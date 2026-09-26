@@ -18,7 +18,9 @@ Feet are Mountain v2's walk (Walk 12°, Look, Close) and are not rebuilt; the in
 | `MANIFEST.json` | `surfaces`, `profiles`, `skate`, `roads`, `walks`, `cable`, `rail`, `water_routes`, `structures`, `underground`, `sky`, `thresholds`, `crossings`, `journeys`, `speeds_ms` |
 | `LIGHT.md` | §1 (night readable), §3 (running lights, runway lamps, the Lamp), §6 (lite 48-card cap) |
 | `STYLE.md` | §1.1, §1.2, §1.6, §1.11 (light cards, running-light colours), §1.12, §3.1 vehicle and station rows (art arrives from pass 2b) |
-| `inputs/grand-plan.txt` | ch. 6 (modes), ch. 8 (skate lines), ch. 9 (the sky), ch. 4 (Ore Line, the Throat) |
+| `inputs/grand-plan.html` | ch. 6 (modes), ch. 8 (skate lines), ch. 9 (the sky), ch. 4 (Ore Line, the Throat) |
+| `RIDE.md` | **M1 and M2 read it in full**: the ground kernel, the tyre step, S/A/D, the slide→boost loop, the pace table (§8.3), the five situations (§9), the consolidation table (§7) and D39–D46. Where M1 below and `RIDE.md` disagree, `RIDE.md` wins. |
+| `FLIGHT.md` | M6 reads it in full (D34–D38) — *pending the FLIGHT patch; not on `main` at v1.6* |
 | Code at `PIN-1` | Skate v2 `src/harbour/skate/{sim,driver,session,world/field,hud,parkScene}`; Mountain v2 `transport.ts`, `race.ts`, `audio.ts`, `body/ride.ts`, `camera/{rideCamera,flight,director,obstruction}.ts`; the Horizon `WorldDefinition` (`src/harbour/horizon/world/build.ts`) and `sky/envelope.ts` |
 
 ## Base SHA rule
@@ -50,13 +52,14 @@ Feet are Mountain v2's walk (Walk 12°, Look, Close) and are not rebuilt; the in
 | `src/harbour/horizon/movers/shared/vehicleArt.ts` | `VehicleArt`: `build(dressing, tier)`; anchors `seat[]`, `cameraMount`, `runningLights[]`, `contact`; fixed dimensions per vehicle (pass 2b implements) |
 | `src/harbour/horizon/movers/shared/wind.ts` | `WindSample { dir, speed }` read-only interface (pass 2b's wind clock implements it; until then a constant south wind at 4 m/s) |
 | `src/harbour/horizon/movers/registry.ts` | one active mode; transitions only through `ThresholdOffer` |
+| `src/harbour/horizon/movers/shared/ground/**` | **The ground kernel** (`RIDE.md §2, §11`): `GroundState`, `GroundProfile`, `stepGround`, the tyre step, the legs, the three-point contact, the ride log. Written by **M1** (its first client), interface reviewed by the integrator on commit 1, consumed by M2 through a `GroundProfile`; M2 requests kernel changes in `HANDOFF-notes/bicycle.md`, never edits it. |
 
 ## Tracks
 
 | Track | Mover | Owns | Must not touch |
 |---|---|---|---|
-| M1 | Board | `src/harbour/skate/sim/**`, `src/harbour/skate/world/field*`, `src/harbour/horizon/movers/board/**` | every other mover folder; the seam files |
-| M2 | Bicycle | `src/harbour/horizon/movers/bicycle/**` (reuses M1's sim through its params object; sim changes are requested from M1) | `src/harbour/skate/**` |
+| M1 | Board | `src/harbour/horizon/movers/shared/ground/**` (the kernel), `src/harbour/horizon/movers/board/**`, `src/harbour/skate/sim/**` (retired into the kernel and the board's components), `src/harbour/skate/world/field*` (the park, behind `surface()`) | every other mover folder; the other seam files |
+| M2 | Bicycle | `src/harbour/horizon/movers/bicycle/**` (a `GroundProfile` of M1's kernel, `RIDE.md §8.1`; kernel changes are requested from M1) | `src/harbour/skate/**`, `movers/shared/ground/**` |
 | M3 | Gondola | `src/harbour/horizon/movers/gondola/**` | `transport.ts` (integrator) |
 | M4 | Ore Line | `src/harbour/horizon/movers/oreLine/**` | `transport.ts` (integrator) |
 | M5 | Zipline | `src/harbour/horizon/movers/zip/**` | `body/ride.ts` (integrator) |
@@ -75,30 +78,41 @@ On commit 1 the integrator generalises `transport.ts` to a line-driven ride API 
 
 ## M1 — Board
 
-- **Uses:** `skate.S1`–`S4` beds and segment `surface` ids; `skate.park`; `skate.rules`; `surfaces[*].pace`; `thresholds` `skateLineStarts`, `stairTop`, `quayWest`, `landingQuay`; `skate.S1.gates` 17, the S1 finish at `structures.landingQuay` (the last point of `skate.S1.pts`, `[1270,1330]`), `skate.S1.time_target_s`; the separated lanes on the Quay Bridge (S3) and the Bight Bridge (S2), the Dune Culvert (S4).
-- **Pace by surface:** the Skate v2 sim reads the surface id under the wheels from the Horizon surface query and takes its `pace` from `MANIFEST.json → surfaces` (`fast`, `flow`, `slow`, `threshold`, `skate` on ice in pass 4). `threshold` pace brings the board to walking pace and offers `park`; the board never passes a threshold (`skate.rules`).
-- **Gravity:** a slope term; downhill accelerates, uphill slows. Travel assist only inside the Tideline park (`skate.park.note`).
-- **Spots:** rails, kerbs, walls, bollards, stairs and bank lips from pass 1's beds only; no required jump; every spot has its ground line.
-- **Race:** S1 with its 17 gates and Mountain v2 race scaffolding (`race.ts`, integrator); finish at the Landing quay (`structures.landingQuay`) on the islet between the Reach's west channel and the river (reached over the Reach boardwalk on piles, `crossings`), with its 25 m run-out, kerb-separated from V01; Retry restarts in every state (A4).
-- **Camera:** Skate v2 skate cam; race shots from `race.ts`. Horizon always in frame on the Crown drop.
-- **Threshold:** pick up at `skateLineStarts`; park at `stairTop`, `quayWest`, `landingQuay` and every threshold a line meets (including the `threshold` rows of `crossings`: S2's dismount at `[660,1170]`, S2 × the Wash bed (the Wash Run closes at its marker for six hours after drizzle), S2 × the Bight pier walk, S4 × VBS `[874,941]`, S4 × VG `[973,538]`, S4 on the Hollow Bridge at walking pace, S3 × the town quay at `quayWest`). S2's label is "the Wash Run".
-- **Sound:** the wheels, by surface (paved roll, cobble chatter, boardwalk hum).
-- **Reduced motion / calm:** playable; no shake, roll or FOV kick; calm view silent.
+**Read `RIDE.md` in full; it is this section fleshed out and it wins over the bullets below.** M1 builds the ground kernel first (`RIDE.md §2–§4`, `§11`), then the board on it; Skate v2's ground model is retired by the consolidation table (`RIDE.md §7`), its air, rails, wallride, manual and tricks are kept as components.
+
+- **Uses:** `skate.S1`–`S4` beds and segment `surface` ids; `skate.park`; `skate.rules`; `beds[*].surfaceSegments[*].pace` and (MANIFEST v1.7) `paces`, `surfaces[*].grip`; thresholds `skateLineStarts.1–4`, `stairTop`, `quayWest`, `landingQuay` and every `crossing.<i>` with `board→feet`; `skate.S1.gates` 17, the S1 finish at `structures.landingQuay` (`[1270,1330]`), `skate.S1.time_target_s`; the separated lanes on the Quay Bridge (S3) and the Bight Bridge (S2), the Dune Culvert (S4).
+- **One motion model:** the ground kernel (`movers/shared/ground/`) owns velocity, heading, yaw rate, grip and contact; fixed step 1/120 with an accumulator; three-point contact on `geography.surface()`; forces in one order: gravity (real, g 12, everywhere — travel assist is retired, `NOT-THIS.md` line 42), rolling resistance by pace, drag, the legs, the tyre step. No other file writes velocity or heading.
+- **Pace is physics:** the bed *segment's* pace (`surfaceSegments[*].pace`, the design lead's word) sets rolling resistance and push grip (`MANIFEST.paces`: fast 0.12 / flow 0.25 / slow 0.6 / threshold 1.8; v1.7), the surface id sets grip (`surfaces[*].grip`), `RIDE.md §8.3`. No caps, no zones. Every threshold pad is `threshold` pace (its 6 m stop a board arriving under ~4.6 m/s), the 25 m run-outs are slow paving where S is the brake, and the pad offers `park`; beyond a board→feet pad, and off any bed the profile lists, the wheels dig in (`offbed`, roll 6.0) and a 300 ms fade returns the board to the bed it left, stopped — the board is bed-bound with no invisible wall (`CONTRACT §2.4`, D43). At-grade crossings where a line continues (S4 × VBS, S4 × VG, S2 × the pier walk, S4 × the garden walk) are crossed at walking pace with the kerb gap.
+- **Steering, slide, twist (D39):** A / D yaw the board; velocity follows through grip; a carve is grip within its limit (0.9 G, so the radius at speed is the wheels' — 13.9 m at 10 m/s on paving), a slide is the remainder. **S** breaks the wheels loose at ≥ 2.5 m/s (kick-out nose-in tail-out, grip → slide grip) and foot-brakes below it; **S held with the stick centred holds a 40° slide** (2 m/s² of net braking on S1's 15 %); A / D deepen, countersteer (assist × 1.5) or commit past 90° into the twist (lead flips, no revert key); grip returns continuously (`bite · cos²β`), never a snap. C and X are removed.
+- **Boost (D41):** the pump out of a slide — charged by a held, fast, controlled slide (set delay 0.35 s, ≥ 3 m/s, full after 1.55 s at 45°), released only by **W** in the 0.5 s window after a clean exit (|β| < 25°), +2.5 m/s over 0.6 s at full charge; never automatic, never a net gain on the flat; the charge crouch is pose only (it never feeds the pump or the landing); ordinary braking never reads as a failed trick.
+- **Gravity:** real everywhere (g 12, D40); downhill runs toward the drag-set terminal (~13.4 m/s on S1's paved 15 %, 14.8 on an 18 % bed); uphill you push. The Tideline park keeps only forgiving landings (`landing.forgiveness` in the park overlay; `skate.park.note` changes accordingly, v1.7).
+- **Spots:** rails, kerbs, walls, bollards, stairs and bank lips from pass 1's beds only; no required jump; every spot has its ground line. Kerbs (0.15) and risers (0.17) are lips for the wheels (`stepMax` 0.12): ollie or stop, visibly.
+- **Race:** S1 with its 17 gates and Mountain v2 race scaffolding (`race.ts`, integrator) re-based on the Horizon bed; finish at the Landing quay with its 25 m run-out, kerb-separated from V01; Retry restarts in every state (A4). **No run-out auto-brake** (D43): the rider brakes; `landingQuay` is the park.
+- **Landing:** one rule — impact keeps speed by Skate v2's impact curve; a sideways landing lands *in a slide* (`grip = cos²β`) that the tyre step resolves; a bail only on hard impact (7.6 / 11.5 crouched). Water is the 300 ms fade back onto the board at the nearest bed point, never a bail and never onto feet.
+- **Camera:** Skate v2 skate cam with **roll 0 at every tier** (rule 7 extended to all riding so the board's heading is always legible) and the yaw target on the velocity direction (a slide moves the board across the screen, not the world); FOV by speed at full tier only (fixed under reduced motion and calm view); race shots from `race.ts`. Horizon always in frame on the Crown drop. Handoffs ≤ 30 eu.
+- **Threshold:** pick up at `skateLineStarts.1–4`; park at `stairTop`, `quayWest`, `landingQuay` and every threshold a line meets (the `threshold` rows of `crossings`: S2's dismount at `[660,1170]`, S2 × the Wash bed (the Wash Run closes at its marker for six hours after drizzle), S2 × the Bight pier walk, S4 × VBS `[874,941]`, S4 × VG `[973,538]`, S4 on the Hollow Bridge at walking pace, S3 × the town quay at `quayWest`). S2's label is "the Wash Run". The action is E / the Enter bubble; `enter(threshold)` places the board stopped and facing along the bed; `exit(threshold)` drops the rider on foot.
+- **Controls:** W push / pump / boost, S slide / foot brake, A / D steer, Space pop, Shift sprint; Move pad up / down / left / right; pad A / B (LT) / left stick / X / R3 (`RIDE.md §10.5`). W and S no longer double as lean.
+- **Sound:** the wheels — the **slide screech** is the on-purpose sound (pitch rises with the charge, bright when full); roll by surface (paved roll, cobble chatter, boardwalk hum, ochre hiss) is the ambient.
+- **HUD:** one glass **pace** bubble (the surface's pace word and icon; the charge arc during a slide; the push glyph in the release window; the offer at a pad). No numbers. The quick layer in every phase.
+- **Reduced motion / calm:** playable, identical physics; no shake, roll, FOV change or cards; calm view silent. Lite: same numbers, FOV fixed.
 - **Night:** no lamp; lines read by lantern pools and edge lips.
-- **Tests:** `test/horizonBoardPace.test.ts` (every surface id → its manifest pace), `test/horizonBoardThresholds.test.ts` (no line passes a threshold without `park`), `test/horizonSkateLines.test.ts` (headless rider completes S1–S4 start → end on bed with no required jump; S1 in `time_target_s`).
-- **Acceptance ride:** S1, S2, S3, S4 end to end, full and lite; S1 race with Retry during countdown and at gate 0.
+- **Presence:** publishing `act: 'skate'` and the slide angle are one wire-change request in `HANDOFF-notes/board.md` (rule 11, D46); nothing is broadcast in pass 2.
+- **Profiles:** the board's `GroundProfile` (`RIDE.md §8.1`) and the eight knobs (`§8.2`); surfaces are the design lead's (`§8.3`, MANIFEST v1.7).
+- **Reproducibility:** the ride log per fixed step (`§9`); the five situations R1–R5 (+ R0 the twist) as headless tests and harness replays.
+- **Tests:** `test/groundKernel.test.ts`, `test/groundTyre.test.ts`, `test/groundSlide.test.ts`, `test/groundLegs.test.ts`, `test/horizonBoardPace.test.ts` (every surface id → its manifest row), `test/horizonBoardThresholds.test.ts` (no line passes a threshold without `park`; off-bed bog), `test/horizonSkateLines.test.ts` (headless rider completes S1–S4 start → end on bed with no required jump; S1 in `time_target_s`; ride log written), `test/horizonRideSituations.test.ts` (R0–R5), `test/horizonBoardLanding.test.ts`, `test/horizonBoardCamera.test.ts`. Skate v2 suites edited or deleted as `RIDE.md §12` lists (`skate-island-travel` deleted; `skate-int-feel` retuned for g 12).
+- **Acceptance ride:** `RIDE.md §13` rides 1–8 on Mac and iPhone, full and lite; S1 race with Retry during countdown and at gate 0.
 
 ## M2 — Bicycle
 
 - **Uses:** `roads.V01`, `VG`, `V02`, `VBS`, `roads.spurs`, beds with `profiles.trail.modes` containing `bicycle`; `speeds_ms.bicycle`; threshold `upperStreetSpur`; racks beside every threshold (`STYLE §3.1`).
-- **Sim:** M1's sim with bicycle parameters (speed, turning radius, no tricks, bell).
+- **Sim:** a `GroundProfile` of M1's ground kernel (`RIDE.md §8.1`, D45): pedal 2.5 to `speeds_ms.bicycle` 6.0 (continuous, no stroke), grip 6.0 / 4.8, **S is both brakes at any speed (4.0 m/s²) plus a rear-wheel skid that tails out ≤ 20°**, wider steering (radius 2.0 + 1.4·s), no kick-out to speak of, no twist, no pop, no boost; a kerb stops a bike (`stepMax` 0.10); its `beds` are roads, spurs and trails, so a walk or a skate bed is `offbed` and the fade returns it (the "refuses walks" test is this rule). The bicycle inherits the board's understanding of ground, grip, gravity and steering through the same kernel tests, and none of its feel.
 - **Beds:** roads and trails only; never a walk, a skate line, a stair or a plaza. The Crown Road turning circle is the wheels' end.
 - **Camera:** follow with look-ahead along the bed's tangent; horizon in frame.
 - **Threshold:** mount and dismount at a rack; `upperStreetSpur` wheels → feet (`park`).
 - **Sound:** the bell (on purpose); tyres by surface.
 - **Reduced motion / calm:** playable; no bob.
 - **Night:** no lamp (`LIGHT §3` lists none).
-- **Tests:** `test/horizonBicycleBeds.test.ts` (refuses walks, skate beds, stairs; accepts roads and trails); journey `square→library by bicycle` against `journeys.targets_s`.
+- **Tests:** `test/horizonBicycleBeds.test.ts` (a walk, a skate bed or a stair is `offbed` and the fade returns the bike; roads and trails are legal); `test/horizonBicycleProfile.test.ts` (S never exceeds 20° of slip; brakes act at any speed; no charge ever; pedal settles near 5.5 on the flat and ~4 on 10 %); journey `square→library by bicycle` measured from the ride log against `journeys.targets_s` (D44).
 - **Acceptance ride:** square → Library timed; one lap of Horizon Drive timed; Crown Road to the turning circle.
 
 ## M3 — Gondola
@@ -199,6 +213,9 @@ On commit 1 the integrator generalises `transport.ts` to a line-driven ride API 
 - Audio: one on-purpose sound per mode through `audio.ts`; calm view silences all.
 - Quick layer in every mode; a test proves it.
 - Streaming: at 35 m/s the plane crosses districts fast; streaming prefetches along the heading, ≤ 1 district built per frame, residency within `CONTRACT §6`.
+- The mover hook (`attachMover` / `detachMover`, `RIDE.md §11`; the same ask as `FLIGHT.md §9.2`, pending); `geography.bedAt(x, z)` (`RIDE.md §11.9`); one exported `g` (12) from `runtime/geography.ts` for the walker, the ground kernel and the wings (D40); `HorizonStage` reads reduced motion and calm live.
+- `race.ts` re-based on the S1 bed (17 gates, Retry in every state); the run-out auto-brake removed (D43).
+- MANIFEST v1.7 (design lead, `make_manifest.py`): `paces` and `surfaces[*].grip` (`RIDE.md §8.3`), pads tagged `threshold`, `skate.park.note`, `journeys` rows for movers marked `measured: 'ride-log'` (D44), the FLIGHT sky fields (`FLIGHT.md §9.5`, pending). No `horizon-geo` bump.
 - Merge with pass 2b into `PIN-2`: swap every greybox proxy for the kit's `VehicleArt`.
 
 ## Must produce
@@ -209,6 +226,7 @@ On commit 1 the integrator generalises `transport.ts` to a line-driven ride API 
 - [ ] Quick layer visible in every mode; money one tap away.
 - [ ] Reduced motion and calm view behaviour per rule 7 and 8 for every mode.
 - [ ] Journey timings re-measured with real movers against `journeys.targets_s`.
+- [ ] The ground kernel with its determinism test; the board and the bicycle as its profiles; the ride logs for R0–R5 and every acceptance ride.
 
 ## Must not
 
@@ -216,7 +234,8 @@ On commit 1 the integrator generalises `transport.ts` to a line-driven ride API 
 - Add a dynamic point light, world-space text, or a floating prop.
 - Change the presence wire, the Worker, money, schema, auth, sync or deploy.
 - Board anyone by a form, a menu or a teleport; the ride is taken at the threshold.
-- Let the board or bicycle leave its beds; let the plane enter the Throat or land on a neighbourhood.
+- Let the board or bicycle leave its beds (off the bed the wheels dig in and the fade returns it — never an invisible wall, never a bog you push out of); let the plane enter the Throat or land on a neighbourhood.
+- Add a second velocity, heading or grip writer beside the ground kernel; add a speed cap or a zone where a surface row would do; add a trick or subsystem the brief does not list.
 - Reverse a ride mid-line; bow a cable upward; float a rider beside a vehicle.
 - Use real household data.
 
@@ -230,7 +249,7 @@ After each section: `pnpm exec vitest run test/<name>.test.ts --maxWorkers=1` an
 
 | Evidence | File |
 |---|---|
-| Each acceptance ride above: a harness recording and a step log (position, mode, surface, speed per second) | `evidence/rides/<mover>_<ride>.mp4`, `.json` |
+| Each acceptance ride above: a harness recording and a step log (position, mode, surface, speed per second; for the board and bicycle the kernel's ride log per fixed step, `RIDE.md §9`) | `evidence/rides/<mover>_<ride>.mp4`, `.json` |
 | Journey timings with real movers vs `journeys.targets_s` | `evidence/journeys.md` |
 | Night: the strip's two lamp rows, the gondola cabins, the Ferry, the plane's running lights, at 02:00 | `evidence/pages/night_<subject>_<full\|lite>.png` |
 | Reduced motion: every passive ride and flight shown as a cut | `evidence/rides/reduced_motion.md` |
@@ -265,3 +284,12 @@ Jonathan rides each mode on his Mac and his iPhone from `TEST-PLAN.md` (Grand Pl
 - M9: headway 300 → 370; the Sea Passage's Steps and Sea Stair; the Sea Door pier = jetty `[1705,775]`; Bight pier `[560,890]` and the pier walks; the canoe acceptance starts at the lake inlet.
 - M5 ride: lands on the landing tower's deck, not on the sand.
 - M6: the Throat 139 m at 30°.
+
+### RIDE deltas (design lead, 26 Sep)
+
+- Inputs: `RIDE.md` (M1, M2) and `FLIGHT.md` (M6) added; `inputs/grand-plan.txt` corrected to `.html`.
+- Shared interfaces: `movers/shared/ground/**` (the ground kernel) added, written by M1, consumed by M2 through a `GroundProfile`.
+- M1 rewritten on `RIDE.md`: one motion model, pace as physics, S / A / D, the twist, the pump-boost, no run-out auto-brake, water as a fade, sideways landings as slides, roll-free camera on the velocity direction, the pace bubble, the ride log and situations R0–R5, the new test list.
+- M2: a profile of the kernel, not a params object of the Skate v2 sim; `horizonBicycleProfile` test; journeys from the ride log.
+- Integrator: the mover hook, one `g`, `race.ts` re-based and the run-out brake removed, MANIFEST v1.7 (surfaces, journeys, sky).
+- Decisions D39–D46 recorded in `docs/DECISIONS.md`.
