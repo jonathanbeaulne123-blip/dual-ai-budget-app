@@ -15,7 +15,7 @@ const TARGETS: Record<`${HouseRoom}:${HouseLevel}`, readonly HouseTarget[]> = {
   "kitchen-table:middle": [{ id: "conversation", label: "Open the conversation folio" }],
   "kitchen-table:below": [{ id: "plan-studio", label: "Pull out the Plan Studio" }],
   "together:above": [{ id: "wishes", label: "Tend a wish" }],
-  "together:middle": [{ id: "pottery", label: "Enter the Pottery Studio" }, { id: "letters", label: "Open the writing desk" }, { id: "encounters", label: "Spend a moment together" }],
+  "together:middle": [{ id: "pottery", label: "Enter the Pottery Studio" }, { id: "letters", label: "Open the writing desk" }],
   "together:below": [{ id: "memories", label: "Open a memory" }, { id: "projector", label: "Choose three memories" }],
   // Making: the Kiln above, Hercules's Cottage on the level, his shelves below.
   "making:above": [{ id: "pottery", label: "Enter the Pottery Studio" }],

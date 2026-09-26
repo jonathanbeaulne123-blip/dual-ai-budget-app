@@ -792,7 +792,8 @@ const daysBetween = (from: DateKey, to: DateKey): number =>
 /** Where each pulse destination sends you, in the house's own door names. */
 const PULSE_TARGETS: Record<FundPulseDestination, { target: HouseTargetId; next: string }> = {
   fund: { target: "cellar-bills", next: "Read the bill jars." },
-  together: { target: "encounters", next: "Spend a moment together." },
+  // K5: encounters are retired; the Boathouse's wishes are where the two of you pick something up together.
+  together: { target: "wishes", next: "Tend a wish." },
   path: { target: "journey", next: "Step into Journey." },
   status: { target: "more", next: "Open Status." },
 };

@@ -154,7 +154,7 @@ function HearthsideHousehold({household:h,memberId,identity,connected,busy,onCom
           {letters&&(route.room==='common'||route.room==='theatre')&&<button id="hearthside-open-letters" onClick={()=>openTool('letters')}>Letters, voice, and capsules</button>}
           {route.room==='common'&&<><button id="hearthside-add-intention" onClick={()=>beginExperience()}>Add an intention</button><button id="hearthside-write-note" onClick={beginNote}>Leave a little note</button><button id="hearthside-sit-together" onClick={()=>openTool('practical')}>Sit together</button></>}
           {route.room==='studio'&&<><button id="hearthside-open-studio" onClick={()=>openTool('studio')}>Enter the Studio</button><button id="hearthside-banks" onClick={()=>bankView()}>Our painted banks</button></>}
-          {(route.room==='common'||route.room==='conservatory')&&<button id="hearthside-discoveries" onClick={()=>openTool('encounters')}>Discover a season together</button>}
+          {/* K5: "Discover a season together" (encounters) is retired from the rooms; an old deep link still opens it. */}
           {route.room==='conservatory'&&<button id="hearthside-new-dream" onClick={()=>beginExperience()}>Plant a possibility</button>}
           {(route.room==='conservatory'||route.room==='theatre')&&<button id="hearthside-occasions" onClick={()=>openTool('occasions')}>Dates that mean something</button>}
           {route.room==='common'&&HEARTHSIDE_FLAGS.guestPublication&&<button id="hearthside-guests" onClick={()=>openTool('guests')}>Our doorway and private street</button>}

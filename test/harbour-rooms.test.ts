@@ -444,7 +444,7 @@ describe("the three rooms as places", () => {
     const handle = PLACES.boathouse!.build(scene, { theme: "classic" } as never, reading as never, "lite", { composition: "desktop", signal: new AbortController().signal, invalidate: () => {} });
     const doors = Object.fromEntries(handle.anchors().filter((anchor) => anchor.door).map((anchor) => [anchor.id, anchor.door!.target]));
     // `wish` is the unlit lantern by the door: the way a wish is made, and a door like every other.
-    expect(doors).toEqual({ wishes: "wishes", wish: "wishes", projector: "projector", memories: "memories", pottery: "pottery", letters: "letters", boat: "encounters" });
+    expect(doors).toEqual({ wishes: "wishes", wish: "wishes", projector: "projector", memories: "memories", pottery: "pottery", letters: "letters", boat: "memories" }); // K5: the rowboat opens what you made together
     expect(handle.anchors().find((anchor) => anchor.id === "wishes")?.label).toContain("3 ideas in the light");
     handle.dispose();
     expect(buildBoathouseReading({})).toEqual(EMPTY_BOATHOUSE_READING);

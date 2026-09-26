@@ -121,7 +121,7 @@ describe("nextCommitment — the sundial's order", () => {
 describe("noticedItem — need before good news", () => {
   it("raises the flag for reset, needs-us and checking with the pulse's own destination", () => {
     expect(noticedItem(pulseOf("reset", "path"), hercules)).toEqual({ fact: "reset. Detail.", next: "Step into Journey.", target: "journey", source: "pulse" });
-    expect(noticedItem(pulseOf("needs-us", "together"), hercules)?.target).toBe("encounters");
+    expect(noticedItem(pulseOf("needs-us", "together"), hercules)?.target).toBe("wishes"); // K5: encounters retired
     expect(noticedItem(pulseOf("needs-us", "fund"), null)?.target).toBe("cellar-bills");
     expect(noticedItem(pulseOf("checking", "status"), null)?.target).toBe("more");
   });
