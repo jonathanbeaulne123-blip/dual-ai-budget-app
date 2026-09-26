@@ -22,7 +22,7 @@ export const NIGHT_FLOOR = {
   moonIntensity: 0.4,
 } as const;
 /** Light cards and the moon-chalk lip line (STYLE §1.3.3; darkness floor: lips at ≥ 3:1 "carried by a chalk lip line"). */
-export const NIGHT_LIGHT_CARDS = { full: 160, lite: 48, poolRadius: 2.4, beadRadius: 0.32, pool: '#f6c779', bead: '#fff0c8', poolOpacity: 0.78, chalk: '#c9d0de', door: '#ffc978', doorSize: [1.6, 2.5] as const } as const;
+export const NIGHT_LIGHT_CARDS = { full: 160, lite: 48, poolRadius: 2.4, beadRadius: 0.32, pool: '#f6c779', bead: '#fff0c8', poolOpacity: 0.78, chalk: '#c9d0de', /** Per-role night colour of retaining/kerb/parapet FACES (dimmer than the lip line). */ faceChalk: '#7d8597', door: '#ffc978', doorSize: [1.6, 2.5] as const } as const;
 export interface NightLight { nightness: number; hemisphereSky: string; hemisphereGround: string; hemisphereIntensity: number; moonIntensity: number; lightCards: boolean }
 export function nightLight(elevation: number, day: { zenith: string; ambient: number }): NightLight {
   const nightness = Math.min(1, Math.max(0, -elevation / 12));

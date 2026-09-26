@@ -109,7 +109,8 @@ export interface TerrainField {
   columns: number;
   rows: number;
   heights: Float32Array;
-  /** One byte per sample; indexes the terrain module's exported surface palette. */
+  /** One paint byte per sample: bits 0–4 the ground palette index, bits 5–6 the strata set
+   * (`packTerrainPaint` / `terrainPaintGround` / `terrainPaintRockSet` in land/terrain). */
   surfaces: Uint8Array;
 }
 // --- T2 additions ---

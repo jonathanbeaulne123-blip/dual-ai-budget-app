@@ -9,6 +9,7 @@ import {loadHorizonAssets,type HorizonAssets} from '../../../house/world/horizon
 import {createHorizonGeography,HORIZON_WALKABLE_DEGREES,HORIZON_BODY_HEIGHT} from './geography.ts';
 import {buildDistrictCards,buildWaterCards,buildHorizonRing} from './cards.ts';
 import {createDistrictStream,useDefinitionDistricts} from '../world/districts.ts';
+import {useCoastline} from '../land/coast/index.ts';
 import {HORIZON_MANIFEST} from '../world/manifest.ts';
 import {restoreHorizonPosition,HORIZON_RESTORE_TOLERANCE} from './savedPosition.ts';
 import {horizonPartnerPose} from './partner.ts';
@@ -35,6 +36,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const {world,field,journey,cuts}=assets,tier=options.tier,assetLoadedAt=performance.now(),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(45,1,.08,4500);
   // The partition is the definition's (R1-67): districtAt() uses the baked hearts from here on.
   useDefinitionDistricts(world.districts);
+  // …and the coastline too: shore tests read the baked outline, not a client re-solve of the manifest.
+  useCoastline(world.coastline);
   const geography=createHorizonGeography(field,cuts),figure=createBodyFigure(),partner=createBodyFigure({coat:'#af8760'});
   scene.add(figure.group,partner.group);partner.group.visible=false;
   const partnerMaterials:Record<string,THREE.Material>={};partner.group.traverse(object=>{if(object instanceof THREE.Mesh)for(const material of Array.isArray(object.material)?object.material:[object.material])partnerMaterials[material.uuid]=material;});
@@ -83,12 +86,14 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   // A district streams in from the fog colour (STYLE §1.13.2): each material mixes toward the fog colour by 1 − fade.
   // Night chalk lip line (STYLE §1.3.3, darkness floor: "carried by a chalk lip line where light alone is not
   // enough"): the up-facing faces of every lip, kerb, parapet, rail and retaining solid, one unlit batch per resident district.
-  const chalkMaterial=new THREE.MeshBasicMaterial({color:NIGHT_LIGHT_CARDS.chalk,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4}),solidsById=new Map((world.geometry?.solids??[]).map(solid=>[solid.id,solid]));
+  // The FACES of retaining walls, kerbs, edges and parapets take a dimmer per-role night colour ("chalked coping", STYLE §1.3.3)
+  // so a wall reads against the moonlit ground at ≥ 3:1 where the lip line alone is thin (P28 pages A and L).
+  const chalkMaterial=new THREE.MeshBasicMaterial({vertexColors:true,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4}),lipChalk=new THREE.Color(NIGHT_LIGHT_CARDS.chalk),faceChalk=new THREE.Color(NIGHT_LIGHT_CARDS.faceChalk),solidsById=new Map((world.geometry?.solids??[]).map(solid=>[solid.id,solid]));
   function buildChalk(d:{solidIds?:string[]}){
-    const positions:number[]=[];
-    for(const id of d.solidIds??[]){const solid=solidsById.get(id);if(!solid||!CHALK_SOLID.test(solid.id))continue;const p=tier==='lite'?(solid.litePositions??solid.positions):solid.positions,ix=tier==='lite'?(solid.liteIndices??solid.indices):solid.indices;
-      for(let i=0;i<ix.length;i+=3){const a=ix[i]!*3,b=ix[i+1]!*3,c=ix[i+2]!*3,ux=p[b]!-p[a]!,uy=p[b+1]!-p[a+1]!,uz=p[b+2]!-p[a+2]!,vx=p[c]!-p[a]!,vy=p[c+1]!-p[a+1]!,vz=p[c+2]!-p[a+2]!,nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx,n=Math.hypot(nx,ny,nz);if(n<1e-9||Math.abs(ny/n)<.6)continue;for(const k of [a,b,c])positions.push(p[k]!,p[k+1]!+.03,p[k+2]!);}}
-    if(!positions.length)return null;const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.computeBoundingSphere();const mesh=new THREE.Mesh(geometry,chalkMaterial);mesh.visible=night;mesh.renderOrder=2;return mesh;
+    const positions:number[]=[],colors:number[]=[];
+    for(const id of d.solidIds??[]){const solid=solidsById.get(id);if(!solid||!CHALK_SOLID.test(solid.id))continue;const faces=CHALK_FACE_SOLID.test(solid.id);const p=tier==='lite'?(solid.litePositions??solid.positions):solid.positions,ix=tier==='lite'?(solid.liteIndices??solid.indices):solid.indices;
+      for(let i=0;i<ix.length;i+=3){const a=ix[i]!*3,b=ix[i+1]!*3,c=ix[i+2]!*3,ux=p[b]!-p[a]!,uy=p[b+1]!-p[a+1]!,uz=p[b+2]!-p[a+2]!,vx=p[c]!-p[a]!,vy=p[c+1]!-p[a+1]!,vz=p[c+2]!-p[a+2]!,nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx,n=Math.hypot(nx,ny,nz);if(n<1e-9)continue;const up=Math.abs(ny/n)>=.6;if(!up&&!(faces&&Math.abs(ny/n)<.45))continue;const col=up?lipChalk:faceChalk,ox=up?0:nx/n*.03,oz=up?0:nz/n*.03;for(const k of [a,b,c]){positions.push(p[k]!+ox,p[k+1]!+(up?.03:0),p[k+2]!+oz);colors.push(col.r,col.g,col.b);}}}
+    if(!positions.length)return null;const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.computeBoundingSphere();const mesh=new THREE.Mesh(geometry,chalkMaterial);mesh.visible=night;mesh.renderOrder=2;return mesh;
   }
   const stream=createDistrictStream(world,d=>{const cards=buildDistrictCards(world,field,cuts,d,tier,false,options.hideBuildings);const hooks=Object.values(cards.materials).map(material=>fogHook(material));const fadeIn=(amount:number)=>{for(const hook of hooks)hook.fade.value=amount;};fadeIn(motion.districtFadeMs>0?0:1);const chalk=buildChalk(d);scene.add(cards.group);if(chalk)scene.add(chalk);requestShadow('district-load');return{cards,chalk,at:performance.now(),fadeIn,dispose(){scene.remove(cards.group);cards.dispose();if(chalk){scene.remove(chalk);chalk.geometry.dispose();}if(coarse.has(d.id))coarse.get(d.id)!.group.visible=true;}};},tier);
   function resize(){const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(mode==='look'&&!transition){const pose=world.views.find(p=>p.id===shotId);if(pose)lookAt(pose);}}
@@ -199,6 +204,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
 }
 
 const CHALK_SOLID=/(^|\.)(edges|kerbs|parapet|parapets|rails|retaining|coping|lip|marker)(\.|@|$)/;
+/** Solids whose vertical faces also take the night face colour (walls that bound a walk, not rails or markers). */
+const CHALK_FACE_SOLID=/(^|\.)(edges|kerbs|parapet|parapets|retaining|coping)(\.|@|$)/;
 type FogHook={fade:{value:number};cap:{value:number}};
 const fogHooks=new WeakMap<THREE.Material,FogHook>();
 /** One fog stage for land and cards: Three's fog, capped (horizon cards: 0.7), then a fade from the fog colour. */
