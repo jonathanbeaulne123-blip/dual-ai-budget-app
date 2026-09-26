@@ -149,7 +149,11 @@ export function buildCrossings(cuts: LandCuts, lines: readonly Line[] = [], cont
     const waterBody = wet.includes(hit), confluence = !waterBody && aquatic(a) && aquatic(b), ferryTransfer = hit.a === 'FERRY' && hit.b.startsWith('ferry.') || hit.b === 'FERRY' && hit.a.startsWith('ferry.');
     const mover = [a, b].find(line => line.kind === 'cable' || line.kind === 'rail'), footLine = mover === a ? b : a;
     const endpointTransfer = !!mover && ['walk', 'road', 'trail', 'boardwalk', 'cave'].includes(footLine.kind) && [mover.points[0]!, mover.points.at(-1)!].some(p => p && Math.hypot(p[0] - hit.at[0], p[2] - hit.at[1]) < 1);
-    const transfer = ferryTransfer || endpointTransfer;
+    // A jetty or dock deck standing over water is a boarding interface (feet → boat), not a land route
+    // meeting water: it is proved like a ferry pier, on its own deck within the transfer tolerance.
+    const jetty = (line: Centreline) => /^(jetty|ferry)\./.test(line.sourceId ?? line.id) && !aquatic(line);
+    const boarding = !ferryTransfer && (jetty(a) && aquatic(b) || jetty(b) && aquatic(a));
+    const transfer = ferryTransfer || endpointTransfer || boarding;
     const yw = [hit.sourceA, hit.sourceB, hit.a, hit.b].includes('yearWalk'), host = hit.a === 'yearWalk' ? hit.b : hit.b === 'yearWalk' ? hit.a : null;
     const footway = yw && host !== null && stretches.some(st => st.host === canonical(host) && (() => { const h = byId.get(host === hit.a ? hit.sourceA ?? hit.a : hit.sourceB ?? hit.b); if (!h) return false; const p = closestOnPolyline(h.points, hit.at[0], hit.at[1]).arc, f = closestOnPolyline(h.points, st.from[0], st.from[1]).arc, t = closestOnPolyline(h.points, st.to[0], st.to[1]).arc; return p >= Math.min(f, t) - 15 && p <= Math.max(f, t) + 15; })());
     const flushFoot = FOOT.has(a.kind) && FOOT.has(b.kind) && separation <= .5;

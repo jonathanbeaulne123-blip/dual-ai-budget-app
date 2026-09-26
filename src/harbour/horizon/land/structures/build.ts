@@ -14,7 +14,7 @@ export const SPANS:SpanSpec[]=[
   {id:'bightBridge',at:[560,1100],route:'V01',length:230,width:17,height:12,clear:8,abutments:true},
   {id:'apronBridge',at:[1158,949],route:'S1',length:45,width:4,height:31,clear:5},
   {id:'hollowBridge',at:[893,600],route:'walk garden',length:32,width:8,height:37,clear:4,covered:true},
-  {id:'inletFootbridge',at:[1161,731],route:'walk lakerim',length:28,width:3,height:52,clear:1},
+  {id:'inletFootbridge',at:[1161,731],route:'walk lakerim',length:28,width:3,height:55,clear:4},
   {id:'reachFootbridge',at:[1274,1203],route:'walk reach',length:48,width:3,height:9.5,clear:4},
   {id:'reachBoardwalk',at:[1255,1251],route:'S1',length:112,width:4,height:5,clear:1},
   {id:'timberCrossing',at:[1500,1250],route:'homestead.lane',length:20,width:3,height:5,clear:2},

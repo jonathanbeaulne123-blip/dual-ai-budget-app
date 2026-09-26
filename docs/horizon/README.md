@@ -394,3 +394,16 @@ Every computed intersection of the v1.9 build has a row (**324 / 324**). 19 rows
 
 `skate.S1.pts` gains [1204,1080] and [1204,1133] (v1.8 in `v1_8_pts`): S1 rides its skate shelf (x 1204, z 1078–1135, h 12, builder pins) instead of running at grade 1–6 m east of it and 1 m above it. Page C: the shelf 0/0 → 2/4 px (portrait passes; 16:9 needs W3-C's sight window). crown→quay 127.7 → 128.9 s (110–150).
 
+
+### 12. Integrator 2 (merge of W3-A and W3-C, seams)
+
+Data (`make_manifest.py` → the "integrator 2" block after v1.9; still version 1.9; byte-exact):
+
+- **The Inlet Footbridge.** The upper river's last reach is the lake's inlet pool, level with Stillwater (50) from a surveyed station at [1163,716] (land/water; the 50 m fall from the Cup is shared by seven 7.1 m weirs above it, was five 5 m weirs and a pool at 58–60 under the bridge). The rim trail's inlet pin 52 → **55** and the footbridge deck 52 → **55** (`structures.inletFootbridge.deck_h`): clear **4.4** over the pool (a river's 4). Crossings `walk lakerim × river upper` (both) now built; P16 inlet rows 3 → 0.
+- **Register row `yearWalk × river upper`** [1161.9,725.2]: under → **over** (`v1_8_resolution` kept): the Year Walk's February stretch crosses the inlet on its deck beside the footbridge.
+
+Build (no manifest data):
+
+- **Page C** (the skate shelf): a Sketchbook sight window from the overlook to the shelf line (terrain only, never a bed) now that S1 rides the shelf: 16:9 **2 → 40 px**.
+- **Jetties are boarding points**: a jetty or dock deck over water is a mode transfer (feet → boat) proved on its own deck, not a land route meeting water (`world/crossings.ts`; clears the Boathouse dock threshold).
+- **Two striped fins smoothed**: the Shoulder's outward blend south of Stillwater never stands above the terrace's top 55 (`STILLWATER_SILL`: [1235–1260, 905–915] was 60–67 over S1's cut); the Notch's west rim south of the High Span, where S1 runs inside the west wall, stands at the Green's ground ≤ 16 (`NOTCH_WEST_BANK`: [1205–1220, 1150–1175] was 24–30). Knife-ridge points (> 8 over both sides within 20 m) 107 → 79.

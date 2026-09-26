@@ -1414,6 +1414,18 @@ for idx, row in enumerate(m["crossings"]):
     reg.append(row)
 m["crossings"] = reg + REG_ADDED_V19
 
+# v1.9 · Stage A integrator 2 (26 September 2026; README "v1.9 deltas" → "Integrator 2"). The upper river's last
+# reach is the lake's inlet pool, level with Stillwater (50), and the rim trail's Inlet Footbridge pin is 55
+# (land/water, land/beds, land/structures): the Year Walk's February stretch now crosses the inlet OVER the
+# water (clear 4.4) on its generated deck beside the footbridge, not under a pool at 58-60.
+for i, row in enumerate(m["crossings"]):
+    if row["a"] == "yearWalk" and row["b"] == "river upper" and row.get("resolution") == "under":
+        row = dict(row); row["v1_8_resolution"] = row["resolution"]; row["resolution"] = "over"
+        row["note"] = "v1.9 (integrator 2): over by 5 eu on its deck beside the Inlet Footbridge; the inlet pool is level with the lake (was under a pool at 58-60)"
+        m["crossings"][i] = row
+m["structures"]["inletFootbridge"]["deck_h"] = 55
+m["structures"]["inletFootbridge"]["note"] = "v1.9 (integrator 2): deck 55 over the inlet pool at the lake level 50 (clear 4.4, a river's 4); was 52 over a pool at 58-60"
+
 
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)

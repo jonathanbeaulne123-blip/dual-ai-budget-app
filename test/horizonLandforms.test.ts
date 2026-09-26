@@ -104,6 +104,11 @@ describe('Horizon authored continuous landforms', () => {
     expect(worstCap, 'bank in the square→dam cone').toBeLessThanOrEqual(DAM_WINDOW.cap + 1e-6);
     for (let x = dx - 60; x <= dx + 60; x += 5) if (!nearWater(x, dz + 20)) expect(baseHeight(x, dz + 20), `${x}`).toBeLessThanOrEqual(DAM_WINDOW.cap + 1e-6);
   }, 30000);
+  it('leaves no striped fin south of Stillwater or on the Notch\'s west rim beside S1 (integrator 2)', () => {
+    // Was 60–67 at [1235–1260, 905–915] (the Shoulder's blend past the terrace) and 24–30 at [1205–1220, 1150–1175].
+    for (let x = 1235; x <= 1260; x += 5) for (let z = 905; z <= 915; z += 5) expect(baseHeight(x, z), `${x},${z}`).toBeLessThanOrEqual(55.01);
+    for (const [x, z] of [[1205, 1150], [1210, 1155], [1210, 1160], [1215, 1160], [1215, 1165], [1220, 1170], [1220, 1175]] as [number, number][]) expect(baseHeight(x, z), `${x},${z}`).toBeLessThanOrEqual(16.5);
+  });
   it('widens the Notch under the High Span: ≥ 40 eu of floor at the water between the walls', () => {
     // The High Span gate spans x 1220–1260 at z 1095 (aperture 40 × 14 at h 16): the floor
     // there is the river and its shelf at the water (its 1 m bank lip), never a wall.

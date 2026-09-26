@@ -79,3 +79,11 @@ it('names register thresholds by their routes, so inserting a row does not renam
   const inserted=[{a:'V01',b:'yearWalk'},...rows];
   expect(registerRowKey(3,inserted)).toBe(registerRowKey(2,rows));expect(registerRowKey(1,inserted)).toBe('crossing.s2.waterWash.1');
 });
+it('proves a jetty deck over water as a boarding point on its own deck, not a land route meeting water (integrator 2)',()=>{
+  // The Boathouse jetty: deck 2.35 over the Reach east channel at 1.75 (0.6 apart) was "at-grade meeting: regrade owed".
+  const channel={id:'water.reach.2',kind:'river' as const,points:[[0,1.75,0],[20,1.75,0]] as BedCut['points'],outline:[] as [number,number][],level:1.75,width:7,depth:1,bank:1};
+  const pad={id:'threshold.dock',kind:'threshold' as const,centre:[10,2.35,0] as [number,number,number],size:[6,5] as [number,number],rotationDegrees:0,margin:0,blend:0,deck:true};
+  const box=(id:string,role:string,y0:number,y1:number)=>({id,kind:'deck',positions:[8,y0,-3,8,y0,3,12,y0,3,12,y0,-3,8,y1,-3,8,y1,3,12,y1,3,12,y1,-3],indices:[0,2,1,0,3,2,4,5,6,4,6,7],surface:'timber',districtId:'reach',bedIds:['jetty.dock'],walkable:role==='deck',role});
+  const cuts:LandCuts={beds:[bed('jetty.dock','walk',[[10,2.35,-6],[10,2.35,6]])],pads:[pad as never],mouths:[],waters:[channel],solids:[box('jetty.dock.deck','deck',1.75,2.35),box('threshold.dock.marker','marker',2.35,2.4)] as never,diagnostics:[]};
+  expect(buildCrossings(cuts).proofs[0]).toMatchObject({kind:'modeTransfer',resolution:'threshold',clearancePass:true,built:true,padId:'threshold.dock'});
+});

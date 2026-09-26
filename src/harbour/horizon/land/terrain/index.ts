@@ -148,7 +148,7 @@ export function baseHeight(x: number, z: number): number {
     // west edge against open ground held only 85 % of it at proximity 0.74); the scarp lies outside.
     if (d > 0) height = mix(height, clamp(height, b.min, b.max), SHOULDER_RINGED.has(b.id) && proximity > 0 ? smooth(d / (step * proximity)) : smooth(d / step));
   }
-  height = throatButtress(x, z, height);
+  height = stillwaterSill(x, z, throatButtress(x, z, height));
   const character = coastCharacter(x, z), shoreWidth = character === 'southBeach' ? 44 * s : character === 'bight' ? 23 * s : 10 * s;
   height = mix(0.14 * s, height, smooth(shore / shoreWidth));
   height = damWindow(x, z, notchHeight(x, z, height));
@@ -201,11 +201,31 @@ function notchHeight(x: number, z: number, height: number): number {
   // of a knife-edge spine at 30–35 that a sight window would notch into two striped spires.
   const fromSpan = Math.hypot(q.x - HIGH_SPAN_STATION[0] * s, q.z - HIGH_SPAN_STATION[1] * s);
   const gorgeRim = q.height + (32 - 7 * q.progress) * s;
-  const rim = Math.max(height, east ? mix(Math.min(gorgeRim, HIGH_SPAN_EAST_RIM * s), gorgeRim, smooth((fromSpan - 70 * s) / (50 * s))) : gorgeRim);
+  // South of the High Span S1 leaves its shelf and runs down INSIDE the west wall (x 1222–1240): the west rim
+  // beyond it is S1's cut bank, never a free-standing rim at 25–30 between S1's cut and the Green (a striped
+  // fin at [1205–1220, 1150–1175] on pages A/F). It stands at the Green's own ground, at most WEST_BANK.
+  const westBank = east ? 0 : smooth((q.z - 1110 * s) / (20 * s));
+  const rim = Math.max(height, east ? mix(Math.min(gorgeRim, HIGH_SPAN_EAST_RIM * s), gorgeRim, smooth((fromSpan - 70 * s) / (50 * s)))
+    : mix(gorgeRim, Math.min(gorgeRim, Math.max(height, NOTCH_WEST_BANK * s)), westBank));
   // The gorge floor meets the river at its surface; applyWaters carves the wet bed.
   if (q.distance <= floor) return q.height;
   if (q.distance <= half) { const t = smooth((q.distance - floor) / Math.max(1, wall)); return mix(q.height, rim, t * t); }
   return mix(rim, height, smooth((q.distance - half) / run));
+}
+/** The Notch's west bank south of the High Span, where S1 runs inside the west wall (eu): S1 at 11–12 plus 4. */
+export const NOTCH_WEST_BANK = 16;
+/**
+ * South of Stillwater (x 1175–1285, z 895–940) the ground falls to the dam and the Green: the Shoulder's
+ * outward blend, which passes the terrace's south-east corner, never stands above the terrace's own top (55).
+ * It left a 10 m striped fin at 60–67 over S1's cut at [1235–1260, 905–915] (pages A, F).
+ */
+export const STILLWATER_SILL = { top: 55, x: [1175, 1190, 1265, 1285], z: [895, 925, 940] } as const;
+function stillwaterSill(x: number, z: number, height: number): number {
+  const s = getModel().scale, c = STILLWATER_SILL, top = c.top * s;
+  if (height <= top || z < c.z[0] * s || z > c.z[2] * s || x < c.x[0] * s || x > c.x[3] * s) return height;
+  const wx = smooth((x - c.x[0] * s) / ((c.x[1] - c.x[0]) * s)) * (1 - smooth((x - c.x[2] * s) / ((c.x[3] - c.x[2]) * s)));
+  const wz = 1 - smooth((z - c.z[1] * s) / ((c.z[2] - c.z[1]) * s));
+  return mix(height, top, wx * wz);
 }
 /** How far the Notch's rim shoulder runs back before meeting the surrounding ground (m). */
 export const NOTCH_RIM_RUN = 20;
@@ -241,16 +261,16 @@ function damWindow(x: number, z: number, height: number): number {
  *   notched the 35 eu rim spine at [1288–1311, 1115–1131] into two striped spires.)
  * - A · the dam's glass face: the gallery flights' embankment at [1169–1176, 916–918] (40–47) and
  *   V01's embankment toe at [1382–1389, 1110–1119] (17–19) cut the face's east half.
- * - (C · the skate shelf is not a terrain window: S1's own carriageway at 12.4–13.4 runs between the
- *   overlook and the shelf deck (11–12.3) at [1206–1219, 1100–1134]; a window beside it only left
- *   S1's edge rail hanging. Once S1 rides the shelf, a window from the eye [1268,1145] h 11.6 to the
- *   shelf line [1206,11.6,1078]–[1206,11.6,1136] clears the floor in front of it.)
+ * - C · the skate shelf: since S1 rides the shelf deck (v1.9, W3-A A2) the ground where its at-grade
+ *   carriageway ran, [1207–1222, 1081–1135] at 10.4–12.7, stood between the overlook and the shelf
+ *   (11–12.3): 2 px at 16:9. The window from the eye [1268,1145] h 11.6 to the shelf line clears it (40 px).
  * Every window lies outside the band polygons or inside the Notch walls' exclusion, or trims a band
  * only within its own range (harbour 0–18): P01 is untouched by construction.
  */
 export interface SightWindow { page: string; subject: string; eyeH: number; a: XYZ; b: XYZ; margin: number; near: number; feather: number; bedFade: number }
 export const SIGHT_WINDOWS: readonly SightWindow[] = [
   { page: 'A', subject: "the dam's glass face", eyeH: 13.6, a: [1121, 38, 909], b: [1160, 38, 909], margin: 1, near: 40, feather: 8, bedFade: 6 },
+  { page: 'C', subject: 'the skate shelf', eyeH: 11.6, a: [1206, 11.6, 1078], b: [1206, 11.6, 1136], margin: 1.1, near: 12, feather: 6, bedFade: 4 },
 ];
 interface PreparedWindow { eye: XYZ; a: XYZ; b: XYZ; tri: XY[]; det: number; w: SightWindow; box: number[] }
 let preparedWindows: PreparedWindow[] | undefined;

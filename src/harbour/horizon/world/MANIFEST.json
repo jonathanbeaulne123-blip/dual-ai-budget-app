@@ -3044,7 +3044,9 @@
    ],
    "kind": "footbridge",
    "deck": "lake rim walk",
-   "under": "the upper river at the lake inlet"
+   "under": "the upper river at the lake inlet",
+   "deck_h": 55,
+   "note": "v1.9 (integrator 2): deck 55 over the inlet pool at the lake level 50 (clear 4.4, a river's 4); was 52 over a pool at 58-60"
   },
   "reachFootbridge": {
    "xy": [
@@ -7562,10 +7564,11 @@
     1161.9,
     725.2
    ],
-   "resolution": "under",
+   "resolution": "over",
    "kind": "crossing",
    "source": "bake v1.8",
-   "note": "under by 8 eu: a named structure (footbridge, deck or passage) is owed"
+   "note": "v1.9 (integrator 2): over by 5 eu on its deck beside the Inlet Footbridge; the inlet pool is level with the lake (was under a pool at 58-60)",
+   "v1_8_resolution": "under"
   },
   {
    "a": "yearWalk",

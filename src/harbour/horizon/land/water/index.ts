@@ -26,7 +26,10 @@ export function buildWaterCuts(): WaterCut[] {
     basin('water.bight', 620, 910, 98, 155, 0, 5, 'lagoon'),
     basin('water.stillwater', w.stillwater.cx, w.stillwater.cy, w.stillwater.rx, w.stillwater.ry, w.stillwater.surface, 5),
     basin('water.cup', w.cup.cx, w.cup.cy, w.cup.rx, w.cup.ry, w.cup.surface, 3),
-    channel('water.river.upper', 'river', w.river.upper, [100, 75, 50], 7, 1, 1.1),
+    // The upper river's last reach is the lake's inlet pool, level with Stillwater from a surveyed station at
+    // [1163,716]: the Inlet Footbridge (deck 52) and the rim trail cross still water at 50, never a pool at
+    // 58–60 above the deck. Its 50 m fall from the Cup is shared evenly by the seven weirs above the station.
+    channel('water.river.upper', 'river', [...w.river.upper.slice(0, 2), [1163, 716], w.river.upper[2]!], [100, 64.3, 50, 50], 7, 1, 1.1),
     channel('water.river.lower', 'river', lower, [22, 15, 10.8, 9.2, 6.5, 3.8, 1.8, 0.9, 0], 12, 1.2, 1),
     channel('water.brook', 'brook', w.brook.pts, [39, 32, 18, 7, 0], 5, 0.8, 0.7),
     channel('water.wash', 'dry', w.wash.pts, [35, 31, 25, 0], 11, 0.65, 0.7),

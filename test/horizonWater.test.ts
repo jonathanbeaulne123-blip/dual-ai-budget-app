@@ -141,6 +141,9 @@ describe('Horizon water meets its banks (Stage A G6)', () => {
       const a = upper.points[i - 1]!, b = upper.points[i]!, run = Math.hypot(b[0] - a[0], b[2] - a[2]);
       expect(a[1] === b[1] || run <= 1.5 + 1e-9, `segment ${i}`).toBe(true);
     }
+    // Integrator 2: the last reach is the lake's inlet pool (50) under the Inlet Footbridge (deck 55), never a pool at 58-60.
+    for (const [x, z] of [[1161.75, 725.98], [1161.12, 731.03], [1163, 716]] as [number, number][]) expect(waterInfluence(upper, x, z).level).toBe(50);
+    expect(Math.max(...upper.points.slice(0, -1).map((p, i) => p[1] - upper.points[i + 1]![1]))).toBeLessThan(7.2);
     const lower = buildWaterCuts().find(w => w.id === 'water.river.lower')!, end = lower.points.at(-1)!, prev = lower.points.at(-2)!;
     const dx = end[0] - prev[0], dz = end[2] - prev[2], l = Math.hypot(dx, dz);
     // 2 m past the downstream end on the axis: dry (a round cap would still be wet).
