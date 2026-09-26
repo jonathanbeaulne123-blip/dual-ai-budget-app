@@ -92,3 +92,25 @@ describe('R2-53 / R2-108 the Deep is closed to the island; L01 is carried, not f
   });
 });
 
+describe('R2-25 / R2-21 cut-edge spikes are capped on the detailed tiers', () => {
+  it('caps a single-vertex spike on a synthetic lattice to its highest neighbour + SPIKE_KEEP and leaves a smooth hill alone', async () => {
+    const { despikeTerrain, SPIKE_KEEP } = await import('../src/harbour/horizon/land/terrain/index');
+    const field: TerrainField = { revision: 'horizon-geo-1', width: 2000, depth: 1800, step: 5, columns: 401, rows: 361, heights: new Float32Array(401 * 361), surfaces: new Uint8Array(401 * 361) };
+    // A smooth dome on the island (≤ 0.4 eu between neighbours) and one 6 eu spike beside a cut at [1460,345].
+    for (let j = 0; j < 361; j++) for (let i = 0; i < 401; i++) field.heights[j * 401 + i] = 60 - Math.hypot(i * 5 - 1300, j * 5 - 800) * .08;
+    const n = (345 / 5) * 401 + 1460 / 5, before = field.heights[n]!; field.heights[n] = before + 6;
+    const dome = (800 / 5) * 401 + 1300 / 5, top = field.heights[dome]!;
+    expect(despikeTerrain(field)).toBe(1);
+    expect(field.heights[n]!).toBeCloseTo(Math.max(field.heights[n - 1]!, field.heights[n + 1]!, field.heights[n - 401]!, field.heights[n + 401]!, field.heights[n - 402]!, field.heights[n - 400]!, field.heights[n + 400]!, field.heights[n + 402]!) + SPIKE_KEEP, 4);
+    expect(field.heights[dome]).toBe(top);
+  });
+  it('leaves no land vertex of the baked full tier more than 1 eu above all eight neighbours (was 5.85 at [1460,345], 48 spikes > 0.3)', () => {
+    const { field } = baked(), { columns: C, rows: R, heights: H } = field; let max = 0, spikes = 0;
+    for (let j = 1; j < R - 1; j++) for (let i = 1; i < C - 1; i++) {
+      const n = j * C + i; let top = -Infinity; for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) if (di || dj) top = Math.max(top, H[n + dj * C + di]!);
+      if (H[n]! <= .1) continue; const rise = H[n]! - top; if (rise > .3) spikes++; max = Math.max(max, rise);
+    }
+    expect(max).toBeLessThanOrEqual(1.005); expect(spikes).toBeLessThanOrEqual(30);
+  });
+});
+

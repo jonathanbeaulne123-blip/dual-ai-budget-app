@@ -1,5 +1,5 @@
 import type { BedCut, TerrainField, WaterCut } from '../interfaces';
-import { conserveBedFootprint, conserveWaterFootprint, GEOGRAPHY_REVISION } from './index';
+import { conserveBedFootprint, conserveWaterFootprint, despikeTerrain, GEOGRAPHY_REVISION } from './index';
 
 export type TerrainLod = 'full' | 'lite' | 'journey';
 const MAGIC = 'HZGEO001';
@@ -31,6 +31,8 @@ export function encodeTerrainAsset(field: TerrainField, options: { waters?: Wate
   // Journey has no detailed route decks: retain the solved master lattice without
   // carving an additional road-width trench at the coarse 20 m resolution.
   if (options.beds) for (const level of levels.slice(0, 2)) conserveBedFootprint(level, options.beds);
+  // R2-25: cap single-vertex cut-edge spikes on the two detailed tiers (only lowers; collision reads `full`).
+  if (options.beds) for (const level of levels.slice(0, 2)) despikeTerrain(level);
   const bytes = HEADER + LODS.length * ENTRIES + levels.reduce((n, f) => n + f.heights.length * 3, 0);
   if (bytes > 2_500_000) throw new Error(`Terrain asset exceeds 2.5 MB: ${bytes}`);
   const buffer = new ArrayBuffer(bytes), view = new DataView(buffer), array = new Uint8Array(buffer);

@@ -575,6 +575,25 @@ export function conserveWaterFootprint(field: TerrainField, waters: WaterCut[]):
     field.heights[n] = Math.min(original, applyWaters(i * field.step, j * field.step, original, waters, margin));
   }
 }
+/** R2-25 / R2-21: a lattice vertex standing more than SPIKE_RISE over ALL eight neighbours is a cut-edge remnant (a bed,
+ * pad or water cut lowered its neighbours and missed it), not a landform: it is capped to its highest neighbour +
+ * SPIKE_KEEP. Land only (never the sea floor); it only lowers; two passes. Run on each retained LOD after the bed and water
+ * footprints (they lower neighbours and can leave a new spike). Returns the number of vertices capped. */
+export const SPIKE_RISE = 1, SPIKE_KEEP = .25;
+export function despikeTerrain(field: TerrainField): number {
+  const { columns: C, rows: R, step, heights: H } = field; let capped = 0;
+  for (let pass = 0; pass < 2; pass++) {
+    const next = Float32Array.from(H);
+    for (let j = 1; j < R - 1; j++) for (let i = 1; i < C - 1; i++) {
+      const n = j * C + i, h = H[n]!; let top = -Infinity;
+      for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) if (di || dj) top = Math.max(top, H[n + dj * C + di]!);
+      if (h - top <= SPIKE_RISE || signedShoreDistance(i * step, j * step) <= 0) continue;
+      next[n] = top + SPIKE_KEEP; capped++;
+    }
+    H.set(next);
+  }
+  return capped;
+}
 /** Offline-only solve. Importing this module allocates no heightfield. */
 export function buildTerrain(cuts: LandCuts, options: { step?: number } = {}): TerrainField {
   const step = options.step ?? 2.5 * requireScaleFactor(), width = M.extent.w * requireScaleFactor(), depth = M.extent.h * requireScaleFactor();
