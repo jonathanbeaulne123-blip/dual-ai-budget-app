@@ -8,17 +8,19 @@ import { walkPlan, type HorizonPathGraph } from '../src/harbour/horizon/world/pa
 
 type Point3 = [number, number, number];
 type World = { collision: Omit<LandCuts, 'solids' | 'diagnostics'>; geometry: { solids: StructureSolid[] }; pathGraph: HorizonPathGraph; diagnostics: { id: string; severity: string }[]; views: { id: string; eye: Point3; target: Point3; proof: { passLandscape: boolean; passPortrait: boolean; landscape: { grid: [number, number]; minPixels: number }; subjects: { id: string; pixels: number; portraitPixels: number | null }[] } }[] };
-let cache: { world: World; field: TerrainField; geo: ReturnType<typeof createHorizonGeography> } | undefined;
-const baked = () => {
-  if (cache) return cache;
-  const world = JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8')) as World, bytes = readFileSync('public/horizon/terrain/horizon-geo-1.bin');
-  const field = decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), 'full');
+type Baked = { world: World; field: TerrainField; geo: ReturnType<typeof createHorizonGeography> };
+const cache: Partial<Record<'full' | 'lite', Baked>> = {};
+let worldCache: World | undefined;
+const baked = (tier: 'full' | 'lite' = 'full'): Baked => {
+  if (cache[tier]) return cache[tier]!;
+  const world = worldCache ??= JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8')) as World, bytes = readFileSync('public/horizon/terrain/horizon-geo-1.bin');
+  const field = decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), tier);
   const geo = createHorizonGeography(field, { ...world.collision, solids: world.geometry.solids, diagnostics: [] } as LandCuts);
-  return cache = { world, field, geo };
+  return cache[tier] = { world, field, geo };
 };
 /** The runtime body along a planned route: 0.2 eu steps, a surface within the 0.48 step, ≤ 40°, no blocker, dry. */
-function bodyWalk(from: Point3, to: Point3, stepFree = true): { planned: boolean; reached: boolean; blockedAt: number[] | null; length: number } {
-  const { world, geo } = baked(), plan = walkPlan(world.pathGraph, from, to, { stepFree });
+function bodyWalk(from: Point3, to: Point3, stepFree = true, tier: 'full' | 'lite' = 'full'): { planned: boolean; reached: boolean; blockedAt: number[] | null; length: number } {
+  const { world, geo } = baked(tier), plan = walkPlan(world.pathGraph, from, to, { stepFree });
   if (!plan) return { planned: false, reached: false, blockedAt: null, length: 0 };
   const p0 = plan.points[0]!; let y = geo.surface(p0[0], p0[2], p0[1] + 1, 3)?.y ?? p0[1], end: Point3 = [p0[0], p0[1], p0[2]];
   for (let i = 1; i < plan.points.length; i++) {
@@ -40,6 +42,11 @@ describe('R2-03 Crown Road through the Shoulder Tunnel north portal', () => {
     expect(up.length).toBeCloseTo(373.7, 0);
     expect(bodyWalk([1449.5, 74.9, 405], [1450.1, 75.5, 430])).toMatchObject({ reached: true, blockedAt: null });
     expect(bodyWalk([1450.1, 75.5, 430], [1449.5, 74.9, 405])).toMatchObject({ reached: true, blockedAt: null });
+  });
+  it('walks the same portal on the phone tier (the 10 m lite lattice met 69 deg ground at [1444.1,420.1] while the mouth reached 3 eu out)', () => {
+    expect(bodyWalk([1433.3, 70, 335.6], [1370, 110, 690], true, 'lite')).toMatchObject({ reached: true, blockedAt: null });
+    expect(bodyWalk([1370, 110, 690], [1433.3, 70, 335.6], true, 'lite')).toMatchObject({ reached: true, blockedAt: null });
+    expect(bodyWalk([1455, 12, 1175], [1310, 158, 470], true, 'lite')).toMatchObject({ reached: true, blockedAt: null });
   });
   it('keeps the road surface continuous across the portal: every 0.25 eu the surface rises ≤ 0.48 and stays ≤ 40°', () => {
     const { geo } = baked();
@@ -107,13 +114,14 @@ describe('R2-25 / R2-21 cut-edge spikes are capped on the detailed tiers', () =>
     expect(field.heights[n]!).toBeCloseTo(Math.max(field.heights[n - 1]!, field.heights[n + 1]!, field.heights[n - 401]!, field.heights[n + 401]!, field.heights[n - 402]!, field.heights[n - 400]!, field.heights[n + 400]!, field.heights[n + 402]!) + SPIKE_KEEP, 4);
     expect(field.heights[dome]).toBe(top);
   });
-  it('leaves no land vertex of the baked full tier more than 1 eu above all eight neighbours (was 5.85 at [1460,345], 48 spikes > 0.3)', () => {
-    const { field } = baked(), { columns: C, rows: R, heights: H } = field; let max = 0, spikes = 0;
+  it('leaves one land vertex of the baked full tier more than 1 eu above all eight neighbours, the one carrying beds (was 48 spikes > 0.3, max 5.85 at [1460,345])', () => {
+    const { field } = baked(), { columns: C, rows: R, step, heights: H } = field; let max = 0, spikes = 0; const over: number[][] = [];
     for (let j = 1; j < R - 1; j++) for (let i = 1; i < C - 1; i++) {
       const n = j * C + i; let top = -Infinity; for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) if (di || dj) top = Math.max(top, H[n + dj * C + di]!);
-      if (H[n]! <= .1) continue; const rise = H[n]! - top; if (rise > .3) spikes++; max = Math.max(max, rise);
+      if (H[n]! <= .1) continue; const rise = H[n]! - top; if (rise > .3) spikes++; if (rise > 1) over.push([i * step, j * step]); else max = Math.max(max, rise);
     }
-    expect(max).toBeLessThanOrEqual(1.005); expect(spikes).toBeLessThanOrEqual(31);
+    // [910,885] holds VBS and walk bight (26.8) 4.5 m from the Year Walk at 17.8: the fill of a lane-stacking cliff, not a cut edge.
+    expect(over).toEqual([[910, 885]]); expect(max).toBeLessThanOrEqual(1.005); expect(spikes).toBeLessThanOrEqual(31);
   });
   it('never takes the fill from under a bed: the runway south end keeps its ground (a first cut left 12.6 eu under it)', async () => {
     const { sampleTerrain } = await import('../src/harbour/horizon/land/terrain/index'), { field } = baked();
