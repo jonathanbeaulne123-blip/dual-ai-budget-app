@@ -13,3 +13,19 @@
 .horizon-pad{display:grid;place-items:center;width:94px;height:94px;border-radius:50%;background:#f8f2e2a6;border:2px solid #6b705c99;color:#3e4338;user-select:none;font:13px system-ui}
 @media(min-width:800px) and (pointer:fine){.horizon-touch-controls{display:none}}
 @media(prefers-reduced-motion:reduce){.horizon-shell *{scroll-behavior:auto}}
+/* Mover HUD (FLIGHT.md §7): screen-space glass, 44 px targets, nothing in world space. */
+.horizon-offers,.horizon-bubble{--horizon-hud-bottom:calc(180px + env(safe-area-inset-bottom))}
+.horizon-offers{position:absolute;left:50%;bottom:calc(var(--horizon-hud-bottom) + 56px);transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:calc(100% - 24px);padding:6px;background:#f8f2e2cc;border:1px solid #817d6e55;border-radius:16px;box-shadow:0 4px 20px #262b2922;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.horizon-offer,.horizon-bubble-place,.horizon-sheet button{min-width:44px;min-height:44px;border:1px solid #79786866;border-radius:12px;padding:8px 14px;background:var(--surface,#fffaf0);color:inherit;font:inherit;cursor:pointer}
+.horizon-offer--hold:active{background:var(--accent,#665e4e);color:var(--on-accent,#fffaf0)}
+.horizon-bubble{position:absolute;bottom:var(--horizon-hud-bottom);display:flex;gap:6px;align-items:center;min-height:44px;margin:0;padding:8px 14px;border-radius:22px;background:#f8f2e2cc;border:1px solid #817d6e55;box-shadow:0 4px 20px #262b2922;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font:600 14px/1.2 system-ui;color:#343b37}
+.horizon-bubble-height{left:max(14px,env(safe-area-inset-left));pointer-events:none}
+.horizon-bubble-place{right:max(14px,env(safe-area-inset-right));max-width:calc(60% - 14px);border-radius:22px;background:#f8f2e2cc}
+.horizon-bubble-lift{font-size:16px}
+.horizon-sheet{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,calc(100% - 32px));max-height:min(70vh,calc(100% - 120px));overflow:auto;padding:16px;background:var(--paper,#f4eee1);border:1px solid #817d6e55;border-radius:18px;box-shadow:0 10px 40px #262b2933;color:#343b37}
+.horizon-sheet h2{margin:0 0 8px;font:600 18px/1.3 system-ui}
+.horizon-sheet h3{margin:12px 0 6px;font:600 13px/1.3 system-ui;text-transform:uppercase;letter-spacing:.04em;color:#5b5d52}
+.horizon-sheet ul{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.horizon-sheet ul button{width:100%;text-align:left}
+.horizon-sheet-stay{margin-top:12px}
+@media(min-width:800px) and (pointer:fine){.horizon-offers,.horizon-bubble{--horizon-hud-bottom:calc(56px + env(safe-area-inset-bottom))}}
