@@ -2,7 +2,7 @@ import { CategorySplitEditor, CategorySplitReview, readCategorySplit } from "./C
 import { loadEntryPresentation, writeEntryLocal } from "./entryDraft.ts";
 import { SplitCut } from "./SplitCut.tsx";
 import { splitReading } from "./core/splitDraft.ts";
-import { useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type Ref, type SetStateAction } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type Dispatch, type ReactNode, type Ref, type SetStateAction } from "react";
 import {
   JOINT,
   activePresets,
@@ -37,21 +37,41 @@ import { KitchenNotice } from "./KitchenNotice.tsx";
 import { ShiftElapsedHint } from "./ShiftElapsedHint.tsx";
 import { PresetChip } from "./widgets/PresetChip.tsx";
 import {
+  ADD_INTO_CHOICES,
+  ADD_INTO_WORDS,
   ADD_MODES,
+  addIntoFor,
+  addConfirmName,
   addSlideCopy,
   addSlidesFor,
+  BILL_LEDGER,
+  BILL_LEDGER_NOTE,
+  billSlipsFor,
   canAdvanceAddSlide,
+  civilDateWords,
   clampAddSlide,
+  defaultAddLedger,
+  duplicateMatchWords,
+  duplicatePromptName,
+  type AddFlowMode,
   type AddFormFields,
+  type AddInto,
   type AddMode,
   type AddSlideId,
+  type AddSubmitPayload,
 } from "./addSlideshow.ts";
+import type { LedgerView } from "./core/types.ts";
+import { BillPaidConfirm, BillPaidSlips } from "./DuePreviewSheet.tsx";
 
 import { MobileEntryChoices, entryRecommendations, useMobileEntry } from "./MobileEntryChoices.tsx";
 import "./swipe.css";
 import "./mobile-entry-sheet.css";
+import "./add-atlas.css";
 
-export type { AddFormFields, AddMode } from "./addSlideshow.ts";
+export type { AddFlowMode, AddFormFields, AddMode, AddSubmitPayload } from "./addSlideshow.ts";
+
+/** The flow's own word, in the deck's vocabulary (§3.2). */
+const FLOW_WORDS: Record<AddFlowMode, string> = { expense: "Purchase", income: "Income", shift: "Shift", transfer: "Move money", bill: "Bill paid" };
 
 export function AddSlideshow({
   sheetRef,
@@ -122,7 +142,30 @@ export function AddSlideshow({
   draftLocation,
   displayZone,
   experienceLine,
+  view,
+  ledger: ledgerProp,
+  onLedgerChange,
+  memberId,
+  billRecurrenceId,
 }: {
+  /**
+   * The space the card is showing. When given, the first slide names the
+   * ledger ("Into: Ours" / "Into: Mine") and lets it be changed (D1); without
+   * it the slideshow behaves as before and never guesses a ledger.
+   */
+  view?: LedgerView;
+  /** A controlled ledger choice; otherwise the slideshow keeps its own, defaulted per D1. */
+  ledger?: LedgerView;
+  /** Called as soon as the person changes the ledger, so the App can switch its view before accounts are picked. */
+  onLedgerChange?: (ledger: LedgerView) => void;
+  /** The signed-in member. Bill paid needs it for the exact due review. */
+  memberId?: string;
+  /**
+   * Bill paid, preselected: a host panel's (or the card's) "Mark paid" names one
+   * recurrence. When that bill is due, the flow opens at its named Confirm; when
+   * it is not due yet, the flow opens on the slips, where it is listed but not offered.
+   */
+  billRecurrenceId?: string | null;
   sheetRef: Ref<HTMLDivElement>;
   draftStorageKey?: string;
   recovery?: ReactNode;
@@ -130,7 +173,7 @@ export function AddSlideshow({
   recommendationHousehold?: Household;
   /** An account explicitly supplied by this launch, never an inherited form default. */
   initialAccountId?: string | null;
-  mode: AddMode;
+  mode: AddFlowMode;
   onSwitchMode: (mode: AddMode) => void;
   lockedMode?: boolean;
   lockedVisibility?: Visibility;
@@ -164,7 +207,12 @@ export function AddSlideshow({
   onConfirmAnyway: () => void;
   onEditDuplicate?: () => void;
   postLabel: string;
-  onPost: () => void;
+  /**
+   * The named Confirm. The payload says which flow, which ledger, and — for
+   * Bill paid — which reviewed occurrence. The App posts through its existing
+   * commands; the slideshow never writes.
+   */
+  onPost: (payload?: AddSubmitPayload) => void;
   onClose: () => void;
   persistCategory: (household: Household, undo?: UndoToken) => void;
   presetId: string | null;
@@ -208,7 +256,44 @@ export function AddSlideshow({
   const initialPresentation = useRef(draftStorageKey ? loadEntryPresentation(draftStorageKey) : null);
   const [pickedAccounts, setPickedAccounts] = useState(initialPresentation.current?.pickedAccounts ?? { accountId: "", fromAccountId: "", toAccountId: "" });
   const [fullForm, setFullForm] = useState(initialPresentation.current?.fullForm ?? false);
-  const expanded = fullForm;
+  const billMode = mode === "bill";
+  /** The entry flow the per-slide parts render; Bill paid never reaches them. */
+  const entryMode: AddMode = mode === "bill" ? "expense" : mode;
+  const expanded = fullForm && !billMode;
+  // The ledger line (D1): a choice made for this flow survives the App's view switching under it.
+  const [ledgerChoice, setLedgerChoice] = useState<{ mode: AddFlowMode; ledger: LedgerView } | null>(null);
+  // Bill paid is always Ours (bills are shared): its line is fixed, whatever the App's view.
+  const ledger: LedgerView | undefined = billMode && view ? BILL_LEDGER : ledgerProp ?? (ledgerChoice?.mode === mode ? ledgerChoice.ledger : view ? defaultAddLedger(mode, view) : undefined);
+  /** The App opened Bill paid while Mine is on screen; it should have switched to Ours first. Offer nothing. */
+  const billOutOfPlace = billMode && (ledgerProp ?? view ?? BILL_LEDGER) !== BILL_LEDGER;
+  function chooseLedger(next: LedgerView) {
+    setLedgerChoice({ mode, ledger: next });
+    onLedgerChange?.(next);
+  }
+  /**
+   * The one ledger control (review finding 2): the Into line. Ours / Mine is the space the flow is open in
+   * (changing it switches the space); Both keeps the space and posts D-030's `both`. A planned expense keeps
+   * its own visibility, so its line is a statement. The confirm row, the button's name and the post all read this.
+   */
+  const into: AddInto | undefined = billMode || !ledger ? ledger : lockedVisibility ?? addIntoFor(ledger, form.visibility);
+  function chooseInto(next: AddInto) {
+    if (lockedVisibility || !ledger) return;
+    if (next === "both") { setForm((current) => ({ ...current, visibility: "both" })); return; }
+    setForm((current) => ({ ...current, visibility: next }));
+    if (next !== ledger) chooseLedger(next);
+  }
+  const [billId, setBillId] = useState<string | null>(null);
+  const bills = useMemo(
+    () => (billMode && memberId && !billOutOfPlace ? billSlipsFor(household, { today, memberId, view: BILL_LEDGER }) : { due: [], upcoming: [] }),
+    [billMode, billOutOfPlace, household, today, memberId],
+  );
+  const chosenBill = bills.due.find((slip) => slip.recurrenceId === billId) ?? null;
+  const billPreselected = useRef<string | null>(null);
+  // A30: the last named Confirm this sheet ran. When an error lands after it, the post failed: the notice is an
+  // alert, the draft (the App's form) stays as it was, and Retry runs the same Confirm again.
+  const [lastPost, setLastPost] = useState<{ payload?: AddSubmitPayload } | null>(null);
+  const post = (payload?: AddSubmitPayload) => { setLastPost({ payload }); onPost(payload); };
+  const amountFieldId = useId();
   const suggestions = recommendationHousehold;
   const slides = useMemo(
     () => addSlidesFor({ mode, shiftGate, hasWorkJobs }),
@@ -227,6 +312,16 @@ export function AddSlideshow({
   useEffect(() => {
     if (index !== slideIndex) onSlideIndex(index);
   }, [index, slideIndex, onSlideIndex]);
+
+  // "Mark paid" names one bill: land on its named Confirm once (the person can still go back to the slips).
+  useEffect(() => {
+    if (!billMode || !billRecurrenceId || billPreselected.current === billRecurrenceId) return;
+    if (!bills.due.some((slip) => slip.recurrenceId === billRecurrenceId)) return;
+    billPreselected.current = billRecurrenceId;
+    setBillId(billRecurrenceId);
+    const confirmAt = slides.indexOf("bill-confirm");
+    if (confirmAt >= 0) onSlideIndex(confirmAt);
+  }, [billMode, billRecurrenceId, bills.due, slides, onSlideIndex]);
 
   const presentationKey = draftStorageKey ?? mode;
   const livePresentationKey = useRef(presentationKey);
@@ -305,7 +400,7 @@ export function AddSlideshow({
     if (!expanded) { onSlideIndex(returnToReview ? slides.length - 1 : Math.min(index + 1, slides.length - 1)); setReturnToReview(false); }
   }
 
-  const hidePost = mode === "shift" && (slide === "shift-choose" || slide === "shift-clocked" || slide === "shift-jobs");
+  const hidePost = billMode || (mode === "shift" && (slide === "shift-choose" || slide === "shift-clocked" || slide === "shift-jobs"));
   const last = index === slides.length - 1;
   const choiceSlide = ["category", "account", "from", "to"].includes(slide);
   let enteredAmount = "";
@@ -353,7 +448,7 @@ export function AddSlideshow({
           {index > 0 || expanded ? (
             <button className="ghost" type="button" disabled={!open || busy} onClick={goBack}>Back</button>
           ) : (
-            <p className="muted add-slideshow-mode">{mode === "expense" ? "Expense" : mode === "income" ? "Income" : mode === "shift" ? "Shift" : "Transfer"}</p>
+            <p className="muted add-slideshow-mode">{FLOW_WORDS[mode]}</p>
           )}
           <button className="ghost" type="button" data-autofocus onClick={onClose}>Close</button>
         </div>
@@ -362,7 +457,7 @@ export function AddSlideshow({
         <p className="muted add-slideshow-hint">{expanded ? "Your whole draft. Only Confirm posts." : copy.hint}</p>
         {!expanded && <p className="muted add-slideshow-progress" aria-live="polite">{index + 1} of {slides.length}</p>}
         {!expanded && !hidePost && !choiceSlide && <button type="button" className="ghost" disabled={busy} onClick={() => setFullForm(true)}>More</button>}
-        {slide !== "confirm" && !lockedMode && (
+        {slide !== "confirm" && !lockedMode && !billMode && (
           <details className="add-slideshow-switch">
             <summary>Switch kind</summary>
             <div className="tabs">
@@ -382,6 +477,11 @@ export function AddSlideshow({
         )}
 
         </div>
+        {ledger && (index === 0 || expanded) && (
+          billMode ? <AddLedgerLine into={BILL_LEDGER} note={BILL_LEDGER_NOTE} />
+            : lockedVisibility ? <AddLedgerLine into={into ?? ledger} note="set by the planned expense" />
+            : <AddLedgerLine into={into ?? ledger} disabled={!open || busy} onChange={chooseInto} />
+        )}
         {returnToReview && !expanded && <p className="muted">Editing your draft. Continue returns to Review.</p>}
         {(expanded || index > 0) && <nav className="entry-section-nav" aria-label="Draft sections">
           {slides.map((item, position) => <button key={item} type="button" disabled={busy || (!expanded && position > index)} aria-current={!expanded && position === index ? "step" : undefined} onClick={() => jumpTo(item)}>{({amount:"Amount",category:"Category",account:"Account",from:"From",to:"To",note:"Note",confirm:"Review"} as Record<string,string>)[item] ?? addSlideCopy(mode,item,shiftGate).title}</button>)}
@@ -395,9 +495,34 @@ export function AddSlideshow({
           const canAdvance = canAdvanceAddSlide(slide, form) && !(slide === "category" && categorySplitError) && !cutPreviewActive;
           return <section key={slide} className={expanded ? "entry-full-section" : undefined} data-entry-section={slide}>
             {expanded && <h2 tabIndex={-1}>{copy.title}</h2>}
+        {slide === "bill-pick" && (
+          billOutOfPlace ? <p role="status">Bills are shared. Record a bill paid from Ours.</p> : memberId ? <BillPaidSlips
+            due={bills.due}
+            upcoming={bills.upcoming}
+            selectedId={billId}
+            busy={busy}
+            onPick={(id) => { setBillId(id); onSlideIndex(Math.min(index + 1, slides.length - 1)); }}
+          /> : <p role="status">Bill paid is not ready on this screen. Open the Cellar to mark a bill paid.</p>
+        )}
+
+        {slide === "bill-confirm" && (
+          chosenBill ? <BillPaidConfirm
+            slip={chosenBill}
+            household={household}
+            busy={busy || postingDisabled || !open}
+            onConfirm={(review) => post({ kind: "bill", mode: "bill", ledger: BILL_LEDGER, recurrenceId: chosenBill.recurrenceId, occurrenceDate: chosenBill.date, review })}
+          /> : <p role="status">Pick a bill first. <button type="button" className="ghost" onClick={() => onSlideIndex(0)}>Back to the bills</button></p>
+        )}
+
         {slide === "amount" && (
           <>
-            {expanded ? <label>Amount (CAD)<input inputMode="decimal" value={form.amount} onChange={event => setForm(current => ({ ...current, amount: event.target.value }))} /></label> : <CadPad
+            {expanded ? <>
+              <label>Amount (CAD)<input inputMode="decimal" value={form.amount}
+                aria-invalid={form.amount.trim() !== "" && !canAdvanceAddSlide("amount", form)}
+                aria-describedby={form.amount.trim() !== "" && !canAdvanceAddSlide("amount", form) ? `${amountFieldId}-error` : undefined}
+                onChange={event => setForm(current => ({ ...current, amount: event.target.value }))} /></label>
+              {form.amount.trim() !== "" && !canAdvanceAddSlide("amount", form) && <p id={`${amountFieldId}-error`} className="cad-pad-error" role="status">Enter an amount above $0.00, for example 12.50.</p>}
+            </> : <CadPad
               giant
               digits={centsDigitsFromDollars(form.amount)}
               onDigits={(digits) => setForm((current) => ({ ...current, amount: padToDollars(digits) }))}
@@ -469,7 +594,7 @@ export function AddSlideshow({
             </button>}
             {mode === "expense" && form.categorySplitEnabled ? <><CategorySplitEditor form={form} setForm={setForm} categories={categories}
               onTouched={onCategoryTouched} onPreviewChange={setCutPreviewActive} /><AddCategoryForm household={household} onSave={persistCategory} inline transactionType="expense" /></> : !expanded ? <MobileEntryChoices
-              choices={suggestions ? entryRecommendations(categories.filter(category => suggestions.categories.some(item => item.id === category.id)), suggestions, mode, "subcategoryId", today) : []}
+              choices={suggestions ? entryRecommendations(categories.filter(category => suggestions.categories.some(item => item.id === category.id)), suggestions, entryMode, "subcategoryId", today) : []}
               label="Suggested categories" selectedId={form.subcategoryId} busy={busy} onPick={pickCategory} onMore={() => setFullForm(true)}
             /> : <>
             <div className="chips add-slideshow-categories">
@@ -500,7 +625,7 @@ export function AddSlideshow({
         {slide === "account" && (
           <>
             {!expanded ? <MobileEntryChoices
-              choices={suggestions ? entryRecommendations(pickerAccounts.filter(account => suggestions.accounts.some(item => item.id === account.id)), suggestions, mode, "accountId", today) : []}
+              choices={suggestions ? entryRecommendations(pickerAccounts.filter(account => suggestions.accounts.some(item => item.id === account.id)), suggestions, entryMode, "accountId", today) : []}
               label="Suggested accounts" selectedId={accountIntent ? form.accountId : ""} busy={busy} onPick={pickAccount} onMore={() => setFullForm(true)}
 
             /> : <AddAccountTiles
@@ -519,7 +644,7 @@ export function AddSlideshow({
         {slide === "from" && (
           <>
             {!expanded ? <MobileEntryChoices
-              choices={suggestions ? entryRecommendations(pickerAccounts.filter(account => suggestions.accounts.some(item => item.id === account.id)), suggestions, mode, "accountId", today) : []}
+              choices={suggestions ? entryRecommendations(pickerAccounts.filter(account => suggestions.accounts.some(item => item.id === account.id)), suggestions, entryMode, "accountId", today) : []}
               label="Source accounts" selectedId={fromIntent ? form.fromAccountId : ""} busy={busy} onPick={pickFrom} onMore={() => setFullForm(true)}
 
             /> : <AddAccountTiles
@@ -538,7 +663,7 @@ export function AddSlideshow({
         {slide === "to" && (
           <>
             {!expanded ? <MobileEntryChoices
-              choices={suggestions ? entryRecommendations(pickerAccounts.filter(account => suggestions.accounts.some(item => item.id === account.id)), suggestions, mode, "accountId", today) : []}
+              choices={suggestions ? entryRecommendations(pickerAccounts.filter(account => suggestions.accounts.some(item => item.id === account.id)), suggestions, entryMode, "accountId", today) : []}
               label="Destination accounts" selectedId={toIntent ? form.toAccountId : ""} busy={busy} onPick={pickTo} onMore={() => setFullForm(true)}
               excludeId={form.fromAccountId}
             /> : <AddAccountTiles
@@ -562,7 +687,7 @@ export function AddSlideshow({
           <NoteSlide
             form={form}
             setForm={setForm}
-            mode={mode}
+            mode={entryMode}
             categoryTouched={categoryTouched}
             household={suggestions ?? household}
             codingHint={codingHint}
@@ -623,7 +748,7 @@ export function AddSlideshow({
 
         {slide === "confirm" && (
           <ConfirmSlide
-            mode={mode}
+            mode={entryMode}
             form={form}
             setForm={setForm}
             household={household}
@@ -649,7 +774,7 @@ export function AddSlideshow({
             draftLocation={draftLocation}
             displayZone={displayZone}
             pictureName={pictureName}
-            lockedVisibility={lockedVisibility}
+            ledger={into}
           />
         )}
 
@@ -660,19 +785,19 @@ export function AddSlideshow({
         {!hidePost && (last || expanded) && needsAccountChoice && (
           <p role="status" data-add-account-intent>{mode === "transfer" ? "Choose the source and destination accounts before Confirm." : "Choose the account for this entry before Confirm."}</p>
         )}
-        <div ref={errorRef} tabIndex={-1} className="entry-error-focus"><KitchenNotice message={error} onGoMore={onGoMore} onDismiss={onDismissError} /></div>
-        {confirm && (
-          <div className="preview warn" role="alert" tabIndex={-1} ref={confirmPanelRef}>
-            <p>{confirm.message}</p>
-            {confirm.matches.map((tx) => (
-              <div className="row" key={tx.id}>
-                <span>{tx.date} · {tx.place || tx.note || tx.type}</span>
-                <span>{formatCad(tx.amountCents)}</span>
-              </div>
-            ))}
-            <button className="primary" type="button" disabled={postingDisabled || busy || !open || entryInvalid || !!splitError || cutPreviewActive} onClick={onConfirmAnyway}>Add anyway</button>
-            {onEditDuplicate && <button type="button" className="ghost" onClick={()=>{onEditDuplicate();setFullForm(true);}}>Back to edit</button>}
-          </div>
+        <div ref={errorRef} tabIndex={-1} className="entry-error-focus"><KitchenNotice message={error} onGoMore={onGoMore} onDismiss={() => { setLastPost(null); onDismissError(); }}
+          onRetry={lastPost && error && !busy ? () => post(lastPost.payload) : undefined} /></div>
+        {confirm && !billMode && (
+          <DuplicatePrompt
+            name={duplicatePromptName(entryMode, confirm.code)}
+            message={confirm.message}
+            matches={confirm.matches.map((tx) => ({ id: tx.id, words: duplicateMatchWords(form, tx, pickerAccounts), amount: formatCad(tx.amountCents), date: tx.date, text: tx.place || tx.note || tx.type }))}
+            panelRef={confirmPanelRef}
+            anywayDisabled={postingDisabled || busy || !open || entryInvalid || !!splitError || cutPreviewActive}
+            onAnyway={onConfirmAnyway}
+            onDont={() => { onEditDuplicate?.(); requestAnimationFrame(() => headingRef.current?.focus()); }}
+            onEdit={onEditDuplicate ? () => { onEditDuplicate(); setFullForm(true); } : undefined}
+          />
         )}
         {!hidePost && (last || expanded) && (
           <>
@@ -680,7 +805,9 @@ export function AddSlideshow({
               {experienceLine}
               {mode === "expense" ? " Fund funding stays separate from Shared or Personal visibility." : ""}
             </p>
-            <button className="primary post-big" type="button" disabled={postingDisabled || busy || !open || entryInvalid || !!splitError || cutPreviewActive} onClick={onPost} data-add-confirm>
+            <button className="primary post-big" type="button" disabled={postingDisabled || busy || !open || entryInvalid || !!splitError || cutPreviewActive}
+              aria-label={addConfirmName({ mode: entryMode, postLabel, form, household, accounts: pickerAccounts, ledger: into })}
+              onClick={() => post({ kind: "entry", mode: entryMode, ledger, ...(into ? { into } : {}) })} data-add-confirm>
               {postLabel}
             </button>
           </>
@@ -917,7 +1044,7 @@ function ConfirmSlide({
   draftLocation,
   displayZone,
   pictureName,
-  lockedVisibility,
+  ledger,
 }: {
   fullForm?: boolean;
   mode: AddMode;
@@ -945,8 +1072,11 @@ function ConfirmSlide({
   draftLocation?: TransactionLocation;
   displayZone: string;
   pictureName: string;
-  lockedVisibility?: Visibility;
+  /** What the Into line names; the confirm reads it back. */
+  ledger?: AddInto;
 }) {
+  const dateRow = <div className="row"><span>Date</span><span>{civilDateWords(form.date)}</span></div>;
+  const ledgerRow = ledger ? <div className="row"><span>Into</span><span>{ADD_INTO_WORDS[ledger]}</span></div> : null;
   const categoryName = categories.find((category) => category.id === form.subcategoryId)?.name
     ?? household.categories.find((category) => category.id === form.subcategoryId)?.name
     ?? "";
@@ -968,6 +1098,7 @@ function ConfirmSlide({
             <div className="row"><span>Move</span><span>{money || "$0.00"}</span></div>
             <div className="row"><span>From</span><span>{fromName}</span></div>
             <div className="row"><span>To</span><span>{toName}</span></div>
+            {dateRow}{ledgerRow}
             <p className="muted">Not income. Not spend.</p>
           </>
         ) : mode === "shift" ? (
@@ -977,12 +1108,14 @@ function ConfirmSlide({
             <div className="row"><span>Cash tips</span><span>{reviewedMoney(form.cashTips)}</span></div>
             <div className="row"><span>Card tips</span><span>{reviewedMoney(form.ccTips)}</span></div>
             <div className="row"><span>Account</span><span>{accountName}</span></div>
+            {dateRow}{ledgerRow}
           </>
         ) : (
           <>
             <div className="row"><span>Amount</span><span>{money || "$0.00"}</span></div>
             {mode === "expense" && form.categorySplitEnabled ? <CategorySplitReview form={form} categories={categories} /> : <div className="row"><span>Category</span><span>{categoryName || "—"}</span></div>}
             <div className="row"><span>Account</span><span>{accountName}</span></div>
+            {dateRow}{ledgerRow}
             <div className="row"><span>Note</span><span>{form.note || "—"}</span></div>
           </>
         )}
@@ -1012,25 +1145,6 @@ function ConfirmSlide({
         <>
           <label>Date</label>
           <input type="date" value={form.date} onChange={(event) => setForm((current) => ({ ...current, date: event.target.value }))} />
-          <label>Save to</label>
-          <div className="chips">
-            {([
-              { id: "household" as Visibility, name: "Shared" },
-              { id: "personal" as Visibility, name: "Personal" },
-              { id: "both" as Visibility, name: "Both" },
-            ]).map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`chip ${form.visibility === item.id ? "selected" : ""}`}
-                disabled={Boolean(lockedVisibility)}
-                onClick={() => setForm((current) => ({ ...current, visibility: item.id }))}
-              >
-                {item.name}
-              </button>
-            ))}
-          </div>
-          {lockedVisibility && <p className="muted">Visibility stays {lockedVisibility === "household" ? "Shared" : lockedVisibility === "personal" ? "Personal" : "Both"} for this planned expense.</p>}
           {mode === "expense" && household.householdFund && (
             <section className="preview" aria-label="Household Fund allocation">
               <div className="row">
@@ -1175,4 +1289,86 @@ function SplitEditor({ household, percents, amount, error, scopeValid, onReview,
         <span>{member.name}</span><span><input aria-label={`${member.name}'s share`} type="number" min={0} max={100} step={1} value={percents[member.id] ?? 0} onChange={event => { if (event.currentTarget.value !== "") onChange(member.id, event.currentTarget.valueAsNumber); }} /> % <span>{cents[member.id] === undefined ? "" : formatCad(cents[member.id]!)}</span></span>
       </label>)}{members.length ? <p className="cut-remainder">{members.at(-1)!.name} fills the remaining cents after rounding.</p> : null}</>}
   </div>;
+}
+
+/**
+ * The ledger line on every flow's first slide (Tool Atlas §3.3, D1): it names
+ * where the money goes and lets it be changed. A two-option radio group named
+ * "Whose money"; the space pill on the card never decides this on its own.
+ */
+function AddLedgerLine(props: { into: AddInto; note: string } | { into: AddInto; note?: undefined; disabled: boolean; onChange: (into: AddInto) => void }) {
+  const { into } = props;
+  // A fixed ledger (Bill paid: "Into: Ours · bills are shared") is a statement, not a choice: no radios.
+  if (props.note !== undefined) return (
+    <div className="add-ledger add-ledger--fixed" data-add-ledger={into} data-add-ledger-fixed="">
+      <p className="add-ledger__into"><span>Into:</span> <strong>{ADD_INTO_WORDS[into]}</strong> · {props.note}</p>
+    </div>
+  );
+  const { disabled, onChange } = props;
+  return (
+    <fieldset className="add-ledger" data-add-ledger={into} disabled={disabled}>
+      <legend className="add-ledger__legend">Whose money</legend>
+      <p className="add-ledger__into"><span>Into:</span> <strong>{ADD_INTO_WORDS[into]}</strong></p>
+      <div className="add-ledger__options">
+        {(["household", "personal", "both"] as const).map((option) => (
+          <label key={option} className={`chip add-ledger__option${into === option ? " selected" : ""}`}>
+            <input type="radio" name="add-ledger" value={option} checked={into === option} onChange={() => onChange(option)} />
+            {ADD_INTO_CHOICES[option]}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+/**
+ * The duplicate prompt (§3.3, A30): an alertdialog named for what it
+ * suspects, the matched fields in words, initial focus on "Don't record it",
+ * and Escape = don't record. Recording anyway is the second, quieter choice.
+ */
+function DuplicatePrompt({ name, message, matches, panelRef, anywayDisabled, onAnyway, onDont, onEdit }: {
+  name: string;
+  message: string;
+  matches: { id: string; words: string; amount: string; date: string; text: string }[];
+  panelRef: Ref<HTMLDivElement>;
+  anywayDisabled: boolean;
+  onAnyway: () => void;
+  onDont: () => void;
+  onEdit?: () => void;
+}) {
+  const titleId = useId();
+  const messageId = useId();
+  const dontRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => { dontRef.current?.focus(); }, []);
+  return (
+    <div
+      className="preview warn add-duplicate"
+      role="alertdialog"
+      aria-labelledby={titleId}
+      aria-describedby={messageId}
+      tabIndex={-1}
+      ref={panelRef}
+      data-dialog-escape-boundary
+      data-add-duplicate
+      // The App focuses this panel when the prompt appears; the first choice is the safe one.
+      onFocus={(event) => { if (event.target === event.currentTarget) dontRef.current?.focus(); }}
+      onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); event.preventDefault(); onDont(); } }}
+    >
+      <h2 id={titleId} className="add-duplicate__title">{name}</h2>
+      <p id={messageId}>{message}</p>
+      {matches.length > 0 && (
+        <ul className="add-duplicate__matches" aria-label="What matches">
+          {matches.map((match) => (
+            <li key={match.id}>
+              <span>{match.words}</span>
+              <span className="muted"> · {match.date} · {match.text} · {match.amount}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <button ref={dontRef} className="primary" type="button" onClick={onDont}>Don’t record it</button>
+      <button className="ghost" type="button" disabled={anywayDisabled} onClick={onAnyway}>Record it anyway</button>
+      {onEdit && <button type="button" className="ghost" onClick={onEdit}>Back to edit</button>}
+    </div>
+  );
 }

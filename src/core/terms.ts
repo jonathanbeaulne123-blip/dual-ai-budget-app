@@ -31,15 +31,40 @@ export type InternalTerm = keyof typeof USER_TERMS;
 /**
  * Words that must not appear in a rendered string. Matched as whole words.
  * "kitchen" is matched lowercase only: a capitalised Kitchen (as in "Kitchen
- * vs takeout") is the room where people cook, not the metaphor.
+ * vs takeout") is the room where people cook, not the metaphor. "the kitchen
+ * table" is the deck's own name for the Plan Studio (Tool Atlas §3.2), so it
+ * is not the metaphor either.
  * CSS class names, ids, imports and code identifiers are not rendered strings.
  */
 export const INTERNAL_TERMS_NEVER_SHOWN: readonly { term: string; pattern: RegExp; use: string }[] = [
   { term: "PGlite", pattern: /\bPGlite\b/, use: USER_TERMS.PGlite },
-  { term: "kitchen", pattern: /\bkitchen\b/, use: USER_TERMS.kitchen },
+  { term: "kitchen", pattern: /\bkitchen\b(?! table)/, use: USER_TERMS.kitchen },
   { term: "snapshot", pattern: /\bsnapshots?\b/i, use: USER_TERMS.snapshot },
   { term: "Sit-down", pattern: /\bsit-down\b/i, use: USER_TERMS["Sit-down"] },
 ];
+
+/**
+ * `.ts` files whose string literals are rendered copy (label tables, chip
+ * rows, the dial's verbs). The fence reads them exactly as it reads `.tsx`
+ * (test/terms.test.ts for the internal words, test/atlas-vocabulary-fence.test.ts
+ * for the retired ones). Add a file here when it starts carrying screen words.
+ * Stored notes ("Sit-down jar · …" in posted transactions) are data, not copy,
+ * and their writers are deliberately not listed.
+ */
+export const COPY_TABLE_FILES: readonly string[] = [
+  "src/core/helpDesk.ts",
+  "src/core/naming.ts",
+  "src/core/officeLayout.ts",
+  "src/core/fabActions.ts",
+  "src/addSlideshow.ts",
+];
+
+/**
+ * The Tool Atlas's retired words (§3.2), fenced out of rendered copy. The
+ * atlas keeps each one as a search synonym, so burying a word never loses the
+ * tool behind it.
+ */
+export { RETIRED_WORDS } from "./toolAtlas.ts";
 
 /** Replace internal words in a sentence with the household's words. For copy that is assembled from runtime messages. */
 export function householdWords(text: string): string {
@@ -51,3 +76,26 @@ export function householdWords(text: string): string {
     .replace(/\bsnapshot\b/gi, "books")
     .replace(/\bsit-down\b/gi, USER_TERMS["Sit-down"]);
 }
+
+/**
+ * The Campfire's words (Tool Atlas §3.2, K3, decision D3). The month ritual is
+ * one evening at **the Campfire**: the **Chapter** closes at its Seal; the
+ * weekly **Sitdown** is two chairs. The retired names below are fenced over
+ * the ritual and the three screens it replaced (test/campfire-ritual.test.ts).
+ */
+export const CAMPFIRE_TERMS = {
+  place: "the Campfire",
+  door: "Open the Campfire",
+  chapter: "Chapter",
+  weekly: "Sitdown",
+  putBack: "Put it back",
+  beats: ["Arrive", "Look back", "Settle", "Look ahead", "Seal"],
+} as const;
+
+export const CAMPFIRE_RETIRED_TERMS: readonly { term: string; pattern: RegExp; use: string }[] = [
+  { term: "check-in", pattern: /\bcheck-?ins?\b/i, use: "the Campfire (monthly) or the Sitdown (weekly)" },
+  { term: "Close the month", pattern: /\bclose the month\b/i, use: "the Campfire's Settle" },
+  { term: "Close the previous Chapter", pattern: /\bclose the previous chapter\b/i, use: "Seal" },
+  { term: "Sit-down", pattern: /\bsit-down\b/i, use: "Sitdown" },
+  { term: "Our Path", pattern: /\bOur Path\b/, use: "the Journey map" },
+];

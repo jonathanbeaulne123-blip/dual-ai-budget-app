@@ -735,7 +735,7 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   /** The sign the building wears, in the twin's own words, appended to its label. */
   const signWords = (id: string): string => (signs[id] ? ` ${signs[id]!.aria}` : "");
   const anchorList = (): Anchor[] => [
-    { id: "queen", position: at(0, 1.1, 0), zone: "queen", label: `The Queen — Everyday ${everyday.words}. Meet the Queen.`, door: { target: "queen" } },
+    { id: "queen", position: at(0, 1.1, 0), zone: "queen", label: `The Queen — Everyday ${everyday.words}. Open the Fund bank.`, door: { target: "queen" } },
     { id: "flagstone", position: at(fx, 0.1, fz), zone: "queen", label: `The Everyday flagstone — ${everyday.words}` },
     ...pieces.anchors().map((anchor) => ({ ...anchor, label: `${anchor.label} ${pieces.slots[anchor.id as PieceId].plate.words}. ${anchor.id === "rook" ? "Climb the Tower." : anchor.id === "bishop" ? "Go down to the Cellar." : "Open the cistern."}` })),
     { id: "sundial", position: at(sx, 1.0, sz), zone: "prop", label: tagWords ? `The sundial — next: ${tagWords}` : "The sundial — no dated commitment" },

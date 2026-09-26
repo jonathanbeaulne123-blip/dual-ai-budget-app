@@ -13,14 +13,22 @@ import { HEARTHSIDE_FLAGS } from './hearthside/flags.ts';
 import { HEARTHSIDE_LABEL, hearthsidePath, parseHearthsideRoute } from './hearthside/routes.ts';
 import { HouseShell } from './hearthside/HouseShell.tsx';
 import { KitchenFolio } from "./house/KitchenFolio.tsx";
+import { bankRoomRequest } from "./house/bankRoom.ts";
 import { HouseWorld } from './house/HouseWorld.tsx';
 import { HARBOUR_ENABLED, harbourOwnsRoute, harbourPlaceFor } from './harbour/flag.ts';
 import { harbourArrivalRoute, tabSession } from './harbour/nav/arrival.ts';
-import { Compass, EditionFlip, useEditionFlipKey, useMotionEdition, type CompassFab } from './harbour/nav/Compass.tsx';
+import { Compass, useEditionFlipKey, type CompassFab } from './harbour/nav/Compass.tsx';
 import { usePublishBarBadges } from './harbour/nav/barBadges.ts';
-import { QuickSheet } from './harbour/nav/QuickSheet.tsx';
+import { HARBOUR_GO_EVENT, QuickSheet, useAtlasSearchKeys } from './harbour/nav/QuickSheet.tsx';
+import type { HouseholdWord } from './harbour/nav/atlasSearch.ts';
+import { readRecentTools, rememberRecentTool } from './harbour/bubbles/usage.ts';
+import { spaceForView, stripLedger, viewForSpace, type DayLedger } from './harbour/glass/dayLedger.ts';
+import { campCardModel, type CampCardModel } from './harbour/glass/campCardModel.ts';
+import { fundExtrasFromBasin, type PanelExtras, type PanelHost } from './harbour/panels/panelModel.ts';
+import { buildBasinReading } from './harbour/mountain/basin.ts';
+import { readSeals, readSnapshot } from './harbour/desk/todayModel.ts';
+import { campfireState, type CampfireBeat } from './campfire/model.ts';
 import { HarbourFlat } from './harbour/flat/PlaceFlat.tsx';
-import { PersonalJourney } from './house/PersonalJourney.tsx';
 import { harbourJourneyAnchor } from './path/harbourJourney.ts';
 import { PersonalTogether } from './house/PersonalTogether.tsx';
 import { interpretationGate } from './house/supportedInterpretation.ts';
@@ -36,7 +44,6 @@ import { WorkspaceClient } from './workspace/client.ts';
 import { PlayBoundary } from "./play/PlayBoundary.tsx";
 import { HouseholdPathHome, HouseholdTogether } from "./HouseholdLife.tsx";
 import { Planner } from "./planner/Planner.tsx";
-import { TimeMachine } from "./timeMachine/TimeMachine.tsx";
 import { personalCalendarUpdateAllowed } from "./core/personalCalendarAuthority.ts";
 import {WornLookContext} from './wardrobe/Appearance.tsx';
 import { QuickSamplePanel } from './QuickSamplePanel.tsx';
@@ -63,7 +70,6 @@ import type { WorkShiftDraftCallbacks } from "./workCountDraft.ts";
 import { editSplitDraft, newSplitDraft, reviewedSplitPayload, splitDraftScope, type SplitDraft } from "./core/splitDraft.ts";
 import type { FundDestination } from "./FundStage.tsx";
 import { enqueueScopedWrite, sameWriteScope } from "./core/scopedWrite.ts";
-import { FundLedge } from "./FundLedge.tsx";
 import { isVisibleInView } from "./core/visibility.ts";
 import { useAppearanceBinding } from "./theme/ThemeProvider.tsx";
 import { AppearancePicker } from "./theme/AppearancePicker.tsx";
@@ -181,6 +187,7 @@ import {
   recordEarningCadence,
   todayKey,
   monthKeyFromDateKey,
+  shiftMonthKey,
   TIMEZONE,
   detectDeviceTimeZone,
   COMMON_TIME_ZONES,
@@ -511,9 +518,9 @@ import { fundModelBootNotice, fundModelBootStep, fundModelReloadRequired, harmle
 import { fundModelPersonalUpdateAllowed } from "./fundModelPersonalRule.ts";
 import { offeredForNewSpending } from "./core/fundRules.ts";
 import { FUND_MODEL_RELOAD_MESSAGE, clientFundModelVersion } from "./ledgerSync/fundModelStamp.ts";
-import { defaultSubcategoryForMode } from "./addSlideshow.ts";
+import { addIntoFor, addPostedStatus, defaultAddLedger, defaultSubcategoryForMode, visibilityForInto, type AddInto, type AddSubmitPayload } from "./addSlideshow.ts";
 import { FabSpeedDial } from "./FabSpeedDial.tsx";
-import { fabActionsFor, fabClosedLabel } from "./core/fabActions.ts";
+import { fabActionsFor, fabClosedLabel, type FabVerbMode } from "./core/fabActions.ts";
 import { fundDisplayName, spaceLabel } from "./core/spaceNames.ts";
 import { HouseholdHome } from "./HouseholdHome.tsx";
 import { ChapterRoom } from "./ChapterPanel.tsx";
@@ -521,6 +528,7 @@ import { OurPathWorld } from "./path/OurPathWorld.tsx";
 import { useJourneyCloudTransition } from "./path/JourneyCloudTransition.tsx";
 import { HouseholdBoardMedia } from "./boardMedia/householdBoardMedia.tsx";
 import { ComfortControls } from "./theme/ComfortControls.tsx";
+import { QueenDressing } from "./house/QueenDressing.tsx";
 import { useComfort } from "./theme/comfort.ts";
 
 /** Under the Vision v2 Household Home, the Office stays reachable as collapsed instruments rather than the opening composition. */
@@ -549,8 +557,11 @@ const HearthsideLetters = lazy(() => import("./hearthside/LettersEntry.tsx"));
 const HerculesPlay = lazy(() => import("./play/HerculesPlay.tsx"));
 /** Little Harbour: the Court owns Household × home behind VITE_HEARTH_HARBOUR; every other room keeps HouseWorld. */
 const HarbourWorld = lazy(() => import("./harbour/HarbourEntry.tsx"));
-/** Simple View Desk S5: personal scope has no harbour, so the App mounts the Desk itself for the flat edition. */
-const DeskShell = lazy(() => import("./harbour/desk/DeskShell.tsx").then(module => ({ default: module.DeskShell })));
+/** The map hosts that have a compact panel (the square and the Kiln have none; they are walked to). */
+const PANEL_HOSTS: ReadonlySet<string> = new Set(["bank", "cellar", "tower", "kitchen", "library", "glasshouse", "campfire", "boathouse", "atlas", "cottage"]);
+/** The Campfire (Tool Atlas D3): one five-beat monthly ritual, and the weekly Sitdown's two chairs. Loaded when opened. */
+const CampfireRitual = lazy(() => import("./campfire/CampfireRitual.tsx").then(module => ({ default: module.CampfireRitual })));
+const WeeklySitdown = lazy(() => import("./campfire/WeeklySitdown.tsx").then(module => ({ default: module.WeeklySitdown })));
 import { type JourneyDestination } from "./OnboardingJourney.tsx";
 import { GuidedSetupPreview } from "./GuidedSetupPreview.tsx";
 import { OnboardingCategories } from "./OnboardingCategories.tsx";
@@ -629,6 +640,7 @@ function houseRouteForTab(tab: Tab, householdId: string): HouseRoute | null {
 }
 
 function tabForHouseRoute(route: HouseRoute): Tab { return houseTabForRoute(route); }
+
 
 function presenceTab(tab: Tab): Exclude<Tab, "till" | "together" | "planner" | "timeMachine" | "hercules" | "play"> {
   if (tab === "planner" || tab === "till" || tab === "hercules") return "home";
@@ -799,7 +811,6 @@ export function App() {
     return JSON.stringify([environmentRef.current, householdRef.current?.householdId, sessionRef.current?.memberId,
       sessionRef.current?.view, replicaScopeGenerationRef.current]);
   }
-  const [fundLedgeExpanded, setFundLedgeExpanded] = useState(false);
   const [swipeOpen, storeSwipeOpen] = useState(false);
   const swipeIntentRef = useRef(0);
   const setSwipeOpen = (open: boolean) => { swipeIntentRef.current += 1; storeSwipeOpen(open); };
@@ -812,6 +823,22 @@ export function App() {
   const [addSlide, setAddSlide] = useState(0);
   const [fabOpen, setFabOpen] = useState(false);
   const [quickSheetOpen, setQuickSheetOpen] = useState(false);
+  /** Tool Atlas: the Add flow runs as Bill paid (AddSlideshow's "bill" mode) while this is set; App's `mode` stays an AddMode. */
+  const [billFlow, setBillFlow] = useState(false);
+  /** "Mark paid" on a host panel names the bill Bill paid opens at (its named Confirm), or null for the slips. */
+  const [billPreselect, setBillPreselect] = useState<string | null>(null);
+  /** D1: a Record verb whose ledger differs from the space on screen waits here while the space switches, then opens. */
+  const [pendingRecord, setPendingRecord] = useState<{ mode: FabVerbMode; ledger: LedgerView; amount?: string; recurrenceId?: string } | null>(null);
+  /** The status line after an accepted Record (A24). */
+  const [recordStatus, setRecordStatus] = useState("");
+  /** The one open compact panel on the map (brief §3.2's host column). */
+  const [hostPanel, setHostPanel] = useState<PanelHost | null>(null);
+  /** The Campfire ritual (D3) and the weekly Sitdown. */
+  const [campfire, setCampfire] = useState<{ beat?: CampfireBeat } | null>(null);
+  const [weeklySitdownOpen, setWeeklySitdownOpen] = useState(false);
+  /** The dock: the month the strip shows (null: this month) and whether the camp card is open. */
+  const [stripMonth, setStripMonth] = useState<MonthKey | null>(null);
+  const [campCardOpen, setCampCardOpen] = useState(false);
   const workShiftInputRef = useRef<ScopedWorkShiftInput | null>(null);
   const shiftScanScopeRef = useRef(createShiftScanScope());
   const confirmPanelRef = useRef<HTMLDivElement | null>(null);
@@ -832,6 +859,7 @@ export function App() {
     setShiftScanWarnings([]);
     setAdding(false);
     setAddSlide(0);
+    setBillFlow(false);
     setConfirm(null);
     setError("");
     setDraftLocation(undefined);
@@ -879,7 +907,7 @@ export function App() {
   const [dueSheetOpen, setDueSheetOpen] = useState(false);
   const [dueReviewActive, setDueReviewActive] = useState(false);
   const [onboardingBooksOpen, setOnboardingBooksOpen] = useState(false);
-  const [booksPaneRequest, setBooksPaneRequest] = useState<"fund" | "fund-register" | "wallet" | "opening" | "register" | null>(null);
+  const [booksPaneRequest, setBooksPaneRequest] = useState<"fund" | "fund-register" | "wallet" | "opening" | "register" | `month:${string}` | null>(null);
   const [, setDismissedOnboardingCompletionDigest] = useState<string | null>(null);
   const [herculesWardrobeRequest, setHerculesWardrobeRequest] = useState<{ scope: string; id: string } | null>(null);
 
@@ -916,7 +944,8 @@ export function App() {
   const [demoSeed, setDemoSeed] = useState("");
   const [demoReport, setDemoReport] = useState<DemoRunReport | null>(null);
   const [saveRepeatingPostFirst, setSaveRepeatingPostFirst] = useState(false);
-  const [commandOpen, setCommandOpen] = useState(false);
+  /** The old Ctrl/Cmd+K palette retired (Tool Atlas K7): ⌘K / Ctrl+K and `/` open All tools' search. While it is open, the same things step aside. */
+  const commandOpen = quickSheetOpen;
   const [splitDraft, setSplitDraft] = useState<SplitDraft | null>(null);
   // Ticks every 30s while visible, aligned to the boundary, and STOPS while the
   // tab is hidden (the old raw interval kept re-rendering the whole tree in the
@@ -992,7 +1021,12 @@ export function App() {
   // An island month opened the Time Machine: it starts on that month.
   const [timeMachineRequest, setTimeMachineRequest] = useState<{ monthKey: string } | null>(null);
   // The request is spent once the Time Machine is left, so its other doors still open on today.
-  useEffect(() => { if (tab !== "timeMachine") setTimeMachineRequest(null); }, [tab]);
+  useEffect(() => {
+    if (tab !== "timeMachine") { setTimeMachineRequest(null); return; }
+    // K2 (Tool Atlas §7): the Time Machine screen is retired. An old link or history entry lands in the books at its month.
+    if (timeMachineRequest?.monthKey) setBooksPaneRequest(`month:${timeMachineRequest.monthKey}`);
+    goTab("ledger");
+  }, [tab]);
   useEffect(() => {
     const source = herculesSourceFocus;
     if (!source || source.view !== session?.view || source.route !== tab || herculesSourceScope.current !== `${environment}:${household?.householdId}:${session?.memberId}:${session?.view}`) return;
@@ -1510,6 +1544,16 @@ export function App() {
     activeEntryKeyRef.current = null;
     closeAdd();
   }, [addScopeKey]);
+  // D1 (Tool Atlas §3.3): a Record verb opens in the ledger its first slide names. When that is not the space on
+  // screen (Shift from Ours; a ledger changed on the first slide), the space switched first; open the flow now it has.
+  // Declared after the scope effect above, so the switch's closeAdd runs before this opens.
+  useEffect(() => {
+    if (!pendingRecord || !session || session.view !== pendingRecord.ledger) return;
+    const next = pendingRecord;
+    setPendingRecord(null);
+    if (next.mode === "bill") openBillPaid(next.recurrenceId); else openAddFor(null, next.mode);
+    if (next.amount) setForm(current => current.amount ? current : { ...current, amount: next.amount! });
+  }, [pendingRecord, session?.view]);
 
   const activeEntryKeyRef = useRef<string | null>(null);
   const [entryDraftVolatile,setEntryDraftVolatile]=useState(false);
@@ -2367,17 +2411,8 @@ export function App() {
     };
   }, [environment, validationAttempt]);
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setCommandOpen(true);
-      }
-      if (event.key === "Escape") setCommandOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  // ⌘K / Ctrl+K and `/` open All tools with the cursor in its search (the one palette; Export stays in Settings › Status).
+  useAtlasSearchKeys(HARBOUR_ENABLED, () => setQuickSheetOpen(true));
 
   useEffect(() => {
     setSoftPresenceOptOutState(isSoftPresenceOptedOut(environment));
@@ -3553,11 +3588,9 @@ export function App() {
   useEditionFlipKey(HARBOUR_ENABLED && Boolean(household && session));
   // The bar's little things (S7): the flip wears Everyday "Now"; All tools wears a pawprint when Hercules has a fresh suggestion.
 
-  /** The chosen edition: flat is the simple view. Personal scope reads it to stand the Desk in place of the illustrated house (S5). */
-  const motionEdition = useMotionEdition();
   const workspaceCapabilityEnabled = import.meta.env.VITE_HERCULES_WORKSPACE === "1";
   const appearance = useAppearance();
-  useAppearanceBinding(environment, household && session ? sceneTabFor(tab) : "entry", view, adding || swipeOpen || fundLedgeExpanded || Boolean(confirm) || Boolean(guard));
+  useAppearanceBinding(environment, household && session ? sceneTabFor(tab) : "entry", view, adding || swipeOpen || Boolean(confirm) || Boolean(guard));
   useEffect(() => {
     if ((tab === "till" || tab === "together") && view !== "household") setTab("home");
   }, [tab, view]);
@@ -3627,6 +3660,27 @@ export function App() {
       ? assembleHousehold(splitForSync(household, memberId).shared, personalReplica, { linked: household.linked })
       : household;
   }, [household, memberId, personalReplica, useLedgerSync]);
+  /**
+   * The dock (Tool Atlas §4.1, track B1): one day ledger for the strip and the camp card, per space. The card
+   * always reads this month; the strip may look at another. `since` is this viewer's last visit, read before it
+   * is rewritten — a per-viewer convenience on this device, never truth.
+   */
+  const dockSinceKey = household && memberId ? `hearth:dock:lastSeen:${household.environment}:${household.householdId}:${memberId}` : null;
+  const dockSince = useMemo(() => { if (!dockSinceKey) return null; try { return localStorage.getItem(dockSinceKey); } catch { return null; } }, [dockSinceKey]);
+  useEffect(() => { if (!dockSinceKey) return; try { localStorage.setItem(dockSinceKey, new Date().toISOString()); } catch { /* storage unavailable: the card reads without "since" */ } }, [dockSinceKey]);
+  const dockHousehold = view === "personal" ? personalSource : household;
+  const dockNowLedger = useMemo<DayLedger | null>(() => {
+    if (!HARBOUR_ENABLED || !dockHousehold || !memberId) return null;
+    try { return stripLedger({ household: dockHousehold, memberId, space: spaceForView(view), today }); } catch { return null; }
+  }, [dockHousehold, memberId, view, today]);
+  const dockStripLedger = useMemo<DayLedger | null>(() => {
+    if (!dockNowLedger || !dockHousehold || !stripMonth || stripMonth === monthKeyFromDateKey(today)) return dockNowLedger;
+    try { return stripLedger({ household: dockHousehold, memberId, space: spaceForView(view), today, month: stripMonth }); } catch { return dockNowLedger; }
+  }, [dockNowLedger, dockHousehold, memberId, view, today, stripMonth]);
+  const dockCard = useMemo<CampCardModel | null>(() => {
+    if (!dockNowLedger || !dockHousehold) return null;
+    try { return campCardModel({ household: dockHousehold, memberId, space: spaceForView(view), today, ledger: dockNowLedger, reading: null, since: dockSince, firstVisit: dockSince === null }); } catch { return null; }
+  }, [dockNowLedger, dockHousehold, memberId, view, today, dockSince]);
   const visible = useMemo(
     () => (personalSource && memberId ? householdForView(personalSource, memberId, view) : personalSource),
     [personalSource, memberId, view],
@@ -6298,7 +6352,67 @@ export function App() {
     if (placePrefs.stampCoords) stampCurrentCoords();
   };
 
+  /**
+   * The Record dial's verbs, All tools' Record chips and the camp card's "Record it here" (Tool Atlas §3.3).
+   * D1: Purchase, Income and Move money open in the space on screen; Shift opens in Mine; Bill paid opens in Ours
+   * (bills are shared: the reviewed bill path posts only Shared rows). When the
+   * verb's ledger is not the space on screen, the space switches first (it closes nothing but the draft sheet)
+   * and the pending-record effect opens the flow there, so the first slide never names a ledger we are not in.
+   */
+  function openRecordFlow(nextMode: FabVerbMode, ledger: LedgerView = defaultAddLedger(nextMode, view), amount?: string, recurrenceId?: string) {
+    if (ledger !== view) { setPendingRecord({ mode: nextMode, ledger, ...(amount ? { amount } : {}), ...(recurrenceId ? { recurrenceId } : {}) }); changeHouseView(ledger); return; }
+    if (nextMode === "bill") openBillPaid(recurrenceId); else openAddFor(null, nextMode);
+  }
+  /**
+   * Bill paid: the expense sheet in its "bill" mode — the due bills as slips, then a named Confirm (`postOneRecurrence`).
+   * With a recurrence ("Mark paid" on the Cellar panel), the sheet opens preselected at that bill's named Confirm.
+   */
+  function openBillPaid(recurrenceId?: string) {
+    openAddFor(null, "expense");
+    setBillFlow(true);
+    setBillPreselect(recurrenceId ?? null);
+    setAddSlide(0);
+  }
+  /** Bill paid's named Confirm: the same reviewed path the due sheet posts through (re-read, then `postOneRecurrence`). */
+  function postBillPaid(payload: Extract<AddSubmitPayload, { kind: "bill" }>) {
+    const request = payload.review.request, basis = payload.review.basis;
+    void run(current => {
+      const fresh = dueOccurrenceReview(current, request);
+      if (fresh.kind !== "ready" || fresh.basis !== basis) throw new Error("This bill changed. Review its current details.");
+      return postOneRecurrence(current, request.recurrenceId, request.today, { createdBy: actorId, dueReview: request });
+    }, { scopeIsCurrent: deskScopeIsCurrent, onAccepted: () => {
+      const name = household?.recurrences.find(row => row.id === payload.recurrenceId)?.note.trim() || "the bill";
+      setBillFlow(false);
+      // Bills are shared: the reviewed path posts household rows only, and Bill paid opens only in Ours (D1).
+      setRecordStatus(`Recorded ${name} as paid, in Ours`);
+    } });
+  }
+  /** The Add flow's named Confirm (A7): never posts into a ledger other than the one its first slide names. */
+  function onAddPost(payload?: AddSubmitPayload) {
+    if (payload?.ledger && payload.ledger !== view) {
+      setError(`This is set to go into ${payload.ledger === "household" ? "Ours" : "Mine"}, but ${view === "household" ? "Ours" : "Mine"} is open. Choose the ledger on the first slide again.`);
+      return;
+    }
+    if (payload?.kind === "bill") { postBillPaid(payload); return; }
+    if (payload?.into && !potentialExpenseAddId && payload.into !== addIntoFor(view, form.visibility)) {
+      setError("The Into line changed. Review where this goes, then Confirm again.");
+      return;
+    }
+    submit();
+  }
+  /** K8: the last account a purchase was posted from — a per-viewer convenience on this device, per space, never truth. */
+  const purchaseAccountKey = household && session ? `hearth:add:lastPurchaseAccount:${environment}:${household.householdId}:${session.memberId}:${view}` : null;
+  function readPurchaseAccount(): string | null {
+    if (!purchaseAccountKey) return null;
+    try { return localStorage.getItem(purchaseAccountKey); } catch { return null; }
+  }
+  function rememberPurchaseAccount(accountId: string) {
+    if (!purchaseAccountKey || !accountId) return;
+    try { localStorage.setItem(purchaseAccountKey, accountId); } catch { /* a convenience: the next Purchase asks for the account */ }
+  }
   const openAddFor = (account: Account | null, nextMode?: AddMode) => {
+    setBillFlow(false);
+    setRecordStatus("");
     if (pausedAddScope === readAddScope() && (!nextMode || nextMode === mode) && (!account || account.id === focusedAccountId)) {
       leaveDesk();
       setAdding(true, true);
@@ -6309,7 +6423,11 @@ export function App() {
     leaveDesk();
     const kind = nextMode ?? mode;
     if (!account && restoreEntryDraft(kind)) return;
-    const id = account?.id ?? focusedAccountId;
+    // K8 (Tool Atlas §7): Swipe / Till merge into Purchase — Purchase remembers the account this person last
+    // posted a purchase from (in this space, on this device) and names it on the account slide; it can be changed.
+    const remembered = !account && kind === "expense" ? pickerAccounts.find(row => row.active && row.id === readPurchaseAccount()) ?? null : null;
+    const launch = account ?? remembered;
+    const id = launch?.id ?? focusedAccountId;
     const defaults = addFormDefaults(displayHousehold, id);
     setFocusedAccountId(id);
     setMode(nextMode ?? defaults.suggestedMode);
@@ -6317,7 +6435,7 @@ export function App() {
     setEntrySubmission(activeEntryKeyRef.current?readEntrySubmission(activeEntryKeyRef.current):null);
     setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
-    setAddLaunchAccountId(account?.id ?? null);
+    setAddLaunchAccountId(launch?.id ?? null);
     setAddSlide(0);
     setAddDetails(false);
     setError("");
@@ -6460,8 +6578,10 @@ export function App() {
     const addressedHearthside = !HOUSE_WORLD_ENABLED && HEARTHSIDE_FLAGS.presentation && household && view === "household" && !houseNavigation && next === "play"
       ? parseHearthsideRoute(window.location.href, household.householdId)
       : null;
+    // K11: Hercules opens his own surface (the workspace and discovery under his bubble); the couple's conversation
+    // folio is the kitchen table's, reached from the Kitchen panel and the table itself, never from Hercules.
     const fallbackHouse=household?(houseRouteForTab(next,household.householdId)??houseRoute??{room:"home" as const,level:"middle" as const,householdId:household.householdId}):null;
-    const nextHouse:HouseRoute|null = HOUSE_WORLD_ENABLED && household && fallbackHouse ? {...(houseNavigation?.route??{...fallbackHouse,surface:next==="home"?undefined:next==="ledger"?"books":next==="plan"?"plan-studio":next==="play"?"life":next==="hercules"?"conversation":next}),scope:view}
+    const nextHouse:HouseRoute|null = HOUSE_WORLD_ENABLED && household && fallbackHouse ? {...(houseNavigation?.route??{...fallbackHouse,surface:next==="home"?undefined:next==="ledger"?"books":next==="plan"?"plan-studio":next==="play"?"life":next}),scope:view}
       : HEARTHSIDE_FLAGS.presentation && household && view === "household"
       ? houseNavigation?.route ?? (addressedHearthside ? {room:"together",level:togetherLevelForRoom(addressedHearthside.room),householdId:household.householdId} : houseRouteForTab(next, household.householdId))
       : null;
@@ -6545,7 +6665,12 @@ export function App() {
   function readHouseCamera():[number,number,number]|undefined{if(document.querySelector(".house-world.is-overview,.house-world__stage[aria-label]"))return undefined;try{const camera=JSON.parse(document.querySelector<HTMLElement>(".house-world__canvas")?.dataset.houseCamera??"null");return Array.isArray(camera)&&camera.length===3&&camera.every(Number.isFinite)?camera as [number,number,number]:undefined;}catch{return undefined;}}
   function openHouseObject(target:string,object?:string){
     if(!household||!session)return;
+    // The Campfire (D3): the fire, both logs, its host panel and Books' door open the one ritual, which is Ours.
+    if(target==="campfire-ritual"||target==="campfire"){setHostPanel(null);if(view!=="household")changeHouseView("household");setCampfire(object==="settle"?{beat:"settle"}:{});return;}
     if(target==="fund"){target="books";object="bindery/handoff-bench";setBooksPaneRequest("fund");}
+    // K12: "Enter the Pottery Studio" (pottery with no station) is a Kitty Bank's studio tab now; the Kiln's own
+    // stations (wheel, paint, kiln, a piece) still open the Kiln, which stays a world place.
+    if(target==="pottery"&&!object){target="loft-banks";object="studio";}
     const identity:HouseIdentity={environment,householdId:household.householdId,memberId:session.memberId,scope:view};
     const route=houseTargetRoute({...activeHouseRoute,scope:view},target,object);
     saveHouseReturn(localStorage,identity,activeHouseRoute,{focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title",scroll:window.scrollY,camera:readHouseCamera(),cameraComposition:readHouseComposition(),body:readHouseBody()},houseReturnSlot(route));
@@ -6610,7 +6735,7 @@ export function App() {
     const path=`${window.location.pathname}${window.location.search}`,focusId=document.activeElement instanceof HTMLElement?document.activeElement.id||'hearthside-title':'hearthside-title';
     const context=readHearthsideToolReturn({scope:ledgerRenderScopeKey,audience:view,path,focusId,label,tab:next,...(reference?.kind==='task'?{taskId:reference.id}:{}),...(reference?.kind==='calendar-event'?{eventId:reference.id}:{})},ledgerRenderScopeKey,household.householdId,view);
     const destination=HOUSE_WORLD_ENABLED?houseRouteForTab(next,household.householdId):null;
-    if(destination)navigateHouseSurface({...destination,scope:view,surface:next==='plan'?'plan-studio':next==='hercules'?'conversation':next,...(reference?{object:`${reference.kind}/${reference.id}`}:{})});else goTab(next);
+    if(destination)navigateHouseSurface({...destination,scope:view,surface:next==='plan'?'plan-studio':next,...(reference?{object:`${reference.kind}/${reference.id}`}:{})});else goTab(next);
     if(context){setHearthsideToolReturn(context);window.history.replaceState({...window.history.state,hearthsideReturn:context},'');}
   }
   function returnToSharedLife(path:string,focusId:string){
@@ -6729,7 +6854,8 @@ export function App() {
   const openFundDestination = (destination: FundDestination | "ask" = "record") => {
     rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
     if (destination === "swipe") { setAdding(false); setError(""); setSwipeError(""); setSwipeOpen(true); return; }
-    if (destination === "ask") { requestSharedBoard({ environment, householdId: household.householdId, memberId: session.memberId }, "ask"); goTab("together", "practical"); return; }
+    // K1: The Ask is a Glasshouse step now; its door opens the steps (the planner), never the retired board.
+    if (destination === "ask") { openHouseObject("planner"); return; }
     if (destination === "shelf") { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:household`; setHerculesSourceFocus({route:"plan",view:"household",label:"Goals & reserves"}); goTab("plan"); return; }
     if (destination === "minutes") { goTab("more"); return; }
     setBooksPaneRequest(destination === "contribute" ? "fund" : destination === "seven-days" ? "register" : "fund-register");
@@ -6768,6 +6894,14 @@ export function App() {
   function submit(flags: { confirmDuplicate?: boolean } = {}) {
     const draftKey=readEntryKey(mode);
     if (!draftKey) return;
+    // A24: the status line after an accepted Final Confirm names the amount and where it went.
+    const postedMode = mode, postedAccountId = form.accountId;
+    // Review finding 2: the Into line is the one ledger control. It names the open space (Ours / Mine) or Both,
+    // and the post goes exactly there: a stale draft visibility never overrides it. A planned expense keeps its own.
+    const into: AddInto = potentialExpenseAddId ? form.visibility : addIntoFor(view, form.visibility);
+    const postVisibility = visibilityForInto(into);
+    let postedStatus = "";
+    try { postedStatus = addPostedStatus({ mode, form, household: household ?? { categories: [] }, accounts: pickerAccounts, ledger: into }); } catch { postedStatus = ""; }
     const held=readEntrySubmission(draftKey);
     if(confirm && held && held.review!==entryReview()){
       clearEntryConfirmation(draftKey,held.id);setEntrySubmission(null);setConfirm(null);
@@ -6788,7 +6922,7 @@ export function App() {
           note: form.note,
           confirmDuplicate: flags.confirmDuplicate,
           createdBy: actorId,
-          visibility: form.visibility,
+          visibility: postVisibility,
         });
       }
       if (mode === "shift") {
@@ -6806,7 +6940,7 @@ export function App() {
           settingsFingerprint: shiftSettingsFingerprint(current.shiftSettings),
           confirmDuplicate: flags.confirmDuplicate,
           createdBy: actorId,
-          visibility: form.visibility,
+          visibility: postVisibility,
         });
       }
       const entry = {
@@ -6839,11 +6973,11 @@ export function App() {
       return postEntry(current, {
         ...entry,
         type: mode,
-        visibility: form.visibility,
+        visibility: postVisibility,
       });
       } catch(caught) {if(!(caught instanceof NeedsConfirmationError)){clearEntryConfirmation(draftKey,confirmationId);setEntrySubmission(null);}throw caught;}
     }, {confirmationId, onDefinitiveRejected:()=>{clearEntryConfirmation(draftKey,confirmationId);if(activeEntryKeyRef.current===draftKey)setEntrySubmission(null);},
-      onAccepted:()=>{clearEntryConfirmation(draftKey,confirmationId);clearEntryLocal(draftKey);clearEntryLocal(draftKey+':presentation');if(activeEntryKeyRef.current===draftKey){setEntrySubmission(null);activeEntryKeyRef.current=null;setPausedAddScope(null);}}});
+      onAccepted:()=>{setRecordStatus(postedStatus);if(postedMode==="expense")rememberPurchaseAccount(postedAccountId);clearEntryConfirmation(draftKey,confirmationId);clearEntryLocal(draftKey);clearEntryLocal(draftKey+':presentation');if(activeEntryKeyRef.current===draftKey){setEntrySubmission(null);activeEntryKeyRef.current=null;setPausedAddScope(null);}}});
   }
 
   async function recoverEntryReceipt() {
@@ -6925,10 +7059,8 @@ export function App() {
     if (destination === "plan" || destination === "personal") { goTab("plan"); return; }
     if (destination === "work") { goTab("shift"); return; }
     if (destination === "bills") { requestCalendarPane("bills", localStorage); goTab("calendar"); return; }
-    if (destination === "boards") {
-      requestSharedBoard({ environment, householdId: household!.householdId, memberId: session!.memberId }, "tasks");
-      goTab("together", "practical"); return;
-    }
+    // K10: the practical board's to-dos are Glasshouse steps now.
+    if (destination === "boards") { openHearthsideTool("planner", undefined, "Our steps"); return; }
     if (destination === "hercules") { goTab(workspaceEnabled ? "hercules" : "home"); return; }
     setFocusedAccountId(null);
     if (destination === "books") setBooksPaneRequest("opening");
@@ -6952,13 +7084,10 @@ export function App() {
   const activeHouseRoute=(HOUSE_WORLD_ENABLED&&houseRoute?.scope!==view?null:houseRoute)??houseRouteForTab(tab,household.householdId)??{room:"home",level:"middle",householdId:household.householdId};
   const activeHouseTool=houseToolPlace(activeHouseRoute);
   const houseToolsVisible = !HOUSE_WORLD_ENABLED || Boolean(activeHouseRoute.surface && activeHouseRoute.surface!=="queen");
-  /** Simple View Desk S5: personal scope in the flat edition draws no house; at rest it stands the Desk, and a tool open in front stands alone with its Put it back. */
-  const personalFlat = HARBOUR_ENABLED && view === "personal" && motionEdition === "flat";
-  const personalDesk = personalFlat && !houseToolsVisible;
   // Due reminders are an inline list until one occurrence's review sheet opens.
   // They must not silently disable the companion's ordinary help entry.
   const herculesReviewBlocked = Boolean(guard && (guard.kind !== "duePreview" || dueSheetOpen || dueReviewActive));
-  const workspaceMode = !workspaceEnabled || Boolean(adding || swipeOpen || confirm || herculesReviewBlocked || commandOpen || fundLedgeExpanded) ? "hidden" : tab === "hercules" ? "room" : workspaceCompact ? "compact" : "hidden";
+  const workspaceMode = !workspaceEnabled || Boolean(adding || swipeOpen || confirm || herculesReviewBlocked || commandOpen) ? "hidden" : tab === "hercules" ? "room" : workspaceCompact ? "compact" : "hidden";
 
   /** The Queen's world (Vision v2 §4.2, `VITE_QUEENS_NEST`): Our Home is one fixed, edge-to-edge world. Only the
       two-space tabs, her field and the five-slot nav are on it; the top bar, the sync line, the household switcher,
@@ -7030,10 +7159,119 @@ export function App() {
         ))}
       </div>
   );
-  /** The personal Desk's doors: Shifts is a page, not a house object, so it goes the way the + dial's "Add a shift" row goes. */
-  const openPersonalDeskDoor = (target: string, object?: string) => { if (target === "shift") goTab("shift"); else openHouseObject(target, object); };
-  /** The one bar's + (S1): the same FabSpeedDial wiring on the island's bar and on its door edition. */
-  const harbourBarFab: CompassFab = {closed:adding,actions:fabActionsFor(view,tab),closedLabel:fabClosedLabel(view),onOpenChange:setFabOpen,onPick:(nextMode)=>openAddFor(null,nextMode),onGo:(nextTab)=>goTab(nextTab)};
+  /**
+   * Shift on the dial (Tool Atlas §3.3): hidden only for the partner without a job when the household has jobs set
+   * up — "the other partner's dial is a stable four". A member with a job, or with a punch still open, always has it;
+   * a household with no job yet keeps it, because the Shift flow is where a job is set up.
+   */
+  const memberHasJob = household.workJobs.some((job) => job.active && job.memberId === actorId)
+    || Boolean(activeOpenShift(household.kitchen, actorId))
+    || !household.workJobs.some((job) => job.active);
+  /**
+   * One dispatcher for every Tool Atlas address that is not a plain house door (All tools, the host panels, the
+   * camp card): the Books panes, Settings, the Leaving list, the weekly Sitdown and the Campfire. House doors go
+   * through `openHouseObject`; Shifts is a page, so it opens the way the dial's Shift row always has.
+   */
+  function openAtlasTarget(target: string, object?: string) {
+    setQuickSheetOpen(false);
+    if (target.startsWith("books:")) { setBooksPaneRequest(target.slice(6) as NonNullable<typeof booksPaneRequest>); goTab("ledger"); return; }
+    if (target.startsWith("tab:")) { goTab(target.slice(4) as AppTab); return; }
+    if (target === "settings" || target.startsWith("settings:")) { goTab("more"); return; }
+    if (target === "accounts") { setBooksPaneRequest("wallet"); goTab("ledger"); return; }
+    if (target === "activity") { setBooksPaneRequest("register"); goTab("ledger"); return; }
+    if (target === "import") { setBooksPaneRequest("opening"); goTab("ledger"); return; }
+    if (target === "audit") { goTab("ledger"); return; }
+    if (target === "leaving") { openHouseObject("cellar-bills", object); return; }
+    if (target === "sitdown") { if (view === "household") setWeeklySitdownOpen(true); else openHouseObject("calendar"); return; }
+    if (target === "shift") { goTab("shift"); return; }
+    openHouseObject(target, object);
+  }
+  /** All tools › Places and a host on the map: the host's compact panel, and the walk there unless the person came by keyboard. */
+  function openPlacePanel(place: string, keyboard: boolean) {
+    setQuickSheetOpen(false);
+    const panel = PANEL_HOSTS.has(place) ? place as PanelHost : null;
+    setHostPanel(panel);
+    if (!keyboard || !panel) window.dispatchEvent(new CustomEvent(HARBOUR_GO_EVENT, { detail: { place } }));
+  }
+  /** The household's own words for All tools' search (§3.4): bills, accounts, Kitty Banks and members, from what this viewer already sees. */
+  const atlasHouseholdWords: HouseholdWord[] = HARBOUR_ENABLED && quickSheetOpen ? [
+    ...displayHousehold.recurrences.filter(row => row.active && row.type !== "income" && row.note.trim()).map((row): HouseholdWord => ({ id: `bill:${row.id}`, word: row.note.trim(), kind: "bill", target: "cellar-bills", object: `recurrence:${row.id}`, group: "bills-dates", where: "the Cellar" })),
+    ...displayHousehold.accounts.filter(row => row.active).map((row): HouseholdWord => ({ id: `account:${row.id}`, word: row.name, kind: "account", target: "accounts", object: `account:${row.id}`, group: "fund", where: "the Wallet" })),
+    ...displayHousehold.goals.filter(goal => goal.status === "open" && !goal.retiredAt && (view === "household" ? goal.shared : !goal.shared && goal.ownerMemberId === actorId)).map((goal): HouseholdWord => ({ id: `bank:${goal.id}`, word: goal.name, kind: "bank", target: "loft-banks", object: `bank/goal:${goal.id}`, group: "kitty-banks", where: "the Loft" })),
+    ...(view === "household" ? household.members.filter(member => member.active).map((member): HouseholdWord => ({ id: `member:${member.id}`, word: member.name, kind: "member", target: "fund", group: "fund", where: "the Fund" })) : []),
+  ] : [];
+  /** The Cellar panel's next bills, with the recurrence "Mark paid" names (the dock's own slips, so the two agree). */
+  const panelExtras: PanelExtras = {
+    memberId: actorId,
+    today,
+    space: spaceForView(view),
+    // The Fund bank: the shared Fund's accepted balance, as-of and last moves, from the reading the Mountain guide's
+    // glass dam read (`buildBasinReading`). Always the shared household: in Mine the panel says "the shared Fund".
+    ...(hostPanel === "bank" ? { fund: fundExtrasFromBasin(
+      buildBasinReading(household, today, sceneInterpretationGate.freshness === "stale" || sceneInterpretationGate.freshness === "offline" ? sceneInterpretationGate.freshness : "current"),
+      view === "personal" ? readSnapshot(household, actorId, "household", today)?.now ?? null : undefined,
+    ) } : {}),
+    // The Library: this month's in / out / leftover, from the Desk's seals model, in the space on screen.
+    ...(hostPanel === "library" ? (() => {
+      const read = readSeals(view === "personal" ? (personalSource ?? household) : household, actorId, view, today);
+      return { books: { inCents: read.seals?.inCents ?? null, outCents: read.seals?.outCents ?? null, leftoverCents: read.seals?.leftoverCents ?? null, monthKey: monthKeyFromDateKey(today) } };
+    })() : {}),
+    // The Campfire's panel line counts the recipe cards and seals waiting on this member (track D's read model).
+    ...(hostPanel === "campfire" && view === "household" ? { needsYou: campfireState(household, actorId, today).needsYou } : {}),
+    bills: (dockNowLedger?.days ?? []).flatMap(day => day.slips.filter(slip => slip.amountCents !== null && (day.relation !== "past" || slip.overdue))
+      .map(slip => ({ key: `${slip.id}:${day.date}`, label: slip.name, cents: slip.amountCents as number, due: day.date, recurrenceId: slip.recurrenceId }))).slice(0, 3),
+  };
+  /** A host panel's "Mark paid": the Bill paid flow at that bill's named Confirm path (`postOneRecurrence`), never a post from the panel. */
+  function markPaidFromPanel(recurrenceId: string) {
+    setHostPanel(null);
+    openRecordFlow("bill", undefined, undefined, recurrenceId);
+  }
+  /** The one bar's Record (S1): the same FabSpeedDial wiring on the island's glass, the Desk's bar and the door edition. */
+  const harbourBarFab: CompassFab = {closed:adding,actions:fabActionsFor(view,{memberHasJob}),closedLabel:fabClosedLabel(view),onOpenChange:setFabOpen,onPick:(nextMode)=>openRecordFlow(nextMode),onBillPaid:()=>openRecordFlow("bill")};
+  /** The dock (track B1) on the island: the strip and the camp card. Absent until the day ledger reads. */
+  const harbourDock = dockStripLedger && dockCard && dockNowLedger ? {
+    strip: {
+      ledger: dockStripLedger,
+      onOpenCalendar: () => openHouseObject("calendar"),
+      onOpenSitdown: () => { if (view === "household") setWeeklySitdownOpen(true); else openHouseObject("calendar"); },
+      onMonthBack: () => setStripMonth(month => shiftMonthKey(month ?? monthKeyFromDateKey(today), -1)),
+      onMonthForward: () => setStripMonth(month => shiftMonthKey(month ?? monthKeyFromDateKey(today), 1)),
+      onMonth: (month: MonthKey) => setStripMonth(month),
+      perDayHits: typeof window !== "undefined" && window.innerWidth >= 1100,
+    },
+    card: {
+      model: dockCard,
+      space: spaceForView(view),
+      onSpaceChange: (next: "ours" | "mine") => changeHouseView(viewForSpace(next)),
+      expanded: campCardOpen,
+      onExpandedChange: setCampCardOpen,
+      // Line 1 → the bank panel, line 2 → the Cellar panel (brief §4.1): its "Mark paid" opens Bill paid at that bill's Confirm.
+      onOpenBank: () => { setCampCardOpen(false); setHostPanel("bank"); },
+      onOpenCellar: () => { setCampCardOpen(false); setHostPanel("cellar"); },
+      onOpenCalendar: () => openHouseObject("calendar"),
+      onOpen: (target: string, object?: string) => openAtlasTarget(target, object),
+      onRecord: () => openRecordFlow("shift"),
+      onTalk: () => openLegacyHercules(),
+      onOpenBooks: () => openHouseObject("books"),
+      onStepIn: () => openHouseObject("journey"),
+      onWhatChanged: () => { setBooksPaneRequest("register"); goTab("ledger"); },
+    },
+  } : undefined;
+  /** The Hercules door the weekly Sitdown and PlanStudio share: the existing Shared reply route. */
+  async function sharedHerculesReply(sessionId: string, inReplyToTurnId: string) {
+    if (!household) throw new Error("Choose a household first.");
+    if (!useLedgerSync) throw new Error("Connect this household before saving a Shared Hercules reply.");
+    const local = localLedgerIdentity(actorId);
+    const auth = local ? null : await ensureSupabaseSession(environment);
+    if (!local && !auth) throw new Error("Continue with Google before asking Hercules in the Shared Sitdown.");
+    const response = await fetch(`/plan/shared/hercules/${environment}/${household.householdId}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${local ?? auth!.accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId, inReplyToTurnId }),
+    });
+    const payload = await response.json() as { ok?: boolean; error?: string };
+    if (!response.ok || !payload.ok) throw new Error(payload.error || "Hercules could not save the Shared reply.");
+  }
 
   return (
     <HearthsideDesignProvider key={ledgerRenderScopeKey} household={household} memberId={session.memberId} identity={ledgerRenderScopeKey} source={()=>ledgerSyncRef.current}><WornLookContext.Provider value={import.meta.env.VITE_HERCULES_DRESSING_ROOM==='1'&&household.companionProfile?.scope.memberId===session.memberId?household.companionProfile.wornLook.value:null}><div className="app" data-house-world={HOUSE_WORLD_ENABLED||undefined} data-harbour-court={harbourOwnsRoute(activeHouseRoute,view)&&!activeHouseRoute.surface||undefined} data-harbour-door={harbourOwnsRoute(activeHouseRoute,view)&&Boolean(activeHouseRoute.surface)||undefined} data-ledger-mode={view} data-ledger-tab={tab} data-world-home={queenWorldHome ? "true" : undefined} data-books-readiness={booksReadiness.phase} data-ledger-live={useLedgerSync && realtimeStatus === "SUBSCRIBED"} data-ledger-transaction-count={household.transactions.length}>
@@ -7223,9 +7461,9 @@ export function App() {
         </div>
       )}
       {!harbourOwnsRoute(activeHouseRoute,view)&&householdSwitcherNode}
-      {!harbourOwnsRoute(activeHouseRoute,view)&&!personalDesk&&spaceSwitchNode}
+      {!harbourOwnsRoute(activeHouseRoute,view)&&spaceSwitchNode}
       {!HOUSE_WORLD_ENABLED&&HEARTHSIDE_FLAGS.presentation&&view==="household"&&<HouseShell route={activeHouseRoute} onNavigate={goHouse} condition={houseCondition}/>}
-      {HOUSE_WORLD_ENABLED&&(harbourOwnsRoute(activeHouseRoute,view)?<Suspense fallback={<HarbourFlat place={harbourPlaceFor(activeHouseRoute,view,true)??"court"} reading={null} status="loading"/>}><HarbourWorld key={`${environment}:${household.householdId}:${actorId}:${view}`} household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onNavigateLocation={navigateHouseSurface} onWorldReady={()=>journeyCloud.ready("to-harbour")} onJourney={()=>journeyCloud.begin("to-journey",()=>goTab("plan",undefined,{route:{householdId:household.householdId,scope:"household",room:"kitchen-table",level:"above",surface:"journey",object:"harbour-return",time:harbourJourneyAnchor(household,today).date},history:"push"}))} onArrange={operation=>commitVillageArrangement(runKitchen,actorId,operation)} onOpen={openHouseObject} onClose={putHouseObjectBack} presence={softPresenceDisplay} onUnhide={()=>applySoftPresenceOptOut(false)} partnerName={household.members.find(member=>member.id!==session.memberId)?.name??null} spaceSlot={spaceSwitchNode} onQuickSheet={()=>setQuickSheetOpen(true)} fab={charterTakeoverVisible?undefined:harbourBarFab}/></Suspense>:personalFlat?(<Suspense fallback={<p className="desk-personal-loading" role="status">Opening my Desk…</p>}><div className="desk-personal-stage" hidden={!personalDesk}><DeskShell key={`${environment}:${household.householdId}:${actorId}:personal`} ready={activeBooksGate.ready} interpretationGate={sceneInterpretationGate} household={personalSource??household} memberId={actorId} scope="personal" today={today} reading={null} theme={appearance.preview??appearance.saved.theme} status="flat" titleId="house-world-title" onOpen={openPersonalDeskDoor} onQuickSheet={()=>setQuickSheetOpen(true)} onTalk={()=>openLegacyHercules()} spaceSlot={spaceSwitchNode}/></div></Suspense>):<HouseWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onOpen={openHouseObject} onClose={putHouseObjectBack}/>)}
+      {HOUSE_WORLD_ENABLED&&(harbourOwnsRoute(activeHouseRoute,view)?<Suspense fallback={<HarbourFlat place={harbourPlaceFor(activeHouseRoute,view,true)??"court"} reading={null} status="loading"/>}><HarbourWorld key={`${environment}:${household.householdId}:${actorId}`} household={view==="personal"?(personalSource??household):household} memberId={actorId} scope={view} space={spaceForView(view)} onOpenMine={(kind,id)=>kind==="bank"?openHouseObject("loft-banks",id?`bank/${id}`:undefined):openHearthsideTool("planner",id?{kind:"task",id}:undefined,"Mine")} dock={harbourDock} toolsOpen={quickSheetOpen} panel={{host:hostPanel,extras:panelExtras,onClose:()=>setHostPanel(null),onOpen:(target,object)=>{setHostPanel(null);openAtlasTarget(target,object);},onRecord:()=>{setHostPanel(null);openRecordFlow("expense");},onMarkPaid:markPaidFromPanel,onTalk:()=>{setHostPanel(null);openLegacyHercules();}}} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onNavigateLocation={navigateHouseSurface} onWorldReady={()=>journeyCloud.ready("to-harbour")} onJourney={()=>journeyCloud.begin("to-journey",()=>goTab("plan",undefined,{route:{householdId:household.householdId,scope:"household",room:"kitchen-table",level:"above",surface:"journey",object:"harbour-return",time:harbourJourneyAnchor(household,today).date},history:"push"}))} onArrange={view==="household"?operation=>commitVillageArrangement(runKitchen,actorId,operation):undefined} onOpen={view==="personal"?openAtlasTarget:openHouseObject} onClose={putHouseObjectBack} presence={softPresenceDisplay} onUnhide={()=>applySoftPresenceOptOut(false)} partnerName={household.members.find(member=>member.id!==session.memberId)?.name??null} spaceSlot={spaceSwitchNode} onQuickSheet={()=>setQuickSheetOpen(true)} fab={charterTakeoverVisible?undefined:harbourBarFab}/></Suspense>:(!HARBOUR_ENABLED||view==="household")?<HouseWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onOpen={openHouseObject} onClose={putHouseObjectBack}/>:null)}
       <div data-app-page="true" data-house-resting={HOUSE_WORLD_ENABLED&&!houseToolsVisible&&!adding&&!swipeOpen&&!confirm&&!guard&&!commandOpen||undefined}>
         {HOUSE_WORLD_ENABLED&&houseToolsVisible&&<header className="house-tool-heading"><h2 tabIndex={-1} id="house-tool-title">{TARGET_NAMES[activeHouseRoute.surface??""]??HOUSE_PLACES[activeHouseRoute.room][activeHouseRoute.level].title}</h2><button onClick={putHouseObjectBack}>Put it back</button></header>}
         <div className={hearthsideOpen ? "hearthside-page" : "world-page"}>
@@ -7288,6 +7526,8 @@ export function App() {
         onReadAcceptedHousehold={async id=>{const client=ledgerSyncRef.current;if(!client||client.options.scope.environment!==environment||client.options.scope.householdId!==household.householdId||client.options.scope.memberId!==actorId)throw Error("SCOPE_CLOSED");return client.acceptedHousehold(id);}}
         onReadSubmission={async id => {const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}}
         onWorkspace={workspaceEnabled?openExperienceWorkspace:undefined}
+        onSteps={()=>openHearthsideTool("planner",undefined,"Our steps")}
+        onLookAhead={()=>setCampfire({beat:"look-ahead"})}
         onReference={(reference,experience) => {
           if(reference.kind==="artifact"){openExperienceWorkspace(experience);return;}
           if (reference.kind === "task") {openHearthsideTool("planner",reference,experience.title);return;}
@@ -7301,7 +7541,7 @@ export function App() {
       /></Suspense></PlayBoundary>}
       {HOUSE_WORLD_ENABLED&&view==="personal"&&tab==="play"&&<PersonalTogether key={`${ledgerRenderScopeKey}:${activeHouseRoute.object??"folio"}`} household={household} memberId={actorId} identity={ledgerRenderScopeKey} today={today} route={activeHouseRoute} busy={busy} onCommand={runKitchen} onNavigate={navigateHouseSurface} onOpenPlan={()=>openHearthsideTool("plan",undefined,"My private folio")} onOpenTask={id=>openHearthsideTool("planner",{kind:"task",id},"My private folio")} onOpenCalendar={()=>openHearthsideTool("calendar",undefined,"My private folio")} onWorkspace={workspaceCapabilityEnabled?openPersonalExperienceWorkspace:undefined}/>}
       {tab === "planner" && <Planner key={`${ledgerRenderScopeKey}:${view}`} focusTaskId={hearthsideToolReturn?.scope===ledgerRenderScopeKey&&hearthsideToolReturn.audience===view?hearthsideToolReturn.taskId:undefined} household={household} memberId={actorId} view={view} today={today} busy={busy} onCommand={runKitchen} onRecord={openTaskInAdd} />}
-      {tab === "timeMachine" && <TimeMachine initialPeriod={timeMachineRequest?.monthKey} household={household} memberId={actorId} view={view} today={today} onOpenBooks={() => goTab("ledger")} />}
+      {/* K2: the Time Machine is retired as a screen; a stray timeMachine route opens the books at its month. */}
       {!HOUSE_WORLD_ENABLED&&(!HEARTHSIDE_FLAGS.presentation || view !== "household") && PLAY_ENABLED && tab === "play" && <PlayBoundary onExit={()=>{ if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); goTab("together"); }}><Suspense fallback={<p>Opening Hercules’s room…</p>}><HerculesPlay initialArea={playInitialArea} key={`${environment}:${household.householdId}:${actorId}`} household={household} memberId={actorId} connected={useLedgerSync && realtimeStatus === "SUBSCRIBED"} onCommand={runKitchen} onTogether={() => { if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); goTab("together"); }} onGoal={goalId => { if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:household`; setHerculesSourceFocus({route:"plan",view:"household",label:"Kitty Banks",...(goalId?{goalId}:{})}); goTab("plan"); }}/></Suspense></PlayBoundary>}
       {!HEARTHSIDE_FLAGS.presentation && tab === "together" && view === "household" && <HouseholdTogether household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} scenarioSource={scenarioSource} onOpenPlanner={() => goTab("planner")} onOpenPlay={PLAY_ENABLED ? () => {setPlayInitialArea(undefined);goTab("play");} : undefined} onOpenPlan={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && view === "household" && planSystemV2Enabled() && !householdHomeV2Enabled() && !HEARTHSIDE_FLAGS.presentation && <HouseholdPathHome household={household} memberId={actorId} today={today} onOpen={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
@@ -7317,7 +7557,7 @@ export function App() {
           onCommand={runKitchen}
           composition={HOUSE_WORLD_ENABLED?"queen":HEARTHSIDE_FLAGS.presentation ? "queen" : undefined}
           world={HOUSE_WORLD_ENABLED?"flat":activeBooksGate.ready ? "auto" : "flat"}
-          initialBankId={HOUSE_WORLD_ENABLED&&activeHouseRoute.object?.startsWith("bank/")?activeHouseRoute.object.slice(5):undefined}
+          initialBankId={HOUSE_WORLD_ENABLED?bankRoomRequest(activeHouseRoute.object).bankId:undefined} initialStudio={HOUSE_WORLD_ENABLED&&bankRoomRequest(activeHouseRoute.object).studio}
           housePlace={(HEARTHSIDE_FLAGS.presentation||HOUSE_WORLD_ENABLED)&&activeHouseTool.room==="home"?(activeHouseTool.level==="above"?"loft":activeHouseTool.level==="below"?"cellar":"home"):undefined}
           onHousePlace={HEARTHSIDE_FLAGS.presentation ? place => goTab("home", undefined, {route:{room:"home",level:place==="loft"?"above":place==="cellar"?"below":"middle",householdId:household.householdId},history:"push"}) : undefined}
           onGo={(next) => goTab(next)}
@@ -7340,7 +7580,7 @@ export function App() {
           )}
         />
       )}
-      {tab === "home" && dashboard && view === "personal" && <KittyBanks key={`${ledgerRenderScopeKey}:nest:${activeHouseRoute.object??""}`} initialBankId={HOUSE_WORLD_ENABLED&&activeHouseRoute.object?.startsWith("bank/")?activeHouseRoute.object.slice(5):undefined} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="home" onCommand={runKitchen} onOpenCalendar={() => goTab("calendar")} />}
+      {tab === "home" && dashboard && view === "personal" && <KittyBanks key={`${ledgerRenderScopeKey}:nest:${activeHouseRoute.object??""}`} initialBankId={HOUSE_WORLD_ENABLED?bankRoomRequest(activeHouseRoute.object).bankId:undefined} initialStudio={HOUSE_WORLD_ENABLED&&bankRoomRequest(activeHouseRoute.object).studio} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="home" onCommand={runKitchen} onOpenCalendar={() => goTab("calendar")} />}
       {!HOUSE_WORLD_ENABLED&&((tab === "home" && dashboard && !queenWorldHome) || (tab === "more" && dashboard && view === "household" && queensNestEnabled() && householdHomeV2Enabled())) && (
         <>
         <HomeInstruments collapsed={view === "household" && householdHomeV2Enabled()}>
@@ -7443,8 +7683,7 @@ export function App() {
         </>
       )}
 
-      {HOUSE_WORLD_ENABLED&&tab==="plan"&&view==="personal"&&activeHouseRoute.surface==="journey"&&<PersonalJourney household={household} memberId={actorId} today={today} interpretationGate={sceneInterpretationGate} onOpenPlan={()=>openHouseObject("plan-studio")} onOpenObject={(kind,id)=>openHouseObject(kind==="bank"?"loft-banks":kind==="memory"?"memories":kind==="experience"?"personal-experience":"wishes",`${kind}/${id}`)} onReturn={putHouseObjectBack}/>}
-      {tab === "plan" && dashboard && !(HOUSE_WORLD_ENABLED&&view==="personal"&&activeHouseRoute.surface==="journey") && (
+      {tab === "plan" && dashboard && (
         <>
           {(onboardingCategoriesOnly || onboardingEstimatesOnly || onboardingPlanOnly) && <header className="journey-plan-heading"><p className="kicker">Stage 3</p><h2>Our first plan</h2><p>Choose starter categories, review each person's amounts, then independently approve and adopt the same proposal.</p><ol aria-label="First plan steps"><li aria-current={onboardingCategoriesOnly ? "step" : undefined}>Categories</li><li aria-current={onboardingEstimatesOnly ? "step" : undefined}>Starter amounts</li><li aria-current={onboardingPlanOnly ? "step" : undefined}>Review and adopt</li></ol></header>}
 
@@ -7504,19 +7743,8 @@ export function App() {
               today={today}
               busy={busy}
               onCommand={runKitchen}
-              onSharedHerculesReply={async (sessionId, inReplyToTurnId) => {
-                if (!useLedgerSync) throw new Error("Connect this household before saving a Shared Hercules reply.");
-                const local = localLedgerIdentity(actorId);
-                const auth = local ? null : await ensureSupabaseSession(environment);
-                if (!local && !auth) throw new Error("Continue with Google before asking Hercules in the Shared Sitdown.");
-                const response = await fetch(`/plan/shared/hercules/${environment}/${household.householdId}`, {
-                  method: "POST",
-                  headers: { Authorization: `Bearer ${local ?? auth!.accessToken}`, "Content-Type": "application/json" },
-                  body: JSON.stringify({ sessionId, inReplyToTurnId }),
-                });
-                const payload = await response.json() as { ok?: boolean; error?: string };
-                if (!response.ok || !payload.ok) throw new Error(payload.error || "Hercules could not save the Shared reply.");
-              }}
+              onSharedHerculesReply={sharedHerculesReply}
+              onOpenCampfire={view === "household" ? () => setCampfire({}) : undefined}
             />
               );
               // D-262: the household Our Path is a world; the tent keeps today's page mounted so drafts survive.
@@ -7524,9 +7752,9 @@ export function App() {
                 <HouseholdBoardMedia household={household} memberId={actorId}>{(boardMedia) => (
                 <OurPathWorld key={ledgerRenderScopeKey} household={household} memberId={actorId} today={today} interpretationGate={sceneInterpretationGate} busy={busy} onCommand={runKitchen} journeyFocusDate={activeHouseRoute.time as import("./core/calendar.ts").DateKey | undefined} openWorldOnJourneySurface={activeHouseRoute.surface==="journey"&&activeHouseRoute.object==="harbour-return"} onWorldReady={()=>journeyCloud.ready("to-journey")} onExitJourney={() => navigateHouseSurface({householdId:household.householdId,scope:"household",room:"home",level:"middle",village:{place:"court"}})} onEnterHarbour={() => navigateHouseSurface({householdId:household.householdId,scope:"household",room:"home",level:"middle",village:{place:"court"}})} onZoomIntoHarbour={navigate=>journeyCloud.begin("to-harbour",navigate)} onOpenFund={() => goTab("ledger")}
                   houseSurface={(HEARTHSIDE_FLAGS.presentation||HOUSE_WORLD_ENABLED) && activeHouseTool.room==="kitchen-table" ? activeHouseTool.level==="below" ? "studio" : activeHouseTool.level==="middle" ? "work" : "journey" : undefined}
-                  houseWorkCentre={<section className="kitchen-work-centre"><p className="kicker">Kitchen Table</p><h2>Work centre</h2><p>Bring a question to Hercules, or continue the shared Sitdown. The agreement stays downstairs in the Plan Studio.</p><div className="kitchen-work-centre__actions"><button type="button" onClick={() => openLegacyHercules()}>Open Hercules conversation</button><button type="button" onClick={() => goTab("together", "practical")}>Open our shared Sitdown</button></div><p className="muted" role="status">{workspaceEnabled ? "The expanded workspace is available when you choose to open it." : "The expanded workspace is not activated. Opening a conversation here does not start a provider run."}</p></section>}
+                  houseWorkCentre={<section className="kitchen-work-centre"><p className="kicker">Kitchen Table</p><h2>Work centre</h2><p>Bring a question to Hercules, or continue the shared Sitdown. The agreement stays downstairs in the Plan Studio.</p><div className="kitchen-work-centre__actions"><button type="button" onClick={() => openLegacyHercules()}>Open Hercules conversation</button><button type="button" onClick={() => setWeeklySitdownOpen(true)}>Open our shared Sitdown</button></div><p className="muted" role="status">{workspaceEnabled ? "The expanded workspace is available when you choose to open it." : "The expanded workspace is not activated. Opening a conversation here does not start a provider run."}</p></section>}
                   boardMedia={boardMedia}
-                  onOpenTimeMachine={monthKey => { setTimeMachineRequest({ monthKey }); goTab("timeMachine"); }}
+                  onOpenTimeMachine={monthKey => { setBooksPaneRequest(`month:${monthKey}`); goTab("ledger"); }}
                   onOpenPlay={PLAY_ENABLED ? () => { setPlayInitialArea(undefined); goTab("play"); } : undefined}
                   onOpenCalendar={() => goTab("calendar")}
                   onOpenPlanner={() => goTab("planner")}
@@ -7537,8 +7765,8 @@ export function App() {
                   presentMembers={1 + peersFromLivePresence({ live: softPresenceLive, members: household.members, viewerMemberId: session.memberId }).length}
                   onTentChange={open => { if (!open) setPathTentFocus(current => current?.focus ? { ...current, focus: null } : current); syncKitchenTent(open); }}
                   openTentFor={herculesSourceScope.current === `${environment}:${household.householdId}:${session.memberId}:${view}` ? herculesSourceFocus : null} classicRoom={<>
-                  <header className="our-path__head"><p className="kicker">Our Path</p><h2>Where we are going</h2><p className="muted">The Chapter leads. Goals, Kitty Banks, and the Plan Studio are rooms inside.</p></header>
-                  <ChapterRoom household={household} memberId={actorId} today={today} onCommand={runKitchen} busy={busy} />
+                  <header className="our-path__head"><p className="kicker">The Journey map</p><h2>Where we are going</h2><p className="muted">The Chapter leads. Goals, Kitty Banks, and the Plan Studio are rooms inside.</p></header>
+                  <ChapterRoom household={household} memberId={actorId} today={today} onCommand={runKitchen} busy={busy} onOpenCampfire={() => setCampfire({})} />
                   <h3 className="our-path__room-title">The Plan Studio · our agreement room</h3>
                   {studio}
                 </>} />
@@ -7736,7 +7964,6 @@ export function App() {
           onPayAccount={openPayCard}
           onAddToAccount={(account) => openAddFor(account)}
           onGoMore={() => goTab("more")}
-          onOpenTimeMachine={() => goTab("timeMachine")}
           requestedPane={booksPaneRequest}
           onConsumeRequestedPane={() => setBooksPaneRequest(null)}
           today={today}
@@ -7751,9 +7978,8 @@ export function App() {
             acceptedHouseholdOnboarding(household)?.completionDigest ?? null,
           )}
           onAskRemove={(request) => setGuard({ kind: "remove", ...request })}
-          closeTheMonth={view === "household" && planSystemV2Enabled() && dashboard
-            ? { household, displayHousehold, dashboard, view, memberId: actorId, onApply: (next, token) => persist(next, token) }
-            : null}
+          campfireDoor={view === "household" && planSystemV2Enabled() ? { onOpenCampfire: () => setCampfire({ beat: "settle" }) } : null}
+          onOpenCampfire={() => openHouseObject("campfire-ritual", "settle")}
         />
       )}
 
@@ -7903,6 +8129,8 @@ export function App() {
           </StatusFold>
           <StatusFold id="comfort" title="Appearance and comfort">
           <AppearancePicker />
+          {/* K9: the Queen's look (formerly her dressing screen in Mine) is an Appearance choice. */}
+          <QueenDressing variant="settings" onPreview={() => undefined} onView={() => undefined} evidence={[]} />
           <ComfortControls environment={environment} />
           </StatusFold>
           <StatusFold id="sources" title="Sources and continuity">
@@ -8380,7 +8608,12 @@ export function App() {
           recommendationHousehold={displayHousehold}
           initialAccountId={addLaunchAccountId}
           sheetRef={addSheetRef}
-          mode={mode}
+          mode={billFlow ? "bill" : mode}
+          view={view}
+          ledger={view}
+          memberId={actorId}
+          billRecurrenceId={billFlow ? billPreselect : null}
+          onLedgerChange={(next) => { if (next !== view) openRecordFlow(billFlow ? "bill" : mode, next, form.amount || undefined); }}
           onSwitchMode={switchAddMode}
           lockedMode={Boolean(potentialExpenseAddId)}
           lockedVisibility={potentialExpenseAddId ? form.visibility : undefined}
@@ -8464,7 +8697,7 @@ export function App() {
           }}
           postLabel={addPostLabel()}
           onEditDuplicate={()=>{const key=readEntryKey(mode);if(key&&entrySubmission)clearEntryConfirmation(key,entrySubmission.id);setEntrySubmission(null);setConfirm(null);}}
-          onPost={() => submit()}
+          onPost={onAddPost}
           onClose={pauseAdd}
           persistCategory={(next, token) => persist(next, token)}
           presetId={presetId}
@@ -8987,37 +9220,6 @@ export function App() {
         </div>
       )}
 
-      {commandOpen && (
-        <div className="cmdk" onClick={() => setCommandOpen(false)}>
-          <div onClick={(event) => event.stopPropagation()}>
-            <input autoFocus placeholder="Jump to add, plan, health…" onKeyDown={(event) => {
-              if (event.key === "Enter") setCommandOpen(false);
-            }} />
-            {[
-              { label: "Add expense", run: () => openAddFor(null, "expense") },
-              { label: "Add shift", run: () => openAddFor(null, "shift") },
-              { label: "Move money", run: () => openAddFor(null, "transfer") },
-              { label: "Calendar", run: () => goTab("calendar") },
-              { label: "Shift", run: () => goTab("shift") },
-              { label: "Plan", run: () => goTab("plan") },
-              ...(view === "household" ? [{ label: "Till", run: () => goTab("till") }] : []),
-              { label: view === "household" ? "Household table" : "My books", run: () => goTab("ledger") },
-              { label: "Health", run: () => goTab("more") },
-              { label: "Google household bridge", run: () => goTab("more") },
-              { label: "Ask Hercules", run: () => goTab(workspaceEnabled ? "hercules" : "home") },
-              { label: "Export", run: () => {
-                if (!experience || !experience.ok) {
-                  setError("Choose who is using this ledger before exporting.");
-                  return;
-                }
-                downloadJson(experience.exportHousehold);
-              } },
-            ].map((item) => (
-              <button key={item.label} onClick={() => { item.run(); setCommandOpen(false); }}>{item.label}</button>
-            ))}
-          </div>
-        </div>
-      )}
 
         </div>
       </div>
@@ -9047,7 +9249,7 @@ export function App() {
         adding={adding || swipeOpen}
         visorPop={visorPop}
         spark={spark}
-        activityBlocked={Boolean(adding || swipeOpen || confirm || herculesReviewBlocked || commandOpen || fundLedgeExpanded)}
+        activityBlocked={Boolean(adding || swipeOpen || confirm || herculesReviewBlocked || commandOpen)}
         memberId={session.memberId}
         view={view}
         freshness={syncFreshnessDisplay.transportMode === "offline" ? "offline" : syncFreshnessDisplay.tone === "danger" || syncFreshnessDisplay.tone === "warning" ? "stale" : "current"}
@@ -9193,25 +9395,21 @@ export function App() {
         session={session}
       />
 
-      {household.householdFund && ["home", "calendar", "plan", "more", "together"].includes(tab) && !queenWorldHome
-        && (!HOUSE_WORLD_ENABLED||houseToolsVisible) && !charterTakeoverVisible && !onboardingInviteVisible && !adding && !swipeOpen && !confirm && !guard && !commandOpen && !fabOpen ? (
-        <FundLedge key={`${environment}:${household.householdId}:${session.memberId}:${view}`}
-          household={household} today={today} view={view} memberId={session.memberId} busy={busy}
-          scenarioSource={scenarioSource}
-          onExpandedChange={setFundLedgeExpanded} onKitchen={runKitchen}
-          onOpenAccount={accountId => {
-            rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
-            openWallet(accountId);
-          }}
-          onOpen={openFundDestination} />
-      ) : null}
+      {/* K1 (Tool Atlas §7): the Fund ledge / FundStage plate rail is retired. Everyday and the next bill are on the camp
+          card; the Fund bank panel and its open state (Books › the Fund) hold the balance, Needs you, To settle and The Level. */}
 
       {!charterTakeoverVisible ? (
-      HARBOUR_ENABLED&&view==="household"?<><Compass fab={harbourBarFab} fabOpen={fabOpen} onQuickSheet={()=>setQuickSheetOpen(true)}/><QuickSheet open={quickSheetOpen} onClose={()=>setQuickSheetOpen(false)} onOpen={(id)=>{setQuickSheetOpen(false);openHouseObject(id);}} onStatus={()=>{setQuickSheetOpen(false);goTab("more");}} onHercules={()=>{setQuickSheetOpen(false);openLegacyHercules();}} spaceSwitch={spaceSwitchNode} householdSwitcher={householdSwitcherNode} current={activeHouseRoute.surface??null}/></>:
-      <><nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} data-house-navigation={houseNavigationActive || undefined} data-edition-nav={HARBOUR_ENABLED && view === "personal" ? (personalDesk ? "desk" : "house") : undefined} aria-label={houseNavigationActive ? "Hearth utilities" : "Hearth"}>
-        {HARBOUR_ENABLED && view === "personal" && <EditionFlip className="house-nav-flip" world="house"/>}
+      HARBOUR_ENABLED?<><Compass fab={harbourBarFab} fabOpen={fabOpen} toolsOpen={quickSheetOpen} member={actorId} theme={appearance.preview??appearance.saved.theme} calm={comfort.quiet} alwaysShowLabels={comfort.labels} onQuickSheet={()=>setQuickSheetOpen(true)}/>
+        {/* All tools, one sheet for both spaces and the Desk drawer (Tool Atlas §3.4). */}
+        <QuickSheet open={quickSheetOpen} onClose={()=>setQuickSheetOpen(false)} onOpen={(id,object)=>openAtlasTarget(id,object)} onTarget={(target,object)=>openAtlasTarget(target,object)}
+          onStatus={()=>{setQuickSheetOpen(false);goTab("more");}} onSettings={(section)=>openAtlasTarget(section?`settings:${section}`:"settings")} onHercules={()=>{setQuickSheetOpen(false);openLegacyHercules();}}
+          onPick={(nextMode)=>{setQuickSheetOpen(false);openRecordFlow(nextMode);}} recordModes={memberHasJob?undefined:["expense","income","bill","transfer"]}
+          onPlace={(place,{keyboard})=>openPlacePanel(place,keyboard)}
+          recent={quickSheetOpen?readRecentTools(actorId):undefined} onUsed={(id)=>rememberRecentTool(actorId,id)} householdWords={atlasHouseholdWords}
+          space={spaceForView(view)} spaceSwitch={spaceSwitchNode} householdSwitcher={householdSwitcherNode} current={activeHouseRoute.surface??null}/></>:
+      <><nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} data-house-navigation={houseNavigationActive || undefined} aria-label={houseNavigationActive ? "Hearth utilities" : "Hearth"}>
         {HOUSE_WORLD_ENABLED&&<button className="house-companion-door" onClick={()=>openLegacyHercules()}>Hercules</button>}
-        {houseNavigationActive && !personalDesk && HOUSE_ROOMS.map(room => <button key={room} type="button" className={`house-nav-phone house-nav-phone--${room}`} aria-label={room === "kitchen-table" ? "Kitchen Table" : room === "together" ? "Together" : room[0]!.toUpperCase() + room.slice(1)} aria-current={activeHouseRoute.room === room ? "page" : undefined} onClick={() => goHouse(room, activeHouseRoute.room === room ? activeHouseRoute.level : "middle")}>{room === "kitchen-table" ? "Kitchen" : room === "together" ? "Together" : room[0]!.toUpperCase() + room.slice(1)}</button>)}
+        {houseNavigationActive && HOUSE_ROOMS.map(room => <button key={room} type="button" className={`house-nav-phone house-nav-phone--${room}`} aria-label={room === "kitchen-table" ? "Kitchen Table" : room === "together" ? "Together" : room[0]!.toUpperCase() + room.slice(1)} aria-current={activeHouseRoute.room === room ? "page" : undefined} onClick={() => goHouse(room, activeHouseRoute.room === room ? activeHouseRoute.level : "middle")}>{room === "kitchen-table" ? "Kitchen" : room === "together" ? "Together" : room[0]!.toUpperCase() + room.slice(1)}</button>)}
         {!houseNavigationActive && kitchenPrimaryNav(view).includes("home") && (
         <button
           className={tab === "home" && !adding ? "active" : ""}
@@ -9259,11 +9457,11 @@ export function App() {
         )}
         <FabSpeedDial
           closed={adding}
-          actions={fabActionsFor(view, tab)}
+          actions={fabActionsFor(view, { memberHasJob })}
           closedLabel={fabClosedLabel(view)}
           onOpenChange={setFabOpen}
-          onPick={(nextMode) => openAddFor(null, nextMode)}
-          onGo={(nextTab) => goTab(nextTab)}
+          onPick={(nextMode) => openRecordFlow(nextMode)}
+          onBillPaid={() => openRecordFlow("bill")}
         />
         {!houseNavigationActive && view !== "household" && kitchenPrimaryNav(view).includes("ledger") && (
         <button
@@ -9296,9 +9494,18 @@ export function App() {
         </button>
         )}
       </nav>
-      {HARBOUR_ENABLED && view === "personal" && <QuickSheet open={quickSheetOpen} onClose={()=>setQuickSheetOpen(false)} onOpen={(id)=>{setQuickSheetOpen(false);openHouseObject(id);}} onGo={(room,level)=>{setQuickSheetOpen(false);const target=HOUSE_PLACES[room][level].target;if(target&&target!=="queen")openHouseObject(target);else goHouse(room,level);}} onStatus={()=>{setQuickSheetOpen(false);goTab("more");}} onHercules={()=>{setQuickSheetOpen(false);openLegacyHercules();}} spaceSwitch={spaceSwitchNode} householdSwitcher={householdSwitcherNode} current={activeHouseRoute.surface??null}/>}
       </>
       ) : null}
+      {/* The Campfire (D3) and the weekly Sitdown: Ours only, opened from the fire, its panel, Books, the strip's flagstone and All tools. */}
+      {view === "household" && campfire && <Suspense fallback={<p className="sr-only" role="status">Opening the Campfire…</p>}><CampfireRitual household={household} memberId={actorId} today={today} busy={busy}
+        onCommand={runKitchen} onClose={() => setCampfire(null)} initialBeat={campfire.beat}
+        sitDown={dashboard ? { dashboard, displayHousehold } : null}
+        presentMemberIds={[session.memberId, ...peersFromLivePresence({ live: softPresenceLive, members: household.members, viewerMemberId: session.memberId }).map(peer => peer.memberId)]}
+        onOpenTable={() => { setCampfire(null); openHouseObject("plan-studio"); }} /></Suspense>}
+      {view === "household" && weeklySitdownOpen && <Suspense fallback={<p className="sr-only" role="status">Opening the Sitdown…</p>}><WeeklySitdown household={household} memberId={actorId} today={today} busy={busy}
+        onCommand={runKitchen} onClose={() => setWeeklySitdownOpen(false)} onSharedHerculesReply={sharedHerculesReply} /></Suspense>}
+      {/* A24: what was just recorded, said once, after acceptance. */}
+      <p className="sr-only" role="status" data-record-status="">{recordStatus}</p>
       {journeyCloud.clouds}
       </div>
     </div></WornLookContext.Provider></HearthsideDesignProvider>

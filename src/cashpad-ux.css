@@ -8,6 +8,9 @@
 :root[data-theme] .sheet.add-slideshow .cad-pad.is-giant .cad-pad-keys { gap: 8px; }
 :root[data-theme] .sheet.add-slideshow .cad-pad.is-giant .cad-pad-display { font-size: clamp(38px, 10vw, 56px); margin: 10px 0 12px; overflow-wrap: anywhere; }
 :root[data-theme] .cad-pad .cad-pad-enter { min-height: 48px; border-radius: 20px; margin-top: 8px; }
+:root[data-theme] .cad-pad .cad-pad-enter[aria-disabled="true"] { opacity: .5; cursor: default; }
+:root[data-theme] .cad-pad .cad-pad-display[data-invalid] { outline: 2px solid var(--danger, #9b2c2c); outline-offset: 2px; border-radius: 8px; }
+:root[data-theme] .cad-pad .cad-pad-display:focus-visible { outline: 2px solid #1A1714; box-shadow: 0 0 0 4px #FFFFFF; }
 :root[data-theme] .entry-section-nav { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 14px; }
 :root[data-theme] .entry-section-nav button { min-height: 44px; padding: 6px 12px; font-size: 13px; border-radius: 99px; }
 :root[data-theme] .entry-section-nav button[aria-current] { border: 2px solid var(--pine); font-weight: 700; }

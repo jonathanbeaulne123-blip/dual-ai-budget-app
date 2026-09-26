@@ -121,7 +121,7 @@ describe("nextCommitment — the sundial's order", () => {
 describe("noticedItem — need before good news", () => {
   it("raises the flag for reset, needs-us and checking with the pulse's own destination", () => {
     expect(noticedItem(pulseOf("reset", "path"), hercules)).toEqual({ fact: "reset. Detail.", next: "Step into Journey.", target: "journey", source: "pulse" });
-    expect(noticedItem(pulseOf("needs-us", "together"), hercules)?.target).toBe("encounters");
+    expect(noticedItem(pulseOf("needs-us", "together"), hercules)?.target).toBe("wishes"); // K5: encounters retired
     expect(noticedItem(pulseOf("needs-us", "fund"), null)?.target).toBe("cellar-bills");
     expect(noticedItem(pulseOf("checking", "status"), null)?.target).toBe("more");
   });
@@ -177,7 +177,7 @@ describe("the tower, the cellar and the cistern — slice 2's reading", () => {
   it("hands the jug and the gun to the Fund's custodian only", () => {
     const custodianId = household.householdFund?.custodianMemberId ?? null;
     expect(reading.tower.jug.custodian).toBe(custodianId === memberId);
-    expect(reading.tower.gun.available).toBe(reading.tower.jug.custodian);
+    expect(reading.tower.gun.available).toBe(false); // K15: merged into the jug
     expect(reading.tower.jug.safeCents).toBeGreaterThanOrEqual(0);
     if (custodianId) expect(reading.tower.jug.holder).toBe(household.members.find((row) => row.id === custodianId)?.name ?? null);
     const other = household.members.find((row) => row.id !== custodianId);

@@ -22,6 +22,7 @@ import {insideVillageBuilding} from '../body/obstacles.ts';
 import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
 import { worldDiagnostics } from "../../house/world/diagnostics.ts";
 import type { ThemeId } from "../../theme/scenes.ts";
+import { inCameraDeadzone } from "../bubbles/deadzone.ts";
 import { createCourtCamera, type CourtCamera, type CourtLook } from "../camera/courtCamera.ts";
 // ── The body lane (world-body) ───────────────────────────────────────────────
 // Everything this lane adds to the runtime is additive and marked like this
@@ -52,7 +53,7 @@ import {tourPose} from '../mountain/tour.ts';
 import { EXIT_REACH, exitAnchors, followHoldIn, placeArrival, placeGround, placeObstacles, placeRoom, roomReach, walksIndoors } from "../body/places.ts";
 import { NO_INPUT, eyeHeight, type BodyInput } from "../body/bodyModel.ts";
 import { CLOSE_HOLDS, COURT_ANCHOR_IDS, COURT_FOV, closePose, type CourtAnchor, type CourtMode, type CourtPose, type RoomHold } from "../camera/poses.ts";
-import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "./framePolicy.ts";
+import { harbourFramePolicy, CAMERA_INTERVAL_MS, createFrameBudgetWatch } from "./framePolicy.ts";
 import { createGround,groundHeightAt } from "./ground.ts";
 import { configureHarbourRenderer, createLightRig } from "./lightRig.ts";
 import { EMPTY_PLACE, PLACES, PLACED_PLACE_IDS, PLACE_HOLDS, SCENE_DRESSING,  placedFootprintHold, placedPose, placementLift, placementToWorld, placementOf, poseFor, streamPlaces, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type PlacePlacement, type PlaceReading, type Pose, type Region, type Vec3 } from "./place.ts";
@@ -116,6 +117,12 @@ export type HarbourCallbacks = {
    */
   onThreshold?: (place: HarbourPlaceId) => void;
   onMountainTravel?:(travelling:boolean)=>void;
+  /**
+   * The glass's two scene signals (Tool Atlas §4.3): the camera is moving (blur
+   * is skipped while it moves), and the frame budget was missed for a second
+   * (the glass goes solid until the next place change). Edge-triggered.
+   */
+  onGlass?:(signal:{cameraMoving:boolean;frameOverBudget:boolean})=>void;
   /** A ride worth offering: standing on a platform, or after a long tap with a station close at hand. `null` withdraws it. */
   onRideOffer?:(offer:RideOffer|null)=>void;
   onMonorail?:(ride:MonorailState|null)=>void;
@@ -394,6 +401,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   let disposed = false, frame = 0, previous = 0, lastPaint = 0, lastAnimated = 0, visible = true, toolOpen = false, breathing = false, settling = false, intervalMs = CAMERA_INTERVAL_MS;
   let worldAmbience:WorldAmbience|null=null;
   const frameStudy=createFrameStudy();
+  const frameBudget=createFrameBudgetWatch(tier);
+  let cameraMovingNow=false;
+  const glassSignal=()=>callbacks.onGlass?.({cameraMoving:cameraMovingNow,frameOverBudget:frameBudget.over()});
   const mountedAt = performance.now();
   const diagnostics = worldDiagnostics();
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -1413,6 +1423,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       worldAmbience.update(at.x,at.y,at.z,at.speed,Boolean(at.supportId&&at.supportId!=='terrain'&&at.supportId!=='mountain-road'&&at.supportId!=='town-race-road'),!walker.skate.active()&&!mountainTrip,calmWorld||toolOpen||placeId!=='court');
     }else worldAmbience.pause();}
     const moving = easing || lensing || (spin !== 0 && !toolOpen) || journey !== null;
+    if (moving !== cameraMovingNow) { cameraMovingNow = moving; glassSignal(); }
     // Reduced motion (and a tool standing in front of the place): no animated
     // frame will ever run, so a place that asked to settle is settled the
     // moment it asks. Without this the flag stays up for the life of the
@@ -1433,7 +1444,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       for (const animate of animators) animate(t, adt);
       lastAnimated = now;
     }
-    if (policy.render || animated) { render(); lastPaint = now; dirty = false; }
+    if (policy.render || animated) { render(); lastPaint = now; dirty = false; if (frameBudget.paint(now)) glassSignal(); }
     if (policy.schedule||streamed) schedule();
   }
 
@@ -1488,6 +1499,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   }
   function onPointerDown(event: PointerEvent): void {
     if (disposed || monorail || (event.target instanceof Element && event.target.closest("button,a,input,select,textarea,[role=button]"))) return;
+    // The glass's dead zones (Tool Atlas §4.1, A8): a gesture that starts on or near a bubble, the dock or an open panel never moves the map.
+    if ((event.target instanceof Element && event.target.closest("[data-camera-deadzone]")) || inCameraDeadzone(event.clientX, event.clientY, host.ownerDocument)) return;
     if (skatePointer(event, "down")) return;
     const { x, y, bounds } = stagePoint(event);
     const hit = pointers.size === 0 ? resolveHit(x, y, bounds) : { kind: "none" as const };
@@ -1558,7 +1571,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     schedule();
   }
   function onWheel(event: WheelEvent): void {
-    if (disposed) return;
+    if (disposed || inCameraDeadzone(event.clientX, event.clientY, host.ownerDocument)) return;
     event.preventDefault();
     const delta = Math.max(-0.5, Math.min(0.5, event.deltaY * 0.0015));
     // ── The body lane (world-body) ── the wheel pulls the follow camera in and out.
@@ -1811,6 +1824,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     },
     enter(next, options = {}) {
       offerRide(null);rideOn=null;cabinSolid=null;
+      if(frameBudget.reset())glassSignal();
       if(monorail){monorail=null;mountainHandle().setTransit?.(null);callbacks.onMonorail?.(null);}
       if(mountainTrip){mountainTrip=null;walker?.attach(null);mountainHandle().setTransit?.(null);callbacks.onMountainTravel?.(false);}
 

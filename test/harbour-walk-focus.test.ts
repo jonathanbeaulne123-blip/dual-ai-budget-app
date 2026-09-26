@@ -6,6 +6,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { seedDemoHousehold } from "../src/core/seed.ts";
 import type { HouseRoute } from "../src/hearthside/houseRoutes.ts";
+import { runWorldAction } from "../src/harbour/nav/worldActions.ts";
 
 /**
  * **The keys have to land.**
@@ -393,20 +394,20 @@ describe("being hidden is not a dead end", () => {
 
 it("pauses clicked walking for the guide and leaves scenic boarding in the world",async()=>{
  const {stage}=await stand();
- await act(async()=>host.querySelector<HTMLButtonElement>('#world-guide-trigger')!.click());
+ await act(async()=>{runWorldAction('step-in');});
  expect(cancelWalk).toHaveBeenCalled();expect(panelOwnsWorld).toBe(true);
  await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Travel & race')!.click());
  expect([...host.querySelectorAll('button')].some(b=>b.textContent==='Board and ride')).toBe(false);
  await act(async()=>host.querySelector<HTMLButtonElement>('[aria-label="Close mountain guide"]')!.click());
  expect(panelOwnsWorld).toBe(false);
- expect(host.querySelector('[role="dialog"][aria-label="Mountain and town guide"]')).toBeNull();
+ expect(host.querySelector('[role="dialog"][aria-label="Step in: rides, a tour and small moments"]')).toBeNull();
  await act(async()=>{stage.focus();offerCallback?.({kind:'funicular',from:0,to:1,label:'Ride the funicular ↑',reason:'platform'});});
  await press('f');expect(travelWasBlocked).toEqual([false]);expect(document.activeElement).toBe(stage);
 });
 
 it("boards the selected monorail route after releasing the guide",async()=>{
  const {stage}=await stand({partnerName:'Bianca'});
- await act(async()=>host.querySelector<HTMLButtonElement>('#world-guide-trigger')!.click());
+ await act(async()=>{runWorldAction('step-in');});
  await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Travel & race')!.click());
  await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Board the monorail')!.click());
  expect(monorailBoarded).toEqual({station:0,companion:true,blocked:false});
@@ -419,7 +420,7 @@ it("keeps main's Space jump on the world and leaves focused controls their keybo
  await press(' ');expect(jump).toHaveBeenCalledTimes(1);expect(quick).not.toHaveBeenCalled();
  riding=true;await press(' ');expect(skateKeyDown).toHaveBeenCalledTimes(1);
  await release(' ');expect(skateKeyUp).toHaveBeenCalledTimes(1);
- const control=host.querySelector<HTMLButtonElement>('#world-guide-trigger')!;
+ const control=host.querySelector<HTMLButtonElement>('[data-glass-flip]')!;
  control.focus();await press(' ');
  expect(skateReset).toHaveBeenCalledTimes(1);
  expect(skateKeyDown).toHaveBeenCalledTimes(1);expect(jump).toHaveBeenCalledTimes(1);

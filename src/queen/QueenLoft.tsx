@@ -5,7 +5,6 @@ import type { QueenShelfItem } from "../core/queenPresentation.ts";
 import { RACK_LIMITS, pourWords, rackHangShelf, rackMoveKey, rackPour, rackSetCutoff, rackSetShare, rackSetSplit, rackSlideDivider, rackTakeDown, shelfShareWords, type QueenRackV1, type RackBank } from "../core/queenRack.ts";
 import { useOutsideClose } from "../useOutsideClose.ts";
 import { LOFT_ZOOM, clampLoftZoom, readLoftZoom, stepLoftZoom, storeLoftZoom } from "./loftZoom.ts";
-import { GUN_BILLS, gunFire, gunLanded, gunRoundTotal, gunStep, gunWords, type GunBill, type GunRound } from "../core/queenGun.ts";
 import { ConfirmSheet } from "../Confirm.tsx";
 import { KittyFlat } from "../kitty/studio/flat.tsx";
 import { queenBankFired, queenBankPiece } from "./world/queenAuthoring.ts";
@@ -83,13 +82,8 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
   const [tilt, setTilt] = useState(0); // tenths of the safe surplus
   const [pouring, setPouring] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  // ---- the money gun (2026-09-15): armed by the custodian; shots add up here and one round posts through Confirm ----
-  const [armed, setArmed] = useState(false);
-  const [bill, setBill] = useState<GunBill>(2_000);
-  const [round, setRound] = useState<GunRound>([]);
-  const [sending, setSending] = useState(false);
-  const gunRef = useRef<HTMLButtonElement>(null);
-  const cashLayer = useRef<HTMLDivElement>(null);
+  // K15 (Tool Atlas §7): the money gun merged into the jug — one control, "Move $X to Kitty Banks", custodian only,
+  // capped at the Fund's safe surplus, one Confirm (allocateHouseholdFundSurplus through pour.onPour).
   // ---- the size of the banks: pinch, ctrl-scroll, the pane, the +/− keys; remembered on this device ----
   const [zoom, setZoom] = useState(() => readLoftZoom(typeof localStorage === "undefined" ? null : localStorage));
   const onZoom = (next: number) => { const z = clampLoftZoom(next); setZoom(z); storeLoftZoom(z, typeof localStorage === "undefined" ? null : localStorage); };
@@ -139,13 +133,12 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
   const shown = useMemo(() => rows.flatMap((row) => row.items), [rows]);
   const held = shown.find((item) => item.id === heldId) ?? null;
   const canMove = Boolean(onRack) && !busy;
-  useEffect(() => { if (!open) { setTilt(0); setNotice(null); setTool(null); setArmed(false); setRound([]); } }, [open]);
+  useEffect(() => { if (!open) { setTilt(0); setNotice(null); setTool(null); } }, [open]);
   // Clicking off a card puts it away; the tools and banks that open cards toggle them themselves.
   useOutsideClose([toolCard], tool !== null, () => setTool(null), { keep: ".queen-shelf__pin, .queen-shelf__weight, .queen-divider, [role=dialog]" });
   useOutsideClose([handCard], heldId !== null, () => setHeldId(null), { keep: ".queen-goal, .queen-room__acts, [role=dialog]" });
 
-  /** A bank's growth step, with whatever this round of the gun has thrown at it: you watch it swell shot by shot. */
-  const stepOf = (item: QueenShelfItem) => (item.goalId && item.bank.amountCents !== null ? gunStep({ ...item.bank, amountCents: item.bank.amountCents }, gunLanded(round, item.goalId)) : item.step);
+  const stepOf = (item: QueenShelfItem) => item.step;
   // The studio's own piece for every bank on the rack: what was thrown, painted and fired is what stands here.
   const pieces = useMemo(() => new Map(shown.map((item) => { const piece = queenBankPiece(item.bank); return [item.id, { piece, fired: queenBankFired(piece) }]; })), [shown]);
   const vessels = useMemo<RoomVessel[]>(() => shown.map((item) => ({
@@ -157,7 +150,7 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
     size: item.size,
     lifted: item.id === heldId || item.id === dragId,
     refusing: item.id === refusedId,
-  })), [shown, pieces, heldId, dragId, refusedId, round]);
+  })), [shown, pieces, heldId, dragId, refusedId]);
 
   const banks = useMemo<RackBank[]>(() => shown.filter(item => item.bank.amountCents !== null).map((item) => ({ key: item.designKey, goalId: item.goalId, name: item.name, amountCents: item.bank.amountCents!, targetCents: item.bank.targetCents })), [shown]);
   const pourCents = pour ? Math.round((pour.safeCents * tilt) / 10) : 0;
@@ -212,50 +205,8 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
     justDragged.current = true;
     if (at) write(rackMoveKey(rack, item.designKey, at.shelf, at.index));
   };
-  const safeCents = pour?.safeCents ?? 0;
-  const fire = (item: QueenShelfItem) => {
-    if (item.bank.amountCents === null) { refuse(item.id); setNotice("This bank’s backing is unavailable. Reconnect before allocating money."); return; }
-    if (!pour || item.mouth === "lidded" || !item.goalId) { refuse(item.id); setNotice(`${item.name} is lidded — there is no decision inside it to throw money at.`); return; }
-    const shot = gunFire(round, { goalId: item.goalId, name: item.name, amountCents: item.bank.amountCents, targetCents: item.bank.targetCents }, bill, safeCents);
-    if (!shot.landed) {
-      refuse(item.id);
-      setNotice(shot.why === "full" ? `${item.name} is full — it won't take another bill.` : "The gun is empty: that's all of the Fund's safe surplus for now.");
-      return;
-    }
-    setNotice(shot.why === "trimmed" ? `${formatCad(shot.landed)} landed in ${item.name} — all it had room for.` : null);
-    setRound(shot.round);
-    throwCash(item.id, shot.landed);
-  };
-  /** A bill flies from the gun to the bank. Decoration only; under reduced motion the bank's swell is the whole story. */
-  const throwCash = (id: string, cents: number) => {
-    const from = gunRef.current?.getBoundingClientRect(), host = cashLayer.current;
-    const to = wall.current?.querySelector<HTMLElement>(`[data-room-vessel="${CSS_escape(id)}"]`)?.getBoundingClientRect();
-    const reduced = (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches) || document.documentElement.dataset.motion === "reduced";
-    if (!from || !to || !host || reduced || typeof Element.prototype.animate !== "function") return;
-    const box = host.getBoundingClientRect();
-    const count = cents >= 5_000 ? 3 : cents >= 2_000 ? 2 : 1;
-    for (let i = 0; i < count; i += 1) {
-      const note = document.createElement("span");
-      note.className = "queen-cash";
-      note.setAttribute("aria-hidden", "true");
-      note.textContent = "$";
-      host.appendChild(note);
-      const x0 = from.left + from.width * 0.8 - box.left, y0 = from.top + from.height * 0.3 - box.top;
-      const x1 = to.left + to.width / 2 - box.left + (i - 1) * 6, y1 = to.top + to.height * 0.25 - box.top;
-      const lift = Math.min(160, Math.abs(x1 - x0) * 0.35 + 40);
-      const spin = (i % 2 ? -1 : 1) * (240 + i * 90);
-      const flight = note.animate([
-        { transform: `translate(${x0}px, ${y0}px) rotate(0deg) scale(.9)`, opacity: 1 },
-        { transform: `translate(${(x0 + x1) / 2}px, ${Math.min(y0, y1) - lift}px) rotate(${spin / 2}deg) scale(1.1)`, opacity: 1, offset: 0.5 },
-        { transform: `translate(${x1}px, ${y1}px) rotate(${spin}deg) scale(.5)`, opacity: 0.2 },
-      ], { duration: 520 + i * 90, delay: i * 70, easing: "cubic-bezier(.3,.6,.5,1)", fill: "both" });
-      flight.onfinish = () => note.remove();
-      flight.oncancel = () => note.remove();
-    }
-  };
   const onPick = (item: QueenShelfItem) => () => {
     if (justDragged.current) { justDragged.current = false; return; }
-    if (armed) { fire(item); return; }
     setHeldId((current) => (current === item.id ? null : item.id));
     if (item.mouth === "lidded") refuse(item.id);
   };
@@ -274,7 +225,7 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
       if (canMove) write(rackMoveKey(rack, item.designKey, shelfIndex + (event.key === "ArrowUp" ? -1 : 1), index));
       return;
     }
-    if (event.key === "Escape") { event.preventDefault(); if (armed) setArmed(false); else setHeldId(null); }
+    if (event.key === "Escape") { event.preventDefault(); setHeldId(null); }
   };
   useEffect(() => {
     // After a move, keep the hand on the bank it moved.
@@ -355,7 +306,7 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
       const share = sliding?.shelf === toolRow.id && sliding.kind === "weight" ? sliding.value : toolRow.share;
       const total = rackTotal - toolRow.share + share;
       return { kind: tool.kind, title: `The weight · ${where}`,
-        how: "The brass block sets how big a part of every pour this shelf takes — from the jug or the money gun. Slide it along the shelf, or use the slider. Heavier (further right) takes more.",
+        how: "The brass block sets how big a part of every pour this shelf takes from the jug. Slide it along the shelf, or use the slider. Heavier (further right) takes more.",
         sliders: [{ label: "Share", min: 1, max: RACK_LIMITS.share, value: share, words: `${share} of ${total}`, onChange: (value: number) => write(rackSetShare(rack, toolRow.id, value)) }],
         now: `${where[0]!.toUpperCase()}${where.slice(1)} takes ${share} of ${total} parts — about ${Math.round((share / Math.max(1, total)) * 100)}% of a pour, before any shelf fills.` };
     }
@@ -378,11 +329,7 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
       ],
       now: `${left.name} takes ${a} and ${right.name} takes ${b} of every ${a + b} parts that reach them.` };
   })() : null;
-  const gunNames = new Map(shown.filter((item) => item.goalId).map((item) => [item.goalId!, item.name]));
-  const roundTotal = gunRoundTotal(round);
-  const line = armed || roundTotal > 0
-    ? <><em>The money gun.</em> {gunWords(round, gunNames, safeCents, formatCad)}</>
-    : held
+  const line = held
     ? held.mouth === "open"
       ? <><em>Open-mouthed.</em> {held.name}{held.date ? `, hoped for ${formatDayLabel(held.date)}` : ""}. {held.marks === 0 ? "Nothing set inside yet; it would accept a part if you gave it one." : `${held.marks} ${held.marks === 1 ? "contribution" : "contributions"} inside.`}</>
       : <><em>Lidded.</em> {held.name} leans away. Nothing to open, because there was never a decision inside it.</>
@@ -391,8 +338,7 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
       : <><em>Open-mouthed things accept.</em> Lidded things refuse. {shelfCount > 1 ? "A higher, heavier shelf takes more of a pour; its pin is where it stops." : "Slide the weight along the shelf, the pin up its post, or hang a shelf below."}</>;
 
   return (
-    <section ref={room} className="queen-room queen-room--loft" aria-label="The loft — Build" inert={!open} data-world={live ? "3d" : "flat"} data-shelves={shelfCount} data-voice={armed ? "gun" : held ? "held" : pour && tilt > 0 ? "pour" : "hint"} data-armed={armed ? "true" : undefined} style={{ ["--loft-zoom" as string]: zoom }}>
-      <div ref={cashLayer} className="queen-cash-layer" aria-hidden="true" />
+    <section ref={room} className="queen-room queen-room--loft" aria-label="The loft — Build" inert={!open} data-world={live ? "3d" : "flat"} data-shelves={shelfCount} data-voice={held ? "held" : pour && tilt > 0 ? "pour" : "hint"} style={{ ["--loft-zoom" as string]: zoom }}>
       <QueenRoomWorld room="loft" root={room} vessels={vessels} ambient={open} mode={world} onLive={(isLive) => setLive(isLive)} />
       <div className="queen-room__head">
         <p className="queen-room__title">The loft</p>
@@ -490,7 +436,7 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
         )}
         {pour && !held && (
           <div className="queen-loft-hands">
-        {pour && !held && !armed && (
+        {pour && !held && (
           <div className="queen-jug" role="group" aria-label="The jug — the Fund's safe surplus, poured over the rack">
             <span className="queen-jug__safe">{pour.safeCents > 0 ? `${formatCad(pour.safeCents)} safe to pour` : "Nothing safe to pour this month"}</span>
             {pour.custodian ? (
@@ -498,29 +444,6 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
                 aria-label="Tilt the jug" aria-valuetext={tilt === 0 ? "upright — nothing poured" : `${tilt * 10}% of the safe surplus, ${formatCad(pourCents)}`}
                 onChange={(event) => setTilt(Number(event.currentTarget.value))} />
             ) : <span className="queen-jug__holder">{pour.custodianName} holds the jug.</span>}
-          </div>
-        )}
-        {pour && !held && pour.custodian && (
-          <div className="queen-gun" role="group" aria-label="The money gun — throw the Fund's safe surplus at the banks you pick">
-            <button ref={gunRef} type="button" className="queen-gun__trigger" aria-pressed={armed} aria-label={armed ? "Money gun — armed. Tap a bank to throw a bill; press to put it down" : "Pick up the money gun"}
-              disabled={busy || sending || (!armed && (safeCents <= 0 || !shown.some((item) => item.goalId)))}
-              onClick={() => { setArmed((on) => !on); setHeldId(null); setTool(null); setTilt(0); }}>
-              <svg viewBox="0 0 64 34" aria-hidden="true" className="queen-gun__art">
-                <rect x="3" y="7" width="40" height="15" rx="5" className="queen-gun__body" />
-                <rect x="40" y="10" width="20" height="9" rx="3" className="queen-gun__barrel" />
-                <path d="M12 21 L10 32 L20 32 L22 21 Z" className="queen-gun__grip" />
-                <rect x="7" y="2" width="22" height="7" rx="2" className="queen-gun__bills" />
-                <text x="18" y="8" textAnchor="middle" className="queen-gun__sign">$</text>
-              </svg>
-              <span>{armed ? "Put the gun down" : "Pick up the money gun"}</span>
-            </button>
-            {armed && (
-              <span className="queen-gun__bills-pick" role="radiogroup" aria-label="Bill size for each shot">
-                {GUN_BILLS.map((value) => (
-                  <button key={value} type="button" role="radio" aria-checked={bill === value} className="queen-gun__bill" onClick={() => setBill(value)}>{formatCad(value).replace(/\.00$/, "")}</button>
-                ))}
-              </span>
-            )}
           </div>
         )}
           </div>
@@ -549,24 +472,18 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
         <div className="queen-room__acts">
 
           {held?.mouth === "open" && held.goalId && <button type="button" className="queen-go queen-go--primary" onClick={() => onOpenGoal(held.goalId!)}>Open {held.name} in the banks</button>}
-          {pour?.custodian && roundTotal > 0 && (
-            <>
-              <button type="button" className="queen-go queen-go--primary queen-gun__send" disabled={busy || sending} onClick={() => setSending(true)}>Send {formatCad(roundTotal)}</button>
-              <button type="button" className="queen-go" disabled={busy || sending} onClick={() => { setRound([]); setNotice("Round cleared — nothing was sent."); }}>Take the shots back</button>
-            </>
-          )}
-          {pour?.custodian && !held && !armed && roundTotal === 0 && tilt > 0 && preview.placedCents > 0 && (
-            <button type="button" className="queen-go queen-go--primary queen-pour" disabled={busy} onClick={() => setPouring(true)}>Pour it</button>
+          {pour?.custodian && !held && tilt > 0 && preview.placedCents > 0 && (
+            <button type="button" className="queen-go queen-go--primary queen-pour" disabled={busy} onClick={() => setPouring(true)}>Move {formatCad(preview.placedCents)} to Kitty Banks</button>
           )}
           <button type="button" className="queen-go" onClick={onOpenBanks}>Open Build in the banks</button>
         </div>
       </div>
       {pouring && pour && (
         <ConfirmSheet
-          title={`Pour ${formatCad(preview.placedCents)} of the Fund's surplus over the rack`}
+          title={`Move ${formatCad(preview.placedCents)} to Kitty Banks`}
           body={`${pourWords(preview, formatCad)} This is the Fund's month-end Kitty rollover, split by the shelves as they stand.`}
           extra="Hearth records the rollover in your books. Operating plus Kitty stays conserved; no bank transfer occurs."
-          confirmLabel="Pour it"
+          confirmLabel={`Move ${formatCad(preview.placedCents)} to Kitty Banks`}
           busy={busy}
           onCancel={() => setPouring(false)}
           onConfirm={() => {
@@ -578,29 +495,6 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
                 setNotice(`${formatCad(preview.placedCents)} poured. The banks fire as they fill.`); setTilt(0);
               },
               (error: unknown) => setNotice(error instanceof Error ? error.message : "The jug could not be poured."),
-            );
-          }}
-        />
-      )}
-      {sending && pour && roundTotal > 0 && (
-        <ConfirmSheet
-          title={`Send ${formatCad(roundTotal)} from the Fund into the banks`}
-          body={`${round.filter((row) => row.cents > 0).map((row) => `${formatCad(row.cents)} to ${gunNames.get(row.goalId) ?? "a bank"}`).join(", ")}. This is the Fund's Kitty rollover, aimed by hand.`}
-          extra="Hearth records the rollover in your books. Operating plus Kitty stays conserved; no bank transfer occurs."
-          confirmLabel={`Send ${formatCad(roundTotal)}`}
-          busy={busy}
-          onCancel={() => setSending(false)}
-          onConfirm={() => {
-            setSending(false);
-            const allocations = round.filter((row) => row.cents > 0).map((row) => ({ goalId: row.goalId, amountCents: row.cents }));
-            const total = roundTotal;
-            void pour.onPour(allocations, total, "Thrown from the loft's money gun").then(
-              (result) => {
-                // Only the books' own answer says money moved; anything else keeps the round in hand.
-                if (!postedOk(result)) { setNotice(rejectedWords(result, "The round was not sent. Nothing moved; the shots are still in hand.")); return; }
-                setNotice(`${formatCad(total)} sent. Watch them fill.`); setRound([]); setArmed(false);
-              },
-              (error: unknown) => setNotice(error instanceof Error ? error.message : "The round could not be sent. Nothing moved."),
             );
           }}
         />

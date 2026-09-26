@@ -1,18 +1,23 @@
 import {MOUNTAIN_INTERACTIONS,initialMountainInteractionState,mountainInteractionLabel,type MountainInteractionState} from './life.ts';
 import {useEffect,useId,useRef,useState} from 'react';
-import {DISTRICTS,RESERVED_PLOTS,MONORAIL_STOPS,districtAt,type Point3,type TransportKind} from './definition.ts';
+import {MONORAIL_STOPS,districtAt,type Point3,type TransportKind} from './definition.ts';
 import {mountainMap} from './mapData.ts';
 import type {MonorailState,MonorailView} from './monorail.ts';
 
 import type {BasinReading} from './basin.ts';
-import {basinMoney} from './basin.ts';
 import './mountain.css';
 import {MOUNTAIN_TOUR,type MountainTourId} from './tour.ts';
 const MONORAIL_DOORS:Readonly<Record<string,string>>={quay:'campfire',studio:'kiln',boathouse:'boathouse',bank:'bank',hearth:'kitchen',orchard:'cottage',library:'library',glasshouse:'glasshouse',reservoir:'loft-banks',summit:'journey'};
 export type MountainAction={kind:'life';id:string}|{kind:'tour';id:MountainTourId}|{kind:'go';at:Point3}|{kind:'ride';transport:TransportKind;from:number;to:number}|{kind:'monorail-board';from:number;stops:number[];companion:boolean}|{kind:'monorail-select';stop:number}|{kind:'monorail-control';control:'pause'|'brake'|'seat'|'companion'|'speed'|'view'|'exit'|'bell';value?:number|boolean|MonorailView}|{kind:'view';view:'dam'|'world'}|{kind:'race'}|{kind:'skip'}|{kind:'calm';on:boolean}|{kind:'sound';on:boolean};
-export function MountainPanel({open:controlledOpen,onOpenChange,hideTrigger=false,life=initialMountainInteractionState(),recoveryWords,reading,statusLine,onAction,onOpen,flat=false,inspect,conditionWords,monorail=null,partnerName=null,soundOn=false,calmOn=false,here}:{here?:Point3;open?:boolean;onOpenChange?:(open:boolean)=>void;hideTrigger?:boolean;life?:MountainInteractionState;recoveryWords?:string;soundOn?:boolean;calmOn?:boolean;monorail?:MonorailState|null;partnerName?:string|null;conditionWords?:string;inspect?:{section:'map'|'water'|'travel';seq:number;station?:number};reading?:BasinReading;statusLine:string|null;onAction:(action:MountainAction)=>void;onOpen:(target:string)=>void;flat?:boolean}){
-
-  const [localOpen,setLocalOpen]=useState(false),[tab,setTab]=useState<'map'|'water'|'travel'|'tour'|'life'>('map');
+/**
+ * Step in's world panel (K6, Tool Atlas §7): the rides, the downhill race, the tour and the small moments —
+ * the parts of the retired "Mountain & town" guide that stay in the world. Its Places moved to All tools ›
+ * Places; its glass-dam Fund reading lives on the card and in the Fund bank panel. It has no trigger of its
+ * own on the chrome: `runWorldAction("step-in")` and the card's Step in open it. `hideTrigger`, `reading`
+ * and `statusLine` are still accepted so callers keep compiling.
+ */
+export function MountainPanel({open:controlledOpen,onOpenChange,life=initialMountainInteractionState(),recoveryWords,onAction,onOpen,flat=false,inspect,conditionWords,monorail=null,partnerName=null,soundOn=false,calmOn=false}:{here?:Point3;nearestStation?:(kind:TransportKind)=>number;open?:boolean;onOpenChange?:(open:boolean)=>void;hideTrigger?:boolean;life?:MountainInteractionState;recoveryWords?:string;soundOn?:boolean;calmOn?:boolean;riding?:boolean;monorail?:MonorailState|null;partnerName?:string|null;conditionWords?:string;inspect?:{section:'map'|'water'|'travel';seq:number;station?:number};reading?:BasinReading;statusLine:string|null;onAction:(action:MountainAction)=>void;onOpen:(target:string)=>void;flat?:boolean}){
+  const [localOpen,setLocalOpen]=useState(false),[tab,setTab]=useState<'travel'|'tour'|'life'>('travel');
   const [monorailFrom,setMonorailFrom]=useState(0),[monorailStops,setMonorailStops]=useState<number[]>([MONORAIL_STOPS.length-1]),[companion,setCompanion]=useState(true);
   const open=controlledOpen??localOpen;
   const panel=useRef<HTMLElement>(null),opener=useRef<HTMLElement|null>(null);
@@ -20,21 +25,14 @@ export function MountainPanel({open:controlledOpen,onOpenChange,hideTrigger=fals
   function dismiss(){setOpen(false);if(opener.current?.isConnected)opener.current.focus({preventScroll:true});}
   function openTool(target:string){setOpen(false);onOpen(target);}
   useEffect(()=>{if(!open)return;opener.current=document.activeElement instanceof HTMLElement?document.activeElement:null;panel.current?.focus();},[open]);
-  useEffect(()=>{if(inspect){setTab(inspect.section);if(inspect.station!==undefined){setMonorailFrom(inspect.station);setMonorailStops([inspect.station===MONORAIL_STOPS.length-1?0:MONORAIL_STOPS.length-1]);}setOpen(true);}},[inspect]);
+  // The retired guide's map and glass-dam sections open on the rides: Places live in All tools, the Fund in its bank.
+  useEffect(()=>{if(inspect){setTab('travel');if(inspect.station!==undefined){setMonorailFrom(inspect.station);setMonorailStops([inspect.station===MONORAIL_STOPS.length-1?0:MONORAIL_STOPS.length-1]);}setOpen(true);}},[inspect]);
   const [tourIndex,setTourIndex]=useState(0);
   const shot=MOUNTAIN_TOUR[tourIndex]!;
   return <aside className="mountain-tools" onPointerDown={e=>e.stopPropagation()} onKeyDown={e=>{e.stopPropagation();if(e.key==="Escape"){e.preventDefault();dismiss();}}}>
-    {!hideTrigger&&<button className="mountain-trigger" aria-expanded={open} onClick={()=>setOpen(!open)}>⌁ <span>Mountain & town</span></button>}
-    {open&&<section ref={panel} tabIndex={-1} role="dialog" className="mountain-panel" aria-label="Mountain and town guide">
+    {open&&<section ref={panel} tabIndex={-1} role="dialog" className="mountain-panel" aria-label="Step in: rides, a tour and small moments">
       <header><div><small>HEARTH MOUNTAIN</small><h2>A life above the harbour</h2></div><button aria-label="Close mountain guide" onClick={dismiss}>×</button></header>
-      <nav aria-label="Mountain guide"><button aria-pressed={tab==='map'} onClick={()=>setTab('map')}>Places</button><button aria-pressed={tab==='water'} onClick={()=>setTab('water')}>The glass dam</button><button aria-pressed={tab==='travel'} onClick={()=>setTab('travel')}>Travel & race</button><button aria-pressed={tab==='tour'} onClick={()=>setTab('tour')}>A tour</button><button aria-pressed={tab==='life'} onClick={()=>setTab('life')}>Small moments</button></nav>
-      {tab==='map'&&<>
-        <MountainMap here={here}/>
-        <div className="mountain-destinations">{DISTRICTS.map(d=><div key={d.id}><strong>{d.name}</strong><small>{d.words}</small><div><button onClick={()=>{onOpen(d.destination);setOpen(false);}}>Open {d.id==='hearth'?'home':d.id==='summit'?'Journey':d.id==='reservoir'?'goals':d.id==='orchard'?'cottage':d.id}</button>{!flat&&<button aria-label={`Visit ${d.name}`} onClick={()=>{onAction({kind:'go',at:d.at});setOpen(false);}}>Visit plateau</button>}</div></div>)}</div>
-        <h3>Down in town</h3><div className="mountain-destinations">{[{id:'court',name:'Town square'},{id:'bank',name:'Fund bank'},{id:'kiln',name:'Pottery Studio'},{id:'boathouse',name:'Boathouse'},{id:'campfire',name:'Waterfront campfire'}].map(place=><button key={place.id} onClick={()=>{onOpen(place.id);setOpen(false);}}>{place.name}</button>)}</div><h3>Rooms at home</h3><div className="mountain-destinations">{[{id:'tower',name:'Loft & goals'},{id:'cellar',name:'Cellar'},{id:'atlas',name:'Atlas nook'}].map(place=><button key={place.id} onClick={()=>{onOpen(place.id);setOpen(false);}}>{place.name}</button>)}</div>
-        <h3>Room for tomorrow</h3>{RESERVED_PLOTS.map(p=><p key={p.id}><strong>{p.name}</strong> — {p.words}{!flat&&<button onClick={()=>{onAction({kind:'go',at:p.at});setOpen(false);}}>Visit</button>}</p>)}
-      </>}
-      {tab==='water'&&<div className="mountain-water-reading"><small>HOUSEHOLD FUND · ACCEPTED BALANCE</small><strong className="mountain-balance">{basinMoney(reading?.balanceCents)}</strong><p>The main basin holds the Fund’s operating balance. The adjoining chamber holds Kitty reserves.</p><dl><dt>Kitty reserves</dt><dd>{basinMoney(reading?.kittyCents)}</dd><dt>Free to spend</dt><dd>{basinMoney(reading?.freeCents)}</dd><dt>Pending contributions</dt><dd>{reading?.known?basinMoney(reading.pendingCents):'Checking'}</dd></dl><p>{statusLine??(reading?.known?`Supported as of ${reading.asOf}`:'Waiting for a supported shared Fund reading.')}</p><p>Pending amounts do not fill the basin. Moving money into Kitty changes chambers; it does not leave the household. The natural river keeps flowing independently.</p>{!flat&&<button onClick={()=>{onAction({kind:'view',view:'dam'});setOpen(false);}}>View the glass dam</button>}<h3>Recorded movements</h3><ol>{reading?.flows.slice(-4).reverse().map(e=><li key={e.id}>{e.label} · {basinMoney(e.cents)}</li>)}</ol><button onClick={()=>openTool('fund')}>Open the Fund</button><button onClick={()=>openTool('books')}>See supporting records</button></div>}
+      <nav aria-label="Step in"><button aria-pressed={tab==='travel'} onClick={()=>setTab('travel')}>Travel & race</button><button aria-pressed={tab==='tour'} onClick={()=>setTab('tour')}>A tour</button><button aria-pressed={tab==='life'} onClick={()=>setTab('life')}>Small moments</button></nav>
       {tab==='travel'&&<>
         <h3>Island monorail</h3><p>A panoramic train from the waterfront through every mountain neighbourhood. Pick any number of stops like elevator floors. Selecting only Summit Commons rides straight to the top.</p>
         <label>Board at<select aria-label="Monorail boarding station" value={monorailFrom} onChange={e=>{const next=Number(e.target.value);setMonorailFrom(next);setMonorailStops([next===MONORAIL_STOPS.length-1?0:MONORAIL_STOPS.length-1]);}}>{MONORAIL_STOPS.map((s,i)=><option key={s.id} value={i}>{s.name}</option>)}</select></label>
@@ -76,7 +74,7 @@ export function MountainMap({here}:{here?:Point3}){
   const map=mountainMap(),districts=map.points.filter(p=>p.kind==='district'),stations=map.points.filter(p=>p.kind==='funicular'||p.kind==='gondola');
   const descId=useId();
   const whereWords=here?(here[2]>-48?' You are here: in town.':` You are here: near ${districtAt(here[0],here[2])?.name??'the mountain road'}.`):'';
-  const description=`The mountain road winds up from the town square through ${districts.map(d=>d.label).join(', ')}, crossing the gorge on bridges. Stations: ${stations.map(s=>s.label).join(', ')}.${whereWords}`;
+  const description=`The mountain road winds up from the square through ${districts.map(d=>d.label).join(', ')}, crossing the gorge on bridges. Stations: ${stations.map(s=>s.label).join(', ')}.${whereWords}`;
   return <svg className="mountain-map" viewBox={map.viewBox} role="img" aria-label="Map of the mountain and the town" aria-describedby={descId}>
     <title>Map of the mountain and the town</title><desc id={descId}>{description}</desc>
     {map.lines.map(l=>{const s=MAP_STYLE[l.kind]??MAP_STYLE.path!;return <path key={l.id} d={l.d} fill={s.fill??'none'} stroke={s.stroke} strokeWidth={s.width} strokeDasharray={s.dash} strokeLinecap="round" strokeLinejoin="round" opacity={l.kind==='contour'?.35:1}/>;})}
@@ -84,7 +82,7 @@ export function MountainMap({here}:{here?:Point3}){
     {stations.map(p=><rect key={p.id} x={p.x-3} y={p.z-3} width="6" height="6" rx="1.2" fill={p.kind==='funicular'?'#7d4ea3':'#c2185b'}/>)}
     {map.points.filter(p=>p.kind==='gate').map(p=><circle key={p.id} cx={p.x} cy={p.z} r="2" fill="#f2c14e" stroke="#5a4300" strokeWidth=".6"/>)}
     {districts.map(d=><g key={d.id}><circle cx={d.x} cy={d.z} r="5" fill="currentColor"/><text x={d.x+8} y={d.z+4} fontSize="12" fontWeight="600" fill="currentColor" paintOrder="stroke" stroke="var(--mountain-land, #f4efe0)" strokeWidth="3">{d.label}</text></g>)}
-    <text x="-30" y="30" fontSize="13" fontWeight="600" fill="currentColor" paintOrder="stroke" stroke="var(--mountain-land, #f4efe0)" strokeWidth="3">Town square</text>
+    <text x="-30" y="30" fontSize="13" fontWeight="600" fill="currentColor" paintOrder="stroke" stroke="var(--mountain-land, #f4efe0)" strokeWidth="3">The square</text>
     {here&&<g aria-hidden="true"><circle cx={here[0]} cy={here[2]} r="7" fill="none" stroke="#d64545" strokeWidth="2.4"/><circle cx={here[0]} cy={here[2]} r="2.6" fill="#d64545"/></g>}
   </svg>;
 }

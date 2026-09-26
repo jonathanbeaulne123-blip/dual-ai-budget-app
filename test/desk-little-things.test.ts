@@ -14,7 +14,7 @@ import { DeskShell, type DeskShellProps } from "../src/harbour/desk/DeskShell.ts
 import { engravedCents } from "../src/harbour/desk/engraved.ts";
 import { DESK_PAGES } from "../src/harbour/desk/pages.ts";
 import { readSitdown } from "../src/harbour/desk/todayModel.ts";
-import { NO_BAR_BADGES, compactCents, publishBarBadges, readBarBadges } from "../src/harbour/nav/barBadges.ts";
+import { NO_BAR_BADGES, compactCents, herculesHasSuggestion, publishBarBadges, readBarBadges, useHerculesSuggestion } from "../src/harbour/nav/barBadges.ts";
 import { Compass, EditionFlip, useEditionFlipKey, type CompassProps } from "../src/harbour/nav/Compass.tsx";
 import { pageTurnAllowed, pageTurnFor, PAGE_TURN_MS } from "../src/harbour/nav/pageTurn.ts";
 import { MOTION_KEY, chooseMotionEdition } from "../src/harbour/nav/QuickSheet.tsx";
@@ -86,7 +86,7 @@ describe("the flip wears the Everyday figure at rest", () => {
 
   it("shows the compact figure in household with a stable name and the full figure as the description", async () => {
     publishBarBadges({ scope: "household", everydayCents: 123_456, suggestion: false });
-    await act(async () => root.render(createElement(Compass, { fab, onQuickSheet: () => undefined })));
+    await act(async () => root.render(createElement(EditionFlip, {})));
     const button = flip();
     expect(button.getAttribute("aria-label")).toBe("Switch to the simple view");
     expect(button.querySelector(".edition-flip__figure")!.textContent).toBe("$1.2k");
@@ -117,11 +117,11 @@ describe("the flip wears the Everyday figure at rest", () => {
     expect(host.querySelector(".edition-flip__figure")).toBeNull();
   });
 
-  it("keeps adding money two presses away: the + stands beside the dressed flip", async () => {
+  it("keeps Record two presses from a money verb on the door edition", async () => {
     publishBarBadges({ scope: "household", everydayCents: 1_000, suggestion: true });
     await act(async () => root.render(createElement(Compass, { fab, onQuickSheet: () => undefined })));
     const nav = host.querySelector("nav.compass")!;
-    expect([...nav.children].map(node => node.className.split(" ")[0])).toEqual(["edition-flip", "fab-dial", "harbour-bar__tools"]);
+    expect([...nav.querySelectorAll<HTMLElement>("[data-glass-bubble]")].map(node => node.dataset.glassBubble)).toEqual(["flip", "record", "tools"]);
     await act(async () => nav.querySelector<HTMLButtonElement>("button.fab")!.click());
     expect(host.querySelectorAll("[data-fab-action]").length).toBeGreaterThan(0);
   });
@@ -132,11 +132,13 @@ describe("the flip wears the Everyday figure at rest", () => {
   });
 });
 
-describe("the pawprint on All tools", () => {
+describe("the pawprint on Hercules (never on All tools)", () => {
   it("is raised by a fresh suggestion — the Hercules corner's own top card — and not by the standing offers", () => {
     const top = discoverySelection({ household, memberId, view: "household", tab: "home", today }).now[0]!;
     expect(top.tier).toBeLessThanOrEqual(1);
     expect(readBarBadges(household, memberId, "household", today).suggestion).toBe(true);
+    expect(herculesHasSuggestion(household, memberId, "household", today)).toBe(true);
+    expect(herculesHasSuggestion(household, memberId, "personal", today)).toBe(false);
     const quiet = { ...household, transactions: [], recurrences: [], claims: [] } as Household;
     expect(discoverySelection({ household: quiet, memberId, view: "household", tab: "home", today }).now.every(row => row.tier > 1)).toBe(true);
     expect(readBarBadges(quiet, memberId, "household", today).suggestion).toBe(false);
@@ -148,28 +150,16 @@ describe("the pawprint on All tools", () => {
     expect(readBarBadges(snoozed, memberId, "household", today).suggestion).toBe(false);
   });
 
-  it("marks the door edition's All tools with a labelled pawprint, keeping the name", async () => {
+  it("never marks All tools — the escape hatch is not a notification — and publishes for the Hercules figure", async () => {
     publishBarBadges({ scope: "household", everydayCents: 0, suggestion: true });
-    await act(async () => root.render(createElement(Compass, { fab, onQuickSheet: () => undefined })));
-    const tools = host.querySelector<HTMLButtonElement>(".harbour-bar__tools")!;
-    expect(tools.getAttribute("aria-label")).toBe("All tools");
-    const paw = tools.querySelector<HTMLElement>("[data-bar-pawprint]")!;
-    expect(paw.getAttribute("role")).toBe("img");
-    expect(paw.getAttribute("aria-label")).toBe("Hercules has a suggestion");
-    expect(tools.getAttribute("aria-describedby")).toBe(paw.id);
-    await act(async () => publishBarBadges({ scope: "household", everydayCents: 0, suggestion: false }));
-    expect(tools.querySelector("[data-bar-pawprint]")).toBeNull();
-    expect(tools.hasAttribute("aria-describedby")).toBe(false);
-  });
-
-  it("marks the island bar's All tools the same way", async () => {
-    publishBarBadges({ scope: "household", everydayCents: 0, suggestion: true });
+    function Figure() { return createElement("i", { "data-suggestion": String(useHerculesSuggestion()) }); }
+    await act(async () => root.render(createElement("div", null, createElement(Compass, { fab, onQuickSheet: () => undefined }), createElement(Figure))));
+    expect(host.querySelector("[data-glass-tools]")!.getAttribute("aria-label")).toBe("All tools and search");
+    expect(host.querySelector("[data-bar-pawprint]")).toBeNull();
+    expect(host.querySelector("[data-suggestion]")!.getAttribute("data-suggestion")).toBe("true");
     await act(async () => root.render(createElement(VillageHUD, { place: "court", travelling: null, onVisit: () => undefined, onView: () => undefined, fab, onQuickSheet: () => undefined, avatar: "bianca" })));
-    const tools = host.querySelector<HTMLButtonElement>(".village-tools__all")!;
-    expect(tools.getAttribute("aria-label")).toBe("All tools");
-    expect(describedBy(tools)!.getAttribute("aria-label")).toBe("Hercules has a suggestion");
+    expect(host.querySelector("[data-bar-pawprint]")).toBeNull();
     await act(async () => publishBarBadges(NO_BAR_BADGES));
-    expect(tools.querySelector("[data-bar-pawprint]")).toBeNull();
   });
 });
 
@@ -196,17 +186,19 @@ describe("the dog-ear on Today", () => {
     expect(readSitdown(proposed, household, memberId, "personal", today)).toBeNull();
   });
 
-  it("folds only while the Sitdown waits, and its press opens the Plan Studio — the Campfire's door", async () => {
+  it("joins Needs you on the card's third line while the Sitdown waits, and opens the Campfire's door", async () => {
+    // Tool Atlas §3.5: the dog-ear folds into the card's "Needs you" line.
     await mount({});
     expect(host.querySelector("[data-desk-dogear]")).toBeNull();
     expect(host.querySelector(".desk-today")!.hasAttribute("data-desk-sitdown")).toBe(false);
 
-    const overdue = withChapter("2026-08");
+    const overdue = { ...withChapter("2026-08"), fundEvents: [] } as unknown as Household;
     const opened = await mount({ household: overdue, reading: buildHarbourReading(overdue, memberId, today, "current") });
     const ear = host.querySelector<HTMLButtonElement>("[data-desk-dogear]")!;
     expect(ear.tagName).toBe("BUTTON");
     expect(ear.dataset.deskDogear).toBe("overdue");
-    expect(ear.getAttribute("aria-label")).toMatch(/^The month’s Sitdown is waiting\. August’s Chapter is still open past its month; the Sitdown is waiting\. Pull out the Plan Studio\.$/);
+    expect(ear.dataset.cardLine3).toBe("needs");
+    expect(ear.textContent).toMatch(/^Needs you · August’s Chapter, at the Campfire/);
     expect(host.querySelector(".desk-today")!.getAttribute("data-desk-sitdown")).toBe("overdue");
     await act(async () => ear.click());
     expect(opened).toEqual([["plan-studio", undefined]]);

@@ -57,6 +57,9 @@
 
 /* ── This month ── */
 .desk-calendar .desk-month { display: grid; gap: 8px; }
+.desk-calendar .desk-month__picker { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.desk-calendar .desk-month__picker .chip { min-width: 44px; min-height: 44px; }
+.desk-calendar .desk-month__picker strong { font-variant-numeric: tabular-nums; }
 .desk-calendar .desk-month__weekdays, .desk-calendar .desk-month__grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
 .desk-calendar .desk-month__weekdays span { text-align: center; font: 700 10px/1.2 var(--font, system-ui, sans-serif); letter-spacing: .12em; color: var(--desk-muted); }
 .desk-calendar .desk-month__blank { min-height: 44px; }

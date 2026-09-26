@@ -69,18 +69,46 @@ describe("src/harbour source fences", () => {
     // body and the seam the live-position lane installs itself into. Like every
     // other directory here, neither reaches anything outside the harbour, which
     // the import fence below is what proves.
-    const dirs = ["court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat", "nav", "data", "camera", "assets", "body", "presence", "interiors", "village", "skate", "mountain", "desk", "art", "horizon"];
+    const dirs = ["bubbles", "panels", "court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat", "nav", "data", "camera", "assets", "body", "presence", "interiors", "village", "skate", "mountain", "desk", "art", "horizon", "glass", "mine"];
     const seen = new Set(files.map((f) => relative(harbour, f).replace(/\\/g, "/").split("/")[0]).filter((part) => part && !part.endsWith(".ts") && !part.endsWith(".tsx")));
     for (const dir of ["court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat"]) expect([...seen]).toContain(dir);
     for (const name of [...seen]) expect(dirs).toContain(name);
   });
 
   it("never imports commands, the kitchen, the ledger, storage, continuity or the api", () => {
+    // No exemptions: the Campfire ritual, which composes captured commands, lives in src/campfire with its own
+    // fence (test/campfire-source-fence.test.ts). src/harbour stays the scene.
     const offences: string[] = [];
     for (const file of files) {
       for (const specifier of importsOf(readFileSync(file, "utf8"))) {
         for (const rule of FORBIDDEN) if (rule.test(specifier)) offences.push(`${relative(root, file)} → ${specifier} (${rule.name})`);
       }
+    }
+    expect(offences).toEqual([]);
+  });
+
+  it("imports no captured command from any core module, and none of the App-level controls that write", () => {
+    // `core/chapters.ts` (and other core modules) mix selectors, which the harbour reads (desk/todayModel.ts,
+    // data/reading.ts), with captured commands (closeChapter, openChapter, …), which it must not import. Every
+    // name exported as `captureCommand(…)` anywhere in core is forbidden here, whichever module it comes from.
+    const coreDir = join(root, "src", "core");
+    const commands = new Set(walk(coreDir).flatMap((file) => [...readFileSync(file, "utf8").matchAll(/export const (\w+)\s*=\s*captureCommand\(/g)].map((m) => m[1]!)));
+    expect(commands.has("closeChapter")).toBe(true);
+    expect(commands.has("closeBooksMonth")).toBe(true);
+    const WRITERS = /\/(ChapterTaskControls|ChapterPanel|SitDownGuide|PlanStudio|Books|AddSlideshow|campfire\/(beats|CampfireRitual|WeeklySitdown|useCampfireWrite))(\.tsx?)?$/;
+    const offences: string[] = [];
+    for (const file of files) {
+      const source = readFileSync(file, "utf8");
+      for (const match of source.matchAll(/import\s+(?:type\s+)?\{([^}]*)\}\s+from\s+["']([^"']+)["']/g)) {
+        const [, names, specifier] = match;
+        if (/\/core\//.test(specifier!)) {
+          for (const raw of names!.split(",")) {
+            const name = raw.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0]!.trim();
+            if (commands.has(name)) offences.push(`${relative(root, file)} → ${name} from ${specifier} (a captured command)`);
+          }
+        }
+      }
+      for (const specifier of importsOf(source)) if (WRITERS.test(specifier) && !/\/harbour\/campfire\//.test(specifier)) offences.push(`${relative(root, file)} → ${specifier} (an App-level writer)`);
     }
     expect(offences).toEqual([]);
   });
@@ -92,7 +120,7 @@ describe("src/harbour source fences", () => {
 
   it("never touches fetch, localStorage or the books outside the loaders and the shell's return records", () => {
     // Edition preferences stay in the navigation seam; terrain fetch stays in its async asset loader.
-    const allowed = new Set(["assets/loadGlb.ts", "court/queenPlace.ts", "scene/quality.ts", "nav/QuickSheet.tsx", "nav/arrival.ts", "nav/motionEdition.ts", "HarbourWorld.tsx", "desk/flip.ts", "mountain/terrainAsset.ts"]);
+    const allowed = new Set(["assets/loadGlb.ts", "court/queenPlace.ts", "scene/quality.ts", "nav/QuickSheet.tsx", "nav/arrival.ts", "nav/motionEdition.ts", "HarbourWorld.tsx", "desk/flip.ts", "mountain/terrainAsset.ts", "bubbles/usage.ts"]);
     const offences: string[] = [];
     for (const file of files) {
       const name = relative(harbour, file).replace(/\\/g, "/");
@@ -113,7 +141,9 @@ describe("src/harbour source fences", () => {
     const app = readFileSync(join(root, "src", "App.tsx"), "utf8");
     expect(app).toMatch(/harbourOwnsRoute\(activeHouseRoute,view\)\?<Suspense fallback=\{<HarbourFlat place=\{harbourPlaceFor\(activeHouseRoute,view,true\)\?\?"court"\}/);
     expect(app).toMatch(/data-harbour-court=\{harbourOwnsRoute\(activeHouseRoute,view\)&&!activeHouseRoute\.surface\|\|undefined\}/);
-    expect(app).toMatch(/HARBOUR_ENABLED&&view==="household"\?<><Compass/);
+    // One glass chrome for both spaces (Tool Atlas D2): no personal bottom bar under the harbour.
+    expect(app).toMatch(/HARBOUR_ENABLED\?<><Compass fab=\{harbourBarFab\}/);
+    expect(app).not.toMatch(/HARBOUR_ENABLED&&view==="household"\?<><Compass/);
     expect(app).toMatch(/harbourArrivalRoute\(\{saved:saved\?\.route,scope:session\.view/);
     // The entry resolves the flat Desk before importing the illustrated world.
     expect(app).toMatch(/const HarbourWorld = lazy\(\(\) => import\("\.\/harbour\/HarbourEntry\.tsx"\)\)/);
