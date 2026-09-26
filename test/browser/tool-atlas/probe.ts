@@ -70,7 +70,8 @@ export const PROBE = String.raw`(() => {
     const v = s.backdropFilter || s.webkitBackdropFilter || 'none';
     return v !== 'none' && shown(el);
   }).map(describe);
-  const controls = (root) => [...(root || document).querySelectorAll('button, a[href], input, select, textarea, [role="button"], [role="grid"], [role="radio"], [tabindex="0"]')]
+  const CONTROL = 'button, a[href], input, select, textarea, [role="button"], [role="grid"], [role="radio"], [tabindex="0"]';
+  const controls = (root) => [...(root && root.matches && root.matches(CONTROL) ? [root] : []), ...(root || document).querySelectorAll(CONTROL)]
     .filter((el) => shown(el) && !el.closest('[inert]') && !srOnly(el));
   window.__atlas = { describe, shown, srOnly, visibleText, hitBox, backdrops, controls, inside };
 })();`;

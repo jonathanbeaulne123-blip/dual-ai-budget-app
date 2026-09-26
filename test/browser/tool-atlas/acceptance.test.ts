@@ -88,7 +88,7 @@ async function tabStops(limit = 160): Promise<string[]> {
 
 const CHROME = ["flip", "strip", "card", "tools", "record"];
 
-async function chromeControls(scope = ".glass-chrome, .glass-dock, .village-character"): Promise<Control[]> {
+async function chromeControls(scope = ".glass-chrome, .glass-dock, .village-character, .skate-entry"): Promise<Control[]> {
   return page.evaluate((sel) => {
     const atlas = (window as unknown as { __atlas: { controls: (root?: Element) => Element[]; hitBox: (el: Element) => { w: number; h: number; covered: boolean; by: string | null }; visibleText: (el: Element) => string } }).__atlas;
     const out: Array<{ name: string; text: string; rect: [number, number, number, number]; hit: { w: number; h: number; covered: boolean; by: string | null }; zone: string }> = [];
@@ -103,7 +103,7 @@ async function chromeControls(scope = ".glass-chrome, .glass-dock, .village-char
           text: atlas.visibleText(el),
           rect: [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)],
           hit: atlas.hitBox(el),
-          zone: el.closest(".glass-dock") ? "dock" : el.closest(".glass-chrome") ? "bubbles" : "character",
+          zone: el.closest(".glass-dock") ? "dock" : el.closest(".glass-chrome") ? "bubbles" : el.closest(".skate-entry") ? "skate card" : "character",
         });
       }
     }
@@ -528,7 +528,7 @@ describe("Tool Atlas acceptance (brief §8)", () => {
           const p = pill ? rect(pill) : null;
           return { id: anchor.getAttribute("data-glass-bubble"), circle, pill: p && p.width ? p : null };
         });
-        const targets = [...document.querySelectorAll(".glass-dock button, .glass-dock [role=grid], .village-character button, .village-character__choices button")]
+        const targets = [...document.querySelectorAll(".glass-dock button, .glass-dock [role=grid], .village-character button, .village-character__choices button, .skate-entry")]
           .filter(el => rect(el).width > 0).map(el => ({ name: (el.getAttribute("aria-label") ?? el.textContent ?? "").trim().slice(0, 30), r: rect(el) }));
         const overlaps: string[] = [];
         for (const b of bubbles) for (const box of [b.circle, b.pill]) {
