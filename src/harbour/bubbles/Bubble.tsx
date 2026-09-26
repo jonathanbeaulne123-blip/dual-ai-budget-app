@@ -17,7 +17,8 @@ import "./bubbles.css";
  * - **The label rule** (§4.2): the pill shows until this person has used the
  *   bubble five times; then the bubble is icon-only and the word comes back
  *   on long-press (350 ms), keyboard focus and hover, dismissible with Escape.
- *   The accessible name is the word throughout. A long press never activates.
+ *   The accessible name is the word throughout. A long press on the bubble
+ *   never activates; a press on a hosted dial's open verb always does.
  * - **Solid** under reduced transparency / motion, more contrast, forced
  *   colours, Save-Data, calm, lite, or a missed frame budget; blur is off
  *   while the camera moves and back 120 ms after it stops.
@@ -105,7 +106,18 @@ export function Bubble(props: BubbleProps) {
   const mode = glassMode(env, { calm: props.calm, lite: props.lite, frameOverBudget: props.frameOverBudget });
   const disabled = Boolean(disabledReason);
 
-  function onPointerDown() {
+  /**
+   * The long-press rule (A23) is about the bubble, not what it hosts: with the Record dial inside, only its own
+   * button (`.fab`) counts, never an open dial's verb rows (`[data-fab-action]`). A slow or tremoring press on
+   * "Purchase" or "Bill paid" must still activate (review finding 7).
+   */
+  function onBubbleItself(target: EventTarget | null): boolean {
+    if (!props.children) return true;
+    const element = target instanceof Element ? target : null;
+    return Boolean(element?.closest(".fab")) && !element?.closest("[data-fab-action]");
+  }
+  function onPointerDown(event: { target: EventTarget | null }) {
+    if (!onBubbleItself(event.target)) { pressedAt.current = null; longPressed.current = false; if (pressTimer.current) clearTimeout(pressTimer.current); pressTimer.current = null; return; }
     pressedAt.current = Date.now();
     longPressed.current = false;
     if (pressTimer.current) clearTimeout(pressTimer.current);
@@ -119,7 +131,7 @@ export function Bubble(props: BubbleProps) {
   }
   /** Capture: a long press shows the word and never activates, whatever control sits inside. */
   function onClickCapture(event: ReactMouseEvent) {
-    if (longPressed.current) {
+    if (longPressed.current && onBubbleItself(event.target)) {
       longPressed.current = false;
       event.preventDefault();
       event.stopPropagation();

@@ -87,6 +87,36 @@ describe("the label rule (A11)", () => {
     await act(async () => { anchor().dispatchEvent(new Event("pointerdown", { bubbles: true })); anchor().dispatchEvent(new Event("pointerup", { bubbles: true })); button().click(); });
     expect(taps).toBe(1);
   });
+
+  it("a slow press on an open dial verb still records; a long press on the Record bubble itself still only shows the word (review finding 7)", async () => {
+    vi.useFakeTimers();
+    const picked: string[] = [];
+    await act(async () => root.render(createElement(GlassChrome, {
+      member: "m-jonathan", environment: QUIET_ENVIRONMENT,
+      fab: { actions: fabActionsFor("household", "home"), closedLabel: "Record", onPick: (mode) => picked.push(mode) },
+      onOpenTools: () => undefined,
+    })));
+    const record = host.querySelector<HTMLElement>("[data-glass-bubble='record']")!;
+    const fab = host.querySelector<HTMLButtonElement>("button.fab")!;
+    // Open the dial with an ordinary press.
+    await act(async () => { fab.dispatchEvent(new Event("pointerdown", { bubbles: true })); fab.dispatchEvent(new Event("pointerup", { bubbles: true })); fab.click(); });
+    const verb = host.querySelector<HTMLButtonElement>("[data-fab-action='expense']")!;
+    expect(verb).toBeTruthy();
+    // Hold the verb for well over 350 ms, then release: it activates (the bubble's long-press guard is not its).
+    await act(async () => { verb.dispatchEvent(new Event("pointerdown", { bubbles: true })); });
+    await act(async () => { vi.advanceTimersByTime(LONG_PRESS_MS + 400); });
+    await act(async () => { verb.dispatchEvent(new Event("pointerup", { bubbles: true })); verb.click(); });
+    expect(picked).toEqual(["expense"]);
+    // A long press on the closed Record bubble itself shows the word and opens nothing.
+    const closed = host.querySelector<HTMLButtonElement>("button.fab")!;
+    const openBefore = closed.getAttribute("aria-expanded");
+    await act(async () => { closed.dispatchEvent(new Event("pointerdown", { bubbles: true })); });
+    await act(async () => { vi.advanceTimersByTime(LONG_PRESS_MS + 10); });
+    expect(record.dataset.glassTip).toBe("on");
+    await act(async () => { closed.dispatchEvent(new Event("pointerup", { bubbles: true })); closed.click(); });
+    expect(closed.getAttribute("aria-expanded")).toBe(openBefore);
+    expect(picked).toEqual(["expense"]);
+  });
 });
 
 describe("the solid fallback (A9, A17)", () => {
