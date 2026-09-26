@@ -19,3 +19,16 @@ it('measures the year walk wrap without replacing it by straight-line station di
   const points: BedCut['points'] = [[0, 0, 0], [10, 0, 0], [10, 0, 10], [0, 0, 10], [0, 0, 0]];
   expect(length3(yearWalkStretch(points, [0, 5], [5, 0]))).toBeCloseTo(10);
 });
+it('builds no path edge through a wall the runtime body stops at, and joins only lips within the 0.48 eu step', () => {
+  const c = cuts([bed('lane', [[0, 0, 0], [20, 0, 0], [40, 0, 0]])]);
+  // A 1.2 eu wall across the lane at x 19.8-20.2.
+  const p = [19.8, 20.2], z = [-3, 3], y = [0, 1.2], positions: number[] = [];
+  for (const yy of y) for (const [xx, zz] of [[p[0], z[0]], [p[1], z[0]], [p[1], z[1]], [p[0], z[1]]]) positions.push(xx!, yy!, zz!);
+  c.solids.push({ id: 'wall', kind: 'retainingWall', positions, indices: [0, 1, 2], surface: 'rock', districtId: 'harbour', bedIds: [], walkable: false, role: 'wall' });
+  const graph = buildPathGraph(c);
+  expect(graph.blocked?.some(b => b.solid === 'wall')).toBe(true);
+  expect(walkPlan(graph, [0, 0, 0], [40, 0, 0], { maxSnap: 1 })).toBeNull();
+  // Two beds meeting 0.49 eu apart are an edge, not a step.
+  const lip = buildPathGraph(cuts([bed('a', [[0, 0, 0], [10, 0, 0]]), bed('b', [[5, .49, -5], [5, .49, 5]])]));
+  expect(lip.edges.some(e => e.id.startsWith('lip:'))).toBe(false);
+});

@@ -8,7 +8,30 @@ import { arcLengths, closestOnPolyline, distance3, length3, mixPoint } from './g
 
 export interface PathNode { id: string; at: Point3; kind: 'junction' | 'door' | 'station'; facing?: number }
 export interface PathEdge { id: string; bedId: string; from: string; to: string; points: Point3[]; length: number; kind: BedCut['kind']; surface: string; halfWidth: number; maxGrade: number }
-export interface HorizonPathGraph { nodes: PathNode[]; edges: PathEdge[] }
+export interface BlockedEdge { edge: string; bedId: string; at: Point3; solid: string }
+export interface HorizonPathGraph { nodes: PathNode[]; edges: PathEdge[]; blocked?: BlockedEdge[] }
+/** The body's step (runtime lip) and height: a solid rising above the step within body height
+ * over a walking line is a wall the runtime stops at, so no edge may pass through it. */
+const STEP = .48, BODY = 1.25;
+type P3 = [number, number, number];
+type Prism = { solid: string; bedIds: readonly string[]; deck: boolean; quads: [number, number][][]; top: P3[]; bottom: P3[] };
+/** Height at (x,z) of the plane through three corners of a prism face (its top or bottom). */
+const planeAt = (f: readonly P3[], x: number, z: number) => { const [a, b, c] = f as [P3, P3, P3], ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2], nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; return Math.abs(ny) < 1e-9 ? Math.max(a[1], b[1], c[1]) : a[1] - (nx * (x - a[0]) + nz * (z - a[2])) / ny; };
+function prismIndex(cuts: LandCuts): { find: (x: number, z: number) => Prism[] } {
+  const CELL = 4, grid = new Map<string, Prism[]>();
+  for (const s of cuts.solids) {
+    // Decks and floors count too: a surface standing more than the step above the line is a wall.
+    if (s.role === 'marker' || s.positions.length % 24) continue;
+    for (let o = 0; o + 23 < s.positions.length; o += 24) {
+      const v = (k: number): P3 => [s.positions[o + k * 3]!, s.positions[o + k * 3 + 1]!, s.positions[o + k * 3 + 2]!];
+      const all = Array.from({ length: 8 }, (_, k) => v(k)), prism: Prism = { solid: s.sourceId ?? s.id, bedIds: s.bedIds, deck: s.role === 'deck' || s.role === 'floor', quads: [all.slice(0, 4).map(p => [p[0], p[2]]), all.slice(4).map(p => [p[0], p[2]])], top: all.slice(4), bottom: all.slice(0, 4) };
+      const xs = all.map(p => p[0]), zs = all.map(p => p[2]);
+      for (let x = Math.floor(Math.min(...xs) / CELL); x <= Math.floor(Math.max(...xs) / CELL); x++) for (let z = Math.floor(Math.min(...zs) / CELL); z <= Math.floor(Math.max(...zs) / CELL); z++) { const key = `${x}:${z}`, list = grid.get(key); if (list) list.push(prism); else grid.set(key, [prism]); }
+    }
+  }
+  return { find: (x, z) => grid.get(`${Math.floor(x / CELL)}:${Math.floor(z / CELL)}`) ?? [] };
+}
+const inQuad = (q: readonly [number, number][], x: number, z: number) => { let hit = false; for (let i = 0, j = q.length - 1; i < q.length; j = i++) { const a = q[i]!, b = q[j]!; if ((a[1] > z) !== (b[1] > z) && x < (b[0] - a[0]) * (z - a[1]) / (b[1] - a[1]) + a[0]) hit = !hit; } return hit; };
 export interface WalkPlan { points: Point3[]; edges: string[]; length: number; seconds: number; offBedDistance: number }
 export interface JourneyLeg { mode: string; bedIds: string[]; lengthEu: number; lengthM: number; speed: number; seconds: number }
 export interface JourneyMeasurement { id: string; targetSeconds?: number | readonly number[]; lengthEu: number; lengthM: number; seconds: number | null; pass: boolean; legs: JourneyLeg[]; reason?: string }
@@ -19,14 +42,26 @@ export function buildPathGraph(cuts: LandCuts, intersections?: readonly Intersec
   const intersectionsAll = intersections ?? computeIntersections(beds.map(b => ({ id: b.id, points: b.points, clearHeight: b.clearHeight, kind: b.kind, structureIds: b.structureIds })));
   const addSplit = (id: string, segment: number, point: readonly [number, number]) => { const bed = bedById.get(id); if (!bed) return; const a = bed.points[segment], b = bed.points[segment + 1]; if (!a || !b) return; const dx = b[0] - a[0], dz = b[2] - a[2], t = ((point[0] - a[0]) * dx + (point[1] - a[2]) * dz) / (dx * dx + dz * dz || 1), segments = split.get(id) ?? new Map<number, number[]>(), values = segments.get(segment) ?? []; values.push(Math.max(0, Math.min(1, t))); segments.set(segment, values); split.set(id, segments); };
   const joins: { a: Point3; b: Point3 }[] = [];
-  for (const p of intersectionsAll) { const a = p.sourceA ?? p.a, b = p.sourceB ?? p.b; if (bedById.has(a) && bedById.has(b) && Math.abs(p.heightA - p.heightB) <= .5) { addSplit(a, p.segmentA, p.at); addSplit(b, p.segmentB, p.at); joins.push({ a: [p.at[0], p.heightA, p.at[1]], b: [p.at[0], p.heightB, p.at[1]] }); } }
+  for (const p of intersectionsAll) { const a = p.sourceA ?? p.a, b = p.sourceB ?? p.b; if (bedById.has(a) && bedById.has(b) && Math.abs(p.heightA - p.heightB) <= STEP) { addSplit(a, p.segmentA, p.at); addSplit(b, p.segmentB, p.at); joins.push({ a: [p.at[0], p.heightA, p.at[1]], b: [p.at[0], p.heightB, p.at[1]] }); } }
   const node = (p: Point3) => { const id = `path:${p.map(v => v.toFixed(3)).join(':')}`; if (!nodes.has(id)) nodes.set(id, { id, at: p, kind: 'junction' }); return id; };
   for (const bed of beds) for (let i = 1; i < bed.points.length; i++) {
     const a = bed.points[i - 1]!, b = bed.points[i]!, values = [...new Set([0, ...(split.get(bed.id)?.get(i - 1) ?? []), 1])].sort((a, b) => a - b);
     for (let k = 1; k < values.length; k++) { const p = mixPoint(a, b, values[k - 1]!), q = mixPoint(a, b, values[k]!), length = distance3(p, q); if (length < 1e-5) continue; const horizontal = Math.hypot(q[0] - p[0], q[2] - p[2]); edges.push({ id: `${bed.id}:${i - 1}:${k}`, bedId: bed.id, from: node(p), to: node(q), points: [p, q], length, kind: bed.kind, surface: bed.surface, halfWidth: bed.width / 2, maxGrade: Math.abs(q[1] - p[1]) / (horizontal || 1e-5) }); }
   }
   joins.forEach((join, i) => { const from = node(join.a), to = node(join.b); if (from !== to) edges.push({ id: `lip:${i}`, bedId: 'junction', from, to, points: [join.a, join.b], length: distance3(join.a, join.b), kind: 'walk', surface: 'plaza', halfWidth: 1, maxGrade: 0 }); });
-  return { nodes: [...nodes.values()], edges };
+  // An edge exists only where the runtime body can walk it: every 0.5 eu along the line, no
+  // non-walkable solid may rise above the step within body height.
+  const prisms = prismIndex(cuts), blocked: BlockedEdge[] = [];
+  const open = edges.filter(e => {
+    if (e.id.startsWith('lip:')) return true;
+    const [p, q] = e.points as [Point3, Point3], n = Math.max(1, Math.ceil(Math.hypot(q[0] - p[0], q[2] - p[2]) / .5));
+    for (let k = 0; k <= n; k++) {
+      const at = mixPoint(p, q, k / n), hit = prisms.find(at[0], at[2]).find(r => !(r.deck && r.bedIds.includes(e.bedId)) && r.quads.some(quad => inQuad(quad, at[0], at[2])) && planeAt(r.top, at[0], at[2]) > at[1] + STEP && planeAt(r.bottom, at[0], at[2]) < at[1] + BODY);
+      if (hit) { blocked.push({ edge: e.id, bedId: e.bedId, at, solid: hit.solid }); return false; }
+    }
+    return true;
+  });
+  return { nodes: [...nodes.values()], edges: open, blocked };
 }
 type Hit = { edge: PathEdge; point: Point3; arc: number; distance: number };
 function project(edges: readonly PathEdge[], p: Point3): Hit | null { let best: Hit | null = null; for (const edge of edges) { const hit = closestOnPolyline(edge.points, p[0], p[2]), d = Math.hypot(hit.distance, hit.point[1] - p[1]); if (!best || d < best.distance) best = { edge, point: hit.point, arc: hit.arc, distance: d }; } return best; }
@@ -63,7 +98,9 @@ export function measureJourneys(graph: HorizonPathGraph, cuts: LandCuts, hosts: 
   const rows: { id: string; target: number | readonly number[]; legs: JourneyLeg[] }[] = [];
   const target = m.journeys.targets_s;
   rows.push({ id: 'square→library by bicycle', target: target['square→library by bicycle'], legs: fromPlan('bicycle', walkPlan(graph, origin, door('library'), { speed: speed('bicycle'), bicycle: true, stepFree: true })) });
-  rows.push({ id: 'square→green running', target: target['square→green running'], legs: fromPlan('run', walkPlan(graph, origin, destination([1040, 1065]), { speed: speed('run'), stepFree: true })) });
+  // v1.7: the Green run ends at the manifest anchor (the Green's edge on Green Road).
+  const greenAnchor = (m.journeys as unknown as { anchors?: Record<string, readonly number[]> }).anchors?.['square→green running'] ?? [1040, 1065];
+  rows.push({ id: 'square→green running', target: target['square→green running'], legs: fromPlan('run', walkPlan(graph, origin, destination(greenAnchor), { speed: speed('run'), stepFree: true })) });
   const gondola = getLine('G1'), top = m.places.find(p => p.id === 'L02')!;
   const first = gondola.length ? walkPlan(graph, origin, gondola[0]!, { stepFree: true }) : null, last = gondola.length ? walkPlan(graph, gondola.at(-1)!, [top.xy[0]! * s, top.h * s, top.xy[1]! * s], { stepFree: true }) : null;
   rows.push({ id: 'square→summit by gondola + walk', target: target['square→summit by gondola + walk'], legs: first && last ? [...fromPlan('walk', first), leg('gondola', gondola, ['G1']), ...fromPlan('walk', last)] : [] });
