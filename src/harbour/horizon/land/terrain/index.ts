@@ -220,8 +220,10 @@ function damWindow(x: number, z: number, height: number): number {
  *   a sight line of 22–23 (the deck line is at 23–29); the rim keeps its gorge wall below the line.
  * - A · the dam's glass face: the gallery flights' embankment at [1169–1176, 916–918] (40–47) and
  *   V01's embankment toe at [1382–1389, 1110–1119] (17–19) cut the face's east half.
- * - C · the skate shelf (deck 11–12.3 at x 1202–1206) from the overlook: the west gorge floor between
- *   the river and the shelf stood 12.3–13.3; the shelf reads as a ledge only with the floor under it.
+ * - (C · the skate shelf is not a terrain window: S1's own carriageway at 12.4–13.4 runs between the
+ *   overlook and the shelf deck (11–12.3) at [1206–1219, 1100–1134]; a window beside it only left
+ *   S1's edge rail hanging. Once S1 rides the shelf, a window from the eye [1268,1145] h 11.6 to the
+ *   shelf line [1206,11.6,1078]–[1206,11.6,1136] clears the floor in front of it.)
  * Every window lies outside the band polygons or inside the Notch walls' exclusion, or trims a band
  * only within its own range (harbour 0–18): P01 is untouched by construction.
  */
@@ -229,7 +231,6 @@ export interface SightWindow { page: string; subject: string; eyeH: number; a: X
 export const SIGHT_WINDOWS: readonly SightWindow[] = [
   { page: 'A', subject: 'the High Span', eyeH: 13.6, a: [1188, 23.3, 1100], b: [1294, 23.3, 1107], margin: 1, near: 40, feather: 8, bedFade: 8 },
   { page: 'A', subject: "the dam's glass face", eyeH: 13.6, a: [1121, 38, 909], b: [1160, 38, 909], margin: 1, near: 40, feather: 8, bedFade: 6 },
-  { page: 'C', subject: 'the skate shelf', eyeH: 11.6, a: [1206, 11.6, 1078], b: [1206, 11.6, 1136], margin: 1.1, near: 12, feather: 6, bedFade: 4 },
 ];
 interface PreparedWindow { eye: XYZ; a: XYZ; b: XYZ; tri: XY[]; det: number; w: SightWindow; box: number[] }
 let preparedWindows: PreparedWindow[] | undefined;
