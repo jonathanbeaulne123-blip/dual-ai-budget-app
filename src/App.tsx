@@ -13,6 +13,7 @@ import { HEARTHSIDE_FLAGS } from './hearthside/flags.ts';
 import { HEARTHSIDE_LABEL, hearthsidePath, parseHearthsideRoute } from './hearthside/routes.ts';
 import { HouseShell } from './hearthside/HouseShell.tsx';
 import { KitchenFolio } from "./house/KitchenFolio.tsx";
+import { bankRoomRequest } from "./house/bankRoom.ts";
 import { HouseWorld } from './house/HouseWorld.tsx';
 import { HARBOUR_ENABLED, harbourOwnsRoute, harbourPlaceFor } from './harbour/flag.ts';
 import { harbourArrivalRoute, tabSession } from './harbour/nav/arrival.ts';
@@ -640,18 +641,6 @@ function houseRouteForTab(tab: Tab, householdId: string): HouseRoute | null {
 
 function tabForHouseRoute(route: HouseRoute): Tab { return houseTabForRoute(route); }
 
-/**
- * A Loft route's bank request: `bank/<id>`, `bank/<id>/studio`, or `studio` (the first bank, on its studio page).
- * K12 (Tool Atlas §7): the Pottery Studio merged into each Kitty Bank's studio tab; the Kiln stays a world place.
- */
-export function bankRoomRequest(object: string | undefined): { bankId?: string; studio: boolean } {
-  if (!object) return { studio: false };
-  if (object === "studio") return { studio: true };
-  if (!object.startsWith("bank/")) return { studio: false };
-  const rest = object.slice(5), studio = rest.endsWith("/studio");
-  const bankId = studio ? rest.slice(0, -7) : rest;
-  return bankId ? { bankId, studio } : { studio };
-}
 
 function presenceTab(tab: Tab): Exclude<Tab, "till" | "together" | "planner" | "timeMachine" | "hercules" | "play"> {
   if (tab === "planner" || tab === "till" || tab === "hercules") return "home";
