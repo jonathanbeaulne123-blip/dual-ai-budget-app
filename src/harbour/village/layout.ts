@@ -8,7 +8,7 @@ export const VILLAGE_SITES = {
   bank: {spot:[8,-26], half:[4.6,3.6], door:[0,3.35], name:'The Fund bank', exterior:'village-bank', entry:'bank'},
   library: {spot:BUILDING_SITES.library, half:BUILDING_FORMS.library.half, door:BUILDING_FORMS.library.door, name:'The Library', exterior:'village-library', entry:'library'},
   glasshouse: {spot:BUILDING_SITES.glasshouse, half:BUILDING_FORMS.glasshouse.half, door:BUILDING_FORMS.glasshouse.door, name:'The Glasshouse', exterior:'village-glasshouse', entry:'glasshouse'},
-  studio: {spot:[33,10], half:[3.8,2.9], door:[1.95,2.82], name:'The Pottery Studio', exterior:'village-studio', entry:'kiln'},
+  studio: {spot:[33,10], half:[3.8,2.9], door:[1.95,2.82], name:'The Kiln', exterior:'village-studio', entry:'kiln'},
   cottage: {spot:BUILDING_SITES.cottage, half:BUILDING_FORMS.cottage.half, door:BUILDING_FORMS.cottage.door, name:'Hercules’s cottage', exterior:'village-cottage', entry:'cottage'},
   boathouse: {spot:[42,-41], half:[3.6,3], door:[1.5,2.8], name:'The Boathouse', exterior:'village-boathouse', entry:'boathouse'},
 } as const;

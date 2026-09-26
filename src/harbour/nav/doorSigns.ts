@@ -157,7 +157,7 @@ export function placeSigns(reading: HarbourReading): Record<HarbourPlaceId, Door
   const heat = fire.sinceFiring === null ? "cold" : fire.sinceFiring === 0 ? "still hot" : fire.warmth > 0 ? "warm" : "cold";
   const kiln: DoorSign = {
     line: `${count(fire.fired, "piece", "pieces")} fired · ${heat}`,
-    aria: `The Kiln. ${count(fire.fired, "piece", "pieces")} fired and the bricks are ${heat}${fire.onTheWheel > 0 ? `; ${count(fire.onTheWheel, "piece is", "pieces are")} still clay` : ""}. Opens the Pottery Studio.`,
+    aria: `The Kiln. ${count(fire.fired, "piece", "pieces")} fired and the bricks are ${heat}${fire.onTheWheel > 0 ? `; ${count(fire.onTheWheel, "piece is", "pieces are")} still clay` : ""}. Opens the Kiln.`,
   };
 
   const ring = reading.campfire;

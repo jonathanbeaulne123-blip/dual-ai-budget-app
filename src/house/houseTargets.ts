@@ -15,17 +15,17 @@ const TARGETS: Record<`${HouseRoom}:${HouseLevel}`, readonly HouseTarget[]> = {
   "kitchen-table:middle": [{ id: "conversation", label: "Open the conversation folio" }],
   "kitchen-table:below": [{ id: "plan-studio", label: "Pull out the Plan Studio" }],
   "together:above": [{ id: "wishes", label: "Tend a wish" }],
-  "together:middle": [{ id: "pottery", label: "Enter the Pottery Studio" }, { id: "letters", label: "Open the writing desk" }],
+  "together:middle": [{ id: "pottery", label: "Open a bank's studio" }, { id: "letters", label: "Open the writing desk" }],
   "together:below": [{ id: "memories", label: "Open a memory" }, { id: "projector", label: "Choose three memories" }],
   // Making: the Kiln above, Hercules's Cottage on the level, his shelves below.
-  "making:above": [{ id: "pottery", label: "Enter the Pottery Studio" }],
+  "making:above": [{ id: "pottery", label: "Open a bank's studio" }],
   "making:middle": [{ id: "wardrobe", label: "Open the dressing room" }, { id: "hercules", label: "Talk with Hercules" }],
   "making:below": [{ id: "wardrobe", label: "Open the dressing room" }],
 };
 
 const personalTargets = (key: `${HouseRoom}:${HouseLevel}`, rows: readonly HouseTarget[]): readonly HouseTarget[] => {
   if (key === "together:above") return [{ id: "wishes", label: "Tend a private wish" }];
-  if (key === "together:middle") return [{ id: "pottery", label: "Enter your private Pottery Studio" }, { id: "letters", label: "Write a private note" }];
+  if (key === "together:middle") return [{ id: "pottery", label: "Open a private bank's studio" }, { id: "letters", label: "Write a private note" }];
   if (key === "together:below") return [{ id: "memories", label: "Open a private memory" }];
   return rows;
 };

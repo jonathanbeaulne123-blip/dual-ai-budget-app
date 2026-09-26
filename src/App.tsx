@@ -640,6 +640,19 @@ function houseRouteForTab(tab: Tab, householdId: string): HouseRoute | null {
 
 function tabForHouseRoute(route: HouseRoute): Tab { return houseTabForRoute(route); }
 
+/**
+ * A Loft route's bank request: `bank/<id>`, `bank/<id>/studio`, or `studio` (the first bank, on its studio page).
+ * K12 (Tool Atlas §7): the Pottery Studio merged into each Kitty Bank's studio tab; the Kiln stays a world place.
+ */
+export function bankRoomRequest(object: string | undefined): { bankId?: string; studio: boolean } {
+  if (!object) return { studio: false };
+  if (object === "studio") return { studio: true };
+  if (!object.startsWith("bank/")) return { studio: false };
+  const rest = object.slice(5), studio = rest.endsWith("/studio");
+  const bankId = studio ? rest.slice(0, -7) : rest;
+  return bankId ? { bankId, studio } : { studio };
+}
+
 function presenceTab(tab: Tab): Exclude<Tab, "till" | "together" | "planner" | "timeMachine" | "hercules" | "play"> {
   if (tab === "planner" || tab === "till" || tab === "hercules") return "home";
   const scene = sceneTabFor(tab);
@@ -6660,6 +6673,9 @@ export function App() {
     // The Campfire (D3): the fire, both logs, its host panel and Books' door open the one ritual, which is Ours.
     if(target==="campfire-ritual"||target==="campfire"){setHostPanel(null);if(view!=="household")changeHouseView("household");setCampfire(object==="settle"?{beat:"settle"}:{});return;}
     if(target==="fund"){target="books";object="bindery/handoff-bench";setBooksPaneRequest("fund");}
+    // K12: "Enter the Pottery Studio" (pottery with no station) is a Kitty Bank's studio tab now; the Kiln's own
+    // stations (wheel, paint, kiln, a piece) still open the Kiln, which stays a world place.
+    if(target==="pottery"&&!object){target="loft-banks";object="studio";}
     const identity:HouseIdentity={environment,householdId:household.householdId,memberId:session.memberId,scope:view};
     const route=houseTargetRoute({...activeHouseRoute,scope:view},target,object);
     saveHouseReturn(localStorage,identity,activeHouseRoute,{focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title",scroll:window.scrollY,camera:readHouseCamera(),cameraComposition:readHouseComposition(),body:readHouseBody()},houseReturnSlot(route));
@@ -7542,7 +7558,7 @@ export function App() {
           onCommand={runKitchen}
           composition={HOUSE_WORLD_ENABLED?"queen":HEARTHSIDE_FLAGS.presentation ? "queen" : undefined}
           world={HOUSE_WORLD_ENABLED?"flat":activeBooksGate.ready ? "auto" : "flat"}
-          initialBankId={HOUSE_WORLD_ENABLED&&activeHouseRoute.object?.startsWith("bank/")?activeHouseRoute.object.slice(5):undefined}
+          initialBankId={HOUSE_WORLD_ENABLED?bankRoomRequest(activeHouseRoute.object).bankId:undefined} initialStudio={HOUSE_WORLD_ENABLED&&bankRoomRequest(activeHouseRoute.object).studio}
           housePlace={(HEARTHSIDE_FLAGS.presentation||HOUSE_WORLD_ENABLED)&&activeHouseTool.room==="home"?(activeHouseTool.level==="above"?"loft":activeHouseTool.level==="below"?"cellar":"home"):undefined}
           onHousePlace={HEARTHSIDE_FLAGS.presentation ? place => goTab("home", undefined, {route:{room:"home",level:place==="loft"?"above":place==="cellar"?"below":"middle",householdId:household.householdId},history:"push"}) : undefined}
           onGo={(next) => goTab(next)}
@@ -7565,7 +7581,7 @@ export function App() {
           )}
         />
       )}
-      {tab === "home" && dashboard && view === "personal" && <KittyBanks key={`${ledgerRenderScopeKey}:nest:${activeHouseRoute.object??""}`} initialBankId={HOUSE_WORLD_ENABLED&&activeHouseRoute.object?.startsWith("bank/")?activeHouseRoute.object.slice(5):undefined} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="home" onCommand={runKitchen} onOpenCalendar={() => goTab("calendar")} />}
+      {tab === "home" && dashboard && view === "personal" && <KittyBanks key={`${ledgerRenderScopeKey}:nest:${activeHouseRoute.object??""}`} initialBankId={HOUSE_WORLD_ENABLED?bankRoomRequest(activeHouseRoute.object).bankId:undefined} initialStudio={HOUSE_WORLD_ENABLED&&bankRoomRequest(activeHouseRoute.object).studio} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="home" onCommand={runKitchen} onOpenCalendar={() => goTab("calendar")} />}
       {!HOUSE_WORLD_ENABLED&&((tab === "home" && dashboard && !queenWorldHome) || (tab === "more" && dashboard && view === "household" && queensNestEnabled() && householdHomeV2Enabled())) && (
         <>
         <HomeInstruments collapsed={view === "household" && householdHomeV2Enabled()}>

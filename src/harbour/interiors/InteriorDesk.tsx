@@ -27,7 +27,7 @@ export default function InteriorDesk({place,household,memberId,scope,onOpen,onVi
   return <div className={`interior-desk interior-desk--${place}`} onKeyDown={event=>event.stopPropagation()} onPointerDown={event=>event.stopPropagation()}>
     <header className="interior-title">
       <p className="interior-eyebrow">Little Harbour <span> / </span> {library?'A room for understanding':'A room for making'}</p>
-      <h1>{library?'The Library':'The Pottery Studio'}</h1>
+      <h1>{library?'The Library':'The Kiln'}</h1>
       <p className="interior-intro">{library?'Find your place. Open a book. Let the rest of the day wait.':'A little clay. Your own hands. Something worth keeping.'}</p>
       <button className="interior-view" onClick={onView}>↗ Take in the room</button>
     </header>
