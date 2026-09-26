@@ -166,6 +166,20 @@ function throatButtress(x: number, z: number, height: number): number {
   const buttress = smooth(1 - Math.max(0, tx - 18) / 72) * north * south;
   return buttress <= 0 ? height : mix(height, Math.max(height, (131 + 5 * clamp((z / s - 300) / 60)) * s), buttress);
 }
+/**
+ * The Throat's mouth is an opening in the buttress's north face: its jambs (5 m either side of the mouth
+ * outline, fading over 5 m more, from 6 m in front of it to its back) stay rock at the buttress height whatever a route's blend
+ * does below them, so the low June sun from the NE never reaches into the mouth (LIGHT §2, P25). A bed's
+ * carriageway and shoulder are never raised (the jamb fades in over 4 m from a bed's edge).
+ */
+function throatJambs(x: number, z: number, height: number, cuts: LandCuts, edgeGap: number): number {
+  const s = getModel().scale, mouth = cuts.mouths.find(m => m.id === 'throat'); if (!mouth) return height;
+  const xs = mouth.outline.map(p => p[0]), zs = mouth.outline.map(p => p[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), z0 = Math.min(...zs), z1 = Math.max(...zs);
+  const beside = Math.max(x0 - x, x - x1), front = z0 - 6 * s - z;
+  if (beside <= 0 || beside > 10 * s || front > 0 || z > z1) return height;
+  const jamb = (131 + 5 * clamp((z / s - 300) / 60)) * s;
+  return Math.max(height, mix(height, jamb, (1 - smooth((beside - 5 * s) / (5 * s))) * smooth(edgeGap / (4 * s))));
+}
 /** The Notch's east rim near the High Span: under page A's square→deck-line sight line (22.3) less 0.8. */
 export const HIGH_SPAN_EAST_RIM = 21.5;
 /** The High Span's surveyed station on the lower river (water 9.2, bed 8). */
@@ -484,6 +498,7 @@ function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<
   let { height, surface } = bedded;
   // Sketchbook sight windows trim open ground (never a bed's carriageway or shoulder).
   height = sightWindows(x, z, height, bedded.edgeGap);
+  height = throatJambs(x, z, height, cuts, bedded.edgeGap);
   const ground = height, s = getModel().scale;
   for (const p of cuts.pads) {
     // A deck pad (PadCut.deck) is carried by its structure or sits flush on graded beds: never earth.
