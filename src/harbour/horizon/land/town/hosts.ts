@@ -5,11 +5,26 @@ import { gradeRoute } from '../beds/solver';
 import { box, districtAt, nearestOnPath, plan, solid } from '../structures/mesh';
 
 export interface HostSite { id:string; door:XYZ; normal:XY; apron:XY[]; padId:string; approachBedId:string }
+/** A host footprint keeps >= 3 m off Stillwater (P32): the manifest Glasshouse corner [1025,799]
+ * lies inside the lake ellipse. The footprint's lake-facing end is drawn in, 0.5 m at a time, with
+ * its far wall fixed (moving the whole house west put its wall on the garden/rim-trail junction at
+ * [990,780]); the change is reported for the manifest. */
+export function clearOfLake(id:string,xy:XY,size:XY,cuts?:LandCuts):{xy:XY;size:XY} {
+  const lake=M.water.stillwater,clear=3;
+  const inside=(p:XY)=>((p[0]-lake.cx)/(lake.rx+clear))**2+((p[1]-lake.cy)/(lake.ry+clear))**2<1;
+  const corners=(c:XY,s:XY):XY[]=>[[-1,-1],[-1,1],[1,1],[1,-1]].map(([sx,sz])=>[c[0]+sx!*s[0]/2,c[1]+sz!*s[1]/2]);
+  if(!corners(xy,size).some(inside))return {xy,size};
+  const side=Math.sign(lake.cx-xy[0])||1,far=xy[0]-side*size[0]/2;let w=size[0];
+  while(w>size[0]*.6&&corners([far+side*w/2,xy[1]],[w,size[1]]).some(inside))w-=.5;
+  const out:{xy:XY;size:XY}={xy:[far+side*w/2,xy[1]],size:[w,size[1]]};
+  cuts?.diagnostics.push({id:`host.${id}.lakeClear`,severity:corners(out.xy,out.size).some(inside)?'conflict':'info',message:`${id} footprint ${size[0]} x ${size[1]} drawn in to ${w} x ${size[1]} (centre [${out.xy.map(v=>v.toFixed(1)).join(',')}]) to stand 3 m clear of Stillwater`,at:out.xy,measured:w,required:size[0]});
+  return out;
+}
 /** Physical doorway faces are omitted; the lintel, jambs and roof remain solid. */
 export function buildHostSites(cuts:LandCuts,base:HeightQuery):HostSite[] {
   const sites:HostSite[]=[];
   for(const h of M.hosts){
-    const [w,d]=h.footprint_m as unknown as XY,p=h.xy as unknown as XY;
+    const site=clearOfLake(h.id,h.xy as unknown as XY,h.footprint_m as unknown as XY,cuts),[w,d]=site.size,p=site.xy;
     const normal:XY=h.door.startsWith('west')?[-1,0]:h.door.startsWith('east')?[1,0]:h.door.startsWith('south-east')?[Math.SQRT1_2,Math.SQRT1_2]:[0,1];
     // The Library doorway is on the southeast wall corner, with its approach square to that face.
     const extent=h.door.startsWith('south-east')?Math.min(w,d)/2:normal[0]! !==0?w/2:d/2;

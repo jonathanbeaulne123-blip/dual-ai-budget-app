@@ -32,3 +32,11 @@ it('keeps the Year Walk outside the rotated Library foundation and avoids a need
  expect(glass.points.some(p=>p[0]>995&&p[0]<1025&&p[2]>781&&p[2]<799)).toBe(false);
  expect(nearestOnPath([1010,810],glass.points).at[1]).toBeCloseTo(56);
 });
+
+import { clearOfLake } from '../src/harbour/horizon/land/town/hosts';
+it('stands every host footprint 3 m clear of Stillwater (the manifest Glasshouse corner [1025,799] was inside the lake)',()=>{
+  const lake=M.water.stillwater;
+  for(const h of M.hosts){const site=clearOfLake(h.id,h.xy as unknown as [number,number],h.footprint_m as unknown as [number,number]),p=site.xy,[w,d]=site.size;
+    for(const [sx,sz] of [[-1,-1],[-1,1],[1,1],[1,-1]])expect(((p[0]+sx!*w!/2-lake.cx)/(lake.rx+3))**2+((p[1]+sz!*d!/2-lake.cy)/(lake.ry+3))**2,h.id).toBeGreaterThanOrEqual(1);
+    if(h.id!=='glasshouse')expect(p).toEqual(h.xy);else expect(w).toBeGreaterThanOrEqual(h.footprint_m[0]!*.8);}
+});

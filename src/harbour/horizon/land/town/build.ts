@@ -2,12 +2,31 @@ import { HORIZON_MANIFEST as M } from '../../world/manifest';
 import type { HeightQuery, LandCuts, XY } from '../interfaces';
 import { addFlatPad, bed, heightOnBeds } from '../beds/profiles';
 import { gradeRoute } from '../beds/solver';
-import { nearestOnPath, plan } from '../structures/mesh';
+import { box, distance, nearestOnPath, plan, slab, solid } from '../structures/mesh';
 import { buildStair } from '../structures/build';
 
+/** Lantern Row's water edge (R1-87: 18 m of quay with a 2 eu drop and nothing on it): a stone
+ * lip 0.35 high along every metre of the town quay whose water side drops more than body
+ * height, with a bollard every 4 m. A quay keeps its edge open for boats: lip and bollards,
+ * not a railing. */
+function quayLip(cuts:LandCuts,base:HeightQuery):void {
+  const q=M.structures.townQuay,h=3,a:XY=q.from as unknown as XY,b:XY=q.to as unknown as XY,len=Math.hypot(b[0]-a[0],b[1]-a[1]),d:XY=[(b[0]-a[0])/len,(b[1]-a[1])/len],n:XY=[-d[1],d[0]],half=1.25;
+  const lip=solid('town quay.lip','kerb','stone','wall',['town quay'],'harbour'),bollards=solid('town quay.bollards','bollard','stone','wall',['town quay'],'harbour');
+  for(const side of [-1,1]){
+    let run:XY|null=null,prev:XY|null=null,count=0;
+    const flush=()=>{if(run&&prev&&distance(run,prev)>.5)slab(lip,[run[0],h,run[1]],[prev[0],h,prev[1]],.4,.35,0,.35);run=null;};
+    for(let s=0;s<=len;s+=1){
+      const on:XY=[a[0]+d[0]*s+n[0]*side*(half+.2),a[1]+d[1]*s+n[1]*side*(half+.2)],beyond:XY=[on[0]+n[0]*side*1.5,on[1]+n[1]*side*1.5];
+      if(h-base(...beyond)>1.25){run??=on;prev=on;if(count++%4===0)box(bollards,on,h+.9,[.45,.45],h);}else{flush();count=0;}
+    }
+    flush();
+  }
+  for(const s of [lip,bollards])if(s.indices.length)cuts.solids.push(s);
+}
 export function buildTown(cuts:LandCuts,base:HeightQuery):void {
   const tiers=[['upperStreet',[1480,1080],18,[34,70]],['square',[1455,1175],12,[56,56]],['storefrontLane',[1490,1218],8,[40,12]],['quay',[1460,1295],3,[55,12]]] as const;
   for(const [id,xy,h,size]of tiers)addFlatPad(cuts,`town.${id}`,'place',xy,h,size);
+  quayLip(cuts,base);
   // Three flights with level landings, alongside an independently traversable 8% lane.
   for(let f=0;f<3;f++){
     const z=1150+f*7;buildStair(`marketStair.flight.${f}`,[1480,18-f*2,z],[1480,16-f*2,z+5],3,cuts);addFlatPad(cuts,`marketStair.landing.${f}`,'landing',[1480,z+6],16-f*2,[4,2]);
@@ -25,7 +44,10 @@ export function buildTown(cuts:LandCuts,base:HeightQuery):void {
   const road=cuts.beds.find(b=>b.id==='V01')!,junction=nearestOnPath([1370,1260],road.points);
   cuts.beds.push(bed('town.riverLink','walk',gradeRoute('town.riverLink',[[1400,1290],plan(junction.at)],()=>7,.12,[{xy:[1400,1290],height:7,reason:'Reach walk'},{xy:plan(junction.at),height:junction.at[1],reason:'drive'}],cuts.diagnostics)));
   cuts.beds.push(bed('gondolaBase.walk','walk',[[1480,18,1060],[1480,18,1090]]));
-  cuts.beds.push(bed('walk summit','walk',[[1310,154,500],[1320,156,485],[1310,158,470],[1310,160,440]]));
+  // West of the summit knoll: the east detour [1320,485] crossed the last leg of walk crownFromGondola
+  // 0.5-1.5 eu apart (the old generated deck there blocked the summit walk, R1-08); capped at the
+  // summit height (158) so no bed raises the ground above the summit.
+  cuts.beds.push(bed('walk summit','walk',[[1310,154,500],[1300,156,485],[1310,158,470],[1310,158,440]]));
   const lane=gradeRoute('homestead.lane',[[1514,1190],[1555,1205],[1540,1240],[1500,1250],[1520,1260],[1497,1265]],base,.08,[{xy:[1514,1190],height:12,reason:'yard'},{xy:[1500,1250],height:5,reason:'crossing'},{xy:[1497,1265],height:3,reason:'quay'}],cuts.diagnostics);cuts.beds.push(bed('homestead.lane','walk',lane));
   addFlatPad(cuts,'homestead.yard','homestead',[1520,1190],12,[26,20]);
   for(const site of M.journey.homestead.sites){

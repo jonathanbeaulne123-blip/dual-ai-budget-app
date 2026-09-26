@@ -7,7 +7,9 @@ import { buildTown } from '../town/build';
 import { buildHostSites } from '../town/hosts';
 import { buildUnderground } from '../underground/build';
 import { addFlatPad, bed, emitBedGeometry, heightOnBeds, planDistance } from './profiles';
-import { gradeRoute, sampleSpline, type HeightPin } from './solver';
+import { gradeRoute, listSteepStretches, sampleSpline, type HeightPin } from './solver';
+/** Typical grades (upper end of profiles.<kind>.grade_typ_pct): a bed rides these, not its maximum. */
+const TYP={road:M.profiles.road.grade_typ_pct[1]!/100,walk:M.profiles.walk.grade_typ_pct[1]!/100,skate:M.profiles.skateMain.grade_typ_pct[1]!/100};
 
 const pin=(xy:XY,height:number,reason:string):HeightPin=>({xy,height,reason});
 const BODY_HEIGHT=1.25;
@@ -18,7 +20,7 @@ const routePins:Record<string,HeightPin[]>={
   VBS:[pin([960,860],30,'Green Road'),pin([775,1125],14,'shore endpoint')],
   S1:[pin([1310,500],154,'Crown start'),pin([1160,935],31,'dam apron'),pin([1204,1098],12,'High Span shelf'),pin([1255,1251],5,'Reach boardwalk'),pin([1270,1330],3,'Landing finish')],
   S2:[pin([480,480],38,'strip start'),pin([560,1100],12,'Bight Bridge'),pin([1020,1430],3,'park')],
-  S3:[pin([1480,1060],18,'upper street'),pin([1470,1160],12,'square arrival'),pin([1440,1200],12,'square'),pin([1350,1345],9,'Quay Bridge'),pin([1133,1435],4,'zip underpass'),pin([1020,1430],3,'park')],
+  S3:[pin([1480,1060],18,'upper street'),pin([1470,1160],12,'square arrival'),pin([1440,1200],12,'square'),pin([1433,1298],3,'town quay at grade (T0 request 4: S3 ran 6-7 eu over the 3 eu quay)'),pin([1350,1345],9,'Quay Bridge'),pin([1133,1435],4,'zip underpass'),pin([1020,1430],3,'park')],
   S4:[pin([1000,520],40,'studio start'),pin([893,600],37,'Hollow Bridge'),pin([1020,1430],3,'park')],
   'walk garden':[pin([762,422],48,'Library apron'),pin([893,600],37,'Hollow Bridge'),pin([915,638],36,'Cottage front walk'),pin([930,650],38,'Cottage spur landing'),pin([990,780],56,'Glasshouse')],
   'walk lakerim':[pin([990,780],56,'Glasshouse'),pin([1161,731],52,'inlet bridge'),pin([1140,905],52,'dam crest')],
@@ -47,21 +49,41 @@ function withSpanPins(id:string,controls:XY[],pins:HeightPin[]=[]):HeightPin[] {
   }
   return out;
 }
+/** A bed running along another route's bridge (S2 along the Bight Bridge, S3 along the Quay
+ * Bridge) is a lane of that deck: across the span it takes the deck height, instead of diving
+ * to the seabed between two pins (S2 reached -2.67 under the Bight and raised a false islet). */
+function spanOf(id:string,p:XY,cuts:LandCuts,dir?:XY){
+  for(const s of SPANS){if(s.route===id||s.height===undefined)continue;const route=cuts.beds.find(b=>b.id===s.route);if(!route)continue;
+    const n=nearestOnPath(p,route.points),ra=route.points[n.segment]!,rb=route.points[Math.min(route.points.length-1,n.segment+1)]!,rl=distance(plan(ra),plan(rb))||1,along=!dir||Math.abs(dir[0]*(rb[0]-ra[0])/rl+dir[1]*(rb[2]-ra[2])/rl)>.9;if(along&&n.distance<=s.width/2&&distance(plan(n.at),s.at)<=s.length/2)return {span:s,height:n.at[1]};}
+  return undefined;
+}
+function spanLanePins(id:string,controls:readonly XY[],cuts:LandCuts):HeightPin[] {
+  const xy=sampleSpline(controls);return xy.flatMap((p,i)=>{const a=xy[Math.max(0,i-1)]!,c=xy[Math.min(xy.length-1,i+1)]!,l=distance(a,c)||1,hit=spanOf(id,p,cuts,[(c[0]-a[0])/l,(c[1]-a[1])/l]);return hit?[pin(p,hit.height,`${hit.span.id} deck lane`)]:[];});
+}
+/** After span exclusions exist: a bed's stretch on another route's span is carried by that deck. */
+function carrySpanLanes(cuts:LandCuts):void {
+  for(const b of cuts.beds){
+    if(!b.terrainCut||b.id.startsWith('structure.')||['cable','cave','rail'].includes(b.kind))continue;
+    let run:XY[]=[];const flush=()=>{if(run.length>1)(b.carried??=[]).push(run);run=[];};
+    for(const p of b.points){const xy=plan(p),hit=spanOf(b.id,xy,cuts);if(hit&&Math.abs(hit.height-p[1])<.5){run.push(xy);(b.terrainExclusions??=[]).push({at:xy,radius:b.width/2+b.shoulder+1,openSpan:true});}else flush();}
+    flush();
+  }
+}
 function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
   for(const [id,row]of Object.entries(M.roads)){
     if(!('pts'in row))continue;
-    const controls=row.pts as unknown as XY[],b=bed(id,row.profile,gradeRoute(id,controls,base,.12,withSpanPins(id,controls,routePins[id]),cuts.diagnostics));
+    const controls=row.pts as unknown as XY[],b=bed(id,row.profile,gradeRoute(id,controls,base,.12,withSpanPins(id,controls,routePins[id]),cuts.diagnostics,5,TYP.road));
     if('structures'in row)b.structureIds=row.structures.filter(x=>!(id==='VG'&&x==='hollowBridge'));cuts.beds.push(b);
   }
   for(const [id,pts]of Object.entries(M.roads.spurs)){
     const name=`spur ${id}`,at=pts[0]! as unknown as XY,start=heightOnBeds(cuts,at,base,40),heights:Record<string,number>={upperStreet:18,library:48,glasshouse:34,studio:40,cottage:38,boathouse:4};
-    cuts.beds.push(bed(name,'spur',gradeRoute(name,pts as unknown as XY[],base,.12,[pin(at,start,'junction'),pin(pts[pts.length-1]! as unknown as XY,heights[id]!,'spur end')],cuts.diagnostics)));
+    cuts.beds.push(bed(name,'spur',gradeRoute(name,pts as unknown as XY[],base,.12,[pin(at,start,'junction'),pin(pts[pts.length-1]! as unknown as XY,heights[id]!,'spur end')],cuts.diagnostics,5,TYP.road)));
   }
   for(const [id,row]of Object.entries(M.skate)){
     if(!('pts'in row))continue;
     const pts=[...row.pts] as unknown as XY[];
     if(id==='S1')pts.splice(4,0,[1435,705],[1430,775],[1325,735]);
-    const b=bed(id,'skateMain',gradeRoute(id,pts,base,.18,withSpanPins(id,pts,routePins[id]),cuts.diagnostics));
+    const b=bed(id,'skateMain',gradeRoute(id,pts,base,.18,[...withSpanPins(id,pts,routePins[id]),...spanLanePins(id,pts,cuts)],cuts.diagnostics,5,TYP.skate));
     b.surfaceSegments=row.segments.map((segment,i)=>({from:i/row.segments.length,to:(i+1)/row.segments.length,surface:segment.surface,pace:segment.pace,bankDegrees:segment.surface==='bankedTurf'?18:0}));cuts.beds.push(b);
   }
   for(const [id,row]of Object.entries(M.walks)){
@@ -73,7 +95,7 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
     if(id==='crownFromGondola')points=[[1360,560],[1405,595],[1450,565],[1430,500],[1350,440],[1310,500]];
     const pins=withSpanPins(name,points,routePins[name]);
     if(id==='garden')for(const p of sampleSpline(points))if(p[0]>=899&&p[0]<=916&&p[1]>=637&&p[1]<=642)pins.push(pin(p,36,'Cottage front bench'));
-    cuts.beds.push(bed(name,row.profile,gradeRoute(name,points,base,.12,pins,cuts.diagnostics)));
+    cuts.beds.push(bed(name,row.profile,gradeRoute(name,points,base,.12,pins,cuts.diagnostics,5,TYP.walk)));
   }
   // Join the Cottage spur to the garden walk at the same contour. A short
   // public link avoids treating two nearby but disconnected paths as one.
@@ -115,6 +137,10 @@ function journey(cuts:LandCuts,base:HeightQuery):YearWalkShare[] {
   const hostHeight=(share:YearWalkShare,p:XY)=>nearestOnPath(p,cuts.beds.find(b=>b.id===share.host)!.points).at[1];
   const shareOf=(i:number)=>shares.find(s=>i>=s.from&&i<=s.to);
   const pins:HeightPin[]=[];
+  // journey.yearWalk.crossings: the walk crosses S1 once, at grade, at [1255,862] (T0 request 3:
+  // the crossing was 2.9 eu apart) - the walk takes S1's height there.
+  const s1=cuts.beds.find(b=>b.id==='S1'),s1Cross:XY=[1255,862];
+  if(s1&&nearestOnPath(s1Cross,s1.points).distance<6)pins.push(pin(s1Cross,nearestOnPath(s1Cross,s1.points).at[1],'S1 at-grade crossing'));
   for(const s of shares)for(const i of [s.from,s.to])pins.push(pin(samples[i]!,hostHeight(s,samples[i]!),`share ${s.stretch} ${s.host} ${i===s.from?'entry':'exit'}`));
   for(const station of M.journey.stations){
     const p=Y.pins.find(q=>q.station===station.id),xy=station.xy as unknown as XY,index=samples.reduce((best,q,i)=>distance(q,xy)<distance(samples[best]!,xy)?i:best,0),share=shareOf(index);
@@ -128,7 +154,7 @@ function journey(cuts:LandCuts,base:HeightQuery):YearWalkShare[] {
   // Adjacent lanes: where the walk comes back beside itself (two months side by side, lanes a
   // few metres apart), the later lane takes the earlier lane's height, so the two read as one
   // level footway instead of two beds at different heights.
-  const first=gradeRoute('yearWalk',controls,base,limit,pins,[]),arcs=[0];for(let i=1;i<first.length;i++)arcs.push(arcs[i-1]!+distance(plan(first[i-1]!),plan(first[i]!)));
+  const first=gradeRoute('yearWalk',controls,base,limit,pins,[],5,TYP.walk),arcs=[0];for(let i=1;i<first.length;i++)arcs.push(arcs[i-1]!+distance(plan(first[i-1]!),plan(first[i]!)));
   for(let j=0;j<first.length;j++){
     if(shareOf(j))continue;
     const dir=(k:number):XY=>{const a=first[Math.max(0,k-1)]!,c=first[Math.min(first.length-1,k+1)]!,len=Math.hypot(c[0]-a[0],c[2]-a[2])||1;return [(c[0]-a[0])/len,(c[2]-a[2])/len];};
@@ -136,9 +162,10 @@ function journey(cuts:LandCuts,base:HeightQuery):YearWalkShare[] {
     let lane=-1;for(let i=0;i<j;i++)if(arcs[j]!-arcs[i]!>40&&arcs.at(-1)!-arcs[j]!+arcs[i]!>40&&distance(plan(first[i]!),plan(first[j]!))<4.5&&Math.abs(dir(i)[0]*dir(j)[0]+dir(i)[1]*dir(j)[1])>.9&&(lane<0||distance(plan(first[i]!),plan(first[j]!))<distance(plan(first[lane]!),plan(first[j]!))))lane=i;
     if(lane>=0){const a=first[lane]!,c=first[Math.min(first.length-1,lane+1)]!,t=nearestOnPath(plan(first[j]!),[a,c]).at[1];pins.push(pin(plan(first[j]!),shareOf(lane)?hostHeight(shareOf(lane)!,plan(first[j]!)):t,'adjacent lane'));}
   }
-  const points=gradeRoute('yearWalk',controls,base,limit,pins,cuts.diagnostics).map((p,i):XYZ=>{const s=shareOf(i);return s?[p[0],hostHeight(s,plan(p)),p[2]]:p;});
+  const solveDiagnostics:LandCuts['diagnostics']=[],points=gradeRoute('yearWalk',controls,base,limit,pins,solveDiagnostics,5,TYP.walk).map((p,i):XYZ=>{const s=shareOf(i);return s?[p[0],hostHeight(s,plan(p)),p[2]]:p;});
   const b=bed('yearWalk','walk',points);b.width=b_width;b.shoulder=1.2;b.maxGrade=limit;cuts.beds.push(b);
-  reportSteepStretches('yearWalk',points,cuts.diagnostics,limit);
+  // Stretches are listed on the final (host-copied) heights, not the pre-copy solve.
+  cuts.diagnostics.push(...solveDiagnostics.filter(d=>!d.id.startsWith('gradeStretch.')));listSteepStretches('yearWalk',points,cuts.diagnostics,limit);
   for(const s of M.journey.stations){const n=nearestOnPath(s.xy as unknown as XY,b.points);const p=addFlatPad(cuts,`station.${s.id}`,'station',s.xy as unknown as XY,n.at[1]!,M.journey.station.pad_m as unknown as XY);p.serviceBedId='yearWalk';p.margin=2;}
   return shares;
 }
@@ -189,13 +216,6 @@ function reportYearWalkSeparation(cuts:LandCuts,walk:BedCut):void {
   }
   for(const [id,r]of runs)cuts.diagnostics.push({id:`yearWalk.separation.${id}`,severity:'conflict',message:`Year Walk runs ${r.min.toFixed(1)} eu edge-to-edge from ${id} at ${r.dh.toFixed(1)} eu height difference (${r.n} samples); the rule is width + 15 m plan separation or one shared bed`,at:r.at,measured:r.min,required:15});
 }
-/** Every stretch of a solved bed steeper than 8 % is listed (MANIFEST profiles: "every stretch over 8 % is listed"). */
-export function reportSteepStretches(id:string,points:readonly XYZ[],diagnostics:LandCuts['diagnostics'],limit:number,review=.08):void {
-  let run:{from:number;length:number;max:number;at:XY}|null=null;
-  const close=()=>{if(run&&run.length>=1)diagnostics.push({id:`gradeStretch.${id}.${Math.round(run.from)}`,severity:run.max>limit+.001?'conflict':'info',message:`${id}: ${run.length.toFixed(1)} eu over ${(review*100).toFixed(0)}% from arc ${run.from.toFixed(0)}; maximum ${(run.max*100).toFixed(2)}%`,at:run.at,measured:run.max,required:review});run=null;};
-  let arc=0;for(let i=1;i<points.length;i++){const a=points[i-1]!,b=points[i]!,len=distance(plan(a),plan(b)),g=Math.abs(b[1]-a[1])/(len||1);if(g>review+1e-4){run??={from:arc,length:0,max:0,at:plan(a)};run.length+=len;run.max=Math.max(run.max,g);}else close();arc+=len;}
-  close();
-}
 function cables(cuts:LandCuts,base:HeightQuery):void {
   const g=M.cable.G1,controls:XYZ[]=[[g.from[0]!,g.fromH,g.from[1]!],...g.towers.map((p,i)=>[p[0]!,Math.max(mix(g.fromH,g.toH,(i+1)/4),base(...p as unknown as XY)+8),p[1]!] as unknown as XYZ),[g.to[0]!,g.toH,g.to[1]!]];
   // Project clearance constraints onto the three free tower heights. Endpoint heights stay frozen.
@@ -228,7 +248,12 @@ function cables(cuts:LandCuts,base:HeightQuery):void {
   cuts.beds.push(bed('G1','cable',gondola,false));const towers=solid('G1.towers','tower','stone','support',['G1'],'prow');controls.slice(1,-1).forEach(p=>{const ground=base(p[0]!,p[2]!);box(towers,plan(p),p[1]!,[1.5,1.5],ground-.25);box(towers,plan(p),ground+.4,[4,4],ground-.25);});cuts.solids.push(towers);
   const z=M.cable.ZIP,len=distance(z.from as unknown as XY,z.to as unknown as XY),zip=Array.from({length:129},(_,k)=>{const t=k/128;return [mix(z.from[0]!,z.to[0]!,t),mix(z.fromH,z.toH,t)-len*z.sag_pct/100*4*t*(1-t),mix(z.from[1]!,z.to[1]!,t)] as unknown as XYZ;});cuts.beds.push(bed('ZIP','cable',zip,false));
   const cross:XY=[1442,921],clear=nearestOnPath(cross,zip).at[1]!-nearestOnPath(cross,gondola).at[1]!;cuts.diagnostics.push({id:'cable.ZIP.G1',severity:clear<8?'conflict':'info',message:'Measured ZIP clearance above the sagged gondola at the fixed crossing',at:cross,measured:clear,required:8});
-  for(const [id,points]of [['G1',gondola],['ZIP',zip]]as const){const geometry=solid(`${id}.cable`,'cable','metal','rail',[id],'prow');for(let i=1;i<points.length;i++)slab(geometry,points[i-1]!,points[i]!,.09,.09);cuts.solids.push(geometry);}
+  // The rope meets each station at its bullwheel, above head height: within 16 eu of a
+  // platform the cable solid never drops below platform + body clearance, so it is not a
+  // tripwire across the platform or the base walk (A3-02). The bed keeps the true line.
+  const CABLE_HEAD=2.6;
+  const lifted=(points:readonly XYZ[]):XYZ[]=>{const ends=[points[0]!,points.at(-1)!];return points.map(p=>{let y=p[1];for(const e of ends){const d=distance(plan(p),plan(e));if(d<16)y=Math.max(y,e[1]+CABLE_HEAD);}return [p[0],y,p[2]] as XYZ;});};
+  for(const [id,points]of [['G1',gondola],['ZIP',zip]]as const){const line=lifted(points),geometry=solid(`${id}.cable`,'cable','metal','rail',[id],'prow');for(let i=1;i<line.length;i++)slab(geometry,line[i-1]!,line[i]!,.09,.09);cuts.solids.push(geometry);}
   let roofMin=Infinity,terrainMin=Infinity;for(const p of zip){terrainMin=Math.min(terrainMin,p[1]!-base(p[0]!,p[2]!));for(const h of M.hosts)if(Math.abs(p[0]!-h.xy[0]!)<=h.footprint_m[0]!/2&&Math.abs(p[2]!-h.xy[1]!)<=h.footprint_m[1]!/2)roofMin=Math.min(roofMin,p[1]!-h.h-h.roofH_eu);}
   if(roofMin<12)cuts.diagnostics.push({id:'cable.ZIP.roofs',severity:'conflict',message:'Fixed sagged zip line fails a host roof clearance',measured:roofMin,required:12});
   if(terrainMin<8)cuts.diagnostics.push({id:'cable.ZIP.terrain',severity:'conflict',message:'Fixed zip line fails terrain clearance; endpoints were not moved',measured:terrainMin,required:8});
@@ -272,6 +297,21 @@ function guardWater(cuts:LandCuts,base:HeightQuery):void {
     if(count)cuts.diagnostics.push({id:`bed.${b.id}.overWater`,severity:'conflict',message:`${b.id}: ${count} centreline samples over open water outside a named span; no terrain fill is emitted there (deck ${deepest.toFixed(2)} eu relative to the water)`,at:first,measured:count,required:0});
   }
 }
+/** Rail holds profiles.rail.grade_max_pct (6 %) except the two named exceptions: the chain-lift
+ * incline (profiles.rail.chainLift, along the line between its ends) and the drop (rail.ORE.drop).
+ * Every other stretch over 6 % is a conflict; the chain lift's own maximum is listed. */
+function checkRailGrades(cuts:LandCuts):void {
+  const limit=M.profiles.rail.grade_max_pct/100,lift=M.profiles.rail.chainLift,drop=M.rail.ORE.drop.at as unknown as XY;
+  for(const b of cuts.beds.filter(b=>b.kind==='rail')){
+    const from=nearestOnPath(lift.from as unknown as XY,b.points),to=nearestOnPath(lift.to as unknown as XY,b.points);
+    let along=0;const incline:XY[]=[];
+    if(from.distance<20&&to.distance<20)b.points.forEach((p,i)=>{if(i)along+=distance(plan(b.points[i-1]!),plan(p));if(along>=Math.min(from.along,to.along)&&along<=Math.max(from.along,to.along))incline.push(plan(p));});
+    const exempt=(at:XY)=>(incline.length>1&&planDistance(at,incline)<2)||distance(at,drop)<20;
+    listSteepStretches(b.id,b.points,cuts.diagnostics,limit,limit,exempt);
+    if(incline.length>1){let max=0;for(let i=1;i<b.points.length;i++){const a=b.points[i-1]!,c=b.points[i]!,mid:XY=[(a[0]+c[0])/2,(a[2]+c[2])/2];if(planDistance(mid,incline)<2)max=Math.max(max,Math.abs(c[1]-a[1])/(distance(plan(a),plan(c))||1));}
+      cuts.diagnostics.push({id:`rail.${b.id}.chainLift`,severity:'info',message:`${b.id}: the named chain-lift incline (${lift.from.join(',')} to ${lift.to.join(',')}) is exempt from ${M.profiles.rail.grade_max_pct} %; its maximum is ${(max*100).toFixed(1)} %`,at:lift.from as unknown as XY,measured:max,required:limit});}
+  }
+}
 /** Offline only: no geometry is constructed at module evaluation. */
 export function buildLandCuts(baseHeight:HeightQuery):LandCuts {
   if(requireScaleFactor()!==1)throw new Error('Horizon Pass 1 was authored at confirmed factor 1.0; re-solve every profile for another factor');
@@ -281,7 +321,7 @@ export function buildLandCuts(baseHeight:HeightQuery):LandCuts {
   for(const spec of SPANS){const route=cuts.beds.find(b=>b.id===spec.route);if(route)(route.terrainExclusions??=[]).push({at:spec.at,radius:spec.length/2+2,openSpan:true});}
   for(const [id,route,length]of [['prowTunnel','V01',90],['shoulderTunnel','V02',110],['duneCulvert','S4',32]]as const){const b=cuts.beds.find(b=>b.id===route);if(b)(b.terrainExclusions??=[]).push({at:M.structures[id]!.xy as unknown as XY,radius:length/2+2});}
   cuts.beds.find(b=>b.id==='V01')!.terrainExclusions!.push({at:[1010,1388],radius:12});
-  settleYearWalkShares(cuts,shares);guardWater(cuts,baseHeight);
+  settleYearWalkShares(cuts,shares);carrySpanLanes(cuts);guardWater(cuts,baseHeight);checkRailGrades(cuts);
   cables(cuts,baseHeight);const markers=thresholds(cuts,baseHeight);
   for(const b of cuts.beds)if(!b.id.startsWith('structure.')&&!b.id.startsWith('underground.')&&!['ORE','DEEP_RUN','ORE.siding','prowTunnel','shoulderTunnel','duneCulvert'].includes(b.id))emitBedGeometry(b,cuts,baseHeight,markers);
   return cuts;

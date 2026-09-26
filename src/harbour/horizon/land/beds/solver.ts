@@ -18,7 +18,7 @@ export function sampleSpline(controls: readonly XY[], step=5): XY[] {
   result.push(controls[controls.length-1]!);return result;
 }
 /** Pins are exact constraints. Incompatible pins produce diagnostics, never an invented pass. */
-export function gradeRoute(id:string, controls:readonly XY[], height:HeightQuery, limit:number, pins:readonly HeightPin[]=[], diagnostics:LandDiagnostic[]=[], step=5): XYZ[] {
+export function gradeRoute(id:string, controls:readonly XY[], height:HeightQuery, limit:number, pins:readonly HeightPin[]=[], diagnostics:LandDiagnostic[]=[], step=5, typical=limit): XYZ[] {
   const xy=sampleSpline(controls,step), chain=[0];
   for(let i=1;i<xy.length;i++)chain.push(chain[i-1]!+distance(xy[i-1]!,xy[i]!));
   const targets=xy.map(p=>height(...p));
@@ -34,21 +34,43 @@ export function gradeRoute(id:string, controls:readonly XY[], height:HeightQuery
     const [a,ha]=anchors[j-1]!,[b,hb]=anchors[j]!,available=chain[b]!-chain[a]!,needed=Math.abs(hb-ha)/limit;
     if(needed>available+.01)diagnostics.push({id:`grade.${id}.${j}`,severity:'conflict',message:`${id}: fixed heights need ${(needed-available).toFixed(1)} eu more route length between controls`,at:xy[a]!,measured:available,required:needed});
   }
-  // Each anchor provides a Lipschitz cone. The intersection is the feasible height interval.
-  const ys=targets.map((target,i)=>{
-    let lo=-Infinity,hi=Infinity;
-    for(const [j,h] of anchors){const allowance=Math.abs(chain[i]!-chain[j]!)*limit;lo=Math.max(lo,h-allowance);hi=Math.min(hi,h+allowance);}
-    return lo<=hi?clamp(target,lo,hi):(lo+hi)/2;
+  // The bed does not ride the maximum: between two anchors its working grade is the typical
+  // grade, or just what those anchors need (+15 %) when that is steeper, never above `limit`.
+  // Free ends keep `limit` (they follow the ground). Segment k joins samples k-1 and k.
+  const work=chain.map((_,k)=>{
+    if(!k)return limit;let j=anchors.findIndex(([a])=>a>=k);if(j<=0)return limit;
+    const [a,ha]=anchors[j-1]!,[b,hb]=anchors[j]!,available=chain[b]!-chain[a]!,need=available>0?Math.abs(hb-ha)/available:limit;
+    return Math.min(limit,Math.max(typical,need*1.15));
   });
+  const weighted=[0];for(let i=1;i<xy.length;i++)weighted.push(weighted[i-1]!+(chain[i]!-chain[i-1]!)*work[i]!);
+  // Each anchor provides a Lipschitz cone. The intersection is the feasible height interval.
+  const bands=targets.map((_,i)=>{
+    let lo=-Infinity,hi=Infinity;
+    for(const [j,h] of anchors){const allowance=Math.abs(weighted[i]!-weighted[j]!);lo=Math.max(lo,h-allowance);hi=Math.min(hi,h+allowance);}
+    return lo<=hi?[lo,hi]:[(lo+hi)/2,(lo+hi)/2];
+  });
+  const ys=targets.map((target,i)=>clamp(target,bands[i]![0]!,bands[i]![1]!));
   for(let pass=0;pass<48;pass++){
     for(let i=1;i<ys.length-1;i++)if(!fixed.has(i))ys[i]! =mix(ys[i]!,(ys[i-1]!+ys[i+1]!)/2,.35);
-    for(let i=1;i<ys.length;i++)if(!fixed.has(i)){const delta=(chain[i]!-chain[i-1]!)*limit;ys[i]! =clamp(ys[i]!,ys[i-1]!-delta,ys[i-1]!+delta);}
-    for(let i=ys.length-2;i>=0;i--)if(!fixed.has(i)){const delta=(chain[i+1]!-chain[i]!)*limit;ys[i]! =clamp(ys[i]!,ys[i+1]!-delta,ys[i+1]!+delta);}
+    for(let i=1;i<ys.length;i++)if(!fixed.has(i)){const delta=(chain[i]!-chain[i-1]!)*work[i]!;ys[i]! =clamp(clamp(ys[i]!,ys[i-1]!-delta,ys[i-1]!+delta),bands[i]![0]!,bands[i]![1]!);}
+    for(let i=ys.length-2;i>=0;i--)if(!fixed.has(i)){const delta=(chain[i+1]!-chain[i]!)*work[i+1]!;ys[i]! =clamp(clamp(ys[i]!,ys[i+1]!-delta,ys[i+1]!+delta),bands[i]![0]!,bands[i]![1]!);}
     fixed.forEach((h,i)=>{ys[i]! =h;});
   }
   const result:XYZ[]=xy.map((p,i)=>[p[0]!,ys[i]!,p[1]!]);
-  let above=0,max=0;
-  for(let i=1;i<result.length;i++){const len=distance(plan(result[i-1]!),plan(result[i]!));const grade=Math.abs(result[i]![1]!-result[i-1]![1]!)/(len||1);max=Math.max(max,grade);if(grade>.08)above+=len;}
-  if(above>0)diagnostics.push({id:`gradeReview.${id}`,severity:max>limit+.001?'conflict':'info',message:`${id}: ${above.toFixed(1)} eu over 8%; maximum ${(max*100).toFixed(2)}%`,measured:max,required:limit});
+  listSteepStretches(id,result,diagnostics,limit);
   return result;
+}
+/** Every stretch of a solved bed steeper than the review grade (8 %) is listed as its own
+ * diagnostic (MANIFEST profiles: "every other stretch over 8 % is listed in the bake report");
+ * a stretch over the bed's limit is a conflict. */
+export function listSteepStretches(id:string,points:readonly XYZ[],diagnostics:LandDiagnostic[],limit:number,review=.08,skip?:(at:XY)=>boolean):void {
+  let run:{from:number;length:number;max:number;at:XY}|null=null;
+  const close=()=>{if(run&&run.length>=1)diagnostics.push({id:`gradeStretch.${id}.${Math.round(run.from)}`,severity:run.max>limit+.001?'conflict':'info',message:`${id}: ${run.length.toFixed(1)} eu over ${(review*100).toFixed(0)}% from arc ${run.from.toFixed(0)}; maximum ${(run.max*100).toFixed(2)}%`,at:run.at,measured:run.max,required:limit});run=null;};
+  let arc=0;
+  for(let i=1;i<points.length;i++){
+    const a=points[i-1]!,b=points[i]!,len=distance(plan(a),plan(b)),g=Math.abs(b[1]-a[1])/(len||1),mid:XY=[(a[0]+b[0])/2,(a[2]+b[2])/2];
+    if(g>review+1e-4&&!skip?.(mid)){run??={from:arc,length:0,max:0,at:plan(a)};run.length+=len;run.max=Math.max(run.max,g);}else close();
+    arc+=len;
+  }
+  close();
 }
