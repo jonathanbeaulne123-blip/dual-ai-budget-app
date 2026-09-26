@@ -23,7 +23,9 @@ import type { HouseholdWord } from './harbour/nav/atlasSearch.ts';
 import { readRecentTools, rememberRecentTool } from './harbour/bubbles/usage.ts';
 import { spaceForView, stripLedger, viewForSpace, type DayLedger } from './harbour/glass/dayLedger.ts';
 import { campCardModel, type CampCardModel } from './harbour/glass/campCardModel.ts';
-import type { PanelExtras, PanelHost } from './harbour/panels/panelModel.ts';
+import { fundExtrasFromBasin, type PanelExtras, type PanelHost } from './harbour/panels/panelModel.ts';
+import { buildBasinReading } from './harbour/mountain/basin.ts';
+import { readSeals, readSnapshot } from './harbour/desk/todayModel.ts';
 import { campfireState, type CampfireBeat } from './harbour/campfire/ritual/model.ts';
 import { HarbourFlat } from './harbour/flat/PlaceFlat.tsx';
 import { harbourJourneyAnchor } from './path/harbourJourney.ts';
@@ -7168,6 +7170,18 @@ export function App() {
   const panelExtras: PanelExtras = {
     memberId: actorId,
     today,
+    space: spaceForView(view),
+    // The Fund bank: the shared Fund's accepted balance, as-of and last moves, from the reading the Mountain guide's
+    // glass dam read (`buildBasinReading`). Always the shared household: in Mine the panel says "the shared Fund".
+    ...(hostPanel === "bank" ? { fund: fundExtrasFromBasin(
+      buildBasinReading(household, today, sceneInterpretationGate.freshness === "stale" || sceneInterpretationGate.freshness === "offline" ? sceneInterpretationGate.freshness : "current"),
+      view === "personal" ? readSnapshot(household, actorId, "household", today)?.now ?? null : undefined,
+    ) } : {}),
+    // The Library: this month's in / out / leftover, from the Desk's seals model, in the space on screen.
+    ...(hostPanel === "library" ? (() => {
+      const read = readSeals(view === "personal" ? (personalSource ?? household) : household, actorId, view, today);
+      return { books: { inCents: read.seals?.inCents ?? null, outCents: read.seals?.outCents ?? null, leftoverCents: read.seals?.leftoverCents ?? null, monthKey: monthKeyFromDateKey(today) } };
+    })() : {}),
     // The Campfire's panel line counts the recipe cards and seals waiting on this member (track D's read model).
     ...(hostPanel === "campfire" && view === "household" ? { needsYou: campfireState(household, actorId, today).needsYou } : {}),
     bills: (dockNowLedger?.days ?? []).flatMap(day => day.slips.filter(slip => slip.amountCents !== null && (day.relation !== "past" || slip.overdue))
@@ -9357,7 +9371,7 @@ export function App() {
       ) : null}
 
       {!charterTakeoverVisible ? (
-      HARBOUR_ENABLED?<><Compass fab={harbourBarFab} fabOpen={fabOpen} toolsOpen={quickSheetOpen} member={actorId} theme={appearance.preview??appearance.saved.theme} onQuickSheet={()=>setQuickSheetOpen(true)}/>
+      HARBOUR_ENABLED?<><Compass fab={harbourBarFab} fabOpen={fabOpen} toolsOpen={quickSheetOpen} member={actorId} theme={appearance.preview??appearance.saved.theme} calm={comfort.quiet} alwaysShowLabels={comfort.labels} onQuickSheet={()=>setQuickSheetOpen(true)}/>
         {/* All tools, one sheet for both spaces and the Desk drawer (Tool Atlas §3.4). */}
         <QuickSheet open={quickSheetOpen} onClose={()=>setQuickSheetOpen(false)} onOpen={(id,object)=>openAtlasTarget(id,object)} onTarget={(target,object)=>openAtlasTarget(target,object)}
           onStatus={()=>{setQuickSheetOpen(false);goTab("more");}} onSettings={(section)=>openAtlasTarget(section?`settings:${section}`:"settings")} onHercules={()=>{setQuickSheetOpen(false);openLegacyHercules();}}

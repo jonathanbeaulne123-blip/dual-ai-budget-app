@@ -11,6 +11,7 @@
 import type { DateKey } from "../../core/calendar.ts";
 import type { HarbourReading } from "../data/reading.ts";
 import { shortDate, shortMonth } from "../nav/doorSigns.ts";
+import type { BasinReading } from "../mountain/basin.ts";
 
 export type PanelHost = "bank" | "cellar" | "tower" | "kitchen" | "library" | "glasshouse" | "campfire" | "boathouse" | "atlas" | "cottage" | "hercules";
 
@@ -21,7 +22,9 @@ export type CellarPanelBill = { key: string; label: string; cents: number; due: 
 export type PanelExtras = {
   memberId?: string;
   today?: DateKey;
-  fund?: { acceptedCents: number | null; asOf: DateKey | null; moves: readonly FundMove[] };
+  fund?: { acceptedCents: number | null; asOf: DateKey | null; moves: readonly FundMove[]; everydayCents?: number | null };
+  /** Which space the card shows. The Fund bank is always the shared Fund; in Mine it says so. */
+  space?: "ours" | "mine";
   /** The next bills with their recurrence, so "Mark paid" can name one. */
   bills?: readonly CellarPanelBill[];
   books?: { inCents: number | null; outCents: number | null; leftoverCents: number | null; monthKey?: string | null };
@@ -54,10 +57,31 @@ export type FundBankPanelReading = {
 export function fundBankPanel(reading: Pick<HarbourReading, "everyday"> | null, extras: PanelExtras = {}): FundBankPanelReading {
   const fund = extras.fund;
   return {
-    everyday: engravedCents(reading?.everyday ?? null),
+    everyday: engravedCents(fund?.everydayCents !== undefined ? fund.everydayCents : reading?.everyday ?? null),
     accepted: engravedCents(fund?.acceptedCents ?? null),
     asOf: fund?.asOf ? shortDate(fund.asOf) : null,
     moves: (fund?.moves ?? []).slice(0, 3).map((move) => ({ key: move.key, label: move.label, amount: signedCents(move.cents), date: shortDate(move.date) })),
+  };
+}
+
+/**
+ * The bank panel's figures from the same shared-Fund reading the retired Mountain guide's
+ * "glass dam" tab used (`buildBasinReading`): the accepted operating balance and its as-of
+ * date only when the reading is supported, and the last three recorded moves, newest first,
+ * signed by what they did to the operating balance. An unsupported reading reads "—".
+ */
+export function fundExtrasFromBasin(basin: BasinReading | null | undefined, everydayCents?: number | null): NonNullable<PanelExtras["fund"]> {
+  const known = Boolean(basin?.known && basin.balanceCents !== null);
+  return {
+    acceptedCents: known ? basin!.balanceCents : null,
+    asOf: known ? basin!.asOf as DateKey : null,
+    moves: known ? basin!.flows.slice(-3).reverse().map((flow) => ({
+      key: flow.id,
+      label: flow.label,
+      cents: flow.kind === "inlet" || flow.kind === "reserve-in" ? flow.cents : -flow.cents,
+      date: (flow.date ?? basin!.asOf) as DateKey,
+    })) : [],
+    ...(everydayCents !== undefined ? { everydayCents } : {}),
   };
 }
 

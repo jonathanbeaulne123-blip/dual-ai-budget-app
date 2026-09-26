@@ -6,7 +6,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HarbourReading } from "../src/harbour/data/reading.ts";
 import { HostPanel, PANEL_DOORS } from "../src/harbour/panels/HostPanel.tsx";
-import { campfirePanel, cellarPanel, daysToMonthEnd, fundBankPanel, glasshousePanel, libraryPanel, loftPanel, signedCents, type PanelHost } from "../src/harbour/panels/panelModel.ts";
+import { campfirePanel, cellarPanel, daysToMonthEnd, fundBankPanel, fundExtrasFromBasin, glasshousePanel, libraryPanel, loftPanel, signedCents, type PanelHost } from "../src/harbour/panels/panelModel.ts";
 
 /**
  * The compact panels (Tool Atlas brief §3.2 right-hand column, A12): pure
@@ -162,5 +162,31 @@ describe("each panel", () => {
     expect(document.activeElement).toBe(opener);
     // Step in without a world is shown, disabled, with its reason.
     opener.remove();
+  });
+
+  it("reads the Fund bank from the shared-Fund basin reading, and says the shared Fund in Mine", async () => {
+    const basin = { identity: "x", revision: 1, asOf: "2026-09-25", known: true, balanceCents: 471_680, kittyCents: 0, freeCents: 0, pendingCents: 0, targetCents: 0, flows: [
+      { id: "e1", cents: 120_000, kind: "inlet" as const, label: "Confirmed Fund contribution", date: "2026-09-01" },
+      { id: "e2", cents: 14_200, kind: "outlet" as const, label: "Confirmed Fund settlement", date: "2026-09-18" },
+      { id: "e3", cents: 5_000, kind: "reserve-out" as const, label: "Moved into Kitty reserves", date: "2026-09-20" },
+      { id: "e4", cents: 2_000, kind: "reserve-in" as const, label: "Released from Kitty reserves", date: "2026-09-24" },
+    ] };
+    const fund = fundExtrasFromBasin(basin, 128_450);
+    expect(fund.acceptedCents).toBe(471_680);
+    expect(fund.asOf).toBe("2026-09-25");
+    expect(fund.moves.map((m) => m.cents)).toEqual([2_000, -5_000, -14_200]);
+    expect(fundExtrasFromBasin({ ...basin, known: false, balanceCents: null })).toEqual({ acceptedCents: null, asOf: null, moves: [] });
+    expect(fundBankPanel(null, { fund }).everyday).toBe("$1,284.50");
+    await act(async () => root.render(createElement(HostPanel, { host: "bank", reading, extras: { fund, space: "mine" }, onClose: () => undefined, onOpen: () => undefined })));
+    expect(host.textContent).toContain("the shared Fund · Everyday · now $1,284.50");
+    expect(host.textContent).toContain("$4,716.80");
+    expect(host.textContent).not.toMatch(/my Fund/i);
+    await act(async () => root.render(createElement(HostPanel, { host: "bank", reading, extras: { fund, space: "ours" }, onClose: () => undefined, onOpen: () => undefined })));
+    expect(host.textContent).not.toContain("the shared Fund");
+  });
+
+  it("keeps an overdue bill the App hands in, so Mark paid can reach it", () => {
+    const cellar = cellarPanel(reading, { today: "2026-09-25", bills: [{ key: "late", label: "Water", cents: 4_000, due: "2026-09-20", recurrenceId: "r-water" }] });
+    expect(cellar.bills.map((b) => b.recurrenceId)).toEqual(["r-water"]);
   });
 });
