@@ -1,0 +1,93 @@
+{
+ "ride": "reduced_motion",
+ "sha": "e4655b3",
+ "generated": "2026-09-26T09:11:56.841Z",
+ "settings": {
+  "tier": "full",
+  "reducedMotion": true,
+  "calm": false
+ },
+ "offers": [
+  "Run off"
+ ],
+ "sheet": "Where to?\nLAND AT\nthe Green\nthe Reach meadow\nLong Sands\nthe strip\nthe Deep, through the Throat\nSKETCHBOOK PAGES\nA · The square, looking north-west\nB · The Lamp gallery\nC · High Span, three speeds\nD · Long Sands\nE · The Crown\nF · Dam crest\nG · The Deep, looking up the Throat\nH · The Flats at sunset\nI · Reach boardwalk\nJ · The Needle's Eye, from the plane\nK · The Glasshouse at dusk\nL · The quay at night\nStay here",
+ "during": {
+  "moverState": {
+   "mode": "glider",
+   "attached": false,
+   "hud": null
+  },
+  "camera": {
+   "eye": [
+    1310,
+    163.4637249670294,
+    449
+   ],
+   "target": [
+    1310,
+    161.15,
+    440
+   ],
+   "fov": 32.64206322435175
+  },
+  "flying": false
+ },
+ "after": {
+  "ms": 11161,
+  "moverState": {
+   "mode": "feet",
+   "attached": false,
+   "hud": null
+  },
+  "body": {
+   "x": 1040,
+   "y": 18.290000915527344,
+   "z": 1065,
+   "yaw": 3.141592653589793
+  },
+  "mode": "walk",
+  "camera": {
+   "eye": [
+    1040,
+    21.75372588255674,
+    1074
+   ],
+   "target": [
+    1040,
+    19.440000915527342,
+    1065
+   ],
+   "fov": 32.64206322435175
+  }
+ },
+ "bail": {
+  "started": false,
+  "attached": false
+ },
+ "summary": {
+  "settings": {
+   "tier": "full",
+   "reducedMotion": true,
+   "calm": false
+  },
+  "sheetLines": 21,
+  "afterBody": {
+   "x": 1040,
+   "y": 18.290000915527344,
+   "z": 1065,
+   "yaw": 3.141592653589793
+  },
+  "afterMode": "feet",
+  "bail": {
+   "started": false,
+   "attached": false
+  }
+ },
+ "errors": [
+  "Failed to load resource: the server responded with a status of 404 (Not Found)"
+ ],
+ "pngs": [
+  "crown-sheet.png",
+  "after-cut-green.png"
+ ]
+}
