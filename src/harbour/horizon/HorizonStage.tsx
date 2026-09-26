@@ -7,7 +7,9 @@ import type {Host} from './world/definition.ts';
 import type {HouseBodyReturn} from '../../house/navigation.ts';
 import type {PlaceWalkSource} from '../scene/place.ts';
 import './horizon.css';
-export type HorizonStageProps={onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onRuntime?:(runtime:HorizonRuntime|null)=>void;onQuickSheet?:()=>void;onJourney?:()=>void;initialBody?:HouseBodyReturn;partner?:PlaceWalkSource|null;paused?:boolean;children?:ReactNode;review?:boolean};
+export type HorizonStageProps={onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onRuntime?:(runtime:HorizonRuntime|null)=>void;onQuickSheet?:()=>void;onJourney?:()=>void;initialBody?:HouseBodyReturn;partner?:PlaceWalkSource|null;paused?:boolean;children?:ReactNode;review?:boolean;
+  /** The world's sound (a deliberate gesture enables it; `comfort.sound` owns the setting). */
+  sound?:{on:boolean;toggle:()=>void}};
 /** Reduced motion is live: the system setting or Hearth's own comfort choice (`data-motion`, written by `theme/comfort.ts`). */
 const readReducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches||document.documentElement.dataset.motion==='reduced';
 /** Calm view is the comfort module's Quiet choice, applied as `data-quiet` by `applyComfort`. */
@@ -21,13 +23,14 @@ export default function HorizonStage(props:HorizonStageProps){
   const [reducedMotion,setReducedMotion]=useState(readReducedMotion),[calm,setCalm]=useState(readCalm);
   const [offers,setOffers]=useState<ThresholdOffer[]>([]),[mover,setMover]=useState<HorizonMoverState|null>(null),[sheet,setSheet]=useState<ReducedMotionCut|null>(null),hold=useRef<number|null>(null);
   const [tier]=useState<'full'|'lite'>(()=>new URLSearchParams(location.search).get('tier')==='lite'||matchMedia('(max-width: 600px)').matches?'lite':'full');
-  useEffect(()=>{const controller=new AbortController();let current:HorizonRuntime|null=null;
+  useEffect(()=>{const controller=new AbortController();let current:HorizonRuntime|null=null,unregister:(()=>void)|null=null;
     const options:HorizonOptions={tier,hideBuildings:HARBOUR_DEV&&new URLSearchParams(location.search).get('hideBuildings')==='1',signal:controller.signal,reducedMotion:readReducedMotion(),onDoor:(h,b)=>latest.current.onDoor?.(h,b),onStatus:setStatus,initialBody:latest.current.initialBody,partner:()=>latest.current.partner??null};
-    import('../scene/worldMount.ts').then(m=>m.mountHorizonWorld(stage.current!,options)).then(world=>{
-      if(controller.signal.aborted){world.dispose();return;}current=world;runtime.current=world;setMode(world.mode());setPage(world.shotId());setReady(true);setStatus('Drag to look. Walk with W A S D, or use the pads. Space jumps; E opens a nearby door.');latest.current.onRuntime?.(world);latest.current.onReady?.();
+    // The movers (M6: the glider and the parachute) register on the runtime as soon as it exists.
+    Promise.all([import('../scene/worldMount.ts').then(m=>m.mountHorizonWorld(stage.current!,options)),import('./movers/glider/index.ts')]).then(([world,gliders])=>{
+      if(controller.signal.aborted){world.dispose();return;}current=world;unregister=gliders.registerGliderModes(world);runtime.current=world;setMode(world.mode());setPage(world.shotId());setReady(true);setStatus('Drag to look. Walk with W A S D, or use the pads. Space jumps; E opens a nearby door.');latest.current.onRuntime?.(world);latest.current.onReady?.();
       if(HARBOUR_DEV)(window as unknown as {__harbour:unknown}).__harbour=world;
     }).catch(error=>{if(!controller.signal.aborted)setStatus(error instanceof Error?error.message:'The Horizon could not open.');});
-    return()=>{controller.abort();current?.dispose();if(HARBOUR_DEV){const debug=window as unknown as {__harbour?:HorizonRuntime};if(debug.__harbour===current)delete debug.__harbour;}runtime.current=null;latest.current.onRuntime?.(null);};
+    return()=>{controller.abort();unregister?.();current?.dispose();if(HARBOUR_DEV){const debug=window as unknown as {__harbour?:HorizonRuntime};if(debug.__harbour===current)delete debug.__harbour;}runtime.current=null;latest.current.onRuntime?.(null);};
   },[tier]);
   useEffect(()=>{runtime.current?.pause(props.paused===true);},[props.paused,ready]);
   useEffect(()=>{
@@ -42,7 +45,7 @@ export default function HorizonStage(props:HorizonStageProps){
     const poll=window.setInterval(()=>{
       const world=runtime.current;if(!world)return;
       const next={offers:world.offers(),mover:world.moverState(),mode:world.mode()},hud=next.mover.hud;
-      const key=JSON.stringify([next.offers.map(offerKey),next.offers.map(o=>o.action),next.mover.mode,next.mover.attached,next.mode,hud&&[Math.round(hud.height??-1),Math.sign(Math.trunc((hud.lift??0)/.5)),hud.place?.label,Math.round(hud.place?.distance??0),hud.place?.action]]);
+      const key=JSON.stringify([next.offers.map(offerKey),next.offers.map(o=>o.action),next.mover.mode,next.mover.attached,next.mode,hud&&[Math.round(hud.height??-1),Math.sign(Math.trunc((hud.lift??0)/.5)),hud.place?.label,Math.round(hud.place?.distance??0),hud.place?.action],next.mover.fade]);
       if(key===last)return;last=key;setOffers(next.offers);setMover(next.mover);setMode(next.mode);
     },200);
     return()=>window.clearInterval(poll);
@@ -74,6 +77,7 @@ export default function HorizonStage(props:HorizonStageProps){
         <label>Page <select aria-label="Sketchbook page" value={page} disabled={!ready} onChange={e=>{setPage(e.target.value);setMode('look');runtime.current?.shot(e.target.value);}}>{'ABCDEFGHIJKL'.split('').map(p=><option key={p}>{p}</option>)}</select></label>
         {props.onQuickSheet&&<button onClick={props.onQuickSheet}>Tools</button>}
         {props.onJourney&&<button onClick={props.onJourney}>Journey</button>}
+        {props.sound&&<button aria-pressed={props.sound.on} onClick={props.sound.toggle}>{props.sound.on?'Sound on':'Sound off'}</button>}
       </div>
       {ready&&mode==='walk'&&<div className="horizon-touch-controls">
         <div className="horizon-pad" role="group" aria-label={mover?.attached?'Move pad: push and pull the bar, lean to bank':'Move pad'} onPointerDown={e=>pad(e,'move')} onPointerMove={e=>pad(e,'move')} onPointerUp={e=>pad(e,'move')} onPointerCancel={e=>pad(e,'move')}>Move</div>
@@ -88,9 +92,10 @@ export default function HorizonStage(props:HorizonStageProps){
       {ready&&mover?.attached&&mover.hud?.height!==undefined&&<p className="horizon-bubble horizon-bubble-height" aria-live="off">
         <span>{Math.max(0,Math.round(mover.hud.height))} m</span>{Math.abs(mover.hud.lift??0)>=.5&&<span className="horizon-bubble-lift" aria-label={(mover.hud.lift??0)>0?'rising':'sinking'}>{(mover.hud.lift??0)>0?'↑':'↓'}</span>}
       </p>}
-      {ready&&mover?.attached&&mover.hud?.place&&(()=>{const place=mover.hud.place,text=place.action==='pull'?place.label:`${place.label} · ${Math.round(place.distance)} m`;
+      {ready&&mover?.attached&&mover.hud?.place&&(()=>{const place=mover.hud.place,text=place.action==='pull'||!(place.distance>0)?place.label:`${place.label} · ${Math.round(place.distance)} m`;
         return place.action==='gate'?<p className="horizon-bubble horizon-bubble-place">{text}</p>
           :<button className="horizon-bubble horizon-bubble-place" onClick={()=>runtime.current?.moverAction(place.action)} aria-label={place.action==='fold'?`Land now: ${text}`:text}>{text}</button>;})()}
+      {ready&&!mover?.attached&&mover?.fade&&<p className="horizon-bubble horizon-bubble-place horizon-bubble-fade" role="status">{mover.fade}</p>}
       {sheet&&<div className="horizon-sheet" role="dialog" aria-modal="false" aria-labelledby="horizon-sheet-title">
         <h2 id="horizon-sheet-title">Where to?</h2>
         {sheet.landings.length>0&&<><h3>Land at</h3><ul>{sheet.landings.map(landing=><li key={landing.id}><button onClick={()=>cut({kind:'landing',landing})}>{landing.label}</button></li>)}</ul></>}

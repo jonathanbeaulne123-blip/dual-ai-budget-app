@@ -29,3 +29,4 @@
 .horizon-sheet ul button{width:100%;text-align:left}
 .horizon-sheet-stay{margin-top:12px}
 @media(min-width:800px) and (pointer:fine){.horizon-offers,.horizon-bubble{--horizon-hud-bottom:calc(56px + env(safe-area-inset-bottom))}}
+.horizon-bubble-fade{pointer-events:none}

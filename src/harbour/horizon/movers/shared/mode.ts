@@ -33,8 +33,11 @@ export interface ModeCameraPose{eye:Vec3;look:Vec3;fov:number;roll:0}
  */
 export interface MoverBody{x:number;y:number;z:number;yaw:number}
 export interface ModeBodyPose extends MoverBody{pitch?:number;bank?:number}
-/** Where the body stands when a mode ends: always on foot. */
-export interface ModeExit{at:Vec3;yaw:number}
+/**
+ * Where the body stands when a mode ends: always on foot. `cut` asks the runtime for a cut to the walk camera
+ * instead of the blend (every fade, FLIGHT.md §4); `label` is the fade's place ("→ the square") for the HUD.
+ */
+export interface ModeExit{at:Vec3;yaw:number;cut?:boolean;label?:string}
 /** A reduced-motion destination offered by the launch sheet (FLIGHT.md §6). `xy` is engine x/z. */
 export interface ReducedMotionLanding{id:string;label:string;xy:readonly [number,number];height?:number}
 export interface ReducedMotionCut{landings:ReducedMotionLanding[]}

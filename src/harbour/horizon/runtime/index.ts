@@ -32,7 +32,12 @@ export type HorizonControls={forward:number;strafe:number;run:boolean;bar?:numbe
 export type HorizonAccept={mode:ModeId;controller:ModeController|null;cut:ReducedMotionCut|null};
 /** A reduced-motion cut: to a landing on foot, to a Sketchbook page in Look, or stay on the pad (cancel). */
 export type HorizonCutTarget={kind:'landing';landing:ReducedMotionLanding}|{kind:'view';id:string}|{kind:'stay'};
-export type HorizonMoverState={mode:ModeId;attached:boolean;hud:ModeHud|null};
+/** `fade` is the last fade's place ("→ the square"), shown for a moment after the cut (FLIGHT.md §2.4). */
+export type HorizonMoverState={mode:ModeId;attached:boolean;hud:ModeHud|null;fade?:string};
+/** A mover's art in the scene (movers/glider/art.ts): ticked every frame after the mover, removed when `tick` returns false. */
+export type HorizonMoverArt={object:THREE.Object3D;tick:(dt:number,figure:THREE.Object3D)=>boolean;dispose?:()=>void};
+/** How long a fade's place label stays in the HUD after the cut. */
+export const HORIZON_FADE_LABEL_MS=2500;
 export type HorizonRuntime=ReturnType<typeof createRuntime>;
 export type HorizonOptions={tier:'full'|'lite';hideBuildings?:boolean;signal?:AbortSignal;reducedMotion?:boolean;onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onStatus?:(text:string)=>void;partner?:()=>PlaceWalkSource|null;initialBody?:HouseBodyReturn};
 export async function mountHorizon(host:HTMLElement,options:HorizonOptions){
@@ -71,7 +76,9 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const body:HorizonBody={x:1400,y:22,z:1210,yaw:0},target=new THREE.Vector3(),keys=new Set<string>(),frameTimes:number[]=[],drawSamples:{at:number;calls:number;triangles:number;resident:number}[]=[];
   // Movers (passes/02-movers.md): one registry, one hook. While a controller is attached it owns the body and the camera.
   const movers=createModeRegistry(world.thresholds),hook=createMoverHook({body,ground:(x,z)=>geography.ground(x,z),surface:(x,z,y)=>{const hit=geography.surface(x,z,y);return hit&&hit.slope<=HORIZON_WALKABLE_DEGREES?hit.y:null;}});
-  let moverHud:ModeHud|null=null,walkFov:number|null=null,pullRequested=false,foldRequested=false,lookDelta:[number,number]=[0,0];
+  let moverHud:ModeHud|null=null,walkFov:number|null=null,pullRequested=false,foldRequested=false,lookDelta:[number,number]=[0,0],fadeLabel:{label:string;at:number}|null=null;
+  const moverArts=new Set<HorizonMoverArt>();
+  function removeMoverArt(art:HorizonMoverArt){if(!moverArts.delete(art))return;scene.remove(art.object);art.dispose?.();}
   const clamp1=(v:number)=>Math.max(-1,Math.min(1,v)),riding=()=>hook.attached()!==null||movers.active()!=='feet';
   const configure=(r:THREE.WebGLRenderer)=>{r.setPixelRatio(Math.min(window.devicePixelRatio||1,tier==='full'?1.5:1));r.shadowMap.enabled=true;r.shadowMap.autoUpdate=false;r.shadowMap.type=THREE.PCFSoftShadowMap;r.outputColorSpace=THREE.SRGBColorSpace;r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.25;};
   const lease=acquireWorldRenderer(host,{priority:0,parameters:{antialias:tier==='full',alpha:false,preserveDrawingBuffer:HARBOUR_DEV},configure,onSuspend:()=>{keys.clear();controls={forward:0,strafe:0,run:false};},onResume:()=>{last=0;schedule();}}),renderer=lease.renderer;
@@ -149,7 +156,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(walkFov===null)walkFov=camera.fov;mode='walk';path=[];transition=null;velocityY=0;jumpRequested=false;hook.attach(controller);moverHud=controller.hud();updateFog();
   }
   /** Drop the body on foot at `at` (y snapped to the walkable surface, else the ground) and blend back to the walk camera; a cut under reduced motion. */
-  function detachMover(at:{x:number;y:number;z:number;yaw:number},how:{cut?:boolean}={}){
+  function detachMover(at:{x:number;y:number;z:number;yaw:number},how:{cut?:boolean;label?:string}={}){
+    fadeLabel=how.label?{label:how.label,at:performance.now()}:null;
     const leaving=hook.attached();if(leaving&&movers.controller()===leaving)movers.release();
     const fromEye=camera.position.clone(),fromTarget=target.clone(),{blendMs}=hook.detach(at,reduced||how.cut===true);
     figure.group.position.set(body.x,body.y,body.z);figure.group.rotation.set(0,body.yaw,0);yaw=body.yaw;mode='walk';path=[];velocityY=0;jumpRequested=false;moverHud=null;
@@ -165,10 +173,11 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     camera.up.set(0,1,0);camera.position.set(...c.eye);target.set(...c.look);camera.lookAt(target);if(Math.abs(camera.fov-c.fov)>1e-6){camera.fov=c.fov;camera.updateProjectionMatrix();}
     moverHud=frame.hud;
     if(ambience&&!calm){if(frame.sound===MOVER_SOUNDS.snap)ambience.snap();else if(frame.sound===MOVER_SOUNDS.splashEcho)ambience.splashEcho();else if(frame.sound===MOVER_SOUNDS.bell)ambience.bell();ambience.vario(frame.hud.lift??0);}
-    if(frame.finished){const exit=controller.exit();detachMover({x:exit.at[0],y:exit.at[1],z:exit.at[2],yaw:exit.yaw});}
+    if(frame.finished){const exit=controller.exit();detachMover({x:exit.at[0],y:exit.at[1],z:exit.at[2],yaw:exit.yaw},{cut:exit.cut,label:exit.label});}
   }
   function tick(now:number){if(disposed)return;const dt=Math.min(.05,Math.max(0,(now-(last||now))/1000));if(last)frameTimes.push(now-last);if(frameTimes.length>3600)frameTimes.shift();last=now;
-    if(!paused){if(hook.attached())moverStep(dt,now);else if(mode==='walk'&&!transition&&!riding())step(dt,now);if(mode!=='journey')stream.update({x:body.x,z:body.z,now,mode:mode==='look'?'look':'walk',radius:mode==='look'?world.views.find(v=>v.id===shotId)?.radius:undefined,underground:body.y+HORIZON_BODY_HEIGHT<geography.ground(body.x,body.z)-.5});}
+    if(!paused){if(hook.attached())moverStep(dt,now);else if(mode==='walk'&&!transition&&!riding())step(dt,now);for(const art of [...moverArts])if(!art.tick(dt,figure.group))removeMoverArt(art);
+      if(ambience)ambience.update(body.x,body.y,body.z,0,false,false,calm);if(mode!=='journey')stream.update({x:body.x,z:body.z,now,mode:mode==='look'?'look':'walk',radius:mode==='look'?world.views.find(v=>v.id===shotId)?.radius:undefined,underground:body.y+HORIZON_BODY_HEIGHT<geography.ground(body.x,body.z)-.5});}
     ring.updateResidency(new Set(stream.live.keys()),mode==='journey');
     for(const resource of stream.live.values()){resource.cards.group.visible=mode!=='journey';fade(resource.cards.materials,Math.min(1,Math.max(0,(now-resource.at)/(reduced?300:500))));}
     for(const [id,cards]of coarse){const resource=stream.live.get(id),amount=mode==='journey'||!resource?1:Math.max(0,1-(now-resource.at)/(reduced?300:500));cards.group.visible=amount>0;fade(cards.materials,amount);}
@@ -205,7 +214,13 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
       if(to.kind==='landing'){const l=to.landing;detachMover({x:l.xy[0],y:l.height??geography.ground(l.xy[0],l.xy[1]),z:l.xy[1],yaw:body.yaw},{cut:true});return true;}
       detachMover(here,{cut:true});return to.kind==='view'?shot(to.id):true;
     },
-    moverState():HorizonMoverState{return{mode:movers.active(),attached:hook.attached()!==null,hud:moverHud};},
+    moverState():HorizonMoverState{const fade=!hook.attached()&&fadeLabel&&performance.now()-fadeLabel.at<HORIZON_FADE_LABEL_MS?fadeLabel.label:undefined;return{mode:movers.active(),attached:hook.attached()!==null,hud:moverHud,...(fade?{fade}:{})};},
+    /** Add a mover's art to the scene; it is ticked after the mover each frame and removed when its tick returns false. Returns a remover. */
+    moverArt(object:THREE.Object3D,tick:HorizonMoverArt['tick'],dispose?:()=>void){const art:HorizonMoverArt={object,tick,dispose};moverArts.add(art);scene.add(object);return()=>removeMoverArt(art);},
+    /** The live comfort settings the movers read (reduced motion blends and FOV; lite tier). */
+    settings(){return{tier,reducedMotion:reduced,calm};},
+    /** The date the sun (and the thermals) read: `setDate`, else the review date, frozen at 15:30 under reduced motion or calm. */
+    reviewDate():Date{return currentTime??solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:reduced,calm});},
     /** A HUD bubble: Fold (land now) or Pull; `gate` is information only. */
     moverAction(action:'fold'|'pull'|'gate'){if(action==='fold')foldRequested=true;else if(action==='pull')pullRequested=true;},
     setReducedMotion(value:boolean){if(reduced!==value){reduced=value;lastSun=-Infinity;}},
@@ -218,7 +233,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     pause(value:boolean){paused=value;if(value)clear();},setDate(date:Date){currentTime=date;lastSun=-Infinity;},
     walkTo(p:XYZ){lastMovementBlocker=null;const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],p,{stepFree:true});path=plan?[...plan.points]:[];return plan;},
     stats(){const gl=renderer.getContext(),debug=gl.getExtension('WEBGL_debug_renderer_info');return{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),revision:world.geographyRevision,terrainBytes:assets.bytes,collisionIndex:geography.indexStats,shadowRequests:[...shadowRequests],firstInteractiveMs:interactiveAt===null?null:interactiveAt-startedAt,assetLoadMs:assetLoadedAt-startedAt,mode,mover:movers.active(),shot:shotId,body:{...body},frames:[...frameTimes],drawSamples:[...drawSamples],stream:[...stream.history],camera:{eye:camera.position.toArray(),target:target.toArray(),fov:camera.fov},diagnostics:world.diagnostics};},
-    dispose(){disposed=true;lease.cancelFrame(frame);observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',clear);host.removeEventListener('blur',clear);stream.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyTexture.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
+    dispose(){disposed=true;for(const art of [...moverArts])removeMoverArt(art);lease.cancelFrame(frame);observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',clear);host.removeEventListener('blur',clear);stream.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyTexture.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
   };
   return api;
 }
