@@ -555,6 +555,8 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       if(id==='mountain:goals'){onOpen('loft-banks');return;}
       if(id==='mountain:pottery'){onOpen('pottery');return;}
       if(id==='mountain:outfitters'){setAppearanceRequest(n=>n+1);return;}
+      // K6: the glass dam's Fund reading is the Fund bank's now (the card's Everyday, the bank panel's accepted balance).
+      if(id==='mountain:basin'){onOpen('fund');return;}
       const monorailStation=id.startsWith('mountain:transport:monorail:')?TRANSPORT_STOPS.monorail.findIndex(stop=>stop.id===id.split(':')[3]):-1;
       setMountainInspect({section:id==='mountain:basin'?'water':id.includes('transport')||id==='mountain:race'?'travel':'map',seq:Date.now(),...(monorailStation>=0?{station:monorailStation}:{})});return;
     }

@@ -10,7 +10,7 @@ export const MONORAIL_STOPS=[
   {id:'studio',name:'Pottery Studio',at:[20,1.31,20] as Point3},
   {id:'boathouse',name:'Boathouse',at:[54,1.31,-40] as Point3},
   {id:'bank',name:'Fund bank',at:[7,1.31,-14] as Point3},
-  {id:'town',name:'Town square',at:[-20,1.31,-37] as Point3},
+  {id:'town',name:'The square',at:[-20,1.31,-37] as Point3},
   {id:'hearth',name:'Hearth Terrace',at:[112,20,-101] as Point3},
   {id:'orchard',name:'Orchard Hollow',at:[-121,34,-137] as Point3},
   {id:'library',name:'Library Woods',at:[106,51,-190] as Point3},

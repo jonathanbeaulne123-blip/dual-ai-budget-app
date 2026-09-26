@@ -399,7 +399,7 @@ it("pauses clicked walking for the guide and releases the follow camera before s
  await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Board and ride')!.click());
  expect(travelWasBlocked).toEqual([false]);expect(panelOwnsWorld).toBe(false);
  expect(document.activeElement).toBe(stage);
- expect(host.querySelector('[role="dialog"][aria-label="Mountain and town guide"]')).toBeNull();
+ expect(host.querySelector('[role="dialog"][aria-label="Step in: rides, a tour and small moments"]')).toBeNull();
 });
 
 it("boards the selected monorail route after releasing the guide",async()=>{
