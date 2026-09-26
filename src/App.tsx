@@ -43,7 +43,6 @@ import { WorkspaceClient } from './workspace/client.ts';
 import { PlayBoundary } from "./play/PlayBoundary.tsx";
 import { HouseholdPathHome, HouseholdTogether } from "./HouseholdLife.tsx";
 import { Planner } from "./planner/Planner.tsx";
-import { TimeMachine } from "./timeMachine/TimeMachine.tsx";
 import { personalCalendarUpdateAllowed } from "./core/personalCalendarAuthority.ts";
 import {WornLookContext} from './wardrobe/Appearance.tsx';
 import { QuickSamplePanel } from './QuickSamplePanel.tsx';
@@ -905,7 +904,7 @@ export function App() {
   const [dueSheetOpen, setDueSheetOpen] = useState(false);
   const [dueReviewActive, setDueReviewActive] = useState(false);
   const [onboardingBooksOpen, setOnboardingBooksOpen] = useState(false);
-  const [booksPaneRequest, setBooksPaneRequest] = useState<"fund" | "fund-register" | "wallet" | "opening" | "register" | null>(null);
+  const [booksPaneRequest, setBooksPaneRequest] = useState<"fund" | "fund-register" | "wallet" | "opening" | "register" | `month:${string}` | null>(null);
   const [, setDismissedOnboardingCompletionDigest] = useState<string | null>(null);
   const [herculesWardrobeRequest, setHerculesWardrobeRequest] = useState<{ scope: string; id: string } | null>(null);
 
@@ -1019,7 +1018,12 @@ export function App() {
   // An island month opened the Time Machine: it starts on that month.
   const [timeMachineRequest, setTimeMachineRequest] = useState<{ monthKey: string } | null>(null);
   // The request is spent once the Time Machine is left, so its other doors still open on today.
-  useEffect(() => { if (tab !== "timeMachine") setTimeMachineRequest(null); }, [tab]);
+  useEffect(() => {
+    if (tab !== "timeMachine") { setTimeMachineRequest(null); return; }
+    // K2 (Tool Atlas §7): the Time Machine screen is retired. An old link or history entry lands in the books at its month.
+    if (timeMachineRequest?.monthKey) setBooksPaneRequest(`month:${timeMachineRequest.monthKey}`);
+    goTab("ledger");
+  }, [tab]);
   useEffect(() => {
     const source = herculesSourceFocus;
     if (!source || source.view !== session?.view || source.route !== tab || herculesSourceScope.current !== `${environment}:${household?.householdId}:${session?.memberId}:${session?.view}`) return;
@@ -7504,7 +7508,7 @@ export function App() {
       /></Suspense></PlayBoundary>}
       {HOUSE_WORLD_ENABLED&&view==="personal"&&tab==="play"&&<PersonalTogether key={`${ledgerRenderScopeKey}:${activeHouseRoute.object??"folio"}`} household={household} memberId={actorId} identity={ledgerRenderScopeKey} today={today} route={activeHouseRoute} busy={busy} onCommand={runKitchen} onNavigate={navigateHouseSurface} onOpenPlan={()=>openHearthsideTool("plan",undefined,"My private folio")} onOpenTask={id=>openHearthsideTool("planner",{kind:"task",id},"My private folio")} onOpenCalendar={()=>openHearthsideTool("calendar",undefined,"My private folio")} onWorkspace={workspaceCapabilityEnabled?openPersonalExperienceWorkspace:undefined}/>}
       {tab === "planner" && <Planner key={`${ledgerRenderScopeKey}:${view}`} focusTaskId={hearthsideToolReturn?.scope===ledgerRenderScopeKey&&hearthsideToolReturn.audience===view?hearthsideToolReturn.taskId:undefined} household={household} memberId={actorId} view={view} today={today} busy={busy} onCommand={runKitchen} onRecord={openTaskInAdd} />}
-      {tab === "timeMachine" && <TimeMachine initialPeriod={timeMachineRequest?.monthKey} household={household} memberId={actorId} view={view} today={today} onOpenBooks={() => goTab("ledger")} />}
+      {/* K2: the Time Machine is retired as a screen; a stray timeMachine route opens the books at its month. */}
       {!HOUSE_WORLD_ENABLED&&(!HEARTHSIDE_FLAGS.presentation || view !== "household") && PLAY_ENABLED && tab === "play" && <PlayBoundary onExit={()=>{ if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); goTab("together"); }}><Suspense fallback={<p>Opening Hercules’s room…</p>}><HerculesPlay initialArea={playInitialArea} key={`${environment}:${household.householdId}:${actorId}`} household={household} memberId={actorId} connected={useLedgerSync && realtimeStatus === "SUBSCRIBED"} onCommand={runKitchen} onTogether={() => { if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); goTab("together"); }} onGoal={goalId => { if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:household`; setHerculesSourceFocus({route:"plan",view:"household",label:"Kitty Banks",...(goalId?{goalId}:{})}); goTab("plan"); }}/></Suspense></PlayBoundary>}
       {!HEARTHSIDE_FLAGS.presentation && tab === "together" && view === "household" && <HouseholdTogether household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} scenarioSource={scenarioSource} onOpenPlanner={() => goTab("planner")} onOpenPlay={PLAY_ENABLED ? () => {setPlayInitialArea(undefined);goTab("play");} : undefined} onOpenPlan={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && view === "household" && planSystemV2Enabled() && !householdHomeV2Enabled() && !HEARTHSIDE_FLAGS.presentation && <HouseholdPathHome household={household} memberId={actorId} today={today} onOpen={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
@@ -7717,7 +7721,7 @@ export function App() {
                   houseSurface={(HEARTHSIDE_FLAGS.presentation||HOUSE_WORLD_ENABLED) && activeHouseTool.room==="kitchen-table" ? activeHouseTool.level==="below" ? "studio" : activeHouseTool.level==="middle" ? "work" : "journey" : undefined}
                   houseWorkCentre={<section className="kitchen-work-centre"><p className="kicker">Kitchen Table</p><h2>Work centre</h2><p>Bring a question to Hercules, or continue the shared Sitdown. The agreement stays downstairs in the Plan Studio.</p><div className="kitchen-work-centre__actions"><button type="button" onClick={() => openLegacyHercules()}>Open Hercules conversation</button><button type="button" onClick={() => setWeeklySitdownOpen(true)}>Open our shared Sitdown</button></div><p className="muted" role="status">{workspaceEnabled ? "The expanded workspace is available when you choose to open it." : "The expanded workspace is not activated. Opening a conversation here does not start a provider run."}</p></section>}
                   boardMedia={boardMedia}
-                  onOpenTimeMachine={monthKey => { setTimeMachineRequest({ monthKey }); goTab("timeMachine"); }}
+                  onOpenTimeMachine={monthKey => { setBooksPaneRequest(`month:${monthKey}`); goTab("ledger"); }}
                   onOpenPlay={PLAY_ENABLED ? () => { setPlayInitialArea(undefined); goTab("play"); } : undefined}
                   onOpenCalendar={() => goTab("calendar")}
                   onOpenPlanner={() => goTab("planner")}
@@ -7927,7 +7931,6 @@ export function App() {
           onPayAccount={openPayCard}
           onAddToAccount={(account) => openAddFor(account)}
           onGoMore={() => goTab("more")}
-          onOpenTimeMachine={() => goTab("timeMachine")}
           requestedPane={booksPaneRequest}
           onConsumeRequestedPane={() => setBooksPaneRequest(null)}
           today={today}

@@ -866,24 +866,24 @@ describe("Our Path world page (D-262)", () => {
       };
     };
 
-    it("opens the time machine from any month card and from the Replay area", async () => {
+    it("opens the books for any month from its card and from the Replay area (K2)", async () => {
       const onOpenTimeMachine = vi.fn();
       await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15", extra: { onOpenTimeMachine } })));
       await settle();
       await click(byText(/^We are here/));
-      await click(byText("Open the time machine"));
+      await click(byText("Open the books for September 2026"));
       expect(onOpenTimeMachine).toHaveBeenLastCalledWith("2026-09");
       await scrub($<HTMLInputElement>(".path-world__slider input"), 0);
       const first = pathMonths(seeded(), "2026-09-15")[0]!.key;
-      await click(byText("Open this month in the time machine"));
+      await click(byText("Open the books for this month"));
       expect(onOpenTimeMachine).toHaveBeenLastCalledWith(first);
       await click([...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")].find((b) => !b.textContent?.startsWith("We are here") && b.textContent?.includes("·"))!);
       expect($(".path-world__card h3").textContent).toMatch(/^How /);
-      await click(byText("Open the time machine"));
+      await click(byText(/^Open the books for (?!this month)/));
       expect(onOpenTimeMachine).toHaveBeenLastCalledWith(first);
       // Without the prop there is no door.
       await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15" })));
-      expect(byText("Open this month in the time machine")).toBeUndefined();
+      expect(byText("Open the books for this month")).toBeUndefined();
     });
 
     it("stands Hercules's cottage only when Play can open, and its card enters Play", async () => {

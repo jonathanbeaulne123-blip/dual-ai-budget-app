@@ -249,7 +249,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   onOpenTogether?: () => void;
   /** The Charter's stone square opens the Charter. */
   onOpenCharter?: () => void;
-  /** A month is a door into the Time Machine at that month (`YYYY-MM`). Only a link. */
+  /** A month is a door into the books at that month (`YYYY-MM`; K2: the Time Machine screen is retired). Only a link. */
   onOpenTimeMachine?: (monthKey: string) => void;
   /** Hercules's cottage is Play, his room. Without it there is no cottage. */
   onOpenPlay?: () => void;
@@ -1421,7 +1421,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
         ],
         actions: (
           <>
-            {first && onOpenTimeMachine && <button type="button" onClick={() => links.current.onOpenTimeMachine?.(first)}>Open {monthName(first)} in the Time Machine</button>}
+            {first && onOpenTimeMachine && <button type="button" onClick={() => links.current.onOpenTimeMachine?.(first)}>Open the books for {monthName(first)}</button>}
             {eraActions(era)}
           </>
         ),
@@ -1529,7 +1529,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
         ],
         actions: onOpenTimeMachine || (currentEra && m === last) ? (
           <>
-            {onOpenTimeMachine && <button type="button" onClick={() => links.current.onOpenTimeMachine?.(month.key)}>Open the time machine</button>}
+            {onOpenTimeMachine && <button type="button" onClick={() => links.current.onOpenTimeMachine?.(month.key)}>Open the books for {monthName(month.key)}</button>}
             {currentEra && m === last && <button type="button" onClick={() => select("era-home")}>About this era</button>}
           </>
         ) : undefined,
@@ -2112,7 +2112,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
               aria-valuetext={nowMonth ? `${monthName(nowMonth.key)}, ${CHARACTER_LABEL[characters[shown]!]}` : undefined}
               onChange={(e) => { setPlaying(false); const v = Number(e.target.value); pageMovedTime.current = true; setFollowNow(v === last); setCur(v); }} />
           </label>
-          {nowMonth && onOpenTimeMachine && <button type="button" className="path-world__link path-world__time" onClick={() => links.current.onOpenTimeMachine?.(nowMonth.key)}>Open this month in the time machine</button>}
+          {nowMonth && onOpenTimeMachine && <button type="button" className="path-world__link path-world__time" onClick={() => links.current.onOpenTimeMachine?.(nowMonth.key)}>Open the books for this month</button>}
           <ol className="path-world__ticks" aria-hidden="true">
             {months.map((month, m) => <li key={month.key} className={`path-chip--${characters[m]}`} data-current={m === shown} />)}
           </ol>

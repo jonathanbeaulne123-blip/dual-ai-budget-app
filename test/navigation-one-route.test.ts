@@ -38,8 +38,11 @@ describe("One route to each place", () => {
     expect(sceneTabFor("timeMachine")).toBe("ledger");
     for (const tab of ["home", "plan", "calendar", "shift", "ledger", "more", "till"] as const) expect(sceneTabFor(tab)).toBe(tab);
     expect(readFileSync("src/App.tsx", "utf8")).not.toMatch(/tab === "together" \? "more" : tab/);
-    expect(readFileSync("src/App.tsx", "utf8")).toMatch(/onOpenTimeMachine=\{\(\) => goTab\("timeMachine"\)\}/);
-    expect(readFileSync("src/Books.tsx", "utf8")).toMatch(/onOpenTimeMachine/);
+    // K2 (Tool Atlas §7): the Time Machine is retired as a screen. Books no longer offers "See any month"; a stray
+    // timeMachine route lands in the books at its month, and each month's card opens "the books for {month}".
+    expect(readFileSync("src/App.tsx", "utf8")).not.toMatch(/<TimeMachine /);
+    expect(readFileSync("src/App.tsx", "utf8")).toMatch(/onOpenTimeMachine=\{monthKey => \{ setBooksPaneRequest\(`month:\$\{monthKey\}`\); goTab\("ledger"\); \}\}/);
+    expect(readFileSync("src/Books.tsx", "utf8")).not.toMatch(/See any month|onOpenTimeMachine/);
   });
 });
 

@@ -121,7 +121,6 @@ function BooksSession({
   onGoMore,
   requestedPane,
   onConsumeRequestedPane,
-  onOpenTimeMachine,
 }: {
   houseDivision?: BookDivision;
   pendingRows?: PendingPreview[];
@@ -144,10 +143,12 @@ function BooksSession({
   duplicateAuthorityGeneration?:number;
   onCommand: KitchenCommand;
   onGoMore?: () => void;
-  requestedPane?: "fund" | "fund-register" | "wallet" | "opening" | "register" | null;
+  /**
+   * A pane to open, or `month:<YYYY-MM>` — "Open the books for {month}" (K2: the Time Machine screen is retired;
+   * the strip walks a month at a time and each month's card opens its books here).
+   */
+  requestedPane?: "fund" | "fund-register" | "wallet" | "opening" | "register" | `month:${string}` | null;
   onConsumeRequestedPane?: () => void;
-  /** The time machine (D-247): one route from Books, never from + or a second chrome bar. */
-  onOpenTimeMachine?: () => void;
 }) {
   const [pane, setPane] = useState<Pane>(view === "personal" ? "wallet" : "overview");
   useEffect(()=>{if(houseDivision)setPane(houseDivision==="Accounts"?"wallet":houseDivision==="Today"?view==="personal"?"wallet":"overview":houseDivision==="Bills"?view==="household"?"fund-register":"register":houseDivision==="Record"?"journal":houseDivision==="Contributions"&&view==="household"?"fund":"register");},[houseDivision,view]);
@@ -282,6 +283,13 @@ function BooksSession({
   }, [onConsumeRequestedPane, requestedPane, sharedTable]);
 
   useEffect(() => {
+    if (!requestedPane?.startsWith("month:")) return;
+    const month = requestedPane.slice(6);
+    if (/^\d{4}-\d{2}$/.test(month)) { setViewMonth(month); setPane(sharedTable ? "fund-register" : "statements"); }
+    onConsumeRequestedPane?.();
+  }, [onConsumeRequestedPane, requestedPane, sharedTable]);
+
+  useEffect(() => {
     if (!sharedTable) setOpeningCardOpen(false);
   }, [sharedTable]);
 
@@ -309,7 +317,6 @@ function BooksSession({
           ) : null}
         </section>
       )}
-      {onOpenTimeMachine && <button type="button" className="chip quiet" onClick={onOpenTimeMachine}>See any month</button>}
       {!sharedTable && <StoryStrip heading="My accounts">
         {showFundPane && (
         <PaperTile
