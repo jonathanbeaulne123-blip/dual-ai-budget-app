@@ -37,8 +37,10 @@ import { KitchenNotice } from "./KitchenNotice.tsx";
 import { ShiftElapsedHint } from "./ShiftElapsedHint.tsx";
 import { PresetChip } from "./widgets/PresetChip.tsx";
 import {
-  ADD_LEDGER_WORDS,
+  ADD_INTO_CHOICES,
+  ADD_INTO_WORDS,
   ADD_MODES,
+  addIntoFor,
   addConfirmName,
   addSlideCopy,
   addSlidesFor,
@@ -53,6 +55,7 @@ import {
   duplicatePromptName,
   type AddFlowMode,
   type AddFormFields,
+  type AddInto,
   type AddMode,
   type AddSlideId,
   type AddSubmitPayload,
@@ -267,6 +270,18 @@ export function AddSlideshow({
     setLedgerChoice({ mode, ledger: next });
     onLedgerChange?.(next);
   }
+  /**
+   * The one ledger control (review finding 2): the Into line. Ours / Mine is the space the flow is open in
+   * (changing it switches the space); Both keeps the space and posts D-030's `both`. A planned expense keeps
+   * its own visibility, so its line is a statement. The confirm row, the button's name and the post all read this.
+   */
+  const into: AddInto | undefined = billMode || !ledger ? ledger : lockedVisibility ?? addIntoFor(ledger, form.visibility);
+  function chooseInto(next: AddInto) {
+    if (lockedVisibility || !ledger) return;
+    if (next === "both") { setForm((current) => ({ ...current, visibility: "both" })); return; }
+    setForm((current) => ({ ...current, visibility: next }));
+    if (next !== ledger) chooseLedger(next);
+  }
   const [billId, setBillId] = useState<string | null>(null);
   const bills = useMemo(
     () => (billMode && memberId && !billOutOfPlace ? billSlipsFor(household, { today, memberId, view: BILL_LEDGER }) : { due: [], upcoming: [] }),
@@ -463,7 +478,9 @@ export function AddSlideshow({
 
         </div>
         {ledger && (index === 0 || expanded) && (
-          billMode ? <AddLedgerLine ledger={BILL_LEDGER} note={BILL_LEDGER_NOTE} /> : <AddLedgerLine ledger={ledger} disabled={!open || busy} onChange={chooseLedger} />
+          billMode ? <AddLedgerLine into={BILL_LEDGER} note={BILL_LEDGER_NOTE} />
+            : lockedVisibility ? <AddLedgerLine into={into ?? ledger} note="set by the planned expense" />
+            : <AddLedgerLine into={into ?? ledger} disabled={!open || busy} onChange={chooseInto} />
         )}
         {returnToReview && !expanded && <p className="muted">Editing your draft. Continue returns to Review.</p>}
         {(expanded || index > 0) && <nav className="entry-section-nav" aria-label="Draft sections">
@@ -757,8 +774,7 @@ export function AddSlideshow({
             draftLocation={draftLocation}
             displayZone={displayZone}
             pictureName={pictureName}
-            lockedVisibility={lockedVisibility}
-            ledger={ledger}
+            ledger={into}
           />
         )}
 
@@ -790,8 +806,8 @@ export function AddSlideshow({
               {mode === "expense" ? " Fund funding stays separate from Shared or Personal visibility." : ""}
             </p>
             <button className="primary post-big" type="button" disabled={postingDisabled || busy || !open || entryInvalid || !!splitError || cutPreviewActive}
-              aria-label={addConfirmName({ mode: entryMode, postLabel, form, household, accounts: pickerAccounts, ledger })}
-              onClick={() => post({ kind: "entry", mode: entryMode, ledger })} data-add-confirm>
+              aria-label={addConfirmName({ mode: entryMode, postLabel, form, household, accounts: pickerAccounts, ledger: into })}
+              onClick={() => post({ kind: "entry", mode: entryMode, ledger, ...(into ? { into } : {}) })} data-add-confirm>
               {postLabel}
             </button>
           </>
@@ -1028,7 +1044,6 @@ function ConfirmSlide({
   draftLocation,
   displayZone,
   pictureName,
-  lockedVisibility,
   ledger,
 }: {
   fullForm?: boolean;
@@ -1057,11 +1072,11 @@ function ConfirmSlide({
   draftLocation?: TransactionLocation;
   displayZone: string;
   pictureName: string;
-  lockedVisibility?: Visibility;
-  ledger?: LedgerView;
+  /** What the Into line names; the confirm reads it back. */
+  ledger?: AddInto;
 }) {
   const dateRow = <div className="row"><span>Date</span><span>{civilDateWords(form.date)}</span></div>;
-  const ledgerRow = ledger ? <div className="row"><span>Into</span><span>{ADD_LEDGER_WORDS[ledger]}</span></div> : null;
+  const ledgerRow = ledger ? <div className="row"><span>Into</span><span>{ADD_INTO_WORDS[ledger]}</span></div> : null;
   const categoryName = categories.find((category) => category.id === form.subcategoryId)?.name
     ?? household.categories.find((category) => category.id === form.subcategoryId)?.name
     ?? "";
@@ -1130,25 +1145,6 @@ function ConfirmSlide({
         <>
           <label>Date</label>
           <input type="date" value={form.date} onChange={(event) => setForm((current) => ({ ...current, date: event.target.value }))} />
-          <label>Save to</label>
-          <div className="chips">
-            {([
-              { id: "household" as Visibility, name: "Shared" },
-              { id: "personal" as Visibility, name: "Personal" },
-              { id: "both" as Visibility, name: "Both" },
-            ]).map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`chip ${form.visibility === item.id ? "selected" : ""}`}
-                disabled={Boolean(lockedVisibility)}
-                onClick={() => setForm((current) => ({ ...current, visibility: item.id }))}
-              >
-                {item.name}
-              </button>
-            ))}
-          </div>
-          {lockedVisibility && <p className="muted">Visibility stays {lockedVisibility === "household" ? "Shared" : lockedVisibility === "personal" ? "Personal" : "Both"} for this planned expense.</p>}
           {mode === "expense" && household.householdFund && (
             <section className="preview" aria-label="Household Fund allocation">
               <div className="row">
@@ -1300,24 +1296,24 @@ function SplitEditor({ household, percents, amount, error, scopeValid, onReview,
  * where the money goes and lets it be changed. A two-option radio group named
  * "Whose money"; the space pill on the card never decides this on its own.
  */
-function AddLedgerLine(props: { ledger: LedgerView; note: string } | { ledger: LedgerView; note?: undefined; disabled: boolean; onChange: (ledger: LedgerView) => void }) {
-  const { ledger } = props;
+function AddLedgerLine(props: { into: AddInto; note: string } | { into: AddInto; note?: undefined; disabled: boolean; onChange: (into: AddInto) => void }) {
+  const { into } = props;
   // A fixed ledger (Bill paid: "Into: Ours · bills are shared") is a statement, not a choice: no radios.
   if (props.note !== undefined) return (
-    <div className="add-ledger add-ledger--fixed" data-add-ledger={ledger} data-add-ledger-fixed="">
-      <p className="add-ledger__into"><span>Into:</span> <strong>{ADD_LEDGER_WORDS[ledger]}</strong> · {props.note}</p>
+    <div className="add-ledger add-ledger--fixed" data-add-ledger={into} data-add-ledger-fixed="">
+      <p className="add-ledger__into"><span>Into:</span> <strong>{ADD_INTO_WORDS[into]}</strong> · {props.note}</p>
     </div>
   );
   const { disabled, onChange } = props;
   return (
-    <fieldset className="add-ledger" data-add-ledger={ledger} disabled={disabled}>
+    <fieldset className="add-ledger" data-add-ledger={into} disabled={disabled}>
       <legend className="add-ledger__legend">Whose money</legend>
-      <p className="add-ledger__into"><span>Into:</span> <strong>{ADD_LEDGER_WORDS[ledger]}</strong></p>
+      <p className="add-ledger__into"><span>Into:</span> <strong>{ADD_INTO_WORDS[into]}</strong></p>
       <div className="add-ledger__options">
-        {(["household", "personal"] as const).map((option) => (
-          <label key={option} className={`chip add-ledger__option${ledger === option ? " selected" : ""}`}>
-            <input type="radio" name="add-ledger" value={option} checked={ledger === option} onChange={() => onChange(option)} />
-            {ADD_LEDGER_WORDS[option]}
+        {(["household", "personal", "both"] as const).map((option) => (
+          <label key={option} className={`chip add-ledger__option${into === option ? " selected" : ""}`}>
+            <input type="radio" name="add-ledger" value={option} checked={into === option} onChange={() => onChange(option)} />
+            {ADD_INTO_CHOICES[option]}
           </label>
         ))}
       </div>

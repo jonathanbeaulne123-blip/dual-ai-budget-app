@@ -218,6 +218,35 @@ export function defaultSubcategoryForMode(mode: AddFlowMode): string {
 export const ADD_LEDGER_WORDS: Readonly<Record<LedgerView, "Ours" | "Mine">> = { household: "Ours", personal: "Mine" };
 
 /**
+ * Where a Record goes, as the one "Into" line on the first slide says it: Ours,
+ * Mine, or Both. Both is D-030's third visibility (`both`: the row shows in Ours
+ * and in its author's Mine), posted from the space on screen. It used to be a
+ * second control ("Save to: Shared / Personal / Both"); it is now the third
+ * option on the Into line, so there is one ledger control and it is the truth.
+ */
+export type AddInto = LedgerView | "both";
+
+/** The Into line's radio words. */
+export const ADD_INTO_CHOICES: Readonly<Record<AddInto, "Ours" | "Mine" | "Both">> = { household: "Ours", personal: "Mine", both: "Both" };
+
+/** What the Into line, the confirm row, the button name and the status line say. */
+export const ADD_INTO_WORDS: Readonly<Record<AddInto, "Ours" | "Mine" | "Ours and Mine">> = { household: "Ours", personal: "Mine", both: "Ours and Mine" };
+
+/**
+ * Pure: what the Into line names, from the space the flow is open in and the
+ * draft's visibility. Only Both is carried by the draft; Ours / Mine is always
+ * the open space, so a stale draft visibility can never contradict the line.
+ */
+export function addIntoFor(ledger: LedgerView, visibility: Visibility | undefined): AddInto {
+  return visibility === "both" ? "both" : ledger;
+}
+
+/** Pure: the visibility a Final Confirm posts with, for what the Into line names. */
+export function visibilityForInto(into: AddInto): Visibility {
+  return into;
+}
+
+/**
  * Bill paid posts only into Ours. The reviewed bill path accepts active Shared
  * CAD accounts only (`dueOccurrenceReview`), and `postOneRecurrence` writes
  * household rows, so a bill can never be recorded "into Mine". The first slide
@@ -253,7 +282,7 @@ export function defaultAddLedger(mode: AddFlowMode, view: LedgerView): LedgerVie
  * line was shown), and then the App posts exactly as before.
  */
 export type AddSubmitPayload =
-  | { kind: "entry"; mode: AddMode; ledger?: LedgerView }
+  | { kind: "entry"; mode: AddMode; ledger?: LedgerView; into?: AddInto }
   | {
       kind: "bill";
       mode: "bill";
@@ -296,14 +325,15 @@ type ConfirmInput = {
   form: Pick<AddFormFields, "amount" | "accountId" | "fromAccountId" | "toAccountId" | "subcategoryId">;
   household: Pick<Household, "categories">;
   accounts: readonly Pick<Account, "id" | "name">[];
-  ledger?: LedgerView;
+  /** What the Into line names (a plain ledger, or Both). */
+  ledger?: AddInto;
 };
 
 function confirmParts({ mode, form, household, accounts, ledger }: ConfirmInput): { money: string; tail: string } {
   const name = (id: string) => accounts.find((account) => account.id === id)?.name || "an account";
   let money = "";
   if (mode !== "shift") { try { money = formatCad(parseAmount(form.amount)); } catch { money = ""; } }
-  const where = ledger ? `, in ${ADD_LEDGER_WORDS[ledger]}` : "";
+  const where = ledger ? `, in ${ADD_INTO_WORDS[ledger]}` : "";
   if (mode === "transfer") return { money, tail: `from ${name(form.fromAccountId)} to ${name(form.toAccountId)}${where}` };
   if (mode === "expense") return { money, tail: `${MODE_NOUN.expense} to ${potWord(categoryDefaultFund(household, form.subcategoryId)) ?? name(form.accountId)}${where}` };
   if (mode === "income") return { money, tail: `${MODE_NOUN.income} to ${name(form.accountId)}${where}` };

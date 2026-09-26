@@ -139,8 +139,13 @@ function Harness(props: {
   billRecurrenceId?: string | null;
   error?: string;
   amount?: string;
+  visibility?: Visibility;
+  details?: boolean;
+  lockedVisibility?: Visibility;
+  onDraft?: (draft: AddFormFields) => void;
 }) {
-  const [draft, setDraft] = useState<AddFormFields>(() => form(props.amount !== undefined ? { amount: props.amount } : {}));
+  const [draft, setDraft] = useState<AddFormFields>(() => form({ ...(props.amount !== undefined ? { amount: props.amount } : {}), ...(props.visibility ? { visibility: props.visibility } : {}) }));
+  props.onDraft?.(draft);
   const [slideIndex, setSlideIndex] = useState(props.slide ?? 0);
   const categories = household.categories.filter((category) => category.recordType === "category" && category.active && category.transactionType === (props.mode === "income" ? "income" : "expense"));
   return createElement(AddSlideshow, {
@@ -160,7 +165,7 @@ function Harness(props: {
     postLabel: "Post $12.40", onPost: (payload) => props.posts.push(payload), onClose: () => undefined,
     persistCategory: () => undefined, presetId: null, onPresetId: () => undefined, onSavePreset: () => undefined, onForgetPreset: () => undefined,
     categoryTouched: false, onCategoryTouched: () => undefined, codingHint: "", onCodingHint: () => undefined,
-    splitPercents: { "MEM-001": 50, "MEM-002": 50 }, onMemberPercent: () => undefined, addDetails: false, onAddDetails: () => undefined,
+    splitPercents: { "MEM-001": 50, "MEM-002": 50 }, onMemberPercent: () => undefined, addDetails: props.details ?? false, lockedVisibility: props.lockedVisibility, onAddDetails: () => undefined,
     placePrefs: { displayTimeZone: "America/Toronto", locationAllowed: false, addPromptSeen: true, stampTime: true, stampCoords: true, shareCoordsWithModel: false, updatedAt: "2026-09-01T00:00:00.000Z" },
     onPlacePrefs: () => undefined, environment: "development", showLocationPrompt: false, onShowLocationPrompt: () => undefined,
     locationBusy: false, applyConfiguredStamps: () => undefined, clearLocationStamp: () => undefined, displayZone: "America/Toronto", experienceLine: "",
@@ -178,11 +183,71 @@ describe("the Add flow's Tool Atlas parts (UI)", () => {
     expect(line.querySelector("legend")?.textContent).toBe("Whose money");
     expect(line.querySelector(".add-ledger__into")?.textContent).toBe("Into: Ours");
     const radios = [...line.querySelectorAll<HTMLInputElement>("input[type=radio]")];
-    expect(radios.map((radio) => radio.closest("label")!.textContent)).toEqual(["Ours", "Mine"]);
+    expect(radios.map((radio) => radio.closest("label")!.textContent)).toEqual(["Ours", "Mine", "Both"]);
     expect(radios[0]!.checked).toBe(true);
     act(() => radios[1]!.click());
     expect(ledgers).toEqual(["personal"]);
     expect(host.querySelector("[data-add-ledger]")?.getAttribute("data-add-ledger")).toBe("personal");
+  });
+
+  it("has one ledger control: Both is the Into line's third option, and the confirm, button and post follow it (review finding 2)", () => {
+    const posts: (AddSubmitPayload | undefined)[] = [];
+    const ledgers: LedgerView[] = [];
+    let latest: AddFormFields | null = null;
+    act(() => root.render(createElement(Harness, { mode: "expense", view: "household", posts, ledgers, onDraft: (draft) => { latest = draft; } })));
+    const both = [...host.querySelectorAll<HTMLInputElement>("[data-add-ledger] input[type=radio]")].find((radio) => radio.value === "both")!;
+    act(() => both.click());
+    // Both keeps the space (no switch) and carries D-030's `both` in the draft.
+    expect(ledgers).toEqual([]);
+    expect(latest!.visibility).toBe("both");
+    expect(host.querySelector(".add-ledger__into")?.textContent).toBe("Into: Ours and Mine");
+    // Back to Ours clears it, again without a switch.
+    const ours = [...host.querySelectorAll<HTMLInputElement>("[data-add-ledger] input[type=radio]")].find((radio) => radio.value === "household")!;
+    act(() => ours.click());
+    expect(ledgers).toEqual([]);
+    expect(latest!.visibility).toBe("household");
+    act(() => { root.unmount(); root = createRoot(host); });
+    act(() => root.render(createElement(Harness, { mode: "expense", view: "household", slide: 4, posts, visibility: "both" })));
+    const rows = [...host.querySelectorAll("[aria-label='Confirm summary'] .row")].map((row) => row.textContent);
+    expect(rows).toContain("IntoOurs and Mine");
+    const post = host.querySelector<HTMLButtonElement>("[data-add-confirm]")!;
+    expect(post.getAttribute("aria-label")).toBe("Post $12.40 purchase to Everyday, in Ours and Mine");
+    act(() => post.click());
+    expect(posts).toEqual([{ kind: "entry", mode: "expense", ledger: "household", into: "both" }]);
+  });
+
+  it("never lets a stale draft visibility contradict the Into line, and has no second Save to control", () => {
+    const posts: (AddSubmitPayload | undefined)[] = [];
+    // A restored draft that once said Personal, now open in Ours: every surface says Ours and the post says Ours.
+    act(() => root.render(createElement(Harness, { mode: "expense", view: "household", posts, visibility: "personal" })));
+    expect(host.querySelector("[data-add-ledger]")?.getAttribute("data-add-ledger")).toBe("household");
+    expect(host.querySelector(".add-ledger__into")?.textContent).toBe("Into: Ours");
+    act(() => { root.unmount(); root = createRoot(host); });
+    act(() => root.render(createElement(Harness, { mode: "expense", view: "household", slide: 4, posts, visibility: "personal", details: true })));
+    expect([...host.querySelectorAll("[aria-label='Confirm summary'] .row")].map((row) => row.textContent)).toContain("IntoOurs");
+    expect(host.querySelector<HTMLButtonElement>("[data-add-confirm]")!.getAttribute("aria-label")).toMatch(/, in Ours$/);
+    // Date & place is open: no "Save to" label and no Shared / Personal chips.
+    expect(host.textContent).not.toContain("Save to");
+    const chipWords = [...host.querySelectorAll("button.chip")].map((chip) => chip.textContent?.trim());
+    expect(chipWords).not.toContain("Shared");
+    expect(chipWords).not.toContain("Personal");
+    act(() => host.querySelector<HTMLButtonElement>("[data-add-confirm]")!.click());
+    expect(posts).toEqual([{ kind: "entry", mode: "expense", ledger: "household", into: "household" }]);
+  });
+
+  it("states a planned expense's own visibility on the Into line and offers no choice", () => {
+    act(() => root.render(createElement(Harness, { mode: "expense", view: "household", posts: [], visibility: "both", lockedVisibility: "both" })));
+    expect(host.querySelector(".add-ledger__into")?.textContent).toBe("Into: Ours and Mine · set by the planned expense");
+    expect(host.querySelectorAll("[data-add-ledger] input[type=radio]").length).toBe(0);
+  });
+
+  it("posts with the visibility the Into line names (App source pin)", () => {
+    const app = readFileSync(join(process.cwd(), "src/App.tsx"), "utf8");
+    const submit = app.slice(app.indexOf("function submit(flags"), app.indexOf("async function recoverEntryReceipt"));
+    expect(submit).toContain("const into: AddInto = potentialExpenseAddId ? form.visibility : addIntoFor(view, form.visibility);");
+    expect(submit).not.toContain("visibility: form.visibility");
+    expect(submit.match(/visibility: postVisibility,/g)).toHaveLength(3);
+    expect(app).toContain("payload.into !== addIntoFor(view, form.visibility)");
   });
 
   it("defaults Shift to Mine even in Ours, and shows no ledger line without a view", () => {
@@ -204,7 +269,7 @@ describe("the Add flow's Tool Atlas parts (UI)", () => {
     expect(post.textContent).toBe("Post $12.40");
     expect(post.getAttribute("aria-label")).toBe("Post $12.40 purchase to Everyday, in Ours");
     act(() => post.click());
-    expect(posts).toEqual([{ kind: "entry", mode: "expense", ledger: "household" }]);
+    expect(posts).toEqual([{ kind: "entry", mode: "expense", ledger: "household", into: "household" }]);
   });
 
   it("puts the duplicate prompt in an alertdialog, focuses Don't record it, and Escape does not record", () => {
@@ -307,7 +372,7 @@ describe("the Add flow's Tool Atlas parts (UI)", () => {
     const retry = [...alert.querySelectorAll<HTMLButtonElement>("button")].find((b) => b.textContent === "Retry")!;
     expect(host.querySelector<HTMLButtonElement>("[data-add-confirm]")!.getAttribute("aria-label")).toBe("Post $12.40 purchase to Everyday, in Ours");
     act(() => retry.click());
-    expect(posts).toEqual([{ kind: "entry", mode: "expense", ledger: "household" }, { kind: "entry", mode: "expense", ledger: "household" }]);
+    expect(posts).toEqual([{ kind: "entry", mode: "expense", ledger: "household", into: "household" }, { kind: "entry", mode: "expense", ledger: "household", into: "household" }]);
   });
 
   it("A30: an error before any post stays a polite status with no Retry", () => {

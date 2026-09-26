@@ -518,7 +518,7 @@ import { fundModelBootNotice, fundModelBootStep, fundModelReloadRequired, harmle
 import { fundModelPersonalUpdateAllowed } from "./fundModelPersonalRule.ts";
 import { offeredForNewSpending } from "./core/fundRules.ts";
 import { FUND_MODEL_RELOAD_MESSAGE, clientFundModelVersion } from "./ledgerSync/fundModelStamp.ts";
-import { addPostedStatus, defaultAddLedger, defaultSubcategoryForMode, type AddSubmitPayload } from "./addSlideshow.ts";
+import { addIntoFor, addPostedStatus, defaultAddLedger, defaultSubcategoryForMode, visibilityForInto, type AddInto, type AddSubmitPayload } from "./addSlideshow.ts";
 import { FabSpeedDial } from "./FabSpeedDial.tsx";
 import { fabActionsFor, fabClosedLabel, type FabVerbMode } from "./core/fabActions.ts";
 import { fundDisplayName, spaceLabel } from "./core/spaceNames.ts";
@@ -6394,6 +6394,10 @@ export function App() {
       return;
     }
     if (payload?.kind === "bill") { postBillPaid(payload); return; }
+    if (payload?.into && !potentialExpenseAddId && payload.into !== addIntoFor(view, form.visibility)) {
+      setError("The Into line changed. Review where this goes, then Confirm again.");
+      return;
+    }
     submit();
   }
   /** K8: the last account a purchase was posted from — a per-viewer convenience on this device, per space, never truth. */
@@ -6892,8 +6896,12 @@ export function App() {
     if (!draftKey) return;
     // A24: the status line after an accepted Final Confirm names the amount and where it went.
     const postedMode = mode, postedAccountId = form.accountId;
+    // Review finding 2: the Into line is the one ledger control. It names the open space (Ours / Mine) or Both,
+    // and the post goes exactly there: a stale draft visibility never overrides it. A planned expense keeps its own.
+    const into: AddInto = potentialExpenseAddId ? form.visibility : addIntoFor(view, form.visibility);
+    const postVisibility = visibilityForInto(into);
     let postedStatus = "";
-    try { postedStatus = addPostedStatus({ mode, form, household: household ?? { categories: [] }, accounts: pickerAccounts, ledger: view }); } catch { postedStatus = ""; }
+    try { postedStatus = addPostedStatus({ mode, form, household: household ?? { categories: [] }, accounts: pickerAccounts, ledger: into }); } catch { postedStatus = ""; }
     const held=readEntrySubmission(draftKey);
     if(confirm && held && held.review!==entryReview()){
       clearEntryConfirmation(draftKey,held.id);setEntrySubmission(null);setConfirm(null);
@@ -6914,7 +6922,7 @@ export function App() {
           note: form.note,
           confirmDuplicate: flags.confirmDuplicate,
           createdBy: actorId,
-          visibility: form.visibility,
+          visibility: postVisibility,
         });
       }
       if (mode === "shift") {
@@ -6932,7 +6940,7 @@ export function App() {
           settingsFingerprint: shiftSettingsFingerprint(current.shiftSettings),
           confirmDuplicate: flags.confirmDuplicate,
           createdBy: actorId,
-          visibility: form.visibility,
+          visibility: postVisibility,
         });
       }
       const entry = {
@@ -6965,7 +6973,7 @@ export function App() {
       return postEntry(current, {
         ...entry,
         type: mode,
-        visibility: form.visibility,
+        visibility: postVisibility,
       });
       } catch(caught) {if(!(caught instanceof NeedsConfirmationError)){clearEntryConfirmation(draftKey,confirmationId);setEntrySubmission(null);}throw caught;}
     }, {confirmationId, onDefinitiveRejected:()=>{clearEntryConfirmation(draftKey,confirmationId);if(activeEntryKeyRef.current===draftKey)setEntrySubmission(null);},
