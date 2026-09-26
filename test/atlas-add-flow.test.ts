@@ -118,8 +118,10 @@ function Harness(props: {
   duplicate?: boolean;
   edits?: string[];
   billRecurrenceId?: string | null;
+  error?: string;
+  amount?: string;
 }) {
-  const [draft, setDraft] = useState<AddFormFields>(() => form());
+  const [draft, setDraft] = useState<AddFormFields>(() => form(props.amount !== undefined ? { amount: props.amount } : {}));
   const [slideIndex, setSlideIndex] = useState(props.slide ?? 0);
   const categories = household.categories.filter((category) => category.recordType === "category" && category.active && category.transactionType === (props.mode === "income" ? "income" : "expense"));
   return createElement(AddSlideshow, {
@@ -131,7 +133,7 @@ function Harness(props: {
     slideIndex, onSlideIndex: setSlideIndex, shiftGate: "choose", hasWorkJobs: false,
     shiftPreview: { netTipsCents: 0, wagesCents: 0 }, onHoursDirty: () => undefined, hoursDirty: false,
     onClockIn: () => undefined, onAlreadyOff: () => undefined, onSignOut: () => undefined, onNeverMind: () => undefined,
-    busy: false, error: "", onDismissError: () => undefined, onGoMore: () => undefined,
+    busy: false, error: props.error ?? "", onDismissError: () => undefined, onGoMore: () => undefined,
     confirm: props.duplicate ? new NeedsConfirmationError("duplicate", "Similar to Groceries on Sep 8.", [{ ...household.transactions[0]!, id: "TX-DUP", amountCents: 1240, accountId: "ACC-VISA", date: today, note: "Groceries", place: "" }]) : null,
     confirmPanelRef: { current: null },
     onConfirmAnyway: () => props.edits?.push("anyway"),
@@ -245,5 +247,41 @@ describe("the Add flow's Tool Atlas parts (UI)", () => {
     act(() => root.render(createElement(Harness, { mode: "bill", view: "household", posts, billRecurrenceId: due.upcoming[0]!.recurrenceId })));
     expect(host.querySelector("[data-add-confirm-bill]")).toBeNull();
     expect(host.querySelectorAll("[data-bill-slip]").length).toBe(1);
+  });
+
+  it("A30: a failed post raises an alert, keeps the draft, and Retry runs the same named Confirm", () => {
+    const posts: (AddSubmitPayload | undefined)[] = [];
+    act(() => root.render(createElement(Harness, { mode: "expense", view: "household", slide: 4, posts })));
+    act(() => host.querySelector<HTMLButtonElement>("[data-add-confirm]")!.click());
+    expect(posts).toHaveLength(1);
+    act(() => root.render(createElement(Harness, { mode: "expense", view: "household", slide: 4, posts, error: "The network did not answer." })));
+    const alert = host.querySelector<HTMLElement>("[role=alert]")!;
+    expect(alert).toBeTruthy();
+    expect(alert.getAttribute("aria-live")).toBeNull();
+    const retry = [...alert.querySelectorAll<HTMLButtonElement>("button")].find((b) => b.textContent === "Retry")!;
+    expect(host.querySelector<HTMLButtonElement>("[data-add-confirm]")!.getAttribute("aria-label")).toBe("Post $12.40 purchase to Everyday, in Ours");
+    act(() => retry.click());
+    expect(posts).toEqual([{ kind: "entry", mode: "expense", ledger: "household" }, { kind: "entry", mode: "expense", ledger: "household" }]);
+  });
+
+  it("A30: an error before any post stays a polite status with no Retry", () => {
+    act(() => root.render(createElement(Harness, { mode: "expense", view: "household", slide: 4, posts: [], error: "Choose a household first." })));
+    expect(host.querySelector("[role=alert]")).toBeNull();
+    expect(host.querySelector("[data-notice-retry-button]")).toBeNull();
+  });
+
+  it("A30: an amount that is not above zero is marked invalid, linked to its message, and takes focus", async () => {
+    act(() => root.render(createElement(Harness, { mode: "expense", view: "household", slide: 0, posts: [], amount: "" })));
+    const enter = host.querySelector<HTMLButtonElement>(".cad-pad-enter")!;
+    expect(enter.getAttribute("aria-disabled")).toBe("true");
+    expect(enter.disabled).toBe(false);
+    act(() => enter.click());
+    await act(async () => { await new Promise((resolve) => requestAnimationFrame(() => resolve(null))); });
+    const typing = host.querySelector(".cad-pad")!.classList.contains("is-typing");
+    const field = typing ? host.querySelector<HTMLElement>(".cad-pad-input")! : host.querySelector<HTMLElement>(".cad-pad-display")!;
+    if (typing) expect(field.getAttribute("aria-invalid")).toBe("true");
+    const message = document.getElementById(field.getAttribute("aria-describedby")!.split(" ").pop()!)!;
+    expect(message.textContent).toBe("Enter an amount above $0.00.");
+    expect(document.activeElement).toBe(field);
   });
 });

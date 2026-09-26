@@ -269,6 +269,11 @@ export function AddSlideshow({
   );
   const chosenBill = bills.due.find((slip) => slip.recurrenceId === billId) ?? null;
   const billPreselected = useRef<string | null>(null);
+  // A30: the last named Confirm this sheet ran. When an error lands after it, the post failed: the notice is an
+  // alert, the draft (the App's form) stays as it was, and Retry runs the same Confirm again.
+  const [lastPost, setLastPost] = useState<{ payload?: AddSubmitPayload } | null>(null);
+  const post = (payload?: AddSubmitPayload) => { setLastPost({ payload }); onPost(payload); };
+  const amountFieldId = useId();
   const suggestions = recommendationHousehold;
   const slides = useMemo(
     () => addSlidesFor({ mode, shiftGate, hasWorkJobs }),
@@ -484,13 +489,19 @@ export function AddSlideshow({
             household={household}
             ledger={ledger}
             busy={busy || postingDisabled || !open}
-            onConfirm={(review) => onPost({ kind: "bill", mode: "bill", ledger, recurrenceId: chosenBill.recurrenceId, occurrenceDate: chosenBill.date, review })}
+            onConfirm={(review) => post({ kind: "bill", mode: "bill", ledger, recurrenceId: chosenBill.recurrenceId, occurrenceDate: chosenBill.date, review })}
           /> : <p role="status">Pick a bill first. <button type="button" className="ghost" onClick={() => onSlideIndex(0)}>Back to the bills</button></p>
         )}
 
         {slide === "amount" && (
           <>
-            {expanded ? <label>Amount (CAD)<input inputMode="decimal" value={form.amount} onChange={event => setForm(current => ({ ...current, amount: event.target.value }))} /></label> : <CadPad
+            {expanded ? <>
+              <label>Amount (CAD)<input inputMode="decimal" value={form.amount}
+                aria-invalid={form.amount.trim() !== "" && !canAdvanceAddSlide("amount", form)}
+                aria-describedby={form.amount.trim() !== "" && !canAdvanceAddSlide("amount", form) ? `${amountFieldId}-error` : undefined}
+                onChange={event => setForm(current => ({ ...current, amount: event.target.value }))} /></label>
+              {form.amount.trim() !== "" && !canAdvanceAddSlide("amount", form) && <p id={`${amountFieldId}-error`} className="cad-pad-error" role="status">Enter an amount above $0.00, for example 12.50.</p>}
+            </> : <CadPad
               giant
               digits={centsDigitsFromDollars(form.amount)}
               onDigits={(digits) => setForm((current) => ({ ...current, amount: padToDollars(digits) }))}
@@ -754,7 +765,8 @@ export function AddSlideshow({
         {!hidePost && (last || expanded) && needsAccountChoice && (
           <p role="status" data-add-account-intent>{mode === "transfer" ? "Choose the source and destination accounts before Confirm." : "Choose the account for this entry before Confirm."}</p>
         )}
-        <div ref={errorRef} tabIndex={-1} className="entry-error-focus"><KitchenNotice message={error} onGoMore={onGoMore} onDismiss={onDismissError} /></div>
+        <div ref={errorRef} tabIndex={-1} className="entry-error-focus"><KitchenNotice message={error} onGoMore={onGoMore} onDismiss={() => { setLastPost(null); onDismissError(); }}
+          onRetry={lastPost && error && !busy ? () => post(lastPost.payload) : undefined} /></div>
         {confirm && !billMode && (
           <DuplicatePrompt
             name={duplicatePromptName(entryMode, confirm.code)}
@@ -775,7 +787,7 @@ export function AddSlideshow({
             </p>
             <button className="primary post-big" type="button" disabled={postingDisabled || busy || !open || entryInvalid || !!splitError || cutPreviewActive}
               aria-label={addConfirmName({ mode: entryMode, postLabel, form, household, accounts: pickerAccounts, ledger })}
-              onClick={() => onPost({ kind: "entry", mode: entryMode, ledger })} data-add-confirm>
+              onClick={() => post({ kind: "entry", mode: entryMode, ledger })} data-add-confirm>
               {postLabel}
             </button>
           </>

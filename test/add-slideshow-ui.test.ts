@@ -187,7 +187,7 @@ describe("Add slideshow UI", () => {
     expect(sheet.getAttribute("data-add-slide")).toBe("amount");
     expect(host.querySelector("#add-sheet-title")?.textContent).toBe("How much did you spend?");
     const enter = [...host.querySelectorAll("button")].find((button) => button.textContent === "Enter") as HTMLButtonElement;
-    expect(enter.disabled).toBe(true);
+    expect(enter.getAttribute("aria-disabled")).toBe("true"); // A30: aria-disabled, still focusable; Enter explains why
     const tap = (label: string) => {
       const button = [...host.querySelectorAll(".cad-pad-keys button")].find((key) => key.getAttribute("aria-label") === label) as HTMLButtonElement;
       act(() => { button.click(); });
