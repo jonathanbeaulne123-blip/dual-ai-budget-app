@@ -134,6 +134,9 @@ Delivered to `~/Downloads/hearth-horizon-<pass>/` (for example `hearth-horizon-p
 ## Time and the plan (added 25 Sep, later)
 `TIME.md` decides the flow of time (a walk of day-stones on the Year Walk; one day ledger; the month turns at the Campfire) and the Plan Studio (the kitchen table; "One Pull Raises It"; one card with four views; Direction C's drawer; one five-beat ritual). It adds pass `02d-kitchen-table.md`, amendments to 01/02b/02c, CONTRACT rules 19–20, `journey.stretch` in the manifest, and decisions D27–D33.
 
+## Flight (added 26 Sep)
+`FLIGHT.md` decides the glider and the parachute (track M6): a hang glider flown by the bar on a five-point polar (8–17 m/s, trim 11 / 1.2), thermals by the real clock, ridge lift worked on the Crown's south face, the landing-outcome table (walk-off, tumble, or a labelled fade — never a crash), the Throat as a corridor dive to a splash and three echoes, the parachute from the plane's carried `bailOut` threshold (freefall, auto-pull at 45 m, the Drop Zone as a wind problem, the plane flies itself home), one horizon-locked flight cam, two glass bubbles, reduced motion as a sheet of landings and pages. It asks for MANIFEST v1.7 sky-only fields and decisions D34–D38.
+
 ## Files and their sources
 - The canonical manifest is `src/harbour/horizon/world/MANIFEST.json`; `docs/horizon/make_manifest.py` reproduces it. Run the generator in a temporary directory, compare its JSON with the canonical file, and copy an approved result there. Earlier embedded manifests and review claims under `inputs/` are historical. V1.6 reconciles the prerequisite data; it does not claim built geometry or clearance acceptance.
 - `inputs/grand-plan.html` is the approved Grand Plan artifact (the *why*), whose map draws from this same manifest.
