@@ -378,6 +378,45 @@
   .glass-bubble-anchor--flip.is-fixed { right: calc(var(--dock-width, 300px) + 16px); top: calc(12px + env(safe-area-inset-top, 0px)); }
 }
 
+/* ── Wave 3a layout fixes (browser evidence, docs/evidence/tool-atlas) ──
+   1. The circle keeps its shape in every dressing. worlds.css rounds every button to the
+      dressing's control radius at 0-5-0 (`:root[data-theme] :is(button, .btn):not(…):not(…)`),
+      which turned the three bubbles and the Record disc into 3 px squares. */
+:root[data-theme] .glass-bubble-anchor.glass-bubble-anchor button.glass-bubble,
+:root[data-theme] .glass-bubble-anchor.glass-bubble-anchor .glass-bubble--host button.fab { border-radius: 50%; }
+/* 2. A pill under a bubble that stands at the screen's edge lines up with that edge instead
+      of centring on the circle, so "Simple view" (and a long Figtree caps word) is never
+      clipped by the viewport. */
+.glass-bubble-anchor--flip.is-fixed .glass-bubble__label,
+.glass-bubble-anchor--record.is-fixed .glass-bubble__label { left: auto; right: 0; transform: none; }
+.glass-bubble-anchor--tools.is-fixed .glass-bubble__label { left: 0; transform: none; }
+@media (min-width: 1100px) {
+  .glass-bubble-anchor--tools.is-fixed .glass-bubble__label { left: auto; right: 0; }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .glass-bubble-anchor--tools.is-fixed .glass-bubble__label { left: auto; right: 0; }
+}
+/* 3. The dial stands beside the Record bubble, its foot level with the bubble's word, so
+      Purchase is the row nearest the thumb and every row sits in the lower part of the
+      screen (A29), and the column is never pushed off the top on desktop or a landscape
+      phone. Below 360 px there is no room beside it, and it opens upward as before. */
+@media (min-width: 360px) {
+  .glass-bubble-anchor--record.is-fixed .fab-dial:not(.is-mirrored) .fab-dial-actions.record-dial {
+    right: calc(100% + 12px);
+    bottom: calc(-1 * var(--glass-pill-space));
+  }
+}
+/* 4. The ring is the glass's own two-tone ring (§4.1 Focus, A18). worlds.css draws every control's focus in
+      the dressing's accent at 0-4-0 (`:root[data-theme] :is(a, button, …, [tabindex]):focus-visible`), which
+      beat the rule above and put a sumac ring on the sumac and leaf-green patches of the map. Forced colours
+      keep worlds.css's `Highlight` ring (it is !important there). */
+:root[data-theme] .glass-bubble-anchor.glass-bubble-anchor .glass-bubble:focus-visible {
+  outline: 2px solid var(--glass-focus-in);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px var(--glass-focus-out), var(--glass-shadow);
+  border-radius: 50%;
+}
+
 .glass-ripple-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 
 /* ── The bar form (brief §3.5 flat edition, §6): [Island] [Record] [All tools],

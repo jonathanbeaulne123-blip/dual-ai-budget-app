@@ -119,8 +119,11 @@ describe("glass.css — the glass, its fallbacks and its dressings", () => {
     expect(bare).toMatch(/\.glass-dock \{[^}]*--glass-ink:\s*#2E241B/);
   });
 
-  it("keeps the dock 216 px at rest, a 300 px right column on a landscape phone, 360 px on desktop (§6)", () => {
-    expect(bare).toMatch(/height:\s*calc\(216px \+ env\(safe-area-inset-bottom, 0px\)\)/);
+  // Wave 3a (browser evidence): 216 px cut the grab handle in half — every button is 44 px tall under
+  // the dressings (worlds.css), so the strip band and the handle need 44 each: 12 + 2 + 44 + 2 + 3 × 44 + 44 = 236.
+  it("keeps the dock 236 px at rest, a 300 px right column on a landscape phone, 360 px on desktop (§6)", () => {
+    expect(bare).toMatch(/height:\s*calc\(236px \+ env\(safe-area-inset-bottom, 0px\)\)/);
+    expect(bare).toMatch(/:root:has\(\.glass-dock\) \{ --dock-height: 236px;/);
     expect(bare).toMatch(/@media \(orientation: landscape\) and \(max-height: 500px\) \{[\s\S]*?width:\s*300px/);
     expect(bare).toMatch(/@media \(min-width: 1100px\) \{[\s\S]*?width:\s*360px/);
     expect(bare).toMatch(/\.glass-dock \{[^}]*touch-action:\s*manipulation/);

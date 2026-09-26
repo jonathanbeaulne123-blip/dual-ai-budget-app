@@ -42,7 +42,10 @@
   right: 0;
   bottom: 0;
   box-sizing: border-box;
-  height: calc(216px + env(safe-area-inset-bottom, 0px));
+  /* 12 gutter + 2 border + 44 strip + 2 card inset + 3 × 44 lines + a 44 px grab handle (worlds.css
+     gives every button 44 px, so the handle is 44, not 32) = 236: nothing at rest is cut off, and the
+     strip's two targets are 44 px tall inside the glass (A21). */
+  height: calc(236px + env(safe-area-inset-bottom, 0px));
   padding: 12px 8px env(safe-area-inset-bottom, 0px); /* the 12 px gutter is part of the dead zone */
   touch-action: manipulation;
   color: var(--glass-ink);
@@ -54,7 +57,7 @@
   pointer-events: auto;
   position: relative;
   display: grid;
-  grid-template-rows: 40px minmax(0, 1fr);
+  grid-template-rows: 44px minmax(0, 1fr);
   height: 100%;
   border-radius: 18px;
   background: var(--glass-fill);
@@ -82,13 +85,13 @@
   box-shadow: 0 0 0 4px #fff;
 }
 
-/* ── The strip band: 40 px ── */
+/* ── The strip band: 44 px ── */
 .glass-strip {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: stretch;
   gap: 6px;
-  height: 40px;
+  height: 44px;
   padding: 0 10px 0 4px;
   border-bottom: 1px solid color-mix(in srgb, var(--glass-stroke) 55%, transparent);
   font-size: 12px;
@@ -114,6 +117,8 @@
 .glass-strip__month { color: var(--glass-ink); font-weight: 700; }
 .glass-strip__covered { white-space: nowrap; }
 .glass-strip__grid { position: relative; min-width: 0; border-radius: 6px; cursor: pointer; }
+/* The band's one tap target is the band's full 44 px: its hit box reaches up over the month word (aria-hidden, inert). */
+.glass-strip__grid::before { content: ""; position: absolute; inset: -17px 0 0 0; }
 .glass-strip__line { position: absolute; left: 0; right: 0; bottom: 5px; height: 2px; background: repeating-linear-gradient(90deg, var(--glass-stroke) 0 3px, transparent 3px 6px); }
 .glass-strip__progress { display: block; height: 100%; background: var(--glass-ink); }
 .glass-strip__days { position: relative; display: grid; height: 100%; align-items: end; }
@@ -192,6 +197,33 @@ button.desk-hercules__card { display: grid; gap: 4px; min-height: 44px; padding:
 .glass-card--page .glass-card__quiet { background: var(--desk-card, #fffaf2); border: 1px solid var(--desk-line, #d8cfc0); border-radius: 10px; padding: 8px 14px; color: var(--desk-ink, #1b1712); }
 .glass-card--page .glass-card__full { padding: 0; }
 
+/* ── Wave 3a layout fixes (browser evidence, docs/evidence/tool-atlas) ──
+   The Ours | Mine pill keeps its pill shape: worlds.css rounds every button to the
+   dressing's control radius at 0-5-0, which squared the options off. */
+:root[data-theme] .glass-pill.glass-pill button.glass-pill__option { border-radius: 999px; }
+/* Line 3 is two lines at most at rest (its whole text stays the button's name); line 2 is
+   never truncated (A6). If a long bill name or large text still runs past the dock, the
+   card scrolls inside the glass rather than pushing the grab handle out of it. */
+.glass-card--dock .glass-card__line[data-card-line="3"] .glass-card__text,
+.glass-card--dock p.glass-card__line[data-card-line="3"] {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+}
+.glass-dock:not([data-expanded]) .glass-card--dock { overflow-y: auto; overscroll-behavior: contain; }
+/* The dock stands inside the island's HUD, whose `.village-hud button { font: inherit; min-height: 44px }`
+   (0-1-1) outranked the dock's own type (0-1-0): the card's lines drew at 16/24 instead of 14/18, so line 2 ran
+   4 px past its 44 px and over line 1's target, and the Ours | Mine pill grew to 50 px, past line 1. */
+.glass-dock .glass-card__door { font-size: 14px; line-height: 18px; }
+.glass-dock .glass-strip__tab, .glass-dock .glass-pill__option { font-size: 13px; }
+:root[data-theme="newfoundland"] .glass-dock .glass-strip__tab, :root[data-theme="newfoundland"] .glass-dock .glass-pill__option { font-size: 12px; }
+:root[data-theme] .glass-card--dock .glass-pill button.glass-pill__option { min-height: 38px; } /* + its ::before, 44 */
+/* The two-tone ring above loses to the dressings' accent ring (worlds.css, 0-4-0) unless it outranks it (A18). */
+:root[data-theme] .glass-dock.glass-dock :is(button, [tabindex]):focus-visible,
+:root[data-theme] .glass-card--page.glass-card--page :is(button, [tabindex]):focus-visible {
+  outline: 2px solid #1A1714;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px #fff;
+}
+
 /* ── The three dressings ── */
 :root[data-theme="taylor"] .glass-dock {
   /* Vellum: frosted tracing paper, a washi-tape corner, a deckled white edge. */
@@ -257,15 +289,18 @@ button.desk-hercules__card { display: grid; gap: 4px; min-height: 44px; padding:
 
 /* ── Landscape phone (844 × 390): a 300 px right-hand column ── */
 @media (orientation: landscape) and (max-height: 500px) {
-  .glass-dock { left: auto; top: 0; width: 300px; height: 100%; padding: 8px 8px 8px 0; }
-  .glass-dock__glass { grid-template-rows: 40px minmax(0, 1fr); }
+  /* Below the App's status strip (absolute, 44 px at the top), which otherwise sits on the strip band. */
+  .glass-dock { left: auto; top: 52px; bottom: 0; width: 300px; height: auto; padding: 0 8px 8px 0; }
+  .glass-dock__glass { grid-template-rows: 44px minmax(0, 1fr); }
   .glass-dock .glass-card { overflow-y: auto; }
   .glass-dock[data-expanded] { max-height: none; }
 }
 
 /* ── Desktop: a 360 px column docked bottom-left, the strip above the card ── */
 @media (min-width: 1100px) {
-  .glass-dock { left: 16px; right: auto; bottom: 16px; width: 360px; padding: 0; height: 204px; }
+  /* 2 border + 44 strip + 2 inset + 3 × 44 lines + a 32 px handle (≥ 24 px is the desktop target, A21) = 212. */
+  .glass-dock { left: 16px; right: auto; bottom: 16px; width: 360px; padding: 0; height: 212px; }
+  .glass-dock .glass-card__handle { min-height: 0; height: 32px; }
   .glass-dock[data-expanded] { height: auto; max-height: calc(100vh - 48px); }
   .glass-dock .glass-card { overflow-y: auto; }
 }
@@ -275,10 +310,10 @@ button.desk-hercules__card { display: grid; gap: 4px; min-height: 44px; padding:
    landscape phone the dock is a 300 px right-hand column (`--dock-width`) and they stand at its edge; on
    desktop the dock is the 204 px bottom-left column and the bubbles are a right-hand column. Set only
    while a dock is on the page, so the Desk and every tool in front keep their own bottoms. */
-:root:has(.glass-dock) { --dock-height: 216px; --dock-width: 0px; }
+:root:has(.glass-dock) { --dock-height: 236px; --dock-width: 0px; }
 @media (orientation: landscape) and (max-height: 500px) {
   :root:has(.glass-dock) { --dock-height: 0px; --dock-width: 300px; }
 }
 @media (min-width: 1100px) {
-  :root:has(.glass-dock) { --dock-height: 220px; --dock-width: 0px; }
+  :root:has(.glass-dock) { --dock-height: 228px; --dock-width: 0px; }
 }

@@ -9,6 +9,13 @@
 .app:is([data-harbour-court], [data-harbour-door]) .topbar .pill { pointer-events: auto; box-shadow: 0 2px 10px #1a201822; }
 .app:is([data-harbour-court], [data-harbour-door]) .view-switch, .app:is([data-harbour-court], [data-harbour-door]) .ledger-switcher { display: none; }
 .app:is([data-harbour-court], [data-harbour-door]) .sync-freshness { position: absolute; left: clamp(12px, 3vw, 28px); right: auto; top: 10px; z-index: 14; margin: 0; max-width: min(62vw, 420px); min-height: 34px; padding: 5px 10px; font-size: 0.72rem; background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(6px); }
+/* Tool Atlas A9 (Wave 3a): the sync line is the one other blurred thing on home. It turns solid with the glass:
+   under the four media fallbacks, and whenever the bubbles are solid (the lite tier, Quiet, Save-Data, a missed
+   frame budget: `data-glass="solid"` on every bubble). */
+@media (prefers-reduced-transparency: reduce), (prefers-reduced-motion: reduce), (prefers-contrast: more), (forced-colors: active) {
+  .app:is([data-harbour-court], [data-harbour-door]) .sync-freshness { background: var(--card); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+.app:is([data-harbour-court], [data-harbour-door]):has([data-glass-bubble][data-glass="solid"]) .sync-freshness { background: var(--card); -webkit-backdrop-filter: none; backdrop-filter: none; }
 .app:is([data-harbour-court], [data-harbour-door]) .sync-freshness__space { display: none; }
 .app:is([data-harbour-court], [data-harbour-door]) [data-app-page][data-house-resting] { display: none; }
 .app:is([data-harbour-court], [data-harbour-door]) .hercules-pill, .app:is([data-harbour-court], [data-harbour-door]) .hercules-live { display: none; }
