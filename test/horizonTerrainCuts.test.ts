@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BedCut, LandCuts, TerrainField } from '../src/harbour/horizon/land/interfaces';
-import { BED_TERRAIN_CLEARANCE, conserveBedFootprint, createBedSampler, createTerrainCutSampler, sampleTerrain } from '../src/harbour/horizon/land/terrain';
+import { BED_LEVEL_TOLERANCE, BED_TERRAIN_CLEARANCE, conserveBedFootprint, createBedSampler, createTerrainCutSampler, PAD_FILL_MAX, raiseForbidden, sampleTerrain } from '../src/harbour/horizon/land/terrain';
+import { HORIZON_MANIFEST as M } from '../src/harbour/horizon/world/manifest';
 import { decodeTerrainAsset, encodeTerrainAsset } from '../src/harbour/horizon/land/terrain/asset';
 import { linePoint, mix, smooth } from '../src/harbour/horizon/land/terrain/geometry';
 
@@ -19,14 +20,19 @@ describe('Horizon spatial bed cut solver', () => {
     const indexed = createBedSampler(beds);
     for (let z = -8; z <= 512; z += 7.25) for (let x = -8; x <= 512; x += 7.25) {
       let height = 3 + x * 0.02 - z * 0.004;
-      const original = height; let footprintHeight = Infinity;
+      const original = height; let footprintHeight = Infinity, deck = -Infinity;
       for (const b of beds) {
         if (!b.terrainCut || b.terrainExclusions?.some(e => Math.hypot(x - e.at[0], z - e.at[1]) < e.radius)) continue;
         const hit = linePoint(b.points, x, z);
         height = mix(height, hit.height, 1 - smooth((hit.distance - b.width / 2 - b.shoulder) / 15));
         if (hit.distance <= b.width / 2 + b.shoulder) footprintHeight = Math.min(footprintHeight, hit.height);
+        if (hit.distance <= b.width / 2) deck = Math.max(deck, hit.height);
       }
       if (Number.isFinite(footprintHeight)) height = footprintHeight;
+      // A lower route never excavates under an upper deck; no bed raises the sea floor or tops the summit.
+      if (deck > height + BED_LEVEL_TOLERANCE) height = deck;
+      if (height > original && raiseForbidden(x, z)) height = original;
+      if (height > original) height = Math.min(height, Math.max(original, M.landforms.find(f => f.id === 'crown')!.summitH! - 1));
       expect(indexed(x, z, original).height, `${x},${z}`).toBeCloseTo(height, 9);
     }
   });
@@ -92,4 +98,36 @@ it('caps banks below named open bridge decks without filling their channels or c
 it('clears generated bridge spans while preserving an adjacent tunnel exclusion',()=>{
  const route=bed('upper',[[100,24,100],[400,24,100]],{terrainExclusions:[{at:[180,100],radius:30,openSpan:true},{at:[330,100],radius:30}]});
  const bank=flatField();conserveBedFootprint(bank,[route]);expect(sampleTerrain(bank,180,100)).toBeCloseTo(23.35,4);expect(sampleTerrain(bank,330,100)).toBe(80);
+});
+
+describe('Horizon bed override guards (Stage A G1/G7)', () => {
+  it('never raises the sea floor or the Bight lagoon floor under a bed or deck', () => {
+    // [586,1147.8] is 57–71 m off the outline under the Bight Bridge; [620,910] is the lagoon.
+    for (const [x, z] of [[586, 1147.8], [620, 910], [1500, 330]] as const) {
+      expect(raiseForbidden(x, z), `${x},${z}`).toBe(true);
+      const causeway = bed('offshore', [[x - 40, 12, z], [x + 40, 12, z]]);
+      expect(createBedSampler([causeway])(x, z, -4).height).toBe(-4);
+    }
+    expect(raiseForbidden(1470, 1186)).toBe(false);
+  });
+  it('never excavates a lower route under an upper deck it passes beneath', () => {
+    const upper = bed('upper', [[1300, 30, 900], [1400, 30, 900]], { width: 8 }), lower = bed('lower', [[1350, 20, 850], [1350, 20, 950]], { width: 5 });
+    for (const beds of [[upper, lower], [lower, upper]]) {
+      expect(createBedSampler(beds)(1350, 900, 25).height).toBe(30);
+      expect(createTerrainCutSampler(cuts(beds), 5)(1350, 900).height).toBeCloseTo(30 - BED_TERRAIN_CLEARANCE, 5);
+    }
+    // At grade (within 0.5 eu) the lowest bed still gets its clearance.
+    const flush = bed('flush', [[1350, 20.3, 850], [1350, 20.3, 950]], { width: 5 }), road = bed('road', [[1300, 20, 900], [1400, 20, 900]]);
+    expect(createBedSampler([road, flush])(1350, 900, 25).height).toBe(20);
+  });
+  it('limits the clearance plane extrapolation to one raster diagonal and the land floor (P05)', () => {
+    // A steep leg meeting a flat one: the steep plane extended 10 m past its end dug below the sea (−0.41 eu).
+    const walk = bed('walk', [[950, 6, 1400], [950, 0.2, 1440], [950, 0.2, 1480]], { kind: 'walk', width: 5.2, shoulder: 1.2 });
+    const sample = createTerrainCutSampler(cuts([walk]), 5);
+    for (let z = 1440; z <= 1452; z += 2.5) expect(sample(950, z).height, `${z}`).toBeGreaterThanOrEqual(0.1 - 1e-9);
+    // Pads raise no mound: a threshold at 100 over ground at 56.7 fills at most PAD_FILL_MAX.
+    const tower = createTerrainCutSampler(cuts([], [{ id: 'threshold.prowPlatform', kind: 'threshold', centre: [1610, 100, 640], size: [6, 5], rotationDegrees: 0, margin: 0, blend: 6 }]), 5);
+    const ground = createTerrainCutSampler(cuts([]), 5)(1610, 640).height;
+    expect(tower(1610, 640).height).toBeLessThanOrEqual(ground + PAD_FILL_MAX + 1e-6);
+  });
 });

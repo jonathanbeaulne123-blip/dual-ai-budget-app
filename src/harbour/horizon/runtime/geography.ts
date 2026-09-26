@@ -1,9 +1,10 @@
 import {waterHeightAt} from '../land/water/index.ts';
 import type {BedCut, LandCuts, StructureSolid, TerrainField, XYZ} from '../land/interfaces.ts';
-import {sampleTerrain, terrainNormal, terrainTriangleVisible} from '../land/terrain/index.ts';
+import {sampleTerrain, terrainNormal, terrainTriangleVisible, WALKABLE_DEGREES} from '../land/terrain/index.ts';
 
-/** Keep the existing body contract: steeper faces are rock, never climbable. */
-export const HORIZON_WALKABLE_DEGREES = 40;
+/** Keep the existing body contract: steeper faces are rock, never climbable. The one number
+ * is MANIFEST `profiles.walkable.slope_max_deg`, read once in land/terrain (bake and paint share it). */
+export const HORIZON_WALKABLE_DEGREES = WALKABLE_DEGREES;
 export const HORIZON_BODY_HEIGHT = 1.25;
 export const HORIZON_STEP_HEIGHT = .48;
 type Triangle = {a:XYZ;b:XYZ;c:XYZ;normal:XYZ;solid:StructureSolid};
