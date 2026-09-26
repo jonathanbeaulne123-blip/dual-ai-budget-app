@@ -1,15 +1,16 @@
 import { HORIZON_MANIFEST as M, requireScaleFactor } from '../../world/manifest';
-import type { HeightQuery, LandCuts, XY, XYZ } from '../interfaces';
+import type { BedCut, HeightQuery, LandCuts, XY, XYZ } from '../interfaces';
 import { buildStructures, SPANS } from '../structures/build';
 import { box, distance, districtAt, mix, nearestOnPath, pathLength, plan, slab, solid } from '../structures/mesh';
 import { buildReserves } from '../reserves/build';
 import { buildTown } from '../town/build';
 import { buildHostSites } from '../town/hosts';
 import { buildUnderground } from '../underground/build';
-import { addFlatPad, bed, emitBedGeometry, heightOnBeds } from './profiles';
+import { addFlatPad, bed, emitBedGeometry, heightOnBeds, planDistance } from './profiles';
 import { gradeRoute, sampleSpline, type HeightPin } from './solver';
 
 const pin=(xy:XY,height:number,reason:string):HeightPin=>({xy,height,reason});
+const BODY_HEIGHT=1.25;
 const routePins:Record<string,HeightPin[]>={
   V01:[pin([1400,1060],24,'Green Road junction'),pin([1480,1040],18,'upper street'),pin([1500,340],70,'Crown Road junction'),pin([900,290],48,'north pass'),pin([560,1100],12,'Bight Bridge'),pin([1350,1345],9,'Quay Bridge')],
   VG:[pin([1400,1060],24,'Horizon Drive junction'),pin([1240,1105],24,'High Span'),pin([960,860],30,'Bight spur'),pin([980,700],42,'cottage spur'),pin([974,540],40,'studio spur'),pin([900,290],48,'north pass')],
@@ -92,19 +93,108 @@ export function yearWalkStretches(cuts:LandCuts):{month:number;stationId:string;
   const length=pathLength(walk.points),along=M.journey.stations.map(s=>nearestOnPath(s.xy as unknown as XY,walk.points).along);
   return M.journey.stations.map((s,i)=>{const previous=along[(i+11)%12]!,current=along[i]!,d=(current-previous+length)%length;return {month:s.month,stationId:s.id,length:d,spacing28:d/28,spacing31:d/31};});
 }
-function journey(cuts:LandCuts,base:HeightQuery):void {
-  // The diagram passes through the Library centre. Route the walking bed around
-  // its southeast apron; the host and all twelve station coordinates stay fixed.
-  const source=(M.journey.yearWalk.pts as unknown as XY[]).flatMap(p=>p[0]===740&&p[1]===400?[[780,450],[762,422],[738,444]] as XY[]:p[0]===930&&p[1]===660?[[930,660],[902,646],[900,608]] as XY[]:[p]);
-  // The two Crown approaches take long contour returns; their short diagram chords cannot hold 12%.
-  const controls:XY[]=[source[0]!,[1440,710],[1450,865],[1360,940],...source.slice(1,-2),[1520,1190],[1580,1050],[1600,860],[1590,700],[1500,340],[1445,430],[1445,520],[1400,620],[1370,690],source[0]!];
-  const stationPins=M.journey.stations.map(s=>pin(s.xy as unknown as XY,s.id==='jan'?110:s.id==='feb'?53:s.id==='dec'?12:heightOnBeds(cuts,s.xy as unknown as XY,base,35),`station ${s.id}`));
-  stationPins.push(pin([762,422],48,'Library public apron'));
-  stationPins.push(pin([902,646],36,'Cottage bypass'),pin([900,608],37,'Hollow approach'));
-  stationPins.push(pin([1480,1060],18,'upper street'),pin([1370,690],110,'turning circle'));
-  for(const p of sampleSpline(controls))if(Math.abs(p[0]-1480)<=21&&Math.abs(p[1]-1080)<=39)stationPins.push(pin(p,18,'level upper street terrace'));
-  const b=bed('yearWalk','walk',gradeRoute('yearWalk',controls,base,.12,stationPins,cuts.diagnostics));b.width=5.2;b.shoulder=1.2;cuts.beds.push(b);
+const walkGrade=()=>M.profiles.walk.grade_max_pct/100,b_width=5.2;
+const insidePad=(pad:{centre:XYZ;size:XY;rotationDegrees:number},p:XY,grow=0):boolean=>{const a=-pad.rotationDegrees*Math.PI/180,dx=p[0]-pad.centre[0],dz=p[1]-pad.centre[2];return Math.abs(dx*Math.cos(a)-dz*Math.sin(a))<=pad.size[0]/2+grow&&Math.abs(dx*Math.sin(a)+dz*Math.cos(a))<=pad.size[1]/2+grow;};
+interface YearWalkShare { host:string; stretch:string; offset:number; from:number; to:number }
+/** The Year Walk is laid verbatim from MANIFEST journey.yearWalk (v1.7): its own control
+ * points, the manifest station pins and the walk grade. On a shared stretch it is a footway
+ * of its host: the host's solved height at every sample, copied, not re-graded. */
+function journey(cuts:LandCuts,base:HeightQuery):YearWalkShare[] {
+  const Y=M.journey.yearWalk,controls=Y.pts as unknown as XY[],limit=walkGrade(),samples=sampleSpline(controls);
+  // Sample index of every control (sampleSpline emits ceil(d/5) samples per control segment).
+  const controlSample=[0];for(let i=1;i<controls.length;i++)controlSample.push(controlSample[i-1]!+Math.max(1,Math.ceil(distance(controls[i-1]!,controls[i]!)/5)));
+  const nearestControl=(q:XY,after=-1)=>{let best=-1,d=Infinity;controls.forEach((p,i)=>{if(i<=after)return;const e=distance(p,q);if(e<d-1e-9){d=e;best=i;}});return best;};
+  const shares:YearWalkShare[]=[];
+  for(const row of Y.shares){
+    const host=cuts.beds.find(b=>b.id===row.host);
+    if(!host){cuts.diagnostics.push({id:`yearWalk.share.${row.stretch}.${row.host}`,severity:'conflict',message:`Year Walk share host ${row.host} is not built`,at:row.from as unknown as XY});continue;}
+    const a=nearestControl(row.from as unknown as XY),b=nearestControl(row.to as unknown as XY,a);
+    if(a<0||b<0){cuts.diagnostics.push({id:`yearWalk.share.${row.stretch}.${row.host}`,severity:'conflict',message:'Year Walk share ends are not on the walk',at:row.from as unknown as XY});continue;}
+    shares.push({host:row.host,stretch:row.stretch,offset:row.offset_m,from:controlSample[a]!,to:controlSample[b]!});
+  }
+  const hostHeight=(share:YearWalkShare,p:XY)=>nearestOnPath(p,cuts.beds.find(b=>b.id===share.host)!.points).at[1];
+  const shareOf=(i:number)=>shares.find(s=>i>=s.from&&i<=s.to);
+  const pins:HeightPin[]=[];
+  for(const s of shares)for(const i of [s.from,s.to])pins.push(pin(samples[i]!,hostHeight(s,samples[i]!),`share ${s.stretch} ${s.host} ${i===s.from?'entry':'exit'}`));
+  for(const station of M.journey.stations){
+    const p=Y.pins.find(q=>q.station===station.id),xy=station.xy as unknown as XY,index=samples.reduce((best,q,i)=>distance(q,xy)<distance(samples[best]!,xy)?i:best,0),share=shareOf(index);
+    const h=share?hostHeight(share,samples[index]!):p?p.h:heightOnBeds(cuts,xy,base,35);
+    if(share&&p&&Math.abs(p.h-h)>.5)cuts.diagnostics.push({id:`yearWalk.station.${station.id}.pin`,severity:'info',message:`Station ${station.id} lies on the ${share.host} footway; the host height ${h.toFixed(2)} replaces the manifest pin ${p.h}`,at:xy,measured:h,required:p.h});
+    // The station pad is level: every walk sample on its footprint holds the station height.
+    const pad={centre:[xy[0],h,xy[1]] as XYZ,size:M.journey.station.pad_m as unknown as XY,rotationDegrees:0};
+    samples.forEach((q,i)=>{if(!shareOf(i)&&insidePad(pad,q,1))pins.push(pin(q,h,`station ${station.id} level pad`));});
+    pins.push(pin(xy,h,`station ${station.id}`));
+  }
+  // Adjacent lanes: where the walk comes back beside itself (two months side by side, lanes a
+  // few metres apart), the later lane takes the earlier lane's height, so the two read as one
+  // level footway instead of two beds at different heights.
+  const first=gradeRoute('yearWalk',controls,base,limit,pins,[]),arcs=[0];for(let i=1;i<first.length;i++)arcs.push(arcs[i-1]!+distance(plan(first[i-1]!),plan(first[i]!)));
+  for(let j=0;j<first.length;j++){
+    if(shareOf(j))continue;
+    const dir=(k:number):XY=>{const a=first[Math.max(0,k-1)]!,c=first[Math.min(first.length-1,k+1)]!,len=Math.hypot(c[0]-a[0],c[2]-a[2])||1;return [(c[0]-a[0])/len,(c[2]-a[2])/len];};
+    // Lanes are 2-4 m apart and run parallel (or back the other way); switchback legs are further apart.
+    let lane=-1;for(let i=0;i<j;i++)if(arcs[j]!-arcs[i]!>40&&arcs.at(-1)!-arcs[j]!+arcs[i]!>40&&distance(plan(first[i]!),plan(first[j]!))<4.5&&Math.abs(dir(i)[0]*dir(j)[0]+dir(i)[1]*dir(j)[1])>.9&&(lane<0||distance(plan(first[i]!),plan(first[j]!))<distance(plan(first[lane]!),plan(first[j]!))))lane=i;
+    if(lane>=0){const a=first[lane]!,c=first[Math.min(first.length-1,lane+1)]!,t=nearestOnPath(plan(first[j]!),[a,c]).at[1];pins.push(pin(plan(first[j]!),shareOf(lane)?hostHeight(shareOf(lane)!,plan(first[j]!)):t,'adjacent lane'));}
+  }
+  const points=gradeRoute('yearWalk',controls,base,limit,pins,cuts.diagnostics).map((p,i):XYZ=>{const s=shareOf(i);return s?[p[0],hostHeight(s,plan(p)),p[2]]:p;});
+  const b=bed('yearWalk','walk',points);b.width=b_width;b.shoulder=1.2;b.maxGrade=limit;cuts.beds.push(b);
+  reportSteepStretches('yearWalk',points,cuts.diagnostics,limit);
   for(const s of M.journey.stations){const n=nearestOnPath(s.xy as unknown as XY,b.points);const p=addFlatPad(cuts,`station.${s.id}`,'station',s.xy as unknown as XY,n.at[1]!,M.journey.station.pad_m as unknown as XY);p.serviceBedId='yearWalk';p.margin=2;}
+  return shares;
+}
+/** After spans and tunnels have their exclusions: a shared stretch has no wall between host and
+ * footway; a stretch the host carries inside its own structure (bridge deck, tunnel section,
+ * or an offset-0 trail) emits no Year Walk deck, edge or terrain override. */
+function settleYearWalkShares(cuts:LandCuts,shares:readonly YearWalkShare[]):void {
+  const walk=cuts.beds.find(b=>b.id==='yearWalk');if(!walk)return;
+  for(const s of shares){
+    const host=cuts.beds.find(b=>b.id===s.host)!,stretch=walk.points.slice(s.from,s.to+1).map(plan);
+    const hostAlong=[nearestOnPath(stretch[0]!,host.points).along,nearestOnPath(stretch.at(-1)!,host.points).along].sort((a,b)=>a-b);
+    let along=0;const hostStretch:XY[]=[];host.points.forEach((p,i)=>{if(i)along+=distance(plan(host.points[i-1]!),plan(p));if(along>=hostAlong[0]!-5&&along<=hostAlong[1]!+5)hostStretch.push(plan(p));});
+    if(s.offset>0){(walk.sharedEdges??=[]).push({other:host.id,at:stretch});if(hostStretch.length>1)(host.sharedEdges??=[]).push({other:walk.id,at:hostStretch});}
+    // Carried runs: the whole stretch at offset 0, else where the host sits in its own span or tunnel.
+    let run:XY[]=[];const flush=()=>{if(run.length>1)(walk.carried??=[]).push(run);run=[];};
+    for(const p of stretch){
+      const h=nearestOnPath(p,host.points),carried=s.offset===0||(host.terrainExclusions??[]).some(e=>distance(plan(h.at),e.at)<e.radius);
+      if(carried){run.push(p);(walk.terrainExclusions??=[]).push({at:p,radius:walk.width/2+walk.shoulder+1,openSpan:(host.terrainExclusions??[]).some(e=>e.openSpan&&distance(plan(h.at),e.at)<e.radius)});}else flush();
+    }
+    flush();
+  }
+  reportYearWalkSeparation(cuts,walk);
+}
+/** The Year Walk keeps >= its width + 15 m plan separation (edge to edge) from any bed at another
+ * height, so neither's cut or fill runs under the other; each violating run is reported. */
+function reportYearWalkSeparation(cuts:LandCuts,walk:BedCut):void {
+  const others=cuts.beds.filter(b=>b!==walk&&b.terrainCut&&!['cable','cave','rail'].includes(b.kind)&&!b.id.startsWith('structure.'));
+  const runs=new Map<string,{min:number;at:XY;dh:number;n:number}>();
+  const inExclusion=(b:BedCut,p:XY)=>(b.terrainExclusions??[]).some(e=>distance(p,e.at)<e.radius);
+  for(const p of walk.points){
+    const xy=plan(p);if(inExclusion(walk,xy)||walk.carried?.some(line=>planDistance(xy,line)<1))continue;
+    for(const o of others){
+      const n=nearestOnPath(xy,o.points),edge=n.distance-walk.width/2-walk.shoulder-o.width/2-o.shoulder,dh=Math.abs(n.at[1]-p[1]);
+      if(edge>=15||dh<=BODY_HEIGHT||inExclusion(o,plan(n.at)))continue;
+      // Proximity is a problem only where one bed's cut or fill reaches the other: a
+      // 1:1 bank over the plan gap must fit the height difference.
+      if(edge>dh)continue;
+      const key=o.id,r=runs.get(key);if(!r||edge<r.min)runs.set(key,{min:edge,at:xy,dh,n:(r?.n??0)+1});else r.n++;
+    }
+  }
+  // The walk against itself (switchback legs): samples far apart along the walk but close in plan.
+  const pts=walk.points,arcs=[0];for(let i=1;i<pts.length;i++)arcs.push(arcs[i-1]!+distance(plan(pts[i-1]!),plan(pts[i]!)));
+  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+    if(arcs[j]!-arcs[i]!<40||arcs.at(-1)!-arcs[j]!+arcs[i]!<40)continue;
+    const edge=distance(plan(pts[i]!),plan(pts[j]!))-walk.width-walk.shoulder*2,dh=Math.abs(pts[i]![1]-pts[j]![1]);
+    if(edge>=15||dh<=BODY_HEIGHT||edge>dh)continue;
+    const r=runs.get('yearWalk');if(!r||edge<r.min)runs.set('yearWalk',{min:edge,at:plan(pts[i]!),dh,n:(r?.n??0)+1});else r.n++;
+  }
+  for(const [id,r]of runs)cuts.diagnostics.push({id:`yearWalk.separation.${id}`,severity:'conflict',message:`Year Walk runs ${r.min.toFixed(1)} eu edge-to-edge from ${id} at ${r.dh.toFixed(1)} eu height difference (${r.n} samples); the rule is width + 15 m plan separation or one shared bed`,at:r.at,measured:r.min,required:15});
+}
+/** Every stretch of a solved bed steeper than 8 % is listed (MANIFEST profiles: "every stretch over 8 % is listed"). */
+export function reportSteepStretches(id:string,points:readonly XYZ[],diagnostics:LandCuts['diagnostics'],limit:number,review=.08):void {
+  let run:{from:number;length:number;max:number;at:XY}|null=null;
+  const close=()=>{if(run&&run.length>=1)diagnostics.push({id:`gradeStretch.${id}.${Math.round(run.from)}`,severity:run.max>limit+.001?'conflict':'info',message:`${id}: ${run.length.toFixed(1)} eu over ${(review*100).toFixed(0)}% from arc ${run.from.toFixed(0)}; maximum ${(run.max*100).toFixed(2)}%`,at:run.at,measured:run.max,required:review});run=null;};
+  let arc=0;for(let i=1;i<points.length;i++){const a=points[i-1]!,b=points[i]!,len=distance(plan(a),plan(b)),g=Math.abs(b[1]-a[1])/(len||1);if(g>review+1e-4){run??={from:arc,length:0,max:0,at:plan(a)};run.length+=len;run.max=Math.max(run.max,g);}else close();arc+=len;}
+  close();
 }
 function cables(cuts:LandCuts,base:HeightQuery):void {
   const g=M.cable.G1,controls:XYZ[]=[[g.from[0]!,g.fromH,g.from[1]!],...g.towers.map((p,i)=>[p[0]!,Math.max(mix(g.fromH,g.toH,(i+1)/4),base(...p as unknown as XY)+8),p[1]!] as unknown as XYZ),[g.to[0]!,g.toH,g.to[1]!]];
@@ -125,10 +215,14 @@ function cables(cuts:LandCuts,base:HeightQuery):void {
     }
   }
   for(let pass=0;pass<16;pass++)for(const q of constraints){const a=controls[q.i-1]!,b=controls[q.i]!,deficit=q.required-mix(a[1],b[1],q.t);if(deficit<=.0001)continue;const wa=q.i>1?1-q.t:0,wb=q.i<controls.length-1?q.t:0,denom=wa*wa+wb*wb;
-    if(wa)controls[q.i-1]=[a[0],Math.min(300,a[1]+deficit*wa/denom),a[2]];
-    if(wb)controls[q.i]=[b[0],Math.min(300,b[1]+deficit*wb/denom),b[2]];
+    if(wa)controls[q.i-1]=[a[0],a[1]+deficit*wa/denom,a[2]];
+    if(wb)controls[q.i]=[b[0],b[1]+deficit*wb/denom,b[2]];
   }
-  for(const q of constraints){const actual=mix(controls[q.i-1]![1],controls[q.i]![1],q.t);if(actual<q.required-.01)cuts.diagnostics.push({id:`cable.G1.clear.${q.i}.${q.t}`,severity:'conflict',message:'Fixed gondola endpoint cannot meet terrain clearance below the 300m sky ceiling',at:q.at,measured:actual,required:q.required});}
+  // The solver never clamps: a tower the fixed endpoints force above the sky ceiling is a
+  // reported failure (RESERVED: the gondola top station), not a silently shortened tower.
+  const ceiling=M.sky.ceiling_m;
+  controls.slice(1,-1).forEach((p,i)=>{if(p[1]>ceiling)cuts.diagnostics.push({id:`cable.G1.tower.${i+1}.ceiling`,severity:'conflict',message:`G1 tower ${i+1} must reach ${p[1].toFixed(1)} eu to clear the terrain between fixed stations, above the ${ceiling} eu sky ceiling`,at:plan(p),measured:p[1],required:ceiling});});
+  for(const q of constraints){const actual=mix(controls[q.i-1]![1],controls[q.i]![1],q.t);if(actual<q.required-.01)cuts.diagnostics.push({id:`cable.G1.clear.${q.i}.${q.t}`,severity:'conflict',message:'Fixed gondola endpoint cannot meet terrain clearance',at:q.at,measured:actual,required:q.required});}
   const gondola:XYZ[]=[];
   for(let i=1;i<controls.length;i++){const a=controls[i-1]!,b=controls[i]!,len=distance(plan(a),plan(b));for(let k=0;k<32;k++){const t=k/32;gondola.push([mix(a[0]!,b[0]!,t),mix(a[1]!,b[1]!,t)-len*.01*4*t*(1-t),mix(a[2]!,b[2]!,t)]);}}gondola.push(controls[controls.length-1]!);
   cuts.beds.push(bed('G1','cable',gondola,false));const towers=solid('G1.towers','tower','stone','support',['G1'],'prow');controls.slice(1,-1).forEach(p=>{const ground=base(p[0]!,p[2]!);box(towers,plan(p),p[1]!,[1.5,1.5],ground-.25);box(towers,plan(p),ground+.4,[4,4],ground-.25);});cuts.solids.push(towers);
@@ -141,11 +235,18 @@ function cables(cuts:LandCuts,base:HeightQuery):void {
 }
 function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
   const positions:XY[]=[];
-  const make=(id:string,p:XY,h?:number)=>{const height=h??heightOnBeds(cuts,p,base,40),pad=addFlatPad(cuts,id,'threshold',p,height,[6,5],0,['threshold.deepJetty','threshold.stepsFoot'].includes(id));positions.push(p);const marker=solid(`${id}.marker`,'threshold','stone','marker',[],districtAt(...p));box(marker,p,height+.025,[2,.6],height-.05);cuts.solids.push(marker);pad.margin=1;};
+  const make=(id:string,p:XY,h?:number)=>{
+    const height=h??heightOnBeds(cuts,p,base,40),underground=['threshold.deepJetty','threshold.stepsFoot'].includes(id),ground=base(...p);
+    // A threshold above its ground or over water is a raised deck (tower top, gallery, jetty):
+    // it never shapes the heightfield; its supports belong to the structure that carries it.
+    const deck=!underground&&(height-ground>BODY_HEIGHT||ground<M.seaLevel);
+    const pad=addFlatPad(cuts,id,'threshold',p,height,[6,5],0,underground);if(deck){pad.deck=true;pad.blend=0;}
+    if(!underground&&!deck&&ground-height>BODY_HEIGHT)cuts.diagnostics.push({id:`${id}.pit`,severity:'conflict',message:`${id} is authored ${(ground-height).toFixed(1)} eu below its ground; the pad would dig a pit`,at:p,measured:height,required:ground});
+    positions.push(p);const marker=solid(`${id}.marker`,'threshold','stone','marker',[],districtAt(...p));box(marker,p,height+.025,[2,.6],height-.05);cuts.solids.push(marker);pad.margin=1;};
   for(const row of M.thresholds){
     if(typeof row.xy==='string'){Object.entries(M.water_routes.FERRY.piers).forEach(([id,p])=>make(`threshold.${row.id}.${id}`,p as unknown as XY,1));continue;}
     if(Array.isArray(row.xy[0]!))(row.xy as number[][]).forEach((p,i)=>make(`threshold.${row.id}.${i+1}`,p as unknown as XY));
-    else {const exact:Record<string,number>={gondolaBase:18,gondolaTop:112,adit:40,southPortal:110,prowPlatform:100,crownLaunch:160,zipLanding:12,lampGallery:25,deepJetty:40.6,seaDoorJetty:1,lampDock:1,bightShoreJetty:1,floatDock:1.2,boathouseDock:1,landingQuay:3,stepsFoot:4};make(`threshold.${row.id}`,row.xy as unknown as XY,exact[row.id]!);}
+    else {const exact:Record<string,number>={gondolaBase:18,gondolaTop:112,adit:40,southPortal:110,prowPlatform:M.sky.launches.prow.h,crownLaunch:M.sky.launches.crown.h,zipLanding:12,lampGallery:M.sky.launches.lampGallery.h,deepJetty:40.6,seaDoorJetty:1,lampDock:1,bightShoreJetty:1,floatDock:1.2,boathouseDock:1,landingQuay:3,stepsFoot:4};make(`threshold.${row.id}`,row.xy as unknown as XY,exact[row.id]!);}
   }
   M.crossings.forEach((row,i)=>{if(row.resolution==='threshold'){
     if(Array.isArray(row.at))make(`crossing.${i}`,row.at as unknown as XY);
@@ -153,15 +254,34 @@ function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
   }});
   return positions;
 }
+/** A bed never raises the sea floor or a lake bed: where its centreline is over open water
+ * (outside its own span, tunnel or carried stretch) its terrain override is withheld and the
+ * stretch is reported, never filled into a causeway or a false islet. */
+function guardWater(cuts:LandCuts,base:HeightQuery):void {
+  const lakes=['stillwater','cup'].map(id=>M.water[id as 'stillwater'|'cup']);
+  const wet=(x:number,z:number)=>{const g=base(x,z);return g<M.seaLevel?M.seaLevel:lakes.find(l=>((x-l.cx)/l.rx)**2+((z-l.cy)/l.ry)**2<=1&&g<l.surface)?.surface;};
+  for(const b of cuts.beds){
+    if(!b.terrainCut||['cable','cave','rail'].includes(b.kind))continue;
+    let count=0,first:XY|undefined,deepest=Infinity;
+    for(const p of b.points){
+      const xy=plan(p),level=wet(...xy);if(level===undefined)continue;
+      if((b.terrainExclusions??[]).some(e=>distance(xy,e.at)<e.radius))continue;
+      (b.terrainExclusions??=[]).push({at:xy,radius:b.width/2+b.shoulder+1});
+      count++;first??=xy;deepest=Math.min(deepest,p[1]-level);
+    }
+    if(count)cuts.diagnostics.push({id:`bed.${b.id}.overWater`,severity:'conflict',message:`${b.id}: ${count} centreline samples over open water outside a named span; no terrain fill is emitted there (deck ${deepest.toFixed(2)} eu relative to the water)`,at:first,measured:count,required:0});
+  }
+}
 /** Offline only: no geometry is constructed at module evaluation. */
 export function buildLandCuts(baseHeight:HeightQuery):LandCuts {
   if(requireScaleFactor()!==1)throw new Error('Horizon Pass 1 was authored at confirmed factor 1.0; re-solve every profile for another factor');
   const cuts:LandCuts={beds:[],pads:[],mouths:[],waters:[],solids:[],diagnostics:[]};
-  roadAndWalks(cuts,baseHeight);journey(cuts,baseHeight);buildTown(cuts,baseHeight);buildReserves(cuts,baseHeight);buildHostSites(cuts,baseHeight);buildStructures(cuts,baseHeight);buildUnderground(cuts,baseHeight);
+  roadAndWalks(cuts,baseHeight);const shares=journey(cuts,baseHeight);buildTown(cuts,baseHeight);buildReserves(cuts,baseHeight);buildHostSites(cuts,baseHeight);buildStructures(cuts,baseHeight);buildUnderground(cuts,baseHeight);
   // Exclude the surface field under bridges and road tunnels, retaining natural water and roof cover.
   for(const spec of SPANS){const route=cuts.beds.find(b=>b.id===spec.route);if(route)(route.terrainExclusions??=[]).push({at:spec.at,radius:spec.length/2+2,openSpan:true});}
   for(const [id,route,length]of [['prowTunnel','V01',90],['shoulderTunnel','V02',110],['duneCulvert','S4',32]]as const){const b=cuts.beds.find(b=>b.id===route);if(b)(b.terrainExclusions??=[]).push({at:M.structures[id]!.xy as unknown as XY,radius:length/2+2});}
   cuts.beds.find(b=>b.id==='V01')!.terrainExclusions!.push({at:[1010,1388],radius:12});
+  settleYearWalkShares(cuts,shares);guardWater(cuts,baseHeight);
   cables(cuts,baseHeight);const markers=thresholds(cuts,baseHeight);
   for(const b of cuts.beds)if(!b.id.startsWith('structure.')&&!b.id.startsWith('underground.')&&!['ORE','DEEP_RUN','ORE.siding','prowTunnel','shoulderTunnel','duneCulvert'].includes(b.id))emitBedGeometry(b,cuts,baseHeight,markers);
   return cuts;

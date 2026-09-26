@@ -48,6 +48,14 @@ export function groundTerrainBeds(cuts:LandCuts,finalHeight:HeightQuery):{filled
       filled.push(proof);
     }
   }
-  cuts.diagnostics.push({id:'structures.terrainBedFill',severity:residual.length?'conflict':'info',message:`Grounded ${filled.length} closed surface-bed prisms; ${residual.length} unsupported prisms retained to protect exclusions, water or lower passages`,measured:residual.length,required:0});
+  cuts.diagnostics.push({id:'structures.terrainBedFill',severity:residual.length?'conflict':'info',message:`Grounded ${filled.length} closed surface-bed prisms; ${residual.length} unsupported prisms (bake errors listed below by place)`,measured:residual.length,required:0});
+  // Never a silent retain: every unsupported run is its own located bake error (clustered
+  // within 12 m per bed and reason), with the deepest void under it.
+  const clusters:{bed:string;reason:string;at:XY;depth:number;n:number}[]=[];
+  for(const r of [...residual].sort((a,b)=>b.depth-a.depth)){
+    const bedId=r.id.replace(/\.(bed|shoulders|surface)(\.\d+)?(\.[a-z]+)?$/i,''),c=clusters.find(c=>c.bed===bedId&&c.reason===r.reason&&distance(c.at,r.at)<12);
+    if(c)c.n++;else clusters.push({bed:bedId,reason:r.reason??'',at:r.at,depth:r.depth,n:1});
+  }
+  clusters.forEach((c,i)=>cuts.diagnostics.push({id:`structures.terrainBedFill.residual.${i}`,severity:'conflict',message:`${c.bed}: ${c.n} bed prisms hang up to ${c.depth.toFixed(2)} eu over the ground (${c.reason}); a bed that cannot be grounded needs a named structure with bearings or a different alignment`,at:c.at,measured:c.depth,required:0}));
   return {filled,residual,protectedSpans};
 }

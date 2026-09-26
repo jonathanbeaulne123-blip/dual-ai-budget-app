@@ -18,6 +18,21 @@ export function bed(id:string, profile:string, points:XYZ[], terrainCut=true):Be
   const width=road?M.profiles.road.surface_m:spur?M.profiles.spur.surface_m:skate?M.profiles.skateMain.surface_m[1]!:profile==='boardwalk'?3:profile==='rail'?2.8:profile==='cable'?.1:profile==='cave'?8:profile==='stair'?3:2.5;
   return {id,kind:road||spur?'road':skate?'skate':profile as BedCut['kind'],profile,surface:road||spur||skate?'paved':profile==='boardwalk'?'boardwalk':profile==='rail'?'rail':profile==='cable'?'metal':profile==='cave'?'wetStone':'gravel',points,width:width*s,shoulder:road?s:0,blend:15*s,clearHeight:road?5*s:spur?4*s:profile==='rail'?3.2*s:profile==='cave'?6*s:2.4,maxGrade:skate?.18:profile==='cable'||profile==='rail'||profile==='cave'?10:.12,terrainCut,structureIds:[],districtIds:[...new Set(points.map(p=>districtAt(p[0]!,p[2]!)))]};
 }
+/** Plan distance from a point to a polyline. */
+export function planDistance(p:XY,line:readonly XY[]):number {
+  if(line.length===1)return distance(p,line[0]!);
+  let best=Infinity;for(let i=1;i<line.length;i++){const a=line[i-1]!,b=line[i]!,dx=b[0]-a[0],dz=b[1]-a[1],t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dz)/(dx*dx+dz*dz||1)));best=Math.min(best,Math.hypot(p[0]-a[0]-dx*t,p[1]-a[1]-dz*t));}
+  return best;
+}
+/** Sides (+1/-1 of the segment normal) this segment shares with a neighbouring bed at the same height. */
+function sharedSides(b:BedCut,cuts:LandCuts,mid:XY,h:number,nx:number,nz:number):Set<number> {
+  const sides=new Set<number>();
+  for(const e of b.sharedEdges??[]){
+    if(planDistance(mid,e.at)>1)continue;const other=cuts.beds.find(x=>x.id===e.other);if(!other)continue;
+    const n=nearestOnPath(mid,other.points);if(Math.abs(n.at[1]-h)>1)continue;const side=Math.sign((n.at[0]-mid[0])*nx+(n.at[2]-mid[1])*nz);if(side)sides.add(side);
+  }
+  return sides;
+}
 export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,thresholds:XY[]=[]):void {
   if(b.kind==='cable'||b.kind==='cave')return;
   const district=b.districtIds[0]!??'harbour',deck=solid(`${b.id}.bed`,'bed',b.surface,'deck',[b.id],district);
@@ -27,11 +42,15 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
   for(let i=1;i<b.points.length;i++){
     const a=b.points[i-1]!,p=b.points[i]!,dx=p[0]!-a[0]!,dz=p[2]!-a[2]!,len=Math.hypot(dx,dz);if(len<1e-6)continue;
     const mid:XY=[(a[0]!+p[0]!)/2,(a[2]!+p[2]!)/2],h=(a[1]!+p[1]!)/2,nx=-dz/len,nz=dx/len;
+    // Carried inside another bed's own structure: no second deck, edge or wall here.
+    if(b.carried?.some(line=>planDistance(mid,line)<1))continue;
+    const shared=b.sharedEdges?sharedSides(b,cuts,mid,h,nx,nz):undefined;
     const target=segments?segments[Math.min(segments.length-1,Math.floor((i-1)/(b.points.length-1)*segments.length))]!:deck;
     slab(target!,a,p,b.width,b.kind==='road'||b.kind==='skate'?.6:.35);
     const joinedPad=cuts.pads.some(p=>{if(p.underground||p.kind==='host'||Math.abs(p.centre[1]-h)>.6)return false;const angle=p.rotationDegrees*Math.PI/180,c=Math.cos(angle),s=Math.sin(angle),x=mid[0]-p.centre[0],z=mid[1]-p.centre[2];return Math.abs(x*c+z*s)<=p.size[0]/2+b.width/2&&Math.abs(-x*s+z*c)<=p.size[1]/2+b.width/2;});
     const gap=joinedPad||thresholds.some(t=>distance(mid,t)<5);
     for(const side of [-1,1]){
+      if(shared?.has(side)){if(b.shoulder)slab(shoulders,a,p,b.shoulder,.6,side*(b.width/2+b.shoulder/2));continue;}
       const edge=b.width/2+b.shoulder,drop=h-base(mid[0]!+nx*side*(edge+1.5),mid[1]!+nz*side*(edge+1.5));
       if(b.shoulder)slab(shoulders,a,p,b.shoulder,.6,side*(b.width/2+b.shoulder/2));
       if(!gap&&b.kind==='road')slab(kerbs,a,p,.25,.15,side*b.width/2,.15);
