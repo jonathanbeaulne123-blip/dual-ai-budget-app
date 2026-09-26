@@ -188,12 +188,12 @@ export function placeSigns(reading: HarbourReading): Record<HarbourPlaceId, Door
   };
 
   return {
-    bank: {line:"Your shared Fund",aria:"The Fund bank. Meet the Queen and review your household Fund."},
+    bank: {line:"Your shared Fund",aria:"The Fund bank. The Queen stands here. Opens the shared Fund."},
     court: {
       line: `${everyday} everyday · ${state}`,
       aria: reading.everyday === null
-        ? `The Court. What is left for everyday is not known yet; the house is ${state}. Meet the Queen.`
-        : `The Court. ${everyday} left for everyday; the house is ${state}. Meet the Queen.`,
+        ? `The square. What is left for everyday is not known yet; the house is ${state}. Opens the Fund bank.`
+        : `The square. ${everyday} left for everyday; the house is ${state}. Opens the Fund bank.`,
     },
     tower: court.tower,
     cellar: court.cellar,

@@ -6,7 +6,7 @@ export type PersonalFolioPage = "wish" | "note" | "memory" | "experience";
 
 const TARGETS: Record<`${HouseRoom}:${HouseLevel}`, readonly HouseTarget[]> = {
   "home:above": [{ id: "loft-banks", label: "Open Kitty Banks" }],
-  "home:middle": [{ id: "queen", label: "Meet the Queen" }, { id: "hercules", label: "Talk with Hercules" }],
+  "home:middle": [{ id: "queen", label: "Open the Fund bank" }, { id: "hercules", label: "Talk with Hercules" }],
   "home:below": [{ id: "cellar-bills", label: "Read the bill jars" }],
   "study:above": [{ id: "planner", label: "Open the Master Planner" }],
   "study:middle": [{ id: "books", label: "Open the Standing Book" }],

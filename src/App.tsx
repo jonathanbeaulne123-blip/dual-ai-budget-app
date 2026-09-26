@@ -527,6 +527,7 @@ import { OurPathWorld } from "./path/OurPathWorld.tsx";
 import { useJourneyCloudTransition } from "./path/JourneyCloudTransition.tsx";
 import { HouseholdBoardMedia } from "./boardMedia/householdBoardMedia.tsx";
 import { ComfortControls } from "./theme/ComfortControls.tsx";
+import { QueenDressing } from "./house/QueenDressing.tsx";
 import { useComfort } from "./theme/comfort.ts";
 
 /** Under the Vision v2 Household Home, the Office stays reachable as collapsed instruments rather than the opening composition. */
@@ -8110,6 +8111,8 @@ export function App() {
           </StatusFold>
           <StatusFold id="comfort" title="Appearance and comfort">
           <AppearancePicker />
+          {/* K9: the Queen's look (formerly her dressing screen in Mine) is an Appearance choice. */}
+          <QueenDressing variant="settings" onPreview={() => undefined} onView={() => undefined} evidence={[]} />
           <ComfortControls environment={environment} />
           </StatusFold>
           <StatusFold id="sources" title="Sources and continuity">
