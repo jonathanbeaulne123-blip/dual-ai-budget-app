@@ -554,7 +554,7 @@ describe("The Standing Book", () => {
       expect(host.querySelector(".fund-book-verdict")?.textContent).toContain(`day ${marks[2]!.day}`);
       expect([...host.querySelectorAll(".fund-book-gate-mark")].map((mark) => mark.getAttribute("aria-current"))).toEqual(marks.map((_, index) => index === 2 ? "true" : null));
       expect(host.querySelector(".fund-book-gate-line")?.textContent).toContain(`${marks[2]!.label} stands in the gate`);
-      expect(host.querySelector(".fund-book-plinth-footing")?.textContent).toBe(`Next out · page 3 of ${marks.length}`);
+      expect(host.querySelector(".fund-book-plinth-footing")?.textContent).toBe(`Leaving next · page 3 of ${marks.length}`);
       await key(host.querySelector<HTMLElement>(".fund-book-gate-view")!, "ArrowLeft");
       expect(selectedFlag(host)?.getAttribute("data-flag-id")).toBe("mark-1");
       expect(host.querySelector(".fund-book-chapter")?.textContent).toBe(marks[1]!.label);

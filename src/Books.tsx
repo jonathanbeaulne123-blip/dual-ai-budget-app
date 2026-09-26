@@ -71,7 +71,7 @@ const DeferredBatchImportCard = lazy(() => import("./BatchImport.tsx").then((mod
 
 const PANES = [
   { id: "wallet", label: "Wallet", blurb: "Household cash, Goals savings, cards, and investments. Touch a tile to open the room." },
-  { id: "fund", label: "Household Fund", blurb: "A shared operating subledger backed by Bianca’s savings. It is not a bank account and Hearth cannot move money." },
+  { id: "fund", label: "The Fund", blurb: "A shared operating subledger backed by Bianca’s savings. It is not a bank account and Hearth cannot move money." },
   { id: "fund-register", label: "Register", blurb: "What this month owes, and which confirmed Fund dollars cover each obligation." },
   { id: "register", label: "All activity", blurb: "Every posted row you can see in this view. Duplicate contrast lives here." },
   { id: "import", label: "Import", blurb: "QFX/OFX and selected document photos enter an inbox. Duplicate review and one final Confirm protect the books." },
@@ -321,7 +321,7 @@ function BooksSession({
         {showFundPane && (
         <PaperTile
           kind="Fund"
-          name={view === "personal" ? "Private Fund check" : "Household Fund"}
+          name={view === "personal" ? "Private Fund check" : "The Fund"}
           value={household.householdFund ? formatCad(fundProjection.operatingBalanceCents) : "Set up at $0.00"}
           onClick={() => setPane("fund")}
           ariaLabel="Open the Hearth Household Fund"
@@ -501,7 +501,7 @@ function BooksSession({
         <summary>{sharedTable ? "Tools & audit" : "Audit office — journal, trial, statements"}</summary>
         {sharedTable ? (
           <>
-            <p className="muted">Import, reconcile, or close the month.</p>
+            <p className="muted">Import or reconcile here; the month closes at the Campfire.</p>
             <BooksStorageNotes household={household} booksStatus={booksStatus} onGoMore={onGoMore} />
           </>
         ) : null}
