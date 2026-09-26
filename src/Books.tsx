@@ -14,7 +14,6 @@ import {
   balanceSheet,
   budgetVariance,
   cashFlowStatement,
-  closeBooksMonth,
   closePackageText,
   closedMonthKeys,
   comparativeIncome,
@@ -58,6 +57,7 @@ import { WalletPane } from "./Accounts.tsx";
 import { booksFilename, booksJournalCsv, booksSqlDump, downloadText } from "./ledger/export.ts";
 import type { BooksStatus } from "./ledger/engine.ts";
 import { HouseholdFundPanel } from "./HouseholdFundPanel.tsx";
+import { CampfireDoor } from "./harbour/campfire/ritual/CampfireDoor.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import "./books-household.css";
 import { DeferredSurface } from "./deferredSurfaces.tsx";
@@ -79,7 +79,7 @@ const PANES = [
   { id: "trial", label: "Trial balance", blurb: "Account totals that must balance. Health refuses a lie." },
   { id: "statements", label: "Statements", blurb: "Balance sheet, P&L, cash flow, equity, working capital, notes." },
   { id: "rec", label: "Reconcile", blurb: "Tie a statement figure to the books. Never posts money by itself." },
-  { id: "close", label: "Close pack", blurb: "Hard month lock. Reopen is explicit. Groceries in the open month still posts." },
+  { id: "close", label: "Close pack", blurb: "The month's pack to download. The month closes at the Campfire; reopening is its own review." },
   { id: "accounts", label: "Chart", blurb: "Every account on the chart of accounts." },
   { id: "query", label: "Ask", blurb: "Ask the books. Hercules answers from the journal visible on this floor." },
 ] as const;
@@ -121,6 +121,7 @@ function BooksSession({
   onGoMore,
   requestedPane,
   onConsumeRequestedPane,
+  onOpenCampfire,
 }: {
   houseDivision?: BookDivision;
   pendingRows?: PendingPreview[];
@@ -149,6 +150,11 @@ function BooksSession({
    */
   requestedPane?: "fund" | "fund-register" | "wallet" | "opening" | "register" | `month:${string}` | null;
   onConsumeRequestedPane?: () => void;
+  /**
+   * The month closes at the Campfire (D3/K3, review finding 3): Books never closes it alone. The Close pack's
+   * door and Mine's "Close pack" seal open the ritual at Settle, where both chairs are asked for.
+   */
+  onOpenCampfire?: () => void;
 }) {
   const [pane, setPane] = useState<Pane>(view === "personal" ? "wallet" : "overview");
   useEffect(()=>{if(houseDivision)setPane(houseDivision==="Accounts"?"wallet":houseDivision==="Today"?view==="personal"?"wallet":"overview":houseDivision==="Bills"?view==="household"?"fund-register":"register":houseDivision==="Paper trail"?"journal":houseDivision==="Contributions"&&view==="household"?"fund":"register");},[houseDivision,view]);
@@ -356,7 +362,7 @@ function BooksSession({
         items={[
           { id: "wallet", label: "Wallet" },
           { id: "register", label: "Activity" },
-          { id: "close", label: "Close month" },
+          { id: "close", label: "Close pack" },
         ]}
         active={pane}
         onPick={(id) => setPane(id as Pane)}
@@ -686,24 +692,11 @@ function BooksSession({
             <span className={`pill ${opinion.kind === "unmodified" ? "good" : "warn"}`}>{opinion.kind}</span>
           </header>
           <p className="muted">{opinion.cpa}</p>
-          <p className="muted">A closed month accepts no posts. Reopen if a receipt was forgotten. Reverse a row instead of deleting it. Mark paid on Calendar still Confirm-writes.</p>
+          <p className="muted">A closed month accepts no posts. Reverse a row instead of deleting it. Mark paid on Calendar still Confirm-writes.</p>
+          <CampfireDoor household={booksHousehold} memberId={memberId} today={today} onOpenCampfire={onOpenCampfire}
+            why="The month closes at the Campfire, at Settle, with both of you." />
           <KitchenNotice message={closeError} />
           <div className="chips">
-            <button
-              className="chip"
-              type="button"
-              onClick={() => {
-                try {
-                  const result = closeBooksMonth(booksHousehold, { monthKey: shiftMonthKey(monthKey, -1), createdBy: memberId });
-                  setCloseError("");
-                  onChange(result.household, result.undo);
-                } catch (caught) {
-                  setCloseError(caught instanceof Error ? caught.message : String(caught));
-                }
-              }}
-            >
-              Close {shiftMonthKey(monthKey, -1)}
-            </button>
             <button
               className="chip"
               type="button"
@@ -737,28 +730,18 @@ function BooksSession({
             </button>
           </div>
           {auditHousehold.kitchen.books.closedMonths.length > 0 && (
-            <ul className="close-list">
-              {auditHousehold.kitchen.books.closedMonths.map((row) => (
-                <li key={row.monthKey}>
-                  <span>{row.monthKey} closed</span>
-                  <button
-                    className="ghost"
-                    type="button"
-                    onClick={() => {
-                      try {
-                        const result = reopenBooksMonth(booksHousehold, row.monthKey);
-                        setCloseError("");
-                        onChange(result.household, result.undo);
-                      } catch (caught) {
-                        setCloseError(caught instanceof Error ? caught.message : String(caught));
-                      }
-                    }}
-                  >
-                    Reopen
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <ReopenClosedMonths
+              months={auditHousehold.kitchen.books.closedMonths.map((row) => row.monthKey)}
+              onReopen={(closedMonth) => {
+                try {
+                  const result = reopenBooksMonth(booksHousehold, closedMonth);
+                  setCloseError("");
+                  onChange(result.household, result.undo);
+                } catch (caught) {
+                  setCloseError(caught instanceof Error ? caught.message : String(caught));
+                }
+              }}
+            />
           )}
         </section>
       )}
@@ -868,6 +851,37 @@ function BooksStorageNotes({
  * changes what is read and nothing else: a month behind you is history, and
  * history has no edit affordance here.
  */
+/**
+ * Reopening a closed month (review finding 3). The month closes only at the Campfire; reopening stays in Books
+ * because a forgotten receipt needs it, but it is behind the same Close pack door and its own review: a
+ * disclosure names what it does and that it is one person's act, then a named "Reopen {month}" confirm.
+ * `reopenBooksMonth` is still single-actor at the command (a hard lock is Jonathan's decision; see D-302).
+ */
+function ReopenClosedMonths({ months, onReopen }: { months: readonly string[]; onReopen: (monthKey: string) => void }) {
+  const [asking, setAsking] = useState<string | null>(null);
+  return (
+    <details className="close-reopen" data-books-reopen>
+      <summary>Reopen a closed month</summary>
+      <p className="muted">Reopening lets posts land in that month again. It is one person's act, so tell each other; the month closes again only at the Campfire.</p>
+      <ul className="close-list">
+        {months.map((closedMonth) => (
+          <li key={closedMonth}>
+            <span>{closedMonth} closed</span>
+            {asking === closedMonth ? (
+              <span className="chips" role="group" aria-label={`Reopen ${closedMonth}?`}>
+                <button className="chip" type="button" data-books-reopen-confirm={closedMonth} onClick={() => { setAsking(null); onReopen(closedMonth); }}>Reopen {closedMonth}</button>
+                <button className="ghost" type="button" onClick={() => setAsking(null)}>Keep it closed</button>
+              </span>
+            ) : (
+              <button className="ghost" type="button" data-books-reopen-ask={closedMonth} onClick={() => setAsking(closedMonth)}>Review reopening {closedMonth}</button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
 function MonthControl({ monthKey, currentMonthKey, onChange }: { monthKey: string; currentMonthKey: string; onChange: (monthKey: string) => void }) {
   return (
     <div className="books-month" role="group" aria-label="Month">

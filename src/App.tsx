@@ -7979,6 +7979,7 @@ export function App() {
           )}
           onAskRemove={(request) => setGuard({ kind: "remove", ...request })}
           campfireDoor={view === "household" && planSystemV2Enabled() ? { onOpenCampfire: () => setCampfire({ beat: "settle" }) } : null}
+          onOpenCampfire={() => openHouseObject("campfire-ritual", "settle")}
         />
       )}
 

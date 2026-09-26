@@ -73,7 +73,9 @@ describe("D-164 ledger story UI fences", () => {
     expect(books).not.toContain("compileHousehold(booksHousehold)");
     expect(books).not.toContain("compileHousehold(household)");
     expect(books).toContain("HouseholdFundPanel household={booksHousehold}");
-    expect(books).toContain("closeBooksMonth(booksHousehold");
+    // The month closes only at the Campfire (review finding 3); Books keeps the reviewed reopen on the accepted snapshot.
+    expect(books).not.toContain("closeBooksMonth(");
+    expect(books).toContain("reopenBooksMonth(booksHousehold");
     expect(books).toContain("StatementsPane household={auditHousehold} writeHousehold={booksHousehold}");
     expect(books).toContain("AskBooks household={auditHousehold}");
     expect(books).toContain("writeHousehold={booksHousehold}");
