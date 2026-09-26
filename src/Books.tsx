@@ -862,7 +862,7 @@ function ReopenClosedMonths({ months, onReopen }: { months: readonly string[]; o
   return (
     <details className="close-reopen" data-books-reopen>
       <summary>Reopen a closed month</summary>
-      <p className="muted">Reopening lets posts land in that month again. It is one person's act, so tell each other; the month closes again only at the Campfire.</p>
+      <p className="muted">Reopening lets posts land in that month again. It is one person's act; it closes again only at the Campfire.</p>
       <ul className="close-list">
         {months.map((closedMonth) => (
           <li key={closedMonth}>
