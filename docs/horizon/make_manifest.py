@@ -582,6 +582,32 @@ m["profiles"]["walk"]["grade_max_pct"] = 12
 m["profiles"]["walk"]["grade_typ_pct"] = [0, 8]
 m["profiles"]["walk"]["note"] = "walks and trails, including the Year Walk: 12 % maximum, ≤ 8 % typical; a stair's step-free twin keeps ≤ 8 %"
 
+# 2. The twelve Sketchbook poses re-authored against the built land, with a portrait rule.
+m["viewRule"] = {
+ "landscape": m["viewRule"] + "; target_h is the look-at height in engine units (it replaces the per-page constants and the terrain-height default); frames lists the Pass 1 subjects the page must hold, deferred the props that arrive in Pass 2/2b/3",
+ "portrait": "on a portrait capture (width < height, e.g. 390 × 844) the camera holds the page's HORIZONTAL field of view, never its vertical one: horizontal FOV = portrait.fov_deg (never below 45°), aimed at portrait.target at portrait.target_h (the page's target when absent), from the landscape eye unless portrait.xy / portrait.eyeH are given; portrait.frames names the subjects that must be legible on the phone — the other landscape subjects may fall outside the portrait crop",
+}
+VIEWS_V17 = {
+ "A": {"xy": [1470, 1186], "target": [1175, 960], "target_h": 30, "fov_deg": 60, "radius_eu": 480, "frames": "the High Span's deck line, the dam's glass face, the Shoulder and the Crown behind", "deferred": ["the Reach (outside any lens that holds the dam from the square; page I carries it)"], "portrait": {"fov_deg": 50, "target": [1195, 1005], "target_h": 28, "frames": ["the High Span", "the dam's glass face"]}},
+ "B": {"xy": [540, 1195], "target": [515, 880], "target_h": 20, "fov_deg": 55, "radius_eu": 520, "portrait": {"fov_deg": 50, "target": [522, 940], "target_h": 18, "frames": ["the Bight Bridge", "the hook"]}},
+ "C": {"xy": [1268, 1145], "target": [1210, 1098], "target_h": 16, "fov_deg": 55, "radius_eu": 220, "portrait": {"fov_deg": 50, "target": [1222, 1102], "target_h": 16, "frames": ["the road deck", "the skate shelf", "the walk at the water"]}},
+ "D": {"xy": [1185, 1445], "target": [700, 1462], "target_h": 6, "fov_deg": 55, "radius_eu": 720, "frames": "surf, the Lamp, the zipline landing", "deferred": ["a bench (Pass 3 dressing)"], "portrait": {"fov_deg": 50, "target": [700, 1454], "target_h": 5, "frames": ["surf", "the Lamp", "the zipline landing"]}},
+ "E": {"xy": [1305, 482], "target": [870, 860], "target_h": 20, "fov_deg": 55, "radius_eu": 900, "frames": "from the lookout's run-off deck: Stillwater, the Green, the Hollow, the Flats and the Bight, the sea beyond (the harbour, the Reach, Long Sands and the Prow lie behind the Shoulder from here)", "portrait": {"fov_deg": 55, "target": [1000, 880], "target_h": 20, "frames": ["the Green", "Stillwater", "the sea"]}},
+ "F": {"xy": [1158, 905], "target": [1400, 1150], "target_h": 14, "fov_deg": 55, "radius_eu": 420, "frames": "the plaques and L01 on the crest, the town below (the lake is behind the camera)", "portrait": {"fov_deg": 45, "target": [1260, 990], "target_h": 30, "frames": ["L01", "the town below"]}},
+ "G": {"target_h": 110, "radius_eu": 220, "portrait": {"fov_deg": 45, "target": [1300, 300], "target_h": 110, "frames": ["the Throat's mouth of daylight", "the skylight shaft"]}},
+ "H": {"xy": [440, 760], "target": [100, 560], "target_h": 30, "fov_deg": 55, "radius_eu": 260, "frames": "the strip in copper, the west sea under the sunset", "deferred": ["the windsock (Pass 2b kit: mast and sock; only its footing is built)", "the balloon at its mooring (Pass 2 mover and 2b kit)"], "portrait": {"fov_deg": 50, "target": [100, 560], "target_h": 30, "frames": ["the strip", "the west sea"]}},
+ "I": {"xy": [1275, 1226], "target": [1250, 1180], "target_h": 5, "fov_deg": 55, "radius_eu": 220, "frames": "the spring and the Reach water", "deferred": ["reeds at hand height", "the heron"], "portrait": {"fov_deg": 45, "target": [1250, 1180], "target_h": 5, "frames": ["the spring"]}},
+ "J": {"xy": [1840, 1000], "eyeH": 60, "target": [1780, 700], "target_h": 14, "fov_deg": 55, "radius_eu": 340, "frames": "the arch ahead of the wing, the Stacks, the Prow", "portrait": {"fov_deg": 50, "target": [1760, 760], "target_h": 14, "frames": ["the arch", "the Stacks", "the Prow"]}},
+ "K": {"xy": [1000, 758], "target": [1120, 812], "target_h": 52, "fov_deg": 55, "radius_eu": 220, "frames": "the Glasshouse in front of Stillwater", "deferred": ["lit from inside", "seed pots in silhouette"], "portrait": {"fov_deg": 45, "target": [1060, 800], "target_h": 55, "frames": ["the Glasshouse", "Stillwater"]}},
+ "L": {"xy": [1484, 1295], "target": [1285, 1315], "target_h": 4, "fov_deg": 55, "radius_eu": 240, "frames": "Lantern Row along the quay, the Boathouse across the water", "deferred": ["the floatplane rocking (Pass 2 mover; its dock is at the quay's east end, behind this pose)", "lantern cards"], "portrait": {"fov_deg": 45, "target": [1285, 1315], "target_h": 4, "frames": ["Lantern Row", "the Boathouse"]}},
+}
+VIEWS_V16 = {v["id"]: {k: v[k] for k in ("xy", "target", "fov_deg", "radius_eu", "eyeH") if k in v} for v in m["views"]}
+for v in m["views"]:
+    v.update(VIEWS_V17[v["id"]])
+    v.setdefault("target_h", 110 if v["id"] == "G" else 14 if v["id"] == "J" else 16 if v["id"] == "C" else None)
+    v.setdefault("deferred", [])
+    v["v1_6"] = VIEWS_V16[v["id"]]
+
 
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)

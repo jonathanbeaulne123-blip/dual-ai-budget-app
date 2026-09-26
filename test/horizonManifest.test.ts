@@ -49,7 +49,9 @@ describe('Horizon manifest v1.7',()=>{
     expect(manifest.hostRule).toContain('footprint_m');
     expect(manifest.hostRule).toContain('roofH_eu');
     for(const host of manifest.hosts){expect(host.footprint_m).toHaveLength(2);expect(Number.isFinite(host.roofH_eu)).toBe(true);}
-    expect(manifest.viewRule).toContain('target');
+    expect(manifest.viewRule.landscape).toContain('target');
+    expect(manifest.viewRule.portrait).toContain('45°');
+    for(const view of manifest.views){expect(view.portrait.fov_deg).toBeGreaterThanOrEqual(45);expect(Number.isFinite(view.target_h)).toBe(true);}
     for(const view of manifest.views){expect(view.target).toHaveLength(2);expect(view.fov_deg).toBeGreaterThan(0);expect(view.radius_eu).toBeGreaterThan(0);}
   });
   it('preserves coordination notes without hiding the shared Deep plan point',()=>{
