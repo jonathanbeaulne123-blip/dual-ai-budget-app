@@ -7042,10 +7042,8 @@ export function App() {
     if (destination === "plan" || destination === "personal") { goTab("plan"); return; }
     if (destination === "work") { goTab("shift"); return; }
     if (destination === "bills") { requestCalendarPane("bills", localStorage); goTab("calendar"); return; }
-    if (destination === "boards") {
-      requestSharedBoard({ environment, householdId: household!.householdId, memberId: session!.memberId }, "tasks");
-      goTab("together", "practical"); return;
-    }
+    // K10: the practical board's to-dos are Glasshouse steps now.
+    if (destination === "boards") { openHearthsideTool("planner", undefined, "Our steps"); return; }
     if (destination === "hercules") { goTab(workspaceEnabled ? "hercules" : "home"); return; }
     setFocusedAccountId(null);
     if (destination === "books") setBooksPaneRequest("opening");
@@ -7511,6 +7509,8 @@ export function App() {
         onReadAcceptedHousehold={async id=>{const client=ledgerSyncRef.current;if(!client||client.options.scope.environment!==environment||client.options.scope.householdId!==household.householdId||client.options.scope.memberId!==actorId)throw Error("SCOPE_CLOSED");return client.acceptedHousehold(id);}}
         onReadSubmission={async id => {const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}}
         onWorkspace={workspaceEnabled?openExperienceWorkspace:undefined}
+        onSteps={()=>openHearthsideTool("planner",undefined,"Our steps")}
+        onLookAhead={()=>setCampfire({beat:"look-ahead"})}
         onReference={(reference,experience) => {
           if(reference.kind==="artifact"){openExperienceWorkspace(experience);return;}
           if (reference.kind === "task") {openHearthsideTool("planner",reference,experience.title);return;}
