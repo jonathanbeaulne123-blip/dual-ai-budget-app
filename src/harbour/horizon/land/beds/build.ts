@@ -316,8 +316,10 @@ function cables(cuts:LandCuts,base:HeightQuery):void {
 }
 function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
   const positions:XY[]=[];
-  const make=(id:string,p:XY,h?:number)=>{
-    const height=h??heightOnBeds(cuts,p,base,40),underground=['threshold.deepJetty','threshold.stepsFoot'].includes(id),ground=base(...p);
+  // v1.9: a threshold on a jetty stands at that jetty's deck (docks now sit 0.6 over the water they reach).
+  const jettyTop=(p:XY)=>{for(const s of cuts.solids){if(!s.id.startsWith('jetty.')||s.role!=='deck')continue;let x0=Infinity,x1=-Infinity,z0=Infinity,z1=-Infinity,y1=-Infinity;const q=s.positions;for(let i=0;i<q.length;i+=3){x0=Math.min(x0,q[i]!);x1=Math.max(x1,q[i]!);y1=Math.max(y1,q[i+1]!);z0=Math.min(z0,q[i+2]!);z1=Math.max(z1,q[i+2]!);}if(p[0]>=x0-.5&&p[0]<=x1+.5&&p[1]>=z0-.5&&p[1]<=z1+.5)return y1;}return undefined;};
+  const make=(id:string,p:XY,h0?:number)=>{
+    const h=h0===undefined?undefined:jettyTop(p)??h0,height=h??heightOnBeds(cuts,p,base,40),underground=['threshold.deepJetty','threshold.stepsFoot'].includes(id),ground=base(...p);
     // A threshold above its ground or over water is a raised deck (tower top, gallery, jetty):
     // it never shapes the heightfield; its supports belong to the structure that carries it.
     const deck=!underground&&(height-ground>BODY_HEIGHT||ground<M.seaLevel);

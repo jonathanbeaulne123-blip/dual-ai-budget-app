@@ -3,6 +3,7 @@ import type { BedCut, HeightQuery, LandCuts, StructureSolid, XY, XYZ } from '../
 import { addFlatPad, bed, heightOnBeds } from '../beds/profiles';
 import { gradeRoute, sampleSpline } from '../beds/solver';
 import { baseHeight } from '../terrain';
+import { buildWaterCuts } from '../water';
 import { FOOTING_SINK, GROUND_CONTACT, pier, wallToGround } from './foundations';
 import { box, clamp, distance, districtAt, mix, nearestOnPath, plan, slab, solid } from './mesh';
 
@@ -223,9 +224,11 @@ function landing(cuts:LandCuts,id:string,at:XY,h:number,size:XY,base:HeightQuery
 function slabOnGrade(out:StructureSolid,a:XYZ,b:XYZ,width:number,base:HeightQuery):void {wallToGround(out,a,b,width,0,base,.6);}
 /** v1.9: the surface of any channel or level water body under a plan point (T3-4: the Boathouse jetty's fixed deck at 1
  * stood 0.15 under the Reach east channel's water). */
+let waterCache:ReturnType<typeof buildWaterCuts>|undefined;
 function waterSurfaceNear(cuts:LandCuts,p:XY,reach:number):number|undefined {
   let best:number|undefined;
-  for(const w of cuts.waters){
+  // The land build runs before the water cuts join `cuts`: read the manifest's water directly.
+  for(const w of cuts.waters.length?cuts.waters:(waterCache??=buildWaterCuts())){
     if(w.kind==='dry')continue;
     if(w.points.length>1){for(let i=1;i<w.points.length;i++){const a=w.points[i-1]!,b=w.points[i]!,dx=b[0]-a[0],dz=b[2]-a[2],t=clamp(((p[0]-a[0])*dx+(p[1]-a[2])*dz)/(dx*dx+dz*dz||1),0,1);if(distance(p,[a[0]+dx*t,a[2]+dz*t])<=w.width/2+reach)best=Math.max(best??-Infinity,mix(a[1],b[1],t));}}
     else if(w.outline.length>2){let inside=false;for(let i=0,j=w.outline.length-1;i<w.outline.length;j=i++){const a=w.outline[i]!,b=w.outline[j]!;if((a[1]>p[1])!==(b[1]>p[1])&&p[0]<(b[0]-a[0])*(p[1]-a[1])/(b[1]-a[1])+a[0])inside=!inside;}if(inside)best=Math.max(best??-Infinity,w.level);}

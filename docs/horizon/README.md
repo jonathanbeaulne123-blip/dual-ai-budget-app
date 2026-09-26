@@ -377,7 +377,7 @@ Page A portrait `fov_deg` 50 → **45** (the viewRule minimum); page E `xy` [130
 ### 9. Structures and heights (P16/P17)
 
 - `reachFootbridge` deck 6 → **9.5** (4 m canoe clearance over the lower river; the Reach walk's pin follows).
-- Every dock stands 0.6 over the water it reaches (the Boathouse jetty's deck at 1 stood 0.15 under the Reach east channel).
+- Every dock stands 0.6 over the water it reaches, read from the manifest's water (the Boathouse jetty's deck at 1 stood 0.75 under the Reach east channel's 1.75; now 2.35), and a threshold on a jetty stands on its deck.
 - The Bight pier walk stops at the Flats' cliff top (`walks.bightPier.pts`, v1.8 in `v1_8_pts`) and **`structures.bightPierStair`** (kind stair, [498,896] → [557.5,896]) takes it down to a new **`jetties.bightPier`** at the ferry stop [560,896] (it ran on at 36 eu over the Bight). The wash footbridge span is retired (the stair crosses the dry wash mouth).
 - The dune walk starts at the zip landing's foot [1148,1463] (it passed 2.2 eu under the landing stair).
 - **`seaStairWestLaneBridge` / `seaStairEastLaneBridge`**: the Year Walk's two Prow lanes cross the sea stair's cutting on short named footbridges (4.9 and 14.2 eu over the stair).
