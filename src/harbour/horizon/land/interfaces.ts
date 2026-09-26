@@ -21,7 +21,9 @@ export interface BedCut {
   /** A bridge/cable/cave must not pull the heightfield up to its deck or down to its floor. */
   terrainCut: boolean;
   /** Exclude terrain fill beneath spans; open spans also cap intruding banks, while tunnel roofs stay intact. */
-  terrainExclusions?: { at: XY; radius: number; openSpan?: boolean }[];
+  /** `terrainAt`/`terrainRadius` (road tunnels): the terrain keeps its natural roof cover only inside this circle, so the
+   * road cut reaches through a portal mouth (R2-03); `at`/`radius` still govern carried shares and reports. */
+  terrainExclusions?: { at: XY; radius: number; openSpan?: boolean; terrainAt?: XY; terrainRadius?: number }[];
   structureIds: string[];
   districtIds: string[];
 }

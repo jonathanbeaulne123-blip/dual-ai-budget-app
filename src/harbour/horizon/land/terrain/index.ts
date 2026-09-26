@@ -436,7 +436,7 @@ export function createBedSampler(beds: BedCut[]): (x: number, z: number, origina
     for (const segment of prepared.bins.get(cellKey(x, z, prepared.cell)) ?? []) {
       if (segment.bed !== active) {
         apply(); active = segment.bed; distance = Infinity;
-        excluded = !!active.terrainExclusions?.some(e => Math.hypot(x - e.at[0], z - e.at[1]) < e.radius);
+        excluded = !!active.terrainExclusions?.some(e => Math.hypot(x - (e.terrainAt ?? e.at)[0], z - (e.terrainAt ?? e.at)[1]) < (e.terrainRadius ?? e.radius));
       }
       if (excluded) continue;
       const { a, b } = segment, q = segmentPoint(x, z, [a[0], a[2]], [b[0], b[2]]);
@@ -475,7 +475,7 @@ export function createBedClearanceSampler(beds: BedCut[], rasterMargin = 0): (x:
     const candidates: { value: number; plane: number; core: boolean; bed: BedCut }[] = [];
     const decks = new Map<BedCut, number>(), near = new Map<BedCut, number>();
     for (const {bed, a, b, length} of prepared.bins.get(cellKey(x, z, prepared.cell)) ?? []) {
-      const exclusions=bed.terrainExclusions?.filter(e=>Math.hypot(x-e.at[0],z-e.at[1])<e.radius+rasterMargin)??[];
+      const exclusions=bed.terrainExclusions?.filter(e=>Math.hypot(x-(e.terrainAt??e.at)[0],z-(e.terrainAt??e.at)[1])<(e.terrainRadius??e.radius)+rasterMargin)??[];
       if (length < 1e-8 || exclusions.some(e=>!e.openSpan)) continue;
       const hit = segmentPoint(x, z, [a[0], a[2]], [b[0], b[2]]);
       if (hit.distance > bed.width / 2 + bed.shoulder + rasterMargin) continue;

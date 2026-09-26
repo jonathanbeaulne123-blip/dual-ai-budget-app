@@ -9,6 +9,8 @@ import { buildUnderground } from '../underground/build';
 import { addFlatPad, bed, emitBedGeometry, heightOnBeds, planDistance } from './profiles';
 import { gradeRoute, listSteepStretches, sampleSpline, type HeightPin } from './solver';
 import { registerRowKey } from '../../world/crossings';
+/** R2-03: eu inside a road tunnel's portal where its natural roof cover begins (the mouth mask hides 6 eu inside). */
+export const PORTAL_CUT_INSET=3;
 /** Typical grades (upper end of profiles.<kind>.grade_typ_pct): a bed rides these, not its maximum. */
 const TYP={road:M.profiles.road.grade_typ_pct[1]!/100,walk:M.profiles.walk.grade_typ_pct[1]!/100,skate:M.profiles.skateMain.grade_typ_pct[1]!/100};
 
@@ -385,7 +387,15 @@ export function buildLandCuts(baseHeight:HeightQuery):LandCuts {
   // Exclude the surface field under bridges and road tunnels, retaining natural water and roof cover.
   // v1.9: a span also carries its route's footways (beds sharing an edge with it): no terrain fill under them either.
   for(const spec of SPANS){for(const b of cuts.beds.filter(b=>b.id===spec.route||(b.sharedEdges??[]).some(e=>e.other===spec.route&&e.at.some(p=>distance(p,spec.at)<spec.length/2+2))))(b.terrainExclusions??=[]).push({at:spec.at,radius:spec.length/2+2,openSpan:true});}
-  for(const [id,route,length]of [['prowTunnel','V01',90],['shoulderTunnel','V02',110],['duneCulvert','S4',32]]as const){const b=cuts.beds.find(b=>b.id===route);if(b)(b.terrainExclusions??=[]).push({at:M.structures[id]!.xy as unknown as XY,radius:length/2+2});}
+  // R2-03: a road tunnel's natural cover ends PORTAL_CUT_INSET inside each portal, so the road cut (and its clearance,
+  // one raster diagonal further out) reaches the portal face: the cut-to-cover lattice step then lies inside the mouth mask.
+  // Only the Shoulder Tunnel's north portal (Crown Road's lower end) had the step; its south portal keeps its cover (walk
+  // crownFromGondola crosses over it), so the cover circle slides south: north edge 3 eu inside, south edge unchanged.
+  for(const [id,route,length]of [['prowTunnel','V01',90],['shoulderTunnel','V02',110],['duneCulvert','S4',32]]as const){const b=cuts.beds.find(b=>b.id===route);if(!b)continue;
+    const at=M.structures[id]!.xy as unknown as XY,e:{at:XY;radius:number;terrainAt?:XY;terrainRadius?:number}={at,radius:length/2+2};
+    if(id==='shoulderTunnel'){const pts=b.points.map(plan),n=nearestOnPath(at,b.points),i=Math.min(pts.length-1,n.segment+1),dir=[pts[i]![0]-pts[n.segment]![0],pts[i]![1]-pts[n.segment]![1]],l=Math.hypot(dir[0]!,dir[1]!)||1,shift=(PORTAL_CUT_INSET+2)/2;
+      e.terrainAt=[at[0]+dir[0]!/l*shift,at[1]+dir[1]!/l*shift];e.terrainRadius=length/2+2-shift;}
+    (b.terrainExclusions??=[]).push(e);}
   cuts.beds.find(b=>b.id==='V01')!.terrainExclusions!.push({at:[1010,1388],radius:12});
   settleYearWalkShares(cuts,shares);carrySpanLanes(cuts);guardWater(cuts,baseHeight);checkRailGrades(cuts);
   cables(cuts,baseHeight);const markers=thresholds(cuts,baseHeight);

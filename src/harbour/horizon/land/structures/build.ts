@@ -43,6 +43,8 @@ function along(path:readonly XYZ[],s:number):{p:XYZ;dir:XY} {
 }
 const planLength=(path:readonly XYZ[])=>path.slice(1).reduce((n,p,i)=>n+distance(plan(path[i]!),plan(p)),0);
 /** The route's own graded points within ±length/2 of the nearest station to `centre`, ends interpolated. */
+/** R2-03: eu of floor apron past each road-tunnel portal (the mouth mask reaches 3 eu outside the face). */
+export const PORTAL_APRON=3.5;
 function routeStretch(route:BedCut,centre:XY,length:number,height?:number):XYZ[] {
   const mid=nearestOnPath(centre,route.points).along,total=planLength(route.points),from=clamp(mid-length/2,0,total),to=clamp(mid+length/2,0,total);
   const out:XYZ[]=[along(route.points,from).p];let run=0;
@@ -280,6 +282,12 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   for(const [id,route,length,width,clear] of [['prowTunnel','V01',90,17,5],['shoulderTunnel','V02',110,17,5],['duneCulvert','S4',32,5,3]] as const){
     const s=M.structures[id]!,xy=s.xy as unknown as XY,b=cuts.beds.find(p=>p.id===route)!,points=routeStretch(b,xy,length);
     tunnel(id,points,width,clear,cuts,districtAt(...xy),{base});
+    // R2-03: a floor apron carries the road and its footway across the portal mouth (3 eu outside the face, where the
+    // mouth mask hides the terrain), so no strip of the mouth is left without a surface.
+    if(id!=='duneCulvert'){const ext=routeStretch(b,xy,length+2*PORTAL_APRON),apron=solid(`${id}.apron`,'tunnel','stone','floor',[route],districtAt(...xy));
+      const e0=ext[0]!,e1=ext.at(-1)!;if(distance(plan(e0),plan(points[0]!))>.5)slab(apron,e0,points[0]!,width,.6);if(distance(plan(e1),plan(points.at(-1)!))>.5)slab(apron,points.at(-1)!,e1,width,.6);
+      for(const side of [-1,1])for(const [a0,a1] of [[e0,points[0]!],[points.at(-1)!,e1]] as const)if(distance(plan(a0),plan(a1))>.5)wallToGround(apron,[a0[0],a0[1]-.6,a0[2]],[a1[0],a1[1]-.6,a1[2]],.6,side*(width/2-.3),base,.3);
+      if(apron.indices.length)cuts.solids.push(apron);}
     const first=points[0]!,last=points.at(-1)!,d0=along(points,0).dir,d1=along(points,planLength(points)).dir;
     cuts.mouths.push(portalMouth(`${id}.portal.0`,first,[-d0[0],-d0[1]],width,clear),portalMouth(`${id}.portal.1`,last,d1,width,clear));
     // The dune culvert's cover is the V01 road deck crossing over it, not the terrain.
