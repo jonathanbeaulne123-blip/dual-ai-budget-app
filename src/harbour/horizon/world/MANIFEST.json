@@ -1325,8 +1325,8 @@
      1040
     ],
     [
-     1540,
-     1000
+     1543.2,
+     1001.4
     ],
     [
      1600,
@@ -2287,7 +2287,38 @@
     ]
    ],
    "profile": "trail",
-   "length_m": 308
+   "length_m": 308,
+   "v1_8_pts": [
+    [
+     840,
+     880
+    ],
+    [
+     790,
+     950
+    ],
+    [
+     745,
+     1010
+    ],
+    [
+     720,
+     1090
+    ],
+    [
+     700,
+     1150
+    ]
+   ],
+   "footwayOf": {
+    "host": "VBS",
+    "offset_m": 4.2,
+    "side_xy": [
+     1100,
+     1100
+    ],
+    "why": "D-2 (v1.9): the four Bight plots and their 6 m margins fill the land between the spur and the shore; the trail walks the spur's landward verge at the spur's height"
+   }
   },
   "bightPier": {
    "pts": [
@@ -2990,8 +3021,8 @@
   ],
   "jetties": {
    "bightShore": [
-    735,
-    955
+    728,
+    946
    ],
    "deep": [
     1300,
@@ -3028,6 +3059,23 @@
    ],
    "note": "Lantern Row, 8 m inside the waterline; pedestrian; the floatplane dock at its east end"
   },
+  "lakesideSwitchback": {
+   "kind": "switchbackRamp",
+   "route": "yearWalk",
+   "bbox": [
+    [
+     1274,
+     843
+    ],
+    [
+     1331,
+     889
+    ]
+   ],
+   "legs": 7,
+   "pitch_m": 7.4,
+   "note": "v1.9 (T0 #16): the Year Walk's seven legs down the Shoulder's south-west corner to the lake terrace; each leg's downhill shoulder is carried to the leg below as a masonry retaining wall (the builder grounds it: no leg hangs over the next)"
+  },
   "gardenWalkBridge": {
    "xy": [
     965.7,
@@ -3055,6 +3103,13 @@
    "deck": "the Crown walk on its own grade (119-122)",
    "under": "Crown Road's cutting (99) and its January footway lane",
    "note": "v1.9: the Crown walk hung 21 eu over Crown Road at [1400-1417,605] (span refused: no footing outside the corridors)"
+  },
+  "jettiesV1_8": {
+   "bightShore": [
+    735,
+    955
+   ],
+   "why": "v1.9: the Bight Shore jetty moved 17 m north-west, out of plot bight.2's 6 m margin"
   }
  },
  "underground": {
@@ -3589,10 +3644,20 @@
    },
    "hangarBay": {
     "xy": [
+     458.2,
+     600
+    ],
+    "placeId": "plot.flats.1",
+    "v1_8_xy": [
      455,
      600
     ],
-    "placeId": "plot.flats.1"
+    "size_m": [
+     11,
+     18
+    ],
+    "door": "west, on the strip edge; its access walk is plot.flats.1.service",
+    "note_v1_9": "an 11 m bay facing the strip, 18 m deep, between the strip's 6 m margin and S2's (the 18 m face did not fit the 26 m between them)"
    }
   },
   "plotRule": "1.5 \u00d7 Library footprint + 6 m clear; graded, walled, served, reserved placeId; no lantern spot inside; no view depends on it being empty",
@@ -8897,12 +8962,12 @@
      640
     ],
     [
-     1355,
-     660
+     1339,
+     662
     ],
     [
-     1350,
-     685
+     1344,
+     684
     ],
     [
      1375,
@@ -8961,84 +9026,80 @@
      852
     ],
     [
-     1322.2,
+     1321.3,
      848.5
     ],
     [
-     1319.5,
+     1317.6,
      852
     ],
     [
-     1319.5,
+     1317.6,
      880
     ],
     [
-     1316.8,
+     1313.9,
      883.5
     ],
     [
-     1314,
+     1310.2,
      880
     ],
     [
-     1314,
+     1310.2,
      852
     ],
     [
-     1311.2,
+     1306.5,
      848.5
     ],
     [
-     1308.5,
+     1302.8,
      852
     ],
     [
-     1308.5,
+     1302.8,
      880
     ],
     [
-     1305.8,
+     1299.1,
      883.5
     ],
     [
-     1303,
+     1295.4,
      880
     ],
     [
-     1303,
+     1295.4,
      852
     ],
     [
-     1300.2,
+     1291.7,
      848.5
     ],
     [
-     1297.5,
-     852
-    ],
-    [
-     1297.5,
-     880
-    ],
-    [
-     1294.8,
-     883.5
-    ],
-    [
-     1292,
-     880
-    ],
-    [
-     1292,
+     1288,
      852
     ],
     [
      1288,
-     847
+     880
     ],
     [
-     1280,
-     845
+     1284.3,
+     883.5
+    ],
+    [
+     1280.6,
+     880
+    ],
+    [
+     1280.6,
+     852
+    ],
+    [
+     1276,
+     846
     ],
     [
      1267,
@@ -9853,44 +9914,40 @@
      703.2
     ],
     [
-     1601.5,
-     743.6
+     1601.8,
+     746.3
     ],
     [
-     1605.7,
-     784.8
+     1606.0,
+     790.3
     ],
     [
-     1608.1,
-     827.2
+     1608.0,
+     832.0
     ],
     [
-     1605.7,
-     864.9
+     1602.7,
+     877.6
     ],
     [
-     1592.8,
-     905.1
+     1588.6,
+     919.0
     ],
     [
-     1576.5,
-     943.3
+     1572.7,
+     957.4
     ],
     [
-     1558.6,
-     980.4
+     1553.6,
+     996.8
     ],
     [
-     1536.4,
-     1014.4
+     1523.0,
+     1027.7
     ],
     [
-     1502.6,
-     1037
-    ],
-    [
-     1500.3,
-     1038.1
+     1498.6,
+     1039.6
     ],
     [
      1510,
@@ -9945,60 +10002,56 @@
      1020
     ],
     [
-     1494.7,
-     1026.4
+     1493.6,
+     1027.6
     ],
     [
-     1527.3,
-     1005.1
+     1528.6,
+     1007.9
     ],
     [
-     1548.8,
-     970.9
+     1549.8,
+     975.8
     ],
     [
-     1564.7,
-     937.9
+     1567.7,
+     936.2
     ],
     [
-     1580.6,
-     900.4
+     1582.4,
+     898.3
     ],
     [
-     1593,
-     862.2
+     1593.6,
+     859.0
     ],
     [
-     1595,
-     822.6
+     1594.6,
+     817.6
     ],
     [
-     1592.7,
-     785.9
+     1591.6,
+     774.9
     ],
     [
-     1588.9,
-     747.7
+     1587.1,
+     732.1
     ],
     [
-     1584,
-     704.7
+     1582.3,
+     690.2
     ],
     [
-     1579.2,
-     664
+     1576.2,
+     645.9
     ],
     [
-     1574.3,
-     626.7
+     1570.1,
+     604.3
     ],
     [
-     1568.7,
-     586.5
-    ],
-    [
-     1562.7,
-     548
+     1561.2,
+     546.4
     ],
     [
      1555.0,
@@ -10073,20 +10126,12 @@
      690.6
     ],
     [
-     1345,
-     680
+     1340.5,
+     687.5
     ],
     [
-     1355,
-     675
-    ],
-    [
-     1330,
-     660
-    ],
-    [
-     1345,
-     650
+     1335.5,
+     663
     ],
     [
      1330,
@@ -10101,7 +10146,7 @@
       1330,
       640
      ],
-     "h": 113.8,
+     "h": 112.8,
      "v1_8_h": 117
     },
     {
@@ -10326,10 +10371,18 @@
       703.2
      ],
      "to": [
+      1498.6,
+      1039.6
+     ],
+     "note": "down the Prow cliff drive's seaward verge to the harbour",
+     "v1_8_from": [
+      1596.9,
+      703.2
+     ],
+     "v1_8_to": [
       1500.3,
       1038.1
-     ],
-     "note": "down the Prow cliff drive's seaward verge to the harbour"
+     ]
     },
     {
      "stretch": "jan",
@@ -10337,8 +10390,8 @@
      "side": "inland (west)",
      "offset_m": 6.5,
      "from": [
-      1494.7,
-      1026.4
+      1493.6,
+      1027.6
      ],
      "to": [
       1456.6,
@@ -10348,6 +10401,10 @@
      "v1_8_to": [
       1495.4,
       344.6
+     ],
+     "v1_8_from": [
+      1494.7,
+      1026.4
      ]
     },
     {
@@ -10594,12 +10651,16 @@
    "levels": [
     {
      "xy": [
-      1358,
-      685
+      1350,
+      687
      ],
      "h": 110,
-     "r": 14,
-     "why": "the south portal forecourt: both January legs cross the ORE station's link walk (110) there at its height"
+     "r": 9,
+     "why": "the south portal forecourt: both January legs cross the ORE station's link walk (110) there at its height",
+     "v1_9_first_xy": [
+      1358,
+      685
+     ]
     }
    ],
    "levelsRule": "levels are extra height pins on the Year Walk's own (unshared) stretches: the builder pins the nearest walk sample to h, so the grade between two pins can use the walk maximum where the ground demands it",
@@ -10775,84 +10836,80 @@
        852
       ],
       [
-       1322.2,
+       1321.3,
        848.5
       ],
       [
-       1319.5,
+       1317.6,
        852
       ],
       [
-       1319.5,
+       1317.6,
        880
       ],
       [
-       1316.8,
+       1313.9,
        883.5
       ],
       [
-       1314,
+       1310.2,
        880
       ],
       [
-       1314,
+       1310.2,
        852
       ],
       [
-       1311.2,
+       1306.5,
        848.5
       ],
       [
-       1308.5,
+       1302.8,
        852
       ],
       [
-       1308.5,
+       1302.8,
        880
       ],
       [
-       1305.8,
+       1299.1,
        883.5
       ],
       [
-       1303,
+       1295.4,
        880
       ],
       [
-       1303,
+       1295.4,
        852
       ],
       [
-       1300.2,
+       1291.7,
        848.5
       ],
       [
-       1297.5,
-       852
-      ],
-      [
-       1297.5,
-       880
-      ],
-      [
-       1294.8,
-       883.5
-      ],
-      [
-       1292,
-       880
-      ],
-      [
-       1292,
+       1288,
        852
       ],
       [
        1288,
-       847
+       880
       ],
       [
-       1280,
-       845
+       1284.3,
+       883.5
+      ],
+      [
+       1280.6,
+       880
+      ],
+      [
+       1280.6,
+       852
+      ],
+      [
+       1276,
+       846
       ],
       [
        1267,
@@ -10863,7 +10920,7 @@
        836
       ]
      ],
-     "why": "the Lakeside switchback: seven 28 m legs on a 5.5 m pitch at <= 12 %, leaving at grade across S1 at [1267,842] to the rim trail"
+     "why": "the Lakeside switchback: seven 28 m legs on a 7.4 m pitch (walk surfaces 2.2 m apart, shoulders meeting as the walls between legs) at <= 12 %, leaving at grade across S1 at [1267,842] to the rim trail"
     },
     {
      "was": [
@@ -11184,6 +11241,290 @@
       ]
      ],
      "why": "September returns from its pad across Green Road and walks its west footway north to the pass (it ran up the shelf beside February, 24 eu apart)"
+    },
+    {
+     "was": [
+      [
+       1596.9,
+       703.2
+      ],
+      [
+       1601.5,
+       743.6
+      ],
+      [
+       1605.7,
+       784.8
+      ],
+      [
+       1608.1,
+       827.2
+      ],
+      [
+       1605.7,
+       864.9
+      ],
+      [
+       1592.8,
+       905.1
+      ],
+      [
+       1576.5,
+       943.3
+      ],
+      [
+       1558.6,
+       980.4
+      ],
+      [
+       1536.4,
+       1014.4
+      ],
+      [
+       1502.6,
+       1037
+      ],
+      [
+       1500.3,
+       1038.1
+      ]
+     ],
+     "now": [
+      [
+       1596.9,
+       703.2
+      ],
+      [
+       1601.8,
+       746.3
+      ],
+      [
+       1606.0,
+       790.3
+      ],
+      [
+       1608.0,
+       832.0
+      ],
+      [
+       1602.7,
+       877.6
+      ],
+      [
+       1588.6,
+       919.0
+      ],
+      [
+       1572.7,
+       957.4
+      ],
+      [
+       1553.6,
+       996.8
+      ],
+      [
+       1523.0,
+       1027.7
+      ],
+      [
+       1498.6,
+       1039.6
+      ]
+     ],
+     "why": "December's seaward verge re-laid on the Prow cliff drive after its [1540,1000] control moved 3.5 m off the Terraces plots"
+    },
+    {
+     "was": [
+      [
+       1494.7,
+       1026.4
+      ],
+      [
+       1527.3,
+       1005.1
+      ],
+      [
+       1548.8,
+       970.9
+      ],
+      [
+       1564.7,
+       937.9
+      ],
+      [
+       1580.6,
+       900.4
+      ],
+      [
+       1593,
+       862.2
+      ],
+      [
+       1595,
+       822.6
+      ],
+      [
+       1592.7,
+       785.9
+      ],
+      [
+       1588.9,
+       747.7
+      ],
+      [
+       1584,
+       704.7
+      ],
+      [
+       1579.2,
+       664
+      ],
+      [
+       1574.3,
+       626.7
+      ],
+      [
+       1568.7,
+       586.5
+      ],
+      [
+       1562.7,
+       548
+      ]
+     ],
+     "now": [
+      [
+       1493.6,
+       1027.6
+      ],
+      [
+       1528.6,
+       1007.9
+      ],
+      [
+       1549.8,
+       975.8
+      ],
+      [
+       1567.7,
+       936.2
+      ],
+      [
+       1582.4,
+       898.3
+      ],
+      [
+       1593.6,
+       859.0
+      ],
+      [
+       1594.6,
+       817.6
+      ],
+      [
+       1591.6,
+       774.9
+      ],
+      [
+       1587.1,
+       732.1
+      ],
+      [
+       1582.3,
+       690.2
+      ],
+      [
+       1576.2,
+       645.9
+      ],
+      [
+       1570.1,
+       604.3
+      ],
+      [
+       1561.2,
+       546.4
+      ]
+     ],
+     "why": "January's inland verge re-laid on the moved Prow cliff drive (6.5 m, now 6 m clear of Terraces plot 3's margin)"
+    },
+    {
+     "was": [
+      [
+       1330,
+       640
+      ],
+      [
+       1355,
+       660
+      ],
+      [
+       1350,
+       685
+      ],
+      [
+       1375,
+       690
+      ]
+     ],
+     "now": [
+      [
+       1330,
+       640
+      ],
+      [
+       1339,
+       662
+      ],
+      [
+       1344,
+       684
+      ],
+      [
+       1375,
+       690
+      ]
+     ],
+     "why": "January's first leg leaves the pad west of the Ore Line's approach cut"
+    },
+    {
+     "was": [
+      [
+       1345,
+       680
+      ],
+      [
+       1355,
+       675
+      ],
+      [
+       1330,
+       660
+      ],
+      [
+       1345,
+       650
+      ],
+      [
+       1330,
+       640
+      ]
+     ],
+     "now": [
+      [
+       1340.5,
+       687.5
+      ],
+      [
+       1335.5,
+       663
+      ],
+      [
+       1330,
+       640
+      ]
+     ],
+     "why": "January's last leg returns as the first leg's west lane (3.5 m), west of the Ore Line"
     }
    ]
   },

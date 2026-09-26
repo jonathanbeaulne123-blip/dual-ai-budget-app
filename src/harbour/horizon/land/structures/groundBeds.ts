@@ -1,9 +1,11 @@
 import type { BedCut, HeightQuery, LandCuts, XY, XYZ } from '../interfaces';
+import { HORIZON_MANIFEST as M } from '../../world/manifest';
 import { clamp, distance, mix, plan } from './mesh';
 
 type Segment={bed:BedCut;a:XYZ;b:XYZ;index:number};
 export interface GroundBedFill { id:string; part:number; at:XY; depth:number; reason?:string }
 const CELL=32;
+const SWITCHBACKS=Object.values(M.structures as unknown as Record<string,{kind?:string;route?:string;bbox?:number[][]}>).filter((r):r is {kind:string;route:string;bbox:number[][]}=>!!r&&typeof r==='object'&&r.kind==='switchbackRamp'&&!!r.bbox);
 function inside(p:XY,poly:readonly XY[]):boolean {let hit=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i]!,b=poly[j]!;if((a[1]>p[1])!==(b[1]>p[1])&&p[0]<(b[0]-a[0])*(p[1]-a[1])/(b[1]-a[1])+a[0])hit=!hit;}return hit;}
 function segmentDistance(p:XY,a:XY,b:XY):number {const dx=b[0]-a[0],dz=b[1]-a[1],t=clamp(((p[0]-a[0])*dx+(p[1]-a[1])*dz)/(dx*dx+dz*dz||1),0,1);return distance(p,[a[0]+t*dx,a[1]+t*dz]);}
 function polygonDistance(p:XY,poly:readonly XY[]):number {return inside(p,poly)?0:Math.min(...poly.map((a,i)=>segmentDistance(p,a,poly[(i+1)%poly.length]!)));}
@@ -36,7 +38,13 @@ export function groundTerrainBeds(cuts:LandCuts,finalHeight:HeightQuery):{filled
       if(!reason){const nearby=new Set<Segment>();for(let x=Math.floor(Math.min(...poly.map(p=>p[0]))/CELL);x<=Math.floor(Math.max(...poly.map(p=>p[0]))/CELL);x++)for(let z=Math.floor(Math.min(...poly.map(p=>p[1]))/CELL);z<=Math.floor(Math.max(...poly.map(p=>p[1]))/CELL);z++)for(const row of cells.get(`${x}:${z}`)??[])nearby.add(row);
         const ownSegments=new Map<string,{index:number;score:number}>(),topMean=tops.reduce((a,b)=>a+b,0)/4;
         for(const row of nearby)if(s.bedIds.includes(row.bed.id)){const score=segmentDistance(centre,plan(row.a),plan(row.b))+Math.abs((row.a[1]+row.b[1])/2-topMean)*4;if(score<(ownSegments.get(row.bed.id)?.score??Infinity))ownSegments.set(row.bed.id,{index:row.index,score});}
+        // W3-A: a footway and its host share one surface (BedCut.sharedEdges): neither is the other's "lower route".
+        // v1.9 switchback ramps (MANIFEST structures.<id>.kind switchbackRamp): inside the ramp's box a leg over the
+        // leg below is carried on the retaining wall between them, so the upper leg's shoulder is grounded (the wall).
+        const inRamp=SWITCHBACKS.some(r=>r.route&&s.bedIds.includes(r.route)&&centre[0]>=r.bbox[0]![0]!&&centre[0]<=r.bbox[1]![0]!&&centre[1]>=r.bbox[0]![1]!&&centre[1]<=r.bbox[1]![1]!);
+        const partners=new Set(sources.flatMap(src=>(src.sharedEdges??[]).filter(e=>e.at.some((p,i)=>i>0&&segmentDistance(centre,e.at[i-1]!,p)<4)).map(e=>e.other)));
         for(const row of nearby){const {a,b,bed}=row,dx=b[0]-a[0],dz=b[2]-a[2],t=clamp(((centre[0]-a[0])*dx+(centre[1]-a[2])*dz)/(dx*dx+dz*dz||1),0,1),h=mix(a[1],b[1],t),own=s.bedIds.includes(bed.id);
+          if(partners.has(bed.id)||inRamp&&own)continue;
           if(own&&(Math.abs(h-topMean)<.75||Math.abs(row.index-ownSegments.get(bed.id)!.index)<=4))continue;
           // W3-A: the lower route's own height where it passes the prism (h), not its segment's
           // min/max: a footway beside a host on a 12 % grade read the host's low end as "under" it.

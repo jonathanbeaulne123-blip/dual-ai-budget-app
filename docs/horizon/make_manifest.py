@@ -1086,7 +1086,7 @@ yw_replace([[885,465],[815,470],[800,480],[755,480],[700,470]],
 #    terrace the footway can reach at the walk grade (May 37, September 35), and the April lane
 #    gets two levels so it takes the Hollow's 17 eu band face at 12 % (it rode the 8 % typical
 #    grade 6-13 eu over the Hollow floor): the plateau edge and the Cottage front walk's bench.
-YW_PIN_H_V19 = {"may": 37, "sep": 40, "jan": 113.8}
+YW_PIN_H_V19 = {"may": 37, "sep": 40, "jan": 112.8}
 for p in YW["pins"]:
     if p["station"] in YW_PIN_H_V19:
         p["v1_8_h"] = p["h"]
@@ -1112,9 +1112,19 @@ YW["levelsRule"] = "levels are extra height pins on the Year Walk's own (unshare
 #    it by crossing S1 at [1255,862] where S1 is 4 eu under the lake terrace (15-16 % both sides). Seven legs of 30 m on a
 #    5.5 m pitch (x 1325-1292, z 852-882) with turning landings; the exit crosses S1 at grade at [1267,842], where S1
 #    stands at the terrace height (55), and meets the rim trail at [1251,836] (the February share starts there).
+SWITCHBACK_X = [1325, 1317.6, 1310.2, 1302.8, 1295.4, 1288, 1280.6]
+sb = [[1330, 885]]
+for k, x in enumerate(SWITCHBACK_X):
+    top, bottom = (880, 852) if k % 2 == 0 else (852, 880)
+    sb += [[x, top], [x, bottom]]
+    if k + 1 < len(SWITCHBACK_X):
+        nx = SWITCHBACK_X[k + 1]; sb.append([round((x + nx) / 2, 1), bottom - 3.5 if bottom == 852 else bottom + 3.5])
+sb += [[1276, 846], [1267, 842], [1251, 836]]
 yw_replace([[1330,885],[1320,880],[1315,865],[1320,885],[1305,845],[1305,875],[1300,855],[1300,880],[1295,860],[1295,880],[1290,860],[1290,885],[1285,870],[1285,880],[1245,855],[1250,845]],
-           [[1330,885],[1325,880],[1325,852],[1322.2,848.5],[1319.5,852],[1319.5,880],[1316.8,883.5],[1314,880],[1314,852],[1311.2,848.5],[1308.5,852],[1308.5,880],[1305.8,883.5],[1303,880],[1303,852],[1300.2,848.5],[1297.5,852],[1297.5,880],[1294.8,883.5],[1292,880],[1292,852],[1288,847],[1280,845],[1267,842],[1251,836]],
-           "the Lakeside switchback: seven 28 m legs on a 5.5 m pitch at <= 12 %, leaving at grade across S1 at [1267,842] to the rim trail")
+           sb,
+           "the Lakeside switchback: seven 28 m legs on a 7.4 m pitch (walk surfaces 2.2 m apart, shoulders meeting as the walls between legs) at <= 12 %, leaving at grade across S1 at [1267,842] to the rim trail")
+m["structures"]["lakesideSwitchback"] = {"kind": "switchbackRamp", "route": "yearWalk", "bbox": [[1274, 843], [1331, 889]], "legs": 7, "pitch_m": 7.4,
+ "note": "v1.9 (T0 #16): the Year Walk's seven legs down the Shoulder's south-west corner to the lake terrace; each leg's downhill shoulder is carried to the leg below as a masonry retaining wall (the builder grounds it: no leg hangs over the next)"}
 YW["s1Crossing"] = [1267, 842]
 for sh in YW["shares"]:
     if sh["stretch"] == "feb" and sh["host"] == "walk lakerim":
@@ -1216,6 +1226,28 @@ yw_replace([[1010,615],[1040,650],[1045,550],[1055,505],[1045,490],[995,470],[98
            [[1010,615],[1032,652],[1025,626],[1010,604]] + sep_vg,
            "September returns from its pad across Green Road and walks its west footway north to the pass (it ran up the shelf beside February, 24 eu apart)")
 YW["shares"].append({"stretch": "sep", "host": "VG", "side": "west", "offset_m": 6.5, "from": sep_vg[0], "to": sep_vg[-1], "note": "v1.9: Green Road's west footway from the September pad's return to the north pass"})
+# 11. Terraces plot 3's margin (P31: the January lane 3.2 m from the plot edge, 12 samples in the 6 m margin): the Prow cliff
+#     drive's control [1540,1000] moves 3.5 m away from the plots (east-south-east), and the December (seaward 6.5) and
+#     January (inland 6.5) verges are re-laid on it.
+V01["pts"][V01["pts"].index([1540, 1000])] = [1543.2, 1001.4]
+v01s = spline5(V01["pts"])
+dec_run = offset_run(v01s, [1800, 1200], 6.5, [1596.9, 703.2], [1500.3, 1038.1])
+jan_run = offset_run(v01s, INLAND, 6.5, [1494.7, 1026.4], [1562.7, 548])
+yw_replace([[1596.9,703.2],[1601.5,743.6],[1605.7,784.8],[1608.1,827.2],[1605.7,864.9],[1592.8,905.1],[1576.5,943.3],[1558.6,980.4],[1536.4,1014.4],[1502.6,1037],[1500.3,1038.1]],
+           dec_run, "December's seaward verge re-laid on the Prow cliff drive after its [1540,1000] control moved 3.5 m off the Terraces plots")
+yw_replace([[1494.7,1026.4],[1527.3,1005.1],[1548.8,970.9],[1564.7,937.9],[1580.6,900.4],[1593,862.2],[1595,822.6],[1592.7,785.9],[1588.9,747.7],[1584,704.7],[1579.2,664],[1574.3,626.7],[1568.7,586.5],[1562.7,548]],
+           jan_run, "January's inland verge re-laid on the moved Prow cliff drive (6.5 m, now 6 m clear of Terraces plot 3's margin)")
+for sh in YW["shares"]:
+    if sh["stretch"] == "dec" and sh["host"] == "V01": sh["v1_8_from"], sh["v1_8_to"] = sh["from"], sh["to"]; sh["from"], sh["to"] = dec_run[0], dec_run[-1]
+    if sh["stretch"] == "jan" and sh["host"] == "V01": sh["v1_8_from"] = sh["from"]; sh["from"] = jan_run[0]
+# 13. January at the south portal (P16: the Year Walk 2.65 over the Ore Line's approach at [1349.6,671.6], rail clearance 3.2):
+#     both January legs keep west of the rail's cut, as two lanes 3.5 m apart between the pad and the portal forecourt.
+yw_replace([[1330,640],[1355,660],[1350,685],[1375,690]], [[1330,640],[1339,662],[1344,684],[1375,690]],
+           "January's first leg leaves the pad west of the Ore Line's approach cut")
+yw_replace([[1345,680],[1355,675],[1330,660],[1345,650],[1330,640]], [[1340.5,687.5],[1335.5,663],[1330,640]],
+           "January's last leg returns as the first leg's west lane (3.5 m), west of the Ore Line")
+for lv in YW["levels"]:
+    if lv["xy"] == [1358, 685]: lv["v1_9_first_xy"] = lv["xy"]; lv["xy"] = [1350, 687]; lv["r"] = 9
 YW["v1_9_edits"] = YW_EDITS_V19
 
 # 8. Named footbridges (P12 unsupported runs / "two foot routes crossing" with no bridge; R1-04, R1-10, R1-31). Each is
@@ -1234,6 +1266,17 @@ m["structures"]["crownWalkBridge"] = {"xy": [1410.1, 605.8], "kind": "footbridge
 m["walks"]["prow"]["v1_8_pts"] = m["walks"]["prow"]["pts"]
 m["walks"]["prow"]["pts"] = [[1590, 998], [1606, 950], [1616, 928], [1641, 924], [1641, 880], [1640, 812], [1633, 790]]
 m["walks"]["prow"]["note_v1_9"] = "re-laid on the Prow top east of V01's cutting (was along the cutting's lip, over it twice); joins the Year Walk's west Prow lane at [1630,790], short of the sea stair's head"
+
+# 12. Reserves (P31, D-2 for Jonathan, reversible): the Bight trail ran through all four Bight plots (27-28 samples inside
+#     each). It becomes the Bight Shore spur's landward footway (builder: `footwayOf`, the spur's heights, no wall between);
+#     its v1.8 shore line is kept in `v1_8_pts`. The hangar bay (plot.flats.1) moves 7 m east out of the strip's 6 m margin
+#     and is served from the strip edge at its west door (its access walk is its service).
+m["walks"]["bight"]["v1_8_pts"] = m["walks"]["bight"]["pts"]
+m["walks"]["bight"]["footwayOf"] = {"host": "VBS", "offset_m": 4.2, "side_xy": [1100, 1100], "why": "D-2 (v1.9): the four Bight plots and their 6 m margins fill the land between the spur and the shore; the trail walks the spur's landward verge at the spur's height"}
+hb = m["reserves"]["small"]["hangarBay"]
+hb["v1_8_xy"] = hb["xy"]; hb["xy"] = [458.2, 600]; hb["size_m"] = [11, 18]; hb["door"] = "west, on the strip edge; its access walk is plot.flats.1.service"
+hb["note_v1_9"] = "an 11 m bay facing the strip, 18 m deep, between the strip's 6 m margin and S2's (the 18 m face did not fit the 26 m between them)"
+m["structures"]["jettiesV1_8"] = {"bightShore": m["structures"]["jetties"]["bightShore"], "why": "v1.9: the Bight Shore jetty moved 17 m north-west, out of plot bight.2's 6 m margin"}; m["structures"]["jetties"]["bightShore"] = [728, 946]
 
 # 10. Views (W3-C requests A1, A4, A6, A7; each tested on the W3-C land): page A portrait at the viewRule minimum
 #     field (45°); page E's eye at the run-off corner of the lookout deck (it stood on the deck centre, 44 % of the frame

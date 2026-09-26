@@ -14,7 +14,7 @@ export const SPANS:SpanSpec[]=[
   {id:'apronBridge',at:[1158,949],route:'S1',length:45,width:4,height:31,clear:5},
   {id:'hollowBridge',at:[893,600],route:'walk garden',length:32,width:8,height:37,clear:4,covered:true},
   {id:'inletFootbridge',at:[1161,731],route:'walk lakerim',length:28,width:3,height:52,clear:1},
-  {id:'reachFootbridge',at:[1274,1203],route:'walk reach',length:48,width:3,height:6,clear:1},
+  {id:'reachFootbridge',at:[1274,1203],route:'walk reach',length:48,width:3,height:9.5,clear:4},
   {id:'washFootbridge',at:[514,895],route:'walk bightPier',length:18,width:3,clear:2},
   {id:'reachBoardwalk',at:[1255,1251],route:'S1',length:112,width:4,height:5,clear:1},
   {id:'timberCrossing',at:[1500,1250],route:'homestead.lane',length:20,width:3,height:5,clear:2},
@@ -222,7 +222,21 @@ function landing(cuts:LandCuts,id:string,at:XY,h:number,size:XY,base:HeightQuery
 }
 /** A slab whose underside follows the ground (a bowl or pan on grade). */
 function slabOnGrade(out:StructureSolid,a:XYZ,b:XYZ,width:number,base:HeightQuery):void {wallToGround(out,a,b,width,0,base,.6);}
-function dock(id:string,p:XY,height:number,cuts:LandCuts,base:HeightQuery,width=5,length=12):void {
+/** v1.9: the surface of any channel or level water body under a plan point (T3-4: the Boathouse jetty's fixed deck at 1
+ * stood 0.15 under the Reach east channel's water). */
+function waterSurfaceNear(cuts:LandCuts,p:XY,reach:number):number|undefined {
+  let best:number|undefined;
+  for(const w of cuts.waters){
+    if(w.kind==='dry')continue;
+    if(w.points.length>1){for(let i=1;i<w.points.length;i++){const a=w.points[i-1]!,b=w.points[i]!,dx=b[0]-a[0],dz=b[2]-a[2],t=clamp(((p[0]-a[0])*dx+(p[1]-a[2])*dz)/(dx*dx+dz*dz||1),0,1);if(distance(p,[a[0]+dx*t,a[2]+dz*t])<=w.width/2+reach)best=Math.max(best??-Infinity,mix(a[1],b[1],t));}}
+    else if(w.outline.length>2){let inside=false;for(let i=0,j=w.outline.length-1;i<w.outline.length;j=i++){const a=w.outline[i]!,b=w.outline[j]!;if((a[1]>p[1])!==(b[1]>p[1])&&p[0]<(b[0]-a[0])*(p[1]-a[1])/(b[1]-a[1])+a[0])inside=!inside;}if(inside)best=Math.max(best??-Infinity,w.level);}
+  }
+  return best;
+}
+function dock(id:string,p:XY,height0:number,cuts:LandCuts,base:HeightQuery,width=5,length=12):void {
+  // The deck stands 0.6 over the water it reaches (never under it); dry-land docks keep their authored height.
+  const surface=waterSurfaceNear(cuts,p,length/2),height=surface===undefined?height0:Math.max(height0,surface+.6);
+  if(surface!==undefined&&height!==height0)cuts.diagnostics.push({id:`structures.${id}.deckOverWater`,severity:'info',message:`${id}: deck raised from ${height0} to ${height.toFixed(2)} (water surface ${surface.toFixed(2)} + 0.6)`,at:p,measured:height,required:surface+.6});
   const a:XYZ=[p[0]!,height,p[1]!-length/2],b:XYZ=[p[0]!,height,p[1]!+length/2],deck=solid(`${id}.deck`,'jetty','boardwalk','deck',[id],districtAt(...p)),piles=solid(`${id}.supports`,'pile','timber','support',[id],deck.districtId),rails=solid(`${id}.rails`,'handrail','metal','rail',[id],deck.districtId);
   slab(deck,a,b,width,.35);for(let offset=-length/2;offset<=length/2+.01;offset+=3)for(const side of [-1,1]){const xy:XY=[p[0]!+side*(width/2-.2),p[1]!+offset];box(piles,xy,height-.2,[.3,.3],Math.min(-2,base(...xy))-FOOTING_SINK);}
   postedRail(rails,[a,b],width/2);postedRail(rails,[a,b],-width/2);cuts.solids.push(deck,piles,rails);const bcut=bed(id,'boardwalk',[a,b],false);bcut.width=width;bcut.structureIds=[id];cuts.beds.push(bcut);

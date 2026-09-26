@@ -325,9 +325,9 @@ Track W3-A re-authored the Year Walk, Horizon Drive's north-east corner and Crow
 | The Hollow: May / September pads | 31.5 / 33 | **37 / 35** (`pins[*].v1_8_h`) | the Green Road footway they leave is at 38.8, 37–45 m away: fixed heights 22.2 and 9.3 eu of route short (P08 72.7 % / 40.6 %) |
 | The Hollow neck (x 893–913, z 600–660) | both Hollow lanes 2–8 eu over S4 and the Garden Walk | both lanes are **S4's east footway** (new `shares` rows, offsets 6 / 8); S4 meets the Cottage front walk at grade (36) | separation S4 69 samples; a generated S4 × Year Walk deck stood across the Garden Walk |
 | The April lane above the Hollow | [925,585] | [935,585] | its 18 eu band-face descent to the S4 footway needs ≥ 150 m at 12 % (148 → 164 m) |
-| January pad | 117 | **113.8** | 7 eu over the turning circle with 37 m of walk between (P08 36 % at [1369,689]) |
-| South portal forecourt | — | `levels`: both January legs at 110 within 14 m of [1358,685] | the legs ran 1–3 eu over the ORE station's link walk (110) |
-| The Lakeside switchback (T0 #16) | 14 legs of 20–30 m, 5 m apart, 12–16 %; left across S1 at [1255,862] where S1 is 4 eu under the terrace | **seven 28 m legs on a 5.5 m pitch** (x 1325–1292, z 852–882) with turning landings; leaves across S1 at grade at **[1267,842]** (S1 at the terrace height, 55) to the rim trail at [1251,836] (the February share starts there; `s1Crossing`) | P08 15–16 % at [1250–1254, 842–862]; fixed heights 2.9 eu short |
+| January pad | 117 | **112.8** | 7 eu over the turning circle with 37 m of walk between (P08 36 % at [1369,689]) |
+| South portal forecourt | the two January legs crossed the Ore Line's approach cut and ran 1–3 eu over the ORE station's link walk | both legs keep west of the rail as lanes 3.5 m apart; `levels`: both at 110 within 9 m of [1350,687] | P16 Year Walk 2.65 over the Ore Line (rail clearance 3.2) |
+| The Lakeside switchback (T0 #16) | 14 legs of 20–30 m, 5 m apart, 12–16 %; left across S1 at [1255,862] where S1 is 4 eu under the terrace | **seven 28 m legs on a 7.4 m pitch** (x 1325–1280.6, z 852–880) with turning landings; `structures.lakesideSwitchback` (kind switchbackRamp): each leg's downhill shoulder is grounded onto the leg below as the retaining wall between them; leaves across S1 at grade at **[1267,842]** (S1 at the terrace height, 55) to the rim trail at [1251,836] (the February share starts there; `s1Crossing`) | P08 15–16 % at [1250–1254, 842–862]; fixed heights 2.9 eu short |
 | North-east corner (November / January verges) | offsets of the v1.8 chord over the sea | re-laid as offsets of the new Drive alignment (same sides and offsets); January turns onto Crown Road's east verge at the junction's inside corner without crossing V02 | follows item 2 |
 
 New fields: `journey.yearWalk.levels` (extra height pins on unshared stretches; `r` pins every sample within r), `journey.yearWalk.s1Crossing`.
@@ -365,4 +365,17 @@ Page A portrait `fov_deg` 50 → **45** (the viewRule minimum); page E `xy` [130
 - Junction aprons: a foot route inside a road's corridor near an at-grade junction takes the road's height (the Boathouse walk).
 - `groundBeds`: a lower route is judged at its own height where it passes under a prism.
 - The zip landing ramp is a timber trestle (no earth dune across the beach; W3-C A3).
+
+### 8. Reserves (P31) — D-2 for Jonathan (reversible)
+
+- **The Bight trail becomes the Bight Shore spur's landward footway** (`walks.bight.footwayOf`: host VBS, 4.2 m, the side of [1100,1100]; the builder lays it at the spur's heights with no wall between). It ran through all four Bight plots (27–28 samples inside each); its v1.8 shore line is kept in `v1_8_pts`. Undo = delete `footwayOf`.
+- **The hangar bay** (`reserves.small.hangarBay`, plot.flats.1) moves [455,600] → **[458.2,600]** and becomes an **11 × 18 m** bay facing the strip (the 26 m between the strip's and S2's 6 m margins cannot hold an 18 m face); its door is on the strip side and its access walk is its service (`plot.flats.1.service`, was `hangar.access`).
+- **The Bight Shore jetty** moves [735,955] → **[728,946]** (it stood in plot bight.2's margin; v1.8 in `structures.jettiesV1_8`).
+- **Terraces plot 3**: the Prow cliff drive's control [1540,1000] → **[1543.2,1001.4]** (3.5 m off the plots); the December and January verges are re-laid on it.
+- Open: **plot bight.1** — the June lane (32 samples inside) and S4 (13 in the margin) run in the 10 m between the plot's north-east margin and the Bight Shore spur; the corridor needs either the plot moved ~12 m south-west or S4 and the June lane re-routed (decision for Jonathan).
+
+### 9. Structures and heights (P16/P17)
+
+- `reachFootbridge` deck 6 → **9.5** (4 m canoe clearance over the lower river; the Reach walk's pin follows).
+- Every dock stands 0.6 over the water it reaches (the Boathouse jetty's deck at 1 stood 0.15 under the Reach east channel).
 
