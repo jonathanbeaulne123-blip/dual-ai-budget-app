@@ -112,7 +112,7 @@ describe('the Throat Run',()=>{
   });
   it('turns ridge height into mouth height one for one in still air (from the Crown at 190 m: 24.8 m in hand)',()=>{
     const crown=envelope.launchPads!.find(p=>p.id==='crown')!,high=flyThroatRun(env(0),{from:{...launchWing(crown.edge,Math.PI),y:190}});
-    expect(high.heightInHand.mouth-base.heightInHand.mouth).toBeCloseTo(30,0);expect(high.heightInHand.mouth).toBeCloseTo(24.8,1);
+    expect(high.heightInHand.mouth!-base.heightInHand.mouth!).toBeCloseTo(30,0);expect(high.heightInHand.mouth).toBeCloseTo(24.8,1);
   });
 });
 
