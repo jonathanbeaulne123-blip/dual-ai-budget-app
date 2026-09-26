@@ -357,8 +357,9 @@ export function createBedClearanceSampler(beds: BedCut[], rasterMargin = 0): (x:
   const prepared = prepareBeds(clearanceBeds, rasterMargin), s = getModel().scale;
   const floor = LAND_FLOOR * s;
   return (x, z) => {
-    let ceiling = Infinity, upperDeck = -Infinity, upperNear = -Infinity;
-    const candidates: { value: number; plane: number; core: boolean }[] = [];
+    let ceiling = Infinity;
+    const candidates: { value: number; plane: number; core: boolean; bed: BedCut }[] = [];
+    const decks = new Map<BedCut, number>(), near = new Map<BedCut, number>();
     for (const {bed, a, b, length} of prepared.bins.get(cellKey(x, z, prepared.cell)) ?? []) {
       const exclusions=bed.terrainExclusions?.filter(e=>Math.hypot(x-e.at[0],z-e.at[1])<e.radius+rasterMargin)??[];
       if (length < 1e-8 || exclusions.some(e=>!e.openSpan)) continue;
@@ -373,15 +374,15 @@ export function createBedClearanceSampler(beds: BedCut[], rasterMargin = 0): (x:
       // more than a 25 % grade's drop over that diagonal below the deck it extends (no pits).
       const value = Math.max(mix(a[1], b[1], t) - clearance, Math.min(plane - clearance, floor), plane - clearance - MAX_EXTRAPOLATED_GRADE * rasterMargin);
       const core = hit.distance <= bed.width / 2 + bed.shoulder;
-      candidates.push({ value, plane, core });
-      if (!open && hit.distance <= bed.width / 2) upperDeck = Math.max(upperDeck, plane);
-      if (!open) upperNear = Math.max(upperNear, plane);
+      candidates.push({ value, plane, core, bed });
+      if (!open && hit.distance <= bed.width / 2) decks.set(bed, Math.max(decks.get(bed) ?? -Infinity, plane));
+      if (!open) near.set(bed, Math.max(near.get(bed) ?? -Infinity, plane));
     }
-    // A lower route's cut never excavates under an upper deck it passes beneath, and its
-    // conservative raster margin never digs a pit into an upper route's own footprint.
+    // A lower route's cut never excavates under ANOTHER route's upper deck it passes beneath,
+    // and its conservative raster margin never digs a pit into another upper route's footprint.
+    const above = (map: Map<BedCut, number>, c: { plane: number; bed: BedCut }) => { for (const [bed, plane] of map) if (bed !== c.bed && plane > c.plane + BED_LEVEL_TOLERANCE) return true; return false; };
     for (const c of candidates) {
-      if (c.plane < upperDeck - BED_LEVEL_TOLERANCE) continue;
-      if (!c.core && c.plane < upperNear - BED_LEVEL_TOLERANCE) continue;
+      if (above(decks, c) || (!c.core && above(near, c))) continue;
       ceiling = Math.min(ceiling, c.value);
     }
     return ceiling;
