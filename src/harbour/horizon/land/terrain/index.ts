@@ -199,6 +199,8 @@ function damWindow(x: number, z: number, height: number): number {
   const weight = (1 - smooth(outside / (DAM_WINDOW.feather * s))) * smooth((z - dz - 4 * s) / (6 * s));
   return mix(height, DAM_WINDOW.cap * s, weight);
 }
+/** Depth of the bed within one lattice diagonal of a water edge (eu): the water card sits on it. */
+export const WET_EDGE_DEPTH = .03;
 const waterBounds = new WeakMap<WaterCut, readonly [number, number, number, number]>();
 /** Named water in its bed. The raster guard (one lattice diagonal outside the true
  * edge) holds the bank AT the water level, never below it: a triangle straddling the
@@ -220,9 +222,14 @@ function applyWaters(x: number, z: number, original: number, waters: WaterCut[],
     const { distance, level, grade } = waterInfluence(water, x, z);
     if (distance > outer) continue;
     if (distance <= 0) {
-      // A weir's short run keeps the vertices of its straddling triangles below it.
-      const depth = water.depth * mix(0.22, 1, smooth(-distance / (water.points.length ? water.width / 2 : 14 * s))) + Math.min(grade * guard, 1.5 * s);
-      h = Math.min(h, level - depth);
+      // Within one lattice diagonal of the edge the bed sits just under the surface, so a
+      // triangle from here to the bank's foot never dips below the water outside the ribbon;
+      // the bed deepens only beyond it. A weir's short run keeps its straddling vertices below it.
+      const reach = water.points.length ? water.width / 2 : 14 * s, inner = Math.max(0, -distance - guard);
+      const depth = WET_EDGE_DEPTH * s + (water.depth - WET_EDGE_DEPTH * s) * smooth(inner / Math.max(1 * s, reach - Math.min(guard, reach / 2))) + Math.min(grade * guard, 1.5 * s);
+      // A channel never floats: where the ground falls away under it, its bed and banks
+      // are raised to carry it (a perched reach reads as a raised stream, not a floating ribbon).
+      h = water.points.length && water.kind !== 'dry' && !raiseForbidden(x, z) ? level - depth : Math.min(h, level - depth);
       wetBedCeiling = Math.min(wetBedCeiling, level - depth);
       continue;
     }
@@ -350,8 +357,8 @@ export function createBedClearanceSampler(beds: BedCut[], rasterMargin = 0): (x:
   const prepared = prepareBeds(clearanceBeds, rasterMargin), s = getModel().scale;
   const floor = LAND_FLOOR * s;
   return (x, z) => {
-    let ceiling = Infinity, upperDeck = -Infinity;
-    const candidates: { value: number; plane: number }[] = [];
+    let ceiling = Infinity, upperDeck = -Infinity, upperNear = -Infinity;
+    const candidates: { value: number; plane: number; core: boolean }[] = [];
     for (const {bed, a, b, length} of prepared.bins.get(cellKey(x, z, prepared.cell)) ?? []) {
       const exclusions=bed.terrainExclusions?.filter(e=>Math.hypot(x-e.at[0],z-e.at[1])<e.radius+rasterMargin)??[];
       if (length < 1e-8 || exclusions.some(e=>!e.openSpan)) continue;
@@ -362,16 +369,26 @@ export function createBedClearanceSampler(beds: BedCut[], rasterMargin = 0): (x:
       // segments, but only across one raster diagonal: never a pit metres past the end.
       const reach = rasterMargin / length, t = clamp(((x - a[0]) * dx + (z - a[2]) * dz) / (length * length), -reach, 1 + reach);
       const clearance = open ? .65 : BED_TERRAIN_CLEARANCE, plane = mix(a[1], b[1], hit.t);
-      // Extrapolation may not dig below the land floor unless the deck itself is lower.
-      const value = Math.max(mix(a[1], b[1], t) - clearance, Math.min(plane - clearance, floor));
-      candidates.push({ value, plane });
+      // Extrapolation may not dig below the land floor unless the deck itself is lower, nor
+      // more than a 25 % grade's drop over that diagonal below the deck it extends (no pits).
+      const value = Math.max(mix(a[1], b[1], t) - clearance, Math.min(plane - clearance, floor), plane - clearance - MAX_EXTRAPOLATED_GRADE * rasterMargin);
+      const core = hit.distance <= bed.width / 2 + bed.shoulder;
+      candidates.push({ value, plane, core });
       if (!open && hit.distance <= bed.width / 2) upperDeck = Math.max(upperDeck, plane);
+      if (!open) upperNear = Math.max(upperNear, plane);
     }
-    // A lower route's cut never excavates under an upper deck it passes beneath.
-    for (const c of candidates) if (c.plane >= upperDeck - BED_LEVEL_TOLERANCE) ceiling = Math.min(ceiling, c.value);
+    // A lower route's cut never excavates under an upper deck it passes beneath, and its
+    // conservative raster margin never digs a pit into an upper route's own footprint.
+    for (const c of candidates) {
+      if (c.plane < upperDeck - BED_LEVEL_TOLERANCE) continue;
+      if (!c.core && c.plane < upperNear - BED_LEVEL_TOLERANCE) continue;
+      ceiling = Math.min(ceiling, c.value);
+    }
     return ceiling;
   };
 }
+/** Steepest grade a deck plane is extended at past its segment's end (a raster diagonal at most). */
+export const MAX_EXTRAPOLATED_GRADE = .25;
 /** Lowest open ground on land outside named water: sea level plus 0.1 eu. */
 export const LAND_FLOOR = .1;
 

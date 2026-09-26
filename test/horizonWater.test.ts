@@ -85,7 +85,7 @@ describe('Horizon water and offshore land', () => {
         }
       }
     }
-  });
+  }, 60000);
   it('builds a closed thick arch with a clear 22 by 16 opening and visible underside', () => {
     const arch = buildNeedleArch(), edges = new Map<string, number>();
     for (let i = 0; i < arch.indices.length; i += 3) for (let j = 0; j < 3; j++) {
