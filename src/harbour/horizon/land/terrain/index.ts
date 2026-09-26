@@ -199,6 +199,58 @@ function damWindow(x: number, z: number, height: number): number {
   const weight = (1 - smooth(outside / (DAM_WINDOW.feather * s))) * smooth((z - dz - 4 * s) / (6 * s));
   return mix(height, DAM_WINDOW.cap * s, weight);
 }
+/**
+ * Sketchbook sight windows (MANIFEST views, the P27 proof). Where a page's subject stands low behind
+ * open ground its eye cannot see over, that ground is held under the sight plane from the eye to the
+ * subject's line, less a margin: the plan triangle eye→A→B, feathered over `feather` m outside it,
+ * never within `near` m of the eye, and never on a bed (its carriageway and shoulder keep their
+ * grade; the trim fades in over `bedFade` m from a bed's edge so no bed is left on a causeway).
+ * `eyeH` is the pose's measured eye (floor + 1.6) on the Stage A bake; a test holds it to the bake.
+ * - A · the High Span from the square: the Notch's east rim at [1288–1311, 1115–1131] stood 35 eu over
+ *   a sight line of 22–23 (the deck line is at 23–29); the rim keeps its gorge wall below the line.
+ * - A · the dam's glass face: the gallery flights' embankment at [1169–1176, 916–918] (40–47) and
+ *   V01's embankment toe at [1382–1389, 1110–1119] (17–19) cut the face's east half.
+ * - C · the skate shelf (deck 11–12.3 at x 1202–1206) from the overlook: the west gorge floor between
+ *   the river and the shelf stood 12.3–13.3; the shelf reads as a ledge only with the floor under it.
+ * Every window lies outside the band polygons or inside the Notch walls' exclusion, or trims a band
+ * only within its own range (harbour 0–18): P01 is untouched by construction.
+ */
+export interface SightWindow { page: string; subject: string; eyeH: number; a: XYZ; b: XYZ; margin: number; near: number; feather: number; bedFade: number }
+export const SIGHT_WINDOWS: readonly SightWindow[] = [
+  { page: 'A', subject: 'the High Span', eyeH: 13.6, a: [1188, 23.3, 1100], b: [1294, 23.3, 1107], margin: 1, near: 40, feather: 8, bedFade: 8 },
+  { page: 'A', subject: "the dam's glass face", eyeH: 13.6, a: [1121, 38, 909], b: [1160, 38, 909], margin: 1, near: 40, feather: 8, bedFade: 6 },
+  { page: 'C', subject: 'the skate shelf', eyeH: 11.6, a: [1206, 11.6, 1078], b: [1206, 11.6, 1136], margin: 1.1, near: 12, feather: 6, bedFade: 4 },
+];
+interface PreparedWindow { eye: XYZ; a: XYZ; b: XYZ; tri: XY[]; det: number; w: SightWindow; box: number[] }
+let preparedWindows: PreparedWindow[] | undefined;
+function windowsPrepared(): PreparedWindow[] {
+  if (preparedWindows) return preparedWindows;
+  const s = getModel().scale;
+  return preparedWindows = SIGHT_WINDOWS.map(w => {
+    const xy = M.views.find(v => v.id === w.page)!.xy, eye: XYZ = [xy[0]! * s, w.eyeH * s, xy[1]! * s];
+    const a: XYZ = [w.a[0] * s, w.a[1] * s, w.a[2] * s], b: XYZ = [w.b[0] * s, w.b[1] * s, w.b[2] * s];
+    const tri: XY[] = [[eye[0], eye[2]], [a[0], a[2]], [b[0], b[2]]], f = w.feather * s;
+    const det = (a[0] - eye[0]) * (b[2] - eye[2]) - (b[0] - eye[0]) * (a[2] - eye[2]);
+    return { eye, a, b, tri, det, w, box: [Math.min(...tri.map(p => p[0])) - f, Math.min(...tri.map(p => p[1])) - f, Math.max(...tri.map(p => p[0])) + f, Math.max(...tri.map(p => p[1])) + f] };
+  });
+}
+/** Ground height under the sight windows: `height` trimmed toward each window's plane (never below the land floor). */
+export function sightWindows(x: number, z: number, height: number, edgeGap = Infinity): number {
+  const s = getModel().scale;
+  for (const p of windowsPrepared()) {
+    if (x < p.box[0]! || z < p.box[1]! || x > p.box[2]! || z > p.box[3]!) continue;
+    const inside = polygonDistance(p.tri, x, z), w = p.w;
+    const weight = (inside >= 0 ? 1 : 1 - smooth(-inside / (w.feather * s)))
+      * smooth((Math.hypot(x - p.eye[0], z - p.eye[2]) - w.near * s) / (w.feather * s)) * smooth(edgeGap / (w.bedFade * s));
+    if (weight <= 0) continue;
+    // The plane through the eye, A and B, evaluated in plan (barycentric in the eye→A→B triangle).
+    const dx = x - p.eye[0], dz = z - p.eye[2];
+    const alpha = (dx * (p.b[2] - p.eye[2]) - (p.b[0] - p.eye[0]) * dz) / p.det, beta = ((p.a[0] - p.eye[0]) * dz - dx * (p.a[2] - p.eye[2])) / p.det;
+    const plane = Math.max(LAND_FLOOR * s, p.eye[1] + alpha * (p.a[1] - p.eye[1]) + beta * (p.b[1] - p.eye[1]) - w.margin * s);
+    if (height > plane) height = mix(height, plane, weight);
+  }
+  return height;
+}
 /** Depth of the bed within one lattice diagonal of a water edge (eu): the water card sits on it. */
 export const WET_EDGE_DEPTH = .03;
 const waterBounds = new WeakMap<WaterCut, readonly [number, number, number, number]>();
@@ -297,16 +349,17 @@ export function raiseForbidden(x: number, z: number): boolean {
 /** Two beds whose decks overlap in plan within this height are one level (at grade). */
 export const BED_LEVEL_TOLERANCE = .5;
 /** Exact local segment lookup, exported for equivalence probes against brute force. */
-export function createBedSampler(beds: BedCut[]): (x: number, z: number, original: number) => { height: number; surface: number | null } {
+export function createBedSampler(beds: BedCut[]): (x: number, z: number, original: number) => { height: number; surface: number | null; edgeGap: number } {
   const prepared = prepareBeds(beds), s = getModel().scale;
   return (x, z, original) => {
     let height = original, surface: number | null = null, active: BedCut | null = null;
     let distance = Infinity, target = 0, progress = 0, excluded = false;
     let footprintHeight = Infinity, footprintSurface: number | null = null, footprintCore = false;
-    let deckHeight = -Infinity, deckSurface: number | null = null;
+    let deckHeight = -Infinity, deckSurface: number | null = null, edgeGap = Infinity;
     const apply = () => {
       if (!active || excluded) return;
       const edge = active.width / 2 + active.shoulder, blend = Math.max(active.blend, 15 * s);
+      edgeGap = Math.min(edgeGap, distance - edge);
       const weight = 1 - smooth((distance - edge) / blend);
       if (weight <= 0) return;
       height = mix(height, target, weight);
@@ -341,7 +394,7 @@ export function createBedSampler(beds: BedCut[]): (x: number, z: number, origina
     if (result > original && raiseForbidden(x, z)) result = original;
     // No route or deck builds ground above the Crown's summit (it stays the island's highest point).
     if (result > original) result = Math.min(result, Math.max(original, crownSummitHeight() - 1 * s));
-    return { height: result, surface: paint };
+    return { height: result, surface: paint, edgeGap };
   };
 }
 /** Five centimetres survives centimetre encoding without terrain sharing the road's top face. */
@@ -403,7 +456,10 @@ export const PAD_FILL_MAX = 3;
 const crownSummitHeight = (): number => M.landforms.find(f => f.id === 'crown')!.summitH! * getModel().scale;
 
 function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<typeof createBedSampler>, rasterMargin: number, bedCeiling: (x: number, z: number) => number): { height: number; surface: number | null } {
-  let { height, surface } = sampleBeds(x, z, baseHeight(x, z));
+  const bedded = sampleBeds(x, z, baseHeight(x, z));
+  let { height, surface } = bedded;
+  // Sketchbook sight windows trim open ground (never a bed's carriageway or shoulder).
+  height = sightWindows(x, z, height, bedded.edgeGap);
   const ground = height, s = getModel().scale;
   for (const p of cuts.pads) {
     // A deck pad (PadCut.deck) is carried by its structure or sits flush on graded beds: never earth.

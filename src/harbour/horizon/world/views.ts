@@ -1,4 +1,4 @@
-import type { LandCuts, TerrainField } from '../land/interfaces.ts';
+import type { LandCuts, StructureSolid, TerrainField } from '../land/interfaces.ts';
 import type { Point3, SketchbookPose, Point2, PortraitPose } from './definition.ts';
 import { waterHeightAt } from '../land/water/index.ts';
 import { HORIZON_MANIFEST, requireScaleFactor } from './manifest.ts';
@@ -42,8 +42,14 @@ export const PAGE_SUBJECTS: Record<string, string[]> = {
   K: ['the Glasshouse', 'Stillwater'],
   L: ['Lantern Row', 'the Boathouse'],
 };
-/** Built-id map (R1-96): each subject name → what a ray must hit. Solid prefixes are SOURCE ids as baked. */
-export function subjectTests(): Record<string, Test> {
+/**
+ * Built-id map (R1-96): each subject name → what a ray must hit. Solid prefixes are SOURCE ids as baked.
+ * With the land's solids, a structure also owns what it carries: a hit on any solid standing on the High
+ * Span's deck (VG's edges and shoulders on the span are its deck line) counts as the High Span.
+ * "The Reach water" is the water of the Reach: its channels and the river where it runs through the
+ * Reach landform (page I looks along the river inside the Reach; the channels lie behind the eye).
+ */
+export function subjectTests(solids: readonly StructureSolid[] = []): Record<string, Test> {
   const m = HORIZON_MANIFEST, s = requireScaleFactor();
   const solid = (...prefixes: string[]): Test => hit => hit.kind === 'solid' && prefixes.some(p => hit.sourceId.startsWith(p));
   const water = (...prefixes: string[]): Test => hit => hit.kind === 'water' && prefixes.some(p => hit.id.startsWith(p));
@@ -53,8 +59,13 @@ export function subjectTests(): Record<string, Test> {
   const near = (xy: readonly number[], r: number): Test => hit => hit.kind !== 'sky' && Math.hypot(hit.point[0] - xy[0]! * s, hit.point[2] - xy[1]! * s) < r * s;
   const any = (...tests: Test[]): Test => (hit, d) => tests.some(t => t(hit, d));
   const lamp = m.offshore.find(o => o.id === 'lamp')!.xy as number[];
+  const carried = (deckPrefix: string): Test => {
+    const decks = solids.filter(q => ((q as StructureSolid & { sourceId?: string }).sourceId ?? q.id.split('@')[0]!).startsWith(deckPrefix)).map(solidBounds);
+    return hit => hit.kind === 'solid' && decks.some(b => hit.point[0] >= b.min[0] && hit.point[0] <= b.max[0] && hit.point[2] >= b.min[2] && hit.point[2] <= b.max[2] && hit.point[1] >= b.min[1] - .25);
+  };
+  const reach = landform('reach');
   return {
-    'the High Span': solid('highSpan.'), "the dam's glass face": solid('dam.wall'), 'the Shoulder': landform('shoulder'), 'the Crown': landform('crown'),
+    'the High Span': any(solid('highSpan.'), carried('highSpan.deck')), "the dam's glass face": solid('dam.wall'), 'the Shoulder': landform('shoulder'), 'the Crown': landform('crown'),
     'the Bight Bridge': solid('bightBridge.'), 'the Flats': landform('flats'), 'the hook': ground(polygon(HOOK)),
     'the road deck': solid('highSpan.deck'), 'the skate shelf': solid('highSpan.shelf'), 'the walk at the water': solid('highSpan.walk'),
     surf: water('water.sea'), 'the Lamp': any(solid('lampGallery', 'jetty.lamp', 'threshold.lampGallery', 'threshold.lampDock', 'offshore.lamp', 'lamp.'), near(lamp, 45)), 'the zipline landing': solid('platform.zipLanding', 'zipLanding', 'threshold.zipLanding'),
@@ -62,7 +73,7 @@ export function subjectTests(): Record<string, Test> {
     L01: solid('place.L01'), 'the town below': landform('harbour'),
     "the Throat's mouth of daylight": (hit, d) => hit.kind === 'sky' && d[1] < 0.6 || hit.kind === 'terrain', 'the skylight shaft': (hit, d) => solid('deep.skylight', 'underground.deep.skylight')(hit, d) || hit.kind === 'sky' && d[1] >= 0.6,
     'the strip': solid('strip.', 'threshold.strip'), 'the west sea': hit => hit.kind === 'water' && hit.id.startsWith('water.sea') && hit.point[0] < 330 * s,
-    'the spring': near(m.water.spring.xy, 12), 'the Reach water': water('water.reach'),
+    'the spring': near(m.water.spring.xy, 12), 'the Reach water': any(water('water.reach'), hit => hit.kind === 'water' && hit.id.startsWith('water.river') && reach({ ...hit, kind: 'terrain', id: 'terrain' }, [0, 0, 0])),
     'the arch': solid('offshore.needle', 'needle.'), 'the Stacks': solid('offshore.stacks', 'stacks.'), 'the Prow': landform('prow'),
     'the Glasshouse': solid('host.glasshouse'), 'Lantern Row': solid('town.quay', 'town quay'), 'the Boathouse': solid('host.boathouse'),
   };
@@ -105,7 +116,7 @@ export function viewPixels(ray: RayCaster, eye: Point3, target: Point3, horizont
   return { grid, pixels, minPixels, skyShare: sky / pixels, seaShare: sea / pixels, horizonRowSkyOrSea: horizonHits, pitchDegrees: pitch * 180 / Math.PI, verticalHalfFovDegrees: vhalf * 180 / Math.PI, horizonInFrame: inFrame && horizonHits >= minPixels, subjects: counts, top: [...top].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, n]) => [k, +(n / pixels).toFixed(4)]) };
 }
 export function buildViews(field: TerrainField, cuts: LandCuts, options: { grid?: typeof VIEW_GRID } = {}): SketchbookPose[] {
-  const s = requireScaleFactor(), tests = subjectTests(), ray = createRayCaster(field, cuts), grid = options.grid ?? VIEW_GRID;
+  const s = requireScaleFactor(), tests = subjectTests(cuts.solids), ray = createRayCaster(field, cuts), grid = options.grid ?? VIEW_GRID;
   return HORIZON_MANIFEST.views.map(view => {
     const xy: Point2 = [view.xy[0]! * s, view.xy[1]! * s], underground = view.id === 'G', v = view as typeof view & { target_h?: number; portrait?: { fov_deg: number; target?: number[]; target_h?: number; frames?: string[]; xy?: number[]; eyeH?: number }; deferred?: string[]; subjects?: string[] };
     const floor = underground ? (cuts.pads.find(p => p.id === 'threshold.deepJetty')?.centre[1] ?? 40 * s) : Math.max(floorAt(field, cuts, xy), ray.floorAt(xy[0], xy[1]));
