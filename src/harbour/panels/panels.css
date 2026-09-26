@@ -65,6 +65,9 @@
 .compact-panel__ledger dt { color: var(--panel-ink-2); font-size: 12px; }
 .compact-panel__ledger dd { margin: 0; font: 600 17px/1.2 var(--panel-display); font-variant-numeric: tabular-nums lining-nums; }
 .compact-panel__actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+/* The panel scrolls inside a third of the screen; its doors stay in view at its foot instead of
+   being cut in half by the scroll edge at rest (Wave 3a evidence: the bank panel at 390 px). */
+.compact-panel__actions { position: sticky; bottom: -14px; z-index: 1; margin: 0 -16px -14px; padding: 8px 16px 14px; background: var(--panel-paper); border-top: 1px solid color-mix(in srgb, var(--panel-line) 35%, transparent); }
 .compact-panel__actions button, .compact-panel__mark {
   min-height: 44px; min-width: 44px; padding: 0 16px; border-radius: 999px; cursor: pointer;
   border: 1px solid var(--panel-line); background: transparent; color: var(--panel-ink); font: 600 14px var(--panel-font);

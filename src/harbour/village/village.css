@@ -128,3 +128,21 @@
 .harbour-world.is-skating .glass-chrome .glass-bubble-anchor:is(:hover,:focus-within){opacity:1}
 .glass-chrome .glass-bubble-anchor:has(.fab-dial.is-open){opacity:1}
 @media (prefers-reduced-motion: reduce){.harbour-world.is-skating .glass-chrome .glass-bubble-anchor{transition:none;animation: none}}
+/* ── Wave 3a layout fix (browser evidence, docs/evidence/tool-atlas) ──
+   The character trigger stood at bottom:173px of a stage that runs past the viewport, so it
+   sat under the dock, and its chooser opened under the Record and All tools bubbles, which
+   covered its Bianca and Jonathan buttons. It now stands in the bubbles' band, centred
+   between them and fixed to the viewport, and the chooser opens above the band. No
+   transform: a transformed ancestor would trap the fixed chooser. */
+.village-hud .village-character{position:fixed;left:0;right:0;width:max-content;margin-inline:auto;bottom:calc(var(--dock-height,0px) + 12px + env(safe-area-inset-bottom,0px));z-index:30}
+.village-hud .village-character__choices{position:fixed;left:0;right:0;margin-inline:auto;bottom:calc(var(--dock-height,0px) + 1.75rem + 98px + env(safe-area-inset-bottom,0px))}
+/* One line, a pill in every dressing (worlds.css squares every button at 0-5-0). */
+:root[data-theme] .village-hud .village-character button.village-character__trigger{border-radius:999px}
+.village-hud .village-character__trigger span{white-space:nowrap}
+@media(max-width:359px){.village-hud .village-character__trigger span{max-width:84px}}
+@media(orientation:landscape) and (max-height:500px){
+.village-hud .village-character{left:16px;right:auto;margin:0;bottom:12px}
+.village-hud .village-character__choices{left:16px;right:auto;margin:0;bottom:68px}}
+@media(min-width:1100px){
+.village-hud .village-character{position:absolute;left:auto;right:96px;width:auto;margin:0;bottom:170px}
+.village-hud .village-character__choices{position:absolute;left:auto;right:0;margin:0;bottom:calc(100% + 9px)}}
