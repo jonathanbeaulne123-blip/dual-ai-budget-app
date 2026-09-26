@@ -2,12 +2,24 @@ import { housePath, parseHouseRoute, type HouseRoute } from "../hearthside/house
 import type { Environment, LedgerView } from "../core/types.ts";
 import type { AppTab } from "../core/ledgerExperience.ts";
 import type { HearthsideRoute } from "../hearthside/routes.ts";
+import {isSavedHorizonWorld,HORIZON_WORLD_BOUNDS} from '../worldGeography.ts';
 
 export const HOUSE_WORLD_ENABLED = import.meta.env.VITE_HEARTH_HOUSE_WORLD === "1";
 export type HouseIdentity = { environment: Environment; householdId: string; memberId: string; scope: LedgerView };
 /** `geo`: the mountain geography revision the position was saved against (the harbour re-validates others). */
 export type HouseBodyReturn={place:string;x:number;z:number;yaw:number;y?:number;world?:string;geo?:string};
-export function validHouseBody(value:unknown):value is HouseBodyReturn {if(!value||typeof value!=="object")return false;const b=value as HouseBodyReturn;return typeof b.place==="string"&&[b.x,b.z,b.yaw].every(Number.isFinite)&&Math.abs(b.x)<=180&&b.z>=-310&&b.z<=84&&Math.abs(b.yaw)<=100&&(b.y===undefined||Number.isFinite(b.y)&&b.y>=-8&&b.y<=150)&&(b.world===undefined||b.world==="hearth-mountain-1"||b.world==="hearth-mountain-2");}
+export function validHouseBody(value:unknown):value is HouseBodyReturn {
+  if(!value||typeof value!=="object")return false;
+  const b=value as HouseBodyReturn;
+  if(typeof b.place!=="string"||![b.x,b.z,b.yaw].every(Number.isFinite)||Math.abs(b.yaw)>100)return false;
+  if(isSavedHorizonWorld(b.world)){
+    const d=HORIZON_WORLD_BOUNDS;
+    return b.x>=d.minX&&b.x<=d.maxX&&b.z>=d.minZ&&b.z<=d.maxZ&&
+      (b.y===undefined||Number.isFinite(b.y)&&b.y>=d.minY&&b.y<=d.maxY)&&
+      typeof b.geo==='string'&&b.geo.length>0&&b.geo.length<=80;
+  }
+  return Math.abs(b.x)<=180&&b.z>=-310&&b.z<=84&&(b.y===undefined||Number.isFinite(b.y)&&b.y>=-8&&b.y<=150)&&(b.world===undefined||b.world==="hearth-mountain-1"||b.world==="hearth-mountain-2");
+}
 export type HouseReturn = { version: 1; identity: string; route: HouseRoute; focus: string; scroll: number; camera?: [number, number, number]; cameraComposition?: "phone" | "desktop"; body?:HouseBodyReturn; at: string };
 type Store = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 export const houseIdentity = (identity: HouseIdentity) => [identity.environment, identity.householdId, identity.memberId, identity.scope].map(encodeURIComponent).join(":");
@@ -29,7 +41,7 @@ export function readHouseReturn(storage: Store, identity: HouseIdentity, object 
     if (!value || value.version !== 1 || value.identity !== houseIdentity(identity) || value.route.scope !== identity.scope) return null;
     const route = parseHouseRoute(housePath(value.route), identity.householdId);
     if (!route || typeof value.focus !== "string" || !Number.isFinite(value.scroll)) return null;
-    return {...value, body:validHouseBody(value.body)&&(value.body.world==="hearth-mountain-1"||value.body.world==="hearth-mountain-2")?value.body:undefined, route, scroll: Math.max(0, Math.min(1e7, value.scroll))};
+    return {...value, body:validHouseBody(value.body)&&(value.body.world==="hearth-mountain-1"||value.body.world==="hearth-mountain-2"||isSavedHorizonWorld(value.body.world))?value.body:undefined, route, scroll: Math.max(0, Math.min(1e7, value.scroll))};
   } catch { return null; }
 }
 export function houseSurfaceRoute(route: HouseRoute, surface: string, object?: string): HouseRoute {
@@ -100,3 +112,11 @@ export const HOUSE_PLACES = {
   making: {above: {title:"The Kiln", subtitle:"Wheel, bench and a shelf of fired pieces", target:"pottery"}, middle: {title:"Hercules’s Cottage", subtitle:"Wardrobe, mirror, cabinet of wonders, and the bell by the door", target:"wardrobe"}, below: {title:"The cabinet of wonders", subtitle:"The looks and keepsakes he keeps on his shelves", target:"wardrobe"}},
 } as const;
 export const TARGET_NAMES: Record<string,string> = {queen:"Meet the Queen", "loft-banks":"Open Kitty Banks", "cellar-bills":"Read the bill jars", books:"Open the Standing Book", planner:"Open the Master Planner", calendar:"Unfold the Calendar", journey:"Step into Journey", conversation:"Open the conversation folio", "plan-studio":"Pull out the Plan Studio", wishes:"Tend a wish", pottery:"Enter the Pottery Studio", memories:"Open a memory", letters:"Open the writing desk", projector:"Choose three memories", hercules:"Talk with Hercules", encounters:"Spend a moment together", wardrobe:"Open the dressing room", shift:"Open Shifts"};
+
+/** Device-local navigation records only; callers never receive a general storage handle. */
+export function readHouseReturnOnDevice(identity:HouseIdentity,object='arrival'):HouseReturn|null{
+  try{return readHouseReturn(window.localStorage,identity,object);}catch{return null;}
+}
+export function saveHouseReturnOnDevice(identity:HouseIdentity,route:HouseRoute,body:HouseBodyReturn,object='arrival'):void{
+  try{saveHouseReturn(window.localStorage,identity,route,{body},object);}catch{/* Restricted storage keeps navigation in memory. */}
+}

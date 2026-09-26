@@ -533,3 +533,8 @@ describe("the harbour's feed seam", () => {
     expect(feed.readLocalPose()).toBeNull();
   });
 });
+
+
+it('publishes the Horizon body world and height without remapping it to Mountain',()=>{
+ expect(localBodyFromPose({target:[0,0,0],theta:0,body:{world:'horizon:horizon-geo-1',x:1500,z:1200,y:25,yaw:.5}})).toEqual({world:'horizon:horizon-geo-1',x:1500,z:1200,y:25,yaw:.5});
+});

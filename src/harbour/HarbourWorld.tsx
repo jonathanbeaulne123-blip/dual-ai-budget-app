@@ -1,3 +1,5 @@
+import {useMotionEdition} from './nav/Compass.tsx';
+import {HARBOUR_DEV} from './flag.ts';
 import {DeskPlace} from "./desk/DeskPlace.tsx";
 import {usePublishEditionAvailability,type EditionAvailability} from "./nav/editionAvailability.ts";
 import {createMountainRecovery} from './mountain/recovery.ts';
@@ -21,7 +23,7 @@ import type {SkateFrame} from './scene/runtime.ts';
 import {useDesignClient} from '../hearthside/DesignProvider.tsx';
 import {snapshotKittyDesignRevision} from '../hearthside/design.ts';
 import type {VillageDisplayContent} from './village/displays.ts';
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import type { DateKey } from "../core/calendar.ts";
 import type { Household, LedgerView } from "../core/types.ts";
 import type { FundPulseFreshness } from "../core/fundPulse.ts";
@@ -152,7 +154,19 @@ const EMOTE_FACES: Readonly<Record<EmoteId, string>> = Object.freeze({
 });
 const pulseFreshness = (gate: InterpretationGate | undefined): FundPulseFreshness => (gate?.freshness === "stale" || gate?.freshness === "offline" ? gate.freshness : "current");
 
+const HorizonWorld = lazy(() => import("./horizon/HorizonWorld.tsx"));
 export default function HarbourWorld(props: HarbourWorldProps) {
+  return HARBOUR_DEV && new URLSearchParams(window.location.search).get("world") === "horizon"
+    ? <HorizonEdition {...props}/>
+    : <MountainHarbourWorld {...props}/>;
+}
+function HorizonEdition(props:HarbourWorldProps){
+  const edition=useMotionEdition();
+  const [canDraw]=useState(()=>{const input=readQualityInput(window,window.innerWidth);return input.webgl&&!input.saveData;});
+  return edition==='flat'||!canDraw ? <MountainHarbourWorld {...props}/> : <Suspense fallback={<p role="status">Loading the Horizon…</p>}><HorizonWorld {...props}/></Suspense>;
+}
+
+function MountainHarbourWorld(props: HarbourWorldProps) {
   const { household, memberId, scope, today, route, ready, freshness, interpretationGate, onOpen, onClose, presence, onUnhide, partnerName = null, onQuickSheet } = props;
   const appearance = useAppearance(), theme: ThemeId = appearance.preview ?? appearance.saved.theme;
   const host = useRef<HTMLDivElement>(null), stage = useRef<HTMLDivElement>(null);

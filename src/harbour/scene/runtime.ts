@@ -1918,3 +1918,5 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   if (diagnostics) (host as HTMLElement & { __harbour?: HarbourRuntime }).__harbour = api;
   return api;
 }
+
+export {mountHorizonWorld} from './worldMount.ts';

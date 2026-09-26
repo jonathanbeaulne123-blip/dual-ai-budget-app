@@ -307,3 +307,17 @@ it("refuses the lane on a ledger socket", async () => {
   joinCourt(wrong, "DEVICE-wrong-lane");
   expect(await wrong.closed()).toMatchObject({ code: 4000, reason: "INVALID_WORLD_PRESENCE" });
 }, 60_000);
+
+
+it('carries Horizon full-scale positions through the authenticated Worker without widening Mountain',async()=>{
+  const a=await connect('MEM-001','presence'),b=await connect('MEM-002','presence');
+  joinCourt(a,'DEVICE-horizon-a');joinCourt(b,'DEVICE-horizon-b');
+  const mine=(m:Record<string,any>)=>m.deviceId==='MEM-001:DEVICE-horizon-a';
+  await b.next('world-peer',mine);
+  a.ws.send(JSON.stringify({type:'world-step',version:1,world:'horizon:horizon-geo-1',x:1455,z:1200,y:24,yaw:.3,moving:true}));
+  expect(await b.next('world-peer',m=>mine(m)&&m.x===1455)).toMatchObject({world:'horizon:horizon-geo-1',x:1455,z:1200,y:24,memberId:'MEM-001'});
+  await new Promise(resolve=>setTimeout(resolve,100));
+  a.ws.send(JSON.stringify({type:'world-step',version:1,world:'horizon:horizon-geo-1',x:2400,z:2000,y:500,yaw:0,moving:false}));
+  expect(await b.next('world-peer',m=>mine(m)&&m.x===2000)).toMatchObject({world:'horizon:horizon-geo-1',x:2000,z:1800,y:300});
+  a.ws.close();b.ws.close();
+});

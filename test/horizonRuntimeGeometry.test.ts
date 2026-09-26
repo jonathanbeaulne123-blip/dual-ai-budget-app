@@ -1,0 +1,47 @@
+import {describe,it,expect} from 'vitest';
+import {createHorizonGeography} from '../src/harbour/horizon/runtime/geography.ts';
+import {solidTriangle} from '../src/harbour/horizon/runtime/cards.ts';
+import {CardBuilder} from '../src/harbour/art/cardScene.ts';
+import type {LandCuts,TerrainField} from '../src/harbour/horizon/land/interfaces.ts';
+import {resolveComputedCrossings} from '../src/harbour/horizon/land/beds/junctions.ts';
+import {bed} from '../src/harbour/horizon/land/beds/profiles.ts';
+import {solid,box} from '../src/harbour/horizon/land/structures/mesh.ts';
+const field:TerrainField={revision:'horizon-geo-1',width:100,depth:100,step:50,columns:3,rows:3,heights:new Float32Array(9),surfaces:new Uint8Array(9)};
+const empty:LandCuts={beds:[],pads:[],mouths:[],waters:[],solids:[],diagnostics:[]};
+describe('rendered Horizon geometry owns collision',()=>{
+ it('keeps the bridge underside and lower walking ground distinct',()=>{
+  const deck=solid('bridge','bridge','stone','deck',[],'harbour');box(deck,[50,50],8,[20,8],7.4);deck.walkable=true;
+  const query=createHorizonGeography(field,{...empty,solids:[deck]});
+  expect(query.surface(50,50,0)?.y).toBe(0);expect(query.surface(50,50,8)?.y).toBe(8);expect(query.ceiling(50,50,0)).toBeCloseTo(7.4);expect(query.blocked(50,50,7)).toBe(true);
+ });
+ it('uses cave floors below the surface and prevents walking through a wall',()=>{
+  const floor=solid('caveFloor','cave','stone','floor',[],'crown');box(floor,[50,50],20,[30,30],19);floor.walkable=true;
+  const wall=solid('caveWall','cave','stone','wall',[],'crown');box(wall,[55,50],25,[1,30],19);
+  const query=createHorizonGeography({...field,heights:new Float32Array(9).fill(100)},{...empty,solids:[floor,wall]});
+  expect(query.surface(50,50,20)?.y).toBe(20);expect(query.blocked(54.4,50,20)).toBe(true);expect(query.blocked(50,50,20)).toBe(false);
+ });
+ it('steps onto a low visible lip without allowing a parapet crossing',()=>{
+  const kerb=solid('lip','kerb','stone','wall');box(kerb,[50,50],.3,[1,5],0);
+  const rail=solid('rail','rail','stone','rail');box(rail,[60,50],1.05,[1,5],0);
+  const query=createHorizonGeography(field,{...empty,solids:[kerb,rail]});
+  expect(query.blocked(49.3,50,0)).toBe(false);expect(query.blocked(59.3,50,0)).toBe(true);
+  expect(query.blocker(59.3,50,0,.3,[1,0])).toBe('rail');expect(query.blocker(59.3,50,0,.3,[-1,0])).toBeNull();
+ });
+ it('stops at visible lake water while allowing a bridge above it',()=>{
+  const lake={id:'lake',kind:'lake' as const,outline:[[30,30],[70,30],[70,70],[30,70]] as [number,number][],points:[],level:50,width:40,depth:5,bank:1};
+  const query=createHorizonGeography(field,{...empty,waters:[lake]});
+  expect(query.submerged(50,50,46)).toBe(true);expect(query.submerged(50,50,51)).toBe(false);expect(query.submerged(10,10,46)).toBe(false);
+ });
+ it('opens an already registered junction through regenerated retaining walls',()=>{
+  const wall=solid('a.retaining','retainingWall','stone','wall',['a']);box(wall,[50,50],1.2,[50,.6],-2);
+  const cuts:LandCuts={...empty,beds:[bed('a','walk',[[20,0,50],[80,0,50]]),bed('b','walk',[[50,0,20],[50,0,80]])],pads:[],solids:[wall],diagnostics:[]};
+  expect(createHorizonGeography(field,cuts).blocked(50,49.6,0)).toBe(true);
+  resolveComputedCrossings(cuts,[{id:'ab',a:'a',b:'b',at:[50,50],heightA:0,heightB:0,resolution:'threshold',requiredClearance:0,built:true,clearancePass:true}],()=>0);
+  const query=createHorizonGeography(field,cuts);expect(query.blocked(50,49.6,0)).toBe(false);expect(query.blocked(70,49.6,0)).toBe(true);
+ });
+ it('does not flip a real underside toward the sun in the shared card pipeline',()=>{
+  const builder=new CardBuilder('underside','lite',{ink:'#000000'});
+  solidTriangle(builder,[0,2,0],[1,2,0],[0,2,1],[1,1,1]);
+  expect(builder.at(0,0).data.card.normals).toEqual([0,-1,0,0,-1,0,0,-1,0]);
+ });
+});

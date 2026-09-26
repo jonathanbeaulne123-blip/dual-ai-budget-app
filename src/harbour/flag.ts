@@ -9,6 +9,8 @@ import type { LedgerView } from "../core/types.ts";
  * reads `import.meta.env`. The harbour needs the whole-house flag because the
  * shared renderer lease is keyed on it (`rendererOwner.ts`).
  */
+export const HARBOUR_DEV = import.meta.env.DEV;
+export const horizonEnabled = (search:string):boolean => HARBOUR_DEV && new URLSearchParams(search).get("world") === "horizon";
 export const HARBOUR_ENABLED = HOUSE_WORLD_ENABLED && import.meta.env.VITE_HEARTH_HARBOUR === "1";
 
 /** Slice 2: one room, three places — one per level (BUILD_PLAN_SLICE2 §0). */

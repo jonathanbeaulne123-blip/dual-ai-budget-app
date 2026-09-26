@@ -125,3 +125,10 @@ export function mountainWalkRoute(from:{x:number;z:number},to:{x:number;z:number
   const end=out[out.length-1];if(!end||end.x!==to.x||end.z!==to.z)out.push({x:to.x,z:to.z});
   return out;
 }
+
+/** WorldDefinition v3 adapter; the Mountain surface list and its callers retain their contract. */
+export async function horizonSurfaceQueries(field:import("../horizon/land/interfaces.ts").TerrainField,world:import("../horizon/world/definition.ts").WorldDefinition){
+  if(!world.collision||!world.geometry)throw new Error("Horizon collision data is missing");
+  const {createHorizonGeography}=await import("../horizon/runtime/geography.ts");
+  return createHorizonGeography(field,{...world.collision,solids:world.geometry.solids,diagnostics:world.diagnostics??[]});
+}

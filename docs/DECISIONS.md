@@ -1501,6 +1501,12 @@ These entries transcribe the supplied Horizon deck v1.5 and the explicit D1 quot
 
 | Pin | Date | Pass | Merge SHA | Geography revision | Presence world |
 |---|---|---|---|---|---|
-| PIN-0 | Pending | 0 Reconcile | Pending | `hearth-mountain-geo-2` | `hearth-mountain-geo-2` |
+| PIN-0 | 2026-09-25 | 0 Reconcile | `0bb2d6792ef9e64a87ad140d28de5e8361643bb0` (#546) | `hearth-mountain-geo-2` | `hearth-mountain-geo-2` |
 
-The PIN-0 prerequisite candidate and exact finalization rules are recorded in [Horizon prerequisites](worksessions/2026-09-25-horizon-prerequisites.md) and [PIN-0](horizon/PIN-0.md). The pin remains pending until the accepted merge SHA is recorded.
+PIN-0 is the actual #546 merge, whose tree matches the verified prerequisite head. Jonathan then instructed “ok now do pass 1”. This authorizes proceeding from that merged baseline; the prior Claude and physical-device checks remain unperformed, not passed. See [PIN-0](horizon/PIN-0.md) and the land worksession.
+
+### Horizon Pass 1 implementation candidate (2026-09-25)
+
+The development-only `world=horizon` mount uses `horizon-geo-1` and the exact presence namespace `horizon:horizon-geo-1`. Reading mode retains the existing Desk. Saved positions stay partitioned by environment, household, member and scope; obsolete Horizon geography snaps to the current path graph. Host doors route to the existing seven tools. No financial writer or Final Confirm semantics change. The Classic greybox limitation is Jonathan's explicit land-pass scope; theme art belongs to the later accepted passes.
+
+Risk High. Budget delta (5): 0, with existing ledger and continuity boundaries preserved. Engagement delta (3): intended +2 for continuous land navigation; not accepted while measured door routes, support, crossing, view and flight conflicts remain. Neither a passing source test nor the approved scale waives a failed geometry target. No merge, deployment, PIN-1 or visual approval is recorded.

@@ -5,7 +5,7 @@ import { ledgerSyncEnabled, localLedgerIdentity } from "./mode.ts";
 import { attachWorldPresence, type WorldPeer, type WorldPresenceHandle } from "./worldPresence.ts";
 import { WORLD_ACTS, WORLD_STEP_MS, isWorldPlaceId, type WorldAct, type WorldPlaceId } from "./worldPresenceWire.ts";
 import { worldPresenceGate } from "../softPresenceWorld.ts";
-import {CURRENT_WORLD_GEOGRAPHY} from '../worldGeography.ts';
+import {CURRENT_WORLD_GEOGRAPHY, isHorizonWorld, type PresenceWorld} from '../worldGeography.ts';
 import { readLocalPose, useWorldFeedProvider, type WorldFeed, type WorldFeedRequest } from "../harbour/presence/feed.ts";
 import type { PlaceWalkSource } from "../harbour/scene/place.ts";
 import type { Environment } from "../core/types.ts";
@@ -48,13 +48,14 @@ import type { Environment } from "../core/types.ts";
  * the ground the person is at, with `theta` the heading the eye orbits from —
  * so the body faces `theta + π`, the direction the person is looking.
  */
-export function localBodyFromPose(pose: { target: readonly [number, number, number]; theta: number; body?: { world?:string;y?:number; x: number; z: number; yaw: number; act?: string | null; p?: number } | null }): { world?:typeof CURRENT_WORLD_GEOGRAPHY;y?:number; x: number; z: number; yaw: number; act?: WorldAct; p?: number } {
+export function localBodyFromPose(pose: { target: readonly [number, number, number]; theta: number; body?: { world?:string;y?:number; x: number; z: number; yaw: number; act?: string | null; p?: number } | null }): { world?:PresenceWorld;y?:number; x: number; z: number; yaw: number; act?: WorldAct; p?: number } {
   if (pose.body) {
     const act = isWorldAct(pose.body.act) ? pose.body.act : null;
     return {
       x: pose.body.x, z: pose.body.z, yaw: wrapYaw(pose.body.yaw),
+      ...(isHorizonWorld(pose.body.world)?{world:pose.body.world}:{}),
       ...((pose.body.world==="hearth-mountain-2"||pose.body.world===CURRENT_WORLD_GEOGRAPHY)?{world:CURRENT_WORLD_GEOGRAPHY}:{}),
-      ...((pose.body.world==="hearth-mountain-2"||pose.body.world===CURRENT_WORLD_GEOGRAPHY||act?.startsWith("skate"))&&Number.isFinite(pose.body.y)?{y:pose.body.y}:{}),
+      ...((pose.body.world==="hearth-mountain-2"||pose.body.world===CURRENT_WORLD_GEOGRAPHY||isHorizonWorld(pose.body.world)||act?.startsWith("skate"))&&Number.isFinite(pose.body.y)?{y:pose.body.y}:{}),
       // Narrowed here, before it is offered: the lane's own decoder would
       // reject an act it does not know and close the socket, and a body doing
       // something the wire has no word for should simply walk.
@@ -95,7 +96,7 @@ export function worldPresenceToken(environment: Environment, memberId: string, l
 }
 
 export function useWorldPresenceFeed(request: WorldFeedRequest): WorldFeed {
-  const { environment, householdId, memberId, linked, view, placeId, softPresenceOptedOut, share } = request;
+  const { environment, householdId, memberId, linked, view, placeId, softPresenceOptedOut, share, world } = request;
   const [peers, setPeers] = useState<WorldPeer[]>([]);
   const handle = useRef<WorldPresenceHandle | null>(null);
   const enabled = ledgerSyncEnabled(environment);
@@ -125,7 +126,7 @@ export function useWorldPresenceFeed(request: WorldFeedRequest): WorldFeed {
     };
     const lane = attachWorldPresence({
       environment, householdId, placeId: place, deviceId: localDeviceId(),
-      token, canPublish, onPeers: setPeers,
+      token, world, canPublish, onPeers: setPeers,
     });
     handle.current = lane;
 
@@ -150,7 +151,7 @@ export function useWorldPresenceFeed(request: WorldFeedRequest): WorldFeed {
       lane.close();
       handle.current = null;
     };
-  }, [enabled, environment, householdId, memberId, linked, place]);
+  }, [enabled, environment, householdId, memberId, linked, place, world]);
 
   // A setting flipped mid-walk: tell the lane at once rather than on its heartbeat.
   useEffect(() => { handle.current?.refresh(); }, [share, view, softPresenceOptedOut]);

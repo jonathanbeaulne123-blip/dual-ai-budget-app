@@ -2,3 +2,5 @@
 # *parses* dist/_redirects if the file exists (error 100324), so the
 # build also deletes dist/ before Vite runs. This ignore is a backup.
 _redirects
+# Pass 1 review assets are served locally only while Horizon is dev-gated.
+/horizon/**

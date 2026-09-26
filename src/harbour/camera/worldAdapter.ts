@@ -326,3 +326,10 @@ export function visitPoint(id: string): V3 | null {
   return p ? (p.at as V3) : null;
 }
 export type { HarbourPlaceId, Point3, TransportKind };
+
+/** A v3 camera consumes the same solid geometry as the body and named shots. */
+export async function horizonCameraAdapter(field:import("../horizon/land/interfaces.ts").TerrainField,world:import("../horizon/world/definition.ts").WorldDefinition){
+  const {horizonSurfaceQueries}=await import("../mountain/surfaces.ts");
+  const query=await horizonSurfaceQueries(field,world);
+  return {ground:query.ground,blocked:query.cameraBlocked,shot:(id:string)=>world.views.find(view=>view.id===id)??null};
+}

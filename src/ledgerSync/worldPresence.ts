@@ -27,7 +27,7 @@ import {
 } from "./worldPresenceWire.ts";
 import { WORLD_EXPIRE_MS, createWorldTrack, type WorldTrack } from "./worldMotion.ts";
 import { retryDelay } from "./wire.ts";
-import {CURRENT_WORLD_GEOGRAPHY} from '../worldGeography.ts';
+import {CURRENT_WORLD_GEOGRAPHY, type PresenceWorld} from '../worldGeography.ts';
 
 export type WorldPresenceState = "joining" | "present" | "offline" | "withheld";
 
@@ -105,6 +105,7 @@ export type WorldPresenceInput = {
   householdId: string;
   placeId: WorldPlaceId;
   deviceId: string;
+  world?: PresenceWorld;
   token: () => Promise<string>;
   /**
    * The privacy gate, polled rather than captured: `worldPresenceGate(...).publish`.
@@ -209,7 +210,7 @@ export function attachWorldPresence(input: WorldPresenceInput): WorldPresenceHan
       publishPeers();
     }
     peer.seenAt = at;
-    if(typeof value.x==='number'&&value.world!==CURRENT_WORLD_GEOGRAPHY){peer.geoMismatch=true;peer.track.clear();publishPeers();return;}
+    if(typeof value.x==='number'&&value.world!==(input.world ?? CURRENT_WORLD_GEOGRAPHY)){peer.geoMismatch=true;peer.track.clear();publishPeers();return;}
     if (typeof value.x === "number" && typeof value.z === "number" && typeof value.yaw === "number") {
       try{
         const step=decodeWorldPresence({type:'world-step',version:1,x:value.x,z:value.z,yaw:value.yaw,moving:value.moving===true,...(value.act?{act:value.act,p:value.p??0}:{}),...(value.y!==undefined?{y:value.y}:{}),...(value.world!==undefined?{world:value.world}:{}),...(value.avatar!==undefined?{avatar:value.avatar}:{})});
