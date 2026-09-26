@@ -23,7 +23,8 @@ export function createRayCaster(field: TerrainField, cuts: Pick<LandCuts, 'solid
   // Water level grid (5 eu) for the surface waters; underground waters are tested exactly.
   const WS = 5, WW = Math.ceil(width / WS) + 1, WD = Math.ceil(depth / WS) + 1, level = new Float32Array(WW * WD).fill(-Infinity), levelId: (string | null)[] = new Array(WW * WD).fill(null);
   const surface = cuts.waters.filter(w => !w.underground && w.kind !== 'dry'), below = cuts.waters.filter(w => w.underground && w.kind !== 'dry');
-  for (let j = 0; j < WD; j++) for (let i = 0; i < WW; i++) for (const w of surface) { const l = waterHeightAt(w, i * WS, j * WS); if (l !== null && l > level[j * WW + i]!) { level[j * WW + i] = l; levelId[j * WW + i] = w.id; } }
+  // The sea is the default water everywhere offshore; a named body at the same level (the Bight's lagoon) wins the tie.
+  for (let j = 0; j < WD; j++) for (let i = 0; i < WW; i++) for (const w of surface) { const l = waterHeightAt(w, i * WS, j * WS), k = j * WW + i; if (l !== null && (l > level[k]! || l === level[k]! && w.kind !== 'sea')) { level[k] = l; levelId[k] = w.id; } }
   const waterAt = (x: number, z: number, underground: boolean): { level: number; id: string | null } => {
     if (underground) { let best: { level: number; id: string | null } = { level: -Infinity, id: null }; for (const w of below) { const l = waterHeightAt(w, x, z); if (l !== null && l > best.level) best = { level: l, id: w.id }; } return best; }
     const i = Math.round(x / WS), j = Math.round(z / WS);
@@ -78,10 +79,10 @@ export function createRayCaster(field: TerrainField, cuts: Pick<LandCuts, 'solid
     // (never below `step`, never more than 0.4 × the clearance), so open-sky rays stay cheap.
     // An underground eye starts below the heightfield: its rooms are closed by their solids, and the
     // terrain only counts once the ray has come out into the air (the Throat's mouth).
-    let prev = 0, inAir = !underground || o[1] >= H(o[0], o[2]);
+    let prev = 0, inAir = !underground || o[1] >= H(o[0], o[2]), exited = false;
     for (let t = step; t <= maxT;) {
       const x = o[0] + d[0] * t, z = o[2] + d[2] * t, y = o[1] + d[1] * t;
-      if (x < -50 || z < -50 || x > width + 50 || z > depth + 50) break;
+      if (x < -50 || z < -50 || x > width + 50 || z > depth + 50) { exited = true; break; }
       const inside = x >= 0 && z >= 0 && x <= width && z <= depth, ground = inside ? H(x, z) : -Infinity;
       const w = waterAt(x, z, underground && y < ground);
       if (w.id && y < w.level && (inAir || y < w.level)) { waterT = t; waterId = w.id; break; }
@@ -92,7 +93,7 @@ export function createRayCaster(field: TerrainField, cuts: Pick<LandCuts, 'solid
     }
     if (waterT < terrainT && waterT > step) { let lo = Math.max(0, waterT - step * 8), hi = waterT; for (let i = 0; i < 10; i++) { const m = (lo + hi) / 2, x = o[0] + d[0] * m, z = o[2] + d[2] * m, q = waterAt(x, z, false); if (q.id && o[1] + d[1] * m < q.level) hi = m; else lo = m; } waterT = hi; }
     // The open sea beyond the terrain grid is a plane at sea level (page H's west sea lies beyond the 2 km grid).
-    if (!underground && waterT === Infinity && terrainT === Infinity && d[1] < 0) { const t = -o[1] / d[1]; if (t > 0 && t < 8000) { waterT = t; waterId = 'water.sea'; } }
+    if (!underground && waterT === Infinity && terrainT === Infinity && d[1] < 0) { const t = -o[1] / d[1]; if (t > 0 && (exited ? t < 8000 : t <= maxT)) { waterT = t; waterId = 'water.sea'; } }
     const limit = Math.min(maxT, terrainT, waterT), solid = raySolids(o, d, limit, options.skip);
     const at = (t: number): Point3 => [o[0] + d[0] * t, o[1] + d[1] * t, o[2] + d[2] * t];
     if (solid) { const s = cuts.solids[solid.si]!; return { kind: 'solid', t: solid.t, id: s.id, sourceId: (s as StructureSolid & { sourceId?: string }).sourceId ?? s.id.split('@')[0]!, role: s.role, point: at(solid.t) }; }
