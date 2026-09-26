@@ -70,7 +70,8 @@ export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedC
   alignSurfaceJoins(cuts,proofs,base);
   for(const row of proofs){
     if(row.kind==='waterConfluence'||row.kind==='modeTransfer')continue;
-    if(row.resolution==='threshold'&&row.built&&row.clearancePass)continue;
+    // A pad can already exist while a regenerated bed still has a wall across it.
+    // Every at-grade junction must cut its visible approach openings.
     const a=routeFor(cuts,row.sourceA,row.a),b=routeFor(cuts,row.sourceB,row.b),heightA=a?nearestOnPath(row.at,a.points).at[1]:row.heightA,heightB=b?nearestOnPath(row.at,b.points).at[1]:row.heightB,difference=Math.abs(heightA-heightB);
     const wet=[row.sourceA??row.a,row.sourceB??row.b].some(id=>id==='DEEP_RUN'||cuts.waters.some(w=>w.id===id&&w.kind!=='dry'));
     if(row.resolution==='threshold'&&wet){

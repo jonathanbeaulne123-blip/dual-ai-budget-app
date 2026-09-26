@@ -16,6 +16,10 @@ export function buildTown(cuts:LandCuts,base:HeightQuery):void {
   const b=bed('marketRamp','walk',ramp);b.surface='cobble';b.maxGrade=.08;cuts.beds.push(b);
   cuts.beds.push(bed('town.storefront','walk',[[1475,12,1190],[1500,8,1218],[1497,3,1265]]));
   cuts.beds.push(bed('town.bankLink','walk',gradeRoute('town.bankLink',[[1455,1175],[1414,1162],[1420,1138],[1430,1138],[1440,1134]],()=>12,.08,[{xy:[1455,1175],height:12,reason:'square'},{xy:[1430,1138],height:16,reason:'level Kitty Plaza entry'},{xy:[1440,1134],height:16,reason:'bank door'}],cuts.diagnostics)));
+  // A contour link on the open northwest side connects the square/bank walk
+  // to Green Road without squeezing walkers through S3's staggered retaining cuts.
+  const bankWalk=cuts.beds.find(b=>b.id==='town.bankLink')!,northStart=nearestOnPath([1420,1138],bankWalk.points).at;
+  cuts.beds.push(bed('town.northLink','walk',gradeRoute('town.northLink',[plan(northStart),[1380,1120],[1360,1090],[1400,1060]],base,.08,[{xy:plan(northStart),height:northStart[1],reason:'bank walk'},{xy:[1400,1060],height:24,reason:'Green Road junction'}],cuts.diagnostics)));
   cuts.beds.push(bed('town.quayLink','walk',gradeRoute('town.quayLink',[[1455,1175],[1423,1207],[1410,1220],[1400,1290],[1420,1335]],()=>12,.08,[{xy:[1455,1175],height:12,reason:'square'},{xy:[1423,1207],height:12,reason:'level square edge'},{xy:[1400,1290],height:7,reason:'Reach walk'},{xy:[1420,1335],height:3,reason:'quay'}],cuts.diagnostics)));
   const road=cuts.beds.find(b=>b.id==='V01')!,junction=nearestOnPath([1370,1260],road.points);
   cuts.beds.push(bed('town.riverLink','walk',gradeRoute('town.riverLink',[[1400,1290],plan(junction.at)],()=>7,.12,[{xy:[1400,1290],height:7,reason:'Reach walk'},{xy:plan(junction.at),height:junction.at[1],reason:'drive'}],cuts.diagnostics)));

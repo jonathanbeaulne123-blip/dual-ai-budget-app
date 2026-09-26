@@ -3,6 +3,8 @@ import {createHorizonGeography} from '../src/harbour/horizon/runtime/geography.t
 import {solidTriangle} from '../src/harbour/horizon/runtime/cards.ts';
 import {CardBuilder} from '../src/harbour/art/cardScene.ts';
 import type {LandCuts,TerrainField} from '../src/harbour/horizon/land/interfaces.ts';
+import {resolveComputedCrossings} from '../src/harbour/horizon/land/beds/junctions.ts';
+import {bed} from '../src/harbour/horizon/land/beds/profiles.ts';
 import {solid,box} from '../src/harbour/horizon/land/structures/mesh.ts';
 const field:TerrainField={revision:'horizon-geo-1',width:100,depth:100,step:50,columns:3,rows:3,heights:new Float32Array(9),surfaces:new Uint8Array(9)};
 const empty:LandCuts={beds:[],pads:[],mouths:[],waters:[],solids:[],diagnostics:[]};
@@ -29,6 +31,13 @@ describe('rendered Horizon geometry owns collision',()=>{
   const lake={id:'lake',kind:'lake' as const,outline:[[30,30],[70,30],[70,70],[30,70]] as [number,number][],points:[],level:50,width:40,depth:5,bank:1};
   const query=createHorizonGeography(field,{...empty,waters:[lake]});
   expect(query.submerged(50,50,46)).toBe(true);expect(query.submerged(50,50,51)).toBe(false);expect(query.submerged(10,10,46)).toBe(false);
+ });
+ it('opens an already registered junction through regenerated retaining walls',()=>{
+  const wall=solid('a.retaining','retainingWall','stone','wall',['a']);box(wall,[50,50],1.2,[50,.6],-2);
+  const cuts:LandCuts={...empty,beds:[bed('a','walk',[[20,0,50],[80,0,50]]),bed('b','walk',[[50,0,20],[50,0,80]])],pads:[],solids:[wall],diagnostics:[]};
+  expect(createHorizonGeography(field,cuts).blocked(50,49.6,0)).toBe(true);
+  resolveComputedCrossings(cuts,[{id:'ab',a:'a',b:'b',at:[50,50],heightA:0,heightB:0,resolution:'threshold',requiredClearance:0,built:true,clearancePass:true}],()=>0);
+  const query=createHorizonGeography(field,cuts);expect(query.blocked(50,49.6,0)).toBe(false);expect(query.blocked(70,49.6,0)).toBe(true);
  });
  it('does not flip a real underside toward the sun in the shared card pipeline',()=>{
   const builder=new CardBuilder('underside','lite',{ink:'#000000'});
