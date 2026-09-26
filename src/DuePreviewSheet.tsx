@@ -77,7 +77,7 @@ export function BillPaidSlips({due,upcoming,selectedId,busy,onPick}:{due:readonl
  * at the press; if the bill changed underneath, nothing is sent and the
  * current details are shown instead. The App posts through `postOneRecurrence`.
  */
-export function BillPaidConfirm({slip,household,ledger,busy,onConfirm}:{slip:AddBillSlip;household:Household;ledger?:'household'|'personal';busy:boolean;onConfirm:(review:ReadyDueReview)=>void}){
+export function BillPaidConfirm({slip,household,busy,onConfirm}:{slip:AddBillSlip;household:Household;busy:boolean;onConfirm:(review:ReadyDueReview)=>void}){
  const [notice,setNotice]=useState('');
  const [basis,setBasis]=useState(()=>slip.review.kind==='ready'?slip.review.basis:null);
  const fresh=dueOccurrenceReview(household,slip.request);
@@ -91,7 +91,8 @@ export function BillPaidConfirm({slip,household,ledger,busy,onConfirm}:{slip:Add
   <div className='row'><span>Category</span><span>{slip.categoryName||'—'}</span></div>
   <div className='row'><span>Date</span><span>{civilDateWords(slip.date)}</span></div>
   {slip.pot&&<div className='row'><span>Pot</span><span>{slip.pot}</span></div>}
-  {ledger&&<div className='row'><span>Into</span><span>{ledger==='household'?'Ours':'Mine'}</span></div>}
+  {/* Bills are shared: the reviewed path posts only Shared rows, so the confirm names Ours, never Mine. */}
+  <div className='row'><span>Into</span><span>Ours · bills are shared</span></div>
   {fresh.kind==='ready'?<p className='muted bill-confirm__detail'>{fresh.detail.split('\n').slice(1).join(' · ')}</p>:<p role='status'>{fresh.reason}</p>}
   {stale&&<p role='status'>This bill changed. Read its current details, then confirm again.</p>}
   {notice&&<p role='status'>{notice}</p>}

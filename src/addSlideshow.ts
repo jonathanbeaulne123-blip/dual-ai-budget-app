@@ -218,13 +218,28 @@ export function defaultSubcategoryForMode(mode: AddFlowMode): string {
 export const ADD_LEDGER_WORDS: Readonly<Record<LedgerView, "Ours" | "Mine">> = { household: "Ours", personal: "Mine" };
 
 /**
- * D1 (Jonathan, 2026-09-25): Purchase, Income, Bill paid and Move money
- * default to the space the card shows; Shift always defaults to Mine. The
- * first slide names the ledger and lets it be changed, so the space pill never
- * decides where money goes on its own.
+ * Bill paid posts only into Ours. The reviewed bill path accepts active Shared
+ * CAD accounts only (`dueOccurrenceReview`), and `postOneRecurrence` writes
+ * household rows, so a bill can never be recorded "into Mine". The first slide
+ * says so ("Into: Ours · bills are shared") and offers no Mine option.
+ */
+export const BILL_LEDGER: LedgerView = "household";
+
+/** The words after "Into:" on Bill paid's first slide. */
+export const BILL_LEDGER_NOTE = "bills are shared";
+
+/**
+ * D1 (Jonathan, 2026-09-25): Purchase, Income and Move money default to the
+ * space the card shows; Shift always defaults to Mine; Bill paid is always Ours
+ * (bills are shared, see `BILL_LEDGER`), so from Mine it switches to Ours the
+ * way Shift switches to Mine. The first slide names the ledger and lets it be
+ * changed (except Bill paid's), so the space pill never decides where money
+ * goes on its own.
  */
 export function defaultAddLedger(mode: AddFlowMode, view: LedgerView): LedgerView {
-  return mode === "shift" ? "personal" : view;
+  if (mode === "shift") return "personal";
+  if (mode === "bill") return BILL_LEDGER;
+  return view;
 }
 
 /**

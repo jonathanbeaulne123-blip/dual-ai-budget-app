@@ -6354,7 +6354,8 @@ export function App() {
 
   /**
    * The Record dial's verbs, All tools' Record chips and the camp card's "Record it here" (Tool Atlas §3.3).
-   * D1: Purchase, Income, Bill paid and Move money open in the space on screen; Shift opens in Mine. When the
+   * D1: Purchase, Income and Move money open in the space on screen; Shift opens in Mine; Bill paid opens in Ours
+   * (bills are shared: the reviewed bill path posts only Shared rows). When the
    * verb's ledger is not the space on screen, the space switches first (it closes nothing but the draft sheet)
    * and the pending-record effect opens the flow there, so the first slide never names a ledger we are not in.
    */
@@ -6382,7 +6383,8 @@ export function App() {
     }, { scopeIsCurrent: deskScopeIsCurrent, onAccepted: () => {
       const name = household?.recurrences.find(row => row.id === payload.recurrenceId)?.note.trim() || "the bill";
       setBillFlow(false);
-      setRecordStatus(`Recorded ${name} as paid, in ${view === "household" ? "Ours" : "Mine"}`);
+      // Bills are shared: the reviewed path posts household rows only, and Bill paid opens only in Ours (D1).
+      setRecordStatus(`Recorded ${name} as paid, in Ours`);
     } });
   }
   /** The Add flow's named Confirm (A7): never posts into a ledger other than the one its first slide names. */

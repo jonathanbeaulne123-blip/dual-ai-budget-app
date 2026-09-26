@@ -42,6 +42,8 @@ import {
   addConfirmName,
   addSlideCopy,
   addSlidesFor,
+  BILL_LEDGER,
+  BILL_LEDGER_NOTE,
   billSlipsFor,
   canAdvanceAddSlide,
   civilDateWords,
@@ -257,15 +259,18 @@ export function AddSlideshow({
   const expanded = fullForm && !billMode;
   // The ledger line (D1): a choice made for this flow survives the App's view switching under it.
   const [ledgerChoice, setLedgerChoice] = useState<{ mode: AddFlowMode; ledger: LedgerView } | null>(null);
-  const ledger: LedgerView | undefined = ledgerProp ?? (ledgerChoice?.mode === mode ? ledgerChoice.ledger : view ? defaultAddLedger(mode, view) : undefined);
+  // Bill paid is always Ours (bills are shared): its line is fixed, whatever the App's view.
+  const ledger: LedgerView | undefined = billMode && view ? BILL_LEDGER : ledgerProp ?? (ledgerChoice?.mode === mode ? ledgerChoice.ledger : view ? defaultAddLedger(mode, view) : undefined);
+  /** The App opened Bill paid while Mine is on screen; it should have switched to Ours first. Offer nothing. */
+  const billOutOfPlace = billMode && (ledgerProp ?? view ?? BILL_LEDGER) !== BILL_LEDGER;
   function chooseLedger(next: LedgerView) {
     setLedgerChoice({ mode, ledger: next });
     onLedgerChange?.(next);
   }
   const [billId, setBillId] = useState<string | null>(null);
   const bills = useMemo(
-    () => (billMode && memberId ? billSlipsFor(household, { today, memberId, view: view ?? "household" }) : { due: [], upcoming: [] }),
-    [billMode, household, today, memberId, view],
+    () => (billMode && memberId && !billOutOfPlace ? billSlipsFor(household, { today, memberId, view: BILL_LEDGER }) : { due: [], upcoming: [] }),
+    [billMode, billOutOfPlace, household, today, memberId],
   );
   const chosenBill = bills.due.find((slip) => slip.recurrenceId === billId) ?? null;
   const billPreselected = useRef<string | null>(null);
@@ -458,7 +463,7 @@ export function AddSlideshow({
 
         </div>
         {ledger && (index === 0 || expanded) && (
-          <AddLedgerLine ledger={ledger} disabled={!open || busy} onChange={chooseLedger} />
+          billMode ? <AddLedgerLine ledger={BILL_LEDGER} note={BILL_LEDGER_NOTE} /> : <AddLedgerLine ledger={ledger} disabled={!open || busy} onChange={chooseLedger} />
         )}
         {returnToReview && !expanded && <p className="muted">Editing your draft. Continue returns to Review.</p>}
         {(expanded || index > 0) && <nav className="entry-section-nav" aria-label="Draft sections">
@@ -474,7 +479,7 @@ export function AddSlideshow({
           return <section key={slide} className={expanded ? "entry-full-section" : undefined} data-entry-section={slide}>
             {expanded && <h2 tabIndex={-1}>{copy.title}</h2>}
         {slide === "bill-pick" && (
-          memberId ? <BillPaidSlips
+          billOutOfPlace ? <p role="status">Bills are shared. Record a bill paid from Ours.</p> : memberId ? <BillPaidSlips
             due={bills.due}
             upcoming={bills.upcoming}
             selectedId={billId}
@@ -487,9 +492,8 @@ export function AddSlideshow({
           chosenBill ? <BillPaidConfirm
             slip={chosenBill}
             household={household}
-            ledger={ledger}
             busy={busy || postingDisabled || !open}
-            onConfirm={(review) => post({ kind: "bill", mode: "bill", ledger, recurrenceId: chosenBill.recurrenceId, occurrenceDate: chosenBill.date, review })}
+            onConfirm={(review) => post({ kind: "bill", mode: "bill", ledger: BILL_LEDGER, recurrenceId: chosenBill.recurrenceId, occurrenceDate: chosenBill.date, review })}
           /> : <p role="status">Pick a bill first. <button type="button" className="ghost" onClick={() => onSlideIndex(0)}>Back to the bills</button></p>
         )}
 
@@ -1296,7 +1300,15 @@ function SplitEditor({ household, percents, amount, error, scopeValid, onReview,
  * where the money goes and lets it be changed. A two-option radio group named
  * "Whose money"; the space pill on the card never decides this on its own.
  */
-function AddLedgerLine({ ledger, disabled, onChange }: { ledger: LedgerView; disabled: boolean; onChange: (ledger: LedgerView) => void }) {
+function AddLedgerLine(props: { ledger: LedgerView; note: string } | { ledger: LedgerView; note?: undefined; disabled: boolean; onChange: (ledger: LedgerView) => void }) {
+  const { ledger } = props;
+  // A fixed ledger (Bill paid: "Into: Ours · bills are shared") is a statement, not a choice: no radios.
+  if (props.note !== undefined) return (
+    <div className="add-ledger add-ledger--fixed" data-add-ledger={ledger} data-add-ledger-fixed="">
+      <p className="add-ledger__into"><span>Into:</span> <strong>{ADD_LEDGER_WORDS[ledger]}</strong> · {props.note}</p>
+    </div>
+  );
+  const { disabled, onChange } = props;
   return (
     <fieldset className="add-ledger" data-add-ledger={ledger} disabled={disabled}>
       <legend className="add-ledger__legend">Whose money</legend>

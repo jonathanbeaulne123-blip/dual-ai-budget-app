@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { createElement, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { act } from "react";
@@ -39,13 +41,30 @@ function form(overrides: Partial<AddFormFields> = {}): AddFormFields {
 }
 
 describe("the Add flow's Tool Atlas words (pure)", () => {
-  it("defaults the ledger per D1: Shift is always Mine, the rest follow the space", () => {
+  it("defaults the ledger per D1: Shift is always Mine, Bill paid is always Ours, the rest follow the space", () => {
     expect(defaultAddLedger("shift", "household")).toBe("personal");
     expect(defaultAddLedger("shift", "personal")).toBe("personal");
-    for (const mode of ["expense", "income", "bill", "transfer"] as const) {
+    // Bills are shared: the reviewed bill path accepts Shared CAD accounts only and posts household rows.
+    expect(defaultAddLedger("bill", "household")).toBe("household");
+    expect(defaultAddLedger("bill", "personal")).toBe("household");
+    for (const mode of ["expense", "income", "transfer"] as const) {
       expect(defaultAddLedger(mode, "household")).toBe("household");
       expect(defaultAddLedger(mode, "personal")).toBe("personal");
     }
+  });
+
+  it("Bill paid from Mine switches to Ours before it opens, and its status never says Mine (review finding 1)", () => {
+    const app = readFileSync(join(process.cwd(), "src/App.tsx"), "utf8");
+    // openRecordFlow defaults the ledger per D1 and switches the space first when it differs from the view…
+    expect(app).toContain("function openRecordFlow(nextMode: FabVerbMode, ledger: LedgerView = defaultAddLedger(nextMode, view)");
+    expect(app).toContain("if (ledger !== view) { setPendingRecord(");
+    // …the pending flow opens only once the view is that ledger…
+    expect(app).toContain("if (!pendingRecord || !session || session.view !== pendingRecord.ledger) return;");
+    // …the post refuses any ledger that is not the open view, and the bill's status line names Ours only.
+    expect(app).toContain("if (payload?.ledger && payload.ledger !== view) {");
+    const postBill = app.slice(app.indexOf("function postBillPaid("), app.indexOf("function onAddPost("));
+    expect(postBill).toContain("in Ours");
+    expect(postBill).not.toContain("Mine");
   });
 
   it("gives Bill paid two slides and its own words, and leaves the four entry flows unchanged", () => {
@@ -233,6 +252,33 @@ describe("the Add flow's Tool Atlas parts (UI)", () => {
     expect(payload.recurrenceId).toBe(payload.review.request.recurrenceId);
     expect(payload.occurrenceDate).toBe("2026-09-01");
     expect(payload.review.request).toMatchObject({ memberId: "MEM-001", view: "household", today });
+  });
+
+  it("Bill paid names Ours on its first slide and its confirm, with no Mine option (bills are shared)", () => {
+    const posts: (AddSubmitPayload | undefined)[] = [];
+    const ledgers: LedgerView[] = [];
+    act(() => root.render(createElement(Harness, { mode: "bill", view: "household", posts, ledgers })));
+    const line = host.querySelector("[data-add-ledger]")!;
+    expect(line.getAttribute("data-add-ledger")).toBe("household");
+    expect(line.querySelector(".add-ledger__into")?.textContent).toBe("Into: Ours · bills are shared");
+    expect(line.querySelectorAll("input[type=radio]").length).toBe(0);
+    expect(host.textContent).not.toMatch(/Into: Mine/);
+    act(() => host.querySelector<HTMLButtonElement>("[data-bill-slip]")!.click());
+    const rows = [...host.querySelectorAll("[data-bill-confirm] .row")].map((row) => row.textContent);
+    expect(rows).toContain("IntoOurs · bills are shared");
+    act(() => host.querySelector<HTMLButtonElement>("[data-add-confirm-bill]")!.click());
+    expect(posts[0]).toMatchObject({ kind: "bill", ledger: "household" });
+    expect(ledgers).toEqual([]);
+  });
+
+  it("Bill paid with Mine on screen offers no bill and says to record it from Ours", () => {
+    const posts: (AddSubmitPayload | undefined)[] = [];
+    act(() => root.render(createElement(Harness, { mode: "bill", view: "personal", posts })));
+    expect(host.querySelector(".add-ledger__into")?.textContent).toBe("Into: Ours · bills are shared");
+    expect(host.querySelector("[data-bill-slip]")).toBeNull();
+    expect(host.querySelector("[data-add-confirm-bill]")).toBeNull();
+    expect(host.textContent).toContain("Bills are shared. Record a bill paid from Ours.");
+    expect(posts).toEqual([]);
   });
 
   it("Mark paid: a named due bill opens straight at its named Confirm; a bill not due yet stays on the slips", () => {
