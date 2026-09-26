@@ -20,3 +20,15 @@ it('defines Harbour landing on the actual sea beside the floatplane dock and mea
   expect(landing).toMatchObject({waterBodyId:'water.sea',centre:[1600,2,1275],radius:60});expect(sky.proofs!.landings.find(v=>v.id==='water.harbour')!.clear).toBe(true);
   const blocked=buildFlightEnvelope(field,waterCuts);expect(blocked.proofs!.landings.find(v=>v.id==='water.harbour')!.obstructionIds).toContain('terrain inside water landing field');
 });
+
+import { buildFlightEnvelope as envelope } from '../src/harbour/horizon/world/sky.ts';
+it('seats the water landings and the Crown launch from MANIFEST v1.7 (sky.waterLandings; the lookout deck)', () => {
+  const field = { revision: 'horizon-geo-1' as const, width: 2000, depth: 1800, step: 100, columns: 21, rows: 19, heights: new Float32Array(399).fill(-10), surfaces: new Uint8Array(399) };
+  const lake = (id: string, kind: 'lagoon' | 'deep', outline: [number, number][], level: number) => ({ id, kind, points: [], outline, level, width: 0, depth: 8, bank: 2, underground: kind === 'deep' });
+  const deck = { id: 'lookout.runoff.deck', kind: 'deck', surface: 'timber', role: 'deck' as const, walkable: true, districtId: 'crown', bedIds: [], positions: [1295, 170, 472, 1315, 170, 472, 1315, 170, 492, 1295, 170, 492], indices: [0, 2, 1, 0, 3, 2] };
+  const sky = envelope(field, { beds: [], pads: [], mouths: [], diagnostics: [], solids: [deck], waters: [lake('water.bight', 'lagoon', [[400, 600], [800, 600], [800, 1000], [400, 1000]], 0), lake('water.deep', 'deep', [[1250, 380], [1350, 380], [1350, 460], [1250, 460]], 40)] });
+  expect(sky.landings.find(l => l.id === 'water.bight')).toMatchObject({ xy: [592, 804] });
+  const deep = sky.volumes!.find(v => v.id === 'water.deep')!; expect(deep.centre[0]).toBe(1278); expect(deep.centre[2]).toBe(423); expect(deep.radius).toBe(8);
+  expect(sky.launchPads!.find(p => p.id === 'crown')).toMatchObject({ padId: 'lookout.runoff.deck', graded: true });
+  expect(sky.proofs!.glide.samples[0]!.obstacle).toBeNull();
+});

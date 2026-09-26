@@ -20,7 +20,7 @@ try{
   const page=await browser.newPage({viewport:tier==='full'?{width:1440,height:900}:{width:390,height:844},timezoneId:zone,deviceScaleFactor:1});
   page.on('pageerror',e=>errors.push({tier,error:e.message}));
   await page.goto(`${url}/horizon-review.html?world=horizon&tier=${tier}&date=${date}&sun=13:02`,{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>window.__harbour?.stats().firstInteractiveMs!==null&&window.__harbour?.stats,null,{timeout:120000});
+  await page.waitForFunction(()=>!!window.__harbour&&window.__harbour.stats().firstInteractiveMs!==null,null,{timeout:120000});
   await page.addStyleTag({content:'.horizon-toolbar,.horizon-status,.horizon-touch-controls{visibility:hidden!important}'});
   for(const view of world.views.filter(v=>!process.env.HORIZON_PAGES||process.env.HORIZON_PAGES.split(',').includes(v.id))){
    for(const [role,word]of [['best',view.bestHour],['also',view.also]]){
@@ -32,14 +32,14 @@ try{
     const file=`${view.id}_${hhmm.replace(':','-')}_classic_${tier}.png`;
     await page.locator('.horizon-stage canvas').screenshot({path:resolve(output,'pages',file),timeout:120000});
     const stats=await page.evaluate(()=>window.__harbour.stats());
-    const record={file,id:view.id,label:view.label,tier,role,word,clock:hhmm,date,timeZone:zone,pose:{eye:view.eye,target:view.target,fovDegrees:view.fovDegrees},proof:view.proof,renderer:stats.renderer,firstInteractiveMs:stats.firstInteractiveMs,assetLoadMs:stats.assetLoadMs,frameIntervals:stats.frames.slice(-20),draw:stats.drawSamples.at(-1),stream:stats.stream.slice(-5)};
+    const record={file,id:view.id,label:view.label,tier,role,word,clock:hhmm,date,timeZone:zone,pose:{eye:view.eye,target:view.target,fovDegrees:view.fovDegrees,portrait:view.portrait,camera:stats.camera},proof:view.proof,renderer:stats.renderer,firstInteractiveMs:stats.firstInteractiveMs,assetLoadMs:stats.assetLoadMs,frameIntervals:stats.frames.slice(-20),draw:stats.drawSamples.at(-1),stream:stats.stream.slice(-5)};
     records.push(record);console.log(JSON.stringify({file,draw:record.draw,projectionPass:view.proof?.pass}));
    }
   }
   await page.close();
  }
- await writeFile(resolve(output,'pages','captures.json'),JSON.stringify({sha,workingTreeClean:!dirty,terrainSha,clockRule:'LIGHT §1; nearest minute, 21 June 2026, America/Toronto. Night=22:00. Portrait preserves the authored vertical FOV and crops horizontal view.',solarReference:sun,records,errors},null,2));
- const verdicts=['# Greybox page captures','',`Revision ${world.geographyRevision}; source ${sha}; clean ${!dirty}; terrain SHA-256 ${terrainSha}.`,'','Automated geometric verdicts are not Jonathan’s visual approval. Portrait framing must also be judged from its image. Page descriptions referring to future props, planting or vehicles retain an explicit deferred-subject list.','',...records.map(r=>`- ${r.file}: ${r.proof?.pass?'geometric framing passes; visual review pending':'geometric framing conflict — '+r.proof?.subjects.filter(s=>!s.inFrame||s.occludedBy).map(s=>`${s.id} ${!s.inFrame?'outside frame':`occluded by ${s.occludedBy}`}`).join('; ')}.`)];
+ await writeFile(resolve(output,'pages','captures.json'),JSON.stringify({sha,workingTreeClean:!dirty,terrainSha,clockRule:'LIGHT §1; nearest minute, 21 June 2026, America/Toronto. Night=22:00. Portrait (390 × 844) holds the page’s horizontal FOV (MANIFEST v1.7 viewRule.portrait: portrait.fov_deg ≥ 45°, portrait.target); landscape keeps the 16:9 vertical FOV.',solarReference:sun,records,errors},null,2));
+ const verdicts=['# Greybox page captures','',`Revision ${world.geographyRevision}; source ${sha}; clean ${!dirty}; terrain SHA-256 ${terrainSha}.`,'','Automated geometric verdicts are not Jonathan’s visual approval. Portrait framing must also be judged from its image. Page descriptions referring to future props, planting or vehicles retain an explicit deferred-subject list.','',...records.map(r=>{const q=r.proof,ok=r.tier==='lite'?q?.passPortrait:q?.passLandscape;return`- ${r.file}: ID-buffer proof ${ok?'passes':'FAILS'} (${r.tier==='lite'?'portrait':'16:9'}); ${(q?.subjects??[]).map(s=>`${s.id} ${r.tier==='lite'?s.portraitPixels??'–':s.pixels} px`).join(', ')}; visual review pending.`;})];
  await writeFile(resolve(output,'pages','VERDICTS.md'),verdicts.join('\n')+'\n');
  await writeFile(resolve(output,'perf','capture-performance.json'),JSON.stringify({sha,terrainSha,method:'Automated headless Chromium; renderer recorded per page. Software renderer timings do not establish physical Mac/iPhone acceptance.',records:records.map(({proof,pose,...r})=>r)},null,2));
 }finally{await browser.close();}
