@@ -49,9 +49,12 @@ export interface GliderEnv{
   lift(x:number,y:number,z:number,heading:number):number;
   groundAt(x:number,z:number,y:number):number;
   water(x:number,z:number,y?:number):{id:string;y:number}|null;
-  /** The pure wing's env; `ground` reads the rider's current height through `y()` (decks under the wing, not over it). */
-  wingEnv(y:()=>number,options?:{walls?:()=>boolean}):WingEnv;
-  chuteEnv(y:()=>number):ChuteEnv;
+  /**
+   * The pure wing's env. `ground(x, z, y)` takes the rider's height (decks under the wing, not over it); `y()` is only
+   * the fallback for a caller that passes none (and without it, the top surface).
+   */
+  wingEnv(y?:()=>number,options?:{walls?:()=>boolean}):WingEnv;
+  chuteEnv(y?:()=>number):ChuteEnv;
   landingContext(contactY:number):LandingContext;
   shoreNode(x:number,z:number):LandingNode|null;
   pathNode(x:number,z:number,y?:number):LandingNode|null;
@@ -164,10 +167,10 @@ export function createGliderEnv(source:GliderWorldSource,options:GliderEnvOption
     envelope,wind,hour,lift,groundAt,water,landingContext,shoreNode,pathNode,inHostFootprint,inHost,placeLabel,
     wingEnv(y,opts={}){
       return{
-        get wind(){return wind(0,y(),0);},
+        get wind(){return wind(0,y?.()??0,0);},
         lift,
-        ground(x,z){
-          const h=y(),g=groundAt(x,z,h);
+        ground(x,z,at){
+          const h=at??y?.()??Infinity,g=groundAt(x,z,h);
           // A structure wall at the rider's height is met as ground here (a touchdown, resolved as a landing).
           if(opts.walls?.()&&h-geography.ground(x,z)<=SOLID_CEILING&&geography.blocked?.(x,z,h,.5))return Math.max(g,h);
           return g;
@@ -177,8 +180,8 @@ export function createGliderEnv(source:GliderWorldSource,options:GliderEnvOption
     chuteEnv(y){
       const dz=envelope.dropZone;
       return{
-        get wind(){return wind(0,y(),0);},
-        ground:(x,z)=>groundAt(x,z,y()),
+        get wind(){return wind(0,y?.()??0,0);},
+        ground:(x,z,at)=>groundAt(x,z,at??y?.()??Infinity),
         // Sink fields only (the Bight, the Notch): no thermal or ridge lift for the canopy.
         sink:(x,yy,z)=>Math.min(0,liftAt(sinks,wind(x,yy,z),{x,y:yy,z},0,hour()).lift),
         ...(dz?{dropZone:{xy:dz.xy,rings:dz.rings}}:{}),

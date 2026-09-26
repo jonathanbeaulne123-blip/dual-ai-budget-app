@@ -14,7 +14,7 @@ import type {ModeBodyPose,ModeCameraPose,ModeController,ModeExit,ModeHud,ModeInp
 import {MOVER_SOUNDS} from '../shared/mode.ts';
 import {LANDING_LABELS,nearestReachableLanding,resolveTouchdown,type LandingOutcome} from './landing.ts';
 import {DEEP_JETTY,corridorOutcome,enterCorridor,stepCorridor,throatGate,type CorridorState,type ThroatGate} from './corridor.ts';
-import {WING_DT,launchWing,stepWing,type WingEnv,type WingState} from './wing.ts';
+import {WING_DT,launchFromPad,launchWing,stepWing,type WingEnv,type WingState} from './wing.ts';
 import {bailOut,stepChute,type ChuteState,type PlaneDoor} from './chute.ts';
 import {createFlightCam,FLIGHT_CAM,walkCameraPose,type FlightCamState} from './camera.ts';
 import {WALL_GRACE,type GliderEnv} from './env.ts';
@@ -60,28 +60,6 @@ const DT=WING_DT;
 export const PAD_THRESHOLDS:Record<string,string>={crown:'crownLaunch',prow:'prowPlatform',lampGallery:'lampGallery'};
 const padFor=(envelope:FlightEnvelope,threshold:Threshold)=>envelope.launchPads?.find(p=>PAD_THRESHOLDS[p.id]===threshold.id||p.padId===`threshold.${threshold.id}`)??null;
 
-/** A side "drops" when the ground 20 m past the lip is at least this far below the pad (a real run-off). */
-export const RUN_DROP=10;
-/**
- * The run-off heading: perpendicular to the pad's edge, on the side the rider faces if the ground falls away
- * there (≥ 10 m within 20 m of the lip), else the side that falls away more. The Crown's gentle south shoulder
- * therefore runs off north; the Prow's deck either way; the Lamp gallery over the sea.
- */
-export function runHeading(edge:readonly Point3[],bodyYaw:number,groundAt:(x:number,z:number,y:number)=>number):number{
-  const a=edge[0]!,b=edge.at(-1)!,ex=b[0]-a[0],ez=b[2]-a[2],cx=(a[0]+b[0])/2,cz=(a[2]+b[2])/2,h=(a[1]+b[1])/2;
-  const n1=Math.atan2(ez,-ex),n2=Math.atan2(-ez,ex);
-  const facing=(n:number)=>Math.cos(n-bodyYaw),first=facing(n1)>=facing(n2)?n1:n2,other=first===n1?n2:n1;
-  const drop=(n:number)=>h-groundAt(cx+Math.sin(n)*20,cz+Math.cos(n)*20,h+.5);
-  return drop(first)>=RUN_DROP||drop(first)>=drop(other)?first:other;
-}
-
-/** The pad's visible lip: the first point past the edge line (≤ 8 m) where the ground falls away by ≥ 0.75 m. */
-export function lipOffset(edge:readonly Point3[],heading:number,groundAt:(x:number,z:number,y:number)=>number):number{
-  const a=edge[0]!,b=edge.at(-1)!,cx=(a[0]+b[0])/2,cz=(a[2]+b[2])/2,h=(a[1]+b[1])/2;
-  for(let s=0;s<=8;s+=.25)if(groundAt(cx+Math.sin(heading)*s,cz+Math.cos(heading)*s,h+.5)<h-.75)return s;
-  return 0;
-}
-
 /** FLIGHT.md §6: the landings each pad offers under reduced motion (and calm view). */
 export function padLandings(padId:string,env:Pick<GliderEnv,'envelope'|'shoreNode'>):ReducedMotionLanding[]{
   const field=(id:string,label=LANDING_LABELS[id]??id):ReducedMotionLanding|null=>{
@@ -113,11 +91,10 @@ export function createGliderController(deps:FlightControllerDeps):FlightControll
   const cam=createFlightCam();
   let stage:GliderStage='wear',wing:WingState=launchWing([[0,0,0],[0,0,0]],0),corridor:CorridorState|null=null,padId='crown',wear=WEAR_SECONDS,acc=0,poseT=0,launchedAt=Infinity;
   let sound:string|null=null,outcome:LandingOutcome|null=null,exitAt:ModeExit|null=null,flying=false,ended=false,runStarted=false,hudT=Infinity,place:ModeHud['place'];
-  let flyingY=0;
   const moving=()=>stage!=='pose'&&stage!=='done';
-  const live=env.wingEnv(()=>flyingY,{walls:()=>wing.t-launchedAt>WALL_GRACE});
+  const live=env.wingEnv(undefined,{walls:()=>wing.t-launchedAt>WALL_GRACE});
   // At the lip the wing lifts: the pad's own floor (which runs a few metres past the edge line) cannot catch it.
-  const wingEnv:WingEnv={get wind(){return live.wind;},lift:live.lift,ground(x,z){const g=live.ground(x,z);return wing.t-launchedAt<LIFTOFF_GRACE?Math.min(g,flyingY-.05):g;}};
+  const wingEnv:WingEnv={get wind(){return live.wind;},lift:live.lift,ground(x,z,y=wing.y){const g=live.ground(x,z,y);return wing.t-launchedAt<LIFTOFF_GRACE?Math.min(g,y-.05):g;}};
   const finish=(o:LandingOutcome,yaw:number)=>{
     outcome=o;
     if(fadeKinds.has(o.kind)){stage='done';exitAt={at:o.at,yaw,cut:true,label:o.label};}
@@ -143,7 +120,7 @@ export function createGliderController(deps:FlightControllerDeps):FlightControll
       return;
     }
     if(stage==='flight'){
-      flyingY=wing.y;wing=stepWing(wing,{bar:input.bar,bank:input.bank},wingEnv,DT);
+      wing=stepWing(wing,{bar:input.bar,bank:input.bank},wingEnv,DT);
       if(Math.hypot(wing.x-gate.mouth[0],wing.z-gate.mouth[2])<=THROAT_TRY_RADIUS){
         const c=enterCorridor(gate,wing,'glider');
         if(c){corridor=c;stage='corridor';cam.blendFrom(FLIGHT_CAM.blend.mouth,reduced());return;}
@@ -172,9 +149,8 @@ export function createGliderController(deps:FlightControllerDeps):FlightControll
       const pad=padFor(env.envelope,threshold);
       padId=pad?.id??Object.entries(PAD_THRESHOLDS).find(([,t])=>t===threshold.id)?.[0]??threshold.id;
       const h=threshold.height??body.y,edge:Point3[]=pad?.edge??[[threshold.at[0]-3,h,threshold.at[1]],[threshold.at[0]+3,h,threshold.at[1]]];
-      // Three steps down the graded pad to its visible lip (the edge line runs through the pad's marker).
-      const heading=runHeading(edge,body.yaw,env.groundAt),lip=lipOffset(edge,heading,env.groundAt),dx=Math.sin(heading)*lip,dz=Math.cos(heading)*lip;
-      wing=launchWing(edge.map(p=>[p[0]+dx,p[1],p[2]+dz] as Point3),heading,{run:true});
+      // Three steps down the graded pad to its visible lip, on the pad's outward side (wing.ts `launchFromPad`).
+      wing=launchFromPad(edge,env.groundAt,{facing:body.yaw,run:true});
       stage='wear';wear=WEAR_SECONDS;acc=0;poseT=0;corridor=null;outcome=null;exitAt=null;sound=null;flying=false;ended=false;runStarted=false;launchedAt=Infinity;hudT=Infinity;
       cam.reset(wing.heading);
       // The walk cam holds until the first running step, then blends 0.8 s to the flight cam.
@@ -229,8 +205,8 @@ export interface ParachuteDeps extends FlightControllerDeps{
 export function createParachuteController(deps:ParachuteDeps):FlightController{
   const {env}=deps,tier=deps.tier??(()=>'full' as const),reduced=deps.reducedMotion??(()=>false),cam=createFlightCam();
   let chute:ChuteState|null=null,stage:ChuteStage='freefall',acc=0,poseT=0,sound:string|null=null,outcome:LandingOutcome|null=null,exitAt:ModeExit|null=null;
-  let flying=false,ended=false,hudT=Infinity,place:ModeHud['place'],y=0,lastCamera:ModeCameraPose=walkCameraPose({x:0,y:0,z:0,yaw:0});
-  const chuteEnv=env.chuteEnv(()=>y);
+  let flying=false,ended=false,hudT=Infinity,place:ModeHud['place'],lastCamera:ModeCameraPose=walkCameraPose({x:0,y:0,z:0,yaw:0});
+  const chuteEnv=env.chuteEnv();
   const moving=()=>stage!=='pose'&&stage!=='done';
   const finish=(o:LandingOutcome,yaw:number)=>{
     outcome=o;
@@ -242,7 +218,7 @@ export function createParachuteController(deps:ParachuteDeps):FlightController{
     if(!chute)return;
     // The Move pad leans in the camera's frame: forward along its yaw, right = (−cos, sin) in engine axes.
     const cy=camYaw(),f=input.forward,s=input.strafe,lean:[number,number]=[Math.sin(cy)*f-Math.cos(cy)*s,Math.cos(cy)*f+Math.sin(cy)*s];
-    y=chute.y;const before=chute.phase;
+    const before=chute.phase;
     chute=stepChute(chute,{lean,pull:input.pull,brake:Math.max(0,-input.bar),yaw:input.bank},chuteEnv,DT);
     if(chute.snapped&&before==='freefall'){sound=MOVER_SOUNDS.snap;cam.blendFrom(FLIGHT_CAM.blend.pull,reduced());}
     stage=chute.phase==='freefall'?'freefall':chute.phase==='opening'?'opening':'canopy';
@@ -264,7 +240,7 @@ export function createParachuteController(deps:ParachuteDeps):FlightController{
     enter(threshold,body){
       const door=deps.plane?.()??{x:threshold.at[0]??body.x,y:threshold.height??body.y,z:threshold.at[1]??body.z,vx:0,vz:0,heading:body.yaw};
       const at={x:Number.isFinite(door.x)?door.x:body.x,y:Number.isFinite(door.y)?door.y:body.y,z:Number.isFinite(door.z)?door.z:body.z};
-      y=at.y;chute=bailOut({...door,...at},at.y-env.groundAt(at.x,at.z,at.y));
+      chute=bailOut({...door,...at},at.y-env.groundAt(at.x,at.z,at.y));
       stage=chute?'freefall':'done';acc=0;poseT=0;outcome=null;sound=null;flying=false;ended=false;hudT=Infinity;
       exitAt=chute?null:{at:[body.x,body.y,body.z],yaw:body.yaw};
       cam.reset(chute?.heading??body.yaw);

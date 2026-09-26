@@ -96,7 +96,7 @@ export class Pilot{
   }
   /** Land: wings level, push out in the last `FLARE_START` metres. */
   land(maxSeconds=120,heading?:number):WingState{
-    return this.fly(s=>({bar:s.y-this.env.ground(s.x,s.z)<FLARE_START?-1:0,bank:heading===undefined?steer(s,s.heading,0):steer(s,heading,15)}),()=>false,maxSeconds);
+    return this.fly(s=>({bar:s.y-this.env.ground(s.x,s.z,s.y)<FLARE_START?-1:0,bank:heading===undefined?steer(s,s.heading,0):steer(s,heading,15)}),()=>false,maxSeconds);
   }
   /**
    * Put the wing down inside a field: head for the centre at trim; over the middle with height to lose,
@@ -105,7 +105,7 @@ export class Pilot{
   landOn(field:{xy:readonly [number,number];r:number},maxSeconds=240):WingState{
     const orbitR=Math.min(20,field.r/2);let final=false;
     return this.fly(s=>{
-      const agl=s.y-this.env.ground(s.x,s.z),d=distanceTo(s,field.xy);
+      const agl=s.y-this.env.ground(s.x,s.z,s.y),d=distanceTo(s,field.xy);
       // Below the 8 m flare band any push-out floats (sink → 0.3), so hold trim until the last 1.5 m;
       // from 2.5 m ease the bank to a gentle 20° the same way so the float curves back over the field.
       if(final||agl<2.5){final=true;return{bar:agl<FLARE_START?-1:0,bank:Math.sign(s.bank||-1)*20/50};}

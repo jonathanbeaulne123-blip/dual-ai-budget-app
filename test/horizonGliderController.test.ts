@@ -3,6 +3,8 @@ import {createGliderController,createParachuteController,POSE_SECONDS,PAD_THRESH
 import {DEEP_JETTY} from '../src/harbour/horizon/movers/glider/corridor.ts';
 import {FOLD_MARGIN,TRIM_GLIDE} from '../src/harbour/horizon/movers/glider/landing.ts';
 import {MOVER_SOUNDS} from '../src/harbour/horizon/movers/shared/mode.ts';
+import {SOUTH_WIND} from '../src/harbour/horizon/movers/shared/wind.ts';
+import {launchFromPad,launchWing,padHeading,padLip,stepWing,type WingEnv} from '../src/harbour/horizon/movers/glider/wing.ts';
 import {fly,input,pad,realHorizon,syntheticEnv,FRAME} from './fixtures/horizonFlight.ts';
 
 const {world,env:real}=realHorizon();
@@ -47,6 +49,37 @@ describe('the run-off at each of the three pads',()=>{
     expect(yawAt('crownLaunch',0)).toBeCloseTo(Math.PI,9);expect(yawAt('crownLaunch',Math.PI)).toBeCloseTo(Math.PI,9);
     // The Lamp gallery runs off over the sea.
     expect(yawAt('lampGallery',0)).toBeCloseTo(Math.PI,9);
+  });
+});
+
+describe('the sim\'s launch and ground (CAM requests 1 and 2)',()=>{
+  it('launchFromPad starts at the pad\'s real lip with its outward heading — the controller uses it as is',()=>{
+    for(const pad of real.envelope.launchPads!){
+      const start=launchFromPad(pad.edge,real.groundAt,{facing:0}),h=pad.edge[0]![1];
+      const heading=padHeading(pad.edge,0,real.groundAt),lip=padLip(pad.edge,heading,real.groundAt);
+      expect(start.heading).toBeCloseTo(heading,9);expect(start.phase).toBe('flight');expect(start.y).toBeCloseTo(h,9);
+      // Half a metre past the start the ground has fallen away (the visible lip), and the lip is past the edge line.
+      expect(lip).toBeGreaterThan(0);
+      expect(real.groundAt(start.x+Math.sin(heading)*.5,start.z+Math.cos(heading)*.5,h+.5)).toBeLessThan(h-.5);
+      const run=launchFromPad(pad.edge,real.groundAt,{facing:0,run:true});expect(Math.hypot(run.x-start.x,run.z-start.z)).toBeCloseTo(3,6);expect(run.phase).toBe('run');
+    }
+    // The Crown runs off north whichever way the rider faces (its south shoulder barely drops: FLIGHT §2.1).
+    const crown=real.envelope.launchPads!.find(p=>p.id==='crown')!;
+    for(const facing of [0,Math.PI])expect(Math.abs(launchFromPad(crown.edge,real.groundAt,{facing}).heading)).toBeCloseTo(Math.PI,9);
+  });
+  it('WingEnv.ground takes the rider\'s height: a deck above the wing is not ground, the same deck below it is',()=>{
+    // A bridge deck at h 50 over flat ground at 0, x 90…110.
+    const deck=(x:number,y?:number)=>x>=90&&x<=110&&(y===undefined||y>=49.5)?50:0;
+    const env:WingEnv={wind:SOUTH_WIND,lift:()=>0,ground:(x,_z,y)=>deck(x,y)};
+    const fly=(y:number)=>{let w={...launchWing([[0,y,0],[0,y,6]],Math.PI/2),airspeed:11};for(let i=0;i<60*12&&w.phase!=='touchdown';i++)w=stepWing(w,{bar:0,bank:0},env,1/60);return w;};
+    const under=fly(40);expect(under.x).toBeGreaterThan(110);expect(under.phase).not.toBe('touchdown');
+    // From 58 m the wing sinks onto the deck (inside the flare band, flying east over it).
+    let over={...launchWing([[80,52,0],[80,52,6]],Math.PI/2),airspeed:11};
+    for(let i=0;i<60*12&&over.phase!=='touchdown';i++)over=stepWing(over,{bar:1,bank:0},env,1/60);
+    expect(over.phase).toBe('touchdown');expect(over.y).toBe(50);expect(over.x).toBeGreaterThan(90);expect(over.x).toBeLessThanOrEqual(110.3);
+    // The live env: the same rule through geography (a point under the Bight Bridge's deck reads the water, not the deck).
+    const live=real.wingEnv(),g5=real.envelope.volumes!.find(v=>v.id==='bightBridge')!;
+    expect(live.ground(g5.centre[0],g5.centre[2],g5.centre[1])).toBeLessThan(g5.centre[1]);
   });
 });
 

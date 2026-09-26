@@ -44,8 +44,12 @@ export interface WingEnv{
   wind:WindSample;
   /** Net vertical air motion at the rider (lift.ts `liftField`). */
   lift:(x:number,y:number,z:number,heading:number)=>number;
-  /** Height of whatever is under the rider: terrain, a deck, or a water surface. */
-  ground:(x:number,z:number)=>number;
+  /**
+   * Height of whatever is under the rider at height `y`: terrain, a deck, or a water surface. A deck *above* the
+   * rider is not ground (the wing flies under bridges). `stepWing` always passes the rider's height at the start of
+   * the step; without `y` an env answers for the top surface.
+   */
+  ground:(x:number,z:number,y?:number)=>number;
   dt?:number;
 }
 
@@ -80,6 +84,42 @@ export function launchWing(edge:readonly Point3[]|{edge:readonly Point3[]},headi
   return{x:x-Math.sin(heading)*run,y,z:z-Math.cos(heading)*run,heading:wrap(heading),bank:0,airspeed:options.run?0:LAUNCH_MS,vs:0,phase:options.run?'run':'flight',stallT:0,t:0,flareT:0,run:0};
 }
 
+/** A side "drops" when the ground 20 m past the lip is at least this far below the pad (a real run-off). */
+export const RUN_DROP=10;
+/** The visible lip is searched this far past the edge line (the graded pad's floor runs a few metres past it). */
+export const LIP_SEARCH=8;
+/** The ground must fall this far below the pad for the lip. */
+export const LIP_DROP=.75;
+type GroundAt=(x:number,z:number,y:number)=>number;
+const edgeCentre=(edge:readonly Point3[]):Point3=>{const a=edge[0]!,b=edge.at(-1)!;return[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2];};
+/**
+ * The pad's outward heading: perpendicular to its edge, on the side the rider faces if the ground falls away there
+ * (≥ 10 m within 20 m of the lip), else the side that falls away more. The Crown's gentle south shoulder therefore
+ * runs off north; the Prow's deck either way; the Lamp gallery over the sea.
+ */
+export function padHeading(edge:readonly Point3[],facing:number,groundAt:GroundAt):number{
+  const a=edge[0]!,b=edge.at(-1)!,ex=b[0]-a[0],ez=b[2]-a[2],[cx,h,cz]=edgeCentre(edge);
+  const n1=Math.atan2(ez,-ex),n2=Math.atan2(-ez,ex);
+  const toward=(n:number)=>Math.cos(n-facing),first=toward(n1)>=toward(n2)?n1:n2,other=first===n1?n2:n1;
+  const drop=(n:number)=>h-groundAt(cx+Math.sin(n)*20,cz+Math.cos(n)*20,h+.5);
+  return drop(first)>=RUN_DROP||drop(first)>=drop(other)?first:other;
+}
+/** Metres from the edge line to the pad's visible lip along `heading`: the first point (≤ 8 m) where the ground falls ≥ 0.75 m. */
+export function padLip(edge:readonly Point3[],heading:number,groundAt:GroundAt):number{
+  const [cx,h,cz]=edgeCentre(edge);
+  for(let s=0;s<=LIP_SEARCH;s+=.25)if(groundAt(cx+Math.sin(heading)*s,cz+Math.cos(heading)*s,h+.5)<h-LIP_DROP)return s;
+  return 0;
+}
+/**
+ * A wing on the rider at a launch pad's *real* lip (`FlightEnvelope.launchPads[].edge` runs through the pad's marker,
+ * not its lip): the outward heading from `padHeading`, the edge moved out to `padLip`, then `launchWing`.
+ * `run: true` starts three steps back from that lip.
+ */
+export function launchFromPad(edge:readonly Point3[],groundAt:GroundAt,options:{facing?:number;run?:boolean}={}):WingState{
+  const heading=padHeading(edge,options.facing??0,groundAt),lip=padLip(edge,heading,groundAt),dx=Math.sin(heading)*lip,dz=Math.cos(heading)*lip;
+  return launchWing(edge.map(p=>[p[0]+dx,p[1],p[2]+dz] as Point3),heading,{run:options.run});
+}
+
 function stepBank(bank:number,input:number,dt:number):number{
   const target=clamp(finite(input),-1,1)*MAX_BANK;
   if(target===bank)return bank;
@@ -109,7 +149,7 @@ export function stepWing(state:WingState,input:WingInput,env:WingEnv,dt=env.dt??
   const bar=clamp(finite(input.bar),-1,1);
   const bank=stepBank(state.bank,input.bank,dt);
   let airspeed=state.airspeed,stallT=state.stallT,flareT=state.flareT??0,sink:number;
-  const lift=env.lift(state.x,state.y,state.z,state.heading),ground0=env.ground(state.x,state.z),agl=state.y-ground0,inFlare=agl<FLARE_AGL;
+  const lift=env.lift(state.x,state.y,state.z,state.heading),ground0=env.ground(state.x,state.z,state.y),agl=state.y-ground0,inFlare=agl<FLARE_AGL;
   if(stallT===0&&airspeed<STALL_MS){stallT=STALL_RECOVERY_S;}
   if(stallT>0){
     // The nose drops: airspeed recovers to 9 over 1.5 s, 6 m are lost, the bar is ignored. Never a spin.
@@ -137,7 +177,7 @@ export function stepWing(state:WingState,input:WingInput,env:WingEnv,dt=env.dt??
   const heading=wrap(state.heading+turnRate(bank,airspeed)*dt);
   const [wx,wz]=windVelocity(env.wind),vx=airspeed*Math.sin(heading)+wx,vz=airspeed*Math.cos(heading)+wz;
   const x=state.x+vx*dt,z=state.z+vz*dt;let y=state.y+vs*dt;
-  const ground=env.ground(x,z);
+  const ground=env.ground(x,z,state.y);
   let phase:WingPhase=y-ground<FLARE_AGL?'flare':'flight',touch:WingState['touch'];
   if(y<=ground){y=ground;phase='touchdown';touch={airspeed,sink:-vs,groundSpeed:Math.hypot(vx,vz)};}
   return{...state,x,y,z,heading,bank,airspeed,vs,phase,stallT,t,flareT,lift,ground:[vx,vz],...(touch?{touch}:{})};
