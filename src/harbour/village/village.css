@@ -146,3 +146,6 @@
 @media(min-width:1100px){
 .village-hud .village-character{position:absolute;left:auto;right:96px;width:auto;margin:0;bottom:170px}
 .village-hud .village-character__choices{position:absolute;left:auto;right:0;margin:0;bottom:calc(100% + 9px)}}
+/* Wave 3a: between 720 and 1099 px the Simple view bubble stands at top 100 px on the right, and the
+   "Walk together" card (right 28 px, 65 px down the stage) sat under it and its pill. It starts below them. */
+@media(min-width:720px) and (max-width:1099px){.village-hud .harbour-walk-together{top:calc(100px + 1.75rem + 72px)}}
