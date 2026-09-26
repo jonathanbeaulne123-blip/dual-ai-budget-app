@@ -1,6 +1,7 @@
-import type { StructureSolid, TerrainField, XY } from '../land/interfaces';
+import type { StructureSolid, TerrainField, XY, XYZ } from '../land/interfaces';
 import { buildOffshoreSolids } from '../land/offshore';
 import { baseHeight, sampleTerrain } from '../land/terrain';
+import { slab, solid as makeSolid } from '../land/structures/mesh';
 import { requireScaleFactor } from '../world/manifest';
 
 export interface HorizonCard {
@@ -54,7 +55,23 @@ export function buildHorizonCards(field?: TerrainField, solids: readonly Structu
     const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
     return Math.abs(nz) > 0.9 * Math.hypot(nx, ny, nz);
   });
-  for (const id of ['highSpan', 'bightBridge']) structure(id, solids.filter(r => is(r, `${id}.deck`) || is(r, `${id}.rails`)));
+  for (const id of ['highSpan', 'bightBridge']) {
+    const selected=solids.filter(r=>is(r,`${id}.deck`)||is(r,`${id}.rails`));
+    const deck=selected.find(r=>is(r,`${id}.deck`));
+    if(deck&&selected.reduce((n,s)=>n+s.indices.length,0)>900&&deck.positions.length%24===0){
+      // Eight closed spans sampled from the real curved deck retain its course;
+      // thin coping is omitted only in this distant LOD, not from the bridge.
+      const centre=(offset:number,a:number,b:number):XYZ=>[0,1,2].map(axis=>(deck.positions[offset+a*3+axis]!+deck.positions[offset+b*3+axis]!)/2) as unknown as XYZ;
+      const points=[centre(0,4,5),...Array.from({length:deck.positions.length/24},(_,i)=>centre(i*24,6,7))];
+      const width=Math.hypot(deck.positions[12]!-deck.positions[15]!,deck.positions[14]!-deck.positions[17]!);
+      const proxy=makeSolid(`${id}.proxy`,'bridge','stone','deck',deck.bedIds,deck.districtId);
+      for(let i=0;i<8;i++){
+        const a=points[Math.floor(i*(points.length-1)/8)]!,b=points[Math.floor((i+1)*(points.length-1)/8)]!;
+        slab(proxy,a,b,width,.6);for(const side of [-1,1])slab(proxy,a,b,.25,1.15,side*(width/2-.125),1.15);
+      }
+      structure(id,[proxy]);
+    }else structure(id,selected);
+  }
   structure('glasshouse', solids.filter(r => is(r, 'host.glasshouse.walls') || is(r, 'host.glasshouse.roof')));
   const rocks = solids.some(r => is(r, 'offshore.needle')) ? solids : buildOffshoreSolids();
   structure('offshore.needle', rocks.filter(r => is(r, 'offshore.needle')));

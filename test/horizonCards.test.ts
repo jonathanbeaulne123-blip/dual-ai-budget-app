@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { slab,solid } from '../src/harbour/horizon/land/structures/mesh';
 import { buildHorizonCards } from '../src/harbour/horizon/sky/horizonCards';
 import { sampleTerrain } from '../src/harbour/horizon/land/terrain';
 import type { StructureSolid, TerrainField } from '../src/harbour/horizon/land/interfaces';
@@ -21,4 +22,13 @@ describe('Horizon distant landmark proxies', () => {
     const card = buildHorizonCards(undefined, [solid]).find(c => c.source === 'bightBridge')!;
     expect(card.positions).toEqual(solid.positions); expect(card.indices).toEqual(solid.indices); expect(card.ownerDistrictIds).toEqual(['bight']);
   });
+});
+
+it('keeps a curved bridge proxy within 300 triangles without straightening the full bridge',()=>{
+ const deck=solid('highSpan.deck','bridge','stone','deck',['VG'],'notch');
+ for(let i=0;i<40;i++)slab(deck,[i,24,Math.sin(i/15)*10],[i+1,24,Math.sin((i+1)/15)*10],10,.6);
+ const before=[...deck.positions],card=buildHorizonCards(undefined,[deck]).find(c=>c.source==='highSpan')!;
+ expect(card.indices.length/3).toBeLessThanOrEqual(300);expect(card.indices.length/3).toBeGreaterThan(200);
+ expect(deck.positions).toEqual(before);expect(card.ownerDistrictIds).toEqual(['notch']);
+ expect(new Set(card.positions.filter((_,i)=>i%3===2)).size).toBeGreaterThan(8);
 });

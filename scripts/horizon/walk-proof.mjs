@@ -4,12 +4,13 @@ import {resolve} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 const output=resolve(process.argv[2]??'/tmp/horizon-walk-proof'),url=process.env.HORIZON_REVIEW_URL??'http://127.0.0.1:5197';
+const tier=process.env.HORIZON_TIER==='lite'?'lite':'full';
 await mkdir(output,{recursive:true});
-const meta={sha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),workingTreeClean:!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),terrainSha256:createHash('sha256').update(await readFile('public/horizon/terrain/horizon-geo-1.bin')).digest('hex')};
+const meta={tier,sha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),workingTreeClean:!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),worldSha256:createHash('sha256').update(await readFile('public/horizon/world/horizon-geo-1.json')).digest('hex'),terrainSha256:createHash('sha256').update(await readFile('public/horizon/terrain/horizon-geo-1.bin')).digest('hex')};
 const browser=await chromium.launch({headless:true,...(process.env.HORIZON_CAPTURE_GPU==='metal'?{args:['--use-angle=metal','--enable-gpu']}: {})});
 try{
  const page=await browser.newPage({viewport:{width:1440,height:900},timezoneId:'America/Toronto'});
- await page.goto(`${url}/horizon-review.html?world=horizon&sun=13:02&date=2026-06-21`,{waitUntil:'domcontentloaded'});
+ await page.goto(`${url}/horizon-review.html?world=horizon&tier=${tier}&sun=13:02&date=2026-06-21`,{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>window.__harbour?.stats,null,{timeout:120000});
  await page.waitForTimeout(1000);
  const ids=await page.evaluate(()=>window.__harbour.world.hosts.map(h=>h.id));
@@ -26,4 +27,5 @@ try{
  }
  await writeFile(resolve(output,'doors.json'),JSON.stringify({meta,method:'Accelerated fixed-step simulation of the runtime walking/collision/door callback. No teleport during each path. This is not manual device acceptance or an app financial-tool integration test.',rows},null,2));
  await writeFile(resolve(output,'doors.md'),['# Seven door walks','',`Source ${meta.sha}; clean ${meta.workingTreeClean}. Each starts in the square; fixed-step runtime collision simulation, not manual device acceptance. Times are planned travel times, not measured completed times when a route fails.`,'','| Door | Planned metres | Planned seconds | Result | Obstruction |','|---|---:|---:|---|---|',...rows.map(r=>`| ${r.id} | ${r.plan?.length.toFixed(1)??'—'} | ${r.plan?.seconds.toFixed(1)??'—'} | ${r.passed?'PASS':'FAIL'} | ${r.walk?.blocker?.obstacle??'none'} |`)].join('\n')+'\n');
+ if(rows.some(r=>!r.passed))process.exitCode=1;
 }finally{await browser.close();}

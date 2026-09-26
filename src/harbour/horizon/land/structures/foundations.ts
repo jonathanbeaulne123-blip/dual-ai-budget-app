@@ -5,7 +5,7 @@ export interface FoundationSettlement { id:string; part:number; at:XY; originalF
  * Only the lowest footing at each column is extended; decks, caps and cables keep their fixed elevations. */
 export function settleFoundations(cuts:LandCuts,finalHeight:HeightQuery):FoundationSettlement[] {
   const result:FoundationSettlement[]=[];
-  for(const solid of cuts.solids.filter(s=>s.role==='support'&&!s.id.endsWith('.posts'))){
+  for(const solid of cuts.solids.filter(s=>s.role==='support'&&s.kind!=='beam'&&!s.id.endsWith('.posts'))){
     const parts:{offset:number;x:number;z:number;bottom:number}[]=[];
     for(let offset=0;offset+23<solid.positions.length;offset+=24){let x=0,z=0,bottom=Infinity;for(let i=0;i<8;i++){x+=solid.positions[offset+i*3]!/8;z+=solid.positions[offset+i*3+2]!/8;bottom=Math.min(bottom,solid.positions[offset+i*3+1]!);}parts.push({offset,x,z,bottom});}
     for(const part of parts){

@@ -19,7 +19,7 @@ const routePins:Record<string,HeightPin[]>={
   S2:[pin([480,480],38,'strip start'),pin([560,1100],12,'Bight Bridge'),pin([1020,1430],3,'park')],
   S3:[pin([1480,1060],18,'upper street'),pin([1470,1160],12,'square arrival'),pin([1440,1200],12,'square'),pin([1350,1345],9,'Quay Bridge'),pin([1133,1435],4,'zip underpass'),pin([1020,1430],3,'park')],
   S4:[pin([1000,520],40,'studio start'),pin([893,600],37,'Hollow Bridge'),pin([1020,1430],3,'park')],
-  'walk garden':[pin([740,400],48,'Library'),pin([893,600],37,'Hollow Bridge'),pin([990,780],56,'Glasshouse')],
+  'walk garden':[pin([762,422],48,'Library apron'),pin([893,600],37,'Hollow Bridge'),pin([915,638],36,'Cottage front walk'),pin([930,650],38,'Cottage spur landing'),pin([990,780],56,'Glasshouse')],
   'walk lakerim':[pin([990,780],56,'Glasshouse'),pin([1161,731],52,'inlet bridge'),pin([1140,905],52,'dam crest')],
   'walk square':[pin([1455,1175],12,'square'),pin([1480,1060],18,'upper street')],
   'walk reach':[pin([1400,1290],7,'town connection'),pin([1274,1203],6,'Reach footbridge'),pin([1240,1130],9,'High Span walk')],
@@ -66,12 +66,21 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
   for(const [id,row]of Object.entries(M.walks)){
     const name=`walk ${id}`;
     let points=row.pts as unknown as XY[];
-    if(id==='garden')points=[[762,422],...points.slice(1)];
+    if(id==='garden')points=[[762,422],[850,525],[893,600],[900,640],[915,638],[930,650],[926,680],[930,720],[960,756],[990,780]];
     if(id==='coveWalk')points=[[762,422],[780,380],[754,356],...points.slice(1)];
     if(id==='crown')points=[[1370,690],[1445,665],[1425,605],[1340,620],[1400,540],[1360,470],[1310,500]];
     if(id==='crownFromGondola')points=[[1360,560],[1405,595],[1450,565],[1430,500],[1350,440],[1310,500]];
-    cuts.beds.push(bed(name,row.profile,gradeRoute(name,points,base,.12,withSpanPins(name,points,routePins[name]),cuts.diagnostics)));
+    const pins=withSpanPins(name,points,routePins[name]);
+    if(id==='garden')for(const p of sampleSpline(points))if(p[0]>=899&&p[0]<=916&&p[1]>=637&&p[1]<=642)pins.push(pin(p,36,'Cottage front bench'));
+    cuts.beds.push(bed(name,row.profile,gradeRoute(name,points,base,.12,pins,cuts.diagnostics)));
   }
+  // Join the Cottage spur to the garden walk at the same contour. A short
+  // public link avoids treating two nearby but disconnected paths as one.
+  const spur=cuts.beds.find(b=>b.id==='spur cottage')!,garden=cuts.beds.find(b=>b.id==='walk garden')!,from=spur.points.at(-1)!;
+  const joins:XYZ[]=[];
+  garden.points.slice(1).forEach((b,i)=>{const a=garden.points[i]!,t=(from[1]-a[1])/(b[1]-a[1]);if(t>=0&&t<=1)joins.push([mix(a[0],b[0],t),from[1],mix(a[2],b[2],t)]);});
+  const to=joins.sort((a,b)=>distance(plan(a),plan(from))-distance(plan(b),plan(from)))[0];
+  if(to&&distance(plan(from),plan(to))>.01&&distance(plan(from),plan(to))<40)cuts.beds.push(bed('cottage.gardenLink','walk',[from,to]));
 }
 export interface StationPositions { id:string; centre:XYZ; positions:XYZ[] }
 /** Two empty south-facing rows; these coordinates reserve space, never create financial beds. */
@@ -84,10 +93,14 @@ export function yearWalkStretches(cuts:LandCuts):{month:number;stationId:string;
   return M.journey.stations.map((s,i)=>{const previous=along[(i+11)%12]!,current=along[i]!,d=(current-previous+length)%length;return {month:s.month,stationId:s.id,length:d,spacing28:d/28,spacing31:d/31};});
 }
 function journey(cuts:LandCuts,base:HeightQuery):void {
-  const source=M.journey.yearWalk.pts as unknown as XY[];
+  // The diagram passes through the Library centre. Route the walking bed around
+  // its southeast apron; the host and all twelve station coordinates stay fixed.
+  const source=(M.journey.yearWalk.pts as unknown as XY[]).flatMap(p=>p[0]===740&&p[1]===400?[[780,450],[762,422],[738,444]] as XY[]:p[0]===930&&p[1]===660?[[930,660],[902,646],[900,608]] as XY[]:[p]);
   // The two Crown approaches take long contour returns; their short diagram chords cannot hold 12%.
   const controls:XY[]=[source[0]!,[1440,710],[1450,865],[1360,940],...source.slice(1,-2),[1520,1190],[1580,1050],[1600,860],[1590,700],[1500,340],[1445,430],[1445,520],[1400,620],[1370,690],source[0]!];
   const stationPins=M.journey.stations.map(s=>pin(s.xy as unknown as XY,s.id==='jan'?110:s.id==='feb'?53:s.id==='dec'?12:heightOnBeds(cuts,s.xy as unknown as XY,base,35),`station ${s.id}`));
+  stationPins.push(pin([762,422],48,'Library public apron'));
+  stationPins.push(pin([902,646],36,'Cottage bypass'),pin([900,608],37,'Hollow approach'));
   stationPins.push(pin([1480,1060],18,'upper street'),pin([1370,690],110,'turning circle'));
   for(const p of sampleSpline(controls))if(Math.abs(p[0]-1480)<=21&&Math.abs(p[1]-1080)<=39)stationPins.push(pin(p,18,'level upper street terrace'));
   const b=bed('yearWalk','walk',gradeRoute('yearWalk',controls,base,.12,stationPins,cuts.diagnostics));b.width=5.2;b.shoulder=1.2;cuts.beds.push(b);
@@ -146,7 +159,7 @@ export function buildLandCuts(baseHeight:HeightQuery):LandCuts {
   const cuts:LandCuts={beds:[],pads:[],mouths:[],waters:[],solids:[],diagnostics:[]};
   roadAndWalks(cuts,baseHeight);journey(cuts,baseHeight);buildTown(cuts,baseHeight);buildReserves(cuts,baseHeight);buildHostSites(cuts,baseHeight);buildStructures(cuts,baseHeight);buildUnderground(cuts,baseHeight);
   // Exclude the surface field under bridges and road tunnels, retaining natural water and roof cover.
-  for(const spec of SPANS){const route=cuts.beds.find(b=>b.id===spec.route);if(route)(route.terrainExclusions??=[]).push({at:spec.at,radius:spec.length/2+2});}
+  for(const spec of SPANS){const route=cuts.beds.find(b=>b.id===spec.route);if(route)(route.terrainExclusions??=[]).push({at:spec.at,radius:spec.length/2+2,openSpan:true});}
   for(const [id,route,length]of [['prowTunnel','V01',90],['shoulderTunnel','V02',110],['duneCulvert','S4',32]]as const){const b=cuts.beds.find(b=>b.id===route);if(b)(b.terrainExclusions??=[]).push({at:M.structures[id]!.xy as unknown as XY,radius:length/2+2});}
   cuts.beds.find(b=>b.id==='V01')!.terrainExclusions!.push({at:[1010,1388],radius:12});
   cables(cuts,baseHeight);const markers=thresholds(cuts,baseHeight);

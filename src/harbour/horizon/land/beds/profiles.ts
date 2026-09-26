@@ -1,6 +1,17 @@
 import { HORIZON_MANIFEST as M, requireScaleFactor } from '../../world/manifest';
 import type { BedCut, HeightQuery, LandCuts, StructureSolid, XY, XYZ } from '../interfaces';
-import { box, distance, districtAt, nearestOnPath, slab, solid } from '../structures/mesh';
+import { box, distance, districtAt, nearestOnPath, slab, solid, prism } from '../structures/mesh';
+
+/** Closed wall with a true 1:6 face, rather than a wide rectangular fence.
+ * A cut leans into the hill; a fill widens toward the ground below the road. */
+export function batteredWall(out:StructureSolid,a:XYZ,b:XYZ,offset:number,side:number,low:number,top:number,cut:boolean):void {
+  const length=Math.hypot(b[0]-a[0],b[2]-a[2]);if(length<1e-7||top<=low)return;
+  const nx=-(b[2]-a[2])/length,nz=(b[0]-a[0])/length,lean=(top-low)/6;
+  const topOffset=offset+(cut?side*lean:0),bottomOffset=offset+(cut?0:side*lean);
+  const corners=(height:number,o:number):XYZ[]=>[[a,-1],[a,1],[b,1],[b,-1]].map(([v,k])=>{const p=v as XYZ,amount=o+(k as number)*.25;return[p[0]+nx*amount,height,p[2]+nz*amount];});
+  const start=out.positions.length;prism(out,corners(top,topOffset),low);
+  corners(low,bottomOffset).forEach((p,i)=>out.positions.splice(start+i*3,3,...p));
+}
 
 export function bed(id:string, profile:string, points:XYZ[], terrainCut=true):BedCut {
   const s=requireScaleFactor(), road=profile==='road',spur=profile==='spur',skate=profile==='skateMain';
@@ -32,11 +43,10 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
           if(i%2===0)box(rails,[mid[0]!+nx*side*edge,mid[1]!+nz*side*edge],h+1.05,[.12,.12],h-.1);
         }
       }
-      if(b.terrainCut&&!joinedPad&&Math.abs(drop)>.5){
+      if(b.terrainCut&&!joinedPad&&!b.terrainExclusions?.some(e=>distance(mid,e.at)<e.radius)&&Math.abs(drop)>.5){
         const low=Math.min(h-.6,base(mid[0]!+nx*side*(edge+1),mid[1]!+nz*side*(edge+1)))-.2;
         const top=Math.max(h,low+Math.abs(drop));
-        // The wall widens into the earth at 1:6, so cuts have a visible battered face.
-        box(retaining,[mid[0]!+nx*side*(edge+.25),mid[1]!+nz*side*(edge+.25)],top,[Math.max(.5,(top-low)/6),len+.05],low,Math.atan2(dz,dx)*180/Math.PI-90);
+        batteredWall(retaining,a,p,side*(edge+.5),side,low,top,drop<0);
       }
     }
   }

@@ -82,3 +82,14 @@ describe('Horizon spatial bed cut solver', () => {
     expect(createBedSampler([ignored[1]!])(200, 300, 80).height).toBe(80);
   });
 });
+
+it('caps banks below named open bridge decks without filling their channels or cutting tunnel roofs',()=>{
+ const bridge=bed('structure.highSpan',[[100,24,100],[300,24,100]],{terrainCut:false,structureIds:['highSpan']});
+ const river=flatField();river.heights.fill(4);conserveBedFootprint(river,[bridge]);expect(sampleTerrain(river,200,100)).toBe(4);
+ const bank=flatField();conserveBedFootprint(bank,[bridge]);expect(sampleTerrain(bank,200,100)).toBeCloseTo(23.35,4);expect(sampleTerrain(bank,200,200)).toBe(80);
+});
+
+it('clears generated bridge spans while preserving an adjacent tunnel exclusion',()=>{
+ const route=bed('upper',[[100,24,100],[400,24,100]],{terrainExclusions:[{at:[180,100],radius:30,openSpan:true},{at:[330,100],radius:30}]});
+ const bank=flatField();conserveBedFootprint(bank,[route]);expect(sampleTerrain(bank,180,100)).toBeCloseTo(23.35,4);expect(sampleTerrain(bank,330,100)).toBe(80);
+});

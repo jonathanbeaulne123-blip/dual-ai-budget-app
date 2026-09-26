@@ -20,8 +20,8 @@ export interface BedCut {
   maxGrade: number;
   /** A bridge/cable/cave must not pull the heightfield up to its deck or down to its floor. */
   terrainCut: boolean;
-  /** Structural spans leave the basin or tunnel roof intact beneath the route. */
-  terrainExclusions?: { at: XY; radius: number }[];
+  /** Exclude terrain fill beneath spans; open spans also cap intruding banks, while tunnel roofs stay intact. */
+  terrainExclusions?: { at: XY; radius: number; openSpan?: boolean }[];
   structureIds: string[];
   districtIds: string[];
 }

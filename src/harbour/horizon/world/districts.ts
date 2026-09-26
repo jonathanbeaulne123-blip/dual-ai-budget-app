@@ -91,7 +91,12 @@ export function createDistrictStream<T extends DistrictResource>(world: Pick<Wor
   const live = new Map<string, T>(), outsideSince = new Map<string, number>(), cap = tier === 'full' ? 4 : 3;
   let disposed = false, frame = 0;
   const history: { frame: number; time: number; mode: string; built: string[]; released: string[]; resident: string[]; pending: string[] }[] = [];
-  const distance = (d: District, x: number, z: number) => { if (pointInPolygon(x, z, d.outline)) return 0; const b = d.bounds!; return Math.hypot(Math.max(b.min[0] - x, 0, x - b.max[0]), Math.max(b.min[2] - z, 0, z - b.max[2])); };
+  const distance = (d: District, x: number, z: number) => {
+    if (pointInPolygon(x, z, d.outline)) return 0;
+    // Voronoi districts have overlapping bounding boxes. Box distance alone
+    // can evict the district containing the camera in favour of distant land.
+    return Math.min(...d.outline.map((a,i)=>{const b=d.outline[(i+1)%d.outline.length]!,dx=b[0]-a[0],dz=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz||1)));return Math.hypot(x-a[0]-t*dx,z-a[1]-t*dz);}));
+  };
   return {
     live, history, cap,
     update(input: StreamPosition): boolean {
@@ -101,7 +106,12 @@ export function createDistrictStream<T extends DistrictResource>(world: Pick<Wor
       // Offshore rocks may become a normal resident; permanent horizon cards belong to the sky ring.
       const offshore = world.districts.find(d => d.id === 'offshore');
       const nearOffshore = HORIZON_MANIFEST.offshore.some(site => { const points = Array.isArray(site.xy[0]) ? site.xy as number[][] : [site.xy as number[]]; return points.some(p => Math.hypot(input.x - p[0]!, input.z - p[1]!) <= (input.radius ?? (tier === 'full' ? 220 : 150))); });
-      if (offshore && (nearOffshore || input.x < 300 || input.x > 1720 || input.z > 1530)) { if (desired.length === cap) desired.pop(); desired.unshift(offshore); }
+      if (offshore && (nearOffshore || input.x < 300 || input.x > 1720 || input.z > 1530)) {
+        if (desired.length === cap) desired.pop();
+        const atOffshore=HORIZON_MANIFEST.offshore.some(site=>{const points=Array.isArray(site.xy[0])?site.xy as number[][]:[site.xy as number[]];return points.some(p=>Math.hypot(input.x-p[0]!,input.z-p[1]!)<80);});
+        // A distant skyline must never displace the ground under the camera.
+        desired.splice(atOffshore||input.x<300||input.x>1720||input.z>1530?0:Math.min(1,desired.length),0,offshore);
+      }
       const wanted = new Set(desired.map(d => d.id)), released: string[] = [], built: string[] = [];
       for (const [id, resource] of live) { if (wanted.has(id)) { outsideSince.delete(id); continue; } const since = outsideSince.get(id) ?? input.now; outsideSince.set(id, since); if (input.now - since >= 4000) { resource.dispose(); live.delete(id); outsideSince.delete(id); released.push(id); } }
       // Walk/Look only changes desired districts on a regular render frame. It cannot flush or build synchronously.

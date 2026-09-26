@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { buildLandCuts } from '../src/harbour/horizon/land/beds/build';
 import { baseHeight } from '../src/harbour/horizon/land/terrain';
 import { bounds, box, slab, solid } from '../src/harbour/horizon/land/structures/mesh';
+import { floorAt } from '../src/harbour/horizon/world/views';
+import { solidVerticalRangeAt } from '../src/harbour/horizon/world/geometry';
 import { SPANS } from '../src/harbour/horizon/land/structures/build';
 import { settleFoundations } from '../src/harbour/horizon/land/structures/foundations';
 import { groundTerrainBeds } from '../src/harbour/horizon/land/structures/groundBeds';
@@ -21,10 +23,15 @@ describe('Horizon structural solids',()=>{
     for(const spec of SPANS){const deck=cuts.solids.find(s=>s.id===`${spec.id}.deck`)!;expect(deck).toBeDefined();const b=bounds(deck);expect(b.max[1]-b.min[1]).toBeGreaterThanOrEqual(.599999);expect(cuts.solids.find(s=>s.id===`${spec.id}.supports`)!.indices.length).toBeGreaterThan(0);}
     for(const id of ['prowTunnel','shoulderTunnel','duneCulvert','oreTunnel','seaPassage'])expect(cuts.solids.find(s=>s.id===`${id}.roof`)!.indices.length).toBeGreaterThan(0);
     const deck=bounds(cuts.solids.find(s=>s.id==='highSpan.deck')!);expect(deck.max[1]).toBe(24);expect(deck.min[1]).toBeGreaterThan(23);
+    const field={revision:'horizon-geo-1' as const,width:2000,depth:1800,step:100,columns:21,rows:19,heights:new Float32Array(399).fill(6),surfaces:new Uint8Array(399)};
+    expect(floorAt(field,cuts,[1245,1125])).toBe(9);
+    expect(cuts.solids.find(s=>s.id==='highSpan.overlook.supports')!.positions.length).toBeGreaterThan(0);
+    expect(solidVerticalRangeAt(cuts.solids.find(s=>s.id==='highSpan.walk.rail')!,1238.5,1125)?.top).toBeCloseTo(10.05);
     expect(bounds(cuts.solids.find(s=>s.id==='highSpan.shelf.deck')!).max[1]).toBe(12);expect(bounds(cuts.solids.find(s=>s.id==='highSpan.walk.deck')!).max[1]).toBe(9);
   },60000);
   it('extends lowest footings after a lower terrain cut without moving fixed decks',()=>{
-    const cuts=buildLandCuts(baseHeight),deck=cuts.solids.find(s=>s.id==='highSpan.deck')!,before=[...deck.positions],settled=settleFoundations(cuts,()=>-20);
+    const cuts=buildLandCuts(baseHeight),deck=cuts.solids.find(s=>s.id==='highSpan.deck')!,before=[...deck.positions];
+    const beam=solid('test.beam','beam','stone','support');box(beam,[0,0],10,[20,1],9.4);cuts.solids.push(beam);const beamBefore=[...beam.positions],settled=settleFoundations(cuts,()=>-20);expect(beam.positions).toEqual(beamBefore);
     expect(settled.some(p=>p.id==='highSpan.supports')).toBe(true);expect(settled.every(p=>p.settledFoot<=-20.25&&p.extension>0)).toBe(true);expect(deck.positions).toEqual(before);expect(bounds(cuts.solids.find(s=>s.id==='highSpan.supports')!).min[1]).toBe(-20.25);
   });
   it('grounds closed bed undersides and preserves lower routes, water, and tunnel exclusions',()=>{

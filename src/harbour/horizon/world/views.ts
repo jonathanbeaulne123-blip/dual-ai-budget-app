@@ -1,10 +1,11 @@
 import type { LandCuts, StructureSolid, TerrainField } from '../land/interfaces.ts';
 import type { Point3, SketchbookPose, Point2 } from './definition.ts';
+import { waterHeightAt } from '../land/water/index.ts';
 import { HORIZON_MANIFEST, requireScaleFactor } from './manifest.ts';
 import { distance3, ellipse, mixPoint, padOutline, pointInPolygon, raySolid, solidBounds, solidTopAt, terrainHeight } from './geometry.ts';
 
 export interface ViewSubject { id: string; at: Point3; exists: boolean; geometryIds: string[]; samples?: Point3[] }
-export interface ViewProof { eyeAboveFloor: boolean; horizonInFrame: boolean; subjects: { id: string; exists: boolean; ndc: Point2; inFrame: boolean; fullyInFrame?: boolean; occludedBy: string | null; distance: number; sampleCount?: number; inFrameSamples?: number; visibleSamples?: number; projectedBounds?: readonly [Point2, Point2] }[]; pass: boolean; deferred: string[] }
+export interface ViewProof { eyeAboveFloor: boolean; eyeAboveWater: boolean; horizonInFrame: boolean; subjects: { id: string; exists: boolean; ndc: Point2; inFrame: boolean; fullyInFrame?: boolean; occludedBy: string | null; distance: number; sampleCount?: number; inFrameSamples?: number; visibleSamples?: number; projectedBounds?: readonly [Point2, Point2] }[]; pass: boolean; deferred: string[] }
 const subjectsByView: Record<string, string[]> = { A: ['landform.reach', 'structure.highSpan', 'structure.dam', 'landform.crown'], B: ['structure.bightBridge', 'landform.flats', 'island.hook'], C: ['structure.highSpan.deck', 'structure.highSpan.shelf', 'structure.highSpan.walk'], D: ['water.sea', 'offshore.lamp', 'threshold.zipLanding'], E: ['landform.harbour', 'landform.sands', 'landform.reach', 'landform.green', 'landform.hollow', 'landform.scholars', 'landform.flats', 'water.stillwater', 'landform.prow', 'water.sea'], F: ['place.L01', 'water.stillwater', 'landform.harbour'], G: ['mouth.throat', 'deep.skylight', 'water.deep'], H: ['structure.strip', 'structure.windsock', 'structure.balloonMooring', 'sea.west'], I: ['landform.reach', 'water.spring'], J: ['offshore.needle', 'offshore.stacks', 'landform.prow'], K: ['host.glasshouse', 'water.stillwater'], L: ['structure.townQuay', 'structure.floatplaneDock', 'host.boathouse'] };
 const deferred: Record<string, string[]> = { D: ['bench', 'wrack and footprints'], F: ['plaques', 'L01 instrument dressing'], G: ['glider', 'glow-worms'], H: ['windsock fabric', 'balloon'], I: ['reeds', 'heron'], K: ['seed pots'], L: ['lantern cards', 'floatplane'] };
 export function floorAt(field: TerrainField, cuts: LandCuts, xy: Point2, underground = false): number {
@@ -50,7 +51,8 @@ export function buildViews(field: TerrainField, cuts: LandCuts): SketchbookPose[
     const eye: Point3 = [xy[0], view.eyeH !== undefined ? view.eyeH * s : floor + 1.6, xy[1]], tx = view.target[0]! * s, tz = view.target[1]! * s;
     const target: Point3 = [tx, view.id === 'G' ? 110 * s : view.id === 'J' ? 14 * s : view.id === 'C' ? 16 * s : terrainHeight(field, tx, tz), tz];
     const horizontal = Math.hypot(target[0] - eye[0], target[2] - eye[2]), pitch = Math.atan2(target[1] - eye[1], horizontal), verticalHalfFov = Math.atan(Math.tan(view.fov_deg * Math.PI / 360) / (16 / 9));
-    const proof: ViewProof = { eyeAboveFloor: eye[1] > floor, horizonInFrame: Math.abs(pitch) < verticalHalfFov, subjects: [], pass: false, deferred: deferred[view.id] ?? [] };
+    const eyeAboveWater=!cuts.waters.some(w=>w.kind!=='dry'&&!!w.underground===underground&&(waterHeightAt(w,eye[0],eye[2])??-Infinity)>=eye[1]);
+    const proof: ViewProof = { eyeAboveFloor: eye[1] > floor, eyeAboveWater, horizonInFrame: Math.abs(pitch) < verticalHalfFov, subjects: [], pass: false, deferred: deferred[view.id] ?? [] };
     for (const id of subjectsByView[view.id] ?? []) {
       const subject = byId.get(id) ?? { id, at: target, exists: false, geometryIds: [] }, projection = projectSubject(eye, target, subject.at, view.fov_deg), ignore = new Set(subject.geometryIds);
       const samples = subject.samples?.length ? subject.samples : [subject.at], projected = samples.map(point => ({ point, ...projectSubject(eye, target, point, view.fov_deg) }));
@@ -60,7 +62,7 @@ export function buildViews(field: TerrainField, cuts: LandCuts): SketchbookPose[
       const front = projected.filter(p => p.depth > 0), projectedBounds: [Point2, Point2] = front.length ? [[Math.min(...front.map(p => p.ndc[0])), Math.min(...front.map(p => p.ndc[1]))], [Math.max(...front.map(p => p.ndc[0])), Math.max(...front.map(p => p.ndc[1]))]] : [[0, 0], [0, 0]];
       proof.subjects.push({ id, exists: subject.exists, ndc: projection.ndc, inFrame: inFrame.length > 0, fullyInFrame: inFrame.length === samples.length, occludedBy: visibleSamples > 0 ? null : obstructions[0] ?? null, distance: distance3(eye, subject.at), sampleCount: samples.length, inFrameSamples: inFrame.length, visibleSamples, projectedBounds });
     }
-    proof.pass = proof.eyeAboveFloor && proof.horizonInFrame && proof.subjects.every(subject => subject.exists && subject.inFrame && subject.occludedBy === null);
+    proof.pass = proof.eyeAboveFloor && proof.eyeAboveWater && proof.horizonInFrame && proof.subjects.every(subject => subject.exists && subject.inFrame && subject.occludedBy === null);
     return { id: view.id, label: view.label, eye, target, floor, underground, fovDegrees: view.fov_deg, aspect: 16 / 9, radius: view.radius_eu, bestHour: view.bestHour, also: view.also, subjectIds: subjectsByView[view.id], proof };
   });
 }

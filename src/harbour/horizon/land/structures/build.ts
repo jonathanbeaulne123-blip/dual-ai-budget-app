@@ -25,7 +25,7 @@ export function buildSpan(spec:SpanSpec,cuts:LandCuts,base:HeightQuery):void {
   const route=cuts.beds.find(b=>b.id===spec.route),axis=axisAt(route,spec.at),normal:XY=[-axis[1]!,axis[0]!];
   const h=spec.height??heightOnBeds(cuts,spec.at,base),a:XYZ=[spec.at[0]!-axis[0]!*spec.length/2,h,spec.at[1]!-axis[1]!*spec.length/2],b:XYZ=[spec.at[0]!+axis[0]!*spec.length/2,h,spec.at[1]!+axis[1]!*spec.length/2];
   const curve:XYZ[]=[];
-  if(spec.id==='quayBridge'&&route){const centre=nearestOnPath(spec.at,route.points).along;let along=0;for(let i=0;i<route.points.length;i++){if(i)along+=distance(plan(route.points[i-1]!),plan(route.points[i]!));if(Math.abs(along-centre)<=spec.length/2+3)curve.push([route.points[i]![0],h,route.points[i]![2]]);}}
+  if((spec.id==='quayBridge'||spec.id==='highSpan')&&route){const centre=nearestOnPath(spec.at,route.points).along;let along=0;for(let i=0;i<route.points.length;i++){if(i)along+=distance(plan(route.points[i-1]!),plan(route.points[i]!));if(Math.abs(along-centre)<=spec.length/2+3)curve.push([route.points[i]![0],h,route.points[i]![2]]);}}
   const path=curve.length>1?curve:[a,b],deck=solid(`${spec.id}.deck`,spec.covered?'coveredFootbridge':'bridge','stone','deck',[spec.route],districtAt(...spec.at));for(let i=1;i<path.length;i++)slab(deck,path[i-1]!,path[i]!,spec.width,.6);
   const piers=solid(`${spec.id}.supports`,'pier','stone','support',[spec.route],deck.districtId),rails=solid(`${spec.id}.rails`,'parapet','stone','rail',[spec.route],deck.districtId);
   const count=Math.ceil(spec.length/(spec.supportSpacing??12));
@@ -81,6 +81,18 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
     const a:XYZ=[x,h,1078],b:XYZ=[x,h,1135],deck=solid(`${id}.deck`,'shelf','stone','deck',[id==='highSpan.shelf'?'S1':'walk reach'],'notch'),brackets=solid(`${id}.supports`,'corbel','rock','support',deck.bedIds,'notch'),rail=solid(`${id}.rail`,'handrail','metal','rail',deck.bedIds,'notch');slab(deck,a,b,width,.6);
     for(let z=1078;z<=1135;z+=10)box(brackets,[x-width/2,z],h-.5,[width+1,1.2],Math.min(base(x-width/2,z)-.2,h-2));slab(rail,a,b,.09,.09,width/2,1.05);cuts.solids.push(deck,brackets,rail);
   }
+  // Camera C keeps its authored position. A real, supported river overlook
+  // connects it to the lower High Span gallery instead of placing the eye underwater.
+  const overlook=solid('highSpan.overlook.deck','shelf','stone','deck',['highSpan.overlook'],'notch');
+  slab(overlook,[1240,9,1125],[1246,9,1125],4,.6);
+  const overlookPiles=solid('highSpan.overlook.supports','pier','stone','support',['highSpan.overlook'],'notch');
+  for(const x of [1241,1245])for(const z of [1123.4,1126.6])box(overlookPiles,[x,z],8.5,[.4,.4],base(x,z)-.25);
+  const overlookRail=solid('highSpan.overlook.rails','handrail','metal','rail',['highSpan.overlook'],'notch');
+  for(const z of [1123,1127])slab(overlookRail,[1241.5,9,z],[1246,9,z],.09,.09,0,1.05);
+  slab(overlookRail,[1246,9,1123],[1246,9,1127],.09,.09,0,1.05);
+  cuts.solids.push(overlook,overlookPiles,overlookRail);
+  const lowerGalleryBed=bed('highSpan.walk','walk',[[1240,9,1078],[1240,9,1125],[1240,9,1135]],false);lowerGalleryBed.width=3;cuts.beds.push(lowerGalleryBed);
+  const overlookBed=bed('highSpan.overlook','walk',[[1240,9,1125],[1246,9,1125]],false);overlookBed.width=4;cuts.beds.push(overlookBed);
   for(const [id,route,length,width,clear] of [['prowTunnel','V01',90,10,5],['shoulderTunnel','V02',110,10,5],['duneCulvert','S4',32,5,3]] as const){
     const s=M.structures[id]!,xy=s.xy as unknown as XY,b=cuts.beds.find(p=>p.id===route)!,axis=axisAt(b,xy),h=id==='duneCulvert'?1.4:heightOnBeds(cuts,xy,base),a:XYZ=[xy[0]!-axis[0]!*length/2,h,xy[1]!-axis[1]!*length/2],end:XYZ=[xy[0]!+axis[0]!*length/2,h,xy[1]!+axis[1]!*length/2];
     tunnel(id,[a,end],width,clear,cuts,districtAt(...xy));

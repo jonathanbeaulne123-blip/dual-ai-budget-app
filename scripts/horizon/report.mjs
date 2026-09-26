@@ -4,7 +4,7 @@ import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 const root=process.cwd(),output=resolve(process.argv[2]??'/tmp/horizon-evidence'),w=JSON.parse(await readFile('public/horizon/world/horizon-geo-1.json','utf8')),m=JSON.parse(await readFile('src/harbour/horizon/world/MANIFEST.json','utf8'));
 for(const dir of ['probes','perf','rides'])await mkdir(resolve(output,dir),{recursive:true});
-const sha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),meta={sha,revision:w.geographyRevision,terrainSha256:createHash('sha256').update(await readFile('public/horizon/terrain/horizon-geo-1.bin')).digest('hex'),workingTreeClean:!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim()};
+const sha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),meta={sha,revision:w.geographyRevision,worldSha256:createHash('sha256').update(await readFile('public/horizon/world/horizon-geo-1.json')).digest('hex'),terrainSha256:createHash('sha256').update(await readFile('public/horizon/terrain/horizon-geo-1.bin')).digest('hex'),workingTreeClean:!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim()};
 const json=(path,value)=>writeFile(resolve(output,path),JSON.stringify({meta,...value},null,2)+'\n'),md=(path,rows)=>writeFile(resolve(output,path),rows.join('\n')+'\n'),round=v=>typeof v==='number'?Number(v.toFixed(3)):v;
 await json('probes/horizon-crossings.json',{rawIntersections:w.rawIntersections,crossings:w.crossingProofs,allBuilt:w.crossingProofs.every(p=>p.built),allClear:w.crossingProofs.every(p=>p.clearancePass)});
 await json('probes/horizon-thresholds.json',{thresholds:w.thresholds,allBuilt:w.thresholds.every(p=>p.built)});

@@ -92,6 +92,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function setMode(next:HorizonMode){
     const fromEye=camera.position.clone(),fromTarget=target.clone();mode=next;path=[];
     if(next==='journey'){camera.position.set(1000,2100,2100);target.set(1000,20,850);camera.lookAt(target);camera.fov=50;camera.updateProjectionMatrix();}
+    else if(next==='look')shot(shotId);
     else if(next==='walk'){const at=geography.surface(body.x,body.z,body.y);if(at&&at.slope<=HORIZON_WALKABLE_DEGREES)body.y=at.y;distance=9;pitch=-.26;updateCamera();}
     transition={eye:fromEye,target:fromTarget,toEye:camera.position.clone(),toTarget:target.clone(),at:performance.now(),duration:options.reducedMotion?300:1100};camera.position.copy(fromEye);target.copy(fromTarget);camera.lookAt(target);
     updateFog();

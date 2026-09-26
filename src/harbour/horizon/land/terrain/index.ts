@@ -253,20 +253,26 @@ export const BED_TERRAIN_CLEARANCE = .05;
 /** Each supporting grid vertex is below the extended plane of every nearby bed
  * segment. Linear interpolation then stays below that same rendered deck plane.
  * The diagonal margin covers every vertex of a triangle touching the footprint.
- * Named bridge/tunnel exclusions retain their terrain, including supporting cells. */
+ * Open spans cap intruding ground without filling their channels; tunnel roofs stay intact. */
 export function createBedClearanceSampler(beds: BedCut[], rasterMargin = 0): (x: number, z: number) => number {
-  const prepared = prepareBeds(beds, rasterMargin);
+  // A bridge exclusion prevents raising the channel to the road, but must not
+  // preserve a bank poking through its deck. Cap ground under named open spans
+  // without raising it or cutting any tunnel/cave roof.
+  const isSpan=(b:BedCut)=>b.id.startsWith('structure.')&&b.structureIds.length>0;
+  const clearanceBeds=beds.map(b=>isSpan(b)?{...b,terrainCut:true,terrainExclusions:[]}:b);
+  const prepared = prepareBeds(clearanceBeds, rasterMargin);
   return (x, z) => {
     let ceiling = Infinity;
     for (const {bed, a, b, length} of prepared.bins.get(cellKey(x, z, prepared.cell)) ?? []) {
-      if (length < 1e-8 || bed.terrainExclusions?.some(e => Math.hypot(x - e.at[0], z - e.at[1]) < e.radius + rasterMargin)) continue;
+      const exclusions=bed.terrainExclusions?.filter(e=>Math.hypot(x-e.at[0],z-e.at[1])<e.radius+rasterMargin)??[];
+      if (length < 1e-8 || exclusions.some(e=>!e.openSpan)) continue;
       const hit = segmentPoint(x, z, [a[0], a[2]], [b[0], b[2]]);
       if (hit.distance > bed.width / 2 + bed.shoulder + rasterMargin) continue;
       const dx = b[0] - a[0], dz = b[2] - a[2];
       // Do not clamp t: a clamped endpoint height can bridge above a sloped
       // deck when a terrain triangle straddles that segment's endpoint.
       const t = ((x - a[0]) * dx + (z - a[2]) * dz) / (length * length);
-      ceiling = Math.min(ceiling, mix(a[1], b[1], t) - BED_TERRAIN_CLEARANCE);
+      ceiling = Math.min(ceiling, mix(a[1], b[1], t) - (isSpan(bed)||exclusions.some(e=>e.openSpan) ? .65 : BED_TERRAIN_CLEARANCE));
     }
     return ceiling;
   };

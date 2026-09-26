@@ -21,3 +21,9 @@ it('matches Three projection for pitched cameras using horizontal FOV',()=>{
   camera.position.set(...eye);camera.lookAt(...target);camera.updateMatrixWorld(true);
   for(const point of [[-20,6,-70],[5,20,-50],[150,10,100],[-40,60,-100]]as const){const expected=new Vector3(...point).project(camera),actual=projectSubject(eye,target,point,fov,aspect);expect(actual.ndc[0]).toBeCloseTo(expected.x,8);expect(actual.ndc[1]).toBeCloseTo(expected.y,8);}
 });
+
+it('rejects an authored eye below a visible river surface even when above terrain',()=>{
+ const wet={...cuts,waters:[{id:'river',kind:'river' as const,points:[[1245,15,1110],[1245,15,1140]] as [number,number,number][],outline:[],level:15,width:8,depth:12,bank:2}]};
+ const view=buildViews(field,wet).find(v=>v.id==='C')!;
+ expect(view.proof!.eyeAboveFloor).toBe(true);expect(view.proof!.eyeAboveWater).toBe(false);expect(view.proof!.pass).toBe(false);
+});

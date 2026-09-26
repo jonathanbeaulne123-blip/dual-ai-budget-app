@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import { HORIZON_MANIFEST as M } from '../src/harbour/horizon/world/manifest';
 import { buildLandCuts } from '../src/harbour/horizon/land/beds/build';
+import { padOutline,pointInPolygon } from '../src/harbour/horizon/world/geometry';
 import { baseHeight } from '../src/harbour/horizon/land/terrain';
 import { maxGrade, nearestOnPath } from '../src/harbour/horizon/land/structures/mesh';
 import { BufferGeometry, Float32BufferAttribute, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three';
@@ -19,3 +20,14 @@ it('leaves all seven physical doorways open and connects their aprons to public 
     const journey=walkPlan(graph,[1455,12,1175],door,{stepFree:true,maxSnap:1});expect(journey,host.id).not.toBeNull();expect(journey!.offBedDistance).toBeLessThan(.01);
   }
 },60000);
+
+it('keeps the Year Walk outside the rotated Library foundation and avoids a needless Glasshouse climb',()=>{
+ const cuts=buildLandCuts(baseHeight),pad=cuts.pads.find(p=>p.id==='host.library')!,foundation=cuts.solids.find(s=>s.id==='host.library.slab')!,outline=padOutline(pad);
+ const xs=foundation.positions.filter((_,i)=>i%3===0);expect(Math.min(...xs)).toBeCloseTo(Math.min(...outline.map(p=>p[0])),6);
+ const year=cuts.beds.find(b=>b.id==='yearWalk')!;expect(year.points.some(p=>pointInPolygon(p[0],p[2],outline))).toBe(false);
+ const cottage=padOutline(cuts.pads.find(p=>p.id==='host.cottage')!);expect(year.points.some(p=>pointInPolygon(p[0],p[2],cottage))).toBe(false);
+ const glass=cuts.beds.find(b=>b.id==='host.glasshouse.approach')!;expect(Math.abs(glass.points[0]![1]-56)).toBeLessThan(3);
+ expect(maxGrade(glass.points)).toBeLessThanOrEqual(.08001);
+ expect(glass.points.some(p=>p[0]>995&&p[0]<1025&&p[2]>781&&p[2]<799)).toBe(false);
+ expect(nearestOnPath([1010,810],glass.points).at[1]).toBeCloseTo(56);
+});

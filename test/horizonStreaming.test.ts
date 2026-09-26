@@ -45,6 +45,13 @@ it('streams the underground child only on request within the same residency cap'
   stream.update({x:1300,z:470,now:200,underground:false});expect(stream.live.has('undercroft')).toBe(true);
   stream.update({x:1300,z:470,now:4200,underground:false});expect(stream.live.has('undercroft')).toBe(false);
 });
+it('loads the camera district first even when other district bounding boxes overlap it',()=>{
+  const world={districts:buildDistricts(field,[],[])},stream=createDistrictStream(world,()=>({dispose(){}}),'lite');
+  // The High Span camera was assigned distant box-overlapping districts, leaving
+  // its close ground represented by the coarser Journey mesh.
+  stream.update({x:1245,z:1125,now:0,mode:'look',radius:1000});
+  expect([...stream.live.keys()][0]).toBe('notch');
+});
 function railFixture(segments: [number, number, number, number][]): StructureSolid {
   const positions:number[]=[],indices:number[]=[],faces=[0,2,1,0,3,2,4,5,6,4,6,7,0,1,5,0,5,4,1,2,6,1,6,5,2,3,7,2,7,6,3,0,4,3,4,7];
   for(const [x1,z1,x2,z2] of segments){const length=Math.hypot(x2-x1,z2-z1),nx=-(z2-z1)/length*.045,nz=(x2-x1)/length*.045,n=positions.length/3;
