@@ -1086,7 +1086,7 @@ yw_replace([[885,465],[815,470],[800,480],[755,480],[700,470]],
 #    terrace the footway can reach at the walk grade (May 37, September 35), and the April lane
 #    gets two levels so it takes the Hollow's 17 eu band face at 12 % (it rode the 8 % typical
 #    grade 6-13 eu over the Hollow floor): the plateau edge and the Cottage front walk's bench.
-YW_PIN_H_V19 = {"may": 37, "sep": 35, "jan": 113.8}
+YW_PIN_H_V19 = {"may": 37, "sep": 40, "jan": 113.8}
 for p in YW["pins"]:
     if p["station"] in YW_PIN_H_V19:
         p["v1_8_h"] = p["h"]
@@ -1202,7 +1202,48 @@ for sh in YW["shares"]:
     if sh["stretch"] == "nov" and sh["host"] == "V01" and sh["side"] == "inland": sh["v1_8_from"] = sh["from"]; sh["from"] = nov[0]
     if sh["stretch"] == "jan" and sh["host"] == "V01": sh["v1_8_to"] = sh["to"]; sh["to"] = jan01[-1]
     if sh["stretch"] == "jan" and sh["host"] == "V02": sh["v1_8_from"] = sh["from"]; sh["from"] = jan02[0]
+# 7. February and September above the Hollow (P12: the February line rode the Crown's flank at 65-67 over the September
+#    line at 40-44, 5 m away; 24 eu unsupported runs at [1046-1056,519-529]). February comes down onto the shelf (45) east of
+#    September and the two run as adjacent lanes (3.5 m, one height) through the shelf's narrow north end to [1000,480].
+yw_replace([[1055,710],[1100,600],[1085,555],[1070,535],[960,470]],
+           [[1055,710],[1052,662],[1060,600],[1062,540],[1060,505],[1050,487],[1000,480],[960,470]],
+           "February leaves the Crown's flank for the 45 shelf (September no longer uses it)")
+vgs = spline5(m["roads"]["VG"]["pts"])
+sep_vg = offset_run(vgs, [700, 500], 6.5, [995, 590], [938, 385])
+for st in m["journey"]["stations"]:
+    if st["id"] == "sep": st["v1_8_xy"] = st["xy"]; st["xy"] = [1032, 652]; st["moveWhy_v1_9"] = "8 m west so February passes east of the pad on the 45 shelf (the pad's level pins held February at 35 there); the pad sits at 40, a 5 m terrace cut into the shelf's edge"
+yw_replace([[1010,615],[1040,650],[1045,550],[1055,505],[1045,490],[995,470],[980,415],[945,370]],
+           [[1010,615],[1032,652],[1025,626],[1010,604]] + sep_vg,
+           "September returns from its pad across Green Road and walks its west footway north to the pass (it ran up the shelf beside February, 24 eu apart)")
+YW["shares"].append({"stretch": "sep", "host": "VG", "side": "west", "offset_m": 6.5, "from": sep_vg[0], "to": sep_vg[-1], "note": "v1.9: Green Road's west footway from the September pad's return to the north pass"})
 YW["v1_9_edits"] = YW_EDITS_V19
+
+# 8. Named footbridges (P12 unsupported runs / "two foot routes crossing" with no bridge; R1-04, R1-10, R1-31). Each is
+#    built by the structures builder on the route's own grade, with bents outside every lower corridor and a truss over the
+#    opening; a bent that would stand in a corridor is refused and reported.
+m["structures"]["gardenWalkBridge"] = {"xy": [965.7, 761.1], "kind": "footbridge", "route": "walk garden", "span_m": 40, "opening_m": 26, "width_m": 3.2,
+ "deck": "the Garden Walk on its own grade (51-55)", "under": "Green Road (37) and its May/September footway lanes, 15 eu below",
+ "note": "v1.9: the Garden Walk hung 16.7 eu over Green Road at [971,765] with no structure (the generated span found no footing within 20 m); the reserved at-grade threshold row VG x walk garden (R-A7) is unchanged"}
+m["structures"]["crownWalkBridge"] = {"xy": [1410.1, 605.8], "kind": "footbridge", "route": "walk crown", "span_m": 36, "opening_m": 24, "width_m": 3.2,
+ "deck": "the Crown walk on its own grade (119-122)", "under": "Crown Road's cutting (99) and its January footway lane",
+ "note": "v1.9: the Crown walk hung 21 eu over Crown Road at [1400-1417,605] (span refused: no footing outside the corridors)"}
+
+# 9. The Prow walk (T0 note 5; P12: 22 runs up to 38.5 eu over V01's cutting and the Year Walk's Prow footways; six
+#    "two foot routes crossing" rows 12-34 eu). It keeps to the Prow top east of the cutting: from the south lookout over
+#    the harbour, past the November station, between the Year Walk's two Prow lanes, onto the west lane at [1630,790].
+m["walks"]["prow"]["v1_8_pts"] = m["walks"]["prow"]["pts"]
+m["walks"]["prow"]["pts"] = [[1590, 998], [1606, 950], [1616, 928], [1641, 924], [1641, 880], [1640, 812], [1633, 790]]
+m["walks"]["prow"]["note_v1_9"] = "re-laid on the Prow top east of V01's cutting (was along the cutting's lip, over it twice); joins the Year Walk's west Prow lane at [1630,790], short of the sea stair's head"
+
+# 10. Views (W3-C requests A1, A4, A6, A7; each tested on the W3-C land): page A portrait at the viewRule minimum
+#     field (45°); page E's eye at the run-off corner of the lookout deck (it stood on the deck centre, 44 % of the frame
+#     deck); page K on the rim walk by the Glasshouse steps (the eye stood 1.4 eu under the walk); page L's portrait
+#     from the quay's west end.
+for v in m["views"]:
+    if v["id"] == "A": v["portrait"]["v1_8_fov_deg"] = v["portrait"]["fov_deg"]; v["portrait"]["fov_deg"] = 45
+    if v["id"] == "E": v["v1_8_xy"] = v["xy"]; v["xy"] = [1300.5, 485.5]
+    if v["id"] == "K": v["v1_8_xy"] = v["xy"]; v["xy"] = [1006, 762]
+    if v["id"] == "L": v["portrait"]["v1_8_xy"] = v["portrait"].get("xy"); v["portrait"]["xy"] = [1460, 1300]
 
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)

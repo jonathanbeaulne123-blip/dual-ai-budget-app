@@ -2209,6 +2209,38 @@
   "prow": {
    "pts": [
     [
+     1590,
+     998
+    ],
+    [
+     1606,
+     950
+    ],
+    [
+     1616,
+     928
+    ],
+    [
+     1641,
+     924
+    ],
+    [
+     1641,
+     880
+    ],
+    [
+     1640,
+     812
+    ],
+    [
+     1633,
+     790
+    ]
+   ],
+   "profile": "trail",
+   "length_m": 466,
+   "v1_8_pts": [
+    [
      1560,
      1000
     ],
@@ -2229,8 +2261,7 @@
      560
     ]
    ],
-   "profile": "trail",
-   "length_m": 466
+   "note_v1_9": "re-laid on the Prow top east of V01's cutting (was along the cutting's lip, over it twice); joins the Year Walk's west Prow lane at [1630,790], short of the sea stair's head"
   },
   "bight": {
    "pts": [
@@ -2996,6 +3027,34 @@
     1265
    ],
    "note": "Lantern Row, 8 m inside the waterline; pedestrian; the floatplane dock at its east end"
+  },
+  "gardenWalkBridge": {
+   "xy": [
+    965.7,
+    761.1
+   ],
+   "kind": "footbridge",
+   "route": "walk garden",
+   "span_m": 40,
+   "opening_m": 26,
+   "width_m": 3.2,
+   "deck": "the Garden Walk on its own grade (51-55)",
+   "under": "Green Road (37) and its May/September footway lanes, 15 eu below",
+   "note": "v1.9: the Garden Walk hung 16.7 eu over Green Road at [971,765] with no structure (the generated span found no footing within 20 m); the reserved at-grade threshold row VG x walk garden (R-A7) is unchanged"
+  },
+  "crownWalkBridge": {
+   "xy": [
+    1410.1,
+    605.8
+   ],
+   "kind": "footbridge",
+   "route": "walk crown",
+   "span_m": 36,
+   "opening_m": 24,
+   "width_m": 3.2,
+   "deck": "the Crown walk on its own grade (119-122)",
+   "under": "Crown Road's cutting (99) and its January footway lane",
+   "note": "v1.9: the Crown walk hung 21 eu over Crown Road at [1400-1417,605] (span refused: no footing outside the corridors)"
   }
  },
  "underground": {
@@ -3672,7 +3731,7 @@
     "the Crown (hidden from the square by the Shoulder's own rim, 4\u201316 eu over the sight line inside its band; page E holds it)"
    ],
    "portrait": {
-    "fov_deg": 50,
+    "fov_deg": 45,
     "target": [
      1195,
      1005
@@ -3681,7 +3740,8 @@
     "frames": [
      "the High Span",
      "the dam's glass face"
-    ]
+    ],
+    "v1_8_fov_deg": 50
    },
    "v1_6": {
     "xy": [
@@ -3865,8 +3925,8 @@
    "radius_eu": 900,
    "label": "The Crown",
    "xy": [
-    1305,
-    482
+    1300.5,
+    485.5
    ],
    "frames": "from the lookout's run-off deck: Stillwater, the Green, the Hollow, the Flats and the Bight, the sea beyond (the harbour, the Reach, Long Sands and the Prow lie behind the Shoulder from here)",
    "bestHour": "noon",
@@ -3905,6 +3965,10 @@
     "the Flats",
     "the Bight",
     "the sea"
+   ],
+   "v1_8_xy": [
+    1305,
+    482
    ]
   },
   {
@@ -4161,8 +4225,8 @@
    "radius_eu": 220,
    "label": "The Glasshouse at dusk",
    "xy": [
-    1000,
-    758
+    1006,
+    762
    ],
    "frames": "the Glasshouse in front of Stillwater",
    "bestHour": "dusk",
@@ -4199,6 +4263,10 @@
    "subjects": [
     "the Glasshouse",
     "Stillwater"
+   ],
+   "v1_8_xy": [
+    1000,
+    758
    ]
   },
   {
@@ -4232,6 +4300,11 @@
     "frames": [
      "Lantern Row",
      "the Boathouse"
+    ],
+    "v1_8_xy": null,
+    "xy": [
+     1460,
+     1300
     ]
    },
    "v1_6": {
@@ -8759,10 +8832,15 @@
     "id": "sep",
     "label": "the Hollow (east rows)",
     "xy": [
+     1032,
+     652
+    ],
+    "why": "apples",
+    "v1_8_xy": [
      1040,
      650
     ],
-    "why": "apples"
+    "moveWhy_v1_9": "8 m west so February passes east of the pad on the 45 shelf (the pad's level pins held February at 35 there); the pad sits at 40, a 5 m terrace cut into the shelf's edge"
    },
    {
     "month": 10,
@@ -8995,16 +9073,28 @@
      710
     ],
     [
-     1100,
+     1052,
+     662
+    ],
+    [
+     1060,
      600
     ],
     [
-     1085,
-     555
+     1062,
+     540
     ],
     [
-     1070,
-     535
+     1060,
+     505
+    ],
+    [
+     1050,
+     487
+    ],
+    [
+     1000,
+     480
     ],
     [
      960,
@@ -9543,32 +9633,40 @@
      615
     ],
     [
-     1040,
-     650
+     1032,
+     652
     ],
     [
-     1045,
-     550
+     1025,
+     626
     ],
     [
-     1055,
-     505
+     1010,
+     604
     ],
     [
-     1045,
-     490
+     991.3,
+     592.5
     ],
     [
-     995,
-     470
+     974.3,
+     552.6
     ],
     [
-     980,
-     415
+     956.4,
+     515.5
     ],
     [
-     945,
-     370
+     938.9,
+     476.8
+    ],
+    [
+     929.5,
+     433.8
+    ],
+    [
+     927.1,
+     388.0
     ],
     [
      915,
@@ -10069,7 +10167,7 @@
       1040,
       650
      ],
-     "h": 35,
+     "h": 40,
      "v1_8_h": 33
     },
     {
@@ -10300,6 +10398,21 @@
       660
      ],
      "note": "v1.9: the June lane, 3 m further out on the same footway"
+    },
+    {
+     "stretch": "sep",
+     "host": "VG",
+     "side": "west",
+     "offset_m": 6.5,
+     "from": [
+      991.3,
+      592.5
+     ],
+     "to": [
+      927.1,
+      388.0
+     ],
+     "note": "v1.9: Green Road's west footway from the September pad's return to the north pass"
     }
    ],
    "sharesRule": "a shared stretch is a footway of its host bed: the same alignment at offset_m from the host centreline, the host's solved height at every point (the builder copies it, it does not re-grade), no separate terrain override, retaining or kerb between host and footway; tunnels and bridges on the host carry the footway inside their own section",
@@ -10933,6 +11046,144 @@
       ]
      ],
      "why": "January's inland verge and Crown Road's east verge re-laid on the re-aligned corner and junction"
+    },
+    {
+     "was": [
+      [
+       1055,
+       710
+      ],
+      [
+       1100,
+       600
+      ],
+      [
+       1085,
+       555
+      ],
+      [
+       1070,
+       535
+      ],
+      [
+       960,
+       470
+      ]
+     ],
+     "now": [
+      [
+       1055,
+       710
+      ],
+      [
+       1052,
+       662
+      ],
+      [
+       1060,
+       600
+      ],
+      [
+       1062,
+       540
+      ],
+      [
+       1060,
+       505
+      ],
+      [
+       1050,
+       487
+      ],
+      [
+       1000,
+       480
+      ],
+      [
+       960,
+       470
+      ]
+     ],
+     "why": "February leaves the Crown's flank for the 45 shelf (September no longer uses it)"
+    },
+    {
+     "was": [
+      [
+       1010,
+       615
+      ],
+      [
+       1040,
+       650
+      ],
+      [
+       1045,
+       550
+      ],
+      [
+       1055,
+       505
+      ],
+      [
+       1045,
+       490
+      ],
+      [
+       995,
+       470
+      ],
+      [
+       980,
+       415
+      ],
+      [
+       945,
+       370
+      ]
+     ],
+     "now": [
+      [
+       1010,
+       615
+      ],
+      [
+       1032,
+       652
+      ],
+      [
+       1025,
+       626
+      ],
+      [
+       1010,
+       604
+      ],
+      [
+       991.3,
+       592.5
+      ],
+      [
+       974.3,
+       552.6
+      ],
+      [
+       956.4,
+       515.5
+      ],
+      [
+       938.9,
+       476.8
+      ],
+      [
+       929.5,
+       433.8
+      ],
+      [
+       927.1,
+       388.0
+      ]
+     ],
+     "why": "September returns from its pad across Green Road and walks its west footway north to the pass (it ran up the shelf beside February, 24 eu apart)"
     }
    ]
   },

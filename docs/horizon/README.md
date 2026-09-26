@@ -336,3 +336,33 @@ New fields: `journey.yearWalk.levels` (extra height pins on unshared stretches; 
 
 `roads.V01`: the control [1500,340] made the Drive a 330 m chord over the sea (x 1370 → [1545,470], 65–70 eu over water; P09 worst drop 72.7, P12 worst void 74.3, P32 a crossing pad 70 over the sea). It is replaced by seven controls 10 m inside the cliff top ([1353.8,295.8] … [1546,472]): a cliff drive cut into the headland like the Prow. `roads.V02` starts from the Drive at **[1433.3,335.6]** (was [1500,340]) and climbs one even grade (11.2 %) after a 25 m level landing at 70 (builder), so its Year Walk footway stays ≤ 12 %.
 
+### 3. February and September above the Hollow
+
+February rode the Crown's flank at 65–67 over September at 40–44, 5 m away (P12: 24 eu unsupported runs at [1046–1056,519–529]). February now comes down onto the 45 shelf ([1052,662] → [1060,600] → [1062,540] → [1050,487]); September's pad moves 8 m west to **[1032,652]** at **40** (`stations[sep].v1_8_xy`, `moveWhy_v1_9`) and September returns from it across Green Road and walks Green Road's **west footway** (new `shares` row, offset 6.5) north to the pass ([927,388]). Green Road meets February at grade at [945,474.5] (45.5, builder pin).
+
+### 4. Named footbridges (`structures`)
+
+| Id | Where | Carries | Over | Why |
+|---|---|---|---|---|
+| `gardenWalkBridge` | [965.7,761.1], 40 m, opening 26 | the Garden Walk on its own grade (51–55) | Green Road (37) and its May/September footway | the walk hung 16.7 eu over Green Road (the generated span found no footing within 20 m); the reserved at-grade row VG × walk garden (R-A7) is untouched |
+| `crownWalkBridge` | [1410.1,605.8], 36 m, opening 24 | the Crown walk (119–122) | Crown Road's cutting (99) and its January footway | the walk hung 21 eu over Crown Road (span refused) |
+
+A named footbridge (`route`, `span_m`, `opening_m`, `width_m`) is built by the structures builder on the route's own graded points; its bents stand outside every lower corridor (moved outward up to 6 eu, else refused and reported) and a through truss spans the opening between the innermost bents.
+
+### 5. The Prow walk
+
+`walks.prow.pts` (v1.8 in `v1_8_pts`): the trail ran along the lip of V01's Prow cutting and over it twice (22 unsupported runs up to 38.5 eu; six foot crossings 12–34 eu over the Year Walk). It now keeps to the Prow top east of the cutting — from the south lookout over the harbour past the November station, between the Year Walk's two Prow lanes, onto the west lane at [1630,790], short of the sea stair's head.
+
+### 6. Views (W3-C requests A1, A4, A6, A7)
+
+Page A portrait `fov_deg` 50 → **45** (the viewRule minimum); page E `xy` [1305,482] → **[1300.5,485.5]** (the run-off corner of the lookout deck; the deck centre filled 44 % of the frame); page K `xy` [1000,758] → **[1006,762]** (on the rim walk by the Glasshouse steps; the eye stood 1.4 eu under the walk); page L `portrait.xy` → **[1460,1300]**. v1.8 values kept beside them.
+
+### 7. Builder rules that came with v1.9 (no data)
+
+- A Year Walk height pin carries its sample index (two lanes of one walk no longer take each other's pins).
+- Every Year Walk centreline crossing of a foot route within 3 eu is held flush on both neighbouring samples.
+- A spur holds its host road's height across that road's Year Walk footway lanes.
+- Junction aprons: a foot route inside a road's corridor near an at-grade junction takes the road's height (the Boathouse walk).
+- `groundBeds`: a lower route is judged at its own height where it passes under a prism.
+- The zip landing ramp is a timber trestle (no earth dune across the beach; W3-C A3).
+

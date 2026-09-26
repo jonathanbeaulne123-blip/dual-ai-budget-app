@@ -6,7 +6,7 @@ import { baseHeight } from '../terrain';
 import { FOOTING_SINK, GROUND_CONTACT, pier, wallToGround } from './foundations';
 import { box, clamp, distance, districtAt, mix, nearestOnPath, plan, slab, solid } from './mesh';
 
-export interface SpanSpec { id:string; at:XY; route:string; length:number; width:number; height?:number; clear?:number; covered?:boolean; supportSpacing?:number; /** A clear opening centred on the span, carried by a through truss. */ opening?:number; /** Build abutments to the ground at both ends. */ abutments?:boolean }
+export interface SpanSpec { id:string; at:XY; route:string; length:number; width:number; height?:number; clear?:number; covered?:boolean; supportSpacing?:number; /** A clear opening centred on the span, carried by a through truss. */ opening?:number; /** Build abutments to the ground at both ends. */ abutments?:boolean; /** v1.9: the deck follows the route's own graded points (plan and height) instead of a level chord. */ followRoute?:boolean }
 export const SPANS:SpanSpec[]=[
   {id:'highSpan',at:[1240,1105],route:'VG',length:104,width:10,height:24,clear:14,supportSpacing:12,opening:44},
   {id:'quayBridge',at:[1350,1345],route:'V01',length:90,width:16,height:9,clear:4},
@@ -18,6 +18,11 @@ export const SPANS:SpanSpec[]=[
   {id:'washFootbridge',at:[514,895],route:'walk bightPier',length:18,width:3,clear:2},
   {id:'reachBoardwalk',at:[1255,1251],route:'S1',length:112,width:4,height:5,clear:1},
   {id:'timberCrossing',at:[1500,1250],route:'homestead.lane',length:20,width:3,height:5,clear:2},
+  // v1.9 named footbridges (MANIFEST structures.<id> with route + span_m): a foot route over a lower
+  // route's corridor on its own grade, bents outside the corridor, a truss over the opening.
+  ...Object.entries(M.structures as unknown as Record<string,{xy?:number[];route?:string;span_m?:number;opening_m?:number;width_m?:number}>)
+    .filter(([,s])=>s&&typeof s==='object'&&s.route&&s.span_m&&s.xy)
+    .map(([id,s]):SpanSpec=>({id,at:s.xy as unknown as XY,route:s.route!,length:s.span_m!,width:s.width_m??3.2,clear:2.4,supportSpacing:7,...(s.opening_m?{opening:s.opening_m}:{}),followRoute:true})),
 ];
 /** Stair and landing supports stand no further apart than this (plan eu). */
 const STAIR_BENT=6;
@@ -70,7 +75,7 @@ function postedRail(rails:StructureSolid,path:readonly XYZ[],offset:number,heigh
 export function buildSpan(spec:SpanSpec,cuts:LandCuts,base:HeightQuery):void {
   const route=cuts.beds.find(b=>b.id===spec.route),axis=axisAt(route,spec.at),normal:XY=[-axis[1]!,axis[0]!];
   const h=spec.height??heightOnBeds(cuts,spec.at,base),a:XYZ=[spec.at[0]!-axis[0]!*spec.length/2,h,spec.at[1]!-axis[1]!*spec.length/2],b:XYZ=[spec.at[0]!+axis[0]!*spec.length/2,h,spec.at[1]!+axis[1]!*spec.length/2];
-  const curve=(spec.id==='quayBridge'||spec.id==='highSpan')&&route?routeStretch(route,spec.at,spec.length+6,h):[];
+  const curve=(spec.id==='quayBridge'||spec.id==='highSpan')&&route?routeStretch(route,spec.at,spec.length+6,h):spec.followRoute&&route?routeStretch(route,spec.at,spec.length):[];
   const path=curve.length>1?curve:[a,b],length=planLength(path),bedIds=[spec.route,`structure.${spec.id}`];
   const deck=solid(`${spec.id}.deck`,spec.covered?'coveredFootbridge':'bridge','stone','deck',[spec.route],districtAt(...spec.at));for(let i=1;i<path.length;i++)slab(deck,path[i-1]!,path[i]!,spec.width,.6);
   const piers=solid(`${spec.id}.supports`,'pier','stone','support',bedIds,deck.districtId),rails=solid(`${spec.id}.rails`,'parapet','stone','rail',[spec.route],deck.districtId);
@@ -78,20 +83,28 @@ export function buildSpan(spec:SpanSpec,cuts:LandCuts,base:HeightQuery):void {
   if(spec.opening){const o=spec.opening/2,n=Math.max(1,Math.ceil((half-o)/spacing));for(let k=0;k<=n;k++){const s=o+(half-o)*k/n;stations.push(half-s,half+s);}}
   else{const n=Math.max(1,Math.ceil(length/spacing));stations=Array.from({length:n+1},(_,k)=>length*k/n);}
   stations.sort((x,y)=>x-y);
-  const placed:number[]=[];
-  for(const s of stations){
-    const {p,dir}=along(path,s);
-    for(const side of [-1,1]){
-      const xy:XY=[p[0]-dir[1]*side*(spec.width/2-.6),p[2]+dir[0]*side*(spec.width/2-.6)];
-      pier(piers,xy,h-.9,base,[.8,.8],[2.4,2.4]);box(piers,xy,h-.5,[1.4,1.4],h-.9);
-    }
+  const placed:number[]=[],guard=spec.followRoute?laneGuard(cuts):undefined;
+  const bentAt=(s:number)=>{const {p,dir}=along(path,s);return {p,top:spec.followRoute?p[1]:h,feet:[-1,1].map(side=>[p[0]-dir[1]*side*(spec.width/2-.6),p[2]+dir[0]*side*(spec.width/2-.6)] as XY)};};
+  const laneAt=(s:number)=>{if(!guard)return undefined;const b=bentAt(s);return b.feet.map(xy=>guard(xy,b.top,[spec.route,`structure.${spec.id}`])).find(Boolean);};
+  for(const s0 of stations){
+    // A named footbridge never stands a bent in a lower route's corridor: the bent moves outward (away
+    // from the opening) up to 6 eu to the first free ground, or it is refused and reported.
+    let s=s0;const out=s0<half?-1:1;
+    for(let shift=0;shift<=6&&laneAt(s);shift++)s=clamp(s0+out*shift,0,length);
+    const lane=laneAt(s);
+    if(lane){conflict(cuts,`structures.${spec.id}.bentInLane`,`${spec.id}: the bent at ${s0.toFixed(1)} eu stands in ${lane}'s corridor (and 6 eu outward); it is not built`,plan(bentAt(s0).p));continue;}
+    const {feet,top}=bentAt(s);
+    for(const xy of feet){pier(piers,xy,top-.9,base,[.8,.8],[2.4,2.4]);box(piers,xy,top-.5,[1.4,1.4],top-.9);}
     placed.push(s);
   }
+  placed.sort((x,y)=>x-y);
   // Supports within 15 eu of every point of the deck, or a truss carrying the opening.
-  for(let i=1;i<placed.length;i++)if(placed[i]!-placed[i-1]!>30.01&&!(spec.opening&&Math.abs((placed[i]!+placed[i-1]!)/2-half)<1)){const m=along(path,(placed[i]!+placed[i-1]!)/2).p;conflict(cuts,`structures.${spec.id}.bay`,`${spec.id}: a ${(placed[i]!-placed[i-1]!).toFixed(1)} eu bay exceeds the 30 eu masonry limit`,plan(m),placed[i]!-placed[i-1]!,30);}
+  for(let i=1;i<placed.length;i++)if(placed[i]!-placed[i-1]!>30.01&&!(spec.opening&&(Math.abs((placed[i]!+placed[i-1]!)/2-half)<1||spec.followRoute&&placed[i-1]!<half&&placed[i]!>half))){const m=along(path,(placed[i]!+placed[i-1]!)/2).p;conflict(cuts,`structures.${spec.id}.bay`,`${spec.id}: a ${(placed[i]!-placed[i-1]!).toFixed(1)} eu bay exceeds the 30 eu masonry limit`,plan(m),placed[i]!-placed[i-1]!,30);}
   if(spec.opening){
     // A through truss over the gate opening: bottom chords under the deck edges bear on the flanking pier caps.
-    const truss=solid(`${spec.id}.truss`,'truss','metal','support',bedIds,deck.districtId),o=spec.opening/2,from=half-o,to=half+o,panels=Math.ceil(spec.opening/5.5),rise=4.5,off=spec.width/2+.3;
+    // The truss bears on the innermost bents either side of the opening (named footbridges may have moved them outward).
+    const inner=[Math.max(...placed.filter(x=>x<half),half-spec.opening/2),Math.min(...placed.filter(x=>x>half),half+spec.opening/2)];
+    const truss=solid(`${spec.id}.truss`,'truss','metal','support',bedIds,deck.districtId),from=spec.followRoute?inner[0]!:half-spec.opening/2,to=spec.followRoute?inner[1]!:half+spec.opening/2,panels=Math.ceil((to-from)/5.5),rise=4.5,off=spec.width/2+.3;
     for(const side of [-1,1]){
       const node=(k:number):XYZ=>along(path,from+(to-from)*k/panels).p;
       for(let k=0;k<panels;k++){const p=node(k),q=node(k+1);
@@ -303,7 +316,15 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
     cuts.solids.push(deck,supports,rails);
   }
   buildStair('zipLanding.stair',[1130,12,1440],[1145,3,1460],3,cuts,base);
-  const ramp=gradeRoute('zipLanding.ramp',[[1130,1440],[1090,1445],[1080,1470],[1145,1460]],()=>3,.08,[{xy:[1130,1440],height:12,reason:'deck'},{xy:[1145,1460],height:3,reason:'sand'}],cuts.diagnostics);cuts.beds.push(bed('zipLanding.ramp','walk',ramp));
+  const ramp=gradeRoute('zipLanding.ramp',[[1130,1440],[1090,1445],[1080,1470],[1145,1460]],()=>3,.08,[{xy:[1130,1440],height:12,reason:'deck'},{xy:[1145,1460],height:3,reason:'sand'}],cuts.diagnostics);
+  {// v1.9 (W3-C A3, P12): the landing ramp is a timber trestle over the beach, not an earth dune: the sand, the
+    // Town Weave and the dune walk run under it. Bents every sample (≤ 5 eu), none in a lower route's corridor.
+    const rampBed=bed('zipLanding.ramp','walk',ramp,false);rampBed.maxGrade=.08;cuts.beds.push(rampBed);
+    const trestle=solid('zipLanding.ramp.supports','trestle','timber','support',['zipLanding.ramp'],'landing'),rails=solid('zipLanding.ramp.rails','handrail','metal','rail',['zipLanding.ramp'],'landing'),guard=laneGuard(cuts);
+    for(const p of ramp){const xy=plan(p);if(p[1]-base(...xy)<.9||guard(xy,p[1],['zipLanding.ramp','zipLanding.stair']))continue;pier(trestle,xy,p[1]-.35,base,[.45,.45],[1.1,1.1]);}
+    for(const side of [-1,1])postedRail(rails,ramp,side*(rampBed.width/2-.05));
+    cuts.solids.push(trestle,rails);
+  }
   // Crown launch: the summit lookout's run-off deck at h 170 over [1305,482] (MANIFEST sky.launches.crown), on four columns, with a stair to the summit ground.
   const crown=M.sky.launches.crown,cxy=crown.xy as unknown as XY,ch=crown.h;
   landing(cuts,'crownLaunch',cxy,ch,[12,8],base);
