@@ -159,6 +159,18 @@ describe("HarbourWorld wiring (static)", () => {
     const reading = readFileSync(resolve(__dirname, "../src/harbour/data/useHarbourReading.ts"), "utf8");
     expect(reading).toMatch(/scope: "household"/);
   });
+
+  it("offers no Arrange in Mine: arranging writes the Shared arrangement (review finding 4)", () => {
+    const app = readFileSync(resolve(__dirname, "../src/App.tsx"), "utf8");
+    // The App passes the arrangement writer only in Ours…
+    expect(app).toContain('onArrange={view==="household"?operation=>commitVillageArrangement(runKitchen,actorId,operation):undefined}');
+    expect(app.match(/commitVillageArrangement\(/g)).toHaveLength(1);
+    // …and the world drops it in Mine anyway, for both the HUD's action and the decorator's commit.
+    expect(world).toContain('const arrange = space === "mine" ? undefined : props.onArrange;');
+    expect(world).not.toMatch(/props\.onArrange&&|onCommit=\{props\.onArrange\}/);
+    expect(world).toContain("onArrange={!desk&&arrange&&");
+    expect(world).toContain("onCommit={arrange}");
+  });
 });
 
 describe("routes in Mine (flag.ts)", () => {
