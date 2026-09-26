@@ -1,8 +1,8 @@
 # The Horizon — the deck
 
-> Current canonical manifest: v1.8 (Stage A integration, 26 September 2026; see "v1.8 deltas" at the end). v1.7: Stage A design-lead data, 26 September 2026 ("v1.7 deltas"). v1.6: Jonathan confirmed full scale 1.0 and three uphill Terraces plots (seven large reserves total) on 25 September 2026. `src/harbour/horizon/world/MANIFEST.json` is authoritative; embedded manifests in `inputs/` are frozen design references. The generator mirrors the canonical data. PIN-0 remains pending until its accepted merge SHA is recorded.
+> Current canonical manifest: v1.9 (Stage A fixer wave 3, track W3-A, 26 September 2026; see "v1.9 deltas" at the end). v1.8: Stage A integration ("v1.8 deltas"). v1.7: Stage A design-lead data, 26 September 2026 ("v1.7 deltas"). v1.6: Jonathan confirmed full scale 1.0 and three uphill Terraces plots (seven large reserves total) on 25 September 2026. `src/harbour/horizon/world/MANIFEST.json` is authoritative; embedded manifests in `inputs/` are frozen design references. The generator mirrors the canonical data. PIN-0 remains pending until its accepted merge SHA is recorded.
 
-Version 1.8 · 26 September 2026 · Owner: Jonathan (product) · Author: Claude (design lead, review)
+Version 1.9 · 26 September 2026 · Owner: Jonathan (product) · Author: Claude (design lead, review)
 
 This folder is **what** to build, pass by pass. The Grand Plan artifact (`inputs/grand-plan.txt`, published as "The Horizon Grand Plan" v1.1) is **why**: the approved design, its chapters and decisions D1–D12 (`DECISIONS.md` carries their status and adds D13–D16). Nobody builds from the Grand Plan directly. Where the Grand Plan and this folder differ in a number or an id, this folder wins; where they differ in intent, stop and ask the design lead.
 
@@ -312,4 +312,27 @@ The integrator merged the four Stage A tracks (T1 terrain/water/paint, T2 beds/j
 
 - **S2's descent** (T2 D-3): S2 cannot descend from the Wash (38) to the Bight Bridge deck lane (12) at 18 %; it needs ~150 m more or a ramp. Jonathan decides with R-A1.
 - **V01's offshore north-east corner** (T0 item 14): V01 samples at [1454–1534, 324–406] lie up to 24 m outside the island outline (manifest point [1500,340]); the Year Walk shares V01 there. Either the coast grows or V01's corner moves inland (~[1480,360]); needs a terrain + route revision.
+
+## v1.9 deltas (Stage A, W3-A: beds, structures and data)
+
+Track W3-A re-authored the Year Walk, Horizon Drive's north-east corner and Crown Road's start so the seven door walks, the nine journeys and the Year Walk's grade rule pass on the built land. `make_manifest.py` → "v1.9"; the generator reproduces `MANIFEST.json` byte for byte. Ids never change. Every re-authored Year Walk run is recorded in `journey.yearWalk.v1_9_edits` (was / now / why); moved values keep their v1.8 value beside them (`v1_8_pts`, `v1_8_h`, `v1_8_from`, `v1_8_to`).
+
+### 1. The Year Walk
+
+| Place | v1.8 | v1.9 | Why (number) |
+|---|---|---|---|
+| Scholars, the March in-leg | a second line 3–4 eu over the Garden Walk's shoulder at [802,468] | the north lane of the March out-leg (3.5 m, one height); crosses the Garden Walk flush beside the out-leg | the Glasshouse and Cottage door walks stopped at [802,468] (terrain 40.4°); browser walks 5/7 → 7/7 |
+| The Hollow: May / September pads | 31.5 / 33 | **37 / 35** (`pins[*].v1_8_h`) | the Green Road footway they leave is at 38.8, 37–45 m away: fixed heights 22.2 and 9.3 eu of route short (P08 72.7 % / 40.6 %) |
+| The Hollow neck (x 893–913, z 600–660) | both Hollow lanes 2–8 eu over S4 and the Garden Walk | both lanes are **S4's east footway** (new `shares` rows, offsets 6 / 8); S4 meets the Cottage front walk at grade (36) | separation S4 69 samples; a generated S4 × Year Walk deck stood across the Garden Walk |
+| The April lane above the Hollow | [925,585] | [935,585] | its 18 eu band-face descent to the S4 footway needs ≥ 150 m at 12 % (148 → 164 m) |
+| January pad | 117 | **113.8** | 7 eu over the turning circle with 37 m of walk between (P08 36 % at [1369,689]) |
+| South portal forecourt | — | `levels`: both January legs at 110 within 14 m of [1358,685] | the legs ran 1–3 eu over the ORE station's link walk (110) |
+| The Lakeside switchback (T0 #16) | 14 legs of 20–30 m, 5 m apart, 12–16 %; left across S1 at [1255,862] where S1 is 4 eu under the terrace | **seven 28 m legs on a 5.5 m pitch** (x 1325–1292, z 852–882) with turning landings; leaves across S1 at grade at **[1267,842]** (S1 at the terrace height, 55) to the rim trail at [1251,836] (the February share starts there; `s1Crossing`) | P08 15–16 % at [1250–1254, 842–862]; fixed heights 2.9 eu short |
+| North-east corner (November / January verges) | offsets of the v1.8 chord over the sea | re-laid as offsets of the new Drive alignment (same sides and offsets); January turns onto Crown Road's east verge at the junction's inside corner without crossing V02 | follows item 2 |
+
+New fields: `journey.yearWalk.levels` (extra height pins on unshared stretches; `r` pins every sample within r), `journey.yearWalk.s1Crossing`.
+
+### 2. Horizon Drive's north-east corner and Crown Road (T0 #14)
+
+`roads.V01`: the control [1500,340] made the Drive a 330 m chord over the sea (x 1370 → [1545,470], 65–70 eu over water; P09 worst drop 72.7, P12 worst void 74.3, P32 a crossing pad 70 over the sea). It is replaced by seven controls 10 m inside the cliff top ([1353.8,295.8] … [1546,472]): a cliff drive cut into the headland like the Prow. `roads.V02` starts from the Drive at **[1433.3,335.6]** (was [1500,340]) and climbs one even grade (11.2 %) after a 25 m level landing at 70 (builder), so its Year Walk footway stays ≤ 12 %.
 

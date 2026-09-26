@@ -216,8 +216,40 @@ function alignSurfaceJoins(cuts:LandCuts,proofs:readonly ComputedCrossing[],base
   }
 }
 /** Called once after C measures logical routes, before A applies the final terrain cuts. */
+/** W3-A: junction aprons. A foot route that meets a road at grade at a shallow angle runs inside
+ * the road's corridor for a few metres before the centreline hit; there it must already stand at
+ * the road's height (the Reach walk met Horizon Drive 0.5 eu under the road's bed edge at
+ * [1372.7,1275] and the Boathouse door walk stopped in the browser). Guest samples inside the host
+ * corridor within 20 eu of the junction take the host's height; the samples beyond ease back to
+ * their own profile at the guest's grade limit. Only the touched stretch is re-emitted. */
+function junctionAprons(cuts:LandCuts,proofs:readonly ComputedCrossing[],base:HeightQuery):void {
+  const touched=new Set<BedCut>();
+  for(const row of proofs){
+    if(row.resolution!=='threshold'||row.kind==='waterConfluence'||row.kind==='modeTransfer')continue;
+    const a=routeFor(cuts,row.sourceA,row.a),b=routeFor(cuts,row.sourceB,row.b);if(!a||!b||a===b)continue;
+    const [host,guest]=a.width>=b.width?[a,b]:[b,a];
+    if(host.kind!=='road'||!['walk','trail'].includes(guest.kind)||guest.id==='yearWalk'||!guest.terrainCut)continue;
+    if(Math.abs(nearestOnPath(row.at,host.points).at[1]-nearestOnPath(row.at,guest.points).at[1])>.5)continue;
+    const pts=guest.points,arcs=[0];for(let i=1;i<pts.length;i++)arcs.push(arcs[i-1]!+distance(plan(pts[i-1]!),plan(pts[i]!)));
+    const along=nearestOnPath(row.at,pts).along,reach=host.width/2+host.shoulder+.6,limit=Math.min(.12,guest.maxGrade),fixed=new Set<number>();
+    const next=pts.map(p=>[p[0],p[1],p[2]] as [number,number,number]);
+    pts.forEach((p,i)=>{if(Math.abs(arcs[i]!-along)>20)return;const n=nearestOnPath(plan(p),host.points);if(n.distance>reach)return;next[i]![1]=n.at[1];fixed.add(i);});
+    if(![...fixed].some(i=>Math.abs(next[i]![1]-pts[i]![1])>.02))continue;
+    // Ease outwards from the fixed samples: each free sample stays within the grade cone of its neighbour.
+    for(const dir of [1,-1])for(let i=dir>0?1:pts.length-2;i>=0&&i<pts.length;i+=dir){if(fixed.has(i))continue;const j=i-dir,d=Math.abs(arcs[i]!-arcs[j]!)*limit;next[i]![1]=clamp(next[i]![1],next[j]![1]-d,next[j]![1]+d);}
+    guest.points=next as unknown as XYZ[];touched.add(guest);
+  }
+  if(!touched.size)return;
+  const markerPositions=cuts.pads.filter(p=>p.kind==='threshold').map(p=>plan(p.centre));
+  for(const bed of touched){
+    const prefixes=['bed','surface','kerbs','edges','retaining','shoulders'].map(s=>`${bed.id}.${s}`);
+    cuts.solids=cuts.solids.filter(s=>!prefixes.some(prefix=>s.id===prefix||s.id.startsWith(`${prefix}.`)));
+    emitBedGeometry(bed,cuts,base,markerPositions);
+  }
+}
 export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedCrossing[],base:HeightQuery):void {
   alignSurfaceJoins(cuts,proofs,base);
+  junctionAprons(cuts,proofs,base);
   for(const row of proofs){
     if(row.kind==='waterConfluence'||row.kind==='modeTransfer')continue;
     // A pad can already exist while a regenerated bed still has a wall across it.

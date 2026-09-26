@@ -1,7 +1,8 @@
 import type { HeightQuery, LandDiagnostic, XY, XYZ } from '../interfaces';
 import { clamp, distance, mix, plan } from '../structures/mesh';
 
-export interface HeightPin { xy: XY; height: number; reason: string }
+export interface HeightPin { xy: XY; height: number; reason: string; /** Sample index on the route when the pin was taken from a sample: a route that passes a
+ * point twice (two lanes of one walk) keeps each pin on its own lane (W3-A). */ index?: number }
 /** Centripetal-like tension keeps controls recognisable and avoids hairpin overshoot. */
 export function sampleSpline(controls: readonly XY[], step=5): XY[] {
   if(controls.length<2||!Number.isFinite(step)||step<=0)throw new Error('A bed needs at least two controls and a positive sampling step');
@@ -24,7 +25,9 @@ export function gradeRoute(id:string, controls:readonly XY[], height:HeightQuery
   const targets=xy.map(p=>height(...p));
   const fixed=new Map<number,number>();
   for(const pin of pins){
-    let index=0,best=Infinity;xy.forEach((p,i)=>{const d=distance(p,pin.xy);if(d<best){best=d;index=i;}});
+    let index=0,best=Infinity;
+    if(pin.index!==undefined&&pin.index>=0&&pin.index<xy.length&&distance(xy[pin.index]!,pin.xy)<1){index=pin.index;best=distance(xy[index]!,pin.xy);}
+    else xy.forEach((p,i)=>{const d=distance(p,pin.xy);if(d<best){best=d;index=i;}});
     if(best>40){diagnostics.push({id:`pin.${id}.${pin.reason}`,severity:'conflict',message:`${id}: ${pin.reason} is ${best.toFixed(1)} eu from its solved centreline`,at:pin.xy,measured:best,required:40});continue;}
     fixed.set(index,pin.height);
   }

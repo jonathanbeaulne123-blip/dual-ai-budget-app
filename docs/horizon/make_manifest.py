@@ -1054,6 +1054,156 @@ HEARTS_V18 = {"harbour": [1470, 1170], "landing": [1060, 1410], "reach": [1280, 
 for d in m["districts"]:
     if d["id"] in HEARTS_V18: d["heart"] = HEARTS_V18[d["id"]]
 
+# ---------------------------------------------------------------------------
+# v1.9 — Stage A fixer wave 3, track W3-A (beds, structures and data), 26 September 2026.
+# Every delta below is listed in docs/horizon/README.md → "v1.9 deltas (Stage A, W3-A)".
+# Ids never change (CONTRACT §2.13); numbers move, fields are added.
+# ---------------------------------------------------------------------------
+m["version"] = "1.9"
+m["date"] = "2026-09-26"
+YW = m["journey"]["yearWalk"]
+YW_V18_PTS = [list(p) for p in YW["pts"]]
+YW_EDITS_V19 = []
+def yw_replace(old, new, why):
+    """Replace one run of Year Walk control points (matched exactly, once) and record it."""
+    pts = YW["pts"]
+    hits = [i for i in range(len(pts) - len(old) + 1) if pts[i:i + len(old)] == old]
+    assert len(hits) == 1, (old, hits)
+    i = hits[0]
+    YW["pts"] = pts[:i] + new + pts[i + len(old):]
+    YW_EDITS_V19.append({"was": old, "now": new, "why": why})
+
+# 1. Scholars: the March in-leg ran 3-4 eu over the Garden Walk's shoulder at [802,468] (the Glasshouse and
+#    Cottage door walks stopped there). It becomes the north lane of the March out-leg, 3.5 m from it at one
+#    height, and crosses the Garden Walk flush beside the out-leg's crossing.
+yw_replace([[885,465],[815,470],[800,480],[755,480],[700,470]],
+           [[885,465],[872,461.7],[857,441.3],[789.3,436.5],[769.2,446.5],[715,446.5],[700,470]],
+           "the March in-leg is the out-leg's north lane (3.5 m, one height) instead of a second line 3-4 eu over the Garden Walk at [802,468]")
+
+# 2. The Hollow (P08 pin clusters at [994,613] and [953,632]: fixed heights 22-53 eu of route short).
+#    May's pad sat on the Hollow floor at 31.5, 7.3 eu under the Green Road footway it leaves 45 m
+#    before; September's at 33 was 5.8 under the same footway 37 m before it. Both pads rise to a
+#    terrace the footway can reach at the walk grade (May 37, September 35), and the April lane
+#    gets two levels so it takes the Hollow's 17 eu band face at 12 % (it rode the 8 % typical
+#    grade 6-13 eu over the Hollow floor): the plateau edge and the Cottage front walk's bench.
+YW_PIN_H_V19 = {"may": 37, "sep": 35, "jan": 113.8}
+for p in YW["pins"]:
+    if p["station"] in YW_PIN_H_V19:
+        p["v1_8_h"] = p["h"]
+        p["h"] = YW_PIN_H_V19[p["station"]]
+yw_replace([[910,565],[925,585],[905,610]], [[910,565],[935,585],[905,610]],
+           "the April lane swings 10 m further east above the Hollow so its 18 eu band-face descent to the S4 footway fits 12 % (148 → 164 m)")
+YW["levels"] = [
+ {"xy": [1358, 685], "h": 110, "r": 14, "why": "the south portal forecourt: both January legs cross the ORE station's link walk (110) there at its height"},
+]
+# 3. The Hollow neck (x 893-913, z 600-660): the brook, S4, the Garden Walk and both Hollow lanes run side by side on the
+#    brook's east bank. The lanes were 2-8 eu over S4 and the Garden Walk there (separation S4 69 samples, a generated
+#    S4 x Year Walk deck across the Garden Walk). Through the neck both lanes are S4's east footway (one height, no wall),
+#    and S4 meets the Cottage front walk at grade (36) instead of passing 2.8 eu under it (junction.cross.s4.walkGarden.3).
+YW["shares"] += [
+ {"stretch": "apr", "host": "S4", "side": "east", "offset_m": 6, "from": [905, 610], "to": [899, 660], "note": "v1.9: the April lane is S4's east footway through the Hollow neck, at S4's height"},
+ {"stretch": "jun", "host": "S4", "side": "east", "offset_m": 8, "from": [903, 628], "to": [902, 660], "note": "v1.9: the June lane, 3 m further out on the same footway"},
+]
+YW["levelsRule"] = "levels are extra height pins on the Year Walk's own (unshared) stretches: the builder pins the nearest walk sample to h, so the grade between two pins can use the walk maximum where the ground demands it"
+
+# 4. January: the pad (117) sat 7 eu over the turning circle with 37 m of walk between them (P08 36 % at [1369,689]);
+#    it steps down to 114 (a 3 m sunken terrace on the Shoulder top), see YW_PIN_H_V19 and the south portal level above.
+# 5. The Lakeside switchback (T0 #16): the v1.7 zig-zag legs were 20-30 m long, 5 m apart and 12-16 %, and the walk left
+#    it by crossing S1 at [1255,862] where S1 is 4 eu under the lake terrace (15-16 % both sides). Seven legs of 30 m on a
+#    5.5 m pitch (x 1325-1292, z 852-882) with turning landings; the exit crosses S1 at grade at [1267,842], where S1
+#    stands at the terrace height (55), and meets the rim trail at [1251,836] (the February share starts there).
+yw_replace([[1330,885],[1320,880],[1315,865],[1320,885],[1305,845],[1305,875],[1300,855],[1300,880],[1295,860],[1295,880],[1290,860],[1290,885],[1285,870],[1285,880],[1245,855],[1250,845]],
+           [[1330,885],[1325,880],[1325,852],[1322.2,848.5],[1319.5,852],[1319.5,880],[1316.8,883.5],[1314,880],[1314,852],[1311.2,848.5],[1308.5,852],[1308.5,880],[1305.8,883.5],[1303,880],[1303,852],[1300.2,848.5],[1297.5,852],[1297.5,880],[1294.8,883.5],[1292,880],[1292,852],[1288,847],[1280,845],[1267,842],[1251,836]],
+           "the Lakeside switchback: seven 28 m legs on a 5.5 m pitch at <= 12 %, leaving at grade across S1 at [1267,842] to the rim trail")
+YW["s1Crossing"] = [1267, 842]
+for sh in YW["shares"]:
+    if sh["stretch"] == "feb" and sh["host"] == "walk lakerim":
+        sh["v1_8_from"] = sh["from"]; sh["from"] = [1251, 836]
+YW["crossings"] = YW["crossings"].replace("at [1255,862] (to be regraded flush)", "at [1267,842] (v1.9: flush, where S1 stands at the lake terrace height)")
+# 6. Horizon Drive's north-east corner (T0 #14, P09 72.7 / P12 74.3 / P32 pad 70 over the sea): the v1.6 control [1500,340]
+#    made the Drive a 330 m chord over the sea from x 1370 to [1545,470] at 65-70 (the NE cliff is vertical from ~105 to the
+#    sea). The corner now follows the cliff 10 m inside its top (a cliff drive cut into the headland, like the Prow), and
+#    Crown Road (V02) starts from the Drive at [1433.3,335.6] on that ledge (95 m before its tunnel portal: 6.6 %). The Year Walk's November/January verges are
+#    re-laid as offsets of the new alignment (same sides and offsets as v1.7).
+def spline5(ctrl, step=5):
+    out = []
+    for i in range(len(ctrl) - 1):
+        a, b, c, d = ctrl[max(0, i - 1)], ctrl[i], ctrl[i + 1], ctrl[min(len(ctrl) - 1, i + 2)]
+        n = max(1, math.ceil(math.dist(b, c) / step))
+        for k in range(n):
+            t = k / n; t2 = t * t; t3 = t2 * t
+            out.append([(2*t3-3*t2+1)*b[j] + (t3-2*t2+t)*(c[j]-a[j])*.35 + (-2*t3+3*t2)*c[j] + (t3-t2)*(d[j]-b[j])*.35 for j in (0, 1)])
+    out.append(list(ctrl[-1])); return out
+def offset_run(line, side_point, off, start, end, spacing=40):
+    """Points at plan offset `off` from polyline `line` (side toward side_point), from the arc nearest `start` to the arc nearest `end`, every ~spacing m."""
+    arcs = [0.0]
+    for i in range(1, len(line)): arcs.append(arcs[-1] + math.dist(line[i - 1], line[i]))
+    def near(q): return min(range(len(line)), key=lambda i: math.dist(line[i], q))
+    i0, i1 = near(start), near(end); step = 1 if i1 >= i0 else -1
+    picks = [i0]
+    for i in range(i0, i1 + step, step):
+        if abs(arcs[i] - arcs[picks[-1]]) >= spacing: picks.append(i)
+    if picks[-1] != i1:
+        if abs(arcs[i1] - arcs[picks[-1]]) < spacing * .5 and len(picks) > 1: picks[-1] = i1
+        else: picks.append(i1)
+    out = []
+    for i in picks:
+        a, c = line[max(0, i - 1)], line[min(len(line) - 1, i + 1)]
+        dx, dz = c[0] - a[0], c[1] - a[1]; L = math.hypot(dx, dz) or 1
+        n = (-dz / L, dx / L)
+        if (side_point[0] - line[i][0]) * n[0] + (side_point[1] - line[i][1]) * n[1] < 0: n = (-n[0], -n[1])
+        out.append([round(line[i][0] + n[0] * off, 1), round(line[i][1] + n[1] * off, 1)])
+    return out
+V01 = m["roads"]["V01"]
+V01["v1_8_pts"] = [list(p) for p in V01["pts"]]
+i = V01["pts"].index([1500, 340])
+NE_V19 = [[1353.8, 295.8], [1397.2, 306.5], [1433.3, 335.6], [1461.6, 373.9], [1493.5, 406.5], [1520.4, 439.7], [1546, 472]]
+V01["pts"] = V01["pts"][:i] + NE_V19[::-1] + V01["pts"][i + 1:]
+V01["note_v1_9"] = "north-east corner re-laid on the cliff 10 m inside its top (was a chord over the sea through [1500,340]); Crown Road starts at [1433.3,335.6]"
+V02 = m["roads"]["V02"]
+V02["v1_8_pts"] = [list(p) for p in V02["pts"]]
+V02["pts"][0] = [1433.3, 335.6]
+v01s, v02s = spline5(V01["pts"]), spline5(V02["pts"])
+INLAND = [1300, 700]
+nov_sea_end = offset_run(v01s, [1316, 0], 6.5, [1316, 268], [1316, 268])[0]
+nov = offset_run(v01s, INLAND, 9.5, [1346, 290], [1554.7, 520.2])
+def seg_dist(q, line):
+    best = 1e9
+    for a, b in zip(line, line[1:]):
+        dx, dz = b[0] - a[0], b[1] - a[1]; t = max(0, min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dz) / (dx * dx + dz * dz or 1)))
+        best = min(best, math.hypot(q[0] - a[0] - dx * t, q[1] - a[1] - dz * t))
+    return best
+# January walks up V01's inland verge and turns onto Crown Road's east verge where the two verges meet (the
+# inside corner of the junction), without crossing V02.
+jn = min(range(len(v01s)), key=lambda i: math.dist(v01s[i], [1433.3, 335.6]))
+turn = jn
+while turn > 0 and seg_dist(offset_run(v01s, INLAND, 6.5, v01s[turn], v01s[turn])[0], v02s) < 6.5: turn -= 1
+# The corner itself (15 m either side of the verges' meeting point) is the walk's own stretch, graded between
+# the two hosts' heights (V01 falls to the south-east, V02 climbs to the south).
+corner_a = offset_run(v01s, INLAND, 6.5, v01s[turn], v01s[turn])[0]
+k02 = min(range(len(v02s)), key=lambda i: math.dist(v02s[i], corner_a))
+corner_b = offset_run(v02s, [1600, 400], 6.5, v02s[k02], v02s[k02])[0]
+tip = [(corner_a[0] + corner_b[0]) / 2, (corner_a[1] + corner_b[1]) / 2]
+jc = [1433.3, 335.6]; bis = [tip[0] - jc[0], tip[1] - jc[1]]; bl = math.hypot(*bis)
+corner_t = [round(tip[0] + bis[0] / bl * 3, 1), round(tip[1] + bis[1] / bl * 3, 1)]
+corner_a8 = offset_run(v01s, INLAND, 6.5, v01s[max(0, turn - 2)], v01s[max(0, turn - 2)])[0]
+corner_b8 = offset_run(v02s, [1600, 400], 6.5, v02s[min(len(v02s) - 1, k02 + 2)], v02s[min(len(v02s) - 1, k02 + 2)])[0]
+corner = [corner_a8, corner_t, corner_b8]
+jan01 = offset_run(v01s, INLAND, 6.5, [1555.2, 508.1], v01s[max(0, turn - 4)])
+jan02 = offset_run(v02s, [1600, 400], 6.5, v02s[min(len(v02s) - 1, k02 + 4)], [1449.5, 447.4])
+yw_replace([[1319.7,258.5],[1340.4,281.3],[1379.9,294.4],[1415.6,307.5],[1453.6,323.6],[1487.1,341.9],[1508.5,367.9],[1524.1,404.6],[1535.4,441.5],[1545.7,481.6],[1554.7,520.2]],
+           [nov_sea_end] + nov,
+           "November's inland verge re-laid 9.5 m inside the re-aligned Drive round the north-east corner")
+yw_replace([[1555.2,508.1],[1546.3,471.5],[1536.1,432.7],[1524.2,396],[1506.8,358.9],[1495.4,344.6],[1505.5,343.5],[1482.9,377.2],[1461,411.8],[1449.5,447.4]],
+           jan01 + corner + jan02,
+           "January's inland verge and Crown Road's east verge re-laid on the re-aligned corner and junction")
+for sh in YW["shares"]:
+    if sh["stretch"] == "nov" and sh["host"] == "V01" and sh["side"].startswith("seaward"): sh["v1_8_to"] = sh["to"]; sh["to"] = nov_sea_end
+    if sh["stretch"] == "nov" and sh["host"] == "V01" and sh["side"] == "inland": sh["v1_8_from"] = sh["from"]; sh["from"] = nov[0]
+    if sh["stretch"] == "jan" and sh["host"] == "V01": sh["v1_8_to"] = sh["to"]; sh["to"] = jan01[-1]
+    if sh["stretch"] == "jan" and sh["host"] == "V02": sh["v1_8_from"] = sh["from"]; sh["from"] = jan02[0]
+YW["v1_9_edits"] = YW_EDITS_V19
+
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")

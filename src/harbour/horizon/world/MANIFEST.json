@@ -1,6 +1,6 @@
 {
  "title": "The Horizon \u2014 MANIFEST",
- "version": "1.8",
+ "version": "1.9",
  "date": "2026-09-26",
  "status": "Design numbers for implementation. Control points are centreline intent to be solved into splines by the land pass; not navigation or collision data until baked into WorldDefinition v3.",
  "units": {
@@ -1341,8 +1341,32 @@
      500
     ],
     [
-     1500,
-     340
+     1546,
+     472
+    ],
+    [
+     1520.4,
+     439.7
+    ],
+    [
+     1493.5,
+     406.5
+    ],
+    [
+     1461.6,
+     373.9
+    ],
+    [
+     1433.3,
+     335.6
+    ],
+    [
+     1397.2,
+     306.5
+    ],
+    [
+     1353.8,
+     295.8
     ],
     [
      1300,
@@ -1424,7 +1448,110 @@
     "prowTunnel",
     "quayBridge",
     "bightBridge"
-   ]
+   ],
+   "v1_8_pts": [
+    [
+     1400,
+     1060
+    ],
+    [
+     1480,
+     1040
+    ],
+    [
+     1540,
+     1000
+    ],
+    [
+     1600,
+     860
+    ],
+    [
+     1590,
+     700
+    ],
+    [
+     1560,
+     500
+    ],
+    [
+     1500,
+     340
+    ],
+    [
+     1300,
+     260
+    ],
+    [
+     1120,
+     250
+    ],
+    [
+     900,
+     290
+    ],
+    [
+     720,
+     300
+    ],
+    [
+     560,
+     360
+    ],
+    [
+     400,
+     470
+    ],
+    [
+     360,
+     650
+    ],
+    [
+     390,
+     850
+    ],
+    [
+     460,
+     1030
+    ],
+    [
+     660,
+     1170
+    ],
+    [
+     760,
+     1250
+    ],
+    [
+     900,
+     1360
+    ],
+    [
+     1100,
+     1400
+    ],
+    [
+     1300,
+     1380
+    ],
+    [
+     1350,
+     1345
+    ],
+    [
+     1370,
+     1260
+    ],
+    [
+     1360,
+     1160
+    ],
+    [
+     1400,
+     1060
+    ]
+   ],
+   "note_v1_9": "north-east corner re-laid on the cliff 10 m inside its top (was a chord over the sea through [1500,340]); Crown Road starts at [1433.3,335.6]"
   },
   "VG": {
    "label": "Green Road",
@@ -1485,8 +1612,8 @@
    "label": "Crown Road",
    "pts": [
     [
-     1500,
-     340
+     1433.3,
+     335.6
     ],
     [
      1445,
@@ -1510,7 +1637,29 @@
    "structures": [
     "shoulderTunnel"
    ],
-   "end": "turning circle at [1370,690]"
+   "end": "turning circle at [1370,690]",
+   "v1_8_pts": [
+    [
+     1500,
+     340
+    ],
+    [
+     1445,
+     430
+    ],
+    [
+     1445,
+     520
+    ],
+    [
+     1400,
+     620
+    ],
+    [
+     1370,
+     690
+    ]
+   ]
   },
   "VBS": {
    "label": "Bight Shore spur",
@@ -8726,64 +8875,100 @@
      885
     ],
     [
-     1320,
+     1325,
      880
     ],
     [
-     1315,
-     865
+     1325,
+     852
     ],
     [
-     1320,
-     885
+     1322.2,
+     848.5
     ],
     [
-     1305,
+     1319.5,
+     852
+    ],
+    [
+     1319.5,
+     880
+    ],
+    [
+     1316.8,
+     883.5
+    ],
+    [
+     1314,
+     880
+    ],
+    [
+     1314,
+     852
+    ],
+    [
+     1311.2,
+     848.5
+    ],
+    [
+     1308.5,
+     852
+    ],
+    [
+     1308.5,
+     880
+    ],
+    [
+     1305.8,
+     883.5
+    ],
+    [
+     1303,
+     880
+    ],
+    [
+     1303,
+     852
+    ],
+    [
+     1300.2,
+     848.5
+    ],
+    [
+     1297.5,
+     852
+    ],
+    [
+     1297.5,
+     880
+    ],
+    [
+     1294.8,
+     883.5
+    ],
+    [
+     1292,
+     880
+    ],
+    [
+     1292,
+     852
+    ],
+    [
+     1288,
+     847
+    ],
+    [
+     1280,
      845
     ],
     [
-     1305,
-     875
+     1267,
+     842
     ],
     [
-     1300,
-     855
-    ],
-    [
-     1300,
-     880
-    ],
-    [
-     1295,
-     860
-    ],
-    [
-     1295,
-     880
-    ],
-    [
-     1290,
-     860
-    ],
-    [
-     1290,
-     885
-    ],
-    [
-     1285,
-     870
-    ],
-    [
-     1285,
-     880
-    ],
-    [
-     1245,
-     855
-    ],
-    [
-     1250,
-     845
+     1251,
+     836
     ],
     [
      1250,
@@ -8842,16 +9027,24 @@
      465
     ],
     [
-     815,
-     470
+     872,
+     461.7
     ],
     [
-     800,
-     480
+     857,
+     441.3
     ],
     [
-     755,
-     480
+     789.3,
+     436.5
+    ],
+    [
+     769.2,
+     446.5
+    ],
+    [
+     715,
+     446.5
     ],
     [
      700,
@@ -8910,7 +9103,7 @@
      565
     ],
     [
-     925,
+     935,
      585
     ],
     [
@@ -9450,48 +9643,44 @@
      252.8
     ],
     [
-     1319.7,
-     258.5
+     1320.2,
+     260.7
     ],
     [
-     1340.4,
-     281.3
+     1338.9,
+     296.4
     ],
     [
-     1379.9,
-     294.4
+     1382.5,
+     312.2
     ],
     [
-     1415.6,
-     307.5
+     1413.8,
+     330.5
     ],
     [
-     1453.6,
-     323.6
+     1439.8,
+     360.0
     ],
     [
-     1487.1,
-     341.9
+     1467.2,
+     393.5
     ],
     [
-     1508.5,
-     367.9
+     1494.8,
+     422.8
     ],
     [
-     1524.1,
-     404.6
+     1521.4,
+     455.9
     ],
     [
-     1535.4,
-     441.5
+     1546.9,
+     487.5
     ],
     [
-     1545.7,
-     481.6
-    ],
-    [
-     1554.7,
-     520.2
+     1553.8,
+     519.4
     ],
     [
      1561,
@@ -9714,44 +9903,48 @@
      548
     ],
     [
-     1555.2,
-     508.1
+     1555.0,
+     508.6
     ],
     [
-     1546.3,
-     471.5
+     1538.9,
+     473.1
     ],
     [
-     1536.1,
-     432.7
+     1513.0,
+     440.8
     ],
     [
-     1524.2,
-     396
+     1486.4,
+     408.4
     ],
     [
-     1506.8,
-     358.9
+     1456.6,
+     378.1
     ],
     [
-     1495.4,
-     344.6
+     1451.4,
+     371.3
     ],
     [
-     1505.5,
-     343.5
+     1445.5,
+     364.7
     ],
     [
-     1482.9,
-     377.2
+     1444.8,
+     372.2
     ],
     [
-     1461,
-     411.8
+     1446.4,
+     383.9
     ],
     [
-     1449.5,
-     447.4
+     1451.2,
+     425.9
+    ],
+    [
+     1452.6,
+     447.1
     ],
     [
      1452,
@@ -9810,7 +10003,8 @@
       1330,
       640
      ],
-     "h": 117
+     "h": 113.8,
+     "v1_8_h": 117
     },
     {
      "station": "feb",
@@ -9842,7 +10036,8 @@
       960,
       640
      ],
-     "h": 31.5
+     "h": 37,
+     "v1_8_h": 31.5
     },
     {
      "station": "jun",
@@ -9874,7 +10069,8 @@
       1040,
       650
      ],
-     "h": 33
+     "h": 35,
+     "v1_8_h": 33
     },
     {
      "station": "oct",
@@ -9909,14 +10105,18 @@
      "side": "on the rim trail",
      "offset_m": 0,
      "from": [
-      1250,
-      800
+      1251,
+      836
      ],
      "to": [
       1100,
       721
      ],
-     "note": "the February stretch walks the lake rim trail round the east and north shore and crosses the upper river on the Inlet Footbridge; one bed, the rim trail's"
+     "note": "the February stretch walks the lake rim trail round the east and north shore and crosses the upper river on the Inlet Footbridge; one bed, the rim trail's",
+     "v1_8_from": [
+      1250,
+      800
+     ]
     },
     {
      "stretch": "may",
@@ -9990,10 +10190,14 @@
       283.6
      ],
      "to": [
+      1320.2,
+      260.7
+     ],
+     "note": "the north coast drive's seaward verge",
+     "v1_8_to": [
       1319.7,
       258.5
-     ],
-     "note": "the north coast drive's seaward verge"
+     ]
     },
     {
      "stretch": "nov",
@@ -10001,14 +10205,18 @@
      "side": "inland",
      "offset_m": 9.5,
      "from": [
-      1340.4,
-      281.3
+      1338.9,
+      296.4
      ],
      "to": [
       1581,
       705
      ],
-     "note": "crosses the Drive at grade at [1330,270] and takes the inland verge round the north-east corner (the seaward verge there is off the outline) up onto the Prow"
+     "note": "crosses the Drive at grade at [1330,270] and takes the inland verge round the north-east corner (the seaward verge there is off the outline) up onto the Prow",
+     "v1_8_from": [
+      1340.4,
+      281.3
+     ]
     },
     {
      "stretch": "dec",
@@ -10035,10 +10243,14 @@
       1026.4
      ],
      "to": [
+      1456.6,
+      378.1
+     ],
+     "note": "up the Prow cliff drive's inland verge, through the Prow Tunnel as its footway",
+     "v1_8_to": [
       1495.4,
       344.6
-     ],
-     "note": "up the Prow cliff drive's inland verge, through the Prow Tunnel as its footway"
+     ]
     },
     {
      "stretch": "jan",
@@ -10046,14 +10258,48 @@
      "side": "east",
      "offset_m": 6.5,
      "from": [
-      1505.5,
-      343.5
+      1446.4,
+      383.9
      ],
      "to": [
       1376.8,
       690.6
      ],
-     "note": "up Crown Road's east verge, through the Shoulder Tunnel as its footway, to the turning circle"
+     "note": "up Crown Road's east verge, through the Shoulder Tunnel as its footway, to the turning circle",
+     "v1_8_from": [
+      1505.5,
+      343.5
+     ]
+    },
+    {
+     "stretch": "apr",
+     "host": "S4",
+     "side": "east",
+     "offset_m": 6,
+     "from": [
+      905,
+      610
+     ],
+     "to": [
+      899,
+      660
+     ],
+     "note": "v1.9: the April lane is S4's east footway through the Hollow neck, at S4's height"
+    },
+    {
+     "stretch": "jun",
+     "host": "S4",
+     "side": "east",
+     "offset_m": 8,
+     "from": [
+      903,
+      628
+     ],
+     "to": [
+      902,
+      660
+     ],
+     "note": "v1.9: the June lane, 3 m further out on the same footway"
     }
    ],
    "sharesRule": "a shared stretch is a footway of its host bed: the same alignment at offset_m from the host centreline, the host's solved height at every point (the builder copies it, it does not re-grade), no separate terrain override, retaining or kerb between host and footway; tunnels and bridges on the host carry the footway inside their own section",
@@ -10097,7 +10343,7 @@
      "note": "from the Shoulder's south-west corner down to the lake terrace: seven short switchback legs on the band face (x 1285\u20131330, z 845\u2013885), outside S1's loop; built as a ramp with retaining walls between legs (the only step-free way off the Shoulder that does not cross S1)"
     }
    ],
-   "crossings": "the walk crosses S1 once, at grade, at [1255,862] (to be regraded flush); every other crossing is at grade on a walk, a spur or a road (thresholds) or on a named bridge (the Inlet Footbridge, the Hollow Bridge, the Bight Bridge)",
+   "crossings": "the walk crosses S1 once, at grade, at [1267,842] (v1.9: flush, where S1 stands at the lake terrace height); every other crossing is at grade on a walk, a spur or a road (thresholds) or on a named bridge (the Inlet Footbridge, the Hollow Bridge, the Bight Bridge)",
    "retired_v1_6_pts": [
     [
      1330,
@@ -10231,6 +10477,463 @@
      1330,
      640
     ]
+   ],
+   "levels": [
+    {
+     "xy": [
+      1358,
+      685
+     ],
+     "h": 110,
+     "r": 14,
+     "why": "the south portal forecourt: both January legs cross the ORE station's link walk (110) there at its height"
+    }
+   ],
+   "levelsRule": "levels are extra height pins on the Year Walk's own (unshared) stretches: the builder pins the nearest walk sample to h, so the grade between two pins can use the walk maximum where the ground demands it",
+   "s1Crossing": [
+    1267,
+    842
+   ],
+   "v1_9_edits": [
+    {
+     "was": [
+      [
+       885,
+       465
+      ],
+      [
+       815,
+       470
+      ],
+      [
+       800,
+       480
+      ],
+      [
+       755,
+       480
+      ],
+      [
+       700,
+       470
+      ]
+     ],
+     "now": [
+      [
+       885,
+       465
+      ],
+      [
+       872,
+       461.7
+      ],
+      [
+       857,
+       441.3
+      ],
+      [
+       789.3,
+       436.5
+      ],
+      [
+       769.2,
+       446.5
+      ],
+      [
+       715,
+       446.5
+      ],
+      [
+       700,
+       470
+      ]
+     ],
+     "why": "the March in-leg is the out-leg's north lane (3.5 m, one height) instead of a second line 3-4 eu over the Garden Walk at [802,468]"
+    },
+    {
+     "was": [
+      [
+       910,
+       565
+      ],
+      [
+       925,
+       585
+      ],
+      [
+       905,
+       610
+      ]
+     ],
+     "now": [
+      [
+       910,
+       565
+      ],
+      [
+       935,
+       585
+      ],
+      [
+       905,
+       610
+      ]
+     ],
+     "why": "the April lane swings 10 m further east above the Hollow so its 18 eu band-face descent to the S4 footway fits 12 % (148 \u2192 164 m)"
+    },
+    {
+     "was": [
+      [
+       1330,
+       885
+      ],
+      [
+       1320,
+       880
+      ],
+      [
+       1315,
+       865
+      ],
+      [
+       1320,
+       885
+      ],
+      [
+       1305,
+       845
+      ],
+      [
+       1305,
+       875
+      ],
+      [
+       1300,
+       855
+      ],
+      [
+       1300,
+       880
+      ],
+      [
+       1295,
+       860
+      ],
+      [
+       1295,
+       880
+      ],
+      [
+       1290,
+       860
+      ],
+      [
+       1290,
+       885
+      ],
+      [
+       1285,
+       870
+      ],
+      [
+       1285,
+       880
+      ],
+      [
+       1245,
+       855
+      ],
+      [
+       1250,
+       845
+      ]
+     ],
+     "now": [
+      [
+       1330,
+       885
+      ],
+      [
+       1325,
+       880
+      ],
+      [
+       1325,
+       852
+      ],
+      [
+       1322.2,
+       848.5
+      ],
+      [
+       1319.5,
+       852
+      ],
+      [
+       1319.5,
+       880
+      ],
+      [
+       1316.8,
+       883.5
+      ],
+      [
+       1314,
+       880
+      ],
+      [
+       1314,
+       852
+      ],
+      [
+       1311.2,
+       848.5
+      ],
+      [
+       1308.5,
+       852
+      ],
+      [
+       1308.5,
+       880
+      ],
+      [
+       1305.8,
+       883.5
+      ],
+      [
+       1303,
+       880
+      ],
+      [
+       1303,
+       852
+      ],
+      [
+       1300.2,
+       848.5
+      ],
+      [
+       1297.5,
+       852
+      ],
+      [
+       1297.5,
+       880
+      ],
+      [
+       1294.8,
+       883.5
+      ],
+      [
+       1292,
+       880
+      ],
+      [
+       1292,
+       852
+      ],
+      [
+       1288,
+       847
+      ],
+      [
+       1280,
+       845
+      ],
+      [
+       1267,
+       842
+      ],
+      [
+       1251,
+       836
+      ]
+     ],
+     "why": "the Lakeside switchback: seven 28 m legs on a 5.5 m pitch at <= 12 %, leaving at grade across S1 at [1267,842] to the rim trail"
+    },
+    {
+     "was": [
+      [
+       1319.7,
+       258.5
+      ],
+      [
+       1340.4,
+       281.3
+      ],
+      [
+       1379.9,
+       294.4
+      ],
+      [
+       1415.6,
+       307.5
+      ],
+      [
+       1453.6,
+       323.6
+      ],
+      [
+       1487.1,
+       341.9
+      ],
+      [
+       1508.5,
+       367.9
+      ],
+      [
+       1524.1,
+       404.6
+      ],
+      [
+       1535.4,
+       441.5
+      ],
+      [
+       1545.7,
+       481.6
+      ],
+      [
+       1554.7,
+       520.2
+      ]
+     ],
+     "now": [
+      [
+       1320.2,
+       260.7
+      ],
+      [
+       1338.9,
+       296.4
+      ],
+      [
+       1382.5,
+       312.2
+      ],
+      [
+       1413.8,
+       330.5
+      ],
+      [
+       1439.8,
+       360.0
+      ],
+      [
+       1467.2,
+       393.5
+      ],
+      [
+       1494.8,
+       422.8
+      ],
+      [
+       1521.4,
+       455.9
+      ],
+      [
+       1546.9,
+       487.5
+      ],
+      [
+       1553.8,
+       519.4
+      ]
+     ],
+     "why": "November's inland verge re-laid 9.5 m inside the re-aligned Drive round the north-east corner"
+    },
+    {
+     "was": [
+      [
+       1555.2,
+       508.1
+      ],
+      [
+       1546.3,
+       471.5
+      ],
+      [
+       1536.1,
+       432.7
+      ],
+      [
+       1524.2,
+       396
+      ],
+      [
+       1506.8,
+       358.9
+      ],
+      [
+       1495.4,
+       344.6
+      ],
+      [
+       1505.5,
+       343.5
+      ],
+      [
+       1482.9,
+       377.2
+      ],
+      [
+       1461,
+       411.8
+      ],
+      [
+       1449.5,
+       447.4
+      ]
+     ],
+     "now": [
+      [
+       1555.0,
+       508.6
+      ],
+      [
+       1538.9,
+       473.1
+      ],
+      [
+       1513.0,
+       440.8
+      ],
+      [
+       1486.4,
+       408.4
+      ],
+      [
+       1456.6,
+       378.1
+      ],
+      [
+       1451.4,
+       371.3
+      ],
+      [
+       1445.5,
+       364.7
+      ],
+      [
+       1444.8,
+       372.2
+      ],
+      [
+       1446.4,
+       383.9
+      ],
+      [
+       1451.2,
+       425.9
+      ],
+      [
+       1452.6,
+       447.1
+      ]
+     ],
+     "why": "January's inland verge and Crown Road's east verge re-laid on the re-aligned corner and junction"
+    }
    ]
   },
   "stretch": {

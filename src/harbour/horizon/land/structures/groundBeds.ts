@@ -38,7 +38,9 @@ export function groundTerrainBeds(cuts:LandCuts,finalHeight:HeightQuery):{filled
         for(const row of nearby)if(s.bedIds.includes(row.bed.id)){const score=segmentDistance(centre,plan(row.a),plan(row.b))+Math.abs((row.a[1]+row.b[1])/2-topMean)*4;if(score<(ownSegments.get(row.bed.id)?.score??Infinity))ownSegments.set(row.bed.id,{index:row.index,score});}
         for(const row of nearby){const {a,b,bed}=row,dx=b[0]-a[0],dz=b[2]-a[2],t=clamp(((centre[0]-a[0])*dx+(centre[1]-a[2])*dz)/(dx*dx+dz*dz||1),0,1),h=mix(a[1],b[1],t),own=s.bedIds.includes(bed.id);
           if(own&&(Math.abs(h-topMean)<.75||Math.abs(row.index-ownSegments.get(bed.id)!.index)<=4))continue;
-          if(Math.max(a[1],b[1])+Math.max(bed.clearHeight,bed.kind==='cable'?8:0)<=target||Math.min(a[1],b[1])+.15>=under)continue;
+          // W3-A: the lower route's own height where it passes the prism (h), not its segment's
+          // min/max: a footway beside a host on a 12 % grade read the host's low end as "under" it.
+          if(h+Math.max(bed.clearHeight,bed.kind==='cable'?8:0)<=target||h+.15>=under)continue;
           if(corridorDistance(poly,plan(a),plan(b))<=bed.width/2+bed.shoulder+.3){reason=`lower route ${bed.id}`;break;}
         }
       }

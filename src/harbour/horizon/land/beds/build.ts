@@ -12,17 +12,26 @@ import { registerRowKey } from '../../world/crossings';
 /** Typical grades (upper end of profiles.<kind>.grade_typ_pct): a bed rides these, not its maximum. */
 const TYP={road:M.profiles.road.grade_typ_pct[1]!/100,walk:M.profiles.walk.grade_typ_pct[1]!/100,skate:M.profiles.skateMain.grade_typ_pct[1]!/100};
 
-const pin=(xy:XY,height:number,reason:string):HeightPin=>({xy,height,reason});
+const pin=(xy:XY,height:number,reason:string,index?:number):HeightPin=>(index===undefined?{xy,height,reason}:{xy,height,reason,index});
 const BODY_HEIGHT=1.25;
+/** v1.9 (W3-A): a road that climbs between two fixed heights at one even grade after a level landing
+ * of `landing` eu (Crown Road: 70 at the Drive, 110 at the turning circle). Its Year Walk footway copies
+ * its heights, so an uneven climb (12 % on the tunnel ramp, flat above) put the footway over 12 %. */
+function evenClimb(controls:XY[],landing:number,from:number,to:number,reason:string):HeightPin[] {
+  const xy=sampleSpline(controls),arcs=[0];for(let i=1;i<xy.length;i++)arcs.push(arcs[i-1]!+distance(xy[i-1]!,xy[i]!));
+  const total=arcs.at(-1)!,out:HeightPin[]=[];
+  xy.forEach((p,i)=>{if(!i)return;const h=arcs[i]!<=landing?from:from+(to-from)*(arcs[i]!-landing)/(total-landing);out.push(pin(p,h,reason,i));});
+  return out;
+}
 const routePins:Record<string,HeightPin[]>={
-  V01:[pin([1400,1060],24,'Green Road junction'),pin([1480,1040],18,'upper street'),pin([1500,340],70,'Crown Road junction'),pin([900,290],48,'north pass'),pin([560,1100],12,'Bight Bridge'),pin([1350,1345],9,'Quay Bridge')],
+  V01:[pin([1400,1060],24,'Green Road junction'),pin([1480,1040],18,'upper street'),pin(M.roads.V02.pts[0] as unknown as XY,70,'Crown Road junction'),pin([900,290],48,'north pass'),pin([560,1100],12,'Bight Bridge'),pin([1350,1345],9,'Quay Bridge')],
   VG:[pin([1400,1060],24,'Horizon Drive junction'),pin([1240,1105],24,'High Span'),pin([960,860],30,'Bight spur'),pin([980,700],42,'cottage spur'),pin([974,540],40,'studio spur'),pin([900,290],48,'north pass')],
-  V02:[pin([1500,340],70,'coast drive'),pin([1370,690],110,'turning circle')],
+  V02:[pin(M.roads.V02.pts[0] as unknown as XY,70,'coast drive'),...evenClimb(M.roads.V02.pts as unknown as XY[],25,70,110,'Crown Road even climb (v1.9)'),pin([1370,690],110,'turning circle')],
   VBS:[pin([960,860],30,'Green Road'),pin([775,1125],14,'shore endpoint')],
   S1:[pin([1310,500],154,'Crown start'),pin([1160,935],31,'dam apron'),pin([1204,1098],12,'High Span shelf'),pin([1255,1251],5,'Reach boardwalk'),pin([1270,1330],3,'Landing finish')],
   S2:[pin([480,480],38,'strip start'),pin([560,1100],12,'Bight Bridge'),pin([1020,1430],3,'park')],
   S3:[pin([1480,1060],18,'upper street'),pin([1470,1160],12,'square arrival'),pin([1440,1200],12,'square'),pin([1433,1298],3,'town quay at grade (T0 request 4: S3 ran 6-7 eu over the 3 eu quay)'),pin([1350,1345],9,'Quay Bridge'),pin([1133,1435],4,'zip underpass'),pin([1020,1430],3,'park')],
-  S4:[pin([1000,520],40,'studio start'),pin([893,600],37,'Hollow Bridge'),pin([1020,1430],3,'park')],
+  S4:[pin([1000,520],40,'studio start'),pin([893,600],37,'Hollow Bridge'),pin([905.9,640.6],36,'Cottage front walk at grade (v1.9)'),pin([1020,1430],3,'park')],
   'walk garden':[pin([762,422],48,'Library apron'),pin([893,600],37,'Hollow Bridge'),pin([915,638],36,'Cottage front walk'),pin([930,650],38,'Cottage spur landing'),pin([990,780],56,'Glasshouse')],
   'walk lakerim':[pin([990,780],56,'Glasshouse'),pin([1161,731],52,'inlet bridge'),pin([1140,905],52,'dam crest')],
   'walk square':[pin([1455,1175],12,'square'),pin([1480,1060],18,'upper street')],
@@ -78,7 +87,13 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
   }
   for(const [id,pts]of Object.entries(M.roads.spurs)){
     const name=`spur ${id}`,at=pts[0]! as unknown as XY,start=heightOnBeds(cuts,at,base,40),heights:Record<string,number>={upperStreet:18,library:48,glasshouse:34,studio:40,cottage:38,boathouse:4};
-    cuts.beds.push(bed(name,'spur',gradeRoute(name,pts as unknown as XY[],base,.12,[pin(at,start,'junction'),pin(pts[pts.length-1]! as unknown as XY,heights[id]!,'spur end')],cuts.diagnostics,5,TYP.road)));
+    // W3-A: where the host road carries Year Walk footway lanes (journey.yearWalk.shares), the spur
+    // holds the host's height across them (a flush landing), then grades to its end: the Cottage
+    // spur met the May/September lanes 0.6 eu below them at [972,692] (a lip the body cannot climb).
+    const landing:HeightPin[]=[],host=cuts.beds.filter(b=>b.kind==='road').map(b=>({b,d:nearestOnPath(at,b.points).distance})).sort((x,y)=>x.d-y.d)[0];
+    const lanes=host&&host.d<3?M.journey.yearWalk.shares.filter(r=>r.host===host.b.id&&r.offset_m>0):[];
+    if(host&&lanes.length){const reach=Math.max(...lanes.map(r=>r.offset_m))+5.2/2+1.2;sampleSpline(pts as unknown as XY[]).forEach((q,i)=>{const n=nearestOnPath(q,host.b.points);if(i&&n.distance<=reach&&lanes.some(r=>distance(q,r.from as unknown as XY)+distance(q,r.to as unknown as XY)<=distance(r.from as unknown as XY,r.to as unknown as XY)+2*reach))landing.push(pin(q,n.at[1],'Year Walk footway landing',i));});}
+    cuts.beds.push(bed(name,'spur',gradeRoute(name,pts as unknown as XY[],base,.12,[pin(at,start,'junction'),...landing,pin(pts[pts.length-1]! as unknown as XY,heights[id]!,'spur end')],cuts.diagnostics,5,TYP.road)));
   }
   for(const [id,row]of Object.entries(M.skate)){
     if(!('pts'in row))continue;
@@ -116,6 +131,8 @@ export function yearWalkStretches(cuts:LandCuts):{month:number;stationId:string;
   const length=pathLength(walk.points),along=M.journey.stations.map(s=>nearestOnPath(s.xy as unknown as XY,walk.points).along);
   return M.journey.stations.map((s,i)=>{const previous=along[(i+11)%12]!,current=along[i]!,d=(current-previous+length)%length;return {month:s.month,stationId:s.id,length:d,spacing28:d/28,spacing31:d/31};});
 }
+/** Plan intersection of segments ab and cd: [t on ab, u on cd], or undefined. */
+function segmentCross(a:XY,b:XY,c:XY,d:XY):[number,number]|undefined {const r=[b[0]-a[0],b[1]-a[1]],q=[d[0]-c[0],d[1]-c[1]],den=r[0]!*q[1]!-r[1]!*q[0]!;if(Math.abs(den)<1e-9)return undefined;const t=((c[0]-a[0])*q[1]!-(c[1]-a[1])*q[0]!)/den,u=((c[0]-a[0])*r[1]!-(c[1]-a[1])*r[0]!)/den;return t>=0&&t<=1&&u>=0&&u<=1?[t,u]:undefined;}
 const walkGrade=()=>M.profiles.walk.grade_max_pct/100,b_width=5.2;
 const insidePad=(pad:{centre:XYZ;size:XY;rotationDegrees:number},p:XY,grow=0):boolean=>{const a=-pad.rotationDegrees*Math.PI/180,dx=p[0]-pad.centre[0],dz=p[1]-pad.centre[2];return Math.abs(dx*Math.cos(a)-dz*Math.sin(a))<=pad.size[0]/2+grow&&Math.abs(dx*Math.sin(a)+dz*Math.cos(a))<=pad.size[1]/2+grow;};
 interface YearWalkShare { host:string; stretch:string; offset:number; from:number; to:number }
@@ -140,17 +157,20 @@ function journey(cuts:LandCuts,base:HeightQuery):YearWalkShare[] {
   const pins:HeightPin[]=[];
   // journey.yearWalk.crossings: the walk crosses S1 once, at grade, at [1255,862] (T0 request 3:
   // the crossing was 2.9 eu apart) - the walk takes S1's height there.
-  const s1=cuts.beds.find(b=>b.id==='S1'),s1Cross:XY=[1255,862];
+  const s1=cuts.beds.find(b=>b.id==='S1'),s1Cross:XY=((Y as unknown as {s1Crossing?:XY}).s1Crossing)??[1255,862];
   if(s1&&nearestOnPath(s1Cross,s1.points).distance<6)pins.push(pin(s1Cross,nearestOnPath(s1Cross,s1.points).at[1],'S1 at-grade crossing'));
-  for(const s of shares)for(const i of [s.from,s.to])pins.push(pin(samples[i]!,hostHeight(s,samples[i]!),`share ${s.stretch} ${s.host} ${i===s.from?'entry':'exit'}`));
+  for(const s of shares)for(const i of [s.from,s.to])pins.push(pin(samples[i]!,hostHeight(s,samples[i]!),`share ${s.stretch} ${s.host} ${i===s.from?'entry':'exit'}`,i));
+  // v1.9 journey.yearWalk.levels: extra height pins on unshared stretches (W3-A).
+  // A level with r pins every unshared sample within r (both legs of a walk that passes twice).
+  for(const l of ((Y as unknown as {levels?:{xy:number[];h:number;r?:number;why:string}[]}).levels??[])){const at=l.xy as unknown as XY;if(l.r)samples.forEach((q,i)=>{if(!shareOf(i)&&distance(q,at)<=l.r!)pins.push(pin(q,l.h,`level ${l.why.slice(0,40)}`,i));});else pins.push(pin(at,l.h,`level ${l.why.slice(0,40)}`));}
   for(const station of M.journey.stations){
     const p=Y.pins.find(q=>q.station===station.id),xy=station.xy as unknown as XY,index=samples.reduce((best,q,i)=>distance(q,xy)<distance(samples[best]!,xy)?i:best,0),share=shareOf(index);
     const h=share?hostHeight(share,samples[index]!):p?p.h:heightOnBeds(cuts,xy,base,35);
     if(share&&p&&Math.abs(p.h-h)>.5)cuts.diagnostics.push({id:`yearWalk.station.${station.id}.pin`,severity:'info',message:`Station ${station.id} lies on the ${share.host} footway; the host height ${h.toFixed(2)} replaces the manifest pin ${p.h}`,at:xy,measured:h,required:p.h});
     // The station pad is level: every walk sample on its footprint holds the station height.
     const pad={centre:[xy[0],h,xy[1]] as XYZ,size:M.journey.station.pad_m as unknown as XY,rotationDegrees:0};
-    samples.forEach((q,i)=>{if(!shareOf(i)&&insidePad(pad,q,1))pins.push(pin(q,h,`station ${station.id} level pad`));});
-    pins.push(pin(xy,h,`station ${station.id}`));
+    samples.forEach((q,i)=>{if(!shareOf(i)&&insidePad(pad,q,1))pins.push(pin(q,h,`station ${station.id} level pad`,i));});
+    pins.push(pin(samples[index]!,h,`station ${station.id}`,index));
   }
   // Adjacent lanes: where the walk comes back beside itself (two months side by side, lanes a
   // few metres apart), the later lane takes the earlier lane's height, so the two read as one
@@ -161,14 +181,29 @@ function journey(cuts:LandCuts,base:HeightQuery):YearWalkShare[] {
     const dir=(k:number):XY=>{const a=first[Math.max(0,k-1)]!,c=first[Math.min(first.length-1,k+1)]!,len=Math.hypot(c[0]-a[0],c[2]-a[2])||1;return [(c[0]-a[0])/len,(c[2]-a[2])/len];};
     // Lanes are 2-4 m apart and run parallel (or back the other way); switchback legs are further apart.
     let lane=-1;for(let i=0;i<j;i++)if(arcs[j]!-arcs[i]!>40&&arcs.at(-1)!-arcs[j]!+arcs[i]!>40&&distance(plan(first[i]!),plan(first[j]!))<4.5&&Math.abs(dir(i)[0]*dir(j)[0]+dir(i)[1]*dir(j)[1])>.9&&(lane<0||distance(plan(first[i]!),plan(first[j]!))<distance(plan(first[lane]!),plan(first[j]!))))lane=i;
-    if(lane>=0){const a=first[lane]!,c=first[Math.min(first.length-1,lane+1)]!,t=nearestOnPath(plan(first[j]!),[a,c]).at[1];pins.push(pin(plan(first[j]!),shareOf(lane)?hostHeight(shareOf(lane)!,plan(first[j]!)):t,'adjacent lane'));}
+    if(lane>=0){const a=first[lane]!,c=first[Math.min(first.length-1,lane+1)]!,t=nearestOnPath(plan(first[j]!),[a,c]).at[1];pins.push(pin(plan(first[j]!),shareOf(lane)?hostHeight(shareOf(lane)!,plan(first[j]!)):t,'adjacent lane',j));}
   }
   // journey.yearWalk.crossings: "every other crossing is at grade on a walk, a spur or a road".
   // Where the walk crosses another foot route's centreline within 2 eu of its height (a near-miss,
   // not a designed over/under), it takes that route's height (v1.7 crossed walk garden 0.6-1 eu
   // apart by the Library, a lip the body cannot climb).
   const footRoutes=cuts.beds.filter(b=>b.terrainCut&&['walk','trail'].includes(b.kind));
-  first.forEach((q,i)=>{if(shareOf(i))return;for(const b of footRoutes){const n=nearestOnPath(plan(q),b.points);if(n.distance<1.5&&Math.abs(n.at[1]-q[1])<2){pins.push(pin(plan(q),n.at[1],`at-grade crossing ${b.id}`));break;}}});
+  first.forEach((q,i)=>{if(shareOf(i))return;for(const b of footRoutes){const n=nearestOnPath(plan(q),b.points);if(n.distance<1.5&&Math.abs(n.at[1]-q[1])<2){pins.push(pin(plan(q),n.at[1],`at-grade crossing ${b.id}`,i));break;}}});
+  // W3-A: a sample spacing of 5 m misses a crossing up to 2.5 m from both samples (Scholars:
+  // the Garden Walk crossing sat 0.42 eu apart and its bed walls closed the Garden Walk). Every
+  // centreline crossing of a foot route within 3 eu of height holds both neighbouring samples
+  // at that route's height, so the crossing is one flush tread.
+  const pinned=new Set(pins.map(p=>p.index).filter((i):i is number=>i!==undefined));
+  for(let i=1;i<first.length;i++){
+    if(shareOf(i)||shareOf(i-1))continue;
+    const a=plan(first[i-1]!),c=plan(first[i]!);
+    for(const b of footRoutes)for(let k=1;k<b.points.length;k++){
+      const hit=segmentCross(a,c,plan(b.points[k-1]!),plan(b.points[k]!));if(!hit)continue;
+      const hb=mix(b.points[k-1]![1],b.points[k]![1],hit[1]),hy=mix(first[i-1]![1],first[i]![1],hit[0]);
+      if(Math.abs(hb-hy)>=3)continue;
+      for(const j of [i-1,i])if(!pinned.has(j)){pins.push(pin(plan(first[j]!),hb,`at-grade crossing ${b.id}`,j));pinned.add(j);}
+    }
+  }
   const solveDiagnostics:LandCuts['diagnostics']=[],points=gradeRoute('yearWalk',controls,base,limit,pins,solveDiagnostics,5,TYP.walk).map((p,i):XYZ=>{const s=shareOf(i);return s?[p[0],hostHeight(s,plan(p)),p[2]]:p;});
   const b=bed('yearWalk','walk',points);b.width=b_width;b.shoulder=1.2;b.maxGrade=limit;cuts.beds.push(b);
   // Stretches are listed on the final (host-copied) heights, not the pre-copy solve.
