@@ -87,9 +87,25 @@ the ground. "Cut to 0" makes the scripted line just touch; "cut to 5" gives the 
 | L3 | Crown south shoulder `[1300, 621]` | −18.9 m | 19 m | 24 m | route the Dam Run west |
 | L4 | Crown south lip `[1310, 535]` | −5.5 m | 5.5 m | 10.5 m | keep north-only launches |
 | L5 | Throat approach z 275–300 + mask floor | −35.3 m | notch to ≤ 100, mask 110 → 101 | same | raise gate 12 to floor 110 |
+| L6 | Bight Bridge passage south of gate 5 (reviewer) | solid 0–11 m | open to ≥ 14 m | same | move gate 5 / the Lamp Hop's line |
+
+### L6 · The Bight Bridge's underside on the Lamp side — gate 5 `[560, 1080]` h 6, 24 × 16, yaw −0.577 (added by the M6 reviewer)
+- **What the wing meets:** from 8 to 28 m along gate 5's normal toward the Lamp (±12 m across), `geography.blocker`
+  reports `V01.retaining.offshore@bight` and `S2.retaining.offshore@bight` solid **from the sea to 9–11 m**, and
+  `bightBridge.supports@bight` at the ends, under `bightBridge.deck@bight` (underside 11.1–11.4 m). The gate's plane itself
+  is clear, so pass 1's proof reads `clear: true`, but no line from the Lamp reaches it below 11 m. Gate 5's aperture
+  (−2…14 m) is 2.6 m into the deck at its top. (`evidence/m6-review/probes/B2-bight-bridge-solids.json`.)
+- **Request:** carry the V01 and S2 approaches over the water on piers (spans with an underside), not retaining walls to
+  the seabed, for the width of gate 5's aperture and 30 m either side along its normal; keep the deck underside ≥ 14 m
+  over the aperture (or lower gate 5 to fit under 11 m). Or move the Lamp Hop's gate. Gate proofs should sweep the
+  passage (± 30 m along the normal), not only the plane.
+- **Why:** FLIGHT §11 ride 4 (the Lamp Hop) cannot be captured; four scripted tries ended on the deck or against the
+  bridge (`evidence/m6/rides/lamp_hop`).
 
 Not a request: **Crown → the Lamp** clears the summit's south-west shoulder by **+0.3 m** at `[1303, 447]` one second
-after the lip (the baked glide proof reads −0.2); Prow → thermal → Sands clears by +18.6 m; the Lamp Hop clears.
+after the lip (the baked glide proof reads −0.2); Prow → thermal → Sands clears by +18.6 m. ~~The Lamp Hop clears.~~
+(Reviewer, 26 Sep: the Lamp Hop clears the *heightfield* only; the bridge's approach walls block it — L6. And every
+number here is still air; in the build's 4 m/s south wind Crown → the Lamp does not arrive — FLIGHT.md, reviewer's notes.)
 
 ---
 

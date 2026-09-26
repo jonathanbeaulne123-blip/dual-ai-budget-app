@@ -287,3 +287,31 @@ Evidence per the brief: harness recording + per-second step log (`position, phas
 - Two hawks in every working thermal; when the thermal switches off at 18:00 they leave.
 - The vario's silence in sink — the island teaches you to fly by going quiet.
 - On the first flared landing on the Green the dandelion clocks lift (pass 4's puff, but the seeds are the Green's own bloom-month planting; in September they are goldenrod dust).
+
+---
+
+## Reviewer's notes (M6 review, 26 Sep 2026)
+
+The independent review of `claude/horizon-glider-cam` (`evidence/m6-review/REVIEW.md`) flew §11 headless on the build and
+measured three things this file did not. They change what Jonathan can ride, not how the wings fly.
+
+- **The build's wind.** Every number in §0 and §10 is still air; the build flies `constantWind()` — 4 m/s from the south,
+  everywhere, always (§2.2). In it, on flat ground with the ideal straight line (probe W1): Crown → the Lamp **−1.1 m,
+  not reached** (still air +17.3 m, 98.1 s); Prow → thermal (≤ 60 s) → Long Sands −6.4 m; Prow → Reach meadow −5.5 m;
+  Crown → the strip +1.4 m (still air +21.3). Flown live, Crown → the Lamp lands in the Bight ~200 m short (7.6 m/s over
+  the ground crabbing into the wind). D34's "measured 98.1 s" is a still-air figure. `test/horizonGliderJourneysWind.test.ts`
+  pins the wind numbers. **Open question for Jonathan (proposed D39):** a calm placeholder wind until pass 2b's wind clock
+  (then re-read the ridge lift and the §3.3 stand-up ruling, which both lean on the 4 m/s south wind), or keep 4 m/s
+  and retarget D34 and the §11 rides to what the wind allows.
+- **The Lamp Hop cannot be flown in the build.** Between the Lamp and gate 5's plane the V01 road's and the S2 skate
+  line's offshore retaining walls fill the Bight Bridge's underside from the sea to 11 m, under a deck whose underside is
+  11.1–11.4 m (gate 5's aperture reaches 14 m; pass 1's gate proof tests only the plane). §0 row 4 holds only on the
+  flat-ground sim. Land request **L6** in `HANDOFF-notes/glider.md`.
+- **The Throat cannot be entered in the build** (HANDOFF-notes L5, confirmed): the north face is 118.8–131 m from z 280
+  to the mouth while the aperture is 101–119 m; pass 1's own gate proof measures the aperture 0 m tall. The ridge that
+  earns it is out of the Crown's reach (the north-only lip, L4). §2.5 is proven headlessly only
+  (`test/horizonThroat.test.ts`).
+- Flown and completed on the build: the Prow → the Prow thermal → Long Sands (walk-off), the parachute's half-brake
+  stand-up in the bullseye and full-brake tumble (the §3.3 ruling holds), the reduced-motion sheet → the Green, and the
+  Fold bubble from 250 m over the Flats. The canopy is fully open at ~30 m after an auto-pull at 45 m (≈ 14 s of canopy,
+  §12 D37 says 15).
