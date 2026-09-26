@@ -49,7 +49,6 @@ const TODAY = "2026-09-12";
 const leafSource = readFileSync(new URL("../src/core/bookLeaf.ts", import.meta.url), "utf8");
 const bookSource = readFileSync(new URL("../src/FundStandingBook.tsx", import.meta.url), "utf8");
 const featureSource = readFileSync(new URL("../src/core/planFeature.ts", import.meta.url), "utf8");
-const ledgeSource = readFileSync(new URL("../src/FundLedge.tsx", import.meta.url), "utf8");
 const officeSource = readFileSync(new URL("../src/OfficeWide.tsx", import.meta.url), "utf8");
 const cssSource = readFileSync(new URL("../src/fund-standing-book.css", import.meta.url), "utf8");
 
@@ -86,17 +85,14 @@ describe("the Standing Book flag", () => {
     expect(fn).toContain("import.meta.env.VITE_FUND_STANDING_BOOK");
   });
 
-  it("stands the book in place of the board only when the flag is on, in both hosts, and leaves the stage alone", () => {
-    for (const source of [ledgeSource, officeSource]) {
+  it("stands the book in place of the board only when the flag is on, and leaves the stage alone (the phone Fund ledge is retired, K1)", () => {
+    for (const source of [officeSource]) {
       expect(source).toContain("fundStandingBookEnabled()");
       expect(source).toContain("<FundStandingBook");
       expect(source).toContain("<FundBoard");
       expect(source).toContain("<FundStage");
     }
     // The book and the board receive the identical props at each host.
-    const ledgeBook = ledgeSource.slice(ledgeSource.indexOf("<FundStandingBook"), ledgeSource.indexOf("/>", ledgeSource.indexOf("<FundStandingBook")));
-    const ledgeBoard = ledgeSource.slice(ledgeSource.indexOf("<FundBoard "), ledgeSource.indexOf("/>", ledgeSource.indexOf("<FundBoard ")));
-    expect(ledgeBook.replace("<FundStandingBook", "").replace(/\s+/g, " ")).toBe(ledgeBoard.replace("<FundBoard", "").replace(/\s+/g, " "));
     const officeBook = officeSource.slice(officeSource.indexOf("<FundStandingBook"), officeSource.indexOf("/>", officeSource.indexOf("<FundStandingBook")));
     const officeBoard = officeSource.slice(officeSource.indexOf("<FundBoard "), officeSource.indexOf("/>", officeSource.indexOf("<FundBoard ")));
     expect(officeBook.replace("<FundStandingBook", "").replace(/\s+/g, " ")).toBe(officeBoard.replace("<FundBoard", "").replace(/\s+/g, " "));

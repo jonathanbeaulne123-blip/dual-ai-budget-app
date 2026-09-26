@@ -168,6 +168,6 @@ describe("daily kitchen cosmetics", () => {
     const kitty = readFileSync(new URL("../src/KittyBanks.tsx", import.meta.url), "utf8");
     expect(kitty).toMatch(/fundGoal\(current,/);
     expect(sit).toMatch(/formatCad\(row\.lastActualCents\)/);
-    expect(sit).toMatch(/applySitDown\(household, preview\.sourceMonth, \{\}\)/);
+    expect(sit).toMatch(/applySitDown\(current, preview\.sourceMonth, \{\}\)/);
   });
 });

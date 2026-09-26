@@ -223,7 +223,7 @@ describe("The Journey of Life on the page (D-268)", () => {
     expect(cardText()).toContain("Mar 2026 – Jun 2026");
     expect(cardText()).toContain("Crossed Jul 2026");
     expect(cardText()).toContain("What grew");
-    await click(byText("Open March 2026 in the Time Machine"));
+    await click(byText("Open the books for March 2026"));
     expect(doors).toEqual(["2026-03"]);
   });
 

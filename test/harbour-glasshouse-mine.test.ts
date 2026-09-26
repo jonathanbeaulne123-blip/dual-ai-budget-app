@@ -103,7 +103,7 @@ describe("the side bench as a place", () => {
     const bench = handle.anchors().find((anchor) => anchor.id === "mine")!;
     expect(bench.door).toEqual({ target: "planner" });
     expect(bench.zone).toBe("bench");
-    expect(bench.label).toBe("Your own bench — 5 seeds, 4 sprouts, 1 harvested this week. Yours alone. Open the Master Planner.");
+    expect(bench.label).toBe("Your own bench — 5 seeds, 4 sprouts, 1 harvested this week. Yours alone. Open the steps.");
     expect(bench.label).not.toContain(SECRET);
     const region = handle.regions().find((region) => region.id === "mine")!;
     expect(region.box).toBeTruthy();

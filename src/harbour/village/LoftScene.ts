@@ -77,7 +77,7 @@ export function createLoft(scene: THREE.Scene, dressing: { timber: string; metal
 
   const anchors = (): Anchor[] => [
     { id: "home-down", position: [-2, 0, 1.7], zone: "portal", label: "Down to the Kitchen" },
-    { id: "home-atlas", position: [2, 0, -1.5], zone: "portal", label: "Step into the Atlas nook" },
+    { id: "home-atlas", position: [2, 0, -1.5], zone: "portal", label: "Step into the Atlas" },
     { id: "loft-banks", position: [0, 1.1, -2.15], zone: "shelf", label: "The bank shelves — open the Loft", door: { target: "loft-banks" } },
     ...slots.map(slot => ({ id: `bank:${slot.bank.key}`, position: slot.position, zone: "bank", label: bankWords(slot.bank), door: { target: "loft-banks", object: `bank/plan:${slot.bank.goalId ?? slot.bank.key}` } })),
   ];

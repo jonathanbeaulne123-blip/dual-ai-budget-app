@@ -104,8 +104,10 @@ export type KittyRoomProps = {
   context?: KittyPlanContext;
   initialGoalId?: string;
   initialBankId?: string;
+  /** K12 (Tool Atlas §7): open the chosen bank on its studio page — "a bank's studio" is where pottery lives now. */
+  initialStudio?: boolean;
   onOpenCalendar?: () => void;
-  returnTo?: "Plan" | "Home" | "setup" | "Hercules" | "Hearthside";
+  returnTo?: "Plan" | "Home" | "setup" | "Hercules" | "the Boathouse";
   onClose: () => void;
 };
 type SavedReview = { id: string; title: string };
@@ -246,6 +248,7 @@ function Room({
   context,
   initialGoalId,
   initialBankId,
+  initialStudio = false,
   onOpenCalendar,
   returnTo = "Plan",
   onClose,
@@ -278,7 +281,7 @@ function Room({
   const bankScope={identity:creationIdentity??identity,environment:h.environment,householdId:h.householdId,memberId};
   const initiallyNeedsCreation=!selected.startsWith("nest:")&&!h.goals.some(g=>goalVisibleInView(g,memberId,view)&&!g.envelope?.archivedAt&&g.status!=="retired");
   const [creating, setCreating] = useState(()=>{try{return Boolean(creationContext||initiallyNeedsCreation||localStorage.getItem(bankCreationKey(bankScope,creationContext)));}catch{return Boolean(creationContext||initiallyNeedsCreation);}});
-  const [studioFor, setStudioFor] = useState("");
+  const [studioFor, setStudioFor] = useState(() => initialStudio && !selected.startsWith("nest:") ? selected : "");
   const all = h.goals.filter((goal) => goalVisibleInView(goal, memberId, view));
   const visible = all.filter((goal) =>
     filter === "completed"

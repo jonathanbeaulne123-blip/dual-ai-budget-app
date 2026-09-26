@@ -39,7 +39,7 @@ describe('authored room continuity',()=>{
     expect(()=>housePath(wardrobe)).not.toThrow();
   });
   it('opens Today and Record explicitly without mistaking another object for a chapter',()=>{
-    expect(binderyDivisionFor('chapter/today')).toBe('Today');expect(binderyDivisionFor('chapter/record')).toBe('Record');expect(binderyDivisionFor('chapter/made-up')).toBeNull();
+    expect(binderyDivisionFor('chapter/today')).toBe('Today');expect(binderyDivisionFor('chapter/record')).toBe('Paper trail');expect(binderyDivisionFor('chapter/made-up')).toBeNull();
   });
 });
 describe('original room resources',()=>{

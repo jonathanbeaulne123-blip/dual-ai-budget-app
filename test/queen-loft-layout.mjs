@@ -194,7 +194,7 @@ try {
     // 5:1 → $1166.67 to the top shelf split 1:1 over the two open goals (the lidded date night takes nothing), the odd cent landing whole; $233.33 to the wedding.
     const top = tilted.shelves[0].banks.filter(name => !/date night/.test(name));
     assert.equal(tilted.line, `The jug tilts. $1166.67 to the top shelf (${top[0]} $583.34, ${top[1]} $583.33); $233.33 to the bottom shelf (Fictional wedding weekend $233.33).`, `${label}: ${tilted.line}`);
-    assert.equal(tilted.pour?.text, 'Pour it', `${label}: the act`);
+    assert.equal(tilted.pour?.text, 'Move $' + (tilted.pour?.text?.match(/\$([0-9.,]+)/)?.[1] ?? '') + ' to Kitty Banks', `${label}: the act`);
     assert.equal(tilted.ledgeMoney, false, `${label}: the figures are the jug's and the line's, never the ledge's`);
     assert.ok(tilted.allInRoom, `${label} tilted: everything inside the room ${JSON.stringify(tilted.parts)}`);
     await stamp(page, `tilt-${width}x${height}`);
@@ -214,7 +214,7 @@ try {
       // Once, for real, on the fictional books: the surplus falls by what was poured, the goals fill, the notice says so.
       await page.locator('.queen-room--loft .queen-pour').click();
       await page.waitForSelector('[role=dialog].sheet');
-      await page.locator('[role=dialog].sheet button', { hasText: /^Pour it$/ }).click();
+      await page.locator('[role=dialog].sheet button', { hasText: /^Move \$[0-9.,]+ to Kitty Banks$/ }).click();
       await page.waitForTimeout(900);
       const poured = await measure(page);
       noScroll(poured, `${label} poured`);

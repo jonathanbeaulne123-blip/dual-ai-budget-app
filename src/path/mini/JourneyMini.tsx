@@ -230,7 +230,7 @@ export function JourneyMini(props: JourneyMiniProps) {
     const nowMonth = journey.nowMonth;
     const months = journey.months.filter((m) => m.key <= shiftMonthKey(nowMonth, 6)).slice(-24);
     return [{
-      id: "path", worldId: "era-home", order: 1, name: "Our path so far", finishLine: "", state: "current", from: months[0]?.key ?? nowMonth, to: months.at(-1)?.key ?? nowMonth,
+      id: "path", worldId: "era-home", order: 1, name: "The journey so far", finishLine: "", state: "current", from: months[0]?.key ?? nowMonth, to: months.at(-1)?.key ?? nowMonth,
       openEnded: true, home: "flat", homeLabel: "home", months: months.map((m, i) => ({ ...m, lap: i })), monthCount: months.length, finishKind: "agree", banks: [], banksFull: 0,
       finishMet: false, finishWhy: "", plans: [],
     }];

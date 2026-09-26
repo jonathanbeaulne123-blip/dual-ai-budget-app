@@ -10,10 +10,11 @@ import { MOTION_KEY, readMotionEdition } from "../src/harbour/nav/QuickSheet.tsx
 import { VillageHUD } from "../src/harbour/village/VillageHUD.tsx";
 
 /**
- * The one bar (Simple View Desk S1): the island's quick-travel bar carries
- * [Simple view] [⌖ Village map] [Quick travel…] [↗ Look around] [◇ Journey]
- * [+] [All tools], over the 3D harbour and the reading edition alike; the
- * flip and the backtick write the same `hearth:motion` switch the quick sheet does.
+ * The glass over the harbour (Tool Atlas brief §2.4, §4.1, §6): the seven-control
+ * bar retired. The island stands three bubbles — Simple view, All tools, Record —
+ * fixed to the viewport, in the declared focus order; the flip and the backtick
+ * write the same `hearth:motion` switch the sheet does; the App's door edition
+ * carries the same three things and steps aside while the island's glass stands.
  */
 let host: HTMLDivElement, root: Root;
 beforeEach(() => { vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true); window.localStorage.clear(); host = document.createElement("div"); document.body.append(host); root = createRoot(host); });
@@ -27,108 +28,108 @@ function hud(overrides: Record<string, unknown> = {}) {
   return createElement(VillageHUD, { place: "court", travelling: null, onVisit: () => undefined, onView: () => undefined, onJourney: () => undefined, avatar: "jonathan", fab: fab(), onQuickSheet: () => undefined, ...overrides } as Parameters<typeof VillageHUD>[0]);
 }
 
-const barNames = () => [...host.querySelectorAll<HTMLElement>('nav[aria-label="Harbour bar"] > *')].map((node) => node.querySelector("select")?.getAttribute("aria-label") ?? node.getAttribute("aria-label"));
+const bubbles = () => [...host.querySelectorAll<HTMLElement>("[data-glass-bubble]")].map((node) => node.dataset.glassBubble);
+const flip = () => host.querySelector<HTMLButtonElement>("[data-glass-flip]")!;
 
-describe("the one bar over the harbour", () => {
-  it("renders flip, map, quick travel, look, journey, + and All tools, flip at the left end", async () => {
-    await act(async () => root.render(hud()));
-    const bar = host.querySelector<HTMLElement>('nav[aria-label="Harbour bar"]')!;
-    expect(bar).not.toBeNull();
-    expect(bar.dataset.harbourBar).toBe("island");
-    expect(barNames()).toEqual(["Switch to the simple view", "Village map", "Quick travel", "Look around this place", "Journey map", null, "All tools"]);
-    // The unnamed child is the + dial; its button carries the name.
-    expect(bar.children[5]!.classList.contains("fab-dial")).toBe(true);
-    expect(bar.querySelector("button.fab")?.getAttribute("aria-label")).toBe(fabClosedLabel("household"));
-    // No district row anywhere.
-    expect(host.querySelector("[data-compass-district]")).toBeNull();
-    // Every icon button has an accessible name.
-    for (const button of bar.querySelectorAll("button:not([role=menuitem])")) expect(button.getAttribute("aria-label")).toBeTruthy();
-  });
-
-  it("keeps Arrange before the + when a room offers it, and leaves out + / All tools when the App gives neither", async () => {
+describe("the glass over the harbour", () => {
+  it("stands three bubbles in focus order — Simple view, All tools, Record — and no seven-control bar", async () => {
     await act(async () => root.render(hud({ onArrange: () => undefined })));
-    expect(barNames()).toEqual(["Switch to the simple view", "Village map", "Quick travel", "Look around this place", "Journey map", "Arrange room", null, "All tools"]);
-    await act(async () => root.render(hud({ fab: undefined, onQuickSheet: undefined, onJourney: undefined })));
-    expect(barNames()).toEqual(["Switch to the simple view", "Village map", "Quick travel", "Look around this place"]);
-  });
-
-  it("keeps map, quick travel, look around and journey working", async () => {
-    const log: string[] = [];
-    await act(async () => root.render(hud({ onVisit: (id: string, instant?: boolean) => log.push(`visit:${id}:${instant}`), onView: () => log.push("view"), onJourney: () => log.push("journey"), onQuickSheet: () => log.push("sheet") })));
-    const button = (name: string) => host.querySelector<HTMLButtonElement>(`nav[aria-label="Harbour bar"] button[aria-label="${name}"]`)!;
-    await act(async () => button("Village map").click());
-    expect(host.querySelector('[aria-label="Village destinations"]')).not.toBeNull();
-    const select = host.querySelector<HTMLSelectElement>('select[aria-label="Quick travel"]')!;
-    await act(async () => { select.value = "cellar"; select.dispatchEvent(new Event("change", { bubbles: true })); });
+    expect(bubbles()).toEqual(["flip", "tools", "record"]);
+    for (const node of host.querySelectorAll<HTMLElement>("[data-glass-bubble]")) {
+      expect(node.classList.contains("is-fixed")).toBe(true);
+      expect(node.dataset.cameraDeadzone).toBe("44");
+    }
+    // The retired controls are gone from the glass.
+    expect(host.querySelector('[aria-label="Quick travel"]')).toBeNull();
+    expect(host.querySelector('[aria-label="Village map"]')).toBeNull();
+    expect(host.querySelector('[aria-label="Look around this place"]')).toBeNull();
+    expect(host.querySelector('[aria-label="Journey map"]')).toBeNull();
+    expect(host.querySelector('[aria-label="Arrange room"]')).toBeNull();
     expect(host.querySelector('[aria-label="Village destinations"]')).toBeNull();
-    await act(async () => button("Look around this place").click());
-    await act(async () => button("Journey map").click());
-    await act(async () => button("All tools").click());
-    expect(log).toEqual(["visit:cellar:true", "view", "journey", "sheet"]);
+    expect(host.querySelector(".village-tools")).toBeNull();
+    expect(host.textContent).not.toMatch(/Beyond the village|Quick travel|Village map/);
+    // The accessible names start with the visible words.
+    expect(flip().querySelector(".glass-bubble__label")!.textContent).toContain("Simple view");
+    expect(host.querySelector("[data-glass-tools]")!.getAttribute("aria-label")).toBe("All tools and search");
+    expect(host.querySelector("button.fab")!.getAttribute("aria-label")).toBe("Record");
+    // The address card is glass.
+    expect(host.querySelector(".village-address[data-glass-card]")).not.toBeNull();
   });
 
-  it("reaches the four money verbs in two presses from the bar's +", async () => {
+  it("leaves out Record and All tools when the App gives neither", async () => {
+    await act(async () => root.render(hud({ fab: undefined, onQuickSheet: undefined })));
+    expect(bubbles()).toEqual(["flip"]);
+  });
+
+  it("puts the integrator's map, strip and card between Simple view and All tools", async () => {
+    await act(async () => root.render(hud({ glassBetween: createElement("button", { type: "button", "data-test-map": "" }, "The Horizon, September") })));
+    const order = [...host.querySelectorAll<HTMLElement>("[data-glass-bubble], [data-test-map]")].map((node) => node.dataset.glassBubble ?? "map");
+    expect(order).toEqual(["flip", "map", "tools", "record"]);
+  });
+
+  it("opens All tools, and reaches a money verb in two presses from Record", async () => {
     const log: string[] = [];
-    await act(async () => root.render(hud({ fab: fab(log) })));
-    await act(async () => host.querySelector<HTMLButtonElement>('nav[aria-label="Harbour bar"] button.fab')!.click());
-    const verbs = [...host.querySelectorAll<HTMLButtonElement>("[data-fab-action]")].map((b) => b.textContent);
-    expect(verbs).toEqual(["Record an expense", "Add income", "Move money", "Add a shift"]);
+    await act(async () => root.render(hud({ fab: fab(log), onQuickSheet: () => log.push("sheet") })));
+    await act(async () => host.querySelector<HTMLButtonElement>("[data-glass-tools]")!.click());
+    expect(log).toEqual(["sheet"]);
+    await act(async () => host.querySelector<HTMLButtonElement>("button.fab")!.click());
+    const verbs = [...host.querySelectorAll<HTMLButtonElement>("[data-fab-action] .record-dial__label")].map((b) => b.textContent);
+    // No onBillPaid in this fixture, so Bill paid stays hidden (the App wires it through GlassFab.onBillPaid).
+    expect(verbs).toEqual(["Purchase", "Shift", "Income", "Move money"]);
     await act(async () => host.querySelector<HTMLButtonElement>('[data-fab-action="income"]')!.click());
-    expect(log).toEqual(["open:true", "open:false", "pick:income"]);
+    // Record forwards the dial's open state (it shuts while an Add sheet is open), so the App hears it open and close.
+    expect(log).toEqual(["sheet", "open:true", "open:false", "pick:income"]);
   });
 
-  it("stands in the reading edition too, with the flip reading Harbour", async () => {
+  it("reads Island on the Desk", async () => {
     window.localStorage.setItem(MOTION_KEY, "flat");
-    // The reading edition passes no wander and no character.
-    await act(async () => root.render(hud({ onWander: undefined, onAvatar: undefined })));
-    const flip = host.querySelector<HTMLButtonElement>(".edition-flip")!;
-    expect(flip.getAttribute("aria-label")).toBe("Switch to the illustrated harbour");
-    expect(flip.textContent).toContain("Harbour");
-    expect(host.querySelector("button.fab")).not.toBeNull();
-    expect(host.querySelector('button[aria-label="All tools"]')).not.toBeNull();
+    await act(async () => root.render(hud({ flat: true, onAvatar: undefined })));
+    expect(flip().querySelector(".glass-bubble__label")!.textContent).toContain("Island");
+    expect(flip().dataset.glassFlip).toBe("desk");
+    // On the Desk the three stand as the flat bar: [Island] [Record] [All tools], Record centred.
+    expect([...host.querySelectorAll<HTMLElement>('[data-harbour-bar="island"] [data-glass-bubble]')].map((node) => node.dataset.glassBubble)).toEqual(["flip", "record", "tools"]);
+    expect(host.querySelector(".village-address")).toBeNull();
   });
 
-  it("makes the App's door edition step aside while it stands, so there is one bar", async () => {
+  it("makes the App's door edition step aside while it stands, so there is one set", async () => {
     const both = (island: boolean) => createElement("div", null, createElement(Compass, { fab: fab(), onQuickSheet: () => undefined }), island ? hud() : null);
     await act(async () => root.render(both(true)));
-    expect(host.querySelectorAll('nav[aria-label="Harbour bar"]').length).toBe(1);
-    expect(host.querySelector('[data-harbour-bar="island"]')).not.toBeNull();
+    expect(host.querySelectorAll('nav[aria-label="Harbour bar"]').length).toBe(0);
     expect(host.querySelectorAll("button.fab").length).toBe(1);
-    // A tool opens in front (or the Journey): the island's bar leaves, the door edition carries flip, + and All tools.
+    expect(host.querySelectorAll("[data-glass-flip]").length).toBe(1);
+    // A tool opens in front (or the Journey): the island's glass leaves, the door edition carries the same three.
     await act(async () => root.render(both(false)));
-    expect(host.querySelectorAll('nav[aria-label="Harbour bar"]').length).toBe(1);
-    expect(host.querySelector('[data-harbour-bar="door"]')).not.toBeNull();
+    const door = host.querySelector<HTMLElement>('[data-harbour-bar="door"]')!;
+    expect(door).not.toBeNull();
+    expect([...door.querySelectorAll<HTMLElement>("[data-glass-bubble]")].map((node) => node.dataset.glassBubble)).toEqual(["flip", "record", "tools"]);
     expect(host.querySelectorAll("button.fab").length).toBe(1);
-    expect(host.querySelector(".edition-flip")).not.toBeNull();
   });
 });
 
 describe("the Simple-view flip", () => {
-  it("writes hearth:motion and raises the event in both directions, inverting its words", async () => {
+  it("writes hearth:motion and raises the event, one tap each way, its name equal to its label", async () => {
     const heard: unknown[] = [];
     const listen = (event: Event) => heard.push((event as CustomEvent).detail);
     window.addEventListener(MOTION_KEY, listen);
     try {
       await act(async () => root.render(hud()));
-      const flip = () => host.querySelector<HTMLButtonElement>(".edition-flip")!;
-      expect(flip().textContent).toContain("Simple view");
+      expect(flip().querySelector(".glass-bubble__label")!.textContent).toBe("Simple view");
       await act(async () => flip().click());
       expect(window.localStorage.getItem(MOTION_KEY)).toBe("flat");
       expect(heard).toEqual(["flat"]);
-      expect(flip().getAttribute("aria-label")).toBe("Switch to the illustrated harbour");
-      expect(flip().textContent).toContain("Harbour");
+      expect(flip().querySelector(".glass-bubble__label")!.textContent).toBe("Island");
       await act(async () => flip().click());
-      // Exactly what the quick sheet's switch writes for the illustrated edition.
+      // Exactly what the sheet's switch writes for the illustrated edition.
       expect(window.localStorage.getItem(MOTION_KEY)).toBe("");
       expect(heard).toEqual(["flat", "illustrated"]);
-      expect(flip().getAttribute("aria-label")).toBe("Switch to the simple view");
+      expect(flip().querySelector(".glass-bubble__label")!.textContent).toBe("Simple view");
     } finally { window.removeEventListener(MOTION_KEY, listen); }
   });
 
-  it("follows an edition chosen elsewhere (the quick sheet, the backtick)", async () => {
+  it("follows an edition chosen elsewhere (the sheet, the backtick)", async () => {
     await act(async () => root.render(hud()));
     await act(async () => { flipMotionEdition(); });
-    expect(host.querySelector(".edition-flip")?.getAttribute("aria-label")).toBe("Switch to the illustrated harbour");
+    expect(flip().querySelector(".glass-bubble__label")!.textContent).toBe("Island");
     expect(readMotionEdition()).toBe("flat");
   });
 });
@@ -191,9 +192,11 @@ describe("the seams that carry the bar", () => {
     const app = readFileSync(join(process.cwd(), "src", "App.tsx"), "utf8");
     const shell = readFileSync(join(process.cwd(), "src", "harbour", "HarbourWorld.tsx"), "utf8");
     // The same FabSpeedDial wiring on both editions of the bar; none while the charter takes over.
-    expect(app).toMatch(/const harbourBarFab: CompassFab = \{closed:adding,actions:fabActionsFor\(view,tab\),closedLabel:fabClosedLabel\(view\),onOpenChange:setFabOpen,onPick:\(nextMode\)=>openAddFor\(null,nextMode\)/);
+    // Five verbs (Shift only with a job), Bill paid wired, and every verb opens in its D1 ledger (openRecordFlow).
+    expect(app).toMatch(/const harbourBarFab: CompassFab = \{closed:adding,actions:fabActionsFor\(view,\{memberHasJob\}\),closedLabel:fabClosedLabel\(view\),onOpenChange:setFabOpen,onPick:\(nextMode\)=>openRecordFlow\(nextMode\),onBillPaid:\(\)=>openRecordFlow\("bill"\)\}/);
     expect(app).toMatch(/onQuickSheet=\{\(\)=>setQuickSheetOpen\(true\)\} fab=\{charterTakeoverVisible\?undefined:harbourBarFab\}\/><\/Suspense>/);
-    expect(app).toMatch(/HARBOUR_ENABLED&&view==="household"\?<><Compass fab=\{harbourBarFab\}/);
+    // One glass chrome for both spaces (D2).
+    expect(app).toMatch(/HARBOUR_ENABLED\?<><Compass fab=\{harbourBarFab\}/);
     // The district row is gone from the App.
     expect(app).not.toMatch(/<Compass[^>]*(?:onHome|onStudy|onKitchen|onMaking|onTogether)=/);
     // S5: the backtick flips in personal scope too (its Desk), still behind the harbour gate.

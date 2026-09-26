@@ -51,33 +51,24 @@ describe("Vision v2 slice 1 — space names (Decision 1 and 10)", () => {
   });
 });
 
-describe("Vision v2 slice 1 — adaptive action", () => {
-  it("keeps My Money's direct four in their known order", () => {
-    expect(fabActionsFor("personal", "home").map((row) => row.id)).toEqual(["shift", "income", "expense", "transfer"]);
-    expect(fabActionsFor("personal", "calendar")).toBe(fabActionsFor("personal", "home"));
-    expect(FAB_ADD_ACTIONS.map((row) => row.mode)).toEqual(["shift", "income", "expense", "transfer"]);
-    expect(fabClosedLabel("personal")).toBe("Add money");
+describe("Vision v2 slice 1 — adaptive action, now the Record dial (Tool Atlas §3.3)", () => {
+  it("keeps one order in both spaces: Purchase · Shift · Income · Bill paid · Move money", () => {
+    for (const view of ["personal", "household"] as const) {
+      expect(fabActionsFor(view).map((row) => row.id)).toEqual(["purchase", "shift", "income", "bill-paid", "move-money"]);
+      expect(fabActionsFor(view, "calendar")).toBe(fabActionsFor(view, "home"));
+      expect(fabClosedLabel(view)).toBe("Record");
+    }
+    expect(FAB_ADD_ACTIONS.map((row) => row.mode)).toEqual(["expense", "shift", "income", "bill", "transfer"]);
   });
 
-  it("keeps Our Home's + on four money verbs, reordered by destination, and never a navigation verb (row 5)", () => {
-    expect(fabActionsFor("household", "home")[0]!.id).toBe("record-expense");
-    expect(fabActionsFor("household", "plan").slice(0, 2).map((row) => row.id)).toEqual(["record-expense", "move-money"]);
-    expect(fabActionsFor("household", "ledger").slice(0, 3).map((row) => row.id)).toEqual(["record-expense", "add-income", "move-money"]);
+  it("hides Shift only for a member with no job, and never carries a navigation verb (row 5)", () => {
+    expect(fabActionsFor("household", { memberHasJob: false }).map((row) => row.id)).toEqual(["purchase", "income", "bill-paid", "move-money"]);
+    expect(fabActionsFor("household", { memberHasJob: true })).toHaveLength(5);
     for (const tab of ["home", "ledger", "plan", "together", "planner", "timeMachine"]) {
       const actions = fabActionsFor("household", tab);
-      expect(actions).toHaveLength(4);
+      expect(actions).toHaveLength(5);
       expect(actions.every((row) => row.kind === "add" && row.money)).toBe(true);
-    }
-    expect(fabClosedLabel("household")).toBe("Add money");
-  });
-
-  it("keeps every money verb on an Add mode and marks navigation verbs as non-money", () => {
-    for (const tab of ["home", "ledger", "plan", "together", "planner", "timeMachine"]) {
-      for (const action of fabActionsFor("household", tab)) {
-        if (action.kind === "add") expect(action.money).toBe(true);
-        else expect(action.money).toBe(false);
-      }
-      expect(fabActionsFor("household", tab).some((row) => row.kind === "add" && row.mode === "shift")).toBe(true);
+      expect(actions.every((row) => row.aria.startsWith(row.label))).toBe(true);
     }
   });
 });

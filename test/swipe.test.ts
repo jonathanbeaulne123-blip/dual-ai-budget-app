@@ -269,9 +269,9 @@ describe("swipe sheet", () => {
     household = buy(household, { date: "2026-09-02", amount: "10", subcategoryId: "SUB-FOOD-GROCERIES" });
     const posts: Array<{ amount: string; subcategoryId: string }> = [];
     renderSwipe(household, { onPostCategory: (input) => posts.push(input) });
-    expect(enterButton().disabled).toBe(true);
+    expect(enterButton().getAttribute("aria-disabled")).toBe("true"); // A30: aria-disabled, still focusable
     tapPad("1", "Add 00");
-    expect(enterButton().disabled).toBe(false);
+    expect(enterButton().getAttribute("aria-disabled")).toBeNull();
     act(() => { enterButton().click(); });
     const grocery = Array.from(container.querySelectorAll(".swipe-cat"))
       .find((button) => button.textContent === "Groceries") as HTMLButtonElement | undefined;
@@ -577,7 +577,7 @@ describe("swipe posting contract", () => {
     expect(applyUndo).toContain("suppressUndo: fundedTransactionIds.length > 0");
     expect(applyUndo).toContain("swipeUndoScopeMatches");
     expect(appSource).toContain("!options?.suppressUndo");
-    expect(appSource).toContain("activityBlocked={Boolean(adding || swipeOpen || confirm || herculesReviewBlocked || commandOpen || fundLedgeExpanded)}");
+    expect(appSource).toContain("activityBlocked={Boolean(adding || swipeOpen || confirm || herculesReviewBlocked || commandOpen)}"); // K1: the Fund ledge retired
     expect(appSource).toContain('guard.kind !== "duePreview" || dueSheetOpen || dueReviewActive');
     expect(appSource).toContain("onReviewActiveChange={setDueReviewActive}");
     expect(readFileSync(resolve(process.cwd(), "src/swipe.css"), "utf8")).toContain("z-index: 32");

@@ -125,7 +125,7 @@ try {
     assert.deepEqual(m.jars.map(j => j.strike), ['shard', 'hammer', 'none', 'hammer', 'hammer', 'none', 'crack', 'none', 'none', 'none', 'none'], `${label}: shard, hammers, crack, early (${m.jars.map(j => j.strike).join(', ')})`);
     // The gate opens on today, where the rent stands cracked.
     assert.match(m.line, /^Cracked\. Fictional rent · house bill · Housing › Electric · due today/, `${label}: ${m.line}`);
-    assert.ok(m.acts.some(a => a.crack && a.text === 'Pay it anyway · from the water'), `${label}: the crack pays from the water (${m.acts.map(a => a.text).join(' | ')})`);
+    assert.ok(m.acts.some(a => a.crack && a.text === 'Mark paid anyway · from the water'), `${label}: the crack pays from the water (${m.acts.map(a => a.text).join(' | ')})`);
     await stamp(page, `due-crack-${width}x${height}`);
     records.push({ scene: 'due-crack', width, height, world: m.world, overflowY: m.overflowY, line: m.line, acts: m.acts.map(a => a.text) });
     // The kitty jar's card: press the rent in the gate and it opens in the room with everything it has to say; × closes it and the jar takes focus back.

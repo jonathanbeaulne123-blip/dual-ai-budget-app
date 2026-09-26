@@ -211,8 +211,8 @@ describe("five boards entry App integration", () => {
     await mount();
     const nav=container.querySelector('[data-ledger-nav="shared"]')!;
     expect([...nav.children].map(el=>el.classList.contains('fab-dial')?'Add':el.textContent)).toEqual(['Home','The Fund','Add','Our Path','Together']);
-    await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Add money"]')!.click());
-    await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Add expense"]')!.click());
+    await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Record"]')!.click());
+    await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Purchase: record one"]')!.click());
     await waitFor(()=>expect(button('More').disabled).toBe(false));
     if(expanded)act(()=>button('More').click());
     input('[data-entry-section="amount"] input','130.01');
@@ -228,8 +228,8 @@ describe("five boards entry App integration", () => {
     expect(reviewed.textContent).toContain('$66.31');expect(reviewed.textContent).toContain('$63.70');
     expect(writes.confirmations).toHaveLength(0);
     act(()=>[...container.querySelectorAll<HTMLButtonElement>('[data-add-slideshow] button')].find(b=>b.textContent==='Close')!.click());
-    await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Add money"]')!.click());
-    await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Add expense"]')!.click());
+    await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Record"]')!.click());
+    await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Purchase: record one"]')!.click());
     expect(container.querySelector('.category-split-editor [role="slider"]')?.getAttribute('aria-valuenow')).toBe('51');
     if(!expanded){
       expect(button('Continue to account').disabled).toBe(false);
@@ -271,9 +271,16 @@ describe("five boards entry App integration", () => {
     expect(added.transactions.filter(t => t.note.startsWith("Fictional sample")).length).toBeLessThanOrEqual(48);
     expect(added.potentialExpenses?.filter(p => p.title.startsWith("Fictional sample plan")).length).toBeGreaterThanOrEqual(40);
   });
+  it("carries the five Record verbs, Bill paid wired (Tool Atlas §3.3)", async () => {
+    mobile = true; await mount();
+    const fab = container.querySelector<HTMLButtonElement>('[aria-label="Record"]')!;
+    await act(async () => { fab.focus(); fab.click(); });
+    // No job is set up in this fictional household yet, so Shift stays: its flow is where a job is set up.
+    expect([...container.querySelectorAll<HTMLElement>("[data-fab-action]")].map((row) => row.dataset.fabAction)).toEqual(["expense", "shift", "income", "bill", "transfer"]);
+  });
   it.each(["expense", "income", "transfer", "shift"])("returns real App %s FAB entry focus to the + across Close and resume", async mode => {
     mobile = true; await mount();
-    const fab = container.querySelector<HTMLButtonElement>('[aria-label="Add money"]')!;
+    const fab = container.querySelector<HTMLButtonElement>('[aria-label="Record"]')!;
     const writesBefore = writes.candidates.length;
     for (const dismissal of ["Close", "Escape"]) {
       await act(async () => { fab.focus(); fab.click(); });
@@ -289,7 +296,7 @@ describe("five boards entry App integration", () => {
       });
       expect(sheet.hidden).toBe(true);
       expect(document.activeElement).toBe(fab);
-      expect(fab.getAttribute("aria-label")).toBe("Add money");
+      expect(fab.getAttribute("aria-label")).toBe("Record");
     }
     expect(writes.candidates.length).toBe(writesBefore);
   }, 30000);
@@ -345,8 +352,8 @@ describe("five boards entry App integration", () => {
     vi.stubEnv("VITE_LEDGER_SYNC_V2", "1"); vi.stubEnv("VITE_LEDGER_SYNC_LOCAL_AUTH", "1");
     await mount();
     const openFullForm = async () => {
-      await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Add money"]')!.click());
-      await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Add expense"]')!.click());
+      await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Record"]')!.click());
+      await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Purchase: record one"]')!.click());
       const more = () => [...container.querySelectorAll<HTMLButtonElement>('[data-add-slideshow] button')].find(button => button.textContent === "More")!;
       await waitFor(() => expect(more().disabled).toBe(false));
       act(() => more().click());
@@ -358,7 +365,8 @@ describe("five boards entry App integration", () => {
       const amount = entry === 0 ? '18.75' : '29.36';
       const note = `Acceptance lifecycle ${entry}`;
       input('#add-note', note); input('[data-entry-section="amount"] input', amount);
-      expect(container.querySelector<HTMLButtonElement>('[data-add-confirm]')!.disabled).toBe(true);
+      // K8: the second Purchase remembers the account of the first accepted one (Visa), so it can post straight away.
+      expect(container.querySelector<HTMLButtonElement>('[data-add-confirm]')!.disabled).toBe(entry === 0);
       act(() => [...container.querySelectorAll<HTMLButtonElement>('[data-entry-section="account"] .wallet-tile')].find(tile => tile.textContent?.includes("Visa"))!.click());
       await act(async () => container.querySelector<HTMLButtonElement>('[data-add-confirm]')!.click());
       await waitFor(() => expect(writes.confirmations).toHaveLength(entry + 1));
@@ -384,8 +392,8 @@ describe("five boards entry App integration", () => {
     if (ordinary) await act(async () => ordinary.click());
     await waitFor(() => expect(container.textContent).toContain("Focus Visa"));
     await act(async () => button("Focus Visa").click());
-    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Add money"]')!.click());
-    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Add expense"]')!.click());
+    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Record"]')!.click());
+    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Purchase: record one"]')!.click());
     const more = () => [...container.querySelectorAll<HTMLButtonElement>('[data-add-slideshow] button')].find(item => item.textContent === "More")!;
     act(() => more().click());
     input('[data-entry-section="amount"] input', '12.50');
@@ -398,23 +406,14 @@ describe("five boards entry App integration", () => {
     expect(container.querySelector('[data-entry-section="account"] [aria-pressed="true"]')?.textContent).toContain("Visa");
   }, 30000);
 
-  it.each([false, true])("Ask opens its board directly without a ledger save (Hearthside=%s)", async hearthside => {
+  it.each([false, true])("The Ask opens the Glasshouse steps without a ledger save (K1, Hearthside=%s)", async hearthside => {
     mobile = true; writes.hearthside = hearthside; await mount();
     const writesBefore = writes.candidates.length;
     await act(async () => button("Open Ask").click());
-    await waitFor(() => expect(container.querySelector('[data-ledger-tab="' + (hearthside ? 'play' : 'together') + '"]')).not.toBeNull());
+    // K1 (Tool Atlas §7): the Fund ledge's Ask plate retired; The Ask is a Glasshouse step, so its door opens the steps.
+    await waitFor(() => expect(container.querySelector('[data-ledger-tab="planner"]')).not.toBeNull());
     expect(container.querySelector("[data-add-slideshow]")).toBeNull();
-    await waitFor(() => expect(container.querySelector<HTMLDivElement>('.shared-board-page--ask')?.hidden).toBe(false));
-    expect(container.querySelector('.shared-boards [role="tab"][aria-selected="true"]')?.textContent).toBe("Shift Ask");
     expect(writes.candidates.length).toBe(writesBefore);
-    if (hearthside) {
-      expect(new URL(location.href).searchParams.get('surface')).toBe('practical');
-      // A fresh lazy mount follows the durable surface URL and scoped board selection.
-      await act(async () => { root.unmount(); root = createRoot(container); root.render(createElement(App)); });
-      await waitFor(() => expect(container.querySelector<HTMLDivElement>('.shared-board-page--ask')?.hidden).toBe(false));
-      expect(container.querySelector('.shared-boards [role="tab"][aria-selected="true"]')?.textContent).toBe('Shift Ask');
-      expect(writes.candidates.length).toBe(writesBefore);
-    }
   }, 30000);
 
   it("exits a failed Personal Play room into Household Hearthside", async () => {

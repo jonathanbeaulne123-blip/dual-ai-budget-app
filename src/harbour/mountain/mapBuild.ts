@@ -60,7 +60,7 @@ function build(){
     ...Object.values(TRANSPORT_LINES).flatMap(l=>l.stations.map(s=>({id:`${l.kind}:${s.id}`,x:s.platform.at[0],z:s.platform.at[2],kind:l.kind,label:`${s.name} ${l.kind}`}))),
     ...MOUNTAIN_GATES.map(g=>({id:g.id,x:g.at[0],z:g.at[2],kind:'gate',label:g.name??'Gate'})),
     ...OVERLOOKS.map(o=>({id:o.id,x:o.at[0],z:o.at[2],kind:'overlook',label:o.name})),
-    {id:'town-square',x:0,z:0,kind:'town',label:'Town square'},
+    {id:'town-square',x:0,z:0,kind:'town',label:'The square'},
   ];
   return {viewBox:'-196 -392 392 476',lines,points};
 }
