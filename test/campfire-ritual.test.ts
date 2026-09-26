@@ -20,7 +20,8 @@ import {
   sealWords,
 } from "../src/harbour/campfire/ritual/model.ts";
 import { catalogHousehold } from "../src/core/seed.ts";
-import { addGoal, appendPlanSitdownTurn, closeBooksMonth } from "../src/core/commands.ts";
+import { addGoal, appendPlanSitdownTurn, closeBooksMonth, postEntry } from "../src/core/commands.ts";
+import { buildDashboard, type Dashboard } from "../src/core/insights.ts";
 import { closeChapter, openChapter, reviewChapterClosure } from "../src/core/chapters.ts";
 import { isMonthClosed } from "../src/core/statements.ts";
 import { CAMPFIRE_RETIRED_TERMS } from "../src/core/terms.ts";
@@ -50,7 +51,7 @@ function septemberChapter(): Household {
 
 type Harness = { commands: string[]; household: Household; setMember: (id: string) => void };
 
-async function mountRitual(start: Household, options: { memberId?: string; today?: string; weekly?: boolean } = {}) {
+async function mountRitual(start: Household, options: { memberId?: string; today?: string; weekly?: boolean; sitDown?: { dashboard: Dashboard; displayHousehold: Household } } = {}) {
   const harness: Harness = { commands: [], household: start, setMember: () => {} };
   function Proof() {
     const [household, setHousehold] = useState(start);
@@ -66,7 +67,7 @@ async function mountRitual(start: Household, options: { memberId?: string; today
       } catch (error) { return { ok: false, userMessage: (error as Error).message }; }
     };
     const props = { key: memberId, household, memberId, today: options.today ?? OCT_2, busy: false, onCommand, onClose: () => {} };
-    return options.weekly ? createElement(WeeklySitdown, props) : createElement(CampfireRitual, props);
+    return options.weekly ? createElement(WeeklySitdown, props) : createElement(CampfireRitual, { ...props, sitDown: options.sitDown ?? null });
   }
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
   await act(async () => { root!.render(createElement(Proof)); await new Promise(r => setTimeout(r, 0)); });
@@ -274,7 +275,7 @@ describe("money truth at the fire", () => {
     expect(slices.some(slice => slice.targetId === trip.postedIds[0])).toBe(true);
   });
 
-  it("composes only existing commands, and none that post money on its own", () => {
+  it("composes only existing commands in its own files, and imports no money writer", () => {
     const dir = "src/harbour/campfire/ritual";
     const allowed = new Set(["appendPlanSitdownTurn", "acknowledgeHouseholdPlan", "closeBooksMonth", "closeChapter", "openChapter", "editRitual", "acknowledgeRitualChange", "keepWinAsMemory", "dismissWin", "offerMove"]);
     const used = new Set<string>();
@@ -286,6 +287,94 @@ describe("money truth at the fire", () => {
       }
     }
     expect([...used].filter(name => !allowed.has(name))).toEqual([]);
+  });
+
+  /**
+   * Review finding 6: the ritual does move money, through the controls it reuses. The Settle beat hosts
+   * SitDownLeftover, whose "Confirm moves of $X" posts transfers (`executeSitDownMoves`); the Chapter controls
+   * carry their own commands. This names every command reached that way, and proves the one money mover is
+   * that named button, sent through the App's run.
+   */
+  const MONEY_WRITERS = ["executeSitDownMoves", "postEntry", "postTransfer", "postShift", "postOneRecurrence", "postDueRecurrences", "fundGoal", "purchaseGoal",
+    "allocateHouseholdFundSurplus", "contributeToGoal", "proposeHouseholdFundContribution", "confirmHouseholdFundContribution", "settleWorkReceivable", "postPotentialExpense"];
+  const slice = (file: string, from: string, to?: string) => {
+    const source = readFileSync(file, "utf8");
+    const start = source.indexOf(from);
+    expect(start, `${file}: ${from}`).toBeGreaterThanOrEqual(0);
+    const end = to ? source.indexOf(to, start + from.length) : source.length;
+    return source.slice(start, end < 0 ? source.length : end);
+  };
+  // A captured command takes the accepted household first: `name(current, …)` / `name(h, …)`.
+  const coreImports = (file: string) => new Set([...readFileSync(file, "utf8").matchAll(/import \{([^}]*)\} from ["']\.\/core\/[^"']+["']/g)]
+    .flatMap(match => match[1]!.split(",").map(name => name.trim().replace(/^type\s+/, "")).filter(Boolean)));
+  const commandsIn = (source: string, file: string) => {
+    const core = coreImports(file);
+    return new Set([...source.matchAll(/\b([a-z][A-Za-z]+)\((?:current|h)\b/g)].map(match => match[1]!).filter(name => core.has(name)));
+  };
+  const REUSED: Record<string, { file: string; source: () => string; commands: string[] }> = {
+    "SitDownGuide.tsx › SitDownLeftover": {
+      file: "src/SitDownGuide.tsx",
+      source: () => slice("src/SitDownGuide.tsx", "export function SitDownLeftover(", "\nexport function "),
+      commands: ["adoptSitDownStandingOrders", "applySitDown", "executeSitDownMoves", "recordSitDownDrive", "saveSitDownSession"],
+    },
+    "ChapterTaskControls.tsx": {
+      file: "src/ChapterTaskControls.tsx",
+      source: () => readFileSync("src/ChapterTaskControls.tsx", "utf8"),
+      commands: ["acknowledgeRitualChange", "acknowledgeTask", "adoptChapterTasks", "completeMove", "editRitual", "prepareRitualOccurrence", "recordRitualHeld", "respondToMove", "setRitualParticipation"],
+    },
+    "ChapterPanel.tsx › RitualForm": {
+      file: "src/ChapterPanel.tsx",
+      source: () => slice("src/ChapterPanel.tsx", "export function RitualForm(", "\nexport function "),
+      commands: ["addRitual"],
+    },
+  };
+
+  it("names every command it reaches through reused controls", () => {
+    const beats = readFileSync("src/harbour/campfire/ritual/beats.tsx", "utf8");
+    // The reused controls it mounts, and nothing else from the App's root.
+    expect([...beats.matchAll(/from "\.\.\/\.\.\/\.\.\/([A-Z][A-Za-z]+)\.tsx"/g)].map(match => match[1]).sort()).toEqual(["ChapterPanel", "ChapterTaskControls", "SitDownGuide"]);
+    for (const [where, { file, source, commands }] of Object.entries(REUSED)) {
+      expect([...commandsIn(source(), file)].sort(), where).toEqual(commands);
+    }
+  });
+
+  it("moves money only through Settle's named “Confirm moves of $X”, sent through run", () => {
+    const own = readdirSync("src/harbour/campfire/ritual").filter(file => /\.tsx?$/.test(file)).map(file => readFileSync(join("src/harbour/campfire/ritual", file), "utf8")).join("\n");
+    const reached = Object.values(REUSED).map(({ source }) => source()).join("\n");
+    const movers = MONEY_WRITERS.filter(name => new RegExp(`\\b${name}\\(`).test(own + reached));
+    expect(movers).toEqual(["executeSitDownMoves"]);
+    expect(own).not.toMatch(/\bexecuteSitDownMoves\b/);
+    const leftover = REUSED["SitDownGuide.tsx › SitDownLeftover"]!.source();
+    expect(leftover.match(/\bexecuteSitDownMoves\(/g)).toHaveLength(1);
+    // Its one call is inside the button whose visible name is "Confirm moves of {amount}", handed to send → onCommand…
+    const button = leftover.slice(leftover.lastIndexOf("<button", leftover.indexOf("executeSitDownMoves(")), leftover.indexOf("</button>", leftover.indexOf("executeSitDownMoves(")));
+    expect(button).toContain("void send((current) => executeSitDownMoves(current,");
+    expect(button).toContain("Confirm moves of {formatCad(plan.allocatedCents)}");
+    const send = leftover.slice(leftover.indexOf("async function send("), leftover.indexOf("async function send(") + 200);
+    expect(send).toContain("const outcome = await onCommand(fn)");
+    // …and the Settle beat hands SitDownLeftover the ritual's relay, which is the App's run (runKitchen).
+    const beats = readFileSync("src/harbour/campfire/ritual/beats.tsx", "utf8");
+    expect(beats).toMatch(/<SitDownLeftover [^>]*onCommand=\{props\.relay\}/);
+    const write = readFileSync("src/harbour/campfire/ritual/useCampfireWrite.ts", "utf8");
+    expect(write).toMatch(/const relay = useCallback\(async \(fn[^)]*\)[^{]*\{[^}]*await onCommand\(fn\)/);
+  });
+
+  it("drives it: the Settle beat's “Confirm moves of $X” is the one money press, and it reaches run", async () => {
+    let start = septemberChapter();
+    start = postEntry(start, { date: "2026-09-02", type: "income", amount: "900", accountId: "ACC-CHEQUING", subcategoryId: "SUB-INCOME-WAGES", note: "Fictional pay", createdBy: BIANCA, visibility: "household", confirmDuplicate: true }).household;
+    const sitDown = { dashboard: buildDashboard(start, "2026-09-25", new Date("2026-09-25T12:00:00Z")), displayHousehold: start };
+    const harness = await mountRitual(start, { today: "2026-09-25", sitDown });
+    await goTo("Settle");
+    const confirm = button(/^Confirm moves of \$/);
+    expect(document.querySelectorAll("[aria-label='Where leftover goes']")).toHaveLength(1);
+    // Nothing on the way here moved money.
+    const moves = (rows: string[]) => rows.filter(row => MONEY_WRITERS.some(name => new RegExp(`\\b${name}\\b`).test(row)));
+    expect(moves(harness.commands)).toEqual([]);
+    if (confirm.getAttribute("aria-disabled") === "true") throw new Error(`Confirm moves is held: ${document.body.textContent}`);
+    await click(confirm);
+    const moved = moves(harness.commands);
+    expect(moved).toHaveLength(1);
+    expect(moved[0]).toMatch(/\bexecuteSitDownMoves\b/);
   });
 });
 
