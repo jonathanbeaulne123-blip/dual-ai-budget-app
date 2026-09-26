@@ -111,7 +111,7 @@ export const HARBOUR_LANDMARKS: Readonly<Record<string, { room: HouseRoom; level
  * personal illustrated house, T63) or the personal flat Desk now sees `true`
  * for the same rooms — the personal house is no longer reachable through this
  * predicate, and the App must pass `space` / `mineHousehold` / `onOpenMine`
- * to `HarbourWorld` (see `HANDOFF-mine.md`, "Wiring"). The harbour's reading
+ * to `HarbourWorld` (see `docs/claude/tool-atlas/HANDOFF-mine.md`, "Wiring"). The harbour's reading
  * stays the household's in both spaces (`data/useHarbourReading.ts` is keyed
  * `scope: "household"`), so hosts keep their meaning: the Fund bank is always
  * the shared Fund. World presence publishes nothing from a personal view

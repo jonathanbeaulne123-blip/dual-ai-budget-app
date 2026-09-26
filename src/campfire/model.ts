@@ -30,7 +30,7 @@ import type { Household } from "../core/types.ts";
  * Rituals and Moves, the household Plan versions and their acknowledgements,
  * the Shared Sitdown turns and the closed months. It writes nothing. Every
  * write the ritual makes is an existing captured command, sent by the sheet
- * through the App's own `run` (see HANDOFF-campfire.md).
+ * through the App's own `run` (see docs/claude/tool-atlas/HANDOFF-campfire.md).
  *
  * Two laws live here so a test can hold them without a browser:
  * - the seal needs both chairs: one person alone never seals (D3);
