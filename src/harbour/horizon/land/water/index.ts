@@ -1,6 +1,6 @@
 import { HORIZON_MANIFEST as M, requireScaleFactor } from '../../world/manifest';
 import type { WaterCut, XY, XYZ } from '../interfaces';
-import { ellipse, lineOutline, linePoint, polygonDistance, segmentPoint } from '../terrain/geometry';
+import { ellipse, lineOutline, polygonDistance, polylineArcs, segmentPoint } from '../terrain/geometry';
 import { islandContains } from '../coast';
 
 /** Authored hydrology. Heights are independent of route grading and household state.
@@ -8,7 +8,10 @@ import { islandContains } from '../coast';
 export function buildWaterCuts(): WaterCut[] {
   const s = requireScaleFactor();
   const channel = (id: string, kind: WaterCut['kind'], xy: readonly number[][], heights: number[], width: number, depth: number, bank = 1): WaterCut => {
-    const points: XYZ[] = xy.map((p, i) => [p[0]! * s, heights[i]! * s, p[1]! * s]);
+    const controls: XYZ[] = xy.map((p, i) => [p[0]! * s, heights[i]! * s, p[1]! * s]);
+    // Running water is a stair of level pools and short weirs/falls (a dry wash keeps its
+    // graded bed): a level pool's banks meet its surface exactly on the 5 m lattice.
+    const points = kind === 'dry' ? controls : poolSteps(controls, s);
     return { id, kind, points, outline: lineOutline(points, width * s), level: heights[0]! * s, width: width * s, depth: depth * s, bank: bank * s };
   };
   const basin = (id: string, cx: number, cz: number, rx: number, rz: number, level: number, depth: number, kind: WaterCut['kind'] = 'lake'): WaterCut => ({
@@ -33,13 +36,49 @@ export function buildWaterCuts(): WaterCut[] {
   return bodies;
 }
 
-/** Signed distance from a water edge: negative is wet, positive is outside. */
-export function waterInfluence(water: WaterCut, x: number, z: number): { distance: number; level: number; progress: number } {
-  if (water.points.length > 1) {
-    const q = linePoint(water.points, x, z);
-    return { distance: q.distance - water.width / 2, level: q.height, progress: q.progress };
+/** Largest drop of one weir or fall (m), the shortest pool (m) and a weir's run (m). */
+export const WATER_STEP = { drop: 1, pool: 8, weir: 1.5 } as const;
+/** Split each graded reach into level pools joined by short weirs; control points and
+ * their surveyed levels are kept, so the chain stays monotonic and the ends unchanged. */
+export function poolSteps(controls: readonly XYZ[], s = 1): XYZ[] {
+  const out: XYZ[] = [controls[0]!];
+  for (let i = 1; i < controls.length; i++) {
+    const a = controls[i - 1]!, b = controls[i]!, length = Math.hypot(b[0] - a[0], b[2] - a[2]), drop = a[1] - b[1];
+    const count = Math.max(1, Math.min(Math.ceil(drop / (WATER_STEP.drop * s) - 1e-9), Math.floor(length / (WATER_STEP.pool * s))));
+    if (count <= 1 && drop <= WATER_STEP.drop * s) { out.push(b); continue; }
+    const at = (d: number, h: number): XYZ => [a[0] + (b[0] - a[0]) * d / length, h, a[2] + (b[2] - a[2]) * d / length];
+    const pool = length / count, weir = Math.min(WATER_STEP.weir * s, pool / 3);
+    for (let k = 0; k < count; k++) {
+      const level = a[1] - drop * k / count, next = a[1] - drop * (k + 1) / count;
+      out.push(at(pool * (k + 1) - weir, level));
+      out.push(k === count - 1 ? b : at(pool * (k + 1), next));
+    }
   }
-  return { distance: -polygonDistance(water.outline, x, z), level: water.level, progress: 0 };
+  return out;
+}
+/** Signed distance from a water edge: negative is wet, positive is outside. A channel's
+ * wet region is exactly its rendered ribbon: round joins at bends, square ends. */
+export function waterInfluence(water: WaterCut, x: number, z: number): { distance: number; level: number; progress: number; grade: number } {
+  const p = water.points;
+  if (p.length > 1) {
+    const { lengths, total } = polylineArcs(p);
+    let best = Infinity, level = 0, progress = 0, grade = 0, travelled = 0, segment = 0;
+    for (let i = 1; i < p.length; i++) {
+      const a = p[i - 1]!, b = p[i]!, length = lengths[i - 1]!, hit = segmentPoint(x, z, [a[0], a[2]], [b[0], b[2]]);
+      if (hit.distance < best - 1e-9) { best = hit.distance; level = a[1] + (b[1] - a[1]) * hit.t; progress = (travelled + hit.t * length) / (total || 1); grade = Math.abs(a[1] - b[1]) / (length || 1); segment = i; }
+      travelled += length;
+    }
+    let distance = best - water.width / 2;
+    // Beyond either end the ribbon stops square; the round cap is dry ground.
+    const ends = [[p[0]!, p[1]!, 1], [p[p.length - 1]!, p[p.length - 2]!, p.length - 1]] as const;
+    for (const [end, next, index] of ends) {
+      if (segment !== index) continue;
+      const dx = end[0] - next[0], dz = end[2] - next[2], l = Math.hypot(dx, dz) || 1, over = ((x - end[0]) * dx + (z - end[2]) * dz) / l;
+      if (over > 0) distance = Math.max(distance, over);
+    }
+    return { distance, level, progress, grade };
+  }
+  return { distance: -polygonDistance(water.outline, x, z), level: water.level, progress: 0, grade: 0 };
 }
 export function waterHeightAt(water: WaterCut, x: number, z: number): number | null {
   if ((water.kind === 'sea' || water.kind === 'lagoon') && islandContains(x, z)) return null;

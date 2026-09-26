@@ -5,8 +5,9 @@ import { buildWaterCuts, waterInfluence } from '../water';
 import { clamp, contains, linePoint, mix, polygonCentre, polygonDistance, polylineArcs, segmentPoint, smooth } from './geometry';
 
 export const GEOGRAPHY_REVISION = 'horizon-geo-1' as const;
-/** Mountain v2 body/bodyModel.ts WALKABLE_DEG. Kept pure so baking imports no body scene. */
-export const WALKABLE_DEGREES = 40;
+/** The one walkable limit: MANIFEST `profiles.walkable.slope_max_deg` (40°, Mountain v2's body
+ * limit). Bake, paint and the runtime geography all read this constant. Kept pure so baking imports no body scene. */
+export const WALKABLE_DEGREES: number = M.profiles.walkable.slope_max_deg;
 export const WALKABLE_SLOPE = Math.tan(WALKABLE_DEGREES * Math.PI / 180);
 export const isWalkableSlope = (slope: number): boolean => Number.isFinite(slope) && slope <= WALKABLE_SLOPE;
 export const TERRAIN_SURFACE_PALETTE = [
@@ -30,7 +31,26 @@ export const TERRAIN_SURFACE_PALETTE = [
   { id: 'gravel', color: '#cbbb98', night: '#6c7282' },
   { id: 'plaza', color: '#d3bf99', night: '#6c7282' },
   { id: 'snow', color: '#f1f1ec', night: '#8fa3c7' },
+  { id: 'scree', color: '#b8ad98', night: '#6c7282' },
 ] as const;
+/** One byte per terrain vertex: the ground paint (palette index, bits 0–4) and the rock
+ * strata set the vertex shows where the ground is steep (bits 5–6). Rock is not baked
+ * per vertex: the renderer weights it from each triangle's slope (soft 35–45°) and draws
+ * the ledges from world height, so paint follows contours, never the 5 m lattice. */
+export const ROCK_SETS = [
+  { id: 'crown', base: 'rock.crown', ledge: 'rock.crown.ledge', spacing: 3.2 },
+  { id: 'notch', base: 'rock.notch', ledge: 'rock.notch.ledge', spacing: 2.2 },
+  { id: 'ochre', base: 'rock.ochre', ledge: 'rock.ochre.ledge', spacing: 4 },
+  { id: 'sea', base: 'rock.sea', ledge: 'rock.sea.ledge', spacing: 3.2 },
+] as const;
+export const packTerrainPaint = (ground: number, rockSet: number): number => (ground & 31) | ((rockSet & 3) << 5);
+export const terrainPaintGround = (byte: number): number => byte & 31;
+export const terrainPaintRockSet = (byte: number): number => (byte >> 5) & 3;
+/** Biome ground that the renderer blends softly between neighbours (bed paint is never blended). */
+export const BIOME_GROUNDS: readonly number[] = ['sand', 'bankedTurf', 'duff', 'ochre', 'scree'].map(id => TERRAIN_SURFACE_PALETTE.findIndex(p => p.id === id));
+/** Rock weight from a triangle's slope: 0 at 35°, 1 at 45°, ≥ 0.5 above the walkable limit. */
+export const ROCK_BLEND_DEGREES = [35, 45] as const;
+export const rockWeight = (degrees: number): number => smooth((degrees - ROCK_BLEND_DEGREES[0]) / (ROCK_BLEND_DEGREES[1] - ROCK_BLEND_DEGREES[0]));
 
 interface Band { id: string; min: number; max: number; poly: XY[]; centre: XY; bounds: number[]; priority: number }
 let model: { bands: Band[]; water: WaterCut[]; scale: number } | undefined;
@@ -101,38 +121,88 @@ function outsideHeight(x: number, z: number, shore: number, s: number): number {
   if (contains(sandbar, x, z)) return -0.22 * s;
   return -Math.max(0.1 * s, Math.min(12 * s, -shore * 0.18));
 }
+/** landformRule band-edge blend (m) and the scarp over which a band gap is crossed (m). */
+export const BAND_BLEND = 60, BAND_STEP = 15;
+/** landformRule: the terraces cut into the Shoulder, and the Crown standing on it: each
+ * holds its band to its own edge, and the transition is the Shoulder's (the Cup is water). */
+const SHOULDER_RINGED = new Set(['hollow', 'stillwater', 'crown']);
 /** Authored land and named hydrology, before Track B's beds, aprons and openings. */
 export function baseHeight(x: number, z: number): number {
   const m = getModel(), s = m.scale, shore = signedShoreDistance(x, z);
   if (shore < 0) return outsideHeight(x, z, shore, s);
   let height = (9 + 28 * clamp((1150 - z / s) / 1000) + 10 * clamp((x / s - 1050) / 650)) * s;
+  // landformRule: where polygons overlap or meet, the higher band wins and its 60 m
+  // blend lies INSIDE the winner, so the lower landform keeps its band to the edge.
+  // Q is the proximity to lower-priority landforms (1 inside one, fading over 60 m);
+  // against open ground (Q = 0) the blend stays outward as before. Where two bands
+  // do not meet (a terrace cut into the Shoulder) the gap is one short scarp.
+  const blend = BAND_BLEND * s, step = BAND_STEP * s, distances: number[] = [];
   for (const b of m.bands) {
-    if (x < b.bounds[0]! - 60 * s || z < b.bounds[1]! - 60 * s || x > b.bounds[2]! + 60 * s || z > b.bounds[3]! + 60 * s) continue;
-    const distance = polygonDistance(b.poly, x, z);
-    if (distance <= -60 * s) continue;
-    height = mix(height, bandHeight(b, x, z), smooth(1 + distance / (60 * s)));
+    const far = x < b.bounds[0]! - blend || z < b.bounds[1]! - blend || x > b.bounds[2]! + blend || z > b.bounds[3]! + blend;
+    const distance = far ? -Infinity : polygonDistance(b.poly, x, z);
+    let proximity = 0;
+    for (const lower of distances) if (lower > -blend) proximity = Math.max(proximity, lower >= 0 ? 1 : 1 - smooth(-lower / blend));
+    distances.push(distance);
+    if (distance <= -blend) continue;
+    // A terrace cut INTO the Shoulder (landformRule) holds its band to its own edge and the
+    // scarp is the Shoulder's wall; elsewhere the winner's own edge carries the scarp.
+    const d = distance + (SHOULDER_RINGED.has(b.id) ? step * proximity : 0);
+    const weight = d < 0 ? smooth(1 + d / blend) * (1 - proximity) : 1 - (1 - smooth(d / blend)) * proximity;
+    height = mix(height, bandHeight(b, x, z), weight);
+    if (d > 0) height = mix(height, clamp(height, b.min, b.max), smooth(d / step));
   }
   const character = coastCharacter(x, z), shoreWidth = character === 'southBeach' ? 44 * s : character === 'bight' ? 23 * s : 10 * s;
   height = mix(0.14 * s, height, smooth(shore / shoreWidth));
-  height = notchHeight(x, z, height);
+  height = damWindow(x, z, notchHeight(x, z, height));
   return applyWaters(x, z, height, m.water);
 }
+/** The High Span's surveyed station on the lower river (water 9.2, bed 8). */
+const HIGH_SPAN_STATION: XY = [1236.875, 1105];
 function notchHeight(x: number, z: number, height: number): number {
   const m = getModel(), s = m.scale, river = m.water.find(w => w.id === 'water.river.lower')!;
   const q = linePoint(river.points, x, z);
   // The gorge opens progressively to the Reach; it is never a uniform trench.
   if (q.z > 1170 * s || q.z < 906 * s) return height;
-  const half = (22 + 11 * q.progress) * s;
-  if (q.distance >= half + 12 * s) return height;
+  // Under the High Span the floor is a shelf at the water, ≥ 40 m across between the
+  // walls (the flight gate's aperture): 28 m on the east (Green-rim) side, 16 m west.
+  const span = 1 - smooth((Math.hypot(q.x - HIGH_SPAN_STATION[0] * s, q.z - HIGH_SPAN_STATION[1] * s) - 40 * s) / (40 * s));
+  const east = q.tangent[0] * (z - q.z) - q.tangent[1] * (x - q.x) < 0;
+  const floor = mix(river.width / 2, (east ? 28 : 16) * s, span), wall = (22 + 11 * q.progress) * s - river.width / 2;
+  const half = floor + wall, run = NOTCH_RIM_RUN * s;
+  if (q.distance >= half + run) return height;
   const rim = Math.max(height, q.height + (32 - 7 * q.progress) * s);
-  if (q.distance <= half) {
-    const t = smooth((q.distance - river.width / 2) / Math.max(1, half - river.width / 2));
-    return mix(q.height - river.depth, rim, t * t);
-  }
-  return mix(rim, height, smooth((q.distance - half) / (12 * s)));
+  // The gorge floor meets the river at its surface; applyWaters carves the wet bed.
+  if (q.distance <= floor) return q.height;
+  if (q.distance <= half) { const t = smooth((q.distance - floor) / Math.max(1, wall)); return mix(q.height, rim, t * t); }
+  return mix(rim, height, smooth((q.distance - half) / run));
+}
+/** How far the Notch's rim shoulder runs back before meeting the surrounding ground (m). */
+export const NOTCH_RIM_RUN = 20;
+/** The square→dam window (page A, F): in front of the dam face nothing between the
+ * square and the dam stands above 18 eu, and no bank shades the face at 09:00/15:00.
+ * The dam's own abutments stay; the river's channel and banks are applied after this. */
+export const DAM_WINDOW = { cap: 18, feather: 20, halfWidth: 30, forecourt: 70 } as const;
+/** The dam's crest (m): the lake at 50 is held by a wall topped at 49.3–50. */
+const DAM_CREST = 50;
+function damWindow(x: number, z: number, height: number): number {
+  const s = getModel().scale, dam = M.structures.dam.xy, view = M.views.find(v => v.id === 'A')!.xy;
+  const dx = dam[0]! * s, dz = dam[1]! * s;
+  // The abutments tie into the ground at crest height (the lake terrace), no higher.
+  if (z > dz - 12 * s && z < dz + 16 * s && Math.abs(x - dx) < 90 * s) height = Math.min(height, mix(height, DAM_CREST * s, 1 - smooth((Math.abs(x - dx) - 60 * s) / (30 * s))));
+  if (z < dz + 4 * s || height <= DAM_WINDOW.cap * s) return height;
+  // A corridor as wide as the wall (±22 m) plus margin from the dam toward the square,
+  // and the forecourt in front of the face.
+  const ax = view[0]! * s - dx, az = view[1]! * s - dz, length = Math.hypot(ax, az), ux = ax / length, uz = az / length;
+  const along = (x - dx) * ux + (z - dz) * uz, across = Math.abs(-(x - dx) * uz + (z - dz) * ux);
+  const corridor = along < 0 || along > length - 40 * s ? Infinity : across - DAM_WINDOW.halfWidth * s;
+  const outside = Math.min(corridor, Math.hypot(x - dx, z - dz) - DAM_WINDOW.forecourt * s);
+  const weight = (1 - smooth(outside / (DAM_WINDOW.feather * s))) * smooth((z - dz - 4 * s) / (6 * s));
+  return mix(height, DAM_WINDOW.cap * s, weight);
 }
 const waterBounds = new WeakMap<WaterCut, readonly [number, number, number, number]>();
-const waterGrades = new WeakMap<WaterCut, number>();
+/** Named water in its bed. The raster guard (one lattice diagonal outside the true
+ * edge) holds the bank AT the water level, never below it: a triangle straddling the
+ * edge stays under a level pool, and the bank meets the surface where it is drawn. */
 function applyWaters(x: number, z: number, original: number, waters: WaterCut[], rasterMargin = 0): number {
   const s = getModel().scale;
   let h = original, wetBedCeiling = Infinity;
@@ -147,30 +217,29 @@ function applyWaters(x: number, z: number, original: number, waters: WaterCut[],
       waterBounds.set(water, bounds);
     }
     if (x < bounds[0] - outer || z < bounds[1] - outer || x > bounds[2] + outer || z > bounds[3] + outer) continue;
-    const { distance: distanceToWater, level } = waterInfluence(water, x, z), d = distanceToWater - guard;
-    let grade = waterGrades.get(water);
-    if (grade === undefined) {
-      grade = 0;
-      for (let i = 1; i < water.points.length; i++) {
-        const a = water.points[i - 1]!, b = water.points[i]!;
-        grade = Math.max(grade, Math.abs(b[1] - a[1]) / (Math.hypot(b[0] - a[0], b[2] - a[2]) || 1));
-      }
-      waterGrades.set(water, grade);
-    }
-    const verticalGuard = grade * guard;
-    if (d > outer) continue;
-    if (d <= 0) {
-      const depth = water.depth * mix(0.22, 1, smooth(-distanceToWater / (water.points.length ? water.width / 2 : 14 * s))) + verticalGuard;
+    const { distance, level, grade } = waterInfluence(water, x, z);
+    if (distance > outer) continue;
+    if (distance <= 0) {
+      // A weir's short run keeps the vertices of its straddling triangles below it.
+      const depth = water.depth * mix(0.22, 1, smooth(-distance / (water.points.length ? water.width / 2 : 14 * s))) + Math.min(grade * guard, 1.5 * s);
       h = Math.min(h, level - depth);
       wetBedCeiling = Math.min(wetBedCeiling, level - depth);
-    } else if (d < bankWidth) {
-      const edge = level - water.depth * 0.22 - verticalGuard, bank = Math.max(h, level + water.bank);
-      h = mix(edge, bank, smooth(d / bankWidth));
-    } else {
-      h = Math.max(h, mix(level + water.bank, h, smooth((d - bankWidth) / (outer - bankWidth))));
+      continue;
     }
+    // The dam holds Stillwater on its downstream side: no lake bank is raised there.
+    if (water.id === 'water.stillwater' && damHolds(x, z)) continue;
+    // The guard band IS the bank's foot: exactly at the water level (raised or cut to it).
+    if (distance <= guard) { h = level; wetBedCeiling = Math.min(wetBedCeiling, level); continue; }
+    const d = distance - guard;
+    if (d < bankWidth) h = mix(guard > 0 ? level : Math.min(h, level), Math.max(h, level + water.bank), smooth(d / bankWidth));
+    else h = Math.max(h, mix(level + water.bank, h, smooth((d - bankWidth) / (outer - bankWidth))));
   }
   return Math.min(h, wetBedCeiling);
+}
+/** South of the dam line the lake is held by the dam's solid, not by an earth bank. */
+function damHolds(x: number, z: number): boolean {
+  const s = getModel().scale, dam = M.structures.dam.xy;
+  return z > dam[1]! * s && Math.abs(x - dam[0]! * s) < 90 * s;
 }
 const padFrames = new WeakMap<PadCut, { cos: number; sin: number; xReach: number; zReach: number }>();
 function padDistance(p: PadCut, x: number, z: number): number {
@@ -212,6 +281,14 @@ function prepareBeds(beds: BedCut[], rasterMargin = 0): PreparedBeds {
   const prepared = { bins, cell }, next = cache ?? new Map<number, PreparedBeds>();
   next.set(rasterMargin, prepared); preparedBedCache.set(beds, next); return prepared;
 }
+/** Ground that no bed or pad may raise: the sea floor outside the surveyed
+ * shoreline and the floor of every open basin (the Bight lagoon, the lakes). */
+export function raiseForbidden(x: number, z: number): boolean {
+  if (signedShoreDistance(x, z) < 0) return true;
+  return getModel().water.some(w => !w.underground && !w.points.length && w.kind !== 'sea' && contains(w.outline, x, z));
+}
+/** Two beds whose decks overlap in plan within this height are one level (at grade). */
+export const BED_LEVEL_TOLERANCE = .5;
 /** Exact local segment lookup, exported for equivalence probes against brute force. */
 export function createBedSampler(beds: BedCut[]): (x: number, z: number, original: number) => { height: number; surface: number | null } {
   const prepared = prepareBeds(beds), s = getModel().scale;
@@ -219,6 +296,7 @@ export function createBedSampler(beds: BedCut[]): (x: number, z: number, origina
     let height = original, surface: number | null = null, active: BedCut | null = null;
     let distance = Infinity, target = 0, progress = 0, excluded = false;
     let footprintHeight = Infinity, footprintSurface: number | null = null;
+    let deckHeight = -Infinity, deckSurface: number | null = null;
     const apply = () => {
       if (!active || excluded) return;
       const edge = active.width / 2 + active.shoulder, blend = Math.max(active.blend, 15 * s);
@@ -228,9 +306,11 @@ export function createBedSampler(beds: BedCut[]): (x: number, z: number, origina
       if (distance <= active.width / 2) {
         const material = active.surfaceSegments?.find(segment => progress >= segment.from && progress <= segment.to)?.surface ?? active.surface;
         surface = Math.max(0, TERRAIN_SURFACE_PALETTE.findIndex(p => p.id === material));
+        // The highest deck over this point: a lower route's cut may never excavate under it.
+        if (target > deckHeight) { deckHeight = target; deckSurface = surface; }
       }
-      // A neighbouring route's soft bank cannot bury a visible bed. At a
-      // crossing, the lowest eligible bed needs clearance; solids own each deck.
+      // A neighbouring route's soft bank cannot bury a visible bed. At an at-grade
+      // crossing the lowest eligible bed needs clearance; solids own each deck.
       if (distance <= edge && target < footprintHeight) {
         footprintHeight = target; footprintSurface = surface;
       }
@@ -244,7 +324,14 @@ export function createBedSampler(beds: BedCut[]): (x: number, z: number, origina
       const { a, b } = segment, q = segmentPoint(x, z, [a[0], a[2]], [b[0], b[2]]);
       if (q.distance < distance) { distance = q.distance; target = mix(a[1], b[1], q.t); progress = (segment.arc + segment.length * q.t) / (segment.total || 1); }
     }
-    apply(); return { height: Number.isFinite(footprintHeight) ? footprintHeight : height, surface: footprintSurface ?? surface };
+    apply();
+    let result = Number.isFinite(footprintHeight) ? footprintHeight : height, paint = footprintSurface ?? surface;
+    if (deckHeight > result + BED_LEVEL_TOLERANCE) { result = deckHeight; paint = deckSurface; }
+    // No bed raises the sea floor or a basin floor: offshore decks stand on piers.
+    if (result > original && raiseForbidden(x, z)) result = original;
+    // No route or deck builds ground above the Crown's summit (it stays the island's highest point).
+    if (result > original) result = Math.min(result, Math.max(original, crownSummitHeight() - 1 * s));
+    return { height: result, surface: paint };
   };
 }
 /** Five centimetres survives centimetre encoding without terrain sharing the road's top face. */
@@ -260,32 +347,54 @@ export function createBedClearanceSampler(beds: BedCut[], rasterMargin = 0): (x:
   // without raising it or cutting any tunnel/cave roof.
   const isSpan=(b:BedCut)=>b.id.startsWith('structure.')&&b.structureIds.length>0;
   const clearanceBeds=beds.map(b=>isSpan(b)?{...b,terrainCut:true,terrainExclusions:[]}:b);
-  const prepared = prepareBeds(clearanceBeds, rasterMargin);
+  const prepared = prepareBeds(clearanceBeds, rasterMargin), s = getModel().scale;
+  const floor = LAND_FLOOR * s;
   return (x, z) => {
-    let ceiling = Infinity;
+    let ceiling = Infinity, upperDeck = -Infinity;
+    const candidates: { value: number; plane: number }[] = [];
     for (const {bed, a, b, length} of prepared.bins.get(cellKey(x, z, prepared.cell)) ?? []) {
       const exclusions=bed.terrainExclusions?.filter(e=>Math.hypot(x-e.at[0],z-e.at[1])<e.radius+rasterMargin)??[];
       if (length < 1e-8 || exclusions.some(e=>!e.openSpan)) continue;
       const hit = segmentPoint(x, z, [a[0], a[2]], [b[0], b[2]]);
       if (hit.distance > bed.width / 2 + bed.shoulder + rasterMargin) continue;
-      const dx = b[0] - a[0], dz = b[2] - a[2];
-      // Do not clamp t: a clamped endpoint height can bridge above a sloped
-      // deck when a terrain triangle straddles that segment's endpoint.
-      const t = ((x - a[0]) * dx + (z - a[2]) * dz) / (length * length);
-      ceiling = Math.min(ceiling, mix(a[1], b[1], t) - (isSpan(bed)||exclusions.some(e=>e.openSpan) ? .65 : BED_TERRAIN_CLEARANCE));
+      const dx = b[0] - a[0], dz = b[2] - a[2], open = isSpan(bed)||exclusions.some(e=>e.openSpan);
+      // The extended deck plane keeps a triangle straddling a grade break below both
+      // segments, but only across one raster diagonal: never a pit metres past the end.
+      const reach = rasterMargin / length, t = clamp(((x - a[0]) * dx + (z - a[2]) * dz) / (length * length), -reach, 1 + reach);
+      const clearance = open ? .65 : BED_TERRAIN_CLEARANCE, plane = mix(a[1], b[1], hit.t);
+      // Extrapolation may not dig below the land floor unless the deck itself is lower.
+      const value = Math.max(mix(a[1], b[1], t) - clearance, Math.min(plane - clearance, floor));
+      candidates.push({ value, plane });
+      if (!open && hit.distance <= bed.width / 2) upperDeck = Math.max(upperDeck, plane);
     }
+    // A lower route's cut never excavates under an upper deck it passes beneath.
+    for (const c of candidates) if (c.plane >= upperDeck - BED_LEVEL_TOLERANCE) ceiling = Math.min(ceiling, c.value);
     return ceiling;
   };
 }
+/** Lowest open ground on land outside named water: sea level plus 0.1 eu. */
+export const LAND_FLOOR = .1;
+
+/** Largest earth fill a threshold or landing pad may make; a higher deck is a structure. */
+export const PAD_FILL_MAX = 3;
+const crownSummitHeight = (): number => M.landforms.find(f => f.id === 'crown')!.summitH! * getModel().scale;
 
 function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<typeof createBedSampler>, rasterMargin: number, bedCeiling: (x: number, z: number) => number): { height: number; surface: number | null } {
   let { height, surface } = sampleBeds(x, z, baseHeight(x, z));
+  const ground = height, s = getModel().scale;
   for (const p of cuts.pads) {
     if (p.underground) continue;
     const distance = padDistance(p, x, z);
     if (distance > p.blend) continue;
     height = mix(height, p.centre[1], 1 - smooth(distance / Math.max(p.blend, 0.01)));
     if (distance <= 0) surface = p.kind === 'reserve' ? 13 : 14;
+  }
+  // A threshold or landing is a mark on the ground or a structure's deck, never
+  // an earth mound: its fill is capped, and no pad raises the sea floor or tops the summit.
+  if (height > ground) {
+    const fillCap = cuts.pads.some(p => !p.underground && (p.kind === 'threshold' || p.kind === 'landing') && p.centre[1] > ground + PAD_FILL_MAX * s && padDistance(p, x, z) <= p.blend) ? PAD_FILL_MAX * s : Infinity;
+    height = Math.min(height, ground + fillCap, Math.max(ground, crownSummitHeight() - 1 * s));
+    if (raiseForbidden(x, z)) height = ground;
   }
   // Mouths are topology masks read by terrainIndices(), not pits through a heightfield.
   // A cave's floor and ceiling remain independent surfaces under this continuous roof.
@@ -311,11 +420,7 @@ export function conserveBedFootprint(field: TerrainField, beds: BedCut[]): void 
     const n = j * field.columns + i;
     field.heights[n] = Math.min(field.heights[n]!, ceiling(i * field.step, j * field.step));
   }
-  for (let j = 0; j < field.rows; j++) for (let i = 0; i < field.columns; i++) {
-    const n = j * field.columns + i, normal = terrainNormal(field, i * field.step, j * field.step);
-    const slope = Math.hypot(normal[0], normal[2]) / normal[1];
-    if (!isWalkableSlope(slope)) field.surfaces[n] = terrainSurface(i * field.step, j * field.step, field.heights[n]!, slope);
-  }
+  // Paint does not depend on slope (the renderer weights rock per triangle), so no repaint.
 }
 /** Conservative lower-LOD approximation of this same lattice. Only vertices that
  * support a named wet footprint or its bank transition may move downward; dry
@@ -325,11 +430,6 @@ export function conserveWaterFootprint(field: TerrainField, waters: WaterCut[]):
   for (let j = 0; j < field.rows; j++) for (let i = 0; i < field.columns; i++) {
     const n = j * field.columns + i, original = field.heights[n]!;
     field.heights[n] = Math.min(original, applyWaters(i * field.step, j * field.step, original, waters, margin));
-  }
-  for (let j = 0; j < field.rows; j++) for (let i = 0; i < field.columns; i++) {
-    const n = j * field.columns + i, normal = terrainNormal(field, i * field.step, j * field.step);
-    const slope = Math.hypot(normal[0], normal[2]) / normal[1];
-    if (!isWalkableSlope(slope)) field.surfaces[n] = terrainSurface(i * field.step, j * field.step, field.heights[n]!, slope);
   }
 }
 /** Offline-only solve. Importing this module allocates no heightfield. */
@@ -345,24 +445,43 @@ export function buildTerrain(cuts: LandCuts, options: { step?: number } = {}): T
   }
   for (let j = 0; j < rows; j++) for (let i = 0; i < columns; i++) {
     const n = j * columns + i, x = i * step, z = j * step;
-    const normal = terrainNormal(field, x, z), slope = Math.hypot(normal[0], normal[2]) / normal[1];
-    field.surfaces[n] = isWalkableSlope(slope) && painted[n]! >= 0 ? painted[n]! : terrainSurface(x, z, field.heights[n]!, slope);
+    field.surfaces[n] = packTerrainPaint(painted[n]! >= 0 ? painted[n]! : biomeGround(x, z, field.heights[n]!), rockSetAt(x, z));
   }
   return field;
 }
+/** Landform-polygon biomes (no x/z/h rulers): beach sand by the shore, the Flats' ochre
+ * dust, needles in Scholars' Edge and the Hollow, scree on the Crown, turf elsewhere. */
+export function biomeGround(x: number, z: number, height: number): number {
+  const m = getModel(), s = m.scale, shore = signedShoreDistance(x, z), inside = (id: string) => { const b = m.bands.find(f => f.id === id); return !!b && contains(b.poly, x, z); };
+  const beach = coastCharacter(x, z) === 'southBeach' ? 30 * s : coastCharacter(x, z) === 'bight' ? 12 * s : 4 * s;
+  if (height < 1 * s || shore < beach || inside('sands')) return PAINT.sand;
+  if (inside('crown') && height >= 120 * s) return PAINT.scree;
+  if (inside('flats')) return PAINT.ochre;
+  if (inside('scholars') || inside('hollow')) return PAINT.duff;
+  return PAINT.bankedTurf;
+}
+/** The strata set a face shows: the Notch walls, the Flats/Wash ochre, the Prow and east
+ * sea cliffs, and the Crown's grey everywhere else (STYLE §3.3). */
+export function rockSetAt(x: number, z: number): number {
+  const m = getModel(), s = m.scale;
+  const notch = linePoint(m.water.find(w => w.id === 'water.river.lower')!.points, x, z);
+  if (notch.distance < 48 * s && z < 1190 * s && z > 905 * s) return 1;
+  const near = (id: string, reach: number) => { const b = m.bands.find(f => f.id === id); return !!b && polygonDistance(b.poly, x, z) > -reach * s; };
+  const wash = m.water.find(w => w.id === 'water.wash');
+  if (near('flats', 40) || (wash && waterInfluence(wash, x, z).distance < 30 * s)) return 2;
+  if (near('prow', 40) || (coastCharacter(x, z) === 'eastCliff' && signedShoreDistance(x, z) < 80 * s)) return 3;
+  return 0;
+}
+const PAINT = Object.fromEntries(TERRAIN_SURFACE_PALETTE.map((p, i) => [p.id, i])) as Record<(typeof TERRAIN_SURFACE_PALETTE)[number]['id'], number>;
+/** The dominant palette id at a vertex: its strata set's rock (base or ledge by height)
+ * where the slope is over the walkable limit, else its ground. For probes and tests;
+ * the renderer blends rock by per-triangle weight and draws ledges per pixel. */
 export function terrainSurface(x: number, z: number, height: number, slope: number): number {
-  const s = getModel().scale;
   if (!isWalkableSlope(slope)) {
-    const notch = linePoint(getModel().water.find(w => w.id === 'water.river.lower')!.points, x, z);
-    const set = notch.distance < 48 * s && z < 1190 * s && z > 905 * s ? 6 : x < 580 * s ? 8 : x > 1540 * s ? 10 : 4;
-    const spacing = set === 6 ? 2.2 : set === 8 ? 4 : 3.2;
-    return set + (Math.floor(height / spacing) % 3 === 0 ? 1 : 0);
+    const set = ROCK_SETS[rockSetAt(x, z)]!, ledge = ((height / set.spacing) % 1 + 1) % 1 < 0.34;
+    return PAINT[ledge ? set.ledge : set.base];
   }
-  if (height < 1 * s || z > 1360 * s) return 0;
-  if (height >= 110 * s) return 4;
-  if (x < 580 * s) return 3;
-  if (x < 1020 * s && z < 550 * s) return 2;
-  return 1;
+  return biomeGround(x, z, height);
 }
 export function sampleTerrain(field: TerrainField, x: number, z: number): number {
   const gx = clamp(x / field.step, 0, field.columns - 1), gz = clamp(z / field.step, 0, field.rows - 1);
@@ -389,7 +508,8 @@ export function bandProbeEligibility(id: string, x: number, z: number, cuts?: La
   const m = getModel(), b = m.bands.find(f => f.id === id);
   if (!b || !contains(b.poly, x, z)) return 'outside-polygon';
   if (signedShoreDistance(x, z) <= 12 * m.scale) return 'shore-clipping-and-stroke';
-  for (const higher of m.bands) if (higher.priority > b.priority && polygonDistance(higher.poly, x, z) > -60 * m.scale) return 'higher-band-or-60m-blend';
+  // Owner rule: only ground inside a higher band's polygon belongs to it; the blend ring is counted.
+  for (const higher of m.bands) if (higher.priority > b.priority && contains(higher.poly, x, z)) return 'higher-band';
   for (const w of m.water) if (!w.underground && !['sea', 'lagoon'].includes(w.kind) && waterInfluence(w, x, z).distance < 24 * m.scale) return 'named-water-and-banks';
   const notch = linePoint(m.water.find(w => w.id === 'water.river.lower')!.points, x, z);
   if (notch.distance < 50 * m.scale && z > 905 * m.scale && z < 1170 * m.scale) return 'notch-walls';

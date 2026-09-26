@@ -2,10 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { Mesh, MeshBasicMaterial, BufferGeometry, Float32BufferAttribute, Raycaster, Vector3 } from 'three';
 import { baseHeight, conserveWaterFootprint, createTerrainCutSampler, sampleTerrain } from '../src/harbour/horizon/land/terrain';
 import { decodeTerrainAsset, encodeTerrainAsset } from '../src/harbour/horizon/land/terrain/asset';
-import type { TerrainField } from '../src/harbour/horizon/land/interfaces';
+import type { TerrainField, WaterCut } from '../src/harbour/horizon/land/interfaces';
 import { buildWaterCuts, bightMouthWidth, waterInfluence } from '../src/harbour/horizon/land/water';
 import { islandContains } from '../src/harbour/horizon/land/coast';
 import { buildNeedleArch, buildOffshoreSolids } from '../src/harbour/horizon/land/offshore';
+
+/** A pool is level; within one lattice diagonal of a weir or fall the ground may stand at
+ * the pool above it (the step itself), never higher. Graded reaches use their plane. */
+function stepLevel(water: WaterCut, x: number, z: number, plane: number, step: number): number {
+  let level = plane;
+  for (const p of water.points) if (Math.hypot(p[0] - x, p[2] - z) <= step * Math.SQRT2 + water.width / 2) level = Math.max(level, p[1]);
+  return level;
+}
 
 describe('Horizon water and offshore land', () => {
   it('fixes lake levels and keeps every channel monotonically downstream', () => {
@@ -24,8 +32,12 @@ describe('Horizon water and offshore land', () => {
       const check = (x: number, z: number, level: number) => {
         const other = waters.find(w => w !== water && !w.underground && w.kind !== 'sea' && w.kind !== 'lagoon' && waterInfluence(w, x, z).distance < 8);
         if (other || !islandContains(x, z)) { joined++; return; }
+        // The dam's solid holds Stillwater on its downstream side (no earth bank there).
+        if (water.id === 'water.stillwater' && z > 905 && Math.abs(x - 1140) < 90) { joined++; return; }
         bankSamples++;
-        expect(baseHeight(x, z), `${water.id} bank ${x},${z}, water ${level}`).toBeGreaterThan(level);
+        // The bank stands above the water it borders (at a weir, the pool it faces).
+        const faced = water.points.length ? waterInfluence(water, x, z).level : level;
+        expect(baseHeight(x, z), `${water.id} bank ${x},${z}, water ${faced}`).toBeGreaterThan(faced);
       };
       if (water.points.length) {
         for (let j = 1; j < water.points.length; j++) {
@@ -65,9 +77,11 @@ describe('Horizon water and offshore land', () => {
     for (const water of waters) if (!water.underground && water.points.length && water.kind !== 'dry') {
       for (let i = 1; i < water.points.length; i++) {
         const a = water.points[i - 1]!, b = water.points[i]!, dx = b[0] - a[0], dz = b[2] - a[2], length = Math.hypot(dx, dz);
+        // A level pool keeps its whole wet width under its plane; beside a short weir or
+        // fall the ground stays under the pool above it (the step is the weir).
         for (let t = 0.05; t < 1; t += 0.05) for (const side of [-0.99, -0.5, 0, 0.5, 0.99]) {
           const x = a[0] + dx * t - side * dz / length * water.width / 2, z = a[2] + dz * t + side * dx / length * water.width / 2;
-          expect(patch(x, z), `${water.id} wet footprint ${x},${z}`).toBeLessThan(a[1] + (b[1] - a[1]) * t + 0.01);
+          expect(patch(x, z), `${water.id} wet footprint ${x},${z}`).toBeLessThan(stepLevel(water, x, z, a[1] + (b[1] - a[1]) * t, 5) + 0.01);
         }
       }
     }
@@ -96,10 +110,40 @@ describe('Horizon water and offshore land', () => {
         const a = water.points[j - 1]!, b = water.points[j]!, dx = b[0] - a[0], dz = b[2] - a[2], length = Math.hypot(dx, dz);
         for (let t = 0.05; t < 1; t += 0.05) for (const side of [-0.99, 0, 0.99]) {
           const x = a[0] + dx * t - side * dz / length * water.width / 2, z = a[2] + dz * t + side * dx / length * water.width / 2;
-          expect(sampleTerrain(field, x, z), `${lod}: ${water.id} wet width`).toBeLessThan(a[1] + (b[1] - a[1]) * t + 0.02);
+          expect(sampleTerrain(field, x, z), `${lod}: ${water.id} wet width`).toBeLessThan(stepLevel(water, x, z, a[1] + (b[1] - a[1]) * t, field.step) + 0.02);
         }
       }
       expect(field.heights[0]).toBe(80); // Far dry land is unchanged in every LOD.
     }
+  });
+});
+
+describe('Horizon water meets its banks (Stage A G6)', () => {
+  it('holds the raster guard band at the water level: no moat below a pool', () => {
+    const waters = buildWaterCuts(), sample = createTerrainCutSampler({ waters, beds: [], pads: [], mouths: [], solids: [], diagnostics: [] }, 5);
+    const lake = waters.find(w => w.id === 'water.stillwater')!;
+    // 3 m outside the north rim (inside the 7.07 m guard): exactly the lake level.
+    expect(sample(1130, 820 - 85 - 3).height).toBeCloseTo(lake.level, 6);
+    // Every pool of the lower river: a vertex 3 m outside its edge sits at its surface.
+    const lower = waters.find(w => w.id === 'water.river.lower')!;
+    for (let i = 1; i < lower.points.length; i++) {
+      const a = lower.points[i - 1]!, b = lower.points[i]!; if (a[1] !== b[1]) continue;
+      const dx = b[0] - a[0], dz = b[2] - a[2], l = Math.hypot(dx, dz), mx = (a[0] + b[0]) / 2, mz = (a[2] + b[2]) / 2;
+      const x = mx - dz / l * (lower.width / 2 + 3), z = mz + dx / l * (lower.width / 2 + 3), w = waterInfluence(lower, x, z);
+      if (Math.abs(w.level - a[1]) > 1e-9 || waters.some(o => o !== lower && !o.underground && o.kind !== 'sea' && o.kind !== 'lagoon' && waterInfluence(o, x, z).distance < 8)) continue;
+      expect(sample(x, z).height, `${x},${z}`).toBeGreaterThanOrEqual(a[1] - 1e-6);
+    }
+  });
+  it('makes the upper cascade a stair of level pools, and ends channels square like their ribbon', () => {
+    const upper = buildWaterCuts().find(w => w.id === 'water.river.upper')!;
+    const levels = new Set(upper.points.map(p => p[1])); expect(levels.size).toBeGreaterThanOrEqual(6);
+    for (let i = 1; i < upper.points.length; i++) {
+      const a = upper.points[i - 1]!, b = upper.points[i]!, run = Math.hypot(b[0] - a[0], b[2] - a[2]);
+      expect(a[1] === b[1] || run <= 1.5 + 1e-9, `segment ${i}`).toBe(true);
+    }
+    const lower = buildWaterCuts().find(w => w.id === 'water.river.lower')!, end = lower.points.at(-1)!, prev = lower.points.at(-2)!;
+    const dx = end[0] - prev[0], dz = end[2] - prev[2], l = Math.hypot(dx, dz);
+    // 2 m past the downstream end on the axis: dry (a round cap would still be wet).
+    expect(waterInfluence(lower, end[0] + dx / l * 2, end[2] + dz / l * 2).distance).toBeGreaterThan(0);
   });
 });
