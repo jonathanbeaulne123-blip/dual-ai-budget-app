@@ -55,7 +55,7 @@ const serialFixtureTests = [
 // 15-second per-test limit under concurrent host pressure.
 // The integrated park field and room runtime also exceed 15 seconds under
 // four concurrent workers; all 123 tests pass together in the serial lane.
-const serialTimingTests = ["continuity-two-browser-proof.test.ts", "hercules-private-chat-ui.test.ts", "hercules-wardrobe-ui.test.ts", "harbour-walk-everywhere.test.ts", "skate-sim-ride.test.ts", "skate-world.test.ts"];
+const serialTimingTests = ["continuity-two-browser-proof.test.ts", "hercules-private-chat-ui.test.ts", "hercules-wardrobe-ui.test.ts", "harbour-walk-everywhere.test.ts", "skate-sim-ride.test.ts", "skate-world.test.ts", "horizonSkateLines.test.ts"];
 
 const rpcIsolatedFixtureTests = [
   "mountain-demo.test.ts",

@@ -492,6 +492,34 @@ m["journeys"]["at_active_scale"] = times(m["scale"]["factor"])
 m["journeys"]["note"] = 'Straight-segment lengths between control points at assumed speeds; calibration estimates, not measured journeys. at_active_scale uses the confirmed scale.factor (1.0); the two at_factor tables are comparison scenarios.'
 m["journeys"]["targets_s"]["note"] = 'Original design targets retained after D13 selected 1.0. Pass 1 reports measured pass/fail against these targets; scale approval does not waive them or change speeds.'
 
+# RIDE §8.3 / §11.5 (2026-09-26): v1.7 is data only — paces and surface grip for the ground kernel (D42),
+# the park's forgiving landings (D40). No geometry change, no horizon-geo bump. Every v1.6 id and number stays.
+m["version"] = "1.7"
+m["date"] = "2026-09-26"
+m["status"] += " v1.7: paces and surface grip (RIDE D42) — data only, no geometry change."
+paces = {
+ "fast":{"roll":0.12,"pushGrip":1.0,"meaning":"open line"},
+ "flow":{"roll":0.25,"pushGrip":0.9,"meaning":"banked or boarded ground that wants a carve"},
+ "slow":{"roll":0.6,"pushGrip":0.8,"meaning":"a neighbourhood, a chicane"},
+ "threshold":{"roll":1.8,"pushGrip":0.5,"meaning":"every pad and the square: stops a board arriving under ~4.6 m/s in a pad's 6 m"},
+ "skate":{"roll":0.03,"pushGrip":None,"meaning":"pass 4's ice; the skates' pace"},
+ "n/a":{"roll":None,"pushGrip":None,"note":"not a bed for this mover; the kernel's offbed class applies (roll 6.0, pushGrip 0)"},
+}
+# Pads, station slabs and the park report material 'stone' (collision solids); without a row their lateral grip
+# fell to the unlisted 0.6. They grip like pavement. (The park's own pace is flow in the contact adapter.)
+m["surfaces"]["stone"] = {"pace":"threshold","footstep":"stone","grip":1.0,"note":"threshold pads, station slabs and the Tideline park"}
+grip = {"paved":1.0,"packedEarth":0.95,"ochre":0.85,"apron":1.0,"bankedTurf":1.1,"boardwalk":0.9,"cobble":0.7,"gravel":0.6,"sand":0.5,"plaza":1.0,"snow":0.4,"ice":0.2,"duff":None,"stone":1.0}
+assert set(grip) == set(m["surfaces"]), "every surface needs a grip row"
+for sid, row in m["surfaces"].items():
+    row["grip"] = grip[sid]
+    assert row["pace"] in paces, sid
+_rows = list(m.items()); _at = [k for k, _ in _rows].index("surfaces") + 1
+m = dict(_rows[:_at] + [("paces", paces)] + _rows[_at:])   # paces sits beside surfaces
+m["skate"]["park"]["note"] = "Skate v2 park; forgiving landings only (RIDE D40); no race"
+for sid in ("S1", "S2", "S3", "S4"):
+    for seg in m["skate"][sid]["segments"]:
+        assert seg["pace"] in paces and seg["surface"] in m["surfaces"], (sid, seg["name"])
+
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")

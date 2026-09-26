@@ -1537,6 +1537,23 @@ These entries transcribe the supplied Horizon deck v1.5 and the explicit D1 quot
 | D32 | Cards are "every month" or "once"; taking one down files it | Claude recommends yes | No answer recorded in the supplied deck | OPEN | 02d |
 | D33 | Money-meaning items kept as Jonathan's: the era finish rule "without going broke"; whether a skipped month's unedged bed shows on the island or only in the Books | — | No answer recorded in the supplied deck | OPEN | 02c |
 
+### The Horizon — decisions D39–D46 (RIDE: one board, one motion model, 2026-09-26)
+
+Source: `docs/horizon/RIDE.md` §14. D34–D38 are reserved by the FLIGHT patch (`docs/horizon/FLIGHT.md`, not yet on `main`); the two patches do not collide.
+
+| ID | Proposed decision | Recommendation | Jonathan answer and date | Status | Blocks |
+|---|---|---|---|---|---|
+| D39 | S is the slide: one key sheds speed (a powerslide at speed, a foot brake below 2.5 m/s); C, X (revert) and the brake-plus-steer auto-slide are removed; the twist replaces the revert | Claude recommends yes | No answer recorded | OPEN | 02 (M1) |
+| D40 | One gravity (12) and one ground kernel for every wheeled or sliding mover, real gravity everywhere; travel assist retired; the Tideline park keeps forgiving landings only; the park's feel changes (wider carves at speed, transition airs ~17 % higher) and its feel tests are retuned in the same PR | Claude recommends yes (fallback: g 14 for all movers, with the walker's jump retuned) | No answer recorded | OPEN | 02 (M1, M2) |
+| D41 | The boost is the pump: earned by a held, fast, controlled slide (0.35 s set delay, ≥ 3 m/s, full after 1.55 s at 45°), released only by W in a 0.5 s window after a clean exit, +2.5 m/s at full charge over 0.6 s; never automatic, never a net gain on the flat; the charge crouch is pose only | Claude recommends yes | No answer recorded | OPEN | 02 (M1) |
+| D42 | Pace is physics (refines D7): MANIFEST v1.7 gains `paces` (rolling resistance and push grip by the bed segment's pace) and `surfaces[*].grip`; no speed caps or zones; the plaza's, the run-outs' and the pads' threshold pace is rolling resistance 1.8; top speed from drag (~13.4 m/s on S1's paved 15 %) | Claude recommends yes | No answer recorded | OPEN | 02 (M1) |
+| D43 | The bed's edge is physical, not a wall: the board is bed-bound by its profile's `beds`; off the bed the wheels dig in (roll 6.0) and a 300 ms fade returns the board, stopped, to the bed it left; water is the same fade; every pad is threshold pace (it stops a board under ~4.6 m/s; a faster rider overruns, digs in and is faded back), the run-outs are slow paving where S is the brake, so "board never past a threshold" is made by the ground; no run-out auto-brake — the S1 race ends at the line, the rider brakes, `landingQuay` is the park | Claude recommends yes | No answer recorded | OPEN | 02 (M1, I) |
+| D44 | `journeys` rows for movers are measured from the ride log, not `length/speed`; the S1 estimate (139 s) is replaced by the headless ride (~83–88 s) inside `targets_s [70,130]`; no retarget | Claude recommends yes | No answer recorded | OPEN | 02 (I) |
+| D45 | The bicycle is a profile of the same kernel (grip 6/4.8, pedal 2.5 to 6.0, brakes at any speed plus a ≤ 20° skid, no boost, bell), not a second sim; pass 4's ice skates likewise | Claude recommends yes | No answer recorded | OPEN | 02 (M2), 04 |
+| D46 | The partner on a board: publishing `act: 'skate'` from the Horizon and carrying the slide angle (`p` as β) are one presence-wire change — a Codex trust-review request for pass 3, nothing broadcast in pass 2 | Claude recommends yes, as a pass-3 request | No answer recorded | OPEN | 03 |
+| D47 | RIDE build additions found by riding the real beds (2026-09-26, slice 1): the centred-stick S hold is a **pendulum speed check** at `pendulumAngle` 70° swinging every 12° of travel (a straight S brake no longer walks the board off a 4 m bed; sheds 1.84 m/s² on 15 %); the stick-held hold stays 40°; a landing never re-grips a slide (`grip = min(grip, cos²β)`); contact is a nine-sample wheel footprint with a 10 cm seam bridge; the twist commits after 1.8 s of full stick and flips lead at 135°; Look/Island while riding pauses the ride (a mode still ends only at a threshold) | Claude recommends yes | No answer recorded | OPEN | 02 (M1) |
+| D48 | S1 as built is 1 266 m (971 m drawn; the pass-1 switchbacks) and the headless rider takes ~167 s in legs against `time_target_s [70,130]`; either retarget S1 to the built length (~[90,170]) or ask the land touch-up to shorten the line | Claude recommends retarget to the built length | No answer recorded | OPEN | 02 (M1), 03 (land touch-up) |
+
 ### Pins
 
 | Pin | Date | Pass | Merge SHA | Geography revision | Presence world |
