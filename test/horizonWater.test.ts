@@ -147,3 +147,21 @@ describe('Horizon water meets its banks (Stage A G6)', () => {
     expect(waterInfluence(lower, end[0] + dx / l * 2, end[2] + dz / l * 2).distance).toBeGreaterThan(0);
   });
 });
+
+describe('Horizon terrain leftovers (Stage A W3-C: P01, P05, P06)', () => {
+  const waters = buildWaterCuts(), sample = createTerrainCutSampler({ waters, beds: [], pads: [], mouths: [], solids: [], diagnostics: [] }, 5);
+  it('holds Stillwater\'s band to its own west edge (P01 owner rule 0.786 -> 1.00)', () => {
+    // The west edge at x 1000 borders open ground; it held 85 % of the band (40.9–44.7 at z 870–890).
+    for (const z of [870, 880, 890]) expect(baseHeight(1000.5, z)).toBeGreaterThanOrEqual(45);
+  });
+  it('keeps the brook mouth\'s bank foot above the sea on land (P05: two samples at 0.00)', () => {
+    for (const x of [820, 825]) expect(sample(x, 865).height).toBeGreaterThan(0);
+  });
+  it('banks a basin at its surface within one lattice diagonal (P06)', () => {
+    const lake = waters.find(w => w.id === 'water.stillwater')!;
+    // The south shore west of the dam: the lake at 50 stood over ground at 43–49 ([1061,889], [1101,904]).
+    for (const [x, z] of [[1061.6, 888.9], [1100.9, 904]] as const) expect(sample(x, z).height, `${x},${z}`).toBeGreaterThanOrEqual(lake.level - 1e-6);
+    // East of the dam the forecourt stays open (page A, P25): no lake bank raised in front of the face.
+    expect(sample(1180, 925).height).toBeLessThan(40);
+  });
+});

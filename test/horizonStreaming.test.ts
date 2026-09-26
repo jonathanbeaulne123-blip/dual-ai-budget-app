@@ -99,3 +99,15 @@ it('reports actual lite triangles including terrain and preserves full collision
   expect(lite.geometry!.solids[0]!.indices).toBe(solids[0]!.indices);expect(lite.geometry!.solids[0]!.positions).toBe(solids[0]!.positions);expect(JSON.stringify(world)).toBe(before);
   expect(lite.geometry!.simplification).toMatchObject({method:'prism-chain',maximumMergedPrisms:4,maxReportedErrorEu:0,fullCollisionUnchanged:true});
 });
+it.each(['full', 'lite'] as const)('%s: ten Walk/Look toggles at the runtime radii (walking default vs the page radius) build nothing (P22)', tier => {
+  const world = { districts: buildDistricts(field, [], []) }, built: string[] = [];
+  const stream = createDistrictStream(world, d => { built.push(d.id); return { dispose() {} }; }, tier);
+  // Page A's shot: look at the square with the page's 480 eu radius until settled (grace included).
+  let now = 0; for (let i = 0; i < 600; i++) { stream.update({ x: 1470, z: 1186, now, mode: 'look', radius: 480 }); now += 16; }
+  const before = built.length;
+  // The browser harness: setMode every 200 ms; walk passes no radius (150 lite / 220 full), look the page's.
+  for (let i = 0; i < 10; i++) for (let f = 0; f < 12; f++) { stream.update({ x: 1470, z: 1186, now, mode: i % 2 === 0 ? 'walk' : 'look', radius: i % 2 === 0 ? undefined : 480 }); now += 16; }
+  expect(built.length - before).toBe(0);
+  // A relocation still settles at once: the camera district on the first frame, the neighbourhood within the cap.
+  stream.update({ x: 350, z: 550, now, radius: 2000 }); expect(stream.history.at(-1)!.built).toEqual(['flats']);
+});

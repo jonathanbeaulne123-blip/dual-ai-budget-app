@@ -87,11 +87,6 @@ function crownHeight(b: Band, x: number, z: number): number {
   const q = clamp(distance / Math.max(1, edgeDistance));
   const ridge = clamp(1 - 0.16 * dx / (260 * s) + 0.12 * dz / (260 * s), 0.75, 1.25);
   let height = mix(110 * s, summit.summitH! * s, Math.pow(1 - smooth(q), ridge));
-  // The Throat is cut into a north-facing buttress, not into an exposed low edge.
-  // Its surveyed 110 m floor plus 18 m aperture has real rock above it.
-  const tx = Math.abs(x / s - 1300), north = smooth((z / s - 268) / 24), south = 1 - smooth((z / s - 345) / 65);
-  const buttress = smooth(1 - Math.max(0, tx - 18) / 72) * north * south;
-  height = mix(height, Math.max(height, (131 + 5 * clamp((z / s - 300) / 60)) * s), buttress);
   // The skylight opens at the manifest's northern shaft endpoint (1300,400),
   // not at the lake centre (1300,420). A small rock saddle meets its 138 m rim.
   const opening = M.underground.rooms.deep.skylight;
@@ -149,13 +144,44 @@ export function baseHeight(x: number, z: number): number {
     const d = distance + (SHOULDER_RINGED.has(b.id) ? step * proximity : 0);
     const weight = d < 0 ? smooth(1 + d / blend) * (1 - proximity) : 1 - (1 - smooth(d / blend)) * proximity;
     height = mix(height, bandHeight(b, x, z), weight);
-    if (d > 0) height = mix(height, clamp(height, b.min, b.max), smooth(d / step));
+    // A ringed terrace holds its band fully to its own edge, whatever the neighbour (P01: Stillwater's
+    // west edge against open ground held only 85 % of it at proximity 0.74); the scarp lies outside.
+    if (d > 0) height = mix(height, clamp(height, b.min, b.max), SHOULDER_RINGED.has(b.id) && proximity > 0 ? smooth(d / (step * proximity)) : smooth(d / step));
   }
+  height = throatButtress(x, z, height);
   const character = coastCharacter(x, z), shoreWidth = character === 'southBeach' ? 44 * s : character === 'bight' ? 23 * s : 10 * s;
   height = mix(0.14 * s, height, smooth(shore / shoreWidth));
   height = damWindow(x, z, notchHeight(x, z, height));
   return applyWaters(x, z, height, m.water);
 }
+/**
+ * The Throat is cut into a north-facing buttress, not into an exposed low edge: its surveyed 110 m
+ * floor plus 18 m aperture has real rock above it (≥ 131 over the mouth, rising south). Applied after
+ * the band blend: since the landformRule blend moved inside the winning polygon (Stage A), the Crown's
+ * own band no longer reached the mouth 13 m inside its north edge, the ground there fell to 115–123
+ * and the P25 Throat samples (y 111–127, z 300–310) stood in open air, sunlit 8–17 of 75.
+ */
+function throatButtress(x: number, z: number, height: number): number {
+  const s = getModel().scale, tx = Math.abs(x / s - 1300), north = smooth((z / s - 268) / 24), south = 1 - smooth((z / s - 345) / 65);
+  const buttress = smooth(1 - Math.max(0, tx - 18) / 72) * north * south;
+  return buttress <= 0 ? height : mix(height, Math.max(height, (131 + 5 * clamp((z / s - 300) / 60)) * s), buttress);
+}
+/**
+ * The Throat's mouth is an opening in the buttress's north face: its jambs (5 m either side of the mouth
+ * outline, fading over 5 m more, from 6 m in front of it to its back) stay rock at the buttress height whatever a route's blend
+ * does below them, so the low June sun from the NE never reaches into the mouth (LIGHT §2, P25). A bed's
+ * carriageway and shoulder are never raised (the jamb fades in over 4 m from a bed's edge).
+ */
+function throatJambs(x: number, z: number, height: number, cuts: LandCuts, edgeGap: number): number {
+  const s = getModel().scale, mouth = cuts.mouths.find(m => m.id === 'throat'); if (!mouth) return height;
+  const xs = mouth.outline.map(p => p[0]), zs = mouth.outline.map(p => p[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), z0 = Math.min(...zs), z1 = Math.max(...zs);
+  const beside = Math.max(x0 - x, x - x1), front = z0 - 6 * s - z;
+  if (beside <= 0 || beside > 10 * s || front > 0 || z > z1) return height;
+  const jamb = (131 + 5 * clamp((z / s - 300) / 60)) * s;
+  return Math.max(height, mix(height, jamb, (1 - smooth((beside - 5 * s) / (5 * s))) * smooth(edgeGap / (4 * s))));
+}
+/** The Notch's east rim near the High Span: under page A's square→deck-line sight line (22.3) less 0.8. */
+export const HIGH_SPAN_EAST_RIM = 21.5;
 /** The High Span's surveyed station on the lower river (water 9.2, bed 8). */
 const HIGH_SPAN_STATION: XY = [1236.875, 1105];
 function notchHeight(x: number, z: number, height: number): number {
@@ -170,7 +196,12 @@ function notchHeight(x: number, z: number, height: number): number {
   const floor = mix(river.width / 2, (east ? 28 : 16) * s, span), wall = (22 + 11 * q.progress) * s - river.width / 2;
   const half = floor + wall, run = NOTCH_RIM_RUN * s;
   if (q.distance >= half + run) return height;
-  const rim = Math.max(height, q.height + (32 - 7 * q.progress) * s);
+  // Page A frames the High Span's deck line (23–29) from the square (eye 13.6): the east rim near the bridge
+  // stays under that sight line along its whole length, easing back to the gorge's rim over 50 m, instead
+  // of a knife-edge spine at 30–35 that a sight window would notch into two striped spires.
+  const fromSpan = Math.hypot(q.x - HIGH_SPAN_STATION[0] * s, q.z - HIGH_SPAN_STATION[1] * s);
+  const gorgeRim = q.height + (32 - 7 * q.progress) * s;
+  const rim = Math.max(height, east ? mix(Math.min(gorgeRim, HIGH_SPAN_EAST_RIM * s), gorgeRim, smooth((fromSpan - 70 * s) / (50 * s))) : gorgeRim);
   // The gorge floor meets the river at its surface; applyWaters carves the wet bed.
   if (q.distance <= floor) return q.height;
   if (q.distance <= half) { const t = smooth((q.distance - floor) / Math.max(1, wall)); return mix(q.height, rim, t * t); }
@@ -198,6 +229,58 @@ function damWindow(x: number, z: number, height: number): number {
   const outside = Math.min(corridor, Math.hypot(x - dx, z - dz) - DAM_WINDOW.forecourt * s);
   const weight = (1 - smooth(outside / (DAM_WINDOW.feather * s))) * smooth((z - dz - 4 * s) / (6 * s));
   return mix(height, DAM_WINDOW.cap * s, weight);
+}
+/**
+ * Sketchbook sight windows (MANIFEST views, the P27 proof). Where a page's subject stands low behind
+ * open ground its eye cannot see over, that ground is held under the sight plane from the eye to the
+ * subject's line, less a margin: the plan triangle eye→A→B, feathered over `feather` m outside it,
+ * never within `near` m of the eye, and never on a bed (its carriageway and shoulder keep their
+ * grade; the trim fades in over `bedFade` m from a bed's edge so no bed is left on a causeway).
+ * `eyeH` is the pose's measured eye (floor + 1.6) on the Stage A bake; a test holds it to the bake.
+ * - (A · the High Span from the square is held by the Notch's east rim cap, HIGH_SPAN_EAST_RIM: a window
+ *   notched the 35 eu rim spine at [1288–1311, 1115–1131] into two striped spires.)
+ * - A · the dam's glass face: the gallery flights' embankment at [1169–1176, 916–918] (40–47) and
+ *   V01's embankment toe at [1382–1389, 1110–1119] (17–19) cut the face's east half.
+ * - (C · the skate shelf is not a terrain window: S1's own carriageway at 12.4–13.4 runs between the
+ *   overlook and the shelf deck (11–12.3) at [1206–1219, 1100–1134]; a window beside it only left
+ *   S1's edge rail hanging. Once S1 rides the shelf, a window from the eye [1268,1145] h 11.6 to the
+ *   shelf line [1206,11.6,1078]–[1206,11.6,1136] clears the floor in front of it.)
+ * Every window lies outside the band polygons or inside the Notch walls' exclusion, or trims a band
+ * only within its own range (harbour 0–18): P01 is untouched by construction.
+ */
+export interface SightWindow { page: string; subject: string; eyeH: number; a: XYZ; b: XYZ; margin: number; near: number; feather: number; bedFade: number }
+export const SIGHT_WINDOWS: readonly SightWindow[] = [
+  { page: 'A', subject: "the dam's glass face", eyeH: 13.6, a: [1121, 38, 909], b: [1160, 38, 909], margin: 1, near: 40, feather: 8, bedFade: 6 },
+];
+interface PreparedWindow { eye: XYZ; a: XYZ; b: XYZ; tri: XY[]; det: number; w: SightWindow; box: number[] }
+let preparedWindows: PreparedWindow[] | undefined;
+function windowsPrepared(): PreparedWindow[] {
+  if (preparedWindows) return preparedWindows;
+  const s = getModel().scale;
+  return preparedWindows = SIGHT_WINDOWS.map(w => {
+    const xy = M.views.find(v => v.id === w.page)!.xy, eye: XYZ = [xy[0]! * s, w.eyeH * s, xy[1]! * s];
+    const a: XYZ = [w.a[0] * s, w.a[1] * s, w.a[2] * s], b: XYZ = [w.b[0] * s, w.b[1] * s, w.b[2] * s];
+    const tri: XY[] = [[eye[0], eye[2]], [a[0], a[2]], [b[0], b[2]]], f = w.feather * s;
+    const det = (a[0] - eye[0]) * (b[2] - eye[2]) - (b[0] - eye[0]) * (a[2] - eye[2]);
+    return { eye, a, b, tri, det, w, box: [Math.min(...tri.map(p => p[0])) - f, Math.min(...tri.map(p => p[1])) - f, Math.max(...tri.map(p => p[0])) + f, Math.max(...tri.map(p => p[1])) + f] };
+  });
+}
+/** Ground height under the sight windows: `height` trimmed toward each window's plane (never below the land floor). */
+export function sightWindows(x: number, z: number, height: number, edgeGap = Infinity): number {
+  const s = getModel().scale;
+  for (const p of windowsPrepared()) {
+    if (x < p.box[0]! || z < p.box[1]! || x > p.box[2]! || z > p.box[3]!) continue;
+    const inside = polygonDistance(p.tri, x, z), w = p.w;
+    const weight = (inside >= 0 ? 1 : 1 - smooth(-inside / (w.feather * s)))
+      * smooth((Math.hypot(x - p.eye[0], z - p.eye[2]) - w.near * s) / (w.feather * s)) * smooth(edgeGap / (w.bedFade * s));
+    if (weight <= 0) continue;
+    // The plane through the eye, A and B, evaluated in plan (barycentric in the eye→A→B triangle).
+    const dx = x - p.eye[0], dz = z - p.eye[2];
+    const alpha = (dx * (p.b[2] - p.eye[2]) - (p.b[0] - p.eye[0]) * dz) / p.det, beta = ((p.a[0] - p.eye[0]) * dz - dx * (p.a[2] - p.eye[2])) / p.det;
+    const plane = Math.max(LAND_FLOOR * s, p.eye[1] + alpha * (p.a[1] - p.eye[1]) + beta * (p.b[1] - p.eye[1]) - w.margin * s);
+    if (height > plane) height = mix(height, plane, weight);
+  }
+  return height;
 }
 /** Depth of the bed within one lattice diagonal of a water edge (eu): the water card sits on it. */
 export const WET_EDGE_DEPTH = .03;
@@ -229,21 +312,28 @@ function applyWaters(x: number, z: number, original: number, waters: WaterCut[],
       const depth = WET_EDGE_DEPTH * s + (water.depth - WET_EDGE_DEPTH * s) * smooth(inner / Math.max(1 * s, reach - Math.min(guard, reach / 2))) + Math.min(grade * guard, 1.5 * s);
       // A channel never floats: where the ground falls away under it, its bed and banks
       // are raised to carry it (a perched reach reads as a raised stream, not a floating ribbon).
-      h = water.points.length && water.kind !== 'dry' && !raiseForbidden(x, z) ? level - depth : Math.min(h, level - depth);
+      // A basin (lake, tarn) does the same within one lattice diagonal of its edge: a triangle from its
+      // edge to the bank never dips under the surface where the ground outside the terrace is lower (P06).
+      const raise = water.kind !== 'dry' && (water.points.length ? !raiseForbidden(x, z) : guard > 0 && -distance <= guard);
+      h = raise ? level - depth : Math.min(h, level - depth);
       wetBedCeiling = Math.min(wetBedCeiling, level - depth);
       continue;
     }
     // The dam holds Stillwater on its downstream side: no lake bank is raised there.
     if (water.id === 'water.stillwater' && damHolds(x, z)) continue;
-    // The guard band IS the bank's foot: exactly at the water level (raised or cut to it).
-    if (distance <= guard) { h = level; wetBedCeiling = Math.min(wetBedCeiling, level); continue; }
+    // The guard band IS the bank's foot: exactly at the water level (raised or cut to it); where a
+    // stream meets the sea at level 0 the foot on land stays at the land floor (P05: ground > 0 inland).
+    const foot = level < LAND_FLOOR * s && signedShoreDistance(x, z) > 0 ? LAND_FLOOR * s : level;
+    if (distance <= guard) { h = foot; wetBedCeiling = Math.min(wetBedCeiling, foot); continue; }
     const d = distance - guard;
-    if (d < bankWidth) h = mix(guard > 0 ? level : Math.min(h, level), Math.max(h, level + water.bank), smooth(d / bankWidth));
+    if (d < bankWidth) h = mix(guard > 0 ? foot : Math.min(h, foot), Math.max(h, level + water.bank), smooth(d / bankWidth));
     else h = Math.max(h, mix(level + water.bank, h, smooth((d - bankWidth) / (outer - bankWidth))));
   }
   return Math.min(h, wetBedCeiling);
 }
-/** South of the dam line the lake is held by the dam's solid, not by an earth bank. */
+/** South of the dam line the lake is held by the dam's solid, not by an earth bank: the forecourt in front
+ * of the face stays open (DAM_WINDOW). (Stage A W3-C tried a bank foot west of the abutments for P06's
+ * [1100,908]: it stood a 32 m earth wall beside the west abutment and moved no P06 sample; reverted.) */
 function damHolds(x: number, z: number): boolean {
   const s = getModel().scale, dam = M.structures.dam.xy;
   return z > dam[1]! * s && Math.abs(x - dam[0]! * s) < 90 * s;
@@ -297,16 +387,17 @@ export function raiseForbidden(x: number, z: number): boolean {
 /** Two beds whose decks overlap in plan within this height are one level (at grade). */
 export const BED_LEVEL_TOLERANCE = .5;
 /** Exact local segment lookup, exported for equivalence probes against brute force. */
-export function createBedSampler(beds: BedCut[]): (x: number, z: number, original: number) => { height: number; surface: number | null } {
+export function createBedSampler(beds: BedCut[]): (x: number, z: number, original: number) => { height: number; surface: number | null; edgeGap: number } {
   const prepared = prepareBeds(beds), s = getModel().scale;
   return (x, z, original) => {
     let height = original, surface: number | null = null, active: BedCut | null = null;
     let distance = Infinity, target = 0, progress = 0, excluded = false;
     let footprintHeight = Infinity, footprintSurface: number | null = null, footprintCore = false;
-    let deckHeight = -Infinity, deckSurface: number | null = null;
+    let deckHeight = -Infinity, deckSurface: number | null = null, edgeGap = Infinity;
     const apply = () => {
       if (!active || excluded) return;
       const edge = active.width / 2 + active.shoulder, blend = Math.max(active.blend, 15 * s);
+      edgeGap = Math.min(edgeGap, distance - edge);
       const weight = 1 - smooth((distance - edge) / blend);
       if (weight <= 0) return;
       height = mix(height, target, weight);
@@ -341,7 +432,7 @@ export function createBedSampler(beds: BedCut[]): (x: number, z: number, origina
     if (result > original && raiseForbidden(x, z)) result = original;
     // No route or deck builds ground above the Crown's summit (it stays the island's highest point).
     if (result > original) result = Math.min(result, Math.max(original, crownSummitHeight() - 1 * s));
-    return { height: result, surface: paint };
+    return { height: result, surface: paint, edgeGap };
   };
 }
 /** Five centimetres survives centimetre encoding without terrain sharing the road's top face. */
@@ -403,7 +494,11 @@ export const PAD_FILL_MAX = 3;
 const crownSummitHeight = (): number => M.landforms.find(f => f.id === 'crown')!.summitH! * getModel().scale;
 
 function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<typeof createBedSampler>, rasterMargin: number, bedCeiling: (x: number, z: number) => number): { height: number; surface: number | null } {
-  let { height, surface } = sampleBeds(x, z, baseHeight(x, z));
+  const bedded = sampleBeds(x, z, baseHeight(x, z));
+  let { height, surface } = bedded;
+  // Sketchbook sight windows trim open ground (never a bed's carriageway or shoulder).
+  height = sightWindows(x, z, height, bedded.edgeGap);
+  height = throatJambs(x, z, height, cuts, bedded.edgeGap);
   const ground = height, s = getModel().scale;
   for (const p of cuts.pads) {
     // A deck pad (PadCut.deck) is carried by its structure or sits flush on graded beds: never earth.

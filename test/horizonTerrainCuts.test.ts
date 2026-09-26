@@ -134,3 +134,22 @@ describe('Horizon bed override guards (Stage A G1/G7)', () => {
     expect(tower(1610, 640).height).toBeLessThanOrEqual(ground + PAD_FILL_MAX + 1e-6);
   });
 });
+
+describe('Sketchbook sight windows (Stage A W3-C, P27)', () => {
+  it('holds the open ground between a page eye and its subject under the sight plane, never on a bed', async () => {
+    const { SIGHT_WINDOWS, sightWindows, baseHeight, HIGH_SPAN_EAST_RIM } = await import('../src/harbour/horizon/land/terrain');
+    const { readFileSync } = await import('node:fs');
+    // The window eyes are the poses' measured eyes (floor + 1.6) on the committed bake.
+    const world = JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8')) as { views: { id: string; eye: number[] }[] };
+    for (const w of SIGHT_WINDOWS) expect(Math.abs(world.views.find(v => v.id === w.page)!.eye[1]! - w.eyeH)).toBeLessThan(.3);
+    // Page A: the Notch's east rim at [1296,1121] stood as a 35 eu spine over a 22.3 sight line to the High Span's deck
+    // line; the rim cap holds it at the gorge's floor-side ground, under the line, with no spire left.
+    expect(baseHeight(1296, 1121)).toBeLessThanOrEqual(HIGH_SPAN_EAST_RIM + 1e-6);
+    for (const [x, z] of [[1280, 1080], [1295, 1150], [1300, 1130]] as const) expect(baseHeight(x, z), `${x},${z}`).toBeLessThan(23);
+    // The dam window: the gallery embankment at [1172,917] is trimmed; a bed's shoulder (edge gap 0) never is.
+    expect(sightWindows(1172, 917, 43)).toBeLessThan(43);
+    expect(sightWindows(1172, 917, 43, 0)).toBe(43);
+    expect(sightWindows(1296, 1300, 35)).toBe(35);
+  });
+
+});

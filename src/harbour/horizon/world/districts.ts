@@ -111,10 +111,12 @@ export function buildDistricts(field: TerrainField, beds: readonly BedCut[], sol
 export const CARD_CELL_EU = 256;
 export type DistrictResource = { dispose(): void };
 export type StreamPosition = { x: number; z: number; now: number; mode?: 'walk' | 'look'; radius?: number; underground?: boolean };
+/** A camera move longer than this in one frame is a relocation (the plane covers < 1 eu per frame). */
+export const RELOCATION_JUMP_EU = 50;
 /** Same delayed-release / one-build-per-frame algorithm as Mountain v2, with a hard residency cap. */
 export function createDistrictStream<T extends DistrictResource>(world: Pick<WorldDefinition, 'districts'>, build: (district: District) => T, tier: 'full' | 'lite' = 'full') {
   const live = new Map<string, T>(), outsideSince = new Map<string, number>(), cap = tier === 'full' ? 4 : 3;
-  let disposed = false, frame = 0;
+  let disposed = false, frame = 0, settling = false, last: { x: number; z: number } | null = null;
   const history: { frame: number; time: number; mode: string; built: string[]; released: string[]; resident: string[]; pending: string[] }[] = [];
   const distance = (d: District, x: number, z: number) => {
     if (pointInPolygon(x, z, d.outline)) return 0;
@@ -144,15 +146,22 @@ export function createDistrictStream<T extends DistrictResource>(world: Pick<Wor
       const wanted = new Set(desired.map(d => d.id)), released: string[] = [], built: string[] = [];
       for (const [id, resource] of live) { if (wanted.has(id)) { outsideSince.delete(id); continue; } const since = outsideSince.get(id) ?? input.now; outsideSince.set(id, since); if (input.now - since >= 4000) { resource.dispose(); live.delete(id); outsideSince.delete(id); released.push(id); } }
       // Release before build (R1-70): when a wanted district is waiting and the cap is full, the unwanted resident
-      // that has been outside longest is released at once, so the camera's own district never waits for the 4 s grace.
-      // Still ≤ 1 build per frame, and a Walk/Look toggle in place changes nothing (the wanted set is unchanged).
+      // that has been outside longest is released at once — for the camera's own district always (the ground under
+      // the camera never waits for the 4 s grace), and for the rest of the neighbourhood while the stream settles
+      // after a relocation (a jump of more than RELOCATION_JUMP_EU in one frame: a page shot, a restore). In place, a waiting neighbour
+      // keeps the grace: a Walk/Look toggle changes the wanted radius (the page's radius_eu against the walking
+      // 150/220), and on lite's three-district cap an at-once swap thrashed notch↔offshore on every toggle (P22 in
+      // the browser: 10 builds on 10 toggles).
       const next = desired.find(d => !live.has(d.id));
-      if (next && live.size >= cap) {
+      if (!last || Math.hypot(input.x - last.x, input.z - last.z) > RELOCATION_JUMP_EU) settling = true;
+      last = { x: input.x, z: input.z };
+      if (next && live.size >= cap && (next === desired[0] || settling)) {
         const victim = [...live.keys()].filter(id => !wanted.has(id)).sort((a, b) => (outsideSince.get(a) ?? input.now) - (outsideSince.get(b) ?? input.now) || a.localeCompare(b))[0];
         if (victim !== undefined) { live.get(victim)!.dispose(); live.delete(victim); outsideSince.delete(victim); released.push(victim); }
       }
       if (next && live.size < cap) { live.set(next.id, build(next)); built.push(next.id); }
       const pending = desired.filter(d => !live.has(d.id)).map(d => d.id);
+      if (!pending.length) settling = false;
       history.push({ frame: frame++, time: input.now, mode: input.mode ?? 'walk', built, released, resident: [...live.keys()], pending });
       if (history.length > 600) history.shift();
       return built.length > 0 || released.length > 0 || pending.length > 0;

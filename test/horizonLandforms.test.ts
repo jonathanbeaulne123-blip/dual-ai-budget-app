@@ -111,3 +111,25 @@ describe('Horizon authored continuous landforms', () => {
     for (let x = 1220; x <= 1260; x += 2.5) expect(baseHeight(x, 1095), `${x}`).toBeLessThanOrEqual(waterInfluence(river, x, 1095).level + river.bank + 1e-6);
   });
 });
+
+it('keeps real rock over the Throat mouth after the band blend (P25: the Throat is never lit)', async () => {
+  const { baseHeight } = await import('../src/harbour/horizon/land/terrain');
+  // The corridor's roof stands at 128.6 over the 110 floor at the mouth (z 300) and falls south; the
+  // Stage A blend had left the ground at 115–123 there, so the P25 samples (y 111–127) stood in open air.
+  for (const z of [300, 305, 310, 320]) for (const x of [1289, 1300, 1311]) expect(baseHeight(x, z)).toBeGreaterThanOrEqual(131);
+  // In front of the mouth the buttress falls away north (the mouth of daylight stays open).
+  expect(baseHeight(1300, 270)).toBeLessThan(100);
+});
+
+it('keeps the Throat mouth\'s jambs in rock when a route passes below them (P25, merged W3-A land)', async () => {
+  const { createTerrainCutSampler, baseHeight } = await import('../src/harbour/horizon/land/terrain');
+  const mouth = { id: 'throat', outline: [[1287, 291], [1287, 309], [1313, 309], [1313, 291]] as [number, number][] };
+  const road = { id: 'V01', kind: 'road' as const, profile: 'road', surface: 'paved', points: [[1360, 74, 250], [1330, 74, 300]] as [number, number, number][], width: 8, shoulder: 1, blend: 15, clearHeight: 5, maxGrade: .12, terrainCut: true, structureIds: [], districtIds: [] };
+  const sample = createTerrainCutSampler({ beds: [road], pads: [], mouths: [mouth], waters: [], solids: [], diagnostics: [] } as never, 5);
+  // Beside the mouth's NE corner the road's blend pulled the buttress to 116 (June 06:50 sun into the mouth).
+  expect(sample(1318, 290).height).toBeGreaterThanOrEqual(130);
+  // In front of the mouth and inside it the ground is what it was without the jambs (the mouth of daylight stays open).
+  const bare = createTerrainCutSampler({ beds: [road], pads: [], mouths: [], waters: [], solids: [], diagnostics: [] } as never, 5);
+  for (const [x, z] of [[1300, 280], [1300, 300], [1318, 330]] as const) expect(sample(x, z).height).toBe(bare(x, z).height);
+  expect(baseHeight(1318, 290)).toBeGreaterThan(sample(1318, 290).height - 1);
+});
