@@ -8,6 +8,7 @@ import { buildHostSites } from '../town/hosts';
 import { buildUnderground } from '../underground/build';
 import { addFlatPad, bed, emitBedGeometry, heightOnBeds, planDistance } from './profiles';
 import { gradeRoute, listSteepStretches, sampleSpline, type HeightPin } from './solver';
+import { registerRowKey } from '../../world/crossings';
 /** Typical grades (upper end of profiles.<kind>.grade_typ_pct): a bed rides these, not its maximum. */
 const TYP={road:M.profiles.road.grade_typ_pct[1]!/100,walk:M.profiles.walk.grade_typ_pct[1]!/100,skate:M.profiles.skateMain.grade_typ_pct[1]!/100};
 
@@ -271,7 +272,11 @@ function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
     // A threshold above its ground or over water is a raised deck (tower top, gallery, jetty):
     // it never shapes the heightfield; its supports belong to the structure that carries it.
     const deck=!underground&&(height-ground>BODY_HEIGHT||ground<M.seaLevel);
-    const pad=addFlatPad(cuts,id,'threshold',p,height,[6,5],0,underground);if(deck){pad.deck=true;pad.blend=0;}
+    const pad=addFlatPad(cuts,id,'threshold',p,height,[6,5],0,underground);if(deck){pad.deck=true;pad.blend=0;
+      // On a structure's own deck at this height (Crown launch, cable platforms, lamp gallery, jetties) the deck is the
+      // floor: no second pad slab floats beside it (structures.padFloating). The pad stays as the threshold's footprint.
+      const onDeck=cuts.solids.some(s=>(s.role==='deck'||s.role==='floor')&&s.id!==`${id}.slab`&&(()=>{let x0=Infinity,x1=-Infinity,z0=Infinity,z1=-Infinity,y1=-Infinity;const q=s.positions;for(let i=0;i<q.length;i+=3){x0=Math.min(x0,q[i]!);x1=Math.max(x1,q[i]!);y1=Math.max(y1,q[i+1]!);z0=Math.min(z0,q[i+2]!);z1=Math.max(z1,q[i+2]!);}return p[0]>=x0&&p[0]<=x1&&p[1]>=z0&&p[1]<=z1&&Math.abs(y1-height)<.5;})());
+      if(onDeck)cuts.solids=cuts.solids.filter(s=>s.id!==`${id}.slab`);}
     if(!underground&&!deck&&ground-height>BODY_HEIGHT)cuts.diagnostics.push({id:`${id}.pit`,severity:'conflict',message:`${id} is authored ${(ground-height).toFixed(1)} eu below its ground; the pad would dig a pit`,at:p,measured:height,required:ground});
     positions.push(p);const marker=solid(`${id}.marker`,'threshold','stone','marker',[],districtAt(...p));box(marker,p,height+.025,[2,.6],height-.05);cuts.solids.push(marker);pad.margin=1;};
   for(const row of M.thresholds){
@@ -280,8 +285,9 @@ function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
     else {const exact:Record<string,number>={gondolaBase:18,gondolaTop:112,adit:40,southPortal:110,prowPlatform:M.sky.launches.prow.h,crownLaunch:M.sky.launches.crown.h,zipLanding:12,lampGallery:M.sky.launches.lampGallery.h,deepJetty:40.6,seaDoorJetty:1,lampDock:1,bightShoreJetty:1,floatDock:1.2,boathouseDock:1,landingQuay:3,stepsFoot:4};make(`threshold.${row.id}`,row.xy as unknown as XY,exact[row.id]!);}
   }
   M.crossings.forEach((row,i)=>{if(row.resolution==='threshold'){
-    if(Array.isArray(row.at))make(`crossing.${i}`,row.at as unknown as XY);
-    else if(row.at.includes('465,700'))make(`crossing.${i}`,[465,700]);
+    // Register pads are named by the row's route names (registerRowKey), not its list index (R1-68).
+    if(Array.isArray(row.at))make(registerRowKey(i),row.at as unknown as XY);
+    else if(row.at.includes('465,700'))make(registerRowKey(i),[465,700]);
   }});
   return positions;
 }

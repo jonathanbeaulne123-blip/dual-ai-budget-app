@@ -60,6 +60,12 @@ export function settleFoundations(cuts:LandCuts,finalHeight:HeightQuery):Foundat
       result.push({id:solid.id,part:part.offset/24,at:[part.x,part.z],originalFoot:part.bottom,settledFoot:target,extension:part.bottom-target});
     }
   }
+  // A wall foot is never carried down through a walkable route below it: a retaining wall's lintel over a
+  // passage (openRetainingPassages) or a wall over another route's corridor keeps its opening (P17b / journeys).
+  const routeIndex=new Map<string,{id:string;a:XYZ;b:XYZ;half:number}[]>(),RC=16;
+  for(const b of cuts.beds){if(!['road','walk','trail','boardwalk','skate','stair'].includes(b.kind))continue;const half=b.width/2+b.shoulder+.3;
+    for(let i=1;i<b.points.length;i++){const a=b.points[i-1]!,e=b.points[i]!;for(let x=Math.floor((Math.min(a[0],e[0])-half)/RC);x<=Math.floor((Math.max(a[0],e[0])+half)/RC);x++)for(let z=Math.floor((Math.min(a[2],e[2])-half)/RC);z<=Math.floor((Math.max(a[2],e[2])+half)/RC);z++){const k=`${x}:${z}`;(routeIndex.get(k)??routeIndex.set(k,[]).get(k)!).push({id:b.id,a,b:e,half});}}}
+  const routeBelow=(x:number,z:number,from:number,to:number,own:readonly string[]):number|null=>{let best:number|null=null;for(const r of routeIndex.get(`${Math.floor(x/RC)}:${Math.floor(z/RC)}`)??[]){if(own.includes(r.id))continue;const dx=r.b[0]-r.a[0],dz=r.b[2]-r.a[2],t=Math.max(0,Math.min(1,((x-r.a[0])*dx+(z-r.a[2])*dz)/(dx*dx+dz*dz||1)));if(Math.hypot(x-r.a[0]-t*dx,z-r.a[2]-t*dz)>r.half)continue;const h=mix(r.a[1],r.b[1],t);if(h<from-.3&&h>=to-1)best=Math.max(best??-Infinity,h);}return best;};
   for(const solid of cuts.solids){
     const pad=solid.kind==='pad'&&solid.role==='floor'&&!underground.has(solid.id);
     if(!(CORNER_KINDS.has(solid.kind)&&(solid.role==='support'||solid.role==='wall'))&&!pad)continue;
@@ -67,7 +73,8 @@ export function settleFoundations(cuts:LandCuts,finalHeight:HeightQuery):Foundat
     for(let offset=0;offset+23<solid.positions.length;offset+=24){
       let x=0,z=0,deepest=0,gap=Infinity;const moves:[number,number][]=[];
       for(let i=0;i<4;i++){
-        const at=offset+i*3,px=solid.positions[at]!,y=solid.positions[at+1]!,pz=solid.positions[at+2]!,ground=finalHeight(px,pz),target=ground-FOOTING_SINK;x+=px/4;z+=pz/4;gap=Math.min(gap,y-ground);
+        const at=offset+i*3,px=solid.positions[at]!,y=solid.positions[at+1]!,pz=solid.positions[at+2]!,ground=finalHeight(px,pz);let target=ground-FOOTING_SINK;x+=px/4;z+=pz/4;gap=Math.min(gap,y-ground);
+        if(!pad&&y>target+.001){const route=routeBelow(px,pz,y,target,solid.bedIds);if(route!==null)target=Math.max(target,y);}
         if(Number.isFinite(target)&&y>target+.001){moves.push([at+1,target]);deepest=Math.max(deepest,y-target);}
       }
       if(!moves.length)continue;

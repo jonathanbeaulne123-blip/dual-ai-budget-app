@@ -64,7 +64,7 @@ describe('Horizon structural solids',()=>{
     expect(prisms(find(cuts,'highSpan.overlook.supports')!).length).toBe(8);
     expect(solidVerticalRangeAt(find(cuts,'highSpan.overlook.rails')!,c[0]+.3,c[1]-3.1)?.top).toBeCloseTo(11.05,5);
   },120000);
-  it('follows each road tunnel floor on its road and reports the Prow Tunnel roof without cover',()=>{
+  it('follows each road tunnel floor on its road and measures the Prow Tunnel's rock cover',()=>{
     const cuts=cutsOnce();
     for(const [id,route] of [['prowTunnel','V01'],['shoulderTunnel','V02']] as const){
       const tube=cuts.beds.find(b=>b.id===id)!,road=cuts.beds.find(b=>b.id===route)!;
@@ -72,7 +72,10 @@ describe('Horizon structural solids',()=>{
       for(const p of tube.points)expect(Math.abs(nearestOnPath([p[0],p[2]],road.points).at[1]-p[1])).toBeLessThan(.05);
       expect(cuts.mouths.filter(m=>m.id.startsWith(`${id}.portal.`))).toHaveLength(2);
     }
-    const prow=cuts.diagnostics.find(d=>d.id==='structures.prowTunnel.cover')!;expect(prow.severity).toBe('conflict');expect(prow.measured!).toBeLessThan(0);
+    // Stage A integration: V01 now rides its typical grade (T2) and runs 9–13 eu lower through the Prow, so the
+    // RESERVED tunnel (built as authored) has rock over its lined roof: min cover 8.4 eu on the offline ground, no conflict.
+    const prowTube=cuts.beds.find(b=>b.id==='prowTunnel')!,cover=Math.min(...prowTube.points.map(p=>baseHeight(p[0],p[2])-(p[1]+5.6)));
+    expect(cover).toBeGreaterThan(2);expect(cuts.diagnostics.some(d=>d.id==='structures.prowTunnel.cover')).toBe(false);
   },120000);
   it('carries every stair on stringers and bents no further apart than 6 eu, with posted rails',()=>{
     const cuts=cutsOnce();

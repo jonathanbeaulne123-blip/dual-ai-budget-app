@@ -49,10 +49,12 @@ function clipEdgePrisms(piece:StructureSolid,at:XY,radius:number,height:number,p
     };
     const thickness=Math.max(...p.slice(4).map(p=>p[1]))-Math.min(...p.slice(0,4).map(p=>p[1]));
     const radiusWithWidth=radius+distance(plan(p[4]!),plan(p[5]!))/2;
-    if(hit.distance>=radiusWithWidth||hit.at[1]<height-.6||hit.at[1]>maxTop||hit.at[1]<minTop||hit.at[1]-thickness>height+1.3||passageClearance!==undefined&&Math.min(...p.slice(4).map(p=>p[1]))<height+passageClearance+.6){append(0,1);continue;}
+    if(hit.distance>=radiusWithWidth||hit.at[1]<height-.6||hit.at[1]>maxTop||hit.at[1]<minTop||hit.at[1]-thickness>height+1.3){append(0,1);continue;}
     const half=Math.sqrt(Math.max(0,radiusWithWidth*radiusWithWidth-hit.distance*hit.distance))/(distance(plan(start),plan(end))||1),lo=clamp(hit.t-half,0,1),hi=clamp(hit.t+half,0,1);
     if(lo>1e-5)append(0,lo);if(hi<1-1e-5)append(hi,1);
-    if(passageClearance!==undefined){append(lo,hi,-Infinity,height-.1);append(lo,hi,height+passageClearance);}
+    // A passage keeps the masonry below the floor and a lintel ≥ 0.6 thick above the headroom; a wall too
+    // low for a lintel is opened to the floor (its upper bed stays a reported unsupported run, never a wall across a route).
+    if(passageClearance!==undefined){append(lo,hi,-Infinity,height-.1);if(Math.min(...p.slice(4).map(p=>p[1]))>=height+passageClearance+.6)append(lo,hi,height+passageClearance);}
   }
   piece.positions=kept.positions;piece.indices=kept.indices;
 }
@@ -142,8 +144,30 @@ export function openRetainingPassages(cuts:LandCuts,proofs:readonly ComputedCros
     if(!['road','walk','trail','boardwalk'].includes(lower.kind))continue;
     const clearance=Math.max(2.4,lower.clearHeight),radius=upper.width/2+upper.shoulder+lower.width/2+2;
     if(Math.abs(heightA-heightB)<clearance+.6)continue;
-    for(const piece of cuts.solids)if(piece.kind==='retainingWall'&&piece.bedIds.includes(upper.id))clipEdgePrisms(piece,row.at,radius,height,clearance);
+    const walls=cuts.solids.filter(piece=>piece.kind==='retainingWall'&&piece.bedIds.includes(upper.id));
+    for(const piece of walls)clipEdgePrisms(piece,row.at,radius,height,clearance);
+    // The lower route crosses the upper's wall line away from the centreline crossing when the angle is
+    // shallow: open the passage along the lower route itself wherever it runs through the upper's wall band.
+    const band=upper.width/2+upper.shoulder+4,from=nearestOnPath(row.at,lower.points).along;
+    for(let i=1,along=0;i<lower.points.length;i++){
+      const a=lower.points[i-1]!,b=lower.points[i]!,len=distance(plan(a),plan(b)),steps=Math.max(1,Math.ceil(len));
+      for(let k=0;k<=steps;k++){const t=k/steps,d=along+len*t;if(Math.abs(d-from)>40)continue;const q:XY=[mix(a[0],b[0],t),mix(a[2],b[2],t)],h=mix(a[1],b[1],t),u=nearestOnPath(q,upper.points);
+        if(u.distance<=band&&u.at[1]-h>=clearance+.6)for(const piece of walls){clipEdgePrisms(piece,q,lower.width/2+lower.shoulder+.8,h,clearance);dropPrismsInPassage(piece,q,lower.width/2+lower.shoulder+.5,h,clearance);}}
+      along+=len;
+    }
   }
+}
+/** After a passage clip, any prism left in the passage's body envelope (a battered wall on a steep bank can
+ * slice into a twisted remnant) is removed: only masonry wholly below the floor or wholly above the headroom stays. */
+function dropPrismsInPassage(piece:StructureSolid,at:XY,half:number,floor:number,clearance:number):void {
+  const P=piece.positions,n=P.length/24;if(!n||piece.indices.length!==n*36)return;
+  const keep:number[]=[];
+  for(let k=0;k<n;k++){let lo=Infinity,hi=-Infinity,near=false;for(let v=0;v<8;v++){const o=(k*8+v)*3;lo=Math.min(lo,P[o+1]!);hi=Math.max(hi,P[o+1]!);if(Math.hypot(P[o]!-at[0],P[o+2]!-at[1])<=half)near=true;}{let cx=0,cz=0;for(let v=0;v<8;v++){cx+=P[(k*8+v)*3]!/8;cz+=P[(k*8+v)*3+2]!/8;}if(Math.hypot(cx-at[0],cz-at[1])<=half+1.5)near=true;}
+    if(near&&lo<floor+clearance-.01&&hi>floor+.1)continue;keep.push(k);}
+  if(keep.length===n)return;
+  const positions:number[]=[],indices:number[]=[];
+  for(const k of keep){const base=positions.length/3;for(let i=0;i<24;i++)positions.push(P[k*24+i]!);for(let i=0;i<36;i++)indices.push(piece.indices[k*36+i]!-k*8+base);}
+  piece.positions=positions;piece.indices=indices;
 }
 function routeFor(cuts:LandCuts,id:string|undefined,logical:string):BedCut|undefined {
   return cuts.beds.find(b=>b.id===id)??cuts.beds.find(b=>b.id===logical);
@@ -175,7 +199,8 @@ function alignSurfaceJoins(cuts:LandCuts,proofs:readonly ComputedCrossing[],base
   for(const row of proofs.filter(p=>p.resolution==='threshold'&&Math.abs(p.heightA-p.heightB)>.01)){
     const a=routeFor(cuts,row.sourceA,row.a),b=routeFor(cuts,row.sourceB,row.b);if(!a||!b||![a,b].every(b=>['road','walk','trail','skate','boardwalk'].includes(b.kind)))continue;
     const ra=range(a,row.at),rb=range(b,row.at),lo=Math.max(ra[0],rb[0]),hi=Math.min(ra[1],rb[1]);if(lo>hi)continue;
-    const preferred=a.kind==='road'?row.heightA:b.kind==='road'?row.heightB:(row.heightA+row.heightB)/2,h=clamp(preferred,lo,hi);
+    // The Year Walk on a shared stretch is its host's footway at the host's solved height: the other route meets it there.
+    const preferred=a.id==='yearWalk'?row.heightA:b.id==='yearWalk'?row.heightB:a.kind==='road'?row.heightA:b.kind==='road'?row.heightB:(row.heightA+row.heightB)/2,h=clamp(preferred,lo,hi);
     for(const bed of [a,b])if(bed.terrainCut){const c=context(bed),hit=nearestOnPath(row.at,bed.points);c.pins.push({xy:row.at,height:h,reason:row.id});c.targets.push({at:row.at,height:h,along:hit.along});}
   }
   const markerPositions=cuts.pads.filter(p=>p.kind==='threshold').map(p=>plan(p.centre));
@@ -202,6 +227,12 @@ export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedC
     if(row.resolution==='threshold'&&wet){
       cuts.diagnostics.push({id:`junction.${row.id}`,severity:'conflict',message:'A land or rail route intersects open water without a separated deck or named boarding interface; no dry pad was placed in the channel',at:row.at,measured:difference});continue;
     }
+    // A bed inside a water body's outline is the crossing proof's diagnostic (a bridge, causeway or
+    // re-route is owed): never a dry pad in the water (T4 request 3).
+    if(row.kind==='waterBody')continue;
+    // Flush path meetings (junction, shared stretch, Year Walk footway) are one walking surface:
+    // no pad, no marker, no mode change (R1-88); approach mouths are opened by clearRouteCorridors.
+    if((row.kind==='junction'||row.kind==='sharedStretch'||row.kind==='footway')&&difference<=LIP)continue;
     if(row.resolution==='threshold'&&difference<=LIP){
       if(!a&&!b)continue; // A confluence is one water surface, never a dry threshold pad.
       const height=(heightA+heightB)/2,pedestrian=[a,b].every(b=>b&&['walk','trail','boardwalk'].includes(b.kind)),width=pedestrian?Math.max(3,a?.width??0,b?.width??0)+1:Math.max(6,a?.width??0,b?.width??0)+2;

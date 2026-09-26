@@ -401,7 +401,8 @@ function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<
   let { height, surface } = sampleBeds(x, z, baseHeight(x, z));
   const ground = height, s = getModel().scale;
   for (const p of cuts.pads) {
-    if (p.underground) continue;
+    // A deck pad (PadCut.deck) is carried by its structure or sits flush on graded beds: never earth.
+    if (p.underground || p.deck) continue;
     const distance = padDistance(p, x, z);
     if (distance > p.blend) continue;
     height = mix(height, p.centre[1], 1 - smooth(distance / Math.max(p.blend, 0.01)));
@@ -410,7 +411,7 @@ function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<
   // A threshold or landing is a mark on the ground or a structure's deck, never
   // an earth mound: its fill is capped, and no pad raises the sea floor or tops the summit.
   if (height > ground) {
-    const fillCap = cuts.pads.some(p => !p.underground && (p.kind === 'threshold' || p.kind === 'landing') && p.centre[1] > ground + PAD_FILL_MAX * s && padDistance(p, x, z) <= p.blend) ? PAD_FILL_MAX * s : Infinity;
+    const fillCap = cuts.pads.some(p => !p.underground && !p.deck && (p.kind === 'threshold' || p.kind === 'landing') && p.centre[1] > ground + PAD_FILL_MAX * s && padDistance(p, x, z) <= p.blend) ? PAD_FILL_MAX * s : Infinity;
     height = Math.min(height, ground + fillCap, Math.max(ground, crownSummitHeight() - 1 * s));
     if (raiseForbidden(x, z)) height = ground;
   }
@@ -532,7 +533,7 @@ export function bandProbeEligibility(id: string, x: number, z: number, cuts?: La
   const notch = linePoint(m.water.find(w => w.id === 'water.river.lower')!.points, x, z);
   if (notch.distance < 50 * m.scale && z > 905 * m.scale && z < 1170 * m.scale) return 'notch-walls';
   if (cuts) {
-    for (const p of cuts.pads) if (!p.underground && padDistance(p, x, z) < p.blend) return 'graded-pad';
+    for (const p of cuts.pads) if (!p.underground && !p.deck && padDistance(p, x, z) < p.blend) return 'graded-pad';
     const prepared = prepareBeds(cuts.beds);
     for (const segment of prepared.bins.get(cellKey(x, z, prepared.cell)) ?? []) {
       const b = segment.bed;

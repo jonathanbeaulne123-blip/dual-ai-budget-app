@@ -105,6 +105,16 @@ export function waterOutlineIntersections(beds: readonly Centreline[], waters: r
   }
   return out;
 }
+/** Plan segments of a route's own centreline within `reach` eu (by plan arc) of `at`, clamped to the route's ends. */
+export function approachMouth(points: readonly Point3[], at: Point2, reach: number): [Point2, Point2][] {
+  const arcs = [0]; for (let i = 1; i < points.length; i++) arcs.push(arcs[i - 1]! + Math.hypot(points[i]![0] - points[i - 1]![0], points[i]![2] - points[i - 1]![2]));
+  const near = closestOnPolyline(points, at[0], at[1]), a = points[near.segment]!, b = points[Math.min(points.length - 1, near.segment + 1)]!;
+  const hitArc = arcs[near.segment]! + Math.hypot(b[0] - a[0], b[2] - a[2]) * near.t, lo = Math.max(0, hitArc - reach), hi = Math.min(arcs.at(-1)!, hitArc + reach);
+  const at2 = (arc: number): Point2 => { let i = 1; while (i < points.length - 1 && arcs[i]! < arc) i++; const p = points[i - 1]!, q = points[i]!, span = arcs[i]! - arcs[i - 1]! || 1, t = Math.max(0, Math.min(1, (arc - arcs[i - 1]!) / span)); return [p[0] + (q[0] - p[0]) * t, p[2] + (q[2] - p[2]) * t]; };
+  const stops = [lo, ...arcs.filter(x => x > lo && x < hi), hi], out: [Point2, Point2][] = [];
+  for (let i = 1; i < stops.length; i++) if (stops[i]! - stops[i - 1]! > 1e-6) out.push([at2(stops[i - 1]!), at2(stops[i]!)]);
+  return out;
+}
 /** Year Walk footway stretches (MANIFEST v1.7 `journey.yearWalk.shares`), in engine units. */
 function footwayStretches(): { host: string; from: Point2; to: Point2 }[] {
   const s = requireScaleFactor(), shares = (HORIZON_MANIFEST.journey.yearWalk as { shares?: { host: string; from: number[]; to: number[] }[] }).shares ?? [];
@@ -148,12 +158,14 @@ export function buildCrossings(cuts: LandCuts, lines: readonly Line[] = [], cont
     const namedStructure = match?.row.structure?.split(' (')[0];
     const relevant = cuts.solids.filter(solid => solid.role !== 'marker' && solidNear(solid, hit.at, 3 * s) && (solid.bedIds.some(id => canonical(id) === hit.a || canonical(id) === hit.b) || namedStructure !== undefined && solid.id.startsWith(namedStructure)));
     const id = ids[hitIndex]!;
-    const pad = cuts.pads.find(p => (p.id === `crossing.${id}` || p.id === `crossing.${match?.index}` || p.kind === 'threshold') && (pointInPolygon(hit.at[0], hit.at[1], padOutline(p)) || transfer && p.id.startsWith('threshold.ferryPiers.') && Math.hypot(p.centre[0] - hit.at[0], p.centre[2] - hit.at[1]) <= 20));
+    const pad = cuts.pads.find(p => (p.id === `crossing.${id}` || (match !== undefined && p.id === registerRowKey(match.index)) || p.kind === 'threshold') && (pointInPolygon(hit.at[0], hit.at[1], padOutline(p)) || transfer && p.id.startsWith('threshold.ferryPiers.') && Math.hypot(p.centre[0] - hit.at[0], p.centre[2] - hit.at[1]) <= 20));
     const marker = pad && cuts.solids.find(solid => solid.role === 'marker' && (solid.id === `${pad.id}.marker` || solidNear(solid, hit.at, 8 * s)));
     // A kerb gap is measured against the actual rail/wall solids through the centre of the crossing.
     const obstructionHeight = foot + .08;
-    const directions = [a, b].filter(line => line.points.length > 1).map(line => { const nearest = closestOnPolyline(line.points, hit.at[0], hit.at[1]), p = line.points[nearest.segment]!, q = line.points[Math.min(line.points.length - 1, nearest.segment + 1)]!, length = Math.hypot(q[0] - p[0], q[2] - p[2]) || 1; return [(q[0] - p[0]) / length, (q[2] - p[2]) / length] as Point2; });
-    const kerbGap = !cuts.solids.some(solid => (solid.role === 'rail' || solid.role === 'wall') && solidNear(solid, hit.at, 8) && boxes.get(solid.id)!.min[1] <= obstructionHeight && boxes.get(solid.id)!.max[1] >= obstructionHeight && directions.some(dir => raySolid([hit.at[0] - dir[0] * 6, obstructionHeight, hit.at[1] - dir[1] * 6], [hit.at[0] + dir[0] * 6, obstructionHeight, hit.at[1] + dir[1] * 6], solid)));
+    // Approach mouths only: each route's own extent within 6 eu of the hit (a T-junction's stem ends at the
+    // hit, so its ray never reaches the through route's far-edge parapet, which must stay over a drop).
+    const mouths = [a, b].filter(line => line.points.length > 1).flatMap(line => approachMouth(line.points, hit.at, 6));
+    const kerbGap = !cuts.solids.some(solid => (solid.role === 'rail' || solid.role === 'wall') && solidNear(solid, hit.at, 8) && boxes.get(solid.id)!.min[1] <= obstructionHeight && boxes.get(solid.id)!.max[1] >= obstructionHeight && mouths.some(([p, q]) => raySolid([p[0], obstructionHeight, p[1]], [q[0], obstructionHeight, q[1]], solid)));
     // Headroom = LOWER SURFACE → UPPER UNDERSIDE (R1-39). The underside is the lowest bottom of the upper route's own
     // deck/roof solids at this point; with none found it is the upper centreline less the thinnest deck STYLE allows.
     let underside = upperHeight - DECK_MIN_THICKNESS_EU; const physical: StructureSolid[] = [];

@@ -185,7 +185,8 @@ export function buildStair(id:string,from:XYZ,to:XYZ,width:number,cuts:LandCuts,
   const limits=[0,...bearings,1];
   for(let i=1;i<limits.length;i++){const gap=(limits[i]!-limits[i-1]!)*run,endGap=i===1||i===limits.length-1;
     if(gap>(endGap?STAIR_BENT:STAIR_CLEAR_MAX)+.01){const m=line((limits[i]!+limits[i-1]!)/2);conflict(cuts,`structures.${id}.clearSpan`,`${id}: a protected lane leaves ${gap.toFixed(1)} eu of flight with no footing${endGap?' at its end':''}; it needs a girder span or a re-route`,plan(m),gap,endGap?STAIR_BENT:STAIR_CLEAR_MAX);}
-    else if(gap>STAIR_BENT*1.5)cuts.diagnostics.push({id:`structures.${id}.girderSpan`,severity:'info',message:`${id}: stringers carry a ${gap.toFixed(1)} eu clear span over a protected lane`,at:plan(line((limits[i]!+limits[i-1]!)/2)),measured:gap,required:STAIR_CLEAR_MAX});
+    // Any interior bay longer than a bent spacing is a stringer girder over a protected lane: always reported.
+    else if(gap>STAIR_BENT+.01)cuts.diagnostics.push({id:`structures.${id}.girderSpan`,severity:'info',message:`${id}: stringers carry a ${gap.toFixed(1)} eu clear span over a protected lane`,at:plan(line((limits[i]!+limits[i-1]!)/2)),measured:gap,required:STAIR_CLEAR_MAX});
   }
   // Masonry cheek walls from the stringer to the ground wherever the flight is low.
   for(let k=0;k<pieces;k++)for(const side of [-1,1]){const t0=k/pieces,t1=(k+1)/pieces;const worst=Math.max(drop(t0,side),drop(t1,side));if(worst>CHEEK_MAX||worst<=GROUND_CONTACT)continue;
