@@ -70,8 +70,8 @@ describe('Horizon manifest v1.8',()=>{
     expect(crossing?.districtNote).toContain('unless pass 1');
     const retired=manifest.routePairNotes.filter(row=>(row as {kind?:string}).kind==='retired register row (v1.8)');
     expect(manifest.routePairNotes.length-retired.length).toBe(2);
-    // v1.8: the eight stale register rows without a plan intersection (R1-11) are retired here with their reason.
-    expect(retired.map(row=>`${row.a} x ${row.b}`).sort()).toEqual(['S1 finish x V01','S2 x V01','S3 x town quay','S3 x walk dune','S4 x spur studio','ZIP x town','plane x everything','walk reach x VG']);
+    // v1.8: the nine stale register rows without a plan intersection (R1-11) are retired here with their reason.
+    expect(retired.map(row=>`${row.a} x ${row.b}`).sort()).toEqual(['S1 finish x V01','S2 x V01','S3 x V01','S3 x town quay','S3 x walk dune','S4 x spur studio','ZIP x town','plane x everything','walk reach x VG']);
     expect(manifest.routePairNotes.find(row=>row.a==='DEEP_RUN'&&row.b==='ORE')).toMatchObject({
       kind:'shared-plan-point',sharedPlanPoints:[[1300,420]],
     });

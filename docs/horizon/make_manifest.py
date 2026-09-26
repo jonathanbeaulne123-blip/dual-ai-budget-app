@@ -676,7 +676,6 @@ REPOINT_V18 = {
  21: ([1587, 677], "the Deep run passes under the Prow cliff drive 23 m north-east of the v1.7 point"),
  23: ([1611, 710], "the Deep run passes under the Prow walk 11 m east of the v1.7 point"),
  24: ([1009, 1388], "the dune culvert: V01 over S4 13 m south of the v1.7 point"),
- 26: ([1350, 1345], "S3 meets V01 at grade at the river mouth (S3 never reaches [1480,1050])"),
  27: ([1160.8, 940.1], "RESERVED R-A7: S1 meets the dam portage stair (was the lake-rim walk) 4.8 eu apart; physically separated until Jonathan rules"),
  38: ([1374, 615], "the Crown walk crosses over the Ore Line 48 m north of the v1.7 point (two more crossings are listed below)"),
 }
@@ -687,6 +686,7 @@ RETIRE_V18 = {
  14: "S2 is a lane of the Bight Bridge deck (row 13); it passes 17.9 m from the [660,1170] dismount, which does not exist (T2 D-3: S2 cannot descend from the Wash to the deck at 18 %; Jonathan decides)",
  20: "S3 runs beside the town quay, never across it (T0 request 4: S3 at [1433,1298] should come down ≤ 3.5 eu)",
  25: "\"none\": S3 and the dune walk do not cross",
+ 26: "S3 never reaches [1480,1050]; it meets V01 only on the river-mouth bridge decks ([1350,1345], [1322,1372]), carried below as rows accepted from the bake: a threshold there needs a widened, guarded deck (a register pad would stand in the river)",
  27: None,
  29: "an area rule, not an intersection: the zip line passes over the town's roofs with ≥ 12 eu clearance (checked as cable.ZIP.roofs)",
  40: "S4 starts at [1000,520]; it never meets the Studio spur at [974,540] (the spur meets VG there, listed below)",

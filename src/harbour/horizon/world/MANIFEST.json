@@ -4357,21 +4357,6 @@
    "kind": "crossing"
   },
   {
-   "a": "S3",
-   "b": "V01",
-   "at": [
-    1350,
-    1345
-   ],
-   "resolution": "threshold",
-   "note": "the upper-street spur end is the board pick-up; S3 meets V01 at grade at the river mouth (S3 never reaches [1480,1050])",
-   "movedFrom": [
-    1480,
-    1050
-   ],
-   "kind": "crossing"
-  },
-  {
    "a": "S1",
    "b": "damPortage",
    "at": [
@@ -5423,6 +5408,18 @@
   },
   {
    "a": "S3",
+   "b": "V01",
+   "at": [
+    1350,
+    1345
+   ],
+   "resolution": "threshold",
+   "kind": "crossing",
+   "source": "bake v1.8",
+   "note": ""
+  },
+  {
+   "a": "S3",
    "b": "walk square",
    "at": [
     1480,
@@ -5991,6 +5988,18 @@
    "at": [
     1321.9,
     1372.3
+   ],
+   "resolution": "threshold",
+   "kind": "crossing",
+   "source": "bake v1.8",
+   "note": ""
+  },
+  {
+   "a": "V01",
+   "b": "S3",
+   "at": [
+    1350,
+    1345
    ],
    "resolution": "threshold",
    "kind": "crossing",
@@ -10686,6 +10695,23 @@
     "at": "none",
     "resolution": "over",
     "note": "S3's boardwalk runs the dune crest; the dune walk runs the beach foot 30 m south; they never meet"
+   }
+  },
+  {
+   "a": "S3",
+   "b": "V01",
+   "kind": "retired register row (v1.8)",
+   "verification": "S3 never reaches [1480,1050]; it meets V01 only on the river-mouth bridge decks ([1350,1345], [1322,1372]), carried below as rows accepted from the bake: a threshold there needs a widened, guarded deck (a register pad would stand in the river)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "S3",
+    "b": "V01",
+    "at": [
+     1480,
+     1050
+    ],
+    "resolution": "threshold",
+    "note": "the upper-street spur end is the board pick-up"
    }
   },
   {
