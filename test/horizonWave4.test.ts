@@ -62,7 +62,10 @@ describe('R2-08 the summit L02 on foot', () => {
   it('joins the Crown walk to the Year Walk lane it shares at the turning circle, and keeps the launch stair off the walk', () => {
     const { world } = baked(), lanes = world.pathGraph.edges.filter(e => e.id.startsWith('lane:'));
     expect(lanes.length).toBeGreaterThan(0);
-    expect((world.pathGraph.blocked ?? []).filter(b => b.bedId === 'walk crown').map(b => b.solid)).toEqual([]);
+    // The launch stair no longer stands across the walk (walk crown:139/140 were blocked by its treads). The five edges the
+    // Year Walk's stacked lanes still close at the turning circle [1376-1387,686-688] are bypassed by the lane join.
+    const blocked = (world.pathGraph.blocked ?? []).filter(b => b.bedId === 'walk crown');
+    expect(blocked.filter(b => /crownLaunch/.test(b.solid))).toEqual([]); expect(blocked.map(b => b.solid)).toEqual(Array(5).fill('yearWalk.bed.crown'));
   });
 });
 

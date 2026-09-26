@@ -45,6 +45,8 @@ const planLength=(path:readonly XYZ[])=>path.slice(1).reduce((n,p,i)=>n+distance
 /** The route's own graded points within ±length/2 of the nearest station to `centre`, ends interpolated. */
 /** R2-03: eu of floor apron past each road-tunnel portal (the mouth mask reaches 3 eu outside the face). */
 export const PORTAL_APRON=3.5;
+/** R2-03: eu each tunnel floor piece laps its neighbours (no wedge slit at a bend). */
+export const FLOOR_LAP=.5;
 function routeStretch(route:BedCut,centre:XY,length:number,height?:number):XYZ[] {
   const mid=nearestOnPath(centre,route.points).along,total=planLength(route.points),from=clamp(mid-length/2,0,total),to=clamp(mid+length/2,0,total);
   const out:XYZ[]=[along(route.points,from).p];let run=0;
@@ -152,7 +154,10 @@ export function tunnel(id:string,points:XYZ[],width:number,clear:number,cuts:Lan
   const sources:Record<string,string>={oreTunnel:'ORE',oreSiding:'ORE',seaPassage:'DEEP_RUN',prowTunnel:'V01',shoulderTunnel:'V02',duneCulvert:'S4'},bedIds=options.bedIds??[sources[id]??id],base=options.base;
   const floor=solid(`${id}.floor`,'tunnel','stone','floor',bedIds,district),walls=solid(`${id}.walls`,'tunnel','rock','wall',bedIds,district),roof=solid(`${id}.roof`,'tunnel','rock','roof',bedIds,district),footings=solid(`${id}.footings`,'tunnelFooting','stone','support',bedIds,district);
   for(let i=1;i<points.length;i++){
-    const a=points[i-1]!,b=points[i]!;slab(floor,a,b,width,.6);slab(roof,a,b,width+1.2,.6,0,clear+.6);
+    const a=points[i-1]!,b=points[i]!;slab(roof,a,b,width+1.2,.6,0,clear+.6);
+    // R2-03: each floor piece overlaps its neighbours by FLOOR_LAP along the route: at a bend, abutting pieces left a wedge
+    // slit on the outer side (0.1 eu at the Year Walk footway, 5.9 eu off the Shoulder Tunnel's axis, where the body fell).
+    {const l=distance(plan(a),plan(b))||1,k=Math.min(FLOOR_LAP,l)/l,ex=(p:XYZ,q:XYZ):XYZ=>[p[0]+(p[0]-q[0])*k,p[1]+(p[1]-q[1])*k,p[2]+(p[2]-q[2])*k];slab(floor,i>1?ex(a,b):a,i<points.length-1?ex(b,a):b,width,.6);}
     for(const side of [-1,1]){
       slab(walls,a,b,.6,clear+.6,side*(width/2+.3),clear);
       // Below the floor slab the wall continues as a footing strip to the ground wherever the ground falls away.
@@ -285,7 +290,9 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
     // R2-03: a floor apron carries the road and its footway across the portal mouth (3 eu outside the face, where the
     // mouth mask hides the terrain), so no strip of the mouth is left without a surface.
     if(id!=='duneCulvert'){const ext=routeStretch(b,xy,length+2*PORTAL_APRON),apron=solid(`${id}.apron`,'tunnel','stone','floor',[route],districtAt(...xy));
-      const e0=ext[0]!,e1=ext.at(-1)!;if(distance(plan(e0),plan(points[0]!))>.5)slab(apron,e0,points[0]!,width,.6);if(distance(plan(e1),plan(points.at(-1)!))>.5)slab(apron,points.at(-1)!,e1,width,.6);
+      const e0=ext[0]!,e1=ext.at(-1)!,lap=(p:XYZ,q:XYZ):XYZ=>{const l=distance(plan(p),plan(q))||1,k=Math.min(FLOOR_LAP,l)/l;return [p[0]+(p[0]-q[0])*k,p[1]+(p[1]-q[1])*k,p[2]+(p[2]-q[2])*k];};
+      // Each apron laps FLOOR_LAP into the tube (abutting pieces left a slit at the footway, 5.9 eu off the axis).
+      if(distance(plan(e0),plan(points[0]!))>.5)slab(apron,e0,lap(points[0]!,e0),width,.6);if(distance(plan(e1),plan(points.at(-1)!))>.5)slab(apron,lap(points.at(-1)!,e1),e1,width,.6);
       for(const side of [-1,1])for(const [a0,a1] of [[e0,points[0]!],[points.at(-1)!,e1]] as const)if(distance(plan(a0),plan(a1))>.5)wallToGround(apron,[a0[0],a0[1]-.6,a0[2]],[a1[0],a1[1]-.6,a1[2]],.6,side*(width/2-.3),base,.3);
       if(apron.indices.length)cuts.solids.push(apron);}
     const first=points[0]!,last=points.at(-1)!,d0=along(points,0).dir,d1=along(points,planLength(points)).dir;
