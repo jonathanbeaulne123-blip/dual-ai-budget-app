@@ -1,8 +1,8 @@
 {
  "title": "The Horizon \u2014 MANIFEST",
- "version": "1.6",
- "date": "2026-09-25",
- "status": "Design numbers for implementation. Control points are centreline intent to be solved into splines by the land pass; not navigation or collision data until baked into WorldDefinition v3.",
+ "version": "1.7",
+ "date": "2026-09-26",
+ "status": "Design numbers for implementation. Control points are centreline intent to be solved into splines by the land pass; not navigation or collision data until baked into WorldDefinition v3. v1.7: paces and surface grip (RIDE D42) \u2014 data only, no geometry change.",
  "units": {
   "x": "east, concept metres",
   "y": "south, concept metres (engine z)",
@@ -1176,60 +1176,111 @@
  "surfaces": {
   "paved": {
    "pace": "fast",
-   "footstep": "stone"
+   "footstep": "stone",
+   "grip": 1.0
   },
   "packedEarth": {
    "pace": "fast",
-   "footstep": "earth"
+   "footstep": "earth",
+   "grip": 0.95
   },
   "apron": {
    "pace": "flow",
    "footstep": "concrete",
-   "note": "the dam's spillway apron"
+   "note": "the dam's spillway apron",
+   "grip": 1.0
   },
   "bankedTurf": {
    "pace": "flow",
-   "footstep": "grass"
+   "footstep": "grass",
+   "grip": 1.1
   },
   "boardwalk": {
    "pace": "flow",
-   "footstep": "plank"
+   "footstep": "plank",
+   "grip": 0.9
   },
   "cobble": {
    "pace": "slow",
-   "footstep": "cobble"
+   "footstep": "cobble",
+   "grip": 0.7
   },
   "gravel": {
    "pace": "slow",
-   "footstep": "gravel"
+   "footstep": "gravel",
+   "grip": 0.6
   },
   "sand": {
    "pace": "slow",
    "footstep": "sand",
-   "prints": true
+   "prints": true,
+   "grip": 0.5
   },
   "plaza": {
    "pace": "threshold",
-   "footstep": "stone"
+   "footstep": "stone",
+   "grip": 1.0
   },
   "duff": {
    "pace": "n/a",
-   "footstep": "needles"
+   "footstep": "needles",
+   "grip": null
   },
   "ochre": {
    "pace": "fast",
-   "footstep": "dust"
+   "footstep": "dust",
+   "grip": 0.85
   },
   "snow": {
    "pace": "slow",
    "footstep": "snow",
-   "season": "Dec\u2013Mar"
+   "season": "Dec\u2013Mar",
+   "grip": 0.4
   },
   "ice": {
    "pace": "skate",
    "footstep": "ice",
    "season": "Jan\u2013Feb",
-   "where": "stillwater"
+   "where": "stillwater",
+   "grip": 0.2
+  },
+  "stone": {
+   "pace": "threshold",
+   "footstep": "stone",
+   "grip": 1.0,
+   "note": "threshold pads, station slabs and the Tideline park"
+  }
+ },
+ "paces": {
+  "fast": {
+   "roll": 0.12,
+   "pushGrip": 1.0,
+   "meaning": "open line"
+  },
+  "flow": {
+   "roll": 0.25,
+   "pushGrip": 0.9,
+   "meaning": "banked or boarded ground that wants a carve"
+  },
+  "slow": {
+   "roll": 0.6,
+   "pushGrip": 0.8,
+   "meaning": "a neighbourhood, a chicane"
+  },
+  "threshold": {
+   "roll": 1.8,
+   "pushGrip": 0.5,
+   "meaning": "every pad and the square: stops a board arriving under ~4.6 m/s in a pad's 6 m"
+  },
+  "skate": {
+   "roll": 0.03,
+   "pushGrip": null,
+   "meaning": "pass 4's ice; the skates' pace"
+  },
+  "n/a": {
+   "roll": null,
+   "pushGrip": null,
+   "note": "not a bed for this mover; the kernel's offbed class applies (roll 6.0, pushGrip 0)"
   }
  },
  "roads": {
@@ -1907,7 +1958,7 @@
     60,
     32
    ],
-   "note": "Skate v2 park, travel assist on; no race"
+   "note": "Skate v2 park; forgiving landings only (RIDE D40); no race"
   },
   "rules": [
    "no required jumps",

@@ -6,6 +6,8 @@ import {sampleTerrain, terrainNormal, terrainTriangleVisible} from '../land/terr
 export const HORIZON_WALKABLE_DEGREES = 40;
 export const HORIZON_BODY_HEIGHT = 1.25;
 export const HORIZON_STEP_HEIGHT = .48;
+/** One gravity for the walker, the ground kernel and the wings (RIDE D40). */
+export const HORIZON_G = 12;
 type Triangle = {a:XYZ;b:XYZ;c:XYZ;normal:XYZ;solid:StructureSolid};
 export type HorizonSurface = {id:string;y:number;nx:number;ny:number;nz:number;material:string;slope:number};
 const CELL=24;
