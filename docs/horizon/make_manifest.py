@@ -1426,6 +1426,102 @@ for i, row in enumerate(m["crossings"]):
 m["structures"]["inletFootbridge"]["deck_h"] = 55
 m["structures"]["inletFootbridge"]["note"] = "v1.9 (integrator 2): deck 55 over the inlet pool at the lake level 50 (clear 4.4, a river's 4); was 52 over a pool at 58-60"
 
+# ---------------------------------------------------------------------------
+# v2.0 — Stage A Wave 5, design-lead data after Jonathan's rulings of 27 September 2026 (D-A1…D-A8, group B and C
+# "recommended on all"). Every delta below is listed in docs/horizon/README.md → "v2.0 (Wave 5, Jonathan's rulings
+# 2026-09-27)" with its old value; the old values are also kept beside the new ones (`v1_9_*`). Ids never change.
+# ---------------------------------------------------------------------------
+m["version"] = "2.0"
+m["date"] = "2026-09-27"
+RULED = "Jonathan 2026-09-27"
+def row_find(a, b, where=None, tol=.6):
+    hits = [i for i, r in enumerate(m["crossings"]) if r["a"] == a and r["b"] == b and (where is None or (isinstance(r["at"], list) and abs(r["at"][0] - where[0]) < tol and abs(r["at"][1] - where[1]) < tol))]
+    assert len(hits) == 1, (a, b, where, hits)
+    return hits[0]
+def row_edit(a, b, where=None, **changes):
+    i = row_find(a, b, where); row = dict(m["crossings"][i])
+    for k, v in changes.items():
+        if k in ("resolution", "at", "note", "kind", "structure") and k in row and row[k] != v: row.setdefault("v1_9_" + k, row[k])
+        if v is None: row.pop(k, None)
+        else: row[k] = v
+    m["crossings"][i] = row
+    return row
+RETIRED_V20 = []
+def row_retire(a, b, where, why):
+    i = row_find(a, b, where); row = m["crossings"].pop(i)
+    RETIRED_V20.append(row)
+    m["routePairNotes"].append({"a": row["a"], "b": row["b"], "kind": "retired register row (v2.0)", "verification": why, "sharedPlanPoints": [], "retiredRow": dict(row)})
+
+# 1. D-A1 · The Bight Bridge (Jonathan: "lengthen it … upgrade it and make it useful and cool; agreed on upgrading
+#    skateboard paths around it"): Option 1. The deck is the V01 axis between its control points [460,1030] and
+#    [660,1170] (244.1 m; span 245 with the abutment seats), a timber viaduct with one 36 m steel through-arch over the
+#    ferry channel, abutments on both headlands down to the ground (the headlands and V01's points do not move). S2 becomes
+#    a continuous skate ribbon carried on the deck: the lagoon-side lane from the west abutment, one flyover over the road
+#    under the arch crown (the original register intent, S2 over V01 at the bridge's middle), the sea-side lane to the
+#    east abutment, and a banked descent off the east abutment onto its old line; a ramp from the Wash at the west.
+#    Axis frame: s = metres from [460,1030] toward [660,1170]; o = metres off the axis, + toward the Bight (lagoon side).
+BB_A, BB_B = [460, 1030], [660, 1170]
+BB_L = math.dist(BB_A, BB_B); BB_D = [(BB_B[0] - BB_A[0]) / BB_L, (BB_B[1] - BB_A[1]) / BB_L]; BB_N = [BB_D[1], -BB_D[0]]
+def bb(s, o=0.0): return [round(BB_A[0] + BB_D[0] * s + BB_N[0] * o, 1), round(BB_A[1] + BB_D[1] * s + BB_N[1] * o, 1)]
+S2_LAGOON_O, S2_SEA_O, S2_CROWN_H, BB_DECK_H = 11.2, -7.5, 17.6, 12
+def s2_flyover_o(s): return S2_LAGOON_O + (S2_SEA_O - S2_LAGOON_O) * (s - 100) / 32
+bbr = m["structures"]["bightBridge"]
+m["structures"]["bightBridge"] = {
+ "xy": bbr["xy"], "kind": "bridge", "deck": "V01, the Year Walk's lagoon-side footways, and S2 as a separated skate ribbon (lagoon lane, flyover, sea lane), every deck edge railed",
+ "span_m": 245, "h_deck": BB_DECK_H, "clear_m": bbr["clear_m"], "under": bbr["under"],
+ "ends": {"west": BB_A, "east": BB_B, "axis_m": round(BB_L, 1), "abutments": "both on the headlands and down to the ground: west a 14 × 24 m embankment from the Flats spit tip [460,1020] to the deck end (it carries S2's lagoon lane and its bank), east on the shore; no bed raises the seabed under the deck"},
+ "section": {"from_axis_m": [-10.0, 13.7], "width_m": 23.7, "lanes": {"S2 sea lane": [S2_SEA_O - 2, S2_SEA_O + 2], "V01": [-4, 4], "V01 shoulders": 1, "Year Walk footways (centres)": [5.2, 7.4], "S2 lagoon lane": [S2_LAGOON_O - 2, S2_LAGOON_O + 2]}, "rails": "a rail on both deck edges the whole length, and a kerb rail between each S2 lane and its neighbour", "note": "offsets from the V01 axis, + toward the Bight; the deck widens from 17 m (v1.9) to carry S2 as a lane of its own"},
+ "opening": {"at_s": [98, 134], "centre_s": 116, "centre": bb(116), "width_m": 36, "kind": "steel-arch", "clear_eu": 11.4, "clearWidth_m": 34, "arch": "a steel through-arch above the deck (rise ≥ 10 over the deck, crown ≥ 22), its ribs on the deck edges and hangers to the deck", "why": "36 m is past the 30 eu masonry-arch limit (STYLE §1.6.3), so the arch is steel; the opening covers the ferry lane (s 122, in at 46°, out at 58°) and Ring Run gate 5 (s 111); a hull of water_routes.FERRY.beam_m 8 at 46° needs 27.6 m along the axis (proposals/bight-bridge.md)"},
+ "bents": {"west": {"count": 8, "bay_m": 10.9, "from_s": 0, "to_s": 98}, "east": {"count": 9, "bay_m": 11.0, "from_s": 134, "to_s": 244}, "arch piers": [98, 134], "note": "timber paired bents, every bay under the 12 eu timber limit; no bent in the opening or in S2's east descent"},
+ "lookout": {"id": "bightBridge.lookout", "s": 116, "xy": bb(116, 12.25), "deck_h": BB_DECK_H, "size_m": [24, 7.5], "side": "lagoon", "from_s": 104, "to_s": 128, "reach": "off the Year Walk's lagoon footway at deck level, under the arch, railed on its three open sides", "note": "a bay of the deck (a structure), not a pad: no register pad stands on the deck (D-A1). Under S2's flyover at its inner corner (5.6 above)"},
+ "s2Flyover": {"id": "bightBridge.s2Flyover", "from": bb(100, S2_LAGOON_O), "to": bb(132, S2_SEA_O), "h": S2_CROWN_H, "overRoad": bb(100 + 32 * S2_LAGOON_O / (S2_LAGOON_O - S2_SEA_O)), "clear_eu": round(S2_CROWN_H - BB_DECK_H - .6, 1), "carried": "hung from the arch between its ribs", "note": "S2 crosses the road and the Year Walk footways once, over them, at the arch crown (register S2 × V01 'over'); ramps of 8 % up the lagoon lane (s 30 → 100) and down the sea lane (s 132 → 202)"},
+ "v1_9": {"span_m": bbr["span_m"], "deck": bbr["deck"], "h_deck": bbr["h_deck"]},
+ "decided": "D-A1 option 1 (" + RULED + ")",
+}
+m["water_routes"]["FERRY"]["beam_m"] = 8
+m["water_routes"]["FERRY"]["beamNote"] = "v2.0 (D-A1): each hull's beam, authored so the Bight Bridge's navigable opening is provable (along-axis opening needed = beam / sin(angle) + deck width / tan(angle); 27.6 m at the inbound 46°, the steel arch gives 34 m clear)"
+S2 = m["skate"]["S2"]
+S2["v1_9_pts"] = [list(p) for p in S2["pts"]]
+S2_WEST_RAMP = [[485, 800], [510, 900], [480, 985]]
+S2_EAST = [[672, 1192], [690, 1210], [712, 1230]]
+S2_DECK = [bb(0, S2_LAGOON_O), bb(30, S2_LAGOON_O), bb(100, S2_LAGOON_O), bb(116, s2_flyover_o(116)), bb(132, S2_SEA_O), bb(202, S2_SEA_O), bb(244, S2_SEA_O)]
+i0 = S2["pts"].index([485, 800]); i1 = S2["pts"].index([750, 1265])
+S2["pts"] = S2["pts"][:i0] + S2_WEST_RAMP + S2_DECK + S2_EAST + S2["pts"][i1:]
+S2["length_m"] = round(length(S2["pts"]))
+S2["levels"] = [
+ {"xy": [485, 800], "h": 23.7, "why": "the Wash rim: the top of the west ramp"},
+ {"xy": S2_DECK[0], "h": BB_DECK_H, "why": "the west abutment's deck end"},
+ {"xy": S2_DECK[1], "h": BB_DECK_H, "why": "the lagoon lane starts its 8 % climb to the flyover"},
+ {"xy": S2_DECK[2], "h": S2_CROWN_H, "why": "the flyover's west end"},
+ {"xy": S2_DECK[4], "h": S2_CROWN_H, "why": "the flyover's east end"},
+ {"xy": S2_DECK[5], "h": BB_DECK_H, "why": "back on the sea lane at deck height"},
+ {"xy": S2_DECK[6], "h": BB_DECK_H, "why": "the east abutment's deck end: the banked descent starts"},
+ {"xy": [712, 1230], "h": 6.5, "why": "the foot of the banked descent on the sea-side shelf"},
+]
+S2["westRamp"] = {"from": [485, 800], "from_h": 23.7, "to": S2_DECK[0], "to_h": BB_DECK_H, "grade_pct": round((23.7 - BB_DECK_H) / length([[485, 800]] + S2_WEST_RAMP[1:] + [S2_DECK[0]]) * 100, 1),
+ "carried": "one even grade from the Wash down to the deck: a timber trestle over the Wash mouth (x 495-515, z 830-925, up to 18.6 over the dry bed, under the Bight pier stair) and a cutting of at most 4 eu through the spit knoll [480-492, 950-1010]",
+ "why": "D-A1: S2 could not descend from the Wash to the deck at 18 % (it dipped to 11.9 in the Wash mouth and climbed 18.5 again, v1.8 open item); within profiles.skateMain (grade_max_pct 18, typical 8-14)"}
+S2["deckLanes"] = {"structure": "bightBridge", "lagoon": {"from_s": 0, "to_s": 100, "offset_m": S2_LAGOON_O}, "flyover": "bightBridge.s2Flyover (s 100 → 132)", "sea": {"from_s": 132, "to_s": 244, "offset_m": S2_SEA_O}, "note": "offsets from the V01 axis (+ toward the Bight); S2 never rides the road's shoulder and never crosses it at grade"}
+S2["eastDescent"] = {"kind": "bankedDescent", "from": S2_DECK[6], "from_h": BB_DECK_H, "to": [712, 1230], "to_h": 6.5, "via": S2_EAST[:2], "bank_deg": [12, 20], "radius_m": 45, "grade_pct": round((BB_DECK_H - 6.5) / length([S2_DECK[6]] + S2_EAST) * 100, 1),
+ "why": "D-A1: S2 left the deck at [606.6,1144.1] and came down over the lagoon with nothing under it (the island's worst drop, 24.0 eu); it now stays on the deck to the east abutment and carves a right-hand banked descent down the headland's sea-side shelf onto its old line to [750,1265]",
+ "bank": "the outside of the curve is the east abutment's wing wall battered to a bank (spot S2.eastAbutmentBank)"}
+S2["spots"] = [
+ {"id": "S2.archCrown", "kind": "rail", "bed": "S2", "on": "bightBridge.s2Flyover", "xy": bb(116, s2_flyover_o(116)), "h": S2_CROWN_H, "length_m": 24, "groundLine": "the flyover deck beside the rail: roll over the crown without touching it", "requiredJump": False, "note": "the flyover's crown parapet rail under the steel arch, 5.6 above the road deck"},
+ {"id": "S2.westAbutmentBank", "kind": "bank lip", "bed": "S2", "on": "bightBridge west abutment", "xy": bb(-7, S2_LAGOON_O + 2), "h": BB_DECK_H, "length_m": 14, "groundLine": "the lagoon lane itself (the bank is its outer wing wall, battered to 30°)", "requiredJump": False},
+ {"id": "S2.eastAbutmentBank", "kind": "bank lip", "bed": "S2", "on": "bightBridge east abutment", "xy": [664, 1184], "h": 11, "length_m": 20, "groundLine": "the descent's inside line", "requiredJump": False},
+ {"id": "S2.deckRail", "kind": "rail", "bed": "S2", "on": "bightBridge deck edge", "xy": bb(60, S2_LAGOON_O + 2.3), "h": BB_DECK_H, "length_m": 244, "groundLine": "the lane beside the rail", "requiredJump": False, "note": "the deck-edge rail, full length on the lagoon side to the flyover and on the sea side after it"},
+]
+S2["spotsRule"] = "Pass 02 M1 'Spots': rails, kerbs, walls, bollards, stairs and bank lips from pass 1's beds only; kind is one of those words; every spot names its groundLine and requiredJump is always false"
+for seg in S2["segments"]:
+    if seg["name"] == "Bight Bridge": seg["v1_9_spot"] = seg["spot"]; seg["spot"] = "S2.archCrown, S2.westAbutmentBank, S2.eastAbutmentBank, S2.deckRail (skate.S2.spots)"
+row_edit("V01+S2", "Bight mouth", reserved=None, decided="D-A1 (" + RULED + ")", note="245 m viaduct with one 36 m steel through-arch (s 98-134); abutments on both headlands to the ground")
+row_edit("FERRY", "bightBridge", reserved=None, decided="D-A1 (" + RULED + ")", note="twice per lap, through the steel-arch opening (s 98-134, 34 m × 11.4 clear; beam 8)")
+row_edit("S2", "V01", note="v2.0 (D-A1): S2 rides the deck's lagoon lane from the west abutment, crosses over V01 and the Year Walk footways once on bightBridge.s2Flyover at the arch crown (17.6, 5.6 above the deck), then the sea lane to the east abutment and a banked descent onto its line; never the shoulder, never at grade")
+m["crossings"].append({"a": "S2", "b": "V01", "at": bb(100 + 32 * S2_LAGOON_O / (S2_LAGOON_O - S2_SEA_O)), "resolution": "over", "kind": "crossing", "structure": "bightBridge.s2Flyover", "source": "design lead v2.0", "note": "D-A1: 5.6 over the road deck at the arch crown (road clear 5 + 0.6)"})
+row_edit("S2", "yearWalk", [553.9, 1095], at=bb(100 + 32 * (S2_LAGOON_O - 6.3) / (S2_LAGOON_O - S2_SEA_O), 6.3), resolution="over", structure="bightBridge.s2Flyover", note="v2.0 (D-A1): S2's flyover passes over the Year Walk's lagoon footways (was a crossing on the deck)")
+row_retire("S2", "yearWalk", [468.2, 1026.4], "v2.0 (D-A1): S2 comes onto the deck's lagoon lane outboard of the Year Walk footways (+11.2 against +5.2/+7.4); they run side by side and never meet")
+row_edit("S2", "FERRY", [560, 1100], note="v2.0 (D-A1): on the flyover under the arch crown, through the navigable opening")
+
 
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
