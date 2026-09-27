@@ -258,7 +258,8 @@ it('wires the ride rule into the runtime: boarding asks the gate, the held offer
   const { readFileSync } = await import('node:fs');
   const runtime = readFileSync('src/harbour/horizon/runtime/index.ts', 'utf8');
   expect(runtime).toMatch(/if\(!riding&&offer\.to!=='feet'&&\(rideGateOpen\(\),!rideGate\.request\(offer\)\)\)\{options\.onStatus\?\.\(RIDE_WAITS_STATUS\);return false;\}/);
-  expect(runtime).toMatch(/if\(rideGate\.pending\(\)\)\{rideGateOpen\(\);const go=rideGate\.poll\(offer\);if\(go&&acceptOffer\(go\)\)/);
+  // The held offer is looked up among the registry's offers at the body (not the offer row, which a Walk tween hides).
+  expect(runtime).toMatch(/if\(held&&mode==='walk'\)\{rideGateOpen\(\);const here=registry\.offers\(body\)\.find\(o=>o\.id===held\.id\)\?\?null,go=rideGate\.poll\(here\);if\(go&&acceptOffer\(go\)\)/);
   expect(runtime).toMatch(/attachMover\(controller:ModeController,offer:ThresholdOffer\)\{.*if\(!rideGateOpen\(true\)\)return false;if\(!registry\.attach/);
   expect(runtime).toMatch(/ride:rideGate\.stats\(\)/);
 });

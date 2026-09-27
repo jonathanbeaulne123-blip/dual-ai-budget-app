@@ -341,7 +341,10 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function offersAndAccept():boolean{
     const offer=mode==='walk'&&(!transition||transition.live)?offerToShow(registry.offers(body),registry.canAccept):null;
     if(!sameOffer(offer,lastOffer)){lastOffer=offer;options.onOffer?.(offer);}
-    if(rideGate.pending()){rideGateOpen();const go=rideGate.poll(offer);if(go&&acceptOffer(go)){acceptRequested=false;return false;}}
+    // A held boarding stays held while the rider is still at its threshold (a Walk camera tween or a paused frame hides the offer
+    // row, not the offer); it boards once every chunk is in, and is dropped only when its offer is no longer there.
+    const held=rideGate.pending();
+    if(held&&mode==='walk'){rideGateOpen();const here=registry.offers(body).find(o=>o.id===held.id)??null,go=rideGate.poll(here);if(go&&acceptOffer(go)){acceptRequested=false;return false;}}
     if(!acceptRequested)return false;acceptRequested=false;
     if(offer&&acceptOffer(offer))return false;
     if(registry.active())return true;
