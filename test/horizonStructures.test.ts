@@ -274,4 +274,12 @@ describe('Horizon Wave 7 structures (W7-S)',()=>{
     expect(prisms(find(cuts,'apronBridge.rails')!).filter(p=>Math.hypot(p.x-foot[0],p.z-foot[2])<1.6)).toEqual([]);
     expect(prisms(find(cuts,'apronBridge.rails')!).length).toBeGreaterThan(20);
   },120000);
+  it('gives S1 a quay finish a powerslide fits: 14 eu paved on grade, no rail within 6.5 eu of the line, 26 eu of run-out (item 7)',()=>{
+    const cuts=cutsOnce(),s1=cuts.beds.find(b=>b.id==='S1')!,end=s1.points.at(-1)!,quay=cuts.beds.find(b=>b.id==='landingQuay')!;
+    expect(quay.width).toBe(14);expect(quay.points.at(-1)![2]-end[2]).toBeGreaterThanOrEqual(M.profiles.skateMain.runout_m);
+    expect(cuts.solids.some(s=>s.id==='landingQuay.supports')).toBe(false);
+    const rails=cuts.solids.find(s=>s.id==='landingQuay.rails');const near=rails?prisms(rails).filter(p=>p.z>1328&&p.z<1356&&Math.abs(p.x-end[0])<6.5):[];
+    expect(near).toEqual([]);
+    expect(cuts.pads.find(p=>p.id==='landingQuay.finish')?.centre[1]).toBe(3);
+  },120000);
 });

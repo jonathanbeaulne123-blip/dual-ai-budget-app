@@ -559,6 +559,29 @@ function dock(id:string,p:XY,height0:number,cuts:LandCuts,base:HeightQuery,width
   slab(deck,a,b,width,.35);for(let offset=-length/2;offset<=length/2+.01;offset+=3)for(const side of [-1,1]){const xy:XY=[p[0]!+side*(width/2-.2),p[1]!+offset];box(piles,xy,height-.2,[.3,.3],Math.min(-2,base(...xy))-FOOTING_SINK);}
   postedRail(rails,[a,b],width/2);postedRail(rails,[a,b],-width/2);cuts.solids.push(deck,piles,rails);const bcut=bed(id,'boardwalk',[a,b],false);bcut.width=width;bcut.structureIds=[id];cuts.beds.push(bcut);
 }
+/** Wave 7 (A1 item 7, RECONCILE regression 3): S1's quay finish was an 8 m jetty on piles at 3 with rails down both
+ * sides, set into the islet (the ground rises to 4.5–5.5 past z 1338): a railed channel where every 50–60° powerslide
+ * met a rail within 0.8 s, ending in a bank. The islet is dry (the Reach channels run 35–50 eu away), so the finish is a
+ * paved quay on grade: QUAY_FINISH.width wide (profiles.skateMain surface 3–4 m plus a slide either side), level at the
+ * authored 3 from where S1 reaches it (z 1328) to 6 eu past the finish, then an uphill run-out on grade that brings the total run-out to
+ * profiles.skateMain.runout_m (25). A terrain pad grades the level part (never a jetty over dry land); the run-out's slab
+ * follows the ground. Rails stand only where an edge drops more than body height (none on the islet today), with gaps
+ * where S1 comes on. */
+export const QUAY_FINISH={width:14,from:1328,level:1336,to:1356} as const;
+function landingQuayFinish(cuts:LandCuts,base:HeightQuery):void {
+  const xy=M.structures.landingQuay.xy as unknown as XY,h=3,{width,from,level,to}=QUAY_FINISH,x=xy[0],district=districtAt(...xy);
+  const runH=Math.max(h,Math.min(h+(to-level)*.12,base(x,to)));
+  addFlatPad(cuts,'landingQuay.finish','landing',[x,(from+level)/2],h,[width,level-from]);
+  const deck=solid('landingQuay.deck','quay','paved','deck',['landingQuay','S1'],district),rails=solid('landingQuay.rails','deckParapet','metal','rail',['landingQuay'],district);
+  slabOnGrade(deck,[x,h,from],[x,h,level],width,base);slabOnGrade(deck,[x,h,level],[x,runH,to],width,base);
+  const w=width/2-.1,P=(dx:number,z:number,y:number):XYZ=>[x+dx,y,z];
+  guardEdgeLater(rails,[P(-w,from,h),P(-w,level,h),P(-w,to,runH)],[-1,0],['landingQuay'],base);
+  guardEdgeLater(rails,[P(w,from,h),P(w,level,h),P(w,to,runH)],[1,0],['landingQuay'],base);
+  guardEdgeLater(rails,[P(-w,from,h),P(w,from,h)],[0,-1],['landingQuay'],base);guardEdgeLater(rails,[P(-w,to,runH),P(w,to,runH)],[0,1],['landingQuay'],base);
+  cuts.solids.push(deck,rails);
+  const b=bed('landingQuay','walk',[[x,h,from],[x,h,level],[x,runH,to]],false);b.width=width;b.structureIds=['landingQuay'];cuts.beds.push(b);
+  cuts.diagnostics.push({id:'structures.landingQuay.finish',severity:'info',message:`landingQuay: S1's finish is a ${width} eu paved quay on grade at ${h} (z ${from}–${level}) with a run-out climbing to ${runH.toFixed(2)} at z ${to}: ${(to-xy[1]).toFixed(0)} eu of run-out past the finish`,at:xy,measured:to-xy[1],required:M.profiles.skateMain.runout_m});
+}
 /** High Span's lower levels: the S1 shelf on the west wall, the Reach gallery on the west bank beside
  * (never in) the river, and camera C's overlook as a bank platform at its v1.7 coordinate. */
 function highSpanLevels(cuts:LandCuts,base:HeightQuery):void {
@@ -717,7 +740,7 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   Object.entries(M.structures.jetties).forEach(([id,p])=>dock(`jetty.${id}`,p as unknown as XY,id==='deep'?40.6:1,cuts,base));
   Object.entries(M.water_routes.FERRY.piers).forEach(([id,p])=>dock(`ferry.${id}`,p as unknown as XY,1,cuts,base,6,16));
   dock('floatplaneDock',M.structures.floatplaneDock as unknown as XY,1.2,cuts,base,8,20);
-  dock('landingQuay',M.structures.landingQuay.xy as unknown as XY,3,cuts,base,8,32);
+  landingQuayFinish(cuts,base);
   const q=M.structures.townQuay;cuts.beds.push(bed('town quay','walk',[[...q.from.slice(0,1),3,q.from[1]!] as unknown as XYZ,[q.to[0]!,3,q.to[1]!]],false));
   const seaTop:XYZ=[1620,base(1620,760),760];buildStair('seaStair',[1705,1,775],seaTop,3,cuts,base);
   // v1.9 MANIFEST structures.<id>.kind "stair" (from/to plan points): a stair from a route's end down to a jetty or
