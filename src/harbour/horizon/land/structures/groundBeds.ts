@@ -49,6 +49,12 @@ export function groundTerrainBeds(cuts:LandCuts,finalHeight:HeightQuery):{filled
           // W3-A: the lower route's own height where it passes the prism (h), not its segment's
           // min/max: a footway beside a host on a 12 % grade read the host's low end as "under" it.
           if(h+Math.max(bed.clearHeight,bed.kind==='cable'?8:0)<=target||h+.15>=under)continue;
+          // Integrator 3 (Wave 5 seams): a bed's own carrying structure is not its lower route (V01's approach prisms beside
+          // the Bight Bridge's deck bed `structure.bightBridge` read the deck as a route under them at the west abutment), and
+          // a lane within 0.75 eu of the prism's walking face runs beside it, not under it (the Year Walk's lagoon footway
+          // beside S2's lagoon lane at the deck end, 0.4 apart): the prism is grounded like any other.
+          if(bed.id.startsWith('structure.')&&bed.structureIds.some(id=>sources.some(src=>src.structureIds.includes(id))))continue;
+          if(!own&&topMean-h<.75)continue;
           // W5-A: the lower route's walking width (+0.3), not its shoulder: a prism beside a lower lane is grounded, its fill
           // face standing on the lower route's shoulder as a retaining edge (the Year Walk's side-by-side lanes at two heights
           // counted the 1.2 m shoulder and hung unsupported beside each other).

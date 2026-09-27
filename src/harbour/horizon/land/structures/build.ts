@@ -163,11 +163,17 @@ export function buildBightBridge(cuts:LandCuts,base:HeightQuery):BightReport {
   }
   {// The flyover: deck on the ramp ends' posts, hung between them from the portal struts (hangers to shoes at its edges).
     const fd=solid('bightBridge.s2Flyover.deck','skateFlyover','paved','deck',['S2'],district),fr=solid('bightBridge.s2Flyover.rails','handrail','metal','rail',['S2'],district),ends:[XYZ,XYZ]=[P(fa.s,fa.o,fly.h),P(fb.s,fb.o,fly.h)];
-    slab(fd,ends[0],ends[1],laneW,T);for(const side of [-1,1])postedRail(fr,ends,side*(laneW/2-.05));
-    const ds=fb.s-fa.s,dO=fb.o-fa.o,len=Math.hypot(ds,dO),nv={s:-dO/len,o:ds/len},edge=laneW/2+.25;
-    for(const s of struts)for(const side of [-1,1]){const t=(s-side*edge*nv.s-fa.s)/ds,o=fa.o+t*dO+side*edge*nv.o;if(t<0||t>1)continue;
-      box(arch,F.at(s,o),ribY(s)-.7,[.25,.25],fly.h-.55,F.rot);box(arch,F.at(s,o),fly.h-.05,[.6,.6],fly.h-.55,F.rot);}
-    cuts.solids.push(fd,fr);const fb2=bed('structure.bightBridge.s2Flyover','skateMain',[...ends],false);fb2.width=laneW;fb2.structureIds=['bightBridge'];cuts.beds.push(fb2);
+    // Integrator 3: the flyover is as wide as S2's own bed (4, profiles.skateMain) and follows S2's own line between its ends
+    // (S2's spline bends through the crown up to 1.9 m off the straight chord): its rails stand at the bed's edges (P09 read
+    // S2's edge outboard of 3.5 m straight-chord rails at 5.6 over the deck); the deck lanes keep 3.5 (the 21.6 m section).
+    const s2bed=cuts.beds.find(b=>b.id==='S2'),flyW=Math.max(laneW,s2bed?.width??laneW);
+    const flyPath:XYZ[]=[ends[0],...(s2bed?.points??[]).filter(p=>{const q=F.so(plan(p));return q.s>fa.s+.5&&q.s<fb.s-.5&&Math.abs(q.o-(fa.o+(fb.o-fa.o)*(q.s-fa.s)/(fb.s-fa.s)))<4;}).map(p=>[p[0],fly.h,p[2]] as XYZ),ends[1]];
+    for(let i=1;i<flyPath.length;i++)slab(fd,flyPath[i-1]!,flyPath[i]!,flyW,T);for(const side of [-1,1])postedRail(fr,flyPath,side*(flyW/2-.05));
+    const edge=flyW/2+.25,flyS=flyPath.map(p=>F.so(plan(p)).s);
+    for(const s of struts){const i=flyS.findIndex((v,k)=>k>0&&flyS[k-1]!<=s&&v>=s);if(i<1)continue;
+      const a=flyPath[i-1]!,b=flyPath[i]!,t=(s-flyS[i-1]!)/((flyS[i]!-flyS[i-1]!)||1),c:XY=[mix(a[0],b[0],t),mix(a[2],b[2],t)],l=distance(plan(a),plan(b))||1,n:XY=[-(b[2]-a[2])/l,(b[0]-a[0])/l];
+      for(const side of [-1,1]){const xy:XY=[c[0]+n[0]*side*edge,c[1]+n[1]*side*edge];box(arch,xy,ribY(F.so(xy).s)-.7,[.25,.25],fly.h-.55,F.rot);box(arch,xy,fly.h-.05,[.6,.6],fly.h-.55,F.rot);}}
+    cuts.solids.push(fd,fr);const fb2=bed('structure.bightBridge.s2Flyover','skateMain',flyPath,false);fb2.width=flyW;fb2.structureIds=['bightBridge'];cuts.beds.push(fb2);
     report.deckProfile.push({lane:'S2 flyover',o:(fa.o+fb.o)/2,points:[[Number(fa.s.toFixed(2)),fly.h],[Number(fb.s.toFixed(2)),fly.h]]});
     const road=fly.h-T-H;cuts.diagnostics.push({id:'structures.bightBridge.s2Flyover.clear',severity:road<fly.clear-.01?'conflict':'info',message:`bightBridge: the S2 flyover's underside stands ${road.toFixed(2)} eu over the road deck (need ${fly.clear})`,at:F.at((fa.s+fb.s)/2,0),measured:road,required:fly.clear});
   }
@@ -599,7 +605,10 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   {const well=solid('damGallery.walls','stairwell','stone','wall',['damGallery.exit'],'lakeside'),top=46.05,seat=51.65;
     box(well,[1160.3,916.75],top,[.6,16.5],base(1160.3,916.75)-FOOTING_SINK);
     // R2-108: under L01's slab (z 908-916) the east wall stands to the slab's underside; south of it, to the parapet.
-    box(well,[1172.8,920.9],top,[.6,8.2],base(1172.8,920.9)-FOOTING_SINK);box(well,[1172.8,912.4],seat,[.6,8.8],base(1172.8,912.4)-FOOTING_SINK);
+    // Integrator 3 (W5-T request, D-C2 on page A's phone): the east wall's south part (z 916.8-925, to the 45 landing's
+    // parapet at 46.05, free-standing on ground at 17.8) took 2 of the dam face's portrait rays; like the south wall it is an
+    // open railed parapet now (the landing's posted rail and flight 2's own rails). The north part carries L01's slab.
+    box(well,[1172.8,912.4],seat,[.6,8.8],base(1172.8,912.4)-FOOTING_SINK);
     // North wall with the exit door (x 1169-1172), south wall above the apron entry (h >= 34.4).
     // D-C2 (v2.0): the south side is an open, railed parapet (the 45 landing's posted rail and the flights' own rails): the
     // solid south wall (34.4 → 46.05 at z 925.6) hid the dam's face from page A's phone frame.
@@ -611,7 +620,9 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
     const l01=cuts.solids.find(q=>q.id==='place.L01.slab');
     if(l01){l01.positions.length=0;l01.indices.length=0;l01.kind='roofDeck';box(l01,[1172,909.375],52,[8,2.75],seat);box(l01,[1174.05,913.375],52,[3.9,5.25],seat);}
     const l01s=solid('place.L01.supports','pier','stone','support',['place.L01'],'lakeside');pier(l01s,[1168.55,909.4],seat,base,[.5,.5],[1,1]);cuts.solids.push(l01s);}
-  buildStair('damPortage',[1150,50,910],[1169,25,963],3,cuts,base);
+  // Integrator 3 (D-A7, S1 × dam portage flush, register [1160.8,940.1]): the portage's upper flight lands on the apron
+  // bridge at the apron's 31 (it crossed at 35.8); the lower flight leaves the apron's far edge for the tailrace put-in at 25.
+  buildStair('damPortage',[1150,50,910],[1160.8,31,940.1],3,cuts,base);buildStair('damPortage.lower',[1162.9,31,946.0],[1169,25,963],3,cuts,base);
   // Dry Wash bowl: the invert remains an ordinary ground line, with a bank on either side; its underside sits on the ground.
   const wash=solid('wash.bowl','bowl','ochre','deck',['S2'],'flats'),washH=heightOnBeds(cuts,[465,700],base);for(let i=-12;i<12;i++){const h=washH+5*(i/12)**2,h2=washH+5*((i+1)/12)**2;slabOnGrade(wash,[465+i,h,665],[466+i,h2,665],72,base);}cuts.solids.push(wash);
   // Runway and mooring foundations contain no lamps, windsock, hangar or balloon props in Pass 1.

@@ -1,6 +1,6 @@
 import { HORIZON_MANIFEST as M, requireScaleFactor } from '../../world/manifest';
 import type { BedCut, HeightQuery, LandCuts, XY, XYZ } from '../interfaces';
-import { buildStructures, SPANS } from '../structures/build';
+import { buildStructures, cableTower, SPANS } from '../structures/build';
 import { box, distance, districtAt, mix, nearestOnPath, pathLength, plan, slab, solid } from '../structures/mesh';
 import { pier } from '../structures/foundations';
 import { buildReserves } from '../reserves/build';
@@ -98,10 +98,13 @@ function carryNamedStructures(cuts:LandCuts):void {
     const s=(M.structures as unknown as Record<string,{from?:number[];to?:number[]}>)[c.id];if(!s?.from||!s.to)continue;
     const a=s.from as unknown as XY,b=s.to as unknown as XY,route=cuts.beds.find(r=>r.id===c.route);if(!route)continue;
     // The deck ends are the route's highest pass within 4 m (a self-crossing route passes twice; the flyover carries the upper).
-    const top=(q:XY)=>Math.max(...route.points.filter(p=>distance(plan(p),q)<4).map(p=>p[1]),nearestOnPath(q,route.points).at[1]);
-    const ha=top(a),hb=top(b),line:XYZ[]=[[a[0],ha,a[1]],[b[0],hb,b[1]]];
+    // Integrator 3: the carried line is the route's own points between the two ends (like structures' stretchBetween), not
+    // the from→to chord: VBS bends under the trestle and the chord to the v2.1 south end left its middle 5.3 m off.
+    const pick=(q:XY)=>{const d=route.points.map(p=>distance(plan(p),q)),near=d.map((_,i)=>i).filter(i=>d[i]!<=4);if(!near.length)return d.indexOf(Math.min(...d));
+      const top=Math.max(...near.map(i=>route.points[i]![1]));return near.filter(i=>route.points[i]![1]>top-.5).sort((x,y)=>d[x]!-d[y]!)[0]!;};
+    const [i0,i1]=[pick(a),pick(b)].sort((x,y)=>x-y) as [number,number],line:XYZ[]=route.points.slice(i0,i1+1),total=pathLength(line);
     for(const id of [c.route,...c.footways]){const r=cuts.beds.find(x=>x.id===id);if(!r)continue;const reach=id===c.route?5:9;
-      for(const p of r.points){const n=nearestOnPath(plan(p),line);if(n.distance<=reach&&n.t>0&&n.t<1&&Math.abs(n.at[1]-p[1])<3)(r.terrainExclusions??=[]).push({at:plan(p),radius:r.width/2+r.shoulder+1,openSpan:true});}}
+      for(const p of r.points){const n=nearestOnPath(plan(p),line);if(n.distance<=reach&&n.along>0&&n.along<total&&Math.abs(n.at[1]-p[1])<3)(r.terrainExclusions??=[]).push({at:plan(p),radius:r.width/2+r.shoulder+1,openSpan:true});}}
   }
 }
 /** Pin each complete span flat before grading its two approaches. */
@@ -187,7 +190,10 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
     // an open, owned item (groundBeds OPEN_VOIDS) for the Bight Bridge west abutment work.
     const pins=withSpanPins(name,points,[...(routePins[name]??[]),...levels,...(id==='square'?squareWalkPins(sampleSpline(points)):[])]);
     if(id==='garden')for(const p of sampleSpline(points))if(p[0]>=899&&p[0]<=916&&p[1]>=637&&p[1]<=642)pins.push(pin(p,36,'Cottage front bench'));
-    cuts.beds.push(bed(name,row.profile,gradeRoute(name,points,base,.12,pins,cuts.diagnostics,5,TYP.walk)));
+    const wb=bed(name,row.profile,gradeRoute(name,points,base,.12,pins,cuts.diagnostics,5,TYP.walk));
+    // v2.1: walks.<id>.surface_m / shoulder_m override the profile section (the lake-rim trail carries the Year Walk's February share at its width).
+    const {surface_m:sw,shoulder_m:sh}=row as unknown as {surface_m?:number;shoulder_m?:number};if(sw)wb.width=sw*requireScaleFactor();if(sh)wb.shoulder=sh*requireScaleFactor();
+    cuts.beds.push(wb);
   }
   // Join the Cottage spur to the garden walk at the same contour. A short
   // public link avoids treating two nearby but disconnected paths as one.
@@ -406,7 +412,8 @@ function cables(cuts:LandCuts,base:HeightQuery):void {
   for(const q of constraints){const actual=mix(controls[q.i-1]![1],controls[q.i]![1],q.t);if(actual<q.required-.01)cuts.diagnostics.push({id:`cable.G1.clear.${q.i}.${q.t}`,severity:'conflict',message:'Fixed gondola endpoint cannot meet terrain clearance',at:q.at,measured:actual,required:q.required});}
   const gondola:XYZ[]=[];
   for(let i=1;i<controls.length;i++){const a=controls[i-1]!,b=controls[i]!,len=distance(plan(a),plan(b));for(let k=0;k<32;k++){const t=k/32;gondola.push([mix(a[0]!,b[0]!,t),mix(a[1]!,b[1]!,t)-len*.01*4*t*(1-t),mix(a[2]!,b[2]!,t)]);}}gondola.push(controls[controls.length-1]!);
-  cuts.beds.push(bed('G1','cable',gondola,false));const towers=solid('G1.towers','tower','stone','support',['G1'],'prow');controls.slice(1,-1).forEach(p=>{const ground=base(p[0]!,p[2]!);box(towers,plan(p),p[1]!,[1.5,1.5],ground-.25);box(towers,plan(p),ground+.4,[4,4],ground-.25);});cuts.solids.push(towers);
+  cuts.beds.push(bed('G1','cable',gondola,false));// Integrator 3 (W5-S request 3): each tower is structures' cableTower - four legs on footings, head frame, bracing.
+  const towers=solid('G1.towers','tower','stone','support',['G1'],'prow'),bracing=solid('G1.towers.bracing','beam','metal','support',['G1'],'prow');controls.slice(1,-1).forEach(p=>cableTower(towers,bracing,plan(p),p[1]!,base));cuts.solids.push(towers);if(bracing.indices.length)cuts.solids.push(bracing);
   const z=M.cable.ZIP,len=distance(z.from as unknown as XY,z.to as unknown as XY),zip=Array.from({length:129},(_,k)=>{const t=k/128;return [mix(z.from[0]!,z.to[0]!,t),mix(z.fromH,z.toH,t)-len*z.sag_pct/100*4*t*(1-t),mix(z.from[1]!,z.to[1]!,t)] as unknown as XYZ;});cuts.beds.push(bed('ZIP','cable',zip,false));
   // v2.0 D-A2: the register row decides the order (ZIP under G1); the separation is signed by that order.
   const zipRow=M.crossings.find(r=>r.a==='ZIP'&&r.b==='G1'),under=zipRow?.resolution==='under',at0=(zipRow?.at??[1442,921]) as unknown as XY;

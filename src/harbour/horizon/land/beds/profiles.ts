@@ -46,6 +46,10 @@ function sharedSides(b:BedCut,cuts:LandCuts,mid:XY,h:number,nx:number,nz:number)
 }
 /** Plan length (eu) over which a bed edge's guard and retaining decision is taken, and the most a rail runs between posts. */
 export const EDGE_PIECE=2.5;
+/** Integrator 3: road-kind beds that are not carriageways take the walk's open posted rail at a drop, not the road's solid
+ * parapet: the airstrip's west edge over the Year Walk (a 1 m stone parapet 17 m from page H's eye hid all 638 of the
+ * west sea's rays at 1440 × 900). */
+export const OPEN_RAIL_ROADS=new Set(['strip']);
 export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,thresholds:XY[]=[]):void {
   if(b.kind==='cable'||b.kind==='cave')return;
   const district=b.districtIds[0]!??'harbour',deck=solid(`${b.id}.bed`,'bed',b.surface,'deck',[b.id],district);
@@ -79,7 +83,7 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
         const drop=Math.max(...[1,1.5].map(o=>ph-groundBeyond(cuts,base,pm[0]+nx*side*(edge+o),pm[1]+nz*side*(edge+o),ph)));
         const run=runs.get(side)!,post=(q:XYZ)=>box(rails,[q[0]+nx*side*edge,q[2]+nz*side*edge],q[1]+1.05,[.12,.12],q[1]-.1);
         if(drop>1.25){
-          if(b.kind==='road'){
+          if(b.kind==='road'&&!OPEN_RAIL_ROADS.has(b.id)){
             slab(rails,pa,pb,.35,1,side*edge,1);slab(rails,pa,pb,.5,.15,side*edge,1.15);
           }else{
             slab(rails,pa,pb,.09,.09,side*edge,1.05);

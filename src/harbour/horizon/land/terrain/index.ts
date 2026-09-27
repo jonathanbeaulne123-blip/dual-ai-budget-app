@@ -160,13 +160,18 @@ export function baseHeight(x: number, z: number): number {
  * its top at the deck (h_deck 12) under the whole deck section (−9 … +12.6, centred +1.8). Its back and sides fall
  * at 1 : 1.5 to the ground; its front stops at s −1 and falls to the sea floor by s +2.5, behind the abutment's
  * face, so no earth stands under the deck (the seabed under the deck is never raised). Raise only.
+ * Integrator 3 (W5-A request): the east abutment is the same embankment mirrored on the east headland (axis s 244.1
+ * at [660,1170]), so S2's banked descent leaves the deck onto ground (its first off-deck sample [659.5,1178.8], s 248.8
+ * o −7.5, stood over the sea: `bed.S2.overWater`).
  */
 export const BIGHT_ABUTMENT = { length: 14, width: 24, centreOffset: 1.8, frontStop: -1, frontFall: 3.5, sideSlope: 1.5 } as const;
 let abutmentFrame: { w: XY; u: XY; n: XY; top: number } | undefined;
 function bightAbutment(x: number, z: number, height: number): number {
-  const s = getModel().scale, B = M.structures.bightBridge as { h_deck: number; ends: { west: number[]; east: number[] } };
+  const s = getModel().scale, B = M.structures.bightBridge as { h_deck: number; ends: { west: number[]; east: number[]; axis_m: number } };
   const f = abutmentFrame ??= (() => { const w: XY = [B.ends.west[0]! * s, B.ends.west[1]! * s], dx = B.ends.east[0]! * s - w[0], dz = B.ends.east[1]! * s - w[1], l = Math.hypot(dx, dz); return { w, u: [dx / l, dz / l] as XY, n: [dz / l, -dx / l] as XY, top: B.h_deck * s }; })();
-  const px = x - f.w[0], pz = z - f.w[1], along = px * f.u[0] + pz * f.u[1], across = px * f.n[0] + pz * f.n[1] - BIGHT_ABUTMENT.centreOffset * s, c = BIGHT_ABUTMENT;
+  const px = x - f.w[0], pz = z - f.w[1], axisS = px * f.u[0] + pz * f.u[1], across = px * f.n[0] + pz * f.n[1] - BIGHT_ABUTMENT.centreOffset * s, c = BIGHT_ABUTMENT;
+  // The nearer end's frame: west measures back from s 0, east measures forward from the axis end (mirrored).
+  const A = B.ends.axis_m * s, along = axisS <= A / 2 ? axisS : A - axisS;
   if (along > (c.frontStop + c.frontFall) * s || along < -(c.length + 30) * s || Math.abs(across) > (c.width / 2 + 30) * s) return height;
   const back = Math.max(0, -c.length * s - along), side = Math.max(0, Math.abs(across) - c.width / 2 * s), out = Math.hypot(back, side);
   let fill = f.top - out / c.sideSlope;

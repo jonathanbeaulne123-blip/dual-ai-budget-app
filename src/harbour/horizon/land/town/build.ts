@@ -45,7 +45,9 @@ export function buildTown(cuts:LandCuts,base:HeightQuery):void {
   const stepFree=M.structures.marketStair.stepFree;
   cuts.diagnostics.push({id:'marketStair.stepFree',severity:'info',message:`Market stair is stairs only (D-C11); the step-free way is ${stepFree.route.join(' → ')} (${stepFree.length_eu} eu)`,at:[1480,1160],measured:stepFree.length_eu});
   cuts.beds.push(bed('town.storefront','walk',[[1475,12,1190],[1500,8,1218],[1497,3,1265]]));
-  cuts.beds.push(bed('town.bankLink','walk',gradeRoute('town.bankLink',[[1455,1175],[1414,1162],[1420,1138],[1430,1138],[1440,1134]],()=>12,.08,[{xy:[1455,1175],height:12,reason:'square'},{xy:[1430,1138],height:16,reason:'level Kitty Plaza entry'},{xy:[1440,1134],height:16,reason:'bank door'}],cuts.diagnostics)));
+  // Integrator 3 (v2.1): the bank's door is read from its host data (south wall centre), not hard-coded at [1440,1134].
+  const bankHost=M.hosts.find(h=>h.id==='bank')!,bankDoor:XY=[bankHost.xy[0]!,bankHost.xy[1]!+bankHost.footprint_m[1]!/2];
+  cuts.beds.push(bed('town.bankLink','walk',gradeRoute('town.bankLink',[[1455,1175],[1414,1162],[1420,1138],[1430,1138],bankDoor],()=>12,.08,[{xy:[1455,1175],height:12,reason:'square'},{xy:[1430,1138],height:16,reason:'level Kitty Plaza entry'},{xy:bankDoor,height:16,reason:'bank door'}],cuts.diagnostics)));
   // Join the town to the existing drive once, then use its graded ascent.
   // The former shortcut cut obliquely through the drive's steep shoulders twice.
   const bankWalk=cuts.beds.find(b=>b.id==='town.bankLink')!,northStart=nearestOnPath([1420,1138],bankWalk.points).at;
