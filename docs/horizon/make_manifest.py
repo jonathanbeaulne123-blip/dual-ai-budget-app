@@ -1517,6 +1517,11 @@ S2["spots"] = [
 S2["spotsRule"] = "Pass 02 M1 'Spots': rails, kerbs, walls, bollards, stairs and bank lips from pass 1's beds only; kind is one of those words; every spot names its groundLine and requiredJump is always false"
 for seg in S2["segments"]:
     if seg["name"] == "Bight Bridge": seg["v1_9_spot"] = seg["spot"]; seg["spot"] = "S2.archCrown, S2.westAbutmentBank, S2.eastAbutmentBank, S2.deckRail (skate.S2.spots)"
+for v in m["views"]:
+    if v["id"] == "B":
+        v["v1_9_frames"] = v["frames"]
+        v["frames"] = "the Bight Bridge with its steel arch and the lookout at its crown, the Flats, the whole hook"
+        v["framesNote_v2_0"] = "D-A1: the arch and the lookout are parts of the Bight Bridge (bightBridge.* solids), so the machine subject stays 'the Bight Bridge'"
 row_edit("V01+S2", "Bight mouth", reserved=None, decided="D-A1 (" + RULED + ")", note="245 m viaduct with one 36 m steel through-arch (s 98-134); abutments on both headlands to the ground")
 row_edit("FERRY", "bightBridge", reserved=None, decided="D-A1 (" + RULED + ")", note="twice per lap, through the steel-arch opening (s 98-134, 34 m × 11.4 clear; beam 8)")
 row_edit("S2", "V01", note="v2.0 (D-A1): S2 rides the deck's lagoon lane from the west abutment, crosses over V01 and the Year Walk footways once on bightBridge.s2Flyover at the arch crown (17.6, 5.6 above the deck), then the sea lane to the east abutment and a banked descent onto its line; never the shoulder, never at grade")

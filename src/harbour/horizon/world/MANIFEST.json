@@ -4670,7 +4670,7 @@
     540,
     1195
    ],
-   "frames": "the Bight Bridge, the Flats, the whole hook",
+   "frames": "the Bight Bridge with its steel arch and the lookout at its crown, the Flats, the whole hook",
    "bestHour": "sunset",
    "also": "noon",
    "target_h": 20,
@@ -4703,7 +4703,9 @@
     "the Bight Bridge",
     "the Flats",
     "the hook"
-   ]
+   ],
+   "v1_9_frames": "the Bight Bridge, the Flats, the whole hook",
+   "framesNote_v2_0": "D-A1: the arch and the lookout are parts of the Bight Bridge (bightBridge.* solids), so the machine subject stays 'the Bight Bridge'"
   },
   {
    "id": "C",

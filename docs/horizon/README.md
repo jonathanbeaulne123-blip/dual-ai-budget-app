@@ -421,6 +421,7 @@ MANIFEST v1.9 → **v2.0**, 27 September 2026, Claude (design lead, track W5-DAT
 | `structures.bightBridge.bents` (new) | 21 paired bents (built) | 8 west (10.9 m bays, s 0–98), 9 east (11.0 m bays, s 134–244), two arch piers | D-A1 |
 | `structures.bightBridge.lookout` (new) | — | a 24 × 7.2 deck bay at the arch crown, lagoon side, [562.1,1086.4], deck 12, off the Year Walk footway; a structure, not a pad | D-A1 |
 | `structures.bightBridge.s2Flyover` (new) | S2 crossed V01 on the deck (0 of 5 headroom) | S2 over V01 once, [548.0,1078.7] → [564.1,1111.4] at **17.6** (5.0 clear over the road), hung from the arch | D-A1 |
+| `views.B.frames` | "the Bight Bridge, the Flats, the whole hook" | "the Bight Bridge with its steel arch and the lookout at its crown, the Flats, the whole hook" (machine subject unchanged: both are `bightBridge.*`) | D-A1 |
 | `water_routes.FERRY.beam_m` (new) | — | **8** | D-A1 |
 | `skate.S2.pts` | … [480,985], [470,1030], [560,1100], [650,1185], [750,1265] … | … [480,985], lagoon lane [466.1,1021.3] → [490.7,1038.5] → [548.0,1078.7], flyover [556.1,1095.0] → [564.1,1111.4], sea lane [621.5,1151.6] → [655.9,1175.7], banked descent [672,1192] → [690,1210] → [712,1230], [750,1265] … (`v1_9_pts`); length 1 254 → 1 259 | D-A1 |
 | `skate.S2.levels`, `westRamp`, `deckLanes`, `eastDescent` (new) | — | ramp from the Wash [485,800] h 23.7 down to the deck at 12, **5.0 %** (trestle over the Wash mouth, ≤ 4 eu cut through the spit knoll); lanes on the deck; banked right-hand descent 12 → 6.5 at **7.1 %**, bank 12–20°, r 45 | D-A1 |
