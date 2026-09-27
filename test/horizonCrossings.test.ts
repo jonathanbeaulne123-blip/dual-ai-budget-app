@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { buildCrossings, computeIntersections, type Centreline } from '../src/harbour/horizon/world/crossings.ts';
+import { buildCrossings, collectCentrelines, computeIntersections, S2_FLYOVER, type Centreline } from '../src/harbour/horizon/world/crossings.ts';
 import type { LandCuts, BedCut } from '../src/harbour/horizon/land/interfaces.ts';
 const line = (id: string, points: Centreline['points']): Centreline => ({ id, points, clearHeight: 4, kind: 'road', structureIds: [] });
 it('finds skew, endpoint and collinear crossings without exempting the Deep shared point', () => {
@@ -86,4 +86,14 @@ it('proves a jetty deck over water as a boarding point on its own deck, not a la
   const box=(id:string,role:string,y0:number,y1:number)=>({id,kind:'deck',positions:[8,y0,-3,8,y0,3,12,y0,3,12,y0,-3,8,y1,-3,8,y1,3,12,y1,3,12,y1,-3],indices:[0,2,1,0,3,2,4,5,6,4,6,7],surface:'timber',districtId:'reach',bedIds:['jetty.dock'],walkable:role==='deck',role});
   const cuts:LandCuts={beds:[bed('jetty.dock','walk',[[10,2.35,-6],[10,2.35,6]])],pads:[pad as never],mouths:[],waters:[channel],solids:[box('jetty.dock.deck','deck',1.75,2.35),box('threshold.dock.marker','marker',2.35,2.4)] as never,diagnostics:[]};
   expect(buildCrossings(cuts).proofs[0]).toMatchObject({kind:'modeTransfer',resolution:'threshold',clearancePass:true,built:true,padId:'threshold.dock'});
+});
+it('reads the Bight Bridge S2 flyover as S2, so the register row S2 × V01 is proved on the flyover (D-A1, v2.0)',()=>{
+  // The flyover crosses V01 on the deck at [557.7,1098.4]: deck 12, flyover 17.6 (5.6 over).
+  const lines=collectCentrelines({beds:[bed('structure.bightBridge.s2Flyover','skate',[[548,17.6,1078.7],[564.1,17.6,1111.4]]),bed('bightBridge.s2Flyover','skate',[[548,17.6,1078.7],[564.1,17.6,1111.4]]),bed('V01','road',[[460,12,1030],[660,12,1170]])],pads:[],mouths:[],waters:[],solids:[],diagnostics:[]});
+  expect(S2_FLYOVER).toBe('bightBridge.s2Flyover');
+  expect(lines.map(l=>l.id)).toEqual(['S2','S2','V01']);
+  const hit=computeIntersections(lines.slice(1)).find(h=>[h.a,h.b].includes('S2'))!;
+  expect([hit.a,hit.b].sort()).toEqual(['S2','V01']);
+  expect(hit.at[0]).toBeCloseTo(557.7,0);expect(hit.at[1]).toBeCloseTo(1098.4,0);
+  expect(Math.abs(hit.heightA-hit.heightB)).toBeCloseTo(5.6,5);
 });

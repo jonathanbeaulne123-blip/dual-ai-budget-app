@@ -46,8 +46,12 @@ export function registerRowKey(index: number, rows: readonly { a: string; b: str
   const row = rows[index]!, pair = (r: { a: string; b: string }) => [camel(r.a), camel(r.b)].join('.'), key = pair(row);
   return `crossing.${key}.${rows.slice(0, index + 1).filter(r => pair(r) === key).length}`;
 }
+/** The Bight Bridge's S2 flyover deck id (MANIFEST v2.0 `structures.bightBridge.s2Flyover.id`). */
+export const S2_FLYOVER: string = (HORIZON_MANIFEST.structures.bightBridge as { s2Flyover?: { id?: string } }).s2Flyover?.id ?? 'bightBridge.s2Flyover';
 export function collectCentrelines(cuts: LandCuts, lines: readonly Line[] = [], raw = false): Centreline[] {
-  const physicalOwner = (b: BedCut) => { if (b.id.startsWith('structure.')) { const name = b.id.slice('structure.'.length), source = cuts.solids.find(s => s.id.startsWith(`${name}.`) && s.role === 'deck' && s.bedIds.length === 1); if (source) return source.bedIds[0]!; } return ({ prowTunnel: 'V01', shoulderTunnel: 'V02', duneCulvert: 'S4' } as Record<string, string>)[b.id] ?? b.id; };
+  // D-A1 (v2.0): the Bight Bridge's S2 flyover is S2 hung from the arch; whatever bed or structure bed carries it, the
+  // register reads it as S2 (row S2 × V01 'over' at [557.7,1098.4] is proved on the flyover).
+  const physicalOwner = (b: BedCut) => { const bare = b.id.startsWith('structure.') ? b.id.slice('structure.'.length) : b.id; if (bare === S2_FLYOVER || bare.startsWith(`${S2_FLYOVER}.`)) return 'S2'; if (b.id.startsWith('structure.')) { const name = b.id.slice('structure.'.length), source = cuts.solids.find(s => s.id.startsWith(`${name}.`) && s.role === 'deck' && s.bedIds.length === 1); if (source) return source.bedIds[0]!; } return ({ prowTunnel: 'V01', shoulderTunnel: 'V02', duneCulvert: 'S4' } as Record<string, string>)[b.id] ?? b.id; };
   const out: Centreline[] = cuts.beds.filter(b => b.points.length > 1).map(b => ({ id: raw ? b.id : canonical(physicalOwner(b)), sourceId: b.id, points: b.points, clearHeight: b.clearHeight, kind: b.kind, structureIds: b.structureIds }));
   for (const line of lines) if (line.points.length > 1 && !out.some(c => c.sourceId === line.id || c.id === line.id)) out.push({ id: !raw && line.id === 'RIVER_RUN' ? 'river lower' : line.id, sourceId: line.id, points: line.points, clearHeight: line.mode === 'gondola' ? 8 : line.mode === 'ferry' || line.mode === 'row' ? 4 : 1.25, kind: line.mode, structureIds: [] });
   for (const water of cuts.waters) if (water.points.length > 1) out.push({ id: raw ? water.id : canonical(water.id), sourceId: water.id, points: water.points, clearHeight: water.kind === 'brook' || water.kind === 'dry' ? 1.25 : 4, kind: water.kind === 'dry' ? 'dry' : 'water', structureIds: [] });
