@@ -1930,6 +1930,23 @@ m["speeds_ms"]["v2_2_bicycle"] = m["speeds_ms"]["bicycle"]; m["speeds_ms"]["bicy
 _t = m["journeys"]["targets_s"]; _t["decisions"]["square→library by bicycle"] = "v2.3 (" + W7 + ", reversible): planned at the bicycle's 6.0 m/s cap, the ride measures 220.6 s (1,324 eu, Stage A W7-A scratch bake); target = measured + 10 % = 243 s (v2.2: 185 s at 8 m/s)"
 _t["decisions"]["v2_2_square→library by bicycle"] = _t["square→library by bicycle"]; _t["square→library by bicycle"] = 243
 
+# 6. D-D6 (design lead rules, reversible; W7-T request A1/A2, measured with the view ray caster on candidate 5's bake):
+#    page J looks due east THROUGH the Needle's Eye at dawn from the Prow cliff (the sunrise gate keeps its alignment), not
+#    north past the arch from the plane: the arch 2,027 px at 1440 × 900 (opening 615 px = 22 % of its face; ≈ 28 % is the
+#    ceiling until the arch is re-authored, R3-111), 370 / 100 px at 390 × 844. The Stacks are not on this line (60-65° to
+#    the right): they leave J's subjects. J's eye stands on the Prow's ground (floor 49.9 + 1.6 = 51.5), and Walk from J starts on the Year
+#    Walk at the Prow (`ground`, the nearest reachable path node; R3-130).
+for v in m["views"]:
+    if v["id"] == "J":
+        v["v2_2"] = {k: v[k] for k in ("xy", "target", "target_h", "eyeH", "label", "frames", "subjects")}; v["v2_2"]["portrait"] = dict(v["portrait"])
+        v["eyeH"] = 51.5   # the Prow cliff floor 49.9 + 1.6 (W7-T measured); an absolute eye, like every eyeH
+        v.update({"xy": [1665, 680], "target": [1790, 681], "target_h": 25, "fov_deg": 55, "label": "The Needle's Eye at dawn, from the Prow",
+                  "frames": "the arch, the sea through it at dawn, the Prow underfoot", "subjects": ["the arch", "the Prow"],
+                  "ground": {"xy": [1607.3, 690.9], "h": 48.5}})
+        v["portrait"] = {"fov_deg": 50, "target": [1790, 681], "target_h": 25, "frames": ["the arch", "the Prow"]}
+        v["deferred"] = list(v.get("deferred", [])) + ["the Stacks (not on J's east line through the arch, 60-65° to its right; D-D6)"]
+        v["decided_v2_3"] = "D-D6 re-pose (recommended; " + W7 + ", reversible: v2_2), W7-T's measured pose"
+
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")

@@ -5393,35 +5393,36 @@
   {
    "id": "J",
    "target": [
-    1780,
-    700
+    1790,
+    681
    ],
    "fov_deg": 55,
    "radius_eu": 340,
-   "eyeH": 60,
-   "label": "The Needle's Eye, from the plane",
+   "eyeH": 51.5,
+   "label": "The Needle's Eye at dawn, from the Prow",
    "xy": [
-    1840,
-    1000
+    1665,
+    680
    ],
-   "frames": "the arch ahead of the wing, the Stacks, the Prow",
+   "frames": "the arch, the sea through it at dawn, the Prow underfoot",
    "bestHour": "dawn",
    "also": "noon",
-   "target_h": 14,
+   "target_h": 25,
    "portrait": {
     "fov_deg": 50,
     "target": [
-     1760,
-     760
+     1790,
+     681
     ],
-    "target_h": 14,
+    "target_h": 25,
     "frames": [
      "the arch",
-     "the Stacks",
      "the Prow"
     ]
    },
-   "deferred": [],
+   "deferred": [
+    "the Stacks (not on J's east line through the arch, 60-65\u00b0 to its right; D-D6)"
+   ],
    "v1_6": {
     "xy": [
      1790,
@@ -5437,9 +5438,48 @@
    },
    "subjects": [
     "the arch",
-    "the Stacks",
     "the Prow"
-   ]
+   ],
+   "v2_2": {
+    "xy": [
+     1840,
+     1000
+    ],
+    "target": [
+     1780,
+     700
+    ],
+    "target_h": 14,
+    "eyeH": 60,
+    "label": "The Needle's Eye, from the plane",
+    "frames": "the arch ahead of the wing, the Stacks, the Prow",
+    "subjects": [
+     "the arch",
+     "the Stacks",
+     "the Prow"
+    ],
+    "portrait": {
+     "fov_deg": 50,
+     "target": [
+      1760,
+      760
+     ],
+     "target_h": 14,
+     "frames": [
+      "the arch",
+      "the Stacks",
+      "the Prow"
+     ]
+    }
+   },
+   "ground": {
+    "xy": [
+     1607.3,
+     690.9
+    ],
+    "h": 48.5
+   },
+   "decided_v2_3": "D-D6 re-pose (recommended; design lead, Stage A Wave 7 (W7-A) 2026-09-27, reversible: v2_2), W7-T's measured pose"
   },
   {
    "id": "K",

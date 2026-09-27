@@ -230,6 +230,11 @@ describe('Horizon manifest v2.2: main\'s v1.7 RIDE data (§8.3, D40, D42)',()=>{
 });
 describe('Horizon manifest v2.3: Stage A Wave 7 (W7-A)',()=>{
   const m=manifest as unknown as Record<string,any>;
+  it('D-D6: page J looks east through the Needle\'s Eye from the Prow, with a ground point for Walk',()=>{
+    const J=m.views.find((v:{id:string})=>v.id==='J');
+    expect(J).toMatchObject({xy:[1665,680],target:[1790,681],target_h:25,eyeH:51.5,subjects:['the arch','the Prow'],ground:{xy:[1607.3,690.9],h:48.5}});
+    expect(J.v2_2).toMatchObject({xy:[1840,1000],eyeH:60});expect(J.portrait.frames).toEqual(['the arch','the Prow']);
+  });
   it('plans the bicycle at its 6.0 cap and re-targets the library ride at the measured 220.6 s + 10 %',()=>{
     expect(m.speeds_ms).toMatchObject({bicycle:6,v2_2_bicycle:8});
     expect(m.journeys.targets_s['square→library by bicycle']).toBe(243);expect(Math.ceil(220.6*1.1)).toBe(243);
