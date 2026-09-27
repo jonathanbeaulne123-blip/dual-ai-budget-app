@@ -38,7 +38,8 @@ export interface FoundationSettlement { id:string; part:number; at:XY; originalF
 /** Prism kinds whose four foot corners follow the ground independently (walls and slabs on grade). */
 const CORNER_KINDS=new Set(['cheekWall','abutment','retainingWall','tunnel','tunnelFooting']);
 /** Members that bear on other supports, never directly on the ground. */
-const HUNG_KINDS=new Set(['beam','stringer','truss']);
+/** v2.0: an arch (ribs, hangers, shoes, portal struts) bears on its arch piers, never directly on the ground. */
+const HUNG_KINDS=new Set(['beam','stringer','truss','arch','capBeam']);
 /** A pad slab left floating over lower final terrain becomes a plinth on grade up to this depth. */
 const PAD_PLINTH_MAX=6;
 /** Run on authored closed prisms after terrain export, before world mesh compaction.
