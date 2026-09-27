@@ -1611,6 +1611,20 @@ m["structures"]["prowTunnel"] = {"xy": [1592, 890], "kind": "gallery", "length_m
  "why": "the v1.9 box at [1600,780] stood on V01's side-hill cut with no hill over it: its roof 3 eu out of the ground, V01 8.4 under its floor at the north portal and 4.977 < 5 headroom (proposals/prow-tunnel.md)"}
 m["structures"]["prowTunnel"]["kindNote"] = "gallery (new kind, v2.0, D-A4): a covered road on a hillside: the hill is one wall, a roof slab on a colonnade forms the other, open to the view; ceiling and lining as a tunnel, cover not required"
 
+# 5. D-A5 · The dam's glass face (Jonathan: "b"): the face stays due south; at golden hour and dusk its glass is lit from
+#    inside by a light card (no dynamic light). LIGHT §2's line changes (LIGHT.md) and page A's golden-hour proof (P25)
+#    reads "lit or emissive": on 21 June at 19:47 the sun is at 294.5°, 164° from the square's bearing to the dam, so a
+#    face that faces the square cannot be sunlit then; the square sees 65 % of the face's width.
+m["lights"] = [
+ {"id": "dam.glassFace", "kind": "card", "anchor": "structures.dam", "face": "south", "on": "golden hour → dawn (sunset − 1 h to sunrise); off by day", "colour": "warm interior glow (the kit pass picks the swatch)",
+  "note": "v2.0 (D-A5, " + RULED + "): an emissive card on the dam's glass band, no dynamic light; the square sees it lit at golden hour and dusk; LIGHT §2"},
+]
+m["lightsRule"] = "lights lists the manifest-authored light cards (LIGHT §3 WorldDefinition.lights); the bake's door and threshold lamps are derived and not listed here"
+m["structures"]["dam"]["faceLight"] = "dam.glassFace"
+for v in m["views"]:
+    if v["id"] == "A":
+        v["lightRule"] = "at the page's best hour (golden hour) the dam's glass face reads lit OR emissive: the dam.glassFace light card is on from golden hour (D-A5); P25's golden-hour check is 'the square lit and the dam's face lit or emissive'"
+
 
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)

@@ -3514,7 +3514,8 @@
    "spillwayArch": "Ring Run gate 4",
    "apron": "S1 half-pipe",
    "crest": "walk with plaques",
-   "gallery": "stair in the east abutment from the apron to the crest, past the plaques (does not enter the Undercroft)"
+   "gallery": "stair in the east abutment from the apron to the crest, past the plaques (does not enter the Undercroft)",
+   "faceLight": "dam.glassFace"
   },
   "gondolaStations": {
    "base": [
@@ -4472,7 +4473,8 @@
     "the dam's glass face",
     "the Shoulder"
    ],
-   "v1_7_frames": "the High Span's deck line, the dam's glass face, the Shoulder and the Crown behind"
+   "v1_7_frames": "the High Span's deck line, the dam's glass face, the Shoulder and the Crown behind",
+   "lightRule": "at the page's best hour (golden hour) the dam's glass face reads lit OR emissive: the dam.glassFace light card is on from golden hour (D-A5); P25's golden-hour check is 'the square lit and the dam's face lit or emissive'"
   },
   {
    "id": "B",
@@ -13481,5 +13483,17 @@
     "note": "RESERVED R-A3: waits on the gondola top station"
    }
   }
- ]
+ ],
+ "lights": [
+  {
+   "id": "dam.glassFace",
+   "kind": "card",
+   "anchor": "structures.dam",
+   "face": "south",
+   "on": "golden hour \u2192 dawn (sunset \u2212 1 h to sunrise); off by day",
+   "colour": "warm interior glow (the kit pass picks the swatch)",
+   "note": "v2.0 (D-A5, Jonathan 2026-09-27): an emissive card on the dam's glass band, no dynamic light; the square sees it lit at golden hour and dusk; LIGHT \u00a72"
+  }
+ ],
+ "lightsRule": "lights lists the manifest-authored light cards (LIGHT \u00a73 WorldDefinition.lights); the bake's door and threshold lamps are derived and not listed here"
 }

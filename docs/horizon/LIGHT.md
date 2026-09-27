@@ -33,7 +33,7 @@ Sunrise east, noon south, sunset west. The island's plan reads that path:
 
 Terrain rules derived from this:
 - **South-facing slopes are warm biomes** (meadow, orchard); **north-facing are cool** (woodland, the Throat, moss, the Crown's snow lasts longest there). Codex places woodland on the north-west rise and the orchard in a south-facing bowl because the sun says so.
-- **The dam faces south** so it is lit through the day and seen lit from the square.
+- **The dam faces south** so it is lit through the day and, at golden hour and dusk, glows from inside (a light card, no dynamic light), seen from the square (D-A5, Jonathan 2026-09-27).
 - **The square looks north-west**, so at golden hour the dam and the Crown are lit and the square itself is in warm shade: the first screen after sign-in is at its best in the evening, when people actually open the app.
 - **The Flats are west** so the sunset lands on the airstrip and the balloon.
 - **The Prow is east** so dawn flights start there and the zipline drops toward the lit town.
