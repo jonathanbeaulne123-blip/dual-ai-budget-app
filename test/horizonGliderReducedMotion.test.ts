@@ -40,11 +40,15 @@ describe('the launch sheet under reduced motion (FLIGHT.md §6)',()=>{
     expect(padLandings('prow',env).find(l=>l.id==='sands')!.label).toBe('Long Sands (afternoon)');
     expect(padLandings('lampGallery',env).map(l=>l.label)).toEqual(['the sandbar',"the Flats' strip"]);
   });
-  it('the sandbar is the Bight shore path node nearest [600, 1030], on dry ground by the water',()=>{
+  it('the sandbar is the Bight path node nearest [600, 1030], standing on a walkable surface above the water',()=>{
     const sandbar=padLandings('lampGallery',env)[0]!;
-    // Measured: [735, 1, 961], 152 m away — the nodes nearer (≈ [547, −6, 1084]) run under the water and are not a shore.
+    // v2.2 (Stage A land): the Bight Bridge (D-A1) spans [600, 1030] and the Bight keeps no low shore path (the nearest node
+    // within 6 m of water is 463 m away at Stillwater), so shoreNode falls back to the nearest path node: the bridge's deck walk,
+    // ≈ [553, 12, 1078], 67 m away. It is walkable and 12 m over the water, not wet; its label "the sandbar" is an open item
+    // (RECONCILE.md). Was [735, 1, 961] on the v1.6 land.
     expect(Math.hypot(sandbar.xy[0]-600,sandbar.xy[1]-1030)).toBeLessThan(160);expect(sandbar.height!).toBeGreaterThanOrEqual(0);
-    expect(env.water(sandbar.xy[0],sandbar.xy[1],sandbar.height!+.3)).toBeNull();
+    const floor=geography.surface(sandbar.xy[0],sandbar.xy[1],sandbar.height!+.5),wet=env.water(sandbar.xy[0],sandbar.xy[1],sandbar.height!+.3);
+    expect(floor&&Math.abs(floor.y-sandbar.height!)).toBeLessThan(.5);expect(wet===null||wet.y<sandbar.height!-1).toBe(true);
     expect(env.shoreNode(600,1030)?.label).toBe('Bight Shore');
   });
   it('every landing has a finite place and height (the cut lands on foot there)',()=>{

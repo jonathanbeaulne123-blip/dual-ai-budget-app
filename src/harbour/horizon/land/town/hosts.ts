@@ -5,17 +5,32 @@ import { gradeRoute } from '../beds/solver';
 import { box, districtAt, nearestOnPath, plan, solid } from '../structures/mesh';
 
 export interface HostSite { id:string; door:XYZ; normal:XY; apron:XY[]; padId:string; approachBedId:string }
+/** A host footprint keeps >= 3 m off Stillwater (P32): the manifest Glasshouse corner [1025,799]
+ * lies inside the lake ellipse. The footprint's lake-facing end is drawn in, 0.5 m at a time, with
+ * its far wall fixed (moving the whole house west put its wall on the garden/rim-trail junction at
+ * [990,780]); the change is reported for the manifest. */
+export function clearOfLake(id:string,xy:XY,size:XY,cuts?:LandCuts):{xy:XY;size:XY} {
+  const lake=M.water.stillwater,clear=3;
+  const inside=(p:XY)=>((p[0]-lake.cx)/(lake.rx+clear))**2+((p[1]-lake.cy)/(lake.ry+clear))**2<1;
+  const corners=(c:XY,s:XY):XY[]=>[[-1,-1],[-1,1],[1,1],[1,-1]].map(([sx,sz])=>[c[0]+sx!*s[0]/2,c[1]+sz!*s[1]/2]);
+  if(!corners(xy,size).some(inside))return {xy,size};
+  const side=Math.sign(lake.cx-xy[0])||1,far=xy[0]-side*size[0]/2;let w=size[0];
+  while(w>size[0]*.6&&corners([far+side*w/2,xy[1]],[w,size[1]]).some(inside))w-=.5;
+  const out:{xy:XY;size:XY}={xy:[far+side*w/2,xy[1]],size:[w,size[1]]};
+  cuts?.diagnostics.push({id:`host.${id}.lakeClear`,severity:corners(out.xy,out.size).some(inside)?'conflict':'info',message:`${id} footprint ${size[0]} x ${size[1]} drawn in to ${w} x ${size[1]} (centre [${out.xy.map(v=>v.toFixed(1)).join(',')}]) to stand 3 m clear of Stillwater`,at:out.xy,measured:w,required:size[0]});
+  return out;
+}
 /** Physical doorway faces are omitted; the lintel, jambs and roof remain solid. */
 export function buildHostSites(cuts:LandCuts,base:HeightQuery):HostSite[] {
   const sites:HostSite[]=[];
   for(const h of M.hosts){
-    const [w,d]=h.footprint_m as unknown as XY,p=h.xy as unknown as XY;
+    const site=clearOfLake(h.id,h.xy as unknown as XY,h.footprint_m as unknown as XY,cuts),[w,d]=site.size,p=site.xy;
     const normal:XY=h.door.startsWith('west')?[-1,0]:h.door.startsWith('east')?[1,0]:h.door.startsWith('south-east')?[Math.SQRT1_2,Math.SQRT1_2]:[0,1];
     // The Library doorway is on the southeast wall corner, with its approach square to that face.
     const extent=h.door.startsWith('south-east')?Math.min(w,d)/2:normal[0]! !==0?w/2:d/2;
     const door:XYZ=[p[0]!+normal[0]!*extent,h.h,p[1]!+normal[1]!*extent];
     const apronCentre:XY=[door[0]!+normal[0]!*4,door[2]!+normal[1]!*4],rotation=Math.atan2(normal[1]!,normal[0]!)*180/Math.PI;
-    const pad=addFlatPad(cuts,`host.${h.id}`,'host',p,h.h,[w+2,d+2]);pad.placeId=h.placeIds[0]!;pad.door=door;
+    const pad=addFlatPad(cuts,`host.${h.id}`,'host',p,h.h,[w+2,d+2],h.id==='library'?-45:0);pad.placeId=h.placeIds[0]!;pad.door=door;
     const apron=addFlatPad(cuts,`host.${h.id}.apron`,'landing',apronCentre,h.h,[10,10],rotation);apron.door=door;
     const shell=solid(`host.${h.id}.walls`,'host','stone','wall',[],districtAt(...p)),roof=solid(`host.${h.id}.roof`,'host','stone','roof',[],districtAt(...p));
     const opening=2.4,clear=2.6,wall=.4,wallH=h.roofH_eu-.35;
@@ -32,23 +47,23 @@ export function buildHostSites(cuts:LandCuts,base:HeightQuery):HostSite[] {
     }
     box(roof,p,h.h+h.roofH_eu,[w+1,d+1],h.h+h.roofH_eu-.35);
     if(h.id==='library'){
-      pad.rotationDegrees=-45;
       for(const geometry of [shell,roof])for(let i=0;i<geometry.positions.length;i+=3){const x=geometry.positions[i]!-p[0]!,z=geometry.positions[i+2]!-p[1]!;geometry.positions[i]! =p[0]!+(x+z)*Math.SQRT1_2;geometry.positions[i+2]! =p[1]!+(z-x)*Math.SQRT1_2;}
     }
     cuts.solids.push(shell,roof);
     // Connect to the local public route at its nearest point, then turn onto the apron normal.
     const preferred:Record<string,string[]>={home:['walk square'],bank:['walk square'],library:['spur library','walk garden'],glasshouse:['spur glasshouse','walk garden'],studio:['spur studio'],cottage:['spur cottage','walk garden'],boathouse:['spur boathouse']};
     const candidates=cuts.beds.filter(b=>preferred[h.id]!.includes(b.id));
-    let nearest=candidates.map(b=>({b,...nearestOnPath(apronCentre,b.points)})).sort((a,b)=>a.distance-b.distance)[0]!;
+    let nearest=candidates.map(b=>({b,...nearestOnPath(apronCentre,b.points)})).sort((a,b)=>Math.hypot(a.distance,(a.at[1]-h.h)/.08)-Math.hypot(b.distance,(b.at[1]-h.h)/.08))[0]!;
     if(!nearest)throw new Error(`Missing public approach for ${h.id}`);
-    const entry:XY=[door[0]!+normal[0]!*9,door[2]!+normal[1]!*9],start:XY=h.id==='home'?[1455,1175]:plan(nearest.at),startHeight=h.id==='home'?12:nearest.at[1],controls:XY[]=h.id==='home'?[start,[1465,1178],[1474,1184],[1485,1180],[1485,1165],[door[0],door[2]]]:[start,entry,[door[0]!,door[2]!]];
+    const entry:XY=[door[0]!+normal[0]!*(h.id==='glasshouse'?11:9),door[2]!+normal[1]!*(h.id==='glasshouse'?11:9)],start:XY=h.id==='home'?[1455,1175]:plan(nearest.at),startHeight=h.id==='home'?12:nearest.at[1],controls:XY[]=h.id==='home'?[start,[1465,1178],[1474,1184],[1485,1180],[1485,1165],[door[0],door[2]]]:[start,entry,[door[0]!,door[2]!]];
+    if(h.id==='glasshouse')controls.splice(1,0,[989,805],[1000,813]);
     const lengthNeeded=Math.abs(startHeight-h.h)/.08;
     if(h.id!=='home'&&lengthNeeded>nearest.distance+6){
       // A broad courtyard return increases accessible length without moving the door or street.
-      const tangent:XY=[-normal[1]!,normal[0]!],extra=(lengthNeeded-nearest.distance)/2+8;
+      const tangent:XY=h.id==='cottage'?[normal[1]!,-normal[0]!]:[-normal[1]!,normal[0]!],extra=(lengthNeeded-nearest.distance)/2+8;
       controls.splice(1,0,[entry[0]!+tangent[0]!*extra,entry[1]!+tangent[1]!*extra],[entry[0]!+normal[0]!*8+tangent[0]!*extra,entry[1]!+normal[1]!*8+tangent[1]!*extra]);
     }
-    const id=`host.${h.id}.approach`,points=gradeRoute(id,controls,base,.08,[{xy:start,height:startHeight,reason:'public bed'},...(h.id==='home'?[{xy:[1465,1178] as XY,height:12,reason:'square exit'},{xy:[1485,1175] as XY,height:14,reason:'level apron entry'}]:[]),{xy:[door[0]!,door[2]!],height:h.h,reason:'door'}],cuts.diagnostics);
+    const id=`host.${h.id}.approach`,points=gradeRoute(id,controls,base,.08,[{xy:start,height:startHeight,reason:'public bed'},...(h.id==='home'?[{xy:[1465,1178] as XY,height:12,reason:'square exit'},{xy:[1485,1175] as XY,height:14,reason:'level apron entry'}]:[]),...(h.id==='glasshouse'?[{xy:entry,height:h.h,reason:'level apron entry'}]:[]),{xy:[door[0]!,door[2]!],height:h.h,reason:'door'}],cuts.diagnostics);
     const approach=bed(id,'walk',points);approach.maxGrade=.08;cuts.beds.push(approach);pad.serviceBedId=id;apron.serviceBedId=id;
     const a=rotation*Math.PI/180,c=Math.cos(a),s=Math.sin(a),outline:XY[]=[[-5,-5],[-5,5],[5,5],[5,-5]].map(([x,z])=>[apronCentre[0]!+x!*c-z!*s,apronCentre[1]!+x!*s+z!*c]);
     sites.push({id:h.id,door,normal,apron:outline,padId:pad.id,approachBedId:id});

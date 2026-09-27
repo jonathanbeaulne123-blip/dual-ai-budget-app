@@ -20,7 +20,9 @@ export function buildFlightEnvelope(field: TerrainField, cuts: LandCuts): Flight
     for (const { solid, bounds: b } of boxes) if (p[0] >= b.min[0] && p[0] <= b.max[0] && p[1] >= b.min[1] && p[1] <= b.max[1] && p[2] >= b.min[2] && p[2] <= b.max[2] && pointInsideSolid(p, solid)) return solid.id;
     return null;
   };
-  for (const [id, launch] of Object.entries(m.sky.launches)) { if (typeof launch === 'string') continue; const at: Point3 = [launch.xy[0]! * s, launch.h * s, launch.xy[1]! * s], thresholdId = id === 'crown' ? 'crownLaunch' : id === 'prow' ? 'prowPlatform' : id, pad = cuts.pads.find(p => p.id === `threshold.${thresholdId}`); launches.push({ id, xy: [at[0], at[2]], height: at[1] }); launchPads.push({ id, padId: pad?.id, edge: [[at[0] - 3 * s, at[1], at[2]], [at[0] + 3 * s, at[1], at[2]]], graded: !!pad && pointInPolygon(at[0], at[2], padOutline(pad)) && Math.abs(pad.centre[1] - at[1]) < .5 }); }
+  // A launch stands on a graded pad OR on a walkable deck at its height (v1.7: the Crown launch is the summit lookout's run-off deck, h 170).
+  const launchDeck = (at: Point3) => boxes.find(({ solid, bounds: b }) => solid.walkable && at[0] >= b.min[0] && at[0] <= b.max[0] && at[2] >= b.min[2] && at[2] <= b.max[2] && Math.abs((solidTopAt(solid, at[0], at[2]) ?? -Infinity) - at[1]) < .5)?.solid;
+  for (const [id, launch] of Object.entries(m.sky.launches)) { if (typeof launch === 'string') continue; const at: Point3 = [launch.xy[0]! * s, launch.h * s, launch.xy[1]! * s], thresholdId = id === 'crown' ? 'crownLaunch' : id === 'prow' ? 'prowPlatform' : id, pad = cuts.pads.find(p => p.id === `threshold.${thresholdId}`), deck = launchDeck(at); launches.push({ id, xy: [at[0], at[2]], height: at[1] }); launchPads.push({ id, padId: pad?.id ?? deck?.id, edge: [[at[0] - 3 * s, at[1], at[2]], [at[0] + 3 * s, at[1], at[2]]], graded: !!pad && pointInPolygon(at[0], at[2], padOutline(pad)) && Math.abs(pad.centre[1] - at[1]) < .5 || !!deck }); }
   for (const [i, thermal] of m.sky.lift.thermals.entries()) volumes.push({ id: `thermal.${i + 1}`, kind: 'thermal', centre: [thermal.xy[0]! * s, ceiling / 2, thermal.xy[1]! * s], halfSize: [thermal.r * s, ceiling / 2, thermal.r * s], radius: thermal.r * s, yaw: 0, hours: thermal.hours });
   for (const [i, sink] of m.sky.lift.sink.entries()) volumes.push({ id: `sink.${i + 1}`, kind: 'sink', centre: [sink.xy[0]! * s, ceiling / 2, sink.xy[1]! * s], halfSize: [sink.r * s, ceiling / 2, sink.r * s], radius: sink.r * s, yaw: 0 });
   volumes.push({ id: 'ridge.crownSouth', kind: 'ridge', centre: [1310 * s, 180 * s, 670 * s], halfSize: [200 * s, 100 * s, 45 * s], yaw: 0, modes: ['glider'] });
@@ -33,8 +35,12 @@ export function buildFlightEnvelope(field: TerrainField, cuts: LandCuts): Flight
   };
   for (const id of ['harbour', 'bight', 'deep']) {
     const water = cuts.waters.find(w => w.id === id || w.id === `water.${id}`) ?? (id === 'harbour' ? cuts.waters.find(w => w.kind === 'sea') : undefined); if (!water?.outline.length) continue;
-    let x = water.outline.reduce((sum, p) => sum + p[0], 0) / water.outline.length, z = water.outline.reduce((sum, p) => sum + p[1], 0) / water.outline.length; const radius = (id === 'deep' ? 20 : 60) * s;
-    if (id === 'harbour' && water.kind === 'sea') {
+    // MANIFEST v1.7 sky.waterLandings carries each water landing's centre and radius (bight [592,804] r60, deep [1278,423] r8);
+    // before v1.7 the envelope used the outline's centroid and a fixed radius.
+    const authored = (m.sky as { waterLandings?: Record<string, { xy?: number[]; r?: number }> }).waterLandings?.[id];
+    let x = water.outline.reduce((sum, p) => sum + p[0], 0) / water.outline.length, z = water.outline.reduce((sum, p) => sum + p[1], 0) / water.outline.length; const radius = (authored?.r ?? (id === 'deep' ? 20 : 60)) * s;
+    if (authored?.xy) { x = authored.xy[0]! * s; z = authored.xy[1]! * s; }
+    else if (id === 'harbour' && water.kind === 'sea') {
       const dock = m.structures.floatplaneDock; let found = false; x = dock[0]! * s + 100 * s; z = dock[1]! * s;
       // Harbour shares the sea mesh. Select the nearest actual open water patch beside its authored dock.
       for (let distance = 80; distance <= 240 && !found; distance += 20) for (let angle = 0; angle < 24; angle++) {
@@ -79,7 +85,9 @@ export function buildFlightEnvelope(field: TerrainField, cuts: LandCuts): Flight
     return { id: v.id, clear: ids.length === 0, obstructionIds: ids };
   });
   const start = m.sky.launches.crown, finish = m.sky.launches.lampGallery, from: Point3 = [start.xy[0]! * s, start.h * s, start.xy[1]! * s], to: Point3 = [finish.xy[0]! * s, finish.h * s, finish.xy[1]! * s], planLength = Math.hypot(to[0] - from[0], to[2] - from[2]), duration = planLength / m.sky.glider.speed_ms, steps = Math.ceil(planLength / 4), samples: SkyProof['glide']['samples'] = [];
-  for (let i = 0; i <= steps; i++) { const t = i / steps, p = mixPoint(from, to, t), height = from[1] - duration * t * m.sky.glider.sink_ms, at: Point3 = [p[0], height, p[2]], ground = terrainHeight(field, at[0], at[2]); let obstacle: string | null = null, surface = ground; for (const { solid, bounds: b } of boxes) if (at[0] >= b.min[0] && at[0] <= b.max[0] && at[2] >= b.min[2] && at[2] <= b.max[2] && b.max[1] > surface) { const top = solidTopAt(solid, at[0], at[2]); if (top !== null && top > surface) { surface = top; obstacle = solid.id; } } samples.push({ at, clearance: height - surface, required: i === 0 ? 0 : 10, obstacle }); }
+  // The launch's own deck is where the glide starts, not an obstacle under it.
+  const ownDeck = launchDeck(from);
+  for (let i = 0; i <= steps; i++) { const t = i / steps, p = mixPoint(from, to, t), height = from[1] - duration * t * m.sky.glider.sink_ms, at: Point3 = [p[0], height, p[2]], ground = terrainHeight(field, at[0], at[2]); let obstacle: string | null = null, surface = ground; for (const { solid, bounds: b } of boxes) if (solid !== ownDeck && solid.role !== 'marker' && at[0] >= b.min[0] && at[0] <= b.max[0] && at[2] >= b.min[2] && at[2] <= b.max[2] && b.max[1] > surface) { const top = solidTopAt(solid, at[0], at[2]); if (top !== null && top > surface) { surface = top; obstacle = solid.id; } } samples.push({ at, clearance: height - surface, required: i === 0 ? 0 : 10, obstacle }); }
   const glide: SkyProof['glide'] = { lengthEu: distance3(from, samples.at(-1)!.at), durationSeconds: duration, arrivalHeight: samples.at(-1)!.at[1], samples, minClearance: Math.min(...samples.slice(1).map(p => p.clearance)), pass: samples.every(p => p.clearance >= p.required) };
   const proofs: SkyProof = { gates: gateProofs, landings: landingProofs, glide, pass: gateProofs.every(g => g.clear) && landingProofs.every(l => l.clear) && glide.pass };
   // MANIFEST v1.7 (FLIGHT.md §9 ask 5): the polar, the parachute, the Throat corridor and the Drop Zone. Speeds stay m/s; lengths scale.

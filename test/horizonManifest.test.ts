@@ -2,7 +2,7 @@ import {describe,expect,it} from 'vitest';
 import {HORIZON_MANIFEST,parseHorizonManifest,requireScaleFactor} from '../src/harbour/horizon/world/manifest.ts';
 
 const manifest=HORIZON_MANIFEST;
-describe('Horizon manifest v1.6',()=>{
+describe('Horizon manifest v2.0',()=>{
   it('uses Jonathan’s confirmed full scale while rejecting an unconfirmed bake',()=>{
     expect(parseHorizonManifest(manifest)).toBe(manifest);
     expect(manifest.scale.factor).toBe(1);
@@ -10,8 +10,9 @@ describe('Horizon manifest v1.6',()=>{
     expect(()=>requireScaleFactor({...manifest,scale:{...manifest.scale,status:'recommended'}})).toThrow('D13 open');
     expect(()=>parseHorizonManifest({...manifest,scale:{status:'recommended'}})).toThrow('Invalid Horizon manifest');
     expect(manifest.journeys.at_active_scale).toEqual(manifest.journeys.at_factor_1_0);
-    expect(manifest.journeys.targets_s['square→library by bicycle']).toBe(150);
-    expect(manifest.journeys.at_active_scale['square→library by bicycle'].time_s).toBeGreaterThan(150);
+    expect(manifest.journeys.targets_s['square→library by bicycle']).toBe(185);
+    expect(manifest.journeys.at_active_scale['square→library by bicycle'].time_s).toBeLessThanOrEqual(185);
+    expect(manifest.journeys.targets_v1_6['square→library by bicycle']).toBe(150);
   });
   it('has the authored ids and counts without treating the two lake places as hosts',()=>{
     expect(manifest.hosts).toHaveLength(7);
@@ -49,18 +50,88 @@ describe('Horizon manifest v1.6',()=>{
     expect(manifest.hostRule).toContain('footprint_m');
     expect(manifest.hostRule).toContain('roofH_eu');
     for(const host of manifest.hosts){expect(host.footprint_m).toHaveLength(2);expect(Number.isFinite(host.roofH_eu)).toBe(true);}
-    expect(manifest.viewRule).toContain('target');
+    expect(manifest.viewRule.landscape).toContain('target');
+    expect(manifest.viewRule.portrait).toContain('45°');
+    for(const view of manifest.views){expect(view.portrait.fov_deg).toBeGreaterThanOrEqual(45);expect(Number.isFinite(view.target_h)).toBe(true);}
     for(const view of manifest.views){expect(view.target).toHaveLength(2);expect(view.fov_deg).toBeGreaterThan(0);expect(view.radius_eu).toBeGreaterThan(0);}
+  });
+  it('registers every Stage A intersection with a proof class and keeps the reserved rows authored (v1.8; decided v2.0)',()=>{
+    const rows=manifest.crossings as unknown as {a:string;b:string;resolution:string;kind?:string;source?:string;reserved?:string}[];
+    expect(rows.every(r=>['crossing','junction','sharedStretch','footway','waterBody','waterConfluence','modeTransfer'].includes(r.kind!))).toBe(true);
+    // v2.0: Jonathan's 2026-09-27 rulings decided every reserved row but the Hollow neck (#7, now D-C10); ZIP x G1 is
+    // "under" (D-A2) and VG x walk garden is "over" on gardenWalkBridge (D-A7). The data changed by ruling, not by test.
+    expect(rows.filter(r=>r.reserved).map(r=>`${r.a} x ${r.b} ${r.resolution} ${r.reserved}`)).toEqual(['S4 x walk garden threshold D-C10']);
+    const decided=rows as unknown as {a:string;b:string;resolution:string;decided?:string}[];
+    expect(decided.filter(r=>r.decided?.startsWith('D-A')).map(r=>`${r.a} x ${r.b} ${r.resolution}`).sort()).toEqual(['FERRY x bightBridge under','S1 x damPortage threshold','S4 x VG threshold','S4 x walk garden threshold','V01 x walk bightPier threshold','V01+S2 x Bight mouth over','VG x walk garden over','ZIP x G1 under']);
+    const host=manifest.hosts.find(h=>h.id==='glasshouse')!;expect(host.footprint_m).toEqual([25,18]);expect(host.xy).toEqual([1007.5,790]);
+    const gate=manifest.sky.gates.find(g=>g.id==='highSpan')!;expect([gate.h,...(gate.aperture_m ?? [])]).toEqual([17,40,12]);
+    const views=manifest.views as unknown as {id:string;subjects:string[];portrait?:{frames:string[]}}[];
+    expect(views.find(v=>v.id==='A')!.subjects).not.toContain('the Crown');expect(views.find(v=>v.id==='D')!.portrait!.frames).not.toContain('the Lamp');
   });
   it('preserves coordination notes without hiding the shared Deep plan point',()=>{
     const crossing=manifest.crossings.find(row=>row.a==='S4'&&row.b==='VBS');
     expect(crossing).toMatchObject({at:[874,941],resolution:'threshold',district:'green'});
     expect(crossing?.districtNote).toContain('unless pass 1');
-    expect(manifest.routePairNotes).toHaveLength(2);
+    const retired=manifest.routePairNotes.filter(row=>(row as {kind?:string}).kind==='retired register row (v1.8)');
+    // v1.9 (W3-A): 45 bake rows without a plan hit in the v1.9 build (or duplicates) + 3 authored rows whose routes moved.
+    const retired19=manifest.routePairNotes.filter(row=>(row as {kind?:string}).kind==='retired register row (v1.9)');
+    expect(retired19).toHaveLength(48);
+    expect(retired19.filter(row=>!(row as {retiredRow?:{source?:string}}).retiredRow?.source).map(row=>`${row.a} x ${row.b}`).sort()).toEqual(['DEEP_RUN x walk prow','S2 x walk bightPier','walk bightPier x water wash']);
+    // v2.0: 19 rows retired by the rulings (1 D-A1, 12 D-A3, 4 D-C7, 2 D-C11), each with its reason.
+    const retired20=manifest.routePairNotes.filter(row=>(row as {kind?:string}).kind==='retired register row (v2.0)');
+    expect(retired20).toHaveLength(19);
+    expect(retired20.filter(row=>/marketRamp/.test(`${row.a} ${row.b}`))).toHaveLength(2);
+    expect(manifest.routePairNotes.length-retired.length-retired19.length-retired20.length).toBe(2);
+    // v1.8: the nine stale register rows without a plan intersection (R1-11) are retired here with their reason.
+    expect(retired.map(row=>`${row.a} x ${row.b}`).sort()).toEqual(['S1 finish x V01','S2 x V01','S3 x V01','S3 x town quay','S3 x walk dune','S4 x spur studio','ZIP x town','plane x everything','walk reach x VG']);
     expect(manifest.routePairNotes.find(row=>row.a==='DEEP_RUN'&&row.b==='ORE')).toMatchObject({
       kind:'shared-plan-point',sharedPlanPoints:[[1300,420]],
     });
     for(const note of manifest.routePairNotes)expect(note).not.toHaveProperty('resolution');
+  });
+  it('carries Jonathan’s 2026-09-27 rulings as numbers (v2.0) and the Wave 5 integration data (v2.1)',()=>{
+    const m=manifest as unknown as Record<string,any>;
+    expect(m.version).toBe('2.2');   // v2.2 = v2.1 + main's data-only v1.7 blocks (reconciliation)
+    // D-A1: 245 m, one steel arch, 11.4 clear; an 8 m hull at 46° needs 32.0 m. Ruled 36 m at s 98-134 (kept as opening.v2_0);
+    // v2.1 (design lead, reversible): 40 m at s 103-143, 38 clear - the hull cleared the east pier by -3.99 at 36 m, +1.37 at 40.
+    const bb=m.structures.bightBridge;expect(bb.span_m).toBe(245);expect(bb.v1_9.span_m).toBe(230);
+    expect(bb.opening).toMatchObject({at_s:[103,143],width_m:40,kind:'steel-arch',clearWidth_m:38});expect(bb.opening.v2_0).toMatchObject({at_s:[98,134],width_m:36,clearWidth_m:34});
+    expect(bb.bents['arch piers']).toEqual(bb.opening.at_s);expect(bb.opening.hullClearance_eu.v2_1_40m_s103_143).toBeGreaterThan(0);expect(bb.opening.clear_eu).toBeGreaterThanOrEqual(11.4);
+    expect(m.water_routes.FERRY.beam_m).toBe(8);
+    const need=(w:number,deg:number)=>8/Math.sin(deg*Math.PI/180)+w/Math.tan(deg*Math.PI/180);
+    expect(need(bb.section.width_m,46)).toBeLessThanOrEqual(bb.opening.clearWidth_m-2);expect(bb.opening.needAlongAxis_m.at_46deg).toBeCloseTo(need(bb.section.width_m,46),1);
+    expect(bb.s2Flyover.clear_eu).toBeGreaterThanOrEqual(5);expect(bb.lookout.size_m).toEqual([24,7.2]);
+    // S2 is continuous over the deck with >= 2 trick spots on the bridge's own structure, each with a ground line and no jump.
+    const spots=m.skate.S2.spots as {id:string;kind:string;on:string;groundLine:string;requiredJump:boolean}[];
+    expect(spots.filter(x=>/bightBridge/.test(x.on)).length).toBeGreaterThanOrEqual(2);
+    for(const x of spots){expect(['rail','kerb','wall','bollard','stair','bank lip']).toContain(x.kind);expect(x.groundLine.length).toBeGreaterThan(0);expect(x.requiredJump).toBe(false);}
+    expect(m.skate.S2.westRamp.grade_pct).toBeLessThanOrEqual(m.profiles.skateMain.grade_max_pct);expect(m.skate.S2.eastDescent.grade_pct).toBeLessThanOrEqual(14);
+    // D-A3: station [1335,535] deck 150, towers 120-200 apart and no authored height, summit target 205 (was 375).
+    const g=m.cable.G1;expect(g.to).toEqual([1335,535]);expect(g.toH).toBe(150);expect(g.towers).toHaveLength(3);
+    const d=[0,...g.towerDistances_m,Math.hypot(g.to[0]-g.from[0],g.to[1]-g.from[1])];
+    for(let i=1;i<d.length;i++){expect(d[i]-d[i-1]).toBeGreaterThanOrEqual(m.profiles.cable.towerSpacing_m[0]);expect(d[i]-d[i-1]).toBeLessThanOrEqual(m.profiles.cable.towerSpacing_m[1]);}
+    for(const t of g.towers)expect(t).toHaveLength(2);
+    expect(m.structures.gondolaStations.crownStation).toEqual([1335,535]);expect(m.walks.crownFromGondola.pts[0]).toEqual([1335,535]);
+    expect(manifest.journeys.targets_s['square→summit by gondola + walk']).toBe(205);expect(m.journeys.targets_v1_9['square→summit by gondola + walk']).toBe(375);
+    expect(manifest.journeys.at_active_scale['square→summit by gondola + walk'].time_s).toBeLessThanOrEqual(205);
+    // D-A4 gallery at candidate A; D-A5 the glass-face card; D-A8 November on the Prow top; D-C11 stairs only.
+    expect(m.structures.prowTunnel).toMatchObject({xy:[1592,890],kind:'gallery',length_m:90});
+    expect(m.lights.find((l:{id:string})=>l.id==='dam.glassFace').on).toContain('golden hour');
+    expect(m.journey.stations.find((s:{id:string})=>s.id==='nov')).toMatchObject({xy:[1626,904],pad_rot_deg:90});
+    expect(m.structures.marketStair.v2_0_stepFree.length_eu).toBe(295);expect(m.structures.marketStair.stepFree).toMatchObject({route:['walk square'],length_eu:94});expect(m.structures.marketStair.stepFree.grade_pct.max).toBeLessThanOrEqual(8);expect(JSON.stringify(manifest.crossings)).not.toContain('marketRamp');
+    // Group B/C: K re-posed, H at golden hour, the Throat's built aperture, L01 on the slab, plot bight.1 off the paths.
+    const views=manifest.views as unknown as {id:string;xy:number[];target:number[];bestHour:string}[];
+    expect(views.find(v=>v.id==='K')).toMatchObject({xy:[994,770],target:[1120,815]});expect(views.find(v=>v.id==='H')!.bestHour).toBe('golden hour');
+    expect(m.underground.doors.throat.collarAperture_m).toBe(10.8);expect(manifest.places.find(p=>p.id==='L01')!.xy).toEqual([1173,912]);
+    expect(manifest.reserves.bightShore.plots[0]).toEqual([814,919]);
+    // v2.1 (Wave 5 integration, design lead): the numbers the merged bake measured.
+    expect(m.structures.coveStair.to_h).toBe(1.0);expect(m.structures.coveStair.v2_0_to_h).toBe(1.8);
+    const zip=manifest.crossings.find(r=>r.a==='ZIP'&&r.b==='G1') as unknown as {resolution:string;measured:{separation_eu:number}};expect(zip.resolution).toBe('under');expect(zip.measured.separation_eu).toBe(15);
+    expect(manifest.crossings.some(r=>r.a==='jetty.bightPier'&&r.b==='FERRY'&&JSON.stringify(r.at)==='[560,890]'&&r.resolution==='threshold')).toBe(true);
+    const D=m.views.find((v:{id:string})=>v.id==='D');expect(D.subjects).toEqual(['surf','the zipline landing']);expect(D.deferred.some((x:string)=>x.startsWith('the Lamp (Pass 2b'))).toBe(true);
+    expect(m.hosts.find((h:{id:string})=>h.id==='bank')).toMatchObject({footprint_m:[20,18],xy:[1443,1125],v2_0_footprint_m:[26,18]});
+    expect(m.views.find((v:{id:string})=>v.id==='H').portrait.xy).toEqual([428,760]);expect(m.walks.lakerim).toMatchObject({surface_m:5.2,shoulder_m:1.2});
+    expect(m.structures.bightSpurTrestle).toMatchObject({to:[886.7,916],length_m:56,v2_0_to:[891.6,906]});
   });
   it.each(['n/a','bridge',''])('rejects unresolved crossing resolution %j on load',resolution=>{
     expect(()=>parseHorizonManifest({...manifest,crossings:[{...manifest.crossings[0],resolution}]})).toThrow('Invalid Horizon crossing');
@@ -86,17 +157,21 @@ describe('Horizon manifest v1.6',()=>{
     }
   });
 });
-describe('Horizon manifest v1.7 (sky-only)',()=>{
+describe('Horizon manifest v2.2: main\'s v1.7 sky data on the v2.1 land',()=>{
   it('adds FLIGHT.md sky data without a geography change',()=>{
-    expect(manifest.version).toBe('1.7');
+    expect(manifest.version).toBe('2.2');
     expect(manifest.sky.gliderPolar).toHaveLength(5);
     expect(manifest.sky.parachute).toMatchObject({forward_ms:6,sink_ms:3,freefallCap_ms:30,autoPull_agl_m:45,minBail_agl_m:60,canopy_m:[7,3]});
     expect(manifest.sky.corridors.throat).toMatchObject({gate:12,to:[1300,420],slope_deg:30,level_m:25,splashH:42,coneDeg:25,maxBankDeg:20});
     expect(manifest.sky.dropZone).toMatchObject({xy:manifest.sky.landings.green.xy,rings_m:[5,10,25]});
     for(const key of ['green','reachMeadow','sands'] as const)expect(manifest.sky.landings[key].modes).toContain('parachute');
     expect(manifest.sky.landingModes.deep).toEqual(['glider']);
-    expect(manifest.journeys.targets_s['crown→lamp by glider']).toEqual([70,110]);
+    // The Drop Zone follows the green landing onto the v2.1 land ([1040,1065] was the v1.6 green landing).
+    expect(manifest.sky.dropZone.xy).toEqual([1028,1112]);expect((manifest.sky.dropZone as unknown as {v1_7_xy:number[]}).v1_7_xy).toEqual([1040,1065]);
+    // Stage A v1.7's target stands (96.0 s measured on candidate 5 from the lookout launch); D34's [70,110] is recorded beside it.
+    expect(manifest.journeys.targets_s['crown→lamp by glider']).toEqual([85,120]);
     expect(manifest.journeys.targets_s.decisions['crown→lamp by glider']).toContain("D34 applied pending Jonathan's confirmation");
+    expect((manifest.journeys.targets_s.decisions as unknown as {v2_2_d34:number[]}).v2_2_d34).toEqual([70,110]);
   });
   it('rejects a carried threshold without a carrier or with a broken mode sequence',()=>{
     const row=manifest.carriedThresholds[0]!;
@@ -105,13 +180,13 @@ describe('Horizon manifest v1.7 (sky-only)',()=>{
   });
 });
 
-describe('Horizon manifest v1.7 (RIDE §8.3, D40, D42)',()=>{
+describe('Horizon manifest v2.2: main\'s v1.7 RIDE data (§8.3, D40, D42)',()=>{
   const paces=manifest.paces as unknown as Record<string,{roll:number|null;pushGrip:number|null}>;
   const surfaces=manifest.surfaces as unknown as Record<string,{pace:string;grip:number|null}>;
-  it('is version 1.7, dated, and says what changed',()=>{
-    expect(manifest.version).toBe('1.7');
-    expect(manifest.date).toBe('2026-09-26');
-    expect(manifest.status).toContain('v1.7: paces and surface grip (RIDE D42)');
+  it('is version 2.2, dated, and says what changed',()=>{
+    expect(manifest.version).toBe('2.2');
+    expect(manifest.date).toBe('2026-09-27');
+    expect(manifest.status).toContain('v2.2: paces and surface grip (RIDE D42)');
   });
   it('gives every surface a numeric grip except duff, which is never a bed',()=>{
     const expected:Record<string,number|null>={paved:1,packedEarth:.95,ochre:.85,apron:1,bankedTurf:1.1,boardwalk:.9,cobble:.7,gravel:.6,sand:.5,plaza:1,snow:.4,ice:.2,duff:null,stone:1};
@@ -142,10 +217,13 @@ describe('Horizon manifest v1.7 (RIDE §8.3, D40, D42)',()=>{
       expect(Object.hasOwn(surfaces,segment.surface),`${id} ${segment.name}`).toBe(true);
     }
   });
-  it('makes the park forgiving rather than assisted, and keeps the v1.6 numbers',()=>{
+  it('makes the park forgiving rather than assisted, and keeps the park and S1/S3 numbers',()=>{
     expect(manifest.skate.park.note).toBe('Skate v2 park; forgiving landings only (RIDE D40); no race');
     expect(manifest.skate.park).toMatchObject({xy:[1020,1430],size:[60,32]});
-    expect(manifest.speeds_ms.board).toBe(7);
+    // Stage A v1.7 (journeys at scale 1.0) set the planning speeds board 10 / bicycle 8; the board and bicycle movers do not read
+    // speeds_ms (their kernels set pace; the bicycle caps at 6.0). v2.2 keeps Stage A's number; the journey rows vs the movers' ride
+    // logs (D44) are an open item (RECONCILE.md).
+    expect(manifest.speeds_ms.board).toBe(10);expect(manifest.speeds_ms.bicycle).toBe(8);
     expect(manifest.skate.S1.segments.map(s=>[s.pace,s.surface])).toEqual([['fast','paved'],['flow','bankedTurf'],['flow','apron'],['fast','paved'],['slow','cobble'],['fast','paved']]);
     expect(manifest.skate.S3.segments[2]).toMatchObject({name:'The square',pace:'threshold',surface:'plaza'});
   });

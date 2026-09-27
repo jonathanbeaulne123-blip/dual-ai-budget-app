@@ -28,7 +28,9 @@ export function buildReserves(cuts:LandCuts,base:HeightQuery):void {
     });
   }
   for(const [id,r]of Object.entries(M.reserves.small)){
-    const under=id==='sealedDrift',p=r.xy as unknown as XY,pad=addFlatPad(cuts,r.placeId,'reserve',p,under?42:38,under?[18,12]:[18,14],0,under);pad.placeId=r.placeId;pad.margin=6;pad.door=[p[0]!+9,pad.centre[1]!,p[1]!];pad.serviceBedId=under?'underground.sealedDrift':'hangar.access';
-    if(!under)cuts.beds.push(bed('hangar.access','walk',[[445,38,600],[464,38,600]]));
+    // v1.9: the hangar bay's door faces the strip (west) and its access walk is its service (plot.<n>.service), from the
+    // strip's east edge to the door, outside the plot (P31: the access ran through the plot; was hangar.access).
+    const under=id==='sealedDrift',p=r.xy as unknown as XY,pad=addFlatPad(cuts,r.placeId,'reserve',p,under?42:38,under?[18,12]:[11,18],0,under),doorX=under?p[0]!+9:p[0]!-5.5;pad.placeId=r.placeId;pad.margin=6;pad.door=[doorX,pad.centre[1]!,p[1]!];pad.serviceBedId=under?'underground.sealedDrift':`${r.placeId}.service`;
+    if(!under){const strip=M.structures.strip,t=(p[1]!-strip.from[1]!)/(strip.to[1]!-strip.from[1]!),edge=strip.from[0]!+(strip.to[0]!-strip.from[0]!)*t+strip.width_m/2;cuts.beds.push(bed(`${r.placeId}.service`,'walk',[[Math.min(edge,doorX-1),38,p[1]!],[doorX,38,p[1]!]]));}
   }
 }

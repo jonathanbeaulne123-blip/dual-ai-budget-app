@@ -1,13 +1,15 @@
 import type { LandCuts, StructureSolid, TerrainField, PadCut } from '../land/interfaces.ts';
-import type { Anchor, Bed, Host, Line, Point2, Point3, Threshold, WorldDefinition } from './definition.ts';
+import type { Anchor, Bed, FaceCard, Host, Line, Point2, Point3, Threshold, WorldDefinition } from './definition.ts';
 import { HORIZON_MANIFEST, requireScaleFactor } from './manifest.ts';
-import { buildCrossings } from './crossings.ts';
+import { buildCrossings, registerRowKey } from './crossings.ts';
 import type { CrossingProof } from './crossings.ts';
 import { buildDistricts, districtAt, partitionWorldSolids } from './districts.ts';
 import { arcLengths, closestOnPolyline, ellipse, length3, padOutline, rectangle, solidBounds, terrainHeight } from './geometry.ts';
 import { buildPathGraph, measureJourneys, yearWalkStretch } from './pathGraph.ts';
 import { buildFlightEnvelope } from './sky.ts';
 import { buildViews, protectedGreenOutline } from './views.ts';
+import { waterHeightAt } from '../land/water/index.ts';
+import { buildCoastline } from '../land/coast/index.ts';
 
 export const GEOGRAPHY_REVISION = 'horizon-geo-1';
 export interface LandWorldOptions { terrainAsset?: { url: string; bytes: number; step: number }; extraSolids?: StructureSolid[] }
@@ -48,7 +50,8 @@ export function buildThresholds(field: TerrainField, cuts: LandCuts, proofs: rea
   }
   // A carried threshold (the plane's door) has no place of its own: no pad, no marker, no lamp. Its vehicle supplies at/height each frame.
   for (const t of HORIZON_MANIFEST.carriedThresholds) thresholds.push({ id: t.id, sourceId: t.id, at: [NaN, NaN], modes: t.modes as `${string}→${string}`[], action: t.action, carried: t.carriedBy, minAgl: t.minAgl_m * s, kerbGap: false, built: true });
-  HORIZON_MANIFEST.crossings.forEach((c, i) => { if (c.resolution === 'threshold' && Array.isArray(c.at)) add(`crossing.${i}`, `crossing.${i}`, c.at, ['board→feet'], c.note ?? 'Dismount at the marked crossing.', `crossing.${i}`); });
+  // Register thresholds and their pads are named by the row's route names (registerRowKey), not the row's list index (R1-68).
+  HORIZON_MANIFEST.crossings.forEach((c, i) => { if (c.resolution === 'threshold' && Array.isArray(c.at) && !(c as { source?: string }).source) add(registerRowKey(i), registerRowKey(i), c.at, ['board→feet'], c.note ?? 'Dismount at the marked crossing.', registerRowKey(i)); });
   const mode = (id: string) => { const b = cuts.beds.find(b => b.id === id); return b?.kind === 'road' ? 'wheels' : b?.kind === 'skate' ? 'board' : b?.kind === 'rail' ? 'cart' : b?.kind === 'cable' ? id === 'ZIP' ? 'zip' : 'cable' : id === 'FERRY' ? 'ferry' : id.startsWith('water') || id === 'DEEP_RUN' ? 'boat' : 'feet'; };
   for (const p of cuts.pads) if (p.kind === 'threshold' && !thresholds.some(t => t.padId === p.id)) { const proof = proofs.find(row => row.padId === p.id || p.id === `crossing.${row.id}`), kinds = proof ? [...new Set([mode(proof.sourceA ?? proof.a), mode(proof.sourceB ?? proof.b)])] : ['feet'], modes = kinds.filter(k => k !== 'feet').map(k => `${k}→feet`); add(p.id.replace(/^threshold\./, ''), proof?.id ?? p.id, [p.centre[0] / s, p.centre[2] / s], modes.length ? modes : ['feet→feet'], kinds.every(k => k === 'feet') ? 'Pause and give way at the marked junction.' : 'Stop at the marker and deliberately change mode.', p.id); }
   return thresholds;
@@ -60,7 +63,9 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
   const m = HORIZON_MANIFEST, s = requireScaleFactor();
   if (terrain.revision !== GEOGRAPHY_REVISION) throw new Error(`Terrain revision ${terrain.revision} does not match ${GEOGRAPHY_REVISION}`);
   if (terrain.heights.length !== terrain.columns * terrain.rows || terrain.columns < 2 || terrain.rows < 2) throw new Error('Invalid terrain lattice');
-  const cuts: LandCuts = { ...input, solids: [...input.solids, ...(options.extraSolids ?? [])] }, hosts = buildHosts(cuts), lines = buildWorldLines(terrain, cuts), crossing = buildCrossings(cuts, lines), graph = buildPathGraph(cuts, crossing.proofs), sky = buildFlightEnvelope(terrain, cuts), views = buildViews(terrain, cuts), geometry = partitionWorldSolids(cuts.solids), districts = buildDistricts(terrain, cuts.beds, geometry), thresholds = buildThresholds(terrain, cuts, crossing.proofs);
+  const cuts: LandCuts = { ...input, solids: [...input.solids, ...(options.extraSolids ?? [])] };
+  assertUniqueSolidIds(cuts.solids);
+  const hosts = buildHosts(cuts), lines = buildWorldLines(terrain, cuts), crossing = buildCrossings(cuts, lines, { ground: (x, z) => terrainHeight(terrain, x, z), waterAt: waterHeightAt }), graph = buildPathGraph(cuts, crossing.proofs), sky = buildFlightEnvelope(terrain, cuts), views = buildViews(terrain, cuts), geometry = partitionWorldSolids(cuts.solids), districts = buildDistricts(terrain, cuts.beds, geometry), thresholds = buildThresholds(terrain, cuts, crossing.proofs);
   const sourceMap: Record<string, string[]> = {};
   for (const solid of geometry) (sourceMap[solid.sourceId] ??= []).push(solid.id);
   for (const host of hosts) host.solidIds = host.solidIds?.flatMap(id => sourceMap[id] ?? []);
@@ -69,19 +74,21 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
   const yearWalk: Bed = yearCut ? toBed(yearCut) : { id: 'yearWalk', profile: 'walk', surface: 'gravel', points: [], districtIds: [] };
   const measurements = measureJourneys(graph, cuts, hosts, lines, sky), diagnostics = [...cuts.diagnostics];
   for (const p of crossing.proofs) if (!p.registered || !p.built) diagnostics.push({ id: p.id, severity: p.built ? 'info' : 'conflict', message: `${p.a} × ${p.b}: ${p.registered ? 'registered' : 'proposed for design lead'} ${p.resolution}; ${p.built ? 'built' : 'physical resolution incomplete'}.`, at: p.at, measured: p.separation, required: p.requiredClearance });
-  for (const p of views) if (!p.proof!.pass) diagnostics.push({ id: `view.${p.id}`, severity: 'conflict', message: `Fixed camera pose fails ${[...(!p.proof!.eyeAboveFloor ? ['eye above floor'] : []), ...(!p.proof!.horizonInFrame ? ['horizon in frame'] : []), ...p.proof!.subjects.filter(s => !s.exists || !s.inFrame || s.occludedBy).map(s => `${s.id}: ${!s.exists ? 'missing' : !s.inFrame ? 'outside frame' : `occluded by ${s.occludedBy}`}`)].join('; ')}.` });
+  for (const p of views) if (!p.proof!.pass) { const q = p.proof!; diagnostics.push({ id: `view.${p.id}`, severity: 'conflict', message: `Sketchbook pose fails the ID-buffer proof (1440×900 ${q.passLandscape ? 'pass' : 'FAIL'}, portrait ${q.passPortrait ? 'pass' : 'FAIL'}): ${[...(!q.eyeAboveFloor ? ['eye below the ground'] : []), ...(!q.eyeAboveWater ? ['eye below water'] : []), ...(!q.horizonInFrame ? [`horizon not in frame (pitch ${q.landscape.pitchDegrees.toFixed(1)}°, sky/sea on the horizon rows ${q.landscape.horizonRowSkyOrSea}/${q.portrait?.horizonRowSkyOrSea ?? 0} px)`] : []), ...q.subjects.filter(s => !s.pass).map(s => `${s.id}: ${!s.exists ? 'no built geometry mapped' : `${s.pixels} px at 1440×900 (min ${q.landscape.minPixels})${s.portraitRequired ? `, ${s.portraitPixels} px portrait (min ${q.portrait?.minPixels})` : ''}`}`)].join('; ')}.` }); }
   for (const p of measurements) if (!p.pass) diagnostics.push({ id: `journey.${p.id}`, severity: 'conflict', message: p.reason ?? `Measured journey ${p.seconds!.toFixed(1)} s exceeds the unchanged target.`, measured: p.seconds ?? undefined });
   for (const p of sky.proofs!.gates) if (!p.clear) diagnostics.push({ id: `sky.gate.${p.id}`, severity: 'conflict', message: `Gate aperture obstructed by ${p.obstructionIds.join(', ')}.` });
   for (const p of sky.proofs!.landings) if (!p.clear) diagnostics.push({ id: `sky.landing.${p.id}`, severity: 'conflict', message: `Landing field intersects ${p.obstructionIds.join(', ')}.` });
   for (const p of sky.launchPads ?? []) if (!p.graded) diagnostics.push({ id: `sky.launch.${p.id}`, severity: 'conflict', message: 'Launch has no graded pad at its required deck height.' });
   if (!sky.proofs!.glide.pass) diagnostics.push({ id: 'sky.crownLamp', severity: 'conflict', message: 'The Crown to Lamp trajectory does not maintain the 10 eu terrain/structure margin.', measured: sky.proofs!.glide.minClearance, required: 10 });
-  diagnostics.push({ id: 'walkableSlope', severity: 'conflict', message: 'Existing Mountain body limit is 40 degrees; manifest requests 38. The explicit keep-existing-contract instruction retains 40 for Horizon collision.', measured: 40, required: 38 });
+  // One walkable number (G23): MANIFEST v1.7 `profiles.walkable.slope_max_deg` = the Mountain body limit 40; report only a disagreement.
+  if (HORIZON_MANIFEST.profiles.walkable.slope_max_deg !== 40) diagnostics.push({ id: 'walkableSlope', severity: 'conflict', message: `Mountain body limit is 40 degrees; manifest requests ${HORIZON_MANIFEST.profiles.walkable.slope_max_deg}.`, measured: 40, required: HORIZON_MANIFEST.profiles.walkable.slope_max_deg });
   for (const d of districts.flatMap(d => [d, ...(d.children ?? [])])) if (d.triangles!.full > 150000 || d.triangles!.lite > 60000) diagnostics.push({ id: `budget.${d.id}`, severity: 'conflict', message: `District triangle budget exceeded: full ${d.triangles!.full}, lite ${d.triangles!.lite}.` });
   for (const t of thresholds) if (!t.built) diagnostics.push({ id: `threshold.${t.id}`, severity: 'conflict', message: 'Threshold needs its graded pad, marker and any crossing kerb gap.' });
-  const small = m.underground.footprint;
   const roomVolumes = Object.keys(m.underground.rooms).flatMap(id => { const pad = cuts.pads.find(p => p.id === `underground.${id}`), roof = cuts.solids.find(s => s.id === `underground.${id}.roof`); if (!pad || !roof) { diagnostics.push({ id: `room.${id}`, severity: 'conflict', message: 'Missing room floor or ceiling geometry.' }); return []; } return [{ id, outline: ellipse(pad.centre[0], pad.centre[2], pad.size[0] / 2, pad.size[1] / 2, 24), floor: pad.centre[1], ceiling: solidBounds(roof).min[1], solidIds: geometry.filter(s => s.sourceId.startsWith(`underground.${id}.`)).map(s => s.id) }]; });
   return {
     id: 'horizon', geographyRevision: GEOGRAPHY_REVISION, scaleFactor: s, extent: { w: 2000, h: 1800 }, seaLevel: 0,
+    // The shoreline the runtime tests water against, carried by the definition (R1-67; the runtime reads it once T1 wires land/coast to it).
+    coastline: buildCoastline(),
     heightfield: { kind: 'baked', revision: GEOGRAPHY_REVISION, url: options.terrainAsset?.url ?? '/horizon/terrain/horizon-geo-1.bin', bytes: options.terrainAsset?.bytes ?? 0, step: options.terrainAsset?.step ?? terrain.step },
     water: cuts.waters.map(w => ({ id: w.id, outline: w.outline, level: w.level, kind: w.kind })),
     landforms: m.landforms.map(l => ({ id: l.id, outline: l.poly?.map(p => [p[0]! * s, p[1]! * s] as Point2) ?? (l.footprint ? ellipse(l.footprint.cx * s, l.footprint.cy * s, l.footprint.rx * s, l.footprint.ry * s) : l.centreline?.map(p => [p[0]! * s, p[1]! * s] as Point2) ?? []), minHeight: Array.isArray(l.h) ? l.h[0]! * s : 0, maxHeight: Array.isArray(l.h) ? l.h[1]! * s : 45 * s })),
@@ -89,10 +96,10 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
     structures: geometry.map(solid => { const b = solidBounds(solid); return { id: solid.id, kind: solid.kind, footprint: rectangle([(b.min[0] + b.max[0]) / 2, (b.min[2] + b.max[2]) / 2], [b.max[0] - b.min[0], b.max[2] - b.min[2]]), bedIds: solid.bedIds, geometryId: solid.id, role: solid.role, districtId: solid.districtId, bounds: b }; }),
     crossings: crossing.crossings, crossingProofs: crossing.proofs, rawIntersections: crossing.rawIntersections, thresholds,
     reserves: cuts.pads.filter(p => p.kind === 'reserve').map(p => ({ id: p.id, placeId: p.placeId ?? p.id, outline: padOutline(p), door: anchor(`${p.id}.door`, p.door ?? p.centre), rotationDegrees: p.rotationDegrees })), sky,
-    underground: { doors: Object.entries(m.underground.doors).map(([id, door]) => anchor(id, [door.xy[0]! * s, door.h * s, door.xy[1]! * s])), rooms: roomVolumes.map(room => room.outline), roomVolumes, waterBodyId: cuts.waters.find(w => w.kind === 'deep')?.id, skylight: anchor('deep.skylight', [small.cx * s, m.underground.rooms.deep.skylight.topH * s, m.underground.rooms.deep.skylight.to[1]! * s]) },
-    lights: [...hosts.map(h => { const d = h.door as { xy: Point2; height: number }; return { id: `door.${h.id}.lamp`, at: [d.xy[0], d.height + 2.2, d.xy[1]] as Point3, kind: 'door' }; }), ...thresholds.filter(t => !t.carried).map(t => ({ id: `${t.id}.lamp`, at: [t.at[0], (t.height ?? 0) + .8, t.at[1]] as Point3, kind: 'threshold' }))], views, lanterns: [],
+    underground: { doors: Object.entries(m.underground.doors).map(([id, door]) => anchor(id, [door.xy[0]! * s, door.h * s, door.xy[1]! * s])), rooms: roomVolumes.map(room => room.outline), roomVolumes, waterBodyId: cuts.waters.find(w => w.kind === 'deep')?.id, skylight: anchor('deep.skylight', [m.underground.rooms.deep.skylight.to[0]! * s, m.underground.rooms.deep.skylight.topH * s, m.underground.rooms.deep.skylight.to[1]! * s]) },
+    lights: [...hosts.map(h => { const d = h.door as { xy: Point2; height: number }; return { id: `door.${h.id}.lamp`, at: [d.xy[0], d.height + 2.2, d.xy[1]] as Point3, kind: 'door' }; }), ...thresholds.filter(t => !t.carried).map(t => ({ id: `${t.id}.lamp`, at: [t.at[0], (t.height ?? 0) + .8, t.at[1]] as Point3, kind: 'threshold' }))], faceCards: buildFaceCards(geometry), views, lanterns: [],
     protected: [{ id: 'green', outline: protectedGreenOutline(), reason: 'No building, plot or tall prop inside the protected centre.' }],
-    geometry: { solids: geometry, sourceMap }, collision: { beds: cuts.beds, pads: cuts.pads, mouths: cuts.mouths, waters: cuts.waters, walkableSlopeDegrees: 40, lipStepMax: .5 }, pathGraph: graph, diagnostics, journeyMeasurements: measurements,
+    geometry: { solids: geometry, sourceMap }, collision: { beds: cuts.beds, pads: cuts.pads, mouths: cuts.mouths, waters: cuts.waters, walkableSlopeDegrees: 40, lipStepMax: .48 }, pathGraph: graph, diagnostics, journeyMeasurements: measurements,
     journey: {
       stations: m.journey.stations.map((station, i) => { const pad = resolvePad(cuts, `station.${station.id}`), prev = m.journey.stations[(i + 11) % 12]!, points = yearWalkStretch(yearWalk.points, prev.xy.map(v => v * s), station.xy.map(v => v * s)), len = length3(points); return { id: station.id, month: station.month, anchor: anchor(`station.${station.id}`, pad?.centre ?? [station.xy[0]! * s, terrainHeight(terrain, station.xy[0]! * s, station.xy[1]! * s), station.xy[1]! * s]), bedIds: [], padId: pad?.id, footprint: pad ? padOutline(pad) : [], bedPositions: pad ? stationPositions(pad, s) : [], stretch: { from: prev.id, lengthEu: len, lengthM: len / s, spacing: [28, 29, 30, 31].map(days => ({ days, eu: len / days })), points } }; }), yearWalk,
       homestead: m.journey.homestead.sites.map(site => { const pad = resolvePad(cuts, `homestead.${site.id}`), host = hosts.find(h => h.id === site.id), fallback = site.id === 'reserveBasin' ? m.places.find(p => p.id === 'L01')!.xy : site.xy ?? m.hosts[0]!.xy, p: Point3 = pad?.centre ?? [fallback[0]! * s, terrainHeight(terrain, fallback[0]! * s, fallback[1]! * s), fallback[1]! * s]; return { id: site.id, anchor: anchor(`homestead.${site.id}`, p), footprint: pad ? padOutline(pad) : host?.footprint ?? [] }; }),
@@ -102,3 +109,41 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
   };
 }
 export const buildHorizonDefinition = createLandWorld;
+/** Inset of a face card from its face's edges (eu) and its stand-off in front of the face (a hair, no z-fight). */
+export const FACE_CARD = { inset: 1, stand: .1, band: [.55, 1] as const } as const;
+/**
+ * D-A5 (MANIFEST v2.0 `lights`, LIGHT §2): each light card of kind 'card' anchored on a structure's face becomes one quad on
+ * that face. The dam's glass face is the south face of `dam.wall` (normal +z): its upper band (55 % → 100 % of the face's
+ * height, i.e. above the apron the square sees over) inset 1 eu, following the face's batter (z fitted linearly in y), 0.1 eu in front.
+ */
+export function buildFaceCards(solids: readonly StructureSolid[]): FaceCard[] {
+  const s = requireScaleFactor(), cards: FaceCard[] = [];
+  for (const light of ((HORIZON_MANIFEST as { lights?: { id: string; kind: string; anchor: string; face?: string }[] }).lights ?? [])) {
+    if (light.kind !== 'card' || light.face !== 'south') continue;
+    const prefix = `${light.anchor.replace(/^structures\./, '')}.wall`, points: Point3[] = [];
+    for (const solid of solids) {
+      if (!(solid.sourceId ?? solid.id.split('@')[0]!).startsWith(prefix)) continue;
+      const P = solid.positions, I = solid.indices;
+      for (let k = 0; k < I.length; k += 3) {
+        const a = I[k]! * 3, b = I[k + 1]! * 3, c = I[k + 2]! * 3, u = [P[b]! - P[a]!, P[b + 1]! - P[a + 1]!, P[b + 2]! - P[a + 2]!], v = [P[c]! - P[a]!, P[c + 1]! - P[a + 1]!, P[c + 2]! - P[a + 2]!];
+        const n = [u[1]! * v[2]! - u[2]! * v[1]!, u[2]! * v[0]! - u[0]! * v[2]!, u[0]! * v[1]! - u[1]! * v[0]!], l = Math.hypot(n[0]!, n[1]!, n[2]!);
+        if (l < 1e-9 || n[2]! / l <= .5 || Math.abs(n[1]! / l) >= .7) continue;
+        for (const i of [a, b, c]) points.push([P[i]!, P[i + 1]!, P[i + 2]!]);
+      }
+    }
+    if (points.length < 3) continue;
+    const xs = points.map(p => p[0]), ys = points.map(p => p[1]), x0 = Math.min(...xs) + FACE_CARD.inset * s, x1 = Math.max(...xs) - FACE_CARD.inset * s, y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const yb = y0 + (y1 - y0) * FACE_CARD.band[0], yt = y1 - FACE_CARD.inset * s;
+    // z = a + b·y by least squares over the face's vertices (the batter); the card stands FACE_CARD.stand in front.
+    const my = ys.reduce((t, y) => t + y, 0) / ys.length, mz = points.reduce((t, p) => t + p[2], 0) / points.length;
+    const vy = points.reduce((t, p) => t + (p[1] - my) ** 2, 0), slope = vy > 1e-9 ? points.reduce((t, p) => t + (p[1] - my) * (p[2] - mz), 0) / vy : 0;
+    const zAt = (y: number) => mz + slope * (y - my) + FACE_CARD.stand * s, nl = Math.hypot(1, slope);
+    cards.push({ id: light.id, anchor: light.anchor, corners: [[x0, yb, zAt(yb)], [x1, yb, zAt(yb)], [x1, yt, zAt(yt)], [x0, yt, zAt(yt)]], normal: [0, -slope / nl, 1 / nl], on: 'goldenHourToDawn', districtId: districtAt((x0 + x1) / 2, zAt(yb), s) });
+  }
+  return cards;
+}
+/** One id, one mesh (R1-69): a bake refuses two solids with the same id rather than resolving lookups to the first. */
+export function assertUniqueSolidIds(solids: readonly StructureSolid[]): void {
+  const seen = new Set<string>(), dup = new Set<string>(); for (const solid of solids) { if (seen.has(solid.id)) dup.add(solid.id); seen.add(solid.id); }
+  if (dup.size) throw new Error(`Duplicate Horizon solid ids (${dup.size}): ${[...dup].slice(0, 12).join(', ')}${dup.size > 12 ? ', …' : ''}. Name every solid uniquely (e.g. underground.<room>.passage.*).`);
+}

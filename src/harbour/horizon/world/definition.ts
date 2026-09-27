@@ -14,7 +14,13 @@ export type HeightfieldRef =
   | { kind: 'baked'; revision: string; url: string; bytes: number; step: number };
 export interface WaterBody { id: string; outline: Polygon; level: number; kind: string }
 export interface Landform { id: string; outline: Polygon; minHeight: number; maxHeight: number }
-export interface District { id: string; neighbourhood: string | null; outline: Polygon; childOf?: string; bounds?: DistrictBounds; children?: District[]; solidIds?: string[]; bedIds?: string[]; triangles?: { full: number; lite: number }; drawCalls?: number }
+export interface District { id: string; neighbourhood: string | null; outline: Polygon; childOf?: string; bounds?: DistrictBounds; children?: District[]; solidIds?: string[]; bedIds?: string[]; triangles?: { full: number; lite: number };
+  /** Meshes the runtime CardBuilder makes for the district (terrain + solids per 256-eu card cell). */
+  drawCalls?: number;
+  /** The district's Voronoi heart (engine units): the single source of the streaming partition. */
+  heart?: Point2;
+  /** Offshore only: rock sites, the island box outside which the rocks stream, and the radius that puts them first. */
+  offshore?: { sites: Point2[]; islandBox: [Point2, Point2]; arriveRadius: number } }
 export interface Host { id: string; placeIds: string[]; door: Anchor; apron: Polygon; arrivalThresholds: string[]; height?: number; roofHeight?: number; footprint?: Polygon; solidIds?: string[]; padId?: string; facing?: number; returnAt?: Point3; arrivalEye?: Point3; arrivalTarget?: Point3; toolPlaceId?: string }
 export interface OutdoorPlace { id: string; anchor: Anchor; districtId: string }
 export interface Bed { id: string; profile: string; surface: string; points: Point3[]; districtIds: string[]; kind?: BedCut['kind']; width?: number; clearHeight?: number; structureIds?: string[]; surfaceSegments?: BedCut['surfaceSegments'] }
@@ -34,7 +40,12 @@ export interface DropZoneSpec { xy: Point2; height: number; rings: number[] }
 export interface FlightEnvelope { ceiling: number; launches: Anchor[]; landings: Anchor[]; gates: Anchor[]; volumes?: FlightVolume[]; launchPads?: { id: string; padId?: string; edge: Point3[]; graded: boolean }[]; glider?: { speed: number; sink: number }; proofs?: SkyProof; gliderPolar?: PolarPoint[]; parachute?: ParachuteSpec; corridors?: { throat?: CorridorSpec }; dropZone?: DropZoneSpec }
 export interface UndercroftDef { doors: Anchor[]; rooms: Polygon[]; waterBodyId?: string; skylight?: Anchor; roomVolumes?: { id: string; outline: Polygon; floor: number; ceiling: number; solidIds: string[] }[] }
 export interface LightAnchor { id: string; at: Point3; kind: string; bestHour?: string }
-export interface SketchbookPose { id: string; eye: Point3; target: Point3; fovDegrees: number; radius: number; bestHour?: string; also?: string; label?: string; aspect?: number; subjectIds?: string[]; floor?: number; underground?: boolean; proof?: ViewProof }
+/** An emissive light card on a face (MANIFEST v2.0 `lights`, kind 'card'; D-A5): an unlit quad a hair in front of the face,
+ * no dynamic light. `corners` run bottom-left, bottom-right, top-right, top-left seen from in front; `on` is the schedule. */
+export interface FaceCard { id: string; anchor: string; corners: [Point3, Point3, Point3, Point3]; normal: Point3; on: 'goldenHourToDawn'; districtId: string }
+/** A page's portrait lens (MANIFEST v1.7 viewRule.portrait): horizontal FOV held, never below 45°. */
+export interface PortraitPose { eye: Point3; target: Point3; fovDegrees: number; frames: string[] }
+export interface SketchbookPose { id: string; eye: Point3; target: Point3; fovDegrees: number; radius: number; bestHour?: string; also?: string; label?: string; aspect?: number; subjectIds?: string[]; floor?: number; underground?: boolean; portrait?: PortraitPose; deferred?: string[]; proof?: ViewProof }
 export interface LanternSpot { id: string; at: Point3; districtId: string }
 export interface ProtectedArea { id: string; outline: Polygon; reason: string }
 export interface Station { id: string; month: number; anchor: Anchor; bedIds: string[]; padId?: string; footprint?: Polygon; bedPositions?: { yearIndex: number; at: Point3; size: Point2 }[]; stretch?: { from: string; lengthEu: number; lengthM: number; spacing: { days: number; eu: number }[]; points: Point3[] } }
@@ -48,6 +59,8 @@ export interface WorldDefinition {
   extent: { w: 2000; h: 1800 };
   seaLevel: 0;
   heightfield: HeightfieldRef;
+  /** The island outline (engine units, closed) the runtime tests the sea and lagoon against: one source with the bake. */
+  coastline?: Polygon;
   water: WaterBody[];
   landforms: Landform[];
   districts: District[];
@@ -62,6 +75,8 @@ export interface WorldDefinition {
   sky: FlightEnvelope;
   underground: UndercroftDef;
   lights: LightAnchor[];
+  /** v2.0 (D-A5): emissive face cards (the dam's glass face), on from golden hour to dawn. */
+  faceCards?: FaceCard[];
   views: SketchbookPose[];
   lanterns: LanternSpot[];
   protected: ProtectedArea[];

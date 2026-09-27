@@ -492,27 +492,1370 @@ m["journeys"]["at_active_scale"] = times(m["scale"]["factor"])
 m["journeys"]["note"] = 'Straight-segment lengths between control points at assumed speeds; calibration estimates, not measured journeys. at_active_scale uses the confirmed scale.factor (1.0); the two at_factor tables are comparison scenarios.'
 m["journeys"]["targets_s"]["note"] = 'Original design targets retained after D13 selected 1.0. Pass 1 reports measured pass/fail against these targets; scale approval does not waive them or change speeds.'
 
-# FLIGHT.md (2026-09-26), integrator ask 5: MANIFEST v1.7 is sky-only. Geography stays horizon-geo-1.
+YEAR_WALK_V17 = [
+ [1330,640],[1355,660],[1350,685],[1375,690],[1415,680],[1445,690],[1445,695],[1465,685],[1460,705],[1470,700],
+ [1460,755],[1405,865],[1390,870],[1395,870],[1330,885],[1320,880],[1315,865],[1320,885],[1305,845],[1305,875],
+ [1300,855],[1300,880],[1295,860],[1295,880],[1290,860],[1290,885],[1285,870],[1285,880],[1245,855],[1250,845],
+ [1250,800],[1235,755],[1145,720],[1100,720],[1080,725],[1055,710],[1100,600],[1085,555],[1070,535],[960,470],
+ [930,480],[895,480],[905,470],[885,465],[815,470],[800,480],[755,480],[700,470],[715,450],[770,450],
+ [790,440],[855,445],[870,465],[905,470],[895,475],[905,475],[895,480],[915,480],[900,500],[905,545],
+ [910,565],[925,585],[905,610],[900,640],[900,628],[899,660],[898,700],[895,740],[892,780],[887,815],
+ [890,870],[920,900],[915,910],[930,995],[990,1010],[997,1006.7],[977.4,967.2],[966.1,929.6],[957.3,889.1],[953.3,848.9],
+ [956.7,808.9],[962.3,768.6],[969.2,725.7],[975.4,689.6],[986.5,649.9],[994.1,612.3],[970,625],[960,640],[930,605],[910,605],
+ [903,628],[902,660],[901,700],[898,740],[895,780],[890,815],[870,835],[870,870],[885,905],[865,920],
+ [845,965],[865,985],[885,1065],[885,1120],[900,1180],[920,1220],[960,1355],[970,1365],[945,1385],[950,1445],
+ [925,1440],[870,1385],[790,1325],[735,1270],[765,1235],[710,1190],[701.9,1195.9],[679.4,1178.1],[645.9,1154.1],[613.3,1133.2],
+ [579.3,1111.5],[546.3,1090],[512.6,1067],[482.5,1044.2],[454.9,1014],[437.3,979.5],[423.4,943.6],[410.5,904],[425,890],[400,745],
+ [425,770],[440,860],[440,870],[412.6,903.3],[425.5,942.8],[439.3,978.6],[456.7,1012.8],[483.9,1042.5],[513.9,1065.2],[547.5,1088.2],
+ [580.5,1109.6],[614.5,1131.3],[647.1,1152.2],[680.8,1176.4],[703.3,1194.2],[730,1180],[930,1265],[950,1265],[970,1245],[1120,1270],
+ [1160,1300],[1205,1290],[1160,1245],[1120,1250],[1100,1245],[975,1155],[960,1130],[955,1095],[990,1010],[994.6,1008.6],
+ [974.6,968.2],[963.2,930.4],[954.3,889.7],[950.3,848.9],[953.7,808.6],[959.3,768.2],[966.2,725.2],[972.5,688.9],[983.6,649],[991.1,612],
+ [1010,615],[1040,650],[1045,550],[1055,505],[1045,490],[995,470],[980,415],[945,370],[915,370],[820,345],
+ [790,320],[810,305],[810,280],[815,275],[895,275],[899.2,283.6],[940,276.6],[980,268.6],[1017.4,261],[1056.8,253.2],
+ [1096.5,246.3],[1136.3,242.6],[1178.5,242.2],[1216.7,243.5],[1259.2,246.9],[1297.7,252.8],[1319.7,258.5],[1340.4,281.3],[1379.9,294.4],[1415.6,307.5],
+ [1453.6,323.6],[1487.1,341.9],[1508.5,367.9],[1524.1,404.6],[1535.4,441.5],[1545.7,481.6],[1554.7,520.2],[1561,556.4],[1567.4,598.5],[1572.5,635.5],
+ [1577.9,678.4],[1581,705],[1570,665],[1575,670],[1600,665],[1615,725],[1630,745],[1630,855],[1620,910],[1645,875],
+ [1650,855],[1650,745],[1645,725],[1615,685],[1596.9,703.2],[1601.5,743.6],[1605.7,784.8],[1608.1,827.2],[1605.7,864.9],[1592.8,905.1],
+ [1576.5,943.3],[1558.6,980.4],[1536.4,1014.4],[1502.6,1037],[1500.3,1038.1],[1510,1050],[1510,1100],[1525,1175],[1500,1200],[1490,1230],
+ [1500,1200],[1545,1160],[1535,1120],[1540,1085],[1530,1055],[1505,1015],[1495,1015],[1490,1020],[1494.7,1026.4],[1527.3,1005.1],
+ [1548.8,970.9],[1564.7,937.9],[1580.6,900.4],[1593,862.2],[1595,822.6],[1592.7,785.9],[1588.9,747.7],[1584,704.7],[1579.2,664],[1574.3,626.7],
+ [1568.7,586.5],[1562.7,548],[1555.2,508.1],[1546.3,471.5],[1536.1,432.7],[1524.2,396],[1506.8,358.9],[1495.4,344.6],[1505.5,343.5],[1482.9,377.2],
+ [1461,411.8],[1449.5,447.4],[1452,485.4],[1449.1,529],[1433.5,565.6],[1417,599.6],[1400.2,635.7],[1383.7,674.4],[1376.8,690.6],[1345,680],
+ [1355,675],[1330,660],[1345,650],[1330,640]
+]
+
+# ---------------------------------------------------------------------------
+# v1.7 — Stage A ("Land to GO") design-lead data, 26 September 2026.
+# Every delta below is listed in docs/horizon/README.md → "v1.7 deltas (Stage A, design lead)".
+# Ids never change (CONTRACT §2.13); numbers move, fields are added.
+# ---------------------------------------------------------------------------
 m["version"] = "1.7"
 m["date"] = "2026-09-26"
+
+# 1. The Year Walk, re-authored on land. Seven station pads sat on a road, a skate line or a channel;
+#    they move within their own neighbourhood (old xy kept as movedFrom).
+STATION_XY_V17 = {"feb": [1100, 721], "apr": [932, 995], "jul": [401, 745], "aug": [1203, 1292], "oct": [790, 322], "nov": [1622, 912], "dec": [1488, 1228]}
+STATION_MOVE_WHY = {
+ "feb": "the old pad sat on S1 (0.7 m) and walk lakerim; now on the north-shore lake rim at the rim trail's own height (the skipping shelf)",
+ "apr": "the old pad sat across the Bight Shore spur (VBS 7 m) and S4; moved 72 m east onto open Green (west)",
+ "jul": "the old pad sat on Horizon Drive (V01 1.0 m); moved 59 m to the gap between V01 and the strip",
+ "aug": "the old pad reached into the Reach west channel (3.1 m); moved 27 m west onto dry Reach meadow",
+ "oct": "the old pad sat on Horizon Drive (V01 5.7 m); moved 24 m south into the north pass",
+ "nov": "the old pad sat on the Prow cliff drive (V01 0.8 m) in its 34 m cutting; moved onto the Prow top beside the Prow walk",
+ "dec": "the old pad overlapped Town Weave (S3); moved 13 m east onto the storefront lane",
+}
+for s in m["journey"]["stations"]:
+    if s["id"] in STATION_XY_V17:
+        s["movedFrom"] = s["xy"]
+        s["xy"] = STATION_XY_V17[s["id"]]
+        s["moveWhy"] = STATION_MOVE_WHY[s["id"]]
+STATION_PAD_H = {"jan": 117, "feb": 53, "mar": 48, "apr": 19.5, "may": 31.5, "jun": 2, "jul": 36, "aug": 4, "sep": 33, "oct": 45.5, "nov": 56.5, "dec": 8}
+YW_OLD_V16 = m["journey"]["yearWalk"]["pts"]
+m["journey"]["yearWalk"] = {
+ "profile": "walk",
+ "note": "a trail through the twelve stations in calendar order, entirely on land: it never goes below sea level or into Stillwater, the Bight, a river or a channel except across a named bridge, never through a reserve plot, and never stacked on another bed at a different height; where it shares a corridor it shares the host bed's alignment and height (shares); the walk ahead of the current month is dressed as stakes and string",
+ "pts": YEAR_WALK_V17,
+ "ptsRule": "centreline control points, solved as the other beds are (Catmull-Rom, 5 m samples) and graded at profiles.walk.grade_max_pct; the builder uses these points verbatim (no inserted controls) and places each station pad at the walk height at its station",
+ "pins": [{"station": k, "xy": next(s["xy"] for s in m["journey"]["stations"] if s["id"] == k), "h": v} for k, v in STATION_PAD_H.items()],
+ "shares": [
+   {"stretch": "feb", "host": "walk lakerim", "via": "structure.inletFootbridge", "side": "on the rim trail", "offset_m": 0, "from": [1250, 800], "to": [1100, 721], "note": "the February stretch walks the lake rim trail round the east and north shore and crosses the upper river on the Inlet Footbridge; one bed, the rim trail's"},
+   {"stretch": "may", "host": "VG", "side": "west", "offset_m": 6.5, "from": [997, 1006.7], "to": [994.1, 612.3], "note": "Green Road's west footway"},
+   {"stretch": "sep", "host": "VG", "side": "west", "offset_m": 9.5, "from": [994.6, 1008.6], "to": [991.1, 612], "note": "the same footway's outer lane"},
+   {"stretch": "jul", "host": "V01", "via": "structure.bightBridge", "side": "lagoon (north-east)", "offset_m": 5.2, "from": [701.9, 1195.9], "to": [410.5, 904], "note": "the Bight Bridge's lagoon-side footway and the Drive's verge down the Flats arm; deck height 12 on the bridge"},
+   {"stretch": "aug", "host": "V01", "via": "structure.bightBridge", "side": "lagoon (north-east)", "offset_m": 7.4, "from": [412.6, 903.3], "to": [703.3, 1194.2], "note": "the same footway's outer lane, walked back east a month later"},
+   {"stretch": "nov", "host": "V01", "side": "seaward (north)", "offset_m": 6.5, "from": [899.2, 283.6], "to": [1319.7, 258.5], "note": "the north coast drive's seaward verge"},
+   {"stretch": "nov", "host": "V01", "side": "inland", "offset_m": 9.5, "from": [1340.4, 281.3], "to": [1581, 705], "note": "crosses the Drive at grade at [1330,270] and takes the inland verge round the north-east corner (the seaward verge there is off the outline) up onto the Prow"},
+   {"stretch": "dec", "host": "V01", "side": "seaward (east)", "offset_m": 6.5, "from": [1596.9, 703.2], "to": [1500.3, 1038.1], "note": "down the Prow cliff drive's seaward verge to the harbour"},
+   {"stretch": "jan", "host": "V01", "side": "inland (west)", "offset_m": 6.5, "from": [1494.7, 1026.4], "to": [1495.4, 344.6], "note": "up the Prow cliff drive's inland verge, through the Prow Tunnel as its footway"},
+   {"stretch": "jan", "host": "V02", "side": "east", "offset_m": 6.5, "from": [1505.5, 343.5], "to": [1376.8, 690.6], "note": "up Crown Road's east verge, through the Shoulder Tunnel as its footway, to the turning circle"}
+ ],
+ "sharesRule": "a shared stretch is a footway of its host bed: the same alignment at offset_m from the host centreline, the host's solved height at every point (the builder copies it, it does not re-grade), no separate terrain override, retaining or kerb between host and footway; tunnels and bridges on the host carry the footway inside their own section",
+ "ownTrails": [
+   {"stretch": "apr", "name": "the Hollow lane (west lane)", "from": [900, 628], "to": [887, 815], "note": "a new trail on the valley floor between Orchard Brook and S4; the April and June stretches walk two lanes 3 m apart"},
+   {"stretch": "jun", "name": "the Hollow lane (east lane)", "from": [903, 628], "to": [890, 815]},
+   {"stretch": "feb", "name": "the Lakeside zig-zag", "from": [1330, 885], "to": [1285, 875], "note": "from the Shoulder's south-west corner down to the lake terrace: seven short switchback legs on the band face (x 1285–1330, z 845–885), outside S1's loop; built as a ramp with retaining walls between legs (the only step-free way off the Shoulder that does not cross S1)"}
+ ],
+ "crossings": "the walk crosses S1 once, at grade, at [1255,862] (to be regraded flush); every other crossing is at grade on a walk, a spur or a road (thresholds) or on a named bridge (the Inlet Footbridge, the Hollow Bridge, the Bight Bridge)",
+ "retired_v1_6_pts": YW_OLD_V16,
+}
+m["profiles"]["walk"]["grade_max_pct"] = 12
+m["profiles"]["walk"]["grade_typ_pct"] = [0, 8]
+m["profiles"]["walk"]["note"] = "walks and trails, including the Year Walk: 12 % maximum, ≤ 8 % typical; a stair's step-free twin keeps ≤ 8 %"
+
+# 2. The twelve Sketchbook poses re-authored against the built land, with a portrait rule.
+m["viewRule"] = {
+ "landscape": m["viewRule"] + "; target_h is the look-at height in engine units (it replaces the per-page constants and the terrain-height default); frames lists the Pass 1 subjects the page must hold, deferred the props that arrive in Pass 2/2b/3",
+ "portrait": "on a portrait capture (width < height, e.g. 390 × 844) the camera holds the page's HORIZONTAL field of view, never its vertical one: horizontal FOV = portrait.fov_deg (never below 45°), aimed at portrait.target at portrait.target_h (the page's target when absent), from the landscape eye unless portrait.xy / portrait.eyeH are given; portrait.frames names the subjects that must be legible on the phone — the other landscape subjects may fall outside the portrait crop",
+}
+VIEWS_V17 = {
+ "A": {"xy": [1470, 1186], "target": [1175, 960], "target_h": 30, "fov_deg": 60, "radius_eu": 480, "frames": "the High Span's deck line, the dam's glass face, the Shoulder and the Crown behind", "deferred": ["the Reach (outside any lens that holds the dam from the square; page I carries it)"], "portrait": {"fov_deg": 50, "target": [1195, 1005], "target_h": 28, "frames": ["the High Span", "the dam's glass face"]}},
+ "B": {"xy": [540, 1195], "target": [515, 880], "target_h": 20, "fov_deg": 55, "radius_eu": 520, "portrait": {"fov_deg": 50, "target": [522, 940], "target_h": 18, "frames": ["the Bight Bridge", "the hook"]}},
+ "C": {"xy": [1268, 1145], "target": [1210, 1098], "target_h": 16, "fov_deg": 55, "radius_eu": 220, "portrait": {"fov_deg": 50, "target": [1222, 1102], "target_h": 16, "frames": ["the road deck", "the skate shelf", "the walk at the water"]}},
+ "D": {"xy": [1185, 1445], "target": [700, 1462], "target_h": 6, "fov_deg": 55, "radius_eu": 720, "frames": "surf, the Lamp, the zipline landing", "deferred": ["a bench (Pass 3 dressing)"], "portrait": {"fov_deg": 50, "target": [700, 1454], "target_h": 5, "frames": ["surf", "the Lamp", "the zipline landing"]}},
+ "E": {"xy": [1305, 482], "target": [870, 860], "target_h": 20, "fov_deg": 55, "radius_eu": 900, "frames": "from the lookout's run-off deck: Stillwater, the Green, the Hollow, the Flats and the Bight, the sea beyond (the harbour, the Reach, Long Sands and the Prow lie behind the Shoulder from here)", "portrait": {"fov_deg": 55, "target": [1000, 880], "target_h": 20, "frames": ["the Green", "Stillwater", "the sea"]}},
+ "F": {"xy": [1158, 905], "target": [1400, 1150], "target_h": 14, "fov_deg": 55, "radius_eu": 420, "frames": "the plaques and L01 on the crest, the town below (the lake is behind the camera)", "portrait": {"fov_deg": 45, "target": [1260, 990], "target_h": 30, "frames": ["L01", "the town below"]}},
+ "G": {"target_h": 110, "radius_eu": 220, "portrait": {"fov_deg": 45, "target": [1300, 300], "target_h": 110, "frames": ["the Throat's mouth of daylight", "the skylight shaft"]}},
+ "H": {"xy": [440, 760], "target": [100, 560], "target_h": 30, "fov_deg": 55, "radius_eu": 260, "frames": "the strip in copper, the west sea under the sunset", "deferred": ["the windsock (Pass 2b kit: mast and sock; only its footing is built)", "the balloon at its mooring (Pass 2 mover and 2b kit)"], "portrait": {"fov_deg": 50, "target": [100, 560], "target_h": 30, "frames": ["the strip", "the west sea"]}},
+ "I": {"xy": [1275, 1226], "target": [1250, 1180], "target_h": 5, "fov_deg": 55, "radius_eu": 220, "frames": "the spring and the Reach water", "deferred": ["reeds at hand height", "the heron"], "portrait": {"fov_deg": 45, "target": [1250, 1180], "target_h": 5, "frames": ["the spring"]}},
+ "J": {"xy": [1840, 1000], "eyeH": 60, "target": [1780, 700], "target_h": 14, "fov_deg": 55, "radius_eu": 340, "frames": "the arch ahead of the wing, the Stacks, the Prow", "portrait": {"fov_deg": 50, "target": [1760, 760], "target_h": 14, "frames": ["the arch", "the Stacks", "the Prow"]}},
+ "K": {"xy": [1000, 758], "target": [1120, 812], "target_h": 52, "fov_deg": 55, "radius_eu": 220, "frames": "the Glasshouse in front of Stillwater", "deferred": ["lit from inside", "seed pots in silhouette"], "portrait": {"fov_deg": 45, "target": [1060, 800], "target_h": 55, "frames": ["the Glasshouse", "Stillwater"]}},
+ "L": {"xy": [1484, 1295], "target": [1285, 1315], "target_h": 4, "fov_deg": 55, "radius_eu": 240, "frames": "Lantern Row along the quay, the Boathouse across the water", "deferred": ["the floatplane rocking (Pass 2 mover; its dock is at the quay's east end, behind this pose)", "lantern cards"], "portrait": {"fov_deg": 45, "target": [1285, 1315], "target_h": 4, "frames": ["Lantern Row", "the Boathouse"]}},
+}
+VIEWS_V16 = {v["id"]: {k: v[k] for k in ("xy", "target", "fov_deg", "radius_eu", "eyeH") if k in v} for v in m["views"]}
+for v in m["views"]:
+    v.update(VIEWS_V17[v["id"]])
+    v.setdefault("target_h", 110 if v["id"] == "G" else 14 if v["id"] == "J" else 16 if v["id"] == "C" else None)
+    v.setdefault("deferred", [])
+    v["v1_6"] = VIEWS_V16[v["id"]]
+
+# 3. Journeys at scale 1.0: speeds, targets (achievable with ≥ 10 % margin on the measured path graph) and anchors.
+speeds.update({"walk": 2.4, "run": 5.0, "bicycle": 8.0, "board": 10.0, "plane": 45.0, "gondola": 7.0})
+m["sky"]["plane"]["speed_ms"] = speeds["plane"]
+m["cable"]["G1"]["speed"] = speeds["gondola"]
+m["journeys"]["at_factor_1_0"] = times(1.0)
+m["journeys"]["at_factor_0_6"] = times(0.6)
+m["journeys"]["at_active_scale"] = times(m["scale"]["factor"])
+m["journeys"]["anchors"] = {"square→green running": [1053.9, 1043.4], "note": "the Green's edge on Green Road (the centre has no bed within the snap distance); measurements snap to this point"}
+TARGETS_V17 = {"square→library by bicycle": 185, "square→green running": 125, "square→summit by gondola + walk": 375, "crown→quay on the board (S1)": [110, 150], "crown→lamp by glider": [85, 120], "ring by plane": [60, 120], "square→home/bank on foot, walking": 60, "square→boathouse on foot, walking": 180}
+TARGETS_V16 = {k: v for k, v in m["journeys"]["targets_s"].items() if k != "note"}
+m["journeys"]["targets_s"] = dict(TARGETS_V17, note="v1.7 targets at scale 1.0: each is achievable with ≥ 10 % margin on the Stage A path graph (README v1.7 table); the summit target is the achievable value until the gondola top station is decided (reserved), then 180")
+m["journeys"]["targets_v1_6"] = TARGETS_V16
+
+# 4. Sky envelope (and the Crown launch folded into the summit lookout, which also settles the launch-over-summit contradiction).
+# The Crown launch folds into the summit lookout: a timber run-off deck on L02's south-west side, 12 eu above the summit ground.
+m["sky"]["launches"]["crown"] = {"xy": [1305, 482], "h": 170, "note": "the run-off deck of the summit lookout (L02), a structure on the summit's south-west lip; the terrain summit (landforms.crown.summitH 158) stays the island's highest ground and no bed may raise the ground above it"}
+next(t for t in m["thresholds"] if t["id"] == "crownLaunch")["xy"] = [1305, 482]
+
+SKY_GATE_H = {"throat": 119, "scholarsCove": 48, "lamp": 20.5}
+for g in m["sky"]["gates"]:
+    if g["id"] in SKY_GATE_H: g["h"] = SKY_GATE_H[g["id"]]
+    if g["id"] == "throat": g["aperture_m"] = [24, 16]; g["note"] = "into the mountain; glider only; centred on the mouth (110–128), 24 × 16 inside the 26 × 18 mouth"
+    if g["id"] == "highSpan": g["note"] = "under the deck (deck h 24, riverbed h 8); needs the Notch widened to ≥ 40 eu between h 9 and 23 (terrain)"
+m["sky"]["landings"]["green"]["xy"] = [1028, 1112]
+m["sky"]["landings"]["green"]["note"] = "the Drop Zone target is ground paint inside the protected centre, clear of Green Road (its edge 65 m north-east) and the Year Walk"
+m["sky"]["landings"]["reachMeadow"]["xy"] = [1143, 1167]
+m["sky"]["landings"]["sands"]["xy"] = [1095, 1362]
+m["sky"]["waterLandings"] = {
+ "bight": {"xy": [592, 804], "r": 60, "note": "the inner Bight, clear of the ferry pier and the Year Walk; the landing field is wet below level − 2 all round"},
+ "deep": {"xy": [1278, 423], "r": 8, "note": "the only clear water in the Deep: the west lobe beside the Throat's foot; an r 20 field needs the Ore Line's splash moved ≥ 20 m east or the Deep widened 15 m west (underground track)"},
+ "harbour": {"note": "found by the envelope beside the floatplane dock (world/sky.ts); unchanged"},
+ "rule": "the envelope reads these centres; before v1.7 it used the water outline's centroid"
+}
+m["sky"]["courses"]["damRun"]["land"] = "reach meadow [1143,1167]"
+m["sky"]["courses"]["damRun"]["note"] = "514 m to the arch with 115 m of height in hand at a 9:1 glide; under the High Span, then a west turn onto the Reach meadow, 115 m past it"
+
+# 5. Manifest self-contradictions.
+m["profiles"]["walkable"]["slope_max_deg"] = 40
+m["profiles"]["walkable"]["note"] = "the body cannot climb steeper than 40° (Mountain v2's kept body limit, CONTRACT); a lip above 0.5 eu is an edge, not a step"
+m["profiles"]["road"]["exceptions"] = [
+ m["profiles"]["road"]["exception"],
+ "Crown Road (V02) may hold 12 % continuously for its climb from [1454,411] to the Shoulder Tunnel (≈ 300 m): the manifest geometry forces 36 m over 382 m; every other stretch over 8 % is listed in the bake report",
+]
+m["profiles"]["rail"]["grade_max_pct"] = 6
+m["profiles"]["rail"]["chainLift"] = {"from": [1300, 420], "to": [1345, 680], "note": "the Ore Line's climb out of the Deep to the South Portal is a named chain-lift incline (ORE.chainLift) exempt from grade_max_pct; the drop at [1270,450] (rail.ORE.drop) is the other named exception"}
+m["underground"]["rooms"]["deep"]["skylight"]["to"] = [1320, 400]
+m["underground"]["rooms"]["deep"]["skylight"]["note"] = "opens on the north slope 20 m east of the Throat's centreline (so the Throat's mouth of daylight reads from the Deep's jetty); sun shaft when the sun is above 20°"
+
+# ---------------------------------------------------------------------------
+# v1.8 — Stage A integration (design lead), 26 September 2026.
+# Every delta below is listed in docs/horizon/README.md → "v1.8 deltas (Stage A integration)".
+# Ids never change (CONTRACT §2.13); numbers move, fields are added.
+# ---------------------------------------------------------------------------
+m["version"] = "1.8"
+m["date"] = "2026-09-26"
+
+# 1. The crossings register, re-authored against the merged Stage A build (T2 delta + the integrator's bake).
+#    Authored rows keep their resolution; the 12 stale rows (R1-11) are re-pointed to their computed hit or retired
+#    to routePairNotes; every other computed intersection gets a row in T4's vocabulary (kind: crossing, junction,
+#    sharedStretch, footway, waterBody, waterConfluence, modeTransfer; resolution stays over / under / threshold).
+#    Rows with source "bake v1.8" never create register pads or dismount thresholds (a junction is flush, R1-88).
+REGISTER_V17 = m["crossings"]
+REPOINT_V18 = {
+ 5: ([898, 611], "the Hollow Bridge carries the Garden Walk over the brook 12 m north of the v1.7 point"),
+ 6: ([899, 591], "S4's lane on the Hollow Bridge crosses the brook 10 m south-east of the v1.7 point"),
+ 21: ([1587, 677], "the Deep run passes under the Prow cliff drive 23 m north-east of the v1.7 point"),
+ 23: ([1611, 710], "the Deep run passes under the Prow walk 11 m east of the v1.7 point"),
+ 24: ([1009, 1388], "the dune culvert: V01 over S4 13 m south of the v1.7 point"),
+ 27: ([1160.8, 940.1], "RESERVED R-A7: S1 meets the dam portage stair (was the lake-rim walk) 4.8 eu apart; physically separated until Jonathan rules"),
+ 38: ([1374, 615], "the Crown walk crosses over the Ore Line 48 m north of the v1.7 point (two more crossings are listed below)"),
+}
+REPOINT_B = {27: "damPortage"}
+RETIRE_V18 = {
+ 2: "the Reach walk runs under the High Span gallery beside the river; the two centrelines never cross in plan (the High Span's walk-level gallery is the Reach walk's own stretch)",
+ 11: "S1 finishes on the quay without crossing V01 near [1270,1330]; S1 × V01 has no plan intersection in the v1.8 build",
+ 14: "S2 is a lane of the Bight Bridge deck (row 13); it passes 17.9 m from the [660,1170] dismount, which does not exist (T2 D-3: S2 cannot descend from the Wash to the deck at 18 %; Jonathan decides)",
+ 20: "S3 runs beside the town quay, never across it (T0 request 4: S3 at [1433,1298] should come down ≤ 3.5 eu)",
+ 25: "\"none\": S3 and the dune walk do not cross",
+ 26: "S3 never reaches [1480,1050]; it meets V01 only on the river-mouth bridge decks ([1350,1345], [1322,1372]), carried below as rows accepted from the bake: a threshold there needs a widened, guarded deck (a register pad would stand in the river)",
+ 27: None,
+ 29: "an area rule, not an intersection: the zip line passes over the town's roofs with ≥ 12 eu clearance (checked as cable.ZIP.roofs)",
+ 40: "S4 starts at [1000,520]; it never meets the Studio spur at [974,540] (the spur meets VG there, listed below)",
+ 45: "an area rule, not an intersection: planes fly over everything under the sky ceiling",
+}
+RESERVED_ROWS_V18 = {7: "R-A7", 12: "R-A1", 17: "R-A7", 18: "R-A7", 27: "R-A7", 30: "R-A2", 34: "R-A7", 44: "R-A1"}
+register = []
+for i, row in enumerate(REGISTER_V17):
+    if i in RETIRE_V18 and RETIRE_V18[i] is not None:
+        m["routePairNotes"].append({"a": row["a"], "b": row["b"], "kind": "retired register row (v1.8)", "verification": RETIRE_V18[i], "sharedPlanPoints": [], "retiredRow": {k: v for k, v in row.items()}})
+        continue
+    row = dict(row)
+    if i in REPOINT_V18:
+        row["movedFrom"] = row["at"]
+        row["at"], why = REPOINT_V18[i]
+        row["note"] = (row["note"] + "; " if row.get("note") else "") + why
+        if i in REPOINT_B: row["b"] = REPOINT_B[i]
+    if i in RESERVED_ROWS_V18: row["reserved"] = RESERVED_ROWS_V18[i]
+    row.setdefault("kind", "crossing")
+    register.append(row)
+CANON = {"Crown Road": "V02", "river mouth": "river lower", "water wash": "wash", "Reach west channel": "reachChannel.1", "Reach east channel": "reachChannel.2", "S1 finish": "S1"}
+def _canon(name): return {CANON.get(p.strip(), p.strip()) for p in name.split("+")}
+def _covered(row):
+    for a in register:
+        if not isinstance(a["at"], list): continue
+        pair = (_canon(a["a"]), _canon(a["b"]))
+        same = (row["a"] in pair[0] and row["b"] in pair[1]) or (row["a"] in pair[1] and row["b"] in pair[0])
+        if same and ((a["at"][0] - row["at"][0]) ** 2 + (a["at"][1] - row["at"][1]) ** 2) ** .5 <= 10: return True
+    return False
+CROSSINGS_V18_COMPUTED = [
+ {"a":"crownLaunch.stair","b":"underground.bellGallery","at":[1313,480.5],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"damGallery.flight.1","b":"damGallery.exit","at":[1165,898],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 7 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"damGallery.flight.1","b":"water.stillwater","at":[1165,898],"resolution":"threshold","kind":"waterBody","source":"bake v1.8","note":"bed inside the water outline below its surface: a bridge, causeway or re-route is owed (diagnostic)"},
+ {"a":"damGallery.flight.2","b":"damGallery.exit","at":[1165,886],"resolution":"threshold","kind":"sharedStretch","source":"bake v1.8","note":"shared stretch 10 eu at one height"},
+ {"a":"damGallery.flight.2","b":"water.stillwater","at":[1165,892],"resolution":"threshold","kind":"waterBody","source":"bake v1.8","note":"bed inside the water outline below its surface: a bridge, causeway or re-route is owed (diagnostic)"},
+ {"a":"DEEP_RUN","b":"ZIP","at":[1587.5,677.4],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"ferry.bight","b":"FERRY","at":[560,898],"resolution":"threshold","kind":"modeTransfer","source":"bake v1.8","note":"boarding threshold; mover pending"},
+ {"a":"ferry.flats","b":"FERRY","at":[285,720],"resolution":"threshold","kind":"modeTransfer","source":"bake v1.8","note":"boarding threshold; mover pending"},
+ {"a":"ferry.landing","b":"FERRY","at":[1470,1340],"resolution":"threshold","kind":"modeTransfer","source":"bake v1.8","note":"boarding threshold; mover pending"},
+ {"a":"ferry.seaDoor","b":"seaStair","at":[1705,775],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"gondolaBase.walk","b":"G1","at":[1480,1090],"resolution":"threshold","kind":"modeTransfer","source":"bake v1.8","note":"boarding threshold; mover pending; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"highSpan.overlook","b":"river lower","at":[1251.2,1143.3],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 2.2 eu apart: regrade owed"},
+ {"a":"highSpan.overlook","b":"river lower","at":[1251.2,1143.3],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 2.1 eu apart: regrade owed"},
+ {"a":"homestead.lane","b":"town quay","at":[1497,1265],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"jetty.boathouse","b":"reachChannel.2","at":[1320,1318.5],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 0.8 eu apart: regrade owed"},
+ {"a":"jetty.deep","b":"stepsPortage","at":[1300,440],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"jetty.deep","b":"underground.deepAccess","at":[1300,440],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"jetty.lamp","b":"lampGallery.ramp","at":[540,1250],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"jetty.lamp","b":"lampGallery.ramp","at":[540,1250],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 9.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"jetty.lamp","b":"lampGallery.ramp","at":[540,1250],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 19.2 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"jetty.lamp","b":"lampGallery.stair","at":[540,1250],"resolution":"threshold","kind":"sharedStretch","source":"bake v1.8","note":"shared stretch 6 eu at one height"},
+ {"a":"jetty.seaDoor","b":"ferry.seaDoor","at":[1705,781],"resolution":"threshold","kind":"sharedStretch","source":"bake v1.8","note":"shared stretch 12 eu at one height"},
+ {"a":"jetty.seaDoor","b":"seaStair","at":[1705,775],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"lampGallery.ramp","b":"FERRY","at":[510.4,1224.4],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 3.2 eu apart: regrade owed"},
+ {"a":"lampGallery.ramp","b":"FERRY","at":[510.4,1224.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 12.8 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"lampGallery.ramp","b":"FERRY","at":[510.4,1224.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 22.4 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"lampGallery.ramp","b":"FERRY","at":[546.1,1190.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 6.1 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"lampGallery.ramp","b":"FERRY","at":[546.1,1190.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"lampGallery.ramp","b":"lampGallery.stair","at":[540,1195],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"lampGallery.ramp","b":"lampGallery.stair","at":[540,1250],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"lampGallery.ramp","b":"lampGallery.stair","at":[540,1250],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 9.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"lampGallery.ramp","b":"lampGallery.stair","at":[540,1250],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 19.2 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"lampGallery.stair","b":"FERRY","at":[540,1230],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"marketRamp","b":"host.home.approach","at":[1482.4,1181.8],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"marketStair.flight.0","b":"marketRamp","at":[1480,1150],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"ORE","b":"DEEP_RUN","at":[1300,420],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"ORE","b":"ORE.siding","at":[1270,450],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"ORE","b":"southPortal.link","at":[1345,680],"resolution":"threshold","kind":"modeTransfer","source":"bake v1.8","note":"boarding threshold; mover pending"},
+ {"a":"ORE","b":"stepsPortage","at":[1343.6,463.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 25.1 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"ORE","b":"underground.bellGallery","at":[1225.5,489.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"ORE","b":"underground.deepAccess","at":[1280,440],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 17.4 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"ORE","b":"underground.lanternCave","at":[1160,520],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"ORE","b":"underground.throat","at":[1300,420],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"reachChannel.1","b":"reachChannel.2","at":[1280,1220],"resolution":"threshold","kind":"waterConfluence","source":"bake v1.8","note":"one waterway"},
+ {"a":"river lower","b":"reachChannel.1","at":[1280,1220],"resolution":"threshold","kind":"waterConfluence","source":"bake v1.8","note":"one waterway"},
+ {"a":"river lower","b":"reachChannel.2","at":[1280,1220],"resolution":"threshold","kind":"waterConfluence","source":"bake v1.8","note":"one waterway"},
+ {"a":"river lower","b":"reachChannel.2","at":[1320,1276],"resolution":"threshold","kind":"waterConfluence","source":"bake v1.8","note":"one waterway"},
+ {"a":"river lower","b":"reachChannel.2","at":[1320,1276],"resolution":"threshold","kind":"waterConfluence","source":"bake v1.8","note":"one waterway"},
+ {"a":"river lower","b":"river upper","at":[1160,740],"resolution":"threshold","kind":"waterConfluence","source":"bake v1.8","note":"one waterway"},
+ {"a":"S1","b":"dam.apron.level","at":[1168,929.2],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 0.5 eu apart: regrade owed"},
+ {"a":"S1","b":"damPortage","at":[1159.3,936],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A7: physically separated threshold"},
+ {"a":"S1","b":"damPortage","at":[1160.8,940.1],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 4.8 eu apart: regrade owed; RESERVED R-A7: physically separated threshold"},
+ {"a":"S1","b":"G1","at":[1391.9,701.5],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"S1","b":"G1","at":[1407.5,770.1],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"S1","b":"landingQuay","at":[1270,1330],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S1","b":"underground.bellGallery","at":[1308.2,510.9],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S1","b":"walk crown","at":[1310,500],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S1","b":"walk crownFromGondola","at":[1310,500],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"S1","b":"walk summit","at":[1310,500],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"S1","b":"yearWalk","at":[1254.7,862],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S1","b":"ZIP","at":[1251.5,1237.5],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S1","b":"ZIP","at":[1251.9,1236.8],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S2","b":"FERRY","at":[560,1100],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S2","b":"S3","at":[1020,1430],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S2","b":"S4","at":[1020,1430],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S2","b":"yearWalk","at":[468.2,1026.4],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 0.7 eu apart: regrade owed"},
+ {"a":"S2","b":"yearWalk","at":[553.9,1095],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S2","b":"yearWalk","at":[742,1258.5],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S2","b":"yearWalk","at":[944.8,1393.7],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 1.6 eu apart: regrade owed"},
+ {"a":"S3","b":"gondolaBase.walk","at":[1480,1060],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S3","b":"host.home.approach","at":[1456,1175.3],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S3","b":"S4","at":[1020,1430],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S3","b":"town.quayLink","at":[1406,1319.1],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S3","b":"V01","at":[1321.9,1372.3],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S3","b":"V01","at":[1350,1345],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S3","b":"walk square","at":[1480,1060],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S4","b":"brook","at":[896.4,617.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S4","b":"brook","at":[898.5,591.3],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S4","b":"plot.bight.1.service","at":[874.4,919.5],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S4","b":"walk garden","at":[897.5,620.6],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 1.7 eu apart: regrade owed"},
+ {"a":"S4","b":"walk garden","at":[905.9,640.6],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 2.7 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"S4","b":"yearWalk","at":[880.4,909.9],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S4","b":"yearWalk","at":[884.8,903.6],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 0.9 eu apart: regrade owed"},
+ {"a":"S4","b":"yearWalk","at":[900.7,882.8],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 2.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"S4","b":"yearWalk","at":[901.2,629.8],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S4","b":"yearWalk","at":[902.6,632.9],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S4","b":"yearWalk","at":[918.6,574.8],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S4","b":"yearWalk","at":[957.9,1248.9],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 0.6 eu apart: regrade owed"},
+ {"a":"spur boathouse","b":"host.boathouse.approach","at":[1290,1345],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"spur cottage","b":"walk garden","at":[930,650],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"spur cottage","b":"yearWalk","at":[971.9,691.9],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"spur cottage","b":"yearWalk","at":[974.4,694.4],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"spur library","b":"walk coveWalk","at":[760.1,359.9],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"spur library","b":"yearWalk","at":[806.1,337],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"spur studio","b":"host.studio.approach","at":[1000,540],"resolution":"threshold","kind":"sharedStretch","source":"bake v1.8","note":"shared stretch 1 eu at one height"},
+ {"a":"spur upperStreet","b":"gondolaBase.walk","at":[1480,1060],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"spur upperStreet","b":"S3","at":[1480,1060],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"spur upperStreet","b":"walk square","at":[1480,1060],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"town.bankLink","b":"host.bank.approach","at":[1440,1134],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"town.bankLink","b":"host.home.approach","at":[1455,1175],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"town.bankLink","b":"town.northLink","at":[1420,1138],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"town.bankLink","b":"town.quayLink","at":[1455,1175],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"town.quayLink","b":"host.home.approach","at":[1455,1175],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"town.quayLink","b":"town quay","at":[1420,1335],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"town.quayLink","b":"town.riverLink","at":[1400,1290],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"town.storefront","b":"homestead.lane","at":[1497,1265],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"town.storefront","b":"homestead.lane","at":[1498,1250.9],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"town.storefront","b":"town quay","at":[1497,1265],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"underground.bellGallery","b":"underground.deepAccess","at":[1220,480],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"underground.deepAccess","b":"stepsPortage","at":[1300,440],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"underground.lanternCave","b":"underground.bellGallery","at":[1220,480],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"underground.lanternCave","b":"underground.deepAccess","at":[1220,480],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"underground.lanternCave","b":"underground.sealedDrift","at":[1187.3,498.2],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"underground.lanternCave","b":"underground.sealedDrift","at":[1220,480],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"underground.sealedDrift","b":"underground.bellGallery","at":[1220,480],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"underground.sealedDrift","b":"underground.deepAccess","at":[1220,480],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"underground.throat","b":"DEEP_RUN","at":[1300,420],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"DEEP_RUN","at":[1587.3,677.2],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"FERRY","at":[559.3,1104.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"FERRY","at":[560,1100],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"FERRY","at":[562.8,1107.1],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"plot.terraces.1.service","at":[1601.6,831.4],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"plot.terraces.2.service","at":[1580.5,918.1],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"plot.terraces.3.service","at":[1554.6,973.9],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"S3","at":[1321.9,1372.3],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"S3","at":[1350,1345],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"S4","at":[1008.6,1387.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"spur boathouse","at":[1300,1380],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"spur library","at":[900,290],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"spur upperStreet","at":[1480,1040],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"town.northLink","at":[1370.9,1126.3],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"town.riverLink","at":[1370,1260],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"V02","at":[1500,340],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"VG","at":[900,290],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"VG","at":[1400,1060],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"walk prow","at":[1580.1,620.7],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 11.5 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"V01","b":"yearWalk","at":[756.4,1247.1],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"yearWalk","at":[810.8,294.1],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"yearWalk","at":[952.7,1376.1],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"ZIP","at":[1587.4,677.7],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V02","b":"southPortal.link","at":[1370,690],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V02","b":"walk crown","at":[1406.5,606.3],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 21.5 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"V02","b":"walk crownFromGondola","at":[1412.8,593.4],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"V02","b":"walk crownFromGondola","at":[1443.1,526.5],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"VBS","b":"plot.bight.1.service","at":[880.8,928.6],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VBS","b":"plot.bight.2.service","at":[832.6,1011.9],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VBS","b":"plot.bight.3.service","at":[799.1,1066.7],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VBS","b":"plot.bight.4.service","at":[775,1125],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VBS","b":"spur glasshouse","at":[960,860],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VBS","b":"yearWalk","at":[855,974.6],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VBS","b":"yearWalk","at":[904.2,885.9],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VBS","b":"yearWalk","at":[951.2,863.4],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VBS","b":"yearWalk","at":[954.1,862.3],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VG","b":"highSpan.walk","at":[1228.8,1104.1],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VG","b":"spur cottage","at":[980,700],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VG","b":"spur glasshouse","at":[960,860],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VG","b":"spur library","at":[900,290],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VG","b":"spur studio","at":[975.5,540],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VG","b":"VBS","at":[960,860],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VG","b":"walk garden","at":[969.5,764.2],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 16.5 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"VG","b":"yearWalk","at":[933,369.1],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 5.5 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"VG","b":"yearWalk","at":[943.6,471],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk bight","b":"plot.bight.3.service","at":[729.5,1056.6],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk bight","b":"plot.bight.4.service","at":[706.4,1131.1],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk bightPier","b":"FERRY","at":[560,890],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk bightPier","b":"ferry.bight","at":[560,890],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk bightPier","b":"walk flats","at":[350,880],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 3.9 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk bightPier","b":"yearWalk","at":[415.5,897.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 6.2 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk bightPier","b":"yearWalk","at":[422.8,899],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 6.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk coveWalk","b":"ferry.scholarsCove","at":[630,240],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 32.8 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk coveWalk","b":"host.library.approach","at":[762,422],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk crown","b":"crownLaunch.stair","at":[1343.7,474.9],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crown","b":"G1","at":[1365.9,586.1],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crown","b":"G1","at":[1372.4,615.2],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crown","b":"G1","at":[1388.3,685.3],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crown","b":"ORE","at":[1351.2,471.2],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk crown","b":"ORE","at":[1370.4,581],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk crown","b":"ORE","at":[1373.9,614.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk crown","b":"southPortal.link","at":[1370,690],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk crown","b":"stepsPortage","at":[1355.2,469.9],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 124.3 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk crown","b":"stepsPortage","at":[1367.8,476.7],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 126.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk crown","b":"underground.bellGallery","at":[1317,494.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk crown","b":"walk crownFromGondola","at":[1310,500],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crown","b":"walk crownFromGondola","at":[1376,574.7],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 19.8 eu: a named structure (footbridge, deck or passage) is owed; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crown","b":"walk summit","at":[1310,500],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crown","b":"yearWalk","at":[1371.2,689.7],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk crown","b":"yearWalk","at":[1379.9,687.4],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk crown","b":"yearWalk","at":[1414.5,604.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 21.1 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk crownFromGondola","b":"crownLaunch.stair","at":[1320.4,479.2],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"DEEP_RUN","at":[1341.3,445.2],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"DEEP_RUN","at":[1437.6,512.9],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"G1","at":[1360,560],"resolution":"threshold","kind":"modeTransfer","source":"bake v1.8","note":"boarding threshold; mover pending; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"ORE","at":[1334.3,454.3],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"ORE","at":[1369.1,568.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"stepsPortage","at":[1332.3,457.5],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 117.5 eu: a named structure (footbridge, deck or passage) is owed; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"underground.bellGallery","at":[1315.5,489.2],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"V02","at":[1443.1,526.5],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"walk summit","at":[1310,500],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"yearWalk","at":[1422.1,589.2],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"yearWalk","at":[1446.4,537.2],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk damCrest","b":"damGallery.exit","at":[1162,903],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk damCrest","b":"river lower","at":[1140.2,903],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk dune","b":"zipLanding.ramp","at":[1079.2,1469],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 6.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk dune","b":"zipLanding.stair","at":[1144.1,1458.9],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 2.7 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk garden","b":"brook","at":[896.9,615.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk garden","b":"brook","at":[897.8,610.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk garden","b":"host.cottage.approach","at":[916.5,638.7],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk garden","b":"host.glasshouse.approach","at":[990,780],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk garden","b":"host.library.approach","at":[762,422],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk garden","b":"walk coveWalk","at":[762,422],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk garden","b":"walk lakerim","at":[990,780],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk garden","b":"yearWalk","at":[780.9,443.7],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk garden","b":"yearWalk","at":[807.5,474.1],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 3.9 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk garden","b":"yearWalk","at":[899.6,638.9],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 3.9 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk garden","b":"yearWalk","at":[900,640],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk garden","b":"yearWalk","at":[902.3,641.1],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk garden","b":"yearWalk","at":[961,757],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 14.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk garden","b":"yearWalk","at":[963.7,759.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 15.2 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk glasshouseSteps","b":"host.glasshouse.approach","at":[997.1,811.8],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 4.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk lakerim","b":"damGallery.flight.1","at":[1165,905.2],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk lakerim","b":"host.glasshouse.approach","at":[990,780],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk lakerim","b":"river lower","at":[1140,905],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk lakerim","b":"yearWalk","at":[1244.4,852.1],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 2.3 eu apart: regrade owed"},
+ {"a":"walk lakerim","b":"yearWalk","at":[1244.5,851.9],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 2.3 eu apart: regrade owed"},
+ {"a":"walk lakerim","b":"yearWalk","at":[1250.5,837.6],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk prow","b":"DEEP_RUN","at":[1610.9,709.5],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk prow","b":"seaStair","at":[1620,760],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk prow","b":"yearWalk","at":[1567.7,600.9],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 11.2 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk prow","b":"yearWalk","at":[1571.6,606.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 11.3 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk prow","b":"yearWalk","at":[1591.5,908.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 33.9 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk prow","b":"yearWalk","at":[1598.3,664],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 10.8 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk prow","b":"yearWalk","at":[1605.7,689.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 13.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk prow","b":"yearWalk","at":[1607.5,847.7],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 26.7 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk prow","b":"ZIP","at":[1597.3,661.1],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk reach","b":"highSpan.walk","at":[1240,1130],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk reach","b":"town.quayLink","at":[1400,1290],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk reach","b":"town.riverLink","at":[1400,1290],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk reach","b":"ZIP","at":[1272.3,1202.8],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk reach","b":"ZIP","at":[1272.9,1201.8],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk square","b":"gondolaBase.walk","at":[1480,1060],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk square","b":"host.bank.approach","at":[1466.3,1162.9],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk square","b":"host.home.approach","at":[1455,1175],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk square","b":"town.bankLink","at":[1455,1175],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk square","b":"town.quayLink","at":[1455,1175],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk summit","b":"stepsPortage","at":[1310.1,445.5],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 120.4 eu: a named structure (footbridge, deck or passage) is owed; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk summit","b":"underground.bellGallery","at":[1310,470],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"yearWalk","b":"DEEP_RUN","at":[1450.1,522.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"DEEP_RUN","at":[1575.7,660.7],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"DEEP_RUN","at":[1579.4,666],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"DEEP_RUN","at":[1580.8,667.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"DEEP_RUN","at":[1600.5,695.7],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"DEEP_RUN","at":[1611.3,710],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"DEEP_RUN","at":[1649.9,743.2],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"FERRY","at":[560,1096.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"FERRY","at":[560,1099],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"FERRY","at":[560.2,1099.1],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"FERRY","at":[560.5,1096.7],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"G1","at":[1385.1,671.2],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"yearWalk","b":"G1","at":[1388.6,686.7],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"yearWalk","b":"G1","at":[1421.9,833.4],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"yearWalk","b":"ORE","at":[1345,680],"resolution":"threshold","kind":"modeTransfer","source":"bake v1.8","note":"boarding threshold; mover pending"},
+ {"a":"yearWalk","b":"ORE","at":[1349.6,671.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"ORE","at":[1355.1,661.5],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"plot.bight.1.service","at":[871.2,914.9],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"plot.terraces.1.service","at":[1594.9,834],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"plot.terraces.2.service","at":[1575.6,912.8],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"plot.terraces.3.service","at":[1547,974.1],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"river upper","at":[1161.9,725.2],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 8 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"yearWalk","b":"seaStair","at":[1630.8,761.9],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 5.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"yearWalk","b":"seaStair","at":[1650.3,765.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 15.2 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"yearWalk","b":"southPortal.link","at":[1345,680],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 3 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"yearWalk","b":"southPortal.link","at":[1347.7,681.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 2.8 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"yearWalk","b":"southPortal.link","at":[1349.7,682.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 2.9 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"yearWalk","b":"town.storefront","at":[1494.5,1211.8],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"yearWalk","b":"town.storefront","at":[1495,1212.4],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"yearWalk","b":"ZIP","at":[1577.6,693.9],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"ZIP","at":[1579.6,690.7],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"ZIP","at":[1581.9,686.8],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"ZIP","at":[1596.1,663.2],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"ZIP","b":"river lower","at":[1273.1,1201.5],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"ZIP","b":"river lower","at":[1273.1,1201.5],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"zipLanding.ramp","b":"ZIP","at":[1130,1440],"resolution":"threshold","kind":"modeTransfer","source":"bake v1.8","note":"boarding threshold; mover pending"},
+ {"a":"zipLanding.stair","b":"ZIP","at":[1130,1440],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"zipLanding.stair","b":"zipLanding.ramp","at":[1130,1440],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"zipLanding.stair","b":"zipLanding.ramp","at":[1145,1460],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"}
+]
+register += [row for row in CROSSINGS_V18_COMPUTED if not _covered(row)]
+m["crossings"] = register
+m["crossingRule"] = m["crossingRule"] + ". v1.8: every computed intersection of the Stage A build has a row; kind names the proof class (crossing, junction, sharedStretch, footway, waterBody, waterConfluence, modeTransfer) and resolution stays over / under / threshold; rows with source 'bake v1.8' are the design lead's acceptance of the computed resolution and never create a register pad or a dismount threshold; reserved names the decision a row waits on"
+
+# 2. Glasshouse footprint drawn in off Stillwater (T2): 25 × 18 centred [1007.5,790], ≥ 3 m clear of the lake.
+gh = next(h for h in m["hosts"] if h["id"] == "glasshouse")
+gh["v1_7"] = {"footprint_m": gh["footprint_m"], "xy": gh["xy"]}
+gh["footprint_m"] = [25, 18]
+gh["xy"] = [1007.5, 790]
+
+# 3. High Span sky gate: its v1.7 bottom (h 9) sat under the river pools (9.97–10.8) and bank lip (T1). 40 × 12 at h 17 (11–23).
+for g in m["sky"]["gates"]:
+    if g["id"] == "highSpan":
+        g["v1_7"] = {"h": g["h"], "aperture_m": g["aperture_m"]}
+        g["h"] = 17
+        g["aperture_m"] = [40, 12]
+        g["note"] = "under the deck (deck h 24, riverbed h 8): 40 × 12 at h 17 (11–23), clear of the river pools (≤ 10.8) and the bank lip; the Notch is ≥ 54 m wide there (T1)"
+
+# 4. Views: page A no longer frames "the Crown behind" (the Shoulder's in-band rim hides the summit from the square
+#    by 4–16 eu; page E is the Crown's page); page D's portrait drops the Lamp until the Pass 2b lighthouse (2 px at 390).
+#    Every page gets a machine subject list in the frame vocabulary (the proof reads it; the code table is the fallback).
+SUBJECTS_V18 = {
+ "A": ["the High Span", "the dam's glass face", "the Shoulder"],
+ "B": ["the Bight Bridge", "the Flats", "the hook"],
+ "C": ["the road deck", "the skate shelf", "the walk at the water"],
+ "D": ["surf", "the Lamp", "the zipline landing"],
+ "E": ["Stillwater", "the Green", "the Hollow", "the Flats", "the Bight", "the sea"],
+ "F": ["L01", "the town below"],
+ "G": ["the Throat's mouth of daylight", "the skylight shaft"],
+ "H": ["the strip", "the west sea"],
+ "I": ["the spring", "the Reach water"],
+ "J": ["the arch", "the Stacks", "the Prow"],
+ "K": ["the Glasshouse", "Stillwater"],
+ "L": ["Lantern Row", "the Boathouse"],
+}
+for v in m["views"]:
+    v["subjects"] = SUBJECTS_V18[v["id"]]
+    if v["id"] == "A":
+        v["v1_7_frames"] = v["frames"]
+        v["frames"] = "the High Span's deck line, the dam's glass face, the Shoulder"
+        v["deferred"] = v["deferred"] + ["the Crown (hidden from the square by the Shoulder's own rim, 4–16 eu over the sight line inside its band; page E holds it)"]
+    if v["id"] == "D":
+        v["portrait"]["v1_7_frames"] = v["portrait"]["frames"]
+        v["portrait"]["frames"] = ["surf", "the zipline landing"]
+        v["deferred"] = v["deferred"] + ["the Lamp in portrait (2 px at 390 × 844 until the Pass 2b lighthouse; it stays a 16:9 subject)"]
+
+# 5. District hearts (the Voronoi partition's seeds) are data, not a code table (R1-67).
+HEARTS_V18 = {"harbour": [1470, 1170], "landing": [1060, 1410], "reach": [1280, 1260], "green": [1030, 1060], "hollow": [985, 580], "scholars": [765, 400], "flats": [420, 685], "bight": [745, 995], "lakeside": [1130, 820], "notch": [1205, 1070], "prow": [1600, 780], "crown": [1310, 470]}
+for d in m["districts"]:
+    if d["id"] in HEARTS_V18: d["heart"] = HEARTS_V18[d["id"]]
+
+# ---------------------------------------------------------------------------
+# v1.9 — Stage A fixer wave 3, track W3-A (beds, structures and data), 26 September 2026.
+# Every delta below is listed in docs/horizon/README.md → "v1.9 deltas (Stage A, W3-A)".
+# Ids never change (CONTRACT §2.13); numbers move, fields are added.
+# ---------------------------------------------------------------------------
+m["version"] = "1.9"
+m["date"] = "2026-09-26"
+YW = m["journey"]["yearWalk"]
+YW_V18_PTS = [list(p) for p in YW["pts"]]
+YW_EDITS_V19 = []
+def yw_replace(old, new, why):
+    """Replace one run of Year Walk control points (matched exactly, once) and record it."""
+    pts = YW["pts"]
+    hits = [i for i in range(len(pts) - len(old) + 1) if pts[i:i + len(old)] == old]
+    assert len(hits) == 1, (old, hits)
+    i = hits[0]
+    YW["pts"] = pts[:i] + new + pts[i + len(old):]
+    YW_EDITS_V19.append({"was": old, "now": new, "why": why})
+
+# 1. Scholars: the March in-leg ran 3-4 eu over the Garden Walk's shoulder at [802,468] (the Glasshouse and
+#    Cottage door walks stopped there). It becomes the north lane of the March out-leg, 3.5 m from it at one
+#    height, and crosses the Garden Walk flush beside the out-leg's crossing.
+yw_replace([[885,465],[815,470],[800,480],[755,480],[700,470]],
+           [[885,465],[872,461.7],[857,441.3],[789.3,436.5],[769.2,446.5],[715,446.5],[700,470]],
+           "the March in-leg is the out-leg's north lane (3.5 m, one height) instead of a second line 3-4 eu over the Garden Walk at [802,468]")
+
+# 2. The Hollow (P08 pin clusters at [994,613] and [953,632]: fixed heights 22-53 eu of route short).
+#    May's pad sat on the Hollow floor at 31.5, 7.3 eu under the Green Road footway it leaves 45 m
+#    before; September's at 33 was 5.8 under the same footway 37 m before it. Both pads rise to a
+#    terrace the footway can reach at the walk grade (May 37, September 35), and the April lane
+#    gets two levels so it takes the Hollow's 17 eu band face at 12 % (it rode the 8 % typical
+#    grade 6-13 eu over the Hollow floor): the plateau edge and the Cottage front walk's bench.
+YW_PIN_H_V19 = {"may": 37, "sep": 40, "jan": 112.8}
+for p in YW["pins"]:
+    if p["station"] in YW_PIN_H_V19:
+        p["v1_8_h"] = p["h"]
+        p["h"] = YW_PIN_H_V19[p["station"]]
+yw_replace([[910,565],[925,585],[905,610]], [[910,565],[935,585],[905,610]],
+           "the April lane swings 10 m further east above the Hollow so its 18 eu band-face descent to the S4 footway fits 12 % (148 → 164 m)")
+YW["levels"] = [
+ {"xy": [1358, 685], "h": 110, "r": 14, "why": "the south portal forecourt: both January legs cross the ORE station's link walk (110) there at its height"},
+]
+# 3. The Hollow neck (x 893-913, z 600-660): the brook, S4, the Garden Walk and both Hollow lanes run side by side on the
+#    brook's east bank. The lanes were 2-8 eu over S4 and the Garden Walk there (separation S4 69 samples, a generated
+#    S4 x Year Walk deck across the Garden Walk). Through the neck both lanes are S4's east footway (one height, no wall),
+#    and S4 meets the Cottage front walk at grade (36) instead of passing 2.8 eu under it (junction.cross.s4.walkGarden.3).
+YW["shares"] += [
+ {"stretch": "apr", "host": "S4", "side": "east", "offset_m": 6, "from": [905, 610], "to": [899, 660], "note": "v1.9: the April lane is S4's east footway through the Hollow neck, at S4's height"},
+ {"stretch": "jun", "host": "S4", "side": "east", "offset_m": 8, "from": [903, 628], "to": [902, 660], "note": "v1.9: the June lane, 3 m further out on the same footway"},
+]
+YW["levelsRule"] = "levels are extra height pins on the Year Walk's own (unshared) stretches: the builder pins the nearest walk sample to h, so the grade between two pins can use the walk maximum where the ground demands it"
+
+# 4. January: the pad (117) sat 7 eu over the turning circle with 37 m of walk between them (P08 36 % at [1369,689]);
+#    it steps down to 114 (a 3 m sunken terrace on the Shoulder top), see YW_PIN_H_V19 and the south portal level above.
+# 5. The Lakeside switchback (T0 #16): the v1.7 zig-zag legs were 20-30 m long, 5 m apart and 12-16 %, and the walk left
+#    it by crossing S1 at [1255,862] where S1 is 4 eu under the lake terrace (15-16 % both sides). Seven legs of 30 m on a
+#    5.5 m pitch (x 1325-1292, z 852-882) with turning landings; the exit crosses S1 at grade at [1267,842], where S1
+#    stands at the terrace height (55), and meets the rim trail at [1251,836] (the February share starts there).
+SWITCHBACK_X = [1325, 1317.6, 1310.2, 1302.8, 1295.4, 1288, 1280.6]
+sb = [[1330, 885]]
+for k, x in enumerate(SWITCHBACK_X):
+    top, bottom = (880, 852) if k % 2 == 0 else (852, 880)
+    sb += [[x, top], [x, bottom]]
+    if k + 1 < len(SWITCHBACK_X):
+        nx = SWITCHBACK_X[k + 1]; sb.append([round((x + nx) / 2, 1), bottom - 3.5 if bottom == 852 else bottom + 3.5])
+sb += [[1276, 846], [1267, 842], [1251, 836]]
+yw_replace([[1330,885],[1320,880],[1315,865],[1320,885],[1305,845],[1305,875],[1300,855],[1300,880],[1295,860],[1295,880],[1290,860],[1290,885],[1285,870],[1285,880],[1245,855],[1250,845]],
+           sb,
+           "the Lakeside switchback: seven 28 m legs on a 7.4 m pitch (walk surfaces 2.2 m apart, shoulders meeting as the walls between legs) at <= 12 %, leaving at grade across S1 at [1267,842] to the rim trail")
+m["structures"]["lakesideSwitchback"] = {"kind": "switchbackRamp", "route": "yearWalk", "bbox": [[1274, 843], [1331, 889]], "legs": 7, "pitch_m": 7.4,
+ "note": "v1.9 (T0 #16): the Year Walk's seven legs down the Shoulder's south-west corner to the lake terrace; each leg's downhill shoulder is carried to the leg below as a masonry retaining wall (the builder grounds it: no leg hangs over the next)"}
+YW["s1Crossing"] = [1267, 842]
+for sh in YW["shares"]:
+    if sh["stretch"] == "feb" and sh["host"] == "walk lakerim":
+        sh["v1_8_from"] = sh["from"]; sh["from"] = [1251, 836]
+YW["crossings"] = YW["crossings"].replace("at [1255,862] (to be regraded flush)", "at [1267,842] (v1.9: flush, where S1 stands at the lake terrace height)")
+# 6. Horizon Drive's north-east corner (T0 #14, P09 72.7 / P12 74.3 / P32 pad 70 over the sea): the v1.6 control [1500,340]
+#    made the Drive a 330 m chord over the sea from x 1370 to [1545,470] at 65-70 (the NE cliff is vertical from ~105 to the
+#    sea). The corner now follows the cliff 10 m inside its top (a cliff drive cut into the headland, like the Prow), and
+#    Crown Road (V02) starts from the Drive at [1433.3,335.6] on that ledge (95 m before its tunnel portal: 6.6 %). The Year Walk's November/January verges are
+#    re-laid as offsets of the new alignment (same sides and offsets as v1.7).
+def spline5(ctrl, step=5):
+    out = []
+    for i in range(len(ctrl) - 1):
+        a, b, c, d = ctrl[max(0, i - 1)], ctrl[i], ctrl[i + 1], ctrl[min(len(ctrl) - 1, i + 2)]
+        n = max(1, math.ceil(math.dist(b, c) / step))
+        for k in range(n):
+            t = k / n; t2 = t * t; t3 = t2 * t
+            out.append([(2*t3-3*t2+1)*b[j] + (t3-2*t2+t)*(c[j]-a[j])*.35 + (-2*t3+3*t2)*c[j] + (t3-t2)*(d[j]-b[j])*.35 for j in (0, 1)])
+    out.append(list(ctrl[-1])); return out
+def offset_run(line, side_point, off, start, end, spacing=40):
+    """Points at plan offset `off` from polyline `line` (side toward side_point), from the arc nearest `start` to the arc nearest `end`, every ~spacing m."""
+    arcs = [0.0]
+    for i in range(1, len(line)): arcs.append(arcs[-1] + math.dist(line[i - 1], line[i]))
+    def near(q): return min(range(len(line)), key=lambda i: math.dist(line[i], q))
+    i0, i1 = near(start), near(end); step = 1 if i1 >= i0 else -1
+    picks = [i0]
+    for i in range(i0, i1 + step, step):
+        if abs(arcs[i] - arcs[picks[-1]]) >= spacing: picks.append(i)
+    if picks[-1] != i1:
+        if abs(arcs[i1] - arcs[picks[-1]]) < spacing * .5 and len(picks) > 1: picks[-1] = i1
+        else: picks.append(i1)
+    out = []
+    for i in picks:
+        a, c = line[max(0, i - 1)], line[min(len(line) - 1, i + 1)]
+        dx, dz = c[0] - a[0], c[1] - a[1]; L = math.hypot(dx, dz) or 1
+        n = (-dz / L, dx / L)
+        if (side_point[0] - line[i][0]) * n[0] + (side_point[1] - line[i][1]) * n[1] < 0: n = (-n[0], -n[1])
+        out.append([round(line[i][0] + n[0] * off, 1), round(line[i][1] + n[1] * off, 1)])
+    return out
+V01 = m["roads"]["V01"]
+V01["v1_8_pts"] = [list(p) for p in V01["pts"]]
+i = V01["pts"].index([1500, 340])
+NE_V19 = [[1353.8, 295.8], [1397.2, 306.5], [1433.3, 335.6], [1461.6, 373.9], [1493.5, 406.5], [1520.4, 439.7], [1546, 472]]
+V01["pts"] = V01["pts"][:i] + NE_V19[::-1] + V01["pts"][i + 1:]
+V01["note_v1_9"] = "north-east corner re-laid on the cliff 10 m inside its top (was a chord over the sea through [1500,340]); Crown Road starts at [1433.3,335.6]"
+V02 = m["roads"]["V02"]
+V02["v1_8_pts"] = [list(p) for p in V02["pts"]]
+V02["pts"][0] = [1433.3, 335.6]
+v01s, v02s = spline5(V01["pts"]), spline5(V02["pts"])
+INLAND = [1300, 700]
+nov_sea_end = offset_run(v01s, [1316, 0], 6.5, [1316, 268], [1316, 268])[0]
+nov = offset_run(v01s, INLAND, 9.5, [1346, 290], [1554.7, 520.2])
+def seg_dist(q, line):
+    best = 1e9
+    for a, b in zip(line, line[1:]):
+        dx, dz = b[0] - a[0], b[1] - a[1]; t = max(0, min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dz) / (dx * dx + dz * dz or 1)))
+        best = min(best, math.hypot(q[0] - a[0] - dx * t, q[1] - a[1] - dz * t))
+    return best
+# January walks up V01's inland verge and turns onto Crown Road's east verge where the two verges meet (the
+# inside corner of the junction), without crossing V02.
+jn = min(range(len(v01s)), key=lambda i: math.dist(v01s[i], [1433.3, 335.6]))
+turn = jn
+while turn > 0 and seg_dist(offset_run(v01s, INLAND, 6.5, v01s[turn], v01s[turn])[0], v02s) < 6.5: turn -= 1
+# The corner itself (15 m either side of the verges' meeting point) is the walk's own stretch, graded between
+# the two hosts' heights (V01 falls to the south-east, V02 climbs to the south).
+corner_a = offset_run(v01s, INLAND, 6.5, v01s[turn], v01s[turn])[0]
+k02 = min(range(len(v02s)), key=lambda i: math.dist(v02s[i], corner_a))
+corner_b = offset_run(v02s, [1600, 400], 6.5, v02s[k02], v02s[k02])[0]
+tip = [(corner_a[0] + corner_b[0]) / 2, (corner_a[1] + corner_b[1]) / 2]
+jc = [1433.3, 335.6]; bis = [tip[0] - jc[0], tip[1] - jc[1]]; bl = math.hypot(*bis)
+corner_t = [round(tip[0] + bis[0] / bl * 3, 1), round(tip[1] + bis[1] / bl * 3, 1)]
+corner_a8 = offset_run(v01s, INLAND, 6.5, v01s[max(0, turn - 2)], v01s[max(0, turn - 2)])[0]
+corner_b8 = offset_run(v02s, [1600, 400], 6.5, v02s[min(len(v02s) - 1, k02 + 2)], v02s[min(len(v02s) - 1, k02 + 2)])[0]
+corner = [corner_a8, corner_t, corner_b8]
+jan01 = offset_run(v01s, INLAND, 6.5, [1555.2, 508.1], v01s[max(0, turn - 4)])
+jan02 = offset_run(v02s, [1600, 400], 6.5, v02s[min(len(v02s) - 1, k02 + 4)], [1449.5, 447.4])
+yw_replace([[1319.7,258.5],[1340.4,281.3],[1379.9,294.4],[1415.6,307.5],[1453.6,323.6],[1487.1,341.9],[1508.5,367.9],[1524.1,404.6],[1535.4,441.5],[1545.7,481.6],[1554.7,520.2]],
+           [nov_sea_end] + nov,
+           "November's inland verge re-laid 9.5 m inside the re-aligned Drive round the north-east corner")
+yw_replace([[1555.2,508.1],[1546.3,471.5],[1536.1,432.7],[1524.2,396],[1506.8,358.9],[1495.4,344.6],[1505.5,343.5],[1482.9,377.2],[1461,411.8],[1449.5,447.4]],
+           jan01 + corner + jan02,
+           "January's inland verge and Crown Road's east verge re-laid on the re-aligned corner and junction")
+for sh in YW["shares"]:
+    if sh["stretch"] == "nov" and sh["host"] == "V01" and sh["side"].startswith("seaward"): sh["v1_8_to"] = sh["to"]; sh["to"] = nov_sea_end
+    if sh["stretch"] == "nov" and sh["host"] == "V01" and sh["side"] == "inland": sh["v1_8_from"] = sh["from"]; sh["from"] = nov[0]
+    if sh["stretch"] == "jan" and sh["host"] == "V01": sh["v1_8_to"] = sh["to"]; sh["to"] = jan01[-1]
+    if sh["stretch"] == "jan" and sh["host"] == "V02": sh["v1_8_from"] = sh["from"]; sh["from"] = jan02[0]
+# 7. February and September above the Hollow (P12: the February line rode the Crown's flank at 65-67 over the September
+#    line at 40-44, 5 m away; 24 eu unsupported runs at [1046-1056,519-529]). February comes down onto the shelf (45) east of
+#    September and the two run as adjacent lanes (3.5 m, one height) through the shelf's narrow north end to [1000,480].
+yw_replace([[1055,710],[1100,600],[1085,555],[1070,535],[960,470]],
+           [[1055,710],[1052,662],[1060,600],[1062,540],[1060,505],[1050,487],[1000,480],[960,470]],
+           "February leaves the Crown's flank for the 45 shelf (September no longer uses it)")
+vgs = spline5(m["roads"]["VG"]["pts"])
+sep_vg = offset_run(vgs, [700, 500], 6.5, [995, 590], [938, 385])
+for st in m["journey"]["stations"]:
+    if st["id"] == "sep": st["v1_8_xy"] = st["xy"]; st["xy"] = [1032, 652]; st["moveWhy_v1_9"] = "8 m west so February passes east of the pad on the 45 shelf (the pad's level pins held February at 35 there); the pad sits at 40, a 5 m terrace cut into the shelf's edge"
+yw_replace([[1010,615],[1040,650],[1045,550],[1055,505],[1045,490],[995,470],[980,415],[945,370]],
+           [[1010,615],[1032,652],[1025,626],[1010,604]] + sep_vg,
+           "September returns from its pad across Green Road and walks its west footway north to the pass (it ran up the shelf beside February, 24 eu apart)")
+YW["shares"].append({"stretch": "sep", "host": "VG", "side": "west", "offset_m": 6.5, "from": sep_vg[0], "to": sep_vg[-1], "note": "v1.9: Green Road's west footway from the September pad's return to the north pass"})
+# 11. Terraces plot 3's margin (P31: the January lane 3.2 m from the plot edge, 12 samples in the 6 m margin): the Prow cliff
+#     drive's control [1540,1000] moves 3.5 m away from the plots (east-south-east), and the December (seaward 6.5) and
+#     January (inland 6.5) verges are re-laid on it.
+V01["pts"][V01["pts"].index([1540, 1000])] = [1543.2, 1001.4]
+v01s = spline5(V01["pts"])
+dec_run = offset_run(v01s, [1800, 1200], 6.5, [1596.9, 703.2], [1500.3, 1038.1])
+jan_run = offset_run(v01s, INLAND, 6.5, [1494.7, 1026.4], [1562.7, 548])
+yw_replace([[1596.9,703.2],[1601.5,743.6],[1605.7,784.8],[1608.1,827.2],[1605.7,864.9],[1592.8,905.1],[1576.5,943.3],[1558.6,980.4],[1536.4,1014.4],[1502.6,1037],[1500.3,1038.1]],
+           dec_run, "December's seaward verge re-laid on the Prow cliff drive after its [1540,1000] control moved 3.5 m off the Terraces plots")
+yw_replace([[1494.7,1026.4],[1527.3,1005.1],[1548.8,970.9],[1564.7,937.9],[1580.6,900.4],[1593,862.2],[1595,822.6],[1592.7,785.9],[1588.9,747.7],[1584,704.7],[1579.2,664],[1574.3,626.7],[1568.7,586.5],[1562.7,548]],
+           jan_run, "January's inland verge re-laid on the moved Prow cliff drive (6.5 m, now 6 m clear of Terraces plot 3's margin)")
+for sh in YW["shares"]:
+    if sh["stretch"] == "dec" and sh["host"] == "V01": sh["v1_8_from"], sh["v1_8_to"] = sh["from"], sh["to"]; sh["from"], sh["to"] = dec_run[0], dec_run[-1]
+    if sh["stretch"] == "jan" and sh["host"] == "V01": sh["v1_8_from"] = sh["from"]; sh["from"] = jan_run[0]
+# 13. January at the south portal (P16: the Year Walk 2.65 over the Ore Line's approach at [1349.6,671.6], rail clearance 3.2):
+#     both January legs keep west of the rail's cut, as two lanes 3.5 m apart between the pad and the portal forecourt.
+yw_replace([[1330,640],[1355,660],[1350,685],[1375,690]], [[1330,640],[1339,662],[1344,684],[1375,690]],
+           "January's first leg leaves the pad west of the Ore Line's approach cut")
+yw_replace([[1345,680],[1355,675],[1330,660],[1345,650],[1330,640]], [[1340.5,687.5],[1335.5,663],[1330,640]],
+           "January's last leg returns as the first leg's west lane (3.5 m), west of the Ore Line")
+for lv in YW["levels"]:
+    if lv["xy"] == [1358, 685]: lv["v1_9_first_xy"] = lv["xy"]; lv["xy"] = [1350, 687]; lv["r"] = 9
+YW["v1_9_edits"] = YW_EDITS_V19
+
+# 8. Named footbridges (P12 unsupported runs / "two foot routes crossing" with no bridge; R1-04, R1-10, R1-31). Each is
+#    built by the structures builder on the route's own grade, with bents outside every lower corridor and a truss over the
+#    opening; a bent that would stand in a corridor is refused and reported.
+m["structures"]["gardenWalkBridge"] = {"xy": [965.7, 761.1], "kind": "footbridge", "route": "walk garden", "span_m": 40, "opening_m": 26, "width_m": 3.2,
+ "deck": "the Garden Walk on its own grade (51-55)", "under": "Green Road (37) and its May/September footway lanes, 15 eu below",
+ "note": "v1.9: the Garden Walk hung 16.7 eu over Green Road at [971,765] with no structure (the generated span found no footing within 20 m); the reserved at-grade threshold row VG x walk garden (R-A7) is unchanged"}
+m["structures"]["crownWalkBridge"] = {"xy": [1410.1, 605.8], "kind": "footbridge", "route": "walk crown", "span_m": 36, "opening_m": 24, "width_m": 3.2,
+ "deck": "the Crown walk on its own grade (119-122)", "under": "Crown Road's cutting (99) and its January footway lane",
+ "note": "v1.9: the Crown walk hung 21 eu over Crown Road at [1400-1417,605] (span refused: no footing outside the corridors)"}
+
+# 9. The Prow walk (T0 note 5; P12: 22 runs up to 38.5 eu over V01's cutting and the Year Walk's Prow footways; six
+#    "two foot routes crossing" rows 12-34 eu). It keeps to the Prow top east of the cutting: from the south lookout over
+#    the harbour, past the November station, between the Year Walk's two Prow lanes, onto the west lane at [1630,790].
+m["walks"]["prow"]["v1_8_pts"] = m["walks"]["prow"]["pts"]
+m["walks"]["prow"]["pts"] = [[1590, 998], [1606, 950], [1616, 928], [1641, 924], [1641, 880], [1640, 812], [1633, 790]]
+m["walks"]["prow"]["note_v1_9"] = "re-laid on the Prow top east of V01's cutting (was along the cutting's lip, over it twice); joins the Year Walk's west Prow lane at [1630,790], short of the sea stair's head"
+
+# 12. Reserves (P31, D-2 for Jonathan, reversible): the Bight trail ran through all four Bight plots (27-28 samples inside
+#     each). It becomes the Bight Shore spur's landward footway (builder: `footwayOf`, the spur's heights, no wall between);
+#     its v1.8 shore line is kept in `v1_8_pts`. The hangar bay (plot.flats.1) moves 7 m east out of the strip's 6 m margin
+#     and is served from the strip edge at its west door (its access walk is its service).
+m["walks"]["bight"]["v1_8_pts"] = m["walks"]["bight"]["pts"]
+m["walks"]["bight"]["footwayOf"] = {"host": "VBS", "offset_m": 4.2, "side_xy": [1100, 1100], "why": "D-2 (v1.9): the four Bight plots and their 6 m margins fill the land between the spur and the shore; the trail walks the spur's landward verge at the spur's height"}
+hb = m["reserves"]["small"]["hangarBay"]
+hb["v1_8_xy"] = hb["xy"]; hb["xy"] = [458.2, 600]; hb["size_m"] = [11, 18]; hb["door"] = "west, on the strip edge; its access walk is plot.flats.1.service"
+hb["note_v1_9"] = "an 11 m bay facing the strip, 18 m deep, between the strip's 6 m margin and S2's (the 18 m face did not fit the 26 m between them)"
+m["structures"]["jettiesV1_8"] = {"bightShore": m["structures"]["jetties"]["bightShore"], "why": "v1.9: the Bight Shore jetty moved 17 m north-west, out of plot bight.2's 6 m margin"}; m["structures"]["jetties"]["bightShore"] = [728, 946]
+
+# 14. The Bight pier (P12: the pier walk ran on at the Flats' height, 36 eu over the Bight, to the ferry stop): the walk
+#     stops at the cliff top and a stair takes it down to a jetty at the ferry stop (the stair crosses the wash's dry mouth
+#     and S2's bridge lane high above them). The dune walk starts at the zip landing's foot, not under its stair (P16 2.21),
+#     and runs 10-18 m south of the landing ramp's trestle (it ran under the trestle's south leg for 60 m: no bent could stand).
+#     The Year Walk's two Prow lanes cross the sea stair's cutting on two short named footbridges.
+m["walks"]["bightPier"]["v1_8_pts"] = m["walks"]["bightPier"]["pts"]
+m["walks"]["bightPier"]["pts"] = [[350, 880], [430, 900], [498, 896]]
+m["structures"]["bightPierStair"] = {"kind": "stair", "from": [498, 896], "to": [557.5, 896], "note": "v1.9: from the Flats' cliff top (the pier walk's end) down to the Bight ferry jetty"}
+m["structures"]["jetties"]["bightPier"] = [560, 896]
+m["walks"]["dune"]["v1_8_pts"] = m["walks"]["dune"]["pts"]
+m["walks"]["dune"]["pts"] = [[1148, 1463], [1125, 1481], [1000, 1480]] + m["walks"]["dune"]["pts"][2:]
+m["structures"]["seaStairWestLaneBridge"] = {"xy": [1630.9, 762.8], "kind": "footbridge", "route": "yearWalk", "span_m": 14, "opening_m": 7, "width_m": 5.4, "deck": "the Year Walk's west Prow lane (54)", "under": "the sea stair's cutting (49)", "note": "v1.9: the lane crossed the stair 4.9 eu over it with no structure"}
+m["structures"]["seaStairEastLaneBridge"] = {"xy": [1650.3, 766.8], "kind": "footbridge", "route": "yearWalk", "span_m": 16, "opening_m": 8, "width_m": 5.4, "deck": "the Year Walk's east Prow lane (50.6)", "under": "the sea stair's cutting (36)", "note": "v1.9: the lane crossed the stair 14.2 eu over it with no structure"}
+
+# 16. S1 through the High Span (W3-C A2, page C): S1 ran at grade 1-6 m east of its own skate shelf (x 1206-1219, 1 m over
+#     it), hiding the shelf from camera C. It now rides the shelf (x 1204, z 1078-1135, h 12) — the builder pins it level there.
+S1 = m["skate"]["S1"]
+S1["v1_8_pts"] = [list(p) for p in S1["pts"]]
+i = S1["pts"].index([1195, 1075])
+S1["pts"] = S1["pts"][:i + 1] + [[1204, 1080], [1204, 1133]] + S1["pts"][i + 1:]
+
+# 10. Views (W3-C requests A1, A4, A6, A7; each tested on the W3-C land): page A portrait at the viewRule minimum
+#     field (45°); page E's eye at the run-off corner of the lookout deck (it stood on the deck centre, 44 % of the frame
+#     deck); page K on the rim walk by the Glasshouse steps (the eye stood 1.4 eu under the walk); page L's portrait
+#     from the quay's west end.
+for v in m["views"]:
+    if v["id"] == "A": v["portrait"]["v1_8_fov_deg"] = v["portrait"]["fov_deg"]; v["portrait"]["fov_deg"] = 45
+    if v["id"] == "E": v["v1_8_xy"] = v["xy"]; v["xy"] = [1300.5, 485.5]
+    if v["id"] == "K": v["v1_8_xy"] = v["xy"]; v["xy"] = [1006, 762]
+    if v["id"] == "L": v["portrait"]["v1_8_xy"] = v["portrait"].get("xy"); v["portrait"]["xy"] = [1460, 1300]
+
+# 15. The crossings register against the v1.9 build (every computed intersection keeps a row; the design lead accepts each
+#     computed resolution, as in v1.8). Rows accepted from this bake carry source "bake v1.9". Bake rows with no plan hit in the
+#     v1.9 build (the geometry they described moved) and duplicate bake rows are retired to routePairNotes; three authored rows
+#     whose routes moved are retired with their reason; bake rows now met flush become junctions. Reserved rows are untouched.
+REG_ADDED_V19 = [
+ {"a": "bightPierStair", "b": "wash", "at": [513.8, 896], "resolution": "over", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "damGallery.flight.2", "b": "damGallery.exit", "at": [1170.6, 910.8], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "jetty.bightPier", "b": "FERRY", "at": [560, 902], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": "at-grade meeting 1 eu apart: regrade owed"},
+ {"a": "jetty.bightPier", "b": "ferry.bight", "at": [560, 898], "resolution": "threshold", "kind": "sharedStretch", "source": "bake v1.9", "note": "shared stretch 8 eu at one height"},
+ {"a": "S1", "b": "yearWalk", "at": [1266.9, 842], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "S2", "b": "bightPierStair", "at": [509.9, 896], "resolution": "under", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "S4", "b": "walk bight", "at": [873.5, 951.1], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": "at-grade meeting 1 eu apart: regrade owed"},
+ {"a": "S4", "b": "yearWalk", "at": [968.6, 540.5], "resolution": "under", "kind": "crossing", "source": "bake v1.9", "note": "under by 2.8 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a": "V01", "b": "V02", "at": [1433.3, 335.6], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "V02", "b": "yearWalk", "at": [1436, 355.4], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "VG", "b": "walk bight", "at": [960.4, 864.4], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "walk bight", "b": "yearWalk", "at": [858.5, 977], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "walk bight", "b": "yearWalk", "at": [907.3, 888.6], "resolution": "over", "kind": "crossing", "source": "bake v1.9", "note": "over by 8.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a": "walk bight", "b": "yearWalk", "at": [951.6, 867.7], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "walk bight", "b": "yearWalk", "at": [954.5, 866.6], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "walk bightPier", "b": "bightPierStair", "at": [498, 896], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": "at-grade meeting 0.9 eu apart: regrade owed"},
+ {"a": "walk lakerim", "b": "damGallery.exit", "at": [1166.2, 905.1], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "walk prow", "b": "yearWalk", "at": [1641, 881.6], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "yearWalk", "b": "southPortal.link", "at": [1369.7, 689.9], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+]
+REG_RETIRED_V19 = [  # indices into the v1.8 register (each checked against its pair below)
+ [38, "damGallery.flight.1", "damGallery.exit"],
+ [39, "damGallery.flight.1", "water.stillwater"],
+ [40, "damGallery.flight.2", "damGallery.exit"],
+ [41, "damGallery.flight.2", "water.stillwater"],
+ [49, "highSpan.overlook", "river lower"],
+ [55, "jetty.lamp", "lampGallery.ramp"],
+ [56, "jetty.lamp", "lampGallery.ramp"],
+ [61, "lampGallery.ramp", "FERRY"],
+ [62, "lampGallery.ramp", "FERRY"],
+ [64, "lampGallery.ramp", "FERRY"],
+ [67, "lampGallery.ramp", "lampGallery.stair"],
+ [68, "lampGallery.ramp", "lampGallery.stair"],
+ [84, "river lower", "reachChannel.2"],
+ [94, "S1", "yearWalk"],
+ [157, "V01", "S3"],
+ [158, "V01", "S3"],
+ [164, "V01", "V02"],
+ [167, "V01", "walk prow"],
+ [192, "VG", "yearWalk"],
+ [194, "walk bight", "plot.bight.3.service"],
+ [195, "walk bight", "plot.bight.4.service"],
+ [196, "walk bightPier", "FERRY"],
+ [197, "walk bightPier", "ferry.bight"],
+ [227, "walk crownFromGondola", "V02"],
+ [233, "walk dune", "zipLanding.ramp"],
+ [234, "walk dune", "zipLanding.stair"],
+ [241, "walk garden", "yearWalk"],
+ [248, "walk lakerim", "damGallery.flight.1"],
+ [251, "walk lakerim", "yearWalk"],
+ [252, "walk lakerim", "yearWalk"],
+ [254, "walk prow", "seaStair"],
+ [255, "walk prow", "yearWalk"],
+ [256, "walk prow", "yearWalk"],
+ [257, "walk prow", "yearWalk"],
+ [258, "walk prow", "yearWalk"],
+ [259, "walk prow", "yearWalk"],
+ [260, "walk prow", "yearWalk"],
+ [261, "walk prow", "ZIP"],
+ [288, "yearWalk", "ORE"],
+ [289, "yearWalk", "ORE"],
+ [290, "yearWalk", "ORE"],
+ [298, "yearWalk", "southPortal.link"],
+ [299, "yearWalk", "southPortal.link"],
+ [300, "yearWalk", "southPortal.link"],
+ [308, "ZIP", "river lower"],
+]
+REG_RERES_V19 = [
+ {"a": "S4", "b": "walk garden", "at": [905.9, 640.6], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "S4", "b": "yearWalk", "at": [900.7, 882.8], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "S4", "b": "yearWalk", "at": [901.2, 629.8], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "S4", "b": "yearWalk", "at": [902.6, 632.9], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "VG", "b": "yearWalk", "at": [943.6, 471], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "walk bightPier", "b": "walk flats", "at": [350, 880], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "walk garden", "b": "yearWalk", "at": [899.6, 638.9], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "walk garden", "b": "yearWalk", "at": [900, 640], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "walk garden", "b": "yearWalk", "at": [902.3, 641.1], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+]
+REG_RETIRED_AUTHORED_V19 = {
+ ("DEEP_RUN", "walk prow"): "the Prow walk (v1.9) keeps to the Prow top east of V01's cutting and no longer crosses the Deep run's line at [1611,710]",
+ ("S2", "walk bightPier"): "the pier walk (v1.9) ends at the Flats' cliff top; S2 now passes under the Bight pier stair (a row accepted from the v1.9 bake)",
+ ("walk bightPier", "water wash"): "the pier walk (v1.9) ends at the Flats' cliff top; the wash footbridge is retired and the Bight pier stair crosses the dry wash mouth",
+}
+def _same(row, r): return row["a"] == r["a"] and row["b"] == r["b"] and isinstance(row["at"], list) and abs(row["at"][0] - r["at"][0]) < .05 and abs(row["at"][1] - r["at"][1]) < .05
+reg, retired_v19 = [], []
+for idx, row in enumerate(m["crossings"]):
+    if any(k == idx and row["a"] == a and row["b"] == b for k, a, b in REG_RETIRED_V19):
+        retired_v19.append(row)
+        m["routePairNotes"].append({"a": row["a"], "b": row["b"], "kind": "retired register row (v1.9)", "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)", "sharedPlanPoints": [], "retiredRow": dict(row)})
+        continue
+    if (row["a"], row["b"]) in REG_RETIRED_AUTHORED_V19 and not row.get("reserved") and row.get("source") != "bake v1.8":
+        m["routePairNotes"].append({"a": row["a"], "b": row["b"], "kind": "retired register row (v1.9)", "verification": REG_RETIRED_AUTHORED_V19[(row["a"], row["b"])], "sharedPlanPoints": [], "retiredRow": dict(row)})
+        continue
+    for r in REG_RERES_V19:
+        if _same(row, r):
+            row = dict(row); row["v1_8_resolution"] = row["resolution"]; row["resolution"] = r["resolution"]; row["kind"] = r["kind"]
+            row["note"] = (row["note"] + "; " if row.get("note") else "") + r["note"]
+    reg.append(row)
+m["crossings"] = reg + REG_ADDED_V19
+
+# v1.9 · Stage A integrator 2 (26 September 2026; README "v1.9 deltas" → "Integrator 2"). The upper river's last
+# reach is the lake's inlet pool, level with Stillwater (50), and the rim trail's Inlet Footbridge pin is 55
+# (land/water, land/beds, land/structures): the Year Walk's February stretch now crosses the inlet OVER the
+# water (clear 4.4) on its generated deck beside the footbridge, not under a pool at 58-60.
+for i, row in enumerate(m["crossings"]):
+    if row["a"] == "yearWalk" and row["b"] == "river upper" and row.get("resolution") == "under":
+        row = dict(row); row["v1_8_resolution"] = row["resolution"]; row["resolution"] = "over"
+        row["note"] = "v1.9 (integrator 2): over by 5 eu on its deck beside the Inlet Footbridge; the inlet pool is level with the lake (was under a pool at 58-60)"
+        m["crossings"][i] = row
+m["structures"]["inletFootbridge"]["deck_h"] = 55
+m["structures"]["inletFootbridge"]["note"] = "v1.9 (integrator 2): deck 55 over the inlet pool at the lake level 50 (clear 4.4, a river's 4); was 52 over a pool at 58-60"
+
+# ---------------------------------------------------------------------------
+# v2.0 — Stage A Wave 5, design-lead data after Jonathan's rulings of 27 September 2026 (D-A1…D-A8, group B and C
+# "recommended on all"). Every delta below is listed in docs/horizon/README.md → "v2.0 (Wave 5, Jonathan's rulings
+# 2026-09-27)" with its old value; the old values are also kept beside the new ones (`v1_9_*`). Ids never change.
+# ---------------------------------------------------------------------------
+m["version"] = "2.0"
+m["date"] = "2026-09-27"
+RULED = "Jonathan 2026-09-27"
+def row_find(a, b, where=None, tol=.6):
+    hits = [i for i, r in enumerate(m["crossings"]) if r["a"] == a and r["b"] == b and (where is None or (isinstance(r["at"], list) and abs(r["at"][0] - where[0]) < tol and abs(r["at"][1] - where[1]) < tol))]
+    assert len(hits) == 1, (a, b, where, hits)
+    return hits[0]
+def row_edit(a, b, where=None, **changes):
+    i = row_find(a, b, where); row = dict(m["crossings"][i])
+    for k, v in changes.items():
+        if k in ("resolution", "at", "note", "kind", "structure") and k in row and row[k] != v: row.setdefault("v1_9_" + k, row[k])
+        if v is None: row.pop(k, None)
+        else: row[k] = v
+    m["crossings"][i] = row
+    return row
+RETIRED_V20 = []
+def row_retire(a, b, where, why):
+    i = row_find(a, b, where); row = m["crossings"].pop(i)
+    RETIRED_V20.append(row)
+    m["routePairNotes"].append({"a": row["a"], "b": row["b"], "kind": "retired register row (v2.0)", "verification": why, "sharedPlanPoints": [], "retiredRow": dict(row)})
+
+# 1. D-A1 · The Bight Bridge (Jonathan: "lengthen it … upgrade it and make it useful and cool; agreed on upgrading
+#    skateboard paths around it"): Option 1. The deck is the V01 axis between its control points [460,1030] and
+#    [660,1170] (244.1 m; span 245 with the abutment seats), a timber viaduct with one 36 m steel through-arch over the
+#    ferry channel, abutments on both headlands down to the ground (the headlands and V01's points do not move). S2 becomes
+#    a continuous skate ribbon carried on the deck: the lagoon-side lane from the west abutment, one flyover over the road
+#    under the arch crown (the original register intent, S2 over V01 at the bridge's middle), the sea-side lane to the
+#    east abutment, and a banked descent off the east abutment onto its old line; a ramp from the Wash at the west.
+#    Axis frame: s = metres from [460,1030] toward [660,1170]; o = metres off the axis, + toward the Bight (lagoon side).
+BB_A, BB_B = [460, 1030], [660, 1170]
+BB_L = math.dist(BB_A, BB_B); BB_D = [(BB_B[0] - BB_A[0]) / BB_L, (BB_B[1] - BB_A[1]) / BB_L]; BB_N = [BB_D[1], -BB_D[0]]
+def bb(s, o=0.0): return [round(BB_A[0] + BB_D[0] * s + BB_N[0] * o, 1), round(BB_A[1] + BB_D[1] * s + BB_N[1] * o, 1)]
+S2_LAGOON_O, S2_SEA_O, S2_CROWN_H, BB_DECK_H, S2_LANE_W = 10.6, -7.0, 17.6, 12, 3.5
+BB_SECTION = [-9.0, 12.6]
+def bb_need(beam, width, deg): return round(beam / math.sin(math.radians(deg)) + width / math.tan(math.radians(deg)), 1)
+def s2_flyover_o(s): return S2_LAGOON_O + (S2_SEA_O - S2_LAGOON_O) * (s - 100) / 32
+bbr = m["structures"]["bightBridge"]
+m["structures"]["bightBridge"] = {
+ "xy": bbr["xy"], "kind": "bridge", "deck": "V01, the Year Walk's lagoon-side footways, and S2 as a separated skate ribbon (lagoon lane, flyover, sea lane), every deck edge railed",
+ "span_m": 245, "h_deck": BB_DECK_H, "clear_m": bbr["clear_m"], "under": bbr["under"],
+ "ends": {"west": BB_A, "east": BB_B, "axis_m": round(BB_L, 1), "abutments": "both on the headlands and down to the ground: west a 14 × 24 m embankment from the Flats spit tip [460,1020] to the deck end (it carries S2's lagoon lane and its bank), east on the shore; no bed raises the seabed under the deck"},
+ "section": {"from_axis_m": BB_SECTION, "width_m": round(BB_SECTION[1] - BB_SECTION[0], 1), "lanes": {"S2 sea lane": [S2_SEA_O - S2_LANE_W / 2, S2_SEA_O + S2_LANE_W / 2], "V01": [-4, 4], "V01 shoulders": 1, "Year Walk footways (centres)": [5.2, 7.4], "S2 lagoon lane": [S2_LAGOON_O - S2_LANE_W / 2, S2_LAGOON_O + S2_LANE_W / 2]}, "rails": "a rail on both deck edges the whole length, and a kerb rail between each S2 lane and its neighbour", "note": "offsets from the V01 axis, + toward the Bight; the deck widens from 17 m (v1.9) to carry S2 as a lane of its own (3.5 m, profiles.skateMain.surface_m 3-4); the width is held to 21.6 so the 36 m opening still proves for the ferry (opening.needAlongAxis_m)"},
+ "opening": {"at_s": [98, 134], "centre_s": 116, "centre": bb(116), "width_m": 36, "kind": "steel-arch", "clear_eu": 11.4, "clearWidth_m": 34,
+  "needAlongAxis_m": {"beam_m": 8, "deckWidth_m": round(BB_SECTION[1] - BB_SECTION[0], 1), "at_46deg": bb_need(8, BB_SECTION[1] - BB_SECTION[0], 46), "at_58deg": bb_need(8, BB_SECTION[1] - BB_SECTION[0], 58), "rule": "beam / sin(angle) + deck width / tan(angle) ≤ clearWidth_m (proposals/bight-bridge.md)"}, "arch": "a steel through-arch above the deck (rise ≥ 10 over the deck, crown ≥ 22), its ribs on the deck edges and hangers to the deck", "why": "36 m is past the 30 eu masonry-arch limit (STYLE §1.6.3), so the arch is steel; the opening covers the ferry lane (s 122, in at 46°, out at 58°) and Ring Run gate 5 (s 111); a hull of water_routes.FERRY.beam_m 8 at 46° needs 27.6 m along the axis (proposals/bight-bridge.md)"},
+ "bents": {"west": {"count": 8, "bay_m": 10.9, "from_s": 0, "to_s": 98}, "east": {"count": 9, "bay_m": 11.0, "from_s": 134, "to_s": 244}, "arch piers": [98, 134], "note": "timber paired bents, every bay under the 12 eu timber limit; no bent in the opening or in S2's east descent"},
+ "lookout": {"id": "bightBridge.lookout", "s": 116, "xy": bb(116, 12.4), "deck_h": BB_DECK_H, "size_m": [24, 7.2], "side": "lagoon", "from_s": 104, "to_s": 128, "reach": "off the Year Walk's lagoon footway at deck level, under the arch, railed on its three open sides", "note": "a bay of the deck (a structure), not a pad: no register pad stands on the deck (D-A1); it spans o +8.8 to +16 where S2 has left the lagoon lane for the flyover, which passes 5.6 above its inner corner; its underside keeps the deck's 11.4 over the water and it stands between the arch piers, not on them"},
+ "s2Flyover": {"id": "bightBridge.s2Flyover", "from": bb(100, S2_LAGOON_O), "to": bb(132, S2_SEA_O), "h": S2_CROWN_H, "overRoad": bb(100 + 32 * S2_LAGOON_O / (S2_LAGOON_O - S2_SEA_O)), "clear_eu": round(S2_CROWN_H - BB_DECK_H - .6, 1), "carried": "hung from the arch between its ribs", "note": "S2 crosses the road and the Year Walk footways once, over them, at the arch crown (register S2 × V01 'over'); ramps of 8 % up the lagoon lane (s 30 → 100) and down the sea lane (s 132 → 202)"},
+ "v1_9": {"span_m": bbr["span_m"], "deck": bbr["deck"], "h_deck": bbr["h_deck"]},
+ "decided": "D-A1 option 1 (" + RULED + ")",
+}
+m["water_routes"]["FERRY"]["beam_m"] = 8
+m["water_routes"]["FERRY"]["beamNote"] = "v2.0 (D-A1): each hull's beam, authored so the Bight Bridge's navigable opening is provable (along-axis opening needed = beam / sin(angle) + deck width / tan(angle); 27.6 m at the inbound 46°, the steel arch gives 34 m clear)"
+S2 = m["skate"]["S2"]
+S2["v1_9_pts"] = [list(p) for p in S2["pts"]]
+S2_WEST_RAMP = [[485, 800], [510, 900], [480, 985]]
+S2_EAST = [[672, 1192], [690, 1210], [712, 1230]]
+S2_DECK = [bb(0, S2_LAGOON_O), bb(30, S2_LAGOON_O), bb(100, S2_LAGOON_O), bb(116, s2_flyover_o(116)), bb(132, S2_SEA_O), bb(202, S2_SEA_O), bb(244, S2_SEA_O)]
+i0 = S2["pts"].index([485, 800]); i1 = S2["pts"].index([750, 1265])
+S2["pts"] = S2["pts"][:i0] + S2_WEST_RAMP + S2_DECK + S2_EAST + S2["pts"][i1:]
+S2["length_m"] = round(length(S2["pts"]))
+S2["levels"] = [
+ {"xy": [485, 800], "h": 23.7, "why": "the Wash rim: the top of the west ramp"},
+ {"xy": S2_DECK[0], "h": BB_DECK_H, "why": "the west abutment's deck end"},
+ {"xy": S2_DECK[1], "h": BB_DECK_H, "why": "the lagoon lane starts its 8 % climb to the flyover"},
+ {"xy": S2_DECK[2], "h": S2_CROWN_H, "why": "the flyover's west end"},
+ {"xy": S2_DECK[4], "h": S2_CROWN_H, "why": "the flyover's east end"},
+ {"xy": S2_DECK[5], "h": BB_DECK_H, "why": "back on the sea lane at deck height"},
+ {"xy": S2_DECK[6], "h": BB_DECK_H, "why": "the east abutment's deck end: the banked descent starts"},
+ {"xy": [712, 1230], "h": 6.5, "why": "the foot of the banked descent on the sea-side shelf"},
+]
+S2["westRamp"] = {"from": [485, 800], "from_h": 23.7, "to": S2_DECK[0], "to_h": BB_DECK_H, "grade_pct": round((23.7 - BB_DECK_H) / length([[485, 800]] + S2_WEST_RAMP[1:] + [S2_DECK[0]]) * 100, 1),
+ "carried": "one even grade from the Wash down to the deck: a timber trestle over the Wash mouth (x 495-515, z 830-925, up to 18.6 over the dry bed, under the Bight pier stair) and a cutting of at most 4 eu through the spit knoll [480-492, 950-1010]",
+ "why": "D-A1: S2 could not descend from the Wash to the deck at 18 % (it dipped to 11.9 in the Wash mouth and climbed 18.5 again, v1.8 open item); within profiles.skateMain (grade_max_pct 18, typical 8-14)"}
+S2["deckLanes"] = {"structure": "bightBridge", "lagoon": {"from_s": 0, "to_s": 100, "offset_m": S2_LAGOON_O}, "flyover": "bightBridge.s2Flyover (s 100 → 132)", "sea": {"from_s": 132, "to_s": 244, "offset_m": S2_SEA_O}, "note": "offsets from the V01 axis (+ toward the Bight); S2 never rides the road's shoulder and never crosses it at grade"}
+S2["eastDescent"] = {"kind": "bankedDescent", "from": S2_DECK[6], "from_h": BB_DECK_H, "to": [712, 1230], "to_h": 6.5, "via": S2_EAST[:2], "bank_deg": [12, 20], "radius_m": 45, "grade_pct": round((BB_DECK_H - 6.5) / length([S2_DECK[6]] + S2_EAST) * 100, 1),
+ "why": "D-A1: S2 left the deck at [606.6,1144.1] and came down over the lagoon with nothing under it (the island's worst drop, 24.0 eu); it now stays on the deck to the east abutment and carves a right-hand banked descent down the headland's sea-side shelf onto its old line to [750,1265]",
+ "bank": "the outside of the curve is the east abutment's wing wall battered to a bank (spot S2.eastAbutmentBank)"}
+S2["spots"] = [
+ {"id": "S2.archCrown", "kind": "rail", "bed": "S2", "on": "bightBridge.s2Flyover", "xy": bb(116, s2_flyover_o(116)), "h": S2_CROWN_H, "length_m": 24, "groundLine": "the flyover deck beside the rail: roll over the crown without touching it", "requiredJump": False, "note": "the flyover's crown parapet rail under the steel arch, 5.6 above the road deck"},
+ {"id": "S2.westAbutmentBank", "kind": "bank lip", "bed": "S2", "on": "bightBridge west abutment", "xy": bb(-7, S2_LAGOON_O + S2_LANE_W / 2 + .2), "h": BB_DECK_H, "length_m": 14, "groundLine": "the lagoon lane itself (the bank is its outer wing wall, battered to 30°)", "requiredJump": False},
+ {"id": "S2.eastAbutmentBank", "kind": "bank lip", "bed": "S2", "on": "bightBridge east abutment", "xy": [664, 1184], "h": 11, "length_m": 20, "groundLine": "the descent's inside line", "requiredJump": False},
+ {"id": "S2.deckRail", "kind": "rail", "bed": "S2", "on": "bightBridge deck edge", "xy": bb(60, BB_SECTION[1]), "h": BB_DECK_H, "length_m": 244, "groundLine": "the lane beside the rail", "requiredJump": False, "note": "the deck-edge rail, full length on the lagoon side to the flyover and on the sea side after it"},
+]
+S2["spotsRule"] = "Pass 02 M1 'Spots': rails, kerbs, walls, bollards, stairs and bank lips from pass 1's beds only; kind is one of those words; every spot names its groundLine and requiredJump is always false"
+for seg in S2["segments"]:
+    if seg["name"] == "Bight Bridge": seg["v1_9_spot"] = seg["spot"]; seg["spot"] = "S2.archCrown, S2.westAbutmentBank, S2.eastAbutmentBank, S2.deckRail (skate.S2.spots)"
+for v in m["views"]:
+    if v["id"] == "B":
+        v["v1_9_frames"] = v["frames"]
+        v["frames"] = "the Bight Bridge with its steel arch and the lookout at its crown, the Flats, the whole hook"
+        v["framesNote_v2_0"] = "D-A1: the arch and the lookout are parts of the Bight Bridge (bightBridge.* solids), so the machine subject stays 'the Bight Bridge'"
+row_edit("V01+S2", "Bight mouth", reserved=None, decided="D-A1 (" + RULED + ")", note="245 m viaduct with one 36 m steel through-arch (s 98-134); abutments on both headlands to the ground")
+row_edit("FERRY", "bightBridge", reserved=None, decided="D-A1 (" + RULED + ")", note="twice per lap, through the steel-arch opening (s 98-134, 34 m × 11.4 clear; beam 8)")
+row_edit("S2", "V01", note="v2.0 (D-A1): S2 rides the deck's lagoon lane from the west abutment, crosses over V01 and the Year Walk footways once on bightBridge.s2Flyover at the arch crown (17.6, 5.6 above the deck), then the sea lane to the east abutment and a banked descent onto its line; never the shoulder, never at grade")
+m["crossings"].append({"a": "S2", "b": "V01", "at": bb(100 + 32 * S2_LAGOON_O / (S2_LAGOON_O - S2_SEA_O)), "resolution": "over", "kind": "crossing", "structure": "bightBridge.s2Flyover", "source": "design lead v2.0", "note": "D-A1: 5.6 over the road deck at the arch crown (road clear 5 + 0.6)"})
+row_edit("S2", "yearWalk", [553.9, 1095], at=bb(100 + 32 * (S2_LAGOON_O - 6.3) / (S2_LAGOON_O - S2_SEA_O), 6.3), resolution="over", structure="bightBridge.s2Flyover", note="v2.0 (D-A1): S2's flyover passes over the Year Walk's lagoon footways (was a crossing on the deck)")
+row_retire("S2", "yearWalk", [468.2, 1026.4], "v2.0 (D-A1): S2 comes onto the deck's lagoon lane outboard of the Year Walk footways (+10.6 against +5.2/+7.4); they run side by side and never meet")
+row_edit("S2", "FERRY", [560, 1100], note="v2.0 (D-A1): on the flyover under the arch crown, through the navigable opening")
+
+# 2. D-A2 · ZIP × G1 (Jonathan: "leave it"): option A. Nothing physical moves; the register row records the zip passing
+#    UNDER the gondola, as built: at [1441.5,920.8] the ZIP is at 60.6 and G1 at 91.1 (30.45 m apart; the cable rule is 8).
+row_edit("ZIP", "G1", [1442, 921], resolution="under", reserved=None, decided="D-A2 option A (" + RULED + ")", measured={"at": [1441.5, 920.8], "zip_h": 60.6, "g1_h": 91.1, "separation_eu": 30.45, "bake": "candidate 3 (f1a1ec1)"},
+         note="zip under gondola: 30.45 m below the gondola cable where they cross (profiles.cable.clear_eu 8); riders on the zip pass beneath the cabins")
+m["cable"]["ZIP"]["v1_9_note"] = m["cable"]["ZIP"]["note"]
+m["cable"]["ZIP"]["note"] = m["cable"]["ZIP"]["note"].replace("and crosses above the gondola cable at [1442,921] with 10.7 m between cables", "and crosses under the gondola cable at [1441.5,920.8], 30.45 m beneath it (D-A2: zip under gondola)")
+assert "D-A2" in m["cable"]["ZIP"]["note"]
+
+# 3. D-A3 · The gondola top station (Jonathan: "option 2 and a 205 s target"): the station moves ~35 m up the slope onto
+#    the summit's south shoulder at grade, [1335,535], deck 150 on ground 148.5. The line turns 1.1° west about the base
+#    (573.6 m). Towers stand at the v1.9 distances from the base (135.4 / 271.7 m) except tower 3, which moves from 407 to
+#    392 m: at 407 m its footing lands on the Year Walk's January lane at the turning circle (1.7 m from the lane edge),
+#    at 392 m it stands 7.9 m clear of S1 with spans of 135 / 136 / 120 / 182 m (profiles.cable.towerSpacing_m 120-200).
+#    Heights are not authored: the builder solves each tower to the lowest top that keeps every span 8 clear (the 25 m
+#    station throats excepted) and never clamps at the 300 ceiling (a tower above it fails the bake). The proposal's
+#    minimum tops at 135 / 272 / 407 m were 83 / 110 / 151 (proposals/gondola-top-station.md).
+G1 = m["cable"]["G1"]
+G1_TO, G1_TO_H = [1335, 535], 150
+G1_L = math.dist(G1["from"], G1_TO); G1_U = [(G1_TO[0] - G1["from"][0]) / G1_L, (G1_TO[1] - G1["from"][1]) / G1_L]
+G1_TOWER_S = [135.4, 271.7, 392]
+G1["v1_9"] = {"to": G1["to"], "toH": G1["toH"], "towers": G1["towers"], "length_m": G1["length_m"]}
+G1["to"], G1["toH"] = G1_TO, G1_TO_H
+G1["towers"] = [[round(G1["from"][0] + G1_U[0] * d, 1), round(G1["from"][1] + G1_U[1] * d, 1)] for d in G1_TOWER_S]
+G1["towerDistances_m"] = G1_TOWER_S
+G1["length_m"] = round(G1_L)
+G1["towerSolve"] = "each tower top is solved to the lowest height that keeps every span profiles.cable.clear_eu over the ground (1 % sag; the 25 m throat at each station excepted); no tower height is authored and none is clamped: a tower whose top would pass sky.ceiling (300) fails the bake"
+G1["towerMin_h_reference"] = {"at_m": [135, 272, 407], "top_h": [83, 110, 151], "source": "proposals/gondola-top-station.md (Option 2 solver, no terraces rule); tower 3 now stands at 392 m, so re-solve"}
+G1["note"] = "upper street → the Crown station on the summit's south shoulder (at grade, [1335,535]), straight up the south-east face; town falls away, then the whole island; a short walk (≈ 70 m, 8 m of climb) continues from the station to the summit lookout"
+G1["decided"] = "D-A3 option 2 (" + RULED + ")"
+gs = m["structures"]["gondolaStations"]
+gs["v1_9_crownStation"] = gs["crownStation"]; gs["crownStation"] = G1_TO
+gs["crownStation_deck_h"] = G1_TO_H
+gs["note"] = "v2.0 (D-A3): the Crown station stands at grade on the summit's south shoulder (ground 148.5, deck 150); it was in a notch 17 m below the 129.7 ridge at [1360,560] (deck 112), which forced a 275 eu tower"
+for t in m["thresholds"]:
+    if t["id"] == "gondolaTop": t["v1_9_xy"] = t["xy"]; t["xy"] = G1_TO
+cfg = m["walks"]["crownFromGondola"]
+cfg["v1_9_pts"] = cfg["pts"]; cfg["pts"] = [G1_TO, [1322, 517], [1310, 500]]
+cfg["length_m"] = round(length(cfg["pts"]))
+cfg["levels"] = [{"xy": G1_TO, "h": G1_TO_H, "why": "the station deck"}, {"xy": [1310, 500], "h": 154, "why": "the summit junction (walk summit on to L02 [1310,470] at 158)"}]
+cfg["note_v2_0"] = "D-A3: a 43 m leg at 9 % from the station at grade to the summit junction (the station → L02 walk is ≈ 70 m of plan and 8 m of climb, step-free); the builder's hard-coded switchback via [1405,595], [1450,565], [1430,500], [1350,440] goes"
+jl = m["journeys"]["square→summit by gondola + walk"]
+jl["v1_9_legs"] = [dict(l) for l in jl["legs"]]
+jl["legs"][1]["length_m"] = G1["length_m"]
+jl["legs"][2]["length_m"] = round(math.dist(G1_TO, [1310, 470]))
+jl["note"] = "time = sum of legs; v2.0 (D-A3): the gondola runs to the shoulder station [1335,535] and the last walk is the station → L02 leg"
+m["journeys"]["at_factor_1_0"] = times(1.0)
+m["journeys"]["at_factor_0_6"] = times(0.6)
+m["journeys"]["at_active_scale"] = times(m["scale"]["factor"])
+m["journeys"]["targets_v1_9"] = {"square→summit by gondola + walk": m["journeys"]["targets_s"]["square→summit by gondola + walk"]}
+m["journeys"]["targets_s"]["square→summit by gondola + walk"] = 205
+m["journeys"]["targets_s"]["note"] = m["journeys"]["targets_s"]["note"].replace("the summit target is the achievable value until the gondola top station is decided (reserved), then 180", "the summit target is 205 s (D-A3, " + RULED + ": option 2 gives ≈ 185 s; 205 keeps the ≥ 10 % margin; it was 375 while reserved)")
+assert "205 s" in m["journeys"]["targets_s"]["note"]
+# The register against the moved line (plan intersections of the new G1 chord with the candidate-3 beds). Rows on the
+# old station walk that the 43 m leg can no longer meet are retired; the rest drop "RESERVED R-A3".
+G1_REPOINT = [("S1", "G1", [1391.9, 701.5], [1378.6, 701.8]), ("S1", "G1", [1407.5, 770.1], [1395.2, 765.5]),
+ ("walk crown", "G1", [1365.9, 586.1], [1352.3, 601.4]), ("walk crown", "G1", [1372.4, 615.2], [1357, 619.2]), ("walk crown", "G1", [1388.3, 685.3], [1375.1, 688.6]),
+ ("yearWalk", "G1", [1385.1, 671.2], [1375.7, 690.8]), ("yearWalk", "G1", [1388.6, 686.7], [1375.5, 689.9]), ("yearWalk", "G1", [1421.9, 833.4], [1416, 844.9]),
+ ("G1", "V01", [1469, 1043], [1468, 1044]), ("G1", "Crown Road", [1385, 655], [1373.4, 682]), ("G1", "ORE", [1375, 625], [1363.9, 645.4]),
+ ("walk crownFromGondola", "G1", [1360, 560], G1_TO), ("ZIP", "G1", [1441.5, 920.8], [1437.5, 927.4])]
+for a, b, old, new in G1_REPOINT:
+    row_edit(a, b, old, at=new)
+row_edit("ZIP", "G1", [1437.5, 927.4], predicted_v2_0={"separation_eu": 29.0, "g1_h": 88.8, "zip_h": 59.8, "source": "proposals/zip-over-g1.md, with the station at [1335,535]"})
+for a, b, at in [("V02", "walk crownFromGondola", [1412.8, 593.4]), ("V02", "walk crownFromGondola", [1443.1, 526.5]), ("walk crown", "walk crownFromGondola", [1376, 574.7]),
+                 ("walk crownFromGondola", "crownLaunch.stair", [1320.4, 479.2]), ("walk crownFromGondola", "DEEP_RUN", [1341.3, 445.2]), ("walk crownFromGondola", "DEEP_RUN", [1437.6, 512.9]),
+                 ("walk crownFromGondola", "ORE", [1334.3, 454.3]), ("walk crownFromGondola", "ORE", [1369.1, 568.4]), ("walk crownFromGondola", "stepsPortage", [1332.3, 457.5]),
+                 ("walk crownFromGondola", "underground.bellGallery", [1315.5, 489.2]), ("walk crownFromGondola", "yearWalk", [1422.1, 589.2]), ("walk crownFromGondola", "yearWalk", [1446.4, 537.2])]:
+    row_retire(a, b, at, "v2.0 (D-A3): the station walk is a 43 m leg [1335,535] → [1310,500]; the v1.9 switchback that met this route here goes (re-check on the next bake)")
+for i, row in enumerate(m["crossings"]):
+    if "RESERVED R-A3" in row.get("note", ""):
+        row = dict(row); row["note"] = row["note"].replace("RESERVED R-A3: waits on the gondola top station", "D-A3 decided " + RULED + " (station [1335,535]); re-point on the next bake"); m["crossings"][i] = row
+assert not any("R-A3" in r.get("reserved", "") for r in m["crossings"])
+
+# 4. D-A4 · The Prow Tunnel (Jonathan: "option a"): candidate A at ≈ [1590,890], built as a covered GALLERY, not a bore
+#    (the ground west of V01 stands only 0-4 eu over the road there; a tunnel would need ≈ 22,000 m³ of new hill). kind
+#    "gallery" (new): the hillside is the east wall, a roof slab bears on a west colonnade open to the sea, a ceiling and
+#    lining inside (CONTRACT §2.5), headroom ≥ 5 over the Drive and its footway; cover is reported as it is (no earthworks).
+#    V01 does not move (the ring stays continuous; candidate A needs no road change): xy is V01's own centreline point
+#    nearest [1590,890] on the candidate-3 bake, [1592,890]. Grade through the 90 m: 25.6 → 30.9 on the candidate-3 bed
+#    (≈ 6 %; the proposal measured 29.3 → 39.5, 11.3 %, on 76c093f) — inside the Prow cliff drive's exception either way.
+pt = m["structures"]["prowTunnel"]
+m["structures"]["prowTunnel"] = {"xy": [1592, 890], "kind": "gallery", "length_m": 90, "route": "V01",
+ "section": {"hillSide": "east (the Prow top's flank is the wall)", "openSide": "west, a colonnade of columns on footings to the ground, open to the sea", "roof": "a slab from the hill wall to the colonnade beam, lined and ceiled", "headroom_eu": 5, "carries": "Horizon Drive and its Year Walk verges (December seaward, January inland)"},
+ "cover": "report the ground over the roof as measured (a gallery needs none); no fill is made to fake a tunnel",
+ "grade": "V01 unchanged: 25.6 → 30.9 over the 90 m on the candidate-3 bed (≈ 6 %)",
+ "v1_9": {"xy": pt["xy"], "kind": pt["kind"], "length_m": pt["length_m"]},
+ "decided": "D-A4 candidate A as a gallery (" + RULED + ")",
+ "why": "the v1.9 box at [1600,780] stood on V01's side-hill cut with no hill over it: its roof 3 eu out of the ground, V01 8.4 under its floor at the north portal and 4.977 < 5 headroom (proposals/prow-tunnel.md)"}
+m["structures"]["prowTunnel"]["kindNote"] = "gallery (new kind, v2.0, D-A4): a covered road on a hillside: the hill is one wall, a roof slab on a colonnade forms the other, open to the view; ceiling and lining as a tunnel, cover not required"
+
+# 5. D-A5 · The dam's glass face (Jonathan: "b"): the face stays due south; at golden hour and dusk its glass is lit from
+#    inside by a light card (no dynamic light). LIGHT §2's line changes (LIGHT.md) and page A's golden-hour proof (P25)
+#    reads "lit or emissive": on 21 June at 19:47 the sun is at 294.5°, 164° from the square's bearing to the dam, so a
+#    face that faces the square cannot be sunlit then; the square sees 65 % of the face's width.
+m["lights"] = [
+ {"id": "dam.glassFace", "kind": "card", "anchor": "structures.dam", "face": "south", "on": "golden hour → dawn (sunset − 1 h to sunrise); off by day", "colour": "warm interior glow (the kit pass picks the swatch)",
+  "note": "v2.0 (D-A5, " + RULED + "): an emissive card on the dam's glass band, no dynamic light; the square sees it lit at golden hour and dusk; LIGHT §2"},
+]
+m["lightsRule"] = "lights lists the manifest-authored light cards (LIGHT §3 WorldDefinition.lights); the bake's door and threshold lamps are derived and not listed here"
+m["structures"]["dam"]["faceLight"] = "dam.glassFace"
+for v in m["views"]:
+    if v["id"] == "A":
+        v["lightRule"] = "at the page's best hour (golden hour) the dam's glass face reads lit OR emissive: the dam.glassFace light card is on from golden hour (D-A5); P25's golden-hour check is 'the square lit and the dam's face lit or emissive'"
+
+# 6. D-A7 · Crossings built apart (Jonathan: "go with recommended"): the garden walk over Green Road keeps its named
+#    footbridge; the other four meet flush as at-grade thresholds (the beds track regrades them). The Hollow neck's
+#    covered-bridge row (#7) stays reserved, now under D-C10 (Jonathan: recommended = keep reserved).
+D_A7 = "D-A7 (" + RULED + ")"
+row_edit("VG", "walk garden", [974, 748], at=[969.5, 764.2], movedFrom=[974, 748], resolution="over", structure="gardenWalkBridge", reserved=None, decided=D_A7,
+         note="the Garden Walk crosses Green Road on the named gardenWalkBridge, 17.65 over the road (regrading would need ≈ 147 m of 12 % ramp each side)")
+m["structures"]["gardenWalkBridge"]["register_v2_0"] = "D-A7: this footbridge is the register's VG × walk garden crossing (over), at [969.5,764.2]"
+row_edit("V01", "walk bightPier", [407, 894], at=[402.3, 894.5], movedFrom=[407, 894], reserved=None, decided=D_A7,
+         note="flush at-grade threshold (a marked crossing on the Drive): the pier walk (34.47) comes down 3.9 to the Drive (30.55) over ≈ 33 m at ≤ 12 %; regrade owed (beds)")
+for at in ([415.5, 897.6], [422.8, 899]):
+    row_edit("walk bightPier", "yearWalk", at, note=m["crossings"][row_find("walk bightPier", "yearWalk", at)]["note"] + "; v2.0: re-check after the D-A7 regrade of the pier walk at V01 (the pier walk falls to the Drive's height here)")
+row_edit("S4", "VG", [973, 538], reserved=None, decided=D_A7,
+         note="flush at-grade threshold at the studio terrace (dismount marker + kerb gap): S4 (37.07) rises 2.8 to VG (39.87) at ≤ 12 % over ≥ 24 m on either side; regrade owed (beds)")
+row_edit("S4", "walk garden", [905.9, 640.6], decided=D_A7, note=m["crossings"][row_find("S4", "walk garden", [905.9, 640.6])]["note"] + "; v2.0 (D-A7): flush threshold confirmed (it was 2.75 apart in v1.8)")
+row_edit("S4", "walk garden", [893, 600], reserved="D-C10", note="the covered Hollow Bridge is shared: boards to the rail side at walking pace; the Hollow neck stays reserved (D-C10, " + RULED + ": keep reserved until the other crossings are done; one P16 row, a hollowBridge beam 0.05 over the brook)")
+row_edit("S1", "damPortage", [1160.8, 940.1], reserved=None, decided=D_A7,
+         note="dam apron: boards on the apron, the canoe portage meets it flush: the portage stair's foot (35.81) comes down to the apron (31) at the threshold; regrade owed (beds/structures)")
+
+# 7. D-A8 · Year Walk stations (Jonathan: "do recommended"): keep February, April, July, October and December; November
+#    back onto solid ground. Its 36 × 14 pad at [1622,912] overhung the Prow cliff drive's cutting (ground 26.3-56.7 under
+#    it, `padFloating.station.nov`). Turned 90° (long side north-south, along the Prow top) at [1626,904] the pad's
+#    footprint + 2 m stands on 54.0-56.7 (candidate-3 bake), 3.6 m clear of the Prow walk and off V01's cutting; it stays
+#    on the Prow top, 8.9 m from where it was. The Year Walk's November loop tip moves onto the pad's centre.
+NOV_XY = [1626, 904]
+for st in m["journey"]["stations"]:
+    if st["id"] == "nov":
+        st["v1_9_xy"] = st["xy"]; st["xy"] = NOV_XY; st["pad_rot_deg"] = 90
+        st["moveWhy_v2_0"] = "D-A8 (" + RULED + "): off the Prow cliff overhang; turned 90° along the Prow top, ground 54.0-56.7 under the pad (it fell to 26.3 under the v1.9 pad)"
+for pin in m["journey"]["yearWalk"]["pins"]:
+    if pin["station"] == "nov": pin["v1_9_xy"], pin["v1_9_h"] = pin["xy"], pin["h"]; pin["xy"], pin["h"] = NOV_XY, 56
+yw_replace([[1630, 855], [1620, 910], [1645, 875]], [[1630, 855], NOV_XY, [1645, 875]], "v2.0 (D-A8): the November loop's tip on the moved pad's centre")
+m["journey"]["yearWalk"]["v2_0_edits"] = [YW_EDITS_V19.pop()]
+m["journey"]["station"]["padRotRule"] = "v2.0: a station may carry pad_rot_deg (default 0; 90 turns the 36 m side north-south); the builder lays the pad and its beds rotated"
+
+# 8. Groups B and C (Jonathan: "recommended on all").
+REC = "recommended, accepted " + RULED
+views = {v["id"]: v for v in m["views"]}
+# D-B2 · page K re-posed so the Glasshouse is in the 1440 × 900 frame (it was 0 px, 30-63° off the line of sight from
+#   [1006,762]). The eye stands on the terrace at the lake-rim walk's start by the Glasshouse's north-west corner and looks
+#   east-south-east past the Glasshouse to Stillwater. Ray probe on the candidate-3 bake (lib5 pattern, runtime lens):
+#   1440 × 900 Glasshouse 3,089 px / Stillwater 790 px of 12,960 (need 13); 390 × 844 Glasshouse 955 / Stillwater 168 of
+#   7,800 (need 8). v1.9: 0 / 1,989 and 254 / 381.
+K = views["K"]
+K["v1_9"] = {"xy": K["xy"], "target": K["target"], "target_h": K["target_h"], "portrait": dict(K["portrait"])}
+K["xy"], K["target"], K["target_h"] = [994, 770], [1120, 815], 52
+K["portrait"].update({"target": [1120, 815], "target_h": 52})
+K["decided"] = "D-B2 re-pose (" + REC + ")"
+# D-B3 · page H's best hour → golden hour (sunset − 1 h), so the strip can read copper; its wording follows.
+H = views["H"]
+H["v1_9_bestHour"], H["v1_9_label"], H["v1_9_frames"] = H["bestHour"], H["label"], H["frames"]
+H["bestHour"], H["label"], H["frames"] = "golden hour", "The Flats at golden hour", "the strip in copper, the west sea under the low sun"
+H["decided"] = "D-B3 (" + REC + ")"
+# D-C3 · the Throat collar stays (it keeps the Throat dark, P25 0/75); the 18 m is the mouth's aperture, the passage's
+#   aperture where it enters the Deep under the collar is the built 10.8 (data follows the build).
+th = m["underground"]["doors"]["throat"]
+th["collarAperture_m"] = 10.8
+th["apertureNote"] = "v2.0 (D-C3, " + REC + "): mouth_m [26,18] is the mouth's aperture on the north face; the passage opens into the Deep below its ceiling under the collar (68-76.7) with 10.8 clear (built 10.79); the clearance report checks the passage against collarAperture_m"
+# D-C5 · page I's "the Reach water" is the river where it crosses the Reach as well as the Reach channels (W3-C's reading).
+I = views["I"]
+I["subjectDefs"] = {"the Reach water": "water.reach.* (the Reach channels) OR water.river.lower where the hit lies inside landforms.reach (the river crossing the Reach)"}
+I["decided"] = "D-C5 (" + REC + ")"
+# D-C6 · L01 about 1 m east onto solid slab (its point stood 0.1 m inside the gallery's top-flight opening).
+for pl in m["places"]:
+    if pl["id"] == "L01": pl["v1_9_xy"] = pl["xy"]; pl["xy"] = [1173, 912]; pl["decided"] = "D-C6 (" + REC + ")"
+# D-C7 · the turning circle: three lanes stacked within 1 m at [1376-1387, 686-691] (Crown Road's footway 109.25, the Year
+#   Walk's January lane 110, the Crown walk 109.3). The Crown walk no longer lays its own bed along the Year Walk lane from
+#   the turning circle: it walks the lane itself and its own bed starts where it leaves the lane, [1417.7,677.4] (the
+#   candidate-3 walk crown bed is within 0-1.7 m / 0-0.6 eu of the lane from [1370,690] to there). The manifest points
+#   now follow the built route (the builder's hard-coded list, beds/build.ts:122) from that point.
+wc = m["walks"]["crown"]
+wc["v1_9_pts"] = wc["pts"]
+wc["pts"] = [[1417.7, 677.4], [1445, 665], [1425, 605], [1340, 620], [1400, 540], [1360, 470], [1310, 500]]
+wc["length_m"] = round(length(wc["pts"]))
+wc["joinsYearWalk"] = {"at": [1417.7, 677.4], "h": 110.1, "note": "D-C7 (" + REC + "): from the turning circle [1370,690] the Crown walk is the Year Walk's January lane (one bed at 110); its own bed starts here, a flush junction"}
+row_edit("walk crown", "yearWalk", [1379.9, 687.4], at=[1417.7, 677.4], movedFrom=[1379.9, 687.4], note="flush path junction where the Crown walk leaves the Year Walk's January lane (D-C7): no marker, no mode change")
+for a, b, at in [("walk crown", "yearWalk", [1371.2, 689.7]), ("walk crown", "G1", [1375.1, 688.6]), ("walk crown", "southPortal.link", [1370, 690]), ("V02", "walk crown", [1370, 690])]:
+    row_retire(a, b, at, "v2.0 (D-C7): the Crown walk's own bed starts at [1417.7,677.4]; from the turning circle to there it is the Year Walk's January lane (that lane's rows stand)")
+# D-C8 · plot bight.1 moves south-west off the June lane and S4. The packager's ≈ 12 m does not clear on the candidate-3
+#   bake (P31 pattern, 2 m grid, plot + 6 m margin): 12 m south-west leaves 12 Year Walk samples in the plot and 55 in the
+#   margin; 12 m due west clears the beds but puts 6 samples of the plot at or below 0.5 (the lagoon shore). [814,919]
+#   (25 m west-south-west, rot 39 kept) is the nearest spot with 0 bed samples in the plot and its margin and ground ≥ 0.7;
+#   edge to plot bight.2 21.8 m (≥ 17.5). v1.9 [836,907]: 32 in the plot, 62 + 13 in the margin.
+bs = m["reserves"]["bightShore"]
+bs["v1_9_plots"] = [list(q) for q in bs["plots"]]
+bs["plots"][0] = [814, 919]
+bs["plot1Note_v2_0"] = "D-C8 (" + REC + "): plot bight.1 moved 25 m west-south-west, the nearest spot clear of the June lane and S4 (the ≈ 12 m estimate did not clear); the plot's service drive follows"
+# D-C9 · the Bight Shore spur (VBS) rides 6-9 eu above S4 with 4.5-7 m between centrelines (corridors touching) for ≈ 40 m,
+#   [918,877] → [892,906], ground falling to 17.6 under it: a named trestle carries VBS there. It is not a crossing (the two
+#   run side by side), so its bents stand on VBS's far side from S4 and at its centreline; the S4-side deck edge
+#   cantilevers over S4's edge (S4 keeps ≥ 6 eu headroom). length_m (not span_m): the generic footbridge builder would put
+#   bents in S4 lengthwise, as W3-A found; the structures builder needs a trestle kind.
+m["structures"]["bightSpurTrestle"] = {"xy": [904.9, 891.5], "kind": "trestle", "carries": "VBS", "length_m": 44, "width_m": 5, "from": [918.1, 877], "to": [891.6, 906],
+ "deck": "VBS on its own grade (27.4 → 25.2)", "beside": "S4 at 17.3-18.2, 4.5-7 m from VBS's centreline on the east side",
+ "bents": "one line on the west (away from S4) and one under the centreline; none in S4's corridor", "decided": "D-C9 (" + REC + ")",
+ "note": "v2.0: VBS hung 6-9 eu over the ground beside S4 with nothing under it (R2-04; the dropped v1.9 bightSpurBridge put its bents in S4)"}
+# D-C11 · the market stair: stairs only. The ramp twin (marketRamp) is retired from the data; the recorded step-free route
+#   from the stair's foot to the upper street is the 295 eu detour (review 2's route walk).
+for a, b, at in [("marketRamp", "host.home.approach", [1482.4, 1181.8]), ("marketStair.flight.0", "marketRamp", [1480, 1150])]:
+    row_retire(a, b, at, "v2.0 (D-C11, " + RULED + "): the market stair is stairs only; the ramp twin is retired (it ran into Our home's walls, R2-09)")
+m["structures"]["marketStair"] = {"xy": [1480, 1160], "kind": "town stair", "foot": [1480, 12, 1171], "head": [1480, 18, 1150], "flights": 3, "twin": "none (stairs only)",
+ "stepFree": {"route": ["walk square", "town.bankLink", "town.northLink", "V01", "spur upperStreet"], "length_eu": 295, "from": "the square", "to": "the upper street spur's end [1480,18,1060]", "note": "the recorded step-free way between the square and the upper street (review 2 route walk: 295.5 eu, 123 s at 2.4 m/s)"},
+ "decided": "D-C11 stairs only (" + RULED + ")", "note": "v2.0: the ramp twin (marketRamp, land/town/build.ts) is retired; no step-free 75 m run at 8 % fits beside Our home"}
+m["profiles"]["stair"]["exceptions"] = [{"stair": "marketStair", "twin": "none", "stepFree": "structures.marketStair.stepFree (295 eu)", "why": "D-C11"}]
+for seg in m["skate"]["S3"]["segments"]:
+    if seg["name"] == "Market stair": seg["v1_9_spot"] = seg["spot"]; seg["spot"] = "three flights, a rail each; ground line: park at stairTop and carry (stairs only, D-C11)"
+# D-C14 · the cove walk comes down to the Scholars Cove ferry pier by a cliff stair cut into the face (33 m).
+m["structures"]["coveStair"] = {"kind": "cliff-stair", "from": [631.2, 241.9], "from_h": 34.1, "to": [630, 235], "to_h": 1.8, "rise_m": 32.3,
+ "along": "cut into the cliff face west of the pier: two flights of ≈ 55 m run with a landing at ≈ 17, between [631,240] and [604,252] and back", "parapet": "on the sea side, posted to the rock",
+ "decided": "D-C14 cliff stair (" + REC + ")", "note": "v2.0: the cove walk ended 32.8 above the pier; kind cliff-stair (not stair: the tower-stair builder does not apply)"}
+row_edit("walk coveWalk", "ferry.scholarsCove", [630, 240], at=[630, 235], resolution="threshold", kind="modeTransfer", structure="coveStair", note="the cove walk comes down the cliff stair to the pier: feet → ferry (D-C14)")
+# D-C15 · S1 crosses itself at the Shoulder's lakeside loop: the upper pass (89.8 → 83.4) stands up to 12.3 over the ground
+#   from [1363.5,752.2] to [1326.6,735.7] and crosses the lower pass (76-78) at [1353.6,747.9], 11.5 above it. A named
+#   skate flyover carries the upper pass. length_m (not span_m): the generic span builder would take the lower pass as its
+#   own route and could stand bents on it.
+m["structures"]["s1Flyover"] = {"xy": [1345, 744], "kind": "skateFlyover", "carries": "S1 (the upper pass)", "length_m": 44, "width_m": 4, "from": [1363.5, 752.2], "to": [1326.6, 735.7],
+ "deck": "S1's own grade, 89.8 → 83.4", "over": "S1's lower pass at [1353.6,747.9] (76.9), 11.5 below", "opening_m": 12, "rails": "both edges",
+ "bents": "outside the lower pass's corridor (2 m + 1 m margin either side of its centreline)", "decided": "D-C15 (" + REC + ")",
+ "note": "v2.0: a route's self-crossing is not a register pair; P12 proves it (was a 13.4 eu unsupported run at [1358,750])"}
+
+
+# ---------------------------------------------------------------------------
+# v2.1 — Stage A Wave 5 integration (integrator 3, 2026-09-27): the design lead's data calls measured on the merged
+# bake (W5-A beds + W5-S structures + W5-T terrain). Every delta is in docs/horizon/README.md → "v2.1"; old values are
+# kept beside the new ones (`v2_0_*`). Ids never change.
+# ---------------------------------------------------------------------------
+m["version"] = "2.1"
+DL = "design lead, Stage A Wave 5 integration 2026-09-27"
+# 1. D-A1 · the navigable opening → 40 m at s 103-143 (design lead's call, reversible under D-A1). An 8 m hull on the
+#    FERRY line cleared the east arch pier by −3.99 eu with the ruled 36 m at s 98-134 (the ferry crosses the deck edges at
+#    s ≈ 113-131, not centred on s 116); 40 m at s 103-143 clears both piers by +1.37 (W5-S, ferry2.ts; the best 36 m,
+#    s 105-141, gave only +0.15). The lookout (s 104-128), Ring Run gate 5 (s 111) and the S2 flyover (s 100-132) keep
+#    their places; the arch's piers and bents follow the data.
+bbo = m["structures"]["bightBridge"]
+bbo["opening"]["v2_0"] = {"at_s": list(bbo["opening"]["at_s"]), "centre_s": bbo["opening"]["centre_s"], "centre": list(bbo["opening"]["centre"]), "width_m": bbo["opening"]["width_m"], "clearWidth_m": bbo["opening"]["clearWidth_m"]}
+bbo["opening"].update({"at_s": [103, 143], "centre_s": 123, "centre": bb(123), "width_m": 40, "clearWidth_m": 38,
+ "decided": "D-A1 (" + RULED + ": 36 m); widened to 40 m by the " + DL + ", reversible (opening.v2_0)",
+ "hullClearance_eu": {"v2_0_36m_s98_134": -3.99, "v2_1_40m_s103_143": 1.37, "best_36m_s105_141": 0.15, "rule": "an 8 m hull (water_routes.FERRY.beam_m) on the FERRY line against the arch piers' and bents' footings"}})
+bbo["opening"]["why"] = bbo["opening"]["why"].replace("the opening covers the ferry lane (s 122, in at 46°, out at 58°)", "the opening covers the ferry lane (the hull crosses the deck edges at s ≈ 113-131, in at 46°, out at 58°)")
+bbo["bents"]["v2_0"] = {"west": dict(bbo["bents"]["west"]), "east": dict(bbo["bents"]["east"]), "arch piers": list(bbo["bents"]["arch piers"])}
+bbo["bents"]["west"].update({"bay_m": 11.4, "to_s": 103}); bbo["bents"]["east"].update({"bay_m": 10.1, "from_s": 143}); bbo["bents"]["arch piers"] = [103, 143]
+row_edit("FERRY", "bightBridge", note="twice per lap, through the steel-arch opening (s 103-143, 38 m × 11.4 clear; beam 8, +1.37 eu past each pier; v2.0 had s 98-134, 36 m)")
+row_edit("V01+S2", "Bight mouth", note="245 m viaduct with one 40 m steel through-arch (s 103-143; D-A1's 36 m widened by the design lead for the ferry hull, reversible); abutments on both headlands to the ground")
+# 2. D-C14 · the cove stair lands on the Scholars Cove dock deck, built at the water + 0.6 = 1.0 (W5-S); 1.8 left a 0.8 lip.
+cs = m["structures"]["coveStair"]; cs["v2_0_to_h"] = cs["to_h"]; cs["to_h"] = 1.0; cs["rise_m"] = round(cs["from_h"] - 1.0, 1)
+cs["toNote_v2_1"] = "the foot is the dock deck's own height (ferry.scholarsCove, 1.0); 1.8 would leave a 0.8 lip (W5-S)"
+# 3. D-A2 · ZIP × G1, the measured separation with W5-A's tower solve (tops 65.1 / 109.9 / 152.7, no clamp): 15.0 eu.
+zr = m["crossings"][row_find("ZIP", "G1", [1437.5, 927.4])]
+zr["v2_0_measured"] = zr["measured"]; zr["measured"] = {"at": [1437.5, 927.5], "separation_eu": 15.0, "bake": "Stage A candidate 4 (the W5-A tower solve: the lowest tops keeping 8 eu over the ground at 1 % sag)"}
+zr["v2_0_note"] = zr["note"]; zr["note"] = "zip under gondola: 15.0 m below the gondola cable where they cross (profiles.cable.clear_eu 8); riders on the zip pass beneath the cabins"
+m["cable"]["ZIP"]["note"] = m["cable"]["ZIP"]["note"].replace("crosses under the gondola cable at [1441.5,920.8], 30.45 m beneath it", "crosses under the gondola cable at [1437.5,927.5], 15.0 m beneath it")
+# 4. D-C11 · the market stair stays stairs only; the step-free way between the square and the upper street is W5-A's
+#    square walk (≈ 6 % beside the upper-street terrace narrowed to x 1463-1480), not the 295 eu detour (superseded,
+#    reversible via land/town/build.ts TOWN_TIERS).
+ms = m["structures"]["marketStair"]; ms["v2_0_stepFree"] = ms["stepFree"]
+ms["stepFree"] = {"route": ["walk square"], "length_eu": 94, "grade_pct": {"mean": 6.4, "max": 8.0}, "from": "the square [1478,12,1150]", "to": "the upper street spur's end [1480,18,1062]",
+ "note": "the square walk climbs beside the upper-street terrace (narrowed to x 1463-1480, TOWN_TIERS) at ≤ 8 %, level with both pads (W5-A); the 295 eu detour (walk square → town.bankLink → town.northLink → V01 → spur upperStreet) is superseded and comes back if TOWN_TIERS is restored",
+ "decided": "D-C11 stairs only (" + RULED + "); the square walk as the step-free way by the " + DL}
+m["profiles"]["stair"]["exceptions"] = [{"stair": "marketStair", "twin": "none", "stepFree": "structures.marketStair.stepFree (walk square, 94 eu at ≤ 8 %)", "why": "D-C11"}]
+# 5. P15 / R2-116 · the Bight pier's head meets the ferry's second pass at [560,890]: a boarding threshold, like [560,902].
+m["crossings"].append({"a": "jetty.bightPier", "b": "FERRY", "at": [560, 890], "resolution": "threshold", "kind": "modeTransfer", "source": "integrator 3 (P15, R2-116)", "note": "boarding threshold at the pier head (the ferry's second pass); mover pending"})
+# 6. Page D · the Lamp is 670 eu from the eye and 9 px of 13 at 1440 × 900 by size alone (W5-T: lowering its cone changes
+#    nothing): it leaves Pass 1's frames as a deferred Pass 2b subject (the lighthouse's 25 m gallery makes it legible).
+for v in m["views"]:
+    if v["id"] == "D":
+        v["v2_0_frames"] = v["frames"]; v["v2_0_subjects"] = list(v["subjects"])
+        v["frames"] = "surf, the zipline landing"; v["subjects"] = ["surf", "the zipline landing"]
+        v["deferred"] = [d for d in v["deferred"] if not d.startswith("the Lamp in portrait")] + ["the Lamp (Pass 2b subject: 670 eu from the eye, 9 px of 13 at 1440 × 900 by size; the Pass 2b lighthouse and its 25 m gallery make it legible; " + DL + ")"]
+# 7. D-C9 · the VBS trestle runs ≈ 12 m further south, to where VBS comes back within 1.4 of the ground (W5-A/W5-T: VBS hung
+#    7.0 → 3.1 eu over the ground south of [891.6,906]).
+bt = m["structures"]["bightSpurTrestle"]; bt["v2_0_to"] = bt["to"]; bt["v2_0_length_m"] = bt["length_m"]
+bt["to"] = [886.7, 916.0]; bt["length_m"] = 56; bt["deck"] = "VBS on its own grade (27.4 → 24.4)"
+# 8. Page A · the Fund bank's south wall (to 25.6 at z 1134) hid 36 of the Shoulder's rays at 1440 × 900 (8 px of 13): the
+#    bank is 6 m narrower from its west side (east wall and door side unchanged), its footprint 26 × 18 → 20 × 18.
+for h in m["hosts"]:
+    if h["id"] == "bank":
+        h["v2_0_footprint_m"] = h["footprint_m"]; h["v2_0_xy"] = h["xy"]; h["footprint_m"] = [20, 18]; h["xy"] = [1443, 1125]
+        h["massNote_v2_1"] = "page A: the south wall's west 6 m stood in the Shoulder's sight line from the square (" + DL + "; reversible)"
+# 9. Page H portrait · the west sea was 0-1 px at 390 × 844 from [440,760] (the plateau's west edge hides all sea nearer
+#    than ≈ 2,475 eu, W5-T): the portrait eye stands 12 m west on the strip itself, 4 m in from its railed west edge
+#    ([428,760], 1.6 over the strip): west sea 14 px (min 8), the strip 3,115. Landscape unchanged. C and L were tried
+#    (C: target and eye nudges give the shelf ≤ 5 px of 8; L: the Boathouse ≤ 6 of 8 anywhere on the quay, hidden by the
+#    harbour's west bank) and are left as they were.
+for v in m["views"]:
+    if v["id"] == "H":
+        v["portrait"]["v2_0_xy"] = None; v["portrait"]["xy"] = [428, 760]
+        v["portrait"]["poseNote_v2_1"] = "the portrait eye on the strip 12 m west of the landscape eye (west sea 1 → 14 px at 390 × 844; " + DL + ")"
+# 10. The Year Walk's February share (journey.yearWalk.shares feb, offset 0) walks the lake-rim trail, but the trail was a
+#     2.5 m trail under a 5.2 m Year Walk: ≈ 118 m of the Year Walk's edge stood outboard of the trail's own rails (P09,
+#     W5-A request to W5-T). The rim trail is the Year Walk's width.
+lr = m["walks"]["lakerim"]; lr["surface_m"] = 5.2; lr["shoulder_m"] = 1.2
+lr["surfaceNote_v2_1"] = "the Year Walk's February share rides this trail at offset 0: the trail takes the Year Walk's section (5.2 m + 1.2 m shoulders; profile trail 2.5 elsewhere; " + DL + ")"
+
+# ---------------------------------------------------------------------------
+# v2.2 — reconciled with main #549–#552 (integrator, 2026-09-27). Main's two v1.7 blocks (FLIGHT.md "sky-only",
+# RIDE.md "paces and surface grip", both 2026-09-26, Codex) were written on the v1.6 land; Stage A's v1.7 → v2.1 moved
+# that land. They are applied here, AFTER v2.1, with their numbers verbatim, so their assertions run on the v2.1 land.
+# Re-anchored (Stage A's land wins on geometry, CONTRACT §2.13 ids unchanged):
+#   · sky.dropZone.xy follows sky.landings.green (FLIGHT's own rule: "inside the Green's protected centre at
+#     sky.landings.green"); v2.1 moved the green landing [1040,1065] → [1028,1112], so the Drop Zone moves with it.
+#   · journeys.targets_s["crown→lamp by glider"] stays Stage A v1.7's [85,120] (achievable with ≥ 10 % margin from the
+#     v2.1 Crown launch [1305,482] h 170); FLIGHT's D34 [70,110] is kept in targets_s.decisions.v2_2_d34 — both contain
+#     the ≈ 98 s still-air trim flight D34 names.
+# Every delta is in docs/horizon/README.md → "v2.2 (reconciled with main #549–#552)". No horizon-geo bump.
+# ---------------------------------------------------------------------------
+m["version"] = "2.2"
+m["date"] = "2026-09-27"
+# FLIGHT.md (2026-09-26), integrator ask 5 (main's v1.7 "sky-only").
 sky = m["sky"]
 sky["gliderPolar"] = [[8,1.3],[9,1.05],[11,1.2],[14,1.8],[17,3.0]]
 sky["gliderPolarRule"] = "[airspeed m/s, still-air sink m/s] from bar pushed out full to pulled in full; a smooth piecewise cubic between points; trim [11,1.2] is sky.glider; stall below 7.5 (FLIGHT.md §2.2)"
 sky["parachute"] = {"forward_ms":6,"sink_ms":3,"freefallCap_ms":30,"autoPull_agl_m":45,"minBail_agl_m":60,"canopy_m":[7,3],"note":"reached only by jumping from the plane (carriedThresholds.bailOut); the chute always opens (D37)"}
 sky["corridors"] = {"throat":{"gate":12,"to":[1300,420],"slope_deg":30,"level_m":25,"splashH":42,"coneDeg":25,"maxBankDeg":20,"note":"glider only: enter gate 12's aperture heading within coneDeg of south and banked at most maxBankDeg; follow the chute at slope_deg; the last level_m run over the Deep at splashH; a miss passes beside the mouth, never a wall"}}
-sky["dropZone"] = {"xy":[1040,1065],"rings_m":[5,10,25],"note":"ground paint inside the Green's protected centre at sky.landings.green; bullseye, inner, outer, then 'on the Green'"}
+sky["dropZone"] = {"xy":list(sky["landings"]["green"]["xy"]),"rings_m":[5,10,25],"note":"ground paint inside the Green's protected centre at sky.landings.green; bullseye, inner, outer, then 'on the Green'",
+ "v1_7_xy":[1040,1065],"xyNote_v2_2":"follows sky.landings.green (v2.1 [1028,1112]); FLIGHT v1.7 placed it at the v1.6 green landing [1040,1065]"}
 for key in ("green","reachMeadow","sands"):
     sky["landings"][key]["modes"] = ["glider","parachute"]
 sky["landingModes"] = {"strip":["plane","glider","parachute"],"water":["plane","glider","parachute"],"deep":["glider"],"rule":"modes per non-field landing; every landing takes the parachute except water.deep (the Deep is reached only through the Throat, by glider)"}
 m["carriedThresholds"] = [{"id":"bailOut","carriedBy":"plane","xy":"carried","modes":["plane→parachute"],"action":"jump","minAgl_m":60,"hold_s":0.5,"note":"the plane's door: its place is the plane's each frame; offered only at >= minAgl_m above the ground under the plane; never inside the Throat"}]
 m["carriedThresholdRule"] = "A carried threshold moves with a vehicle and has no pad, marker or fixed xy. It is listed apart from thresholds so the land pass never grades a pad for it; WorldDefinition.thresholds carries it with carried = carriedBy."
-m["journeys"]["targets_s"]["crown→lamp by glider"] = [70,110]
-m["journeys"]["targets_s"]["decisions"] = {"crown→lamp by glider":"D34 applied pending Jonathan's confirmation: retargeted from [50,90] to [70,110] (~98 s at 11 m/s trim in still air, FLIGHT.md §12)"}
-# RIDE §8.3 / §11.5 (2026-09-26): v1.7 is data only — paces and surface grip for the ground kernel (D42),
-# the park's forgiving landings (D40). No geometry change, no horizon-geo bump. Every v1.6 id and number stays.
-m["version"] = "1.7"
-m["date"] = "2026-09-26"
-m["status"] += " v1.7: paces and surface grip (RIDE D42) — data only, no geometry change."
+m["journeys"]["targets_s"]["decisions"] = {"crown→lamp by glider":"D34 applied pending Jonathan's confirmation: FLIGHT retargeted from [50,90] to [70,110] (~98 s at 11 m/s trim in still air, FLIGHT.md §12) on the v1.6 launch. v2.2: the Stage A v1.7 target [85,120] (measured on the Stage A graph from the v2.1 lookout launch [1305,482] h 170: 96.0 s on candidate 5) contains the same flight and stands; D34's [70,110] is kept in v2_2_d34","v2_2_d34":[70,110]}
+# RIDE §8.3 / §11.5 (main's v1.7 "paces and surface grip"): data only — paces and surface grip for the ground kernel
+# (D42), the park's forgiving landings (D40). No geometry change. Every v2.1 id and number stays.
+m["status"] += " v2.2: paces and surface grip (RIDE D42) and the FLIGHT sky fields (D34–D38), reconciled onto the v2.1 land — data only, no geometry change."
 paces = {
  "fast":{"roll":0.12,"pushGrip":1.0,"meaning":"open line"},
  "flow":{"roll":0.25,"pushGrip":0.9,"meaning":"banked or boarded ground that wants a carve"},

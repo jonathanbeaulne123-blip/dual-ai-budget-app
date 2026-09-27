@@ -17,7 +17,7 @@ const world={
 const register=vi.fn(()=>()=>{});
 vi.mock('../src/harbour/scene/worldMount.ts',()=>({mountHorizonWorld:async()=>({
   mode:()=>'walk',shotId:()=>'A',offers:()=>world.offers,moverState:()=>world.moverState,moverAction:world.moverAction,accept:world.accept,
-  pause(){},setReducedMotion(){},setCalm(){},setMode(){},dispose(){},input(){},look(){},jump(){},enterDoor(){},cutTo(){},world:{views:[]},
+  pause(){},setComfort(){},setReducedMotion(){},setCalm(){},setMode(){},dispose(){},input(){},look(){},jump(){},enterDoor(){},cutTo(){},world:{views:[]},
 })}));
 vi.mock('../src/harbour/horizon/movers/glider/index.ts',()=>({registerGliderModes:register}));
 

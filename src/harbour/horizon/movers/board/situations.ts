@@ -513,8 +513,9 @@ const SITUATION_TABLE: Record<SituationId, Situation> = {
     },
   },
   R4: {
-    id: 'R4', title: 'Straightening recovery', where: 'S1 Notch shelf (fast, paved, 18 %), S1 at 710 m, 1.2 m right of the centreline, heading 20° left of it, 13 m/s',
-    start: {x: 1258.74, z: 852.94, heading: -0.1961, speed: 13},
+    // v2.2 (re-derived on the Stage A v2.1 land): at 705–710 m S1's deck now reports grass; 650 m is the same paved 16.9 % run.
+    id: 'R4', title: 'Straightening recovery', where: 'S1 Notch shelf (fast, paved, 17 %), S1 at 650 m, 1.2 m right of the centreline, heading 20° left of it, 13 m/s',
+    start: {x: 1298.47, z: 808.34, heading: -0.577, speed: 13},
     script: [{t: 0, input: {slide: true, steer: 1}}, {t: 0.5, input: {steer: -1}}, {t: 1.0, input: {}}],
     duration: 2.0,
     asserts(m) {
@@ -531,8 +532,12 @@ const SITUATION_TABLE: Record<SituationId, Situation> = {
     },
   },
   R5: {
-    id: 'R5', title: 'Boost exit', where: 'S1 Quay finish (fast, paved, flat — not ~4 %), S1 at 1190 m, 1.2 m left of the centreline, heading 20° right of it, 11 m/s (re-derived in the fix round: the crossS1YearWalk pad now grips 1.0, which moved the old exit line onto the grass)',
-    start: {x: 1257.96, z: 1255.23, heading: -0.1004, speed: 11},
+    // v2.2 (re-derived on the Stage A v2.1 land): S1's Quay finish (1140–1240 m) is now a railed run-out — every start 1.2 m
+    // off the centreline at 20° meets a rail within 0.8 s (reachBoardwalk.rails, the Reach deck edges) and bails; no other
+    // flat fast paved stretch of S1–S4 holds a 50–60° slide. S2 at 200 m (the Wash, fast ochre, 3.6 %) is the one place
+    // every R5 check (and the noW / lateW variants) passes. The S1 run-out's width is an open land item (RECONCILE.md).
+    id: 'R5', title: 'Boost exit', where: 'S2 the Wash (fast, ochre, 3.6 %), S2 at 200 m, 1.2 m left of the centreline, heading 20° right of it, 11 m/s (was S1 Quay finish at 1190 m on the v1.6 land)',
+    start: {x: 466.67, z: 679.49, heading: -0.4134, speed: 11},
     // Kernel note: after S + A the post-release steer is the countersteer (D); W is pressed 0.1 s after grip returns.
     script: [{t: 0, input: {slide: true, steer: -1}}, {t: 1.6, input: {steer: 1}}, {t: 1.9, input: {}}],
     duration: 3.6,

@@ -20,8 +20,10 @@ export interface BedCut {
   maxGrade: number;
   /** A bridge/cable/cave must not pull the heightfield up to its deck or down to its floor. */
   terrainCut: boolean;
-  /** Structural spans leave the basin or tunnel roof intact beneath the route. */
-  terrainExclusions?: { at: XY; radius: number }[];
+  /** Exclude terrain fill beneath spans; open spans also cap intruding banks, while tunnel roofs stay intact. */
+  /** `terrainAt`/`terrainRadius` (road tunnels): the terrain keeps its natural roof cover only inside this circle, so the
+   * road cut reaches through a portal mouth (R2-03); `at`/`radius` still govern carried shares and reports. */
+  terrainExclusions?: { at: XY; radius: number; openSpan?: boolean; terrainAt?: XY; terrainRadius?: number }[];
   structureIds: string[];
   districtIds: string[];
 }
@@ -109,6 +111,26 @@ export interface TerrainField {
   columns: number;
   rows: number;
   heights: Float32Array;
-  /** One byte per sample; indexes the terrain module's exported surface palette. */
+  /** One paint byte per sample: bits 0–4 the ground palette index, bits 5–6 the strata set
+   * (`packTerrainPaint` / `terrainPaintGround` / `terrainPaintRockSet` in land/terrain). */
   surfaces: Uint8Array;
+}
+// --- T2 additions ---
+/** A plan stretch of one bed where its side facing `other` is shared with that bed:
+ * the two form one surface at the same height, so neither emits a kerb, parapet or
+ * retaining wall on that side (MANIFEST journey.yearWalk.sharesRule). */
+export interface SharedEdge { other: string; at: XY[] }
+export interface BedCut {
+  /** Stretches whose inner side is shared with another bed at the same height. */
+  sharedEdges?: SharedEdge[];
+  /** Plan stretches carried inside another bed's own structure (a bridge or tunnel
+   * section, or a trail it walks on at offset 0): this bed emits no deck, edge or
+   * terrain override there. */
+  carried?: XY[][];
+}
+export interface PadCut {
+  /** The pad is carried by what is under it, and never shapes the terrain heightfield:
+   * a raised deck (a tower top, a lookout run-off, a jetty over water) on its structure's
+   * supports, or an at-grade junction where two graded beds meet flush. */
+  deck?: boolean;
 }

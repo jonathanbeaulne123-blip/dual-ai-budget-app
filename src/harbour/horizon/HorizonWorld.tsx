@@ -20,6 +20,7 @@ export default function HorizonWorld(props:HarbourWorldProps){
   const initialBody=useMemo(()=>readHouseReturnOnDevice(identity,'horizon')?.body,[identityKey]);
   const share=readWorldPresenceShare(household.environment);
   const peer=useWorldFeed({environment:household.environment,householdId:household.householdId,memberId,linked:household.linked===true,view:scope,placeId:'court',softPresenceOptedOut:props.presence?.optedOut===true,share,world:HORIZON_PRESENCE_WORLD});
+  // The app's comfort choices reach the world: calm view = Comfort.quiet, reduced motion = Comfort.motion (R1-16).
   // The world's sound, as the Mountain does it (HarbourWorld.tsx): off until a deliberate toggle, and never while comfort.sound is off.
   const [comfort,updateComfort]=useComfort(household.environment),audio=useRef<WorldAmbience|null>(null),[soundOn,setSoundOn]=useState(false);
   useEffect(()=>{if(!comfort.sound){audio.current?.dispose();audio.current=null;runtime.current?.setAmbience(null);setSoundOn(false);}},[comfort.sound]);
@@ -36,5 +37,5 @@ export default function HorizonWorld(props:HarbourWorldProps){
     const target=HORIZON_HOST_TOOLS[host.id],place=(host.toolPlaceId??host.placeIds[0]) as HarbourPlaceId,address=VILLAGE_ADDRESS[place];
     if(props.onNavigateLocation&&address)props.onNavigateLocation({...route,...address,surface:target,object:undefined});else if(target)props.onOpen(target);
   }
-  return <HorizonStage key={identityKey} theme={theme} onDoor={onDoor} initialBody={initialBody} onReady={props.onWorldReady} onRuntime={value=>{if(!value&&runtime.current)saveHouseReturnOnDevice(identity,route,runtime.current.savedBody(),'horizon');runtime.current=value;value?.setAmbience?.(audio.current);}} sound={{on:soundOn,toggle:toggleSound}} partner={peer.walk} paused={Boolean(route.surface&&route.surface!=='queen')} onQuickSheet={props.onQuickSheet} onJourney={props.onJourney}>{props.children}</HorizonStage>;
+  return <HorizonStage key={identityKey} theme={theme} onDoor={onDoor} initialBody={initialBody} onReady={props.onWorldReady} onRuntime={value=>{if(!value&&runtime.current)saveHouseReturnOnDevice(identity,route,runtime.current.savedBody(),'horizon');runtime.current=value;value?.setAmbience?.(audio.current);}} sound={{on:soundOn,toggle:toggleSound}} partner={peer.walk} calm={comfort.quiet} reducedMotion={comfort.motion==='reduced'} paused={Boolean(route.surface&&route.surface!=='queen')} onQuickSheet={props.onQuickSheet} onJourney={props.onJourney}>{props.children}</HorizonStage>;
 }

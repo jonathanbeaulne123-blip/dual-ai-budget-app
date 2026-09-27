@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TerrainField } from '../src/harbour/horizon/land/interfaces';
 import { decodeTerrainAsset, encodeTerrainAsset, decimateTerrain } from '../src/harbour/horizon/land/terrain/asset';
-import { sampleTerrain, terrainNormal } from '../src/harbour/horizon/land/terrain';
+import { packTerrainPaint, sampleTerrain, TERRAIN_SURFACE_PALETTE, terrainNormal, terrainPaintGround, terrainPaintRockSet } from '../src/harbour/horizon/land/terrain';
 import { readFileSync } from 'node:fs';
 
 describe('Horizon asynchronous terrain asset format', () => {
@@ -48,5 +48,41 @@ describe('Horizon asynchronous terrain asset format', () => {
     const source = readFileSync(new URL('../src/harbour/horizon/land/terrain/index.ts', import.meta.url), 'utf8');
     expect(source).not.toMatch(/(?:const|let)\s+\w+\s*=\s*buildTerrain\(/);
     expect(source).not.toContain('new Float32Array(801');
+  });
+});
+
+describe('Horizon terrain paint byte', () => {
+  it('carries ground paint and rock set in the existing byte with no format change', () => {
+    const field: TerrainField = { revision: 'horizon-geo-1', width: 2000, depth: 1800, step: 5, columns: 401, rows: 361, heights: new Float32Array(401 * 361).fill(20), surfaces: new Uint8Array(401 * 361) };
+    for (let i = 0; i < field.surfaces.length; i++) field.surfaces[i] = packTerrainPaint(i % TERRAIN_SURFACE_PALETTE.length, i % 4);
+    const decoded = decodeTerrainAsset(encodeTerrainAsset(field), 'full');
+    for (let i = 0; i < field.surfaces.length; i += 97) {
+      expect(terrainPaintGround(decoded.surfaces[i]!)).toBe(i % TERRAIN_SURFACE_PALETTE.length);
+      expect(terrainPaintRockSet(decoded.surfaces[i]!)).toBe(i % 4);
+    }
+  });
+});
+
+describe('Horizon terrain mesh (render = the baked lattice)', () => {
+  it('casts shadows, weights rock per triangle slope and shades turf smoothly (no 0.82 step)', async () => {
+    const { buildTerrainMeshes } = await import('../src/harbour/horizon/runtime/cards');
+    const { districtAt } = await import('../src/harbour/horizon/world/districts');
+    const field: TerrainField = { revision: 'horizon-geo-1', width: 2000, depth: 1800, step: 5, columns: 401, rows: 361, heights: new Float32Array(401 * 361), surfaces: new Uint8Array(401 * 361) };
+    // A 12 eu cliff (67°) across x = 1450 in open turf.
+    for (let r = 0; r < 361; r++) for (let c = 0; c < 401; c++) { field.heights[r * 401 + c] = c * 5 > 1450 ? 22 : 10; field.surfaces[r * 401 + c] = packTerrainPaint(1, 0); }
+    const id = districtAt(1450, 1180), built = buildTerrainMeshes(field, { mouths: [] }, id, true, null)!;
+    expect(built.meshes.length).toBeGreaterThan(0);
+    let steep = 0, flat = 0;
+    for (const mesh of built.meshes) {
+      expect(mesh.castShadow).toBe(true); expect(mesh.receiveShadow).toBe(true);
+      const p = mesh.geometry.getAttribute('position'), n = mesh.geometry.getAttribute('normal'), info = mesh.geometry.getAttribute('rockInfo');
+      for (let t = 0; t < p.count; t += 3) {
+        const ys = [p.getY(t), p.getY(t + 1), p.getY(t + 2)];
+        if (Math.max(...ys) - Math.min(...ys) > 10) { steep++; for (let k = 0; k < 3; k++) expect(info.getX(t + k)).toBeGreaterThanOrEqual(0.5); }
+        else if (Math.abs(p.getX(t) - 1450) > 20) { flat++; for (let k = 0; k < 3; k++) { expect(info.getX(t + k)).toBe(0); expect(n.getY(t + k)).toBeCloseTo(1, 6); } }
+      }
+    }
+    expect(steep).toBeGreaterThan(0); expect(flat).toBeGreaterThan(0);
+    built.dispose();
   });
 });

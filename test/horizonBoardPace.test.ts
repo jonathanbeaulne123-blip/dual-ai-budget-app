@@ -55,8 +55,9 @@ describe('MANIFEST v1.7 paces resolve (RIDE §8.3)', () => {
 
 describe('the board contact adapter over the real world', () => {
   it('samples every built threshold pad legal for the board and the bicycle: threshold pace, or a pick-up pad at its line\'s pace', () => {
-    const built = world.thresholds.filter(t => t.built);
-    expect(built.length).toBeGreaterThan(100);
+    // A carried threshold (#552: the plane's bailOut) has no pad by design; it failed here on main @ ca8ed7e too.
+    const built = world.thresholds.filter(t => t.built && !t.carried);
+    expect(built.length).toBeGreaterThan(80);   // v2.2 (Stage A land): 91 built thresholds (D-A7 flush rows, the re-authored register)
     const pads = new Map(world.collision!.pads.map(p => [p.id, p]));
     const byPad = new Map(world.thresholds.map(t => [t.padId, t]));
     for (const t of built) {
@@ -180,18 +181,25 @@ describe('the board contact adapter over the real world', () => {
       expect(back.legal).toBe(true);
     }
   });
-  it('fades back to dry deck, never into the water on S2\'s submerged Bight Bridge stretch', () => {
+  it('fades back to dry deck, never into the water, beside S2 on the Bight Bridge', () => {
     const s2 = bed('S2');
     let arc = 0;
-    const wet: [number, number, number][] = [];
+    const wet: [number, number, number][] = [], seaSide: [number, number, number][] = [];
     for (let i = 0; i < s2.points.length; i++) {
       if (i) arc += Math.hypot(s2.points[i]![0] - s2.points[i - 1]![0], s2.points[i]![2] - s2.points[i - 1]![2]);
       const p = s2.points[i]!, g = geography.surface(p[0], p[2], p[1], .5);
-      if (arc > 760 && arc < 830 && g && geography.submerged(p[0], p[2], g.y)) wet.push([p[0], p[1], p[2]]);
+      if (g && geography.submerged(p[0], p[2], g.y)) wet.push([p[0], p[1], p[2]]);
+      if (arc > 760 && arc < 830 && i) seaSide.push([p[0], p[1], p[2]]);
     }
-    expect(wet.length, 'S2 has a submerged stretch near 789–803 m').toBeGreaterThan(0);
-    // The middle of the wet stretch: the nearest dry deck is furthest away there.
-    const [x, , z] = wet[wet.length >> 1]!, pt = board.nearestBedPoint(x, z)!;
+    // v2.2 (D-A1 built): S2 is carried on the bridge deck and has no submerged stretch any more (789–803 m was wet on the
+    // v1.6 land). The fade is proved from the Bight 3 m off S2's seaward edge at 760–830 m instead.
+    expect(wet, 'S2 is dry end to end on the v2.1 land').toHaveLength(0);
+    expect(seaSide.length).toBeGreaterThan(0);
+    const [sx, , sz] = seaSide[seaSide.length >> 1]!, i0 = s2.points.findIndex(q => q[0] === sx && q[2] === sz), q0 = s2.points[i0 - 1]!;
+    const heading = Math.atan2(sx - q0[0], sz - q0[2]), out = (s2.width ?? 4) / 2 + 3, x = sx - Math.cos(heading) * out, z = sz + Math.sin(heading) * out;
+    const under = geography.surface(x, z, 13, 50);
+    expect(under === null || geography.submerged(x, z, under.y), 'the probe point is over the Bight').toBe(true);
+    const pt = board.nearestBedPoint(x, z)!;
     expect(pt).not.toBeNull();
     expect(geography.submerged(pt[0], pt[2], pt[1])).toBe(false);
     expect(geography.submerged(pt[0], pt[2], pt[1] - .2), 'not on the water\'s very edge').toBe(false);
@@ -207,7 +215,7 @@ describe('the board contact adapter over the real world', () => {
     const built = world.collision!.pads.filter(p => world.thresholds.some(t => t.built && t.padId === p.id));
     const samples = built.map(p => board.sample(p.centre[0], p.centre[2], p.centre[1])!);
     const onStone = samples.filter(s => s.material === 'stone');
-    expect(onStone.length).toBeGreaterThan(20);
+    expect(onStone.length).toBeGreaterThan(15);   // v2.2: 17 pads report their own stone slab
     const pickup = new Set(world.thresholds.filter(t => isPickupThreshold(t.modes)).map(t => t.padId));
     for (const s of onStone) expect(s, s.padId!).toMatchObject({legal: true, grip: 1});
     for (const s of onStone) if (!pickup.has(s.padId!)) expect(s.pace, s.padId!).toBe('threshold');

@@ -26,3 +26,14 @@ it('assembles named v3 data from typed cuts while exposing missing physical work
   expect(JSON.parse(JSON.stringify(world)).heightfield.bytes).toBe(1234);
   expect(()=>createLandWorld({...field,revision:'horizon-geo-2'} as never,{beds:[],pads:[],mouths:[],waters:[],solids:[],diagnostics:[]})).toThrow(/revision/);
 });
+
+it('carries its own partition, offshore rules and coastline, and refuses duplicate solid ids (R1-67, R1-69)',()=>{
+  const field={revision:'horizon-geo-1' as const,width:2000,depth:1800,step:100,columns:21,rows:19,heights:new Float32Array(399).fill(10),surfaces:new Uint8Array(399)};
+  const empty={beds:[],pads:[],mouths:[],waters:[],solids:[],diagnostics:[]};
+  const world=createLandWorld(field,empty);
+  expect(world.districts.filter(d=>d.id!=='offshore').every(d=>Array.isArray(d.heart))).toBe(true);
+  expect(world.districts.find(d=>d.id==='offshore')!.offshore!.sites.length).toBeGreaterThan(0);
+  expect(world.coastline!.length).toBe(300);
+  const cube=(id:string)=>({id,kind:'box',surface:'stone',role:'wall' as const,walkable:false,districtId:'crown',bedIds:[],positions:[0,0,0,1,0,0,0,1,0],indices:[0,1,2]});
+  expect(()=>createLandWorld(field,{...empty,solids:[cube('underground.lanternCave.walls'),cube('underground.lanternCave.walls')]})).toThrow(/Duplicate Horizon solid ids \(1\): underground\.lanternCave\.walls/);
+});

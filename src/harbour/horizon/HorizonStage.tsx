@@ -6,16 +6,19 @@ import type {ReducedMotionCut,ReducedMotionLanding} from './movers/shared/mode.t
 import type {Host} from './world/definition.ts';
 import type {HouseBodyReturn} from '../../house/navigation.ts';
 import type {PlaceWalkSource} from '../scene/place.ts';
+import {appCalm,appReducedMotion} from './sun/comfort.ts';
 import './horizon.css';
 import type {ThemeId} from '../../theme/scenes.ts';
 import {HORIZON_MANIFEST} from './world/manifest.ts';
 export type HorizonStageProps={onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onRuntime?:(runtime:HorizonRuntime|null)=>void;onQuickSheet?:()=>void;onJourney?:()=>void;initialBody?:HouseBodyReturn;partner?:PlaceWalkSource|null;paused?:boolean;children?:ReactNode;review?:boolean;theme?:ThemeId;
+  /** The app's calm view (useComfort().quiet). Without it the stage reads html[data-quiet]. */calm?:boolean;
+  /** The app's reduced-motion setting (useComfort().motion==='reduced'); html[data-motion] and the OS query are read too. */reducedMotion?:boolean;
   /** The world's sound (a deliberate gesture enables it; `comfort.sound` owns the setting). */
   sound?:{on:boolean;toggle:()=>void}};
-/** Reduced motion is live: the system setting or Hearth's own comfort choice (`data-motion`, written by `theme/comfort.ts`). */
-const readReducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches||document.documentElement.dataset.motion==='reduced';
-/** Calm view is the comfort module's Quiet choice, applied as `data-quiet` by `applyComfort`. */
-const readCalm=()=>document.documentElement.dataset.quiet==='true';
+/** Reduced motion is live: the app's prop (useComfort), the system setting or Hearth's own comfort choice (`data-motion`, written by `theme/comfort.ts`). */
+const readReducedMotion=(props?:Pick<HorizonStageProps,'reducedMotion'>)=>props?.reducedMotion===true||appReducedMotion();
+/** Calm view is the comfort module's Quiet choice: the app's prop, else `data-quiet` as applied by `applyComfort`. */
+const readCalm=(props?:Pick<HorizonStageProps,'calm'>)=>props?.calm??appCalm();
 /** A vehicle-to-vehicle hand-off (the plane's Jump) is a 0.5 s hold, so a stray tap does nothing (FLIGHT.md §3.1). */
 const HOLD_MS=(HORIZON_MANIFEST.carriedThresholds.find(threshold=>threshold.id==='bailOut')?.hold_s??.5)*1000;
 const offerKey=(o:ThresholdOffer)=>`${o.thresholdId}:${o.from}:${o.to}`;
@@ -28,11 +31,11 @@ export function statusTextFor({riding,offerLabel,paused,flight}:{riding:boolean;
 export default function HorizonStage(props:HorizonStageProps){
   const stage=useRef<HTMLDivElement>(null),runtime=useRef<HorizonRuntime|null>(null),latest=useRef(props);latest.current=props;
   const [status,setStatus]=useState('Loading the Horizon…'),[ready,setReady]=useState(false),[mode,setMode]=useState<HorizonMode>('look'),[page,setPage]=useState('A');
-  const [reducedMotion,setReducedMotion]=useState(readReducedMotion),[calm,setCalm]=useState(readCalm);
+  const [reducedMotion,setReducedMotion]=useState(()=>readReducedMotion(props)),[calm,setCalm]=useState(()=>readCalm(props));
   const [offers,setOffers]=useState<ThresholdOffer[]>([]),[mover,setMover]=useState<HorizonMoverState|null>(null),[sheet,setSheet]=useState<ReducedMotionCut|null>(null),hold=useRef<number|null>(null);
   const [tier]=useState<'full'|'lite'>(()=>new URLSearchParams(location.search).get('tier')==='lite'||matchMedia('(max-width: 600px)').matches?'lite':'full');
   useEffect(()=>{const controller=new AbortController();let current:HorizonRuntime|null=null,unregister:(()=>void)|null=null;
-    const options:HorizonOptions={tier,theme:latest.current.theme,hideBuildings:HARBOUR_DEV&&new URLSearchParams(location.search).get('hideBuildings')==='1',signal:controller.signal,reducedMotion:readReducedMotion(),onDoor:(h,b)=>latest.current.onDoor?.(h,b),onStatus:setStatus,initialBody:latest.current.initialBody,partner:()=>latest.current.partner??null};
+    const options:HorizonOptions={tier,theme:latest.current.theme,hideBuildings:HARBOUR_DEV&&new URLSearchParams(location.search).get('hideBuildings')==='1',signal:controller.signal,reducedMotion:readReducedMotion(latest.current),calm:readCalm(latest.current),onDoor:(h,b)=>latest.current.onDoor?.(h,b),onStatus:setStatus,initialBody:latest.current.initialBody,partner:()=>latest.current.partner??null};
     // The movers (M6: the glider and the parachute) register on the runtime as soon as it exists.
     Promise.all([import('../scene/worldMount.ts').then(m=>m.mountHorizonWorld(stage.current!,options)),import('./movers/glider/index.ts')]).then(([world,gliders])=>{
       if(controller.signal.aborted){world.dispose();return;}current=world;unregister=gliders.registerGliderModes(world);runtime.current=world;setMode(world.mode());setPage(world.shotId());setReady(true);setStatus('Drag to look. Walk with W A S D, or use the pads. Space jumps; E opens a nearby door.');latest.current.onRuntime?.(world);latest.current.onReady?.();
@@ -41,13 +44,16 @@ export default function HorizonStage(props:HorizonStageProps){
     return()=>{controller.abort();unregister?.();current?.dispose();if(HARBOUR_DEV){const debug=window as unknown as {__harbour?:HorizonRuntime};if(debug.__harbour===current)delete debug.__harbour;}runtime.current=null;latest.current.onRuntime?.(null);};
   },[tier]);
   useEffect(()=>{runtime.current?.pause(props.paused===true);},[props.paused,ready]);
+  // Comfort is live (CONTRACT §2.10): the app's props (useComfort), html[data-motion] / html[data-quiet] and the OS query, without a remount.
+  useEffect(()=>{setReducedMotion(readReducedMotion(props));setCalm(readCalm(props));},[props.calm,props.reducedMotion]);
   useEffect(()=>{
-    const media=matchMedia('(prefers-reduced-motion: reduce)'),sync=()=>{setReducedMotion(readReducedMotion());setCalm(readCalm());};
-    media.addEventListener('change',sync);const observer=new MutationObserver(sync);observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-motion','data-quiet']});
-    return()=>{media.removeEventListener('change',sync);observer.disconnect();};
+    if(typeof MutationObserver==='undefined')return;
+    const media=matchMedia('(prefers-reduced-motion: reduce)'),sync=()=>{setReducedMotion(readReducedMotion(latest.current));setCalm(readCalm(latest.current));};
+    media.addEventListener?.('change',sync);const observer=new MutationObserver(sync);observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-motion','data-quiet']});
+    return()=>{media.removeEventListener?.('change',sync);observer.disconnect();};
   },[]);
-  // Both reach the runtime, which also passes them to solarReviewDate (the sun freezes at 15:30).
-  useEffect(()=>{runtime.current?.setReducedMotion(reducedMotion);runtime.current?.setCalm(calm);},[reducedMotion,calm,ready]);
+  // One path to the runtime: setComfort sets the land's motion (cuts, frozen 15:30) and the movers' registry together.
+  useEffect(()=>{runtime.current?.setComfort({calm,reducedMotion});},[reducedMotion,calm,ready]);
   useEffect(()=>{
     if(!ready)return;let last='';
     const poll=window.setInterval(()=>{

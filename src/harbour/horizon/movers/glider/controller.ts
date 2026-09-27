@@ -167,7 +167,11 @@ export function createGliderController(deps:FlightControllerDeps):FlightControll
       acc+=Math.min(.25,Math.max(0,dt));
       while(acc>=DT-1e-9&&moving()){step(input);acc-=DT;}
       // Held on the walk pose until the first running step (then the 0.8 s blend), and on the ground after touchdown.
-      lastCamera=cam.update(camState(),{dt,tier:tier(),reducedMotion:reduced(),look:input.look,ground:env.groundAt,blocked:env.cameraBlocked,solid:env.solidAt});
+      // v2.2 (Stage A land): every launch deck is railed all round, so in the run-off the camera, like the wing (WALL_GRACE),
+      // does not take the pad's own railing for an obstruction until the wing has left it behind (a one-frame 11 eu pull-in
+      // at the Prow otherwise). Terrain and hosts still pull it in.
+      const padGrace=stage==='run'||stage==='flight'&&wing.t-launchedAt<=WALL_GRACE;
+      lastCamera=cam.update(camState(),{dt,tier:tier(),reducedMotion:reduced(),look:input.look,ground:env.groundAt,blocked:env.cameraBlocked,...(padGrace?{}:{solid:env.solidAt})});
       hudT+=dt;
     },
     exit(){ended=true;return exitAt??{at:[wing.x,wing.y,wing.z],yaw:wing.heading};},

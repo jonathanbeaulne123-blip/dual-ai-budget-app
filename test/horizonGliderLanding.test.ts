@@ -86,8 +86,10 @@ describe('the Fold bubble',()=>{
     const green=envelope.landings.find(l=>l.id==='green')!,gh=('height' in green?green.height:0)!;
     expect(TRIM_GLIDE).toBeCloseTo(9.17,2);expect(FOLD_MARGIN).toBe(10);
     const need=410/TRIM_GLIDE+10;
-    expect(nearestReachableLanding(envelope,{x:1040,y:gh+need+.1,z:1065-410})).toMatchObject({id:'green',label:'the Green',distance:410});
-    expect(nearestReachableLanding(envelope,{x:1040,y:gh+need-.1,z:1065-410})?.id).not.toBe('green');
+    // From 410 m due north of the green landing (v2.2: [1028,1112]; it was [1040,1065] on the v1.6 land).
+    const [gx,gz]=('xy' in green?green.xy:[0,0]) as readonly [number,number];
+    expect(nearestReachableLanding(envelope,{x:gx,y:gh+need+.1,z:gz-410})).toMatchObject({id:'green',label:'the Green',distance:410});
+    expect(nearestReachableLanding(envelope,{x:gx,y:gh+need-.1,z:gz-410})?.id).not.toBe('green');
   });
   it('never offers an unreachable field, and never a farther one when a nearer is reachable',()=>{
     const fields=envelope.landings.filter(l=>['green','reachMeadow','sands','strip'].includes(l.id)) as {id:string;xy:readonly [number,number];height?:number}[];

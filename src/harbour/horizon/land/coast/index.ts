@@ -19,6 +19,11 @@ export function buildCoastline(samplesPerSpan = 12): XY[] {
   return result;
 }
 const outline = (): XY[] => cached ??= buildCoastline();
+/** The runtime's coastline is the baked definition's (R1-67): one source, not a second
+ * Catmull–Rom solve of the manifest in the client. A bake leaves this unset. */
+export function useCoastline(points: readonly (readonly [number, number])[] | undefined): void {
+  if (points && points.length >= 3) cached = points.map(p => [p[0], p[1]] as XY);
+}
 export const islandContains = (x: number, z: number): boolean => contains(outline(), x, z);
 /** Positive inside the island. Zero is the surveyed shoreline. */
 export const signedShoreDistance = (x: number, z: number): number => polygonDistance(outline(), x, z);

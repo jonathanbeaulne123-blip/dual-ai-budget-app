@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import { HORIZON_MANIFEST as M } from '../src/harbour/horizon/world/manifest';
 import { buildLandCuts } from '../src/harbour/horizon/land/beds/build';
+import { padOutline,pointInPolygon } from '../src/harbour/horizon/world/geometry';
 import { baseHeight } from '../src/harbour/horizon/land/terrain';
 import { maxGrade, nearestOnPath } from '../src/harbour/horizon/land/structures/mesh';
 import { BufferGeometry, Float32BufferAttribute, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three';
@@ -8,8 +9,12 @@ import { buildPathGraph, walkPlan } from '../src/harbour/horizon/world/pathGraph
 import { buildCrossings } from '../src/harbour/horizon/world/crossings';
 import { resolveComputedCrossings } from '../src/harbour/horizon/land/beds/junctions';
 
-it('leaves all seven physical doorways open and connects their aprons to public paths',()=>{
-  const cuts=buildLandCuts(baseHeight);resolveComputedCrossings(cuts,buildCrossings(cuts).proofs,baseHeight);const graph=buildPathGraph(cuts);
+// Integrator 3: the phases yield to the event loop between them. On the quick gate (4 workers on 2 cores) this one synchronous
+// test ran past vitest's 60 s worker RPC timeout ("Timeout calling onTaskUpdate") although every assertion passed.
+const tick=()=>new Promise<void>(resolve=>setImmediate(resolve));
+it('leaves all seven physical doorways open and connects their aprons to public paths',async()=>{
+  const cuts=buildLandCuts(baseHeight);await tick();resolveComputedCrossings(cuts,buildCrossings(cuts).proofs,baseHeight);await tick();const graph=buildPathGraph(cuts);await tick();
+  const garden=cuts.beds.find(b=>b.id==='walk garden')!;expect(nearestOnPath([903,640],garden.points).at[1]).toBeCloseTo(36,1);
   for(const solid of cuts.solids){const g=new BufferGeometry();g.setAttribute('position',new Float32BufferAttribute(solid.positions,3));g.setIndex(solid.indices);const mesh=new Mesh(g,new MeshBasicMaterial());mesh.updateMatrixWorld();expect(new Raycaster(new Vector3(1455,12.15,1175),new Vector3(0,1,0),0,1.2).intersectObject(mesh),`${solid.id} blocks the square spawn`).toHaveLength(0);g.dispose();(mesh.material as MeshBasicMaterial).dispose();}
   for(const host of M.hosts){const p=cuts.pads.find(p=>p.id===`host.${host.id}`)!,door=p.door!,approach=cuts.beds.find(b=>b.id===p.serviceBedId)!;
     expect(nearestOnPath([door[0],door[2]],approach.points).distance).toBeLessThan(.01);expect(maxGrade(approach.points)).toBeLessThanOrEqual(.08001);
@@ -19,3 +24,22 @@ it('leaves all seven physical doorways open and connects their aprons to public 
     const journey=walkPlan(graph,[1455,12,1175],door,{stepFree:true,maxSnap:1});expect(journey,host.id).not.toBeNull();expect(journey!.offBedDistance).toBeLessThan(.01);
   }
 },60000);
+
+it('keeps the Year Walk outside the rotated Library foundation and avoids a needless Glasshouse climb',()=>{
+ const cuts=buildLandCuts(baseHeight),pad=cuts.pads.find(p=>p.id==='host.library')!,foundation=cuts.solids.find(s=>s.id==='host.library.slab')!,outline=padOutline(pad);
+ const xs=foundation.positions.filter((_,i)=>i%3===0);expect(Math.min(...xs)).toBeCloseTo(Math.min(...outline.map(p=>p[0])),6);
+ const year=cuts.beds.find(b=>b.id==='yearWalk')!;expect(year.points.some(p=>pointInPolygon(p[0],p[2],outline))).toBe(false);
+ const cottage=padOutline(cuts.pads.find(p=>p.id==='host.cottage')!);expect(year.points.some(p=>pointInPolygon(p[0],p[2],cottage))).toBe(false);
+ const glass=cuts.beds.find(b=>b.id==='host.glasshouse.approach')!;expect(Math.abs(glass.points[0]![1]-56)).toBeLessThan(3);
+ expect(maxGrade(glass.points)).toBeLessThanOrEqual(.08001);
+ expect(glass.points.some(p=>p[0]>995&&p[0]<1025&&p[2]>781&&p[2]<799)).toBe(false);
+ expect(nearestOnPath([1010,810],glass.points).at[1]).toBeCloseTo(56);
+});
+
+import { clearOfLake } from '../src/harbour/horizon/land/town/hosts';
+it('stands every host footprint 3 m clear of Stillwater (the manifest Glasshouse corner [1025,799] was inside the lake)',()=>{
+  const lake=M.water.stillwater;
+  for(const h of M.hosts){const site=clearOfLake(h.id,h.xy as unknown as [number,number],h.footprint_m as unknown as [number,number]),p=site.xy,[w,d]=site.size;
+    for(const [sx,sz] of [[-1,-1],[-1,1],[1,1],[1,-1]])expect(((p[0]+sx!*w!/2-lake.cx)/(lake.rx+3))**2+((p[1]+sz!*d!/2-lake.cy)/(lake.ry+3))**2,h.id).toBeGreaterThanOrEqual(1);
+    if(h.id!=='glasshouse')expect(p).toEqual(h.xy);else expect(w).toBeGreaterThanOrEqual(h.footprint_m[0]!*.8);}
+});

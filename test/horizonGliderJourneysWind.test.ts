@@ -23,20 +23,22 @@ describe('the journeys in the build\'s wind (4 m/s from the south)',()=>{
   it('is the wind the runtime flies: constantWind() is SOUTH_WIND everywhere, always',()=>{
     const w=constantWind();expect(w.sample(0,0,0,0)).toEqual(SOUTH_WIND);expect(w.sample(1500,300,900,86400)).toEqual({dir:Math.PI,speed:4});
   });
-  it('Crown → the Lamp: falls short of the gallery (measured −1.1 m after 136.7 s; still air +17.3 m in 98.1 s)',()=>{
-    const j=flyCrownToLamp(env(0));expect(j.reached).toBe(false);expect(j.heightInHand.arrival).toBeCloseTo(-1.1,1);expect(j.seconds).toBeCloseTo(136.7,1);
+  // v2.2 (the lookout launch, h 170): the wing now reaches the gallery's line, but at its height (−0.1 m in hand after 132.95 s;
+  // still air +30.9 m in 95.2 s). Was −1.1 m after 136.7 s from the v1.6 launch.
+  it('Crown → the Lamp: reaches the gallery with no height in hand (measured −0.1 m after 132.95 s; still air +30.9 m in 95.2 s)',()=>{
+    const j=flyCrownToLamp(env(0));expect(j.reached).toBe(true);expect(j.heightInHand.arrival).toBeCloseTo(-0.1,1);expect(j.seconds).toBeCloseTo(132.95,1);
   });
-  it('keeps Crown → the Lamp explicitly deferred under the shipped wind (D39; measured −1.1 m)',()=>{
-    const j=flyCrownToLamp(env(0));expect(j.reached).toBe(false);expect(j.heightInHand.arrival).toBeCloseTo(-1.1,1);
+  it('keeps Crown → the Lamp explicitly deferred under the shipped wind (D39; measured −0.1 m in hand: no margin)',()=>{
+    const j=flyCrownToLamp(env(0));expect(j.heightInHand.arrival).toBeLessThan(10);expect(j.heightInHand.arrival).toBeCloseTo(-0.1,1);
   });
-  it('Crown → the strip still arrives, with 1.4 m in hand (still air 21.3 m)',()=>{
+  it('Crown → the strip still arrives, with 14.3 m in hand (v2.2 lookout launch; was 1.4 m)',()=>{
     const j=flyStraight(env(STRIP,2),'crown',[435,690],0,{arriveHeight:STRIP,stopWithin:40});
-    expect(j.reached).toBe(true);expect(j.heightInHand.arrival).toBeCloseTo(1.4,1);
+    expect(j.reached).toBe(true);expect(j.heightInHand.arrival).toBeCloseTo(14.3,1);
   });
-  it('keeps Prow → thermal → Long Sands explicitly deferred under the shipped wind (D39; measured −6.4 m)',()=>{
-    const j=flyProwToSands(env(SANDS,15),{thermal:true});expect(j.reached).toBe(false);expect(j.heightInHand.arrival).toBeCloseTo(-6.4,1);
+  it('keeps Prow → thermal → Long Sands explicitly deferred under the shipped wind (D39; measured −2.6 m; −6.4 m on the v1.6 land)',()=>{
+    const j=flyProwToSands(env(SANDS,15),{thermal:true});expect(j.reached).toBe(false);expect(j.heightInHand.arrival).toBeCloseTo(-2.6,1);
   });
-  it('keeps Prow → Reach meadow explicitly deferred under the shipped wind (D39; measured −5.5 m)',()=>{
-    const j=flyProwToMeadow(env(MEADOW,7));expect(j.reached).toBe(false);expect(j.heightInHand.arrival).toBeCloseTo(-5.5,1);
+  it('keeps Prow → Reach meadow explicitly deferred under the shipped wind (D39; measured −14.3 m, the v2.1 meadow 90 m further west; −5.5 m on the v1.6 land)',()=>{
+    const j=flyProwToMeadow(env(MEADOW,7));expect(j.reached).toBe(false);expect(j.heightInHand.arrival).toBeCloseTo(-14.3,1);
   });
 });

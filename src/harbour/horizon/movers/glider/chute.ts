@@ -8,6 +8,7 @@
 import type {Point2} from '../../world/definition.ts';
 import {windVelocity,type WindSample} from '../shared/wind.ts';
 import {CHUTE,chuteAt} from './polar.ts';
+import {HORIZON_MANIFEST} from '../../world/manifest.ts';
 
 export type ChutePhase='freefall'|'opening'|'canopy'|'flare'|'touchdown'|'fade';
 /**
@@ -52,6 +53,8 @@ export interface ChuteEnv{
 export interface PlaneDoor{x:number;y:number;z:number;vx:number;vz:number;heading:number}
 
 export const DROP_ZONE_RINGS=[5,10,25] as const;
+/** The Drop Zone's centre from the manifest (v2.2: on the green landing, [1028,1112]; it was a hard-coded [1040,1065], the v1.6 landing). */
+const DROP_ZONE_XY:Point2=[HORIZON_MANIFEST.sky.dropZone.xy[0]!*HORIZON_MANIFEST.scale.factor,HORIZON_MANIFEST.sky.dropZone.xy[1]!*HORIZON_MANIFEST.scale.factor];
 const FULL=.99;
 /** Brakes at or above this through the last 5 m are a flare (FLIGHT §3.4 as ruled: half brakes or more). */
 export const FLARE_BRAKE=.5;
@@ -67,7 +70,7 @@ export function bailOut(plane:PlaneDoor,agl:number):ChuteState|null{
 }
 
 /** 0 bullseye (≤ 5 m), 1 inner (≤ 10), 2 outer (≤ 25), −1 beyond ("on the Green"). */
-export function ringIndex(xy:readonly [number,number],zone:{xy:Point2;rings:readonly number[]}={xy:[1040,1065],rings:DROP_ZONE_RINGS}):number{
+export function ringIndex(xy:readonly [number,number],zone:{xy:Point2;rings:readonly number[]}={xy:DROP_ZONE_XY,rings:DROP_ZONE_RINGS}):number{
   const d=Math.hypot(xy[0]-zone.xy[0],xy[1]-zone.xy[1]);
   return zone.rings.findIndex(r=>d<=r+1e-9);
 }
