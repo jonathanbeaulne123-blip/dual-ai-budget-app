@@ -2,8 +2,9 @@ import { HORIZON_MANIFEST as M, requireScaleFactor } from '../../world/manifest'
 import type { BedCut, HeightQuery, LandCuts, XY, XYZ } from '../interfaces';
 import { buildStructures, SPANS } from '../structures/build';
 import { box, distance, districtAt, mix, nearestOnPath, pathLength, plan, slab, solid } from '../structures/mesh';
+import { pier } from '../structures/foundations';
 import { buildReserves } from '../reserves/build';
-import { buildTown } from '../town/build';
+import { buildTown, squareWalkPins } from '../town/build';
 import { buildHostSites } from '../town/hosts';
 import { buildUnderground } from '../underground/build';
 import { addFlatPad, bed, emitBedGeometry, heightOnBeds, planDistance } from './profiles';
@@ -31,19 +32,78 @@ const routePins:Record<string,HeightPin[]>={
   V02:[pin(M.roads.V02.pts[0] as unknown as XY,70,'coast drive'),...evenClimb(M.roads.V02.pts as unknown as XY[],35,70,110,'Crown Road even climb (v1.9)'),pin([1370,690],110,'turning circle')],
   VBS:[pin([960,860],30,'Green Road'),pin([775,1125],14,'shore endpoint')],
   S1:[pin([1310,500],154,'Crown start'),pin([1160,935],31,'dam apron'),pin([1204,1080],12,'High Span shelf north end (v1.9: S1 rides its shelf)'),pin([1204,1098],12,'High Span shelf'),pin([1204,1133],12,'High Span shelf south end'),pin([1255,1251],5,'Reach boardwalk'),pin([1270,1330],3,'Landing finish')],
-  S2:[pin([480,480],38,'strip start'),pin([560,1100],12,'Bight Bridge'),pin([1020,1430],3,'park')],
+  // v2.0 D-A1: S2's Bight stretch is authored (skate.S2.levels/westRamp/deckLanes/eastDescent): see s2Profile.
+  S2:[pin([480,480],38,'strip start'),pin([1020,1430],3,'park')],
   S3:[pin([1480,1060],18,'upper street'),pin([1470,1160],12,'square arrival'),pin([1440,1200],12,'square'),pin([1433,1298],3,'town quay at grade (T0 request 4: S3 ran 6-7 eu over the 3 eu quay)'),pin([1350,1345],9,'Quay Bridge'),pin([1133,1435],4,'zip underpass'),pin([1020,1430],3,'park')],
   S4:[pin([1000,520],40,'studio start'),pin([893,600],37,'Hollow Bridge'),pin([905.9,640.6],36,'Cottage front walk at grade (v1.9)'),pin([1020,1430],3,'park')],
   'walk garden':[pin([762,422],48,'Library apron'),pin([893,600],37,'Hollow Bridge'),pin([915,638],36,'Cottage front walk'),pin([930,650],38,'Cottage spur landing'),pin([990,780],56,'Glasshouse')],
   'walk lakerim':[pin([990,780],56,'Glasshouse'),pin([1161,731],55,'inlet bridge'),pin([1140,905],52,'dam crest')],
   'walk square':[pin([1455,1175],12,'square'),pin([1480,1060],18,'upper street')],
   'walk reach':[pin([1400,1290],7,'town connection'),pin([1274,1203],9.5,'Reach footbridge (v1.9: 4 m canoe clearance over the river)'),pin([1240,1130],9,'High Span walk')],
-  'walk crown':[pin([1370,690],110,'turning circle'),pin([1310,500],154,'summit')],
+  // v2.0 D-C7: the Crown walk's own bed starts where it leaves the Year Walk's January lane (walks.crown.joinsYearWalk).
+  'walk crown':[pin(M.walks.crown.joinsYearWalk.at as unknown as XY,M.walks.crown.joinsYearWalk.h,'Year Walk January lane (D-C7)'),pin([1310,500],154,'summit')],
   'walk flats':[pin([350,880],30.5,'meets the pier walk at one height (v1.9)')],
   'walk bightPier':[pin([350,880],30.5,'meets the Flats trail at one height (v1.9)')],
   'walk dune':[pin([1148,1463],3,'zip landing foot (v1.9: the dune walk starts at the stair and ramp foot, not under the stair)')],
-  'walk crownFromGondola':[pin([1360,560],112,'station'),pin([1310,500],154,'summit')],
 };
+type S2Data={levels:{xy:number[];h:number;why:string}[];westRamp:{from:number[];to:number[];from_h:number;to_h:number};eastDescent:{from:number[];to:number[]}};
+/** v2.0 D-A1: S2 from the Wash rim to the foot of the east banked descent is one authored profile: every sample is
+ * pinned, linear by arc between consecutive skate.S2.levels (the west ramp one even 5 %, the deck lanes' 8 % climbs to
+ * the arch flyover at 17.6, the east descent one even 7.1 %). `deck` is the sample range the Bight Bridge carries
+ * (westRamp.to → eastDescent.from: lagoon lane, flyover, sea lane), `ramp` the west ramp's range. */
+export function s2Profile(controls:readonly XY[]):{pins:HeightPin[];deck:[number,number];ramp:[number,number];samples:XY[];heights:Map<number,number>} {
+  const S=M.skate.S2 as unknown as S2Data,xy=sampleSpline(controls),arcs=[0];for(let i=1;i<xy.length;i++)arcs.push(arcs[i-1]!+distance(xy[i-1]!,xy[i]!));
+  const at=(q:readonly number[])=>xy.reduce((best,p,i)=>distance(p,q as unknown as XY)<distance(xy[best]!,q as unknown as XY)?i:best,0);
+  const marks=S.levels.map(l=>({i:at(l.xy),h:l.h})).sort((a,b)=>a.i-b.i),heights=new Map<number,number>(),pins:HeightPin[]=[];
+  for(let k=1;k<marks.length;k++){const a=marks[k-1]!,b=marks[k]!;for(let i=a.i;i<=b.i;i++){const h=a.i===b.i?b.h:mix(a.h,b.h,(arcs[i]!-arcs[a.i]!)/(arcs[b.i]!-arcs[a.i]!));heights.set(i,h);}}
+  heights.forEach((h,i)=>pins.push(pin(xy[i]!,h,'S2 authored profile (D-A1)',i)));
+  return {pins,deck:[at(S.westRamp.to),at(S.eastDescent.from)],ramp:[at(S.westRamp.from),at(S.westRamp.to)],samples:xy,heights};
+}
+/** S2 on the Bight Bridge is a lane of the deck (carried: no bed deck, edge or terrain here; the bridge's own deck,
+ * flyover and rails are structures'), and its west ramp crosses the Wash mouth on its own timber trestle: where the
+ * ramp stands over BODY_HEIGHT above the ground its terrain is left alone (open span) and paired bents carry it. */
+function carryS2(cuts:LandCuts,base:HeightQuery,b:BedCut):void {
+  const pts=(M.skate.S2 as unknown as {pts:XY[]}).pts,prof=s2Profile(pts),deck=prof.samples.slice(prof.deck[0],prof.deck[1]+1);
+  (b.carried??=[]).push(deck);for(const p of deck)(b.terrainExclusions??=[]).push({at:p,radius:b.width/2+1,openSpan:true});
+  const trestle=solid('S2.westRamp.trestle','trestle','timber','support',['S2'],'flats');let bays=0,last:XY|undefined;
+  for(let i=prof.ramp[0];i<prof.ramp[1];i++){
+    const p=b.points[i]!,xy=plan(p);if(p[1]-base(...xy)<=BODY_HEIGHT)continue;
+    (b.terrainExclusions??=[]).push({at:xy,radius:b.width/2+1,openSpan:true});
+    // A paired bent every sample (≤ 5.2 m bays), both posts inside the deck's width, footings on the dry bed.
+    if(last&&distance(last,xy)<4)continue;last=xy;bays++;
+    const a=b.points[Math.max(0,i-1)]!,c=b.points[i+1]!,l=distance(plan(a),plan(c))||1,n:XY=[-(c[2]-a[2])/l,(c[0]-a[0])/l];
+    for(const side of [-1,1])pier(trestle,[xy[0]+n[0]*side*(b.width/2-.35),xy[1]+n[1]*side*(b.width/2-.35)],p[1]-.6,base,[.4,.4],[1,1]);
+  }
+  if(trestle.indices.length){cuts.solids.push(trestle);cuts.diagnostics.push({id:'S2.westRamp.trestle',severity:'info',message:`S2's west ramp crosses the Wash mouth on ${bays} timber bents (5 % from the Wash rim to the Bight deck, D-A1)`,measured:bays});}
+}
+/** v2.0 D-A7 flush thresholds (Jonathan 2026-09-27): a register row resolved 'threshold' by a D-A7 ruling is one flush tread -
+ * the route being laid takes the already-built route's height at the row point (#34 the pier walk comes down to the Drive,
+ * #17 S4 rises to Green Road at the studio terrace). */
+function flushPins(id:string,cuts:LandCuts):HeightPin[] {
+  const out:HeightPin[]=[];
+  for(const row of M.crossings as unknown as {a:string;b:string;at:unknown;resolution:string;decided?:string}[]){
+    if(row.resolution!=='threshold'||!row.decided?.startsWith('D-A7')||!Array.isArray(row.at)||![row.a,row.b].includes(id))continue;
+    const other=cuts.beds.find(b=>b.id===(row.a===id?row.b:row.a)),at=row.at as unknown as XY;if(!other)continue;
+    const n=nearestOnPath(at,other.points);if(n.distance<3)out.push(pin(at,n.at[1],`flush threshold with ${other.id} (D-A7)`));
+  }
+  return out;
+}
+/** v2.0 named carriers that are not SPANS (D-C15 structures.s1Flyover, D-C9 structures.bightSpurTrestle): the route they carry
+ * keeps its own grade over them, its terrain is left alone there (an open span: no fill, no counted void), and structures
+ * (W5-S) stand the deck's bents outside every lower corridor. The carried stretch is the route's samples within 3 m of the
+ * carrier's from→to line (and, for a self-crossing, within 3 eu of its deck, never the lower pass). */
+export const NAMED_CARRIERS=[{id:'s1Flyover',route:'S1',footways:[] as string[]},{id:'bightSpurTrestle',route:'VBS',footways:['walk bight']}] as const;
+function carryNamedStructures(cuts:LandCuts):void {
+  for(const c of NAMED_CARRIERS){
+    const s=(M.structures as unknown as Record<string,{from?:number[];to?:number[]}>)[c.id];if(!s?.from||!s.to)continue;
+    const a=s.from as unknown as XY,b=s.to as unknown as XY,route=cuts.beds.find(r=>r.id===c.route);if(!route)continue;
+    // The deck ends are the route's highest pass within 4 m (a self-crossing route passes twice; the flyover carries the upper).
+    const top=(q:XY)=>Math.max(...route.points.filter(p=>distance(plan(p),q)<4).map(p=>p[1]),nearestOnPath(q,route.points).at[1]);
+    const ha=top(a),hb=top(b),line:XYZ[]=[[a[0],ha,a[1]],[b[0],hb,b[1]]];
+    for(const id of [c.route,...c.footways]){const r=cuts.beds.find(x=>x.id===id);if(!r)continue;const reach=id===c.route?5:9;
+      for(const p of r.points){const n=nearestOnPath(plan(p),line);if(n.distance<=reach&&n.t>0&&n.t<1&&Math.abs(n.at[1]-p[1])<3)(r.terrainExclusions??=[]).push({at:plan(p),radius:r.width/2+r.shoulder+1,openSpan:true});}}
+  }
+}
 /** Pin each complete span flat before grading its two approaches. */
 function withSpanPins(id:string,controls:XY[],pins:HeightPin[]=[]):HeightPin[] {
   const samples=sampleSpline(controls),points:XYZ[]=samples.map(p=>[p[0],0,p[1]]),out=[...pins];
@@ -104,7 +164,8 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
     if(!('pts'in row))continue;
     const pts=[...row.pts] as unknown as XY[];
     if(id==='S1')pts.splice(4,0,[1435,705],[1430,775],[1325,735]);
-    const b=bed(id,'skateMain',gradeRoute(id,pts,base,.18,[...withSpanPins(id,pts,routePins[id]),...spanLanePins(id,pts,cuts)],cuts.diagnostics,5,TYP.skate));
+    // v2.0 D-A1: S2's Bight stretch follows its authored profile, never another route's deck height (spanLanePins).
+    const b=bed(id,'skateMain',gradeRoute(id,pts,base,.18,[...withSpanPins(id,pts,routePins[id]),...flushPins(id,cuts),...(id==='S2'?s2Profile(pts).pins:spanLanePins(id,pts,cuts))],cuts.diagnostics,5,TYP.skate));
     b.surfaceSegments=row.segments.map((segment,i)=>({from:i/row.segments.length,to:(i+1)/row.segments.length,surface:segment.surface,pace:segment.pace,bankDegrees:segment.surface==='bankedTurf'?18:0}));cuts.beds.push(b);
   }
   for(const [id,row]of Object.entries(M.walks)){
@@ -119,13 +180,13 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
     let points=row.pts as unknown as XY[];
     if(id==='garden')points=[[762,422],[850,525],[893,600],[900,640],[915,638],[930,650],[926,680],[930,720],[960,756],[990,780]];
     if(id==='coveWalk')points=[[762,422],[780,380],[754,356],...points.slice(1)];
-    if(id==='crown')points=[[1370,690],[1445,665],[1425,605],[1340,620],[1400,540],[1360,470],[1310,500]];
-    if(id==='crownFromGondola')points=[[1360,560],[1405,595],[1450,565],[1430,500],[1350,440],[1310,500]];
-    const pins=withSpanPins(name,points,routePins[name]);
+    // v2.0: walks.<id>.levels are exact height pins (the station walk: the station deck 150 and the summit junction 154, D-A3).
+    const levels=((row as unknown as {levels?:{xy:number[];h:number;why:string}[]}).levels??[]).map(l=>pin(l.xy as unknown as XY,l.h,`level ${l.why.slice(0,40)}`));
+    // D-A7 #34 (V01 × the pier walk) is not pinned here: on v2.0 the Drive stands at 21.3 at the row (28.4 on candidate 3), 9 eu
+    // under the Flats junction 54 m away, and pinning the pier walk to it stepped the Year Walk's July/August turn (40 %). It stays
+    // an open, owned item (groundBeds OPEN_VOIDS) for the Bight Bridge west abutment work.
+    const pins=withSpanPins(name,points,[...(routePins[name]??[]),...levels,...(id==='square'?squareWalkPins(sampleSpline(points)):[])]);
     if(id==='garden')for(const p of sampleSpline(points))if(p[0]>=899&&p[0]<=916&&p[1]>=637&&p[1]<=642)pins.push(pin(p,36,'Cottage front bench'));
-    // R2-08: from the turning circle the Crown walk runs on the Year Walk's lane: it holds the turning circle's level
-    // (it dipped to 109.25, 0.8 under the lane's deck, and the lane's edge closed the walk's start both ways).
-    if(id==='crown')for(const p of sampleSpline(points))if(p[0]>=1370&&p[0]<=1399&&p[1]>=680)pins.push(pin(p,110,'turning circle level (Year Walk lane)'));
     cuts.beds.push(bed(name,row.profile,gradeRoute(name,points,base,.12,pins,cuts.diagnostics,5,TYP.walk)));
   }
   // Join the Cottage spur to the garden walk at the same contour. A short
@@ -136,10 +197,13 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
   const to=joins.sort((a,b)=>distance(plan(a),plan(from))-distance(plan(b),plan(from)))[0];
   if(to&&distance(plan(from),plan(to))>.01&&distance(plan(from),plan(to))<40)cuts.beds.push(bed('cottage.gardenLink','walk',[from,to]));
 }
+/** v2.0 D-A8: journey.stations[*].pad_rot_deg (0 when absent). */
+export const stationRotation=(s:unknown):number=>(s as {pad_rot_deg?:number}).pad_rot_deg??0;
 export interface StationPositions { id:string; centre:XYZ; positions:XYZ[] }
 /** Two empty south-facing rows; these coordinates reserve space, never create financial beds. */
 export function stationBedPositions(cuts:LandCuts):StationPositions[] {
-  return M.journey.stations.map(s=>{const pad=cuts.pads.find(p=>p.id===`station.${s.id}`);if(!pad)throw new Error(`Missing station ${s.id}`);return {id:s.id,centre:pad.centre,positions:Array.from({length:20},(_,n)=>[pad.centre[0]!-14.85+(n%10)*3.3,pad.centre[1]!,pad.centre[2]!+(n<10?-3:3)] as unknown as XYZ)};});
+  // The two rows turn with the pad (the same rotation convention as the pad's slab).
+  return M.journey.stations.map(s=>{const pad=cuts.pads.find(p=>p.id===`station.${s.id}`);if(!pad)throw new Error(`Missing station ${s.id}`);const a=pad.rotationDegrees*Math.PI/180,c=Math.cos(a),sn=Math.sin(a);return {id:s.id,centre:pad.centre,positions:Array.from({length:20},(_,n)=>{const dx=-14.85+(n%10)*3.3,dz=n<10?-3:3;return [pad.centre[0]!+dx*c-dz*sn,pad.centre[1]!,pad.centre[2]!+dx*sn+dz*c] as unknown as XYZ;})};});
 }
 export function yearWalkStretches(cuts:LandCuts):{month:number;stationId:string;length:number;spacing28:number;spacing31:number}[] {
   const walk=cuts.beds.find(b=>b.id==='yearWalk');if(!walk)return [];
@@ -183,8 +247,11 @@ function journey(cuts:LandCuts,base:HeightQuery):YearWalkShare[] {
     const h=share?hostHeight(share,samples[index]!):p?p.h:heightOnBeds(cuts,xy,base,35);
     if(share&&p&&Math.abs(p.h-h)>.5)cuts.diagnostics.push({id:`yearWalk.station.${station.id}.pin`,severity:'info',message:`Station ${station.id} lies on the ${share.host} footway; the host height ${h.toFixed(2)} replaces the manifest pin ${p.h}`,at:xy,measured:h,required:p.h});
     // The station pad is level: every walk sample on its footprint holds the station height.
-    const pad={centre:[xy[0],h,xy[1]] as XYZ,size:M.journey.station.pad_m as unknown as XY,rotationDegrees:0};
-    samples.forEach((q,i)=>{if(!shareOf(i)&&insidePad(pad,q,1))pins.push(pin(q,h,`station ${station.id} level pad`,i));});
+    // v2.0 D-A8: a station pad may be turned (journey.stations[*].pad_rot_deg: November 90° along the Prow top).
+    const pad={centre:[xy[0],h,xy[1]] as XYZ,size:M.journey.station.pad_m as unknown as XY,rotationDegrees:stationRotation(station)};
+    // A turned pad (November, 90°) lies along the walk: its level stretch is the footprint itself (no 1 m apron), so the walk
+    // keeps the length it needs to leave the Prow top within 12 %.
+    samples.forEach((q,i)=>{if(!shareOf(i)&&insidePad(pad,q,pad.rotationDegrees?0:1))pins.push(pin(q,h,`station ${station.id} level pad`,i));});
     pins.push(pin(samples[index]!,h,`station ${station.id}`,index));
   }
   // Adjacent lanes: where the walk comes back beside itself (two months side by side, lanes a
@@ -205,6 +272,7 @@ function journey(cuts:LandCuts,base:HeightQuery):YearWalkShare[] {
   // centreline crossing of a foot route within 3 eu of height holds both neighbouring samples
   // at that route's height, so the crossing is one flush tread.
   const pinned=new Set(pins.map(p=>p.index).filter((i):i is number=>i!==undefined));
+
   for(let i=1;i<pre.length;i++){
     if(shareOf(i)||shareOf(i-1))continue;
     const a=plan(pre[i-1]!),c=plan(pre[i]!);
@@ -227,8 +295,19 @@ function journey(cuts:LandCuts,base:HeightQuery):YearWalkShare[] {
   const b=bed('yearWalk','walk',points);b.width=b_width;b.shoulder=1.2;b.maxGrade=limit;cuts.beds.push(b);
   // Stretches are listed on the final (host-copied) heights, not the pre-copy solve.
   cuts.diagnostics.push(...solveDiagnostics.filter(d=>!d.id.startsWith('gradeStretch.')));listSteepStretches('yearWalk',points,cuts.diagnostics,limit);
-  for(const s of M.journey.stations){const n=nearestOnPath(s.xy as unknown as XY,b.points);const p=addFlatPad(cuts,`station.${s.id}`,'station',s.xy as unknown as XY,n.at[1]!,M.journey.station.pad_m as unknown as XY);p.serviceBedId='yearWalk';p.margin=2;}
+  joinCrownWalk(cuts,b);
+  for(const s of M.journey.stations){const n=nearestOnPath(s.xy as unknown as XY,b.points);const p=addFlatPad(cuts,`station.${s.id}`,'station',s.xy as unknown as XY,n.at[1]!,M.journey.station.pad_m as unknown as XY,stationRotation(s));p.serviceBedId='yearWalk';p.margin=2;}
   return shares;
+}
+/** v2.0 D-C7: the Crown walk leaves the Year Walk's January lane at walks.crown.joinsYearWalk. Its bed starts on the lane's
+ * centreline at the lane's own height (a flush junction the path graph joins), and its first metres ease from that height
+ * back to its solved line at the walk grade. */
+function joinCrownWalk(cuts:LandCuts,walk:BedCut):void {
+  const crown=cuts.beds.find(b=>b.id==='walk crown');if(!crown)return;
+  const start=plan(crown.points[0]!),n=nearestOnPath(start,walk.points);if(n.distance>6)return;
+  const h=n.at[1],limit=walkGrade();crown.points.unshift([n.at[0],h,n.at[2]]);
+  let run=distance(plan(n.at),start);
+  for(let i=1;i<crown.points.length;i++){if(i>1)run+=distance(plan(crown.points[i-1]!),plan(crown.points[i]!));const p=crown.points[i]!,lo=h-run*limit,hi=h+run*limit;if(p[1]>=lo&&p[1]<=hi)break;crown.points[i]=[p[0],Math.min(hi,Math.max(lo,p[1])),p[2]];}
 }
 /** After spans and tunnels have their exclusions: a shared stretch has no wall between host and
  * footway; a stretch the host carries inside its own structure (bridge deck, tunnel section,
@@ -277,38 +356,64 @@ function reportYearWalkSeparation(cuts:LandCuts,walk:BedCut):void {
   }
   for(const [id,r]of runs)cuts.diagnostics.push({id:`yearWalk.separation.${id}`,severity:'conflict',message:`Year Walk runs ${r.min.toFixed(1)} eu edge-to-edge from ${id} at ${r.dh.toFixed(1)} eu height difference (${r.n} samples); the rule is width + 15 m plan separation or one shared bed`,at:r.at,measured:r.min,required:15});
 }
+/** v2.0 D-A3: the G1 tower tops are solved, never authored or clamped: each is the lowest top that keeps every span
+ * profiles.cable.clear_eu over the ground (1 % sag), the station throats (MANIFEST cable.G1.towerSolve, 25 m) excepted.
+ * A top above sky.ceiling fails the bake with the tower's place. */
+export const G1_THROAT_M=25;
 function cables(cuts:LandCuts,base:HeightQuery):void {
-  const g=M.cable.G1,controls:XYZ[]=[[g.from[0]!,g.fromH,g.from[1]!],...g.towers.map((p,i)=>[p[0]!,Math.max(mix(g.fromH,g.toH,(i+1)/4),base(...p as unknown as XY)+8),p[1]!] as unknown as XYZ),[g.to[0]!,g.toH,g.to[1]!]];
-  // Project clearance constraints onto the three free tower heights. Endpoint heights stay frozen.
-  // Raising each tower by the same deficit produces spurious giant towers near a fixed endpoint.
+  const g=M.cable.G1,clear=M.profiles.cable.clear_eu??8,SAG=.01;
+  const controls:XYZ[]=[[g.from[0]!,g.fromH,g.from[1]!],...g.towers.map(p=>[p[0]!,base(...p as unknown as XY)+clear,p[1]!] as unknown as XYZ),[g.to[0]!,g.toH,g.to[1]!]];
+  const floor=controls.map(p=>p[1]);
   const constraints:{i:number;t:number;required:number;at:XY}[]=[];
   for(let i=1;i<controls.length;i++){
     const a=controls[i-1]!,b=controls[i]!,span=distance(plan(a),plan(b));
-    for(let k=1;k<32;k++){
-      const t=k/32,x=mix(a[0],b[0],t),z=mix(a[2],b[2],t),at:XY=[x,z];
-      // Loading platforms are an intentional cable-to-feet boundary, not an overhead crossing.
-      if(distance(at,plan(controls[0]!))<14||distance(at,plan(controls.at(-1)!))<14)continue;
+    for(let k=1;k<64;k++){
+      const t=k/64,x=mix(a[0],b[0],t),z=mix(a[2],b[2],t),at:XY=[x,z];
+      // Loading platforms are an intentional cable-to-feet boundary (the station throat), not an overhead crossing.
+      if(distance(at,plan(controls[0]!))<G1_THROAT_M||distance(at,plan(controls.at(-1)!))<G1_THROAT_M)continue;
       let surface=Math.max(base(x,z),heightOnBeds(cuts,at,base,8));
-      for(const pad of cuts.pads){const angle=-pad.rotationDegrees*Math.PI/180,dx=x-pad.centre[0],dz=z-pad.centre[2];if(!pad.underground&&Math.abs(dx*Math.cos(angle)-dz*Math.sin(angle))<pad.size[0]/2&&Math.abs(dx*Math.sin(angle)+dz*Math.cos(angle))<pad.size[1]/2)surface=pad.centre[1];}
-      let required=surface+8+span*.01*4*t*(1-t);
-      for(const p of cuts.pads.filter(p=>/^plot\.terraces\.\d$/.test(p.id)))if(distance(at,plan(p.centre))<40)required=Math.max(required,p.centre[1]+12+span*.01*4*t*(1-t));
+      for(const pad of cuts.pads){const angle=-pad.rotationDegrees*Math.PI/180,dx=x-pad.centre[0],dz=z-pad.centre[2];if(!pad.underground&&Math.abs(dx*Math.cos(angle)-dz*Math.sin(angle))<pad.size[0]/2&&Math.abs(dx*Math.sin(angle)+dz*Math.cos(angle))<pad.size[1]/2)surface=Math.max(surface,pad.centre[1]);}
+      let required=surface+clear+span*SAG*4*t*(1-t);
+      for(const p of cuts.pads.filter(p=>/^plot\.terraces\.\d$/.test(p.id)))if(distance(at,plan(p.centre))<40)required=Math.max(required,p.centre[1]+12+span*SAG*4*t*(1-t));
       constraints.push({i,t,required,at});
     }
   }
-  for(let pass=0;pass<16;pass++)for(const q of constraints){const a=controls[q.i-1]!,b=controls[q.i]!,deficit=q.required-mix(a[1],b[1],q.t);if(deficit<=.0001)continue;const wa=q.i>1?1-q.t:0,wb=q.i<controls.length-1?q.t:0,denom=wa*wa+wb*wb;
-    if(wa)controls[q.i-1]=[a[0],a[1]+deficit*wa/denom,a[2]];
-    if(wb)controls[q.i]=[b[0],b[1]+deficit*wb/denom,b[2]];
+  const ceilingOf=()=>M.sky.ceiling_m,last=controls.length-1,need=(j:number)=>{let h=floor[j]!;for(const q of constraints){
+    if(q.i===j&&j>0)h=Math.max(h,(q.required-(1-q.t)*controls[j-1]![1])/q.t);
+    if(q.i-1===j&&j<last)h=Math.max(h,(q.required-q.t*controls[j+1]![1])/(1-q.t));}return h;};
+  // Feasible first (raise each tower to what its spans need, repeated), then each tower down to its own minimum given its
+  // neighbours, the tallest first: the result keeps every constraint and no tower can come down alone.
+  for(let pass=0;pass<64;pass++){let moved=0;for(let j=1;j<last;j++){const h=need(j);if(h>controls[j]![1]+1e-6){controls[j]=[controls[j]![0],h,controls[j]![2]];moved++;}}if(!moved)break;}
+  for(let pass=0;pass<32;pass++){let moved=0;for(const j of Array.from({length:last-1},(_,k)=>k+1).sort((a,b)=>controls[b]![1]-controls[a]![1])){const h=need(j);if(h<controls[j]![1]-1e-6){controls[j]=[controls[j]![0],h,controls[j]![2]];moved++;}}if(!moved)break;}
+  // Three towers (the authored line): search the middle top; the outer two then take their own minimum (each bears on a
+  // fixed station). Keep the set with the shortest tallest tower above its ground, then the least total.
+  if(last===4){
+    const tall=(j:number)=>controls[j]![1]-floor[j]!,score=()=>[Math.max(tall(1),tall(2),tall(3)),tall(1)+tall(2)+tall(3)] as const;
+    let best=controls.map(p=>[...p] as XYZ),bestScore=score();
+    for(let h2=floor[2]!;h2<=ceilingOf();h2+=.25){
+      controls[2]=[controls[2]![0],h2,controls[2]![2]];
+      for(let k=0;k<4;k++)for(const j of [1,3])controls[j]=[controls[j]![0],need(j),controls[j]![2]];
+      if(need(2)>h2+1e-6)continue;const sc=score();if(sc[0]<bestScore[0]-1e-6||Math.abs(sc[0]-bestScore[0])<=1e-6&&sc[1]<bestScore[1]){best=controls.map(p=>[...p] as XYZ);bestScore=sc;}
+    }
+    best.forEach((p,i)=>{controls[i]=p;});
   }
-  // The solver never clamps: a tower the fixed endpoints force above the sky ceiling is a
-  // reported failure (RESERVED: the gondola top station), not a silently shortened tower.
+  // Never clamped: a top the fixed stations force above the sky ceiling fails the bake, located.
   const ceiling=M.sky.ceiling_m;
-  controls.slice(1,-1).forEach((p,i)=>{if(p[1]>ceiling)cuts.diagnostics.push({id:`cable.G1.tower.${i+1}.ceiling`,severity:'conflict',message:`G1 tower ${i+1} must reach ${p[1].toFixed(1)} eu to clear the terrain between fixed stations, above the ${ceiling} eu sky ceiling`,at:plan(p),measured:p[1],required:ceiling});});
+  controls.slice(1,-1).forEach((p,i)=>{
+    if(p[1]>ceiling)throw new Error(`cable.G1.tower.${i+1}.ceiling: G1 tower ${i+1} at [${p[0].toFixed(1)},${p[2].toFixed(1)}] must reach ${p[1].toFixed(1)} eu to keep ${clear} eu over the ground, above the ${ceiling} eu sky ceiling (D-A3: no clamp)`);
+    cuts.diagnostics.push({id:`cable.G1.tower.${i+1}`,severity:'info',message:`G1 tower ${i+1} top solved to ${p[1].toFixed(1)} eu (ground ${base(p[0],p[2]).toFixed(1)}, ${(p[1]-base(p[0],p[2])).toFixed(1)} tall; lowest top keeping ${clear} eu over the ground at 1 % sag)`,at:plan(p),measured:p[1],required:ceiling});
+  });
   for(const q of constraints){const actual=mix(controls[q.i-1]![1],controls[q.i]![1],q.t);if(actual<q.required-.01)cuts.diagnostics.push({id:`cable.G1.clear.${q.i}.${q.t}`,severity:'conflict',message:'Fixed gondola endpoint cannot meet terrain clearance',at:q.at,measured:actual,required:q.required});}
   const gondola:XYZ[]=[];
   for(let i=1;i<controls.length;i++){const a=controls[i-1]!,b=controls[i]!,len=distance(plan(a),plan(b));for(let k=0;k<32;k++){const t=k/32;gondola.push([mix(a[0]!,b[0]!,t),mix(a[1]!,b[1]!,t)-len*.01*4*t*(1-t),mix(a[2]!,b[2]!,t)]);}}gondola.push(controls[controls.length-1]!);
   cuts.beds.push(bed('G1','cable',gondola,false));const towers=solid('G1.towers','tower','stone','support',['G1'],'prow');controls.slice(1,-1).forEach(p=>{const ground=base(p[0]!,p[2]!);box(towers,plan(p),p[1]!,[1.5,1.5],ground-.25);box(towers,plan(p),ground+.4,[4,4],ground-.25);});cuts.solids.push(towers);
   const z=M.cable.ZIP,len=distance(z.from as unknown as XY,z.to as unknown as XY),zip=Array.from({length:129},(_,k)=>{const t=k/128;return [mix(z.from[0]!,z.to[0]!,t),mix(z.fromH,z.toH,t)-len*z.sag_pct/100*4*t*(1-t),mix(z.from[1]!,z.to[1]!,t)] as unknown as XYZ;});cuts.beds.push(bed('ZIP','cable',zip,false));
-  const cross:XY=[1442,921],clear=nearestOnPath(cross,zip).at[1]!-nearestOnPath(cross,gondola).at[1]!;cuts.diagnostics.push({id:'cable.ZIP.G1',severity:clear<8?'conflict':'info',message:'Measured ZIP clearance above the sagged gondola at the fixed crossing',at:cross,measured:clear,required:8});
+  // v2.0 D-A2: the register row decides the order (ZIP under G1); the separation is signed by that order.
+  const zipRow=M.crossings.find(r=>r.a==='ZIP'&&r.b==='G1'),under=zipRow?.resolution==='under',at0=(zipRow?.at??[1442,921]) as unknown as XY;
+  // The measured crossing is where the two plans meet: the nearest pair of samples.
+  let cross=at0,best=Infinity;for(const p of zip){const n=nearestOnPath(plan(p),gondola);if(n.distance<best&&distance(plan(p),at0)<40){best=n.distance;cross=plan(p);}}
+  const sep=(nearestOnPath(cross,zip).at[1]!-nearestOnPath(cross,gondola).at[1]!)*(under?-1:1);
+  cuts.diagnostics.push({id:'cable.ZIP.G1',severity:sep<clear?'conflict':'info',message:`Measured ZIP ${under?'under':'over'} G1 separation at the crossing (register order)`,at:cross,measured:sep,required:clear});
   // The rope meets each station at its bullwheel, above head height: within 16 eu of a
   // platform the cable solid never drops below platform + body clearance, so it is not a
   // tripwire across the platform or the base walk (A3-02). The bed keeps the true line.
@@ -338,7 +443,7 @@ function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
   for(const row of M.thresholds){
     if(typeof row.xy==='string'){Object.entries(M.water_routes.FERRY.piers).forEach(([id,p])=>make(`threshold.${row.id}.${id}`,p as unknown as XY,1));continue;}
     if(Array.isArray(row.xy[0]!))(row.xy as number[][]).forEach((p,i)=>make(`threshold.${row.id}.${i+1}`,p as unknown as XY));
-    else {const exact:Record<string,number>={gondolaBase:18,gondolaTop:112,adit:40,southPortal:110,prowPlatform:M.sky.launches.prow.h,crownLaunch:M.sky.launches.crown.h,zipLanding:12,lampGallery:M.sky.launches.lampGallery.h,deepJetty:40.6,seaDoorJetty:1,lampDock:1,bightShoreJetty:1,floatDock:1.2,boathouseDock:1,landingQuay:3,stepsFoot:4};make(`threshold.${row.id}`,row.xy as unknown as XY,exact[row.id]!);}
+    else {const exact:Record<string,number>={gondolaBase:M.cable.G1.fromH,gondolaTop:M.cable.G1.toH,adit:40,southPortal:110,prowPlatform:M.sky.launches.prow.h,crownLaunch:M.sky.launches.crown.h,zipLanding:12,lampGallery:M.sky.launches.lampGallery.h,deepJetty:40.6,seaDoorJetty:1,lampDock:1,bightShoreJetty:1,floatDock:1.2,boathouseDock:1,landingQuay:3,stepsFoot:4};make(`threshold.${row.id}`,row.xy as unknown as XY,exact[row.id]!);}
   }
   // Only authored register rows make a dismount pad: rows accepted from the bake (source 'bake v1.8') are flush
   // junctions, footways or unresolved proposals, never a new marker (R1-88).
@@ -394,13 +499,16 @@ export function buildLandCuts(baseHeight:HeightQuery):LandCuts {
   // one raster diagonal further out) reaches the portal face: the cut-to-cover lattice step then lies inside the mouth mask.
   // Only the Shoulder Tunnel's north portal (Crown Road's lower end) had the step; its south portal keeps its cover (walk
   // crownFromGondola crosses over it), so the cover circle slides south: north edge 3 eu inside, south edge unchanged.
+  // v2.0 D-A4: the Prow is a gallery (the hill is one wall, a colonnade the other): no natural cover is kept over the Drive and
+  // its verges - the road cuts the hillside as usual and structures roof it; a cover circle left the verges in the hill.
   for(const [id,route,length]of [['prowTunnel','V01',90],['shoulderTunnel','V02',110],['duneCulvert','S4',32]]as const){const b=cuts.beds.find(b=>b.id===route);if(!b)continue;
+    if((M.structures[id] as {kind?:string}).kind==='gallery')continue;
     const at=M.structures[id]!.xy as unknown as XY,e:{at:XY;radius:number;terrainAt?:XY;terrainRadius?:number}={at,radius:length/2+2};
     if(id==='shoulderTunnel'){const pts=b.points.map(plan),n=nearestOnPath(at,b.points),i=Math.min(pts.length-1,n.segment+1),dir=[pts[i]![0]-pts[n.segment]![0],pts[i]![1]-pts[n.segment]![1]],l=Math.hypot(dir[0]!,dir[1]!)||1,shift=(PORTAL_CUT_INSET+2)/2;
       e.terrainAt=[at[0]+dir[0]!/l*shift,at[1]+dir[1]!/l*shift];e.terrainRadius=length/2+2-shift;}
     (b.terrainExclusions??=[]).push(e);}
   cuts.beds.find(b=>b.id==='V01')!.terrainExclusions!.push({at:[1010,1388],radius:12});
-  settleYearWalkShares(cuts,shares);carrySpanLanes(cuts);guardWater(cuts,baseHeight);checkRailGrades(cuts);
+  settleYearWalkShares(cuts,shares);{const s2=cuts.beds.find(b=>b.id==='S2');if(s2)carryS2(cuts,baseHeight,s2);}carryNamedStructures(cuts);carrySpanLanes(cuts);guardWater(cuts,baseHeight);checkRailGrades(cuts);
   cables(cuts,baseHeight);const markers=thresholds(cuts,baseHeight);
   for(const b of cuts.beds)if(!b.id.startsWith('structure.')&&!b.id.startsWith('underground.')&&!['ORE','DEEP_RUN','ORE.siding','prowTunnel','shoulderTunnel','duneCulvert'].includes(b.id))emitBedGeometry(b,cuts,baseHeight,markers);
   return cuts;

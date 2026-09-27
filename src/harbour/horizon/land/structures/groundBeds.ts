@@ -49,7 +49,10 @@ export function groundTerrainBeds(cuts:LandCuts,finalHeight:HeightQuery):{filled
           // W3-A: the lower route's own height where it passes the prism (h), not its segment's
           // min/max: a footway beside a host on a 12 % grade read the host's low end as "under" it.
           if(h+Math.max(bed.clearHeight,bed.kind==='cable'?8:0)<=target||h+.15>=under)continue;
-          if(corridorDistance(poly,plan(a),plan(b))<=bed.width/2+bed.shoulder+.3){reason=`lower route ${bed.id}`;break;}
+          // W5-A: the lower route's walking width (+0.3), not its shoulder: a prism beside a lower lane is grounded, its fill
+          // face standing on the lower route's shoulder as a retaining edge (the Year Walk's side-by-side lanes at two heights
+          // counted the 1.2 m shoulder and hung unsupported beside each other).
+          if(corridorDistance(poly,plan(a),plan(b))<=bed.width/2+.3){reason=`lower route ${bed.id}`;break;}
         }
       }
       const proof={id:s.id,part:offset/24,at:centre,depth};
@@ -67,5 +70,43 @@ export function groundTerrainBeds(cuts:LandCuts,finalHeight:HeightQuery):{filled
     if(c)c.n++;else clusters.push({bed:bedId,reason:r.reason??'',at:r.at,depth:r.depth,n:1});
   }
   clusters.forEach((c,i)=>cuts.diagnostics.push({id:`structures.terrainBedFill.residual.${i}`,severity:'conflict',message:`${c.bed}: ${c.n} bed prisms hang up to ${c.depth.toFixed(2)} eu over the ground (${c.reason}); a bed that cannot be grounded needs a named structure with bearings or a different alignment`,at:c.at,measured:c.depth,required:0}));
+  // FINISH-PROMPT A1.1: a residual deeper than RESIDUAL_LIMIT fails the bake unless it is reserved (RESERVED_VOIDS, D-C10 only)
+  // or a named, owned open item (OPEN_VOIDS, each with its owner and request - to be emptied, never grown silently).
+  const failing=residualBakeErrors(clusters);
+  if(failing.length)throw new Error(`Unsupported beds deeper than ${RESIDUAL_LIMIT} eu (A1.1): ${failing.map(c=>`${c.bed} ${c.depth.toFixed(2)} eu at [${c.at.map(v=>v.toFixed(1)).join(',')}] (${c.reason})`).join('; ')}`);
   return {filled,residual,protectedSpans};
+}
+/** A residual void deeper than this under a bed fails the bake (A1.1). */
+export const RESIDUAL_LIMIT=1.25;
+export interface VoidAllowance { bed:string; at:XY; r:number; decision:string; owner?:string; why:string }
+/** Reserved by Jonathan's rulings: only the Hollow neck (D-C10, keep reserved until the other crossings are done). */
+export const RESERVED_VOIDS:readonly VoidAllowance[]=[
+  {bed:'*',at:[895,605],r:36,decision:'D-C10',why:'the Hollow neck: the brook under the Garden Walk, S4 and the Year Walk (hollowBridge)'},
+];
+/** Open, owned items measured on the W5-A scratch bake (2026-09-27). Each names its owner and the request that closes it. */
+export const OPEN_VOIDS:readonly VoidAllowance[]=[
+  {bed:'yearWalk',at:[1605,690],r:16,decision:'W5-DATA Beds',owner:'W5-T',why:'Year Walk lane over its own lane at the Prow November loop: a lane re-route or a named overpass (manifest journey.yearWalk)'},
+  {bed:'yearWalk',at:[892.5,471.7],r:16,decision:'W5-DATA Beds',owner:'W5-T',why:'Year Walk lane stacking at Scholars (two legs 4.1 apart): lane re-route'},
+  {bed:'yearWalk',at:[914.9,601.5],r:10,decision:'W5-DATA Beds',owner:'W5-T',why:'Year Walk April/June lanes on S4 stacked at the Hollow: lane re-route'},
+  {bed:'yearWalk',at:[1512,1026],r:12,decision:'W5-DATA Beds',owner:'W5-T',why:'Year Walk lane stacking at the harbour: lane re-route'},
+  {bed:'yearWalk',at:[1384.8,687.9],r:10,decision:'D-C7',owner:'W5-T',why:'turning circle: the January lane over the V02 footway lane (D-C7 re-route of one lane)'},
+  {bed:'yearWalk',at:[1461.6,698.8],r:10,decision:'W5-DATA Beds',owner:'W5-T',why:'Year Walk lanes stacked on the Crown Road shelf'},
+  {bed:'yearWalk',at:[1400.9,869.8],r:10,decision:'W5-DATA Beds',owner:'W5-T',why:'Year Walk lanes stacked on the Shoulder'},
+  {bed:'yearWalk',at:[1448.5,376.2],r:10,decision:'W5-DATA Beds',owner:'W5-T',why:'Year Walk lanes stacked at Crown Road\'s foot'},
+  {bed:'yearWalk',at:[418,896],r:20,decision:'D-A7 #34',owner:'W5-S',why:'Year Walk footways at the Bight Bridge west abutment (embankment 14 × 24, structures)'},
+  {bed:'walk bightPier',at:[415,897],r:14,decision:'D-A7 #34',owner:'W5-S/W5-A',why:'the pier walk over the Drive and its footways at #34: v2.0 moved the Drive to 21.3 there (28.4 on candidate 3); flush needs the west abutment profile'},
+  {bed:'V01',at:[420,932],r:36,decision:'D-A7 #34',owner:'W5-S',why:'the Drive over its own July/August footway lanes on the Bight Bridge west approach (the abutment embankment carries them)'},
+  {bed:'homestead.lane',at:[1515.2,1190.5],r:6,decision:'R2-04',owner:'W5-A',why:'the lane leaves the yard 3.5 over the Year Walk: a yard-edge stair or a lane start moved west (next W5-A pass)'},
+  {bed:'walk reach',at:[1250,1155],r:30,decision:'R2-20',owner:'W3-C/W5-A',why:'the Reach walk on the river lower\'s bank: the bank at the water level + 0.3 (water) or a boardwalk (beds)'},
+  {bed:'walk flats',at:[349.8,879],r:5,decision:'R2-04',owner:'W5-A',why:'the Flats trail end 3.2 over the pier walk\'s start (a flush junction owed)'},
+  {bed:'host.glasshouse.approach',at:[998.2,812.3],r:6,decision:'R2-04',owner:'W5-S',why:'the Glasshouse approach over the glasshouse steps (authored flat at 50; a stair from the spur at 34)'},
+  {bed:'plot.bight.1.service',at:[857.2,935.1],r:6,decision:'D-C8',owner:'W5-A',why:'the moved plot\'s service drive crosses the June lane 2.2 over it (P31: the clear spot is 25 m WSW, not 12)'},
+  {bed:'strip',at:[419.5,690.9],r:6,decision:'R2-04',owner:'W5-S',why:'the airstrip edge 1.9 over the Year Walk lane beside it'},
+  {bed:'host.bank.approach',at:[1434.9,1146.4],r:6,decision:'R2-36',owner:'W5-A',why:'the bank approach over its own lower leg (the Kitty plaza lip)'},
+  {bed:'VBS',at:[872.4,944.5],r:8,decision:'D-C9',owner:'W5-S/W5-T',why:'VBS 1.5 over S4 just south of structures.bightSpurTrestle: extend the trestle ≈ 12 m south'},
+];
+const covered=(c:{bed:string;at:XY},list:readonly VoidAllowance[])=>list.some(v=>(v.bed==='*'||v.bed===c.bed)&&distance(c.at,v.at)<=v.r);
+/** The residual clusters that fail the bake: deeper than RESIDUAL_LIMIT and on neither list. */
+export function residualBakeErrors<T extends {bed:string;at:XY;depth:number;reason:string}>(clusters:readonly T[]):T[] {
+  return clusters.filter(c=>c.depth>RESIDUAL_LIMIT&&!covered(c,RESERVED_VOIDS)&&!covered(c,OPEN_VOIDS));
 }

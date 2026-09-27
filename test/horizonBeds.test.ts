@@ -96,3 +96,67 @@ describe('Horizon v1.9 beds (W3-A)',()=>{
     expect(cuts.beds.some(b=>b.id==='hangar.access')).toBe(false);
   },60000);
 });
+describe('Horizon v2.0 beds (W5-A, Jonathan\'s rulings 2026-09-27)',()=>{
+  const cuts=buildLandCuts(baseHeight),find=(id:string)=>cuts.beds.find(b=>b.id===id)!;
+  const hAt=(id:string,at:XY)=>nearestOnPath(at,find(id).points).at[1];
+  const grade=(a:readonly number[],b:readonly number[])=>Math.abs(b[1]!-a[1]!)/distance(plan(a as never),plan(b as never));
+  it('lays the station walk from the new gondola station at grade and starts the Crown walk on the January lane (D-A3, D-C7)',()=>{
+    const walk=find('walk crownFromGondola');
+    expect(plan(walk.points[0]!)).toEqual([1335,535]);expect(walk.points[0]![1]).toBeCloseTo(150,5);
+    expect(plan(walk.points.at(-1)!)).toEqual([1310,500]);expect(walk.points.at(-1)![1]).toBeCloseTo(154,5);
+    expect(walk.points.every(p=>p[0]<=1336&&p[2]<=536)).toBe(true); // no switchback via [1405,595]/[1450,565]
+    expect(maxGrade(walk.points)).toBeLessThanOrEqual(.12);
+    // The Crown walk's bed starts on the Year Walk's centreline at the lane's height (a flush junction), not at [1370,690].
+    const crown=find('walk crown'),lane=nearestOnPath(plan(crown.points[0]!),find('yearWalk').points);
+    expect(lane.distance).toBeLessThan(.01);expect(Math.abs(crown.points[0]![1]-lane.at[1])).toBeLessThan(.01);
+    expect(distance(plan(crown.points[1]!),[1417.7,677.4])).toBeLessThan(.01);
+    expect(crown.points.some(p=>distance(plan(p),[1370,690])<20)).toBe(false);
+    expect(maxGrade(crown.points)).toBeLessThanOrEqual(.12);
+  },120000);
+  it('solves the G1 tower tops, the tallest 51 eu, all under the sky ceiling, the ZIP 15 eu under the cable (D-A3, D-A2)',()=>{
+    const towers=[1,2,3].map(i=>cuts.diagnostics.find(d=>d.id===`cable.G1.tower.${i}`)!);
+    expect(towers.every(t=>t.severity==='info'&&t.measured!<M.sky.ceiling_m)).toBe(true);
+    const tops=towers.map(t=>t.measured!),tall=towers.map((t,i)=>t.measured!-baseHeight(...M.cable.G1.towers[i] as unknown as XY));
+    expect(tops[0]).toBeCloseTo(65.1,0);expect(tops[1]).toBeCloseTo(109.9,0);expect(tops[2]).toBeCloseTo(152.7,0);
+    expect(Math.max(...tall)).toBeLessThan(51.5);
+    towers.forEach((t,i)=>expect(t.at).toEqual(M.cable.G1.towers[i]));
+    expect(cuts.diagnostics.filter(d=>d.id.startsWith('cable.G1.clear')||d.id.endsWith('.ceiling'))).toEqual([]);
+    const zip=cuts.diagnostics.find(d=>d.id==='cable.ZIP.G1')!;expect(zip.severity).toBe('info');expect(zip.measured!).toBeGreaterThan(8);expect(zip.message).toContain('under');
+    const top=cuts.pads.find(p=>p.id==='threshold.gondolaTop')!;expect(top.centre[1]).toBe(150);
+  },120000);
+  it('lays S2 on its authored Bight profile: a 5 % west ramp on a trestle, the deck lanes carried, a 7.1 % east descent (D-A1)',()=>{
+    const s2=find('S2'),S=M.skate.S2 as unknown as {levels:{xy:XY;h:number}[]};
+    for(const l of S.levels)expect(Math.abs(hAt('S2',l.xy)-l.h),`${l.xy}`).toBeLessThan(.01);
+    const stretch=(from:XY,to:XY)=>{const a=nearestOnPath(from,s2.points).segment,b=nearestOnPath(to,s2.points).segment;return s2.points.slice(a+1,b+1);};
+    const ramp=stretch([485,800],[466.1,1021.3]),rampGrades=ramp.slice(1).map((p,i)=>grade(ramp[i]!,p));
+    expect(Math.min(...rampGrades)).toBeGreaterThan(.047);expect(Math.max(...rampGrades)).toBeLessThan(.053);
+    const descent=stretch([655.9,1175.7],[712,1230]),dg=descent.slice(1).map((p,i)=>grade(descent[i]!,p));
+    expect(Math.min(...dg)).toBeGreaterThan(.066);expect(Math.max(...dg)).toBeLessThan(.076);
+    // The deck stretch is carried by the bridge (no S2 deck, edge or terrain there) and never raises the seabed.
+    const carried=s2.carried!.flat();expect(planDistance([548,1078.7],carried)).toBeLessThan(3);expect(planDistance([621.5,1151.6],carried)).toBeLessThan(3);
+    const trestle=cuts.solids.find(s=>s.id==='S2.westRamp.trestle')!;expect(trestle.role).toBe('support');
+    expect(cuts.diagnostics.find(d=>d.id==='S2.westRamp.trestle')!.measured).toBeGreaterThanOrEqual(15);
+    expect(cuts.solids.some(s=>s.id.startsWith('S2.bed')&&(()=>{for(let i=0;i<s.positions.length;i+=3)if(planDistance([s.positions[i]!,s.positions[i+2]!],[[548,1078.7],[564.1,1111.4]])<1)return true;return false;})())).toBe(false);
+  },120000);
+  it('turns November\'s pad 90°, makes the D-A7 thresholds flush, retires the market ramp and keeps the homestead lane on land',()=>{
+    const nov=cuts.pads.find(p=>p.id==='station.nov')!;expect(nov.rotationDegrees).toBe(90);expect(plan(nov.centre)).toEqual([1626,904]);
+    // #34 V01 × the pier walk stays open (groundBeds OPEN_VOIDS, D-A7 #34): v2.0 moved the Drive to 21.3 there.
+    expect(maxGrade(find('walk bightPier').points)).toBeLessThanOrEqual(.12+1e-6);
+    expect(Math.abs(hAt('S4',[973,538])-hAt('VG',[973,538]))).toBeLessThan(.3); // VG's crown vs S4 at the kerb gap
+    expect(Math.abs(hAt('S4',[905.9,640.6])-hAt('walk garden',[905.9,640.6]))).toBeLessThan(.05);
+    expect(cuts.beds.some(b=>b.id==='marketRamp')).toBe(false);
+    // The square walk is the step-free way up: from the square's edge to the upper street it climbs at most 8 %.
+    const square=find('walk square');expect(maxGrade(square.points.filter(p=>p[2]<=1148))).toBeLessThanOrEqual(.08+1e-6);
+    for(const p of square.points)if(Math.abs(p[0]-1455)<=28&&Math.abs(p[2]-1175)<=28)expect(p[1]).toBeCloseTo(12,5);
+    expect(square.points.at(-1)![1]).toBeCloseTo(18,5);
+    const lane=find('homestead.lane');expect(lane.points.filter(p=>baseHeight(p[0],p[2])<M.seaLevel).length).toBe(0);expect(maxGrade(lane.points)).toBeLessThanOrEqual(.08+1e-6);
+  },120000);
+  it('leaves the named carriers\' routes as open spans: S1\'s upper pass on the flyover, VBS on the trestle (D-C15, D-C9)',()=>{
+    const s1=find('S1'),open=(b:typeof s1,at:XY)=>(b.terrainExclusions??[]).some(e=>e.openSpan&&distance(e.at,at)<e.radius);
+    expect(open(s1,[1345,744])).toBe(true);
+    // The lower pass at [1353.6,747.9] (76.9) is not carried by the flyover.
+    const lower=s1.points.filter(p=>distance(plan(p),[1353.6,747.9])<4&&p[1]<80);expect(lower.length).toBeGreaterThan(0);
+    expect(lower.every(p=>!(s1.terrainExclusions??[]).some(e=>e.openSpan&&distance(e.at,plan(p))<.01))).toBe(true);
+    const vbsMid=plan(nearestOnPath([904.9,891.5],find('VBS').points).at);expect(open(find('VBS'),vbsMid)).toBe(true);expect(open(find('walk bight'),[904.9,891.5])).toBe(true);
+  },120000);
+});

@@ -44,12 +44,15 @@ function sharedSides(b:BedCut,cuts:LandCuts,mid:XY,h:number,nx:number,nz:number)
   }
   return sides;
 }
+/** Plan length (eu) over which a bed edge's guard and retaining decision is taken, and the most a rail runs between posts. */
+export const EDGE_PIECE=2.5;
 export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,thresholds:XY[]=[]):void {
   if(b.kind==='cable'||b.kind==='cave')return;
   const district=b.districtIds[0]!??'harbour',deck=solid(`${b.id}.bed`,'bed',b.surface,'deck',[b.id],district);
   const kerbs=solid(`${b.id}.kerbs`,'kerb','stone','wall',[b.id],district),rails=solid(`${b.id}.edges`,'parapet','stone','rail',[b.id],district),retaining=solid(`${b.id}.retaining`,'retainingWall','rock','wall',[b.id],district);
   const shoulders=solid(`${b.id}.shoulders`,'shoulder','gravel','deck',[b.id],district);
   const segments=b.surfaceSegments?.map((v,i)=>solid(`${b.id}.surface.${i}`,'bed',v.surface,'deck',[b.id],district));
+  const runs=new Map<number,{on:boolean;count:number;last?:XYZ;nx:number;nz:number;edge:number}>([[-1,{on:false,count:0,nx:0,nz:0,edge:0}],[1,{on:false,count:0,nx:0,nz:0,edge:0}]]);
   for(let i=1;i<b.points.length;i++){
     const a=b.points[i-1]!,p=b.points[i]!,dx=p[0]!-a[0]!,dz=p[2]!-a[2]!,len=Math.hypot(dx,dz);if(len<1e-6)continue;
     const mid:XY=[(a[0]!+p[0]!)/2,(a[2]!+p[2]!)/2],h=(a[1]!+p[1]!)/2,nx=-dz/len,nz=dx/len;
@@ -63,26 +66,36 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
     // pad surface) drops more than body height. Junction mouths are opened later along the
     // joining route's own corridor (junctions.ts), never as a circle around the pad.
     const gap=joinedPad||thresholds.some(t=>distance(mid,t)<5);
+    // W5-A (R2-05): edges are decided every EDGE_PIECE eu, not once per segment (the 340 m airstrip segment read one drop at
+    // its middle and left 56 m of a 3.8 eu edge bare), and the drop is the larger of 1.0 and 1.5 eu beyond the edge.
+    const pieces=len>2.4*EDGE_PIECE?Math.ceil(len/EDGE_PIECE):1,at=(t:number):XYZ=>[a[0]+(p[0]-a[0])*t,a[1]+(p[1]-a[1])*t,a[2]+(p[2]-a[2])*t];
     for(const side of [-1,1]){
       if(shared?.has(side)){if(b.shoulder)slab(shoulders,a,p,b.shoulder,.6,side*(b.width/2+b.shoulder/2));continue;}
-      const edge=b.width/2+b.shoulder,drop=h-groundBeyond(cuts,base,mid[0]!+nx*side*(edge+1.5),mid[1]!+nz*side*(edge+1.5),h);
+      const edge=b.width/2+b.shoulder;
       if(b.shoulder)slab(shoulders,a,p,b.shoulder,.6,side*(b.width/2+b.shoulder/2));
       if(!gap&&b.kind==='road')slab(kerbs,a,p,.25,.15,side*b.width/2,.15);
-      if(drop>1.25){
-        if(b.kind==='road'){
-          slab(rails,a,p,.35,1,side*edge,1);slab(rails,a,p,.5,.15,side*edge,1.15);
-        }else{
-          slab(rails,a,p,.09,.09,side*edge,1.05);
-          if(i%2===0)box(rails,[mid[0]!+nx*side*edge,mid[1]!+nz*side*edge],h+1.05,[.12,.12],h-.1);
+      for(let k=0;k<pieces;k++){
+        const pa=at(k/pieces),pb=at((k+1)/pieces),pm:XY=[(pa[0]+pb[0])/2,(pa[2]+pb[2])/2],ph=(pa[1]+pb[1])/2;
+        const drop=Math.max(...[1,1.5].map(o=>ph-groundBeyond(cuts,base,pm[0]+nx*side*(edge+o),pm[1]+nz*side*(edge+o),ph)));
+        const run=runs.get(side)!,post=(q:XYZ)=>box(rails,[q[0]+nx*side*edge,q[2]+nz*side*edge],q[1]+1.05,[.12,.12],q[1]-.1);
+        if(drop>1.25){
+          if(b.kind==='road'){
+            slab(rails,pa,pb,.35,1,side*edge,1);slab(rails,pa,pb,.5,.15,side*edge,1.15);
+          }else{
+            slab(rails,pa,pb,.09,.09,side*edge,1.05);
+            // Posts at every rail run's start and end and at least every other piece between: no run without a post.
+            if(!run.on||run.count%2===0)post(pa);run.on=true;run.count++;run.last=pb;run.nx=nx;run.nz=nz;run.edge=edge;
+          }
+        }else if(run.on){post(pa);run.on=false;run.count=0;}
+        if(b.terrainCut&&!b.terrainExclusions?.some(e=>distance(pm,e.at)<e.radius)&&Math.abs(drop)>.5){
+          const low=Math.min(ph-.6,base(pm[0]+nx*side*(edge+1),pm[1]+nz*side*(edge+1)))-.2;
+          const top=Math.max(ph,low+Math.abs(drop));
+          batteredWall(retaining,pa,pb,side*(edge+.5),side,low,top,drop<0);
         }
-      }
-      if(b.terrainCut&&!b.terrainExclusions?.some(e=>distance(mid,e.at)<e.radius)&&Math.abs(drop)>.5){
-        const low=Math.min(h-.6,base(mid[0]!+nx*side*(edge+1),mid[1]!+nz*side*(edge+1)))-.2;
-        const top=Math.max(h,low+Math.abs(drop));
-        batteredWall(retaining,a,p,side*(edge+.5),side,low,top,drop<0);
       }
     }
   }
+  for(const [side,run]of runs)if(run.on&&run.last)box(rails,[run.last[0]+run.nx*side*run.edge,run.last[2]+run.nz*side*run.edge],run.last[1]+1.05,[.12,.12],run.last[1]-.1);
   // A road circles several districts. Stream its local prisms with the district underneath them.
   for(const piece of [...(segments??[deck]),kerbs,rails,retaining,shoulders])if(piece.indices.length){
     const districts=new Map<string,StructureSolid>();

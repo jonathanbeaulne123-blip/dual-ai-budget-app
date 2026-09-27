@@ -61,10 +61,11 @@ describe('R2-08 the summit L02 on foot', () => {
   it('walks the runtime body from the square to L02 without the gondola (Crown Road, the turning circle, walk crown) and from the top station', () => {
     const square = bodyWalk([1455, 12, 1175], [1310, 158, 470]);
     expect(square).toMatchObject({ planned: true, reached: true, blockedAt: null }); expect(square.length).toBeLessThan(2900);
-    expect(bodyWalk([1370, 110, 690], [1310, 158, 470])).toMatchObject({ reached: true, blockedAt: null });
-    // The gondola's top station (RESERVED height 112) to L02: the walk no longer meets 52° ground at [1370,569].
-    const station = bodyWalk([1360, 112, 560], [1310, 158, 470]);
-    expect(station).toMatchObject({ reached: true, blockedAt: null }); expect(station.length).toBeCloseTo(412.5, 0);
+    expect(bodyWalk([1417.7, 110.1, 677.4], [1310, 158, 470])).toMatchObject({ reached: true, blockedAt: null }); // D-C7 the Crown walk's start
+    // v2.0 D-A3: the gondola's top station at grade on the summit's shoulder [1335,535] (deck 150) to L02: a short step-free walk
+    // (the v1.9 station at [1360,112,560] took 412.5 eu of switchback).
+    const station = bodyWalk([1335, 150, 535], [1310, 158, 470]);
+    expect(station).toMatchObject({ reached: true, blockedAt: null }); expect(station.length).toBeLessThan(100);
   });
   it('joins the Crown walk to the Year Walk lane it shares at the turning circle, and keeps the launch stair off the walk', () => {
     const { world } = baked(), lanes = world.pathGraph.edges.filter(e => e.id.startsWith('lane:'));
@@ -72,7 +73,8 @@ describe('R2-08 the summit L02 on foot', () => {
     // The launch stair no longer stands across the walk (walk crown:139/140 were blocked by its treads). The five edges the
     // Year Walk's stacked lanes still close at the turning circle [1376-1387,686-688] are bypassed by the lane join.
     const blocked = (world.pathGraph.blocked ?? []).filter(b => b.bedId === 'walk crown');
-    expect(blocked.filter(b => /crownLaunch/.test(b.solid))).toEqual([]); expect(blocked.map(b => b.solid)).toEqual(Array(5).fill('yearWalk.bed.crown'));
+    // v2.0 D-C7 (W5-A): the Crown walk's bed starts on the January lane's centreline at its height, so nothing closes it.
+    expect(blocked.filter(b => /crownLaunch/.test(b.solid))).toEqual([]); expect(blocked.map(b => b.solid)).toEqual([]);
   });
 });
 
@@ -120,8 +122,8 @@ describe('R2-25 / R2-21 cut-edge spikes are capped on the detailed tiers', () =>
       const n = j * C + i; let top = -Infinity; for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) if (di || dj) top = Math.max(top, H[n + dj * C + di]!);
       if (H[n]! <= .1) continue; const rise = H[n]! - top; if (rise > .3) spikes++; if (rise > 1) over.push([i * step, j * step]); else max = Math.max(max, rise);
     }
-    // [910,885] holds VBS and walk bight (26.8) 4.5 m from the Year Walk at 17.8: the fill of a lane-stacking cliff, not a cut edge.
-    expect(over).toEqual([[910, 885]]); expect(max).toBeLessThanOrEqual(1.005); expect(spikes).toBeLessThanOrEqual(31);
+    // W5-A: [910,885] (VBS and walk bight 4.5 m from the Year Walk) is now on the VBS trestle's open span (D-C9): no fill cliff.
+    expect(over).toEqual([]); expect(max).toBeLessThanOrEqual(1.005); expect(spikes).toBeLessThanOrEqual(31);
   });
   it('never takes the fill from under a bed: the runway south end keeps its ground (a first cut left 12.6 eu under it)', async () => {
     const { sampleTerrain } = await import('../src/harbour/horizon/land/terrain/index'), { field } = baked();
@@ -138,10 +140,12 @@ describe('R2-74 / R2-14 the baked view proof measures the acceptance frames', ()
   });
   it('claims only what the frames hold: 8/12 at 1440 × 900 and 6/12 on the phone (was 12/12 and 11/12 claimed, 6/12 and 7/12 measured)', () => {
     const { world } = baked(), pass = (k: 'passLandscape' | 'passPortrait') => world.views.filter(v => v.proof[k]).map(v => v.id).join('');
-    expect(pass('passLandscape')).toBe('BCEFGHJL'); expect(pass('passPortrait')).toBe('BEFGJK');
+    // v2.0 data (W5-DATA): D-B2 re-posed K into the 1440 frame (K joins); D-B3 moved H to golden hour and H's west sea now fails
+    // the landscape proof on the land-track bake (a view item for the integrator, not a bed).
+    expect(pass('passLandscape')).toBe('BCEFGJKL'); expect(pass('passPortrait')).toBe('BEFGJK');
     const px = (page: string, subject: string) => world.views.find(v => v.id === page)!.proof.subjects.find(s => s.id === subject)!;
     // Where the land really fails a subject (listed in final3/BEFORE-AFTER.md with the blocker):
-    expect(px('K', 'the Glasshouse').pixels).toBe(0); expect(px('I', 'the spring').pixels).toBe(0); expect(px('I', 'the Reach water').pixels).toBe(0);
+    expect(px('K', 'the Glasshouse').pixels).toBeGreaterThan(13); // v2.0 D-B2 re-pose (was 0) expect(px('I', 'the spring').pixels).toBe(0); expect(px('I', 'the Reach water').pixels).toBe(0);
     expect(px('A', 'the Shoulder').pixels).toBeLessThan(13); expect(px('D', 'the Lamp').pixels).toBeLessThan(13);
   });
 });
