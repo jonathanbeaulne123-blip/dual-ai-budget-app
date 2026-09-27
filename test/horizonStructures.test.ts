@@ -230,8 +230,12 @@ describe('Horizon Wave 7 structures (W7-S)',()=>{
       const rope=prisms(find(cuts,`${cable}.cable`)!),end=rope.reduce((a,b)=>Math.hypot(a.x-xy[0]!,a.z-xy[1]!)<Math.hypot(b.x-xy[0]!,b.z-xy[1]!)?a:b);
       expect(end.top,id).toBeCloseTo(h+ROPE_END,5);
       const r=solidVerticalRangeAt(frame,xy[0]!,xy[1]!)!;expect(r,id).not.toBeNull();expect(r.bottom,id).toBeLessThanOrEqual(h+ROPE_END-.09);expect(r.top,id).toBeGreaterThanOrEqual(h+ROPE_END);
-      // Its legs stand on the station deck (h): nothing of the frame is below the deck, and the station point is clear below h + 2.3.
-      const parts=prisms(frame);expect(Math.min(...parts.map(p=>p.bottom)),id).toBeCloseTo(h,5);
+      // Its legs are columns to footings below the ground (P11: the frame's load path reaches the ground, not a slab); the
+      // hung frame rests on the legs' tops; the station point is clear below h + 2.3.
+      const parts=prisms(frame),legs=lowest(find(cuts,`platform.${id}.headFrame.legs`)!);expect(new Set(legs.map(p=>`${Math.round(p.x)},${Math.round(p.z)}`)).size,id).toBe(2);
+      for(const p of legs)expect(p.bottom,id).toBeLessThanOrEqual(baseHeight(p.x,p.z)-FOOTING_SINK+1e-6);
+      expect(Math.min(...parts.map(p=>p.bottom)),id).toBeGreaterThan(h+2.2);
+      const legTop=Math.max(...prisms(find(cuts,`platform.${id}.headFrame.legs`)!).map(p=>p.top));expect(parts.some(p=>p.bottom<=legTop&&p.top>=legTop),id).toBe(true);
       expect(parts.filter(p=>Math.hypot(p.x-xy[0]!,p.z-xy[1]!)<1.9&&p.bottom<h+2.29),id).toEqual([]);
     }
   },120000);
