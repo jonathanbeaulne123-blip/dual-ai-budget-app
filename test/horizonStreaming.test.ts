@@ -223,3 +223,42 @@ it('cable layer: a span renders only once both its anchors are in, an anchor dra
   layer.dispose();
   const { CABLE_LINE } = await import('../src/harbour/horizon/runtime/cards.ts'); expect(CABLE_LINE.test('G1.cable')).toBe(true); expect(CABLE_LINE.test('G1.towers')).toBe(false);
 });
+
+// v2.2 (reconciled with main #551/#552): the RIDE chunk rule. A board, bicycle, glider or parachute is taken only with every
+// chunk resident (a glider cannot wait at a boundary in the air); the held offer boards by itself when the last chunk lands,
+// if it is still the one on show; walking away drops it; parking never waits.
+import { createRideGate, rideMissing } from '../src/harbour/horizon/runtime/chunkGate.ts';
+it('holds a boarding until every chunk is resident, then boards the held offer by itself', () => {
+  const resident = new Set(['harbour', 'landing']), loader = { refs: ['harbour', 'landing', 'crown', 'prow'].map(districtId => ({ districtId })), ready: (id: string) => resident.has(id) };
+  expect(rideMissing(loader)).toEqual(['crown', 'prow']);
+  const gate = createRideGate<{ id: string; to: string }>(loader), glide = { id: 'crownLaunch:feet→glider', to: 'glider' }, board = { id: 'skateLineStarts.1:feet→board', to: 'board' };
+  expect(gate.request(glide)).toBe(false); expect(gate.pending()).toBe(glide);
+  expect(gate.request({ id: 'landingQuay:board→feet', to: 'feet' })).toBe(true);   // parking never waits (and clears a held boarding)
+  expect(gate.pending()).toBeNull();
+  expect(gate.request(glide)).toBe(false);
+  expect(gate.poll(glide)).toBeNull();                         // still missing: held
+  resident.add('crown');
+  expect(gate.poll(glide)).toBeNull();                         // one chunk still missing
+  resident.add('prow');
+  expect(gate.poll(glide)).toBe(glide); expect(gate.pending()).toBeNull();   // boards by itself, once
+  expect(gate.request(board)).toBe(true);                      // all resident: at once
+  expect(gate.stats()).toEqual({ pending: null, holds: 2 });
+});
+it('drops a held boarding when the rider walks away from its offer, and never holds without a chunked world', () => {
+  const loader = { refs: [{ districtId: 'harbour' }, { districtId: 'crown' }], ready: (id: string) => id === 'harbour' };
+  const gate = createRideGate<{ id: string; to: string }>(loader), glide = { id: 'crownLaunch:feet→glider', to: 'glider' };
+  expect(gate.request(glide)).toBe(false);
+  expect(gate.poll(null)).toBeNull(); expect(gate.pending()).toBeNull();   // no offer on show: dropped
+  expect(gate.request(glide)).toBe(false);
+  expect(gate.poll({ id: 'prowPlatform:feet→glider', to: 'glider' })).toBeNull(); expect(gate.pending()).toBeNull();   // another offer: dropped
+  const monolith = createRideGate<{ id: string; to: string }>(undefined);
+  expect(monolith.request(glide)).toBe(true); expect(monolith.missing()).toEqual([]);
+});
+it('wires the ride rule into the runtime: boarding asks the gate, the held offer is polled each frame, the review attach may load synchronously', async () => {
+  const { readFileSync } = await import('node:fs');
+  const runtime = readFileSync('src/harbour/horizon/runtime/index.ts', 'utf8');
+  expect(runtime).toMatch(/if\(!riding&&offer\.to!=='feet'&&\(rideGateOpen\(\),!rideGate\.request\(offer\)\)\)\{options\.onStatus\?\.\(RIDE_WAITS_STATUS\);return false;\}/);
+  expect(runtime).toMatch(/if\(rideGate\.pending\(\)\)\{rideGateOpen\(\);const go=rideGate\.poll\(offer\);if\(go&&acceptOffer\(go\)\)/);
+  expect(runtime).toMatch(/attachMover\(controller:ModeController,offer:ThresholdOffer\)\{.*if\(!rideGateOpen\(true\)\)return false;if\(!registry\.attach/);
+  expect(runtime).toMatch(/ride:rideGate\.stats\(\)/);
+});
