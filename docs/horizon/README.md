@@ -407,3 +407,57 @@ Build (no manifest data):
 - **Page C** (the skate shelf): a Sketchbook sight window from the overlook to the shelf line (terrain only, never a bed) now that S1 rides the shelf: 16:9 **2 → 40 px**.
 - **Jetties are boarding points**: a jetty or dock deck over water is a mode transfer (feet → boat) proved on its own deck, not a land route meeting water (`world/crossings.ts`; clears the Boathouse dock threshold).
 - **Two striped fins smoothed**: the Shoulder's outward blend south of Stillwater never stands above the terrace's top 55 (`STILLWATER_SILL`: [1235–1260, 905–915] was 60–67 over S1's cut); the Notch's west rim south of the High Span, where S1 runs inside the west wall, stands at the Green's ground ≤ 16 (`NOTCH_WEST_BANK`: [1205–1220, 1150–1175] was 24–30). Knife-ridge points (> 8 over both sides within 20 m) 107 → 79.
+
+## v2.0 (Wave 5, Jonathan's rulings 2026-09-27)
+
+MANIFEST v1.9 → **v2.0**, 27 September 2026, Claude (design lead, track W5-DATA). Input: Jonathan's answers to the Stage A `DECISIONS.md` (group A item by item; groups B and C "recommended on all"), the proposals under `proposals/` and ray/bed probes on the committed candidate-3 bake (`f1a1ec1`). `make_manifest.py` → "v2.0"; the generator reproduces `MANIFEST.json` byte for byte. Ids never change. Every moved value keeps its old value beside it (`v1_9`, `v1_9_*`); every register row changed by a ruling carries `decided` and its old `v1_9_resolution` / `v1_9_at`; rows the rulings made impossible are retired to `routePairNotes` (kind "retired register row (v2.0)", 19 rows, each with its reason). Nothing is re-baked here: the land, structures and runtime tracks build the data next (their requests are in the Wave 5 handoff notes). The Hollow neck (#7) is the only reserved row left (D-C10).
+
+| Key | v1.9 | v2.0 | Ruling |
+|---|---|---|---|
+| `version` / `date` | 1.9 / 2026-09-26 | **2.0** / 2026-09-27 | — |
+| `structures.bightBridge.span_m` | 230 | **245** (deck on the V01 axis [460,1030] → [660,1170], 244.1 m) | D-A1 |
+| `structures.bightBridge.opening` (new) | — | s **98–134** (centre 116, [555.0,1096.5]), width **36**, kind **steel-arch**, clear **11.4** high × 34 wide; `needAlongAxis_m` 32.0 at 46° / 22.9 at 58° for an 8 m hull | D-A1 |
+| `structures.bightBridge.section` (new) | deck 17 m, "V01 + S2 separated lane" | **21.6 m** (−9.0 … +12.6 off the V01 axis, + toward the Bight): S2 sea lane −7.0, V01 ±4 (+1), Year Walk footways +5.2 / +7.4, S2 lagoon lane +10.6 (S2 lanes 3.5 m); rails on both edges, kerb rails between lanes | D-A1 |
+| `structures.bightBridge.bents` (new) | 21 paired bents (built) | 8 west (10.9 m bays, s 0–98), 9 east (11.0 m bays, s 134–244), two arch piers | D-A1 |
+| `structures.bightBridge.lookout` (new) | — | a 24 × 7.2 deck bay at the arch crown, lagoon side, [562.1,1086.4], deck 12, off the Year Walk footway; a structure, not a pad | D-A1 |
+| `structures.bightBridge.s2Flyover` (new) | S2 crossed V01 on the deck (0 of 5 headroom) | S2 over V01 once, [548.0,1078.7] → [564.1,1111.4] at **17.6** (5.0 clear over the road), hung from the arch | D-A1 |
+| `water_routes.FERRY.beam_m` (new) | — | **8** | D-A1 |
+| `skate.S2.pts` | … [480,985], [470,1030], [560,1100], [650,1185], [750,1265] … | … [480,985], lagoon lane [466.1,1021.3] → [490.7,1038.5] → [548.0,1078.7], flyover [556.1,1095.0] → [564.1,1111.4], sea lane [621.5,1151.6] → [655.9,1175.7], banked descent [672,1192] → [690,1210] → [712,1230], [750,1265] … (`v1_9_pts`); length 1 254 → 1 259 | D-A1 |
+| `skate.S2.levels`, `westRamp`, `deckLanes`, `eastDescent` (new) | — | ramp from the Wash [485,800] h 23.7 down to the deck at 12, **5.0 %** (trestle over the Wash mouth, ≤ 4 eu cut through the spit knoll); lanes on the deck; banked right-hand descent 12 → 6.5 at **7.1 %**, bank 12–20°, r 45 | D-A1 |
+| `skate.S2.spots` (new) | segment spot "full-length rail" | `S2.archCrown` (rail, 17.6), `S2.westAbutmentBank` (bank lip), `S2.eastAbutmentBank` (bank lip), `S2.deckRail` (rail); each `bed`, `on`, `xy`, `h`, `groundLine`, `requiredJump: false` (Pass 02 M1 "Spots") | D-A1 |
+| crossings `V01+S2 × Bight mouth`, `FERRY × bightBridge` | reserved R-A1 | decided D-A1 | D-A1 |
+| crossing `S2 × V01` (point row, new) | — | over at [557.7,1098.4], structure `bightBridge.s2Flyover` | D-A1 |
+| crossing `S2 × yearWalk` [553.9,1095] | threshold (on the deck) | **over** at [551.9,1086.7] on the flyover | D-A1 |
+| crossing `S2 × yearWalk` [468.2,1026.4] | threshold, regrade owed | retired (S2 runs outboard of the footways) | D-A1 |
+| crossing `ZIP × G1` | over, "10.7 m above", reserved R-A2, [1442,921] | **under**, measured 30.45 (ZIP 60.6, G1 91.1 at [1441.5,920.8]); re-pointed to [1437.5,927.4] for the new G1 (29.0 predicted) | D-A2 |
+| `cable.ZIP.note` | "crosses above the gondola cable … 10.7 m" | "crosses under the gondola cable … 30.45 m beneath it" | D-A2 |
+| `cable.G1.to` / `toH` | [1360,560] / 112 | **[1335,535] / 150** (ground 148.5) | D-A3 |
+| `cable.G1.towers` | [1450,958], [1420,825], [1390,693] | [1445.8,959.0], [1411.3,827.1], **[1380.9,710.7]** (135.4 / 271.7 / 392 m from the base; tower 3 moved from 407 m off the Year Walk lane); no heights authored, `towerSolve` forbids the 300 clamp; `towerMin_h_reference` 83 / 110 / 151 | D-A3 |
+| `cable.G1.length_m` | 543 | **574** | D-A3 |
+| `structures.gondolaStations.crownStation`, threshold `gondolaTop` | [1360,560] | **[1335,535]** (deck 150) | D-A3 |
+| `walks.crownFromGondola.pts` | [1360,560], [1330,520], [1310,500] | **[1335,535], [1322,517], [1310,500]** (43 m, 9 %), with `levels` | D-A3 |
+| `journeys["square→summit by gondola + walk"].legs` | 158 walk + 543 gondola + 78 walk | 158 + **574** + **70** (station → L02); estimate 176 → 177 s | D-A3 |
+| `journeys.targets_s` summit | 375 (reserved) | **205** (`targets_v1_9` keeps 375) | D-A3 |
+| crossings on G1 (11 rows) | v1.9 points | re-pointed to the new chord's plan intersections with the candidate-3 beds (e.g. G1 × V01 [1469,1043] → [1468,1044], G1 × Crown Road [1385,655] → [1373.4,682], G1 × ORE [1375,625] → [1363.9,645.4]) | D-A3 |
+| crossings on the old station walk (12 rows) | "RESERVED R-A3" | retired; the other R-A3 notes read "D-A3 decided" | D-A3 |
+| `structures.prowTunnel` | [1600,780], kind tunnel, 90 m | **[1592,890]** (V01's centreline point nearest [1590,890]), kind **gallery** (new: hill wall east, roof on a west colonnade, lined and ceiled, headroom ≥ 5, cover reported); V01 unchanged, 25.6 → 30.9 over the 90 m | D-A4 |
+| `lights` (new), `structures.dam.faceLight`, `views.A.lightRule` | — | light card `dam.glassFace` (golden hour → dawn, no dynamic light); page A golden-hour proof "lit or emissive" | D-A5 |
+| LIGHT §2 dam line | "lit through the day and seen lit from the square" | "… and, at golden hour and dusk, glows from inside (a light card, no dynamic light), seen from the square" | D-A5 |
+| crossing `VG × walk garden` | threshold at [974,748], reserved R-A7 | **over** at [969.5,764.2], structure `gardenWalkBridge` | D-A7 |
+| crossings `V01 × walk bightPier` ([407,894] → [402.3,894.5]), `S4 × VG`, `S4 × walk garden` [905.9,640.6], `S1 × damPortage` | reserved R-A7 / separated | decided flush thresholds; the regrade is owed by the beds track | D-A7 |
+| crossing `S4 × walk garden` [893,600] (#7) | reserved R-A7 | reserved **D-C10** (the Hollow neck stays reserved) | D-A7 / D-C10 |
+| `journey.stations[nov]`, its pin | [1622,912], pad 36 × 14 E–W, h 56.5 | **[1626,904]**, `pad_rot_deg` **90**, h **56** (ground 54.0–56.7 under the pad; was 26.3–56.7); Year Walk loop tip [1620,910] → [1626,904]; `journey.station.padRotRule` (new) | D-A8 |
+| `views.K` | [1006,762] → [1120,812] @52; portrait → [1060,800] @55 | **[994,770] → [1120,815] @52**, portrait → [1120,815] @52 (probe: Glasshouse 3 089 / Stillwater 790 px at 1440 × 900, 955 / 168 at 390 × 844; was 0 / 1 989 and 254 / 381) | D-B2 |
+| `views.H.bestHour` / label / frames | sunset / "The Flats at sunset" / "… the west sea under the sunset" | **golden hour** / "The Flats at golden hour" / "… the west sea under the low sun" | D-B3 |
+| `underground.doors.throat.collarAperture_m` (new) | the 18 m of `mouth_m` read as the passage's | **10.8** (built 10.79) where the passage enters the Deep under the collar; `mouth_m` [26,18] is the mouth's | D-C3 |
+| `views.I.subjectDefs` (new) | "the Reach water" = the channels only | the channels **or** the lower river inside `landforms.reach` | D-C5 |
+| `places[L01].xy` | [1172,912] | **[1173,912]** | D-C6 |
+| `walks.crown.pts`, `joinsYearWalk` (new) | [1370,690], [1330,600], [1310,500] (the builder hard-codes another route) | the built route from **[1417.7,677.4]**, where it leaves the Year Walk's January lane; 4 stacked-lane rows retired, the junction re-pointed [1379.9,687.4] → [1417.7,677.4] | D-C7 |
+| `reserves.bightShore.plots[0]` (plot bight.1) | [836,907] | **[814,919]** (25 m WSW; ≈ 12 m SW leaves 12 + 55 Year Walk samples, 12 m W reaches the lagoon shore) | D-C8 |
+| `structures.bightSpurTrestle` (new) | VBS 6–9 eu over the ground beside S4, no structure | trestle [918.1,877] → [891.6,906], 44 m, bents away from S4 (`length_m`, not auto-built) | D-C9 |
+| crossings `marketRamp × …` (2 rows), `structures.marketStair` (new), `profiles.stair.exceptions` (new), S3 "Market stair" spot | ramp twin as the step-free way | ramp retired; `stepFree` = the **295 eu** detour (walk square → town.bankLink → town.northLink → V01 → spur upperStreet); spot ground line "park at stairTop and carry" | D-C11 |
+| `structures.coveStair` (new), crossing `walk coveWalk × ferry.scholarsCove` | over by 32.8, "structure owed" | kind **cliff-stair** [631.2,241.9] h 34.1 → the pier [630,235] h 1.8; the row becomes a mode transfer at the pier | D-C14 |
+| `structures.s1Flyover` (new) | S1's upper pass 13.4 unsupported at [1358,750] | skate flyover [1363.5,752.2] → [1326.6,735.7], 44 m, 11.5 over the lower pass at [1353.6,747.9] (`length_m`, not auto-built) | D-C15 |
+| crossings / `routePairNotes` | 284 / 59 | 266 / 78 | — |
+
+Accepted as made (no data change): D-A6 (all eleven v1.7 poses; K re-posed by D-B2), D-B1 (the Crown off page A), D-B4 (2.4 m/s until Jonathan walks it), D-B5 … D-B13, D-C1 (the Notch is a shallow gorge; page A wins), D-C2 (a railed parapet: a structures request), D-C4 (P29 measured with the plaza slab checked), D-C10 (reserved), D-C12, D-C13.
