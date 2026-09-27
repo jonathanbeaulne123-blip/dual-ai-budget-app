@@ -126,13 +126,14 @@ export function measureJourneys(graph: HorizonPathGraph, cuts: LandCuts, hosts: 
   const door = (id: string): Point3 => { const host = hosts.find(h => h.id === id)!; return 'xy' in host.door ? [host.door.xy[0], host.door.height ?? 0, host.door.xy[1]] : [0, 0, 0]; };
   const getLine = (id: string) => lines.find(line => line.id === id)?.points ?? cuts.beds.find(b => b.id === id)?.points ?? [];
   const destination = (xy: readonly number[]) => { const hit = project(graph.edges, [xy[0]! * s, 0, xy[1]! * s]); return [xy[0]! * s, hit?.point[1] ?? 0, xy[1]! * s] as Point3; };
-  const rows: { id: string; target: number | readonly number[]; legs: JourneyLeg[] }[] = [];
+  const rows: { id: string; target: number | readonly number[]; legs: JourneyLeg[]; reason?: string }[] = [];
   const target = m.journeys.targets_s;
   rows.push({ id: 'square→library by bicycle', target: target['square→library by bicycle'], legs: fromPlan('bicycle', walkPlan(graph, origin, door('library'), { speed: speed('bicycle'), bicycle: true, stepFree: true })) });
   // v1.7: the Green run ends at the manifest anchor (the Green's edge on Green Road).
   const greenAnchor = (m.journeys as unknown as { anchors?: Record<string, readonly number[]> }).anchors?.['square→green running'] ?? [1040, 1065];
   rows.push({ id: 'square→green running', target: target['square→green running'], legs: fromPlan('run', walkPlan(graph, origin, destination(greenAnchor), { speed: speed('run'), stepFree: true })) });
   const gondola = getLine('G1'), top = m.places.find(p => p.id === 'L02')!;
+  // Both walks step-free: the square walk up to the gondola base (W5-A), the station walk to L02 (D-A3).
   const first = gondola.length ? walkPlan(graph, origin, gondola[0]!, { stepFree: true }) : null, last = gondola.length ? walkPlan(graph, gondola.at(-1)!, [top.xy[0]! * s, top.h * s, top.xy[1]! * s], { stepFree: true }) : null;
   rows.push({ id: 'square→summit by gondola + walk', target: target['square→summit by gondola + walk'], legs: first && last ? [...fromPlan('walk', first), leg('gondola', gondola, ['G1']), ...fromPlan('walk', last)] : [] });
   rows.push({ id: 'crown→quay on the board (S1)', target: target['crown→quay on the board (S1)'], legs: getLine('S1').length ? [leg('board', getLine('S1'), ['S1'])] : [] });
@@ -143,7 +144,7 @@ export function measureJourneys(graph: HorizonPathGraph, cuts: LandCuts, hosts: 
   rows.push({ id: 'ring by plane', target: target['ring by plane'], legs: gates.length ? [leg('plane', [...gates, gates[0]!], ['sky.ringRun'])] : [] });
   for (const id of ['home', 'bank']) rows.push({ id: `square→${id} on foot, walking`, target: target['square→home/bank on foot, walking'], legs: fromPlan('walk', walkPlan(graph, origin, door(id), { stepFree: true })) });
   rows.push({ id: 'square→boathouse on foot, walking', target: target['square→boathouse on foot, walking'], legs: fromPlan('walk', walkPlan(graph, origin, door('boathouse'), { stepFree: true })) });
-  return rows.map(row => { const lengthEu = row.legs.reduce((sum, l) => sum + l.lengthEu, 0), seconds = row.legs.length ? row.legs.reduce((sum, l) => sum + l.seconds, 0) : null; return { id: row.id, targetSeconds: row.target, lengthEu, lengthM: lengthEu / s, seconds, pass: seconds !== null && (typeof row.target === 'number' ? seconds <= row.target : seconds >= row.target[0]! && seconds <= row.target[1]!), legs: row.legs, ...(seconds === null ? { reason: 'No connected traversable path between the required anchors.' } : {}) }; });
+  return rows.map(row => { const lengthEu = row.legs.reduce((sum, l) => sum + l.lengthEu, 0), seconds = row.legs.length ? row.legs.reduce((sum, l) => sum + l.seconds, 0) : null; return { id: row.id, targetSeconds: row.target, lengthEu, lengthM: lengthEu / s, seconds, pass: seconds !== null && (typeof row.target === 'number' ? seconds <= row.target : seconds >= row.target[0]! && seconds <= row.target[1]!), legs: row.legs, ...(seconds === null ? { reason: 'No connected traversable path between the required anchors.' } : row.reason ? { reason: row.reason } : {}) }; });
 }
 export function yearWalkStretch(points: readonly Point3[], start: readonly number[], end: readonly number[]): Point3[] {
   if (points.length < 2) return [];
