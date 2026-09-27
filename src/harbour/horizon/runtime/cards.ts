@@ -4,6 +4,8 @@ import type {District, WorldDefinition} from '../world/definition.ts';
 import type {LandCuts, StructureSolid, TerrainField, WaterCut, XYZ} from '../land/interfaces.ts';
 import {BIOME_GROUNDS, ROCK_SETS, rockWeight, TERRAIN_SURFACE_PALETTE, terrainPaintGround, terrainPaintRockSet, terrainTriangleVisible} from '../land/terrain/index.ts';
 import {districtAt} from '../world/districts.ts';
+/** Wave 6: the cable lines (their spans hang between anchors in other districts). */
+export const CABLE_LINE=/^(G1|ZIP)\.cable$/;
 
 /** Preserve outward winding, especially the visible undersides. cardKit.tri is top-facing. */
 export function solidTriangle(builder:CardBuilder,a:XYZ,b:XYZ,c:XYZ,color:RGB,bucket:'card'|'pad'='card'){
@@ -14,7 +16,7 @@ export function solidTriangle(builder:CardBuilder,a:XYZ,b:XYZ,c:XYZ,color:RGB,bu
   for(const p of [a,b,c]){data.positions.push(...p);data.normals.push(nx/n,ny/n,nz/n);data.colors.push(color[0]*shade,color[1]*shade,color[2]*shade);data.uvs.push(p[0]*.03,p[2]*.03);}
 }
 const surfaceColor=(surface:string,role:string):RGB=>rgb(role==='marker'?'#e6b95b':surface.includes('water')?'#527f83':surface.includes('metal')?'#777e7f':surface.includes('wood')||surface.includes('board')?'#b59c79':role==='roof'?'#aaa398':role==='rock'?'#a3998a':'#c9c2b4');
-function addSolid(builder:CardBuilder,solid:StructureSolid,tier:'full'|'lite'='full'){
+export function addSolid(builder:CardBuilder,solid:StructureSolid,tier:'full'|'lite'='full'){
   const color=surfaceColor(solid.surface,solid.role),p=tier==='lite'?(solid.litePositions??solid.positions):solid.positions,indices=tier==='lite'?(solid.liteIndices??solid.indices):solid.indices;
   for(let i=0;i<indices.length;i+=3){const v=(n:number):XYZ=>{const j=indices[i+n]!*3;return[p[j]!,p[j+1]!,p[j+2]!];};solidTriangle(builder,v(0),v(1),v(2),color);}
 }
@@ -101,7 +103,8 @@ export function terrainMaterial(paper:THREE.Texture|null){
 }
 export function buildDistrictCards(world:WorldDefinition,field:TerrainField,cuts:LandCuts,district:District,tier:'full'|'lite',coarse=false,hideBuildings=false):CardBuild{
   const builder=new CardBuilder(`horizon.${coarse?'journey':'district'}.${district.id}`,tier,{ink:'#5b5447',cell:coarse?4096:256,shadows:!coarse});
-  if(!coarse){const ids=new Set(district.solidIds??[]);for(const solid of world.geometry?.solids??[])if(ids.has(solid.id)&&!(hideBuildings&&(solid.sourceId??solid.id).startsWith('host.')))addSolid(builder,solid,tier);}
+  // Wave 6: cable lines are drawn by the cable layer (runtime/cableLayer.ts), span by span with their anchors, never by a district.
+  if(!coarse){const ids=new Set(district.solidIds??[]);for(const solid of world.geometry?.solids??[])if(ids.has(solid.id)&&!CABLE_LINE.test(solid.sourceId??solid.id)&&!(hideBuildings&&(solid.sourceId??solid.id).startsWith('host.')))addSolid(builder,solid,tier);}
   const result=builder.finish();
   // The terrain casts into the one shadow map (Journey's coarse lattice only receives).
   const terrain=district.childOf?null:buildTerrainMeshes(field,cuts,district.id,!coarse,paperGrain());
