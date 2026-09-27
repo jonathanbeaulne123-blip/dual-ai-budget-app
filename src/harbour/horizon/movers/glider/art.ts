@@ -45,7 +45,7 @@ export function createFlightArt(kind:'glider'|'parachute',dressing:VehicleDressi
   }
   const light=art.anchors.runningLights[0],lightCard=light?tailLightCard(light.at):null;if(lightCard)wing.add(lightCard);
   const position=new THREE.Vector3(),quat=new THREE.Quaternion(),euler=new THREE.Euler(0,0,0,'YXZ'),offset=new THREE.Vector3();
-  let done=false;
+  let done=false,landedT=0;
   return{
     root,
     update(state,_dt,figure){
@@ -70,7 +70,10 @@ export function createFlightArt(kind:'glider'|'parachute',dressing:VehicleDressi
         if(canopy){const open=Math.max(0,Math.min(1,state.open));canopy.visible=open>0;canopy.scale.set(Math.max(.05,open),Math.max(.05,open),Math.max(.05,open));}
         return true;
       }
-      const t=state.landedFor??0;
+      // Once the controller hands the feet back, finish stowing on the live figure (also on moving decks).
+      landedT=state.ended?Math.max(landedT+_dt,state.landedFor??0):state.landedFor??0;
+      if(state.ended&&figure){root.position.copy(figure.position);root.quaternion.copy(figure.quaternion);}
+      const t=landedT;
       if(kind==='glider'){
         // The wing folds to a bundle over 2 s where it touched down, and is gone.
         const k=Math.min(1,t/FOLD_SECONDS);root.scale.set(Math.max(.02,1-k),Math.max(.1,1-k*.9),Math.max(.02,1-k));

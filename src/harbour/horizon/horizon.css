@@ -40,3 +40,14 @@
 :root[data-motion="reduced"] .horizon-offer{transition:none}
 .horizon-offers .horizon-offer{position:static;display:flex;transform:none;pointer-events:auto}
 @media(min-width:800px) and (pointer:fine){.horizon-offers{display:none}}
+
+/* The fleet inherits each world's authored paper, ink and accent. */
+.horizon-fleet { position:absolute; right:1rem; top:5rem; z-index:5; max-width:22rem; max-height:45%; overflow:auto; padding:.8rem 1rem; border:1px solid #b6a387; border-radius:1rem; background:rgba(246,237,217,.94); color:#2b4c57; box-shadow:0 8px 30px #17313820; font-size:.82rem; }
+.horizon-fleet p { margin:.4rem 0; line-height:1.4; }
+.horizon-fleet__heading { display:flex; align-items:center; justify-content:space-between; gap:.8rem; }
+.horizon-fleet__actions { display:flex; flex-wrap:wrap; gap:.4rem; }
+.horizon-fleet button { min-height:44px; border:1px solid currentColor; border-radius:.6rem; padding:.4rem .65rem; color:inherit; background:transparent; cursor:pointer; }
+.horizon-fleet button:focus-visible { outline:3px solid currentColor; outline-offset:2px; }
+.horizon-shell--taylor .horizon-fleet { background:rgba(255,240,220,.95); color:#73374b; border-color:#cba1be; border-radius:1.4rem .65rem 1.2rem .7rem; }
+.horizon-shell--newfoundland .horizon-fleet { background:rgba(232,237,226,.95); color:#174d57; border-color:#688582; border-radius:.4rem; border-top:4px solid #d4a040; }
+@media(max-width:600px) { .horizon-fleet { top:5.5rem; right:.5rem; left:.5rem; max-width:none; max-height:24%; padding:.5rem .65rem; font-size:.75rem; } .horizon-fleet__actions { flex-wrap:nowrap; overflow:auto; } .horizon-fleet__actions button { flex:none; } }

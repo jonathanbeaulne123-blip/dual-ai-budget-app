@@ -7,7 +7,7 @@ import type {ThresholdOffer} from './threshold.ts';
 import type {Threshold} from '../../world/definition.ts';
 export type {ThresholdOffer} from './threshold.ts';
 
-export type ModeId = 'feet'|'board'|'bicycle'|'gondola'|'cart'|'zip'|'glider'|'parachute'|'plane'|'balloon'|'row'|'canoe'|'dinghy'|'ferry';
+export type ModeId = 'feet'|'kayak'|'motorboat'|'yacht'|'board'|'bicycle'|'gondola'|'cart'|'zip'|'glider'|'parachute'|'plane'|'balloon'|'row'|'canoe'|'dinghy'|'ferry';
 export type MoverBody = {x:number;y:number;z:number;yaw:number};
 /** What the runtime hands a mover every frame. Already merged from keys, pads and gamepad by the runtime. */
 export interface MoverInput {
@@ -50,7 +50,7 @@ export interface ModeController {
   finished?():boolean;
 }
 
-export const MODE_IDS:readonly ModeId[] = ['feet','board','bicycle','gondola','cart','zip','glider','parachute','plane','balloon','row','canoe','dinghy','ferry'];
+export const MODE_IDS:readonly ModeId[] = ['feet','kayak','motorboat','yacht','board','bicycle','gondola','cart','zip','glider','parachute','plane','balloon','row','canoe','dinghy','ferry'];
 export const isModeId = (value:string):value is ModeId => (MODE_IDS as readonly string[]).includes(value);
 
 /** The original flight-controller seam remains available to the glider's pure hook tests. */

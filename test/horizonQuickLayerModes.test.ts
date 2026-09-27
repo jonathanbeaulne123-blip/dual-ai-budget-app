@@ -5,6 +5,7 @@ import {createRoot} from 'react-dom/client';
 import {afterEach,beforeAll,describe,expect,it,vi} from 'vitest';
 import type {ThresholdOffer} from '../src/harbour/horizon/movers/shared/threshold.ts';
 import type {HorizonMoverState} from '../src/harbour/horizon/runtime/index.ts';
+import type {FleetAction} from '../src/harbour/horizon/movers/fleet/model.ts';
 
 // FLIGHT.md §7: the quick layer (the toolbar: Walk / Look / Island, the page picker, Tools, Journey, Sound) stays
 // exactly where it is in every phase — on foot, in the glider, in the corridor, in freefall, after a fade.
@@ -13,10 +14,12 @@ const world={
   moverState:{mode:'feet',attached:false,hud:null} as HorizonMoverState,
   offers:[] as ThresholdOffer[],
   moverAction:vi.fn(),accept:vi.fn(),
+  fleetActions:[] as FleetAction[],fleetAction:vi.fn(),cycleCamera:vi.fn(),jumpHold:vi.fn(),
 };
 const register=vi.fn(()=>()=>{});
 vi.mock('../src/harbour/scene/worldMount.ts',()=>({mountHorizonWorld:async()=>({
   mode:()=>'walk',shotId:()=>'A',offers:()=>world.offers,moverState:()=>world.moverState,moverAction:world.moverAction,accept:world.accept,
+  fleetActions:()=>world.fleetActions,fleetState:()=>({vessels:[],swimming:false,perspective:'activity',sitting:null,saveFailed:false}),fleetAction:world.fleetAction,cycleCamera:world.cycleCamera,jumpHold:world.jumpHold,
   pause(){},setComfort(){},setReducedMotion(){},setCalm(){},setMode(){},dispose(){},input(){},look(){},jump(){},enterDoor(){},cutTo(){},world:{views:[]},
 })}));
 vi.mock('../src/harbour/horizon/movers/glider/index.ts',()=>({registerGliderModes:register}));
@@ -75,6 +78,14 @@ describe('the quick layer in every mover phase',()=>{
   it('after a fade the place bubble reads "→ place" for a moment, not a button',async()=>{
     const h=await mount();hud(false,null,'feet','→ the square');await tick();
     const fade=h.querySelector('.horizon-bubble-fade')!;expect(fade.textContent).toBe('→ the square');expect(fade.tagName).toBe('P');
+  });
+  it('shows boat braking and physical actions without exposing flight or walking controls',async()=>{
+    const h=await mount();hud(true,{pace:'5 km/h',label:'Dinghy'},'dinghy');world.fleetActions=[{id:'moor-dinghy',kind:'moor',craft:'dinghy',label:'Secure boat & climb aboard',at:{x:1620,y:.65,z:1318}}];await tick();
+    expect(h.querySelector('.horizon-jump')?.textContent).toBe('Brake');
+    const brake=[...h.querySelectorAll('button')].find(b=>b.textContent==='Brake')!;expect(brake).toBeTruthy();
+    act(()=>{brake.dispatchEvent(new Event('pointerdown',{bubbles:true}));brake.dispatchEvent(new Event('pointerup',{bubbles:true}));});expect(world.jumpHold).toHaveBeenCalledWith(true);expect(world.jumpHold).toHaveBeenLastCalledWith(false);
+    const boarding=[...h.querySelectorAll('.horizon-fleet button')].find(b=>b.textContent?.includes('Secure boat'))!;act(()=>boarding.click());expect(world.fleetAction).toHaveBeenCalledWith('moor-dinghy');
+    expect(h.querySelector('.horizon-bubble-place')).toBeNull();world.fleetActions=[];
   });
   it('labels the glider offers as the pads read them, and the plane\'s Jump as a press-and-hold',async()=>{
     const h=await mount();
