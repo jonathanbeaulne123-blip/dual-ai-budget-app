@@ -2784,6 +2784,22 @@
   "crownFromGondola": {
    "pts": [
     [
+     1335,
+     535
+    ],
+    [
+     1322,
+     517
+    ],
+    [
+     1310,
+     500
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 43,
+   "v1_9_pts": [
+    [
      1360,
      560
     ],
@@ -2796,8 +2812,25 @@
      500
     ]
    ],
-   "profile": "walk",
-   "length_m": 78
+   "levels": [
+    {
+     "xy": [
+      1335,
+      535
+     ],
+     "h": 150,
+     "why": "the station deck"
+    },
+    {
+     "xy": [
+      1310,
+      500
+     ],
+     "h": 154,
+     "why": "the summit junction (walk summit on to L02 [1310,470] at 158)"
+    }
+   ],
+   "note_v2_0": "D-A3: a 43 m leg at 9 % from the station at grade to the summit junction (the station \u2192 L02 walk is \u2248 70 m of plan and 8 m of climb, step-free); the builder's hard-coded switchback via [1405,595], [1450,565], [1430,500], [1350,440] goes"
   },
   "glasshouseSteps": {
    "pts": [
@@ -2888,30 +2921,72 @@
     1090
    ],
    "to": [
-    1360,
-    560
+    1335,
+    535
    ],
    "fromH": 18,
-   "toH": 112,
+   "toH": 150,
    "towers": [
     [
-     1450,
-     958
+     1445.8,
+     959.0
     ],
     [
-     1420,
-     825
+     1411.3,
+     827.1
     ],
     [
-     1390,
-     693
+     1380.9,
+     710.7
     ]
    ],
    "towerNote": "three towers at ~150 m spacing; heights solved in pass 1 so the cable clears terrain (the Shoulder band from [1425,848]) by profiles.cable.clear_m and passes \u2265 12 m over plot.terraces.*",
    "clear_eu": 8,
-   "length_m": 543,
+   "length_m": 574,
    "speed": 7.0,
-   "note": "upper street \u2192 Crown station, straight up the south-east face; town falls away, then the whole island; the Crown walk continues from the station to the summit"
+   "note": "upper street \u2192 the Crown station on the summit's south shoulder (at grade, [1335,535]), straight up the south-east face; town falls away, then the whole island; a short walk (\u2248 70 m, 8 m of climb) continues from the station to the summit lookout",
+   "v1_9": {
+    "to": [
+     1360,
+     560
+    ],
+    "toH": 112,
+    "towers": [
+     [
+      1450,
+      958
+     ],
+     [
+      1420,
+      825
+     ],
+     [
+      1390,
+      693
+     ]
+    ],
+    "length_m": 543
+   },
+   "towerDistances_m": [
+    135.4,
+    271.7,
+    392
+   ],
+   "towerSolve": "each tower top is solved to the lowest height that keeps every span profiles.cable.clear_eu over the ground (1 % sag; the 25 m throat at each station excepted); no tower height is authored and none is clamped: a tower whose top would pass sky.ceiling (300) fails the bake",
+   "towerMin_h_reference": {
+    "at_m": [
+     135,
+     272,
+     407
+    ],
+    "top_h": [
+     83,
+     110,
+     151
+    ],
+    "source": "proposals/gondola-top-station.md (Option 2 solver, no terraces rule); tower 3 now stands at 392 m, so re-solve"
+   },
+   "decided": "D-A3 option 2 (Jonathan 2026-09-27)"
   },
   "ZIP": {
    "label": "Zipline",
@@ -3426,9 +3501,15 @@
     1090
    ],
    "crownStation": [
+    1335,
+    535
+   ],
+   "v1_9_crownStation": [
     1360,
     560
-   ]
+   ],
+   "crownStation_deck_h": 150,
+   "note": "v2.0 (D-A3): the Crown station stands at grade on the summit's south shoulder (ground 148.5, deck 150); it was in a notch 17 m below the 129.7 ridge at [1360,560] (deck 112), which forced a 275 eu tower"
   },
   "inletFootbridge": {
    "xy": [
@@ -5206,8 +5287,8 @@
    "a": "ZIP",
    "b": "G1",
    "at": [
-    1442,
-    921
+    1437.5,
+    927.4
    ],
    "resolution": "under",
    "note": "zip under gondola: 30.45 m below the gondola cable where they cross (profiles.cable.clear_eu 8); riders on the zip pass beneath the cabins",
@@ -5224,7 +5305,17 @@
     "separation_eu": 30.45,
     "bake": "candidate 3 (f1a1ec1)"
    },
-   "v1_9_note": "zip 10.7 m above the gondola chord at 1 % sag"
+   "v1_9_note": "zip 10.7 m above the gondola chord at 1 % sag",
+   "v1_9_at": [
+    1442,
+    921
+   ],
+   "predicted_v2_0": {
+    "separation_eu": 29.0,
+    "g1_h": 88.8,
+    "zip_h": 59.8,
+    "source": "proposals/zip-over-g1.md, with the station at [1335,535]"
+   }
   },
   {
    "a": "ZIP",
@@ -5299,34 +5390,46 @@
    "a": "G1",
    "b": "ORE",
    "at": [
-    1375,
-    625
+    1363.9,
+    645.4
    ],
    "resolution": "over",
    "note": "cable above, rail in its tunnel",
-   "kind": "crossing"
+   "kind": "crossing",
+   "v1_9_at": [
+    1375,
+    625
+   ]
   },
   {
    "a": "G1",
    "b": "V01",
    "at": [
-    1469,
-    1043
+    1468,
+    1044
    ],
    "resolution": "over",
    "structure": "cable clear \u2265 8 m; tower 1 beside the road",
-   "kind": "crossing"
+   "kind": "crossing",
+   "v1_9_at": [
+    1469,
+    1043
+   ]
   },
   {
    "a": "G1",
    "b": "Crown Road",
    "at": [
-    1385,
-    655
+    1373.4,
+    682
    ],
    "resolution": "over",
    "structure": "cable clear \u2265 8 m",
-   "kind": "crossing"
+   "kind": "crossing",
+   "v1_9_at": [
+    1385,
+    655
+   ]
   },
   {
    "a": "V02",
@@ -5362,7 +5465,7 @@
    "resolution": "over",
    "kind": "crossing",
    "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
+   "note": "D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake"
   },
   {
    "a": "DEEP_RUN",
@@ -5434,7 +5537,7 @@
    "resolution": "threshold",
    "kind": "modeTransfer",
    "source": "bake v1.8",
-   "note": "boarding threshold; mover pending; RESERVED R-A3: waits on the gondola top station"
+   "note": "boarding threshold; mover pending; D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake"
   },
   {
    "a": "highSpan.overlook",
@@ -5800,25 +5903,33 @@
    "a": "S1",
    "b": "G1",
    "at": [
-    1391.9,
-    701.5
+    1378.6,
+    701.8
    ],
    "resolution": "under",
    "kind": "crossing",
    "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
+   "note": "D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake",
+   "v1_9_at": [
+    1391.9,
+    701.5
+   ]
   },
   {
    "a": "S1",
    "b": "G1",
    "at": [
-    1407.5,
-    770.1
+    1395.2,
+    765.5
    ],
    "resolution": "under",
    "kind": "crossing",
    "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
+   "note": "D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake",
+   "v1_9_at": [
+    1407.5,
+    770.1
+   ]
   },
   {
    "a": "S1",
@@ -5866,7 +5977,7 @@
    "resolution": "threshold",
    "kind": "crossing",
    "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
+   "note": "D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake"
   },
   {
    "a": "S1",
@@ -5878,7 +5989,7 @@
    "resolution": "threshold",
    "kind": "crossing",
    "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
+   "note": "D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake"
   },
   {
    "a": "S1",
@@ -6781,30 +6892,6 @@
    "note": "under by 21.5 eu: a named structure (footbridge, deck or passage) is owed"
   },
   {
-   "a": "V02",
-   "b": "walk crownFromGondola",
-   "at": [
-    1412.8,
-    593.4
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
-  },
-  {
-   "a": "V02",
-   "b": "walk crownFromGondola",
-   "at": [
-    1443.1,
-    526.5
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
-  },
-  {
    "a": "VBS",
    "b": "plot.bight.1.service",
    "at": [
@@ -7080,43 +7167,55 @@
    "resolution": "threshold",
    "kind": "junction",
    "source": "bake v1.8",
-   "note": "flush path junction: no marker, no mode change; RESERVED R-A3: waits on the gondola top station"
+   "note": "flush path junction: no marker, no mode change; D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake"
   },
   {
    "a": "walk crown",
    "b": "G1",
    "at": [
+    1352.3,
+    601.4
+   ],
+   "resolution": "under",
+   "kind": "crossing",
+   "source": "bake v1.8",
+   "note": "D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake",
+   "v1_9_at": [
     1365.9,
     586.1
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
+   ]
   },
   {
    "a": "walk crown",
    "b": "G1",
    "at": [
+    1357,
+    619.2
+   ],
+   "resolution": "under",
+   "kind": "crossing",
+   "source": "bake v1.8",
+   "note": "D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake",
+   "v1_9_at": [
     1372.4,
     615.2
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
+   ]
   },
   {
    "a": "walk crown",
    "b": "G1",
    "at": [
-    1388.3,
-    685.3
+    1375.1,
+    688.6
    ],
    "resolution": "under",
    "kind": "crossing",
    "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
+   "note": "D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake",
+   "v1_9_at": [
+    1388.3,
+    685.3
+   ]
   },
   {
    "a": "walk crown",
@@ -7200,19 +7299,7 @@
    "resolution": "threshold",
    "kind": "junction",
    "source": "bake v1.8",
-   "note": "flush path junction: no marker, no mode change; RESERVED R-A3: waits on the gondola top station"
-  },
-  {
-   "a": "walk crown",
-   "b": "walk crownFromGondola",
-   "at": [
-    1376,
-    574.7
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "over by 19.8 eu: a named structure (footbridge, deck or passage) is owed; RESERVED R-A3: waits on the gondola top station"
+   "note": "flush path junction: no marker, no mode change; D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake"
   },
   {
    "a": "walk crown",
@@ -7224,7 +7311,7 @@
    "resolution": "threshold",
    "kind": "junction",
    "source": "bake v1.8",
-   "note": "flush path junction: no marker, no mode change; RESERVED R-A3: waits on the gondola top station"
+   "note": "flush path junction: no marker, no mode change; D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake"
   },
   {
    "a": "walk crown",
@@ -7264,99 +7351,19 @@
   },
   {
    "a": "walk crownFromGondola",
-   "b": "crownLaunch.stair",
-   "at": [
-    1320.4,
-    479.2
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
-  },
-  {
-   "a": "walk crownFromGondola",
-   "b": "DEEP_RUN",
-   "at": [
-    1341.3,
-    445.2
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
-  },
-  {
-   "a": "walk crownFromGondola",
-   "b": "DEEP_RUN",
-   "at": [
-    1437.6,
-    512.9
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
-  },
-  {
-   "a": "walk crownFromGondola",
    "b": "G1",
    "at": [
-    1360,
-    560
+    1335,
+    535
    ],
    "resolution": "threshold",
    "kind": "modeTransfer",
    "source": "bake v1.8",
-   "note": "boarding threshold; mover pending; RESERVED R-A3: waits on the gondola top station"
-  },
-  {
-   "a": "walk crownFromGondola",
-   "b": "ORE",
-   "at": [
-    1334.3,
-    454.3
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
-  },
-  {
-   "a": "walk crownFromGondola",
-   "b": "ORE",
-   "at": [
-    1369.1,
-    568.4
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
-  },
-  {
-   "a": "walk crownFromGondola",
-   "b": "stepsPortage",
-   "at": [
-    1332.3,
-    457.5
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "over by 117.5 eu: a named structure (footbridge, deck or passage) is owed; RESERVED R-A3: waits on the gondola top station"
-  },
-  {
-   "a": "walk crownFromGondola",
-   "b": "underground.bellGallery",
-   "at": [
-    1315.5,
-    489.2
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
+   "note": "boarding threshold; mover pending; D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake",
+   "v1_9_at": [
+    1360,
+    560
+   ]
   },
   {
    "a": "walk crownFromGondola",
@@ -7368,31 +7375,7 @@
    "resolution": "threshold",
    "kind": "junction",
    "source": "bake v1.8",
-   "note": "flush path junction: no marker, no mode change; RESERVED R-A3: waits on the gondola top station"
-  },
-  {
-   "a": "walk crownFromGondola",
-   "b": "yearWalk",
-   "at": [
-    1422.1,
-    589.2
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
-  },
-  {
-   "a": "walk crownFromGondola",
-   "b": "yearWalk",
-   "at": [
-    1446.4,
-    537.2
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
+   "note": "flush path junction: no marker, no mode change; D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake"
   },
   {
    "a": "walk damCrest",
@@ -7731,7 +7714,7 @@
    "resolution": "over",
    "kind": "crossing",
    "source": "bake v1.8",
-   "note": "over by 120.4 eu: a named structure (footbridge, deck or passage) is owed; RESERVED R-A3: waits on the gondola top station"
+   "note": "over by 120.4 eu: a named structure (footbridge, deck or passage) is owed; D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake"
   },
   {
    "a": "walk summit",
@@ -7743,7 +7726,7 @@
    "resolution": "over",
    "kind": "crossing",
    "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
+   "note": "D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake"
   },
   {
    "a": "yearWalk",
@@ -7881,37 +7864,49 @@
    "a": "yearWalk",
    "b": "G1",
    "at": [
+    1375.7,
+    690.8
+   ],
+   "resolution": "under",
+   "kind": "crossing",
+   "source": "bake v1.8",
+   "note": "D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake",
+   "v1_9_at": [
     1385.1,
     671.2
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
+   ]
   },
   {
    "a": "yearWalk",
    "b": "G1",
    "at": [
+    1375.5,
+    689.9
+   ],
+   "resolution": "under",
+   "kind": "crossing",
+   "source": "bake v1.8",
+   "note": "D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake",
+   "v1_9_at": [
     1388.6,
     686.7
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
+   ]
   },
   {
    "a": "yearWalk",
    "b": "G1",
    "at": [
-    1421.9,
-    833.4
+    1416,
+    844.9
    ],
    "resolution": "under",
    "kind": "crossing",
    "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
+   "note": "D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake",
+   "v1_9_at": [
+    1421.9,
+    833.4
+   ]
   },
   {
    "a": "yearWalk",
@@ -8542,13 +8537,17 @@
   {
    "id": "gondolaTop",
    "xy": [
-    1360,
-    560
+    1335,
+    535
    ],
    "modes": [
     "cable\u2192feet"
    ],
-   "action": "step off onto the platform"
+   "action": "step off onto the platform",
+   "v1_9_xy": [
+    1360,
+    560
+   ]
   },
   {
    "id": "southPortal",
@@ -8665,6 +8664,21 @@
      "mode": "walk"
     },
     {
+     "length_m": 574,
+     "mode": "gondola"
+    },
+    {
+     "length_m": 70,
+     "mode": "walk"
+    }
+   ],
+   "note": "time = sum of legs; v2.0 (D-A3): the gondola runs to the shoulder station [1335,535] and the last walk is the station \u2192 L02 leg",
+   "v1_9_legs": [
+    {
+     "length_m": 158,
+     "mode": "walk"
+    },
+    {
      "length_m": 543,
      "mode": "gondola"
     },
@@ -8672,8 +8686,7 @@
      "length_m": 78,
      "mode": "walk"
     }
-   ],
-   "note": "time = sum of legs"
+   ]
   },
   "crown\u2192quay on the board (S1)": {
    "length_m": 971,
@@ -8713,8 +8726,8 @@
     "time_s": 182
    },
    "square\u2192summit by gondola + walk": {
-    "engine_u": 779,
-    "time_s": 176
+    "engine_u": 802,
+    "time_s": 177
    },
    "crown\u2192quay on the board (S1)": {
     "engine_u": 971,
@@ -8757,7 +8770,7 @@
     "time_s": 109
    },
    "square\u2192summit by gondola + walk": {
-    "engine_u": 467,
+    "engine_u": 481,
     "time_s": 106
    },
    "crown\u2192quay on the board (S1)": {
@@ -8798,7 +8811,7 @@
   "targets_s": {
    "square\u2192library by bicycle": 185,
    "square\u2192green running": 125,
-   "square\u2192summit by gondola + walk": 375,
+   "square\u2192summit by gondola + walk": 205,
    "crown\u2192quay on the board (S1)": [
     110,
     150
@@ -8813,7 +8826,7 @@
    ],
    "square\u2192home/bank on foot, walking": 60,
    "square\u2192boathouse on foot, walking": 180,
-   "note": "v1.7 targets at scale 1.0: each is achievable with \u2265 10 % margin on the Stage A path graph (README v1.7 table); the summit target is the achievable value until the gondola top station is decided (reserved), then 180"
+   "note": "v1.7 targets at scale 1.0: each is achievable with \u2265 10 % margin on the Stage A path graph (README v1.7 table); the summit target is 205 s (D-A3, Jonathan 2026-09-27: option 2 gives \u2248 185 s; 205 keeps the \u2265 10 % margin; it was 375 while reserved)"
   },
   "at_active_scale": {
    "square\u2192library by bicycle": {
@@ -8821,8 +8834,8 @@
     "time_s": 182
    },
    "square\u2192summit by gondola + walk": {
-    "engine_u": 779,
-    "time_s": 176
+    "engine_u": 802,
+    "time_s": 177
    },
    "crown\u2192quay on the board (S1)": {
     "engine_u": 971,
@@ -8884,6 +8897,9 @@
    ],
    "square\u2192home/bank on foot, walking": 60,
    "square\u2192boathouse on foot, walking": 100
+  },
+  "targets_v1_9": {
+   "square\u2192summit by gondola + walk": 375
   }
  },
  "speeds_ms": {
@@ -13214,6 +13230,234 @@
     "kind": "crossing",
     "source": "bake v1.8",
     "note": "at-grade meeting 0.7 eu apart: regrade owed"
+   }
+  },
+  {
+   "a": "V02",
+   "b": "walk crownFromGondola",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-A3): the station walk is a 43 m leg [1335,535] \u2192 [1310,500]; the v1.9 switchback that met this route here goes (re-check on the next bake)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "V02",
+    "b": "walk crownFromGondola",
+    "at": [
+     1412.8,
+     593.4
+    ],
+    "resolution": "under",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "RESERVED R-A3: waits on the gondola top station"
+   }
+  },
+  {
+   "a": "V02",
+   "b": "walk crownFromGondola",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-A3): the station walk is a 43 m leg [1335,535] \u2192 [1310,500]; the v1.9 switchback that met this route here goes (re-check on the next bake)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "V02",
+    "b": "walk crownFromGondola",
+    "at": [
+     1443.1,
+     526.5
+    ],
+    "resolution": "under",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "RESERVED R-A3: waits on the gondola top station"
+   }
+  },
+  {
+   "a": "walk crown",
+   "b": "walk crownFromGondola",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-A3): the station walk is a 43 m leg [1335,535] \u2192 [1310,500]; the v1.9 switchback that met this route here goes (re-check on the next bake)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk crown",
+    "b": "walk crownFromGondola",
+    "at": [
+     1376,
+     574.7
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "over by 19.8 eu: a named structure (footbridge, deck or passage) is owed; RESERVED R-A3: waits on the gondola top station"
+   }
+  },
+  {
+   "a": "walk crownFromGondola",
+   "b": "crownLaunch.stair",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-A3): the station walk is a 43 m leg [1335,535] \u2192 [1310,500]; the v1.9 switchback that met this route here goes (re-check on the next bake)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk crownFromGondola",
+    "b": "crownLaunch.stair",
+    "at": [
+     1320.4,
+     479.2
+    ],
+    "resolution": "under",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "RESERVED R-A3: waits on the gondola top station"
+   }
+  },
+  {
+   "a": "walk crownFromGondola",
+   "b": "DEEP_RUN",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-A3): the station walk is a 43 m leg [1335,535] \u2192 [1310,500]; the v1.9 switchback that met this route here goes (re-check on the next bake)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk crownFromGondola",
+    "b": "DEEP_RUN",
+    "at": [
+     1341.3,
+     445.2
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "RESERVED R-A3: waits on the gondola top station"
+   }
+  },
+  {
+   "a": "walk crownFromGondola",
+   "b": "DEEP_RUN",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-A3): the station walk is a 43 m leg [1335,535] \u2192 [1310,500]; the v1.9 switchback that met this route here goes (re-check on the next bake)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk crownFromGondola",
+    "b": "DEEP_RUN",
+    "at": [
+     1437.6,
+     512.9
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "RESERVED R-A3: waits on the gondola top station"
+   }
+  },
+  {
+   "a": "walk crownFromGondola",
+   "b": "ORE",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-A3): the station walk is a 43 m leg [1335,535] \u2192 [1310,500]; the v1.9 switchback that met this route here goes (re-check on the next bake)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk crownFromGondola",
+    "b": "ORE",
+    "at": [
+     1334.3,
+     454.3
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "RESERVED R-A3: waits on the gondola top station"
+   }
+  },
+  {
+   "a": "walk crownFromGondola",
+   "b": "ORE",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-A3): the station walk is a 43 m leg [1335,535] \u2192 [1310,500]; the v1.9 switchback that met this route here goes (re-check on the next bake)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk crownFromGondola",
+    "b": "ORE",
+    "at": [
+     1369.1,
+     568.4
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "RESERVED R-A3: waits on the gondola top station"
+   }
+  },
+  {
+   "a": "walk crownFromGondola",
+   "b": "stepsPortage",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-A3): the station walk is a 43 m leg [1335,535] \u2192 [1310,500]; the v1.9 switchback that met this route here goes (re-check on the next bake)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk crownFromGondola",
+    "b": "stepsPortage",
+    "at": [
+     1332.3,
+     457.5
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "over by 117.5 eu: a named structure (footbridge, deck or passage) is owed; RESERVED R-A3: waits on the gondola top station"
+   }
+  },
+  {
+   "a": "walk crownFromGondola",
+   "b": "underground.bellGallery",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-A3): the station walk is a 43 m leg [1335,535] \u2192 [1310,500]; the v1.9 switchback that met this route here goes (re-check on the next bake)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk crownFromGondola",
+    "b": "underground.bellGallery",
+    "at": [
+     1315.5,
+     489.2
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "RESERVED R-A3: waits on the gondola top station"
+   }
+  },
+  {
+   "a": "walk crownFromGondola",
+   "b": "yearWalk",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-A3): the station walk is a 43 m leg [1335,535] \u2192 [1310,500]; the v1.9 switchback that met this route here goes (re-check on the next bake)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk crownFromGondola",
+    "b": "yearWalk",
+    "at": [
+     1422.1,
+     589.2
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "RESERVED R-A3: waits on the gondola top station"
+   }
+  },
+  {
+   "a": "walk crownFromGondola",
+   "b": "yearWalk",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-A3): the station walk is a 43 m leg [1335,535] \u2192 [1310,500]; the v1.9 switchback that met this route here goes (re-check on the next bake)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk crownFromGondola",
+    "b": "yearWalk",
+    "at": [
+     1446.4,
+     537.2
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "RESERVED R-A3: waits on the gondola top station"
    }
   }
  ]

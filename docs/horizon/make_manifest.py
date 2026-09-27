@@ -1530,6 +1530,70 @@ m["cable"]["ZIP"]["v1_9_note"] = m["cable"]["ZIP"]["note"]
 m["cable"]["ZIP"]["note"] = m["cable"]["ZIP"]["note"].replace("and crosses above the gondola cable at [1442,921] with 10.7 m between cables", "and crosses under the gondola cable at [1441.5,920.8], 30.45 m beneath it (D-A2: zip under gondola)")
 assert "D-A2" in m["cable"]["ZIP"]["note"]
 
+# 3. D-A3 · The gondola top station (Jonathan: "option 2 and a 205 s target"): the station moves ~35 m up the slope onto
+#    the summit's south shoulder at grade, [1335,535], deck 150 on ground 148.5. The line turns 1.1° west about the base
+#    (573.6 m). Towers stand at the v1.9 distances from the base (135.4 / 271.7 m) except tower 3, which moves from 407 to
+#    392 m: at 407 m its footing lands on the Year Walk's January lane at the turning circle (1.7 m from the lane edge),
+#    at 392 m it stands 7.9 m clear of S1 with spans of 135 / 136 / 120 / 182 m (profiles.cable.towerSpacing_m 120-200).
+#    Heights are not authored: the builder solves each tower to the lowest top that keeps every span 8 clear (the 25 m
+#    station throats excepted) and never clamps at the 300 ceiling (a tower above it fails the bake). The proposal's
+#    minimum tops at 135 / 272 / 407 m were 83 / 110 / 151 (proposals/gondola-top-station.md).
+G1 = m["cable"]["G1"]
+G1_TO, G1_TO_H = [1335, 535], 150
+G1_L = math.dist(G1["from"], G1_TO); G1_U = [(G1_TO[0] - G1["from"][0]) / G1_L, (G1_TO[1] - G1["from"][1]) / G1_L]
+G1_TOWER_S = [135.4, 271.7, 392]
+G1["v1_9"] = {"to": G1["to"], "toH": G1["toH"], "towers": G1["towers"], "length_m": G1["length_m"]}
+G1["to"], G1["toH"] = G1_TO, G1_TO_H
+G1["towers"] = [[round(G1["from"][0] + G1_U[0] * d, 1), round(G1["from"][1] + G1_U[1] * d, 1)] for d in G1_TOWER_S]
+G1["towerDistances_m"] = G1_TOWER_S
+G1["length_m"] = round(G1_L)
+G1["towerSolve"] = "each tower top is solved to the lowest height that keeps every span profiles.cable.clear_eu over the ground (1 % sag; the 25 m throat at each station excepted); no tower height is authored and none is clamped: a tower whose top would pass sky.ceiling (300) fails the bake"
+G1["towerMin_h_reference"] = {"at_m": [135, 272, 407], "top_h": [83, 110, 151], "source": "proposals/gondola-top-station.md (Option 2 solver, no terraces rule); tower 3 now stands at 392 m, so re-solve"}
+G1["note"] = "upper street → the Crown station on the summit's south shoulder (at grade, [1335,535]), straight up the south-east face; town falls away, then the whole island; a short walk (≈ 70 m, 8 m of climb) continues from the station to the summit lookout"
+G1["decided"] = "D-A3 option 2 (" + RULED + ")"
+gs = m["structures"]["gondolaStations"]
+gs["v1_9_crownStation"] = gs["crownStation"]; gs["crownStation"] = G1_TO
+gs["crownStation_deck_h"] = G1_TO_H
+gs["note"] = "v2.0 (D-A3): the Crown station stands at grade on the summit's south shoulder (ground 148.5, deck 150); it was in a notch 17 m below the 129.7 ridge at [1360,560] (deck 112), which forced a 275 eu tower"
+for t in m["thresholds"]:
+    if t["id"] == "gondolaTop": t["v1_9_xy"] = t["xy"]; t["xy"] = G1_TO
+cfg = m["walks"]["crownFromGondola"]
+cfg["v1_9_pts"] = cfg["pts"]; cfg["pts"] = [G1_TO, [1322, 517], [1310, 500]]
+cfg["length_m"] = round(length(cfg["pts"]))
+cfg["levels"] = [{"xy": G1_TO, "h": G1_TO_H, "why": "the station deck"}, {"xy": [1310, 500], "h": 154, "why": "the summit junction (walk summit on to L02 [1310,470] at 158)"}]
+cfg["note_v2_0"] = "D-A3: a 43 m leg at 9 % from the station at grade to the summit junction (the station → L02 walk is ≈ 70 m of plan and 8 m of climb, step-free); the builder's hard-coded switchback via [1405,595], [1450,565], [1430,500], [1350,440] goes"
+jl = m["journeys"]["square→summit by gondola + walk"]
+jl["v1_9_legs"] = [dict(l) for l in jl["legs"]]
+jl["legs"][1]["length_m"] = G1["length_m"]
+jl["legs"][2]["length_m"] = round(math.dist(G1_TO, [1310, 470]))
+jl["note"] = "time = sum of legs; v2.0 (D-A3): the gondola runs to the shoulder station [1335,535] and the last walk is the station → L02 leg"
+m["journeys"]["at_factor_1_0"] = times(1.0)
+m["journeys"]["at_factor_0_6"] = times(0.6)
+m["journeys"]["at_active_scale"] = times(m["scale"]["factor"])
+m["journeys"]["targets_v1_9"] = {"square→summit by gondola + walk": m["journeys"]["targets_s"]["square→summit by gondola + walk"]}
+m["journeys"]["targets_s"]["square→summit by gondola + walk"] = 205
+m["journeys"]["targets_s"]["note"] = m["journeys"]["targets_s"]["note"].replace("the summit target is the achievable value until the gondola top station is decided (reserved), then 180", "the summit target is 205 s (D-A3, " + RULED + ": option 2 gives ≈ 185 s; 205 keeps the ≥ 10 % margin; it was 375 while reserved)")
+assert "205 s" in m["journeys"]["targets_s"]["note"]
+# The register against the moved line (plan intersections of the new G1 chord with the candidate-3 beds). Rows on the
+# old station walk that the 43 m leg can no longer meet are retired; the rest drop "RESERVED R-A3".
+G1_REPOINT = [("S1", "G1", [1391.9, 701.5], [1378.6, 701.8]), ("S1", "G1", [1407.5, 770.1], [1395.2, 765.5]),
+ ("walk crown", "G1", [1365.9, 586.1], [1352.3, 601.4]), ("walk crown", "G1", [1372.4, 615.2], [1357, 619.2]), ("walk crown", "G1", [1388.3, 685.3], [1375.1, 688.6]),
+ ("yearWalk", "G1", [1385.1, 671.2], [1375.7, 690.8]), ("yearWalk", "G1", [1388.6, 686.7], [1375.5, 689.9]), ("yearWalk", "G1", [1421.9, 833.4], [1416, 844.9]),
+ ("G1", "V01", [1469, 1043], [1468, 1044]), ("G1", "Crown Road", [1385, 655], [1373.4, 682]), ("G1", "ORE", [1375, 625], [1363.9, 645.4]),
+ ("walk crownFromGondola", "G1", [1360, 560], G1_TO), ("ZIP", "G1", [1441.5, 920.8], [1437.5, 927.4])]
+for a, b, old, new in G1_REPOINT:
+    row_edit(a, b, old, at=new)
+row_edit("ZIP", "G1", [1437.5, 927.4], predicted_v2_0={"separation_eu": 29.0, "g1_h": 88.8, "zip_h": 59.8, "source": "proposals/zip-over-g1.md, with the station at [1335,535]"})
+for a, b, at in [("V02", "walk crownFromGondola", [1412.8, 593.4]), ("V02", "walk crownFromGondola", [1443.1, 526.5]), ("walk crown", "walk crownFromGondola", [1376, 574.7]),
+                 ("walk crownFromGondola", "crownLaunch.stair", [1320.4, 479.2]), ("walk crownFromGondola", "DEEP_RUN", [1341.3, 445.2]), ("walk crownFromGondola", "DEEP_RUN", [1437.6, 512.9]),
+                 ("walk crownFromGondola", "ORE", [1334.3, 454.3]), ("walk crownFromGondola", "ORE", [1369.1, 568.4]), ("walk crownFromGondola", "stepsPortage", [1332.3, 457.5]),
+                 ("walk crownFromGondola", "underground.bellGallery", [1315.5, 489.2]), ("walk crownFromGondola", "yearWalk", [1422.1, 589.2]), ("walk crownFromGondola", "yearWalk", [1446.4, 537.2])]:
+    row_retire(a, b, at, "v2.0 (D-A3): the station walk is a 43 m leg [1335,535] → [1310,500]; the v1.9 switchback that met this route here goes (re-check on the next bake)")
+for i, row in enumerate(m["crossings"]):
+    if "RESERVED R-A3" in row.get("note", ""):
+        row = dict(row); row["note"] = row["note"].replace("RESERVED R-A3: waits on the gondola top station", "D-A3 decided " + RULED + " (station [1335,535]); re-point on the next bake"); m["crossings"][i] = row
+assert not any("R-A3" in r.get("reserved", "") for r in m["crossings"])
+
 
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
