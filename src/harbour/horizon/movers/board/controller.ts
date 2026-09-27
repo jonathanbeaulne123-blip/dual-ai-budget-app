@@ -227,6 +227,19 @@ export function createBoardController(deps: MoverDeps, profile: GroundProfile = 
       const events = stepFrame(dt, input);
       return frame(dt, input, events, look);
     },
+    airborne(){return !state.contact.on&&holdSteps===0?{...body(),velocity:[...state.v] as [number,number,number]}:null;},
+    resumeAt(at){
+      const c=contact.sample(at.x,at.z,at.y+.1);
+      if(!c||!c.legal||c.slope>40||Math.abs(c.y-at.y)>.15||contact.submerged(at.x,at.z,at.y))return false;
+      state.p=[at.x,c.y,at.z];state.v=[...at.velocity];state.heading=at.yaw;
+      const dot=state.v[0]*c.n[0]+state.v[1]*c.n[1]+state.v[2]*c.n[2];
+      if(dot<0)state.v=state.v.map((v,i)=>v-dot*c.n[i]!) as [number,number,number];
+      state.contact={...state.contact,on:true,kind:'ground',n:[...c.n],material:c.material,pace:c.pace,legal:true,slope:c.slope};
+      state.legs={...state.legs,boost:0,charge:0,window:0,crouch:0,stroke:-1};
+      state.latch={...state.latch,boostAccel:0,popBuffer:0,prevPop:false,popped:false,prevPush:true};
+      state.airborneFor=0;state.offbedFor=0;state.yawRate=0;state.stopped=0;state.slideFor=0;acc.t=0;holdSteps=0;jumpHeld=0;prevJump=false;camera.snap(state,flags);
+      return true;
+    },
     exit(): MoverBody { return body(); },
     reducedMotion(on) { flags.reducedMotion = on; },
     calm(on) { flags.calm = on; },

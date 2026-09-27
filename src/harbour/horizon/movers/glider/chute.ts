@@ -1,140 +1,125 @@
-/**
- * The square canopy (FLIGHT.md §3). Reached only by the plane's carried `bailOut` threshold.
- * Pure and deterministic: `stepChute(state, input, env, dt)` returns a new state.
- *
- * Axes: engine x east, y up, z south; heading follows mode.ts (0 = south). `lean` is a world-axis
- * `[x, z]` steer (the controller turns the Move pad into it by the camera's yaw).
- */
+/** One continuous airborne velocity, with a canopy that adds drag as it inflates. */
 import type {Point2} from '../../world/definition.ts';
 import {windVelocity,type WindSample} from '../shared/wind.ts';
 import {CHUTE,chuteAt} from './polar.ts';
 import {HORIZON_MANIFEST} from '../../world/manifest.ts';
+import type {AirborneBody} from '../shared/mode.ts';
 
 export type ChutePhase='freefall'|'opening'|'canopy'|'flare'|'touchdown'|'fade';
-/**
- * `flared`: the brakes were ≥ 0.5 on every step of the last 5 m (FLIGHT §3.4 as ruled). The stand-up also needs
- * ground speed ≤ 3 m/s; `resolveTouchdown` applies that half of the rule.
- */
 export interface ChuteTouchdown{xy:Point2;groundSpeed:number;flared:boolean;ringIndex:number}
 export interface ChuteState{
-  phase:ChutePhase;
-  x:number;y:number;z:number;
-  /** Ground velocity, m/s (vy up +). */
-  vx:number;vy:number;vz:number;
-  heading:number;
-  /** Seconds the brakes have been held full (the 3 s limit). */
-  brakeT:number;
-  t:number;
-  /** The plane's velocity still carried in freefall `[vx, vz]`, decaying with τ 0.5 s. */
-  carried?:readonly [number,number];
-  /** Seconds into the 1.2 s opening, and the fall speed it started from. */
-  openT?:number;openFrom?:number;
-  /** Seconds left of the mush's auto-release (brakes up, sink 4). */
-  releaseT?:number;
-  /** The brake setting applied on the last step. */
-  brake?:number;
-  /** Inside the last 5 m: true while the brakes have been ≥ 0.5 on every step since entering it (the flare). */
-  flareHeld?:boolean;
-  /** True on the step the pull happened (auto or by hand): the snap. */
-  snapped?:boolean;
-  pulledBy?:'hand'|'auto';
-  touchdown?:ChuteTouchdown;
+  phase:ChutePhase;x:number;y:number;z:number;vx:number;vy:number;vz:number;heading:number;brakeT:number;t:number;
+  inflation?:number;pullHeld?:boolean;contactT?:number;openT?:number;openFrom?:number;
+  releaseT?:number;brake?:number;flareHeld?:boolean;snapped?:boolean;pulledBy?:'hand'|'auto';touchdown?:ChuteTouchdown;
 }
 export interface ChuteInput{lean:readonly [number,number];pull:boolean;brake:number;yaw:number}
 export interface ChuteEnv{
   wind:WindSample;
-  /** Height of whatever is under the rider at height `y` (a deck above the rider is not ground). */
+  windAt?:(x:number,y:number,z:number)=>WindSample;
+  ready?:(x:number,z:number)=>boolean;
+  ceiling?:(x:number,z:number,y:number)=>number;
   ground:(x:number,z:number,y?:number)=>number;
-  /** Sink fields only (the Bight, the Notch): m/s, ≤ 0. No thermal or ridge lift for the canopy. */
+  /** A wall is not a landing. Upward-facing support is tested separately. */
+  blocked?:(x:number,y:number,z:number)=>boolean;
+  normal?:(x:number,z:number,y:number)=>readonly [number,number,number];
   sink?:(x:number,y:number,z:number)=>number;
-  /** The Drop Zone target for `touchdown.ringIndex`. */
   dropZone?:{xy:Point2;rings:readonly number[]};
 }
-export interface PlaneDoor{x:number;y:number;z:number;vx:number;vz:number;heading:number}
-
+export interface PlaneDoor{x:number;y:number;z:number;vx:number;vy?:number;vz:number;heading:number}
 export const DROP_ZONE_RINGS=[5,10,25] as const;
-/** The Drop Zone's centre from the manifest (v2.2: on the green landing, [1028,1112]; it was a hard-coded [1040,1065], the v1.6 landing). */
 const DROP_ZONE_XY:Point2=[HORIZON_MANIFEST.sky.dropZone.xy[0]!*HORIZON_MANIFEST.scale.factor,HORIZON_MANIFEST.sky.dropZone.xy[1]!*HORIZON_MANIFEST.scale.factor];
-const FULL=.99;
-/** Brakes at or above this through the last 5 m are a flare (FLIGHT §3.4 as ruled: half brakes or more). */
 export const FLARE_BRAKE=.5;
 const clamp=(v:number,lo:number,hi:number)=>Math.min(hi,Math.max(lo,v));
 const finite=(v:number)=>Number.isFinite(v)?v:0;
-const TAU=Math.PI*2;
-const wrap=(a:number)=>{let r=a%TAU;if(r>Math.PI)r-=TAU;if(r<=-Math.PI)r+=TAU;return r;};
+const wrap=(a:number)=>Math.atan2(Math.sin(a),Math.cos(a));
+const SUPPORT_SECONDS=.04;
+const SUPPORT_NORMAL=Math.cos(HORIZON_MANIFEST.profiles.walkable.slope_max_deg*Math.PI/180);
 
-/** Jump: refused (null) below 60 m above the ground under the plane. The rider leaves with the plane's velocity. */
-export function bailOut(plane:PlaneDoor,agl:number):ChuteState|null{
-  if(!(agl>=CHUTE.minBailAgl))return null;
-  return{phase:'freefall',x:plane.x,y:plane.y,z:plane.z,vx:plane.vx,vy:0,vz:plane.vz,heading:wrap(plane.heading),brakeT:0,t:0,carried:[plane.vx,plane.vz],brake:0};
+/** No height, fall-time, equipment-unlock, or aircraft condition belongs here. */
+export function airborneChute(body:AirborneBody,open=false):ChuteState{
+  return{phase:open?'opening':'freefall',x:body.x,y:body.y,z:body.z,vx:body.velocity[0],vy:body.velocity[1],vz:body.velocity[2],heading:wrap(body.yaw),brakeT:0,t:0,inflation:0,pullHeld:open,openT:0,brake:0};
 }
-
-/** 0 bullseye (≤ 5 m), 1 inner (≤ 10), 2 outer (≤ 25), −1 beyond ("on the Green"). */
+/** A plane exit is just another airborne source. Ground contact, not height, excludes a bail. */
+export function bailOut(plane:PlaneDoor,agl:number):ChuteState|null{
+  if(!Number.isFinite(agl)||agl<=0)return null;
+  return airborneChute({x:plane.x,y:plane.y,z:plane.z,yaw:plane.heading,velocity:[plane.vx,plane.vy??0,plane.vz]});
+}
 export function ringIndex(xy:readonly [number,number],zone:{xy:Point2;rings:readonly number[]}={xy:DROP_ZONE_XY,rings:DROP_ZONE_RINGS}):number{
-  const d=Math.hypot(xy[0]-zone.xy[0],xy[1]-zone.xy[1]);
-  return zone.rings.findIndex(r=>d<=r+1e-9);
+  const d=Math.hypot(xy[0]-zone.xy[0],xy[1]-zone.xy[1]);return zone.rings.findIndex(r=>d<=r+1e-9);
 }
 
 export function stepChute(state:ChuteState,input:ChuteInput,env:ChuteEnv,dt:number):ChuteState{
   if(state.phase==='touchdown'||state.phase==='fade'||!(dt>0))return state;
-  const t=state.t+dt,ground0=env.ground(state.x,state.z,state.y),agl=state.y-ground0,[wx,wz]=windVelocity(env.wind);
-  const sinkField=Math.min(0,env.sink?.(state.x,state.y,state.z)??0);
-  let phase:ChutePhase=state.phase,{heading,brakeT}=state,vx:number,vy:number,vz:number,openT=state.openT,openFrom=state.openFrom,releaseT=state.releaseT??0,carried=state.carried,snapped=false,pulledBy=state.pulledBy,brake=0;
+  // The controller supplies fixed steps; bound direct callers too, without dropping elapsed time.
+  if(dt>1/60+1e-9){let out=state,left=dt;while(left>1e-9){const h=Math.min(left,1/120);out=stepChute(out,input,env,h);left-=h;}return out;}
+  let phase:ChutePhase=state.phase,inflation=state.inflation??(phase==='canopy'||phase==='flare'?1:0);
+  const edge=input.pull&&!state.pullHeld;
+  if(edge)phase=phase==='freefall'?'opening':'freefall';
+  const opening=phase!=='freefall';
+  inflation=clamp(inflation+dt*(opening?1/CHUTE.openingSeconds:-5),0,1);
+  if(opening)phase=inflation<1-1e-9?'opening':'canopy';
+  const [wx,wz]=windVelocity(env.windAt?.(state.x,state.y,state.z)??env.wind);
+  const ground0=env.ground(state.x,state.z,state.y),agl=state.y-ground0;
+  const yaw=clamp(finite(input.yaw),-1,1),heading=wrap(state.heading-yaw*CHUTE.yawRate*inflation*dt);
+  let brake=opening?clamp(finite(input.brake),0,1):0;
+  let brakeT=brake>=.99?state.brakeT+dt:0,releaseT=Math.max(0,(state.releaseT??0)-dt);
   const inBand=agl<=CHUTE.flareAgl;
-  if(phase==='freefall'){
-    const decay=Math.exp(-dt/CHUTE.planeTau);carried=[(carried?.[0]??0)*decay,(carried?.[1]??0)*decay];
-    let lx=finite(input.lean[0]),lz=finite(input.lean[1]);const l=Math.hypot(lx,lz);if(l>1){lx/=l;lz/=l;}
-    vx=carried[0]+lx*CHUTE.leanMax+wx*CHUTE.freefallWind;vz=carried[1]+lz*CHUTE.leanMax+wz*CHUTE.freefallWind;
-    vy=Math.max(-CHUTE.freefallCap,state.vy-CHUTE.gravity*dt);
-    if(input.pull||agl<=CHUTE.autoPullAgl){phase='opening';openT=0;openFrom=-vy;snapped=true;pulledBy=input.pull&&agl>CHUTE.autoPullAgl?'hand':'auto';}
-  }else if(phase==='opening'){
-    openT=(openT??0)+dt;const u=Math.min(1,openT/CHUTE.openingSeconds),from=openFrom??CHUTE.freefallCap;
-    // Square-root curve: most of the fall speed goes in the first instants of the snap.
-    vy=-(from+(CHUTE.openedSink-from)*Math.sqrt(u));
-    const decay=Math.exp(-dt/CHUTE.planeTau);carried=[(carried?.[0]??0)*decay,(carried?.[1]??0)*decay];
-    const drive=chuteAt(0).forward*u;
-    vx=carried[0]+Math.sin(heading)*drive+wx*(CHUTE.freefallWind+(1-CHUTE.freefallWind)*u);
-    vz=carried[1]+Math.cos(heading)*drive+wz*(CHUTE.freefallWind+(1-CHUTE.freefallWind)*u);
-    if(u>=1){phase='canopy';carried=[0,0];}
-  }else{
-    // Canopy (and its flare band): toggles set forward and sink; the wind acts in full.
-    const yaw=clamp(finite(input.yaw),-1,1);
-    heading=wrap(heading-yaw*CHUTE.yawRate*dt);
-    let forward:number,sink:number;
-    const wanted=clamp(finite(input.brake),0,1),wantFull=wanted>=FULL;
-    if(releaseT>0){
-      // The mush: sink 4, brakes released themselves for 1 s.
-      releaseT=Math.max(0,releaseT-dt);brake=0;forward=chuteAt(0).forward;sink=CHUTE.mushSink;
-      if(releaseT===0)brakeT=0;
-      if(phase==='flare')phase='canopy';
-    }else if(inBand&&wanted>=FLARE_BRAKE){
-      // The flare: half brakes or more in the last 5 m (no 3 s limit here). Full brakes take forward 2 → 0 and
-      // sink 1.5 → 0.5 as the ground comes up; half to full fly the toggle table (half: 4 forward, 2.2 sink).
-      phase='flare';
-      if(wantFull){brake=1;const f=clamp(1-agl/CHUTE.flareAgl,0,1);forward=2*(1-f);sink=1.5-f;}
-      else{brake=wanted;({forward,sink}=chuteAt(brake));}
-    }else{
-      brake=wanted;brakeT=wantFull?brakeT+dt:0;
-      ({forward,sink}=chuteAt(brake));
-      if(brakeT>CHUTE.fullBrakeSeconds){releaseT=CHUTE.mushReleaseSeconds;brake=0;sink=CHUTE.mushSink;forward=chuteAt(0).forward;}
-      if(phase==='flare')phase='canopy';
+  if(brakeT>CHUTE.fullBrakeSeconds&&!inBand)releaseT=CHUTE.mushReleaseSeconds;
+  if(releaseT>0){brake=0;brakeT=0;}
+  let {forward,sink}=chuteAt(brake);
+  if(releaseT>0)sink=CHUTE.mushSink;
+  else if(phase==='canopy'&&inBand&&brake>=FLARE_BRAKE){
+    phase='flare';if(brake>=.99){const f=clamp(1-agl/CHUTE.flareAgl,0,1);forward=2*(1-f);sink=1.5-f;}
+  }
+  sink+=CHUTE.turnSink*Math.abs(yaw)-Math.min(0,env.sink?.(state.x,state.y,state.z)??0);
+  let lx=finite(input.lean[0]),lz=finite(input.lean[1]);const len=Math.hypot(lx,lz);if(len>1){lx/=len;lz/=len;}
+  // All controls supply finite forces toward a target. Neither deploy nor retract assigns a new velocity.
+  const airDrag=.18,canopyDrag=2.5*inflation,k=airDrag*(1-inflation)+canopyDrag;
+  const tx=(lx*CHUTE.leanMax+wx*.5)*(1-inflation)+(Math.sin(heading)*forward+wx)*inflation;
+  const tz=(lz*CHUTE.leanMax+wz*.5)*(1-inflation)+(Math.cos(heading)*forward+wz)*inflation;
+  const blend=1-Math.exp(-k*dt);
+  let vx=state.vx+(tx-state.vx)*blend,vz=state.vz+(tz-state.vz)*blend;
+  let vy=state.vy < -CHUTE.freefallCap
+    ? -CHUTE.freefallCap+(state.vy+CHUTE.freefallCap)*Math.exp(-2*dt)
+    : Math.max(-CHUTE.freefallCap,state.vy-CHUTE.gravity*(1-inflation)*dt);
+  // A strictly negative equilibrium prevents toggle pumping. Existing upward momentum is allowed to decay.
+  vy=-sink+(vy+sink)*Math.exp(-3*inflation*dt);
+  if(env.ready&&!env.ready(state.x+vx*dt,state.z+vz*dt))return{...state,phase,inflation,pullHeld:input.pull,openT:inflation*CHUTE.openingSeconds};
+  let x=state.x,z=state.z,y=state.y;
+  let supported=false;
+  const steps=Math.max(1,Math.ceil(Math.hypot(vx,vy,vz)*dt/.2)),h=dt/steps;
+  for(let i=0;i<steps;i++){
+    let nx=x+vx*h,nz=z+vz*h,ny=y+vy*h;
+    const ceiling=env.ceiling?.(nx,nz,y)??Infinity;
+    if(vy>0&&ny+1.25>=ceiling){ny=ceiling-1.25;vy=0;}
+    if(env.blocked?.(nx,ny,nz)){
+      const canX=!env.blocked(nx,ny,z),canZ=!env.blocked(x,ny,nz);
+      if(!canX){nx=x;vx=0;}if(!canZ){nz=z;vz=0;}
+      if(canX&&canZ){nx=x;nz=z;vx=0;vz=0;}
+      if(env.blocked(nx,ny,nz)){ny=y;vy=Math.min(0,vy);}
     }
-    if(Math.abs(yaw)>.05)sink+=CHUTE.turnSink*Math.abs(yaw);
-    vx=Math.sin(heading)*forward+wx;vz=Math.cos(heading)*forward+wz;vy=-sink;
+    const floor=env.ground(nx,nz,y),n=env.normal?.(nx,nz,floor)??[0,1,0];
+    const onSupport=supported||(state.contactT??0)>0;
+    supported=false;
+    const inward=vx*n[0]+vy*n[1]+vz*n[2];
+    if((ny<=floor||onSupport&&ny-floor<=.04)&&(vy<=0||inward<=0)&&y>=floor-.2){
+      ny=floor;
+      if(n[1]>=SUPPORT_NORMAL){
+        supported=true;
+        // Retain tangential momentum on slopes; vertical=0 would bounce above downhill support.
+        vx-=inward*n[0];vy-=inward*n[1];vz-=inward*n[2];
+      }
+      else{
+        // Brush a steep face: remove inward speed and slide along it, keeping the canopy available.
+        const dot=vx*n[0]+vy*n[1]+vz*n[2];if(dot<0){vx-=dot*n[0];vy-=dot*n[1];vz-=dot*n[2];}
+      }
+    }else if(ny<floor){nx=x;nz=z;vx=0;vz=0;}
+    x=nx;y=ny;z=nz;
   }
-  if(phase!=='freefall')vy+=sinkField;
-  // The flare is held only if the brakes stayed ≥ 0.5 on every canopy step inside the last 5 m.
-  const canopyStep=phase==='canopy'||phase==='flare',flareHeld=canopyStep&&inBand?(state.flareHeld??true)&&brake>=FLARE_BRAKE:undefined;
-  const x=state.x+vx*dt,z=state.z+vz*dt;let y=state.y+vy*dt;
-  const ground=env.ground(x,z,state.y);
-  let touchdown:ChuteTouchdown|undefined;
-  if(y<=ground){
-    y=ground;
-    const groundSpeed=Math.hypot(vx,vz),flared=flareHeld===true;
-    touchdown={xy:[x,z],groundSpeed,flared,ringIndex:ringIndex([x,z],env.dropZone)};
-    phase='touchdown';
-  }
-  const {flareHeld:_held,...rest}=state;void _held;
-  return{...rest,phase,x,y,z,vx,vy,vz,heading,brakeT,t,carried,releaseT,brake,snapped,...(flareHeld===undefined?{}:{flareHeld}),
-    ...(openT===undefined?{}:{openT}),...(openFrom===undefined?{}:{openFrom}),...(pulledBy?{pulledBy}:{}),...(touchdown?{touchdown}:{})};
+  const contactT=supported?(state.contactT??0)+dt:0;
+  const canopyStep=phase==='canopy'||phase==='flare';
+  const flareHeld=canopyStep&&inBand?(state.flareHeld??true)&&brake>=FLARE_BRAKE:undefined;
+  const touchdown=contactT>=SUPPORT_SECONDS?{xy:[x,z] as Point2,groundSpeed:Math.hypot(vx,vz),flared:flareHeld===true,ringIndex:ringIndex([x,z],env.dropZone)}:undefined;
+  if(touchdown){phase='touchdown';inflation=0;}
+  return{phase,x,y,z,vx,vy,vz,heading,brakeT,t:state.t+dt,inflation,pullHeld:input.pull,contactT,openT:inflation*CHUTE.openingSeconds,releaseT,brake,flareHeld,snapped:edge&&opening,pulledBy:edge&&opening?'hand':state.pulledBy,touchdown};
 }
