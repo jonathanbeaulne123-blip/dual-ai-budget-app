@@ -1982,32 +1982,32 @@
      985
     ],
     [
-     466.4,
-     1020.8
+     466.1,
+     1021.3
     ],
     [
-     491.0,
-     1038.0
+     490.7,
+     1038.5
     ],
     [
-     548.3,
-     1078.2
+     548.0,
+     1078.7
     ],
     [
      556.1,
      1095.0
     ],
     [
-     563.8,
-     1111.8
+     564.1,
+     1111.4
     ],
     [
-     621.2,
-     1152.0
+     621.5,
+     1151.6
     ],
     [
-     655.6,
-     1176.1
+     655.9,
+     1175.7
     ],
     [
      672,
@@ -2131,48 +2131,48 @@
     },
     {
      "xy": [
-      466.4,
-      1020.8
+      466.1,
+      1021.3
      ],
      "h": 12,
      "why": "the west abutment's deck end"
     },
     {
      "xy": [
-      491.0,
-      1038.0
+      490.7,
+      1038.5
      ],
      "h": 12,
      "why": "the lagoon lane starts its 8 % climb to the flyover"
     },
     {
      "xy": [
-      548.3,
-      1078.2
+      548.0,
+      1078.7
      ],
      "h": 17.6,
      "why": "the flyover's west end"
     },
     {
      "xy": [
-      563.8,
-      1111.8
+      564.1,
+      1111.4
      ],
      "h": 17.6,
      "why": "the flyover's east end"
     },
     {
      "xy": [
-      621.2,
-      1152.0
+      621.5,
+      1151.6
      ],
      "h": 12,
      "why": "back on the sea lane at deck height"
     },
     {
      "xy": [
-      655.6,
-      1176.1
+      655.9,
+      1175.7
      ],
      "h": 12,
      "why": "the east abutment's deck end: the banked descent starts"
@@ -2193,8 +2193,8 @@
     ],
     "from_h": 23.7,
     "to": [
-     466.4,
-     1020.8
+     466.1,
+     1021.3
     ],
     "to_h": 12,
     "grade_pct": 5.0,
@@ -2206,21 +2206,21 @@
     "lagoon": {
      "from_s": 0,
      "to_s": 100,
-     "offset_m": 11.2
+     "offset_m": 10.6
     },
     "flyover": "bightBridge.s2Flyover (s 100 \u2192 132)",
     "sea": {
      "from_s": 132,
      "to_s": 244,
-     "offset_m": -7.5
+     "offset_m": -7.0
     },
     "note": "offsets from the V01 axis (+ toward the Bight); S2 never rides the road's shoulder and never crosses it at grade"
    },
    "eastDescent": {
     "kind": "bankedDescent",
     "from": [
-     655.6,
-     1176.1
+     655.9,
+     1175.7
     ],
     "from_h": 12,
     "to": [
@@ -2269,8 +2269,8 @@
      "bed": "S2",
      "on": "bightBridge west abutment",
      "xy": [
-      461.8,
-      1015.2
+      461.5,
+      1015.7
      ],
      "h": 12,
      "length_m": 14,
@@ -2297,8 +2297,8 @@
      "bed": "S2",
      "on": "bightBridge deck edge",
      "xy": [
-      516.9,
-      1053.3
+      516.4,
+      1054.1
      ],
      "h": 12,
      "length_m": 244,
@@ -3403,14 +3403,14 @@
    },
    "section": {
     "from_axis_m": [
-     -10.0,
-     13.7
+     -9.0,
+     12.6
     ],
-    "width_m": 23.7,
+    "width_m": 21.6,
     "lanes": {
      "S2 sea lane": [
-      -9.5,
-      -5.5
+      -8.75,
+      -5.25
      ],
      "V01": [
       -4,
@@ -3422,12 +3422,12 @@
       7.4
      ],
      "S2 lagoon lane": [
-      9.2,
-      13.2
+      8.85,
+      12.35
      ]
     },
     "rails": "a rail on both deck edges the whole length, and a kerb rail between each S2 lane and its neighbour",
-    "note": "offsets from the V01 axis, + toward the Bight; the deck widens from 17 m (v1.9) to carry S2 as a lane of its own"
+    "note": "offsets from the V01 axis, + toward the Bight; the deck widens from 17 m (v1.9) to carry S2 as a lane of its own (3.5 m, profiles.skateMain.surface_m 3-4); the width is held to 21.6 so the 36 m opening still proves for the ferry (opening.needAlongAxis_m)"
    },
    "opening": {
     "at_s": [
@@ -3443,6 +3443,13 @@
     "kind": "steel-arch",
     "clear_eu": 11.4,
     "clearWidth_m": 34,
+    "needAlongAxis_m": {
+     "beam_m": 8,
+     "deckWidth_m": 21.6,
+     "at_46deg": 32.0,
+     "at_58deg": 22.9,
+     "rule": "beam / sin(angle) + deck width / tan(angle) \u2264 clearWidth_m (proposals/bight-bridge.md)"
+    },
     "arch": "a steel through-arch above the deck (rise \u2265 10 over the deck, crown \u2265 22), its ribs on the deck edges and hangers to the deck",
     "why": "36 m is past the 30 eu masonry-arch limit (STYLE \u00a71.6.3), so the arch is steel; the opening covers the ferry lane (s 122, in at 46\u00b0, out at 58\u00b0) and Ring Run gate 5 (s 111); a hull of water_routes.FERRY.beam_m 8 at 46\u00b0 needs 27.6 m along the axis (proposals/bight-bridge.md)"
    },
@@ -3470,33 +3477,33 @@
     "s": 116,
     "xy": [
      562.1,
-     1086.5
+     1086.4
     ],
     "deck_h": 12,
     "size_m": [
      24,
-     7.5
+     7.2
     ],
     "side": "lagoon",
     "from_s": 104,
     "to_s": 128,
     "reach": "off the Year Walk's lagoon footway at deck level, under the arch, railed on its three open sides",
-    "note": "a bay of the deck (a structure), not a pad: no register pad stands on the deck (D-A1). Under S2's flyover at its inner corner (5.6 above)"
+    "note": "a bay of the deck (a structure), not a pad: no register pad stands on the deck (D-A1); it spans o +8.8 to +16 where S2 has left the lagoon lane for the flyover, which passes 5.6 above its inner corner; its underside keeps the deck's 11.4 over the water and it stands between the arch piers, not on them"
    },
    "s2Flyover": {
     "id": "bightBridge.s2Flyover",
     "from": [
-     548.3,
-     1078.2
+     548.0,
+     1078.7
     ],
     "to": [
-     563.8,
-     1111.8
+     564.1,
+     1111.4
     ],
     "h": 17.6,
     "overRoad": [
-     557.6,
-     1098.3
+     557.7,
+     1098.4
     ],
     "clear_eu": 5.0,
     "carried": "hung from the arch between its ribs",
@@ -6273,8 +6280,8 @@
    "a": "S2",
    "b": "yearWalk",
    "at": [
-    552.4,
-    1087.0
+    551.9,
+    1086.7
    ],
    "resolution": "over",
    "kind": "crossing",
@@ -8555,8 +8562,8 @@
    "a": "S2",
    "b": "V01",
    "at": [
-    557.6,
-    1098.3
+    557.7,
+    1098.4
    ],
    "resolution": "over",
    "kind": "crossing",
@@ -13460,7 +13467,7 @@
    "a": "S2",
    "b": "yearWalk",
    "kind": "retired register row (v2.0)",
-   "verification": "v2.0 (D-A1): S2 comes onto the deck's lagoon lane outboard of the Year Walk footways (+11.2 against +5.2/+7.4); they run side by side and never meet",
+   "verification": "v2.0 (D-A1): S2 comes onto the deck's lagoon lane outboard of the Year Walk footways (+10.6 against +5.2/+7.4); they run side by side and never meet",
    "sharedPlanPoints": [],
    "retiredRow": {
     "a": "S2",
