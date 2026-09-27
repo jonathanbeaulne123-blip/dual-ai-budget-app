@@ -15,7 +15,7 @@ import {restoreHorizonPosition,HORIZON_RESTORE_TOLERANCE} from './savedPosition.
 import {horizonWalkOut,type HorizonWalkProbe} from './walkOut.ts';
 import {horizonPartnerPose} from './partner.ts';
 import {walkPlan} from '../world/pathGraph.ts';
-import {createChunkGate,createChunkScheduler,createRideGate,CHUNK_REACH_EU} from './chunkGate.ts';
+import {createChunkGate,createChunkScheduler,createRideGate,CHUNK_REACH_EU,CHUNK_ARRIVING_STATUS,CHUNK_FAILED_STATUS} from './chunkGate.ts';
 import {createCableLayer} from './cableLayer.ts';
 import {solarPosition,solarReviewDate} from '../sun/solar.ts';
 import {skyGradient} from '../sky/gradient.ts';
@@ -178,12 +178,21 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function gateOpen(x:number,z:number):boolean{
     if(!gate||!chunks)return true;
     const missing=gate.missingAt(x,z),at:XYZ=[x,body.y,z],t=performance.now(),hold=(h:typeof chunkHolds[number])=>{chunkHolds.push(h);if(chunkHolds.length>200)chunkHolds.shift();};
-    if(!missing.length){if(heldNow.length)hold({districts:heldNow,at,t,resolved:'arrived'});heldNow=[];return true;}
-    for(const id of missing)chunks.loadSync(id,simulating&&HARBOUR_DEV);
+    if(!missing.length){if(heldNow.length){hold({districts:heldNow,at,t,resolved:'arrived'});if(holdText)options.onStatus?.('');holdText='';}heldNow=[];return true;}
+    // R3-122 (b): a failed synchronous review fetch throws NetworkError; the step holds instead of throwing out of the loop.
+    for(const id of missing){try{chunks.loadSync(id,simulating&&HARBOUR_DEV);}catch{/* held: the scheduler retries (R3-118) */}}
     const still=gate.missingAt(x,z);
     if(!still.length){hold({districts:missing,at,t,resolved:'sync'});heldNow=[];return true;}
-    if(heldNow.join()!==still.join()){heldNow=still;hold({districts:still,at,t});}
-    scheduler?.route([...still,...scheduler.queued().route]);return false;
+    // A new hold is a fresh demand (R3-118): its chunks go to the front and a failed one gets its tries back.
+    if(heldNow.join()!==still.join()){heldNow=still;hold({districts:still,at,t});scheduler?.route([...still,...scheduler.queued().route]);}
+    return false;
+  }
+  /** R3-118: while the walker is held, one status line says why — still arriving, or failed and being retried. */
+  let holdText='';
+  function holdStatus(){
+    if(!heldNow.length||!scheduler)return;
+    const failedHere=scheduler.failures().some(f=>heldNow.includes(f.id)),text=failedHere?CHUNK_FAILED_STATUS:CHUNK_ARRIVING_STATUS;
+    if(text!==holdText){holdText=text;options.onStatus?.(text);}
   }
   // v2.2 ride rule (chunkGate.ts createRideGate): a feet → mover offer is taken only with every chunk resident; until then
   // it is held (the offer stays on show, a status line says why) and boards by itself when the last chunk lands.
@@ -192,7 +201,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function rideGateOpen(blocking=false):boolean{
     if(!chunks)return true;
     let missing=rideGate.missing();if(!missing.length)return true;
-    for(const id of missing)chunks.loadSync(id,blocking&&HARBOUR_DEV);
+    for(const id of missing){try{chunks.loadSync(id,blocking&&HARBOUR_DEV);}catch{/* held (R3-122 b) */}}
     missing=rideGate.missing();if(!missing.length)return true;
     scheduler?.route([...missing,...scheduler.queued().route]);return false;
   }
@@ -426,6 +435,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     else if(path.length){const p=path[0]!;dx=p[0]-body.x;dz=p[2]-body.z;if(Math.hypot(dx,dz)<.35){path.shift();dx=0;dz=0;}}
     const length=Math.hypot(dx,dz),speed=controls.run||keys.has('shift')?HORIZON_MANIFEST.speeds_ms.run:HORIZON_MANIFEST.speeds_ms.walk;
     let moved=0;if(length){dx=dx/length*Math.min(length,speed*dt);dz=dz/length*Math.min(length,speed*dt);body.yaw=Math.atan2(dx,dz);moved=move(dx,dz,dt);if(path.length&&moved<.001&&!held){path=[];options.onStatus?.('That path is blocked. Choose another approach.');}}
+    holdStatus();
     if(jumpRequested&&velocityY===0)velocityY=4.2;jumpRequested=false;
     if(velocityY!==0){velocityY-=HORIZON_G*dt;body.y+=velocityY*dt;const floor=geography.surface(body.x,body.z,body.y+.5);if(floor&&body.y<=floor.y){body.y=floor.y;velocityY=0;}if(geography.ceiling(body.x,body.z,body.y)<body.y+HORIZON_BODY_HEIGHT){body.y=geography.ceiling(body.x,body.z,body.y)-HORIZON_BODY_HEIGHT;velocityY=Math.min(0,velocityY);}}
     if(moved>0&&now>doorCooldown){const door=world.hosts.find(h=>'xy'in h.door&&Math.hypot(body.x-h.door.xy[0],body.z-h.door.xy[1],body.y-(h.door.height??0))<1.15);if(door)enterDoor(door.id);}
@@ -516,7 +526,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     setComfort(next:Partial<HorizonComfort>){applyComfort(next);},
     comfort:()=>({...comfort,motion:{...motion}}),
     walkTo(p:XYZ){lastMovementBlocker=null;const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],p,{stepFree:true});path=plan?[...plan.points]:[];if(plan)routeAhead(plan.points);return plan;},
-    stats(){const gl=renderer.getContext(),debug=gl.getExtension('WEBGL_debug_renderer_info');return{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),revision:world.geographyRevision,terrainBytes:assets.bytes,collisionIndex:geography.indexStats,bytesBeforeFirstFrame,chunksLoaded:chunks?chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId):null,cables:cableLayer.stats(),chunks:chunks?{resident:chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId),total:chunks.refs.length,queued:scheduler!.queued(),heldAt:heldNow.length?{districts:[...heldNow],body:{...body}}:null,holds:chunkHolds.map(h=>({...h,at:[...h.at]})),ride:rideGate.stats()}:null,walkOut:lastWalkOut,definitionBytesSoFar:chunks?.bytes()??assets.definitionBytes,shadowRequests:[...shadowRequests],comfort:{...comfort,motion:{...motion}},lightCards:pools.count,shadow:{half:sun.shadow.camera.right,centre:sun.target.position.toArray()},firstInteractiveMs:interactiveAt===null?null:interactiveAt-startedAt,assetLoadMs:assetLoadedAt-startedAt,mode,shot:shotId,body:{...body},frames:[...frameTimes],drawSamples:[...drawSamples],stream:[...stream.history],camera:{eye:camera.position.toArray(),target:target.toArray(),fov:camera.fov},diagnostics:world.diagnostics};},
+    stats(){const gl=renderer.getContext(),debug=gl.getExtension('WEBGL_debug_renderer_info');return{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),revision:world.geographyRevision,terrainBytes:assets.bytes,collisionIndex:geography.indexStats,bytesBeforeFirstFrame,chunksLoaded:chunks?chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId):null,cables:cableLayer.stats(),chunks:chunks?{resident:chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId),total:chunks.refs.length,queued:scheduler!.queued(),heldAt:heldNow.length?{districts:[...heldNow],body:{...body}}:null,holds:chunkHolds.map(h=>({...h,at:[...h.at]})),ride:rideGate.stats(),failures:scheduler!.failures()}:null,walkOut:lastWalkOut,definitionBytesSoFar:chunks?.bytes()??assets.definitionBytes,shadowRequests:[...shadowRequests],comfort:{...comfort,motion:{...motion}},lightCards:pools.count,shadow:{half:sun.shadow.camera.right,centre:sun.target.position.toArray()},firstInteractiveMs:interactiveAt===null?null:interactiveAt-startedAt,assetLoadMs:assetLoadedAt-startedAt,mode,shot:shotId,body:{...body},frames:[...frameTimes],drawSamples:[...drawSamples],stream:[...stream.history],camera:{eye:camera.position.toArray(),target:target.toArray(),fov:camera.fov},diagnostics:world.diagnostics};},
     dispose(){disposed=true;window.clearTimeout(fadeTimer);registry.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();offChunk?.();lease.cancelFrame(frame);observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',clear);host.removeEventListener('blur',clear);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();poolGeometry.dispose();beadGeometry.dispose();poolMaterial.dispose();beadMaterial.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
   };
   return api;
