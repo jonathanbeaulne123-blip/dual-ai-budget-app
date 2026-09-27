@@ -254,6 +254,9 @@ function guardEdgeLater(rails:StructureSolid,line:XYZ[],outward:XY,own:string[],
     const mid=(a:XYZ,b:XYZ):XYZ=>[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2];
     for(let i=0;i<run.length;i++){const p=run[i]!;if(drop(p)||i+1<run.length&&drop(mid(p,run[i+1]!))||i>0&&drop(mid(run[i-1]!,p)))cur.push(p);else flush();}flush();});
 }
+/** A route crossing a rail line up to this far above the deck is landing on it through the rail (the dam portage's
+ * treads pass the apron bridge's west parapet line 2.4 over the deck and land between the parapets). */
+const LANDING_OVER=3.5;
 function lineGaps(cuts:LandCuts,line:readonly XYZ[],own:readonly string[]):number[] {
   const out:number[]=[],arc=[0];for(let i=1;i<line.length;i++)arc.push(arc[i-1]!+distance(plan(line[i-1]!),plan(line[i]!)));
   for(const b of cuts.beds){if(!['walk','trail','stair','road','boardwalk','skate'].includes(b.kind)||own.includes(b.id))continue;
@@ -261,7 +264,7 @@ function lineGaps(cuts:LandCuts,line:readonly XYZ[],own:readonly string[]):numbe
       for(let j=1;j<line.length;j++){const a=line[j-1]!,c=line[j]!,al=distance(plan(a),plan(c));if(al<1e-6)continue;
         const r:XY=[q[0]-p[0],q[2]-p[2]],s:XY=[c[0]-a[0],c[2]-a[2]],d=r[0]*s[1]-r[1]*s[0];if(Math.abs(d)<1e-9)continue;
         const t=((a[0]-p[0])*s[1]-(a[2]-p[2])*s[0])/d,u=((a[0]-p[0])*r[1]-(a[2]-p[2])*r[0])/d;if(t<0||t>1||u<0||u>1)continue;
-        const sin=Math.abs(d)/(pl*al),y=mix(p[1],q[1],t),h=mix(a[1],c[1],u);if(sin<Math.sin(25*Math.PI/180)||Math.abs(y-h)>1.6)continue;out.push(arc[j-1]!+u*al);}}
+        const sin=Math.abs(d)/(pl*al),y=mix(p[1],q[1],t),h=mix(a[1],c[1],u);if(sin<Math.sin(25*Math.PI/180)||y-h< -1.6||y-h>LANDING_OVER)continue;out.push(arc[j-1]!+u*al);}}
     for(const e of [b.points[0]!,b.points.at(-1)!]){const hit=nearestOnPath(plan(e),line);if(hit.distance<1.2&&Math.abs(e[1]-hit.at[1])<1.6)out.push(hit.along);}
   }
   return out;

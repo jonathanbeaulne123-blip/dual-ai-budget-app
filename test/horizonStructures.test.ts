@@ -270,8 +270,9 @@ describe('Horizon Wave 7 structures (W7-S)',()=>{
     const s1East=s1.points.findIndex((p,i)=>i>0&&(s1.points[i-1]![0]-1170.1)*(p[0]-1170.1)<=0),a=s1.points[s1East-1]!,b=s1.points[s1East]!,zc=a[2]+(b[2]-a[2])*(1170.1-a[0])/(b[0]-a[0]);
     expect(Math.min(...east.map(p=>Math.abs(p.z-zc)))).toBeGreaterThan(1.5);
     // The apron bridge's parapet opens where the portage stair lands on it ([1160.8, 31, 940.1], S1 x dam portage).
-    const foot=cuts.beds.find(b=>b.id==='damPortage')!.points.at(-1)!;
-    expect(prisms(find(cuts,'apronBridge.rails')!).filter(p=>Math.hypot(p.x-foot[0],p.z-foot[2])<1.6)).toEqual([]);
+    // No parapet part stands within 1.5 eu of the stair's line over its last 6 eu (its approach mouth onto the deck).
+    const stair=cuts.beds.find(b=>b.id==='damPortage')!,foot=stair.points.at(-1)!,top=stair.points[0]!,len=Math.hypot(foot[0]-top[0],foot[2]-top[2]),mouth:XYZ[]=[[foot[0]-(foot[0]-top[0])*6/len,0,foot[2]-(foot[2]-top[2])*6/len],[foot[0],0,foot[2]]];
+    expect(prisms(find(cuts,'apronBridge.rails')!).filter(p=>nearestOnPath([p.x,p.z],mouth).distance<1.5)).toEqual([]);
     expect(prisms(find(cuts,'apronBridge.rails')!).length).toBeGreaterThan(20);
   },120000);
   it('gives S1 a quay finish a powerslide fits: 14 eu paved on grade, no rail within 6.5 eu of the line, 26 eu of run-out (item 7)',()=>{
