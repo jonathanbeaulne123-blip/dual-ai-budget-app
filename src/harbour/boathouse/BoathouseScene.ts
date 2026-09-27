@@ -411,9 +411,9 @@ export function createBoathouse(scene: THREE.Scene, options: BoathouseOptions): 
       { id: "wish", position: at(wlx, wly, wlz), zone: "station", label: "The unlit lantern by the door — take it down and make a wish. Tend a wish.", door: { target: "wishes" } },
       { id: "projector", position: at(px, 0.8, pz), zone: "station", label: `The projector, aimed at the sail — choose three memories.`, door: { target: "projector" } },
       { id: "memories", position: at(BOATHOUSE_LAYOUT.shelfX - 0.2, BOATHOUSE_LAYOUT.shelfY + 0.1, -1.3), zone: "station", label: `The memory shelf — ${fewWords(view.memories, "memory kept", "memories kept")}. Open a memory.`, door: { target: "memories" } },
-      { id: "pottery", position: at(bx, 1.0, bz), zone: "station", label: "The workbench — clay under the window. Enter the Pottery Studio.", door: { target: "pottery" } },
+      { id: "pottery", position: at(bx, 1.0, bz), zone: "station", label: "The workbench — clay under the window. Open a bank's studio.", door: { target: "pottery" } },
       { id: "letters", position: at(dkx, 0.95, dkz), zone: "station", label: `The writing desk — ${fewWords(view.letters, "note placed", "notes placed")}. Open the writing desk.`, door: { target: "letters" } },
-      { id: "boat", position: at(BOATHOUSE_LAYOUT.boat[0], 0.35, BOATHOUSE_LAYOUT.boat[2]), zone: "station", label: `The rowboat in the slip, two thwarts${partnerName ? ` — room for you and ${partnerName}` : ""} — ${fewWords(view.encounters, "moment spent together", "moments spent together")}. Spend a moment together.`, door: { target: "encounters" } },
+      { id: "boat", position: at(BOATHOUSE_LAYOUT.boat[0], 0.35, BOATHOUSE_LAYOUT.boat[2]), zone: "station", label: `The rowboat in the slip, two thwarts${partnerName ? ` — room for you and ${partnerName}` : ""} — ${fewWords(view.encounters, "moment spent together", "moments spent together")}. Open what you made together.`, door: { target: "memories" } },
       { id: "shore-door", position: at(BOATHOUSE_LAYOUT.door[0], 1.0, BOATHOUSE_LAYOUT.door[2] - 0.2), zone: "stair", label: "The shore door — back to the Court." },
     ];
     return rows;

@@ -6,9 +6,15 @@ type Props = {
   onGoMore?: () => void;
   onReload?: () => void;
   onDismiss?: () => void;
+  /**
+   * A failed post (Tool Atlas A30): the notice is an `alert`, the draft stays,
+   * and "Retry" runs the same named Confirm again. Without it the notice is a
+   * polite status, as before.
+   */
+  onRetry?: () => void;
 };
 
-export function KitchenNotice({ message, onGoMore, onReload, onDismiss }: Props) {
+export function KitchenNotice({ message, onGoMore, onReload, onDismiss, onRetry }: Props) {
   const [dismissed, setDismissed] = useState(false);
   useEffect(() => {
     setDismissed(false);
@@ -38,9 +44,10 @@ export function KitchenNotice({ message, onGoMore, onReload, onDismiss }: Props)
     <div
       className={`kitchen-notice kitchen-notice--${copy.tone}`}
       data-notice-id={copy.id}
-      role="status"
-      aria-live="polite"
+      role={onRetry ? "alert" : "status"}
+      aria-live={onRetry ? undefined : "polite"}
       aria-atomic="true"
+      data-notice-retry={onRetry ? "" : undefined}
     >
       <div className="kitchen-notice__content">
         <span className="kitchen-notice__primary">{copy.primary}</span>
@@ -53,6 +60,11 @@ export function KitchenNotice({ message, onGoMore, onReload, onDismiss }: Props)
           onClick={() => runAction(copy.action!.kind)}
         >
           {copy.action.label}
+        </button>
+      )}
+      {onRetry && (
+        <button type="button" className="kitchen-notice__action" data-notice-retry-button="" onClick={onRetry}>
+          Retry
         </button>
       )}
       <button type="button" className="kitchen-notice__close" aria-label="Dismiss" onClick={dismiss}>

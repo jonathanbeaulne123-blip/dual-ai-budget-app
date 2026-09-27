@@ -247,7 +247,7 @@ it.each([["0","1"],["1","0"],["0","0"]])("presentation rollback keeps the indepe
  if(chat==='0'){
   expect(host.textContent).not.toContain('Continue our conversation');
   expect(host.querySelector('.hercules-replies button')).toBeNull();
-  await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Play')!.click());
+  await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Play with him')!.click());
  }
  expect(fetcher).not.toHaveBeenCalled();expect(command).not.toHaveBeenCalled();
 });

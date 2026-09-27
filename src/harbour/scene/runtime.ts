@@ -6,7 +6,8 @@ import {mountainFoliageAt} from '../mountain/planting.ts';
 import {worldCeilingAt,worldCollisionAt} from '../mountain/surfaces.ts';
 import {GEOGRAPHY_REVISION,MOUNTAIN_VERSION,transportPoint,TRANSPORT_STOPS,type Point3,type TransportKind} from '../mountain/definition.ts';
 import {walkGraph} from '../body/geography.ts';
-import {createRide,farOffer,nearestStation,platformOffer,type Ride,type RideOffer} from '../body/ride.ts';
+import {createRide,nearestStation,platformOffer,PLATFORM_REACH,type Ride,type RideOffer} from '../body/ride.ts';
+import {buildRideButtons,type RideButtonAction} from '../mountain/rideButtons.ts';
 import {advanceMonorail,boardMonorail,monorailPosition,selectMonorailStop,type MonorailState,type MonorailView} from '../mountain/monorail.ts';
 
 import {crossedVillageDoor,villagePortalArrival} from "../village/topology.ts";
@@ -21,6 +22,7 @@ import {insideVillageBuilding} from '../body/obstacles.ts';
 import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
 import { worldDiagnostics } from "../../house/world/diagnostics.ts";
 import type { ThemeId } from "../../theme/scenes.ts";
+import { inCameraDeadzone } from "../bubbles/deadzone.ts";
 import { createCourtCamera, type CourtCamera, type CourtLook } from "../camera/courtCamera.ts";
 // ── The body lane (world-body) ───────────────────────────────────────────────
 // Everything this lane adds to the runtime is additive and marked like this
@@ -51,7 +53,7 @@ import {tourPose} from '../mountain/tour.ts';
 import { EXIT_REACH, exitAnchors, followHoldIn, placeArrival, placeGround, placeObstacles, placeRoom, roomReach, walksIndoors } from "../body/places.ts";
 import { NO_INPUT, eyeHeight, type BodyInput } from "../body/bodyModel.ts";
 import { CLOSE_HOLDS, COURT_ANCHOR_IDS, COURT_FOV, closePose, type CourtAnchor, type CourtMode, type CourtPose, type RoomHold } from "../camera/poses.ts";
-import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "./framePolicy.ts";
+import { harbourFramePolicy, CAMERA_INTERVAL_MS, createFrameBudgetWatch } from "./framePolicy.ts";
 import { createGround,groundHeightAt } from "./ground.ts";
 import { configureHarbourRenderer, createLightRig } from "./lightRig.ts";
 import { EMPTY_PLACE, PLACES, PLACED_PLACE_IDS, PLACE_HOLDS, SCENE_DRESSING,  placedFootprintHold, placedPose, placementLift, placementToWorld, placementOf, poseFor, streamPlaces, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type PlacePlacement, type PlaceReading, type Pose, type Region, type Vec3 } from "./place.ts";
@@ -64,6 +66,7 @@ export type HarbourHit =
   | { kind: "queen"; region: string; object: THREE.Object3D; point: Vec3 }
   | { kind: "anchor"; id: string; anchor: Anchor; point: Vec3 }
   | { kind: "ground"; point: Vec3 }
+  | { kind: "ride-button"; action: RideButtonAction; point: Vec3 }
   | { kind: "none" };
 
 export type GestureSample = { x: number; y: number; t: number };
@@ -114,6 +117,12 @@ export type HarbourCallbacks = {
    */
   onThreshold?: (place: HarbourPlaceId) => void;
   onMountainTravel?:(travelling:boolean)=>void;
+  /**
+   * The glass's two scene signals (Tool Atlas §4.3): the camera is moving (blur
+   * is skipped while it moves), and the frame budget was missed for a second
+   * (the glass goes solid until the next place change). Edge-triggered.
+   */
+  onGlass?:(signal:{cameraMoving:boolean;frameOverBudget:boolean})=>void;
   /** A ride worth offering: standing on a platform, or after a long tap with a station close at hand. `null` withdraws it. */
   onRideOffer?:(offer:RideOffer|null)=>void;
   onMonorail?:(ride:MonorailState|null)=>void;
@@ -199,6 +208,7 @@ export type HarbourRuntime = {
   measure:(action:'start'|'stop'|'read',label?:string)=>FrameStudy;
   mountainTravel:(at:Point3,trip?:{kind:TransportKind;from:number;to:number})=>void;
   mountainSkip:()=>void;
+  mountainSeat:()=>void;
   /** The station on a line nearest the body (a ride form's "From" defaults to it). */
   nearestStation:(kind:TransportKind)=>number;
   monorailBoard:(station:number,companion:boolean)=>void;
@@ -391,6 +401,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   let disposed = false, frame = 0, previous = 0, lastPaint = 0, lastAnimated = 0, visible = true, toolOpen = false, breathing = false, settling = false, intervalMs = CAMERA_INTERVAL_MS;
   let worldAmbience:WorldAmbience|null=null;
   const frameStudy=createFrameStudy();
+  const frameBudget=createFrameBudgetWatch(tier);
+  let cameraMovingNow=false;
+  const glassSignal=()=>callbacks.onGlass?.({cameraMoving:cameraMovingNow,frameOverBudget:frameBudget.over()});
   const mountedAt = performance.now();
   const diagnostics = worldDiagnostics();
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -434,6 +447,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const animators = new Set<(t: number, dt: number) => void>();
   const rig = createLightRig(scene, dressing.light, tier);
   const ground = createGround(scene, dressing, tier);
+  const rideButtons=buildRideButtons(theme);scene.add(rideButtons.group);
   // ── Tideline Skate Club v2 ── one field: the park you see is the park you ride.
   const skatePark=buildSkatePark(dressing,{tier,field:skateField()});scene.add(skatePark.group);
   // A local recording is a separate decorative silhouette: never a body, collider or presence source.
@@ -793,7 +807,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const here=walker?.state(),stops=TRANSPORT_STOPS[kind];
     const at=here?stops.reduce((a,b)=>Math.hypot(a.at[0]-here.x,a.at[1]-here.y,a.at[2]-here.z)<=Math.hypot(b.at[0]-here.x,b.at[1]-here.y,b.at[2]-here.z)?a:b).at:stops[0]!.at;
     walker?.attach(null);walker?.emote(null);walker?.place(at[0],at[2],here?.yaw??0,at[1]);
-    monorail=null;mountainTrip=null;rideOn=null;cabinSolid=null;bodyInput=NO_INPUT;offerRide(null);
+    monorail=null;mountainTrip=null;rideOn=null;cabinSolid=null;bodyInput=NO_INPUT;offerRide(null);rideButtons.setCabin(null);
     mountainHandle().setTransit?.(null);callbacks.onMonorail?.(null);callbacks.onMountainTravel?.(false);
     focus=[at[0],at[2]];previousDoorPoint=null;
   }
@@ -814,6 +828,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
    */
   function standBody(): void {
     skatePark.group.visible=placeId==='court';
+    rideButtons.group.visible=placeId==='court';
     const anchors = handle.anchors();
     const room = placeRoom(placeId, anchors);
     bodyGround = placeGround(placeId);
@@ -895,14 +910,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const ride=mountainTrip;if(!ride||!walker)return;
     const end=ride.pose(),stop=TRANSPORT_STOPS[ride.kind][ride.to]!.at;
     mountainTrip=null;walker.attach(null);
+    rideButtons.setCabin(null);
     walker.place(stop[0],stop[2],end.yaw,stop[1]);
     mountainHandle().setTransit?.(null);callbacks.onMountainTravel?.(false);bringCat();focus=[stop[0],stop[2]];
-  }
-  /** A long walk with a station close at hand asks "Ride there?" rather than setting off on a seven-minute climb. */
-  function offerFar(x:number,z:number,y?:number):void{
-    if(!walker||placeId!=='court')return;
-    const plan=walker.plan(),at=walker.state();
-    offerRide(plan?farOffer({x:at.x,y:at.y,z:at.z},{x,z,...(y===undefined?{}:{y})},plan.length):null);
   }
   function dropBody(): void {
     raceGhost.visible=false;
@@ -1028,6 +1038,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       const point = hit.point.toArray() as [number, number, number];
       let node: THREE.Object3D | null = hit.object;
       while (node) {
+        const button=node.userData.rideButton as RideButtonAction|undefined;
+        if(button)return {kind:'ride-button',action:button,point};
         const region = node.userData.region;
         if (typeof region === "string") return { kind: "queen", region, object: hit.object, point };
         const anchorId = node.userData.anchor;
@@ -1182,7 +1194,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // frame policy nothing it was not already spending, and there is no raw
     // `requestAnimationFrame` anywhere near it.
     // Any touch screen gets the stick — a tablet as much as a phone — and a phone's composition still does.
-    if (!stick && pointers.size === 1 && !mountainTrip) {
+    if (!stick && pointers.size === 1) {
       const only = [...pointers.values()][0];
       if (only && (only.touch || composition === "phone") && only.hit.kind === "ground" && now - only.startedAt >= STICK_MS
         && Math.hypot(only.x - only.startX, only.y - only.startY) < TAP_PIXELS) {
@@ -1251,10 +1263,11 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         // shore or obstacle resolution — and holds its ride pose. Arc-length
         // constant speed; skip finishes it at once.
 
-        bodyInput=NO_INPUT;walker.setInput(NO_INPUT);
+        mountainTrip.move(drive.forward,drive.strafe,toolOpen?0:dt);walker.setInput(NO_INPUT);
         const pose=mountainTrip.step(toolOpen?0:dt);
         walker.attach(pose);walker.step(dt,(now-mountedAt)/1000,heading);
-        mountainHandle().setTransit?.([pose.cabin[0],pose.cabin[1],pose.cabin[2]],mountainTrip.kind,{yaw:pose.yaw,pitch:pose.pitch});previousDoorPoint=null;
+        mountainHandle().setTransit?.([pose.cabin[0],pose.cabin[1],pose.cabin[2]],mountainTrip.kind,{yaw:pose.cabinYaw,pitch:pose.pitch});previousDoorPoint=null;
+        rideButtons.setCabin(mountainTrip.kind,pose.cabin as Point3,pose.cabinYaw);
         bodyMoving=true;
         if(mountainTrip.done())arriveRide();
       }else{
@@ -1328,8 +1341,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         if (!following) setFollowing(true);
         const u = trip.progress();
         // The travel direction from the transport's own frame; the cabin is wherever the rider really is.
-        const along = rideFrame(trip.kind, trip.from, trip.to, u), cabin: Vec3 = [at.x, at.y, at.z];
-        cabinSolid = { at: [at.x, at.y + 1.1, at.z], half: [1.3, 1.5, 1.3] };
+        const along = rideFrame(trip.kind, trip.from, trip.to, u), ridePose=trip.pose(), cabin: Vec3 = [...ridePose.cabin];
+        cabinSolid = { at: [cabin[0], cabin[1] + 1.1, cabin[2]], half: [1.3, 1.5, 1.3] };
         const input = { kind: trip.kind, u, cabin, dir: along.dir, rider: [at.x, at.y + 1.1, at.z] as Vec3, aspect: camera.aspect || 1.6, fov: walkLens() };
         const shot = rideOn ? rideCam.update(input, dt, reducedMotion()) : rideCam.start(input);
         rideOn = { kind: trip.kind, to: trip.to };
@@ -1410,6 +1423,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       worldAmbience.update(at.x,at.y,at.z,at.speed,Boolean(at.supportId&&at.supportId!=='terrain'&&at.supportId!=='mountain-road'&&at.supportId!=='town-race-road'),!walker.skate.active()&&!mountainTrip,calmWorld||toolOpen||placeId!=='court');
     }else worldAmbience.pause();}
     const moving = easing || lensing || (spin !== 0 && !toolOpen) || journey !== null;
+    if (moving !== cameraMovingNow) { cameraMovingNow = moving; glassSignal(); }
     // Reduced motion (and a tool standing in front of the place): no animated
     // frame will ever run, so a place that asked to settle is settled the
     // moment it asks. Without this the flag stays up for the life of the
@@ -1430,7 +1444,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       for (const animate of animators) animate(t, adt);
       lastAnimated = now;
     }
-    if (policy.render || animated) { render(); lastPaint = now; dirty = false; }
+    if (policy.render || animated) { render(); lastPaint = now; dirty = false; if (frameBudget.paint(now)) glassSignal(); }
     if (policy.schedule||streamed) schedule();
   }
 
@@ -1469,8 +1483,24 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     return used;
   }
   function onContextMenu(event: MouseEvent): void { if (walker?.skate.active()) event.preventDefault(); }
+  function pressRideButton(action:RideButtonAction):void{
+    if(placeId!=='court'||toolOpen||!walker||monorail)return;
+    if(action.action==='board'){
+      if(mountainTrip)return;
+      const stop=TRANSPORT_STOPS[action.kind][action.from];if(!stop)return;
+      const at=walker.state();
+      if(Math.hypot(at.x-stop.at[0],at.z-stop.at[2])>PLATFORM_REACH||Math.abs(at.y-stop.at[1])>1.2)return;
+      api.mountainTravel(stop.at,{kind:action.kind,from:action.from,to:action.to});return;
+    }
+    if(mountainTrip?.kind!==action.kind)return;
+    if(action.action==='skip')mountainTrip.skip();
+    else{mountainTrip.toggleSeat();walker.attach(mountainTrip.pose());}
+    dirty=true;schedule();
+  }
   function onPointerDown(event: PointerEvent): void {
     if (disposed || monorail || (event.target instanceof Element && event.target.closest("button,a,input,select,textarea,[role=button]"))) return;
+    // The glass's dead zones (Tool Atlas §4.1, A8): a gesture that starts on or near a bubble, the dock or an open panel never moves the map.
+    if ((event.target instanceof Element && event.target.closest("[data-camera-deadzone]")) || inCameraDeadzone(event.clientX, event.clientY, host.ownerDocument)) return;
     if (skatePointer(event, "down")) return;
     const { x, y, bounds } = stagePoint(event);
     const hit = pointers.size === 0 ? resolveHit(x, y, bounds) : { kind: "none" as const };
@@ -1518,6 +1548,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     if (event.type === "pointercancel") return;
     const travelled = Math.hypot(pointer.x - pointer.startX, pointer.y - pointer.startY), lasted = performance.now() - pointer.startedAt;
     if (travelled < TAP_PIXELS && lasted < TAP_MS) {
+      if(pointer.hit.kind==='ride-button'){pressRideButton(pointer.hit.action);schedule();return;}
       callbacks.onTap?.(pointer.hit, { x: pointer.startX, y: pointer.startY });
       // Two quick taps on the open ground take the place's close hold on and
       // off: the ground itself opens nothing, so this steals no other tap.
@@ -1532,7 +1563,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         if (doubled) { lastGroundTap = null; walker?.cancel(); applyClose(!court.closed()); moved(); }
         else {
           lastGroundTap = { x: pointer.startX, y: pointer.startY, at };
-          if (walker&&!walker.skate.active()&&!mountainTrip) { walker.goTo(pointer.hit.point[0], pointer.hit.point[2], pointer.hit.point[1]); offerFar(pointer.hit.point[0], pointer.hit.point[2], pointer.hit.point[1]); setFollowing(true); }
+          if (walker&&!walker.skate.active()&&!mountainTrip) { walker.goTo(pointer.hit.point[0], pointer.hit.point[2], pointer.hit.point[1]); setFollowing(true); }
         }
       } else lastGroundTap = null;
     }
@@ -1540,7 +1571,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     schedule();
   }
   function onWheel(event: WheelEvent): void {
-    if (disposed) return;
+    if (disposed || inCameraDeadzone(event.clientX, event.clientY, host.ownerDocument)) return;
     event.preventDefault();
     const delta = Math.max(-0.5, Math.min(0.5, event.deltaY * 0.0015));
     // ── The body lane (world-body) ── the wheel pulls the follow camera in and out.
@@ -1636,11 +1667,12 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     setWorldAmbience(audio){worldAmbience=audio;dirty=true;schedule();},
     mountainCalm(on){calmWorld=on;if(on){worldAmbience?.pause();raceGhost.visible=false;walker?.skate.replay('stop');}publishSkate(performance.now(),true);mountainHandle().setCalm?.(on);dirty=true;schedule();},
     mountainSkip(){if(mountainTrip){mountainTrip.skip();dirty=true;schedule();}},
+    mountainSeat(){if(mountainTrip?.kind==='gondola'){mountainTrip.toggleSeat();walker?.attach(mountainTrip.pose());dirty=true;schedule();}},
     nearestStation(kind){const at=walker?.state();return at&&kind!=='monorail'?nearestStation(kind,at.x,at.z,at.y):0;},
     monorailBoard(station,companion){
       if(placeId!=='court')return;
       raiseBody();if(!walker)return;
-      walker.attach(null);rideOn=null;cabinSolid=null;offerRide(null);mountainHandle().setTransit?.(null);callbacks.onMountainTravel?.(false);
+      walker.attach(null);rideOn=null;cabinSolid=null;offerRide(null);rideButtons.setCabin(null);mountainHandle().setTransit?.(null);callbacks.onMountainTravel?.(false);
       mountainTrip=null;monorail=boardMonorail(station,companion);bodyInput=NO_INPUT;walker.cancel();walker.setInput(NO_INPUT);
       const p=monorailPosition(monorail);walker.place(p[0],p[2],0,p[1]);bringCat();previousDoorPoint=null;pendingDoor=null;focus=[p[0],p[2]];
       setFollowing(false);setFollowing(true);follow?.snap();stream();announceMonorail(true);dirty=true;schedule();
@@ -1665,6 +1697,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       if(placeId!=='court'||trip?.kind==='monorail')return;
       raiseBody();if(!walker)return;
       if(monorail){monorail=null;callbacks.onMonorail?.(null);}
+      rideButtons.setCabin(null);
       if(mountainTrip)walker.attach(null);
       mountainTrip=null;mountainHandle().setTransit?.(null);offerRide(null);callbacks.onMountainTravel?.(Boolean(trip));bodyInput=NO_INPUT;walker.cancel();walker.setInput(NO_INPUT);
 
@@ -1773,7 +1806,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         // at the body (it never flies to the town); a room still steps back to its own diorama.
         follow(on) { setFollowing(on); if (!on && placeId !== 'court') { aim("court"); } moved(); },
         input(next) { if(next.forward!==0||next.strafe!==0)offerRide(null);bodyInput = next; if (next.forward !== 0 || next.strafe !== 0) { setFollowing(true); } dirty = true; schedule(); },
-        goTo(x, z, y) { const planned=one.goTo(x, z, y);if(planned)setFollowing(true);offerFar(x,z,y); dirty = true; schedule();return planned; },
+        goTo(x, z, y) { const planned=one.goTo(x, z, y);if(planned)setFollowing(true);dirty = true; schedule();return planned; },
         runLock(on) { const locked=one.runLock(on);rememberedRun=locked; dirty = true; schedule(); return locked; },
         place(x, z, yaw, y) { one.place(x, z, yaw, y);bringCat(); focus=[x,z]; previousDoorPoint=null; dirty = true; schedule(); },
         at() {
@@ -1791,6 +1824,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     },
     enter(next, options = {}) {
       offerRide(null);rideOn=null;cabinSolid=null;
+      if(frameBudget.reset())glassSignal();
       if(monorail){monorail=null;mountainHandle().setTransit?.(null);callbacks.onMonorail?.(null);}
       if(mountainTrip){mountainTrip=null;walker?.attach(null);mountainHandle().setTransit?.(null);callbacks.onMountainTravel?.(false);}
 
@@ -1903,6 +1937,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       // ── The body lane (world-body) ──
       dropBody();
       scene.remove(raceGhost);for(const geometry of ghostGeometries)geometry.dispose();ghostMaterial.dispose();
+      rideButtons.dispose();
       skatePark.dispose();ground.dispose(); rig.dispose();
       lease.release();
       host.style.backgroundImage = "";

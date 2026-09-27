@@ -60,7 +60,7 @@ it('runs two actual App clients through real local LedgerRoom, Studio and recipi
   const taskArticle=two.locator('.hearthside-linked article').filter({hasText:taskTitle});await taskArticle.waitFor();
   let accepted=await authority.household();const task=accepted.tasks?.find(row=>row.title===taskTitle);expect(task).toMatchObject({visibility:'household',assigneeId:'MEM-001',deleted:false});
   expect(accepted.hearthside?.experiences.find(row=>row.title===intentionTitle)?.references.filter(row=>row.kind==='task'&&row.id===task!.id)).toHaveLength(1);
-  await taskArticle.getByRole('button',{name:'Open',exact:true}).click();await two.locator('#planner-focused-task').waitFor();await two.getByRole('button',{name:'Return to Hearthside',exact:true}).click();await two.getByRole('heading',{name:intentionTitle,exact:true}).waitFor();
+  await taskArticle.getByRole('button',{name:'Open',exact:true}).click();await two.locator('#planner-focused-task').waitFor();await two.getByRole('button',{name:'Return to The Boathouse',exact:true}).click();await two.getByRole('heading',{name:intentionTitle,exact:true}).waitFor();
 
   const dateTitle=`${prefix} soup night`,dateIds=await commandIds(one);await one.getByRole('button',{name:'Make time for this',exact:true}).click();
   const dateDraft=one.getByRole('region',{name:'Connected date draft'});await dateDraft.getByLabel('What we are making time for').fill(dateTitle);await dateDraft.getByLabel('Starts').fill('2026-09-25');
@@ -68,13 +68,13 @@ it('runs two actual App clients through real local LedgerRoom, Studio and recipi
   const dateArticle=two.locator('.hearthside-linked article').filter({hasText:dateTitle});await dateArticle.waitFor();accepted=await authority.household();const date=accepted.nativeEvents?.find(row=>row.title===dateTitle);
   expect(date).toMatchObject({visibility:'household',allDay:true,deleted:false});expect(accepted.hearthside?.experiences.find(row=>row.title===intentionTitle)?.references.filter(row=>row.kind==='calendar-event'&&row.id===date!.id)).toHaveLength(1);
   await dateArticle.getByRole('button',{name:'Open',exact:true}).click();await two.getByLabel('Event title',{exact:true}).waitFor();expect(await two.getByLabel('Event title',{exact:true}).inputValue()).toBe(dateTitle);
-  await two.getByRole('button',{name:'Return to Hearthside',exact:true}).click();await two.getByRole('heading',{name:intentionTitle,exact:true}).waitFor();
+  await two.getByRole('button',{name:'Return to The Boathouse',exact:true}).click();await two.getByRole('heading',{name:intentionTitle,exact:true}).waitFor();
   expect(taskReceipt.sequence).toBeGreaterThan(initialSequence);expect(dateReceipt.sequence).toBeGreaterThan(taskReceipt.sequence);
   expect(await financialAuditHash(accepted)).toBe(initialHash);
 
   // The ordinary financial draft does not touch authority until its exact Final Confirm.
   const beforeReview=await authority.snapshot(),beforeReviewHousehold=await authority.household();
-  await one.getByRole('button',{name:'Add money',exact:true}).click();await one.getByRole('menuitem',{name:'Add expense',exact:true}).click();
+  await one.getByRole('button',{name:'Record',exact:true}).click();await one.getByRole('button',{name:'Purchase: record one',exact:true}).click();
   await one.getByLabel('Amount (CAD)',{exact:true}).fill('1.23');await one.getByRole('button',{name:'Enter',exact:true}).click();
   await one.getByRole('button',{name:'Groceries',exact:true}).click();
   const continueToAccount=one.getByRole('button',{name:'Continue to account',exact:true});if(await continueToAccount.isVisible())await continueToAccount.click();

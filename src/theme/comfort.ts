@@ -16,9 +16,15 @@ export type Comfort = {
   motion: MotionPreference;
   haptics: boolean;
   sound: boolean;
+  /**
+   * "Always show labels" (Tool Atlas §4.2, A11): the glass bubbles keep their word
+   * pill at every usage count on this device. Off by default: a bubble shows its
+   * label until this person has used it five times.
+   */
+  labels: boolean;
 };
 
-export const DEFAULT_COMFORT: Comfort = { quiet: false, celebration: "full", motion: "system", haptics: true, sound: false };
+export const DEFAULT_COMFORT: Comfort = { quiet: false, celebration: "full", motion: "system", haptics: true, sound: false, labels: false };
 
 export function comfortKey(environment: string): string {
   return `hearth:comfort:v1:${environment}`;
@@ -32,6 +38,7 @@ export function parseComfort(raw: unknown): Comfort {
     motion: value.motion === "reduced" ? "reduced" : "system",
     haptics: value.haptics !== false,
     sound: value.sound === true,
+    labels: value.labels === true,
   };
 }
 
@@ -56,6 +63,7 @@ export function applyComfort(comfort: Comfort, root: HTMLElement = document.docu
   root.dataset.motion = comfort.motion;
   root.dataset.haptics = comfort.haptics ? "on" : "off";
   root.dataset.sound = comfort.sound ? "on" : "off";
+  root.dataset.labels = comfort.labels ? "always" : "learned";
 }
 
 function safeStorage(): Storage | null {

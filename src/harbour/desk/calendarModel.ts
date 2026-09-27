@@ -187,8 +187,8 @@ function monthItem(item: CalendarDisplayItem, scoped: Household): DeskMonthItem 
 }
 
 /** The mini month: this month's days with the Calendar page's heat, glyphs and day lists. */
-export function readMonth(household: Household, memberId: string, scope: LedgerView, today: DateKey): DeskMonth {
-  const monthKey = monthKeyFromDateKey(today);
+/** The month's grid. `monthKey` defaults to this month; the Desk's month picker (K2) reads any other. */
+export function readMonth(household: Household, memberId: string, scope: LedgerView, today: DateKey, monthKey: MonthKey = monthKeyFromDateKey(today)): DeskMonth {
   const monthLabel = formatMonthLabel(monthKey).replace(/\s\d{4}$/, "");
   const lead = weekdaySunday0(`${monthKey}-01`);
   const scoped = calendarHousehold(household, memberId, scope);

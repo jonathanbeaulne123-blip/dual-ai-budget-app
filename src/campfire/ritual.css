@@ -1,0 +1,223 @@
+/*
+ * The Campfire ritual sheet — a working surface over the map (Tool Atlas §4.1:
+ * an open surface is solid paper, no blur). Three dressings change the
+ * material, never only the hue (§4.4): Classic porcelain with a chalk top edge,
+ * Taylor's vellum with a washi corner, Newfoundland's white-framed paper.
+ * Phone 320/390: a full-height sheet, beats as a scrolling row. ≥ 720: a
+ * centred panel with the beats down the left. The fire never animates under
+ * reduced motion.
+ */
+.campfire-ritual {
+  --cf-paper: #f6f0e4;
+  --cf-ink: #2e241b;
+  --cf-ink-2: #5a4a3c;
+  --cf-line: #8a7a69;
+  --cf-accent: #b04c34;
+  --cf-accent-ink: #f6f0e4;
+  --cf-edge: #fbf5e6;
+  --cf-flame: #d9722e;
+  --cf-stone: #8f8676;
+  --cf-scrim: rgba(26, 23, 20, 0.42);
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  background: var(--cf-scrim);
+  touch-action: manipulation;
+  font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+}
+:root[data-theme="taylor"] .campfire-ritual, :root[data-theme="taylor"] .campfire-door {
+  --cf-paper: #fff8f4;
+  --cf-ink: #49323d;
+  --cf-ink-2: #5a4a3c;
+  --cf-accent: #826789;
+  --cf-accent-ink: #fff8f4;
+  --cf-edge: #ffffff;
+  --cf-flame: #c96f8e;
+}
+:root[data-theme="newfoundland"] .campfire-ritual, :root[data-theme="newfoundland"] .campfire-door {
+  --cf-paper: #f5f3ea;
+  --cf-ink: #273e41;
+  --cf-ink-2: #5a4a3c;
+  --cf-accent: #2f5b63;
+  --cf-accent-ink: #f5f3ea;
+  --cf-edge: #ffffff;
+  --cf-flame: #d98a3a;
+}
+
+.campfire-ritual__sheet {
+  box-sizing: border-box;
+  width: 100%;
+  max-height: 100dvh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  background: var(--cf-paper);
+  color: var(--cf-ink);
+  border-top: 2px solid var(--cf-edge);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -8px 24px -12px rgba(26, 23, 20, 0.45);
+  display: grid;
+  /* One column that may shrink below its content's width: without minmax(0, …) the beat row's
+     full width (≈ 620 px) became the track's minimum and the whole sheet, "Put it back"
+     included, ran off a 390 px screen (Wave 3a evidence). */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.campfire-ritual__sheet > * { min-width: 0; }
+/* Classic: the chalk top edge. */
+:root[data-theme="classic"] .campfire-ritual__sheet, :root:not([data-theme]) .campfire-ritual__sheet { box-shadow: inset 0 1px 0 var(--cf-edge), 0 -8px 24px -12px rgba(26, 23, 20, 0.45); }
+/* Taylor: vellum with a washi-tape corner. */
+:root[data-theme="taylor"] .campfire-ritual__sheet { position: relative; font-family: "Atkinson Hyperlegible", system-ui, sans-serif; }
+:root[data-theme="taylor"] .campfire-ritual__sheet::before {
+  content: ""; position: absolute; top: 6px; left: 18px; width: 72px; height: 18px;
+  background: rgba(232, 166, 189, 0.2); transform: rotate(-4deg); pointer-events: none;
+}
+:root[data-theme="taylor"] .campfire-ritual__kicker { font-family: "Caveat", "Atkinson Hyperlegible", cursive; font-size: 1.15rem; }
+/* Newfoundland: a white frame, Figtree caps for the beat words. */
+:root[data-theme="newfoundland"] .campfire-ritual__sheet { outline: 1.5px solid #f5f3ea; outline-offset: -6px; }
+:root[data-theme="newfoundland"] .campfire-ritual__beats button { font-family: "Figtree", "Atkinson Hyperlegible", sans-serif; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
+
+.campfire-ritual__head { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+.campfire-ritual__head h2 { margin: 0; font-family: "Fraunces", Georgia, serif; font-size: 1.35rem; line-height: 1.2; overflow-wrap: anywhere; }
+.campfire-ritual__kicker { margin: 0; color: var(--cf-ink-2); font-size: 0.85rem; }
+.campfire-ritual--weekly .campfire-ritual__head { grid-template-columns: 1fr auto; }
+
+.campfire-ritual button, .campfire-door button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--cf-line);
+  background: var(--cf-paper);
+  color: var(--cf-ink);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.campfire-ritual .campfire-primary, .campfire-door .campfire-primary {
+  background: var(--cf-accent);
+  color: var(--cf-accent-ink);
+  border-color: var(--cf-accent);
+  box-shadow: 0 0 0 2px var(--cf-paper);
+  font-weight: 700;
+}
+.campfire-ritual [aria-disabled="true"], .campfire-door [aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+.campfire-ritual :focus-visible, .campfire-door :focus-visible {
+  outline: 2px solid #1a1714;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px #ffffff;
+}
+.campfire-ritual h3:focus { outline: none; }
+.campfire-ritual h3:focus-visible { outline: 2px solid #1a1714; outline-offset: 4px; }
+
+.campfire-ritual__beats ol { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; overflow-x: auto; scrollbar-width: thin; }
+.campfire-ritual__beats li { flex: 0 0 auto; }
+.campfire-ritual__beats button { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.campfire-ritual__beats button[aria-current="step"] { border-width: 2px; border-color: var(--cf-ink); font-weight: 700; }
+.campfire-ritual__beat-number { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid currentColor; font-size: 0.8rem; }
+
+.campfire-beat { display: grid; gap: 12px; }
+.campfire-beat h3 { margin: 0; font-family: "Fraunces", Georgia, serif; font-size: 1.25rem; }
+.campfire-beat h4 { margin: 0 0 6px; font-size: 1rem; }
+.campfire-beat__body { display: grid; gap: 14px; }
+.campfire-beat__body p, .campfire-door p { margin: 0; max-width: 62ch; }
+
+.campfire-chairs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.campfire-chair { display: grid; gap: 2px; padding: 10px; border: 1px dashed var(--cf-line); border-radius: 12px; }
+.campfire-chair.is-here { border-style: solid; border-width: 2px; border-color: var(--cf-ink); }
+.campfire-chair__log { display: block; width: 44px; height: 10px; border-radius: 6px; background: var(--cf-stone); }
+.campfire-chair.is-here .campfire-chair__log { background: var(--cf-flame); }
+
+.campfire-facts { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; }
+.campfire-facts dt { color: var(--cf-ink-2); }
+.campfire-facts dd { margin: 0; overflow-wrap: anywhere; }
+.campfire-hercules { font-style: italic; color: var(--cf-ink-2); }
+
+.campfire-list, .campfire-cards { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.campfire-list > li, .campfire-card { display: grid; gap: 4px; padding: 10px; border: 1px solid color-mix(in srgb, var(--cf-line) 55%, transparent); border-radius: 12px; overflow-wrap: anywhere; }
+.campfire-card span { color: var(--cf-ink-2); }
+.campfire-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.campfire-drift { margin: 8px 0 0; padding-left: 18px; color: var(--cf-ink-2); }
+.campfire-more > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+.campfire-outcomes { display: grid; gap: 6px; border: 1px solid var(--cf-line); border-radius: 12px; padding: 10px; margin: 0; }
+.campfire-outcome { display: flex; gap: 10px; align-items: center; min-height: 44px; }
+.campfire-outcome input { width: 22px; height: 22px; accent-color: var(--cf-accent); }
+.campfire-ritual label, .campfire-door label { display: grid; gap: 4px; }
+.campfire-ritual input:not([type="radio"]), .campfire-ritual textarea { min-height: 44px; box-sizing: border-box; width: 100%; padding: 8px 10px; border: 1px solid var(--cf-line); border-radius: 10px; background: #fff; color: var(--cf-ink); font: inherit; }
+.campfire-seal-line { font-weight: 700; font-size: 1.05rem; }
+.campfire-digest { padding: 10px; border: 2px solid var(--cf-ink); border-radius: 12px; display: grid; gap: 6px; }
+.campfire-reason { display: none; color: var(--cf-ink-2); font-size: 0.9rem; }
+.campfire-reason.is-told, :focus-visible + .campfire-reason, :hover + .campfire-reason { display: block; }
+
+.campfire-ritual__foot { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; position: sticky; bottom: 0; padding-top: 8px; background: var(--cf-paper); }
+.campfire-ritual__status { margin: 0; min-height: 1.2em; font-weight: 700; }
+.campfire-ritual__error { margin: 0; color: #8b1e12; }
+
+.campfire-glyph { flex: none; }
+.campfire-glyph__flame { fill: var(--cf-flame); transform-origin: 24px 34px; }
+.campfire-glyph__logs { stroke: var(--cf-ink-2); stroke-width: 3; stroke-linecap: round; fill: none; }
+.campfire-glyph__stones ellipse { fill: var(--cf-stone); }
+@media (prefers-reduced-motion: no-preference) {
+  .campfire-glyph__flame { animation: campfire-flicker 2.4s ease-in-out infinite alternate; }
+  .campfire-ritual__sheet { animation: campfire-rise 180ms ease-out; }
+}
+@keyframes campfire-flicker { from { transform: scale(1, 1); } to { transform: scale(0.94, 1.06); } }
+@keyframes campfire-rise { from { transform: translateY(24px); opacity: 0.6; } to { transform: none; opacity: 1; } }
+
+/* ≥ 720: a centred panel; the beats run down the left. */
+@media (min-width: 720px) {
+  .campfire-ritual { align-items: center; padding: 24px; }
+  .campfire-ritual__sheet {
+    width: min(920px, 100%);
+    max-height: min(88dvh, 900px);
+    border-radius: 18px;
+    border: 2px solid var(--cf-edge);
+    grid-template-columns: 200px minmax(0, 1fr);
+    grid-template-areas: "head head" "beats beat" "beats foot" "beats status" "beats error";
+    column-gap: 24px;
+    padding: 24px;
+  }
+  .campfire-ritual__head { grid-area: head; }
+  .campfire-ritual__beats { grid-area: beats; }
+  .campfire-beat { grid-area: beat; }
+  .campfire-ritual__foot { grid-area: foot; }
+  .campfire-ritual__status { grid-area: status; }
+  .campfire-ritual__error { grid-area: error; }
+  .campfire-ritual__beats ol { flex-direction: column; overflow: visible; }
+  .campfire-ritual__beats button { width: 100%; justify-content: flex-start; }
+  .campfire-ritual--weekly .campfire-ritual__sheet { width: min(560px, 100%); grid-template-columns: 1fr; grid-template-areas: none; }
+  .campfire-ritual--weekly .campfire-ritual__sheet > * { grid-area: auto; }
+}
+/* 320: the chairs stack; nothing scrolls sideways but the beat row. */
+@media (max-width: 359px) {
+  .campfire-chairs { grid-template-columns: 1fr; }
+  .campfire-ritual__head { grid-template-columns: 1fr auto; }
+  .campfire-glyph { display: none; }
+}
+
+/* Solid, plain and system-painted when the person asks for it. */
+@media (prefers-contrast: more) {
+  .campfire-ritual { --cf-line: var(--cf-ink); }
+  .campfire-ritual__sheet { border: 2px solid var(--cf-ink); }
+}
+@media (forced-colors: active) {
+  .campfire-ritual__sheet, .campfire-ritual button, .campfire-door button, .campfire-chair, .campfire-card { border: 1px solid CanvasText; forced-color-adjust: auto; }
+  .campfire-ritual :focus-visible, .campfire-door :focus-visible { outline: 2px solid Highlight; }
+  .campfire-glyph { display: none; }
+}
+
+/* The door that stands where the three old screens stood. */
+.campfire-door {
+  --cf-paper: #f6f0e4; --cf-ink: #2e241b; --cf-ink-2: #5a4a3c; --cf-line: #8a7a69; --cf-accent: #b04c34; --cf-accent-ink: #f6f0e4;
+  display: grid; gap: 8px; justify-items: start; padding: 14px; border-radius: 14px; border: 1px solid var(--cf-line); background: var(--cf-paper); color: var(--cf-ink);
+}
+.campfire-door__line { font-weight: 700; }
+.campfire-door__why { color: var(--cf-ink-2); }
+
+/* No see-through veil when transparency is unwelcome: the map simply goes away behind the paper. */
+@media (prefers-reduced-transparency: reduce) {
+  .campfire-ritual { background: var(--cf-paper); }
+}

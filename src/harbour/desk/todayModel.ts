@@ -1,5 +1,7 @@
 /**
- * The Desk's Today page, read (SIMPLE_VIEW_DESK S2). Pure functions over
+ * The Desk's Today page, read (SIMPLE_VIEW_DESK S2) — and since the Tool
+ * Atlas (§3.5), the camp card's read too: `glass/campCardModel.ts` builds the
+ * card from these same functions, and the Desk's Today renders that card. Pure functions over
  * shipped core selectors only — nothing here posts, writes or moves money,
  * and nothing here computes a balance of its own:
  *
@@ -115,22 +117,23 @@ export function readNext(walk: FundWalk | null, today: DateKey): DeskNext | null
 }
 
 /**
- * Where each Hercules suggestion's source lives, as a house door. Typed on
+ * Where each Hercules suggestion's source lives, as a house door, named in
+ * the Tool Atlas's words (§3.2: the Cellar, the kitchen table, Settings). Typed on
  * every capability, so a new one without a door is a type error, not a dead
  * button. `hercules` means the suggestion is a conversation, so the corner
  * offers only the Talk button.
  */
 export const DISCOVERY_DOORS: Readonly<Record<HerculesCapabilityId, { target: string; words: string }>> = Object.freeze({
-  "review-bill": { target: "cellar-bills", words: "Read the bill jars" },
-  "bills-before-payday": { target: "cellar-bills", words: "Read the bill jars" },
-  "explain-fund": { target: "cellar-bills", words: "Read the bill jars" },
+  "review-bill": { target: "cellar-bills", words: "Open the Cellar" },
+  "bills-before-payday": { target: "cellar-bills", words: "Open the Cellar" },
+  "explain-fund": { target: "cellar-bills", words: "Open the Cellar" },
   "review-claim": { target: "books", words: "Open the books" },
   "explain-account": { target: "books", words: "Open the books" },
   "explain-spending": { target: "books", words: "Open the books" },
   "compare-periods": { target: "books", words: "Open the books" },
-  "review-plan": { target: "plan-studio", words: "Sit down at the Plan Studio" },
+  "review-plan": { target: "plan-studio", words: "Open the kitchen table" },
   "review-goal": { target: "loft-banks", words: "Open Kitty Banks" },
-  "review-health": { target: "more", words: "Open Health in the Status Centre" },
+  "review-health": { target: "more", words: "Open Status in Settings" },
   "dress-hercules": { target: "wardrobe", words: "Open his wardrobe" },
   "resume-shift": { target: "hercules", words: "Ask Hercules" },
   "explain-page": { target: "hercules", words: "Ask Hercules" },

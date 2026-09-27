@@ -13,9 +13,10 @@ android {
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
-            // Android's asset merger treats .glb.gz and .glb as one key. The
-            // Android wardrobe loader uses the original .glb; keep every model.
-            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~:!*.glb.gz'
+            // Android's asset merger treats compressed sidecars as their
+            // uncompressed key. Wardrobe loads the original .glb, while
+            // Horizon loads the gzip definition and decodes it itself.
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~:!*.glb.gz:!horizon-geo-1.json'
         }
     }
     buildTypes {

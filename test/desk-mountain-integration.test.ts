@@ -32,11 +32,12 @@ it('blocks every edition writer when the device cannot draw and explains the fal
 });
 it('preserves pottery station object routes',async()=>{const onOpen=vi.fn();await act(async()=>root.render(createElement(DeskPlace,{place:'kiln',onOpen,onVisit:vi.fn(),onGuide:vi.fn()})));await act(async()=>{for(const button of host.querySelectorAll('nav button'))(button as HTMLButtonElement).click();});expect(onOpen.mock.calls).toEqual([['pottery','wheel'],['pottery','paint'],['pottery','kiln']]);});
 it('does not turn an unreadable payments table into zero',()=>{expect(readLeavingTable(null,null,today)).toMatchObject({available:false,totalCents:null});});
-it('offers town and mountain doors without WebGL, closes for financial tools, and restores focus only on dismissal',async()=>{
+it('K6: Step in keeps the rides, tour and small moments without WebGL; Places and the glass dam moved out',async()=>{
  const trigger=document.createElement('button');document.body.append(trigger);trigger.focus();const onOpen=vi.fn(),onAction=vi.fn();
  await act(async()=>root.render(createElement(MountainPanel,{flat:true,open:true,onOpenChange:vi.fn(),statusLine:null,onAction,onOpen})));
- expect(document.activeElement).toBe(host.querySelector('[role=dialog]'));expect(host.textContent).toContain('Pottery Studio');expect(host.textContent).toContain('Library Woods');
- await act(async()=>[...host.querySelectorAll('button')].find(x=>x.textContent==='The glass dam')!.click());await act(async()=>[...host.querySelectorAll('button')].find(x=>x.textContent==='Open the Fund')!.click());expect(onOpen).toHaveBeenCalledWith('fund');
+ expect(document.activeElement).toBe(host.querySelector('[role=dialog]'));expect(host.querySelector('[role=dialog]')!.getAttribute('aria-label')).toBe('Step in: rides, a tour and small moments');
+ expect(host.textContent).toContain('Island monorail');expect(host.textContent).not.toMatch(/Mountain (&|and) town|Town square|Atlas nook/);
+ const tabs=[...host.querySelectorAll('nav button')].map(b=>b.textContent);expect(tabs).toEqual(['Travel & race','A tour','Small moments']);
  await act(async()=>root.unmount());expect(document.activeElement).not.toBe(trigger);root=createRoot(host);trigger.remove();
 });
 

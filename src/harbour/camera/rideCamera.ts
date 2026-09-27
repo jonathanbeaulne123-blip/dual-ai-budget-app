@@ -64,8 +64,8 @@ export const RIDE = Object.freeze({
   revealIn: [0.18, 0.4] as const, revealOut: [0.7, 0.88] as const,
   /** Spring stiffness (rad/s) for eye and look-at. */
   wEye: 3.2, wLook: 4.2,
-  /** The safe area the rider is kept inside (NDC). */
-  safe: 0.72,
+  /** Keep the rider and carriage controls clear of the bottom toolbar (NDC). */
+  safe: 0.4,
   /** The ride lens widens a little over the reveal. */
   revealFov: 6,
 });

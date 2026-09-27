@@ -108,7 +108,7 @@ describe("the Glasshouse as a place", () => {
     for (const pot of pots) {
       expect(pot.door?.target).toBe("planner");
       expect(pot.door?.object).toMatch(/^task\//);
-      expect(pot.label).toMatch(/Open the Master Planner/);
+      expect(pot.label).toMatch(/Open the steps/);
     }
     expect(anchors.find((anchor) => anchor.id === "beds")?.door?.target).toBe("calendar");
     expect(anchors.find((anchor) => anchor.id === "garden-door")?.zone).toBe("stair");

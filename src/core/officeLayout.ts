@@ -89,7 +89,7 @@ export const INSTRUMENT_LABEL: Record<InstrumentId, string> = {
   timesheet: "Shifts",
   chalkboard: "Notes",
   wardrobe: "Hercules outfits",
-  postcard: "Sit-down",
+  postcard: "Sitdown",
   cookoff: "Kitchen vs takeout",
   jars: "Goals",
   lamp: "Health",
@@ -135,7 +135,7 @@ export const PERSONALITY_LABEL: Record<Exclude<DeskPersonality, "custom">, strin
   tracker: "Tracker",
   household: "Household",
   cpa: "CPA",
-  play: "Play",
+  play: "Playful",
 };
 
 export const PERSONALITY_BLURB: Record<Exclude<DeskPersonality, "custom">, string> = {

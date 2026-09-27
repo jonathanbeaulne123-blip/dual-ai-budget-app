@@ -29,7 +29,20 @@ export type HarbourTwinsProps = {
   onQueenKey?: (region: string, key: "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight") => void;
   /** The group's name in words: "The Court", "The Tower", "The Cellar". */
   label?: string;
+  /**
+   * A badge a twin wears, in words (Tool Atlas §4.2: "Badges: one pawprint on
+   * Hercules when he has a tier ≤ 1 suggestion"). The words join the twin's
+   * accessible name; the mark beside it is decorative.
+   */
+  badges?: Readonly<Record<string, string>>;
 };
+
+/** The pawprint Hercules wears on the map when he has a fresh suggestion. */
+export function Pawprint() {
+  return <svg className="court-twins__paw" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+    <g fill="currentColor"><ellipse cx="12" cy="16" rx="4.6" ry="3.8" /><circle cx="6" cy="10.5" r="2.1" /><circle cx="9.6" cy="6.6" r="2.1" /><circle cx="14.4" cy="6.6" r="2.1" /><circle cx="18" cy="10.5" r="2.1" /></g>
+  </svg>;
+}
 
 /** Slice 1's name for the same component; the Court is one of the three places it serves. */
 export type CourtTwinsProps = HarbourTwinsProps;
@@ -42,7 +55,7 @@ export function orderTwins<T extends { id: string; visible: boolean }>(rects: re
   return [...rects].filter(r => r.visible).sort((a, b) => orderOf(a.id) - orderOf(b.id) || a.id.localeCompare(b.id));
 }
 
-export function HarbourTwins({ rects, hidden = false, label = "The Court", onActivate, onQueenKey }: HarbourTwinsProps) {
+export function HarbourTwins({ rects, hidden = false, label = "The square", onActivate, onQueenKey, badges }: HarbourTwinsProps) {
   const ordered = orderTwins(rects);
   const queen = ordered.filter(r => r.group === "queen" && r.id !== "queen");
   const [roving, setRoving] = useState<string>(queen[0]?.id ?? "");
@@ -73,6 +86,7 @@ export function HarbourTwins({ rects, hidden = false, label = "The Court", onAct
   return <div className="court-twins" data-court-twins={ordered.length} hidden={hidden || undefined} role="group" aria-label={label}>
     {ordered.map(rect => {
       const isQueenRegion = rect.group === "queen" && rect.id !== "queen";
+      const badge = badges?.[rect.id];
       return <button
         key={rect.id}
         type="button"
@@ -81,12 +95,13 @@ export function HarbourTwins({ rects, hidden = false, label = "The Court", onAct
         data-twin={rect.id}
         data-twin-group={rect.group}
         tabIndex={isQueenRegion ? (rect.id === roving ? 0 : -1) : 0}
-        aria-label={rect.label}
+        aria-label={badge ? `${rect.label}, ${badge}` : rect.label}
+        data-twin-badge={badge ? "" : undefined}
         style={{ left: `${rect.x}px`, top: `${rect.y}px`, width: `${rect.w}px`, height: `${rect.h}px` }}
         onFocus={() => { if (isQueenRegion) setRoving(rect.id); }}
         onKeyDown={event => onKeyDown(rect, event)}
         onClick={() => onActivate(rect)}
-      />;
+      >{badge ? <span className="court-twins__badge" aria-hidden="true"><Pawprint /></span> : null}</button>;
     })}
   </div>;
 }

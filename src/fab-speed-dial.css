@@ -1,0 +1,136 @@
+/*
+ * The Record speed dial (Tool Atlas brief §3.3, §4.1–§4.4).
+ *
+ * The bubble keeps the host bar's size (the bars in styles.css, village.css and
+ * harbour-nav.css set it); inside it the glyph sits over the word "Record",
+ * which never hides. The open column is a solid paper card, never glass:
+ * rows ≥ 48 px, full-width labels, right-aligned toward the thumb, mirrored by
+ * the "Record on the left" Comfort setting. Selectors carry enough weight to
+ * win over the older `.fab-dial-action` rules without !important.
+ */
+
+.fab-dial > button.fab.record-bubble {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 2px;
+  line-height: 1;
+  touch-action: manipulation;
+}
+.record-bubble__icon { width: 20px; height: 20px; flex: none; }
+.record-bubble__close { font-size: 18px; line-height: 18px; height: 20px; }
+.record-bubble__label {
+  font-family: "Atkinson Hyperlegible", var(--font, "Figtree", sans-serif);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.fab-dial .fab-dial-actions.record-dial {
+  --record-paper: #f6f0e4;
+  --record-ink: #2e241b;
+  --record-line: rgba(46, 36, 27, 0.18);
+  left: auto;
+  right: 0;
+  transform: none;
+  align-items: stretch;
+  min-width: 200px;
+  max-width: min(280px, calc(100vw - 32px));
+  gap: 6px;
+  padding: 8px;
+  border-radius: 18px;
+  background: var(--record-paper);
+  color: var(--record-ink);
+  border: 1px solid var(--record-line);
+  box-shadow: 0 8px 24px -12px rgba(26, 23, 20, 0.45);
+  touch-action: manipulation;
+}
+.fab-dial.is-mirrored .fab-dial-actions.record-dial { left: 0; right: auto; }
+
+.fab-dial .record-dial > .record-dial__row.fab-dial-action {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--record-ink);
+  box-shadow: none;
+  font-family: "Atkinson Hyperlegible", var(--font, "Figtree", sans-serif);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: right;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+/* Right-aligned toward the thumb: the icon sits at the thumb's edge, the word beside it. */
+.fab-dial.is-mirrored .record-dial > .record-dial__row.fab-dial-action { flex-direction: row; text-align: left; }
+.fab-dial .record-dial > .record-dial__row.fab-dial-action:hover { background: rgba(46, 36, 27, 0.06); }
+.record-dial__icon { flex: none; width: 24px; height: 24px; }
+.record-dial__label { flex: 1 1 auto; }
+
+/* Two-tone focus ring, drawn with outline so forced colours keep it (§4.1): dark inside, white outside. */
+.fab-dial .record-dial > .record-dial__row.fab-dial-action:focus-visible,
+.fab-dial > button.fab.record-bubble:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px #1a1714;
+}
+
+/* Pressed: a small settle; the state change stays under reduced motion. */
+.fab-dial .record-dial > .record-dial__row.fab-dial-action:active { background: rgba(46, 36, 27, 0.12); }
+@media (prefers-reduced-motion: no-preference) {
+  .fab-dial > button.fab.record-bubble { transition: transform 90ms ease-out; }
+  .fab-dial > button.fab.record-bubble:active { transform: scale(0.96); }
+}
+
+/* The three dressings change the paper, not only its hue (§4.4). */
+:root[data-theme="classic"] .fab-dial .fab-dial-actions.record-dial {
+  --record-paper: #f6f0e4;
+  --record-ink: #2e241b;
+  border-top-color: #fbf5e6; /* the chalk edge */
+}
+:root[data-theme="taylor"] .fab-dial .fab-dial-actions.record-dial {
+  --record-paper: #fff8f4;
+  --record-ink: #49323d;
+  --record-line: rgba(73, 50, 61, 0.2);
+  background-image: linear-gradient(135deg, rgba(232, 166, 189, 0.2) 0 22px, transparent 22px); /* the washi corner */
+}
+:root[data-theme="newfoundland"] .fab-dial .fab-dial-actions.record-dial {
+  --record-paper: #f5f3ea;
+  --record-ink: #273e41;
+  --record-line: rgba(39, 62, 65, 0.2);
+  border: 1.5px solid #f5f3ea; /* the white frame */
+  outline: 1px solid var(--record-line);
+}
+:root[data-theme="newfoundland"] .fab-dial .record-dial > .record-dial__row.fab-dial-action {
+  font-family: "Figtree", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+
+/* Solid, calm and system-painted fallbacks (§4.3): the column is already solid; keep its line visible. */
+@media (prefers-contrast: more) {
+  .fab-dial .fab-dial-actions.record-dial { border-color: color-mix(in srgb, var(--record-ink) 66%, transparent); }
+}
+@media (forced-colors: active) {
+  .fab-dial .fab-dial-actions.record-dial,
+  .fab-dial .record-dial > .record-dial__row.fab-dial-action { border: 1px solid transparent; box-shadow: none; background-image: none; }
+  .fab-dial .record-dial > .record-dial__row.fab-dial-action:focus-visible,
+  .fab-dial > button.fab.record-bubble:focus-visible { outline: 2px solid CanvasText; box-shadow: none; }
+}
+:root[data-quiet="true"] .fab-dial .fab-dial-actions.record-dial { box-shadow: none; border-color: #8a7a69; }
+@media (prefers-reduced-transparency: reduce) {
+  .fab-dial .fab-dial-actions.record-dial { box-shadow: none; border-color: #8a7a69; }
+}

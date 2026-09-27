@@ -1,0 +1,320 @@
+{
+ "ride": "lamp_hop",
+ "sha": "e4655b3",
+ "generated": "2026-09-26T10:14:47.543Z",
+ "query": "&sun=11:00",
+ "threshold": "lampGallery",
+ "yaw": 3.141592653589793,
+ "offers": [
+  "Run off the gallery"
+ ],
+ "launch": {
+  "realMs": 33142,
+  "at": {
+   "kind": "glider",
+   "t": 0.9500000000000013,
+   "x": 540,
+   "y": 24.842199448529414,
+   "z": 1187.7750000000026,
+   "phase": "flight",
+   "airspeed": 9.299999999999999,
+   "vs": -1.0550625,
+   "lift": 0,
+   "bank": 0,
+   "heading": 3.141592653589793,
+   "groundSpeed": 13.299999999999999
+  }
+ },
+ "legs": [
+  {
+   "kind": "to",
+   "name": "off the gallery, north",
+   "to": [
+    540,
+    1150
+   ],
+   "within": 22
+  },
+  {
+   "kind": "orbit",
+   "name": "one turn over the water to lose height",
+   "core": [
+    540,
+    1150
+   ],
+   "r": 25,
+   "bar": 0,
+   "belowY": 14,
+   "maxSeconds": 20
+  },
+  {
+   "kind": "gate",
+   "name": "under the Bight Bridge (gate 5, centre h 6)",
+   "gate": [
+    560,
+    1080
+   ],
+   "h": 6,
+   "within": 4,
+   "aim": [
+    582,
+    1046
+   ],
+   "maxBank": 45
+  },
+  {
+   "kind": "to",
+   "name": "through, toward the sandbar",
+   "to": [
+    600,
+    1030
+   ],
+   "within": 10,
+   "bar": 0
+  },
+  {
+   "kind": "land",
+   "name": "land"
+  }
+ ],
+ "summary": {
+  "seconds": 9.33,
+  "final": {
+   "t": 9.33,
+   "x": 523.2,
+   "y": 12.1,
+   "z": 1078.3,
+   "phase": "pose",
+   "airspeed": 13.43,
+   "vs": -2.26,
+   "lift": 0,
+   "bankDeg": 43,
+   "headingDeg": -117,
+   "agl": null,
+   "groundSpeed": 15.66,
+   "bar": 0.83,
+   "bankIn": 0.9,
+   "outcome": "tumble",
+   "outcomeLabel": "",
+   "at": [
+    523.2,
+    12,
+    1078.3
+   ]
+  },
+  "outcome": "tumble",
+  "label": "",
+  "bodyAfter": {
+   "x": 523.1950890640654,
+   "y": 12,
+   "z": 1078.2930452615537,
+   "yaw": -2.042463453265514
+  },
+  "modeAfter": "feet",
+  "peak": {
+   "t": 1.45,
+   "y": 24.3,
+   "x": 540,
+   "z": 1180.9
+  }
+ },
+ "events": [
+  {
+   "t": 2.0499999999999976,
+   "event": "leg off the gallery, north done",
+   "y": 23.591392156862746,
+   "x": 540,
+   "z": 1171.9833333333363
+  },
+  {
+   "t": 8.11666666666665,
+   "event": "leg one turn over the water to lose height done",
+   "y": 13.992464575656289,
+   "x": 536.9491422046758,
+   "z": 1088.827368035081
+  },
+  {
+   "t": 9.333333333333377,
+   "event": "phase flare → pose",
+   "x": 523.2,
+   "y": 12.1,
+   "z": 1078.3,
+   "airspeed": 13.43,
+   "vs": -2.26,
+   "groundSpeed": 15.66
+  }
+ ],
+ "log": [
+  {
+   "t": 1.45,
+   "x": 540,
+   "y": 24.3,
+   "z": 1180.9,
+   "phase": "flight",
+   "airspeed": 10.3,
+   "vs": -1.13,
+   "lift": 0,
+   "bankDeg": 0,
+   "headingDeg": 180,
+   "agl": 24.3,
+   "groundSpeed": 14.3,
+   "bar": 0,
+   "bankIn": 0,
+   "place": "Bight Shore · 7 m (fold)",
+   "leg": "off the gallery, north"
+  },
+  {
+   "t": 2.02,
+   "x": 540,
+   "y": 23.6,
+   "z": 1172.5,
+   "phase": "flight",
+   "airspeed": 11,
+   "vs": -1.2,
+   "lift": 0,
+   "bankDeg": 0,
+   "headingDeg": 180,
+   "agl": 23.6,
+   "groundSpeed": 15,
+   "bar": 0,
+   "bankIn": 0,
+   "place": "Bight Shore · 15 m (fold)",
+   "leg": "off the gallery, north"
+  },
+  {
+   "t": 3.02,
+   "x": 540.9,
+   "y": 22.2,
+   "z": 1157.6,
+   "phase": "flight",
+   "airspeed": 11,
+   "vs": -1.7,
+   "lift": 0,
+   "bankDeg": 45,
+   "headingDeg": 165.8,
+   "agl": 22.2,
+   "groundSpeed": 14.91,
+   "bar": 0,
+   "bankIn": 0.9,
+   "place": "Bight Shore · 30 m (fold)",
+   "leg": "one turn over the water to lose height"
+  },
+  {
+   "t": 4.02,
+   "x": 545.6,
+   "y": 20.7,
+   "z": 1143.7,
+   "phase": "flight",
+   "airspeed": 11,
+   "vs": -1.2,
+   "lift": 0,
+   "bankDeg": -3,
+   "headingDeg": 148.9,
+   "agl": 20.7,
+   "groundSpeed": 14.57,
+   "bar": 0,
+   "bankIn": -0.9,
+   "place": "Bight Shore · 35 m (fold)",
+   "leg": "one turn over the water to lose height"
+  },
+  {
+   "t": 5.02,
+   "x": 550.2,
+   "y": 19.3,
+   "z": 1129.7,
+   "phase": "flight",
+   "airspeed": 11,
+   "vs": -1.7,
+   "lift": 0,
+   "bankDeg": -45,
+   "headingDeg": 165.2,
+   "agl": 19.3,
+   "groundSpeed": 14.9,
+   "bar": 0,
+   "bankIn": -0.9,
+   "place": "Bight Shore · 24 m (fold)",
+   "leg": "one turn over the water to lose height"
+  },
+  {
+   "t": 6.02,
+   "x": 550.6,
+   "y": 17.6,
+   "z": 1114.8,
+   "phase": "flight",
+   "airspeed": 11,
+   "vs": -1.7,
+   "lift": 0,
+   "bankDeg": -45,
+   "headingDeg": -169.3,
+   "agl": 17.6,
+   "groundSpeed": 14.95,
+   "bar": 0,
+   "bankIn": -0.9,
+   "place": "Bight Shore · 16 m (fold)",
+   "leg": "one turn over the water to lose height"
+  },
+  {
+   "t": 7.02,
+   "x": 546.2,
+   "y": 15.9,
+   "z": 1100.8,
+   "phase": "flare",
+   "airspeed": 11,
+   "vs": -1.7,
+   "lift": 0,
+   "bankDeg": -45,
+   "headingDeg": -143.7,
+   "agl": 3.9,
+   "groundSpeed": 14.42,
+   "bar": 0,
+   "bankIn": -0.9,
+   "place": "Bight Shore · 5 m (fold)",
+   "leg": "one turn over the water to lose height"
+  },
+  {
+   "t": 8.02,
+   "x": 537.9,
+   "y": 14.2,
+   "z": 1089.7,
+   "phase": "flare",
+   "airspeed": 11,
+   "vs": -1.7,
+   "lift": 0,
+   "bankDeg": -45,
+   "headingDeg": -118.2,
+   "agl": 2.2,
+   "groundSpeed": 13.36,
+   "bar": 0,
+   "bankIn": -0.9,
+   "place": "Bight Shore · 1 m (fold)",
+   "leg": "one turn over the water to lose height"
+  },
+  {
+   "t": 9,
+   "x": 527.2,
+   "y": 12.7,
+   "z": 1081.4,
+   "phase": "flare",
+   "airspeed": 12.77,
+   "vs": -1.63,
+   "lift": 0,
+   "bankDeg": 23,
+   "headingDeg": -112.2,
+   "agl": 0.7,
+   "groundSpeed": 14.75,
+   "bar": 1,
+   "bankIn": 0.9,
+   "place": "Bight Shore · 2 m (fold)",
+   "leg": "under the Bight Bridge (gate 5, centre h 6)"
+  }
+ ],
+ "pngs": [
+  "offer-taken.png",
+  "lip.png",
+  "t006.png",
+  "after.png"
+ ],
+ "errors": [
+  "Failed to load resource: the server responded with a status of 404 (Not Found)"
+ ]
+}

@@ -291,7 +291,8 @@ describe("weekly document presentation", () => {
     expect(getComputedStyle(stamp).minHeight).toBe("44px");
     expect(getComputedStyle(next).minHeight).toBe("44px");
     expect(container.scrollWidth).toBeLessThanOrEqual(container.clientWidth + 1);
-    expect(sitDownSource).toContain("useState<1 | 2 | 3>");
+    // The monthly leftover guide is the Campfire's Settle now (D3); it still owns the session writes the weekly document must not reuse.
+    expect(sitDownSource).toContain("saveSitDownSession");
     expect(weeklySource).not.toContain("saveSitDownSession");
     expect(weeklySource).not.toContain("SitDownSession");
     expect(weeklySource).toContain("memberId: viewerMemberId");

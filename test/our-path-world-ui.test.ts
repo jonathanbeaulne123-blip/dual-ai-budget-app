@@ -534,7 +534,7 @@ describe("Our Path world page (D-262)", () => {
       const world = created.worlds[0] as FakeWorld;
       const scene = world.setScene.mock.calls.at(-1)![0] as { forks: { id: string }[] };
       expect(scene.forks.map((f) => f.id)).toEqual(decisions.map((line) => `fork:${line.id}`));
-      for (const line of decisions) expect(outline().map((b) => b.textContent)).toContain(`${line.labelSnapshot} · Together`);
+      for (const line of decisions) expect(outline().map((b) => b.textContent)).toContain(`${line.labelSnapshot} · Both of us`);
       const line = decisions[0]!;
       await openFromOutline(line.labelSnapshot);
       expect($(".path-world__card").textContent).toContain(line.decision!.nextStep!);
@@ -866,24 +866,24 @@ describe("Our Path world page (D-262)", () => {
       };
     };
 
-    it("opens the time machine from any month card and from the Replay area", async () => {
+    it("opens the books for any month from its card and from the Replay area (K2)", async () => {
       const onOpenTimeMachine = vi.fn();
       await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15", extra: { onOpenTimeMachine } })));
       await settle();
       await click(byText(/^We are here/));
-      await click(byText("Open the time machine"));
+      await click(byText("Open the books for September 2026"));
       expect(onOpenTimeMachine).toHaveBeenLastCalledWith("2026-09");
       await scrub($<HTMLInputElement>(".path-world__slider input"), 0);
       const first = pathMonths(seeded(), "2026-09-15")[0]!.key;
-      await click(byText("Open this month in the time machine"));
+      await click(byText("Open the books for this month"));
       expect(onOpenTimeMachine).toHaveBeenLastCalledWith(first);
       await click([...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")].find((b) => !b.textContent?.startsWith("We are here") && b.textContent?.includes("·"))!);
       expect($(".path-world__card h3").textContent).toMatch(/^How /);
-      await click(byText("Open the time machine"));
+      await click(byText(/^Open the books for (?!this month)/));
       expect(onOpenTimeMachine).toHaveBeenLastCalledWith(first);
       // Without the prop there is no door.
       await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15" })));
-      expect(byText("Open this month in the time machine")).toBeUndefined();
+      expect(byText("Open the books for this month")).toBeUndefined();
     });
 
     it("stands Hercules's cottage only when Play can open, and its card enters Play", async () => {
@@ -901,15 +901,15 @@ describe("Our Path world page (D-262)", () => {
       await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15", extra: { onOpenPlay } })));
       await settle();
       expect((world.setScene.mock.calls.at(-1)![0] as { cottage?: boolean }).cottage).toBe(true);
-      expect(host.querySelector(".path-mark--cottage")?.getAttribute("aria-label")).toBe("Hercules's cottage, Play");
-      await click(outline().find((b) => b.textContent === "Hercules's cottage · Play")!);
+      expect(host.querySelector(".path-mark--cottage")?.getAttribute("aria-label")).toBe("Hercules's cottage, Time with Hercules");
+      await click(outline().find((b) => b.textContent === "Hercules's cottage · Time with Hercules")!);
       expect($(".path-world__card").textContent).toContain("Hercules keeps our favourite things here.");
       await click(byText("Enter the cottage"));
       expect(onOpenPlay).toHaveBeenCalledTimes(1);
       // Hercules waits in the tent's mark, as decoration: the tent's name stays the text.
       const tent = $<HTMLButtonElement>(".path-mark--tent");
       expect(tent.querySelector(".path-hercules")?.getAttribute("aria-hidden")).toBe("true");
-      expect(tent.getAttribute("aria-label")).toMatch(/^Plan Studio, /);
+      expect(tent.getAttribute("aria-label")).toMatch(/^The kitchen table, /);
     });
 
     it("sits Hercules, aria-hidden, beside the tent button when there is no WebGL", async () => {
@@ -1113,6 +1113,41 @@ describe("Private footpaths and bridges on Our Path", () => {
     await click($("#switch"));
     expect(host.querySelectorAll(".path-world__stage .path-world__flat .path-minimap__footpath")).toHaveLength(1);
     expect([...host.querySelectorAll(".path-world__stage .path-world__flat .path-minimap__bridge")].map((g) => g.getAttribute("data-stage"))).toEqual(["2"]);
+  });
+});
+
+describe("Tool Atlas D2: the App's space drives the private marks", () => {
+  const TODAY = "2026-09-15";
+  const outline = () => [...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")].map((b) => b.textContent ?? "");
+  function withPaths(): Household {
+    let h = seeded();
+    h = saveTask(h, { memberId: "MEM-001", id: "TASK-MINE", expectedRevision: 0, task: { visibility: "personal", title: "Fictional: my own long walk", notes: "", listId: null, parentId: null, doDate: null, dueDate: null, repeat: "none", cue: "none", assigneeId: null, backupId: null, chapterId: null, planReference: null, moneyLink: null, expectedAmountCents: null, deleted: false } }).household;
+    h = savePlanBridgeDraft(h, { monthKey: "2026-09", kind: "responsibility", label: "Fictional: I could cover the ferry", amountCents: 7_321, memberId: "MEM-001", createdBy: "MEM-001" }).household;
+    return h;
+  }
+
+  it("draws my footpaths and my private plank in Mine only, with no toggle and nothing persisted", async () => {
+    created.mode = "fake";
+    const h = withPaths();
+    await act(async () => root.render(createElement(Harness, { initial: h, today: TODAY, extra: { space: "ours" } })));
+    await settle();
+    await enter();
+    const world = created.worlds[0] as FakeWorld;
+    const scene = () => world.setScene.mock.calls.at(-1)![0] as { footpaths: unknown[]; bridges: { stage: number }[] };
+    expect(scene().footpaths).toEqual([]);
+    expect(scene().bridges.filter((bridge) => bridge.stage === 1)).toEqual([]);
+    expect(outline().some((t) => t.includes("my own long walk"))).toBe(false);
+    expect(outline().some((t) => t.includes("cover the ferry"))).toBe(false);
+    await openDrawer();
+    expect([...host.querySelectorAll(".path-world__layers button")].map((b) => b.textContent)).toEqual(["Weather", "Story", "Rhythm"]);
+
+    await act(async () => root.render(createElement(Harness, { initial: h, today: TODAY, extra: { space: "mine" } })));
+    await settle();
+    expect(scene().footpaths).toHaveLength(1);
+    expect(scene().bridges.filter((bridge) => bridge.stage === 1)).toHaveLength(1);
+    expect(outline()).toContain("Fictional: my own long walk · only you see this");
+    // The space is the only source: no per-device key is written or read.
+    expect(Object.keys(localStorage).filter((key) => key.startsWith("hearth:pathWorld:mine"))).toEqual([]);
   });
 });
 

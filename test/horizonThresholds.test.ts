@@ -67,3 +67,18 @@ it('reports an at-grade junction on a bridge deck instead of paving it and cutti
   resolveComputedCrossings(cuts,[{id:'onDeck',a:'deckRoad',b:'lane',at:[0,0],heightA:9,heightB:9,resolution:'threshold',requiredClearance:.5}],()=>0);
   expect(cuts.pads).toHaveLength(0);expect(cuts.diagnostics.find(d=>d.id==='junction.onDeck')?.message).toMatch(/bridge deck/);
 });
+it('carries the plane door as a carried threshold with no pad, marker or lamp, and grades no pad for it',async()=>{
+  const {buildThresholds,createLandWorld}=await import('../src/harbour/horizon/world/build');
+  const field={revision:'horizon-geo-1' as const,width:2000,depth:1800,step:100,columns:21,rows:19,heights:new Float32Array(399).fill(10),surfaces:new Uint8Array(399)};
+  const empty:LandCuts={beds:[],pads:[],mouths:[],waters:[],solids:[],diagnostics:[]};
+  expect(M.thresholds.some(t=>t.id==='bailOut')).toBe(false);// listed apart so the land pass never cuts a pad
+  expect(M.carriedThresholds).toEqual([expect.objectContaining({id:'bailOut',carriedBy:'plane',xy:'carried',modes:['plane→parachute'],action:'jump',minAgl_m:60})]);
+  const bail=buildThresholds(field,empty).find(t=>t.id==='bailOut')!;
+  expect(bail).toMatchObject({carried:'plane',minAgl:60,modes:['plane→parachute'],action:'jump',built:true});expect(bail.padId).toBeUndefined();expect(bail.markerId).toBeUndefined();
+  expect(bail.at.every(v=>Number.isNaN(v))).toBe(true);
+  const world=createLandWorld(field,empty);
+  expect(world.thresholds.find(t=>t.id==='bailOut')?.carried).toBe('plane');
+  expect(world.lights.some(l=>l.id.startsWith('bailOut'))).toBe(false);
+  expect(world.diagnostics!.some(d=>d.id==='threshold.bailOut')).toBe(false);
+  expect(buildLandCuts(baseHeight).pads.some(p=>p.id.startsWith('threshold.bailOut'))).toBe(false);
+},60000);

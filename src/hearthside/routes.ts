@@ -1,6 +1,7 @@
 import { HEARTHSIDE_ROOMS, choice, identifier, type HearthsideRoom } from './contracts.ts';
 import { parseHouseRoute, togetherRoomForLevel } from './houseRoutes.ts';
-export const HEARTHSIDE_LABEL = (import.meta.env?.VITE_HEARTHSIDE_LABEL?.trim() || 'Hearthside').slice(0, 60);
+/** K13 (Tool Atlas §3.2): the shared-life rooms are **the Boathouse** on screen ("Hearthside" stays the code's name). */
+export const HEARTHSIDE_LABEL = (import.meta.env?.VITE_HEARTHSIDE_LABEL?.trim() || 'The Boathouse').slice(0, 60);
 export type HearthsideRoute = {
   version: 1; householdId: string; room: HearthsideRoom;
   object?: { kind: 'experience' | 'memory' | 'occasion' | 'note' | 'encounter'; id: string } | {kind:'piece';id:string;designId:string};

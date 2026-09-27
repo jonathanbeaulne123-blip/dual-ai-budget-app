@@ -6,11 +6,14 @@ import { MOTION_KEY } from './nav/motionEdition.ts';
 import { usePublishEditionAvailability, type EditionAvailability } from './nav/editionAvailability.ts';
 import { useHarbourReading } from './data/useHarbourReading.ts';
 import { useAppearance } from '../theme/ThemeProvider.tsx';
+import { useComfort } from '../theme/comfort.ts';
 import { DeskShell } from './desk/DeskShell.tsx';
 import { DeskPlace } from './desk/DeskPlace.tsx';
 import { HarbourFlat } from './flat/PlaceFlat.tsx';
 import { VILLAGE_ADDRESS } from './village/layout.ts';
-import { BarFab, EditionFlip, useIslandBar } from './nav/Compass.tsx';
+import { useIslandBar } from './nav/Compass.tsx';
+import { GlassBar } from './bubbles/GlassChrome.tsx';
+import { HostPanel } from './panels/HostPanel.tsx';
 import './village/village.css';
 
 /** The reading entry stays independent of the illustrated terrain chunk. */
@@ -33,6 +36,7 @@ function ReadingHarbour(props: HarbourWorldProps & { failed?: boolean }) {
   const appearance = useAppearance();
   const theme = appearance.preview ?? appearance.saved.theme;
   const [reason] = useState(flatReason);
+  const [comfort] = useComfort(household.environment);
   const freshness = interpretationGate?.freshness === 'stale' || interpretationGate?.freshness === 'offline'
     ? interpretationGate.freshness : 'current';
   const { reading } = useHarbourReading({ household, memberId, today, freshness, interpretationGate });
@@ -49,14 +53,12 @@ function ReadingHarbour(props: HarbourWorldProps & { failed?: boolean }) {
       {toolOpen ? <HarbourFlat place={place} reading={reading} status={props.failed ? 'fallback' : 'flat'} theme={theme} /> : <>
         <DeskShell household={household} memberId={memberId} scope={props.scope} today={today} reading={reading} theme={theme} ready={props.ready} interpretationGate={interpretationGate} status={props.failed ? 'fallback' : 'flat'} titleId="house-world-title" onOpen={onOpen} onQuickSheet={onQuickSheet} spaceSlot={props.spaceSlot}
           context={<DeskPlace place={place} reading={reading} onOpen={onOpen} onVisit={visit} onGuide={() => onQuickSheet?.()} />} />
-        <nav className="village-tools harbour-bar" data-harbour-bar="island" aria-label="Harbour bar">
-          <EditionFlip className="village-tools__flip" />
-          <button type="button" onClick={onQuickSheet} aria-label="Village destinations">⌖ <span>Village map</span></button>
-          <label className="village-quick"><span>Go straight to</span><select aria-label="Quick travel" value="" onChange={event => { if (event.target.value) visit(event.target.value as HarbourPlaceId); }}><option value="">Quick travel…</option>{Object.keys(VILLAGE_ADDRESS).map(id => <option key={id} value={id}>{id === 'court' ? 'Village square' : id === 'bank' ? 'Fund bank' : id}</option>)}</select></label>
-          {props.onJourney && <button type="button" onClick={props.onJourney} aria-label="Journey map">◇ <span>Journey</span></button>}
-          {props.fab && <BarFab fab={props.fab} />}
-          {onQuickSheet && <button type="button" className="village-tools__all" aria-label="All tools" onClick={onQuickSheet}>☰ <span>All tools</span></button>}
-        </nav>
+        {/* The flat bar (Tool Atlas brief §3.5, §6): [Island] [Record] [All tools], Record centred —
+            the island's three things and nothing else. The Desk's header drops its own flip while this stands. */}
+        <GlassBar edition="desk" fab={props.fab} onOpenTools={onQuickSheet} toolsOpen={props.toolsOpen} member={memberId} theme={theme} calm={comfort.quiet} alwaysShowLabels={comfort.labels} />
+        {props.panel?.host && <HostPanel key={props.panel.host} host={props.panel.host} reading={reading} extras={props.panel.extras} theme={theme} onClose={props.panel.onClose} onOpen={props.panel.onOpen}
+          onRecord={props.panel.onRecord} onMarkPaid={props.panel.onMarkPaid} onTalk={props.panel.onTalk} returnFocusTo={props.panel.returnFocusTo}
+          onVisit={props.panel.host !== 'hercules' ? () => { const host = props.panel?.host; if (host && host !== 'hercules') visit(host); props.panel?.onClose(); } : undefined} />}
       </>}
     </div>
   </section>;

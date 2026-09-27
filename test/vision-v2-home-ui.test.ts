@@ -55,8 +55,8 @@ describe("Vision v2 Home UI review repairs", () => {
   });
 
   it("reloads device-local comfort when the environment changes", async () => {
-    writeComfort("development", { quiet: false, celebration: "full", motion: "system", haptics: true, sound: true });
-    writeComfort("production", { quiet: true, celebration: "off", motion: "reduced", haptics: false, sound: false });
+    writeComfort("development", { quiet: false, celebration: "full", motion: "system", haptics: true, sound: true, labels: false });
+    writeComfort("production", { quiet: true, celebration: "off", motion: "reduced", haptics: false, sound: false, labels: false });
     function Probe({ environment }: { environment: string }) {
       const [comfort] = useComfort(environment);
       return createElement("output", null, `${environment}:${comfort.quiet}:${comfort.sound}`);

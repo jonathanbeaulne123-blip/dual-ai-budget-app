@@ -63,7 +63,7 @@ export function HerculesSetup({open,onClose,onHelp,onPlay,...props}: HerculesSet
       <div className="hercules-setup-body">
         {error && <div role="alert">{error}<button type="button" onClick={()=>{attempt.current="";setError("");setRetry(n=>n+1);}}>Retry setup</button></div>}
         <div hidden={destination!==null}>
-          <div className="hercules-setup-options"><button type="button" className="ghost" onClick={onHelp}>Ask Hercules</button><button type="button" className="ghost" onClick={onPlay}>Play</button></div>
+          <div className="hercules-setup-options"><button type="button" className="ghost" onClick={onHelp}>Ask Hercules</button><button type="button" className="ghost" onClick={onPlay}>Play with him</button></div>
           <div className="hercules-setup-overview"><OnboardingJourney household={household} memberId={memberId} onGo={go} />
           <OnboardingChat embedded household={household} memberId={memberId} today={today} busy={busy} onCommit={commit} onDismiss={onClose}
             onOpenCharter={()=>go('people')} onOpenAccounts={()=>go('books')} onOpenOpeningBalances={()=>go('books')}

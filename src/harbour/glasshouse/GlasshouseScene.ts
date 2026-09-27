@@ -517,7 +517,7 @@ export function createGlasshouse(scene: THREE.Scene, options: GlasshouseOptions)
     const plant = pot.state === "seed" ? "a seed" : "a sprout";
     const water = pot.dry ? ", dry — the can is out" : "";
     const whose = pot.thread === "both" ? "both of you" : pot.thread === "mine" ? "yours" : pot.thread === "partner" ? "the partner's" : "nobody's yet";
-    return `${pot.title} — ${plant}, ${whose}${water}. Open the Master Planner.`;
+    return `${pot.title} — ${plant}, ${whose}${water}. Open the steps.`;
   };
 
   const anchorList = (): Anchor[] => {
@@ -529,12 +529,12 @@ export function createGlasshouse(scene: THREE.Scene, options: GlasshouseOptions)
       door: { target: "planner", object: pot.key },
     }));
     rows.push({ id: "beds", position: at(0, 1.85, -halfDepth + 0.2), zone: "bed", label: "The beds around the glasshouse — unfold the Calendar.", door: { target: "calendar" } });
-    rows.push({ id: "harvest", position: at(GLASSHOUSE_LAYOUT.shelfX, GLASSHOUSE_LAYOUT.shelfY + 0.2, -0.7), zone: "shelf", label: view.harvested === 0 ? "The harvest shelf — nothing yet this week. Open the Master Planner." : `The harvest shelf — ${view.harvested} harvested this week. Open the Master Planner.`, door: { target: "planner" } });
-    if (view.perennials.length > 0) rows.push({ id: "perennials", position: at(GLASSHOUSE_LAYOUT.bedX, 0.6, -0.4), zone: "bed", label: `The long bed — ${view.perennials.length} ${view.perennials.length === 1 ? "perennial" : "perennials"}. Open the Master Planner.`, door: { target: "planner" } });
+    rows.push({ id: "harvest", position: at(GLASSHOUSE_LAYOUT.shelfX, GLASSHOUSE_LAYOUT.shelfY + 0.2, -0.7), zone: "shelf", label: view.harvested === 0 ? "The harvest shelf — nothing yet this week. Open the steps." : `The harvest shelf — ${view.harvested} harvested this week. Open the steps.`, door: { target: "planner" } });
+    if (view.perennials.length > 0) rows.push({ id: "perennials", position: at(GLASSHOUSE_LAYOUT.bedX, 0.6, -0.4), zone: "bed", label: `The long bed — ${view.perennials.length} ${view.perennials.length === 1 ? "perennial" : "perennials"}. Open the steps.`, door: { target: "planner" } });
     // Your own bench: counts, by state, and a door onto the planner. Never a title.
-    rows.push({ id: "mine", position: at(mineBench.x, mineBench.top + 0.28, mineBench.z), zone: "bench", label: `${mineWords(view.mine)}. Yours alone. Open the Master Planner.`, door: { target: "planner" } });
+    rows.push({ id: "mine", position: at(mineBench.x, mineBench.top + 0.28, mineBench.z), zone: "bench", label: `${mineWords(view.mine)}. Yours alone. Open the steps.`, door: { target: "planner" } });
     rows.push({ id: "garden-door", position: at(GLASSHOUSE_LAYOUT.door[0], 1.0, GLASSHOUSE_LAYOUT.door[2] - 0.2), zone: "stair", label: "The garden door — back to the Court." });
-    if (can.visible) rows.push({ id: "can", position: at(GLASSHOUSE_LAYOUT.can[0], 0.35, GLASSHOUSE_LAYOUT.can[2]), zone: "prop", label: `The watering can — ${view.dry} ${view.dry === 1 ? "pot is" : "pots are"} dry. Open the Master Planner.`, door: { target: "planner" } });
+    if (can.visible) rows.push({ id: "can", position: at(GLASSHOUSE_LAYOUT.can[0], 0.35, GLASSHOUSE_LAYOUT.can[2]), zone: "prop", label: `The watering can — ${view.dry} ${view.dry === 1 ? "pot is" : "pots are"} dry. Open the steps.`, door: { target: "planner" } });
     return rows;
   };
 

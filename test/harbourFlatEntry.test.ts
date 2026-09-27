@@ -23,7 +23,10 @@ it('opens the household Desk with WebGL disabled even when terrain is unavailabl
     onNavigate: () => {}, onOpen: () => {}, onClose: () => {},
   })));
   expect(host.querySelector('[data-desk]')).not.toBeNull();
-  expect(host.querySelector('[aria-label="Quick travel"]')).not.toBeNull();
+  // The flat bar is the island's three things (Tool Atlas brief §6): no Quick travel, no Village map, one flip.
+  expect(host.querySelector('[aria-label="Quick travel"]')).toBeNull();
+  expect(host.querySelector('[data-glass-flip="desk"]')).not.toBeNull();
+  expect(host.querySelector('[data-desk-flip]')).toBeNull();
   expect(loadTerrainAsset).not.toHaveBeenCalled();
   await act(async () => root.unmount());
   host.remove();

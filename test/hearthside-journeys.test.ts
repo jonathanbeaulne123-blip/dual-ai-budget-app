@@ -174,6 +174,6 @@ describe('Connected Hearthside room journeys through the command authority',()=>
     // rAF runs after React's committed layout in browsers; issue the next frame here.
     expect(location.pathname).toBe('/hearthside/rooms/common');
     sessionStorage.setItem(`hearth:hearthside:drafts:test:${app.read().householdId}:MEM-001`,JSON.stringify({experience:{references:'broken'},memory:null,note:null}));
-    await app.reload();expect(host.textContent).toContain('The device draft could not be read');expect(host.querySelector('h1')?.textContent).toBe('Hearthside');
+    await app.reload();expect(host.textContent).toContain('The device draft could not be read');expect(host.querySelector('h1')?.textContent).toBe('The Boathouse'); // K13
   });
 });

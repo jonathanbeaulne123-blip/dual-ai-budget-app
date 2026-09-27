@@ -48,7 +48,7 @@ export function PlanNextSteps({household,memberId,version,busy,onCommand,onOpenP
     {rows.length?rows.map(line=>{
       const matches=(row:{planReference?:{planVersionId:string;planLineId:string}|null})=>row.planReference?.planLineId===line.id&&row.planReference.planVersionId===version!.id;
       const task=household.tasks?.find(matches),legacy=boards.tasks.find(matches);
-      return <article key={line.id}><div><h4>{line.labelSnapshot}</h4><p>{line.decision!.nextStep}</p><small>{line.responsibility?.kind==='joint'?'Together':household.members.find(m=>m.id===line.responsibility?.memberId)?.name??'Choose a responsible person'}</small></div>
+      return <article key={line.id}><div><h4>{line.labelSnapshot}</h4><p>{line.decision!.nextStep}</p><small>{line.responsibility?.kind==='joint'?'Both of us':household.members.find(m=>m.id===line.responsibility?.memberId)?.name??'Choose a responsible person'}</small></div>
         {task?<><span>{task.deleted?'Put away in our planner':task.completedAt?'Completed in our planner':'In our planner'}</span>{onOpenPlanner&&<button onClick={()=>onOpenPlanner(task.id)}>Open this next step</button>}</>:legacy?<button disabled={busy||working} onClick={()=>void onCommand(current=>adoptBoardTasks(current,{memberId}))}>Move the existing board tasks into our planner</button>:<button disabled={busy||working||!agreed} onClick={()=>void add(line)}>Add this agreed next step to our tasks</button>}
         <button onClick={()=>onOpenPlan({route:'plan',view:'household',label:line.labelSnapshot,planVersionId:version!.id,planLineId:line.id})}>Read the agreement</button>
       </article>;

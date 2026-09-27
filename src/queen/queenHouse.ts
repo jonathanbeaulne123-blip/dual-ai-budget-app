@@ -25,7 +25,7 @@ export type HouseTurn = -1 | 1;
 
 export const HOUSE_WORDS: Record<HousePlace, { name: string; role: string; toward: string }> = {
   loft: { name: "The loft", role: "Build", toward: "Up to the loft" },
-  home: { name: "The hearth", role: "What now", toward: "Back to her" },
+  home: { name: "The hearth", role: "Everyday · now", toward: "Back to her" },
   cellar: { name: "The cellar", role: "Protect", toward: "Down to the cellar" },
 };
 

@@ -79,6 +79,9 @@ describe("the flat world is the Desk, in every place", () => {
     expect(world.dataset.worldStatus).toBe("flat");
     expect(world.querySelector("[data-desk]")).toBeTruthy();
     expect(world.querySelectorAll("[data-harbour-bar]")).toHaveLength(1);
+    // One flip: the glass carries it, so the Desk's header does not (Tool Atlas brief K14).
+    expect(world.querySelectorAll("[data-glass-flip]")).toHaveLength(1);
+    expect(world.querySelector("[data-desk-flip]")).toBeNull();
     expect(world.querySelector("[data-place-flat]")).toBeNull();
     // Both editions share one bar; the 3D address and directory stay out of the Desk.
     expect(world.querySelector(".village-address")).toBeNull();
@@ -96,7 +99,7 @@ describe("the flat world is the Desk, in every place", () => {
       expect(world.querySelector(".village-address")).toBeNull();
       // The Leaving page carries what the Cellar's rail used to; the Desk opens on Today.
       expect(world.querySelector("[data-desk-chip='leaving']")).toBeTruthy();
-      expect(world.querySelector("[data-desk-flip]")!.getAttribute("aria-disabled")).toBe("true");
+      expect(world.querySelector("[data-glass-flip]")!.getAttribute("aria-disabled")).toBe("true");
     });
   }
 
@@ -174,7 +177,7 @@ describe("a draw that failed is said honestly, in every place", () => {
       const desk = world.querySelector<HTMLElement>("[data-desk]");
       expect(desk).toBeTruthy();
       expect(desk!.dataset.deskStatus).toBe("fallback");
-      expect(world.querySelector("[data-desk-flip]")!.getAttribute("aria-disabled")).toBe("true");
+      expect(world.querySelector("[data-glass-flip]")!.getAttribute("aria-disabled")).toBe("true");
       expect(world.querySelector(".desk__undrawn")!.textContent).toMatch(/could not be drawn/);
       expect(world.querySelector("[data-place-flat]")).toBeNull();
       expect(world.querySelector(".village-address")).toBeNull();

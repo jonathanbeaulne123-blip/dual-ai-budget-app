@@ -1,0 +1,150 @@
+/*
+ * The Mine layer and its ribbon (Tool Atlas §3.5, §4.3–4.4; D2).
+ * Three dressings change the *material*, never only the hue:
+ *   Classic Hearth — warm porcelain glass, chalk top edge, sumac-tipped wooden stakes.
+ *   Taylor's Scrapbook — vellum, a washi-tape corner, deckled white edge, lilac paper flags.
+ *   Newfoundland — wavy glass in a white frame, painted buoy-teal stakes.
+ * Solid fallback (no blur, alpha 1, 1 px #8A7A69 line) under reduced transparency,
+ * reduced motion, more contrast, forced colours, the Quiet comfort setting, and the
+ * lite / flat tiers. Reduced motion: no transitions and no animation at all.
+ */
+.mine-ribbon-host, .mine-layer {
+  --mine-glass: rgba(246, 240, 228, 0.72);
+  --mine-edge: #fbf5e6;
+  --mine-ink: #2E241B;
+  --mine-ink-2: #5A4A3C;
+  --mine-line: rgba(46, 36, 27, 0.18);
+  --mine-blur: blur(14px) saturate(120%);
+  --mine-stake: #7a5a3a;
+  --mine-stake-tip: #B04C34;
+  --mine-footpath: #c9a36a;
+  --mine-footpath-done: #4f6b4a;
+  --mine-plank: #8a6a48;
+  --mine-font: "Atkinson Hyperlegible", system-ui, sans-serif;
+}
+:root[data-theme="taylor"] .mine-ribbon-host, :root[data-theme="taylor"] .mine-layer {
+  --mine-glass: rgba(255, 247, 246, 0.76);
+  --mine-edge: #ffffff;
+  --mine-ink: #49323D;
+  --mine-blur: blur(10px) saturate(115%);
+  --mine-stake: #826789;
+  --mine-stake-tip: #e8a6bd;
+  --mine-footpath: #d6ae6a;
+  --mine-footpath-done: #6f7d5c;
+  --mine-plank: #b79a8a;
+}
+:root[data-theme="newfoundland"] .mine-ribbon-host, :root[data-theme="newfoundland"] .mine-layer {
+  --mine-glass: rgba(247, 247, 237, 0.74);
+  --mine-edge: #f5f3ea;
+  --mine-ink: #273E41;
+  --mine-stake: #2f5b63;
+  --mine-stake-tip: #b75a4e;
+  --mine-footpath: #bfa56c;
+  --mine-footpath-done: #608778;
+  --mine-plank: #6b5a44;
+  --mine-font: "Figtree", "Atkinson Hyperlegible", system-ui, sans-serif;
+}
+
+.mine-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+/* ── The ribbon: top-left of the map, glass, ink "Mine". ── */
+.mine-ribbon-host { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 12px); left: calc(env(safe-area-inset-left, 0px) + 12px); z-index: 8; pointer-events: none; }
+.mine-ribbon {
+  display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 6px 14px 6px 10px; min-height: 32px;
+  font: 600 14px/1.1 var(--mine-font); letter-spacing: 0.02em; color: var(--mine-ink);
+  background: var(--mine-glass); -webkit-backdrop-filter: var(--mine-blur); backdrop-filter: var(--mine-blur);
+  border: 1px solid var(--mine-line); border-top-color: var(--mine-edge);
+  border-radius: 4px 14px 14px 4px; box-shadow: 0 8px 24px -12px rgba(26, 23, 20, 0.45);
+  transform-origin: left center;
+}
+.mine-ribbon__icon { flex: none; }
+:root[data-theme="taylor"] .mine-ribbon { font-family: "Atkinson Hyperlegible", system-ui, sans-serif; border-color: #ffffff; background-image: linear-gradient(135deg, rgba(232, 166, 189, 0.2) 0 14px, transparent 14px); }
+:root[data-theme="newfoundland"] .mine-ribbon { border: 1.5px solid #f5f3ea; text-transform: uppercase; font-weight: 800; letter-spacing: 0.06em; }
+
+/* ── The layer: drawn over the canvas, only its marks take a tap. ── */
+.mine-layer { position: absolute; inset: 0; z-index: 7; pointer-events: none; font-family: var(--mine-font); color: var(--mine-ink); }
+.mine-trail { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.mine-trail__way { stroke: var(--mine-footpath); stroke-width: 2; stroke-dasharray: 3 6; stroke-linecap: round; opacity: 0.6; }
+.mine-trail__footpath { stroke: var(--mine-footpath); stroke-width: 3; stroke-dasharray: 4 3; stroke-linecap: round; opacity: 0.85; }
+.mine-trail__footpath.is-done { stroke: var(--mine-footpath-done); }
+.mine-trail__footpath.is-lit { stroke-dasharray: none; }
+
+.mine-group { position: absolute; transform: translate(-50%, calc(-100% - 8px)); display: flex; flex-direction: column; align-items: center; gap: 4px; max-width: min(280px, calc(100vw - 32px)); }
+.mine-group[data-mine-placed="beds"] { left: 50%; top: auto; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); }
+.mine-group[data-mine-placed="shelf"] { left: auto; right: 16px; top: 72px; transform: none; align-items: flex-end; }
+.mine-group[data-mine-placed="trail"] { transform: translate(-50%, 0); }
+.mine-dock { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 56px); left: calc(env(safe-area-inset-left, 0px) + 12px); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; max-width: min(300px, calc(100% - 24px)); }
+.mine-dock .mine-group { position: static; transform: none; align-items: flex-start; }
+.mine-dock__empty { margin: 0; padding: 8px 12px; font-size: 13px; color: var(--mine-ink-2); background: var(--mine-glass); -webkit-backdrop-filter: var(--mine-blur); backdrop-filter: var(--mine-blur); border: 1px dashed var(--mine-line); border-radius: 10px; }
+
+.mine-stakes, .mine-shelf, .mine-footpaths { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+.mine-dock .mine-stakes, .mine-dock .mine-shelf { justify-content: flex-start; }
+.mine-footpaths { flex-direction: column; padding: 6px; background: var(--mine-glass); -webkit-backdrop-filter: var(--mine-blur); backdrop-filter: var(--mine-blur); border: 1px dashed var(--mine-line); border-radius: 12px; max-height: 40vh; overflow: auto; }
+
+/* Every mark is a ≥ 44 px target with its words beside the icon. */
+.mine-stake, .mine-bank, .mine-more, .mine-trailhead, .mine-footpath {
+  pointer-events: auto; touch-action: manipulation; display: inline-flex; align-items: center; gap: 6px;
+  min-height: 44px; min-width: 44px; margin: 0; padding: 4px 12px 4px 8px; font: 600 13px/1.2 var(--mine-font); color: var(--mine-ink);
+  background: var(--mine-glass); -webkit-backdrop-filter: var(--mine-blur); backdrop-filter: var(--mine-blur);
+  border: 1px dashed var(--mine-line); border-radius: 12px; cursor: pointer; text-align: start;
+  transition: transform 90ms ease-out, background-color 90ms ease-out;
+}
+.mine-stake:active, .mine-bank:active, .mine-more:active, .mine-trailhead:active, .mine-footpath:active { transform: scale(0.96); }
+.mine-stake__icon { color: var(--mine-stake); }
+.mine-stake__icon path:nth-child(2) { color: var(--mine-stake-tip); fill: var(--mine-stake-tip); stroke: var(--mine-stake-tip); }
+.mine-stake__flag, .mine-bank__name, .mine-footpath__label { max-width: 20ch; overflow-wrap: anywhere; }
+.mine-stake[data-late] .mine-stake__flag { font-style: italic; }
+.mine-bank__icon { color: var(--mine-stake-tip); }
+.mine-shelf__plank { display: block; width: 100%; min-width: 120px; height: 6px; border-radius: 2px; background: var(--mine-plank); box-shadow: 0 2px 0 rgba(26, 23, 20, 0.25); }
+.mine-footpath { flex-direction: column; align-items: flex-start; gap: 0; width: 100%; }
+.mine-footpath__sub { font-weight: 400; font-style: italic; font-size: 12px; color: var(--mine-ink-2); }
+.mine-footpath[data-state="done"] .mine-footpath__label { text-decoration: line-through; text-decoration-color: var(--mine-footpath-done); }
+.mine-more, .mine-trailhead { border-style: solid; }
+
+:root[data-theme="taylor"] .mine-stake, :root[data-theme="taylor"] .mine-bank { border: 1px solid #ffffff; border-radius: 3px 12px 12px 3px; background-image: linear-gradient(135deg, rgba(232, 166, 189, 0.2) 0 10px, transparent 10px); }
+:root[data-theme="newfoundland"] .mine-stake, :root[data-theme="newfoundland"] .mine-bank { border: 1.5px solid #f5f3ea; border-radius: 8px; }
+:root[data-theme="newfoundland"] .mine-trailhead, :root[data-theme="newfoundland"] .mine-more { text-transform: uppercase; letter-spacing: 0.06em; font-weight: 800; }
+
+/* Two-tone focus ring, drawn with outline so it survives forced colours. */
+.mine-stake:focus-visible, .mine-bank:focus-visible, .mine-more:focus-visible, .mine-trailhead:focus-visible, .mine-footpath:focus-visible {
+  outline: 2px solid #1A1714; outline-offset: 2px; box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 6px #FFFFFF;
+}
+
+/* The ribbon unfurls and stakes lean in only when motion is welcome. */
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="reduced"]):not([data-quiet="true"]) .mine-ribbon { animation: mine-unfurl 180ms ease-out both; }
+  :root:not([data-motion="reduced"]):not([data-quiet="true"]) .mine-group { animation: mine-arrive 180ms ease-out both; }
+}
+@keyframes mine-unfurl { from { opacity: 0; transform: scaleX(0.6); } to { opacity: 1; transform: none; } }
+@keyframes mine-arrive { from { opacity: 0; } to { opacity: 1; } }
+
+/* Solid fallback: no blur, alpha 1, a visible 1 px line; no motion at all. */
+@media (prefers-reduced-transparency: reduce), (prefers-reduced-motion: reduce), (prefers-contrast: more) {
+  .mine-ribbon, .mine-stake, .mine-bank, .mine-more, .mine-trailhead, .mine-footpath, .mine-footpaths, .mine-dock__empty {
+    -webkit-backdrop-filter: none; backdrop-filter: none; background-color: #F6F0E4; background-image: none; border: 1px solid #8A7A69;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mine-ribbon, .mine-group, .mine-stake, .mine-bank, .mine-more, .mine-trailhead, .mine-footpath { animation: none !important; transition: none !important; }
+  .mine-stake:active, .mine-bank:active, .mine-more:active, .mine-trailhead:active, .mine-footpath:active { transform: none; }
+}
+@media (prefers-contrast: more) {
+  .mine-ribbon, .mine-stake, .mine-bank, .mine-more, .mine-trailhead, .mine-footpath { border-color: color-mix(in srgb, var(--mine-ink) 66%, transparent); }
+}
+:root[data-motion="reduced"] .mine-ribbon, :root[data-motion="reduced"] .mine-group, :root[data-motion="reduced"] .mine-stake, :root[data-motion="reduced"] .mine-bank, :root[data-motion="reduced"] .mine-more, :root[data-motion="reduced"] .mine-trailhead, :root[data-motion="reduced"] .mine-footpath,
+:root[data-quiet="true"] .mine-ribbon, :root[data-quiet="true"] .mine-group, :root[data-quiet="true"] .mine-stake, :root[data-quiet="true"] .mine-bank, :root[data-quiet="true"] .mine-more, :root[data-quiet="true"] .mine-trailhead, :root[data-quiet="true"] .mine-footpath {
+  animation: none !important; transition: none !important;
+}
+:root[data-quiet="true"] :is(.mine-ribbon, .mine-stake, .mine-bank, .mine-more, .mine-trailhead, .mine-footpath, .mine-footpaths, .mine-dock__empty),
+.harbour-world:is([data-harbour-tier="lite"], [data-harbour-tier="flat"]) :is(.mine-ribbon, .mine-stake, .mine-bank, .mine-more, .mine-trailhead, .mine-footpath, .mine-footpaths, .mine-dock__empty) {
+  -webkit-backdrop-filter: none; backdrop-filter: none; background-color: #F6F0E4; background-image: none; border: 1px solid #8A7A69;
+}
+@media (forced-colors: active) {
+  .mine-ribbon, .mine-stake, .mine-bank, .mine-more, .mine-trailhead, .mine-footpath, .mine-footpaths { border: 1px solid CanvasText; -webkit-backdrop-filter: none; backdrop-filter: none; forced-color-adjust: auto; }
+  .mine-trail__way, .mine-trail__footpath { stroke: CanvasText; }
+  .mine-stake:focus-visible, .mine-bank:focus-visible, .mine-more:focus-visible, .mine-trailhead:focus-visible, .mine-footpath:focus-visible { outline: 2px solid Highlight; }
+}
+@media (max-width: 719px) {
+  .mine-stake, .mine-bank { padding-inline: 8px; }
+  .mine-stake__flag, .mine-bank__name { max-width: 14ch; }
+}

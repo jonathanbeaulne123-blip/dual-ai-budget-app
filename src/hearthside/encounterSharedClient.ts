@@ -1,3 +1,9 @@
+/**
+ * @deprecated K5 (Tool Atlas brief §7): "Spend a moment together" is retired from the sheet and every host
+ * (the Boathouse rowboat, the Hearthside rooms, the house targets). This module still compiles and still
+ * serves an old deep link (`surface=encounters`), and its shared records stay readable; nothing new opens it.
+ * It is not listed in All tools: a Buried row would re-host it in the Boathouse group, so it was left out.
+ */
 import {canonical} from '../ledgerSync/patch.ts';
 import {sha256String} from '../core/synchronousHash.ts';
 import {decodeEncounterCommand,type EncounterCommand} from './encounterContracts.ts';

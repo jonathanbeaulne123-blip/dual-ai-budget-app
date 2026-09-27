@@ -41,6 +41,23 @@ export function CadPad({
       : formatCad(cents);
 
   const parsed = parsePadDecimal(text, cap);
+  // A30: Enter on an amount that is not above zero (or does not read) shows why, marks the field invalid and
+  // moves focus to it; the message is linked by aria-describedby. Changing the amount clears it.
+  const displayRef = useRef<HTMLParagraphElement>(null);
+  const [blocked, setBlocked] = useState(false);
+  useEffect(() => { setBlocked(false); }, [digits, text]);
+  const amountInvalid = Boolean(parsed.error) || (enterDisabled && cents <= 0);
+  const invalidWords = parsed.error || (unit === "hours" ? "Enter hours above 0." : "Enter an amount above $0.00.");
+  const showError = Boolean(parsed.error) || blocked;
+  function enter() {
+    if (!onEnter) return;
+    if (amountInvalid) {
+      setBlocked(true);
+      requestAnimationFrame(() => (typing ? inputRef.current : displayRef.current)?.focus());
+      return;
+    }
+    if (!enterDisabled) onEnter();
+  }
   useEffect(() => {
     if (digits !== lastEmitted.current) {
       setText(digits ? dollarsFromCentsDigits(digits) : "");
@@ -67,17 +84,19 @@ export function CadPad({
       <div hidden={!typing} className="cad-pad-typing">
         <input id={fieldId} ref={inputRef} type="text" inputMode="decimal" autoComplete="off" spellCheck={false}
           className="cad-pad-input" value={text} placeholder={emptyDisplay || "0.00"}
-          aria-invalid={!!parsed.error} aria-describedby={`${fieldId}-help${parsed.error ? ` ${fieldId}-error` : ""}`}
+          aria-invalid={showError} aria-describedby={`${fieldId}-help${showError ? ` ${fieldId}-error` : ""}`}
           onChange={event => changeText(event.currentTarget.value)}
           onKeyDown={event => {
             if (event.key !== "Enter" || event.nativeEvent.isComposing || event.repeat || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return;
             event.preventDefault(); event.stopPropagation();
-            if (!enterDisabled && !parsed.error && onEnter) onEnter();
+            enter();
           }} />
         <p id={`${fieldId}-help`} className="cad-pad-help">Type {unit === "hours" ? "hours" : "dollars"}, for example 12.50. Tab moves to the next control.</p>
-        {parsed.error && <p id={`${fieldId}-error`} className="cad-pad-error" role="status">{parsed.error}</p>}
+        {typing && showError && <p id={`${fieldId}-error`} className="cad-pad-error" role="status">{invalidWords}</p>}
       </div>
-      <p hidden={typing} className="cad-pad-display" aria-live="polite">{display}</p>
+      <p hidden={typing} ref={displayRef} tabIndex={-1} className="cad-pad-display" aria-live="polite"
+        aria-describedby={!typing && showError ? `${fieldId}-error` : undefined} data-invalid={!typing && showError ? "" : undefined}>{display}</p>
+      {!typing && showError && <p id={`${fieldId}-error`} className="cad-pad-error" role="status">{invalidWords}</p>}
       {!typing && <p className="cad-pad-help">Keypad enters {unit === "hours" ? "hundredths" : "cents"}: 1 2 5 0 = {unit === "hours" ? "12.50 h" : "$12.50"}.</p>}
       <div hidden={typing} className="cad-pad-keys">
         {PAD_KEYS.map((key) => (
@@ -100,8 +119,8 @@ export function CadPad({
         <button
           type="button"
           className="primary post-big cad-pad-enter"
-          disabled={enterDisabled || !!parsed.error}
-          onClick={onEnter}
+          aria-disabled={enterDisabled || amountInvalid ? true : undefined}
+          onClick={enter}
         >
           {enterLabel}
         </button>

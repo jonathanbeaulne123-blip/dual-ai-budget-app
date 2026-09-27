@@ -1825,6 +1825,60 @@ for v in m["views"]:
 lr = m["walks"]["lakerim"]; lr["surface_m"] = 5.2; lr["shoulder_m"] = 1.2
 lr["surfaceNote_v2_1"] = "the Year Walk's February share rides this trail at offset 0: the trail takes the Year Walk's section (5.2 m + 1.2 m shoulders; profile trail 2.5 elsewhere; " + DL + ")"
 
+# ---------------------------------------------------------------------------
+# v2.2 — reconciled with main #549–#552 (integrator, 2026-09-27). Main's two v1.7 blocks (FLIGHT.md "sky-only",
+# RIDE.md "paces and surface grip", both 2026-09-26, Codex) were written on the v1.6 land; Stage A's v1.7 → v2.1 moved
+# that land. They are applied here, AFTER v2.1, with their numbers verbatim, so their assertions run on the v2.1 land.
+# Re-anchored (Stage A's land wins on geometry, CONTRACT §2.13 ids unchanged):
+#   · sky.dropZone.xy follows sky.landings.green (FLIGHT's own rule: "inside the Green's protected centre at
+#     sky.landings.green"); v2.1 moved the green landing [1040,1065] → [1028,1112], so the Drop Zone moves with it.
+#   · journeys.targets_s["crown→lamp by glider"] stays Stage A v1.7's [85,120] (achievable with ≥ 10 % margin from the
+#     v2.1 Crown launch [1305,482] h 170); FLIGHT's D34 [70,110] is kept in targets_s.decisions.v2_2_d34 — both contain
+#     the ≈ 98 s still-air trim flight D34 names.
+# Every delta is in docs/horizon/README.md → "v2.2 (reconciled with main #549–#552)". No horizon-geo bump.
+# ---------------------------------------------------------------------------
+m["version"] = "2.2"
+m["date"] = "2026-09-27"
+# FLIGHT.md (2026-09-26), integrator ask 5 (main's v1.7 "sky-only").
+sky = m["sky"]
+sky["gliderPolar"] = [[8,1.3],[9,1.05],[11,1.2],[14,1.8],[17,3.0]]
+sky["gliderPolarRule"] = "[airspeed m/s, still-air sink m/s] from bar pushed out full to pulled in full; a smooth piecewise cubic between points; trim [11,1.2] is sky.glider; stall below 7.5 (FLIGHT.md §2.2)"
+sky["parachute"] = {"forward_ms":6,"sink_ms":3,"freefallCap_ms":30,"autoPull_agl_m":45,"minBail_agl_m":60,"canopy_m":[7,3],"note":"reached only by jumping from the plane (carriedThresholds.bailOut); the chute always opens (D37)"}
+sky["corridors"] = {"throat":{"gate":12,"to":[1300,420],"slope_deg":30,"level_m":25,"splashH":42,"coneDeg":25,"maxBankDeg":20,"note":"glider only: enter gate 12's aperture heading within coneDeg of south and banked at most maxBankDeg; follow the chute at slope_deg; the last level_m run over the Deep at splashH; a miss passes beside the mouth, never a wall"}}
+sky["dropZone"] = {"xy":list(sky["landings"]["green"]["xy"]),"rings_m":[5,10,25],"note":"ground paint inside the Green's protected centre at sky.landings.green; bullseye, inner, outer, then 'on the Green'",
+ "v1_7_xy":[1040,1065],"xyNote_v2_2":"follows sky.landings.green (v2.1 [1028,1112]); FLIGHT v1.7 placed it at the v1.6 green landing [1040,1065]"}
+for key in ("green","reachMeadow","sands"):
+    sky["landings"][key]["modes"] = ["glider","parachute"]
+sky["landingModes"] = {"strip":["plane","glider","parachute"],"water":["plane","glider","parachute"],"deep":["glider"],"rule":"modes per non-field landing; every landing takes the parachute except water.deep (the Deep is reached only through the Throat, by glider)"}
+m["carriedThresholds"] = [{"id":"bailOut","carriedBy":"plane","xy":"carried","modes":["plane→parachute"],"action":"jump","minAgl_m":60,"hold_s":0.5,"note":"the plane's door: its place is the plane's each frame; offered only at >= minAgl_m above the ground under the plane; never inside the Throat"}]
+m["carriedThresholdRule"] = "A carried threshold moves with a vehicle and has no pad, marker or fixed xy. It is listed apart from thresholds so the land pass never grades a pad for it; WorldDefinition.thresholds carries it with carried = carriedBy."
+m["journeys"]["targets_s"]["decisions"] = {"crown→lamp by glider":"D34 applied pending Jonathan's confirmation: FLIGHT retargeted from [50,90] to [70,110] (~98 s at 11 m/s trim in still air, FLIGHT.md §12) on the v1.6 launch. v2.2: the Stage A v1.7 target [85,120] (measured on the Stage A graph from the v2.1 lookout launch [1305,482] h 170: 96.0 s on candidate 5) contains the same flight and stands; D34's [70,110] is kept in v2_2_d34","v2_2_d34":[70,110]}
+# RIDE §8.3 / §11.5 (main's v1.7 "paces and surface grip"): data only — paces and surface grip for the ground kernel
+# (D42), the park's forgiving landings (D40). No geometry change. Every v2.1 id and number stays.
+m["status"] += " v2.2: paces and surface grip (RIDE D42) and the FLIGHT sky fields (D34–D38), reconciled onto the v2.1 land — data only, no geometry change."
+paces = {
+ "fast":{"roll":0.12,"pushGrip":1.0,"meaning":"open line"},
+ "flow":{"roll":0.25,"pushGrip":0.9,"meaning":"banked or boarded ground that wants a carve"},
+ "slow":{"roll":0.6,"pushGrip":0.8,"meaning":"a neighbourhood, a chicane"},
+ "threshold":{"roll":1.8,"pushGrip":0.5,"meaning":"every pad and the square: stops a board arriving under ~4.6 m/s in a pad's 6 m"},
+ "skate":{"roll":0.03,"pushGrip":None,"meaning":"pass 4's ice; the skates' pace"},
+ "n/a":{"roll":None,"pushGrip":None,"note":"not a bed for this mover; the kernel's offbed class applies (roll 6.0, pushGrip 0)"},
+}
+# Pads, station slabs and the park report material 'stone' (collision solids); without a row their lateral grip
+# fell to the unlisted 0.6. They grip like pavement. (The park's own pace is flow in the contact adapter.)
+m["surfaces"]["stone"] = {"pace":"threshold","footstep":"stone","grip":1.0,"note":"threshold pads, station slabs and the Tideline park"}
+grip = {"paved":1.0,"packedEarth":0.95,"ochre":0.85,"apron":1.0,"bankedTurf":1.1,"boardwalk":0.9,"cobble":0.7,"gravel":0.6,"sand":0.5,"plaza":1.0,"snow":0.4,"ice":0.2,"duff":None,"stone":1.0}
+assert set(grip) == set(m["surfaces"]), "every surface needs a grip row"
+for sid, row in m["surfaces"].items():
+    row["grip"] = grip[sid]
+    assert row["pace"] in paces, sid
+_rows = list(m.items()); _at = [k for k, _ in _rows].index("surfaces") + 1
+m = dict(_rows[:_at] + [("paces", paces)] + _rows[_at:])   # paces sits beside surfaces
+m["skate"]["park"]["note"] = "Skate v2 park; forgiving landings only (RIDE D40); no race"
+for sid in ("S1", "S2", "S3", "S4"):
+    for seg in m["skate"][sid]["segments"]:
+        assert seg["pace"] in paces and seg["surface"] in m["surfaces"], (sid, seg["name"])
+
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")

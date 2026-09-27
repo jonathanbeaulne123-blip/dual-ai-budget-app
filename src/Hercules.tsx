@@ -1903,12 +1903,12 @@ export function HerculesPresence({
             {actionPanel()}
             {turns.length?<details className="hercules-compact-tools" open={!!reminderIssue}><summary>Suggestions and help</summary>{discoveryPanel()}</details>:discoveryPanel()}
             {!chatEnabled && <p role="status">Conversation is taking a break. Your saved preferences are still available.</p>}
-            {!setup && <button type="button" onClick={sitWithBag}>Play</button>}
+            {!setup && <button type="button" onClick={sitWithBag}>Play with him</button>}
             {<><p className="companion-save-status" role="status">{privateSaveStatus}</p>
             {preferenceUndo && <button type="button" onClick={undoRememberedPreference}>Undo remembered preference</button>}
             {pendingExchange.current && !privateSaving && <button type="button" onClick={() => { if (pendingExchange.current) void savePrivateExchange([...pendingExchange.current]); }}>Retry conversation save</button>}
             <details className="hercules-compact-tools"><summary>Memory and settings</summary><CompanionMemoryControls household={household} memberId={memberId} view={view} onCommand={onCompanionCommand} /></details></>}
-            {setup && <div className="hercules-manual-actions"><button type="button" onClick={()=>setSetupSelected(true)}>Set up Hearth</button><button type="button" onClick={sitWithBag}>Play</button></div>}
+            {setup && <div className="hercules-manual-actions"><button type="button" onClick={()=>setSetupSelected(true)}>Set up Hearth</button><button type="button" onClick={sitWithBag}>Play with him</button></div>}
             {talk ? (
               <>
             {open && turns.length > 0 ? (
@@ -2026,7 +2026,7 @@ export function HerculesPresence({
         >
           {open&&<header className="hercules-chat-header"><HerculesLivePortrait mood={look.view.mood} hat={look.hat} chain={look.chain} house={look.house} collar={look.collar} pose={pose} size={44}/><strong>Hercules</strong><span className="mode-label mode-label--private" role="note"><span aria-hidden="true">◌</span>Private — only you see this conversation</span><button type="button" aria-expanded={chatExpanded} onClick={()=>setChatExpanded(!chatExpanded)}>{chatExpanded?'Compact':'Expand'}</button></header>}
           <div className="hercules-conversation-content">{open&&easyReadToggle}{open&&actionPanel()}
-          {open && setup && !setupSelected && <div className="hercules-manual-actions"><button type="button" onClick={()=>setSetupSelected(true)}>Set up Hearth</button><button type="button" onClick={sitWithBag}>Play</button></div>}
+          {open && setup && !setupSelected && <div className="hercules-manual-actions"><button type="button" onClick={()=>setSetupSelected(true)}>Set up Hearth</button><button type="button" onClick={sitWithBag}>Play with him</button></div>}
           {desktopOnboardingOpen ? (
             <>
               <OnboardingChat
@@ -2062,7 +2062,7 @@ export function HerculesPresence({
           <>
           {open && !begging && (turns.length?<details className="hercules-compact-tools" open={!!reminderIssue}><summary>Suggestions and help</summary>{discoveryPanel()}</details>:discoveryPanel())}
           {open && !chatEnabled && <p role="status">Conversation is taking a break. Your saved preferences are still available.</p>}
-          {open && !setup && <button type="button" onClick={sitWithBag}>Play</button>}
+          {open && !setup && <button type="button" onClick={sitWithBag}>Play with him</button>}
           {open && !begging && turns.length > 0 ? (
             <div className="hercules-chat-log" ref={logRef}>
               {turns.map((turn, index) => (

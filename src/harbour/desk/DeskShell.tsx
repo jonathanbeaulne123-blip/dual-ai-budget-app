@@ -8,6 +8,7 @@ import { useSupportedDesk } from "./supportedDesk.ts";
 import { useEditionAvailability, editionUnavailableWords } from "../nav/editionAvailability.ts";
 import { DESK_PAGES } from "./pages.ts";
 import { flipToHarbour } from "./flip.ts";
+import { useFlipStanding } from "../bubbles/flipStanding.ts";
 import "./desk.css";
 import "./desk-personal.css";
 import "./desk-dressings.css";
@@ -37,6 +38,11 @@ export type DeskShellProps = {
   onTalk?: () => void;
   /** Called after the flip is written; the harbour shell hears the `hearth:motion` event itself. */
   onFlip?: () => void;
+  /**
+   * Show the header's own flip. Default: only while no glass flip stands
+   * (`bubbles/GlassChrome.tsx` announces one), so there is one flip, never two.
+   */
+  headerFlip?: boolean;
   /** Room in the header for the space switch: the App's own household ↔ personal control (S5). */
   spaceSlot?: ReactNode;
   initialPage?: string;
@@ -64,7 +70,7 @@ export function deskHeaderWords(scope: LedgerView): { kicker: string; title: str
 
 const SWIPE_MIN = 56;
 
-export function DeskShell({ household, memberId, scope, today, reading, theme = "classic", status = "flat", onOpen, onQuickSheet, onTalk, onFlip, spaceSlot, initialPage, titleId, ready = true, interpretationGate, hidden, context }: DeskShellProps) {
+export function DeskShell({ headerFlip, household, memberId, scope, today, reading, theme = "classic", status = "flat", onOpen, onQuickSheet, onTalk, onFlip, spaceSlot, initialPage, titleId, ready = true, interpretationGate, hidden, context }: DeskShellProps) {
   const [pageId, setPageId] = useState(() => DESK_PAGES.some(page => page.id === initialPage) ? initialPage! : DESK_PAGES[0]!.id);
   const base = useId();
   const tabs = useRef<HTMLDivElement>(null);
@@ -78,6 +84,9 @@ export function DeskShell({ household, memberId, scope, today, reading, theme = 
   const harbourDrawable = status !== "fallback" && !availability.reason;
   const supported = useSupportedDesk({household,memberId,scope,today,reading},ready,interpretationGate);
   const words = deskHeaderWords(scope);
+  // One flip (Tool Atlas brief K14): the header drops its own while the glass carries one.
+  const flipStanding = useFlipStanding();
+  const showFlip = headerFlip ?? !flipStanding;
   const headingId = titleId ?? `${base}-title`;
 
   function select(next: number, focus: boolean) {
@@ -117,12 +126,12 @@ export function DeskShell({ household, memberId, scope, today, reading, theme = 
   const Page = page.Page;
   return <section hidden={hidden} className={`desk desk--${theme}`} data-desk="" data-desk-scope={scope} data-desk-page={page.id} data-desk-status={status} aria-labelledby={headingId}
     onPointerDown={event => event.stopPropagation()}>
-    <header className="desk__header">
-      <button type="button" className="desk__flip" data-desk-flip="" onClick={flip} aria-disabled={harbourDrawable ? undefined : true}
+    <header className="desk__header" data-desk-header-flip={showFlip ? "" : undefined}>
+      {showFlip && <button type="button" className="desk__flip" data-desk-flip="" onClick={flip} aria-disabled={harbourDrawable ? undefined : true}
         aria-describedby={harbourDrawable ? undefined : `${base}-undrawn`}
         aria-label={harbourDrawable ? words.flipAria : `${words.flip} — cannot be drawn on this device`}>
         <span className="desk__flip-mark" aria-hidden="true">{scope === "personal" ? "⌂" : "⚓"}</span><span>{words.flip}</span>
-      </button>
+      </button>}
       <div className="desk__title">
         <small>{words.kicker}</small>
         <h1 id={headingId} tabIndex={-1}>{words.title}</h1>

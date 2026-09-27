@@ -135,7 +135,7 @@ describe("the time machine surface", () => {
     for (const tab of ["ledger", "timeMachine", "home"] as const) {
       const actions = fabActionsFor("household", tab);
       expect(actions.every((row) => row.kind === "add" && row.money)).toBe(true);
-      expect(actions.some((row) => row.id === "see-a-month")).toBe(false);
+      expect(actions.some((row) => (row.id as string) === "see-a-month")).toBe(false);
     }
     expect(sceneTabFor("timeMachine")).toBe("ledger");
   });

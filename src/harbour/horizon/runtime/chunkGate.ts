@@ -70,3 +70,36 @@ export function createChunkScheduler(options:{ready:(id:string)=>boolean;load:(i
     queued:()=>({route:route.filter(id=>!options.ready(id)),view:view.filter(id=>!options.ready(id))}),
   };
 }
+/**
+ * v2.2 (reconciled with main #551/#552): the RIDE rule. A board, a bicycle, a glider or a parachute crosses district
+ * boundaries faster than the walking gate can hold it (a glider cannot wait in the air), and a glide or a board line can
+ * reach any district. So a ride is taken only with its ground loaded: accepting a feet → mover offer waits — no teleport,
+ * no fall-through, the offer stays on show — until every chunk is resident (the whole island; the bytes are already fetched
+ * after the first frame). A held offer boards by itself the moment the last chunk lands, if it is still the one on show;
+ * walking away (another or no offer) drops it. Parking (mover → feet) never waits.
+ */
+export interface RideGateLoader {refs:readonly {districtId:string}[];ready(id:string):boolean}
+export function rideMissing(loader:RideGateLoader):string[]{return loader.refs.map(r=>r.districtId).filter(id=>!loader.ready(id));}
+export function createRideGate<T extends {id:string;to:string}>(loader:RideGateLoader|null|undefined){
+  let pending:T|null=null,holds=0;
+  const missing=()=>loader?rideMissing(loader):[];
+  return{
+    missing,
+    /** Ask to take `offer`: true = go now; false = held (pending until every chunk is resident). Parking never waits. */
+    request(offer:T):boolean{
+      if(offer.to==='feet'||!missing().length){pending=null;return true;}
+      if(pending?.id!==offer.id)holds++;pending=offer;return false;
+    },
+    /** Once a frame with the offer on show: the held offer when it may go now (and it is cleared), else null. Another or no offer drops it. */
+    poll(shown:T|null):T|null{
+      if(!pending)return null;
+      if(!shown||shown.id!==pending.id){pending=null;return null;}
+      if(missing().length)return null;
+      const go=pending;pending=null;return go;
+    },
+    pending:()=>pending,
+    /** Drop a held offer (a restore, a door, leaving Walk). */
+    clear(){pending=null;},
+    stats:()=>({pending:pending?.id??null,holds}),
+  };
+}

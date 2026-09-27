@@ -409,7 +409,7 @@ describe("The Still Queen — two interactions, and they are different", () => {
     expect(home().classList.contains("is-expanded")).toBe(true);
     expect($(".queen-figure").getAttribute("aria-expanded")).toBe("true");
     const buttons = [...host.querySelectorAll<HTMLButtonElement>(".queen-bank__button")];
-    expect(buttons.map((button) => button.textContent)).toEqual(["Protect", "What now", "Build"]);
+    expect(buttons.map((button) => button.textContent)).toEqual(["Protect", "Everyday · now", "Build"]);
     for (const button of buttons) {
       expect(button.closest("[inert]")).toBeNull();
       expect(button.getAttribute("aria-label") ?? "").toMatch(/\S/);
@@ -477,7 +477,7 @@ describe("The Still Queen — two interactions, and they are different", () => {
     expect(home().dataset.scene).toBe("home");
 
     await click($(".queen-bank--queen .queen-bank__button"));
-    expect($(".queen-panel__title").textContent).toBe("What now");
+    expect($(".queen-panel__title").textContent).toBe("Everyday · now");
     await click($(".queen-bank--queen .queen-bank__button"));
     expect(home().dataset.open).toBe("none");
     expect(home().dataset.scene).toBe("home");
@@ -494,7 +494,7 @@ describe("The Still Queen — two interactions, and they are different", () => {
     await click([...document.querySelectorAll<HTMLButtonElement>("button")].find((row) => row.textContent?.trim() === "← Back to Home")!);
     expect(document.querySelector(".kitty-room")).toBeNull();
     await click($(".queen-bank--queen .queen-bank__button"));
-    await click([...host.querySelectorAll<HTMLButtonElement>(".queen-panel .queen-go")].find((row) => row.textContent === "Open What now in the banks")!);
+    await click([...host.querySelectorAll<HTMLButtonElement>(".queen-panel .queen-go")].find((row) => row.textContent === "Open Everyday · now in the banks")!);
     expect(document.querySelector(".nest-detail h2")?.textContent).toBe("Everyday");
     await click([...document.querySelectorAll<HTMLButtonElement>("button")].find((row) => row.textContent?.trim() === "← Back to Home")!);
     await click($(".queen-bank--build .queen-bank__button"));

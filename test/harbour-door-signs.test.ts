@@ -186,7 +186,7 @@ describe("placeSigns — every building on the island wears its own", () => {
     const signs = placeSigns(buildHarbourReading(seedDemoHousehold({ today }), "MEM-001", today, "current"));
     for (const [place, sign] of Object.entries(signs)) {
       expect(sign.line.length, `${place}: ${sign.line}`).toBeLessThanOrEqual(SIGN_LINE_MAX);
-      expect(sign.aria, place).toMatch(/Opens the|Opens Journey|Meet the Queen/);
+      expect(sign.aria, place).toMatch(/Opens the|Opens Journey/); // K9: "Meet the Queen" retired
     }
   });
 });

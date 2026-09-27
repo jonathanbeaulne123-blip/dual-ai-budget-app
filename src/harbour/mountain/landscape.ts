@@ -63,12 +63,7 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   const plaques=buildDamStructure(card,damGlass,pal,tier);
   // ── Transport ──
   const transport=buildTransportArt(card,pal,tier);
-  for(const hut of transport.huts){house(card,pal,hut.x,hut.z,hut.yaw,1.3,1.05,{wall:pal.walls[1%pal.walls.length]!,wallH:2.4,roofRise:.9,door:{u:0,face:'front'},windows:[{u:0,y:1.1,face:'left'},{u:0,y:1.1,face:'right'}],plinth:.15});
-    const c=Math.cos(hut.yaw),s=Math.sin(hut.yaw),g=Math.max(groundHeightAt(hut.x,hut.z),groundHeightAt(hut.x+s*1.1,hut.z+c*1.1));
-    signSpots.push({spot:{at:[hut.x+s*1.2,g+2.45,hut.z+c*1.2],yaw:hut.yaw,w:2.3,h:.5},text:`${hut.name} · ${hut.kind}`,anchor:`mountain:transport:${hut.kind}`});}
-  for(const [kind,line] of Object.entries(TRANSPORT_LINES) as [TransportKind,typeof TRANSPORT_LINES[TransportKind]][])for(const st of line.stations){
-    if(kind==='funicular'&&transport.huts.some(h=>h.name===st.name))continue;
-    const p=st.platform,c=Math.cos(p.yaw),s=Math.sin(p.yaw);signSpots.push({spot:{at:[p.at[0]-c*(p.half[1]-.1),p.at[1]+2.5,p.at[2]+s*(p.half[1]-.1)],yaw:p.yaw-Math.PI/2,w:2.6,h:.5},text:`${st.name} · ${kind}`,anchor:`mountain:transport:${kind}`,board:true});}
+  for(const hut of transport.huts)house(card,pal,hut.x,hut.z,hut.yaw,1.3,1.05,{wall:pal.walls[1%pal.walls.length]!,wallH:2.4,roofRise:.9,door:{u:0,face:'front'},windows:[{u:0,y:1.1,face:'left'},{u:0,y:1.1,face:'right'}],plinth:.15});
   for(let i=1;i<MONORAIL_STOPS.length;i++)for(let k=1;k<=48;k++){
     const a=transportPoint('monorail',i-1,i,(k-1)/48),b=transportPoint('monorail',i-1,i,k/48);
     card.line(a,b,pal.brass);

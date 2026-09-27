@@ -92,56 +92,13 @@ describe("The shelf tools explain themselves and carry sliders", () => {
   });
 });
 
-describe("The money gun", () => {
-  it("throws bills at the banks you tap, never at a lidded one, and sends the round once behind Confirm", async () => {
+describe("The money gun is merged into the jug (K15)", () => {
+  it("offers no gun: the custodian's one control is the jug's \"Move $X to Kitty Banks\"", async () => {
     const onPour = vi.fn<LoftPour["onPour"]>(async () => undefined);
-    const { shelf } = await render(withLedge(), { pour: { safeCents: 100_000, custodian: true, custodianName: "Alex (fictional)", onPour } });
-    const trigger = $<HTMLButtonElement>(".queen-gun__trigger")!;
-    expect(trigger.textContent).toMatch(/Pick up the money gun/);
-    await click(trigger);
-    expect(trigger.getAttribute("aria-pressed")).toBe("true");
-    expect($(".queen-jug")).toBeNull();
-    await click($$<HTMLButtonElement>(".queen-gun__bill").find((row) => row.textContent === "$50")!);
-    const trip = bank("Fictional trip to the shore");
-    await click(trip);
-    await click(trip);
-    // The $10 porch takes only what it has room for.
-    await click(bank("Fictional porch renovation"));
-    // The lidded date night refuses.
-    await click(bank("Fictional date night"));
-    expect($(".queen-cellar-notice")!.textContent).toMatch(/lidded/);
-    expect($(".queen-room__line")!.textContent).toBe("The money gun. $100.00 at Fictional trip to the shore, $10.00 at Fictional porch renovation — $110.00 thrown, $890.00 still loaded.");
-    expect(onPour).not.toHaveBeenCalled();
-    const send = $$<HTMLButtonElement>(".queen-room__acts button").find((row) => row.textContent === "Send $110.00")!;
-    await click(send);
-    const sheet = document.querySelector('[role="dialog"]')!;
-    expect(sheet.textContent).toMatch(/\$100\.00 to Fictional trip to the shore, \$10\.00 to Fictional porch renovation/);
-    await click([...sheet.querySelectorAll<HTMLButtonElement>("button")].find((row) => row.textContent === "Send $110.00")!);
-    expect(onPour).toHaveBeenCalledTimes(1);
-    const tripGoal = shelf.find((row) => row.name === "Fictional trip to the shore")!.goalId;
-    expect(onPour.mock.calls[0]![0]).toEqual([{ goalId: tripGoal, amountCents: 10_000 }, { goalId: expect.any(String), amountCents: 1_000 }]);
-    expect(onPour.mock.calls[0]![1]).toBe(11_000);
-    expect(onPour.mock.calls[0]![2]).toBe("Thrown from the loft's money gun");
-    await act(async () => { await Promise.resolve(); });
-    expect($(".queen-cellar-notice")!.textContent).toBe("$110.00 sent. Watch them fill.");
-  });
-
-  it("keeps the round when the books refuse it, and says nothing moved", async () => {
-    const onPour = vi.fn<LoftPour["onPour"]>(async () => ({ ok: false, postedNothing: true, userMessage: "That rollover exceeds the safe surplus." }));
-    await render(withLedge(), { pour: { safeCents: 100_000, custodian: true, custodianName: "Alex (fictional)", onPour } });
-    await click($<HTMLButtonElement>(".queen-gun__trigger")!);
-    await click(bank("Fictional trip to the shore"));
-    await click($$<HTMLButtonElement>(".queen-room__acts button").find((row) => row.textContent?.startsWith("Send"))!);
-    await click([...document.querySelector('[role="dialog"]')!.querySelectorAll<HTMLButtonElement>("button")].find((row) => row.textContent?.startsWith("Send"))!);
-    await act(async () => { await Promise.resolve(); });
-    expect($(".queen-cellar-notice")!.textContent).toBe("That rollover exceeds the safe surplus. Nothing moved.");
-    expect($$<HTMLButtonElement>(".queen-room__acts button").some((row) => row.textContent === "Send $20.00")).toBe(true);
-  });
-
-  it("is not offered to anyone but the Fund's custodian", async () => {
-    await render(withLedge(), { pour: { safeCents: 100_000, custodian: false, custodianName: "Sam (fictional)", onPour: vi.fn(async () => undefined) } });
+    await render(withLedge(), { pour: { safeCents: 5_000, custodian: true, custodianName: "Alex (fictional)", onPour } });
     expect($(".queen-gun")).toBeNull();
-    expect($(".queen-jug__holder")!.textContent).toBe("Sam (fictional) holds the jug.");
+    expect(host.textContent).not.toMatch(/money gun/i);
+    expect($(".queen-jug__tilt")).not.toBeNull();
   });
 });
 

@@ -1,0 +1,305 @@
+{
+ "ride": "lamp_hop",
+ "sha": "e4655b3",
+ "generated": "2026-09-26T10:25:07.549Z",
+ "query": "&sun=11:00",
+ "threshold": "lampGallery",
+ "yaw": 0,
+ "offers": [
+  "Run off the gallery"
+ ],
+ "launch": {
+  "realMs": 25197,
+  "at": {
+   "kind": "glider",
+   "t": 0.9500000000000013,
+   "x": 540,
+   "y": 24.842199448529414,
+   "z": 1187.7750000000026,
+   "phase": "flight",
+   "airspeed": 9.299999999999999,
+   "vs": -1.0550625,
+   "lift": 0,
+   "bank": 0,
+   "heading": 3.141592653589793,
+   "groundSpeed": 13.299999999999999
+  }
+ },
+ "legs": [
+  {
+   "kind": "heading",
+   "name": "off the gallery, south into the wind",
+   "heading": 0,
+   "seconds": 3
+  },
+  {
+   "kind": "heading",
+   "name": "turn back north",
+   "heading": 2.9845130209103035,
+   "seconds": 6,
+   "maxBank": 45
+  },
+  {
+   "kind": "gate",
+   "name": "under the Bight Bridge (gate 5, centre h 6)",
+   "gate": [
+    560,
+    1080
+   ],
+   "h": 6,
+   "within": 4,
+   "aim": [
+    582,
+    1046
+   ],
+   "maxBank": 30
+  },
+  {
+   "kind": "to",
+   "name": "through, toward the sandbar",
+   "to": [
+    600,
+    1030
+   ],
+   "within": 10,
+   "bar": 0
+  },
+  {
+   "kind": "land",
+   "name": "land"
+  }
+ ],
+ "summary": {
+  "seconds": 9.52,
+  "final": {
+   "t": 9.52,
+   "x": 504.5,
+   "y": 12.7,
+   "z": 1074.1,
+   "phase": "done",
+   "airspeed": 11,
+   "vs": -1.21,
+   "lift": 0,
+   "bankDeg": 7.9,
+   "headingDeg": 177,
+   "agl": null,
+   "groundSpeed": 15,
+   "bar": 0,
+   "bankIn": 0.16,
+   "outcome": "fadeShore",
+   "outcomeLabel": "→ Bight Shore",
+   "at": [
+    507.3,
+    12,
+    1069.6
+   ]
+  },
+  "outcome": "fadeShore",
+  "label": "→ Bight Shore",
+  "bodyAfter": {
+   "x": 507.303206997,
+   "y": 12,
+   "z": 1069.591836735,
+   "yaw": 3.0899226508597253
+  },
+  "modeAfter": "feet",
+  "peak": {
+   "t": 1.45,
+   "y": 24.3,
+   "x": 540,
+   "z": 1180.9
+  }
+ },
+ "events": [
+  {
+   "t": 4.466666666666656,
+   "event": "leg off the gallery, south into the wind done",
+   "y": 19.75297688705154,
+   "x": 526.4272395631842,
+   "z": 1140.3818893606638
+  },
+  {
+   "t": 9.516666666666719,
+   "event": "phase flight → done",
+   "x": 504.5,
+   "y": 12.7,
+   "z": 1074.1,
+   "airspeed": 11,
+   "vs": -1.21,
+   "groundSpeed": 15
+  }
+ ],
+ "log": [
+  {
+   "t": 1.45,
+   "x": 540,
+   "y": 24.3,
+   "z": 1180.9,
+   "phase": "flight",
+   "airspeed": 10.3,
+   "vs": -1.13,
+   "lift": 0,
+   "bankDeg": 0,
+   "headingDeg": 180,
+   "agl": 24.3,
+   "groundSpeed": 14.3,
+   "bar": 0,
+   "bankIn": 0,
+   "place": "Bight Shore · 7 m (fold)",
+   "leg": "off the gallery, south into the wind"
+  },
+  {
+   "t": 2.02,
+   "x": 539.8,
+   "y": 23.6,
+   "z": 1172.5,
+   "phase": "flight",
+   "airspeed": 11,
+   "vs": -1.45,
+   "lift": 0,
+   "bankDeg": -34,
+   "headingDeg": -175.3,
+   "agl": 23.6,
+   "groundSpeed": 14.99,
+   "bar": 0,
+   "bankIn": -0.8,
+   "place": "Bight Shore · 15 m (fold)",
+   "leg": "off the gallery, south into the wind"
+  },
+  {
+   "t": 3.02,
+   "x": 536.9,
+   "y": 22,
+   "z": 1157.9,
+   "phase": "flight",
+   "airspeed": 11,
+   "vs": -1.57,
+   "lift": 0,
+   "bankDeg": -40,
+   "headingDeg": -154,
+   "agl": 22,
+   "groundSpeed": 14.7,
+   "bar": 0,
+   "bankIn": -0.8,
+   "place": "Bight Shore · 30 m (fold)",
+   "leg": "off the gallery, south into the wind"
+  },
+  {
+   "t": 4.02,
+   "x": 530.3,
+   "y": 20.5,
+   "z": 1145.2,
+   "phase": "flight",
+   "airspeed": 11,
+   "vs": -1.57,
+   "lift": 0,
+   "bankDeg": -40,
+   "headingDeg": -132.6,
+   "agl": 20.5,
+   "groundSpeed": 14.02,
+   "bar": 0,
+   "bankIn": -0.8,
+   "place": "Bight Shore · 45 m (fold)",
+   "leg": "off the gallery, south into the wind"
+  },
+  {
+   "t": 5.02,
+   "x": 521.2,
+   "y": 19,
+   "z": 1135.2,
+   "phase": "flight",
+   "airspeed": 11,
+   "vs": -1.21,
+   "lift": 0,
+   "bankDeg": 6.5,
+   "headingDeg": -119,
+   "agl": 19,
+   "groundSpeed": 13.4,
+   "bar": 0,
+   "bankIn": 0.9,
+   "place": "Bight Shore · 46 m (fold)",
+   "leg": "turn back north"
+  },
+  {
+   "t": 6.02,
+   "x": 512.3,
+   "y": 17.6,
+   "z": 1124.8,
+   "phase": "flight",
+   "airspeed": 11,
+   "vs": -1.7,
+   "lift": 0,
+   "bankDeg": 45,
+   "headingDeg": -136.6,
+   "agl": 17.6,
+   "groundSpeed": 14.18,
+   "bar": 0,
+   "bankIn": 0.9,
+   "place": "Bight Shore · 44 m (fold)",
+   "leg": "turn back north"
+  },
+  {
+   "t": 7.02,
+   "x": 506.8,
+   "y": 15.9,
+   "z": 1111.4,
+   "phase": "flight",
+   "airspeed": 11,
+   "vs": -1.58,
+   "lift": 0,
+   "bankDeg": 40.5,
+   "headingDeg": -162,
+   "agl": 15.9,
+   "groundSpeed": 14.86,
+   "bar": 0,
+   "bankIn": 0.54,
+   "place": "Bight Shore · 36 m (fold)",
+   "leg": "turn back north"
+  },
+  {
+   "t": 8.02,
+   "x": 504.7,
+   "y": 14.5,
+   "z": 1096.6,
+   "phase": "flight",
+   "airspeed": 11,
+   "vs": -1.27,
+   "lift": 0,
+   "bankDeg": 18.9,
+   "headingDeg": -174.4,
+   "agl": 14.5,
+   "groundSpeed": 14.99,
+   "bar": 0,
+   "bankIn": 0.38,
+   "place": "Bight Shore · 25 m (fold)",
+   "leg": "turn back north"
+  },
+  {
+   "t": 9,
+   "x": 504.3,
+   "y": 13.3,
+   "z": 1081.8,
+   "phase": "flight",
+   "airspeed": 11,
+   "vs": -1.22,
+   "lift": 0,
+   "bankDeg": 10.7,
+   "headingDeg": 179.2,
+   "agl": 13.3,
+   "groundSpeed": 15,
+   "bar": 0,
+   "bankIn": 0.21,
+   "place": "Bight Shore · 12 m (fold)",
+   "leg": "turn back north"
+  }
+ ],
+ "pngs": [
+  "offer-taken.png",
+  "lip.png",
+  "t006.png",
+  "after.png"
+ ],
+ "errors": [
+  "Failed to load resource: the server responded with a status of 404 (Not Found)"
+ ]
+}

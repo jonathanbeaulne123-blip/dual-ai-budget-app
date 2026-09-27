@@ -152,10 +152,12 @@ describe("the App's personal Desk wiring (source)", () => {
     expect(app).not.toMatch(/useEditionFlipKey\([^)]*view === "household"/);
   });
 
-  it("stands the Desk for personal only in the flat edition at rest, and keeps the illustrated house otherwise", () => {
-    expect(app).toMatch(/const personalFlat = HARBOUR_ENABLED && view === "personal" && motionEdition === "flat";/);
-    expect(app).toMatch(/const personalDesk = personalFlat && !houseToolsVisible;/);
-    expect(app).toMatch(/:personalFlat\?\(<Suspense[^]*?hidden=\{!personalDesk\}><DeskShell[^]*?ready=\{activeBooksGate.ready\} interpretationGate=\{sceneInterpretationGate\} household=\{personalSource\?\?household\}[^]*?scope="personal"[^]*?titleId="house-world-title"[^]*?spaceSlot=\{spaceSwitchNode\}\/><\/div><\/Suspense>\):<HouseWorld /);
+  it("stands one island for both spaces (Tool Atlas D2): the harbour mounts in Mine with the member's own source, and no personal Desk branch remains", () => {
+    expect(app).not.toMatch(/personalFlat|personalDesk/);
+    // The same source the personal Desk always read (never the partner's personal rows), one key for both spaces so the pill closes nothing.
+    expect(app).toMatch(/<HarbourWorld key=\{`\$\{environment\}:\$\{household\.householdId\}:\$\{actorId\}`\} household=\{view==="personal"\?\(personalSource\?\?household\):household\} memberId=\{actorId\} scope=\{view\} space=\{spaceForView\(view\)\}/);
+    // The flat tier's Desk inside the harbour takes the space's scope; the illustrated personal house stands only without the harbour.
+    expect(app).toMatch(/\(!HARBOUR_ENABLED\|\|view==="household"\)\?<HouseWorld /);
   });
 
   it("threads the space switch through the harbour into the household Desk's header, one prop", () => {
@@ -164,8 +166,10 @@ describe("the App's personal Desk wiring (source)", () => {
     expect(harbour).toMatch(/<DeskShell [^\n]*spaceSlot=\{props\.spaceSlot\} \/>/);
   });
 
-  it("puts the Simple-view flip in the personal bar, keeps the + there, and opens the quick sheet in personal", () => {
-    expect(app).toMatch(/\{HARBOUR_ENABLED && view === "personal" && <EditionFlip className="house-nav-flip" world="house"\/>\}/);
-    expect(app).toMatch(/\{HARBOUR_ENABLED && view === "personal" && <QuickSheet open=\{quickSheetOpen\}/);
+  it("serves both spaces with one glass chrome and one All-tools sheet, and no personal bottom bar", () => {
+    expect(app).not.toMatch(/<EditionFlip className="house-nav-flip"/);
+    expect(app).toMatch(/HARBOUR_ENABLED\?<><Compass fab=\{harbourBarFab\}/);
+    expect(app.match(/<QuickSheet /g) ?? []).toHaveLength(1);
+    expect(app).toContain("space={spaceForView(view)} spaceSwitch={spaceSwitchNode}");
   });
 });

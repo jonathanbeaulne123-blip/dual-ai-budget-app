@@ -6,7 +6,7 @@ import type {PlaceWalkSource} from '../../scene/place.ts';
 import type {HouseBodyReturn} from '../../../house/navigation.ts';
 import {HORIZON_GEOGRAPHY,HORIZON_PRESENCE_WORLD} from '../../../worldGeography.ts';
 import {loadHorizonAssets,type HorizonAssets} from '../../../house/world/horizonAssets.ts';
-import {createHorizonGeography,HORIZON_WALKABLE_DEGREES,HORIZON_BODY_HEIGHT} from './geography.ts';
+import {createHorizonGeography,HORIZON_WALKABLE_DEGREES,HORIZON_BODY_HEIGHT,HORIZON_G} from './geography.ts';
 import {buildDistrictCards,buildWaterCards,buildHorizonRing} from './cards.ts';
 import {createDistrictStream,districtAt,useDefinitionDistricts} from '../world/districts.ts';
 import {useCoastline} from '../land/coast/index.ts';
@@ -14,7 +14,7 @@ import {HORIZON_MANIFEST} from '../world/manifest.ts';
 import {restoreHorizonPosition,HORIZON_RESTORE_TOLERANCE} from './savedPosition.ts';
 import {horizonPartnerPose} from './partner.ts';
 import {walkPlan} from '../world/pathGraph.ts';
-import {createChunkGate,createChunkScheduler,CHUNK_REACH_EU} from './chunkGate.ts';
+import {createChunkGate,createChunkScheduler,createRideGate,CHUNK_REACH_EU} from './chunkGate.ts';
 import {createCableLayer} from './cableLayer.ts';
 import {solarPosition,solarReviewDate} from '../sun/solar.ts';
 import {skyGradient} from '../sky/gradient.ts';
@@ -26,11 +26,37 @@ import {nightLight,nightDome,NIGHT_LIGHT_CARDS,NIGHT_FLOOR,faceCardOn,FACE_CARD_
 import {sketchbookLens} from '../world/lens.ts';
 import type {XYZ} from '../land/interfaces.ts';
 import type {Host,SketchbookPose} from '../world/definition.ts';
+import type {WorldAmbience} from '../../mountain/audio.ts';
+import {createMoverRegistry,type MoverDeps} from '../movers/shared/registry.ts';
+import type {ModeController,ModeHud,ModeId,MoverBody,MoverFrame,MoverHud,MoverInput,MoverSound,ReducedMotionCut,ReducedMotionLanding} from '../movers/shared/mode.ts';
+import type {ThresholdOffer} from '../movers/shared/threshold.ts';
+import {moverInputFrom,moverFadeMs,moverBlendMs,moverBlendEase,registerHorizonMovers,riderSlip,savedRideBody,offerToShow,sameHud,sameOffer,createRideHold,RIDING_STATUS} from './moverInput.ts';
+import {buildBoardProxy,BOARD_PROXY,type BoardProxy} from '../movers/board/art/proxy.ts';
+import type {VehicleDressing} from '../movers/shared/vehicleArt.ts';
 
 export type HorizonBody={x:number;y:number;z:number;yaw:number};
 export type HorizonMode='walk'|'look'|'journey';
+export type HorizonMoverState={mode:ModeId;attached:boolean;hud:MoverHud|ModeHud|null;fade?:string;cut?:ReducedMotionCut|null};
+export type HorizonMoverArt={object:THREE.Object3D;tick:(dt:number,figure:THREE.Object3D)=>boolean;dispose?:()=>void};
+export type HorizonAccept={mode:ModeId;controller:ModeController|null;cut:ReducedMotionCut|null};
+export type HorizonCutTarget={kind:'landing';landing:ReducedMotionLanding}|{kind:'view';id:string}|{kind:'stay'};
+export const HORIZON_FADE_LABEL_MS=2500;
+/** v2.2 ride rule: said while a boarding waits for the island's chunks (chunkGate.ts createRideGate). */
+export const RIDE_WAITS_STATUS='The ride waits a moment while the island finishes arriving.';
 export type HorizonRuntime=ReturnType<typeof createRuntime>;
-export type HorizonOptions={tier:'full'|'lite';hideBuildings?:boolean;signal?:AbortSignal;/** The app's reduced-motion setting (Comfort.motion) or the OS query; html[data-motion] is also read. */reducedMotion?:boolean;/** The app's calm view (Comfort.quiet): the frozen 15:30, no night, nothing moving on its own. */calm?:boolean;onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onStatus?:(text:string)=>void;partner?:()=>PlaceWalkSource|null;initialBody?:HouseBodyReturn};
+export type HorizonOptions={tier:'full'|'lite';hideBuildings?:boolean;signal?:AbortSignal;/** The app's reduced-motion setting (Comfort.motion) or the OS query; html[data-motion] is also read. Live changes go through `api.setComfort`. */reducedMotion?:boolean;onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onStatus?:(text:string)=>void;partner?:()=>PlaceWalkSource|null;initialBody?:HouseBodyReturn;
+  /** The active Hearth dressing is shared with the Horizon vehicle art. */
+  theme?:VehicleDressing;
+  /** The app's calm view (Comfort.quiet; RIDE §10.6): the frozen 15:30, no night, nothing moving on its own; forwarded to the active mover. Live changes go through `api.setComfort`. */
+  calm?:boolean;
+  /** The nearest acceptable threshold offer (throttled to changes); the Enter bubble reads its label. */
+  onOffer?:(offer:ThresholdOffer|null)=>void;
+  /** The active mover's pace bubble (throttled to changes); null when no mover is active. */
+  onMoverHud?:(hud:MoverHud|null)=>void;
+  /** The active mover's sound intensities, every riding frame. */
+  onMoverSound?:(sound:MoverSound)=>void;
+  /** Mover factories to register at mount; the board and the bicycle are registered by default (`HORIZON_MOVERS`) and an entry here replaces its mode's default. `api.registry.register` works later too. */
+  movers?:Partial<Record<ModeId,(deps:MoverDeps)=>ModeController>>};
 export async function mountHorizon(host:HTMLElement,options:HorizonOptions){
   const startedAt=performance.now(),assets=await loadHorizonAssets(options.tier,options.signal);if(options.signal?.aborted)throw new DOMException('Aborted','AbortError');
   // R1-72: the chunk under the entry body (page A's eye) is the only geometry fetched before the first frame; the rest
@@ -58,12 +84,23 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const bytesBeforeFirstFrame={definition:chunks?.bytes()??assets.definitionBytes,terrain:assets.bytes};
   const geography=createHorizonGeography(field,cuts),figure=createBodyFigure(),partner=createBodyFigure({coat:'#af8760'});
   scene.add(figure.group,partner.group);partner.group.visible=false;
+  // Movers (RIDE §10.2, §11 ask 2): one registry, one active controller; the Horizon mode stays 'walk' while riding.
+  // One comfort source (v2.2): the land's motion (cuts, the frozen 15:30) and the movers' registry read the same two flags.
+  let comfort:HorizonComfort={calm:options.calm===true,reducedMotion:options.reducedMotion===true||appReducedMotion()},motion=horizonMotion(comfort);
+  const theme=options.theme??'classic';
+  const registry=createMoverRegistry({world,geography,manifest:HORIZON_MANIFEST,reducedMotion:comfort.reducedMotion,calm:comfort.calm,tier});
+  registerHorizonMovers(registry,options.movers);
+  // R2-01: Look / Island / a page pause the ride where it is; Walk resumes it; a reload / arrive parks at a threshold. A mode never ends in place.
+  const hold=createRideHold(registry,world,(x,z)=>geography.ground(x,z));
+  const moverArts=new Set<HorizonMoverArt>();
+  const removeMoverArt=(art:HorizonMoverArt)=>{if(!moverArts.delete(art))return;scene.remove(art.object);art.dispose?.();};
+  let boardProxy:BoardProxy|null=null,jumpHeld=false,acceptRequested=false,lookAcc={dx:0,dy:0},lastOffer:ThresholdOffer|null=null,lastHud:MoverHud|null=null,lastInput:MoverInput|null=null,walkFov:number|null=null,fadeTimer=0,moverActionRequested:'fold'|'pull'|null=null,fadeLabel:{label:string;at:number}|null=null;
+  const fadeEl=document.createElement('div');fadeEl.className='horizon-fade';fadeEl.setAttribute('aria-hidden','true');host.appendChild(fadeEl);
   const partnerMaterials:Record<string,THREE.Material>={};partner.group.traverse(object=>{if(object instanceof THREE.Mesh)for(const material of Array.isArray(object.material)?object.material:[object.material])partnerMaterials[material.uuid]=material;});
   const coarse=new Map(world.districts.map(d=>{const cards=buildDistrictCards(world,journey,cuts,d,tier,true);scene.add(cards.group);return[d.id,cards] as const;}));
   const water=buildWaterCards(cuts,tier),ring=buildHorizonRing(assets.horizonCards,tier);scene.add(water.group,ring.group);
   // Horizon cards are fogged like the land but never beyond 70 % (STYLE §1.8), so they never vanish and never poke through.
   for(const material of Object.values(ring.materials)){if('fog'in material)(material as THREE.MeshStandardMaterial).fog=true;fogHook(material,HORIZON_FOG.horizonMaxOpacity);}
-  let comfort:HorizonComfort={calm:options.calm===true,reducedMotion:options.reducedMotion===true||appReducedMotion()},motion=horizonMotion(comfort);
   // R2-110: the sky is a dome in view direction whose horizon IS the fog colour (sky/dome.ts), not a screen-space gradient.
   const skyDome=createSkyDome();scene.add(skyDome.mesh);let lastSkyColors:{zenith:string;horizonAway:string;horizonSun:string}|null=null,lastSunDirection:[number,number,number]=[0,1,0];
   const ambient=new THREE.HemisphereLight('#d9e7e8','#786b57',1.2),sun=new THREE.DirectionalLight('#fff0d5',2.2),moon=new THREE.DirectionalLight('#9badcd',.26);
@@ -81,7 +118,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const faceCardMaterial=new THREE.MeshBasicMaterial({color:FACE_CARD_LIGHT.colour,transparent:true,opacity:FACE_CARD_LIGHT.opacity,side:THREE.FrontSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4}),faceCards=new THREE.Group();
   for(const card of world.faceCards??[]){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(card.corners.flat(),3));g.setIndex([0,1,2,0,2,3]);g.computeVertexNormals();const mesh=new THREE.Mesh(g,faceCardMaterial);mesh.name=`faceCard.${card.id}`;mesh.renderOrder=2;faceCards.add(mesh);}
   faceCards.visible=false;scene.add(faceCards);let faceCardsLit=false;
-  let night=false,lastLocalLights=-Infinity,lastLightAt:XYZ=[Infinity,0,0],lastSolar={elevation:30,azimuth:180};
+  let night=false,lastLocalLights=-Infinity,lastLightAt:XYZ=[Infinity,0,0],lastSolar={elevation:30,azimuth:180},ambience:WorldAmbience|null=null;
   const shadowRequests:{at:number;reason:string}[]=[];
   function requestShadow(reason:string){renderer.shadowMap.needsUpdate=true;shadowRequests.push({at:performance.now(),reason});if(shadowRequests.length>120)shadowRequests.shift();}
   function updateFog(){const fog=horizonFog({tier,eyeAboveGround:Math.max(0,camera.position.y-geography.ground(camera.position.x,camera.position.z)),elevation:lastSolar.elevation,sunAzimuth:lastSolar.azimuth,heading:yaw*180/Math.PI});scene.fog=mode==='journey'?null:new THREE.Fog(fog.color,fog.near,fog.far);if(lastSkyColors)skyDome.update(lastSkyColors,fog.color,lastSunDirection);}
@@ -98,7 +135,9 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   let interactiveAt:number|null=null;
   let doorCooldown=0,lastMovementBlocker:unknown=null,simulating=false;
   let frame=0,disposed=false,paused=false,mode:HorizonMode='look',last=0,lastSun=-Infinity,shotId='A',distance=12,pitch=.2,yaw=0,drag:{x:number;y:number;id:number;travel:number}|null=null;
-  let transition:{eye:THREE.Vector3;target:THREE.Vector3;toEye:THREE.Vector3;toTarget:THREE.Vector3;at:number;duration:number}|null=null;
+  let comfortCut:ReducedMotionCut|null=null,comfortCutBody:MoverBody|null=null,ambienceSpeed=0;
+  // `live`: the walk ↔ ride camera blend (RIDE §10.2). Walking/riding keeps running and the goal (toEye/toTarget) follows the camera ride()/step() set that frame; fov blends to toFov.
+  let transition:{eye:THREE.Vector3;target:THREE.Vector3;toEye:THREE.Vector3;toTarget:THREE.Vector3;at:number;duration:number;live?:boolean;fov?:number;toFov?:number}|null=null;
   let controls={forward:0,strafe:0,run:false},path:XYZ[]=[],velocityY=0,jumpRequested=false,currentTime:Date|null=null;
   // The entry body and the Island camera come from the definition (page A's eye; the extent), not code constants.
   const entry=world.views.find(v=>v.id==='A')??world.views[0],body:HorizonBody={x:entry?.eye[0]??world.extent.w/2,y:(entry?.eye[1]??1.6)-1.6,z:entry?.eye[2]??world.extent.h/2,yaw:0},target=new THREE.Vector3(),keys=new Set<string>(),frameTimes:number[]=[],drawSamples:{at:number;calls:number;triangles:number;resident:number}[]=[];
@@ -145,6 +184,17 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(heldNow.join()!==still.join()){heldNow=still;hold({districts:still,at,t});}
     scheduler?.route([...still,...scheduler.queued().route]);return false;
   }
+  // v2.2 ride rule (chunkGate.ts createRideGate): a feet → mover offer is taken only with every chunk resident; until then
+  // it is held (the offer stays on show, a status line says why) and boards by itself when the last chunk lands.
+  const rideGate=createRideGate<ThresholdOffer>(chunks);
+  /** Every chunk resident (fetched bytes are parsed now; `blocking` — the review-only attach — may wait synchronously). */
+  function rideGateOpen(blocking=false):boolean{
+    if(!chunks)return true;
+    let missing=rideGate.missing();if(!missing.length)return true;
+    for(const id of missing)chunks.loadSync(id,blocking&&HARBOUR_DEV);
+    missing=rideGate.missing();if(!missing.length)return true;
+    scheduler?.route([...missing,...scheduler.queued().route]);return false;
+  }
   function resize(){const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(mode==='look'&&!transition){const pose=world.views.find(p=>p.id===shotId);if(pose)lookAt(pose);}}
   const observer=new ResizeObserver(resize);observer.observe(host);resize();
   function setLight(date:Date){
@@ -169,19 +219,141 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     const delta=target.clone().sub(camera.position),horizontal=Math.hypot(delta.x,delta.z);yaw=Math.atan2(delta.x,delta.z);pitch=Math.atan2(delta.y,horizontal);distance=delta.length();
     camera.fov=lens.verticalFovDegrees;camera.updateProjectionMatrix();
   }
-  function shot(id:string){const pose=world.views.find(p=>p.id===id);if(!pose)return false;shotId=id;mode='look';path=[];transition=null;lookAt(pose);body.x=pose.eye[0];body.z=pose.eye[2];body.y=pose.eye[1]-1.6;body.yaw=yaw;lastSun=-Infinity;return true;}
+  function shot(id:string){const pose=world.views.find(p=>p.id===id);if(!pose)return false;pauseRide();shotId=id;mode='look';path=[];transition=null;lookAt(pose);body.x=pose.eye[0];body.z=pose.eye[2];body.y=pose.eye[1]-1.6;body.yaw=yaw;lastSun=-Infinity;return true;}
   function restore(saved:HouseBodyReturn){
+    parkRide();if(transition?.live)transition=null;rideGate.clear();
     const next=restoreHorizonPosition(saved,world.pathGraph!,geography.ground,(x,z,y)=>{const at=geography.surface(x,z,y+.5,HORIZON_RESTORE_TOLERANCE);return at&&at.slope<=HORIZON_WALKABLE_DEGREES&&!geography.submerged(x,z,at.y)&&!geography.blocked(x,z,at.y)?{standY:at.y}:null;});
     Object.assign(body,{x:next.x,y:next.y!,z:next.z,yaw:next.yaw});yaw=body.yaw;mode='walk';path=[];velocityY=0;
     // Wave 6: a restore into ground whose chunk has not arrived stands and waits; the body is re-seated when it lands.
     if(!gateOpen(body.x,body.z))resnap=true;updateCamera();
   }
 
-  function savedBody():HouseBodyReturn{return{...body,place:'court',world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY};}
-  function enterDoor(hostId?:string){const h=hostId?world.hosts.find(h=>h.id===hostId):world.hosts.find(h=>'xy'in h.door&&Math.hypot(body.x-h.door.xy[0],body.z-h.door.xy[1],body.y-(h.door.height??0))<2.4);if(!h)return false;
+  /** While riding, a reload restores on foot at the nearest threshold of the mode (RIDE §6.5). */
+  function savedBody():HouseBodyReturn{const at=registry.active()?savedRideBody(world,hold.body??body,registry.mode(),geography.ground):body;return{x:at.x,y:at.y,z:at.z,yaw:at.yaw,place:'court',world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY};}
+  // ---- The mover hook ----
+  function fadeCut(label:string){
+    // The mover has already moved the body: show black at once and fade back in (300 ms); a cut under reduced motion / calm.
+    const ms=moverFadeMs(comfort.reducedMotion,comfort.calm);if(label)options.onStatus?.(label);if(!ms)return;
+    window.clearTimeout(fadeTimer);fadeEl.style.transitionDuration='0ms';fadeEl.style.opacity='1';void fadeEl.offsetWidth;
+    fadeTimer=window.setTimeout(()=>{fadeEl.style.transitionDuration=`${ms}ms`;fadeEl.style.opacity='0';},16);
+  }
+  /** Starts the walk ↔ ride camera blend from where the camera is now (a cut when `ms` is 0). */
+  function blendCamera(ms:number,toFov:number){
+    if(!ms){if(transition?.live)transition=null;return;}
+    transition={eye:camera.position.clone(),target:target.clone(),toEye:camera.position.clone(),toTarget:target.clone(),at:performance.now(),duration:ms,live:true,fov:camera.fov,toFov};
+  }
+  /** The board greybox under the rider's figure while a mover is active (RIDE §11: VehicleArt until pass 2b). */
+  function mountBoardProxy(){
+    if(boardProxy)return;boardProxy=buildBoardProxy();
+    boardProxy.group.traverse(o=>{if(o instanceof THREE.Mesh)o.castShadow=true;});
+    figure.group.add(boardProxy.group);
+  }
+  function unmountBoardProxy(){boardProxy?.dispose();boardProxy=null;}
+  /** The figure over the deck: it faces the travel (body.yaw + slip), feet on the deck top; the deck keeps the nose heading, pitch and roll in world space and stays on the ground under a crouch. */
+  const proxyTurn=new THREE.Quaternion(),proxyEuler=new THREE.Euler(0,0,0,'YXZ'),figureInverse=new THREE.Quaternion();
+  function poseRider(pose:MoverFrame['pose'],active:ModeController,now:number){
+    const slip=riderSlip(pose,active),drop=Math.max(0,pose.crouch)*.25,lift=boardProxy?BOARD_PROXY.top:0;
+    figure.group.position.set(body.x,body.y+lift-drop,body.z);figure.group.rotation.set(0,body.yaw+slip,-pose.lean);
+    figure.pose(now*.007,0,now/1000);   // riding: no walk cycle
+    if(!boardProxy)return;
+    const scale=figure.group.scale.x||1;figureInverse.copy(figure.group.quaternion).invert();
+    boardProxy.group.quaternion.copy(figureInverse).multiply(proxyTurn.setFromEuler(proxyEuler.set(-pose.pitch,body.yaw,-pose.roll,'YXZ')));
+    boardProxy.group.position.set(0,drop-lift,0).applyQuaternion(figureInverse).divideScalar(scale);
+    boardProxy.group.scale.setScalar(1/scale);
+  }
+  function onFoot(at:MoverBody|null,status:string){
+    blendCamera(moverBlendMs('park',comfort.reducedMotion,comfort.calm),walkFov??camera.fov);unmountBoardProxy();
+    if(at){Object.assign(body,{x:at.x,y:at.y,z:at.z,yaw:at.yaw});yaw=body.yaw;}
+    velocityY=0;path=[];figure.group.rotation.set(0,body.yaw,0);figure.group.position.set(body.x,body.y,body.z);
+    if(walkFov!==null){camera.fov=walkFov;camera.updateProjectionMatrix();walkFov=null;}
+    comfortCut=null;comfortCutBody=null;ambienceSpeed=0;lastHud=null;options.onMoverHud?.(null);options.onStatus?.(status);updateCamera();
+  }
+  function openComfortCut(at:MoverBody={...body}){
+    const active=registry.active(),cut=active?.reducedMotionCut?.();
+    if(!active||!cut)return false;
+    comfortCut=cut;comfortCutBody={...at};options.onStatus?.('Choose where to continue.');return true;
+  }
+  /** The app's comfort, live, for the land and the movers at once (Stage A + main #552; the stricter rule wins): reduced motion
+   *  makes every camera change a cut (Look/Island, districts, mover pick-up/park, fades) and a ride a cut to a chosen place;
+   *  calm freezes 15:30 (no night, no light cards), nothing moves on its own, and the movers are silent. */
+  function applyComfort(next:Partial<HorizonComfort>){
+    const was=comfort;
+    comfort={calm:next.calm??comfort.calm,reducedMotion:(next.reducedMotion??comfort.reducedMotion)||appReducedMotion()};
+    registry.setReducedMotion(comfort.reducedMotion);registry.setCalm(comfort.calm);
+    if(comfort.calm){faceCardsLit=false;faceCards.visible=false;}
+    motion=horizonMotion(comfort);
+    if(motion.transitionMs<=0&&transition&&!transition.live){camera.position.copy(transition.toEye);target.copy(transition.toTarget);camera.lookAt(target);transition=null;}
+    if(!comfortCut&&(comfort.reducedMotion&&!was.reducedMotion||comfort.calm&&!was.calm))openComfortCut();
+    lastSun=-Infinity;
+  }
+  function acceptOffer(offer:ThresholdOffer){
+    const riding=registry.active()!==null,name=registry.mode(),acceptedBody={...body};
+    // v2.2: boarding waits for the island's chunks (parking never waits); the held offer boards from offersAndAccept.
+    if(!riding&&offer.to!=='feet'&&(rideGateOpen(),!rideGate.request(offer))){options.onStatus?.(RIDE_WAITS_STATUS);return false;}
+    if(!registry.accept(offer,{...body},performance.now()))return false;
+    if(offer.to==='feet')onFoot(registry.lastExit(),`Parked the ${name} at ${offer.thresholdId}.`);
+    else {if(!riding)startRide();if(comfort.reducedMotion||comfort.calm)openComfortCut(acceptedBody);}
+    return true;
+  }
+  /** Pick-up: save the walk FOV, blend the camera to the mover's (0.8 s; a cut under reduced motion / calm), show the deck. */
+  function startRide(){walkFov=camera.fov;path=[];blendCamera(moverBlendMs('pickup',comfort.reducedMotion,comfort.calm),camera.fov);mountBoardProxy();options.onStatus?.(RIDING_STATUS);}
+  /** Leaving Walk (Look / Island / a page) while riding: the mover pauses where it is (R2-01). The mode, the controller and the rider's body are kept; `update` stops; the Look / Island camera takes over. */
+  function pauseRide(){
+    if(!hold.pause({...body}))return;
+    jumpHeld=false;jumpRequested=false;acceptRequested=false;
+    options.onStatus?.(`The ${registry.mode()} waits where you left it. Choose Walk to ride on.`);
+  }
+  /** Walk again: the paused rider is put back and the mover camera blends back in (0.8 s; a cut under reduced motion / calm). */
+  function resumeRide(){
+    const at=hold.resume();if(!at)return false;
+    Object.assign(body,at);yaw=body.yaw;mode='walk';path=[];lookAcc={dx:0,dy:0};jumpRequested=false;acceptRequested=false;
+    const ms=moverBlendMs('pickup',comfort.reducedMotion,comfort.calm);if(!ms)transition=null;   // a cut also drops a Look/Island transition still running
+    blendCamera(ms,camera.fov);options.onStatus?.(RIDING_STATUS);return true;
+  }
+  /** A reload / arrive while riding: the mode ends at the saved-body rule's `mode→feet` threshold through `registry.accept` (the controller exits and is disposed). */
+  function parkRide(){
+    if(!registry.active())return;
+    const name=registry.mode(),parked=hold.park({...body},performance.now());
+    onFoot(parked?.body??null,parked?`Parked the ${name} at ${parked.offer.thresholdId}.`:`The ${name} is put away.`);
+  }
+  function currentInput(accept:boolean):MoverInput{
+    const action=moverActionRequested;moverActionRequested=null;
+    return {...moverInputFrom({keys,controls,jumpHeld,jumpEdge:jumpRequested,accept,look:lookAcc}),...(action?{action}:{})};
+  }
+  function ride(dt:number,now:number,accept:boolean){
+    const active=registry.active()!;const input=currentInput(accept);jumpRequested=false;lookAcc={dx:0,dy:0};lastInput=input;
+    const f=active.update(dt,input,now);
+    Object.assign(body,{x:f.body.x,y:f.body.y,z:f.body.z,yaw:f.body.yaw});yaw=f.body.yaw;
+    ambienceSpeed=f.pose.speed;
+    if(f.fade){fadeLabel={label:f.fade.label,at:performance.now()};fadeCut(f.fade.label);if(transition?.live)transition=null;}   // the mover snapped its camera with the body: no blend across a fade
+    if(f.camera){camera.position.set(...f.camera.eye);target.set(...f.camera.target);camera.lookAt(target);if(transition?.live)transition.toFov=f.camera.fov;else if(Math.abs(camera.fov-f.camera.fov)>1e-3){camera.fov=f.camera.fov;camera.updateProjectionMatrix();}}
+    else updateCamera();
+    poseRider(f.pose,active,now);
+    if(!sameHud(lastHud,f.hud)){lastHud={...f.hud};options.onMoverHud?.(lastHud);}
+    options.onMoverSound?.(f.sound);
+    if(ambience&&!comfort.calm){if(f.sound.bite)ambience.snap();if(f.sound.boost)ambience.splashEcho();ambience.vario(f.hud.lift??0);}
+    if(active.finished?.()){
+      const out=registry.finish();
+      if(out)onFoot(out,fadeLabel?.label??`Landed from the ${active.id}.`);
+    }
+  }
+  /** Offers and the E / Enter edge, once per frame. Returns whether the edge is still unspent (for the mover's `accept`). */
+  function offersAndAccept():boolean{
+    const offer=mode==='walk'&&(!transition||transition.live)?offerToShow(registry.offers(body),registry.canAccept):null;
+    if(!sameOffer(offer,lastOffer)){lastOffer=offer;options.onOffer?.(offer);}
+    if(rideGate.pending()){rideGateOpen();const go=rideGate.poll(offer);if(go&&acceptOffer(go)){acceptRequested=false;return false;}}
+    if(!acceptRequested)return false;acceptRequested=false;
+    if(offer&&acceptOffer(offer))return false;
+    if(registry.active())return true;
+    enterDoor();return false;
+  }
+  function enterDoor(hostId?:string){if(registry.active())return false;   // a rider parks first: a door is not a mode threshold
+    const h=hostId?world.hosts.find(h=>h.id===hostId):world.hosts.find(h=>'xy'in h.door&&Math.hypot(body.x-h.door.xy[0],body.z-h.door.xy[1],body.y-(h.door.height??0))<2.4);if(!h)return false;
     doorCooldown=performance.now()+1800;const out=h.returnAt;if(out){Object.assign(body,{x:out[0],y:out[1],z:out[2],yaw:h.facing??0});yaw=body.yaw;}path=[];options.onDoor?.(h,savedBody());return true;
   }
   function setMode(next:HorizonMode){
+    if(next!=='walk')pauseRide();
+    else if(registry.active()){resumeRide();mode='walk';path=[];updateFog();return;}   // riding: no walk-camera transition, the mover camera blends back (a cut under reduced motion / calm)
     const fromEye=camera.position.clone(),fromTarget=target.clone();mode=next;path=[];faceCards.visible=faceCardsLit&&mode!=='journey';
     if(next==='journey'){const {w,h}=world.extent;camera.position.set(w/2,w*1.05,h*1.17);target.set(w/2,20,h*.47);camera.lookAt(target);camera.fov=50;camera.updateProjectionMatrix();}
     else if(next==='look')shot(shotId);
@@ -217,17 +389,26 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     const length=Math.hypot(dx,dz),speed=controls.run||keys.has('shift')?HORIZON_MANIFEST.speeds_ms.run:HORIZON_MANIFEST.speeds_ms.walk;
     let moved=0;if(length){dx=dx/length*Math.min(length,speed*dt);dz=dz/length*Math.min(length,speed*dt);body.yaw=Math.atan2(dx,dz);moved=move(dx,dz,dt);if(path.length&&moved<.001&&!held){path=[];options.onStatus?.('That path is blocked. Choose another approach.');}}
     if(jumpRequested&&velocityY===0)velocityY=4.2;jumpRequested=false;
-    if(velocityY!==0){velocityY-=12*dt;body.y+=velocityY*dt;const floor=geography.surface(body.x,body.z,body.y+.5);if(floor&&body.y<=floor.y){body.y=floor.y;velocityY=0;}if(geography.ceiling(body.x,body.z,body.y)<body.y+HORIZON_BODY_HEIGHT){body.y=geography.ceiling(body.x,body.z,body.y)-HORIZON_BODY_HEIGHT;velocityY=Math.min(0,velocityY);}}
+    if(velocityY!==0){velocityY-=HORIZON_G*dt;body.y+=velocityY*dt;const floor=geography.surface(body.x,body.z,body.y+.5);if(floor&&body.y<=floor.y){body.y=floor.y;velocityY=0;}if(geography.ceiling(body.x,body.z,body.y)<body.y+HORIZON_BODY_HEIGHT){body.y=geography.ceiling(body.x,body.z,body.y)-HORIZON_BODY_HEIGHT;velocityY=Math.min(0,velocityY);}}
     if(moved>0&&now>doorCooldown){const door=world.hosts.find(h=>'xy'in h.door&&Math.hypot(body.x-h.door.xy[0],body.z-h.door.xy[1],body.y-(h.door.height??0))<1.15);if(door)enterDoor(door.id);}
     if(!simulating){figure.group.position.set(body.x,body.y,body.z);figure.group.rotation.y=body.yaw;figure.pose(now*.007,moved>0?1:0,now/1000);updateCamera();}
   }
   function tick(now:number){if(disposed)return;const dt=Math.min(.05,Math.max(0,(now-(last||now))/1000));if(last)frameTimes.push(now-last);if(frameTimes.length>3600)frameTimes.shift();last=now;
-    if(!paused){if(mode==='walk'&&!transition)step(dt,now);if(mode!=='journey')stream.update({x:body.x,z:body.z,now,mode:mode==='look'?'look':'walk',radius:mode==='look'?world.views.find(v=>v.id===shotId)?.radius:undefined,keepRadius:world.views.find(v=>v.id===shotId)?.radius,underground:body.y+HORIZON_BODY_HEIGHT<geography.ground(body.x,body.z)-.5});}
+    let stepped=false;
+    if(!paused){const accept=comfortCut?false:offersAndAccept();if(mode==='walk'&&(!transition||transition.live)){stepped=true;if(registry.active()){if(!comfortCut&&hold.steps(mode))ride(dt,now,accept);}else if(!comfortCut)step(dt,now);}if(mode!=='journey')stream.update({x:body.x,z:body.z,now,mode:mode==='look'?'look':'walk',radius:mode==='look'?world.views.find(v=>v.id===shotId)?.radius:undefined,keepRadius:world.views.find(v=>v.id===shotId)?.radius,underground:body.y+HORIZON_BODY_HEIGHT<geography.ground(body.x,body.z)-.5});}
+    if(ambience){if(paused)ambience.pause();else ambience.update(body.x,body.y,body.z,ambienceSpeed,false,false,comfort.calm,registry.mode()==='glider'||registry.mode()==='parachute');}
+    for(const art of [...moverArts])if(!art.tick(dt,figure.group))removeMoverArt(art);
     ring.updateResidency(new Set(stream.live.keys()),mode==='journey');cableLayer.update(new Set(stream.live.keys()),mode==='journey');
     // Fine districts rise from the fog colour over 0.8 s (a cut under reduced motion); the coarse card they replace hides at once.
     for(const resource of stream.live.values()){resource.cards.group.visible=mode!=='journey';if(resource.chalk)resource.chalk.visible=night&&mode!=='journey';resource.fadeIn(motion.districtFadeMs>0?Math.min(1,Math.max(0,(now-resource.at)/motion.districtFadeMs)):1);}
     for(const [id,cards]of coarse)cards.group.visible=mode==='journey'||!stream.live.has(id);
-    if(transition){const t=transition.duration>0?Math.min(1,Math.max(0,(now-transition.at)/transition.duration)):1,ease=t*t*(3-2*t);camera.position.lerpVectors(transition.eye,transition.toEye,ease);target.lerpVectors(transition.target,transition.toTarget,ease);camera.lookAt(target);if(t===1)transition=null;}figure.group.visible=mode==='walk';
+    if(transition){
+      if(transition.live&&stepped){transition.toEye.copy(camera.position);transition.toTarget.copy(target);}   // ride()/step() just set this frame's goal camera
+      const t=transition.duration>0?Math.min(1,Math.max(0,(now-transition.at)/transition.duration)):1,ease=transition.live?moverBlendEase(now-transition.at,transition.duration):t*t*(3-2*t);
+      camera.position.lerpVectors(transition.eye,transition.toEye,ease);target.lerpVectors(transition.target,transition.toTarget,ease);camera.lookAt(target);
+      if(transition.fov!==undefined&&transition.toFov!==undefined){const fov=transition.fov+(transition.toFov-transition.fov)*ease;if(Math.abs(camera.fov-fov)>1e-3){camera.fov=fov;camera.updateProjectionMatrix();}}
+      if(t===1)transition=null;
+    }figure.group.visible=mode==='walk';
     const peer=horizonPartnerPose(options.partner?.());partner.group.visible=Boolean(peer)&&mode!=='journey';if(peer){fade(partnerMaterials,peer.opacity);partner.group.position.set(peer.x,peer.y??geography.ground(peer.x,peer.z),peer.z);partner.group.rotation.y=peer.yaw;partner.pose(motion.ambientMotion?now*.007:0,peer.moving?1:0,motion.ambientMotion?now/1000:0);}
     // Calm and reduced motion hold the frozen 15:30 (no night, no sun step); a review date never overrides them.
     if(now-lastSun>=60_000){setLight(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm}));lastSun=now;}
@@ -235,25 +416,70 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     skyDome.follow(camera);renderer.render(scene,camera);if(interactiveAt===null){interactiveAt=performance.now();options.onReady?.();void prefetchChunks();}if(drawSamples.length===0||now-drawSamples.at(-1)!.at>500){drawSamples.push({at:now,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,resident:stream.live.size});if(drawSamples.length>600)drawSamples.shift();}schedule();
   }
   function schedule(){if(!disposed&&lease.active)frame=lease.requestFrame(tick);}
+  const offers=()=>mode==='walk'&&!paused?registry.offers(body):[];
+  function acceptPublic(offer?:ThresholdOffer):HorizonAccept|null|void{
+    if(!offer){acceptRequested=true;return;}
+    if(!registry.canAccept(offer)||!acceptOffer(offer))return null;
+    return{mode:registry.mode(),controller:registry.active(),cut:comfortCut};
+  }
+  function cutTo(to:HorizonCutTarget){
+    if(to.kind==='view'){
+      const holdAt=comfortCutBody,out=registry.finish();
+      if(out||holdAt)onFoot(holdAt??out,'Flight paused.');
+      return shot(to.id);
+    }
+    if(to.kind==='landing'){
+      const at={x:to.landing.xy[0],y:to.landing.height??geography.ground(to.landing.xy[0],to.landing.xy[1]),z:to.landing.xy[1],yaw:body.yaw};
+      registry.finish();onFoot(at,`→ ${to.landing.label}`);return true;
+    }
+    const holdAt=comfortCutBody,out=registry.finish();
+    if(out||holdAt)onFoot(holdAt??out,'Stayed at the accepted threshold.');
+    return true;
+  }
   const interactive=(event:KeyboardEvent)=>event.composedPath().some(t=>t instanceof Element&&Boolean(t.closest('input,textarea,select,button,a,[contenteditable="true"],[role="dialog"],[role="textbox"]')));
-  function keyDown(e:KeyboardEvent){if(paused||interactive(e)||!host.contains(document.activeElement))return;const key=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(key)){e.preventDefault();if(key===' ')jumpRequested=true;else keys.add(key);}if(key==='e'){e.preventDefault();enterDoor();}if(key==='escape')path=[];}
+  function keyDown(e:KeyboardEvent){if(paused||interactive(e)||!host.contains(document.activeElement))return;const key=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(key)){e.preventDefault();keys.add(key);if(key===' '&&!e.repeat||key===' '&&!registry.active())jumpRequested=true;}if(key==='e'){e.preventDefault();if(!e.repeat)acceptRequested=true;}if(key==='escape')path=[];}
   function keyUp(e:KeyboardEvent){keys.delete(e.key.toLowerCase());}
-  function clear(){keys.clear();controls={forward:0,strafe:0,run:false};path=[];drag=null;}
-  const unlisten=[lease.listenCanvas<PointerEvent>('pointerdown',e=>{if(paused)return;host.focus({preventScroll:true});drag={x:e.clientX,y:e.clientY,id:e.pointerId,travel:0};renderer.domElement.setPointerCapture(e.pointerId);}),lease.listenCanvas<PointerEvent>('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.travel+=Math.hypot(dx,dy);drag.x=e.clientX;drag.y=e.clientY;yaw-=dx*.005;pitch=Math.max(-1.2,Math.min(.8,pitch-dy*.004));if(mode==='look'){target.set(camera.position.x+Math.sin(yaw)*Math.cos(pitch)*distance,camera.position.y+Math.sin(pitch)*distance,camera.position.z+Math.cos(yaw)*Math.cos(pitch)*distance);camera.lookAt(target);}}),lease.listenCanvas<PointerEvent>('pointerup',e=>{const click=drag&&drag.travel<5;drag=null;if(!click||mode!=='walk'||paused)return;const rect=renderer.domElement.getBoundingClientRect(),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);const hits=ray.intersectObjects([...stream.live.values()].map(r=>r.cards.group),true);const hit=hits[0];if(hit){const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],[hit.point.x,hit.point.y,hit.point.z],{stepFree:true});if(plan){path=[...plan.points];routeAhead(plan.points);}else options.onStatus?.('No connected walking route reaches that point.');}}),lease.listenCanvas<WheelEvent>('wheel',e=>{if(paused)return;e.preventDefault();distance=Math.max(2,Math.min(45,distance*Math.exp(e.deltaY*.001)));updateCamera();},{passive:false})];
+  function clear(){keys.clear();controls={forward:0,strafe:0,run:false};path=[];drag=null;jumpHeld=false;}
+  const unlisten=[lease.listenCanvas<PointerEvent>('pointerdown',e=>{if(paused)return;host.focus({preventScroll:true});drag={x:e.clientX,y:e.clientY,id:e.pointerId,travel:0};renderer.domElement.setPointerCapture(e.pointerId);}),lease.listenCanvas<PointerEvent>('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.travel+=Math.hypot(dx,dy);drag.x=e.clientX;drag.y=e.clientY;lookAcc.dx-=dx*.005;lookAcc.dy-=dy*.004;yaw-=dx*.005;pitch=Math.max(-1.2,Math.min(.8,pitch-dy*.004));if(mode==='look'){target.set(camera.position.x+Math.sin(yaw)*Math.cos(pitch)*distance,camera.position.y+Math.sin(pitch)*distance,camera.position.z+Math.cos(yaw)*Math.cos(pitch)*distance);camera.lookAt(target);}}),lease.listenCanvas<PointerEvent>('pointerup',e=>{const click=drag&&drag.travel<5;drag=null;if(!click||mode!=='walk'||paused)return;const rect=renderer.domElement.getBoundingClientRect(),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);const hits=ray.intersectObjects([...stream.live.values()].map(r=>r.cards.group),true);const hit=hits[0];if(hit){const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],[hit.point.x,hit.point.y,hit.point.z],{stepFree:true});if(plan){path=[...plan.points];routeAhead(plan.points);}else options.onStatus?.('No connected walking route reaches that point.');}}),lease.listenCanvas<WheelEvent>('wheel',e=>{if(paused)return;e.preventDefault();distance=Math.max(2,Math.min(45,distance*Math.exp(e.deltaY*.001)));updateCamera();},{passive:false})];
   window.addEventListener('keydown',keyDown);window.addEventListener('keyup',keyUp);window.addEventListener('blur',clear);host.addEventListener('blur',clear);
   shot(new URLSearchParams(location.search).get('shot')??'A');if(options.initialBody)restore(options.initialBody);resize();schedule();
   const api={world,assets,scene,camera,geography,shot,setMode,restore,savedBody,enterDoor,
     arrive(hostId:string){const h=world.hosts.find(h=>h.id===hostId);if(!h||!h.returnAt)return false;restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',x:h.returnAt[0],y:h.returnAt[1],z:h.returnAt[2],yaw:(h.facing??0)+Math.PI});return true;},
     simulateWalk(seconds:number){if(!HARBOUR_DEV)throw new Error('Simulation is a review-only control.');const count=Math.ceil(Math.max(0,Math.min(seconds,3600))/.05);simulating=true;try{for(let i=0;i<count&&path.length;i++)step(.05,performance.now()+i*50);}finally{simulating=false;updateCamera();}return{body:{...body},remaining:path.length,blocker:lastMovementBlocker};},
     body:()=>({...body}),mode:()=>mode,shotId:()=>shotId,
-    input(next:Partial<typeof controls>){controls={...controls,...next};},jump(){jumpRequested=true;},look(dx:number,dy:number){yaw+=dx;pitch=Math.max(-1.2,Math.min(.8,pitch+dy));},
-    pause(value:boolean){paused=value;if(value)clear();},setDate(date:Date){currentTime=date;lastSun=-Infinity;},
+    settings:()=>({tier,reducedMotion:comfort.reducedMotion,calm:comfort.calm,theme}),reviewDate:()=>(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm})),setAmbience(audio:WorldAmbience|null){ambience=audio;},
+    offers,
+    moverState():HorizonMoverState{const fade=fadeLabel&&performance.now()-fadeLabel.at<HORIZON_FADE_LABEL_MS?fadeLabel.label:undefined;return{mode:registry.mode(),attached:registry.active()!==null,hud:lastHud,...(fade?{fade}:{}),cut:comfortCut};},
+    moverAction(action:'fold'|'pull'|'gate'){if(action==='fold'||action==='pull')moverActionRequested=action;},
+    moverArt(object:THREE.Object3D,tick:(dt:number,figure:THREE.Object3D)=>boolean,dispose?:()=>void){const art:HorizonMoverArt={object,tick,dispose};moverArts.add(art);scene.add(object);return()=>removeMoverArt(art);},
+    // ---- movers (track I) ----
+    registry,
+    /** The input the active mover would read this frame (after a riding frame: the one it did read). */
+    moverInput():MoverInput{return lastInput&&registry.active()?{...lastInput,look:{...lastInput.look}}:currentInput(acceptRequested);},
+    /** Review only (HARBOUR_DEV, R2-14): make `controller` the active mode as if `offer` had been accepted here. Refused while riding (park first). */
+    attachMover(controller:ModeController,offer:ThresholdOffer){if(!HARBOUR_DEV)throw new Error('attachMover is a review-only control.');const at={...body};if(!rideGateOpen(true))return false;if(!registry.attach(controller,offer,at,performance.now()))return false;mode='walk';path=[];startRide();if(comfort.reducedMotion||comfort.calm)openComfortCut(at);return true;},
+    /** Review only (HARBOUR_DEV): park through `offer` (to 'feet'), else at the saved-body rule's threshold. Never in place. */
+    detachMover(offer?:ThresholdOffer){if(!HARBOUR_DEV)throw new Error('detachMover is a review-only control.');if(!registry.active())return false;if(offer)return acceptOffer(offer);parkRide();return true;},
+    /** Whether the active mover is paused (Look / Island / a page while riding). */
+    ridePaused:()=>hold.paused(),
+    /** E / the Enter bubble: an edge the next frame spends on the nearest offer, else a nearby door. */
+    accept:acceptPublic,
+    cutTo,
+    /** The Jump bubble held (riding: the board charges its pop). */
+    jumpHold(on:boolean){jumpHeld=on;if(on&&!registry.active())jumpRequested=true;},
+    offer:()=>lastOffer,
+    /** Compatibility (main #552): one comfort path — `setComfort` sets the land's motion and the movers' registry together. */
+    setReducedMotion(on:boolean){applyComfort({reducedMotion:on});},
+    setCalm(on:boolean){applyComfort({calm:on});},
+    input(next:Partial<typeof controls>){controls={...controls,...next};},jump(){jumpRequested=true;},look(dx:number,dy:number){lookAcc.dx+=dx;lookAcc.dy+=dy;yaw+=dx;pitch=Math.max(-1.2,Math.min(.8,pitch+dy));},
+    pause(value:boolean){paused=value;if(value){clear();ambience?.pause();}},setDate(date:Date){currentTime=date;lastSun=-Infinity;},
+
     /** The app's comfort choices, live (HorizonStage threads useComfort; html[data-motion] is read too). */
-    setComfort(next:Partial<HorizonComfort>){comfort={calm:next.calm??comfort.calm,reducedMotion:(next.reducedMotion??comfort.reducedMotion)||appReducedMotion()};if(comfort.calm){faceCardsLit=false;faceCards.visible=false;}motion=horizonMotion(comfort);if(motion.transitionMs<=0&&transition){camera.position.copy(transition.toEye);target.copy(transition.toTarget);camera.lookAt(target);transition=null;}lastSun=-Infinity;},
+    setComfort(next:Partial<HorizonComfort>){applyComfort(next);},
     comfort:()=>({...comfort,motion:{...motion}}),
     walkTo(p:XYZ){lastMovementBlocker=null;const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],p,{stepFree:true});path=plan?[...plan.points]:[];if(plan)routeAhead(plan.points);return plan;},
-    stats(){const gl=renderer.getContext(),debug=gl.getExtension('WEBGL_debug_renderer_info');return{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),revision:world.geographyRevision,terrainBytes:assets.bytes,collisionIndex:geography.indexStats,bytesBeforeFirstFrame,chunksLoaded:chunks?chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId):null,cables:cableLayer.stats(),chunks:chunks?{resident:chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId),total:chunks.refs.length,queued:scheduler!.queued(),heldAt:heldNow.length?{districts:[...heldNow],body:{...body}}:null,holds:chunkHolds.map(h=>({...h,at:[...h.at]}))}:null,definitionBytesSoFar:chunks?.bytes()??assets.definitionBytes,shadowRequests:[...shadowRequests],comfort:{...comfort,motion:{...motion}},lightCards:pools.count,shadow:{half:sun.shadow.camera.right,centre:sun.target.position.toArray()},firstInteractiveMs:interactiveAt===null?null:interactiveAt-startedAt,assetLoadMs:assetLoadedAt-startedAt,mode,shot:shotId,body:{...body},frames:[...frameTimes],drawSamples:[...drawSamples],stream:[...stream.history],camera:{eye:camera.position.toArray(),target:target.toArray(),fov:camera.fov},diagnostics:world.diagnostics};},
-    dispose(){disposed=true;offChunk?.();lease.cancelFrame(frame);observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',clear);host.removeEventListener('blur',clear);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();poolGeometry.dispose();beadGeometry.dispose();poolMaterial.dispose();beadMaterial.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
+    stats(){const gl=renderer.getContext(),debug=gl.getExtension('WEBGL_debug_renderer_info');return{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),revision:world.geographyRevision,terrainBytes:assets.bytes,collisionIndex:geography.indexStats,bytesBeforeFirstFrame,chunksLoaded:chunks?chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId):null,cables:cableLayer.stats(),chunks:chunks?{resident:chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId),total:chunks.refs.length,queued:scheduler!.queued(),heldAt:heldNow.length?{districts:[...heldNow],body:{...body}}:null,holds:chunkHolds.map(h=>({...h,at:[...h.at]})),ride:rideGate.stats()}:null,definitionBytesSoFar:chunks?.bytes()??assets.definitionBytes,shadowRequests:[...shadowRequests],comfort:{...comfort,motion:{...motion}},lightCards:pools.count,shadow:{half:sun.shadow.camera.right,centre:sun.target.position.toArray()},firstInteractiveMs:interactiveAt===null?null:interactiveAt-startedAt,assetLoadMs:assetLoadedAt-startedAt,mode,shot:shotId,body:{...body},frames:[...frameTimes],drawSamples:[...drawSamples],stream:[...stream.history],camera:{eye:camera.position.toArray(),target:target.toArray(),fov:camera.fov},diagnostics:world.diagnostics};},
+    dispose(){disposed=true;window.clearTimeout(fadeTimer);registry.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();offChunk?.();lease.cancelFrame(frame);observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',clear);host.removeEventListener('blur',clear);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();poolGeometry.dispose();beadGeometry.dispose();poolMaterial.dispose();beadMaterial.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
   };
   return api;
 }

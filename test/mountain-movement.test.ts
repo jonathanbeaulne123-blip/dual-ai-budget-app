@@ -5,11 +5,13 @@
  * the ride the runtime attaches the body to.
  */
 import {describe,expect,it} from 'vitest';
+import * as THREE from 'three';
 import {createWalker} from '../src/harbour/body/walker.ts';
 import {courtObstacles} from '../src/harbour/body/obstacles.ts';
 import {createBodyState,requestJump,stepBody,BODY_HEIGHT,KERB_PRESS,RETURN_FADE,SAFE_FALL,type BodyState,type BodyWorld,type Support} from '../src/harbour/body/bodyModel.ts';
-import {districtArrival,raceCorridorAt} from '../src/harbour/body/geography.ts';
+import {districtArrival,raceCorridorAt,transportCurve} from '../src/harbour/body/geography.ts';
 import {createRide,farOffer,nearestStation,platformOffer} from '../src/harbour/body/ride.ts';
+import {buildRideButtons,type RideButtonAction} from '../src/harbour/mountain/rideButtons.ts';
 import {groundHeightAt} from '../src/harbour/scene/ground.ts';
 import {DISTRICTS,TRANSPORT_STOPS,TRANSPORT_LINES,RACE_FINISH} from '../src/harbour/mountain/definition.ts';
 import {MOUNTAIN_COURSE_POINTS,MOUNTAIN_GATES,crossesRaceGate} from '../src/harbour/mountain/race.ts';
@@ -150,6 +152,55 @@ describe('edges',()=>{
 });
 
 describe('rides',()=>{
+  it('lets a rider walk inside either cabin without crossing its walls',()=>{
+    for(const kind of ['funicular','gondola'] as const){
+      const ride=createRide(kind,0,1);
+      while(ride.progress()<.15)ride.step(.1);
+      if(kind==='gondola')expect(ride.pose().seated).toBe(true);
+      for(let i=0;i<100;i++)ride.move(1,1,.1);
+      const pose=ride.pose(),dx=pose.x-pose.cabin[0],dz=pose.z-pose.cabin[2];
+      expect(Math.hypot(dx,dz)).toBeLessThan(kind==='funicular'?1.46:.89);
+      expect(Math.hypot(dx,dz)).toBeGreaterThan(.5);
+      expect(pose.seated).toBe(false);
+      ride.move(-1,-1,.1);
+      expect(ride.pose().x).not.toBe(pose.x);
+      if(kind==='gondola'){ride.toggleSeat();expect(ride.pose().seated).toBe(true);}
+      const curve=transportCurve(kind,0,1);
+      let exitPose=ride.pose();
+      for(let i=0;i<10000&&!ride.done();i++){
+        exitPose=ride.step(.01);
+        const along=curve.frame(curve.length*ride.progress());
+        if(along.aboard===false&&ride.progress()>.5){
+          expect(Math.hypot(exitPose.x-along.at[0],exitPose.z-along.at[2])).toBeGreaterThan(.4);
+          break;
+        }
+      }
+      ride.skip();const stop=TRANSPORT_STOPS[kind][1]!.at;
+      expect(Math.hypot(ride.pose().x-stop[0],ride.pose().z-stop[2])).toBeLessThan(.01);
+    }
+  });
+  it('has one physical station arrow per reachable direction and carriage controls',()=>{
+    for(const theme of ['classic','taylor','newfoundland'] as const){
+      const buttons=buildRideButtons(theme),actions:RideButtonAction[]=[];
+      buttons.group.traverse(object=>{if(object.userData.rideButton)actions.push(object.userData.rideButton as RideButtonAction);});
+      expect(actions.filter(a=>a.action==='board')).toHaveLength(8);
+      expect(actions.filter(a=>a.action==='skip')).toHaveLength(2);
+      expect(actions.filter(a=>a.action==='seat')).toHaveLength(1);
+      for(const action of actions)if(action.action==='board')expect(Math.abs(action.from-action.to)).toBe(1);
+      buttons.group.updateMatrixWorld(true);
+      const platform=TRANSPORT_LINES.funicular.stations[0]!.platform.at;
+      const ray=new THREE.Raycaster(new THREE.Vector3(platform[0],platform[1]+5,platform[2]),new THREE.Vector3(0,-1,0));
+      const hit=ray.intersectObject(buttons.group,true)[0];
+      let target:THREE.Object3D|null=hit?.object??null;
+      while(target&&!target.userData.rideButton)target=target.parent;
+      expect(target?.userData.rideButton).toMatchObject({action:'board',kind:'funicular',from:0,to:1});
+      buttons.setCabin('gondola',TRANSPORT_STOPS.gondola[0]!.at,0);
+      const carriage=buttons.group.getObjectByName('Ride carriage buttons')!;
+      expect(carriage.visible).toBe(true);
+      buttons.setCabin(null);expect(carriage.visible).toBe(false);
+      buttons.dispose();
+    }
+  });
   it('carries the body attached to the cabin every frame, at the line\'s own cruise, and skips mid-ride',()=>{
     for(const [kind,from,to] of [['funicular',0,3],['gondola',0,1],['funicular',2,0]] as const){
       const ride=createRide(kind,from,to);

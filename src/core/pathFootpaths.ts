@@ -1,7 +1,8 @@
 import type { DateKey } from "./calendar.ts";
 import { pathLabel, pathTaskDone } from "./pathStones.ts";
 import { taskInView, taskIsFinancial } from "./tasks.ts";
-import type { Household } from "./types.ts";
+import type { Goal, Household } from "./types.ts";
+import type { Task } from "./tasks.ts";
 
 /**
  * Our Path private footpaths (Jonathan's step 6): "Each person has footpaths only
@@ -32,11 +33,33 @@ export type PathFootpath = {
 
 export const PATH_FOOTPATH_LIMIT = 40;
 
+/**
+ * The owner-only guard (the trust boundary, D-264 step 6; extended by the Mine
+ * layer, Tool Atlas D2). One predicate for every private task a surface draws:
+ * not deleted, `visibility: "personal"`, created by this member, and in the
+ * member's personal view. A blank member owns nothing. The Mine layer
+ * (`harbour/mine/mineLayer.ts`) reads footpaths *and* Glasshouse steps through
+ * this one function, so there is a single place to review.
+ */
+export function ownsPrivateTask(task: Pick<Task, "deleted" | "visibility" | "createdBy">, memberId: string): boolean {
+  return Boolean(memberId) && !task.deleted && task.visibility === "personal" && task.createdBy === memberId && taskInView(task, memberId, "personal");
+}
+
+/**
+ * The same guard for a private Kitty Bank: a goal that is not shared and is
+ * owned by this member (`visibility.ts` `goalVisibleInView(goal, memberId,
+ * "personal")`, restated so the Mine layer can re-check a projection's output
+ * row by row). A blank member, or a goal with no owner, is never private-mine.
+ */
+export function ownsPrivateGoal(goal: Pick<Goal, "shared" | "ownerMemberId">, memberId: string): boolean {
+  return Boolean(memberId) && goal.shared === false && goal.ownerMemberId !== null && goal.ownerMemberId === memberId;
+}
+
 export function pathFootpaths(household: Household, memberId: string, today: DateKey): PathFootpath[] {
   void today;
   if (!memberId) return [];
   return (household.tasks ?? [])
-    .filter((task) => !task.deleted && task.visibility === "personal" && task.createdBy === memberId && taskInView(task, memberId, "personal"))
+    .filter((task) => ownsPrivateTask(task, memberId))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id))
     .slice(0, PATH_FOOTPATH_LIMIT)
     .map((task): PathFootpath => {

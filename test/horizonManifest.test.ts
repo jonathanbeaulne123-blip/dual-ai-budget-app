@@ -91,7 +91,7 @@ describe('Horizon manifest v2.0',()=>{
   });
   it('carries Jonathan’s 2026-09-27 rulings as numbers (v2.0) and the Wave 5 integration data (v2.1)',()=>{
     const m=manifest as unknown as Record<string,any>;
-    expect(m.version).toBe('2.1');
+    expect(m.version).toBe('2.2');   // v2.2 = v2.1 + main's data-only v1.7 blocks (reconciliation)
     // D-A1: 245 m, one steel arch, 11.4 clear; an 8 m hull at 46° needs 32.0 m. Ruled 36 m at s 98-134 (kept as opening.v2_0);
     // v2.1 (design lead, reversible): 40 m at s 103-143, 38 clear - the hull cleared the east pier by -3.99 at 36 m, +1.37 at 40.
     const bb=m.structures.bightBridge;expect(bb.span_m).toBe(245);expect(bb.v1_9.span_m).toBe(230);
@@ -155,5 +155,73 @@ describe('Horizon manifest v2.0',()=>{
         small:{...manifest.reserves.small,sealedDrift:{...manifest.reserves.small.sealedDrift,placeId}},
       }})).toThrow('Invalid Horizon small reserve');
     }
+  });
+});
+describe('Horizon manifest v2.2: main\'s v1.7 sky data on the v2.1 land',()=>{
+  it('adds FLIGHT.md sky data without a geography change',()=>{
+    expect(manifest.version).toBe('2.2');
+    expect(manifest.sky.gliderPolar).toHaveLength(5);
+    expect(manifest.sky.parachute).toMatchObject({forward_ms:6,sink_ms:3,freefallCap_ms:30,autoPull_agl_m:45,minBail_agl_m:60,canopy_m:[7,3]});
+    expect(manifest.sky.corridors.throat).toMatchObject({gate:12,to:[1300,420],slope_deg:30,level_m:25,splashH:42,coneDeg:25,maxBankDeg:20});
+    expect(manifest.sky.dropZone).toMatchObject({xy:manifest.sky.landings.green.xy,rings_m:[5,10,25]});
+    for(const key of ['green','reachMeadow','sands'] as const)expect(manifest.sky.landings[key].modes).toContain('parachute');
+    expect(manifest.sky.landingModes.deep).toEqual(['glider']);
+    // The Drop Zone follows the green landing onto the v2.1 land ([1040,1065] was the v1.6 green landing).
+    expect(manifest.sky.dropZone.xy).toEqual([1028,1112]);expect((manifest.sky.dropZone as unknown as {v1_7_xy:number[]}).v1_7_xy).toEqual([1040,1065]);
+    // Stage A v1.7's target stands (96.0 s measured on candidate 5 from the lookout launch); D34's [70,110] is recorded beside it.
+    expect(manifest.journeys.targets_s['crown→lamp by glider']).toEqual([85,120]);
+    expect(manifest.journeys.targets_s.decisions['crown→lamp by glider']).toContain("D34 applied pending Jonathan's confirmation");
+    expect((manifest.journeys.targets_s.decisions as unknown as {v2_2_d34:number[]}).v2_2_d34).toEqual([70,110]);
+  });
+  it('rejects a carried threshold without a carrier or with a broken mode sequence',()=>{
+    const row=manifest.carriedThresholds[0]!;
+    expect(()=>parseHorizonManifest({...manifest,carriedThresholds:[{...row,carriedBy:''}]})).toThrow('Invalid Horizon carried threshold');
+    expect(()=>parseHorizonManifest({...manifest,carriedThresholds:[{...row,modes:['plane→']}]})).toThrow('Invalid Horizon carried threshold');
+  });
+});
+
+describe('Horizon manifest v2.2: main\'s v1.7 RIDE data (§8.3, D40, D42)',()=>{
+  const paces=manifest.paces as unknown as Record<string,{roll:number|null;pushGrip:number|null}>;
+  const surfaces=manifest.surfaces as unknown as Record<string,{pace:string;grip:number|null}>;
+  it('is version 2.2, dated, and says what changed',()=>{
+    expect(manifest.version).toBe('2.2');
+    expect(manifest.date).toBe('2026-09-27');
+    expect(manifest.status).toContain('v2.2: paces and surface grip (RIDE D42)');
+  });
+  it('gives every surface a numeric grip except duff, which is never a bed',()=>{
+    const expected:Record<string,number|null>={paved:1,packedEarth:.95,ochre:.85,apron:1,bankedTurf:1.1,boardwalk:.9,cobble:.7,gravel:.6,sand:.5,plaza:1,snow:.4,ice:.2,duff:null,stone:1};
+    expect(Object.keys(surfaces)).toHaveLength(14);
+    expect(new Set(Object.keys(surfaces))).toEqual(new Set(Object.keys(expected)));
+    for(const [id,row] of Object.entries(surfaces)){
+      if(id==='duff'){expect(row.grip).toBeNull();expect(row.pace).toBe('n/a');continue;}
+      expect(typeof row.grip,id).toBe('number');expect(Number.isFinite(row.grip),id).toBe(true);expect(row.grip,id).toBe(expected[id]);
+    }
+  });
+  it('gives pads, station slabs and the park a stone row that grips like pavement',()=>{
+    expect(surfaces.stone).toEqual({pace:'threshold',footstep:'stone',grip:1,note:'threshold pads, station slabs and the Tideline park'});
+  });
+  it('carries the six paces with their roll and push grip',()=>{
+    expect(Object.keys(paces).sort()).toEqual(['fast','flow','n/a','skate','slow','threshold']);
+    expect(paces.fast).toMatchObject({roll:.12,pushGrip:1});
+    expect(paces.flow).toMatchObject({roll:.25,pushGrip:.9});
+    expect(paces.slow).toMatchObject({roll:.6,pushGrip:.8});
+    expect(paces.threshold).toMatchObject({roll:1.8,pushGrip:.5});
+    expect(paces.skate).toMatchObject({roll:.03,pushGrip:null});
+    expect(paces['n/a']).toMatchObject({roll:null,pushGrip:null});
+    expect((manifest.paces['n/a'] as {note:string}).note).toContain('offbed');
+  });
+  it('resolves every surface default pace and every skate segment pace to a paces row',()=>{
+    for(const [id,row] of Object.entries(surfaces))expect(Object.hasOwn(paces,row.pace),id).toBe(true);
+    for(const id of ['S1','S2','S3','S4'] as const)for(const segment of manifest.skate[id].segments){
+      expect(Object.hasOwn(paces,segment.pace),`${id} ${segment.name}`).toBe(true);
+      expect(Object.hasOwn(surfaces,segment.surface),`${id} ${segment.name}`).toBe(true);
+    }
+  });
+  it('makes the park forgiving rather than assisted, and keeps the v1.6 numbers',()=>{
+    expect(manifest.skate.park.note).toBe('Skate v2 park; forgiving landings only (RIDE D40); no race');
+    expect(manifest.skate.park).toMatchObject({xy:[1020,1430],size:[60,32]});
+    expect(manifest.speeds_ms.board).toBe(7);
+    expect(manifest.skate.S1.segments.map(s=>[s.pace,s.surface])).toEqual([['fast','paved'],['flow','bankedTurf'],['flow','apron'],['fast','paved'],['slow','cobble'],['fast','paved']]);
+    expect(manifest.skate.S3.segments[2]).toMatchObject({name:'The square',pace:'threshold',surface:'plaza'});
   });
 });

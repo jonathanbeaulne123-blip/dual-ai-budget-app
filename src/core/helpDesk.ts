@@ -108,8 +108,8 @@ export function helpCommands(input: {
   if (tab === "plan" || instrument === "postcard" || instrument === "jars") {
     rows.push({
       id: "sit-down",
-      label: "Sit-down?",
-      prompt: "Sit-down?",
+      label: "Sitdown?",
+      prompt: "Sitdown?",
       go: "plan",
       expand: "postcard",
     });
@@ -126,7 +126,7 @@ export function helpCommands(input: {
       prompt: label,
       expand: ["Which bill?", "Calendar"].includes(label) ? "calendar" : undefined,
       go: label === "Health" || label === "What broke?" ? "more"
-        : label === "Sit-down?" || label === "Leftover?" ? "plan"
+        : /^sit-?down\?$/i.test(label) || label === "Leftover?" ? "plan"
           : label === "Which bill?" || label === "Calendar" ? "calendar"
             : label === "Tonight?" || label === "Protect or chase?" || label === "Tax milk?" ? "shift"
             : undefined,
@@ -183,7 +183,7 @@ export function helpIntro(
   } else if (leftover.leftoverCents > 0) {
     parts.push(`Leftover is ${formatCad(leftover.leftoverCents)} after bills and card mins.`);
   } else if (leftover.shortfallCents > 0) {
-    parts.push("Nothing leftover to move. Sit-down still runs.");
+    parts.push("Nothing leftover to move. The Sitdown still runs.");
   }
 
   if (instrument === "calendar" || tab === "calendar") {

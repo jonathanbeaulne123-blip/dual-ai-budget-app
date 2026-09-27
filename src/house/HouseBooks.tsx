@@ -9,7 +9,8 @@ import { booksPresentationFloor, householdWallet } from "../core/index.ts";
 import { useAppearance } from "../theme/ThemeProvider.tsx";
 import "./houseBooks.css";
 
-export const BOOK_DIVISIONS=["Today","Accounts","Spending","Bills","Goals","Contributions","Record"] as const;
+/** K13 (Tool Atlas §3.3): the division formerly "Record" is the **Paper trail**, so "Record" means one thing (the verb). */
+export const BOOK_DIVISIONS=["Today","Accounts","Spending","Bills","Goals","Contributions","Paper trail"] as const;
 export type BookDivision=typeof BOOK_DIVISIONS[number];
 /**
  * `openAt` is a presentation preselect: a door that named a division (the
@@ -18,7 +19,7 @@ export type BookDivision=typeof BOOK_DIVISIONS[number];
  */
 export function HouseBooks({household,memberId,view,children,onOpenBank,openAt}:{household:Household;memberId:string;view:LedgerView;children:(division:BookDivision)=>ReactNode;onOpenBank?:(id:string)=>void;openAt?:BookDivision|null}){
   const appearance=useAppearance(),identity=`${household.environment}:${household.householdId}:${memberId}:${view}`;
-  const [division,setDivision]=useState<BookDivision>(()=>{if(openAt&&BOOK_DIVISIONS.includes(openAt))return openAt;try{const saved=localStorage.getItem(`hearth:book:${identity}`);return BOOK_DIVISIONS.includes(saved as BookDivision)?saved as BookDivision:"Today";}catch{return "Today";}}),[flat,setFlat]=useState(false);
+  const [division,setDivision]=useState<BookDivision>(()=>{if(openAt&&BOOK_DIVISIONS.includes(openAt))return openAt;try{const stored=localStorage.getItem(`hearth:book:${identity}`),saved=stored==="Record"?"Paper trail":stored;return BOOK_DIVISIONS.includes(saved as BookDivision)?saved as BookDivision:"Today";}catch{return "Today";}}),[flat,setFlat]=useState(false);
   const today=todayKey(),nest=useMemo(()=>projectKittyNest(household,memberId,view,today),[household,memberId,view,today]);
   const fund=useMemo(()=>view==="household"?projectHouseholdFund(household,today):null,[household,view,today]);
   const register=useMemo(()=>view==="household"?contributionRegister(household,monthKeyFromDateKey(today),today):null,[household,view,today]);

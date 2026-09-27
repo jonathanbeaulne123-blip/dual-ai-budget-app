@@ -768,7 +768,7 @@ export function QueenHome({ household, memberId, today, freshness, interpretatio
             <p className="queen-eyebrow">Together</p>
             <h2 id={`${ids}-panel-title`} className="queen-panel__title">Waiting on both of you</h2>
             <p className="queen-panel__sub">Decisions neither of you makes alone.</p>
-            <p>{crown.light === "both" ? <><b>Both of you are here.</b> The crown is lit.</> : <><b>{crown.light === "unlit" ? "Quiet for now." : "One of you is here."}</b> The crown lights when you are both in the kitchen.</>}</p>
+            <p>{crown.light === "both" ? <><b>Both of you are here.</b> The crown is lit.</> : <><b>{crown.light === "unlit" ? "Quiet for now." : "One of you is here."}</b> The crown lights when you are both here.</>}</p>
             {hands.kind === "move" && (
               <div className="queen-decision">
                 <p><b>{hands.move.text}</b></p>

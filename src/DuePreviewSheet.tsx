@@ -3,6 +3,8 @@ import type {DueRecurrencePreviewRow} from './core/recurrencePreview.ts';
 import {dueOccurrenceReview,hideDueOccurrence,type DueOccurrenceRequest,type DueOccurrenceReview} from './core/dueOccurrenceReview.ts';
 import type {Household} from './core/types.ts';
 import {RowReveal} from './RowReveal.tsx';
+import {formatCad} from './core/money.ts';
+import {billConfirmLabel,billSlipName,civilDateWords,type AddBillSlip} from './addSlideshow.ts';
 export type ReadyDueReview=Extract<DueOccurrenceReview,{kind:'ready'}>;
 /** Inline occurrence review. Motion only discloses; the named button posts. */
 export function DuePreviewSheet({rows,household,memberId,view,today,busy,isCurrent,onDismiss,onPost,onReviewActiveChange}:{rows:DueRecurrencePreviewRow[];household:Household;memberId:string;view:'household'|'personal';today:string;busy:boolean;isCurrent:()=>boolean;onDismiss:()=>void;onPost:(review:ReadyDueReview)=>Promise<boolean>;onReviewActiveChange?:(active:boolean)=>void}){
@@ -44,4 +46,56 @@ function DueRow({row,request,household,busy,isCurrent,onPost,onAccepted,onHide,o
   </>} left={<><p>Hide only this occurrence’s reminder for you on this device today. Its schedule and Books stay as they are.</p><button type='button' className='ghost' disabled={busy||pending} onClick={onHide}>Hide this reminder</button></>}>
   <strong>{label}</strong><div className='muted'>{review.kind==='ready'?review.detail.split('\n')[0]:`${row.summary} · ${row.nextDate}`}</div>
  </RowReveal>;
+}
+
+/**
+ * Bill paid, step one (Tool Atlas §3.3): the next due bills as slips — name,
+ * amount, date, pot. Pick one; nothing is recorded here. Bills that are not
+ * due yet are listed for context and are not offered: the reviewed path
+ * records only a due occurrence. "Post all due" stays in the Cellar.
+ */
+export function BillPaidSlips({due,upcoming,selectedId,busy,onPick}:{due:readonly AddBillSlip[];upcoming:readonly AddBillSlip[];selectedId:string|null;busy:boolean;onPick:(recurrenceId:string)=>void}){
+ return <div className='bill-slips' data-bill-slips>
+  {due.length?<ul className='bill-slips__list' aria-label='Bills due'>{due.map(slip=><li key={`${slip.recurrenceId}:${slip.date}`}>
+   <button type='button' className={`bill-slip${selectedId===slip.recurrenceId?' selected':''}`} aria-pressed={selectedId===slip.recurrenceId} aria-label={billSlipName(slip)} disabled={busy} data-bill-slip={slip.recurrenceId} onClick={()=>onPick(slip.recurrenceId)}>
+    <span className='bill-slip__name'>{slip.name}</span>
+    <span className='bill-slip__amount'>{formatCad(slip.amountCents)}</span>
+    <span className='bill-slip__date'>{civilDateWords(slip.date)}</span>
+    {slip.pot&&<span className='bill-slip__pot'>{slip.pot}</span>}
+   </button>
+  </li>)}</ul>:<p role='status' className='bill-slips__empty'>No bill is due today.{upcoming[0]?` The next one is ${upcoming[0].name}, ${formatCad(upcoming[0].amountCents)}, on ${civilDateWords(upcoming[0].date)}.`:''}</p>}
+  {upcoming.length>0&&<section className='bill-slips__later' aria-label='Not due yet'>
+   <h2 className='muted'>Not due yet</h2>
+   <ul>{upcoming.map(slip=><li key={`${slip.recurrenceId}:${slip.date}`} className='muted'>{slip.name} · {formatCad(slip.amountCents)} · {civilDateWords(slip.date)}{slip.pot?` · ${slip.pot}`:''}</li>)}</ul>
+  </section>}
+ </div>;
+}
+
+/**
+ * Bill paid, step two: the chosen bill read back as text, then its named
+ * Confirm ("Record Hydro, $142.00, paid from Prepare"). The review is re-read
+ * at the press; if the bill changed underneath, nothing is sent and the
+ * current details are shown instead. The App posts through `postOneRecurrence`.
+ */
+export function BillPaidConfirm({slip,household,busy,onConfirm}:{slip:AddBillSlip;household:Household;busy:boolean;onConfirm:(review:ReadyDueReview)=>void}){
+ const [notice,setNotice]=useState('');
+ const [basis,setBasis]=useState(()=>slip.review.kind==='ready'?slip.review.basis:null);
+ const fresh=dueOccurrenceReview(household,slip.request);
+ const stale=fresh.kind==='ready'&&basis!==null&&fresh.basis!==basis;
+ const label=billConfirmLabel(slip);
+ const press=()=>{const latest=dueOccurrenceReview(household,slip.request);if(latest.kind!=='ready'){setNotice(latest.reason);return;}if(latest.basis!==basis){setNotice('This bill changed. Read its current details, then confirm again.');setBasis(latest.basis);return;}setNotice('');onConfirm(latest);};
+ return <section className='bill-confirm preview add-confirm-summary' aria-label='Bill to record' data-bill-confirm={slip.recurrenceId}>
+  <div className='row'><span>Bill</span><span>{slip.name}</span></div>
+  <div className='row'><span>Amount</span><span>{formatCad(slip.amountCents)}</span></div>
+  <div className='row'><span>Account</span><span>{slip.accountName||'—'}</span></div>
+  <div className='row'><span>Category</span><span>{slip.categoryName||'—'}</span></div>
+  <div className='row'><span>Date</span><span>{civilDateWords(slip.date)}</span></div>
+  {slip.pot&&<div className='row'><span>Pot</span><span>{slip.pot}</span></div>}
+  {/* Bills are shared: the reviewed path posts only Shared rows, so the confirm names Ours, never Mine. */}
+  <div className='row'><span>Into</span><span>Ours · bills are shared</span></div>
+  {fresh.kind==='ready'?<p className='muted bill-confirm__detail'>{fresh.detail.split('\n').slice(1).join(' · ')}</p>:<p role='status'>{fresh.reason}</p>}
+  {stale&&<p role='status'>This bill changed. Read its current details, then confirm again.</p>}
+  {notice&&<p role='status'>{notice}</p>}
+  {fresh.kind==='ready'&&<button type='button' className='primary post-big' disabled={busy} onClick={press} data-add-confirm-bill>{label}</button>}
+ </section>;
 }

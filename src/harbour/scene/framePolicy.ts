@@ -47,3 +47,32 @@ export function harbourFramePolicy(activity: HarbourFrameActivity): HarbourFrame
   if (activity.projectionChanged) return { animate: false, render: true, schedule: false, intervalMs: 0 };
   return { animate: false, render: false, schedule: false, intervalMs: 0 };
 }
+
+/**
+ * The glass's frame budget (Tool Atlas brief §4.3 "Blur budget"): if the painted
+ * frame rate misses the tier's target (≥ 60 fps full, ≥ 30 fps lite) for a whole
+ * second of continuous painting, the glass drops to its solid version until the
+ * next place change (`reset`). A gap longer than `IDLE_GAP_MS` is the scene
+ * resting (render-on-demand), never a miss. Pure: the runtime feeds it paint
+ * times; `paint` answers whether the latched state changed.
+ */
+export const FRAME_BUDGET_MS: Readonly<Record<"full" | "lite", number>> = Object.freeze({ full: 1000 / 60, lite: 1000 / 30 });
+const BUDGET_SLACK = 1.5, BUDGET_WINDOW_MS = 1000, IDLE_GAP_MS = 250;
+export type FrameBudgetWatch = { paint: (now: number) => boolean; over: () => boolean; reset: () => boolean };
+export function createFrameBudgetWatch(tier: "full" | "lite"): FrameBudgetWatch {
+  const limit = FRAME_BUDGET_MS[tier] * BUDGET_SLACK;
+  let previous: number | null = null, missingSince: number | null = null, over = false;
+  return {
+    paint(now) {
+      const gap = previous === null ? null : now - previous;
+      previous = now;
+      if (over || gap === null || gap > IDLE_GAP_MS) { if (gap !== null && gap > IDLE_GAP_MS) missingSince = null; return false; }
+      if (gap <= limit) { missingSince = null; return false; }
+      if (missingSince === null) { missingSince = now - gap; }
+      if (now - missingSince >= BUDGET_WINDOW_MS) { over = true; return true; }
+      return false;
+    },
+    over: () => over,
+    reset() { const was = over; over = false; missingSince = null; previous = null; return was; },
+  };
+}

@@ -6,6 +6,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { seedDemoHousehold } from "../src/core/seed.ts";
 import type { HouseRoute } from "../src/hearthside/houseRoutes.ts";
+import { runWorldAction } from "../src/harbour/nav/worldActions.ts";
 
 /**
  * **The keys have to land.**
@@ -27,6 +28,7 @@ let inputs: Input[] = [];
 let ready: (() => void) | null = null;
 let panelOwnsWorld=false;
 let travelWasBlocked:boolean[]=[];
+let travelTrips:{kind:string;from:number;to:number}[]=[];
 let monorailBoarded:{station:number;companion:boolean;blocked:boolean}|null=null;
 let monorailSelected:number[]=[];
 const cancelWalk=vi.fn();
@@ -54,7 +56,7 @@ function fakeWorld() {
     place: () => ({ anchors: () => [], regions: () => ({}), words: () => null }),
     placeId: () => "court" as const,
     setToolOpen: (open:boolean) => {panelOwnsWorld=open;},
-    mountainTravel: () => {travelWasBlocked.push(panelOwnsWorld);},
+    mountainTravel: (_at:unknown,trip?:{kind:string;from:number;to:number}) => {travelWasBlocked.push(panelOwnsWorld);if(trip)travelTrips.push(trip);},
     monorailBoard: (station:number,companion:boolean) => {monorailBoarded={station,companion,blocked:panelOwnsWorld};},
     monorailSelect: (station:number) => {monorailSelected.push(station);},
     monorailControl: () => undefined,
@@ -137,7 +139,7 @@ const release = (key: string) => act(async () => {
 const settle = () => act(async () => { await new Promise((done) => setTimeout(done, 300)); });
 
 beforeEach(() => {
-  gesture.mockClear();offerCallback=undefined;runLocked=false;inputs = []; ready = null; coarse = false;panelOwnsWorld=false;travelWasBlocked=[];monorailBoarded=null;monorailSelected=[];cancelWalk.mockClear();jump.mockClear();skateKeyDown.mockClear();skateKeyUp.mockClear();skateReset.mockClear();riding=false;localStorage.clear();
+  gesture.mockClear();offerCallback=undefined;runLocked=false;inputs = []; ready = null; coarse = false;panelOwnsWorld=false;travelWasBlocked=[];travelTrips=[];monorailBoarded=null;monorailSelected=[];cancelWalk.mockClear();jump.mockClear();skateKeyDown.mockClear();skateKeyUp.mockClear();skateReset.mockClear();riding=false;localStorage.clear();
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal("matchMedia", (query: string) => ({
     matches: query === "(pointer: coarse)" ? coarse : false,
@@ -390,20 +392,22 @@ describe("being hidden is not a dead end", () => {
 });
 
 
-it("pauses clicked walking for the guide and releases the follow camera before scenic travel",async()=>{
+it("pauses clicked walking for the guide and leaves scenic boarding in the world",async()=>{
  const {stage}=await stand();
- await act(async()=>host.querySelector<HTMLButtonElement>('#world-guide-trigger')!.click());
+ await act(async()=>{runWorldAction('step-in');});
  expect(cancelWalk).toHaveBeenCalled();expect(panelOwnsWorld).toBe(true);
  await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Travel & race')!.click());
- await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Board and ride')!.click());
- expect(travelWasBlocked).toEqual([false]);expect(panelOwnsWorld).toBe(false);
- expect(document.activeElement).toBe(stage);
- expect(host.querySelector('[role="dialog"][aria-label="Mountain and town guide"]')).toBeNull();
+ expect([...host.querySelectorAll('button')].some(b=>b.textContent==='Board and ride')).toBe(false);
+ await act(async()=>host.querySelector<HTMLButtonElement>('[aria-label="Close mountain guide"]')!.click());
+ expect(panelOwnsWorld).toBe(false);
+ expect(host.querySelector('[role="dialog"][aria-label="Step in: rides, a tour and small moments"]')).toBeNull();
+ await act(async()=>{stage.focus();offerCallback?.({kind:'funicular',from:0,to:1,label:'Ride the funicular ↑',reason:'platform'});});
+ await press('f');expect(travelWasBlocked).toEqual([false]);expect(document.activeElement).toBe(stage);
 });
 
 it("boards the selected monorail route after releasing the guide",async()=>{
  const {stage}=await stand({partnerName:'Bianca'});
- await act(async()=>host.querySelector<HTMLButtonElement>('#world-guide-trigger')!.click());
+ await act(async()=>{runWorldAction('step-in');});
  await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Travel & race')!.click());
  await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Board the monorail')!.click());
  expect(monorailBoarded).toEqual({station:0,companion:true,blocked:false});
@@ -416,7 +420,7 @@ it("keeps main's Space jump on the world and leaves focused controls their keybo
  await press(' ');expect(jump).toHaveBeenCalledTimes(1);expect(quick).not.toHaveBeenCalled();
  riding=true;await press(' ');expect(skateKeyDown).toHaveBeenCalledTimes(1);
  await release(' ');expect(skateKeyUp).toHaveBeenCalledTimes(1);
- const control=host.querySelector<HTMLButtonElement>('#world-guide-trigger')!;
+ const control=host.querySelector<HTMLButtonElement>('[data-glass-flip]')!;
  control.focus();await press(' ');
  expect(skateReset).toHaveBeenCalledTimes(1);
  expect(skateKeyDown).toHaveBeenCalledTimes(1);expect(jump).toHaveBeenCalledTimes(1);
@@ -430,15 +434,20 @@ it("keeps Space as direct tool access when the flat Desk has no world body",asyn
 });
 
 describe('mountain finishing controls',()=>{
- it('announces and accepts a ride, returns keys to the stage, and withdraws stale offers',async()=>{
+ it('announces physical ride arrows to assistive technology and accepts their keyboard equivalent',async()=>{
   const {stage}=await stand();
   await act(async()=>offerCallback?.({kind:'funicular',from:0,to:1,label:'Ride the funicular ↑',reason:'platform'}));
-  expect(host.querySelector('[role=status]')?.textContent).toContain('Ride the funicular');
-  const go=host.querySelector<HTMLButtonElement>('.harbour-ride-offer__go')!;
-  await act(async()=>{go.focus();go.click();});expect(document.activeElement).toBe(stage);expect(travelWasBlocked).toEqual([false]);
+  expect(host.querySelector('.harbour-world__sr-only')?.textContent).toContain('Ride the funicular');
+  expect(host.querySelector('.harbour-ride-offer')).toBeNull();
+  await press('f');expect(document.activeElement).toBe(stage);expect(travelWasBlocked).toEqual([false]);
   await act(async()=>offerCallback?.({kind:'gondola',from:0,to:1,label:'Ride the gondola ↑',reason:'platform'}));
   await press('Enter');expect(travelWasBlocked).toHaveLength(2);
-  await act(async()=>offerCallback?.(null));expect(host.querySelector('.harbour-ride-offer')).toBeNull();
+  await act(async()=>offerCallback?.({kind:'funicular',from:1,to:2,label:'Ride the funicular ↑',reason:'platform'}));
+  await act(async()=>stage.dispatchEvent(new KeyboardEvent('keydown',{key:'F',shiftKey:true,bubbles:true})));
+  expect(travelTrips.at(-1)).toMatchObject({kind:'funicular',from:1,to:0});
+  await act(async()=>offerCallback?.({kind:'gondola',from:0,to:1,label:'Ride there?',reason:'far'}));
+  await press('f');expect(travelWasBlocked).toHaveLength(3);
+  await act(async()=>offerCallback?.(null));expect(host.querySelector('.harbour-world__sr-only')).toBeNull();
  });
  it('releases each orbit key independently and clears orbit when focus leaves',async()=>{
   const {stage}=await stand();await press('q');await press('e');expect(gesture.mock.calls.at(-1)?.[0]).toEqual({kind:'spin',dir:0});

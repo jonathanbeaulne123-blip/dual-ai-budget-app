@@ -10,19 +10,15 @@ import {
   pendingChapterClosure,
   reviewChapterClosure,
   reviewChapterClosureAtSitdown,
-  movesForChapter,
   nextFoundationChapter,
   nextMove,
-  offerMove,
   openChapter,
   openChapterFor,
-  ourRhythm,
-  ritualsForChapter,
   type ChapterOutcome,
   type RitualCue,
 } from "./core/chapters.ts";
-import { chapterLesson } from "./core/planLearning.ts";
-import { ChapterAdoption, ChapterMoveActions, RitualCard, RitualTermsRead } from "./ChapterTaskControls.tsx";
+import { ChapterAdoption, ChapterMoveActions, RitualTermsRead } from "./ChapterTaskControls.tsx";
+import { CampfireDoor } from "./campfire/CampfireDoor.tsx";
 import { sitdownBrief } from "./core/sitdownBrief.ts";
 import { fundModelMode } from "./core/fundRules.ts";
 import { monthKeyFromDateKey } from "./core/calendar.ts";
@@ -60,8 +56,10 @@ export function ModeLabel({ mode }: { mode: "private" | "shared" }) {
  * The Chapter on Home: title expressed as meaning, the next Move, and a quiet
  * door deeper. Nothing here is a score.
  */
-export function ChapterMoment({ household, memberId, today, onOpenPath, onOpenSetup, onCommand, busy }: {
+export function ChapterMoment({ household, memberId, today, onOpenPath, onOpenSetup, onCommand, busy, onOpenCampfire }: {
   household: Household; memberId: string; today: DateKey; onOpenPath: () => void; onOpenSetup?: (destination: "charter" | "fund") => void; onCommand: Run; busy: boolean;
+  /** A Chapter opens and closes only at the Campfire (D3). Without this door, the Journey map's door is used. */
+  onOpenCampfire?: () => void;
 }) {
   const chapter = openChapterFor(household);
   const move = nextMove(household, memberId);
@@ -72,15 +70,12 @@ export function ChapterMoment({ household, memberId, today, onOpenPath, onOpenSe
         <p className="kicker">This month</p>
         <h3>{next ? `Ready to begin: ${next.title}` : "Choose the next Chapter together"}</h3>
         <p>{next?.purpose ?? "The foundation is complete. Open a Chapter of your own, or deepen one you have already made your rhythm."}</p>
-        <div className="chapter-actions">
-          {next && <button type="button" className="primary" disabled={busy} onClick={() => void onCommand((current) => openChapter(current, { memberId, foundationId: next.id }))}>Open this Chapter</button>}
-          <button type="button" onClick={onOpenPath}>See Our Path</button>
-        </div>
+        <CampfireDoor household={household} memberId={memberId} today={today} onOpenCampfire={onOpenCampfire ?? onOpenPath} why="A Chapter opens at the Campfire's Seal." />
       </section>
     );
   }
   const weeks = Math.max(1, Math.floor((Date.parse(`${today}T12:00:00Z`) - Date.parse(chapter.openedAt)) / (7 * 24 * 60 * 60 * 1000)) + 1);
-  // D-273: a Chapter never closes by itself; once its month has ended we say so until the Sitdown closes it.
+  // D-273: a Chapter never closes by itself; once its month has ended we say so until the Campfire seals it.
   const reminder = fundModelMode(household) === 2 ? chapterReminder(household, { today }) : null;
   return (
     <section className="chapter-moment" aria-label="This Chapter">
@@ -107,104 +102,31 @@ export function ChapterMoment({ household, memberId, today, onOpenPath, onOpenSe
       ) : (
         <p className="next-move__meta">No Move is waiting. The Chapter is holding.</p>
       )}
-      <button type="button" className="chapter-door" onClick={onOpenPath}>Open Our Path</button>
+      <button type="button" className="chapter-door" onClick={onOpenCampfire ?? onOpenPath}>Open the Campfire</button>
     </section>
   );
 }
 
 /**
- * The Chapter room inside Our Path: Lesson, Rituals with their cues and
- * holding evidence, Moves, Our Rhythm, and the foundation ahead.
+ * The Chapter room retired as a screen (Tool Atlas K3, decision D3). Its
+ * Rituals, Moves, graduation and the seal live at the Campfire now; this is
+ * the door that stands where the room stood. It writes nothing.
  */
 type ChapterRoomProps = {
-  household: Household; memberId: string; today: DateKey; onCommand: Run; busy: boolean;
+  household: Household; memberId: string; today: DateKey;
+  /** Kept for the App's current call; the door does not write. */
+  onCommand?: Run; busy?: boolean;
+  onOpenCampfire?: () => void;
 };
-export function ChapterRoom(props: ChapterRoomProps) { return <ChapterRoomState key={JSON.stringify([props.household.environment, props.household.householdId, props.memberId, openChapterFor(props.household)?.id ?? "none"])} {...props} />; }
-function ChapterRoomState({ household, memberId, today, onCommand, busy }: {
-  household: Household; memberId: string; today: DateKey; onCommand: Run; busy: boolean;
-}) {
+export function ChapterRoom({ household, memberId, today, onOpenCampfire }: ChapterRoomProps) {
   const chapter = openChapterFor(household);
-  const rituals = chapter ? ritualsForChapter(household, chapter.id).filter(row => row.state !== "graduated") : [];
-  const moves = chapter ? movesForChapter(household, chapter.id) : [];
-  const rhythm = ourRhythm(household);
-  const lesson = chapter ? chapterLesson(chapter.lessonId) : null;
-  const [moveText, setMoveText] = useState("");
-  const [ritualDraft, setRitualDraft] = useState<{ title: string; cue: RitualCue; doneDefinition: string; recoveryMove: string } | null>(null);
-  const done = new Set((household.chapters ?? []).filter((row) => row.state !== "open").map((row) => row.foundationId));
-
   return (
     <div className="chapter-room">
-      {chapter ? (
-        <section className="card chapter-card" aria-label="The current Chapter">
-          <p className="kicker">The current Chapter</p>
-          <h3>{chapter.title}</h3>
-          <p>{chapter.meaning}</p>
-          {chapter.betterFeelsLike && <p className="chapter-better"><strong>Better will feel like:</strong> {chapter.betterFeelsLike}</p>}
-          {lesson && (
-            <details className="chapter-lesson">
-              <summary>This month's Lesson · {lesson.title}</summary>
-              <p>{lesson.explain}</p>
-              <p><strong>Try it:</strong> {lesson.experiment}</p>
-              <p><strong>Couple skill:</strong> {lesson.coupleSkill}</p>
-              <p><a href={lesson.source} target="_blank" rel="noreferrer">Source</a> · reviewed {lesson.reviewedOn} · {lesson.jurisdiction}. Learning never blocks agreement.</p>
-            </details>
-          )}
-
-          <h4>Rituals</h4>
-          {rituals.length === 0 && <p className="muted">No Ritual yet. A Ritual is one small repeated action tied to a real moment.</p>}
-          <ChapterAdoption household={household} memberId={memberId} onCommand={onCommand} busy={busy} chapterId={chapter.id} />
-          <ul className="ritual-list">{rituals.map(ritual => <li key={ritual.id}><RitualCard household={household} memberId={memberId} ritual={ritual} today={today} onCommand={onCommand} busy={busy} /></li>)}</ul>
-          {ritualDraft ? (
-            <form className="ritual-form" onSubmit={(event) => { event.preventDefault(); void onCommand((current) => addRitual(current, { memberId, chapterId: chapter.id, ...ritualDraft })).then((outcome) => { if (commandAccepted(outcome)) setRitualDraft(null); }); }}>
-              <label>The Ritual<input value={ritualDraft.title} onChange={(e) => setRitualDraft({ ...ritualDraft, title: e.target.value })} placeholder="Pre-rent readiness check" /></label>
-              <label>Its cue<select value={ritualDraft.cue} onChange={(e) => setRitualDraft({ ...ritualDraft, cue: e.target.value as RitualCue })}>{(Object.keys(CUE_LABEL) as RitualCue[]).map((cue) => <option key={cue} value={cue}>{CUE_LABEL[cue]}</option>)}</select></label>
-              <label>What done looks like<input value={ritualDraft.doneDefinition} onChange={(e) => setRitualDraft({ ...ritualDraft, doneDefinition: e.target.value })} /></label>
-              <label>If we miss it<input value={ritualDraft.recoveryMove} onChange={(e) => setRitualDraft({ ...ritualDraft, recoveryMove: e.target.value })} placeholder="We do the two-minute version today." /></label>
-              <div className="chapter-actions"><button type="submit" className="primary" disabled={busy || !ritualDraft.title.trim() || !ritualDraft.doneDefinition.trim()}>Add the Ritual</button><button type="button" onClick={() => setRitualDraft(null)}>Cancel</button></div>
-            </form>
-          ) : (
-            <button type="button" onClick={() => setRitualDraft({ title: "", cue: "weekly", doneDefinition: "", recoveryMove: "" })}>Add a Ritual</button>
-          )}
-
-          <h4>Moves</h4>
-          <ul className="move-list">
-            {moves.filter((row) => row.state !== "declined").map((move) => (
-              <li key={move.id} className={`move move--${move.state}`}>
-                <span>{move.text}</span>
-                <span className="muted"> · {move.state === "done" ? move.completedByMemberId ? `done by ${memberName(household, move.completedByMemberId)}` : "done earlier · author not recorded" : move.ownerMemberId ? memberName(household, move.ownerMemberId) : "either of us"}{move.needsAcknowledgment ? ` · acknowledged by ${move.acknowledgedByMemberIds.length} of ${household.members.filter((m) => m.active).length}` : ""}</span>
-                <ChapterMoveActions household={household} memberId={memberId} move={move} onCommand={onCommand} busy={busy} />
-              </li>
-            ))}
-          </ul>
-          <form className="move-form" onSubmit={(event) => { event.preventDefault(); if (!moveText.trim()) return; void onCommand((current) => offerMove(current, { memberId, chapterId: chapter.id, text: moveText })).then((outcome) => { if (commandAccepted(outcome)) setMoveText(""); }); }}>
-            <label>Offer a small Move<input value={moveText} onChange={(e) => setMoveText(e.target.value)} placeholder="Write what done means for the hydro bill" /></label>
-            <button type="submit" disabled={busy || !moveText.trim()}>Offer</button>
-          </form>
-        </section>
-      ) : (
-        <section className="card chapter-card chapter-card--empty" aria-label="Begin a Chapter">
-          <p className="kicker">No Chapter is open</p>
-          <h3>A Chapter runs from one Sitdown to the next</h3>
-          <p>Each teaches one useful layer and builds one primary habit. Open the next foundation Chapter, or one of your own.</p>
-          <ul className="foundation-list">
-            {FOUNDATION_CHAPTERS.map((row) => (
-              <li key={row.id} className={done.has(row.id) ? "is-done" : ""}>
-                <strong>{row.order}. {row.title}</strong> <span className="muted">{row.purpose}</span>
-                {!done.has(row.id) && <button type="button" disabled={busy} onClick={() => void onCommand((current) => openChapter(current, { memberId, foundationId: row.id }))}>Open</button>}
-                {done.has(row.id) && <span className="muted"> · part of our story</span>}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <section className="card our-rhythm" aria-label="Our Rhythm">
-        <p className="kicker">Our Rhythm</p>
-        <h3>{rhythm.length ? "Habits holding quietly" : "Nothing has graduated yet"}</h3>
-        {rhythm.length === 0 && <p className="muted">When a Ritual has held three times and you both choose it, it leaves the monthly foreground and lives here.</p>}
-        <ul>
-          {rhythm.map(ritual => <li key={ritual.id}><ChapterAdoption household={household} memberId={memberId} onCommand={onCommand} busy={busy} chapterId={ritual.chapterId} /><RitualCard household={household} memberId={memberId} ritual={ritual} today={today} onCommand={onCommand} busy={busy} /></li>)}
-        </ul>
+      <section className="card chapter-card" aria-label="The current Chapter">
+        <p className="kicker">The Chapter</p>
+        <h3>{chapter?.title ?? "No Chapter is open"}</h3>
+        {chapter?.meaning && <p>{chapter.meaning}</p>}
+        <CampfireDoor household={household} memberId={memberId} today={today} onOpenCampfire={onOpenCampfire} why="Rituals, Moves and the seal are at the Campfire." />
       </section>
     </div>
   );
@@ -250,7 +172,7 @@ function ChapterCloseState({ household, memberId, today, sitdownId, onCommand, b
   ];
   return (
     <div className="chapter-close">
-      <p className="kicker">Close the previous Chapter</p>
+      <p className="kicker">Seal this Chapter</p>
       <h4>{chapter.title}</h4>
       {sortedMonths && <p className="muted">Your review includes the next Chapter for {monthKeyFromDateKey(today)}. Both people agree before this Chapter closes and the next opens.</p>}
       {brief.chapter && <p className="muted">Rituals held {brief.chapter.ritualsHeld} times · {brief.chapter.movesDone} Moves done · {brief.chapter.movesOpen} still open.</p>}
@@ -305,7 +227,7 @@ function RitualFormState({ household, memberId, onCommand, busy }: { household: 
       <label>What done looks like<input value={draft.doneDefinition} onChange={(e) => setDraft({ ...draft, doneDefinition: e.target.value })} /></label>
       <label>The recovery move if we miss it<input value={draft.recoveryMove} onChange={(e) => setDraft({ ...draft, recoveryMove: e.target.value })} /></label>
       <div className="chapter-actions"><button type="submit" className="primary" disabled={busy || !draft.title.trim() || !draft.doneDefinition.trim()}>Add this Ritual to the Chapter</button></div>
-      {saved && <p className="muted">"{saved}" is proposed on Our Path for the other person’s review. The backup is {memberName(household, active.find((m) => m.id !== draft.ownerMemberId)?.id ?? null)}.</p>}
+      {saved && <p className="muted">"{saved}" is proposed at the Campfire for the other person’s review. The backup is {memberName(household, active.find((m) => m.id !== draft.ownerMemberId)?.id ?? null)}.</p>}
     </form>
   );
 }

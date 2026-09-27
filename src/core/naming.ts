@@ -14,7 +14,7 @@ export const UI = {
   markPurchased: "Mark purchased",
   completedGoals: "Completed goals",
   goalsSavings: "Goals savings",
-  sitDown: "Sit-down",
+  sitDown: "Sitdown",
   closeMonth: "Close month",
   closePack: "Close pack",
   health: "Health",

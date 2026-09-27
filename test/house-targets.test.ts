@@ -5,7 +5,7 @@ describe("scope-aware house targets", () => {
   it("does not advertise shared-only Common room actions in Personal scope", () => {
     expect(houseTargets("personal", "together", "middle").map(target => target.id)).toEqual(["pottery", "letters"]);
     expect(houseTargets("personal", "together", "below").map(target => target.id)).toEqual(["memories"]);
-    expect(houseTargets("household", "together", "middle").map(target => target.id)).toContain("encounters");
+    expect(houseTargets("household", "together", "middle").map(target => target.id)).not.toContain("encounters"); // K5: retired from the hosts
     expect(houseTargets("household", "together", "below").map(target => target.id)).toContain("projector");
   });
 

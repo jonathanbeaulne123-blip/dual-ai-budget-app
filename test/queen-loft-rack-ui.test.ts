@@ -114,11 +114,13 @@ describe("The loft's rack — shelves you hang, weight, mark and divide by hand"
     expect(tilt.getAttribute("aria-valuetext")).toBe("50% of the safe surplus, $500.00");
     // Half the surplus over one shelf of three, split equally: the lidded date night takes nothing (no goal); the two goals share it.
     expect($(".queen-room__line").textContent).toBe("The jug tilts. $500.00 to the shelf (Fictional porch renovation $250.00, Fictional trip to the shore $250.00).");
+    // K15: one control, named with its amount and destination (A7); one Confirm.
+    expect($(".queen-pour")!.textContent).toBe("Move $500.00 to Kitty Banks");
     await click($(".queen-pour"));
     const sheet = document.querySelector("[role='dialog']");
-    expect(sheet?.textContent).toMatch(/Pour \$500\.00 of the Fund's surplus over the rack/);
+    expect(sheet?.textContent).toMatch(/Move \$500\.00 to Kitty Banks/);
     expect(onPour).not.toHaveBeenCalled();
-    await click([...document.querySelectorAll<HTMLButtonElement>("[role='dialog'] button")].find((row) => row.textContent === "Pour it")!);
+    await click([...document.querySelectorAll<HTMLButtonElement>("[role='dialog'] button")].find((row) => row.textContent === "Move $500.00 to Kitty Banks")!);
     expect(onPour).toHaveBeenCalledTimes(1);
     expect(onPour.mock.calls[0]![0]).toEqual([{ goalId: expect.any(String), amountCents: 25_000 }, { goalId: expect.any(String), amountCents: 25_000 }]);
     expect(onPour.mock.calls[0]![1]).toBe(50_000);

@@ -1,8 +1,8 @@
 {
  "title": "The Horizon \u2014 MANIFEST",
- "version": "2.1",
+ "version": "2.2",
  "date": "2026-09-27",
- "status": "Design numbers for implementation. Control points are centreline intent to be solved into splines by the land pass; not navigation or collision data until baked into WorldDefinition v3.",
+ "status": "Design numbers for implementation. Control points are centreline intent to be solved into splines by the land pass; not navigation or collision data until baked into WorldDefinition v3. v2.2: paces and surface grip (RIDE D42) and the FLIGHT sky fields (D34\u2013D38), reconciled onto the v2.1 land \u2014 data only, no geometry change.",
  "units": {
   "x": "east, concept metres",
   "y": "south, concept metres (engine z)",
@@ -1278,60 +1278,111 @@
  "surfaces": {
   "paved": {
    "pace": "fast",
-   "footstep": "stone"
+   "footstep": "stone",
+   "grip": 1.0
   },
   "packedEarth": {
    "pace": "fast",
-   "footstep": "earth"
+   "footstep": "earth",
+   "grip": 0.95
   },
   "apron": {
    "pace": "flow",
    "footstep": "concrete",
-   "note": "the dam's spillway apron"
+   "note": "the dam's spillway apron",
+   "grip": 1.0
   },
   "bankedTurf": {
    "pace": "flow",
-   "footstep": "grass"
+   "footstep": "grass",
+   "grip": 1.1
   },
   "boardwalk": {
    "pace": "flow",
-   "footstep": "plank"
+   "footstep": "plank",
+   "grip": 0.9
   },
   "cobble": {
    "pace": "slow",
-   "footstep": "cobble"
+   "footstep": "cobble",
+   "grip": 0.7
   },
   "gravel": {
    "pace": "slow",
-   "footstep": "gravel"
+   "footstep": "gravel",
+   "grip": 0.6
   },
   "sand": {
    "pace": "slow",
    "footstep": "sand",
-   "prints": true
+   "prints": true,
+   "grip": 0.5
   },
   "plaza": {
    "pace": "threshold",
-   "footstep": "stone"
+   "footstep": "stone",
+   "grip": 1.0
   },
   "duff": {
    "pace": "n/a",
-   "footstep": "needles"
+   "footstep": "needles",
+   "grip": null
   },
   "ochre": {
    "pace": "fast",
-   "footstep": "dust"
+   "footstep": "dust",
+   "grip": 0.85
   },
   "snow": {
    "pace": "slow",
    "footstep": "snow",
-   "season": "Dec\u2013Mar"
+   "season": "Dec\u2013Mar",
+   "grip": 0.4
   },
   "ice": {
    "pace": "skate",
    "footstep": "ice",
    "season": "Jan\u2013Feb",
-   "where": "stillwater"
+   "where": "stillwater",
+   "grip": 0.2
+  },
+  "stone": {
+   "pace": "threshold",
+   "footstep": "stone",
+   "grip": 1.0,
+   "note": "threshold pads, station slabs and the Tideline park"
+  }
+ },
+ "paces": {
+  "fast": {
+   "roll": 0.12,
+   "pushGrip": 1.0,
+   "meaning": "open line"
+  },
+  "flow": {
+   "roll": 0.25,
+   "pushGrip": 0.9,
+   "meaning": "banked or boarded ground that wants a carve"
+  },
+  "slow": {
+   "roll": 0.6,
+   "pushGrip": 0.8,
+   "meaning": "a neighbourhood, a chicane"
+  },
+  "threshold": {
+   "roll": 1.8,
+   "pushGrip": 0.5,
+   "meaning": "every pad and the square: stops a board arriving under ~4.6 m/s in a pad's 6 m"
+  },
+  "skate": {
+   "roll": 0.03,
+   "pushGrip": null,
+   "meaning": "pass 4's ice; the skates' pace"
+  },
+  "n/a": {
+   "roll": null,
+   "pushGrip": null,
+   "note": "not a bed for this mover; the kernel's offbed class applies (roll 6.0, pushGrip 0)"
   }
  },
  "roads": {
@@ -2500,7 +2551,7 @@
     60,
     32
    ],
-   "note": "Skate v2 park, travel assist on; no race"
+   "note": "Skate v2 park; forgiving landings only (RIDE D40); no race"
   },
   "rules": [
    "no required jumps",
@@ -4182,21 +4233,33 @@
     ],
     "r": 60,
     "target": true,
-    "note": "the Drop Zone target is ground paint inside the protected centre, clear of Green Road (its edge 65 m north-east) and the Year Walk"
+    "note": "the Drop Zone target is ground paint inside the protected centre, clear of Green Road (its edge 65 m north-east) and the Year Walk",
+    "modes": [
+     "glider",
+     "parachute"
+    ]
    },
    "reachMeadow": {
     "xy": [
      1143,
      1167
     ],
-    "r": 40
+    "r": 40,
+    "modes": [
+     "glider",
+     "parachute"
+    ]
    },
    "sands": {
     "xy": [
      1095,
      1362
     ],
-    "r": 60
+    "r": 60,
+    "modes": [
+     "glider",
+     "parachute"
+    ]
    },
    "strip": "see structures.strip",
    "water": [
@@ -4442,6 +4505,89 @@
     "note": "found by the envelope beside the floatplane dock (world/sky.ts); unchanged"
    },
    "rule": "the envelope reads these centres; before v1.7 it used the water outline's centroid"
+  },
+  "gliderPolar": [
+   [
+    8,
+    1.3
+   ],
+   [
+    9,
+    1.05
+   ],
+   [
+    11,
+    1.2
+   ],
+   [
+    14,
+    1.8
+   ],
+   [
+    17,
+    3.0
+   ]
+  ],
+  "gliderPolarRule": "[airspeed m/s, still-air sink m/s] from bar pushed out full to pulled in full; a smooth piecewise cubic between points; trim [11,1.2] is sky.glider; stall below 7.5 (FLIGHT.md \u00a72.2)",
+  "parachute": {
+   "forward_ms": 6,
+   "sink_ms": 3,
+   "freefallCap_ms": 30,
+   "autoPull_agl_m": 45,
+   "minBail_agl_m": 60,
+   "canopy_m": [
+    7,
+    3
+   ],
+   "note": "reached only by jumping from the plane (carriedThresholds.bailOut); the chute always opens (D37)"
+  },
+  "corridors": {
+   "throat": {
+    "gate": 12,
+    "to": [
+     1300,
+     420
+    ],
+    "slope_deg": 30,
+    "level_m": 25,
+    "splashH": 42,
+    "coneDeg": 25,
+    "maxBankDeg": 20,
+    "note": "glider only: enter gate 12's aperture heading within coneDeg of south and banked at most maxBankDeg; follow the chute at slope_deg; the last level_m run over the Deep at splashH; a miss passes beside the mouth, never a wall"
+   }
+  },
+  "dropZone": {
+   "xy": [
+    1028,
+    1112
+   ],
+   "rings_m": [
+    5,
+    10,
+    25
+   ],
+   "note": "ground paint inside the Green's protected centre at sky.landings.green; bullseye, inner, outer, then 'on the Green'",
+   "v1_7_xy": [
+    1040,
+    1065
+   ],
+   "xyNote_v2_2": "follows sky.landings.green (v2.1 [1028,1112]); FLIGHT v1.7 placed it at the v1.6 green landing [1040,1065]"
+  },
+  "landingModes": {
+   "strip": [
+    "plane",
+    "glider",
+    "parachute"
+   ],
+   "water": [
+    "plane",
+    "glider",
+    "parachute"
+   ],
+   "deep": [
+    "glider"
+   ],
+   "rule": "modes per non-field landing; every landing takes the parachute except water.deep (the Deep is reached only through the Throat, by glider)"
   }
  },
  "reserves": {
@@ -9137,7 +9283,14 @@
    ],
    "square\u2192home/bank on foot, walking": 60,
    "square\u2192boathouse on foot, walking": 180,
-   "note": "v1.7 targets at scale 1.0: each is achievable with \u2265 10 % margin on the Stage A path graph (README v1.7 table); the summit target is 205 s (D-A3, Jonathan 2026-09-27: option 2 gives \u2248 185 s; 205 keeps the \u2265 10 % margin; it was 375 while reserved)"
+   "note": "v1.7 targets at scale 1.0: each is achievable with \u2265 10 % margin on the Stage A path graph (README v1.7 table); the summit target is 205 s (D-A3, Jonathan 2026-09-27: option 2 gives \u2248 185 s; 205 keeps the \u2265 10 % margin; it was 375 while reserved)",
+   "decisions": {
+    "crown\u2192lamp by glider": "D34 applied pending Jonathan's confirmation: FLIGHT retargeted from [50,90] to [70,110] (~98 s at 11 m/s trim in still air, FLIGHT.md \u00a712) on the v1.6 launch. v2.2: the Stage A v1.7 target [85,120] (measured on the Stage A graph from the v2.1 lookout launch [1305,482] h 170: 96.0 s on candidate 5) contains the same flight and stands; D34's [70,110] is kept in v2_2_d34",
+    "v2_2_d34": [
+     70,
+     110
+    ]
+   }
   },
   "at_active_scale": {
    "square\u2192library by bicycle": {
@@ -13945,5 +14098,20 @@
    "note": "v2.0 (D-A5, Jonathan 2026-09-27): an emissive card on the dam's glass band, no dynamic light; the square sees it lit at golden hour and dusk; LIGHT \u00a72"
   }
  ],
- "lightsRule": "lights lists the manifest-authored light cards (LIGHT \u00a73 WorldDefinition.lights); the bake's door and threshold lamps are derived and not listed here"
+ "lightsRule": "lights lists the manifest-authored light cards (LIGHT \u00a73 WorldDefinition.lights); the bake's door and threshold lamps are derived and not listed here",
+ "carriedThresholds": [
+  {
+   "id": "bailOut",
+   "carriedBy": "plane",
+   "xy": "carried",
+   "modes": [
+    "plane\u2192parachute"
+   ],
+   "action": "jump",
+   "minAgl_m": 60,
+   "hold_s": 0.5,
+   "note": "the plane's door: its place is the plane's each frame; offered only at >= minAgl_m above the ground under the plane; never inside the Throat"
+  }
+ ],
+ "carriedThresholdRule": "A carried threshold moves with a vehicle and has no pad, marker or fixed xy. It is listed apart from thresholds so the land pass never grades a pad for it; WorldDefinition.thresholds carries it with carried = carriedBy."
 }

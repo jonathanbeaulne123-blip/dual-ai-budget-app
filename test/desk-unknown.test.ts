@@ -36,7 +36,9 @@ describe("Today with the pots unread", () => {
     expect(pots.map(pot => pot.dataset.deskPot)).toEqual(["everyday", "prepare", "protect", "build"]);
     expect(pots.map(pot => pot.querySelector(".desk-figure")!.textContent)).toEqual(["—", "—", "—", "—"]);
     for (const pot of pots) expect(pot.textContent).not.toMatch(/\$0(\.00)?\b/);
-    expect(pots[0]!.getAttribute("aria-label")).toMatch(/^Everyday, now: —\./);
+    // Tool Atlas A22: the name is the visible label ("Everyday · now"), then the figure.
+    expect(pots[0]!.hasAttribute("aria-label")).toBe(false);
+    expect(pots[0]!.textContent).toMatch(/^Everyday · now\s*—$/);
     // No reading yet: the chip's door sign is a plain line, never a throw.
     expect(host.querySelector("[data-desk-sign]")!.textContent).toBe("The Fund, this month");
   });

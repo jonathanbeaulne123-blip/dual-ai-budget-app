@@ -18,7 +18,7 @@
  * - Contributions: `contributionRegister(...).byMember` for this month's
  *   confirmed sources, each member's own rhythm from `twoStreams`. Never
  *   summed into a comparison. Personal reads only the member's own.
- * - Record: this month's entries on the books floor, and the newest one.
+ * - Paper trail (formerly "Record"): this month's entries on the books floor, and the newest one.
  *
  * Unknown stays `null` and reads "—" downstream, never $0.
  */
@@ -44,7 +44,7 @@ export const BOOK_DOORS = Object.freeze({
   spending: { object: "bindery/lantern-row", division: "Spending" },
   goals: { object: "bindery/glasshouse-pane", division: "Goals" },
   contributions: { object: "bindery/handoff-bench", division: "Contributions" },
-  record: { object: "chapter/record", division: "Record" },
+  record: { object: "chapter/record", division: "Paper trail" },
 } as const);
 export type DeskBookId = keyof typeof BOOK_DOORS;
 

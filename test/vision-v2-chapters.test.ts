@@ -311,7 +311,7 @@ describe("Lessons and the Sitdown brief", () => {
 describe("Comfort controls", () => {
   it("parses defensively and defaults sound off", () => {
     expect(parseComfort(null)).toEqual(DEFAULT_COMFORT);
-    expect(parseComfort({ quiet: true, celebration: "soft", motion: "reduced", haptics: false, sound: true })).toEqual({ quiet: true, celebration: "soft", motion: "reduced", haptics: false, sound: true });
+    expect(parseComfort({ quiet: true, celebration: "soft", motion: "reduced", haptics: false, sound: true })).toEqual({ quiet: true, celebration: "soft", motion: "reduced", haptics: false, sound: true, labels: false });
     expect(parseComfort({ celebration: "loud" }).celebration).toBe("full");
   });
 

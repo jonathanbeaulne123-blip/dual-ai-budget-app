@@ -25,7 +25,7 @@ export const FUND_WIDGET_CARD: Record<FundWidgetId, { name: string; line: string
   swipe: { name: "I spent something", line: "review and confirm a household expense" },
   contribute: { name: "I'll put in", line: "raise a contribution motion" },
   waiting: { name: "Waiting on you", line: "motions to confirm or hold" },
-  "next-out": { name: "Next out", line: "what leaves, and what it leaves you" },
+  "next-out": { name: "Leaving next", line: "what leaves, and what it leaves you" },
   "spoken-for": { name: "Spoken for", line: "claimed against the pool" },
   week: { name: "This week", line: "due, posted, and whose turn" },
   shape: { name: "The shape", line: "each category against its own band" },

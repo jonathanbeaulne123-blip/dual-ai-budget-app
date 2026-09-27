@@ -256,7 +256,7 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
               <button type="button" className="queen-go queen-go--primary queen-hammer" disabled={busy} onClick={() => setStriking(gateJar)}>Break the kitty jar</button>
             )}
             {gateJar?.strike === "crack" && gateJar.recurrenceId && (
-              <button type="button" className="queen-go queen-go--primary queen-hammer queen-hammer--crack" disabled={busy} onClick={() => setStriking(gateJar)}>Pay it anyway · from the water</button>
+              <button type="button" className="queen-go queen-go--primary queen-hammer queen-hammer--crack" disabled={busy} onClick={() => setStriking(gateJar)}>Mark paid anyway · from the water</button>
             )}
             {gateJar && !gateJar.paid && gateJar.obligationId && (
               <button type="button" className="queen-go" aria-pressed={heldId === gateJar.id} onClick={() => setHeldId((current) => (current === gateJar.id ? null : gateJar.id))}>
@@ -271,10 +271,10 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
           {notice && <p className="queen-room__line queen-cellar-notice" role="status">{notice}</p>}
           {striking && onCommand && today && (
             <ConfirmSheet
-              title={striking.strike === "crack" ? `Pay ${striking.label} from the cellar's water` : `Break the kitty jar: ${striking.label}`}
+              title={striking.strike === "crack" ? `Mark ${striking.label} paid from the cellar's water` : `Break the kitty jar: ${striking.label}`}
               body={`Post ${formatCad(striking.targetCents)} for ${striking.label} in the books, dated ${cellarDayLabel(striking.date)}, its day.${striking.strike === "crack" ? ` Its jar holds ${(striking.savedCents === null ? "unavailable backing" : formatCad(striking.savedCents))}; the rest comes from the Fund's water and the walk shows the buffer take it.` : " Its jar is full; the bank breaks and stays on the rail as a shard."}`}
               extra="Hearth records the payment in your books. It does not move money at your bank."
-              confirmLabel={striking.strike === "crack" ? "Pay it anyway" : "Break it"}
+              confirmLabel={striking.strike === "crack" ? "Mark paid anyway" : "Break it"}
               busy={busy}
               onCancel={() => setStriking(null)}
               onConfirm={() => {

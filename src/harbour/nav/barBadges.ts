@@ -10,14 +10,17 @@ import { readHercules, readSnapshot } from "../desk/todayModel.ts";
  *   same `fundSnapshot(h, { memberId, view, today }).now` the Desk's Today
  *   leads with — so the button previews the page it opens. Unknown reads the
  *   engraved "—"; personal scope wears nothing (it has no Fund to lead with).
- * - All tools wears a pawprint when Hercules has a fresh suggestion: the top of
- *   the same `discoverySelection` the Desk's Hercules corner reads, when that
- *   card is about something in the books right now (a Health finding, an open
- *   shift, a bill due within the week, a claim still out — tier 0–1). The
- *   standing offers every household always has ("Make sense of this page",
- *   "Find Hercules something to wear") never raise it, and a snoozed or
- *   switched-off card never does either, because the selection already
- *   honours "Not now" and "Don't suggest this".
+ * - **Hercules** wears a pawprint when he has a fresh suggestion (Tool Atlas
+ *   brief §3.4: it moved off All tools — the escape hatch never doubles as a
+ *   notification — onto Hercules himself on the map): the top of the same
+ *   `discoverySelection` the Desk's Hercules corner reads, when that card is
+ *   about something in the books right now (a Health finding, an open shift,
+ *   a bill due within the week, a claim still out — tier 0–1). The standing
+ *   offers every household always has ("Make sense of this page", "Find
+ *   Hercules something to wear") never raise it, and a snoozed or switched-off
+ *   card never does either, because the selection already honours "Not now"
+ *   and "Don't suggest this". Read it with `herculesHasSuggestion` (pure) or
+ *   `useHerculesSuggestion` (the published store).
  *
  * The App owns the household, so it publishes; the bars (the island's, which
  * HarbourWorld mounts, and the App's door edition) subscribe. A tiny external
@@ -29,7 +32,7 @@ export type BarBadges = {
   scope: LedgerView | null;
   /** The household's Everyday "Now", in CAD cents. Null is unknown ("—"), never zero. */
   everydayCents: number | null;
-  /** Hercules has a fresh suggestion: the pawprint on All tools. */
+  /** Hercules has a fresh suggestion: the pawprint on Hercules on the map (never on All tools). */
   suggestion: boolean;
 };
 
@@ -38,12 +41,18 @@ export const NO_BAR_BADGES: BarBadges = Object.freeze({ scope: null, everydayCen
 /** The capability tiers that mean "something in the books is asking" (herculesDiscovery's own ranking). */
 export const FRESH_SUGGESTION_TIER = 1;
 
-/** Pure: what the bar wears for this household, member, scope and day. */
+/** Pure: does Hercules have a fresh (tier ≤ 1) suggestion for this member? The map's Hercules figure wears the pawprint. */
+export function herculesHasSuggestion(household: Household, memberId: string, scope: LedgerView, today: DateKey): boolean {
+  if (scope !== "household") return false;
+  const top = readHercules(household, memberId, scope, today);
+  return Boolean(top && top.candidate.tier <= FRESH_SUGGESTION_TIER);
+}
+
+/** Pure: what the glass wears for this household, member, scope and day. */
 export function readBarBadges(household: Household, memberId: string, scope: LedgerView, today: DateKey): BarBadges {
   if (scope !== "household") return { scope, everydayCents: null, suggestion: false };
   const everydayCents = readSnapshot(household, memberId, scope, today)?.now ?? null;
-  const top = readHercules(household, memberId, scope, today);
-  return { scope, everydayCents, suggestion: Boolean(top && top.candidate.tier <= FRESH_SUGGESTION_TIER) };
+  return { scope, everydayCents, suggestion: herculesHasSuggestion(household, memberId, scope, today) };
 }
 
 let current: BarBadges = NO_BAR_BADGES;
@@ -63,6 +72,11 @@ const serverSnapshot = () => NO_BAR_BADGES;
 /** What the bar wears now. */
 export function useBarBadges(): BarBadges {
   return useSyncExternalStore(subscribe, snapshot, serverSnapshot);
+}
+
+/** For the Hercules figure on the map (and the card's "Needs you"): he has a fresh suggestion. */
+export function useHerculesSuggestion(): boolean {
+  return useSyncExternalStore(subscribe, () => current.suggestion, () => false);
 }
 
 /**

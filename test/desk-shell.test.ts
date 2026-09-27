@@ -84,11 +84,12 @@ describe("Today, the Desk's front page", () => {
     expect(qa(".desk-seal__figure").map(figure => figure.textContent)).toEqual(["—", "—", "—"]);
   });
 
-  it("stands the sundial on the walk's next row, unfolds the Level in place, and keeps Hercules's corner a door", async () => {
+  it("reads Leaving next off the strip's own slips, unfolds the Level in place, and keeps Hercules's corner a door", async () => {
+    // Tool Atlas §3.5: Today is the camp card in full; its second line replaces the sundial.
     const { opened } = await mount();
-    const sundial = q<HTMLButtonElement>("[data-desk-sundial]");
-    expect(sundial.dataset.deskSundial).toBe("dated");
-    expect(sundial.getAttribute("aria-label")).toMatch(/^Sundial\. Next to leave the Fund: /);
+    const leaving = q<HTMLButtonElement>('[data-card-line="2"]');
+    expect(leaving.textContent).toMatch(/^Leaving next · /);
+    expect(leaving.hasAttribute("aria-label")).toBe(false);
     const level = q<HTMLButtonElement>(".desk-level__press");
     expect(level.getAttribute("aria-expanded")).toBe("false");
     await act(async () => level.click());
@@ -96,10 +97,10 @@ describe("Today, the Desk's front page", () => {
     expect(q("[data-desk-level]").dataset.deskLevel).toBe("tall");
     const talk = qa<HTMLButtonElement>(".desk-door--talk")[0]!;
     expect(talk.textContent).toBe("Talk with Hercules");
-    await act(async () => { sundial.click(); talk.click(); });
+    await act(async () => { leaving.click(); talk.click(); });
     expect(opened).toEqual([["cellar-bills", undefined], ["hercules", undefined]]);
-    expect(q("[data-desk-discovery]")).toBeTruthy();
   });
+
 });
 
 describe("the Desk shell", () => {

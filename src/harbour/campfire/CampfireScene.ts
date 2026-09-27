@@ -19,9 +19,10 @@ import { campfireDressingFrom, type CampfireDressing } from "./dressing.ts";
  * its own** — the fire simply keeps burning until both of you sit down.
  *
  * Everything the fire shows is a **door** (`onOpen`) onto the surface that
- * already owns it: the Plan Studio for the Sitdown and the closure, Journey
- * for the path of months, the companion's own surface for Hercules. Nothing
- * here writes, proposes, agrees or closes anything.
+ * already owns it: the fire and both logs open **the Campfire ritual**
+ * (`CAMPFIRE_RITUAL_TARGET`, the five-beat sheet in `./ritual/`, decision D3),
+ * Journey for the path of months, the companion's own surface for Hercules.
+ * Nothing here writes, proposes, agrees or closes anything.
  *
  * The one thing that moves: the fire. It flickers on the runtime's own frame
  * policy (`animate` returns true, the shell's `invalidate` keeps the frames
@@ -102,6 +103,9 @@ export function campfirePoses(anchors: readonly Anchor[]): Record<string, Pose> 
   }
   return poses;
 }
+
+/** The door target the fire and both logs open: the App routes it to the Campfire ritual sheet. */
+export const CAMPFIRE_RITUAL_TARGET = "campfire-ritual";
 
 export type CampfireSceneReading = { campfire: CampfireReading | null; partnerName: string | null };
 
@@ -450,10 +454,10 @@ export function createCampfire(scene: THREE.Scene, options: CampfireOptions): Pl
 
   const seatLabel = (index: number): string => {
     const seat = seatOf(index);
-    if (!seat) return "A log drawn up to the fire, nobody on it yet. Pull out the Plan Studio.";
+    if (!seat) return "A log drawn up to the fire, nobody on it yet. Open the Campfire.";
     return seat.seated
-      ? `${seat.name}’s log — ${seat.name} has sat down for ${view.month ?? "this month"}. Read the closing in the Plan Studio.`
-      : `${seat.name}’s log, still empty — the Chapter closes when ${seat.name} sits too. Read the closing in the Plan Studio.`;
+      ? `${seat.name}’s log — ${seat.name} has sat down for ${view.month ?? "this month"}. Open the Campfire.`
+      : `${seat.name}’s log, still empty — the Chapter closes when ${seat.name} sits too. Open the Campfire.`;
   };
 
   const anchorList = (): Anchor[] => {
@@ -462,8 +466,8 @@ export function createCampfire(scene: THREE.Scene, options: CampfireOptions): Pl
         id: "fire",
         position: at(0, 0.5, 0),
         zone: "station",
-        label: `The fire${view.title ? ` · “${view.title}”` : ""} — ${campfireWords(view)}. Pull out the Plan Studio.`,
-        door: { target: "plan-studio" },
+        label: `The fire${view.title ? ` · “${view.title}”` : ""} — ${campfireWords(view)}. Open the Campfire.`,
+        door: { target: CAMPFIRE_RITUAL_TARGET },
       },
       {
         id: "stones",
@@ -475,7 +479,7 @@ export function createCampfire(scene: THREE.Scene, options: CampfireOptions): Pl
     ];
     seats.forEach((spot, index) => {
       if (!seatOf(index)) return;
-      rows.push({ id: `seat:${index}`, position: at(spot[0], 0.55, spot[2]), zone: "station", label: seatLabel(index), door: { target: "plan-studio" } });
+      rows.push({ id: `seat:${index}`, position: at(spot[0], 0.55, spot[2]), zone: "station", label: seatLabel(index), door: { target: CAMPFIRE_RITUAL_TARGET } });
     });
     rows.push({ id: "hercules", position: at(herculesSpot[0], 0.4, herculesSpot[2]), zone: "prop", label: `Hercules by the fire — he asks one question at a time${partnerName ? `, and waits for ${partnerName}` : ""}. Talk with Hercules.`, door: { target: "hercules" } });
     rows.push({ id: "boathouse", position: at(boathouseSpot[0], 1.24, boathouseSpot[2]), zone: "landmark", label: "The Boathouse — follow the path across the village." });

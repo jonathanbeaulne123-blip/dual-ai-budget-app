@@ -117,14 +117,14 @@ describe("the books surface arrives at the division the door named", () => {
   it("is a preselect, not a lock: the reader can still turn the book, and no address leaves them where they were", async () => {
     await render(binderyDivisionFor(binderyDoorObject("cut-bank")));
     expect(open()).toBe("Accounts");
-    const record = divisions().find((button) => button.textContent?.includes("Record"))!;
+    const record = divisions().find((button) => button.textContent?.includes("Paper trail"))!;
     await act(async () => record.click());
-    expect(open()).toBe("Record");
+    expect(open()).toBe("Paper trail");
     // The same address again does not snatch the page back.
     await render(binderyDivisionFor(binderyDoorObject("cut-bank")));
-    expect(open()).toBe("Record");
+    expect(open()).toBe("Paper trail");
     // Arriving with no address at all keeps the page the reader left open.
     await render(null);
-    expect(open()).toBe("Record");
+    expect(open()).toBe("Paper trail");
   });
 });
