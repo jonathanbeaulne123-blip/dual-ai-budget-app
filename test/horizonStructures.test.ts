@@ -258,4 +258,20 @@ describe('Horizon Wave 7 structures (W7-S)',()=>{
     // The Stacks: 12-sided, not octagonal prisms.
     const stack=buildOffshoreSolids().find(s=>s.id==='offshore.stacks.1')!;expect(stack.positions.length/3%12).toBe(0);expect(stack.positions.length/3).toBeGreaterThanOrEqual(12*8);
   });
+  it('lets S1 onto a level apron and rails the apron and its lane where they drop; kerb gaps for S1 and the portage (A1.2, A1.3)',()=>{
+    const cuts=cutsOnce(),s1=cuts.beds.find(b=>b.id==='S1')!,apron=find(cuts,'dam.apron')!;
+    // Level at 31 east of the low line: S1 comes on from the east at the apron's own height, no lip or wall across it.
+    for(const x of [1152,1160,1166,1169.5])expect(solidVerticalRangeAt(apron,x,930)!.top,String(x)).toBeCloseTo(31,5);
+    const walls=prisms(find(cuts,'dam.apron.abutments')!).filter(p=>p.top>31.2&&nearestOnPath([p.x,p.z],s1.points).distance<s1.width/2+.5&&p.x>1148);
+    expect(walls).toEqual([]);
+    // The level bay and its lane: a posted rail on the east edge (the ground falls 7+ eu), open where S1 comes through it.
+    const rails=prisms(find(cuts,'dam.apron.rails')!),east=rails.filter(p=>Math.abs(p.x-1170.1)<.2&&p.top-p.bottom>1.3);
+    expect(east.length).toBeGreaterThan(4);
+    const s1East=s1.points.findIndex((p,i)=>i>0&&(s1.points[i-1]![0]-1170.1)*(p[0]-1170.1)<=0),a=s1.points[s1East-1]!,b=s1.points[s1East]!,zc=a[2]+(b[2]-a[2])*(1170.1-a[0])/(b[0]-a[0]);
+    expect(Math.min(...east.map(p=>Math.abs(p.z-zc)))).toBeGreaterThan(1.5);
+    // The apron bridge's parapet opens where the portage stair lands on it ([1160.8, 31, 940.1], S1 x dam portage).
+    const foot=cuts.beds.find(b=>b.id==='damPortage')!.points.at(-1)!;
+    expect(prisms(find(cuts,'apronBridge.rails')!).filter(p=>Math.hypot(p.x-foot[0],p.z-foot[2])<1.6)).toEqual([]);
+    expect(prisms(find(cuts,'apronBridge.rails')!).length).toBeGreaterThan(20);
+  },120000);
 });

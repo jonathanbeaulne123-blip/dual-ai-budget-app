@@ -239,7 +239,43 @@ function exitsThrough(cuts:LandCuts,loop:readonly XYZ[],own:readonly string[]):X
   }
   return out;
 }
-function flushRails(cuts:LandCuts):void {for(const r of pendingRails.splice(0))perimeterRail(r.rails,r.loop,exitsThrough(cuts,r.loop,r.own));}
+/** Wave 7 (A1.3 kerb gaps): open rail lines (a span's parapet, a deck edge) drawn once every route exists, broken for
+ * `gapHalf` eu either side of each place a foot, skate or road route at the line's height (±1.6) crosses it at ≥ 25° —
+ * a route joining the deck through its edge (the dam portage onto the apron bridge) — or ends on it. `draw` draws a
+ * run a→b of the rail. */
+const pendingLines:{line:XYZ[];own:string[];gapHalf:number;draw:(run:XYZ[])=>void}[]=[];
+function railLineLater(line:XYZ[],own:string[],draw:(run:XYZ[])=>void,gapHalf=1.8):void {pendingLines.push({line,own,gapHalf,draw});}
+/** Wave 7 (A1.2): a posted rail along a deck edge wherever the ground 1 eu outside the edge (`outward`, a plan unit
+ * normal) lies more than BODY_DROP below the deck, with kerb gaps where a route joins through the edge. */
+const BODY_DROP=1.25;
+function guardEdgeLater(rails:StructureSolid,line:XYZ[],outward:XY,own:string[],base:HeightQuery):void {
+  const drop=(p:XYZ)=>p[1]-base(p[0]+outward[0],p[2]+outward[1])>BODY_DROP;
+  railLineLater(line,own,run=>{let cur:XYZ[]=[];const flush=()=>{if(cur.length>1)postedRail(rails,cur,0);cur=[];};
+    const mid=(a:XYZ,b:XYZ):XYZ=>[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2];
+    for(let i=0;i<run.length;i++){const p=run[i]!;if(drop(p)||i+1<run.length&&drop(mid(p,run[i+1]!))||i>0&&drop(mid(run[i-1]!,p)))cur.push(p);else flush();}flush();});
+}
+function lineGaps(cuts:LandCuts,line:readonly XYZ[],own:readonly string[]):number[] {
+  const out:number[]=[],arc=[0];for(let i=1;i<line.length;i++)arc.push(arc[i-1]!+distance(plan(line[i-1]!),plan(line[i]!)));
+  for(const b of cuts.beds){if(!['walk','trail','stair','road','boardwalk','skate'].includes(b.kind)||own.includes(b.id))continue;
+    for(let i=1;i<b.points.length;i++){const p=b.points[i-1]!,q=b.points[i]!,pl=distance(plan(p),plan(q));if(pl<1e-6)continue;
+      for(let j=1;j<line.length;j++){const a=line[j-1]!,c=line[j]!,al=distance(plan(a),plan(c));if(al<1e-6)continue;
+        const r:XY=[q[0]-p[0],q[2]-p[2]],s:XY=[c[0]-a[0],c[2]-a[2]],d=r[0]*s[1]-r[1]*s[0];if(Math.abs(d)<1e-9)continue;
+        const t=((a[0]-p[0])*s[1]-(a[2]-p[2])*s[0])/d,u=((a[0]-p[0])*r[1]-(a[2]-p[2])*r[0])/d;if(t<0||t>1||u<0||u>1)continue;
+        const sin=Math.abs(d)/(pl*al),y=mix(p[1],q[1],t),h=mix(a[1],c[1],u);if(sin<Math.sin(25*Math.PI/180)||Math.abs(y-h)>1.6)continue;out.push(arc[j-1]!+u*al);}}
+    for(const e of [b.points[0]!,b.points.at(-1)!]){const hit=nearestOnPath(plan(e),line);if(hit.distance<1.2&&Math.abs(e[1]-hit.at[1])<1.6)out.push(hit.along);}
+  }
+  return out;
+}
+function flushLines(cuts:LandCuts):void {
+  for(const r of pendingLines.splice(0)){const gaps=lineGaps(cuts,r.line,r.own).sort((a,b)=>a-b),total=planLength(r.line);let from=0;
+    const run=(a:number,b:number)=>{if(b-a<.5)return;const n=Math.max(1,Math.ceil((b-a)/2)),pts:XYZ[]=[];for(let k=0;k<=n;k++)pts.push(along(r.line,a+(b-a)*k/n).p);r.draw(pts);};
+    for(const g of gaps){run(from,Math.min(g-r.gapHalf,total));from=Math.max(from,g+r.gapHalf);}run(from,total);}
+}
+/** A polyline moved `offset` along its left normal (per segment, the joints averaged). */
+function offsetLine(path:readonly XYZ[],offset:number):XYZ[] {
+  return path.map((p,i)=>{const a=path[Math.max(0,i-1)]!,b=path[Math.min(path.length-1,i+1)]!,l=distance(plan(a),plan(b))||1,n:XY=[-(b[2]-a[2])/l,(b[0]-a[0])/l];return [p[0]+n[0]*offset,p[1],p[2]+n[1]*offset] as XYZ;});
+}
+function flushRails(cuts:LandCuts):void {for(const r of pendingRails.splice(0))perimeterRail(r.rails,r.loop,exitsThrough(cuts,r.loop,r.own));flushLines(cuts);}
 /** v2.0 (D-A3): a cable tower on a footing to the ground: four legs, cross bracing and a head frame at the cable. W5-A's
  * tower solve (beds/build.ts) supplies the top; a top above the sky ceiling is the solver's failure to report, not clamped here. */
 export function cableTower(out:StructureSolid,bracing:StructureSolid,at:XY,top:number,base:HeightQuery,spread=2):void {
@@ -363,7 +399,9 @@ export function buildSpan(spec:SpanSpec,cuts:LandCuts,base:HeightQuery):void {
     }
     cuts.solids.push(truss);
   }
-  for(const side of [-1,1])for(let i=1;i<path.length;i++){slab(rails,path[i-1]!,path[i]!,.25,1,side*(spec.width/2-.125),1);slab(rails,path[i-1]!,path[i]!,.4,.15,side*(spec.width/2-.125),1.15);}
+  // Wave 7 (A1.3): the parapets wait for every route: a kerb gap opens where a route joins the deck through its edge
+  // (S1 × the dam portage on the apron bridge, [1160.8,940.1]).
+  for(const side of [-1,1])railLineLater(offsetLine(path,side*(spec.width/2-.125)),[spec.route,`structure.${spec.id}`],run=>{for(let i=1;i<run.length;i++){slab(rails,run[i-1]!,run[i]!,.25,1,0,1);slab(rails,run[i-1]!,run[i]!,.4,.15,0,1.15);}});
   cuts.solids.push(deck,piers,rails);
   if(spec.abutments){
     // Abutments carry the deck ends and the approaches down to the bank; they never step into the channel.
@@ -618,10 +656,24 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   const damAbut=solid('dam.abutments','abutment','stone','support',['walk damCrest'],'lakeside');
   for(const x of [1116,1164])wallToGround(damAbut,[x,52.01-.6,899],[x,52.01-.6,911],4,0,base);cuts.solids.push(damAbut);
   // Apron: a supported half-pipe slab on piers clear of the tailrace, with end abutments.
-  const bowl=solid('dam.apron','halfPipe','apron','deck',['S1'],'notch'),apronH=(x:number)=>31+7*((x-1151)/16)**2;
-  for(let i=0;i<16;i++){const x=1135+i*2,x2=x+2;slab(bowl,[x,apronH(x),935],[x2,apronH(x2),935],22,.6);}cuts.solids.push(bowl);
+  // Wave 7 (A1.2, R3-36): a quarter-pipe, not a half-pipe: the apron rises to 38 at the dam-abutment (west) end and runs
+  // level at 31 east of its low line (x 1151), so S1 comes onto it flush from the east at 31 (the 7 eu east lip and its
+  // abutment wall stood across S1's line at x 1166.7 and left 6.6 / 7.4 eu drops beside S1 and dam.apron.level).
+  const bowl=solid('dam.apron','halfPipe','apron','deck',['S1'],'notch'),apronH=(x:number)=>x<1151?31+7*((x-1151)/16)**2:31;
+  for(let i=0;i<16;i++){const x=1135+i*2,x2=x+2;slab(bowl,[x,apronH(x),935],[x2,apronH(x2),935],22,.6);}
+  // Wave 7: dam.apron.level (x 1166–1170, z 923–947, the lane S1 comes onto the apron by) is the apron's level east bay, a
+  // deck on the apron's piers, not a bed over nothing.
+  slab(bowl,[1167,31,935],[1170.2,31,935],24,.6);cuts.solids.push(bowl);
   const apronPiers=solid('dam.apron.supports','pier','stone','support',['S1','dam.apron'],'notch'),apronAbut=solid('dam.apron.abutments','abutment','stone','support',['S1','dam.apron'],'notch'),tail=laneGuard(cuts);
-  for(const x of [1137,1141,1162,1166])for(const z of [926,935,944]){const xy:XY=[x,z];if(tail(xy,apronH(x),['S1','dam.apron.level'])==='RIVER_RUN')continue;pier(apronPiers,xy,Math.min(apronH(x-.5),apronH(x+.5))-.6,base,[1,1],[2.4,2.4]);}
+  {// Rails on the apron's open edges wherever the ground falls more than body height (the west lip at 38, the south edge
+    // over the tailrace bank, the east bay's edge): kerb gaps where S1, the portage and the gallery join.
+    const apronRails=solid('dam.apron.rails','deckParapet','metal','rail',['S1','dam.apron.level'],'notch'),own=['dam.apron.level'];
+    guardEdgeLater(apronRails,[[1135.1,38,923.9],[1135.1,38,946.1]],[-1,0],own,base);
+    guardEdgeLater(apronRails,[[1135,apronH(1135),946.1],...Array.from({length:17},(_,k):XYZ=>[1136+k*2,apronH(1136+k*2),946.1]),[1170.1,31,946.9]],[0,1],own,base);
+    guardEdgeLater(apronRails,[[1170.1,31,946.9],[1170.1,31,923.1]],[1,0],own,base);
+    guardEdgeLater(apronRails,[[1170.1,31,923.1],[1166,31,923.1],...Array.from({length:16},(_,k):XYZ=>[1165-k*2,apronH(1165-k*2),923.9]),[1135,apronH(1135),923.9]],[0,-1],own,base);
+    cuts.solids.push(apronRails);}
+  for(const x of [1137,1141,1162,1166,1169.4])for(const z of [926,935,944]){const xy:XY=[x,z];if(tail(xy,apronH(x),['S1','dam.apron.level'])==='RIVER_RUN')continue;pier(apronPiers,xy,Math.min(apronH(x-.5),apronH(x+.5))-.6,base,[1,1],[2.4,2.4]);}
   for(const x of [1135.3,1166.7])wallToGround(apronAbut,[x,apronH(x)-.6,924.2],[x,apronH(x)-.6,945.8],.6,0,base);
   // Spandrel walls under both long edges follow the curved underside in 1 eu bays, leaving the tailrace lane open.
   for(let x=1135;x<1167;x++)for(const z of [924.6,945.4]){if(tail([x+.5,z],apronH(x+.5),['S1','dam.apron.level'])==='RIVER_RUN')continue;wallToGround(apronAbut,[x,apronH(x)-.6,z],[x+1,apronH(x+1)-.6,z],.6,0,base);}
