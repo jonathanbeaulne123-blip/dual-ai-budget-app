@@ -115,8 +115,8 @@ export function buildBightBridge(cuts:LandCuts,base:HeightQuery):BightReport {
   const B=bightSpec(),F=bightFrame(),H=B.h,T=.6,[o0,o1]=B.section,oc=(o0+o1)/2,width=o1-o0,[op0,op1]=B.opening,sc=(op0+op1)/2,halfOpen=(op1-op0)/2;
   const s0=F.A/2-B.span/2,s1=F.A/2+B.span/2,P=(s:number,o:number,h:number):XYZ=>{const p=F.at(s,o);return [p[0],h,p[1]];},axis=(a:number,b:number,o:number,h:number):[XYZ,XYZ]=>[P(a,o,h),P(b,o,h)];
   const route=cuts.beds.find(b=>b.id==='V01'),district=districtAt(...F.at(F.A/2,0)),ids=['V01','structure.bightBridge'],report:BightReport={bents:[],arch:[],ferryClearance:Infinity,ferryAt:[0,0],deckProfile:[]};
-  const deck=solid('bightBridge.deck','bridge','boardwalk','deck',['V01'],district),caps=solid('bightBridge.caps','beam','timber','support',ids,district),bents=solid('bightBridge.supports','pier','timber','support',ids,district),bracing=solid('bightBridge.bracing','beam','timber','support',ids,district);
-  const piers=solid('bightBridge.archPiers','pier','stone','support',ids,district),arch=solid('bightBridge.arch','arch','metal','support',ids,district),rails=solid('bightBridge.rails','parapet','metal','rail',['V01'],district);
+  const deck=solid('bightBridge.deck','bridge','boardwalk','deck',['V01'],district),caps=solid('bightBridge.caps','capBeam','timber','support',ids,district),bents=solid('bightBridge.supports','pier','timber','support',ids,district),bracing=solid('bightBridge.bracing','beam','timber','support',ids,district);
+  const piers=solid('bightBridge.archPiers','pier','stone','support',ids,district),arch=solid('bightBridge.arch','arch','metal','support',ids,district),rails=solid('bightBridge.rails','deckParapet','metal','rail',['V01'],district),kerbs=solid('bightBridge.kerbRails','handrail','metal','rail',['S2'],district);
   // Bents: the west viaduct in equal bays from the abutment to the west arch pier, the east from the east arch pier to the abutment.
   const westS=Array.from({length:B.westBents},(_,k)=>op0*(k+1)/(B.westBents+1)),eastS=Array.from({length:B.eastBents},(_,k)=>op1+(F.A-op1)*(k+1)/(B.eastBents+1));
   const columns=[0,1,2,3].map(k=>mix(o0+.8,o1-.8,k/3)),guard=laneGuard(cuts),rib:[number,number]=[o0-.4,o1+.4],pierWidth=rib[1]-rib[0]+.8,pierMid=(rib[0]+rib[1])/2;
@@ -174,11 +174,13 @@ export function buildBightBridge(cuts:LandCuts,base:HeightQuery):BightReport {
   // Rails: both deck edges the whole length (the lagoon edge opens onto the lookout), the lookout's three open sides,
   // and kerb rails between each S2 lane and the footway beside it where S2 rides the deck at deck level. A rail run on
   // the axis takes offset −o (postedRail's offset, like slab's, is along the path's left normal, −o here).
-  const edgeRail=(a:number,b:number,o:number)=>postedRail(rails,axis(a,b,0,H),-o);
+  // The deck-edge parapets are kind deckParapet: nothing walks beyond a deck edge, so a route's corridor clearance
+  // (junctions.ts clearRouteCorridors: S2's sea lane reaches 0.25 past the edge) never cuts them; the kerb rails can be.
+  const edgeRail=(a:number,b:number,o:number,into:StructureSolid=rails)=>postedRail(into,axis(a,b,0,H),-o);
   edgeRail(s0,s1,o0+.05);edgeRail(s0,B.lookout.from,o1-.05);edgeRail(B.lookout.to,s1,o1-.05);edgeRail(B.lookout.from,B.lookout.to,B.lookout.outer-.05);
   for(const s of [B.lookout.from,B.lookout.to])postedRail(rails,[P(s,o1,H),P(s,B.lookout.outer,H)],0);
-  edgeRail(s0,ramps[0]!.from,ramps[0]!.o-laneW/2-.1);edgeRail(ramps[1]!.to,s1,ramps[1]!.o+laneW/2+.1);
-  cuts.solids.push(deck,lookout,caps,bents,piers,arch,rails);if(bracing.indices.length)cuts.solids.push(bracing);
+  edgeRail(s0,ramps[0]!.from,ramps[0]!.o-laneW/2-.1,kerbs);edgeRail(ramps[1]!.to,s1,ramps[1]!.o+laneW/2+.1,kerbs);
+  cuts.solids.push(deck,lookout,caps,bents,piers,arch,rails,kerbs);if(bracing.indices.length)cuts.solids.push(bracing);
   // Abutments: a masonry block under each deck end down to the ground, then the V01 approach walled down to grade.
   const abut=solid('bightBridge.abutments','abutment','stone','support',ids,district);
   for(const [end,out] of [[s0,-1],[s1,1]] as const)wallToGround(abut,P(end-out*1.5,0,cap),P(end+out*2,0,cap),width+1,-oc,base);
@@ -237,7 +239,7 @@ export function cableTower(out:StructureSolid,bracing:StructureSolid,at:XY,top:n
  * 3 eu or is refused and reported; a bay over 12 eu (timber) is a conflict. Rails on posts on both edges. */
 function carriedDeck(id:string,route:BedCut,path:XYZ[],width:number,cuts:LandCuts,base:HeightQuery,o:{spacing?:number;bentOffsets?:number[];avoid?:(xy:XY)=>string|undefined;kind?:string;bedProfile?:string}={}):{bents:number[];refused:number[]} {
   const district=districtAt(...plan(path[Math.floor(path.length/2)]!)),ids=[route.id,`structure.${id}`],guard=laneGuard(cuts),length=planLength(path),spacing=o.spacing??6,offsets=o.bentOffsets??[-(width/2-.6),width/2-.6];
-  const deck=solid(`${id}.deck`,o.kind??'trestle','boardwalk','deck',[route.id],district),supports=solid(`${id}.supports`,'trestle','timber','support',ids,district),caps=solid(`${id}.caps`,'beam','timber','support',ids,district),rails=solid(`${id}.rails`,'handrail','metal','rail',[route.id],district);
+  const deck=solid(`${id}.deck`,o.kind??'trestle','boardwalk','deck',[route.id],district),supports=solid(`${id}.supports`,'trestle','timber','support',ids,district),caps=solid(`${id}.caps`,'capBeam','timber','support',ids,district),rails=solid(`${id}.rails`,'handrail','metal','rail',[route.id],district);
   for(let i=1;i<path.length;i++)slab(deck,path[i-1]!,path[i]!,width,.6);
   const feetAt=(s:number)=>{const {p,dir}=along(path,s);return {p,feet:offsets.map(off=>[p[0]-dir[1]*off,p[2]+dir[0]*off] as XY)};},bents:number[]=[],refused:number[]=[];
   const blocked=(s:number)=>{const {p,feet}=feetAt(s);return feet.map(xy=>guard(xy,p[1]-.6,ids)??o.avoid?.(xy)).find(Boolean);};
@@ -286,7 +288,9 @@ export function buildNamedKinds(cuts:LandCuts,base:HeightQuery):void {
     if(f&&vbs&&f.from&&f.to){const path=stretchBetween(vbs,f.from as unknown as XY,f.to as unknown as XY),w=f.width_m??5,{dir}=along(path,planLength(path)/2),west=-dir[1]<0?1:-1;
       carriedDeck('bightSpurTrestle',vbs,path,w,cuts,base,{bentOffsets:[0,west*(w/2-.6)],bedProfile:'road'});}}
   {// D-C14 Scholars Cove cliff stair: two flights along the face with a landing at mid-height, a posted parapet on the sea side.
-    const f=S.coveStair;if(f&&f.from&&f.to){const top:XYZ=[f.from[0]!,f.from_h??34.1,f.from[1]!],foot:XYZ=[f.to[0]!,f.to_h??1.8,f.to[1]!],mid=(top[1]+foot[1])/2;
+    // The foot lands on the Scholars Cove ferry dock's deck (built at the water + 0.6 = 1.0; MANIFEST to_h says 1.8: a 0.8 lip).
+    const f=S.coveStair,dockDeck=cuts.beds.find(b=>b.id==='ferry.scholarsCove')?.points[0]?.[1];
+    if(f&&f.from&&f.to){const top:XYZ=[f.from[0]!,f.from_h??34.1,f.from[1]!],foot:XYZ=[f.to[0]!,dockDeck??f.to_h??1.8,f.to[1]!],mid=(top[1]+foot[1])/2;
       // The face runs from the cove walk's end toward [604,252] (MANIFEST coveStair.along); the sea is on its north side.
       const far:XY=[604,252],u:XY=(()=>{const d=distance(plan(top),far);return [(far[0]-top[0])/d,(far[1]-top[2])/d];})(),nA:XY=[u[1],-u[0]],seaN:XY=nA[1]<0?nA:[-nA[0],-nA[1]];
       const run=distance(plan(top),far)-2,b1:XYZ=[top[0]+u[0]*run,mid,top[2]+u[1]*run],b2:XYZ=[b1[0]+seaN[0]*3.5,mid,b1[2]+seaN[1]*3.5];

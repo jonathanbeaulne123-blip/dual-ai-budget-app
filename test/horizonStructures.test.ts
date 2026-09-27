@@ -206,7 +206,7 @@ describe('Horizon v2.0 structures (W5-S)',()=>{
     // The VBS trestle's bents stay out of S4's corridor (S4 runs beside it on the east).
     const s4=cuts.beds.find(b=>b.id==='S4')!;for(const p of lowest(find(cuts,'bightSpurTrestle.supports')!))expect(nearestOnPath([p.x,p.z],s4.points).distance).toBeGreaterThan(s4.width/2+1);
     const f0=cuts.beds.find(b=>b.id==='coveStair.flight.0')!,f1=cuts.beds.find(b=>b.id==='coveStair.flight.1')!;
-    expect(f0.points[0]![1]).toBeCloseTo(34.1,5);expect(f1.points.at(-1)![1]).toBeCloseTo(1.8,5);expect(f0.points.at(-1)![1]).toBeCloseTo(17.95,5);expect(bounds(find(cuts,'coveStair.landing.slab')!).max[1]).toBeCloseTo(17.95,5);
+    const dock=cuts.beds.find(b=>b.id==='ferry.scholarsCove')!.points[0]![1];expect(f0.points[0]![1]).toBeCloseTo(34.1,5);expect(f1.points.at(-1)![1]).toBeCloseTo(dock,5);expect(f0.points.at(-1)![1]).toBeCloseTo((34.1+dock)/2,5);expect(bounds(find(cuts,'coveStair.landing.slab')!).max[1]).toBeCloseTo((34.1+dock)/2,5);
     // D-C2: no solid stairwell wall stands along the gallery's south side (z 925.6) any more.
     expect(prisms(find(cuts,'damGallery.walls')!).some(p=>Math.abs(p.z-925.6)<.5)).toBe(false);
     expect(prisms(find(cuts,'damGallery.landing.1.rails')!).some(p=>p.top-p.bottom>1&&p.z>925)).toBe(true);
