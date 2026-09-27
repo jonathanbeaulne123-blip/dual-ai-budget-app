@@ -335,6 +335,9 @@ function damWindow(x: number, z: number, height: number): number {
  * - C · the skate shelf: since S1 rides the shelf deck (v1.9, W3-A A2) the ground where its at-grade
  *   carriageway ran, [1207–1222, 1081–1135] at 10.4–12.7, stood between the overlook and the shelf
  *   (11–12.3): 2 px at 16:9. The window from the eye [1268,1145] h 11.6 to the shelf line clears it (40 px).
+ * - D · surf (W5, R2-14): the eye [1185,1445] (2.65) stands behind the Long Sands' dune humps (1.8–3.3); the sea beyond the beach
+ *   west-south-west read 7 px at 1440 × 900. The window from the eye to the shoreline [1000–1100, 1490–1500] holds the sand
+ *   under the line to the surf (probe on the W5 bake: 55 px). The zipline landing's stair still covers the surf on the phone.
  * Every window lies outside the band polygons or inside the Notch walls' exclusion, or trims a band
  * only within its own range (harbour 0–18): P01 is untouched by construction.
  */
@@ -342,6 +345,7 @@ export interface SightWindow { page: string; subject: string; eyeH: number; a: X
 export const SIGHT_WINDOWS: readonly SightWindow[] = [
   { page: 'A', subject: "the dam's glass face", eyeH: 13.6, a: [1121, 38, 909], b: [1160, 38, 909], margin: 1, near: 40, feather: 8, bedFade: 6 },
   { page: 'C', subject: 'the skate shelf', eyeH: 11.6, a: [1206, 11.6, 1078], b: [1206, 11.6, 1136], margin: 1.1, near: 12, feather: 6, bedFade: 4 },
+  { page: 'D', subject: 'surf', eyeH: 2.65, a: [1000, 0.9, 1500], b: [1100, 0.9, 1490], margin: .3, near: 10, feather: 6, bedFade: 4 },
 ];
 interface PreparedWindow { eye: XYZ; a: XYZ; b: XYZ; tri: XY[]; det: number; w: SightWindow; box: number[] }
 let preparedWindows: PreparedWindow[] | undefined;

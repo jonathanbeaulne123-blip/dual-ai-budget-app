@@ -150,6 +150,11 @@ describe('Sketchbook sight windows (Stage A W3-C, P27)', () => {
     expect(sightWindows(1172, 917, 43)).toBeLessThan(43);
     expect(sightWindows(1172, 917, 43, 0)).toBe(43);
     expect(sightWindows(1296, 1300, 35)).toBe(35);
+    // Page D (W5): the Long Sands' humps in the eye→shoreline cone stand under the line to the surf (plane 2.35 → 0.6).
+    const d = SIGHT_WINDOWS.find(w => w.page === 'D')!;
+    expect(d.eyeH).toBe(2.65);
+    expect(sightWindows(1120, 1470, 2.5)).toBeLessThan(1.7); expect(sightWindows(1050, 1493, 1.5)).toBeLessThan(.8);
+    expect(sightWindows(1140, 1430, 3.3)).toBe(3.3);
   });
 
 });
