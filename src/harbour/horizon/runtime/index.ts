@@ -8,7 +8,7 @@ import {HORIZON_GEOGRAPHY,HORIZON_PRESENCE_WORLD} from '../../../worldGeography.
 import {loadHorizonAssets,type HorizonAssets} from '../../../house/world/horizonAssets.ts';
 import {createHorizonGeography,HORIZON_WALKABLE_DEGREES,HORIZON_BODY_HEIGHT} from './geography.ts';
 import {buildDistrictCards,buildWaterCards,buildHorizonRing} from './cards.ts';
-import {createDistrictStream,useDefinitionDistricts} from '../world/districts.ts';
+import {createDistrictStream,districtAt,useDefinitionDistricts} from '../world/districts.ts';
 import {useCoastline} from '../land/coast/index.ts';
 import {HORIZON_MANIFEST} from '../world/manifest.ts';
 import {restoreHorizonPosition,HORIZON_RESTORE_TOLERANCE} from './savedPosition.ts';
@@ -19,7 +19,8 @@ import {skyGradient} from '../sky/gradient.ts';
 import {horizonFog,HORIZON_FOG} from '../sky/fog.ts';
 import {horizonMotion,appReducedMotion,type HorizonComfort} from '../sun/comfort.ts';
 import {shadowFrame} from '../sun/shadow.ts';
-import {nightLight,NIGHT_LIGHT_CARDS,NIGHT_FLOOR} from '../sky/night.ts';
+import {createSkyDome} from '../sky/dome.ts';
+import {nightLight,NIGHT_LIGHT_CARDS,NIGHT_FLOOR,faceCardOn,FACE_CARD_LIGHT} from '../sky/night.ts';
 import {sketchbookLens} from '../world/lens.ts';
 import type {XYZ} from '../land/interfaces.ts';
 import type {Host,SketchbookPose} from '../world/definition.ts';
@@ -30,6 +31,10 @@ export type HorizonRuntime=ReturnType<typeof createRuntime>;
 export type HorizonOptions={tier:'full'|'lite';hideBuildings?:boolean;signal?:AbortSignal;/** The app's reduced-motion setting (Comfort.motion) or the OS query; html[data-motion] is also read. */reducedMotion?:boolean;/** The app's calm view (Comfort.quiet): the frozen 15:30, no night, nothing moving on its own. */calm?:boolean;onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onStatus?:(text:string)=>void;partner?:()=>PlaceWalkSource|null;initialBody?:HouseBodyReturn};
 export async function mountHorizon(host:HTMLElement,options:HorizonOptions){
   const startedAt=performance.now(),assets=await loadHorizonAssets(options.tier,options.signal);if(options.signal?.aborted)throw new DOMException('Aborted','AbortError');
+  // R1-72: the chunk under the entry body (page A's eye) is the only geometry fetched before the first frame; the rest
+  // streams by district residency (createDistrictStream ready/request), each added to the collision index as it lands.
+  const startEye=assets.world.views.find(v=>v.id==='A')?.eye;
+  if(assets.chunks&&startEye){useDefinitionDistricts(assets.world.districts);await assets.chunks.load(districtAt(startEye[0],startEye[2]),options.signal);if(options.signal?.aborted)throw new DOMException('Aborted','AbortError');}
   return createRuntime(host,assets,options,startedAt);
 }
 function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOptions,startedAt:number){
@@ -38,6 +43,10 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   useDefinitionDistricts(world.districts);
   // …and the coastline too: shore tests read the baked outline, not a client re-solve of the manifest.
   useCoastline(world.coastline);
+  // R1-72: the chunk under the entry body (page A's eye) is the only geometry fetched before the first frame; the rest
+  // streams in behind it, nearest the body first, one chunk at a time, each added to the collision index as it lands.
+  const chunks=assets.chunks;
+  const bytesBeforeFirstFrame={definition:chunks?.bytes()??assets.definitionBytes,terrain:assets.bytes};
   const geography=createHorizonGeography(field,cuts),figure=createBodyFigure(),partner=createBodyFigure({coat:'#af8760'});
   scene.add(figure.group,partner.group);partner.group.visible=false;
   const partnerMaterials:Record<string,THREE.Material>={};partner.group.traverse(object=>{if(object instanceof THREE.Mesh)for(const material of Array.isArray(object.material)?object.material:[object.material])partnerMaterials[material.uuid]=material;});
@@ -46,7 +55,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   // Horizon cards are fogged like the land but never beyond 70 % (STYLE §1.8), so they never vanish and never poke through.
   for(const material of Object.values(ring.materials)){if('fog'in material)(material as THREE.MeshStandardMaterial).fog=true;fogHook(material,HORIZON_FOG.horizonMaxOpacity);}
   let comfort:HorizonComfort={calm:options.calm===true,reducedMotion:options.reducedMotion===true||appReducedMotion()},motion=horizonMotion(comfort);
-  const skyCanvas=document.createElement('canvas');skyCanvas.width=8;skyCanvas.height=256;const skyTexture=new THREE.CanvasTexture(skyCanvas);skyTexture.colorSpace=THREE.SRGBColorSpace;
+  // R2-110: the sky is a dome in view direction whose horizon IS the fog colour (sky/dome.ts), not a screen-space gradient.
+  const skyDome=createSkyDome();scene.add(skyDome.mesh);let lastSkyColors:{zenith:string;horizonAway:string;horizonSun:string}|null=null,lastSunDirection:[number,number,number]=[0,1,0];
   const ambient=new THREE.HemisphereLight('#d9e7e8','#786b57',1.2),sun=new THREE.DirectionalLight('#fff0d5',2.2),moon=new THREE.DirectionalLight('#9badcd',.26);
   sun.castShadow=true;{const size=tier==='full'?2048:1024;sun.shadow.mapSize.set(size,size);}sun.shadow.camera.near=1;sun.shadow.normalBias=.05;sun.shadow.bias=-.00006;
   scene.add(ambient,sun,sun.target,moon);
@@ -58,10 +68,14 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   // The seven windows (LIGHT §3): each host's doorway is a lit card from dusk, one instanced draw.
   const doorHosts=world.hosts.filter(h=>'xy'in h.door),doorGeometry=new THREE.PlaneGeometry(NIGHT_LIGHT_CARDS.doorSize[0],NIGHT_LIGHT_CARDS.doorSize[1]).translate(0,NIGHT_LIGHT_CARDS.doorSize[1]/2,0),doorMaterial=new THREE.MeshBasicMaterial({color:NIGHT_LIGHT_CARDS.door,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-8}),doors=new THREE.InstancedMesh(doorGeometry,doorMaterial,Math.max(1,doorHosts.length));
   doorHosts.forEach((h,i)=>{const d=h.door as {xy:readonly [number,number];height?:number},facing=h.facing??0;doors.setMatrixAt(i,new THREE.Matrix4().makeRotationY(facing).setPosition(d.xy[0]+Math.sin(facing)*.08,(d.height??0)+.02,d.xy[1]+Math.cos(facing)*.08));});doors.count=doorHosts.length;doors.visible=false;scene.add(doors);
+  // D-A5 (v2.0 lights, LIGHT §2): the dam's glass face is an emissive card (an unlit quad, no dynamic light), on from golden hour to dawn.
+  const faceCardMaterial=new THREE.MeshBasicMaterial({color:FACE_CARD_LIGHT.colour,transparent:true,opacity:FACE_CARD_LIGHT.opacity,side:THREE.FrontSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4}),faceCards=new THREE.Group();
+  for(const card of world.faceCards??[]){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(card.corners.flat(),3));g.setIndex([0,1,2,0,2,3]);g.computeVertexNormals();const mesh=new THREE.Mesh(g,faceCardMaterial);mesh.name=`faceCard.${card.id}`;mesh.renderOrder=2;faceCards.add(mesh);}
+  faceCards.visible=false;scene.add(faceCards);let faceCardsLit=false;
   let night=false,lastLocalLights=-Infinity,lastLightAt:XYZ=[Infinity,0,0],lastSolar={elevation:30,azimuth:180};
   const shadowRequests:{at:number;reason:string}[]=[];
   function requestShadow(reason:string){renderer.shadowMap.needsUpdate=true;shadowRequests.push({at:performance.now(),reason});if(shadowRequests.length>120)shadowRequests.shift();}
-  function updateFog(){const fog=horizonFog({tier,eyeAboveGround:Math.max(0,camera.position.y-geography.ground(camera.position.x,camera.position.z)),elevation:lastSolar.elevation,sunAzimuth:lastSolar.azimuth,heading:yaw*180/Math.PI});scene.fog=mode==='journey'?null:new THREE.Fog(fog.color,fog.near,fog.far);}
+  function updateFog(){const fog=horizonFog({tier,eyeAboveGround:Math.max(0,camera.position.y-geography.ground(camera.position.x,camera.position.z)),elevation:lastSolar.elevation,sunAzimuth:lastSolar.azimuth,heading:yaw*180/Math.PI});scene.fog=mode==='journey'?null:new THREE.Fog(fog.color,fog.near,fog.far);if(lastSkyColors)skyDome.update(lastSkyColors,fog.color,lastSunDirection);}
   const lightMatrix=new THREE.Matrix4();
   function updateLocalLights(now:number){
     if(now-lastLocalLights<500)return;lastLocalLights=now;
@@ -95,13 +109,19 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
       for(let i=0;i<ix.length;i+=3){const a=ix[i]!*3,b=ix[i+1]!*3,c=ix[i+2]!*3,ux=p[b]!-p[a]!,uy=p[b+1]!-p[a+1]!,uz=p[b+2]!-p[a+2]!,vx=p[c]!-p[a]!,vy=p[c+1]!-p[a+1]!,vz=p[c+2]!-p[a+2]!,nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx,n=Math.hypot(nx,ny,nz);if(n<1e-9)continue;const up=Math.abs(ny/n)>=.6;if(!up&&!(faces&&Math.abs(ny/n)<.45))continue;const col=up?lipChalk:faceChalk,ox=up?0:nx/n*.03,oz=up?0:nz/n*.03;for(const k of [a,b,c]){positions.push(p[k]!+ox,p[k+1]!+(up?.03:0),p[k+2]!+oz);colors.push(col.r,col.g,col.b);}}}
     if(!positions.length)return null;const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.computeBoundingSphere();const mesh=new THREE.Mesh(geometry,chalkMaterial);mesh.visible=night;mesh.renderOrder=2;return mesh;
   }
-  const stream=createDistrictStream(world,d=>{const cards=buildDistrictCards(world,field,cuts,d,tier,false,options.hideBuildings);const hooks=Object.values(cards.materials).map(material=>fogHook(material));const fadeIn=(amount:number)=>{for(const hook of hooks)hook.fade.value=amount;};fadeIn(motion.districtFadeMs>0?0:1);const chalk=buildChalk(d);scene.add(cards.group);if(chalk)scene.add(chalk);requestShadow('district-load');return{cards,chalk,at:performance.now(),fadeIn,dispose(){scene.remove(cards.group);cards.dispose();if(chalk){scene.remove(chalk);chalk.geometry.dispose();}if(coarse.has(d.id))coarse.get(d.id)!.group.visible=true;}};},tier);
+  const stream=createDistrictStream(world,d=>{const cards=buildDistrictCards(world,field,cuts,d,tier,false,options.hideBuildings);const hooks=Object.values(cards.materials).map(material=>fogHook(material));const fadeIn=(amount:number)=>{for(const hook of hooks)hook.fade.value=amount;};fadeIn(motion.districtFadeMs>0?0:1);const chalk=buildChalk(d);scene.add(cards.group);if(chalk)scene.add(chalk);requestShadow('district-load');return{cards,chalk,at:performance.now(),fadeIn,dispose(){scene.remove(cards.group);cards.dispose();if(chalk){scene.remove(chalk);chalk.geometry.dispose();}if(coarse.has(d.id))coarse.get(d.id)!.group.visible=true;}};},tier,{ready:id=>!chunks||chunks.ready(id),request:id=>{void chunks?.load(id,options.signal).catch(()=>{});}});
+  // P22 with chunks: once the first frame is up, the remaining chunks are fetched in the background, nearest the body first, one
+  // at a time, so a relocation (a page shot, a restore) finds its district's geometry ready and builds it on the next frame.
+  let prefetching=false;
+  async function prefetchChunks(){if(!chunks||prefetching)return;prefetching=true;const order=[...chunks.refs].filter(r=>!chunks.ready(r.districtId)).sort((a,b)=>{const da=world.districts.find(d=>d.id===a.districtId),db=world.districts.find(d=>d.id===b.districtId),dist=(d:typeof da)=>{const c=d?.heart??d?.outline[0];return c?Math.hypot(c[0]-body.x,c[1]-body.z):Infinity;};return dist(da)-dist(db)||a.districtId.localeCompare(b.districtId);});
+    for(const ref of order){if(disposed)return;try{await chunks.load(ref.districtId,options.signal);}catch{return;}await new Promise(r=>setTimeout(r,0));}}
+  const offChunk=chunks?.onLoad((_id,solids)=>{if(!disposed){geography.addSolids(solids);requestShadow('chunk-load');}});
   function resize(){const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(mode==='look'&&!transition){const pose=world.views.find(p=>p.id===shotId);if(pose)lookAt(pose);}}
   const observer=new ResizeObserver(resize);observer.observe(host);resize();
   function setLight(date:Date){
     const position=solarPosition(date),colors=skyGradient(position.elevation),lookHeight=camera.position.y-geography.ground(camera.position.x,camera.position.z),fog=horizonFog({tier,eyeAboveGround:Math.max(0,lookHeight),elevation:position.elevation,sunAzimuth:position.azimuth,heading:yaw*180/Math.PI}),floor=nightLight(position.elevation,colors);
-    lastSolar=position;night=floor.lightCards;lastLocalLights=-Infinity;lastLightAt=[Infinity,0,0];
-    const context=skyCanvas.getContext('2d')!;const gradient=context.createLinearGradient(0,0,0,256);gradient.addColorStop(0,colors.zenith);gradient.addColorStop(.6,colors.horizonAway);gradient.addColorStop(1,colors.horizonSun);context.fillStyle=gradient;context.fillRect(0,0,8,256);skyTexture.needsUpdate=true;scene.background=skyTexture;
+    lastSolar=position;night=floor.lightCards;faceCardsLit=faceCardOn(position,comfort.calm);faceCards.visible=faceCardsLit&&mode!=='journey';lastLocalLights=-Infinity;lastLightAt=[Infinity,0,0];
+    lastSkyColors=colors;lastSunDirection=[position.direction[0],position.direction[1],position.direction[2]];skyDome.update(colors,fog.color,lastSunDirection);
     scene.fog=mode==='journey'?null:new THREE.Fog(fog.color,fog.near,fog.far);
     ambient.color.set(floor.hemisphereSky);ambient.groundColor.set(floor.hemisphereGround);ambient.intensity=floor.hemisphereIntensity;
     // The shadow box follows what the camera frames (sun/shadow.ts), not only the body.
@@ -131,7 +151,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     doorCooldown=performance.now()+1800;const out=h.returnAt;if(out){Object.assign(body,{x:out[0],y:out[1],z:out[2],yaw:h.facing??0});yaw=body.yaw;}path=[];options.onDoor?.(h,savedBody());return true;
   }
   function setMode(next:HorizonMode){
-    const fromEye=camera.position.clone(),fromTarget=target.clone();mode=next;path=[];
+    const fromEye=camera.position.clone(),fromTarget=target.clone();mode=next;path=[];faceCards.visible=faceCardsLit&&mode!=='journey';
     if(next==='journey'){const {w,h}=world.extent;camera.position.set(w/2,w*1.05,h*1.17);target.set(w/2,20,h*.47);camera.lookAt(target);camera.fov=50;camera.updateProjectionMatrix();}
     else if(next==='look')shot(shotId);
     else if(next==='walk'){const at=geography.surface(body.x,body.z,body.y);if(at&&at.slope<=HORIZON_WALKABLE_DEGREES)body.y=at.y;distance=9;pitch=-.26;updateCamera();}
@@ -177,7 +197,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     // Calm and reduced motion hold the frozen 15:30 (no night, no sun step); a review date never overrides them.
     if(now-lastSun>=60_000){setLight(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm}));lastSun=now;}
     updateLocalLights(now);
-    renderer.render(scene,camera);if(interactiveAt===null){interactiveAt=performance.now();options.onReady?.();}if(drawSamples.length===0||now-drawSamples.at(-1)!.at>500){drawSamples.push({at:now,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,resident:stream.live.size});if(drawSamples.length>600)drawSamples.shift();}schedule();
+    skyDome.follow(camera);renderer.render(scene,camera);if(interactiveAt===null){interactiveAt=performance.now();options.onReady?.();void prefetchChunks();}if(drawSamples.length===0||now-drawSamples.at(-1)!.at>500){drawSamples.push({at:now,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,resident:stream.live.size});if(drawSamples.length>600)drawSamples.shift();}schedule();
   }
   function schedule(){if(!disposed&&lease.active)frame=lease.requestFrame(tick);}
   const interactive=(event:KeyboardEvent)=>event.composedPath().some(t=>t instanceof Element&&Boolean(t.closest('input,textarea,select,button,a,[contenteditable="true"],[role="dialog"],[role="textbox"]')));
@@ -194,11 +214,11 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     input(next:Partial<typeof controls>){controls={...controls,...next};},jump(){jumpRequested=true;},look(dx:number,dy:number){yaw+=dx;pitch=Math.max(-1.2,Math.min(.8,pitch+dy));},
     pause(value:boolean){paused=value;if(value)clear();},setDate(date:Date){currentTime=date;lastSun=-Infinity;},
     /** The app's comfort choices, live (HorizonStage threads useComfort; html[data-motion] is read too). */
-    setComfort(next:Partial<HorizonComfort>){comfort={calm:next.calm??comfort.calm,reducedMotion:(next.reducedMotion??comfort.reducedMotion)||appReducedMotion()};motion=horizonMotion(comfort);if(motion.transitionMs<=0&&transition){camera.position.copy(transition.toEye);target.copy(transition.toTarget);camera.lookAt(target);transition=null;}lastSun=-Infinity;},
+    setComfort(next:Partial<HorizonComfort>){comfort={calm:next.calm??comfort.calm,reducedMotion:(next.reducedMotion??comfort.reducedMotion)||appReducedMotion()};if(comfort.calm){faceCardsLit=false;faceCards.visible=false;}motion=horizonMotion(comfort);if(motion.transitionMs<=0&&transition){camera.position.copy(transition.toEye);target.copy(transition.toTarget);camera.lookAt(target);transition=null;}lastSun=-Infinity;},
     comfort:()=>({...comfort,motion:{...motion}}),
     walkTo(p:XYZ){lastMovementBlocker=null;const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],p,{stepFree:true});path=plan?[...plan.points]:[];return plan;},
-    stats(){const gl=renderer.getContext(),debug=gl.getExtension('WEBGL_debug_renderer_info');return{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),revision:world.geographyRevision,terrainBytes:assets.bytes,collisionIndex:geography.indexStats,shadowRequests:[...shadowRequests],comfort:{...comfort,motion:{...motion}},lightCards:pools.count,shadow:{half:sun.shadow.camera.right,centre:sun.target.position.toArray()},firstInteractiveMs:interactiveAt===null?null:interactiveAt-startedAt,assetLoadMs:assetLoadedAt-startedAt,mode,shot:shotId,body:{...body},frames:[...frameTimes],drawSamples:[...drawSamples],stream:[...stream.history],camera:{eye:camera.position.toArray(),target:target.toArray(),fov:camera.fov},diagnostics:world.diagnostics};},
-    dispose(){disposed=true;lease.cancelFrame(frame);observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',clear);host.removeEventListener('blur',clear);stream.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyTexture.dispose();poolGeometry.dispose();beadGeometry.dispose();poolMaterial.dispose();beadMaterial.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
+    stats(){const gl=renderer.getContext(),debug=gl.getExtension('WEBGL_debug_renderer_info');return{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),revision:world.geographyRevision,terrainBytes:assets.bytes,collisionIndex:geography.indexStats,bytesBeforeFirstFrame,chunksLoaded:chunks?chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId):null,definitionBytesSoFar:chunks?.bytes()??assets.definitionBytes,shadowRequests:[...shadowRequests],comfort:{...comfort,motion:{...motion}},lightCards:pools.count,shadow:{half:sun.shadow.camera.right,centre:sun.target.position.toArray()},firstInteractiveMs:interactiveAt===null?null:interactiveAt-startedAt,assetLoadMs:assetLoadedAt-startedAt,mode,shot:shotId,body:{...body},frames:[...frameTimes],drawSamples:[...drawSamples],stream:[...stream.history],camera:{eye:camera.position.toArray(),target:target.toArray(),fov:camera.fov},diagnostics:world.diagnostics};},
+    dispose(){disposed=true;offChunk?.();lease.cancelFrame(frame);observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',clear);host.removeEventListener('blur',clear);stream.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();poolGeometry.dispose();beadGeometry.dispose();poolMaterial.dispose();beadMaterial.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
   };
   return api;
 }

@@ -150,6 +150,62 @@ describe('Sketchbook sight windows (Stage A W3-C, P27)', () => {
     expect(sightWindows(1172, 917, 43)).toBeLessThan(43);
     expect(sightWindows(1172, 917, 43, 0)).toBe(43);
     expect(sightWindows(1296, 1300, 35)).toBe(35);
+    // Page D (W5): the Long Sands' humps in the eye→shoreline cone stand under the line to the surf (plane 2.35 → 0.6).
+    const d = SIGHT_WINDOWS.find(w => w.page === 'D')!;
+    expect(d.eyeH).toBe(2.65);
+    expect(sightWindows(1120, 1470, 2.5)).toBeLessThan(1.7); expect(sightWindows(1050, 1493, 1.5)).toBeLessThan(.8);
+    expect(sightWindows(1140, 1430, 3.3)).toBe(3.3);
   });
 
+});
+
+describe('Stage A W5 terrain for Jonathan\'s rulings (MANIFEST v2.0)', () => {
+  it('D-A1: the Bight Bridge west abutment is a 14 × 24 embankment at the deck (12) and never earth under the deck', async () => {
+    const { baseHeight, BIGHT_ABUTMENT } = await import('../src/harbour/horizon/land/terrain');
+    const B = M.structures.bightBridge as { h_deck: number; ends: { west: number[]; east: number[] } }, w = B.ends.west, e = B.ends.east, l = Math.hypot(e[0]! - w[0]!, e[1]! - w[1]!), u = [(e[0]! - w[0]!) / l, (e[1]! - w[1]!) / l], n = [u[1]!, -u[0]!];
+    const at = (s: number, o: number) => baseHeight(w[0]! + u[0]! * s + n[0]! * (o + BIGHT_ABUTMENT.centreOffset), w[1]! + u[1]! * s + n[1]! * (o + BIGHT_ABUTMENT.centreOffset));
+    expect(BIGHT_ABUTMENT).toMatchObject({ length: 14, width: 24 });
+    // Raise only: the box stands at the deck wherever the spit is lower (it rises to 13–19 at its north-west corner).
+    let flat = 0; for (const s of [-14, -10, -5, -1]) for (const o of [-12, -6, 0, 6, 12]) { const h = at(s, o); expect(h).toBeGreaterThanOrEqual(B.h_deck - 1e-6); if (Math.abs(h - B.h_deck) < 1e-6) flat++; }
+    expect(flat).toBeGreaterThanOrEqual(14);
+    // Under the deck (s ≥ 2.5, the first bays) the ground is the sea floor, below 0 across the whole section.
+    for (const s of [2.5, 5, 10, 20]) for (const o of [-10.8, 0, 10.8]) expect(at(s, o)).toBeLessThan(0);
+  });
+  it('D-A1: S2\'s west ramp passes the spit knoll in a cutting of at most 4 eu (the ground at the cutting\'s crest)', async () => {
+    const { baseHeight, s2WestRamp, SPIT_KNOLL_CUT: c } = await import('../src/harbour/horizon/land/terrain');
+    const ramp = s2WestRamp();
+    expect(ramp[0]).toEqual([485, 23.7, 800]); expect(ramp.at(-1)).toEqual([466.1, 12, 1021.3]);
+    let worst = -Infinity, samples = 0;
+    for (let z = 950; z <= 1010; z += 2) {
+      // The ramp's centreline at this z (the knoll stretch runs one segment per z), and its plan normal.
+      const i = ramp.findIndex((p, k) => k > 0 && (ramp[k - 1]![2] - z) * (p[2] - z) <= 0), a = ramp[i - 1]!, b = ramp[i]!, t = (z - a[2]) / (b[2] - a[2]), x = mix(a[0], b[0], t), h = mix(a[1], b[1], t);
+      const len = Math.hypot(b[0] - a[0], b[2] - a[2]), nx = -(b[2] - a[2]) / len, nz = (b[0] - a[0]) / len;
+      for (const side of [-1, 1]) { const d = c.shoulder + c.face, g = baseHeight(x + nx * d * side, z + nz * d * side); if (g > h) { worst = Math.max(worst, g - h); samples++; } }
+    }
+    expect(samples).toBeGreaterThan(20); expect(worst).toBeLessThanOrEqual(4 + 1e-6);
+  });
+  it('D-A8: the ground under the November station pad [1626,904] (turned 90°, + 2 m) is solid at 54–57', async () => {
+    const { baseHeight } = await import('../src/harbour/horizon/land/terrain');
+    const [px, pz] = (M.journey.station as { pad_m: number[] }).pad_m, nov = M.journey.stations.find(q => q.id === 'nov')!;
+    const hs: number[] = [];
+    for (let a = -(pz! / 2 + 2); a <= pz! / 2 + 2; a += 1) for (let b = -(px! / 2 + 2); b <= px! / 2 + 2; b += 1) hs.push(baseHeight(nov.xy[0]! + a, nov.xy[1]! + b));
+    expect(Math.min(...hs)).toBeGreaterThan(53.5); expect(Math.max(...hs)).toBeLessThan(57.5);
+  });
+  it('D-C14: the cove cliff stair\'s flights are benched into the face, never buried (W5-S request 1)', async () => {
+    const { baseHeight, COVE_STAIR_BENCH: c } = await import('../src/harbour/horizon/land/terrain');
+    let worst = -Infinity;
+    for (const [k, flight] of [[0, c.flights[0]], [2, c.flights[2]]] as const) for (let t = k === 2 ? .2 : 0; t <= 1; t += .05) {
+      const [a, b] = flight, x = mix(a[0], b[0], t), h = mix(a[1], b[1], t), z = mix(a[2], b[2], t);
+      for (const o of [-c.half, 0, c.half]) { const n = [-(b[2] - a[2]), b[0] - a[0]], l = Math.hypot(n[0]!, n[1]!); worst = Math.max(worst, baseHeight(x + n[0]! / l * o, z + n[1]! / l * o) - (h - c.tread)); }
+    }
+    expect(worst).toBeLessThanOrEqual(1e-6);
+  });
+  it('R2-60: the spring at the Reach is a water body with a visible source rock standing 3.2 over the ground', async () => {
+    const { buildWaterCuts, buildSpringSolids, SPRING } = await import('../src/harbour/horizon/land/water');
+    const pool = buildWaterCuts().find(w => w.id === 'water.spring')!;
+    expect(pool).toMatchObject({ kind: 'lake', level: SPRING.pool.level, bank: .3 });
+    const [rock] = buildSpringSolids(() => 6), ys = rock!.positions.filter((_, i) => i % 3 === 1);
+    expect(rock!.id).toBe('water.spring.source'); expect(Math.max(...ys)).toBeCloseTo(9.2, 6); expect(Math.min(...ys)).toBeCloseTo(4.5, 6);
+    expect(Math.hypot(SPRING.source.c[0] - 1250, SPRING.source.c[1] - 1180)).toBeLessThan(6);
+  });
 });

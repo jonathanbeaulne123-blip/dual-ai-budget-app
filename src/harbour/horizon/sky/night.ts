@@ -36,3 +36,13 @@ export function nightLight(elevation: number, day: { zenith: string; ambient: nu
     lightCards: elevation < 0,
   };
 }
+/**
+ * D-A5 (MANIFEST v2.0 `lights`, LIGHT §2): an emissive face card (the dam's glass face) is ON from golden hour (sunset − 60 min)
+ * until sunrise, OFF by day, and never under the calm view (its frozen 15:30 has no night). No dynamic light: an unlit quad.
+ * `localMinutes`, `sunrise` and `sunset` are minutes after the civil day's midnight (sun/solar.ts SolarPosition).
+ */
+export const FACE_CARD_LIGHT = { goldenHourMinutes: 60, colour: '#f2c47e', opacity: 0.92 } as const;
+export function faceCardOn(sun: { localMinutes: number; sunrise: number; sunset: number }, calm = false): boolean {
+  if (calm) return false;
+  return sun.localMinutes >= sun.sunset - FACE_CARD_LIGHT.goldenHourMinutes || sun.localMinutes < sun.sunrise;
+}

@@ -114,7 +114,10 @@ export type StreamPosition = { x: number; z: number; now: number; mode?: 'walk' 
 /** A camera move longer than this in one frame is a relocation (the plane covers < 1 eu per frame). */
 export const RELOCATION_JUMP_EU = 50;
 /** Same delayed-release / one-build-per-frame algorithm as Mountain v2, with a hard residency cap. */
-export function createDistrictStream<T extends DistrictResource>(world: Pick<WorldDefinition, 'districts'>, build: (district: District) => T, tier: 'full' | 'lite' = 'full') {
+/** R1-72: `ready(id)` false while a district's geometry chunk is still loading; the stream never builds it early (it stays
+ * pending, and `request(id)` asks the loader for it), so a district's cards never go up without its solids. */
+export interface DistrictStreamOptions { ready?: (districtId: string) => boolean; request?: (districtId: string) => void }
+export function createDistrictStream<T extends DistrictResource>(world: Pick<WorldDefinition, 'districts'>, build: (district: District) => T, tier: 'full' | 'lite' = 'full', options: DistrictStreamOptions = {}) {
   const live = new Map<string, T>(), outsideSince = new Map<string, number>(), cap = tier === 'full' ? 4 : 3;
   let disposed = false, frame = 0, settling = false, last: { x: number; z: number } | null = null;
   const history: { frame: number; time: number; mode: string; built: string[]; released: string[]; resident: string[]; pending: string[] }[] = [];
@@ -152,7 +155,8 @@ export function createDistrictStream<T extends DistrictResource>(world: Pick<Wor
       // keeps the grace: a Walk/Look toggle changes the wanted radius (the page's radius_eu against the walking
       // 150/220), and on lite's three-district cap an at-once swap thrashed notch↔offshore on every toggle (P22 in
       // the browser: 10 builds on 10 toggles).
-      const next = desired.find(d => !live.has(d.id));
+      for (const d of desired) if (!live.has(d.id) && options.ready && !options.ready(d.id)) options.request?.(d.id);
+      const next = desired.find(d => !live.has(d.id) && (!options.ready || options.ready(d.id)));
       if (!last || Math.hypot(input.x - last.x, input.z - last.z) > RELOCATION_JUMP_EU) settling = true;
       last = { x: input.x, z: input.z };
       if (next && live.size >= cap && (next === desired[0] || settling)) {

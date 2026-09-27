@@ -52,3 +52,38 @@ describe('Horizon real solar clock', () => {
     expect(horizonFog({ tier: 'lite', eyeAboveGround: 100, elevation: 30, heading: 0, sunAzimuth: 0 })).toMatchObject({ near: 270, far: 1365, horizonMaxOpacity: 0.7 });
   });
 });
+
+describe('D-A5 the dam glass face light card (MANIFEST v2.0 lights, views.A.lightRule)', () => {
+  it('is on from golden hour (sunset - 60 min) to sunrise, off by day and always off under the calm view', async () => {
+    const { faceCardOn, FACE_CARD_LIGHT } = await import('../src/harbour/horizon/sky/night');
+    const sun = (localMinutes: number) => ({ localMinutes, sunrise: 330, sunset: 1260 });
+    expect(FACE_CARD_LIGHT.goldenHourMinutes).toBe(60);
+    expect(faceCardOn(sun(1199))).toBe(false); expect(faceCardOn(sun(1200))).toBe(true); expect(faceCardOn(sun(1439))).toBe(true);
+    expect(faceCardOn(sun(0))).toBe(true); expect(faceCardOn(sun(329))).toBe(true); expect(faceCardOn(sun(330))).toBe(false); expect(faceCardOn(sun(930))).toBe(false);
+    expect(faceCardOn(sun(1300), true)).toBe(false);
+  });
+  it('is one quad on the upper band of the dam wall\'s south face, 0.1 in front, from the manifest lights list', async () => {
+    const { buildFaceCards } = await import('../src/harbour/horizon/world/build');
+    const { HORIZON_MANIFEST } = await import('../src/harbour/horizon/world/manifest');
+    expect((HORIZON_MANIFEST as unknown as { lights: { id: string }[] }).lights.map(l => l.id)).toEqual(['dam.glassFace']);
+    // A 44 × 32 south face (x 1118–1162, y 20–52) battered back 1.5 over its height, as candidate 3 builds dam.wall.
+    const positions = [1118, 20, 909, 1162, 20, 909, 1162, 52, 907.5, 1118, 52, 907.5], wall = { id: 'dam.wall@lakeside', sourceId: 'dam.wall', kind: 'wall', positions, indices: [0, 1, 2, 0, 2, 3], surface: 'stone', districtId: 'lakeside', bedIds: [], walkable: false, role: 'wall' as const };
+    const [card] = buildFaceCards([wall]);
+    expect(card!.id).toBe('dam.glassFace'); expect(card!.on).toBe('goldenHourToDawn');
+    const [bl, br, tr, tl] = card!.corners;
+    expect(bl[0]).toBeCloseTo(1119, 6); expect(br[0]).toBeCloseTo(1161, 6); expect(bl[1]).toBeCloseTo(20 + 32 * .55, 6); expect(tl[1]).toBeCloseTo(51, 6);
+    // In front of the face by 0.1 at both heights (z = 909 − 1.5·(y − 20)/32).
+    expect(bl[2] - (909 - 1.5 * (bl[1] - 20) / 32)).toBeCloseTo(.1, 6); expect(tr[2] - (909 - 1.5 * (tr[1] - 20) / 32)).toBeCloseTo(.1, 6);
+    expect(card!.normal[2]).toBeGreaterThan(.99);
+  });
+});
+
+describe('R2-110 the sky dome meets the fogged sea at the horizon with no edge', () => {
+  it('is exactly the fog colour at and below the horizon and the zenith from sin(elevation) 0.25 up', async () => {
+    const { skyDomeWeights, SKY_DOME } = await import('../src/harbour/horizon/sky/dome');
+    for (const up of [-.5, -.01, 0]) expect(skyDomeWeights(up, 1)).toMatchObject({ fog: 1, band: 0, zenith: 0 });
+    expect(skyDomeWeights(SKY_DOME.band, 0).band).toBeCloseTo(1, 9); expect(skyDomeWeights(SKY_DOME.blend, 0).zenith).toBeCloseTo(1, 9);
+    // Continuous across the horizon: a hundredth of a degree above it is still > 99.9 % fog colour.
+    expect(skyDomeWeights(Math.sin(.01 * Math.PI / 180), 0).fog).toBeGreaterThan(.999);
+  });
+});

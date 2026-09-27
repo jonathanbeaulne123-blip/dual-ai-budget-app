@@ -124,7 +124,7 @@ const SHOULDER_RINGED = new Set(['hollow', 'stillwater', 'crown']);
 /** Authored land and named hydrology, before Track B's beds, aprons and openings. */
 export function baseHeight(x: number, z: number): number {
   const m = getModel(), s = m.scale, shore = signedShoreDistance(x, z);
-  if (shore < 0) return outsideHeight(x, z, shore, s);
+  if (shore < 0) return bightAbutment(x, z, outsideHeight(x, z, shore, s));
   let height = (9 + 28 * clamp((1150 - z / s) / 1000) + 10 * clamp((x / s - 1050) / 650)) * s;
   // landformRule: where polygons overlap or meet, the higher band wins and its 60 m
   // blend lies INSIDE the winner, so the lower landform keeps its band to the edge.
@@ -152,7 +152,78 @@ export function baseHeight(x: number, z: number): number {
   const character = coastCharacter(x, z), shoreWidth = character === 'southBeach' ? 44 * s : character === 'bight' ? 23 * s : 10 * s;
   height = mix(0.14 * s, height, smooth(shore / shoreWidth));
   height = damWindow(x, z, notchHeight(x, z, height));
-  return applyWaters(x, z, height, m.water);
+  return coveStairBench(x, z, bightAbutment(x, z, spitKnollCut(x, z, applyWaters(x, z, height, m.water))));
+}
+/**
+ * D-A1 (MANIFEST v2.0 `structures.bightBridge.ends.abutments`): the Bight Bridge's west abutment is an embankment
+ * 14 m along the axis × 24 m across it, from the Flats spit tip [460,1020] to the deck end (axis s 0 at [460,1030]),
+ * its top at the deck (h_deck 12) under the whole deck section (−9 … +12.6, centred +1.8). Its back and sides fall
+ * at 1 : 1.5 to the ground; its front stops at s −1 and falls to the sea floor by s +2.5, behind the abutment's
+ * face, so no earth stands under the deck (the seabed under the deck is never raised). Raise only.
+ */
+export const BIGHT_ABUTMENT = { length: 14, width: 24, centreOffset: 1.8, frontStop: -1, frontFall: 3.5, sideSlope: 1.5 } as const;
+let abutmentFrame: { w: XY; u: XY; n: XY; top: number } | undefined;
+function bightAbutment(x: number, z: number, height: number): number {
+  const s = getModel().scale, B = M.structures.bightBridge as { h_deck: number; ends: { west: number[]; east: number[] } };
+  const f = abutmentFrame ??= (() => { const w: XY = [B.ends.west[0]! * s, B.ends.west[1]! * s], dx = B.ends.east[0]! * s - w[0], dz = B.ends.east[1]! * s - w[1], l = Math.hypot(dx, dz); return { w, u: [dx / l, dz / l] as XY, n: [dz / l, -dx / l] as XY, top: B.h_deck * s }; })();
+  const px = x - f.w[0], pz = z - f.w[1], along = px * f.u[0] + pz * f.u[1], across = px * f.n[0] + pz * f.n[1] - BIGHT_ABUTMENT.centreOffset * s, c = BIGHT_ABUTMENT;
+  if (along > (c.frontStop + c.frontFall) * s || along < -(c.length + 30) * s || Math.abs(across) > (c.width / 2 + 30) * s) return height;
+  const back = Math.max(0, -c.length * s - along), side = Math.max(0, Math.abs(across) - c.width / 2 * s), out = Math.hypot(back, side);
+  let fill = f.top - out / c.sideSlope;
+  if (along > c.frontStop * s) fill -= (f.top + 3 * s) * smooth((along - c.frontStop * s) / (c.frontFall * s));
+  return Math.max(height, fill);
+}
+/**
+ * D-C14 (MANIFEST v2.0 `structures.coveStair`, W5-S request 1): the cliff stair's two flights are cut into the cove's face.
+ * Under each flight (and its landing) the rock is benched 3.5 wide to the flight's own height less 0.25 (the stair's
+ * treads stand on rock, never buried), and the landward wall of the bench rises at 1 : 0.3 (73°, a rock face) back to the
+ * cliff. Lowering only: where the face falls below a flight, the stair is the structure's (posted to the rock).
+ * Flight 0 [631.2,241.9] 34.1 → [605.9,251.3] 17.55; landing ≈ [603.9,250.2] 3 × 6.5 at 17.55; flight 1 → [630,235] 1.0.
+ */
+export const COVE_STAIR_BENCH = { half: 1.75, tread: .25, wall: .3, flights: [[[631.2, 34.1, 241.9], [605.9, 17.55, 251.3]], [[605.9, 17.55, 251.3], [603.9, 17.55, 250.2]], [[603.9, 17.55, 250.2], [630, 1, 235]]] as const } as const;
+function coveStairBench(x: number, z: number, height: number): number {
+  const s = getModel().scale, c = COVE_STAIR_BENCH;
+  if (x < 590 * s || x > 645 * s || z < 225 * s || z > 265 * s) return height;
+  const original = height, under: number[] = [];
+  for (const flight of c.flights) {
+    const line: XYZ[] = flight.map(p => [p[0] * s, p[1] * s, p[2] * s]), q = linePoint(line, x, z), d = Math.max(0, q.distance - c.half * s);
+    if (d <= 0) under.push(q.height - c.tread * s);
+    const bench = q.height - c.tread * s + d / c.wall;
+    if (bench < height) height = bench;
+  }
+  // The flights double back 4–5 m apart: one flight's bench wall never undercuts the other flight's own bench (the
+  // 5 m lattice cannot carry two stacked benches; the lower flight is then carried on its posts, seaward of the upper).
+  for (const h of under) height = Math.max(height, Math.min(original, h));
+  return height;
+}
+/**
+ * D-A1 (MANIFEST v2.0 `skate.S2.westRamp`): S2's west ramp comes down the Wash at one even 5 % grade and passes the
+ * spit knoll [480–492, 950–1010] in a cutting of at most 4 eu. The knoll's east flank (the Flats' shoulder, 28–37 on the
+ * ramp's line with no bed over it) is lowered into a saddle: the ground at the ramp's shoulder (3.5 m from its centreline)
+ * stands at the ramp; it rises 4 over the next 6 m (the cutting's face, 34°), then climbs back to the knoll at 1 : 0.8
+ * (39°, inside the 40° walkable limit: a steep bank, not a rock wall). Candidate 3's S2 bed already held this flank at
+ * 17–21 (a 56° scarp up to the Flats at 36–38); the saddle keeps that scarp's footprint within ≈ 10 m. The saddle holds only over the ramp's knoll stretch (z 945–1015, feathered over 12 m along the ramp) and only
+ * lowers ground. The cut depth at the cutting's crest (ground − ramp) is therefore ≤ 4 wherever the saddle holds.
+ */
+export const SPIT_KNOLL_CUT = { shoulder: 3.5, face: 6, depth: 4, flank: .8, z: [945, 1015], feather: 12 } as const;
+let rampLine: XYZ[] | undefined;
+export function s2WestRamp(): XYZ[] {
+  if (rampLine) return rampLine;
+  const s = getModel().scale, S2 = M.skate.S2 as { pts: number[][]; westRamp?: { from: number[]; to: number[]; from_h: number; to_h: number } }, r = S2.westRamp;
+  if (!r) return rampLine = [];
+  const same = (p: number[], q: number[]) => Math.abs(p[0]! - q[0]!) < 1e-6 && Math.abs(p[1]! - q[1]!) < 1e-6, i0 = S2.pts.findIndex(p => same(p, r.from)), i1 = S2.pts.findIndex(p => same(p, r.to));
+  if (i0 < 0 || i1 <= i0) return rampLine = [];
+  const pts = S2.pts.slice(i0, i1 + 1), arcs = [0];
+  for (let i = 1; i < pts.length; i++) arcs.push(arcs[i - 1]! + Math.hypot(pts[i]![0]! - pts[i - 1]![0]!, pts[i]![1]! - pts[i - 1]![1]!));
+  return rampLine = pts.map((p, i) => [p[0]! * s, mix(r.from_h, r.to_h, arcs[i]! / arcs.at(-1)!) * s, p[1]! * s]);
+}
+function spitKnollCut(x: number, z: number, height: number): number {
+  const s = getModel().scale, c = SPIT_KNOLL_CUT, line = s2WestRamp();
+  if (line.length < 2 || z < (c.z[0] - 80) * s || z > (c.z[1] + 80) * s || x < 400 * s || x > 560 * s) return height;
+  const q = linePoint(line, x, z), stretch = smooth((q.z - (c.z[0] - c.feather) * s) / (c.feather * s)) * (1 - smooth((q.z - c.z[1] * s) / (c.feather * s)));
+  if (stretch <= 0) return height;
+  const d = Math.max(0, q.distance - c.shoulder * s), target = q.height + Math.min(c.depth * s, d * c.depth / c.face) + Math.max(0, d - c.face * s) * c.flank;
+  return target >= height ? height : mix(height, target, stretch);
 }
 /**
  * The Throat is cut into a north-facing buttress, not into an exposed low edge: its surveyed 110 m
@@ -264,6 +335,9 @@ function damWindow(x: number, z: number, height: number): number {
  * - C · the skate shelf: since S1 rides the shelf deck (v1.9, W3-A A2) the ground where its at-grade
  *   carriageway ran, [1207–1222, 1081–1135] at 10.4–12.7, stood between the overlook and the shelf
  *   (11–12.3): 2 px at 16:9. The window from the eye [1268,1145] h 11.6 to the shelf line clears it (40 px).
+ * - D · surf (W5, R2-14): the eye [1185,1445] (2.65) stands behind the Long Sands' dune humps (1.8–3.3); the sea beyond the beach
+ *   west-south-west read 7 px at 1440 × 900. The window from the eye to the shoreline [1000–1100, 1490–1500] holds the sand
+ *   under the line to the surf (probe on the W5 bake: 55 px). The zipline landing's stair still covers the surf on the phone.
  * Every window lies outside the band polygons or inside the Notch walls' exclusion, or trims a band
  * only within its own range (harbour 0–18): P01 is untouched by construction.
  */
@@ -271,6 +345,7 @@ export interface SightWindow { page: string; subject: string; eyeH: number; a: X
 export const SIGHT_WINDOWS: readonly SightWindow[] = [
   { page: 'A', subject: "the dam's glass face", eyeH: 13.6, a: [1121, 38, 909], b: [1160, 38, 909], margin: 1, near: 40, feather: 8, bedFade: 6 },
   { page: 'C', subject: 'the skate shelf', eyeH: 11.6, a: [1206, 11.6, 1078], b: [1206, 11.6, 1136], margin: 1.1, near: 12, feather: 6, bedFade: 4 },
+  { page: 'D', subject: 'surf', eyeH: 2.65, a: [1000, 0.9, 1500], b: [1100, 0.9, 1490], margin: .3, near: 10, feather: 6, bedFade: 4 },
 ];
 interface PreparedWindow { eye: XYZ; a: XYZ; b: XYZ; tri: XY[]; det: number; w: SightWindow; box: number[] }
 let preparedWindows: PreparedWindow[] | undefined;

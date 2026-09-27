@@ -33,6 +33,9 @@ export interface FlightVolume { id: string; kind: 'gate' | 'thermal' | 'ridge' |
 export interface FlightEnvelope { ceiling: number; launches: Anchor[]; landings: Anchor[]; gates: Anchor[]; volumes?: FlightVolume[]; launchPads?: { id: string; padId?: string; edge: Point3[]; graded: boolean }[]; glider?: { speed: number; sink: number }; proofs?: SkyProof }
 export interface UndercroftDef { doors: Anchor[]; rooms: Polygon[]; waterBodyId?: string; skylight?: Anchor; roomVolumes?: { id: string; outline: Polygon; floor: number; ceiling: number; solidIds: string[] }[] }
 export interface LightAnchor { id: string; at: Point3; kind: string; bestHour?: string }
+/** An emissive light card on a face (MANIFEST v2.0 `lights`, kind 'card'; D-A5): an unlit quad a hair in front of the face,
+ * no dynamic light. `corners` run bottom-left, bottom-right, top-right, top-left seen from in front; `on` is the schedule. */
+export interface FaceCard { id: string; anchor: string; corners: [Point3, Point3, Point3, Point3]; normal: Point3; on: 'goldenHourToDawn'; districtId: string }
 /** A page's portrait lens (MANIFEST v1.7 viewRule.portrait): horizontal FOV held, never below 45°. */
 export interface PortraitPose { eye: Point3; target: Point3; fovDegrees: number; frames: string[] }
 export interface SketchbookPose { id: string; eye: Point3; target: Point3; fovDegrees: number; radius: number; bestHour?: string; also?: string; label?: string; aspect?: number; subjectIds?: string[]; floor?: number; underground?: boolean; portrait?: PortraitPose; deferred?: string[]; proof?: ViewProof }
@@ -65,6 +68,8 @@ export interface WorldDefinition {
   sky: FlightEnvelope;
   underground: UndercroftDef;
   lights: LightAnchor[];
+  /** v2.0 (D-A5): emissive face cards (the dam's glass face), on from golden hour to dawn. */
+  faceCards?: FaceCard[];
   views: SketchbookPose[];
   lanterns: LanternSpot[];
   protected: ProtectedArea[];
