@@ -48,7 +48,7 @@ export const PAGE_SUBJECTS: Record<string, string[]> = {
  * With the land's solids, a structure also owns what it carries: a hit on any solid standing on the High
  * Span's deck (VG's edges and shoulders on the span are its deck line) counts as the High Span.
  * "The Reach water" is the water of the Reach: its channels and the river where it runs through the
- * Reach landform (page I looks along the river inside the Reach; the channels lie behind the eye).
+ * Reach landform (page I looks along the river inside the Reach; the channels lie behind the eye). D-C5, MANIFEST v2.0.
  */
 export function subjectTests(solids: readonly StructureSolid[] = []): Record<string, Test> {
   const m = HORIZON_MANIFEST, s = requireScaleFactor();
@@ -60,6 +60,7 @@ export function subjectTests(solids: readonly StructureSolid[] = []): Record<str
   const near = (xy: readonly number[], r: number): Test => hit => hit.kind !== 'sky' && Math.hypot(hit.point[0] - xy[0]! * s, hit.point[2] - xy[1]! * s) < r * s;
   const any = (...tests: Test[]): Test => (hit, d) => tests.some(t => t(hit, d));
   const lamp = m.offshore.find(o => o.id === 'lamp')!.xy as number[];
+  const reachPoly = polygon(m.landforms.find(q => q.id === 'reach')?.poly ?? []), reachRiver: Test = hit => hit.kind === 'water' && hit.id.startsWith('water.river.lower') && reachPoly.length > 2 && pointInPolygon(hit.point[0], hit.point[2], reachPoly);
   const carried = (deckPrefix: string): Test => {
     const decks = solids.filter(q => ((q as StructureSolid & { sourceId?: string }).sourceId ?? q.id.split('@')[0]!).startsWith(deckPrefix)).map(solidBounds);
     return hit => hit.kind === 'solid' && decks.some(b => hit.point[0] >= b.min[0] && hit.point[0] <= b.max[0] && hit.point[2] >= b.min[2] && hit.point[2] <= b.max[2] && hit.point[1] >= b.min[1] - .25);
@@ -73,9 +74,9 @@ export function subjectTests(solids: readonly StructureSolid[] = []): Record<str
     L01: solid('place.L01'), 'the town below': landform('harbour'),
     "the Throat's mouth of daylight": (hit, d) => hit.kind === 'sky' && d[1] < 0.6 || hit.kind === 'terrain', 'the skylight shaft': (hit, d) => solid('deep.skylight', 'underground.deep.skylight')(hit, d) || hit.kind === 'sky' && d[1] >= 0.6,
     'the strip': solid('strip.', 'threshold.strip'), 'the west sea': hit => hit.kind === 'water' && hit.id.startsWith('water.sea') && hit.point[0] < 330 * s,
-    // R2-74: the spring is its own water body or structure (proximity counted any ground near its point); the Reach water
-    // is the Reach's channels (the lower river crossing the Reach landform was counted in).
-    'the spring': any(water('water.spring'), solid('spring', 'water.spring')), 'the Reach water': water('water.reach'),
+    // R2-74: the spring is its own water body or structure (proximity counted any ground near its point). D-C5 (v2.0,
+    // views.I.subjectDefs): the Reach water is the Reach's channels OR the lower river where the hit lies inside landforms.reach.
+    'the spring': any(water('water.spring'), solid('spring', 'water.spring')), 'the Reach water': any(water('water.reach'), reachRiver),
     'the arch': solid('offshore.needle', 'needle.'), 'the Stacks': solid('offshore.stacks', 'stacks.'), 'the Prow': landform('prow'),
     'the Glasshouse': solid('host.glasshouse'), 'Lantern Row': solid('town.quay', 'town quay'), 'the Boathouse': solid('host.boathouse'),
   };

@@ -61,7 +61,7 @@ it('counts a subject only where it is the first hit of the ID buffer (terrain an
  // Looking into the ridge's face: no sky or sea at or above the eye line → the horizon is not in frame.
  const face=viewPixels(createRayCaster(ridge,{solids:[],waters:[],mouths:[]}),[1000,11.6,480],[1000,11.6,520],30,[64,36],{},false);expect(face.horizonInFrame).toBe(false);
 });
-it('counts what a structure carries as the structure, and only the Reach channels as the Reach water (R2-74)',()=>{
+it('counts what a structure carries as the structure, and the Reach channels plus the river inside the Reach as the Reach water (D-C5)',()=>{
  const deck=solid('highSpan.deck','bridge','stone','deck',['VG'],'notch');slab(deck,[1200,23,1100],[1290,23,1100],10,1);
  const rail=solid('VG.edges.notch','bed','stone','rail',['VG'],'notch');slab(rail,[1200,24.5,1096],[1290,24.5,1096],.3,1);
  const tests=subjectTests([deck,rail]),at=(id:string,point:[number,number,number])=>({kind:'solid' as const,t:1,id,sourceId:id,role:'rail' as const,point});
@@ -69,8 +69,8 @@ it('counts what a structure carries as the structure, and only the Reach channel
  // The same rail off the deck's plan is not the High Span.
  expect(tests['the High Span']!(at('VG.edges.notch',[1350,24.5,1096]),[0,0,1])).toBe(false);
  const water=(id:string,point:[number,number,number])=>({kind:'water' as const,t:1,id,point});
- // R2-74 (wave 4): the lower river crossing the Reach landform is the river, not the Reach water (review 2's P27 rule).
- expect(tests['the Reach water']!(water('water.river.lower',[1265,4,1215]),[0,0,1])).toBe(false);
+ // D-C5 (v2.0, views.I.subjectDefs): the lower river where it crosses the Reach landform IS the Reach water; upstream of it is not.
+ expect(tests['the Reach water']!(water('water.river.lower',[1265,4,1215]),[0,0,1])).toBe(true);
  expect(tests['the Reach water']!(water('water.river.lower',[1235,9,1105]),[0,0,1])).toBe(false);
  expect(tests['the Reach water']!(water('water.reach.1',[1330,2,1300]),[0,0,1])).toBe(true);
 });
