@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { gradePadApproaches } from '../src/harbour/horizon/land/beds/padApproaches';
 import { addFlatPad, batteredWall, bed, emitBedGeometry } from '../src/harbour/horizon/land/beds/profiles';
 import { openRetainingPassages, settleBedEdges } from '../src/harbour/horizon/land/beds/junctions';
@@ -79,4 +79,30 @@ it('opens rails inside the shared Garden and Year Walk corridor while retaining 
  cuts.beds.push(garden,year);const rail=solid('shared.rail','handrail','metal','rail',['yearWalk']);box(rail,[50,50],11.05,[.1,80],10.96);box(rail,[44,50],11.05,[.1,80],10.96);cuts.solids.push(rail);
  expect(solidVerticalRangeAt(rail,50,50)).not.toBeNull();settleBedEdges(cuts,()=>0);
  expect(solidVerticalRangeAt(rail,50,50)).toBeNull();expect(solidVerticalRangeAt(rail,44,50)).not.toBeNull();
+});
+describe('A1.1 unsupported beds fail the bake (W5-A)',()=>{
+  it('reserves only the Hollow neck (D-C10) and names an owner for every open void',async()=>{
+    const {RESERVED_VOIDS,OPEN_VOIDS,RESIDUAL_LIMIT,residualBakeErrors}=await import('../src/harbour/horizon/land/structures/groundBeds');
+    expect(RESIDUAL_LIMIT).toBe(1.25);
+    expect(RESERVED_VOIDS.map(v=>v.decision)).toEqual(['D-C10']);
+    expect(OPEN_VOIDS.every(v=>!!v.owner&&v.why.length>20&&v.r<=36)).toBe(true);
+    const c=(bed:string,at:[number,number],depth:number)=>({bed,at,depth,reason:'lower route x'});
+    // A new void over 1.25 anywhere else fails; one at or under 1.25 does not; the reserved neck does not.
+    expect(residualBakeErrors([c('S3',[1318,1376],3.25)]).length).toBe(1);
+    expect(residualBakeErrors([c('S3',[1318,1376],1.2)]).length).toBe(0);
+    expect(residualBakeErrors([c('walk garden',[897.8,624.5],8.31),c('walk garden',[883.8,581.4],1.83)]).length).toBe(0);
+    expect(residualBakeErrors([c('V01',[1605,690],6.8)]).length).toBe(1); // an open allowance is per bed
+  });
+});
+it('decides a long bed edge\'s guard every 2.5 eu and posts every rail run at both ends (W5-A, R2-05)', () => {
+  // A 60 eu single-segment walk whose east side drops 3 eu only over its middle third: one mid-segment test used to decide it all.
+  const cuts = empty(), b = bed('long', 'walk', [[0, 10, 0], [0, 10, 60]]);
+  const ground = (x: number, z: number) => (x < -1.5 && z > 20 && z < 40 ? 7 : 10);
+  emitBedGeometry(b, cuts, ground);
+  const rails = cuts.solids.filter(s => s.id.startsWith('long.edges'));
+  const zs: number[] = []; for (const s of rails) for (let i = 0; i < s.positions.length; i += 3) zs.push(s.positions[i + 2]!);
+  expect(rails.length).toBeGreaterThan(0); expect(Math.min(...zs)).toBeGreaterThanOrEqual(17.4); expect(Math.max(...zs)).toBeLessThanOrEqual(42.6);
+  // Posts (0.12 × 0.12) at the run's start and end.
+  const posts: number[] = []; for (const s of rails) for (let o = 0; o + 23 < s.positions.length; o += 24) { const xs = [0, 1, 2, 3].map(k => s.positions[o + k * 3]!); if (Math.max(...xs) - Math.min(...xs) < .13 && s.positions[o + 13]! - s.positions[o + 1]! > 1) posts.push(s.positions[o + 2]!); }
+  expect(Math.min(...posts)).toBeLessThan(21); expect(Math.max(...posts)).toBeGreaterThan(39);
 });
