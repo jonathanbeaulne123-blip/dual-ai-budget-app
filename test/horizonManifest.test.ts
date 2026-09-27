@@ -2,7 +2,7 @@ import {describe,expect,it} from 'vitest';
 import {HORIZON_MANIFEST,parseHorizonManifest,requireScaleFactor} from '../src/harbour/horizon/world/manifest.ts';
 
 const manifest=HORIZON_MANIFEST;
-describe('Horizon manifest v1.8',()=>{
+describe('Horizon manifest v2.0',()=>{
   it('uses Jonathan’s confirmed full scale while rejecting an unconfirmed bake',()=>{
     expect(parseHorizonManifest(manifest)).toBe(manifest);
     expect(manifest.scale.factor).toBe(1);
@@ -55,10 +55,14 @@ describe('Horizon manifest v1.8',()=>{
     for(const view of manifest.views){expect(view.portrait.fov_deg).toBeGreaterThanOrEqual(45);expect(Number.isFinite(view.target_h)).toBe(true);}
     for(const view of manifest.views){expect(view.target).toHaveLength(2);expect(view.fov_deg).toBeGreaterThan(0);expect(view.radius_eu).toBeGreaterThan(0);}
   });
-  it('registers every Stage A intersection with a proof class and keeps the reserved rows authored (v1.8)',()=>{
+  it('registers every Stage A intersection with a proof class and keeps the reserved rows authored (v1.8; decided v2.0)',()=>{
     const rows=manifest.crossings as unknown as {a:string;b:string;resolution:string;kind?:string;source?:string;reserved?:string}[];
     expect(rows.every(r=>['crossing','junction','sharedStretch','footway','waterBody','waterConfluence','modeTransfer'].includes(r.kind!))).toBe(true);
-    expect(rows.filter(r=>r.reserved).map(r=>`${r.a} x ${r.b} ${r.resolution} ${r.reserved}`)).toEqual(['S4 x walk garden threshold R-A7','V01+S2 x Bight mouth over R-A1','S4 x VG threshold R-A7','VG x walk garden threshold R-A7','S1 x damPortage threshold R-A7','ZIP x G1 over R-A2','V01 x walk bightPier threshold R-A7','FERRY x bightBridge under R-A1']);
+    // v2.0: Jonathan's 2026-09-27 rulings decided every reserved row but the Hollow neck (#7, now D-C10); ZIP x G1 is
+    // "under" (D-A2) and VG x walk garden is "over" on gardenWalkBridge (D-A7). The data changed by ruling, not by test.
+    expect(rows.filter(r=>r.reserved).map(r=>`${r.a} x ${r.b} ${r.resolution} ${r.reserved}`)).toEqual(['S4 x walk garden threshold D-C10']);
+    const decided=rows as unknown as {a:string;b:string;resolution:string;decided?:string}[];
+    expect(decided.filter(r=>r.decided?.startsWith('D-A')).map(r=>`${r.a} x ${r.b} ${r.resolution}`).sort()).toEqual(['FERRY x bightBridge under','S1 x damPortage threshold','S4 x VG threshold','S4 x walk garden threshold','V01 x walk bightPier threshold','V01+S2 x Bight mouth over','VG x walk garden over','ZIP x G1 under']);
     const host=manifest.hosts.find(h=>h.id==='glasshouse')!;expect(host.footprint_m).toEqual([25,18]);expect(host.xy).toEqual([1007.5,790]);
     const gate=manifest.sky.gates.find(g=>g.id==='highSpan')!;expect([gate.h,...(gate.aperture_m ?? [])]).toEqual([17,40,12]);
     const views=manifest.views as unknown as {id:string;subjects:string[];portrait?:{frames:string[]}}[];
@@ -73,13 +77,51 @@ describe('Horizon manifest v1.8',()=>{
     const retired19=manifest.routePairNotes.filter(row=>(row as {kind?:string}).kind==='retired register row (v1.9)');
     expect(retired19).toHaveLength(48);
     expect(retired19.filter(row=>!(row as {retiredRow?:{source?:string}}).retiredRow?.source).map(row=>`${row.a} x ${row.b}`).sort()).toEqual(['DEEP_RUN x walk prow','S2 x walk bightPier','walk bightPier x water wash']);
-    expect(manifest.routePairNotes.length-retired.length-retired19.length).toBe(2);
+    // v2.0: 19 rows retired by the rulings (1 D-A1, 12 D-A3, 4 D-C7, 2 D-C11), each with its reason.
+    const retired20=manifest.routePairNotes.filter(row=>(row as {kind?:string}).kind==='retired register row (v2.0)');
+    expect(retired20).toHaveLength(19);
+    expect(retired20.filter(row=>/marketRamp/.test(`${row.a} ${row.b}`))).toHaveLength(2);
+    expect(manifest.routePairNotes.length-retired.length-retired19.length-retired20.length).toBe(2);
     // v1.8: the nine stale register rows without a plan intersection (R1-11) are retired here with their reason.
     expect(retired.map(row=>`${row.a} x ${row.b}`).sort()).toEqual(['S1 finish x V01','S2 x V01','S3 x V01','S3 x town quay','S3 x walk dune','S4 x spur studio','ZIP x town','plane x everything','walk reach x VG']);
     expect(manifest.routePairNotes.find(row=>row.a==='DEEP_RUN'&&row.b==='ORE')).toMatchObject({
       kind:'shared-plan-point',sharedPlanPoints:[[1300,420]],
     });
     for(const note of manifest.routePairNotes)expect(note).not.toHaveProperty('resolution');
+  });
+  it('carries Jonathan’s 2026-09-27 rulings as numbers (v2.0)',()=>{
+    const m=manifest as unknown as Record<string,any>;
+    expect(m.version).toBe('2.0');
+    // D-A1: 245 m, one 36 m steel arch at s 98-134, 11.4 clear; an 8 m hull at 46° needs 32.0 m of the 34 m clear.
+    const bb=m.structures.bightBridge;expect(bb.span_m).toBe(245);expect(bb.v1_9.span_m).toBe(230);
+    expect(bb.opening).toMatchObject({at_s:[98,134],width_m:36,kind:'steel-arch',clearWidth_m:34});expect(bb.opening.clear_eu).toBeGreaterThanOrEqual(11.4);
+    expect(m.water_routes.FERRY.beam_m).toBe(8);
+    const need=(w:number,deg:number)=>8/Math.sin(deg*Math.PI/180)+w/Math.tan(deg*Math.PI/180);
+    expect(need(bb.section.width_m,46)).toBeLessThanOrEqual(bb.opening.clearWidth_m-2);expect(bb.opening.needAlongAxis_m.at_46deg).toBeCloseTo(need(bb.section.width_m,46),1);
+    expect(bb.s2Flyover.clear_eu).toBeGreaterThanOrEqual(5);expect(bb.lookout.size_m).toEqual([24,7.2]);
+    // S2 is continuous over the deck with >= 2 trick spots on the bridge's own structure, each with a ground line and no jump.
+    const spots=m.skate.S2.spots as {id:string;kind:string;on:string;groundLine:string;requiredJump:boolean}[];
+    expect(spots.filter(x=>/bightBridge/.test(x.on)).length).toBeGreaterThanOrEqual(2);
+    for(const x of spots){expect(['rail','kerb','wall','bollard','stair','bank lip']).toContain(x.kind);expect(x.groundLine.length).toBeGreaterThan(0);expect(x.requiredJump).toBe(false);}
+    expect(m.skate.S2.westRamp.grade_pct).toBeLessThanOrEqual(m.profiles.skateMain.grade_max_pct);expect(m.skate.S2.eastDescent.grade_pct).toBeLessThanOrEqual(14);
+    // D-A3: station [1335,535] deck 150, towers 120-200 apart and no authored height, summit target 205 (was 375).
+    const g=m.cable.G1;expect(g.to).toEqual([1335,535]);expect(g.toH).toBe(150);expect(g.towers).toHaveLength(3);
+    const d=[0,...g.towerDistances_m,Math.hypot(g.to[0]-g.from[0],g.to[1]-g.from[1])];
+    for(let i=1;i<d.length;i++){expect(d[i]-d[i-1]).toBeGreaterThanOrEqual(m.profiles.cable.towerSpacing_m[0]);expect(d[i]-d[i-1]).toBeLessThanOrEqual(m.profiles.cable.towerSpacing_m[1]);}
+    for(const t of g.towers)expect(t).toHaveLength(2);
+    expect(m.structures.gondolaStations.crownStation).toEqual([1335,535]);expect(m.walks.crownFromGondola.pts[0]).toEqual([1335,535]);
+    expect(manifest.journeys.targets_s['square→summit by gondola + walk']).toBe(205);expect(m.journeys.targets_v1_9['square→summit by gondola + walk']).toBe(375);
+    expect(manifest.journeys.at_active_scale['square→summit by gondola + walk'].time_s).toBeLessThanOrEqual(205);
+    // D-A4 gallery at candidate A; D-A5 the glass-face card; D-A8 November on the Prow top; D-C11 stairs only.
+    expect(m.structures.prowTunnel).toMatchObject({xy:[1592,890],kind:'gallery',length_m:90});
+    expect(m.lights.find((l:{id:string})=>l.id==='dam.glassFace').on).toContain('golden hour');
+    expect(m.journey.stations.find((s:{id:string})=>s.id==='nov')).toMatchObject({xy:[1626,904],pad_rot_deg:90});
+    expect(m.structures.marketStair.stepFree.length_eu).toBe(295);expect(JSON.stringify(manifest.crossings)).not.toContain('marketRamp');
+    // Group B/C: K re-posed, H at golden hour, the Throat's built aperture, L01 on the slab, plot bight.1 off the paths.
+    const views=manifest.views as unknown as {id:string;xy:number[];target:number[];bestHour:string}[];
+    expect(views.find(v=>v.id==='K')).toMatchObject({xy:[994,770],target:[1120,815]});expect(views.find(v=>v.id==='H')!.bestHour).toBe('golden hour');
+    expect(m.underground.doors.throat.collarAperture_m).toBe(10.8);expect(manifest.places.find(p=>p.id==='L01')!.xy).toEqual([1173,912]);
+    expect(manifest.reserves.bightShore.plots[0]).toEqual([814,919]);
   });
   it.each(['n/a','bridge',''])('rejects unresolved crossing resolution %j on load',resolution=>{
     expect(()=>parseHorizonManifest({...manifest,crossings:[{...manifest.crossings[0],resolution}]})).toThrow('Invalid Horizon crossing');
