@@ -1,5 +1,5 @@
 import type { LandCuts, StructureSolid, TerrainField, PadCut } from '../land/interfaces.ts';
-import type { Anchor, Bed, Host, Line, Point2, Point3, Threshold, WorldDefinition } from './definition.ts';
+import type { Anchor, Bed, FaceCard, Host, Line, Point2, Point3, Threshold, WorldDefinition } from './definition.ts';
 import { HORIZON_MANIFEST, requireScaleFactor } from './manifest.ts';
 import { buildCrossings, registerRowKey } from './crossings.ts';
 import type { CrossingProof } from './crossings.ts';
@@ -95,7 +95,7 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
     crossings: crossing.crossings, crossingProofs: crossing.proofs, rawIntersections: crossing.rawIntersections, thresholds,
     reserves: cuts.pads.filter(p => p.kind === 'reserve').map(p => ({ id: p.id, placeId: p.placeId ?? p.id, outline: padOutline(p), door: anchor(`${p.id}.door`, p.door ?? p.centre), rotationDegrees: p.rotationDegrees })), sky,
     underground: { doors: Object.entries(m.underground.doors).map(([id, door]) => anchor(id, [door.xy[0]! * s, door.h * s, door.xy[1]! * s])), rooms: roomVolumes.map(room => room.outline), roomVolumes, waterBodyId: cuts.waters.find(w => w.kind === 'deep')?.id, skylight: anchor('deep.skylight', [m.underground.rooms.deep.skylight.to[0]! * s, m.underground.rooms.deep.skylight.topH * s, m.underground.rooms.deep.skylight.to[1]! * s]) },
-    lights: [...hosts.map(h => { const d = h.door as { xy: Point2; height: number }; return { id: `door.${h.id}.lamp`, at: [d.xy[0], d.height + 2.2, d.xy[1]] as Point3, kind: 'door' }; }), ...thresholds.map(t => ({ id: `${t.id}.lamp`, at: [t.at[0], (t.height ?? 0) + .8, t.at[1]] as Point3, kind: 'threshold' }))], views, lanterns: [],
+    lights: [...hosts.map(h => { const d = h.door as { xy: Point2; height: number }; return { id: `door.${h.id}.lamp`, at: [d.xy[0], d.height + 2.2, d.xy[1]] as Point3, kind: 'door' }; }), ...thresholds.map(t => ({ id: `${t.id}.lamp`, at: [t.at[0], (t.height ?? 0) + .8, t.at[1]] as Point3, kind: 'threshold' }))], faceCards: buildFaceCards(geometry), views, lanterns: [],
     protected: [{ id: 'green', outline: protectedGreenOutline(), reason: 'No building, plot or tall prop inside the protected centre.' }],
     geometry: { solids: geometry, sourceMap }, collision: { beds: cuts.beds, pads: cuts.pads, mouths: cuts.mouths, waters: cuts.waters, walkableSlopeDegrees: 40, lipStepMax: .48 }, pathGraph: graph, diagnostics, journeyMeasurements: measurements,
     journey: {
@@ -107,6 +107,39 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
   };
 }
 export const buildHorizonDefinition = createLandWorld;
+/** Inset of a face card from its face's edges (eu) and its stand-off in front of the face (a hair, no z-fight). */
+export const FACE_CARD = { inset: 1, stand: .1, band: [.55, 1] as const } as const;
+/**
+ * D-A5 (MANIFEST v2.0 `lights`, LIGHT §2): each light card of kind 'card' anchored on a structure's face becomes one quad on
+ * that face. The dam's glass face is the south face of `dam.wall` (normal +z): its upper band (55 % → 100 % of the face's
+ * height, i.e. above the apron the square sees over) inset 1 eu, following the face's batter (z fitted linearly in y), 0.1 eu in front.
+ */
+export function buildFaceCards(solids: readonly StructureSolid[]): FaceCard[] {
+  const s = requireScaleFactor(), cards: FaceCard[] = [];
+  for (const light of ((HORIZON_MANIFEST as { lights?: { id: string; kind: string; anchor: string; face?: string }[] }).lights ?? [])) {
+    if (light.kind !== 'card' || light.face !== 'south') continue;
+    const prefix = `${light.anchor.replace(/^structures\./, '')}.wall`, points: Point3[] = [];
+    for (const solid of solids) {
+      if (!(solid.sourceId ?? solid.id.split('@')[0]!).startsWith(prefix)) continue;
+      const P = solid.positions, I = solid.indices;
+      for (let k = 0; k < I.length; k += 3) {
+        const a = I[k]! * 3, b = I[k + 1]! * 3, c = I[k + 2]! * 3, u = [P[b]! - P[a]!, P[b + 1]! - P[a + 1]!, P[b + 2]! - P[a + 2]!], v = [P[c]! - P[a]!, P[c + 1]! - P[a + 1]!, P[c + 2]! - P[a + 2]!];
+        const n = [u[1]! * v[2]! - u[2]! * v[1]!, u[2]! * v[0]! - u[0]! * v[2]!, u[0]! * v[1]! - u[1]! * v[0]!], l = Math.hypot(n[0]!, n[1]!, n[2]!);
+        if (l < 1e-9 || n[2]! / l <= .5 || Math.abs(n[1]! / l) >= .7) continue;
+        for (const i of [a, b, c]) points.push([P[i]!, P[i + 1]!, P[i + 2]!]);
+      }
+    }
+    if (points.length < 3) continue;
+    const xs = points.map(p => p[0]), ys = points.map(p => p[1]), x0 = Math.min(...xs) + FACE_CARD.inset * s, x1 = Math.max(...xs) - FACE_CARD.inset * s, y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const yb = y0 + (y1 - y0) * FACE_CARD.band[0], yt = y1 - FACE_CARD.inset * s;
+    // z = a + b·y by least squares over the face's vertices (the batter); the card stands FACE_CARD.stand in front.
+    const my = ys.reduce((t, y) => t + y, 0) / ys.length, mz = points.reduce((t, p) => t + p[2], 0) / points.length;
+    const vy = points.reduce((t, p) => t + (p[1] - my) ** 2, 0), slope = vy > 1e-9 ? points.reduce((t, p) => t + (p[1] - my) * (p[2] - mz), 0) / vy : 0;
+    const zAt = (y: number) => mz + slope * (y - my) + FACE_CARD.stand * s, nl = Math.hypot(1, slope);
+    cards.push({ id: light.id, anchor: light.anchor, corners: [[x0, yb, zAt(yb)], [x1, yb, zAt(yb)], [x1, yt, zAt(yt)], [x0, yt, zAt(yt)]], normal: [0, -slope / nl, 1 / nl], on: 'goldenHourToDawn', districtId: districtAt((x0 + x1) / 2, zAt(yb), s) });
+  }
+  return cards;
+}
 /** One id, one mesh (R1-69): a bake refuses two solids with the same id rather than resolving lookups to the first. */
 export function assertUniqueSolidIds(solids: readonly StructureSolid[]): void {
   const seen = new Set<string>(), dup = new Set<string>(); for (const solid of solids) { if (seen.has(solid.id)) dup.add(solid.id); seen.add(solid.id); }
