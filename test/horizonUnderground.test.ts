@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { HORIZON_MANIFEST as M } from '../src/harbour/horizon/world/manifest';
 import { buildLandCuts } from '../src/harbour/horizon/land/beds/build';
 import { baseHeight } from '../src/harbour/horizon/land/terrain';
-import { ROOM_DIMENSIONS } from '../src/harbour/horizon/land/underground/build';
+import { ROOM_DIMENSIONS, THROAT_COFFER } from '../src/harbour/horizon/land/underground/build';
 import { BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three';
 
 it('encloses rooms and passages, preserves the only named mouths, and reports roof breaches',()=>{
@@ -32,8 +32,24 @@ it('gives every underground solid a unique id and opens the Deep roof only at th
   const lining=cuts.solids.find(s=>s.id==='underground.throat.roof')!,liningZ=[...Array(lining.positions.length/3).keys()].map(i=>lining.positions[i*3+2]!);
   expect(Math.max(...liningZ)).toBeLessThanOrEqual(390.01);
   const collar=cuts.solids.find(s=>s.id==='underground.deep.throatCollar')!,cy=[...Array(collar.positions.length/3).keys()].map(i=>collar.positions[i*3+1]!);
-  expect(Math.min(...cy)).toBeCloseTo(68,1);expect(Math.max(...cy)).toBeCloseTo(76.7,1);
+  expect(Math.min(...cy)).toBeCloseTo(68+THROAT_COFFER,1);expect(Math.max(...cy)).toBeCloseTo(76.7,1);
   expect(covered(sky[0]!,sky[1]!)).toBe(false);expect(covered(1280,430)).toBe(true);expect(covered(1300,412)).toBe(true);
   const mouth=cuts.mouths.find(m=>m.id==='deep.skylight')!;expect(mouth.outline.reduce((n,p)=>n+p[0],0)/4).toBe(sky[0]);expect(mouth.ceiling).toBe(M.underground.rooms.deep.skylight.topH);
   expect(Math.abs(sky[0]!-1300)).toBeGreaterThanOrEqual(20);
+},120000);
+it('v2.0: checks the Throat against the collar aperture and keeps ceilings off the Ore Line and its branches',()=>{
+  const cuts=buildLandCuts(baseHeight),throat=cuts.beds.find(b=>b.id==='underground.throat')!;
+  // D-C3: the passage is checked against doors.throat.collarAperture_m (10.8); the mouth stays 26 x 18.
+  expect(throat.clearHeight).toBe(10.8);const ap=cuts.diagnostics.find(d=>d.id==='underground.throat.collarAperture')!;expect(ap.severity).toBe('info');expect(ap.measured!).toBeGreaterThanOrEqual(10.8);
+  const mouth=cuts.mouths.find(m=>m.id==='throat')!;expect(mouth.ceiling-mouth.floor).toBe(18);
+  // The Deep's ceiling follows its ellipse: nothing over the Ore Line's tube at [1270.6,449.4] (it hung 0.60 over ORE).
+  const roof=cuts.solids.find(s=>s.id==='underground.deep.roof')!;
+  const over=(x:number,z:number)=>{for(let o=0;o+23<roof.positions.length;o+=24){const xs=[0,1,2,3].map(i=>roof.positions[o+i*3]!),zs=[0,1,2,3].map(i=>roof.positions[o+i*3+2]!);if(x>Math.min(...xs)&&x<Math.max(...xs)&&z>Math.min(...zs)&&z<Math.max(...zs))return true;}return false;};
+  expect(over(1270.6,449.4)).toBe(false);expect(over(1300,420)).toBe(true);
+  // ORE's roof never stands lower than the siding's (3.2) or the lantern cave passage's (8) clearance over them.
+  const ore=cuts.solids.find(s=>s.id==='oreTunnel.roof')!;
+  for(const id of ['ORE.siding','underground.lanternCave']){const b=cuts.beds.find(x=>x.id===id)!;
+    for(let o=0;o+23<ore.positions.length;o+=24){const v=[0,1,2,3,4,5,6,7].map(i=>[ore.positions[o+i*3]!,ore.positions[o+i*3+1]!,ore.positions[o+i*3+2]!] as const),c=[v.reduce((n,q)=>n+q[0],0)/8,v.reduce((n,q)=>n+q[2],0)/8] as const,under=Math.min(...v.map(q=>q[1]));
+      let best=Infinity,h=0;for(const p of b.points){const d=Math.hypot(p[0]-c[0],p[2]-c[1]);if(d<best){best=d;h=p[1];}}
+      if(best<b.width/2&&h<under)expect(under-h,`${id} under ORE's roof at [${c.map(n=>n.toFixed(1))}]`).toBeGreaterThanOrEqual(b.clearHeight-.01);}}
 },120000);
