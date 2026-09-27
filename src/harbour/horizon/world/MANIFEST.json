@@ -2929,7 +2929,8 @@
    "length_m": 933,
    "speed": 12.0,
    "minClearAboveRoof_eu": 12,
-   "note": "the Prow tower (30 m tower, deck at h 100) \u2192 Long Sands 44 m inland, skirting the town's west edge over the Reach; at 1 % sag it overflies no roof, clears V01 by 9 m, S1 by 23 m, the Reach walk by 26 m, and crosses above the gondola cable at [1442,921] with 10.7 m between cables"
+   "note": "the Prow tower (30 m tower, deck at h 100) \u2192 Long Sands 44 m inland, skirting the town's west edge over the Reach; at 1 % sag it overflies no roof, clears V01 by 9 m, S1 by 23 m, the Reach walk by 26 m, and crosses under the gondola cable at [1441.5,920.8], 30.45 m beneath it (D-A2: zip under gondola)",
+   "v1_9_note": "the Prow tower (30 m tower, deck at h 100) \u2192 Long Sands 44 m inland, skirting the town's west edge over the Reach; at 1 % sag it overflies no roof, clears V01 by 9 m, S1 by 23 m, the Reach walk by 26 m, and crosses above the gondola cable at [1442,921] with 10.7 m between cables"
   }
  },
  "rail": {
@@ -5208,10 +5209,22 @@
     1442,
     921
    ],
-   "resolution": "over",
-   "note": "zip 10.7 m above the gondola chord at 1 % sag",
-   "reserved": "R-A2",
-   "kind": "crossing"
+   "resolution": "under",
+   "note": "zip under gondola: 30.45 m below the gondola cable where they cross (profiles.cable.clear_eu 8); riders on the zip pass beneath the cabins",
+   "kind": "crossing",
+   "v1_9_resolution": "over",
+   "decided": "D-A2 option A (Jonathan 2026-09-27)",
+   "measured": {
+    "at": [
+     1441.5,
+     920.8
+    ],
+    "zip_h": 60.6,
+    "g1_h": 91.1,
+    "separation_eu": 30.45,
+    "bake": "candidate 3 (f1a1ec1)"
+   },
+   "v1_9_note": "zip 10.7 m above the gondola chord at 1 % sag"
   },
   {
    "a": "ZIP",

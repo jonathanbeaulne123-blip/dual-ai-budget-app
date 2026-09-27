@@ -1522,6 +1522,14 @@ row_edit("S2", "yearWalk", [553.9, 1095], at=bb(100 + 32 * (S2_LAGOON_O - 6.3) /
 row_retire("S2", "yearWalk", [468.2, 1026.4], "v2.0 (D-A1): S2 comes onto the deck's lagoon lane outboard of the Year Walk footways (+11.2 against +5.2/+7.4); they run side by side and never meet")
 row_edit("S2", "FERRY", [560, 1100], note="v2.0 (D-A1): on the flyover under the arch crown, through the navigable opening")
 
+# 2. D-A2 · ZIP × G1 (Jonathan: "leave it"): option A. Nothing physical moves; the register row records the zip passing
+#    UNDER the gondola, as built: at [1441.5,920.8] the ZIP is at 60.6 and G1 at 91.1 (30.45 m apart; the cable rule is 8).
+row_edit("ZIP", "G1", [1442, 921], resolution="under", reserved=None, decided="D-A2 option A (" + RULED + ")", measured={"at": [1441.5, 920.8], "zip_h": 60.6, "g1_h": 91.1, "separation_eu": 30.45, "bake": "candidate 3 (f1a1ec1)"},
+         note="zip under gondola: 30.45 m below the gondola cable where they cross (profiles.cable.clear_eu 8); riders on the zip pass beneath the cabins")
+m["cable"]["ZIP"]["v1_9_note"] = m["cable"]["ZIP"]["note"]
+m["cable"]["ZIP"]["note"] = m["cable"]["ZIP"]["note"].replace("and crosses above the gondola cable at [1442,921] with 10.7 m between cables", "and crosses under the gondola cable at [1441.5,920.8], 30.45 m beneath it (D-A2: zip under gondola)")
+assert "D-A2" in m["cable"]["ZIP"]["note"]
+
 
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
