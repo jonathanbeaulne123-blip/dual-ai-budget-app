@@ -1,6 +1,6 @@
 {
  "title": "The Horizon \u2014 MANIFEST",
- "version": "2.0",
+ "version": "2.1",
  "date": "2026-09-27",
  "status": "Design numbers for implementation. Control points are centreline intent to be solved into splines by the land pass; not navigation or collision data until baked into WorldDefinition v3.",
  "units": {
@@ -979,7 +979,7 @@
   {
    "id": "bank",
    "footprint_m": [
-    26,
+    20,
     18
    ],
    "roofH_eu": 10,
@@ -988,11 +988,20 @@
     "bank"
    ],
    "xy": [
-    1440,
+    1443,
     1125
    ],
    "h": 16,
-   "door": "south, onto the square (the bank stands on the square's north side)"
+   "door": "south, onto the square (the bank stands on the square's north side)",
+   "v2_0_footprint_m": [
+    26,
+    18
+   ],
+   "v2_0_xy": [
+    1440,
+    1125
+   ],
+   "massNote_v2_1": "page A: the south wall's west 6 m stood in the Shoulder's sight line from the square (design lead, Stage A Wave 5 integration 2026-09-27; reversible)"
   },
   {
    "id": "library",
@@ -1226,7 +1235,7 @@
     {
      "stair": "marketStair",
      "twin": "none",
-     "stepFree": "structures.marketStair.stepFree (295 eu)",
+     "stepFree": "structures.marketStair.stepFree (walk square, 94 eu at \u2264 8 %)",
      "why": "D-C11"
     }
    ]
@@ -2559,7 +2568,10 @@
     ]
    ],
    "profile": "trail",
-   "length_m": 494
+   "length_m": 494,
+   "surface_m": 5.2,
+   "shoulder_m": 1.2,
+   "surfaceNote_v2_1": "the Year Walk's February share rides this trail at offset 0: the trail takes the Year Walk's section (5.2 m + 1.2 m shoulders; profile trail 2.5 elsewhere; design lead, Stage A Wave 5 integration 2026-09-27)"
   },
   "prow": {
    "pts": [
@@ -3056,7 +3068,7 @@
    "length_m": 933,
    "speed": 12.0,
    "minClearAboveRoof_eu": 12,
-   "note": "the Prow tower (30 m tower, deck at h 100) \u2192 Long Sands 44 m inland, skirting the town's west edge over the Reach; at 1 % sag it overflies no roof, clears V01 by 9 m, S1 by 23 m, the Reach walk by 26 m, and crosses under the gondola cable at [1441.5,920.8], 30.45 m beneath it (D-A2: zip under gondola)",
+   "note": "the Prow tower (30 m tower, deck at h 100) \u2192 Long Sands 44 m inland, skirting the town's west edge over the Reach; at 1 % sag it overflies no roof, clears V01 by 9 m, S1 by 23 m, the Reach walk by 26 m, and crosses under the gondola cable at [1437.5,927.5], 15.0 m beneath it (D-A2: zip under gondola)",
    "v1_9_note": "the Prow tower (30 m tower, deck at h 100) \u2192 Long Sands 44 m inland, skirting the town's west edge over the Reach; at 1 % sag it overflies no roof, clears V01 by 9 m, S1 by 23 m, the Reach walk by 26 m, and crosses above the gondola cable at [1442,921] with 10.7 m between cables"
   }
  },
@@ -3431,18 +3443,18 @@
    },
    "opening": {
     "at_s": [
-     98,
-     134
+     103,
+     143
     ],
-    "centre_s": 116,
+    "centre_s": 123,
     "centre": [
-     555.0,
-     1096.5
+     560.8,
+     1100.5
     ],
-    "width_m": 36,
+    "width_m": 40,
     "kind": "steel-arch",
     "clear_eu": 11.4,
-    "clearWidth_m": 34,
+    "clearWidth_m": 38,
     "needAlongAxis_m": {
      "beam_m": 8,
      "deckWidth_m": 21.6,
@@ -3451,26 +3463,64 @@
      "rule": "beam / sin(angle) + deck width / tan(angle) \u2264 clearWidth_m (proposals/bight-bridge.md)"
     },
     "arch": "a steel through-arch above the deck (rise \u2265 10 over the deck, crown \u2265 22), its ribs on the deck edges and hangers to the deck",
-    "why": "36 m is past the 30 eu masonry-arch limit (STYLE \u00a71.6.3), so the arch is steel; the opening covers the ferry lane (s 122, in at 46\u00b0, out at 58\u00b0) and Ring Run gate 5 (s 111); a hull of water_routes.FERRY.beam_m 8 at 46\u00b0 needs 27.6 m along the axis (proposals/bight-bridge.md)"
+    "why": "36 m is past the 30 eu masonry-arch limit (STYLE \u00a71.6.3), so the arch is steel; the opening covers the ferry lane (the hull crosses the deck edges at s \u2248 113-131, in at 46\u00b0, out at 58\u00b0) and Ring Run gate 5 (s 111); a hull of water_routes.FERRY.beam_m 8 at 46\u00b0 needs 27.6 m along the axis (proposals/bight-bridge.md)",
+    "v2_0": {
+     "at_s": [
+      98,
+      134
+     ],
+     "centre_s": 116,
+     "centre": [
+      555.0,
+      1096.5
+     ],
+     "width_m": 36,
+     "clearWidth_m": 34
+    },
+    "decided": "D-A1 (Jonathan 2026-09-27: 36 m); widened to 40 m by the design lead, Stage A Wave 5 integration 2026-09-27, reversible (opening.v2_0)",
+    "hullClearance_eu": {
+     "v2_0_36m_s98_134": -3.99,
+     "v2_1_40m_s103_143": 1.37,
+     "best_36m_s105_141": 0.15,
+     "rule": "an 8 m hull (water_routes.FERRY.beam_m) on the FERRY line against the arch piers' and bents' footings"
+    }
    },
    "bents": {
     "west": {
      "count": 8,
-     "bay_m": 10.9,
+     "bay_m": 11.4,
      "from_s": 0,
-     "to_s": 98
+     "to_s": 103
     },
     "east": {
      "count": 9,
-     "bay_m": 11.0,
-     "from_s": 134,
+     "bay_m": 10.1,
+     "from_s": 143,
      "to_s": 244
     },
     "arch piers": [
-     98,
-     134
+     103,
+     143
     ],
-    "note": "timber paired bents, every bay under the 12 eu timber limit; no bent in the opening or in S2's east descent"
+    "note": "timber paired bents, every bay under the 12 eu timber limit; no bent in the opening or in S2's east descent",
+    "v2_0": {
+     "west": {
+      "count": 8,
+      "bay_m": 10.9,
+      "from_s": 0,
+      "to_s": 98
+     },
+     "east": {
+      "count": 9,
+      "bay_m": 11.0,
+      "from_s": 134,
+      "to_s": 244
+     },
+     "arch piers": [
+      98,
+      134
+     ]
+    }
    },
    "lookout": {
     "id": "bightBridge.lookout",
@@ -3826,21 +3876,26 @@
    ],
    "kind": "trestle",
    "carries": "VBS",
-   "length_m": 44,
+   "length_m": 56,
    "width_m": 5,
    "from": [
     918.1,
     877
    ],
    "to": [
-    891.6,
-    906
+    886.7,
+    916.0
    ],
-   "deck": "VBS on its own grade (27.4 \u2192 25.2)",
+   "deck": "VBS on its own grade (27.4 \u2192 24.4)",
    "beside": "S4 at 17.3-18.2, 4.5-7 m from VBS's centreline on the east side",
    "bents": "one line on the west (away from S4) and one under the centreline; none in S4's corridor",
    "decided": "D-C9 (recommended, accepted Jonathan 2026-09-27)",
-   "note": "v2.0: VBS hung 6-9 eu over the ground beside S4 with nothing under it (R2-04; the dropped v1.9 bightSpurBridge put its bents in S4)"
+   "note": "v2.0: VBS hung 6-9 eu over the ground beside S4 with nothing under it (R2-04; the dropped v1.9 bightSpurBridge put its bents in S4)",
+   "v2_0_to": [
+    891.6,
+    906
+   ],
+   "v2_0_length_m": 44
   },
   "marketStair": {
    "xy": [
@@ -3862,6 +3917,22 @@
    "twin": "none (stairs only)",
    "stepFree": {
     "route": [
+     "walk square"
+    ],
+    "length_eu": 94,
+    "grade_pct": {
+     "mean": 6.4,
+     "max": 8.0
+    },
+    "from": "the square [1478,12,1150]",
+    "to": "the upper street spur's end [1480,18,1062]",
+    "note": "the square walk climbs beside the upper-street terrace (narrowed to x 1463-1480, TOWN_TIERS) at \u2264 8 %, level with both pads (W5-A); the 295 eu detour (walk square \u2192 town.bankLink \u2192 town.northLink \u2192 V01 \u2192 spur upperStreet) is superseded and comes back if TOWN_TIERS is restored",
+    "decided": "D-C11 stairs only (Jonathan 2026-09-27); the square walk as the step-free way by the design lead, Stage A Wave 5 integration 2026-09-27"
+   },
+   "decided": "D-C11 stairs only (Jonathan 2026-09-27)",
+   "note": "v2.0: the ramp twin (marketRamp, land/town/build.ts) is retired; no step-free 75 m run at 8 % fits beside Our home",
+   "v2_0_stepFree": {
+    "route": [
      "walk square",
      "town.bankLink",
      "town.northLink",
@@ -3872,9 +3943,7 @@
     "from": "the square",
     "to": "the upper street spur's end [1480,18,1060]",
     "note": "the recorded step-free way between the square and the upper street (review 2 route walk: 295.5 eu, 123 s at 2.4 m/s)"
-   },
-   "decided": "D-C11 stairs only (Jonathan 2026-09-27)",
-   "note": "v2.0: the ramp twin (marketRamp, land/town/build.ts) is retired; no step-free 75 m run at 8 % fits beside Our home"
+   }
   },
   "coveStair": {
    "kind": "cliff-stair",
@@ -3887,12 +3956,14 @@
     630,
     235
    ],
-   "to_h": 1.8,
-   "rise_m": 32.3,
+   "to_h": 1.0,
+   "rise_m": 33.1,
    "along": "cut into the cliff face west of the pier: two flights of \u2248 55 m run with a landing at \u2248 17, between [631,240] and [604,252] and back",
    "parapet": "on the sea side, posted to the rock",
    "decided": "D-C14 cliff stair (recommended, accepted Jonathan 2026-09-27)",
-   "note": "v2.0: the cove walk ended 32.8 above the pier; kind cliff-stair (not stair: the tower-stair builder does not apply)"
+   "note": "v2.0: the cove walk ended 32.8 above the pier; kind cliff-stair (not stair: the tower-stair builder does not apply)",
+   "v2_0_to_h": 1.8,
+   "toNote_v2_1": "the foot is the dock deck's own height (ferry.scholarsCove, 1.0); 1.8 would leave a 0.8 lip (W5-S)"
   },
   "s1Flyover": {
    "xy": [
@@ -4769,13 +4840,13 @@
     1185,
     1445
    ],
-   "frames": "surf, the Lamp, the zipline landing",
+   "frames": "surf, the zipline landing",
    "bestHour": "afternoon",
    "also": "night",
    "target_h": 6,
    "deferred": [
     "a bench (Pass 3 dressing)",
-    "the Lamp in portrait (2 px at 390 \u00d7 844 until the Pass 2b lighthouse; it stays a 16:9 subject)"
+    "the Lamp (Pass 2b subject: 670 eu from the eye, 9 px of 13 at 1440 \u00d7 900 by size; the Pass 2b lighthouse and its 25 m gallery make it legible; design lead, Stage A Wave 5 integration 2026-09-27)"
    ],
    "portrait": {
     "fov_deg": 50,
@@ -4807,6 +4878,11 @@
     "radius_eu": 220
    },
    "subjects": [
+    "surf",
+    "the zipline landing"
+   ],
+   "v2_0_frames": "surf, the Lamp, the zipline landing",
+   "v2_0_subjects": [
     "surf",
     "the Lamp",
     "the zipline landing"
@@ -4993,7 +5069,13 @@
     "frames": [
      "the strip",
      "the west sea"
-    ]
+    ],
+    "v2_0_xy": null,
+    "xy": [
+     428,
+     760
+    ],
+    "poseNote_v2_1": "the portrait eye on the strip 12 m west of the landscape eye (west sea 1 \u2192 14 px at 390 \u00d7 844; design lead, Stage A Wave 5 integration 2026-09-27)"
    },
    "v1_6": {
     "xy": [
@@ -5388,7 +5470,8 @@
    "structure": "bightBridge",
    "kind": "crossing",
    "decided": "D-A1 (Jonathan 2026-09-27)",
-   "note": "245 m viaduct with one 36 m steel through-arch (s 98-134); abutments on both headlands to the ground"
+   "note": "245 m viaduct with one 40 m steel through-arch (s 103-143; D-A1's 36 m widened by the design lead for the ferry hull, reversible); abutments on both headlands to the ground",
+   "v1_9_note": "245 m viaduct with one 36 m steel through-arch (s 98-134); abutments on both headlands to the ground"
   },
   {
    "a": "S2",
@@ -5543,19 +5626,17 @@
     927.4
    ],
    "resolution": "under",
-   "note": "zip under gondola: 30.45 m below the gondola cable where they cross (profiles.cable.clear_eu 8); riders on the zip pass beneath the cabins",
+   "note": "zip under gondola: 15.0 m below the gondola cable where they cross (profiles.cable.clear_eu 8); riders on the zip pass beneath the cabins",
    "kind": "crossing",
    "v1_9_resolution": "over",
    "decided": "D-A2 option A (Jonathan 2026-09-27)",
    "measured": {
     "at": [
-     1441.5,
-     920.8
+     1437.5,
+     927.5
     ],
-    "zip_h": 60.6,
-    "g1_h": 91.1,
-    "separation_eu": 30.45,
-    "bake": "candidate 3 (f1a1ec1)"
+    "separation_eu": 15.0,
+    "bake": "Stage A candidate 4 (the W5-A tower solve: the lowest tops keeping 8 eu over the ground at 1 % sag)"
    },
    "v1_9_note": "zip 10.7 m above the gondola chord at 1 % sag",
    "v1_9_at": [
@@ -5567,7 +5648,18 @@
     "g1_h": 88.8,
     "zip_h": 59.8,
     "source": "proposals/zip-over-g1.md, with the station at [1335,535]"
-   }
+   },
+   "v2_0_measured": {
+    "at": [
+     1441.5,
+     920.8
+    ],
+    "zip_h": 60.6,
+    "g1_h": 91.1,
+    "separation_eu": 30.45,
+    "bake": "candidate 3 (f1a1ec1)"
+   },
+   "v2_0_note": "zip under gondola: 30.45 m below the gondola cable where they cross (profiles.cable.clear_eu 8); riders on the zip pass beneath the cabins"
   },
   {
    "a": "ZIP",
@@ -5700,7 +5792,7 @@
     1100
    ],
    "resolution": "under",
-   "note": "twice per lap, through the steel-arch opening (s 98-134, 34 m \u00d7 11.4 clear; beam 8)",
+   "note": "twice per lap, through the steel-arch opening (s 103-143, 38 m \u00d7 11.4 clear; beam 8, +1.37 eu past each pier; v2.0 had s 98-134, 36 m)",
    "kind": "crossing",
    "decided": "D-A1 (Jonathan 2026-09-27)",
    "v1_9_note": "twice per lap"
@@ -8572,6 +8664,18 @@
    "structure": "bightBridge.s2Flyover",
    "source": "design lead v2.0",
    "note": "D-A1: 5.6 over the road deck at the arch crown (road clear 5 + 0.6)"
+  },
+  {
+   "a": "jetty.bightPier",
+   "b": "FERRY",
+   "at": [
+    560,
+    890
+   ],
+   "resolution": "threshold",
+   "kind": "modeTransfer",
+   "source": "integrator 3 (P15, R2-116)",
+   "note": "boarding threshold at the pier head (the ferry's second pass); mover pending"
   }
  ],
  "thresholds": [

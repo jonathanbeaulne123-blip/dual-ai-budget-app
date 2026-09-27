@@ -1753,6 +1753,78 @@ m["structures"]["s1Flyover"] = {"xy": [1345, 744], "kind": "skateFlyover", "carr
  "note": "v2.0: a route's self-crossing is not a register pair; P12 proves it (was a 13.4 eu unsupported run at [1358,750])"}
 
 
+# ---------------------------------------------------------------------------
+# v2.1 — Stage A Wave 5 integration (integrator 3, 2026-09-27): the design lead's data calls measured on the merged
+# bake (W5-A beds + W5-S structures + W5-T terrain). Every delta is in docs/horizon/README.md → "v2.1"; old values are
+# kept beside the new ones (`v2_0_*`). Ids never change.
+# ---------------------------------------------------------------------------
+m["version"] = "2.1"
+DL = "design lead, Stage A Wave 5 integration 2026-09-27"
+# 1. D-A1 · the navigable opening → 40 m at s 103-143 (design lead's call, reversible under D-A1). An 8 m hull on the
+#    FERRY line cleared the east arch pier by −3.99 eu with the ruled 36 m at s 98-134 (the ferry crosses the deck edges at
+#    s ≈ 113-131, not centred on s 116); 40 m at s 103-143 clears both piers by +1.37 (W5-S, ferry2.ts; the best 36 m,
+#    s 105-141, gave only +0.15). The lookout (s 104-128), Ring Run gate 5 (s 111) and the S2 flyover (s 100-132) keep
+#    their places; the arch's piers and bents follow the data.
+bbo = m["structures"]["bightBridge"]
+bbo["opening"]["v2_0"] = {"at_s": list(bbo["opening"]["at_s"]), "centre_s": bbo["opening"]["centre_s"], "centre": list(bbo["opening"]["centre"]), "width_m": bbo["opening"]["width_m"], "clearWidth_m": bbo["opening"]["clearWidth_m"]}
+bbo["opening"].update({"at_s": [103, 143], "centre_s": 123, "centre": bb(123), "width_m": 40, "clearWidth_m": 38,
+ "decided": "D-A1 (" + RULED + ": 36 m); widened to 40 m by the " + DL + ", reversible (opening.v2_0)",
+ "hullClearance_eu": {"v2_0_36m_s98_134": -3.99, "v2_1_40m_s103_143": 1.37, "best_36m_s105_141": 0.15, "rule": "an 8 m hull (water_routes.FERRY.beam_m) on the FERRY line against the arch piers' and bents' footings"}})
+bbo["opening"]["why"] = bbo["opening"]["why"].replace("the opening covers the ferry lane (s 122, in at 46°, out at 58°)", "the opening covers the ferry lane (the hull crosses the deck edges at s ≈ 113-131, in at 46°, out at 58°)")
+bbo["bents"]["v2_0"] = {"west": dict(bbo["bents"]["west"]), "east": dict(bbo["bents"]["east"]), "arch piers": list(bbo["bents"]["arch piers"])}
+bbo["bents"]["west"].update({"bay_m": 11.4, "to_s": 103}); bbo["bents"]["east"].update({"bay_m": 10.1, "from_s": 143}); bbo["bents"]["arch piers"] = [103, 143]
+row_edit("FERRY", "bightBridge", note="twice per lap, through the steel-arch opening (s 103-143, 38 m × 11.4 clear; beam 8, +1.37 eu past each pier; v2.0 had s 98-134, 36 m)")
+row_edit("V01+S2", "Bight mouth", note="245 m viaduct with one 40 m steel through-arch (s 103-143; D-A1's 36 m widened by the design lead for the ferry hull, reversible); abutments on both headlands to the ground")
+# 2. D-C14 · the cove stair lands on the Scholars Cove dock deck, built at the water + 0.6 = 1.0 (W5-S); 1.8 left a 0.8 lip.
+cs = m["structures"]["coveStair"]; cs["v2_0_to_h"] = cs["to_h"]; cs["to_h"] = 1.0; cs["rise_m"] = round(cs["from_h"] - 1.0, 1)
+cs["toNote_v2_1"] = "the foot is the dock deck's own height (ferry.scholarsCove, 1.0); 1.8 would leave a 0.8 lip (W5-S)"
+# 3. D-A2 · ZIP × G1, the measured separation with W5-A's tower solve (tops 65.1 / 109.9 / 152.7, no clamp): 15.0 eu.
+zr = m["crossings"][row_find("ZIP", "G1", [1437.5, 927.4])]
+zr["v2_0_measured"] = zr["measured"]; zr["measured"] = {"at": [1437.5, 927.5], "separation_eu": 15.0, "bake": "Stage A candidate 4 (the W5-A tower solve: the lowest tops keeping 8 eu over the ground at 1 % sag)"}
+zr["v2_0_note"] = zr["note"]; zr["note"] = "zip under gondola: 15.0 m below the gondola cable where they cross (profiles.cable.clear_eu 8); riders on the zip pass beneath the cabins"
+m["cable"]["ZIP"]["note"] = m["cable"]["ZIP"]["note"].replace("crosses under the gondola cable at [1441.5,920.8], 30.45 m beneath it", "crosses under the gondola cable at [1437.5,927.5], 15.0 m beneath it")
+# 4. D-C11 · the market stair stays stairs only; the step-free way between the square and the upper street is W5-A's
+#    square walk (≈ 6 % beside the upper-street terrace narrowed to x 1463-1480), not the 295 eu detour (superseded,
+#    reversible via land/town/build.ts TOWN_TIERS).
+ms = m["structures"]["marketStair"]; ms["v2_0_stepFree"] = ms["stepFree"]
+ms["stepFree"] = {"route": ["walk square"], "length_eu": 94, "grade_pct": {"mean": 6.4, "max": 8.0}, "from": "the square [1478,12,1150]", "to": "the upper street spur's end [1480,18,1062]",
+ "note": "the square walk climbs beside the upper-street terrace (narrowed to x 1463-1480, TOWN_TIERS) at ≤ 8 %, level with both pads (W5-A); the 295 eu detour (walk square → town.bankLink → town.northLink → V01 → spur upperStreet) is superseded and comes back if TOWN_TIERS is restored",
+ "decided": "D-C11 stairs only (" + RULED + "); the square walk as the step-free way by the " + DL}
+m["profiles"]["stair"]["exceptions"] = [{"stair": "marketStair", "twin": "none", "stepFree": "structures.marketStair.stepFree (walk square, 94 eu at ≤ 8 %)", "why": "D-C11"}]
+# 5. P15 / R2-116 · the Bight pier's head meets the ferry's second pass at [560,890]: a boarding threshold, like [560,902].
+m["crossings"].append({"a": "jetty.bightPier", "b": "FERRY", "at": [560, 890], "resolution": "threshold", "kind": "modeTransfer", "source": "integrator 3 (P15, R2-116)", "note": "boarding threshold at the pier head (the ferry's second pass); mover pending"})
+# 6. Page D · the Lamp is 670 eu from the eye and 9 px of 13 at 1440 × 900 by size alone (W5-T: lowering its cone changes
+#    nothing): it leaves Pass 1's frames as a deferred Pass 2b subject (the lighthouse's 25 m gallery makes it legible).
+for v in m["views"]:
+    if v["id"] == "D":
+        v["v2_0_frames"] = v["frames"]; v["v2_0_subjects"] = list(v["subjects"])
+        v["frames"] = "surf, the zipline landing"; v["subjects"] = ["surf", "the zipline landing"]
+        v["deferred"] = [d for d in v["deferred"] if not d.startswith("the Lamp in portrait")] + ["the Lamp (Pass 2b subject: 670 eu from the eye, 9 px of 13 at 1440 × 900 by size; the Pass 2b lighthouse and its 25 m gallery make it legible; " + DL + ")"]
+# 7. D-C9 · the VBS trestle runs ≈ 12 m further south, to where VBS comes back within 1.4 of the ground (W5-A/W5-T: VBS hung
+#    7.0 → 3.1 eu over the ground south of [891.6,906]).
+bt = m["structures"]["bightSpurTrestle"]; bt["v2_0_to"] = bt["to"]; bt["v2_0_length_m"] = bt["length_m"]
+bt["to"] = [886.7, 916.0]; bt["length_m"] = 56; bt["deck"] = "VBS on its own grade (27.4 → 24.4)"
+# 8. Page A · the Fund bank's south wall (to 25.6 at z 1134) hid 36 of the Shoulder's rays at 1440 × 900 (8 px of 13): the
+#    bank is 6 m narrower from its west side (east wall and door side unchanged), its footprint 26 × 18 → 20 × 18.
+for h in m["hosts"]:
+    if h["id"] == "bank":
+        h["v2_0_footprint_m"] = h["footprint_m"]; h["v2_0_xy"] = h["xy"]; h["footprint_m"] = [20, 18]; h["xy"] = [1443, 1125]
+        h["massNote_v2_1"] = "page A: the south wall's west 6 m stood in the Shoulder's sight line from the square (" + DL + "; reversible)"
+# 9. Page H portrait · the west sea was 0-1 px at 390 × 844 from [440,760] (the plateau's west edge hides all sea nearer
+#    than ≈ 2,475 eu, W5-T): the portrait eye stands 12 m west on the strip itself, 4 m in from its railed west edge
+#    ([428,760], 1.6 over the strip): west sea 14 px (min 8), the strip 3,115. Landscape unchanged. C and L were tried
+#    (C: target and eye nudges give the shelf ≤ 5 px of 8; L: the Boathouse ≤ 6 of 8 anywhere on the quay, hidden by the
+#    harbour's west bank) and are left as they were.
+for v in m["views"]:
+    if v["id"] == "H":
+        v["portrait"]["v2_0_xy"] = None; v["portrait"]["xy"] = [428, 760]
+        v["portrait"]["poseNote_v2_1"] = "the portrait eye on the strip 12 m west of the landscape eye (west sea 1 → 14 px at 390 × 844; " + DL + ")"
+# 10. The Year Walk's February share (journey.yearWalk.shares feb, offset 0) walks the lake-rim trail, but the trail was a
+#     2.5 m trail under a 5.2 m Year Walk: ≈ 118 m of the Year Walk's edge stood outboard of the trail's own rails (P09,
+#     W5-A request to W5-T). The rim trail is the Year Walk's width.
+lr = m["walks"]["lakerim"]; lr["surface_m"] = 5.2; lr["shoulder_m"] = 1.2
+lr["surfaceNote_v2_1"] = "the Year Walk's February share rides this trail at offset 0: the trail takes the Year Walk's section (5.2 m + 1.2 m shoulders; profile trail 2.5 elsewhere; " + DL + ")"
+
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")

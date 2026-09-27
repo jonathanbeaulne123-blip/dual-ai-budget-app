@@ -75,7 +75,7 @@ On commit 1 the integrator generalises `transport.ts` to a line-driven ride API 
 
 ## M1 — Board
 
-- **Uses:** `skate.S1`–`S4` beds and segment `surface` ids; `skate.park`; `skate.rules`; `surfaces[*].pace`; `thresholds` `skateLineStarts`, `stairTop`, `quayWest`, `landingQuay`; `skate.S1.gates` 17, the S1 finish at `structures.landingQuay` (the last point of `skate.S1.pts`, `[1270,1330]`), `skate.S1.time_target_s`; the separated lanes on the Quay Bridge (S3) and the Bight Bridge (S2), the Dune Culvert (S4).
+- **Uses:** `skate.S1`–`S4` beds and segment `surface` ids; `skate.park`; `skate.rules`; `surfaces[*].pace`; `thresholds` `skateLineStarts`, `stairTop`, `quayWest`, `landingQuay`; `skate.S1.gates` 17, the S1 finish at `structures.landingQuay` (the last point of `skate.S1.pts`, `[1270,1330]`), `skate.S1.time_target_s`; the separated lanes on the Quay Bridge (S3) and the Bight Bridge (S2), the Dune Culvert (S4). S2's trick spots are `skate.S2.spots` (v2.0, D-A1: the arch crown rail, the two abutment banks, the deck rail).
 - **Pace by surface:** the Skate v2 sim reads the surface id under the wheels from the Horizon surface query and takes its `pace` from `MANIFEST.json → surfaces` (`fast`, `flow`, `slow`, `threshold`, `skate` on ice in pass 4). `threshold` pace brings the board to walking pace and offers `park`; the board never passes a threshold (`skate.rules`).
 - **Gravity:** a slope term; downhill accelerates, uphill slows. Travel assist only inside the Tideline park (`skate.park.note`).
 - **Spots:** rails, kerbs, walls, bollards, stairs and bank lips from pass 1's beds only; no required jump; every spot has its ground line.
@@ -103,7 +103,7 @@ On commit 1 the integrator generalises `transport.ts` to a line-driven ride API 
 
 ## M3 — Gondola
 
-- **Uses:** `cable.G1` (`from`, `to`, `fromH`, `toH`, `towers` `[1450,958]`, `[1420,825]`, `[1390,693]`, `clear_eu` 8, `length_m`, `speed`), `profiles.cable` (`towerSpacing_m` 120–200), `structures.gondolaStations`, thresholds `gondolaBase`, `gondolaTop`, crossings `G1 × V01`, `G1 × Crown Road`, `G1 × ORE`, `ZIP × G1` (the zip passes 10.7 m above at `[1442,921]`).
+- **Uses:** `cable.G1` (`from`, `to`, `fromH`, `toH`, `to` `[1335,535]` at `toH` 150 (D-A3), `towers` `[1445.8,959.0]`, `[1411.3,827.1]`, `[1380.9,710.7]` (tops solved by pass 1: the lowest keeping 8 eu over the ground at 1 % sag, 65.1 / 109.9 / 152.7 on Stage A candidate 4), `clear_eu` 8, `length_m`, `speed`), `profiles.cable` (`towerSpacing_m` 120–200), `structures.gondolaStations`, thresholds `gondolaBase`, `gondolaTop`, crossings `G1 × V01`, `G1 × Crown Road`, `G1 × ORE`, `ZIP × G1` (D-A2: the zip passes **under** the gondola, 15.0 m below its cable at `[1437.5,927.5]`; riders on the zip pass beneath the cabins).
 - **Route:** Mountain v2's gondola re-routed to G1 through the integrator's ride API; towers on pass 1's footings; the cable sags between towers (catenary, lowest point between towers, never above the chord); ≥ 8 m clear over every bed.
 - **Boarding:** walk onto the platform; accept "Ride ↑" (or "Ride ↓"); the rider is seated in the cabin. Skip cuts to the far platform.
 - **Camera:** ride cam: the town falls away, then the whole island; horizon in frame throughout.
@@ -127,7 +127,7 @@ On commit 1 the integrator generalises `transport.ts` to a line-driven ride API 
 
 ## M5 — Zipline
 
-- **Uses:** `cable.ZIP` (`from` `[1610,640]` at `fromH` 100, `to` `[1130,1440]` at `toH` 12, `sag_pct` 1, `length_m` 933, `speed`, `minClearAboveRoof_eu` 12), `structures.zipPlatforms` (the Prow tower's deck, shared with the glider launch; the landing tower on the dune crest, deck `h` 12, with a stair and a ramp to the sand), thresholds `prowPlatform` (`clip in`) and `zipLanding` (unclip on the landing tower), crossings `ZIP × town` (≥ 12 eu above every roof, sag included), `ZIP × G1` `[1442,921]`, `ZIP × V01`, `ZIP × VG`, `ZIP × S3` (the Town Weave boardwalk passes beneath the landing tower).
+- **Uses:** `cable.ZIP` (`from` `[1610,640]` at `fromH` 100, `to` `[1130,1440]` at `toH` 12, `sag_pct` 1, `length_m` 933, `speed`, `minClearAboveRoof_eu` 12), `structures.zipPlatforms` (the Prow tower's deck, shared with the glider launch; the landing tower on the dune crest, deck `h` 12, with a stair and a ramp to the sand), thresholds `prowPlatform` (`clip in`) and `zipLanding` (unclip on the landing tower), crossings `ZIP × town` (≥ 12 eu above every roof, sag included), `ZIP × G1` (under, 15.0 m, `[1437.5,927.5]`), `ZIP × V01`, `ZIP × VG`, `ZIP × S3` (the Town Weave boardwalk passes beneath the landing tower).
 - **Ride:** the ride attachment (`body/ride.ts`, integrator) on a trolley under a sagging cable; the rider hangs visibly below it; lands on the landing tower's deck (`h` 12) against its buffer, then takes the stair or the ramp to the sand.
 - **Clearance:** the sagged cable is checked against every roof, bed and the G1 cable; a failure is a conflict for the design lead, not a reason to raise the cable silently.
 - **Camera:** chase cam behind and above the rider; the lit town below.

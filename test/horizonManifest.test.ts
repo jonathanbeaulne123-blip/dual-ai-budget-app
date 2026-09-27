@@ -89,12 +89,14 @@ describe('Horizon manifest v2.0',()=>{
     });
     for(const note of manifest.routePairNotes)expect(note).not.toHaveProperty('resolution');
   });
-  it('carries Jonathan’s 2026-09-27 rulings as numbers (v2.0)',()=>{
+  it('carries Jonathan’s 2026-09-27 rulings as numbers (v2.0) and the Wave 5 integration data (v2.1)',()=>{
     const m=manifest as unknown as Record<string,any>;
-    expect(m.version).toBe('2.0');
-    // D-A1: 245 m, one 36 m steel arch at s 98-134, 11.4 clear; an 8 m hull at 46° needs 32.0 m of the 34 m clear.
+    expect(m.version).toBe('2.1');
+    // D-A1: 245 m, one steel arch, 11.4 clear; an 8 m hull at 46° needs 32.0 m. Ruled 36 m at s 98-134 (kept as opening.v2_0);
+    // v2.1 (design lead, reversible): 40 m at s 103-143, 38 clear - the hull cleared the east pier by -3.99 at 36 m, +1.37 at 40.
     const bb=m.structures.bightBridge;expect(bb.span_m).toBe(245);expect(bb.v1_9.span_m).toBe(230);
-    expect(bb.opening).toMatchObject({at_s:[98,134],width_m:36,kind:'steel-arch',clearWidth_m:34});expect(bb.opening.clear_eu).toBeGreaterThanOrEqual(11.4);
+    expect(bb.opening).toMatchObject({at_s:[103,143],width_m:40,kind:'steel-arch',clearWidth_m:38});expect(bb.opening.v2_0).toMatchObject({at_s:[98,134],width_m:36,clearWidth_m:34});
+    expect(bb.bents['arch piers']).toEqual(bb.opening.at_s);expect(bb.opening.hullClearance_eu.v2_1_40m_s103_143).toBeGreaterThan(0);expect(bb.opening.clear_eu).toBeGreaterThanOrEqual(11.4);
     expect(m.water_routes.FERRY.beam_m).toBe(8);
     const need=(w:number,deg:number)=>8/Math.sin(deg*Math.PI/180)+w/Math.tan(deg*Math.PI/180);
     expect(need(bb.section.width_m,46)).toBeLessThanOrEqual(bb.opening.clearWidth_m-2);expect(bb.opening.needAlongAxis_m.at_46deg).toBeCloseTo(need(bb.section.width_m,46),1);
@@ -116,12 +118,20 @@ describe('Horizon manifest v2.0',()=>{
     expect(m.structures.prowTunnel).toMatchObject({xy:[1592,890],kind:'gallery',length_m:90});
     expect(m.lights.find((l:{id:string})=>l.id==='dam.glassFace').on).toContain('golden hour');
     expect(m.journey.stations.find((s:{id:string})=>s.id==='nov')).toMatchObject({xy:[1626,904],pad_rot_deg:90});
-    expect(m.structures.marketStair.stepFree.length_eu).toBe(295);expect(JSON.stringify(manifest.crossings)).not.toContain('marketRamp');
+    expect(m.structures.marketStair.v2_0_stepFree.length_eu).toBe(295);expect(m.structures.marketStair.stepFree).toMatchObject({route:['walk square'],length_eu:94});expect(m.structures.marketStair.stepFree.grade_pct.max).toBeLessThanOrEqual(8);expect(JSON.stringify(manifest.crossings)).not.toContain('marketRamp');
     // Group B/C: K re-posed, H at golden hour, the Throat's built aperture, L01 on the slab, plot bight.1 off the paths.
     const views=manifest.views as unknown as {id:string;xy:number[];target:number[];bestHour:string}[];
     expect(views.find(v=>v.id==='K')).toMatchObject({xy:[994,770],target:[1120,815]});expect(views.find(v=>v.id==='H')!.bestHour).toBe('golden hour');
     expect(m.underground.doors.throat.collarAperture_m).toBe(10.8);expect(manifest.places.find(p=>p.id==='L01')!.xy).toEqual([1173,912]);
     expect(manifest.reserves.bightShore.plots[0]).toEqual([814,919]);
+    // v2.1 (Wave 5 integration, design lead): the numbers the merged bake measured.
+    expect(m.structures.coveStair.to_h).toBe(1.0);expect(m.structures.coveStair.v2_0_to_h).toBe(1.8);
+    const zip=manifest.crossings.find(r=>r.a==='ZIP'&&r.b==='G1') as unknown as {resolution:string;measured:{separation_eu:number}};expect(zip.resolution).toBe('under');expect(zip.measured.separation_eu).toBe(15);
+    expect(manifest.crossings.some(r=>r.a==='jetty.bightPier'&&r.b==='FERRY'&&JSON.stringify(r.at)==='[560,890]'&&r.resolution==='threshold')).toBe(true);
+    const D=m.views.find((v:{id:string})=>v.id==='D');expect(D.subjects).toEqual(['surf','the zipline landing']);expect(D.deferred.some((x:string)=>x.startsWith('the Lamp (Pass 2b'))).toBe(true);
+    expect(m.hosts.find((h:{id:string})=>h.id==='bank')).toMatchObject({footprint_m:[20,18],xy:[1443,1125],v2_0_footprint_m:[26,18]});
+    expect(m.views.find((v:{id:string})=>v.id==='H').portrait.xy).toEqual([428,760]);expect(m.walks.lakerim).toMatchObject({surface_m:5.2,shoulder_m:1.2});
+    expect(m.structures.bightSpurTrestle).toMatchObject({to:[886.7,916],length_m:56,v2_0_to:[891.6,906]});
   });
   it.each(['n/a','bridge',''])('rejects unresolved crossing resolution %j on load',resolution=>{
     expect(()=>parseHorizonManifest({...manifest,crossings:[{...manifest.crossings[0],resolution}]})).toThrow('Invalid Horizon crossing');

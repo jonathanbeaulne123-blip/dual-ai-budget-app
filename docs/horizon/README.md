@@ -462,3 +462,26 @@ MANIFEST v1.9 → **v2.0**, 27 September 2026, Claude (design lead, track W5-DAT
 | crossings / `routePairNotes` | 284 / 59 | 266 / 78 | — |
 
 Accepted as made (no data change): D-A6 (all eleven v1.7 poses; K re-posed by D-B2), D-B1 (the Crown off page A), D-B4 (2.4 m/s until Jonathan walks it), D-B5 … D-B13, D-C1 (the Notch is a shallow gorge; page A wins), D-C2 (a railed parapet: a structures request), D-C4 (P29 measured with the plaza slab checked), D-C10 (reserved), D-C12, D-C13.
+
+## v2.1 (Wave 5 integration, design lead, 2026-09-27)
+
+MANIFEST v2.0 → **v2.1**, 27 September 2026, Claude (design lead, integrator 3), after merging W5-A (beds/town), W5-S (structures/underground) and W5-T (terrain/views/runtime/chunking) and measuring the merged bake. `make_manifest.py` regenerates `MANIFEST.json` byte-exact. Every v2.0 value is kept beside the new one (`v2_0_*`). All are reversible design-lead calls inside Jonathan's rulings; the first three are listed for him in `DECISIONS.md` → "Design-lead calls in the Wave 5 integration".
+
+| Key | v2.0 | v2.1 | Why (number) |
+|---|---|---|---|
+| `version` | 2.0 | **2.1** | — |
+| `structures.bightBridge.opening` | s 98–134, 36 m, 34 clear | **s 103–143, 40 m, 38 clear** (centre s 123, [560.8,1100.5]); `v2_0` kept; `hullClearance_eu` recorded | An 8 m ferry hull cleared the east arch pier by **−3.99** eu at 36 m (the ferry crosses the deck edges at s ≈ 113–131, not centred on s 116); 40 m at s 103–143 gives **+1.37** (best 36 m, s 105–141: +0.15). D-A1's 36 m, widened; reversible |
+| `structures.bightBridge.bents` | west s 0–98 (10.9 m bays), east 134–244 (11.0), arch piers 98 / 134 | west s 0–103 (**11.4**), east 143–244 (**10.1**), arch piers **103 / 143** | the piers and bents follow the opening; every bay under the 12 eu timber limit |
+| crossings `FERRY × bightBridge`, `V01+S2 × Bight mouth` | notes "s 98-134, 36 m" | "s 103-143, 38 m clear, +1.37 past each pier" | — |
+| `structures.coveStair.to_h` / `rise_m` | 1.8 / 32.3 | **1.0 / 33.1** | the stair lands on the Scholars Cove dock deck (water + 0.6); 1.8 left a 0.8 lip (W5-S) |
+| crossing `ZIP × G1` `measured` / note, `cable.ZIP.note` | 30.45 m at [1441.5,920.8] (candidate 3) | **15.0 m** at [1437.5,927.5] (`v2_0_measured` kept) | W5-A's tower solve (tops 65.1 / 109.9 / 152.7: the lowest keeping 8 eu at 1 % sag); still ≥ 8 |
+| `structures.marketStair.stepFree` | the 295 eu detour (square → bankLink → northLink → V01 → upper street) | **`walk square`**, 94 eu at ≤ 8 % (mean 6.4 %), square [1478,12,1150] → upper street [1480,18,1062]; the detour kept as `v2_0_stepFree`, superseded | W5-A narrowed the upper-street terrace (x 1463–1480, `TOWN_TIERS`) so the square walk climbs beside it; reversible by restoring `TOWN_TIERS` |
+| `profiles.stair.exceptions[marketStair].stepFree` | "295 eu" | "walk square, 94 eu at ≤ 8 %" | — |
+| crossing `jetty.bightPier × FERRY` [560,890] (new) | — (P15's one unlisted computed crossing, R2-116) | **threshold, modeTransfer** (boarding at the pier head; the ferry's second pass) | P15 unlisted 1 → 0 |
+| `views.D.frames` / `subjects` / `deferred` | "surf, the Lamp, the zipline landing" | **"surf, the zipline landing"**; the Lamp deferred as a Pass 2b subject | the Lamp is 670 eu from the eye and 9 px of 13 at 1440 × 900 by size alone; the Pass 2b lighthouse's 25 m gallery makes it legible |
+| `structures.bightSpurTrestle.to` / `length_m` / deck | [891.6,906] / 44 / 27.4 → 25.2 | **[886.7,916.0] / 56** / 27.4 → 24.4 | VBS hung 7.0 → 3.1 eu over the ground for 12 m south of the old end (W5-A/W5-T) |
+| `hosts[bank].footprint_m` / `xy` | 26 × 18 / [1440,1125] | **20 × 18 / [1443,1125]** (east wall and door side kept; the door moves 3 m east with the centre) | page A 1440 × 900: the bank's south wall hid 36 of the Shoulder's rays (8 px of 13) → **33 px**, PASS |
+| `views.H.portrait.xy` (new) | the landscape eye [440,760] | **[428,760]** (on the strip, 4 m in from its railed west edge, 1.6 over it) | page H 390 × 844: west sea 1 → **14** px (min 8); the strip 3,115 px |
+| `walks.lakerim.surface_m` / `shoulder_m` (new) | the trail profile (2.5, no shoulder) | **5.2 / 1.2** (the Year Walk's own section) | the Year Walk's February share rides the rim trail at offset 0: ≈ 118 m of its edge stood outboard of the trail's rails (P09) |
+
+Tried and left as they were (poses): page C portrait (target and eye nudges give the skate shelf ≤ 5 px of 8 — blocked by `highSpan.supports` and `S1.retaining.notch`), page L portrait (the Boathouse ≤ 6 px of 8 anywhere on the quay: the harbour's west bank hides it), page D portrait (surf ≤ 4 px of 8 for targets up to [800,1540]), page A portrait (the dam face 4 px of 8 after the stairwell's east wall opened: the rays now meet the flights, the west wall and the portage stair).
