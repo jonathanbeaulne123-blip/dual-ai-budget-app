@@ -30,3 +30,25 @@ export function assertHorizonArtifact(key, stored, generated) {
     throw new Error(`Stale Horizon ${key} asset; regenerate with pnpm horizon:bake`);
   }
 }
+
+/**
+ * R1-72: split a baked definition into a small index (every whole-island thing; `geometry.solids` empty) and one chunk per
+ * district (that district's solids, as listed in `districts[*].solidIds` and their children's). The index lists every chunk
+ * with its URL (keyed by the geography revision), its serialized byte length, SHA-256 and solid count. Deterministic: chunks
+ * sorted by district id, solids in definition order, the same number serialization as the monolith.
+ * @param {any} world
+ * @param {(buffer: Buffer) => string} sha256
+ */
+export function splitHorizonDefinition(world, sha256) {
+  const revision = world.geographyRevision, owner = new Map();
+  for (const district of world.districts.flatMap(d => [d, ...(d.children ?? [])])) for (const id of district.solidIds ?? []) owner.set(id, district.id);
+  const groups = new Map();
+  for (const solid of world.geometry.solids) {
+    const id = owner.get(solid.id) ?? solid.districtId;
+    if (!groups.has(id)) groups.set(id, []);
+    groups.get(id).push(solid);
+  }
+  const chunks = [...groups.keys()].sort().map(districtId => ({ districtId, path: `${revision}/${districtId}.json.gz`, json: serializeHorizonJson({ id: 'horizon-chunk', geographyRevision: revision, districtId, solids: groups.get(districtId) }) }));
+  const index = { ...world, geometry: { ...world.geometry, solids: [] }, chunks: chunks.map(c => ({ districtId: c.districtId, url: `/horizon/world/${c.path}`, bytes: c.json.byteLength, sha256: sha256(c.json), solids: groups.get(c.districtId).length })) };
+  return { index: serializeHorizonJson(index), chunks };
+}

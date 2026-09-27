@@ -33,23 +33,30 @@ function atHeight(t:Triangle,y:number):XYZ[]{
 export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
   // Keep one compact reference per indexed face, not four duplicate JS arrays per face.
   // Rendering and collision still read the exact same serialized vertices and indices.
-  const solids=cuts.solids.filter(s=>s.role!=='marker'),capacity=solids.reduce((n,s)=>n+s.indices.length/3,0);
-  const owners=new Uint32Array(capacity),offsets=new Uint32Array(capacity),normals=new Float32Array(capacity*3),cells=new Map<string,number[]>();
-  let count=0;
-  for(let owner=0;owner<solids.length;owner++){
-    const solid=solids[owner]!,p=solid.positions;
-    for(let i=0;i<solid.indices.length;i+=3){
-      const vertex=(n:number):XYZ=>{const j=solid.indices[i+n]!*3;return[p[j]!,p[j+1]!,p[j+2]!];};
-      const a=vertex(0),b=vertex(1),c=vertex(2),u=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],v=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
-      const nx=u[1]!*v[2]!-u[2]!*v[1]!,ny=u[2]!*v[0]!-u[0]!*v[2]!,nz=u[0]!*v[1]!-u[1]!*v[0]!,len=Math.hypot(nx,ny,nz);
-      if(len<1e-8)continue;
-      const id=count++;owners[id]=owner;offsets[id]=i;normals.set([nx/len,ny/len,nz/len],id*3);
-      for(let x=Math.floor(Math.min(a[0],b[0],c[0])/CELL);x<=Math.floor(Math.max(a[0],b[0],c[0])/CELL);x++)
-        for(let z=Math.floor(Math.min(a[2],b[2],c[2])/CELL);z<=Math.floor(Math.max(a[2],b[2],c[2])/CELL);z++){
-          const k=`${x}:${z}`,bucket=cells.get(k)??[];bucket.push(id);cells.set(k,bucket);
-        }
+  // R1-72: the index is built per district chunk as it arrives (`addSolids`), never for the whole island at once;
+  // the typed arrays grow by doubling.
+  const solids:StructureSolid[]=[],cells=new Map<string,number[]>();
+  let owners=new Uint32Array(1024),offsets=new Uint32Array(1024),normals=new Float32Array(1024*3),count=0,chunks=0;
+  function grow(need:number){if(need<=owners.length)return;let size=owners.length;while(size<need)size*=2;const o=new Uint32Array(size),f=new Uint32Array(size),n=new Float32Array(size*3);o.set(owners);f.set(offsets);n.set(normals);owners=o;offsets=f;normals=n;}
+  function addSolids(list:readonly StructureSolid[]){
+    const kept=list.filter(s=>s.role!=='marker');if(!kept.length)return;chunks++;
+    grow(count+kept.reduce((n,s)=>n+s.indices.length/3,0));
+    for(const solid of kept){
+      const owner=solids.push(solid)-1,p=solid.positions;
+      for(let i=0;i<solid.indices.length;i+=3){
+        const vertex=(n:number):XYZ=>{const j=solid.indices[i+n]!*3;return[p[j]!,p[j+1]!,p[j+2]!];};
+        const a=vertex(0),b=vertex(1),c=vertex(2),u=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],v=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
+        const nx=u[1]!*v[2]!-u[2]!*v[1]!,ny=u[2]!*v[0]!-u[0]!*v[2]!,nz=u[0]!*v[1]!-u[1]!*v[0]!,len=Math.hypot(nx,ny,nz);
+        if(len<1e-8)continue;
+        const id=count++;owners[id]=owner;offsets[id]=i;normals.set([nx/len,ny/len,nz/len],id*3);
+        for(let x=Math.floor(Math.min(a[0],b[0],c[0])/CELL);x<=Math.floor(Math.max(a[0],b[0],c[0])/CELL);x++)
+          for(let z=Math.floor(Math.min(a[2],b[2],c[2])/CELL);z<=Math.floor(Math.max(a[2],b[2],c[2])/CELL);z++){
+            const k=`${x}:${z}`,bucket=cells.get(k)??[];bucket.push(id);cells.set(k,bucket);
+          }
+      }
     }
   }
+  addSolids(cuts.solids);
   const nearby=(x:number,z:number)=>cells.get(key(x,z))??[];
   function triangle(id:number):Triangle{
     const solid=solids[owners[id]!]!,offset=offsets[id]!,p=solid.positions;
@@ -107,7 +114,7 @@ export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
     }
     return false;
   }
-  return {surface,ceiling,blocked,blocker,submerged,cameraBlocked,indexStats:{triangles:count,referenceBytes:owners.byteLength+offsets.byteLength+normals.byteLength,cells:cells.size},ground:(x:number,z:number)=>sampleTerrain(field,x,z)};
+  return {surface,ceiling,blocked,blocker,submerged,cameraBlocked,get indexStats(){return{triangles:count,referenceBytes:(owners.byteLength+offsets.byteLength+normals.byteLength)*count/Math.max(1,owners.length),cells:cells.size,chunks};},addSolids,ground:(x:number,z:number)=>sampleTerrain(field,x,z)};
 }
 export function nearestBedPoint(beds:readonly BedCut[],x:number,z:number):XYZ {
   let best:XYZ=[x,0,z],distance=Infinity;

@@ -37,3 +37,17 @@ it('compares gzip payloads across compression settings and rejects stale or corr
 it('keeps the terrain binary comparison exact', () => {
   expect(() => assertHorizonArtifact('terrain', Buffer.from([1, 2, 3]), Buffer.from([1, 2, 4]))).toThrow('Stale Horizon terrain asset');
 });
+
+it('splits the definition into an index and one chunk per district, deterministically (R1-72)', async () => {
+  const { splitHorizonDefinition } = await import('../scripts/horizon/artifacts.mjs');
+  const { createHash } = await import('node:crypto');
+  const solid = (id: string, districtId: string) => ({ id, districtId, positions: [0, 0, 0, 1, 0, 0, 0, 0, 1], indices: [0, 1, 2] });
+  const world = { id: 'horizon', geographyRevision: 'horizon-geo-1', districts: [{ id: 'harbour', solidIds: ['a@harbour', 'b@harbour'] }, { id: 'crown', solidIds: ['c@crown'], children: [{ id: 'undercroft', solidIds: ['d@undercroft'] }] }], geometry: { solids: [solid('a@harbour', 'harbour'), solid('c@crown', 'crown'), solid('d@undercroft', 'crown'), solid('b@harbour', 'harbour')], sourceMap: {} }, pathGraph: { nodes: [], edges: [] } };
+  const sha = (b: Buffer) => createHash('sha256').update(b).digest('hex'), first = splitHorizonDefinition(world, sha), second = splitHorizonDefinition(structuredClone(world), sha);
+  expect(first.index.equals(second.index)).toBe(true); expect(first.chunks.map(c => c.json.equals(second.chunks.find(d => d.districtId === c.districtId)!.json))).toEqual([true, true, true]);
+  const index = JSON.parse(first.index.toString());
+  expect(index.geometry.solids).toEqual([]); expect(index.pathGraph).toEqual(world.pathGraph);
+  expect(index.chunks.map((c: { districtId: string; url: string; solids: number }) => [c.districtId, c.url, c.solids])).toEqual([['crown', '/horizon/world/horizon-geo-1/crown.json.gz', 1], ['harbour', '/horizon/world/horizon-geo-1/harbour.json.gz', 2], ['undercroft', '/horizon/world/horizon-geo-1/undercroft.json.gz', 1]]);
+  for (const c of first.chunks) { const ref = index.chunks.find((r: { districtId: string }) => r.districtId === c.districtId); expect(ref.sha256).toBe(sha(c.json)); expect(ref.bytes).toBe(c.json.byteLength); }
+  expect(JSON.parse(first.chunks.find(c => c.districtId === 'harbour')!.json.toString()).solids.map((s: { id: string }) => s.id)).toEqual(['a@harbour', 'b@harbour']);
+});

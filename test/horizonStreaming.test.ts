@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { buildDistricts, createDistrictStream, partitionWorldSolids, removeInternalFaces } from '../src/harbour/horizon/world/districts.ts';
 import type { TerrainField } from '../src/harbour/horizon/land/interfaces.ts';
 import type { StructureSolid } from '../src/harbour/horizon/land/interfaces.ts';
@@ -110,4 +110,38 @@ it.each(['full', 'lite'] as const)('%s: ten Walk/Look toggles at the runtime rad
   expect(built.length - before).toBe(0);
   // A relocation still settles at once: the camera district on the first frame, the neighbourhood within the cap.
   stream.update({ x: 350, z: 550, now, radius: 2000 }); expect(stream.history.at(-1)!.built).toEqual(['flats']);
+});
+it('never builds a district whose geometry chunk has not loaded, and asks the loader for it (R1-72)',()=>{
+  const world={districts:buildDistricts(field,[],[])},built:string[]=[],requested:string[]=[],ready=new Set<string>();
+  const stream=createDistrictStream(world,d=>{built.push(d.id);return{dispose(){}};},'full',{ready:id=>ready.has(id),request:id=>{requested.push(id);}});
+  const at={x:1470,z:1186,now:0};
+  stream.update(at);expect(built).toEqual([]);expect(requested.length).toBeGreaterThan(0);
+  const first=requested[0]!;ready.add(first);stream.update({...at,now:16});expect(built).toEqual([first]);
+});
+it('loads the index, then one district chunk on request, appending its solids once; a stale chunk is refused (R1-72)',async()=>{
+  const {gzipSync,strToU8}=await import('fflate');
+  const {parseHorizonIndex,createHorizonChunkLoader,parseHorizonChunk}=await import('../src/house/world/horizonAssets.ts');
+  const solid={id:'a@harbour',kind:'deck',positions:[0,0,0,1,0,0,0,0,1],indices:[0,1,2],surface:'stone',districtId:'harbour',bedIds:[],walkable:true,role:'deck'};
+  const index={id:'horizon',geographyRevision:'horizon-geo-1',geometry:{solids:[]},collision:{beds:[]},pathGraph:{nodes:[],edges:[]},chunks:[{districtId:'harbour',url:'/horizon/world/horizon-geo-1/harbour.json.gz',bytes:1,sha256:'x',solids:1}]};
+  const chunk=gzipSync(strToU8(JSON.stringify({id:'horizon-chunk',geographyRevision:'horizon-geo-1',districtId:'harbour',solids:[solid]})));
+  const world=parseHorizonIndex(gzipSync(strToU8(JSON.stringify(index))).buffer as ArrayBuffer);
+  const calls:string[]=[];vi.stubGlobal('fetch',async(url:string)=>{calls.push(url);return new Response(chunk as unknown as BodyInit);});
+  try{
+    const loader=createHorizonChunkLoader(world)!,landed:string[]=[];loader.onLoad(id=>landed.push(id));
+    expect(loader.ready('harbour')).toBe(false);expect(loader.ready('green')).toBe(true);
+    await Promise.all([loader.load('harbour'),loader.load('harbour')]);await loader.load('harbour');
+    expect(calls).toEqual(['/horizon/world/horizon-geo-1/harbour.json.gz']);expect(landed).toEqual(['harbour']);
+    expect(world.geometry.solids.map(s=>s.id)).toEqual(['a@harbour']);expect(loader.ready('harbour')).toBe(true);expect(loader.bytes()).toBe(chunk.byteLength);
+  }finally{vi.unstubAllGlobals();}
+  const stale=gzipSync(strToU8(JSON.stringify({id:'horizon-chunk',geographyRevision:'horizon-geo-0',districtId:'harbour',solids:[solid]})));
+  expect(()=>parseHorizonChunk(stale.buffer as ArrayBuffer,index.chunks[0]!)).toThrow('stale');
+  expect(()=>parseHorizonIndex(gzipSync(strToU8(JSON.stringify({...index,chunks:[{...index.chunks[0],url:'/horizon/world/horizon-geo-0/harbour.json.gz'}]}))).buffer as ArrayBuffer)).toThrow('revision');
+});
+it('falls back to the one-file definition when a bake has no index (404 or a dev server HTML fallback) (R1-72)',async()=>{
+  const {encodeTerrainAsset}=await import('../src/harbour/horizon/land/terrain/asset.ts'),{loadHorizonAssets,HORIZON_INDEX_URL,HORIZON_MONOLITH_URL}=await import('../src/house/world/horizonAssets.ts');
+  const buffer=encodeTerrainAsset({revision:'horizon-geo-1',width:2000,depth:1800,step:5,columns:401,rows:361,heights:new Float32Array(401*361),surfaces:new Uint8Array(401*361)});
+  const definition={id:'horizon',geographyRevision:'horizon-geo-1',geometry:{solids:[{id:'a'}]},collision:{beds:[]},pathGraph:{nodes:[],edges:[]}},calls:string[]=[];
+  vi.stubGlobal('fetch',async(url:string)=>{calls.push(url);return url===HORIZON_INDEX_URL?new Response('<!doctype html>',{headers:{'content-type':'text/html'}}):new Response(url.endsWith('.bin')?buffer as unknown as BodyInit:url.endsWith('cards.json')?'[]':JSON.stringify(definition));});
+  try{const assets=await loadHorizonAssets('lite');expect(calls).toContain(HORIZON_MONOLITH_URL);expect(assets.chunks).toBeUndefined();expect(assets.world.geometry!.solids).toHaveLength(1);}
+  finally{vi.unstubAllGlobals();}
 });
