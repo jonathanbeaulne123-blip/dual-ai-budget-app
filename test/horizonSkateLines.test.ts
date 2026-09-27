@@ -66,15 +66,10 @@ describe('the headless rider rides S1–S4 (RIDE §12)', () => {
       const run = await rideLine(id);
       runs.set(id, run);
       evidence(id, run, id === 'S1');
-      if (id === 'S4') {
-        // v2.2 (reconciled onto Stage A candidate 5) — REGRESSION, open land defect, kept visible: the terrain stands 0.3–0.8 m
-        // over S4's deck at 206–210 m ([915.5, 669], grass at 32.9–33.1 over a 32.3–32.5 deck, just south of the reserved
-        // Hollow neck). The rider stops at the deck edge there (204 m, a step) and, restarted onto the hump, stalls at 216 m —
-        // a stop the classifier cannot name. S4 rode start → end on main's v1.6 land.
-        expect(run.completed).toBe(false);
-        expect(run.stops.map(stop => [stop.kind, Math.round(stop.d / 4) * 4])).toEqual([['wall', 148], ['step', 204], ['rider', 216]]);
-        return;
-      }
+      // Wave 7 (W7-T): S4 rides start → end again. The regression on the v2.2 reconcile (terrain 0.3–0.8 m over the deck at
+      // 206–210 m, [915.5, 669]; stops step 204 / rider 216) was the lattice triangle between S4 and the walk garden's
+      // terrace (7.3 eu up, 10 eu beside): a skate lane now keeps its raster margin against a terrace (terrain/index.ts
+      // SKATE_TERRACE). Measured on the W7-T scratch bake; the integrator's bake must hold it.
       expect(run.completed).toBe(true);
       expect(run.stops.filter(s => s.kind === 'rider')).toEqual([]);
       run.legs.forEach((leg, i) => {
