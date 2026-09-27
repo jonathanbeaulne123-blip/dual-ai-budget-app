@@ -1,5 +1,5 @@
 import { HORIZON_MANIFEST as M, requireScaleFactor } from '../../world/manifest';
-import type { WaterCut, XY, XYZ } from '../interfaces';
+import type { StructureSolid, WaterCut, XY, XYZ } from '../interfaces';
 import { ellipse, lineOutline, polygonDistance, polylineArcs, segmentPoint } from '../terrain/geometry';
 import { islandContains } from '../coast';
 
@@ -35,10 +35,40 @@ export function buildWaterCuts(): WaterCut[] {
     channel('water.wash', 'dry', w.wash.pts, [35, 31, 25, 0], 11, 0.65, 0.7),
     ...w.reachChannels.map((p, i) => channel(`water.reach.${i + 1}`, 'river', p, [3.8, 2.5, 1], 7, 0.9, 0.65)),
     { ...basin('water.deep', w.deep.cx, w.deep.cy, 43, 28, w.deep.surface, 7, 'deep'), underground: true },
+    // R2-60: the spring at the Reach (water.spring) is a water body with a visible source: a pool at the foot of the
+    // west bank (SPRING below; the source rock is `buildSpringSolids`).
+    { ...basin('water.spring', SPRING.pool.c[0], SPRING.pool.c[1], SPRING.pool.r[0], SPRING.pool.r[1], SPRING.pool.level, 0.6, 'lake'), bank: SPRING.pool.bank * s },
   ];
   return bodies;
 }
 
+/**
+ * The spring at the Reach (MANIFEST `water.spring` [1250,1180], "a decorative spring at the Reach; not the Deep's
+ * outflow"; R2-60). Its pool lies at the foot of the west bank, level 5.6 (ground 5.6–7 round it on candidate 3);
+ * it seeps to the river (no rill: walk reach and the Reach Footbridge's west end run between the pool and the
+ * river at x 1256–1263, and a surface rill would add an unregistered crossing under them).
+ * The source is a banded rock the water issues from, set into the bank on the pool's north-west side, standing
+ * 3.2 over the ground so page I's boardwalk eye (5.4, 52 eu away) holds it over the bank at [1250,1190] (6.6).
+ */
+export const SPRING = {
+  pool: { c: [1250, 1184] as const, r: [4.5, 3] as const, level: 5.6, bank: 0.3 },
+  source: { c: [1245.4, 1180.2] as const, radius: 2.6, rise: 3.2, sink: 1.5 },
+} as const;
+/** The spring's source rock: a banded, tapering octagonal outcrop (the offshore stack form, land scale), its foot sunk
+ * `sink` below the lowest ground under it so no edge hangs, its top `rise` over the highest. */
+export function buildSpringSolids(ground: (x: number, z: number) => number): StructureSolid[] {
+  const s = requireScaleFactor(), src = SPRING.source, cx = src.c[0] * s, cz = src.c[1] * s, r = src.radius * s;
+  const profile: XY[] = [[-0.91, -0.3], [-0.62, -0.83], [0.12, -1], [0.83, -0.52], [1, 0.18], [0.61, 0.78], [-0.24, 1], [-0.84, 0.48]];
+  const under = profile.map(p => ground(cx + r * p[0], cz + r * p[1])), low = Math.min(...under, ground(cx, cz)), high = Math.max(...under, ground(cx, cz));
+  const foot = low - src.sink * s, top = high + src.rise * s, positions: number[] = [], indices: number[] = [];
+  const tiers = [{ y: foot, size: 1.05, x: 0, z: 0 }, { y: high, size: 1, x: -0.04, z: 0.03 }, { y: mix(high, top, 0.55), size: 0.82, x: 0.06, z: -0.04 }, { y: top, size: 0.5, x: 0.1, z: -0.08 }];
+  for (const t of tiers) for (const p of profile) positions.push(cx + r * (p[0] * t.size + t.x), t.y, cz + r * (p[1] * t.size + t.z));
+  const quad = (a: number, b: number, c: number, d: number) => indices.push(a, c, b, a, d, c);
+  for (let k = 0; k < tiers.length - 1; k++) for (let i = 0; i < profile.length; i++) quad(k * 8 + i, k * 8 + (i + 1) % 8, (k + 1) * 8 + (i + 1) % 8, (k + 1) * 8 + i);
+  for (let i = 1; i < 7; i++) { indices.push(0, i, i + 1); indices.push(24, 24 + i + 1, 24 + i); }
+  return [{ id: 'water.spring.source', kind: 'springSource', positions, indices, surface: 'rock.spring', districtId: 'reach', bedIds: [], walkable: false, role: 'rock' }];
+}
+const mix = (a: number, b: number, t: number): number => a + (b - a) * t;
 /** Largest drop of one weir or fall (m), the shortest pool (m) and a weir's run (m). */
 export const WATER_STEP = { drop: 1, pool: 8, weir: 1.5 } as const;
 /** Split each graded reach into level pools joined by short weirs; control points and

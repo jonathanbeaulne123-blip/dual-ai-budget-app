@@ -4,7 +4,7 @@ import {prepareLiteWorld} from '../../src/harbour/horizon/world/lite.ts';
 import {baseHeight,buildTerrain,sampleTerrain} from '../../src/harbour/horizon/land/terrain/index.ts';
 import {encodeTerrainAsset,decodeTerrainAsset} from '../../src/harbour/horizon/land/terrain/asset.ts';
 import {buildLandCuts} from '../../src/harbour/horizon/land/beds/build.ts';
-import {buildWaterCuts} from '../../src/harbour/horizon/land/water/index.ts';
+import {buildWaterCuts,buildSpringSolids} from '../../src/harbour/horizon/land/water/index.ts';
 import {buildOffshoreSolids} from '../../src/harbour/horizon/land/offshore/index.ts';
 import {buildCrossings} from '../../src/harbour/horizon/world/crossings.ts';
 import {resolveComputedCrossings,settleBedEdges,openRetainingPassages} from '../../src/harbour/horizon/land/beds/junctions.ts';
@@ -17,6 +17,7 @@ export async function bake(){
   resolveComputedCrossings(cuts,crossings,baseHeight);
   const built=buildTerrain(cuts,{step:5});
   const buffer=encodeTerrainAsset(built, { waters: cuts.waters, beds: cuts.beds }),field=decodeTerrainAsset(buffer,'full');
+  cuts.solids.push(...buildSpringSolids((x,z)=>sampleTerrain(field,x,z)));
   settleBedEdges(cuts,(x,z)=>sampleTerrain(field,x,z));
   openRetainingPassages(cuts,crossings);
   const groundBeds=groundTerrainBeds(cuts,(x,z)=>sampleTerrain(field,x,z));
