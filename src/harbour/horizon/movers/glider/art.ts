@@ -50,6 +50,7 @@ export function createFlightArt(kind:'glider'|'parachute',dressing:VehicleDressi
     root,
     update(state,_dt,figure){
       if(done)return false;
+      if(kind==='parachute'&&state.ended){done=true;root.visible=false;return false;}
       // Never flew (a reduced-motion cut): nothing to show.
       if(state.ended&&!state.flying){done=true;root.visible=false;return false;}
       if(!state.flying){root.visible=false;return true;}

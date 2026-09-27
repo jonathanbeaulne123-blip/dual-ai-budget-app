@@ -86,14 +86,14 @@ describe('the offers read exactly as the brief says',()=>{
     expect(label('crownLaunch')).toEqual(['Run off']);expect(label('lampGallery')).toEqual(['Run off the gallery']);expect(label('prowPlatform')).toEqual(['Run off']);
     expect(thresholdTransitions(threshold('bailOut'))).toEqual([{from:'plane',to:'parachute',action:'Jump'}]);
   });
-  it('offers Jump from the plane only ≥ 60 m above the ground under it (M7 plugs the plane in)',()=>{
+  it('offers Jump from the plane whenever the plane is off the ground (M7 plugs the plane in)',()=>{
     const h=harness({reducedMotion:false,calm:false}),plane=stillDoor(1040,200,1000);let door:ReturnType<typeof stillDoor>|null=plane;
     h.movers.register('plane',()=>({id:'plane',enter(){},update(){},exit:()=>({at:[435,40,690],yaw:0}),bodyPose:()=>({x:door!.x,y:door!.y,z:door!.z,yaw:0}),camera:()=>({eye:[0,0,0],look:[0,0,1],fov:55,roll:0}),sound:()=>null,reducedMotionCut:()=>({landings:[]}),hud:()=>({})}));
     Object.assign(h.body,on('strip'));h.movers.accept(h.movers.offers(h.body).find(o=>o.to==='plane')!,h.body);
     const off=registerBailOutProvider(h.runtime,()=>door);
     Object.assign(h.body,{x:1040,y:200,z:1000});
     const jump=h.movers.offers(h.body).find(o=>o.to==='parachute');expect(jump).toMatchObject({action:'Jump',from:'plane',at:[1040,200,1000],height:200});
-    door={...plane,y:env.groundAt(1040,1000,200)+59};Object.assign(h.body,{y:door.y});expect(h.movers.offers(h.body).some(o=>o.to==='parachute')).toBe(false);
+    door={...plane,y:env.groundAt(1040,1000,200)};Object.assign(h.body,{y:door.y});expect(h.movers.offers(h.body).some(o=>o.to==='parachute')).toBe(false);
     door=plane;Object.assign(h.body,{y:200});
     const taken=h.movers.accept(h.movers.offers(h.body).find(o=>o.to==='parachute')!,h.body)!;
     expect(taken.controller?.id).toBe('parachute');expect((taken.controller as FlightController).phase()).toBe('freefall');
@@ -110,10 +110,10 @@ describe('the dev jump (?bail=x,z,h)',()=>{
     expect(parseBailQuery('?world=horizon&bail=1040,1000,300')).toEqual({x:1040,z:1000,h:300});
     for(const q of ['?bail=1040,1000','?bail=a,b,c','?world=horizon',''])expect(parseBailQuery(q)).toBeNull();
   });
-  it('starts a parachute in freefall from the point in development (a flight: attached), and refuses below 60 m',()=>{
+  it('starts a parachute in freefall from the point in development (a flight: attached), including below the former height gate',()=>{
     const h=harness({reducedMotion:false,calm:false}),c=startDevParachute(h.runtime,{x:1040,z:1000,h:300});
     if(!HARBOUR_DEV){expect(c).toBeNull();return;}
     expect(c?.id).toBe('parachute');expect(h.attachMover).toHaveBeenCalledWith(c);expect((c as FlightController).phase()).toBe('freefall');
-    expect(startDevParachute(harness({reducedMotion:false,calm:false}).runtime,{x:1040,z:1000,h:env.groundAt(1040,1000,300)+50})).toBeNull();
+    expect(startDevParachute(harness({reducedMotion:false,calm:false}).runtime,{x:1040,z:1000,h:env.groundAt(1040,1000,300)+.01})).not.toBeNull();
   });
 });

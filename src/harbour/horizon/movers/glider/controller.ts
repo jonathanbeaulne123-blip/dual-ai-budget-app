@@ -15,7 +15,7 @@ import {MOVER_SOUNDS} from '../shared/mode.ts';
 import {LANDING_LABELS,nearestReachableLanding,resolveTouchdown,type LandingOutcome} from './landing.ts';
 import {DEEP_JETTY,corridorOutcome,enterCorridor,stepCorridor,throatGate,type CorridorState,type ThroatGate} from './corridor.ts';
 import {WING_DT,launchFromPad,launchWing,stepWing,type WingEnv,type WingState} from './wing.ts';
-import {bailOut,stepChute,type ChuteState,type PlaneDoor} from './chute.ts';
+import {airborneChute,bailOut,stepChute,type ChuteState,type PlaneDoor} from './chute.ts';
 import {createFlightCam,FLIGHT_CAM,walkCameraPose,type FlightCamState} from './camera.ts';
 import {WALL_GRACE,type GliderEnv} from './env.ts';
 
@@ -148,6 +148,7 @@ export function createGliderController(deps:FlightControllerDeps):FlightControll
   let lastCamera:ModeCameraPose=walkCameraPose({x:0,y:0,z:0,yaw:0});
   const controller:FlightController={
     id:'glider',
+    airborne(){const c=camState();return stage==='flight'?{...controller.bodyPose(),velocity:[...c.velocity] as [number,number,number]}:null;},
     enter(threshold,body){
       const pad=padFor(env.envelope,threshold);
       padId=pad?.id??Object.entries(PAD_THRESHOLDS).find(([,t])=>t===threshold.id)?.[0]??threshold.id;
@@ -217,18 +218,19 @@ export interface ParachuteDeps extends FlightControllerDeps{
 export function createParachuteController(deps:ParachuteDeps):FlightController{
   const {env}=deps,tier=deps.tier??(()=>'full' as const),reduced=deps.reducedMotion??(()=>false),cam=createFlightCam();
   let chute:ChuteState|null=null,stage:ChuteStage='freefall',acc=0,poseT=0,sound:string|null=null,outcome:LandingOutcome|null=null,exitAt:ModeExit|null=null;
-  let flying=false,ended=false,hudT=Infinity,place:ModeHud['place'],lastCamera:ModeCameraPose=walkCameraPose({x:0,y:0,z:0,yaw:0});
-  const chuteEnv=env.chuteEnv();
+  let pullHeld=false,pendingPull=0,initialSnap=false;
+  let flying=false,ended=false,lastCamera:ModeCameraPose=walkCameraPose({x:0,y:0,z:0,yaw:0});
+  const chuteEnv=env.chuteEnv(()=>chute?.y??0);
   const moving=()=>stage!=='pose'&&stage!=='done';
   const finish=(o:LandingOutcome,yaw:number)=>{
     outcome=o;
     if(fadeKinds.has(o.kind)){stage='done';exitAt={at:o.at,yaw,cut:true,label:o.label};}
     else{stage='pose';poseT=0;exitAt={at:o.at,yaw};cam.hold(cam.pose());}
   };
-  function camYaw(){return cam.memory()?.yaw??chute?.heading??0;}
+  function camYaw(){return chute?.heading??0;}
   function step(input:ModeInput){
     if(!chute)return;
-    // The Move pad leans in the camera's frame: forward along its yaw, right = (−cos, sin) in engine axes.
+    // Steering stays in the body's frame when the user changes camera perspective.
     const cy=camYaw(),f=input.forward,s=input.strafe,lean:[number,number]=[Math.sin(cy)*f-Math.cos(cy)*s,Math.cos(cy)*f+Math.sin(cy)*s];
     const before=chute.phase;
     chute=stepChute(chute,{lean,pull:input.pull,brake:Math.max(0,-input.bar),yaw:input.bank},chuteEnv,DT);
@@ -236,12 +238,10 @@ export function createParachuteController(deps:ParachuteDeps):FlightController{
     stage=chute.phase==='freefall'?'freefall':chute.phase==='opening'?'opening':'canopy';
     if(chute.phase==='touchdown'&&chute.touchdown){
       const t=chute.touchdown;
-      finish(resolveTouchdown(env.landingContext(chute.y),{x:chute.x,y:chute.y,z:chute.z,mode:'parachute'},{airspeed:t.groundSpeed,sink:-chute.vy,groundSpeed:t.groundSpeed,flared:t.flared}),chute.heading);
+      const ctx=env.landingContext(chute.y),surface=ctx.surface(chute.x,chute.z),water=ctx.water(chute.x,chute.z);
+      const local=surface&&surface.walkable&&surface.slope<=40&&Math.abs(surface.y-chute.y)<.15&&(!water||surface.y>water.y+.1);
+      finish(local?{kind:'walkoff',at:[chute.x,chute.y,chute.z],label:'',rule:'field'}:resolveTouchdown(ctx,{x:chute.x,y:chute.y,z:chute.z,mode:'parachute'},{airspeed:t.groundSpeed,sink:-chute.vy,groundSpeed:t.groundSpeed,flared:t.flared}),chute.heading);
     }
-  }
-  function fold(){
-    if(!chute||stage!=='canopy')return;
-    const target=foldTarget(env,chute,'parachute');if(target)finish({kind:'fadeApron',at:target.at,label:`→ ${target.label}`,rule:'field'},chute.heading);
   }
   function camState():FlightCamState{
     const c=chute!;
@@ -249,25 +249,34 @@ export function createParachuteController(deps:ParachuteDeps):FlightController{
   }
   const controller:FlightController={
     id:'parachute',
+    enterAirborne(body,open){
+      chute=airborneChute(body,open);stage=open?'opening':'freefall';acc=0;poseT=0;outcome=null;exitAt=null;sound=null;initialSnap=open;flying=false;ended=false;pullHeld=false;pendingPull=0;
+      cam.reset(body.yaw);lastCamera=walkCameraPose(body);
+    },
+    landingMotion(){return chute?.phase==='touchdown'&&!exitAt?.cut?{x:chute.x,y:chute.y,z:chute.z,yaw:chute.heading,velocity:[chute.vx,chute.vy,chute.vz]}:null;},
     enter(threshold,body){
       const door=deps.plane?.()??{x:threshold.at[0]??body.x,y:threshold.height??body.y,z:threshold.at[1]??body.z,vx:0,vz:0,heading:body.yaw};
       const at={x:Number.isFinite(door.x)?door.x:body.x,y:Number.isFinite(door.y)?door.y:body.y,z:Number.isFinite(door.z)?door.z:body.z};
       chute=bailOut({...door,...at},at.y-env.groundAt(at.x,at.z,at.y));
-      stage=chute?'freefall':'done';acc=0;poseT=0;outcome=null;sound=null;flying=false;ended=false;hudT=Infinity;
+      stage=chute?'freefall':'done';acc=0;poseT=0;outcome=null;sound=null;flying=false;ended=false;pullHeld=false;pendingPull=0;
       exitAt=chute?null:{at:[body.x,body.y,body.z],yaw:body.yaw};
       cam.reset(chute?.heading??body.yaw);
       // The plane's chase cam (M7) hands over by a 0.3 s blend; from a point it starts on the freefall cam.
       lastCamera=walkCameraPose(body);
     },
     update(dt,input){
-      sound=null;flying=true;
-      if(input.fold)fold();
+      sound=initialSnap?MOVER_SOUNDS.snap:null;initialSnap=false;flying=true;
+      if(input.pull&&!pullHeld)pendingPull++;pullHeld=input.pull;
+
       if(stage==='pose'){poseT+=dt;return;}
       if(stage==='done'||!chute)return;
       acc+=Math.min(.25,Math.max(0,dt));
-      while(acc>=DT-1e-9&&moving()){step(input);acc-=DT;}
+      while(acc>=DT-1e-9&&moving()){
+        const toggle=pendingPull%2===1;pendingPull=0;
+        chute={...chute!,pullHeld:false};step({...input,pull:toggle});acc-=DT;
+      }
       if(chute&&moving())lastCamera=cam.update(camState(),{dt,tier:tier(),reducedMotion:reduced(),look:input.look,ground:env.groundAt,blocked:env.cameraBlocked,solid:env.solidAt});
-      hudT+=dt;
+
     },
     exit(){ended=true;return exitAt??(chute?{at:[chute.x,chute.y,chute.z],yaw:chute.heading}:{at:[0,0,0],yaw:0});},
     bodyPose():ModeBodyPose{
@@ -280,11 +289,9 @@ export function createParachuteController(deps:ParachuteDeps):FlightController{
     hud():ModeHud{
       if(!chute||stage==='pose'||stage==='done')return{};
       const height=chute.y-env.groundAt(chute.x,chute.z,chute.y);
-      if(stage==='freefall')return{height,place:{label:'Pull',distance:0,action:'pull'}};
-      if(stage==='canopy'&&hudT>=HUD_REFRESH){hudT=0;const t=foldTarget(env,chute,'parachute');place=t?{label:t.label,distance:t.distance,action:'fold'}:undefined;}
-      return{height,...(stage==='canopy'&&place?{place}:{})};
+      return{height,place:{label:stage==='freefall'?'Open parachute':stage==='opening'?'Opening · retract':'Retract parachute',distance:0,action:'pull'}};
     },
-    finished:()=>stage==='done'||(stage==='pose'&&poseT>=POSE_SECONDS),
+    finished:()=>stage==='done'||stage==='pose',
     phase:()=>stage==='pose'||stage==='done'?stage:chute?.phase??stage,
     outcome:()=>outcome,
     probe():FlightProbe{
@@ -292,7 +299,7 @@ export function createParachuteController(deps:ParachuteDeps):FlightController{
       const g=Math.hypot(c.vx,c.vz);
       return{kind:'parachute',t:c.t,x:c.x,y:c.y,z:c.z,phase:controller.phase(),airspeed:g,vs:c.vy,lift:0,bank:0,heading:c.heading,groundSpeed:c.touchdown?.groundSpeed??g,brake:c.brake??0,...(outcome?{outcome:outcome.kind}:{})};
     },
-    artState:()=>({kind:'parachute',flying,ended,stage,pose:controller.bodyPose(),open:!chute?0:stage==='freefall'?0:stage==='opening'?Math.min(1,(chute.openT??0)/1.2):1,landedFor:stage==='pose'||stage==='done'?poseT:null,faded:stage==='done'&&!!exitAt?.cut}),
+    artState:()=>({kind:'parachute',flying,ended,stage,pose:controller.bodyPose(),open:chute?.inflation??0,landedFor:stage==='pose'||stage==='done'?poseT:null,faded:stage==='done'&&!!exitAt?.cut}),
   };
   return controller;
 }

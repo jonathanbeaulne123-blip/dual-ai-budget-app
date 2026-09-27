@@ -4,7 +4,7 @@
  *
  * - `registerGliderModes(runtime)` → an unregister function (the stage calls it on dispose).
  * - `registerBailOutProvider(runtime, getPlane)` is M7's plug: the plane reports its door each frame; the
- *   carried `bailOut` threshold is offered (as "Jump", a 0.5 s hold) only ≥ 60 m above the ground under it.
+ *   carried `bailOut` threshold is offered (as "Jump", a 0.5 s hold) whenever off the ground.
  * - Dev only (`HARBOUR_DEV`, like `?world=horizon`): `?bail=x,z,h` starts a parachute jump from that point.
  */
 import {HARBOUR_DEV} from '../../../flag.ts';
@@ -20,7 +20,6 @@ import {createFlightArt} from './art.ts';
 import {createGliderController,createParachuteController,stillDoor,type BailSource,type FlightController} from './controller.ts';
 import {adaptFlightController} from './adapter.ts';
 import {createGliderEnv,type GliderEnv} from './env.ts';
-import {CHUTE} from './polar.ts';
 import type {PlaneDoor} from './chute.ts';
 
 /** The slice of the runtime M6 needs (tests pass a fake). */
@@ -40,14 +39,14 @@ export function runtimeHour(runtime:Pick<GliderRuntime,'reviewDate'>,now:()=>num
   let at=-Infinity,hour=15.5;
   return()=>{const t=now();if(t-at>=HOUR_REFRESH_MS){at=t;try{hour=solarPosition(runtime.reviewDate()).localMinutes/60;}catch{/* keep the last hour */}}return hour;};
 }
-export function gliderEnvFor(runtime:Pick<GliderRuntime,'world'|'geography'|'assets'|'reviewDate'>):GliderEnv{
-  return createGliderEnv({world:runtime.world,geography:runtime.geography,cuts:runtime.assets.cuts},{hour:runtimeHour(runtime),clock:()=>performance.now()/1000});
+export function gliderEnvFor(runtime:Pick<GliderRuntime,'world'|'geography'|'assets'|'reviewDate'>&{airspaceReady?:(x:number,z:number)=>boolean}):GliderEnv{
+  return createGliderEnv({world:runtime.world,geography:runtime.geography,cuts:runtime.assets.cuts},{hour:runtimeHour(runtime),clock:()=>performance.now()/1000,ready:runtime.airspaceReady});
 }
 
 const planes=new WeakMap<object,BailSource>();
 /**
  * M7's plug (FLIGHT.md §3.1, §9 ask 6): `getPlane()` returns the plane's door (position, velocity, heading) or
- * null. The carried `bailOut` threshold follows it and is offered only at ≥ 60 m above the ground under the plane.
+ * null. The carried `bailOut` threshold follows it and is offered whenever the plane is off the ground.
  */
 export function registerBailOutProvider(runtime:GliderRuntimeLike,getPlane:BailSource,env:GliderEnv=gliderEnvFor(runtime)):()=>void{
   planes.set(runtime,getPlane);
@@ -56,7 +55,7 @@ export function registerBailOutProvider(runtime:GliderRuntimeLike,getPlane:BailS
   // legacy flight registry keyed the same provider by the row id (`bailOut`).
   const off=registry.carried(isLegacyRuntime(runtime)?'bailOut':'plane',()=>{
     const p=getPlane();if(!p)return null;
-    return p.y-env.groundAt(p.x,p.z,p.y)>=CHUTE.minBailAgl?{at:[p.x,p.z],height:p.y}:null;
+    return p.y-env.groundAt(p.x,p.z,p.y)>0?{at:[p.x,p.z],height:p.y}:null;
   });
   return()=>{off();if(planes.get(runtime)===getPlane)planes.delete(runtime);};
 }
@@ -94,12 +93,12 @@ export function parseBailQuery(search:string):{x:number;z:number;h:number}|null{
 }
 /**
  * Dev-only acceptance harness: a parachute jump from a point, as if the plane's door were there (no plane yet,
- * M7). Refused under reduced motion or calm (no flight there) and below 60 m above the ground.
+ * M7). Refused under reduced motion or calm (no flight there) and at ground contact.
  */
 export function startDevParachute(runtime:GliderRuntimeLike,at:{x:number;z:number;h:number},env:GliderEnv=gliderEnvFor(runtime)):ModeController|FlightController|null{
   if(!HARBOUR_DEV)return null;
   const settings=runtime.settings();if(settings.reducedMotion||settings.calm)return null;
-  if(at.h-env.groundAt(at.x,at.z,at.h)<CHUTE.minBailAgl)return null;
+  if(at.h-env.groundAt(at.x,at.z,at.h)<=0)return null;
   const door:PlaneDoor=stillDoor(at.x,at.h,at.z);
   const flight=withArt(runtime,createParachuteController({env,tier:()=>runtime.settings().tier,reducedMotion:()=>runtime.settings().reducedMotion,plane:()=>door}));
   const threshold:Threshold=runtime.world.thresholds.find(t=>t.id==='bailOut')??{id:'bailOut',at:[at.x,at.z],modes:['plane→parachute'],action:'jump',carried:'plane'};
