@@ -186,6 +186,15 @@ describe('Stage A W5 terrain for Jonathan\'s rulings (MANIFEST v2.0)', () => {
     for (let a = -(pz! / 2 + 2); a <= pz! / 2 + 2; a += 1) for (let b = -(px! / 2 + 2); b <= px! / 2 + 2; b += 1) hs.push(baseHeight(nov.xy[0]! + a, nov.xy[1]! + b));
     expect(Math.min(...hs)).toBeGreaterThan(53.5); expect(Math.max(...hs)).toBeLessThan(57.5);
   });
+  it('D-C14: the cove cliff stair\'s flights are benched into the face, never buried (W5-S request 1)', async () => {
+    const { baseHeight, COVE_STAIR_BENCH: c } = await import('../src/harbour/horizon/land/terrain');
+    let worst = -Infinity;
+    for (const [k, flight] of [[0, c.flights[0]], [2, c.flights[2]]] as const) for (let t = k === 2 ? .2 : 0; t <= 1; t += .05) {
+      const [a, b] = flight, x = mix(a[0], b[0], t), h = mix(a[1], b[1], t), z = mix(a[2], b[2], t);
+      for (const o of [-c.half, 0, c.half]) { const n = [-(b[2] - a[2]), b[0] - a[0]], l = Math.hypot(n[0]!, n[1]!); worst = Math.max(worst, baseHeight(x + n[0]! / l * o, z + n[1]! / l * o) - (h - c.tread)); }
+    }
+    expect(worst).toBeLessThanOrEqual(1e-6);
+  });
   it('R2-60: the spring at the Reach is a water body with a visible source rock standing 3.2 over the ground', async () => {
     const { buildWaterCuts, buildSpringSolids, SPRING } = await import('../src/harbour/horizon/land/water');
     const pool = buildWaterCuts().find(w => w.id === 'water.spring')!;

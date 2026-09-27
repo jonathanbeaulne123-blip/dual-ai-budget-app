@@ -152,7 +152,7 @@ export function baseHeight(x: number, z: number): number {
   const character = coastCharacter(x, z), shoreWidth = character === 'southBeach' ? 44 * s : character === 'bight' ? 23 * s : 10 * s;
   height = mix(0.14 * s, height, smooth(shore / shoreWidth));
   height = damWindow(x, z, notchHeight(x, z, height));
-  return bightAbutment(x, z, spitKnollCut(x, z, applyWaters(x, z, height, m.water)));
+  return coveStairBench(x, z, bightAbutment(x, z, spitKnollCut(x, z, applyWaters(x, z, height, m.water))));
 }
 /**
  * D-A1 (MANIFEST v2.0 `structures.bightBridge.ends.abutments`): the Bight Bridge's west abutment is an embankment
@@ -172,6 +172,29 @@ function bightAbutment(x: number, z: number, height: number): number {
   let fill = f.top - out / c.sideSlope;
   if (along > c.frontStop * s) fill -= (f.top + 3 * s) * smooth((along - c.frontStop * s) / (c.frontFall * s));
   return Math.max(height, fill);
+}
+/**
+ * D-C14 (MANIFEST v2.0 `structures.coveStair`, W5-S request 1): the cliff stair's two flights are cut into the cove's face.
+ * Under each flight (and its landing) the rock is benched 3.5 wide to the flight's own height less 0.25 (the stair's
+ * treads stand on rock, never buried), and the landward wall of the bench rises at 1 : 0.3 (73°, a rock face) back to the
+ * cliff. Lowering only: where the face falls below a flight, the stair is the structure's (posted to the rock).
+ * Flight 0 [631.2,241.9] 34.1 → [605.9,251.3] 17.55; landing ≈ [603.9,250.2] 3 × 6.5 at 17.55; flight 1 → [630,235] 1.0.
+ */
+export const COVE_STAIR_BENCH = { half: 1.75, tread: .25, wall: .3, flights: [[[631.2, 34.1, 241.9], [605.9, 17.55, 251.3]], [[605.9, 17.55, 251.3], [603.9, 17.55, 250.2]], [[603.9, 17.55, 250.2], [630, 1, 235]]] as const } as const;
+function coveStairBench(x: number, z: number, height: number): number {
+  const s = getModel().scale, c = COVE_STAIR_BENCH;
+  if (x < 590 * s || x > 645 * s || z < 225 * s || z > 265 * s) return height;
+  const original = height, under: number[] = [];
+  for (const flight of c.flights) {
+    const line: XYZ[] = flight.map(p => [p[0] * s, p[1] * s, p[2] * s]), q = linePoint(line, x, z), d = Math.max(0, q.distance - c.half * s);
+    if (d <= 0) under.push(q.height - c.tread * s);
+    const bench = q.height - c.tread * s + d / c.wall;
+    if (bench < height) height = bench;
+  }
+  // The flights double back 4–5 m apart: one flight's bench wall never undercuts the other flight's own bench (the
+  // 5 m lattice cannot carry two stacked benches; the lower flight is then carried on its posts, seaward of the upper).
+  for (const h of under) height = Math.max(height, Math.min(original, h));
+  return height;
 }
 /**
  * D-A1 (MANIFEST v2.0 `skate.S2.westRamp`): S2's west ramp comes down the Wash at one even 5 % grade and passes the
