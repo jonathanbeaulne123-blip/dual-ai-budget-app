@@ -49,6 +49,37 @@ function rectMinus(r:[number,number,number,number],holes:readonly [number,number
   for(let i=1;i<xs.length;i++)for(let j=1;j<zs.length;j++){const cx=(xs[i-1]!+xs[i]!)/2,cz=(zs[j-1]!+zs[j]!)/2;if(xs[i]!-xs[i-1]!<1e-6||zs[j]!-zs[j-1]!<1e-6||holes.some(h=>cx>h[0]&&cx<h[1]&&cz>h[2]&&cz<h[3]))continue;out.push([xs[i-1]!,xs[i]!,zs[j-1]!,zs[j]!]);}
   return out;
 }
+/** Wave 7 (page G, R3-53 / Wave 6 "brown shards and a black void"): the Deep had no floor (its pad is underground, so the
+ * terrain never draws one; on the lite frame the lower fifth looked through to nothing), the Ore Line's tube floor and its
+ * footings crossed the room as a steep slab hanging in the air (57 → 40 across [1279,440] → [1298,421]: the brown shards),
+ * and the Sea Passage's first walls stood in the lake (their feet below the room floor kept them from being opened).
+ * Inside the Deep's ellipse: the Ore Line runs on a timber trestle (deck under its rails, bents ≤ 6 eu to the room floor),
+ * the Sea Passage's walls and roof open onto the lake, and every room gets a floor slab at its floor height. */
+export const DEEP_TRESTLE_BAY=6;
+function inRoom(id:string,x:number,z:number,shrink=.5):boolean {const r=M.underground.rooms[id as keyof typeof M.underground.rooms] as {xy:number[]},d=ROOM_DIMENSIONS[id]!;return ((x-r.xy[0]!)/(d.size[0]/2-shrink))**2+((z-r.xy[1]!)/(d.size[1]/2-shrink))**2<1;}
+function dropPrisms(cuts:LandCuts,id:string,drop:(c:XYZ)=>boolean):number {
+  const s=cuts.solids.find(q=>q.id===id);if(!s||s.positions.length%24)return 0;const keep={positions:[] as number[],indices:[] as number[]};let n=0;
+  for(let o=0;o+23<s.positions.length;o+=24){const m=[0,0,0];for(let k=0;k<8;k++)for(let a=0;a<3;a++)m[a]=m[a]!+s.positions[o+k*3+a]!/8;const c:XYZ=[m[0]!,m[1]!,m[2]!];
+    if(drop(c)){n++;continue;}const b=keep.positions.length/3;keep.positions.push(...s.positions.slice(o,o+24));keep.indices.push(...s.indices.slice(o/24*36,o/24*36+36).map(i=>i-o/3+b));}
+  s.positions=keep.positions;s.indices=keep.indices;return n;
+}
+function deepInterior(cuts:LandCuts):void {
+  const d=ROOM_DIMENSIONS.deep!,dp=M.underground.rooms.deep.xy as unknown as XY,inside=(c:XYZ)=>inRoom('deep',c[0],c[2]);
+  let dropped=0;for(const id of ['oreTunnel.floor','oreTunnel.footings','oreTunnel.walls','oreTunnel.roof','seaPassage.walls','seaPassage.roof'])dropped+=dropPrisms(cuts,id,inside);
+  // The Ore Line's trestle across the Deep: a 1.8 eu deck under its rails, bents to the room floor every ≤ DEEP_TRESTLE_BAY.
+  const ore=cuts.beds.find(b=>b.id==='ORE')!,run:XYZ[]=[];for(const p of ore.points)if(inRoom('deep',p[0],p[2],-1))run.push(p);
+  if(run.length>1){const deck=solid('ORE.deepTrestle.deck','trestle','timber','floor',['ORE'],'crown'),bents=solid('ORE.deepTrestle.supports','trestle','timber','support',['ORE'],'crown');
+    for(let i=1;i<run.length;i++)slab(deck,run[i-1]!,run[i]!,1.8,.4);
+    let last=-Infinity,along=0;for(let i=0;i<run.length;i++){if(i)along+=distance([run[i-1]![0],run[i-1]![2]],[run[i]![0],run[i]![2]]);if(along-last<DEEP_TRESTLE_BAY-.01&&i<run.length-1)continue;last=along;
+      const p=run[i]!,q=run[Math.min(run.length-1,i+1)]!,r0=run[Math.max(0,i-1)]!,l=distance([r0[0],r0[2]],[q[0],q[2]])||1,n:XY=[-(q[2]-r0[2])/l,(q[0]-r0[0])/l];
+      for(const side of [-1,1])box(bents,[p[0]+n[0]*side*.7,p[2]+n[1]*side*.7],p[1]-.4,[.35,.35],d.floor-.25);}
+    cuts.solids.push(deck,bents);}
+  // A floor slab in every room at its floor height (the Deep's lies 2 under the lake's surface: the lake bed).
+  for(const [id,room]of Object.entries(M.underground.rooms)){const {size,floor}=ROOM_DIMENSIONS[id]!,p=room.xy as unknown as XY,f=solid(`underground.${id}.floor`,'cavern','rock','floor',[],'crown'),rx=size[0]/2,rz=size[1]/2,strip=2*rx/15;
+    for(let x0=p[0]-rx;x0<p[0]+rx-1e-6;x0+=strip){const x1=Math.min(x0+strip,p[0]+rx),near=Math.min(Math.abs(x0-p[0]),Math.abs(x1-p[0]),x0<p[0]&&x1>p[0]?0:Infinity),half=rz*Math.sqrt(Math.max(0,1-(near/rx)**2))+.5;box(f,[(x0+x1)/2,p[1]],floor,[x1-x0,2*half],floor-.6);}
+    cuts.solids.push(f);}
+  cuts.diagnostics.push({id:'underground.deep.interior',severity:'info',message:`the Deep: ${dropped} tube prisms opened inside the room (Ore Line tube, Sea Passage walls); the Ore Line crosses on a timber trestle to the floor at ${d.floor}; every room has a floor slab`,at:dp,measured:dropped,required:0});
+}
 export function buildUnderground(cuts:LandCuts,base:HeightQuery):void {
   for(const [id,room]of Object.entries(M.underground.rooms)){
     const p=room.xy as unknown as XY,{size,floor,clear}=ROOM_DIMENSIONS[id]!,pad=addFlatPad(cuts,`underground.${id}`,'place',p,floor,size,0,true);
@@ -132,6 +163,7 @@ export function buildUnderground(cuts:LandCuts,base:HeightQuery):void {
   }
   const link=bed('southPortal.link','walk',[[1345,110,680],[1355,110,685],[1370,110,690]]);cuts.beds.push(link);
   openRoomConnections(cuts);
+  deepInterior(cuts);
   // Ignore only the named entrance neighbourhoods when measuring roof cover.
   let low=Infinity,lowAt:XY=[0,0];
   for(const b of cuts.beds.filter(b=>b.kind==='cave'||b.id==='ORE'))for(const p of b.points){
