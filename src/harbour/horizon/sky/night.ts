@@ -21,8 +21,24 @@ export const NIGHT_FLOOR = {
   moon: '#b9c6e2',
   moonIntensity: 0.4,
 } as const;
+/**
+ * Wave 6 (P28 regression: the R2-110 sky dome drew the night zenith, #121a2e = L* 9.5, over most of a 390 × 844 frame — the
+ * histogram mode fell from 34 to 10 on pages A, C and L): the dome's zenith never falls below the night floor's sky,
+ * #2b3757 (L* 23, just over the fog/horizon colour's 20), so a portrait frame's sky sits inside 12–35 and rails and lips
+ * (face chalk Y 0.23) keep ≥ 3:1 against it. Dusk skies lighter than the floor are untouched.
+ */
+export const NIGHT_DOME = { zenithFloor: '#2b3757' } as const;
+export function nightDome<T extends { zenith: string }>(colors: T, nightness: number): T {
+  const floor = blendColor(colors.zenith, NIGHT_DOME.zenithFloor, Math.min(1, Math.max(0, nightness)));
+  return luminance(floor) > luminance(colors.zenith) ? { ...colors, zenith: floor } : colors;
+}
+/** Relative luminance (sRGB → linear, Rec. 709) of a #rrggbb colour. */
+export function luminance(hex: string): number {
+  const c = [1, 3, 5].map(i => Number.parseInt(hex.slice(i, i + 2), 16) / 255).map(v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * c[0]! + 0.7152 * c[1]! + 0.0722 * c[2]!;
+}
 /** Light cards and the moon-chalk lip line (STYLE §1.3.3; darkness floor: lips at ≥ 3:1 "carried by a chalk lip line"). */
-export const NIGHT_LIGHT_CARDS = { full: 160, lite: 48, poolRadius: 2.4, beadRadius: 0.32, pool: '#f6c779', bead: '#fff0c8', poolOpacity: 0.78, chalk: '#c9d0de', /** Per-role night colour of retaining/kerb/parapet FACES (dimmer than the lip line). */ faceChalk: '#7d8597', door: '#ffc978', doorSize: [1.6, 2.5] as const } as const;
+export const NIGHT_LIGHT_CARDS = { full: 160, lite: 48, poolRadius: 2.4, beadRadius: 0.32, pool: '#f6c779', bead: '#fff0c8', poolOpacity: 0.78, chalk: '#c9d0de', /** Per-role night colour of retaining/kerb/parapet FACES (dimmer than the lip line). */ faceChalk: '#7d8597', door: '#ffc978', doorSize: [1.6, 2.5] as const, /** Wave 6: a threshold marker's top at night — dark ink against its lamp's warm pool (≥ 3:1). */ markerInk: '#262a36' } as const;
 export interface NightLight { nightness: number; hemisphereSky: string; hemisphereGround: string; hemisphereIntensity: number; moonIntensity: number; lightCards: boolean }
 export function nightLight(elevation: number, day: { zenith: string; ambient: number }): NightLight {
   const nightness = Math.min(1, Math.max(0, -elevation / 12));

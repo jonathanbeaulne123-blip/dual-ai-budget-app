@@ -87,3 +87,25 @@ describe('R2-110 the sky dome meets the fogged sea at the horizon with no edge',
     expect(skyDomeWeights(Math.sin(.01 * Math.PI / 180), 0).fog).toBeGreaterThan(.999);
   });
 });
+it('Wave 6 (P28): the night dome zenith never falls below the night floor (L* 23.5), dusk skies stay as they are', async () => {
+  const { nightDome, luminance, NIGHT_DOME } = await import('../src/harbour/horizon/sky/night.ts');
+  const { skyGradient } = await import('../src/harbour/horizon/sky/gradient.ts');
+  const Lstar = (y: number) => (y > 0.008856 ? 116 * Math.cbrt(y) - 16 : 903.3 * y);
+  const night = skyGradient(-30), dusk = skyGradient(-3);
+  expect(+Lstar(luminance(night.zenith)).toFixed(1)).toBe(9.5); // the R2-110 dome's night zenith: the P28 mode of 10
+  expect(nightDome(night, 1).zenith).toBe(NIGHT_DOME.zenithFloor);
+  const floorL = Lstar(luminance(nightDome(night, 1).zenith)); expect(floorL).toBeGreaterThanOrEqual(12); expect(floorL).toBeLessThanOrEqual(35); expect(+floorL.toFixed(1)).toBe(23.5);
+  // The horizon/fog colour at night (L* 20.2) stays under the zenith: the dome still darkens upward, never inverts.
+  expect(Lstar(luminance(night.horizonAway))).toBeLessThan(floorL);
+  expect(nightDome(dusk, 0.25)).toBe(dusk);
+  // The face chalk that rails now take reads ≥ 3:1 against the floor sky.
+  const { NIGHT_LIGHT_CARDS } = await import('../src/harbour/horizon/sky/night.ts');
+  expect((luminance(NIGHT_LIGHT_CARDS.faceChalk) + 0.05) / (luminance(NIGHT_DOME.zenithFloor) + 0.05)).toBeGreaterThanOrEqual(3);
+});
+it('Wave 6 (P28 A markers 1.37:1): a threshold marker top at night is dark ink, ≥ 3:1 against its lamp pool', async () => {
+  const { luminance, NIGHT_LIGHT_CARDS } = await import('../src/harbour/horizon/sky/night.ts');
+  const pool = luminance(NIGHT_LIGHT_CARDS.pool) * NIGHT_LIGHT_CARDS.poolOpacity, ink = luminance(NIGHT_LIGHT_CARDS.markerInk);
+  expect((pool + 0.05) / (ink + 0.05)).toBeGreaterThanOrEqual(3);
+  // The lip chalk it replaces on markers read 1.2:1 against the same pool.
+  expect((luminance(NIGHT_LIGHT_CARDS.chalk) + 0.05) / (pool + 0.05)).toBeLessThan(1.5);
+});
