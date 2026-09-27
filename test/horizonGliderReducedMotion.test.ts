@@ -40,15 +40,17 @@ describe('the launch sheet under reduced motion (FLIGHT.md §6)',()=>{
     expect(padLandings('prow',env).find(l=>l.id==='sands')!.label).toBe('Long Sands (afternoon)');
     expect(padLandings('lampGallery',env).map(l=>l.label)).toEqual(['the sandbar',"the Flats' strip"]);
   });
-  it('the sandbar is the Bight path node nearest [600, 1030], standing on a walkable surface above the water',()=>{
+  it('the sandbar is a dry beach off the Bight Bridge\'s deck, on open ground just above the water (Wave 7)',()=>{
     const sandbar=padLandings('lampGallery',env)[0]!;
-    // v2.2 (Stage A land): the Bight Bridge (D-A1) spans [600, 1030] and the Bight keeps no low shore path (the nearest node
-    // within 6 m of water is 463 m away at Stillwater), so shoreNode falls back to the nearest path node: the bridge's deck walk,
-    // ≈ [553, 12, 1078], 67 m away. It is walkable and 12 m over the water, not wet; its label "the sandbar" is an open item
-    // (RECONCILE.md). Was [735, 1, 961] on the v1.6 land.
-    expect(Math.hypot(sandbar.xy[0]-600,sandbar.xy[1]-1030)).toBeLessThan(160);expect(sandbar.height!).toBeGreaterThanOrEqual(0);
-    const floor=geography.surface(sandbar.xy[0],sandbar.xy[1],sandbar.height!+.5),wet=env.water(sandbar.xy[0],sandbar.xy[1],sandbar.height!+.3);
-    expect(floor&&Math.abs(floor.y-sandbar.height!)).toBeLessThan(.5);expect(wet===null||wet.y<sandbar.height!-1).toBe(true);
+    // v2.2 (Stage A land): the sandbar itself is awash (−0.22) and the Bight keeps no low shore path (the nearest node within
+    // 6 m of water is 463 m away at Stillwater): shoreNode fell back to the bridge's deck walk [553, 12, 1078] (RECONCILE item 8).
+    // Wave 7: `beach` searches the terrain — measured [679.4, 0.44, 1057.5], 84 m east of [600, 1030], 0.44 over the Bight.
+    expect(sandbar.xy[0]).toBeCloseTo(679.4,1);expect(sandbar.xy[1]).toBeCloseTo(1057.5,1);expect(sandbar.height!).toBeCloseTo(.44,2);
+    const floor=geography.surface(sandbar.xy[0],sandbar.xy[1],sandbar.height!+.5)!;
+    expect(floor.id).toBe('terrain');expect(Math.abs(floor.y-sandbar.height!)).toBeLessThan(.05);
+    expect(geography.submerged(sandbar.xy[0],sandbar.xy[1],sandbar.height!)).toBe(false);expect(env.water(sandbar.xy[0],sandbar.xy[1],sandbar.height!-.3)).toBeNull();
+    // Not the deck: the old fallback stood 12 over the water.
+    expect(Math.hypot(sandbar.xy[0]-553.4,sandbar.xy[1]-1077.9)).toBeGreaterThan(100);
     expect(env.shoreNode(600,1030)?.label).toBe('Bight Shore');
   });
   it('every landing has a finite place and height (the cut lands on foot there)',()=>{
