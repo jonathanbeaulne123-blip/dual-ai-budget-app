@@ -76,3 +76,9 @@ describe.each(['full', 'lite'] as const)('Wave 6 body blockers (%s)', tier => {
     expect(lineWalk([[1470, 12, 1186], [1470.5, 12, 1182], [1476, 12, 1181]], tier)).toEqual({ reached: true, blockedAt: null, by: null });
   });
 });
+describe('Wave 6 floor slabs as ground beside a bed edge', () => {
+  it("reads a slab's top faces, not its box: the rotated bight.1 lay-by does not cancel the service drive's rail or VBS's wall beside it (P09 +4 m on the first cut)", () => {
+    expect(solidsNear('plot.bight.1.service.edges', 867.5, 944.7, 2).length).toBeGreaterThan(0);
+    expect(solidsNear('VBS.retaining', 864.3, 952.4, 2).length).toBeGreaterThan(0);
+  });
+});

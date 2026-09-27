@@ -28,16 +28,26 @@ export function planDistance(p:XY,line:readonly XY[]):number {
  * not above the bed (a pad above the bed is a wall to retain, not ground). */
 /** Wave 6: a raised landing/platform deck (a floor slab, not a pad) is ground to the bed edge beside it — page B's lamp
  * gallery ramp ran on across its landing slab and railed its own mouth (the drop was read to the sea under the slab). */
-const floorBounds=new WeakMap<StructureSolid,{x0:number;x1:number;z0:number;z1:number;top:number}>();
+type FloorTop={x0:number;x1:number;z0:number;z1:number;tris:number[][]};
+const floorTops=new WeakMap<StructureSolid,FloorTop>();
 const floorLists=new WeakMap<readonly StructureSolid[],{length:number;floors:StructureSolid[]}>();
+/** The floor's up-facing triangles (a rotated slab's box would cover ground beside it). */
+function floorTop(s:StructureSolid):FloorTop{
+  let f=floorTops.get(s);if(f)return f;f={x0:Infinity,x1:-Infinity,z0:Infinity,z1:-Infinity,tris:[]};const p=s.positions;
+  for(let i=0;i<s.indices.length;i+=3){const t=[0,1,2].map(k=>s.indices[i+k]!*3),a=t.map(j=>[p[j]!,p[j+1]!,p[j+2]!]);
+    const ux=a[1]![0]!-a[0]![0]!,uz=a[1]![2]!-a[0]![2]!,vx=a[2]![0]!-a[0]![0]!,vz=a[2]![2]!-a[0]![2]!,uy=a[1]![1]!-a[0]![1]!,vy=a[2]![1]!-a[0]![1]!,ny=uz*vx-ux*vz,n=Math.hypot(uy*vz-uz*vy,ny,ux*vy-uy*vx);
+    if(n<1e-9||ny/n<.9)continue;f.tris.push(a.flat());for(const q of a){f.x0=Math.min(f.x0,q[0]!);f.x1=Math.max(f.x1,q[0]!);f.z0=Math.min(f.z0,q[2]!);f.z1=Math.max(f.z1,q[2]!);}}
+  floorTops.set(s,f);return f;
+}
 function floorAt(cuts:LandCuts,x:number,z:number,h:number):number {
   // A regeneration pass (junctions.ts settleBedEdges) emits into an empty solid list: it names the real one as floorSource.
   const source=(cuts as LandCuts&{floorSource?:StructureSolid[]}).floorSource??cuts.solids;
   let top=-Infinity,list=floorLists.get(source);
   if(!list||list.length!==source.length){list={length:source.length,floors:source.filter(s=>s.role==='floor'&&s.walkable&&/\.slab$/.test(s.id))};floorLists.set(source,list);}
-  for(const s of list.floors){
-    let b=floorBounds.get(s);if(!b){const p=s.positions;b={x0:Infinity,x1:-Infinity,z0:Infinity,z1:-Infinity,top:-Infinity};for(let i=0;i<p.length;i+=3){b.x0=Math.min(b.x0,p[i]!);b.x1=Math.max(b.x1,p[i]!);b.z0=Math.min(b.z0,p[i+2]!);b.z1=Math.max(b.z1,p[i+2]!);b.top=Math.max(b.top,p[i+1]!);}floorBounds.set(s,b);}
-    if(x>=b.x0&&x<=b.x1&&z>=b.z0&&z<=b.z1&&b.top<=h+.6)top=Math.max(top,b.top);}
+  for(const s of list.floors){const f=floorTop(s);if(x<f.x0||x>f.x1||z<f.z0||z>f.z1)continue;
+    for(const t of f.tris){const [ax,ay,az,bx,by,bz,cx,cy,cz]=t as [number,number,number,number,number,number,number,number,number],det=(bz-cz)*(ax-cx)+(cx-bx)*(az-cz);if(Math.abs(det)<1e-9)continue;
+      const u=((bz-cz)*(x-cx)+(cx-bx)*(z-cz))/det,v=((cz-az)*(x-cx)+(ax-cx)*(z-cz))/det;if(u<-1e-6||v<-1e-6||u+v>1+1e-6)continue;
+      const y=u*ay+v*by+(1-u-v)*cy;if(y<=h+.6)top=Math.max(top,y);}}
   return top;
 }
 function groundBeyond(cuts:LandCuts,base:HeightQuery,x:number,z:number,h:number):number {
