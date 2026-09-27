@@ -129,14 +129,16 @@ export function viewPixels(ray: RayCaster, eye: Point3, target: Point3, horizont
 export function buildViews(field: TerrainField, cuts: LandCuts, options: { grid?: typeof VIEW_GRID } = {}): SketchbookPose[] {
   const s = requireScaleFactor(), tests = subjectTests(cuts.solids), ray = createRayCaster(field, cuts), grid = options.grid ?? VIEW_GRID;
   return HORIZON_MANIFEST.views.map(view => {
-    const xy: Point2 = [view.xy[0]! * s, view.xy[1]! * s], underground = view.id === 'G', v = view as typeof view & { target_h?: number; portrait?: { fov_deg: number; target?: number[]; target_h?: number; frames?: string[]; xy?: number[]; eyeH?: number }; deferred?: string[]; subjects?: string[] };
+    const xy: Point2 = [view.xy[0]! * s, view.xy[1]! * s], underground = view.id === 'G', v = view as typeof view & { target_h?: number; portrait?: { fov_deg: number; target?: number[]; target_h?: number; frames?: string[]; xy?: number[]; eyeH?: number }; deferred?: string[]; subjects?: string[]; ground?: { xy: number[]; h: number } | number[] };
     const floor = underground ? (cuts.pads.find(p => p.id === 'threshold.deepJetty')?.centre[1] ?? 40 * s) : Math.max(floorAt(field, cuts, xy), ray.floorAt(xy[0], xy[1]));
     const eye: Point3 = [xy[0], view.eyeH !== undefined ? view.eyeH * s : floor + 1.6, xy[1]], tx = view.target[0]! * s, tz = view.target[1]! * s;
     // target_h (v1.7) replaces the per-page constants and the terrain default.
     const target: Point3 = [tx, v.target_h !== undefined ? v.target_h * s : terrainHeight(field, tx, tz), tz];
     const p = v.portrait, pxy = p?.xy ? [p.xy[0]! * s, p.xy[1]! * s] as Point2 : null, pt = p?.target ?? view.target;
     const portrait: PortraitPose | undefined = p ? { eye: pxy ? [pxy[0], p.eyeH !== undefined ? p.eyeH * s : floorAt(field, cuts, pxy) + 1.6, pxy[1]] : eye, target: [pt[0]! * s, p.target_h !== undefined ? p.target_h * s : target[1], pt[1]! * s], fovDegrees: p.fov_deg, frames: p.frames ?? [] } : undefined;
-    const pose: SketchbookPose = { id: view.id, label: view.label, eye, target, floor, underground, fovDegrees: view.fov_deg, aspect: 16 / 9, radius: view.radius_eu, bestHour: view.bestHour, also: view.also, portrait, deferred: v.deferred ?? [] };
+    // Wave 7 (R3-130, D-D6): a page may name its own dry ground point for Walk (`views[*].ground`, {xy, h} or [x, h, z]).
+    const g = v.ground, ground: Point3 | undefined = !g ? undefined : Array.isArray(g) ? [g[0]! * s, g[1]! * s, g[2]! * s] : [g.xy[0]! * s, g.h * s, g.xy[1]! * s];
+    const pose: SketchbookPose = { id: view.id, label: view.label, eye, target, floor, underground, fovDegrees: view.fov_deg, aspect: 16 / 9, radius: view.radius_eu, bestHour: view.bestHour, also: view.also, portrait, deferred: v.deferred ?? [], ...(ground ? { ground } : {}) };
     const names = v.subjects ?? PAGE_SUBJECTS[view.id] ?? [], pageTests = Object.fromEntries(names.map(n => [n, tests[n] ?? (() => false)]));
     // R2-74: fog at this eye's height (sky/fog.ts): full tier on the 1440 × 900 frame, lite on the phone.
     const lift = Math.max(0, eye[1] - floor), fogAt = (tier: 'full' | 'lite') => ({ near: HORIZON_FOG[tier].near + lift * HORIZON_FOG.nearPerEyeHeight, far: HORIZON_FOG[tier].far + lift * HORIZON_FOG.farPerEyeHeight }), farFull = fogAt('full'), farLite = fogAt('lite');
