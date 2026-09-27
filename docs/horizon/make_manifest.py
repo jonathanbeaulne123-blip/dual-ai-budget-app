@@ -1625,6 +1625,24 @@ for v in m["views"]:
     if v["id"] == "A":
         v["lightRule"] = "at the page's best hour (golden hour) the dam's glass face reads lit OR emissive: the dam.glassFace light card is on from golden hour (D-A5); P25's golden-hour check is 'the square lit and the dam's face lit or emissive'"
 
+# 6. D-A7 · Crossings built apart (Jonathan: "go with recommended"): the garden walk over Green Road keeps its named
+#    footbridge; the other four meet flush as at-grade thresholds (the beds track regrades them). The Hollow neck's
+#    covered-bridge row (#7) stays reserved, now under D-C10 (Jonathan: recommended = keep reserved).
+D_A7 = "D-A7 (" + RULED + ")"
+row_edit("VG", "walk garden", [974, 748], at=[969.5, 764.2], movedFrom=[974, 748], resolution="over", structure="gardenWalkBridge", reserved=None, decided=D_A7,
+         note="the Garden Walk crosses Green Road on the named gardenWalkBridge, 17.65 over the road (regrading would need ≈ 147 m of 12 % ramp each side)")
+m["structures"]["gardenWalkBridge"]["register_v2_0"] = "D-A7: this footbridge is the register's VG × walk garden crossing (over), at [969.5,764.2]"
+row_edit("V01", "walk bightPier", [407, 894], at=[402.3, 894.5], movedFrom=[407, 894], reserved=None, decided=D_A7,
+         note="flush at-grade threshold (a marked crossing on the Drive): the pier walk (34.47) comes down 3.9 to the Drive (30.55) over ≈ 33 m at ≤ 12 %; regrade owed (beds)")
+for at in ([415.5, 897.6], [422.8, 899]):
+    row_edit("walk bightPier", "yearWalk", at, note=m["crossings"][row_find("walk bightPier", "yearWalk", at)]["note"] + "; v2.0: re-check after the D-A7 regrade of the pier walk at V01 (the pier walk falls to the Drive's height here)")
+row_edit("S4", "VG", [973, 538], reserved=None, decided=D_A7,
+         note="flush at-grade threshold at the studio terrace (dismount marker + kerb gap): S4 (37.07) rises 2.8 to VG (39.87) at ≤ 12 % over ≥ 24 m on either side; regrade owed (beds)")
+row_edit("S4", "walk garden", [905.9, 640.6], decided=D_A7, note=m["crossings"][row_find("S4", "walk garden", [905.9, 640.6])]["note"] + "; v2.0 (D-A7): flush threshold confirmed (it was 2.75 apart in v1.8)")
+row_edit("S4", "walk garden", [893, 600], reserved="D-C10", note="the covered Hollow Bridge is shared: boards to the rail side at walking pace; the Hollow neck stays reserved (D-C10, " + RULED + ": keep reserved until the other crossings are done; one P16 row, a hollowBridge beam 0.05 over the brook)")
+row_edit("S1", "damPortage", [1160.8, 940.1], reserved=None, decided=D_A7,
+         note="dam apron: boards on the apron, the canoe portage meets it flush: the portage stair's foot (35.81) comes down to the apron (31) at the threshold; regrade owed (beds/structures)")
+
 
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)

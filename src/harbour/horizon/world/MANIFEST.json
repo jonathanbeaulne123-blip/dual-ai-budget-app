@@ -3696,7 +3696,8 @@
    "width_m": 3.2,
    "deck": "the Garden Walk on its own grade (51-55)",
    "under": "Green Road (37) and its May/September footway lanes, 15 eu below",
-   "note": "v1.9: the Garden Walk hung 16.7 eu over Green Road at [971,765] with no structure (the generated span found no footing within 20 m); the reserved at-grade threshold row VG x walk garden (R-A7) is unchanged"
+   "note": "v1.9: the Garden Walk hung 16.7 eu over Green Road at [971,765] with no structure (the generated span found no footing within 20 m); the reserved at-grade threshold row VG x walk garden (R-A7) is unchanged",
+   "register_v2_0": "D-A7: this footbridge is the register's VG \u00d7 walk garden crossing (over), at [969.5,764.2]"
   },
   "crownWalkBridge": {
    "xy": [
@@ -5124,9 +5125,10 @@
     600
    ],
    "resolution": "threshold",
-   "note": "the covered bridge is shared: boards to the rail side at walking pace",
-   "reserved": "R-A7",
-   "kind": "crossing"
+   "note": "the covered Hollow Bridge is shared: boards to the rail side at walking pace; the Hollow neck stays reserved (D-C10, Jonathan 2026-09-27: keep reserved until the other crossings are done; one P16 row, a hollowBridge beam 0.05 over the brook)",
+   "reserved": "D-C10",
+   "kind": "crossing",
+   "v1_9_note": "the covered bridge is shared: boards to the rail side at walking pace"
   },
   {
    "a": "V01",
@@ -5212,20 +5214,32 @@
     538
    ],
    "resolution": "threshold",
-   "note": "at grade at the studio terrace: dismount marker + kerb gap",
-   "reserved": "R-A7",
-   "kind": "crossing"
+   "note": "flush at-grade threshold at the studio terrace (dismount marker + kerb gap): S4 (37.07) rises 2.8 to VG (39.87) at \u2264 12 % over \u2265 24 m on either side; regrade owed (beds)",
+   "kind": "crossing",
+   "decided": "D-A7 (Jonathan 2026-09-27)",
+   "v1_9_note": "at grade at the studio terrace: dismount marker + kerb gap"
   },
   {
    "a": "VG",
    "b": "walk garden",
    "at": [
+    969.5,
+    764.2
+   ],
+   "resolution": "over",
+   "kind": "crossing",
+   "v1_9_at": [
     974,
     748
    ],
-   "resolution": "threshold",
-   "reserved": "R-A7",
-   "kind": "crossing"
+   "movedFrom": [
+    974,
+    748
+   ],
+   "v1_9_resolution": "threshold",
+   "structure": "gardenWalkBridge",
+   "decided": "D-A7 (Jonathan 2026-09-27)",
+   "note": "the Garden Walk crosses Green Road on the named gardenWalkBridge, 17.65 over the road (regrading would need \u2248 147 m of 12 % ramp each side)"
   },
   {
    "a": "V01",
@@ -5287,13 +5301,14 @@
     940.1
    ],
    "resolution": "threshold",
-   "note": "dam apron: boards on the apron; walkers on the crest above; RESERVED R-A7: S1 meets the dam portage stair (was the lake-rim walk) 4.8 eu apart; physically separated until Jonathan rules",
+   "note": "dam apron: boards on the apron, the canoe portage meets it flush: the portage stair's foot (35.81) comes down to the apron (31) at the threshold; regrade owed (beds/structures)",
    "movedFrom": [
     1160,
     935
    ],
-   "reserved": "R-A7",
-   "kind": "crossing"
+   "kind": "crossing",
+   "decided": "D-A7 (Jonathan 2026-09-27)",
+   "v1_9_note": "dam apron: boards on the apron; walkers on the crest above; RESERVED R-A7: S1 meets the dam portage stair (was the lake-rim walk) 4.8 eu apart; physically separated until Jonathan rules"
   },
   {
    "a": "S1",
@@ -5377,12 +5392,21 @@
    "a": "V01",
    "b": "walk bightPier",
    "at": [
+    402.3,
+    894.5
+   ],
+   "resolution": "threshold",
+   "kind": "crossing",
+   "v1_9_at": [
     407,
     894
    ],
-   "resolution": "threshold",
-   "reserved": "R-A7",
-   "kind": "crossing"
+   "movedFrom": [
+    407,
+    894
+   ],
+   "decided": "D-A7 (Jonathan 2026-09-27)",
+   "note": "flush at-grade threshold (a marked crossing on the Drive): the pier walk (34.47) comes down 3.9 to the Drive (30.55) over \u2248 33 m at \u2264 12 %; regrade owed (beds)"
   },
   {
    "a": "V01",
@@ -6248,8 +6272,10 @@
    "resolution": "threshold",
    "kind": "junction",
    "source": "bake v1.8",
-   "note": "under by 2.7 eu: a named structure (footbridge, deck or passage) is owed; v1.9: now a flush path junction (was under)",
-   "v1_8_resolution": "under"
+   "note": "under by 2.7 eu: a named structure (footbridge, deck or passage) is owed; v1.9: now a flush path junction (was under); v2.0 (D-A7): flush threshold confirmed (it was 2.75 apart in v1.8)",
+   "v1_8_resolution": "under",
+   "decided": "D-A7 (Jonathan 2026-09-27)",
+   "v1_9_note": "under by 2.7 eu: a named structure (footbridge, deck or passage) is owed; v1.9: now a flush path junction (was under)"
   },
   {
    "a": "S4",
@@ -7142,7 +7168,8 @@
    "resolution": "over",
    "kind": "crossing",
    "source": "bake v1.8",
-   "note": "over by 6.2 eu: a named structure (footbridge, deck or passage) is owed"
+   "note": "over by 6.2 eu: a named structure (footbridge, deck or passage) is owed; v2.0: re-check after the D-A7 regrade of the pier walk at V01 (the pier walk falls to the Drive's height here)",
+   "v1_9_note": "over by 6.2 eu: a named structure (footbridge, deck or passage) is owed"
   },
   {
    "a": "walk bightPier",
@@ -7154,7 +7181,8 @@
    "resolution": "over",
    "kind": "crossing",
    "source": "bake v1.8",
-   "note": "over by 6.6 eu: a named structure (footbridge, deck or passage) is owed"
+   "note": "over by 6.6 eu: a named structure (footbridge, deck or passage) is owed; v2.0: re-check after the D-A7 regrade of the pier walk at V01 (the pier walk falls to the Drive's height here)",
+   "v1_9_note": "over by 6.6 eu: a named structure (footbridge, deck or passage) is owed"
   },
   {
    "a": "walk coveWalk",
