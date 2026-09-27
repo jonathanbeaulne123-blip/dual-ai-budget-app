@@ -14,7 +14,7 @@ import {HORIZON_GEOGRAPHY} from '../../worldGeography.ts';
  */
 export const HORIZON_CHUNKED=true;
 export const HORIZON_INDEX_URL=`/horizon/world/${HORIZON_GEOGRAPHY}.index.json.gz`,HORIZON_MONOLITH_URL=`/horizon/world/${HORIZON_GEOGRAPHY}.json.gz`;
-export interface HorizonChunkRef{districtId:string;url:string;bytes:number;sha256:string;solids:number}
+export interface HorizonChunkRef{districtId:string;url:string;bytes:number;sha256:string;solids:number;/** Wave 6: plan-view cells (flattened [cx,cz,…] at `cell` eu) the chunk's solids touch (artifacts.mjs chunkFootprint). */footprint?:{cell:number;cells:number[]}}
 export interface HorizonChunkLoader{
   refs:readonly HorizonChunkRef[];
   /** True once this district's solids are in `world.geometry.solids` (a district with no chunk is always ready). */
@@ -25,6 +25,13 @@ export interface HorizonChunkLoader{
   onLoad(listener:(districtId:string,solids:StructureSolid[])=>void):()=>void;
   /** Bytes fetched so far for the definition (index + chunks, as delivered to script: gzip or raw). */
   bytes():number;
+  /** Wave 6: network only — fetch a chunk's bytes without parsing them (`load`/`loadSync` parse and append later). */
+  fetch(districtId:string,signal?:AbortSignal):Promise<void>;
+  /** Wave 6: append a chunk NOW if its bytes are here; with `blocking` (the review-only simulation), fetch it synchronously
+   * first. Returns whether the chunk is resident afterwards. */
+  loadSync(districtId:string,blocking?:boolean):boolean;
+  /** Wave 6: the chunks whose footprint touches the disc (x, z, radius); null when the index carries no footprints (a stale bake). */
+  covering(x:number,z:number,radius:number):string[]|null;
 }
 export type HorizonAssets={world:WorldDefinition;field:TerrainField;journey:TerrainField;cuts:LandCuts;bytes:number;horizonCards:import('../../harbour/horizon/sky/horizonCards.ts').HorizonCard[];chunks?:HorizonChunkLoader;definitionBytes:number};
 type LoadedWorld=WorldDefinition&{geometry:NonNullable<WorldDefinition['geometry']>;collision:NonNullable<WorldDefinition['collision']>;pathGraph:NonNullable<WorldDefinition['pathGraph']>;chunks?:HorizonChunkRef[]};
@@ -49,17 +56,47 @@ export function parseHorizonChunk(bytes:ArrayBuffer,ref:HorizonChunkRef):Structu
 }
 export function createHorizonChunkLoader(world:LoadedWorld,counter:{bytes:number}={bytes:0}):HorizonChunkLoader|undefined{
   const refs=world.chunks??[];if(!refs.length)return undefined;
-  const done=new Set<string>(),pending=new Map<string,Promise<StructureSolid[]>>(),listeners=new Set<(id:string,solids:StructureSolid[])=>void>(),byId=new Map(refs.map(r=>[r.districtId,r]));
+  const done=new Set<string>(),pending=new Map<string,Promise<StructureSolid[]>>(),raw=new Map<string,ArrayBuffer>(),fetching=new Map<string,Promise<ArrayBuffer>>(),listeners=new Set<(id:string,solids:StructureSolid[])=>void>(),byId=new Map(refs.map(r=>[r.districtId,r]));
+  // Footprint cells → chunk ids (Wave 6 chunk gate). A stale index without footprints leaves `covering` null.
+  const withFootprint=refs.every(r=>r.footprint&&Array.isArray(r.footprint.cells)),cellSize=withFootprint?refs[0]!.footprint!.cell:0,byCell=new Map<string,string[]>();
+  if(withFootprint)for(const r of refs){const c=r.footprint!.cells;for(let i=0;i+1<c.length;i+=2){const k=`${c[i]}:${c[i+1]}`,list=byCell.get(k);if(list)list.push(r.districtId);else byCell.set(k,[r.districtId]);}}
+  function append(id:string,buffer:ArrayBuffer):StructureSolid[]{
+    if(done.has(id))return [];
+    const solids=parseHorizonChunk(buffer,byId.get(id)!);world.geometry.solids.push(...solids);done.add(id);raw.delete(id);
+    for(const listener of listeners)listener(id,solids);return solids;
+  }
+  function fetchBytes(id:string,signal?:AbortSignal):Promise<ArrayBuffer>{
+    const have=raw.get(id);if(have)return Promise.resolve(have);
+    let job=fetching.get(id);
+    if(!job){const ref=byId.get(id)!;job=(async()=>{const response=await fetch(ref.url,{signal});if(!response.ok)throw new Error(`The Horizon chunk ${id} is unavailable.`);const buffer=await response.arrayBuffer();counter.bytes+=buffer.byteLength;if(!done.has(id))raw.set(id,buffer);fetching.delete(id);return buffer;})();job.catch(()=>fetching.delete(id));fetching.set(id,job);}
+    return job;
+  }
   return{refs,
     ready:id=>done.has(id)||!byId.has(id),
     load(id,signal){
-      const ref=byId.get(id);if(!ref||done.has(id))return Promise.resolve([]);
+      if(!byId.has(id)||done.has(id))return Promise.resolve([]);
       let job=pending.get(id);
-      if(!job){
-        job=(async()=>{const response=await fetch(ref.url,{signal});if(!response.ok)throw new Error(`The Horizon chunk ${id} is unavailable.`);const buffer=await response.arrayBuffer();counter.bytes+=buffer.byteLength;const solids=parseHorizonChunk(buffer,ref);world.geometry.solids.push(...solids);done.add(id);pending.delete(id);for(const listener of listeners)listener(id,solids);return solids;})();
-        job.catch(()=>pending.delete(id));pending.set(id,job);
-      }
+      if(!job){job=(async()=>{const buffer=await fetchBytes(id,signal);const solids=append(id,buffer);pending.delete(id);return solids;})();job.catch(()=>pending.delete(id));pending.set(id,job);}
       return job;
+    },
+    async fetch(id,signal){if(!byId.has(id)||done.has(id))return;await fetchBytes(id,signal);},
+    loadSync(id,blocking=false){
+      if(!byId.has(id)||done.has(id))return true;
+      let buffer=raw.get(id);
+      if(!buffer&&blocking&&typeof XMLHttpRequest!=='undefined'){
+        // Review-only simulation (`simulateWalk`): the walker "waits in place" for the chunk; the synchronous run cannot
+        // yield to the network, so the wait is taken here, synchronously (binary via x-user-defined; gzip or raw).
+        const request=new XMLHttpRequest();request.open('GET',byId.get(id)!.url,false);request.overrideMimeType('text/plain; charset=x-user-defined');request.send();
+        if(request.status>=200&&request.status<300){const text=request.responseText,bytes=new Uint8Array(text.length);for(let i=0;i<text.length;i++)bytes[i]=text.charCodeAt(i)&255;buffer=bytes.buffer;counter.bytes+=bytes.byteLength;}
+      }
+      if(!buffer)return false;
+      append(id,buffer);return true;
+    },
+    covering(x,z,radius){
+      if(!withFootprint)return null;
+      const out=new Set<string>();
+      for(let cx=Math.floor((x-radius)/cellSize);cx<=Math.floor((x+radius)/cellSize);cx++)for(let cz=Math.floor((z-radius)/cellSize);cz<=Math.floor((z+radius)/cellSize);cz++)for(const id of byCell.get(`${cx}:${cz}`)??[])out.add(id);
+      return [...out];
     },
     onLoad(listener){listeners.add(listener);return()=>{listeners.delete(listener);};},
     bytes:()=>counter.bytes,

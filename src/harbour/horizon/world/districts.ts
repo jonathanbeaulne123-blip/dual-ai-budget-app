@@ -110,7 +110,11 @@ export function buildDistricts(field: TerrainField, beds: readonly BedCut[], sol
 /** The district CardBuilder cell in runtime/cards.ts (`cell: 256`). */
 export const CARD_CELL_EU = 256;
 export type DistrictResource = { dispose(): void };
-export type StreamPosition = { x: number; z: number; now: number; mode?: 'walk' | 'look'; radius?: number; underground?: boolean };
+export type StreamPosition = { x: number; z: number; now: number; mode?: 'walk' | 'look'; radius?: number; underground?: boolean; /** Wave 6: the radius a Walk↔Look toggle can switch to in place (the current page's), kept from the grace release. */ keepRadius?: number };
+/** Wave 6 (P22 on 2 s SwiftShader frames): the 4 s grace never releases a district the body or camera can reach within 4 s —
+ * wanted at the current place under either mode's radius (walk default, the page's) grown by 4 s at run speed. */
+export const STREAM_GRACE_MS = 4000;
+export const STREAM_KEEP_REACH_EU = HORIZON_MANIFEST.speeds_ms.run * STREAM_GRACE_MS / 1000;
 /** A camera move longer than this in one frame is a relocation (the plane covers < 1 eu per frame). */
 export const RELOCATION_JUMP_EU = 50;
 /** Same delayed-release / one-build-per-frame algorithm as Mountain v2, with a hard residency cap. */
@@ -127,27 +131,36 @@ export function createDistrictStream<T extends DistrictResource>(world: Pick<Wor
     // can evict the district containing the camera in favour of distant land.
     return Math.min(...d.outline.map((a,i)=>{const b=d.outline[(i+1)%d.outline.length]!,dx=b[0]-a[0],dz=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz||1)));return Math.hypot(x-a[0]-t*dx,z-a[1]-t*dz);}));
   };
+  const defaultRadius = tier === 'full' ? 220 : 150;
+  function wantedAt(input: StreamPosition, radiusIn: number | undefined, limit: number): District[] {
+    const radius = radiusIn ?? defaultRadius;
+    const desired = world.districts.filter(d => d.id !== 'offshore').map(d => ({ d, distance: distance(d, input.x, input.z) })).sort((a, b) => a.distance - b.distance || a.d.id.localeCompare(b.d.id)).filter((d, i) => i === 0 || d.distance <= radius).slice(0, limit).map(d => d.d);
+    if (input.underground) { const child = world.districts.find(d => d.id === 'crown')?.children?.find(d => d.id === 'undercroft'); if (child) { if (desired.length === limit) desired.pop(); desired.unshift(child); } }
+    // Offshore rocks may become a normal resident; permanent horizon cards belong to the sky ring.
+    // Offshore sites and the island box come from the definition (R1-67); a stale bake falls back to the manifest.
+    const offshore = world.districts.find(d => d.id === 'offshore'), s = offshore?.offshore ? 1 : requireScaleFactor();
+    const sites: Point2[] = offshore?.offshore?.sites ?? HORIZON_MANIFEST.offshore.flatMap(site => (Array.isArray(site.xy[0]) ? site.xy as number[][] : [site.xy as number[]]).map(p => [p[0]! * s, p[1]! * s] as Point2));
+    const box = offshore?.offshore?.islandBox ?? [[OFFSHORE_ISLAND_BOX[0][0] * s, OFFSHORE_ISLAND_BOX[0][1] * s], [OFFSHORE_ISLAND_BOX[1][0] * s, OFFSHORE_ISLAND_BOX[1][1] * s]] as [Point2, Point2], arrive = offshore?.offshore?.arriveRadius ?? 80 * s;
+    const outsideIsland = input.x < box[0][0] || input.x > box[1][0] || input.z > box[1][1];
+    const nearOffshore = sites.some(p => Math.hypot(input.x - p[0], input.z - p[1]) <= radius);
+    if (offshore && (nearOffshore || outsideIsland)) {
+      if (desired.length === limit) desired.pop();
+      const atOffshore = sites.some(p => Math.hypot(input.x - p[0], input.z - p[1]) < arrive);
+      // A distant skyline must never displace the ground under the camera.
+      desired.splice(atOffshore || outsideIsland ? 0 : Math.min(1, desired.length), 0, offshore);
+    }
+    return desired;
+  }
   return {
     live, history, cap,
     update(input: StreamPosition): boolean {
       if (disposed) return false;
-      const desired = world.districts.filter(d => d.id !== 'offshore').map(d => ({ d, distance: distance(d, input.x, input.z) })).sort((a, b) => a.distance - b.distance || a.d.id.localeCompare(b.d.id)).filter((d, i) => i === 0 || d.distance <= (input.radius ?? (tier === 'full' ? 220 : 150))).slice(0, cap).map(d => d.d);
-      if (input.underground) { const child = world.districts.find(d => d.id === 'crown')?.children?.find(d => d.id === 'undercroft'); if (child) { if (desired.length === cap) desired.pop(); desired.unshift(child); } }
-      // Offshore rocks may become a normal resident; permanent horizon cards belong to the sky ring.
-      // Offshore sites and the island box come from the definition (R1-67); a stale bake falls back to the manifest.
-      const offshore = world.districts.find(d => d.id === 'offshore'), s = offshore?.offshore ? 1 : requireScaleFactor();
-      const sites: Point2[] = offshore?.offshore?.sites ?? HORIZON_MANIFEST.offshore.flatMap(site => (Array.isArray(site.xy[0]) ? site.xy as number[][] : [site.xy as number[]]).map(p => [p[0]! * s, p[1]! * s] as Point2));
-      const box = offshore?.offshore?.islandBox ?? [[OFFSHORE_ISLAND_BOX[0][0] * s, OFFSHORE_ISLAND_BOX[0][1] * s], [OFFSHORE_ISLAND_BOX[1][0] * s, OFFSHORE_ISLAND_BOX[1][1] * s]] as [Point2, Point2], arrive = offshore?.offshore?.arriveRadius ?? 80 * s;
-      const outsideIsland = input.x < box[0][0] || input.x > box[1][0] || input.z > box[1][1];
-      const nearOffshore = sites.some(p => Math.hypot(input.x - p[0], input.z - p[1]) <= (input.radius ?? (tier === 'full' ? 220 : 150)));
-      if (offshore && (nearOffshore || outsideIsland)) {
-        if (desired.length === cap) desired.pop();
-        const atOffshore = sites.some(p => Math.hypot(input.x - p[0], input.z - p[1]) < arrive);
-        // A distant skyline must never displace the ground under the camera.
-        desired.splice(atOffshore || outsideIsland ? 0 : Math.min(1, desired.length), 0, offshore);
-      }
+      const desired = wantedAt(input, input.radius, cap);
+      const keepRadius = Math.max(input.radius ?? defaultRadius, input.keepRadius ?? 0, defaultRadius) + STREAM_KEEP_REACH_EU, keep = new Set(wantedAt(input, keepRadius, Infinity).map(d => d.id));
       const wanted = new Set(desired.map(d => d.id)), released: string[] = [], built: string[] = [];
-      for (const [id, resource] of live) { if (wanted.has(id)) { outsideSince.delete(id); continue; } const since = outsideSince.get(id) ?? input.now; outsideSince.set(id, since); if (input.now - since >= 4000) { resource.dispose(); live.delete(id); outsideSince.delete(id); released.push(id); } }
+      // A wanted district that could build now but for the cap needs a slot: then the grace applies as before.
+      const needSlot = live.size >= cap && desired.some(d => !live.has(d.id) && (!options.ready || options.ready(d.id)));
+      for (const [id, resource] of live) { if (wanted.has(id)) { outsideSince.delete(id); continue; } const since = outsideSince.get(id) ?? input.now; outsideSince.set(id, since); if (input.now - since >= STREAM_GRACE_MS && (!keep.has(id) || needSlot)) { resource.dispose(); live.delete(id); outsideSince.delete(id); released.push(id); } }
       // Release before build (R1-70): when a wanted district is waiting and the cap is full, the unwanted resident
       // that has been outside longest is released at once — for the camera's own district always (the ground under
       // the camera never waits for the 4 s grace), and for the rest of the neighbourhood while the stream settles

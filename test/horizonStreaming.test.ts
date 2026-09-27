@@ -145,3 +145,58 @@ it('falls back to the one-file definition when a bake has no index (404 or a dev
   try{const assets=await loadHorizonAssets('lite');expect(calls).toContain(HORIZON_MONOLITH_URL);expect(assets.chunks).toBeUndefined();expect(assets.world.geometry!.solids).toHaveLength(1);}
   finally{vi.unstubAllGlobals();}
 });
+it.each(['full', 'lite'] as const)('%s: ten Walk/Look toggles on SwiftShader frames release nothing the page can reach again; without the keep radius full thrashes offshore (Wave 6, P22)', tier => {
+  const run = (keep: boolean) => {
+    const world = { districts: buildDistricts(field, [], []) }, built: string[] = [], released: string[] = [];
+    const stream = createDistrictStream(world, d => { built.push(d.id); return { dispose() { released.push(d.id); } }; }, tier);
+    let now = 0; for (let i = 0; i < 600; i++) { stream.update({ x: 1470, z: 1186, now, mode: 'look', radius: 480, keepRadius: keep ? 480 : undefined }); now += 16; }
+    const before = built.length, releasedBefore = released.length;
+    // The browser harness (perf4, candidate 4): setMode, then four stream frames per mode at the tier's SwiftShader frame (median full 1,933 ms, lite 250 ms).
+    for (let i = 0; i < 10; i++) for (let f = 0; f < 4; f++) { stream.update({ x: 1470, z: 1186, now, mode: i % 2 === 0 ? 'walk' : 'look', radius: i % 2 === 0 ? undefined : 480, keepRadius: keep ? 480 : undefined }); now += tier === 'full' ? 1933 : 250; }
+    return { built: built.slice(before), released: released.slice(releasedBefore) };
+  };
+  const kept = run(true); expect(kept.built).toEqual([]); expect(kept.released).toEqual([]);
+  if (tier === 'full') expect(run(false).built).toEqual(['offshore', 'offshore', 'offshore', 'offshore', 'offshore']);
+  // A district nobody can reach again is still released after the grace.
+  const world = { districts: buildDistricts(field, [], []) }, released: string[] = [];
+  const stream = createDistrictStream(world, d => ({ dispose() { released.push(d.id); } }), tier);
+  let now = 0; for (let i = 0; i < 300; i++) { stream.update({ x: 1470, z: 1186, now, mode: 'look', radius: 480, keepRadius: 480 }); now += 16; }
+  for (let i = 0; i < 400; i++) { stream.update({ x: 420, z: 685, now, mode: 'walk', keepRadius: 200 }); now += 16; }
+  expect(released).toContain('harbour');
+});
+it('chunk gate: footprints name the chunks under a step; a route lists its chunks in path order; the stale-index fallback uses the partition (Wave 6)', async () => {
+  const { gzipSync, strToU8 } = await import('fflate');
+  const { parseHorizonIndex, createHorizonChunkLoader } = await import('../src/house/world/horizonAssets.ts');
+  const { createChunkGate, createChunkScheduler, CHUNK_REACH_EU } = await import('../src/harbour/horizon/runtime/chunkGate.ts');
+  const { chunkFootprint } = await import('../scripts/horizon/artifacts.mjs');
+  const deck = (id: string, district: string, x0: number, x1: number) => ({ id, kind: 'deck', positions: [x0, 12, 0, x1, 12, 0, x0, 12, 10, x1, 12, 10], indices: [0, 1, 2, 1, 3, 2], surface: 'stone', districtId: district, bedIds: [], walkable: true, role: 'deck' });
+  const a = [deck('a@harbour', 'harbour', 0, 60)], b = [deck('b@bight', 'bight', 60, 200)];
+  const ref = (id: string, solids: ReturnType<typeof deck>[]) => ({ districtId: id, url: `/horizon/world/horizon-geo-1/${id}.json.gz`, bytes: 1, sha256: 'x', solids: solids.length, footprint: chunkFootprint(solids) });
+  expect(ref('bight', b).footprint).toEqual({ cell: 32, cells: [1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0] });
+  const index = { id: 'horizon', geographyRevision: 'horizon-geo-1', geometry: { solids: [] }, collision: { beds: [] }, pathGraph: { nodes: [], edges: [] }, chunks: [ref('bight', b), ref('harbour', a)] };
+  const world = parseHorizonIndex(gzipSync(strToU8(JSON.stringify(index))).buffer as ArrayBuffer);
+  const payload = (id: string, solids: unknown[]) => gzipSync(strToU8(JSON.stringify({ id: 'horizon-chunk', geographyRevision: 'horizon-geo-1', districtId: id, solids })));
+  const calls: string[] = [];
+  vi.stubGlobal('fetch', async (url: string) => { calls.push(url); return new Response((url.includes('bight') ? payload('bight', b) : payload('harbour', a)) as unknown as BodyInit); });
+  try {
+    const loader = createHorizonChunkLoader(world)!, gate = createChunkGate(loader, () => 'harbour');
+    await loader.load('harbour');
+    // Walking east along z 5: every step up to the bight chunk's first cell is open; the first step into cell x 64 is held.
+    // (Footprints are conservative: the bight deck starts at x 60, inside cell 1 = x 32–64; the gate probes 1 eu ahead.)
+    let held = NaN; for (let k = 0; k <= 500; k++) { const x = 20 + k * 0.2; if (gate.missingAt(x, 5).length) { held = +x.toFixed(1); break; } }
+    expect(held).toBe(31); expect(gate.missingAt(31, 5)).toEqual(['bight']); expect(gate.missingAt(30.8, 5)).toEqual([]);
+    expect(gate.along([[10, 12, 5], [150, 12, 5]])).toEqual(['harbour', 'bight']); expect(gate.near(10, 5, CHUNK_REACH_EU)).toEqual(['harbour', 'bight']);
+    // Bytes fetched ahead are appended at once by the gate (no wait); without bytes and not blocking it stays held.
+    expect(loader.loadSync('bight')).toBe(false); await loader.fetch('bight'); expect(loader.ready('bight')).toBe(false);
+    expect(loader.loadSync('bight')).toBe(true); expect(gate.missingAt(63, 5)).toEqual([]); expect(world.geometry.solids.map(s => s.id)).toEqual(['a@harbour', 'b@bight']);
+    await loader.load('bight'); expect(world.geometry.solids).toHaveLength(2); expect(calls.filter(u => u.includes('bight'))).toHaveLength(1);
+    // Scheduler: the route's chunks load before what the view asked for, before the background.
+    const order: string[] = [], ready = new Set<string>(), sched = createChunkScheduler({ ready: id => ready.has(id), load: async id => { order.push(id); ready.add(id); }, background: () => ['z', 'y'], isDisposed: () => false, yield: () => Promise.resolve() });
+    sched.view(['v']); sched.route(['r1', 'r2']); sched.startBackground(); for (let i = 0; i < 20; i++) await Promise.resolve();
+    expect(order).toEqual(['v', 'r1', 'r2', 'z', 'y']);
+  } finally { vi.unstubAllGlobals(); }
+  // A stale index (no footprints): the gate falls back to the district partition around the point.
+  const stale = createHorizonChunkLoader(parseHorizonIndex(gzipSync(strToU8(JSON.stringify({ ...index, chunks: index.chunks.map(({ footprint: _f, ...r }) => r) }))).buffer as ArrayBuffer))!;
+  expect(stale.covering(10, 5, 1)).toBeNull();
+  expect(createChunkGate(stale, x => (x < 60 ? 'harbour' : 'bight')).missingAt(59.5, 5)).toEqual(['harbour', 'bight']);
+});

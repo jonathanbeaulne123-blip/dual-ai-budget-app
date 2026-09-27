@@ -14,6 +14,7 @@ import {HORIZON_MANIFEST} from '../world/manifest.ts';
 import {restoreHorizonPosition,HORIZON_RESTORE_TOLERANCE} from './savedPosition.ts';
 import {horizonPartnerPose} from './partner.ts';
 import {walkPlan} from '../world/pathGraph.ts';
+import {createChunkGate,createChunkScheduler,CHUNK_REACH_EU} from './chunkGate.ts';
 import {solarPosition,solarReviewDate} from '../sun/solar.ts';
 import {skyGradient} from '../sky/gradient.ts';
 import {horizonFog,HORIZON_FOG} from '../sky/fog.ts';
@@ -33,8 +34,15 @@ export async function mountHorizon(host:HTMLElement,options:HorizonOptions){
   const startedAt=performance.now(),assets=await loadHorizonAssets(options.tier,options.signal);if(options.signal?.aborted)throw new DOMException('Aborted','AbortError');
   // R1-72: the chunk under the entry body (page A's eye) is the only geometry fetched before the first frame; the rest
   // streams by district residency (createDistrictStream ready/request), each added to the collision index as it lands.
+  // Wave 6 arrival rule: the camera district AND every chunk within the body's reach (CHUNK_REACH_EU) are resident before
+  // the first interactive frame — the body (page A's eye, or the restored body) and the camera (page A, or ?shot=).
   const startEye=assets.world.views.find(v=>v.id==='A')?.eye;
-  if(assets.chunks&&startEye){useDefinitionDistricts(assets.world.districts);await assets.chunks.load(districtAt(startEye[0],startEye[2]),options.signal);if(options.signal?.aborted)throw new DOMException('Aborted','AbortError');}
+  if(assets.chunks&&startEye){
+    useDefinitionDistricts(assets.world.districts);
+    const loader=assets.chunks,gate=createChunkGate(loader,(x,z)=>districtAt(x,z)),shotEye=assets.world.views.find(v=>v.id===new URLSearchParams(location.search).get('shot'))?.eye,bodyAt=options.initialBody?[options.initialBody.x,options.initialBody.z]:[startEye[0],startEye[2]];
+    const ids=new Set<string>([districtAt(startEye[0],startEye[2]),...gate.near(bodyAt[0]!,bodyAt[1]!,CHUNK_REACH_EU),...(shotEye?[districtAt(shotEye[0],shotEye[2])]:[])]);
+    await Promise.all([...ids].map(id=>loader.load(id,options.signal)));if(options.signal?.aborted)throw new DOMException('Aborted','AbortError');
+  }
   return createRuntime(host,assets,options,startedAt);
 }
 function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOptions,startedAt:number){
@@ -109,13 +117,28 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
       for(let i=0;i<ix.length;i+=3){const a=ix[i]!*3,b=ix[i+1]!*3,c=ix[i+2]!*3,ux=p[b]!-p[a]!,uy=p[b+1]!-p[a+1]!,uz=p[b+2]!-p[a+2]!,vx=p[c]!-p[a]!,vy=p[c+1]!-p[a+1]!,vz=p[c+2]!-p[a+2]!,nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx,n=Math.hypot(nx,ny,nz);if(n<1e-9)continue;const up=Math.abs(ny/n)>=.6;if(!up&&!(faces&&Math.abs(ny/n)<.45))continue;const col=up?lipChalk:faceChalk,ox=up?0:nx/n*.03,oz=up?0:nz/n*.03;for(const k of [a,b,c]){positions.push(p[k]!+ox,p[k+1]!+(up?.03:0),p[k+2]!+oz);colors.push(col.r,col.g,col.b);}}}
     if(!positions.length)return null;const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.computeBoundingSphere();const mesh=new THREE.Mesh(geometry,chalkMaterial);mesh.visible=night;mesh.renderOrder=2;return mesh;
   }
-  const stream=createDistrictStream(world,d=>{const cards=buildDistrictCards(world,field,cuts,d,tier,false,options.hideBuildings);const hooks=Object.values(cards.materials).map(material=>fogHook(material));const fadeIn=(amount:number)=>{for(const hook of hooks)hook.fade.value=amount;};fadeIn(motion.districtFadeMs>0?0:1);const chalk=buildChalk(d);scene.add(cards.group);if(chalk)scene.add(chalk);requestShadow('district-load');return{cards,chalk,at:performance.now(),fadeIn,dispose(){scene.remove(cards.group);cards.dispose();if(chalk){scene.remove(chalk);chalk.geometry.dispose();}if(coarse.has(d.id))coarse.get(d.id)!.group.visible=true;}};},tier,{ready:id=>!chunks||chunks.ready(id),request:id=>{void chunks?.load(id,options.signal).catch(()=>{});}});
-  // P22 with chunks: once the first frame is up, the remaining chunks are fetched in the background, nearest the body first, one
-  // at a time, so a relocation (a page shot, a restore) finds its district's geometry ready and builds it on the next frame.
-  let prefetching=false;
-  async function prefetchChunks(){if(!chunks||prefetching)return;prefetching=true;const order=[...chunks.refs].filter(r=>!chunks.ready(r.districtId)).sort((a,b)=>{const da=world.districts.find(d=>d.id===a.districtId),db=world.districts.find(d=>d.id===b.districtId),dist=(d:typeof da)=>{const c=d?.heart??d?.outline[0];return c?Math.hypot(c[0]-body.x,c[1]-body.z):Infinity;};return dist(da)-dist(db)||a.districtId.localeCompare(b.districtId);});
-    for(const ref of order){if(disposed)return;try{await chunks.load(ref.districtId,options.signal);}catch{return;}await new Promise(r=>setTimeout(r,0));}}
-  const offChunk=chunks?.onLoad((_id,solids)=>{if(!disposed){geography.addSolids(solids);requestShadow('chunk-load');}});
+  const stream=createDistrictStream(world,d=>{const cards=buildDistrictCards(world,field,cuts,d,tier,false,options.hideBuildings);const hooks=Object.values(cards.materials).map(material=>fogHook(material));const fadeIn=(amount:number)=>{for(const hook of hooks)hook.fade.value=amount;};fadeIn(motion.districtFadeMs>0?0:1);const chalk=buildChalk(d);scene.add(cards.group);if(chalk)scene.add(chalk);requestShadow('district-load');return{cards,chalk,at:performance.now(),fadeIn,dispose(){scene.remove(cards.group);cards.dispose();if(chalk){scene.remove(chalk);chalk.geometry.dispose();}if(coarse.has(d.id))coarse.get(d.id)!.group.visible=true;}};},tier,{ready:id=>!chunks||chunks.ready(id),request:id=>{scheduler?.view([id]);}});
+  // Wave 6: one chunk at a time by priority — a walk plan's route (path order), then what the view asked for, then the rest
+  // nearest the body; after the first frame every chunk's BYTES are fetched ahead (network only; parsed by priority).
+  const nearestFirst=()=>chunks?[...chunks.refs].map(r=>{const d=world.districts.find(q=>q.id===r.districtId)??world.districts.flatMap(q=>q.children??[]).find(q=>q.id===r.districtId),c=d?.heart??d?.outline[0];return{id:r.districtId,d:c?Math.hypot(c[0]-body.x,c[1]-body.z):Infinity};}).sort((a,b)=>a.d-b.d||a.id.localeCompare(b.id)).map(r=>r.id):[];
+  const gate=chunks?createChunkGate(chunks,(x,z)=>districtAt(x,z)):null;
+  const scheduler=chunks?createChunkScheduler({ready:id=>chunks.ready(id),load:id=>chunks.load(id,options.signal),background:nearestFirst,isDisposed:()=>disposed}):null;
+  const chunkHolds:{districts:string[];at:XYZ;t:number;resolved?:'sync'|'arrived'}[]=[];let heldNow:string[]=[];
+  function prefetchChunks(){if(!chunks||!scheduler)return;for(const id of nearestFirst())if(!chunks.ready(id))void chunks.fetch(id,options.signal).catch(()=>{});scheduler.startBackground();}
+  function routeAhead(points:readonly XYZ[]){if(gate&&scheduler)scheduler.route(gate.along(points));}
+  let resnap=false;
+  const offChunk=chunks?.onLoad((_id,solids)=>{if(!disposed){geography.addSolids(solids);requestShadow('chunk-load');if(resnap&&gate&&!gate.missingAt(body.x,body.z).length){resnap=false;const at=geography.surface(body.x,body.z,body.y+HORIZON_BODY_HEIGHT);if(at)body.y=at.y;}}});
+  /** The gate: resident (true) or held (false). Bytes already fetched are parsed now; the review simulation may block. */
+  function gateOpen(x:number,z:number):boolean{
+    if(!gate||!chunks)return true;
+    const missing=gate.missingAt(x,z),at:XYZ=[x,body.y,z],t=performance.now(),hold=(h:typeof chunkHolds[number])=>{chunkHolds.push(h);if(chunkHolds.length>200)chunkHolds.shift();};
+    if(!missing.length){if(heldNow.length)hold({districts:heldNow,at,t,resolved:'arrived'});heldNow=[];return true;}
+    for(const id of missing)chunks.loadSync(id,simulating&&HARBOUR_DEV);
+    const still=gate.missingAt(x,z);
+    if(!still.length){hold({districts:missing,at,t,resolved:'sync'});heldNow=[];return true;}
+    if(heldNow.join()!==still.join()){heldNow=still;hold({districts:still,at,t});}
+    scheduler?.route([...still,...scheduler.queued().route]);return false;
+  }
   function resize(){const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(mode==='look'&&!transition){const pose=world.views.find(p=>p.id===shotId);if(pose)lookAt(pose);}}
   const observer=new ResizeObserver(resize);observer.observe(host);resize();
   function setLight(date:Date){
@@ -143,7 +166,9 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function shot(id:string){const pose=world.views.find(p=>p.id===id);if(!pose)return false;shotId=id;mode='look';path=[];transition=null;lookAt(pose);body.x=pose.eye[0];body.z=pose.eye[2];body.y=pose.eye[1]-1.6;body.yaw=yaw;lastSun=-Infinity;return true;}
   function restore(saved:HouseBodyReturn){
     const next=restoreHorizonPosition(saved,world.pathGraph!,geography.ground,(x,z,y)=>{const at=geography.surface(x,z,y+.5,HORIZON_RESTORE_TOLERANCE);return at&&at.slope<=HORIZON_WALKABLE_DEGREES&&!geography.submerged(x,z,at.y)&&!geography.blocked(x,z,at.y)?{standY:at.y}:null;});
-    Object.assign(body,{x:next.x,y:next.y!,z:next.z,yaw:next.yaw});yaw=body.yaw;mode='walk';path=[];velocityY=0;updateCamera();
+    Object.assign(body,{x:next.x,y:next.y!,z:next.z,yaw:next.yaw});yaw=body.yaw;mode='walk';path=[];velocityY=0;
+    // Wave 6: a restore into ground whose chunk has not arrived stands and waits; the body is re-seated when it lands.
+    if(!gateOpen(body.x,body.z))resnap=true;updateCamera();
   }
 
   function savedBody():HouseBodyReturn{return{...body,place:'court',world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY};}
@@ -154,7 +179,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     const fromEye=camera.position.clone(),fromTarget=target.clone();mode=next;path=[];faceCards.visible=faceCardsLit&&mode!=='journey';
     if(next==='journey'){const {w,h}=world.extent;camera.position.set(w/2,w*1.05,h*1.17);target.set(w/2,20,h*.47);camera.lookAt(target);camera.fov=50;camera.updateProjectionMatrix();}
     else if(next==='look')shot(shotId);
-    else if(next==='walk'){const at=geography.surface(body.x,body.z,body.y);if(at&&at.slope<=HORIZON_WALKABLE_DEGREES)body.y=at.y;distance=9;pitch=-.26;updateCamera();}
+    else if(next==='walk'){if(!gateOpen(body.x,body.z))resnap=true;const at=geography.surface(body.x,body.z,body.y);if(at&&at.slope<=HORIZON_WALKABLE_DEGREES)body.y=at.y;distance=9;pitch=-.26;updateCamera();}
     transition={eye:fromEye,target:fromTarget,toEye:camera.position.clone(),toTarget:target.clone(),at:performance.now(),duration:motion.transitionMs};
     // Reduced motion: a cut, never a tween (CONTRACT §2.10).
     if(transition.duration<=0){const to=transition;transition=null;camera.position.copy(to.toEye);target.copy(to.toTarget);}else{camera.position.copy(fromEye);target.copy(fromTarget);}camera.lookAt(target);
@@ -165,10 +190,14 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     let f=1;while(f>.12&&geography.cameraBlocked(eye,[eye[0]+(desired[0]-eye[0])*f,eye[1]+(desired[1]-eye[1])*f,eye[2]+(desired[2]-eye[2])*f]))f-=.08;
     camera.position.set(eye[0]+(desired[0]-eye[0])*f,eye[1]+(desired[1]-eye[1])*f,eye[2]+(desired[2]-eye[2])*f);target.set(...eye);camera.lookAt(target);
   }
+  let held=false;
   function move(dx:number,dz:number,dt:number){
-    const length=Math.hypot(dx,dz),steps=Math.max(1,Math.ceil(length/.2));let moved=0;
+    const length=Math.hypot(dx,dz),steps=Math.max(1,Math.ceil(length/.2));let moved=0;held=false;
     for(let i=0;i<steps;i++){
-      const x=body.x+dx/steps,z=body.z+dz/steps,hit=geography.surface(x,z,body.y,.48);
+      const x=body.x+dx/steps,z=body.z+dz/steps;
+      // Wave 6 gate: never step onto ground whose collision chunk is not resident — wait in place (the path is kept).
+      if(!gateOpen(x,z)){held=true;break;}
+      const hit=geography.surface(x,z,body.y,.48);
       const obstacle=hit?geography.blocker(x,z,Math.max(body.y,hit.y),.3,[dx/steps,dz/steps]):null;
       if(!hit||hit.slope>HORIZON_WALKABLE_DEGREES||geography.submerged(x,z,hit.y)||obstacle){lastMovementBlocker={at:[x,body.y,z],surface:hit,obstacle,water:hit?geography.submerged(x,z,hit.y):false};break;}
       body.x=x;body.z=z;if(velocityY===0)body.y=Math.max(hit.y,body.y-6*dt/steps);moved+=length/steps;
@@ -180,14 +209,14 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(dx||dz)path=[];
     else if(path.length){const p=path[0]!;dx=p[0]-body.x;dz=p[2]-body.z;if(Math.hypot(dx,dz)<.35){path.shift();dx=0;dz=0;}}
     const length=Math.hypot(dx,dz),speed=controls.run||keys.has('shift')?HORIZON_MANIFEST.speeds_ms.run:HORIZON_MANIFEST.speeds_ms.walk;
-    let moved=0;if(length){dx=dx/length*Math.min(length,speed*dt);dz=dz/length*Math.min(length,speed*dt);body.yaw=Math.atan2(dx,dz);moved=move(dx,dz,dt);if(path.length&&moved<.001){path=[];options.onStatus?.('That path is blocked. Choose another approach.');}}
+    let moved=0;if(length){dx=dx/length*Math.min(length,speed*dt);dz=dz/length*Math.min(length,speed*dt);body.yaw=Math.atan2(dx,dz);moved=move(dx,dz,dt);if(path.length&&moved<.001&&!held){path=[];options.onStatus?.('That path is blocked. Choose another approach.');}}
     if(jumpRequested&&velocityY===0)velocityY=4.2;jumpRequested=false;
     if(velocityY!==0){velocityY-=12*dt;body.y+=velocityY*dt;const floor=geography.surface(body.x,body.z,body.y+.5);if(floor&&body.y<=floor.y){body.y=floor.y;velocityY=0;}if(geography.ceiling(body.x,body.z,body.y)<body.y+HORIZON_BODY_HEIGHT){body.y=geography.ceiling(body.x,body.z,body.y)-HORIZON_BODY_HEIGHT;velocityY=Math.min(0,velocityY);}}
     if(moved>0&&now>doorCooldown){const door=world.hosts.find(h=>'xy'in h.door&&Math.hypot(body.x-h.door.xy[0],body.z-h.door.xy[1],body.y-(h.door.height??0))<1.15);if(door)enterDoor(door.id);}
     if(!simulating){figure.group.position.set(body.x,body.y,body.z);figure.group.rotation.y=body.yaw;figure.pose(now*.007,moved>0?1:0,now/1000);updateCamera();}
   }
   function tick(now:number){if(disposed)return;const dt=Math.min(.05,Math.max(0,(now-(last||now))/1000));if(last)frameTimes.push(now-last);if(frameTimes.length>3600)frameTimes.shift();last=now;
-    if(!paused){if(mode==='walk'&&!transition)step(dt,now);if(mode!=='journey')stream.update({x:body.x,z:body.z,now,mode:mode==='look'?'look':'walk',radius:mode==='look'?world.views.find(v=>v.id===shotId)?.radius:undefined,underground:body.y+HORIZON_BODY_HEIGHT<geography.ground(body.x,body.z)-.5});}
+    if(!paused){if(mode==='walk'&&!transition)step(dt,now);if(mode!=='journey')stream.update({x:body.x,z:body.z,now,mode:mode==='look'?'look':'walk',radius:mode==='look'?world.views.find(v=>v.id===shotId)?.radius:undefined,keepRadius:world.views.find(v=>v.id===shotId)?.radius,underground:body.y+HORIZON_BODY_HEIGHT<geography.ground(body.x,body.z)-.5});}
     ring.updateResidency(new Set(stream.live.keys()),mode==='journey');
     // Fine districts rise from the fog colour over 0.8 s (a cut under reduced motion); the coarse card they replace hides at once.
     for(const resource of stream.live.values()){resource.cards.group.visible=mode!=='journey';if(resource.chalk)resource.chalk.visible=night&&mode!=='journey';resource.fadeIn(motion.districtFadeMs>0?Math.min(1,Math.max(0,(now-resource.at)/motion.districtFadeMs)):1);}
@@ -204,7 +233,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function keyDown(e:KeyboardEvent){if(paused||interactive(e)||!host.contains(document.activeElement))return;const key=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(key)){e.preventDefault();if(key===' ')jumpRequested=true;else keys.add(key);}if(key==='e'){e.preventDefault();enterDoor();}if(key==='escape')path=[];}
   function keyUp(e:KeyboardEvent){keys.delete(e.key.toLowerCase());}
   function clear(){keys.clear();controls={forward:0,strafe:0,run:false};path=[];drag=null;}
-  const unlisten=[lease.listenCanvas<PointerEvent>('pointerdown',e=>{if(paused)return;host.focus({preventScroll:true});drag={x:e.clientX,y:e.clientY,id:e.pointerId,travel:0};renderer.domElement.setPointerCapture(e.pointerId);}),lease.listenCanvas<PointerEvent>('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.travel+=Math.hypot(dx,dy);drag.x=e.clientX;drag.y=e.clientY;yaw-=dx*.005;pitch=Math.max(-1.2,Math.min(.8,pitch-dy*.004));if(mode==='look'){target.set(camera.position.x+Math.sin(yaw)*Math.cos(pitch)*distance,camera.position.y+Math.sin(pitch)*distance,camera.position.z+Math.cos(yaw)*Math.cos(pitch)*distance);camera.lookAt(target);}}),lease.listenCanvas<PointerEvent>('pointerup',e=>{const click=drag&&drag.travel<5;drag=null;if(!click||mode!=='walk'||paused)return;const rect=renderer.domElement.getBoundingClientRect(),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);const hits=ray.intersectObjects([...stream.live.values()].map(r=>r.cards.group),true);const hit=hits[0];if(hit){const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],[hit.point.x,hit.point.y,hit.point.z],{stepFree:true});if(plan)path=[...plan.points];else options.onStatus?.('No connected walking route reaches that point.');}}),lease.listenCanvas<WheelEvent>('wheel',e=>{if(paused)return;e.preventDefault();distance=Math.max(2,Math.min(45,distance*Math.exp(e.deltaY*.001)));updateCamera();},{passive:false})];
+  const unlisten=[lease.listenCanvas<PointerEvent>('pointerdown',e=>{if(paused)return;host.focus({preventScroll:true});drag={x:e.clientX,y:e.clientY,id:e.pointerId,travel:0};renderer.domElement.setPointerCapture(e.pointerId);}),lease.listenCanvas<PointerEvent>('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.travel+=Math.hypot(dx,dy);drag.x=e.clientX;drag.y=e.clientY;yaw-=dx*.005;pitch=Math.max(-1.2,Math.min(.8,pitch-dy*.004));if(mode==='look'){target.set(camera.position.x+Math.sin(yaw)*Math.cos(pitch)*distance,camera.position.y+Math.sin(pitch)*distance,camera.position.z+Math.cos(yaw)*Math.cos(pitch)*distance);camera.lookAt(target);}}),lease.listenCanvas<PointerEvent>('pointerup',e=>{const click=drag&&drag.travel<5;drag=null;if(!click||mode!=='walk'||paused)return;const rect=renderer.domElement.getBoundingClientRect(),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);const hits=ray.intersectObjects([...stream.live.values()].map(r=>r.cards.group),true);const hit=hits[0];if(hit){const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],[hit.point.x,hit.point.y,hit.point.z],{stepFree:true});if(plan){path=[...plan.points];routeAhead(plan.points);}else options.onStatus?.('No connected walking route reaches that point.');}}),lease.listenCanvas<WheelEvent>('wheel',e=>{if(paused)return;e.preventDefault();distance=Math.max(2,Math.min(45,distance*Math.exp(e.deltaY*.001)));updateCamera();},{passive:false})];
   window.addEventListener('keydown',keyDown);window.addEventListener('keyup',keyUp);window.addEventListener('blur',clear);host.addEventListener('blur',clear);
   shot(new URLSearchParams(location.search).get('shot')??'A');if(options.initialBody)restore(options.initialBody);resize();schedule();
   const api={world,assets,scene,camera,geography,shot,setMode,restore,savedBody,enterDoor,
@@ -216,8 +245,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     /** The app's comfort choices, live (HorizonStage threads useComfort; html[data-motion] is read too). */
     setComfort(next:Partial<HorizonComfort>){comfort={calm:next.calm??comfort.calm,reducedMotion:(next.reducedMotion??comfort.reducedMotion)||appReducedMotion()};if(comfort.calm){faceCardsLit=false;faceCards.visible=false;}motion=horizonMotion(comfort);if(motion.transitionMs<=0&&transition){camera.position.copy(transition.toEye);target.copy(transition.toTarget);camera.lookAt(target);transition=null;}lastSun=-Infinity;},
     comfort:()=>({...comfort,motion:{...motion}}),
-    walkTo(p:XYZ){lastMovementBlocker=null;const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],p,{stepFree:true});path=plan?[...plan.points]:[];return plan;},
-    stats(){const gl=renderer.getContext(),debug=gl.getExtension('WEBGL_debug_renderer_info');return{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),revision:world.geographyRevision,terrainBytes:assets.bytes,collisionIndex:geography.indexStats,bytesBeforeFirstFrame,chunksLoaded:chunks?chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId):null,definitionBytesSoFar:chunks?.bytes()??assets.definitionBytes,shadowRequests:[...shadowRequests],comfort:{...comfort,motion:{...motion}},lightCards:pools.count,shadow:{half:sun.shadow.camera.right,centre:sun.target.position.toArray()},firstInteractiveMs:interactiveAt===null?null:interactiveAt-startedAt,assetLoadMs:assetLoadedAt-startedAt,mode,shot:shotId,body:{...body},frames:[...frameTimes],drawSamples:[...drawSamples],stream:[...stream.history],camera:{eye:camera.position.toArray(),target:target.toArray(),fov:camera.fov},diagnostics:world.diagnostics};},
+    walkTo(p:XYZ){lastMovementBlocker=null;const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],p,{stepFree:true});path=plan?[...plan.points]:[];if(plan)routeAhead(plan.points);return plan;},
+    stats(){const gl=renderer.getContext(),debug=gl.getExtension('WEBGL_debug_renderer_info');return{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),revision:world.geographyRevision,terrainBytes:assets.bytes,collisionIndex:geography.indexStats,bytesBeforeFirstFrame,chunksLoaded:chunks?chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId):null,chunks:chunks?{resident:chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId),total:chunks.refs.length,queued:scheduler!.queued(),heldAt:heldNow.length?{districts:[...heldNow],body:{...body}}:null,holds:chunkHolds.map(h=>({...h,at:[...h.at]}))}:null,definitionBytesSoFar:chunks?.bytes()??assets.definitionBytes,shadowRequests:[...shadowRequests],comfort:{...comfort,motion:{...motion}},lightCards:pools.count,shadow:{half:sun.shadow.camera.right,centre:sun.target.position.toArray()},firstInteractiveMs:interactiveAt===null?null:interactiveAt-startedAt,assetLoadMs:assetLoadedAt-startedAt,mode,shot:shotId,body:{...body},frames:[...frameTimes],drawSamples:[...drawSamples],stream:[...stream.history],camera:{eye:camera.position.toArray(),target:target.toArray(),fov:camera.fov},diagnostics:world.diagnostics};},
     dispose(){disposed=true;offChunk?.();lease.cancelFrame(frame);observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',clear);host.removeEventListener('blur',clear);stream.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();poolGeometry.dispose();beadGeometry.dispose();poolMaterial.dispose();beadMaterial.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
   };
   return api;
