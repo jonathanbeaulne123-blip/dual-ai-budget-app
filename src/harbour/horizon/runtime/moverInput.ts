@@ -11,6 +11,7 @@ import type {GroundState} from '../movers/shared/ground/types.ts';
 import {slipAngle} from '../movers/shared/ground/kernel.ts';
 import {parkOfferFor, type ThresholdOffer} from '../movers/shared/threshold.ts';
 import {createBoardController} from '../movers/board/controller.ts';
+import {createCruiserController} from '../movers/cruiser/controller.ts';
 import {createBicycleController} from '../movers/bicycle/controller.ts';
 
 export type MoverControls = {forward:number;strafe:number;run:boolean};
@@ -56,6 +57,7 @@ export function moverBlendEase(elapsedMs:number, durationMs:number):number {
 type MoverFactory = (deps:MoverDeps) => ModeController;
 /** The movers the Horizon runtime registers at mount (RIDE §11 ask 2): the board and the bicycle. */
 export const HORIZON_MOVERS:Readonly<Partial<Record<ModeId, MoverFactory>>> = Object.freeze({
+  cruiser: (deps:MoverDeps) => createCruiserController(deps),
   board: (deps:MoverDeps) => createBoardController(deps),
   bicycle: (deps:MoverDeps) => createBicycleController(deps),
 });

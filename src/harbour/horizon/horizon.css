@@ -1,4 +1,4 @@
-.horizon-shell{position:relative;width:100%;height:100%;min-height:400px;background:#d4dbd3;color:var(--text,#393b35);isolation:isolate}
+.horizon-shell{box-sizing:border-box;position:relative;width:100%;height:100%;min-height:400px;background:#d4dbd3;color:var(--text,#393b35);isolation:isolate}
 .horizon-shell--review{height:100dvh;min-height:0}
 .horizon-stage{position:absolute;inset:0;outline:none;touch-action:none}
 .horizon-stage:focus-visible{outline:3px solid var(--accent,#86613d);outline-offset:-4px}
@@ -40,3 +40,17 @@
 :root[data-motion="reduced"] .horizon-offer{transition:none}
 .horizon-offers .horizon-offer{position:static;display:flex;transform:none;pointer-events:auto}
 @media(min-width:800px) and (pointer:fine){.horizon-offers{display:none}}
+
+/* Cruiser access stays separate from the existing navigation row. */
+.horizon-cruiser-controls{position:absolute;top:84px;left:12px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;max-width:calc(100% - 24px);padding:8px;border:1px solid #71654d66;border-radius:14px;background:#f4eddaed;box-shadow:0 3px 12px #2223;color:#343b37;font:13px/1.3 system-ui}
+.horizon-cruiser-controls button,.horizon-cruiser-controls select{min-height:44px;border:1px solid #6d725e80;background:#fffaf0;color:inherit;font:inherit;border-radius:9px;padding:8px 10px;cursor:pointer}
+.horizon-cruiser-controls button[aria-pressed=true]{background:#365e54;color:#fffaf0}
+.horizon-cruiser-controls button:disabled{opacity:.55;cursor:default}
+.horizon-cruiser-controls label{display:flex;align-items:center;gap:5px}
+.horizon-cruiser-controls output{min-width:62px;font-variant-numeric:tabular-nums}
+.horizon-cruiser-controls button span{font-size:10px;opacity:.65}
+.horizon-shell--taylor .horizon-cruiser-controls{background:#fff1e9f5;color:#563b55;border:2px dashed #ae7992;border-radius:4px 14px 8px 17px;box-shadow:3px 3px 0 #bd93aa55}
+.horizon-shell--taylor .horizon-cruiser-controls button[aria-pressed=true]{background:#704663;color:#fff9f3}
+.horizon-shell--newfoundland .horizon-cruiser-controls{background:#e7eee8f5;color:#163f48;border:2px solid #577b7d;border-radius:5px;box-shadow:0 4px 0 #163f4833}
+.horizon-shell--newfoundland .horizon-cruiser-controls button[aria-pressed=true]{background:#215663;color:#fff8de}
+@media(max-width:600px){.horizon-cruiser-controls{top:144px;right:12px;font-size:12px;gap:4px}.horizon-cruiser-controls label{flex:1 1 100%;min-width:0;order:4}.horizon-cruiser-controls select{width:100%;min-width:0;padding:5px}.horizon-cruiser-controls button span{display:none}.horizon-status{font-size:11px;line-height:1.35}.horizon-touch-controls{bottom:98px}}
