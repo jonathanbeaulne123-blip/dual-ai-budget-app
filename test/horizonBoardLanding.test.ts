@@ -134,8 +134,9 @@ describe('landing — one rule (RIDE §6.3)', () => {
 
 describe('water (RIDE §6.4)', () => {
   it('fades a board that goes off the Bight Bridge lane into the Bight back onto the lane, stopped', () => {
-    // S2 at 690 m: the Bight Bridge lane stands ~10 m over the Bight; start 1 m beyond the lane's edge, rolling off it.
-    const p = pointAt(s2, 690), off = (s2.bed.width ?? 4) / 2 + 1;
+    // v2.2 (D-A1 land): S2 is carried on the Bight Bridge — at 690 m it is on the flyover over the road, so 1 m off it is the
+    // deck. At 780 m S2 runs the sea-side lane at 12 over the Bight: start 1 m beyond its seaward edge (past the rail), rolling off.
+    const p = pointAt(s2, 780), off = -((s2.bed.width ?? 4) / 2 + 1);
     const x = p.x + Math.cos(p.heading) * off, z = p.z - Math.sin(p.heading) * off;
     board.place({x, z, y: p.y, heading: p.heading, speed: 2});
     events.length = 0;

@@ -45,8 +45,10 @@ describe('the run-off at each of the three pads',()=>{
     const yawAt=(id:string,facing:number)=>{const c=createGliderController({env:real});c.enter(threshold(id),standing(id,facing));return Math.abs(c.bodyPose().yaw);};
     // The Prow's deck drops 43 m on both sides: the rider's choice.
     expect(yawAt('prowPlatform',0)).toBeCloseTo(0,9);expect(yawAt('prowPlatform',Math.PI)).toBeCloseTo(Math.PI,9);
-    // The Crown's south shoulder falls 1.4 m in 20 m (unflyable); its north face 14.5 m: north either way.
-    expect(yawAt('crownLaunch',0)).toBeCloseTo(Math.PI,9);expect(yawAt('crownLaunch',Math.PI)).toBeCloseTo(Math.PI,9);
+    // v2.2: the Crown launch is the summit lookout's run-off deck ([1305,482] h 170, Stage A v1.7), 12 eu over the summit
+    // ground: it drops 13.7 m south and 12.2 m north within 5 m, so like the Prow it is the rider's choice. (On the v1.6 land
+    // the launch sat on the ground, the south shoulder fell 1.4 m in 20 m and every run-off went north.)
+    expect(yawAt('crownLaunch',0)).toBeCloseTo(0,9);expect(yawAt('crownLaunch',Math.PI)).toBeCloseTo(Math.PI,9);
     // The Lamp gallery runs off over the sea.
     expect(yawAt('lampGallery',0)).toBeCloseTo(Math.PI,9);
   });
@@ -63,9 +65,10 @@ describe('the sim\'s launch and ground (CAM requests 1 and 2)',()=>{
       expect(real.groundAt(start.x+Math.sin(heading)*.5,start.z+Math.cos(heading)*.5,h+.5)).toBeLessThan(h-.5);
       const run=launchFromPad(pad.edge,real.groundAt,{facing:0,run:true});expect(Math.hypot(run.x-start.x,run.z-start.z)).toBeCloseTo(3,6);expect(run.phase).toBe('run');
     }
-    // The Crown runs off north whichever way the rider faces (its south shoulder barely drops: FLIGHT §2.1).
+    // v2.2: the Crown's run-off deck falls away on both sides (12–16 m), so it runs off the side the rider faces, like the Prow
+    // (on the v1.6 land it ran off north whichever way: the south shoulder barely dropped, FLIGHT §2.1).
     const crown=real.envelope.launchPads!.find(p=>p.id==='crown')!;
-    for(const facing of [0,Math.PI])expect(Math.abs(launchFromPad(crown.edge,real.groundAt,{facing}).heading)).toBeCloseTo(Math.PI,9);
+    for(const facing of [0,Math.PI])expect(Math.abs(launchFromPad(crown.edge,real.groundAt,{facing}).heading)).toBeCloseTo(facing,9);
   });
   it('WingEnv.ground takes the rider\'s height: a deck above the wing is not ground, the same deck below it is',()=>{
     // A bridge deck at h 50 over flat ground at 0, x 90…110.
@@ -105,7 +108,7 @@ describe('touchdown outcomes → exit or cut',()=>{
     const exit=c.exit();expect(exit.cut).toBe(true);expect(exit.label?.startsWith('→ ')).toBe(true);expect(exit.at).toEqual([1006,20,950]);
   });
   it('the Throat: admitted within 40 m of the mouth, down the chute, the splash (splashEcho on that frame), the jetty cut',()=>{
-    const c=createGliderController({env});c.enter(pad('test',1300,250,115),{x:1300,y:115,z:250,yaw:0});
+    const c=createGliderController({env});c.enter(pad('test',1300,250,124),{x:1300,y:124,z:250,yaw:0});   // v2.2: 5 m over the gate-centred mouth (h 119; was 115 over 110)
     const frames=fly(c,()=>({bar:c.phase()==='run'||c.phase()==='wear'?1:c.phase()==='level'?-1:0}),()=>c.finished!(),60);
     const phases=[...new Set(frames.map(f=>f.phase))];
     expect(phases).toEqual(expect.arrayContaining(['corridor','level']));

@@ -219,7 +219,9 @@ function glidePath(p:Pilot,from:readonly [number,number],to:readonly [number,num
     const d=Math.max(1,distanceTo(s,to)),slope=(s.y-h)/d;
     let bar=slope<=TRIM_SLOPE?0:barForSlope(slope),offset=0;
     since+=p.dt;if(since>6){since=0;weave=-weave;}
-    if(slope>DIVE_SLOPE*1.02&&d>60){bar=1;offset=weave*60*DEG;}
+    // v2.2: the S-turns stop 80 m out (was 60): from the lookout launch (h 170, Stage A) the last weave left the wing 16 m
+    // beside the spillway arch; 80 m is room to roll out onto the line at the dive's speed.
+    if(slope>DIVE_SLOPE*1.02&&d>80){bar=1;offset=weave*60*DEG;}
     const heading=trackHeading(bearingTo(s,to)+offset,s.airspeed,p.env.wind);
     return{bar,bank:steer(s,heading,maxBankDegrees)};
   },s=>(s.x-to[0])*ux+(s.z-to[1])*uz>=0);
@@ -304,7 +306,8 @@ export interface ThroatRunOptions{
 /**
  * The Throat Run (FLIGHT.md §0 last row, §2.5): Crown → gate 10 (north face, h 130) → `outbound` m out to
  * sea → a 180° right turn of `turnRadius` → an S-turn back onto the chute's axis → gate 12's mouth.
- * `heightInHand.mouth` is the height at the mouth plane above the aperture's floor (101).
+ * `heightInHand.mouth` is the height at the mouth plane above the aperture's floor (v2.2: 111, gate 12 centred on the built
+ * mouth at 119 with a 16 m aperture; it was 101 on the v1.6 land).
  */
 export function flyThroatRun(env:JourneyEnv,options:ThroatRunOptions={}):Journey{
   const gate=options.gate??throatGate(env.envelope);

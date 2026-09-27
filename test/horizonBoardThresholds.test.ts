@@ -97,7 +97,18 @@ describe('pick up and park at the thresholds (RIDE §6.5, P17)', () => {
       if (board.contact.padAt(pad.centre[0], pad.centre[2], pad.centre[1])?.pickup) continue;
       expect(board.contact.sample(pad.centre[0], pad.centre[2], pad.centre[1] + 0.1), t.id).toMatchObject({pace: 'threshold', legal: true});
     }
-    for (const id of ['stairTop', 'quayWest', 'landingQuay']) {
+    // v2.2 (reconciliation, OPEN land defect on Stage A candidate 5): the market stair's head pad (stairTop, [1480,18,1150])
+    // stands 6 m over the square on every side — the upper-street terrace at 18 now ends at z ≈ 1112 (W5-A's TOWN_TIERS);
+    // S3 passes 0.9 m from the pad at 12. A board from 3 m before reaches the pad's lip and bails. Kept visible here.
+    {
+      const pad = pads.get('threshold.stairTop')!, a = pad.rotationDegrees * Math.PI / 180, heading = Math.atan2(Math.cos(a), Math.sin(a));
+      board.place({x: pad.centre[0] - Math.sin(heading) * 3, z: pad.centre[2] - Math.cos(heading) * 3, y: pad.centre[1], heading, speed: 4.5});
+      const run = coast(board);
+      expect(run.events, 'stairTop (open land defect)').toContain('bail');
+      const beside = board.contact.sample(pad.centre[0], pad.centre[2] - 3, pad.centre[1] + .1)!;
+      expect(pad.centre[1] - beside.y, 'stairTop stands over the square').toBeGreaterThan(5);
+    }
+    for (const id of ['quayWest', 'landingQuay']) {
       // Along the pad's 6 m axis, from 3 m before its centre: threshold pace (roll 1.8) stops 4.5 m/s in 4.5²/3.6 = 5.6 m.
       const pad = pads.get(`threshold.${id}`)!, a = pad.rotationDegrees * Math.PI / 180, heading = Math.atan2(Math.cos(a), Math.sin(a));
       board.place({x: pad.centre[0] - Math.sin(heading) * 3, z: pad.centre[2] - Math.cos(heading) * 3, y: pad.centre[1], heading, speed: 4.5});
@@ -253,7 +264,8 @@ describe('no bed passes a threshold (RIDE §6.5, P17)', () => {
     }
     // The doors that end a line are checked (not a vacuous pass): S1 at landingQuay, S3 at upperStreetSpur, and the three
     // lines that end at the Tideline park's crossing.
-    expect(ends).toEqual(expect.arrayContaining(['landingQuay × S1 end', 'upperStreetSpur × S3 start', 'crossing.crossS2S3n805hv × S2 end', 'crossing.crossS2S3n805hv × S3 end', 'crossing.crossS2S3n805hv × S4 end']));
+    // v2.2: the Tideline park crossing's pad is named by its register row key (Stage A R1-68), not the old hash id.
+    expect(ends).toEqual(expect.arrayContaining(['landingQuay × S1 end', 'upperStreetSpur × S3 start', 'crossing.cross.s2.s3.1 × S2 end', 'crossing.cross.s2.s3.1 × S3 end', 'crossing.cross.s2.s3.1 × S4 end']));
     expect(through.length).toBeGreaterThan(10);   // the at-grade crossings, RIDE §6.5
     expect(passes).toEqual(THROUGH_DOORS);
   });
@@ -267,42 +279,25 @@ describe('no bed passes a threshold (RIDE §6.5, P17)', () => {
  * this test, and a land fix that clears one updates this table. The render-vs-collider half of P19 needs render
  * meshes and stays with the browser pass.
  */
+// v2.2 (reconciled with Stage A candidate 5): re-measured on the v2.1 land. S2 and S3 run clear end to end (the Bight
+// Bridge carries S2 on its deck, D-A1; the upper-street slab and the quay/landing retaining walls no longer stand in S3);
+// blocked samples S1 33 → 7, S2 21 → 0, S3 19 → 0, S4 15 → 8. The table on main (v1.6 land) is in git history.
 const LINE_BLOCKERS: Record<LineId, Record<string, number[]>> = {
   S1: {
-    'S1.retaining.lakeside@lakeside': [498, 500, 518, 520, 526, 534, 536, 596, 598, 600, 624, 626, 628, 630, 632],   // across the switchback flights
-    'station.feb.slab@lakeside': [722, 724],   // overhangs the deck 0.78 m up
-    'dam.apron@lakeside': [846, 848, 850],   // the dam/apron crossing, 837–879 m
+    's1Flyover.deck@lakeside': [534],   // the S1 skate flyover's deck edge over the lower pass (Stage A structure)
+    'dam.apron@lakeside': [846, 848, 850],   // the dam/apron crossing (R3-36: still blocked downhill at the apron)
     'apronBridge.rails@lakeside': [878],
     'apronBridge.rails@notch': [880],
-    'S1.retaining.notch@notch': [1004, 1006, 1016, 1018, 1020, 1022, 1024, 1026],
-    'yearWalk.retaining.reach@reach': [1186],
-    'yearWalk.shoulders.reach@reach': [1188],
-    'reachBoardwalk.rails@reach': [1240],   // across the run-out, 25 m before landingQuay
+    'reachBoardwalk.rails@reach': [1252],   // across the run-out before landingQuay
   },
-  S2: {
-    // V01's shoulder and retaining walls and the Bight Bridge deck at the V01 junction, 656–740 m.
-    'V01.retaining.offshore@bight': [656, 662, 668, 674, 720, 722],
-    'bightBridge.deck@bight': [658, 660, 664, 666, 678, 684, 688],
-    'V01.shoulders.offshore@bight': [670, 672, 676],
-    'V01.bed.offshore@bight': [680, 682, 686],
-    'V01.retaining.bight@bight': [734, 740],
-  },
-  S3: {
-    'town.upperStreet.slab@harbour': [12, 14, 16, 18],   // fix round 2: the slab overlays S3's first 18 m up to 1.8 m above its deck (the rider rides its top)
-    'quayBridge.deck@reach': [370, 394, 396, 398, 400, 402, 404],
-    'V01.retaining.landing@reach': [434],   // fix round 2: into the right half of the deck at the landing junction
-    'zipLanding.ramp.retaining.landing@landing': [638, 640, 642, 644, 646, 648, 650],   // fix round 2: into the deck's right half (the rider passes on the left)
-  },
+  S2: {},
+  S3: {},
   S4: {
-    'crossing.crossYearWalkBrookuefyx8.rails@hollow': [126],   // the garden-walk crossing, 124 m
-    'hollowBridge.deck@hollow': [146],
-    'host.cottage.approach.retaining.hollow@hollow': [172, 176],
-    'crossing.crossS4HostCottageApproach1ha399.supports@hollow': [182],   // fix round 2: beside the cottage approach walls
-    'yearWalk.retaining.lakeside@hollow': [304],
-    'host.glasshouse.approach.retaining.lakeside@lakeside': [362],
-    'plot.bight.1.retaining@bight': [472, 486],
-    'plot.bight.1.service.bed.bight@bight': [484],
-    'duneCulvert.roof@landing': [956, 958, 960, 962, 964],   // 0.5–1.7 m clear against 01-land's 3 m
+    'hollowBridge.rails@hollow': [148],
+    'walk garden.bed.hollow@hollow': [150],   // the Hollow neck (D-C10, reserved)
+    'VBS.bed.bight@bight': [510, 512, 514, 516],   // VBS × S4 convergence at the bight.1 lay-by (R3-36 / OPEN_VOIDS)
+    'walk bight.bed.bight@bight': [520],
+    'plot.bight.1.layby.slab@bight': [522],
   },
 };
 

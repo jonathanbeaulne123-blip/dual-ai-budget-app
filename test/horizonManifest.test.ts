@@ -217,10 +217,13 @@ describe('Horizon manifest v2.2: main\'s v1.7 RIDE data (§8.3, D40, D42)',()=>{
       expect(Object.hasOwn(surfaces,segment.surface),`${id} ${segment.name}`).toBe(true);
     }
   });
-  it('makes the park forgiving rather than assisted, and keeps the v1.6 numbers',()=>{
+  it('makes the park forgiving rather than assisted, and keeps the park and S1/S3 numbers',()=>{
     expect(manifest.skate.park.note).toBe('Skate v2 park; forgiving landings only (RIDE D40); no race');
     expect(manifest.skate.park).toMatchObject({xy:[1020,1430],size:[60,32]});
-    expect(manifest.speeds_ms.board).toBe(7);
+    // Stage A v1.7 (journeys at scale 1.0) set the planning speeds board 10 / bicycle 8; the board and bicycle movers do not read
+    // speeds_ms (their kernels set pace; the bicycle caps at 6.0). v2.2 keeps Stage A's number; the journey rows vs the movers' ride
+    // logs (D44) are an open item (RECONCILE.md).
+    expect(manifest.speeds_ms.board).toBe(10);expect(manifest.speeds_ms.bicycle).toBe(8);
     expect(manifest.skate.S1.segments.map(s=>[s.pace,s.surface])).toEqual([['fast','paved'],['flow','bankedTurf'],['flow','apron'],['fast','paved'],['slow','cobble'],['fast','paved']]);
     expect(manifest.skate.S3.segments[2]).toMatchObject({name:'The square',pace:'threshold',surface:'plaza'});
   });

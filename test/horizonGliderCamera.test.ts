@@ -108,7 +108,7 @@ describe('every handoff ≤ 30 eu (FLIGHT.md §4)',()=>{
     const exit=c.exit();expect(distance3(frames.at(-1)!.camera.eye,walkCameraPose({x:exit.at[0],y:exit.at[1],z:exit.at[2],yaw:exit.yaw}).eye)).toBeLessThanOrEqual(HANDOFF);
   });
   it('the Throat mouth: a 1.0 s pull-in along the axis, never a swing, and the corridor eye stays inside the chute',()=>{
-    const c=createGliderController({env});c.enter(pad('test',1300,250,115),{x:1300,y:115,z:250,yaw:0});
+    const c=createGliderController({env});c.enter(pad('test',1300,250,124),{x:1300,y:124,z:250,yaw:0});   // v2.2: 5 m over the gate-centred mouth (h 119; was 115 over 110)
     let n=0;
     const frames=fly(c,()=>({bar:c.phase()==='run'||c.phase()==='wear'?1:0,bank:c.phase()==='corridor'?Math.sin(n++*.05):0}),()=>c.finished!(),60);
     const mouth=frames.findIndex(f=>f.phase==='corridor');expect(mouth).toBeGreaterThan(0);
