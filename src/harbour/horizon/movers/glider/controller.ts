@@ -266,7 +266,8 @@ export function createParachuteController(deps:ParachuteDeps):FlightController{
     },
     update(dt,input){
       sound=initialSnap?MOVER_SOUNDS.snap:null;initialSnap=false;flying=true;
-      if(input.pull&&!pullHeld)pendingPull++;pullHeld=input.pull;
+      // The live adapter marks discrete presses; legacy held-input callers still use rising edges.
+      if(input.pullEdge||input.pull&&!pullHeld)pendingPull++;pullHeld=input.pull;
 
       if(stage==='pose'){poseT+=dt;return;}
       if(stage==='done'||!chute)return;

@@ -44,7 +44,7 @@ describe('the quick layer in every mover phase',()=>{
   it('registers the gliders on the runtime it mounts',async()=>{await mount();expect(register).toHaveBeenCalledTimes(1);});
   it('keeps the same toolbar mounted — Walk, Look, Island, the page, Tools, Journey, Sound — through launch, flight, corridor, freefall and a fade',async()=>{
     const h=await mount(),bar=toolbar(h),before=labels(h);
-    expect(before).toEqual(['Walk','Look','Island','Tools','Journey','Sound off']);
+    expect(before).toEqual(['Walk','Look','Island','Activity view','Tools','Journey','Sound off']);
     const phases:[boolean,HorizonMoverState['hud'],HorizonMoverState['mode'],string?][]=[
       [true,{place:{label:'Step back',distance:0,action:'fold'}},'glider'],
       [true,{height:62.4,lift:1.2,place:{label:'the Green',distance:410,action:'fold'}},'glider'],

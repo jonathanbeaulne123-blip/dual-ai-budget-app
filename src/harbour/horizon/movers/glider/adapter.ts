@@ -16,7 +16,7 @@ function thresholdFor(deps:MoverDeps, offer:ThresholdOffer):Threshold {
 }
 
 function flightInput(input:MoverInput){
-  return {forward:input.forward,strafe:input.steer,run:input.sprint,bar:input.forward,bank:input.steer,pull:input.action==='pull'||input.jump,look:[input.look.dx,input.look.dy] as const,fold:input.action==='fold'};
+  return {forward:input.forward,strafe:input.steer,run:input.sprint,bar:input.forward,bank:input.steer,pull:input.action==='pull'||input.jump,pullEdge:input.action==='pull'||input.jump,look:[input.look.dx,input.look.dy] as const,fold:input.action==='fold'};
 }
 
 export function adaptFlightController(flight:FlightController,deps:MoverDeps):ModeController {

@@ -165,6 +165,11 @@ describe('the parachute controller',()=>{
     expect(c.phase()).toBe('opening');expect(frames.at(-1)!.sound).toBe(MOVER_SOUNDS.snap);
     fly(c,()=>({}),()=>c.phase()==='canopy',3);expect(c.phase()).toBe('canopy');
   });
+  it('accepts consecutive distinct toggle presses without requiring an idle frame',()=>{
+    const c=jump(200);c.update(FRAME,input({pull:true,pullEdge:true}));expect(c.phase()).toBe('opening');
+    c.update(FRAME,input({pull:true,pullEdge:true}));expect(c.phase()).toBe('freefall');
+    c.update(FRAME,input({pull:true,pullEdge:true}));expect(c.phase()).toBe('opening');
+  });
   it('captures a brief press between fixed simulation steps, then retracts and reopens',()=>{
     const c=jump(200);c.update(FRAME/2,input({pull:true}));c.update(FRAME/2,input());expect(c.phase()).toBe('opening');
     c.update(FRAME,input({pull:true}));expect(c.phase()).toBe('freefall');

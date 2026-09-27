@@ -69,7 +69,7 @@ export interface ModeExit {at:Vec3;yaw:number;cut?:boolean;label?:string}
 export interface ReducedMotionLanding {id:string;label:string;xy:readonly [number,number];height?:number}
 export interface ReducedMotionCut {landings:ReducedMotionLanding[]}
 export interface ModeHud {height?:number;lift?:number;place?:{label:string;distance:number;action:'fold'|'pull'|'gate'}}
-export interface ModeInput {forward:number;strafe:number;run:boolean;bar:number;bank:number;pull:boolean;look:readonly [number,number];fold?:boolean}
+export interface ModeInput {forward:number;strafe:number;run:boolean;bar:number;bank:number;pull:boolean;pullEdge?:boolean;look:readonly [number,number];fold?:boolean}
 export const IDLE_INPUT:ModeInput=Object.freeze({forward:0,strafe:0,run:false,bar:0,bank:0,pull:false,look:[0,0] as const});
 export interface FlightModeController {
   readonly id:ModeId;
