@@ -1643,6 +1643,22 @@ row_edit("S4", "walk garden", [893, 600], reserved="D-C10", note="the covered Ho
 row_edit("S1", "damPortage", [1160.8, 940.1], reserved=None, decided=D_A7,
          note="dam apron: boards on the apron, the canoe portage meets it flush: the portage stair's foot (35.81) comes down to the apron (31) at the threshold; regrade owed (beds/structures)")
 
+# 7. D-A8 · Year Walk stations (Jonathan: "do recommended"): keep February, April, July, October and December; November
+#    back onto solid ground. Its 36 × 14 pad at [1622,912] overhung the Prow cliff drive's cutting (ground 26.3-56.7 under
+#    it, `padFloating.station.nov`). Turned 90° (long side north-south, along the Prow top) at [1626,904] the pad's
+#    footprint + 2 m stands on 54.0-56.7 (candidate-3 bake), 3.6 m clear of the Prow walk and off V01's cutting; it stays
+#    on the Prow top, 8.9 m from where it was. The Year Walk's November loop tip moves onto the pad's centre.
+NOV_XY = [1626, 904]
+for st in m["journey"]["stations"]:
+    if st["id"] == "nov":
+        st["v1_9_xy"] = st["xy"]; st["xy"] = NOV_XY; st["pad_rot_deg"] = 90
+        st["moveWhy_v2_0"] = "D-A8 (" + RULED + "): off the Prow cliff overhang; turned 90° along the Prow top, ground 54.0-56.7 under the pad (it fell to 26.3 under the v1.9 pad)"
+for pin in m["journey"]["yearWalk"]["pins"]:
+    if pin["station"] == "nov": pin["v1_9_xy"], pin["v1_9_h"] = pin["xy"], pin["h"]; pin["xy"], pin["h"] = NOV_XY, 56
+yw_replace([[1630, 855], [1620, 910], [1645, 875]], [[1630, 855], NOV_XY, [1645, 875]], "v2.0 (D-A8): the November loop's tip on the moved pad's centre")
+m["journey"]["yearWalk"]["v2_0_edits"] = [YW_EDITS_V19.pop()]
+m["journey"]["station"]["padRotRule"] = "v2.0: a station may carry pad_rot_deg (default 0; 90 turns the 36 m side north-south); the builder lays the pad and its beds rotated"
+
 
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)

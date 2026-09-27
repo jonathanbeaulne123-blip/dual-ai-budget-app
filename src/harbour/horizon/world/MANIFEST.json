@@ -9224,15 +9224,21 @@
     "id": "nov",
     "label": "the Prow",
     "xy": [
-     1622,
-     912
+     1626,
+     904
     ],
     "why": "the first storms, the Lamp\u2019s beam",
     "movedFrom": [
      1570,
      940
     ],
-    "moveWhy": "the old pad sat on the Prow cliff drive (V01 0.8 m) in its 34 m cutting; moved onto the Prow top beside the Prow walk"
+    "moveWhy": "the old pad sat on the Prow cliff drive (V01 0.8 m) in its 34 m cutting; moved onto the Prow top beside the Prow walk",
+    "v1_9_xy": [
+     1622,
+     912
+    ],
+    "pad_rot_deg": 90,
+    "moveWhy_v2_0": "D-A8 (Jonathan 2026-09-27): off the Prow cliff overhang; turned 90\u00b0 along the Prow top, ground 54.0-56.7 under the pad (it fell to 26.3 under the v1.9 pad)"
    },
    {
     "month": 12,
@@ -10183,8 +10189,8 @@
      855
     ],
     [
-     1620,
-     910
+     1626,
+     904
     ],
     [
      1645,
@@ -10523,10 +10529,15 @@
     {
      "station": "nov",
      "xy": [
+      1626,
+      904
+     ],
+     "h": 56,
+     "v1_9_xy": [
       1622,
       912
      ],
-     "h": 56.5
+     "v1_9_h": 56.5
     },
     {
      "station": "dec",
@@ -11823,6 +11834,39 @@
      ],
      "why": "January's last leg returns as the first leg's west lane (3.5 m), west of the Ore Line"
     }
+   ],
+   "v2_0_edits": [
+    {
+     "was": [
+      [
+       1630,
+       855
+      ],
+      [
+       1620,
+       910
+      ],
+      [
+       1645,
+       875
+      ]
+     ],
+     "now": [
+      [
+       1630,
+       855
+      ],
+      [
+       1626,
+       904
+      ],
+      [
+       1645,
+       875
+      ]
+     ],
+     "why": "v2.0 (D-A8): the November loop's tip on the moved pad's centre"
+    }
    ]
   },
   "stretch": {
@@ -11857,7 +11901,8 @@
    "rows": 2,
    "identity": "site(monthOrdinal) = station(month) + bed(yearIndex); appending never moves a bed",
    "maxHeight": "a bench (0.85 eu)",
-   "waymark": "post with the month name and the year count; lit at the camp"
+   "waymark": "post with the month name and the year count; lit at the camp",
+   "padRotRule": "v2.0: a station may carry pad_rot_deg (default 0; 90 turns the 36 m side north-south); the builder lays the pad and its beds rotated"
   },
   "camp": {
    "rule": "the current month\u2019s bed: lit waymark + tent card; the camp card docks to it on the map",
