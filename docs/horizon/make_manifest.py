@@ -1659,6 +1659,91 @@ yw_replace([[1630, 855], [1620, 910], [1645, 875]], [[1630, 855], NOV_XY, [1645,
 m["journey"]["yearWalk"]["v2_0_edits"] = [YW_EDITS_V19.pop()]
 m["journey"]["station"]["padRotRule"] = "v2.0: a station may carry pad_rot_deg (default 0; 90 turns the 36 m side north-south); the builder lays the pad and its beds rotated"
 
+# 8. Groups B and C (Jonathan: "recommended on all").
+REC = "recommended, accepted " + RULED
+views = {v["id"]: v for v in m["views"]}
+# D-B2 · page K re-posed so the Glasshouse is in the 1440 × 900 frame (it was 0 px, 30-63° off the line of sight from
+#   [1006,762]). The eye stands on the terrace at the lake-rim walk's start by the Glasshouse's north-west corner and looks
+#   east-south-east past the Glasshouse to Stillwater. Ray probe on the candidate-3 bake (lib5 pattern, runtime lens):
+#   1440 × 900 Glasshouse 3,089 px / Stillwater 790 px of 12,960 (need 13); 390 × 844 Glasshouse 955 / Stillwater 168 of
+#   7,800 (need 8). v1.9: 0 / 1,989 and 254 / 381.
+K = views["K"]
+K["v1_9"] = {"xy": K["xy"], "target": K["target"], "target_h": K["target_h"], "portrait": dict(K["portrait"])}
+K["xy"], K["target"], K["target_h"] = [994, 770], [1120, 815], 52
+K["portrait"].update({"target": [1120, 815], "target_h": 52})
+K["decided"] = "D-B2 re-pose (" + REC + ")"
+# D-B3 · page H's best hour → golden hour (sunset − 1 h), so the strip can read copper; its wording follows.
+H = views["H"]
+H["v1_9_bestHour"], H["v1_9_label"], H["v1_9_frames"] = H["bestHour"], H["label"], H["frames"]
+H["bestHour"], H["label"], H["frames"] = "golden hour", "The Flats at golden hour", "the strip in copper, the west sea under the low sun"
+H["decided"] = "D-B3 (" + REC + ")"
+# D-C3 · the Throat collar stays (it keeps the Throat dark, P25 0/75); the 18 m is the mouth's aperture, the passage's
+#   aperture where it enters the Deep under the collar is the built 10.8 (data follows the build).
+th = m["underground"]["doors"]["throat"]
+th["collarAperture_m"] = 10.8
+th["apertureNote"] = "v2.0 (D-C3, " + REC + "): mouth_m [26,18] is the mouth's aperture on the north face; the passage opens into the Deep below its ceiling under the collar (68-76.7) with 10.8 clear (built 10.79); the clearance report checks the passage against collarAperture_m"
+# D-C5 · page I's "the Reach water" is the river where it crosses the Reach as well as the Reach channels (W3-C's reading).
+I = views["I"]
+I["subjectDefs"] = {"the Reach water": "water.reach.* (the Reach channels) OR water.river.lower where the hit lies inside landforms.reach (the river crossing the Reach)"}
+I["decided"] = "D-C5 (" + REC + ")"
+# D-C6 · L01 about 1 m east onto solid slab (its point stood 0.1 m inside the gallery's top-flight opening).
+for pl in m["places"]:
+    if pl["id"] == "L01": pl["v1_9_xy"] = pl["xy"]; pl["xy"] = [1173, 912]; pl["decided"] = "D-C6 (" + REC + ")"
+# D-C7 · the turning circle: three lanes stacked within 1 m at [1376-1387, 686-691] (Crown Road's footway 109.25, the Year
+#   Walk's January lane 110, the Crown walk 109.3). The Crown walk no longer lays its own bed along the Year Walk lane from
+#   the turning circle: it walks the lane itself and its own bed starts where it leaves the lane, [1417.7,677.4] (the
+#   candidate-3 walk crown bed is within 0-1.7 m / 0-0.6 eu of the lane from [1370,690] to there). The manifest points
+#   now follow the built route (the builder's hard-coded list, beds/build.ts:122) from that point.
+wc = m["walks"]["crown"]
+wc["v1_9_pts"] = wc["pts"]
+wc["pts"] = [[1417.7, 677.4], [1445, 665], [1425, 605], [1340, 620], [1400, 540], [1360, 470], [1310, 500]]
+wc["length_m"] = round(length(wc["pts"]))
+wc["joinsYearWalk"] = {"at": [1417.7, 677.4], "h": 110.1, "note": "D-C7 (" + REC + "): from the turning circle [1370,690] the Crown walk is the Year Walk's January lane (one bed at 110); its own bed starts here, a flush junction"}
+row_edit("walk crown", "yearWalk", [1379.9, 687.4], at=[1417.7, 677.4], movedFrom=[1379.9, 687.4], note="flush path junction where the Crown walk leaves the Year Walk's January lane (D-C7): no marker, no mode change")
+for a, b, at in [("walk crown", "yearWalk", [1371.2, 689.7]), ("walk crown", "G1", [1375.1, 688.6]), ("walk crown", "southPortal.link", [1370, 690]), ("V02", "walk crown", [1370, 690])]:
+    row_retire(a, b, at, "v2.0 (D-C7): the Crown walk's own bed starts at [1417.7,677.4]; from the turning circle to there it is the Year Walk's January lane (that lane's rows stand)")
+# D-C8 · plot bight.1 moves south-west off the June lane and S4. The packager's ≈ 12 m does not clear on the candidate-3
+#   bake (P31 pattern, 2 m grid, plot + 6 m margin): 12 m south-west leaves 12 Year Walk samples in the plot and 55 in the
+#   margin; 12 m due west clears the beds but puts 6 samples of the plot at or below 0.5 (the lagoon shore). [814,919]
+#   (25 m west-south-west, rot 39 kept) is the nearest spot with 0 bed samples in the plot and its margin and ground ≥ 0.7;
+#   edge to plot bight.2 21.8 m (≥ 17.5). v1.9 [836,907]: 32 in the plot, 62 + 13 in the margin.
+bs = m["reserves"]["bightShore"]
+bs["v1_9_plots"] = [list(q) for q in bs["plots"]]
+bs["plots"][0] = [814, 919]
+bs["plot1Note_v2_0"] = "D-C8 (" + REC + "): plot bight.1 moved 25 m west-south-west, the nearest spot clear of the June lane and S4 (the ≈ 12 m estimate did not clear); the plot's service drive follows"
+# D-C9 · the Bight Shore spur (VBS) rides 6-9 eu above S4 with 4.5-7 m between centrelines (corridors touching) for ≈ 40 m,
+#   [918,877] → [892,906], ground falling to 17.6 under it: a named trestle carries VBS there. It is not a crossing (the two
+#   run side by side), so its bents stand on VBS's far side from S4 and at its centreline; the S4-side deck edge
+#   cantilevers over S4's edge (S4 keeps ≥ 6 eu headroom). length_m (not span_m): the generic footbridge builder would put
+#   bents in S4 lengthwise, as W3-A found; the structures builder needs a trestle kind.
+m["structures"]["bightSpurTrestle"] = {"xy": [904.9, 891.5], "kind": "trestle", "carries": "VBS", "length_m": 44, "width_m": 5, "from": [918.1, 877], "to": [891.6, 906],
+ "deck": "VBS on its own grade (27.4 → 25.2)", "beside": "S4 at 17.3-18.2, 4.5-7 m from VBS's centreline on the east side",
+ "bents": "one line on the west (away from S4) and one under the centreline; none in S4's corridor", "decided": "D-C9 (" + REC + ")",
+ "note": "v2.0: VBS hung 6-9 eu over the ground beside S4 with nothing under it (R2-04; the dropped v1.9 bightSpurBridge put its bents in S4)"}
+# D-C11 · the market stair: stairs only. The ramp twin (marketRamp) is retired from the data; the recorded step-free route
+#   from the stair's foot to the upper street is the 295 eu detour (review 2's route walk).
+for a, b, at in [("marketRamp", "host.home.approach", [1482.4, 1181.8]), ("marketStair.flight.0", "marketRamp", [1480, 1150])]:
+    row_retire(a, b, at, "v2.0 (D-C11, " + RULED + "): the market stair is stairs only; the ramp twin is retired (it ran into Our home's walls, R2-09)")
+m["structures"]["marketStair"] = {"xy": [1480, 1160], "kind": "town stair", "foot": [1480, 12, 1171], "head": [1480, 18, 1150], "flights": 3, "twin": "none (stairs only)",
+ "stepFree": {"route": ["walk square", "town.bankLink", "town.northLink", "V01", "spur upperStreet"], "length_eu": 295, "from": "the square", "to": "the upper street spur's end [1480,18,1060]", "note": "the recorded step-free way between the square and the upper street (review 2 route walk: 295.5 eu, 123 s at 2.4 m/s)"},
+ "decided": "D-C11 stairs only (" + RULED + ")", "note": "v2.0: the ramp twin (marketRamp, land/town/build.ts) is retired; no step-free 75 m run at 8 % fits beside Our home"}
+m["profiles"]["stair"]["exceptions"] = [{"stair": "marketStair", "twin": "none", "stepFree": "structures.marketStair.stepFree (295 eu)", "why": "D-C11"}]
+for seg in m["skate"]["S3"]["segments"]:
+    if seg["name"] == "Market stair": seg["v1_9_spot"] = seg["spot"]; seg["spot"] = "three flights, a rail each; ground line: park at stairTop and carry (stairs only, D-C11)"
+# D-C14 · the cove walk comes down to the Scholars Cove ferry pier by a cliff stair cut into the face (33 m).
+m["structures"]["coveStair"] = {"kind": "cliff-stair", "from": [631.2, 241.9], "from_h": 34.1, "to": [630, 235], "to_h": 1.8, "rise_m": 32.3,
+ "along": "cut into the cliff face west of the pier: two flights of ≈ 55 m run with a landing at ≈ 17, between [631,240] and [604,252] and back", "parapet": "on the sea side, posted to the rock",
+ "decided": "D-C14 cliff stair (" + REC + ")", "note": "v2.0: the cove walk ended 32.8 above the pier; kind cliff-stair (not stair: the tower-stair builder does not apply)"}
+row_edit("walk coveWalk", "ferry.scholarsCove", [630, 240], at=[630, 235], resolution="threshold", kind="modeTransfer", structure="coveStair", note="the cove walk comes down the cliff stair to the pier: feet → ferry (D-C14)")
+# D-C15 · S1 crosses itself at the Shoulder's lakeside loop: the upper pass (89.8 → 83.4) stands up to 12.3 over the ground
+#   from [1363.5,752.2] to [1326.6,735.7] and crosses the lower pass (76-78) at [1353.6,747.9], 11.5 above it. A named
+#   skate flyover carries the upper pass. length_m (not span_m): the generic span builder would take the lower pass as its
+#   own route and could stand bents on it.
+m["structures"]["s1Flyover"] = {"xy": [1345, 744], "kind": "skateFlyover", "carries": "S1 (the upper pass)", "length_m": 44, "width_m": 4, "from": [1363.5, 752.2], "to": [1326.6, 735.7],
+ "deck": "S1's own grade, 89.8 → 83.4", "over": "S1's lower pass at [1353.6,747.9] (76.9), 11.5 below", "opening_m": 12, "rails": "both edges",
+ "bents": "outside the lower pass's corridor (2 m + 1 m margin either side of its centreline)", "decided": "D-C15 (" + REC + ")",
+ "note": "v2.0: a route's self-crossing is not a register pair; P12 proves it (was a 13.4 eu unsupported run at [1358,750])"}
+
 
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)

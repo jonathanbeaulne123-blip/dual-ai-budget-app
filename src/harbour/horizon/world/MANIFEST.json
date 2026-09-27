@@ -1120,11 +1120,16 @@
    "id": "L01",
    "label": "Fund instrument (beside the dam)",
    "xy": [
-    1172,
+    1173,
     912
    ],
    "h": 52,
-   "reads": "BasinReading only"
+   "reads": "BasinReading only",
+   "v1_9_xy": [
+    1172,
+    912
+   ],
+   "decided": "D-C6 (recommended, accepted Jonathan 2026-09-27)"
   },
   {
    "id": "L02",
@@ -1216,7 +1221,15 @@
   "stair": {
    "width_m": 3,
    "rise_m": 0.17,
-   "twin": "ramp \u2264 8 % or path"
+   "twin": "ramp \u2264 8 % or path",
+   "exceptions": [
+    {
+     "stair": "marketStair",
+     "twin": "none",
+     "stepFree": "structures.marketStair.stepFree (295 eu)",
+     "why": "D-C11"
+    }
+   ]
   },
   "rail": {
    "gauge_m": 0.9,
@@ -2360,7 +2373,8 @@
      "name": "Market stair",
      "pace": "flow",
      "surface": "paved",
-     "spot": "three flights, a rail each; ramp = ground line"
+     "spot": "three flights, a rail each; ground line: park at stairTop and carry (stairs only, D-C11)",
+     "v1_9_spot": "three flights, a rail each; ramp = ground line"
     },
     {
      "name": "The square",
@@ -2766,6 +2780,38 @@
   "crown": {
    "pts": [
     [
+     1417.7,
+     677.4
+    ],
+    [
+     1445,
+     665
+    ],
+    [
+     1425,
+     605
+    ],
+    [
+     1340,
+     620
+    ],
+    [
+     1400,
+     540
+    ],
+    [
+     1360,
+     470
+    ],
+    [
+     1310,
+     500
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 418,
+   "v1_9_pts": [
+    [
      1370,
      690
     ],
@@ -2778,8 +2824,14 @@
      500
     ]
    ],
-   "profile": "walk",
-   "length_m": 200
+   "joinsYearWalk": {
+    "at": [
+     1417.7,
+     677.4
+    ],
+    "h": 110.1,
+    "note": "D-C7 (recommended, accepted Jonathan 2026-09-27): from the turning circle [1370,690] the Crown walk is the Year Walk's January lane (one bed at 110); its own bed starts here, a flush junction"
+   }
   },
   "crownFromGondola": {
    "pts": [
@@ -3759,6 +3811,106 @@
    "deck": "the Year Walk's east Prow lane (50.6)",
    "under": "the sea stair's cutting (36)",
    "note": "v1.9: the lane crossed the stair 14.2 eu over it with no structure"
+  },
+  "bightSpurTrestle": {
+   "xy": [
+    904.9,
+    891.5
+   ],
+   "kind": "trestle",
+   "carries": "VBS",
+   "length_m": 44,
+   "width_m": 5,
+   "from": [
+    918.1,
+    877
+   ],
+   "to": [
+    891.6,
+    906
+   ],
+   "deck": "VBS on its own grade (27.4 \u2192 25.2)",
+   "beside": "S4 at 17.3-18.2, 4.5-7 m from VBS's centreline on the east side",
+   "bents": "one line on the west (away from S4) and one under the centreline; none in S4's corridor",
+   "decided": "D-C9 (recommended, accepted Jonathan 2026-09-27)",
+   "note": "v2.0: VBS hung 6-9 eu over the ground beside S4 with nothing under it (R2-04; the dropped v1.9 bightSpurBridge put its bents in S4)"
+  },
+  "marketStair": {
+   "xy": [
+    1480,
+    1160
+   ],
+   "kind": "town stair",
+   "foot": [
+    1480,
+    12,
+    1171
+   ],
+   "head": [
+    1480,
+    18,
+    1150
+   ],
+   "flights": 3,
+   "twin": "none (stairs only)",
+   "stepFree": {
+    "route": [
+     "walk square",
+     "town.bankLink",
+     "town.northLink",
+     "V01",
+     "spur upperStreet"
+    ],
+    "length_eu": 295,
+    "from": "the square",
+    "to": "the upper street spur's end [1480,18,1060]",
+    "note": "the recorded step-free way between the square and the upper street (review 2 route walk: 295.5 eu, 123 s at 2.4 m/s)"
+   },
+   "decided": "D-C11 stairs only (Jonathan 2026-09-27)",
+   "note": "v2.0: the ramp twin (marketRamp, land/town/build.ts) is retired; no step-free 75 m run at 8 % fits beside Our home"
+  },
+  "coveStair": {
+   "kind": "cliff-stair",
+   "from": [
+    631.2,
+    241.9
+   ],
+   "from_h": 34.1,
+   "to": [
+    630,
+    235
+   ],
+   "to_h": 1.8,
+   "rise_m": 32.3,
+   "along": "cut into the cliff face west of the pier: two flights of \u2248 55 m run with a landing at \u2248 17, between [631,240] and [604,252] and back",
+   "parapet": "on the sea side, posted to the rock",
+   "decided": "D-C14 cliff stair (recommended, accepted Jonathan 2026-09-27)",
+   "note": "v2.0: the cove walk ended 32.8 above the pier; kind cliff-stair (not stair: the tower-stair builder does not apply)"
+  },
+  "s1Flyover": {
+   "xy": [
+    1345,
+    744
+   ],
+   "kind": "skateFlyover",
+   "carries": "S1 (the upper pass)",
+   "length_m": 44,
+   "width_m": 4,
+   "from": [
+    1363.5,
+    752.2
+   ],
+   "to": [
+    1326.6,
+    735.7
+   ],
+   "deck": "S1's own grade, 89.8 \u2192 83.4",
+   "over": "S1's lower pass at [1353.6,747.9] (76.9), 11.5 below",
+   "opening_m": 12,
+   "rails": "both edges",
+   "bents": "outside the lower pass's corridor (2 m + 1 m margin either side of its centreline)",
+   "decided": "D-C15 (recommended, accepted Jonathan 2026-09-27)",
+   "note": "v2.0: a route's self-crossing is not a register pair; P12 proves it (was a 13.4 eu unsupported run at [1358,750])"
   }
  },
  "underground": {
@@ -3782,7 +3934,9 @@
      26,
      18
     ],
-    "note": "a diving entry: 139 m of sloping throat at 30\u00b0 down to the Deep at h 40; flare over the water"
+    "note": "a diving entry: 139 m of sloping throat at 30\u00b0 down to the Deep at h 40; flare over the water",
+    "collarAperture_m": 10.8,
+    "apertureNote": "v2.0 (D-C3, recommended, accepted Jonathan 2026-09-27): mouth_m [26,18] is the mouth's aperture on the north face; the passage opens into the Deep below its ceiling under the collar (68-76.7) with 10.8 clear (built 10.79); the clearance report checks the passage against collarAperture_m"
    },
    "seaDoor": {
     "xy": [
@@ -4248,8 +4402,8 @@
   "bightShore": {
    "plots": [
     [
-     836,
-     907
+     814,
+     919
     ],
     [
      771,
@@ -4281,7 +4435,26 @@
     "plot.bight.3",
     "plot.bight.4"
    ],
-   "served": "VBS spur; jetty [735,955]; all four outside protected.green (r 160)"
+   "served": "VBS spur; jetty [735,955]; all four outside protected.green (r 160)",
+   "v1_9_plots": [
+    [
+     836,
+     907
+    ],
+    [
+     771,
+     973
+    ],
+    [
+     729,
+     1032
+    ],
+    [
+     705,
+     1107
+    ]
+   ],
+   "plot1Note_v2_0": "D-C8 (recommended, accepted Jonathan 2026-09-27): plot bight.1 moved 25 m west-south-west, the nearest spot clear of the June lane and S4 (the \u2248 12 m estimate did not clear); the plot's service drive follows"
   },
   "small": {
    "sealedDrift": {
@@ -4788,13 +4961,13 @@
    ],
    "fov_deg": 55,
    "radius_eu": 260,
-   "label": "The Flats at sunset",
+   "label": "The Flats at golden hour",
    "xy": [
     440,
     760
    ],
-   "frames": "the strip in copper, the west sea under the sunset",
-   "bestHour": "sunset",
+   "frames": "the strip in copper, the west sea under the low sun",
+   "bestHour": "golden hour",
    "also": "dawn",
    "target_h": 30,
    "deferred": [
@@ -4828,7 +5001,11 @@
    "subjects": [
     "the strip",
     "the west sea"
-   ]
+   ],
+   "v1_9_bestHour": "sunset",
+   "v1_9_label": "The Flats at sunset",
+   "v1_9_frames": "the strip in copper, the west sea under the sunset",
+   "decided": "D-B3 (recommended, accepted Jonathan 2026-09-27)"
   },
   {
    "id": "I",
@@ -4877,7 +5054,11 @@
    "subjects": [
     "the spring",
     "the Reach water"
-   ]
+   ],
+   "subjectDefs": {
+    "the Reach water": "water.reach.* (the Reach channels) OR water.river.lower where the hit lies inside landforms.reach (the river crossing the Reach)"
+   },
+   "decided": "D-C5 (recommended, accepted Jonathan 2026-09-27)"
   },
   {
    "id": "J",
@@ -4934,14 +5115,14 @@
    "id": "K",
    "target": [
     1120,
-    812
+    815
    ],
    "fov_deg": 55,
    "radius_eu": 220,
    "label": "The Glasshouse at dusk",
    "xy": [
-    1006,
-    762
+    994,
+    770
    ],
    "frames": "the Glasshouse in front of Stillwater",
    "bestHour": "dusk",
@@ -4954,10 +5135,10 @@
    "portrait": {
     "fov_deg": 45,
     "target": [
-     1060,
-     800
+     1120,
+     815
     ],
-    "target_h": 55,
+    "target_h": 52,
     "frames": [
      "the Glasshouse",
      "Stillwater"
@@ -4982,7 +5163,31 @@
    "v1_8_xy": [
     1000,
     758
-   ]
+   ],
+   "v1_9": {
+    "xy": [
+     1006,
+     762
+    ],
+    "target": [
+     1120,
+     812
+    ],
+    "target_h": 52,
+    "portrait": {
+     "fov_deg": 45,
+     "target": [
+      1060,
+      800
+     ],
+     "target_h": 55,
+     "frames": [
+      "the Glasshouse",
+      "Stillwater"
+     ]
+    }
+   },
+   "decided": "D-B2 re-pose (recommended, accepted Jonathan 2026-09-27)"
   },
   {
    "id": "L",
@@ -5479,17 +5684,6 @@
    ]
   },
   {
-   "a": "V02",
-   "b": "walk crown",
-   "at": [
-    1370,
-    690
-   ],
-   "resolution": "threshold",
-   "note": "turning circle is the wheels' end; the Crown walk begins",
-   "kind": "crossing"
-  },
-  {
    "a": "FERRY",
    "b": "bightBridge",
    "at": [
@@ -5753,30 +5947,6 @@
    "kind": "crossing",
    "source": "bake v1.8",
    "note": ""
-  },
-  {
-   "a": "marketRamp",
-   "b": "host.home.approach",
-   "at": [
-    1482.4,
-    1181.8
-   ],
-   "resolution": "threshold",
-   "kind": "junction",
-   "source": "bake v1.8",
-   "note": "flush path junction: no marker, no mode change"
-  },
-  {
-   "a": "marketStair.flight.0",
-   "b": "marketRamp",
-   "at": [
-    1480,
-    1150
-   ],
-   "resolution": "threshold",
-   "kind": "junction",
-   "source": "bake v1.8",
-   "note": "flush path junction: no marker, no mode change"
   },
   {
    "a": "ORE",
@@ -7189,12 +7359,20 @@
    "b": "ferry.scholarsCove",
    "at": [
     630,
+    235
+   ],
+   "resolution": "threshold",
+   "kind": "modeTransfer",
+   "source": "bake v1.8",
+   "note": "the cove walk comes down the cliff stair to the pier: feet \u2192 ferry (D-C14)",
+   "v1_9_at": [
+    630,
     240
    ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "over by 32.8 eu: a named structure (footbridge, deck or passage) is owed"
+   "v1_9_resolution": "over",
+   "v1_9_kind": "crossing",
+   "structure": "coveStair",
+   "v1_9_note": "over by 32.8 eu: a named structure (footbridge, deck or passage) is owed"
   },
   {
    "a": "walk coveWalk",
@@ -7254,22 +7432,6 @@
   },
   {
    "a": "walk crown",
-   "b": "G1",
-   "at": [
-    1375.1,
-    688.6
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake",
-   "v1_9_at": [
-    1388.3,
-    685.3
-   ]
-  },
-  {
-   "a": "walk crown",
    "b": "ORE",
    "at": [
     1351.2,
@@ -7291,18 +7453,6 @@
    "kind": "crossing",
    "source": "bake v1.8",
    "note": ""
-  },
-  {
-   "a": "walk crown",
-   "b": "southPortal.link",
-   "at": [
-    1370,
-    690
-   ],
-   "resolution": "threshold",
-   "kind": "junction",
-   "source": "bake v1.8",
-   "note": "flush path junction: no marker, no mode change"
   },
   {
    "a": "walk crown",
@@ -7368,25 +7518,22 @@
    "a": "walk crown",
    "b": "yearWalk",
    "at": [
-    1371.2,
-    689.7
+    1417.7,
+    677.4
    ],
    "resolution": "threshold",
    "kind": "junction",
    "source": "bake v1.8",
-   "note": "flush path junction: no marker, no mode change"
-  },
-  {
-   "a": "walk crown",
-   "b": "yearWalk",
-   "at": [
+   "note": "flush path junction where the Crown walk leaves the Year Walk's January lane (D-C7): no marker, no mode change",
+   "v1_9_at": [
     1379.9,
     687.4
    ],
-   "resolution": "threshold",
-   "kind": "junction",
-   "source": "bake v1.8",
-   "note": "flush path junction: no marker, no mode change"
+   "movedFrom": [
+    1379.9,
+    687.4
+   ],
+   "v1_9_note": "flush path junction: no marker, no mode change"
   },
   {
    "a": "walk crown",
@@ -13554,6 +13701,123 @@
     "kind": "crossing",
     "source": "bake v1.8",
     "note": "RESERVED R-A3: waits on the gondola top station"
+   }
+  },
+  {
+   "a": "walk crown",
+   "b": "yearWalk",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-C7): the Crown walk's own bed starts at [1417.7,677.4]; from the turning circle to there it is the Year Walk's January lane (that lane's rows stand)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk crown",
+    "b": "yearWalk",
+    "at": [
+     1371.2,
+     689.7
+    ],
+    "resolution": "threshold",
+    "kind": "junction",
+    "source": "bake v1.8",
+    "note": "flush path junction: no marker, no mode change"
+   }
+  },
+  {
+   "a": "walk crown",
+   "b": "G1",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-C7): the Crown walk's own bed starts at [1417.7,677.4]; from the turning circle to there it is the Year Walk's January lane (that lane's rows stand)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk crown",
+    "b": "G1",
+    "at": [
+     1375.1,
+     688.6
+    ],
+    "resolution": "under",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "D-A3 decided Jonathan 2026-09-27 (station [1335,535]); re-point on the next bake",
+    "v1_9_at": [
+     1388.3,
+     685.3
+    ]
+   }
+  },
+  {
+   "a": "walk crown",
+   "b": "southPortal.link",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-C7): the Crown walk's own bed starts at [1417.7,677.4]; from the turning circle to there it is the Year Walk's January lane (that lane's rows stand)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk crown",
+    "b": "southPortal.link",
+    "at": [
+     1370,
+     690
+    ],
+    "resolution": "threshold",
+    "kind": "junction",
+    "source": "bake v1.8",
+    "note": "flush path junction: no marker, no mode change"
+   }
+  },
+  {
+   "a": "V02",
+   "b": "walk crown",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-C7): the Crown walk's own bed starts at [1417.7,677.4]; from the turning circle to there it is the Year Walk's January lane (that lane's rows stand)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "V02",
+    "b": "walk crown",
+    "at": [
+     1370,
+     690
+    ],
+    "resolution": "threshold",
+    "note": "turning circle is the wheels' end; the Crown walk begins",
+    "kind": "crossing"
+   }
+  },
+  {
+   "a": "marketRamp",
+   "b": "host.home.approach",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-C11, Jonathan 2026-09-27): the market stair is stairs only; the ramp twin is retired (it ran into Our home's walls, R2-09)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "marketRamp",
+    "b": "host.home.approach",
+    "at": [
+     1482.4,
+     1181.8
+    ],
+    "resolution": "threshold",
+    "kind": "junction",
+    "source": "bake v1.8",
+    "note": "flush path junction: no marker, no mode change"
+   }
+  },
+  {
+   "a": "marketStair.flight.0",
+   "b": "marketRamp",
+   "kind": "retired register row (v2.0)",
+   "verification": "v2.0 (D-C11, Jonathan 2026-09-27): the market stair is stairs only; the ramp twin is retired (it ran into Our home's walls, R2-09)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "marketStair.flight.0",
+    "b": "marketRamp",
+    "at": [
+     1480,
+     1150
+    ],
+    "resolution": "threshold",
+    "kind": "junction",
+    "source": "bake v1.8",
+    "note": "flush path junction: no marker, no mode change"
    }
   }
  ],
