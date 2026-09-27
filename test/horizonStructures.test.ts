@@ -120,7 +120,10 @@ describe('Horizon structural solids',()=>{
       if(constraint==='water')cuts.waters.push({id:'river',kind:'river',points:[[0,4,-10],[0,4,10]],outline:[],level:4,width:3,depth:2,bank:2});
       if(constraint==='mouth')cuts.mouths.push({id:'adit',kind:'portal',floor:3,ceiling:8,outline:[[-2,-2],[-2,2],[2,2],[2,-2]]});
       if(constraint==='span')upper.terrainExclusions=[{at:[0,0],radius:3}];
-      const before=[...deck.positions],result=groundTerrainBeds(cuts,()=>0);
+      const before=[...deck.positions];
+      // W5-A (A1.1): a located residual deeper than RESIDUAL_LIMIT on no allowance list fails the bake; the deck is never filled.
+      if(constraint==='lowerRoute'||constraint==='water'||constraint==='mouth'){expect(()=>groundTerrainBeds(cuts,()=>0)).toThrow(/A1\.1.*upper 9\.50 eu/);expect(deck.positions).toEqual(before);expect(cuts.diagnostics.filter(d=>d.id.startsWith('structures.terrainBedFill.residual'))).toHaveLength(1);continue;}
+      const result=groundTerrainBeds(cuts,()=>0);
       if(constraint==='dry'){expect(result.filled).toHaveLength(1);expect(bounds(deck).min[1]).toBe(-.1);expect(deck.positions.slice(12)).toEqual(before.slice(12));}
       else {expect(result.filled).toHaveLength(0);expect(deck.positions).toEqual(before);expect(result.residual.length+result.protectedSpans.length).toBe(1);}
     }
