@@ -77,3 +77,13 @@ describe('D-A5 the dam glass face light card (MANIFEST v2.0 lights, views.A.ligh
     expect(card!.normal[2]).toBeGreaterThan(.99);
   });
 });
+
+describe('R2-110 the sky dome meets the fogged sea at the horizon with no edge', () => {
+  it('is exactly the fog colour at and below the horizon and the zenith from sin(elevation) 0.25 up', async () => {
+    const { skyDomeWeights, SKY_DOME } = await import('../src/harbour/horizon/sky/dome');
+    for (const up of [-.5, -.01, 0]) expect(skyDomeWeights(up, 1)).toMatchObject({ fog: 1, band: 0, zenith: 0 });
+    expect(skyDomeWeights(SKY_DOME.band, 0).band).toBeCloseTo(1, 9); expect(skyDomeWeights(SKY_DOME.blend, 0).zenith).toBeCloseTo(1, 9);
+    // Continuous across the horizon: a hundredth of a degree above it is still > 99.9 % fog colour.
+    expect(skyDomeWeights(Math.sin(.01 * Math.PI / 180), 0).fog).toBeGreaterThan(.999);
+  });
+});
