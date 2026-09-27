@@ -89,7 +89,9 @@ export interface VoidAllowance { bed:string; at:XY; r:number; decision:string; o
 export const RESERVED_VOIDS:readonly VoidAllowance[]=[
   {bed:'*',at:[895,605],r:36,decision:'D-C10',why:'the Hollow neck: the brook under the Garden Walk, S4 and the Year Walk (hollowBridge)'},
 ];
-/** Open, owned items measured on the W5-A scratch bake (2026-09-27). Each names its owner and the request that closes it. */
+/** Open, owned items measured on the W5-A scratch bake (2026-09-27). Each names its owner and the request that closes it.
+ * W7-A (Wave 7) closed: homestead.lane (the lane leaves the yard east of the Year Walk), plot.bight.1.service (the June lane meets
+ * the drive at grade), VBS × S4 at [872.4,944.5] (one flush tread); the lake rim's 10.4 eu over the stairwell (D-D8) never was a row. */
 export const OPEN_VOIDS:readonly VoidAllowance[]=[
   {bed:'yearWalk',at:[1605,690],r:16,decision:'W5-DATA Beds',owner:'W5-T',why:'Year Walk lane over its own lane at the Prow November loop: a lane re-route or a named overpass (manifest journey.yearWalk)'},
   {bed:'yearWalk',at:[892.5,471.7],r:16,decision:'W5-DATA Beds',owner:'W5-T',why:'Year Walk lane stacking at Scholars (two legs 4.1 apart): lane re-route'},
@@ -102,14 +104,11 @@ export const OPEN_VOIDS:readonly VoidAllowance[]=[
   {bed:'yearWalk',at:[418,896],r:20,decision:'D-A7 #34',owner:'W5-S',why:'Year Walk footways at the Bight Bridge west abutment (embankment 14 × 24, structures)'},
   {bed:'walk bightPier',at:[415,897],r:14,decision:'D-A7 #34',owner:'W5-S/W5-A',why:'the pier walk over the Drive and its footways at #34: v2.0 moved the Drive to 21.3 there (28.4 on candidate 3); flush needs the west abutment profile'},
   {bed:'V01',at:[420,932],r:36,decision:'D-A7 #34',owner:'W5-S',why:'the Drive over its own July/August footway lanes on the Bight Bridge west approach (the abutment embankment carries them)'},
-  {bed:'homestead.lane',at:[1515.2,1190.5],r:6,decision:'R2-04',owner:'W5-A',why:'the lane leaves the yard 3.5 over the Year Walk: a yard-edge stair or a lane start moved west (next W5-A pass)'},
   {bed:'walk reach',at:[1250,1155],r:30,decision:'R2-20',owner:'W3-C/W5-A',why:'the Reach walk on the river lower\'s bank: the bank at the water level + 0.3 (water) or a boardwalk (beds)'},
   {bed:'walk flats',at:[349.8,879],r:5,decision:'R2-04',owner:'W5-A',why:'the Flats trail end 3.2 over the pier walk\'s start (a flush junction owed)'},
   {bed:'host.glasshouse.approach',at:[998.2,812.3],r:6,decision:'R2-04',owner:'W5-S',why:'the Glasshouse approach over the glasshouse steps (authored flat at 50; a stair from the spur at 34)'},
-  {bed:'plot.bight.1.service',at:[857.2,935.1],r:6,decision:'D-C8',owner:'W5-A',why:'the moved plot\'s service drive crosses the June lane 2.2 over it (P31: the clear spot is 25 m WSW, not 12)'},
   {bed:'strip',at:[419.5,690.9],r:6,decision:'R2-04',owner:'W5-S',why:'the airstrip edge 1.9 over the Year Walk lane beside it'},
   {bed:'host.bank.approach',at:[1434.9,1146.4],r:6,decision:'R2-36',owner:'W5-A',why:'the bank approach over its own lower leg (the Kitty plaza lip)'},
-  {bed:'VBS',at:[872.4,944.5],r:8,decision:'D-C9',owner:'W5-S/W5-T',why:'VBS 1.5 over S4 just south of structures.bightSpurTrestle: extend the trestle ≈ 12 m south'},
 ];
 const covered=(c:{bed:string;at:XY},list:readonly VoidAllowance[])=>list.some(v=>(v.bed==='*'||v.bed===c.bed)&&distance(c.at,v.at)<=v.r);
 /** The residual clusters that fail the bake: deeper than RESIDUAL_LIMIT and on neither list. */

@@ -1,9 +1,23 @@
 import { HORIZON_MANIFEST as M } from '../../world/manifest';
-import type { HeightQuery, LandCuts, XY } from '../interfaces';
+import type { HeightQuery, LandCuts, XY, XYZ } from '../interfaces';
 import { addFlatPad, bed } from '../beds/profiles';
 import { gradeRoute } from '../beds/solver';
 import { box, districtAt, nearestOnPath, plan, solid } from '../structures/mesh';
 
+/** W7-A (A1.3): each large plot's service drive (lay-by on its road → apron → door) at its level, from the manifest and the
+ * built road - the same line buildReserves lays. The Year Walk (built before the reserves) meets these drives at grade. */
+export function reserveServiceLines(cuts:LandCuts):{id:string;points:XYZ[]}[] {
+  const out:{id:string;points:XYZ[]}[]=[];
+  for(const area of ['terraces','bightShore']as const){
+    const data=M.reserves[area]!,road=cuts.beds.find(b=>b.id===(area==='terraces'?'V01':'VBS'));if(!road)continue;
+    data.plots.forEach((coords,i)=>{
+      const p=coords as unknown as XY,rotation=data.rot_deg[i]!,nearest=nearestOnPath(p,road.points),height=nearest.at[1]!,theta=rotation*Math.PI/180,normal:XY=[-Math.sin(theta),Math.cos(theta)];
+      const toward=(nearest.at[0]!-p[0]!)*normal[0]!+(nearest.at[2]!-p[1]!)*normal[1]!>=0?1:-1,door:XY=[p[0]!+normal[0]!*toward*22,p[1]!+normal[1]!*toward*22],apron:XY=[door[0]!+normal[0]!*toward*3,door[1]!+normal[1]!*toward*3];
+      out.push({id:`${data.placeIds[i]!}.service`,points:[plan(nearest.at),apron,door].map(q=>[q[0],height,q[1]] as XYZ)});
+    });
+  }
+  return out;
+}
 export function buildReserves(cuts:LandCuts,base:HeightQuery):void {
   for(const area of ['terraces','bightShore']as const){
     const data=M.reserves[area]!,road=cuts.beds.find(b=>b.id===(area==='terraces'?'V01':'VBS'))!;

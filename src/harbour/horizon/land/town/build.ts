@@ -39,11 +39,21 @@ export function buildTown(cuts:LandCuts,base:HeightQuery):void {
   // retired - it ran into Our home's walls and no step-free 75 m run fits; the step-free way between the square and the
   // upper street is the recorded detour structures.marketStair.stepFree (walk square → bank link → north link → V01 →
   // upper-street spur, 295 eu), proved in the bake's path graph (test/horizonHostRouting).
+  // W7-A (v2.3, the reconciliation's regression 2): the stair's head stood 6 m over the square at [1480,18,1150], 35 m past the
+  // upper street's end (z 1115, W5-A narrowed the terrace). The stair now leaves the upper street's south edge at its own height
+  // (MANIFEST structures.marketStair.head) and comes down south to the square (foot + a level foot landing onto the square).
+  const ms=M.structures.marketStair as unknown as {head:number[];foot:number[]},[sx,sh,sz]=ms.head as [number,number,number],rise=(sh-ms.foot[1]!)/3;
   for(let f=0;f<3;f++){
-    const z=1150+f*7;buildStair(`marketStair.flight.${f}`,[1480,18-f*2,z],[1480,16-f*2,z+5],3,cuts);addFlatPad(cuts,`marketStair.landing.${f}`,'landing',[1480,z+6],16-f*2,[4,2]);
+    const z=sz+f*7,top=sh-f*rise;buildStair(`marketStair.flight.${f}`,[sx,top,z],[sx,top-rise,z+5],3,cuts);
+    if(f<2){addFlatPad(cuts,`marketStair.landing.${f}`,'landing',[sx,z+6],top-rise,[4,2]);cuts.beds.push(bed(`marketStair.landingWalk.${f}`,'walk',[[sx,top-rise,z+5],[sx,top-rise,z+7]]));}
   }
+  {const footZ=sz+19,square=cuts.beds.find(b=>b.id==='walk square'),onSquare=square?nearestOnPath([sx,1148],square.points).at:[sx,12,1148] as const;
+    addFlatPad(cuts,'marketStair.landing.2','landing',[sx,(footZ+1148)/2],ms.foot[1]!,[4,1148-footZ]);
+    cuts.beds.push(bed('marketStair.foot','walk',[[sx,ms.foot[1]!,footZ],[sx,ms.foot[1]!,1146],[onSquare[0],onSquare[1],onSquare[2]]]));
+    // The head: a level walk across the upper street from the gondola base walk's south end.
+    cuts.beds.push(bed('town.upperStreetWalk','walk',[[1480,18,1090],[1476,18,1103],[sx,sh,sz]]));}
   const stepFree=M.structures.marketStair.stepFree;
-  cuts.diagnostics.push({id:'marketStair.stepFree',severity:'info',message:`Market stair is stairs only (D-C11); the step-free way is ${stepFree.route.join(' → ')} (${stepFree.length_eu} eu)`,at:[1480,1160],measured:stepFree.length_eu});
+  cuts.diagnostics.push({id:'marketStair.stepFree',severity:'info',message:`Market stair is stairs only (D-C11); the step-free way is ${stepFree.route.join(' → ')} (${stepFree.length_eu} eu)`,at:[sx,sz+10],measured:stepFree.length_eu});
   cuts.beds.push(bed('town.storefront','walk',[[1475,12,1190],[1500,8,1218],[1497,3,1265]]));
   // Integrator 3 (v2.1): the bank's door is read from its host data (south wall centre), not hard-coded at [1440,1134].
   const bankHost=M.hosts.find(h=>h.id==='bank')!,bankDoor:XY=[bankHost.xy[0]!,bankHost.xy[1]!+bankHost.footprint_m[1]!/2];
@@ -65,7 +75,9 @@ export function buildTown(cuts:LandCuts,base:HeightQuery):void {
   // W5-A (R2-04): the lane's two loops east ([1555,1205]-[1540,1240]) and south ([1520,1260]) stood over the harbour water (9.7 eu
   // void at [1556.5,1208.6]); it now stays on the headland's shelf: 94 m from the yard to the timber crossing (7.4 %), then
   // back west of the crossing to the quay (7.8 %).
-  const lane=gradeRoute('homestead.lane',[[1514,1190],[1542,1204],[1528,1222],[1510,1236],[1500,1250],[1488,1258],[1497,1265]],base,.08,[{xy:[1514,1190],height:12,reason:'yard'},{xy:[1500,1250],height:5,reason:'crossing'},{xy:[1497,1265],height:3,reason:'quay'}],cuts.diagnostics);cuts.beds.push(bed('homestead.lane','walk',lane));
+  // W7-A (A1.1): the lane leaves the yard from its south-east ([1520,1196], 13 m clear of the lanes); from [1514,1190] it started 3.5 over the Year Walk's
+  // two lanes crossing the yard's west half (OPEN_VOIDS homestead.lane).
+  const lane=gradeRoute('homestead.lane',[[1520,1196],[1540,1198],[1544,1208],[1528,1222],[1510,1236],[1500,1250],[1488,1258],[1497,1265]],base,.08,[{xy:[1520,1196],height:12,reason:'yard'},{xy:[1500,1250],height:5,reason:'crossing'},{xy:[1497,1265],height:3,reason:'quay'}],cuts.diagnostics);cuts.beds.push(bed('homestead.lane','walk',lane));
   addFlatPad(cuts,'homestead.yard','homestead',[1520,1190],12,[26,20]);
   for(const site of M.journey.homestead.sites){
     const xy='xy'in site?site.xy as unknown as XY:site.id==='home'?M.hosts[0]!.xy as unknown as XY:[1177,912] as unknown as XY; // v1.9: 5 m east, clear of the dam gallery's stairwell

@@ -160,3 +160,41 @@ describe('Horizon v2.0 beds (W5-A, Jonathan\'s rulings 2026-09-27)',()=>{
     const vbsMid=plan(nearestOnPath([904.9,891.5],find('VBS').points).at);expect(open(find('VBS'),vbsMid)).toBe(true);expect(open(find('walk bight'),[904.9,891.5])).toBe(true);
   },120000);
 });
+describe('Horizon v2.3 beds (W7-A, Wave 7)',()=>{
+  const cuts=buildLandCuts(baseHeight),find=(id:string)=>cuts.beds.find(b=>b.id===id)!;
+  const hAt=(id:string,at:XY)=>nearestOnPath(at,find(id).points).at[1];
+  it('D-D8: the lake-rim trail keeps its 2.5 m profile, the Year Walk carries the February share, and the trail ends at the gallery exit',()=>{
+    const rim=find('walk lakerim'),yw=find('yearWalk');
+    expect(rim.width).toBe(2.5);expect(plan(rim.points.at(-1)!)).toEqual([1166,905]);expect(rim.points.at(-1)![1]).toBeCloseTo(52,5);
+    // The trail's own deck and edges stop where the Year Walk carries it; the Year Walk is not carried there any more.
+    const onShare=plan(nearestOnPath([1215,745],rim.points).at);expect(rim.carried!.some(line=>planDistance(onShare,line)<1)).toBe(true);expect((yw.carried??[]).some(line=>planDistance(onShare,line)<1)).toBe(false);
+    // Nothing of the trail within 3 m of the dam gallery's stairwell or south of the crest walk's line (it overhung it 10.4 eu).
+    expect(rim.points.every(p=>!(p[0]>1155&&p[0]<1173&&p[2]>906.5))).toBe(true);
+    expect(rim.points.filter(p=>p[0]<1160&&p[2]>880).length).toBe(0);
+  },120000);
+  it('seats the market stair on the upper street: head at 18 on the street\'s edge, foot at 12 joined to the square walk',()=>{
+    const flights=[0,1,2].map(f=>find(`marketStair.flight.${f}`));
+    expect(flights[0]!.points[0]).toEqual([1472,18,1115]);expect(flights[2]!.points.at(-1)).toEqual([1472,12,1134]);
+    const street=cuts.pads.find(p=>p.id==='town.upperStreet')!;expect(street.centre[2]+street.size[1]/2).toBeCloseTo(1115,5);expect(street.centre[1]).toBe(18);
+    const foot=find('marketStair.foot'),square=find('walk square');expect(nearestOnPath(plan(foot.points.at(-1)!),square.points).distance).toBeLessThan(.01);
+    expect(foot.points.every(p=>Math.abs(p[1]-12)<.3)).toBe(true);
+    expect(find('town.upperStreetWalk').points.at(-1)).toEqual([1472,18,1115]);
+  },120000);
+  it('A1.3: S4 meets the Year Walk flush at the studio terrace (0.68 of 2.4 under) and S4 × VBS is one tread (1.72 step)',()=>{
+    expect(Math.abs(hAt('S4',[968.6,540.6])-hAt('yearWalk',[968.6,540.6]))).toBeLessThan(.25);
+    expect(Math.abs(hAt('S4',[871.7,945.9])-hAt('VBS',[871.7,945.9]))).toBeLessThan(.25);
+    expect(Math.abs(hAt('S4',[873.5,951.1])-hAt('walk bight',[873.5,951.1]))).toBeLessThan(.3);
+    expect(maxGrade(find('S4').points)).toBeLessThanOrEqual(.18+1e-6);expect(maxGrade(find('VBS').points)).toBeLessThanOrEqual(.12+1e-6);
+  },120000);
+  it('A1.3 / D-D2: the June lane meets plot bight.1\'s service drive at grade (1.97 of 2.4 under) within the walk grade',()=>{
+    const service=find('plot.bight.1.service'),yw=find('yearWalk');
+    let best={d:Infinity,dh:Infinity};for(const p of yw.points){const n=nearestOnPath(plan(p),service.points);if(n.distance<best.d)best={d:n.distance,dh:Math.abs(n.at[1]-p[1])};}
+    expect(best.d).toBeLessThan(2);expect(best.dh).toBeLessThan(.25);
+    expect(maxGrade(yw.points.filter(p=>distance(plan(p),[856.7,935])<40))).toBeLessThanOrEqual(M.profiles.walk.grade_max_pct/100+1e-6);
+  },120000);
+  it('the homestead lane leaves the yard east of the Year Walk\'s lanes (it started 3.5 over them)',()=>{
+    const lane=find('homestead.lane'),yw=find('yearWalk');
+    expect(plan(lane.points[0]!)).toEqual([1520,1196]);expect(maxGrade(lane.points)).toBeLessThanOrEqual(.08+1e-6);expect(lane.points[0]![1]).toBeCloseTo(12,5);
+    expect(lane.points.slice(0,4).every(p=>nearestOnPath(plan(p),yw.points).distance>yw.width/2+yw.shoulder+lane.width/2)).toBe(true);
+  },120000);
+});
