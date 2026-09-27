@@ -26,14 +26,59 @@ export function planDistance(p:XY,line:readonly XY[]):number {
 }
 /** The walking ground just beyond a bed edge: the terrain, or a pad surface there that is
  * not above the bed (a pad above the bed is a wall to retain, not ground). */
+/** Wave 6: a raised landing/platform deck (a floor slab, not a pad) is ground to the bed edge beside it — page B's lamp
+ * gallery ramp ran on across its landing slab and railed its own mouth (the drop was read to the sea under the slab). */
+const floorBounds=new WeakMap<StructureSolid,{x0:number;x1:number;z0:number;z1:number;top:number}>();
+const floorLists=new WeakMap<readonly StructureSolid[],{length:number;floors:StructureSolid[]}>();
+function floorAt(cuts:LandCuts,x:number,z:number,h:number):number {
+  // A regeneration pass (junctions.ts settleBedEdges) emits into an empty solid list: it names the real one as floorSource.
+  const source=(cuts as LandCuts&{floorSource?:StructureSolid[]}).floorSource??cuts.solids;
+  let top=-Infinity,list=floorLists.get(source);
+  if(!list||list.length!==source.length){list={length:source.length,floors:source.filter(s=>s.role==='floor'&&s.walkable&&/\.slab$/.test(s.id))};floorLists.set(source,list);}
+  for(const s of list.floors){
+    let b=floorBounds.get(s);if(!b){const p=s.positions;b={x0:Infinity,x1:-Infinity,z0:Infinity,z1:-Infinity,top:-Infinity};for(let i=0;i<p.length;i+=3){b.x0=Math.min(b.x0,p[i]!);b.x1=Math.max(b.x1,p[i]!);b.z0=Math.min(b.z0,p[i+2]!);b.z1=Math.max(b.z1,p[i+2]!);b.top=Math.max(b.top,p[i+1]!);}floorBounds.set(s,b);}
+    if(x>=b.x0&&x<=b.x1&&z>=b.z0&&z<=b.z1&&b.top<=h+.6)top=Math.max(top,b.top);}
+  return top;
+}
 function groundBeyond(cuts:LandCuts,base:HeightQuery,x:number,z:number,h:number):number {
-  let ground=base(x,z);
+  let ground=Math.max(base(x,z),floorAt(cuts,x,z,h));
   for(const p of cuts.pads){
     if(p.underground||p.centre[1]>h+.6||p.centre[1]<=ground)continue;
     const angle=p.rotationDegrees*Math.PI/180,c=Math.cos(angle),s=Math.sin(angle),dx=x-p.centre[0],dz=z-p.centre[2];
     if(Math.abs(dx*c+dz*s)<=p.size[0]/2&&Math.abs(-dx*s+dz*c)<=p.size[1]/2)ground=p.centre[1];
   }
   return ground;
+}
+/** Wave 6: (x, z) lies on a surface pad (not a host pad) at `level` (± 0.3). */
+function onPlaza(cuts:LandCuts,x:number,z:number,level:number):boolean {
+  return cuts.pads.some(p=>{if(p.underground||p.kind==='host'||Math.abs(p.centre[1]-level)>.3)return false;const angle=p.rotationDegrees*Math.PI/180,c=Math.cos(angle),s=Math.sin(angle),dx=x-p.centre[0],dz=z-p.centre[2];return Math.abs(dx*c+dz*s)<=p.size[0]/2&&Math.abs(-dx*s+dz*c)<=p.size[1]/2;});
+}
+/** Wave 6: walkable batters — per side, runs of cross-sections (bed edge point → plaza foot, BATTER_RUN eu of run per eu of rise;
+ * ≈ 9.5°); consecutive sections share their corners (mitred at bends), so no wedge gap or proud end face is left for a
+ * body to catch on (the first cut, one prism per piece, left 0.2 eu wedges and end faces at every bend). */
+type BatterSection={top:XYZ;foot:XYZ;at:XY};
+/** Run per unit of rise: 6 (≈ 9.5°) keeps every triangle of a mitred, twisted strip under the collision's 18° flat-face limit. */
+export const BATTER_RUN=6;
+function batterSection(runs:Map<number,BatterSection[][]>,side:number,p:XYZ,nx:number,nz:number,edge:number,level:number,start:boolean):void {
+  const list=runs.get(side)!,run=list.at(-1)!,run1=Math.max(.8,BATTER_RUN*(p[1]-level)),last=run.at(-1);
+  const make=(ax:number,az:number):BatterSection=>({at:[p[0],p[2]],top:[p[0]+ax*edge,p[1],p[2]+az*edge],foot:[p[0]+ax*(edge+run1),level,p[2]+az*(edge+run1)]});
+  // A piece's start joins the run only where the previous piece ended (mitred); otherwise it starts a new run. Its end always extends it.
+  if(start&&last&&Math.hypot(last.at[0]-p[0],last.at[1]-p[2])>=1e-6){list.push([make(nx*side,nz*side)]);return;}
+  if(start&&last){
+    // Mitre: the shared section takes the mean of the two normals.
+    const ox=(last.top[0]-p[0]),oz=(last.top[2]-p[2]),ol=Math.hypot(ox,oz)||1,mx=ox/ol+nx*side,mz=oz/ol+nz*side,ml=Math.hypot(mx,mz)||1;run[run.length-1]=make(mx/ml,mz/ml);return;
+  }
+  run.push(make(nx*side,nz*side));
+}
+function batterSolid(id:string,runs:Map<number,BatterSection[][]>,district:string):StructureSolid|null {
+  const out=solid(id,'shoulder','gravel','deck',[id.replace(/\.batter$/,'')],district);
+  // One 8-vertex prism per section pair (later bake passes treat solids as prisms of 8 vertices): shared, mitred corners, so
+  // neighbouring end faces coincide inside the strip; bottoms 0.1 under the plaza.
+  for(const list of runs.values())for(const run of list)for(let i=1;i<run.length;i++){
+    const a=run[i-1]!,b=run[i]!,q:XYZ[]=[a.top,b.top,b.foot,a.foot],area=q.reduce((sum,p,k)=>{const n=q[(k+1)%4]!;return sum+p[0]*n[2]-n[0]*p[2];},0);
+    prism(out,area<0?q:[...q].reverse(),Math.min(a.foot[1],b.foot[1])-.1);
+  }
+  return out.indices.length?out:null;
 }
 /** Sides (+1/-1 of the segment normal) this segment shares with a neighbouring bed at the same height. */
 function sharedSides(b:BedCut,cuts:LandCuts,mid:XY,h:number,nx:number,nz:number):Set<number> {
@@ -57,6 +102,7 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
   const shoulders=solid(`${b.id}.shoulders`,'shoulder','gravel','deck',[b.id],district);
   const segments=b.surfaceSegments?.map((v,i)=>solid(`${b.id}.surface.${i}`,'bed',v.surface,'deck',[b.id],district));
   const runs=new Map<number,{on:boolean;count:number;last?:XYZ;nx:number;nz:number;edge:number}>([[-1,{on:false,count:0,nx:0,nz:0,edge:0}],[1,{on:false,count:0,nx:0,nz:0,edge:0}]]);
+  const batters=new Map<number,BatterSection[][]>([[-1,[[]]],[1,[[]]]]),endBatter=(side:number)=>{const list=batters.get(side)!;if(list.at(-1)!.length)list.push([]);};
   for(let i=1;i<b.points.length;i++){
     const a=b.points[i-1]!,p=b.points[i]!,dx=p[0]!-a[0]!,dz=p[2]!-a[2]!,len=Math.hypot(dx,dz);if(len<1e-6)continue;
     const mid:XY=[(a[0]!+p[0]!)/2,(a[2]!+p[2]!)/2],h=(a[1]!+p[1]!)/2,nx=-dz/len,nz=dx/len;
@@ -91,6 +137,11 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
             if(!run.on||run.count%2===0)post(pa);run.on=true;run.count++;run.last=pb;run.nx=nx;run.nz=nz;run.edge=edge;
           }
         }else if(run.on){post(pa);run.on=false;run.count=0;}
+        // Wave 6: a walk rising less than a guard's drop out of a plaza of its own tier (candidate 4: the home approach 0.4–0.8
+        // over the square beside page A's pose; its retaining wall and bed lip stopped the first step) meets the plaza with a
+        // walkable batter (1:6, under the collision's 18° flat-face rule), not a wall or a lip: the route joins the plaza along its length.
+        if(drop>.3&&drop<=1.25&&b.kind!=='road'&&[1,1.5,BATTER_RUN*drop].every(o=>onPlaza(cuts,pm[0]+nx*side*(edge+o),pm[1]+nz*side*(edge+o),ph-drop))){batterSection(batters,side,pa,nx,nz,edge,ph-drop,true);batterSection(batters,side,pb,nx,nz,edge,ph-drop,false);continue;}
+        endBatter(side);
         if(b.terrainCut&&!b.terrainExclusions?.some(e=>distance(pm,e.at)<e.radius)&&Math.abs(drop)>.5){
           const low=Math.min(ph-.6,base(pm[0]+nx*side*(edge+1),pm[1]+nz*side*(edge+1)))-.2;
           const top=Math.max(ph,low+Math.abs(drop));
@@ -101,6 +152,7 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
   }
   for(const [side,run]of runs)if(run.on&&run.last)box(rails,[run.last[0]+run.nx*side*run.edge,run.last[2]+run.nz*side*run.edge],run.last[1]+1.05,[.12,.12],run.last[1]-.1);
   // A road circles several districts. Stream its local prisms with the district underneath them.
+  {const batter=batterSolid(`${b.id}.batter`,batters,district);if(batter)cuts.solids.push(batter);}
   for(const piece of [...(segments??[deck]),kerbs,rails,retaining,shoulders])if(piece.indices.length){
     const districts=new Map<string,StructureSolid>();
     for(let vertex=0;vertex<piece.positions.length/3;vertex+=8){

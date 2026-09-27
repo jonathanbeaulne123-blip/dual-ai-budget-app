@@ -65,8 +65,8 @@ export function settleBedEdges(cuts:LandCuts,ground:HeightQuery):void {
   const pads=cuts.pads.filter(p=>!p.underground&&p.kind!=='host');
   for(const b of cuts.beds){
     if(!b.terrainCut||!['road','walk','trail','skate','boardwalk'].includes(b.kind))continue;
-    const prefixes=['kerbs','edges','retaining'].map(kind=>`${b.id}.${kind}`),owns=(s:StructureSolid)=>prefixes.some(p=>s.id===p||s.id.startsWith(`${p}.`));
-    const generated:LandCuts={...cuts,solids:[]};emitBedGeometry(b,generated,ground,pads.map(p=>plan(p.centre)));
+    const prefixes=['kerbs','edges','retaining','batter'].map(kind=>`${b.id}.${kind}`),owns=(s:StructureSolid)=>prefixes.some(p=>s.id===p||s.id.startsWith(`${p}.`));
+    const generated={...cuts,solids:[],floorSource:cuts.solids} as LandCuts;emitBedGeometry(b,generated,ground,pads.map(p=>plan(p.centre)));
     cuts.solids=cuts.solids.filter(s=>!owns(s));cuts.solids.push(...generated.solids.filter(owns));
   }
   // Guards are never cut as a circle around a pad (that removed 573 m of guard over real
@@ -223,7 +223,7 @@ function alignSurfaceJoins(cuts:LandCuts,proofs:readonly ComputedCrossing[],base
     const old=c.bed.points,diagnostics:LandCuts['diagnostics']=[],next=gradeRoute(c.bed.id,points,(x,z)=>nearestOnPath([x,z],old).at[1],Math.min(.12,c.bed.maxGrade),c.pins,diagnostics);
     if(maxGrade(next)>Math.min(.12,c.bed.maxGrade)+.00001)continue;
     c.bed.points=next;
-    const prefixes=['bed','surface','kerbs','edges','retaining','shoulders'].map(s=>`${c.bed.id}.${s}`);
+    const prefixes=['bed','surface','kerbs','edges','retaining','shoulders','batter'].map(s=>`${c.bed.id}.${s}`);
     cuts.solids=cuts.solids.filter(s=>!prefixes.some(prefix=>s.id===prefix||s.id.startsWith(`${prefix}.`)));
     emitBedGeometry(c.bed,cuts,base,markerPositions);
   }
@@ -255,7 +255,7 @@ function junctionAprons(cuts:LandCuts,proofs:readonly ComputedCrossing[],base:He
   if(!touched.size)return;
   const markerPositions=cuts.pads.filter(p=>p.kind==='threshold').map(p=>plan(p.centre));
   for(const bed of touched){
-    const prefixes=['bed','surface','kerbs','edges','retaining','shoulders'].map(s=>`${bed.id}.${s}`);
+    const prefixes=['bed','surface','kerbs','edges','retaining','shoulders','batter'].map(s=>`${bed.id}.${s}`);
     cuts.solids=cuts.solids.filter(s=>!prefixes.some(prefix=>s.id===prefix||s.id.startsWith(`${prefix}.`)));
     emitBedGeometry(bed,cuts,base,markerPositions);
   }
@@ -402,7 +402,7 @@ export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedC
   }
   if(bightLanding)for(const b of gradePadApproaches(cuts,[bightLanding],3))rebuilt.add(b);
   for(const b of rebuilt){
-    const prefixes=['bed','surface','kerbs','edges','retaining','shoulders'].map(s=>`${b.id}.${s}`);
+    const prefixes=['bed','surface','kerbs','edges','retaining','shoulders','batter'].map(s=>`${b.id}.${s}`);
     cuts.solids=cuts.solids.filter(s=>!prefixes.some(prefix=>s.id===prefix||s.id.startsWith(`${prefix}.`)));
     emitBedGeometry(b,cuts,base,junctionPads.map(p=>plan(p.centre)));
   }
