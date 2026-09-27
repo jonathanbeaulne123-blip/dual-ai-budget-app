@@ -120,7 +120,8 @@ export function stepCruiser(s:CruiserState,input:CruiserInput,g:CruiserGround,dt
     const ceiling=g.ceiling(x,z,y);
     if(ceiling<y+1.55){y=ceiling-1.55;vy=Math.min(0,vy);}
   }
-  lean+=(steer*Math.min(.22,cruiserSpeed(s)*.025)-lean)*(1-Math.exp(-8*dt));
+  // Art uses -lean for local roll; match the island's rightward negative yaw.
+  lean+=(-steer*Math.min(.22,cruiserSpeed(s)*.025)-lean)*(1-Math.exp(-8*dt));
   const safe=grounded&&!contact&&validCruiserPosition(g,{x,y,z,yaw})?{x,y,z,yaw}:s.safe;
   return {x,y,z,yaw,vx,vz,vy,grounded,reverse,brakeHeld:braking,jumpHeld:input.jump,pitch,lean,safe,contact};
 }
