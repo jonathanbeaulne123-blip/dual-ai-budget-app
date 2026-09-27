@@ -10,7 +10,7 @@ describe('Horizon manifest v2.0',()=>{
     expect(()=>requireScaleFactor({...manifest,scale:{...manifest.scale,status:'recommended'}})).toThrow('D13 open');
     expect(()=>parseHorizonManifest({...manifest,scale:{status:'recommended'}})).toThrow('Invalid Horizon manifest');
     expect(manifest.journeys.at_active_scale).toEqual(manifest.journeys.at_factor_1_0);
-    expect(manifest.journeys.targets_s['square→library by bicycle']).toBe(185);
+    expect(manifest.journeys.targets_s['square→library by bicycle']).toBe(243);   // v2.3: planned at the bicycle's 6.0 cap (185 at 8)
     expect(manifest.journeys.at_active_scale['square→library by bicycle'].time_s).toBeLessThanOrEqual(185);
     expect(manifest.journeys.targets_v1_6['square→library by bicycle']).toBe(150);
   });
@@ -23,7 +23,7 @@ describe('Horizon manifest v2.0',()=>{
     expect(manifest.views).toHaveLength(12);
     expect(manifest.sky.gates).toHaveLength(12);
     expect(['S1','S2','S3','S4'].every(id=>Object.hasOwn(manifest.skate,id))).toBe(true);
-    expect(manifest.reserves.terraces.plots).toEqual([[1552,832],[1528,896],[1512,952]]);
+    expect(manifest.reserves.terraces.plots).toEqual([[1551.1,832.5],[1528,896],[1512,952]]);   // v2.3: terraces.1 1.0 m off the Year Walk (R3-32; v2.2 [1552,832])
     expect(manifest.reserves.terraces.rot_deg).toEqual([-67,23,23]);
     expect(manifest.reserves.terraces.placeIds).toEqual(['plot.terraces.1','plot.terraces.2','plot.terraces.3']);
     expect(manifest.reserves.bightShore.plots).toHaveLength(4);
@@ -91,7 +91,7 @@ describe('Horizon manifest v2.0',()=>{
   });
   it('carries Jonathan’s 2026-09-27 rulings as numbers (v2.0) and the Wave 5 integration data (v2.1)',()=>{
     const m=manifest as unknown as Record<string,any>;
-    expect(m.version).toBe('2.2');   // v2.2 = v2.1 + main's data-only v1.7 blocks (reconciliation)
+    expect(m.version).toBe('2.3');   // v2.2 = v2.1 + main's data-only v1.7 blocks (reconciliation); v2.3 = Wave 7 (W7-A)
     // D-A1: 245 m, one steel arch, 11.4 clear; an 8 m hull at 46° needs 32.0 m. Ruled 36 m at s 98-134 (kept as opening.v2_0);
     // v2.1 (design lead, reversible): 40 m at s 103-143, 38 clear - the hull cleared the east pier by -3.99 at 36 m, +1.37 at 40.
     const bb=m.structures.bightBridge;expect(bb.span_m).toBe(245);expect(bb.v1_9.span_m).toBe(230);
@@ -123,14 +123,14 @@ describe('Horizon manifest v2.0',()=>{
     const views=manifest.views as unknown as {id:string;xy:number[];target:number[];bestHour:string}[];
     expect(views.find(v=>v.id==='K')).toMatchObject({xy:[994,770],target:[1120,815]});expect(views.find(v=>v.id==='H')!.bestHour).toBe('golden hour');
     expect(m.underground.doors.throat.collarAperture_m).toBe(10.8);expect(manifest.places.find(p=>p.id==='L01')!.xy).toEqual([1173,912]);
-    expect(manifest.reserves.bightShore.plots[0]).toEqual([814,919]);
+    expect(manifest.reserves.bightShore.plots[0]).toEqual([813,918.8]);   // v2.3: D-D2 nudge 1.0 m (v2.0 [814,919])
     // v2.1 (Wave 5 integration, design lead): the numbers the merged bake measured.
     expect(m.structures.coveStair.to_h).toBe(1.0);expect(m.structures.coveStair.v2_0_to_h).toBe(1.8);
     const zip=manifest.crossings.find(r=>r.a==='ZIP'&&r.b==='G1') as unknown as {resolution:string;measured:{separation_eu:number}};expect(zip.resolution).toBe('under');expect(zip.measured.separation_eu).toBe(15);
     expect(manifest.crossings.some(r=>r.a==='jetty.bightPier'&&r.b==='FERRY'&&JSON.stringify(r.at)==='[560,890]'&&r.resolution==='threshold')).toBe(true);
     const D=m.views.find((v:{id:string})=>v.id==='D');expect(D.subjects).toEqual(['surf','the zipline landing']);expect(D.deferred.some((x:string)=>x.startsWith('the Lamp (Pass 2b'))).toBe(true);
     expect(m.hosts.find((h:{id:string})=>h.id==='bank')).toMatchObject({footprint_m:[20,18],xy:[1443,1125],v2_0_footprint_m:[26,18]});
-    expect(m.views.find((v:{id:string})=>v.id==='H').portrait.xy).toEqual([428,760]);expect(m.walks.lakerim).toMatchObject({surface_m:5.2,shoulder_m:1.2});
+    expect(m.views.find((v:{id:string})=>v.id==='H').portrait.xy).toEqual([428,760]);expect(m.walks.lakerim).toMatchObject({v2_1_surface_m:5.2,v2_1_shoulder_m:1.2});expect(m.walks.lakerim.surface_m).toBeUndefined();
     expect(m.structures.bightSpurTrestle).toMatchObject({to:[886.7,916],length_m:56,v2_0_to:[891.6,906]});
   });
   it.each(['n/a','bridge',''])('rejects unresolved crossing resolution %j on load',resolution=>{
@@ -159,7 +159,7 @@ describe('Horizon manifest v2.0',()=>{
 });
 describe('Horizon manifest v2.2: main\'s v1.7 sky data on the v2.1 land',()=>{
   it('adds FLIGHT.md sky data without a geography change',()=>{
-    expect(manifest.version).toBe('2.2');
+    expect(manifest.version).toBe('2.3');
     expect(manifest.sky.gliderPolar).toHaveLength(5);
     expect(manifest.sky.parachute).toMatchObject({forward_ms:6,sink_ms:3,freefallCap_ms:30,autoPull_agl_m:45,minBail_agl_m:60,canopy_m:[7,3]});
     expect(manifest.sky.corridors.throat).toMatchObject({gate:12,to:[1300,420],slope_deg:30,level_m:25,splashH:42,coneDeg:25,maxBankDeg:20});
@@ -183,8 +183,8 @@ describe('Horizon manifest v2.2: main\'s v1.7 sky data on the v2.1 land',()=>{
 describe('Horizon manifest v2.2: main\'s v1.7 RIDE data (§8.3, D40, D42)',()=>{
   const paces=manifest.paces as unknown as Record<string,{roll:number|null;pushGrip:number|null}>;
   const surfaces=manifest.surfaces as unknown as Record<string,{pace:string;grip:number|null}>;
-  it('is version 2.2, dated, and says what changed',()=>{
-    expect(manifest.version).toBe('2.2');
+  it('is version 2.2 (now 2.3), dated, and says what changed',()=>{
+    expect(manifest.version).toBe('2.3');
     expect(manifest.date).toBe('2026-09-27');
     expect(manifest.status).toContain('v2.2: paces and surface grip (RIDE D42)');
   });
@@ -223,8 +223,32 @@ describe('Horizon manifest v2.2: main\'s v1.7 RIDE data (§8.3, D40, D42)',()=>{
     // Stage A v1.7 (journeys at scale 1.0) set the planning speeds board 10 / bicycle 8; the board and bicycle movers do not read
     // speeds_ms (their kernels set pace; the bicycle caps at 6.0). v2.2 keeps Stage A's number; the journey rows vs the movers' ride
     // logs (D44) are an open item (RECONCILE.md).
-    expect(manifest.speeds_ms.board).toBe(10);expect(manifest.speeds_ms.bicycle).toBe(8);
+    expect(manifest.speeds_ms.board).toBe(10);expect(manifest.speeds_ms.bicycle).toBe(6);   // v2.3: the bicycle's cap (was 8)
     expect(manifest.skate.S1.segments.map(s=>[s.pace,s.surface])).toEqual([['fast','paved'],['flow','bankedTurf'],['flow','apron'],['fast','paved'],['slow','cobble'],['fast','paved']]);
     expect(manifest.skate.S3.segments[2]).toMatchObject({name:'The square',pace:'threshold',surface:'plaza'});
+  });
+});
+describe('Horizon manifest v2.3: Stage A Wave 7 (W7-A)',()=>{
+  const m=manifest as unknown as Record<string,any>;
+  it('plans the bicycle at its 6.0 cap and re-targets the library ride at the measured 220.6 s + 10 %',()=>{
+    expect(m.speeds_ms).toMatchObject({bicycle:6,v2_2_bicycle:8});
+    expect(m.journeys.targets_s['square→library by bicycle']).toBe(243);expect(Math.ceil(220.6*1.1)).toBe(243);
+    expect(m.journeys.targets_s.decisions['v2_2_square→library by bicycle']).toBe(185);
+  });
+  it('D-D8: the lake-rim trail keeps its profile and ends at the gallery exit, not along the dam crest',()=>{
+    expect(m.walks.lakerim.pts.at(-1)).toEqual([1166,905]);expect(m.walks.lakerim.v2_2_pts.at(-1)).toEqual([1140,905]);
+    expect(manifest.crossings.some(r=>r.a==='walk lakerim'&&r.b==='river lower')).toBe(false);
+    expect(manifest.crossings.some(r=>r.a==='walk damCrest'&&r.b==='river lower')).toBe(true);
+  });
+  it('seats the market stair\'s head on the upper street (it stood 6 m over the square) and keeps D-C11',()=>{
+    expect(m.structures.marketStair).toMatchObject({head:[1472,18,1115],foot:[1472,12,1134],v2_2_head:[1480,18,1150],twin:'none (stairs only)'});
+    expect(m.structures.marketStair.stepFree.route).toEqual(['walk square']);
+  });
+  it('moves plots bight.1 and terraces.1 1.0 m off the Year Walk and puts two failed over/unders at grade',()=>{
+    expect(m.reserves.bightShore.plots[0]).toEqual([813,918.8]);expect(m.reserves.bightShore.v2_2_plots[0]).toEqual([814,919]);
+    expect(m.reserves.terraces.plots[0]).toEqual([1551.1,832.5]);
+    const row=(a:string,b:string)=>manifest.crossings.find(r=>r.a===a&&r.b===b&&(r as {note?:string}).note?.startsWith('v2.3')) as unknown as {resolution:string;v2_2_resolution:string}|undefined;
+    expect(row('S4','yearWalk')).toMatchObject({resolution:'threshold',v2_2_resolution:'under'});
+    expect(row('yearWalk','plot.bight.1.service')).toMatchObject({resolution:'threshold',v2_2_resolution:'under'});
   });
 });
