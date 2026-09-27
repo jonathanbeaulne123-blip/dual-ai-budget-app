@@ -1594,6 +1594,23 @@ for i, row in enumerate(m["crossings"]):
         row = dict(row); row["note"] = row["note"].replace("RESERVED R-A3: waits on the gondola top station", "D-A3 decided " + RULED + " (station [1335,535]); re-point on the next bake"); m["crossings"][i] = row
 assert not any("R-A3" in r.get("reserved", "") for r in m["crossings"])
 
+# 4. D-A4 · The Prow Tunnel (Jonathan: "option a"): candidate A at ≈ [1590,890], built as a covered GALLERY, not a bore
+#    (the ground west of V01 stands only 0-4 eu over the road there; a tunnel would need ≈ 22,000 m³ of new hill). kind
+#    "gallery" (new): the hillside is the east wall, a roof slab bears on a west colonnade open to the sea, a ceiling and
+#    lining inside (CONTRACT §2.5), headroom ≥ 5 over the Drive and its footway; cover is reported as it is (no earthworks).
+#    V01 does not move (the ring stays continuous; candidate A needs no road change): xy is V01's own centreline point
+#    nearest [1590,890] on the candidate-3 bake, [1592,890]. Grade through the 90 m: 25.6 → 30.9 on the candidate-3 bed
+#    (≈ 6 %; the proposal measured 29.3 → 39.5, 11.3 %, on 76c093f) — inside the Prow cliff drive's exception either way.
+pt = m["structures"]["prowTunnel"]
+m["structures"]["prowTunnel"] = {"xy": [1592, 890], "kind": "gallery", "length_m": 90, "route": "V01",
+ "section": {"hillSide": "east (the Prow top's flank is the wall)", "openSide": "west, a colonnade of columns on footings to the ground, open to the sea", "roof": "a slab from the hill wall to the colonnade beam, lined and ceiled", "headroom_eu": 5, "carries": "Horizon Drive and its Year Walk verges (December seaward, January inland)"},
+ "cover": "report the ground over the roof as measured (a gallery needs none); no fill is made to fake a tunnel",
+ "grade": "V01 unchanged: 25.6 → 30.9 over the 90 m on the candidate-3 bed (≈ 6 %)",
+ "v1_9": {"xy": pt["xy"], "kind": pt["kind"], "length_m": pt["length_m"]},
+ "decided": "D-A4 candidate A as a gallery (" + RULED + ")",
+ "why": "the v1.9 box at [1600,780] stood on V01's side-hill cut with no hill over it: its roof 3 eu out of the ground, V01 8.4 under its floor at the north portal and 4.977 < 5 headroom (proposals/prow-tunnel.md)"}
+m["structures"]["prowTunnel"]["kindNote"] = "gallery (new kind, v2.0, D-A4): a covered road on a hillside: the hill is one wall, a roof slab on a colonnade forms the other, open to the view; ceiling and lining as a tunnel, cover not required"
+
 
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)

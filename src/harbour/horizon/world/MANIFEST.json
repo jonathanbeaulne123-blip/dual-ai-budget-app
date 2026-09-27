@@ -3469,11 +3469,32 @@
   },
   "prowTunnel": {
    "xy": [
-    1600,
-    780
+    1592,
+    890
    ],
-   "kind": "tunnel",
-   "length_m": 90
+   "kind": "gallery",
+   "length_m": 90,
+   "route": "V01",
+   "section": {
+    "hillSide": "east (the Prow top's flank is the wall)",
+    "openSide": "west, a colonnade of columns on footings to the ground, open to the sea",
+    "roof": "a slab from the hill wall to the colonnade beam, lined and ceiled",
+    "headroom_eu": 5,
+    "carries": "Horizon Drive and its Year Walk verges (December seaward, January inland)"
+   },
+   "cover": "report the ground over the roof as measured (a gallery needs none); no fill is made to fake a tunnel",
+   "grade": "V01 unchanged: 25.6 \u2192 30.9 over the 90 m on the candidate-3 bed (\u2248 6 %)",
+   "v1_9": {
+    "xy": [
+     1600,
+     780
+    ],
+    "kind": "tunnel",
+    "length_m": 90
+   },
+   "decided": "D-A4 candidate A as a gallery (Jonathan 2026-09-27)",
+   "why": "the v1.9 box at [1600,780] stood on V01's side-hill cut with no hill over it: its roof 3 eu out of the ground, V01 8.4 under its floor at the north portal and 4.977 < 5 headroom (proposals/prow-tunnel.md)",
+   "kindNote": "gallery (new kind, v2.0, D-A4): a covered road on a hillside: the hill is one wall, a roof slab on a colonnade forms the other, open to the view; ceiling and lining as a tunnel, cover not required"
   },
   "shoulderTunnel": {
    "xy": [
