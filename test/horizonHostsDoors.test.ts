@@ -9,8 +9,11 @@ import { buildPathGraph, walkPlan } from '../src/harbour/horizon/world/pathGraph
 import { buildCrossings } from '../src/harbour/horizon/world/crossings';
 import { resolveComputedCrossings } from '../src/harbour/horizon/land/beds/junctions';
 
-it('leaves all seven physical doorways open and connects their aprons to public paths',()=>{
-  const cuts=buildLandCuts(baseHeight);resolveComputedCrossings(cuts,buildCrossings(cuts).proofs,baseHeight);const graph=buildPathGraph(cuts);
+// Integrator 3: the phases yield to the event loop between them. On the quick gate (4 workers on 2 cores) this one synchronous
+// test ran past vitest's 60 s worker RPC timeout ("Timeout calling onTaskUpdate") although every assertion passed.
+const tick=()=>new Promise<void>(resolve=>setImmediate(resolve));
+it('leaves all seven physical doorways open and connects their aprons to public paths',async()=>{
+  const cuts=buildLandCuts(baseHeight);await tick();resolveComputedCrossings(cuts,buildCrossings(cuts).proofs,baseHeight);await tick();const graph=buildPathGraph(cuts);await tick();
   const garden=cuts.beds.find(b=>b.id==='walk garden')!;expect(nearestOnPath([903,640],garden.points).at[1]).toBeCloseTo(36,1);
   for(const solid of cuts.solids){const g=new BufferGeometry();g.setAttribute('position',new Float32BufferAttribute(solid.positions,3));g.setIndex(solid.indices);const mesh=new Mesh(g,new MeshBasicMaterial());mesh.updateMatrixWorld();expect(new Raycaster(new Vector3(1455,12.15,1175),new Vector3(0,1,0),0,1.2).intersectObject(mesh),`${solid.id} blocks the square spawn`).toHaveLength(0);g.dispose();(mesh.material as MeshBasicMaterial).dispose();}
   for(const host of M.hosts){const p=cuts.pads.find(p=>p.id===`host.${host.id}`)!,door=p.door!,approach=cuts.beds.find(b=>b.id===p.serviceBedId)!;
