@@ -282,4 +282,12 @@ describe('Horizon Wave 7 structures (W7-S)',()=>{
     expect(near).toEqual([]);
     expect(cuts.pads.find(p=>p.id==='landingQuay.finish')?.centre[1]).toBe(3);
   },120000);
+  it('girders the bightSpurTrestle bay over the Year Walk\'s lane and proves its load path instead of a "not built" conflict (A1.1)',()=>{
+    const cuts=cutsOnce();
+    expect(cuts.diagnostics.filter(d=>d.severity==='conflict'&&/^structures\.(bightSpurTrestle|s1Flyover)\.(bentInLane|bay)$/.test(d.id))).toEqual([]);
+    const omitted=cuts.diagnostics.find(d=>d.id==='structures.bightSpurTrestle.bentOmitted')!;expect(omitted.severity).toBe('info');expect(omitted.measured!).toBeLessThanOrEqual(24);expect(omitted.message).toMatch(/steel girders/);
+    const g=prisms(find(cuts,'bightSpurTrestle.girders')!);expect(g.length).toBeGreaterThanOrEqual(2);
+    // Both girders bear on the cap beams either side of the bay (their ends at the caps' tops).
+    const caps=prisms(find(cuts,'bightSpurTrestle.caps')!);for(const p of g)expect(caps.some(c=>Math.abs(c.top-p.top)<.05)).toBe(true);
+  },120000);
 });

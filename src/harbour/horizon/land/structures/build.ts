@@ -292,15 +292,15 @@ function carriedDeck(id:string,route:BedCut,path:XYZ[],width:number,cuts:LandCut
   const district=districtAt(...plan(path[Math.floor(path.length/2)]!)),ids=[route.id,`structure.${id}`],guard=laneGuard(cuts),length=planLength(path),spacing=o.spacing??6,offsets=o.bentOffsets??[-(width/2-.6),width/2-.6];
   const deck=solid(`${id}.deck`,o.kind??'trestle','boardwalk','deck',[route.id],district),supports=solid(`${id}.supports`,'trestle','timber','support',ids,district),caps=solid(`${id}.caps`,'capBeam','timber','support',ids,district),rails=solid(`${id}.rails`,'handrail','metal','rail',[route.id],district);
   for(let i=1;i<path.length;i++)slab(deck,path[i-1]!,path[i]!,width,.6);
-  const feetAt=(s:number)=>{const {p,dir}=along(path,s);return {p,feet:offsets.map(off=>[p[0]-dir[1]*off,p[2]+dir[0]*off] as XY)};},bents:number[]=[],refused:number[]=[];
+  const feetAt=(s:number)=>{const {p,dir}=along(path,s);return {p,feet:offsets.map(off=>[p[0]-dir[1]*off,p[2]+dir[0]*off] as XY)};},bents:number[]=[],refused:number[]=[],refusedWhy=new Map<number,string>();
   const blocked=(s:number)=>{const {p,feet}=feetAt(s);return feet.map(xy=>guard(xy,p[1]-.6,ids)??o.avoid?.(xy)).find(Boolean);};
   const n=Math.max(1,Math.ceil(length/spacing));
   for(let k=0;k<=n;k++){const s0=length*k/n;let s:number|undefined;
     for(const shift of [0,.5,-.5,1,-1,1.5,-1.5,2,-2,2.5,-2.5,3,-3,3.5,-3.5,4,-4,4.5,-4.5,5,-5]){const v=clamp(s0+shift,0,length);if(!blocked(v)){s=v;break;}}
     // Always drawn (the offline ground is not the final terrain: S1's lower pass cuts the hill under its upper pass);
     // settleFoundations carries each footing down to the final ground.
-    const {p}=feetAt(s0);
-    if(s===undefined){refused.push(s0);conflict(cuts,`structures.${id}.bentInLane`,`${id}: the bent at ${s0.toFixed(1)} eu stands in ${blocked(s0)}'s corridor (and 5 eu either way); it is not built`,plan(p));continue;}
+    // Wave 7 (A1.1): a refused bent is reported once the bays are known: a conflict only if no girder carries its bay.
+    if(s===undefined){refused.push(s0);refusedWhy.set(s0,`${blocked(s0)}`);continue;}
     const at=feetAt(s);for(const xy of at.feet)pier(supports,xy,at.p[1]-1.2,base,[.5,.5],[1.4,1.4]);
     const e0=at.feet[0]!,e1=at.feet.at(-1)!,d=distance(e0,e1)||1,ex=.45/d;slab(caps,[e0[0]-(e1[0]-e0[0])*ex,at.p[1]-.6,e0[1]-(e1[1]-e0[1])*ex],[e1[0]+(e1[0]-e0[0])*ex,at.p[1]-.6,e1[1]+(e1[1]-e0[1])*ex],.6,.6);bents.push(s);}
   bents.sort((a,b)=>a-b);
@@ -312,6 +312,9 @@ function carriedDeck(id:string,route:BedCut,path:XYZ[],width:number,cuts:LandCut
     const a=along(path,bents[i-1]!).p,b=along(path,bents[i]!).p;for(const side of [-1,1])slab(girders,[a[0],a[1]-.6,a[2]],[b[0],b[1]-.6,b[2]],.4,.9,side*(width/2-.4));
     cuts.diagnostics.push({id:`structures.${id}.girderSpan`,severity:'info',message:`${id}: steel girders carry a ${bay.toFixed(1)} eu bay over a lower route`,at,measured:bay,required:24});}
   if(girders.indices.length)cuts.solids.push(girders);
+  for(const r of refused){const i=bents.findIndex(b=>b>r),bay=i>0?bents[i]!-bents[i-1]!:Infinity,at=plan(along(path,r).p);
+    if(bay<=24.01)cuts.diagnostics.push({id:`structures.${id}.bentOmitted`,severity:'info',message:`${id}: no bent at ${r.toFixed(1)} eu (it would stand in ${refusedWhy.get(r)}'s corridor); the ${bay.toFixed(1)} eu bay ${bay>12.01?'is carried by steel girders under both deck edges bearing on the cap beams at':'spans between the bents at'} ${bents[i-1]!.toFixed(1)} and ${bents[i]!.toFixed(1)} eu`,at,measured:bay,required:24});
+    else conflict(cuts,`structures.${id}.bentInLane`,`${id}: the bent at ${r.toFixed(1)} eu stands in ${refusedWhy.get(r)}'s corridor (and 5 eu either way); it is not built and no girder carries its ${Number.isFinite(bay)?bay.toFixed(1)+' eu ':''}bay`,at,bay,24);}
   for(const side of [-1,1])postedRail(rails,path,side*(width/2-.05));
   cuts.solids.push(deck,rails);if(supports.indices.length)cuts.solids.push(supports,caps);
   const b=bed(`structure.${id}`,o.bedProfile??'walk',path,false);b.width=width;b.structureIds=[id];cuts.beds.push(b);route.structureIds.push(id);
