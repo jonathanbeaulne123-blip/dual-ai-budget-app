@@ -4,7 +4,7 @@ import { baseHeight } from '../src/harbour/horizon/land/terrain';
 import { bounds, box, distance, nearestOnPath, slab, solid } from '../src/harbour/horizon/land/structures/mesh';
 import { floorAt } from '../src/harbour/horizon/world/views';
 import { solidVerticalRangeAt } from '../src/harbour/horizon/world/geometry';
-import { bightFrame, bightReport, bightSpec, buildStair, GALLERY_MARGIN, SPANS } from '../src/harbour/horizon/land/structures/build';
+import { bightFrame, bightReport, bightSpec, buildStair, GALLERY_MARGIN, ROPE_END, SPANS } from '../src/harbour/horizon/land/structures/build';
 import { FOOTING_SINK, settleFoundations } from '../src/harbour/horizon/land/structures/foundations';
 import { groundTerrainBeds } from '../src/harbour/horizon/land/structures/groundBeds';
 import { bed } from '../src/harbour/horizon/land/beds/profiles';
@@ -218,5 +218,21 @@ describe('Horizon v2.0 structures (W5-S)',()=>{
     const cuts=cutsOnce(),stair=cuts.beds.find(b=>b.id==='crownLaunch.stair')!,head=stair.points[0]!;
     expect(prisms(find(cuts,'crownLaunch.rails')!).some(p=>Math.hypot(p.x-head[0],p.z-head[2])<1.2)).toBe(false);
     expect(prisms(find(cuts,'crownLaunch.rails')!).length).toBeGreaterThan(20);
+  },120000);
+});
+describe('Horizon Wave 7 structures (W7-S)',()=>{
+  it('ends every cable rope inside its station head frame, standing on the station deck (no rope ends in mid-air)',()=>{
+    const cuts=cutsOnce(),g=M.cable.G1,z=M.cable.ZIP;
+    const ends:[string,readonly number[],number,string][]=[['gondolaBase',g.from,g.fromH,'G1'],['gondolaTop',g.to,g.toH,'G1'],['prowPlatform',z.from,z.fromH,'ZIP'],['zipLanding',z.to,z.toH,'ZIP']];
+    for(const [id,xy,h,cable] of ends){
+      const frame=find(cuts,`platform.${id}.headFrame`)!;expect(frame,id).toBeDefined();expect(frame.role).toBe('support');
+      // The rope's own solid ends at the station point, ROPE_END over the deck: that end lies inside the frame's bullwheel.
+      const rope=prisms(find(cuts,`${cable}.cable`)!),end=rope.reduce((a,b)=>Math.hypot(a.x-xy[0]!,a.z-xy[1]!)<Math.hypot(b.x-xy[0]!,b.z-xy[1]!)?a:b);
+      expect(end.top,id).toBeCloseTo(h+ROPE_END,5);
+      const r=solidVerticalRangeAt(frame,xy[0]!,xy[1]!)!;expect(r,id).not.toBeNull();expect(r.bottom,id).toBeLessThanOrEqual(h+ROPE_END-.09);expect(r.top,id).toBeGreaterThanOrEqual(h+ROPE_END);
+      // Its legs stand on the station deck (h): nothing of the frame is below the deck, and the station point is clear below h + 2.3.
+      const parts=prisms(frame);expect(Math.min(...parts.map(p=>p.bottom)),id).toBeCloseTo(h,5);
+      expect(parts.filter(p=>Math.hypot(p.x-xy[0]!,p.z-xy[1]!)<1.9&&p.bottom<h+2.29),id).toEqual([]);
+    }
   },120000);
 });

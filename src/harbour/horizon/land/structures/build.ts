@@ -551,6 +551,31 @@ function highSpanLevels(cuts:LandCuts,base:HeightQuery):void {
   cuts.solids.push(approachDeck);if(approachCheeks.indices.length)cuts.solids.push(approachCheeks);
   const overlookBed=bed('highSpan.overlook','walk',[...approach,[c[0]!,oh,c[1]!]],false);overlookBed.width=2.5;cuts.beds.push(overlookBed);
 }
+/** Wave 7 (station head frames, R3-113/R3-126): eu above its station deck at which a cable's rope ends (beds' CABLE_HEAD:
+ * the rope's solid spans h + 2.51 … h + 2.60 within 16 eu of each station). */
+export const ROPE_END=2.6;
+/** A station's head frame: the rope ends in a horizontal bullwheel (radius 1.5, h + 2.3 … 2.85, around the rope's end),
+ * hung from an arm that cantilevers forward from a two-legged portal standing on the station deck behind the station
+ * point (away from the rope). The legs close the gap from the deck to the rope; the station point itself stays clear
+ * for boarding / launching (nothing under h + 2.3 within 1.9 eu of it). Load path: wheel → hanger → arm → cross-head →
+ * legs → station deck (kind headFrame bears on the deck, never on the ground; settleFoundations leaves it). The solids are
+ * named platform.<id>.headFrame so the cable layer draws them with the station's own anchor solids. */
+function headFrame(cuts:LandCuts,id:string,at:XY,h:number,toward:XY,onDeck:(xy:XY)=>boolean):void {
+  const l=distance(at,toward)||1,d:XY=[(toward[0]-at[0])/l,(toward[1]-at[1])/l],n:XY=[-d[1],d[0]],rot=Math.atan2(d[1],d[0])*180/Math.PI,district=districtAt(at[0],at[1]);
+  const frame=solid(`platform.${id}.headFrame`,'headFrame','metal','support',[`platform.${id}`],district);
+  const P=(s:number,o:number):XY=>[at[0]+d[0]*s+n[0]*o,at[1]+d[1]*s+n[1]*o];
+  // The portal stands as far behind the station point as the deck allows (2.6 … 1.9 eu).
+  let back=2.6;while(back>1.9&&![-1.3,1.3].every(o=>onDeck(P(-back,o))))back-=.1;
+  const top=h+ROPE_END+1.5;
+  for(const o of [-1.3,1.3])box(frame,P(-back,o),top,[.45,.45],h,rot);                       // legs, deck → cross-head
+  box(frame,P(-back,0),top+.5,[.5,3.1],top-.1,rot);                                           // cross-head
+  {const b0=P(-back,0),f=P(1.7,0);slab(frame,[b0[0],top+.4,b0[1]],[f[0],top+.4,f[1]],.45,.5);}   // arm
+  box(frame,at,top,[.3,.3],h+2.85,rot);                                                        // hanger
+  for(const r of [0,45])box(frame,at,h+2.85,[2.7,2.7],h+2.3,rot+r);                         // bullwheel (octagon of two squares)
+  box(frame,P(-.9,0),h+2.8,[1.8,.5],h+2.35,rot);                                              // rope anchor: the rope's end clamped into the wheel's back
+  cuts.solids.push(frame);
+  cuts.diagnostics.push({id:`structures.platform.${id}.headFrame`,severity:'info',message:`platform.${id}: the rope ends in the head frame's bullwheel at ${(h+ROPE_END).toFixed(2)} (deck ${h}); portal ${back.toFixed(1)} eu behind the station point`,at,measured:back,required:1.9});
+}
 /** The last Bight Bridge build's bent / arch table and deck profile (for the handoff and the tests). */
 export let bightReport:BightReport|undefined;
 export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
@@ -651,9 +676,12 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
     buildStair(id,[from[0],top,from[1]],[to[0],foot,to[1]],3,cuts,base);
   }
   // Cable platforms: a raised deck on its tower (a footing, not a terrain mound); on-grade stations stay pads.
-  for(const [id,xy,h]of [['gondolaBase',M.cable.G1.from,M.cable.G1.fromH],['gondolaTop',M.cable.G1.to,M.cable.G1.toH],['prowPlatform',M.cable.ZIP.from,M.cable.ZIP.fromH],['zipLanding',M.cable.ZIP.to,M.cable.ZIP.toH]] as const){
+  // Wave 7 (station head frames): each station carries the head frame its rope ends in (`headFrame`), toward = the rope's
+  // next anchor (the first / last G1 tower, the zip's other end).
+  const g1=M.cable.G1,zipC=M.cable.ZIP;
+  for(const [id,xy,h,toward]of [['gondolaBase',g1.from,g1.fromH,g1.towers[0]!],['gondolaTop',g1.to,g1.toH,g1.towers.at(-1)!],['prowPlatform',zipC.from,zipC.fromH,zipC.to],['zipLanding',zipC.to,zipC.toH,zipC.from]] as const){
     const at=xy as unknown as XY,ground=Math.min(...[[-5,-4],[-5,4],[5,4],[5,-4],[0,0]].map(([x,z])=>base(at[0]+x!,at[1]+z!)));
-    if(ground>=h-1){addFlatPad(cuts,`platform.${id}`,'landing',at,h,[10,8]);continue;}
+    if(ground>=h-1){addFlatPad(cuts,`platform.${id}`,'landing',at,h,[10,8]);headFrame(cuts,id,at,h,toward as unknown as XY,()=>true);continue;}
     // Wave 6: a platform never overhangs a lower route with less than body height + 0.3 under its slab (candidate 4, lite: the
     // square walk climbs past the gondola base's east edge at 16.0–16.5 under a 17.4 underside; the body stopped). The slab's
     // side over such a route is trimmed back to clear the route's corridor by 0.3; the station point stays ≥ 2 inside it.
@@ -671,6 +699,7 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
     const supports=solid(`platform.${id}.supports`,'tower','stone','support',[],districtAt(at[0],at[1]));for(const x of [ext.x0+1,ext.x1-1])for(const z of [ext.z0+1,ext.z1-1])pier(supports,[at[0]+x,at[1]+z],h-.6,base,[.9,.9],[2.2,2.2]);
     const rails=solid(`platform.${id}.rails`,'handrail','metal','rail',[],deck.districtId),c=(x:number,z:number):XYZ=>[at[0]+x,h,at[1]+z];railLater(rails,[c(ext.x0,ext.z0),c(ext.x1,ext.z0),c(ext.x1,ext.z1),c(ext.x0,ext.z1)],[`platform.${id}`]);
     cuts.solids.push(deck,supports,rails);
+    headFrame(cuts,id,at,h,toward as unknown as XY,xy=>xy[0]-at[0]>ext.x0+.3&&xy[0]-at[0]<ext.x1-.3&&xy[1]-at[1]>ext.z0+.3&&xy[1]-at[1]<ext.z1-.3);
   }
   buildStair('zipLanding.stair',[1130,12,1440],[1145,3,1460],3,cuts,base);
   const ramp=gradeRoute('zipLanding.ramp',[[1130,1440],[1090,1445],[1080,1470],[1145,1460]],()=>3,.08,[{xy:[1130,1440],height:12,reason:'deck'},{xy:[1145,1460],height:3,reason:'sand'}],cuts.diagnostics);
