@@ -235,4 +235,27 @@ describe('Horizon Wave 7 structures (W7-S)',()=>{
       expect(parts.filter(p=>Math.hypot(p.x-xy[0]!,p.z-xy[1]!)<1.9&&p.bottom<h+2.29),id).toEqual([]);
     }
   },120000);
+  it('re-authors the Needle\'s Eye as a real arch: the sunrise gate aperture open, two legs, a 9 eu lintel, strata (R3-111)',()=>{
+    const needle=buildOffshoreSolids().find(s=>s.id==='offshore.needle')!,g=new BufferGeometry();g.setAttribute('position',new Float32BufferAttribute(needle.positions,3));g.setIndex(needle.indices);
+    const mesh=new Mesh(g,new MeshBasicMaterial({side:2}));mesh.updateMatrixWorld();
+    const hit=(o:[number,number,number],d:[number,number,number])=>new Raycaster(new Vector3(...o),new Vector3(...d).normalize()).intersectObject(mesh);
+    const gate=(M.sky.gates as unknown as {id:string;xy:number[];h:number;aperture_m:number[]}[]).find(q=>q.id==='needle')!,[gw,gh]=gate.aperture_m as [number,number];
+    // The gate's 22 × 16 rectangle at h 14, plus a 1 eu margin all round, is clear along the opening's axis (east–west).
+    let blocked=0;for(let y=gate.h-gh/2-1;y<=gate.h+gh/2+1;y+=1)for(let z=gate.xy[1]!-gw/2-1;z<=gate.xy[1]!+gw/2+1;z+=1)if(hit([gate.xy[0]!-60,y,z],[1,0,0]).length)blocked++;
+    expect(blocked).toBe(0);
+    // The bake's gate proof (world/sky.ts) reads a point as inside a solid by the parity of distinct hits on a ray straight up:
+    // every point of the aperture plane (x = gate.x) must read outside (an even count), so no two strata may share a face plane.
+    let inside=0;for(let y=gate.h-gh/2;y<=gate.h+gh/2;y+=2)for(let z=gate.xy[1]!-gw/2;z<=gate.xy[1]!+gw/2;z+=2){const d=new Set(hit([gate.xy[0]!+.123,y,z+.217],[0,1,0]).map(h=>Math.round(h.distance*1e6)));if(d.size%2)inside++;}
+    expect(inside).toBe(0);
+    // Two legs: rays along x hit rock either side of the opening at mid-height; the lintel stands 9 eu over the crown.
+    for(const z of [gate.xy[1]!-20,gate.xy[1]!+20])expect(hit([gate.xy[0]!-60,10,z],[1,0,0]).length).toBeGreaterThan(0);
+    const up=hit([gate.xy[0]!,5,gate.xy[1]!],[0,1,0]).map(h=>h.point.y);expect(Math.min(...up)).toBeCloseTo(28,1);expect(Math.max(...up)).toBeCloseTo(37,1);
+    // Strata: the east face steps in and out between bands (at least 6 distinct face planes), not one flat box face.
+    const eastX=new Set<number>();for(let i=0;i<needle.positions.length;i+=3)if(needle.positions[i]!>1790)eastX.add(Math.round(needle.positions[i]!*10));
+    expect(eastX.size).toBeGreaterThanOrEqual(6);
+    // The far-card proxy budget (sky/horizonCards: ≤ 300 triangles per structure) holds for the arch and every stack.
+    for(const r of buildOffshoreSolids().filter(q=>/^offshore\.(needle|stacks)/.test(q.id)))expect(r.indices.length/3,r.id).toBeLessThanOrEqual(300);
+    // The Stacks: 12-sided, not octagonal prisms.
+    const stack=buildOffshoreSolids().find(s=>s.id==='offshore.stacks.1')!;expect(stack.positions.length/3%12).toBe(0);expect(stack.positions.length/3).toBeGreaterThanOrEqual(12*8);
+  });
 });
