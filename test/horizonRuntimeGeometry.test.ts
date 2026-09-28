@@ -45,3 +45,14 @@ describe('rendered Horizon geometry owns collision',()=>{
   expect(builder.at(0,0).data.card.normals).toEqual([0,-1,0,0,-1,0,0,-1,0]);
  });
 });
+
+it('shares appended static collision with hulls without exposing dynamic decks or mutating query results',()=>{
+ const query=createHorizonGeography(field,empty),hull=query.staticOnly;
+ const retained=query.surface(50,50,0)!,before={...retained};
+ const remove=query.addDynamic({surface:()=>({id:'yacht',y:12,nx:0,ny:1,nz:0,material:'wood',slope:0}),ceiling:()=>15,contact:()=>({id:'yacht',nx:1,nz:0})});
+ expect(query.surface(50,50,12)?.id).toBe('yacht');expect(query.blocker(50,50,12)).toBe('yacht');expect(query.ceiling(50,50,12)).toBe(15);
+ expect(hull.surface(50,50,12)?.id).toBe('terrain');expect(hull.blocked(50,50,12)).toBe(false);expect(hull.ceiling(50,50,12)).toBe(Infinity);
+ const deck=solid('bridge','bridge','stone','deck',[],'harbour');box(deck,[50,50],8,[20,8],7.4);deck.walkable=true;query.addSolids([deck]);
+ expect(hull.surface(50,50,8)?.id).toBe('bridge');expect(hull.ceiling(50,50,0)).toBeCloseTo(7.4);expect(query.indexStats.chunks).toBe(1);
+ remove();expect(query.surface(50,50,8)).toEqual(hull.surface(50,50,8));expect(retained).toEqual(before);
+});

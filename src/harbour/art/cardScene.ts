@@ -1,3 +1,4 @@
+import {finishBuild} from '../../house/world/buildTask.ts';
 /**
  * World-space painted card: the shared kit (`cardKit.ts`) bound to spatial cells, with the
  * higher-level pieces a landscape needs (beams, swept profiles, prisms, gables, discs,
@@ -220,9 +221,12 @@ export class CardBuilder{
   }
   glow(p0:V3,p1:V3,p2:V3,p3:V3,color:RGB){this.quad(p0,p1,p2,p3,color,'glow');}
 
-  finish(opts:{glassOpacity?:number;glassColor?:string;waterColor?:string;water?:THREE.Material}={}):CardBuild{
+  finish(opts:{glassOpacity?:number;glassColor?:string;waterColor?:string;water?:THREE.Material}={}):CardBuild{return finishBuild(this.finishSteps(opts));}
+  *finishSteps(opts:{glassOpacity?:number;glassColor?:string;waterColor?:string;water?:THREE.Material}={}):Generator<void,CardBuild,void>{
     const group=new THREE.Group();group.name=this.name;
     const owned:{dispose():void}[]=[];const own=<T extends {dispose():void}>(o:T):T=>{owned.push(o);return o;};
+    let complete=false;
+    try {
     const paper=paperGrain();
     const std=(p:THREE.MeshStandardMaterialParameters)=>own(new THREE.MeshStandardMaterial({vertexColors:true,side:THREE.DoubleSide,...p}));
     let materials:Record<string,THREE.Material>|null=null;
@@ -240,6 +244,7 @@ export class CardBuilder{
     });
     const water:THREE.Mesh[]=[];
     for(const [key,cell] of this.cells){
+      yield;
       const d=cell.data,label=`${this.name} ${key}`;
       const add=(b:Bucket,m:string,cast:boolean,uv:'kit'|'flow'|'none'='kit')=>{
         if(!b.positions.length)return null;
@@ -260,8 +265,9 @@ export class CardBuilder{
         const l=new THREE.LineSegments(geo,mats().ink!);l.name=`${label} ink`;l.renderOrder=2;group.add(l);}
     }
     this.cells.clear();
-    let dead=false;
+    let dead=false;complete=true;
     return {group,water,materials:materials??{},dispose(){if(dead)return;dead=true;group.removeFromParent();owned.forEach(o=>o.dispose());group.clear();}};
+    } finally {if(!complete){owned.forEach(o=>o.dispose());group.clear();this.cells.clear();}}
   }
 }
 const lift=(p:V3):V3=>[p[0],p[1]+INK_LIFT*4,p[2]];
