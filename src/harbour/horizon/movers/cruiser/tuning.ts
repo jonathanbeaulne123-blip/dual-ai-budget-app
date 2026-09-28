@@ -7,7 +7,7 @@ import {HORIZON_G} from '../../runtime/geography.ts';
  */
 export const CRUISER = Object.freeze({
   dt: GROUND_DT, speed: 16, reverseSpeed: 2.5, acceleration: 7.5,
-  brake: 16, coast: 2.2, grip: 22, radius: .46, wheelbase: 1.12,
+  brake: 16, coast: 2.2, grip: 22, radius: .46, height: 1.55, wheelbase: 1.12,
   stepHeight: .48, groundSnap: .55, maxSlope: 40, gravity: HORIZON_G,
   jumpSpeed: 4.8, steerLow: 2.4, steerHigh: 1.05, cornerSpeed: 8,
   cameraDistance: 5.4, cameraHeight: 2.6, cameraFov: 58,

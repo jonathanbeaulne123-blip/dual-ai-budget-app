@@ -1,6 +1,7 @@
 import {chromium} from '@playwright/test';
-import {writeFile,copyFile} from 'node:fs/promises';
+import {writeFile,copyFile,mkdir} from 'node:fs/promises';
 import assert from 'node:assert/strict';
+const out=process.env.CRUISER_PROOF_DIR??'/tmp/island-cruiser-proof';await mkdir(out,{recursive:true});
 const origin=process.env.CRUISER_PROOF_URL??'http://127.0.0.1:5206',browser=await chromium.launch({headless:true,args:['--use-angle=metal','--enable-gpu']});
 const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.route('**/*',r=>new URL(r.request().url()).origin===origin?r.continue():r.abort());
 try{
@@ -27,5 +28,5 @@ try{
   }
   return {method:'Fixed-step scripted steering over the rendered Horizon geography, separate from real-time keyboard browser proof.',rows};
  });
- report.errors=errors;report.pass=report.rows.every(row=>row.stopped&&row.endDistance<2&&row.maxSpeed<=16.001&&row.longestStop<.25)&&errors.length===0;console.log(JSON.stringify(report,null,2));await copyFile('/tmp/island-cruiser-proof/routes.json','/tmp/island-cruiser-proof/routes-exploration.json').catch(()=>{});await writeFile('/tmp/island-cruiser-proof/routes.json',JSON.stringify(report,null,2));assert.ok(report.pass,'bounded routes finish and brake beside their endpoint');
+ report.errors=errors;report.pass=report.rows.every(row=>row.stopped&&row.endDistance<2&&row.maxSpeed<=16.001&&row.longestStop<.25)&&errors.length===0;console.log(JSON.stringify(report,null,2));await copyFile(`${out}/routes.json`,`${out}/routes-exploration.json`).catch(()=>{});await writeFile(`${out}/routes.json`,JSON.stringify(report,null,2));assert.ok(report.pass,'bounded routes finish and brake beside their endpoint');
 }finally{await browser.close();}

@@ -1,6 +1,6 @@
 # Hearth worksession — Island cruiser
 
-- Status: implemented and browser-tested locally; full repository gate remains open
+- Status: implemented and browser-tested; PR #555 records final merge verification
 - Opened: 2026-09-27 (America/Toronto)
 - Decision owner: Jonathan; implementer/integrator: Codex
 - Repository: jonathanbeaulne123-blip/dual-ai-budget-app
@@ -69,3 +69,11 @@ Physical phone thumb feel, Mac interactive feel, GPU performance, screen-reader 
 The three textual conflicts with #554 are resolved preserving both features. Read-only movement/camera review caught and corrected walking input being cleared on ordinary parachute landing, wheel writes into the active activity camera, held-Space handoff suppression, and carried-board ownership on a new cruiser pickup. Shared perspective overrides run after the activity camera. The toolbar and cruiser controls now flow vertically together instead of relying on fixed offsets that overlap when the new perspective button wraps.
 
 Focused integration run: **131/131 tests passed across ten suites in 11.60 s** (cruiser, geometry, registry, mover hook, quick layer, parachute, perspective, board landing, glider controller and comfort). Three new cruiser cases cover grounded deployment refusal, exact velocity with both canopy states, one active owner, putting away the cruiser, and replacing previously carried board equipment. Rendered integration passed both skins across all three perspectives without velocity/heading changes, first-person art hiding, V freefall, Space parachute deployment, foot landing with held W preserved, remount, Look/Walk pause/resume, repeated ground handoffs, and phone Ride/Hop. All twelve theme/viewport captures have no horizontal overflow or toolbar/cruiser overlap. One exploratory remount was refused beside a slope where the character fit but the larger vehicle footprint did not; the repeated-mount scenario starts on checked open road. The final focus review also found and fixed the first fresh key being swallowed when keyup occurred in another app; repeat events remain suppressed until physical release. Final quick-gate evidence is recorded in PR #555.
+
+The integrated candidate `223dbd1` passed GitHub repository TypeScript plus **279 tests across 21 suites** in **111.644 s** with no budget breach, both Node 22/24 baked-asset checks, and the application build. Its synthetic PR merge commit `6476147d` has the identical tree `29d7b6a319b2b8c7aadd561150005a33fb7cbc66`. The final local gate attempt at `19c1508` was stopped after **335.748 s** in TypeScript and remains incomplete; GitHub supplies the completed gate evidence. The final rendered focus-recovery regression also passed.
+
+Automated review subsequently found two bounded edge cases: the browser's localStorage getter itself may throw before a helper catches getItem/setItem errors, and the route proof did not create or honor its output directory. Both are fixed, with a real Stage DOM regression for denied storage and a standalone route run into a new output directory. Final CI for these follow-ups is recorded in PR #555.
+
+The second automated reviewer found that the shared walking body is shorter than the mounted rider. Grounded cruiser movement now checks its configured 1.55 m headroom at the centre and footprint edges before each substep, with a low-slab regression proving it stops while the shorter walker fits, and a higher bridge proving ordinary underpasses remain open.
+
+Review-fix verification: **33/33 tests passed** (21 cruiser, 6 collision geography, 6 Stage DOM tests) in **12.65 s**. The standalone three-route browser proof created a new nested output directory and wrote a passing report with zero page errors.

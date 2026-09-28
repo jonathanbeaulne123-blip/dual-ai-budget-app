@@ -23,9 +23,13 @@ function wheelSupport(g:CruiserGround,x:number,z:number,y:number,yaw:number) {
   }
   return centre;
 }
+/** The generic walker is shorter: check the mounted envelope at its centre and footprint edges. */
+function cruiserHeadroom(g:CruiserGround,x:number,z:number,y:number,radius:number=C.radius){
+  return [[0,0],[radius,0],[-radius,0],[0,radius],[0,-radius]].every(([dx,dz])=>g.ceiling(x+dx!,z+dz!,y)>=y+C.height);
+}
 export function validCruiserPosition(g:CruiserGround,at:MoverBody,radius:number=C.radius):MoverBody|null {
   const p=g.surface(at.x,at.z,at.y,C.stepHeight);
-  if(!p||!Number.isFinite(p.y)||Math.abs(p.y-at.y)>.7||p.slope>C.maxSlope||g.submerged(at.x,at.z,p.y)||g.blocker(at.x,at.z,p.y,radius)||g.ceiling(at.x,at.z,p.y)<p.y+1.55)return null;
+  if(!p||!Number.isFinite(p.y)||Math.abs(p.y-at.y)>.7||p.slope>C.maxSlope||g.submerged(at.x,at.z,p.y)||g.blocker(at.x,at.z,p.y,radius)||!cruiserHeadroom(g,at.x,at.z,p.y,radius))return null;
   return {...at,y:p.y};
 }
 /** Search near the rider, at the same altitude, and validate the entire exit path. */
@@ -100,6 +104,7 @@ export function stepCruiser(s:CruiserState,input:CruiserInput,g:CruiserGround,dt
     // from above ground while preserving a cave/underpass already below it.
     if(!grounded&&!under&&y>=g.ground(x,z)-.5&&g.ground(nx,nz)>y+C.stepHeight){vx=0;vz=0;contact='terrain-face';continue;}
     if((grounded&&(!under||under.slope>C.maxSlope||g.submerged(nx,nz,under.y)))||(!grounded&&g.submerged(nx,nz,y))) {vx=0;vz=0;contact='terrain';continue;}
+    if(grounded&&under&&!cruiserHeadroom(g,nx,nz,under.y)){vx=0;vz=0;contact='low-headroom';continue;}
     x=nx;z=nz;
     if(grounded&&under) {
       const drop=y-under.y;
@@ -118,7 +123,7 @@ export function stepCruiser(s:CruiserState,input:CruiserInput,g:CruiserGround,dt
     }
     else y=next;
     const ceiling=g.ceiling(x,z,y);
-    if(ceiling<y+1.55){y=ceiling-1.55;vy=Math.min(0,vy);}
+    if(ceiling<y+C.height){y=ceiling-C.height;vy=Math.min(0,vy);}
   }
   // Art uses -lean for local roll; match the island's rightward negative yaw.
   lean+=(-steer*Math.min(.22,cruiserSpeed(s)*.025)-lean)*(1-Math.exp(-8*dt));

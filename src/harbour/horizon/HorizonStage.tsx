@@ -30,10 +30,11 @@ export function statusTextFor({riding,offerLabel,paused,flight}:{riding:boolean;
   if(riding)return paused?RIDE_PAUSED_STATUS:flight?'Flying. W/S set the bar, A/D bank; use the landing bubble.':'Riding. W pushes, S slides, A D steer, Space pops, E parks.';
   return offerLabel?`E · ${offerLabel}`:WALK_STATUS;
 }
+function cruiserStorage(){try{return window.localStorage;}catch{return null;}}
 export default function HorizonStage(props:HorizonStageProps){
   const stage=useRef<HTMLDivElement>(null),runtime=useRef<HorizonRuntime|null>(null),latest=useRef(props);latest.current=props;
   const skinKey=props.cruiserPreference??'hearth:horizon-cruiser:review:v1';
-  const [skin,setSkin]=useState<CruiserSkin>(()=>readCruiserSkin(localStorage,skinKey)),[skinSaveFailed,setSkinSaveFailed]=useState(false);
+  const [skin,setSkin]=useState<CruiserSkin>(()=>{const storage=cruiserStorage();return storage?readCruiserSkin(storage,skinKey):'vespa';}),[skinSaveFailed,setSkinSaveFailed]=useState(false);
   const [status,setStatus]=useState('Loading the Horizon…'),[ready,setReady]=useState(false),[mode,setMode]=useState<HorizonMode>('look'),[page,setPage]=useState('A');
   const [reducedMotion,setReducedMotion]=useState(()=>readReducedMotion(props)),[calm,setCalm]=useState(()=>readCalm(props));
   const [offers,setOffers]=useState<ThresholdOffer[]>([]),[mover,setMover]=useState<HorizonMoverState|null>(null),[sheet,setSheet]=useState<ReducedMotionCut|null>(null),hold=useRef<number|null>(null),jumpPointer=useRef<number|null>(null);
@@ -120,7 +121,7 @@ export default function HorizonStage(props:HorizonStageProps){
       </div>
       {ready&&!sheet&&<div className="horizon-cruiser-controls" role="group" aria-label="Island cruiser">
         <button disabled={Boolean(mover?.attached&&mover.mode!=='cruiser')} aria-pressed={mover?.mode==='cruiser'} onClick={()=>{runtime.current?.toggleCruiser();stage.current?.focus();}}>{mover?.mode==='cruiser'?'Get off':'Ride'} <span aria-hidden="true">V</span></button>
-        <label>Style <select aria-label="Cruiser style" value={skin} onChange={event=>{const next=event.target.value as CruiserSkin;setSkin(next);runtime.current?.setCruiserSkin(next);setSkinSaveFailed(!saveCruiserSkin(localStorage,skinKey,next));}}>{Object.entries(CRUISER_SKINS).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
+        <label>Style <select aria-label="Cruiser style" value={skin} onChange={event=>{const next=event.target.value as CruiserSkin;setSkin(next);runtime.current?.setCruiserSkin(next);const storage=cruiserStorage();setSkinSaveFailed(!storage||!saveCruiserSkin(storage,skinKey,next));}}>{Object.entries(CRUISER_SKINS).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
         {mover?.mode==='cruiser'&&<><button onClick={()=>{runtime.current?.recoverCruiser();stage.current?.focus();}}>Recover <span aria-hidden="true">R</span></button><output aria-label="Cruiser speed">{(mover.hud as {pace?:string})?.pace??'0 km/h'}</output></>}
         {skinSaveFailed&&<span role="status">Style saved for this visit only.</span>}
       </div>}

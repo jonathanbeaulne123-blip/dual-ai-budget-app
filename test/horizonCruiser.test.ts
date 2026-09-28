@@ -49,6 +49,15 @@ describe('one forgiving Horizon cruiser',()=>{
     const s=run(3,{...idle,forward:1},g);expect(s.z).toBeGreaterThan(115);expect(s.y).toBe(0);expect(s.grounded).toBe(true);
     expect(validCruiserPosition(g,{...start,z:110,y:8})?.y).toBe(8);expect(validCruiserPosition(g,{...start,z:110,y:7})).toBeNull();
   });
+  it('stops before a low overhang while allowing a bridge with mounted headroom',()=>{
+    const slab=solid('low-slab','test','stone','deck');box(slab,[100,110],2.2,[20,8],1.4);slab.walkable=true;
+    const low=createHorizonGeography(field,{...empty,solids:[slab]});
+    expect(low.blocker(100,108,0,CRUISER.radius)).toBeNull(); // The shorter walking body fits.
+    const stopped=run(4,{...idle,forward:1},low);expect(stopped.z).toBeLessThanOrEqual(106-CRUISER.radius);expect(stopped.y).toBe(0);expect(cruiserSpeed(stopped)).toBe(0);
+    expect(validCruiserPosition(low,{...start,z:108})).toBeNull();
+    const high=solid('high-slab','test','stone','deck');box(high,[100,110],2.2,[20,8],1.7);high.walkable=true;
+    expect(run(4,{...idle,forward:1},createHorizonGeography(field,{...empty,solids:[high]})).z).toBeGreaterThan(115);
+  });
   it('cannot jump through an uphill terrain face',()=>{
     const g={...flat,ground:(_x:number,z:number)=>z>102?6:0,surface:(x:number,z:number,y=0,step=.48)=>z>102?(y+step<6?null:{...flat.surface(x,z)!,y:6}):flat.surface(x,z)};
     const s=run(1,{...idle,jump:true},g,{...createCruiserState(start),vz:12});expect(s.z).toBeLessThan(102);expect(s.y).toBeGreaterThanOrEqual(0);
