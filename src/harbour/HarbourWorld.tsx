@@ -1,6 +1,6 @@
 import {HomeBookButton,useHomeBook} from '../home/HomeBookContext.tsx';
 import {useMotionEdition} from './nav/Compass.tsx';
-import {HARBOUR_DEV} from './flag.ts';
+import {useHarbourWorld} from './harbourWorld.ts';
 import {DeskPlace} from "./desk/DeskPlace.tsx";
 import {usePublishEditionAvailability,type EditionAvailability} from "./nav/editionAvailability.ts";
 import {createMountainRecovery} from './mountain/recovery.ts';
@@ -208,9 +208,11 @@ const pulseFreshness = (gate: InterpretationGate | undefined): FundPulseFreshnes
 const HorizonWorld = lazy(() => import("./horizon/HorizonWorld.tsx"));
 export default function HarbourWorld(props: HarbourWorldProps) {
   const homeBook=useHomeBook();
-  return homeBook?.visitRequested || HARBOUR_DEV && new URLSearchParams(window.location.search).get("world") === "horizon"
-    ? <HorizonEdition {...props}/>
-    : <MountainHarbourWorld {...props}/>;
+  const world=useHarbourWorld();
+  // Home Book visit still forces Horizon (product path). Otherwise DEV world query.
+  return homeBook?.visitRequested || world === "horizon"
+    ? <HorizonEdition {...props} key="horizon"/>
+    : <MountainHarbourWorld {...props} key="mountain"/>;
 }
 function HorizonEdition(props:HarbourWorldProps){
   const edition=useMotionEdition();

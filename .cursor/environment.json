@@ -5,14 +5,23 @@
   "terminals": [
     {
       "name": "vite-dev-server",
-      "command": "pnpm dev --host 0.0.0.0",
-      "description": "Vite kitchen dev server on port 5173. Open the demo kitchen table for fictional Development data."
+      "command": "VITE_HEARTH_HOUSE_WORLD=1 VITE_HEARTH_HARBOUR=1 pnpm dev --host 0.0.0.0",
+      "description": "Vite kitchen with Harbour mounted. Dev Mountain/Horizon toggle is at the top of the App; use ?world=horizon to start on Horizon."
+    },
+    {
+      "name": "whole-house-review",
+      "command": "HEARTH_REVIEW_PORT=4192 node scripts/serve-whole-house-review.mjs",
+      "description": "Fictional whole-house review on port 4192. Mountain rehearsal and Horizon links are in the banner; in-App toggle switches worlds under Compass/QuickSheet."
     }
   ],
   "ports": [
     {
       "name": "vite",
       "port": 5173
+    },
+    {
+      "name": "whole-house-review",
+      "port": 4192
     }
   ]
 }

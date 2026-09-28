@@ -203,3 +203,38 @@
 @keyframes page-turn-dim { to { opacity: 1; } }
 @keyframes page-turn-shade { from { opacity: 1; } to { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .page-turn { display: none; } }
+
+/* ── Dev-only Mountain ↔ Horizon dissection toggle (full-App chrome) ── */
+.harbour-world-toggle {
+  position: fixed;
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--paper, #f5eee2) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink, #273b33) 18%, transparent);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--ink, #273b33) 12%, transparent);
+}
+.harbour-world-toggle__btn {
+  min-height: 36px;
+  min-width: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink, #273b33);
+  font: 600 12px/1.2 var(--font, system-ui, sans-serif);
+  cursor: pointer;
+}
+.harbour-world-toggle__btn[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--pine, #356c55) 22%, var(--paper, #f5eee2));
+  color: var(--pine, #356c55);
+}
+.harbour-world-toggle__btn:focus-visible {
+  outline: 2px solid var(--pine, #356c55);
+  outline-offset: 2px;
+}
