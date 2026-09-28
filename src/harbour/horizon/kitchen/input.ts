@@ -1,4 +1,5 @@
 import {padStick,PAD_DEADZONE,type GetPads,type PadLike} from '../../skate/input/gamepad.ts';
+import {INGREDIENTS} from './config.ts';
 import type {Point} from '../movers/fleet/layout.ts';
 import type {ChefId,ChefPose,ChefState,KitchenChefInput,KitchenControls,KitchenItem,KitchenStation} from './types.ts';
 
@@ -126,7 +127,7 @@ export function selectKitchenTarget(pose:ChefPose,stations:readonly KitchenStati
   return best;
 }
 /** Only loose, cool ingredients can leave the hands; targets are real surfaces or an empty-handed chef. */
-export function selectTossTarget(chef:ChefState,item:KitchenItem|null,stations:readonly KitchenStation[],chefs:readonly ChefState[],blocked:KitchenLineBlocked,previous?:KitchenTossTarget|null):KitchenTossTarget|null{
+export function selectTossTarget(chef:ChefState,item:KitchenItem|null,stations:readonly KitchenStation[],chefs:readonly ChefState[],blocked:KitchenLineBlocked,previous?:KitchenTossTarget|null,items:Readonly<Record<string,KitchenItem>>={}):KitchenTossTarget|null{
   if(!item||item.kind!=='ingredient'||!['raw','prepared'].includes(item.phase)||item.contents.length||item.location.kind!=='hands'||item.location.chef!==chef.id)return null;
   const from={...chef.pose,y:chef.pose.y+.9};let best:KitchenTossTarget|null=null,score=Infinity;
   const consider=(target:KitchenTossTarget)=>{
@@ -136,7 +137,12 @@ export function selectTossTarget(chef:ChefState,item:KitchenItem|null,stations:r
     const next=distance+(1-aim)*1.5-(same ? .22 : 0);
     if(next<score){score=next;best=target;}
   };
-  for(const station of stations)if(station.kind==='counter')consider({station:station.id,point:{...station.surface}});
-  for(const other of chefs)if(other.id!==chef.id&&other.connected&&other.held===null)consider({chef:other.id,point:{...other.pose,y:other.pose.y+.9}});
+  const existing=Object.values(items),cook=item.ingredient?INGREDIENTS[item.ingredient]?.cook:undefined;
+  for(const station of stations){
+    const compatible=station.kind==='counter'||station.kind==='prep'||station.kind==='appliance'&&cook&&item.phase===cook.from&&station.appliances?.includes(cook.appliance);
+    if(!compatible||station.capacity<1||existing.some(i=>i.location.kind==='station'&&i.location.station===station.id||i.location.kind==='transit'&&i.location.station===station.id))continue;
+    consider({station:station.id,point:{...station.surface}});
+  }
+  for(const other of chefs)if(other.id!==chef.id&&other.connected&&other.held===null&&!existing.some(i=>i.location.kind==='transit'&&i.location.chef===other.id))consider({chef:other.id,point:{...other.pose,y:other.pose.y+.9}});
   return best;
 }

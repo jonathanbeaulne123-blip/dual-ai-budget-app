@@ -1,5 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {createKitchenInput,selectKitchenTarget,selectTossTarget} from '../src/harbour/horizon/kitchen/input.ts';
+import {createKitchenEngine,stationsFor} from '../src/harbour/horizon/kitchen/model.ts';
 import type {PadLike} from '../src/harbour/skate/input/gamepad.ts';
 import type {ChefState,KitchenItem,KitchenStation} from '../src/harbour/horizon/kitchen/types.ts';
 
@@ -117,5 +118,32 @@ describe('kitchen target selection',()=>{
   it('never tosses hot food, cookware, assembled dishes or another chef’s held item',()=>{
     const player=chef(0),dest=[station('counter')];
     for(const item of [{...ingredient(),phase:'ready' as const},{...ingredient(),kind:'plate' as const},{...ingredient(),contents:['filling']},ingredient(1)])expect(selectTossTarget(player,item,dest,[],()=>false)).toBeNull();
+  });
+
+  it('offers empty prep counters and only compatible appliances, excluding occupied or reserved destinations',()=>{
+    const player=chef(0),item=ingredient(),prep={...station('prep'),kind:'prep' as const},hob={...station('hob'),kind:'appliance' as const,appliances:['sauce']};
+    expect(selectTossTarget(player,item,[prep],[],()=>false)?.station).toBe('prep');
+    expect(selectTossTarget(player,item,[hob],[],()=>false)).toBeNull();
+    expect(selectTossTarget(player,{...item,phase:'prepared'},[hob],[],()=>false)?.station).toBe('hob');
+    const occupied:KitchenItem={...ingredient(),id:'already-there',location:{kind:'station',station:'prep',slot:0}};
+    expect(selectTossTarget(player,item,[prep],[],()=>false,null,{occupied})).toBeNull();
+    occupied.location={kind:'transit',from:player.pose,to:prep.surface,remaining:.2,station:'prep'};
+    expect(selectTossTarget(player,item,[prep],[],()=>false,null,{occupied})).toBeNull();
+    occupied.location={kind:'transit',from:player.pose,to:{x:0,y:.9,z:2},remaining:.2,chef:1};
+    expect(selectTossTarget(player,item,[],[chef(1,0,2)],()=>false,null,{occupied})).toBeNull();
+  });
+
+  it('passes actual configured prep-counter and teammate targets through the engine without changing their height',()=>{
+    const engine=createKitchenEngine({seed:42});engine.start('practice',2);engine.action(0,{type:'ready'});engine.action(1,{type:'ready'});
+    const state=engine.state(),stations=stationsFor(state),store=stations.find(s=>s.ingredients?.includes('tomato'))!,prep=stations.find(s=>s.kind==='prep')!;
+    const fetch=()=>{engine.setPose(0,{...store.approach,yaw:store.facing});engine.setTarget(0,store.id);expect(engine.action(0,{type:'interact',ingredient:'tomato'}).ok).toBe(true);return state.items[state.chefs[0]!.held!]!;};
+    const first=fetch();engine.setPose(0,{...prep.approach,yaw:prep.facing});engine.setPose(1,{x:6,y:3.85,z:-18,yaw:0});
+    const surface=selectTossTarget(state.chefs[0]!,first,stations,state.chefs,()=>false,null,state.items);
+    expect(surface?.station).toBe(prep.id);expect(engine.action(0,{type:'toss',to:surface!}).ok).toBe(true);engine.update(.5);
+    expect(first.location).toMatchObject({kind:'station',station:prep.id});
+    const second=fetch();engine.setPose(0,{x:0,y:3.85,z:-10,yaw:Math.PI/2});engine.setPose(1,{x:1.5,y:3.85,z:-10,yaw:-Math.PI/2});
+    const handoff=selectTossTarget(state.chefs[0]!,second,stations,state.chefs,()=>false,null,state.items);
+    expect(handoff?.chef).toBe(1);expect(engine.action(0,{type:'toss',to:handoff!}).ok).toBe(true);engine.update(.5);
+    expect(state.chefs[1]!.held).toBe(second.id);expect(second.location).toEqual({kind:'hands',chef:1});
   });
 });
