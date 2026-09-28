@@ -1,4 +1,4 @@
-// Reconciliation 2 (Stage A candidate 6 × main #554–#559): main's new movers on the Stage A land (MANIFEST v2.5 moverAnchors_v2_5).
+// Reconciliation 2 (Stage A candidate 6 × main #554–#560): main's new movers on the Stage A land (MANIFEST v2.5 moverAnchors_v2_5).
 import {describe,expect,it} from 'vitest';
 import {HORIZON_MANIFEST} from '../src/harbour/horizon/world/manifest.ts';
 import {createVessels,launchBody} from '../src/harbour/horizon/movers/fleet/model.ts';
@@ -49,5 +49,23 @@ describe('v2.5 × #559: the galley sails with the yacht and needs the harbour ch
     expect(districtAt(p.x,p.z)).toBe('harbour');
     for(const [dx,dz] of [[-7,-22],[7,-22],[-7,22],[7,22]] as const)expect(districtAt(yacht.x+dx,yacht.z+dz)).toBe('harbour');
     expect(g.ground(p.x,p.z)).toBeCloseTo(-12,1);expect(g.waterLevel(p.x,p.z)).toBe(0);
+  });
+});
+describe('v2.5 × #560: the personal homes stand on Stage A\'s graded plots',()=>{
+  it('every home plot is a dry graded pad, its door on the path graph, no path through the cottage',async()=>{
+    const {HOME_PLOTS}=await import('../src/home/ownership.ts');
+    const {homeSite,homeWorld}=await import('../src/home/site.ts');
+    const {world,geography:g}=realHorizon(),nodes=world.pathGraph!.nodes;
+    expect((HORIZON_MANIFEST as unknown as {moverAnchors_v2_5:{homes:{plots:string}}}).moverAnchors_v2_5.homes.plots).toContain('HOME_PLOTS');
+    for(const id of HOME_PLOTS){
+      const site=homeSite(world.reserves,id)!;expect(site,id).not.toBeNull();
+      let lo=Infinity,hi=-Infinity;
+      for(let x=-26;x<=26;x+=2)for(let z=-16;z<=16;z+=2){const p=homeWorld(site,x,z),h=g.ground(p.x,p.z);lo=Math.min(lo,h);hi=Math.max(hi,h);const w=g.waterLevel(p.x,p.z);expect(w===null||w<=h,`${id} wet at ${x},${z}`).toBe(true);}
+      expect(site.y-lo,id).toBeLessThanOrEqual(.06);expect(hi-site.y,id).toBeLessThanOrEqual(.01);   // measured: within 0.05 below, 0 above (reconciliation 2)
+      expect(Math.min(...nodes.map(n=>Math.hypot(n.at[0]-site.door[0],n.at[2]-site.door[1]))),id).toBeLessThan(.5);
+      const c=Math.cos(site.yaw),s=Math.sin(site.yaw);
+      const inCottage=nodes.filter(n=>{const x=(n.at[0]-site.x)*c-(n.at[2]-site.z)*s,z=(n.at[0]-site.x)*s+(n.at[2]-site.z)*c;return Math.abs(x)<=8&&Math.abs(z)<=11;});
+      expect(inCottage.map(n=>n.id),id).toEqual([]);
+    }
   });
 });

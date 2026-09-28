@@ -14407,7 +14407,7 @@
  ],
  "carriedThresholdRule": "A carried threshold moves with a vehicle and has no pad, marker or fixed xy. It is listed apart from thresholds so the land pass never grades a pad for it; WorldDefinition.thresholds carries it with carried = carriedBy.",
  "moverAnchors_v2_5": {
-  "source": "main #554 parachute, #555 cruiser, #556 fall rescue (Little Harbour), #557 fleet + yacht, #558 fleet water, #559 Yacht Kitchen \u2014 anchors are code-owned (movers/fleet/model.ts, movers/cruiser/*, kitchen/geometry.ts); reconciliation 2, 2026-09-27",
+  "source": "main #554 parachute, #555 cruiser, #556 fall rescue (Little Harbour), #557 fleet + yacht, #558 fleet water, #559 Yacht Kitchen, #560 personal homes \u2014 anchors are code-owned (movers/fleet/model.ts, movers/cruiser/*, kitchen/geometry.ts, home/site.ts); reconciliation 2, 2026-09-27",
   "fleet": {
    "launch": "structures.floatplaneDock [1520,1275]: the dock's bed at h 1.2 (the fleet's launchBody [1523,1.2,1276] stands on it, dry)",
    "moorings": {
@@ -14448,6 +14448,10 @@
    "board": "kitchen/geometry.ts KITCHEN_BOARD, yacht-local [-2.6, main deck 3.85, -10.6]: it sails with the yacht, no land anchor",
    "measured": "at the yacht's mooring the menu board stands at [1617.4,3.85,1329.4] over the harbour water (seabed -12), district harbour; the yacht's whole 14 x 44 hull is inside the harbour chunk and the galley opens only aboard, so it needs the harbour chunk resident like the fleet",
    "rule": "an open service holds the body: a chosen page while cooking returns to the galley on Walk (main: Choose Walk and Resume); after Exit a chosen page is a visit again (Stage A walk-out)"
+  },
+  "homes": {
+   "plots": "home/ownership.ts HOME_PLOTS: plot.terraces.1-3, plot.bight.1-4 (one per member, first come); home/site.ts reads each plot from the bake (outline centre, door xy and height), so the homes follow these reserves",
+   "measured": "on the candidate-6 bake all seven plots are graded pads: ground within 0.05 of the door height over the whole 52 x 32 home plot, dry, the door on a path node, no path node inside the 16 x 22 cottage; plot.terraces.3 has one path node at its plot corner (local [25.4,13.7]); plot.terraces.1 is the v2.2 plot (R3-32 margin 5.83 of 6 still open)"
   },
   "comfort": "one comfort source: reduced motion and calm reach the fleet (wind off, no bob), the cruiser (no lean, camera cut) and the parachute (comfort camera) through the registry; the stricter rule wins"
  }
