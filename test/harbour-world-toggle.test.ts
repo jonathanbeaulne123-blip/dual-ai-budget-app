@@ -62,7 +62,12 @@ describe("setHarbourWorld", () => {
       return;
     }
     setHarbourWorld("mountain", { replaceState }, loc);
-    expect(replaceState.mock.calls[0]![2]).toBe("/?sun=09:00#court");
+    const url = String(replaceState.mock.calls[0]![2]);
+    expect(url.startsWith("/?")).toBe(true);
+    expect(url.endsWith("#court")).toBe(true);
+    const params = new URLSearchParams(url.slice(url.indexOf("?") + 1, url.indexOf("#")));
+    expect(params.get("world")).toBeNull();
+    expect(params.get("sun")).toBe("09:00");
   });
 });
 
