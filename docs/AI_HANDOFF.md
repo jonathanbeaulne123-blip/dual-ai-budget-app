@@ -1,3 +1,7 @@
+## 2026-09-27 — Offshore fleet and physically walkable yacht
+
+Local implementation is on `codex/offshore-fleet` in `.codex-work/offshore-fleet`, integrated with main `c82f9d7` (shared airborne parachute, C-camera and explicit fall Retry updates). The [fleet guide](briefs/OFFSHORE_FLEET_GUIDE.md) explains access, controls, usable spaces, galley anchors and limitations; the [worksession](worksessions/2026-09-27-offshore-fleet.md) records exact validation and next-owner gates. This is recreational local state with Budget delta 0. No deployment or hosted activation is implied.
+
 ## 2026-09-24 — Claude Desk integrated with the complete mountain
 
 `codex/mountain-desk-integration`, isolated checkout `.codex-work/hearth-mountain-desk`, combines current main `dd5635c4`, completed mountain `448aade3`, and verified Claude bundle `0ec53106`. The completed task stack was not all present in main despite the PRs showing merged; merge `9a6721cd` restores the exact completed mountain tree, then `9fe576cb` joins the Desk. No main checkout was overwritten.

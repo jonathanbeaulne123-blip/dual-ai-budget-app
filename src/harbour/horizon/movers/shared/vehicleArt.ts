@@ -23,7 +23,7 @@ export interface VehicleArt{build(dressing:VehicleDressing,tier:VehicleTier):THR
 export const VEHICLE_DIMENSIONS={
   glider:{span:10,keel:3.2},
   parachute:{canopy:[7,3] as const,lines:5},
-  board:null,bicycle:null,gondola:null,cart:null,zip:null,plane:null,balloon:null,row:null,canoe:null,dinghy:null,ferry:null,
+  cruiser:{length:1.8,width:.72},kayak:{length:4.6,width:1.2},motorboat:{length:5.8,width:2.4},yacht:{length:44,width:14},board:null,bicycle:null,gondola:null,cart:null,zip:null,plane:null,balloon:null,row:null,canoe:null,dinghy:null,ferry:null,
 } as const satisfies Record<VehicleId,unknown>;
 
 const G=VEHICLE_DIMENSIONS.glider,P=VEHICLE_DIMENSIONS.parachute;

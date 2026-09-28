@@ -26,7 +26,7 @@ export interface HorizonChunkLoader{
   /** Bytes fetched so far for the definition (index + chunks, as delivered to script: gzip or raw). */
   bytes():number;
   /** Wave 6: network only — fetch a chunk's bytes without parsing them (`load`/`loadSync` parse and append later). */
-  fetch(districtId:string,signal?:AbortSignal):Promise<void>;
+  prefetch(districtId:string,signal?:AbortSignal):Promise<void>;
   /** Wave 6: append a chunk NOW if its bytes are here; with `blocking` (the review-only simulation), fetch it synchronously
    * first. Returns whether the chunk is resident afterwards. */
   loadSync(districtId:string,blocking?:boolean):boolean;
@@ -79,7 +79,7 @@ export function createHorizonChunkLoader(world:LoadedWorld,counter:{bytes:number
       if(!job){job=(async()=>{const buffer=await fetchBytes(id,signal);const solids=append(id,buffer);pending.delete(id);return solids;})();job.catch(()=>pending.delete(id));pending.set(id,job);}
       return job;
     },
-    async fetch(id,signal){if(!byId.has(id)||done.has(id))return;await fetchBytes(id,signal);},
+    async prefetch(id,signal){if(!byId.has(id)||done.has(id))return;await fetchBytes(id,signal);},
     loadSync(id,blocking=false){
       if(!byId.has(id)||done.has(id))return true;
       let buffer=raw.get(id);

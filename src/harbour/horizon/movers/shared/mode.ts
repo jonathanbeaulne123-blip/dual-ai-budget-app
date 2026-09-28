@@ -7,8 +7,10 @@ import type {ThresholdOffer} from './threshold.ts';
 import type {Threshold} from '../../world/definition.ts';
 export type {ThresholdOffer} from './threshold.ts';
 
-export type ModeId = 'feet'|'board'|'bicycle'|'gondola'|'cart'|'zip'|'glider'|'parachute'|'plane'|'balloon'|'row'|'canoe'|'dinghy'|'ferry';
+export type ModeId = 'feet'|'cruiser'|'kayak'|'motorboat'|'yacht'|'board'|'bicycle'|'gondola'|'cart'|'zip'|'glider'|'parachute'|'plane'|'balloon'|'row'|'canoe'|'dinghy'|'ferry';
 export type MoverBody = {x:number;y:number;z:number;yaw:number};
+/** World velocity at a physical handoff. Never reconstructed from facing or camera yaw. */
+export interface AirborneBody extends MoverBody {velocity:XYZ}
 /** What the runtime hands a mover every frame. Already merged from keys, pads and gamepad by the runtime. */
 export interface MoverInput {
   steer:number;      // -1..1, +1 = right (D / pad right / stick right)
@@ -18,7 +20,7 @@ export interface MoverInput {
   crouch:number;     // 0..1 (held Space charge, arrows-down, etc.; 0 if the runtime has nothing)
   accept:boolean;    // E / the Enter bubble (edge)
   look:{dx:number;dy:number}; // pointer / Look pad deltas this frame (radians), consumed by the mover's camera if it wants free look
-  action?:'fold'|'pull'; // a flight HUD action; ground movers ignore it
+  action?:'fold'|'pull'; // pull toggles the canopy; fold remains the glider's landing shortcut
 }
 export interface MoverPose { lean:number; roll:number; pitch:number; crouch:number; slide:number; speed:number;  // radians / 0..1 / m/s; the figure reads it
   /** Additive (track I, fix round): the travel direction minus the board's nose heading (`body.yaw`), radians about +y, wrapped to ±π
@@ -48,9 +50,15 @@ export interface ModeController {
   reducedMotionCut?():ReducedMotionCut;
   dispose():void;
   finished?():boolean;
+  /** Only while detached from support and in control (not during a bail or a seated ride). */
+  airborne?():AirborneBody|null;
+  enterAirborne?(body:AirborneBody,open:boolean):void;
+  /** Retained equipment can resume at a legal landing without replaying a pickup or boost. */
+  resumeAt?(body:AirborneBody):boolean;
+  landingMotion?():AirborneBody|null;
 }
 
-export const MODE_IDS:readonly ModeId[] = ['feet','board','bicycle','gondola','cart','zip','glider','parachute','plane','balloon','row','canoe','dinghy','ferry'];
+export const MODE_IDS:readonly ModeId[] = ['feet','cruiser','kayak','motorboat','yacht','board','bicycle','gondola','cart','zip','glider','parachute','plane','balloon','row','canoe','dinghy','ferry'];
 export const isModeId = (value:string):value is ModeId => (MODE_IDS as readonly string[]).includes(value);
 
 /** The original flight-controller seam remains available to the glider's pure hook tests. */
@@ -61,7 +69,7 @@ export interface ModeExit {at:Vec3;yaw:number;cut?:boolean;label?:string}
 export interface ReducedMotionLanding {id:string;label:string;xy:readonly [number,number];height?:number}
 export interface ReducedMotionCut {landings:ReducedMotionLanding[]}
 export interface ModeHud {height?:number;lift?:number;place?:{label:string;distance:number;action:'fold'|'pull'|'gate'}}
-export interface ModeInput {forward:number;strafe:number;run:boolean;bar:number;bank:number;pull:boolean;look:readonly [number,number];fold?:boolean}
+export interface ModeInput {forward:number;strafe:number;run:boolean;bar:number;bank:number;pull:boolean;pullEdge?:boolean;look:readonly [number,number];fold?:boolean}
 export const IDLE_INPUT:ModeInput=Object.freeze({forward:0,strafe:0,run:false,bar:0,bank:0,pull:false,look:[0,0] as const});
 export interface FlightModeController {
   readonly id:ModeId;
@@ -74,5 +82,8 @@ export interface FlightModeController {
   reducedMotionCut():ReducedMotionCut;
   hud():ModeHud;
   finished?():boolean;
+  airborne?():AirborneBody|null;
+  enterAirborne?(body:AirborneBody,open:boolean):void;
+  landingMotion?():AirborneBody|null;
 }
 export const MOVER_SOUNDS={snap:'snap',splashEcho:'splashEcho',bell:'bell'} as const;

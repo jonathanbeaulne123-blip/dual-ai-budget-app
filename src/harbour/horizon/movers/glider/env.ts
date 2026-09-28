@@ -26,7 +26,8 @@ import type {ChuteEnv} from './chute.ts';
 /** The slice of `runtime/geography.ts` the movers read. */
 export interface GliderGeography{
   ground(x:number,z:number):number;
-  surface(x:number,z:number,y?:number,step?:number):{y:number;slope:number;material:string}|null;
+  surface(x:number,z:number,y?:number,step?:number):{y:number;slope:number;material:string;nx?:number;ny?:number;nz?:number}|null;
+  ceiling?(x:number,z:number,y:number):number;
   blocked?(x:number,z:number,y:number,radius?:number):boolean;
 }
 export interface GliderWorldSource{
@@ -40,6 +41,7 @@ export interface GliderEnvOptions{
   wind?:WindSource;
   /** Seconds, for the wind source. */
   clock?:()=>number;
+  ready?:(x:number,z:number)=>boolean;
 }
 export interface GliderEnv{
   envelope:FlightEnvelope;
@@ -202,6 +204,13 @@ export function createGliderEnv(source:GliderWorldSource,options:GliderEnvOption
       const dz=envelope.dropZone;
       return{
         get wind(){return wind(0,y?.()??0,0);},
+        windAt:wind,
+        ready:options.ready,
+        ceiling:geography.ceiling,
+        blocked:(x,yy,z)=>geography.blocked?.(x,z,yy,.25)??false,
+        normal(x,z,yy){const s=geography.surface(x,z,yy+.05),w=water(x,z,yy+.05);
+          if(w&&Math.abs(w.y-yy)<.05&&w.y>(s?.y??-Infinity)+.01)return[0,1,0];
+          return s&&s.nx!==undefined&&s.ny!==undefined&&s.nz!==undefined?[s.nx,s.ny,s.nz]:[0,1,0];},
         ground:(x,z,at)=>groundAt(x,z,at??y?.()??Infinity),
         // Sink fields only (the Bight, the Notch): no thermal or ridge lift for the canopy.
         sink:(x,yy,z)=>Math.min(0,liftAt(sinks,wind(x,yy,z),{x,y:yy,z},0,hour()).lift),

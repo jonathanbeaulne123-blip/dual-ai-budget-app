@@ -198,7 +198,7 @@
    picking is done with a thumb or with `E`. It sits above the stick's ring
    and never over the stage's own controls. */
 .harbour-moves { position: absolute; right: 16px; bottom: 20px; z-index: 4; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-.harbour-moves__row { display: flex; gap: 8px; }
+.harbour-moves__row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 32px); }
 .harbour-moves__key { min-width: 62px; min-height: 44px; padding: 0 12px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .5); background: rgba(20, 18, 16, .42); color: #fff; font: inherit; font-size: .82rem; letter-spacing: .01em; backdrop-filter: blur(3px); }
 .harbour-moves__key[aria-pressed="true"] { background: rgba(255, 255, 255, .82); color: #1b1917; }
 .harbour-moves__emotes { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: min(320px, 78vw); }

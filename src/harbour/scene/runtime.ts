@@ -198,6 +198,8 @@ export type BodyControls = {
    */
   /** Jump; in the air, the second jump. */
   jump: () => void;
+  /** Retry the outdoor walk through the existing fade back to safe ground. */
+  retry: () => void;
   /** Drop into a slide. Only from a run, and only on the ground. */
   slide: () => void;
   /** Play an emote, or stop the one playing. Asking for the one playing stops it. */
@@ -1818,6 +1820,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         // body takes it on the next frame, exactly once, and the frame is
         // asked for here because a key press is not otherwise a reason to paint.
         jump() { one.jump(); setFollowing(true); dirty = true; schedule(); },
+        retry() { one.retry(); setFollowing(true); previousDoorPoint=null; dirty = true; schedule(); },
         slide() { one.slideNow(); setFollowing(true); dirty = true; schedule(); },
         emote(id) { one.emote(id); dirty = true; schedule(); },
       };

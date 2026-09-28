@@ -1,3 +1,37 @@
+## 2026-09-27 — Fleet review preserves occupied water, hulls and live appearance
+
+The fleet correction keeps separate water contracts: hulls query the highest exposed surface, while people query the nearest valid water volume at their feet, including the underground Deep and overlapping water depths. Small-craft contact includes both oriented hull dimensions and the proposed heading. Speed text updates while attached; unchanged or hidden fleet controls do not drive repeated React commits. Live appearance changes replace and dispose only the fleet art, preserving the boat model, body, doors and movement owner. These repairs preserve the physically reached yacht behavior accepted for the fleet.
+
+Risk High; Budget (5): +0; Engagement (3): corrected water/contact and live controls. No financial, identity, schema or deployment-policy change. The [worksession](worksessions/2026-09-27-offshore-fleet.md) and correction PR #558 retain verification and device/timing limits.
+
+## 2026-09-27 — The offshore fleet shares movement and one physical yacht
+
+Jonathan authorized four distinct watercraft and a walkable offshore yacht. One fixed-step fleet model has separate kayak, dinghy, motorboat and yacht handling. A 44 m by 14 m yacht supplies shared rendered and collision geometry, rotating deck support, connected rooms, doors, stairs, seats and stable galley station hooks. Close-range boarding, secured tenders, swimming and ladder recovery make it a physically reached destination. Its current location is reused by Island view; it has no remote land boarding flow.
+
+The existing mover registry owns each activity. Main's integrated parachute and C-perspective update is preserved; leaving a moving deck transfers velocity once into shared airborne physics. Valid deck touchdown returns walking immediately while art stows with the live figure. Near-fleet water impacts preserve the impact location for swimming. Local persistence is scoped by the app identity and atomically validated; no fleet cloud writer or multiplayer authority is invented. Existing shared wind and comfort settings remain authoritative. Functional fittings and environmental detail are listed in the [fleet guide](briefs/OFFSHORE_FLEET_GUIDE.md).
+
+Risk High; Budget (5): +0; Engagement (3): four water journeys and one connected destination. Local verification and remaining device/release gates are in the [worksession](worksessions/2026-09-27-offshore-fleet.md). No deployment, schema or financial changes.
+
+## 2026-09-27 — Fall rescue is an explicit Retry
+
+Jonathan reported the character fading out and respawning after jumping from the mountain or high platforms, then directed: keep fall rescue, but move it to Retry. Little Harbour no longer triggers rescue from a fall-height threshold. Its existing fade out, return near safe ground and fade in remain available through the outdoor Retry button on desktop and touch. Repeated clicks do not restart the return. Boarding or restoring a skateboard clears an interrupted fade so the rider stays visible. Existing board Retry, transport controls and Horizon parachute mechanics remain intact.
+
+Risk Medium-High; Budget (5): +0; Engagement (3): +1. This is a movement repair with no financial writer or scope change. Verification and release state are recorded in [the worksession](worksessions/2026-09-27-manual-fall-retry.md).
+
+## 2026-09-27 — One easy Horizon cruiser, two cosmetic identities
+
+Jonathan requested effortless island travel with Vespa-style and Harley-Davidson-style appearances. Both use one `cruiser` mover and a single tuning object; skin selection only replaces art. The registered controller owns position, gravity and camera on riding frames, with dry off-road access, fixed-step grip/steering, small-step ground support, wall slides, checked nearby dismount and recovery. Ride/Get off is available beside the existing Horizon controls, with per-environment/household/member device-local skin persistence. Classic, Taylor and Newfoundland receive distinct materials and control treatments.
+
+W/up accelerates; S/down stops without engaging reverse until released and pressed again at rest. A/D steer independently of the camera; Space hops, V changes between feet and cruiser, R recovers. The current Look/Island pause and Walk resume contract is retained. Integration with #554 uses the shared C cycle for activity, first-person and floating views. During airtime, V hands exact position and velocity to freefall; a fresh Space opens the parachute. Space from an airborne cruiser opens it directly. The cruiser is put away on either airborne handoff, and landing returns on foot with Ride available again. Selecting Ride replaces any previously carried board; it cannot reappear on the subsequent landing. Grounded dismounts validate space beside the vehicle before releasing movement ownership.
+
+Risk Medium-High; Budget (5) +0, Engagement (3) +2 intended. This remains on Horizon's existing Development entry. No financial writer, hosted persistence, schema or Production change. Jonathan subsequently authorized PR #555 merge; no separate deployment command is authorized. Measured evidence and limitations: [worksession](worksessions/2026-09-27-island-cruiser.md).
+
+## 2026-09-27 — A parachute is available during ordinary airborne movement
+
+Jonathan authorized implementation of unrestricted deployment. Walking jumps and cliff falls, board/bicycle airtime, glider flight and the existing plane exit seam hand position and full velocity to one airborne controller. Space opens or retracts; gradual inflation and drag preserve momentum and repeated toggles cannot create upward lift. The board stays retained under one movement owner and resumes on legal dry support; otherwise it stays carried for explicit recovery. Stable support stows the canopy, and held input cannot redeploy after landing. Shared wind remains the existing source. C cycles activity, first-person and floating views independently of movement, with local art hidden in first person. Ordinary falls remain controllable with a stable comfort camera.
+
+Risk High; Budget (5): +0; Engagement (3): +2 intended. Local evidence and remaining device acceptance are recorded in [the worksession](worksessions/2026-09-27-integrated-parachute.md). The existing Movers plan is unchanged. No merge or deployment is authorized by this implementation request.
+
 ## 2026-09-26 — Funicular and gondola controls live in the 3D world
 
 The funicular and gondola use raised physical arrows at each station for boarding in either available direction. Their carriages carry the player while allowing bounded walking on the floor; the gondola seat is optional. A raised carriage arrow finishes the trip. The former text boarding form, ride offer pill and text skip control are removed. Keyboard equivalents and screen reader announcements remain for access. The controls use distinct materials in Classic Hearth, Taylor's Scrapbook and Newfoundland. This is recreational movement only: no ledger, cloud, Final Confirm or financial route changes. Risk Medium-High for shared pointer, movement and camera paths. Budget (5): +0. Engagement (3): +2 intended. See [the worksession](worksessions/2026-09-26-physical-funicular-gondola.md) for measured local verification and open device acceptance.

@@ -8,7 +8,7 @@ import {describe,expect,it} from 'vitest';
 import * as THREE from 'three';
 import {createWalker} from '../src/harbour/body/walker.ts';
 import {courtObstacles} from '../src/harbour/body/obstacles.ts';
-import {createBodyState,requestJump,stepBody,BODY_HEIGHT,KERB_PRESS,RETURN_FADE,SAFE_FALL,type BodyState,type BodyWorld,type Support} from '../src/harbour/body/bodyModel.ts';
+import {createBodyState,requestJump,requestRetry,stepBody,BODY_HEIGHT,KERB_PRESS,RETURN_FADE,type BodyState,type BodyWorld,type Support} from '../src/harbour/body/bodyModel.ts';
 import {districtArrival,raceCorridorAt,transportCurve} from '../src/harbour/body/geography.ts';
 import {createRide,farOffer,nearestStation,platformOffer} from '../src/harbour/body/ride.ts';
 import {buildRideButtons,type RideButtonAction} from '../src/harbour/mountain/rideButtons.ts';
@@ -123,15 +123,29 @@ describe('edges',()=>{
     s=requestJump(s);s=walkFor(s,open,2.5,60).state;
     expect(s.x).toBeGreaterThan(5);expect(s.y).toBeCloseTo(0,4);expect(s.returning??null).toBeNull();
   });
-  it('a fall of more than four units fades out, returns to the path and fades back — never a one-frame pop',()=>{
+  it('a high jump stays visible through the fall and landing until Retry is requested',()=>{
     const cliff=worldOf(ledge(12));
     let s=walkFor(createBodyState(3.5,0,Math.PI/2,cliff),cliff,1,60).state;
     s=requestJump(s);
+    for(let i=0;i<60*6;i++){
+      const f=stepBody(s,{forward:1,strafe:0},PLUS_X,1/60,cliff);s=f.state;
+      expect(f.fade).toBe(1);expect(f.returned).toBeNull();expect(s.returning).toBeNull();
+    }
+    expect(s.x).toBeGreaterThan(5);expect(s.y).toBeCloseTo(0,5);
+  });
+  it('Retry during a fall fades out, returns to the path and fades back — never a one-frame pop',()=>{
+    const cliff=worldOf(ledge(12));
+    let s=walkFor(createBodyState(3.5,0,Math.PI/2,cliff),cliff,1,60).state;
+    s=requestJump(s);
+    for(let i=0;i<300&&!(s.x>5&&s.vy<0);i++)s=stepBody(s,{forward:1,strafe:0},PLUS_X,1/60,cliff).state;
+    expect(s.x).toBeGreaterThan(5);expect(s.vy).toBeLessThan(0);expect(s.returning).toBeNull();
+    const requested=requestRetry(s,cliff);
+    expect(requested.returning).toBeTruthy();expect(requestRetry(requested,cliff)).toBe(requested);
+    s=requested;
     const frames:{s:BodyState;fade:number;moved:boolean}[]=[];
     // Holding forward over the edge; once it is back on its feet the keys are let go.
     for(let i=0;i<60*6;i++){const back=frames.some(f=>f.moved)&&!s.returning;const f=stepBody(s,back?{forward:0,strafe:0}:{forward:1,strafe:0},PLUS_X,1/60,cliff);frames.push({s:f.state,fade:f.fade,moved:Boolean(f.returned)});s=f.state;}
-    const started=frames.findIndex(f=>f.s.returning);expect(started).toBeGreaterThan(0);
-    expect(frames[started-1]!.s.y-12).toBeGreaterThan(-SAFE_FALL-1);
+    const started=frames.findIndex(f=>f.s.returning);expect(started).toBe(0);
     const move=frames.findIndex(f=>f.moved);expect(move).toBeGreaterThan(started);
     expect(frames[move]!.fade).toBe(0);
     // Every visible frame is continuous with the one before it.
