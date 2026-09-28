@@ -11,7 +11,9 @@ export function createFramePacer() {
       if (!next || intervalMs !== previousInterval || now - next > intervalMs * 4) {
         next = now + intervalMs; previousInterval = intervalMs; return true;
       }
-      if (now + 0.75 < next) return false;
+      // Real rAF timestamps vary by over 1 ms on the measured 60 Hz Metal
+      // browser. A 2 ms lead keeps those refreshes without accumulating drift.
+      if (now + 2 < next) return false;
       next += Math.max(1, Math.floor((now - next) / intervalMs) + 1) * intervalMs;
       return true;
     },

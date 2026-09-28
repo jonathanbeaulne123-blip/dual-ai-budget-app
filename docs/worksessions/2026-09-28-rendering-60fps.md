@@ -1,6 +1,6 @@
 # Hearth worksession — Rendering toward steady 60 fps
 
-- Status: OPEN
+- Status: COMPLETE — local implementation and measured scoped validation; physical-device acceptance open
 - Opened: 2026-09-28 (America/Toronto)
 - Owner / decision owner: Jonathan
 - Assignee: Codex; bounded read-only rendering audit
@@ -25,7 +25,7 @@ Frame pacing, repeated spatial/visual work and focused measurement. No deploymen
 ## Acceptance evidence
 - [x] Regression tests for frame pacing, lifecycle and streaming behavior.
 - [x] Current-change Medium quick gate: passed, time-budget-breached (405.988 s).
-- [ ] Before/after local browser measurement, renderer identified.
+- [x] Before/after local browser measurement, renderer identified.
 - [x] Explicit separation from physical phone / complete-scene acceptance.
 
 ## Verified baseline
@@ -38,7 +38,7 @@ Fresh isolated clone avoids modifying older shared checkouts. Local dependencies
 Physical Mac/iPhone sustained traversal, thermal throttling, all authored scenes and GPU capacity. Browser timings alone cannot certify 60 fps at all times.
 
 ## Handoff
-Implementation in progress; no push, merge or deployment.
+Local branch `codex/rendering-60fps` is implemented and validated. No push, PR, merge or deployment. Next owner: Jonathan for release direction and physical-device acceptance; a release review must use current main and this evidence boundary.
 
 ## Preliminary measurements
 
@@ -50,7 +50,7 @@ Implementation in progress; no push, merge or deployment.
 
 ## Verification result
 
-Serial Medium quick gate: **765/765 tests across 47 files pass** (598 fast + 167 serial); TypeScript and AI-surface verification pass. Total 405.988 s; the five-minute budget was exceeded during serial tests. Classification: `quick-gate-passed; time-budget-breached`, not exhaustive/release verification. Source and tests have not changed after this run; subsequent edits only complete the evidence document.
+Serial Medium quick gate: **765/765 tests across 47 files pass** (598 fast + 167 serial); TypeScript and AI-surface verification pass. Total 405.988 s; the five-minute budget was exceeded during serial tests. Classification: `quick-gate-passed; time-budget-breached`, not exhaustive/release verification. This verifies commit `60708b2`. The only subsequent code change widens frame timestamp tolerance from 0.75 to 2 ms, with one added jitter regression; that incremental change receives its own gate below.
 
 Command (with the bundled Node/pnpm paths on PATH and the session-only dependency-check setting described above):
 
@@ -59,3 +59,24 @@ pnpm test -- --risk=medium --focus=test/world-frame-pacer.test.ts --focus=test/h
 ```
 
 Regression coverage includes 60 Hz timestamp rounding, 90/120/144 Hz pacing, suspension/resume, both Harbour tiers, reduced motion, renderer ownership, streaming ready/grace/underground/relocation behavior, all three Journey themes, unchanged aim uploads and changed bounds, hidden kitchen camera cleanup/re-entry, and existing actual-App synthetic authority tests. No real household or hosted service was changed. A read-only reviewer found no blocking code regressions.
+
+## Final camera measurements
+
+The uncontended probe bundles the real Harbour/Mountain Court and renderer (no household), warms for 12 seconds, then warms an oscillating camera for 5 seconds, and captures 8 seconds. Chromium headless uses ANGLE Metal / Apple M2 on this 8 GB Mac; device scale is 2, capped by the existing renderer at 1 for Lite and 1.5 for Full. The baseline bundle substitutes the unmodified `b1a1454` runtime and frame policy. No geometry or visual quality is reduced.
+
+| View | Baseline painted FPS | Final painted FPS | Final p95 interval | Final CPU p95 | Final samples |
+|---|---:|---:|---:|---:|---:|
+| Lite, 390×844 | 17.875 | 60.006 | 18.2 ms | 4.6 ms | 479 |
+| Full, 1440×900 | 17.324 | 59.996 | 18.3 ms | 4.6 ms | 480 |
+
+Both final captures have zero page errors, zero interruptions, no sample-cap truncation, and zero intervals above the existing 33.8 ms long-frame threshold. These are measured short camera scenarios, not a claim that every frame on every device meets 16.67 ms. Cold starts, changing scenes, long traversal, thermal conditions, physical iPhone and GPU saturation remain outside this acceptance.
+
+Why the last pacing refinement mattered: a separate real rAF sequence supplied 481 refresh timestamps; the original 0.75 ms tolerance accepted only 440 in replay. Tolerances of 1.5 and 2 ms accepted all 481. The final 2 ms allowance retains the deadline-based 60 Hz budget and is regression-tested alongside 90/120/144 Hz scheduling. The interim 54–55 fps results were superseded by the final captures above.
+
+Local raw evidence is under workspace `artifacts/rendering-60fps-2026-09-28/`: baseline/final camera JSON, Horizon before/after JSON, district benchmark, recorded rAF probe, final screenshots and gate logs. Temporary harness scripts remain in `/tmp/hearth-rendering-evidence/`; they contain no credentials or household data.
+
+## Final incremental gate and handoff
+
+`pnpm test -- --base=60708b2 --risk=medium --focus=test/world-frame-pacer.test.ts --focus=test/harbour-world-frame.test.ts --focus-reason="Final timing-only refinement over the already validated rendering commit; tests real 60 Hz timestamp jitter, high-refresh cadence and mounted Full/Lite rendering"` passes in **65.370 s**: TypeScript, AI-surface/diff checks, and **32/32 tests**. This verifies only the timestamp-tolerance refinement over the already tested `60708b2`; it does not replace or relabel the earlier 765-test gate's budget overrun. Only this evidence document changed after that final gate.
+
+Changed source: shared frame pacer, Harbour policy/runtime, Horizon district selection, kitchen art/activity, Journey label layout. Tests cover each changed mechanism. All three themes retain their authored materials and UI, with theme-specific Journey assertions passing. Budget and financial state are unchanged. Browser harness and this task's preview server were stopped after capture. Remaining limits are explicit above; no universal 60 fps certification, exhaustive release gate, physical-phone acceptance, hosted deployment or real-ledger test is claimed.

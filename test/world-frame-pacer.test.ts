@@ -25,3 +25,9 @@ describe('world refresh pacing',()=>{
     expect(pacer.due(20,0)).toBe(true);
   });
 });
+
+it('keeps every refresh when 60 Hz timestamps wobble by a millisecond',()=>{
+  const pacer=createFramePacer();
+  const timestamps=[0,17.1,32.3,50.4,67.1,82.5,100.3,116.1,133.9,149.0];
+  expect(timestamps.filter(now=>pacer.due(now,1000/60))).toEqual(timestamps);
+});
