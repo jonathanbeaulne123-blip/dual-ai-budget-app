@@ -18,7 +18,7 @@ const world={
 };
 const register=vi.fn(()=>()=>{});
 vi.mock('../src/harbour/scene/worldMount.ts',()=>({mountHorizonWorld:async()=>({
-  mode:()=>world.mode,shotId:()=>'A',offers:()=>world.offers,moverState:()=>world.moverState,moverAction:world.moverAction,accept:world.accept,
+  setHome:vi.fn(),visitHome:vi.fn(()=>true),homeActions:()=>[],mode:()=>world.mode,shotId:()=>'A',offers:()=>world.offers,moverState:()=>world.moverState,moverAction:world.moverAction,accept:world.accept,
   fleetActions:()=>world.fleetActions,fleetState:()=>({vessels:[],swimming:false,perspective:'activity',sitting:null,saveFailed:false}),fleetAction:world.fleetAction,cycleCamera:world.cycleCamera,jumpHold:world.jumpHold,
   setTheme:world.setTheme,setCruiserTheme:world.setCruiserTheme,setCruiserSkin:world.setCruiserSkin,toggleCruiser:world.toggleCruiser,recoverCruiser:world.recoverCruiser,cyclePerspective(){},resumeEquipment(){},pause(){},setComfort(){},setReducedMotion(){},setCalm(){},setMode(){},dispose(){},input:world.input,look(){},jump:world.jump,enterDoor(){},cutTo(){},world:{views:[]},
 })}));

@@ -1,3 +1,5 @@
+import {buildHomeArt} from '../../home/geometry.ts';
+import type {HomeLayout} from '../../home/model.ts';
 import * as THREE from "three";
 import type { PathEraHome, PathEraPlanKind } from "../../core/pathWorld.ts";
 import type { ThemeId } from "../../theme/scenes.ts";
@@ -40,6 +42,7 @@ export type MiniSceneEra = {
   laps: number;
 };
 export type MiniSceneInput = {
+  customHome?: HomeLayout;
   theme: ThemeId;
   monthKey: string;
   days: MiniSceneDay[];
@@ -58,6 +61,13 @@ export type MiniSceneInput = {
   /** The era we are in (index into `eras`), or -1. */
   currentEra: number;
 };
+export function miniSceneKeys(next: MiniSceneInput) {
+  const pk = `${next.monthKey}|${next.anchorDay}|${next.gate}|${JSON.stringify(next.days)}`;
+  const homeKey = `${next.monthKey}|${JSON.stringify(next.customHome ?? null)}`;
+  const ik = `${next.eraIndex}|${next.lap}|${JSON.stringify(next.laps)}|${JSON.stringify(next.banks)}|${next.anchorDay}|${next.days.length}|${next.eras[next.eraIndex]?.id ?? ""}|${homeKey}`;
+  const jk = `${next.eraIndex}|${next.currentEra}|${JSON.stringify(next.eras)}|${homeKey}`;
+  return {pk,ik,jk};
+}
 export type MiniAnchor = { id: string; x: number; y: number; visible: boolean };
 export type MiniFrame = { anchors: MiniAnchor[]; z: number; day: number; width: number; height: number };
 export type MiniQuality = "full" | "low";
@@ -678,6 +688,7 @@ export function createMiniWorld(host: HTMLElement, options: {
     under.rotation.x = Math.PI;
     for (let i = 0; i < 9; i++) { const a = i * 0.7; mesh(shared.dodeca, mat("stoneEdge"), island, Math.cos(a) * ISLAND_R * 0.55, -3 - i * 0.5, Math.sin(a) * ISLAND_R * 0.4, 1.1 + (i % 3) * 0.3); }
     if (era) { island.userData.pickId = `era:${era.id}`; pickables.push(island); }
+    if(inp.customHome&&era?.state==='current'){const art=buildHomeArt(inp.customHome,{detail:'map',season:(Number(inp.monthKey.slice(5,7))<=2||Number(inp.monthKey.slice(5,7))===12)?'winter':Number(inp.monthKey.slice(5,7))<=5?'spring':Number(inp.monthKey.slice(5,7))<=8?'summer':'autumn'});art.group.scale.setScalar(.14);art.group.position.set(-3,0,-4);island.add(art.group);islandDisposables.push(art.dispose);}
     // Laps: every other Chapter of this era as a ring of stones, joined by gates on one spoke.
     const laps = inp.laps.length || 1;
     lapR = miniLapRadius(inp.lap, laps);
@@ -804,7 +815,7 @@ export function createMiniWorld(host: HTMLElement, options: {
           const a = rnd() * Math.PI * 2, rr = r * (0.55 + rnd() * 0.38);
           tree(g, (["tree1", "tree2", "tree3"] as const)[t % 3]!, Math.cos(a) * rr, Math.sin(a) * rr, 1 + rnd() * 0.8, undefined, mute);
         }
-        home(g, era.home, 2, mute).position.set(-1.5, 0, -1.2);
+        if(inp.customHome&&era.state==='current'){const art=buildHomeArt(inp.customHome,{detail:'map',season:(Number(inp.monthKey.slice(5,7))<=2||Number(inp.monthKey.slice(5,7))===12)?'winter':Number(inp.monthKey.slice(5,7))<=5?'spring':Number(inp.monthKey.slice(5,7))<=8?'summer':'autumn'});art.group.scale.setScalar(.2);art.group.position.set(-1.5,0,-1.2);g.add(art.group);journeyDisposables.push(art.dispose);}else home(g, era.home, 2, mute).position.set(-1.5, 0, -1.2);
         // Faint laps, as the era island will hold them.
         const laps = Math.min(12, Math.max(3, era.laps / 3));
         for (let j = 0; j < laps; j++) {
@@ -1087,9 +1098,7 @@ export function createMiniWorld(host: HTMLElement, options: {
     setScene(next: MiniSceneInput) {
       const themeChanged = !input || input.theme !== next.theme;
       palette = MINI_PALETTES[next.theme] ?? MINI_PALETTES.classic;
-      const pk = `${next.monthKey}|${next.anchorDay}|${next.gate}|${JSON.stringify(next.days)}`;
-      const ik = `${next.eraIndex}|${next.lap}|${JSON.stringify(next.laps)}|${JSON.stringify(next.banks)}|${next.anchorDay}|${next.days.length}|${next.eras[next.eraIndex]?.id ?? ""}`;
-      const jk = `${next.eraIndex}|${next.currentEra}|${JSON.stringify(next.eras)}`;
+      const {pk,ik,jk} = miniSceneKeys(next);
       input = next;
       if (pk !== pathKey) { buildPath(next); pathKey = pk; }
       if (ik !== islandKey) { buildIsland(next); islandKey = ik; }

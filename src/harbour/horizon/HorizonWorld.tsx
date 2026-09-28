@@ -1,3 +1,6 @@
+import {livingEvidence} from '../../house/interpretation.ts';
+import {DEFAULT_QUEEN_STYLE} from '../../house/queenStyle.ts';
+import {useHomeBook} from '../../home/HomeBookContext.tsx';
 import {cruiserPreferenceKey} from './movers/cruiser/tuning.ts';
 import {useEffect,useRef,useMemo,useState} from 'react';
 import type {HarbourWorldProps} from '../HarbourWorld.tsx';
@@ -15,8 +18,11 @@ import {createWorldAmbience,type WorldAmbience} from '../mountain/audio.ts';
 import {useAppearance} from '../../theme/ThemeProvider.tsx';
 export const HORIZON_HOST_TOOLS:Readonly<Record<string,string>>={home:'conversation',bank:'loft-banks',library:'books',glasshouse:'planner',studio:'pottery',cottage:'wardrobe',boathouse:'wishes'};
 export default function HorizonWorld(props:HarbourWorldProps){
+  const homeBook=useHomeBook();
   const {household,memberId,scope,route}=props,runtime=useRef<HorizonRuntime|null>(null),identity={environment:household.environment,householdId:household.householdId,memberId,scope},identityRef=useRef(identity);identityRef.current=identity;
   const appearance=useAppearance(),theme=appearance.preview??appearance.saved.theme;
+  const botanical=useMemo(()=>livingEvidence(household,memberId,'personal'),[household.personalLife,household.hearthside,memberId]);
+  useEffect(()=>{runtime.current?.setHomeBotanical?.(appearance.saved.queen??DEFAULT_QUEEN_STYLE,botanical);},[appearance.saved.queen,botanical]);
   const identityKey=houseIdentity(identity);
   const initialBody=useMemo(()=>readHouseReturnOnDevice(identity,'horizon')?.body,[identityKey]);
   const share=readWorldPresenceShare(household.environment);
@@ -38,5 +44,5 @@ export default function HorizonWorld(props:HarbourWorldProps){
     const target=HORIZON_HOST_TOOLS[host.id],place=(host.toolPlaceId??host.placeIds[0]) as HarbourPlaceId,address=VILLAGE_ADDRESS[place];
     if(props.onNavigateLocation&&address)props.onNavigateLocation({...route,...address,surface:target,object:undefined});else if(target)props.onOpen(target);
   }
-  return <HorizonStage key={identityKey} fleetStorageKey={`hearth:horizon-fleet:v1:${identityKey}`} kitchenStorageKey={`hearth:yacht-kitchen:v1:${identityKey}`} cruiserPreference={cruiserPreferenceKey(household.environment,household.householdId,memberId)} theme={theme} onDoor={onDoor} initialBody={initialBody} onReady={props.onWorldReady} onRuntime={value=>{if(!value&&runtime.current)saveHouseReturnOnDevice(identity,route,runtime.current.savedBody(),'horizon');runtime.current=value;value?.setAmbience?.(audio.current);}} sound={{on:soundOn,toggle:toggleSound}} partner={peer.walk} calm={comfort.quiet} reducedMotion={comfort.motion==='reduced'} paused={Boolean(route.surface&&route.surface!=='queen')} onQuickSheet={props.onQuickSheet} onJourney={props.onJourney}>{props.children}</HorizonStage>;
+  return <HorizonStage homePlotId={homeBook?.plotId} homeLayout={homeBook?.layout??undefined} homeDisplays={homeBook?.displays} visitHome={homeBook?.pendingVisit} onHomeVisited={homeBook?.acknowledgeVisit} onHomeBook={homeBook?.open} onHomeWorkspace={target=>{const body=runtime.current?.savedBody();if(body){saveHouseReturnOnDevice(identity,route,body,'horizon');saveHouseReturnOnDevice(identity,route,body);}props.onOpen(target);}} key={identityKey} fleetStorageKey={`hearth:horizon-fleet:v1:${identityKey}`} kitchenStorageKey={`hearth:yacht-kitchen:v1:${identityKey}`} cruiserPreference={cruiserPreferenceKey(household.environment,household.householdId,memberId)} theme={theme} onDoor={onDoor} initialBody={initialBody} onReady={props.onWorldReady} onRuntime={value=>{if(!value&&runtime.current)saveHouseReturnOnDevice(identity,route,runtime.current.savedBody(),'horizon');runtime.current=value;value?.setAmbience?.(audio.current);value?.setHomeBotanical?.(appearance.saved.queen??DEFAULT_QUEEN_STYLE,botanical);}} sound={{on:soundOn,toggle:toggleSound}} partner={peer.walk} calm={comfort.quiet} reducedMotion={comfort.motion==='reduced'} paused={homeBook?.editing===true||Boolean(route.surface&&route.surface!=='queen')} onQuickSheet={props.onQuickSheet} onJourney={props.onJourney}>{props.children}</HorizonStage>;
 }

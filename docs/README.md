@@ -1,3 +1,5 @@
+Personal modular homes — local implementation (September 28): [controls, catalogue, milestones and limitations](MODULAR_HOME.md) · [verification and release boundaries](worksessions/2026-09-27-modular-home.md). Each member has a private home and a distinct residential reserve plot; deployment and device acceptance remain open.
+
 Current Hearthside web integration: [project-lead handoff and P0–P15 remaining acceptance](briefs/HEARTHSIDE_WEB_HANDOFF_2026-09-19.md) · [candidate and measured verification](worksessions/2026-09-19-hearthside-web-integration.md). Native delivery is deferred; prior resume evidence is historical.
 
 ## Current Hearthside resume (September 19)
