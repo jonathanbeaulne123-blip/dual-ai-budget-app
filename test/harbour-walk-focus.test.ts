@@ -32,7 +32,7 @@ let travelTrips:{kind:string;from:number;to:number}[]=[];
 let monorailBoarded:{station:number;companion:boolean;blocked:boolean}|null=null;
 let monorailSelected:number[]=[];
 const cancelWalk=vi.fn();
-const jump=vi.fn(),skateKeyDown=vi.fn(),skateKeyUp=vi.fn(),skateReset=vi.fn();
+const jump=vi.fn(),retry=vi.fn(),skateKeyDown=vi.fn(),skateKeyUp=vi.fn(),skateReset=vi.fn();
 let riding=false;
 let offerCallback:((offer:import("../src/harbour/body/ride.ts").RideOffer|null)=>void)|undefined;
 let runLocked=false;
@@ -42,6 +42,7 @@ const body = {
   cancel: cancelWalk,
   runLock:(on?:boolean)=>on===undefined?runLocked:(runLocked=on),
   jump,
+  retry,
   skate:{active:()=>riding,input:()=>({keyDown:skateKeyDown,keyUp:skateKeyUp,reset:skateReset}),pause:()=>undefined,checkpoint:()=>null,setAudio:()=>undefined,enable:()=>false},
   place: () => undefined,
   input: (next: Input) => { inputs.push(next); },
@@ -160,6 +161,18 @@ afterEach(async () => {
 });
 
 describe("the stage takes the keyboard when the world is ready", () => {
+  for (const touch of [false, true]) it(`Retry asks for rescue and returns focus on ${touch?'touch':'desktop'}`, async () => {
+    coarse=touch;
+    const {stage}=await stand();
+    await press('w');
+    const button=host.querySelector<HTMLButtonElement>('[aria-label="Retry from safe ground"]');
+    expect(button).not.toBeNull();
+    const calls=retry.mock.calls.length;
+    await act(async()=>{button!.focus();button!.click();});
+    expect(retry).toHaveBeenCalledTimes(calls+1);
+    expect(inputs.at(-1)).toMatchObject({forward:0,strafe:0});
+    expect(document.activeElement).toBe(stage);
+  });
   it("holds focus as soon as the place is standing, with no click", async () => {
     const { stage } = await stand();
     expect(document.activeElement).toBe(stage);

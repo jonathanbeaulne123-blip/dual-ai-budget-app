@@ -1,6 +1,6 @@
 ## 2026-09-27 — Offshore fleet and physically walkable yacht
 
-Local implementation is on `codex/offshore-fleet` in `.codex-work/offshore-fleet`, integrated with main `4685a6d` (shared airborne parachute and C-camera update). The [fleet guide](briefs/OFFSHORE_FLEET_GUIDE.md) explains access, controls, usable spaces, galley anchors and limitations; the [worksession](worksessions/2026-09-27-offshore-fleet.md) records exact validation and next-owner gates. This is recreational local state with Budget delta 0. No deployment or hosted activation is implied.
+Local implementation is on `codex/offshore-fleet` in `.codex-work/offshore-fleet`, integrated with main `c82f9d7` (shared airborne parachute, C-camera and explicit fall Retry updates). The [fleet guide](briefs/OFFSHORE_FLEET_GUIDE.md) explains access, controls, usable spaces, galley anchors and limitations; the [worksession](worksessions/2026-09-27-offshore-fleet.md) records exact validation and next-owner gates. This is recreational local state with Budget delta 0. No deployment or hosted activation is implied.
 
 ## 2026-09-24 — Claude Desk integrated with the complete mountain
 

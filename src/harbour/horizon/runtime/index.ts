@@ -212,7 +212,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const gate=chunks?createChunkGate(chunks,(x,z)=>districtAt(x,z)):null;
   const scheduler=chunks?createChunkScheduler({ready:id=>chunks.ready(id),load:id=>chunks.load(id,options.signal),background:nearestFirst,isDisposed:()=>disposed}):null;
   const chunkHolds:{districts:string[];at:XYZ;t:number;resolved?:'sync'|'arrived'}[]=[];let heldNow:string[]=[];
-  function prefetchChunks(){if(!chunks||!scheduler)return;for(const id of nearestFirst())if(!chunks.ready(id))void chunks.fetch(id,options.signal).catch(()=>{});scheduler.startBackground();}
+  function prefetchChunks(){if(!chunks||!scheduler)return;for(const id of nearestFirst())if(!chunks.ready(id))void chunks.prefetch(id,options.signal).catch(()=>{});scheduler.startBackground();}
   function routeAhead(points:readonly XYZ[]){if(gate&&scheduler)scheduler.route(gate.along(points));}
   let resnap=false;
   // Wave 6: cables span by span with their anchors (runtime/cableLayer.ts), rebuilt as chunks land.

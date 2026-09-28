@@ -6,6 +6,12 @@ The existing mover registry owns each activity. Main's integrated parachute and 
 
 Risk High; Budget (5): +0; Engagement (3): four water journeys and one connected destination. Local verification and remaining device/release gates are in the [worksession](worksessions/2026-09-27-offshore-fleet.md). No deployment, schema or financial changes.
 
+## 2026-09-27 — Fall rescue is an explicit Retry
+
+Jonathan reported the character fading out and respawning after jumping from the mountain or high platforms, then directed: keep fall rescue, but move it to Retry. Little Harbour no longer triggers rescue from a fall-height threshold. Its existing fade out, return near safe ground and fade in remain available through the outdoor Retry button on desktop and touch. Repeated clicks do not restart the return. Boarding or restoring a skateboard clears an interrupted fade so the rider stays visible. Existing board Retry, transport controls and Horizon parachute mechanics remain intact.
+
+Risk Medium-High; Budget (5): +0; Engagement (3): +1. This is a movement repair with no financial writer or scope change. Verification and release state are recorded in [the worksession](worksessions/2026-09-27-manual-fall-retry.md).
+
 ## 2026-09-27 — A parachute is available during ordinary airborne movement
 
 Jonathan authorized implementation of unrestricted deployment. Walking jumps and cliff falls, board/bicycle airtime, glider flight and the existing plane exit seam hand position and full velocity to one airborne controller. Space opens or retracts; gradual inflation and drag preserve momentum and repeated toggles cannot create upward lift. The board stays retained under one movement owner and resumes on legal dry support; otherwise it stays carried for explicit recovery. Stable support stows the canopy, and held input cannot redeploy after landing. Shared wind remains the existing source. C cycles activity, first-person and floating views independently of movement, with local art hidden in first person. Ordinary falls remain controllable with a stable comfort camera.
