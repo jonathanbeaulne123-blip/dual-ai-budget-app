@@ -7,12 +7,13 @@ import {stationsFor} from './config.ts';
 import {createKitchenInput,selectKitchenTarget,selectTossTarget,type KitchenTossTarget} from './input.ts';
 import {createKitchenStorage} from './storage.ts';
 import {createKitchenArt} from './art.ts';
+import {kitchenCameraFrame} from './camera.ts';
 import {createKitchenAudio} from './audio.ts';
 import {atKitchenBoard,moveKitchenChef,kitchenWalkable,kitchenSightBlocked} from './geometry.ts';
 import type {ChefId,ChefPose,KitchenChefInput,KitchenCommand,KitchenView} from './types.ts';
 
 export type KitchenActivityOptions={fleet:Fleet;scene:THREE.Scene;storageKey:string;theme:VehicleDressing;
- body:()=>ChefPose;setBody:(body:ChefPose)=>void;canOpen:()=>boolean;canPlay:()=>boolean;
+ viewport:()=>{width:number;height:number};body:()=>ChefPose;setBody:(body:ChefPose)=>void;canOpen:()=>boolean;canPlay:()=>boolean;
  movementYaw?:()=>number;perspective:()=>Perspective;choosePerspective:(value:Perspective)=>void;
  status:(message:string)=>void;clearWorldInput:()=>void;reducedMotion:()=>boolean;
 };
@@ -26,7 +27,7 @@ export function createKitchenActivity(options:KitchenActivityOptions){
  let saved=storage.loadSession(),progress=storage.loadProgress(),targets:Partial<Record<ChefId,KitchenTossTarget>>={};
  // Validate persisted sessions before offering Resume. Restore never starts a timer.
  if(saved!==null){if(!engine.restore(saved)||!engine.state().chefs.every(chef=>kitchenWalkable(fleet,chef.pose,engine.state().service==='sunset',stationsFor(engine.state())))){sessionWarning='The interrupted kitchen could not be restored safely. Start a fresh service; completed results are kept.';saved=null;storage.saveSession(null);}engine.exit();}
- let controls=input.sample(2);
+ let controls=input.sample(2),cameraFit:ReturnType<typeof kitchenCameraFrame>|null=null,cameraKey='',framedCamera:THREE.PerspectiveCamera|null=null;
  const active=()=>engine.state().phase!=='idle';
  const available=()=>!active()&&options.canOpen()&&atKitchenBoard(fleet,options.body());
  const syncBody=()=>{const chef=engine.state().chefs[0];if(chef)options.setBody({...toWorld(fleet.yacht,chef.pose),yaw:chef.pose.yaw+fleet.yacht.yaw});};
@@ -110,16 +111,16 @@ export function createKitchenActivity(options:KitchenActivityOptions){
  function render(camera:THREE.PerspectiveCamera,target:THREE.Vector3,visible:boolean){
   const state=engine.state();art.root.position.set(fleet.yacht.x,fleet.yacht.y,fleet.yacht.z);art.root.rotation.y=fleet.yacht.yaw;
   art.root.visible=visible;art.update(state,stationsFor(state),Object.fromEntries(Object.entries(targets).filter(([,value])=>value).map(([id,value])=>[id,value!.point])),{firstPersonChef:active()&&state.players===1&&options.perspective()==='first-person'?0:undefined,reducedMotion:options.reducedMotion(),unlocks:progress.unlocks});
-  if(!active()||!visible||options.perspective()!=='activity'&&state.players===1)return;
-  const deck=state.service==='sunset'&&!['menu','idle'].includes(state.phase),centerZ=deck?-13.5:-7.5;
-  // Fit the entire usable counter loop (and both chefs) in portrait as well as landscape.
-  const fitDistance=7.25/(Math.tan(24*Math.PI/180)*Math.max(.25,camera.aspect)),height=Math.max(deck?22:17,3.9+Math.sqrt(Math.max(0,fitDistance*fitDistance-81))),eye=toWorld(fleet.yacht,{x:0,y:height,z:centerZ-9}),at=toWorld(fleet.yacht,{x:0,y:3.9,z:centerZ});
-  camera.position.set(eye.x,eye.y,eye.z);target.set(at.x,at.y,at.z);camera.fov=48;camera.updateProjectionMatrix();camera.lookAt(target);
+  if(!active()||!visible||options.perspective()!=='activity'&&state.players===1){framedCamera?.clearViewOffset();framedCamera=null;return;}
+  const deck=state.service==='sunset'&&!['menu','idle'].includes(state.phase),size=options.viewport(),key=`${size.width}:${size.height}:${deck}`;
+  if(!cameraFit||key!==cameraKey){cameraKey=key;cameraFit=kitchenCameraFrame(size.width,size.height,deck);}
+  const fit=cameraFit,eye=toWorld(fleet.yacht,fit.eye),at=toWorld(fleet.yacht,fit.target);
+  camera.position.set(eye.x,eye.y,eye.z);target.set(at.x,at.y,at.z);camera.fov=48;camera.setViewOffset(fit.width,fit.height,0,fit.offsetY,fit.width,fit.height);camera.lookAt(target);framedCamera=camera;
  }
  return{active,available,view,command,update,render,pause,save,exit,
   keyDown:input.keyDown,keyUp:input.keyUp,clear:input.clear,input:(chef:ChefId,value:Partial<KitchenChefInput>)=>input.touch(chef,value),
   setSound(on:boolean,gesture=false){sound=on;if(!on)void audio.enabled(false);else if(gesture)void audio.enabled(true);},
   setTheme(theme:VehicleDressing){art.dispose();options.scene.remove(art.root);art=createKitchenArt(theme);options.scene.add(art.root);},
-  dispose(){pause('The kitchen was closed. Resume at the galley menu board.');save();input.dispose();audio.dispose();options.scene.remove(art.root);art.dispose();},
+  dispose(){framedCamera?.clearViewOffset();pause('The kitchen was closed. Resume at the galley menu board.');save();input.dispose();audio.dispose();options.scene.remove(art.root);art.dispose();},
  };
 }

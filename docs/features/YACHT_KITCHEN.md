@@ -49,7 +49,7 @@ Assists adjust cooking forgiveness, patience, warnings and preparation input. Sc
 
 - `src/harbour/horizon/kitchen/config.ts`: recipes, ingredients, preparation/cook/burn times, service lengths, patience, order limits, thresholds and trolley docks.
 - `model.ts`: deterministic fixed-step rules, capacity-aware orders, scoring, single item ownership and validated session restore.
-- `geometry.ts` and `activity.ts`: actual yacht collision, physical entry, camera/input ownership, moving frame, pause and recovery.
+- `geometry.ts`, `camera.ts` and `activity.ts`: actual yacht collision, physical entry, camera/input ownership, moving frame, pause and recovery.
 - `input.ts`: independent controller assignments, dead zones, stable targets and toss destinations.
 - `storage.ts`: identity-scoped recreational results and once-only cosmetic rules.
 - `KitchenHUD.tsx`, `kitchen.css`, `art.ts`, `audio.ts`: themed presentation, food states, chefs, local attachments and optional sound cues.

@@ -12,7 +12,7 @@ beforeEach(()=>{localStorage.clear();Object.defineProperty(navigator,'getGamepad
 function setup(){
  const fleet=createFleet({water:()=>0,ground:()=>-12,blocked:()=>false,width:2200,depth:1800});
  let body:ChefPose={...toWorld(fleet.yacht,KITCHEN_BOARD),yaw:0},perspective:Perspective='floating',canPlay=true;
- const scene=new THREE.Scene(),status=vi.fn(),a=createKitchenActivity({fleet,scene,storageKey:'test-kitchen',theme:'classic',body:()=>body,setBody:v=>{body=v;},canOpen:()=>canPlay,canPlay:()=>canPlay,perspective:()=>perspective,choosePerspective:v=>{perspective=v;},status,clearWorldInput:vi.fn(),reducedMotion:()=>false});
+ const scene=new THREE.Scene(),status=vi.fn(),a=createKitchenActivity({fleet,scene,storageKey:'test-kitchen',theme:'classic',viewport:()=>({width:1280,height:900}),body:()=>body,setBody:v=>{body=v;},canOpen:()=>canPlay,canPlay:()=>canPlay,perspective:()=>perspective,choosePerspective:v=>{perspective=v;},status,clearWorldInput:vi.fn(),reducedMotion:()=>false});
  return{fleet,a,scene,status,body:()=>body,perspective:()=>perspective,setBody:(v:ChefPose)=>{body=v;},setCanPlay:(v:boolean)=>{canPlay=v;}};
 }
 const sid=(name:string)=>'yacht.galley.'+name;
@@ -36,7 +36,7 @@ describe('physical yacht kitchen activity integration',()=>{
   const vessel={...t.fleet.yacht};a.command({type:'start',service:'practice',players:1,assists:{}});expect(t.fleet.yacht.x).toBe(vessel.x);expect(t.fleet.yacht.z).toBe(vessel.z);expect(t.fleet.yacht.anchor).toBe(true);expect(t.perspective()).toBe('activity');action(a,{type:'ready'});
   const local=a.view().state.chefs[0]!.pose;t.fleet.yacht.x+=7;t.fleet.yacht.z-=4;t.fleet.yacht.yaw=.8;a.update(.05);expect(toLocal(t.fleet.yacht,t.body()).x).toBeCloseTo(local.x);expect(toLocal(t.fleet.yacht,t.body()).z).toBeCloseTo(local.z);
   const camera=new THREE.PerspectiveCamera(),target=new THREE.Vector3();a.render(camera,target,true);expect(t.scene.children[0]!.position.x).toBe(t.fleet.yacht.x);expect(t.scene.children[0]!.rotation.y).toBe(.8);
-  a.command({type:'exit'});expect(a.active()).toBe(false);expect(t.perspective()).toBe('floating');expect(t.fleet.doors.has('galley-aft-door')).toBe(false);a.dispose();expect(t.scene.children).toHaveLength(0);
+  a.command({type:'exit'});a.render(camera,target,true);expect(camera.view?.enabled).toBe(false);expect(a.active()).toBe(false);expect(t.perspective()).toBe('floating');expect(t.fleet.doors.has('galley-aft-door')).toBe(false);a.dispose();expect(t.scene.children).toHaveLength(0);
  });
  it('walks the real counter loop to cook, chop, assemble, deliver and wash the complete First Service',()=>{
   const t=setup(),{a}=t;a.command({type:'open'});a.command({type:'start',service:'first',players:1,assists:{}});action(a,{type:'ready'});
