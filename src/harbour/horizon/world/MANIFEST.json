@@ -6357,20 +6357,20 @@
   {
    "id": "F",
    "target": [
-    1119,
-    731
+    1150,
+    720
    ],
    "fov_deg": 55,
    "radius_eu": 420,
    "label": "Dam crest (Mountain v2)",
    "xy": [
-    1337.86,
-    526.54
+    1332.23,
+    533.27
    ],
    "frames": "from the east end of Mountain v2's glass dam crest: L01 on the crest plaques, Stillwater and the Foot terrace below (the reservoir is behind the camera)",
    "bestHour": "morning",
    "also": "dusk",
-   "target_h": 101.4,
+   "target_h": 100,
    "portrait": {
     "fov_deg": 45,
     "target": [
@@ -6432,7 +6432,7 @@
     "bestHour": "morning",
     "also": "dusk"
    },
-   "eyeH": 143.6,
+   "eyeH": 143.7,
    "ground": {
     "xy": [
      1316,
@@ -6440,7 +6440,20 @@
     ],
     "h": 142
    },
-   "note_v2_6": "D-M10 (re-posed; confirm by eye): L01 is on Mountain v2's dam crest (D-M3); from the crest the Little Harbour lies behind v2's south slopes and the Shoulder remnant, so the page holds L01 with Stillwater below instead of 'the town below'. eyeH: the promenade is v2's deck (the region's), not Horizon ground; ground is the L01 bay (place.L01.deck)"
+   "note_v2_6": "D-M10 (re-posed; confirm by eye): L01 is on Mountain v2's dam crest (D-M3); from the crest the Little Harbour lies behind v2's south slopes and the Shoulder remnant, so the page holds L01 with Stillwater below instead of 'the town below'. eyeH: the promenade is v2's deck (the region's), not Horizon ground; ground is the L01 bay (place.L01.deck)",
+   "v2_6a": {
+    "xy": [
+     1337.86,
+     526.54
+    ],
+    "target": [
+     1119,
+     731
+    ],
+    "eyeH": 143.6,
+    "target_h": 101.4
+   },
+   "note_v2_6b": "integrator: the east-end eye stood inside the abutment (the capture showed paper grain); the eye now stands on promenade[10] at crest + 1.7 looking west-south-west along the crest over L01 to Stillwater and the Foot"
   },
   {
    "id": "G",
