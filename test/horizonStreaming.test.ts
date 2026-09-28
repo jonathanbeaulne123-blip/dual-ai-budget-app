@@ -278,8 +278,54 @@ it('R3-118: a failed chunk is retried with back-off (3 tries), then waits exhaus
   expect(sched.failures()[0]).toMatchObject({ tries: 3, exhausted: true, retryAt: null });
   await advance(60_000); expect(tries).toHaveLength(3);        // exhausted: no busy retry loop; the gate stays held and says so
   expect(sched.queued().route).toEqual(['lakeside']);          // still queued in its place — never dropped (review 3: queued.route [])
-  network = true; sched.route(['lakeside']); await flush();    // a new hold / route is a fresh demand
+  sched.route(['lakeside']); sched.view(['lakeside']); await advance(60_000); expect(tries).toHaveLength(3);   // a repeated identical demand is not a new one (Codex P2)
+  network = true; sched.route(['lakeside'], true); await flush();   // a new walk plan is a fresh demand
   expect(tries).toHaveLength(4); expect(ready.has('lakeside')).toBe(true); expect(sched.failures()).toEqual([]);
+});
+it('Codex P2 (PR #561): a chunk that always 404s is tried 3 times across 600 frames of identical demand, stays "part failed", and a new route re-arms it exactly once', async () => {
+  const { createChunkScheduler, CHUNK_FAILED_STATUS, CHUNK_ARRIVING_STATUS } = await import('../src/harbour/horizon/runtime/chunkGate.ts');
+  let clock = 0; const timers: { at: number; fn: () => void }[] = [], ready = new Set<string>(), fetches: string[] = [];
+  const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); };
+  let broken = '';
+  const sched = createChunkScheduler({ ready: id => ready.has(id), load: async id => { fetches.push(id); if (id === broken) throw new Error('404'); ready.add(id); }, background: () => [], isDisposed: () => false, yield: () => Promise.resolve(), now: () => clock, setTimer: (fn, ms) => timers.push({ at: clock + ms, fn }) });
+  // The district stream as the runtime wires it (runtime/index.ts: request → scheduler.view([id]), every animation frame).
+  const world = { districts: buildDistricts(field, [], []) };
+  const stream = createDistrictStream(world, () => ({ dispose() {} }), 'full', { ready: id => ready.has(id), request: id => { if (!broken) broken = id; sched.view([id]); } });
+  const heldNow = () => [broken];   // the walker held at the broken chunk's boundary (runtime gateOpen)
+  const status = () => (sched.failures().some(f => heldNow().includes(f.id)) ? CHUNK_FAILED_STATUS : CHUNK_ARRIVING_STATUS);   // runtime holdStatus
+  const frames = async (n: number) => {
+    const seen = new Set<string>();
+    for (let i = 0; i < n; i++) {
+      stream.update({ x: 1470, z: 1186, now: clock });                                                        // districts.ts:171 → view([id])
+      sched.route([...heldNow(), ...sched.queued().route]);                                                  // a held ride's poll / the gate hold
+      clock += 16; for (const t of timers.splice(0).filter(t => { if (t.at <= clock) return true; timers.push(t); return false; })) t.fn();
+      await flush(); if (fetches.filter(id => id === broken).length) seen.add(status());
+    }
+    return seen;
+  };
+  const seen = await frames(600);   // 9.6 s of frames: the 1 s and 4 s back-offs both elapse
+  const brokenFetches = () => fetches.filter(id => id === broken).length;
+  expect(broken).not.toBe('');
+  expect(brokenFetches()).toBe(3);                                               // was: one fetch + decompress + parse per frame, forever
+  expect(sched.failures().find(f => f.id === broken)).toMatchObject({ tries: 3, exhausted: true, retryAt: null });
+  expect([...seen]).toEqual([CHUNK_FAILED_STATUS]);                             // "part failed" on every frame once it failed
+  expect(sched.rearms()).toBe(0);
+  sched.route([broken, 'elsewhere'], true);                                      // a new walk plan that crosses it (runtime routeAhead)
+  expect(sched.rearms()).toBe(1);
+  expect([...await frames(600)]).toEqual([CHUNK_FAILED_STATUS]);
+  expect(brokenFetches()).toBe(6); expect(sched.rearms()).toBe(1);               // re-armed exactly once: 3 more tries, then held again
+  // A chunk newly entering the demand (it failed in the background, in neither list) is re-armed once by its first hold;
+  // the same hold again — the walker pushing at that boundary frame after frame — is not a new demand.
+  const bgTimers: { at: number; fn: () => void }[] = [], bgFetches: string[] = [];
+  const bg = createChunkScheduler({ ready: () => false, load: async id => { bgFetches.push(id); throw new Error('404'); }, background: () => ['far'], isDisposed: () => false, yield: () => Promise.resolve(), now: () => clock, setTimer: (fn, ms) => bgTimers.push({ at: clock + ms, fn }) });
+  const bgAdvance = async (ms: number) => { clock += ms; for (const t of bgTimers.splice(0).filter(t => { if (t.at <= clock) return true; bgTimers.push(t); return false; })) t.fn(); await flush(); };
+  bg.startBackground(); await flush(); await bgAdvance(1000); await bgAdvance(4000);
+  expect(bgFetches).toHaveLength(3); expect(bg.failures()[0]).toMatchObject({ id: 'far', exhausted: true });
+  bg.route(['far']); await flush(); expect(bg.rearms()).toBe(1); expect(bgFetches).toHaveLength(4);   // first hold: newly demanded
+  await bgAdvance(1000); await bgAdvance(4000); expect(bgFetches).toHaveLength(6);
+  for (let i = 0; i < 600; i++) { bg.route(['far', ...bg.queued().route]); bg.view(['far']); await bgAdvance(16); }
+  expect(bgFetches).toHaveLength(6); expect(bg.rearms()).toBe(1);
+  bg.retry(['far']); await flush(); expect(bgFetches).toHaveLength(7); expect(bg.rearms()).toBe(2);   // Look → Walk onto it again: an explicit retry
 });
 it('R3-118 / R3-122: the runtime holds with a status line, retries on a new hold, never throws a failed review fetch, and restores wait for their chunk', async () => {
   const { readFileSync } = await import('node:fs');

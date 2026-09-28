@@ -235,7 +235,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const scheduler=chunks?createChunkScheduler({ready:id=>chunks.ready(id),load:id=>chunks.load(id,options.signal),background:nearestFirst,isDisposed:()=>disposed}):null;
   const chunkHolds:{districts:string[];at:XYZ;t:number;resolved?:'sync'|'arrived'}[]=[];let heldNow:string[]=[];
   function prefetchChunks(){if(!chunks||!scheduler)return;for(const id of nearestFirst())if(!chunks.ready(id))void chunks.prefetch(id,options.signal).catch(()=>{});scheduler.startBackground();}
-  function routeAhead(points:readonly XYZ[]){if(gate&&scheduler)scheduler.route(gate.along(points));}
+  function routeAhead(points:readonly XYZ[]){if(gate&&scheduler)scheduler.route(gate.along(points),true);}
   let resnap=false;
   // Wave 6: cables span by span with their anchors (runtime/cableLayer.ts), rebuilt as chunks land.
   const cableLayer=createCableLayer(world,tier,id=>!chunks||chunks.ready(id),xy=>gate?gate.near(xy[0],xy[1],6):[districtAt(xy[0],xy[1])],build=>{for(const material of Object.values(build.materials))fogHook(material);});
