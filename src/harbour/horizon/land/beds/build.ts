@@ -537,7 +537,9 @@ function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
   for(const row of M.thresholds){
     if(typeof row.xy==='string'){Object.entries(M.water_routes.FERRY.piers).forEach(([id,p])=>make(`threshold.${row.id}.${id}`,p as unknown as XY,1));continue;}
     if(Array.isArray(row.xy[0]!))(row.xy as number[][]).forEach((p,i)=>make(`threshold.${row.id}.${i+1}`,p as unknown as XY));
-    else {const exact:Record<string,number>={gondolaBase:M.cable.G1.fromH,gondolaTop:M.cable.G1.toH,adit:40,southPortal:M.underground.doors.southPortal.h,prowPlatform:M.sky.launches.prow.h,crownLaunch:M.sky.launches.crown.h,zipLanding:12,lampGallery:M.sky.launches.lampGallery.h,deepJetty:40.6,seaDoorJetty:1,lampDock:1,bightShoreJetty:1,floatDock:1.2,boathouseDock:1,landingQuay:M.structures.landingQuay.finish_h,stepsFoot:4};make(`threshold.${row.id}`,row.xy as unknown as XY,exact[row.id]!);}
+    else {const exact:Record<string,number>={gondolaBase:M.cable.G1.fromH,gondolaTop:M.cable.G1.toH,adit:40,southPortal:M.underground.doors.southPortal.h,prowPlatform:M.sky.launches.prow.h,crownLaunch:M.sky.launches.crown.h,zipLanding:12,lampGallery:M.sky.launches.lampGallery.h,deepJetty:40.6,seaDoorJetty:1,lampDock:1,bightShoreJetty:1,floatDock:1.2,boathouseDock:1,landingQuay:M.structures.landingQuay.finish_h,stepsFoot:4};
+      // v2.6 (R5-02): a threshold row may carry its own authored height `h` (the funicular platforms on Mountain v2's viaduct).
+      const authored=(row as {h?:number}).h;make(`threshold.${row.id}`,row.xy as unknown as XY,exact[row.id]??(typeof authored==='number'?authored:undefined));}
   }
   // Only authored register rows make a dismount pad: rows accepted from the bake (source 'bake v1.8') are flush
   // junctions, footways or unresolved proposals, never a new marker (R1-88).
