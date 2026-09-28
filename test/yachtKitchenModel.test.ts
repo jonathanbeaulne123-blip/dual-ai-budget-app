@@ -100,6 +100,20 @@ describe('recoverable preparation, cooking, mistakes and ownership',()=>{
 });
 
 describe('deterministic time, paused restoration and capacity-aware orders',()=>{
+ it('ends a timed service without inventing a missed order after its final delivery',()=>{
+  const e=createKitchenEngine({seed:1500});e.start('lunch',1,{patience:3,forgiveness:3});act(e,{type:'ready'});
+  // Keep the first pasta plate on a counter. Its pending order reserves both
+  // cooking slots, so the following real orders are salads we can prepare ahead.
+  expect(e.state().orders[0]!.recipe).toBe('pasta');dish(e,'pasta');at(e,'prep-island');act(e);
+  while(e.state().nextOrderAt<SERVICES.lunch.seconds){
+   const arrival=e.state().nextOrderAt;dish(e,'salad');e.update(Math.max(0,arrival-e.state().elapsed));deliver(e);
+   if(e.state().nextOrderAt<SERVICES.lunch.seconds)wash(e);
+  }
+  at(e,'prep-island');act(e);expect(itemLabel(held(e),e.state())).toBe('Tomato pasta');
+  e.update(e.state().remaining-.05);deliver(e);expect(e.state().remaining).toBeCloseTo(.05,6);expect(e.state().orders.some(o=>o.status==='waiting')).toBe(false);
+  const issued=e.state().orders.length,score=e.state().score;expect(e.state().missed).toBe(0);
+  e.update(.05);expect(e.state().phase).toBe('results');expect(e.state().orders).toHaveLength(issued);expect(e.state().result).toMatchObject({served:issued,missed:0,score});
+ });
  it('warns once when an order reaches its final quarter, without counting paused time',()=>{
   const e=createKitchenEngine({seed:1500});e.start('lunch',1,{patience:.5});act(e,{type:'ready'});const order=e.state().orders[0]!;
   expect(order.recipe).toBe('pasta');const message=`${RECIPES[order.recipe].label}: the order has a quarter of its patience left.`;

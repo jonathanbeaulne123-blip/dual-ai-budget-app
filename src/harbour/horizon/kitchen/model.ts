@@ -154,8 +154,8 @@ export function createKitchenEngine(options:{seed?:number;canReach?:(pose:ChefPo
   }
   if(s.phase!=='playing')return;
   for(const order of s.orders)if(order.status==='waiting'&&order.total>0){const before=order.remaining;order.remaining=Math.max(0,round(order.remaining-dt));if(before>order.total*.25&&order.remaining<=order.total*.25)emit('warning',`${RECIPES[order.recipe].label}: the order has a quarter of its patience left.`);if(order.remaining===0){order.status='missed';s.missed++;s.sequence=0;emit('miss',`${RECIPES[order.recipe].label} missed. The next order is a fresh chance.`);}}
+  if(SERVICES[s.service].seconds&&s.remaining===0){finish();return;}
   if(s.service!=='first'&&(s.elapsed>=s.nextOrderAt||!s.orders.some(o=>o.status==='waiting'))){addOrder();s.nextOrderAt=s.elapsed+SERVICES[s.service].interval*(s.players===1?1.45:1);}
-  if(SERVICES[s.service].seconds&&s.remaining===0)finish();
  }
  function releaseChef(c:ChefState){const item=s.items[c.held??''];if(item){item.location={kind:'return',remaining:0};c.held=null;}c.task=null;heldPrep.delete(c.id);}
  const engine:KitchenEngine={
