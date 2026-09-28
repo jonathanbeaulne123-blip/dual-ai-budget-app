@@ -122,6 +122,12 @@
 @media(max-width:379px){.harbour-world:not(.is-skating) .harbour-moves{bottom:124px}
 .harbour-world__supported,.harbour-world__checking{bottom:124px}
 .harbour-world__supported + .harbour-world__checking{bottom:156px}}
+/* With the reading dock present, walking actions sit above its tool bubbles.
+   Use the viewport like those bubbles: the stage can extend below the screen. */
+@media(max-width:1099px){
+body:has(.glass-dock) .harbour-world:not(.is-skating) .harbour-moves{position:fixed;right:calc(var(--dock-width,0px) + 16px + env(safe-area-inset-right,0px));bottom:calc(var(--dock-height,0px) + 120px + env(safe-area-inset-bottom,0px))}
+body:has(.glass-dock) .harbour-world:not(.is-skating) .harbour-moves__row{max-width:calc(100vw - var(--dock-width,0px) - 32px)}
+}
 /* Riding: the chrome is dimmed, never removed (skate.css). The rest of the HUD
    steps away, but the glass stays — Record and All tools are still one press. */
 .harbour-world.is-skating .village-hud{display:block}
