@@ -25,5 +25,5 @@ export type KitchenProgress={version:1;completed:Record<string,KitchenResult>;be
 export type KitchenConnection={chef:ChefId;kind:'keyboard'|'gamepad'|'none';label:string;connected:boolean};
 export type KitchenChefInput={x:number;z:number;interact:boolean;prepare:boolean;prepareHeld:boolean;toss:boolean;cycle:boolean;ready:boolean;pause:boolean};
 export type KitchenControls={chefs:[KitchenChefInput,KitchenChefInput];connections:KitchenConnection[];disconnected:ChefId[]};
-export type KitchenView={state:KitchenState;stations:KitchenStation[];connections:KitchenConnection[];available:boolean;progress:KitchenProgress;storageWarning:boolean;tossTargets:Partial<Record<ChefId,Point>>;targetLabels:Partial<Record<ChefId,string>>};
+export type KitchenView={state:KitchenState;stations:KitchenStation[];connections:KitchenConnection[];available:boolean;progress:KitchenProgress;storageWarning:boolean;tossTargets:Partial<Record<ChefId,Point>>;targetLabels:Partial<Record<ChefId,string>>;resumable?:boolean};
 export type KitchenCommand={type:'open'}|{type:'start';service:ServiceId;players:1|2;assists:Partial<KitchenAssists>}|{type:'action';chef:ChefId;action:KitchenAction}|{type:'pause'|'resume'|'exit'|'restart'|'resume-saved'|'discard-saved'|'camera'|'leave-partner'};
