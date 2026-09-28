@@ -99,4 +99,4 @@ Rule for anything not listed: draw it only if it improves the silhouette, establ
 
 ## 6. Status
 
-Started 28 Sep 2026 on `claude/horizon-v2-mountain`. Not pinned. Not merged.
+Built on branch `claude/horizon-v2-mountain`; PR pending; not pinned.
