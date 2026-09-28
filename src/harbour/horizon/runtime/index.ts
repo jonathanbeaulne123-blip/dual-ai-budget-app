@@ -555,10 +555,14 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     swimming=water!==null&&body.y<=water-.3&&(!at||at.y<water-.3);
     let forward=controls.forward+(keys.has('w')||keys.has('arrowup')?1:0)-(keys.has('s')||keys.has('arrowdown')?1:0),strafe=controls.strafe+(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0);
     let dx=Math.sin(yaw)*forward+Math.cos(yaw)*strafe,dz=Math.cos(yaw)*forward-Math.sin(yaw)*strafe;
-    if(dx||dz)path=[];else if(path.length){const p=path[0]!;dx=p[0]-body.x;dz=p[2]-body.z;if(Math.hypot(dx,dz)<.35){path.shift();dx=0;dz=0;}}
+    let following=false;
+    if(dx||dz)path=[];else if(path.length){const p=path[0]!;dx=p[0]-body.x;dz=p[2]-body.z;following=true;if(Math.hypot(dx,dz)<.35){path.shift();dx=0;dz=0;}}
     const length=Math.hypot(dx,dz),speed=swimming?2.4:controls.run||keys.has('shift')?HORIZON_MANIFEST.speeds_ms.run:HORIZON_MANIFEST.speeds_ms.walk;
     const before={x:body.x,z:body.z};
-    let moved=0;if(length){dx=dx/length*Math.min(1,length)*speed*dt;dz=dz/length*Math.min(1,length)*speed*dt;body.yaw=Math.atan2(dx,dz);moved=move(dx,dz,dt);if(path.length&&moved<.001&&!held){path=[];options.onStatus?.('That path is blocked. Choose another approach.');}}
+    // A pad's analog magnitude scales the pace (main #557); a route (tap-to-walk, walkTo) keeps full pace to each point and
+    // never overshoots it — scaled by the remaining distance it crawled the last metre to every one of a route's points.
+    const pace=following?Math.min(length,speed*dt):Math.min(1,length)*speed*dt;
+    let moved=0;if(length){dx=dx/length*pace;dz=dz/length*pace;body.yaw=Math.atan2(dx,dz);moved=move(dx,dz,dt);if(path.length&&moved<.001&&!held){path=[];options.onStatus?.('That path is blocked. Choose another approach.');}}
     holdStatus();
     const floor=geography.surface(body.x,body.z,body.y,.02),wet=waterLevel(body.x,body.z,body.y);
     swimming=wet!==null&&body.y<=wet-.3&&(!floor||floor.y<wet-.3);
