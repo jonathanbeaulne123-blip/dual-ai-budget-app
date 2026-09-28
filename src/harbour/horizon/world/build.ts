@@ -1,18 +1,30 @@
 import type { LandCuts, StructureSolid, TerrainField, PadCut } from '../land/interfaces.ts';
-import type { Anchor, Bed, FaceCard, Host, Line, Point2, Point3, Threshold, WorldDefinition } from './definition.ts';
+import type { Anchor, Bed, FaceCard, Host, Line, Point2, Point3, RegionPlacement, Threshold, WorldDefinition } from './definition.ts';
 import { HORIZON_MANIFEST, requireScaleFactor } from './manifest.ts';
 import { buildCrossings, registerRowKey } from './crossings.ts';
 import type { CrossingProof } from './crossings.ts';
 import { buildDistricts, districtAt, partitionWorldSolids } from './districts.ts';
 import { arcLengths, closestOnPolyline, ellipse, length3, padOutline, rectangle, solidBounds, terrainHeight } from './geometry.ts';
-import { buildPathGraph, measureJourneys, yearWalkStretch } from './pathGraph.ts';
+import { buildPathGraph, measureJourneys, yearWalkStretch, type ExtraPathGraph } from './pathGraph.ts';
 import { buildFlightEnvelope } from './sky.ts';
 import { buildViews, protectedGreenOutline } from './views.ts';
 import { waterHeightAt } from '../land/water/index.ts';
 import { buildCoastline } from '../land/coast/index.ts';
 
 export const GEOGRAPHY_REVISION = 'horizon-geo-1';
-export interface LandWorldOptions { terrainAsset?: { url: string; bytes: number; step: number }; extraSolids?: StructureSolid[] }
+export interface LandWorldOptions { terrainAsset?: { url: string; bytes: number; step: number }; extraSolids?: StructureSolid[];
+  /** Pass 5 (T2): a placed world's walk graph in engine space (Mountain v2's), joined to the bed graph at its seams. */
+  extraGraph?: ExtraPathGraph }
+/** Pass 5 (T2): the manifest's `regions` (placed worlds), in engine units; empty when the manifest has none. */
+export function buildRegions(): RegionPlacement[] {
+  const s = requireScaleFactor(), list = (HORIZON_MANIFEST as unknown as { regions?: readonly { id: string; kind?: string; offset: { x: number; y: number; z: number } | readonly number[]; footprint: { minX: number; maxX: number; minZ: number; maxZ: number } | readonly number[] }[] }).regions;
+  if (!Array.isArray(list)) return [];
+  return list.map(r => {
+    const o = Array.isArray(r.offset) ? { x: r.offset[0]!, y: r.offset[1]!, z: r.offset[2]! } : r.offset as { x: number; y: number; z: number };
+    const f = Array.isArray(r.footprint) ? { minX: r.footprint[0]!, minZ: r.footprint[1]!, maxX: r.footprint[2]!, maxZ: r.footprint[3]! } : r.footprint as { minX: number; maxX: number; minZ: number; maxZ: number };
+    return { id: r.id, kind: 'placedWorld' as const, offset: { x: o.x * s, y: o.y * s, z: o.z * s }, footprint: { minX: f.minX * s, maxX: f.maxX * s, minZ: f.minZ * s, maxZ: f.maxZ * s } };
+  });
+}
 function anchor(id: string, p: Point3): Anchor { return { id, xy: [p[0], p[2]], height: p[1] }; }
 function resolvePad(cuts: LandCuts, id: string) { return cuts.pads.find(p => p.id === id); }
 export function buildWorldLines(cuts: LandCuts): Line[];
@@ -65,8 +77,8 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
   if (terrain.heights.length !== terrain.columns * terrain.rows || terrain.columns < 2 || terrain.rows < 2) throw new Error('Invalid terrain lattice');
   const cuts: LandCuts = { ...input, solids: [...input.solids, ...(options.extraSolids ?? [])] };
   assertUniqueSolidIds(cuts.solids);
-  const hosts = buildHosts(cuts), lines = buildWorldLines(terrain, cuts), crossing = buildCrossings(cuts, lines, { ground: (x, z) => terrainHeight(terrain, x, z), waterAt: waterHeightAt }), graph = buildPathGraph(cuts, crossing.proofs), sky = buildFlightEnvelope(terrain, cuts), views = buildViews(terrain, cuts), geometry = partitionWorldSolids(cuts.solids), districts = buildDistricts(terrain, cuts.beds, geometry), thresholds = buildThresholds(terrain, cuts, crossing.proofs);
-  const sourceMap: Record<string, string[]> = {};
+  const hosts = buildHosts(cuts), lines = buildWorldLines(terrain, cuts), crossing = buildCrossings(cuts, lines, { ground: (x, z) => terrainHeight(terrain, x, z), waterAt: waterHeightAt }), graph = buildPathGraph(cuts, crossing.proofs, options.extraGraph), sky = buildFlightEnvelope(terrain, cuts), views = buildViews(terrain, cuts), geometry = partitionWorldSolids(cuts.solids), districts = buildDistricts(terrain, cuts.beds, geometry), thresholds = buildThresholds(terrain, cuts, crossing.proofs);
+  const sourceMap: Record<string, string[]> = {}, regions = buildRegions();
   for (const solid of geometry) (sourceMap[solid.sourceId] ??= []).push(solid.id);
   for (const host of hosts) host.solidIds = host.solidIds?.flatMap(id => sourceMap[id] ?? []);
   for (const t of thresholds) { if (t.carried) continue; const proof = crossing.proofs.find(p => p.padId === t.padId); if (proof) { t.kerbGap = proof.kerbGap ?? false; t.built = t.built && proof.built; } }
@@ -99,7 +111,7 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
     underground: { doors: Object.entries(m.underground.doors).map(([id, door]) => anchor(id, [door.xy[0]! * s, door.h * s, door.xy[1]! * s])), rooms: roomVolumes.map(room => room.outline), roomVolumes, waterBodyId: cuts.waters.find(w => w.kind === 'deep')?.id, skylight: anchor('deep.skylight', [m.underground.rooms.deep.skylight.to[0]! * s, m.underground.rooms.deep.skylight.topH * s, m.underground.rooms.deep.skylight.to[1]! * s]) },
     lights: [...hosts.map(h => { const d = h.door as { xy: Point2; height: number }; return { id: `door.${h.id}.lamp`, at: [d.xy[0], d.height + 2.2, d.xy[1]] as Point3, kind: 'door' }; }), ...thresholds.filter(t => !t.carried).map(t => ({ id: `${t.id}.lamp`, at: [t.at[0], (t.height ?? 0) + .8, t.at[1]] as Point3, kind: 'threshold' }))], faceCards: buildFaceCards(geometry), views, lanterns: [],
     protected: [{ id: 'green', outline: protectedGreenOutline(), reason: 'No building, plot or tall prop inside the protected centre.' }],
-    geometry: { solids: geometry, sourceMap }, collision: { beds: cuts.beds, pads: cuts.pads, mouths: cuts.mouths, waters: cuts.waters, walkableSlopeDegrees: 40, lipStepMax: .48 }, pathGraph: graph, diagnostics, journeyMeasurements: measurements,
+    geometry: { solids: geometry, sourceMap }, collision: { beds: cuts.beds, pads: cuts.pads, mouths: cuts.mouths, waters: cuts.waters, walkableSlopeDegrees: 40, lipStepMax: .48 }, pathGraph: graph, diagnostics, journeyMeasurements: measurements, ...(regions.length ? { regions } : {}),
     journey: {
       stations: m.journey.stations.map((station, i) => { const pad = resolvePad(cuts, `station.${station.id}`), prev = m.journey.stations[(i + 11) % 12]!, points = yearWalkStretch(yearWalk.points, prev.xy.map(v => v * s), station.xy.map(v => v * s)), len = length3(points); return { id: station.id, month: station.month, anchor: anchor(`station.${station.id}`, pad?.centre ?? [station.xy[0]! * s, terrainHeight(terrain, station.xy[0]! * s, station.xy[1]! * s), station.xy[1]! * s]), bedIds: [], padId: pad?.id, footprint: pad ? padOutline(pad) : [], bedPositions: pad ? stationPositions(pad, s) : [], stretch: { from: prev.id, lengthEu: len, lengthM: len / s, spacing: [28, 29, 30, 31].map(days => ({ days, eu: len / days })), points } }; }), yearWalk,
       homestead: m.journey.homestead.sites.map(site => { const pad = resolvePad(cuts, `homestead.${site.id}`), host = hosts.find(h => h.id === site.id), fallback = site.id === 'reserveBasin' ? m.places.find(p => p.id === 'L01')!.xy : site.xy ?? m.hosts[0]!.xy, p: Point3 = pad?.centre ?? [fallback[0]! * s, terrainHeight(terrain, fallback[0]! * s, fallback[1]! * s), fallback[1]! * s]; return { id: site.id, anchor: anchor(`homestead.${site.id}`, p), footprint: pad ? padOutline(pad) : host?.footprint ?? [] }; }),

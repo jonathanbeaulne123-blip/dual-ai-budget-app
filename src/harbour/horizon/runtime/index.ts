@@ -3,7 +3,7 @@ import {applyHorizonQuality} from './quality.ts';
 import {createHorizonFrameLoop} from './frameLoop.ts';
 import {createBuildTask,finishBuild} from '../../../house/world/buildTask.ts';
 import type {District} from '../world/definition.ts';
-import type {CardBuild} from '../../art/cardScene.ts';
+import {CARD_CLOCK} from '../../art/cardScene.ts';
 import {createHomeWorld} from '../../../home/world.ts';
 import type {HomeLayout} from '../../../home/model.ts';
 import type {HomeDisplayContent} from '../../../home/displays.ts';
@@ -27,14 +27,19 @@ import type {HouseBodyReturn} from '../../../house/navigation.ts';
 import {HORIZON_GEOGRAPHY,HORIZON_PRESENCE_WORLD} from '../../../worldGeography.ts';
 import {loadHorizonAssets,type HorizonAssets} from '../../../house/world/horizonAssets.ts';
 import {createHorizonGeography,HORIZON_WALKABLE_DEGREES,HORIZON_BODY_HEIGHT} from './geography.ts';
-import {buildDistrictCardSteps,buildDistrictCards,buildWaterCards,buildHorizonRing} from './cards.ts';
+import {buildDistrictCardSteps,buildDistrictCards,buildWaterCards,buildHorizonRing,type DistrictCards,type TerrainCellFilter} from './cards.ts';
+import {sampleTerrain} from '../land/terrain/index.ts';
+import type {MountainV2Region,RegionScene} from '../regions/mountainV2/index.ts';
+import {MOUNTAIN_V2_OFFSET} from '../regions/mountainV2/placement.ts';
+import {connectCableRegion} from '../movers/gondola/index.ts';
+import type {PlaceDressing} from '../../scene/place.ts';
 import {createDistrictStream,districtAt,useDefinitionDistricts} from '../world/districts.ts';
 import {useCoastline} from '../land/coast/index.ts';
 import {HORIZON_MANIFEST} from '../world/manifest.ts';
 import {restoreHorizonPosition,HORIZON_RESTORE_TOLERANCE} from './savedPosition.ts';
 import {horizonFootFrame,horizonWalkOut,type HorizonWalkProbe} from './walkOut.ts';
 import {horizonPartnerPose} from './partner.ts';
-import {walkPlan} from '../world/pathGraph.ts';
+import {walkPlan,withExtraGraph} from '../world/pathGraph.ts';
 import {createChunkGate,createChunkScheduler,createRideGate,CHUNK_REACH_EU,CHUNK_ARRIVING_STATUS,CHUNK_FAILED_STATUS} from './chunkGate.ts';
 import {createCableLayer} from './cableLayer.ts';
 import {solarPosition,solarReviewDate} from '../sun/solar.ts';
@@ -77,13 +82,31 @@ export type HorizonOptions={homePlotId?:string;homeLayout?:HomeLayout;onHomeBook
   /** The active mover's sound intensities, every riding frame. */
   onMoverSound?:(sound:MoverSound)=>void;
   /** Mover factories to register at mount; the board and the bicycle are registered by default (`HORIZON_MOVERS`) and an entry here replaces its mode's default. `api.registry.register` works later too. */
-  movers?:Partial<Record<ModeId,(deps:MoverDeps)=>ModeController>>};
+  movers?:Partial<Record<ModeId,(deps:MoverDeps)=>ModeController>>;
+  /** Pass 5: Mountain v2 placed on the Horizon. Mounted when the definition lists the `mountainV2` region (a bake with the
+   *  ground override); `false` keeps it out, `true` mounts it on any bake (review; also `?mountainV2` in development). */
+  mountainV2?:boolean};
+/** Pass 5 (T2): a placed region and the dressing its scene is built in. */
+export type HorizonPlacedRegion={region:MountainV2Region;dressing:(theme:VehicleDressing)=>PlaceDressing};
+/** A region not needed (no district under its footprint resident, or the Journey map) is released after this long. */
+export const REGION_RELEASE_MS=20_000;
+/** Loads and creates the placed Mountain v2 region when the definition lists it (dynamic: v2's definition evaluates its terrain at import). */
+export async function placeHorizonRegions(assets:Pick<HorizonAssets,'world'|'field'|'cuts'>,options:Pick<HorizonOptions,'mountainV2'>={}):Promise<HorizonPlacedRegion|null>{
+  const listed=assets.world.regions?.some(r=>r.id==='mountainV2'&&r.kind==='placedWorld')===true;
+  if(options.mountainV2===false||!(listed||options.mountainV2===true))return null;
+  const mod=await import('../regions/mountainV2/index.ts'),field=assets.field;
+  return {region:mod.createMountainV2Region({horizonGround:(x,z)=>sampleTerrain(field,x,z),exclude:mod.mouthExclusion(assets.cuts.mouths),terrainStep:field.step}),dressing:mod.regionDressing};
+}
 export async function mountHorizon(host:HTMLElement,options:HorizonOptions){
   const startedAt=performance.now(),assets=await loadHorizonAssets(options.tier,options.signal);if(options.signal?.aborted)throw new DOMException('Aborted','AbortError');
   // R1-72: the chunk under the entry body (page A's eye) is the only geometry fetched before the first frame; the rest
   // streams by district residency (createDistrictStream ready/request), each added to the collision index as it lands.
   // Wave 6 arrival rule: the camera district AND every chunk within the body's reach (CHUNK_REACH_EU) are resident before
   // the first interactive frame — the body (page A's eye, or the restored body) and the camera (page A, or ?shot=).
+  // Pass 5: the placed region's module (v2's definition and its 1.2 MB ground) loads alongside the entry chunks.
+  // Review (HARBOUR_DEV): `?mountainV2` places it on any bake, `?mountainV2=off` keeps it out.
+  const review=HARBOUR_DEV?new URLSearchParams(location.search).get('mountainV2'):null;
+  const placing=placeHorizonRegions(assets,{mountainV2:options.mountainV2??(review===null?undefined:review!=='off')});placing.catch(()=>{});
   const startEye=assets.world.views.find(v=>v.id==='A')?.eye;
   if(assets.chunks&&startEye){
     useDefinitionDistricts(assets.world.districts);
@@ -91,20 +114,25 @@ export async function mountHorizon(host:HTMLElement,options:HorizonOptions){
     const ids=new Set<string>([districtAt(startEye[0],startEye[2]),...gate.near(bodyAt[0]!,bodyAt[1]!,CHUNK_REACH_EU),...(shotEye?[districtAt(shotEye[0],shotEye[2])]:[])]);
     await Promise.all([...ids].map(id=>loader.load(id,options.signal)));if(options.signal?.aborted)throw new DOMException('Aborted','AbortError');
   }
-  return createRuntime(host,assets,options,startedAt);
+  const placed=await placing;if(options.signal?.aborted)throw new DOMException('Aborted','AbortError');
+  return createRuntime(host,assets,options,startedAt,placed);
 }
-function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOptions,startedAt:number){
+function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOptions,startedAt:number,placed:HorizonPlacedRegion|null=null){
   const {world,field,journey,cuts}=assets,tier=options.tier,assetLoadedAt=performance.now(),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(45,1,.08,4500);
   // The partition is the definition's (R1-67): districtAt() uses the baked hearts from here on.
   useDefinitionDistricts(world.districts);
   // …and the coastline too: shore tests read the baked outline, not a client re-solve of the manifest.
   useCoastline(world.coastline);
+  // Pass 5: a placed region's walk graph joins the Horizon's at its seams (walk plans, walk-outs, restores cross it).
+  if(placed&&world.pathGraph)world.pathGraph=withExtraGraph(world.pathGraph,placed.region.pathGraph());
   // R1-72: the chunk under the entry body (page A's eye) is the only geometry fetched before the first frame; the rest
   // streams in behind it, nearest the body first, one chunk at a time, each added to the collision index as it lands.
   const chunks=assets.chunks;
   const bytesBeforeFirstFrame={definition:chunks?.bytes()??assets.definitionBytes,terrain:assets.bytes};
   const geography=createHorizonGeography(field,cuts),figure=createBodyFigure(),partner=createBodyFigure({coat:'#af8760'});
   scene.add(figure.group,partner.group);partner.group.visible=false;
+  // Pass 5: inside the region's footprint its provider owns the ground (v2's exact ground, decks, solids, ceilings).
+  const offRegion=placed?geography.addDynamic(placed.region.provider):null;
   const homeWorld=createHomeWorld(scene,world.reserves,options.homePlotId);homeWorld.set(options.homeLayout);const offHome=geography.addDynamic(homeWorld.collision);
   // Movers (RIDE §10.2, §11 ask 2): one registry, one active controller; the Horizon mode stays 'walk' while riding.
   // One comfort source (v2.2): the land's motion (cuts, the frozen 15:30) and the movers' registry read the same two flags.
@@ -171,7 +199,13 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   let boardProxy:BoardProxy|null=null,consumeJumpUntilRelease=false,jumpHeld=false,acceptRequested=false,lookAcc={dx:0,dy:0},lastOffer:ThresholdOffer|null=null,lastHud:MoverHud|null=null,lastInput:MoverInput|null=null,walkFov:number|null=null,footFov=45,fadeTimer=0,moverActionRequested:'fold'|'pull'|null=null,fadeLabel:{label:string;at:number}|null=null;
   const fadeEl=document.createElement('div');fadeEl.className='horizon-fade';fadeEl.setAttribute('aria-hidden','true');host.appendChild(fadeEl);
   const partnerMaterials:Record<string,THREE.Material>={};partner.group.traverse(object=>{if(object instanceof THREE.Mesh)for(const material of Array.isArray(object.material)?object.material:[object.material])partnerMaterials[material.uuid]=material;});
-  const coarse=new Map(world.districts.map(d=>{const cards=buildDistrictCards(world,journey,cuts,d,tier,true);scene.add(cards.group);return[d.id,cards] as const;}));
+  // Pass 5: terrain cells under the region are built apart (`under`) and shown only while the region is not drawn. A resident
+  // tile's cell goes under when its centre is inside the region; a journey (coarse) cell only when it lies wholly inside.
+  const regionCells:TerrainCellFilter=placed?{split:(x,z)=>placed.region.hidesTerrainCell(x,z)}:{};
+  const coarseCells:TerrainCellFilter=placed?{split:(x,z,st)=>[[0,0],[-1,-1],[1,-1],[-1,1],[1,1]].every(([u,v])=>placed.region.contains(x+u!*st/2,z+v!*st/2))}:{};
+  const regionDistricts=new Set<string>();
+  if(placed){const f=placed.region.footprint;for(let x=f.minX;x<=f.maxX;x+=10)for(let z=f.minZ;z<=f.maxZ;z+=10)if(placed.region.contains(x,z))regionDistricts.add(districtAt(x,z));}
+  const coarse=new Map(world.districts.map(d=>{const cards=buildDistrictCards(world,journey,cuts,d,tier,true,false,coarseCells);scene.add(cards.group);return[d.id,cards] as const;}));
   const water=buildWaterCards(cuts,tier),ring=buildHorizonRing(assets.horizonCards,tier);scene.add(water.group,ring.group);
   // Horizon cards are fogged like the land but never beyond 70 % (STYLE §1.8), so they never vanish and never poke through.
   for(const material of Object.values(ring.materials)){if('fog'in material)(material as THREE.MeshStandardMaterial).fog=true;fogHook(material,HORIZON_FOG.horizonMaxOpacity);}
@@ -235,9 +269,13 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
       for(let i=0;i<ix.length;i+=3){if(i%1536===0)yield;const a=ix[i]!*3,b=ix[i+1]!*3,c=ix[i+2]!*3,ux=p[b]!-p[a]!,uy=p[b+1]!-p[a+1]!,uz=p[b+2]!-p[a+2]!,vx=p[c]!-p[a]!,vy=p[c+1]!-p[a+1]!,vz=p[c+2]!-p[a+2]!,nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx,n=Math.hypot(nx,ny,nz);if(n<1e-9)continue;const up=Math.abs(ny/n)>=.6;if(!up&&!(faces&&Math.abs(ny/n)<.45))continue;const col=up?(/(^|\.)marker(\.|@|$)/.test(solid.id)?markerInk:lipChalk):faceChalk,ox=up?0:nx/n*.03,oz=up?0:nz/n*.03;for(const k of [a,b,c]){positions.push(p[k]!+ox,p[k+1]!+(up?.03:0),p[k+2]!+oz);colors.push(col.r,col.g,col.b);}}}
     if(!positions.length)return null;const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.computeBoundingSphere();const mesh=new THREE.Mesh(geometry,chalkMaterial);mesh.visible=night;mesh.renderOrder=4;return mesh;
   }
-  type Resident={cards:CardBuild;chalk:THREE.Mesh|null;at:number;fadeIn(amount:number):void;dispose():void};
+  // Pass 5: the placed region's state (updateRegion, below).
+  let regionScene:RegionScene|null=null,regionTask:{advance():RegionScene|undefined;cancel():void}|null=null,regionVisible=false,regionIdleSince=0,regionShownAt=0,regionHooks:FogHook[]=[];
+  let regionWater:{level:number|null;reserve:number|null}={level:null,reserve:null},regionTransit:{cabin:{at:XYZ;yaw:number;pitch:number}|null;kind:'gondola'|'funicular'}|null=null;
+  type Resident={cards:DistrictCards;chalk:THREE.Mesh|null;at:number;fadeIn(amount:number):void;dispose():void};
   function* buildResident(d:District):Generator<void,Resident,void>{
-    const cards=yield* buildDistrictCardSteps(world,field,cuts,d,tier,false,options.hideBuildings);
+    const cards=yield* buildDistrictCardSteps(world,field,cuts,d,tier,false,options.hideBuildings,regionCells);
+    for(const mesh of cards.under??[])mesh.visible=!regionVisible;
     let chalk:THREE.Mesh|null=null,complete=false;
     try {
       chalk=yield* buildChalk(d);
@@ -464,7 +502,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     comfort={calm:next.calm??comfort.calm,reducedMotion:(next.reducedMotion??comfort.reducedMotion)||appReducedMotion()};
     registry.setReducedMotion(comfort.reducedMotion);registry.setCalm(comfort.calm);
     if(comfort.calm){faceCardsLit=false;faceCards.visible=false;}
-    motion=horizonMotion(comfort);
+    motion=horizonMotion(comfort);regionScene?.setQuiet(!motion.ambientMotion);
     if(motion.transitionMs<=0&&transition&&!transition.live){camera.position.copy(transition.toEye);target.copy(transition.toTarget);camera.lookAt(target);transition=null;}
     if(!comfortCut&&(comfort.reducedMotion&&!was.reducedMotion||comfort.calm&&!was.calm))openComfortCut();
     lastSun=-Infinity;
@@ -638,6 +676,31 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(moved>0&&now>doorCooldown&&!swimming){const door=world.hosts.find(h=>'xy'in h.door&&Math.hypot(body.x-h.door.xy[0],body.z-h.door.xy[1],body.y-(h.door.height??0))<1.15);if(door)enterDoor(door.id);}
     if(!simulating){figure.group.position.set(body.x,body.y,body.z);figure.group.rotation.y=body.yaw;figure.pose(now*.007,moved>0?1:0,now/1000);updateCamera();}
   }
+  // ---- Pass 5: the placed region (Mountain v2) ----
+  // Mounted (one v2 builder per frame) when a district under its footprint is resident outside the Journey map, drawn while
+  // that holds, released REGION_RELEASE_MS after it stops. Its materials take the Horizon's fog stage and fade in like a district.
+  const seasonOf=(date:Date)=>{const month=date.getMonth()+1;return month<=2||month===12?'winter' as const:month<=5?'spring' as const:month<=8?'summer' as const:'autumn' as const;};
+  function releaseRegion(){regionTask?.cancel();regionTask=null;regionScene?.dispose();regionScene=null;regionHooks=[];showRegion(false);}
+  function showRegion(visible:boolean){
+    if(regionScene)regionScene.group.visible=visible;
+    if(visible===regionVisible)return;regionVisible=visible;if(visible)regionShownAt=performance.now();
+    for(const resource of stream.live.values())for(const mesh of resource.cards.under??[])mesh.visible=!visible;
+    requestShadow('region-visibility');
+  }
+  function updateRegion(dt:number,now:number){
+    if(!placed)return;
+    const wanted=mode!=='journey'&&[...regionDistricts].some(id=>stream.live.has(id));
+    if(wanted&&!regionScene&&!regionTask)regionTask=createBuildTask(placed.region.mountSteps(scene,tier,placed.dressing(theme),{season:seasonOf(currentTime??new Date()),quiet:!motion.ambientMotion}));
+    if(regionTask){const done=regionTask.advance();if(done){regionTask=null;regionScene=done;done.group.visible=false;
+      const materials=new Set<THREE.Material>();done.group.traverse(o=>{const m=(o as THREE.Mesh).material;if(m)for(const x of Array.isArray(m)?m:[m])materials.add(x);});
+      regionHooks=[...materials].map(material=>fogHook(material));done.setWater(regionWater.level,regionWater.reserve);if(regionTransit)done.setTransit(regionTransit.cabin,regionTransit.kind);}}
+    showRegion(wanted&&regionScene!==null);
+    for(const cards of coarse.values())for(const mesh of cards.under??[])mesh.visible=mode==='journey'||!regionVisible;
+    if(wanted)regionIdleSince=0;else if(!regionIdleSince)regionIdleSince=now;else if(now-regionIdleSince>REGION_RELEASE_MS&&(regionScene||regionTask))releaseRegion();
+    if(!regionScene||!regionVisible)return;
+    const fadeLevel=motion.districtFadeMs>0?Math.min(1,Math.max(0,(performance.now()-regionShownAt)/motion.districtFadeMs)):1;for(const hook of regionHooks)hook.fade.value=fadeLevel;
+    regionScene.animate(dt,now/1000);
+  }
   let residencyRevision=-1,residencyMode:HorizonMode|undefined;
   const residentIds=new Set<string>();
   let peerKey='',paintCount=0;
@@ -649,7 +712,12 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(kitchen?.active()){if(!paused&&!document.hidden&&mode==='walk')kitchen.update(dt);}
     else kitchen?.update(0);
     if(!paused&&!document.hidden){const accept=comfortCut||kitchen?.active()?false:offersAndAccept();if(mode==='walk'&&!kitchen?.active()&&(!transition||transition.live)){stepped=true;if(registry.active()){if(!comfortCut&&hold.steps(mode))ride(dt,now,accept);}else if(!comfortCut)step(dt,now);}if(mode!=='journey')stream.update({x:body.x,z:body.z,now,mode:mode==='look'?'look':'walk',radius:mode==='look'?world.views.find(v=>v.id===shotId)?.radius:undefined,keepRadius:world.views.find(v=>v.id===shotId)?.radius,underground:body.y+HORIZON_BODY_HEIGHT<geography.ground(body.x,body.z)-.5});}
-    if(ambience){if(paused)ambience.pause();else ambience.update(body.x,body.y,body.z,ambienceSpeed,false,false,comfort.calm,registry.mode()==='glider'||registry.mode()==='parachute');}
+    // Pass 5: the ambience reads Mountain v2's geography (the river, its paths), so with the region placed it hears native space.
+    const heard=placed?{x:body.x-MOUNTAIN_V2_OFFSET.x,y:body.y-MOUNTAIN_V2_OFFSET.y,z:body.z-MOUNTAIN_V2_OFFSET.z}:body;
+    if(ambience){if(paused)ambience.pause();else ambience.update(heard.x,heard.y,heard.z,ambienceSpeed,false,false,comfort.calm,registry.mode()==='glider'||registry.mode()==='parachute');}
+    // The shared card clock (wind in v2's planting, water sheen) runs with ambient motion; calm and reduced motion hold it.
+    if(placed&&motion.ambientMotion)CARD_CLOCK.value=now/1000;
+    updateRegion(dt,now);
     for(const art of [...moverArts])if(!art.tick(dt,figure.group))removeMoverArt(art);
     if(residencyRevision!==stream.revision||residencyMode!==mode){
       residencyRevision=stream.revision;residencyMode=mode;residentIds.clear();for(const id of stream.live.keys())residentIds.add(id);
@@ -682,8 +750,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(now-lastSun>=60_000){setLight(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm}));lastSun=now;}
     updateLocalLights(now);
     skyDome.follow(camera);renderer.render(scene,camera);paintCount++;if(interactiveAt===null){interactiveAt=performance.now();options.onReady?.();void prefetchChunks();}if(drawSamples.length===0||now-drawSamples.at(-1)!.at>500){drawSamples.push({at:now,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,resident:stream.live.size});if(drawSamples.length>600)drawSamples.shift();}
-    const building=stream.building||stream.live.size<stream.cap&&Boolean(stream.history.at(-1)?.pending.some(id=>!chunks||chunks.ready(id)));
-    const fading=motion.districtFadeMs>0&&[...stream.live.values()].some(resource=>now-resource.at<motion.districtFadeMs);
+    const building=stream.building||!!regionTask||stream.live.size<stream.cap&&Boolean(stream.history.at(-1)?.pending.some(id=>!chunks||chunks.ready(id)));
+    const fading=motion.districtFadeMs>0&&([...stream.live.values()].some(resource=>now-resource.at<motion.districtFadeMs)||regionVisible&&performance.now()-regionShownAt<motion.districtFadeMs);
     const continuous=!paused&&(mode==='walk'||!!transition||mode!=='journey'&&(building||fading||!!peer&&motion.ambientMotion)||moverArts.size>0);
     // Queue a quality change for the next paint: resizing after render would clear this frame.
     if(continuous&&frameMs>0&&adaptiveQuality.sample(frameMs,performance.now()-workStarted))qualityDirty=true;
@@ -765,7 +833,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     setCruiserSkin(skin:CruiserSkin){schedule();cruiserSkin=skin;cruiserArt?.setSkin(skin);},
     cruiserState:()=>cruiser()?.state()??null,
     body:()=>({...body}),mode:()=>mode,shotId:()=>shotId,
-    setTheme(next:VehicleDressing){if(next===theme)return;theme=next;kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
+    setTheme(next:VehicleDressing){if(next===theme)return;theme=next;if(regionScene||regionTask)releaseRegion();kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
     settings:()=>({tier,reducedMotion:comfort.reducedMotion,calm:comfort.calm,theme}),reviewDate:()=>(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm})),setAmbience(audio:WorldAmbience|null){ambience=audio;schedule();},
     offers,
     moverState():HorizonMoverState{const fade=fadeLabel&&performance.now()-fadeLabel.at<HORIZON_FADE_LABEL_MS?fadeLabel.label:undefined;return{mode:registry.mode(),attached:registry.active()!==null,hud:lastHud,airborne:registry.mode()==='parachute'||!!registry.active()?.airborne?.(),stowed:registry.stowed(),perspective:perspective.mode(),...(fade?{fade}:{}),cut:comfortCut};},
@@ -809,9 +877,17 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     visitHome(){const at=homeWorld.visit();if(!at)return false;restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',...at});return true;},
     homeActions(){return !paused&&mode==='walk'&&!registry.active()?homeWorld.actions(body):[];},
     activateHome(id:string){const action=!paused&&!registry.active()?homeWorld.actions(body).find(a=>a.id===id):null;if(!action)return false;clear();if(action.id==='home-book')options.onHomeBook?.();else if(action.target)options.onHomeWorkspace?.(action.target);return true;},
-    stats(){const gl=renderer.getContext(),debug=gl.getExtension('WEBGL_debug_renderer_info');return{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),revision:world.geographyRevision,terrainBytes:assets.bytes,collisionIndex:geography.indexStats,bytesBeforeFirstFrame,chunksLoaded:chunks?chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId):null,cables:cableLayer.stats(),chunks:chunks?{resident:chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId),total:chunks.refs.length,queued:scheduler!.queued(),heldAt:heldNow.length?{districts:[...heldNow],body:{...body}}:null,holds:chunkHolds.map(h=>({...h,at:[...h.at]})),ride:rideGate.stats(),failures:scheduler!.failures()}:null,walkOut:lastWalkOut,walkOutWait:pendingWalkOut?walkOutWait:null,definitionBytesSoFar:chunks?.bytes()??assets.definitionBytes,shadowRequests:[...shadowRequests],comfort:{...comfort,motion:{...motion}},lightCards:pools.count,shadow:{half:sun.shadow.camera.right,centre:sun.target.position.toArray()},paintCount,quality:{...adaptiveQuality.stats(),...adaptiveQuality.profile(window.devicePixelRatio),appliedPixelRatio:renderer.getPixelRatio(),pending:qualityDirty,shadowMapSize:sun.shadow.map?.width??null},firstInteractiveMs:interactiveAt===null?null:interactiveAt-startedAt,assetLoadMs:assetLoadedAt-startedAt,mode,shot:shotId,body:{...body},frames:[...frameTimes],drawSamples:[...drawSamples],stream:[...stream.history],camera:{eye:camera.position.toArray(),target:target.toArray(),fov:camera.fov},diagnostics:world.diagnostics};},
-    dispose(){kitchen?.dispose();saveFleet();window.removeEventListener('pagehide',saveAll);offFleet();offHome();homeWorld.dispose();fleetArt.dispose();disposed=true;window.clearTimeout(fadeTimer);registry.dispose();cruiserArt?.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();offChunk?.();frameDriver?.dispose();observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',focusPause);document.removeEventListener('visibilitychange',visibilityClear);host.removeEventListener('blur',hostBlur);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();poolGeometry.dispose();beadGeometry.dispose();poolMaterial.dispose();beadMaterial.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
+    stats(){const gl=renderer.getContext(),debug=gl.getExtension('WEBGL_debug_renderer_info');return{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),revision:world.geographyRevision,terrainBytes:assets.bytes,collisionIndex:geography.indexStats,bytesBeforeFirstFrame,chunksLoaded:chunks?chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId):null,cables:cableLayer.stats(),chunks:chunks?{resident:chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId),total:chunks.refs.length,queued:scheduler!.queued(),heldAt:heldNow.length?{districts:[...heldNow],body:{...body}}:null,holds:chunkHolds.map(h=>({...h,at:[...h.at]})),ride:rideGate.stats(),failures:scheduler!.failures()}:null,walkOut:lastWalkOut,walkOutWait:pendingWalkOut?walkOutWait:null,definitionBytesSoFar:chunks?.bytes()??assets.definitionBytes,shadowRequests:[...shadowRequests],comfort:{...comfort,motion:{...motion}},lightCards:pools.count,shadow:{half:sun.shadow.camera.right,centre:sun.target.position.toArray()},paintCount,quality:{...adaptiveQuality.stats(),...adaptiveQuality.profile(window.devicePixelRatio),appliedPixelRatio:renderer.getPixelRatio(),pending:qualityDirty,shadowMapSize:sun.shadow.map?.width??null},firstInteractiveMs:interactiveAt===null?null:interactiveAt-startedAt,assetLoadMs:assetLoadedAt-startedAt,mode,shot:shotId,body:{...body},frames:[...frameTimes],drawSamples:[...drawSamples],stream:[...stream.history],camera:{eye:camera.position.toArray(),target:target.toArray(),fov:camera.fov},diagnostics:world.diagnostics,region:placed?{id:placed.region.id,mounted:regionScene!==null,building:regionTask!==null,visible:regionVisible,districts:[...regionDistricts],joins:world.pathGraph?.joins??[],...(regionScene?regionScene.stats():{})}:null};},
+    /** Pass 5: the placed Mountain v2 region (null when not placed). T3's rides move its cabins through `setTransit`. */
+    mountainRegion:placed?{region:placed.region,scene:()=>regionScene,visible:()=>regionVisible,
+      setTransit(cabin:{at:XYZ;yaw:number;pitch:number}|null,kind:'gondola'|'funicular'){regionTransit={cabin,kind};regionScene?.setTransit(cabin,kind);}}:null,
+    /** Pass 5: the water picture at v2's dam, as given (0…1; null = unknown, frosted glass). The runtime and the region read
+     *  nothing themselves: the app feeds the one reading L01 shows (CONTRACT §2.2). */
+    setMountainDamWater(level:number|null,reserve:number|null){regionWater={level,reserve};regionScene?.setWater(level,reserve);schedule();},
+    dispose(){kitchen?.dispose();releaseRegion();offRegion?.();offCable?.();saveFleet();window.removeEventListener('pagehide',saveAll);offFleet();offHome();homeWorld.dispose();fleetArt.dispose();disposed=true;window.clearTimeout(fadeTimer);registry.dispose();cruiserArt?.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();offChunk?.();frameDriver?.dispose();observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',focusPause);document.removeEventListener('visibilitychange',visibilityClear);host.removeEventListener('blur',hostBlur);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();poolGeometry.dispose();beadGeometry.dispose();poolMaterial.dispose();beadMaterial.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
   };
+  // Pass 5 (T3's contract, HANDOFF-notes/rides.md): the cable rides move the region's cabins through `setTransit`.
+  const offCable=placed&&api.mountainRegion?connectCableRegion(placed.region,api.mountainRegion,()=>camera.aspect):null;
   return api;
 }
 
