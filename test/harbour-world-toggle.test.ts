@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { HARBOUR_DEV, horizonEnabled } from "../src/harbour/flag.ts";
-import { harbourWorldSearch, readHarbourWorld, setHarbourWorld } from "../src/harbour/harbourWorld.ts";
+import { harbourWorldSearch, readHarbourWorld, resetHarbourWorldPreference, setHarbourWorld } from "../src/harbour/harbourWorld.ts";
 
 describe("harbourWorldSearch (pure)", () => {
   it("sets world=horizon and clears it for mountain", () => {
@@ -32,14 +32,30 @@ describe("harbourWorldSearch (pure)", () => {
 
 describe("readHarbourWorld", () => {
   it("matches horizonEnabled: horizon only in DEV with world=horizon", () => {
+    resetHarbourWorldPreference();
     expect(readHarbourWorld("?world=horizon")).toBe(horizonEnabled("?world=horizon") ? "horizon" : "mountain");
+    resetHarbourWorldPreference();
     expect(readHarbourWorld("")).toBe("mountain");
     expect(readHarbourWorld("?seed=mountain")).toBe("mountain");
+  });
+
+  it("keeps a DEV preference after housePath wipes world from the search", () => {
+    resetHarbourWorldPreference();
+    if (!HARBOUR_DEV) {
+      expect(readHarbourWorld("?world=horizon")).toBe("mountain");
+      return;
+    }
+    expect(readHarbourWorld("?world=horizon")).toBe("horizon");
+    // App house navigation replaces search with household/scope only.
+    expect(readHarbourWorld("?household=HH-MOUNTAIN-GROWING-first&scope=household")).toBe("horizon");
+    setHarbourWorld("mountain", { replaceState: vi.fn() }, { pathname: "/house/home/middle", search: "?household=HH&scope=household", hash: "" });
+    expect(readHarbourWorld("?household=HH&scope=household")).toBe("mountain");
   });
 });
 
 describe("setHarbourWorld", () => {
   it("updates only the world query via replaceState and keeps other keys", () => {
+    resetHarbourWorldPreference();
     const replaceState = vi.fn();
     const loc = { pathname: "/__review", search: "?seed=mountain&member=MEM-001", hash: "" };
     const result = setHarbourWorld("horizon", { replaceState }, loc);
@@ -54,6 +70,7 @@ describe("setHarbourWorld", () => {
   });
 
   it("clears world when returning to mountain", () => {
+    resetHarbourWorldPreference();
     const replaceState = vi.fn();
     const loc = { pathname: "/", search: "?world=horizon&sun=09:00", hash: "#court" };
     if (!HARBOUR_DEV) {
