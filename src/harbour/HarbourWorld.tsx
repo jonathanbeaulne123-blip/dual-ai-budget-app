@@ -1245,11 +1245,12 @@ function MountainHarbourWorld(props: HarbourWorldProps) {
             onPointerDown={event => event.stopPropagation()}
             onClick={() => { doEmote(id); setEmotesOpen(false); stage.current?.focus({ preventScroll: true }); }}>{EMOTE_FACES[id]}<small>{i + 1}</small></button>)}
         </div>}
-        {touch && <div className="harbour-moves__row">
-          {!skating&&<button type="button" className="harbour-moves__key" onPointerDown={event => event.stopPropagation()} onClick={() => doMove("jump")}>Jump</button>}
-          {!skating&&<button type="button" className="harbour-moves__key" onPointerDown={event => event.stopPropagation()} onClick={() => doMove("slide")}>Slide</button>}
-          {!skating&&<button type="button" className="harbour-moves__key" aria-pressed={runLocked} onPointerDown={event => event.stopPropagation()} onClick={() => { const body = runtime.current?.body(); if (body) setRunLocked(body.runLock(!runLocked)); }}>Run</button>}
-          <button type="button" className="harbour-moves__key" aria-pressed={emotesOpen} onPointerDown={event => event.stopPropagation()} onClick={() => setEmotesOpen(open => !open)}>Emote</button>
+        {(touch||!skating&&place==='court'&&!mountainRiding) && <div className="harbour-moves__row">
+          {!skating&&place==='court'&&!mountainRiding&&<button type="button" className="harbour-moves__key" aria-label="Retry from safe ground" onPointerDown={event => event.stopPropagation()} onClick={() => {held.current.clear();pushBody();runtime.current?.body()?.retry();setEmotesOpen(false);stage.current?.focus({preventScroll:true});}}>Retry</button>}
+          {touch&&!skating&&<button type="button" className="harbour-moves__key" onPointerDown={event => event.stopPropagation()} onClick={() => doMove("jump")}>Jump</button>}
+          {touch&&!skating&&<button type="button" className="harbour-moves__key" onPointerDown={event => event.stopPropagation()} onClick={() => doMove("slide")}>Slide</button>}
+          {touch&&!skating&&<button type="button" className="harbour-moves__key" aria-pressed={runLocked} onPointerDown={event => event.stopPropagation()} onClick={() => { const body = runtime.current?.body(); if (body) setRunLocked(body.runLock(!runLocked)); }}>Run</button>}
+          {touch&&<button type="button" className="harbour-moves__key" aria-pressed={emotesOpen} onPointerDown={event => event.stopPropagation()} onClick={() => setEmotesOpen(open => !open)}>Emote</button>}
         </div>}
       </div>}
       {status==='ready'&&!toolOpen&&place==='court'&&rideOffer?.reason==='platform'&&!mountainRiding&&!skating&&<span className="harbour-world__sr-only" role="status">{rideOffer.label}. Press F or Enter for this station arrow. At a middle station, hold Shift for the other direction.</span>}

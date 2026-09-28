@@ -23,6 +23,7 @@ import {
   placeBody,
   requestEmote,
   requestJump,
+  requestRetry,
   requestSlide,
   runFraction,
   stepBody,
@@ -140,6 +141,8 @@ export type Walker = {
    * taken on the next one, exactly once. In the air it is the second jump.
    */
   jump(): void;
+  /** Explicitly fade back to safe ground; never triggered by the height of a fall. */
+  retry(): void;
   /** Ask for a slide. Taken only from a run, on the ground. */
   slideNow(): void;
   /** Play an emote, or stop it (`null`). Asking for the one playing stops it. */
@@ -252,12 +255,12 @@ export function createWalker(options: WalkerOptions): Walker {
     run:skater.run,route:skater.route,spot:skater.spot,deck:skater.deck,settings:skater.settings,current:skater.current,command:skater.command,
     checkpoint:skater.checkpoint,input:skater.input,present:skater.present,events:skater.events,takeCut:skater.takeCut,setAudio:skater.setAudio,
     pause(on){skater.pause(on);},
-    restore(checkpoint){if(world.room)return;clearRoute();skater.restore(checkpoint);syncSkate();trail?.clear();dust.clear();drawSkate(0);},
+    restore(checkpoint){if(world.room)return;clearRoute();skater.restore(checkpoint);syncSkate();state={...state,returning:null};setFade(1);trail?.clear();dust.clear();drawSkate(0);},
     enable(on,progress){
       if(on){
         if(world.room)return false;
         if(skater.active())return true;
-        clearRoute();skater.mount(state.x,state.z,state.yaw,progress,{y:state.y,vy:state.vy,supportId:state.supportId});syncSkate();trail?.clear();dust.clear();drawSkate(0);
+        clearRoute();skater.mount(state.x,state.z,state.yaw,progress,{y:state.y,vy:state.vy,supportId:state.supportId});syncSkate();state={...state,returning:null};setFade(1);trail?.clear();dust.clear();drawSkate(0);
       }else{
         boardEmote=null;boardEmoteAt=0;
         const s=skater.unmount();
@@ -351,6 +354,7 @@ export function createWalker(options: WalkerOptions): Walker {
     // On the board the keys go to the skate input (HarbourWorld routes them);
     // the walking moves do nothing there. Emotes animate the rider on the board.
     jump() { if(!skater.active())state = requestJump(state); },
+    retry() { if(ride||world.room)return;if(skater.active()){skater.command('retry');return;}clearRoute();state=requestRetry(state,world); },
     slideNow() { if(!skater.active())state = requestSlide(state); },
     emote(id) {
       if(skater.active()) {boardEmote=boardEmote===id?null:id;boardEmoteAt=0;drawSkate(0);return;}

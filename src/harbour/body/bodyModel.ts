@@ -156,8 +156,6 @@ export const LIP_DROP = BODY_HEIGHT;
 export const LIP_REACH = 1.2;
 /** Pushing into a kerb this long is a deliberate step off it. */
 export const KERB_PRESS = 0.3;
-/** A fall longer than this is not survived as a landing: the body fades and returns to the nearest path. */
-export const SAFE_FALL = 4;
 /** The safe return's fade out, then back in, in seconds. */
 export const RETURN_FADE = 0.4;
 /** How quickly the figure's incline signal follows the slope underfoot (per second). */
@@ -285,7 +283,7 @@ export type BodyState = {
   peak?: number;
   /** The last place the feet stood on a supporting surface (a fall returns near it). */
   safe?: { x: number; y: number; z: number; supportId?: string };
-  /** A fall being handled gracefully: `t` seconds in; it fades out, moves, fades back. */
+  /** A requested Retry: `t` seconds in; it fades out, moves, fades back. */
   returning?: { t: number; x: number; y: number; z: number; supportId: string; moved: boolean } | null;
 };
 
@@ -313,7 +311,7 @@ export type BodyWorld = {
    * and the mountain, never a second sampler for part of it.
    */
   support?: (x: number, z: number, y: number | undefined, supportId: string | null | undefined, stepHeight: number) => Support;
-  /** Where a body that fell too far lands again (default: the nearest walk-graph node). */
+  /** Where Retry returns the body (default: the nearest walk-graph node). */
   safeReturn?: (x: number, y: number, z: number) => { x: number; y: number; z: number; supportId: string };
   /** What stands at the side of a support (default: the geography's per-sample road edges). */
   edge?: (supportId: string | null | undefined, x: number, z: number) => EdgeKind;
@@ -721,17 +719,8 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
     if (stalled >= STUCK_SECONDS) { goal = null; stalled = 0; }
   } else stalled = 0;
 
-  // ── A fall too long to land from ─────────────────────────────────────────
-  // Measured from the highest the feet were, against the ground they are
-  // coming down to. It is caught on the way down, so the body fades out while
-  // it is still falling, and never pops anywhere in one visible frame.
-  const falling = outdoors && vy < 0 && air > 0;
-  let returning: BodyState["returning"] = null;
-  if (outdoors && (falling || landing) && peak - ground > SAFE_FALL) {
-    const from = state.safe ?? { x: state.x, y: feet, z: state.z };
-    const to = world.safeReturn?.(from.x, from.y, from.z) ?? safeReturnPoint(from.x, from.y, from.z);
-    returning = { t: 0, x: to.x, y: to.y, z: to.z, supportId: to.supportId, moved: false };
-  }
+  // Height never requests a rescue. A fall remains continuous until contact;
+  // the player can ask for the same fade-and-return explicitly through Retry.
   const grounded = air <= 0 && vy === 0;
   const safe = outdoors && grounded && !blockedAhead && surface && surface.ny > Math.cos((WALKABLE_DEG * Math.PI) / 180)
     ? { x, y: ground, z, ...(surface.id ? { supportId: surface.id } : {}) } : state.safe;
@@ -745,7 +734,7 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
     // Below a whisper the body is standing still, not creeping.
     speed: speed < 0.01 && wanted === 0 && !sliding ? 0 : speed,
     phase,
-    goal: returning ? null : goal,
+    goal,
     stalled,
     contact,
     lean,
@@ -761,7 +750,7 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
     press,
     peak: grounded ? ground : peak,
     ...(safe ? { safe } : {}),
-    returning,
+    returning: null,
   };
   // A body still settling out of a lean is still moving, and the frame policy
   // has to keep painting until it has. Both signals snap to zero below
@@ -773,8 +762,17 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
     // these reaches exactly zero on its own, which is the promise the frame
     // policy is owed.
     || next.air > 0 || next.vy !== 0 || next.charge > 0 || next.crouch !== 0
-    || next.slide > 0 || next.emote !== null || returning !== null;
-  return { state: next, moving, footfall, skid, jumped, landing: returning ? null : landing, sliding, fade: 1, returned: null };
+    || next.slide > 0 || next.emote !== null;
+  return { state: next, moving, footfall, skid, jumped, landing, sliding, fade: 1, returned: null };
+}
+
+/** Retry is the sole entry to the outdoor fall rescue; repeated clicks do not restart its fade. */
+export function requestRetry(state: BodyState, world: BodyWorld): BodyState {
+  if (world.room || state.returning) return state;
+  const from = state.safe ?? { x: state.x, y: state.y - state.air, z: state.z };
+  const to = world.safeReturn?.(from.x, from.y, from.z) ?? safeReturnPoint(from.x, from.y, from.z);
+  return { ...state, goal: null, wantJump: false, wantSlide: false, charge: 0, slide: 0, emote: null,
+    returning: { t: 0, x: to.x, y: to.y, z: to.z, supportId: to.supportId, moved: false } };
 }
 
 /**
