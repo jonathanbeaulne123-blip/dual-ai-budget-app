@@ -61,4 +61,3 @@ Jonathan authorized push and merge on 2026-09-28. The associated pull request re
 ```sh
 pnpm_config_verify_deps_before_run=false pnpm test -- --risk=medium-high --focus=test/horizonAdaptiveQuality.test.ts --focus=test/horizonRenderWork.test.ts --focus=test/renderer-owner.test.ts --focus=test/horizonComfort.test.ts --focus=test/horizonFleet.test.ts --focus=test/horizonCruiser.test.ts --focus-reason='Adaptive frame-pressure hysteresis, shadow target lifecycle, demand rendering and shared renderer resume with movement/comfort regression coverage'
 ```
-
