@@ -66,3 +66,8 @@
 .horizon-shell--taylor .horizon-fleet { background:rgba(255,240,220,.95); color:#73374b; border-color:#cba1be; border-radius:1.4rem .65rem 1.2rem .7rem; }
 .horizon-shell--newfoundland .horizon-fleet { background:rgba(232,237,226,.95); color:#174d57; border-color:#688582; border-radius:.4rem; border-top:4px solid #d4a040; }
 @media(max-width:600px) { .horizon-fleet { top:var(--horizon-toolbar-bottom,9rem); right:.5rem; left:.5rem; max-width:none; max-height:24%; padding:.5rem .65rem; font-size:.75rem; } .horizon-fleet__actions { flex-wrap:nowrap; overflow:auto; } .horizon-fleet__actions button { flex:none; } }
+
+/* Kitchen owns the upper orders area; essential Hearth tools remain below its controls. */
+.horizon-shell--kitchen .horizon-top-controls{top:auto;bottom:12px;left:12px;right:12px;align-items:center;pointer-events:none}
+.horizon-shell--kitchen .horizon-toolbar{pointer-events:auto;width:max-content;max-width:100%;margin-inline:auto}
+.horizon-shell--kitchen .horizon-status{display:none}
