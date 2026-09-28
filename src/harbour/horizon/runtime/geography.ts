@@ -106,6 +106,19 @@ export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
     return null;
   }
   const blocked=(x:number,z:number,y:number,radius=.3)=>blocker(x,z,y,radius)!==null;
+  /** Hulls query exposed water. A pedestrian supplies feet height so the Deep is
+   * wet without treating a lake in an overhead room as water on a dry floor. */
+  function waterLevel(x:number,z:number,feet?:number):number|null {
+    let level:number|null=null,underground=false;
+    for(const w of cuts.waters){
+      if(w.kind==='dry')continue;
+      const h=waterHeightAt(w,x,z);if(h===null)continue;
+      if(w.underground){underground=true;if(feet===undefined||feet>h+1)continue;}
+      if(feet!==undefined&&h-feet>w.depth+HORIZON_BODY_HEIGHT)continue;
+      if(level===null||h>level)level=h;
+    }
+    return level??(sampleTerrain(field,x,z)<-.2&&(feet===undefined||!underground)?0:null);
+  }
   function submerged(x:number,z:number,feet:number){
     // Visible water owns the walking boundary, including high-altitude lakes and underground water.
     // An overhead water surface in a separate room must not block its dry floor.
@@ -125,7 +138,7 @@ export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
     }
     return false;
   }
-  return {addDynamic(provider:DynamicGeography){dynamic.add(provider);return()=>dynamic.delete(provider);},surface,ceiling,blocked,blocker,submerged,cameraBlocked,get indexStats(){return{triangles:count,referenceBytes:(owners.byteLength+offsets.byteLength+normals.byteLength)*count/Math.max(1,owners.length),cells:cells.size,chunks};},addSolids,ground:(x:number,z:number)=>sampleTerrain(field,x,z)};
+  return {addDynamic(provider:DynamicGeography){dynamic.add(provider);return()=>dynamic.delete(provider);},surface,ceiling,blocked,blocker,waterLevel,submerged,cameraBlocked,get indexStats(){return{triangles:count,referenceBytes:(owners.byteLength+offsets.byteLength+normals.byteLength)*count/Math.max(1,owners.length),cells:cells.size,chunks};},addSolids,ground:(x:number,z:number)=>sampleTerrain(field,x,z)};
 }
 export function nearestBedPoint(beds:readonly BedCut[],x:number,z:number):XYZ {
   let best:XYZ=[x,0,z],distance=Infinity;

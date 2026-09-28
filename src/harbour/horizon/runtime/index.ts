@@ -1,7 +1,6 @@
 import {createFleet,isCraft,HANDLING,toWorld,toLocal,type CraftId} from '../movers/fleet/model.ts';
 import {createWatercraftController} from '../movers/fleet/controller.ts';
 import {createFleetArt} from '../movers/fleet/art.ts';
-import {waterHeightAt} from '../land/water/index.ts';
 import {constantWind} from '../movers/shared/wind.ts';
 import {createPerspective,perspectiveLabel,type Perspective} from './perspective.ts';
 import {HARBOUR_DEV} from '../../flag.ts';
@@ -93,15 +92,15 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   // Movers (RIDE §10.2, §11 ask 2): one registry, one active controller; the Horizon mode stays 'walk' while riding.
   // One comfort source (v2.2): the land's motion (cuts, the frozen 15:30) and the movers' registry read the same two flags.
   let comfort:HorizonComfort={calm:options.calm===true,reducedMotion:options.reducedMotion===true||appReducedMotion()},motion=horizonMotion(comfort);
-  const theme=options.theme??'classic',perspective=createPerspective();
+  let theme=options.theme??'classic';const perspective=createPerspective();
   const registry=createMoverRegistry({world,geography,manifest:HORIZON_MANIFEST,reducedMotion:comfort.reducedMotion,calm:comfort.calm,tier});
   registerHorizonMovers(registry,options.movers);
   const sharedWind=constantWind();
-  const waterLevel=(x:number,z:number)=>{let level:number|null=null;for(const w of cuts.waters){if(w.kind==='dry'||w.underground)continue;const h=waterHeightAt(w,x,z);if(h!==null&&(level===null||h>level))level=h;}return level??(geography.ground(x,z)<-.2?0:null);};
+  const waterLevel=geography.waterLevel;
   // Hull clearance uses static island geometry. Dynamic yacht collision is queried by people and flight.
   const hullGeography=createHorizonGeography(field,cuts);
   const fleet=createFleet({water:waterLevel,ground:geography.ground,blocked:hullGeography.blocked,ceiling:hullGeography.ceiling,surface:hullGeography.surface,width:world.extent.w,depth:world.extent.h,wind:{sample:(x,y,z,t)=>comfort.calm||comfort.reducedMotion?{dir:0,speed:0}:sharedWind.sample(x,y,z,t)}});
-  const offFleet=geography.addDynamic(fleet),fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);
+  const offFleet=geography.addDynamic(fleet);let fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);
   for(const id of ['kayak','dinghy','motorboat','yacht'] as const)registry.register(id,()=>createWatercraftController(fleet,id));
   const fleetKey=options.fleetStorageKey??'hearth:horizon-fleet:review:v1';
   let fleetRestore:ReturnType<typeof fleet.restore>=null;
@@ -460,7 +459,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     for(let i=0;i<steps;i++){
       const x=body.x+dx/steps,z=body.z+dz/steps;if(!gateOpen(x,z)){held=true;break;}
       if(x<.4||z<.4||x>world.extent.w-.4||z>world.extent.h-.4)break;
-      const hit=geography.surface(x,z,body.y,.48),wet=waterLevel(x,z),water=wet!==null&&(!hit||hit.y<wet-.3);
+      const hit=geography.surface(x,z,body.y,.48),wet=waterLevel(x,z,body.y),water=wet!==null&&(!hit||hit.y<wet-.3);
       const height=hit&&!water&&velocityY===0?Math.max(body.y,hit.y):body.y;
       const obstacle=geography.blocker(x,z,height,.3,[dx/steps,dz/steps]);
       if(obstacle||hit&&!water&&hit.slope>HORIZON_WALKABLE_DEGREES){lastMovementBlocker={at:[x,body.y,z],surface:hit,obstacle,water};break;}
@@ -473,7 +472,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function step(dt:number,now:number){
     leftSupport=false;
     if(fleet.sitting()){figure.group.position.set(body.x,body.y,body.z);figure.group.rotation.y=body.yaw;figure.pose(0,0,now/1000,{lean:0,bank:0,run:0,air:0,rise:0,crouch:0,slide:0,emote:'sit',emoteAt:1,flourish:0});updateCamera();return;}
-    const at=geography.surface(body.x,body.z,body.y,.1),water=waterLevel(body.x,body.z);
+    const at=geography.surface(body.x,body.z,body.y,.1),water=waterLevel(body.x,body.z,body.y);
     swimming=water!==null&&body.y<=water-.3&&(!at||at.y<water-.3);
     let forward=controls.forward+(keys.has('w')||keys.has('arrowup')?1:0)-(keys.has('s')||keys.has('arrowdown')?1:0),strafe=controls.strafe+(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0);
     let dx=Math.sin(yaw)*forward+Math.cos(yaw)*strafe,dz=Math.cos(yaw)*forward-Math.sin(yaw)*strafe;
@@ -481,7 +480,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     const length=Math.hypot(dx,dz),speed=swimming?2.4:controls.run||keys.has('shift')?HORIZON_MANIFEST.speeds_ms.run:HORIZON_MANIFEST.speeds_ms.walk;
     const before={x:body.x,z:body.z};
     let moved=0;if(length){dx=dx/length*Math.min(1,length)*speed*dt;dz=dz/length*Math.min(1,length)*speed*dt;body.yaw=Math.atan2(dx,dz);moved=move(dx,dz,dt);if(path.length&&moved<.001&&!held)path=[];}
-    const floor=geography.surface(body.x,body.z,body.y,.02),wet=waterLevel(body.x,body.z);
+    const floor=geography.surface(body.x,body.z,body.y,.02),wet=waterLevel(body.x,body.z,body.y);
     swimming=wet!==null&&body.y<=wet-.3&&(!floor||floor.y<wet-.3);
     const unsupported=leftSupport||!floor||body.y-floor.y>.05;
     if(!swimming&&(unsupported||jumpRequested&&!consumeJumpUntilRelease)){
@@ -563,6 +562,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     arrive(hostId:string){const h=world.hosts.find(h=>h.id===hostId);if(!h||!h.returnAt)return false;restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',x:h.returnAt[0],y:h.returnAt[1],z:h.returnAt[2],yaw:(h.facing??0)+Math.PI});return true;},
     simulateWalk(seconds:number){if(!HARBOUR_DEV)throw new Error('Simulation is a review-only control.');const count=Math.ceil(Math.max(0,Math.min(seconds,3600))/.05);simulating=true;try{for(let i=0;i<count&&path.length;i++)step(.05,performance.now()+i*50);}finally{simulating=false;updateCamera();}return{body:{...body},remaining:path.length,blocker:lastMovementBlocker};},
     body:()=>({...body}),mode:()=>mode,shotId:()=>shotId,
+    setTheme(next:VehicleDressing){if(next===theme)return;theme=next;fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
     settings:()=>({tier,reducedMotion:comfort.reducedMotion,calm:comfort.calm,theme}),reviewDate:()=>(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm})),setAmbience(audio:WorldAmbience|null){ambience=audio;},
     offers,
     moverState():HorizonMoverState{const fade=fadeLabel&&performance.now()-fadeLabel.at<HORIZON_FADE_LABEL_MS?fadeLabel.label:undefined;return{mode:registry.mode(),attached:registry.active()!==null,hud:lastHud,airborne:registry.mode()==='parachute'||!!registry.active()?.airborne?.(),stowed:registry.stowed(),perspective:perspective.mode(),...(fade?{fade}:{}),cut:comfortCut};},

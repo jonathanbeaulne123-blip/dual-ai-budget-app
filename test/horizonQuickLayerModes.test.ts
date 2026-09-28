@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import {createElement} from 'react';
+import {createElement,Profiler} from 'react';
 import {act} from 'react';
 import {createRoot} from 'react-dom/client';
 import {afterEach,beforeAll,describe,expect,it,vi} from 'vitest';
@@ -13,14 +13,14 @@ import type {FleetAction} from '../src/harbour/horizon/movers/fleet/model.ts';
 const world={
   moverState:{mode:'feet',attached:false,hud:null} as HorizonMoverState,
   offers:[] as ThresholdOffer[],
-  moverAction:vi.fn(),accept:vi.fn(),
+  moverAction:vi.fn(),accept:vi.fn(),setTheme:vi.fn(),mode:'walk',
   fleetActions:[] as FleetAction[],fleetAction:vi.fn(),cycleCamera:vi.fn(),jumpHold:vi.fn(),
 };
 const register=vi.fn(()=>()=>{});
 vi.mock('../src/harbour/scene/worldMount.ts',()=>({mountHorizonWorld:async()=>({
-  mode:()=>'walk',shotId:()=>'A',offers:()=>world.offers,moverState:()=>world.moverState,moverAction:world.moverAction,accept:world.accept,
+  mode:()=>world.mode,shotId:()=>'A',offers:()=>world.offers,moverState:()=>world.moverState,moverAction:world.moverAction,accept:world.accept,
   fleetActions:()=>world.fleetActions,fleetState:()=>({vessels:[],swimming:false,perspective:'activity',sitting:null,saveFailed:false}),fleetAction:world.fleetAction,cycleCamera:world.cycleCamera,jumpHold:world.jumpHold,
-  cyclePerspective(){},resumeEquipment(){},pause(){},setComfort(){},setReducedMotion(){},setCalm(){},setMode(){},dispose(){},input(){},look(){},jump(){},enterDoor(){},cutTo(){},world:{views:[]},
+  setTheme:world.setTheme,cyclePerspective(){},resumeEquipment(){},pause(){},setComfort(){},setReducedMotion(){},setCalm(){},setMode(){},dispose(){},input(){},look(){},jump(){},enterDoor(){},cutTo(){},world:{views:[]},
 })}));
 vi.mock('../src/harbour/horizon/movers/glider/index.ts',()=>({registerGliderModes:register}));
 
@@ -30,12 +30,12 @@ beforeAll(()=>{
   globalThis.ResizeObserver??=class{observe(){}unobserve(){}disconnect(){}} as unknown as typeof ResizeObserver;
 });
 const tick=(ms=260)=>act(async()=>{await new Promise(r=>setTimeout(r,ms));});
-let root:ReturnType<typeof createRoot>|null=null,host:HTMLElement|null=null;
+let root:ReturnType<typeof createRoot>|null=null,host:HTMLElement|null=null,commits=0;
 afterEach(()=>{act(()=>root?.unmount());host?.remove();root=null;host=null;});
 async function mount(){
   const {default:HorizonStage}=await import('../src/harbour/horizon/HorizonStage.tsx');
   host=document.createElement('div');document.body.append(host);root=createRoot(host);
-  await act(async()=>{root!.render(createElement(HorizonStage,{onQuickSheet:()=>{},onJourney:()=>{},sound:{on:false,toggle:()=>{}}}));});
+  await act(async()=>{root!.render(createElement(Profiler,{id:'stage',onRender:()=>{commits++;}},createElement(HorizonStage,{onQuickSheet:()=>{},onJourney:()=>{},sound:{on:false,toggle:()=>{}}})));});
   await tick(50);
   return host;
 }
@@ -86,6 +86,24 @@ describe('the quick layer in every mover phase',()=>{
     brake.setPointerCapture=vi.fn();act(()=>{const press=new Event('pointerdown',{bubbles:true,cancelable:true});Object.defineProperty(press,'pointerId',{value:12});brake.dispatchEvent(press);expect(press.defaultPrevented).toBe(true);const release=new Event('pointerup',{bubbles:true});Object.defineProperty(release,'pointerId',{value:12});window.dispatchEvent(release);});expect(world.jumpHold).toHaveBeenCalledWith(true);expect(world.jumpHold).toHaveBeenLastCalledWith(false);
     const boarding=[...h.querySelectorAll<HTMLButtonElement>('.horizon-fleet button')].find(b=>b.textContent?.includes('Secure boat'))!;act(()=>boarding.click());expect(world.fleetAction).toHaveBeenCalledWith('moor-dinghy');
     expect(h.querySelector('.horizon-bubble-place')).toBeNull();world.fleetActions=[];
+  });
+  it('refreshes boat speed while the same craft stays attached',async()=>{
+    const h=await mount();hud(true,{pace:'0 km/h',label:'Dinghy',arc:0,glyph:null},'dinghy');await tick();
+    expect(h.querySelector('.horizon-fleet')?.textContent).toContain('0 km/h');
+    hud(true,{pace:'12 km/h',label:'Dinghy',arc:0,glyph:null},'dinghy');await tick();
+    expect(h.querySelector('.horizon-fleet')?.textContent).toContain('12 km/h');
+  });
+  it('does not commit unchanged fleet polls, including when the panel is hidden',async()=>{
+    hud(false,null,'feet');world.offers=[];world.fleetActions=[];await mount();await tick();const before=commits;
+    await tick(650);expect(commits).toBe(before);
+    world.mode='look';await tick();const hidden=commits;await tick(650);expect(commits).toBe(hidden);world.mode='walk';
+  });
+  it('applies appearance changes to the mounted runtime without re-registering movement',async()=>{
+    const {default:HorizonStage}=await import('../src/harbour/horizon/HorizonStage.tsx');await mount();const count=register.mock.calls.length;
+    await act(async()=>{root!.render(createElement(Profiler,{id:'stage',onRender:()=>{commits++;}},createElement(HorizonStage,{theme:'taylor'})));});await tick(50);
+    const mounted=register.mock.calls.length;
+    await act(async()=>{root!.render(createElement(Profiler,{id:'stage',onRender:()=>{commits++;}},createElement(HorizonStage,{theme:'newfoundland'})));});await tick(50);
+    expect(world.setTheme).toHaveBeenLastCalledWith('newfoundland');expect(register).toHaveBeenCalledTimes(mounted);expect(mounted).toBe(count);
   });
   it('labels the glider offers as the pads read them, and the plane\'s Jump as a press-and-hold',async()=>{
     const h=await mount();

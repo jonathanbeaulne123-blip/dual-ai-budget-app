@@ -20,6 +20,19 @@ export function toWorld(v:Pick<Vessel,'x'|'y'|'z'|'yaw'>,p:Point):Point{const s=
 export function toLocal(v:Pick<Vessel,'x'|'y'|'z'|'yaw'>,p:Point):Point{const s=Math.sin(v.yaw),c=Math.cos(v.yaw),x=p.x-v.x,z=p.z-v.z;return{x:x*c-z*s,y:p.y-v.y,z:x*s+z*c};}
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 const approach=(n:number,to:number,stepSize:number)=>n<to?Math.min(to,n+stepSize):Math.max(to,n-stepSize);
+/** Separate the oriented hull rectangles on both boats' axes, keeping a small fender gap. */
+function smallHullsOverlap(v:Vessel,x:number,z:number,yaw:number,other:Vessel){
+ const hull=HANDLING[v.id],otherHull=HANDLING[other.id];
+ const right={x:Math.cos(yaw),z:-Math.sin(yaw)},forward={x:Math.sin(yaw),z:Math.cos(yaw)};
+ const otherRight={x:Math.cos(other.yaw),z:-Math.sin(other.yaw)},otherForward={x:Math.sin(other.yaw),z:Math.cos(other.yaw)};
+ const dx=other.x-x,dz=other.z-z;
+ for(const axis of[right,forward,otherRight,otherForward]){
+  const reach=hull.width/2*Math.abs(axis.x*right.x+axis.z*right.z)+hull.length/2*Math.abs(axis.x*forward.x+axis.z*forward.z);
+  const otherReach=otherHull.width/2*Math.abs(axis.x*otherRight.x+axis.z*otherRight.z)+otherHull.length/2*Math.abs(axis.x*otherForward.x+axis.z*otherForward.z);
+  if(Math.abs(dx*axis.x+dz*axis.z)>=reach+otherReach+.3)return false;
+ }
+ return true;
+}
 export function createFleet(env:WaterEnv){
  const vessels=createVessels(),doors=new Set<string>(),wind=env.wind??constantWind();let time=0,remainder=0;
  const yacht=vessels[3]!,get=(id:CraftId)=>vessels.find(v=>v.id===id)!;
@@ -54,7 +67,7 @@ export function createFleet(env:WaterEnv){
   // Broad hull against small vessels. Moored tenders travel kinematically and never push the yacht.
   if(v.id!=='yacht'){const p=toLocal(yacht,{x,y:yacht.y,z});if(Math.abs(p.x)<7+r&&Math.abs(p.z)<23+h.length/2)return false;}
   else for(const other of vessels)if(other!==v&&!other.moored){const p=toLocal({...v,x,z,yaw},other);if(Math.abs(p.x)<7+HANDLING[other.id].width/2&&Math.abs(p.z)<23+HANDLING[other.id].length/2)return false;}
-  for(const other of vessels)if(other!==v&&other.id!=='yacht'&&!other.moored&&Math.hypot(other.x-x,other.z-z)<r+HANDLING[other.id].width/2+.3)return false;
+  if(v.id!=='yacht')for(const other of vessels)if(other!==v&&other.id!=='yacht'&&!other.moored&&smallHullsOverlap(v,x,z,yaw,other))return false;
   return true;
  }
  function step(dt:number){
