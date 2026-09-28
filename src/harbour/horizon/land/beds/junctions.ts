@@ -73,6 +73,13 @@ export function settleBedEdges(cuts:LandCuts,ground:HeightQuery):void {
   // drops). Every route instead keeps its own corridor clear of other routes' walls and
   // rails at its own height: that opens exactly the approach mouths of every junction.
   clearRouteCorridors(cuts);
+  // Integrator 4 (Wave 7, W7-A → W7-S: kerb gaps where stairs land on other beds; P17 S1 × dam portage): a stair ends ON
+  // another bed (a walk, a quay, S1, a deck) but never runs along it, so no corridor opened that bed's kerb, edge or rail
+  // where the stair lands (S1.edges.notch stood across the dam portage's foot). At each stair end, ONLY the edge pieces of
+  // the bed it lands on (another structure's bed, its surface within half-width + 1.5 in plan and 0.6 in height) open, the
+  // stair's width + 0.3 either side of the end: a landing's far parapet over a drop is never touched (an all-bed corridor
+  // cut the Scholars Cove stair landing's sea parapet over a 17 m drop on the first try).
+  openStairLandings(cuts);
   // Garden Walk and Year Walk share the Hollow approach for longer than a
   // junction pad. Keep each lane's outside protection, but remove rail pieces
   // from the other route that physically occupy its walking corridor.
@@ -85,6 +92,24 @@ export function settleBedEdges(cuts:LandCuts,ground:HeightQuery):void {
     }
   }
   cuts.solids=cuts.solids.filter(s=>s.indices.length>0);
+}
+/** Where each stair end lands on another structure's walking bed: [stair, end, the bed landed on]. */
+export function stairLandings(cuts:LandCuts):{stair:BedCut;end:XYZ;onto:BedCut}[] {
+  const out:{stair:BedCut;end:XYZ;onto:BedCut}[]=[],owner=(id:string)=>id.split('.')[0]!;
+  for(const b of cuts.beds){
+    if(b.kind!=='stair'||b.points.length<2)continue;
+    for(const end of [b.points[0]!,b.points.at(-1)!])for(const o of cuts.beds){
+      if(o===b||owner(o.id)===owner(b.id)||o.kind==='cable'||o.points.length<2)continue;
+      const n=nearestOnPath(plan(end),o.points);if(n.distance<=o.width/2+1.5&&Math.abs(n.at[1]-end[1])<=.6)out.push({stair:b,end,onto:o});
+    }
+  }
+  return out;
+}
+function openStairLandings(cuts:LandCuts):void {
+  for(const {stair,end,onto} of stairLandings(cuts))for(const piece of cuts.solids){
+    if(!EDGE_KINDS.includes(piece.kind)||!piece.bedIds.includes(onto.id)||piece.bedIds.includes(stair.id))continue;
+    clipEdgePrisms(piece,plan(end),stair.width/2+.3,end[1]);
+  }
 }
 const EDGE_KINDS=['retainingWall','kerb','parapet','handrail'];
 /** The body's step: a join between two beds is flush at or below this (runtime lip 0.48 eu). */

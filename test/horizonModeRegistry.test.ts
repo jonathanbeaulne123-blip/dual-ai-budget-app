@@ -49,7 +49,7 @@ describe('Horizon threshold offers (RIDE §10.2, 02-movers rule 1)', () => {
   });
   it('offers the park at landingQuay on the board, and respects the reach and |dy| rule', () => {
     const board = offersAt(world, at('landingQuay', 2), 'board');
-    expect(board.find(o => o.thresholdId === 'landingQuay')).toMatchObject({from: 'board', to: 'feet', label: 'Park', at: [1270, 3, 1330]});
+    expect(board.find(o => o.thresholdId === 'landingQuay')).toMatchObject({from: 'board', to: 'feet', label: 'Park', at: [1270, 4.7, 1330]});   // v2.4: the quay finish on the islet's natural ground (was 3)
     expect(offersAt(world, at('landingQuay', OFFER_REACH + .2), 'board').some(o => o.thresholdId === 'landingQuay')).toBe(false);
     expect(offersAt(world, at('landingQuay', 0, 1.5), 'board').some(o => o.thresholdId === 'landingQuay')).toBe(false);
   });
@@ -87,7 +87,7 @@ describe('Horizon mover registry', () => {
     expect(park.to).toBe('feet');
     expect(registry.accept(park, at('landingQuay', 1), 40)).toBe(true);
     expect(registry.mode()).toBe('feet'); expect(registry.active()).toBeNull();
-    expect(registry.lastExit()).toEqual({x: 1270, y: 3, z: 1330, yaw: 0});
+    expect(registry.lastExit()).toEqual({x: 1270, y: 4.7, z: 1330, yaw: 0});
     expect(log).toEqual(['reducedMotion:false', 'calm:false', 'tier:full', 'enter:skateLineStarts.1', 'update', 'exit:landingQuay', 'dispose']);
   });
   it('refuses an offer whose from is not the current mode', () => {

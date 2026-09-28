@@ -1,6 +1,6 @@
 {
  "title": "The Horizon \u2014 MANIFEST",
- "version": "2.2",
+ "version": "2.5",
  "date": "2026-09-27",
  "status": "Design numbers for implementation. Control points are centreline intent to be solved into splines by the land pass; not navigation or collision data until baked into WorldDefinition v3. v2.2: paces and surface grip (RIDE D42) and the FLIGHT sky fields (D34\u2013D38), reconciled onto the v2.1 land \u2014 data only, no geometry change.",
  "units": {
@@ -2614,15 +2614,59 @@
      900
     ],
     [
-     1140,
+     1166,
      905
     ]
    ],
    "profile": "trail",
    "length_m": 494,
-   "surface_m": 5.2,
-   "shoulder_m": 1.2,
-   "surfaceNote_v2_1": "the Year Walk's February share rides this trail at offset 0: the trail takes the Year Walk's section (5.2 m + 1.2 m shoulders; profile trail 2.5 elsewhere; design lead, Stage A Wave 5 integration 2026-09-27)"
+   "v2_1_surface_m": 5.2,
+   "v2_1_shoulder_m": 1.2,
+   "v2_1_surfaceNote": "the Year Walk's February share rides this trail at offset 0: the trail takes the Year Walk's section (5.2 m + 1.2 m shoulders; profile trail 2.5 elsewhere; design lead, Stage A Wave 5 integration 2026-09-27)",
+   "sectionNote_v2_3": "D-D8 (design lead, Stage A Wave 7 (W7-A) 2026-09-27, reversible): the trail keeps its profile section (2.5 m); on the February share the Year Walk's own 5.2 m + 1.2 m section carries the trail, so the widening stops where the share stops ([1251,836]) and never reaches the dam end",
+   "v2_2_pts": [
+    [
+     990,
+     780
+    ],
+    [
+     1030,
+     740
+    ],
+    [
+     1130,
+     720
+    ],
+    [
+     1235,
+     755
+    ],
+    [
+     1250,
+     840
+    ],
+    [
+     1200,
+     900
+    ],
+    [
+     1140,
+     905
+    ]
+   ],
+   "v2_2_crossing": {
+    "a": "walk lakerim",
+    "b": "river lower",
+    "at": [
+     1140,
+     905
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "",
+    "retired_v2_3": "the trail ends at the gallery exit [1166,905] (D-D8): walk damCrest \u00d7 river lower [1140.2,903] is the rim's crossing"
+   }
   },
   "prow": {
    "pts": [
@@ -3814,7 +3858,10 @@
     1270,
     1330
    ],
-   "note": "the race finish on the islet between the Reach's west channel and the river; 25 m run-out along the bank; kerb-separated from V01 which passes 45 m south; the Boathouse dock is across the west channel by the Reach boardwalk"
+   "note": "the race finish on the islet between the Reach's west channel and the river; 25 m run-out along the bank; kerb-separated from V01 which passes 45 m south; the Boathouse dock is across the west channel by the Reach boardwalk",
+   "v2_3_finish_h": 3,
+   "finish_h": 4.7,
+   "finishNote_v2_4": "the paved finish and its pad at the islet's natural ground (\u2248 4.7) instead of 3 (design lead, Stage A Wave 7 integrator 4 2026-09-27, W7-S request)"
   },
   "townQuay": {
    "from": [
@@ -3927,15 +3974,15 @@
    ],
    "kind": "trestle",
    "carries": "VBS",
-   "length_m": 56,
+   "length_m": 68,
    "width_m": 5,
    "from": [
-    918.1,
-    877
+    923.6,
+    874.5
    ],
    "to": [
-    886.7,
-    916.0
+    881.0,
+    926.5
    ],
    "deck": "VBS on its own grade (27.4 \u2192 24.4)",
    "beside": "S4 at 17.3-18.2, 4.5-7 m from VBS's centreline on the east side",
@@ -3946,23 +3993,33 @@
     891.6,
     906
    ],
-   "v2_0_length_m": 44
+   "v2_0_length_m": 44,
+   "v2_3_from": [
+    918.1,
+    877
+   ],
+   "v2_3_to": [
+    886.7,
+    916.0
+   ],
+   "v2_3_length_m": 56,
+   "note_v2_4": "extended along VBS (north +6, south +12) over the 8.5 / 1.49 eu voids at its ends (design lead, Stage A Wave 7 integrator 4 2026-09-27, W7-S request 4)"
   },
   "marketStair": {
    "xy": [
-    1480,
-    1160
+    1472,
+    1124.5
    ],
    "kind": "town stair",
    "foot": [
-    1480,
+    1472,
     12,
-    1171
+    1134
    ],
    "head": [
-    1480,
+    1472,
     18,
-    1150
+    1115
    ],
    "flights": 3,
    "twin": "none (stairs only)",
@@ -3994,7 +4051,22 @@
     "from": "the square",
     "to": "the upper street spur's end [1480,18,1060]",
     "note": "the recorded step-free way between the square and the upper street (review 2 route walk: 295.5 eu, 123 s at 2.4 m/s)"
-   }
+   },
+   "v2_2_xy": [
+    1480,
+    1160
+   ],
+   "v2_2_head": [
+    1480,
+    18,
+    1150
+   ],
+   "v2_2_foot": [
+    1480,
+    12,
+    1171
+   ],
+   "placeNote_v2_3": "the head on the upper street's south edge (was 6 m over the square at [1480,18,1150]); a level walk (town.upperStreetWalk) joins it to the gondola base walk and a level foot landing (marketStair.foot) to the square walk (design lead, Stage A Wave 7 (W7-A) 2026-09-27)"
   },
   "coveStair": {
    "kind": "cliff-stair",
@@ -4040,6 +4112,22 @@
    "bents": "outside the lower pass's corridor (2 m + 1 m margin either side of its centreline)",
    "decided": "D-C15 (recommended, accepted Jonathan 2026-09-27)",
    "note": "v2.0: a route's self-crossing is not a register pair; P12 proves it (was a 13.4 eu unsupported run at [1358,750])"
+  },
+  "prowLoopFootbridge": {
+   "kind": "footbridge",
+   "carries": "yearWalk",
+   "over": "the Year Walk's own lower lane (the November loop on the Prow)",
+   "from": [
+    1603.5,
+    674.6
+   ],
+   "to": [
+    1609.8,
+    702.9
+   ],
+   "length_m": 29,
+   "width_m": 6,
+   "note": "v2.4: the Year Walk's upper pass over its own lower lane at the Prow (5.6 eu apart) on a named footbridge (design lead, Stage A Wave 7 integrator 4 2026-09-27, W7-A \u2192 W7-S request; OPEN_VOIDS yearWalk [1605,690] closed)"
   }
  },
  "underground": {
@@ -4241,14 +4329,19 @@
    },
    "reachMeadow": {
     "xy": [
-     1143,
-     1167
+     1195,
+     1205
     ],
     "r": 40,
     "modes": [
      "glider",
      "parachute"
-    ]
+    ],
+    "v2_3_xy": [
+     1143,
+     1167
+    ],
+    "note_v2_4": "the nearest clear 40 m field on the low ground south of the High Span (h 4.7): the Dam Run lands 17.3 m from the centre; Prow \u2192 meadow 23.1 m in hand, 1.9 short of the 25 asked ([1230,1190] kept 25.5 but S1, the Reach walk and the spring stand in its field) (design lead, Stage A Wave 7 integrator 4 2026-09-27, W7-T A6)"
    },
    "sands": {
     "xy": [
@@ -4259,7 +4352,8 @@
     "modes": [
      "glider",
      "parachute"
-    ]
+    ],
+    "note_v2_4": "accepted: Prow \u2192 Sands arrives +3.5 m at 10:00 and 15:30 alike (no thermal needed); label 'Long Sands' (design lead, Stage A Wave 7 integrator 4 2026-09-27, W7-T A8)"
    },
    "strip": "see structures.strip",
    "water": [
@@ -4377,7 +4471,9 @@
      1300,
      200
     ],
-    "h": 130
+    "h": 139,
+    "v2_3_h": 130,
+    "note_v2_4": "re-seated with the lookout launch (+10 \u2192 +9): the Throat Run at trim crosses +0.2 (design lead, Stage A Wave 7 integrator 4 2026-09-27, W7-T A7)"
    },
    {
     "n": 11,
@@ -4621,13 +4717,43 @@
     "plot.terraces.2",
     "plot.terraces.3"
    ],
-   "served": "plots 1\u20133 uphill (west) of the Prow cliff drive between [1600,860] and [1540,1000] with a lay-by each; the Prow walk above; the town below. D12 confirmed 2026-09-25: three uphill plots only; no seaward plot."
+   "served": "plots 1\u20133 uphill (west) of the Prow cliff drive between [1600,860] and [1540,1000] with a lay-by each; the Prow walk above; the town below. D12 confirmed 2026-09-25: three uphill plots only; no seaward plot.",
+   "v2_2_plots": [
+    [
+     1552,
+     832
+    ],
+    [
+     1528,
+     896
+    ],
+    [
+     1512,
+     952
+    ]
+   ],
+   "plot1Note_v2_3": "R3-32: 1.0 m WNW off the Prow walk's corner (margin 5.83 \u2192 \u2265 6.6); design lead, Stage A Wave 7 (W7-A) 2026-09-27",
+   "v2_3_plots": [
+    [
+     1551.1,
+     832.5
+    ],
+    [
+     1528,
+     896
+    ],
+    [
+     1512,
+     952
+    ]
+   ],
+   "plot1Note_v2_4": "back to v2.2 (design lead, Stage A Wave 7 integrator 4 2026-09-27): the v2.3 move put the service drive's bed 0.47 over the Year Walk at [1594.7,837.9] and blocked the walk to L02; R3-32 open (5.83 of 6), owner W7-A"
   },
   "bightShore": {
    "plots": [
     [
-     814,
-     919
+     813.0,
+     918.8
     ],
     [
      771,
@@ -4678,7 +4804,26 @@
      1107
     ]
    ],
-   "plot1Note_v2_0": "D-C8 (recommended, accepted Jonathan 2026-09-27): plot bight.1 moved 25 m west-south-west, the nearest spot clear of the June lane and S4 (the \u2248 12 m estimate did not clear); the plot's service drive follows"
+   "plot1Note_v2_0": "D-C8 (recommended, accepted Jonathan 2026-09-27): plot bight.1 moved 25 m west-south-west, the nearest spot clear of the June lane and S4 (the \u2248 12 m estimate did not clear); the plot's service drive follows",
+   "v2_2_plots": [
+    [
+     814,
+     919
+    ],
+    [
+     771,
+     973
+    ],
+    [
+     729,
+     1032
+    ],
+    [
+     705,
+     1107
+    ]
+   ],
+   "plot1Note_v2_3": "D-D2: 1.0 m WSW off the June lane's corner (margin 5.79 \u2192 \u2265 6.6 with the Year Walk's shoulder); the service drive meets the June lane at grade (design lead, Stage A Wave 7 (W7-A) 2026-09-27)"
   },
   "small": {
    "sealedDrift": {
@@ -5032,7 +5177,15 @@
     "surf",
     "the Lamp",
     "the zipline landing"
-   ]
+   ],
+   "ground": {
+    "xy": [
+     1181,
+     1401
+    ],
+    "h": 3.0
+   },
+   "groundNote_v2_4": "the beach verge south of Horizon Drive, 5.1 eu off the Drive (Long Sands' dune walk and zip landing are not reachable from the square yet: R3-119) (design lead, Stage A Wave 7 integrator 4 2026-09-27)"
   },
   {
    "id": "E",
@@ -5088,7 +5241,15 @@
    "v1_8_xy": [
     1305,
     482
-   ]
+   ],
+   "ground": {
+    "xy": [
+     1306,
+     482
+    ],
+    "h": 170
+   },
+   "groundNote_v2_4": "on the Crown launch deck (lookout run-off deck), 5.1 eu from crownLaunch.stair's head (design lead, Stage A Wave 7 integrator 4 2026-09-27)"
   },
   {
    "id": "F",
@@ -5140,29 +5301,28 @@
   {
    "id": "G",
    "target": [
-    1300,
-    300
+    1320,
+    380
    ],
    "fov_deg": 55,
    "radius_eu": 220,
-   "label": "The Deep, looking up the Throat",
+   "label": "The Deep, looking up the skylight shaft",
    "xy": [
-    1300,
-    440
+    1320,
+    404
    ],
-   "frames": "from the Deep's jetty north up the Throat to its mouth of daylight, the skylight shaft overhead, a glider flaring onto the water",
+   "frames": "from the Deep's floor up the skylight shaft to its square of daylight; the Throat dark behind (D-B5)",
    "bestHour": "noon (sun shaft)",
    "also": "night (moon shaft)",
    "target_h": 110,
    "portrait": {
     "fov_deg": 45,
     "target": [
-     1300,
-     300
+     1320,
+     380
     ],
     "target_h": 110,
     "frames": [
-     "the Throat's mouth of daylight",
      "the skylight shaft"
     ]
    },
@@ -5180,9 +5340,45 @@
     "radius_eu": 220
    },
    "subjects": [
-    "the Throat's mouth of daylight",
     "the skylight shaft"
-   ]
+   ],
+   "v2_3": {
+    "xy": [
+     1300,
+     440
+    ],
+    "target": [
+     1300,
+     300
+    ],
+    "target_h": 110,
+    "label": "The Deep, looking up the Throat",
+    "frames": "from the Deep's jetty north up the Throat to its mouth of daylight, the skylight shaft overhead, a glider flaring onto the water",
+    "subjects": [
+     "the Throat's mouth of daylight",
+     "the skylight shaft"
+    ],
+    "portrait": {
+     "fov_deg": 45,
+     "target": [
+      1300,
+      300
+     ],
+     "target_h": 110,
+     "frames": [
+      "the Throat's mouth of daylight",
+      "the skylight shaft"
+     ]
+    }
+   },
+   "ground": {
+    "xy": [
+     1300,
+     440
+    ],
+    "h": 40.6
+   },
+   "decided_v2_4": "D-D7 option 1 (design lead rules, reversible: v2_3), W7-T request A4 (design lead, Stage A Wave 7 integrator 4 2026-09-27)"
   },
   {
    "id": "H",
@@ -5200,7 +5396,7 @@
    "frames": "the strip in copper, the west sea under the low sun",
    "bestHour": "golden hour",
    "also": "dawn",
-   "target_h": 30,
+   "target_h": 20,
    "deferred": [
     "the windsock (Pass 2b kit: mast and sock; only its footing is built)",
     "the balloon at its mooring (Pass 2 mover and 2b kit)"
@@ -5211,7 +5407,7 @@
      100,
      560
     ],
-    "target_h": 30,
+    "target_h": 20,
     "frames": [
      "the strip",
      "the west sea"
@@ -5221,7 +5417,8 @@
      428,
      760
     ],
-    "poseNote_v2_1": "the portrait eye on the strip 12 m west of the landscape eye (west sea 1 \u2192 14 px at 390 \u00d7 844; design lead, Stage A Wave 5 integration 2026-09-27)"
+    "poseNote_v2_1": "the portrait eye on the strip 12 m west of the landscape eye (west sea 1 \u2192 14 px at 390 \u00d7 844; design lead, Stage A Wave 5 integration 2026-09-27)",
+    "eyeH": 48
    },
    "v1_6": {
     "xy": [
@@ -5242,7 +5439,28 @@
    "v1_9_bestHour": "sunset",
    "v1_9_label": "The Flats at sunset",
    "v1_9_frames": "the strip in copper, the west sea under the sunset",
-   "decided": "D-B3 (recommended, accepted Jonathan 2026-09-27)"
+   "decided": "D-B3 (recommended, accepted Jonathan 2026-09-27)",
+   "v2_3": {
+    "eyeH": null,
+    "eyeH_measured": 39.6,
+    "target_h": 30,
+    "portrait": {
+     "target_h": 30,
+     "xy": [
+      428,
+      760
+     ]
+    }
+   },
+   "eyeH": 48,
+   "ground": {
+    "xy": [
+     440,
+     760
+    ],
+    "h": 38
+   },
+   "poseNote_v2_4": "an aerial eye 10 m over the strip (eye 39.6 \u2192 48, target_h 30 \u2192 20): west sea 0 \u2192 350 / 94 px (design lead, Stage A Wave 7 integrator 4 2026-09-27, W7-T request A5)"
   },
   {
    "id": "I",
@@ -5295,40 +5513,49 @@
    "subjectDefs": {
     "the Reach water": "water.reach.* (the Reach channels) OR water.river.lower where the hit lies inside landforms.reach (the river crossing the Reach)"
    },
-   "decided": "D-C5 (recommended, accepted Jonathan 2026-09-27)"
+   "decided": "D-C5 (recommended, accepted Jonathan 2026-09-27)",
+   "ground": {
+    "xy": [
+     1284.8,
+     1215
+    ],
+    "h": 9.5
+   },
+   "groundNote_v2_4": "on the Reach walk beside the boardwalk footbridge, 0.04 eu off the path (design lead, Stage A Wave 7 integrator 4 2026-09-27)"
   },
   {
    "id": "J",
    "target": [
-    1780,
-    700
+    1790,
+    681
    ],
    "fov_deg": 55,
    "radius_eu": 340,
-   "eyeH": 60,
-   "label": "The Needle's Eye, from the plane",
+   "eyeH": 51.6,
+   "label": "The Needle's Eye at dawn, from the Prow",
    "xy": [
-    1840,
-    1000
+    1665,
+    695
    ],
-   "frames": "the arch ahead of the wing, the Stacks, the Prow",
+   "frames": "the arch, the sea through it at dawn, the Prow underfoot",
    "bestHour": "dawn",
    "also": "noon",
-   "target_h": 14,
+   "target_h": 20,
    "portrait": {
     "fov_deg": 50,
     "target": [
-     1760,
-     760
+     1790,
+     681
     ],
-    "target_h": 14,
+    "target_h": 20,
     "frames": [
      "the arch",
-     "the Stacks",
      "the Prow"
     ]
    },
-   "deferred": [],
+   "deferred": [
+    "the Stacks (not on J's east line through the arch, 60-65\u00b0 to its right; D-D6)"
+   ],
    "v1_6": {
     "xy": [
      1790,
@@ -5344,9 +5571,69 @@
    },
    "subjects": [
     "the arch",
-    "the Stacks",
     "the Prow"
-   ]
+   ],
+   "v2_2": {
+    "xy": [
+     1840,
+     1000
+    ],
+    "target": [
+     1780,
+     700
+    ],
+    "target_h": 14,
+    "eyeH": 60,
+    "label": "The Needle's Eye, from the plane",
+    "frames": "the arch ahead of the wing, the Stacks, the Prow",
+    "subjects": [
+     "the arch",
+     "the Stacks",
+     "the Prow"
+    ],
+    "portrait": {
+     "fov_deg": 50,
+     "target": [
+      1760,
+      760
+     ],
+     "target_h": 14,
+     "frames": [
+      "the arch",
+      "the Stacks",
+      "the Prow"
+     ]
+    }
+   },
+   "ground": {
+    "xy": [
+     1607.3,
+     690.9
+    ],
+    "h": 48.5
+   },
+   "decided_v2_3": "D-D6 re-pose (recommended; design lead, Stage A Wave 7 (W7-A) 2026-09-27, reversible: v2_2), W7-T's measured pose",
+   "v2_3": {
+    "xy": [
+     1665,
+     680
+    ],
+    "eyeH": 51.5,
+    "target_h": 25,
+    "portrait": {
+     "fov_deg": 50,
+     "target": [
+      1790,
+      681
+     ],
+     "target_h": 25,
+     "frames": [
+      "the arch",
+      "the Prow"
+     ]
+    }
+   },
+   "poseNote_v2_4": "15 m south on the Prow cliff so the Prow is in the 16:9 frame (0 \u2192 1,250 px); opening 37.7 % of the arch's face (design lead, Stage A Wave 7 integrator 4 2026-09-27)"
   },
   {
    "id": "K",
@@ -5479,7 +5766,15 @@
    "subjects": [
     "Lantern Row",
     "the Boathouse"
-   ]
+   ],
+   "ground": {
+    "xy": [
+     1477,
+     1289
+    ],
+    "h": 3.0
+   },
+   "groundNote_v2_4": "on the town quay (Lantern Row), 4.3 eu off its walk (design lead, Stage A Wave 7 integrator 4 2026-09-27)"
   }
  ],
  "crossings": [
@@ -8007,18 +8302,6 @@
   },
   {
    "a": "walk lakerim",
-   "b": "river lower",
-   "at": [
-    1140,
-    905
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": ""
-  },
-  {
-   "a": "walk lakerim",
    "b": "yearWalk",
    "at": [
     1250.5,
@@ -8357,13 +8640,18 @@
    "a": "yearWalk",
    "b": "plot.bight.1.service",
    "at": [
-    871.2,
-    914.9
+    856.7,
+    935.0
    ],
-   "resolution": "under",
+   "resolution": "threshold",
    "kind": "crossing",
    "source": "bake v1.8",
-   "note": ""
+   "note": "v2.3: at grade (the June lane rises to the moved plot's service drive (D-D2); design lead, Stage A Wave 7 (W7-A) 2026-09-27)",
+   "v2_2_resolution": "under",
+   "v2_2_at": [
+    871.2,
+    914.9
+   ]
   },
   {
    "a": "yearWalk",
@@ -8661,10 +8949,11 @@
     968.6,
     540.5
    ],
-   "resolution": "under",
+   "resolution": "threshold",
    "kind": "crossing",
    "source": "bake v1.9",
-   "note": "under by 2.8 eu: a named structure (footbridge, deck or passage) is owed"
+   "note": "v2.3: at grade (S4 holds VG's level across the September lane (flush landing, D-A7 #17); design lead, Stage A Wave 7 (W7-A) 2026-09-27)",
+   "v2_2_resolution": "under"
   },
   {
    "a": "V01",
@@ -9266,7 +9555,7 @@
    }
   },
   "targets_s": {
-   "square\u2192library by bicycle": 185,
+   "square\u2192library by bicycle": 243,
    "square\u2192green running": 125,
    "square\u2192summit by gondola + walk": 205,
    "crown\u2192quay on the board (S1)": [
@@ -9289,7 +9578,9 @@
     "v2_2_d34": [
      70,
      110
-    ]
+    ],
+    "square\u2192library by bicycle": "v2.3 (design lead, Stage A Wave 7 (W7-A) 2026-09-27, reversible): planned at the bicycle's 6.0 m/s cap, the ride measures 220.6 s (1,324 eu, Stage A W7-A scratch bake); target = measured + 10 % = 243 s (v2.2: 185 s at 8 m/s)",
+    "v2_2_square\u2192library by bicycle": 185
    }
   },
   "at_active_scale": {
@@ -9370,14 +9661,15 @@
   "walk": 2.4,
   "run": 5.0,
   "board": 10.0,
-  "bicycle": 8.0,
+  "bicycle": 6.0,
   "gondola": 7.0,
   "cart": 8.0,
   "zip": 12.0,
   "glider": 11.0,
   "plane": 45.0,
   "ferry": 5.0,
-  "row": 1.8
+  "row": 1.8,
+  "v2_2_bicycle": 8.0
  },
  "pastimeData": {
   "nineBaskets": [
@@ -14113,5 +14405,54 @@
    "note": "the plane's door: its place is the plane's each frame; offered only at >= minAgl_m above the ground under the plane; never inside the Throat"
   }
  ],
- "carriedThresholdRule": "A carried threshold moves with a vehicle and has no pad, marker or fixed xy. It is listed apart from thresholds so the land pass never grades a pad for it; WorldDefinition.thresholds carries it with carried = carriedBy."
+ "carriedThresholdRule": "A carried threshold moves with a vehicle and has no pad, marker or fixed xy. It is listed apart from thresholds so the land pass never grades a pad for it; WorldDefinition.thresholds carries it with carried = carriedBy.",
+ "moverAnchors_v2_5": {
+  "source": "main #554 parachute, #555 cruiser, #556 fall rescue (Little Harbour), #557 fleet + yacht, #558 fleet water, #559 Yacht Kitchen, #560 personal homes \u2014 anchors are code-owned (movers/fleet/model.ts, movers/cruiser/*, kitchen/geometry.ts, home/site.ts); reconciliation 2, 2026-09-27",
+  "fleet": {
+   "launch": "structures.floatplaneDock [1520,1275]: the dock's bed at h 1.2 (the fleet's launchBody [1523,1.2,1276] stands on it, dry)",
+   "moorings": {
+    "kayak": [
+     1527,
+     1269
+    ],
+    "dinghy": [
+     1527,
+     1276
+    ],
+    "motorboat": [
+     1528,
+     1283
+    ]
+   },
+   "yacht": [
+    1620,
+    1340
+   ],
+   "measured": "every hull navigable at its mooring (seabed \u22123.5 / \u22124.3 / \u22125.3 / \u221212); the three small hulls' approach to the yacht's stern clear 40/40 each; identical on candidate 5 and candidate 6 (the land there did not move)"
+  },
+  "pedestrianWater": {
+   "deep": [
+    1315,
+    420
+   ],
+   "floor_h": 38,
+   "pool_h": 40,
+   "note": "main's swimmer test stands in the Deep under the skylight shaft; candidate 6's page G eye [1320,404] is 16 m north of it (the floor unchanged)"
+  },
+  "fallRescue": {
+   "rule": "a fall that ends in water or off walkable ground fades to a path node that is never submerged (FLIGHT \u00a72.4: fadeShore / fadeApron / the Deep jetty)",
+   "measured": "1,618 touchdowns on a 40 m grid (water and > 40\u00b0 ground): 0 submerged returns on candidate 6 (0 on candidate 5); 26 returns stand against a rail or support or 0.4\u20130.8 off the node's deck (22 on candidate 5), listed in final8/probes"
+  },
+  "rideChunkRule": "v2.2's rule (every chunk resident before a feet \u2192 mover boarding) now covers the cruiser (V), every boat and the yacht's helm; no hull moves while any chunk is missing; a fall (never refused) puts every missing chunk first and the canopy holds at an unloaded boundary",
+  "kitchen": {
+   "board": "kitchen/geometry.ts KITCHEN_BOARD, yacht-local [-2.6, main deck 3.85, -10.6]: it sails with the yacht, no land anchor",
+   "measured": "at the yacht's mooring the menu board stands at [1617.4,3.85,1329.4] over the harbour water (seabed -12), district harbour; the yacht's whole 14 x 44 hull is inside the harbour chunk and the galley opens only aboard, so it needs the harbour chunk resident like the fleet",
+   "rule": "an open service holds the body: a chosen page while cooking returns to the galley on Walk (main: Choose Walk and Resume); after Exit a chosen page is a visit again (Stage A walk-out)"
+  },
+  "homes": {
+   "plots": "home/ownership.ts HOME_PLOTS: plot.terraces.1-3, plot.bight.1-4 (one per member, first come); home/site.ts reads each plot from the bake (outline centre, door xy and height), so the homes follow these reserves",
+   "measured": "on the candidate-6 bake all seven plots are graded pads: ground within 0.05 of the door height over the whole 52 x 32 home plot, dry, the door on a path node, no path node inside the 16 x 22 cottage; plot.terraces.3 has one path node at its plot corner (local [25.4,13.7]); plot.terraces.1 is the v2.2 plot (R3-32 margin 5.83 of 6 still open)"
+  },
+  "comfort": "one comfort source: reduced motion and calm reach the fleet (wind off, no bob), the cruiser (no lean, camera cut) and the parachute (comfort camera) through the registry; the stricter rule wins"
+ }
 }

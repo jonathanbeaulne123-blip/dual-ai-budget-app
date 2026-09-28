@@ -239,7 +239,46 @@ function exitsThrough(cuts:LandCuts,loop:readonly XYZ[],own:readonly string[]):X
   }
   return out;
 }
-function flushRails(cuts:LandCuts):void {for(const r of pendingRails.splice(0))perimeterRail(r.rails,r.loop,exitsThrough(cuts,r.loop,r.own));}
+/** Wave 7 (A1.3 kerb gaps): open rail lines (a span's parapet, a deck edge) drawn once every route exists, broken for
+ * `gapHalf` eu either side of each place a foot, skate or road route at the line's height (±1.6) crosses it at ≥ 25° —
+ * a route joining the deck through its edge (the dam portage onto the apron bridge) — or ends on it. `draw` draws a
+ * run a→b of the rail. */
+const pendingLines:{line:XYZ[];own:string[];gapHalf:number;draw:(run:XYZ[])=>void}[]=[];
+function railLineLater(line:XYZ[],own:string[],draw:(run:XYZ[])=>void,gapHalf=1.8):void {pendingLines.push({line,own,gapHalf,draw});}
+/** Wave 7 (A1.2): a posted rail along a deck edge wherever the ground 1 eu outside the edge (`outward`, a plan unit
+ * normal) lies more than BODY_DROP below the deck, with kerb gaps where a route joins through the edge. */
+const BODY_DROP=1.25;
+function guardEdgeLater(rails:StructureSolid,line:XYZ[],outward:XY,own:string[],base:HeightQuery):void {
+  const drop=(p:XYZ)=>p[1]-base(p[0]+outward[0],p[2]+outward[1])>BODY_DROP;
+  railLineLater(line,own,run=>{let cur:XYZ[]=[];const flush=()=>{if(cur.length>1)postedRail(rails,cur,0);cur=[];};
+    const mid=(a:XYZ,b:XYZ):XYZ=>[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2];
+    for(let i=0;i<run.length;i++){const p=run[i]!;if(drop(p)||i+1<run.length&&drop(mid(p,run[i+1]!))||i>0&&drop(mid(run[i-1]!,p)))cur.push(p);else flush();}flush();});
+}
+/** A route crossing a rail line up to this far above the deck is landing on it through the rail (the dam portage's
+ * treads pass the apron bridge's west parapet line 2.4 over the deck and land between the parapets). */
+const LANDING_OVER=3.5;
+function lineGaps(cuts:LandCuts,line:readonly XYZ[],own:readonly string[]):number[] {
+  const out:number[]=[],arc=[0];for(let i=1;i<line.length;i++)arc.push(arc[i-1]!+distance(plan(line[i-1]!),plan(line[i]!)));
+  for(const b of cuts.beds){if(!['walk','trail','stair','road','boardwalk','skate'].includes(b.kind)||own.includes(b.id))continue;
+    for(let i=1;i<b.points.length;i++){const p=b.points[i-1]!,q=b.points[i]!,pl=distance(plan(p),plan(q));if(pl<1e-6)continue;
+      for(let j=1;j<line.length;j++){const a=line[j-1]!,c=line[j]!,al=distance(plan(a),plan(c));if(al<1e-6)continue;
+        const r:XY=[q[0]-p[0],q[2]-p[2]],s:XY=[c[0]-a[0],c[2]-a[2]],d=r[0]*s[1]-r[1]*s[0];if(Math.abs(d)<1e-9)continue;
+        const t=((a[0]-p[0])*s[1]-(a[2]-p[2])*s[0])/d,u=((a[0]-p[0])*r[1]-(a[2]-p[2])*r[0])/d;if(t<0||t>1||u<0||u>1)continue;
+        const sin=Math.abs(d)/(pl*al),y=mix(p[1],q[1],t),h=mix(a[1],c[1],u);if(sin<Math.sin(25*Math.PI/180)||y-h< -1.6||y-h>LANDING_OVER)continue;out.push(arc[j-1]!+u*al);}}
+    for(const e of [b.points[0]!,b.points.at(-1)!]){const hit=nearestOnPath(plan(e),line);if(hit.distance<1.2&&Math.abs(e[1]-hit.at[1])<1.6)out.push(hit.along);}
+  }
+  return out;
+}
+function flushLines(cuts:LandCuts):void {
+  for(const r of pendingLines.splice(0)){const gaps=lineGaps(cuts,r.line,r.own).sort((a,b)=>a-b),total=planLength(r.line);let from=0;
+    const run=(a:number,b:number)=>{if(b-a<.5)return;const n=Math.max(1,Math.ceil((b-a)/2)),pts:XYZ[]=[];for(let k=0;k<=n;k++)pts.push(along(r.line,a+(b-a)*k/n).p);r.draw(pts);};
+    for(const g of gaps){run(from,Math.min(g-r.gapHalf,total));from=Math.max(from,g+r.gapHalf);}run(from,total);}
+}
+/** A polyline moved `offset` along its left normal (per segment, the joints averaged). */
+function offsetLine(path:readonly XYZ[],offset:number):XYZ[] {
+  return path.map((p,i)=>{const a=path[Math.max(0,i-1)]!,b=path[Math.min(path.length-1,i+1)]!,l=distance(plan(a),plan(b))||1,n:XY=[-(b[2]-a[2])/l,(b[0]-a[0])/l];return [p[0]+n[0]*offset,p[1],p[2]+n[1]*offset] as XYZ;});
+}
+function flushRails(cuts:LandCuts):void {for(const r of pendingRails.splice(0))perimeterRail(r.rails,r.loop,exitsThrough(cuts,r.loop,r.own));flushLines(cuts);}
 /** v2.0 (D-A3): a cable tower on a footing to the ground: four legs, cross bracing and a head frame at the cable. W5-A's
  * tower solve (beds/build.ts) supplies the top; a top above the sky ceiling is the solver's failure to report, not clamped here. */
 export function cableTower(out:StructureSolid,bracing:StructureSolid,at:XY,top:number,base:HeightQuery,spread=2):void {
@@ -256,15 +295,15 @@ function carriedDeck(id:string,route:BedCut,path:XYZ[],width:number,cuts:LandCut
   const district=districtAt(...plan(path[Math.floor(path.length/2)]!)),ids=[route.id,`structure.${id}`],guard=laneGuard(cuts),length=planLength(path),spacing=o.spacing??6,offsets=o.bentOffsets??[-(width/2-.6),width/2-.6];
   const deck=solid(`${id}.deck`,o.kind??'trestle','boardwalk','deck',[route.id],district),supports=solid(`${id}.supports`,'trestle','timber','support',ids,district),caps=solid(`${id}.caps`,'capBeam','timber','support',ids,district),rails=solid(`${id}.rails`,'handrail','metal','rail',[route.id],district);
   for(let i=1;i<path.length;i++)slab(deck,path[i-1]!,path[i]!,width,.6);
-  const feetAt=(s:number)=>{const {p,dir}=along(path,s);return {p,feet:offsets.map(off=>[p[0]-dir[1]*off,p[2]+dir[0]*off] as XY)};},bents:number[]=[],refused:number[]=[];
+  const feetAt=(s:number)=>{const {p,dir}=along(path,s);return {p,feet:offsets.map(off=>[p[0]-dir[1]*off,p[2]+dir[0]*off] as XY)};},bents:number[]=[],refused:number[]=[],refusedWhy=new Map<number,string>();
   const blocked=(s:number)=>{const {p,feet}=feetAt(s);return feet.map(xy=>guard(xy,p[1]-.6,ids)??o.avoid?.(xy)).find(Boolean);};
   const n=Math.max(1,Math.ceil(length/spacing));
   for(let k=0;k<=n;k++){const s0=length*k/n;let s:number|undefined;
     for(const shift of [0,.5,-.5,1,-1,1.5,-1.5,2,-2,2.5,-2.5,3,-3,3.5,-3.5,4,-4,4.5,-4.5,5,-5]){const v=clamp(s0+shift,0,length);if(!blocked(v)){s=v;break;}}
     // Always drawn (the offline ground is not the final terrain: S1's lower pass cuts the hill under its upper pass);
     // settleFoundations carries each footing down to the final ground.
-    const {p}=feetAt(s0);
-    if(s===undefined){refused.push(s0);conflict(cuts,`structures.${id}.bentInLane`,`${id}: the bent at ${s0.toFixed(1)} eu stands in ${blocked(s0)}'s corridor (and 5 eu either way); it is not built`,plan(p));continue;}
+    // Wave 7 (A1.1): a refused bent is reported once the bays are known: a conflict only if no girder carries its bay.
+    if(s===undefined){refused.push(s0);refusedWhy.set(s0,`${blocked(s0)}`);continue;}
     const at=feetAt(s);for(const xy of at.feet)pier(supports,xy,at.p[1]-1.2,base,[.5,.5],[1.4,1.4]);
     const e0=at.feet[0]!,e1=at.feet.at(-1)!,d=distance(e0,e1)||1,ex=.45/d;slab(caps,[e0[0]-(e1[0]-e0[0])*ex,at.p[1]-.6,e0[1]-(e1[1]-e0[1])*ex],[e1[0]+(e1[0]-e0[0])*ex,at.p[1]-.6,e1[1]+(e1[1]-e0[1])*ex],.6,.6);bents.push(s);}
   bents.sort((a,b)=>a-b);
@@ -276,6 +315,9 @@ function carriedDeck(id:string,route:BedCut,path:XYZ[],width:number,cuts:LandCut
     const a=along(path,bents[i-1]!).p,b=along(path,bents[i]!).p;for(const side of [-1,1])slab(girders,[a[0],a[1]-.6,a[2]],[b[0],b[1]-.6,b[2]],.4,.9,side*(width/2-.4));
     cuts.diagnostics.push({id:`structures.${id}.girderSpan`,severity:'info',message:`${id}: steel girders carry a ${bay.toFixed(1)} eu bay over a lower route`,at,measured:bay,required:24});}
   if(girders.indices.length)cuts.solids.push(girders);
+  for(const r of refused){const i=bents.findIndex(b=>b>r),bay=i>0?bents[i]!-bents[i-1]!:Infinity,at=plan(along(path,r).p);
+    if(bay<=24.01)cuts.diagnostics.push({id:`structures.${id}.bentOmitted`,severity:'info',message:`${id}: no bent at ${r.toFixed(1)} eu (it would stand in ${refusedWhy.get(r)}'s corridor); the ${bay.toFixed(1)} eu bay ${bay>12.01?'is carried by steel girders under both deck edges bearing on the cap beams at':'spans between the bents at'} ${bents[i-1]!.toFixed(1)} and ${bents[i]!.toFixed(1)} eu`,at,measured:bay,required:24});
+    else conflict(cuts,`structures.${id}.bentInLane`,`${id}: the bent at ${r.toFixed(1)} eu stands in ${refusedWhy.get(r)}'s corridor (and 5 eu either way); it is not built and no girder carries its ${Number.isFinite(bay)?bay.toFixed(1)+' eu ':''}bay`,at,bay,24);}
   for(const side of [-1,1])postedRail(rails,path,side*(width/2-.05));
   cuts.solids.push(deck,rails);if(supports.indices.length)cuts.solids.push(supports,caps);
   const b=bed(`structure.${id}`,o.bedProfile??'walk',path,false);b.width=width;b.structureIds=[id];cuts.beds.push(b);route.structureIds.push(id);
@@ -302,6 +344,14 @@ export function buildNamedKinds(cuts:LandCuts,base:HeightQuery):void {
     const f=S.bightSpurTrestle,vbs=cuts.beds.find(b=>b.id==='spur VBS'||b.id==='VBS');
     if(f&&vbs&&f.from&&f.to){const path=stretchBetween(vbs,f.from as unknown as XY,f.to as unknown as XY),w=f.width_m??5,{dir}=along(path,planLength(path)/2),west=-dir[1]<0?1:-1;
       carriedDeck('bightSpurTrestle',vbs,path,w,cuts,base,{bentOffsets:[0,west*(w/2-.6)],bedProfile:'road'});}}
+  {// v2.4 (integrator 4): the Year Walk's November loop over its own lower lane at the Prow — the upper pass on the Year Walk's
+    // own grade; bents outside the lower lane's corridor (its centreline ± 4.5: 5.2 walk + shoulders).
+    const f=S.prowLoopFootbridge,yw=cuts.beds.find(b=>b.id==='yearWalk');
+    if(f&&yw&&f.from&&f.to){const path=stretchBetween(yw,f.from as unknown as XY,f.to as unknown as XY),top=Math.min(...path.map(p=>p[1])),mid=planLength(path)/2,cross=along(path,mid).p;
+      const lower=yw.points.filter(p=>p[1]<top-3&&distance(plan(p),plan(cross))<30),avoid=(xy:XY)=>lower.length>1&&nearestOnPath(xy,lower).distance<4.5?'yearWalk (the lower lane)':undefined;
+      const r=carriedDeck('prowLoopFootbridge',yw,path,f.width_m??6,cuts,base,{kind:'footbridge',avoid});
+      const under=lower.length>1?Math.min(...path.map(p=>{const h=nearestOnPath(plan(p),lower);return h.distance<3?p[1]-.6-h.at[1]:Infinity;})):Infinity;
+      cuts.diagnostics.push({id:'structures.prowLoopFootbridge.clear',severity:under<2.4?'conflict':'info',message:`prowLoopFootbridge: ${r.bents.length} bents, ${r.refused.length} refused; the deck's underside clears the Year Walk's lower lane by ${under.toFixed(2)} eu`,at:plan(cross),measured:under,required:2.4});}}
   {// D-C14 Scholars Cove cliff stair: two flights along the face with a landing at mid-height, a posted parapet on the sea side.
     // The foot lands on the Scholars Cove ferry dock's deck (built at the water + 0.6 = 1.0; MANIFEST to_h says 1.8: a 0.8 lip).
     const f=S.coveStair,dockDeck=cuts.beds.find(b=>b.id==='ferry.scholarsCove')?.points[0]?.[1];
@@ -363,7 +413,9 @@ export function buildSpan(spec:SpanSpec,cuts:LandCuts,base:HeightQuery):void {
     }
     cuts.solids.push(truss);
   }
-  for(const side of [-1,1])for(let i=1;i<path.length;i++){slab(rails,path[i-1]!,path[i]!,.25,1,side*(spec.width/2-.125),1);slab(rails,path[i-1]!,path[i]!,.4,.15,side*(spec.width/2-.125),1.15);}
+  // Wave 7 (A1.3): the parapets wait for every route: a kerb gap opens where a route joins the deck through its edge
+  // (S1 × the dam portage on the apron bridge, [1160.8,940.1]).
+  for(const side of [-1,1])railLineLater(offsetLine(path,side*(spec.width/2-.125)),[spec.route,`structure.${spec.id}`],run=>{for(let i=1;i<run.length;i++){slab(rails,run[i-1]!,run[i]!,.25,1,0,1);slab(rails,run[i-1]!,run[i]!,.4,.15,0,1.15);}});
   cuts.solids.push(deck,piers,rails);
   if(spec.abutments){
     // Abutments carry the deck ends and the approaches down to the bank; they never step into the channel.
@@ -521,6 +573,29 @@ function dock(id:string,p:XY,height0:number,cuts:LandCuts,base:HeightQuery,width
   slab(deck,a,b,width,.35);for(let offset=-length/2;offset<=length/2+.01;offset+=3)for(const side of [-1,1]){const xy:XY=[p[0]!+side*(width/2-.2),p[1]!+offset];box(piles,xy,height-.2,[.3,.3],Math.min(-2,base(...xy))-FOOTING_SINK);}
   postedRail(rails,[a,b],width/2);postedRail(rails,[a,b],-width/2);cuts.solids.push(deck,piles,rails);const bcut=bed(id,'boardwalk',[a,b],false);bcut.width=width;bcut.structureIds=[id];cuts.beds.push(bcut);
 }
+/** Wave 7 (A1 item 7, RECONCILE regression 3): S1's quay finish was an 8 m jetty on piles at 3 with rails down both
+ * sides, set into the islet (the ground rises to 4.5–5.5 past z 1338): a railed channel where every 50–60° powerslide
+ * met a rail within 0.8 s, ending in a bank. The islet is dry (the Reach channels run 35–50 eu away), so the finish is a
+ * paved quay on grade: QUAY_FINISH.width wide (profiles.skateMain surface 3–4 m plus a slide either side), level at the
+ * authored MANIFEST structures.landingQuay.finish_h (v2.4: 4.7, the islet's natural ground; v2.3: 3 dug a 1.7 eu pit) from where S1 reaches it (z 1328) to 6 eu past the finish, then an uphill run-out on grade that brings the total run-out to
+ * profiles.skateMain.runout_m (25). A terrain pad grades the level part (never a jetty over dry land); the run-out's slab
+ * follows the ground. Rails stand only where an edge drops more than body height (none on the islet today), with gaps
+ * where S1 comes on. */
+export const QUAY_FINISH={width:14,from:1328,level:1336,to:1356} as const;
+function landingQuayFinish(cuts:LandCuts,base:HeightQuery):void {
+  const xy=M.structures.landingQuay.xy as unknown as XY,h=M.structures.landingQuay.finish_h,{width,from,level,to}=QUAY_FINISH,x=xy[0],district=districtAt(...xy);
+  const runH=Math.max(h,Math.min(h+(to-level)*.12,base(x,to)));
+  addFlatPad(cuts,'landingQuay.finish','landing',[x,(from+level)/2],h,[width,level-from]);
+  const deck=solid('landingQuay.deck','quay','paved','deck',['landingQuay','S1'],district),rails=solid('landingQuay.rails','deckParapet','metal','rail',['landingQuay'],district);
+  slabOnGrade(deck,[x,h,from],[x,h,level],width,base);slabOnGrade(deck,[x,h,level],[x,runH,to],width,base);
+  const w=width/2-.1,P=(dx:number,z:number,y:number):XYZ=>[x+dx,y,z];
+  guardEdgeLater(rails,[P(-w,from,h),P(-w,level,h),P(-w,to,runH)],[-1,0],['landingQuay'],base);
+  guardEdgeLater(rails,[P(w,from,h),P(w,level,h),P(w,to,runH)],[1,0],['landingQuay'],base);
+  guardEdgeLater(rails,[P(-w,from,h),P(w,from,h)],[0,-1],['landingQuay'],base);guardEdgeLater(rails,[P(-w,to,runH),P(w,to,runH)],[0,1],['landingQuay'],base);
+  cuts.solids.push(deck,rails);
+  const b=bed('landingQuay','walk',[[x,h,from],[x,h,level],[x,runH,to]],false);b.width=width;b.structureIds=['landingQuay'];cuts.beds.push(b);
+  cuts.diagnostics.push({id:'structures.landingQuay.finish',severity:'info',message:`landingQuay: S1's finish is a ${width} eu paved quay on grade at ${h} (z ${from}–${level}) with a run-out climbing to ${runH.toFixed(2)} at z ${to}: ${(to-xy[1]).toFixed(0)} eu of run-out past the finish`,at:xy,measured:to-xy[1],required:M.profiles.skateMain.runout_m});
+}
 /** High Span's lower levels: the S1 shelf on the west wall, the Reach gallery on the west bank beside
  * (never in) the river, and camera C's overlook as a bank platform at its v1.7 coordinate. */
 function highSpanLevels(cuts:LandCuts,base:HeightQuery):void {
@@ -550,6 +625,41 @@ function highSpanLevels(cuts:LandCuts,base:HeightQuery):void {
   slab(approachDeck,approach[0]!,approach[1]!,2.5,.5);for(const side of [-1,1])wallToGround(approachCheeks,[approach[0]![0],approach[0]![1]-.5,approach[0]![2]],[approach[1]![0],approach[1]![1]-.5,approach[1]![2]],.3,side*1.1,base);
   cuts.solids.push(approachDeck);if(approachCheeks.indices.length)cuts.solids.push(approachCheeks);
   const overlookBed=bed('highSpan.overlook','walk',[...approach,[c[0]!,oh,c[1]!]],false);overlookBed.width=2.5;cuts.beds.push(overlookBed);
+}
+/** Wave 7 (station head frames, R3-113/R3-126): eu above its station deck at which a cable's rope ends (beds' CABLE_HEAD:
+ * the rope's solid spans h + 2.51 … h + 2.60 within 16 eu of each station). */
+export const ROPE_END=2.6;
+/** Half the gondola head frames' leg spacing (eu, either side of the rope's line): the station's walk passes between the legs. */
+export const HEAD_FRAME_LEG_SPAN=3.2;
+/** A station's head frame: the rope ends in a horizontal bullwheel (radius 1.5, h + 2.3 … 2.85, around the rope's end),
+ * hung from an arm that cantilevers forward from a two-legged portal standing on the station deck behind the station
+ * point (away from the rope). The legs close the gap from the deck to the rope; the station point itself stays clear
+ * for boarding / launching (nothing under h + 2.3 within 1.9 eu of it). Load path: wheel → hanger → arm → cross-head →
+ * legs → footings (the legs are piers through the deck; the upper frame, kind headFrame, is hung and never settled). The solids are
+ * named platform.<id>.headFrame so the cable layer draws them with the station's own anchor solids. */
+function headFrame(cuts:LandCuts,id:string,at:XY,h:number,toward:XY,onDeck:(xy:XY)=>boolean,base:HeightQuery):void {
+  const l=distance(at,toward)||1,d:XY=[(toward[0]-at[0])/l,(toward[1]-at[1])/l],n:XY=[-d[1],d[0]],rot=Math.atan2(d[1],d[0])*180/Math.PI,district=districtAt(at[0],at[1]);
+  const frame=solid(`platform.${id}.headFrame`,'headFrame','metal','support',[`platform.${id}`],district);
+  const P=(s:number,o:number):XY=>[at[0]+d[0]*s+n[0]*o,at[1]+d[1]*s+n[1]*o];
+  // The portal stands as far behind the station point as the deck allows (2.6 … 1.9 eu). Integrator 4 (Wave 7): at the gondola
+  // stations its legs stand HEAD_FRAME_LEG_SPAN either side of the rope's line, so the station's walk leaves between them under
+  // the cross-head (h + 4.1): at ±1.3 the legs stood in walk crownFromGondola (top) and town.upperStreetWalk (base) and the
+  // summit journey lost its path. The zip stations keep ±1.3: the Prow's glider run-off passes behind that frame and a wide
+  // cross-head at h + 4.1 took the flight camera (a 7.5 eu pull-in, FLIGHT §4).
+  const span=id.startsWith('gondola')?HEAD_FRAME_LEG_SPAN:1.3;
+  let back=2.6;while(back>1.9&&![-1.3,1.3].every(o=>onDeck(P(-back,o))))back-=.1;
+  const top=h+ROPE_END+1.5;
+  // The legs are columns through the station deck to their own footings (P11: a load path that reaches the ground, not a
+  // frame resting on a slab); `platform.<id>.headFrame.legs` settles to the final ground like any pier.
+  const legs=solid(`platform.${id}.headFrame.legs`,'pier','metal','support',[`platform.${id}`],district);
+  for(const o of [-span,span])pier(legs,P(-back,o),top,base,[.45,.45],[1.2,1.2],rot);         // legs, footing → cross-head
+  box(frame,P(-back,0),top+.5,[.5,2*span+.5],top-.1,rot);                                     // cross-head
+  {const b0=P(-back,0),f=P(1.7,0);slab(frame,[b0[0],top+.4,b0[1]],[f[0],top+.4,f[1]],.45,.5);}   // arm
+  box(frame,at,top,[.3,.3],h+2.85,rot);                                                        // hanger
+  for(const r of [0,45])box(frame,at,h+2.85,[2.7,2.7],h+2.3,rot+r);                         // bullwheel (octagon of two squares)
+  box(frame,P(-.9,0),h+2.8,[1.8,.5],h+2.35,rot);                                              // rope anchor: the rope's end clamped into the wheel's back
+  cuts.solids.push(frame,legs);
+  cuts.diagnostics.push({id:`structures.platform.${id}.headFrame`,severity:'info',message:`platform.${id}: the rope ends in the head frame's bullwheel at ${(h+ROPE_END).toFixed(2)} (deck ${h}); portal ${back.toFixed(1)} eu behind the station point`,at,measured:back,required:1.9});
 }
 /** The last Bight Bridge build's bent / arch table and deck profile (for the handoff and the tests). */
 export let bightReport:BightReport|undefined;
@@ -593,10 +703,24 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   const damAbut=solid('dam.abutments','abutment','stone','support',['walk damCrest'],'lakeside');
   for(const x of [1116,1164])wallToGround(damAbut,[x,52.01-.6,899],[x,52.01-.6,911],4,0,base);cuts.solids.push(damAbut);
   // Apron: a supported half-pipe slab on piers clear of the tailrace, with end abutments.
-  const bowl=solid('dam.apron','halfPipe','apron','deck',['S1'],'notch'),apronH=(x:number)=>31+7*((x-1151)/16)**2;
-  for(let i=0;i<16;i++){const x=1135+i*2,x2=x+2;slab(bowl,[x,apronH(x),935],[x2,apronH(x2),935],22,.6);}cuts.solids.push(bowl);
+  // Wave 7 (A1.2, R3-36): a quarter-pipe, not a half-pipe: the apron rises to 38 at the dam-abutment (west) end and runs
+  // level at 31 east of its low line (x 1151), so S1 comes onto it flush from the east at 31 (the 7 eu east lip and its
+  // abutment wall stood across S1's line at x 1166.7 and left 6.6 / 7.4 eu drops beside S1 and dam.apron.level).
+  const bowl=solid('dam.apron','halfPipe','apron','deck',['S1'],'notch'),apronH=(x:number)=>x<1151?31+7*((x-1151)/16)**2:31;
+  for(let i=0;i<16;i++){const x=1135+i*2,x2=x+2;slab(bowl,[x,apronH(x),935],[x2,apronH(x2),935],22,.6);}
+  // Wave 7: dam.apron.level (x 1166–1170, z 923–947, the lane S1 comes onto the apron by) is the apron's level east bay, a
+  // deck on the apron's piers, not a bed over nothing.
+  slab(bowl,[1167,31,935],[1170.2,31,935],24,.6);cuts.solids.push(bowl);
   const apronPiers=solid('dam.apron.supports','pier','stone','support',['S1','dam.apron'],'notch'),apronAbut=solid('dam.apron.abutments','abutment','stone','support',['S1','dam.apron'],'notch'),tail=laneGuard(cuts);
-  for(const x of [1137,1141,1162,1166])for(const z of [926,935,944]){const xy:XY=[x,z];if(tail(xy,apronH(x),['S1','dam.apron.level'])==='RIVER_RUN')continue;pier(apronPiers,xy,Math.min(apronH(x-.5),apronH(x+.5))-.6,base,[1,1],[2.4,2.4]);}
+  {// Rails on the apron's open edges wherever the ground falls more than body height (the west lip at 38, the south edge
+    // over the tailrace bank, the east bay's edge): kerb gaps where S1, the portage and the gallery join.
+    const apronRails=solid('dam.apron.rails','deckParapet','metal','rail',['S1','dam.apron.level'],'notch'),own=['dam.apron.level'];
+    guardEdgeLater(apronRails,[[1135.1,38,923.9],[1135.1,38,946.1]],[-1,0],own,base);
+    guardEdgeLater(apronRails,[[1135,apronH(1135),946.1],...Array.from({length:17},(_,k):XYZ=>[1136+k*2,apronH(1136+k*2),946.1]),[1170.1,31,946.9]],[0,1],own,base);
+    guardEdgeLater(apronRails,[[1170.1,31,946.9],[1170.1,31,923.1]],[1,0],own,base);
+    guardEdgeLater(apronRails,[[1170.1,31,923.1],[1166,31,923.1],...Array.from({length:16},(_,k):XYZ=>[1165-k*2,apronH(1165-k*2),923.9]),[1135,apronH(1135),923.9]],[0,-1],own,base);
+    cuts.solids.push(apronRails);}
+  for(const x of [1137,1141,1162,1166,1169.4])for(const z of [926,935,944]){const xy:XY=[x,z];if(tail(xy,apronH(x),['S1','dam.apron.level'])==='RIVER_RUN')continue;pier(apronPiers,xy,Math.min(apronH(x-.5),apronH(x+.5))-.6,base,[1,1],[2.4,2.4]);}
   for(const x of [1135.3,1166.7])wallToGround(apronAbut,[x,apronH(x)-.6,924.2],[x,apronH(x)-.6,945.8],.6,0,base);
   // Spandrel walls under both long edges follow the curved underside in 1 eu bays, leaving the tailrace lane open.
   for(let x=1135;x<1167;x++)for(const z of [924.6,945.4]){if(tail([x+.5,z],apronH(x+.5),['S1','dam.apron.level'])==='RIVER_RUN')continue;wallToGround(apronAbut,[x,apronH(x)-.6,z],[x+1,apronH(x+1)-.6,z],.6,0,base);}
@@ -640,7 +764,7 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   Object.entries(M.structures.jetties).forEach(([id,p])=>dock(`jetty.${id}`,p as unknown as XY,id==='deep'?40.6:1,cuts,base));
   Object.entries(M.water_routes.FERRY.piers).forEach(([id,p])=>dock(`ferry.${id}`,p as unknown as XY,1,cuts,base,6,16));
   dock('floatplaneDock',M.structures.floatplaneDock as unknown as XY,1.2,cuts,base,8,20);
-  dock('landingQuay',M.structures.landingQuay.xy as unknown as XY,3,cuts,base,8,32);
+  landingQuayFinish(cuts,base);
   const q=M.structures.townQuay;cuts.beds.push(bed('town quay','walk',[[...q.from.slice(0,1),3,q.from[1]!] as unknown as XYZ,[q.to[0]!,3,q.to[1]!]],false));
   const seaTop:XYZ=[1620,base(1620,760),760];buildStair('seaStair',[1705,1,775],seaTop,3,cuts,base);
   // v1.9 MANIFEST structures.<id>.kind "stair" (from/to plan points): a stair from a route's end down to a jetty or
@@ -651,9 +775,12 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
     buildStair(id,[from[0],top,from[1]],[to[0],foot,to[1]],3,cuts,base);
   }
   // Cable platforms: a raised deck on its tower (a footing, not a terrain mound); on-grade stations stay pads.
-  for(const [id,xy,h]of [['gondolaBase',M.cable.G1.from,M.cable.G1.fromH],['gondolaTop',M.cable.G1.to,M.cable.G1.toH],['prowPlatform',M.cable.ZIP.from,M.cable.ZIP.fromH],['zipLanding',M.cable.ZIP.to,M.cable.ZIP.toH]] as const){
+  // Wave 7 (station head frames): each station carries the head frame its rope ends in (`headFrame`), toward = the rope's
+  // next anchor (the first / last G1 tower, the zip's other end).
+  const g1=M.cable.G1,zipC=M.cable.ZIP;
+  for(const [id,xy,h,toward]of [['gondolaBase',g1.from,g1.fromH,g1.towers[0]!],['gondolaTop',g1.to,g1.toH,g1.towers.at(-1)!],['prowPlatform',zipC.from,zipC.fromH,zipC.to],['zipLanding',zipC.to,zipC.toH,zipC.from]] as const){
     const at=xy as unknown as XY,ground=Math.min(...[[-5,-4],[-5,4],[5,4],[5,-4],[0,0]].map(([x,z])=>base(at[0]+x!,at[1]+z!)));
-    if(ground>=h-1){addFlatPad(cuts,`platform.${id}`,'landing',at,h,[10,8]);continue;}
+    if(ground>=h-1){addFlatPad(cuts,`platform.${id}`,'landing',at,h,[10,8]);headFrame(cuts,id,at,h,toward as unknown as XY,()=>true,base);continue;}
     // Wave 6: a platform never overhangs a lower route with less than body height + 0.3 under its slab (candidate 4, lite: the
     // square walk climbs past the gondola base's east edge at 16.0–16.5 under a 17.4 underside; the body stopped). The slab's
     // side over such a route is trimmed back to clear the route's corridor by 0.3; the station point stays ≥ 2 inside it.
@@ -671,6 +798,7 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
     const supports=solid(`platform.${id}.supports`,'tower','stone','support',[],districtAt(at[0],at[1]));for(const x of [ext.x0+1,ext.x1-1])for(const z of [ext.z0+1,ext.z1-1])pier(supports,[at[0]+x,at[1]+z],h-.6,base,[.9,.9],[2.2,2.2]);
     const rails=solid(`platform.${id}.rails`,'handrail','metal','rail',[],deck.districtId),c=(x:number,z:number):XYZ=>[at[0]+x,h,at[1]+z];railLater(rails,[c(ext.x0,ext.z0),c(ext.x1,ext.z0),c(ext.x1,ext.z1),c(ext.x0,ext.z1)],[`platform.${id}`]);
     cuts.solids.push(deck,supports,rails);
+    headFrame(cuts,id,at,h,toward as unknown as XY,xy=>xy[0]-at[0]>ext.x0+.3&&xy[0]-at[0]<ext.x1-.3&&xy[1]-at[1]>ext.z0+.3&&xy[1]-at[1]<ext.z1-.3,base);
   }
   buildStair('zipLanding.stair',[1130,12,1440],[1145,3,1460],3,cuts,base);
   const ramp=gradeRoute('zipLanding.ramp',[[1130,1440],[1090,1445],[1080,1470],[1145,1460]],()=>3,.08,[{xy:[1130,1440],height:12,reason:'deck'},{xy:[1145,1460],height:3,reason:'sand'}],cuts.diagnostics);

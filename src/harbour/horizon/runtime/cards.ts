@@ -26,7 +26,7 @@ const TERRAIN_TILE=32;
  * The terrain as its own smooth-shaded, shadow-casting mesh (STYLE §1.2.2, §1.7, §3.3):
  * - ground colour per VERTEX, interpolated (biome grounds blend over ~2 cells; bed paint stays crisp);
  * - rock weight per vertex from the steepest incident triangle (soft 35–45°), so every face
- *   over the walkable limit carries its strata set and walkable ground is not painted rock;
+ *   over the walkable limit carries its strata set; a walkable face takes none (Wave 7: no rock bleed onto grass);
  * - strata ledges drawn per pixel from world height (a continuous phase following contours);
  * - smooth normals on turf, the face normal only where the ground is rock; no value step.
  */
@@ -58,8 +58,11 @@ export function buildTerrainMeshes(field:TerrainField,cuts:Pick<LandCuts,'mouths
   const material=terrainMaterial(paper),meshes:THREE.Mesh[]=[],geometries:THREE.BufferGeometry[]=[];
   for(let tr=0;tr<R-1;tr+=TERRAIN_TILE)for(let tc=0;tc<C-1;tc+=TERRAIN_TILE){
     const pos:number[]=[],nor:number[]=[],col:number[]=[],uv:number[]=[],rb:number[]=[],rl:number[]=[],ri:number[]=[];
-    const vertex=(c:number,r:number,face:XYZ)=>{
-      const n=r*C+c,w=rock[n]!,sm=normalAt(c,r),set=sets[terrainPaintRockSet(field.surfaces[n]!)]!,g=colourAt(c,r);
+    // Wave 7 (E's white dotted sawtooth, R3-21): a walkable face (its own slope under the rock blend) carries NO rock; the
+    // per-vertex weight (steepest incident triangle) otherwise bled a corner of rock paint into every grass triangle along a
+    // scarp that runs diagonal to the lattice — a row of pale wedges (page E, the Shoulder's 110 bench over the Hollow).
+    const vertex=(c:number,r:number,face:XYZ,faceRock:number)=>{
+      const n=r*C+c,w=faceRock>0?rock[n]!:0,sm=normalAt(c,r),set=sets[terrainPaintRockSet(field.surfaces[n]!)]!,g=colourAt(c,r);
       const nx=sm[0]+(face[0]-sm[0])*w,ny=sm[1]+(face[1]-sm[1])*w,nz=sm[2]+(face[2]-sm[2])*w,nl=Math.hypot(nx,ny,nz)||1;
       pos.push(c*st,H[n]!,r*st);nor.push(nx/nl,ny/nl,nz/nl);col.push(g[0],g[1],g[2]);uv.push(c*st*.03,r*st*.03);
       rb.push(set.base[0],set.base[1],set.base[2]);rl.push(set.ledge[0],set.ledge[1],set.ledge[2]);ri.push(w,set.spacing);
@@ -68,7 +71,7 @@ export function buildTerrainMeshes(field:TerrainField,cuts:Pick<LandCuts,'mouths
       const pa:XYZ=[a[0]*st,H[a[1]*C+a[0]]!,a[1]*st],pb:XYZ=[b[0]*st,H[b[1]*C+b[0]]!,b[1]*st],pd:XYZ=[d[0]*st,H[d[1]*C+d[0]]!,d[1]*st];
       const ux=pb[0]-pa[0],uy=pb[1]-pa[1],uz=pb[2]-pa[2],vx=pd[0]-pa[0],vy=pd[1]-pa[1],vz=pd[2]-pa[2];
       let fx=uy*vz-uz*vy,fy=uz*vx-ux*vz,fz=ux*vy-uy*vx;const fl=Math.hypot(fx,fy,fz)||1;if(fy<0){fx=-fx;fy=-fy;fz=-fz;}
-      const face:XYZ=[fx/fl,fy/fl,fz/fl];vertex(a[0],a[1],face);vertex(b[0],b[1],face);vertex(d[0],d[1],face);
+      const face:XYZ=[fx/fl,fy/fl,fz/fl],faceRock=rockWeight(Math.acos(Math.min(1,face[1]))*180/Math.PI);vertex(a[0],a[1],face,faceRock);vertex(b[0],b[1],face,faceRock);vertex(d[0],d[1],face,faceRock);
     };
     for(let r=tr;r<Math.min(R-1,tr+TERRAIN_TILE);r++)for(let c=tc;c<Math.min(C-1,tc+TERRAIN_TILE);c++){
       if(!cells[r*(C-1)+c])continue;const x=c*st,z=r*st;

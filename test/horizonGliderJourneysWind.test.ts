@@ -38,7 +38,7 @@ describe('the journeys in the build\'s wind (4 m/s from the south)',()=>{
   it('keeps Prow → thermal → Long Sands explicitly deferred under the shipped wind (D39; measured −2.6 m; −6.4 m on the v1.6 land)',()=>{
     const j=flyProwToSands(env(SANDS,15),{thermal:true});expect(j.reached).toBe(false);expect(j.heightInHand.arrival).toBeCloseTo(-2.6,1);
   });
-  it('keeps Prow → Reach meadow explicitly deferred under the shipped wind (D39; measured −14.3 m, the v2.1 meadow 90 m further west; −5.5 m on the v1.6 land)',()=>{
-    const j=flyProwToMeadow(env(MEADOW,7));expect(j.reached).toBe(false);expect(j.heightInHand.arrival).toBeCloseTo(-14.3,1);
+  it('keeps Prow → Reach meadow explicitly deferred under the shipped wind (D39; measured −7.1 m to the v2.4 meadow; −14.3 m to v2.1\'s; −5.5 m on the v1.6 land)',()=>{
+    const j=flyProwToMeadow(env(MEADOW,7));expect(j.reached).toBe(false);expect(j.heightInHand.arrival).toBeCloseTo(-7.08,1);
   });
 });

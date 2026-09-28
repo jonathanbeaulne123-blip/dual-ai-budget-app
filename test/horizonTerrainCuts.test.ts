@@ -209,3 +209,21 @@ describe('Stage A W5 terrain for Jonathan\'s rulings (MANIFEST v2.0)', () => {
     expect(Math.hypot(SPRING.source.c[0] - 1250, SPRING.source.c[1] - 1180)).toBeLessThan(6);
   });
 });
+
+describe('Wave 7 · a skate lane keeps its raster margin against a terrace beside it (RECONCILE item 1: S4 at 206–221 m)', () => {
+  it('the lattice node between S4 and a route 7.3 eu up stays under the lane; a near-level neighbour still wins its margin', async () => {
+    const { createBedClearanceSampler, SKATE_TERRACE } = await import('../src/harbour/horizon/land/terrain');
+    expect(SKATE_TERRACE).toBe(4);
+    // S4's case: a 4 eu skate lane at 32.3 along z, a 2.5 eu walk 10 eu to the east at 39.6 (7.3 up); a lattice node 4.5 eu east.
+    const s4 = bed('S4', [[915, 32.3, 600], [915, 32.3, 740]], { kind: 'skate', width: 4, shoulder: 0 });
+    const garden = bed('walk garden', [[925, 39.6, 600], [925, 39.6, 740]], { kind: 'walk', width: 2.5, shoulder: 0 });
+    const margin = 5 * Math.SQRT2, node = createBedClearanceSampler([s4, garden], margin)(919.5, 670);
+    expect(node).toBeLessThanOrEqual(32.3 - BED_TERRAIN_CLEARANCE + 1e-9);   // was 39.55: the triangle rose 0.3–2.5 eu through the lane
+    // A near-level neighbour (VBS / walk bight beside S4 at [870, 948]: 1.5–2 eu up) keeps its margin (no pit under its edge).
+    const lane = bed('walk bight', [[919, 34.2, 600], [919, 34.2, 740]], { kind: 'trail', width: 2.5, shoulder: 0 });
+    expect(createBedClearanceSampler([s4, lane], margin)(919.5, 670)).toBeGreaterThan(33);
+    // A walk (not a skate lane) keeps the old rule against the same terrace: its margin yields.
+    const walk = { ...s4, id: 'a walk', kind: 'walk' as const };
+    expect(createBedClearanceSampler([walk, garden], margin)(919.5, 670)).toBeGreaterThan(39);
+  });
+});

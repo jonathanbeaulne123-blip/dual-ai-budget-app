@@ -263,3 +263,81 @@ it('wires the ride rule into the runtime: boarding asks the gate, the held offer
   expect(runtime).toMatch(/attachMover\(controller:ModeController,offer:ThresholdOffer\)\{.*if\(!rideGateOpen\(true\)\)return false;if\(!registry\.attach/);
   expect(runtime).toMatch(/ride:rideGate\.stats\(\)/);
 });
+it('R3-118: a failed chunk is retried with back-off (3 tries), then waits exhausted until a new route or hold asks for it again', async () => {
+  const { createChunkScheduler, CHUNK_RETRY_TRIES, CHUNK_RETRY_BACKOFF_MS } = await import('../src/harbour/horizon/runtime/chunkGate.ts');
+  let clock = 0, network = false; const timers: { at: number; fn: () => void }[] = [], ready = new Set<string>(), tries: string[] = [];
+  const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); };
+  const advance = async (ms: number) => { clock += ms; for (const t of timers.splice(0).filter(t => { if (t.at <= clock) return true; timers.push(t); return false; })) t.fn(); await flush(); };
+  const sched = createChunkScheduler({ ready: id => ready.has(id), load: async id => { tries.push(id); if (!network) throw new Error('offline'); ready.add(id); }, background: () => [], isDisposed: () => false, yield: () => Promise.resolve(), now: () => clock, setTimer: (fn, ms) => timers.push({ at: clock + ms, fn }) });
+  expect([CHUNK_RETRY_TRIES, ...CHUNK_RETRY_BACKOFF_MS]).toEqual([3, 1000, 4000]);
+  sched.route(['lakeside']); await flush();
+  expect(tries).toEqual(['lakeside']); expect(sched.failures()).toEqual([{ id: 'lakeside', tries: 1, retryAt: 1000, exhausted: false }]);
+  await advance(999); expect(tries).toHaveLength(1);           // back-off: not before 1 s
+  await advance(1); expect(tries).toHaveLength(2);             // try 2 at 1 s
+  await advance(4000); expect(tries).toHaveLength(3);          // try 3 at 5 s
+  expect(sched.failures()[0]).toMatchObject({ tries: 3, exhausted: true, retryAt: null });
+  await advance(60_000); expect(tries).toHaveLength(3);        // exhausted: no busy retry loop; the gate stays held and says so
+  expect(sched.queued().route).toEqual(['lakeside']);          // still queued in its place — never dropped (review 3: queued.route [])
+  sched.route(['lakeside']); sched.view(['lakeside']); await advance(60_000); expect(tries).toHaveLength(3);   // a repeated identical demand is not a new one (Codex P2)
+  network = true; sched.route(['lakeside'], true); await flush();   // a new walk plan is a fresh demand
+  expect(tries).toHaveLength(4); expect(ready.has('lakeside')).toBe(true); expect(sched.failures()).toEqual([]);
+});
+it('Codex P2 (PR #561): a chunk that always 404s is tried 3 times across 600 frames of identical demand, stays "part failed", and a new route re-arms it exactly once', async () => {
+  const { createChunkScheduler, CHUNK_FAILED_STATUS, CHUNK_ARRIVING_STATUS } = await import('../src/harbour/horizon/runtime/chunkGate.ts');
+  let clock = 0; const timers: { at: number; fn: () => void }[] = [], ready = new Set<string>(), fetches: string[] = [];
+  const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); };
+  let broken = '';
+  const sched = createChunkScheduler({ ready: id => ready.has(id), load: async id => { fetches.push(id); if (id === broken) throw new Error('404'); ready.add(id); }, background: () => [], isDisposed: () => false, yield: () => Promise.resolve(), now: () => clock, setTimer: (fn, ms) => timers.push({ at: clock + ms, fn }) });
+  // The district stream as the runtime wires it (runtime/index.ts: request → scheduler.view([id]), every animation frame).
+  const world = { districts: buildDistricts(field, [], []) };
+  const stream = createDistrictStream(world, () => ({ dispose() {} }), 'full', { ready: id => ready.has(id), request: id => { if (!broken) broken = id; sched.view([id]); } });
+  const heldNow = () => [broken];   // the walker held at the broken chunk's boundary (runtime gateOpen)
+  const status = () => (sched.failures().some(f => heldNow().includes(f.id)) ? CHUNK_FAILED_STATUS : CHUNK_ARRIVING_STATUS);   // runtime holdStatus
+  const frames = async (n: number) => {
+    const seen = new Set<string>();
+    for (let i = 0; i < n; i++) {
+      stream.update({ x: 1470, z: 1186, now: clock });                                                        // districts.ts:171 → view([id])
+      sched.route([...heldNow(), ...sched.queued().route]);                                                  // a held ride's poll / the gate hold
+      clock += 16; for (const t of timers.splice(0).filter(t => { if (t.at <= clock) return true; timers.push(t); return false; })) t.fn();
+      await flush(); if (fetches.filter(id => id === broken).length) seen.add(status());
+    }
+    return seen;
+  };
+  const seen = await frames(600);   // 9.6 s of frames: the 1 s and 4 s back-offs both elapse
+  const brokenFetches = () => fetches.filter(id => id === broken).length;
+  expect(broken).not.toBe('');
+  expect(brokenFetches()).toBe(3);                                               // was: one fetch + decompress + parse per frame, forever
+  expect(sched.failures().find(f => f.id === broken)).toMatchObject({ tries: 3, exhausted: true, retryAt: null });
+  expect([...seen]).toEqual([CHUNK_FAILED_STATUS]);                             // "part failed" on every frame once it failed
+  expect(sched.rearms()).toBe(0);
+  sched.route([broken, 'elsewhere'], true);                                      // a new walk plan that crosses it (runtime routeAhead)
+  expect(sched.rearms()).toBe(1);
+  expect([...await frames(600)]).toEqual([CHUNK_FAILED_STATUS]);
+  expect(brokenFetches()).toBe(6); expect(sched.rearms()).toBe(1);               // re-armed exactly once: 3 more tries, then held again
+  // A chunk newly entering the demand (it failed in the background, in neither list) is re-armed once by its first hold;
+  // the same hold again — the walker pushing at that boundary frame after frame — is not a new demand.
+  const bgTimers: { at: number; fn: () => void }[] = [], bgFetches: string[] = [];
+  const bg = createChunkScheduler({ ready: () => false, load: async id => { bgFetches.push(id); throw new Error('404'); }, background: () => ['far'], isDisposed: () => false, yield: () => Promise.resolve(), now: () => clock, setTimer: (fn, ms) => bgTimers.push({ at: clock + ms, fn }) });
+  const bgAdvance = async (ms: number) => { clock += ms; for (const t of bgTimers.splice(0).filter(t => { if (t.at <= clock) return true; bgTimers.push(t); return false; })) t.fn(); await flush(); };
+  bg.startBackground(); await flush(); await bgAdvance(1000); await bgAdvance(4000);
+  expect(bgFetches).toHaveLength(3); expect(bg.failures()[0]).toMatchObject({ id: 'far', exhausted: true });
+  bg.route(['far']); await flush(); expect(bg.rearms()).toBe(1); expect(bgFetches).toHaveLength(4);   // first hold: newly demanded
+  await bgAdvance(1000); await bgAdvance(4000); expect(bgFetches).toHaveLength(6);
+  for (let i = 0; i < 600; i++) { bg.route(['far', ...bg.queued().route]); bg.view(['far']); await bgAdvance(16); }
+  expect(bgFetches).toHaveLength(6); expect(bg.rearms()).toBe(1);
+  bg.retry(['far']); await flush(); expect(bgFetches).toHaveLength(7); expect(bg.rearms()).toBe(2);   // Look → Walk onto it again: an explicit retry
+});
+it('R3-118 / R3-122: the runtime holds with a status line, retries on a new hold, never throws a failed review fetch, and restores wait for their chunk', async () => {
+  const { readFileSync } = await import('node:fs');
+  const runtime = readFileSync('src/harbour/horizon/runtime/index.ts', 'utf8'), gate = readFileSync('src/harbour/horizon/runtime/chunkGate.ts', 'utf8');
+  expect(gate).toMatch(/CHUNK_ARRIVING_STATUS = 'The island is still arriving here\./);
+  // Status while held (arriving, or failed and being retried); a new hold re-routes (a fresh demand).
+  expect(runtime).toMatch(/text=failedHere\?CHUNK_FAILED_STATUS:CHUNK_ARRIVING_STATUS;\s*if\(text!==holdText\)\{holdText=text;options\.onStatus\?\.\(text\);\}/);
+  expect(runtime).toMatch(/if\(heldNow\.join\(\)!==still\.join\(\)\)\{heldNow=still;hold\(\{districts:still,at,t\}\);scheduler\?\.route\(/);
+  // R3-122 (b): the synchronous review fetch's NetworkError holds the step instead of escaping the loop.
+  expect(runtime.match(/try\{chunks\.loadSync\(id,[^)]*\);\}catch\{/g)).toHaveLength(2);
+  // R3-122 (a): a restore into a missing chunk holds at its saved height; the validation runs when the chunk lands.
+  expect(runtime).toMatch(/if\(current&&!gateOpen\(saved\.x,saved\.z\)\)\{Object\.assign\(body,\{x:saved\.x,y:saved\.y!,z:saved\.z,yaw:saved\.yaw\}\);pendingRestore=\{\.\.\.saved\};scheduler\?\.retry\(heldNow\);\}/);
+  expect(runtime).toMatch(/if\(pendingRestore\)\{const saved=pendingRestore;pendingRestore=null;const next=restoreHorizonPosition\(saved,/);
+  expect(runtime).toMatch(/failures:scheduler!\.failures\(\)/);
+});

@@ -144,6 +144,9 @@ describe('R2-74 / R2-14 the baked view proof measures the acceptance frames', ()
     const { world } = baked(), pass = (k: 'passLandscape' | 'passPortrait') => world.views.filter(v => v.proof[k]).map(v => v.id).join('');
     // Candidate 4 (integrator 3): A (the bank 6 m narrower: the Shoulder 33 px), D (the Lamp deferred to Pass 2b, v2.1), H (the
     // airstrip's open rail: the west sea 78 px) and I (W5-T's spring + D-C5) join at 1440 × 900; H's portrait eye moved (v2.1).
+    // Candidate 6 (integrator 4): the honest proof (W7-T, R3-74) failed G and H on candidate 5 (0 px: the shaft is not visible
+    // from the jetty; H's 78 px were the sea beyond the grid). v2.4 re-poses them: G under the shaft 70 / 42 px (D-D7), H an
+    // aerial eye over the strip, the in-map west sea 350 / 94 px — the claim is true again, on the honest measure.
     expect(pass('passLandscape')).toBe('ABCDEFGHIJKL'); expect(pass('passPortrait')).toBe('BEFGHIJK');
     const px = (page: string, subject: string) => world.views.find(v => v.id === page)!.proof.subjects.find(s => s.id === subject)!;
     expect(px('K', 'the Glasshouse').pixels).toBeGreaterThan(13); expect(px('A', 'the Shoulder').pixels).toBeGreaterThanOrEqual(13);
@@ -185,6 +188,7 @@ describe('Wave 5 seams on the committed bake (integrator 3)', () => {
     const rails = baked().world.geometry.solids.filter(s => s.id.startsWith('strip.edges')); expect(rails.length).toBeGreaterThan(0); let solidParapet = 0;
     for (const { positions: p } of rails) for (let o = 0; o + 24 <= p.length; o += 24) { let lo = Infinity, hi = -Infinity, x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity; for (let i = o; i < o + 24; i += 3) { lo = Math.min(lo, p[i + 1]!); hi = Math.max(hi, p[i + 1]!); x0 = Math.min(x0, p[i]!); x1 = Math.max(x1, p[i]!); z0 = Math.min(z0, p[i + 2]!); z1 = Math.max(z1, p[i + 2]!); } if (hi - lo > .5 && Math.min(x1 - x0, z1 - z0) > .3 && Math.max(x1 - x0, z1 - z0) > 1) solidParapet++; }
     expect(solidParapet).toBe(0);
-    const H = baked().world.views.find(v => v.id === 'H')!.proof.subjects.find(s => s.id === 'the west sea')!; expect(H.pixels).toBeGreaterThanOrEqual(13);
+    const H = baked().world.views.find(v => v.id === 'H')!.proof.subjects.find(s => s.id === 'the west sea')!; expect(H.pixels).toBeGreaterThanOrEqual(13);   // candidate 6: 350 (in-map sea only, v2.4 aerial eye)
+    expect(H.pixels).toBe(350);
   });
 });

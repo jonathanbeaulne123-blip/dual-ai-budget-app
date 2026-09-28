@@ -86,6 +86,9 @@ describe('A1.1 unsupported beds fail the bake (W5-A)',()=>{
     expect(RESIDUAL_LIMIT).toBe(1.25);
     expect(RESERVED_VOIDS.map(v=>v.decision)).toEqual(['D-C10']);
     expect(OPEN_VOIDS.every(v=>!!v.owner&&v.why.length>20&&v.r<=36)).toBe(true);
+    // W7-A (Wave 7): three rows closed by the build (19 → 16); integrator 4: the Prow November loop on its footbridge (16 → 15);
+    // nothing new is allowed on the list.
+    expect(OPEN_VOIDS).toHaveLength(15);expect(OPEN_VOIDS.some(v=>v.bed==='yearWalk'&&v.at[0]===1605)).toBe(false);expect(OPEN_VOIDS.some(v=>['homestead.lane','plot.bight.1.service','VBS'].includes(v.bed))).toBe(false);
     const c=(bed:string,at:[number,number],depth:number)=>({bed,at,depth,reason:'lower route x'});
     // A new void over 1.25 anywhere else fails; one at or under 1.25 does not; the reserved neck does not.
     expect(residualBakeErrors([c('S3',[1318,1376],3.25)]).length).toBe(1);

@@ -78,7 +78,11 @@ describe.each(['full', 'lite'] as const)('Wave 6 body blockers (%s)', tier => {
 });
 describe('Wave 6 floor slabs as ground beside a bed edge', () => {
   it("reads a slab's top faces, not its box: the rotated bight.1 lay-by does not cancel the service drive's rail or VBS's wall beside it (P09 +4 m on the first cut)", () => {
-    expect(solidsNear('plot.bight.1.service.edges', 867.5, 944.7, 2).length).toBeGreaterThan(0);
-    expect(solidsNear('VBS.retaining', 864.3, 952.4, 2).length).toBeGreaterThan(0);
+    // Candidate 6 (v2.3, W7-A): plot bight.1 moved 1.0 m and its service drive meets the June lane at grade, so the drop the
+    // drive's rail guarded at [867.5,944.7] is gone (P09 lists neither plot.bight.1.service nor VBS on candidate 6). The
+    // slab rule still leaves both beds' own guards standing beside the lay-by: the drive's kerb and VBS's retaining wall.
+    expect(solidsNear('plot.bight.1.service.edges', 867.5, 944.7, 2)).toHaveLength(0);
+    expect(solidsNear('plot.bight.1.service.kerbs', 867.5, 944.7, 30).length).toBeGreaterThan(0);
+    expect(solidsNear('VBS.retaining', 864.3, 952.4, 2)).toHaveLength(0); expect(solidsNear('VBS.retaining', 864.3, 952.4, 20).length).toBeGreaterThan(0);
   });
 });

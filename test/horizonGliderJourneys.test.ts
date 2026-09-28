@@ -64,25 +64,27 @@ describe('the Prow → Long Sands and the Reach meadow',()=>{
     expect(j.heightInHand.arrival).toBeCloseTo(24.7,1);
     expect(j.path.some(p=>p.lift>1)).toBe(true);
   });
-  // REDUCED on the v2.1 land: the meadow moved 90 m west ([1143,1167]); 9.9 m in hand at the field edge (was 24.5).
-  it('reaches the Reach meadow at any hour and walks off it (9.9 m in hand at the field edge)',()=>{
+  // v2.4 (integrator 4, W7-T A6): the meadow on the low ground south of the High Span ([1195,1205], h 4.7; the v2.1 meadow at
+  // [1143,1167] stood at 15.3): 23.1 m in hand (v2.1: 9.9; main's v1.6 land: 24.5; 25 asked — W7-T's [1230,1190] kept 25.5 but
+  // S1, the Reach walk and the spring stand in its 40 m field).
+  it('reaches the Reach meadow at any hour and walks off it (23.1 m in hand at the field edge)',()=>{
     for(let hour=0;hour<24;hour+=1){
       const j=flyProwToMeadow(env(MEADOW,hour));
-      expect(j.reached).toBe(true);expect(j.heightInHand.arrival).toBeGreaterThan(5);expect(j.heightInHand.arrival).toBeCloseTo(9.9,1);expect(j.final.phase).toBe('touchdown');expect(flared(j)).toBe(true);
+      expect(j.reached).toBe(true);expect(j.heightInHand.arrival).toBeGreaterThan(5);expect(j.heightInHand.arrival).toBeCloseTo(23.1,1);expect(j.final.phase).toBe('touchdown');expect(flared(j)).toBe(true);
     }
   });
 });
 
 describe('the courses',()=>{
-  // REGRESSED on the v2.1 land (open item, RECONCILE.md): both gates are threaded (the scripted pilot's S-turns now stop
-  // 80 m out, journeys.ts), but the v1.7 Reach meadow is 120 m west-south-west of the High Span (gate 3 at h 17, 40 × 12):
-  // the wing touches down 127 m from its centre, short of the field. Was: onto the meadow in 64.2 s.
-  it('Dam Run: through the spillway arch (±6 × ±6) and under the High Span (40 × 12); lands 127 m short of the v2.1 meadow',()=>{
+  // RESOLVED in v2.4 (RECONCILE item 4, W7-T A6): both gates threaded (the pilot's S-turns stop 80 m out), and the meadow now lies
+  // on the low ground south of the High Span: the wing touches down 17.3 m from its centre, inside the 40 m field (the v2.1
+  // meadow at 15.3 was 127 m beyond reach).
+  it('Dam Run: through the spillway arch (±6 × ±6) and under the High Span (40 × 12); lands on the v2.4 meadow',()=>{
     const j=flyDamRun(env(MEADOW));
     expect(j.gates.map(g=>g.id)).toEqual(['damArch','highSpan']);
     expect(j.gates.every(g=>g.inside)).toBe(true);
     expect(Math.abs(j.heightInHand.gate4!)).toBeLessThanOrEqual(6);expect(Math.abs(j.heightInHand.gate3!)).toBeLessThanOrEqual(6);
-    expect(j.reached).toBe(false);expect(j.measures.touchdownFromMeadow).toBeCloseTo(127.4,0);expect(flared(j)).toBe(true);
+    expect(j.reached).toBe(true);expect(j.measures.touchdownFromMeadow).toBeCloseTo(17.3,0);expect(flared(j)).toBe(true);
     expect(j.path.some(p=>p.airspeed>=16.9)).toBe(true);
   });
   it('Lamp Hop: under the Bight Bridge (gate 5), onto the Bight, a fade to the sandbar (measured 13.5 s)',()=>{
@@ -97,10 +99,10 @@ describe('the courses',()=>{
 
 describe('the Throat Run',()=>{
   const base=flyThroatRun(env(0));
-  // CHANGED on the v2.1 land (open item): at trim from the lookout launch (10 m higher) the wing crosses gate 10 9.2 m over its
-  // centre, 1.2 m above the ±8 aperture (was +3.8, inside); gate 10 (north face, h 130) was not re-seated with the launch.
-  it('flies the 25 m-radius turn, lines up on the axis and reaches the mouth plane (measured mouth −9.9 m, gate 10 +9.2 m, 54.5 s)',()=>{
-    expect(base.gates[0]).toMatchObject({id:'northFace',inside:false});expect(base.gates[0]!.vertical).toBeCloseTo(9.2,1);
+  // RESOLVED in v2.4 (RECONCILE item 5, W7-T A7): gate 10 (north face) re-seated with the lookout launch, h 130 → 139: at trim
+  // the wing crosses it 0.2 m over its centre, inside the ±8 aperture (v2.1: +9.2, 1.2 m over the top).
+  it('flies the 25 m-radius turn, lines up on the axis and reaches the mouth plane (measured mouth −9.9 m, gate 10 +0.2 m)',()=>{
+    expect(base.gates[0]).toMatchObject({id:'northFace',inside:true});expect(base.gates[0]!.vertical).toBeCloseTo(0.2,1);
     expect(base.measures.turnRadius).toBeCloseTo(25,1);expect(base.measures.turnOffset).toBeCloseTo(50,0);
     expect(Math.abs(base.measures.mouthLateral!)).toBeLessThan(1);expect(Math.abs(base.measures.mouthHeading!)).toBeLessThan(25*Math.PI/180);expect(Math.abs(base.measures.mouthBank!)).toBeLessThan(20*Math.PI/180);
     expect(base.heightInHand.mouth).toBeCloseTo(-9.9,1);
@@ -143,8 +145,10 @@ describe('the same flights over the baked terrain (report)',()=>{
   it('Crown → Lamp clears the summit\'s south-west shoulder (measured +12.3 m from the lookout launch; +0.4 m on the v1.6 land)',()=>{expect(clearance(flyCrownToLamp(env(0)))).toBeGreaterThanOrEqual(0);});
   it('Prow → thermal → Sands clears the terrain (measured +21.5 m)',()=>{expect(clearance(flyProwToSands(env(SANDS,14),{thermal:true}))).toBeGreaterThanOrEqual(0);});
   it('Lamp Hop clears the terrain',()=>{expect(clearance(flyLampHop(env(0)))).toBeGreaterThanOrEqual(0);});
-  it('keeps the Prow → Reach meadow land request visible (measured −21.7 m at [1410, 866]; −13.4 m at [1450, 872] on the v1.6 land)',()=>{expect(clearance(flyProwToMeadow(env(MEADOW,7)))).toBeCloseTo(-21.7,1);});
-  it('keeps the Dam Run land request visible (measured −1.8 m at [1300, 656]; −18.9 m at [1300, 621] on the v1.6 land)',()=>{expect(clearance(flyDamRun(env(MEADOW)))).toBeCloseTo(-1.8,1);});
+  // v2.4 meadow: the recorded Prow → meadow path still passes 5.3 m under the baked terrain somewhere along it (−21.7 m to the
+  // v2.1 meadow) and so does the Dam Run's (−5.3 m; −1.8 m to the v2.1 meadow). Land requests (FLIGHT owner), kept visible.
+  it('keeps the Prow → Reach meadow land request visible (measured −5.3 m to the v2.4 meadow; −21.7 m to v2.1\'s; −13.4 m on the v1.6 land)',()=>{expect(clearance(flyProwToMeadow(env(MEADOW,7)))).toBeCloseTo(-5.29,1);});
+  it('keeps the Dam Run land request visible (measured −5.3 m to the v2.4 meadow; −1.8 m to v2.1\'s; −18.9 m on the v1.6 land)',()=>{expect(clearance(flyDamRun(env(MEADOW)))).toBeCloseTo(-5.30,1);});
   // RESOLVED on the v2.1 land: the ridge approach cleared −5.5 m at [1310, 535] (the old gondola top-station shoulder); from
   // the lookout launch it clears +11.1 m.
   it('clears the Crown ridge approach (measured +11.1 m; −5.5 m at [1310, 535] on the v1.6 land)',()=>{expect(clearance(workRidge(env(0,6,SOUTH_WIND),210))).toBeCloseTo(11.1,1);});

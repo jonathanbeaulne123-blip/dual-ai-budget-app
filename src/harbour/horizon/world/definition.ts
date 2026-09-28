@@ -45,7 +45,7 @@ export interface LightAnchor { id: string; at: Point3; kind: string; bestHour?: 
 export interface FaceCard { id: string; anchor: string; corners: [Point3, Point3, Point3, Point3]; normal: Point3; on: 'goldenHourToDawn'; districtId: string }
 /** A page's portrait lens (MANIFEST v1.7 viewRule.portrait): horizontal FOV held, never below 45°. */
 export interface PortraitPose { eye: Point3; target: Point3; fovDegrees: number; frames: string[] }
-export interface SketchbookPose { id: string; eye: Point3; target: Point3; fovDegrees: number; radius: number; bestHour?: string; also?: string; label?: string; aspect?: number; subjectIds?: string[]; floor?: number; underground?: boolean; portrait?: PortraitPose; deferred?: string[]; proof?: ViewProof }
+export interface SketchbookPose { id: string; eye: Point3; target: Point3; fovDegrees: number; radius: number; bestHour?: string; also?: string; label?: string; aspect?: number; subjectIds?: string[]; floor?: number; underground?: boolean; portrait?: PortraitPose; deferred?: string[]; proof?: ViewProof; /** Wave 7 (R3-130): the page's dry ground point for Look → Walk, when its eye is not standing. */ ground?: Point3 }
 export interface LanternSpot { id: string; at: Point3; districtId: string }
 export interface ProtectedArea { id: string; outline: Polygon; reason: string }
 export interface Station { id: string; month: number; anchor: Anchor; bedIds: string[]; padId?: string; footprint?: Polygon; bedPositions?: { yearIndex: number; at: Point3; size: Point2 }[]; stretch?: { from: string; lengthEu: number; lengthM: number; spacing: { days: number; eu: number }[]; points: Point3[] } }

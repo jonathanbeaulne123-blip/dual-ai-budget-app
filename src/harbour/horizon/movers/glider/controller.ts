@@ -56,6 +56,8 @@ export const POSE_SECONDS=.8;
 export const THROAT_TRY_RADIUS=40;
 /** Seconds after the lip during which nothing under the wing can be touched (the legs trail off the lip). */
 export const LIFTOFF_GRACE=.4;
+/** Plan radius (eu) round the launch point inside which the launch station's own frame never pulls the flight camera in. */
+export const STATION_KEEP=6;
 const HUD_REFRESH=.25;
 const DT=WING_DT;
 
@@ -64,15 +66,16 @@ export const PAD_THRESHOLDS:Record<string,string>={crown:'crownLaunch',prow:'pro
 const padFor=(envelope:FlightEnvelope,threshold:Threshold)=>envelope.launchPads?.find(p=>PAD_THRESHOLDS[p.id]===threshold.id||p.padId===`threshold.${threshold.id}`)??null;
 
 /** FLIGHT.md §6: the landings each pad offers under reduced motion (and calm view). */
-export function padLandings(padId:string,env:Pick<GliderEnv,'envelope'|'shoreNode'>):ReducedMotionLanding[]{
+export function padLandings(padId:string,env:Pick<GliderEnv,'envelope'|'shoreNode'>&Partial<Pick<GliderEnv,'beach'>>):ReducedMotionLanding[]{
   const field=(id:string,label=LANDING_LABELS[id]??id):ReducedMotionLanding|null=>{
     const l=env.envelope.landings.find(l=>l.id===id);if(!l||'empty' in l)return null;
     return{id,label,xy:[l.xy[0],l.xy[1]],...(l.height!==undefined?{height:l.height}:{})};
   };
   const deep:ReducedMotionLanding={id:'deep',label:'the Deep, through the Throat',xy:[DEEP_JETTY.at[0],DEEP_JETTY.at[2]],height:DEEP_JETTY.at[1]};
-  const sandbar=():ReducedMotionLanding|null=>{const n=env.shoreNode(600,1030);return n?{id:'sandbar',label:'the sandbar',xy:[n.at[0],n.at[2]],height:n.at[1]}:null;};
+  // Wave 7: the dry beach nearest the awash sandbar (never the Bight Bridge's deck walk); the shore node only without a beach query.
+  const sandbar=():ReducedMotionLanding|null=>{const n=env.beach?.(600,1030)??env.shoreNode(600,1030);return n?{id:'sandbar',label:'the sandbar',xy:[n.at[0],n.at[2]],height:n.at[1]}:null;};
   const list:(ReducedMotionLanding|null)[]=padId==='crown'?[field('green'),field('reachMeadow'),field('sands'),field('strip'),deep]
-    :padId==='prow'?[field('reachMeadow'),field('sands','Long Sands (afternoon)'),field('green')]
+    :padId==='prow'?[field('reachMeadow'),field('sands'),field('green')]
     :padId==='lampGallery'?[sandbar(),field('strip',"the Flats' strip")]
     :[field('green'),field('reachMeadow'),field('sands')];
   return list.filter((l):l is ReducedMotionLanding=>l!==null);
@@ -92,7 +95,7 @@ type GliderStage='wear'|'run'|'flight'|'corridor'|'pose'|'done';
 export function createGliderController(deps:FlightControllerDeps):FlightController{
   const {env}=deps,tier=deps.tier??(()=>'full' as const),reduced=deps.reducedMotion??(()=>false),gate:ThroatGate=throatGate(env.envelope);
   const cam=createFlightCam();
-  let stage:GliderStage='wear',wing:WingState=launchWing([[0,0,0],[0,0,0]],0),corridor:CorridorState|null=null,padId='crown',wear=WEAR_SECONDS,acc=0,poseT=0,launchedAt=Infinity;
+  let stage:GliderStage='wear',wing:WingState=launchWing([[0,0,0],[0,0,0]],0),corridor:CorridorState|null=null,padId='crown',station:[number,number,number]|null=null,wear=WEAR_SECONDS,acc=0,poseT=0,launchedAt=Infinity;
   let sound:string|null=null,outcome:LandingOutcome|null=null,exitAt:ModeExit|null=null,flying=false,ended=false,runStarted=false,hudT=Infinity,place:ModeHud['place'];
   const moving=()=>stage!=='pose'&&stage!=='done';
   const live=env.wingEnv(undefined,{walls:()=>wing.t-launchedAt>WALL_GRACE});
@@ -152,7 +155,7 @@ export function createGliderController(deps:FlightControllerDeps):FlightControll
     enter(threshold,body){
       const pad=padFor(env.envelope,threshold);
       padId=pad?.id??Object.entries(PAD_THRESHOLDS).find(([,t])=>t===threshold.id)?.[0]??threshold.id;
-      const h=threshold.height??body.y,edge:Point3[]=pad?.edge??[[threshold.at[0]-3,h,threshold.at[1]],[threshold.at[0]+3,h,threshold.at[1]]];
+      const h=threshold.height??body.y,edge:Point3[]=pad?.edge??[[threshold.at[0]-3,h,threshold.at[1]],[threshold.at[0]+3,h,threshold.at[1]]];station=[threshold.at[0],h,threshold.at[1]];
       // Three steps down the graded pad to its visible lip, on the pad's outward side (wing.ts `launchFromPad`).
       wing=launchFromPad(edge,env.groundAt,{facing:body.yaw,run:true});
       stage='wear';wear=WEAR_SECONDS;acc=0;poseT=0;corridor=null;outcome=null;exitAt=null;sound=null;flying=false;ended=false;runStarted=false;launchedAt=Infinity;hudT=Infinity;
@@ -172,7 +175,12 @@ export function createGliderController(deps:FlightControllerDeps):FlightControll
       // does not take the pad's own railing for an obstruction until the wing has left it behind (a one-frame 11 eu pull-in
       // at the Prow otherwise). Terrain and hosts still pull it in.
       const padGrace=stage==='run'||stage==='flight'&&wing.t-launchedAt<=WALL_GRACE;
-      lastCamera=cam.update(camState(),{dt,tier:tier(),reducedMotion:reduced(),look:input.look,ground:env.groundAt,blocked:env.cameraBlocked,...(padGrace?{}:{solid:env.solidAt})});
+      // Stage A Wave 7 (integrator 4): a cable station's launch deck (the Prow) carries the station's head frame behind the
+      // lip, over the run-off (W7-S). Like the pad's railing, the launch station's own frame (within STATION_KEEP of the
+      // launch point, up to 6 eu over the deck) is not an obstruction for the flight camera: at the end of the grace it
+      // snapped the camera 7.5 eu in one frame (FLIGHT §4: never > 2). Terrain, hosts and every other solid still pull it in.
+      const solid=(x:number,y:number,z:number)=>!(station&&Math.hypot(x-station[0],z-station[2])<STATION_KEEP&&y<station[1]+6)&&env.solidAt(x,y,z);
+      lastCamera=cam.update(camState(),{dt,tier:tier(),reducedMotion:reduced(),look:input.look,ground:env.groundAt,blocked:env.cameraBlocked,...(padGrace?{}:{solid})});
       hudT+=dt;
     },
     exit(){ended=true;return exitAt??{at:[wing.x,wing.y,wing.z],yaw:wing.heading};},

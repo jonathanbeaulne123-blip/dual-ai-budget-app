@@ -26,7 +26,7 @@ export interface ViewProof {
   subjects: { id: string; exists: boolean; inFrame: boolean; occludedBy: string | null; pixels: number; portraitPixels: number | null; portraitRequired: boolean; pass: boolean; blocker?: string }[];
   landscape: ViewPixels; portrait: ViewPixels | null; pass: boolean; passLandscape: boolean; passPortrait: boolean; deferred: string[];
 }
-type Test = (hit: RayHit, direction: Point3) => boolean;
+type Test = (hit: RayHit, direction: Point3, eye?: Point3) => boolean;
 const HOOK: Point2[] = [[520, 780], [545, 940], [460, 1030], [370, 950], [330, 800]];
 /** The Pass 1 subjects each page must hold at 16:9, in the manifest's frame vocabulary (portrait.frames uses the same names). */
 export const PAGE_SUBJECTS: Record<string, string[]> = {
@@ -36,10 +36,10 @@ export const PAGE_SUBJECTS: Record<string, string[]> = {
   D: ['surf', 'the Lamp', 'the zipline landing'],
   E: ['Stillwater', 'the Green', 'the Hollow', 'the Flats', 'the Bight', 'the sea'],
   F: ['L01', 'the town below'],
-  G: ["the Throat's mouth of daylight", 'the skylight shaft'],
+  G: ['the skylight shaft'],   // D-D7 (v2.4): the Throat stays dark (D-B5); G looks up the shaft
   H: ['the strip', 'the west sea'],
   I: ['the spring', 'the Reach water'],
-  J: ['the arch', 'the Stacks', 'the Prow'],
+  J: ['the arch', 'the Prow'],   // D-D6 (v2.3): the Stacks are off J's east line through the arch
   K: ['the Glasshouse', 'Stillwater'],
   L: ['Lantern Row', 'the Boathouse'],
 };
@@ -50,15 +50,22 @@ export const PAGE_SUBJECTS: Record<string, string[]> = {
  * "The Reach water" is the water of the Reach: its channels and the river where it runs through the
  * Reach landform (page I looks along the river inside the Reach; the channels lie behind the eye). D-C5, MANIFEST v2.0.
  */
-export function subjectTests(solids: readonly StructureSolid[] = []): Record<string, Test> {
+export function subjectTests(solids: readonly StructureSolid[] = [], field?: Pick<TerrainField, 'columns' | 'rows' | 'step'>): Record<string, Test> {
   const m = HORIZON_MANIFEST, s = requireScaleFactor();
   const solid = (...prefixes: string[]): Test => hit => hit.kind === 'solid' && prefixes.some(p => hit.sourceId.startsWith(p));
-  const water = (...prefixes: string[]): Test => hit => hit.kind === 'water' && prefixes.some(p => hit.id.startsWith(p));
+  // R3-74 (Wave 7): a water SUBJECT is water on the island's map. The sea slab beyond the 2 km terrain grid is the horizon
+  // (it counts for horizonInFrame, like the horizon cards), never a subject: page H's "west sea" claimed 78 px that were all
+  // that open plane 300–500 eu past the grid's west edge at 40–60 % fog — a haze band on the capture, 0 ‰ on review 3's probe.
+  const width = field ? (field.columns - 1) * field.step : Infinity, depth = field ? (field.rows - 1) * field.step : Infinity;
+  const onMap = (p: Point3) => p[0] >= 0 && p[2] >= 0 && p[0] <= width && p[2] <= depth;
+  const water = (...prefixes: string[]): Test => hit => hit.kind === 'water' && prefixes.some(p => hit.id.startsWith(p)) && onMap(hit.point);
   const polygon = (poly: readonly (readonly number[])[]): Point2[] => poly.map(p => [p[0]! * s, p[1]! * s]);
   const ground = (poly: Point2[]): Test => hit => hit.kind === 'terrain' && pointInPolygon(hit.point[0], hit.point[2], poly);
   const landform = (id: string): Test => { const l = m.landforms.find(q => q.id === id); return l?.poly ? ground(polygon(l.poly)) : () => false; };
   const near = (xy: readonly number[], r: number): Test => hit => hit.kind !== 'sky' && Math.hypot(hit.point[0] - xy[0]! * s, hit.point[2] - xy[1]! * s) < r * s;
   const any = (...tests: Test[]): Test => (hit, d) => tests.some(t => t(hit, d));
+  const shaft = solids.filter(q => ((q as StructureSolid & { sourceId?: string }).sourceId ?? q.id.split('@')[0]!).startsWith('deep.skylight')).map(solidBounds);
+  const throughShaft: Test = (hit, d, e) => !!e && hit.kind === 'sky' && d[1] > 0 && shaft.some(b => [b.min[1], b.max[1]].every(y => { const t = (y - e[1]) / d[1], x = e[0] + d[0] * t, z = e[2] + d[2] * t; return t > 0 && x > b.min[0] && x < b.max[0] && z > b.min[2] && z < b.max[2]; }));
   const lamp = m.offshore.find(o => o.id === 'lamp')!.xy as number[];
   const reachPoly = polygon(m.landforms.find(q => q.id === 'reach')?.poly ?? []), reachRiver: Test = hit => hit.kind === 'water' && hit.id.startsWith('water.river.lower') && reachPoly.length > 2 && pointInPolygon(hit.point[0], hit.point[2], reachPoly);
   const carried = (deckPrefix: string): Test => {
@@ -72,8 +79,12 @@ export function subjectTests(solids: readonly StructureSolid[] = []): Record<str
     surf: water('water.sea'), 'the Lamp': any(solid('lampGallery', 'jetty.lamp', 'threshold.lampGallery', 'threshold.lampDock', 'offshore.lamp', 'lamp.'), near(lamp, 45)), 'the zipline landing': solid('platform.zipLanding', 'zipLanding', 'threshold.zipLanding'),
     Stillwater: water('water.stillwater'), 'the Green': landform('green'), 'the Hollow': landform('hollow'), 'the Bight': water('water.bight', 'water.lagoon'), 'the sea': water('water.sea'),
     L01: solid('place.L01'), 'the town below': landform('harbour'),
-    "the Throat's mouth of daylight": (hit, d) => hit.kind === 'sky' && d[1] < 0.6 || hit.kind === 'terrain', 'the skylight shaft': (hit, d) => solid('deep.skylight', 'underground.deep.skylight')(hit, d) || hit.kind === 'sky' && d[1] >= 0.6,
-    'the strip': solid('strip.', 'threshold.strip'), 'the west sea': hit => hit.kind === 'water' && hit.id.startsWith('water.sea') && hit.point[0] < 330 * s,
+    // D-D7 (design lead, Wave 7; R3-74 / R3-53): the Deep's daylight is the skylight SHAFT only — D-B5 keeps the Throat
+    // dark. Both G subjects count SKY seen THROUGH the shaft (the ray passes inside the shaft at its foot and at its top);
+    // never terrain (the proof counted any rock hit as "daylight": 104 px claimed where the capture shows rock), never the
+    // shaft's own walls, never sky up the Throat.
+    "the Throat's mouth of daylight": throughShaft, 'the skylight shaft': throughShaft,
+    'the strip': solid('strip.', 'threshold.strip'), 'the west sea': hit => hit.kind === 'water' && hit.id.startsWith('water.sea') && hit.point[0] < 330 * s && onMap(hit.point),
     // R2-74: the spring is its own water body or structure (proximity counted any ground near its point). D-C5 (v2.0,
     // views.I.subjectDefs): the Reach water is the Reach's channels OR the lower river where the hit lies inside landforms.reach.
     'the spring': any(water('water.spring'), solid('spring', 'water.spring')), 'the Reach water': any(water('water.reach'), reachRiver),
@@ -121,22 +132,24 @@ export function viewPixels(ray: RayCaster, eye: Point3, target: Point3, horizont
     if (hit.kind === 'sky') sky++; if (hit.kind === 'water' && hit.id.startsWith('water.sea')) sea++;
     if (j <= horizonRow + 1 && (hit.kind === 'sky' || hit.kind === 'water' && hit.id.startsWith('water.sea'))) horizonHits++;
     const key = hit.kind === 'solid' ? hit.sourceId.split('.').slice(0, 2).join('.') : hit.kind === 'terrain' ? 'terrain' : hit.id; top.set(key, (top.get(key) ?? 0) + 1);
-    for (const [name, test] of Object.entries(tests)) if (test(hit, d)) counts[name]!++;
+    for (const [name, test] of Object.entries(tests)) if (test(hit, d, eye)) counts[name]!++;
   }
   const pixels = NX * NY, minPixels = Math.max(3, Math.ceil(pixels * LEGIBLE_PERMILLE / 1000 - 1e-9)), inFrame = Math.abs(pitch) < vhalf && horizonRow >= 0 && horizonRow < NY;
   return { grid, pixels, minPixels, skyShare: sky / pixels, seaShare: sea / pixels, horizonRowSkyOrSea: horizonHits, pitchDegrees: pitch * 180 / Math.PI, verticalHalfFovDegrees: vhalf * 180 / Math.PI, horizonInFrame: inFrame && horizonHits >= minPixels, subjects: counts, top: [...top].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, n]) => [k, +(n / pixels).toFixed(4)]) };
 }
 export function buildViews(field: TerrainField, cuts: LandCuts, options: { grid?: typeof VIEW_GRID } = {}): SketchbookPose[] {
-  const s = requireScaleFactor(), tests = subjectTests(cuts.solids), ray = createRayCaster(field, cuts), grid = options.grid ?? VIEW_GRID;
+  const s = requireScaleFactor(), tests = subjectTests(cuts.solids, field), ray = createRayCaster(field, cuts), grid = options.grid ?? VIEW_GRID;
   return HORIZON_MANIFEST.views.map(view => {
-    const xy: Point2 = [view.xy[0]! * s, view.xy[1]! * s], underground = view.id === 'G', v = view as typeof view & { target_h?: number; portrait?: { fov_deg: number; target?: number[]; target_h?: number; frames?: string[]; xy?: number[]; eyeH?: number }; deferred?: string[]; subjects?: string[] };
+    const xy: Point2 = [view.xy[0]! * s, view.xy[1]! * s], underground = view.id === 'G', v = view as typeof view & { target_h?: number; portrait?: { fov_deg: number; target?: number[]; target_h?: number; frames?: string[]; xy?: number[]; eyeH?: number }; deferred?: string[]; subjects?: string[]; ground?: { xy: number[]; h: number } | number[] };
     const floor = underground ? (cuts.pads.find(p => p.id === 'threshold.deepJetty')?.centre[1] ?? 40 * s) : Math.max(floorAt(field, cuts, xy), ray.floorAt(xy[0], xy[1]));
     const eye: Point3 = [xy[0], view.eyeH !== undefined ? view.eyeH * s : floor + 1.6, xy[1]], tx = view.target[0]! * s, tz = view.target[1]! * s;
     // target_h (v1.7) replaces the per-page constants and the terrain default.
     const target: Point3 = [tx, v.target_h !== undefined ? v.target_h * s : terrainHeight(field, tx, tz), tz];
     const p = v.portrait, pxy = p?.xy ? [p.xy[0]! * s, p.xy[1]! * s] as Point2 : null, pt = p?.target ?? view.target;
     const portrait: PortraitPose | undefined = p ? { eye: pxy ? [pxy[0], p.eyeH !== undefined ? p.eyeH * s : floorAt(field, cuts, pxy) + 1.6, pxy[1]] : eye, target: [pt[0]! * s, p.target_h !== undefined ? p.target_h * s : target[1], pt[1]! * s], fovDegrees: p.fov_deg, frames: p.frames ?? [] } : undefined;
-    const pose: SketchbookPose = { id: view.id, label: view.label, eye, target, floor, underground, fovDegrees: view.fov_deg, aspect: 16 / 9, radius: view.radius_eu, bestHour: view.bestHour, also: view.also, portrait, deferred: v.deferred ?? [] };
+    // Wave 7 (R3-130, D-D6): a page may name its own dry ground point for Walk (`views[*].ground`, {xy, h} or [x, h, z]).
+    const g = v.ground, ground: Point3 | undefined = !g ? undefined : Array.isArray(g) ? [g[0]! * s, g[1]! * s, g[2]! * s] : [g.xy[0]! * s, g.h * s, g.xy[1]! * s];
+    const pose: SketchbookPose = { id: view.id, label: view.label, eye, target, floor, underground, fovDegrees: view.fov_deg, aspect: 16 / 9, radius: view.radius_eu, bestHour: view.bestHour, also: view.also, portrait, deferred: v.deferred ?? [], ...(ground ? { ground } : {}) };
     const names = v.subjects ?? PAGE_SUBJECTS[view.id] ?? [], pageTests = Object.fromEntries(names.map(n => [n, tests[n] ?? (() => false)]));
     // R2-74: fog at this eye's height (sky/fog.ts): full tier on the 1440 × 900 frame, lite on the phone.
     const lift = Math.max(0, eye[1] - floor), fogAt = (tier: 'full' | 'lite') => ({ near: HORIZON_FOG[tier].near + lift * HORIZON_FOG.nearPerEyeHeight, far: HORIZON_FOG[tier].far + lift * HORIZON_FOG.farPerEyeHeight }), farFull = fogAt('full'), farLite = fogAt('lite');

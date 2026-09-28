@@ -1879,6 +1879,178 @@ for sid in ("S1", "S2", "S3", "S4"):
     for seg in m["skate"][sid]["segments"]:
         assert seg["pace"] in paces and seg["surface"] in m["surfaces"], (sid, seg["name"])
 
+# ---------------------------------------------------------------------------
+# v2.3 — Stage A Wave 7, track W7-A (beds, town, reserves, path graph; design lead's calls D-D8 and the reconciliation's
+# regressions). Every delta is in docs/horizon/README.md → "v2.3 (Stage A Wave 7, W7-A)". Ids never change.
+# ---------------------------------------------------------------------------
+m["version"] = "2.3"
+W7 = "design lead, Stage A Wave 7 (W7-A) 2026-09-27"
+# 1. D-D8 · the lake-rim trail keeps its profile (trail 2.5 m); the Year Walk's February share (offset 0) is carried by the
+#    Year Walk's own 5.2 m section instead (beds: the wider bed carries the narrower at offset 0). The rails the widening
+#    bought stay (the Year Walk's own edges); the dam end no longer overhangs the dam gallery's stairwell (10.4 eu void at
+#    [1161.5,908.8]) and its 1.2 m shoulders no longer stand in the dam face's 09:00 sun. Reversible: v2_1 values kept.
+lr = m["walks"]["lakerim"]
+lr["v2_1_surface_m"] = lr.pop("surface_m"); lr["v2_1_shoulder_m"] = lr.pop("shoulder_m"); lr["v2_1_surfaceNote"] = lr.pop("surfaceNote_v2_1")
+lr["sectionNote_v2_3"] = "D-D8 (" + W7 + ", reversible): the trail keeps its profile section (2.5 m); on the February share the Year Walk's own 5.2 m + 1.2 m section carries the trail, so the widening stops where the share stops ([1251,836]) and never reaches the dam end"
+#    The trail's last leg no longer runs along the dam crest beside walk damCrest ([1200,900] → [1140,905] stood 2 m south of
+#    the crest walk, its south edge over the dam's face: 19 eu unguarded at 2.5 m): it ends at the crest's east end, where the
+#    gallery exit meets the crest walk ([1166,905], at 52). The crest walk carries the rim on west over the river lower.
+lr["v2_2_pts"] = [list(p) for p in lr["pts"]]; lr["pts"] = lr["pts"][:-1] + [[1166, 905]]
+_row = [i for i, r in enumerate(m["crossings"]) if r["a"] == "walk lakerim" and r["b"] == "river lower"]
+assert len(_row) == 1
+lr["v2_2_crossing"] = m["crossings"].pop(_row[0]); lr["v2_2_crossing"]["retired_v2_3"] = "the trail ends at the gallery exit [1166,905] (D-D8): walk damCrest × river lower [1140.2,903] is the rim's crossing"
+# 2. The market stair's head stood 6 m over the square ([1480,18,1150], 35 m past the upper street's south edge z 1115 since
+#    W5-A narrowed the terrace). It now leaves the upper street's south edge at 18 and comes down south to the square: three
+#    flights of 2 m with level landings, a level foot landing onto the square at 12. D-C11 stands (stairs only); the square
+#    walk stays the step-free way (D-D3).
+ms = m["structures"]["marketStair"]
+ms["v2_2_xy"] = ms["xy"]; ms["v2_2_head"] = ms["head"]; ms["v2_2_foot"] = ms["foot"]
+ms["xy"] = [1472, 1124.5]; ms["head"] = [1472, 18, 1115]; ms["foot"] = [1472, 12, 1134]
+ms["placeNote_v2_3"] = "the head on the upper street's south edge (was 6 m over the square at [1480,18,1150]); a level walk (town.upperStreetWalk) joins it to the gondola base walk and a level foot landing (marketStair.foot) to the square walk (" + W7 + ")"
+# 4. D-D2 (plot bight.1 kept at 25 m, recommended) and R3-32: the plots' 6 m margins stood 5.79 (bight.1) and 5.83
+#    (terraces.1) from the Year Walk's shoulder at one corner each; each plot moves 1.0 m straight away from that corner.
+for _area, _i, _to in (("bightShore", 0, [813.0, 918.8]), ("terraces", 0, [1551.1, 832.5])):
+    _r = m["reserves"][_area]; _r.setdefault("v2_2_plots", [list(p) for p in _r["plots"]]); _r["plots"][_i] = _to
+m["reserves"]["bightShore"]["plot1Note_v2_3"] = "D-D2: 1.0 m WSW off the June lane's corner (margin 5.79 → ≥ 6.6 with the Year Walk's shoulder); the service drive meets the June lane at grade (" + W7 + ")"
+m["reserves"]["terraces"]["plot1Note_v2_3"] = "R3-32: 1.0 m WNW off the Prow walk's corner (margin 5.83 → ≥ 6.6); " + W7
+# 5. A1.3 · two over/unders that could not clear 2.4 are at grade now: S4 holds Green Road's level across its Year Walk
+#    footway lanes at the studio terrace (S4 × yearWalk [968.6,540.5]: 0.68 of 2.4 under → flush, 0.05), and the moved
+#    plot's service drive meets the June lane at grade (the walk rises to the drive: 1.97 of 2.4 → flush). The register
+#    rows follow the build (their v2.2 values kept).
+for _a, _b, _at, _new_at, _why in (("S4", "yearWalk", [968.6, 540.5], None, "S4 holds VG's level across the September lane (flush landing, D-A7 #17)"),
+                                    ("yearWalk", "plot.bight.1.service", [871.2, 914.9], [856.7, 935.0], "the June lane rises to the moved plot's service drive (D-D2)")):
+    _r = m["crossings"][row_find(_a, _b, _at)]
+    _r["v2_2_resolution"] = _r["resolution"]; _r["resolution"] = "threshold"; _r["kind"] = "crossing"
+    if _new_at: _r["v2_2_at"] = _r["at"]; _r["at"] = _new_at
+    _r["note"] = "v2.3: at grade (" + _why + "; " + W7 + ")"
+# 3. The bicycle's planning speed is its kernel's cap (RIDE §8.1: 6.0 m/s), not 8 (the reconciliation's regression 9).
+m["speeds_ms"]["v2_2_bicycle"] = m["speeds_ms"]["bicycle"]; m["speeds_ms"]["bicycle"] = 6.0
+#    Re-measured on the Stage A graph at 6: square → library 1,324 eu = 220.6 s, over the 185 s target (it held at 8: 165.4 s).
+#    The design lead sets the target to the measured value + 10 % (243 s), reversible: the v2.2 target stays beside it.
+_t = m["journeys"]["targets_s"]; _t["decisions"]["square→library by bicycle"] = "v2.3 (" + W7 + ", reversible): planned at the bicycle's 6.0 m/s cap, the ride measures 220.6 s (1,324 eu, Stage A W7-A scratch bake); target = measured + 10 % = 243 s (v2.2: 185 s at 8 m/s)"
+_t["decisions"]["v2_2_square→library by bicycle"] = _t["square→library by bicycle"]; _t["square→library by bicycle"] = 243
+
+# 6. D-D6 (design lead rules, reversible; W7-T request A1/A2, measured with the view ray caster on candidate 5's bake):
+#    page J looks due east THROUGH the Needle's Eye at dawn from the Prow cliff (the sunrise gate keeps its alignment), not
+#    north past the arch from the plane: the arch 2,027 px at 1440 × 900 (opening 615 px = 22 % of its face; ≈ 28 % is the
+#    ceiling until the arch is re-authored, R3-111), 370 / 100 px at 390 × 844. The Stacks are not on this line (60-65° to
+#    the right): they leave J's subjects. J's eye stands on the Prow's ground (floor 49.9 + 1.6 = 51.5), and Walk from J starts on the Year
+#    Walk at the Prow (`ground`, the nearest reachable path node; R3-130).
+for v in m["views"]:
+    if v["id"] == "J":
+        v["v2_2"] = {k: v[k] for k in ("xy", "target", "target_h", "eyeH", "label", "frames", "subjects")}; v["v2_2"]["portrait"] = dict(v["portrait"])
+        v["eyeH"] = 51.5   # the Prow cliff floor 49.9 + 1.6 (W7-T measured); an absolute eye, like every eyeH
+        v.update({"xy": [1665, 680], "target": [1790, 681], "target_h": 25, "fov_deg": 55, "label": "The Needle's Eye at dawn, from the Prow",
+                  "frames": "the arch, the sea through it at dawn, the Prow underfoot", "subjects": ["the arch", "the Prow"],
+                  "ground": {"xy": [1607.3, 690.9], "h": 48.5}})
+        v["portrait"] = {"fov_deg": 50, "target": [1790, 681], "target_h": 25, "frames": ["the arch", "the Prow"]}
+        v["deferred"] = list(v.get("deferred", [])) + ["the Stacks (not on J's east line through the arch, 60-65° to its right; D-D6)"]
+        v["decided_v2_3"] = "D-D6 re-pose (recommended; " + W7 + ", reversible: v2_2), W7-T's measured pose"
+
+# ---------------------------------------------------------------------------
+# v2.4 — Stage A Wave 7, integrator 4 (design lead): the cross-track requests of W7-T → W7-A (A2–A8) and W7-S → W7-A,
+# measured on the integrator's merged scratch bake (W7-A + W7-S + W7-T) with the repo's own ray caster, walk-out probe and
+# flight model. Every delta is in docs/horizon/README.md → "v2.4 (Stage A Wave 7, integrator 4)". Ids never change; every
+# moved value keeps its v2.3 value beside it (`v2_3*`).
+# ---------------------------------------------------------------------------
+m["version"] = "2.4"
+I4 = "design lead, Stage A Wave 7 integrator 4 2026-09-27"
+_views = {v["id"]: v for v in m["views"]}
+# 1. A2/A3 · a Walk ground point for every page whose eye stands > 8 eu (walkPlan's snap) from the path graph. Each is dry,
+#    walkable, unblocked on both tiers and within 8 eu of a path edge reachable from the square (measured). E's ground is
+#    the Crown launch deck itself (5.1 eu from the deck's stair head: the body stays on the deck, the glider's pad).
+for _id, _g, _why in (("D", {"xy": [1181, 1401], "h": 3.0}, "the beach verge south of Horizon Drive, 5.1 eu off the Drive (Long Sands' dune walk and zip landing are not reachable from the square yet: R3-119)"),
+                      ("E", {"xy": [1306, 482], "h": 170}, "on the Crown launch deck (lookout run-off deck), 5.1 eu from crownLaunch.stair's head"),
+                      ("I", {"xy": [1284.8, 1215], "h": 9.5}, "on the Reach walk beside the boardwalk footbridge, 0.04 eu off the path"),
+                      ("L", {"xy": [1477, 1289], "h": 3.0}, "on the town quay (Lantern Row), 4.3 eu off its walk")):
+    _views[_id]["ground"] = _g; _views[_id]["groundNote_v2_4"] = _why + " (" + I4 + ")"
+# 2. D-D6 applied, J's landscape fixed: at v2.3's eye [1665,680] the Prow is 0 px at 1440 × 900 (the cliff edge is 11 m ahead
+#    and below the frame), so J failed its own subjects. 15 m south on the same cliff ([1665,695], floor 50.0) looking at the
+#    same point: arch 1,743 / 307 px, the Prow 1,250 / 2,988 px, the arch's opening 37.7 % / 36.6 % of its face (≥ 25 %, W7-S's
+#    new arch), horizon in frame both aspects.
+_j = _views["J"]; _j["v2_3"] = {"xy": _j["xy"], "eyeH": _j["eyeH"], "target_h": _j["target_h"], "portrait": dict(_j["portrait"])}
+_j["xy"] = [1665, 695]; _j["eyeH"] = 51.6; _j["target_h"] = 20; _j["portrait"]["target_h"] = 20
+_j["poseNote_v2_4"] = "15 m south on the Prow cliff so the Prow is in the 16:9 frame (0 → 1,250 px); opening 37.7 % of the arch's face (" + I4 + ")"
+# 3. A4 · D-D7 option 1 (design lead rules, reversible): page G looks UP the skylight shaft from the Deep's floor under it
+#    (the proof counts only sky seen through the shaft; from the jetty 44 eu away no ray passes it: 0 px). Eye 4 eu from the
+#    shaft's axis in plan, looking north-up (target [1320,110,380]): 70 px at 1440 × 900, 42 px at 390 × 844; the Deep's roof is
+#    open under the shaft (verified by ray: sky straight up at [1320,400], [1317,398], [1323,403]). The Throat's mouth of
+#    daylight leaves G's subjects (D-B5: the Throat stays dark). Walk from G starts on the Deep's jetty (its v2.3 eye).
+_g = _views["G"]; _g["v2_3"] = {k: _g[k] for k in ("xy", "target", "target_h", "label", "frames", "subjects")}; _g["v2_3"]["portrait"] = dict(_g["portrait"])
+_g.update({"xy": [1320, 404], "target": [1320, 380], "target_h": 110, "label": "The Deep, looking up the skylight shaft",
+           "frames": "from the Deep's floor up the skylight shaft to its square of daylight; the Throat dark behind (D-B5)",
+           "subjects": ["the skylight shaft"], "ground": {"xy": [1300, 440], "h": 40.6}})
+_g["portrait"] = {"fov_deg": 45, "target": [1320, 380], "target_h": 110, "frames": ["the skylight shaft"]}
+_g["decided_v2_4"] = "D-D7 option 1 (design lead rules, reversible: v2_3), W7-T request A4 (" + I4 + ")"
+# 4. A5 · page H: the land cannot show the west sea from a standing eye (the Flats' floor at the polygon's west edge hides every
+#    in-map sea row; review 3: 0 ‰). An aerial eye over the strip: eyeH 39.6 → 48 (the strip 38 + 10), target_h 30 → 20, both
+#    aspects: west sea 350 / 94 px, the strip 121 / 80 px, horizon in frame. Walk from H starts on the strip under the eye.
+_h = _views["H"]; _h["v2_3"] = {"eyeH": None, "eyeH_measured": 39.6, "target_h": _h["target_h"], "portrait": {k: _h["portrait"].get(k) for k in ("target_h", "xy")}}
+_h["eyeH"] = 48; _h["target_h"] = 20; _h["portrait"]["eyeH"] = 48; _h["portrait"]["target_h"] = 20; _h["ground"] = {"xy": [440, 760], "h": 38}
+_h["poseNote_v2_4"] = "an aerial eye 10 m over the strip (eye 39.6 → 48, target_h 30 → 20): west sea 0 → 350 / 94 px (" + I4 + ", W7-T request A5)"
+# 5. A6 · the Reach meadow landing moves down onto the low ground south of the High Span (the v2.1 meadow at 15.3 stood 3.7 m
+#    over the field the Dam Run arrives at: 127 m short). W7-T's [1230,1190] (h 5.9; Dam Run 9.3 m from the centre, Prow → meadow
+#    25.5 m) is not a clear field on the merged land: S1, the Reach walk and footbridge and the spring stand inside its 40 m
+#    (sky.landing.reachMeadow conflict). The nearest clear, dry 40 m field: [1195,1205] h 4.7 (no bed, no water inside r 40):
+#    the Dam Run lands 17.3 m from the centre; Prow → meadow arrives with 23.1 m in hand (25 asked; v2.3: 9.9).
+_rm = m["sky"]["landings"]["reachMeadow"]; _rm["v2_3_xy"] = _rm["xy"]; _rm["xy"] = [1195, 1205]
+_rm["note_v2_4"] = "the nearest clear 40 m field on the low ground south of the High Span (h 4.7): the Dam Run lands 17.3 m from the centre; Prow → meadow 23.1 m in hand, 1.9 short of the 25 asked ([1230,1190] kept 25.5 but S1, the Reach walk and the spring stand in its field) (" + I4 + ", W7-T A6)"
+# 6. A7 · the Throat Run's gate 10 (north face) rides with the h 170 lookout launch: 130 → 139 (at trim the wing crosses +0.2 m,
+#    inside ±8; at 130 it crossed 1.2 m over the top).
+for _gt in m["sky"]["gates"]:
+    if _gt["id"] == "northFace":
+        _gt["v2_3_h"] = _gt["h"]; _gt["h"] = 139; _gt["note_v2_4"] = "re-seated with the lookout launch (+10 → +9): the Throat Run at trim crosses +0.2 (" + I4 + ", W7-T A7)"
+# 7. A8 · Long Sands recorded as ACCEPTED: the Prow → Sands glide arrives (+3.5 m) at any hour without the afternoon thermal, so
+#    the reduced-motion sheet's label is "Long Sands" (was "Long Sands (afternoon)"). FLIGHT's thermal intent is not a route.
+m["sky"]["landings"]["sands"]["note_v2_4"] = "accepted: Prow → Sands arrives +3.5 m at 10:00 and 15:30 alike (no thermal needed); label 'Long Sands' (" + I4 + ", W7-T A8)"
+# 8. W7-S request 7 / design lead: S1's quay finish rises to the islet's natural ground (a pad at 3 dug a 1.7 eu pit into it).
+_lq = m["structures"]["landingQuay"]; _lq["v2_3_finish_h"] = 3; _lq["finish_h"] = 4.7
+_lq["finishNote_v2_4"] = "the paved finish and its pad at the islet's natural ground (≈ 4.7) instead of 3 (" + I4 + ", W7-S request)"
+# 9. W7-S request 4 · the Bight spur trestle carries VBS's whole hang: 6 m further north and 12 m further south along VBS.
+_bt = m["structures"]["bightSpurTrestle"]; _bt["v2_3_from"] = _bt["from"]; _bt["v2_3_to"] = _bt["to"]; _bt["v2_3_length_m"] = _bt["length_m"]
+_bt["from"] = [923.6, 874.5]; _bt["to"] = [881.0, 926.5]; _bt["length_m"] = 68
+_bt["note_v2_4"] = "extended along VBS (north +6, south +12) over the 8.5 / 1.49 eu voids at its ends (" + I4 + ", W7-S request 4)"
+
+# 10. W7-A → W7-S · the Year Walk's November loop crosses over itself at the Prow ([1605,690]: the upper pass 48.3, the lower
+#     lane 42.9, 5.6 apart; an OPEN_VOIDS row since Wave 5). A named footbridge carries the upper pass on the Year Walk's own
+#     grade (W7-A's profile, [1603.5,674.6] 47.10 → [1609.8,702.9] 49.51); its bents stand outside the lower lane's corridor.
+#     The underside clears the lower lane by ≥ 2.4 (5.6 − deck 0.6).
+m["structures"]["prowLoopFootbridge"] = {"kind": "footbridge", "carries": "yearWalk", "over": "the Year Walk's own lower lane (the November loop on the Prow)",
+    "from": [1603.5, 674.6], "to": [1609.8, 702.9], "length_m": 29, "width_m": 6,
+    "note": "v2.4: the Year Walk's upper pass over its own lower lane at the Prow (5.6 eu apart) on a named footbridge (" + I4 + ", W7-A → W7-S request; OPEN_VOIDS yearWalk [1605,690] closed)"}
+
+# 11. Plot terraces.1 back to its v2.2 place (reversible; v2.3 kept as `v2_3_plots`): W7-A's 1.0 m WNW move (R3-32: the 6 m
+#     margin stood 5.83 from the Prow walk's corner) shifted its service drive's lay-by so the drive's bed stands 0.47 over the
+#     Year Walk at [1594.7,837.9], a wall to the walking body (geography.blocker): the square → L02 walk on foot stopped there
+#     on both tiers (horizonWave4 R2-03 / R2-08, candidate 6 first bake). R3-32 (5.83 of 6) is open again, owner W7-A.
+_tr = m["reserves"]["terraces"]; _tr["v2_3_plots"] = [list(p) for p in _tr["plots"]]; _tr["plots"][0] = list(_tr["v2_2_plots"][0])
+_tr["plot1Note_v2_4"] = "back to v2.2 (" + I4 + "): the v2.3 move put the service drive's bed 0.47 over the Year Walk at [1594.7,837.9] and blocked the walk to L02; R3-32 open (5.83 of 6), owner W7-A"
+
+# ---------------------------------------------------------------------------
+# v2.5 — reconciled with main #554–#560 (reconciliation 2, after #553 merged candidate 5). main brought no generator edit:
+# its movers (parachute from any airborne body, the cruiser, the boat fleet and the walkable yacht, fleet water, the galley) keep their
+# anchors in code. This block records those anchors on the land, as measured on the candidate-6 bake, and the two runtime
+# rules that now cover them. Data only: nothing is built from it, no id changes. README → "v2.5 (reconciled with main #554–#560)".
+# ---------------------------------------------------------------------------
+m["version"] = "2.5"
+R2 = "reconciliation 2, 2026-09-27"
+m["moverAnchors_v2_5"] = {
+    "source": "main #554 parachute, #555 cruiser, #556 fall rescue (Little Harbour), #557 fleet + yacht, #558 fleet water, #559 Yacht Kitchen, #560 personal homes — anchors are code-owned (movers/fleet/model.ts, movers/cruiser/*, kitchen/geometry.ts, home/site.ts); " + R2,
+    "fleet": {"launch": "structures.floatplaneDock [1520,1275]: the dock's bed at h 1.2 (the fleet's launchBody [1523,1.2,1276] stands on it, dry)",
+              "moorings": {"kayak": [1527, 1269], "dinghy": [1527, 1276], "motorboat": [1528, 1283]}, "yacht": [1620, 1340],
+              "measured": "every hull navigable at its mooring (seabed −3.5 / −4.3 / −5.3 / −12); the three small hulls' approach to the yacht's stern clear 40/40 each; identical on candidate 5 and candidate 6 (the land there did not move)"},
+    "pedestrianWater": {"deep": [1315, 420], "floor_h": 38, "pool_h": 40, "note": "main's swimmer test stands in the Deep under the skylight shaft; candidate 6's page G eye [1320,404] is 16 m north of it (the floor unchanged)"},
+    "fallRescue": {"rule": "a fall that ends in water or off walkable ground fades to a path node that is never submerged (FLIGHT §2.4: fadeShore / fadeApron / the Deep jetty)",
+                   "measured": "1,618 touchdowns on a 40 m grid (water and > 40° ground): 0 submerged returns on candidate 6 (0 on candidate 5); 26 returns stand against a rail or support or 0.4–0.8 off the node's deck (22 on candidate 5), listed in final8/probes"},
+    "rideChunkRule": "v2.2's rule (every chunk resident before a feet → mover boarding) now covers the cruiser (V), every boat and the yacht's helm; no hull moves while any chunk is missing; a fall (never refused) puts every missing chunk first and the canopy holds at an unloaded boundary",
+    "kitchen": {"board": "kitchen/geometry.ts KITCHEN_BOARD, yacht-local [-2.6, main deck 3.85, -10.6]: it sails with the yacht, no land anchor",
+                "measured": "at the yacht's mooring the menu board stands at [1617.4,3.85,1329.4] over the harbour water (seabed -12), district harbour; the yacht's whole 14 x 44 hull is inside the harbour chunk and the galley opens only aboard, so it needs the harbour chunk resident like the fleet",
+                "rule": "an open service holds the body: a chosen page while cooking returns to the galley on Walk (main: Choose Walk and Resume); after Exit a chosen page is a visit again (Stage A walk-out)"},
+    "homes": {"plots": "home/ownership.ts HOME_PLOTS: plot.terraces.1-3, plot.bight.1-4 (one per member, first come); home/site.ts reads each plot from the bake (outline centre, door xy and height), so the homes follow these reserves",
+              "measured": "on the candidate-6 bake all seven plots are graded pads: ground within 0.05 of the door height over the whole 52 x 32 home plot, dry, the door on a path node, no path node inside the 16 x 22 cottage; plot.terraces.3 has one path node at its plot corner (local [25.4,13.7]); plot.terraces.1 is the v2.2 plot (R3-32 margin 5.83 of 6 still open)"},
+    "comfort": "one comfort source: reduced motion and calm reach the fleet (wind off, no bob), the cruiser (no lean, camera cut) and the parachute (comfort camera) through the registry; the stricter rule wins",
+}
+
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")

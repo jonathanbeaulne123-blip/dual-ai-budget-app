@@ -83,6 +83,16 @@ describe('Horizon terrain mesh (render = the baked lattice)', () => {
       }
     }
     expect(steep).toBeGreaterThan(0); expect(flat).toBeGreaterThan(0);
+    // Wave 7 (E's dotted sawtooth): the walkable faces TOUCHING the cliff carry no rock either (the corner bleed is gone).
+    let edge = 0;
+    for (const mesh of built.meshes) {
+      const p = mesh.geometry.getAttribute('position'), info = mesh.geometry.getAttribute('rockInfo');
+      for (let t = 0; t < p.count; t += 3) {
+        const ys = [p.getY(t), p.getY(t + 1), p.getY(t + 2)], xs = [p.getX(t), p.getX(t + 1), p.getX(t + 2)];
+        if (Math.max(...ys) - Math.min(...ys) < 1e-6 && xs.some(x => Math.abs(x - 1450) <= 5)) { edge++; for (let k = 0; k < 3; k++) expect(info.getX(t + k)).toBe(0); }
+      }
+    }
+    expect(edge).toBeGreaterThan(0);
     built.dispose();
   });
 });

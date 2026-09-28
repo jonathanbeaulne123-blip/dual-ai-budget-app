@@ -53,3 +53,16 @@ it('v2.0: checks the Throat against the collar aperture and keeps ceilings off t
       let best=Infinity,h=0;for(const p of b.points){const d=Math.hypot(p[0]-c[0],p[2]-c[1]);if(d<best){best=d;h=p[1];}}
       if(best<b.width/2&&h<under)expect(under-h,`${id} under ORE's roof at [${c.map(n=>n.toFixed(1))}]`).toBeGreaterThanOrEqual(b.clearHeight-.01);}}
 },120000);
+it('gives the Deep a floor, carries the Ore Line across it on a trestle and opens the tubes onto the lake (page G, Wave 7)',()=>{
+  const cuts=buildLandCuts(baseHeight),deep=M.underground.rooms.deep.xy,dim=ROOM_DIMENSIONS.deep!;
+  const prisms=(id:string)=>{const s=cuts.solids.find(q=>q.id===id);if(!s)return [];const out:{x:number;z:number;bottom:number;top:number}[]=[];for(let o=0;o+23<s.positions.length;o+=24){let x=0,z=0,b=Infinity,t=-Infinity;for(let k=0;k<8;k++){x+=s.positions[o+k*3]!/8;z+=s.positions[o+k*3+2]!/8;b=Math.min(b,s.positions[o+k*3+1]!);t=Math.max(t,s.positions[o+k*3+1]!);}out.push({x,z,bottom:b,top:t});}return out;};
+  const inDeep=(p:{x:number;z:number})=>((p.x-deep[0]!)/(dim.size[0]/2-.5))**2+((p.z-deep[1]!)/(dim.size[1]/2-.5))**2<1;
+  // Every room has a floor at its floor height; the Deep's covers its centre and the rim under the jetty.
+  for(const [id,room] of Object.entries(M.underground.rooms)){const f=prisms(`underground.${id}.floor`);expect(f.length,id).toBeGreaterThan(10);expect(Math.max(...f.map(p=>p.top)),id).toBe(ROOM_DIMENSIONS[id]!.floor);
+    const c=f.some(p=>Math.abs(p.x-room.xy[0]!)<ROOM_DIMENSIONS[id]!.size[0]/15&&p.bottom<ROOM_DIMENSIONS[id]!.floor);expect(c,id).toBe(true);}
+  // No tube piece (the Ore Line's floor, footings, walls, roof; the Sea Passage's walls and roof) stands inside the Deep.
+  for(const id of ['oreTunnel.floor','oreTunnel.footings','oreTunnel.walls','oreTunnel.roof','seaPassage.walls','seaPassage.roof'])expect(prisms(id).filter(inDeep),id).toEqual([]);
+  // The Ore Line crosses on a trestle: a deck under the rails, bents from under it to the room floor.
+  const bents=prisms('ORE.deepTrestle.supports');expect(bents.length).toBeGreaterThanOrEqual(6);for(const b of bents)expect(b.bottom).toBeCloseTo(dim.floor-.25,5);
+  expect(prisms('ORE.deepTrestle.deck').length).toBeGreaterThan(3);
+},120000);
