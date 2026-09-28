@@ -14,6 +14,8 @@ const kitchenCommand=vi.fn((command:KitchenCommand)=>{if(command.type==='exit')e
 vi.mock('../src/harbour/scene/worldMount.ts',()=>({mountHorizonWorld:async()=>({
   mode:()=>'walk',shotId:()=>'A',offers:()=>[],moverState:()=>({mode:'feet',attached:false,hud:null,perspective:'activity'}),
   fleetActions:()=>[],fleetState:()=>({vessels:[],swimming:false,perspective:'activity',sitting:null,saveFailed:false}),
+  // #560 (merged beside #559) added the stage's home calls; the same mock rows as horizonQuickLayerModes (reconciliation 2).
+  setHome(){},visitHome:()=>true,homeActions:()=>[],
   kitchenView:view,kitchenCommand,kitchenInput,setKitchenSound(){},
   setTheme(){},setCruiserTheme(){},setCruiserSkin(){},toggleCruiser(){},recoverCruiser(){},cyclePerspective(){},cycleCamera(){},resumeEquipment(){},
   pause(){},setComfort(){},setReducedMotion(){},setCalm(){},setMode(){},dispose(){},input(){},look(){},jump(){},jumpHold(){},enterDoor(){},cutTo(){},world:{views:[]},
