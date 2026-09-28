@@ -47,6 +47,12 @@ export default function HorizonStage(props:HorizonStageProps){
     return()=>{controller.abort();unregister?.();current?.dispose();if(HARBOUR_DEV){const debug=window as unknown as {__harbour?:HorizonRuntime};if(debug.__harbour===current)delete debug.__harbour;}runtime.current=null;latest.current.onRuntime?.(null);};
   },[tier]);
   useEffect(()=>{runtime.current?.pause(props.paused===true);},[props.paused,ready]);
+  // The toolbar can wrap onto several rows as tools, camera controls or larger text appear.
+  useEffect(()=>{
+    const shell=stage.current?.parentElement,bar=shell?.querySelector('.horizon-toolbar');if(!shell||!bar)return;
+    const place=()=>shell.style.setProperty('--horizon-toolbar-bottom',`${bar.getBoundingClientRect().bottom-shell.getBoundingClientRect().top+12}px`);
+    place();const observer=new ResizeObserver(place);observer.observe(bar);return()=>observer.disconnect();
+  },[ready,mode,props.paused]);
   // Comfort is live (CONTRACT §2.10): the app's props (useComfort), html[data-motion] / html[data-quiet] and the OS query, without a remount.
   useEffect(()=>{setReducedMotion(readReducedMotion(props));setCalm(readCalm(props));},[props.calm,props.reducedMotion]);
   useEffect(()=>{
