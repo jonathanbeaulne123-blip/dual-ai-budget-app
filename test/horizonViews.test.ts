@@ -102,7 +102,7 @@ it('the honest proof on candidate 6\'s bake: G (under the shaft) and H (the aeri
   // (D-D7) and H is an aerial eye over the strip: 12/12 at 1440 × 900. The phone still fails A, C, D, L (D-D11/D-D12 open;
   // D's phone surf is the named disagreement with P27, R3-55).
   // v2.6 (D-M3/D-M10): the dam's glass face is retired: A's phone frame holds the High Span alone and passes; F re-posed on v2's crest.
-  expect(list('passLandscape')).toBe('ABCDEFGHIJKL'); expect(list('passPortrait')).toBe('ABEFGHIJK');
+  expect(list('passLandscape')).toBe('ABCDEFGHIJKL'); expect(list('passPortrait')).toBe('ABEGHIJK');   // v2.6b: F's eye moved onto the promenade (the east end stood inside the abutment); L01 is open on the phone like C/D/L (D-D11/D-D12 class)
   expect([px('G', 'the skylight shaft').pixels, px('G', 'the skylight shaft').portraitPixels]).toEqual([70, 42]);
   expect([px('H', 'the west sea').pixels, px('H', 'the west sea').portraitPixels]).toEqual([350, 94]);
   expect([px('J', 'the Prow').pixels, px('J', 'the arch').pixels]).toEqual([1163, 1743]);

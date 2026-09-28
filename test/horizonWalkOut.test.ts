@@ -53,7 +53,8 @@ describe('R3-130 · Look → Walk from every page lands dry and walkable', () =>
     // v2.6 (D-M10): F's eye is on Mountain v2's crest promenade (the region's deck): Walk goes to its ground point, L01's bay (25.3).
     // v2.6: the Crown launch deck moved to [1322,472] (clear of v2's gondola summit terminal, D-M6), so E's eye [1317.5,170,475.5]
     // now stands on the deck itself: E stays under its eye on the deck at 170 (was 'ground', moved 6.5 onto the deck).
-    const expected = { A: 0, B: 0, C: 0, D: 44.2, E: 0, F: 25.3, G: 41.2, H: 0, I: 14.7, J: 57.8, K: 0, L: 9.2 };
+    // v2.6b: F's eye moved along the promenade to promenade[10] (the east end stood inside the abutment): 17.3 to L01's bay (was 25.3).
+    const expected = { A: 0, B: 0, C: 0, D: 44.2, E: 0, F: 17.3, G: 41.2, H: 0, I: 14.7, J: 57.8, K: 0, L: 9.2 };
     for (const { geo } of tiers) { expect(walkOut(world.views.find(v => v.id === 'E')!, geo)).toMatchObject({ how: 'stand', y: 170 }); expect(walkOut(world.views.find(v => v.id === 'H')!, geo).how).toBe('ground'); }
     expect(moves).toEqual({ full: expected, lite: expected });
   });

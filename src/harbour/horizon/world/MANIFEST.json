@@ -9719,11 +9719,12 @@
    "modes": [
     "feet\u2192cable"
    ],
-   "action": "board by offer",
+   "action": "Ride the gondola \u2191 Summit Commons",
    "v2_5_xy": [
     1480,
     1090
-   ]
+   ],
+   "action_v2_5": "board by offer"
   },
   {
    "id": "adit",
@@ -9877,9 +9878,10 @@
     481.7
    ],
    "modes": [
-    "cable\u2192feet"
+    "cable\u2192feet",
+    "feet\u2192cable"
    ],
-   "action": "step off onto the platform",
+   "action": "step off onto the platform \u00b7 board by offer to ride down",
    "v1_9_xy": [
     1360,
     560
@@ -9887,7 +9889,11 @@
    "v2_5_xy": [
     1335,
     535
-   ]
+   ],
+   "v2_5_modes": [
+    "cable\u2192feet"
+   ],
+   "action_v2_6": "board by offer (ride down) / step off"
   },
   {
    "id": "southPortal",
@@ -9978,6 +9984,84 @@
     "boat\u2192feet"
    ],
    "action": "tie up at the foot of the Steps; portage stair to the Deep"
+  },
+  {
+   "id": "funicular.town.to.hearth",
+   "xy": [
+    1291.1,
+    728.1
+   ],
+   "h": 55.65,
+   "modes": [
+    "feet\u2192funicular"
+   ],
+   "action": "Ride the funicular \u2191 Lower neighbourhood",
+   "source": "v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)"
+  },
+  {
+   "id": "funicular.hearth.to.library",
+   "xy": [
+    1314.41,
+    677.19
+   ],
+   "h": 69.6,
+   "modes": [
+    "feet\u2192funicular"
+   ],
+   "action": "Ride the funicular \u2191 Library Woods",
+   "source": "v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)"
+  },
+  {
+   "id": "funicular.hearth.to.town",
+   "xy": [
+    1314.41,
+    677.19
+   ],
+   "h": 69.6,
+   "modes": [
+    "feet\u2192funicular"
+   ],
+   "action": "Ride the funicular \u2193 The square",
+   "source": "v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)"
+  },
+  {
+   "id": "funicular.library.to.reservoir",
+   "xy": [
+    1325.44,
+    607.53
+   ],
+   "h": 93.6,
+   "modes": [
+    "feet\u2192funicular"
+   ],
+   "action": "Ride the funicular \u2191 Reservoir Heights",
+   "source": "v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)"
+  },
+  {
+   "id": "funicular.library.to.hearth",
+   "xy": [
+    1325.44,
+    607.53
+   ],
+   "h": 93.6,
+   "modes": [
+    "feet\u2192funicular"
+   ],
+   "action": "Ride the funicular \u2193 Lower neighbourhood",
+   "source": "v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)"
+  },
+  {
+   "id": "funicular.reservoir.to.library",
+   "xy": [
+    1344.86,
+    536.53
+   ],
+   "h": 141.6,
+   "modes": [
+    "feet\u2192funicular"
+   ],
+   "action": "Ride the funicular \u2193 Library Woods",
+   "source": "v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)"
   }
  ],
  "journeys": {

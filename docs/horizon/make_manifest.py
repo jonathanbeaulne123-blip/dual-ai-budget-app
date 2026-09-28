@@ -2149,6 +2149,14 @@ for _v in m["views"]:
         _v["xy"] = [1332.23, 533.27]; _v["eyeH"] = 143.7; _v["target"] = [1150, 720]; _v["target_h"] = 100
         _v["note_v2_6b"] = "integrator: the east-end eye stood inside the abutment (the capture showed paper grain); the eye now stands on promenade[10] at crest + 1.7 looking west-south-west along the crest over L01 to Stillwater and the Foot"
 
+# v2.6 R5-02 (integrator): the gondola top also boards the ride down; funicular boarding rows, one per platform per direction.
+for _t in m["thresholds"]:
+    if _t["id"] == "gondolaTop":
+        _t["v2_5_modes"] = list(_t["modes"]); _t["modes"] = ["cable→feet", "feet→cable"]; _t["action_v2_6"] = "board by offer (ride down) / step off"; _t["action"] = "step off onto the platform · board by offer to ride down"
+    if _t["id"] == "gondolaBase":
+        _t["action_v2_5"] = _t["action"]; _t["action"] = "Ride the gondola ↑ Summit Commons"
+m["thresholds"].extend(_json.loads("[{\"id\": \"funicular.town.to.hearth\", \"xy\": [1291.1, 728.1], \"h\": 55.65, \"modes\": [\"feet→funicular\"], \"action\": \"Ride the funicular ↑ Lower neighbourhood\", \"source\": \"v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)\"}, {\"id\": \"funicular.hearth.to.library\", \"xy\": [1314.41, 677.19], \"h\": 69.6, \"modes\": [\"feet→funicular\"], \"action\": \"Ride the funicular ↑ Library Woods\", \"source\": \"v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)\"}, {\"id\": \"funicular.hearth.to.town\", \"xy\": [1314.41, 677.19], \"h\": 69.6, \"modes\": [\"feet→funicular\"], \"action\": \"Ride the funicular ↓ The square\", \"source\": \"v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)\"}, {\"id\": \"funicular.library.to.reservoir\", \"xy\": [1325.44, 607.53], \"h\": 93.6, \"modes\": [\"feet→funicular\"], \"action\": \"Ride the funicular ↑ Reservoir Heights\", \"source\": \"v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)\"}, {\"id\": \"funicular.library.to.hearth\", \"xy\": [1325.44, 607.53], \"h\": 93.6, \"modes\": [\"feet→funicular\"], \"action\": \"Ride the funicular ↓ Lower neighbourhood\", \"source\": \"v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)\"}, {\"id\": \"funicular.reservoir.to.library\", \"xy\": [1344.86, 536.53], \"h\": 141.6, \"modes\": [\"feet→funicular\"], \"action\": \"Ride the funicular ↓ Library Woods\", \"source\": \"v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)\"}]"))
+
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")

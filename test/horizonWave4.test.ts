@@ -152,7 +152,7 @@ describe('R2-74 / R2-14 the baked view proof measures the acceptance frames', ()
     // from the jetty; H's 78 px were the sea beyond the grid). v2.4 re-poses them: G under the shaft 70 / 42 px (D-D7), H an
     // aerial eye over the strip, the in-map west sea 350 / 94 px — the claim is true again, on the honest measure.
     // v2.6 (D-M3/D-M10): the dam's glass face is retired; A's portrait holds the High Span alone and passes (9/12 on the phone).
-    expect(pass('passLandscape')).toBe('ABCDEFGHIJKL'); expect(pass('passPortrait')).toBe('ABEFGHIJK');
+    expect(pass('passLandscape')).toBe('ABCDEFGHIJKL'); expect(pass('passPortrait')).toBe('ABEGHIJK');   // v2.6b: F's promenade eye passes at 1440×900; L01 open in portrait (with C/D/L)
     const px = (page: string, subject: string) => world.views.find(v => v.id === page)!.proof.subjects.find(s => s.id === subject)!;
     expect(px('K', 'the Glasshouse').pixels).toBeGreaterThan(13); expect(px('A', 'the Shoulder').pixels).toBeGreaterThanOrEqual(13);
     expect(px('I', 'the spring').pixels).toBeGreaterThanOrEqual(13); expect(px('I', 'the spring').portraitPixels).toBeGreaterThanOrEqual(8); expect(px('I', 'the Reach water').pixels).toBeGreaterThan(1000);

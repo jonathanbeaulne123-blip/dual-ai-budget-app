@@ -525,7 +525,10 @@ function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
       // On a structure's own deck at this height (Crown launch, cable platforms, lamp gallery, jetties) the deck is the
       // floor: no second pad slab floats beside it (structures.padFloating). The pad stays as the threshold's footprint.
       const onDeck=cuts.solids.some(s=>(s.role==='deck'||s.role==='floor')&&s.id!==`${id}.slab`&&(()=>{let x0=Infinity,x1=-Infinity,z0=Infinity,z1=-Infinity,y1=-Infinity;const q=s.positions;for(let i=0;i<q.length;i+=3){x0=Math.min(x0,q[i]!);x1=Math.max(x1,q[i]!);y1=Math.max(y1,q[i+1]!);z0=Math.min(z0,q[i+2]!);z1=Math.max(z1,q[i+2]!);}return p[0]>=x0&&p[0]<=x1&&p[1]>=z0&&p[1]<=z1&&Math.abs(y1-height)<.5;})());
-      if(onDeck)cuts.solids=cuts.solids.filter(s=>s.id!==`${id}.slab`);}
+      // v2.6 (R5-02): a cable platform on Mountain v2's land stands on the region's own station platform (v2 art and
+      // surfaces, not a Horizon solid): the pad keeps its footprint for the offer, the slab is the region's (no floating slab).
+      const regionPlatform=!onDeck&&mountainV2Rule(...p).kind==='land'&&(id.startsWith('threshold.funicular.')||id==='threshold.gondolaTop'||id==='threshold.gondolaBase');
+      if(onDeck||regionPlatform)cuts.solids=cuts.solids.filter(s=>s.id!==`${id}.slab`);}
     // Integrator 4 (W7-S request 5): a manifest threshold that takes its bed's height (no authored height: skateLineStarts on
     // S1/S4) stands on that bed's own graded cut, which the bed makes anyway — built ground, not a pit. Authored heights and
     // register pads are still checked.
