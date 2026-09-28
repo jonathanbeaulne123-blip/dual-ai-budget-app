@@ -90,7 +90,7 @@ export function createKitchenArt(theme:VehicleDressing='classic'){
     if(location.kind==='transit'){const art=getItem(item);if(!art.transit)art.transit=Math.max(.001,location.remaining);const t=1-Math.max(0,Math.min(1,location.remaining/art.transit));return{x:location.from.x+(location.to.x-location.from.x)*t,y:location.from.y+(location.to.y-location.from.y)*t+Math.sin(t*Math.PI)*.8,z:location.from.z+(location.to.z-location.from.z)*t};}
     return null;
   }
-  const toss=([0,1] as const).map(id=>{const lineGeometry=new THREE.BufferGeometry();geometries.set('toss-'+id,lineGeometry);const lineMaterial=new THREE.LineDashedMaterial({color:palette[id===0?'chef0':'chef1'],dashSize:.15,gapSize:.10});const line=new THREE.Line(lineGeometry,lineMaterial);line.name='chef-toss-preview-'+id;play.add(line);const target=mesh(play,'chef-toss-target-'+id,geometry('toss-ring',()=>new THREE.RingGeometry(.22,.28,24)),role(id===0?'chef0':'chef1'));target.rotation.x=-Math.PI/2;return{line,target,material:lineMaterial};});
+  const toss=([0,1] as const).map(id=>{const lineGeometry=new THREE.BufferGeometry();lineGeometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(63),3).setUsage(THREE.DynamicDrawUsage));lineGeometry.setAttribute('lineDistance',new THREE.BufferAttribute(new Float32Array(21),1).setUsage(THREE.DynamicDrawUsage));geometries.set('toss-'+id,lineGeometry);const lineMaterial=new THREE.LineDashedMaterial({color:palette[id===0?'chef0':'chef1'],dashSize:.15,gapSize:.10});const line=new THREE.Line(lineGeometry,lineMaterial);line.name='chef-toss-preview-'+id;play.add(line);const target=mesh(play,'chef-toss-target-'+id,geometry('toss-ring',()=>new THREE.RingGeometry(.22,.28,24)),role(id===0?'chef0':'chef1'));target.rotation.x=-Math.PI/2;return{line,target,material:lineMaterial,ends:[] as number[]};});
   return{root,
     update(state:KitchenState,stations:KitchenStation[],tossTargets:Partial<Record<ChefId,Point>>={},options:KitchenArtOptions={}){
       if(disposed)return;const active=['ready','playing','paused','results'].includes(state.phase);play.visible=active;menu.visible=!active;const unlocks=options.unlocks??[];glass.visible=unlocks.includes('galley-sea-glass');runner.visible=unlocks.includes('sunset-table');trophy.visible=unlocks.includes('captains-memento');
@@ -104,7 +104,19 @@ export function createKitchenArt(theme:VehicleDressing='classic'){
       }
       const live=new Set<string>();for(const item of Object.values(state.items)){if(item.location.kind==='discarded'||item.location.kind==='return')continue;const art=getItem(item),at=itemPoint(item,state,stations);live.add(item.id);art.group.visible=active&&!!at;if(at)art.group.position.set(at.x,at.y,at.z);const location=item.location;art.label.object.visible=location.kind!=='container'&&(location.kind==='hands'||item.phase==='burnt'||item.phase==='ready');const stateLabel=item.kind==='plate'?(item.dirty?'DIRTY PLATE':item.contents.length?`PLATE · ${item.contents.length} COMPONENTS`:'CLEAN PLATE'):item.kind==='extinguisher'?'EXTINGUISHER':`${INGREDIENTS[item.ingredient!].label} · ${item.phase.toUpperCase()}`;art.label.text(stateLabel);if(location.kind!=='transit')art.transit=0;}
       for(const [id,art]of itemArt)if(!live.has(id)){art.group.removeFromParent();art.label.dispose();itemArt.delete(id);}
-      for(const [i,art]of toss.entries()){const at=tossTargets[i as ChefId],chef=state.chefs.find(c=>c.id===i);art.line.visible=art.target.visible=active&&!!at&&!!chef;if(!at||!chef)continue;art.target.position.set(at.x,at.y+.03,at.z);const points=[];for(let n=0;n<=20;n++){const t=n/20;points.push(new THREE.Vector3(chef.pose.x+(at.x-chef.pose.x)*t,chef.pose.y+.8+(at.y-chef.pose.y-.8)*t+Math.sin(t*Math.PI)*.8,chef.pose.z+(at.z-chef.pose.z)*t));}art.line.geometry.setFromPoints(points);art.line.computeLineDistances();}
+      for(const [i,art]of toss.entries()){const at=tossTargets[i as ChefId],chef=state.chefs.find(c=>c.id===i);art.line.visible=art.target.visible=active&&!!at&&!!chef;if(!at||!chef)continue;art.target.position.set(at.x,at.y+.03,at.z);// Keep the same GPU buffers; an unchanged aim needs no upload.
+        const ends=[chef.pose.x,chef.pose.y,chef.pose.z,at.x,at.y,at.z];
+        if(ends.some((value,index)=>value!==art.ends[index])){
+          art.ends=ends;
+          const position=art.line.geometry.getAttribute('position') as THREE.BufferAttribute;
+          const distances=art.line.geometry.getAttribute('lineDistance') as THREE.BufferAttribute;
+          let length=0,px=0,py=0,pz=0;
+          for(let n=0;n<=20;n++){
+            const t=n/20,x=chef.pose.x+(at.x-chef.pose.x)*t,y=chef.pose.y+.8+(at.y-chef.pose.y-.8)*t+Math.sin(t*Math.PI)*.8,z=chef.pose.z+(at.z-chef.pose.z)*t;
+            position.setXYZ(n,x,y,z);if(n)length+=Math.hypot(x-px,y-py,z-pz);distances.setX(n,length);px=x;py=y;pz=z;
+          }
+          position.needsUpdate=true;distances.needsUpdate=true;art.line.geometry.computeBoundingSphere();
+        }}
     },
     setTheme(next:VehicleDressing){palette=PALETTES[next];for(const [name,m]of roleMaterials)m.color.set(palette[name]);for(const l of labels)l.refresh();for(const [i,t]of toss.entries())t.material.color.set(palette[i===0?'chef0':'chef1']);},
     dispose(){if(disposed)return;disposed=true;for(const art of chefArt)art.figure.dispose();for(const g of geometries.values())g.dispose();for(const m of materials.values())m.dispose();for(const m of roleMaterials.values())m.dispose();for(const t of textures)t.dispose();for(const m of spriteMaterials)m.dispose();for(const art of toss)art.material.dispose();root.removeFromParent();root.clear();},

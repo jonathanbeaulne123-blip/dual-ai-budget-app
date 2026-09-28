@@ -16,11 +16,12 @@ import { createCourtCamera } from "../src/harbour/camera/courtCamera.ts";
 import { COURT_BOUNDS } from "../src/harbour/camera/poses.ts";
 
 const release = vi.fn();
+const { paint } = vi.hoisted(() => ({ paint: vi.fn() }));
 vi.mock("../src/house/world/rendererOwner.ts", () => ({
   acquireWorldRenderer: () => ({
     active: true,
     renderer: {
-      render: vi.fn(), setSize: vi.fn(),
+      render: paint, setSize: vi.fn(),
       info: { render: { calls: 0 }, memory: { geometries: 0, textures: 0 } },
     },
     requestFrame: (callback: FrameRequestCallback) => requestAnimationFrame(callback),
@@ -35,7 +36,9 @@ describe("harbourFramePolicy", () => {
   it("draws nothing when the court is settled", () => {
     expect(harbourFramePolicy(rest)).toEqual({ animate: false, render: false, schedule: false, intervalMs: 0 });
   });
-  it("eases the camera at 30 fps and breathes at 20 fps", () => {
+  it("targets 60 fps for the camera and visible animation", () => {
+    expect(CAMERA_INTERVAL_MS).toBeCloseTo(1000 / 60);
+    expect(BREATH_INTERVAL_MS).toBeCloseTo(1000 / 60);
     expect(harbourFramePolicy({ ...rest, moving: true })).toEqual({ animate: true, render: true, schedule: true, intervalMs: CAMERA_INTERVAL_MS });
     expect(harbourFramePolicy({ ...rest, breathing: true })).toEqual({ animate: true, render: true, schedule: true, intervalMs: BREATH_INTERVAL_MS });
   });
@@ -162,7 +165,7 @@ describe("mountHarbourWorld", () => {
   const projections: ProjectedRect[][] = [];
 
   beforeEach(() => {
-    frames = new Map(); serial = 0; width = 1440; height = 800; clock = 10_000; reducedMatches = true; taps.length = 0; projections.length = 0; release.mockClear();
+    frames = new Map(); serial = 0; width = 1440; height = 800; clock = 10_000; reducedMatches = true; taps.length = 0; projections.length = 0; release.mockClear(); paint.mockClear();
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { frames.set(++serial, callback); return serial; });
     vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
     vi.stubGlobal("matchMedia", () => ({ get matches() { return reducedMatches; }, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
@@ -202,6 +205,16 @@ describe("mountHarbourWorld", () => {
       };
     },
   };
+
+  it.each(["full", "lite"] as const)("paints every 60 Hz refresh during held input on %s", tier => {
+    world = mountHarbourWorld(host, "classic", tier, { onReady: vi.fn(), onFailure: vi.fn(), place: anchorPlace });
+    pointer("pointerdown", 40, 700);
+    frame(100);
+    const before = paint.mock.calls.length;
+    for (let i = 0; i < 60; i++) frame(i % 3 === 0 ? 16.6 : 16.7);
+    expect(paint.mock.calls.length - before).toBe(60);
+    pointer("pointerup", 40, 700);
+  });
 
   it("mounts on the shared lease, reports ready, writes the camera slot and sleeps when settled", () => {
     const ready = vi.fn(), failure = vi.fn();

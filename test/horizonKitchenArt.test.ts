@@ -13,3 +13,21 @@ describe('Yacht Kitchen art follows authoritative local state',()=>{
   it('shows the temporary grill only for Sunset and retains earned mementos in exploration',()=>{const engine=createKitchenEngine(),art=createKitchenArt('newfoundland');art.update(engine.state(),[],{}, {unlocks:['galley-sea-glass','sunset-table','captains-memento']});expect(art.root.getObjectByName('yacht.kitchen.deck-grill.kitchen-art')!.visible).toBe(false);for(const name of['galley-sea-glass','sunset-table','captains-memento'])expect(art.root.getObjectByName('reward.'+name)!.visible).toBe(true);engine.start('sunset',1);art.update(engine.state(),stationsFor(engine.state()));expect(art.root.getObjectByName('yacht.kitchen.deck-grill.kitchen-art')!.visible).toBe(true);engine.start('lunch',1);art.update(engine.state(),stationsFor(engine.state()));expect(art.root.getObjectByName('yacht.kitchen.deck-grill.kitchen-art')!.visible).toBe(false);art.dispose();});
   it('hides only the chosen first-person chef and retains the other actual player',()=>{const engine=service('lunch',2),art=createKitchenArt();art.update(engine.state(),stationsFor(engine.state()),{}, {firstPersonChef:0,reducedMotion:true});expect(art.root.getObjectByName('kitchen.chef.0')!.visible).toBe(false);expect(art.root.getObjectByName('kitchen.chef.1')!.visible).toBe(true);art.update(engine.state(),stationsFor(engine.state()));expect(art.root.getObjectByName('kitchen.chef.0')!.visible).toBe(true);art.dispose();expect(art.root.children).toHaveLength(0);});
 });
+
+it('reuses toss buffers without uploading unchanged aim and refreshes bounds when aim moves',()=>{
+  const engine=service(),art=createKitchenArt(),state=engine.state(),stations=stationsFor(state);
+  const target={x:3,y:4,z:-5};art.update(state,stations,{0:target});
+  const line=art.root.getObjectByName('chef-toss-preview-0') as THREE.Line;
+  const position=line.geometry.getAttribute('position') as THREE.BufferAttribute;
+  const distance=line.geometry.getAttribute('lineDistance') as THREE.BufferAttribute;
+  const version=position.version,bounds=line.geometry.boundingSphere!.clone();
+  art.update(state,stations,{0:{...target}});
+  expect(line.geometry.getAttribute('position')).toBe(position);expect(position.version).toBe(version);
+  expect(line.geometry.getAttribute('lineDistance')).toBe(distance);
+  expect([position.getX(20),position.getY(20),position.getZ(20)]).toEqual([3,4,-5]);
+  expect(distance.getX(0)).toBe(0);expect(distance.getX(20)).toBeGreaterThan(0);
+  art.update(state,stations,{0:{x:100,y:4,z:-5}});
+  expect(position.version).toBe(version+1);expect(position.getX(20)).toBe(100);
+  expect(line.geometry.boundingSphere!.radius).toBeGreaterThan(bounds.radius);
+  art.dispose();
+});

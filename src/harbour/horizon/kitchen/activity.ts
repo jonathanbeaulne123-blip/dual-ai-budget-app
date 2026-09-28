@@ -118,6 +118,8 @@ export function createKitchenActivity(options:KitchenActivityOptions){
  }
  function view():KitchenView{const state=engine.snapshot();return{state,stations:stationsFor(state),available:available(),connections:controls.connections,progress,storageWarning:sessionWarning??(storage.failed()?'Kitchen progress is available for this visit only. Device storage could not save it.':null),resumable:saved!==null,tossTargets:Object.fromEntries(Object.entries(targets).filter(([,target])=>target).map(([id,target])=>[id,target!.point])),targetLabels:Object.fromEntries(state.chefs.map(chef=>[chef.id,stationsFor(state).find(s=>s.id===chef.target)?.label??'']))};}
  function render(camera:THREE.PerspectiveCamera,target:THREE.Vector3,visible:boolean){
+  art.root.visible=visible;
+  if(!visible){framedCamera?.clearViewOffset();framedCamera=null;return;}
   const state=engine.state();art.root.position.set(fleet.yacht.x,fleet.yacht.y,fleet.yacht.z);art.root.rotation.y=fleet.yacht.yaw;
   art.root.visible=visible;art.update(state,stationsFor(state),Object.fromEntries(Object.entries(targets).filter(([,value])=>value).map(([id,value])=>[id,value!.point])),{firstPersonChef:active()&&state.players===1&&options.perspective()==='first-person'?0:undefined,reducedMotion:options.reducedMotion(),unlocks:progress.unlocks});
   if(!active()||!visible||options.perspective()!=='activity'&&state.players===1){framedCamera?.clearViewOffset();framedCamera=null;return;}

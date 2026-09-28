@@ -341,3 +341,21 @@ it('R3-118 / R3-122: the runtime holds with a status line, retries on a new hold
   expect(runtime).toMatch(/if\(pendingRestore\)\{const saved=pendingRestore;pendingRestore=null;const next=restoreHorizonPosition\(saved,/);
   expect(runtime).toMatch(/failures:scheduler!\.failures\(\)/);
 });
+
+it('reuses stationary spatial selection while still processing newly ready chunks and mode history',()=>{
+  const districts=buildDistricts(field,[],[]),world={districts};
+  const first=districts[0]!, polygon=first.outline, read=vi.fn(()=>polygon);
+  Object.defineProperty(first,'outline',{get:read});
+  const ready=new Set<string>(),request=vi.fn();
+  const stream=createDistrictStream(world,()=>({dispose(){}}),'full',{ready:id=>ready.has(id),request});
+  const at={x:1455,z:1175,now:0};stream.update(at);const reads=read.mock.calls.length;
+  expect(reads).toBeGreaterThan(0);expect(stream.live.size).toBe(0);
+  for(const [id] of request.mock.calls)ready.add(id);
+  for(let i=1;i<=5;i++)stream.update({...at,now:i*16,mode:'look'});
+  expect(read).toHaveBeenCalledTimes(reads);expect(stream.live.size).toBeGreaterThan(0);
+  expect(stream.history.at(-1)!.mode).toBe('look');
+  stream.update({...at,x:at.x+1,now:100});expect(read.mock.calls.length).toBeGreaterThan(reads);
+  const movedReads=read.mock.calls.length;
+  stream.update({...at,x:at.x+1,radius:2000,now:116});expect(read.mock.calls.length).toBeGreaterThan(movedReads);
+  stream.dispose();
+});
