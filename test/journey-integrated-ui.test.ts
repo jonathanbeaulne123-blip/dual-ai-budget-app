@@ -281,3 +281,24 @@ describe("The world's camera report (pathWorld3d, D-285)", () => {
     expect(nearestMonthIndex(spot, 5, 200, 0)).toBeNull();
   });
 });
+
+describe('Journey label frame layout',()=>{
+  it.each(['classic','taylor','newfoundland'])('reads %s label sizes before visibility writes and leaves settled styles alone',async theme=>{
+    await mount(journeyHousehold(),{theme});await openWorld();
+    const labels=[...host.querySelectorAll<HTMLButtonElement>('.path-mark')];
+    const events:string[]=[];
+    for(const el of labels){
+      Object.defineProperty(el,'offsetWidth',{configurable:true,get(){events.push('read');return 80;}});
+      Object.defineProperty(el,'offsetHeight',{configurable:true,get(){events.push('read');return 30;}});
+      let hidden=el.hidden;Object.defineProperty(el,'hidden',{configurable:true,get:()=>hidden,set(value:boolean){events.push('write');hidden=value;}});
+    }
+    const onAnchors=fakes.options.at(-1)!.onAnchors as (anchors:{id:string;x:number;y:number;depth:number;visible:boolean}[])=>void;
+    const anchors=labels.map((el,i)=>({id:el.dataset.place!,x:200+i*100,y:300,depth:1,visible:true}));
+    onAnchors(anchors);
+    expect(events).toContain('read');expect(events).toContain('write');
+    expect(events.lastIndexOf('read')).toBeLessThan(events.indexOf('write'));
+    const observer=new MutationObserver(()=>{});observer.observe(host,{subtree:true,attributes:true,attributeFilter:['style']});
+    onAnchors(anchors);expect(observer.takeRecords()).toHaveLength(0);observer.disconnect();
+    onAnchors([]);expect(labels.every(el=>el.hidden)).toBe(true);
+  });
+});

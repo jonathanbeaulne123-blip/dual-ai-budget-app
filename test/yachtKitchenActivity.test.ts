@@ -8,7 +8,8 @@ import {createKitchenActivity} from '../src/harbour/horizon/kitchen/activity.ts'
 import {KITCHEN_BOARD,kitchenWalkable} from '../src/harbour/horizon/kitchen/geometry.ts';
 import type {KitchenAction,KitchenStation,ChefPose} from '../src/harbour/horizon/kitchen/types.ts';
 import type {Perspective} from '../src/harbour/horizon/runtime/perspective.ts';
-vi.mock('../src/harbour/horizon/kitchen/art.ts',()=>({createKitchenArt:()=>({root:new THREE.Group(),update:vi.fn(),dispose:vi.fn()})}));
+const artUpdate=vi.hoisted(()=>vi.fn());
+vi.mock('../src/harbour/horizon/kitchen/art.ts',()=>({createKitchenArt:()=>({root:new THREE.Group(),update:artUpdate,dispose:vi.fn()})}));
 vi.mock('../src/harbour/horizon/kitchen/audio.ts',()=>({createKitchenAudio:()=>({enabled:vi.fn(async()=>{}),sound:vi.fn(),reset:vi.fn(),pause:vi.fn(),dispose:vi.fn()})}));
 beforeEach(()=>{localStorage.clear();Object.defineProperty(navigator,'getGamepads',{configurable:true,value:()=>[]});});
 function setup(){
@@ -67,4 +68,12 @@ describe('physical yacht kitchen activity integration',()=>{
   let pads:any[]=[];Object.defineProperty(navigator,'getGamepads',{configurable:true,value:()=>pads});const t=setup(),{a}=t;a.command({type:'open'});expect(a.command({type:'start',service:'lunch',players:2,assists:{}})).toBe(false);
   pads=[{index:0,connected:true,mapping:'standard',axes:[0,0],buttons:Array.from({length:16},()=>({pressed:false,value:0}))}];expect(a.command({type:'start',service:'lunch',players:2,assists:{}})).toBe(true);action(a,{type:'ready'});a.command({type:'action',chef:1,action:{type:'ready'}});a.update(.05);expect(a.view().state.phase).toBe('playing');pads=[];a.update(.05);expect(a.view().state.phase).toBe('paused');expect(a.command({type:'resume'})).toBe(false);a.command({type:'leave-partner'});expect(a.command({type:'resume'})).toBe(true);expect(a.view().state.players).toBe(1);a.dispose();
  });
+});
+
+it('rests hidden kitchen art, releases its camera offset and refreshes on re-entry',()=>{
+ const {a}=setup();a.command({type:'open'});a.command({type:'start',service:'practice',players:1,assists:{}});
+ const camera=new THREE.PerspectiveCamera(),target=new THREE.Vector3();
+ a.render(camera,target,true);expect(camera.view?.enabled).toBe(true);artUpdate.mockClear();
+ a.render(camera,target,false);expect(artUpdate).not.toHaveBeenCalled();expect(camera.view?.enabled).toBe(false);
+ a.render(camera,target,true);expect(artUpdate).toHaveBeenCalledTimes(1);expect(camera.view?.enabled).toBe(true);a.dispose();
 });

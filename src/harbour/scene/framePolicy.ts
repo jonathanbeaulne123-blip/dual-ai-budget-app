@@ -1,6 +1,6 @@
 /**
  * Pure frame policy (BUILD_PLAN §2 #6). The Court is an invalidation-driven
- * scene: the camera eases at 30 fps, the Queen breathes at 20 fps, a touch
+ * scene: the camera and visible animation target 60 fps, a touch
  * keeps frames flowing while a pointer is down, a body walking the island
  * keeps them flowing at the camera's rate, and a settled court draws nothing
  * until data, size or controls invalidate it.
@@ -35,8 +35,8 @@ export type HarbourFrameActivity = {
 
 export type HarbourFramePolicy = { animate: boolean; render: boolean; schedule: boolean; intervalMs: number };
 
-export const CAMERA_INTERVAL_MS = 1000 / 30;
-export const BREATH_INTERVAL_MS = 1000 / 20;
+export const CAMERA_INTERVAL_MS = 1000 / 60;
+export const BREATH_INTERVAL_MS = 1000 / 60;
 
 export function harbourFramePolicy(activity: HarbourFrameActivity): HarbourFramePolicy {
   if (activity.hidden) return { animate: false, render: false, schedule: false, intervalMs: 0 };
@@ -50,13 +50,13 @@ export function harbourFramePolicy(activity: HarbourFrameActivity): HarbourFrame
 
 /**
  * The glass's frame budget (Tool Atlas brief §4.3 "Blur budget"): if the painted
- * frame rate misses the tier's target (≥ 60 fps full, ≥ 30 fps lite) for a whole
+ * frame rate misses the tier's target (60 fps in both tiers) for a whole
  * second of continuous painting, the glass drops to its solid version until the
  * next place change (`reset`). A gap longer than `IDLE_GAP_MS` is the scene
  * resting (render-on-demand), never a miss. Pure: the runtime feeds it paint
  * times; `paint` answers whether the latched state changed.
  */
-export const FRAME_BUDGET_MS: Readonly<Record<"full" | "lite", number>> = Object.freeze({ full: 1000 / 60, lite: 1000 / 30 });
+export const FRAME_BUDGET_MS: Readonly<Record<"full" | "lite", number>> = Object.freeze({ full: 1000 / 60, lite: 1000 / 60 });
 const BUDGET_SLACK = 1.5, BUDGET_WINDOW_MS = 1000, IDLE_GAP_MS = 250;
 export type FrameBudgetWatch = { paint: (now: number) => boolean; over: () => boolean; reset: () => boolean };
 export function createFrameBudgetWatch(tier: "full" | "lite"): FrameBudgetWatch {

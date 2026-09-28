@@ -19,6 +19,7 @@ import {createHudThrottle,type SkateHudModel} from '../skate/hud/model.ts';
 import {createSkateCamera,SKATE_CAM,type SkateCamera} from '../skate/camera/skateCamera.ts';
 import {skateWalkPose,skateWatchPoint} from '../skate/camera/companion.ts';
 import {insideVillageBuilding} from '../body/obstacles.ts';
+import { createFramePacer } from "../../house/world/framePacer.ts";
 import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
 import { worldDiagnostics } from "../../house/world/diagnostics.ts";
 import type { ThemeId } from "../../theme/scenes.ts";
@@ -400,9 +401,10 @@ type Pointer = { id: number; x: number; y: number; startX: number; startY: numbe
  * projects DOM twins; snapshots on suspend; disposes everything.
  */
 export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: RenderTier, callbacks: HarbourCallbacks): HarbourRuntime {
-  let disposed = false, frame = 0, previous = 0, lastPaint = 0, lastAnimated = 0, visible = true, toolOpen = false, breathing = false, settling = false, intervalMs = CAMERA_INTERVAL_MS;
+  let disposed = false, frame = 0, previous = 0, lastAnimated = 0, visible = true, toolOpen = false, breathing = false, settling = false, intervalMs = CAMERA_INTERVAL_MS;
   let worldAmbience:WorldAmbience|null=null;
   const frameStudy=createFrameStudy();
+  const framePacer=createFramePacer();
   const frameBudget=createFrameBudgetWatch(tier);
   let cameraMovingNow=false;
   const glassSignal=()=>callbacks.onGlass?.({cameraMoving:cameraMovingNow,frameOverBudget:frameBudget.over()});
@@ -439,7 +441,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       if (!disposed) { try { host.style.backgroundImage = `url(${renderer.domElement.toDataURL("image/webp", 0.75)})`; host.style.backgroundSize = "100% 100%"; } catch { /* The reading edition remains. */ } }
       host.dataset.renderer = "suspended";
     },
-    onResume() { host.style.backgroundImage = ""; host.dataset.renderer = "active"; previous = performance.now(); resize(); schedule(); },
+    onResume() { host.style.backgroundImage = ""; host.dataset.renderer = "active"; previous = performance.now(); framePacer.reset(); resize(); schedule(); },
   });
   const renderer = lease.renderer;
   host.dataset.renderer = lease.active ? "active" : "suspended";
@@ -1177,7 +1179,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   function loop(now: number): void {
     frame = 0;
     if (disposed || !visible || document.hidden || !lease.active) return;
-    if (intervalMs > 0 && now - lastPaint < intervalMs) { schedule(); return; }
+    if (!framePacer.due(now, intervalMs)) { schedule(); return; }
     const dt = Math.min((now - previous) / 1000, 0.08); previous = now;
     court.setReduced(reducedMotion());
     // ── The continuous world (§2, §3) ──────────────────────────────────────
@@ -1435,7 +1437,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // world runs at the camera's rate, and the moment the body stands still the
     // policy falls back through its own branches to asking for nothing.
     const policy = harbourFramePolicy({ reduced: reducedMotion(), moving, breathing: breathing || settling, touched: pointers.size > 0, projectionChanged: dirty, hidden: document.hidden || !visible, toolOpen, walking: bodyMoving });
-    intervalMs = tier==='full'&&(bodyMoving||moving)?1000/60:policy.intervalMs;
+    intervalMs = policy.intervalMs;
     let animated = false;
     if (policy.animate && pointers.size === 0) {
       const t = (now - mountedAt) / 1000, adt = lastAnimated ? Math.min((now - lastAnimated) / 1000, 0.1) : 0;
@@ -1446,7 +1448,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       for (const animate of animators) animate(t, adt);
       lastAnimated = now;
     }
-    if (policy.render || animated) { render(); lastPaint = now; dirty = false; if (frameBudget.paint(now)) glassSignal(); }
+    if (policy.render || animated) { render(); dirty = false; if (frameBudget.paint(now)) glassSignal(); }
     if (policy.schedule||streamed) schedule();
   }
 

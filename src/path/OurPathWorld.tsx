@@ -1082,28 +1082,39 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
       const show = a.visible && lv >= mark.minLevel && ln >= mark.lantern && (mark.kind === "now" || mark.kind === "goal" || mark.id === chosen || lv < 2 || a.depth < near);
       return [{ a, el, mark, show }];
     }).sort((x, y) => (rank(x.mark) - rank(y.mark)) || (x.a.depth - y.a.depth));
+    // Complete layout reads before changing visibility or transforms. Interleaved
+    // reads/writes forced the browser to lay out again for each newly shown label.
+    const stageW = host.current?.clientWidth ?? 0;
+    const measured = new Map<string, { w: number; h: number }>();
+    for (const { el, mark, show } of candidates) {
+      if (!show) continue;
+      let size = labelSizes.current.get(mark.id);
+      if (!size || size.w === 0) {
+        const w = el.offsetWidth, h = el.offsetHeight;
+        size = { w: w || mark.label.length * 8 + 20, h: h || 30 };
+        if (w) labelSizes.current.set(mark.id, size);
+      }
+      measured.set(mark.id, size);
+    }
     const reported = new Set(anchors.map((a) => a.id));
     for (const [id, el] of markRefs.current) if (!reported.has(id) && !el.hidden) el.hidden = true;
     const placed: { x0: number; x1: number; y0: number; y1: number }[] = [...obstacles.current];
     for (const { a, el, mark, show } of candidates) {
       let visible = show;
       if (visible) {
-        let size = labelSizes.current.get(mark.id);
-        if (!size || size.w === 0) {
-          size = { w: el.offsetWidth || mark.label.length * 8 + 20, h: el.offsetHeight || 30 };
-          if (el.offsetWidth) labelSizes.current.set(mark.id, size);
-        }
+        const size = measured.get(mark.id)!;
         const box = { x0: a.x - size.w / 2 - 2, x1: a.x + size.w / 2 + 2, y0: a.y - size.h - 2, y1: a.y + 2 };
         // A label that would hang off the stage's side waits too (the outline still lists the place); "We are here" always shows.
-        const stageW = host.current?.clientWidth ?? 0;
         const offEdge = stageW > 0 && (box.x0 < 0 || box.x1 > stageW);
         if (mark.kind !== "now" && (offEdge || placed.some((p) => box.x0 < p.x1 && box.x1 > p.x0 && box.y0 < p.y1 && box.y1 > p.y0))) visible = false;
         else placed.push(box);
       }
       if (el.hidden === visible) el.hidden = !visible;
       if (visible) {
-        el.style.transform = `translate(${a.x.toFixed(1)}px, ${a.y.toFixed(1)}px)`;
-        el.style.zIndex = String(1000 - Math.round(a.depth));
+        const transform = `translate(${a.x.toFixed(1)}px, ${a.y.toFixed(1)}px)`;
+        const zIndex = String(1000 - Math.round(a.depth));
+        if (el.style.transform !== transform) el.style.transform = transform;
+        if (el.style.zIndex !== zIndex) el.style.zIndex = zIndex;
       }
     }
   }, []);

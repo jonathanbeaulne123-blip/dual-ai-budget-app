@@ -129,12 +129,22 @@ export function createDistrictStream<T extends DistrictResource>(world: Pick<Wor
     if (pointInPolygon(x, z, d.outline)) return 0;
     // Voronoi districts have overlapping bounding boxes. Box distance alone
     // can evict the district containing the camera in favour of distant land.
-    return Math.min(...d.outline.map((a,i)=>{const b=d.outline[(i+1)%d.outline.length]!,dx=b[0]-a[0],dz=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz||1)));return Math.hypot(x-a[0]-t*dx,z-a[1]-t*dz);}));
+    let nearest = Infinity;
+    for (let i = 0; i < d.outline.length; i++) {
+      const a = d.outline[i]!, b = d.outline[(i + 1) % d.outline.length]!;
+      const dx = b[0] - a[0], dz = b[1] - a[1];
+      const t = Math.max(0, Math.min(1, ((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz||1)));
+      nearest = Math.min(nearest, Math.hypot(x-a[0]-t*dx, z-a[1]-t*dz));
+    }
+    return nearest;
   };
   const defaultRadius = tier === 'full' ? 220 : 150;
-  function wantedAt(input: StreamPosition, radiusIn: number | undefined, limit: number): District[] {
+  // Partition outlines are fixed for this runtime; arriving chunks fill solid IDs,
+  // not spatial topology. Rank once per position, reuse for desired and grace sets.
+  let selection: { x: number; z: number; radius: number; keepRadius: number; underground: boolean; desired: District[]; wanted: Set<string>; keep: Set<string> } | null = null;
+  function wantedAt(input: StreamPosition, radiusIn: number | undefined, limit: number, ranked: { d: District; distance: number }[]): District[] {
     const radius = radiusIn ?? defaultRadius;
-    const desired = world.districts.filter(d => d.id !== 'offshore').map(d => ({ d, distance: distance(d, input.x, input.z) })).sort((a, b) => a.distance - b.distance || a.d.id.localeCompare(b.d.id)).filter((d, i) => i === 0 || d.distance <= radius).slice(0, limit).map(d => d.d);
+    const desired = ranked.filter((d, i) => i === 0 || d.distance <= radius).slice(0, limit).map(d => d.d);
     if (input.underground) { const child = world.districts.find(d => d.id === 'crown')?.children?.find(d => d.id === 'undercroft'); if (child) { if (desired.length === limit) desired.pop(); desired.unshift(child); } }
     // Offshore rocks may become a normal resident; permanent horizon cards belong to the sky ring.
     // Offshore sites and the island box come from the definition (R1-67); a stale bake falls back to the manifest.
@@ -155,9 +165,17 @@ export function createDistrictStream<T extends DistrictResource>(world: Pick<Wor
     live, history, cap,
     update(input: StreamPosition): boolean {
       if (disposed) return false;
-      const desired = wantedAt(input, input.radius, cap);
-      const keepRadius = Math.max(input.radius ?? defaultRadius, input.keepRadius ?? 0, defaultRadius) + STREAM_KEEP_REACH_EU, keep = new Set(wantedAt(input, keepRadius, Infinity).map(d => d.id));
-      const wanted = new Set(desired.map(d => d.id)), released: string[] = [], built: string[] = [];
+      const radius = input.radius ?? defaultRadius;
+      const keepRadius = Math.max(radius, input.keepRadius ?? 0, defaultRadius) + STREAM_KEEP_REACH_EU;
+      const underground = Boolean(input.underground);
+      if (!selection || selection.x !== input.x || selection.z !== input.z || selection.radius !== radius || selection.keepRadius !== keepRadius || selection.underground !== underground) {
+        const ranked = world.districts.filter(d => d.id !== 'offshore').map(d => ({ d, distance: distance(d, input.x, input.z) })).sort((a, b) => a.distance - b.distance || a.d.id.localeCompare(b.d.id));
+        const desired = wantedAt(input, radius, cap, ranked);
+        selection = { x: input.x, z: input.z, radius, keepRadius, underground, desired,
+          wanted: new Set(desired.map(d => d.id)), keep: new Set(wantedAt(input, keepRadius, Infinity, ranked).map(d => d.id)) };
+      }
+      const { desired, wanted, keep } = selection;
+      const released: string[] = [], built: string[] = [];
       // A wanted district that could build now but for the cap needs a slot: then the grace applies as before.
       const needSlot = live.size >= cap && desired.some(d => !live.has(d.id) && (!options.ready || options.ready(d.id)));
       for (const [id, resource] of live) { if (wanted.has(id)) { outsideSince.delete(id); continue; } const since = outsideSince.get(id) ?? input.now; outsideSince.set(id, since); if (input.now - since >= STREAM_GRACE_MS && (!keep.has(id) || needSlot)) { resource.dispose(); live.delete(id); outsideSince.delete(id); released.push(id); } }
