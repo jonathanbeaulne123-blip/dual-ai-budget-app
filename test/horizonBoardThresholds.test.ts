@@ -97,16 +97,17 @@ describe('pick up and park at the thresholds (RIDE §6.5, P17)', () => {
       if (board.contact.padAt(pad.centre[0], pad.centre[2], pad.centre[1])?.pickup) continue;
       expect(board.contact.sample(pad.centre[0], pad.centre[2], pad.centre[1] + 0.1), t.id).toMatchObject({pace: 'threshold', legal: true});
     }
-    // v2.2 (reconciliation, OPEN land defect on Stage A candidate 5): the market stair's head pad (stairTop, [1480,18,1150])
-    // stands 6 m over the square on every side — the upper-street terrace at 18 now ends at z ≈ 1112 (W5-A's TOWN_TIERS);
-    // S3 passes 0.9 m from the pad at 12. A board from 3 m before reaches the pad's lip and bails. Kept visible here.
+    // Candidate 5: the market stair's head pad (stairTop, [1480,18,1150]) stood 6 m over the square and a board bailed at its
+    // lip. Candidate 6 (v2.3, W7-A): the stair's head moved to the upper street's edge [1472,18,1115]; the stairTop THRESHOLD
+    // still stands at [1480,1150], now a pad on the square 0.52 under the square beside it (a lip: 'airborne', 'land'). It
+    // stops a 4.5 m/s board in 5.4 m at threshold pace, no bail. Open (W7-A): move stairTop to the v2.3 head.
     {
       const pad = pads.get('threshold.stairTop')!, a = pad.rotationDegrees * Math.PI / 180, heading = Math.atan2(Math.cos(a), Math.sin(a));
       board.place({x: pad.centre[0] - Math.sin(heading) * 3, z: pad.centre[2] - Math.cos(heading) * 3, y: pad.centre[1], heading, speed: 4.5});
       const run = coast(board);
-      expect(run.events, 'stairTop (open land defect)').toContain('bail');
+      expect(run.events, 'stairTop').not.toContain('bail'); expect(run.events).toEqual(['airborne', 'land']); expect(run.dist).toBeCloseTo(5.41, 1); expect([...run.paces]).toEqual(['threshold']);
       const beside = board.contact.sample(pad.centre[0], pad.centre[2] - 3, pad.centre[1] + .1)!;
-      expect(pad.centre[1] - beside.y, 'stairTop stands over the square').toBeGreaterThan(5);
+      expect(beside.y - pad.centre[1], 'stairTop sits a lip under the square').toBeCloseTo(.52, 1);
     }
     for (const id of ['quayWest', 'landingQuay']) {
       // Along the pad's 6 m axis, from 3 m before its centre: threshold pace (roll 1.8) stops 4.5 m/s in 4.5²/3.6 = 5.6 m.
@@ -141,7 +142,7 @@ describe('pick up and park at the thresholds (RIDE §6.5, P17)', () => {
     expect(board.contact.sample(st.p[0], st.p[2], st.p[1] + 0.1)).toMatchObject({legal: true});
   });
 
-  it('brakes for the landingQuay pad with S held from 10 m/s (the pendulum), on the line, and stops on the pad', () => {
+  it('brakes for the landingQuay pad with S held from 10 m/s (the pendulum), on the line, and stops on the line before it (v2.4)', () => {
     const s1 = bedPath(world.beds.find(b => b.id === 'S1')!), pad = world.collision!.pads.find(p => p.id === 'threshold.landingQuay')!;
     const padD = progressOf(s1, pad.centre[0], pad.centre[2]).d, p = pointAt(s1, padD - 2.5 - 20);
     // S held with the stick centred is the kernel's pendulum speed check: the board swings ±70° across a travel that
@@ -158,13 +159,17 @@ describe('pick up and park at the thresholds (RIDE §6.5, P17)', () => {
       if (padSpeed === null && board.contact.padAt(st.p[0], st.p[2], st.p[1])?.padId === 'threshold.landingQuay') padSpeed = groundSpeed(st);
       t += DT;
     }
-    expect(padSpeed).not.toBeNull();
-    expect(padSpeed!).toBeLessThan(3);
+    // v2.4 (integrator 4): the finish sits on the islet's natural ground (4.7, MANIFEST structures.landingQuay.finish_h; it was
+    // dug to 3), so S1's last 20 m are near level: the S-held pendulum stops the board ON the line 6.7 m before the pad (it used
+    // to roll down onto it at 2.7 m/s). The line rider below still arrives on the pad under 5 m/s. RIDE owner: re-tune if the
+    // pendulum should carry to the pad.
+    expect(padSpeed).toBeNull();
     expect(offbed).toBe(0);
     expect(events).not.toContain('bail');
     const st = board.state();
     expect(groundSpeed(st)).toBe(0);
-    expect(board.contact.padAt(st.p[0], st.p[2], st.p[1])?.padId).toBe('threshold.landingQuay');
+    expect(Math.hypot(st.p[0] - pad.centre[0], st.p[2] - pad.centre[2])).toBeCloseTo(6.76, 1);
+    expect(board.contact.sample(st.p[0], st.p[2], st.p[1] + 0.1)).toMatchObject({legal: true});
     // The line rider, braking for the pad with its speed plan, reaches it under 5 m/s, on the bed, no bail.
     const rider = runLine(deps, 'S1', {from: padD - 2.5 - 20, speed: 10, arrive: 0.5, brake: 2});
     const at = rider.log.find(r => board.contact.padAt(r.p[0], r.p[2], r.p[1])?.padId === 'threshold.landingQuay');
@@ -283,11 +288,12 @@ describe('no bed passes a threshold (RIDE §6.5, P17)', () => {
 // Bridge carries S2 on its deck, D-A1; the upper-street slab and the quay/landing retaining walls no longer stand in S3);
 // blocked samples S1 33 → 7, S2 21 → 0, S3 19 → 0, S4 15 → 8. The table on main (v1.6 land) is in git history.
 const LINE_BLOCKERS: Record<LineId, Record<string, number[]>> = {
+  // Candidate 6: the dam apron is a quarter-pipe with a level bay S1 comes onto (W7-S), so dam.apron no longer stands in S1
+  // (846–850 cleared); the apron bridge's rails are all in the notch district now. S4's VBS / walk bight / bight.1 lay-by
+  // blockers at 510–522 are gone (W7-A: S4 × VBS one tread at 21.2; the spur trestle carries VBS). Blocked samples 7 + 8 → 4 + 2.
   S1: {
     's1Flyover.deck@lakeside': [534],   // the S1 skate flyover's deck edge over the lower pass (Stage A structure)
-    'dam.apron@lakeside': [846, 848, 850],   // the dam/apron crossing (R3-36: still blocked downhill at the apron)
-    'apronBridge.rails@lakeside': [878],
-    'apronBridge.rails@notch': [880],
+    'apronBridge.rails@notch': [878, 880],
     'reachBoardwalk.rails@reach': [1252],   // across the run-out before landingQuay
   },
   S2: {},
@@ -295,9 +301,6 @@ const LINE_BLOCKERS: Record<LineId, Record<string, number[]>> = {
   S4: {
     'hollowBridge.rails@hollow': [148],
     'walk garden.bed.hollow@hollow': [150],   // the Hollow neck (D-C10, reserved)
-    'VBS.bed.bight@bight': [510, 512, 514, 516],   // VBS × S4 convergence at the bight.1 lay-by (R3-36 / OPEN_VOIDS)
-    'walk bight.bed.bight@bight': [520],
-    'plot.bight.1.layby.slab@bight': [522],
   },
 };
 

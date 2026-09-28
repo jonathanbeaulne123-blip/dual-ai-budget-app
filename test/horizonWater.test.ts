@@ -5,7 +5,7 @@ import { decodeTerrainAsset, encodeTerrainAsset } from '../src/harbour/horizon/l
 import type { TerrainField, WaterCut } from '../src/harbour/horizon/land/interfaces';
 import { buildWaterCuts, bightMouthWidth, waterInfluence } from '../src/harbour/horizon/land/water';
 import { islandContains } from '../src/harbour/horizon/land/coast';
-import { buildNeedleArch, buildOffshoreSolids } from '../src/harbour/horizon/land/offshore';
+import { buildNeedleArch, buildOffshoreSolids, NEEDLE } from '../src/harbour/horizon/land/offshore';
 
 /** A pool is level; within one lattice diagonal of a weir or fall the ground may stand at
  * the pool above it (the step itself), never higher. Graded reaches use their plane. */
@@ -86,7 +86,7 @@ describe('Horizon water and offshore land', () => {
       }
     }
   }, 60000);
-  it('builds a closed thick arch with a clear 22 by 16 opening and visible underside', () => {
+  it('builds a closed thick arch with a clear 28-wide opening (the 22 × 16 gate inside it) and a visible underside (W7-S: intrados 28)', () => {
     const arch = buildNeedleArch(), edges = new Map<string, number>();
     for (let i = 0; i < arch.indices.length; i += 3) for (let j = 0; j < 3; j++) {
       const a = arch.indices[i + j]!, b = arch.indices[i + (j + 1) % 3]!, key = [Math.min(a, b), Math.max(a, b)].join(':'); edges.set(key, (edges.get(key) ?? 0) + 1);
@@ -95,8 +95,8 @@ describe('Horizon water and offshore land', () => {
     const geometry = new BufferGeometry(); geometry.setAttribute('position', new Float32BufferAttribute(arch.positions, 3)); geometry.setIndex(arch.indices);
     const mesh = new Mesh(geometry, new MeshBasicMaterial()); mesh.updateMatrixWorld();
     for (const y of [6, 14, 22]) for (const z of [669, 680, 691]) expect(new Raycaster(new Vector3(1700, y, z), new Vector3(1, 0, 0)).intersectObject(mesh)).toHaveLength(0);
-    expect(new Raycaster(new Vector3(1790, 14, 680), new Vector3(0, 1, 0)).intersectObject(mesh)[0]?.point.y).toBeCloseTo(22.2, 4);
-    expect(Math.max(...arch.positions.filter((_, i) => i % 3 === 0)) - Math.min(...arch.positions.filter((_, i) => i % 3 === 0))).toBe(20);
+    expect(new Raycaster(new Vector3(1790, 14, 680), new Vector3(0, 1, 0)).intersectObject(mesh)[0]?.point.y).toBeCloseTo(NEEDLE.crownIntrados, 4);   // W7-S: the round-headed opening's intrados at 28 (was 22.2)
+    expect(Math.max(...arch.positions.filter((_, i) => i % 3 === 0)) - Math.min(...arch.positions.filter((_, i) => i % 3 === 0))).toBeCloseTo(23.4, 6);   // W7-S: legs 22 deep + the strata ledges (was a 20 eu slab)
     geometry.dispose(); (mesh.material as MeshBasicMaterial).dispose();
     expect(buildOffshoreSolids().filter(r => r.id.startsWith('offshore.stacks'))).toHaveLength(3);
   });

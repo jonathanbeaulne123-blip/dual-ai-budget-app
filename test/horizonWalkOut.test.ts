@@ -35,20 +35,23 @@ describe('R3-130 · Look → Walk from every page lands dry and walkable', () =>
     if (out.how === 'stand') expect(view.eye[1] - 1.6 - out.y).toBeLessThanOrEqual(HORIZON_WALKOUT_DROP);
     else { expect(moverFadeMs(false, calm)).toBe(calm ? 0 : 300); expect(moverFadeMs(true, calm)).toBe(0); }
   });
-  it('page J (eye 60 eu over the sea) walks out to a dry, reachable node — not the seabed at y −12 (review 3 step 3)', () => {
+  it('page J (v2.4: on the Prow cliff, 57.8 eu from the path) walks out to its ground on the Year Walk — never the seabed at y −12 (review 3 step 3)', () => {
     const J = world.views.find(v => v.id === 'J')!;
-    expect(J.eye[1] - 1.6 - (tiers[0]!.geo.surface(J.eye[0], J.eye[2], J.eye[1])?.y ?? 0)).toBeGreaterThan(60);
+    // v2.2 J stood 60 eu over the sea (Walk put the body on the seabed at y −12); D-D6 / v2.4 stand it on the Prow cliff.
+    expect(J.eye[1] - 1.6 - (tiers[0]!.geo.surface(J.eye[0], J.eye[2], J.eye[1])?.y ?? 0)).toBeLessThanOrEqual(HORIZON_WALKOUT_DROP);
+    expect(graphDistance(world.pathGraph, J.eye[0], J.eye[1] - 1.6, J.eye[2])).toBeGreaterThan(HORIZON_WALKOUT_SNAP);
     for (const { geo } of tiers) {
       const out = walkOut(J, geo);
-      expect(out.how).not.toBe('stand');
+      expect(out.how).toBe('ground'); expect([out.x, +out.y.toFixed(1), out.z]).toEqual([1607.3, 48.5, 690.9]);
       expect(out.y).toBeGreaterThan(0);
-      if (out.how === 'node') expect(reachableFromSquare(world.pathGraph).has(out.node!)).toBe(true);
     }
   });
-  it('a standing, routable page keeps the body under its eye; D, E, I, L (eye > 8 eu from the graph) and J move', () => {
+  it('a standing, routable page keeps the body under its eye; D, E, G, I, J, L go to their ground points, H to the strip under its aerial eye', () => {
     const moves = Object.fromEntries(tiers.map(({ tier, geo }) => [tier, Object.fromEntries(world.views.map(v => { const o = walkOut(v, geo); return [v.id, o.how === 'stand' ? 0 : +o.moved.toFixed(1)]; }))]));
-    // Measured on candidate 5's bake (plan eu from the eye): J from 60 eu over the sea to the Prow's path [1630, 56, 900.3].
-    const expected = { A: 0, B: 0, C: 0, D: 49.2, E: 9.1, F: 0, G: 0, H: 0, I: 14.7, J: 232.4, K: 0, L: 32.7 };
+    // Measured on candidate 6's bake (plan eu from the eye; v2.4 grounds): candidate 5 moved D 49.2, E 9.1 (off the launch deck,
+    // to 156.4), I 14.7, J 232.4 (from over the sea), L 32.7 to the nearest nodes. E now stays ON the Crown launch deck (170).
+    const expected = { A: 0, B: 0, C: 0, D: 44.2, E: 6.5, F: 0, G: 41.2, H: 0, I: 14.7, J: 57.8, K: 0, L: 9.2 };
+    for (const { geo } of tiers) { expect(walkOut(world.views.find(v => v.id === 'E')!, geo)).toMatchObject({ how: 'ground', y: 170 }); expect(walkOut(world.views.find(v => v.id === 'H')!, geo).how).toBe('ground'); }
     expect(moves).toEqual({ full: expected, lite: expected });
   });
   it('the walk-out root is the square, and the square reaches most of the graph', () => {

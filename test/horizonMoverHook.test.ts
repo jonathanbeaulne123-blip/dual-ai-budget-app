@@ -91,7 +91,7 @@ describe('Saved position while riding (RIDE §6.5)', () => {
     const parks = new Set(world.thresholds.filter(t => thresholdPairs(t).some(p => (p.from === 'board' || p.from === 'wheels') && p.to === 'feet')).map(t => `${t.at[0]},${t.at[1]}`));
     // In reach of landingQuay: the park there.
     const near = savedRideBody(world, at('landingQuay', 1.5), registry.mode(), geography.ground);
-    expect([near.x, near.y, near.z]).toEqual([1270, 3, 1330]); expect(near.yaw).toBe(.3);
+    expect([near.x, near.y, near.z]).toEqual([1270, 4.7, 1330]);   // v2.4 finish_h expect(near.yaw).toBe(.3);
     // Mid-line, nothing in reach: still a board→feet threshold, the nearest one.
     const mid: MoverBody = {x: 1100, y: 60, z: 700, yaw: 0}, far = savedRideBody(world, mid, registry.mode(), geography.ground);
     expect(parks.has(`${far.x},${far.z}`)).toBe(true);

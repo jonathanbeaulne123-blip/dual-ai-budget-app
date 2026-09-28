@@ -9,14 +9,14 @@ const field: TerrainField = { revision: 'horizon-geo-1', width: 2000, depth: 180
 const cuts: LandCuts = { beds: [], pads: [], mouths: [], solids: [], waters: [], diagnostics: [] };
 it('keeps twelve immutable camera xy/FOV/radii and the specified flight eye height', () => {
   const views = buildViews(field, cuts); expect(views).toHaveLength(12);
-  for (const v of views) { const m = HORIZON_MANIFEST.views.find(p => p.id === v.id)!; expect([v.eye[0], v.eye[2]]).toEqual(m.xy); expect([v.target[0], v.target[2]]).toEqual(m.target); expect(v.fovDegrees).toBe(m.fov_deg); expect(v.radius).toBe(m.radius_eu); expect(v.eye[1]).toBeCloseTo(v.id === 'J' ? 60 : v.floor! + 1.6); }
+  for (const v of views) { const m = HORIZON_MANIFEST.views.find(p => p.id === v.id)!; expect([v.eye[0], v.eye[2]]).toEqual(m.xy); expect([v.target[0], v.target[2]]).toEqual(m.target); expect(v.fovDegrees).toBe(m.fov_deg); expect(v.radius).toBe(m.radius_eu); expect(v.eye[1]).toBeCloseTo((m as { eyeH?: number }).eyeH ?? v.floor! + 1.6); }   // v2.4: J 51.6 and H 48 are authored eyes
 });
 it('projects forward subjects and exposes a missing or out-of-frame subject as failure', () => {
   expect(projectSubject([0, 0, 0], [0, 0, -10], [0, 0, -20], 55).ndc).toEqual([0, 0]);
   expect(Math.abs(projectSubject([0, 0, 0], [0, 0, -10], [100, 0, -20], 55).ndc[0])).toBeGreaterThan(1);
-  // v1.7 J stands at [1840,1000] h 60 looking at [1780,700] @14: pitch −8.6°, the horizon is inside its 32.3° vertical FOV.
+  // v2.4 J stands on the Prow at [1665,695] h 51.6 looking at [1790,681] @20: pitch −14.1°, the horizon inside its vertical FOV.
   const views = buildViews(field, cuts), j = views.find(v => v.id === 'J')!.proof!;
-  expect(j.landscape.pitchDegrees).toBeCloseTo(-8.6, 1); expect(j.horizonInFrame).toBe(true);
+  expect(j.landscape.pitchDegrees).toBeCloseTo(-14.1, 1); expect(j.horizonInFrame).toBe(true);
   // No solids are built in this fixture: every structure subject of C is 0 px, so C fails.
   expect(views.find(v => v.id === 'C')?.proof?.pass).toBe(false);
 });
@@ -92,15 +92,17 @@ it('H: the open sea beyond the terrain grid is horizon, not the west sea (R3-59:
   const on = { kind: 'water', t: 400, id: 'water.sea', point: [200, 0, 600] } as const, off = { kind: 'water', t: 900, id: 'water.sea', point: [-300, 0, 330] } as const;
   expect(west(on, [-1, -.1, 0])).toBe(true); expect(west(off, [-1, -.05, 0])).toBe(false); expect(sea(off, [-1, -.05, 0])).toBe(false);
 });
-it('the honest proof on candidate 5\'s bake fails exactly where review 3\'s P27 fails (R3-74): G and H at 1440 × 900', async () => {
+it('the honest proof on candidate 6\'s bake: G (under the shaft) and H (the aerial eye) pass; the phone fails A, C, D, L (R3-74)', async () => {
   const { readFileSync } = await import('node:fs'), { decodeTerrainAsset } = await import('../src/harbour/horizon/land/terrain/asset.ts');
   const world = JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8')), bytes = readFileSync('public/horizon/terrain/horizon-geo-1.bin');
   const baked = decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), 'full');
   const views = buildViews(baked, { ...world.collision, solids: world.geometry.solids.map((q: { id: string; sourceId?: string }) => ({ ...q, id: q.sourceId ?? q.id.split('@')[0] })) });
   const list = (k: 'passLandscape' | 'passPortrait') => views.filter(v => v.proof![k]).map(v => v.id).join(''), px = (id: string, s: string) => views.find(v => v.id === id)!.proof!.subjects.find(q => q.id === s)!;
-  // Review 3 P27: 1440 × 900 fails G (captures) and H; 390 × 844 fails A, C, G, H, L. D's phone surf is the one named
-  // disagreement: P27 draws no fog (1.2 ‰), the proof fogs the lite frame (0 px of 8 legible) — R3-55, it stays red.
-  expect(list('passLandscape')).toBe('ABCDEFIJKL'); expect(list('passPortrait')).toBe('BEFIJK');
-  for (const s of ["the Throat's mouth of daylight", 'the skylight shaft']) expect([px('G', s).pixels, px('G', s).portraitPixels]).toEqual([0, 0]);
-  expect([px('H', 'the west sea').pixels, px('H', 'the west sea').portraitPixels]).toEqual([0, 0]);
+  // Candidate 5 (review 3 P27): 1440 × 900 failed G and H (0 px each). v2.4: G looks up the skylight shaft from under it
+  // (D-D7) and H is an aerial eye over the strip: 12/12 at 1440 × 900. The phone still fails A, C, D, L (D-D11/D-D12 open;
+  // D's phone surf is the named disagreement with P27, R3-55).
+  expect(list('passLandscape')).toBe('ABCDEFGHIJKL'); expect(list('passPortrait')).toBe('BEFGHIJK');
+  expect([px('G', 'the skylight shaft').pixels, px('G', 'the skylight shaft').portraitPixels]).toEqual([70, 42]);
+  expect([px('H', 'the west sea').pixels, px('H', 'the west sea').portraitPixels]).toEqual([350, 94]);
+  expect([px('J', 'the Prow').pixels, px('J', 'the arch').pixels]).toEqual([1163, 1743]);
 }, 60_000);

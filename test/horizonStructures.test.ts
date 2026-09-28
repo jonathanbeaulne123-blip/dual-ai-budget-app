@@ -202,7 +202,7 @@ describe('Horizon v2.0 structures (W5-S)',()=>{
     for(const id of ['s1Flyover','bightSpurTrestle']){expect(find(cuts,`${id}.deck`),id).toBeDefined();expect(find(cuts,`${id}.supports`)?.indices.length,id).toBeGreaterThan(0);
       expect(cuts.diagnostics.filter(d=>d.id===`structures.${id}.bay`),id).toEqual([]);
       for(const p of lowest(find(cuts,`${id}.supports`)!))expect(p.bottom,id).toBeLessThanOrEqual(baseHeight(p.x,p.z)-FOOTING_SINK+1e-6);}
-    const s1=cuts.diagnostics.find(d=>d.id==='structures.s1Flyover.clear')!;expect(s1.measured!).toBeCloseTo(11.5,1);expect(s1.message).toMatch(/9 bents, 0 refused/);
+    const s1=cuts.diagnostics.find(d=>d.id==='structures.s1Flyover.clear')!;expect(s1.measured!).toBeCloseTo(11.56,2);   // v2.4: S1 reaches the apron bay's 31 at [1170.2,929] (was 11.50)expect(s1.message).toMatch(/9 bents, 0 refused/);
     // The one VBS bent over the Year Walk's lane is refused (reported); steel girders carry that bay (≤ 24 eu).
     const girder=cuts.diagnostics.find(d=>d.id==='structures.bightSpurTrestle.girderSpan');expect(girder?.measured??0).toBeLessThanOrEqual(24);
     expect(cuts.diagnostics.filter(d=>/^structures\.coveStair\./.test(d.id)&&d.severity==='conflict')).toEqual([]);
@@ -285,7 +285,7 @@ describe('Horizon Wave 7 structures (W7-S)',()=>{
     expect(cuts.solids.some(s=>s.id==='landingQuay.supports')).toBe(false);
     const rails=cuts.solids.find(s=>s.id==='landingQuay.rails');const near=rails?prisms(rails).filter(p=>p.z>1328&&p.z<1356&&Math.abs(p.x-end[0])<6.5):[];
     expect(near).toEqual([]);
-    expect(cuts.pads.find(p=>p.id==='landingQuay.finish')?.centre[1]).toBe(3);
+    expect(cuts.pads.find(p=>p.id==='landingQuay.finish')?.centre[1]).toBe(4.7);   // v2.4 MANIFEST finish_h: the islet's natural ground (3 dug a 1.7 pit)
   },120000);
   it('girders the bightSpurTrestle bay over the Year Walk\'s lane and proves its load path instead of a "not built" conflict (A1.1)',()=>{
     const cuts=cutsOnce();

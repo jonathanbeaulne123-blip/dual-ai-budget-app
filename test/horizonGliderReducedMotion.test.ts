@@ -37,7 +37,7 @@ describe('the launch sheet under reduced motion (FLIGHT.md §6)',()=>{
     expect(ids('prow')).toEqual(['reachMeadow','sands','green']);
     expect(ids('lampGallery')).toEqual(['sandbar','strip']);
     expect(padLandings('crown',env).map(l=>l.label)).toEqual(['the Green','the Reach meadow','Long Sands','the strip','the Deep, through the Throat']);
-    expect(padLandings('prow',env).find(l=>l.id==='sands')!.label).toBe('Long Sands (afternoon)');
+    expect(padLandings('prow',env).find(l=>l.id==='sands')!.label).toBe('Long Sands');   // v2.4 (A8): the glide arrives at any hour; no '(afternoon)' promise
     expect(padLandings('lampGallery',env).map(l=>l.label)).toEqual(['the sandbar',"the Flats' strip"]);
   });
   it('the sandbar is a dry beach off the Bight Bridge\'s deck, on open ground just above the water (Wave 7)',()=>{

@@ -23,7 +23,7 @@ describe('Horizon manifest v2.0',()=>{
     expect(manifest.views).toHaveLength(12);
     expect(manifest.sky.gates).toHaveLength(12);
     expect(['S1','S2','S3','S4'].every(id=>Object.hasOwn(manifest.skate,id))).toBe(true);
-    expect(manifest.reserves.terraces.plots).toEqual([[1551.1,832.5],[1528,896],[1512,952]]);   // v2.3: terraces.1 1.0 m off the Year Walk (R3-32; v2.2 [1552,832])
+    expect(manifest.reserves.terraces.plots).toEqual([[1552,832],[1528,896],[1512,952]]);   // v2.4: terraces.1 back to v2.2 (v2.3's 1.0 m move walled the walk to L02; R3-32 open)
     expect(manifest.reserves.terraces.rot_deg).toEqual([-67,23,23]);
     expect(manifest.reserves.terraces.placeIds).toEqual(['plot.terraces.1','plot.terraces.2','plot.terraces.3']);
     expect(manifest.reserves.bightShore.plots).toHaveLength(4);
@@ -91,7 +91,7 @@ describe('Horizon manifest v2.0',()=>{
   });
   it('carries Jonathan’s 2026-09-27 rulings as numbers (v2.0) and the Wave 5 integration data (v2.1)',()=>{
     const m=manifest as unknown as Record<string,any>;
-    expect(m.version).toBe('2.3');   // v2.2 = v2.1 + main's data-only v1.7 blocks (reconciliation); v2.3 = Wave 7 (W7-A)
+    expect(m.version).toBe('2.4');   // v2.2 = v2.1 + main's data-only v1.7 blocks (reconciliation); v2.3 = Wave 7 (W7-A); v2.4 = Wave 7 integrator 4
     // D-A1: 245 m, one steel arch, 11.4 clear; an 8 m hull at 46° needs 32.0 m. Ruled 36 m at s 98-134 (kept as opening.v2_0);
     // v2.1 (design lead, reversible): 40 m at s 103-143, 38 clear - the hull cleared the east pier by -3.99 at 36 m, +1.37 at 40.
     const bb=m.structures.bightBridge;expect(bb.span_m).toBe(245);expect(bb.v1_9.span_m).toBe(230);
@@ -131,7 +131,7 @@ describe('Horizon manifest v2.0',()=>{
     const D=m.views.find((v:{id:string})=>v.id==='D');expect(D.subjects).toEqual(['surf','the zipline landing']);expect(D.deferred.some((x:string)=>x.startsWith('the Lamp (Pass 2b'))).toBe(true);
     expect(m.hosts.find((h:{id:string})=>h.id==='bank')).toMatchObject({footprint_m:[20,18],xy:[1443,1125],v2_0_footprint_m:[26,18]});
     expect(m.views.find((v:{id:string})=>v.id==='H').portrait.xy).toEqual([428,760]);expect(m.walks.lakerim).toMatchObject({v2_1_surface_m:5.2,v2_1_shoulder_m:1.2});expect(m.walks.lakerim.surface_m).toBeUndefined();
-    expect(m.structures.bightSpurTrestle).toMatchObject({to:[886.7,916],length_m:56,v2_0_to:[891.6,906]});
+    expect(m.structures.bightSpurTrestle).toMatchObject({v2_3_to:[886.7,916],v2_3_length_m:56,v2_0_to:[891.6,906]});   // v2.4 extends it again (below)
   });
   it.each(['n/a','bridge',''])('rejects unresolved crossing resolution %j on load',resolution=>{
     expect(()=>parseHorizonManifest({...manifest,crossings:[{...manifest.crossings[0],resolution}]})).toThrow('Invalid Horizon crossing');
@@ -159,7 +159,7 @@ describe('Horizon manifest v2.0',()=>{
 });
 describe('Horizon manifest v2.2: main\'s v1.7 sky data on the v2.1 land',()=>{
   it('adds FLIGHT.md sky data without a geography change',()=>{
-    expect(manifest.version).toBe('2.3');
+    expect(manifest.version).toBe('2.4');
     expect(manifest.sky.gliderPolar).toHaveLength(5);
     expect(manifest.sky.parachute).toMatchObject({forward_ms:6,sink_ms:3,freefallCap_ms:30,autoPull_agl_m:45,minBail_agl_m:60,canopy_m:[7,3]});
     expect(manifest.sky.corridors.throat).toMatchObject({gate:12,to:[1300,420],slope_deg:30,level_m:25,splashH:42,coneDeg:25,maxBankDeg:20});
@@ -184,7 +184,7 @@ describe('Horizon manifest v2.2: main\'s v1.7 RIDE data (§8.3, D40, D42)',()=>{
   const paces=manifest.paces as unknown as Record<string,{roll:number|null;pushGrip:number|null}>;
   const surfaces=manifest.surfaces as unknown as Record<string,{pace:string;grip:number|null}>;
   it('is version 2.2 (now 2.3), dated, and says what changed',()=>{
-    expect(manifest.version).toBe('2.3');
+    expect(manifest.version).toBe('2.4');
     expect(manifest.date).toBe('2026-09-27');
     expect(manifest.status).toContain('v2.2: paces and surface grip (RIDE D42)');
   });
@@ -232,7 +232,8 @@ describe('Horizon manifest v2.3: Stage A Wave 7 (W7-A)',()=>{
   const m=manifest as unknown as Record<string,any>;
   it('D-D6: page J looks east through the Needle\'s Eye from the Prow, with a ground point for Walk',()=>{
     const J=m.views.find((v:{id:string})=>v.id==='J');
-    expect(J).toMatchObject({xy:[1665,680],target:[1790,681],target_h:25,eyeH:51.5,subjects:['the arch','the Prow'],ground:{xy:[1607.3,690.9],h:48.5}});
+    expect(J).toMatchObject({xy:[1665,695],target:[1790,681],target_h:20,eyeH:51.6,subjects:['the arch','the Prow'],ground:{xy:[1607.3,690.9],h:48.5}});   // v2.4: 15 m south (the Prow in the 16:9 frame)
+    expect(J.v2_3).toMatchObject({xy:[1665,680],eyeH:51.5,target_h:25});
     expect(J.v2_2).toMatchObject({xy:[1840,1000],eyeH:60});expect(J.portrait.frames).toEqual(['the arch','the Prow']);
   });
   it('plans the bicycle at its 6.0 cap and re-targets the library ride at the measured 220.6 s + 10 %',()=>{
@@ -251,9 +252,27 @@ describe('Horizon manifest v2.3: Stage A Wave 7 (W7-A)',()=>{
   });
   it('moves plots bight.1 and terraces.1 1.0 m off the Year Walk and puts two failed over/unders at grade',()=>{
     expect(m.reserves.bightShore.plots[0]).toEqual([813,918.8]);expect(m.reserves.bightShore.v2_2_plots[0]).toEqual([814,919]);
-    expect(m.reserves.terraces.plots[0]).toEqual([1551.1,832.5]);
+    expect(m.reserves.terraces.v2_3_plots[0]).toEqual([1551.1,832.5]);expect(m.reserves.terraces.plots[0]).toEqual([1552,832]);   // v2.4 reverted it (below)
     const row=(a:string,b:string)=>manifest.crossings.find(r=>r.a===a&&r.b===b&&(r as {note?:string}).note?.startsWith('v2.3')) as unknown as {resolution:string;v2_2_resolution:string}|undefined;
     expect(row('S4','yearWalk')).toMatchObject({resolution:'threshold',v2_2_resolution:'under'});
     expect(row('yearWalk','plot.bight.1.service')).toMatchObject({resolution:'threshold',v2_2_resolution:'under'});
+  });
+});
+describe('Horizon manifest v2.4: Stage A Wave 7 (integrator 4)',()=>{
+  const m=manifest as unknown as Record<string,any>,view=(id:string)=>m.views.find((v:{id:string})=>v.id===id);
+  it('gives D, E (on the Crown launch deck), G, H, I, J and L a Walk ground point',()=>{
+    expect(Object.fromEntries('DEGHIJL'.split('').map(id=>[id,view(id).ground]))).toEqual({D:{xy:[1181,1401],h:3},E:{xy:[1306,482],h:170},G:{xy:[1300,440],h:40.6},H:{xy:[440,760],h:38},I:{xy:[1284.8,1215],h:9.5},J:{xy:[1607.3,690.9],h:48.5},L:{xy:[1477,1289],h:3}});
+  });
+  it('D-D7: G looks up the skylight shaft; H is an aerial eye over the strip (eye 39.6 → 48)',()=>{
+    expect(view('G')).toMatchObject({xy:[1320,404],target:[1320,380],target_h:110,subjects:['the skylight shaft']});expect(view('G').v2_3.xy).toEqual([1300,440]);
+    expect(view('H')).toMatchObject({eyeH:48,target_h:20,portrait:{eyeH:48,target_h:20}});expect(view('H').v2_3).toMatchObject({eyeH_measured:39.6,target_h:30});
+  });
+  it('moves the Reach meadow onto a clear field, re-seats gate 10, raises the quay finish and extends the spur trestle',()=>{
+    expect(m.sky.landings.reachMeadow).toMatchObject({xy:[1195,1205],v2_3_xy:[1143,1167],r:40});
+    expect(m.sky.gates.find((g:{id:string})=>g.id==='northFace')).toMatchObject({h:139,v2_3_h:130});
+    expect(m.structures.landingQuay).toMatchObject({finish_h:4.7,v2_3_finish_h:3});
+    expect(m.structures.bightSpurTrestle).toMatchObject({from:[923.6,874.5],to:[881,926.5],length_m:68,v2_3_length_m:56});
+    expect(m.structures.prowLoopFootbridge).toMatchObject({from:[1603.5,674.6],to:[1609.8,702.9],width_m:6});
+    expect(m.reserves.terraces).toMatchObject({plots:[[1552,832],[1528,896],[1512,952]]});
   });
 });
