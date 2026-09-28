@@ -2,6 +2,8 @@
 import {beforeEach,describe,expect,it,vi} from 'vitest';
 import * as THREE from 'three';
 import {createFleet,toLocal,toWorld} from '../src/harbour/horizon/movers/fleet/model.ts';
+import {createKitchenEngine} from '../src/harbour/horizon/kitchen/model.ts';
+import {createKitchenStorage} from '../src/harbour/horizon/kitchen/storage.ts';
 import {createKitchenActivity} from '../src/harbour/horizon/kitchen/activity.ts';
 import {KITCHEN_BOARD,kitchenWalkable} from '../src/harbour/horizon/kitchen/geometry.ts';
 import type {KitchenAction,KitchenStation,ChefPose} from '../src/harbour/horizon/kitchen/types.ts';
@@ -55,6 +57,11 @@ describe('physical yacht kitchen activity integration',()=>{
   const third=setup();expect(third.a.view().resumable).toBe(true);third.a.command({type:'open'});third.a.command({type:'resume-saved'});expect(third.a.view().state.phase).toBe('paused');expect(third.a.view().state.elapsed).toBe(elapsed);third.a.command({type:'exit'});expect(third.a.view().resumable).toBe(true);third.a.dispose();
   const fourth=setup();expect(fourth.a.view().resumable).toBe(true);fourth.a.command({type:'open'});fourth.a.command({type:'discard-saved'});fourth.a.command({type:'exit'});fourth.a.dispose();
   const fifth=setup();expect(fifth.a.view().resumable).toBe(false);fifth.a.dispose();
+ });
+ it('restores a valid Sunset chef in the reserved doorway without opening the exploration door early',()=>{
+  const engine=createKitchenEngine();engine.start('sunset',2);const doorway={x:0,y:3.85,z:-12.5,yaw:0};engine.setPose(1,doorway);engine.action(0,{type:'ready'});engine.action(1,{type:'ready'});createKitchenStorage('test-kitchen').saveSession(engine.snapshot());
+  const t=setup();expect(t.fleet.doors.has('galley-aft-door')).toBe(false);expect(kitchenWalkable(t.fleet,doorway,true)).toBe(false);expect(t.a.view().resumable).toBe(true);
+  t.a.command({type:'open'});t.a.command({type:'resume-saved'});expect(t.a.view().state.phase).toBe('paused');expect(t.a.view().state.chefs[1]!.pose).toEqual(doorway);expect(t.fleet.doors.has('galley-aft-door')).toBe(true);t.a.dispose();
  });
  it('requires a real second input connection and pauses both chefs on its loss',()=>{
   let pads:any[]=[];Object.defineProperty(navigator,'getGamepads',{configurable:true,value:()=>pads});const t=setup(),{a}=t;a.command({type:'open'});expect(a.command({type:'start',service:'lunch',players:2,assists:{}})).toBe(false);

@@ -26,7 +26,14 @@ export function createKitchenActivity(options:KitchenActivityOptions){
  let sessionWarning:string|null=null;
  let saved=storage.loadSession(),progress=storage.loadProgress(),targets:Partial<Record<ChefId,KitchenTossTarget>>={};
  // Validate persisted sessions before offering Resume. Restore never starts a timer.
- if(saved!==null){if(!engine.restore(saved)||!engine.state().chefs.every(chef=>kitchenWalkable(fleet,chef.pose,engine.state().service==='sunset',stationsFor(engine.state())))){sessionWarning='The interrupted kitchen could not be restored safely. Start a fresh service; completed results are kept.';saved=null;storage.saveSession(null);}engine.exit();}
+ if(saved!==null){
+  // Service reservation opens this door. A closed exploration door cannot make a
+  // valid saved chef in the doorway corrupt; validation must use the same layout.
+  const wasOpen=fleet.doors.has('galley-aft-door');let valid=false;fleet.doors.add('galley-aft-door');
+  try{valid=engine.restore(saved)&&engine.state().chefs.every(chef=>kitchenWalkable(fleet,chef.pose,engine.state().service==='sunset',stationsFor(engine.state())));}
+  finally{if(!wasOpen)fleet.doors.delete('galley-aft-door');}
+  if(!valid){sessionWarning='The interrupted kitchen could not be restored safely. Start a fresh service; completed results are kept.';saved=null;storage.saveSession(null);}engine.exit();
+ }
  let controls=input.sample(2),cameraFit:ReturnType<typeof kitchenCameraFrame>|null=null,cameraKey='',framedCamera:THREE.PerspectiveCamera|null=null;
  const active=()=>engine.state().phase!=='idle';
  const available=()=>!active()&&options.canOpen()&&atKitchenBoard(fleet,options.body());
