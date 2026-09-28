@@ -35,6 +35,17 @@ describe('pedestrian water height respects underground rooms',()=>{
     expect(geography.waterLevel(50,50,100)).toBeNull();
   });
 
+  it('stays in the occupied pool when a deep overhead lake overlaps its depth range',()=>{
+    const waters=[pool('lake',50,20),pool('deep',40,7,true)];
+    for(const order of [waters,[...waters].reverse()]){
+      const geography=createHorizonGeography(field,{...empty,waters:order});
+      expect(geography.waterLevel(50,50,38)).toBe(40);
+      expect(geography.waterLevel(50,50,39.5)).toBe(40);
+      expect(geography.waterLevel(50,50,48)).toBe(50);
+      expect(geography.waterLevel(50,50)).toBe(50);
+    }
+  });
+
   it('preserves offshore sea fallback without flooding a dry floor beneath an underground pool',()=>{
     const seabed={...field,heights:new Float32Array(9).fill(-2)};
     const sea=createHorizonGeography(seabed,empty);

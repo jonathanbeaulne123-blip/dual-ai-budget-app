@@ -115,7 +115,9 @@ export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
       const h=waterHeightAt(w,x,z);if(h===null)continue;
       if(w.underground){underground=true;if(feet===undefined||feet>h+1)continue;}
       if(feet!==undefined&&h-feet>w.depth+HORIZON_BODY_HEIGHT)continue;
-      if(level===null||h>level)level=h;
+      // Stacked pools may have overlapping depth ranges: feet select the nearest
+      // eligible surface, while a hull still selects the highest exposed water.
+      if(level===null||(feet===undefined?h>level:Math.abs(h-feet)<Math.abs(level-feet)||Math.abs(h-feet)===Math.abs(level-feet)&&h>level))level=h;
     }
     return level??(sampleTerrain(field,x,z)<-.2&&(feet===undefined||!underground)?0:null);
   }
