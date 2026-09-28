@@ -91,7 +91,7 @@ describe('Horizon manifest v2.0',()=>{
   });
   it('carries Jonathan’s 2026-09-27 rulings as numbers (v2.0) and the Wave 5 integration data (v2.1)',()=>{
     const m=manifest as unknown as Record<string,any>;
-    expect(m.version).toBe('2.4');   // v2.2 = v2.1 + main's data-only v1.7 blocks (reconciliation); v2.3 = Wave 7 (W7-A); v2.4 = Wave 7 integrator 4
+    expect(m.version).toBe('2.5');   // was '2.4' (candidate 6). v2.2 = v2.1 + main's data-only v1.7 blocks (reconciliation); v2.3 = Wave 7 (W7-A); v2.4 = Wave 7 integrator 4; v2.5 = reconciled with main #554-#558
     // D-A1: 245 m, one steel arch, 11.4 clear; an 8 m hull at 46° needs 32.0 m. Ruled 36 m at s 98-134 (kept as opening.v2_0);
     // v2.1 (design lead, reversible): 40 m at s 103-143, 38 clear - the hull cleared the east pier by -3.99 at 36 m, +1.37 at 40.
     const bb=m.structures.bightBridge;expect(bb.span_m).toBe(245);expect(bb.v1_9.span_m).toBe(230);
@@ -159,7 +159,7 @@ describe('Horizon manifest v2.0',()=>{
 });
 describe('Horizon manifest v2.2: main\'s v1.7 sky data on the v2.1 land',()=>{
   it('adds FLIGHT.md sky data without a geography change',()=>{
-    expect(manifest.version).toBe('2.4');
+    expect(manifest.version).toBe('2.5');   // was '2.4' (candidate 6); v2.5 = reconciled with main #554-#558
     expect(manifest.sky.gliderPolar).toHaveLength(5);
     expect(manifest.sky.parachute).toMatchObject({forward_ms:6,sink_ms:3,freefallCap_ms:30,autoPull_agl_m:45,minBail_agl_m:60,canopy_m:[7,3]});
     expect(manifest.sky.corridors.throat).toMatchObject({gate:12,to:[1300,420],slope_deg:30,level_m:25,splashH:42,coneDeg:25,maxBankDeg:20});
@@ -184,7 +184,7 @@ describe('Horizon manifest v2.2: main\'s v1.7 RIDE data (§8.3, D40, D42)',()=>{
   const paces=manifest.paces as unknown as Record<string,{roll:number|null;pushGrip:number|null}>;
   const surfaces=manifest.surfaces as unknown as Record<string,{pace:string;grip:number|null}>;
   it('is version 2.2 (now 2.3), dated, and says what changed',()=>{
-    expect(manifest.version).toBe('2.4');
+    expect(manifest.version).toBe('2.5');   // was '2.4' (candidate 6)
     expect(manifest.date).toBe('2026-09-27');
     expect(manifest.status).toContain('v2.2: paces and surface grip (RIDE D42)');
   });

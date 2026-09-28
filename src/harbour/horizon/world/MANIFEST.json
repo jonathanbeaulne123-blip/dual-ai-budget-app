@@ -1,6 +1,6 @@
 {
  "title": "The Horizon \u2014 MANIFEST",
- "version": "2.4",
+ "version": "2.5",
  "date": "2026-09-27",
  "status": "Design numbers for implementation. Control points are centreline intent to be solved into splines by the land pass; not navigation or collision data until baked into WorldDefinition v3. v2.2: paces and surface grip (RIDE D42) and the FLIGHT sky fields (D34\u2013D38), reconciled onto the v2.1 land \u2014 data only, no geometry change.",
  "units": {
@@ -14405,5 +14405,45 @@
    "note": "the plane's door: its place is the plane's each frame; offered only at >= minAgl_m above the ground under the plane; never inside the Throat"
   }
  ],
- "carriedThresholdRule": "A carried threshold moves with a vehicle and has no pad, marker or fixed xy. It is listed apart from thresholds so the land pass never grades a pad for it; WorldDefinition.thresholds carries it with carried = carriedBy."
+ "carriedThresholdRule": "A carried threshold moves with a vehicle and has no pad, marker or fixed xy. It is listed apart from thresholds so the land pass never grades a pad for it; WorldDefinition.thresholds carries it with carried = carriedBy.",
+ "moverAnchors_v2_5": {
+  "source": "main #554 parachute, #555 cruiser, #556 fall rescue (Little Harbour), #557 fleet + yacht, #558 fleet water \u2014 anchors are code-owned (movers/fleet/model.ts, movers/cruiser/*); reconciliation 2, 2026-09-27",
+  "fleet": {
+   "launch": "structures.floatplaneDock [1520,1275]: the dock's bed at h 1.2 (the fleet's launchBody [1523,1.2,1276] stands on it, dry)",
+   "moorings": {
+    "kayak": [
+     1527,
+     1269
+    ],
+    "dinghy": [
+     1527,
+     1276
+    ],
+    "motorboat": [
+     1528,
+     1283
+    ]
+   },
+   "yacht": [
+    1620,
+    1340
+   ],
+   "measured": "every hull navigable at its mooring (seabed \u22123.5 / \u22124.3 / \u22125.3 / \u221212); the three small hulls' approach to the yacht's stern clear 40/40 each; identical on candidate 5 and candidate 6 (the land there did not move)"
+  },
+  "pedestrianWater": {
+   "deep": [
+    1315,
+    420
+   ],
+   "floor_h": 38,
+   "pool_h": 40,
+   "note": "main's swimmer test stands in the Deep under the skylight shaft; candidate 6's page G eye [1320,404] is 16 m north of it (the floor unchanged)"
+  },
+  "fallRescue": {
+   "rule": "a fall that ends in water or off walkable ground fades to a path node that is never submerged (FLIGHT \u00a72.4: fadeShore / fadeApron / the Deep jetty)",
+   "measured": "1,618 touchdowns on a 40 m grid (water and > 40\u00b0 ground): 0 submerged returns on candidate 6 (0 on candidate 5); 26 returns stand against a rail or support or 0.4\u20130.8 off the node's deck (22 on candidate 5), listed in final8/probes"
+  },
+  "rideChunkRule": "v2.2's rule (every chunk resident before a feet \u2192 mover boarding) now covers the cruiser (V), every boat and the yacht's helm; no hull moves while any chunk is missing; a fall (never refused) puts every missing chunk first and the canopy holds at an unloaded boundary",
+  "comfort": "one comfort source: reduced motion and calm reach the fleet (wind off, no bob), the cruiser (no lean, camera cut) and the parachute (comfort camera) through the registry; the stricter rule wins"
+ }
 }

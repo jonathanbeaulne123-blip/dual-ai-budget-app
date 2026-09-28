@@ -2026,6 +2026,26 @@ m["structures"]["prowLoopFootbridge"] = {"kind": "footbridge", "carries": "yearW
 _tr = m["reserves"]["terraces"]; _tr["v2_3_plots"] = [list(p) for p in _tr["plots"]]; _tr["plots"][0] = list(_tr["v2_2_plots"][0])
 _tr["plot1Note_v2_4"] = "back to v2.2 (" + I4 + "): the v2.3 move put the service drive's bed 0.47 over the Year Walk at [1594.7,837.9] and blocked the walk to L02; R3-32 open (5.83 of 6), owner W7-A"
 
+# ---------------------------------------------------------------------------
+# v2.5 — reconciled with main #554–#558 (reconciliation 2, after #553 merged candidate 5). main brought no generator edit:
+# its movers (parachute from any airborne body, the cruiser, the boat fleet and the walkable yacht, fleet water) keep their
+# anchors in code. This block records those anchors on the land, as measured on the candidate-6 bake, and the two runtime
+# rules that now cover them. Data only: nothing is built from it, no id changes. README → "v2.5 (reconciled with main #554–#558)".
+# ---------------------------------------------------------------------------
+m["version"] = "2.5"
+R2 = "reconciliation 2, 2026-09-27"
+m["moverAnchors_v2_5"] = {
+    "source": "main #554 parachute, #555 cruiser, #556 fall rescue (Little Harbour), #557 fleet + yacht, #558 fleet water — anchors are code-owned (movers/fleet/model.ts, movers/cruiser/*); " + R2,
+    "fleet": {"launch": "structures.floatplaneDock [1520,1275]: the dock's bed at h 1.2 (the fleet's launchBody [1523,1.2,1276] stands on it, dry)",
+              "moorings": {"kayak": [1527, 1269], "dinghy": [1527, 1276], "motorboat": [1528, 1283]}, "yacht": [1620, 1340],
+              "measured": "every hull navigable at its mooring (seabed −3.5 / −4.3 / −5.3 / −12); the three small hulls' approach to the yacht's stern clear 40/40 each; identical on candidate 5 and candidate 6 (the land there did not move)"},
+    "pedestrianWater": {"deep": [1315, 420], "floor_h": 38, "pool_h": 40, "note": "main's swimmer test stands in the Deep under the skylight shaft; candidate 6's page G eye [1320,404] is 16 m north of it (the floor unchanged)"},
+    "fallRescue": {"rule": "a fall that ends in water or off walkable ground fades to a path node that is never submerged (FLIGHT §2.4: fadeShore / fadeApron / the Deep jetty)",
+                   "measured": "1,618 touchdowns on a 40 m grid (water and > 40° ground): 0 submerged returns on candidate 6 (0 on candidate 5); 26 returns stand against a rail or support or 0.4–0.8 off the node's deck (22 on candidate 5), listed in final8/probes"},
+    "rideChunkRule": "v2.2's rule (every chunk resident before a feet → mover boarding) now covers the cruiser (V), every boat and the yacht's helm; no hull moves while any chunk is missing; a fall (never refused) puts every missing chunk first and the canopy holds at an unloaded boundary",
+    "comfort": "one comfort source: reduced motion and calm reach the fleet (wind off, no bob), the cruiser (no lean, camera cut) and the parachute (comfort camera) through the registry; the stricter rule wins",
+}
+
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")
