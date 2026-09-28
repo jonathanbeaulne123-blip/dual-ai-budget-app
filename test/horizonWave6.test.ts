@@ -60,8 +60,9 @@ describe.each(['full', 'lite'] as const)('Wave 6 body blockers (%s)', tier => {
   });
   it('the square walk reaches the upper street step-free: the gondola base slab no longer overhangs it (lite stopped under it at [1485.3,16.5,1086.5])', () => {
     expect(bodyWalk([1455, 12, 1175], [1480, 18, 1062], true, tier)).toMatchObject({ reached: true, blockedAt: null });
-    const { geo, world } = baked(tier), slab = world.geometry.solids.filter(s => s.id.startsWith('platform.gondolaBase.slab')), xs = slab.flatMap(s => s.positions.filter((_, i) => i % 3 === 0));
-    expect(Math.max(...xs)).toBeCloseTo(1483.41, 1);
+    // v2.6 (D-M6): the gondola base is Mountain v2's Waterfront station; no Horizon platform stands over the square walk at all.
+    const { geo, world } = baked(tier);
+    expect(world.geometry.solids.filter(s => s.id.startsWith('platform.gondolaBase'))).toEqual([]);
     // Every point of the square walk under the slab's old footprint (x 1475–1485, z 1086–1094) has body height + 0.3 of clear headroom or none of the slab over it.
     for (const p of bed('walk square').points) { if (p[0] < 1475 || p[0] > 1487 || p[2] < 1084 || p[2] > 1096) continue; const stand = geo.surface(p[0], p[2], p[1] + .5, .6)!.y, over = geo.ceiling(p[0], p[2], stand); expect(over - stand, `headroom at [${p[0].toFixed(1)},${p[2].toFixed(1)}]`).toBeGreaterThanOrEqual(1.55); }
   });

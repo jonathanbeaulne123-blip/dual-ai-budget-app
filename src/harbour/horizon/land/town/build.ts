@@ -1,4 +1,6 @@
 import { HORIZON_MANIFEST as M } from '../../world/manifest';
+import { mountainV2Rule } from '../mountainV2/ground';
+import { regionCarryLand } from '../mountainV2/beds';
 import type { HeightQuery, LandCuts, XY } from '../interfaces';
 import { addFlatPad, bed, heightOnBeds } from '../beds/profiles';
 import { gradeRoute } from '../beds/solver';
@@ -66,12 +68,18 @@ export function buildTown(cuts:LandCuts,base:HeightQuery):void {
   cuts.beds.push(bed('town.quayLink','walk',gradeRoute('town.quayLink',[[1455,1175],[1423,1207],[1410,1220],[1400,1290],[1404,1316],[1420,1335]],()=>12,.08,[{xy:[1455,1175],height:12,reason:'square'},{xy:[1423,1207],height:12,reason:'level square edge'},{xy:[1400,1290],height:7,reason:'Reach walk'},{xy:[1420,1335],height:3,reason:'quay'}],cuts.diagnostics)));
   const road=cuts.beds.find(b=>b.id==='V01')!,junction=nearestOnPath([1370,1260],road.points);
   cuts.beds.push(bed('town.riverLink','walk',gradeRoute('town.riverLink',[[1400,1290],plan(junction.at)],()=>7,.12,[{xy:[1400,1290],height:7,reason:'Reach walk'},{xy:plan(junction.at),height:junction.at[1],reason:'drive'}],cuts.diagnostics)));
-  cuts.beds.push(bed('gondolaBase.walk','walk',[[1480,18,1060],[1480,18,1090]]));
+  // v2.6 (D-M6): the gondola base is Mountain v2's quay station; the upper street's walk to the v2.5 base [1480,1090] is retired.
+  if((M.cable.G1 as {drawnBy?:string}).drawnBy!=='mountainV2')cuts.beds.push(bed('gondolaBase.walk','walk',[[1480,18,1060],[1480,18,1090]]));
   // West of the summit knoll, reaching 158 at the L02 pad's edge (a 0.7 eu lip blocked it): the
   // east detour [1320,485] crossed the last leg of walk crownFromGondola
   // 0.5-1.5 eu apart (the old generated deck there blocked the summit walk, R1-08); capped at the
   // summit height (158) so no bed raises the ground above the summit.
-  cuts.beds.push(bed('walk summit','walk',gradeRoute('walk summit',[[1310,500],[1294,494],[1292,480],[1304,475],[1310,470],[1310,440]],base,.12,[{xy:[1310,500],height:154,reason:'walk crown / crownFromGondola end'},{xy:[1304,475],height:158,reason:'L02 lookout edge (level onto the pad)'},{xy:[1310,470],height:158,reason:'L02'},{xy:[1310,440],height:158,reason:'summit'}],cuts.diagnostics)));
+  // v2.6 (D-M1): the summit is Mountain v2's: the walk leaves the top of v2's road [1325,470.5] (158.2) past L02 (v2's
+  // observatory) to the north lookout; it lies on v2's land, so the region carries it (v2's summit paving is its floor).
+  {const summit=bed('walk summit','walk',gradeRoute('walk summit',[[1325,470.5],[1318,472],[1310,470],[1310,440]],base,.12,[{xy:[1325,470.5],height:158.2,reason:'the top of Mountain v2 road'},{xy:[1310,470],height:158,reason:'L02'}],cuts.diagnostics));regionCarryLand(summit);cuts.beds.push(summit);
+    // v2.6 (D-M6): from Mountain v2's Summit Commons gondola platform (gondolaTop) to L02; carried like the summit walk.
+    const g1=M.cable.G1 as unknown as {to:number[];toH:number},top=(M.thresholds.find(t=>t.id==='gondolaTop')!.xy as unknown as XY);
+    if((M.cable.G1 as {drawnBy?:string}).drawnBy==='mountainV2'){const link=bed('walk summitStation','walk',gradeRoute('walk summitStation',[top,[1304,476],[1310,470]],base,.12,[{xy:top,height:g1.toH,reason:'the Summit Commons platform'},{xy:[1310,470],height:158,reason:'L02'}],cuts.diagnostics));regionCarryLand(link);cuts.beds.push(link);}}
   // W5-A (R2-04): the lane's two loops east ([1555,1205]-[1540,1240]) and south ([1520,1260]) stood over the harbour water (9.7 eu
   // void at [1556.5,1208.6]); it now stays on the headland's shelf: 94 m from the yard to the timber crossing (7.4 %), then
   // back west of the crossing to the quay (7.8 %).
@@ -87,5 +95,12 @@ export function buildTown(cuts:LandCuts,base:HeightQuery):void {
   }
   addFlatPad(cuts,'kittyPlaza','homestead',M.journey.kittyPlaza.xy as unknown as XY,16,[18,12]);
   addFlatPad(cuts,'tidelinePark','place',M.skate.park.xy as unknown as XY,3,M.skate.park.size as unknown as XY);
-  for(const p of M.places)if(p.id!=='court')addFlatPad(cuts,`place.${p.id}`,'place',p.xy as unknown as XY,p.h,p.id==='L02'?[12,10]:[8,8]);
+  for(const p of M.places)if(p.id!=='court'){const pad=addFlatPad(cuts,`place.${p.id}`,'place',p.xy as unknown as XY,p.h,p.id==='L02'?[12,10]:[8,8]);
+    // v2.6 (D-M3): L01 stands on Mountain v2's glass dam crest (the region draws the crest and its plaques): a deck, never earth.
+    if(p.id==='L01'&&mountainV2Rule(...(p.xy as unknown as XY)).kind!=='outside'){pad.deck=true;pad.blend=0;
+      // The place's 8 x 8 slab would float 25 eu over the gorge under v2's crest: L01 is a bay of v2's promenade (4 x 2.2, flush
+      // with v2's deck, walkable, the region draws the promenade round it) and the instrument's plaque standing on it.
+      cuts.solids=cuts.solids.filter(q=>q.id!=='place.L01.slab');
+      const xy=p.xy as unknown as XY,bay=solid('place.L01.deck','deck','stone','floor',[],'crown'),plaque=solid('place.L01.plaque','plaque','metal','marker',[],'crown');
+      box(bay,xy,p.h,[4,2.2],p.h-.3);box(plaque,[xy[0],xy[1]+.6],p.h+1.1,[1.4,.12],p.h);cuts.solids.push(bay,plaque);}}
 }
