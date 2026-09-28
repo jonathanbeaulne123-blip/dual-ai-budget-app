@@ -1879,6 +1879,74 @@ for sid in ("S1", "S2", "S3", "S4"):
     for seg in m["skate"][sid]["segments"]:
         assert seg["pace"] in paces and seg["surface"] in m["surfaces"], (sid, seg["name"])
 
+# ---------------------------------------------------------------------------
+# v2.3 — Stage A Wave 7, track W7-A (beds, town, reserves, path graph; design lead's calls D-D8 and the reconciliation's
+# regressions). Every delta is in docs/horizon/README.md → "v2.3 (Stage A Wave 7, W7-A)". Ids never change.
+# ---------------------------------------------------------------------------
+m["version"] = "2.3"
+W7 = "design lead, Stage A Wave 7 (W7-A) 2026-09-27"
+# 1. D-D8 · the lake-rim trail keeps its profile (trail 2.5 m); the Year Walk's February share (offset 0) is carried by the
+#    Year Walk's own 5.2 m section instead (beds: the wider bed carries the narrower at offset 0). The rails the widening
+#    bought stay (the Year Walk's own edges); the dam end no longer overhangs the dam gallery's stairwell (10.4 eu void at
+#    [1161.5,908.8]) and its 1.2 m shoulders no longer stand in the dam face's 09:00 sun. Reversible: v2_1 values kept.
+lr = m["walks"]["lakerim"]
+lr["v2_1_surface_m"] = lr.pop("surface_m"); lr["v2_1_shoulder_m"] = lr.pop("shoulder_m"); lr["v2_1_surfaceNote"] = lr.pop("surfaceNote_v2_1")
+lr["sectionNote_v2_3"] = "D-D8 (" + W7 + ", reversible): the trail keeps its profile section (2.5 m); on the February share the Year Walk's own 5.2 m + 1.2 m section carries the trail, so the widening stops where the share stops ([1251,836]) and never reaches the dam end"
+#    The trail's last leg no longer runs along the dam crest beside walk damCrest ([1200,900] → [1140,905] stood 2 m south of
+#    the crest walk, its south edge over the dam's face: 19 eu unguarded at 2.5 m): it ends at the crest's east end, where the
+#    gallery exit meets the crest walk ([1166,905], at 52). The crest walk carries the rim on west over the river lower.
+lr["v2_2_pts"] = [list(p) for p in lr["pts"]]; lr["pts"] = lr["pts"][:-1] + [[1166, 905]]
+_row = [i for i, r in enumerate(m["crossings"]) if r["a"] == "walk lakerim" and r["b"] == "river lower"]
+assert len(_row) == 1
+lr["v2_2_crossing"] = m["crossings"].pop(_row[0]); lr["v2_2_crossing"]["retired_v2_3"] = "the trail ends at the gallery exit [1166,905] (D-D8): walk damCrest × river lower [1140.2,903] is the rim's crossing"
+# 2. The market stair's head stood 6 m over the square ([1480,18,1150], 35 m past the upper street's south edge z 1115 since
+#    W5-A narrowed the terrace). It now leaves the upper street's south edge at 18 and comes down south to the square: three
+#    flights of 2 m with level landings, a level foot landing onto the square at 12. D-C11 stands (stairs only); the square
+#    walk stays the step-free way (D-D3).
+ms = m["structures"]["marketStair"]
+ms["v2_2_xy"] = ms["xy"]; ms["v2_2_head"] = ms["head"]; ms["v2_2_foot"] = ms["foot"]
+ms["xy"] = [1472, 1124.5]; ms["head"] = [1472, 18, 1115]; ms["foot"] = [1472, 12, 1134]
+ms["placeNote_v2_3"] = "the head on the upper street's south edge (was 6 m over the square at [1480,18,1150]); a level walk (town.upperStreetWalk) joins it to the gondola base walk and a level foot landing (marketStair.foot) to the square walk (" + W7 + ")"
+# 4. D-D2 (plot bight.1 kept at 25 m, recommended) and R3-32: the plots' 6 m margins stood 5.79 (bight.1) and 5.83
+#    (terraces.1) from the Year Walk's shoulder at one corner each; each plot moves 1.0 m straight away from that corner.
+for _area, _i, _to in (("bightShore", 0, [813.0, 918.8]), ("terraces", 0, [1551.1, 832.5])):
+    _r = m["reserves"][_area]; _r.setdefault("v2_2_plots", [list(p) for p in _r["plots"]]); _r["plots"][_i] = _to
+m["reserves"]["bightShore"]["plot1Note_v2_3"] = "D-D2: 1.0 m WSW off the June lane's corner (margin 5.79 → ≥ 6.6 with the Year Walk's shoulder); the service drive meets the June lane at grade (" + W7 + ")"
+m["reserves"]["terraces"]["plot1Note_v2_3"] = "R3-32: 1.0 m WNW off the Prow walk's corner (margin 5.83 → ≥ 6.6); " + W7
+# 5. A1.3 · two over/unders that could not clear 2.4 are at grade now: S4 holds Green Road's level across its Year Walk
+#    footway lanes at the studio terrace (S4 × yearWalk [968.6,540.5]: 0.68 of 2.4 under → flush, 0.05), and the moved
+#    plot's service drive meets the June lane at grade (the walk rises to the drive: 1.97 of 2.4 → flush). The register
+#    rows follow the build (their v2.2 values kept).
+for _a, _b, _at, _new_at, _why in (("S4", "yearWalk", [968.6, 540.5], None, "S4 holds VG's level across the September lane (flush landing, D-A7 #17)"),
+                                    ("yearWalk", "plot.bight.1.service", [871.2, 914.9], [856.7, 935.0], "the June lane rises to the moved plot's service drive (D-D2)")):
+    _r = m["crossings"][row_find(_a, _b, _at)]
+    _r["v2_2_resolution"] = _r["resolution"]; _r["resolution"] = "threshold"; _r["kind"] = "crossing"
+    if _new_at: _r["v2_2_at"] = _r["at"]; _r["at"] = _new_at
+    _r["note"] = "v2.3: at grade (" + _why + "; " + W7 + ")"
+# 3. The bicycle's planning speed is its kernel's cap (RIDE §8.1: 6.0 m/s), not 8 (the reconciliation's regression 9).
+m["speeds_ms"]["v2_2_bicycle"] = m["speeds_ms"]["bicycle"]; m["speeds_ms"]["bicycle"] = 6.0
+#    Re-measured on the Stage A graph at 6: square → library 1,324 eu = 220.6 s, over the 185 s target (it held at 8: 165.4 s).
+#    The design lead sets the target to the measured value + 10 % (243 s), reversible: the v2.2 target stays beside it.
+_t = m["journeys"]["targets_s"]; _t["decisions"]["square→library by bicycle"] = "v2.3 (" + W7 + ", reversible): planned at the bicycle's 6.0 m/s cap, the ride measures 220.6 s (1,324 eu, Stage A W7-A scratch bake); target = measured + 10 % = 243 s (v2.2: 185 s at 8 m/s)"
+_t["decisions"]["v2_2_square→library by bicycle"] = _t["square→library by bicycle"]; _t["square→library by bicycle"] = 243
+
+# 6. D-D6 (design lead rules, reversible; W7-T request A1/A2, measured with the view ray caster on candidate 5's bake):
+#    page J looks due east THROUGH the Needle's Eye at dawn from the Prow cliff (the sunrise gate keeps its alignment), not
+#    north past the arch from the plane: the arch 2,027 px at 1440 × 900 (opening 615 px = 22 % of its face; ≈ 28 % is the
+#    ceiling until the arch is re-authored, R3-111), 370 / 100 px at 390 × 844. The Stacks are not on this line (60-65° to
+#    the right): they leave J's subjects. J's eye stands on the Prow's ground (floor 49.9 + 1.6 = 51.5), and Walk from J starts on the Year
+#    Walk at the Prow (`ground`, the nearest reachable path node; R3-130).
+for v in m["views"]:
+    if v["id"] == "J":
+        v["v2_2"] = {k: v[k] for k in ("xy", "target", "target_h", "eyeH", "label", "frames", "subjects")}; v["v2_2"]["portrait"] = dict(v["portrait"])
+        v["eyeH"] = 51.5   # the Prow cliff floor 49.9 + 1.6 (W7-T measured); an absolute eye, like every eyeH
+        v.update({"xy": [1665, 680], "target": [1790, 681], "target_h": 25, "fov_deg": 55, "label": "The Needle's Eye at dawn, from the Prow",
+                  "frames": "the arch, the sea through it at dawn, the Prow underfoot", "subjects": ["the arch", "the Prow"],
+                  "ground": {"xy": [1607.3, 690.9], "h": 48.5}})
+        v["portrait"] = {"fov_deg": 50, "target": [1790, 681], "target_h": 25, "frames": ["the arch", "the Prow"]}
+        v["deferred"] = list(v.get("deferred", [])) + ["the Stacks (not on J's east line through the arch, 60-65° to its right; D-D6)"]
+        v["decided_v2_3"] = "D-D6 re-pose (recommended; " + W7 + ", reversible: v2_2), W7-T's measured pose"
+
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")

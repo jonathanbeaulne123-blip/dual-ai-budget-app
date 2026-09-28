@@ -32,3 +32,19 @@ it('builds no path edge through a wall the runtime body stops at, and joins only
   const lip = buildPathGraph(cuts([bed('a', [[0, 0, 0], [10, 0, 0]]), bed('b', [[5, .49, -5], [5, .49, 5]])]));
   expect(lip.edges.some(e => e.id.startsWith('lip:'))).toBe(false);
 });
+it('R3-119: joins a bed that ends on another bed\'s surface (a tee), and keeps the open run of a bed walled at one end', () => {
+  // A stair whose foot lands on the side of a walk (never crossing its centreline) is one tee lip away from it.
+  const tee = buildPathGraph(cuts([bed('walk', [[0, 0, 0], [40, 0, 0]]), bed('stair', [[20, 0, 1.2], [20, 6, 21.2]], 'stair')]));
+  expect(tee.edges.filter(e => e.id.startsWith('tee:'))).toHaveLength(1);
+  expect(walkPlan(tee, [0, 0, 0], [20, 6, 21.2], { maxSnap: 1 })).not.toBeNull();
+  expect(walkPlan(tee, [0, 0, 0], [20, 6, 21.2], { stepFree: true, maxSnap: 1 })).toBeNull();
+  // An end 1.2 eu above the walk is not a tee (a lip the body cannot climb).
+  expect(buildPathGraph(cuts([bed('walk', [[0, 0, 0], [40, 0, 0]]), bed('high', [[20, 1.2, 1.2], [20, 1.2, 21.2]])])).edges.some(e => e.id.startsWith('tee:'))).toBe(false);
+  // A two-point jetty walled at its far end keeps the run up to the wall (it used to leave the graph altogether).
+  const c = cuts([bed('quay', [[0, 0, 0], [40, 0, 0]]), bed('jetty', [[20, 0, 0], [20, 0, 20]], 'boardwalk')]), positions: number[] = [];
+  for (const yy of [0, 1.2]) for (const [xx, zz] of [[17, 19.8], [23, 19.8], [23, 20.4], [17, 20.4]]) positions.push(xx!, yy!, zz!);
+  c.solids.push({ id: 'slab', kind: 'pad', positions, indices: [0, 1, 2], surface: 'stone', districtId: 'harbour', bedIds: [], walkable: true, role: 'wall' });
+  const graph = buildPathGraph(c), jetty = graph.edges.filter(e => e.bedId === 'jetty');
+  expect(jetty).toHaveLength(1); expect(jetty[0]!.length).toBeGreaterThan(19); expect(jetty[0]!.length).toBeLessThan(20);
+  expect(walkPlan(graph, [0, 0, 0], [20, 0, 19], { maxSnap: 1 })).not.toBeNull();
+});

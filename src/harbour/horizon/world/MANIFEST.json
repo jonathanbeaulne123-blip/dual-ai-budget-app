@@ -1,6 +1,6 @@
 {
  "title": "The Horizon \u2014 MANIFEST",
- "version": "2.2",
+ "version": "2.3",
  "date": "2026-09-27",
  "status": "Design numbers for implementation. Control points are centreline intent to be solved into splines by the land pass; not navigation or collision data until baked into WorldDefinition v3. v2.2: paces and surface grip (RIDE D42) and the FLIGHT sky fields (D34\u2013D38), reconciled onto the v2.1 land \u2014 data only, no geometry change.",
  "units": {
@@ -2614,15 +2614,59 @@
      900
     ],
     [
-     1140,
+     1166,
      905
     ]
    ],
    "profile": "trail",
    "length_m": 494,
-   "surface_m": 5.2,
-   "shoulder_m": 1.2,
-   "surfaceNote_v2_1": "the Year Walk's February share rides this trail at offset 0: the trail takes the Year Walk's section (5.2 m + 1.2 m shoulders; profile trail 2.5 elsewhere; design lead, Stage A Wave 5 integration 2026-09-27)"
+   "v2_1_surface_m": 5.2,
+   "v2_1_shoulder_m": 1.2,
+   "v2_1_surfaceNote": "the Year Walk's February share rides this trail at offset 0: the trail takes the Year Walk's section (5.2 m + 1.2 m shoulders; profile trail 2.5 elsewhere; design lead, Stage A Wave 5 integration 2026-09-27)",
+   "sectionNote_v2_3": "D-D8 (design lead, Stage A Wave 7 (W7-A) 2026-09-27, reversible): the trail keeps its profile section (2.5 m); on the February share the Year Walk's own 5.2 m + 1.2 m section carries the trail, so the widening stops where the share stops ([1251,836]) and never reaches the dam end",
+   "v2_2_pts": [
+    [
+     990,
+     780
+    ],
+    [
+     1030,
+     740
+    ],
+    [
+     1130,
+     720
+    ],
+    [
+     1235,
+     755
+    ],
+    [
+     1250,
+     840
+    ],
+    [
+     1200,
+     900
+    ],
+    [
+     1140,
+     905
+    ]
+   ],
+   "v2_2_crossing": {
+    "a": "walk lakerim",
+    "b": "river lower",
+    "at": [
+     1140,
+     905
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "",
+    "retired_v2_3": "the trail ends at the gallery exit [1166,905] (D-D8): walk damCrest \u00d7 river lower [1140.2,903] is the rim's crossing"
+   }
   },
   "prow": {
    "pts": [
@@ -3950,19 +3994,19 @@
   },
   "marketStair": {
    "xy": [
-    1480,
-    1160
+    1472,
+    1124.5
    ],
    "kind": "town stair",
    "foot": [
-    1480,
+    1472,
     12,
-    1171
+    1134
    ],
    "head": [
-    1480,
+    1472,
     18,
-    1150
+    1115
    ],
    "flights": 3,
    "twin": "none (stairs only)",
@@ -3994,7 +4038,22 @@
     "from": "the square",
     "to": "the upper street spur's end [1480,18,1060]",
     "note": "the recorded step-free way between the square and the upper street (review 2 route walk: 295.5 eu, 123 s at 2.4 m/s)"
-   }
+   },
+   "v2_2_xy": [
+    1480,
+    1160
+   ],
+   "v2_2_head": [
+    1480,
+    18,
+    1150
+   ],
+   "v2_2_foot": [
+    1480,
+    12,
+    1171
+   ],
+   "placeNote_v2_3": "the head on the upper street's south edge (was 6 m over the square at [1480,18,1150]); a level walk (town.upperStreetWalk) joins it to the gondola base walk and a level foot landing (marketStair.foot) to the square walk (design lead, Stage A Wave 7 (W7-A) 2026-09-27)"
   },
   "coveStair": {
    "kind": "cliff-stair",
@@ -4595,8 +4654,8 @@
   "terraces": {
    "plots": [
     [
-     1552,
-     832
+     1551.1,
+     832.5
     ],
     [
      1528,
@@ -4621,13 +4680,28 @@
     "plot.terraces.2",
     "plot.terraces.3"
    ],
-   "served": "plots 1\u20133 uphill (west) of the Prow cliff drive between [1600,860] and [1540,1000] with a lay-by each; the Prow walk above; the town below. D12 confirmed 2026-09-25: three uphill plots only; no seaward plot."
+   "served": "plots 1\u20133 uphill (west) of the Prow cliff drive between [1600,860] and [1540,1000] with a lay-by each; the Prow walk above; the town below. D12 confirmed 2026-09-25: three uphill plots only; no seaward plot.",
+   "v2_2_plots": [
+    [
+     1552,
+     832
+    ],
+    [
+     1528,
+     896
+    ],
+    [
+     1512,
+     952
+    ]
+   ],
+   "plot1Note_v2_3": "R3-32: 1.0 m WNW off the Prow walk's corner (margin 5.83 \u2192 \u2265 6.6); design lead, Stage A Wave 7 (W7-A) 2026-09-27"
   },
   "bightShore": {
    "plots": [
     [
-     814,
-     919
+     813.0,
+     918.8
     ],
     [
      771,
@@ -4678,7 +4752,26 @@
      1107
     ]
    ],
-   "plot1Note_v2_0": "D-C8 (recommended, accepted Jonathan 2026-09-27): plot bight.1 moved 25 m west-south-west, the nearest spot clear of the June lane and S4 (the \u2248 12 m estimate did not clear); the plot's service drive follows"
+   "plot1Note_v2_0": "D-C8 (recommended, accepted Jonathan 2026-09-27): plot bight.1 moved 25 m west-south-west, the nearest spot clear of the June lane and S4 (the \u2248 12 m estimate did not clear); the plot's service drive follows",
+   "v2_2_plots": [
+    [
+     814,
+     919
+    ],
+    [
+     771,
+     973
+    ],
+    [
+     729,
+     1032
+    ],
+    [
+     705,
+     1107
+    ]
+   ],
+   "plot1Note_v2_3": "D-D2: 1.0 m WSW off the June lane's corner (margin 5.79 \u2192 \u2265 6.6 with the Year Walk's shoulder); the service drive meets the June lane at grade (design lead, Stage A Wave 7 (W7-A) 2026-09-27)"
   },
   "small": {
    "sealedDrift": {
@@ -5300,35 +5393,36 @@
   {
    "id": "J",
    "target": [
-    1780,
-    700
+    1790,
+    681
    ],
    "fov_deg": 55,
    "radius_eu": 340,
-   "eyeH": 60,
-   "label": "The Needle's Eye, from the plane",
+   "eyeH": 51.5,
+   "label": "The Needle's Eye at dawn, from the Prow",
    "xy": [
-    1840,
-    1000
+    1665,
+    680
    ],
-   "frames": "the arch ahead of the wing, the Stacks, the Prow",
+   "frames": "the arch, the sea through it at dawn, the Prow underfoot",
    "bestHour": "dawn",
    "also": "noon",
-   "target_h": 14,
+   "target_h": 25,
    "portrait": {
     "fov_deg": 50,
     "target": [
-     1760,
-     760
+     1790,
+     681
     ],
-    "target_h": 14,
+    "target_h": 25,
     "frames": [
      "the arch",
-     "the Stacks",
      "the Prow"
     ]
    },
-   "deferred": [],
+   "deferred": [
+    "the Stacks (not on J's east line through the arch, 60-65\u00b0 to its right; D-D6)"
+   ],
    "v1_6": {
     "xy": [
      1790,
@@ -5344,9 +5438,48 @@
    },
    "subjects": [
     "the arch",
-    "the Stacks",
     "the Prow"
-   ]
+   ],
+   "v2_2": {
+    "xy": [
+     1840,
+     1000
+    ],
+    "target": [
+     1780,
+     700
+    ],
+    "target_h": 14,
+    "eyeH": 60,
+    "label": "The Needle's Eye, from the plane",
+    "frames": "the arch ahead of the wing, the Stacks, the Prow",
+    "subjects": [
+     "the arch",
+     "the Stacks",
+     "the Prow"
+    ],
+    "portrait": {
+     "fov_deg": 50,
+     "target": [
+      1760,
+      760
+     ],
+     "target_h": 14,
+     "frames": [
+      "the arch",
+      "the Stacks",
+      "the Prow"
+     ]
+    }
+   },
+   "ground": {
+    "xy": [
+     1607.3,
+     690.9
+    ],
+    "h": 48.5
+   },
+   "decided_v2_3": "D-D6 re-pose (recommended; design lead, Stage A Wave 7 (W7-A) 2026-09-27, reversible: v2_2), W7-T's measured pose"
   },
   {
    "id": "K",
@@ -8007,18 +8140,6 @@
   },
   {
    "a": "walk lakerim",
-   "b": "river lower",
-   "at": [
-    1140,
-    905
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": ""
-  },
-  {
-   "a": "walk lakerim",
    "b": "yearWalk",
    "at": [
     1250.5,
@@ -8357,13 +8478,18 @@
    "a": "yearWalk",
    "b": "plot.bight.1.service",
    "at": [
-    871.2,
-    914.9
+    856.7,
+    935.0
    ],
-   "resolution": "under",
+   "resolution": "threshold",
    "kind": "crossing",
    "source": "bake v1.8",
-   "note": ""
+   "note": "v2.3: at grade (the June lane rises to the moved plot's service drive (D-D2); design lead, Stage A Wave 7 (W7-A) 2026-09-27)",
+   "v2_2_resolution": "under",
+   "v2_2_at": [
+    871.2,
+    914.9
+   ]
   },
   {
    "a": "yearWalk",
@@ -8661,10 +8787,11 @@
     968.6,
     540.5
    ],
-   "resolution": "under",
+   "resolution": "threshold",
    "kind": "crossing",
    "source": "bake v1.9",
-   "note": "under by 2.8 eu: a named structure (footbridge, deck or passage) is owed"
+   "note": "v2.3: at grade (S4 holds VG's level across the September lane (flush landing, D-A7 #17); design lead, Stage A Wave 7 (W7-A) 2026-09-27)",
+   "v2_2_resolution": "under"
   },
   {
    "a": "V01",
@@ -9266,7 +9393,7 @@
    }
   },
   "targets_s": {
-   "square\u2192library by bicycle": 185,
+   "square\u2192library by bicycle": 243,
    "square\u2192green running": 125,
    "square\u2192summit by gondola + walk": 205,
    "crown\u2192quay on the board (S1)": [
@@ -9289,7 +9416,9 @@
     "v2_2_d34": [
      70,
      110
-    ]
+    ],
+    "square\u2192library by bicycle": "v2.3 (design lead, Stage A Wave 7 (W7-A) 2026-09-27, reversible): planned at the bicycle's 6.0 m/s cap, the ride measures 220.6 s (1,324 eu, Stage A W7-A scratch bake); target = measured + 10 % = 243 s (v2.2: 185 s at 8 m/s)",
+    "v2_2_square\u2192library by bicycle": 185
    }
   },
   "at_active_scale": {
@@ -9370,14 +9499,15 @@
   "walk": 2.4,
   "run": 5.0,
   "board": 10.0,
-  "bicycle": 8.0,
+  "bicycle": 6.0,
   "gondola": 7.0,
   "cart": 8.0,
   "zip": 12.0,
   "glider": 11.0,
   "plane": 45.0,
   "ferry": 5.0,
-  "row": 1.8
+  "row": 1.8,
+  "v2_2_bicycle": 8.0
  },
  "pastimeData": {
   "nineBaskets": [

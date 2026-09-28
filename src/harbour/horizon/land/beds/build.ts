@@ -3,7 +3,7 @@ import type { BedCut, HeightQuery, LandCuts, XY, XYZ } from '../interfaces';
 import { buildStructures, cableTower, SPANS } from '../structures/build';
 import { box, distance, districtAt, mix, nearestOnPath, pathLength, plan, slab, solid } from '../structures/mesh';
 import { pier } from '../structures/foundations';
-import { buildReserves } from '../reserves/build';
+import { buildReserves, reserveServiceLines } from '../reserves/build';
 import { buildTown, squareWalkPins } from '../town/build';
 import { buildHostSites } from '../town/hosts';
 import { buildUnderground } from '../underground/build';
@@ -30,14 +30,14 @@ const routePins:Record<string,HeightPin[]>={
   V01:[pin([1400,1060],24,'Green Road junction'),pin([1480,1040],18,'upper street'),pin(M.roads.V02.pts[0] as unknown as XY,70,'Crown Road junction'),pin([900,290],48,'north pass'),pin([560,1100],12,'Bight Bridge'),pin([1350,1345],9,'Quay Bridge')],
   VG:[pin([1400,1060],24,'Horizon Drive junction'),pin([1240,1105],24,'High Span'),pin([960,860],30,'Bight spur'),pin([980,700],42,'cottage spur'),pin([974,540],40,'studio spur'),pin([945,474.5],45.5,'Year Walk February crossing at grade (v1.9)'),pin([900,290],48,'north pass')],
   V02:[pin(M.roads.V02.pts[0] as unknown as XY,70,'coast drive'),...evenClimb(M.roads.V02.pts as unknown as XY[],35,70,110,'Crown Road even climb (v1.9)'),pin([1370,690],110,'turning circle')],
-  VBS:[pin([960,860],30,'Green Road'),pin([775,1125],14,'shore endpoint')],
+  VBS:[pin([960,860],30,'Green Road'),pin([872.5,944],21.2,'S4 at grade (register S4 × VBS [874,941], W7-A: was a 1.72 step)'),pin([775,1125],14,'shore endpoint')],
   S1:[pin([1310,500],154,'Crown start'),pin([1160,935],31,'dam apron'),pin([1204,1080],12,'High Span shelf north end (v1.9: S1 rides its shelf)'),pin([1204,1098],12,'High Span shelf'),pin([1204,1133],12,'High Span shelf south end'),pin([1255,1251],5,'Reach boardwalk'),pin([1270,1330],3,'Landing finish')],
   // v2.0 D-A1: S2's Bight stretch is authored (skate.S2.levels/westRamp/deckLanes/eastDescent): see s2Profile.
   S2:[pin([480,480],38,'strip start'),pin([1020,1430],3,'park')],
   S3:[pin([1480,1060],18,'upper street'),pin([1470,1160],12,'square arrival'),pin([1440,1200],12,'square'),pin([1433,1298],3,'town quay at grade (T0 request 4: S3 ran 6-7 eu over the 3 eu quay)'),pin([1350,1345],9,'Quay Bridge'),pin([1133,1435],4,'zip underpass'),pin([1020,1430],3,'park')],
   S4:[pin([1000,520],40,'studio start'),pin([893,600],37,'Hollow Bridge'),pin([905.9,640.6],36,'Cottage front walk at grade (v1.9)'),pin([1020,1430],3,'park')],
   'walk garden':[pin([762,422],48,'Library apron'),pin([893,600],37,'Hollow Bridge'),pin([915,638],36,'Cottage front walk'),pin([930,650],38,'Cottage spur landing'),pin([990,780],56,'Glasshouse')],
-  'walk lakerim':[pin([990,780],56,'Glasshouse'),pin([1161,731],55,'inlet bridge'),pin([1140,905],52,'dam crest')],
+  'walk lakerim':[pin([990,780],56,'Glasshouse'),pin([1161,731],55,'inlet bridge'),pin(M.walks.lakerim.pts.at(-1) as unknown as XY,52,'dam crest (v2.3: the gallery exit, not along the crest)')],
   'walk square':[pin([1455,1175],12,'square'),pin([1480,1060],18,'upper street')],
   'walk reach':[pin([1400,1290],7,'town connection'),pin([1274,1203],9.5,'Reach footbridge (v1.9: 4 m canoe clearance over the river)'),pin([1240,1130],9,'High Span walk')],
   // v2.0 D-C7: the Crown walk's own bed starts where it leaves the Year Walk's January lane (walks.crown.joinsYearWalk).
@@ -79,13 +79,28 @@ function carryS2(cuts:LandCuts,base:HeightQuery,b:BedCut):void {
 /** v2.0 D-A7 flush thresholds (Jonathan 2026-09-27): a register row resolved 'threshold' by a D-A7 ruling is one flush tread -
  * the route being laid takes the already-built route's height at the row point (#34 the pier walk comes down to the Drive,
  * #17 S4 rises to Green Road at the studio terrace). */
-function flushPins(id:string,cuts:LandCuts):HeightPin[] {
+function flushPins(id:string,cuts:LandCuts,controls:readonly XY[]=[]):HeightPin[] {
   const out:HeightPin[]=[];
   for(const row of M.crossings as unknown as {a:string;b:string;at:unknown;resolution:string;decided?:string}[]){
     if(row.resolution!=='threshold'||!row.decided?.startsWith('D-A7')||!Array.isArray(row.at)||![row.a,row.b].includes(id))continue;
     const other=cuts.beds.find(b=>b.id===(row.a===id?row.b:row.a)),at=row.at as unknown as XY;if(!other)continue;
     const n=nearestOnPath(at,other.points);if(n.distance<3)out.push(pin(at,n.at[1],`flush threshold with ${other.id} (D-A7)`));
+    // W7-A (A1.3, P16 S4 × yearWalk 0.68 of 2.4): where the other route carries Year Walk footway lanes beside it, the flush
+    // tread holds the host's level across those lanes too (a landing, like the spurs'): S4 met VG flush at the studio terrace
+    // and passed the September lane 6.5 m on, 0.68 under it.
+    const lanes=M.journey.yearWalk.shares.filter(r=>r.host===other.id&&r.offset_m>0),reach=lanes.length?Math.max(...lanes.map(r=>r.offset_m))+b_width/2+1.2:0;
+    if(n.distance<3&&reach)sampleSpline(controls).forEach((q,i)=>{if(distance(q,at)>reach)return;const m=nearestOnPath(q,other.points);if(m.distance<=reach&&lanes.some(r=>distance(q,r.from as unknown as XY)+distance(q,r.to as unknown as XY)<=distance(r.from as unknown as XY,r.to as unknown as XY)+2*reach))out.push(pin(q,m.at[1],`flush landing across ${other.id}'s footway lanes (D-A7)`,i));});
   }
+  return out;
+}
+/** W7-A (A1.3): authored at-grade register rows between a skate line and a road whose footway walks beside it: across the road
+ * and its footway (reach) the skate line takes the road's own height, so the kerb gap is one flush tread (S4 × VBS met 1.72
+ * under the spur at [871.7,945.9]; S4 × walk bight 1 eu apart at [873.5,951.1]). */
+const AT_GRADE=[{skate:'S4',road:'VBS',at:[874,941] as XY,reach:11}] as const;
+function atGradePins(id:string,controls:readonly XY[],cuts:LandCuts):HeightPin[] {
+  const out:HeightPin[]=[];
+  for(const g of AT_GRADE){if(g.skate!==id)continue;const road=cuts.beds.find(b=>b.id===g.road);if(!road)continue;
+    sampleSpline(controls).forEach((q,i)=>{if(distance(q,g.at)>g.reach)return;out.push(pin(q,nearestOnPath(q,road.points).at[1],`at grade with ${g.road} (W7-A)`,i));});}
   return out;
 }
 /** v2.0 named carriers that are not SPANS (D-C15 structures.s1Flyover, D-C9 structures.bightSpurTrestle): the route they carry
@@ -168,7 +183,7 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
     const pts=[...row.pts] as unknown as XY[];
     if(id==='S1')pts.splice(4,0,[1435,705],[1430,775],[1325,735]);
     // v2.0 D-A1: S2's Bight stretch follows its authored profile, never another route's deck height (spanLanePins).
-    const b=bed(id,'skateMain',gradeRoute(id,pts,base,.18,[...withSpanPins(id,pts,routePins[id]),...flushPins(id,cuts),...(id==='S2'?s2Profile(pts).pins:spanLanePins(id,pts,cuts))],cuts.diagnostics,5,TYP.skate));
+    const b=bed(id,'skateMain',gradeRoute(id,pts,base,.18,[...withSpanPins(id,pts,routePins[id]),...flushPins(id,cuts,pts),...atGradePins(id,pts,cuts),...(id==='S2'?s2Profile(pts).pins:spanLanePins(id,pts,cuts))],cuts.diagnostics,5,TYP.skate));
     b.surfaceSegments=row.segments.map((segment,i)=>({from:i/row.segments.length,to:(i+1)/row.segments.length,surface:segment.surface,pace:segment.pace,bankDegrees:segment.surface==='bankedTurf'?18:0}));cuts.beds.push(b);
   }
   for(const [id,row]of Object.entries(M.walks)){
@@ -271,7 +286,9 @@ function journey(cuts:LandCuts,base:HeightQuery):YearWalkShare[] {
   // apart by the Library, a lip the body cannot climb).
   const footRoutes=cuts.beds.filter(b=>b.terrainCut&&['walk','trail'].includes(b.kind));
   // v1.9: a skate line the walk meets at grade (S4 in the Hollow) is held flush the same way.
-  const gradeRoutes=[...footRoutes,...cuts.beds.filter(b=>b.terrainCut&&b.kind==='skate')];
+  // W7-A (A1.3, P16 yearWalk × plot.bight.1.service 1.97 of 2.4): a plot's service drive (laid later, at its lay-by's level)
+  // crosses the walk at grade: the walk rises to it (the drive is a flush junction, not a 2 m overpass on nothing).
+  const gradeRoutes:{id:string;points:XYZ[]}[]=[...footRoutes,...cuts.beds.filter(b=>b.terrainCut&&b.kind==='skate'),...reserveServiceLines(cuts)];
   pre.forEach((q,i)=>{if(shareOf(i))return;for(const b of footRoutes){const n=nearestOnPath(plan(q),b.points);if(n.distance<1.5&&Math.abs(n.at[1]-q[1])<2){pins.push(pin(plan(q),n.at[1],`at-grade crossing ${b.id}`,i));break;}}});
   // W3-A: a sample spacing of 5 m misses a crossing up to 2.5 m from both samples (Scholars:
   // the Garden Walk crossing sat 0.42 eu apart and its bed walls closed the Garden Walk). Every
@@ -325,13 +342,23 @@ function settleYearWalkShares(cuts:LandCuts,shares:readonly YearWalkShare[]):voi
     const hostAlong=[nearestOnPath(stretch[0]!,host.points).along,nearestOnPath(stretch.at(-1)!,host.points).along].sort((a,b)=>a-b);
     let along=0;const hostStretch:XY[]=[];host.points.forEach((p,i)=>{if(i)along+=distance(plan(host.points[i-1]!),plan(p));if(along>=hostAlong[0]!-5&&along<=hostAlong[1]!+5)hostStretch.push(plan(p));});
     if(s.offset>0){(walk.sharedEdges??=[]).push({other:host.id,at:stretch});if(hostStretch.length>1)(host.sharedEdges??=[]).push({other:walk.id,at:hostStretch});}
-    // Carried runs: the whole stretch at offset 0, else where the host sits in its own span or tunnel.
+    // Carried runs: where the host sits in its own span or tunnel; at offset 0 the wider of the two carries the other.
+    // W7-A (D-D8, design lead): the February share (offset 0 on the 2.5 m lake-rim trail) is carried by the Year Walk's own
+    // 5.2 m section, not the other way round: the trail keeps its profile width everywhere else, so its dam end no longer
+    // overhangs the dam gallery's stairwell (10.4 eu void) nor shades the dam face at 09:00 with 1.2 m shoulders.
+    const hostCarries=s.offset===0&&host.width+2*host.shoulder>=walk.width+2*walk.shoulder;
     let run:XY[]=[];const flush=()=>{if(run.length>1)(walk.carried??=[]).push(run);run=[];};
     for(const p of stretch){
-      const h=nearestOnPath(p,host.points),carried=s.offset===0||(host.terrainExclusions??[]).some(e=>distance(plan(h.at),e.at)<e.radius);
+      const h=nearestOnPath(p,host.points),inStructure=(host.terrainExclusions??[]).some(e=>distance(plan(h.at),e.at)<e.radius),carried=inStructure||hostCarries;
       if(carried){run.push(p);(walk.terrainExclusions??=[]).push({at:p,radius:walk.width/2+walk.shoulder+1,openSpan:(host.terrainExclusions??[]).some(e=>e.openSpan&&distance(plan(h.at),e.at)<e.radius)});}else flush();
     }
     flush();
+    if(s.offset===0&&!hostCarries){
+      // The host's own points on the stretch (outside its spans) ride inside the Year Walk's deck: no second deck or edge.
+      let own:XY[]=[];const done=()=>{if(own.length>1)(host.carried??=[]).push(own);own=[];};
+      for(const p of host.points){const xy=plan(p),inStructure=(host.terrainExclusions??[]).some(e=>distance(xy,e.at)<e.radius);if(!inStructure&&planDistance(xy,stretch)<=walk.width/2)own.push(xy);else done();}
+      done();
+    }
   }
   reportYearWalkSeparation(cuts,walk);
 }
