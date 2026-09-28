@@ -27,6 +27,11 @@ function wash(e:KitchenEngine,chef:ChefId=0){e.update(6);at(e,'return',chef);act
 function ensureOwnership(e:KitchenEngine){const s=e.state(),heldIds=s.chefs.map(c=>c.held).filter(Boolean);expect(new Set(heldIds).size).toBe(heldIds.length);for(const item of Object.values(s.items)){if(item.location.kind==='hands')expect(s.chefs.find(c=>c.id===(item.location as {chef:ChefId}).chef)?.held).toBe(item.id);if(item.location.kind==='container')expect(s.items[item.location.container]?.contents).toContain(item.id);}}
 
 describe('five configured dishes and complete services',()=>{
+ for(const seed of[0,1,721,1500,2731,0xffffffff])it(`Practice introduces all five dishes in its first five deliveries for seed ${seed}`,()=>{
+  const e=createKitchenEngine({seed});e.start('practice',1);act(e,{type:'ready'});
+  for(let i=0;i<5;i++){const order=e.state().orders.find(o=>o.status==='waiting')!;expect(order.recipe).toBe(SERVICES.practice.recipes[i]);dish(e,order.recipe);deliver(e);wash(e);}
+  expect(e.state().orders.slice(0,5).map(o=>o.recipe)).toEqual(SERVICES.practice.recipes);expect(e.state().orders.filter(o=>o.status==='served').map(o=>o.recipe)).toEqual(SERVICES.practice.recipes);
+ });
  it('makes and delivers every recipe through public interactions, including recycling its plate',()=>{
   const e=start(),seen=new Set<RecipeId>();let delivered=0;
   while(seen.size<5&&delivered<40){const order=e.state().orders.find(o=>o.status==='waiting')!;dish(e,order.recipe);deliver(e);seen.add(order.recipe);wash(e);ensureOwnership(e);delivered++;}

@@ -89,7 +89,11 @@ export function createKitchenEngine(options:{seed?:number;canReach?:(pose:ChefPo
   let choices=service.recipes.filter(id=>RECIPES[id].components.every(c=>available.has(c.ingredient)&&(c.phase!=='prepared'||INGREDIENTS[c.ingredient].prepSeconds>0)&&(c.phase!=='ready'||appliances.has(INGREDIENTS[c.ingredient].cook?.appliance??'')))&&demand+cookingDemand(RECIPES[id])<=capacity&&cookingFits([...waiting.map(o=>RECIPES[o.recipe]),RECIPES[id]],stations.filter(st=>!s.fires[st.id])));
   if(s.service==='sunset'&&s.orders.length===0&&choices.includes('fish'))choices=['fish'];
   if(!choices.length)return false;
-  const id=choices[Math.floor(random()*choices.length)]!,recipe=RECIPES[id],total=service.seconds?recipe.patience*(s.players===1?1.35:1)*s.assists.patience+(service.area==='deck'?30:service.trolley?20:0):0;
+  // Practice teaches the complete menu in order. A busy appliance delays the next
+  // planned dish; selecting another eligible recipe here can starve pasta forever.
+  const planned=service.recipes[s.orders.length%service.recipes.length]!;
+  if(s.service==='practice'&&!choices.includes(planned))return false;
+  const id=s.service==='practice'?planned:choices[Math.floor(random()*choices.length)]!,recipe=RECIPES[id],total=service.seconds?recipe.patience*(s.players===1?1.35:1)*s.assists.patience+(service.area==='deck'?30:service.trolley?20:0):0;
   s.orders.push({id:'order-'+s.nextId++,recipe:id,remaining:total,total,status:'waiting'});return true;
  }
  function feedbackAction(id:ChefId,a:KitchenAction):KitchenActionResult{
