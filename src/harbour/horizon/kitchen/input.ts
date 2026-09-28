@@ -3,7 +3,7 @@ import type {Point} from '../movers/fleet/layout.ts';
 import type {ChefId,ChefPose,ChefState,KitchenChefInput,KitchenControls,KitchenItem,KitchenStation} from './types.ts';
 
 export type KitchenKeyEvent={key:string;repeat?:boolean};
-export type KitchenTouch=Partial<Pick<KitchenChefInput,'x'|'z'|'interact'|'prepare'|'toss'|'cycle'|'ready'|'pause'>>;
+export type KitchenTouch=Partial<Pick<KitchenChefInput,'x'|'z'|'interact'|'prepare'|'prepareHeld'|'toss'|'cycle'|'ready'|'pause'>>;
 export type KitchenLineBlocked=(from:Point,to:Point)=>boolean;
 export type KitchenTossTarget={station?:string;chef?:ChefId;point:Point};
 export const KITCHEN_BINDINGS={keyboard:'WASD / arrows: move · E: pick up / place · F: prepare · R: toss · Q: choose ingredient · Enter: ready · Esc: pause',gamepad:'Left stick: move · A: pick up / place · X: prepare · B: toss · Y: choose ingredient · Start: ready / pause'} as const;
@@ -40,7 +40,10 @@ export function createKitchenInput(options:{getGamepads?:GetPads|null}={}){
   function touch(chef:ChefId,value:KitchenTouch){
     if(disposed)return;
     const old=touches[chef];
-    for(const action of actions)if(value[action]===true&&!old[action])touchEdges[chef].add(action);
+    // Buttons send one event per click, while movement and preparation holds are
+    // continuous. A second tap must not need an invented release event from React.
+    for(const action of actions)if(value[action]===true)touchEdges[chef].add(action);
+    if(value.prepareHeld===true&&!old.prepareHeld)touchEdges[chef].add('prepare');
     touches[chef]={...old,...value};
   }
   function pads(){
@@ -94,7 +97,7 @@ export function createKitchenInput(options:{getGamepads?:GetPads|null}={}){
       input.x=clamp(input.x+(t.x??0));input.z=clamp(input.z+(t.z??0));
       const length=Math.hypot(input.x,input.z);if(length>1){input.x/=length;input.z/=length;}
       for(const action of actions)input[action] ||= touchEdges[chef].has(action);
-      input.prepareHeld ||= t.prepare===true;touchEdges[chef].clear();
+      input.prepareHeld ||= t.prepareHeld===true;touchEdges[chef].clear();
     }
     if(players===1)chefs[1]=neutral();
     const connections=([0,1] as const).map(chef=>{

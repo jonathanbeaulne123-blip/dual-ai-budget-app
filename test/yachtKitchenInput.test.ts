@@ -59,7 +59,7 @@ describe('independent kitchen controls',()=>{
 
   it('clears touch and keyboard state on pause and resyncs held controller edges',()=>{
     const p=pad(0),input=createKitchenInput({getGamepads:()=>[p]});input.sample(2);
-    input.keyDown({key:'e'});input.touch(1,{x:.5,prepare:true});button(p,0);
+    input.keyDown({key:'e'});input.touch(1,{x:.5,prepareHeld:true});button(p,0);
     expect(input.sample(2).chefs[1]).toMatchObject({x:.5,prepare:true,prepareHeld:true,interact:true});
     input.resync();input.keyDown({key:'e',repeat:true});
     const clean=input.sample(2);expect(clean.chefs[0].interact).toBe(false);expect(clean.chefs[1]).toMatchObject({x:0,prepare:false,prepareHeld:false,interact:false});
@@ -73,6 +73,19 @@ describe('independent kitchen controls',()=>{
     const p=pad(0,NaN,.1);let denied=false;const input=createKitchenInput({getGamepads:()=>{if(denied)throw new Error('denied');return [p];}});
     expect(input.sample(1).chefs[0]).toMatchObject({x:0,z:0});denied=true;
     expect(input.sample(1).disconnected).toEqual([0]);expect(input.sample(1).chefs[0].prepareHeld).toBe(false);
+  });
+
+  it('accepts repeated UI tap events and keeps touch preparation held until its own release',()=>{
+    const input=createKitchenInput({getGamepads:()=>[]});
+    for(const action of ['interact','prepare','toss','cycle'] as const){
+      input.touch(0,{[action]:true});expect(input.sample(1).chefs[0][action]).toBe(true);
+      expect(input.sample(1).chefs[0][action]).toBe(false);
+      input.touch(0,{[action]:true});expect(input.sample(1).chefs[0][action]).toBe(true);
+    }
+    input.touch(0,{prepareHeld:true});expect(input.sample(1).chefs[0]).toMatchObject({prepare:true,prepareHeld:true});
+    input.touch(0,{prepareHeld:true});expect(input.sample(1).chefs[0]).toMatchObject({prepare:false,prepareHeld:true});
+    input.touch(0,{x:.5});expect(input.sample(1).chefs[0].prepareHeld).toBe(true);
+    input.touch(0,{prepareHeld:false});expect(input.sample(1).chefs[0].prepareHeld).toBe(false);
   });
 });
 
