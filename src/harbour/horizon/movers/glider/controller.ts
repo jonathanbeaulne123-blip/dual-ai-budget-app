@@ -73,7 +73,7 @@ export function padLandings(padId:string,env:Pick<GliderEnv,'envelope'|'shoreNod
   // Wave 7: the dry beach nearest the awash sandbar (never the Bight Bridge's deck walk); the shore node only without a beach query.
   const sandbar=():ReducedMotionLanding|null=>{const n=env.beach?.(600,1030)??env.shoreNode(600,1030);return n?{id:'sandbar',label:'the sandbar',xy:[n.at[0],n.at[2]],height:n.at[1]}:null;};
   const list:(ReducedMotionLanding|null)[]=padId==='crown'?[field('green'),field('reachMeadow'),field('sands'),field('strip'),deep]
-    :padId==='prow'?[field('reachMeadow'),field('sands','Long Sands (afternoon)'),field('green')]
+    :padId==='prow'?[field('reachMeadow'),field('sands'),field('green')]
     :padId==='lampGallery'?[sandbar(),field('strip',"the Flats' strip")]
     :[field('green'),field('reachMeadow'),field('sands')];
   return list.filter((l):l is ReducedMotionLanding=>l!==null);

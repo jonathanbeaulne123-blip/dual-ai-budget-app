@@ -31,10 +31,10 @@ const routePins:Record<string,HeightPin[]>={
   VG:[pin([1400,1060],24,'Horizon Drive junction'),pin([1240,1105],24,'High Span'),pin([960,860],30,'Bight spur'),pin([980,700],42,'cottage spur'),pin([974,540],40,'studio spur'),pin([945,474.5],45.5,'Year Walk February crossing at grade (v1.9)'),pin([900,290],48,'north pass')],
   V02:[pin(M.roads.V02.pts[0] as unknown as XY,70,'coast drive'),...evenClimb(M.roads.V02.pts as unknown as XY[],35,70,110,'Crown Road even climb (v1.9)'),pin([1370,690],110,'turning circle')],
   VBS:[pin([960,860],30,'Green Road'),pin([872.5,944],21.2,'S4 at grade (register S4 × VBS [874,941], W7-A: was a 1.72 step)'),pin([775,1125],14,'shore endpoint')],
-  S1:[pin([1310,500],154,'Crown start'),pin([1160,935],31,'dam apron'),pin([1204,1080],12,'High Span shelf north end (v1.9: S1 rides its shelf)'),pin([1204,1098],12,'High Span shelf'),pin([1204,1133],12,'High Span shelf south end'),pin([1255,1251],5,'Reach boardwalk'),pin([1270,1330],3,'Landing finish')],
+  S1:[pin([1310,500],154,'Crown start'),pin([1170.2,929],31,'the apron\'s level bay, east edge (integrator 4, W7-S request 2: S1 stood 31.7-32.5 over the 31 bay)'),pin([1160,935],31,'dam apron'),pin([1204,1080],12,'High Span shelf north end (v1.9: S1 rides its shelf)'),pin([1204,1098],12,'High Span shelf'),pin([1204,1133],12,'High Span shelf south end'),pin([1255,1251],5,'Reach boardwalk'),pin([1270,1330],M.structures.landingQuay.finish_h,'Landing finish (v2.4: the islet\'s natural ground, W7-S request)')],
   // v2.0 D-A1: S2's Bight stretch is authored (skate.S2.levels/westRamp/deckLanes/eastDescent): see s2Profile.
   S2:[pin([480,480],38,'strip start'),pin([1020,1430],3,'park')],
-  S3:[pin([1480,1060],18,'upper street'),pin([1470,1160],12,'square arrival'),pin([1440,1200],12,'square'),pin([1433,1298],3,'town quay at grade (T0 request 4: S3 ran 6-7 eu over the 3 eu quay)'),pin([1350,1345],9,'Quay Bridge'),pin([1133,1435],4,'zip underpass'),pin([1020,1430],3,'park')],
+  S3:[pin([1480,1060],18,'upper street'),pin([1470,1160],12,'square arrival'),pin([1440,1200],12,'square'),pin([1433,1298],3,'town quay at grade (T0 request 4: S3 ran 6-7 eu over the 3 eu quay)'),pin([1360,1340],9,'Quay Bridge deck edge (integrator 4, W7-S request 1: S3 joined the 9 deck at 8.5-8.7)'),pin([1350,1345],9,'Quay Bridge'),pin([1133,1435],4,'zip underpass'),pin([1020,1430],3,'park')],
   S4:[pin([1000,520],40,'studio start'),pin([893,600],37,'Hollow Bridge'),pin([905.9,640.6],36,'Cottage front walk at grade (v1.9)'),pin([1020,1430],3,'park')],
   'walk garden':[pin([762,422],48,'Library apron'),pin([893,600],37,'Hollow Bridge'),pin([915,638],36,'Cottage front walk'),pin([930,650],38,'Cottage spur landing'),pin([990,780],56,'Glasshouse')],
   'walk lakerim':[pin([990,780],56,'Glasshouse'),pin([1161,731],55,'inlet bridge'),pin(M.walks.lakerim.pts.at(-1) as unknown as XY,52,'dam crest (v2.3: the gallery exit, not along the crest)')],
@@ -107,7 +107,7 @@ function atGradePins(id:string,controls:readonly XY[],cuts:LandCuts):HeightPin[]
  * keeps its own grade over them, its terrain is left alone there (an open span: no fill, no counted void), and structures
  * (W5-S) stand the deck's bents outside every lower corridor. The carried stretch is the route's samples within 3 m of the
  * carrier's from→to line (and, for a self-crossing, within 3 eu of its deck, never the lower pass). */
-export const NAMED_CARRIERS=[{id:'s1Flyover',route:'S1',footways:[] as string[]},{id:'bightSpurTrestle',route:'VBS',footways:['walk bight']}] as const;
+export const NAMED_CARRIERS=[{id:'s1Flyover',route:'S1',footways:[] as string[]},{id:'bightSpurTrestle',route:'VBS',footways:['walk bight']},{id:'prowLoopFootbridge',route:'yearWalk',footways:[] as string[]}] as const;
 function carryNamedStructures(cuts:LandCuts):void {
   for(const c of NAMED_CARRIERS){
     const s=(M.structures as unknown as Record<string,{from?:number[];to?:number[]}>)[c.id];if(!s?.from||!s.to)continue;
@@ -472,12 +472,15 @@ function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
       // floor: no second pad slab floats beside it (structures.padFloating). The pad stays as the threshold's footprint.
       const onDeck=cuts.solids.some(s=>(s.role==='deck'||s.role==='floor')&&s.id!==`${id}.slab`&&(()=>{let x0=Infinity,x1=-Infinity,z0=Infinity,z1=-Infinity,y1=-Infinity;const q=s.positions;for(let i=0;i<q.length;i+=3){x0=Math.min(x0,q[i]!);x1=Math.max(x1,q[i]!);y1=Math.max(y1,q[i+1]!);z0=Math.min(z0,q[i+2]!);z1=Math.max(z1,q[i+2]!);}return p[0]>=x0&&p[0]<=x1&&p[1]>=z0&&p[1]<=z1&&Math.abs(y1-height)<.5;})());
       if(onDeck)cuts.solids=cuts.solids.filter(s=>s.id!==`${id}.slab`);}
-    if(!underground&&!deck&&ground-height>BODY_HEIGHT)cuts.diagnostics.push({id:`${id}.pit`,severity:'conflict',message:`${id} is authored ${(ground-height).toFixed(1)} eu below its ground; the pad would dig a pit`,at:p,measured:height,required:ground});
+    // Integrator 4 (W7-S request 5): a manifest threshold that takes its bed's height (no authored height: skateLineStarts on
+    // S1/S4) stands on that bed's own graded cut, which the bed makes anyway — built ground, not a pit. Authored heights and
+    // register pads are still checked.
+    if(!underground&&!deck&&(h0!==undefined||!id.startsWith('threshold.'))&&ground-height>BODY_HEIGHT)cuts.diagnostics.push({id:`${id}.pit`,severity:'conflict',message:`${id} is authored ${(ground-height).toFixed(1)} eu below its ground; the pad would dig a pit`,at:p,measured:height,required:ground});
     positions.push(p);const marker=solid(`${id}.marker`,'threshold','stone','marker',[],districtAt(...p));box(marker,p,height+.025,[2,.6],height-.05);cuts.solids.push(marker);pad.margin=1;};
   for(const row of M.thresholds){
     if(typeof row.xy==='string'){Object.entries(M.water_routes.FERRY.piers).forEach(([id,p])=>make(`threshold.${row.id}.${id}`,p as unknown as XY,1));continue;}
     if(Array.isArray(row.xy[0]!))(row.xy as number[][]).forEach((p,i)=>make(`threshold.${row.id}.${i+1}`,p as unknown as XY));
-    else {const exact:Record<string,number>={gondolaBase:M.cable.G1.fromH,gondolaTop:M.cable.G1.toH,adit:40,southPortal:110,prowPlatform:M.sky.launches.prow.h,crownLaunch:M.sky.launches.crown.h,zipLanding:12,lampGallery:M.sky.launches.lampGallery.h,deepJetty:40.6,seaDoorJetty:1,lampDock:1,bightShoreJetty:1,floatDock:1.2,boathouseDock:1,landingQuay:3,stepsFoot:4};make(`threshold.${row.id}`,row.xy as unknown as XY,exact[row.id]!);}
+    else {const exact:Record<string,number>={gondolaBase:M.cable.G1.fromH,gondolaTop:M.cable.G1.toH,adit:40,southPortal:110,prowPlatform:M.sky.launches.prow.h,crownLaunch:M.sky.launches.crown.h,zipLanding:12,lampGallery:M.sky.launches.lampGallery.h,deepJetty:40.6,seaDoorJetty:1,lampDock:1,bightShoreJetty:1,floatDock:1.2,boathouseDock:1,landingQuay:M.structures.landingQuay.finish_h,stepsFoot:4};make(`threshold.${row.id}`,row.xy as unknown as XY,exact[row.id]!);}
   }
   // Only authored register rows make a dismount pad: rows accepted from the bake (source 'bake v1.8') are flush
   // junctions, footways or unresolved proposals, never a new marker (R1-88).

@@ -36,10 +36,10 @@ export const PAGE_SUBJECTS: Record<string, string[]> = {
   D: ['surf', 'the Lamp', 'the zipline landing'],
   E: ['Stillwater', 'the Green', 'the Hollow', 'the Flats', 'the Bight', 'the sea'],
   F: ['L01', 'the town below'],
-  G: ["the Throat's mouth of daylight", 'the skylight shaft'],
+  G: ['the skylight shaft'],   // D-D7 (v2.4): the Throat stays dark (D-B5); G looks up the shaft
   H: ['the strip', 'the west sea'],
   I: ['the spring', 'the Reach water'],
-  J: ['the arch', 'the Stacks', 'the Prow'],
+  J: ['the arch', 'the Prow'],   // D-D6 (v2.3): the Stacks are off J's east line through the arch
   K: ['the Glasshouse', 'Stillwater'],
   L: ['Lantern Row', 'the Boathouse'],
 };

@@ -344,6 +344,14 @@ export function buildNamedKinds(cuts:LandCuts,base:HeightQuery):void {
     const f=S.bightSpurTrestle,vbs=cuts.beds.find(b=>b.id==='spur VBS'||b.id==='VBS');
     if(f&&vbs&&f.from&&f.to){const path=stretchBetween(vbs,f.from as unknown as XY,f.to as unknown as XY),w=f.width_m??5,{dir}=along(path,planLength(path)/2),west=-dir[1]<0?1:-1;
       carriedDeck('bightSpurTrestle',vbs,path,w,cuts,base,{bentOffsets:[0,west*(w/2-.6)],bedProfile:'road'});}}
+  {// v2.4 (integrator 4): the Year Walk's November loop over its own lower lane at the Prow — the upper pass on the Year Walk's
+    // own grade; bents outside the lower lane's corridor (its centreline ± 4.5: 5.2 walk + shoulders).
+    const f=S.prowLoopFootbridge,yw=cuts.beds.find(b=>b.id==='yearWalk');
+    if(f&&yw&&f.from&&f.to){const path=stretchBetween(yw,f.from as unknown as XY,f.to as unknown as XY),top=Math.min(...path.map(p=>p[1])),mid=planLength(path)/2,cross=along(path,mid).p;
+      const lower=yw.points.filter(p=>p[1]<top-3&&distance(plan(p),plan(cross))<30),avoid=(xy:XY)=>lower.length>1&&nearestOnPath(xy,lower).distance<4.5?'yearWalk (the lower lane)':undefined;
+      const r=carriedDeck('prowLoopFootbridge',yw,path,f.width_m??6,cuts,base,{kind:'footbridge',avoid});
+      const under=lower.length>1?Math.min(...path.map(p=>{const h=nearestOnPath(plan(p),lower);return h.distance<3?p[1]-.6-h.at[1]:Infinity;})):Infinity;
+      cuts.diagnostics.push({id:'structures.prowLoopFootbridge.clear',severity:under<2.4?'conflict':'info',message:`prowLoopFootbridge: ${r.bents.length} bents, ${r.refused.length} refused; the deck's underside clears the Year Walk's lower lane by ${under.toFixed(2)} eu`,at:plan(cross),measured:under,required:2.4});}}
   {// D-C14 Scholars Cove cliff stair: two flights along the face with a landing at mid-height, a posted parapet on the sea side.
     // The foot lands on the Scholars Cove ferry dock's deck (built at the water + 0.6 = 1.0; MANIFEST to_h says 1.8: a 0.8 lip).
     const f=S.coveStair,dockDeck=cuts.beds.find(b=>b.id==='ferry.scholarsCove')?.points[0]?.[1];
@@ -569,13 +577,13 @@ function dock(id:string,p:XY,height0:number,cuts:LandCuts,base:HeightQuery,width
  * sides, set into the islet (the ground rises to 4.5–5.5 past z 1338): a railed channel where every 50–60° powerslide
  * met a rail within 0.8 s, ending in a bank. The islet is dry (the Reach channels run 35–50 eu away), so the finish is a
  * paved quay on grade: QUAY_FINISH.width wide (profiles.skateMain surface 3–4 m plus a slide either side), level at the
- * authored 3 from where S1 reaches it (z 1328) to 6 eu past the finish, then an uphill run-out on grade that brings the total run-out to
+ * authored MANIFEST structures.landingQuay.finish_h (v2.4: 4.7, the islet's natural ground; v2.3: 3 dug a 1.7 eu pit) from where S1 reaches it (z 1328) to 6 eu past the finish, then an uphill run-out on grade that brings the total run-out to
  * profiles.skateMain.runout_m (25). A terrain pad grades the level part (never a jetty over dry land); the run-out's slab
  * follows the ground. Rails stand only where an edge drops more than body height (none on the islet today), with gaps
  * where S1 comes on. */
 export const QUAY_FINISH={width:14,from:1328,level:1336,to:1356} as const;
 function landingQuayFinish(cuts:LandCuts,base:HeightQuery):void {
-  const xy=M.structures.landingQuay.xy as unknown as XY,h=3,{width,from,level,to}=QUAY_FINISH,x=xy[0],district=districtAt(...xy);
+  const xy=M.structures.landingQuay.xy as unknown as XY,h=M.structures.landingQuay.finish_h,{width,from,level,to}=QUAY_FINISH,x=xy[0],district=districtAt(...xy);
   const runH=Math.max(h,Math.min(h+(to-level)*.12,base(x,to)));
   addFlatPad(cuts,'landingQuay.finish','landing',[x,(from+level)/2],h,[width,level-from]);
   const deck=solid('landingQuay.deck','quay','paved','deck',['landingQuay','S1'],district),rails=solid('landingQuay.rails','deckParapet','metal','rail',['landingQuay'],district);
@@ -621,6 +629,8 @@ function highSpanLevels(cuts:LandCuts,base:HeightQuery):void {
 /** Wave 7 (station head frames, R3-113/R3-126): eu above its station deck at which a cable's rope ends (beds' CABLE_HEAD:
  * the rope's solid spans h + 2.51 … h + 2.60 within 16 eu of each station). */
 export const ROPE_END=2.6;
+/** Half the head frame's leg spacing (eu, either side of the rope's line): a walk leaving the station passes between the legs. */
+export const HEAD_FRAME_LEG_SPAN=3.2;
 /** A station's head frame: the rope ends in a horizontal bullwheel (radius 1.5, h + 2.3 … 2.85, around the rope's end),
  * hung from an arm that cantilevers forward from a two-legged portal standing on the station deck behind the station
  * point (away from the rope). The legs close the gap from the deck to the rope; the station point itself stays clear
@@ -631,14 +641,17 @@ function headFrame(cuts:LandCuts,id:string,at:XY,h:number,toward:XY,onDeck:(xy:X
   const l=distance(at,toward)||1,d:XY=[(toward[0]-at[0])/l,(toward[1]-at[1])/l],n:XY=[-d[1],d[0]],rot=Math.atan2(d[1],d[0])*180/Math.PI,district=districtAt(at[0],at[1]);
   const frame=solid(`platform.${id}.headFrame`,'headFrame','metal','support',[`platform.${id}`],district);
   const P=(s:number,o:number):XY=>[at[0]+d[0]*s+n[0]*o,at[1]+d[1]*s+n[1]*o];
-  // The portal stands as far behind the station point as the deck allows (2.6 … 1.9 eu).
+  // The portal stands as far behind the station point as the deck allows (2.6 … 1.9 eu). Integrator 4 (Wave 7): its legs
+  // stand LEG_SPAN either side of the rope's line, so the station's walk leaves between them under the cross-head (h + 4.1):
+  // at ±1.3 the legs stood in walk crownFromGondola (gondola top) and town.upperStreetWalk (gondola base) and the summit
+  // journey lost its path (pathGraph.blocked, 'No connected traversable path').
   let back=2.6;while(back>1.9&&![-1.3,1.3].every(o=>onDeck(P(-back,o))))back-=.1;
   const top=h+ROPE_END+1.5;
   // The legs are columns through the station deck to their own footings (P11: a load path that reaches the ground, not a
   // frame resting on a slab); `platform.<id>.headFrame.legs` settles to the final ground like any pier.
   const legs=solid(`platform.${id}.headFrame.legs`,'pier','metal','support',[`platform.${id}`],district);
-  for(const o of [-1.3,1.3])pier(legs,P(-back,o),top,base,[.45,.45],[1.2,1.2],rot);          // legs, footing → cross-head
-  box(frame,P(-back,0),top+.5,[.5,3.1],top-.1,rot);                                           // cross-head
+  for(const o of [-HEAD_FRAME_LEG_SPAN,HEAD_FRAME_LEG_SPAN])pier(legs,P(-back,o),top,base,[.45,.45],[1.2,1.2],rot); // legs, footing → cross-head
+  box(frame,P(-back,0),top+.5,[.5,2*HEAD_FRAME_LEG_SPAN+.5],top-.1,rot);                      // cross-head
   {const b0=P(-back,0),f=P(1.7,0);slab(frame,[b0[0],top+.4,b0[1]],[f[0],top+.4,f[1]],.45,.5);}   // arm
   box(frame,at,top,[.3,.3],h+2.85,rot);                                                        // hanger
   for(const r of [0,45])box(frame,at,h+2.85,[2.7,2.7],h+2.3,rot+r);                         // bullwheel (octagon of two squares)

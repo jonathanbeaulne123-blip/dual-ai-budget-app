@@ -91,9 +91,9 @@ export const RESERVED_VOIDS:readonly VoidAllowance[]=[
 ];
 /** Open, owned items measured on the W5-A scratch bake (2026-09-27). Each names its owner and the request that closes it.
  * W7-A (Wave 7) closed: homestead.lane (the lane leaves the yard east of the Year Walk), plot.bight.1.service (the June lane meets
- * the drive at grade), VBS × S4 at [872.4,944.5] (one flush tread); the lake rim's 10.4 eu over the stairwell (D-D8) never was a row. */
+ * the drive at grade), VBS × S4 at [872.4,944.5] (one flush tread); the lake rim's 10.4 eu over the stairwell (D-D8) never was a row.
+ * Integrator 4 (v2.4) closed: the Year Walk over its own lane at the Prow November loop (structures.prowLoopFootbridge). */
 export const OPEN_VOIDS:readonly VoidAllowance[]=[
-  {bed:'yearWalk',at:[1605,690],r:16,decision:'W5-DATA Beds',owner:'W5-T',why:'Year Walk lane over its own lane at the Prow November loop: a lane re-route or a named overpass (manifest journey.yearWalk)'},
   {bed:'yearWalk',at:[892.5,471.7],r:16,decision:'W5-DATA Beds',owner:'W5-T',why:'Year Walk lane stacking at Scholars (two legs 4.1 apart): lane re-route'},
   {bed:'yearWalk',at:[914.9,601.5],r:10,decision:'W5-DATA Beds',owner:'W5-T',why:'Year Walk April/June lanes on S4 stacked at the Hollow: lane re-route'},
   {bed:'yearWalk',at:[1512,1026],r:12,decision:'W5-DATA Beds',owner:'W5-T',why:'Year Walk lane stacking at the harbour: lane re-route'},
