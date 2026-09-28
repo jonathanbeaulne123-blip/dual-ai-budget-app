@@ -1,6 +1,6 @@
 # Yacht Kitchen
 
-Yacht Kitchen is an optional local cooking game aboard the existing Horizon yacht. Its results, ingredients, waste and cosmetic rewards never write household money or budgeting-task evidence. This implementation is on `codex/yacht-kitchen`; it has not been merged or deployed.
+Yacht Kitchen is an optional local cooking game aboard the existing Horizon yacht. Its results, ingredients, waste and cosmetic rewards never write household money or budgeting-task evidence. Implementation and verification evidence are recorded in the linked worksession.
 
 ## Start aboard the yacht
 
