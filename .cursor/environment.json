@@ -10,8 +10,8 @@
     },
     {
       "name": "whole-house-review",
-      "command": "HEARTH_REVIEW_PORT=4192 node scripts/serve-whole-house-review.mjs",
-      "description": "Fictional whole-house review on port 4192. Mountain rehearsal and Horizon links are in the banner; in-App toggle switches worlds under Compass/QuickSheet."
+      "command": "HEARTH_REVIEW_HOST=0.0.0.0 HEARTH_REVIEW_PORT=4192 node scripts/serve-whole-house-review.mjs",
+      "description": "Fictional whole-house review on port 4192 (0.0.0.0 for Cursor Ports). Open via Ports panel, not a Mac localhost tab. Mountain/Horizon toggle is in-App."
     }
   ],
   "ports": [
