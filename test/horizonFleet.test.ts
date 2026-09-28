@@ -18,6 +18,28 @@ describe('one watercraft simulation, distinct handling',()=>{
  it('Space brakes even with throttle held; reverse remains capped',()=>{const f=createFleet(water),v=pilot(f,'motorboat');v.speed=12;for(let i=0;i<240;i++){f.drive(v.id,{forward:1,steer:0,jump:true});f.step(1/60);}expect(v.speed).toBe(0);for(let i=0;i<240;i++){f.drive(v.id,{forward:-1,steer:0,jump:false});f.step(1/60);}expect(v.speed).toBeCloseTo(-HANDLING.motorboat.reverse);});
  it('low bridges admit small boats but stop the yacht superstructure',()=>{const f=createFleet({...water,ceiling:()=>4});for(const v of f.vessels)expect(f.navigable(v,v.x,v.z),v.id).toBe(v.id!=='yacht');});
  it('minor contact stops propulsion without launching or spinning',()=>{const f=createFleet({...water,blocked:(x,_z)=>x>1540}),v=pilot(f,'dinghy');v.yaw=Math.PI/2;for(let i=0;i<600;i++){f.drive(v.id,{forward:1,steer:0,jump:false});f.step(1/60);}expect(v.x).toBeLessThan(1540);expect(Math.abs(v.y)).toBeLessThan(.15);expect(v.turn).toBe(0);});
+ it('small craft keep their full bow and stern clear at every heading',()=>{
+  const f=createFleet(water),motor=f.get('motorboat'),kayak=f.get('kayak');
+  for(const yaw of[0,Math.PI/4,Math.PI/2]){
+   Object.assign(kayak,{x:1850,z:1200,yaw});motor.yaw=yaw;
+   for(const distance of[-4,4]){const p=toWorld(kayak,{x:0,y:0,z:distance});expect(f.navigable(motor,p.x,p.z,yaw),`overlap at ${yaw}, ${distance}`).toBe(false);}
+   const clear=toWorld(kayak,{x:0,y:0,z:5.6});expect(f.navigable(motor,clear.x,clear.z,yaw)).toBe(true);
+   const beside=toWorld(kayak,{x:2.2,y:0,z:0});expect(f.navigable(motor,beside.x,beside.z,yaw)).toBe(true);
+  }
+ });
+ it('a turn is blocked when the rotated bow would enter another small craft',()=>{
+  const f=createFleet(water),motor=f.get('motorboat'),kayak=f.get('kayak');
+  Object.assign(kayak,{x:1850,z:1200,yaw:Math.PI/2});Object.assign(motor,{x:1854,z:1200,yaw:0});
+  expect(f.navigable(motor,motor.x,motor.z,0)).toBe(true);
+  expect(f.navigable(motor,motor.x,motor.z,Math.PI/2)).toBe(false);
+ });
+ it('throttle cannot drive a motorboat through a kayak bow to stern',()=>{
+  const f=createFleet(water),motor=pilot(f,'motorboat'),kayak=f.get('kayak');
+  Object.assign(motor,{x:1850,z:1200,yaw:0});Object.assign(kayak,{x:1850,z:1210,yaw:0});
+  f.drive('motorboat',{forward:1,steer:0,jump:false});
+  for(let i=0;i<600;i++){f.step(1/60);expect(motor.z+HANDLING.motorboat.length/2).toBeLessThanOrEqual(kayak.z-HANDLING.kayak.length/2);}
+  expect(motor.z).toBeGreaterThan(1203);expect(motor.turn).toBe(0);expect(kayak.z).toBe(1210);
+ });
  it('leaving helm retains motion, anchor settles it predictably',()=>{const f=createFleet(water),v=pilot(f,'yacht');v.speed=4;const p=f.seatBody(v);expect(f.actions(p).some(a=>a.id==='anchor')).toBe(true);f.act('leave-helm',p);f.step(.05);expect(v.speed).toBeGreaterThan(3.9);expect(v.z).toBeGreaterThan(1340);f.act('anchor',{...toWorld(v,{...HELM,x:1.6}),yaw:0});for(let i=0;i<600;i++)f.step(1/60);expect(v.speed).toBe(0);const at=v.z;f.step(.25);expect(v.z).toBe(at);});
 });
 describe('physical boarding, mooring and two real kayak seats',()=>{
@@ -57,6 +79,7 @@ describe('actual island and ordinary parachute landing',()=>{
  beforeAll(()=>{const bytes=readFileSync('public/horizon/world/horizon-geo-1.json.gz'),bin=readFileSync('public/horizon/terrain/horizon-geo-1.bin');world=parseHorizonDefinition(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength) as ArrayBuffer);const field=decodeTerrainAsset(bin.buffer.slice(bin.byteOffset,bin.byteOffset+bin.byteLength) as ArrayBuffer,'full');cuts={...world.collision,solids:world.geometry.solids,diagnostics:[]};geo=createHorizonGeography(field,cuts);fleet=createFleet({ground:geo.ground,blocked:geo.blocked,width:field.width,depth:field.depth,water:(x,z)=>{for(const w of cuts.waters){const h=waterHeightAt(w,x,z);if(h!==null)return h;}return null;}});},120000);
  it('launch hulls and offshore yacht fit actual water and collision',()=>{for(const v of fleet.vessels)expect(fleet.navigable(v,v.x,v.z),v.id).toBe(true);});
  it('restore rejects a wet centre whose hull overlaps the dock',()=>{const s=fleet.snapshot({...toWorld(fleet.yacht,BOARDING),yaw:0});Object.assign(s.vessels[3]!,{x:1527,z:1276});expect(fleet.restore(s)).toBeNull();expect(fleet.yacht.x).toBe(1620);});
- it('all small hulls have a clear approach to the stern',()=>{for(const id of['kayak','dinghy','motorboat'] as const){const v=fleet.get(id);for(let i=0;i<40;i++){const t=i/40,x=1530+90*t,z=1276+38*t;expect(fleet.navigable(v,x,z,Math.atan2(90,38)),`${id} ${i}`).toBe(true);}}});
+ // Start the open-water approach clear of the parked hulls beside the launch dock.
+ it('all small hulls have a clear approach to the stern',()=>{for(const id of['kayak','dinghy','motorboat'] as const){const v=fleet.get(id);for(let i=0;i<40;i++){const t=i/40,x=1534+86*t,z=1276+38*t;expect(fleet.navigable(v,x,z,Math.atan2(86,38)),`${id} ${i}`).toBe(true);}}});
  it('shared flight geography lands a parachute on real decks without a checkpoint',()=>{const off=geo.addDynamic(fleet),env=createGliderEnv({world,geography:geo,cuts});for(const local of[{x:0,y:DECK.main,z:17},{x:2,y:DECK.upper,z:0},{x:0,y:DECK.lower,z:-22}]){const p=toWorld(fleet.yacht,local);const outcome=resolveTouchdown(env.landingContext(p.y),{...p,mode:'parachute'},{airspeed:2,sink:1,groundSpeed:2,flared:true});expect(outcome.kind).toBe('walkoff');expect(outcome.at[1]).toBeCloseTo(p.y);}off();});
 });
