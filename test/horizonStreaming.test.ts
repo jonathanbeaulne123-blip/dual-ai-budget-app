@@ -263,3 +263,35 @@ it('wires the ride rule into the runtime: boarding asks the gate, the held offer
   expect(runtime).toMatch(/attachMover\(controller:ModeController,offer:ThresholdOffer\)\{.*if\(!rideGateOpen\(true\)\)return false;if\(!registry\.attach/);
   expect(runtime).toMatch(/ride:rideGate\.stats\(\)/);
 });
+it('R3-118: a failed chunk is retried with back-off (3 tries), then waits exhausted until a new route or hold asks for it again', async () => {
+  const { createChunkScheduler, CHUNK_RETRY_TRIES, CHUNK_RETRY_BACKOFF_MS } = await import('../src/harbour/horizon/runtime/chunkGate.ts');
+  let clock = 0, network = false; const timers: { at: number; fn: () => void }[] = [], ready = new Set<string>(), tries: string[] = [];
+  const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); };
+  const advance = async (ms: number) => { clock += ms; for (const t of timers.splice(0).filter(t => { if (t.at <= clock) return true; timers.push(t); return false; })) t.fn(); await flush(); };
+  const sched = createChunkScheduler({ ready: id => ready.has(id), load: async id => { tries.push(id); if (!network) throw new Error('offline'); ready.add(id); }, background: () => [], isDisposed: () => false, yield: () => Promise.resolve(), now: () => clock, setTimer: (fn, ms) => timers.push({ at: clock + ms, fn }) });
+  expect([CHUNK_RETRY_TRIES, ...CHUNK_RETRY_BACKOFF_MS]).toEqual([3, 1000, 4000]);
+  sched.route(['lakeside']); await flush();
+  expect(tries).toEqual(['lakeside']); expect(sched.failures()).toEqual([{ id: 'lakeside', tries: 1, retryAt: 1000, exhausted: false }]);
+  await advance(999); expect(tries).toHaveLength(1);           // back-off: not before 1 s
+  await advance(1); expect(tries).toHaveLength(2);             // try 2 at 1 s
+  await advance(4000); expect(tries).toHaveLength(3);          // try 3 at 5 s
+  expect(sched.failures()[0]).toMatchObject({ tries: 3, exhausted: true, retryAt: null });
+  await advance(60_000); expect(tries).toHaveLength(3);        // exhausted: no busy retry loop; the gate stays held and says so
+  expect(sched.queued().route).toEqual(['lakeside']);          // still queued in its place — never dropped (review 3: queued.route [])
+  network = true; sched.route(['lakeside']); await flush();    // a new hold / route is a fresh demand
+  expect(tries).toHaveLength(4); expect(ready.has('lakeside')).toBe(true); expect(sched.failures()).toEqual([]);
+});
+it('R3-118 / R3-122: the runtime holds with a status line, retries on a new hold, never throws a failed review fetch, and restores wait for their chunk', async () => {
+  const { readFileSync } = await import('node:fs');
+  const runtime = readFileSync('src/harbour/horizon/runtime/index.ts', 'utf8'), gate = readFileSync('src/harbour/horizon/runtime/chunkGate.ts', 'utf8');
+  expect(gate).toMatch(/CHUNK_ARRIVING_STATUS = 'The island is still arriving here\./);
+  // Status while held (arriving, or failed and being retried); a new hold re-routes (a fresh demand).
+  expect(runtime).toMatch(/text=failedHere\?CHUNK_FAILED_STATUS:CHUNK_ARRIVING_STATUS;\s*if\(text!==holdText\)\{holdText=text;options\.onStatus\?\.\(text\);\}/);
+  expect(runtime).toMatch(/if\(heldNow\.join\(\)!==still\.join\(\)\)\{heldNow=still;hold\(\{districts:still,at,t\}\);scheduler\?\.route\(/);
+  // R3-122 (b): the synchronous review fetch's NetworkError holds the step instead of escaping the loop.
+  expect(runtime.match(/try\{chunks\.loadSync\(id,[^)]*\);\}catch\{/g)).toHaveLength(2);
+  // R3-122 (a): a restore into a missing chunk holds at its saved height; the validation runs when the chunk lands.
+  expect(runtime).toMatch(/if\(current&&!gateOpen\(saved\.x,saved\.z\)\)\{Object\.assign\(body,\{x:saved\.x,y:saved\.y!,z:saved\.z,yaw:saved\.yaw\}\);pendingRestore=\{\.\.\.saved\};\}/);
+  expect(runtime).toMatch(/if\(pendingRestore\)\{const saved=pendingRestore;pendingRestore=null;const next=restoreHorizonPosition\(saved,/);
+  expect(runtime).toMatch(/failures:scheduler!\.failures\(\)/);
+});

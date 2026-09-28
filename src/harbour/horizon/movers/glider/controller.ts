@@ -64,13 +64,14 @@ export const PAD_THRESHOLDS:Record<string,string>={crown:'crownLaunch',prow:'pro
 const padFor=(envelope:FlightEnvelope,threshold:Threshold)=>envelope.launchPads?.find(p=>PAD_THRESHOLDS[p.id]===threshold.id||p.padId===`threshold.${threshold.id}`)??null;
 
 /** FLIGHT.md §6: the landings each pad offers under reduced motion (and calm view). */
-export function padLandings(padId:string,env:Pick<GliderEnv,'envelope'|'shoreNode'>):ReducedMotionLanding[]{
+export function padLandings(padId:string,env:Pick<GliderEnv,'envelope'|'shoreNode'>&Partial<Pick<GliderEnv,'beach'>>):ReducedMotionLanding[]{
   const field=(id:string,label=LANDING_LABELS[id]??id):ReducedMotionLanding|null=>{
     const l=env.envelope.landings.find(l=>l.id===id);if(!l||'empty' in l)return null;
     return{id,label,xy:[l.xy[0],l.xy[1]],...(l.height!==undefined?{height:l.height}:{})};
   };
   const deep:ReducedMotionLanding={id:'deep',label:'the Deep, through the Throat',xy:[DEEP_JETTY.at[0],DEEP_JETTY.at[2]],height:DEEP_JETTY.at[1]};
-  const sandbar=():ReducedMotionLanding|null=>{const n=env.shoreNode(600,1030);return n?{id:'sandbar',label:'the sandbar',xy:[n.at[0],n.at[2]],height:n.at[1]}:null;};
+  // Wave 7: the dry beach nearest the awash sandbar (never the Bight Bridge's deck walk); the shore node only without a beach query.
+  const sandbar=():ReducedMotionLanding|null=>{const n=env.beach?.(600,1030)??env.shoreNode(600,1030);return n?{id:'sandbar',label:'the sandbar',xy:[n.at[0],n.at[2]],height:n.at[1]}:null;};
   const list:(ReducedMotionLanding|null)[]=padId==='crown'?[field('green'),field('reachMeadow'),field('sands'),field('strip'),deep]
     :padId==='prow'?[field('reachMeadow'),field('sands','Long Sands (afternoon)'),field('green')]
     :padId==='lampGallery'?[sandbar(),field('strip',"the Flats' strip")]

@@ -57,6 +57,9 @@ export interface GliderEnv{
   chuteEnv(y?:()=>number):ChuteEnv;
   landingContext(contactY:number):LandingContext;
   shoreNode(x:number,z:number):LandingNode|null;
+  /** Wave 7: the nearest DRY beach to (x, z) — open terrain, ≥ 0.3 over the water beside it, ≤ 3 over it within 10 m, ≤ 20°,
+   * never a deck, a pier or a host (the Lamp gallery's reduced-motion "sandbar"). */
+  beach?(x:number,z:number):LandingNode|null;
   pathNode(x:number,z:number,y?:number):LandingNode|null;
   inHostFootprint(x:number,z:number):boolean;
   /** Inside a host's building volume (footprint, floor − 2 … roof + 1): the camera never stands there. */
@@ -142,6 +145,24 @@ export function createGliderEnv(source:GliderWorldSource,options:GliderEnvOption
     for(let i=0;i<sorted.length&&i<600;i++){const n=sorted[i]!.n;if(isShore(n))return toNode(n,AREA_LABELS[districtAt(n.at[0],n.at[2])]??'the shore');}
     return sorted[0]?toNode(sorted[0].n,placeLabel(sorted[0].n.at[0],sorted[0].n.at[2])):null;
   }
+  /**
+   * Wave 7 (RECONCILE item 8): on the v2.1 land the Bight's sandbar is awash (−0.22) and the path nodes nearest [600, 1030]
+   * are the Bight Bridge's deck walk (12 over the water) — `shoreNode` fell back to that deck. A beach is searched on the
+   * TERRAIN in 4 m rings (≤ 300 m): open ground, ≤ 20°, 0.3–3 over the water within 10 m, dry, unblocked, not in a host.
+   */
+  const beaches=new Map<string,LandingNode|null>();
+  function beach(x:number,z:number):LandingNode|null{
+    const key=`${x}:${z}`;if(beaches.has(key))return beaches.get(key)!;
+    let out:LandingNode|null=null;
+    for(let r=0;r<=300&&!out;r+=4)for(let k=0,n=Math.max(1,Math.ceil(2*Math.PI*r/4));k<n&&!out;k++){
+      const a=k/n*2*Math.PI,px=x+Math.cos(a)*r,pz=z+Math.sin(a)*r,s=geography.surface(px,pz,50);
+      const open=visible(px,pz)&&!!s&&Math.abs(s.y-geography.ground(px,pz))<.05,w=water(px,pz);
+      if(!s||!open||s.slope>20||(w&&w.y>s.y-.3)||inHostFootprint(px,pz)||geography.blocked?.(px,pz,s.y))continue;
+      let shore=false;for(let i=0;i<8&&!shore;i++){const b=i*Math.PI/4,qx=px+Math.cos(b)*10,qz=pz+Math.sin(b)*10,w=water(qx,qz,s.y);if(w&&w.y>geography.ground(qx,qz)&&s.y-w.y<=3)shore=true;}
+      if(shore)out={id:`beach:${px.toFixed(1)}:${pz.toFixed(1)}`,at:[px,s.y,pz],label:placeLabel(px,pz)};
+    }
+    beaches.set(key,out);return out;
+  }
   // `liftField(envelope, wind, hour)`, rebuilt only when the hour or the wind sample changes.
   let field:{h:number;w:WindSample;f:ReturnType<typeof liftField>}|null=null;
   function lift(x:number,y:number,z:number,heading:number){
@@ -164,7 +185,7 @@ export function createGliderEnv(source:GliderWorldSource,options:GliderEnvOption
     };
   }
   return{
-    envelope,wind,hour,lift,groundAt,water,landingContext,shoreNode,pathNode,inHostFootprint,inHost,placeLabel,
+    envelope,wind,hour,lift,groundAt,water,landingContext,shoreNode,beach,pathNode,inHostFootprint,inHost,placeLabel,
     wingEnv(y,opts={}){
       return{
         get wind(){return wind(0,y?.()??0,0);},

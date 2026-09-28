@@ -12,9 +12,10 @@ import {createDistrictStream,districtAt,useDefinitionDistricts} from '../world/d
 import {useCoastline} from '../land/coast/index.ts';
 import {HORIZON_MANIFEST} from '../world/manifest.ts';
 import {restoreHorizonPosition,HORIZON_RESTORE_TOLERANCE} from './savedPosition.ts';
+import {horizonWalkOut,type HorizonWalkProbe} from './walkOut.ts';
 import {horizonPartnerPose} from './partner.ts';
 import {walkPlan} from '../world/pathGraph.ts';
-import {createChunkGate,createChunkScheduler,createRideGate,CHUNK_REACH_EU} from './chunkGate.ts';
+import {createChunkGate,createChunkScheduler,createRideGate,CHUNK_REACH_EU,CHUNK_ARRIVING_STATUS,CHUNK_FAILED_STATUS} from './chunkGate.ts';
 import {createCableLayer} from './cableLayer.ts';
 import {solarPosition,solarReviewDate} from '../sun/solar.ts';
 import {skyGradient} from '../sky/gradient.ts';
@@ -172,17 +173,26 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   // Wave 6: cables span by span with their anchors (runtime/cableLayer.ts), rebuilt as chunks land.
   const cableLayer=createCableLayer(world,tier,id=>!chunks||chunks.ready(id),xy=>gate?gate.near(xy[0],xy[1],6):[districtAt(xy[0],xy[1])],build=>{for(const material of Object.values(build.materials))fogHook(material);});
   cableLayer.rebuild();scene.add(cableLayer.group);
-  const offChunk=chunks?.onLoad((_id,solids)=>{if(!disposed){for(const solid of solids)solidsById.set(solid.id,solid);geography.addSolids(solids);cableLayer.rebuild();requestShadow('chunk-load');if(resnap&&gate&&!gate.missingAt(body.x,body.z).length){resnap=false;const at=geography.surface(body.x,body.z,body.y+HORIZON_BODY_HEIGHT);if(at)body.y=at.y;}}});
+  const offChunk=chunks?.onLoad((_id,solids)=>{if(!disposed){for(const solid of solids)solidsById.set(solid.id,solid);geography.addSolids(solids);cableLayer.rebuild();requestShadow('chunk-load');if(resnap&&gate&&!gate.missingAt(body.x,body.z).length){resnap=false;reseat();}}});
   /** The gate: resident (true) or held (false). Bytes already fetched are parsed now; the review simulation may block. */
   function gateOpen(x:number,z:number):boolean{
     if(!gate||!chunks)return true;
     const missing=gate.missingAt(x,z),at:XYZ=[x,body.y,z],t=performance.now(),hold=(h:typeof chunkHolds[number])=>{chunkHolds.push(h);if(chunkHolds.length>200)chunkHolds.shift();};
-    if(!missing.length){if(heldNow.length)hold({districts:heldNow,at,t,resolved:'arrived'});heldNow=[];return true;}
-    for(const id of missing)chunks.loadSync(id,simulating&&HARBOUR_DEV);
+    if(!missing.length){if(heldNow.length){hold({districts:heldNow,at,t,resolved:'arrived'});if(holdText)options.onStatus?.('');holdText='';}heldNow=[];return true;}
+    // R3-122 (b): a failed synchronous review fetch throws NetworkError; the step holds instead of throwing out of the loop.
+    for(const id of missing){try{chunks.loadSync(id,simulating&&HARBOUR_DEV);}catch{/* held: the scheduler retries (R3-118) */}}
     const still=gate.missingAt(x,z);
     if(!still.length){hold({districts:missing,at,t,resolved:'sync'});heldNow=[];return true;}
-    if(heldNow.join()!==still.join()){heldNow=still;hold({districts:still,at,t});}
-    scheduler?.route([...still,...scheduler.queued().route]);return false;
+    // A new hold is a fresh demand (R3-118): its chunks go to the front and a failed one gets its tries back.
+    if(heldNow.join()!==still.join()){heldNow=still;hold({districts:still,at,t});scheduler?.route([...still,...scheduler.queued().route]);}
+    return false;
+  }
+  /** R3-118: while the walker is held, one status line says why — still arriving, or failed and being retried. */
+  let holdText='';
+  function holdStatus(){
+    if(!heldNow.length||!scheduler)return;
+    const failedHere=scheduler.failures().some(f=>heldNow.includes(f.id)),text=failedHere?CHUNK_FAILED_STATUS:CHUNK_ARRIVING_STATUS;
+    if(text!==holdText){holdText=text;options.onStatus?.(text);}
   }
   // v2.2 ride rule (chunkGate.ts createRideGate): a feet → mover offer is taken only with every chunk resident; until then
   // it is held (the offer stays on show, a status line says why) and boards by itself when the last chunk lands.
@@ -191,7 +201,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function rideGateOpen(blocking=false):boolean{
     if(!chunks)return true;
     let missing=rideGate.missing();if(!missing.length)return true;
-    for(const id of missing)chunks.loadSync(id,blocking&&HARBOUR_DEV);
+    for(const id of missing){try{chunks.loadSync(id,blocking&&HARBOUR_DEV);}catch{/* held (R3-122 b) */}}
     missing=rideGate.missing();if(!missing.length)return true;
     scheduler?.route([...missing,...scheduler.queued().route]);return false;
   }
@@ -220,10 +230,42 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     camera.fov=lens.verticalFovDegrees;camera.updateProjectionMatrix();
   }
   function shot(id:string){const pose=world.views.find(p=>p.id===id);if(!pose)return false;pauseRide();shotId=id;mode='look';path=[];transition=null;lookAt(pose);body.x=pose.eye[0];body.z=pose.eye[2];body.y=pose.eye[1]-1.6;body.yaw=yaw;lastSun=-Infinity;return true;}
+  const restoreStand=(x:number,z:number,y:number)=>{const at=geography.surface(x,z,y+.5,HORIZON_RESTORE_TOLERANCE);return at&&at.slope<=HORIZON_WALKABLE_DEGREES&&!geography.submerged(x,z,at.y)&&!geography.blocked(x,z,at.y)?{standY:at.y}:null;};
+  /** Wave 7 (R3-130): dry, walkable, unblocked floor at or under y (the walk-out's standing check). */
+  const walkProbe:HorizonWalkProbe=(x,z,y)=>{const at=geography.surface(x,z,y);return at&&at.slope<=HORIZON_WALKABLE_DEGREES&&!geography.submerged(x,z,at.y)&&!geography.blocked(x,z,at.y)?{y:at.y}:null;};
+  let pendingRestore:HouseBodyReturn|null=null,pendingWalkOut=false;
+  /** A chunk has landed under a held body: finish what was held (a restore's validation, a walk-out), or settle on the floor. */
+  function reseat(){
+    if(pendingRestore){const saved=pendingRestore;pendingRestore=null;const next=restoreHorizonPosition(saved,world.pathGraph!,geography.ground,restoreStand);const moved=Math.hypot(next.x-body.x,next.z-body.z);Object.assign(body,{x:next.x,y:next.y!,z:next.z,yaw:next.yaw});if(moved>.5){yaw=body.yaw;updateCamera();}return;}
+    if(pendingWalkOut&&mode==='walk'){pendingWalkOut=false;walkOut(true);return;}
+    const at=geography.surface(body.x,body.z,body.y+HORIZON_BODY_HEIGHT);if(at)body.y=at.y;
+  }
+  /**
+   * Wave 7 (R3-130): Look → Walk stands the body where the page's eye stands, or — an eye over water or in the air (page J) —
+   * at the page's dry ground point or the nearest dry path node reachable from the square, with a fade (a cut under reduced
+   * motion or calm). Never a submerged body, never one in the air. Held while the eye's chunk has not arrived.
+   * Returns true when the body moved away from the eye.
+   */
+  function walkOut(late=false):boolean{
+    if(!gateOpen(body.x,body.z)){pendingWalkOut=true;resnap=true;return false;}
+    const pose=world.views.find(p=>p.id===shotId),atEye=pose&&Math.hypot(body.x-pose.eye[0],body.z-pose.eye[2])<.01&&Math.abs(body.y-(pose.eye[1]-1.6))<.01;
+    const out=horizonWalkOut({eye:[body.x,body.y+1.6,body.z],target:atEye?pose!.target:undefined,ground:atEye?pose!.ground:undefined,yaw:body.yaw},world.pathGraph!,walkProbe);
+    lastWalkOut={page:atEye?pose!.id:null,how:out.how,node:out.node,moved:+out.moved.toFixed(2),at:[out.x,out.y,out.z]};
+    Object.assign(body,{x:out.x,y:out.y,z:out.z});velocityY=0;
+    if(out.how==='stand')return false;
+    body.yaw=out.yaw;yaw=out.yaw;if(!gateOpen(body.x,body.z))resnap=true;
+    fadeCut(late?'':'Walk starts on the nearest dry path.');return true;
+  }
+  let lastWalkOut:{page:string|null;how:string;node?:string;moved:number;at:XYZ}|null=null;
   function restore(saved:HouseBodyReturn){
     parkRide();if(transition?.live)transition=null;rideGate.clear();
-    const next=restoreHorizonPosition(saved,world.pathGraph!,geography.ground,(x,z,y)=>{const at=geography.surface(x,z,y+.5,HORIZON_RESTORE_TOLERANCE);return at&&at.slope<=HORIZON_WALKABLE_DEGREES&&!geography.submerged(x,z,at.y)&&!geography.blocked(x,z,at.y)?{standY:at.y}:null;});
-    Object.assign(body,{x:next.x,y:next.y!,z:next.z,yaw:next.yaw});yaw=body.yaw;mode='walk';path=[];velocityY=0;
+    // Wave 7 (R3-122 a): a same-revision restore into ground whose chunk has not arrived is NOT validated against the partial
+    // collision (the terrain under a missing deck, or the water under it): the body holds at its saved height, and the full
+    // validation runs when the chunk lands (reseat). Only a restore onto resident ground is validated now.
+    const current=saved.geo===HORIZON_GEOGRAPHY&&saved.world===HORIZON_PRESENCE_WORLD&&Number.isFinite(saved.y);
+    if(current&&!gateOpen(saved.x,saved.z)){Object.assign(body,{x:saved.x,y:saved.y!,z:saved.z,yaw:saved.yaw});pendingRestore={...saved};}
+    else{const next=restoreHorizonPosition(saved,world.pathGraph!,geography.ground,restoreStand);Object.assign(body,{x:next.x,y:next.y!,z:next.z,yaw:next.yaw});pendingRestore=null;}
+    yaw=body.yaw;mode='walk';path=[];velocityY=0;pendingWalkOut=false;
     // Wave 6: a restore into ground whose chunk has not arrived stands and waits; the body is re-seated when it lands.
     if(!gateOpen(body.x,body.z))resnap=true;updateCamera();
   }
@@ -360,8 +402,10 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     const fromEye=camera.position.clone(),fromTarget=target.clone();mode=next;path=[];faceCards.visible=faceCardsLit&&mode!=='journey';
     if(next==='journey'){const {w,h}=world.extent;camera.position.set(w/2,w*1.05,h*1.17);target.set(w/2,20,h*.47);camera.lookAt(target);camera.fov=50;camera.updateProjectionMatrix();}
     else if(next==='look')shot(shotId);
-    else if(next==='walk'){if(!gateOpen(body.x,body.z))resnap=true;const at=geography.surface(body.x,body.z,body.y);if(at&&at.slope<=HORIZON_WALKABLE_DEGREES)body.y=at.y;distance=9;pitch=-.26;updateCamera();}
-    transition={eye:fromEye,target:fromTarget,toEye:camera.position.clone(),toTarget:target.clone(),at:performance.now(),duration:motion.transitionMs};
+    let relocated=false;
+    if(next==='walk'){relocated=walkOut();distance=9;pitch=-.26;updateCamera();}
+    // A walk-out that relocates the body fades (fadeCut) rather than tweening the camera across the map.
+    transition={eye:fromEye,target:fromTarget,toEye:camera.position.clone(),toTarget:target.clone(),at:performance.now(),duration:relocated?0:motion.transitionMs};
     // Reduced motion: a cut, never a tween (CONTRACT §2.10).
     if(transition.duration<=0){const to=transition;transition=null;camera.position.copy(to.toEye);target.copy(to.toTarget);}else{camera.position.copy(fromEye);target.copy(fromTarget);}camera.lookAt(target);
     updateFog();
@@ -391,6 +435,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     else if(path.length){const p=path[0]!;dx=p[0]-body.x;dz=p[2]-body.z;if(Math.hypot(dx,dz)<.35){path.shift();dx=0;dz=0;}}
     const length=Math.hypot(dx,dz),speed=controls.run||keys.has('shift')?HORIZON_MANIFEST.speeds_ms.run:HORIZON_MANIFEST.speeds_ms.walk;
     let moved=0;if(length){dx=dx/length*Math.min(length,speed*dt);dz=dz/length*Math.min(length,speed*dt);body.yaw=Math.atan2(dx,dz);moved=move(dx,dz,dt);if(path.length&&moved<.001&&!held){path=[];options.onStatus?.('That path is blocked. Choose another approach.');}}
+    holdStatus();
     if(jumpRequested&&velocityY===0)velocityY=4.2;jumpRequested=false;
     if(velocityY!==0){velocityY-=HORIZON_G*dt;body.y+=velocityY*dt;const floor=geography.surface(body.x,body.z,body.y+.5);if(floor&&body.y<=floor.y){body.y=floor.y;velocityY=0;}if(geography.ceiling(body.x,body.z,body.y)<body.y+HORIZON_BODY_HEIGHT){body.y=geography.ceiling(body.x,body.z,body.y)-HORIZON_BODY_HEIGHT;velocityY=Math.min(0,velocityY);}}
     if(moved>0&&now>doorCooldown){const door=world.hosts.find(h=>'xy'in h.door&&Math.hypot(body.x-h.door.xy[0],body.z-h.door.xy[1],body.y-(h.door.height??0))<1.15);if(door)enterDoor(door.id);}
@@ -481,7 +526,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     setComfort(next:Partial<HorizonComfort>){applyComfort(next);},
     comfort:()=>({...comfort,motion:{...motion}}),
     walkTo(p:XYZ){lastMovementBlocker=null;const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],p,{stepFree:true});path=plan?[...plan.points]:[];if(plan)routeAhead(plan.points);return plan;},
-    stats(){const gl=renderer.getContext(),debug=gl.getExtension('WEBGL_debug_renderer_info');return{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),revision:world.geographyRevision,terrainBytes:assets.bytes,collisionIndex:geography.indexStats,bytesBeforeFirstFrame,chunksLoaded:chunks?chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId):null,cables:cableLayer.stats(),chunks:chunks?{resident:chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId),total:chunks.refs.length,queued:scheduler!.queued(),heldAt:heldNow.length?{districts:[...heldNow],body:{...body}}:null,holds:chunkHolds.map(h=>({...h,at:[...h.at]})),ride:rideGate.stats()}:null,definitionBytesSoFar:chunks?.bytes()??assets.definitionBytes,shadowRequests:[...shadowRequests],comfort:{...comfort,motion:{...motion}},lightCards:pools.count,shadow:{half:sun.shadow.camera.right,centre:sun.target.position.toArray()},firstInteractiveMs:interactiveAt===null?null:interactiveAt-startedAt,assetLoadMs:assetLoadedAt-startedAt,mode,shot:shotId,body:{...body},frames:[...frameTimes],drawSamples:[...drawSamples],stream:[...stream.history],camera:{eye:camera.position.toArray(),target:target.toArray(),fov:camera.fov},diagnostics:world.diagnostics};},
+    stats(){const gl=renderer.getContext(),debug=gl.getExtension('WEBGL_debug_renderer_info');return{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),revision:world.geographyRevision,terrainBytes:assets.bytes,collisionIndex:geography.indexStats,bytesBeforeFirstFrame,chunksLoaded:chunks?chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId):null,cables:cableLayer.stats(),chunks:chunks?{resident:chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId),total:chunks.refs.length,queued:scheduler!.queued(),heldAt:heldNow.length?{districts:[...heldNow],body:{...body}}:null,holds:chunkHolds.map(h=>({...h,at:[...h.at]})),ride:rideGate.stats(),failures:scheduler!.failures()}:null,walkOut:lastWalkOut,definitionBytesSoFar:chunks?.bytes()??assets.definitionBytes,shadowRequests:[...shadowRequests],comfort:{...comfort,motion:{...motion}},lightCards:pools.count,shadow:{half:sun.shadow.camera.right,centre:sun.target.position.toArray()},firstInteractiveMs:interactiveAt===null?null:interactiveAt-startedAt,assetLoadMs:assetLoadedAt-startedAt,mode,shot:shotId,body:{...body},frames:[...frameTimes],drawSamples:[...drawSamples],stream:[...stream.history],camera:{eye:camera.position.toArray(),target:target.toArray(),fov:camera.fov},diagnostics:world.diagnostics};},
     dispose(){disposed=true;window.clearTimeout(fadeTimer);registry.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();offChunk?.();lease.cancelFrame(frame);observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',clear);host.removeEventListener('blur',clear);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();poolGeometry.dispose();beadGeometry.dispose();poolMaterial.dispose();beadMaterial.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
   };
   return api;

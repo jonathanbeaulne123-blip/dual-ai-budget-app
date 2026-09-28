@@ -28,7 +28,7 @@ describe('Horizon comfort (R1-16, R1-104)', () => {
     expect(reduced.transitionMs).toBe(0); expect(reduced.districtFadeMs).toBe(0); expect(reduced.sunFollowsClock).toBe(false);
     expect(full.transitionMs).toBe(1100); expect(full.districtFadeMs).toBe(HORIZON_DISTRICT_FADE_MS); expect(HORIZON_DISTRICT_FADE_MS).toBe(800);
     const runtime = readFileSync('src/harbour/horizon/runtime/index.ts', 'utf8');
-    expect(runtime).not.toMatch(/reducedMotion\?300/); expect(runtime).toMatch(/duration:motion\.transitionMs/); expect(runtime).toMatch(/motion\.districtFadeMs/);
+    expect(runtime).not.toMatch(/reducedMotion\?300/); expect(runtime).toMatch(/duration:relocated\?0:motion\.transitionMs/);   // R3-130: a walk-out that moves the body fades (fadeCut), never tweens expect(runtime).toMatch(/motion\.districtFadeMs/);
   });
   it('reads the app setting html[data-motion="reduced"] as the Mountain runtime does', () => {
     (globalThis as { document?: unknown }).document = { documentElement: { dataset: { motion: 'reduced' } } };

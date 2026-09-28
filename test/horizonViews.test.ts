@@ -74,3 +74,33 @@ it('counts what a structure carries as the structure, and the Reach channels plu
  expect(tests['the Reach water']!(water('water.river.lower',[1235,9,1105]),[0,0,1])).toBe(false);
  expect(tests['the Reach water']!(water('water.reach.1',[1330,2,1300]),[0,0,1])).toBe(true);
 });
+
+// ---- Wave 7 · R3-74 (with R3-53, R3-59, D-D7): the baked proof is honest where review 3's probe fails a page ----
+it('G: daylight is sky seen THROUGH the skylight shaft only — never terrain, never the shaft walls, never sky up the Throat (D-D7)', () => {
+  // A 10 × 10 shaft box from y 60 to 130 over [95..105, 95..105] (the bounds are what the test reads).
+  const tube = solid('deep.skylight.shaft', 'rock', 'rock', 'wall', [], 'undercroft'); slab(tube, [100, 130, 95], [100, 130, 105], 10, 70);
+  const t = subjectTests([tube], field), shaft = t['the skylight shaft']!, mouth = t["the Throat's mouth of daylight"]!, sky = { kind: 'sky', t: Infinity, id: 'sky' } as const;
+  // Straight up the shaft from under it: through its foot (60) and its top (130).
+  expect(shaft(sky, [0, 1, 0], [100, 40, 100])).toBe(true); expect(mouth(sky, [0, 1, 0], [100, 40, 100])).toBe(true);
+  // Sky beside the shaft (up the Throat), rock, and the shaft's own wall never count.
+  expect(shaft(sky, [0, .8, -.6], [100, 40, 100])).toBe(false);
+  expect(mouth({ kind: 'terrain', t: 5, id: 'terrain', point: [100, 150, 100] }, [0, 1, 0], [100, 40, 100])).toBe(false);
+  expect(shaft({ kind: 'solid', t: 5, id: 'deep.skylight.shaft', sourceId: 'deep.skylight.shaft', role: 'wall', point: [95, 80, 100] }, [0, 1, 0], [100, 40, 100])).toBe(false);
+});
+it('H: the open sea beyond the terrain grid is horizon, not the west sea (R3-59: 78 px claimed, the capture shows a haze band)', () => {
+  const t = subjectTests([], field), west = t['the west sea']!, sea = t['the sea']!;
+  const on = { kind: 'water', t: 400, id: 'water.sea', point: [200, 0, 600] } as const, off = { kind: 'water', t: 900, id: 'water.sea', point: [-300, 0, 330] } as const;
+  expect(west(on, [-1, -.1, 0])).toBe(true); expect(west(off, [-1, -.05, 0])).toBe(false); expect(sea(off, [-1, -.05, 0])).toBe(false);
+});
+it('the honest proof on candidate 5\'s bake fails exactly where review 3\'s P27 fails (R3-74): G and H at 1440 × 900', async () => {
+  const { readFileSync } = await import('node:fs'), { decodeTerrainAsset } = await import('../src/harbour/horizon/land/terrain/asset.ts');
+  const world = JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8')), bytes = readFileSync('public/horizon/terrain/horizon-geo-1.bin');
+  const baked = decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), 'full');
+  const views = buildViews(baked, { ...world.collision, solids: world.geometry.solids.map((q: { id: string; sourceId?: string }) => ({ ...q, id: q.sourceId ?? q.id.split('@')[0] })) });
+  const list = (k: 'passLandscape' | 'passPortrait') => views.filter(v => v.proof![k]).map(v => v.id).join(''), px = (id: string, s: string) => views.find(v => v.id === id)!.proof!.subjects.find(q => q.id === s)!;
+  // Review 3 P27: 1440 × 900 fails G (captures) and H; 390 × 844 fails A, C, G, H, L. D's phone surf is the one named
+  // disagreement: P27 draws no fog (1.2 ‰), the proof fogs the lite frame (0 px of 8 legible) — R3-55, it stays red.
+  expect(list('passLandscape')).toBe('ABCDEFIJKL'); expect(list('passPortrait')).toBe('BEFIJK');
+  for (const s of ["the Throat's mouth of daylight", 'the skylight shaft']) expect([px('G', s).pixels, px('G', s).portraitPixels]).toEqual([0, 0]);
+  expect([px('H', 'the west sea').pixels, px('H', 'the west sea').portraitPixels]).toEqual([0, 0]);
+}, 60_000);
