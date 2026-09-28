@@ -1,11 +1,12 @@
 # Worksession — Horizon ↔ Mountain full-App UX dissection
 
-**Date:** 2026-09-28  
-**Branch:** `cursor/horizon-mountain-toggle-39dc`  
-**Base:** `origin/main` (recorded at open)  
-**Risk:** Medium  
-**Budget delta (5):** +0 — no money meaning, writers, schema, or Confirm changes  
-**Engagement delta (3):** +1 — one session can flip Mountain and Horizon under real App chrome for dissection  
+**Date:** 2026-09-28
+**Branch:** `cursor/horizon-mountain-toggle-39dc`
+**Base:** `origin/main@9fed6002`
+**Head:** recorded on close
+**Risk:** Medium
+**Budget delta (5):** +0 — no money meaning, writers, schema, or Confirm changes
+**Engagement delta (3):** +1 — one session can flip Mountain and Horizon under real App chrome for dissection
 
 ## Outcome
 
@@ -21,16 +22,16 @@ Jonathan can open a fictional household (whole-house review or flagged Vite) and
 
 ## Out of scope
 
-- Geographic merge, side-by-side canvases, Mountain VillageHUD on Horizon land  
-- `VITE_HEARTH_HORIZON` / D15 production switch  
-- Presence cross-world peers, Worker, hosted schema  
-- Exhaustive full lanes  
+- Geographic merge, side-by-side canvases, Mountain VillageHUD on Horizon land
+- `VITE_HEARTH_HORIZON` / D15 production switch
+- Presence cross-world peers, Worker, hosted schema
+- Exhaustive full lanes
 
 ## Verification (fill on close)
 
-- Focused quick gate command and result  
-- Manual: Mountain → Horizon → Mountain with Compass/QuickSheet present  
-- Data/environment: fictional Development only; no Production  
+- Focused quick gate command and result
+- Manual: Mountain → Horizon → Mountain with Compass/QuickSheet present
+- Data/environment: fictional Development only; no Production
 
 ## Next owner
 
