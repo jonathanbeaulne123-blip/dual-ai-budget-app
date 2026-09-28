@@ -37,7 +37,9 @@ export function createKitchenActivity(options:KitchenActivityOptions){
  }
  function reserve(){fleet.yacht.anchor=true;fleet.resetInput();fleet.doors.add('galley-aft-door');options.clearWorldInput();options.choosePerspective('activity');}
  function exit(){
-  if(!active())return;syncBody();engine.exit();saved=null;storage.saveSession(null);input.clear();audio.pause();targets={};
+  if(!active())return;const leavingService=engine.state().phase!=='menu';syncBody();engine.exit();
+  // Closing the menu must not discard an interrupted service offered for resume.
+  if(leavingService){saved=null;storage.saveSession(null);}input.clear();audio.pause();targets={};
   const local=toLocal(fleet.yacht,options.body());if(!aftWasOpen&&!(Math.abs(local.x)<1.35&&Math.abs(local.z+12.5)<.55))fleet.doors.delete('galley-aft-door');options.choosePerspective(previousPerspective);options.clearWorldInput();options.status('Back aboard the yacht. The anchor remains down; the helm is available.');
  }
  function act(chef:ChefId,action:Parameters<typeof engine.action>[1]){
