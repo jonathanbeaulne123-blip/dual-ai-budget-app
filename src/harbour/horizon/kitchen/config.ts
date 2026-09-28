@@ -29,7 +29,10 @@ export const TROLLEY_DOCKS:readonly Point[]=[{x:-2.7,y:DECK.main,z:-4.7},{x:2.7,
 export const TROLLEY_SECONDS=10;
 export const TASK_SECONDS={wash:3,extinguish:2} as const;
 const added=(id:string,label:string,kind:KitchenStation['kind'],x:number,z:number,dx:number,dz:number,area:'galley'|'deck'='galley'):KitchenStation=>({id:'yacht.kitchen.'+id,label,kind,at:{x,y:DECK.main,z},surface:{x,y:DECK.main+.9,z},approach:{x:x+dx,y:DECK.main,z:z+dz},facing:Math.atan2(-dx,-dz),capacity:2,area});
-export const STATIONS:KitchenStation[]=[...GALLEY.map(s=>({id:s.id,label:s.label,kind:({cold:'storage',cook:'appliance'} as Record<string,KitchenStation['kind']>)[s.role]??s.role as KitchenStation['kind'],at:{...s.at},approach:{...s.approach},surface:{...s.surface},facing:s.facing,capacity:s.role==='plate'||s.role==='return'?4:2,area:'galley' as const,...(s.role==='storage'?{ingredients:['bread','pasta','bun'] as IngredientId[]}:s.role==='cold'?{ingredients:['tomato','lettuce','fish','patty'] as IngredientId[]}:s.role==='cook'?{appliances:['toast','grill','boil','sauce']}: {})})),
+export const STATIONS:KitchenStation[]=[...GALLEY.map(s=>({id:s.id,label:s.label,kind:({cold:'storage',cook:'appliance'} as Record<string,KitchenStation['kind']>)[s.role]??s.role as KitchenStation['kind'],at:{...s.at},approach:{...s.approach},surface:{...s.surface},facing:s.facing,capacity:s.role==='plate'||s.role==='return'?4:2,area:'galley' as const,...(s.role==='storage'?{ingredients:['bread','pasta','bun'] as IngredientId[]}:s.role==='cold'?{ingredients:['tomato','lettuce','fish','patty'] as IngredientId[]}:s.role==='cook'?{appliances:['toast','grill','boil','sauce']}: {}),
+ // Dirty returns use the starboard end of the same pass, reachable from the galley;
+ // its former salon-side approach crosses a stairwell outside the kitchen activity.
+ ...(s.role==='return'?{at:{...s.at,x:.85},surface:{...s.surface,x:.85},approach:{x:1.1,y:s.at.y,z:-4.6},facing:Math.atan2(-.25,1.4)}:{})})),
  {...added('extinguisher','Fire extinguisher','extinguisher',-2.1,-11.7,0,1.3),capacity:1},
  {...added('deck-grill','Deck grill','appliance',6,-14,-1.35,0,'deck'),appliances:['grill','toast'],capacity:2},
  {...added('deck-pass','Outdoor dining pass','serve',4.65,-17,-1.6,0,'deck'),capacity:1},

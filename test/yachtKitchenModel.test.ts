@@ -19,7 +19,7 @@ function dish(e:KitchenEngine,recipe:RecipeId,chef:ChefId=0){for(const c of RECI
 function deliver(e:KitchenEngine,chef:ChefId=0){
  if(e.state().service==='banquet'){
   at(e,'yacht.kitchen.trolley',chef);
-  if(e.state().trolley.dock===1){act(e,undefined,chef);return;}
+  if(e.state().trolley.dock===1){act(e,{type:'prepare'},chef);e.update(TROLLEY_SECONDS);at(e,'yacht.kitchen.trolley',chef);act(e,{type:'prepare'},chef);}
   act(e,undefined,chef);act(e,{type:'prepare'},chef);e.update(TROLLEY_SECONDS);at(e,'yacht.kitchen.trolley',chef);act(e,{type:'prepare'},chef);
  }else{at(e,e.state().service==='sunset'?'yacht.kitchen.deck-pass':'serve',chef);act(e,undefined,chef);}
 }
@@ -54,6 +54,17 @@ describe('recoverable preparation, cooking, mistakes and ownership',()=>{
  it('preserves partial chopping with hold controls and while walking away',()=>{
   const e=createKitchenEngine();e.start('practice',1,{prep:'hold'});act(e,{type:'ready'});fetchIngredient(e,'tomato');at(e,'prep-port');act(e);act(e,{type:'prepare'});e.update(1);const tomato=Object.values(e.state().items).find(i=>i.ingredient==='tomato')!;expect(tomato.progress).toBe(1);e.setPreparing(0,false);e.update(5);expect(tomato.progress).toBe(1);act(e,{type:'prepare'});at(e,'pantry');e.update(1);expect(tomato.progress).toBe(1);at(e,'prep-port');act(e,{type:'prepare'});e.update(2);expect(tomato.phase).toBe('prepared');
  });
+ it('keeps a station selection locally so cycling storage never selects an unrelated empty plate',()=>{
+  const e=start();at(e,'cold');act(e,{type:'cycle'});act(e);expect(held(e).ingredient).toBe('lettuce');
+  at(e,'prep-port');act(e);act(e,{type:'prepare'});e.update(3);act(e);at(e,'plate');act(e);
+  component(e,'tomato','prepared');at(e,'plate');act(e);expect(itemLabel(held(e),e.state())).toBe('Garden salad');
+ });
+ it('requires each banquet delivery to ride the trolley from loading dock to service dock',()=>{
+  const e=start('banquet');dish(e,e.state().orders[0]!.recipe);deliver(e);wash(e);expect(e.state().trolley.dock).toBe(1);
+  const order=e.state().orders.find(o=>o.status==='waiting')!;dish(e,order.recipe);at(e,'yacht.kitchen.trolley');const plate=held(e).id,served=e.state().served;
+  expect(e.action(0,{type:'interact'}).ok).toBe(false);expect(held(e).id).toBe(plate);expect(e.state().served).toBe(served);
+  deliver(e);expect(e.state().served).toBe(served+1);expect(e.state().trolley.dock).toBe(1);ensureOwnership(e);
+ });
  it('does not consume incorrect ingredients or incomplete deliveries and recycles discarded plates',()=>{
   const e=start();fetchIngredient(e,'bread');at(e,'plate');expect(e.action(0,{type:'interact'}).ok).toBe(false);expect(held(e).ingredient).toBe('bread');at(e,'waste');act(e);at(e,'plate');act(e);const plate=held(e);at(e,'serve');expect(e.action(0,{type:'interact'}).ok).toBe(false);expect(held(e).id).toBe(plate.id);at(e,'waste');act(e);e.update(3);at(e,'return');act(e);at(e,'wash');act(e);act(e,{type:'prepare'});e.update(3);expect(plate.dirty).toBe(false);expect(Object.values(e.state().items).filter(i=>i.kind==='plate')).toHaveLength(3);
  });
@@ -81,12 +92,15 @@ describe('deterministic time, paused restoration and capacity-aware orders',()=>
   for(const service of Object.keys(SERVICES) as ServiceId[]){const e=start(service,2);for(let i=0;i<30&&e.state().phase==='playing';i++){e.update(10);const capacity=stationsFor(e.state()).filter(s=>s.kind==='appliance').reduce((n,s)=>n+s.capacity,0),demand=e.state().orders.filter(o=>o.status==='waiting').reduce((n,o)=>n+RECIPES[o.recipe].components.filter(c=>c.phase==='ready').length,0);expect(demand).toBeLessThanOrEqual(capacity);}}
   const e=start();e.update(600);expect(e.state().orders.every(o=>o.status==='waiting'&&o.remaining===0)).toBe(true);expect(e.state().missed).toBe(0);
  });
+ it('reserves the specific outdoor grill capacity rather than counting unavailable indoor hob slots',()=>{
+  for(let seed=1;seed<=25;seed++){const e=createKitchenEngine({seed});e.start('sunset',2);act(e,{type:'ready'},0);act(e,{type:'ready'},1);e.update(96);const grill=e.state().orders.filter(o=>o.status==='waiting').flatMap(o=>RECIPES[o.recipe].components).filter(c=>c.phase==='ready'&&INGREDIENTS[c.ingredient].cook?.appliance==='grill');expect(grill.length,`seed ${seed}`).toBeLessThanOrEqual(2);}
+ });
  it('restores unfinished work paused and never applies time spent away',()=>{
   const e=start();fetchIngredient(e,'bread');at(e,'hob');act(e);e.update(3);const saved=e.snapshot(),other=createKitchenEngine();expect(other.restore(saved)).toBe(true);expect(other.state().phase).toBe('paused');other.update(600);expect(other.state().elapsed).toBe(saved.elapsed);other.resume();other.update(4);expect(Object.values(other.state().items).find(i=>i.ingredient==='bread')?.phase).toBe('ready');
  });
  it('rejects corrupt ownership, inventory, timers, recipes and results atomically',()=>{
   const e=start();fetchIngredient(e,'tomato');const saved=e.snapshot(),before=e.snapshot();
-  const mutations:((s:ReturnType<KitchenEngine['snapshot']>)=>void)[]=[s=>{s.elapsed=NaN;},s=>{s.chefs[0]!.held='missing';},s=>{s.items[s.chefs[0]!.held!]!.location={kind:'container',container:'missing'};},s=>{s.stationIds.push('invented');},s=>{s.orders[0]!.recipe='invented' as RecipeId;},s=>{s.items['item-999']={...Object.values(s.items)[0]!,id:'item-999'};},s=>{s.served=99;},s=>{s.phase='results';s.result=null;}];
+  const mutations:((s:ReturnType<KitchenEngine['snapshot']>)=>void)[]=[s=>{s.elapsed=NaN;},s=>{s.chefs[0]!.held='missing';},s=>{s.items[s.chefs[0]!.held!]!.location={kind:'container',container:'missing'};},s=>{s.stationIds.push('invented');},s=>{s.orders[0]!.recipe='invented' as RecipeId;},s=>{s.items['item-999']={...Object.values(s.items)[0]!,id:'item-999'};},s=>{delete s.items[Object.values(s.items).find(i=>i.kind==='plate')!.id];},s=>{Object.values(s.items).find(i=>i.kind==='plate')!.location={kind:'discarded'};},s=>{s.served=99;},s=>{s.phase='results';s.result=null;}];
   for(const mutate of mutations){const invalid=structuredClone(saved);mutate(invalid);expect(e.restore(invalid)).toBe(false);expect(e.snapshot()).toEqual(before);}
  });
  it('restart and exit remove temporary kitchen objects without carrying old tasks',()=>{const e=start();fetchIngredient(e,'tomato');at(e,'prep-port');act(e);act(e,{type:'prepare'});e.update(1);e.exit();expect(e.state().phase).toBe('idle');expect(Object.values(e.state().items)).toHaveLength(0);e.start('lunch',1);expect(e.state().phase).toBe('ready');expect(e.state().chefs[0]!.task).toBeNull();expect(Object.values(e.state().items).filter(i=>i.kind==='plate')).toHaveLength(3);});

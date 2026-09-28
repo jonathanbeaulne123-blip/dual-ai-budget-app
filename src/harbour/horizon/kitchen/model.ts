@@ -8,6 +8,13 @@ const sid=(s:string)=>'yacht.galley.'+s;
 const distance=(a:ChefPose|{x:number;y:number;z:number},b:{x:number;y:number;z:number})=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
 const poseValid=(p:ChefPose)=>p&&[p.x,p.y,p.z,p.yaw].every(finite)&&Math.abs(p.x)<=9&&Math.abs(p.z)<=25&&p.y>=0&&p.y<=11;
 const cookingDemand=(r:Recipe)=>r.components.filter(c=>c.phase==='ready').length;
+function cookingFits(recipes:Recipe[],stations:KitchenStation[]){
+ const slots=stations.filter(s=>s.kind==='appliance').flatMap(s=>Array.from({length:s.capacity},()=>s.appliances??[]));
+ const tasks=recipes.flatMap(r=>r.components.filter(c=>c.phase==='ready').map(c=>INGREDIENTS[c.ingredient].cook!.appliance));
+ tasks.sort((a,b)=>slots.filter(s=>s.includes(a)).length-slots.filter(s=>s.includes(b)).length);
+ const used=new Set<number>();const assign=(n:number):boolean=>n===tasks.length||slots.some((slot,i)=>{if(used.has(i)||!slot.includes(tasks[n]!))return false;used.add(i);if(assign(n+1))return true;used.delete(i);return false;});
+ return assign(0);
+}
 const chef=(id:ChefId):ChefState=>({id,label:id===0?'Chef 1':'Chef 2',pose:{x:id===0?-1.3:1.3,y:3.85,z:-10,yaw:0},held:null,target:null,selection:0,task:null,connected:true,ready:false});
 const empty=(seed:number):KitchenState=>({version:1,phase:'idle',service:'first',players:1,assists:{...DEFAULT_ASSISTS},seed:seed>>>0,elapsed:0,remaining:0,score:0,served:0,missed:0,sequence:0,bestSequence:0,chefs:[chef(0)],items:{},orders:[],stationIds:[],fires:{},events:[],eventSeq:0,nextId:1,nextOrderAt:0,tutorial:0,trolley:{dock:0,secured:true,progress:0},pauseReason:null,result:null});
 function parts(item:KitchenItem,state:KitchenState){return item.contents.map(id=>state.items[id]!).filter(Boolean);}
@@ -79,8 +86,8 @@ export function createKitchenEngine(options:{seed?:number;canReach?:(pose:ChefPo
   const service=SERVICES[s.service],stations=stationsFor(s),available=new Set(stations.flatMap(st=>st.ingredients??[])),appliances=new Set(stations.filter(st=>!s.fires[st.id]).flatMap(st=>st.appliances??[]));
   const waiting=s.orders.filter(o=>o.status==='waiting'),capacity=stations.filter(st=>st.kind==='appliance'&&!s.fires[st.id]).reduce((n,st)=>n+st.capacity,0),demand=waiting.reduce((n,o)=>n+cookingDemand(RECIPES[o.recipe]),0);
   if(waiting.length>=Math.min(service.maxOrders,s.players===1?2:3))return false;
-  let choices=service.recipes.filter(id=>RECIPES[id].components.every(c=>available.has(c.ingredient)&&(c.phase!=='prepared'||INGREDIENTS[c.ingredient].prepSeconds>0)&&(c.phase!=='ready'||appliances.has(INGREDIENTS[c.ingredient].cook?.appliance??'')))&&demand+cookingDemand(RECIPES[id])<=capacity);
-  if(s.service==='sunset'&&s.orders.length===0)choices=['fish'];
+  let choices=service.recipes.filter(id=>RECIPES[id].components.every(c=>available.has(c.ingredient)&&(c.phase!=='prepared'||INGREDIENTS[c.ingredient].prepSeconds>0)&&(c.phase!=='ready'||appliances.has(INGREDIENTS[c.ingredient].cook?.appliance??'')))&&demand+cookingDemand(RECIPES[id])<=capacity&&cookingFits([...waiting.map(o=>RECIPES[o.recipe]),RECIPES[id]],stations.filter(st=>!s.fires[st.id])));
+  if(s.service==='sunset'&&s.orders.length===0&&choices.includes('fish'))choices=['fish'];
   if(!choices.length)return false;
   const id=choices[Math.floor(random()*choices.length)]!,recipe=RECIPES[id],total=service.seconds?recipe.patience*(s.players===1?1.35:1)*s.assists.patience+(service.area==='deck'?30:service.trolley?20:0):0;
   s.orders.push({id:'order-'+s.nextId++,recipe:id,remaining:total,total,status:'waiting'});return true;
@@ -94,6 +101,7 @@ export function createKitchenEngine(options:{seed?:number;canReach?:(pose:ChefPo
   if(s.phase!=='playing')return{ok:false,message:'The service is not playing.'};
   if(a.type==='toss')return toss(c,a);
   const st=currentStation(a.target??c.target);if(!st||!reach(c,st))return result(false,'Face the highlighted station and move within reach.',id);
+  if(c.target!==st.id){c.target=st.id;c.selection=0;}
   if(a.type==='cycle'){const items=contents(st.id),n=st.ingredients?.length??Math.max(1,items.length);c.selection=(c.selection+1)%n;return result(true,st.ingredients?INGREDIENTS[st.ingredients[c.selection]!].label:items[c.selection]?itemLabel(items[c.selection]!,s):'Use interact to pick up or place; prepare to work.',id);}
   if(a.type==='prepare')return chooseTask(c,st);
   if(a.type!=='interact')return{ok:false,message:'Unknown action.'};
@@ -113,8 +121,9 @@ export function createKitchenEngine(options:{seed?:number;canReach?:(pose:ChefPo
   if(st.kind==='plate'&&held.kind!=='plate')return result(false,'Place a clean plate here before adding recipe components.',id);
   if(st.kind==='extinguisher'&&held.kind!=='extinguisher'||st.kind!=='extinguisher'&&held.kind==='extinguisher')return result(false,'The extinguisher belongs on its wall hook.',id);
   if(st.kind==='trolley'&&held.kind!=='plate')return result(false,'The trolley carries plated dishes.',id);
+  if(st.kind==='trolley'&&s.trolley.dock===1)return result(false,'Load dishes at the galley dock. Release the trolley to send it back.',id);
   if(!put(held,st))return result(false,'This station is full. Use another clear surface.',id);
-  if(st.kind==='appliance')beginCooking(held,st);drop(c);if(st.kind==='trolley'&&s.trolley.dock===1&&recipeFor(held))return deliver(held);return result(true,`Placed at ${st.label}.`,id);
+  if(st.kind==='appliance')beginCooking(held,st);drop(c);return result(true,`Placed at ${st.label}.`,id);
  }
  function step(dt:number){
   s.elapsed=round(s.elapsed+dt);if(SERVICES[s.service].seconds)s.remaining=Math.max(0,round(s.remaining-dt));
@@ -150,7 +159,7 @@ export function createKitchenEngine(options:{seed?:number;canReach?:(pose:ChefPo
   start(service,players,assists={}){if(!SERVICES[service]||![1,2].includes(players))return;const nextId=s.nextId+1,entryPose={...s.chefs[0]!.pose};s=empty(initialSeed);s.nextId=nextId;s.phase='ready';s.service=service;s.players=players;s.remaining=SERVICES[service].seconds;s.assists={...DEFAULT_ASSISTS,...(service==='practice'?{forgiveness:2,hazards:false}:{}),...assists};s.assists.forgiveness=finite(s.assists.forgiveness)?Math.max(.5,Math.min(5,s.assists.forgiveness)):DEFAULT_ASSISTS.forgiveness;s.assists.patience=finite(s.assists.patience)?Math.max(.5,Math.min(3,s.assists.patience)):DEFAULT_ASSISTS.patience;s.chefs=players===2?[chef(0),chef(1)]:[chef(0)];s.chefs[0]!.pose=entryPose;s.stationIds=STATIONS.filter(st=>st.area!=='deck'||service==='sunset').filter(st=>st.kind!=='trolley'||service==='banquet').map(st=>st.id);for(let i=0;i<(players===1?3:4);i++)put(newItem('plate'),currentStation(sid('plate'))!);put(newItem('extinguisher'),currentStation('yacht.kitchen.extinguisher')!);heldPrep.clear();remainder=0;},
   action:feedbackAction,
   setPose(id,pose){const c=s.chefs.find(c=>c.id===id);if(c&&poseValid(pose))c.pose={...pose};},
-  setTarget(id,target){const c=s.chefs.find(c=>c.id===id);if(c)c.target=currentStation(target)?.id??null;},
+  setTarget(id,target){const c=s.chefs.find(c=>c.id===id),next=currentStation(target)?.id??null;if(c&&c.target!==next){c.target=next;c.selection=0;}},
   setPreparing(id,held){if(held)heldPrep.add(id);else{heldPrep.delete(id);if(s.assists.prep==='hold'){const c=s.chefs.find(c=>c.id===id);if(c)c.task=null;}}},
   update(seconds){if(s.phase!=='playing'||!finite(seconds)||seconds<=0)return;remainder+=Math.min(600,seconds);while(remainder>=.05-1e-9&&s.phase==='playing'){remainder-=.05;step(.05);}},
   pause(reason='Paused together.'){if(s.phase==='playing'){s.phase='paused';s.pauseReason=reason;heldPrep.clear();}},
@@ -176,16 +185,20 @@ function validSnapshot(value:unknown):value is KitchenState{
   if(s.phase!=='idle'&&s.phase!=='menu'&&(s.stationIds.length!==expected.length||expected.some(id=>!s.stationIds.includes(id))))return false;
   if(new Set(s.stationIds).size!==s.stationIds.length||s.stationIds.some(id=>!STATIONS.some(st=>st.id===id)))return false;
   const stations=new Map(stationsFor(s).map(st=>[st.id,st])),locations=new Set<string>(),claimed=new Set<string>();
+  const items=Object.values(s.items),plates=items.filter(i=>i.kind==='plate'),tools=items.filter(i=>i.kind==='extinguisher');
+  if(!['idle','menu'].includes(s.phase)&&(plates.length<3||plates.length>4||tools.length!==1))return false;
+  if(plates.some(i=>i.location?.kind==='discarded')||tools.some(i=>i.location?.kind==='discarded'))return false;
   for(const c of s.chefs){if(![0,1].includes(c.id)||claimed.has('chef'+c.id)||!poseValid(c.pose)||typeof c.connected!=='boolean'||typeof c.ready!=='boolean'||!Number.isInteger(c.selection)||c.selection<0||c.target!==null&&!stations.has(c.target))return false;claimed.add('chef'+c.id);if(c.task&&(!stations.has(c.task.station)||!['prepare','wash','extinguish'].includes(c.task.kind)))return false;if(c.held){const item=s.items[c.held];if(!item||item.location.kind!=='hands'||item.location.chef!==c.id)return false;}}
   for(const [id,item]of Object.entries(s.items)){
    if(!item||item.id!==id||!/^item-\d+$/.test(id)||Number(id.slice(5))>=s.nextId||!['ingredient','plate','extinguisher'].includes(item.kind)||!['raw','prepared','cooking','ready','burnt'].includes(item.phase)||![item.progress,item.cookElapsed].every(n=>finite(n)&&n>=0)||!Array.isArray(item.contents)||typeof item.dirty!=='boolean')return false;
    if(item.kind==='ingredient'&&!INGREDIENTS[item.ingredient!]||item.kind!=='plate'&&(item.contents.length||item.dirty)||item.kind==='plate'&&item.dirty&&item.contents.length)return false;
+   if(item.kind!=='ingredient'&&(item.phase!=='raw'||item.ingredient!==undefined))return false;
    if(item.kind==='ingredient'){const rule=INGREDIENTS[item.ingredient!];if(item.phase==='prepared'&&!rule.prepSeconds||['cooking','ready','burnt'].includes(item.phase)&&!rule.cook)return false;}
    for(const part of item.contents){if(claimed.has(part))return false;claimed.add(part);const p=s.items[part];if(!p||p.kind!=='ingredient'||p.location.kind!=='container'||p.location.container!==id)return false;}
    if(item.kind==='plate'&&item.contents.length&&!Object.values(RECIPES).some(r=>matches(r,parts(item,s))))return false;
    const loc=item.location;if(!loc)return false;
    if(loc.kind==='hands'){if(s.chefs.find(c=>c.id===loc.chef)?.held!==id)return false;}
-   else if(loc.kind==='station'){const st=stations.get(loc.station),key=loc.station+':'+loc.slot;if(!st||!Number.isInteger(loc.slot)||loc.slot<0||loc.slot>=st.capacity||locations.has(key))return false;locations.add(key);}
+   else if(loc.kind==='station'){const st=stations.get(loc.station),key=loc.station+':'+loc.slot;if(!st||!Number.isInteger(loc.slot)||loc.slot<0||loc.slot>=st.capacity||locations.has(key))return false;if(item.phase==='cooking'&&(st.kind!=='appliance'||!st.appliances?.includes(INGREDIENTS[item.ingredient!].cook?.appliance??'')))return false;locations.add(key);}
    else if(loc.kind==='container'){const plate=s.items[loc.container];if(!plate||plate.kind!=='plate'||!plate.contents.includes(id))return false;}
    else if(loc.kind==='return'){if(!finite(loc.remaining)||loc.remaining<0||loc.remaining>60)return false;}
    else if(loc.kind==='transit'){if(item.kind!=='ingredient'||!['raw','prepared'].includes(item.phase)||!finite(loc.remaining)||loc.remaining<0||loc.remaining>1||![loc.from.x,loc.from.y,loc.from.z,loc.to.x,loc.to.y,loc.to.z].every(finite)||distance(loc.from,loc.to)>6||(loc.station===undefined)===(loc.chef===undefined)||loc.station!==undefined&&!stations.has(loc.station)||loc.chef!==undefined&&!s.chefs.some(c=>c.id===loc.chef))return false;const key='transit:'+(loc.station??loc.chef);if(locations.has(key))return false;locations.add(key);}
