@@ -155,3 +155,14 @@ describe('water (RIDE §6.4)', () => {
     expect(st.grip).toBe(1);
   });
 });
+
+describe('parachute return to the real board',()=>{
+  it('carries velocity and clears latent boost, charge and pop on a legal landing',()=>{
+    const c=createBoardController(deps),p=pointAt(s1,30);c.place({x:p.x,z:p.z,heading:p.heading,speed:0});const state=c.state(),at=[...state.p];
+    state.legs.boost=1;state.legs.charge=1;state.latch.boostAccel=10;state.latch.popBuffer=1;state.latch.prevPop=true;
+    expect(c.resumeAt!({x:at[0]!,y:at[1]!,z:at[2]!,yaw:p.heading,velocity:[Math.sin(p.heading)*6,0,Math.cos(p.heading)*6]})).toBe(true);
+    expect(Math.hypot(state.v[0],state.v[2])).toBeCloseTo(6,1);expect(state.legs).toMatchObject({boost:0,charge:0});expect(state.latch).toMatchObject({boostAccel:0,popBuffer:0,prevPop:false});expect(c.airborne!()).toBeNull();
+    const body=c.airborne!();expect(body).toBeNull();state.contact.on=false;state.v=[3,4,5];expect(c.airborne!()?.velocity).toEqual([3,4,5]);
+    expect(c.resumeAt!({x:at[0]!,y:at[1]!+2,z:at[2]!,yaw:0,velocity:[0,0,0]})).toBe(false);
+  });
+});

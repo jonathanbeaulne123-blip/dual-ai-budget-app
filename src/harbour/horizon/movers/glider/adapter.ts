@@ -16,24 +16,28 @@ function thresholdFor(deps:MoverDeps, offer:ThresholdOffer):Threshold {
 }
 
 function flightInput(input:MoverInput){
-  return {forward:input.forward,strafe:input.steer,run:input.sprint,bar:input.forward,bank:input.steer,pull:input.action==='pull'||input.jump,look:[input.look.dx,input.look.dy] as const,fold:input.action==='fold'};
+  return {forward:input.forward,strafe:input.steer,run:input.sprint,bar:input.forward,bank:input.steer,pull:input.action==='pull'||input.jump,pullEdge:input.action==='pull'||input.jump,look:[input.look.dx,input.look.dy] as const,fold:input.action==='fold'};
 }
 
 export function adaptFlightController(flight:FlightController,deps:MoverDeps):ModeController {
   return {
     id:flight.id,
     enter(offer,body){flight.enter(thresholdFor(deps,offer),body);},
+    airborne:()=>flight.airborne?.()??null,
+    enterAirborne(body,open){flight.enterAirborne?.(body,open);},
+    landingMotion:()=>flight.landingMotion?.()??null,
     update(dt,input,_now):MoverFrame {
       flight.update(dt,flightInput(input));
       const body=flight.bodyPose(),camera=flight.camera(),hud=flight.hud(),sound=flight.sound(),probe=flight.probe();
-      const place=hud.place;
+      const place=hud.place,outcome=flight.outcome();
+      const recovery=outcome&&['fadeShore','fadeApron','deepSmall','deepBig'].includes(outcome.kind)?outcome:null;
       return {
         body:{x:body.x,y:body.y,z:body.z,yaw:body.yaw},
         camera:{eye:[...camera.eye] as [number,number,number],target:[...camera.look] as [number,number,number],fov:camera.fov},
         pose:{lean:0,roll:body.bank??0,pitch:body.pitch??0,crouch:0,slide:0,speed:probe.groundSpeed},
         hud:{pace:null,arc:0,glyph:place?.action==='fold'||place?.action==='pull'?'park':null,label:place?.label??null,height:hud.height,lift:hud.lift,place},
         sound:{slide:0,roll:0,bite:sound==='snap',boost:sound==='splashEcho'},
-        fade:null,
+        fade:recovery?{to:{x:recovery.at[0],y:recovery.at[1],z:recovery.at[2],yaw:body.yaw},label:recovery.label}:null,
         events:sound?[sound]:[],
       };
     },

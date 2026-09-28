@@ -20,7 +20,7 @@ const register=vi.fn(()=>()=>{});
 vi.mock('../src/harbour/scene/worldMount.ts',()=>({mountHorizonWorld:async()=>({
   mode:()=>'walk',shotId:()=>'A',offers:()=>world.offers,moverState:()=>world.moverState,moverAction:world.moverAction,accept:world.accept,
   fleetActions:()=>world.fleetActions,fleetState:()=>({vessels:[],swimming:false,perspective:'activity',sitting:null,saveFailed:false}),fleetAction:world.fleetAction,cycleCamera:world.cycleCamera,jumpHold:world.jumpHold,
-  pause(){},setComfort(){},setReducedMotion(){},setCalm(){},setMode(){},dispose(){},input(){},look(){},jump(){},enterDoor(){},cutTo(){},world:{views:[]},
+  cyclePerspective(){},resumeEquipment(){},pause(){},setComfort(){},setReducedMotion(){},setCalm(){},setMode(){},dispose(){},input(){},look(){},jump(){},enterDoor(){},cutTo(){},world:{views:[]},
 })}));
 vi.mock('../src/harbour/horizon/movers/glider/index.ts',()=>({registerGliderModes:register}));
 
@@ -47,7 +47,7 @@ describe('the quick layer in every mover phase',()=>{
   it('registers the gliders on the runtime it mounts',async()=>{await mount();expect(register).toHaveBeenCalledTimes(1);});
   it('keeps the same toolbar mounted — Walk, Look, Island, the page, Tools, Journey, Sound — through launch, flight, corridor, freefall and a fade',async()=>{
     const h=await mount(),bar=toolbar(h),before=labels(h);
-    expect(before).toEqual(['Walk','Look','Island','Tools','Journey','Sound off']);
+    expect(before).toEqual(['Walk','Look','Island','Activity view','Tools','Journey','Sound off']);
     const phases:[boolean,HorizonMoverState['hud'],HorizonMoverState['mode'],string?][]=[
       [true,{place:{label:'Step back',distance:0,action:'fold'}},'glider'],
       [true,{height:62.4,lift:1.2,place:{label:'the Green',distance:410,action:'fold'}},'glider'],

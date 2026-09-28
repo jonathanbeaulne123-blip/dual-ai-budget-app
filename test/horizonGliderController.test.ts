@@ -1,4 +1,5 @@
 import {describe,expect,it} from 'vitest';
+import {createGliderEnv} from '../src/harbour/horizon/movers/glider/env.ts';
 import {createGliderController,createParachuteController,POSE_SECONDS,PAD_THRESHOLDS,stillDoor} from '../src/harbour/horizon/movers/glider/controller.ts';
 import {DEEP_JETTY} from '../src/harbour/horizon/movers/glider/corridor.ts';
 import {FOLD_MARGIN,TRIM_GLIDE} from '../src/harbour/horizon/movers/glider/landing.ts';
@@ -142,26 +143,49 @@ describe('the parachute controller',()=>{
   const env=syntheticEnv();
   const bail=world.thresholds.find(t=>t.id==='bailOut')!;
   const jump=(h:number,plane=stillDoor(1040,h,1000))=>{const c=createParachuteController({env,plane:()=>plane});c.enter({...bail,at:[plane.x,plane.z],height:h},{x:plane.x,y:h,z:plane.z,yaw:0});return c;};
-  it('freefall offers Pull; pulling opens the canopy with the snap on that frame',()=>{
+  it('lands on water above a steep seabed and recovers to shore; a dry bridge remains a local landing',()=>{
+    for(const bridge of [false,true]){
+      const terrain=(x:number)=>2*x-100;
+      const waterEnv=createGliderEnv({world:{sky:world.sky,hosts:[],pathGraph:{nodes:[{id:'shore',at:[100,12,50],kind:'junction'}],edges:[]}},cuts:{mouths:[],waters:[{id:'test-water',kind:'lake',outline:[[0,0],[80,0],[80,100],[0,100]],points:[],level:10,width:80,depth:100,bank:0}]},geography:{ground:terrain,surface:(x)=>bridge?{y:12,slope:0,material:'wood',nx:0,ny:1,nz:0}:{y:terrain(x),slope:63.4,material:'rock',nx:-2/Math.sqrt(5),ny:1/Math.sqrt(5),nz:0}}});
+      const c=createParachuteController({env:waterEnv});c.enterAirborne!({x:50,y:bridge?12.1:10.1,z:50,yaw:0,velocity:[0,-1,0]},false);
+      fly(c,()=>({}),()=>c.finished!(),2);expect(c.finished!()).toBe(true);
+      if(bridge){expect(c.outcome()?.kind).toBe('walkoff');expect(c.exit().at[1]).toBe(12);expect(c.exit().cut).toBeUndefined();}
+      else{expect(c.outcome()?.kind).toBe('fadeShore');expect(c.exit()).toMatchObject({cut:true,at:[100,12,50]});}
+    }
+  });
+  it('uses the same low-altitude airborne state for a moving plane exit',()=>{
+    const c=jump(30,{...stillDoor(1040,30,1000,.7),vx:12,vy:-4,vz:18});
+    expect(c.bodyPose()).toMatchObject({x:1040,y:30,z:1000,yaw:.7});expect(c.probe()).toMatchObject({phase:'freefall',vs:-4,groundSpeed:Math.hypot(12,18)});
+    c.update(FRAME,input({pull:true}));expect(c.phase()).toBe('opening');expect(c.probe().groundSpeed).toBeGreaterThan(20);
+  });
+  it('freefall offers Open parachute; pulling opens the canopy with the snap on that frame',()=>{
     const c=jump(220);
-    fly(c,()=>({}),()=>false,1);expect(c.phase()).toBe('freefall');expect(c.hud().place).toEqual({label:'Pull',distance:0,action:'pull'});
+    fly(c,()=>({}),()=>false,1);expect(c.phase()).toBe('freefall');expect(c.hud().place).toEqual({label:'Open parachute',distance:0,action:'pull'});
     const frames=fly(c,()=>({pull:true}),()=>c.phase()!=='freefall',1);
     expect(c.phase()).toBe('opening');expect(frames.at(-1)!.sound).toBe(MOVER_SOUNDS.snap);
     fly(c,()=>({}),()=>c.phase()==='canopy',3);expect(c.phase()).toBe('canopy');
   });
-  it('auto-pulls at 45 m above the ground when nobody pulls',()=>{
-    const c=jump(200);let openedAt=NaN;
-    fly(c,()=>({}),()=>{if(c.phase()==='opening'&&Number.isNaN(openedAt))openedAt=c.bodyPose().y-20;return c.phase()==='canopy';},30);
-    expect(openedAt).toBeLessThanOrEqual(45+1);expect(openedAt).toBeGreaterThan(40);
+  it('accepts consecutive distinct toggle presses without requiring an idle frame',()=>{
+    const c=jump(200);c.update(FRAME,input({pull:true,pullEdge:true}));expect(c.phase()).toBe('opening');
+    c.update(FRAME,input({pull:true,pullEdge:true}));expect(c.phase()).toBe('freefall');
+    c.update(FRAME,input({pull:true,pullEdge:true}));expect(c.phase()).toBe('opening');
   });
-  it('lands, plays the pose, and is finished; the exit is on foot where it touched',()=>{
+  it('captures a brief press between fixed simulation steps, then retracts and reopens',()=>{
+    const c=jump(200);c.update(FRAME/2,input({pull:true}));c.update(FRAME/2,input());expect(c.phase()).toBe('opening');
+    c.update(FRAME,input({pull:true}));expect(c.phase()).toBe('freefall');
+    c.update(FRAME,input());c.update(FRAME,input({pull:true}));expect(c.phase()).toBe('opening');
+  });
+  it('stays in freefall until the player opens or reaches the ground',()=>{
+    const c=jump(60);fly(c,()=>({}),()=>c.finished!(),30);expect(c.finished!()).toBe(true);expect(c.artState().open).toBe(0);expect(c.outcome()?.kind).toBe('walkoff');
+  });
+  it('lands and is immediately finished; the exit is on foot where it touched',()=>{
     const c=jump(120);
     fly(c,()=>{const agl=c.bodyPose().y-20;return{pull:true,bar:agl<5?-1:0};},()=>c.finished!(),120);
     expect(c.finished!()).toBe(true);expect(['walkoff','tumble']).toContain(c.outcome()?.kind);
     expect(c.exit().at[1]).toBeCloseTo(20,6);
   });
-  it('is refused below 60 m above the ground (nothing to fly; exits where it stood)',()=>{
-    const c=jump(70);expect(c.finished!()).toBe(true);expect(c.exit().at).toEqual([1040,70,1000]);
+  it('starts even centimetres above the ground and lands while opening',()=>{
+    const c=jump(20.01);expect(c.finished!()).toBe(false);c.update(FRAME,input({pull:true}));fly(c,()=>({}),()=>c.finished!(),1);expect(c.exit().at[1]).toBe(20);
   });
 });
 

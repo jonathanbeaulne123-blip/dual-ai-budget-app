@@ -100,8 +100,6 @@ export const CHUTE={
   planeTau:.5,
   leanMax:8,
   freefallWind:.5,
-  autoPullAgl:chute.autoPull_agl_m*HORIZON_MANIFEST.scale.factor,
-  minBailAgl:chute.minBail_agl_m*HORIZON_MANIFEST.scale.factor,
   openingSeconds:1.2,
   openedSink:3,
   fullBrakeSeconds:3,
