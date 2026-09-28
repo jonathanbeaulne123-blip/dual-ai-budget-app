@@ -83,7 +83,7 @@ describe('the quick layer in every mover phase',()=>{
     const h=await mount();hud(true,{pace:'5 km/h',label:'Dinghy'},'dinghy');world.fleetActions=[{id:'moor-dinghy',kind:'moor',craft:'dinghy',label:'Secure boat & climb aboard',at:{x:1620,y:.65,z:1318}}];await tick();
     expect(h.querySelector('.horizon-jump')?.textContent).toBe('Brake');
     const brake=[...h.querySelectorAll('button')].find(b=>b.textContent==='Brake')!;expect(brake).toBeTruthy();
-    act(()=>{brake.dispatchEvent(new Event('pointerdown',{bubbles:true}));brake.dispatchEvent(new Event('pointerup',{bubbles:true}));});expect(world.jumpHold).toHaveBeenCalledWith(true);expect(world.jumpHold).toHaveBeenLastCalledWith(false);
+    brake.setPointerCapture=vi.fn();act(()=>{const press=new Event('pointerdown',{bubbles:true,cancelable:true});Object.defineProperty(press,'pointerId',{value:12});brake.dispatchEvent(press);expect(press.defaultPrevented).toBe(true);const release=new Event('pointerup',{bubbles:true});Object.defineProperty(release,'pointerId',{value:12});window.dispatchEvent(release);});expect(world.jumpHold).toHaveBeenCalledWith(true);expect(world.jumpHold).toHaveBeenLastCalledWith(false);
     const boarding=[...h.querySelectorAll('.horizon-fleet button')].find(b=>b.textContent?.includes('Secure boat'))!;act(()=>boarding.click());expect(world.fleetAction).toHaveBeenCalledWith('moor-dinghy');
     expect(h.querySelector('.horizon-bubble-place')).toBeNull();world.fleetActions=[];
   });
