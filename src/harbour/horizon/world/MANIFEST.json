@@ -4691,8 +4691,8 @@
   "terraces": {
    "plots": [
     [
-     1551.1,
-     832.5
+     1552,
+     832
     ],
     [
      1528,
@@ -4732,7 +4732,22 @@
      952
     ]
    ],
-   "plot1Note_v2_3": "R3-32: 1.0 m WNW off the Prow walk's corner (margin 5.83 \u2192 \u2265 6.6); design lead, Stage A Wave 7 (W7-A) 2026-09-27"
+   "plot1Note_v2_3": "R3-32: 1.0 m WNW off the Prow walk's corner (margin 5.83 \u2192 \u2265 6.6); design lead, Stage A Wave 7 (W7-A) 2026-09-27",
+   "v2_3_plots": [
+    [
+     1551.1,
+     832.5
+    ],
+    [
+     1528,
+     896
+    ],
+    [
+     1512,
+     952
+    ]
+   ],
+   "plot1Note_v2_4": "back to v2.2 (design lead, Stage A Wave 7 integrator 4 2026-09-27): the v2.3 move put the service drive's bed 0.47 over the Year Walk at [1594.7,837.9] and blocked the walk to L02; R3-32 open (5.83 of 6), owner W7-A"
   },
   "bightShore": {
    "plots": [

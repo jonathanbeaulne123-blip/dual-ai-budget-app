@@ -2019,6 +2019,13 @@ m["structures"]["prowLoopFootbridge"] = {"kind": "footbridge", "carries": "yearW
     "from": [1603.5, 674.6], "to": [1609.8, 702.9], "length_m": 29, "width_m": 6,
     "note": "v2.4: the Year Walk's upper pass over its own lower lane at the Prow (5.6 eu apart) on a named footbridge (" + I4 + ", W7-A → W7-S request; OPEN_VOIDS yearWalk [1605,690] closed)"}
 
+# 11. Plot terraces.1 back to its v2.2 place (reversible; v2.3 kept as `v2_3_plots`): W7-A's 1.0 m WNW move (R3-32: the 6 m
+#     margin stood 5.83 from the Prow walk's corner) shifted its service drive's lay-by so the drive's bed stands 0.47 over the
+#     Year Walk at [1594.7,837.9], a wall to the walking body (geography.blocker): the square → L02 walk on foot stopped there
+#     on both tiers (horizonWave4 R2-03 / R2-08, candidate 6 first bake). R3-32 (5.83 of 6) is open again, owner W7-A.
+_tr = m["reserves"]["terraces"]; _tr["v2_3_plots"] = [list(p) for p in _tr["plots"]]; _tr["plots"][0] = list(_tr["v2_2_plots"][0])
+_tr["plot1Note_v2_4"] = "back to v2.2 (" + I4 + "): the v2.3 move put the service drive's bed 0.47 over the Year Walk at [1594.7,837.9] and blocked the walk to L02; R3-32 open (5.83 of 6), owner W7-A"
+
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")

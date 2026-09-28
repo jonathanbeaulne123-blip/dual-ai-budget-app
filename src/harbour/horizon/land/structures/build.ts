@@ -629,7 +629,7 @@ function highSpanLevels(cuts:LandCuts,base:HeightQuery):void {
 /** Wave 7 (station head frames, R3-113/R3-126): eu above its station deck at which a cable's rope ends (beds' CABLE_HEAD:
  * the rope's solid spans h + 2.51 … h + 2.60 within 16 eu of each station). */
 export const ROPE_END=2.6;
-/** Half the head frame's leg spacing (eu, either side of the rope's line): a walk leaving the station passes between the legs. */
+/** Half the gondola head frames' leg spacing (eu, either side of the rope's line): the station's walk passes between the legs. */
 export const HEAD_FRAME_LEG_SPAN=3.2;
 /** A station's head frame: the rope ends in a horizontal bullwheel (radius 1.5, h + 2.3 … 2.85, around the rope's end),
  * hung from an arm that cantilevers forward from a two-legged portal standing on the station deck behind the station
@@ -641,17 +641,19 @@ function headFrame(cuts:LandCuts,id:string,at:XY,h:number,toward:XY,onDeck:(xy:X
   const l=distance(at,toward)||1,d:XY=[(toward[0]-at[0])/l,(toward[1]-at[1])/l],n:XY=[-d[1],d[0]],rot=Math.atan2(d[1],d[0])*180/Math.PI,district=districtAt(at[0],at[1]);
   const frame=solid(`platform.${id}.headFrame`,'headFrame','metal','support',[`platform.${id}`],district);
   const P=(s:number,o:number):XY=>[at[0]+d[0]*s+n[0]*o,at[1]+d[1]*s+n[1]*o];
-  // The portal stands as far behind the station point as the deck allows (2.6 … 1.9 eu). Integrator 4 (Wave 7): its legs
-  // stand LEG_SPAN either side of the rope's line, so the station's walk leaves between them under the cross-head (h + 4.1):
-  // at ±1.3 the legs stood in walk crownFromGondola (gondola top) and town.upperStreetWalk (gondola base) and the summit
-  // journey lost its path (pathGraph.blocked, 'No connected traversable path').
+  // The portal stands as far behind the station point as the deck allows (2.6 … 1.9 eu). Integrator 4 (Wave 7): at the gondola
+  // stations its legs stand HEAD_FRAME_LEG_SPAN either side of the rope's line, so the station's walk leaves between them under
+  // the cross-head (h + 4.1): at ±1.3 the legs stood in walk crownFromGondola (top) and town.upperStreetWalk (base) and the
+  // summit journey lost its path. The zip stations keep ±1.3: the Prow's glider run-off passes behind that frame and a wide
+  // cross-head at h + 4.1 took the flight camera (a 7.5 eu pull-in, FLIGHT §4).
+  const span=id.startsWith('gondola')?HEAD_FRAME_LEG_SPAN:1.3;
   let back=2.6;while(back>1.9&&![-1.3,1.3].every(o=>onDeck(P(-back,o))))back-=.1;
   const top=h+ROPE_END+1.5;
   // The legs are columns through the station deck to their own footings (P11: a load path that reaches the ground, not a
   // frame resting on a slab); `platform.<id>.headFrame.legs` settles to the final ground like any pier.
   const legs=solid(`platform.${id}.headFrame.legs`,'pier','metal','support',[`platform.${id}`],district);
-  for(const o of [-HEAD_FRAME_LEG_SPAN,HEAD_FRAME_LEG_SPAN])pier(legs,P(-back,o),top,base,[.45,.45],[1.2,1.2],rot); // legs, footing → cross-head
-  box(frame,P(-back,0),top+.5,[.5,2*HEAD_FRAME_LEG_SPAN+.5],top-.1,rot);                      // cross-head
+  for(const o of [-span,span])pier(legs,P(-back,o),top,base,[.45,.45],[1.2,1.2],rot);         // legs, footing → cross-head
+  box(frame,P(-back,0),top+.5,[.5,2*span+.5],top-.1,rot);                                     // cross-head
   {const b0=P(-back,0),f=P(1.7,0);slab(frame,[b0[0],top+.4,b0[1]],[f[0],top+.4,f[1]],.45,.5);}   // arm
   box(frame,at,top,[.3,.3],h+2.85,rot);                                                        // hanger
   for(const r of [0,45])box(frame,at,h+2.85,[2.7,2.7],h+2.3,rot+r);                         // bullwheel (octagon of two squares)
