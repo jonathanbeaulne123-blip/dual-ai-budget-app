@@ -1947,6 +1947,78 @@ for v in m["views"]:
         v["deferred"] = list(v.get("deferred", [])) + ["the Stacks (not on J's east line through the arch, 60-65° to its right; D-D6)"]
         v["decided_v2_3"] = "D-D6 re-pose (recommended; " + W7 + ", reversible: v2_2), W7-T's measured pose"
 
+# ---------------------------------------------------------------------------
+# v2.4 — Stage A Wave 7, integrator 4 (design lead): the cross-track requests of W7-T → W7-A (A2–A8) and W7-S → W7-A,
+# measured on the integrator's merged scratch bake (W7-A + W7-S + W7-T) with the repo's own ray caster, walk-out probe and
+# flight model. Every delta is in docs/horizon/README.md → "v2.4 (Stage A Wave 7, integrator 4)". Ids never change; every
+# moved value keeps its v2.3 value beside it (`v2_3*`).
+# ---------------------------------------------------------------------------
+m["version"] = "2.4"
+I4 = "design lead, Stage A Wave 7 integrator 4 2026-09-27"
+_views = {v["id"]: v for v in m["views"]}
+# 1. A2/A3 · a Walk ground point for every page whose eye stands > 8 eu (walkPlan's snap) from the path graph. Each is dry,
+#    walkable, unblocked on both tiers and within 8 eu of a path edge reachable from the square (measured). E's ground is
+#    the Crown launch deck itself (5.1 eu from the deck's stair head: the body stays on the deck, the glider's pad).
+for _id, _g, _why in (("D", {"xy": [1181, 1401], "h": 3.0}, "the beach verge south of Horizon Drive, 5.1 eu off the Drive (Long Sands' dune walk and zip landing are not reachable from the square yet: R3-119)"),
+                      ("E", {"xy": [1306, 482], "h": 170}, "on the Crown launch deck (lookout run-off deck), 5.1 eu from crownLaunch.stair's head"),
+                      ("I", {"xy": [1284.8, 1215], "h": 9.5}, "on the Reach walk beside the boardwalk footbridge, 0.04 eu off the path"),
+                      ("L", {"xy": [1477, 1289], "h": 3.0}, "on the town quay (Lantern Row), 4.3 eu off its walk")):
+    _views[_id]["ground"] = _g; _views[_id]["groundNote_v2_4"] = _why + " (" + I4 + ")"
+# 2. D-D6 applied, J's landscape fixed: at v2.3's eye [1665,680] the Prow is 0 px at 1440 × 900 (the cliff edge is 11 m ahead
+#    and below the frame), so J failed its own subjects. 15 m south on the same cliff ([1665,695], floor 50.0) looking at the
+#    same point: arch 1,743 / 307 px, the Prow 1,250 / 2,988 px, the arch's opening 37.7 % / 36.6 % of its face (≥ 25 %, W7-S's
+#    new arch), horizon in frame both aspects.
+_j = _views["J"]; _j["v2_3"] = {"xy": _j["xy"], "eyeH": _j["eyeH"], "target_h": _j["target_h"], "portrait": dict(_j["portrait"])}
+_j["xy"] = [1665, 695]; _j["eyeH"] = 51.6; _j["target_h"] = 20; _j["portrait"]["target_h"] = 20
+_j["poseNote_v2_4"] = "15 m south on the Prow cliff so the Prow is in the 16:9 frame (0 → 1,250 px); opening 37.7 % of the arch's face (" + I4 + ")"
+# 3. A4 · D-D7 option 1 (design lead rules, reversible): page G looks UP the skylight shaft from the Deep's floor under it
+#    (the proof counts only sky seen through the shaft; from the jetty 44 eu away no ray passes it: 0 px). Eye 4 eu from the
+#    shaft's axis in plan, looking north-up (target [1320,110,380]): 70 px at 1440 × 900, 42 px at 390 × 844; the Deep's roof is
+#    open under the shaft (verified by ray: sky straight up at [1320,400], [1317,398], [1323,403]). The Throat's mouth of
+#    daylight leaves G's subjects (D-B5: the Throat stays dark). Walk from G starts on the Deep's jetty (its v2.3 eye).
+_g = _views["G"]; _g["v2_3"] = {k: _g[k] for k in ("xy", "target", "target_h", "label", "frames", "subjects")}; _g["v2_3"]["portrait"] = dict(_g["portrait"])
+_g.update({"xy": [1320, 404], "target": [1320, 380], "target_h": 110, "label": "The Deep, looking up the skylight shaft",
+           "frames": "from the Deep's floor up the skylight shaft to its square of daylight; the Throat dark behind (D-B5)",
+           "subjects": ["the skylight shaft"], "ground": {"xy": [1300, 440], "h": 40.6}})
+_g["portrait"] = {"fov_deg": 45, "target": [1320, 380], "target_h": 110, "frames": ["the skylight shaft"]}
+_g["decided_v2_4"] = "D-D7 option 1 (design lead rules, reversible: v2_3), W7-T request A4 (" + I4 + ")"
+# 4. A5 · page H: the land cannot show the west sea from a standing eye (the Flats' floor at the polygon's west edge hides every
+#    in-map sea row; review 3: 0 ‰). An aerial eye over the strip: eyeH 39.6 → 48 (the strip 38 + 10), target_h 30 → 20, both
+#    aspects: west sea 350 / 94 px, the strip 121 / 80 px, horizon in frame. Walk from H starts on the strip under the eye.
+_h = _views["H"]; _h["v2_3"] = {"eyeH": None, "eyeH_measured": 39.6, "target_h": _h["target_h"], "portrait": {k: _h["portrait"].get(k) for k in ("target_h", "xy")}}
+_h["eyeH"] = 48; _h["target_h"] = 20; _h["portrait"]["eyeH"] = 48; _h["portrait"]["target_h"] = 20; _h["ground"] = {"xy": [440, 760], "h": 38}
+_h["poseNote_v2_4"] = "an aerial eye 10 m over the strip (eye 39.6 → 48, target_h 30 → 20): west sea 0 → 350 / 94 px (" + I4 + ", W7-T request A5)"
+# 5. A6 · the Reach meadow landing moves down onto the low ground south of the High Span (the v2.1 meadow at 15.3 stood 3.7 m
+#    over the field the Dam Run arrives at: 127 m short). W7-T's [1230,1190] (h 5.9; Dam Run 9.3 m from the centre, Prow → meadow
+#    25.5 m) is not a clear field on the merged land: S1, the Reach walk and footbridge and the spring stand inside its 40 m
+#    (sky.landing.reachMeadow conflict). The nearest clear, dry 40 m field: [1195,1205] h 4.7 (no bed, no water inside r 40):
+#    the Dam Run lands 17.3 m from the centre; Prow → meadow arrives with 23.1 m in hand (25 asked; v2.3: 9.9).
+_rm = m["sky"]["landings"]["reachMeadow"]; _rm["v2_3_xy"] = _rm["xy"]; _rm["xy"] = [1195, 1205]
+_rm["note_v2_4"] = "the nearest clear 40 m field on the low ground south of the High Span (h 4.7): the Dam Run lands 17.3 m from the centre; Prow → meadow 23.1 m in hand, 1.9 short of the 25 asked ([1230,1190] kept 25.5 but S1, the Reach walk and the spring stand in its field) (" + I4 + ", W7-T A6)"
+# 6. A7 · the Throat Run's gate 10 (north face) rides with the h 170 lookout launch: 130 → 139 (at trim the wing crosses +0.2 m,
+#    inside ±8; at 130 it crossed 1.2 m over the top).
+for _gt in m["sky"]["gates"]:
+    if _gt["id"] == "northFace":
+        _gt["v2_3_h"] = _gt["h"]; _gt["h"] = 139; _gt["note_v2_4"] = "re-seated with the lookout launch (+10 → +9): the Throat Run at trim crosses +0.2 (" + I4 + ", W7-T A7)"
+# 7. A8 · Long Sands recorded as ACCEPTED: the Prow → Sands glide arrives (+3.5 m) at any hour without the afternoon thermal, so
+#    the reduced-motion sheet's label is "Long Sands" (was "Long Sands (afternoon)"). FLIGHT's thermal intent is not a route.
+m["sky"]["landings"]["sands"]["note_v2_4"] = "accepted: Prow → Sands arrives +3.5 m at 10:00 and 15:30 alike (no thermal needed); label 'Long Sands' (" + I4 + ", W7-T A8)"
+# 8. W7-S request 7 / design lead: S1's quay finish rises to the islet's natural ground (a pad at 3 dug a 1.7 eu pit into it).
+_lq = m["structures"]["landingQuay"]; _lq["v2_3_finish_h"] = 3; _lq["finish_h"] = 4.7
+_lq["finishNote_v2_4"] = "the paved finish and its pad at the islet's natural ground (≈ 4.7) instead of 3 (" + I4 + ", W7-S request)"
+# 9. W7-S request 4 · the Bight spur trestle carries VBS's whole hang: 6 m further north and 12 m further south along VBS.
+_bt = m["structures"]["bightSpurTrestle"]; _bt["v2_3_from"] = _bt["from"]; _bt["v2_3_to"] = _bt["to"]; _bt["v2_3_length_m"] = _bt["length_m"]
+_bt["from"] = [923.6, 874.5]; _bt["to"] = [881.0, 926.5]; _bt["length_m"] = 68
+_bt["note_v2_4"] = "extended along VBS (north +6, south +12) over the 8.5 / 1.49 eu voids at its ends (" + I4 + ", W7-S request 4)"
+
+# 10. W7-A → W7-S · the Year Walk's November loop crosses over itself at the Prow ([1605,690]: the upper pass 48.3, the lower
+#     lane 42.9, 5.6 apart; an OPEN_VOIDS row since Wave 5). A named footbridge carries the upper pass on the Year Walk's own
+#     grade (W7-A's profile, [1603.5,674.6] 47.10 → [1609.8,702.9] 49.51); its bents stand outside the lower lane's corridor.
+#     The underside clears the lower lane by ≥ 2.4 (5.6 − deck 0.6).
+m["structures"]["prowLoopFootbridge"] = {"kind": "footbridge", "carries": "yearWalk", "over": "the Year Walk's own lower lane (the November loop on the Prow)",
+    "from": [1603.5, 674.6], "to": [1609.8, 702.9], "length_m": 29, "width_m": 6,
+    "note": "v2.4: the Year Walk's upper pass over its own lower lane at the Prow (5.6 eu apart) on a named footbridge (" + I4 + ", W7-A → W7-S request; OPEN_VOIDS yearWalk [1605,690] closed)"}
+
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")
