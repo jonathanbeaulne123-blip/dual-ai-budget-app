@@ -99,4 +99,4 @@ Rule for anything not listed: draw it only if it improves the silhouette, establ
 
 ## 6. Status
 
-Built on branch `claude/horizon-v2-mountain`; PR pending; not pinned.
+Built on branch `claude/horizon-v2-mountain`; PR #566; not pinned.

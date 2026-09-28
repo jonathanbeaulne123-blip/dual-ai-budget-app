@@ -1676,4 +1676,4 @@ Mountain v2 (`src/harbour/mountain/**`, the live mountain on `main`, `hearth-mou
 
 Risk **High** (shared geometry, navigation, presentation). Budget delta (5): **+0** — no money path changes; `L01` moves with the dam onto v2's crest plaques and still reads `BasinReading` only, nothing else on the mountain touches money. Engagement delta (3): **+2** — the beautiful mountain, preserved at its original quality and stripped of clutter, is now on the island. Fictional data only, per `CONTRACT.md` §2.12. See the [worksession](worksessions/2026-09-28-horizon-v2-mountain.md) for tracks, verification and uncertainty.
 
-Status: branch `claude/horizon-v2-mountain`, PR pending. <!-- PR -->
+Status: branch `claude/horizon-v2-mountain`, PR #566 (dev-gated; merge state recorded in the PR).
