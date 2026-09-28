@@ -6,7 +6,7 @@ untouched). Fictional data only. `src/core/` and money semantics were not touche
 
 ## 0 · Status
 
-- **Tests:** every owned suite is green on the committed bake, run one at a time with `--maxWorkers=1`.
+- **Tests:** every owned suite is green on the committed bake, run one at a time with `--maxWorkers=1` (measured at T1's working tree; the integrator's later re-bakes — the launch deck, page F, the funicular thresholds — moved three expectations, re-run green: see `evidence/pass5/REVIEW-5.md` and the worksession).
   - Landforms 11, TerrainCuts 18, Beds 17, Structures 23, Water 11, Thresholds 8, Crossings 12, Views 11, Journeys 5.
   - WalkOut 51, HeldWalkOut 29, SavedPosition 4, Wave4 15, Wave6 9, Reconcile2 5, LandRepairs 10, Underground 4.
   - Manifest 35, BakeArtifacts 6, TerrainAsset 7, SkyEnvelope 5, Cards 7, HostsDoors 3, Reserves 1, Streaming 31.
