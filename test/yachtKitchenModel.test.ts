@@ -85,6 +85,19 @@ describe('recoverable preparation, cooking, mistakes and ownership',()=>{
 });
 
 describe('deterministic time, paused restoration and capacity-aware orders',()=>{
+ it('warns once when an order reaches its final quarter, without counting paused time',()=>{
+  const e=createKitchenEngine({seed:1500});e.start('lunch',1,{patience:.5});act(e,{type:'ready'});const order=e.state().orders[0]!;
+  expect(order.recipe).toBe('pasta');const message=`${RECIPES[order.recipe].label}: the order has a quarter of its patience left.`;
+  const warnings=()=>e.state().events.filter(event=>event.kind==='warning'&&event.message===message);
+  e.update(order.total*.75-.05);expect(warnings()).toHaveLength(0);e.pause();const remaining=order.remaining;e.update(60);expect(order.remaining).toBe(remaining);expect(warnings()).toHaveLength(0);
+  e.resume();e.update(.05);expect(warnings()).toHaveLength(1);e.pause();e.update(60);e.resume();e.update(5);expect(warnings()).toHaveLength(1);
+ });
+ it('warns once at thirty service seconds and does not replay the cue after paused restoration',()=>{
+  const e=start('lunch'),message='30 seconds left in this service. Finish the plates already underway.';
+  const warnings=(engine:KitchenEngine)=>engine.state().events.filter(event=>event.kind==='warning'&&event.message===message);
+  e.update(SERVICES.lunch.seconds-30-.05);expect(warnings(e)).toHaveLength(0);e.pause();e.update(600);expect(warnings(e)).toHaveLength(0);e.resume();e.update(.05);expect(warnings(e)).toHaveLength(1);
+  const restored=createKitchenEngine();expect(restored.restore(e.snapshot())).toBe(true);restored.update(600);expect(warnings(restored)).toHaveLength(1);restored.resume();restored.update(1);expect(warnings(restored)).toHaveLength(1);
+ });
  it('uses the same sequence and progress at 20, 30, 60 and 120 updates per second',()=>{
   const run=(fps:number)=>{const e=start('lunch');fetchIngredient(e,'bread');at(e,'hob');act(e);for(let i=0;i<60*fps;i++)e.update(1/fps);return e.snapshot();};const expected=run(20);for(const fps of[30,60,120])expect(run(fps)).toEqual(expected);
  });

@@ -126,7 +126,7 @@ export function createKitchenEngine(options:{seed?:number;canReach?:(pose:ChefPo
   if(st.kind==='appliance')beginCooking(held,st);drop(c);return result(true,`Placed at ${st.label}.`,id);
  }
  function step(dt:number){
-  s.elapsed=round(s.elapsed+dt);if(SERVICES[s.service].seconds)s.remaining=Math.max(0,round(s.remaining-dt));
+  s.elapsed=round(s.elapsed+dt);if(SERVICES[s.service].seconds){const before=s.remaining;s.remaining=Math.max(0,round(s.remaining-dt));if(before>30&&s.remaining<=30)emit('warning','30 seconds left in this service. Finish the plates already underway.');}
   if(!s.trolley.secured)s.trolley.progress=Math.min(1,round(s.trolley.progress+dt/TROLLEY_SECONDS));
   for(const c of s.chefs){const task=c.task,st=currentStation(task?.station);if(!task||!st)continue;if(!c.connected||!reach(c,st)||s.assists.prep==='hold'&&!heldPrep.has(c.id)){c.task=null;continue;}
    const item=task.kind==='extinguish'?s.items[c.held??'']:contents(st.id).find(i=>task.kind==='wash'?i.kind==='plate'&&i.dirty:i.kind==='ingredient'&&i.phase==='raw'&&INGREDIENTS[i.ingredient!].prepSeconds>0);
@@ -149,7 +149,7 @@ export function createKitchenEngine(options:{seed?:number;canReach?:(pose:ChefPo
    }
   }
   if(s.phase!=='playing')return;
-  for(const order of s.orders)if(order.status==='waiting'&&order.total>0){order.remaining=Math.max(0,round(order.remaining-dt));if(order.remaining===0){order.status='missed';s.missed++;s.sequence=0;emit('miss',`${RECIPES[order.recipe].label} missed. The next order is a fresh chance.`);}}
+  for(const order of s.orders)if(order.status==='waiting'&&order.total>0){const before=order.remaining;order.remaining=Math.max(0,round(order.remaining-dt));if(before>order.total*.25&&order.remaining<=order.total*.25)emit('warning',`${RECIPES[order.recipe].label}: the order has a quarter of its patience left.`);if(order.remaining===0){order.status='missed';s.missed++;s.sequence=0;emit('miss',`${RECIPES[order.recipe].label} missed. The next order is a fresh chance.`);}}
   if(s.service!=='first'&&(s.elapsed>=s.nextOrderAt||!s.orders.some(o=>o.status==='waiting'))){addOrder();s.nextOrderAt=s.elapsed+SERVICES[s.service].interval*(s.players===1?1.45:1);}
   if(SERVICES[s.service].seconds&&s.remaining===0)finish();
  }
