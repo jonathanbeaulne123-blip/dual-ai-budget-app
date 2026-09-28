@@ -61,6 +61,9 @@ Raw JSON, screenshots, exact harness scripts, source/test hashes and gate logs a
 - Workspace TypeScript passed: `pnpm_config_verify_deps_before_run=false pnpm run typecheck:workspace`.
 - Initial quick gate found two test-fixture typing errors (112.8 s, no timing breach); corrected the fixture annotations. Final repository quick gate passed: 402/402 tests across 29 files, TypeScript, AI surface and diff checks in 165.073 s; `timeBudgetBreached:false`. All commands use `pnpm_config_verify_deps_before_run=false` to preserve the verified shared dependency installation.
 
+## PR review follow-up
+PR #563 review identified that attaching ambience to a sleeping view did not wake it. `setAmbience` now schedules a frame. A real-browser regression probe in Full/Lite × Look/Journey verified one immediate audio update/render, zero subsequent idle frames, and zero browser errors in all four cases. Probe: `node /tmp/hearth-horizon-opt/browser-sound.mjs`; raw script, log and JSON are in the evidence directory. The PR checks verify the correction before merge.
+
 ## Remaining limits
 The 3 ms construction budget is cooperative: a single cell conversion, chalk upload, synchronous chunk parse/index, cable change or GPU upload can exceed it. Initial coarse construction and shader compilation remain synchronous. Walking keeps simulation running; only settled Look/Journey/paused views rest, and visible ambient partner motion retains animation. Physical iPhone, Safari, full-app overlays, prolonged thermal load, two-device presence and accessibility acceptance remain separate. Adaptive quality is not implemented. This work cannot certify 60 fps at all times.
 

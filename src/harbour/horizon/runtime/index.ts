@@ -760,7 +760,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     cruiserState:()=>cruiser()?.state()??null,
     body:()=>({...body}),mode:()=>mode,shotId:()=>shotId,
     setTheme(next:VehicleDressing){if(next===theme)return;theme=next;kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
-    settings:()=>({tier,reducedMotion:comfort.reducedMotion,calm:comfort.calm,theme}),reviewDate:()=>(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm})),setAmbience(audio:WorldAmbience|null){ambience=audio;},
+    settings:()=>({tier,reducedMotion:comfort.reducedMotion,calm:comfort.calm,theme}),reviewDate:()=>(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm})),setAmbience(audio:WorldAmbience|null){ambience=audio;schedule();},
     offers,
     moverState():HorizonMoverState{const fade=fadeLabel&&performance.now()-fadeLabel.at<HORIZON_FADE_LABEL_MS?fadeLabel.label:undefined;return{mode:registry.mode(),attached:registry.active()!==null,hud:lastHud,airborne:registry.mode()==='parachute'||!!registry.active()?.airborne?.(),stowed:registry.stowed(),perspective:perspective.mode(),...(fade?{fade}:{}),cut:comfortCut};},
     moverAction(action:'fold'|'pull'|'gate'){
