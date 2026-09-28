@@ -82,6 +82,16 @@ describe('recoverable preparation, cooking, mistakes and ownership',()=>{
  it('rescues held items on disconnect and supports finishing alone without advancing paused clocks',()=>{
   const e=start('practice',2);fetchIngredient(e,'tomato',1);const item=held(e,1).id;e.disconnect(1);expect(e.state().phase).toBe('paused');expect(e.state().items[item]!.location.kind).toBe('return');const paused=e.snapshot();e.update(100);expect(e.snapshot()).toEqual(paused);e.leaveChef(1);expect(e.state().players).toBe(1);e.resume();e.update(.05);at(e,'return');act(e);expect(held(e).id).toBe(item);ensureOwnership(e);
  });
+ it('extends existing co-op order patience exactly once when continuing alone',()=>{
+  const e=start('lunch',2);e.update(60);const before=structuredClone(e.state().orders.filter(o=>o.status==='waiting'));expect(before.length).toBeGreaterThan(1);
+  e.disconnect(1);e.leaveChef(1);expect(e.state().players).toBe(1);expect(e.state().phase).toBe('paused');
+  for(const order of before){const after=e.state().orders.find(o=>o.id===order.id)!;expect(after.remaining).toBeCloseTo(order.remaining*1.35,6);expect(after.total).toBeCloseTo(order.total*1.35,6);}
+  const once=e.snapshot();e.leaveChef(1);e.disconnect(1);expect(e.snapshot()).toEqual(once);
+ });
+ it('finishes relaxed practice without counting unfinished orders as misses',()=>{
+  const e=start();dish(e,e.state().orders[0]!.recipe);deliver(e);wash(e);expect(e.state().orders.some(o=>o.status==='waiting')).toBe(true);const score=e.state().score;
+  act(e,{type:'ready'});expect(e.state().phase).toBe('results');expect(e.state().missed).toBe(0);expect(e.state().result).toMatchObject({served:1,missed:0,score});expect(e.state().orders).toHaveLength(1);expect(e.state().orders[0]!.status).toBe('served');const restored=createKitchenEngine();expect(restored.restore(e.snapshot())).toBe(true);expect(restored.state().result?.missed).toBe(0);
+ });
 });
 
 describe('deterministic time, paused restoration and capacity-aware orders',()=>{
