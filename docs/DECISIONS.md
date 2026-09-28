@@ -1,3 +1,11 @@
+## 2026-09-28 — Spread Horizon construction and rest settled views
+
+Jonathan selected district-loading stalls, idle work and collision allocations for the next optimization. Fine district geometry is built cooperatively with a 3 ms target per animation frame; coarse terrain remains until completion, and abandoned work disposes its partial resources. Collision readiness and movement gates remain synchronous and authoritative. Cable systems rebuild only when their own geometry or anchor readiness changes.
+
+Look, Journey and paused views rest once transitions and district fades settle. Input, external visual setters, chunk arrival, visibility and renderer-lease resume wake them; a small idle poll watches relevant partner changes, sunlight and eviction grace. Walking and visible ambient animation keep their ordinary cadence. Static collision data is indexed once for people and hulls, with hull queries explicitly excluding dynamic providers; face/intersection scratch is reused without exposing mutable query results. No geometry simplification, adaptive quality, financial or Confirm changes.
+
+Risk Medium-High. Budget (5): responsive access to existing tools. Engagement (3): smoother arrival and lower idle work. Measurements and limitations are in [the worksession](worksessions/2026-09-28-horizon-render-work.md). The construction target is cooperative, not a hard deadline; GPU uploads and initial asset parsing still require physical-device profiling.
+
 ## 2026-09-28 — Target 60 fps with less repeated rendering work
 
 Jonathan asked for faster rendering and a steady 60 fps experience. Harbour now targets 60 fps for active camera, pointer, body and visible ambient animation in both Full and Lite. A deadline-based frame pacer tolerates fractional browser timestamps, preserves cadence on high-refresh displays, and resynchronizes after suspension without catch-up simulation. Rested and hidden Harbour scenes retain demand-driven rendering and reduced-motion behavior. The glass budget uses the same 60 fps target for both tiers.

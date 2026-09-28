@@ -120,10 +120,12 @@ export const RELOCATION_JUMP_EU = 50;
 /** Same delayed-release / one-build-per-frame algorithm as Mountain v2, with a hard residency cap. */
 /** R1-72: `ready(id)` false while a district's geometry chunk is still loading; the stream never builds it early (it stays
  * pending, and `request(id)` asks the loader for it), so a district's cards never go up without its solids. */
-export interface DistrictStreamOptions { ready?: (districtId: string) => boolean; request?: (districtId: string) => void }
-export function createDistrictStream<T extends DistrictResource>(world: Pick<WorldDefinition, 'districts'>, build: (district: District) => T, tier: 'full' | 'lite' = 'full', options: DistrictStreamOptions = {}) {
+export interface DistrictStreamOptions<T extends DistrictResource = DistrictResource> { prepare?: (district:District)=>{advance():T|undefined;cancel():void}; ready?: (districtId: string) => boolean; request?: (districtId: string) => void }
+export function createDistrictStream<T extends DistrictResource>(world: Pick<WorldDefinition, 'districts'>, build: (district: District) => T, tier: 'full' | 'lite' = 'full', options: DistrictStreamOptions<T> = {}) {
   const live = new Map<string, T>(), outsideSince = new Map<string, number>(), cap = tier === 'full' ? 4 : 3;
   let disposed = false, frame = 0, settling = false, last: { x: number; z: number } | null = null;
+  let preparing:{id:string;task:{advance():T|undefined;cancel():void}}|null=null;
+  let revision=0;
   const history: { frame: number; time: number; mode: string; built: string[]; released: string[]; resident: string[]; pending: string[] }[] = [];
   const distance = (d: District, x: number, z: number) => {
     if (pointInPolygon(x, z, d.outline)) return 0;
@@ -163,6 +165,12 @@ export function createDistrictStream<T extends DistrictResource>(world: Pick<Wor
   }
   return {
     live, history, cap,
+    get revision(){return revision;},
+    get building(){return preparing!==null;},
+    get nextMaintenanceAt(){
+      const needSlot=live.size>=cap&&Boolean(selection?.desired.some(d=>!live.has(d.id)&&(!options.ready||options.ready(d.id))));
+      let next=Infinity;for(const [id,since] of outsideSince)if(!selection?.keep.has(id)||needSlot)next=Math.min(next,since+STREAM_GRACE_MS);return next;
+    },
     update(input: StreamPosition): boolean {
       if (disposed) return false;
       const radius = input.radius ?? defaultRadius;
@@ -188,19 +196,24 @@ export function createDistrictStream<T extends DistrictResource>(world: Pick<Wor
       // the browser: 10 builds on 10 toggles).
       for (const d of desired) if (!live.has(d.id) && options.ready && !options.ready(d.id)) options.request?.(d.id);
       const next = desired.find(d => !live.has(d.id) && (!options.ready || options.ready(d.id)));
+      if(preparing&&preparing.id!==next?.id){preparing.task.cancel();preparing=null;}
       if (!last || Math.hypot(input.x - last.x, input.z - last.z) > RELOCATION_JUMP_EU) settling = true;
       last = { x: input.x, z: input.z };
       if (next && live.size >= cap && (next === desired[0] || settling)) {
         const victim = [...live.keys()].filter(id => !wanted.has(id)).sort((a, b) => (outsideSince.get(a) ?? input.now) - (outsideSince.get(b) ?? input.now) || a.localeCompare(b))[0];
         if (victim !== undefined) { live.get(victim)!.dispose(); live.delete(victim); outsideSince.delete(victim); released.push(victim); }
       }
-      if (next && live.size < cap) { live.set(next.id, build(next)); built.push(next.id); }
+      if (next && live.size < cap) {
+        if(options.prepare){preparing??={id:next.id,task:options.prepare(next)};const resource=preparing.task.advance();if(resource){live.set(next.id,resource);built.push(next.id);preparing=null;}}
+        else {live.set(next.id,build(next));built.push(next.id);}
+      }
+      if(built.length||released.length)revision++;
       const pending = desired.filter(d => !live.has(d.id)).map(d => d.id);
       if (!pending.length) settling = false;
       history.push({ frame: frame++, time: input.now, mode: input.mode ?? 'walk', built, released, resident: [...live.keys()], pending });
       if (history.length > 600) history.shift();
       return built.length > 0 || released.length > 0 || pending.length > 0;
     },
-    dispose() { if (disposed) return; disposed = true; for (const resource of live.values()) resource.dispose(); live.clear(); outsideSince.clear(); },
+    dispose() { if (disposed) return; disposed = true; preparing?.task.cancel();preparing=null; for (const resource of live.values()) resource.dispose(); live.clear(); outsideSince.clear(); },
   };
 }

@@ -209,7 +209,7 @@ it('cable layer: a span renders only once both its anchors are in, an anchor dra
   const mid = (p: readonly number[], q: readonly number[]) => [(p[0]! + q[0]!) / 2, (p[1]! + q[1]!) / 2];
   const m0 = mid(a0, a1), m3 = mid(a3, a4);
   const cable = { id: 'G1.cable@harbour', sourceId: 'G1.cable', districtId: 'harbour', kind: 'cable', surface: 'metal', role: 'rail', walkable: false, bedIds: [], positions: [m0[0]!, 40, m0[1]!, m0[0]! + 1, 40, m0[1]!, m0[0]!, 41, m0[1]!, m3[0]!, 120, m3[1]!, m3[0]! + 1, 120, m3[1]!, m3[0]!, 121, m3[1]!], indices: [0, 1, 2, 3, 4, 5] };
-  const slab = (id: string, district: string, xy: readonly number[]) => ({ id: `${id}@${district}`, sourceId: id, districtId: district, kind: 'platform', surface: 'stone', role: 'floor', walkable: true, bedIds: [], positions: [xy[0]!, 18, xy[1]!, xy[0]! + 2, 18, xy[1]!, xy[0]!, 18, xy[1]! + 2], indices: [0, 1, 2] });
+  const slab = (id: string, district: string, xy: readonly number[]):StructureSolid => ({ id: `${id}@${district}`, sourceId: id, districtId: district, kind: 'platform', surface: 'stone', role: 'floor', walkable: true, bedIds: [], positions: [xy[0]!, 18, xy[1]!, xy[0]! + 2, 18, xy[1]!, xy[0]!, 18, xy[1]! + 2], indices: [0, 1, 2] });
   const world = { geometry: { solids: [cable, slab('platform.gondolaBase.slab', 'harbour', a0), slab('platform.gondolaTop.slab', 'crown', a4)] } } as unknown as Parameters<typeof createCableLayer>[0];
   const ready = new Set(['harbour']), where = (xy: readonly number[]) => [xy === a4 || xy[1]! < 800 ? 'crown' : 'harbour'];
   const layer = createCableLayer(world, 'full', id => ready.has(id), where);
@@ -218,6 +218,8 @@ it('cable layer: a span renders only once both its anchors are in, an anchor dra
   expect(layer.stats().spans.filter(s => s.system === 'G1').map(s => s.drawn)).toEqual([true, true, false, false]);
   layer.update(new Set(['harbour']), false); expect(layer.stats().anchorsDrawn).toEqual([]);
   layer.update(new Set(['crown']), false); expect(layer.stats().anchorsDrawn).toEqual(['harbour']);
+  const stable=[...layer.group.children];layer.rebuild();expect(layer.group.children).toEqual(stable);
+  world.geometry!.solids.push({...slab('unrelated.rock','harbour',a0)});layer.rebuild();expect(layer.group.children).toEqual(stable);
   ready.add('crown'); layer.rebuild(); layer.update(new Set(['harbour']), false);
   expect(layer.stats().spans.filter(s => s.system === 'G1').map(s => s.drawn)).toEqual([true, true, true, true]); expect(layer.stats().anchorsDrawn).toEqual(['crown']);
   layer.dispose();
@@ -358,4 +360,13 @@ it('reuses stationary spatial selection while still processing newly ready chunk
   const movedReads=read.mock.calls.length;
   stream.update({...at,x:at.x+1,radius:2000,now:116});expect(read.mock.calls.length).toBeGreaterThan(movedReads);
   stream.dispose();
+});
+
+it('keeps partial districts outside residency and cancels obsolete or disposed work',()=>{
+ const world={districts:buildDistricts(field,[],[])},cancelled:string[]=[],started:string[]=[];
+ const stream=createDistrictStream(world,()=>({dispose(){}}),'lite',{prepare:d=>{started.push(d.id);let count=0;return{advance:()=>++count===3?{dispose(){}}:undefined,cancel:()=>{cancelled.push(d.id);}};}});
+ stream.update({x:1455,z:1175,now:0});expect(stream.building).toBe(true);expect(stream.live.size).toBe(0);const original=started[0]!;
+ stream.update({x:350,z:550,now:16});expect(cancelled).toEqual([original]);expect(started.at(-1)).toBe('flats');expect(stream.live.size).toBe(0);
+ stream.update({x:350,z:550,now:32});stream.update({x:350,z:550,now:48});expect(stream.live.has('flats')).toBe(true);expect(stream.revision).toBe(1);
+ stream.update({x:350,z:550,now:64,radius:2000});stream.dispose();expect(cancelled.length).toBe(2);expect(stream.live.size).toBe(0);
 });

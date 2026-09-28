@@ -9,7 +9,8 @@ export const HORIZON_BODY_HEIGHT = 1.25;
 export const HORIZON_STEP_HEIGHT = .48;
 /** One gravity for the walker, the ground kernel and the wings (RIDE D40). */
 export const HORIZON_G = 12;
-type Triangle = {a:XYZ;b:XYZ;c:XYZ;normal:XYZ;solid:StructureSolid};
+type MutableXYZ=[number,number,number];
+type Triangle = {a:MutableXYZ;b:MutableXYZ;c:MutableXYZ;normal:MutableXYZ;solid:StructureSolid};
 export type HorizonSurface = {id:string;y:number;nx:number;ny:number;nz:number;material:string;slope:number};
 export interface DynamicGeography {
  surface(x:number,z:number,y?:number,step?:number):HorizonSurface|null;
@@ -25,17 +26,18 @@ function projection(t:Triangle,x:number,z:number):number|null {
   const v=((c[2]-a[2])*(x-c[0])+(a[0]-c[0])*(z-c[2]))/det;
   return u>=-1e-6&&v>=-1e-6&&u+v<=1.000001?u*a[1]+v*b[1]+(1-u-v)*c[1]:null;
 }
-function distanceSegment(x:number,z:number,a:XYZ,b:XYZ){
-  const dx=b[0]-a[0],dz=b[2]-a[2],d=dx*dx+dz*dz,t=d?Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[2])*dz)/d)):0;
-  return Math.hypot(x-a[0]-t*dx,z-a[2]-t*dz);
-}
-function atHeight(t:Triangle,y:number):XYZ[]{
-  const result:XYZ[]=[];
-  for(const [a,b] of [[t.a,t.b],[t.b,t.c],[t.c,t.a]] as const){
+/** Scratch intersection coordinates stay within a query; no per-face arrays. */
+function touchesAtHeight(t:Triangle,y:number,x:number,z:number,radius:number):boolean {
+  let count=0,ax=0,az=0,bx=0,bz=0;
+  for(let i=0;i<3;i++){
+    const a=i===0?t.a:i===1?t.b:t.c,b=i===0?t.b:i===1?t.c:t.a;
     if((y-a[1])*(y-b[1])>0||Math.abs(b[1]-a[1])<1e-8)continue;
-    const f=(y-a[1])/(b[1]-a[1]);result.push([a[0]+f*(b[0]-a[0]),y,a[2]+f*(b[2]-a[2])]);
+    const f=(y-a[1])/(b[1]-a[1]),px=a[0]+f*(b[0]-a[0]),pz=a[2]+f*(b[2]-a[2]);
+    if(count++===0){ax=px;az=pz;}else{bx=px;bz=pz;break;}
   }
-  return result;
+  if(count<2)return false;
+  const dx=bx-ax,dz=bz-az,d=dx*dx+dz*dz,f=d?Math.max(0,Math.min(1,((x-ax)*dx+(z-az)*dz)/d)):0;
+  return Math.hypot(x-ax-f*dx,z-az-f*dz)<radius;
 }
 export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
   // Keep one compact reference per indexed face, not four duplicate JS arrays per face.
@@ -66,43 +68,46 @@ export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
   }
   addSolids(cuts.solids);
   const nearby=(x:number,z:number)=>cells.get(key(x,z))??[];
+  // Query-local scratch is never returned. Dynamic providers are called outside
+  // static face loops, so a provider can query this geography without corrupting it.
+  const face:Triangle={a:[0,0,0],b:[0,0,0],c:[0,0,0],normal:[0,0,0],solid:solids[0]!};
   function triangle(id:number):Triangle{
     const solid=solids[owners[id]!]!,offset=offsets[id]!,p=solid.positions;
-    const vertex=(n:number):XYZ=>{const j=solid.indices[offset+n]!*3;return[p[j]!,p[j+1]!,p[j+2]!];};
-    return{a:vertex(0),b:vertex(1),c:vertex(2),normal:[normals[id*3]!,normals[id*3+1]!,normals[id*3+2]!],solid};
+    for(let n=0;n<3;n++){const j=solid.indices[offset+n]!*3,v=n===0?face.a:n===1?face.b:face.c;v[0]=p[j]!;v[1]=p[j+1]!;v[2]=p[j+2]!;face.normal[n]=normals[id*3+n]!;}
+    face.solid=solid;return face;
   }
-  function surface(x:number,z:number,y?:number,step=.48):HorizonSurface|null {
+  const contactFaces=new Set<number>();
+  function surface(x:number,z:number,y?:number,step=.48,staticOnly=false):HorizonSurface|null {
     if(x<0||z<0||x>field.width||z>field.depth)return null;
     const g=sampleTerrain(field,x,z),normal=terrainNormal(field,x,z);
     const n=Array.isArray(normal)?normal:[0,1,0];
     let best:HorizonSurface|null=terrainTriangleVisible(x,z,cuts)&&(y===undefined||g<=y+step)?{id:'terrain',y:g,nx:n[0]!,ny:n[1]!,nz:n[2]!,material:'grass',slope:Math.acos(Math.min(1,n[1]!))*180/Math.PI}:null;
-    for(const id of nearby(x,z)){const t=triangle(id);
-      if(t.normal[1]<=.001||!t.solid.walkable)continue;
+    for(const id of nearby(x,z)){
+      if(normals[id*3+1]!<=.001||!solids[owners[id]!]!.walkable)continue;const t=triangle(id);
       const h=projection(t,x,z);if(h===null||(y!==undefined&&h>y+step)||(best&&h<best.y))continue;
       best={id:t.solid.id,y:h,nx:t.normal[0],ny:t.normal[1],nz:t.normal[2],material:t.solid.surface,slope:Math.acos(Math.min(1,t.normal[1]))*180/Math.PI};
     }
-    for(const d of dynamic){const h=d.surface(x,z,y,step);if(h&&(!best||h.y>best.y))best=h;}
+    if(!staticOnly)for(const d of dynamic){const h=d.surface(x,z,y,step);if(h&&(!best||h.y>best.y))best=h;}
     return best;
   }
-  function ceiling(x:number,z:number,y:number){
+  function ceiling(x:number,z:number,y:number,staticOnly=false){
     let value=Infinity;
-    for(const id of nearby(x,z)){const t=triangle(id);if(t.normal[1]>=-.001)continue;const h=projection(t,x,z);if(h!==null&&h>y+.1)value=Math.min(value,h);}
-    for(const d of dynamic)value=Math.min(value,d.ceiling(x,z,y));
+    for(const id of nearby(x,z)){if(normals[id*3+1]!>=-.001)continue;const t=triangle(id);const h=projection(t,x,z);if(h!==null&&h>y+.1)value=Math.min(value,h);}
+    if(!staticOnly)for(const d of dynamic)value=Math.min(value,d.ceiling(x,z,y));
     return value;
   }
   function contact(x:number,z:number,y:number,radius=.3,travel?:readonly [number,number],ignoreDynamic=false):{id:string;nx:number;nz:number}|null{
     if(x<radius||z<radius||x>field.width-radius||z>field.depth-radius){const nx=x<radius?1:x>field.width-radius?-1:0,nz=z<radius?1:z>field.depth-radius?-1:0,n=Math.hypot(nx,nz);return {id:'world-boundary',nx:nx/n,nz:nz/n};}
     if(!ignoreDynamic)for(const d of dynamic){const h=d.contact(x,z,y,radius);if(h)return h;}
-    const all=new Set<number>();
-    for(const dx of [-radius,0,radius])for(const dz of [-radius,0,radius])for(const t of nearby(x+dx,z+dz))all.add(t);
-    for(const id of all){const t=triangle(id);
-      if(Math.abs(t.normal[1])>.95)continue;
+    const all=contactFaces;all.clear();
+    for(let ix=-1;ix<=1;ix++)for(let iz=-1;iz<=1;iz++)for(const t of nearby(x+ix*radius,z+iz*radius))all.add(t);
+    for(const id of all){if(Math.abs(normals[id*3+1]!)>.95)continue;const t=triangle(id);
       // A body already overlapping a lip can leave it; only an approaching side blocks motion.
       if(travel&&t.normal[0]*travel[0]+t.normal[2]*travel[1]>=-1e-8)continue;
       if(Math.max(t.a[1],t.b[1],t.c[1])<=y+HORIZON_STEP_HEIGHT||Math.min(t.a[1],t.b[1],t.c[1])>y+HORIZON_BODY_HEIGHT)continue;
-      for(const h of [y+.2,y+.65,y+HORIZON_BODY_HEIGHT]){const span=atHeight(t,h);if(span.length>=2&&distanceSegment(x,z,span[0]!,span[1]!)<radius){const length=Math.hypot(t.normal[0],t.normal[2]);return {id:t.solid.id,nx:t.normal[0]/length,nz:t.normal[2]/length};}}
+      for(let level=0;level<3;level++){const h=y+(level===0?.2:level===1?.65:HORIZON_BODY_HEIGHT);if(touchesAtHeight(t,h,x,z,radius)){const length=Math.hypot(t.normal[0],t.normal[2]);return {id:t.solid.id,nx:t.normal[0]/length,nz:t.normal[2]/length};}}
     }
-    for(const id of nearby(x,z)){const t=triangle(id);if(t.normal[1]>=-.001)continue;const h=projection(t,x,z);if(h!==null&&h>y+.1&&h<y+HORIZON_BODY_HEIGHT)return {id:t.solid.id,nx:0,nz:0};}
+    for(const id of nearby(x,z)){if(normals[id*3+1]!>=-.001)continue;const t=triangle(id);const h=projection(t,x,z);if(h!==null&&h>y+.1&&h<y+HORIZON_BODY_HEIGHT)return {id:t.solid.id,nx:0,nz:0};}
     return null;
   }
   const blocker=(x:number,z:number,y:number,radius=.3,travel?:readonly [number,number],ignoreDynamic=false)=>contact(x,z,y,radius,travel,ignoreDynamic)?.id??null;
@@ -141,7 +146,8 @@ export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
     }
     return false;
   }
-  return {addDynamic(provider:DynamicGeography){dynamic.add(provider);return()=>dynamic.delete(provider);},surface,ceiling,blocked,blocker,contact,waterLevel,submerged,cameraBlocked,get indexStats(){return{triangles:count,referenceBytes:(owners.byteLength+offsets.byteLength+normals.byteLength)*count/Math.max(1,owners.length),cells:cells.size,chunks};},addSolids,ground:(x:number,z:number)=>sampleTerrain(field,x,z)};
+  const staticOnly={surface:(x:number,z:number,y?:number,step?:number)=>surface(x,z,y,step,true),ceiling:(x:number,z:number,y:number)=>ceiling(x,z,y,true),blocked:(x:number,z:number,y:number,radius=.3)=>blocker(x,z,y,radius,undefined,true)!==null};
+  return {staticOnly,addDynamic(provider:DynamicGeography){dynamic.add(provider);return()=>dynamic.delete(provider);},surface,ceiling,blocked,blocker,contact,waterLevel,submerged,cameraBlocked,get indexStats(){return{triangles:count,referenceBytes:(owners.byteLength+offsets.byteLength+normals.byteLength)*count/Math.max(1,owners.length),cells:cells.size,chunks};},addSolids,ground:(x:number,z:number)=>sampleTerrain(field,x,z)};
 }
 export function nearestBedPoint(beds:readonly BedCut[],x:number,z:number):XYZ {
   let best:XYZ=[x,0,z],distance=Infinity;
