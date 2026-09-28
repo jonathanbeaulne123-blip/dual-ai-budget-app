@@ -131,7 +131,7 @@ export function createFleet(env:WaterEnv){
   if(a.kind==='door'){const f=FIXTURES.find(f=>f.id===a.id)!,p=toLocal(yacht,body);if(doors.has(a.id)&&inside(f,p.x,p.z,.35))return{message:'Step clear of the doorway to close it.'};doors.has(a.id)?doors.delete(a.id):doors.add(a.id);return{};}
   if(a.kind==='sit'){sitting=a.id;return{body:{...toWorld(yacht,SEATS.find(s=>s.id===a.id)!.at),yaw:yacht.yaw}};}
   if(a.kind==='stand'){const s=SEATS.find(s=>s.id===sitting)!;sitting=null;return{body:{...toWorld(yacht,s.stand),yaw:yacht.yaw}};}
-  return{message:`${a.label.replace(' · inspect station','')} · a place for future cooking activities.`};
+  return{message:`${a.label.replace(' · inspect station','')} · open Yacht Kitchen at the galley menu board beside the pantry.`};
  }
  return{vessels,get,yacht,doors,time:()=>time,surface,ceiling,contact,support,navigable,step,actions,act,seatBody,
   pilot:()=>pilot,sitting:()=>sitting,stand(){sitting=null;},resetInput(){input={forward:0,steer:0,jump:false};},
