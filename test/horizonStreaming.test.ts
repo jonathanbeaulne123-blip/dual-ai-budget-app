@@ -187,7 +187,7 @@ it('chunk gate: footprints name the chunks under a step; a route lists its chunk
     expect(held).toBe(31); expect(gate.missingAt(31, 5)).toEqual(['bight']); expect(gate.missingAt(30.8, 5)).toEqual([]);
     expect(gate.along([[10, 12, 5], [150, 12, 5]])).toEqual(['harbour', 'bight']); expect(gate.near(10, 5, CHUNK_REACH_EU)).toEqual(['harbour', 'bight']);
     // Bytes fetched ahead are appended at once by the gate (no wait); without bytes and not blocking it stays held.
-    expect(loader.loadSync('bight')).toBe(false); await loader.fetch('bight'); expect(loader.ready('bight')).toBe(false);
+    expect(loader.loadSync('bight')).toBe(false); await loader.prefetch('bight'); expect(loader.ready('bight')).toBe(false);
     expect(loader.loadSync('bight')).toBe(true); expect(gate.missingAt(63, 5)).toEqual([]); expect(world.geometry.solids.map(s => s.id)).toEqual(['a@harbour', 'b@bight']);
     await loader.load('bight'); expect(world.geometry.solids).toHaveLength(2); expect(calls.filter(u => u.includes('bight'))).toHaveLength(1);
     // Scheduler: the route's chunks load before what the view asked for, before the background.

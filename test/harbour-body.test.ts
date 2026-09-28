@@ -58,6 +58,40 @@ function walk(state: BodyState, theta: number, seconds: number, world: BodyWorld
 const TOWARD_Z = Math.PI, AWAY_FROM_Z = 0;
 
 describe("the body is a person in a model village", () => {
+  for (const takeOver of ['mount', 'restore'] as const) {
+    it(`shows the rider when a skateboard ${takeOver} interrupts a fall recovery`, () => {
+      const rider = createWalker({ groundHeightAt, tier: 'lite', trail: false });
+      let checkpoint: ReturnType<typeof rider.skate.checkpoint> = null;
+      if (takeOver === 'restore') {
+        rider.skate.enable(true); checkpoint = rider.skate.checkpoint(); rider.skate.enable(false);
+        expect(checkpoint).toBeTruthy();
+      }
+      const figure = rider.group.getObjectByName('body')!;
+      expect(figure).toBeTruthy();
+      rider.place(COURT_ARRIVAL.x, COURT_ARRIVAL.z, 0, groundHeightAt(COURT_ARRIVAL.x, COURT_ARRIVAL.z) + 10);
+      rider.retry();
+      for (let i = 0; i < 180 && figure.visible; i++) rider.step(1 / 60, i / 60, 0);
+      expect(rider.state().returning).toBeTruthy();
+      expect(figure.visible).toBe(false);
+      if (takeOver === 'restore') rider.skate.restore(checkpoint!);
+      else expect(rider.skate.enable(true)).toBe(true);
+      expect(figure.visible).toBe(true);
+      expect(rider.state().returning).toBeNull();
+      figure.traverse(node => {
+        if (!(node instanceof THREE.Mesh)) return;
+        for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
+          expect(material.opacity).toBe(1);
+        }
+      });
+      for (let i = 0; i < 90; i++) rider.step(1 / 60, i / 60, 0);
+      expect(figure.visible).toBe(true);
+      rider.skate.enable(false);
+      rider.step(1 / 60, 2, 0);
+      expect(figure.visible).toBe(true);
+      expect(rider.state().returning).toBeNull();
+      rider.dispose();
+    });
+  }
   it("plays all six emotes without putting the skateboard away", () => {
     const rider = createWalker({ groundHeightAt, tier: "lite" });
     expect(rider.skate.enable(true)).toBe(true);
