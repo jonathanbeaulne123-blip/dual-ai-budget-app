@@ -109,6 +109,8 @@ export function createMoverRegistry(deps:MoverDeps):MoverRegistryControl {
         active=next;current='parachute';return true;
       }
       if (active) return false;
+      // Selecting the quick-access cruiser replaces carried equipment; its later exit must not auto-mount an old board.
+      if(offer.to==='cruiser'&&stowed){stowed.dispose();stowed=null;}
       if(stowed?.id===offer.to){const equipment=stowed;stowed=null;start(equipment,offer,body,now);return true;}
       // Keep the factory's settings view live: reduced-motion, calm and tier can change while a mode is attached.
       start(factory(live), offer, body, now);

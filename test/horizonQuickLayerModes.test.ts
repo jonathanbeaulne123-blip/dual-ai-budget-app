@@ -20,7 +20,7 @@ const register=vi.fn(()=>()=>{});
 vi.mock('../src/harbour/scene/worldMount.ts',()=>({mountHorizonWorld:async()=>({
   mode:()=>'walk',shotId:()=>'A',offers:()=>world.offers,moverState:()=>world.moverState,moverAction:world.moverAction,accept:world.accept,
   fleetActions:()=>world.fleetActions,fleetState:()=>({vessels:[],swimming:false,perspective:'activity',sitting:null,saveFailed:false}),fleetAction:world.fleetAction,cycleCamera:world.cycleCamera,jumpHold:world.jumpHold,
-  cyclePerspective(){},resumeEquipment(){},pause(){},setComfort(){},setReducedMotion(){},setCalm(){},setMode(){},dispose(){},input(){},look(){},jump(){},enterDoor(){},cutTo(){},world:{views:[]},
+  setCruiserSkin(){},cyclePerspective(){},resumeEquipment(){},pause(){},setComfort(){},setReducedMotion(){},setCalm(){},setMode(){},dispose(){},input(){},look(){},jump(){},enterDoor(){},cutTo(){},world:{views:[]},
 })}));
 vi.mock('../src/harbour/horizon/movers/glider/index.ts',()=>({registerGliderModes:register}));
 
@@ -95,4 +95,14 @@ describe('the quick layer in every mover phase',()=>{
     const jump=h.querySelector('.horizon-offers .horizon-offer')!;expect(jump.textContent).toBe('Jump');expect(jump.classList.contains('horizon-offer--hold')).toBe(true);expect(jump.getAttribute('aria-label')).toBe('Jump (press and hold)');
     world.offers=[];
   });
+  it('renders and changes cruiser style when the browser storage getter is blocked',async()=>{
+    const storage=vi.spyOn(window,'localStorage','get').mockImplementation(()=>{throw new DOMException('Storage blocked','SecurityError');});
+    try{
+      const h=await mount(),select=h.querySelector<HTMLSelectElement>('select[aria-label="Cruiser style"]')!;
+      expect(select.value).toBe('vespa');
+      act(()=>{select.value='harley';select.dispatchEvent(new Event('change',{bubbles:true}));});
+      expect(select.value).toBe('harley');expect(h.querySelector('.horizon-cruiser-controls [role="status"]')?.textContent).toBe('Style saved for this visit only.');
+    }finally{storage.mockRestore();}
+  });
+
 });

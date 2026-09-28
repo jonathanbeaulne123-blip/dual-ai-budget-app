@@ -90,9 +90,9 @@ export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
     for(const d of dynamic)value=Math.min(value,d.ceiling(x,z,y));
     return value;
   }
-  function blocker(x:number,z:number,y:number,radius=.3,travel?:readonly [number,number],ignoreDynamic=false):string|null{
-    if(x<radius||z<radius||x>field.width-radius||z>field.depth-radius)return 'world-boundary';
-    if(!ignoreDynamic)for(const d of dynamic){const h=d.contact(x,z,y,radius);if(h)return h.id;}
+  function contact(x:number,z:number,y:number,radius=.3,travel?:readonly [number,number],ignoreDynamic=false):{id:string;nx:number;nz:number}|null{
+    if(x<radius||z<radius||x>field.width-radius||z>field.depth-radius){const nx=x<radius?1:x>field.width-radius?-1:0,nz=z<radius?1:z>field.depth-radius?-1:0,n=Math.hypot(nx,nz);return {id:'world-boundary',nx:nx/n,nz:nz/n};}
+    if(!ignoreDynamic)for(const d of dynamic){const h=d.contact(x,z,y,radius);if(h)return h;}
     const all=new Set<number>();
     for(const dx of [-radius,0,radius])for(const dz of [-radius,0,radius])for(const t of nearby(x+dx,z+dz))all.add(t);
     for(const id of all){const t=triangle(id);
@@ -100,11 +100,12 @@ export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
       // A body already overlapping a lip can leave it; only an approaching side blocks motion.
       if(travel&&t.normal[0]*travel[0]+t.normal[2]*travel[1]>=-1e-8)continue;
       if(Math.max(t.a[1],t.b[1],t.c[1])<=y+HORIZON_STEP_HEIGHT||Math.min(t.a[1],t.b[1],t.c[1])>y+HORIZON_BODY_HEIGHT)continue;
-      for(const h of [y+.2,y+.65,y+HORIZON_BODY_HEIGHT]){const span=atHeight(t,h);if(span.length>=2&&distanceSegment(x,z,span[0]!,span[1]!)<radius)return t.solid.id;}
+      for(const h of [y+.2,y+.65,y+HORIZON_BODY_HEIGHT]){const span=atHeight(t,h);if(span.length>=2&&distanceSegment(x,z,span[0]!,span[1]!)<radius){const length=Math.hypot(t.normal[0],t.normal[2]);return {id:t.solid.id,nx:t.normal[0]/length,nz:t.normal[2]/length};}}
     }
-    for(const id of nearby(x,z)){const t=triangle(id);if(t.normal[1]>=-.001)continue;const h=projection(t,x,z);if(h!==null&&h>y+.1&&h<y+HORIZON_BODY_HEIGHT)return t.solid.id;}
+    for(const id of nearby(x,z)){const t=triangle(id);if(t.normal[1]>=-.001)continue;const h=projection(t,x,z);if(h!==null&&h>y+.1&&h<y+HORIZON_BODY_HEIGHT)return {id:t.solid.id,nx:0,nz:0};}
     return null;
   }
+  const blocker=(x:number,z:number,y:number,radius=.3,travel?:readonly [number,number],ignoreDynamic=false)=>contact(x,z,y,radius,travel,ignoreDynamic)?.id??null;
   const blocked=(x:number,z:number,y:number,radius=.3)=>blocker(x,z,y,radius)!==null;
   function submerged(x:number,z:number,feet:number){
     // Visible water owns the walking boundary, including high-altitude lakes and underground water.
@@ -125,7 +126,7 @@ export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
     }
     return false;
   }
-  return {addDynamic(provider:DynamicGeography){dynamic.add(provider);return()=>dynamic.delete(provider);},surface,ceiling,blocked,blocker,submerged,cameraBlocked,get indexStats(){return{triangles:count,referenceBytes:(owners.byteLength+offsets.byteLength+normals.byteLength)*count/Math.max(1,owners.length),cells:cells.size,chunks};},addSolids,ground:(x:number,z:number)=>sampleTerrain(field,x,z)};
+  return {addDynamic(provider:DynamicGeography){dynamic.add(provider);return()=>dynamic.delete(provider);},surface,ceiling,blocked,blocker,contact,submerged,cameraBlocked,get indexStats(){return{triangles:count,referenceBytes:(owners.byteLength+offsets.byteLength+normals.byteLength)*count/Math.max(1,owners.length),cells:cells.size,chunks};},addSolids,ground:(x:number,z:number)=>sampleTerrain(field,x,z)};
 }
 export function nearestBedPoint(beds:readonly BedCut[],x:number,z:number):XYZ {
   let best:XYZ=[x,0,z],distance=Infinity;
