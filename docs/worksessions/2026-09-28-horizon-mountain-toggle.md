@@ -3,7 +3,7 @@
 **Date:** 2026-09-28
 **Branch:** `cursor/horizon-mountain-toggle-39dc`
 **Base:** `origin/main@9fed6002`
-**Head:** `7245a679`
+**Head:** tip of `cursor/horizon-mountain-toggle-39dc` (handoff SHA updated at push)
 **PR:** #565 (draft)
 **Risk:** Medium
 **Budget delta (5):** +0 — no money meaning, writers, schema, or Confirm changes
