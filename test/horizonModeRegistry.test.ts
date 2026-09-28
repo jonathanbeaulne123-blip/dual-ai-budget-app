@@ -152,8 +152,8 @@ describe('The runtime registers the board and the bicycle (fix round)', () => {
     const geo = createHorizonGeography(field, {...world.collision, solids: world.geometry?.solids ?? [], diagnostics: world.diagnostics ?? []} as Parameters<typeof createHorizonGeography>[1]);
     realDeps = {world, geography: geo, manifest: HORIZON_MANIFEST, reducedMotion: false, calm: false, tier: 'full'};
   }, 120000);
-  it('lists exactly the board and the bicycle as the default movers', () => {
-    expect(Object.keys(HORIZON_MOVERS).sort()).toEqual(['bicycle', 'board']);
+  it('lists the board, bicycle and shared cruiser as the default movers', () => {
+    expect(Object.keys(HORIZON_MOVERS).sort()).toEqual(['bicycle', 'board', 'cruiser']);
   });
   it('accepts skateLineStarts.1 on foot and rides an active board controller', () => {
     const registry = createMoverRegistry(realDeps);   // as mountHorizon does, then registerHorizonMovers(registry, options.movers)

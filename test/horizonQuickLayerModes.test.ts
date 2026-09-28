@@ -13,14 +13,14 @@ import type {FleetAction} from '../src/harbour/horizon/movers/fleet/model.ts';
 const world={
   moverState:{mode:'feet',attached:false,hud:null} as HorizonMoverState,
   offers:[] as ThresholdOffer[],
-  moverAction:vi.fn(),accept:vi.fn(),setTheme:vi.fn(),mode:'walk',
+  moverAction:vi.fn(),accept:vi.fn(),setTheme:vi.fn(),setCruiserTheme:vi.fn(),setCruiserSkin:vi.fn(),toggleCruiser:vi.fn(),recoverCruiser:vi.fn(),input:vi.fn(),jump:vi.fn(),mode:'walk',
   fleetActions:[] as FleetAction[],fleetAction:vi.fn(),cycleCamera:vi.fn(),jumpHold:vi.fn(),
 };
 const register=vi.fn(()=>()=>{});
 vi.mock('../src/harbour/scene/worldMount.ts',()=>({mountHorizonWorld:async()=>({
   mode:()=>world.mode,shotId:()=>'A',offers:()=>world.offers,moverState:()=>world.moverState,moverAction:world.moverAction,accept:world.accept,
   fleetActions:()=>world.fleetActions,fleetState:()=>({vessels:[],swimming:false,perspective:'activity',sitting:null,saveFailed:false}),fleetAction:world.fleetAction,cycleCamera:world.cycleCamera,jumpHold:world.jumpHold,
-  setTheme:world.setTheme,cyclePerspective(){},resumeEquipment(){},pause(){},setComfort(){},setReducedMotion(){},setCalm(){},setMode(){},dispose(){},input(){},look(){},jump(){},enterDoor(){},cutTo(){},world:{views:[]},
+  setTheme:world.setTheme,setCruiserTheme:world.setCruiserTheme,setCruiserSkin:world.setCruiserSkin,toggleCruiser:world.toggleCruiser,recoverCruiser:world.recoverCruiser,cyclePerspective(){},resumeEquipment(){},pause(){},setComfort(){},setReducedMotion(){},setCalm(){},setMode(){},dispose(){},input:world.input,look(){},jump:world.jump,enterDoor(){},cutTo(){},world:{views:[]},
 })}));
 vi.mock('../src/harbour/horizon/movers/glider/index.ts',()=>({registerGliderModes:register}));
 
@@ -93,6 +93,23 @@ describe('the quick layer in every mover phase',()=>{
     hud(true,{pace:'12 km/h',label:'Dinghy',arc:0,glyph:null},'dinghy');await tick();
     expect(h.querySelector('.horizon-fleet')?.textContent).toContain('12 km/h');
   });
+  it('switches cruiser and boat controls without mixing actions or freezing speed',async()=>{
+    hud(true,{pace:'6 km/h',label:'Cruiser',arc:0,glyph:null},'cruiser');const h=await mount();await tick();
+    const bar=toolbar(h),cruiser=h.querySelector('.horizon-cruiser-controls')!;
+    expect(h.querySelector('.horizon-fleet')).toBeNull();expect(h.querySelector('.horizon-jump')?.textContent).toBe('Hop');
+    expect(cruiser.querySelector('output')?.textContent).toBe('6 km/h');
+    const button=(text:string)=>[...cruiser.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent?.startsWith(text))!;
+    act(()=>button('Get off').click());expect(world.toggleCruiser).toHaveBeenCalled();
+    act(()=>button('Recover').click());expect(world.recoverCruiser).toHaveBeenCalled();
+    const hop=h.querySelector<HTMLButtonElement>('.horizon-jump')!;act(()=>hop.click());expect(world.jump).toHaveBeenCalled();
+    hud(true,{pace:'18 km/h',label:'Cruiser',arc:0,glyph:null},'cruiser');await tick();expect(cruiser.querySelector('output')?.textContent).toBe('18 km/h');
+    const pad=h.querySelector<HTMLDivElement>('[aria-label="Ride pad: up accelerates, down brakes, left and right steer"]')!;
+    act(()=>pad.dispatchEvent(new Event('lostpointercapture',{bubbles:true})));expect(world.input).toHaveBeenLastCalledWith({forward:0,strafe:0});
+    hud(true,{pace:'5 km/h',label:'Dinghy',arc:0,glyph:null},'dinghy');await tick();
+    expect(toolbar(h)).toBe(bar);expect(h.querySelector('.horizon-jump')?.textContent).toBe('Brake');
+    expect(h.querySelector('.horizon-fleet')?.textContent).toContain('5 km/h');expect(cruiser.querySelector('output')).toBeNull();expect(button('Ride').disabled).toBe(true);
+    hud(false,null,'feet');await tick();expect(button('Ride').disabled).toBe(false);
+  });
   it('does not commit unchanged fleet polls, including when the panel is hidden',async()=>{
     hud(false,null,'feet');world.offers=[];world.fleetActions=[];await mount();await tick();const before=commits;
     await tick(650);expect(commits).toBe(before);
@@ -103,7 +120,7 @@ describe('the quick layer in every mover phase',()=>{
     await act(async()=>{root!.render(createElement(Profiler,{id:'stage',onRender:()=>{commits++;}},createElement(HorizonStage,{theme:'taylor'})));});await tick(50);
     const mounted=register.mock.calls.length;
     await act(async()=>{root!.render(createElement(Profiler,{id:'stage',onRender:()=>{commits++;}},createElement(HorizonStage,{theme:'newfoundland'})));});await tick(50);
-    expect(world.setTheme).toHaveBeenLastCalledWith('newfoundland');expect(register).toHaveBeenCalledTimes(mounted);expect(mounted).toBe(count);
+    expect(world.setTheme).toHaveBeenLastCalledWith('newfoundland');expect(world.setCruiserTheme).toHaveBeenLastCalledWith('newfoundland');expect(register).toHaveBeenCalledTimes(mounted);expect(mounted).toBe(count);
   });
   it('labels the glider offers as the pads read them, and the plane\'s Jump as a press-and-hold',async()=>{
     const h=await mount();
@@ -113,4 +130,14 @@ describe('the quick layer in every mover phase',()=>{
     const jump=h.querySelector('.horizon-offers .horizon-offer')!;expect(jump.textContent).toBe('Jump');expect(jump.classList.contains('horizon-offer--hold')).toBe(true);expect(jump.getAttribute('aria-label')).toBe('Jump (press and hold)');
     world.offers=[];
   });
+  it('renders and changes cruiser style when the browser storage getter is blocked',async()=>{
+    const storage=vi.spyOn(window,'localStorage','get').mockImplementation(()=>{throw new DOMException('Storage blocked','SecurityError');});
+    try{
+      const h=await mount(),select=h.querySelector<HTMLSelectElement>('select[aria-label="Cruiser style"]')!;
+      expect(select.value).toBe('vespa');
+      act(()=>{select.value='harley';select.dispatchEvent(new Event('change',{bubbles:true}));});
+      expect(select.value).toBe('harley');expect(h.querySelector('.horizon-cruiser-controls [role="status"]')?.textContent).toBe('Style saved for this visit only.');
+    }finally{storage.mockRestore();}
+  });
+
 });
