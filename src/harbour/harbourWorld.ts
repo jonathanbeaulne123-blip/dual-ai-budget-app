@@ -27,14 +27,19 @@ export function harbourWorldSearch(search: string, next: HarbourWorldId): string
  * DEV only. Updates `world` via `history.replaceState`, preserves every other
  * query key (seed, member, story, sun, …), and notifies subscribers.
  */
-export function setHarbourWorld(next: HarbourWorldId, historyApi: Pick<History, "replaceState"> = history, loc: Pick<Location, "pathname" | "search" | "hash"> = location): HarbourWorldId {
+export function setHarbourWorld(
+  next: HarbourWorldId,
+  historyApi: Pick<History, "replaceState"> & { state?: unknown } = typeof history === "undefined" ? { replaceState() { /* no browser history */ } } : history,
+  loc: Pick<Location, "pathname" | "search" | "hash"> = typeof location === "undefined" ? { pathname: "/", search: "", hash: "" } : location,
+): HarbourWorldId {
   if (!HARBOUR_DEV) return "mountain";
   const search = harbourWorldSearch(loc.search, next);
   if (search === loc.search || (!search && !loc.search)) {
     announceHarbourWorld();
     return next;
   }
-  historyApi.replaceState(historyApi === history ? history.state : null, "", `${loc.pathname}${search}${loc.hash}`);
+  const state = "state" in historyApi ? historyApi.state : null;
+  historyApi.replaceState(state ?? null, "", `${loc.pathname}${search}${loc.hash}`);
   announceHarbourWorld();
   return next;
 }

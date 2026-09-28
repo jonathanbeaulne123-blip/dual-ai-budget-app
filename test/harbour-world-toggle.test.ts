@@ -12,8 +12,17 @@ describe("harbourWorldSearch (pure)", () => {
 
   it("preserves seed, member, story and sun when flipping", () => {
     const base = "?seed=mountain&story=growing&run=first&member=MEM-001&sun=15:30";
-    expect(harbourWorldSearch(base, "horizon")).toBe(`${base}&world=horizon`);
-    expect(harbourWorldSearch(`${base}&world=horizon`, "mountain")).toBe(base);
+    const toHorizon = new URLSearchParams(harbourWorldSearch(base, "horizon").slice(1));
+    expect(toHorizon.get("seed")).toBe("mountain");
+    expect(toHorizon.get("story")).toBe("growing");
+    expect(toHorizon.get("run")).toBe("first");
+    expect(toHorizon.get("member")).toBe("MEM-001");
+    expect(toHorizon.get("sun")).toBe("15:30");
+    expect(toHorizon.get("world")).toBe("horizon");
+    const back = new URLSearchParams(harbourWorldSearch(harbourWorldSearch(base, "horizon"), "mountain").slice(1));
+    expect(back.get("world")).toBeNull();
+    expect(back.get("member")).toBe("MEM-001");
+    expect(back.get("sun")).toBe("15:30");
   });
 
   it("accepts search without a leading ?", () => {
