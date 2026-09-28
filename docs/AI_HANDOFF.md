@@ -1,3 +1,18 @@
+## 2026-09-28 — Horizon ↔ Mountain full-App UX dissection toggle
+
+Branch `cursor/horizon-mountain-toggle-39dc` from `origin/main@9fed6002`, head `fa7f8166`. PR #565 (draft). **Risk: Medium.** Budget (5): +0. Engagement (3): +1. No money, schema, Auth/RLS, sync, or Hercules payload change. Fictional Development only.
+
+**Household outcome:** In DEV, one fictional household session flips Mountain ↔ Horizon under Compass/QuickSheet via a top toggle; Cloud Agent terminals boot harbour flags + whole-house review.
+
+**Verification (quick-gate verified, not fully verified):**
+- `pnpm test -- --risk=medium --focus=test/harbour-world-toggle.test.ts --focus-reason="dev world toggle preserves App chrome XOR mountain/horizon"` on `b75a37a9`: diff-check/ai-surface/typescript/test-discovery/**vitest-fast 55 files / 611 tests passed**; vitest-serial failed on missing Playwright chromium + `hearthside-bank-ack-recovery` (environment, unrelated to this packet); **time-budget-breached** at vitest-serial (~537s / 300s soft SLA). Final CSS z-index fix `fa7f8166` covered by Chrome CDP proof.
+- Focused units on head: `test/harbour-world-toggle.test.ts` + fences/one-bar/desk-personal — 43/43 pass.
+- Manual: Chrome CDP Mountain→Horizon→Mountain (`/opt/cursor/artifacts/toggle-chrome-proof.json`); screenshots `mountain-with-toggle.webp`, `horizon-with-toggle.webp`, `mountain-after-toggle.webp`.
+
+**Uncertainty:** Headless WebGL may Desk-fallback; production never mounts the toggle (`HARBOUR_DEV`). D15 production switch untouched.
+
+**Next:** Jonathan reviews PR #565 in `/__review` with the toggle; merge only after his say. See [worksession](worksessions/2026-09-28-horizon-mountain-toggle.md).
+
 ## 2026-09-27 — Offshore fleet and physically walkable yacht
 
 Local implementation is on `codex/offshore-fleet` in `.codex-work/offshore-fleet`, integrated with main `c82f9d7` (shared airborne parachute, C-camera and explicit fall Retry updates). The [fleet guide](briefs/OFFSHORE_FLEET_GUIDE.md) explains access, controls, usable spaces, galley anchors and limitations; the [worksession](worksessions/2026-09-27-offshore-fleet.md) records exact validation and next-owner gates. This is recreational local state with Budget delta 0. No deployment or hosted activation is implied.

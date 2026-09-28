@@ -3,7 +3,8 @@
 **Date:** 2026-09-28
 **Branch:** `cursor/horizon-mountain-toggle-39dc`
 **Base:** `origin/main@9fed6002`
-**Head:** recorded on close
+**Head:** `fa7f81665eaa1ac1bca25f599479722d82193e1e`
+**PR:** #565 (draft)
 **Risk:** Medium
 **Budget delta (5):** +0 — no money meaning, writers, schema, or Confirm changes
 **Engagement delta (3):** +1 — one session can flip Mountain and Horizon under real App chrome for dissection
@@ -14,8 +15,8 @@ Jonathan can open a fictional household (whole-house review or flagged Vite) and
 
 ## Scope
 
-- Reactive DEV world seam (`src/harbour/harbourWorld.ts`)
-- In-App `WorldToggle` beside harbour chrome
+- Reactive DEV world seam (`src/harbour/harbourWorld.ts`) with preference that survives `housePath` query rewrites
+- In-App `WorldToggle` (z-index above review banner)
 - `HarbourWorld` + App remount key
 - Cloud Agent `.cursor/environment.json` harbour flags + review terminal
 - Whole-house review banner Horizon link + `docs/horizon/README.md` §8 note
@@ -27,12 +28,14 @@ Jonathan can open a fictional household (whole-house review or flagged Vite) and
 - Presence cross-world peers, Worker, hosted schema
 - Exhaustive full lanes
 
-## Verification (fill on close)
+## Verification
 
-- Focused quick gate command and result
-- Manual: Mountain → Horizon → Mountain with Compass/QuickSheet present
-- Data/environment: fictional Development only; no Production
+- Quick gate (focus `test/harbour-world-toggle.test.ts`, risk medium) on `b75a37a9`: vitest-fast **611/611**; serial failed Playwright missing + bank-ack env; **time-budget-breached** at serial (~537s). Classification: quick-gate-failed on serial env; change-focused fast lane green.
+- Units on head: harbour-world-toggle + source-fences + one-bar + desk-personal **43/43**.
+- Chrome CDP: Mountain→Horizon→Mountain with `aria-pressed` and `world=` URL sync (`/opt/cursor/artifacts/toggle-chrome-proof.json`).
+- Screenshots: `/opt/cursor/artifacts/mountain-with-toggle.webp`, `horizon-with-toggle.webp`, `mountain-after-toggle.webp`.
+- Data/environment: fictional Development only; no Production.
 
 ## Next owner
 
-Jonathan reviews the toggle in whole-house review, then decides any follow-up chrome overlay packet.
+Jonathan reviews the toggle in whole-house review on PR #565, then decides merge or any follow-up chrome overlay packet.
