@@ -159,7 +159,7 @@ describe('Horizon manifest v2.0',()=>{
 });
 describe('Horizon manifest v2.2: main\'s v1.7 sky data on the v2.1 land',()=>{
   it('adds FLIGHT.md sky data without a geography change',()=>{
-    expect(manifest.version).toBe('2.5');   // was '2.4' (candidate 6); v2.5 = reconciled with main #554-#558
+    expect(manifest.version).toBe('2.5');   // was '2.4' (candidate 6); v2.5 = reconciled with main #554-#559
     expect(manifest.sky.gliderPolar).toHaveLength(5);
     expect(manifest.sky.parachute).toMatchObject({forward_ms:6,sink_ms:3,freefallCap_ms:30,autoPull_agl_m:45,minBail_agl_m:60,canopy_m:[7,3]});
     expect(manifest.sky.corridors.throat).toMatchObject({gate:12,to:[1300,420],slope_deg:30,level_m:25,splashH:42,coneDeg:25,maxBankDeg:20});

@@ -2027,15 +2027,15 @@ _tr = m["reserves"]["terraces"]; _tr["v2_3_plots"] = [list(p) for p in _tr["plot
 _tr["plot1Note_v2_4"] = "back to v2.2 (" + I4 + "): the v2.3 move put the service drive's bed 0.47 over the Year Walk at [1594.7,837.9] and blocked the walk to L02; R3-32 open (5.83 of 6), owner W7-A"
 
 # ---------------------------------------------------------------------------
-# v2.5 — reconciled with main #554–#558 (reconciliation 2, after #553 merged candidate 5). main brought no generator edit:
-# its movers (parachute from any airborne body, the cruiser, the boat fleet and the walkable yacht, fleet water) keep their
+# v2.5 — reconciled with main #554–#559 (reconciliation 2, after #553 merged candidate 5). main brought no generator edit:
+# its movers (parachute from any airborne body, the cruiser, the boat fleet and the walkable yacht, fleet water, the galley) keep their
 # anchors in code. This block records those anchors on the land, as measured on the candidate-6 bake, and the two runtime
-# rules that now cover them. Data only: nothing is built from it, no id changes. README → "v2.5 (reconciled with main #554–#558)".
+# rules that now cover them. Data only: nothing is built from it, no id changes. README → "v2.5 (reconciled with main #554–#559)".
 # ---------------------------------------------------------------------------
 m["version"] = "2.5"
 R2 = "reconciliation 2, 2026-09-27"
 m["moverAnchors_v2_5"] = {
-    "source": "main #554 parachute, #555 cruiser, #556 fall rescue (Little Harbour), #557 fleet + yacht, #558 fleet water — anchors are code-owned (movers/fleet/model.ts, movers/cruiser/*); " + R2,
+    "source": "main #554 parachute, #555 cruiser, #556 fall rescue (Little Harbour), #557 fleet + yacht, #558 fleet water, #559 Yacht Kitchen — anchors are code-owned (movers/fleet/model.ts, movers/cruiser/*, kitchen/geometry.ts); " + R2,
     "fleet": {"launch": "structures.floatplaneDock [1520,1275]: the dock's bed at h 1.2 (the fleet's launchBody [1523,1.2,1276] stands on it, dry)",
               "moorings": {"kayak": [1527, 1269], "dinghy": [1527, 1276], "motorboat": [1528, 1283]}, "yacht": [1620, 1340],
               "measured": "every hull navigable at its mooring (seabed −3.5 / −4.3 / −5.3 / −12); the three small hulls' approach to the yacht's stern clear 40/40 each; identical on candidate 5 and candidate 6 (the land there did not move)"},
@@ -2043,6 +2043,9 @@ m["moverAnchors_v2_5"] = {
     "fallRescue": {"rule": "a fall that ends in water or off walkable ground fades to a path node that is never submerged (FLIGHT §2.4: fadeShore / fadeApron / the Deep jetty)",
                    "measured": "1,618 touchdowns on a 40 m grid (water and > 40° ground): 0 submerged returns on candidate 6 (0 on candidate 5); 26 returns stand against a rail or support or 0.4–0.8 off the node's deck (22 on candidate 5), listed in final8/probes"},
     "rideChunkRule": "v2.2's rule (every chunk resident before a feet → mover boarding) now covers the cruiser (V), every boat and the yacht's helm; no hull moves while any chunk is missing; a fall (never refused) puts every missing chunk first and the canopy holds at an unloaded boundary",
+    "kitchen": {"board": "kitchen/geometry.ts KITCHEN_BOARD, yacht-local [-2.6, main deck 3.85, -10.6]: it sails with the yacht, no land anchor",
+                "measured": "at the yacht's mooring the menu board stands at [1617.4,3.85,1329.4] over the harbour water (seabed -12), district harbour; the yacht's whole 14 x 44 hull is inside the harbour chunk and the galley opens only aboard, so it needs the harbour chunk resident like the fleet",
+                "rule": "an open service holds the body: a chosen page while cooking returns to the galley on Walk (main: Choose Walk and Resume); after Exit a chosen page is a visit again (Stage A walk-out)"},
     "comfort": "one comfort source: reduced motion and calm reach the fleet (wind off, no bob), the cruiser (no lean, camera cut) and the parachute (comfort camera) through the registry; the stricter rule wins",
 }
 

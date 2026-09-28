@@ -1,4 +1,4 @@
-// Reconciliation 2 (Stage A candidate 6 × main #554–#558): main's new movers on the Stage A land (MANIFEST v2.5 moverAnchors_v2_5).
+// Reconciliation 2 (Stage A candidate 6 × main #554–#559): main's new movers on the Stage A land (MANIFEST v2.5 moverAnchors_v2_5).
 import {describe,expect,it} from 'vitest';
 import {HORIZON_MANIFEST} from '../src/harbour/horizon/world/manifest.ts';
 import {createVessels,launchBody} from '../src/harbour/horizon/movers/fleet/model.ts';
@@ -35,4 +35,19 @@ describe('v2.5: a fall that ends in water or on unwalkable ground never returns 
     expect(fades).toBeGreaterThan(300);   // measured 400+ on candidate 6 (the 40 m probe: 1,567 fades of 1,618 touchdowns)
     expect(wet).toEqual([]);
   },60000);
+});
+describe('v2.5 × #559: the galley sails with the yacht and needs the harbour chunk like the fleet',()=>{
+  it('the menu board at the moored yacht stands over harbour water, inside the harbour district',async()=>{
+    const {toWorld}=await import('../src/harbour/horizon/movers/fleet/model.ts');
+    const {KITCHEN_BOARD}=await import('../src/harbour/horizon/kitchen/geometry.ts');
+    const {districtAt}=await import('../src/harbour/horizon/world/districts.ts');
+    const k=(HORIZON_MANIFEST as unknown as {moverAnchors_v2_5:{kitchen:{board:string}}}).moverAnchors_v2_5.kitchen;
+    expect(k.board).toContain('[-2.6, main deck 3.85, -10.6]');
+    expect([KITCHEN_BOARD.x,KITCHEN_BOARD.y,KITCHEN_BOARD.z]).toEqual([-2.6,3.85,-10.6]);
+    const {geography:g}=realHorizon(),yacht=createVessels().find(v=>v.id==='yacht')!,p=toWorld(yacht as never,KITCHEN_BOARD);
+    expect([p.x,p.z].map(v=>+v.toFixed(1))).toEqual([1617.4,1329.4]);   // measured, reconciliation 2 (#559)
+    expect(districtAt(p.x,p.z)).toBe('harbour');
+    for(const [dx,dz] of [[-7,-22],[7,-22],[-7,22],[7,22]])expect(districtAt(yacht.x+dx,yacht.z+dz)).toBe('harbour');
+    expect(g.ground(p.x,p.z)).toBeCloseTo(-12,1);expect(g.waterLevel(p.x,p.z)).toBe(0);
+  });
 });
