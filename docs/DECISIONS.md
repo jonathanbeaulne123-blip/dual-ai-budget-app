@@ -1,3 +1,9 @@
+## 2026-09-28 — Adapt Horizon raster quality to sustained frame pressure
+
+Jonathan selected the remaining adaptive-quality optimization. Horizon retains its chosen Full/Lite assets, geometry, lighting, collision and physics. A four-step drawing-buffer/shadow-resolution ladder responds to consecutive rendered frame timings: two slow windows lower one step; recovery needs eight healthy windows and at least fifteen active seconds since the last reduction. Short stalls, idle waits, hidden tabs and shared-renderer suspension cannot accumulate pressure or recovery. Resolution never exceeds the existing device/tier cap and bottoms out at 70% of the capped ratio, with a minimum pixel ratio of 0.75 (or the native ratio if lower). Shadow size halves at the lower two steps; shadows remain enabled.
+
+Quality changes happen before a paint, release resized shadow targets, preserve CSS/camera composition and track shadow bias to the actual map size. Renderer-lease return restores host dimensions and the chosen quality; context restoration rebuilds valid shadow targets. The controller is session-local and makes no financial, Confirm, theme or household-setting change. Risk Medium-High. Budget (5): responsive tools; Engagement (3): smoother movement under sustained rendering load. Local evidence and remaining device/CPU limits belong to [the worksession](worksessions/2026-09-28-horizon-adaptive-quality.md).
+
 ## 2026-09-28 — Spread Horizon construction and rest settled views
 
 Jonathan selected district-loading stalls, idle work and collision allocations for the next optimization. Fine district geometry is built cooperatively with a 3 ms target per animation frame; coarse terrain remains until completion, and abandoned work disposes its partial resources. Collision readiness and movement gates remain synchronous and authoritative. Cable systems rebuild only when their own geometry or anchor readiness changes.
