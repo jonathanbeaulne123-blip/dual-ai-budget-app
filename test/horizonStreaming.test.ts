@@ -337,7 +337,7 @@ it('R3-118 / R3-122: the runtime holds with a status line, retries on a new hold
   // R3-122 (b): the synchronous review fetch's NetworkError holds the step instead of escaping the loop.
   expect(runtime.match(/try\{chunks\.loadSync\(id,[^)]*\);\}catch\{/g)).toHaveLength(2);
   // R3-122 (a): a restore into a missing chunk holds at its saved height; the validation runs when the chunk lands.
-  expect(runtime).toMatch(/if\(current&&!gateOpen\(saved\.x,saved\.z\)\)\{Object\.assign\(body,\{x:saved\.x,y:saved\.y!,z:saved\.z,yaw:saved\.yaw\}\);pendingRestore=\{\.\.\.saved\};\}/);
+  expect(runtime).toMatch(/if\(current&&!gateOpen\(saved\.x,saved\.z\)\)\{Object\.assign\(body,\{x:saved\.x,y:saved\.y!,z:saved\.z,yaw:saved\.yaw\}\);pendingRestore=\{\.\.\.saved\};scheduler\?\.retry\(heldNow\);\}/);
   expect(runtime).toMatch(/if\(pendingRestore\)\{const saved=pendingRestore;pendingRestore=null;const next=restoreHorizonPosition\(saved,/);
   expect(runtime).toMatch(/failures:scheduler!\.failures\(\)/);
 });
