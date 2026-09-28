@@ -1,3 +1,5 @@
+import {buildHomeArt} from '../../home/geometry.ts';
+import type {HomeLayout} from '../../home/model.ts';
 import * as THREE from "three";
 import type { ThemeId } from "../../theme/scenes.ts";
 import type { KittyPieceV1 } from "../../core/types.ts";
@@ -81,6 +83,7 @@ export type PathWorldInput = {
   eras?: PathEraIslandInput[];
   /** The current era's home, standing at the centre of the main island. Anchored as `era-home`. */
   home?: PathEraHome | null;
+  customHome?: HomeLayout;
   /**
    * The bridge out of the current era toward the next era island (offset 1). One lantern per part of the finish line.
    * `open`: every lantern lit. `crossing`: one of us has agreed to cross (planks half down). Anchored as `era-gate`.
@@ -1988,15 +1991,18 @@ export function createPathWorld(host: HTMLElement, options: {
     const next = nodes.find((node) => node.offset > 0) ?? null;
 
     // The home at the centre of the main island.
-    if (input.home) {
+    if (input.home || input.customHome) {
       // The current era's home is the authored centre. Unrelated object edits
       // must not relocate it by changing a collision candidate score.
       const best = { x: 0, z: 0 };
-      const home = buildHome(input.home, false);
+      const customArt = input.customHome ? buildHomeArt(input.customHome,{detail:'map',season:seasonOf(currentKey)}) : null;
+      if(customArt) sceneDisposables.push(customArt.dispose);
+      const home = customArt?.group ?? buildHome(input.home!, false);
+      if(input.customHome)home.scale.setScalar(.16);
       home.position.set(best.x, heightAt(island, best.x, best.z), best.z);
       // Face the way the journey goes.
       home.rotation.y = Math.atan2(Math.cos(ERA_AXIS), Math.sin(ERA_AXIS));
-      home.scale.setScalar(1.1);
+      if(!input.customHome)home.scale.setScalar(1.1);
       home.traverse((o) => { o.castShadow = true; });
       const pad = part(G.cyl, tint(palette.dry, palette.sand, 0.5), 3.3, 0.14, 3.3, 0, 0.02, 0); pad.castShadow = false; home.add(pad);
       anchor("era-home", home, 5.2);

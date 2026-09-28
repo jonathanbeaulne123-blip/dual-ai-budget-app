@@ -1,3 +1,4 @@
+import {HomeBookButton,useHomeBook} from '../home/HomeBookContext.tsx';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { DateKey } from "../core/calendar.ts";
 import { monthKeyFromDateKey } from "../core/calendar.ts";
@@ -293,6 +294,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
    */
   space?: "ours" | "mine";
 }) {
+  const homeBook=useHomeBook();
   const appearance = useAppearance();
   // Callback props are only used in handlers: read them through one ref so an inline arrow in the App never
   // invalidates a memo (and so never rebuilds the scene).
@@ -805,6 +807,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   const harbourMonth = chapter ? months.findIndex((month) => month.key === chapterMonth(chapter)) : -1;
 
   const worldInput = useMemo<PathWorldInput>(() => ({
+    customHome: homeBook?.layout ?? (household.personalLife?.ownerMemberId===memberId ? household.personalLife.home?.layout : undefined),
     island,
     theme,
     characters,
@@ -844,7 +847,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     layers,
     harbour: harbourMonth >= 0 && harbourMonth <= shown ? { month: harbourMonth } : null,
     ...(sceneEras.length ? { eras: eraIslands, home: eraHome, gate } : {}),
-  }), [sceneEras.length, eraIslands, eraHome, gate, fireMonth, placedMonth, shownFootpaths, shownBridges, island, theme, characters, household, months, atNow, moves, activeMembers.length, next, landmarks, kiln, rhythm, kept, shown, bills, sunrises, mist, weather, today, shownStones, unknown, islandName, layers, sceneFireSitdown, sceneLand, sceneSitdownClosed, presentMembers, sceneCharterView, sceneCharterShown, shownForks, photoUrls, keptPhotos, canPlay, harbourMonth]);
+  }), [homeBook?.layout, household.personalLife, memberId, sceneEras.length, eraIslands, eraHome, gate, fireMonth, placedMonth, shownFootpaths, shownBridges, island, theme, characters, household, months, atNow, moves, activeMembers.length, next, landmarks, kiln, rhythm, kept, shown, bills, sunrises, mist, weather, today, shownStones, unknown, islandName, layers, sceneFireSitdown, sceneLand, sceneSitdownClosed, presentMembers, sceneCharterView, sceneCharterShown, shownForks, photoUrls, keptPhotos, canPlay, harbourMonth]);
 
   // ------------------------------------------------------------ marks: the real buttons over the canvas
   const marks = useMemo(() => {
@@ -918,11 +921,11 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   const harbourAnchor = useMemo(() => harbourJourneyAnchor(household, today), [household, today]);
   const enterHarbour = useCallback((fromZoom = false) => {
     if (!onEnterHarbour || !isHarbourJourneyMonth(harbourAnchor, journey.focus.date)) return false;
-    const navigate = () => leaveThen.current(() => onEnterHarbour(harbourAnchor));
+    const navigate = () => leaveThen.current(() => homeBook?.layout ? homeBook.visit() : onEnterHarbour(harbourAnchor));
     if (fromZoom && onZoomIntoHarbour) onZoomIntoHarbour(navigate);
     else navigate();
     return true;
-  }, [onEnterHarbour, onZoomIntoHarbour, harbourAnchor, journey.focus.date]);
+  }, [onEnterHarbour, onZoomIntoHarbour, harbourAnchor, journey.focus.date,homeBook]);
   const enterHarbourRef = useRef(enterHarbour);
   enterHarbourRef.current = enterHarbour;
   const focus = journey.focus;
@@ -1263,7 +1266,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   useEffect(() => { world.current?.setQuality(quality); }, [quality, live]);
   // The world only draws while it is open: minimized (or in the tent) it sleeps, keeping every buffer, and wakes at
   // the size it has once shown again.
-  const awake = full && !tentOpen;
+  const awake = full && !tentOpen && !homeBook?.editing;
   useEffect(() => {
     const current = world.current;
     if (!live || !current) return;
@@ -1896,6 +1899,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
       <section className="path-world__island" hidden={tentOpen || houseSurface === "work"} aria-labelledby="path-world-title" onKeyDown={(e) => { if (e.key === "Escape" && detail) { e.stopPropagation(); e.preventDefault(); closeCard(); } }}>
         <header className="path-world__head">
           <p className="kicker">The Journey map</p>
+          <HomeBookButton/>
           <h2 id="path-world-title">{islandName ?? "Where we are going"}</h2>
           <p className="path-world__lede">The land grows from your shared months. Open the world to walk the whole island.</p>
           {supported.statusLine && <p className="muted" role="status">{supported.statusLine}</p>}

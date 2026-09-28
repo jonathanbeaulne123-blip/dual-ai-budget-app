@@ -1,3 +1,4 @@
+import {decodeHome,type HomeState} from '../home/model.ts';
 import { sha256String } from '../core/synchronousHash.ts';
 import {
   HEARTHSIDE_ROOMS,
@@ -87,6 +88,7 @@ export type PersonalLifeDesignIndex = {
   designId: string;
   revision: number;
   pieceIds: string[];
+  firedByMemberIds?: string[];
 };
 export type PersonalLifeShareReceipt = {
   version: 1;
@@ -100,6 +102,7 @@ export type PersonalLifeShareReceipt = {
   copiedAt: string;
 };
 export type PersonalLifeDocument = {
+  home?:HomeState;
   version: 1;
   ownerMemberId: string;
   wishes: PersonalLifeWish[];
@@ -218,8 +221,8 @@ export function decodePersonalLifePlacement(value: unknown): PersonalLifePlaceme
 }
 
 export function decodePersonalLifeDesignIndex(value: unknown): PersonalLifeDesignIndex {
-  const row = object(value, ['version', 'designId', 'revision', 'pieceIds']);
-  return { version: version(row.version), designId: identifier(row.designId), revision: revisionValue(row.revision), pieceIds: unique(list(row.pieceIds, identifier, 200), id => id) };
+  const row = object(value, ['version', 'designId', 'revision', 'pieceIds', 'firedByMemberIds']);
+  return { version: version(row.version), designId: identifier(row.designId), revision: revisionValue(row.revision), pieceIds: unique(list(row.pieceIds, identifier, 200), id => id),...(row.firedByMemberIds!==undefined?{firedByMemberIds:unique(list(row.firedByMemberIds,identifier,200),id=>id)}:{}) };
 }
 
 export function decodePersonalLifeShareReceipt(value: unknown): PersonalLifeShareReceipt {
@@ -235,7 +238,7 @@ export function decodePersonalLifeShareReceipt(value: unknown): PersonalLifeShar
 
 export function decodePersonalLife(value: unknown, ownerMemberId: string): PersonalLifeDocument {
   if (value === undefined) return emptyPersonalLife(ownerMemberId);
-  const row = object(value, ['version', 'ownerMemberId', 'wishes', 'experiences', 'notes', 'memories', 'placements', 'designs', 'shareReceipts']);
+  const row = object(value, ['version', 'ownerMemberId', 'wishes', 'experiences', 'notes', 'memories', 'placements', 'designs', 'shareReceipts', 'home']);
   const owner = identifier(ownerMemberId);
   if (identifier(row.ownerMemberId) !== owner) throw Error('PERSONAL_LIFE_OWNER_MISMATCH');
   const decoded: PersonalLifeDocument = {
@@ -246,6 +249,7 @@ export function decodePersonalLife(value: unknown, ownerMemberId: string): Perso
     memories: unique(list(row.memories, decodePersonalLifeMemory, 4000), item => item.id),
     placements: unique(list(row.placements, decodePersonalLifePlacement, 160), item => item.id),
     designs: unique(list(row.designs, decodePersonalLifeDesignIndex, 1000), item => item.designId),
+    ...(row.home!==undefined?{home:decodeHome(row.home)}:{}),
     shareReceipts: unique(list(row.shareReceipts, decodePersonalLifeShareReceipt, 4000), item => item.id),
   };
   if ([...decoded.wishes, ...decoded.experiences, ...decoded.notes, ...decoded.memories].some(item => ('createdBy' in item ? item.createdBy : item.authorId) !== owner)) throw Error('PERSONAL_LIFE_OWNER_MISMATCH');

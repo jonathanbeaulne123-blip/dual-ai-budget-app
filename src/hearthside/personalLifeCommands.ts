@@ -1,3 +1,5 @@
+import {acceptHome} from '../home/acceptance.ts';
+import {claimHomePlot} from '../home/ownership.ts';
 import { captureCommand } from '../ledgerSync/capture.ts';
 import { canonical } from '../ledgerSync/patch.ts';
 import type { CommitResult, Household } from '../core/types.ts';
@@ -54,6 +56,7 @@ export type PreparePersonalLifeShareReviewInput = {
 };
 
 export type PersonalLifeOperation =
+  | {kind: 'home.save'; expectedRevision:number; value:unknown}
   | { kind: 'wish.save'; expectedRevision: number; value: PersonalLifeWish }
   | { kind: 'experience.save'; expectedRevision: number; value: PersonalLifeExperience }
   | { kind: 'experience.mark-lived'; id: string; expectedRevision: number; livedOn: string }
@@ -181,7 +184,11 @@ export const commitPersonalLife = captureCommand('commitPersonalLife', (househol
   const document = decodePersonalLife(household.personalLife, actor);
   const operation = input.operation;
   let sharedMutation = false;
-  if (operation.kind === 'wish.save') {
+  if(operation.kind==='home.save'){
+    document.home=acceptHome(household,actor,document.home,operation.expectedRevision,operation.value);
+    const state=decodeHearthside(household.hearthside),claims=claimHomePlot(state.homePlots,actor);
+    if(!state.homePlots?.some(c=>c.memberId===actor)){state.homePlots=claims.claims;household={...household,hearthside:decodeHearthside(state)};sharedMutation=true;}
+  } else if (operation.kind === 'wish.save') {
     const value = decodePersonalLifeWish(operation.value), old = document.wishes.find(row => row.id === value.id);
     expectRevision(old?.revision ?? 0, operation.expectedRevision, value.revision);
     if (value.createdBy !== actor || old && old.createdBy !== actor || value.references.some(reference => !personalReferenceExists(household, actor, reference))) throw Error('PERSONAL_LIFE_REFERENCE_FORBIDDEN');
@@ -264,7 +271,7 @@ export const commitPersonalLife = captureCommand('commitPersonalLife', (househol
   return {
     household: next, postedIds: [], warnings: [],
     ...(!sharedMutation ? { persistenceScope: 'member-personal' as const, personalMemberId: actor } : {}),
-    undo: { id: input.id, label: sharedMutation ? 'Share with Our Home' : 'Personal life', snapshot: previous, postedIds: [], actorMemberId: actor, commandKind: 'personal-life' },
+    undo: { id: input.id, label: operation.kind==='home.save' ? 'Save my home' : sharedMutation ? 'Share with Our Home' : 'Personal life', snapshot: previous, postedIds: [], actorMemberId: actor, commandKind: 'personal-life' },
   };
 });
 

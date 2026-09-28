@@ -1,3 +1,6 @@
+import {createHomeWorld} from '../../../home/world.ts';
+import type {HomeLayout} from '../../../home/model.ts';
+import type {HomeDisplayContent} from '../../../home/displays.ts';
 import {createKitchenActivity} from '../kitchen/activity.ts';
 import type {ChefId,KitchenChefInput,KitchenCommand} from '../kitchen/types.ts';
 import {createCruiserArt,CRUISER_RIDER_POSE} from '../movers/cruiser/art.ts';
@@ -55,7 +58,7 @@ export const HORIZON_FADE_LABEL_MS=2500;
 /** v2.2 ride rule: said while a boarding waits for the island's chunks (chunkGate.ts createRideGate). */
 export const RIDE_WAITS_STATUS='The ride waits a moment while the island finishes arriving.';
 export type HorizonRuntime=ReturnType<typeof createRuntime>;
-export type HorizonOptions={cruiserSkin?:CruiserSkin;fleetStorageKey?:string;kitchenStorageKey?:string;tier:'full'|'lite';hideBuildings?:boolean;signal?:AbortSignal;/** The app's reduced-motion setting (Comfort.motion) or the OS query; html[data-motion] is also read. Live changes go through `api.setComfort`. */reducedMotion?:boolean;onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onStatus?:(text:string)=>void;partner?:()=>PlaceWalkSource|null;initialBody?:HouseBodyReturn;
+export type HorizonOptions={homePlotId?:string;homeLayout?:HomeLayout;onHomeBook?:()=>void;onHomeWorkspace?:(target:string)=>void;cruiserSkin?:CruiserSkin;fleetStorageKey?:string;kitchenStorageKey?:string;tier:'full'|'lite';hideBuildings?:boolean;signal?:AbortSignal;/** The app's reduced-motion setting (Comfort.motion) or the OS query; html[data-motion] is also read. Live changes go through `api.setComfort`. */reducedMotion?:boolean;onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onStatus?:(text:string)=>void;partner?:()=>PlaceWalkSource|null;initialBody?:HouseBodyReturn;
   /** The active Hearth dressing is shared with the Horizon vehicle art. */
   theme?:VehicleDressing;
   /** The app's calm view (Comfort.quiet; RIDE §10.6): the frozen 15:30, no night, nothing moving on its own; forwarded to the active mover. Live changes go through `api.setComfort`. */
@@ -95,6 +98,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const bytesBeforeFirstFrame={definition:chunks?.bytes()??assets.definitionBytes,terrain:assets.bytes};
   const geography=createHorizonGeography(field,cuts),figure=createBodyFigure(),partner=createBodyFigure({coat:'#af8760'});
   scene.add(figure.group,partner.group);partner.group.visible=false;
+  const homeWorld=createHomeWorld(scene,world.reserves,options.homePlotId);homeWorld.set(options.homeLayout);const offHome=geography.addDynamic(homeWorld.collision);
   // Movers (RIDE §10.2, §11 ask 2): one registry, one active controller; the Horizon mode stays 'walk' while riding.
   // One comfort source (v2.2): the land's motion (cuts, the frozen 15:30) and the movers' registry read the same two flags.
   let comfort:HorizonComfort={calm:options.calm===true,reducedMotion:options.reducedMotion===true||appReducedMotion()},motion=horizonMotion(comfort);
@@ -252,7 +256,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   }
   function resize(){const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(mode==='look'&&!transition){const pose=world.views.find(p=>p.id===shotId);if(pose)lookAt(pose);}}
   const observer=new ResizeObserver(resize);observer.observe(host);resize();
-  function setLight(date:Date){
+  function setLight(date:Date){const month=date.getMonth()+1;homeWorld.setSeason(month<=2||month===12?'winter':month<=5?'spring':month<=8?'summer':'autumn');
     const position=solarPosition(date),colors=skyGradient(position.elevation),lookHeight=camera.position.y-geography.ground(camera.position.x,camera.position.z),fog=horizonFog({tier,eyeAboveGround:Math.max(0,lookHeight),elevation:position.elevation,sunAzimuth:position.azimuth,heading:yaw*180/Math.PI}),floor=nightLight(position.elevation,colors);
     lastSolar=position;night=floor.lightCards;faceCardsLit=faceCardOn(position,comfort.calm);faceCards.visible=faceCardsLit&&mode!=='journey';lastLocalLights=-Infinity;lastLightAt=[Infinity,0,0];
     lastSkyColors=nightDome(colors,floor.nightness);lastSunDirection=[position.direction[0],position.direction[1],position.direction[2]];skyDome.update(lastSkyColors,fog.color,lastSunDirection);
@@ -447,7 +451,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(registry.active())return true;
     enterDoor();return false;
   }
-  function enterDoor(hostId?:string){if(kitchen?.active()||registry.active())return false;   // a rider parks first: a door is not a mode threshold
+  function enterDoor(hostId?:string){if(kitchen?.active()||registry.active())return false;
+    if(!hostId&&homeWorld.actions(body).some(a=>a.id==='home-book')){clear();options.onHomeBook?.();return true;}   // a rider parks first: a door is not a mode threshold
     const h=hostId?world.hosts.find(h=>h.id===hostId):world.hosts.find(h=>'xy'in h.door&&Math.hypot(body.x-h.door.xy[0],body.z-h.door.xy[1],body.y-(h.door.height??0))<2.4);if(!h)return false;
     doorCooldown=performance.now()+1800;const out=h.returnAt;if(out){Object.assign(body,{x:out[0],y:out[1],z:out[2],yaw:h.facing??0});yaw=body.yaw;}path=[];options.onDoor?.(h,savedBody());return true;
   }
@@ -542,7 +547,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     // Own equipment is hidden locally in first person; activity and floating retain the full canopy.
     for(const art of moverArts)if(firstPerson)art.object.visible=false;
     if(cruiserArt)cruiserArt.root.visible=mode==='walk'&&!firstPerson;
-    fleetArt.update(body,yachtView()!==null,mode==='journey',!firstPerson,yachtView()?.y);
+    homeWorld.update(body,mode,firstPerson);fleetArt.update(body,yachtView()!==null,mode==='journey',!firstPerson,yachtView()?.y);
     const roomMarkers=fleetArt.root.getObjectByName('yacht-room-markers');if(roomMarkers&&kitchen?.active())roomMarkers.visible=false;
     kitchen?.render(camera,target,mode==='walk');
     const cutawayKey=`${yachtView()?Math.floor(yachtView()!.y-fleet.yacht.y):'outside'}:${perspective.mode()}:${mode}`;if(cutawayKey!==lastFleetCutaway){lastFleetCutaway=cutawayKey;requestShadow('fleet-cutaway');}
@@ -612,7 +617,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function recoverRide(){const active=cruiser();if(!active)return false;clear();const ok=active.recover();options.onStatus?.(ok?'Ready to ride.':'No clear recovery spot nearby.');return ok;}
   const api={world,assets,scene,camera,geography,shot,setMode,restore,savedBody,enterDoor,
     /** Development replay uses the exact live controllers/collision without waiting for rendered frames. */
-    simulateMotion(seconds:number){if(!HARBOUR_DEV)throw new Error('Development replay only.');const steps=Math.ceil(Math.max(0,Math.min(120,seconds))*60);for(let i=0;i<steps;i++){if(paused||mode!=='walk'||hold.paused())break;physicalBody=null;tickFleet(1/60);if(kitchen?.active())kitchen.update(1/60);else if(registry.active())ride(1/60,performance.now()+i*1000/60,false);else step(1/60,performance.now()+i*1000/60);}fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);return{body:{...body},vessels:fleet.snapshot().vessels};},
+    simulateMotion(seconds:number){if(!HARBOUR_DEV)throw new Error('Development replay only.');const steps=Math.ceil(Math.max(0,Math.min(120,seconds))*60);for(let i=0;i<steps;i++){if(paused||mode!=='walk'||hold.paused())break;physicalBody=null;tickFleet(1/60);if(kitchen?.active())kitchen.update(1/60);else if(registry.active())ride(1/60,performance.now()+i*1000/60,false);else step(1/60,performance.now()+i*1000/60);}homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);return{body:{...body},vessels:fleet.snapshot().vessels};},
     kitchenView:()=>kitchen!.view(),kitchenCommand:(command:KitchenCommand)=>{if(command.type==='resume'&&mode!=='walk')setMode('walk');return kitchen!.command(command);},kitchenInput:(chef:ChefId,value:Partial<KitchenChefInput>)=>kitchen!.input(chef,value),setKitchenSound:(on:boolean,gesture=false)=>kitchen!.setSound(on,gesture),
     fleetActions,fleetAction,cycleCamera,fleetState:()=>({vessels:fleet.snapshot().vessels,swimming,perspective:perspective.mode(),sitting:fleet.sitting(),saveFailed:fleetSaveFailed}),
     arrive(hostId:string){const h=world.hosts.find(h=>h.id===hostId);if(!h||!h.returnAt)return false;restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',x:h.returnAt[0],y:h.returnAt[1],z:h.returnAt[2],yaw:(h.facing??0)+Math.PI});return true;},
@@ -622,7 +627,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     setCruiserSkin(skin:CruiserSkin){cruiserSkin=skin;cruiserArt?.setSkin(skin);},
     cruiserState:()=>cruiser()?.state()??null,
     body:()=>({...body}),mode:()=>mode,shotId:()=>shotId,
-    setTheme(next:VehicleDressing){if(next===theme)return;theme=next;kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
+    setTheme(next:VehicleDressing){if(next===theme)return;theme=next;kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
     settings:()=>({tier,reducedMotion:comfort.reducedMotion,calm:comfort.calm,theme}),reviewDate:()=>(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm})),setAmbience(audio:WorldAmbience|null){ambience=audio;},
     offers,
     moverState():HorizonMoverState{const fade=fadeLabel&&performance.now()-fadeLabel.at<HORIZON_FADE_LABEL_MS?fadeLabel.label:undefined;return{mode:registry.mode(),attached:registry.active()!==null,hud:lastHud,airborne:registry.mode()==='parachute'||!!registry.active()?.airborne?.(),stowed:registry.stowed(),perspective:perspective.mode(),...(fade?{fade}:{}),cut:comfortCut};},
@@ -655,14 +660,19 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     setReducedMotion(on:boolean){applyComfort({reducedMotion:on});},
     setCalm(on:boolean){applyComfort({calm:on});},
     input(next:Partial<typeof controls>){controls={...controls,...next};},jump(){jumpRequested=true;},look(dx:number,dy:number){if(perspective.mode()!=='activity'&&mode==='walk'){perspective.look(dx,dy);return;}lookAcc.dx+=dx;lookAcc.dy+=dy;yaw+=dx;pitch=Math.max(-1.2,Math.min(.8,pitch+dy));},
-    pause(value:boolean){paused=value;if(value){kitchen?.pause('Tools are open. All kitchen timers are paused.');clear();ambience?.pause();}},setDate(date:Date){currentTime=date;lastSun=-Infinity;},
+    pause(value:boolean){paused=value;if(value){kitchen?.pause('Tools are open. All kitchen timers are paused.');clear();ambience?.pause();}},setDate(date:Date){const month=date.getMonth()+1;homeWorld.setSeason(month<=2||month===12?'winter':month<=5?'spring':month<=8?'summer':'autumn');currentTime=date;lastSun=-Infinity;},
 
     /** The app's comfort choices, live (HorizonStage threads useComfort; html[data-motion] is read too). */
     setComfort(next:Partial<HorizonComfort>){applyComfort(next);},
     comfort:()=>({...comfort,motion:{...motion}}),
     walkTo(p:XYZ){lastMovementBlocker=null;const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],p,{stepFree:true});path=plan?[...plan.points]:[];if(plan)routeAhead(plan.points);return plan;},
+    setHomeBotanical(...args:Parameters<typeof homeWorld.setBotanical>){homeWorld.setBotanical(...args);},
+    setHome(layout:HomeLayout|undefined,displays?:HomeDisplayContent[],plotId?:string){const occupied=homeWorld.roomAt(body);homeWorld.set(layout,displays,plotId);if(occupied&&(geography.blocked(body.x,body.z,body.y)||!homeWorld.roomAt(body))){const at=homeWorld.visit();if(at)restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',...at});}requestShadow('home-renovation');},
+    visitHome(){const at=homeWorld.visit();if(!at)return false;restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',...at});return true;},
+    homeActions(){return !paused&&mode==='walk'&&!registry.active()?homeWorld.actions(body):[];},
+    activateHome(id:string){const action=!paused&&!registry.active()?homeWorld.actions(body).find(a=>a.id===id):null;if(!action)return false;clear();if(action.id==='home-book')options.onHomeBook?.();else if(action.target)options.onHomeWorkspace?.(action.target);return true;},
     stats(){const gl=renderer.getContext(),debug=gl.getExtension('WEBGL_debug_renderer_info');return{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),revision:world.geographyRevision,terrainBytes:assets.bytes,collisionIndex:geography.indexStats,bytesBeforeFirstFrame,chunksLoaded:chunks?chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId):null,cables:cableLayer.stats(),chunks:chunks?{resident:chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId),total:chunks.refs.length,queued:scheduler!.queued(),heldAt:heldNow.length?{districts:[...heldNow],body:{...body}}:null,holds:chunkHolds.map(h=>({...h,at:[...h.at]})),ride:rideGate.stats()}:null,definitionBytesSoFar:chunks?.bytes()??assets.definitionBytes,shadowRequests:[...shadowRequests],comfort:{...comfort,motion:{...motion}},lightCards:pools.count,shadow:{half:sun.shadow.camera.right,centre:sun.target.position.toArray()},firstInteractiveMs:interactiveAt===null?null:interactiveAt-startedAt,assetLoadMs:assetLoadedAt-startedAt,mode,shot:shotId,body:{...body},frames:[...frameTimes],drawSamples:[...drawSamples],stream:[...stream.history],camera:{eye:camera.position.toArray(),target:target.toArray(),fov:camera.fov},diagnostics:world.diagnostics};},
-    dispose(){kitchen?.dispose();saveFleet();window.removeEventListener('pagehide',saveAll);offFleet();fleetArt.dispose();disposed=true;window.clearTimeout(fadeTimer);registry.dispose();cruiserArt?.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();offChunk?.();lease.cancelFrame(frame);observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',focusPause);document.removeEventListener('visibilitychange',visibilityClear);host.removeEventListener('blur',hostBlur);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();poolGeometry.dispose();beadGeometry.dispose();poolMaterial.dispose();beadMaterial.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
+    dispose(){kitchen?.dispose();saveFleet();window.removeEventListener('pagehide',saveAll);offFleet();offHome();homeWorld.dispose();fleetArt.dispose();disposed=true;window.clearTimeout(fadeTimer);registry.dispose();cruiserArt?.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();offChunk?.();lease.cancelFrame(frame);observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',focusPause);document.removeEventListener('visibilitychange',visibilityClear);host.removeEventListener('blur',hostBlur);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();poolGeometry.dispose();beadGeometry.dispose();poolMaterial.dispose();beadMaterial.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
   };
   return api;
 }
