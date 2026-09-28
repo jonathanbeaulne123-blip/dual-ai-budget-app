@@ -6,7 +6,7 @@
 - Repository: jonathanbeaulne123-blip/dual-ai-budget-app
 - Branch: codex/island-cruiser
 - Original baseline: 22c95b8b82cb3774f0b5f2aba6f562825aff6b0c (fresh isolated clone)
-- Integrated baseline: origin/main 4685a6d05d3069ea1c600d476d3054ccb1235f35 (#554)
+- Integrated baseline: origin/main c82f9d7 (#556), including #554
 - PR: #555; Jonathan explicitly requested merge after creating the draft
 - Risk: Medium-High, shared recreational movement, camera and input lifecycle
 - Budget delta (5): +0; no financial, Auth, books or Final Confirm changes
@@ -79,3 +79,7 @@ The second automated reviewer found that the shared walking body is shorter than
 Review-fix verification: **33/33 tests passed** (21 cruiser, 6 collision geography, 6 Stage DOM tests) in **12.65 s**. The standalone three-route browser proof created a new nested output directory and wrote a passing report with zero page errors.
 
 A follow-up low-ceiling landing review extended the envelope check to airborne horizontal movement. Vertical contact resolution now rejects an impossible floor/ceiling step and retains the preceding pose rather than moving a grounded rider below the floor. The airborne approach and defensive touchdown regression cover both paths; all **28/28 cruiser/geometry tests passed in 5.11 s**.
+
+Main advanced during native checks with #556 (`c82f9d7`). Its explicit fall Retry behavior and chunk-prefetch correction are preserved; the sole textual conflict was adjacent decision-log entries, both retained. The earlier final candidate `43acde5` passed repository TypeScript and **282/282 tests** in **115.832 s**, both terrain checks, the app build, automated review and Android. Final combined checks are linked from PR #555.
+
+After #556 integration, **193/193 tests across seven suites passed in 56.75 s**, including the cruiser, registry, Stage controls, streaming, Harbour body/focus and mountain movement. Independent review confirmed the explicit Retry uses Little Harbour's separate walker and the Horizon prefetch rename preserves behavior. Native CI is not an enforced merge requirement; physical-device acceptance remains separate.

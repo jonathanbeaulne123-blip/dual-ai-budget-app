@@ -1,3 +1,9 @@
+## 2026-09-27 — Fall rescue is an explicit Retry
+
+Jonathan reported the character fading out and respawning after jumping from the mountain or high platforms, then directed: keep fall rescue, but move it to Retry. Little Harbour no longer triggers rescue from a fall-height threshold. Its existing fade out, return near safe ground and fade in remain available through the outdoor Retry button on desktop and touch. Repeated clicks do not restart the return. Boarding or restoring a skateboard clears an interrupted fade so the rider stays visible. Existing board Retry, transport controls and Horizon parachute mechanics remain intact.
+
+Risk Medium-High; Budget (5): +0; Engagement (3): +1. This is a movement repair with no financial writer or scope change. Verification and release state are recorded in [the worksession](worksessions/2026-09-27-manual-fall-retry.md).
+
 ## 2026-09-27 — One easy Horizon cruiser, two cosmetic identities
 
 Jonathan requested effortless island travel with Vespa-style and Harley-Davidson-style appearances. Both use one `cruiser` mover and a single tuning object; skin selection only replaces art. The registered controller owns position, gravity and camera on riding frames, with dry off-road access, fixed-step grip/steering, small-step ground support, wall slides, checked nearby dismount and recovery. Ride/Get off is available beside the existing Horizon controls, with per-environment/household/member device-local skin persistence. Classic, Taylor and Newfoundland receive distinct materials and control treatments.
