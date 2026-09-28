@@ -1,6 +1,6 @@
 # Hearth worksession — offshore fleet
 
-- Status: OPEN, final project checks queued
+- Status: CLOSED — local implementation and functional validation; timing and device/release acceptance remain open
 - Opened: 2026-09-27 (America/Toronto)
 - Owner / decision owner: Jonathan
 - Assignee: Codex; bounded read-only movement and layout audits
@@ -26,7 +26,7 @@ The initial baseline had no implemented boats or swimming and only one orbit per
 - [x] Rotating/translating deck support exactly once, stairs, walls, airborne arrivals.
 - [x] Full yacht rooms and navigable galley work cycle; three authored material treatments.
 - [x] Identity-scoped atomic fleet/support restore; no invented multiplayer.
-- [ ] Focused tests, quick gate, build and actual runtime browser journeys recorded.
+- [x] Focused tests, quick gate, build and actual runtime browser journeys recorded (final timing requirement failed).
 
 No recipe/scoring system, financial changes, schema application or deployment is in scope.
 
@@ -63,4 +63,12 @@ Next owner: Jonathan for visual review and physical iPhone/Mac, screen-reader an
 
 ### Final project verification
 
-Pending the queued High quick gate and build; do not treat the focused tests as a full project pass.
+- Pre-responsive-fix source head: `cc5f16387beaf071936c8796127682c206fad4f0`; base `4685a6d05d3069ea1c600d476d3054ccb1235f35`; clean working tree at gate start.
+- Exact command: `pnpm check:quick --risk=high --focus=test/horizonFleet.test.ts --focus=test/horizonQuickLayerModes.test.ts --focus=test/horizonPerspective.test.ts --focus-reason="Shared fleet, physical yacht traversal, airborne handoffs and camera controls"`.
+- **PASS**, 108.058 s of 300 s, no timing breach. Full TypeScript 86.929 s; AI surface passed; test discovery 8.848 s; **297/297 tests in 22 files** passed. Change fingerprint `58268d6e06e624e0cce0125a97b2ceb8d3ea00d95dfa4d9d2dcb61241a24a362`.
+- The preceding run failed at 482.996 s on two UI-fixture type errors (incomplete mocked HUD and untyped button query). These were corrected in `cc5f163`; the successful fresh run above supersedes that failure without hiding it.
+- The following build passed mountain and Horizon asset checks, then was stopped before bundling to correct a phone overlay found during final screenshot review. The panel now observes the toolbar's actual height and stays 12 px below it; all three 390×844 theme captures and the added non-overlap assertion passed.
+- Final executable source is `e9d5c36e35b784f968728d82322c8b3e1921db0e`. The gate started with only this worksession's documentation edits uncommitted (`workingTreeClean:false`); application/test code is committed. Its **full TypeScript and all 297 tests in 22 files passed**, but the gate took **784.330 s**, exceeding the 300 s requirement. TypeScript: 741.434 s; discovery: 15.238 s; tests: 26.597 s. Classification: `quick-gate-passed; time-budget-breached`. Fingerprint `61c482cadb661d3c73baa97f08c45b94b62ad3446f4c967809db70d8c590ad65`. The timing requirement is **not accepted**; the earlier 108.058 s result is not substituted for this final run.
+- Build verification reuses the successful final full TypeScript result and the successful mountain/Horizon asset checks (the only subsequent executable changes were Stage/CSS and visual-proof assertions, with no asset inputs modified). The automatic `pnpm build` repeat was stopped before it repeated those checks. Remaining equivalent build stages are `pnpm typecheck:workspace && pnpm exec vite build && pnpm build:hercules-pro-ui && test ! -e dist/_redirects`; **all passed, exit 0**. Vite completed in 1 min 59 s. It emitted browser-externalization, eval and chunk-size warnings from the unchanged PGlite/geometry dependencies and larger app chunks. No dependency, ledger or build-policy edits were made to silence them.
+- Go/no-go: **GO for local feature review; NO-GO for release acceptance** until the final gate's timing requirement and physical-device/hosted checks are addressed. This request did not authorize deployment or main-branch merge.
+- Durable local evidence: `/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/artifacts/offshore-fleet/`. Full gate and focused logs, JSON journey results and screenshots are retained there. The final documentation-only closure commit does not change executable code.
