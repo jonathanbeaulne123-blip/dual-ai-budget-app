@@ -8,6 +8,7 @@ import {perspectiveLabel} from './runtime/perspective.ts';
 import {HARBOUR_DEV} from '../flag.ts';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import type {HorizonRuntime,HorizonOptions,HorizonMode,HorizonMoverState} from './runtime/index.ts';
+import {cableRidingStatus} from './movers/gondola/hud.ts';
 import type {ThresholdOffer} from './movers/shared/threshold.ts';
 import type {ReducedMotionCut,ReducedMotionLanding} from './movers/shared/mode.ts';
 import type {Host} from './world/definition.ts';
@@ -31,7 +32,8 @@ const HOLD_MS=(HORIZON_MANIFEST.carriedThresholds.find(threshold=>threshold.id==
 const offerKey=(o:ThresholdOffer)=>`${o.thresholdId}:${o.from}:${o.to}`;
 export const WALK_STATUS='Drag to look. Walk with W A S D, Space jumps; E opens a nearby door.';
 export const RIDE_PAUSED_STATUS='The ride waits where you left it. Choose Walk to ride on.';
-export function statusTextFor({riding,offerLabel,paused,flight}:{riding:boolean;offerLabel?:string|null;paused?:boolean;flight?:boolean}):string{
+export function statusTextFor({riding,offerLabel,paused,flight,cable}:{riding:boolean;offerLabel?:string|null;paused?:boolean;flight?:boolean;cable?:'gondola'|'funicular'|null}):string{
+  if(riding&&cable)return cableRidingStatus(cable);
   if(riding)return paused?RIDE_PAUSED_STATUS:flight?'Flying. W/S set the bar, A/D bank; use the landing bubble.':'Riding. W pushes, S slides, A D steer, Space pops, E parks.';
   return offerLabel?`E · ${offerLabel}`:WALK_STATUS;
 }
@@ -96,7 +98,7 @@ export default function HorizonStage(props:HorizonStageProps){
       if(isCraft(next.mover.mode)){setStatus(world.ridePaused?.()?RIDE_PAUSED_STATUS:'W / ↑ accelerates · S / ↓ slows then reverses · A / D steer · Space brakes · E interacts · C camera.');return;}
       if(next.mover.mode==='parachute')setStatus(`${hud?.place?.label??'Airborne'}. Space opens or retracts; A/D steer, S brakes. C changes view.`);
       else if(next.mover.mode==='cruiser')setStatus(world.ridePaused?.()?RIDE_PAUSED_STATUS:'W / ↑ accelerates · S / ↓ brakes; release and press again to reverse · A / D steer · Space hops; press again airborne for parachute · V gets off · C changes view · R recovers.');
-      else if(next.mover.attached||next.offers.length>0)setStatus(statusTextFor({riding:next.mover.attached,offerLabel:next.offers[0]?.action,paused:typeof world.ridePaused==='function'&&world.ridePaused(),flight:next.mover.mode==='glider'}));
+      else if(next.mover.attached||next.offers.length>0)setStatus(statusTextFor({riding:next.mover.attached,offerLabel:next.offers[0]?.action,paused:typeof world.ridePaused==='function'&&world.ridePaused(),flight:next.mover.mode==='glider',cable:next.mover.mode==='gondola'||next.mover.mode==='funicular'?next.mover.mode:null}));
     },200);
     return()=>window.clearInterval(poll);
   },[ready]);

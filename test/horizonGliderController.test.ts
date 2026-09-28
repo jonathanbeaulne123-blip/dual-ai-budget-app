@@ -49,7 +49,10 @@ describe('the run-off at each of the three pads',()=>{
     // v2.2: the Crown launch is the summit lookout's run-off deck ([1305,482] h 170, Stage A v1.7), 12 eu over the summit
     // ground: it drops 13.7 m south and 12.2 m north within 5 m, so like the Prow it is the rider's choice. (On the v1.6 land
     // the launch sat on the ground, the south shoulder fell 1.4 m in 20 m and every run-off went north.)
-    expect(yawAt('crownLaunch',0)).toBeCloseTo(0,9);expect(yawAt('crownLaunch',Math.PI)).toBeCloseTo(Math.PI,9);
+    // v2.6 (D-M6): the launch moved to [1322,472] beside Mountain v2's summit crest. The deck still stands 12 m over the ground on
+    // both sides, but 20 m out toward the crest (−z) the summit is only 9.9 m under it (< RUN_DROP 10; 9.1 m on the region's
+    // ground), so every run-off goes +z, over the falling south-west face (was the rider's choice, π → π).
+    expect(yawAt('crownLaunch',0)).toBeCloseTo(0,9);expect(yawAt('crownLaunch',Math.PI)).toBeCloseTo(0,9);
     // The Lamp gallery runs off over the sea.
     expect(yawAt('lampGallery',0)).toBeCloseTo(Math.PI,9);
   });
@@ -68,8 +71,9 @@ describe('the sim\'s launch and ground (CAM requests 1 and 2)',()=>{
     }
     // v2.2: the Crown's run-off deck falls away on both sides (12–16 m), so it runs off the side the rider faces, like the Prow
     // (on the v1.6 land it ran off north whichever way: the south shoulder barely dropped, FLIGHT §2.1).
+    // v2.6 (D-M6): from [1322,472] the crest side (−z) falls only 9.9 m in 20 m (< RUN_DROP), so both facings run off +z (was facing).
     const crown=real.envelope.launchPads!.find(p=>p.id==='crown')!;
-    for(const facing of [0,Math.PI])expect(Math.abs(launchFromPad(crown.edge,real.groundAt,{facing}).heading)).toBeCloseTo(facing,9);
+    for(const facing of [0,Math.PI])expect(Math.abs(launchFromPad(crown.edge,real.groundAt,{facing}).heading)).toBeCloseTo(0,9);
   });
   it('WingEnv.ground takes the rider\'s height: a deck above the wing is not ground, the same deck below it is',()=>{
     // A bridge deck at h 50 over flat ground at 0, x 90…110.

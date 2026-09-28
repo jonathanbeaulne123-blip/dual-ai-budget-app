@@ -466,6 +466,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
       return;
     }
     if(isCraft(active.id)){figure.group.position.set(body.x,body.y,body.z);figure.group.rotation.set(0,body.yaw,0);figure.pose(0,0,now/1000,{lean:0,bank:0,run:0,air:0,rise:0,crouch:0,slide:0,emote:active.id==='yacht'?'wave':'sit',emoteAt:1,flourish:0});return;}
+    // In a cabin the rider sits when seated (crouch 1) and otherwise stands on the cabin floor (T3 rides notes).
+    if(active.id==='gondola'||active.id==='funicular'){figure.group.position.set(body.x,body.y,body.z);figure.group.rotation.set(0,body.yaw,0);figure.pose(pose.crouch>=1?0:now*.004,0,now/1000,{lean:0,bank:0,run:0,air:0,rise:0,crouch:0,slide:0,emote:pose.crouch>=1?'sit':null,emoteAt:1,flourish:0});return;}
     const stowed=active.id==='parachute'&&registry.stowed()==='board';
     const slip=riderSlip(pose,active),drop=Math.max(0,pose.crouch)*.25,lift=boardProxy&&!stowed?BOARD_PROXY.top:0;
     figure.group.position.set(body.x,body.y+lift-drop,body.z);figure.group.rotation.set(0,body.yaw+slip,-pose.lean);

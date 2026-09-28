@@ -5326,11 +5326,16 @@
   "launches": {
    "crown": {
     "xy": [
+     1322,
+     472
+    ],
+    "h": 170,
+    "note": "the run-off deck of the summit lookout (L02), a structure on the summit's south-west lip; the terrain summit (landforms.crown.summitH 158) stays the island's highest ground and no bed may raise the ground above it",
+    "v2_5_xy": [
      1305,
      482
     ],
-    "h": 170,
-    "note": "the run-off deck of the summit lookout (L02), a structure on the summit's south-west lip; the terrain summit (landforms.crown.summitH 158) stays the island's highest ground and no bed may raise the ground above it"
+    "note_v2_6": "v2.6 (integrator, D-M6): moved 17 m east and 10 m north, clear of Mountain v2's Summit Commons gondola terminal [1300,480] and its rope (which arrives from tower 3 at [1370,550]); the deck keeps h 170 over the summit terrace, east of the observatory [1306,466]"
    },
    "prow": {
     "xy": [
@@ -6290,8 +6295,8 @@
    "radius_eu": 900,
    "label": "The Crown",
    "xy": [
-    1300.5,
-    485.5
+    1317.5,
+    475.5
    ],
    "frames": "from the lookout's run-off deck: Stillwater, the Green, the Hollow, the Flats and the Bight, the sea beyond (the harbour, the Reach, Long Sands and the Prow lie behind the Shoulder from here)",
    "bestHour": "noon",
@@ -6342,7 +6347,12 @@
     ],
     "h": 170
    },
-   "groundNote_v2_4": "on the Crown launch deck (lookout run-off deck), 5.1 eu from crownLaunch.stair's head (design lead, Stage A Wave 7 integrator 4 2026-09-27)"
+   "groundNote_v2_4": "on the Crown launch deck (lookout run-off deck), 5.1 eu from crownLaunch.stair's head (design lead, Stage A Wave 7 integrator 4 2026-09-27)",
+   "v2_5_xy_launch": [
+    1300.5,
+    485.5
+   ],
+   "note_v2_6": "the eye follows the run-off deck (thresholds.crownLaunch v2.6)"
   },
   {
    "id": "F",
@@ -9728,13 +9738,18 @@
   {
    "id": "crownLaunch",
    "xy": [
-    1305,
-    482
+    1322,
+    472
    ],
    "modes": [
     "feet\u2192glider"
    ],
-   "action": "run off"
+   "action": "run off",
+   "v2_5_xy": [
+    1305,
+    482
+   ],
+   "note_v2_6": "v2.6 (integrator, D-M6): moved 17 m east and 10 m north, clear of Mountain v2's Summit Commons gondola terminal [1300,480] and its rope (which arrives from tower 3 at [1370,550]); the deck keeps h 170 over the summit terrace, east of the observatory [1306,466]"
   },
   {
    "id": "strip",

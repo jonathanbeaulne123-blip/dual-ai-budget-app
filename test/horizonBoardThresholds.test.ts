@@ -13,6 +13,8 @@ import {BOARD_PARK_PROFILE, BOARD_PROFILE, boardProfileAt, parkBox, PARK_FORGIVE
 import {createBoardController, type BoardController} from '../src/harbour/horizon/movers/board/controller.ts';
 import {bedClass} from '../src/harbour/horizon/movers/shared/ground/contact.ts';
 import {bedPath, moverInputOf, pointAt, progressOf, runLine, type BedPath, type LineId} from '../src/harbour/horizon/movers/board/situations.ts';
+import {sampleTerrain} from '../src/harbour/horizon/land/terrain/index.ts';
+import {createMountainV2Region} from '../src/harbour/horizon/regions/mountainV2/index.ts';
 
 // The real baked world, loaded the way test/horizonBoardPace.test.ts loads it.
 let deps: MoverDeps, world: WorldDefinition, board: BoardController;
@@ -21,6 +23,8 @@ beforeAll(() => {
   const loaded = parseHorizonDefinition(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer);
   const field = decodeTerrainAsset(terrain.buffer.slice(terrain.byteOffset, terrain.byteOffset + terrain.byteLength) as ArrayBuffer, 'full');
   const geography = createHorizonGeography(field, {...loaded.collision, solids: loaded.geometry.solids, diagnostics: loaded.diagnostics ?? []} as Parameters<typeof createHorizonGeography>[1]);
+  // v2.6 (D-M1/D-M2): as mountHorizon does, the Mountain v2 region owns the ground, decks and solids inside its footprint.
+  geography.addDynamic(createMountainV2Region({horizonGround: (x, z) => sampleTerrain(field, x, z), terrainStep: field.step}).provider);
   world = loaded;
   deps = {world, geography, manifest: M, reducedMotion: false, calm: false, tier: 'full'};
   board = createBoardController(deps);
@@ -61,7 +65,8 @@ describe('the board profile (RIDE §8.1)', () => {
 
 describe('pick up and park at the thresholds (RIDE §6.5, P17)', () => {
   it('picks the board up at skateLineStarts.1 under the rider, clamped into the pad, stopped, gripped, facing down S1, at S1\'s pace', () => {
-    const rider = {x: 1310, y: 154, z: 500, yaw: 2};
+    // v2.6: skateLineStarts[0] is v2's start gate [1325,470.5] h 158.2 (D-M5); was [1310,154,500], S1's old start.
+    const rider = {x: 1325, y: 158.2, z: 470.5, yaw: 2};
     const offer = offersAt(world, rider, 'feet', (x, z) => deps.geography.ground(x, z)).find(o => o.thresholdId === 'skateLineStarts.1')!;
     expect(offer).toMatchObject({from: 'feet', to: 'board'});
     board.enter(offer, rider, 0);
@@ -291,10 +296,14 @@ const LINE_BLOCKERS: Record<LineId, Record<string, number[]>> = {
   // Candidate 6: the dam apron is a quarter-pipe with a level bay S1 comes onto (W7-S), so dam.apron no longer stands in S1
   // (846–850 cleared); the apron bridge's rails are all in the notch district now. S4's VBS / walk bight / bight.1 lay-by
   // blockers at 510–522 are gone (W7-A: S4 × VBS one tread at 21.2; the spur trestle carries VBS). Blocked samples 7 + 8 → 4 + 2.
+  // v2.6: S1's upper half is v2's race course (D-M5), 434 m longer to the Notch, so the lower blockers move 878/880 → 1312/1314
+  // and 1252 → 1686; the s1Flyover is retired (D-M5), its 534 sample is gone.
   S1: {
-    's1Flyover.deck@lakeside': [534],   // the S1 skate flyover's deck edge over the lower pass (Stage A structure)
-    'apronBridge.rails@notch': [878, 880],
-    'reachBoardwalk.rails@reach': [1252],   // across the run-out before landingQuay
+    // v2.6: with the region mounted, v2's own library balcony (a region solid, T2) stands in S1's clearance on v2's course
+    // (Library balcony segment); written up in HANDOFF-notes/tests.md for the region.
+    'mountainV2:library-balcony': [614, 616],
+    'apronBridge.rails@notch': [1312, 1314],
+    'reachBoardwalk.rails@reach': [1686],   // across the run-out before landingQuay
   },
   S2: {},
   S3: {},

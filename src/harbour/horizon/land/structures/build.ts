@@ -764,16 +764,19 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   const crown=M.sky.launches.crown,cxy=crown.xy as unknown as XY,ch=crown.h;
   landing(cuts,'crownLaunch',cxy,ch,[12,8],base);
   {// The stair lands on the Crown walk at the nearest point a ≤ 0.7 pitch reaches (the walk's own height, not the raw ground).
-    const walk=cuts.beds.find(b=>b.id==='walk crown');let best:{from:XYZ;to:XYZ;run:number}|undefined;
-    for(const p of walk?.points??[]){const dx=p[0]-cxy[0],dz=p[2]-cxy[1],d=Math.hypot(dx,dz)||1,u:XY=[dx/d,dz/d],edge=Math.min(Math.abs(6/u[0]||Infinity),Math.abs(4/u[1]||Infinity)),from:XYZ=[cxy[0]+u[0]*edge,ch,cxy[1]+u[1]*edge],run=d-edge;
-      if(run>2&&(ch-p[1])/run<=.7&&(!best||run<best.run))best={from,to:p,run};}
+    // v2.6 (D-M6): the deck stands over Mountain v2's summit paths; the stair may land on the summit lane (`walk summit`,
+    // h 158.2, a short flight beside its own lane) or, as before, on the Crown walk. The nearest reachable point wins.
+    let walk:BedCut|undefined;let best:{from:XYZ;to:XYZ;run:number}|undefined;
+    for(const candidate of ['walk summit','walk crown'].map(id=>cuts.beds.find(b=>b.id===id))){if(!candidate)continue;
+    for(const p of candidate.points){const dx=p[0]-cxy[0],dz=p[2]-cxy[1],d=Math.hypot(dx,dz)||1,u:XY=[dx/d,dz/d],edge=Math.min(Math.abs(6/u[0]||Infinity),Math.abs(4/u[1]||Infinity)),from:XYZ=[cxy[0]+u[0]*edge,ch,cxy[1]+u[1]*edge],run=d-edge;
+      if(run>2&&(ch-p[1])/run<=.7&&(!best||run<best.run)){best={from,to:p,run};walk=candidate;}}}
     // R2-08: the flight meets the walk at ~20°, so its lower treads stood across the walk and closed it both ways. The flight
     // now runs down BESIDE the walk: its foot stands clear of the walk's edge (walk half-width + stair half-width + 0.2), at
     // the walk's height, and a level strip (the stair bed's last segment) steps across onto the walk's centreline.
     if(best){const w=walk!,i=w.points.indexOf(best.to),a=w.points[Math.max(0,i-1)]!,c=w.points[Math.min(w.points.length-1,i+1)]!,tl=Math.hypot(c[0]-a[0],c[2]-a[2])||1;
       let n:XY=[-(c[2]-a[2])/tl,(c[0]-a[0])/tl];if(n[0]*(best.from[0]-best.to[0])+n[1]*(best.from[2]-best.to[2])<0)n=[-n[0],-n[1]];
       const side=w.width/2+1.5+.2,foot:XYZ=[best.to[0]+n[0]*side,best.to[1],best.to[2]+n[1]*side];
-      buildStair('crownLaunch.stair',best.from,foot,3,cuts,base);cuts.beds.find(b=>b.id==='crownLaunch.stair')?.points.push(best.to);}else conflict(cuts,'structures.crownLaunch.stair','crownLaunch: no point on the Crown walk within a 0.7 stair pitch of the lookout deck',cxy);}
+      buildStair('crownLaunch.stair',best.from,foot,3,cuts,base,[w.id]);cuts.beds.find(b=>b.id==='crownLaunch.stair')?.points.push(best.to);}else conflict(cuts,'structures.crownLaunch.stair','crownLaunch: no point on the Crown walk within a 0.7 stair pitch of the lookout deck',cxy);}
   landing(cuts,'lampGallery',[540,1195],25,[10,8],base);
   const lampSupports=solid('lampGallery.supports','tower','stone','support',['lampGallery.ramp'],'offshore');
   // Wave 6: the ramp ends where its spiral meets the landing's north edge ([540,25,1190]; its deck overlaps the landing's edge,
