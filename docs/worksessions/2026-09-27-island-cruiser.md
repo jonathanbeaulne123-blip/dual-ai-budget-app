@@ -5,7 +5,9 @@
 - Decision owner: Jonathan; implementer/integrator: Codex
 - Repository: jonathanbeaulne123-blip/dual-ai-budget-app
 - Branch: codex/island-cruiser
-- Baseline: origin/main 22c95b8b82cb3774f0b5f2aba6f562825aff6b0c (fresh isolated clone)
+- Original baseline: 22c95b8b82cb3774f0b5f2aba6f562825aff6b0c (fresh isolated clone)
+- Integrated baseline: origin/main 4685a6d05d3069ea1c600d476d3054ccb1235f35 (#554)
+- PR: #555; Jonathan explicitly requested merge after creating the draft
 - Risk: Medium-High, shared recreational movement, camera and input lifecycle
 - Budget delta (5): +0; no financial, Auth, books or Final Confirm changes
 - Engagement delta (3): +2 intended; quick, forgiving island travel
@@ -17,13 +19,13 @@ One registered cruiser controller and one tuning object, with Vespa-style and Ha
 
 Current main has Horizon board/bicycle and glider/parachute movers. Horizon uses the existing Development `?world=horizon` App route and the local review page. Onboarding replaces the URL: add `world=horizon` to the canonical `/house/home/middle?...` URL after entering the app. The normal App was tested separately from the review page.
 
-No unified C-key/first-person/floating camera system exists in this baseline. The existing Look/Island/Walk camera contract remains authoritative. Current parachute requires a plane-source exit at least 60 m high; the shared registry refuses mode-to-mode handoffs. Dismount is grounded only. Airborne requests explain the limit, retain ownership and continue the trajectory. Vehicle hopping remains real airtime; no fake parachute transfer or duplicate vehicle.
+#554 is now integrated. The shared C cycle supplies activity, first-person and floating views; own rider/vehicle art hides locally in first person. V during airtime puts the vehicle away and transfers exact position, heading and velocity to closed-canopy freefall. Space while already airborne transfers directly to an open parachute. The single shared airborne owner handles gravity and landing; landing returns on foot and Ride is available again. Selecting a cruiser replaces previously carried board equipment, preventing an older board from auto-resuming on a later cruiser exit. Grounded dismount still checks nearby geometry. There is no additional altitude requirement.
 
 ## Tuning and controls
 
 `src/harbour/horizon/movers/cruiser/tuning.ts` is the sole physical configuration. Cruise 16 m/s against island manifest board 7 / cart 8; acceleration 7.5 m/s², braking 16 m/s², reverse 2.5 m/s. Steering reduces target speed toward 8 m/s at full deflection. The 120 Hz fixed step has matching results at 10, 20, 30, 60 and 120 input frames per second. Below 10 rendering frames per second the runtime bounds catch-up for safety.
 
-W/up accelerates. S/down brakes; release and press again at rest to reverse. A/D or arrows steer. Space hops. V mounts/gets off; R recovers. The Ride pad uses the same inputs; Hop and the separate Look pad work on narrow screens. Camera drag never steers the vehicle. No balance, damage, gears, fuel, boost or rain grip penalty.
+W/up accelerates. S/down brakes; release and press again at rest to reverse. A/D or arrows steer. Space hops; a fresh Space during airtime opens the parachute. C changes perspective. V mounts/gets off (freefall when airborne); R recovers. The Ride pad uses the same inputs; Hop and the separate Look pad work on narrow screens. Camera drag never steers the vehicle. No balance, damage, gears, fuel, boost or rain grip penalty.
 
 ## Review and refinements
 
@@ -58,6 +60,12 @@ Final focused run: **75/75 passed across six suites** in 43.97 s, including 17 c
 
 ## Handoff and open acceptance
 
-Next integrator: Codex, then Jonathan for ride feel. Keep this as one reviewable vehicle change; compare against current main before integrating parallel camera/parachute work. Preserve one movement owner, one tuning object, geometry-checked dismount/recovery, scoped cosmetic storage and all ledger/Confirm boundaries. Do not infer deployment authorization.
+Next integrator: Codex, completing the explicitly authorized merge, then Jonathan for ride feel. #554 camera/parachute integration is included in this change. Preserve one movement owner, one tuning object, geometry-checked dismount/recovery, scoped cosmetic storage and all ledger/Confirm boundaries. Do not infer deployment authorization.
 
 Physical phone thumb feel, Mac interactive feel, GPU performance, screen-reader usability and whole-island/hairpin acceptance remain open. Complete the repository check on a less memory-constrained host if the local run cannot finish. Then review and playtest before any separately authorized release.
+
+## Merge integration evidence
+
+The three textual conflicts with #554 are resolved preserving both features. Read-only movement/camera review caught and corrected walking input being cleared on ordinary parachute landing, wheel writes into the active activity camera, held-Space handoff suppression, and carried-board ownership on a new cruiser pickup. Shared perspective overrides run after the activity camera. The toolbar and cruiser controls now flow vertically together instead of relying on fixed offsets that overlap when the new perspective button wraps.
+
+Focused integration run: **131/131 tests passed across ten suites in 11.60 s** (cruiser, geometry, registry, mover hook, quick layer, parachute, perspective, board landing, glider controller and comfort). Three new cruiser cases cover grounded deployment refusal, exact velocity with both canopy states, one active owner, putting away the cruiser, and replacing previously carried board equipment. Full quick-gate and rendered integration results are recorded below when complete.

@@ -1,4 +1,4 @@
-import {describe,it,expect} from 'vitest';
+import {describe,it,expect,vi} from 'vitest';
 import {createHorizonGeography} from '../src/harbour/horizon/runtime/geography.ts';
 import type {LandCuts,TerrainField} from '../src/harbour/horizon/land/interfaces.ts';
 import {solid,box} from '../src/harbour/horizon/land/structures/mesh.ts';
@@ -6,8 +6,8 @@ import {createCruiserState,stepCruiser,cruiserDismount,recoverCruiser,cruiserSpe
 import {createCruiserController} from '../src/harbour/horizon/movers/cruiser/controller.ts';
 import {CRUISER,cruiserPreferenceKey,readCruiserSkin,saveCruiserSkin} from '../src/harbour/horizon/movers/cruiser/tuning.ts';
 import {createCruiserArt} from '../src/harbour/horizon/movers/cruiser/art.ts';
-import type {MoverDeps} from '../src/harbour/horizon/movers/shared/registry.ts';
-import type {MoverInput} from '../src/harbour/horizon/movers/shared/mode.ts';
+import {createMoverRegistry,type MoverDeps} from '../src/harbour/horizon/movers/shared/registry.ts';
+import type {AirborneBody,ModeController,MoverInput} from '../src/harbour/horizon/movers/shared/mode.ts';
 const field:TerrainField={revision:'horizon-geo-1',width:500,depth:500,step:250,columns:3,rows:3,heights:new Float32Array(9),surfaces:new Uint8Array(9)};
 const empty:LandCuts={beds:[],pads:[],mouths:[],waters:[],solids:[],diagnostics:[]};
 const flat=createHorizonGeography(field,empty),start={x:100,y:0,z:100,yaw:0};
@@ -86,6 +86,29 @@ describe('one forgiving Horizon cruiser',()=>{
       for(let i=0;i<fps*4;i++)c.update(1/fps,{...idle,forward:1,steer:.1,look:{dx:fps===30?.01:0,dy:0}},i*1000/fps);
       return c.state();
     });for(const s of states){expect(s.x).toBeCloseTo(states[0]!.x,7);expect(s.z).toBeCloseTo(states[0]!.z,7);}
+  });
+  it.each([false,true])('transfers exact airborne momentum to one parachute owner (open=%s), then puts the cruiser away',open=>{
+    const deps={geography:flat,reducedMotion:false,calm:false,tier:'full'} as MoverDeps;
+    const registry=createMoverRegistry(deps),c=createCruiserController(deps),dispose=vi.spyOn(c,'dispose');
+    const enterAirborne=vi.fn(),chute={...c,id:'parachute',enterAirborne,update:()=>({} as never)} as ModeController;
+    registry.register('parachute',()=>chute);
+    registry.attach(c,{from:'feet',to:'cruiser'} as never,start,0);
+    expect(c.airborne!()).toBeNull();expect(registry.deploy({...start,velocity:[1,2,3]},0,open)).toBe(false);
+    c.update(0,idle,0);c.update(.2,{...idle,forward:1},0);c.update(.1,{...idle,forward:1,jump:true},0);
+    const before=c.state(),air=c.airborne!()!;expect(air).toEqual({x:before.x,y:before.y,z:before.z,yaw:before.yaw,velocity:[before.vx,before.vy,before.vz]});
+    expect(registry.deploy(air,1,open)).toBe(true);expect(enterAirborne).toHaveBeenCalledWith(air,open);
+    expect(registry.active()).toBe(chute);expect(registry.stowed()).toBeNull();expect(dispose).toHaveBeenCalledTimes(1);
+    registry.active()!.update(.1,idle,1);expect(c.state()).toEqual(before);
+    registry.finish();expect(registry.mode()).toBe('feet');expect(registry.active()).toBeNull();
+  });
+  it('replaces a carried board when the rider explicitly selects the cruiser',()=>{
+    const deps={geography:flat} as MoverDeps,registry=createMoverRegistry(deps),board=createCruiserController(deps);
+    const dispose=vi.fn(),retained={...board,id:'board',dispose,airborne:()=>({...start,velocity:[0,2,4] as [number,number,number]}),resumeAt:()=>false} as ModeController;
+    registry.attach(retained,{from:'feet',to:'board'} as never,start,0);
+    registry.register('parachute',()=>({...board,id:'parachute',enterAirborne(_at:AirborneBody){}}));
+    registry.deploy({...start,velocity:[0,2,4]},0);registry.finish();expect(registry.stowed()).toBe('board');
+    registry.register('cruiser',createCruiserController);registry.accept({from:'feet',to:'cruiser'} as never,start,0);
+    expect(dispose).toHaveBeenCalledTimes(1);expect(registry.stowed()).toBeNull();expect(registry.mode()).toBe('cruiser');
   });
   it('requires neutral input after an ownership handoff',()=>{
     const c=createCruiserController({geography:flat} as MoverDeps);c.enter({} as never,start,0);

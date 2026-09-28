@@ -46,6 +46,9 @@ export function createCruiserController(deps:MoverDeps):CruiserController {
       };recovered=false;return frame;
     },
     exit(offer){return offer?{x:offer.at[0],y:offer.at[1],z:offer.at[2],yaw:state.yaw}:{...state.safe};},
+    // A physical exit hands the complete world velocity to the shared airborne owner.
+    // No resumeAt: the cruiser is put away, so a landing returns on foot without duplicate equipment.
+    airborne:()=>state.grounded?null:{x:state.x,y:state.y,z:state.z,yaw:state.yaw,velocity:[state.vx,state.vy,state.vz]},
     state:()=>({...state,safe:{...state.safe}}),
     dismount:()=>cruiserDismount(deps.geography,state),
     recover(){const next=recoverCruiser(deps.geography,state);if(!next)return false;state=next;cameraYaw=state.yaw;cameraY=state.y;resetInput();recovered=true;return true;},

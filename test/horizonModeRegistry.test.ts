@@ -5,7 +5,7 @@ import {HORIZON_MANIFEST} from '../src/harbour/horizon/world/manifest.ts';
 import type {WorldDefinition} from '../src/harbour/horizon/world/definition.ts';
 import {createMoverRegistry, type HorizonGeography, type MoverDeps} from '../src/harbour/horizon/movers/shared/registry.ts';
 import {offersAt, parkOfferFor, thresholdPairs, OFFER_REACH, type ThresholdOffer} from '../src/harbour/horizon/movers/shared/threshold.ts';
-import {isModeId, type ModeController, type ModeId, type MoverBody, type MoverFrame} from '../src/harbour/horizon/movers/shared/mode.ts';
+import {isModeId, type AirborneBody, type ModeController, type ModeId, type MoverBody, type MoverFrame} from '../src/harbour/horizon/movers/shared/mode.ts';
 import {decodeTerrainAsset} from '../src/harbour/horizon/land/terrain/asset.ts';
 import {createHorizonGeography} from '../src/harbour/horizon/runtime/geography.ts';
 import {HORIZON_MOVERS, registerHorizonMovers, riderSlip} from '../src/harbour/horizon/runtime/moverInput.ts';
@@ -183,5 +183,32 @@ describe('The runtime registers the board and the bicycle (fix round)', () => {
     expect(registry.accept(pick, body, 0)).toBe(true);
     expect(log).toContain('enter:skateLineStarts.1');
     expect('state' in registry.active()!).toBe(false);
+  });
+});
+
+describe('airborne ownership and retained equipment',()=>{
+  const launch={x:100,y:60,z:200,yaw:.4,velocity:[12,-3,8] as [number,number,number]};
+  const pick={id:'test:feet→board',thresholdId:'test',at:[100,20,200] as [number,number,number],from:'feet' as const,to:'board' as const,action:'pick up',label:'Pick up the board'};
+  function setup(rideable=true){
+    const boardLog:string[]=[],chuteLog:string[]=[],registry=createMoverRegistry(deps());
+    let received:AirborneBody|null=null,grounded=false,resumed:AirborneBody|null=null;
+    const board:ModeController={...fakeController('board',boardLog),airborne:()=>grounded?null:launch,resumeAt:at=>{resumed=at;return rideable;}};
+    registry.register('board',()=>{throw new Error('retained equipment must be reused');});
+    registry.register('parachute',()=>({...fakeController('parachute',chuteLog),enterAirborne:b=>{received=b;},landingMotion:()=>({...launch,y:20,velocity:[9,0,6]})}));
+    registry.attach(board,pick,launch,0);
+    return{registry,board,boardLog,chuteLog,received:()=>received,resumed:()=>resumed,ground:()=>{grounded=true;}};
+  }
+  it('hands full motion to exactly one owner and resumes the identical board at touchdown',()=>{
+    const h=setup();expect(h.registry.deploy(launch,0)).toBe(true);expect(h.received()).toEqual(launch);expect(h.registry.stowed()).toBe('board');expect(h.registry.active()).not.toBe(h.board);expect(h.boardLog).not.toContain('dispose');
+    expect(h.registry.deploy(launch,1)).toBe(false);h.registry.finish();expect(h.registry.active()).toBe(h.board);expect(h.registry.stowed()).toBeNull();expect(h.resumed()?.velocity).toEqual([9,0,6]);
+    h.registry.dispose();expect(h.boardLog.filter(x=>x==='dispose')).toHaveLength(1);expect(h.chuteLog.filter(x=>x==='dispose')).toHaveLength(1);
+  });
+  it('keeps equipment after a nonrideable landing and reuses it on ordinary pickup',()=>{
+    const h=setup(false);h.registry.deploy(launch,0);h.registry.finish();expect(h.registry.mode()).toBe('feet');expect(h.registry.stowed()).toBe('board');expect(h.registry.resumeStowed(launch)).toBe(false);
+    expect(h.registry.accept(pick,launch,1)).toBe(true);expect(h.registry.active()).toBe(h.board);expect(h.registry.stowed()).toBeNull();h.registry.dispose();expect(h.boardLog.filter(x=>x==='dispose')).toHaveLength(1);
+  });
+  it('rejects grounded movers and keeps settings live while equipment is stowed',()=>{
+    const h=setup();h.ground();expect(h.registry.deploy(launch,0)).toBe(false);expect(h.registry.active()).toBe(h.board);
+    const airborne=setup();airborne.registry.deploy(launch,0);airborne.registry.setReducedMotion(true);airborne.registry.setCalm(true);airborne.registry.setTier('lite');expect(airborne.boardLog.slice(-3)).toEqual(['reducedMotion:true','calm:true','tier:lite']);
   });
 });

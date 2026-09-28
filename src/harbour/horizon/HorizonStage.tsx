@@ -1,4 +1,5 @@
 import {CRUISER_SKINS,readCruiserSkin,saveCruiserSkin,type CruiserSkin} from './movers/cruiser/tuning.ts';
+import {perspectiveLabel} from './runtime/perspective.ts';
 import {HARBOUR_DEV} from '../flag.ts';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import type {HorizonRuntime,HorizonOptions,HorizonMode,HorizonMoverState} from './runtime/index.ts';
@@ -35,7 +36,7 @@ export default function HorizonStage(props:HorizonStageProps){
   const [skin,setSkin]=useState<CruiserSkin>(()=>readCruiserSkin(localStorage,skinKey)),[skinSaveFailed,setSkinSaveFailed]=useState(false);
   const [status,setStatus]=useState('Loading the Horizon…'),[ready,setReady]=useState(false),[mode,setMode]=useState<HorizonMode>('look'),[page,setPage]=useState('A');
   const [reducedMotion,setReducedMotion]=useState(()=>readReducedMotion(props)),[calm,setCalm]=useState(()=>readCalm(props));
-  const [offers,setOffers]=useState<ThresholdOffer[]>([]),[mover,setMover]=useState<HorizonMoverState|null>(null),[sheet,setSheet]=useState<ReducedMotionCut|null>(null),hold=useRef<number|null>(null);
+  const [offers,setOffers]=useState<ThresholdOffer[]>([]),[mover,setMover]=useState<HorizonMoverState|null>(null),[sheet,setSheet]=useState<ReducedMotionCut|null>(null),hold=useRef<number|null>(null),jumpPointer=useRef<number|null>(null);
   const [tier]=useState<'full'|'lite'>(()=>new URLSearchParams(location.search).get('tier')==='lite'||matchMedia('(max-width: 600px)').matches?'lite':'full');
   useEffect(()=>{const controller=new AbortController();let current:HorizonRuntime|null=null,unregister:(()=>void)|null=null;
     const options:HorizonOptions={tier,cruiserSkin:skin,theme:latest.current.theme,hideBuildings:HARBOUR_DEV&&new URLSearchParams(location.search).get('hideBuildings')==='1',signal:controller.signal,reducedMotion:readReducedMotion(latest.current),calm:readCalm(latest.current),onDoor:(h,b)=>latest.current.onDoor?.(h,b),onStatus:setStatus,initialBody:latest.current.initialBody,partner:()=>latest.current.partner??null};
@@ -63,12 +64,20 @@ export default function HorizonStage(props:HorizonStageProps){
     const poll=window.setInterval(()=>{
       const world=runtime.current;if(!world)return;
       const next={offers:world.offers(),mover:world.moverState(),mode:world.mode()},hud=next.mover.hud;
-      const key=JSON.stringify([next.offers.map(offerKey),next.offers.map(o=>o.action),next.mover.mode,next.mover.attached,next.mode,(hud as {pace?:string})?.pace,hud&&[Math.round(hud.height??-1),Math.sign(Math.trunc((hud.lift??0)/.5)),hud.place?.label,Math.round(hud.place?.distance??0),hud.place?.action],next.mover.fade,next.mover.cut?.landings.map(landing=>landing.id)]);
+      const key=JSON.stringify([next.offers.map(offerKey),next.offers.map(o=>o.action),next.mover.mode,next.mover.attached,next.mover.airborne,next.mover.stowed,next.mover.perspective,next.mode,(hud as {pace?:string})?.pace,hud&&[Math.round(hud.height??-1),Math.sign(Math.trunc((hud.lift??0)/.5)),hud.place?.label,Math.round(hud.place?.distance??0),hud.place?.action],next.mover.fade,next.mover.cut?.landings.map(landing=>landing.id)]);
       if(key===last)return;last=key;setOffers(next.offers);setMover(next.mover);setMode(next.mode);
-      if(next.mover.attached||next.offers.length>0)setStatus(next.mover.mode==='cruiser'&&world.ridePaused?.()?RIDE_PAUSED_STATUS:next.mover.mode==='cruiser'?'W / ↑ accelerates · S / ↓ brakes; release and press again to reverse · A / D steer · Space hops · V gets off · R recovers.':statusTextFor({riding:next.mover.attached,offerLabel:next.offers[0]?.action,paused:typeof world.ridePaused==='function'&&world.ridePaused(),flight:next.mover.mode==='glider'||next.mover.mode==='parachute'}));
+      if(next.mover.mode==='parachute')setStatus(`${hud?.place?.label??'Airborne'}. Space opens or retracts; A/D steer, S brakes. C changes view.`);
+      else if(next.mover.mode==='cruiser')setStatus(world.ridePaused?.()?RIDE_PAUSED_STATUS:'W / ↑ accelerates · S / ↓ brakes; release and press again to reverse · A / D steer · Space hops; press again airborne for parachute · V gets off · C changes view · R recovers.');
+      else if(next.mover.attached||next.offers.length>0)setStatus(statusTextFor({riding:next.mover.attached,offerLabel:next.offers[0]?.action,paused:typeof world.ridePaused==='function'&&world.ridePaused(),flight:next.mover.mode==='glider'}));
     },200);
     return()=>window.clearInterval(poll);
   },[ready]);
+  useEffect(()=>{
+    const release=(e:PointerEvent)=>{if(e.pointerId!==jumpPointer.current)return;jumpPointer.current=null;runtime.current?.jumpHold(false);};
+    const blur=()=>{jumpPointer.current=null;runtime.current?.jumpHold(false);};
+    window.addEventListener('pointerup',release);window.addEventListener('pointercancel',release);window.addEventListener('blur',blur);
+    return()=>{window.removeEventListener('pointerup',release);window.removeEventListener('pointercancel',release);window.removeEventListener('blur',blur);blur();};
+  },[]);
   useEffect(()=>()=>{if(hold.current!==null)window.clearTimeout(hold.current);},[]);
   function take(offer:ThresholdOffer){
     const result=runtime.current?.accept(offer);if(!result)return;
@@ -97,11 +106,13 @@ export default function HorizonStage(props:HorizonStageProps){
     if(kind==='move')runtime.current?.input({forward:-y,strafe:x});else runtime.current?.look(-x*.08,-y*.06);
   }
   return <section className={`horizon-shell horizon-shell--${props.theme??'classic'} ${props.review?'horizon-shell--review':''}`} aria-label="Horizon land review">
-    <div ref={stage} className="horizon-stage" tabIndex={props.paused?-1:0} aria-label={mover?.mode==='cruiser'?"Cruiser. W accelerates, S brakes; release and press S again to reverse. A D steer, Space hops, V gets off, R recovers. Drag to look.":"Horizon. Drag to look. W A S D walks, Space jumps, E opens a nearby door. V rides the cruiser."} />
+    <div ref={stage} className="horizon-stage" tabIndex={props.paused?-1:0} aria-label={mover?.mode==='cruiser'?"Cruiser. W accelerates, S brakes; release and press S again to reverse. A D steer. Space hops; press again airborne to open the parachute. V gets off, C changes view, R recovers. Drag to look.":"Horizon. Drag to look. W A S D walks, Space jumps, E opens a nearby door. V rides the cruiser."} />
     {!props.paused&&<div className="horizon-offer" role="status" data-empty={mode==='walk'&&offers.length>0?undefined:'true'}><span className="horizon-offer__text">{mode==='walk'&&offers[0]?`E · ${offers[0].action}`:''}</span></div>}
     {!props.paused&&<>
+      <div className="horizon-top-controls">
       <div className="horizon-toolbar" aria-label="World controls">
         {(['walk','look','journey']as const).map(m=><button key={m} disabled={!ready} aria-pressed={mode===m} onClick={()=>changeMode(m)}>{m==='journey'?'Island':m==='walk'?'Walk':'Look'}</button>)}
+        {mode==='walk'&&<button disabled={!ready} onClick={()=>{runtime.current?.cyclePerspective();stage.current?.focus();}} aria-label="Change camera perspective (C)">{perspectiveLabel(mover?.perspective??'activity')}</button>}
         <label>Page <select aria-label="Sketchbook page" value={page} disabled={!ready} onChange={e=>{setPage(e.target.value);setMode('look');runtime.current?.shot(e.target.value);}}>{'ABCDEFGHIJKL'.split('').map(p=><option key={p}>{p}</option>)}</select></label>
         {props.onQuickSheet&&<button onClick={props.onQuickSheet}>Tools</button>}
         {props.onJourney&&<button onClick={props.onJourney}>Journey</button>}
@@ -113,11 +124,14 @@ export default function HorizonStage(props:HorizonStageProps){
         {mover?.mode==='cruiser'&&<><button onClick={()=>{runtime.current?.recoverCruiser();stage.current?.focus();}}>Recover <span aria-hidden="true">R</span></button><output aria-label="Cruiser speed">{(mover.hud as {pace?:string})?.pace??'0 km/h'}</output></>}
         {skinSaveFailed&&<span role="status">Style saved for this visit only.</span>}
       </div>}
+      </div>
       {ready&&mode==='walk'&&<div className="horizon-touch-controls">
-        <div className="horizon-pad" role="group" aria-label={mover?.mode==='cruiser'?'Ride pad: up accelerates, down brakes, left and right steer':mover?.attached?'Move pad: push and pull the bar, lean to bank':'Move pad'} onPointerDown={e=>pad(e,'move')} onPointerMove={e=>pad(e,'move')} onPointerUp={e=>pad(e,'move')} onPointerCancel={e=>pad(e,'move')} onLostPointerCapture={e=>pad(e,'move')}>{mover?.mode==='cruiser'?'Ride':'Move'}</div>
-        {mover?.mode==='cruiser'&&<button className="horizon-jump" onPointerDown={e=>e.preventDefault()} onClick={()=>runtime.current?.jump()}>Hop</button>}
-        {!mover?.attached&&<><button className="horizon-jump" onClick={()=>runtime.current?.jump()}>Jump</button>
-        <button onClick={()=>runtime.current?.enterDoor()}>Enter</button></>}
+        <div className="horizon-pad" role="group" aria-label={mover?.mode==='cruiser'?'Ride pad: up accelerates, down brakes, left and right steer':mover?.mode==='parachute'?'Move pad: steer and brake the parachute':mover?.attached?'Move pad: push and pull the bar, lean to bank':'Move pad'} onPointerDown={e=>pad(e,'move')} onPointerMove={e=>pad(e,'move')} onPointerUp={e=>pad(e,'move')} onPointerCancel={e=>pad(e,'move')} onLostPointerCapture={e=>pad(e,'move')}>{mover?.mode==='cruiser'?'Ride':'Move'}</div>
+        {mover?.mode==='cruiser'&&<button className="horizon-jump" onPointerDown={e=>e.preventDefault()} onClick={()=>{stage.current?.focus();runtime.current?.jump();}}>{mover.airborne?'Open parachute':'Hop'}</button>}
+        {(mover?.mode==='board'||mover?.mode==='bicycle'&&mover.airborne)&&<button className="horizon-jump" onPointerDown={e=>{e.preventDefault();stage.current?.focus();jumpPointer.current=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);runtime.current?.jumpHold(true);}} onClick={e=>{if(e.detail===0){stage.current?.focus();runtime.current?.jump();}}}>{mover.airborne?'Open parachute':'Jump'}</button>}
+        {!mover?.attached&&<><button className="horizon-jump" onClick={()=>{stage.current?.focus();runtime.current?.jump();}}>Jump</button>
+        <button onClick={()=>runtime.current?.enterDoor()}>Enter</button>
+        {mover?.stowed&&<button onClick={()=>{runtime.current?.resumeEquipment();stage.current?.focus();}}>Ride {mover.stowed}</button>}</>}
         <div className="horizon-pad" role="group" aria-label="Look pad" onPointerDown={e=>pad(e,'look')} onPointerMove={e=>pad(e,'look')} onPointerUp={e=>pad(e,'look')} onPointerCancel={e=>pad(e,'look')}>Look</div>
       </div>}
       {ready&&!sheet&&offers.length>0&&<div className="horizon-offers" role="group" aria-label="Change how you travel here">
@@ -129,7 +143,7 @@ export default function HorizonStage(props:HorizonStageProps){
       </p>}
       {ready&&mover?.attached&&mover.hud?.place&&(()=>{const place=mover.hud.place,text=place.action==='pull'||!(place.distance>0)?place.label:`${place.label} · ${Math.round(place.distance)} m`;
         return place.action==='gate'?<p className="horizon-bubble horizon-bubble-place">{text}</p>
-          :<button className="horizon-bubble horizon-bubble-place" onClick={()=>runtime.current?.moverAction(place.action)} aria-label={place.action==='fold'?`Land now: ${text}`:text}>{text}</button>;})()}
+          :<button className="horizon-bubble horizon-bubble-place" onClick={()=>{stage.current?.focus();runtime.current?.moverAction(place.action);}} aria-label={place.action==='fold'?`Land now: ${text}`:text}>{text}</button>;})()}
       {ready&&!mover?.attached&&mover?.fade&&<p className="horizon-bubble horizon-bubble-place horizon-bubble-fade" role="status">{mover.fade}</p>}
       {sheet&&<div className="horizon-sheet" role="dialog" aria-modal="false" aria-labelledby="horizon-sheet-title">
         <h2 ref={sheetTitle} id="horizon-sheet-title" tabIndex={-1}>Where to?</h2>

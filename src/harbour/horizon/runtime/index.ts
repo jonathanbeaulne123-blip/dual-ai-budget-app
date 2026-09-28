@@ -2,6 +2,7 @@ import {createCruiserArt,CRUISER_RIDER_POSE} from '../movers/cruiser/art.ts';
 import type {CruiserController} from '../movers/cruiser/controller.ts';
 import {validCruiserPosition} from '../movers/cruiser/sim.ts';
 import type {CruiserSkin} from '../movers/cruiser/tuning.ts';
+import {createPerspective,perspectiveLabel,type Perspective} from './perspective.ts';
 import {HARBOUR_DEV} from '../../flag.ts';
 import * as THREE from 'three';
 import {acquireWorldRenderer} from '../../../house/world/rendererOwner.ts';
@@ -10,7 +11,7 @@ import type {PlaceWalkSource} from '../../scene/place.ts';
 import type {HouseBodyReturn} from '../../../house/navigation.ts';
 import {HORIZON_GEOGRAPHY,HORIZON_PRESENCE_WORLD} from '../../../worldGeography.ts';
 import {loadHorizonAssets,type HorizonAssets} from '../../../house/world/horizonAssets.ts';
-import {createHorizonGeography,HORIZON_WALKABLE_DEGREES,HORIZON_BODY_HEIGHT,HORIZON_G} from './geography.ts';
+import {createHorizonGeography,HORIZON_WALKABLE_DEGREES,HORIZON_BODY_HEIGHT} from './geography.ts';
 import {buildDistrictCards,buildWaterCards,buildHorizonRing} from './cards.ts';
 import {createDistrictStream,districtAt,useDefinitionDistricts} from '../world/districts.ts';
 import {useCoastline} from '../land/coast/index.ts';
@@ -32,7 +33,7 @@ import type {XYZ} from '../land/interfaces.ts';
 import type {Host,SketchbookPose} from '../world/definition.ts';
 import type {WorldAmbience} from '../../mountain/audio.ts';
 import {createMoverRegistry,type MoverDeps} from '../movers/shared/registry.ts';
-import type {ModeController,ModeHud,ModeId,MoverBody,MoverFrame,MoverHud,MoverInput,MoverSound,ReducedMotionCut,ReducedMotionLanding} from '../movers/shared/mode.ts';
+import type {AirborneBody,ModeController,ModeHud,ModeId,MoverBody,MoverFrame,MoverHud,MoverInput,MoverSound,ReducedMotionCut,ReducedMotionLanding} from '../movers/shared/mode.ts';
 import type {ThresholdOffer} from '../movers/shared/threshold.ts';
 import {moverInputFrom,moverFadeMs,moverBlendMs,moverBlendEase,registerHorizonMovers,riderSlip,savedRideBody,offerToShow,sameHud,sameOffer,createRideHold,RIDING_STATUS} from './moverInput.ts';
 import {buildBoardProxy,BOARD_PROXY,type BoardProxy} from '../movers/board/art/proxy.ts';
@@ -40,7 +41,7 @@ import type {VehicleDressing} from '../movers/shared/vehicleArt.ts';
 
 export type HorizonBody={x:number;y:number;z:number;yaw:number};
 export type HorizonMode='walk'|'look'|'journey';
-export type HorizonMoverState={mode:ModeId;attached:boolean;hud:MoverHud|ModeHud|null;fade?:string;cut?:ReducedMotionCut|null};
+export type HorizonMoverState={mode:ModeId;attached:boolean;hud:MoverHud|ModeHud|null;fade?:string;cut?:ReducedMotionCut|null;airborne?:boolean;stowed?:ModeId|null;perspective?:Perspective};
 export type HorizonMoverArt={object:THREE.Object3D;tick:(dt:number,figure:THREE.Object3D)=>boolean;dispose?:()=>void};
 export type HorizonAccept={mode:ModeId;controller:ModeController|null;cut:ReducedMotionCut|null};
 export type HorizonCutTarget={kind:'landing';landing:ReducedMotionLanding}|{kind:'view';id:string}|{kind:'stay'};
@@ -91,7 +92,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   // Movers (RIDE §10.2, §11 ask 2): one registry, one active controller; the Horizon mode stays 'walk' while riding.
   // One comfort source (v2.2): the land's motion (cuts, the frozen 15:30) and the movers' registry read the same two flags.
   let comfort:HorizonComfort={calm:options.calm===true,reducedMotion:options.reducedMotion===true||appReducedMotion()},motion=horizonMotion(comfort);
-  const theme=options.theme??'classic';
+  const theme=options.theme??'classic',perspective=createPerspective();
   const registry=createMoverRegistry({world,geography,manifest:HORIZON_MANIFEST,reducedMotion:comfort.reducedMotion,calm:comfort.calm,tier});
   registerHorizonMovers(registry,options.movers);
   // R2-01: Look / Island / a page pause the ride where it is; Walk resumes it; a reload / arrive parks at a threshold. A mode never ends in place.
@@ -101,7 +102,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   let cruiserTheme=options.theme??'classic';
   let cruiserSkin:CruiserSkin=options.cruiserSkin??'vespa',cruiserArt:ReturnType<typeof createCruiserArt>|null=null;
   const cruiser=()=>registry.mode()==='cruiser'?registry.active() as CruiserController:null;
-  let boardProxy:BoardProxy|null=null,jumpHeld=false,acceptRequested=false,lookAcc={dx:0,dy:0},lastOffer:ThresholdOffer|null=null,lastHud:MoverHud|null=null,lastInput:MoverInput|null=null,walkFov:number|null=null,fadeTimer=0,moverActionRequested:'fold'|'pull'|null=null,fadeLabel:{label:string;at:number}|null=null;
+  let boardProxy:BoardProxy|null=null,consumeJumpUntilRelease=false,jumpHeld=false,acceptRequested=false,lookAcc={dx:0,dy:0},lastOffer:ThresholdOffer|null=null,lastHud:MoverHud|null=null,lastInput:MoverInput|null=null,walkFov:number|null=null,footFov=45,fadeTimer=0,moverActionRequested:'fold'|'pull'|null=null,fadeLabel:{label:string;at:number}|null=null;
   const fadeEl=document.createElement('div');fadeEl.className='horizon-fade';fadeEl.setAttribute('aria-hidden','true');host.appendChild(fadeEl);
   const partnerMaterials:Record<string,THREE.Material>={};partner.group.traverse(object=>{if(object instanceof THREE.Mesh)for(const material of Array.isArray(object.material)?object.material:[object.material])partnerMaterials[material.uuid]=material;});
   const coarse=new Map(world.districts.map(d=>{const cards=buildDistrictCards(world,journey,cuts,d,tier,true);scene.add(cards.group);return[d.id,cards] as const;}));
@@ -256,6 +257,16 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     figure.group.add(boardProxy.group);
   }
   function unmountBoardProxy(){boardProxy?.dispose();boardProxy=null;}
+  function syncEquipment(){
+    if(registry.mode()==='board'||registry.mode()==='bicycle'||registry.stowed()==='board')mountBoardProxy();else unmountBoardProxy();
+    if(cruiser()){if(!cruiserArt){cruiserArt=createCruiserArt(cruiserTheme);cruiserArt.setSkin(cruiserSkin);scene.add(cruiserArt.root);}}
+    else{cruiserArt?.dispose();cruiserArt=null;}
+  }
+  function beginAirborne(at:AirborneBody,open:boolean){
+    if(!registry.deploy(at,performance.now(),open))return false;
+    velocityY=0;jumpRequested=false;consumeJumpUntilRelease=consumeJumpUntilRelease||keys.has(' ')||jumpHeld;
+    startRide();return true;
+  }
   /** The figure over the deck: it faces the travel (body.yaw + slip), feet on the deck top; the deck keeps the nose heading, pitch and roll in world space and stays on the ground under a crouch. */
   const proxyTurn=new THREE.Quaternion(),proxyEuler=new THREE.Euler(0,0,0,'YXZ'),figureInverse=new THREE.Quaternion();
   function poseRider(pose:MoverFrame['pose'],active:ModeController,now:number){
@@ -266,26 +277,31 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
       figure.pose(0,0,now/1000,{lean:0,bank:0,run:0,air:0,rise:0,crouch:0,slide:0,emote:null,flourish:0,skatePose:CRUISER_RIDER_POSE});
       return;
     }
-    const slip=riderSlip(pose,active),drop=Math.max(0,pose.crouch)*.25,lift=boardProxy?BOARD_PROXY.top:0;
+    const stowed=active.id==='parachute'&&registry.stowed()==='board';
+    const slip=riderSlip(pose,active),drop=Math.max(0,pose.crouch)*.25,lift=boardProxy&&!stowed?BOARD_PROXY.top:0;
     figure.group.position.set(body.x,body.y+lift-drop,body.z);figure.group.rotation.set(0,body.yaw+slip,-pose.lean);
     figure.pose(now*.007,0,now/1000);   // riding: no walk cycle
     if(!boardProxy)return;
-    const scale=figure.group.scale.x||1;figureInverse.copy(figure.group.quaternion).invert();
+    const scale=figure.group.scale.x||1;
+    if(stowed){boardProxy.group.position.set(0,.55,-.25).divideScalar(scale);boardProxy.group.rotation.set(Math.PI/2,0,0);boardProxy.group.scale.setScalar(1/scale);return;}
+    figureInverse.copy(figure.group.quaternion).invert();
     boardProxy.group.quaternion.copy(figureInverse).multiply(proxyTurn.setFromEuler(proxyEuler.set(-pose.pitch,body.yaw,-pose.roll,'YXZ')));
     boardProxy.group.position.set(0,drop-lift,0).applyQuaternion(figureInverse).divideScalar(scale);
     boardProxy.group.scale.setScalar(1/scale);
   }
-  function onFoot(at:MoverBody|null,status:string){
-    clear();cruiserArt?.dispose();cruiserArt=null;
-    blendCamera(moverBlendMs('park',comfort.reducedMotion,comfort.calm),walkFov??camera.fov);unmountBoardProxy();
+  function onFoot(at:MoverBody|null,status:string,cut=false){
+    const heldJump=keys.has(' ')||jumpHeld||consumeJumpUntilRelease;
+    if(cruiserArt)clear();consumeJumpUntilRelease=heldJump;cruiserArt?.dispose();cruiserArt=null;
+    if(cut)transition=null;else blendCamera(moverBlendMs('park',comfort.reducedMotion,comfort.calm),walkFov??camera.fov);unmountBoardProxy();
     if(at){Object.assign(body,{x:at.x,y:at.y,z:at.z,yaw:at.yaw});yaw=body.yaw;}
-    velocityY=0;path=[];figure.group.rotation.set(0,body.yaw,0);figure.group.position.set(body.x,body.y,body.z);
+    velocityY=0;path=[];jumpRequested=false;consumeJumpUntilRelease=consumeJumpUntilRelease||keys.has(' ')||jumpHeld;figure.group.rotation.set(0,body.yaw,0);figure.group.position.set(body.x,body.y,body.z);
     if(walkFov!==null){camera.fov=walkFov;camera.updateProjectionMatrix();walkFov=null;}
     comfortCut=null;comfortCutBody=null;ambienceSpeed=0;lastHud=null;options.onMoverHud?.(null);options.onStatus?.(status);updateCamera();
   }
   function openComfortCut(at:MoverBody={...body}){
     const active=registry.active(),cut=active?.reducedMotionCut?.();
-    if(!active||!cut)return false;
+    // Falls keep player control with the comfort camera; a destination cut would teleport an ordinary jump.
+    if(!active||active.id==='parachute'||!cut)return false;
     comfortCut=cut;comfortCutBody={...at};options.onStatus?.('Choose where to continue.');return true;
   }
   /** The app's comfort, live, for the land and the movers at once (Stage A + main #552; the stricter rule wins): reduced motion
@@ -311,9 +327,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     return true;
   }
   /** Pick-up: save the walk FOV, blend the camera to the mover's (0.8 s; a cut under reduced motion / calm), show the deck. */
-  function startRide(){clear();cruiser()?.resetInput();walkFov=camera.fov;path=[];blendCamera(moverBlendMs('pickup',comfort.reducedMotion,comfort.calm),camera.fov);if(registry.mode()==='board'||registry.mode()==='bicycle')mountBoardProxy();
-    if(cruiser()){cruiserArt?.dispose();cruiserArt=createCruiserArt(cruiserTheme);cruiserArt.setSkin(cruiserSkin);scene.add(cruiserArt.root);}
-    options.onStatus?.(RIDING_STATUS);}
+  function startRide(){if(cruiser()){clear();cruiser()!.resetInput();}if(walkFov===null)walkFov=footFov;path=[];blendCamera(moverBlendMs('pickup',comfort.reducedMotion,comfort.calm),camera.fov);syncEquipment();options.onStatus?.(registry.mode()==='parachute'?'Airborne. Space opens or retracts the parachute.':RIDING_STATUS);}
   /** Leaving Walk (Look / Island / a page) while riding: the mover pauses where it is (R2-01). The mode, the controller and the rider's body are kept; `update` stops; the Look / Island camera takes over. */
   function pauseRide(){
     if(!hold.pause({...body}))return;
@@ -339,7 +353,13 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     return {...moverInputFrom({keys,controls,jumpHeld,jumpEdge:jumpRequested,accept,look:lookAcc}),...(action?{action}:{})};
   }
   function ride(dt:number,now:number,accept:boolean){
-    const active=registry.active()!;const input=currentInput(accept);jumpRequested=false;lookAcc={dx:0,dy:0};lastInput=input;
+    let active=registry.active()!,transferred=false;const edge=jumpRequested;const input=currentInput(accept);jumpRequested=false;lookAcc={dx:0,dy:0};
+    if(edge&&!consumeJumpUntilRelease&&active.id!=='parachute'){
+      const at=active.airborne?.();if(at&&beginAirborne(at,true)){active=registry.active()!;transferred=true;input.jump=false;input.action=undefined;}
+    }
+    if(active.id==='parachute')input.jump=!transferred&&edge&&!consumeJumpUntilRelease;
+    else if(consumeJumpUntilRelease)input.jump=false;
+    lastInput=input;
     const f=active.update(dt,input,now);
     Object.assign(body,{x:f.body.x,y:f.body.y,z:f.body.z,yaw:f.body.yaw});yaw=f.body.yaw;
     ambienceSpeed=f.pose.speed;
@@ -353,7 +373,11 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(ambience&&!comfort.calm){if(f.sound.bite)ambience.snap();if(f.sound.boost)ambience.splashEcho();ambience.vario(f.hud.lift??0);}
     if(active.finished?.()){
       const out=registry.finish();
-      if(out)onFoot(out,fadeLabel?.label??`Landed from the ${active.id}.`);
+      if(registry.active()){
+        jumpRequested=false;consumeJumpUntilRelease=keys.has(' ')||jumpHeld;syncEquipment();
+        blendCamera(moverBlendMs('park',comfort.reducedMotion,comfort.calm),camera.fov);
+        options.onStatus?.('Landed. Riding on with the board.');
+      }else if(out)onFoot(out,fadeLabel?.label??`Landed. ${registry.stowed()?'Board stowed. ':''}Space jumps.`,!!f.fade);
     }
   }
   /** Offers and the E / Enter edge, once per frame. Returns whether the edge is still unspent (for the mover's `accept`). */
@@ -379,39 +403,51 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     const fromEye=camera.position.clone(),fromTarget=target.clone();mode=next;path=[];faceCards.visible=faceCardsLit&&mode!=='journey';
     if(next==='journey'){const {w,h}=world.extent;camera.position.set(w/2,w*1.05,h*1.17);target.set(w/2,20,h*.47);camera.lookAt(target);camera.fov=50;camera.updateProjectionMatrix();}
     else if(next==='look')shot(shotId);
-    else if(next==='walk'){if(!gateOpen(body.x,body.z))resnap=true;const at=geography.surface(body.x,body.z,body.y);if(at&&at.slope<=HORIZON_WALKABLE_DEGREES)body.y=at.y;distance=9;pitch=-.26;updateCamera();}
+    else if(next==='walk'){footFov=camera.fov;if(!gateOpen(body.x,body.z))resnap=true;const at=geography.surface(body.x,body.z,body.y);if(at&&at.slope<=HORIZON_WALKABLE_DEGREES)body.y=at.y;distance=9;pitch=-.26;updateCamera();}
     transition={eye:fromEye,target:fromTarget,toEye:camera.position.clone(),toTarget:target.clone(),at:performance.now(),duration:motion.transitionMs};
     // Reduced motion: a cut, never a tween (CONTRACT §2.10).
     if(transition.duration<=0){const to=transition;transition=null;camera.position.copy(to.toEye);target.copy(to.toTarget);}else{camera.position.copy(fromEye);target.copy(fromTarget);}camera.lookAt(target);
     updateFog();
   }
+  function cyclePerspective(){if(mode!=='walk')return;perspective.cycle(body,camera.position.toArray(),target.toArray());transition=null;options.onStatus?.(`${perspectiveLabel(perspective.mode())}. C changes the view.`);}
   function updateCamera(){if(mode!=='walk')return;
+    if(!registry.active()&&camera.fov!==footFov){camera.fov=footFov;camera.updateProjectionMatrix();}
     const eye:XYZ=[body.x,body.y+1.15,body.z],desired:XYZ=[body.x-Math.sin(yaw)*distance,body.y+1.15-Math.sin(pitch)*distance,body.z-Math.cos(yaw)*distance];
     let f=1;while(f>.12&&geography.cameraBlocked(eye,[eye[0]+(desired[0]-eye[0])*f,eye[1]+(desired[1]-eye[1])*f,eye[2]+(desired[2]-eye[2])*f]))f-=.08;
     camera.position.set(eye[0]+(desired[0]-eye[0])*f,eye[1]+(desired[1]-eye[1])*f,eye[2]+(desired[2]-eye[2])*f);target.set(...eye);camera.lookAt(target);
   }
-  let held=false;
+  let held=false,leftSupport=false;
   function move(dx:number,dz:number,dt:number){
-    const length=Math.hypot(dx,dz),steps=Math.max(1,Math.ceil(length/.2));let moved=0;held=false;
+    const length=Math.hypot(dx,dz),steps=Math.max(1,Math.ceil(length/.2));let moved=0;held=false;leftSupport=false;
     for(let i=0;i<steps;i++){
       const x=body.x+dx/steps,z=body.z+dz/steps;
       // Wave 6 gate: never step onto ground whose collision chunk is not resident — wait in place (the path is kept).
       if(!gateOpen(x,z)){held=true;break;}
       const hit=geography.surface(x,z,body.y,.48);
-      const obstacle=hit?geography.blocker(x,z,Math.max(body.y,hit.y),.3,[dx/steps,dz/steps]):null;
+      const obstacle=geography.blocker(x,z,Math.max(body.y,hit?.y??body.y),.3,[dx/steps,dz/steps]);
+      if(!obstacle&&(!hit||body.y-hit.y>.48)){
+        body.x=x;body.z=z;moved+=length/steps;leftSupport=true;break;
+      }
       if(!hit||hit.slope>HORIZON_WALKABLE_DEGREES||geography.submerged(x,z,hit.y)||obstacle){lastMovementBlocker={at:[x,body.y,z],surface:hit,obstacle,water:hit?geography.submerged(x,z,hit.y):false};break;}
       body.x=x;body.z=z;if(velocityY===0)body.y=Math.max(hit.y,body.y-6*dt/steps);moved+=length/steps;
     }return moved;
   }
   function step(dt:number,now:number){
+    leftSupport=false;
     let forward=controls.forward+(keys.has('w')||keys.has('arrowup')?1:0)-(keys.has('s')||keys.has('arrowdown')?1:0),strafe=controls.strafe+(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0);
     let dx=Math.sin(yaw)*forward+Math.cos(yaw)*strafe,dz=Math.cos(yaw)*forward-Math.sin(yaw)*strafe;
     if(dx||dz)path=[];
     else if(path.length){const p=path[0]!;dx=p[0]-body.x;dz=p[2]-body.z;if(Math.hypot(dx,dz)<.35){path.shift();dx=0;dz=0;}}
     const length=Math.hypot(dx,dz),speed=controls.run||keys.has('shift')?HORIZON_MANIFEST.speeds_ms.run:HORIZON_MANIFEST.speeds_ms.walk;
+    const before={x:body.x,z:body.z};
     let moved=0;if(length){dx=dx/length*Math.min(length,speed*dt);dz=dz/length*Math.min(length,speed*dt);body.yaw=Math.atan2(dx,dz);moved=move(dx,dz,dt);if(path.length&&moved<.001&&!held){path=[];options.onStatus?.('That path is blocked. Choose another approach.');}}
-    if(jumpRequested&&velocityY===0)velocityY=4.2;jumpRequested=false;
-    if(velocityY!==0){velocityY-=HORIZON_G*dt;body.y+=velocityY*dt;const floor=geography.surface(body.x,body.z,body.y+.5);if(floor&&body.y<=floor.y){body.y=floor.y;velocityY=0;}if(geography.ceiling(body.x,body.z,body.y)<body.y+HORIZON_BODY_HEIGHT){body.y=geography.ceiling(body.x,body.z,body.y)-HORIZON_BODY_HEIGHT;velocityY=Math.min(0,velocityY);}}
+    const support=geography.surface(body.x,body.z,body.y,.02);
+    const unsupported=leftSupport||!support||body.y-support.y>.05;
+    if(unsupported||jumpRequested&&!consumeJumpUntilRelease){
+      const vx=dt>0?(leftSupport?dx:body.x-before.x)/dt:0,vz=dt>0?(leftSupport?dz:body.z-before.z)/dt:0;
+      if(beginAirborne({...body,velocity:[vx,unsupported?0:4.2,vz]},false))return;
+    }
+    jumpRequested=false;
     if(moved>0&&now>doorCooldown){const door=world.hosts.find(h=>'xy'in h.door&&Math.hypot(body.x-h.door.xy[0],body.z-h.door.xy[1],body.y-(h.door.height??0))<1.15);if(door)enterDoor(door.id);}
     if(!simulating){figure.group.position.set(body.x,body.y,body.z);figure.group.rotation.y=body.yaw;figure.pose(now*.007,moved>0?1:0,now/1000);updateCamera();}
   }
@@ -430,7 +466,14 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
       camera.position.lerpVectors(transition.eye,transition.toEye,ease);target.lerpVectors(transition.target,transition.toTarget,ease);camera.lookAt(target);
       if(transition.fov!==undefined&&transition.toFov!==undefined){const fov=transition.fov+(transition.toFov-transition.fov)*ease;if(Math.abs(camera.fov-fov)>1e-3){camera.fov=fov;camera.updateProjectionMatrix();}}
       if(t===1)transition=null;
-    }figure.group.visible=mode==='walk';if(cruiserArt)cruiserArt.root.visible=mode==='walk';
+    }
+    const chosen=mode==='walk'?perspective.pose(body,geography.cameraBlocked,geography.ceiling(body.x,body.z,body.y)):null;
+    if(chosen){camera.position.set(...chosen.eye);target.set(...chosen.target);camera.fov=chosen.fov;camera.updateProjectionMatrix();camera.lookAt(target);}
+    const firstPerson=mode==='walk'&&perspective.mode()==='first-person';
+    figure.group.visible=mode==='walk'&&!firstPerson;
+    // Own equipment is hidden locally in first person; activity and floating retain the full canopy.
+    for(const art of moverArts)if(firstPerson)art.object.visible=false;
+    if(cruiserArt)cruiserArt.root.visible=mode==='walk'&&!firstPerson;
     const peer=horizonPartnerPose(options.partner?.());partner.group.visible=Boolean(peer)&&mode!=='journey';if(peer){fade(partnerMaterials,peer.opacity);partner.group.position.set(peer.x,peer.y??geography.ground(peer.x,peer.z),peer.z);partner.group.rotation.y=peer.yaw;partner.pose(motion.ambientMotion?now*.007:0,peer.moving?1:0,motion.ambientMotion?now/1000:0);}
     // Calm and reduced motion hold the frozen 15:30 (no night, no sun step); a review date never overrides them.
     if(now-lastSun>=60_000){setLight(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm}));lastSun=now;}
@@ -459,20 +502,23 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     return true;
   }
   const interactive=(event:KeyboardEvent)=>event.composedPath().some(t=>t instanceof Element&&Boolean(t.closest('input,textarea,select,button,a,[contenteditable="true"],[role="dialog"],[role="textbox"]')));
-  function keyDown(e:KeyboardEvent){if(paused||interactive(e)||!host.contains(document.activeElement))return;const key=e.key.toLowerCase();if(suppressedKeys.has(key)){e.preventDefault();return;}if(key==='v'&&!e.repeat){e.preventDefault();toggleCruiser();return;}if(key==='r'&&cruiser()&&!e.repeat){e.preventDefault();recoverRide();return;}if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(key)){e.preventDefault();keys.add(key);if(key===' '&&!e.repeat||key===' '&&!registry.active())jumpRequested=true;}if(key==='e'){e.preventDefault();if(!e.repeat)acceptRequested=true;}if(key==='escape')path=[];}
+  function keyDown(e:KeyboardEvent){if(paused||interactive(e)||!host.contains(document.activeElement))return;const key=e.key.toLowerCase();if(suppressedKeys.has(key)){e.preventDefault();return;}if(key==='v'&&!e.repeat){e.preventDefault();toggleCruiser();return;}if(key==='r'&&cruiser()&&!e.repeat){e.preventDefault();recoverRide();return;}if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(key)){e.preventDefault();keys.add(key);if(key===' '&&!e.repeat&&!consumeJumpUntilRelease)jumpRequested=true;}if(key==='c'&&!e.repeat){e.preventDefault();cyclePerspective();}if(key==='e'){e.preventDefault();if(!e.repeat)acceptRequested=true;}if(key==='escape')path=[];}
   const suppressedKeys=new Set<string>();
-  function keyUp(e:KeyboardEvent){keys.delete(e.key.toLowerCase());suppressedKeys.delete(e.key.toLowerCase());}
   function visibilityClear(){if(document.hidden){clear();last=0;}}
-  function clear(){for(const key of keys)suppressedKeys.add(key);keys.clear();controls={forward:0,strafe:0,run:false};path=[];drag=null;jumpHeld=false;jumpRequested=false;acceptRequested=false;lookAcc={dx:0,dy:0};moverActionRequested=null;cruiser()?.resetInput();}
-  const unlisten=[lease.listenCanvas<PointerEvent>('pointerdown',e=>{if(paused)return;host.focus({preventScroll:true});drag={x:e.clientX,y:e.clientY,id:e.pointerId,travel:0};renderer.domElement.setPointerCapture(e.pointerId);}),lease.listenCanvas<PointerEvent>('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.travel+=Math.hypot(dx,dy);drag.x=e.clientX;drag.y=e.clientY;lookAcc.dx-=dx*.005;lookAcc.dy-=dy*.004;yaw-=dx*.005;pitch=Math.max(-1.2,Math.min(.8,pitch-dy*.004));if(mode==='look'){target.set(camera.position.x+Math.sin(yaw)*Math.cos(pitch)*distance,camera.position.y+Math.sin(pitch)*distance,camera.position.z+Math.cos(yaw)*Math.cos(pitch)*distance);camera.lookAt(target);}}),lease.listenCanvas<PointerEvent>('pointerup',e=>{const click=drag&&drag.travel<5;drag=null;if(!click||mode!=='walk'||paused||registry.active())return;const rect=renderer.domElement.getBoundingClientRect(),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);const hits=ray.intersectObjects([...stream.live.values()].map(r=>r.cards.group),true);const hit=hits[0];if(hit){const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],[hit.point.x,hit.point.y,hit.point.z],{stepFree:true});if(plan){path=[...plan.points];routeAhead(plan.points);}else options.onStatus?.('No connected walking route reaches that point.');}}),lease.listenCanvas<WheelEvent>('wheel',e=>{if(paused)return;e.preventDefault();if(registry.active())return;distance=Math.max(2,Math.min(45,distance*Math.exp(e.deltaY*.001)));updateCamera();},{passive:false})];
+  function keyUp(e:KeyboardEvent){keys.delete(e.key.toLowerCase());suppressedKeys.delete(e.key.toLowerCase());if(e.key===' '){consumeJumpUntilRelease=false;jumpHeld=false;}}
+  function clear(){for(const key of keys)suppressedKeys.add(key);keys.clear();controls={forward:0,strafe:0,run:false};path=[];drag=null;jumpHeld=false;jumpRequested=false;moverActionRequested=null;consumeJumpUntilRelease=suppressedKeys.has(' ');acceptRequested=false;lookAcc={dx:0,dy:0};cruiser()?.resetInput();}
+  const unlisten=[lease.listenCanvas<PointerEvent>('pointerdown',e=>{if(paused)return;host.focus({preventScroll:true});drag={x:e.clientX,y:e.clientY,id:e.pointerId,travel:0};renderer.domElement.setPointerCapture(e.pointerId);}),lease.listenCanvas<PointerEvent>('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.travel+=Math.hypot(dx,dy);drag.x=e.clientX;drag.y=e.clientY;if(perspective.mode()!=='activity'&&mode==='walk')perspective.look(-dx*.005,-dy*.004);
+      else{lookAcc.dx-=dx*.005;lookAcc.dy-=dy*.004;yaw-=dx*.005;pitch=Math.max(-1.2,Math.min(.8,pitch-dy*.004));}if(mode==='look'){target.set(camera.position.x+Math.sin(yaw)*Math.cos(pitch)*distance,camera.position.y+Math.sin(pitch)*distance,camera.position.z+Math.cos(yaw)*Math.cos(pitch)*distance);camera.lookAt(target);}}),lease.listenCanvas<PointerEvent>('pointerup',e=>{const click=drag&&drag.travel<5;drag=null;if(!click||mode!=='walk'||paused||registry.active())return;const rect=renderer.domElement.getBoundingClientRect(),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);const hits=ray.intersectObjects([...stream.live.values()].map(r=>r.cards.group),true);const hit=hits[0];if(hit){const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],[hit.point.x,hit.point.y,hit.point.z],{stepFree:true});if(plan){path=[...plan.points];routeAhead(plan.points);}else options.onStatus?.('No connected walking route reaches that point.');}}),lease.listenCanvas<WheelEvent>('wheel',e=>{if(paused)return;e.preventDefault();if(perspective.mode()==='floating'&&mode==='walk'){perspective.zoom(e.deltaY);return;}if(registry.active())return;distance=Math.max(2,Math.min(45,distance*Math.exp(e.deltaY*.001)));updateCamera();},{passive:false})];
   window.addEventListener('keydown',keyDown);window.addEventListener('keyup',keyUp);window.addEventListener('blur',clear);document.addEventListener('visibilitychange',visibilityClear);host.addEventListener('blur',clear);
   shot(new URLSearchParams(location.search).get('shot')??'A');if(options.initialBody)restore(options.initialBody);resize();schedule();
   function toggleCruiser(){
     if(paused)return false;
     const active=cruiser();
     if(active){
+      const airborne=active.airborne?.();
+      if(airborne){resumeRide();clear();mode='walk';return beginAirborne(airborne,false);}
       const at=active.dismount();
-      if(!at){options.onStatus?.(active.state().grounded?'No clear place beside you. Move into an open spot or use Recover.':'Land before getting off. This parachute requires a high-altitude flight exit.');return false;}
+      if(!at){options.onStatus?.(active.state().grounded?'No clear place beside you. Move into an open spot or use Recover.':'No safe dismount is available yet.');return false;}
       hold.resume();mode='walk';const offer:ThresholdOffer={id:'cruiser-park',thresholdId:'beside-cruiser',from:'cruiser',to:'feet',at:[at.x,at.y,at.z],action:'Get off',label:'Get off'};
       return acceptOffer(offer);
     }
@@ -494,8 +540,15 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     body:()=>({...body}),mode:()=>mode,shotId:()=>shotId,
     settings:()=>({tier,reducedMotion:comfort.reducedMotion,calm:comfort.calm,theme}),reviewDate:()=>(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm})),setAmbience(audio:WorldAmbience|null){ambience=audio;},
     offers,
-    moverState():HorizonMoverState{const fade=fadeLabel&&performance.now()-fadeLabel.at<HORIZON_FADE_LABEL_MS?fadeLabel.label:undefined;return{mode:registry.mode(),attached:registry.active()!==null,hud:lastHud,...(fade?{fade}:{}),cut:comfortCut};},
-    moverAction(action:'fold'|'pull'|'gate'){if(action==='fold'||action==='pull')moverActionRequested=action;},
+    moverState():HorizonMoverState{const fade=fadeLabel&&performance.now()-fadeLabel.at<HORIZON_FADE_LABEL_MS?fadeLabel.label:undefined;return{mode:registry.mode(),attached:registry.active()!==null,hud:lastHud,airborne:registry.mode()==='parachute'||!!registry.active()?.airborne?.(),stowed:registry.stowed(),perspective:perspective.mode(),...(fade?{fade}:{}),cut:comfortCut};},
+    moverAction(action:'fold'|'pull'|'gate'){
+      if(action==='pull'&&registry.mode()!=='parachute'){
+        const at=registry.active()?.airborne?.();if(at)beginAirborne(at,true);else options.onStatus?.('Open the parachute while airborne.');
+      }else if(action==='fold'||action==='pull')moverActionRequested=action;
+    },
+    cyclePerspective,
+    resumeEquipment(){if(registry.resumeStowed({...body,velocity:[0,0,0]})){startRide();return true;}options.onStatus?.('Carry the board to a rideable surface.');return false;},
+    airspaceReady:(x:number,z:number)=>gateOpen(x,z),
     moverArt(object:THREE.Object3D,tick:(dt:number,figure:THREE.Object3D)=>boolean,dispose?:()=>void){const art:HorizonMoverArt={object,tick,dispose};moverArts.add(art);scene.add(object);return()=>removeMoverArt(art);},
     // ---- movers (track I) ----
     registry,
@@ -511,12 +564,12 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     accept:acceptPublic,
     cutTo,
     /** The Jump bubble held (riding: the board charges its pop). */
-    jumpHold(on:boolean){jumpHeld=on;if(on&&!registry.active())jumpRequested=true;},
+    jumpHold(on:boolean){if(on&&!jumpHeld&&!consumeJumpUntilRelease)jumpRequested=true;jumpHeld=on;if(!on)consumeJumpUntilRelease=false;},
     offer:()=>lastOffer,
     /** Compatibility (main #552): one comfort path — `setComfort` sets the land's motion and the movers' registry together. */
     setReducedMotion(on:boolean){applyComfort({reducedMotion:on});},
     setCalm(on:boolean){applyComfort({calm:on});},
-    input(next:Partial<typeof controls>){controls={...controls,...next};},jump(){jumpRequested=true;},look(dx:number,dy:number){lookAcc.dx+=dx;lookAcc.dy+=dy;yaw+=dx;pitch=Math.max(-1.2,Math.min(.8,pitch+dy));},
+    input(next:Partial<typeof controls>){controls={...controls,...next};},jump(){jumpRequested=true;},look(dx:number,dy:number){if(perspective.mode()!=='activity'&&mode==='walk'){perspective.look(dx,dy);return;}lookAcc.dx+=dx;lookAcc.dy+=dy;yaw+=dx;pitch=Math.max(-1.2,Math.min(.8,pitch+dy));},
     pause(value:boolean){paused=value;if(value){clear();ambience?.pause();}},setDate(date:Date){currentTime=date;lastSun=-Infinity;},
 
     /** The app's comfort choices, live (HorizonStage threads useComfort; html[data-motion] is read too). */
