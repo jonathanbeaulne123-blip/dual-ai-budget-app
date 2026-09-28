@@ -3,7 +3,7 @@
 **Date:** 2026-09-28
 **Branch:** `cursor/horizon-mountain-toggle-39dc`
 **Base:** `origin/main@9fed6002`
-**Head:** `fa7f81665eaa1ac1bca25f599479722d82193e1e`
+**Head:** `7245a679`
 **PR:** #565 (draft)
 **Risk:** Medium
 **Budget delta (5):** +0 — no money meaning, writers, schema, or Confirm changes
