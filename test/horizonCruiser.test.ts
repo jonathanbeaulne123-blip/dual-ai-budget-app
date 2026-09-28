@@ -35,6 +35,14 @@ describe('one forgiving Horizon cruiser',()=>{
   it('stops at a thin wall without tunnelling, flipping or launching',()=>{
     const s=run(6,{...idle,forward:1},wallAt());expect(s.z).toBeLessThan(119.35);expect(s.z).toBeGreaterThan(118);expect(s.y).toBe(0);expect(s.grounded).toBe(true);expect(cruiserSpeed(s)).toBeLessThan(.2);
   });
+  it('uses dynamic boat collision normals and preserves camera hull bypass',()=>{
+    const g=createHorizonGeography(field,empty);
+    const remove=g.addDynamic({surface:()=>null,ceiling:()=>Infinity,contact:(_x,z,_y,radius=.3)=>z>120-radius?{id:'yacht-hull',nx:0,nz:-1}:null});
+    const stopped=run(5,{...idle,forward:1},g);expect(stopped.z).toBeLessThan(120);expect(cruiserSpeed(stopped)).toBeLessThan(.01);
+    expect(g.blocker(100,121,0)).toBe('yacht-hull');expect(g.blocker(100,121,0,.3,undefined,true)).toBeNull();
+    expect(g.cameraBlocked([100,1,118],[100,1,122])).toBe(true);expect(g.cameraBlocked([100,1,118],[100,1,122],true)).toBe(false);
+    remove();expect(run(5,{...idle,forward:1},g).z).toBeGreaterThan(140);
+  });
   it('stops at a world corner without reflecting its velocity',()=>{
     const s=stepCruiser({...createCruiserState({x:499.53,y:0,z:499.53,yaw:Math.PI/4}),vx:11.3,vz:11.3},idle,flat);expect(s.vx).toBeGreaterThanOrEqual(-.001);expect(s.vz).toBeGreaterThanOrEqual(-.001);expect(cruiserSpeed(s)).toBeLessThan(.01);
   });

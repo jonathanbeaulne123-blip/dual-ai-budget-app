@@ -1,3 +1,11 @@
+## 2026-09-27 — The offshore fleet shares movement and one physical yacht
+
+Jonathan authorized four distinct watercraft and a walkable offshore yacht. One fixed-step fleet model has separate kayak, dinghy, motorboat and yacht handling. A 44 m by 14 m yacht supplies shared rendered and collision geometry, rotating deck support, connected rooms, doors, stairs, seats and stable galley station hooks. Close-range boarding, secured tenders, swimming and ladder recovery make it a physically reached destination. Its current location is reused by Island view; it has no remote land boarding flow.
+
+The existing mover registry owns each activity. Main's integrated parachute and C-perspective update is preserved; leaving a moving deck transfers velocity once into shared airborne physics. Valid deck touchdown returns walking immediately while art stows with the live figure. Near-fleet water impacts preserve the impact location for swimming. Local persistence is scoped by the app identity and atomically validated; no fleet cloud writer or multiplayer authority is invented. Existing shared wind and comfort settings remain authoritative. Functional fittings and environmental detail are listed in the [fleet guide](briefs/OFFSHORE_FLEET_GUIDE.md).
+
+Risk High; Budget (5): +0; Engagement (3): four water journeys and one connected destination. Local verification and remaining device/release gates are in the [worksession](worksessions/2026-09-27-offshore-fleet.md). No deployment, schema or financial changes.
+
 ## 2026-09-27 — Fall rescue is an explicit Retry
 
 Jonathan reported the character fading out and respawning after jumping from the mountain or high platforms, then directed: keep fall rescue, but move it to Retry. Little Harbour no longer triggers rescue from a fall-height threshold. Its existing fade out, return near safe ground and fade in remain available through the outdoor Retry button on desktop and touch. Repeated clicks do not restart the return. Boarding or restoring a skateboard clears an interrupted fade so the rider stays visible. Existing board Retry, transport controls and Horizon parachute mechanics remain intact.

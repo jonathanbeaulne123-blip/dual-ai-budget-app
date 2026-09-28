@@ -6,7 +6,7 @@
 - Repository: jonathanbeaulne123-blip/dual-ai-budget-app
 - Branch: codex/island-cruiser
 - Original baseline: 22c95b8b82cb3774f0b5f2aba6f562825aff6b0c (fresh isolated clone)
-- Integrated baseline: origin/main c82f9d7 (#556), including #554
+- Integrated baseline: origin/main eed2eaa (#557), including #556 and #554
 - PR: #555; Jonathan explicitly requested merge after creating the draft
 - Risk: Medium-High, shared recreational movement, camera and input lifecycle
 - Budget delta (5): +0; no financial, Auth, books or Final Confirm changes
@@ -83,3 +83,10 @@ A follow-up low-ceiling landing review extended the envelope check to airborne h
 Main advanced during native checks with #556 (`c82f9d7`). Its explicit fall Retry behavior and chunk-prefetch correction are preserved; the sole textual conflict was adjacent decision-log entries, both retained. The earlier final candidate `43acde5` passed repository TypeScript and **282/282 tests** in **115.832 s**, both terrain checks, the app build, automated review and Android. Final combined checks are linked from PR #555.
 
 After #556 integration, **193/193 tests across seven suites passed in 56.75 s**, including the cruiser, registry, Stage controls, streaming, Harbour body/focus and mountain movement. Independent review confirmed the explicit Retry uses Little Harbour's separate walker and the Horizon prefetch rename preserves behavior. Native CI is not an enforced merge requirement; physical-device acceptance remains separate.
+
+
+### Fleet integration before merge
+
+The merge was rejected when #557 (`eed2eaa`) landed immediately before it. Cruiser and fleet now share the combined dynamic collision API, input cleanup, perspectives, and exclusive mover registry. Dynamic yacht contacts preserve normals for cruiser wall sliding; camera queries retain the fleet hull bypass. Fleet snapshots use the cruiser checked dismount or safe position instead of raw airborne coordinates. Cruiser mounting is refused on the yacht deck or while seated: step ashore first. The fleet panel measures the complete top controls and hides during another active mover; boat pause status stays accurate.
+
+Focused combined verification: **99/99 tests across six suites in 13.96 s**, including a dynamic-contact regression, all cruiser and fleet tests, geometry, registry, Stage and parachute tests. The complete rendered cruiser proof passed again with the fleet present (both skins, perspectives, airborne handoffs, held-input recovery, phone pads and all twelve theme/viewport captures). Two independent read-only reviewers checked the conflict resolutions. The focused combined browser proof and current-head CI are recorded in PR #555; physical-device acceptance remains open.

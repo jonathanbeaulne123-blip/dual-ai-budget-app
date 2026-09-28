@@ -47,6 +47,6 @@ export function adaptFlightController(flight:FlightController,deps:MoverDeps):Mo
     tier(){},
     reducedMotionCut(){return flight.reducedMotionCut();},
     dispose(){},
-    finished(){return flight.finished?.()===true;},
+    finished(){const p=flight.bodyPose();return flight.finished?.()===true||(flight.phase()==='pose'&&deps.geography.surface(p.x,p.z,p.y,.1)?.id.startsWith('yacht.')===true);},
   };
 }
