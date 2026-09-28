@@ -52,6 +52,7 @@ export default function HorizonStage(props:HorizonStageProps){
   },[tier]);
   useEffect(()=>{runtime.current?.setCruiserTheme?.(props.theme??'classic');},[props.theme,ready]);
   useEffect(()=>{runtime.current?.pause(props.paused===true);},[props.paused,ready]);
+  useEffect(()=>{runtime.current?.setTheme(props.theme??'classic');},[props.theme,ready]);
   // The toolbar can wrap onto several rows as tools, camera controls or larger text appear.
   useEffect(()=>{
     const shell=stage.current?.parentElement,bar=shell?.querySelector('.horizon-top-controls');if(!shell||!bar)return;
@@ -69,12 +70,17 @@ export default function HorizonStage(props:HorizonStageProps){
   // One path to the runtime: setComfort sets the land's motion (cuts, frozen 15:30) and the movers' registry together.
   useEffect(()=>{runtime.current?.setComfort({calm,reducedMotion});},[reducedMotion,calm,ready]);
   useEffect(()=>{
-    if(!ready)return;let last='';
+    if(!ready)return;let last='',lastFleet='';
     const poll=window.setInterval(()=>{
       const world=runtime.current;if(!world)return;
-      setBoatActions(world.fleetActions());setFleetState(world.fleetState());
       const next={offers:world.offers(),mover:world.moverState(),mode:world.mode()},hud=next.mover.hud;
-      const key=JSON.stringify([next.offers.map(offerKey),next.offers.map(o=>o.action),next.mover.mode,next.mover.attached,next.mover.airborne,next.mover.stowed,next.mover.perspective,next.mode,(hud as {pace?:string})?.pace,hud&&[Math.round(hud.height??-1),Math.sign(Math.trunc((hud.lift??0)/.5)),hud.place?.label,Math.round(hud.place?.distance??0),hud.place?.action],next.mover.fade,next.mover.cut?.landings.map(landing=>landing.id)]);
+      if(next.mode==='walk'&&!latest.current.paused&&(!next.mover.attached||isCraft(next.mover.mode))){
+        const actions=world.fleetActions(),state=world.fleetState();
+        // Only rendered fleet values own React updates; vessel poses stay in the runtime.
+        const fleetKey=JSON.stringify([actions.map(a=>[a.id,a.label]),state.swimming,state.saveFailed,state.vessels.find(v=>v.id==='yacht')?.anchor]);
+        if(fleetKey!==lastFleet){lastFleet=fleetKey;setBoatActions(actions);setFleetState(state);}
+      }
+      const key=JSON.stringify([next.offers.map(offerKey),next.offers.map(o=>o.action),next.mover.mode,next.mover.attached,next.mover.airborne,next.mover.stowed,next.mover.perspective,next.mode,hud&&['pace' in hud?hud.pace:null,Math.round(hud.height??-1),Math.sign(Math.trunc((hud.lift??0)/.5)),hud.place?.label,Math.round(hud.place?.distance??0),hud.place?.action],next.mover.fade,next.mover.cut?.landings.map(landing=>landing.id)]);
       if(key===last)return;last=key;setOffers(next.offers);setMover(next.mover);setMode(next.mode);
       if(isCraft(next.mover.mode)){setStatus(world.ridePaused?.()?RIDE_PAUSED_STATUS:'W / ↑ accelerates · S / ↓ slows then reverses · A / D steer · Space brakes · E interacts · C camera.');return;}
       if(next.mover.mode==='parachute')setStatus(`${hud?.place?.label??'Airborne'}. Space opens or retracts; A/D steer, S brakes. C changes view.`);

@@ -1,3 +1,9 @@
+## 2026-09-27 — Fleet review preserves occupied water, hulls and live appearance
+
+The fleet correction keeps separate water contracts: hulls query the highest exposed surface, while people query the nearest valid water volume at their feet, including the underground Deep and overlapping water depths. Small-craft contact includes both oriented hull dimensions and the proposed heading. Speed text updates while attached; unchanged or hidden fleet controls do not drive repeated React commits. Live appearance changes replace and dispose only the fleet art, preserving the boat model, body, doors and movement owner. These repairs preserve the physically reached yacht behavior accepted for the fleet.
+
+Risk High; Budget (5): +0; Engagement (3): corrected water/contact and live controls. No financial, identity, schema or deployment-policy change. The [worksession](worksessions/2026-09-27-offshore-fleet.md) and correction PR #558 retain verification and device/timing limits.
+
 ## 2026-09-27 — The offshore fleet shares movement and one physical yacht
 
 Jonathan authorized four distinct watercraft and a walkable offshore yacht. One fixed-step fleet model has separate kayak, dinghy, motorboat and yacht handling. A 44 m by 14 m yacht supplies shared rendered and collision geometry, rotating deck support, connected rooms, doors, stairs, seats and stable galley station hooks. Close-range boarding, secured tenders, swimming and ladder recovery make it a physically reached destination. Its current location is reused by Island view; it has no remote land boarding flow.
