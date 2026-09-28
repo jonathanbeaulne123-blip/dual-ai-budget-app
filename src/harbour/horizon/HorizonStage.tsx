@@ -41,7 +41,7 @@ export default function HorizonStage(props:HorizonStageProps){
   const [status,setStatus]=useState('Loading the Horizon…'),[ready,setReady]=useState(false),[mode,setMode]=useState<HorizonMode>('look'),[page,setPage]=useState('A');
   const [reducedMotion,setReducedMotion]=useState(()=>readReducedMotion(props)),[calm,setCalm]=useState(()=>readCalm(props));
   const [offers,setOffers]=useState<ThresholdOffer[]>([]),[mover,setMover]=useState<HorizonMoverState|null>(null),[sheet,setSheet]=useState<ReducedMotionCut|null>(null),hold=useRef<number|null>(null),jumpPointer=useRef<number|null>(null);
-  const [kitchen,setKitchen]=useState<KitchenView|null>(null);
+  const [kitchen,setKitchen]=useState<KitchenView|null>(null),kitchenSnapshot=useRef('');
   const kitchenActive=Boolean(kitchen&&kitchen.state.phase!=='idle');
   const [boatActions,setBoatActions]=useState<FleetAction[]>([]),[fleetState,setFleetState]=useState<ReturnType<HorizonRuntime['fleetState']>|null>(null);
   const [tier]=useState<'full'|'lite'>(()=>new URLSearchParams(location.search).get('tier')==='lite'||matchMedia('(max-width: 600px)').matches?'lite':'full');
@@ -75,10 +75,10 @@ export default function HorizonStage(props:HorizonStageProps){
   // One path to the runtime: setComfort sets the land's motion (cuts, frozen 15:30) and the movers' registry together.
   useEffect(()=>{runtime.current?.setComfort({calm,reducedMotion});},[reducedMotion,calm,ready]);
   useEffect(()=>{
-    if(!ready)return;let last='',lastFleet='',lastKitchen='';
+    if(!ready)return;let last='',lastFleet='';
     const poll=window.setInterval(()=>{
       const world=runtime.current;if(!world)return;
-      const kitchenView=world.kitchenView?.();if(kitchenView){const k=JSON.stringify(kitchenView);if(k!==lastKitchen){lastKitchen=k;setKitchen(kitchenView);}}
+      const kitchenView=world.kitchenView?.();if(kitchenView){const k=JSON.stringify(kitchenView);if(k!==kitchenSnapshot.current){kitchenSnapshot.current=k;setKitchen(kitchenView);}}
       const next={offers:world.offers(),mover:world.moverState(),mode:world.mode()},hud=next.mover.hud;
       if(next.mode==='walk'&&!latest.current.paused&&(!next.mover.attached||isCraft(next.mover.mode))){
         const actions=world.fleetActions(),state=world.fleetState();
@@ -183,7 +183,7 @@ export default function HorizonStage(props:HorizonStageProps){
         <button className="horizon-sheet-stay" onClick={()=>cut({kind:'stay'})}>Stay here</button>
       </div>}
       <p className="horizon-status" role="status">{status}</p>
-      {ready&&kitchen&&<KitchenHUD view={kitchen} theme={props.theme??'classic'} reducedMotion={reducedMotion} onCommand={command=>{runtime.current?.kitchenCommand(command);setKitchen(runtime.current?.kitchenView()??null);stage.current?.focus({preventScroll:true});}} onInput={(chef,value)=>{runtime.current?.kitchenInput(chef,value);stage.current?.focus({preventScroll:true});}}/>}
+      {ready&&kitchen&&<KitchenHUD view={kitchen} theme={props.theme??'classic'} reducedMotion={reducedMotion} onCommand={command=>{runtime.current?.kitchenCommand(command);const next=runtime.current?.kitchenView()??null;kitchenSnapshot.current=JSON.stringify(next);setKitchen(next);stage.current?.focus({preventScroll:true});}} onInput={(chef,value)=>{runtime.current?.kitchenInput(chef,value);stage.current?.focus({preventScroll:true});}}/>}
     </>}
     {props.children}
   </section>;
