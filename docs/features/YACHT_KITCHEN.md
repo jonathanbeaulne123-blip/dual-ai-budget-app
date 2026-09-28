@@ -33,7 +33,7 @@ Chefs can share a preparation counter by placing and picking up items with E/A, 
 - **Tomato pasta:** boiled pasta and cooked chopped tomato sauce.
 - **Deck burger:** grilled patty, chopped lettuce and tomato, and bun.
 
-All dishes need a clean plate and an active matching order. Pick up the finished plate and deliver it at the pass. Dirty plates return after six seconds; take them to the sink and prepare to wash. Three plates circulate in solo, four in co-op. The waste bin clears mistaken food and returns plates for washing. An unattended appliance can burn food and, with hazards enabled, start a contained fire. Carry the extinguisher to it and prepare before removing burnt food.
+All dishes need a clean plate and an active matching order. Pick up the finished plate and deliver it at the pass, or use the trolley during Captain’s Banquet. Dirty plates return after six seconds; take them to the sink and prepare to wash. Three plates circulate in solo, four in co-op. The waste bin clears mistaken food and returns plates for washing. An unattended appliance can burn food and, with hazards enabled, start a contained fire. Carry the extinguisher to it and prepare before removing burnt food.
 
 | Service | Rules |
 | --- | --- |
@@ -43,7 +43,7 @@ All dishes need a clean plate and an active matching order. Pick up the finished
 | Captain’s Banquet | Five-minute service with a bounded trolley: load at LOAD, release, walk to SERVE and secure, then return it for the next load. |
 | Practice / relaxed | Cycles all five recipes without a clock or expiring orders; extra cooking forgiveness and fires off by default. Finish with the visible button or Enter. |
 
-Assists adjust cooking forgiveness, patience, warnings and preparation input. Scores, sequence bonuses and ratings are recreational. Earned apron, sea-glass inset, outdoor table runner and captain’s memento appear on this yacht. Results and interrupted sessions are saved together on this device, scoped to the environment, household, member and view. They do not synchronize across devices. Failed storage is reported; replaying a result does not grant it twice.
+Assists adjust cooking forgiveness, patience, warnings and preparation input. Scores, sequence bonuses and ratings are recreational. Earned apron, sea-glass inset, outdoor table runner and captain’s memento appear on this yacht. Results and interrupted sessions are saved together on this device, scoped to the environment, household, member and view. They do not synchronize across devices. For an interrupted service, return to the galley menu board and choose Resume service; it restores paused until you explicitly resume. Failed storage is reported; replaying a result does not grant it twice.
 
 ## Implementation and tuning
 
