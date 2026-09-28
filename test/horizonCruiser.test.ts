@@ -58,6 +58,16 @@ describe('one forgiving Horizon cruiser',()=>{
     const high=solid('high-slab','test','stone','deck');box(high,[100,110],2.2,[20,8],1.7);high.walkable=true;
     expect(run(4,{...idle,forward:1},createHorizonGeography(field,{...empty,solids:[high]})).z).toBeGreaterThan(115);
   });
+  it('rejects a low overhang during landing without pushing the rider beneath the floor',()=>{
+    const slab=solid('low-air-slab','test','stone','deck');box(slab,[100,110],2.2,[20,8],1.4);slab.walkable=true;
+    const low=createHorizonGeography(field,{...empty,solids:[slab]});
+    let s={...createCruiserState({...start,z:105.4,y:.09}),grounded:false,vz:16,vy:-1};
+    for(let i=0;i<30;i++){s=stepCruiser(s,idle,low);expect(s.y).toBeGreaterThanOrEqual(0);if(s.grounded)expect(validCruiserPosition(low,s)).not.toBeNull();}
+    expect(s.z).toBeLessThan(106-CRUISER.radius);expect(s.grounded).toBe(true);
+    // Defensive vertical resolution also retains the prior pose if contact data changes at touchdown.
+    const cramped={...flat,ceiling:()=>1.4},before={...createCruiserState(start),y:.02,grounded:false,vy:-3};
+    const next=stepCruiser(before,idle,cramped);expect(next.y).toBe(before.y);expect(next.grounded).toBe(false);expect(next.contact).toBe('low-headroom');
+  });
   it('cannot jump through an uphill terrain face',()=>{
     const g={...flat,ground:(_x:number,z:number)=>z>102?6:0,surface:(x:number,z:number,y=0,step=.48)=>z>102?(y+step<6?null:{...flat.surface(x,z)!,y:6}):flat.surface(x,z)};
     const s=run(1,{...idle,jump:true},g,{...createCruiserState(start),vz:12});expect(s.z).toBeLessThan(102);expect(s.y).toBeGreaterThanOrEqual(0);

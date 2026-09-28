@@ -77,3 +77,5 @@ Automated review subsequently found two bounded edge cases: the browser's localS
 The second automated reviewer found that the shared walking body is shorter than the mounted rider. Grounded cruiser movement now checks its configured 1.55 m headroom at the centre and footprint edges before each substep, with a low-slab regression proving it stops while the shorter walker fits, and a higher bridge proving ordinary underpasses remain open.
 
 Review-fix verification: **33/33 tests passed** (21 cruiser, 6 collision geography, 6 Stage DOM tests) in **12.65 s**. The standalone three-route browser proof created a new nested output directory and wrote a passing report with zero page errors.
+
+A follow-up low-ceiling landing review extended the envelope check to airborne horizontal movement. Vertical contact resolution now rejects an impossible floor/ceiling step and retains the preceding pose rather than moving a grounded rider below the floor. The airborne approach and defensive touchdown regression cover both paths; all **28/28 cruiser/geometry tests passed in 5.11 s**.

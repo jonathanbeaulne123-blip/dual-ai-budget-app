@@ -104,7 +104,7 @@ export function stepCruiser(s:CruiserState,input:CruiserInput,g:CruiserGround,dt
     // from above ground while preserving a cave/underpass already below it.
     if(!grounded&&!under&&y>=g.ground(x,z)-.5&&g.ground(nx,nz)>y+C.stepHeight){vx=0;vz=0;contact='terrain-face';continue;}
     if((grounded&&(!under||under.slope>C.maxSlope||g.submerged(nx,nz,under.y)))||(!grounded&&g.submerged(nx,nz,y))) {vx=0;vz=0;contact='terrain';continue;}
-    if(grounded&&under&&!cruiserHeadroom(g,nx,nz,under.y)){vx=0;vz=0;contact='low-headroom';continue;}
+    if(!cruiserHeadroom(g,nx,nz,grounded&&under?under.y:y)){vx=0;vz=0;contact='low-headroom';continue;}
     x=nx;z=nz;
     if(grounded&&under) {
       const drop=y-under.y;
@@ -123,7 +123,13 @@ export function stepCruiser(s:CruiserState,input:CruiserInput,g:CruiserGround,dt
     }
     else y=next;
     const ceiling=g.ceiling(x,z,y);
-    if(ceiling<y+C.height){y=ceiling-C.height;vy=Math.min(0,vy);}
+    if(ceiling<y+C.height){
+      const below=ceiling-C.height;
+      // Never solve a ceiling by pushing a newly landed rider through its floor.
+      // If the envelope cannot fit, reject this step and retain the preceding pose.
+      if(floor&&below<floor.y)return {...s,vx:0,vy:0,vz:0,brakeHeld:braking,jumpHeld:input.jump,contact:'low-headroom'};
+      y=below;vy=Math.min(0,vy);
+    }
   }
   // Art uses -lean for local roll; match the island's rightward negative yaw.
   lean+=(-steer*Math.min(.22,cruiserSpeed(s)*.025)-lean)*(1-Math.exp(-8*dt));
