@@ -61,6 +61,13 @@ export type MiniSceneInput = {
   /** The era we are in (index into `eras`), or -1. */
   currentEra: number;
 };
+export function miniSceneKeys(next: MiniSceneInput) {
+  const pk = `${next.monthKey}|${next.anchorDay}|${next.gate}|${JSON.stringify(next.days)}`;
+  const homeKey = `${next.monthKey}|${JSON.stringify(next.customHome ?? null)}`;
+  const ik = `${next.eraIndex}|${next.lap}|${JSON.stringify(next.laps)}|${JSON.stringify(next.banks)}|${next.anchorDay}|${next.days.length}|${next.eras[next.eraIndex]?.id ?? ""}|${homeKey}`;
+  const jk = `${next.eraIndex}|${next.currentEra}|${JSON.stringify(next.eras)}|${homeKey}`;
+  return {pk,ik,jk};
+}
 export type MiniAnchor = { id: string; x: number; y: number; visible: boolean };
 export type MiniFrame = { anchors: MiniAnchor[]; z: number; day: number; width: number; height: number };
 export type MiniQuality = "full" | "low";
@@ -1091,9 +1098,7 @@ export function createMiniWorld(host: HTMLElement, options: {
     setScene(next: MiniSceneInput) {
       const themeChanged = !input || input.theme !== next.theme;
       palette = MINI_PALETTES[next.theme] ?? MINI_PALETTES.classic;
-      const pk = `${next.monthKey}|${next.anchorDay}|${next.gate}|${JSON.stringify(next.days)}`;
-      const ik = `${next.eraIndex}|${next.lap}|${JSON.stringify(next.laps)}|${JSON.stringify(next.banks)}|${next.anchorDay}|${next.days.length}|${next.eras[next.eraIndex]?.id ?? ""}`;
-      const jk = `${next.eraIndex}|${next.currentEra}|${JSON.stringify(next.eras)}`;
+      const {pk,ik,jk} = miniSceneKeys(next);
       input = next;
       if (pk !== pathKey) { buildPath(next); pathKey = pk; }
       if (ik !== islandKey) { buildIsland(next); islandKey = ik; }

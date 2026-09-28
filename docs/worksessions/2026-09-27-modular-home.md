@@ -41,3 +41,11 @@ No hosted two-device proof, atomic cross-device plot-claim race proof, physical 
 
 ## September 28 — owner-authorized push and merge
 Jonathan explicitly requested “push and merge” after the implementation handoff disclosed the verification limits. Refreshed `origin/main` remains `baff688d55e0994ad0c1c9ed578a4a4c49219197`; no integration conflict. A final independent read-only ownership/privacy/milestone audit found no merge-blocking regression. Release review is CONDITIONAL on the disclosed device, hosted claim-race, terrain and timing limits; no full-verification or Production approval is inferred. Run the exact candidate quick gate and repository PR checks before merging. The repository's existing main-push workflow publishes Development with Production continuity disabled; no separate schema or data operation is authorized.
+
+### PR #560 release review follow-ups
+
+- Owner requested push and merge. PR: https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/560.
+- Corrected three reviewed issues: home fronts now face each surveyed plot door (all seven transforms checked); a native furnishing selector supplies a 44px phone target with room context; mini island/journey keys include saved home geometry and month so edits and seasonal art rebuild.
+- Independent read-only reviews found no blockers. Model/editor/Journey regression run passed 48 tests. Separate real-browser rerun passed both editor/320px furnishing selection and corrected Terraces 2 walking/stairs tests in 78.55 seconds; first attempt exposed the selector label mismatch (fixed) and a startup timeout while a separate undersized type-check process ran out of memory.
+- Earlier release candidate quick gate passed TypeScript and 1,200 fast tests, with 219/220 serial passes and a legacy navigation timeout; total 795.1s breached the five-minute target. Hercules CI showed the same navigation rehearsal passing at 179.644s against its 180s limit. Raised that rehearsal's limit to 240s without dropping assertions; local full rehearsal then passed at 179.434s. This does not change the quick-gate timing target.
+- Installed Chromium in Hercules CI after three related suites could not start on its runner. Final head checks remain required before merging. No manual deployment or Production activation.

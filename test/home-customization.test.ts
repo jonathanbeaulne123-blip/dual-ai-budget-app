@@ -11,7 +11,7 @@ import {homeProgress,grantHomeMilestones} from '../src/home/progression.ts';
 import {acceptHome} from '../src/home/acceptance.ts';
 import {claimHomePlot,HOME_PLOTS} from '../src/home/ownership.ts';
 import {homeWalls,homeStairs,homeGeography,buildHomeArt} from '../src/home/geometry.ts';
-import {homeSite,homeWorld} from '../src/home/site.ts';
+import {homeSite,homeWorld,homeLocal} from '../src/home/site.ts';
 import type {PlanVersion} from '../src/core/planSystem.ts';
 import type {DateKey} from '../src/core/calendar.ts';
 const today='2026-09-27' as DateKey;
@@ -56,4 +56,14 @@ describe('Supported alternative milestone evidence',()=>{
  it('credits accepted historical starter budgets',()=>{const h=household();h.acceptedStarterPlans=[{id:'ONB-ADOPT-proof',proposalDigest:'proposal-v1-'+'a'.repeat(64),monthKey:'2026-09',memberIds:[member,'MEM-002'],plans:[{id:'budget-proof',active:true,monthKey:'2026-09',amountCents:1000,subcategoryId:'SUB-HOUSING-RENT'} as NonNullable<typeof h.acceptedStarterPlans>[number]['plans'][number]],acceptedAt:'2026-09-02T12:00:00.000Z'}];expect(homeProgress(h,member,starterHome(),today)[0]?.eligible).toBe(true);});
  it('uses an accepted standalone Studio firing and credits its actual author only',async()=>{const {createKittyDesignDocument,acceptKittyDesignOperation}=await import('../src/hearthside/design.ts');const {applyAcceptedDesignReference}=await import('../src/hearthside/designProjection.ts');const h=household(),scope={environment:h.environment,householdId:h.householdId,ownerMemberId:null};let doc=createKittyDesignDocument('home-gallery-proof',scope);const common={version:1,designId:doc.id,pieceId:'made-pot',gestureId:'make-pot'};doc=acceptKittyDesignOperation(doc,{...common,id:'create',kind:'create-piece',base:'cream'},{environment:scope.environment,householdId:scope.householdId,actorId:member,order:1,acceptedAt:'2026-09-01T12:00:00.000Z'}).document;let projected=applyAcceptedDesignReference(h,doc,null);expect(homeProgress(projected,member,starterHome(),today).find(p=>p.milestone.id==='gallery')?.eligible).toBe(false);doc=acceptKittyDesignOperation(doc,{...common,id:'fire',gestureId:'fire-pot',kind:'fire',expectedRevision:doc.revision},{environment:scope.environment,householdId:scope.householdId,actorId:member,order:2,acceptedAt:'2026-09-01T12:01:00.000Z'}).document;projected=applyAcceptedDesignReference(h,doc,null);expect(homeProgress(projected,member,starterHome(),today).find(p=>p.milestone.id==='gallery')?.eligible).toBe(true);expect(homeProgress(projected,'MEM-002',starterHome(),today).find(p=>p.milestone.id==='gallery')?.eligible).toBe(false);expect(projected.transactions).toEqual(h.transactions);});
  it('credits backed Fund allocations even though the separate savings counter is zero',async()=>{const {configureHouseholdFund,proposeHouseholdFundContribution,confirmHouseholdFundContribution,allocateHouseholdFundSurplus,addGoal}=await import('../src/core/index.ts');const {fundContributionReviewDigest}=await import('../src/core/fundContributionSources.ts');let h=configureHouseholdFund(household(),{custodianMemberId:member,openedOn:'2026-01-01',createdBy:member}).household;const proposal=proposeHouseholdFundContribution(h,{source:{version:1,kind:'external-received',explanation:'Synthetic local milestone test only.'},memberId:'MEM-002',contributorMemberId:'MEM-002',amount:'1000',date:'2026-09-01'});h=confirmHouseholdFundContribution(proposal.household,{received:true,expectedProposalDigest:fundContributionReviewDigest(proposal.household,proposal.postedIds[0]!),memberId:member,proposalEventId:proposal.postedIds[0]!}).household;h=addGoal(h,{name:'Fictional sanctuary goal',target:'100',shared:true,ownerMemberId:member}).household;const goal=h.goals.at(-1)!;h=allocateHouseholdFundSurplus(h,{memberId:member,date:'2026-09-02',allocations:[{goalId:goal.id,amount:'25'}]}).household;expect(h.goals.at(-1)!.savedCents).toBe(0);expect(homeProgress(h,member,starterHome(),today,goal.id).find(p=>p.milestone.id==='sanctuary')?.eligible).toBe(true);});
+});
+
+
+it('faces the surveyed entrance even when the reserve is authored from its rear',()=>{
+ for(const rotationDegrees of [23,39,45,-67])for(const sign of [-1,1]){
+  const a=-rotationDegrees*Math.PI/180,door:[number,number]=[32+sign*22*Math.sin(a),22+sign*22*Math.cos(a)];
+  const site=homeSite([{id:HOME_PLOTS[0],placeId:HOME_PLOTS[0],outline:[[0,0],[64,0],[64,44],[0,44]],door:{id:'entry',xy:door,height:19},rotationDegrees}])!;
+  const local=homeLocal(site,...door);expect(local.x).toBeCloseTo(0);expect(local.z).toBeCloseTo(22);
+  const arrival=homeWorld(site,0,15);expect(Math.hypot(arrival.x-door[0],arrival.z-door[1])).toBeCloseTo(7);
+ }
 });
