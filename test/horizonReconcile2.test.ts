@@ -47,7 +47,7 @@ describe('v2.5 × #559: the galley sails with the yacht and needs the harbour ch
     const {geography:g}=realHorizon(),yacht=createVessels().find(v=>v.id==='yacht')!,p=toWorld(yacht as never,KITCHEN_BOARD);
     expect([p.x,p.z].map(v=>+v.toFixed(1))).toEqual([1617.4,1329.4]);   // measured, reconciliation 2 (#559)
     expect(districtAt(p.x,p.z)).toBe('harbour');
-    for(const [dx,dz] of [[-7,-22],[7,-22],[-7,22],[7,22]])expect(districtAt(yacht.x+dx,yacht.z+dz)).toBe('harbour');
+    for(const [dx,dz] of [[-7,-22],[7,-22],[-7,22],[7,22]] as const)expect(districtAt(yacht.x+dx,yacht.z+dz)).toBe('harbour');
     expect(g.ground(p.x,p.z)).toBeCloseTo(-12,1);expect(g.waterLevel(p.x,p.z)).toBe(0);
   });
 });
