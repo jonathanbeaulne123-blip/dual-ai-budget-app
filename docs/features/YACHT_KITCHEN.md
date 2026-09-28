@@ -43,7 +43,7 @@ All dishes need a clean plate and an active matching order. Pick up the finished
 | Captain’s Banquet | Five-minute service with a bounded trolley: load at LOAD, release, walk to SERVE and secure, then return it for the next load. |
 | Practice / relaxed | Cycles all five recipes without a clock or expiring orders; extra cooking forgiveness and fires off by default. Finish with the visible button or Enter. |
 
-Assists adjust cooking forgiveness, patience, warnings and preparation input. Scores, sequence bonuses and ratings are recreational. Earned apron, sea-glass inset, outdoor table runner and captain’s memento appear on this yacht. Results and interrupted sessions are saved together on this device, scoped to the environment, household, member and view. They do not synchronize across devices. For an interrupted service, return to the galley menu board and choose Resume service; it restores paused until you explicitly resume. Failed storage is reported; replaying a result does not grant it twice.
+Assists adjust cooking forgiveness, patience, warnings and preparation input. Scores, sequence bonuses and ratings are recreational. Earned apron, sea-glass inset, outdoor table runner and captain’s memento appear on this yacht. Results and interrupted sessions are saved together on this device, scoped to the environment, household, member and view. They do not synchronize across devices. Returning to yacht exploration preserves an unfinished service. To continue it, return to the galley menu board and choose Resume service; it restores paused until you explicitly resume. Failed storage is reported; replaying a result does not grant it twice.
 
 ## Implementation and tuning
 

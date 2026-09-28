@@ -37,10 +37,10 @@ export function createKitchenActivity(options:KitchenActivityOptions){
  }
  function reserve(){fleet.yacht.anchor=true;fleet.resetInput();fleet.doors.add('galley-aft-door');options.clearWorldInput();options.choosePerspective('activity');}
  function exit(){
-  if(!active())return;const leavingService=engine.state().phase!=='menu';syncBody();engine.exit();
-  // Closing the menu must not discard an interrupted service offered for resume.
-  if(leavingService){saved=null;storage.saveSession(null);}input.clear();audio.pause();targets={};
-  const local=toLocal(fleet.yacht,options.body());if(!aftWasOpen&&!(Math.abs(local.x)<1.35&&Math.abs(local.z+12.5)<.55))fleet.doors.delete('galley-aft-door');options.choosePerspective(previousPerspective);options.clearWorldInput();options.status('Back aboard the yacht. The anchor remains down; the helm is available.');
+  if(!active())return;pause('Service saved. Resume at the galley menu board.');syncBody();engine.exit();
+  // Leaving the kitchen preserves unfinished work; Start fresh explicitly discards it.
+  input.clear();audio.pause();targets={};
+  const local=toLocal(fleet.yacht,options.body());if(!aftWasOpen&&!(Math.abs(local.x)<1.35&&Math.abs(local.z+12.5)<.55))fleet.doors.delete('galley-aft-door');options.choosePerspective(previousPerspective);options.clearWorldInput();options.status(saved!==null?'Back aboard the yacht. Resume your service at the galley menu board.':'Back aboard the yacht. The helm is available.');
  }
  function act(chef:ChefId,action:Parameters<typeof engine.action>[1]){
   if(action.type==='toss'){const to=targets[chef];if(!to){options.status('Face a clear counter or your teammate to toss a loose ingredient.');return;}action={...action,to};}

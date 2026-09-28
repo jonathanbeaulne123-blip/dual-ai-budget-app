@@ -183,8 +183,8 @@ export default function HorizonStage(props:HorizonStageProps){
         <button className="horizon-sheet-stay" onClick={()=>cut({kind:'stay'})}>Stay here</button>
       </div>}
       <p className="horizon-status" role="status">{status}</p>
-      {ready&&kitchen&&<KitchenHUD view={kitchen} theme={props.theme??'classic'} reducedMotion={reducedMotion} onCommand={command=>{runtime.current?.kitchenCommand(command);const next=runtime.current?.kitchenView()??null;kitchenSnapshot.current=JSON.stringify(next);setKitchen(next);stage.current?.focus({preventScroll:true});}} onInput={(chef,value)=>{runtime.current?.kitchenInput(chef,value);stage.current?.focus({preventScroll:true});}}/>}
     </>}
+    <div hidden={props.paused===true}>{ready&&kitchen&&<KitchenHUD view={kitchen} theme={props.theme??'classic'} reducedMotion={reducedMotion} onCommand={command=>{const previous=runtime.current?.kitchenView()?.state.phase;runtime.current?.kitchenCommand(command);const next=runtime.current?.kitchenView()??null;kitchenSnapshot.current=JSON.stringify(next);setKitchen(next);if(command.type==='exit'||next?.state.phase==='playing'&&previous!=='playing')stage.current?.focus({preventScroll:true});}} onInput={(chef,value)=>runtime.current?.kitchenInput(chef,value)}/>}</div>
     {props.children}
   </section>;
 }

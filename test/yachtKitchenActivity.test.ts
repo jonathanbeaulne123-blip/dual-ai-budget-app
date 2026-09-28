@@ -52,8 +52,9 @@ describe('physical yacht kitchen activity integration',()=>{
  it('preserves an interrupted service when its menu is closed and only discards it deliberately',()=>{
   const first=setup();first.a.command({type:'open'});first.a.command({type:'start',service:'lunch',players:1,assists:{}});action(first.a,{type:'ready'});advance(first.a,4);const elapsed=first.a.view().state.elapsed;first.a.dispose();
   const second=setup();expect(second.a.view().resumable).toBe(true);second.a.command({type:'open'});second.a.command({type:'exit'});expect(second.a.active()).toBe(false);expect(second.a.view().resumable).toBe(true);second.a.dispose();
-  const third=setup();expect(third.a.view().resumable).toBe(true);third.a.command({type:'open'});third.a.command({type:'resume-saved'});expect(third.a.view().state.phase).toBe('paused');expect(third.a.view().state.elapsed).toBe(elapsed);third.a.command({type:'exit'});expect(third.a.view().resumable).toBe(false);third.a.dispose();
-  const fourth=setup();expect(fourth.a.view().resumable).toBe(false);fourth.a.dispose();
+  const third=setup();expect(third.a.view().resumable).toBe(true);third.a.command({type:'open'});third.a.command({type:'resume-saved'});expect(third.a.view().state.phase).toBe('paused');expect(third.a.view().state.elapsed).toBe(elapsed);third.a.command({type:'exit'});expect(third.a.view().resumable).toBe(true);third.a.dispose();
+  const fourth=setup();expect(fourth.a.view().resumable).toBe(true);fourth.a.command({type:'open'});fourth.a.command({type:'discard-saved'});fourth.a.command({type:'exit'});fourth.a.dispose();
+  const fifth=setup();expect(fifth.a.view().resumable).toBe(false);fifth.a.dispose();
  });
  it('requires a real second input connection and pauses both chefs on its loss',()=>{
   let pads:any[]=[];Object.defineProperty(navigator,'getGamepads',{configurable:true,value:()=>pads});const t=setup(),{a}=t;a.command({type:'open'});expect(a.command({type:'start',service:'lunch',players:2,assists:{}})).toBe(false);
