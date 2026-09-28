@@ -1,6 +1,6 @@
 ## 2026-09-28 — Horizon ↔ Mountain full-App UX dissection toggle
 
-Branch `cursor/horizon-mountain-toggle-39dc` from `origin/main@9fed6002`. Tip recorded at close of this entry (see worksession). PR #565 (draft). **Risk: Medium.** Budget (5): +0. Engagement (3): +1. No money, schema, Auth/RLS, sync, or Hercules payload change. Fictional Development only. **Not shipped. Not fully verified. Not release-ready.**
+Branch `cursor/horizon-mountain-toggle-39dc` from `origin/main@9fed6002`. Tip `358c16718c3b79ea5f3c9eb35044877eeee5d930`. PR #565 (draft). **Risk: Medium.** Budget (5): +0. Engagement (3): +1. No money, schema, Auth/RLS, sync, or Hercules payload change. Fictional Development only. **Not shipped. Not fully verified. Not release-ready.**
 
 **Household outcome:** In DEV, one fictional household session flips Mountain ↔ Horizon under Compass/QuickSheet via a top toggle; Cloud Agent terminals boot harbour flags + whole-house review.
 
