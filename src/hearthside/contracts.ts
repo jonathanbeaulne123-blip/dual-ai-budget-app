@@ -1,3 +1,4 @@
+import {decodeHomePlots,type HomePlotClaim} from '../home/ownership.ts';
 import {decodeSharedLifeRestoreReviews,type SharedLifeRestoreReview} from './sharedLifeRestoreContracts.ts';
 import {decodeWinProvenance,type LegacyWinProvenance} from './winMemoryProvenance.ts';
 import {decodeFurniturePlacements,type FurniturePlacement} from './roomFurniture.ts';
@@ -52,7 +53,7 @@ export type PublicationReference = {
   sourceId: string; sourceRevision: number; manifestDigest: string;
   state: 'prepared' | 'accepted' | 'active' | 'withdrawn';
 };
-export type HearthsideDesignIndex = {version:1; designId:string; revision:number; displayPieceId:string|null; bankId:string|null; pieceIds:string[]};
+export type HearthsideDesignIndex = {version:1; designId:string; revision:number; displayPieceId:string|null; bankId:string|null; pieceIds:string[]; firedByMemberIds?:string[]};
 export type HearthsideState = {
   version: 1; experiences: SharedExperience[]; notes: PlacedNote[];
   restoreReviews?:SharedLifeRestoreReview[];
@@ -62,6 +63,7 @@ export type HearthsideState = {
   roomHistory?:RecordedRoom[];
   furniture?:FurniturePlacement[];
   villageArrangement?:VillageArrangement;
+  homePlots?:HomePlotClaim[];
   artifactPublications?:ArtifactPublication[];
   placements: RoomPlacement[]; publications: PublicationReference[]; designs: HearthsideDesignIndex[];
 };
@@ -167,16 +169,17 @@ export function decodePublication(value: unknown): PublicationReference {
   return { version: version(r.version), id: identifier(r.id), revision: revisionValue(r.revision, 1), kind: choice(r.kind, ['memory', 'guest']), sourceId: identifier(r.sourceId), sourceRevision: revisionValue(r.sourceRevision, 1), manifestDigest: r.manifestDigest, state: choice(r.state, ['prepared', 'accepted', 'active', 'withdrawn']) };
 }
 export function decodeDesignIndex(value:unknown):HearthsideDesignIndex {
-  const r=object(value,['version','designId','revision','displayPieceId','bankId','pieceIds']);
+  const r=object(value,['version','designId','revision','displayPieceId','bankId','pieceIds','firedByMemberIds']);
   const pieceIds=unique(list(r.pieceIds,identifier,200),id=>id);
   const displayPieceId=nullableId(r.displayPieceId);
   if(displayPieceId!==null&&!pieceIds.includes(displayPieceId))throw Error('HEARTHSIDE_INVALID_DISPLAY');
-  return {version:version(r.version),designId:identifier(r.designId),revision:revisionValue(r.revision),displayPieceId,bankId:nullableId(r.bankId),pieceIds};
+  return {version:version(r.version),designId:identifier(r.designId),revision:revisionValue(r.revision),displayPieceId,bankId:nullableId(r.bankId),pieceIds,...(r.firedByMemberIds!==undefined?{firedByMemberIds:unique(list(r.firedByMemberIds,identifier,200),id=>id)}:{})};
 }
 export function decodeHearthside(value: unknown): HearthsideState {
   if (value === undefined) return emptyHearthside();
-  const r = object(value, ['version', 'experiences', 'notes', 'memories', 'occasions', 'placements', 'publications', 'designs','handoffs','roomHistory','artifactPublications','encounters','furniture','villageArrangement','restoreReviews']);
+  const r = object(value, ['version', 'experiences', 'notes', 'memories', 'occasions', 'placements', 'publications', 'designs','handoffs','roomHistory','artifactPublications','encounters','furniture','villageArrangement','restoreReviews','homePlots']);
   const decoded = { ...(r.restoreReviews!==undefined?{restoreReviews:decodeSharedLifeRestoreReviews(r.restoreReviews)}:{}),...(r.furniture!==undefined?{furniture:decodeFurniturePlacements(r.furniture)}:{}),...(r.encounters!==undefined?{encounters:unique(list(r.encounters,decodeSharedEncounter,400),r=>r.id)}:{}),...(r.artifactPublications!==undefined?{artifactPublications:unique(list(r.artifactPublications,decodeArtifactPublication,4000),r=>r.id)}:{}),...(r.roomHistory!==undefined?{roomHistory:unique(list(r.roomHistory,decodeRecordedRoom,120),r=>r.id)}:{}),...(r.handoffs!==undefined?{handoffs:unique(list(r.handoffs,decodeStudioHandoff,2000),r=>r.id)}:{}),version: version(r.version), experiences: unique(list(r.experiences, decodeExperience), r => r.id), notes: unique(list(r.notes, decodeNote, 4000), r => r.id), memories: unique(list(r.memories, decodeMemory, 4000), r => r.id), occasions: unique(list(r.occasions, decodeOccasion, 300), r => r.id), placements: unique(list(r.placements, decodePlacement, 160), r => r.id), publications: unique(list(r.publications, decodePublication, 4000), r => r.id), designs:unique(list(r.designs ?? [],decodeDesignIndex,1000),r=>r.designId) };
+  if(r.homePlots!==undefined)(decoded as HearthsideState).homePlots=decodeHomePlots(r.homePlots);
   if(r.villageArrangement!==undefined)(decoded as HearthsideState).villageArrangement=decodeVillageArrangement(r.villageArrangement);
   if (new TextEncoder().encode(JSON.stringify(decoded)).length > HEARTHSIDE_METADATA_BYTES) throw Error('HEARTHSIDE_METADATA_LIMIT: Shared story storage is full. Your new draft has not been saved.');
   return decoded;

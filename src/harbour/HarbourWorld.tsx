@@ -1,3 +1,4 @@
+import {HomeBookButton,useHomeBook} from '../home/HomeBookContext.tsx';
 import {useMotionEdition} from './nav/Compass.tsx';
 import {HARBOUR_DEV} from './flag.ts';
 import {DeskPlace} from "./desk/DeskPlace.tsx";
@@ -206,7 +207,8 @@ const pulseFreshness = (gate: InterpretationGate | undefined): FundPulseFreshnes
 
 const HorizonWorld = lazy(() => import("./horizon/HorizonWorld.tsx"));
 export default function HarbourWorld(props: HarbourWorldProps) {
-  return HARBOUR_DEV && new URLSearchParams(window.location.search).get("world") === "horizon"
+  const homeBook=useHomeBook();
+  return homeBook?.visitRequested || HARBOUR_DEV && new URLSearchParams(window.location.search).get("world") === "horizon"
     ? <HorizonEdition {...props}/>
     : <MountainHarbourWorld {...props}/>;
 }
@@ -217,6 +219,7 @@ function HorizonEdition(props:HarbourWorldProps){
 }
 
 function MountainHarbourWorld(props: HarbourWorldProps) {
+  const homeBook=useHomeBook();
   const { household, memberId, scope, today, route, ready, freshness, interpretationGate, onOpen, onClose, presence, onUnhide, partnerName = null, onQuickSheet } = props;
   const space: MineSpace = props.space === "mine" ? "mine" : "ours";
   /** Arranging writes the Shared arrangement (`commitHearthside`), so Mine never offers it (D-302 item 4, review finding 4). */
@@ -226,6 +229,7 @@ function MountainHarbourWorld(props: HarbourWorldProps) {
   const runtime = useRef<HarbourRuntime | null>(null), court = useRef<QueenHost | null>(null), queen = useRef<QueenPlace | null>(null);
   const queenAnimation=useRef<(()=>void)|null>(null);
   const [arranging,setArranging]=useState(false);
+  useEffect(()=>{runtime.current?.setToolOpen(homeBook?.editing===true||Boolean(route.surface));},[homeBook?.editing,route.surface]);
   const [previewLook,setPreviewLook]=useState<ReturnType<typeof villageRoomConfig>|null>(null);
   const [travelTo,setTravelTo]=useState<HarbourPlaceId|null>(null);
   const [status, setStatus] = useState<Status>("loading");
@@ -723,7 +727,7 @@ function MountainHarbourWorld(props: HarbourWorldProps) {
     if(toolOpen){setGuideOpen(false);setMountainInspect(undefined);}
     const world = runtime.current;
     if (!world) return;
-    world.setToolOpen(toolOpen || guideOpen);
+    world.setToolOpen(toolOpen || guideOpen || homeBook?.editing===true);
     // The band above the sheet is a frieze, and each place declares its own
     // (`door` in its pose table): the rack close and level, the rail at eye
     // height, her portrait in the Court.
@@ -1237,6 +1241,7 @@ function MountainHarbourWorld(props: HarbourWorldProps) {
         onSpot={id=>runtime.current?.body()?.skate?.spot(id)} onDeck={id=>runtime.current?.body()?.skate?.deck(id)}
         presence={<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk?partner.name:null} worldUnavailable={partnerWalk.unavailable} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut===true} onUnhide={onUnhide} hasPartner={Boolean(softPeer||partnerName||partnerWalk.memberId)}/>}
         onFocus={()=>stage.current?.focus({preventScroll:true})} partnerName={partnerWalk.walk?.pose(Date.now())?.act?.startsWith('skate')?partner?.name:null} saveFailed={skateSaveFailed}/>}
+      {!route.surface&&<div style={{position:'absolute',right:18,top:72,zIndex:12}}><HomeBookButton/></div>}
       {arranging&&!showFlat&&decorRoom&&arrange&&<VillageDecorator key={decorRoom} household={household} memberId={memberId} room={decorRoom} arrangement={arrangement} onCommit={arrange} onPreview={setPreviewLook} onClose={()=>{setArranging(false);stage.current?.querySelector<HTMLButtonElement>('[aria-label="Arrange room"]')?.focus();}}/>}
       {invite && !monorail && <div className="harbour-world__invite" data-harbour-invite={touch ? "touch" : "keys"} aria-hidden="true"><Whisper mode="line">{inviteWords(place, touch)}</Whisper></div>}
       {status === "ready" && !toolOpen && standing && !monorail && <div className="harbour-moves" data-harbour-moves={emotesOpen ? "open" : "shut"}>

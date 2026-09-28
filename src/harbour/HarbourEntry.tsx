@@ -1,3 +1,4 @@
+import {HomeBookButton} from '../home/HomeBookContext.tsx';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import type { HarbourWorldProps } from './HarbourWorld.tsx';
 import { harbourPlaceFor, type HarbourPlaceId } from './flag.ts';
@@ -53,6 +54,7 @@ function ReadingHarbour(props: HarbourWorldProps & { failed?: boolean }) {
       {toolOpen ? <HarbourFlat place={place} reading={reading} status={props.failed ? 'fallback' : 'flat'} theme={theme} /> : <>
         <DeskShell household={household} memberId={memberId} scope={props.scope} today={today} reading={reading} theme={theme} ready={props.ready} interpretationGate={interpretationGate} status={props.failed ? 'fallback' : 'flat'} titleId="house-world-title" onOpen={onOpen} onQuickSheet={onQuickSheet} spaceSlot={props.spaceSlot}
           context={<DeskPlace place={place} reading={reading} onOpen={onOpen} onVisit={visit} onGuide={() => onQuickSheet?.()} />} />
+        <HomeBookButton/>
         {/* The flat bar (Tool Atlas brief §3.5, §6): [Island] [Record] [All tools], Record centred —
             the island's three things and nothing else. The Desk's header drops its own flip while this stands. */}
         <GlassBar edition="desk" fab={props.fab} onOpenTools={onQuickSheet} toolsOpen={props.toolsOpen} member={memberId} theme={theme} calm={comfort.quiet} alwaysShowLabels={comfort.labels} />

@@ -127,7 +127,7 @@ async function ready(page:Page){
  const close=page.getByRole('button',{name:'Close reminders',exact:true});if(await close.count()&&await close.isVisible())await close.click();
 }
 async function openHearthside(page:Page){
- await page.getByRole('navigation',{name:'House rooms'}).getByRole('button',{name:'Together',exact:true}).click();await page.locator('.hearthside').waitFor();
+ await page.getByRole('navigation',{name:'House rooms'}).getByRole('button',{name:'Boathouse',exact:true}).click();await page.locator('.hearthside').waitFor();
  await page.locator('#hearthside-room-common').click();await page.locator('.hearthside[data-room="common"]').waitFor();await page.locator('#hearthside-add-intention').waitFor();
 }
 async function openStudio(page:Page){

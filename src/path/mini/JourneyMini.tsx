@@ -1,3 +1,4 @@
+import {HomeBookButton,useHomeBook} from '../../home/HomeBookContext.tsx';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { addDays, daysInMonthKey, monthKeyFromDateKey, shiftMonthKey, weekdaySunday0, type DateKey } from "../../core/calendar.ts";
 import type { Household, LedgerView } from "../../core/types.ts";
@@ -118,6 +119,7 @@ function skeletonMonth(head: MiniMonthSummary, today: DateKey): MiniMonth {
 }
 
 export function JourneyMini(props: JourneyMiniProps) {
+  const homeBook=useHomeBook();
   const { household, memberId, today, focus, onOpenWorld, compact = false, view = "household" } = props;
   const harbourAnchor = useMemo(() => harbourJourneyAnchor(household, today), [household, today]);
   const appearance = useAppearance();
@@ -180,9 +182,9 @@ export function JourneyMini(props: JourneyMiniProps) {
   }, [share]);
   const enterHarbour = useCallback((direction = -1): boolean => {
     if (compact || !props.onEnterHarbour || !entersHarbourFromJourneyZoom(levelRef.current, direction, harbourAnchor, dateRef.current)) return false;
-    props.onEnterHarbour(harbourAnchor);
+    if(homeBook?.layout)homeBook.visit();else props.onEnterHarbour(harbourAnchor);
     return true;
-  }, [compact, props.onEnterHarbour, harbourAnchor]);
+  }, [compact, props.onEnterHarbour, harbourAnchor,homeBook]);
 
   // The world (or the page) moved: follow it.
   useEffect(() => {
@@ -250,6 +252,7 @@ export function JourneyMini(props: JourneyMiniProps) {
   const sceneInput: MiniSceneInput | null = useMemo(() => {
     if (!journey) return null;
     return {
+      customHome: homeBook?.layout ?? (household.personalLife?.ownerMemberId===memberId ? household.personalLife.home?.layout : undefined),
       theme,
       monthKey,
       anchorDay: Math.min(dayOf(today), daysInMonthKey(monthKey)),
@@ -268,7 +271,7 @@ export function JourneyMini(props: JourneyMiniProps) {
       eras: sceneEras,
       currentEra: currentEraIndex,
     };
-  }, [journey, theme, monthKey, today, month, eraIndex, focusEra, lapIndex, sceneEras, currentEraIndex, whoOf]);
+  }, [homeBook?.layout, memberId, household.personalLife, journey, theme, monthKey, today, month, eraIndex, focusEra, lapIndex, sceneEras, currentEraIndex, whoOf]);
 
   // ------------------------------------------------------------------ the renderer
   const qualityProp = props.quality ?? "full";
@@ -1023,6 +1026,7 @@ export function JourneyMini(props: JourneyMiniProps) {
     <section className="journey-mini" data-mini-theme={theme} data-level={level} data-flat={flat ? "true" : "false"} aria-labelledby="journey-mini-title">
       <div className="journey-mini__frame">
       <header className="journey-mini__head">
+        <HomeBookButton/>
         <div>
           <h2 id="journey-mini-title">{head.title}</h2>
           <p className="journey-mini__sub" title={head.sub}>{head.sub.split(/(\S+–\S+)/).map((part, i) => (i % 2 ? <span key={i} className="journey-mini__nowrap">{part}</span> : part))}{head.fig && <span className="journey-mini__fig-inline"> · {head.fig}</span>}{monthLoading && level <= 2 ? " · reading…" : ""}</p>

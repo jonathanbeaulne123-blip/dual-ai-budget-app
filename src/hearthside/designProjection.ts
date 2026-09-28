@@ -11,6 +11,7 @@ export function applyAcceptedDesignReference(household:Household,document:KittyD
   if(document.scope.environment!==household.environment || document.scope.householdId!==household.householdId)throw Error('SCOPE_MISMATCH');
   if(document.nest){if(bankId!==null)throw Error('DESIGN_NEST_GOAL_CONFLICT');household=applyNestDesignReference(household,document,acceptedAt);}
   const reference=kittyDesignReference(document), view=projectKittyDesign(document);
+  const firedByMemberIds=[...new Set(view.pieces.flatMap(row=>row.piece.firedAt&&row.piece.firedBy?[row.piece.firedBy]:[]))],completion=firedByMemberIds.length?{firedByMemberIds}:{};
   const next={...household,goals:household.goals.map(goal=>{
     if(goal.id!==bankId)return goal;
     if((goal.shared?null:goal.ownerMemberId)!==document.scope.ownerMemberId)throw Error('DESIGN_OWNERSHIP_CHANGED');
@@ -20,11 +21,11 @@ export function applyAcceptedDesignReference(household:Household,document:KittyD
   })};
   if(document.scope.ownerMemberId===null) {
     const hearthside=decodeHearthside(household.hearthside);
-    const index={...reference,bankId,pieceIds:view.pieces.map(row=>row.piece.id)};
+    const index={...reference,bankId,pieceIds:view.pieces.map(row=>row.piece.id),...completion};
     next.hearthside=decodeHearthside({...hearthside,designs:[...hearthside.designs.filter(row=>row.designId!==document.id),index]});
   } else {
     const personalLife=decodePersonalLife(household.personalLife,document.scope.ownerMemberId);
-    const index={version:1 as const,designId:document.id,revision:document.revision,pieceIds:view.pieces.map(row=>row.piece.id)};
+    const index={version:1 as const,designId:document.id,revision:document.revision,pieceIds:view.pieces.map(row=>row.piece.id),...completion};
     next.personalLife=decodePersonalLife({...personalLife,designs:[...personalLife.designs.filter(row=>row.designId!==document.id),index]},document.scope.ownerMemberId);
   }
   return next;

@@ -11,7 +11,7 @@ import { pathMonths } from "../src/core/pathSignals.ts";
 import { agreePathProposal, pendingPathProposals, shapePathWorld, type PathEraRow, type PathEraSpec } from "../src/core/pathWorld.ts";
 import { saveTask, type TaskInput } from "../src/core/tasks.ts";
 import { miniCad, miniFund, miniEraFor, miniItemWords, miniJourney, miniMonth } from "../src/path/mini/miniJourneyModel.ts";
-import { miniLapRadius, miniLevelWeight } from "../src/path/mini/miniWorld3d.ts";
+import { miniLapRadius, miniLevelWeight, miniSceneKeys, type MiniSceneInput } from "../src/path/mini/miniWorld3d.ts";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
 
 afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
@@ -275,4 +275,15 @@ describe("miniJourney — the simple view as data (D-284)", () => {
     expect(miniLapRadius(0, 24)).toBeLessThan(miniLapRadius(23, 24));
     expect(miniLapRadius(23, 24)).toBeCloseTo(13.4, 6);
   });
+});
+
+
+it('refreshes both mini home projections after a save, removal or season change',()=>{
+ const layout={rooms:[],objects:[]} as NonNullable<MiniSceneInput['customHome']>;
+ const scene:MiniSceneInput={theme:'classic',monthKey:'2026-09',days:[],anchorDay:1,gate:'open',eraIndex:0,lap:0,laps:[],banks:[],eras:[],currentEra:0,customHome:layout};
+ const before=miniSceneKeys(scene);
+ layout.objects.push({id:'lamp',catalogueId:'lamp',roomId:null,x:0,z:0,rotation:0,stored:false,variant:'hearth'});
+ const saved=miniSceneKeys(scene);expect(saved.pk).toBe(before.pk);expect(saved.ik).not.toBe(before.ik);expect(saved.jk).not.toBe(before.jk);
+ for(const next of [{...scene,customHome:undefined},{...scene,monthKey:'2026-12'}]){const keys=miniSceneKeys(next);expect(keys.ik).not.toBe(saved.ik);expect(keys.jk).not.toBe(saved.jk);}
+ expect(miniSceneKeys({...scene,customHome:JSON.parse(JSON.stringify(layout))})).toEqual(saved);
 });

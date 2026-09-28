@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, resolve, dirname } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -81,7 +81,8 @@ describe("src/harbour source fences", () => {
     const offences: string[] = [];
     for (const file of files) {
       for (const specifier of importsOf(readFileSync(file, "utf8"))) {
-        for (const rule of FORBIDDEN) if (rule.test(specifier)) offences.push(`${relative(root, file)} → ${specifier} (${rule.name})`);
+        // Resolve storage imports: the yacht game's local score store is not src/storage.ts (the books).
+        for (const rule of FORBIDDEN) if (rule.test(specifier) && !(rule.name === "storage" && resolve(dirname(file),specifier).replace(/\.ts$/, "") !== join(root,"src/storage"))) offences.push(`${relative(root, file)} → ${specifier} (${rule.name})`);
       }
     }
     expect(offences).toEqual([]);
@@ -120,14 +121,16 @@ describe("src/harbour source fences", () => {
 
   it("never touches fetch, localStorage or the books outside the loaders and the shell's return records", () => {
     // Edition preferences stay in the navigation seam; terrain fetch stays in its async asset loader.
+    // The merged cruiser/fleet/yacht kitchen also persist local cosmetic and game state (no ledger writes).
     const allowed = new Set(["assets/loadGlb.ts", "court/queenPlace.ts", "scene/quality.ts", "nav/QuickSheet.tsx", "nav/arrival.ts", "nav/motionEdition.ts", "HarbourWorld.tsx", "desk/flip.ts", "mountain/terrainAsset.ts", "bubbles/usage.ts"]);
+    const localGameplayStorage=new Set(["horizon/HorizonStage.tsx", "horizon/runtime/index.ts", "horizon/kitchen/storage.ts"]);
     const offences: string[] = [];
     for (const file of files) {
       const name = relative(harbour, file).replace(/\\/g, "/");
       const source = readFileSync(file, "utf8");
       if (allowed.has(name)) continue;
       if (/\bfetch\(/.test(source)) offences.push(`${name} fetches`);
-      if (/localStorage|sessionStorage|indexedDB/.test(source)) offences.push(`${name} reads storage`);
+      if (!localGameplayStorage.has(name) && /localStorage|sessionStorage|indexedDB/.test(source)) offences.push(`${name} reads storage`);
     }
     expect(offences).toEqual([]);
     const money = files.filter((file) => /postEntry|postShift|postVisit|acceptHouseholdWrite|allocateHouseholdFundSurplus|commitCommand/.test(readFileSync(file, "utf8")));

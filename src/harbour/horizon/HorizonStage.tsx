@@ -1,3 +1,5 @@
+import type {HomeLayout} from '../../home/model.ts';
+import type {HomeDisplayContent} from '../../home/displays.ts';
 import KitchenHUD from './kitchen/KitchenHUD.tsx';
 import type {KitchenView} from './kitchen/types.ts';
 import {CRUISER_SKINS,readCruiserSkin,saveCruiserSkin,type CruiserSkin} from './movers/cruiser/tuning.ts';
@@ -15,7 +17,7 @@ import {appCalm,appReducedMotion} from './sun/comfort.ts';
 import './horizon.css';
 import type {ThemeId} from '../../theme/scenes.ts';
 import {HORIZON_MANIFEST} from './world/manifest.ts';
-export type HorizonStageProps={cruiserPreference?:string;fleetStorageKey?:string;kitchenStorageKey?:string;onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onRuntime?:(runtime:HorizonRuntime|null)=>void;onQuickSheet?:()=>void;onJourney?:()=>void;initialBody?:HouseBodyReturn;partner?:PlaceWalkSource|null;paused?:boolean;children?:ReactNode;review?:boolean;theme?:ThemeId;
+export type HorizonStageProps={homePlotId?:string;homeLayout?:HomeLayout;homeDisplays?:HomeDisplayContent[];visitHome?:boolean;onHomeVisited?:()=>void;onHomeBook?:()=>void;onHomeWorkspace?:(target:string)=>void;cruiserPreference?:string;fleetStorageKey?:string;kitchenStorageKey?:string;onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onRuntime?:(runtime:HorizonRuntime|null)=>void;onQuickSheet?:()=>void;onJourney?:()=>void;initialBody?:HouseBodyReturn;partner?:PlaceWalkSource|null;paused?:boolean;children?:ReactNode;review?:boolean;theme?:ThemeId;
   /** The app's calm view (useComfort().quiet). Without it the stage reads html[data-quiet]. */calm?:boolean;
   /** The app's reduced-motion setting (useComfort().motion==='reduced'); html[data-motion] and the OS query are read too. */reducedMotion?:boolean;
   /** The world's sound (a deliberate gesture enables it; `comfort.sound` owns the setting). */
@@ -37,6 +39,7 @@ function cruiserStorage(){try{return window.localStorage;}catch{return null;}}
 export default function HorizonStage(props:HorizonStageProps){
   const stage=useRef<HTMLDivElement>(null),runtime=useRef<HorizonRuntime|null>(null),latest=useRef(props);latest.current=props;
   const skinKey=props.cruiserPreference??'hearth:horizon-cruiser:review:v1';
+  const [homeActions,setHomeActions]=useState<{id:string;label:string;target?:string}[]>([]);
   const [skin,setSkin]=useState<CruiserSkin>(()=>{const storage=cruiserStorage();return storage?readCruiserSkin(storage,skinKey):'vespa';}),[skinSaveFailed,setSkinSaveFailed]=useState(false);
   const [status,setStatus]=useState('Loading the Horizon…'),[ready,setReady]=useState(false),[mode,setMode]=useState<HorizonMode>('look'),[page,setPage]=useState('A');
   const [reducedMotion,setReducedMotion]=useState(()=>readReducedMotion(props)),[calm,setCalm]=useState(()=>readCalm(props));
@@ -46,7 +49,7 @@ export default function HorizonStage(props:HorizonStageProps){
   const [boatActions,setBoatActions]=useState<FleetAction[]>([]),[fleetState,setFleetState]=useState<ReturnType<HorizonRuntime['fleetState']>|null>(null);
   const [tier]=useState<'full'|'lite'>(()=>new URLSearchParams(location.search).get('tier')==='lite'||matchMedia('(max-width: 600px)').matches?'lite':'full');
   useEffect(()=>{const controller=new AbortController();let current:HorizonRuntime|null=null,unregister:(()=>void)|null=null;
-    const options:HorizonOptions={tier,cruiserSkin:skin,fleetStorageKey:latest.current.fleetStorageKey,kitchenStorageKey:latest.current.kitchenStorageKey,theme:latest.current.theme,hideBuildings:HARBOUR_DEV&&new URLSearchParams(location.search).get('hideBuildings')==='1',signal:controller.signal,reducedMotion:readReducedMotion(latest.current),calm:readCalm(latest.current),onDoor:(h,b)=>latest.current.onDoor?.(h,b),onStatus:setStatus,initialBody:latest.current.initialBody,partner:()=>latest.current.partner??null};
+    const options:HorizonOptions={homePlotId:latest.current.homePlotId,homeLayout:latest.current.homeLayout,onHomeBook:()=>latest.current.onHomeBook?.(),onHomeWorkspace:t=>latest.current.onHomeWorkspace?.(t),tier,cruiserSkin:skin,fleetStorageKey:latest.current.fleetStorageKey,kitchenStorageKey:latest.current.kitchenStorageKey,theme:latest.current.theme,hideBuildings:HARBOUR_DEV&&new URLSearchParams(location.search).get('hideBuildings')==='1',signal:controller.signal,reducedMotion:readReducedMotion(latest.current),calm:readCalm(latest.current),onDoor:(h,b)=>latest.current.onDoor?.(h,b),onStatus:setStatus,initialBody:latest.current.initialBody,partner:()=>latest.current.partner??null};
     // The movers (M6: the glider and the parachute) register on the runtime as soon as it exists.
     Promise.all([import('../scene/worldMount.ts').then(m=>m.mountHorizonWorld(stage.current!,options)),import('./movers/glider/index.ts')]).then(([world,gliders])=>{
       if(controller.signal.aborted){world.dispose();return;}current=world;unregister=gliders.registerGliderModes(world);runtime.current=world;setMode(world.mode());setPage(world.shotId());setReady(true);setStatus('Drag to look. Walk with W A S D, or use the pads. Space jumps; E opens a nearby door.');latest.current.onRuntime?.(world);latest.current.onReady?.();
@@ -54,6 +57,8 @@ export default function HorizonStage(props:HorizonStageProps){
     }).catch(error=>{if(!controller.signal.aborted)setStatus(error instanceof Error?error.message:'The Horizon could not open.');});
     return()=>{controller.abort();unregister?.();current?.dispose();if(HARBOUR_DEV){const debug=window as unknown as {__harbour?:HorizonRuntime};if(debug.__harbour===current)delete debug.__harbour;}runtime.current=null;latest.current.onRuntime?.(null);};
   },[tier]);
+  useEffect(()=>{runtime.current?.setHome(props.homeLayout,props.homeDisplays,props.homePlotId);},[props.homeLayout,props.homeDisplays,props.homePlotId,ready]);
+  useEffect(()=>{if(ready&&props.visitHome&&runtime.current?.visitHome()){latest.current.onHomeVisited?.();setMode('walk');}},[ready,props.visitHome,props.homePlotId]);
   useEffect(()=>{runtime.current?.setKitchenSound?.(props.sound?.on===true);},[props.sound?.on,ready]);
   useEffect(()=>{runtime.current?.setCruiserTheme?.(props.theme??'classic');},[props.theme,ready]);
   useEffect(()=>{runtime.current?.pause(props.paused===true);},[props.paused,ready]);
@@ -75,9 +80,9 @@ export default function HorizonStage(props:HorizonStageProps){
   // One path to the runtime: setComfort sets the land's motion (cuts, frozen 15:30) and the movers' registry together.
   useEffect(()=>{runtime.current?.setComfort({calm,reducedMotion});},[reducedMotion,calm,ready]);
   useEffect(()=>{
-    if(!ready)return;let last='',lastFleet='';
+    if(!ready)return;let last='',lastFleet='',lastHome='';
     const poll=window.setInterval(()=>{
-      const world=runtime.current;if(!world)return;
+      const world=runtime.current;if(!world)return;const actionsHome=world.homeActions?.()??[],homeKey=JSON.stringify(actionsHome);if(homeKey!==lastHome){lastHome=homeKey;setHomeActions(actionsHome);}
       const kitchenView=world.kitchenView?.();if(kitchenView){const k=JSON.stringify(kitchenView);if(k!==kitchenSnapshot.current){kitchenSnapshot.current=k;setKitchen(kitchenView);}}
       const next={offers:world.offers(),mover:world.moverState(),mode:world.mode()},hud=next.mover.hud;
       if(next.mode==='walk'&&!latest.current.paused&&(!next.mover.attached||isCraft(next.mover.mode))){
@@ -140,6 +145,9 @@ export default function HorizonStage(props:HorizonStageProps){
     {!props.paused&&<>
       <div className="horizon-top-controls">
       <div className="horizon-toolbar" aria-label="World controls">
+        {props.onHomeBook&&<button onClick={props.onHomeBook}>Renovation book</button>}
+        {props.homeLayout&&<button disabled={!ready} onClick={()=>runtime.current?.visitHome()}>Visit my homestead</button>}
+        {homeActions.map(a=><button key={a.id} onClick={()=>runtime.current?.activateHome(a.id)}>{a.label}</button>)}
         {!kitchenActive&&(['walk','look','journey']as const).map(m=><button key={m} disabled={!ready} aria-pressed={mode===m} onClick={()=>changeMode(m)}>{m==='journey'?'Island':m==='walk'?'Walk':'Look'}</button>)}
         {!kitchenActive&&mode==='walk'&&<button disabled={!ready} onClick={()=>{runtime.current?.cyclePerspective();stage.current?.focus();}} aria-label="Change camera perspective (C)">{perspectiveLabel(mover?.perspective??'activity')}</button>}
         {!kitchenActive&&<label>Page <select aria-label="Sketchbook page" value={page} disabled={!ready} onChange={e=>{setPage(e.target.value);setMode('look');runtime.current?.shot(e.target.value);}}>{'ABCDEFGHIJKL'.split('').map(p=><option key={p}>{p}</option>)}</select></label>}
