@@ -111,6 +111,8 @@
 .harbour-world__supported,.harbour-world__checking{bottom:88px}
 .harbour-world__supported + .harbour-world__checking{bottom:120px}
 .harbour-world:not(.is-skating) .harbour-moves{bottom:88px}
+/* Keep walking actions clear of Hercules's litter box on wider screens. */
+@media(min-width:720px){.harbour-world:not(.is-skating) .harbour-moves{right:144px}}
 /* Phones: 44px targets (K7: the old destination list is retired; All tools › Places lists
    every destination). Seven targets fit at 320px; a
    room with Arrange (eight) wraps onto two rows instead of scrolling sideways. */
