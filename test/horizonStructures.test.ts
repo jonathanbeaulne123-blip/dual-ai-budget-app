@@ -4,7 +4,7 @@ import { baseHeight } from '../src/harbour/horizon/land/terrain';
 import { bounds, box, distance, nearestOnPath, slab, solid } from '../src/harbour/horizon/land/structures/mesh';
 import { floorAt } from '../src/harbour/horizon/world/views';
 import { solidVerticalRangeAt } from '../src/harbour/horizon/world/geometry';
-import { bightFrame, bightReport, bightSpec, buildStair, GALLERY_MARGIN, SPANS } from '../src/harbour/horizon/land/structures/build';
+import { bightFrame, bightReport, bightSpec, buildStair, GALLERY_MARGIN, ROPE_END, SPANS } from '../src/harbour/horizon/land/structures/build';
 import { FOOTING_SINK, settleFoundations } from '../src/harbour/horizon/land/structures/foundations';
 import { groundTerrainBeds } from '../src/harbour/horizon/land/structures/groundBeds';
 import { bed } from '../src/harbour/horizon/land/beds/profiles';
@@ -218,5 +218,81 @@ describe('Horizon v2.0 structures (W5-S)',()=>{
     const cuts=cutsOnce(),stair=cuts.beds.find(b=>b.id==='crownLaunch.stair')!,head=stair.points[0]!;
     expect(prisms(find(cuts,'crownLaunch.rails')!).some(p=>Math.hypot(p.x-head[0],p.z-head[2])<1.2)).toBe(false);
     expect(prisms(find(cuts,'crownLaunch.rails')!).length).toBeGreaterThan(20);
+  },120000);
+});
+describe('Horizon Wave 7 structures (W7-S)',()=>{
+  it('ends every cable rope inside its station head frame, standing on the station deck (no rope ends in mid-air)',()=>{
+    const cuts=cutsOnce(),g=M.cable.G1,z=M.cable.ZIP;
+    const ends:[string,readonly number[],number,string][]=[['gondolaBase',g.from,g.fromH,'G1'],['gondolaTop',g.to,g.toH,'G1'],['prowPlatform',z.from,z.fromH,'ZIP'],['zipLanding',z.to,z.toH,'ZIP']];
+    for(const [id,xy,h,cable] of ends){
+      const frame=find(cuts,`platform.${id}.headFrame`)!;expect(frame,id).toBeDefined();expect(frame.role).toBe('support');
+      // The rope's own solid ends at the station point, ROPE_END over the deck: that end lies inside the frame's bullwheel.
+      const rope=prisms(find(cuts,`${cable}.cable`)!),end=rope.reduce((a,b)=>Math.hypot(a.x-xy[0]!,a.z-xy[1]!)<Math.hypot(b.x-xy[0]!,b.z-xy[1]!)?a:b);
+      expect(end.top,id).toBeCloseTo(h+ROPE_END,5);
+      const r=solidVerticalRangeAt(frame,xy[0]!,xy[1]!)!;expect(r,id).not.toBeNull();expect(r.bottom,id).toBeLessThanOrEqual(h+ROPE_END-.09);expect(r.top,id).toBeGreaterThanOrEqual(h+ROPE_END);
+      // Its legs are columns to footings below the ground (P11: the frame's load path reaches the ground, not a slab); the
+      // hung frame rests on the legs' tops; the station point is clear below h + 2.3.
+      const parts=prisms(frame),legs=lowest(find(cuts,`platform.${id}.headFrame.legs`)!);expect(new Set(legs.map(p=>`${Math.round(p.x)},${Math.round(p.z)}`)).size,id).toBe(2);
+      for(const p of legs)expect(p.bottom,id).toBeLessThanOrEqual(baseHeight(p.x,p.z)-FOOTING_SINK+1e-6);
+      expect(Math.min(...parts.map(p=>p.bottom)),id).toBeGreaterThan(h+2.2);
+      const legTop=Math.max(...prisms(find(cuts,`platform.${id}.headFrame.legs`)!).map(p=>p.top));expect(parts.some(p=>p.bottom<=legTop&&p.top>=legTop),id).toBe(true);
+      expect(parts.filter(p=>Math.hypot(p.x-xy[0]!,p.z-xy[1]!)<1.9&&p.bottom<h+2.29),id).toEqual([]);
+    }
+  },120000);
+  it('re-authors the Needle\'s Eye as a real arch: the sunrise gate aperture open, two legs, a 9 eu lintel, strata (R3-111)',()=>{
+    const needle=buildOffshoreSolids().find(s=>s.id==='offshore.needle')!,g=new BufferGeometry();g.setAttribute('position',new Float32BufferAttribute(needle.positions,3));g.setIndex(needle.indices);
+    const mesh=new Mesh(g,new MeshBasicMaterial({side:2}));mesh.updateMatrixWorld();
+    const hit=(o:[number,number,number],d:[number,number,number])=>new Raycaster(new Vector3(...o),new Vector3(...d).normalize()).intersectObject(mesh);
+    const gate=(M.sky.gates as unknown as {id:string;xy:number[];h:number;aperture_m:number[]}[]).find(q=>q.id==='needle')!,[gw,gh]=gate.aperture_m as [number,number];
+    // The gate's 22 × 16 rectangle at h 14, plus a 1 eu margin all round, is clear along the opening's axis (east–west).
+    let blocked=0;for(let y=gate.h-gh/2-1;y<=gate.h+gh/2+1;y+=1)for(let z=gate.xy[1]!-gw/2-1;z<=gate.xy[1]!+gw/2+1;z+=1)if(hit([gate.xy[0]!-60,y,z],[1,0,0]).length)blocked++;
+    expect(blocked).toBe(0);
+    // The bake's gate proof (world/sky.ts) reads a point as inside a solid by the parity of distinct hits on a ray straight up:
+    // every point of the aperture plane (x = gate.x) must read outside (an even count), so no two strata may share a face plane.
+    let inside=0;for(let y=gate.h-gh/2;y<=gate.h+gh/2;y+=2)for(let z=gate.xy[1]!-gw/2;z<=gate.xy[1]!+gw/2;z+=2){const d=new Set(hit([gate.xy[0]!+.123,y,z+.217],[0,1,0]).map(h=>Math.round(h.distance*1e6)));if(d.size%2)inside++;}
+    expect(inside).toBe(0);
+    // Two legs: rays along x hit rock either side of the opening at mid-height; the lintel stands 9 eu over the crown.
+    for(const z of [gate.xy[1]!-20,gate.xy[1]!+20])expect(hit([gate.xy[0]!-60,10,z],[1,0,0]).length).toBeGreaterThan(0);
+    const up=hit([gate.xy[0]!,5,gate.xy[1]!],[0,1,0]).map(h=>h.point.y);expect(Math.min(...up)).toBeCloseTo(28,1);expect(Math.max(...up)).toBeCloseTo(37,1);
+    // Strata: the east face steps in and out between bands (at least 6 distinct face planes), not one flat box face.
+    const eastX=new Set<number>();for(let i=0;i<needle.positions.length;i+=3)if(needle.positions[i]!>1790)eastX.add(Math.round(needle.positions[i]!*10));
+    expect(eastX.size).toBeGreaterThanOrEqual(6);
+    // The far-card proxy budget (sky/horizonCards: ≤ 300 triangles per structure) holds for the arch and every stack.
+    for(const r of buildOffshoreSolids().filter(q=>/^offshore\.(needle|stacks)/.test(q.id)))expect(r.indices.length/3,r.id).toBeLessThanOrEqual(300);
+    // The Stacks: 12-sided, not octagonal prisms.
+    const stack=buildOffshoreSolids().find(s=>s.id==='offshore.stacks.1')!;expect(stack.positions.length/3%12).toBe(0);expect(stack.positions.length/3).toBeGreaterThanOrEqual(12*8);
+  });
+  it('lets S1 onto a level apron and rails the apron and its lane where they drop; kerb gaps for S1 and the portage (A1.2, A1.3)',()=>{
+    const cuts=cutsOnce(),s1=cuts.beds.find(b=>b.id==='S1')!,apron=find(cuts,'dam.apron')!;
+    // Level at 31 east of the low line: S1 comes on from the east at the apron's own height, no lip or wall across it.
+    for(const x of [1152,1160,1166,1169.5])expect(solidVerticalRangeAt(apron,x,930)!.top,String(x)).toBeCloseTo(31,5);
+    const walls=prisms(find(cuts,'dam.apron.abutments')!).filter(p=>p.top>31.2&&nearestOnPath([p.x,p.z],s1.points).distance<s1.width/2+.5&&p.x>1148);
+    expect(walls).toEqual([]);
+    // The level bay and its lane: a posted rail on the east edge (the ground falls 7+ eu), open where S1 comes through it.
+    const rails=prisms(find(cuts,'dam.apron.rails')!),east=rails.filter(p=>Math.abs(p.x-1170.1)<.2&&p.top-p.bottom>1.3);
+    expect(east.length).toBeGreaterThan(4);
+    const s1East=s1.points.findIndex((p,i)=>i>0&&(s1.points[i-1]![0]-1170.1)*(p[0]-1170.1)<=0),a=s1.points[s1East-1]!,b=s1.points[s1East]!,zc=a[2]+(b[2]-a[2])*(1170.1-a[0])/(b[0]-a[0]);
+    expect(Math.min(...east.map(p=>Math.abs(p.z-zc)))).toBeGreaterThan(1.5);
+    // The apron bridge's parapet opens where the portage stair lands on it ([1160.8, 31, 940.1], S1 x dam portage).
+    // No parapet part stands within 1.5 eu of the stair's line over its last 6 eu (its approach mouth onto the deck).
+    const stair=cuts.beds.find(b=>b.id==='damPortage')!,foot=stair.points.at(-1)!,top=stair.points[0]!,len=Math.hypot(foot[0]-top[0],foot[2]-top[2]),mouth:XYZ[]=[[foot[0]-(foot[0]-top[0])*6/len,0,foot[2]-(foot[2]-top[2])*6/len],[foot[0],0,foot[2]]];
+    expect(prisms(find(cuts,'apronBridge.rails')!).filter(p=>nearestOnPath([p.x,p.z],mouth).distance<1.5)).toEqual([]);
+    expect(prisms(find(cuts,'apronBridge.rails')!).length).toBeGreaterThan(20);
+  },120000);
+  it('gives S1 a quay finish a powerslide fits: 14 eu paved on grade, no rail within 6.5 eu of the line, 26 eu of run-out (item 7)',()=>{
+    const cuts=cutsOnce(),s1=cuts.beds.find(b=>b.id==='S1')!,end=s1.points.at(-1)!,quay=cuts.beds.find(b=>b.id==='landingQuay')!;
+    expect(quay.width).toBe(14);expect(quay.points.at(-1)![2]-end[2]).toBeGreaterThanOrEqual(M.profiles.skateMain.runout_m);
+    expect(cuts.solids.some(s=>s.id==='landingQuay.supports')).toBe(false);
+    const rails=cuts.solids.find(s=>s.id==='landingQuay.rails');const near=rails?prisms(rails).filter(p=>p.z>1328&&p.z<1356&&Math.abs(p.x-end[0])<6.5):[];
+    expect(near).toEqual([]);
+    expect(cuts.pads.find(p=>p.id==='landingQuay.finish')?.centre[1]).toBe(3);
+  },120000);
+  it('girders the bightSpurTrestle bay over the Year Walk\'s lane and proves its load path instead of a "not built" conflict (A1.1)',()=>{
+    const cuts=cutsOnce();
+    expect(cuts.diagnostics.filter(d=>d.severity==='conflict'&&/^structures\.(bightSpurTrestle|s1Flyover)\.(bentInLane|bay)$/.test(d.id))).toEqual([]);
+    const omitted=cuts.diagnostics.find(d=>d.id==='structures.bightSpurTrestle.bentOmitted')!;expect(omitted.severity).toBe('info');expect(omitted.measured!).toBeLessThanOrEqual(24);expect(omitted.message).toMatch(/steel girders/);
+    const g=prisms(find(cuts,'bightSpurTrestle.girders')!);expect(g.length).toBeGreaterThanOrEqual(2);
+    // Both girders bear on the cap beams either side of the bay (their ends at the caps' tops).
+    const caps=prisms(find(cuts,'bightSpurTrestle.caps')!);for(const p of g)expect(caps.some(c=>Math.abs(c.top-p.top)<.05)).toBe(true);
   },120000);
 });
