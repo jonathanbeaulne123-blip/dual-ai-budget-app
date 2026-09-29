@@ -11,14 +11,14 @@
 import type * as THREE from 'three';
 import {SCENE_DRESSING,type PlaceDressing} from '../../../scene/place.ts';
 import {finishBuild} from '../../../../house/world/buildTask.ts';
-import {createRegionGeography,mouthExclusion,type RegionGeographyOptions,type RegionSurface} from './geography.ts';
+import {createRegionGeography,mouthExclusion,terraceBedExclusion,type RegionGeographyOptions,type RegionSurface} from './geography.ts';
 import {regionPathGraph} from './graph.ts';
 import {regionRides} from './rides.ts';
 import {mountRegionSteps,type RegionScene,type RegionSeason,type RegionCabinPose} from './scene.ts';
 import {MOUNTAIN_V2_OFFSET,MOUNTAIN_V2_FOOTPRINT} from './placement.ts';
 import type {ExtraPathGraph} from '../../world/pathGraph.ts';
 
-export {MOUNTAIN_V2_OFFSET,MOUNTAIN_V2_FOOTPRINT,mouthExclusion};
+export {MOUNTAIN_V2_OFFSET,MOUNTAIN_V2_FOOTPRINT,mouthExclusion,terraceBedExclusion};
 export type {RegionScene,RegionSurface,RegionCabinPose};
 export const MOUNTAIN_V2_REGION_ID='mountainV2';
 

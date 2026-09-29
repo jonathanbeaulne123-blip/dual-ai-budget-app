@@ -96,8 +96,9 @@ always covered and the overlap at the edge is ≤ one Horizon cell (the bake is 
   motion hold it: no wind, still water sheen). The region never writes it. Note: this also starts the sheen on the Horizon's
   own water cards while the region is placed (they share the clock).
 - Comfort: `setQuiet(!motion.ambientMotion)`: flock away, parked gondola still, dam water snaps.
-- Audio hazard: with the region placed, `ambience.update` receives the body in v2's native space (the river, v2's paths
-  and footsteps are right inside the footprint; outside it the wind is 54 m "lower" than before). HorizonWorld is unchanged.
+- Audio: with the region placed and the body inside `region.contains`, `ambience.update` receives the body in v2's native
+  space (the river, v2's paths and footsteps are right there); outside the footprint it hears the Horizon body as before
+  (PR #566 CodeRabbit closed the 54 m "lower" wind). HorizonWorld is unchanged.
 - `stats().region` = `{id, mounted, building, visible, districts, joins, triangles, drawCalls, groundTriangles, benches}`.
 
 ## 6 · The Fund picture (D-M3)

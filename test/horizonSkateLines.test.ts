@@ -9,7 +9,7 @@ import type {MoverDeps} from '../src/harbour/horizon/movers/shared/registry.ts';
 import {groundGuard} from '../src/harbour/horizon/movers/shared/ground/kernel.ts';
 import {bedPath, lineLegSteps, type LineId, type LineLegs} from '../src/harbour/horizon/movers/board/situations.ts';
 import {sampleTerrain} from '../src/harbour/horizon/land/terrain/index.ts';
-import {createMountainV2Region} from '../src/harbour/horizon/regions/mountainV2/index.ts';
+import {createMountainV2Region, terraceBedExclusion} from '../src/harbour/horizon/regions/mountainV2/index.ts';
 
 // The real baked world, loaded the way test/horizonBoardPace.test.ts loads it.
 let deps: MoverDeps;
@@ -21,7 +21,7 @@ beforeAll(() => {
   // v2.6 (D-M1/D-M2, D-M5): as mountHorizon does, the Mountain v2 region owns the ground and decks inside its footprint: S1's
   // upper half is v2's race course on v2's road, region-carried (no Horizon deck), so without the region it rides the bake's
   // 5 m lattice and leaves the bed. With it S1 rides end to end with 5 land-defect stops (HANDOFF-notes/tests.md).
-  geography.addDynamic(createMountainV2Region({horizonGround: (x, z) => sampleTerrain(field, x, z), terrainStep: field.step}).provider);
+  geography.addDynamic(createMountainV2Region({horizonGround: (x, z) => sampleTerrain(field, x, z), yield: terraceBedExclusion(world.beds), terrainStep: field.step}).provider);
   deps = {world, geography, manifest: M, reducedMotion: false, calm: false, tier: 'full'};
   groundGuard.strict = true;
 }, 120000);

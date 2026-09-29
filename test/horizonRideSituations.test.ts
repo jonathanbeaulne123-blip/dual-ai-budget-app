@@ -13,7 +13,7 @@ import {createBoardContact} from '../src/harbour/horizon/movers/shared/ground/co
 import {BOARD_PROFILE} from '../src/harbour/horizon/movers/board/profile.ts';
 import {runSituation, SITUATIONS, type RideLogSink, type SituationId} from '../src/harbour/horizon/movers/board/situations.ts';
 import {sampleTerrain} from '../src/harbour/horizon/land/terrain/index.ts';
-import {createMountainV2Region} from '../src/harbour/horizon/regions/mountainV2/index.ts';
+import {createMountainV2Region, terraceBedExclusion} from '../src/harbour/horizon/regions/mountainV2/index.ts';
 
 // The real baked world, loaded the way test/horizonBoardPace.test.ts loads it.
 let deps: MoverDeps;
@@ -23,7 +23,7 @@ beforeAll(() => {
   const field = decodeTerrainAsset(terrain.buffer.slice(terrain.byteOffset, terrain.byteOffset + terrain.byteLength) as ArrayBuffer, 'full');
   const geography = createHorizonGeography(field, {...world.collision, solids: world.geometry.solids, diagnostics: world.diagnostics ?? []} as Parameters<typeof createHorizonGeography>[1]);
   // v2.6 (D-M1/D-M2): as mountHorizon does, the Mountain v2 region owns the ground and decks inside its footprint (R3 rides v2's road).
-  geography.addDynamic(createMountainV2Region({horizonGround: (x, z) => sampleTerrain(field, x, z), terrainStep: field.step}).provider);
+  geography.addDynamic(createMountainV2Region({horizonGround: (x, z) => sampleTerrain(field, x, z), yield: terraceBedExclusion(world.beds), terrainStep: field.step}).provider);
   deps = {world, geography, manifest: M, reducedMotion: false, calm: false, tier: 'full'};
   groundGuard.strict = true;
 }, 120000);

@@ -18,7 +18,7 @@ Counts at review time: BLOCKER 1 · MAJOR 7 · MINOR 9 · NIT 4.
 | R5-10 | MINOR | Region collision answers while the region is not yet drawn; build steps ≈250 ms each | Open (segment 2): answer decks only while drawn; split the large builders |
 | R5-11 | MINOR | The Horizon may still draw its own `G1.cable` beside v2's ropes | Open, unproven in captures (the Foot view shows one rope pair) |
 | R5-12 | MINOR | v2's reservoir and river are not Horizon water (a walker can stand under the drawn water) | Open: a region `waterLevel` hook |
-| R5-13 | MINOR | `library-balcony` support solid in S1's clearance (rider bails at 614 m); S1 slabs 10/11 drawn in the wrong material | Open (pinned in `horizonBoardPace`) |
+| R5-13 | MINOR | `library-balcony` support solid in S1's clearance (rider bails at 614 m); S1 slabs 10/11 drawn in the wrong material | **Balcony fixed** (CodeRabbit round): it was the balcony's landing ramp, a deck; the region's contact now applies v2's junction rule. Slabs 10/11 still open (pinned in `horizonBoardPace`) |
 | R5-14 | MINOR | Loose bounds in Landforms/Beds; v2's road grades up to 14 % against NOT-THIS's 12 % with no waiver | Open: record the v2-road grade waiver in DECISIONS; pin measured values |
 | R5-15 | MINOR | Design losses pinned as measured: R1 Downhill carve has no home; the Crown launch runs off one way; Crown→Lamp in wind −1.2 m; Dam Run gate still named `damArch` | **For Jonathan (E-5-4)** |
 | R5-16 | MINOR | Three `stepsPortage` "proposed" conflicts at ≈133 eu of rock separation inside the footprint | Open: register as `over` |

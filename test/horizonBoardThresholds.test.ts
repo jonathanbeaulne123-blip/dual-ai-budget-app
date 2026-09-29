@@ -14,7 +14,7 @@ import {createBoardController, type BoardController} from '../src/harbour/horizo
 import {bedClass} from '../src/harbour/horizon/movers/shared/ground/contact.ts';
 import {bedPath, moverInputOf, pointAt, progressOf, runLine, type BedPath, type LineId} from '../src/harbour/horizon/movers/board/situations.ts';
 import {sampleTerrain} from '../src/harbour/horizon/land/terrain/index.ts';
-import {createMountainV2Region} from '../src/harbour/horizon/regions/mountainV2/index.ts';
+import {createMountainV2Region, terraceBedExclusion} from '../src/harbour/horizon/regions/mountainV2/index.ts';
 
 // The real baked world, loaded the way test/horizonBoardPace.test.ts loads it.
 let deps: MoverDeps, world: WorldDefinition, board: BoardController;
@@ -24,7 +24,7 @@ beforeAll(() => {
   const field = decodeTerrainAsset(terrain.buffer.slice(terrain.byteOffset, terrain.byteOffset + terrain.byteLength) as ArrayBuffer, 'full');
   const geography = createHorizonGeography(field, {...loaded.collision, solids: loaded.geometry.solids, diagnostics: loaded.diagnostics ?? []} as Parameters<typeof createHorizonGeography>[1]);
   // v2.6 (D-M1/D-M2): as mountHorizon does, the Mountain v2 region owns the ground, decks and solids inside its footprint.
-  geography.addDynamic(createMountainV2Region({horizonGround: (x, z) => sampleTerrain(field, x, z), terrainStep: field.step}).provider);
+  geography.addDynamic(createMountainV2Region({horizonGround: (x, z) => sampleTerrain(field, x, z), yield: terraceBedExclusion(loaded.beds), terrainStep: field.step}).provider);
   world = loaded;
   deps = {world, geography, manifest: M, reducedMotion: false, calm: false, tier: 'full'};
   board = createBoardController(deps);
@@ -299,9 +299,8 @@ const LINE_BLOCKERS: Record<LineId, Record<string, number[]>> = {
   // v2.6: S1's upper half is v2's race course (D-M5), 434 m longer to the Notch, so the lower blockers move 878/880 → 1312/1314
   // and 1252 → 1686; the s1Flyover is retired (D-M5), its 534 sample is gone.
   S1: {
-    // v2.6: with the region mounted, v2's own library balcony (a region solid, T2) stands in S1's clearance on v2's course
-    // (Library balcony segment); written up in HANDOFF-notes/tests.md for the region.
-    'mountainV2:library-balcony': [614, 616],
+    // v2.6: the library balcony's landing ramp (a region deck) stood in S1's clearance at 614–616 m; PR #566 CodeRabbit: the
+    // region applies v2's own junction rule (a branch's mouth is open road), so it stops nobody on S1 — no entry here.
     'apronBridge.rails@notch': [1312, 1314],
     'reachBoardwalk.rails@reach': [1686],   // across the run-out before landingQuay
   },

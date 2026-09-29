@@ -37,7 +37,7 @@ Verdicts: **a** means the expectation moved because of a ruling. **b** means a r
 |---|---|---|---|---|---|
 | BoardThresholds | picks the board up at skateLineStarts.1 | a | The rider now stands at v2's start gate (D-M5). | [1310,154,500] → [1325,158.2,470.5] | `test/horizonBoardThresholds.test.ts:68` |
 | BoardThresholds | every board→feet pad is threshold pace | **b** | See §2.1. `crossing.walkFootQuay.g1.1` sampled `slow`, because the `gondolaBase` pad (feet→cable) 2.4 m away hid it. Fixed in `contact.ts`; the test is unchanged. | slow → threshold | `contact.ts:197` |
-| BoardThresholds | P19 blockers on S1 | a | S1 is 434 m longer to the Notch. The flyover is retired (D-M5). With the region mounted, v2's `library-balcony` solid is a new blocker (§3). | apronBridge 878/880 → 1312/1314; reach 1252 → 1686; s1Flyover 534 → gone; +library-balcony 614/616 | `:299`, `:302` |
+| BoardThresholds | P19 blockers on S1 | a | S1 is 434 m longer to the Notch. The flyover is retired (D-M5). With the region mounted, v2's `library-balcony` landing ramp was a new blocker (§3 item 2, closed: v2's junction rule). | apronBridge 878/880 → 1312/1314; reach 1252 → 1686; s1Flyover 534 → gone; library-balcony 614/616 came and went | `:299`, `:302` |
 | ModeRegistry | offers the pick-up at skateLineStarts.1 | a | v2's start gate (D-M5). | at [1310,154,500] → [1325,158.2,470.5] | `test/horizonModeRegistry.test.ts:47` |
 | ModeRegistry | accepts skateLineStarts.1 and rides a board | a | The pad is at v2's start gate. | [1310,500] → [1325,470.5] | `:171`, `:177` |
 | GliderController | run-off side at crownLaunch | a (flag, §4.3) | At the moved launch, 20 m toward v2's crest (−z) is only 9.9 m below the deck, under RUN_DROP 10. Both facings now run off +z. | facing π → π becomes π → 0 | `test/horizonGliderController.test.ts:52` |
@@ -102,17 +102,19 @@ Verdicts: **a** means the expectation moved because of a ruling. **b** means a r
      - on the Reach boardwalk, slice 11 is drawn `paved` where it should be `cobble`.
    - Grip follows the drawn material.
    - Pinned in `horizonBoardPace` as `{'S1.10':'cobble','S1.11':'paved'}`. A land fix empties that table.
-2. **v2's `library-balcony` solid stands in S1's clearance** at 614–616 m, in the Library balcony slice.
-   - It is a region solid (`regions/mountainV2/geography.ts REGION_SOLIDS`).
-   - The headless rider bails on it at 613.8 m, 0.19 m off the centreline.
-   - For T2: trim the box to the balcony, or leave it out of the solids the way the district fixtures are.
-3. **The region's lawn over S1's Foot-terrace deck.** At 950–980, 1040, 1060 and 1100 m, the region's ground (`island` / `foot`)
-   stands a few centimetres over the Horizon's S1 slab.
-   - The contact reads material `grass`, so grip is 0.6 instead of 1.0.
-   - The pace is still correct and the sample is legal.
-   - For T2: yield the ground to a Horizon deck there, or add the S1 slab to the region's decks.
-4. **SkateLines S1 stops, with the region mounted** (6 legs):
-   - `mountainV2:library-balcony` at 613.8 m
+2. **v2's `library-balcony` stood in S1's clearance** at 614–616 m, in the Library balcony slice — **closed (PR #566 CodeRabbit)**.
+   - It was the balcony's landing ramp (a region *deck*, not a solid: no `REGION_SOLIDS` box stands within 0.6 m of S1 there),
+     rejoining the road 0.8–1.7 m over S1's bed at native x 79–85; the body contact read it as a wall.
+   - The region's `contact` now applies v2's own junction rule (`surfaces.ts worldCeilingAt`): within 18 m of a skill branch's
+     ends a deck under 3 m over the feet is its mouth or landing, open road. P19's S1 table lost the entry; nothing else moved.
+3. **The region's lawn over S1's Foot-terrace deck** — **closed (PR #566 CodeRabbit)**. At 950–1100 m the region's ground
+   (`island` / `foot`) stood a few centimetres over the Horizon's S1 slab and the contact read `grass` (grip 0.6 for 1.0).
+   - `createMountainV2Region({yield})` (`terraceBedExclusion(beds)`): inside S1's own corridor (width/2 + shoulder) at native
+     z ≥ −48 the region is drawn but answers nothing; the Horizon's slab does. Measured after: 950 `S1.surface.7` cobble,
+     980–1100 `S1.surface.8/9` paved, at the bed's own height. `contains` (the drawn footprint, hidden tiles) is unchanged.
+   - The four world-mounting suites pass the same `yield` the runtime does.
+4. **SkateLines S1 stops, with the region mounted** (6 legs at review; the balcony stop is gone with item 2):
+   - ~~`mountainV2:library-balcony` at 613.8 m~~
    - `apronBridge.rails@lakeside` at 1270.4 and 1276.4 m
    - `apronBridge.rails@notch` at 1312.9 m
    - `highSpan.shelf.rail@notch` at 1440.7 m

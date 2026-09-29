@@ -49,6 +49,9 @@ export type RegionGeographyOptions={
   horizonGround?:(hx:number,hz:number)=>number;
   /** Horizon points the region leaves to the Horizon (its terrain mouths: a portal's opening must stay open). */
   exclude?:(hx:number,hz:number)=>boolean;
+  /** Points inside the drawn footprint whose ground, decks and solids the Horizon still answers (S1's own slab across the
+   * Foot terrace): drawn as the region, felt as the Horizon (PR #566 CodeRabbit). */
+  yield?:(hx:number,hz:number)=>boolean;
 };
 /** The margin (m) round a Horizon terrain mouth the region leaves to the Horizon's own (masked) terrain. */
 export const MOUTH_MARGIN=6;
@@ -72,6 +75,12 @@ function deckIndex(surfaces:readonly WorldSurface[]){
     for(let x=Math.floor((Math.min(a[0],b[0])-r)/CELL);x<=Math.floor((Math.max(a[0],b[0])+r)/CELL);x++)for(let z=Math.floor((Math.min(a[2],b[2])-r)/CELL);z<=Math.floor((Math.max(a[2],b[2])+r)/CELL);z++){
       const key=`${x}:${z}`,list=cells.get(key);if(!list)cells.set(key,[i]);else if(list.at(-1)!==i)list.push(i);}}});
   return (x:number,z:number)=>cells.get(`${Math.floor(x/CELL)}:${Math.floor(z/CELL)}`)??[];
+}
+/** v2's junction rule (`surfaces.ts worldCeilingAt`): within 18 m of a skill branch's ends, a deck less than 3 m over the
+ * feet is the branch's mouth or landing ramp — an open road junction — and stops nobody on the road under it. */
+const BRANCH_ENDS=new Map(REGION_SURFACES.filter(s=>s.kind==='branch').map(s=>[s.id,[s.points[0]!,s.points[s.points.length-1]!] as const]));
+function branchJunction(s:WorldSurface,over:number,x:number,z:number):boolean{
+  const ends=BRANCH_ENDS.get(s.id);return !!ends&&over<3&&ends.some(at=>Math.hypot(x-at[0],z-at[2])<18);
 }
 /** Nearest point of a deck's polyline, null past its square ends (as v2's `onDeck`). */
 function onDeck(x:number,z:number,points:readonly Point3[]){
@@ -102,6 +111,19 @@ function riverWater(x:number,z:number):number|null{
 /** v2's water surface at a native point (the reservoir, else the river); null when dry. */
 export function regionWaterAt(x:number,z:number):number|null{return reservoirWater(x,z)??riverWater(x,z);}
 
+/** `yield` for a Horizon bed's own corridor (width/2 + shoulder) where it crosses the Foot terrace (native z ≥ −48): S1
+ * arrives there on the Horizon's slab, which the region's lawn stood a few centimetres over (grip 0.6 for 1.0). On v2's massif
+ * the bed is region-carried (land/mountainV2/beds.ts regionCarryLand) and stays the region's (PR #566 CodeRabbit, tests.md §3). */
+export function terraceBedExclusion(beds:readonly {id:string;points:readonly Point3[];width?:number;shoulder?:number}[],ids:readonly string[]=['S1']){
+  const from=O.z+MOUNTAIN_V2_MASSIF_Z;
+  const runs=beds.filter(b=>ids.includes(b.id)).flatMap(b=>{
+    const pts=b.points.filter(p=>p[2]>=from-2);if(pts.length<2)return [];
+    // A skate bed's shoulder is 0 in the bake (land/beds/profiles.ts); the published world carries the width only.
+    const half=(b.width??4)/2+(b.shoulder??0),xs=pts.map(p=>p[0]),zs=pts.map(p=>p[2]);
+    return [{pts,half,box:[Math.min(...xs)-half,Math.min(...zs)-half,Math.max(...xs)+half,Math.max(...zs)+half] as const}];
+  });
+  return (hx:number,hz:number)=>hz>=from&&runs.some(r=>hx>=r.box[0]&&hz>=r.box[1]&&hx<=r.box[2]&&hz<=r.box[3]&&nearestOnRoute(hx,hz,r.pts).distance<=r.half);
+}
 export function createRegionGeography(options:RegionGeographyOptions={}){
   const near=deckIndex(REGION_SURFACES);
   /** Inside the drawn footprint (see the module note). Horizon coordinates. */
@@ -117,17 +139,19 @@ export function createRegionGeography(options:RegionGeographyOptions={}){
     return g>LAND||mountainContains(nx,nz);
   }
   /** v2's ground (terrain only), Horizon height; null outside the footprint. */
-  function groundAt(hx:number,hz:number):number|null{return contains(hx,hz)?groundHeightAt(hx-O.x,hz-O.z)+O.y:null;}
+  /** The region answers here: inside the drawn footprint and not yielded to a Horizon deck. */
+  const owns=(hx:number,hz:number)=>contains(hx,hz)&&!options.yield?.(hx,hz);
+  function groundAt(hx:number,hz:number):number|null{return owns(hx,hz)?groundHeightAt(hx-O.x,hz-O.z)+O.y:null;}
   /** The highest v2 floor (ground or deck) at or under hy + step; null outside the footprint or when it is above that. */
   function surface(hx:number,hy:number|undefined,hz:number,step=STEP,decks:readonly WorldSurface[]=REGION_SURFACES):RegionSurface|null{
-    if(!contains(hx,hz))return null;
+    if(!owns(hx,hz))return null;
     const hit=queryWorldSurface({x:hx-O.x,z:hz-O.z,y:hy===undefined?undefined:hy-O.y,stepHeight:step},groundHeightAt,decks),y=hit.y+O.y;
     if(hy!==undefined&&y>hy+step)return null;
     return {id:hit.id==='terrain'?'terrain':`mountainV2:${hit.id}`,y,n:[hit.nx,hit.ny,hit.nz],material:regionMaterial(hit),slope:Math.atan(hit.slope)*180/Math.PI};
   }
   /** The lowest v2 deck underside above the feet; null when none (or outside). */
   function ceiling(hx:number,hy:number,hz:number):number|null{
-    if(!contains(hx,hz))return null;
+    if(!owns(hx,hz))return null;
     const c=worldCeilingAt(hx-O.x,hz-O.z,hy-O.y,.2,REGION_SURFACES);
     return Number.isFinite(c)?c+O.y:null;
   }
@@ -138,10 +162,13 @@ export function createRegionGeography(options:RegionGeographyOptions={}){
    * the body (for sliding). Null outside the footprint.
    */
   function contact(hx:number,hz:number,feet:number,radius=.3):RegionContact|null{
-    if(!contains(hx,hz))return null;
+    if(!owns(hx,hz))return null;
     const x=hx-O.x,z=hz-O.z,lo=feet-O.y+STEP,hi=feet-O.y+BODY;
     for(const si of near(x,z)){const s=REGION_SURFACES[si]!,p=onDeck(x,z,s.points);if(!p||p.distance>=s.halfWidth+radius)continue;
       const top=p.point[1]+.08,bottom=p.point[1]-.28;if(top<=lo||bottom>=hi)continue;
+      // PR #566 CodeRabbit (R5-13): a skill branch's mouth is an open road junction, not a wall — v2's `worldCeilingAt` rule.
+      // The library balcony's landing ramp rejoins the road 0.8–1.7 m over S1's bed (native x 79–85) and read as a blocker.
+      if(branchJunction(s,p.point[1]-(feet-O.y),x,z))continue;
       const dx=x-p.point[0],dz=z-p.point[2],d=Math.hypot(dx,dz)||1;return {id:`mountainV2:${s.id}`,nx:dx/d,nz:dz/d};}
     for(const s of REGION_SOLIDS){
       if(s.max[1]<=lo||s.min[1]>=hi||x<=s.min[0]-radius||x>=s.max[0]+radius||z<=s.min[2]-radius||z>=s.max[2]+radius)continue;
@@ -160,7 +187,7 @@ export function createRegionGeography(options:RegionGeographyOptions={}){
   }
   /** v2's point test (`worldCollisionAt`'s shape) over the drawn solids: is (hx, hy, hz) inside a solid, within r? */
   function blocked(hx:number,hy:number,hz:number,r=.2):boolean{
-    if(!contains(hx,hz))return false;
+    if(!owns(hx,hz))return false;
     const x=hx-O.x,y=hy-O.y,z=hz-O.z;
     for(const si of near(x,z)){const s=REGION_SURFACES[si]!,p=onDeck(x,z,s.points);if(p&&p.distance<s.halfWidth+r&&y>p.point[1]-.28&&y<p.point[1]+.08)return true;}
     if(REGION_SOLIDS.some(s=>x>s.min[0]-r&&x<s.max[0]+r&&z>s.min[2]-r&&z<s.max[2]+r&&y>s.min[1]&&y<s.max[1]))return true;
@@ -177,7 +204,7 @@ export function createRegionGeography(options:RegionGeographyOptions={}){
    * `ground()` answers v2's ground and the camera tests v2's ground. Outside the footprint it answers nothing.
    */
   /** PR #566 Codex: v2's water (the reservoir, the river) at a Horizon point inside the footprint; null when dry or outside. */
-  function waterLevel(hx:number,hz:number):number|null{if(!contains(hx,hz))return null;const w=regionWaterAt(hx-O.x,hz-O.z);return w===null?null:w+O.y;}
+  function waterLevel(hx:number,hz:number):number|null{if(!owns(hx,hz))return null;const w=regionWaterAt(hx-O.x,hz-O.z);return w===null?null:w+O.y;}
   const asHit=(s:RegionSurface|null)=>s?{id:s.id,y:s.y,nx:s.n[0],ny:s.n[1],nz:s.n[2],material:s.material,slope:s.slope}:null;
   const provider={
     owns:contains,

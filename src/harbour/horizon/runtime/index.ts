@@ -98,7 +98,8 @@ export async function placeHorizonRegions(assets:Pick<HorizonAssets,'world'|'fie
   // PR #566 Codex: the region's import fetches/decodes v2's terrain; a failure leaves the Horizon without the region, never blocks it.
   try{
     const mod=await load(),field=assets.field;
-    return {region:mod.createMountainV2Region({horizonGround:(x,z)=>sampleTerrain(field,x,z),exclude:mod.mouthExclusion(assets.cuts.mouths),terrainStep:field.step}),dressing:mod.regionDressing};
+    // PR #566 CodeRabbit: across the Foot terrace S1 runs on the Horizon's own slab — drawn under the region, answered by the Horizon.
+    return {region:mod.createMountainV2Region({horizonGround:(x,z)=>sampleTerrain(field,x,z),exclude:mod.mouthExclusion(assets.cuts.mouths),yield:mod.terraceBedExclusion(assets.cuts.beds),terrainStep:field.step}),dressing:mod.regionDressing};
   }catch(error){console.warn('Horizon: the Mountain v2 region did not load; the island runs without it.',error);return null;}
 }
 export async function mountHorizon(host:HTMLElement,options:HorizonOptions){
@@ -738,7 +739,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     else kitchen?.update(0);
     if(!paused&&!document.hidden){const accept=comfortCut||kitchen?.active()?false:offersAndAccept();if(mode==='walk'&&!kitchen?.active()&&(!transition||transition.live)){stepped=true;if(registry.active()){if(!comfortCut&&hold.steps(mode)&&riderReady())ride(dt,now,accept);}else if(!comfortCut)step(dt,now);}if(mode!=='journey')stream.update({x:body.x,z:body.z,now,mode:mode==='look'?'look':'walk',radius:mode==='look'?world.views.find(v=>v.id===shotId)?.radius:undefined,keepRadius:world.views.find(v=>v.id===shotId)?.radius,underground:body.y+HORIZON_BODY_HEIGHT<geography.ground(body.x,body.z)-.5});}
     // Pass 5: the ambience reads Mountain v2's geography (the river, its paths), so with the region placed it hears native space.
-    const heard=placed?{x:body.x-MOUNTAIN_V2_OFFSET.x,y:body.y-MOUNTAIN_V2_OFFSET.y,z:body.z-MOUNTAIN_V2_OFFSET.z}:body;
+    // PR #566 CodeRabbit: only inside the region's footprint; elsewhere the Horizon body is what it hears.
+    const heard=placed&&placed.region.contains(body.x,body.z)?{x:body.x-MOUNTAIN_V2_OFFSET.x,y:body.y-MOUNTAIN_V2_OFFSET.y,z:body.z-MOUNTAIN_V2_OFFSET.z}:body;
     if(ambience){if(paused)ambience.pause();else ambience.update(heard.x,heard.y,heard.z,ambienceSpeed,false,false,comfort.calm,registry.mode()==='glider'||registry.mode()==='parachute');}
     // The shared card clock (wind in v2's planting, water sheen) runs with ambient motion; calm and reduced motion hold it.
     if(placed&&motion.ambientMotion)CARD_CLOCK.value=now/1000;

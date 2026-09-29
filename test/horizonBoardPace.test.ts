@@ -8,7 +8,7 @@ import type {Bed, WorldDefinition} from '../src/harbour/horizon/world/definition
 import {bedAt, createBoardContact, isPickupThreshold, paceOf, type BoardContact} from '../src/harbour/horizon/movers/shared/ground/contact.ts';
 import {BOARD_TEST_PROFILE} from '../src/harbour/horizon/movers/shared/ground/synthetic.ts';
 import {sampleTerrain} from '../src/harbour/horizon/land/terrain/index.ts';
-import {createMountainV2Region} from '../src/harbour/horizon/regions/mountainV2/index.ts';
+import {createMountainV2Region, terraceBedExclusion} from '../src/harbour/horizon/regions/mountainV2/index.ts';
 import type {GroundProfile, Pace} from '../src/harbour/horizon/movers/shared/ground/types.ts';
 
 // The real baked world (the same assets the runtime loads): geometry v1 is unchanged by MANIFEST v1.7.
@@ -40,7 +40,7 @@ beforeAll(() => {
   geography = createHorizonGeography(field, {...loaded.collision, solids: loaded.geometry.solids, diagnostics: loaded.diagnostics ?? []});
   // v2.6 (D-M1/D-M2): as mountHorizon does, the placed Mountain v2 region owns the ground and decks inside its footprint
   // (S1's upper half rides v2's own road there, region-carried: no Horizon deck).
-  geography.addDynamic(createMountainV2Region({horizonGround: (x, z) => sampleTerrain(field, x, z), terrainStep: field.step}).provider);
+  geography.addDynamic(createMountainV2Region({horizonGround: (x, z) => sampleTerrain(field, x, z), yield: terraceBedExclusion(loaded.beds), terrainStep: field.step}).provider);
   board = createBoardContact(geography, world, M, BOARD_TEST_PROFILE);
   bicycle = createBoardContact(geography, world, M, BICYCLE);
 }, 120000);
