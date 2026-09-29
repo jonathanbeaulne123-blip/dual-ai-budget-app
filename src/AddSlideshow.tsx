@@ -313,15 +313,18 @@ export function AddSlideshow({
     if (index !== slideIndex) onSlideIndex(index);
   }, [index, slideIndex, onSlideIndex]);
 
-  // "Mark paid" names one bill: land on its named Confirm once (the person can still go back to the slips).
+  // "Mark paid" names one bill: land on its named Confirm once per opening (the person can still go back to the
+  // slips). A paused sheet (open === false) forgets the preselection, so "Mark paid" again for the same bill after
+  // Close lands on its Confirm again rather than on the slips the App's reopen resets to (D-T6-1).
   useEffect(() => {
+    if (open === false) { billPreselected.current = null; return; }
     if (!billMode || !billRecurrenceId || billPreselected.current === billRecurrenceId) return;
     if (!bills.due.some((slip) => slip.recurrenceId === billRecurrenceId)) return;
     billPreselected.current = billRecurrenceId;
     setBillId(billRecurrenceId);
     const confirmAt = slides.indexOf("bill-confirm");
     if (confirmAt >= 0) onSlideIndex(confirmAt);
-  }, [billMode, billRecurrenceId, bills.due, slides, onSlideIndex]);
+  }, [open, billMode, billRecurrenceId, bills.due, slides, onSlideIndex]);
 
   const presentationKey = draftStorageKey ?? mode;
   const livePresentationKey = useRef(presentationKey);

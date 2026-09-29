@@ -104,6 +104,18 @@ export type HarbourWorldProps = {
   onOpen: (target: string, object?: string) => void;
   onClose: () => void;
   onJourney?:()=>void;
+  /**
+   * An explicit "Enter Horizon here" from the Journey Board (P2): while set, the harbour
+   * shows the Horizon (the geography the board is drawn from) and HorizonWorld starts the
+   * body at the location — `{x, y}` concept metres (engine x, z; grounded or snapped to a
+   * path node, never the sea) or a host's baked `returnAt`. Structural: the harbour does not
+   * import `src/journey`. The App clears it when the Journey route is active again, or when a
+   * place is picked in All tools (the Mountain again, D49). `arrived` (set by the App from
+   * `onHorizonArrived`) means the body already stood there: a remount keeps the saved body.
+   */
+  enterHorizonRequest?: { seq: number; location: { x: number; y: number } | { host: string }; arrived?: boolean } | null;
+  /** Horizon has put the body at `enterHorizonRequest` (once per request `seq`). */
+  onHorizonArrived?: (seq: number) => void;
   onWorldReady?:()=>void;
   presence?: SoftPresenceDisplay;
   /** Undo the coarse soft-presence opt-out, offered where a person learns of it. */
@@ -208,7 +220,7 @@ const pulseFreshness = (gate: InterpretationGate | undefined): FundPulseFreshnes
 const HorizonWorld = lazy(() => import("./horizon/HorizonWorld.tsx"));
 export default function HarbourWorld(props: HarbourWorldProps) {
   const homeBook=useHomeBook();
-  return homeBook?.visitRequested || HARBOUR_DEV && new URLSearchParams(window.location.search).get("world") === "horizon"
+  return homeBook?.visitRequested || props.enterHorizonRequest || HARBOUR_DEV && new URLSearchParams(window.location.search).get("world") === "horizon"
     ? <HorizonEdition {...props}/>
     : <MountainHarbourWorld {...props}/>;
 }

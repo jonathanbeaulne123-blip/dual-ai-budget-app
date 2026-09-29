@@ -17,7 +17,9 @@ import { KitchenFolio } from "./house/KitchenFolio.tsx";
 import { bankRoomRequest } from "./house/bankRoom.ts";
 import { HouseWorld } from './house/HouseWorld.tsx';
 import { HARBOUR_ENABLED, harbourOwnsRoute, harbourPlaceFor } from './harbour/flag.ts';
+import { VILLAGE_ADDRESS } from './harbour/village/layout.ts';
 import { harbourArrivalRoute, tabSession } from './harbour/nav/arrival.ts';
+import { readMotionEdition } from './harbour/nav/motionEdition.ts';
 import { Compass, useEditionFlipKey, type CompassFab } from './harbour/nav/Compass.tsx';
 import { usePublishBarBadges } from './harbour/nav/barBadges.ts';
 import { HARBOUR_GO_EVENT, QuickSheet, useAtlasSearchKeys } from './harbour/nav/QuickSheet.tsx';
@@ -96,7 +98,10 @@ import { fetchLedgerSnapshot } from "./ledgerSync/discovery.ts";
 import { captureExplicit } from './ledgerSync/capture.ts';
 import { LedgerSyncClient, LedgerCommandRejectedError } from "./ledgerSync/client.ts";
 import { ledgerSyncEnabled, localLedgerIdentity } from "./ledgerSync/mode.ts";
-import { Suspense, lazy, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Suspense, lazy, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import type { BooksRef, HorizonLocation, JourneyBoardActions } from "./journey/contracts.ts";
+import { useHomeBook } from "./home/HomeBookContext.tsx";
+import { pathEras } from "./core/pathEras.ts";
 import {
   JOINT,
   NeedsConfirmationError,
@@ -563,6 +568,93 @@ const PANEL_HOSTS: ReadonlySet<string> = new Set(["bank", "cellar", "tower", "ki
 /** The Campfire (Tool Atlas D3): one five-beat monthly ritual, and the weekly Sitdown's two chairs. Loaded when opened. */
 const CampfireRitual = lazy(() => import("./campfire/CampfireRitual.tsx").then(module => ({ default: module.CampfireRitual })));
 const WeeklySitdown = lazy(() => import("./campfire/WeeklySitdown.tsx").then(module => ({ default: module.WeeklySitdown })));
+/** The household Journey Board (D26 / SCALES §1): the Journey surface of kitchen-table/above, and the arrival home. Loaded when shown. */
+const JourneyBoard = lazy(() => import("./journey/ui/JourneyBoard.tsx"));
+/** The Era planner (both-agree era proposals), opened from a Journey Board crossroads as a sheet. */
+const EraPlanner = lazy(() => import("./path/EraPlanner.tsx").then(module => ({ default: module.EraPlanner })));
+/**
+ * `HomeBookProvider` wraps the App's own render, so the App body cannot call `useHomeBook()`; the Journey Board's
+ * "Open the HomeBook" reaches the provider through this bridge (the viewer's own home only).
+ */
+function JourneyHomeBookBridge({ children }: { children: (open: () => void) => ReactNode }) {
+  const homeBook = useHomeBook();
+  return <>{children(() => homeBook?.open())}</>;
+}
+/**
+ * The Journey Board's frame. The board is the household's first screen (D26), so it stands full-bleed below the
+ * App's header chrome (top bar, sync line, space switch) and above the Compass, as the Journey world did before it;
+ * the house strip is not mounted on this route and the tool heading is kept only as a named focus target. The board
+ * sizes itself from `--jb-top` on every width (journey-board.css): the frame measures where the header chrome ends
+ * (the page's top, tracked while the page scrolls) and hands that down. Sheets (z 20+, the due review included) and
+ * the Compass (z 25) stay above.
+ */
+function JourneyBoardFrame({ children }: { children: ReactNode }) {
+  const frame = useRef<HTMLDivElement>(null);
+  const [layout, setLayout] = useState<{ top: number }>({ top: 0 });
+  useLayoutEffect(() => {
+    const node = frame.current;
+    if (!node) return;
+    let queued = 0;
+    const measure = () => {
+      queued = 0;
+      // The header chrome ends where the page begins (the house strip is not drawn under the board).
+      const marker = node.closest<HTMLElement>("[data-app-page]") ?? node.parentElement;
+      const top = Math.max(0, Math.round(marker?.getBoundingClientRect().top ?? 0));
+      setLayout(current => current.top === top ? current : { top });
+    };
+    const schedule = () => { if (!queued) queued = window.requestAnimationFrame(measure); };
+    measure();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedule);
+    observer?.observe(document.body);
+    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, { passive: true });
+    return () => { if (queued) window.cancelAnimationFrame(queued); observer?.disconnect(); window.removeEventListener("resize", schedule); window.removeEventListener("scroll", schedule); };
+  }, []);
+  // The board sizes itself to `100dvh - --jb-top` (at least 560 px on wide), so a short window is taller than the
+  // frame: the frame scrolls on every width rather than clip the stage and the panel (review MINOR 7).
+  const style = { "--jb-top": `${layout.top}px`, position: "fixed", top: layout.top, left: 0, right: 0, bottom: 0, zIndex: 12, overflowX: "hidden", overflowY: "auto", overscrollBehavior: "contain", background: "var(--paper)" } as CSSProperties;
+  // Everything the frame paints over is out of reach (review B1): the page content laid out before the board in the
+  // page (a banner, a return chip, a covered heading's controls) goes `inert` while the board stands. Floating layers
+  // (a fixed workspace, a live region, a world sheet, a dialog) and the page's named focus target are left alone; the
+  // App's sheets come after the board in the page and draw above it (z 20+).
+  useLayoutEffect(() => {
+    const node = frame.current;
+    const page = node?.closest<HTMLElement>("[data-app-page]");
+    if (!node || !page) return;
+    const marked = new Set<HTMLElement>();
+    const floating = (el: HTMLElement) => el.id === "house-tool-title" || el.matches('[role="status"],[role="alert"],[aria-live],[data-world-sheet],[role="dialog"],[aria-modal="true"]')
+      || (typeof getComputedStyle === "function" && getComputedStyle(el).position === "fixed");
+    const apply = () => {
+      const keep = new Set<HTMLElement>();
+      for (let branch: HTMLElement | null = node; branch && branch !== page; branch = branch.parentElement) {
+        const parent: HTMLElement | null = branch.parentElement;
+        if (!parent) break;
+        for (const sibling of Array.from(parent.children)) {
+          if (sibling === branch) break;
+          if (!(sibling instanceof HTMLElement) || floating(sibling)) continue;
+          keep.add(sibling);
+          if (!sibling.hasAttribute("inert")) { sibling.setAttribute("inert", ""); marked.add(sibling); }
+        }
+      }
+      for (const el of [...marked]) if (!keep.has(el)) { el.removeAttribute("inert"); marked.delete(el); }
+    };
+    apply();
+    let queued = 0;
+    const observer = typeof MutationObserver === "undefined" ? null : new MutationObserver(() => { if (!queued) queued = window.requestAnimationFrame(() => { queued = 0; apply(); }); });
+    for (let branch: HTMLElement | null = node.parentElement; branch; branch = branch === page ? null : branch.parentElement) observer?.observe(branch, { childList: true });
+    return () => { if (queued) window.cancelAnimationFrame(queued); observer?.disconnect(); for (const el of marked) el.removeAttribute("inert"); };
+  }, []);
+  return <div ref={frame} className="journey-board-host" data-journey-board-host="" style={style}>{children}</div>;
+}
+/**
+ * The due review raised over the Journey Board (review B1): the `data-world-sheet` pattern (queen-home.css) inline, so it
+ * holds even where that stylesheet is not loaded — fixed, above the board's frame (z 12) and below the Compass (z 25),
+ * clear of the phone's bottom bar, scrolling inside itself.
+ */
+const DUE_SHEET_OVER_BOARD: CSSProperties = {
+  position: "fixed", left: 0, right: 0, bottom: "var(--mobile-bottom-clearance, 0px)", zIndex: 20, margin: "0 auto", maxWidth: 760,
+  maxHeight: "min(78dvh, calc(100dvh - 72px - var(--mobile-bottom-clearance, 0px)))", overflow: "auto", overscrollBehavior: "contain",
+};
 import { type JourneyDestination } from "./OnboardingJourney.tsx";
 import { GuidedSetupPreview } from "./GuidedSetupPreview.tsx";
 import { OnboardingCategories } from "./OnboardingCategories.tsx";
@@ -837,6 +929,15 @@ export function App() {
   /** The Campfire ritual (D3) and the weekly Sitdown. */
   const [campfire, setCampfire] = useState<{ beat?: CampfireBeat } | null>(null);
   const [weeklySitdownOpen, setWeeklySitdownOpen] = useState(false);
+  /**
+   * Journey Board (P2): an explicit "Enter Horizon here" — the harbour shows the Horizon and starts the body at the
+   * location. Cleared when the Journey route is active again. Nothing about it is financial or persisted.
+   */
+  /** "Enter Horizon here" (P2). `arrived` is set once Horizon has put the body there: a later remount then keeps the device's saved body. */
+  const [horizonRequest, setHorizonRequest] = useState<{ seq: number; location: HorizonLocation; arrived?: boolean } | null>(null);
+  /** The Era planner sheet opened from a Journey Board crossroads (the era row id), or null. */
+  const [eraPlannerFor, setEraPlannerFor] = useState<string | null>(null);
+  const eraPlannerOpener = useRef<HTMLElement | null>(null);
   /** The dock: the month the strip shows (null: this month) and whether the camp card is open. */
   const [stripMonth, setStripMonth] = useState<MonthKey | null>(null);
   const [campCardOpen, setCampCardOpen] = useState(false);
@@ -876,6 +977,7 @@ export function App() {
     setAdding(false);
   };
   const addSheetRef = useDialog(adding, pauseAdd);
+  const eraSheetRef = useDialog(eraPlannerFor !== null, () => closeEraPlanner(), () => eraPlannerOpener.current);
   useEffect(() => {
     if (!swipeStrip) return;
     const timer = window.setTimeout(() => setSwipeStrip(item=>item?.token.id===swipeStrip.token.id&&item.expiresAt===swipeStrip.expiresAt?null:item), Math.max(0,swipeStrip.expiresAt-Date.now()));
@@ -907,6 +1009,9 @@ export function App() {
   /** Over the Queen's world the due-reminders review rises as a sheet only when its arrival link is taken; on the ordinary page it stays inline. */
   const [dueSheetOpen, setDueSheetOpen] = useState(false);
   const [dueReviewActive, setDueReviewActive] = useState(false);
+  /** The Journey Board's "Review and record…" / "Repeating reminders": which occurrence the due sheet focuses, and who opened it. */
+  const [dueFocus, setDueFocus] = useState<{ recurrenceId: string; seq: number } | null>(null);
+  const dueSheetOpener = useRef<HTMLElement | null>(null);
   const [onboardingBooksOpen, setOnboardingBooksOpen] = useState(false);
   const [booksPaneRequest, setBooksPaneRequest] = useState<"fund" | "fund-register" | "wallet" | "opening" | "register" | `month:${string}` | null>(null);
   const [, setDismissedOnboardingCompletionDigest] = useState<string | null>(null);
@@ -959,6 +1064,8 @@ export function App() {
   const [playInitialArea,setPlayInitialArea]=useState<"dressing"|undefined>();
   const [hearthsideToolReturn,setHearthsideToolReturn]=useState<HearthsideToolReturn|null>(null);
   const [houseRoute,setHouseRoute]=useState<HouseRoute|null>(null);
+  // Journey Board (P2): back on the Journey route, the Horizon request is spent — the harbour's next visit is the Mountain again.
+  useEffect(()=>{if(houseRoute?.surface==="journey")setHorizonRequest(null);},[houseRoute?.surface]);
   useLayoutEffect(() => {
     if ((!HEARTHSIDE_FLAGS.presentation && !HOUSE_WORLD_ENABLED) || !household || !session || (!HOUSE_WORLD_ENABLED && session.view !== "household")) return;
     const locate = () => {
@@ -975,7 +1082,7 @@ export function App() {
         const identity:HouseIdentity={environment,householdId:household.householdId,memberId:session.memberId,scope:session.view};
         const saved=readHouseReturn(localStorage,identity);
         const legacy=parseHearthsideRoute(window.location.href,household.householdId);
-        const route=legacy&&session.view==="household"?houseRouteFromLife(legacy,session.view):harbourArrivalRoute({saved:saved?.route,scope:session.view,householdId:household.householdId,identity:houseIdentity(identity),session:tabSession()});
+        const route=legacy&&session.view==="household"?houseRouteFromLife(legacy,session.view):harbourArrivalRoute({saved:saved?.route,scope:session.view,householdId:household.householdId,identity:houseIdentity(identity),session:tabSession(),edition:readMotionEdition()==="flat"?"reading":"illustrated"});
         setHouseRoute(route);setTab(tabForHouseRoute(route));window.history.replaceState({hearthTab:tabForHouseRoute(route)},"",housePath(route));return;
       }
       const hearthside=parseHearthsideRoute(window.location.href, household.householdId);
@@ -7085,6 +7192,12 @@ export function App() {
   const activeHouseRoute=(HOUSE_WORLD_ENABLED&&houseRoute?.scope!==view?null:houseRoute)??houseRouteForTab(tab,household.householdId)??{room:"home",level:"middle",householdId:household.householdId};
   const activeHouseTool=houseToolPlace(activeHouseRoute);
   const houseToolsVisible = !HOUSE_WORLD_ENABLED || Boolean(activeHouseRoute.surface && activeHouseRoute.surface!=="queen");
+  /**
+   * D26 / SCALES §1: the household Journey (kitchen-table/above) is the Journey Board, the household's first screen.
+   * The tent's other levels (the Plan Studio below, the Work centre in the middle) keep OurPathWorld; Personal keeps
+   * the Plan Studio page; the flag off (local dev without VITE_HEARTH_HOUSE_WORLD) keeps OurPathWorld.
+   */
+  const journeyBoardShown = HOUSE_WORLD_ENABLED && view === "household" && tab === "plan" && Boolean(dashboard) && planSystemV2Enabled() && activeHouseTool.room === "kitchen-table" && activeHouseTool.level === "above";
   // Due reminders are an inline list until one occurrence's review sheet opens.
   // They must not silently disable the companion's ordinary help entry.
   const herculesReviewBlocked = Boolean(guard && (guard.kind !== "duePreview" || dueSheetOpen || dueReviewActive));
@@ -7192,6 +7305,14 @@ export function App() {
     setQuickSheetOpen(false);
     const panel = PANEL_HOSTS.has(place) ? place as PanelHost : null;
     setHostPanel(panel);
+    // A place picked in All tools is a Mountain place: an "Enter Horizon here" visit ends, so the harbour draws the
+    // Mountain again (D49: the Mountain square stays one tap away; review MINOR 1). The Mountain mounts on the place's
+    // own route, so the walk is a navigation rather than an event the Horizon would not hear.
+    if (horizonRequest && household && Object.hasOwn(VILLAGE_ADDRESS, place)) {
+      setHorizonRequest(null);
+      navigateHouseSurface({ householdId: household.householdId, scope: view, ...VILLAGE_ADDRESS[place as keyof typeof VILLAGE_ADDRESS] });
+      return;
+    }
     if (!keyboard || !panel) window.dispatchEvent(new CustomEvent(HARBOUR_GO_EVENT, { detail: { place } }));
   }
   /** The household's own words for All tools' search (§3.4): bills, accounts, Kitty Banks and members, from what this viewer already sees. */
@@ -7226,6 +7347,88 @@ export function App() {
   function markPaidFromPanel(recurrenceId: string) {
     setHostPanel(null);
     openRecordFlow("bill", undefined, undefined, recurrenceId);
+  }
+  /**
+   * The due reminders over the Journey Board (review B1 / M1): the SAME reviewed recurrence path as the inline due
+   * sheet (`dueOccurrenceReview` → its named Confirm → `postOneRecurrence`), raised above the board and focused on one
+   * occurrence when asked. Opening it records nothing. When no reminder review is up, the due rows are read again (an
+   * occurrence this person hid today is still shown when the board asks for it by name); another review in progress
+   * (a different guard) is never replaced.
+   */
+  function openDueReviewFromBoard(recurrenceId?: string) {
+    if (!household || !session) return;
+    const active = document.activeElement;
+    dueSheetOpener.current = active instanceof HTMLElement && active !== document.body ? active : null;
+    const hasRow = guard?.kind === "duePreview" && (!recurrenceId || guard.rows.some(row => row.recurrenceId === recurrenceId));
+    if (!hasRow) {
+      if (guard && guard.kind !== "duePreview") return;
+      const scoped = experience && experience.ok ? experience.scopedHousehold : household;
+      const rows = dueRecurrencePreview(scoped, today).filter(row => row.recurrenceId === recurrenceId || !dueOccurrenceHidden({ environment, householdId: household.householdId, memberId: session.memberId, view: session.view, today, recurrenceId: row.recurrenceId, occurrenceDate: row.nextDate }));
+      if (!rows.length) { openHouseObject("calendar"); return; }
+      setGuard({ kind: "duePreview", rows });
+    }
+    setDueFocus(recurrenceId ? { recurrenceId, seq: (dueFocus?.seq ?? 0) + 1 } : null);
+    setDueSheetOpen(true);
+    if (!recurrenceId) requestAnimationFrame(() => document.getElementById("due-reminders")?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true }));
+  }
+  function returnDueFocus() {
+    const opener = dueSheetOpener.current;
+    dueSheetOpener.current = null;
+    if (opener?.isConnected) requestAnimationFrame(() => opener.focus({ preventScroll: true }));
+  }
+  /** Put the due sheet down over the board (Escape): the reminders stay in "Needs attention"; focus goes back. */
+  function closeDueSheet() {
+    setDueSheetOpen(false);
+    setDueFocus(null);
+    returnDueFocus();
+  }
+  /** Due occurrences still waiting in the reminders (posted, hidden or moved-on rows drop out), for the board's summary. */
+  const dueReviewCount = journeyBoardShown && guard?.kind === "duePreview" && session ? guard.rows.filter(row => {
+    const recurrence = household.recurrences.find(item => item.id === row.recurrenceId);
+    return Boolean(recurrence?.active && recurrence.nextDate === row.nextDate)
+      && !dueOccurrenceHidden({ environment, householdId: household.householdId, memberId: session.memberId, view: session.view, today, recurrenceId: row.recurrenceId, occurrenceDate: row.nextDate });
+  }).length : 0;
+  /**
+   * The Journey Board's only way out (contracts `JourneyBoardActions`): every callback OPENS an existing surface, which
+   * keeps its own named Confirm. Nothing here posts, marks paid, completes, grants or moves the household.
+   * `openHomeBook` is added at the mount, through `JourneyHomeBookBridge`.
+   */
+  const journeyActions: Omit<JourneyBoardActions, "openHomeBook"> = {
+    // The App's own ledger rule for each verb (a shift is Mine; Bill paid is the bill ledger), as the one bar's Record.
+    openRecord: (mode, prefill) => openRecordFlow(mode, undefined, undefined, prefill?.recurrenceId),
+    openBillPaid: (recurrenceId) => openRecordFlow("bill", undefined, undefined, recurrenceId),
+    // Expected recurring pay and the due reminders: the reviewed recurrence path (review B1 / M1).
+    openDueReview: (recurrenceId) => openDueReviewFromBoard(recurrenceId),
+    openPlace: (target, object) => openAtlasTarget(target, object),
+    // The Campfire opens on the Chapter that is still open (`openChapterFor`); it takes no month (listed in the board's limitations).
+    openCampfire: () => setCampfire({}),
+    openWeeklySitdown: () => setWeeklySitdownOpen(true),
+    openEraPlanner: (eraId) => { const active = document.activeElement; eraPlannerOpener.current = active instanceof HTMLElement && active !== document.body ? active : null; setEraPlannerFor(eraId); },
+    openKitty: (goalId) => openHouseObject("loft-banks", `bank/goal:${goalId}`),
+    // The Calendar has no date focus today (N10): it opens on its current month.
+    openCalendar: () => openHouseObject("calendar"),
+    openBooks: (ref: BooksRef) => {
+      if (ref.kind === "fund") { openHouseObject("fund"); return; }
+      setBooksPaneRequest(ref.kind === "month" ? `month:${ref.monthKey}` : "register");
+      goTab("ledger");
+    },
+    // P2: the only hand-off to the detailed world. The request is set under the clouds with the navigation, so a
+    // passage already in flight never leaves a stale request behind; the board is told it did not start (MINOR 9).
+    enterHorizon: (location) => {
+      if (journeyCloud.clouds) return false;
+      journeyCloud.begin("to-harbour", () => {
+      setHorizonRequest({ seq: Date.now(), location });
+      navigateHouseSurface({householdId:household.householdId,scope:"household",room:"home",level:"middle",village:{place:"court"}});
+      });
+      return true;
+    },
+    back: () => putHouseObjectBack(),
+  };
+  function closeEraPlanner() {
+    setEraPlannerFor(null);
+    const opener = eraPlannerOpener.current;
+    eraPlannerOpener.current = null;
+    if (opener?.isConnected) requestAnimationFrame(() => opener.focus({ preventScroll: true }));
   }
   /** The one bar's Record (S1): the same FabSpeedDial wiring on the island's glass, the Desk's bar and the door edition. */
   const harbourBarFab: CompassFab = {closed:adding,actions:fabActionsFor(view,{memberHasJob}),closedLabel:fabClosedLabel(view),onOpenChange:setFabOpen,onPick:(nextMode)=>openRecordFlow(nextMode),onBillPaid:()=>openRecordFlow("bill")};
@@ -7464,13 +7667,15 @@ export function App() {
       {!harbourOwnsRoute(activeHouseRoute,view)&&householdSwitcherNode}
       {!harbourOwnsRoute(activeHouseRoute,view)&&spaceSwitchNode}
       {!HOUSE_WORLD_ENABLED&&HEARTHSIDE_FLAGS.presentation&&view==="household"&&<HouseShell route={activeHouseRoute} onNavigate={goHouse} condition={houseCondition}/>}
-      {HOUSE_WORLD_ENABLED&&(harbourOwnsRoute(activeHouseRoute,view)?<Suspense fallback={<HarbourFlat place={harbourPlaceFor(activeHouseRoute,view,true)??"court"} reading={null} status="loading"/>}><HarbourWorld key={`${environment}:${household.householdId}:${actorId}`} household={view==="personal"?(personalSource??household):household} memberId={actorId} scope={view} space={spaceForView(view)} onOpenMine={(kind,id)=>kind==="bank"?openHouseObject("loft-banks",id?`bank/${id}`:undefined):openHearthsideTool("planner",id?{kind:"task",id}:undefined,"Mine")} dock={harbourDock} toolsOpen={quickSheetOpen} panel={{host:hostPanel,extras:panelExtras,onClose:()=>setHostPanel(null),onOpen:(target,object)=>{setHostPanel(null);openAtlasTarget(target,object);},onRecord:()=>{setHostPanel(null);openRecordFlow("expense");},onMarkPaid:markPaidFromPanel,onTalk:()=>{setHostPanel(null);openLegacyHercules();}}} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onNavigateLocation={navigateHouseSurface} onWorldReady={()=>journeyCloud.ready("to-harbour")} onJourney={()=>journeyCloud.begin("to-journey",()=>goTab("plan",undefined,{route:{householdId:household.householdId,scope:"household",room:"kitchen-table",level:"above",surface:"journey",object:"harbour-return",time:harbourJourneyAnchor(household,today).date},history:"push"}))} onArrange={view==="household"?operation=>commitVillageArrangement(runKitchen,actorId,operation):undefined} onOpen={view==="personal"?openAtlasTarget:openHouseObject} onClose={putHouseObjectBack} presence={softPresenceDisplay} onUnhide={()=>applySoftPresenceOptOut(false)} partnerName={household.members.find(member=>member.id!==session.memberId)?.name??null} spaceSlot={spaceSwitchNode} onQuickSheet={()=>setQuickSheetOpen(true)} fab={charterTakeoverVisible?undefined:harbourBarFab}/></Suspense>:(!HARBOUR_ENABLED||view==="household")?<HouseWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onOpen={openHouseObject} onClose={putHouseObjectBack}/>:null)}
+      {HOUSE_WORLD_ENABLED&&(harbourOwnsRoute(activeHouseRoute,view)?<Suspense fallback={<HarbourFlat place={harbourPlaceFor(activeHouseRoute,view,true)??"court"} reading={null} status="loading"/>}><HarbourWorld key={`${environment}:${household.householdId}:${actorId}`} household={view==="personal"?(personalSource??household):household} memberId={actorId} scope={view} space={spaceForView(view)} onOpenMine={(kind,id)=>kind==="bank"?openHouseObject("loft-banks",id?`bank/${id}`:undefined):openHearthsideTool("planner",id?{kind:"task",id}:undefined,"Mine")} dock={harbourDock} toolsOpen={quickSheetOpen} panel={{host:hostPanel,extras:panelExtras,onClose:()=>setHostPanel(null),onOpen:(target,object)=>{setHostPanel(null);openAtlasTarget(target,object);},onRecord:()=>{setHostPanel(null);openRecordFlow("expense");},onMarkPaid:markPaidFromPanel,onTalk:()=>{setHostPanel(null);openLegacyHercules();}}} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onNavigateLocation={navigateHouseSurface} enterHorizonRequest={horizonRequest} onHorizonArrived={seq=>setHorizonRequest(current=>current&&current.seq===seq&&!current.arrived?{...current,arrived:true}:current)} onWorldReady={()=>journeyCloud.ready("to-harbour")} onJourney={()=>journeyCloud.begin("to-journey",()=>goTab("plan",undefined,{route:{householdId:household.householdId,scope:"household",room:"kitchen-table",level:"above",surface:"journey",object:"harbour-return",time:harbourJourneyAnchor(household,today).date},history:"push"}))} onArrange={view==="household"?operation=>commitVillageArrangement(runKitchen,actorId,operation):undefined} onOpen={view==="personal"?openAtlasTarget:openHouseObject} onClose={putHouseObjectBack} presence={softPresenceDisplay} onUnhide={()=>applySoftPresenceOptOut(false)} partnerName={household.members.find(member=>member.id!==session.memberId)?.name??null} spaceSlot={spaceSwitchNode} onQuickSheet={()=>setQuickSheetOpen(true)} fab={charterTakeoverVisible?undefined:harbourBarFab}/></Suspense>:journeyBoardShown?null:(!HARBOUR_ENABLED||view==="household")?<HouseWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onOpen={openHouseObject} onClose={putHouseObjectBack}/>:null)}
       <div data-app-page="true" data-house-resting={HOUSE_WORLD_ENABLED&&!houseToolsVisible&&!adding&&!swipeOpen&&!confirm&&!guard&&!commandOpen||undefined}>
-        {HOUSE_WORLD_ENABLED&&houseToolsVisible&&<header className="house-tool-heading"><h2 tabIndex={-1} id="house-tool-title">{TARGET_NAMES[activeHouseRoute.surface??""]??HOUSE_PLACES[activeHouseRoute.room][activeHouseRoute.level].title}</h2><button onClick={putHouseObjectBack}>Put it back</button></header>}
+        {HOUSE_WORLD_ENABLED&&houseToolsVisible&&!journeyBoardShown&&<header className="house-tool-heading"><h2 tabIndex={-1} id="house-tool-title">{TARGET_NAMES[activeHouseRoute.surface??""]??HOUSE_PLACES[activeHouseRoute.room][activeHouseRoute.level].title}</h2><button onClick={putHouseObjectBack}>Put it back</button></header>}
+        {/* The Journey Board stands full-bleed over the tool heading: the heading stays as the page's named focus target only. */}
+        {journeyBoardShown&&<h2 className="sr-only" tabIndex={-1} id="house-tool-title">{TARGET_NAMES[activeHouseRoute.surface??""]??HOUSE_PLACES[activeHouseRoute.room][activeHouseRoute.level].title}</h2>}
         <div className={hearthsideOpen ? "hearthside-page" : "world-page"}>
       {houseToolsVisible&&<>
       {!HOUSE_WORLD_ENABLED&&!hearthsideOpen && <PageWorld page={sceneTabFor(tab)} />}
-      {guard?.kind==='duePreview'&&<a className='due-arrival' href='#due-reminders' aria-expanded={queenWorldHome ? dueSheetOpen : undefined} onClick={event=>{event.preventDefault();if(queenWorldHome)setDueSheetOpen(true);requestAnimationFrame(()=>{const panel=document.getElementById('due-reminders');panel?.scrollIntoView({block:'start'});panel?.querySelector<HTMLElement>('h2')?.focus({preventScroll:true});});}}>Repeating reminders <span>Review →</span></a>}
+      {guard?.kind==='duePreview'&&!journeyBoardShown&&<a className='due-arrival' href='#due-reminders' aria-expanded={queenWorldHome ? dueSheetOpen : undefined} onClick={event=>{event.preventDefault();if(queenWorldHome)setDueSheetOpen(true);requestAnimationFrame(()=>{const panel=document.getElementById('due-reminders');panel?.scrollIntoView({block:'start'});panel?.querySelector<HTMLElement>('h2')?.focus({preventScroll:true});});}}>Repeating reminders <span>Review →</span></a>}
       {experience && experience.ok && showsLedgerPurposeBanner(presenceTab(tab)) ? (
         <LedgerPurposeBanner tab={presenceTab(tab)} view={view} label={experience.label} />
       ) : null}
@@ -7749,7 +7954,23 @@ export function App() {
             />
               );
               // D-262: the household Our Path is a world; the tent keeps today's page mounted so drafts survive.
-              return view === "household" ? (
+              // D26: the household Journey is the Journey Board (`journeyBoardShown`); OurPathWorld keeps the other levels.
+              return view === "household" ? journeyBoardShown ? (
+                <JourneyBoardFrame>
+                <Suspense fallback={<p role="status">Opening the Journey…</p>}>
+                <JourneyHomeBookBridge>{(openHomeBook) => (
+                <JourneyBoard household={household} memberId={actorId} environment={environment} today={today}
+                  theme={appearance.preview ?? appearance.saved.theme}
+                  actions={{ ...journeyActions, openHomeBook: (memberId) => { if (memberId === actorId) openHomeBook(); } }}
+                  focusDate={activeHouseRoute.time as import("./core/calendar.ts").DateKey | undefined}
+                  returningFromHorizon={activeHouseRoute.object === "harbour-return"}
+                  freshnessNote={sceneInterpretationGate.current ? null : sceneInterpretationGate.detail}
+                  dueReview={dueReviewCount > 0 ? { count: dueReviewCount } : null}
+                  onReady={() => journeyCloud.ready("to-journey")} />
+                )}</JourneyHomeBookBridge>
+                </Suspense>
+                </JourneyBoardFrame>
+              ) : (
                 <HouseholdBoardMedia household={household} memberId={actorId}>{(boardMedia) => (
                 <OurPathWorld key={ledgerRenderScopeKey} household={household} memberId={actorId} today={today} interpretationGate={sceneInterpretationGate} busy={busy} onCommand={runKitchen} journeyFocusDate={activeHouseRoute.time as import("./core/calendar.ts").DateKey | undefined} openWorldOnJourneySurface={activeHouseRoute.surface==="journey"&&activeHouseRoute.object==="harbour-return"} onWorldReady={()=>journeyCloud.ready("to-journey")} onExitJourney={() => navigateHouseSurface({householdId:household.householdId,scope:"household",room:"home",level:"middle",village:{place:"court"}})} onEnterHarbour={() => navigateHouseSurface({householdId:household.householdId,scope:"household",room:"home",level:"middle",village:{place:"court"}})} onZoomIntoHarbour={navigate=>journeyCloud.begin("to-harbour",navigate)} onOpenFund={() => goTab("ledger")}
                   houseSurface={(HEARTHSIDE_FLAGS.presentation||HOUSE_WORLD_ENABLED) && activeHouseTool.room==="kitchen-table" ? activeHouseTool.level==="below" ? "studio" : activeHouseTool.level==="middle" ? "work" : "journey" : undefined}
@@ -8950,10 +9171,15 @@ export function App() {
         />
       )}
       {guard?.kind === "duePreview" && (
-        <div className="due-preview-host" hidden={queenWorldHome && !dueSheetOpen} data-world-sheet={queenWorldHome ? "true" : undefined}>
+        // Over the Queen's world and over the Journey Board the review is a sheet (z 20, above the board's frame) that
+        // rises only when its entry is taken; on the ordinary page it stays inline.
+        <div className="due-preview-host" hidden={(queenWorldHome || journeyBoardShown) && !dueSheetOpen} data-world-sheet={queenWorldHome || journeyBoardShown ? "true" : undefined}
+          style={journeyBoardShown ? DUE_SHEET_OVER_BOARD : undefined}
+          onKeyDown={journeyBoardShown ? event => { if (event.key === "Escape" && !event.defaultPrevented) { event.stopPropagation(); closeDueSheet(); } } : undefined}>
         <DuePreviewSheet key={dueOpening} rows={guard.rows} household={household} memberId={actorId} view={view} today={today} busy={busy} isCurrent={dueIsCurrent}
+          focusRecurrence={journeyBoardShown ? dueFocus : null}
           onReviewActiveChange={setDueReviewActive}
-          onDismiss={()=>setGuard(null)}
+          onDismiss={()=>{setGuard(null);if(journeyBoardShown)returnDueFocus();}}
           onPost={async reviewed=>{let accepted=false;await run(current=>{const fresh=dueOccurrenceReview(current,reviewed.request);if(fresh.kind!=='ready'||fresh.basis!==reviewed.basis)throw new Error('This occurrence changed. Review its current details.');return postOneRecurrence(current,reviewed.request.recurrenceId,reviewed.request.today,{createdBy:actorId,dueReview:reviewed.request});},{isCurrent:dueIsCurrent,scopeIsCurrent:deskScopeIsCurrent,closeAdd:false,onAccepted:()=>{accepted=true;}});return accepted;}}
         />
         </div>
@@ -9505,6 +9731,20 @@ export function App() {
         onOpenTable={() => { setCampfire(null); openHouseObject("plan-studio"); }} /></Suspense>}
       {view === "household" && weeklySitdownOpen && <Suspense fallback={<p className="sr-only" role="status">Opening the Sitdown…</p>}><WeeklySitdown household={household} memberId={actorId} today={today} busy={busy}
         onCommand={runKitchen} onClose={() => setWeeklySitdownOpen(false)} onSharedHerculesReply={sharedHerculesReply} /></Suspense>}
+      {/* A Journey Board crossroads' "Continue in the Era planner…": the planner that owns both-agree era proposals, as a sheet. */}
+      {/* A modal (`useDialog`): focus moves in and is held, Escape closes, focus returns to the board's opener, and the
+          page, the board and the Compass behind it are inert while it is up (review MINOR 6). */}
+      {view === "household" && eraPlannerFor !== null && (
+        <div ref={eraSheetRef} className="sheet journey-era-sheet" role="dialog" aria-modal="true" aria-label="Era planner">
+          <div className="sheet-inner">
+            <Suspense fallback={<p role="status">Opening the Era planner…</p>}>
+            <EraPlanner household={household} memberId={actorId} today={today} busy={busy} eras={pathEras(household, today)} startEraId={eraPlannerFor}
+              run={async fn => { const outcome = await runKitchen(fn); return Boolean(outcome && typeof outcome === "object" && "ok" in outcome && outcome.ok === true); }}
+              onClose={closeEraPlanner} nameOf={id => household.members.find(member => member.id === id)?.name ?? "Either of us"} />
+            </Suspense>
+          </div>
+        </div>
+      )}
       {/* A24: what was just recorded, said once, after acceptance. */}
       <p className="sr-only" role="status" data-record-status="">{recordStatus}</p>
       {journeyCloud.clouds}

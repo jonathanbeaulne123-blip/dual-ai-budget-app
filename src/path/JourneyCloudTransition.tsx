@@ -23,7 +23,7 @@ export function useJourneyCloudTransition() {
   const begin = (direction: Direction, navigate: () => void) => {
     if (current.current) return;
     clear();
-    if (direction === "to-journey") window.requestAnimationFrame?.(() => { void import("./world/pathWorld3d.ts").catch(() => undefined); });
+    if (direction === "to-journey") window.requestAnimationFrame?.(() => { void import("../journey/ui/JourneyBoard.tsx").catch(() => undefined); });
     destinationReady.current = false;
     current.current = { direction, phase: "cover" };
     setPassage(current.current);
