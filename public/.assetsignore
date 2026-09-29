@@ -2,7 +2,7 @@
 # *parses* dist/_redirects if the file exists (error 100324), so the
 # build also deletes dist/ before Vite runs. This ignore is a backup.
 _redirects
-# Pass 1 review assets are served locally only while Horizon is dev-gated.
-# (R1-72: when Horizon ships, serve the chunked definition — world/<revision>.index.json.gz and
-# world/<revision>/<district>.json.gz — never the raw world/<revision>.json bake artefact, 27.7 MB > 25 MiB.)
-/horizon/**
+# The Horizon ships (D15, 2026-09-29): serve the chunked definition — world/<revision>.index.json.gz,
+# world/<revision>/<district>.json.gz, the terrain .bin, the cards and the Journey slim land — but never the
+# raw world/<revision>.json bake artefact (27.7 MB > Cloudflare's 25 MiB per-file limit; no runtime fetches it).
+/horizon/world/horizon-geo-*.json

@@ -47,7 +47,7 @@ import { useHarbourReading } from "./data/useHarbourReading.ts";
 import { HarbourFlat } from "./flat/PlaceFlat.tsx";
 import { DeskShell } from "./desk/DeskShell.tsx";
 import { HarbourTwins } from "./court/CourtTwins.tsx";
-import { HARBOUR_LANDMARKS, HARBOUR_PLACE_NAMES, harbourPlaceFor, harbourWayFor, type HarbourPlaceId } from "./flag.ts";
+import { HARBOUR_LANDMARKS, HORIZON_AVAILABLE, HARBOUR_PLACE_NAMES, harbourPlaceFor, harbourWayFor, type HarbourPlaceId } from "./flag.ts";
 import { HARBOUR_GO_EVENT } from "./nav/QuickSheet.tsx";
 import { HOUSE_LEVELS, HOUSE_ROOMS } from "../hearthside/houseRoutes.ts";
 import { classifyGesture, gestureAction, spark, type QueenAction, type QueenRegion, type QueenSpark } from "./court/queenTouch.ts";
@@ -222,7 +222,8 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const homeBook=useHomeBook();
   const world=useHarbourWorld();
   // Home Book visit and the Journey Board's "Enter Horizon" still force Horizon (product paths). Otherwise the DEV world toggle.
-  return homeBook?.visitRequested || world === "horizon" || props.enterHorizonRequest
+  // Every path needs the Horizon to be mountable here (development, or D15's live switch); otherwise the Mountain.
+  return HORIZON_AVAILABLE && (homeBook?.visitRequested || world === "horizon" || props.enterHorizonRequest)
     ? <HorizonEdition {...props} key="horizon"/>
     : <MountainHarbourWorld {...props} key="mountain"/>;
 }
