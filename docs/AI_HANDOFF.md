@@ -1,3 +1,11 @@
+## 2026-09-28 — Journey Board: the household Journey as a board over the baked Horizon land
+
+Branch `claude/journey-board` from `main@9fed600`, pushed with a PR to `main`; not merged, not deployed, not live verified. **Risk: Medium-High** — it changes the illustrated edition's default arrival and replaces the household Journey surface, adds an App door onto the Era planner, raises the due review over the board and touches `AddSlideshow` / `DuePreviewSheet`; no money meaning, arithmetic, command, schema, sync, Auth/RLS or Hercules payload change, and every write stays behind an existing named Confirm.
+- Budget (5): +1. Honest statuses on the home screen (expected ≠ confirmed, overdue ≠ paid), the due reminders first, and each stop opens its real tool — expected pay through the reviewed recurrence path.
+- Engagement (3): +2. A board over the real island: the piece on today, chapters, crossroads to preview, and an explicit "Enter Horizon here".
+- Verification: typecheck clean; 14 focused files / 199 tests pass; the medium-high quick gate is `quick-gate-failed; time-budget-breached` (760 s) with every serial failure followed up (environmental, missing headless shell, or timing-sensitive in this sandbox). axe 0 violations at 390/1100. Fictional demo data, headless SwiftShader only; no phone.
+- Details, limitations, next owner and the decisions owed (D49–D67): [the handoff](CLAUDE_JOURNEY_BOARD.md) · [evidence](evidence/journey-board/INDEX.md).
+
 ## 2026-09-27 — Offshore fleet and physically walkable yacht
 
 Local implementation is on `codex/offshore-fleet` in `.codex-work/offshore-fleet`, integrated with main `c82f9d7` (shared airborne parachute, C-camera and explicit fall Retry updates). The [fleet guide](briefs/OFFSHORE_FLEET_GUIDE.md) explains access, controls, usable spaces, galley anchors and limitations; the [worksession](worksessions/2026-09-27-offshore-fleet.md) records exact validation and next-owner gates. This is recreational local state with Budget delta 0. No deployment or hosted activation is implied.

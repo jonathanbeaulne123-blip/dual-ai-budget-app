@@ -91,6 +91,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [CLAUDE_DESKTOP_OFFICE.md](CLAUDE_DESKTOP_OFFICE.md) | Claude desktop-office prompt |
 | [CLAUDE_MOBILE_SHELL.md](CLAUDE_MOBILE_SHELL.md) | Shipped phone Home prompt/history |
 | [CLAUDE_OFFICE_UX.md](CLAUDE_OFFICE_UX.md) | Historical Office prompt |
+| [CLAUDE_JOURNEY_BOARD.md](CLAUDE_JOURNEY_BOARD.md) | **Claude, PR open (not merged):** the household Journey as a board over the baked Horizon land — handoff, where actions connect, verification, limitations, decisions D49–D67 |
 | [HEARTH_UI_THEME.md](HEARTH_UI_THEME.md) | **Living UI theme packet** — mobile C, desktop D, Hercules focus/wander, paper tile grammar (Jonathan 2026-08-25) |
 | [ux/2026-08-25-home-ux-report.md](ux/2026-08-25-home-ux-report.md) | UX audit + mockup index |
 | [briefs/CURSOR_UI_THEME_PACKET.md](briefs/CURSOR_UI_THEME_PACKET.md) | Paste-ready theme implementation slices for Cursor/other AIs |
