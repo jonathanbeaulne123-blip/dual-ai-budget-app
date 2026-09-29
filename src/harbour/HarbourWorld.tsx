@@ -218,12 +218,27 @@ const EMOTE_FACES: Readonly<Record<EmoteId, string>> = Object.freeze({
 const pulseFreshness = (gate: InterpretationGate | undefined): FundPulseFreshness => (gate?.freshness === "stale" || gate?.freshness === "offline" ? gate.freshness : "current");
 
 const HorizonWorld = lazy(() => import("./horizon/HorizonWorld.tsx"));
+/**
+ * Which shell stands for a route. Outdoors (the square, the island, the campfire) is the Horizon whenever it is chosen;
+ * indoors — the bank, the Loft, the Cellar, the Kitchen, the Atlas, the Library, the Glasshouse, the Kiln, the Cottage,
+ * the Boathouse — is the old world's 3D room with its old shell (Jonathan 2026-09-29, PR C): a Horizon door walks you
+ * into the room, and walking out (or "← The square") brings the Horizon back at that door. A Home Book visit and an
+ * unspent Journey Board "Enter Horizon here" still force the Horizon (product paths).
+ */
+export function harbourShellFor(input:{available:boolean;place:HarbourPlaceId;world:"horizon"|"mountain";
+  /** A Home Book visit not yet made (`pendingVisit`): the Horizon, wherever the route stands. */visit?:boolean;
+  /** A Home Book visit already made this session (`visitRequested`): keeps the Horizon outdoors only, never a room (PR #572 review). */visited?:boolean;
+  request?:{arrived?:boolean}|null}):"horizon"|"mountain"{
+  if(!input.available)return "mountain";
+  const indoors=input.place!=="court"&&input.place!=="campfire";
+  if(input.visit||input.request&&!input.request.arrived)return "horizon";
+  return !indoors&&(input.world==="horizon"||Boolean(input.visited)||Boolean(input.request))?"horizon":"mountain";
+}
 export default function HarbourWorld(props: HarbourWorldProps) {
   const homeBook=useHomeBook();
   const world=useHarbourWorld();
-  // Home Book visit and the Journey Board's "Enter Horizon" still force Horizon (product paths). Otherwise the DEV world toggle.
-  // Every path needs the Horizon to be mountable here (development, or D15's live switch); otherwise the Mountain.
-  return HORIZON_AVAILABLE && (homeBook?.visitRequested || world === "horizon" || props.enterHorizonRequest)
+  const shell=harbourShellFor({available:HORIZON_AVAILABLE,place:harbourPlaceFor(props.route,props.scope,true)??"court",world,visit:homeBook?.pendingVisit,visited:homeBook?.visitRequested,request:props.enterHorizonRequest});
+  return shell==="horizon"
     ? <HorizonEdition {...props} key="horizon"/>
     : <MountainHarbourWorld {...props} key="mountain"/>;
 }

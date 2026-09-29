@@ -1741,3 +1741,13 @@ Jonathan chose "the old Mountain skate", not the Horizon's board mover. Mountain
 - Source fence: `horizon/HorizonWorld.tsx` joins the local gameplay-storage list (skate progress; the same as `HarbourWorld.tsx`).
 
 Risk **Medium-High** (world runtime, input routing). Budget delta (5): **0**: no money path. Engagement delta (3): **+2**: the old skate returns inside the new world.
+
+### 2026-09-29 — Horizon doors into the old 3D rooms (PR C of three)
+
+Outdoors is the Horizon; indoors is the old world's room with its old shell. `harbourShellFor` (HarbourWorld.tsx) picks the shell per route: the square, the island and the campfire are the Horizon whenever it is chosen; the bank (with the Queen), Loft, Cellar, Kitchen, Atlas, Library, Glasshouse, Kiln, Cottage and Boathouse mount the old world's 3D room. A Home Book visit and an unspent Journey Board "Enter Horizon here" still force the Horizon; a spent one no longer holds a room hostage.
+
+- A Horizon door now walks you into the room (route without a surface) instead of opening a flat tool; tools open from the room's own objects, as they always did. The door saves the Horizon return body, so walking out or choosing "← The square" brings the Horizon back at that door.
+- "← The square" stands above the dock (`village.css`); it had been covered by the dock card since the dock arrived, and is now the way back to the Horizon.
+- Known cost: the old world still loads its island behind a room (it keeps the island standing for placed rooms). Not visible from inside; worth trimming later.
+
+Risk **Medium-High** (world routing). Budget delta (5): **0**: rooms read the books exactly as before; no money path changes. Engagement delta (3): **+2**: the old rooms are back behind Horizon doors.
