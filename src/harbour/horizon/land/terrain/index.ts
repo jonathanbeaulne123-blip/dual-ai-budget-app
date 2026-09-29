@@ -656,7 +656,10 @@ function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<
   // paved edge, then falling 1 : 1.5), whatever a pad, another bed's blend or the natural ground would leave there (the Drive
   // stood 0.7–2.6 over the ground at the upper street and the Tideline park; its edges hung over the dunes by the culvert).
   // Never over the sea floor or a basin (raiseForbidden), never above another bed's deck (the bed ceiling below).
-  if (height < bedded.roadFloor && !raiseForbidden(x, z) && bedded.roadFloor - baseHeight(x, z) <= ROAD_EMBANKMENT_MAX_FILL) height = bedded.roadFloor;
+  // The fill is measured against the ground the beds gave (before pads): a pad's blend or margin may not dig under a road's
+  // embankment (the plot terraces.1 pad pulled the ground 6.3 under V03's south lane), but a pad's own footprint (not its margin) is its floor, except a reserve plot's (in construction: the Mountain Road crosses
+  // plot terraces.1's corner 6.9 over it on its embankment).
+  if (height < bedded.roadFloor && !raiseForbidden(x, z) && bedded.roadFloor - ground <= ROAD_EMBANKMENT_MAX_FILL && !cuts.pads.some(p => !p.underground && !p.deck && p.kind !== 'reserve' && p.centre[1] < bedded.roadFloor - .5 && padDistance(p, x, z) <= -p.margin)) height = bedded.roadFloor;
   // A threshold or landing is a mark on the ground or a structure's deck, never
   // an earth mound: its fill is capped, and no pad raises the sea floor or tops the summit.
   if (height > ground) {

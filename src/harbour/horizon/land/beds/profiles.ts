@@ -208,12 +208,16 @@ export function hostSurface(b:BedCut,cuts:LandCuts):((p:XYZ)=>number)|undefined 
   return (p:XYZ)=>{
     let best:{h:number;rank:number}|undefined;
     for(const s of index.cells.get(`${Math.floor(p[0]/HOST_CELL)}:${Math.floor(p[2]/HOST_CELL)}`)??[]){
-      if(surfaceRank(s.bed)<=rank)continue;const dx=s.b[0]-s.a[0],dz=s.b[2]-s.a[2],l=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((p[0]-s.a[0])*dx+(p[2]-s.a[2])*dz)/l));
+      if(surfaceRank(s.bed)<=rank)continue;const dx=s.b[0]-s.a[0],dz=s.b[2]-s.a[2],l=dx*dx+dz*dz||1,t=((p[0]-s.a[0])*dx+(p[2]-s.a[2])*dz)/l;
+      // Only the segment whose span holds the point's foot (an end cap would read a host's closing segment far past its end).
+      if(t<-.02||t>1.02)continue;
       const d=Math.hypot(p[0]-s.a[0]-dx*t,p[2]-s.a[2]-dz*t);if(d>s.bed.width/2+s.bed.shoulder+HOST_APRON)continue;const h=s.a[1]+(s.b[1]-s.a[1])*t;if(Math.abs(h-p[1])>=.6)continue;
       const r=surfaceRank(s.bed);if(!best||r>best.rank||r===best.rank&&Math.abs(h-p[1])<Math.abs(best.h-p[1]))best={h,rank:r};}
     return best?best.h:p[1];
   };
 }
+/** road (L1): the deck corner test used by emitBedGeometry: the host's surface at the corner's plan point, measured against the
+ * bed's own height at the segment's point nearest the corner (the corner itself carries the bed's centreline height). */
 export function heightOnBeds(cuts:LandCuts,p:XY,base:HeightQuery,maxDistance=15):number {
   let distance=Infinity,height=base(...p);
   for(const b of cuts.beds){if(b.kind==='cable'||b.kind==='cave'||b.kind==='rail')continue;const n=nearestOnPath(p,b.points);if(n.distance<Math.min(distance,maxDistance)){distance=n.distance;height=n.at[1]!;}}

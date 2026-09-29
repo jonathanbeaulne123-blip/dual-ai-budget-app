@@ -630,7 +630,7 @@ function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
       if(onDeck||regionPlatform)cuts.solids=cuts.solids.filter(s=>s.id!==`${id}.slab`);}
     // road (L1): a threshold on a road's carriageway at the road's height (a dismount mark on the Green Road, the Bight spur) has
     // the road as its floor: no flat slab laid over the graded road (a 6 × 5 slab stood 0.2 proud of VG and VBS at one end).
-    else if(cuts.beds.some(b=>b.kind==='road'&&b.terrainCut&&!b.id.startsWith('structure.')&&(()=>{const n=nearestOnPath(p,b.points);return n.distance<b.width/2+b.shoulder&&Math.abs(n.at[1]-height)<.5;})())){cuts.solids=cuts.solids.filter(s=>s.id!==`${id}.slab`);pad.deck=true;pad.blend=0;}
+    if(cuts.beds.some(b=>b.kind==='road'&&b.terrainCut&&!b.id.startsWith('structure.')&&(()=>{const n=nearestOnPath(p,b.points);return n.distance<b.width/2+b.shoulder&&Math.abs(n.at[1]-height)<.5;})())){cuts.solids=cuts.solids.filter(s=>s.id!==`${id}.slab`);pad.deck=true;pad.blend=0;}
     // Integrator 4 (W7-S request 5): a manifest threshold that takes its bed's height (no authored height: skateLineStarts on
     // S1/S4) stands on that bed's own graded cut, which the bed makes anyway — built ground, not a pit. Authored heights and
     // register pads are still checked.
