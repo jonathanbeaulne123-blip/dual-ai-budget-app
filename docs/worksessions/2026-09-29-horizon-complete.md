@@ -1,14 +1,14 @@
 # Hearth worksession — Horizon in the old app
 
-- **Status:** LOCAL IMPLEMENTATION; NOT DEPLOYED
+- **Status:** DRAFT PR; NOT MERGED OR DEPLOYED
 - **Opened:** 2026-09-29 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `codex/horizon-complete`
 - **Baseline SHA:** `e6ee1b0a220af420699ab3b24609d10d80a2b07a` (`origin/main`, checked 2026-09-29)
-- **Head SHA:** pending integration commit (source commits `d16bc51`, `366443e`)
-- **PR or issue:** pending
+- **Integration SHA:** `c6bfacf` (source commits `d16bc51`, `366443e`; this record has a later documentation commit)
+- **PR or issue:** #573 (draft)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** none until separately authorized release
@@ -68,4 +68,4 @@ The broad local gate verifies code and many contracts, but visual and physical-d
 
 ## Handoff
 
-Codex owns the local branch and review artifact. Jonathan decides on a Development release after reviewing local and device evidence. No merge or deployment is authorized by this worksession.
+Codex owns the branch and draft PR #573. Jonathan decides on a Development release after reviewing local and device evidence. No merge or deployment is authorized by this worksession.
