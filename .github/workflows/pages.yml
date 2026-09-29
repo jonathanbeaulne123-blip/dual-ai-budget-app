@@ -66,6 +66,8 @@ jobs:
           VITE_PLAN_SYSTEM_V2: ${{ inputs.plan_system_v2 || '1' }}
           VITE_HEARTH_HOUSE_WORLD: "1"
           VITE_HEARTH_HARBOUR: "1"
+          # D15 (Jonathan, 2026-09-29): the Horizon is the world for everyone. Set to "0" and redeploy to return to the Mountain.
+          VITE_HEARTH_HORIZON: "1"
           VITE_QUEENS_NEST: ${{ vars.VITE_QUEENS_NEST || '1' }}
           VITE_FUND_MODEL_V2: "1"
           VITE_CELLAR_V3: "1"
