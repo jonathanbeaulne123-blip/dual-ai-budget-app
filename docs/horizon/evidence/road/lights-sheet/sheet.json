@@ -1,0 +1,251 @@
+{
+ "records": [
+  {
+   "file": "sheet_town_night-22-30.png",
+   "label": "night-22-30",
+   "elevation": -15,
+   "stats": {
+    "k": 1,
+    "linesOn": 1,
+    "lines": 1,
+    "roadLamps": 12,
+    "anchors": 0,
+    "cap": 160,
+    "roadCards": 12,
+    "anchorCards": 0,
+    "cards": 12,
+    "pointLights": 6,
+    "pointLightsLit": 5,
+    "pointAssigned": [
+     "sheet.lamp.1",
+     "sheet.lamp.2",
+     "sheet.lamp.0",
+     "sheet.lamp.3",
+     "sheet.lamp.4",
+     null
+    ],
+    "poolTriangles": 1232,
+    "conformedPools": 11
+   },
+   "harbour": {
+    "lightCards": 114,
+    "roadLights": {
+     "k": 1,
+     "linesOn": 0,
+     "lines": 0,
+     "roadLamps": 0,
+     "anchors": 114,
+     "cap": 160,
+     "roadCards": 0,
+     "anchorCards": 114,
+     "cards": 114,
+     "pointLights": 0,
+     "pointLightsLit": 0,
+     "pointAssigned": [],
+     "poolTriangles": 0,
+     "conformedPools": 0
+    },
+    "draw": {
+     "at": 9154.6,
+     "calls": 65,
+     "triangles": 106526,
+     "resident": 3
+    }
+   }
+  },
+  {
+   "file": "sheet_town_dusk-sequence-1-2s.png",
+   "label": "dusk-sequence-1-2s",
+   "elevation": -7,
+   "stats": {
+    "k": 1,
+    "linesOn": 1,
+    "lines": 1,
+    "roadLamps": 12,
+    "anchors": 0,
+    "cap": 160,
+    "roadCards": 12,
+    "anchorCards": 0,
+    "cards": 12,
+    "pointLights": 6,
+    "pointLightsLit": 3,
+    "pointAssigned": [
+     "sheet.lamp.0",
+     "sheet.lamp.1",
+     "sheet.lamp.2",
+     null,
+     null,
+     null
+    ],
+    "poolTriangles": 1232,
+    "conformedPools": 11
+   },
+   "harbour": {
+    "lightCards": 114,
+    "roadLights": {
+     "k": 1,
+     "linesOn": 0,
+     "lines": 0,
+     "roadLamps": 0,
+     "anchors": 114,
+     "cap": 160,
+     "roadCards": 0,
+     "anchorCards": 114,
+     "cards": 114,
+     "pointLights": 0,
+     "pointLightsLit": 0,
+     "pointAssigned": [],
+     "poolTriangles": 0,
+     "conformedPools": 0
+    },
+    "draw": {
+     "at": 13671.1,
+     "calls": 65,
+     "triangles": 106526,
+     "resident": 3
+    }
+   }
+  },
+  {
+   "file": "sheet_town_day-13-00.png",
+   "label": "day-13-00",
+   "elevation": 60,
+   "stats": {
+    "k": 0,
+    "linesOn": 0,
+    "lines": 1,
+    "roadLamps": 12,
+    "anchors": 0,
+    "cap": 160,
+    "roadCards": 12,
+    "anchorCards": 0,
+    "cards": 12,
+    "pointLights": 6,
+    "pointLightsLit": 0,
+    "pointAssigned": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "poolTriangles": 1232,
+    "conformedPools": 11
+   },
+   "harbour": {
+    "lightCards": 0,
+    "roadLights": {
+     "k": 0.3499999999999983,
+     "linesOn": 0,
+     "lines": 0,
+     "roadLamps": 0,
+     "anchors": 114,
+     "cap": 160,
+     "roadCards": 0,
+     "anchorCards": 0,
+     "cards": 0,
+     "pointLights": 0,
+     "pointLightsLit": 0,
+     "pointAssigned": [],
+     "poolTriangles": 0,
+     "conformedPools": 0
+    },
+    "draw": {
+     "at": 27970.5,
+     "calls": 59,
+     "triangles": 66874,
+     "resident": 3
+    }
+   }
+  },
+  {
+   "inspector": {
+    "time": "2026-09-29T08:38:00.075Z",
+    "clock": "2026-06-21T17:00:00.000Z",
+    "sha": "67b469f32c5e28e0e532d2775585dc5bfa4a869c",
+    "tier": "full",
+    "position": {
+     "x": 1364.51,
+     "y": 14.02,
+     "z": 1200.02
+    },
+    "heading": {
+     "degrees": 356.3,
+     "compass": "N"
+    },
+    "mode": "look",
+    "perspective": "activity",
+    "mover": "feet",
+    "speed": null,
+    "grounded": null,
+    "surface": {
+     "id": "V01.bed.reach@reach",
+     "kind": "solid",
+     "role": "deck",
+     "solidKind": "bed",
+     "material": "paved",
+     "y": 13.72,
+     "slope": 3.98
+    },
+    "station": {
+     "none": "no corridor"
+    },
+    "frame": {
+     "p50": 1533.3,
+     "p95": 3383.1,
+     "samples": 15
+    },
+    "render": {
+     "calls": 59,
+     "triangles": 66874
+    },
+    "resident": {
+     "count": 3,
+     "ids": [
+      "harbour",
+      "notch",
+      "reach"
+     ]
+    },
+    "lights": {
+     "k": 0.23329999999999756,
+     "linesOn": 0,
+     "lines": 0,
+     "roadLamps": 0,
+     "anchors": 114,
+     "cap": 160,
+     "roadCards": 0,
+     "anchorCards": 0,
+     "cards": 0,
+     "pointLights": 0,
+     "pointLightsLit": 0,
+     "pointAssigned": [],
+     "poolTriangles": 0,
+     "conformedPools": 0
+    },
+    "blocker": {
+     "walk": null,
+     "contact": null
+    }
+   }
+  },
+  {
+   "overlay": {
+    "open": true,
+    "rect": {
+     "x": 8,
+     "y": 256,
+     "w": 304,
+     "h": 218.84375
+    },
+    "text": "InspectorAnnounceCopyClosepos 1364.5 14.02 1200.0 · 356° N\nlook · activity · feet\nunder V01.bed.reach@reach (deck/paved) y 13.72 4°\nno corridor\nframe p50 1533.3 p95 3449.8 ms · 52 calls 62k tris\ndistricts 3 · lights 0 cards, 0/0 point, k 0.00\nblocker noneCopied snapshot 1.",
+    "log": 1,
+    "closedByEscape": true
+   }
+  }
+ ],
+ "errors": [
+  "Failed to load resource: the server responded with a status of 404 (Not Found)"
+ ]
+}
