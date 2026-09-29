@@ -29,7 +29,11 @@ export type HorizonStageProps={homePlotId?:string;homeLayout?:HomeLayout;homeDis
   /** The world could not open (assets, chunk or runtime import): the host swaps in a working world. */
   onFailed?:(message:string)=>void;
   /** The mover state as the stage polls it (riding, airborne…), for the shell's own controls. */
-  onMover?:(mover:HorizonMoverState|null)=>void};
+  onMover?:(mover:HorizonMoverState|null)=>void;
+  /** The old skate's HUD frames (the shell renders SkateHUD and saves progress). */
+  onSkate?:HorizonOptions['onSkate'];
+  /** The old skate is riding: the stage names the skate's keys instead of the walking ones (PR #571 review). */
+  skating?:boolean};
 /** Reduced motion is live: the app's prop (useComfort), the system setting or Hearth's own comfort choice (`data-motion`, written by `theme/comfort.ts`). */
 const readReducedMotion=(props?:Pick<HorizonStageProps,'reducedMotion'>)=>props?.reducedMotion===true||appReducedMotion();
 /** Calm view is the comfort module's Quiet choice: the app's prop, else `data-quiet` as applied by `applyComfort`. */
@@ -37,6 +41,8 @@ const readCalm=(props?:Pick<HorizonStageProps,'calm'>)=>props?.calm??appCalm();
 /** A vehicle-to-vehicle hand-off (the plane's Jump) is a 0.5 s hold, so a stray tap does nothing (FLIGHT.md §3.1). */
 const HOLD_MS=(HORIZON_MANIFEST.carriedThresholds.find(threshold=>threshold.id==='bailOut')?.hold_s??.5)*1000;
 const offerKey=(o:ThresholdOffer)=>`${o.thresholdId}:${o.from}:${o.to}`;
+/** The old shell's words for the stage while skating (HarbourWorld.tsx). */
+export const SKATE_STAGE_WORDS='Skate the Harbour. W pushes, A turns left, D turns right, S brakes. Hold Space and release to jump farther. Press and hold Space again in the air to drift toward a nearby rail or wall ride surface. In the air after a Space jump, the arrows do board tricks; tap W for a backflip, S for a frontflip, and hold A or D to spin. Hold the down arrow and flick up to ollie, flick to a corner to flip. Q and E grab, G locks onto rails, M manuals, R returns to your marker, P pauses, B walks.';
 export const WALK_STATUS='Drag to look. Walk with W A S D, Space jumps; E opens a nearby door.';
 export const RIDE_PAUSED_STATUS='The ride waits where you left it. Choose Walk to ride on.';
 export function statusTextFor({riding,offerLabel,paused,flight,cable}:{riding:boolean;offerLabel?:string|null;paused?:boolean;flight?:boolean;cable?:'gondola'|'funicular'|null}):string{
@@ -60,7 +66,7 @@ export default function HorizonStage(props:HorizonStageProps){
   const [boatActions,setBoatActions]=useState<FleetAction[]>([]),[fleetState,setFleetState]=useState<ReturnType<HorizonRuntime['fleetState']>|null>(null);
   const [tier]=useState<'full'|'lite'>(()=>new URLSearchParams(location.search).get('tier')==='lite'||matchMedia('(max-width: 600px)').matches?'lite':'full');
   useEffect(()=>{const controller=new AbortController();let current:HorizonRuntime|null=null,unregister:(()=>void)|null=null;
-    const options:HorizonOptions={homePlotId:latest.current.homePlotId,homeLayout:latest.current.homeLayout,onHomeBook:()=>latest.current.onHomeBook?.(),onHomeWorkspace:t=>latest.current.onHomeWorkspace?.(t),tier,cruiserSkin:skin,fleetStorageKey:latest.current.fleetStorageKey,kitchenStorageKey:latest.current.kitchenStorageKey,theme:latest.current.theme,hideBuildings:HARBOUR_DEV&&new URLSearchParams(location.search).get('hideBuildings')==='1',signal:controller.signal,reducedMotion:readReducedMotion(latest.current),calm:readCalm(latest.current),onDoor:(h,b)=>latest.current.onDoor?.(h,b),onStatus:setStatus,initialBody:latest.current.initialBody,partner:()=>latest.current.partner??null};
+    const options:HorizonOptions={homePlotId:latest.current.homePlotId,homeLayout:latest.current.homeLayout,onHomeBook:()=>latest.current.onHomeBook?.(),onHomeWorkspace:t=>latest.current.onHomeWorkspace?.(t),tier,cruiserSkin:skin,fleetStorageKey:latest.current.fleetStorageKey,kitchenStorageKey:latest.current.kitchenStorageKey,theme:latest.current.theme,hideBuildings:HARBOUR_DEV&&new URLSearchParams(location.search).get('hideBuildings')==='1',signal:controller.signal,reducedMotion:readReducedMotion(latest.current),calm:readCalm(latest.current),onDoor:(h,b)=>latest.current.onDoor?.(h,b),onStatus:setStatus,initialBody:latest.current.initialBody,partner:()=>latest.current.partner??null,onSkate:frame=>latest.current.onSkate?.(frame)};
     // The movers (M6: the glider and the parachute) register on the runtime as soon as it exists.
     // The world is owned the moment it exists, so the effect's cleanup disposes it even if the glider import then fails (PR #570 review).
     import('../scene/worldMount.ts').then(m=>m.mountHorizonWorld(stage.current!,options)).then(async world=>{
@@ -148,7 +154,7 @@ export default function HorizonStage(props:HorizonStageProps){
     if(kind==='move')runtime.current?.input({forward:-y,strafe:x});else runtime.current?.look(-x*.08,-y*.06);
   }
   return <section className={`horizon-shell horizon-shell--${props.theme??'classic'} ${props.review?'horizon-shell--review':''} ${kitchenActive?'horizon-shell--kitchen':''} ${props.shell?'horizon-shell--in-shell':''}`} aria-label={props.shell?'The Horizon':'Horizon land review'}>
-    <div ref={stage} className="horizon-stage" tabIndex={props.paused?-1:0} aria-label={kitchenActive?"Yacht Kitchen. WASD or arrows moves, E picks up and places, F prepares, R tosses, Q changes ingredient, Escape pauses, C changes the solo camera.":mover?.mode==='cruiser'?"Cruiser. W accelerates, S brakes; release and press S again to reverse. A D steer. Space hops; press again airborne to open the parachute. V gets off, C changes view, R recovers. Drag to look.":"Horizon. Drag to look. W A S D moves, Space jumps or brakes a boat, E interacts, C changes view. V rides the cruiser."} />
+    <div ref={stage} className="horizon-stage" tabIndex={props.paused?-1:0} aria-label={props.skating?SKATE_STAGE_WORDS:kitchenActive?"Yacht Kitchen. WASD or arrows moves, E picks up and places, F prepares, R tosses, Q changes ingredient, Escape pauses, C changes the solo camera.":mover?.mode==='cruiser'?"Cruiser. W accelerates, S brakes; release and press S again to reverse. A D steer. Space hops; press again airborne to open the parachute. V gets off, C changes view, R recovers. Drag to look.":"Horizon. Drag to look. W A S D moves, Space jumps or brakes a boat, E interacts, C changes view. V rides the cruiser."} />
     {!kitchenActive&&!props.paused&&ready&&mode==='walk'&&(!mover?.attached||isCraft(mover.mode))&&(!props.shell||boatActions.length>0||Boolean(mover&&isCraft(mover.mode))||fleetState?.swimming===true)&&<div className="horizon-fleet" role="group" aria-label="Boating and yacht">
       <div className="horizon-fleet__heading"><strong>{mover&&isCraft(mover.mode)?mover.mode==='yacht'?'Yacht helm':mover.mode:fleetState?.swimming?'Swimming':'Offshore fleet'}</strong><button onClick={()=>{runtime.current?.cycleCamera();stage.current?.focus();}}>Camera · C</button></div>
       {mover&&isCraft(mover.mode)?<p>{(mover.hud as {pace?:string})?.pace} · {mover.mode==='yacht'?(fleetState?.vessels.find(v=>v.id==='yacht')?.anchor?'Anchor down':'Anchor raised'):'Hold W to go; S slows and reverses.'}</p>:<p>{fleetState?.swimming?'Swim with the movement pad or W A S D. The yacht ladder is at the stern.':'Kayak, dinghy and motorboat: east side of the float dock. The yacht is offshore to the southeast.'}</p>}
