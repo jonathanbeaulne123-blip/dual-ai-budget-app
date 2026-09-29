@@ -124,30 +124,50 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
   },[softPeer,peer.memberId,household.members,props.partnerName]);
   const here=harbourPlaceFor(route,scope,true)??'court';
   /** Walk the body to a harbour place along the Horizon's paths (All tools › Places, a panel's Visit, the room bar). */
+  const lastHere=useRef(here);
+  const [notice,setNotice]=useState('');
   const walkToPlace=useCallback((place:HarbourPlaceId)=>{
     const world=runtime.current;if(!world)return false;
     const at=horizonPlaceTarget(world.world,place);if(!at)return false;
-    world.setMode('walk');const plan=world.walkTo(at);setTravelTo(plan?place:null);world.emote(null);return Boolean(plan);
+    // A ride owns the body (PR #570 review): refuse, and say so, rather than queue a walk the ride would never take.
+    const riding=world.moverState();if(riding.attached||riding.airborne){setTravelTo(null);setNotice('Park the ride first, then choose where to go.');return false;}
+    world.setMode('walk');const plan=world.walkTo(at);setTravelTo(plan?place:null);setNotice(plan?'':'That path is blocked. Choose another way.');world.emote(null);return Boolean(plan);
   },[]);
-  // Arrival ends "travelling" (the room bar's word for it).
+  useEffect(()=>{if(!notice)return;const id=window.setTimeout(()=>setNotice(''),4000);return()=>window.clearTimeout(id);},[notice]);
+  // Arrival ends "travelling" (the room bar's word for it) and makes the place the current one, as the old shell's
+  // Places did by navigating there (PR #570 review). A walk the person abandons ends without moving the route.
+  const routeRef=useRef(route);routeRef.current=route;
   useEffect(()=>{
     if(!travelTo)return;
-    const id=window.setInterval(()=>{const world=runtime.current,b=world?.body(),at=world&&horizonPlaceTarget(world.world,travelTo);if(!b||!at||Math.hypot(b.x-at[0],b.z-at[2])<3)setTravelTo(null);},500);
+    const id=window.setInterval(()=>{
+      const world=runtime.current,b=world?.body(),at=world&&horizonPlaceTarget(world.world,travelTo);
+      if(!world||!b||!at){setTravelTo(null);return;}
+      if(Math.hypot(b.x-at[0],b.z-at[2])<3){
+        setTravelTo(null);
+        if(harbourPlaceFor(routeRef.current,scope,true)!==travelTo&&props.onNavigateLocation){lastHere.current=travelTo;props.onNavigateLocation({...routeRef.current,...VILLAGE_ADDRESS[travelTo],surface:undefined,object:undefined});}
+      }else if(!world.routing())setTravelTo(null);
+    },500);
     return()=>window.clearInterval(id);
-  },[travelTo]);
+  },[travelTo]); // eslint-disable-line react-hooks/exhaustive-deps
   // All tools › Places (App `openPlacePanel`) and the QuickSheet dispatch this: on the Horizon it is a walk.
   useEffect(()=>{
     const go=(event:Event)=>{const place=(event as CustomEvent<{place?:string}>).detail?.place;if(place&&Object.hasOwn(VILLAGE_ADDRESS,place))walkToPlace(place as HarbourPlaceId);};
     window.addEventListener(HARBOUR_GO_EVENT,go);return()=>window.removeEventListener(HARBOUR_GO_EVENT,go);
   },[walkToPlace]);
   // A route to another harbour place (the room bar, Compass) walks there; the first route is where the saved body is.
-  const lastHere=useRef(here);
-  useEffect(()=>{if(lastHere.current===here)return;lastHere.current=here;if(!toolOpen)walkToPlace(here);},[here,toolOpen,walkToPlace]);
+  // Only a walk actually started moves the marker, so a place chosen while a tool was open is walked to once it closes.
+  useEffect(()=>{if(lastHere.current===here||toolOpen)return;lastHere.current=here;walkToPlace(here);},[here,toolOpen,walkToPlace]);
   /** "Step in" on a panel: through that host's door, which opens its tool as a Horizon door always has. */
   function stepIn(place:string){const world=runtime.current,host=world&&horizonHostFor(world.world,place);if(host&&world?.enterDoor(host.id))return;if(Object.hasOwn(VILLAGE_ADDRESS,place))walkToPlace(place as HarbourPlaceId);}
   function focusStage(){(document.querySelector('.horizon-stage') as HTMLElement|null)?.focus({preventScroll:true});}
   function doEmote(id:EmoteId){runtime.current?.emote(id);setEmotesOpen(false);focusStage();}
-  const lite=typeof window.matchMedia==='function'&&window.matchMedia('(max-width: 600px)').matches;
+  // The phone branch is below 720px (AGENTS.md), so the glass is lite there.
+  const lite=typeof window.matchMedia==='function'&&window.matchMedia('(max-width: 719px)').matches;
+  // The emote row's 1–6 shortcuts, as on the Mountain (the row shows them).
+  useEffect(()=>{
+    const key=(event:KeyboardEvent)=>{const slot=EMOTE_IDS[Number(event.key)-1];if(!slot||event.repeat||event.metaKey||event.ctrlKey||event.altKey)return;const stage=document.querySelector('.horizon-stage');if(!stage||document.activeElement!==stage)return;doEmote(slot);event.preventDefault();};
+    window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);
+  });
   const dock=props.dock&&!toolOpen?<Dock {...props.dock} calm={comfort.quiet} lite={lite} night={glassNight} cameraMoving={false}/>:undefined;
   const presence=<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={peer.walk} walkName={peer.walk?partnerName:null} worldUnavailable={peer.unavailable} soft={softPeer} here={here} placeName={HARBOUR_PLACE_NAMES[here]} softPresenceOptedOut={props.presence?.optedOut===true} onUnhide={props.onUnhide} hasPartner={Boolean(softPeer||props.partnerName||peer.memberId)}/>;
   return <section data-harbour-space={space} data-harbour-world="horizon" className={`harbour-world harbour-world--${theme} harbour-world--horizon${toolOpen?' has-open-object':''}`} data-world-status={worldReady?'ready':'loading'} data-world-scope={scope} data-harbour-place={here} data-harbour-tier={lite?'lite':'full'} data-horizon-riding={riding?'':undefined} aria-label={HARBOUR_PLACE_NAMES[here]}>
@@ -166,6 +186,7 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
         </div>}
         <div className="harbour-moves__row">{touch&&<><button type="button" className="harbour-moves__key" onPointerDown={event=>event.stopPropagation()} onClick={()=>{runtime.current?.jump();focusStage();}}>Jump</button><button type="button" className="harbour-moves__key" onPointerDown={event=>event.stopPropagation()} onClick={()=>{runtime.current?.accept();focusStage();}}>Interact</button></>}{mover?.stowed&&<button type="button" className="harbour-moves__key" onPointerDown={event=>event.stopPropagation()} onClick={()=>{runtime.current?.resumeEquipment();focusStage();}}>Ride {mover.stowed}</button>}<button type="button" className="harbour-moves__key" aria-keyshortcuts="V" onPointerDown={event=>event.stopPropagation()} onClick={()=>{runtime.current?.toggleCruiser();focusStage();}}>Ride</button><button type="button" className="harbour-moves__key" aria-pressed={emotesOpen} onPointerDown={event=>event.stopPropagation()} onClick={()=>setEmotesOpen(open=>!open)}>Emote</button></div>
       </div>}
+      <p className="harbour-world__phrase" role="status" aria-live="polite">{notice}</p>
       {statusLine&&<small className="harbour-world__supported" role="status">{statusLine}</small>}
       {!props.ready&&worldReady&&<small className="harbour-world__checking" role="status">Checking the books · {props.freshness}</small>}
     </div>

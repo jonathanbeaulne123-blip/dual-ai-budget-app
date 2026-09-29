@@ -86,3 +86,5 @@
 .horizon-shell--in-shell .horizon-fleet{position:fixed;top:calc(max(12px,env(safe-area-inset-top)) + 196px);right:120px;max-height:40%}
 @media(max-width:719px){.horizon-shell--in-shell .horizon-fleet{top:calc(max(12px,env(safe-area-inset-top)) + 236px);right:.5rem;left:.5rem}}
 .horizon-shell--in-shell .horizon-offer{bottom:calc(var(--dock-height,0px) + 64px + env(safe-area-inset-bottom,0px))}
+/* The in-shell stage is sized by the old shell's stage, not the viewport (PR #570 review: the canvas overflowed on phones). */
+.app[data-harbour-court] .harbour-world--horizon .horizon-shell,.harbour-world--horizon .horizon-shell{height:100%;min-height:0}
