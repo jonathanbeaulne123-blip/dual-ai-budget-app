@@ -2,9 +2,9 @@
 
 Driver's-eye audit of the committed bake with the real cruiser sim (`stepCruiser`, CRUISER.dt = 1/120 s). Read-only: nothing under `src/` or `public/` was changed.
 
-- Command: `node scripts/horizon/road-audit.mjs --out docs/horizon/evidence/road/audit-after --title after` (from `/home/claude/dual-ai-budget-app`)
-- Checkout: `51477128a4ffa34b1b2de2ff55ba0adfbf404063`; world `public/horizon/world/horizon-geo-1.json.gz` sha256 `bf5aa43723447c62…`, terrain sha256 `7fbbe1bae4867b07…` (horizon-geo-1)
-- Wall-clock: **62.6 s** on 2 CPUs (v22.22.2); generated 2026-09-29T18:15:14.602Z
+- Command: `node scripts/horizon/road-audit.mjs --out docs/horizon/evidence/road/audit-after --title after` (from the repo root)
+- Checkout: `6e30a3a9bf1b83e0fb9a4d79dd1f2fc4199cdf83`; world `public/horizon/world/horizon-geo-1.json.gz` sha256 `6c3ce551b69ca2c9…`, terrain sha256 `7fbbe1bae4867b07…` (horizon-geo-1)
+- Wall-clock: **58 s** on 2 CPUs (v22.22.2); generated 2026-09-29T21:01:08.320Z
 - Roads: V01, VG, VBS, V03, spur upperStreet, spur library, spur glasshouse, spur studio, spur cottage, spur boathouse, plot.terraces.1.service, plot.terraces.2.service, plot.terraces.3.service, plot.bight.1.service, plot.bight.2.service, plot.bight.3.service, plot.bight.4.service
 
 ## Method
@@ -14,7 +14,7 @@ Driver's-eye audit of the committed bake with the real cruiser sim (`stepCruiser
 - **Static** (every 2 m station, no driving): *lateral scan* both sides in 0.25 m steps from the centreline at the deck height — `geography.contact` (r 0.2) at the rider's body band, surface continuity (±0.5 m), water, > 40°, or no ground; a transverse crack between segment prisms (deck continues 0.15 m either side along the road, or within 0.6 m further out) is stepped over, not an edge → usable width, drop depth beyond the first edge. *Missing guard* = a drop > 1.25 m that starts within the bed edge + 1.5 m with no rail/wall stopping the scan first (drops further out are listed as MINOR `verge-drop`). *Unguarded step* = 0.5–1.25 m drop at the edge. *Buried* = visible terrain above the deck at five points across the carriageway (skipped under a roof whose underside is below that terrain). *Floating edge* = deck-edge bottom (deck − 0.6 m) more than 0.3 m above the terrain 0.3 m outside the edge with no wall/rail/support solid below it (not on structures). *Headroom* = every downward-facing static face whose plan falls inside the carriageway box of that station with its underside 0.1–5 m above the deck (this road's own parapet coping excluded), plus the dynamic (Mountain v2) ceiling. *Kerbs* = own kerb solid at ±half-width. *Scenery* = non-walkable static solids not belonging to the road, and v2 dynamic solids, within the carriageway + 1 m, 0.3–4.5 m above the deck.
 - **Lips** (every 0.1 m along five lines at 0, ±0.375, ±0.75 × half-width, interpolated so a line never cuts a corner): step in the physical surface with the local grade removed, > 0.08 m. A run of steps that returns to its starting height within 0.6 m is one *crack* (gap) or *ridge* — the 1.12 m wheelbase bridges a crack ≤ 0.3 m wide, so such a crack is MAJOR only when deeper than groundSnap (a foot, a board wheel or the rider's centre can fall in), else MINOR. *Junctions*: every threshold crossing of a road — the other route's bed ±20 m (to the road edge + 6 m) and the road ±15 m on three lines. *Pads*: every non-threshold pad within reach of a road — three lines from the road into 4 m inside the pad. *Transitions*: ±15 m on five lines at every structure-bed end within 12 m of a road. *v2 planting*: `mountainPlanting('full')` trees and shrubs kept where the region draws them, against every road (trunk inside the carriageway, within 1 m of it, or crown below 2.8 m over it).
 - **Cross-reference**: every static finding lists the driving events (type:pass) within ±6 m of it, so "a lip exists" and "the cruiser felt it" stay separate facts.
-- **Sampling**: nothing was sub-sampled beyond the steps above; the whole run took 62.6 s.
+- **Sampling**: nothing was sub-sampled beyond the steps above; the whole run took 58 s.
 - **Severity**: BLOCKER = stops or launches the cruiser (stall, airborne > 0.1 s, lip up > 0.48 m or down > 0.55 m that is not a narrow crack, hole), buries it (terrain > 0.48 m over the deck), or headroom < 1.55 m. MAJOR = lip > 0.15 m, crack deeper than 0.55 m, missing guard over a > 1.25 m drop, usable width < 7 m (8 m roads) / < width − 0.5 m (5 m spurs), grade > 12 % per 10 m, contact while inside the carriageway, obstruction inside the carriageway at body height, buried 0.15–0.48 m, floating edge > 1 m, headroom < 5 m, v2 tree trunk in the carriageway, the Bight Bridge frame mismatch when V01's edge leaves the deck. MINOR otherwise.
 
 ## Totals
@@ -231,7 +231,7 @@ Drives: **fwd/centre** 1179 m in 76.5 s sim (mean 15.41 m/s, max 16), 0 contact 
 
 | Sev | Type | Station m | At [x, y, z] | Value | Passes | Cause |
 |---|---|---|---|---|---|---|
-| MINOR | unguarded-step | 98–104 | [1308.9, 23.1, 1095.3] | 0.72 m drop | static | left edge: 0.72 m step off at 5.25 m (launches the cruiser if it drifts out: groundSnap 0.55) |
+| MINOR | unguarded-step | 98–106 | [1308.9, 23.1, 1095.3] | 0.72 m drop | static | left edge: 0.72 m step off at 5.25 m (launches the cruiser if it drifts out: groundSnap 0.55) |
 | MINOR | unguarded-step | 220–230 | [1178.4, 23.6, 1096.1] | 0.82 m drop | static | left edge: 0.82 m step off at 5 m (launches the cruiser if it drifts out: groundSnap 0.55) |
 | MINOR | unguarded-step | 220–228 | [1184.3, 23.9, 1097.2] | 0.66 m drop | static | right edge: 0.66 m step off at 5.25 m (launches the cruiser if it drifts out: groundSnap 0.55) |
 | MINOR | grade | 636–734 | [974.5, 39.2, 733.4] | 11.6 % max | static | 98 m over 8 % (max 11.6 % per 10 m) |

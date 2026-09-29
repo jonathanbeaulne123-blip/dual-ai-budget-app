@@ -120,8 +120,9 @@ export const TERRACE_YIELD_BEDS=['S1','V03'] as const;
 /** A terrace yield, which may also carry the height the region's DRAWN ground must stay under (road L1): drawn as the region,
  * felt as the Horizon, and never drawn over the Horizon deck it yields to. */
 export type TerraceYield=((hx:number,hz:number)=>boolean)&{ceiling?:(hx:number,hz:number)=>number|null};
-/** road (L1): eu under a yielded deck the region's drawn ground is held (the Horizon's own bed clearance), and the 1:2 fall back
- * to v2's ground from BATTER_FROM beyond the corridor. */
+/** road (L1): eu under a yielded deck the region's drawn ground is held (the Horizon's own bed clearance), and the steep 2 : 1
+ * rise (2 eu up per eu out) back to v2's ground from BATTER_FROM beyond the corridor, so v2's authored lawn is lowered only in a
+ * narrow band beside the deck. */
 const DECK_CLEARANCE=.05,BATTER_FROM=1.5,BATTER=.5;
 export function terraceBedExclusion(beds:readonly {id:string;points:readonly Point3[];width?:number;shoulder?:number}[],ids:readonly string[]=TERRACE_YIELD_BEDS):TerraceYield{
   const from=O.z+MOUNTAIN_V2_MASSIF_Z;
@@ -132,8 +133,8 @@ export function terraceBedExclusion(beds:readonly {id:string;points:readonly Poi
     return [{pts,half,box:[Math.min(...xs)-half,Math.min(...zs)-half,Math.max(...xs)+half,Math.max(...zs)+half] as const,wide:[Math.min(...xs)-grow,Math.min(...zs)-grow,Math.max(...xs)+grow,Math.max(...zs)+grow] as const}];
   });
   const test:TerraceYield=(hx:number,hz:number)=>hz>=from&&runs.some(r=>hx>=r.box[0]&&hz>=r.box[1]&&hx<=r.box[2]&&hz<=r.box[3]&&nearestOnRoute(hx,hz,r.pts).distance<=r.half);
-  // road (L1): the drawn lawn keeps DECK_CLEARANCE under the deck across its corridor and BATTER_FROM beyond, then falls back to
-  // v2's ground at 1:2 (the region's lawn was drawn 0.56 over V03's carriageway on the Foot terrace).
+  // road (L1): the drawn lawn keeps DECK_CLEARANCE under the deck across its corridor and BATTER_FROM beyond, then rises back to
+  // v2's ground at 2 : 1 (the region's lawn was drawn 0.56 over V03's carriageway on the Foot terrace).
   test.ceiling=(hx,hz)=>{if(hz<from-8)return null;let best:number|null=null;
     for(const r of runs){if(hx<r.wide[0]||hz<r.wide[1]||hx>r.wide[2]||hz>r.wide[3])continue;const n=nearestOnRoute(hx,hz,r.pts),over=Math.max(0,n.distance-r.half-BATTER_FROM);
       const c=n.point[1]-DECK_CLEARANCE+over*BATTER/(1-BATTER)*2;if(best===null||c<best)best=c;}

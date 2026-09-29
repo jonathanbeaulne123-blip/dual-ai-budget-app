@@ -48,6 +48,20 @@ export function buildWorldLines(input: LandCuts | TerrainField, supplied?: LandC
   lines.push({ id: 'ROW', mode: 'row', bedIds: [], points: [], waterBodyIds: cuts.waters.filter(w => w.kind !== 'dry' && w.kind !== 'brook').map(w => w.id) });
   return lines;
 }
+/**
+ * Road main (ROAD.md §3, review of #575): the destinations beside the road whose frontage the corridor plan lights — the
+ * journey stations, the host doors and the Tideline / campfire places — at exactly the anchors `createLandWorld` publishes
+ * (`world.journey.stations[].anchor`, `world.hosts[].door`, `world.places[].anchor`), so the baked plan and the plan tests
+ * read one list.
+ */
+export function corridorDestinations(cuts: LandCuts): { id: string; at: Point2 }[] {
+  const m = HORIZON_MANIFEST, s = requireScaleFactor();
+  return [
+    ...m.journey.stations.map(station => { const pad = resolvePad(cuts, `station.${station.id}`); return { id: station.id, at: (pad ? [pad.centre[0], pad.centre[2]] : [station.xy[0]! * s, station.xy[1]! * s]) as Point2 }; }),
+    ...buildHosts(cuts).map(h => ({ id: h.id, at: [...(h.door as { xy: Point2 }).xy] as Point2 })),
+    ...m.places.filter(p => /tideline|campfire/i.test(p.id)).map(p => ({ id: p.id, at: [p.xy[0]! * s, p.xy[1]! * s] as Point2 })),
+  ];
+}
 function buildHosts(cuts: LandCuts): Host[] {
   const m = HORIZON_MANIFEST, s = requireScaleFactor();
   return m.hosts.map(host => {

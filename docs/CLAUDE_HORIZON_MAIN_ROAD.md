@@ -29,6 +29,7 @@ The Journey map draws the road's bridges, covered stretches and boulevards at ma
 | Kit and art | `kit/road/**`, `runtime/corridorArt.ts`, `runtime/cards.ts` | Pavement bands, markings, kerbs, flagged walks, stone parapets, post-and-rail, road, bridge and tunnel lanterns, and stop furniture. Classic, Taylor and Newfoundland dressings. |
 | Planting | `kit/plants/**`, `runtime/corridorPlanting.ts` | Mountain v2's plant archetypes plus palm, flower bed and grass tuft. Seasons follow the world clock. Lite drops items without substituting. Distance fades avoid pop. |
 | Night | `runtime/roadLights.ts`, `sky/night.ts` | Lanterns switch on in sequence between sun elevations of +2° and −6°. Pool decals lie on the surface. Six shadowless point lights on full, two on lite (D-R3). Pool radius is 12 eu. |
+| Review of #575 | `corridor/index.ts`, `world/build.ts` (`corridorDestinations`), `bake-entry.ts`, `journey/land/simplify.ts`, `road-audit.mjs` | The bake's plan now reads the bake's water test, the Year Walk and the published destinations, as the plan tests did (V01 and VG each gain two frontage lanterns; nothing else moves). `arcOf` uses the true segment length. The audit's slide field is named for what it holds (the closest approach to the centreline). Comment and heading fixes. |
 | Inspector | `runtime/inspector.ts`, `scripts/horizon/road-inspector.mjs` | Dev-only, or `?diagnostics=1`. Shows position, the corridor station, frame ms, draw calls, lights and the last blocker. Copy writes to `inspectorLog`. |
 | Journey | `src/journey/land/**` | Bridges, covered stretches and boulevards. Slim format 2. |
 | Runtime mount | `runtime/index.ts` | Art and planting per resident district, hidden on the Journey map, with fog. Theme and season follow the app and the clock; road lights are rebuilt with the kit on a theme change. |
@@ -45,6 +46,8 @@ The Journey map draws the road's bridges, covered stretches and boulevards at ma
     - the Bight spur trestle's south end, where it meets S4 at 3 eu off the centreline;
     - a Glasshouse-steps retaining wall at the Glasshouse spur's edge.
 - **Suites:** every `horizon*`, `journey-*`, `harbour-world-toggle`, `harbour-source-fences` and `harbour-walk*` file, run one file at a time with `--maxWorkers=1` at 3267392: **102 files, 1343 passed, 2 failed**. The 2 failures are `horizonMoversNoMoney`, which fails the same way on the pre-branch baseline `857b059`, so they are pre-existing.
+  - After the #575 review fixes (rebaked, `horizon:check` byte-exact, audit unchanged at 0 / 23 / 85 with 0 restarts), the same 102 files: 1342 passed, 3 failed. Two are the same pre-existing `horizonMoversNoMoney` failures. The third was one `journey-fullscreen-ui` test, which waits on a 2 s wall clock; it passed 3 of 3 re-runs on its own.
+  - The Journey land captures were re-run for all three themes and now include the Long Sands region and stop poses (`docs/horizon/evidence/road/journey/after-*-sands-*.png`).
 - **Captures:** `docs/horizon/evidence/road/after/` and `LOOK.md`: 36 SwiftShader captures covering the day, night, boulevard, mountain and coastal views, rides in 3 cameras with 2 skins, and 2 aerials. `docs/horizon/evidence/road/inspector/`: five inspector snapshots, plus the overlay at 390 and 320.
 - **Independent review:** a blind reviewer returned 1 BLOCKER (captures not yet committed), 3 MAJOR and 6 MINOR.
   - Fixed: the captures, M1 (collider heights, with a new baked test), minors 1, 2 and 4, and the decision entry.
@@ -57,7 +60,7 @@ The Journey map draws the road's bridges, covered stretches and boulevards at ma
 - **Quay Bridge south approach:** 16 eu of road is unpainted by pool decals, between the approach lanterns and the first bridge lantern. A junction mouth, a crossing, S3's separated lane and the abutment leave no legal lantern spot. The point lights still light it. This is a named exception in `horizonCorridorPlan.test.ts`.
 - **Tideline Park:** the park sits 2.3 eu below the Drive. Its frontage is a kerb over a grassed bank with a 0.46 eu step. A flush frontage needs the park regraded, which is owed.
 - **No planted median on Long Sands:** the Drive's 10 eu section has no room without narrowing the lanes.
-- **The Crown Lookout** is proposed, not built: it needs a graded pad, which is owed. The Long Sands Shore stop is built.
+- **The Crown Lookout** is proposed, not built: it needs a graded pad, which is owed. The Long Sands Shore stop is built, but it is 108 eu from the Year Walk, so it has no path joining the walk as ROAD §4.7 asks.
 - **Year Walk threshold markers** in the lane (a yellow stud) are pre-existing. Replacing them with zebras would be tidier.
 - **Per-district draw-call budget** (ROAD §8) is proven on fixtures only.
 

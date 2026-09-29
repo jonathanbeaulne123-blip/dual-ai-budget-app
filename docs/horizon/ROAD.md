@@ -9,7 +9,7 @@ Evidence of the road as it stood before this pass: `docs/horizon/evidence/road/a
 
 ---
 
-## 0. Overrides and standing decisions (recorded in `docs/DECISIONS.md` as D-R1…D-R8)
+## 0. Overrides and standing decisions (recorded in `docs/DECISIONS.md` as D-R1…D-R12)
 
 | Id | Decision | Why | Status |
 |---|---|---|---|

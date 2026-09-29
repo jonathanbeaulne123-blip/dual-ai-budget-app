@@ -27,18 +27,24 @@ export interface CorridorBuildOptions {
   ownership?: StructureOwnership;
   /** Seed for the plan (same seed → same plan). */
   seed?: string;
+  /** Destinations beside the road whose frontage gets a lantern pair (`PlanEnv.destinations`): the bake passes
+   * `corridorDestinations(cuts)` (world/build.ts), the same anchors the world publishes. Default: none. */
+  destinations?: readonly { id: string; at: readonly [number, number] }[];
 }
 export interface CorridorBuild { corridors: Corridor[]; cores: CorridorCore[]; solids: LandCuts['solids']; walks: BedCut[]; replacedIds: string[] }
 
 /** Stations, guards, plan and solids for every corridor road. Reads `cuts` and `ground`; changes nothing. */
 export function buildCorridors(cuts: LandCuts, ground: HeightQuery, options: CorridorBuildOptions = {}): CorridorBuild {
   const env = createCorridorEnv(cuts, ground, options.ownership), corridors: Corridor[] = [], cores: CorridorCore[] = [], solids: LandCuts['solids'] = [], walks: BedCut[] = [];
+  const yearWalk = cuts.beds.find(b => b.id === 'yearWalk'), walkBeds = yearWalk ? [{ id: yearWalk.id, points: yearWalk.points }] : [];
   for (const bed of env.roads) {
     const core = buildCorridor(bed, env);
     // A preliminary guard pass first, so the plan knows where rails will stand (a lantern over a drop is rail-mounted); then
     // the plan (its scenic stops open viewpoint gaps), then the guards again over the final gaps.
     planGuards(core, { ground });
-    const plan = planCorridor({ id: core.id, closed: core.closed, step: core.step, stations: core.stations, reaches: core.reaches }, { ground, occupied: env.occupied, seed: options.seed ?? `corridor:${core.id}` });
+    // The plan reads the bake's own environment (review of #575): the corridor's water test (held water above sea level
+    // included), the Year Walk a scenic stop joins, and the destinations whose frontage is lit.
+    const plan = planCorridor({ id: core.id, closed: core.closed, step: core.step, stations: core.stations, reaches: core.reaches }, { ground, occupied: env.occupied, water: env.wet, walks: walkBeds, destinations: options.destinations ?? [], seed: options.seed ?? `corridor:${core.id}` });
     applyViewpointGaps(core, plan.stops);
     for (const st of core.stations) for (const side of ['left', 'right'] as const) if (st[side].guard !== 'bridgeRail') st[side].guard = 'none';
     const guards: GuardRun[] = planGuards(core, { ground });

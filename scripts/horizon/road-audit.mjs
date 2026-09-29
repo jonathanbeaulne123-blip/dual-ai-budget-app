@@ -11,12 +11,12 @@
  *     with a pure-pursuit driver (lookahead 6–8 m) and a curvature/braking speed plan (no position snapping, no assist);
  *  2. probes the corridor statically at `--station` m stations (width, drops and guards, buried/floating deck, headroom,
  *     kerbs, scenery in the carriageway, lips along five lateral lines, junction/pad lips, bridge/tunnel transitions);
- *  3. writes audit.json and AUDIT.md under --out (default docs/horizon/evidence/road/audit-before).
+ *  3. writes audit.json and AUDIT.md under --out (default docs/horizon/evidence/road/audit-<--title, default before>).
  * Nothing under src/ or public/ is written; every query helper beyond the runtime geography lives in this file.
  */
 import {build} from 'esbuild';
 import {readFileSync, writeFileSync, mkdirSync, existsSync} from 'node:fs';
-import {resolve, dirname} from 'node:path';
+import {resolve, dirname, relative} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
 import {execSync} from 'node:child_process';
@@ -28,7 +28,7 @@ const arg = (name, fallback) => { const i = argv.indexOf(name); return i < 0 ? f
 const flag = name => argv.includes(name);
 const HERE = dirname(fileURLToPath(import.meta.url)), OWN_REPO = resolve(HERE, '../..');
 const ROOT = resolve(arg('--root', process.cwd()));
-const OUT = resolve(ROOT, arg('--out', 'docs/horizon/evidence/road/audit-before'));
+const OUT = resolve(ROOT, arg('--out', `docs/horizon/evidence/road/audit-${arg('--title', 'before')}`)); // default follows --title, so an 'after' run never overwrites the before evidence
 const STATION = Number(arg('--station', '2'));
 const ONLY = arg('--beds', null)?.split(',');
 const DRIVE = !flag('--no-drive'), STATIC = !flag('--no-static');
@@ -226,7 +226,7 @@ function runDrive(bedId, dir, lane) {
   let stallT = 0, stallOpen = null, air = null, slide = null, off = null, corner = null, mism = null, lastContact = null, lastContactT = -1;
   const maxT = total / 3 + 180; let speedSum = 0;
   function closeSlide(sl) {
-      const d = describe(sl.idKey), inLane = sl.maxIn <= half - C.radius;
+      const d = describe(sl.idKey), inLane = sl.nearestIn <= half - C.radius;
       event({...tag, type: 'contact', severity: inLane ? 'MAJOR' : 'MINOR', station: spanOf(path, sl.start, sl.end), at: sl.at, ids: [sl.idKey], role: d?.role, kind: d?.kind,
         value: r2(sl.steps * C.dt), unit: 's', speedIn: sl.speedIn, minSpeed: r1(sl.minSpeed), offCentre: sl.offCentre,
         note: `${inLane ? 'in-lane' : 'edge'} contact with ${sl.idKey} (${d?.kind}/${d?.role}) for ${(sl.steps * C.dt).toFixed(2)} s, ${sl.speedIn}→${r1(sl.minSpeed)} m/s`});
@@ -268,9 +268,9 @@ function runDrive(bedId, dir, lane) {
     if (next.contact && !HARD.has(next.contact)) {
       if (!slide || slide.idKey !== next.contact) {
         if (slide) closeSlide(slide);
-        slide = {...tag, type: 'contact', idKey: next.contact, ...where(), start: q.s, end: q.s, steps: 0, speedIn: r1(speed), minSpeed: ns, maxIn: Math.abs(offC), offCentre: r2(offC)};
+        slide = {...tag, type: 'contact', idKey: next.contact, ...where(), start: q.s, end: q.s, steps: 0, speedIn: r1(speed), minSpeed: ns, nearestIn: Math.abs(offC), offCentre: r2(offC)};
       }
-      slide.steps++; slide.end = q.s; slide.minSpeed = Math.min(slide.minSpeed, ns); slide.maxIn = Math.min(slide.maxIn, Math.abs(offC));
+      slide.steps++; slide.end = q.s; slide.minSpeed = Math.min(slide.minSpeed, ns); slide.nearestIn = Math.min(slide.nearestIn, Math.abs(offC)); // the closest approach to the centreline: a slide that reaches into the lane at any point is in-lane
     } else if (slide) { closeSlide(slide); slide = null; }
     // Airborne.
     if (s.grounded && !next.grounded) { const a = g.surface(s.x, s.z, s.y + .05, .1); air = {takeoff: {x: s.x, y: s.y, z: s.z}, t: 0, minVy: 0, from: a?.id ?? null, station: q.s, speed: speed}; }
@@ -710,7 +710,7 @@ const fmtAt = a => a ? `[${a.map(v => Math.round(v * 10) / 10).join(', ')}]` : '
 const fmtSt = s => Array.isArray(s) ? (s[0] === s[1] ? `${s[0]}` : `${s[0]}–${s[1]}`) : `${s}`;
 const esc = t => String(t ?? '').replace(/\|/g, '\\|');
 let md = `# Horizon road audit — ${arg('--title', 'before')}\n\nDriver's-eye audit of the committed bake with the real cruiser sim (\`stepCruiser\`, CRUISER.dt = 1/120 s). Read-only: nothing under \`src/\` or \`public/\` was changed.\n\n`;
-md += `- Command: \`${command}\` (from \`${ROOT}\`)\n- Checkout: \`${rootSha}\`; world \`${meta.bake.world}\` sha256 \`${meta.bake.worldSha256.slice(0, 16)}…\`, terrain sha256 \`${meta.bake.terrainSha256.slice(0, 16)}…\` (${world.geographyRevision})\n`;
+md += `- Command: \`${command}\` (from ${ROOT === process.cwd() ? 'the repo root' : `\`${relative(process.cwd(), ROOT) || '.'}\``})\n- Checkout: \`${rootSha}\`; world \`${meta.bake.world}\` sha256 \`${meta.bake.worldSha256.slice(0, 16)}…\`, terrain sha256 \`${meta.bake.terrainSha256.slice(0, 16)}…\` (${world.geographyRevision})\n`;
 md += `- Wall-clock: **${wallSeconds} s** on ${meta.cpus} CPUs (${process.version}); generated ${meta.generated}\n- Roads: ${ROAD_IDS.join(', ')}\n\n`;
 md += `## Method\n\n- **World**: \`parseHorizonDefinition(horizon-geo-1.json.gz)\` + \`decodeTerrainAsset(bin,'full')\` + \`createHorizonGeography(field,{...collision, solids, diagnostics})\` + \`addDynamic(createMountainV2Region(...).provider)\` — the loader of \`test/horizonRideSituations.test.ts\`.\n`;
 md += `- **Drive**: pure pursuit (lookahead 6–8 m) on the lane line; target speed = min(${C.speed}, √(${A_LAT}/κ)) braked back at ${B_DEC} m/s²; throttle/coast/brake only through \`stepCruiser\` inputs; no snapping. Passes: forward and reverse, centreline and keep-right +2 m (5 m-wide spurs: centreline only). V01 is driven round the whole loop (+10 m). A stall longer than 2 s, or leaving the corridor (> half-width + shoulder + 5 m, or 4 m below the bed), is logged and the drive restarts 6–8 m further on (listed per pass).\n`;

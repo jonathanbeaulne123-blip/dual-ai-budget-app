@@ -112,10 +112,11 @@ export function projectOnSegment(p: readonly number[], a: readonly number[], b: 
 export function arcOf(points: readonly Point2[], q: Point2): number {
   let best = Infinity, at = 0, run = 0;
   for (let i = 1; i < points.length; i++) {
-    const a = points[i - 1]!, b = points[i]!, pr = projectOnSegment(q, a, b), t = Math.min(Math.max(pr.t, 0), 1);
+    // The true segment length (projectOnSegment reports 1 for a zero-length segment; sliceByArc counts it as 0).
+    const a = points[i - 1]!, b = points[i]!, len = Math.hypot(b[0] - a[0], b[1] - a[1]), pr = projectOnSegment(q, a, b), t = len > 0 ? Math.min(Math.max(pr.t, 0), 1) : 0;
     const d = Math.hypot(a[0] + (b[0] - a[0]) * t - q[0], a[1] + (b[1] - a[1]) * t - q[1]);
-    if (d < best) { best = d; at = run + t * pr.length; }
-    run += pr.length;
+    if (d < best) { best = d; at = run + t * len; }
+    run += len;
   }
   return at;
 }

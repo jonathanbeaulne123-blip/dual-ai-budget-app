@@ -56,6 +56,6 @@ try{
   }
   // The overlay at phone widths (the last spot's view).
   for(const [w,h] of [[390,844],[320,640]]){await page.setViewportSize({width:w,height:h});await page.waitForTimeout(2000);const file=`inspector_overlay_${w}.png`;await page.screenshot({path:join(out,file)});records.push({label:`overlay-${w}`,file});log(file);}
-}finally{await browser.close();kill();}
+}catch(e){errors.push(`run: ${String(e).slice(0,300)}`);log('FAILED run',String(e).slice(0,200));}finally{await browser.close();kill();}
 await writeFile(join(out,'inspector.json'),JSON.stringify({sha,generated:new Date().toISOString(),method:'headless Chromium (SwiftShader) review page ?diagnostics=1; cruiser via restore + toggleCruiser + input/simulateMotion; snapshot = __harbour.inspect(). Frame times are SwiftShader, not device evidence.',records,errors},null,1));
 log('done',records.length,'records',errors.length,'errors');

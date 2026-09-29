@@ -1,15 +1,15 @@
 {
  "meta": {
-  "generated": "2026-09-29T18:15:14.602Z",
+  "generated": "2026-09-29T21:01:08.320Z",
   "command": "node scripts/horizon/road-audit.mjs --out docs/horizon/evidence/road/audit-after --title after",
   "root": "/home/claude/dual-ai-budget-app",
-  "rootSha": "51477128a4ffa34b1b2de2ff55ba0adfbf404063",
-  "wallSeconds": 62.6,
+  "rootSha": "6e30a3a9bf1b83e0fb9a4d79dd1f2fc4199cdf83",
+  "wallSeconds": 58,
   "node": "v22.22.2",
   "cpus": 2,
   "bake": {
    "world": "public/horizon/world/horizon-geo-1.json.gz",
-   "worldSha256": "bf5aa43723447c623c2f11d2b0ed010fa0ce652740d14f90106887196e773dc1",
+   "worldSha256": "6c3ce551b69ca2c916d3ea1debd90ef4bcc0d8a55012b5fbbe8097313f8bce37",
    "terrain": "public/horizon/terrain/horizon-geo-1.bin",
    "terrainSha256": "7fbbe1bae4867b07b48045983c25528f5b135ffddc96eaf76495dec8541d432a",
    "revision": "horizon-geo-1"
@@ -170,7 +170,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 7079
+   "wallMs": 5962
   },
   {
    "bed": "V01",
@@ -186,7 +186,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 6332
+   "wallMs": 5446
   },
   {
    "bed": "V01",
@@ -202,7 +202,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 6446
+   "wallMs": 5566
   },
   {
    "bed": "V01",
@@ -218,7 +218,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 6512
+   "wallMs": 5560
   },
   {
    "bed": "VG",
@@ -234,7 +234,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 2204
+   "wallMs": 2089
   },
   {
    "bed": "VG",
@@ -250,7 +250,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 1992
+   "wallMs": 1817
   },
   {
    "bed": "VG",
@@ -266,7 +266,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 2087
+   "wallMs": 1907
   },
   {
    "bed": "VG",
@@ -282,7 +282,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 2294
+   "wallMs": 1980
   },
   {
    "bed": "VBS",
@@ -298,7 +298,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 801
+   "wallMs": 759
   },
   {
    "bed": "VBS",
@@ -314,7 +314,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 791
+   "wallMs": 661
   },
   {
    "bed": "V03",
@@ -330,7 +330,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 463
+   "wallMs": 423
   },
   {
    "bed": "V03",
@@ -346,7 +346,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 468
+   "wallMs": 387
   },
   {
    "bed": "V03",
@@ -362,7 +362,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 453
+   "wallMs": 395
   },
   {
    "bed": "V03",
@@ -378,7 +378,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 619
+   "wallMs": 543
   },
   {
    "bed": "spur upperStreet",
@@ -390,102 +390,6 @@
    "steps": 336,
    "maxSpeed": 10.954451150103326,
    "meanSpeed": 6.54,
-   "contacts": 0,
-   "airborneSteps": 0,
-   "restarts": [],
-   "completed": true,
-   "wallMs": 107
-  },
-  {
-   "bed": "spur upperStreet",
-   "dir": "rev",
-   "lane": 0,
-   "pass": "rev/centre",
-   "distance": 18.5,
-   "simSeconds": 2.8,
-   "steps": 336,
-   "maxSpeed": 10.954451150103326,
-   "meanSpeed": 6.54,
-   "contacts": 0,
-   "airborneSteps": 0,
-   "restarts": [],
-   "completed": true,
-   "wallMs": 87
-  },
-  {
-   "bed": "spur library",
-   "dir": "fwd",
-   "lane": 0,
-   "pass": "fwd/centre",
-   "distance": 155.5,
-   "simSeconds": 11.7,
-   "steps": 1406,
-   "maxSpeed": 16,
-   "meanSpeed": 13.26,
-   "contacts": 0,
-   "airborneSteps": 0,
-   "restarts": [],
-   "completed": true,
-   "wallMs": 240
-  },
-  {
-   "bed": "spur library",
-   "dir": "rev",
-   "lane": 0,
-   "pass": "rev/centre",
-   "distance": 155.5,
-   "simSeconds": 11.7,
-   "steps": 1406,
-   "maxSpeed": 16,
-   "meanSpeed": 13.26,
-   "contacts": 0,
-   "airborneSteps": 0,
-   "restarts": [],
-   "completed": true,
-   "wallMs": 247
-  },
-  {
-   "bed": "spur glasshouse",
-   "dir": "fwd",
-   "lane": 0,
-   "pass": "fwd/centre",
-   "distance": 49,
-   "simSeconds": 5.1,
-   "steps": 607,
-   "maxSpeed": 16,
-   "meanSpeed": 9.65,
-   "contacts": 0,
-   "airborneSteps": 0,
-   "restarts": [],
-   "completed": true,
-   "wallMs": 155
-  },
-  {
-   "bed": "spur glasshouse",
-   "dir": "rev",
-   "lane": 0,
-   "pass": "rev/centre",
-   "distance": 49,
-   "simSeconds": 5.1,
-   "steps": 607,
-   "maxSpeed": 16,
-   "meanSpeed": 9.65,
-   "contacts": 0,
-   "airborneSteps": 0,
-   "restarts": [],
-   "completed": true,
-   "wallMs": 123
-  },
-  {
-   "bed": "spur studio",
-   "dir": "fwd",
-   "lane": 0,
-   "pass": "fwd/centre",
-   "distance": 24.5,
-   "simSeconds": 3.3,
-   "steps": 397,
-   "maxSpeed": 12.449899597988736,
-   "meanSpeed": 7.35,
    "contacts": 0,
    "airborneSteps": 0,
    "restarts": [],
@@ -493,6 +397,102 @@
    "wallMs": 98
   },
   {
+   "bed": "spur upperStreet",
+   "dir": "rev",
+   "lane": 0,
+   "pass": "rev/centre",
+   "distance": 18.5,
+   "simSeconds": 2.8,
+   "steps": 336,
+   "maxSpeed": 10.954451150103326,
+   "meanSpeed": 6.54,
+   "contacts": 0,
+   "airborneSteps": 0,
+   "restarts": [],
+   "completed": true,
+   "wallMs": 76
+  },
+  {
+   "bed": "spur library",
+   "dir": "fwd",
+   "lane": 0,
+   "pass": "fwd/centre",
+   "distance": 155.5,
+   "simSeconds": 11.7,
+   "steps": 1406,
+   "maxSpeed": 16,
+   "meanSpeed": 13.26,
+   "contacts": 0,
+   "airborneSteps": 0,
+   "restarts": [],
+   "completed": true,
+   "wallMs": 211
+  },
+  {
+   "bed": "spur library",
+   "dir": "rev",
+   "lane": 0,
+   "pass": "rev/centre",
+   "distance": 155.5,
+   "simSeconds": 11.7,
+   "steps": 1406,
+   "maxSpeed": 16,
+   "meanSpeed": 13.26,
+   "contacts": 0,
+   "airborneSteps": 0,
+   "restarts": [],
+   "completed": true,
+   "wallMs": 200
+  },
+  {
+   "bed": "spur glasshouse",
+   "dir": "fwd",
+   "lane": 0,
+   "pass": "fwd/centre",
+   "distance": 49,
+   "simSeconds": 5.1,
+   "steps": 607,
+   "maxSpeed": 16,
+   "meanSpeed": 9.65,
+   "contacts": 0,
+   "airborneSteps": 0,
+   "restarts": [],
+   "completed": true,
+   "wallMs": 113
+  },
+  {
+   "bed": "spur glasshouse",
+   "dir": "rev",
+   "lane": 0,
+   "pass": "rev/centre",
+   "distance": 49,
+   "simSeconds": 5.1,
+   "steps": 607,
+   "maxSpeed": 16,
+   "meanSpeed": 9.65,
+   "contacts": 0,
+   "airborneSteps": 0,
+   "restarts": [],
+   "completed": true,
+   "wallMs": 107
+  },
+  {
+   "bed": "spur studio",
+   "dir": "fwd",
+   "lane": 0,
+   "pass": "fwd/centre",
+   "distance": 24.5,
+   "simSeconds": 3.3,
+   "steps": 397,
+   "maxSpeed": 12.449899597988736,
+   "meanSpeed": 7.35,
+   "contacts": 0,
+   "airborneSteps": 0,
+   "restarts": [],
+   "completed": true,
+   "wallMs": 94
+  },
+  {
    "bed": "spur studio",
    "dir": "rev",
    "lane": 0,
@@ -506,7 +506,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 92
+   "wallMs": 73
   },
   {
    "bed": "spur cottage",
@@ -522,7 +522,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 170
+   "wallMs": 140
   },
   {
    "bed": "spur cottage",
@@ -538,7 +538,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 174
+   "wallMs": 147
   },
   {
    "bed": "spur boathouse",
@@ -554,7 +554,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 131
+   "wallMs": 112
   },
   {
    "bed": "spur boathouse",
@@ -570,7 +570,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 121
+   "wallMs": 106
   },
   {
    "bed": "plot.terraces.1.service",
@@ -586,7 +586,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 97
+   "wallMs": 86
   },
   {
    "bed": "plot.terraces.1.service",
@@ -602,7 +602,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 89
+   "wallMs": 72
   },
   {
    "bed": "plot.terraces.2.service",
@@ -618,7 +618,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 152
+   "wallMs": 130
   },
   {
    "bed": "plot.terraces.2.service",
@@ -634,7 +634,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 139
+   "wallMs": 113
   },
   {
    "bed": "plot.terraces.3.service",
@@ -650,7 +650,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 145
+   "wallMs": 103
   },
   {
    "bed": "plot.terraces.3.service",
@@ -666,7 +666,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 130
+   "wallMs": 89
   },
   {
    "bed": "plot.bight.1.service",
@@ -682,7 +682,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 108
+   "wallMs": 92
   },
   {
    "bed": "plot.bight.1.service",
@@ -698,7 +698,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 109
+   "wallMs": 91
   },
   {
    "bed": "plot.bight.2.service",
@@ -714,7 +714,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 102
+   "wallMs": 86
   },
   {
    "bed": "plot.bight.2.service",
@@ -730,7 +730,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 96
+   "wallMs": 83
   },
   {
    "bed": "plot.bight.3.service",
@@ -746,7 +746,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 108
+   "wallMs": 90
   },
   {
    "bed": "plot.bight.3.service",
@@ -762,7 +762,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 103
+   "wallMs": 99
   },
   {
    "bed": "plot.bight.4.service",
@@ -778,7 +778,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 78
+   "wallMs": 63
   },
   {
    "bed": "plot.bight.4.service",
@@ -794,7 +794,7 @@
    "airborneSteps": 0,
    "restarts": [],
    "completed": true,
-   "wallMs": 77
+   "wallMs": 63
   }
  ],
  "issues": {
@@ -1730,7 +1730,7 @@
     "side": "left",
     "station": [
      98,
-     104
+     106
     ],
     "at": [
      1308.88,
@@ -4159,7 +4159,7 @@
    "side": "left",
    "station": [
     98,
-    104
+    106
    ],
    "at": [
     1308.88,
@@ -11718,11 +11718,11 @@
      24,
      1058.66
     ],
-    "w": 15.5,
-    "L": "blocker",
-    "Ld": 7.75,
-    "R": "blocker",
-    "Rd": 7.75,
+    "w": 16,
+    "L": "open",
+    "Ld": 8,
+    "R": "open",
+    "Rd": 8,
     "st": null,
     "ceil": null,
     "bur": 0,
@@ -12231,9 +12231,9 @@
      20.03,
      1046.54
     ],
-    "w": 13.75,
-    "L": "blocker",
-    "Ld": 7.75,
+    "w": 14,
+    "L": "open",
+    "Ld": 8,
     "R": "blocker",
     "Rd": 6,
     "st": null,
@@ -12250,11 +12250,11 @@
      19.83,
      1046.03
     ],
-    "w": 13.5,
+    "w": 13.75,
     "L": "drop",
     "Ld": 8,
-    "R": "blocker",
-    "Rd": 5.5,
+    "R": "drop",
+    "Rd": 5.75,
     "st": null,
     "ceil": null,
     "bur": 0,
@@ -12326,11 +12326,11 @@
      19.03,
      1043.93
     ],
-    "w": 13,
+    "w": 13.25,
     "L": "drop",
     "Ld": 7.5,
-    "R": "blocker",
-    "Rd": 5.5,
+    "R": "drop",
+    "Rd": 5.75,
     "st": null,
     "ceil": null,
     "bur": 0,
@@ -20230,11 +20230,11 @@
      71.09,
      322.69
     ],
-    "w": 13.25,
+    "w": 16,
     "L": "open",
     "Ld": 8,
-    "R": "blocker",
-    "Rd": 5.25,
+    "R": "open",
+    "Rd": 8,
     "st": null,
     "ceil": null,
     "bur": 0,
@@ -20306,11 +20306,11 @@
      71.52,
      317.6
     ],
-    "w": 13.25,
+    "w": 16,
     "L": "open",
     "Ld": 8,
-    "R": "blocker",
-    "Rd": 5.25,
+    "R": "open",
+    "Rd": 8,
     "st": null,
     "ceil": null,
     "bur": 0,
@@ -24923,9 +24923,9 @@
      50.88,
      281.83
     ],
-    "w": 15.75,
-    "L": "blocker",
-    "Ld": 7.75,
+    "w": 16,
+    "L": "drop",
+    "Ld": 8,
     "R": "open",
     "Rd": 8,
     "st": null,
@@ -47799,11 +47799,11 @@
      17.95,
      1140.2
     ],
-    "w": 15.5,
+    "w": 15.75,
     "L": "blocker",
     "Ld": 7.75,
-    "R": "blocker",
-    "Rd": 7.75,
+    "R": "drop",
+    "Rd": 8,
     "st": null,
     "ceil": null,
     "bur": 0,
@@ -48027,11 +48027,11 @@
      19.68,
      1117.84
     ],
-    "w": 15.5,
+    "w": 15.75,
     "L": "blocker",
     "Ld": 7.75,
-    "R": "blocker",
-    "Rd": 7.75,
+    "R": "drop",
+    "Rd": 8,
     "st": null,
     "ceil": null,
     "bur": 0,
@@ -48293,9 +48293,9 @@
      22.46,
      1092.17
     ],
-    "w": 15.5,
-    "L": "blocker",
-    "Ld": 7.75,
+    "w": 15.75,
+    "L": "drop",
+    "Ld": 8,
     "R": "blocker",
     "Rd": 7.75,
     "st": null,
@@ -49644,11 +49644,11 @@
      23.65,
      1097.08
     ],
-    "w": 10.5,
-    "L": "blocker",
-    "Ld": 5.25,
-    "R": "blocker",
-    "Rd": 5.25,
+    "w": 13.25,
+    "L": "drop",
+    "Ld": 5.5,
+    "R": "drop",
+    "Rd": 7.75,
     "st": null,
     "ceil": null,
     "bur": 0,
@@ -60115,11 +60115,11 @@
      29.05,
      869.33
     ],
-    "w": 8.25,
+    "w": 10.75,
     "L": "open",
     "Ld": 5.5,
-    "R": "blocker",
-    "Rd": 2.75,
+    "R": "drop",
+    "Rd": 5.25,
     "st": null,
     "ceil": null,
     "bur": 0,

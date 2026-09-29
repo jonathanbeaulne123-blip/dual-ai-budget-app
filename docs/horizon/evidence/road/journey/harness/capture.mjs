@@ -12,7 +12,7 @@ const repo = process.cwd(), root = new URL(".", import.meta.url).pathname;
 const server = await createServer({ root, configFile: false, publicDir: resolve(repo, "public"), logLevel: "warn",
   server: { port: 5291, strictPort: true, host: "127.0.0.1", fs: { allow: [repo] } }, optimizeDeps: { entries: [root + "main.ts"] } });
 await server.listen();
-const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
+const browser = await chromium.launch({ executablePath: process.env.HORIZON_CHROMIUM ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
 const report = {};
 try {
   for (const theme of (process.env.THEMES ?? "classic").split(",")) {

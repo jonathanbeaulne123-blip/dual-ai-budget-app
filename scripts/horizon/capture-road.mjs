@@ -140,7 +140,7 @@ try{
   for(const d of drive.filter(d=>d.night&&wanted(d))){try{await capturePose({...d,label:`${d.label}-night`},NIGHT);}catch(e){errors.push({at:d.label+'-night',message:String(e).slice(0,400)});log('FAILED',d.label,String(e).slice(0,200));}}
   // 3. Riding: mount at the Green Road junction on V01, drive along the loop with the real controller, then capture the
   //    activity, first-person and floating cameras (Vespa, then Harley).
-  if(!only||only.some(o=>'ride'.includes(o)||o==='ride')){
+  if(!only||only.some(o=>o==='ride')){
     try{
       await setTime(DAY);
       const start=V.at(0).p,next=V.at(8).p,yaw=Math.atan2(next[0]-start[0],next[2]-start[2]);

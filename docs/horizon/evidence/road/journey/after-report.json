@@ -8,11 +8,11 @@
       "worldPerPixel": 0.29144228634687414
     },
     "stats": {
-      "triangles": 39653,
+      "triangles": 39649,
       "drawCalls": 30
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -44,11 +44,11 @@
       "worldPerPixel": 0.29144228634687414
     },
     "stats": {
-      "triangles": 28189,
+      "triangles": 28185,
       "drawCalls": 28
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -62,11 +62,11 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 26741,
+      "triangles": 26737,
       "drawCalls": 28
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -80,11 +80,11 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 26831,
+      "triangles": 26827,
       "drawCalls": 30
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -98,11 +98,11 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 29199,
+      "triangles": 29195,
       "drawCalls": 28
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -116,11 +116,47 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 28649,
+      "triangles": 28645,
       "drawCalls": 30
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "after-classic-sands-region.png": {
+    "view": {
+      "x": 880,
+      "y": 1290,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 30357,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "after-classic-sands-stop.png": {
+    "view": {
+      "x": 880,
+      "y": 1290,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 27999,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -134,11 +170,11 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 31157,
+      "triangles": 31153,
       "drawCalls": 30
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -152,11 +188,11 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 28883,
+      "triangles": 28879,
       "drawCalls": 30
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -173,11 +209,11 @@
       "worldPerPixel": 0.29144228634687414
     },
     "stats": {
-      "triangles": 39653,
+      "triangles": 39649,
       "drawCalls": 30
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -209,11 +245,11 @@
       "worldPerPixel": 0.29144228634687414
     },
     "stats": {
-      "triangles": 28189,
+      "triangles": 28185,
       "drawCalls": 28
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -227,11 +263,11 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 26741,
+      "triangles": 26737,
       "drawCalls": 28
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -245,11 +281,11 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 26831,
+      "triangles": 26827,
       "drawCalls": 30
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -263,11 +299,11 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 29199,
+      "triangles": 29195,
       "drawCalls": 28
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -281,11 +317,47 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 28649,
+      "triangles": 28645,
       "drawCalls": 30
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "after-taylor-sands-region.png": {
+    "view": {
+      "x": 880,
+      "y": 1290,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 30357,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "after-taylor-sands-stop.png": {
+    "view": {
+      "x": 880,
+      "y": 1290,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 27999,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -299,11 +371,11 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 31157,
+      "triangles": 31153,
       "drawCalls": 30
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -317,11 +389,11 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 28883,
+      "triangles": 28879,
       "drawCalls": 30
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -336,11 +408,11 @@
       "worldPerPixel": 0.29144228634687414
     },
     "stats": {
-      "triangles": 39653,
+      "triangles": 39649,
       "drawCalls": 30
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -372,11 +444,11 @@
       "worldPerPixel": 0.29144228634687414
     },
     "stats": {
-      "triangles": 28189,
+      "triangles": 28185,
       "drawCalls": 28
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -390,11 +462,11 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 26741,
+      "triangles": 26737,
       "drawCalls": 28
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -408,11 +480,11 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 26831,
+      "triangles": 26827,
       "drawCalls": 30
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -426,11 +498,11 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 29199,
+      "triangles": 29195,
       "drawCalls": 28
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -444,11 +516,47 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 28649,
+      "triangles": 28645,
       "drawCalls": 30
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "after-newfoundland-sands-region.png": {
+    "view": {
+      "x": 880,
+      "y": 1290,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 30357,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "after-newfoundland-sands-stop.png": {
+    "view": {
+      "x": 880,
+      "y": 1290,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 27999,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -462,11 +570,11 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 31157,
+      "triangles": 31153,
       "drawCalls": 30
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
@@ -480,11 +588,11 @@
       "worldPerPixel": 0.09326153163099972
     },
     "stats": {
-      "triangles": 28883,
+      "triangles": 28879,
       "drawCalls": 30
     },
     "land": {
-      "triangles": 12435,
+      "triangles": 12431,
       "drawCalls": 12
     },
     "anchors": 533
