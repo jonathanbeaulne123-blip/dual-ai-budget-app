@@ -16,8 +16,11 @@ import { HORIZON_GEOGRAPHY } from "../../worldGeography.ts";
 
 /** Where the bake writes the slim artefact (keyed by the geography revision, beside the index). */
 export const JOURNEY_LAND_SLIM_URL = `/horizon/world/${HORIZON_GEOGRAPHY}.journey.json.gz`;
-/** Bumped when the payload shape changes; a loader that does not know the format falls back to the index. */
-export const JOURNEY_LAND_SLIM_FORMAT = 1;
+/**
+ * Bumped when the payload shape changes; a loader that does not know the format falls back to the index.
+ * 2 (road pass, ROAD.md §7): `bridges` and `covers` always, `boulevards` when the index carries corridors.
+ */
+export const JOURNEY_LAND_SLIM_FORMAT = 2;
 
 /** Which bake the payload came from: the sha256 of the index JSON (uncompressed) and of the terrain asset. */
 export type JourneyLandSlimSource = { index: string; indexSha256: string; terrainSha256: string };
@@ -66,7 +69,14 @@ export function decodeJourneyLandSlim(value: unknown, revision: string = HORIZON
   const count = t!.columns * t!.rows;
   if (!(t!.columns >= 2 && t!.rows >= 2 && t!.step > 0) || !isArray(t!.heightsCm) || !isArray(t!.surfaces) || t!.heightsCm.length !== count || t!.surfaces.length !== count ||
       t!.width !== (t!.columns - 1) * t!.step || t!.depth !== (t!.rows - 1) * t!.step) fail("the terrain lattice is malformed");
-  for (const key of ["coastline", "water", "landforms", "districts", "hosts", "reserves", "lines", "stations", "yearWalk", "homestead"] as const) if (!isArray(land![key])) fail(`${key} is missing`);
+  for (const key of ["coastline", "water", "landforms", "districts", "hosts", "reserves", "lines", "stations", "yearWalk", "homestead", "bridges", "covers"] as const) if (!isArray(land![key])) fail(`${key} is missing`);
+  if (land!.boulevards !== undefined && !isArray(land!.boulevards)) fail("boulevards is malformed");
+  const drawn = new Set(land!.lines.map((l) => l.id));
+  for (const b of land!.bridges!) {
+    if (!b || typeof b.id !== "string" || !isArray(b.axis) || b.axis.length < 2 || !(b.width > 0) || !isArray(b.lineIds) || !isArray(b.underIds)) fail(`bridge ${String(b?.id)} is malformed`);
+    if (b.lineIds.some((id) => !drawn.has(id))) fail(`bridge ${b.id} carries a line the land does not draw`);
+  }
+  for (const c of [...land!.covers!, ...(land!.boulevards ?? [])]) if (!c || !drawn.has(c.lineId) || !isArray(c.points) || c.points.length < 2) fail(`${String(c?.id)} is malformed`);
   if (land!.stations.length !== STATION_IDS.length || land!.stations.some((s, i) => s.id !== STATION_IDS[i])) fail("the twelve stations are not jan…dec");
   const heights = new Float32Array(count), surfaces = new Uint8Array(count);
   for (let n = 0; n < count; n++) { heights[n] = t!.heightsCm[n]! / 100; surfaces[n] = t!.surfaces[n]!; }

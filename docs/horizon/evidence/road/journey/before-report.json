@@ -1,0 +1,131 @@
+{
+  "before-classic-default-region.png": {
+    "view": {
+      "x": 1048.325806572974,
+      "y": 687.1415660619346,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 37763,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 10545,
+      "drawCalls": 10
+    },
+    "anchors": 533
+  },
+  "before-classic-sky.png": {
+    "view": {
+      "x": 1000,
+      "y": 900,
+      "radius": 1734.9873406203205,
+      "tier": "sky",
+      "worldPerPixel": 2.022594709333076
+    },
+    "stats": {
+      "triangles": 20391,
+      "drawCalls": 20
+    },
+    "land": {
+      "triangles": 9675,
+      "drawCalls": 9
+    },
+    "anchors": 533
+  },
+  "before-classic-bight-region.png": {
+    "view": {
+      "x": 560,
+      "y": 1098,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 26299,
+      "drawCalls": 26
+    },
+    "land": {
+      "triangles": 10545,
+      "drawCalls": 10
+    },
+    "anchors": 533
+  },
+  "before-classic-bight-stop.png": {
+    "view": {
+      "x": 560,
+      "y": 1098,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 24851,
+      "drawCalls": 26
+    },
+    "land": {
+      "triangles": 10545,
+      "drawCalls": 10
+    },
+    "anchors": 533
+  },
+  "before-classic-quay-stop.png": {
+    "view": {
+      "x": 1340,
+      "y": 1340,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 24941,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 10545,
+      "drawCalls": 10
+    },
+    "anchors": 533
+  },
+  "before-classic-highspan-stop.png": {
+    "view": {
+      "x": 1240,
+      "y": 1102,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 27309,
+      "drawCalls": 26
+    },
+    "land": {
+      "triangles": 10545,
+      "drawCalls": 10
+    },
+    "anchors": 533
+  },
+  "before-classic-prow-stop.png": {
+    "view": {
+      "x": 1590,
+      "y": 890,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 26759,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 10545,
+      "drawCalls": 10
+    },
+    "anchors": 533
+  },
+  "errors-classic": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+}

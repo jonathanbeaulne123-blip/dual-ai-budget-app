@@ -100,6 +100,46 @@ export function densify(points: readonly Point2[], maxStep: number): Point2[] {
   return out;
 }
 
+
+/** Plan projection of p on segment a→b: t along (0…1, unclamped) and signed lateral offset (right of a→b positive). */
+export function projectOnSegment(p: readonly number[], a: readonly number[], b: readonly number[]): { t: number; lateral: number; length: number } {
+  const dx = b[0]! - a[0]!, dz = b[1]! - a[1]!, length = Math.hypot(dx, dz) || 1;
+  const px = p[0]! - a[0]!, pz = p[1]! - a[1]!;
+  return { t: (px * dx + pz * dz) / (length * length), lateral: (-px * dz + pz * dx) / length, length };
+}
+
+/** Arc position (eu) of the point of a polyline nearest to q. */
+export function arcOf(points: readonly Point2[], q: Point2): number {
+  let best = Infinity, at = 0, run = 0;
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]!, b = points[i]!, pr = projectOnSegment(q, a, b), t = Math.min(Math.max(pr.t, 0), 1);
+    const d = Math.hypot(a[0] + (b[0] - a[0]) * t - q[0], a[1] + (b[1] - a[1]) * t - q[1]);
+    if (d < best) { best = d; at = run + t * pr.length; }
+    run += pr.length;
+  }
+  return at;
+}
+
+/** The polyline between two arc positions (a < b), ends interpolated. */
+export function sliceByArc(points: readonly Point2[], from: number, to: number): Point2[] {
+  const out: Point2[] = [];
+  let run = 0;
+  const at = (a: Point2, b: Point2, t: number): Point2 => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]!, b = points[i]!, len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (len > 0) {
+      const s0 = run, s1 = run + len;
+      if (s1 >= from && s0 <= to) {
+        if (!out.length) out.push(at(a, b, Math.max(0, (from - s0) / len)));
+        out.push(at(a, b, Math.min(1, (to - s0) / len)));
+      }
+    }
+    run += len;
+    if (run > to) break;
+  }
+  return out.filter((p, i) => i === 0 || p[0] !== out[i - 1]![0] || p[1] !== out[i - 1]![1]);
+}
+
 /** SVG path data for a polyline or ring, rounded to 0.1 concept metre. */
 export function pathData(points: readonly Point2[], closed: boolean): string {
   if (!points.length) return "";
