@@ -196,7 +196,7 @@ describe("the seams that carry the bar", () => {
     expect(app).toMatch(/const harbourBarFab: CompassFab = \{closed:adding,actions:fabActionsFor\(view,\{memberHasJob\}\),closedLabel:fabClosedLabel\(view\),onOpenChange:setFabOpen,onPick:\(nextMode\)=>openRecordFlow\(nextMode\),onBillPaid:\(\)=>openRecordFlow\("bill"\)\}/);
     expect(app).toMatch(/onQuickSheet=\{\(\)=>setQuickSheetOpen\(true\)\} fab=\{charterTakeoverVisible\?undefined:harbourBarFab\}\/><\/Suspense>/);
     // One glass chrome for both spaces (D2).
-    expect(app).toMatch(/HARBOUR_ENABLED\?<><Compass fab=\{harbourBarFab\}/);
+    expect(app).toMatch(/HARBOUR_ENABLED\?<><WorldToggle\/><Compass fab=\{harbourBarFab\}/);
     // The district row is gone from the App.
     expect(app).not.toMatch(/<Compass[^>]*(?:onHome|onStudy|onKitchen|onMaking|onTogether)=/);
     // S5: the backtick flips in personal scope too (its Desk), still behind the harbour gate.

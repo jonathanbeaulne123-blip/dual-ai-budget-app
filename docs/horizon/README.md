@@ -112,7 +112,8 @@ Delivered to `~/Downloads/hearth-horizon-<pass>/` (for example `hearth-horizon-p
 ## 8. Review harness and capture convention
 
 - Serve: `HEARTH_REVIEW_PORT=4192 node scripts/serve-whole-house-review.mjs`
-- Open: `http://localhost:4192/__review?seed=mountain&story=growing&run=first&member=MEM-001` plus `&sun=HH:MM` (LIGHT §1).
+- Open Mountain: `http://localhost:4192/__review?seed=mountain&story=growing&run=first&member=MEM-001` plus `&sun=HH:MM` (LIGHT §1).
+- Open Horizon (DEV): same URL with `&world=horizon`, or start Vite with `VITE_HEARTH_HOUSE_WORLD=1 VITE_HEARTH_HARBOUR=1` and use the in-App **Mountain / Horizon** toggle under Compass/QuickSheet (full-App UX dissection; geography stays partitioned).
 - Runtime handle: `document.querySelector('.house-world__canvas[data-harbour-tier]').__harbour` → `shot(id)`, `body().at()`, `nearestStation`, `mountainTravel`.
 - Sizes: 1440 × 900 (full tier: needs ≥ 720 px and `hardwareConcurrency > 4`) and 390 × 844 (lite).
 - Headless captures are the builder's checks. Acceptance captures come from Jonathan's Mac and iPhone (CONTRACT §2.15, §7).
