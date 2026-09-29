@@ -8,7 +8,7 @@
 - **Branch:** `codex/horizon-board-reset` for the follow-up
 - **Baseline SHA:** `e6ee1b0a220af420699ab3b24609d10d80a2b07a` (`origin/main`, checked 2026-09-29)
 - **Integration SHA:** `c6bfacf` (source commits `d16bc51`, `366443e`; this record has a later documentation commit)
-- **PR or issue:** #573 (merged); board/reset follow-up PR pending
+- **PR or issue:** #573 (merged); #574 (board/reset follow-up draft)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** no follow-up deployment authorized
@@ -76,4 +76,4 @@ The broad local gate verifies code and many contracts, but visual and physical-d
 
 ## Handoff
 
-PR #573 merged without the board/reset follow-up. Codex owns the separate follow-up branch. Jonathan decides on a Development release after reviewing local and device evidence. No follow-up merge or deployment is authorized by this worksession.
+PR #573 merged without the board/reset follow-up. Codex owns the separate follow-up branch and draft PR #574. Jonathan decides on a Development release after reviewing local and device evidence. No follow-up merge or deployment is authorized by this worksession.
