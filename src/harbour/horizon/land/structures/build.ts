@@ -124,12 +124,15 @@ function laneGuard(cuts:LandCuts):(xy:XY,above:number,ownBeds:readonly string[])
   };
 }
 /** Rail posts every ≤ 2 eu with a bar between each pair, so a clipped junction removes only a local bay. */
-/** Posts every `spacing` and a top rail; `midRail` (road decks, ROAD.md §2.5) adds a continuous rail at 0.55–0.85 (across the 0.65 contact level whether the deck top is at the path or 0.15 over it) so a vehicle
+/** Road main: width of the Bight spur trestle's west deck filler (to the Bight walk's inner edge), eu. */
+const WEST_FILL=.45;
+/** Posts every `spacing` and a top rail; `midRail` (road decks, ROAD.md §2.5) adds a continuous board at 0.25–0.95 (across both the 0.2 and 0.65 contact levels even where the route was regraded up to
+ * 0.25 eu after its trestle was built) so a vehicle
  * or a walker is stopped at body height between the posts (a top rail at 1.05 alone passes under the cruiser's 0.2/0.65 contact
  * levels: the Bight spur trestle's east edge let a rider through to a 9 eu drop). */
 function postedRail(rails:StructureSolid,path:readonly XYZ[],offset:number,height=1.05,spacing=2,midRail=false):void {
   const length=planLength(path),n=Math.max(1,Math.ceil(length/spacing));let prev:XYZ|undefined;
-  for(let k=0;k<=n;k++){const {p,dir}=along(path,length*k/n),xy:XY=[p[0]-dir[1]*offset,p[2]+dir[0]*offset];box(rails,xy,p[1]+height,[.1,.1],p[1]-.35);const top:XYZ=[p[0],p[1],p[2]];if(prev){slab(rails,prev,top,.09,.09,offset,height);if(midRail)slab(rails,prev,top,.08,.3,offset,.55);}prev=top;}
+  for(let k=0;k<=n;k++){const {p,dir}=along(path,length*k/n),xy:XY=[p[0]-dir[1]*offset,p[2]+dir[0]*offset];box(rails,xy,p[1]+height,[.1,.1],p[1]-.35);const top:XYZ=[p[0],p[1],p[2]];if(prev){slab(rails,prev,top,.09,.09,offset,height);if(midRail)slab(rails,prev,top,.08,.7,offset,.95);}prev=top;}
 }
 /** v2.0 (D-A1): MANIFEST structures.bightBridge as numbers. s runs along the V01 axis from the west control point, o is
  * the offset from that axis, + toward the Bight (the lagoon). */
@@ -366,7 +369,8 @@ function carriedDeck(id:string,route:BedCut,path:XYZ[],width:number,cuts:LandCut
   for(const r of refused){const i=bents.findIndex(b=>b>r),bay=i>0?bents[i]!-bents[i-1]!:Infinity,at=plan(along(path,r).p);
     if(bay<=24.01)cuts.diagnostics.push({id:`structures.${id}.bentOmitted`,severity:'info',message:`${id}: no bent at ${r.toFixed(1)} eu (it would stand in ${refusedWhy.get(r)}'s corridor); the ${bay.toFixed(1)} eu bay ${bay>12.01?'is carried by steel girders under both deck edges bearing on the cap beams at':'spans between the bents at'} ${bents[i-1]!.toFixed(1)} and ${bents[i]!.toFixed(1)} eu`,at,measured:bay,required:24});
     else conflict(cuts,`structures.${id}.bentInLane`,`${id}: the bent at ${r.toFixed(1)} eu stands in ${refusedWhy.get(r)}'s corridor (and 5 eu either way); it is not built and no girder carries its ${Number.isFinite(bay)?bay.toFixed(1)+' eu ':''}bay`,at,bay,24);}
-  for(const side of [-1,1])postedRail(rails,path,side*(width/2-.05),1.05,2,o.bedProfile==='road');
+  // A road deck's rail is mounted on the deck's outside face (its whole width stays carriageway); others stand just inside.
+  for(const side of [-1,1])postedRail(rails,path,side*(o.bedProfile==='road'?width/2+.06:width/2-.05),1.05,2,o.bedProfile==='road');
   cuts.solids.push(deck,rails);if(supports.indices.length)cuts.solids.push(supports,caps);
   const b=bed(`structure.${id}`,o.bedProfile??'walk',path,false);b.width=width;b.structureIds=[id];cuts.beds.push(b);route.structureIds.push(id);
   return {bents,refused};
@@ -391,7 +395,15 @@ export function buildNamedKinds(cuts:LandCuts,base:HeightQuery):void {
   {// D-C9 VBS trestle: bents on the west edge and the centreline only; the S4-side (east) edge cantilevers.
     const f=S.bightSpurTrestle,vbs=cuts.beds.find(b=>b.id==='spur VBS'||b.id==='VBS');
     if(f&&vbs&&f.from&&f.to){const path=stretchBetween(vbs,f.from as unknown as XY,f.to as unknown as XY),w=f.width_m??5,{dir}=along(path,planLength(path)/2),west=-dir[1]<0?1:-1;
-      carriedDeck('bightSpurTrestle',vbs,path,w,cuts,base,{bentOffsets:[0,west*(w/2-.6)],bedProfile:'road'});}}
+      carriedDeck('bightSpurTrestle',vbs,path,w,cuts,base,{bentOffsets:[0,west*(w/2-.6)],bedProfile:'road'});
+      // Road main: the Bight walk runs beside VBS on the west at the road's height on its own deck (its inner edge 0.4 eu
+      // out); the trestle's west deck edge is carried out to meet it, so no slot opens between the road and the footway.
+      const walk=cuts.beds.find(b=>b.id==='walk bight'),mid=path[Math.floor(path.length/2)]!,near=walk?nearestOnPath(plan(mid),walk.points):undefined;
+      if(walk&&near&&near.distance<w/2+walk.width){
+        const {dir:md}=along(path,planLength(path)/2),side=Math.sign((near.at[0]-mid[0])*-md[1]+(near.at[2]-mid[2])*md[0])||west;
+        const fill=solid('bightSpurTrestle.deckFill','trestle','boardwalk','deck',[vbs.id],districtAt(...plan(mid)));
+        for(let i=1;i<path.length;i++)mitredSlab(fill,path,i,WEST_FILL,.6,side*(w/2+WEST_FILL/2-.02));
+        cuts.solids.push(fill);}}}
   {// v2.4 (integrator 4): the Year Walk's November loop over its own lower lane at the Prow — the upper pass on the Year Walk's
     // own grade; bents outside the lower lane's corridor (its centreline ± 4.5: 5.2 walk + shoulders).
     const f=S.prowLoopFootbridge,yw=cuts.beds.find(b=>b.id==='yearWalk');
