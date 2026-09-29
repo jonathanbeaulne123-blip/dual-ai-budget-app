@@ -51,6 +51,9 @@ import {shadowFrame} from '../sun/shadow.ts';
 import {createSkyDome} from '../sky/dome.ts';
 import {nightLight,nightDome,NIGHT_LIGHT_CARDS,NIGHT_FLOOR,faceCardOn,FACE_CARD_LIGHT} from '../sky/night.ts';
 import {createRoadLights} from './roadLights.ts';
+import {createCorridorArt,type CorridorArt} from './corridorArt.ts';
+import {createCorridorPlanting,type CorridorPlanting} from './corridorPlanting.ts';
+import {roadLampRamp} from '../sky/night.ts';
 import {createInspector,inspectorEnabled,buildInspectorSnapshot,type InspectorSource} from './inspector.ts';
 import {sketchbookLens} from '../world/lens.ts';
 import type {XYZ} from '../land/interfaces.ts';
@@ -227,7 +230,22 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   // Night is the moonlit floor plus the light cards of every `world.lights` anchor (door and threshold pool + bead; corridor
   // lamps: conformed pool decal + glow/halo) under one cap, and, for road lamps only (D-R3 overrides STYLE §1.2.1), a fixed
   // pool of shadowless point lights. Lamps ramp on the world clock (the sun's elevation); `updateLocalLights` drives it.
-  const roadLights=createRoadLights(scene,world,{tier,ground:(x,z,near)=>geography.surface(x,z,near+1,0)?.y??null,revision:()=>geography.indexStats.chunks});
+  // ---- Road main: the corridor's dressing and planting (runtime/corridorArt.ts, corridorPlanting.ts; ROAD.md §4–§6, §8) ----
+  // Markings, guard kits, lamps and stop furniture, and the roadside planting, per resident district; hidden on the Journey map.
+  // The kit's lamp heads feed roadLights so the pools, glow cards and point lights sit on the lanterns as drawn.
+  const seasonOf=(date:Date)=>{const month=date.getMonth()+1;return month<=2||month===12?'winter' as const:month<=5?'spring' as const:month<=8?'summer' as const:'autumn' as const;};
+  let corridorArt:CorridorArt,corridorPlanting:CorridorPlanting,corridorSeason='',corridorNight=-1;
+  function mountCorridor(date:Date){
+    corridorArt=createCorridorArt(world,{tier,theme,ground:(x,z)=>geography.ground(x,z)});
+    corridorSeason=seasonOf(date);corridorNight=-1;
+    corridorPlanting=createCorridorPlanting(world,{tier,theme,season:corridorSeason as ReturnType<typeof seasonOf>,month:date.getMonth()+1});
+    scene.add(corridorArt.group,corridorPlanting.group);
+    for(const material of Object.values(corridorArt.materials))fogHook(material);for(const material of corridorPlanting.materials())fogHook(material);
+  }
+  function unmountCorridor(){corridorArt.dispose();corridorPlanting.dispose();scene.remove(corridorPlanting.group);}
+  mountCorridor(new Date());
+  const kitHeads=new Map(corridorArt!.lampHeads().map(h=>[h.id,h.head] as const));
+  const roadLights=createRoadLights(scene,{...world,lights:world.lights.map(a=>{const head=kitHeads.get(a.id);return head?{...a,head}:a;})},{tier,ground:(x,z,near)=>geography.surface(x,z,near+1,0)?.y??null,revision:()=>geography.indexStats.chunks});
   const lightAt:[number,number,number]=[0,0,0],lightFrame:{at?:readonly [number,number,number];hidden:boolean}={hidden:false};
   // The seven windows (LIGHT §3): each host's doorway is a lit card from dusk, one instanced draw.
   const doorHosts=world.hosts.filter(h=>'xy'in h.door),doorGeometry=new THREE.PlaneGeometry(NIGHT_LIGHT_CARDS.doorSize[0],NIGHT_LIGHT_CARDS.doorSize[1]).translate(0,NIGHT_LIGHT_CARDS.doorSize[1]/2,0),doorMaterial=new THREE.MeshBasicMaterial({color:NIGHT_LIGHT_CARDS.door,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-8}),doors=new THREE.InstancedMesh(doorGeometry,doorMaterial,Math.max(1,doorHosts.length));
@@ -244,6 +262,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function updateLocalLights(now:number){
     doors.visible=night&&mode!=='journey';lightAt[0]=body.x;lightAt[1]=body.y;lightAt[2]=body.z;lightFrame.at=mode==='look'?undefined:lightAt;lightFrame.hidden=mode==='journey';
     roadLights.update(camera,lastSolar.elevation,now,lightFrame);
+    const k=Math.round(roadLampRamp(lastSolar.elevation)*100)/100;if(k!==corridorNight){corridorNight=k;corridorArt.setNight(k);}
   }
   let interactiveAt:number|null=null;
   let doorCooldown=0,lastMovementBlocker:unknown=null,simulating=false;
@@ -346,6 +365,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function resize(reframe=true){schedule();adaptiveQuality.interrupt();if(lease.active)applyHorizonQuality(renderer,sun,adaptiveQuality.profile(window.devicePixelRatio));const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(reframe&&mode==='look'&&!transition){const pose=world.views.find(p=>p.id===shotId);if(pose)lookAt(pose);}}
   const observer=new ResizeObserver(()=>resize());observer.observe(host);resize();
   function setLight(date:Date){const month=date.getMonth()+1;homeWorld.setSeason(month<=2||month===12?'winter':month<=5?'spring':month<=8?'summer':'autumn');
+    if(seasonOf(date)!==corridorSeason){corridorSeason=seasonOf(date);corridorPlanting.setSeason(seasonOf(date),month);}
     const position=solarPosition(date),colors=skyGradient(position.elevation),lookHeight=camera.position.y-geography.ground(camera.position.x,camera.position.z),fog=horizonFog({tier,eyeAboveGround:Math.max(0,lookHeight),elevation:position.elevation,sunAzimuth:position.azimuth,heading:yaw*180/Math.PI}),floor=nightLight(position.elevation,colors);
     lastSolar=position;night=floor.lightCards;faceCardsLit=faceCardOn(position,comfort.calm);faceCards.visible=faceCardsLit&&mode!=='journey';roadLights.refresh();
     lastSkyColors=nightDome(colors,floor.nightness);lastSunDirection=[position.direction[0],position.direction[1],position.direction[2]];skyDome.update(lastSkyColors,fog.color,lastSunDirection);
@@ -701,7 +721,6 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   // ---- Pass 5: the placed region (Mountain v2) ----
   // Mounted (one v2 builder per frame) when a district under its footprint is resident outside the Journey map, drawn while
   // that holds, released REGION_RELEASE_MS after it stops. Its materials take the Horizon's fog stage and fade in like a district.
-  const seasonOf=(date:Date)=>{const month=date.getMonth()+1;return month<=2||month===12?'winter' as const:month<=5?'spring' as const:month<=8?'summer' as const:'autumn' as const;};
   function releaseRegion(){regionTask?.cancel();regionTask=null;regionScene?.dispose();regionScene=null;regionHooks=[];showRegion(false);}
   function showRegion(visible:boolean){
     if(regionScene)regionScene.group.visible=visible;
@@ -751,6 +770,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     }
     // Fine districts rise from the fog colour over 0.8 s (a cut under reduced motion); the coarse card they replace hides at once.
     for(const resource of stream.live.values()){resource.cards.group.visible=mode!=='journey';if(resource.chalk)resource.chalk.visible=night&&mode!=='journey';resource.fadeIn(motion.districtFadeMs>0?Math.min(1,Math.max(0,(now-resource.at)/motion.districtFadeMs)):1);}
+    // Road main: the corridor's art and planting follow the resident districts (hidden on the Journey map).
+    corridorArt.group.visible=corridorPlanting.group.visible=mode!=='journey';if(mode!=='journey'){corridorArt.update(camera,residentIds);corridorPlanting.update(camera,residentIds);}
     if(transition){
       if(transition.live&&stepped){transition.toEye.copy(camera.position);transition.toTarget.copy(target);}   // ride()/step() just set this frame's goal camera
       const t=transition.duration>0?Math.min(1,Math.max(0,(now-transition.at)/transition.duration)):1,ease=transition.live?moverBlendEase(now-transition.at,transition.duration):t*t*(3-2*t);
@@ -775,7 +796,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(now-lastSun>=60_000){setLight(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm}));lastSun=now;}
     updateLocalLights(now);
     skyDome.follow(camera);renderer.render(scene,camera);paintCount++;if(interactiveAt===null){interactiveAt=performance.now();options.onReady?.();void prefetchChunks();}if(drawSamples.length===0||now-drawSamples.at(-1)!.at>500){drawSamples.push({at:now,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,resident:stream.live.size});if(drawSamples.length>600)drawSamples.shift();}
-    const building=stream.building||!!regionTask||stream.live.size<stream.cap&&Boolean(stream.history.at(-1)?.pending.some(id=>!chunks||chunks.ready(id)));
+    const building=stream.building||!!regionTask||corridorArt.building()||stream.live.size<stream.cap&&Boolean(stream.history.at(-1)?.pending.some(id=>!chunks||chunks.ready(id)));
     const fading=motion.districtFadeMs>0&&([...stream.live.values()].some(resource=>now-resource.at<motion.districtFadeMs)||regionVisible&&performance.now()-regionShownAt<motion.districtFadeMs);
     const continuous=!paused&&(mode==='walk'||!!transition||mode!=='journey'&&(building||fading||!!peer&&motion.ambientMotion||roadLights.busy(now))||moverArts.size>0);
     // Queue a quality change for the next paint: resizing after render would clear this frame.
@@ -871,7 +892,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     setCruiserSkin(skin:CruiserSkin){schedule();cruiserSkin=skin;cruiserArt?.setSkin(skin);},
     cruiserState:()=>cruiser()?.state()??null,
     body:()=>({...body}),mode:()=>mode,shotId:()=>shotId,
-    setTheme(next:VehicleDressing){if(next===theme)return;theme=next;if(regionScene||regionTask)releaseRegion();kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
+    setTheme(next:VehicleDressing){if(next===theme)return;theme=next;unmountCorridor();mountCorridor(currentTime??new Date());if(regionScene||regionTask)releaseRegion();kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
     settings:()=>({tier,reducedMotion:comfort.reducedMotion,calm:comfort.calm,theme}),reviewDate:()=>(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm})),setAmbience(audio:WorldAmbience|null){ambience=audio;schedule();},
     offers,
     moverState():HorizonMoverState{const fade=fadeLabel&&performance.now()-fadeLabel.at<HORIZON_FADE_LABEL_MS?fadeLabel.label:undefined;return{mode:registry.mode(),attached:registry.active()!==null,hud:lastHud,airborne:registry.mode()==='parachute'||!!registry.active()?.airborne?.(),stowed:registry.stowed(),perspective:perspective.mode(),...(fade?{fade}:{}),cut:comfortCut};},
@@ -936,17 +957,17 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     /** Pass 5: the water picture at v2's dam, as given (0…1; null = unknown, frosted glass). The runtime and the region read
      *  nothing themselves: the app feeds the one reading L01 shows (CONTRACT §2.2). */
     setMountainDamWater(level:number|null,reserve:number|null){regionWater={level,reserve};regionScene?.setWater(level,reserve);schedule();},
-    dispose(){kitchen?.dispose();releaseRegion();offRegion?.();offCable?.();saveFleet();window.removeEventListener('pagehide',saveAll);offFleet();offHome();homeWorld.dispose();fleetArt.dispose();disposed=true;window.clearTimeout(fadeTimer);registry.dispose();cruiserArt?.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();offChunk?.();frameDriver?.dispose();observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',focusPause);document.removeEventListener('visibilitychange',visibilityClear);host.removeEventListener('blur',hostBlur);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();roadLights.dispose();inspector.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
+    dispose(){kitchen?.dispose();releaseRegion();offRegion?.();offCable?.();saveFleet();window.removeEventListener('pagehide',saveAll);offFleet();offHome();homeWorld.dispose();fleetArt.dispose();disposed=true;window.clearTimeout(fadeTimer);registry.dispose();cruiserArt?.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();offChunk?.();frameDriver?.dispose();observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',focusPause);document.removeEventListener('visibilitychange',visibilityClear);host.removeEventListener('blur',hostBlur);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();roadLights.dispose();unmountCorridor();inspector.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
   };
   // Pass 5 (T3's contract, HANDOFF-notes/rides.md): the cable rides move the region's cabins through `setTransit`.
   const offCable=placed&&api.mountainRegion?connectCableRegion(placed.region,api.mountainRegion,()=>camera.aspect):null;
   return api;
 }
 
-const CHALK_SOLID=/(^|\.)(edges|kerbs|parapet|parapets|rails|retaining|coping|lip|marker)(\.|@|$)/;
+const CHALK_SOLID=/(^|\.)(edges|kerbs|kerb|guard|parapet|parapets|rails|retaining|coping|lip|marker)(\.|@|$)/;
 /** Solids whose vertical faces also take the night face colour (walls that bound a walk and, Wave 6, rails: P28 C and L
  * read their rails at 1.25 / 2.69 : 1 against the moonlit ground; not markers). */
-const CHALK_FACE_SOLID=/(^|\.)(edges|kerbs|parapet|parapets|retaining|coping|rails)(\.|@|$)/;
+const CHALK_FACE_SOLID=/(^|\.)(edges|kerbs|kerb|parapet|parapets|retaining|coping|rails)(\.|@|$)/;
 type FogHook={fade:{value:number};cap:{value:number}};
 const fogHooks=new WeakMap<THREE.Material,FogHook>();
 /** One fog stage for land and cards: Three's fog, capped (horizon cards: 0.7), then a fade from the fog colour. */

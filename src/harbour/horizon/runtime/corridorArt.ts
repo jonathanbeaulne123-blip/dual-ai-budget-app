@@ -58,6 +58,8 @@ export type CorridorArt={
   night:{value:number};
   /** Build every listed district now (tests, kit sheets). */
   prebuild(ids:Iterable<string>):void;
+  /** True while a resident district's art is still being built (the frame loop keeps painting until it is done). */
+  building():boolean;
   stats():CorridorArtStats;
   dispose():void;
 };
@@ -233,6 +235,7 @@ export function createCorridorArt(world:WorldDefinition,opts:CorridorArtOptions)
     haloMesh.instanceMatrix.needsUpdate=true;haloMesh.visible=night.value>0;group.add(haloMesh);
   }
   const eye=new THREE.Vector3();
+  let pending=false;
   let task:{id:string;run:ReturnType<typeof createBuildTask<DistrictArt>>}|null=null;
   function update(camera:THREE.Camera,resident:ReadonlySet<string>){
     const now=performance.now();
@@ -240,6 +243,7 @@ export function createCorridorArt(world:WorldDefinition,opts:CorridorArtOptions)
     if(task&&!resident.has(task.id)){task.run.cancel();task=null;}
     if(!task)for(const id of resident)if(!districts.has(id)&&plans.has(id)){task={id,run:createBuildTask(buildDistrictSteps(id))};break;}
     if(task){const done=task.run.advance();if(done){districts.set(task.id,done);task=null;haloKey='';}}
+    pending=task!==null;if(!pending)for(const id of resident)if(!districts.has(id)&&plans.has(id)){pending=true;break;}
     camera.getWorldPosition(eye);
     for(const [id,d] of districts){
       const on=resident.has(id);d.build.group.visible=on;if(on)d.lastResident=now;
@@ -254,7 +258,7 @@ export function createCorridorArt(world:WorldDefinition,opts:CorridorArtOptions)
     const k=Math.max(0,Math.min(1,kIn));night.value=k;(halo.uniforms.opacity as {value:number}).value=k*.85;if(haloMesh)haloMesh.visible=k>0;
     const chalk=new THREE.Color(NIGHT_LIGHT_CARDS.chalk);markings.emissive.copy(chalk).multiplyScalar(.34*k);
   }
-  return {group,update,setNight,materials,night,
+  return {group,update,setNight,materials,night,building:()=>pending,
     lampHeads:()=>heads,
     prebuild(ids){for(const id of ids)if(!districts.has(id)&&plans.has(id))districts.set(id,finishBuild(buildDistrictSteps(id)));const all=new Set(districts.keys());for(const d of districts.values())d.build.group.visible=true;refreshHalos(all);},
     stats(){const out:CorridorArtStats={districts:{},lamps:heads.length};for(const [id,d] of districts)out.districts[id]={drawCalls:d.drawCalls,triangles:d.triangles,instances:d.instances};return out;},
