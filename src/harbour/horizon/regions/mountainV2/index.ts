@@ -61,7 +61,7 @@ export function createMountainV2Region(options:MountainV2RegionOptions={}):Mount
   const geo=createRegionGeography(options),terrainStep=options.terrainStep??5,rides=regionRides();
   // The ground mesh's triangle selection depends on the footprint; with a baked field it is this region's own.
   const groundCache=options.horizonGround?new Map():undefined;
-  const mountSteps=(scene:THREE.Scene,tier:'full'|'lite',dressing:PlaceDressing,o:MountainV2MountOptions={})=>mountRegionSteps(scene,tier,dressing,{contains:geo.contains,terrainStep,season:o.season,quiet:o.quiet,groundCache});
+  const mountSteps=(scene:THREE.Scene,tier:'full'|'lite',dressing:PlaceDressing,o:MountainV2MountOptions={})=>mountRegionSteps(scene,tier,dressing,{contains:geo.contains,terrainStep,season:o.season,quiet:o.quiet,groundCache,...(options.yield?.ceiling?{groundCeiling:options.yield.ceiling}:{})});
   return {
     id:MOUNTAIN_V2_REGION_ID,offset:MOUNTAIN_V2_OFFSET,footprint:MOUNTAIN_V2_FOOTPRINT,
     contains:geo.contains,hidesTerrainCell:geo.contains,groundAt:geo.groundAt,

@@ -5,7 +5,7 @@ import { gradeRoute, sampleSpline } from '../beds/solver';
 import { baseHeight } from '../terrain';
 import { buildWaterCuts } from '../water';
 import { FOOTING_SINK, GROUND_CONTACT, pier, wallToGround } from './foundations';
-import { box, clamp, distance, districtAt, mix, nearestOnPath, plan, slab, solid } from './mesh';
+import { box, clamp, distance, districtAt, mitredSlab, mix, nearestOnPath, plan, slab, solid } from './mesh';
 
 export interface SpanSpec { id:string; at:XY; route:string; length:number; width:number; height?:number; clear?:number; covered?:boolean; supportSpacing?:number; /** A clear opening centred on the span, carried by a through truss. */ opening?:number; /** Build abutments to the ground at both ends. */ abutments?:boolean; /** v1.9: the deck follows the route's own graded points (plan and height) instead of a level chord. */ followRoute?:boolean }
 export const SPANS:SpanSpec[]=[
@@ -27,6 +27,42 @@ export const SPANS:SpanSpec[]=[
     .filter(([,s])=>s&&typeof s==='object'&&s.route&&s.span_m&&s.xy)
     .map(([id,s]):SpanSpec=>({id,at:s.xy as unknown as XY,route:s.route!,length:s.span_m!,width:s.width_m??3.2,clear:2.4,supportSpacing:7,...(s.opening_m?{opening:s.opening_m}:{}),followRoute:true})),
 ];
+/** road (L1): the plan length of a span's deck along its route: exactly the span. The Quay Bridge and the High Span laid their
+ * deck 6 eu longer than the span, 3 eu past the route's level pins at each end, so the road met the deck 0.18–0.27 low under
+ * its lip; the deck now ends where the road's level ends (bed solver withSpanPins holds the same length). */
+export const spanDeckLength=(spec:SpanSpec):number=>spec.length;
+/** road (L1, ROAD.md §1 "where a structure owns the road"): a stretch of a road bed that a structure's own deck or floor carries.
+ * `from`/`to` are arc lengths (eu, plan) along the bed's FINAL points (as baked: world.collision.beds[id].points) from its first
+ * point; the structure's deck top is the road surface over [from, to] and its rails are the only rails there. */
+export interface StructureStretch { bedId:string; structureId:string; kind:'bridge'|'gallery'|'tunnel'|'trestle'; from:number; to:number }
+/** road (L1): every stretch of a road bed (V01, VG, V03, VBS) owned by a structure: the Quay Bridge, the Bight Bridge and the High
+ * Span (their span length), the Prow gallery and the Mountain Road Tunnel (their length plus the portal aprons, PORTAL_APRON each
+ * end), the Mountain Road canal bridge (its span) and the Bight spur trestle (between its manifest ends). Pure: it reads the beds'
+ * points and the manifest, so the corridor (L2) can call it on the final beds after the bake's settle passes. */
+export function structureStretches(beds:readonly Pick<BedCut,'id'|'points'>[]):StructureStretch[] {
+  const out:StructureStretch[]=[],S=M.structures as unknown as Record<string,{kind?:string;route?:string;xy?:number[];length_m?:number;span_m?:number;from?:number[];to?:number[]}>;
+  const arcOf=(b:Pick<BedCut,'points'>,q:XY)=>nearestOnPath(q,b.points).along,total=(b:Pick<BedCut,'points'>)=>planLength(b.points);
+  const push=(bedId:string,structureId:string,kind:StructureStretch['kind'],a:number,b:number)=>{const bed=beds.find(x=>x.id===bedId);if(!bed)return;const L=total(bed);out.push({bedId,structureId,kind,from:clamp(Math.min(a,b),0,L),to:clamp(Math.max(a,b),0,L)});};
+  for(const spec of SPANS){const bed=beds.find(b=>b.id===spec.route);if(!bed||spec.height===undefined||!['V01','VG','V03','VBS'].includes(spec.route))continue;
+    if(spec.id==='bightBridge'){const F=bightFrame(),B=bightSpec(),s0=F.A/2-B.span/2,s1=F.A/2+B.span/2;push(spec.route,spec.id,'bridge',arcOf(bed,F.at(s0,0)),arcOf(bed,F.at(s1,0)));continue;}
+    const mid=arcOf(bed,spec.at),half=spanDeckLength(spec)/2;push(spec.route,spec.id,'bridge',mid-half,mid+half);}
+  for(const [id,route,length] of [['prowTunnel','V01',90],...manifestTunnels().map(([i,r,l])=>[i,r,l] as [string,string,number])] as [string,string,number][]){
+    const t=S[id],bed=beds.find(b=>b.id===route);if(!t?.xy||!bed)continue;const mid=arcOf(bed,t.xy as unknown as XY),L=(t.length_m??length)/2+PORTAL_APRON;
+    push(route,id,t.kind==='gallery'?'gallery':'tunnel',mid-L,mid+L);}
+  for(const [id,t] of Object.entries(S)){if(!t||typeof t!=='object'||!t.route||!t.span_m||!t.xy||!['V01','VG','V03','VBS'].includes(t.route))continue;const bed=beds.find(b=>b.id===t.route);if(!bed)continue;const mid=arcOf(bed,t.xy as unknown as XY);push(t.route,id,'bridge',mid-t.span_m/2,mid+t.span_m/2);}
+  {const t=S.bightSpurTrestle,bed=beds.find(b=>b.id==='VBS');if(t?.from&&t.to&&bed)push('VBS','bightSpurTrestle','trestle',arcOf(bed,t.from as unknown as XY),arcOf(bed,t.to as unknown as XY));}
+  return out;
+}
+/** road (L1): the predicate form of structureStretches: is arc length `s` along bed `bedId` on a structure (and which)? */
+export function structureAt(stretches:readonly StructureStretch[],bedId:string,s:number):StructureStretch|undefined {
+  return stretches.find(r=>r.bedId===bedId&&s>=r.from&&s<=r.to);
+}
+/** road (L1): the dune culvert's centre: where the Drive (V01) crosses S4 in plan, else the manifest point. */
+export function duneCulvertCentre(cuts:Pick<LandCuts,'beds'>,s4:BedCut|undefined=cuts.beds.find(b=>b.id==='S4'),fallback:XY=M.structures.duneCulvert.xy as unknown as XY):XY {
+  const v=cuts.beds.find(b=>b.id==='V01');if(!v||!s4)return fallback;let best:XY=fallback,d=Infinity;
+  for(let i=1;i<s4.points.length;i++){const a=s4.points[i-1]!,b=s4.points[i]!;for(let k=0;k<=8;k++){const q:XY=[mix(a[0],b[0],k/8),mix(a[2],b[2],k/8)],n=nearestOnPath(q,v.points);if(n.distance<d&&distance(q,fallback)<40){d=n.distance;best=q;}}}
+  return d<2?best:fallback;
+}
 /** v2.6: MANIFEST structures.<id> of kind tunnel with a `route` (the Mountain Road Tunnel on V03): [id, route, length, width]. */
 export function manifestTunnels():[string,string,number,number][] {
   const S=M.structures as unknown as Record<string,{kind?:string;route?:string;length_m?:number;width_m?:number}>;
@@ -380,9 +416,11 @@ export function buildNamedKinds(cuts:LandCuts,base:HeightQuery):void {
 export function buildSpan(spec:SpanSpec,cuts:LandCuts,base:HeightQuery):void {
   const route=cuts.beds.find(b=>b.id===spec.route),axis=axisAt(route,spec.at),normal:XY=[-axis[1]!,axis[0]!];
   const h=spec.height??heightOnBeds(cuts,spec.at,base),a:XYZ=[spec.at[0]!-axis[0]!*spec.length/2,h,spec.at[1]!-axis[1]!*spec.length/2],b:XYZ=[spec.at[0]!+axis[0]!*spec.length/2,h,spec.at[1]!+axis[1]!*spec.length/2];
-  const curve=(spec.id==='quayBridge'||spec.id==='highSpan')&&route?routeStretch(route,spec.at,spec.length+6,h):spec.followRoute&&route?routeStretch(route,spec.at,spec.length):[];
+  const curve=(spec.id==='quayBridge'||spec.id==='highSpan')&&route?routeStretch(route,spec.at,spanDeckLength(spec),h):spec.followRoute&&route?routeStretch(route,spec.at,spec.length):[];
   const path=curve.length>1?curve:[a,b],length=planLength(path),bedIds=[spec.route,`structure.${spec.id}`];
-  const deck=solid(`${spec.id}.deck`,spec.covered?'coveredFootbridge':'bridge','stone','deck',[spec.route],districtAt(...spec.at));for(let i=1;i<path.length;i++)slab(deck,path[i-1]!,path[i]!,spec.width,.6);
+  // road (L1): one continuous deck (mitred pieces sharing their corners): per-segment rectangles left 0.2–0.3 eu cracks to the
+  // river on the outside of the Quay Bridge's bend.
+  const deck=solid(`${spec.id}.deck`,spec.covered?'coveredFootbridge':'bridge','stone','deck',[spec.route],districtAt(...spec.at));for(let i=1;i<path.length;i++)mitredSlab(deck,path,i,spec.width,.6);
   const piers=solid(`${spec.id}.supports`,'pier','stone','support',bedIds,deck.districtId),rails=solid(`${spec.id}.rails`,'parapet','stone','rail',[spec.route],deck.districtId);
   const spacing=spec.supportSpacing??12,half=length/2;let stations:number[]=[];
   if(spec.opening){const o=spec.opening/2,n=Math.max(1,Math.ceil((half-o)/spacing));for(let k=0;k<=n;k++){const s=o+(half-o)*k/n;stations.push(half-s,half+s);}}
@@ -473,7 +511,16 @@ export function tunnel(id:string,points:XYZ[],width:number,clear:number,cuts:Lan
     // The open side: columns every ≤ columnSpacing eu from the roof's underside to footings on the ground, and a parapet
     // on posts along the carriageway's open edge (the drop to the sea side is guarded wherever it is).
     const side=options.openSide,colonnade=solid(`${id}.colonnade`,'column','stone','support',bedIds,district),parapet=solid(`${id}.parapet`,'parapet','metal','rail',bedIds,district),length=planLength(points),n=Math.max(1,Math.ceil(length/(options.columnSpacing??6)));
-    for(let k=0;k<=n;k++){const {p,dir}=along(points,length*k/n),o=side*(width/2+.3);pier(colonnade,[p[0]-dir[1]*o,p[2]+dir[0]*o],p[1]+clear,base,[.7,.7],[1.8,1.8]);}
+    // road (L1): a route leaving the gallery through its open side (the plot terraces.2 service drive) passes through an open
+    // bay: no column stands within its half width + 0.9 of where it crosses the colonnade line; a lintel (kind beam, hung)
+    // carries the roof's edge over the bay between the columns either side. The drive stalled on a column 1.5 eu off its axis.
+    const o0=side*(width/2+.3),colLine=points.map((q,i)=>{const a=points[Math.max(0,i-1)]!,b=points[Math.min(points.length-1,i+1)]!,l=distance(plan(a),plan(b))||1;return [q[0]-(b[2]-a[2])/l*o0,q[1],q[2]+(b[0]-a[0])/l*o0] as XYZ;});
+    const bays=lineGaps(cuts,colLine,[...bedIds,id]).map(s=>{const hit=cuts.beds.find(b=>b.points.length>1&&nearestOnPath(plan(along(colLine,s).p),b.points).distance<1.5&&!bedIds.includes(b.id));return {s,half:(hit?hit.width/2:2.5)+.9};});
+    const lintel=solid(`${id}.lintels`,'beam','stone','support',bedIds,district);
+    const cols:number[]=[];for(let k=0;k<=n;k++){const sk=length*k/n;if(bays.some(b=>Math.abs(b.s-sk)<b.half))continue;cols.push(sk);const {p,dir}=along(points,sk);pier(colonnade,[p[0]-dir[1]*o0,p[2]+dir[0]*o0],p[1]+clear,base,[.7,.7],[1.8,1.8]);}
+    for(const b of bays){const before=Math.max(...cols.filter(c=>c<b.s),0),after=Math.min(...cols.filter(c=>c>b.s),length);const a=along(colLine,before).p,c=along(colLine,after).p;
+      slab(lintel,[a[0],along(points,before).p[1]+clear,a[2]],[c[0],along(points,after).p[1]+clear,c[2]],.7,.6);}
+    if(lintel.indices.length){cuts.solids.push(lintel);cuts.diagnostics.push({id:`structures.${id}.openBays`,severity:'info',message:`${id}: ${bays.length} open bay(s) in the colonnade where a route leaves through the open side (lintels carry the roof edge; road L1)`,measured:bays.length});}
     postedRail(parapet,points,side*(width/2-.1));cuts.solids.push(colonnade,parapet);
   }
 }
@@ -677,10 +724,13 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   // wall, the sea side is a colonnade; length_m and the headroom come from the manifest.
   // v2.6 (D-M4): the Shoulder Tunnel is retired with Crown Road; MANIFEST tunnels with a `route` (the Mountain Road Tunnel on V03)
   // are built here too, as sections of their route (no bed of their own: the route's bed runs through them).
-  for(const [id,route,length0,width,clear0] of [['prowTunnel','V01',90,17,5],['duneCulvert','S4',32,5,3],...manifestTunnels().map(([id,route,length,width]):[string,string,number,number,number]=>[id,route,length,width,5])] as const){
+  for(const [id,route,length0,width,clear0] of [['prowTunnel','V01',90,17,5],['duneCulvert','S4',32,5,3],...manifestTunnels().map(([id,route,length,width]):[string,string,number,number,number]=>[id,route,length,width,5+GALLERY_MARGIN])] as const){
     const s=(M.structures as unknown as Record<string,unknown>)[id]! as unknown as {xy:number[];kind?:string;length_m?:number;route?:string;section?:{headroom_eu?:number}},xy=s.xy as unknown as XY,b=cuts.beds.find(p=>p.id===route)!,isGallery=s.kind==='gallery',length=s.length_m??length0;
     // A gallery's roof follows the road's own points: GALLERY_MARGIN over the stated headroom covers the verges' cross-fall.
-    const clear=isGallery?(s.section?.headroom_eu??clear0)+GALLERY_MARGIN:clear0,points=routeStretch(b,xy,length);
+    // road (L1): the dune culvert is centred on the Drive's crossing over S4 (its manifest point lies 13 eu north, which left its
+    // south portal under the Drive's carriageway and the Drive's embankment masked away over it).
+    const centre=id==='duneCulvert'?duneCulvertCentre(cuts,b,xy):xy;
+    const clear=isGallery?(s.section?.headroom_eu??clear0)+GALLERY_MARGIN:clear0,points=routeStretch(b,centre,length);
     const openSide=isGallery?gallerySeaSide(points,base):undefined;
     tunnel(id,points,width,clear,cuts,districtAt(...xy),{base,...(openSide?{openSide}:{}),...(manifestTunnels().some(t=>t[0]===id)?{bedIds:[route]}:{})});
     if(isGallery)galleryHeadroom(id,points,width,clear,cuts);

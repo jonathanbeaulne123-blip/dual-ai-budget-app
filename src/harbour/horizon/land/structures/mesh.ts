@@ -74,3 +74,18 @@ export function bounds(out: StructureSolid): { min: XYZ; max: XYZ } {
   out.positions.forEach((v,i)=>{min[i%3]! =Math.min(min[i%3]!,v);max[i%3]! =Math.max(max[i%3]!,v);});
   return {min:min as unknown as unknown as XYZ,max:max as unknown as unknown as XYZ};
 }
+/** road (L1): a closed slab over segment i of `points` (points[i-1] → points[i]) whose end faces lie on the mitre (bisector) of
+ * the joints with its neighbours, so consecutive pieces share their corners exactly: a continuous ribbon with no wedge crack on
+ * the outside of a bend and no overlap on the inside (per-segment rectangles left 0.2–0.3 eu cracks down to the ground). `offset`
+ * is along the left normal like `slab`; `rise` lifts the top; `skip(j)` marks a neighbour segment j that is not drawn (the end
+ * facing it is square). The mitre is capped at 2× the width (a hairpin keeps a square end). */
+export function mitredSlab(out: StructureSolid, points: readonly XYZ[], i: number, width: number, thickness: number, offset = 0, rise = 0, skip?: (j: number) => boolean): void {
+  const a = points[i - 1]!, b = points[i]!, d = Math.hypot(b[0] - a[0], b[2] - a[2]); if (d < 1e-7) return;
+  const n: XY = [-(b[2] - a[2]) / d, (b[0] - a[0]) / d];
+  const normalOf = (j: number): XY | null => { if (j < 1 || j >= points.length || skip?.(j)) return null; const p = points[j - 1]!, q = points[j]!, l = Math.hypot(q[0] - p[0], q[2] - p[2]); return l < 1e-7 ? null : [-(q[2] - p[2]) / l, (q[0] - p[0]) / l]; };
+  const joint = (other: XY | null): [XY, number] => { if (!other) return [n, 1]; const m: XY = [n[0] + other[0], n[1] + other[1]], l = Math.hypot(m[0], m[1]); if (l < 1e-6) return [n, 1]; const u: XY = [m[0] / l, m[1] / l], c = u[0] * n[0] + u[1] * n[1]; return c < .5 ? [n, 1] : [u, 1 / c]; };
+  const [na, ka] = joint(normalOf(i - 1)), [nb, kb] = joint(normalOf(i + 1));
+  const pt = (p: XYZ, m: XY, k: number, side: number): XYZ => [p[0] + m[0] * (offset + side * width / 2) * k, p[1] + rise, p[2] + m[1] * (offset + side * width / 2) * k];
+  const corners = [pt(a, na, ka, -1), pt(a, na, ka, 1), pt(b, nb, kb, 1), pt(b, nb, kb, -1)];
+  prism(out, corners, corners.map(p => p[1]! - thickness));
+}

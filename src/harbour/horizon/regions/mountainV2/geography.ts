@@ -51,7 +51,7 @@ export type RegionGeographyOptions={
   exclude?:(hx:number,hz:number)=>boolean;
   /** Points inside the drawn footprint whose ground, decks and solids the Horizon still answers (S1's own slab across the
    * Foot terrace): drawn as the region, felt as the Horizon (PR #566 CodeRabbit). */
-  yield?:(hx:number,hz:number)=>boolean;
+  yield?:TerraceYield;
 };
 /** The margin (m) round a Horizon terrain mouth the region leaves to the Horizon's own (masked) terrain. */
 export const MOUTH_MARGIN=6;
@@ -113,16 +113,32 @@ export function regionWaterAt(x:number,z:number):number|null{return reservoirWat
 
 /** `yield` for a Horizon bed's own corridor (width/2 + shoulder) where it crosses the Foot terrace (native z ≥ −48): S1
  * arrives there on the Horizon's slab, which the region's lawn stood a few centimetres over (grip 0.6 for 1.0). On v2's massif
- * the bed is region-carried (land/mountainV2/beds.ts regionCarryLand) and stays the region's (PR #566 CodeRabbit, tests.md §3). */
-export function terraceBedExclusion(beds:readonly {id:string;points:readonly Point3[];width?:number;shoulder?:number}[],ids:readonly string[]=['S1']){
+ * the bed is region-carried (land/mountainV2/beds.ts regionCarryLand) and stays the region's (PR #566 CodeRabbit, tests.md §3).
+ * road (L1): the Mountain Road (V03) crosses the Foot terrace on its own deck to the town lane: the region's lawn stood 0.56
+ * over the carriageway at V03 246–274 (a buried road). The default now yields V03's corridor too. */
+export const TERRACE_YIELD_BEDS=['S1','V03'] as const;
+/** A terrace yield, which may also carry the height the region's DRAWN ground must stay under (road L1): drawn as the region,
+ * felt as the Horizon, and never drawn over the Horizon deck it yields to. */
+export type TerraceYield=((hx:number,hz:number)=>boolean)&{ceiling?:(hx:number,hz:number)=>number|null};
+/** road (L1): eu under a yielded deck the region's drawn ground is held (the Horizon's own bed clearance), and the 1:2 fall back
+ * to v2's ground from BATTER_FROM beyond the corridor. */
+const DECK_CLEARANCE=.05,BATTER_FROM=1.5,BATTER=.5;
+export function terraceBedExclusion(beds:readonly {id:string;points:readonly Point3[];width?:number;shoulder?:number}[],ids:readonly string[]=TERRACE_YIELD_BEDS):TerraceYield{
   const from=O.z+MOUNTAIN_V2_MASSIF_Z;
   const runs=beds.filter(b=>ids.includes(b.id)).flatMap(b=>{
     const pts=b.points.filter(p=>p[2]>=from-2);if(pts.length<2)return [];
     // A skate bed's shoulder is 0 in the bake (land/beds/profiles.ts); the published world carries the width only.
-    const half=(b.width??4)/2+(b.shoulder??0),xs=pts.map(p=>p[0]),zs=pts.map(p=>p[2]);
-    return [{pts,half,box:[Math.min(...xs)-half,Math.min(...zs)-half,Math.max(...xs)+half,Math.max(...zs)+half] as const}];
+    const half=(b.width??4)/2+(b.shoulder??0),xs=pts.map(p=>p[0]),zs=pts.map(p=>p[2]),grow=half+BATTER_FROM+8;
+    return [{pts,half,box:[Math.min(...xs)-half,Math.min(...zs)-half,Math.max(...xs)+half,Math.max(...zs)+half] as const,wide:[Math.min(...xs)-grow,Math.min(...zs)-grow,Math.max(...xs)+grow,Math.max(...zs)+grow] as const}];
   });
-  return (hx:number,hz:number)=>hz>=from&&runs.some(r=>hx>=r.box[0]&&hz>=r.box[1]&&hx<=r.box[2]&&hz<=r.box[3]&&nearestOnRoute(hx,hz,r.pts).distance<=r.half);
+  const test:TerraceYield=(hx:number,hz:number)=>hz>=from&&runs.some(r=>hx>=r.box[0]&&hz>=r.box[1]&&hx<=r.box[2]&&hz<=r.box[3]&&nearestOnRoute(hx,hz,r.pts).distance<=r.half);
+  // road (L1): the drawn lawn keeps DECK_CLEARANCE under the deck across its corridor and BATTER_FROM beyond, then falls back to
+  // v2's ground at 1:2 (the region's lawn was drawn 0.56 over V03's carriageway on the Foot terrace).
+  test.ceiling=(hx,hz)=>{if(hz<from-8)return null;let best:number|null=null;
+    for(const r of runs){if(hx<r.wide[0]||hz<r.wide[1]||hx>r.wide[2]||hz>r.wide[3])continue;const n=nearestOnRoute(hx,hz,r.pts),over=Math.max(0,n.distance-r.half-BATTER_FROM);
+      const c=n.point[1]-DECK_CLEARANCE+over*BATTER/(1-BATTER)*2;if(best===null||c<best)best=c;}
+    return best;};
+  return test;
 }
 export function createRegionGeography(options:RegionGeographyOptions={}){
   const near=deckIndex(REGION_SURFACES);
@@ -208,7 +224,8 @@ export function createRegionGeography(options:RegionGeographyOptions={}){
   const asHit=(s:RegionSurface|null)=>s?{id:s.id,y:s.y,nx:s.n[0],ny:s.n[1],nz:s.n[2],material:s.material,slope:s.slope}:null;
   const provider={
     owns:contains,
-    ground:(x:number,z:number)=>groundHeightAt(x-O.x,z-O.z)+O.y,
+    // road (L1): where the region yields to a Horizon deck its ground answers under that deck (the drawn lawn does the same).
+    ground:(x:number,z:number)=>{const g=groundHeightAt(x-O.x,z-O.z)+O.y,c=options.yield?.ceiling?.(x,z);return c==null?g:Math.min(g,c);},
     waterLevel,
     surface(x:number,z:number,y?:number,step?:number){return asHit(surface(x,y,z,step));},
     ceiling(x:number,z:number,y:number){return ceiling(x,y,z)??Infinity;},

@@ -1,6 +1,6 @@
 import { HORIZON_MANIFEST as M, requireScaleFactor } from '../../world/manifest';
 import type { BedCut, HeightQuery, LandCuts, XY, XYZ } from '../interfaces';
-import { buildStructures, cableTower, SPANS } from '../structures/build';
+import { buildStructures, cableTower, duneCulvertCentre, SPANS, spanDeckLength, structureStretches } from '../structures/build';
 import { box, distance, districtAt, mix, nearestOnPath, pathLength, plan, slab, solid } from '../structures/mesh';
 import { pier } from '../structures/foundations';
 import { buildReserves, reserveServiceLines } from '../reserves/build';
@@ -23,7 +23,10 @@ const BODY_HEIGHT=1.25;
 const routePins:Record<string,HeightPin[]>={
   // v2.6 (D-M4): Crown Road (V02) is retired; the Drive keeps the height it held at the old junction (70 at [1433.3,335.6]) so
   // nothing on the north-east drive moves; V03 takes V01's own height at its junction.
-  V01:[pin([1400,1060],24,'Green Road junction'),pin([1480,1040],18,'upper street'),pin([1433.3,335.6],70,'the north-east drive (v2.5 Crown Road junction height, kept)'),pin([900,290],48,'north pass'),pin([560,1100],12,'Bight Bridge'),pin([1350,1345],9,'Quay Bridge')],
+  // road (L1): the Drive holds 24.5 at the pier walk's flush crossing (D-A7 #34, [402.3,894.5]): at 21 the pier walk could not
+  // come down to it within 12 % and the junction solve lifted 220 m of the Drive 7.5 eu off its own footway lanes; at 24.5 the
+  // pier walk meets it within 10 % and the Drive falls ≤ 10 % to the Bight Bridge.
+  V01:[pin([1400,1060],24,'Green Road junction'),pin([1480,1040],18,'upper street'),pin([1433.3,335.6],70,'the north-east drive (v2.5 Crown Road junction height, kept)'),pin([900,290],48,'north pass'),pin([402.3,894.5],24.5,'the pier walk flush crossing (D-A7 #34, road L1)'),pin([560,1100],12,'Bight Bridge'),pin([1350,1345],9,'Quay Bridge')],
   VG:[pin([1400,1060],24,'Horizon Drive junction'),pin([1240,1105],24,'High Span'),pin([960,860],30,'Bight spur'),pin([980,700],42,'cottage spur'),pin([974,540],40,'studio spur'),pin([945,474.5],45.5,'Year Walk February crossing at grade (v1.9)'),pin([900,290],48,'north pass')],
   VBS:[pin([960,860],30,'Green Road'),pin([872.5,944],21.2,'S4 at grade (register S4 × VBS [874,941], W7-A: was a 1.72 step)'),pin([775,1125],14,'shore endpoint')],
   // v2.6 (D-M5): S1's upper half is Mountain v2's course (laid exactly, mountainV2Course); these pins grade the Horizon stretch
@@ -41,6 +44,9 @@ const routePins:Record<string,HeightPin[]>={
   'walk flats':[pin([350,880],30.5,'meets the pier walk at one height (v1.9)')],
   'walk bightPier':[pin([350,880],30.5,'meets the Flats trail at one height (v1.9)')],
   'walk dune':[pin([1148,1463],3,'zip landing foot (v1.9: the dune walk starts at the stair and ramp foot, not under the stair)')],
+  // road (L1): the Library spur crosses the Year Walk 12 eu before the October station pad (45.5): at the spur's 46.7 the walk
+  // could not come down to the pad within 12 % and both the crossing and the pad's edge stepped 0.6–0.9. The spur dips to 46.2.
+  'spur library':[pin([806.1,336.9],46.2,'the Year Walk crossing before the October station (road L1)')],
 };
 type S2Data={levels:{xy:number[];h:number;why:string}[];westRamp:{from:number[];to:number[];from_h:number;to_h:number};eastDescent:{from:number[];to:number[]}};
 /** v2.0 D-A1: S2 from the Wash rim to the foot of the east banked descent is one authored profile: every sample is
@@ -90,17 +96,21 @@ function carryS2(cuts:LandCuts,base:HeightQuery,b:BedCut):void {
 /** v2.0 D-A7 flush thresholds (Jonathan 2026-09-27): a register row resolved 'threshold' by a D-A7 ruling is one flush tread -
  * the route being laid takes the already-built route's height at the row point (#34 the pier walk comes down to the Drive,
  * #17 S4 rises to Green Road at the studio terrace). */
-function flushPins(id:string,cuts:LandCuts,controls:readonly XY[]=[]):HeightPin[] {
+function flushPins(id:string,cuts:LandCuts,controls:readonly XY[]=[],onlyRoads=false):HeightPin[] {
   const out:HeightPin[]=[];
   for(const row of M.crossings as unknown as {a:string;b:string;at:unknown;resolution:string;decided?:string}[]){
     if(row.resolution!=='threshold'||!row.decided?.startsWith('D-A7')||!Array.isArray(row.at)||![row.a,row.b].includes(id))continue;
-    const other=cuts.beds.find(b=>b.id===(row.a===id?row.b:row.a)),at=row.at as unknown as XY;if(!other)continue;
+    const other=cuts.beds.find(b=>b.id===(row.a===id?row.b:row.a)),at=row.at as unknown as XY;if(!other||onlyRoads&&other.kind!=='road')continue;
     const n=nearestOnPath(at,other.points);if(n.distance<3)out.push(pin(at,n.at[1],`flush threshold with ${other.id} (D-A7)`));
     // W7-A (A1.3, P16 S4 × yearWalk 0.68 of 2.4): where the other route carries Year Walk footway lanes beside it, the flush
     // tread holds the host's level across those lanes too (a landing, like the spurs'): S4 met VG flush at the studio terrace
     // and passed the September lane 6.5 m on, 0.68 under it.
     const lanes=M.journey.yearWalk.shares.filter(r=>r.host===other.id&&r.offset_m>0),reach=lanes.length?Math.max(...lanes.map(r=>r.offset_m))+b_width/2+1.2:0;
-    if(n.distance<3&&reach)sampleSpline(controls).forEach((q,i)=>{if(distance(q,at)>reach)return;const m=nearestOnPath(q,other.points);if(m.distance<=reach&&lanes.some(r=>distance(q,r.from as unknown as XY)+distance(q,r.to as unknown as XY)<=distance(r.from as unknown as XY,r.to as unknown as XY)+2*reach))out.push(pin(q,m.at[1],`flush landing across ${other.id}'s footway lanes (D-A7)`,i));});
+    // road (L1): for a walk meeting a road (onlyRoads) only the samples on the lanes' own side of the road are held (the pier walk
+    // west of the Drive keeps its own grade down to it; the July/August lanes are on the lagoon side).
+    const side=(q:XY,m:{at:XYZ;segment:number})=>{const a=other.points[m.segment]!,b=other.points[Math.min(other.points.length-1,m.segment+1)]!;return Math.sign((b[0]-a[0])*(q[1]-m.at[2])-(b[2]-a[2])*(q[0]-m.at[0]));};
+    const laneSides=new Set(lanes.map(r=>{const f=r.from as unknown as XY;return side(f,nearestOnPath(f,other.points));}));
+    if(n.distance<3&&reach)sampleSpline(controls).forEach((q,i)=>{if(distance(q,at)>reach)return;const m=nearestOnPath(q,other.points);if(onlyRoads&&m.distance>other.width/2+other.shoulder&&!laneSides.has(side(q,m)))return;if(m.distance<=reach&&lanes.some(r=>distance(q,r.from as unknown as XY)+distance(q,r.to as unknown as XY)<=distance(r.from as unknown as XY,r.to as unknown as XY)+2*reach))out.push(pin(q,m.at[1],`flush landing across ${other.id}'s footway lanes (D-A7)`,i));});
   }
   return out;
 }
@@ -134,14 +144,16 @@ function carryNamedStructures(cuts:LandCuts):void {
   }
 }
 /** Pin each complete span flat before grading its two approaches. */
-function withSpanPins(id:string,controls:XY[],pins:HeightPin[]=[]):HeightPin[] {
-  const samples=sampleSpline(controls),points:XYZ[]=samples.map(p=>[p[0],0,p[1]]),out=[...pins];
+function withSpanPins(id:string,controls:XY[],pins:HeightPin[]=[],straight?:ReadonlySet<number>):HeightPin[] {
+  const samples=sampleSpline(controls,5,straight),points:XYZ[]=samples.map(p=>[p[0],0,p[1]]),out=[...pins];
   for(const span of SPANS.filter(s=>s.route===id&&s.height!==undefined)){
     const hit=nearestOnPath(span.at,points),travel=[0];for(let i=1;i<points.length;i++)travel.push(travel[i-1]!+distance(plan(points[i-1]!),plan(points[i]!)));
-    for(const delta of [-span.length/2,0,span.length/2]){
+    // road (L1): the route is level over exactly the deck's length (structures spanDeckLength), so it meets both deck ends flush.
+    const half=spanDeckLength(span)/2;
+    for(const delta of [-half,0,half]){
       const target=hit.along+delta;let best=0;travel.forEach((d,i)=>{if(Math.abs(d-target)<Math.abs(travel[best]!-target))best=i;});out.push(pin(samples[best]!,span.height!,`${span.id} ${delta<0?'entry':delta>0?'exit':'centre'}`));
     }
-    travel.forEach((d,i)=>{if(Math.abs(d-hit.along)<=span.length/2)out.push(pin(samples[i]!,span.height!,`${span.id} deck ${i}`));});
+    travel.forEach((d,i)=>{if(Math.abs(d-hit.along)<=half+.01)out.push(pin(samples[i]!,span.height!,`${span.id} deck ${i}`));});
   }
   if(id==='S3'){
     const from=nearestOnPath([1470,1160],points).along,to=nearestOnPath([1440,1200],points).along;let along=0;
@@ -164,6 +176,43 @@ function spanOf(id:string,p:XY,cuts:LandCuts,dir?:XY){
 function spanLanePins(id:string,controls:readonly XY[],cuts:LandCuts):HeightPin[] {
   const xy=sampleSpline(controls);return xy.flatMap((p,i)=>{const a=xy[Math.max(0,i-1)]!,c=xy[Math.min(xy.length-1,i+1)]!,l=distance(a,c)||1,hit=spanOf(id,p,cuts,[(c[0]-a[0])/l,(c[1]-a[1])/l]);return hit?[pin(p,hit.height,`${hit.span.id} deck lane`)]:[];});
 }
+/** road (L1): a skate line ending in the Tideline park is at the park's level (3) across the park's pad and 1 eu round it: S4
+ * came in 0.9 under the park's edge and held the ground there under the slab (a 0.84 step between the Drive's embankment and the
+ * park). */
+function parkPins(controls:readonly XY[]):HeightPin[] {
+  const park=M.skate.park as unknown as {xy:number[];size:number[]},c=park.xy as unknown as XY,half:XY=[park.size[0]!/2+1,park.size[1]!/2+1];
+  return sampleSpline(controls).flatMap((q,i)=>Math.abs(q[0]-c[0])<=half[0]&&Math.abs(q[1]-c[1])<=half[1]?[pin(q,3,'the Tideline park level (road L1)',i)]:[]);
+}
+/** road (L1): the main roads a skate line may ride at grade (their deck is its surface there). */
+const LANE_HOSTS=['V01','VG','V03'];
+/** road (L1): a skate line whose provisional solve runs within 1.5 eu of a main road's height inside that road's paved width
+ * plus its own half width takes the road's height there (pins by sample), and the samples just beyond ease away at its grade. */
+function roadLanePins(id:string,controls:readonly XY[],cuts:LandCuts,pins:readonly HeightPin[],base:HeightQuery):HeightPin[] {
+  const roads=cuts.beds.filter(b=>LANE_HOSTS.includes(b.id));if(!roads.length)return [];
+  const pre=gradeRoute(id,controls,base,.18,pins,[],5,TYP.skate),out:HeightPin[]=[],own=M.profiles.skateMain.surface_m[1]!/2;
+  pre.forEach((p,i)=>{for(const r of roads){const n=nearestOnPath(plan(p),r.points);if(n.distance<=r.width/2+r.shoulder+own&&Math.abs(n.at[1]-p[1])<1.5){out.push(pin(plan(p),n.at[1],`on ${r.id}'s carriageway (road L1)`,i));break;}}});
+  return out;
+}
+/** road (L1): the stretch of a skate line lying inside a main road's paved width at the road's height is carried by the road's
+ * deck: it emits no deck, edge or wall of its own there (S3's lane edges stood 0.85–0.96 over the Drive's carriageway). */
+function carryRoadLanes(cuts:LandCuts):void {
+  const roads=cuts.beds.filter(b=>LANE_HOSTS.includes(b.id));
+  for(const b of cuts.beds){if(b.kind!=='skate'||!b.terrainCut)continue;
+    let run:XY[]=[];const flush=()=>{if(run.length>1)(b.carried??=[]).push(run);run=[];};
+    for(const p of b.points){const xy=plan(p),on=roads.some(r=>{const n=nearestOnPath(xy,r.points);return n.distance<=r.width/2+r.shoulder&&Math.abs(n.at[1]-p[1])<.05;});if(on)run.push(xy);else flush();}
+    flush();}
+}
+/** road (L1, the one-road-on-structures rule): a road's stretch that a structure's own deck or floor carries (structureStretches)
+ * is carried by it: the road emits no second deck, shoulder, kerb, edge or wall there (V01.bed lay on the Quay and Bight decks
+ * and the gallery floor, V01.edges stood inside the Quay's rails). The bed keeps its points: the corridor, crossings, the path
+ * graph and the Journey read them; the structure's deck top is the same surface (its route is pinned to the deck height). */
+function carryStructureStretches(cuts:LandCuts):void {
+  for(const r of structureStretches(cuts.beds)){
+    const b=cuts.beds.find(x=>x.id===r.bedId);if(!b)continue;
+    const arcs=[0];for(let i=1;i<b.points.length;i++)arcs.push(arcs[i-1]!+distance(plan(b.points[i-1]!),plan(b.points[i]!)));
+    const run=b.points.filter((_,i)=>arcs[i]!>=r.from+.5&&arcs[i]!<=r.to-.5).map(plan);if(run.length>1)(b.carried??=[]).push(run);
+  }
+}
 /** After span exclusions exist: a bed's stretch on another route's span is carried by that deck. */
 function carrySpanLanes(cuts:LandCuts):void {
   for(const b of cuts.beds){
@@ -173,6 +222,30 @@ function carrySpanLanes(cuts:LandCuts):void {
     flush();
   }
 }
+/** W3-A: where a route starts on a road that carries Year Walk footway lanes (journey.yearWalk.shares), the route holds the host's
+ * height across them (a flush landing), then grades to its end: the Cottage spur met the May/September lanes 0.6 eu below them
+ * at [972,692] (a lip the body cannot climb). road (L1): shared by the spurs and the roads (VBS). */
+function footwayLanding(cuts:LandCuts,controls:readonly XY[],step=5,width=0):HeightPin[] {
+  const at=controls[0]!,landing:HeightPin[]=[],host=cuts.beds.filter(b=>b.kind==='road').map(b=>({b,d:nearestOnPath(at,b.points).distance})).sort((x,y)=>x.d-y.d)[0];
+  const lanes=host&&host.d<3?M.journey.yearWalk.shares.filter(r=>r.host===host.b.id&&r.offset_m>0):[];
+  if(host&&lanes.length){const reach=Math.max(...lanes.map(r=>r.offset_m))+5.2/2+1.2;sampleSpline(controls,step).forEach((q,i)=>{const n=nearestOnPath(q,host.b.points);if(i&&n.distance<=reach&&lanes.some(r=>distance(q,r.from as unknown as XY)+distance(q,r.to as unknown as XY)<=distance(r.from as unknown as XY,r.to as unknown as XY)+2*reach))landing.push(pin(q,n.at[1],'Year Walk footway landing',i));});}
+  // road (L1): a road leaving another road lies flush on it wherever its own bed overlaps the host's paved width (the Boathouse
+  // spur leaves the Drive at a shallow angle on its 7 % climb and stood 0.55 under it for 4 m, a lip the cruiser stalled on).
+  if(host&&host.d<3&&width>0){const reach=host.b.width/2+host.b.shoulder+width/2;sampleSpline(controls,step).forEach((q,i)=>{if(!i||landing.some(p=>p.index===i))return;const n=nearestOnPath(q,host.b.points);if(n.distance<=reach)landing.push(pin(q,n.at[1],`flush on ${host.b.id} (road L1)`,i));});}
+  return landing;
+}
+/** road (L1): the step (eu) spurs are sampled at: fine enough that their flush run on the host road holds (a spur is ≤ 160 eu). */
+const SPUR_STEP=2.5;
+/** road (L1, ROAD.md §2.4): the Drive's grade limit (the profile's 12 % stays the limit of every other road). */
+export const V01_GRADE=.10;
+/** road (L1): control segments of a road laid straight because a straight structure owns them: V01 between the Bight Bridge's
+ * manifest ends (structures.bightBridge.ends), so the road across the span follows the deck's axis (it drifted 7.2 eu off it). */
+export function straightSegments(id:string,controls:readonly XY[]):Set<number> {
+  const out=new Set<number>();if(id!=='V01')return out;
+  const e=M.structures.bightBridge.ends,w=e.west as unknown as XY,x=e.east as unknown as XY;
+  for(let i=0;i<controls.length-1;i++)if(distance(controls[i]!,w)<.01&&distance(controls[i+1]!,x)<.01)out.add(i);
+  return out;
+}
 function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
   // v2.6 (D-M4): Mountain v2's own road is the mountain's road: a Horizon bed on v2's exact line, carried by the region
   // (it shapes no baked ground and draws nothing), so wheels, the Year Walk's lanes and the Crown walk can share it.
@@ -180,21 +253,28 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
   for(const [id,row]of Object.entries(M.roads)){
     if(!('pts'in row))continue;
     // v2.6: roads.<id>.grade_max_pct (V03 at 10 %) and .levels (height pins); a road starting on a built road takes its height.
-    const r=row as unknown as {grade_max_pct?:number;levels?:{xy:number[];h:number;why:string}[]},limit=r.grade_max_pct?r.grade_max_pct/100:.12;
+    // road (L1, ROAD.md §2.4): the Drive keeps ≤ 10 % (V01_GRADE); other roads their own maximum or the profile's 12 %.
+    const r=row as unknown as {grade_max_pct?:number;levels?:{xy:number[];h:number;why:string}[]},limit=r.grade_max_pct?r.grade_max_pct/100:id==='V01'?V01_GRADE:.12;
     const controls=row.pts as unknown as XY[],start=cuts.beds.filter(b=>b.kind==='road'&&b.terrainCut).map(b=>nearestOnPath(controls[0]!,b.points)).sort((a,b)=>a.distance-b.distance)[0];
     const extra=[...(r.levels??[]).map(l=>pin(l.xy as unknown as XY,l.h,`level ${l.why.slice(0,40)}`)),...(id!=='V01'&&start&&start.distance<3&&!(routePins[id]??[]).some(p=>distance(p.xy,controls[0]!)<1)?[pin(controls[0]!,start.at[1],'junction on the built road')]:[])];
-    const b=bed(id,row.profile,gradeRoute(id,controls,base,limit,withSpanPins(id,controls,[...(routePins[id]??[]),...extra]),cuts.diagnostics,5,Math.min(limit,TYP.road)));
-    if('structures'in row)b.structureIds=row.structures.filter(x=>!(id==='VG'&&x==='hollowBridge'));cuts.beds.push(b);
+    // road (L1): a road on a straight structure is laid straight between its ends (V01 on the Bight Bridge's frame), and a road's
+    // profile is faired into vertical curves (ROAD.md §2.4); a road ending on a built road also takes its height at the end.
+    const straight=straightSegments(id,controls),end=cuts.beds.filter(b=>b.kind==='road'&&b.terrainCut).map(b=>nearestOnPath(controls.at(-1)!,b.points)).sort((a,b)=>a.distance-b.distance)[0];
+    if(id!=='V01'&&end&&end.distance<3&&!(routePins[id]??[]).some(p=>distance(p.xy,controls.at(-1)!)<1))extra.push(pin(controls.at(-1)!,end.at[1],'junction on the built road (end)'));
+    // road (L1): a road leaving a built road that carries Year Walk footway lanes holds the host's height across them (the spurs'
+    // flush landing, W3-A): VBS dropped 0.86 under the VG west lanes it crosses at the Green Road junction.
+    if(id!=='V01'&&start&&start.distance<3)extra.push(...footwayLanding(cuts,controls,5,row.profile==="road"?M.profiles.road.surface_m*requireScaleFactor():M.profiles.spur.surface_m*requireScaleFactor()));
+    const b=bed(id,row.profile,gradeRoute(id,controls,base,limit,withSpanPins(id,controls,[...(routePins[id]??[]),...extra],straight),cuts.diagnostics,5,Math.min(limit,TYP.road),{straight,fair:true}));
+    b.maxGrade=limit;if('structures'in row)b.structureIds=row.structures.filter(x=>!(id==='VG'&&x==='hollowBridge'));cuts.beds.push(b);
   }
   for(const [id,pts]of Object.entries(M.roads.spurs)){
     const name=`spur ${id}`,at=pts[0]! as unknown as XY,start=heightOnBeds(cuts,at,base,40),heights:Record<string,number>={upperStreet:18,library:48,glasshouse:34,studio:40,cottage:38,boathouse:4};
     // W3-A: where the host road carries Year Walk footway lanes (journey.yearWalk.shares), the spur
     // holds the host's height across them (a flush landing), then grades to its end: the Cottage
     // spur met the May/September lanes 0.6 eu below them at [972,692] (a lip the body cannot climb).
-    const landing:HeightPin[]=[],host=cuts.beds.filter(b=>b.kind==='road').map(b=>({b,d:nearestOnPath(at,b.points).distance})).sort((x,y)=>x.d-y.d)[0];
-    const lanes=host&&host.d<3?M.journey.yearWalk.shares.filter(r=>r.host===host.b.id&&r.offset_m>0):[];
-    if(host&&lanes.length){const reach=Math.max(...lanes.map(r=>r.offset_m))+5.2/2+1.2;sampleSpline(pts as unknown as XY[]).forEach((q,i)=>{const n=nearestOnPath(q,host.b.points);if(i&&n.distance<=reach&&lanes.some(r=>distance(q,r.from as unknown as XY)+distance(q,r.to as unknown as XY)<=distance(r.from as unknown as XY,r.to as unknown as XY)+2*reach))landing.push(pin(q,n.at[1],'Year Walk footway landing',i));});}
-    cuts.beds.push(bed(name,'spur',gradeRoute(name,pts as unknown as XY[],base,.12,[pin(at,start,'junction'),...landing,pin(pts[pts.length-1]! as unknown as XY,heights[id]!,'spur end')],cuts.diagnostics,5,TYP.road)));
+    const landing=footwayLanding(cuts,pts as unknown as XY[],SPUR_STEP,M.profiles.spur.surface_m*requireScaleFactor());
+    // road (L1): spurs are faired roads too, sampled at SPUR_STEP; routePins['spur <id>'] adds authored heights.
+    cuts.beds.push(bed(name,'spur',gradeRoute(name,pts as unknown as XY[],base,.12,[pin(at,start,'junction'),...landing,...(routePins[name]??[]),pin(pts[pts.length-1]! as unknown as XY,heights[id]!,'spur end')],cuts.diagnostics,SPUR_STEP,TYP.road,{fair:true})));
   }
   for(const [id,row]of Object.entries(M.skate)){
     if(!('pts'in row))continue;
@@ -202,7 +282,10 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
     if(id==='S1'&&v2){cuts.beds.push(s1OnMountain(cuts,base,row as unknown as SkateRow,v2.upperPts));continue;}
     const pts=[...row.pts] as unknown as XY[];
     // v2.0 D-A1: S2's Bight stretch follows its authored profile, never another route's deck height (spanLanePins).
-    const b=bed(id,'skateMain',gradeRoute(id,pts,base,.18,[...withSpanPins(id,pts,routePins[id]),...flushPins(id,cuts,pts),...atGradePins(id,pts,cuts),...(id==='S2'?s2Profile(pts).pins:spanLanePins(id,pts,cuts))],cuts.diagnostics,5,TYP.skate));
+    const skatePins=[...withSpanPins(id,pts,routePins[id]),...flushPins(id,cuts,pts),...atGradePins(id,pts,cuts),...(id==='S2'?s2Profile(pts).pins:spanLanePins(id,pts,cuts)),...parkPins(pts)];
+    // road (L1): where the line runs on a road's carriageway at grade (S3 along the Drive off the Quay Bridge's south end) it takes
+    // the road's height across the road's paved width and its own (roadLanePins): no step between the lane and the carriageway.
+    const b=bed(id,'skateMain',gradeRoute(id,pts,base,.18,[...skatePins,...roadLanePins(id,pts,cuts,skatePins,base)],cuts.diagnostics,5,TYP.skate));
     b.surfaceSegments=row.segments.map((segment,i)=>({from:i/row.segments.length,to:(i+1)/row.segments.length,surface:segment.surface,pace:segment.pace,bankDegrees:segment.surface==='bankedTurf'?18:0}));cuts.beds.push(b);
   }
   for(const [id,row]of Object.entries(M.walks)){
@@ -228,7 +311,9 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
     // D-A7 #34 (V01 × the pier walk) is not pinned here: on v2.0 the Drive stands at 21.3 at the row (28.4 on candidate 3), 9 eu
     // under the Flats junction 54 m away, and pinning the pier walk to it stepped the Year Walk's July/August turn (40 %). It stays
     // an open, owned item (groundBeds OPEN_VOIDS) for the Bight Bridge west abutment work.
-    const pins=withSpanPins(name,points,[...(routePins[name]??[]),...levels,...(id==='square'?squareWalkPins(sampleSpline(points)):[])]);
+    // road (L1): a walk registered as a flush threshold with a road (D-A7: #34 the pier walk comes down to the Drive) takes the
+    // road's height at the row and across its footway lanes (flushPins), so the junction solve never lifts the road to the walk.
+    const pins=withSpanPins(name,points,[...(routePins[name]??[]),...levels,...(id==='square'?squareWalkPins(sampleSpline(points)):[]),...flushPins(name,cuts,points,true)]);
     if(id==='garden')for(const p of sampleSpline(points))if(p[0]>=899&&p[0]<=916&&p[1]>=637&&p[1]<=642)pins.push(pin(p,36,'Cottage front bench'));
     const wb=bed(name,row.profile,gradeRoute(name,points,base,.12,pins,cuts.diagnostics,5,TYP.walk));
     // v2.1: walks.<id>.surface_m / shoulder_m override the profile section (the lake-rim trail carries the Year Walk's February share at its width).
@@ -314,7 +399,10 @@ function journey(cuts:LandCuts,base:HeightQuery):YearWalkShare[] {
   // v1.9: a skate line the walk meets at grade (S4 in the Hollow) is held flush the same way.
   // W7-A (A1.3, P16 yearWalk × plot.bight.1.service 1.97 of 2.4): a plot's service drive (laid later, at its lay-by's level)
   // crosses the walk at grade: the walk rises to it (the drive is a flush junction, not a 2 m overpass on nothing).
-  const gradeRoutes:{id:string;points:XYZ[]}[]=[...footRoutes,...cuts.beds.filter(b=>b.terrainCut&&b.kind==='skate'),...reserveServiceLines(cuts)];
+  // road (L1): the walk crosses a road (V01, VG, V03, a spur) at the road's own height: the walk comes to the road, never the
+  // road to the walk (the junction solve lowered the Drive 2.4 eu to the walk at the harbour, [1512.6,1026]).
+  const roadBeds=cuts.beds.filter(b=>b.terrainCut&&b.kind==='road'&&!b.id.startsWith('structure.'));
+  const gradeRoutes:{id:string;points:XYZ[]}[]=[...footRoutes,...cuts.beds.filter(b=>b.terrainCut&&b.kind==='skate'),...reserveServiceLines(cuts),...roadBeds];
   pre.forEach((q,i)=>{if(shareOf(i))return;for(const b of footRoutes){const n=nearestOnPath(plan(q),b.points);if(n.distance<1.5&&Math.abs(n.at[1]-q[1])<2){pins.push(pin(plan(q),n.at[1],`at-grade crossing ${b.id}`,i));break;}}});
   // W3-A: a sample spacing of 5 m misses a crossing up to 2.5 m from both samples (Scholars:
   // the Garden Walk crossing sat 0.42 eu apart and its bed walls closed the Garden Walk). Every
@@ -332,6 +420,17 @@ function journey(cuts:LandCuts,base:HeightQuery):YearWalkShare[] {
       for(const j of [i-1,i])if(!pinned.has(j)){pins.push(pin(plan(pre[j]!),hb,`at-grade crossing ${b.id}`,j));pinned.add(j);}
     }
   }
+  // road (L1): across a road crossing every walk sample whose bed reaches the road's paved area (paved half + the walk's half
+  // width) within 15 eu of the crossing is flush with the road at its nearest point: the walk's deck never stands proud of,
+  // or sinks under, the carriageway it crosses.
+  {const arcsPre=[0];for(let i=1;i<pre.length;i++)arcsPre.push(arcsPre[i-1]!+distance(plan(pre[i-1]!),plan(pre[i]!)));
+    const crossings:{road:BedCut;along:number}[]=[];
+    for(let i=1;i<pre.length;i++){if(shareOf(i)||shareOf(i-1))continue;const a=plan(pre[i-1]!),c=plan(pre[i]!);
+      for(const r of roadBeds)for(let k=1;k<r.points.length;k++){const hit=segmentCross(a,c,plan(r.points[k-1]!),plan(r.points[k]!));if(!hit)continue;
+        const hb=mix(r.points[k-1]![1],r.points[k]![1],hit[1]),hy=mix(pre[i-1]![1],pre[i]![1],hit[0]);if(Math.abs(hb-hy)<3)crossings.push({road:r,along:mix(arcsPre[i-1]!,arcsPre[i]!,hit[0])});}}
+    for(const {road,along} of crossings){const reach=road.width/2+road.shoulder+b_width/2+1.2;
+      pre.forEach((q,j)=>{if(shareOf(j)||Math.abs(arcsPre[j]!-along)>15)return;const n=nearestOnPath(plan(q),road.points);if(n.distance>reach)return;
+        const k=pins.findIndex(p=>p.index===j);const p=pin(plan(q),n.at[1],`flush across ${road.id} (road L1)`,j);if(k>=0)pins[k]=p;else pins.push(p);pinned.add(j);});}}
   const first=gradeRoute('yearWalk',controls,base,limit,pins,[],5,TYP.walk),arcs=[0];for(let i=1;i<first.length;i++)arcs.push(arcs[i-1]!+distance(plan(first[i-1]!),plan(first[i]!)));
   for(let j=0;j<first.length;j++){
     if(shareOf(j))continue;
@@ -607,10 +706,11 @@ export function buildLandCuts(baseHeight:HeightQuery):LandCuts {
   // V03) keep their natural cover the same way.
   for(const [id,route,length]of roadTunnels()){const b=cuts.beds.find(b=>b.id===route);if(!b)continue;
     if((M.structures as unknown as Record<string,{kind?:string}>)[id]?.kind==='gallery')continue;
-    const at=(M.structures as unknown as Record<string,{xy:number[]}>)[id]!.xy as unknown as XY,e:{at:XY;radius:number;terrainAt?:XY;terrainRadius?:number}={at,radius:length/2+2};
+    const at=id==='duneCulvert'?duneCulvertCentre(cuts,b):(M.structures as unknown as Record<string,{xy:number[]}>)[id]!.xy as unknown as XY,e:{at:XY;radius:number;terrainAt?:XY;terrainRadius?:number}={at,radius:length/2+2};
     (b.terrainExclusions??=[]).push(e);}
-  cuts.beds.find(b=>b.id==='V01')!.terrainExclusions!.push({at:[1010,1388],radius:12});
-  settleYearWalkShares(cuts,shares);{const s2=cuts.beds.find(b=>b.id==='S2');if(s2)carryS2(cuts,baseHeight,s2);}carryNamedStructures(cuts);carrySpanLanes(cuts);guardWater(cuts,baseHeight);checkRailGrades(cuts);
+  // road (L1): the Drive crosses the dune culvert on an embankment (the culvert runs through it; its tube is the passage): the
+  // 12 eu exclusion that stood here left the Drive 2–3.5 eu over the dunes for 24 m with nothing under its edges.
+  settleYearWalkShares(cuts,shares);{const s2=cuts.beds.find(b=>b.id==='S2');if(s2)carryS2(cuts,baseHeight,s2);}carryNamedStructures(cuts);carrySpanLanes(cuts);carryRoadLanes(cuts);carryStructureStretches(cuts);guardWater(cuts,baseHeight);checkRailGrades(cuts);
   cables(cuts,baseHeight);const markers=thresholds(cuts,baseHeight);
   for(const b of cuts.beds)if(!b.id.startsWith('structure.')&&!b.id.startsWith('underground.')&&!['ORE','DEEP_RUN','ORE.siding','prowTunnel','duneCulvert'].includes(b.id))emitBedGeometry(b,cuts,baseHeight,markers);
   return cuts;

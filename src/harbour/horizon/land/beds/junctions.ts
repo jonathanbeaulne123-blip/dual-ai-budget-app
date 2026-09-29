@@ -211,6 +211,27 @@ function dropPrismsInPassage(piece:StructureSolid,at:XY,half:number,floor:number
 function routeFor(cuts:LandCuts,id:string|undefined,logical:string):BedCut|undefined {
   return cuts.beds.find(b=>b.id===id)??cuts.beds.find(b=>b.id===logical);
 }
+/** road (L1): a footway (the Year Walk's shares, walks.<id>.footwayOf) holds its host's height at every point (MANIFEST
+ * journey.yearWalk.sharesRule). The junction solve and the pad approaches can move a host after the footway copied it (the
+ * Drive's regrade left its Flats lanes 7.5 eu under it and its harbour lanes 2.4 over it): each footway point on a shared
+ * stretch takes its host's final height again, and the points beside the stretch ease back to their own profile within the
+ * footway's grade limit. Returns the beds changed. */
+export function resyncFootways(cuts:LandCuts):BedCut[] {
+  const changed:BedCut[]=[];
+  for(const walk of cuts.beds){
+    if(!walk.terrainCut||!walk.sharedEdges?.length||!['walk','trail'].includes(walk.kind))continue;
+    const pts=walk.points.map(p=>[p[0],p[1],p[2]] as [number,number,number]),fixed=new Set<number>();
+    for(const e of walk.sharedEdges){const host=cuts.beds.find(b=>b.id===e.other);if(!host||!['road','skate'].includes(host.kind)||e.at.length<2)continue;const line=e.at.map(p=>[p[0],0,p[1]] as XYZ);
+      pts.forEach((p,i)=>{if(nearestOnPath([p[0],p[2]],line).distance>.5)return;const h=nearestOnPath([p[0],p[2]],host.points).at[1];p[1]=h;fixed.add(i);});}
+    if(!fixed.size||![...fixed].some(i=>Math.abs(pts[i]![1]-walk.points[i]![1])>.005))continue;
+    const arcs=[0];for(let i=1;i<pts.length;i++)arcs.push(arcs[i-1]!+distance(plan(pts[i-1]!),plan(pts[i]!)));
+    const limit=Math.min(.12,walk.maxGrade);
+    // Ease outwards from the held points (as junctionAprons): each free point stays within its neighbour's grade cone.
+    for(const dir of [1,-1])for(let i=dir>0?1:pts.length-2;i>=0&&i<pts.length;i+=dir){if(fixed.has(i))continue;const j=i-dir,d=Math.abs(arcs[i]!-arcs[j]!)*limit;pts[i]![1]=clamp(pts[i]![1],pts[j]![1]-d,pts[j]![1]+d);}
+    walk.points=pts as unknown as XYZ[];changed.push(walk);
+  }
+  return changed;
+}
 /** Solve ordinary at-grade joins against the same grade cones used for route construction.
  * Existing span heights, station levels, doors and route endpoints remain hard constraints. */
 function alignSurfaceJoins(cuts:LandCuts,proofs:readonly ComputedCrossing[],base:HeightQuery):void {
@@ -239,14 +260,19 @@ function alignSurfaceJoins(cuts:LandCuts,proofs:readonly ComputedCrossing[],base
     const a=routeFor(cuts,row.sourceA,row.a),b=routeFor(cuts,row.sourceB,row.b);if(!a||!b||![a,b].every(b=>['road','walk','trail','skate','boardwalk'].includes(b.kind)))continue;
     const ra=range(a,row.at),rb=range(b,row.at),lo=Math.max(ra[0],rb[0]),hi=Math.min(ra[1],rb[1]);if(lo>hi)continue;
     // The Year Walk on a shared stretch is its host's footway at the host's solved height: the other route meets it there.
-    const preferred=a.id==='yearWalk'?row.heightA:b.id==='yearWalk'?row.heightB:a.kind==='road'?row.heightA:b.kind==='road'?row.heightB:(row.heightA+row.heightB)/2,h=clamp(preferred,lo,hi);
-    for(const bed of [a,b])if(bed.terrainCut){const c=context(bed),hit=nearestOnPath(row.at,bed.points);c.pins.push({xy:row.at,height:h,reason:row.id});c.targets.push({at:row.at,height:h,along:hit.along});}
+    // road (L1): a road crossed by a foot route keeps its own height (the walk comes to the road; the Drive was lowered 2.4 eu
+    // to the Year Walk at the harbour and VBS raised 0.6 to it at the Green Road).
+    const road=(x:BedCut)=>x.kind==='road'&&!x.id.startsWith('structure.');
+    const preferred=road(a)&&!road(b)?row.heightA:road(b)&&!road(a)?row.heightB:a.id==='yearWalk'?row.heightA:b.id==='yearWalk'?row.heightB:a.kind==='road'?row.heightA:b.kind==='road'?row.heightB:(row.heightA+row.heightB)/2,h=clamp(preferred,lo,hi);
+    // road (L1): a road already at the join height is not regraded at all (its profile stays the faired one); only the foot route moves.
+    for(const bed of [a,b])if(bed.terrainCut){const hit=nearestOnPath(row.at,bed.points);if(road(bed)&&Math.abs(hit.at[1]-h)<.01)continue;const c=context(bed);c.pins.push({xy:row.at,height:h,reason:row.id});c.targets.push({at:row.at,height:h,along:hit.along});}
   }
   const markerPositions=cuts.pads.filter(p=>p.kind==='threshold').map(p=>plan(p.centre));
   for(const c of contexts.values()){
     if(!c.targets.length)continue;
     const points=[...c.bed.points.map((p,i)=>({at:plan(p),along:c.arcs[i]!})),...c.targets,...c.pins.map(p=>({at:p.xy,along:nearestOnPath(p.xy,c.bed.points).along}))].sort((a,b)=>a.along-b.along).filter((v,i,all)=>!i||distance(v.at,all[i-1]!.at)>.001).map(p=>p.at);
-    const old=c.bed.points,diagnostics:LandCuts['diagnostics']=[],next=gradeRoute(c.bed.id,points,(x,z)=>nearestOnPath([x,z],old).at[1],Math.min(.12,c.bed.maxGrade),c.pins,diagnostics);
+    // road (L1): a regraded road stays faired (ROAD.md §2.4: no grade change sharper than 4 % per 10 m).
+    const old=c.bed.points,diagnostics:LandCuts['diagnostics']=[],next=gradeRoute(c.bed.id,points,(x,z)=>nearestOnPath([x,z],old).at[1],Math.min(.12,c.bed.maxGrade),c.pins,diagnostics,5,Math.min(.12,c.bed.maxGrade),{fair:c.bed.kind==='road'});
     // v2.6: a lane on Mountain v2's road takes v2's own grades (the region owns them): the regrade's check skips those segments.
     const steepest=next.slice(1).reduce((m,p,i)=>{const q=next[i]!;return onMountainV2Road([(p[0]+q[0])/2,(p[2]+q[2])/2])?m:Math.max(m,Math.abs(p[1]-q[1])/(distance(plan(p),plan(q))||1));},0);
     if(steepest>Math.min(.12,c.bed.maxGrade)+.00001)continue;
@@ -332,6 +358,9 @@ export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedC
     const upper=heightA>=heightB?a:b,lower=heightA>=heightB?b:a,upperHeight=Math.max(heightA,heightB);
     // Cable load paths and underground linings are already built by their specialised modules.
     if(!upper||upper.kind==='cable'||upper.kind==='cave'||upper.kind==='rail'||lower?.kind==='cave'||lower?.kind==='rail')continue;
+    // road (L1): a route carried here by another route's structure (S3 on the Quay Bridge deck) is over the lower route on that
+    // structure: no second generated deck (its handrails stood 0.96 over the Drive's carriageway on the Quay Bridge).
+    if(upper.id.startsWith('structure.')||upper.carried?.some(line=>line.length>1&&nearestOnPath(row.at,line.map(p=>[p[0],0,p[1]] as XYZ)).distance<1)){cuts.diagnostics.push({id:`junction.${row.id}`,severity:'info',message:`${upper.id} is carried over ${lower?.id??'the crossing'} by the structure it rides here; no generated deck (road L1)`,at:row.at,measured:difference});continue;}
     // Water is never "a lower route needing headroom": a route over water is on its named
     // bridge, or it meets the water at grade and needs a footbridge or a new line.
     if((!lower||wet)&&difference<row.requiredClearance+.6){
@@ -421,14 +450,17 @@ export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedC
   if(access&&drive){
     const end=access.points.at(-1)!,pad=junctionPads.find(p=>distance(plan(p.centre),plan(end))<1);
     if(pad){
-      const radius=Math.hypot(...pad.size)/2+.65,height=Math.max(...drive.points.filter(p=>distance(plan(p),plan(end))<=radius+3).map(p=>p[1]),end[1]);
+      // road (L1): the landing takes the Drive's own height at the lane's end; the Drive is not flattened for it (a 16 m level on
+      // its 7 % climb made a 10 % crest at [1369,1130]).
+      const height=nearestOnPath(plan(end),drive.points).at[1];
       const delta=height-pad.centre[1];pad.centre=[pad.centre[0],height,pad.centre[2]];
       for(const piece of cuts.solids.filter(s=>s.id.startsWith(`${pad.id}.`)))for(let i=1;i<piece.positions.length;i+=3)piece.positions[i]!+=delta;
       access.points=gradeRoute(access.id,access.points.map(plan),base,.12,[{xy:plan(access.points[0]!),height:access.points[0]![1],reason:'bank walk'},{xy:plan(end),height,reason:'drive landing'}],cuts.diagnostics);
-      rebuilt.add(access);for(const bed of gradePadApproaches(cuts,[pad],3))rebuilt.add(bed);
+      rebuilt.add(access);for(const bed of gradePadApproaches(cuts,[pad],3,b=>b!==drive))rebuilt.add(bed);
     }
   }
   if(bightLanding)for(const b of gradePadApproaches(cuts,[bightLanding],3))rebuilt.add(b);
+  for(const b of resyncFootways(cuts))rebuilt.add(b);
   for(const b of rebuilt){
     const prefixes=['bed','surface','kerbs','edges','retaining','shoulders','batter'].map(s=>`${b.id}.${s}`);
     cuts.solids=cuts.solids.filter(s=>!prefixes.some(prefix=>s.id===prefix||s.id.startsWith(`${prefix}.`)));

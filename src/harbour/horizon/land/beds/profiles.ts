@@ -1,6 +1,6 @@
 import { HORIZON_MANIFEST as M, requireScaleFactor } from '../../world/manifest';
 import type { BedCut, HeightQuery, LandCuts, StructureSolid, XY, XYZ } from '../interfaces';
-import { box, distance, districtAt, nearestOnPath, slab, solid, prism } from '../structures/mesh';
+import { box, distance, districtAt, mitredSlab, nearestOnPath, slab, solid, prism } from '../structures/mesh';
 
 /** Closed wall with a true 1:6 face, rather than a wide rectangular fence.
  * A cut leans into the hill; a fill widens toward the ground below the road. */
@@ -113,14 +113,18 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
   const segments=b.surfaceSegments?.map((v,i)=>solid(`${b.id}.surface.${i}`,'bed',v.surface,'deck',[b.id],district));
   const runs=new Map<number,{on:boolean;count:number;last?:XYZ;nx:number;nz:number;edge:number}>([[-1,{on:false,count:0,nx:0,nz:0,edge:0}],[1,{on:false,count:0,nx:0,nz:0,edge:0}]]);
   const batters=new Map<number,BatterSection[][]>([[-1,[[]]],[1,[[]]]]),endBatter=(side:number)=>{const list=batters.get(side)!;if(list.at(-1)!.length)list.push([]);};
+  // road (L1): carried segments are known up front so the deck's mitred joints square off against them.
+  const carriedSeg=b.points.map((p,i)=>{if(!i)return false;const a=b.points[i-1]!,mid:XY=[(a[0]!+p[0]!)/2,(a[2]!+p[2]!)/2];return !!b.carried?.some(line=>planDistance(mid,line)<1);});
   for(let i=1;i<b.points.length;i++){
     const a=b.points[i-1]!,p=b.points[i]!,dx=p[0]!-a[0]!,dz=p[2]!-a[2]!,len=Math.hypot(dx,dz);if(len<1e-6)continue;
     const mid:XY=[(a[0]!+p[0]!)/2,(a[2]!+p[2]!)/2],h=(a[1]!+p[1]!)/2,nx=-dz/len,nz=dx/len;
     // Carried inside another bed's own structure: no second deck, edge or wall here.
-    if(b.carried?.some(line=>planDistance(mid,line)<1))continue;
+    if(carriedSeg[i])continue;
     const shared=b.sharedEdges?sharedSides(b,cuts,mid,h,nx,nz):undefined;
     const target=segments?segments[Math.min(segments.length-1,Math.floor((i-1)/(b.points.length-1)*segments.length))]!:deck;
-    slab(target!,a,p,b.width,b.kind==='road'||b.kind==='skate'?.6:.35);
+    // road (L1): the deck is one continuous ribbon: mitred pieces share their corners (per-segment rectangles left 0.2–0.3 eu
+    // cracks to the ground on the outside of every bend).
+    mitredSlab(target!,b.points,i,b.width,b.kind==='road'||b.kind==='skate'?.6:.35,0,0,j=>!!carriedSeg[j]);
     const joinedPad=cuts.pads.some(p=>{if(p.underground||p.kind==='host'||Math.abs(p.centre[1]-h)>.6)return false;const angle=p.rotationDegrees*Math.PI/180,c=Math.cos(angle),s=Math.sin(angle),x=mid[0]-p.centre[0],z=mid[1]-p.centre[2];return Math.abs(x*c+z*s)<=p.size[0]/2+b.width/2&&Math.abs(-x*s+z*c)<=p.size[1]/2+b.width/2;});
     // A pad only lifts the kerb: a guard stays wherever the ground beyond the edge (terrain or a
     // pad surface) drops more than body height. Junction mouths are opened later along the
