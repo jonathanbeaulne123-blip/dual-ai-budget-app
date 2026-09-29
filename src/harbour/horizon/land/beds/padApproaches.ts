@@ -1,14 +1,17 @@
 import type { BedCut, LandCuts, PadCut, XYZ } from '../interfaces';
 import { distance, mix, nearestOnPath, plan } from '../structures/mesh';
+import { fairProfile } from './solver';
 
 /** Raise continuous approaches to the complete footprint of each junction.
  * The maximum of grade-limited cones retains the route's grade limit.
  * Never lower an existing road to one pad: an adjacent crossing may be higher. Existing
  * endpoints and separated structures are fixed constraints, never erased. */
-export function gradePadApproaches(cuts: LandCuts, pads: readonly PadCut[] = cuts.pads, maxJoinDifference = .55): BedCut[] {
+/** road (L1): `only` limits the beds regraded (an access walk's landing never flattens the Drive it lands beside); a road's
+ * regraded profile is faired (solver fairProfile) with the pad's level stretch held, so no plateau makes a crest. */
+export function gradePadApproaches(cuts: LandCuts, pads: readonly PadCut[] = cuts.pads, maxJoinDifference = .55, only?: (bed: BedCut) => boolean): BedCut[] {
   const changed: BedCut[] = [];
   for (const bed of cuts.beds) {
-    if (!bed.terrainCut || !['road', 'walk', 'trail', 'skate', 'boardwalk'].includes(bed.kind)) continue;
+    if (!bed.terrainCut || !['road', 'walk', 'trail', 'skate', 'boardwalk'].includes(bed.kind) || only && !only(bed)) continue;
     const arcs = [0];
     for (let i = 1; i < bed.points.length; i++) arcs.push(arcs[i - 1]! + distance(plan(bed.points[i - 1]!), plan(bed.points[i]!)));
     const total = arcs.at(-1)!, closed = distance(plan(bed.points[0]!), plan(bed.points.at(-1)!)) < .01;
@@ -44,7 +47,13 @@ export function gradePadApproaches(cuts: LandCuts, pads: readonly PadCut[] = cut
       return [p[0], lo, p[2]] as XYZ;
     });
     if (points.some((p, i) => i && Math.abs(p[1] - points[i - 1]![1]) > distance(plan(p), plan(points[i - 1]!)) * Math.max(limit, bed.maxGrade) + .0001)) continue;
-    bed.points = points; changed.push(bed);
+    let out = points;
+    if (bed.kind === 'road' && !bed.id.startsWith('structure.')) {
+      const held = new Set<number>();
+      samples.forEach((along, i) => { if (!i || i === samples.length - 1 || levels.some(l => along >= l.lo - .01 && along <= l.hi + .01)) held.add(i); });
+      out = fairProfile(points, held, limit);
+    }
+    bed.points = out; changed.push(bed);
   }
   return changed;
 }

@@ -46,7 +46,7 @@ import {MOUNTAIN_V2_OFFSET as O,toNativeXYZ} from './placement.ts';
 export type RegionTier='full'|'lite';
 export type RegionSeason='spring'|'summer'|'autumn'|'winter';
 export type RegionCabinPose={at:readonly [number,number,number];yaw:number;pitch:number};
-export type RegionMountOptions={contains:(hx:number,hz:number)=>boolean;terrainStep:number;season?:RegionSeason;quiet?:boolean;groundCache?:Map<string,PreparedGround>};
+export type RegionMountOptions={contains:(hx:number,hz:number)=>boolean;terrainStep:number;season?:RegionSeason;quiet?:boolean;groundCache?:Map<string,PreparedGround>;/** road (L1): the drawn ground's ceiling under a yielded Horizon deck (Horizon heights). */groundCeiling?:(hx:number,hz:number)=>number|null};
 export type RegionScene={
   group:THREE.Group;
   animate(dt:number,clock:number):boolean;
@@ -107,7 +107,7 @@ export function* mountRegionSteps(scene:THREE.Scene,tier:RegionTier,dressing:Pla
   let complete=false;
   try{
     const pal=mountainArtPalette(dressing);
-    const ground=track(buildRegionGround(tier,dressing,options.contains,options.terrainStep,options.groundCache));host.add(ground.mesh);yield;
+    const ground=track(buildRegionGround(tier,dressing,options.contains,options.terrainStep,options.groundCache,options.groundCeiling));host.add(ground.mesh);yield;
     const card=new CardBuilder('Mountain v2 card',tier,{ink:pal.ink});
     buildRouteArt(card,pal,tier);yield;
     buildBridgeArt(card,pal);yield;
