@@ -99,4 +99,4 @@ Rule for anything not listed: draw it only if it improves the silhouette, establ
 
 ## 6. Status
 
-Built on branch `claude/horizon-v2-mountain`; PR #566; not pinned.
+Built on branch `claude/horizon-v2-mountain`; **PR #566 merged to `main` as `0015a8a` (Jonathan, 2026-09-29 01:20 UTC)**. Deployed: the Workers build on `0015a8a` succeeded at 01:30 UTC and the live worker serves the new `main` (the shell and `mountain/terrain/hearth-mountain-geo-2.bin` answer; every check on the PR head `7059fa3` — test, pages, assets Node 22/24, iOS, Android, Workers — was green). Not live-visible by design: the Horizon stays dev-gated (`public/.assetsignore` drops `/horizon/**`, `horizon-review.html` is not served), so nothing from this pass is reachable on the live URL; only the old world's shared `mountain/**` edits (`waterArt.ts`) are in the live bundle, unverified by eye. Not pinned (PIN-1 open; device evidence owed).
