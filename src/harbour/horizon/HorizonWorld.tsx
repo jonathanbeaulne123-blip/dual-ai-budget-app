@@ -144,7 +144,8 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
   useEffect(()=>{if(!notice)return;const id=window.setTimeout(()=>setNotice(''),4000);return()=>window.clearTimeout(id);},[notice]);
   // Arrival ends "travelling" (the room bar's word for it) and makes the place the current one, as the old shell's
   // Places did by navigating there (PR #570 review). A walk the person abandons ends without moving the route.
-  const routeRef=useRef(route);routeRef.current=route;
+  // Committed routes only (PR #570 review): a discarded render never leaves a stale route here.
+  const routeRef=useRef(route);useLayoutEffect(()=>{routeRef.current=route;});
   useEffect(()=>{
     if(!travelTo)return;
     const id=window.setInterval(()=>{
@@ -164,7 +165,8 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
   },[walkToPlace]);
   // A route to another harbour place (the room bar, Compass) walks there; the first route is where the saved body is.
   // Only a walk actually started moves the marker, so a place chosen while a tool was open is walked to once it closes.
-  useEffect(()=>{if(lastHere.current===here||toolOpen)return;lastHere.current=here;walkToPlace(here);},[here,toolOpen,walkToPlace]);
+  // …and one chosen before the world was ready is walked to once it is (PR #570 review).
+  useEffect(()=>{if(lastHere.current===here||toolOpen||!worldReady)return;lastHere.current=here;walkToPlace(here);},[here,toolOpen,worldReady,walkToPlace]);
   /** "Step in" on a panel: through that host's door, which opens its tool as a Horizon door always has. */
   function stepIn(place:string){const world=runtime.current,host=world&&horizonHostFor(world.world,place);if(host&&world?.enterDoor(host.id))return;if(Object.hasOwn(VILLAGE_ADDRESS,place))walkToPlace(place as HarbourPlaceId);}
   // ── The old Tideline skate on Mountain v2's town island (PR B) ── the same HUD, keys, saves and progress key.
