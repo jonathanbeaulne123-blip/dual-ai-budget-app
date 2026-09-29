@@ -24,7 +24,7 @@ import type {SkateFrame} from './scene/runtime.ts';
 import {useDesignClient} from '../hearthside/DesignProvider.tsx';
 import {snapshotKittyDesignRevision} from '../hearthside/design.ts';
 import type {VillageDisplayContent} from './village/displays.ts';
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { Component, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useGlassNight } from "./bubbles/glassMode.ts";
 import { useHerculesSuggestion } from "./nav/barBadges.ts";
 /** The words Hercules's twin adds to its name while he has a fresh suggestion. */
@@ -230,7 +230,18 @@ export default function HarbourWorld(props: HarbourWorldProps) {
 function HorizonEdition(props:HarbourWorldProps){
   const edition=useMotionEdition();
   const [canDraw]=useState(()=>{const input=readQualityInput(window,window.innerWidth);return input.webgl&&!input.saveData;});
-  return edition==='flat'||!canDraw ? <MountainHarbourWorld {...props}/> : <Suspense fallback={<p role="status">Loading the Horizon…</p>}><HorizonWorld {...props}/></Suspense>;
+  // A Horizon that cannot open (an asset, a chunk, the runtime import) never strands the harbour: the old world takes
+  // over for this visit, with its dock, panels and Desk (D15 follow-up; PR #569 review P2).
+  const [failed,setFailed]=useState(false);
+  if(edition==='flat'||!canDraw||failed)return <MountainHarbourWorld {...props}/>;
+  return <HorizonBoundary onFailed={()=>setFailed(true)}><Suspense fallback={<HarbourFlat place="court" reading={null} status="loading"/>}><HorizonWorld {...props} onFailed={()=>setFailed(true)}/></Suspense></HorizonBoundary>;
+}
+/** Catches a Horizon render or lazy-import failure and hands the harbour back to the old world. */
+class HorizonBoundary extends Component<{onFailed:()=>void;children:ReactNode},{failed:boolean}>{
+  state={failed:false};
+  static getDerivedStateFromError(){return {failed:true};}
+  componentDidCatch(){this.props.onFailed();}
+  render(){return this.state.failed?null:this.props.children;}
 }
 
 function MountainHarbourWorld(props: HarbourWorldProps) {

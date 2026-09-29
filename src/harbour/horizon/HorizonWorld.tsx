@@ -2,7 +2,22 @@ import {livingEvidence} from '../../house/interpretation.ts';
 import {DEFAULT_QUEEN_STYLE} from '../../house/queenStyle.ts';
 import {useHomeBook} from '../../home/HomeBookContext.tsx';
 import {cruiserPreferenceKey} from './movers/cruiser/tuning.ts';
-import {useEffect,useLayoutEffect,useRef,useMemo,useState} from 'react';
+import {useCallback,useEffect,useLayoutEffect,useRef,useMemo,useState} from 'react';
+import {HomeBookButton} from '../../home/HomeBookContext.tsx';
+import {useHarbourReading} from '../data/useHarbourReading.ts';
+import {VillageHUD} from '../village/VillageHUD.tsx';
+import {MineRibbon} from '../mine/MineRibbon.tsx';
+import {Dock} from '../glass/Dock.tsx';
+import {HostPanel} from '../panels/HostPanel.tsx';
+import {HarbourFlat} from '../flat/PlaceFlat.tsx';
+import {WalkTogether} from '../presence/WalkTogether.tsx';
+import {HARBOUR_GO_EVENT} from '../nav/QuickSheet.tsx';
+import {useGlassNight} from '../bubbles/glassMode.ts';
+import {EMOTE_IDS,type EmoteId} from '../body/bodyModel.ts';
+import {HARBOUR_PLACE_NAMES,harbourPlaceFor} from '../flag.ts';
+import {memberDisplayName} from '../../softPresence.ts';
+import {type WorldPresenceShare} from '../../softPresenceWorld.ts';
+import type {HorizonMoverState} from './runtime/index.ts';
 import type {HarbourWorldProps} from '../HarbourWorld.tsx';
 import HorizonStage from './HorizonStage.tsx';
 import type {HorizonRuntime} from './runtime/index.ts';
@@ -19,7 +34,25 @@ import {useAppearance} from '../../theme/ThemeProvider.tsx';
 import {buildBasinReading,createBasinView} from '../mountain/basin.ts';
 import type {FundPulseFreshness} from '../../core/fundPulse.ts';
 export const HORIZON_HOST_TOOLS:Readonly<Record<string,string>>={home:'conversation',bank:'loft-banks',library:'books',glasshouse:'planner',studio:'pottery',cottage:'wardrobe',boathouse:'wishes'};
-export default function HorizonWorld(props:HarbourWorldProps){
+const TOUCH='(hover: none) and (pointer: coarse)';
+const readTouch=()=>{try{return typeof window.matchMedia==='function'&&window.matchMedia(TOUCH).matches;}catch{return false;}};
+const EMOTE_FACES:Readonly<Record<EmoteId,string>>=Object.freeze({wave:'👋',dance:'💃',sit:'🪑',cheer:'🙌',laugh:'😂',point:'👉'});
+/**
+ * Where a harbour place stands on the Horizon: its host's door step (`returnAt`) or, for the outdoor places (the
+ * square, the campfire), the place's own anchor. The old app's Places, panels and room bar walk the body there.
+ */
+export function horizonPlaceTarget(world:Pick<HorizonRuntime['world'],'hosts'|'places'>,place:HarbourPlaceId):readonly [number,number,number]|null{
+  const host=world.hosts.find(h=>h.placeIds.includes(place)||h.toolPlaceId===place);
+  if(host?.returnAt)return host.returnAt;
+  const outdoor=world.places.find(p=>p.id===place);
+  return outdoor?.anchor&&'xy' in outdoor.anchor?[outdoor.anchor.xy[0],outdoor.anchor.height??0,outdoor.anchor.xy[1]]:null;
+}
+/** The Horizon host that stands for a harbour place (its door opens that place's tool), or null for an outdoor place. */
+export function horizonHostFor(world:Pick<HorizonRuntime['world'],'hosts'>,place:string):Host|null{
+  return world.hosts.find(h=>h.placeIds.includes(place)||h.toolPlaceId===place)??null;
+}
+/** The Horizon as the live world, worn in the old app shell (D15 follow-up, Jonathan 2026-09-29). */
+export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message:string)=>void}){
   const homeBook=useHomeBook();
   const {household,memberId,scope,route}=props,runtime=useRef<HorizonRuntime|null>(null),identity={environment:household.environment,householdId:household.householdId,memberId,scope},identityRef=useRef(identity);identityRef.current=identity;
   const appearance=useAppearance(),theme=appearance.preview??appearance.saved.theme;
@@ -47,8 +80,12 @@ export default function HorizonWorld(props:HarbourWorldProps){
     if(!r.arrived)onArrivedRef.current?.(r.seq);
   }
   useEffect(()=>{arriveForRequest();},[request?.seq]);
-  const share=readWorldPresenceShare(household.environment);
-  const peer=useWorldFeed({environment:household.environment,householdId:household.householdId,memberId,linked:household.linked===true,view:scope,placeId:'court',softPresenceOptedOut:props.presence?.optedOut===true,share,world:HORIZON_PRESENCE_WORLD});
+  // The share choice belongs to one environment: on a switch the new environment's own choice is read in the same render,
+  // never the previous one's (PR #570 review: a "live" choice must not reach another environment's presence gate).
+  const [walkShareState,setWalkShareState]=useState<{environment:string;share:WorldPresenceShare}>(()=>({environment:household.environment,share:readWorldPresenceShare(household.environment)}));
+  const walkShare=walkShareState.environment===household.environment?walkShareState.share:readWorldPresenceShare(household.environment);
+  const setWalkShare=useCallback((share:WorldPresenceShare)=>setWalkShareState({environment:household.environment,share}),[household.environment]);
+  const peer=useWorldFeed({environment:household.environment,householdId:household.householdId,memberId,linked:household.linked===true,view:scope,placeId:'court',softPresenceOptedOut:props.presence?.optedOut===true,share:walkShare,world:HORIZON_PRESENCE_WORLD});
   // The app's comfort choices reach the world: calm view = Comfort.quiet, reduced motion = Comfort.motion (R1-16).
   // The world's sound, as the Mountain does it (HarbourWorld.tsx): off until a deliberate toggle, and never while comfort.sound is off.
   const [comfort,updateComfort]=useComfort(household.environment),audio=useRef<WorldAmbience|null>(null),[soundOn,setSoundOn]=useState(false);
@@ -72,5 +109,93 @@ export default function HorizonWorld(props:HarbourWorldProps){
     const target=HORIZON_HOST_TOOLS[host.id],place=(host.toolPlaceId??host.placeIds[0]) as HarbourPlaceId,address=VILLAGE_ADDRESS[place];
     if(props.onNavigateLocation&&address)props.onNavigateLocation({...route,...address,surface:target,object:undefined});else if(target)props.onOpen(target);
   }
-  return <HorizonStage homePlotId={homeBook?.plotId} homeLayout={homeBook?.layout??undefined} homeDisplays={homeBook?.displays} visitHome={homeBook?.pendingVisit} onHomeVisited={homeBook?.acknowledgeVisit} onHomeBook={homeBook?.open} onHomeWorkspace={target=>{const body=runtime.current?.savedBody();if(body){saveHouseReturnOnDevice(identity,route,body,'horizon');saveHouseReturnOnDevice(identity,route,body);}props.onOpen(target);}} key={identityKey} fleetStorageKey={`hearth:horizon-fleet:v1:${identityKey}`} kitchenStorageKey={`hearth:yacht-kitchen:v1:${identityKey}`} cruiserPreference={cruiserPreferenceKey(household.environment,household.householdId,memberId)} theme={theme} onDoor={onDoor} initialBody={initialBody} onReady={()=>{arriveForRequest();props.onWorldReady?.();}} onRuntime={value=>{if(!value&&runtime.current)saveHouseReturnOnDevice(identity,route,runtime.current.savedBody(),'horizon');runtime.current=value;value?.setAmbience?.(audio.current);{const v=basinView.current(basin);value?.setMountainDamWater?.(v.level,v.reserveLevel);}value?.setHomeBotanical?.(appearance.saved.queen??DEFAULT_QUEEN_STYLE,botanical);}} sound={{on:soundOn,toggle:toggleSound}} partner={peer.walk} calm={comfort.quiet} reducedMotion={comfort.motion==='reduced'} paused={homeBook?.editing===true||Boolean(route.surface&&route.surface!=='queen')} onQuickSheet={props.onQuickSheet} onJourney={props.onJourney}>{props.children}</HorizonStage>;
+  // ── The old app shell around the Horizon ──
+  const space=props.space==='mine'?'mine':'ours';
+  const toolOpen=Boolean(route.surface);
+  const [mover,setMover]=useState<HorizonMoverState|null>(null);
+  const riding=Boolean(mover?.attached||mover?.airborne);
+  const [touch]=useState(readTouch);
+  const [emotesOpen,setEmotesOpen]=useState(false),[travelTo,setTravelTo]=useState<HarbourPlaceId|null>(null);
+  const [worldReady,setWorldReady]=useState(false);
+  const glassNight=useGlassNight();
+  const {reading,statusLine}=useHarbourReading({household,memberId,today:props.today,freshness,interpretationGate:props.interpretationGate});
+  const softPeer=useMemo(()=>props.presence?.peers?.find(p=>p.memberId!==memberId)??null,[props.presence,memberId]);
+  const partnerName=useMemo(()=>{
+    const walkName=peer.memberId?memberDisplayName(household.members,peer.memberId):null;
+    if(softPeer)return softPeer.name;
+    return walkName??props.partnerName??null;
+  },[softPeer,peer.memberId,household.members,props.partnerName]);
+  const here=harbourPlaceFor(route,scope,true)??'court';
+  /** Walk the body to a harbour place along the Horizon's paths (All tools › Places, a panel's Visit, the room bar). */
+  const lastHere=useRef(here);
+  const [notice,setNotice]=useState('');
+  const walkToPlace=useCallback((place:HarbourPlaceId)=>{
+    const world=runtime.current;if(!world)return false;
+    const at=horizonPlaceTarget(world.world,place);if(!at)return false;
+    // A ride owns the body (PR #570 review): refuse, and say so, rather than queue a walk the ride would never take.
+    const riding=world.moverState();if(riding.attached||riding.airborne){setTravelTo(null);setNotice('Park the ride first, then choose where to go.');return false;}
+    world.setMode('walk');const plan=world.walkTo(at);setTravelTo(plan?place:null);setNotice(plan?'':'That path is blocked. Choose another way.');world.emote(null);return Boolean(plan);
+  },[]);
+  useEffect(()=>{if(!notice)return;const id=window.setTimeout(()=>setNotice(''),4000);return()=>window.clearTimeout(id);},[notice]);
+  // Arrival ends "travelling" (the room bar's word for it) and makes the place the current one, as the old shell's
+  // Places did by navigating there (PR #570 review). A walk the person abandons ends without moving the route.
+  // Committed routes only (PR #570 review): a discarded render never leaves a stale route here.
+  const routeRef=useRef(route);useLayoutEffect(()=>{routeRef.current=route;});
+  useEffect(()=>{
+    if(!travelTo)return;
+    const id=window.setInterval(()=>{
+      const world=runtime.current,b=world?.body(),at=world&&horizonPlaceTarget(world.world,travelTo);
+      if(!world||!b||!at){setTravelTo(null);return;}
+      if(Math.hypot(b.x-at[0],b.z-at[2])<3){
+        setTravelTo(null);
+        if(harbourPlaceFor(routeRef.current,scope,true)!==travelTo&&props.onNavigateLocation){lastHere.current=travelTo;props.onNavigateLocation({...routeRef.current,...VILLAGE_ADDRESS[travelTo],surface:undefined,object:undefined});}
+      }else if(!world.routing())setTravelTo(null);
+    },500);
+    return()=>window.clearInterval(id);
+  },[travelTo]); // eslint-disable-line react-hooks/exhaustive-deps
+  // All tools › Places (App `openPlacePanel`) and the QuickSheet dispatch this: on the Horizon it is a walk.
+  useEffect(()=>{
+    const go=(event:Event)=>{const place=(event as CustomEvent<{place?:string}>).detail?.place;if(place&&Object.hasOwn(VILLAGE_ADDRESS,place))walkToPlace(place as HarbourPlaceId);};
+    window.addEventListener(HARBOUR_GO_EVENT,go);return()=>window.removeEventListener(HARBOUR_GO_EVENT,go);
+  },[walkToPlace]);
+  // A route to another harbour place (the room bar, Compass) walks there; the first route is where the saved body is.
+  // Only a walk actually started moves the marker, so a place chosen while a tool was open is walked to once it closes.
+  // …and one chosen before the world was ready is walked to once it is (PR #570 review).
+  // A place chosen while riding waits until the ride is parked; only a walk actually started marks it handled (PR #570 review).
+  useEffect(()=>{if(lastHere.current===here||toolOpen||!worldReady||riding)return;if(walkToPlace(here))lastHere.current=here;},[here,toolOpen,worldReady,riding,walkToPlace]);
+  /** "Step in" on a panel: through that host's door, which opens its tool as a Horizon door always has. */
+  function stepIn(place:string){const world=runtime.current,host=world&&horizonHostFor(world.world,place);if(host&&world?.enterDoor(host.id))return;if(Object.hasOwn(VILLAGE_ADDRESS,place))walkToPlace(place as HarbourPlaceId);}
+  function focusStage(){(document.querySelector('.horizon-stage') as HTMLElement|null)?.focus({preventScroll:true});}
+  function doEmote(id:EmoteId){runtime.current?.emote(id);setEmotesOpen(false);focusStage();}
+  // The phone branch is below 720px (AGENTS.md), so the glass is lite there.
+  const lite=typeof window.matchMedia==='function'&&window.matchMedia('(max-width: 719px)').matches;
+  // The emote row's 1–6 shortcuts, as on the Mountain (the row shows them).
+  useEffect(()=>{
+    const key=(event:KeyboardEvent)=>{const slot=EMOTE_IDS[Number(event.key)-1];if(!slot||event.repeat||event.metaKey||event.ctrlKey||event.altKey)return;const stage=document.querySelector('.horizon-stage');if(!stage||document.activeElement!==stage)return;doEmote(slot);event.preventDefault();};
+    window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);
+  });
+  const dock=props.dock&&!toolOpen?<Dock {...props.dock} calm={comfort.quiet} lite={lite} night={glassNight} cameraMoving={false}/>:undefined;
+  const presence=<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={peer.walk} walkName={peer.walk?partnerName:null} worldUnavailable={peer.unavailable} soft={softPeer} here={here} placeName={HARBOUR_PLACE_NAMES[here]} softPresenceOptedOut={props.presence?.optedOut===true} onUnhide={props.onUnhide} hasPartner={Boolean(softPeer||props.partnerName||peer.memberId)}/>;
+  return <section data-harbour-space={space} data-harbour-world="horizon" className={`harbour-world harbour-world--${theme} harbour-world--horizon${toolOpen?' has-open-object':''}`} data-world-status={worldReady?'ready':'loading'} data-world-scope={scope} data-harbour-place={here} data-harbour-tier={lite?'lite':'full'} data-horizon-riding={riding?'':undefined} aria-label={HARBOUR_PLACE_NAMES[here]}>
+    <div className="harbour-world__stage">
+      <HorizonStage shell onFailed={props.onFailed} onMover={setMover} homePlotId={homeBook?.plotId} homeLayout={homeBook?.layout??undefined} homeDisplays={homeBook?.displays} visitHome={homeBook?.pendingVisit} onHomeVisited={homeBook?.acknowledgeVisit} onHomeBook={homeBook?.open} onHomeWorkspace={target=>{const body=runtime.current?.savedBody();if(body){saveHouseReturnOnDevice(identity,route,body,'horizon');saveHouseReturnOnDevice(identity,route,body);}props.onOpen(target);}} key={identityKey} fleetStorageKey={`hearth:horizon-fleet:v1:${identityKey}`} kitchenStorageKey={`hearth:yacht-kitchen:v1:${identityKey}`} cruiserPreference={cruiserPreferenceKey(household.environment,household.householdId,memberId)} theme={theme} onDoor={onDoor} initialBody={initialBody} onReady={()=>{setWorldReady(true);arriveForRequest();props.onWorldReady?.();}} onRuntime={value=>{if(!value&&runtime.current)saveHouseReturnOnDevice(identity,route,runtime.current.savedBody(),'horizon');runtime.current=value;value?.setAmbience?.(audio.current);{const v=basinView.current(basin);value?.setMountainDamWater?.(v.level,v.reserveLevel);}value?.setHomeBotanical?.(appearance.saved.queen??DEFAULT_QUEEN_STYLE,botanical);}} sound={{on:soundOn,toggle:toggleSound}} partner={peer.walk} calm={comfort.quiet} reducedMotion={comfort.motion==='reduced'} paused={homeBook?.editing===true||Boolean(route.surface&&route.surface!=='queen')} />
+      {!worldReady&&!toolOpen&&<HarbourFlat place={here} reading={reading} status="loading" theme={theme} overlay/>}
+      {!toolOpen&&<MineRibbon space={space}/>}
+      {worldReady&&!toolOpen&&<VillageHUD memberId={memberId} theme={theme} calm={comfort.quiet} lite={lite} night={glassNight} alwaysShowLabels={comfort.labels} toolsOpen={props.toolsOpen} glassBetween={dock} fab={props.fab} onQuickSheet={props.onQuickSheet} place={here} travelling={travelTo} onVisit={place=>{walkToPlace(place);}} presence={presence}/>}
+      {worldReady&&!toolOpen&&props.panel?.host&&<HostPanel key={props.panel.host} host={props.panel.host} reading={reading} extras={props.panel.extras} theme={theme} onClose={props.panel.onClose} onOpen={props.panel.onOpen} onRecord={props.panel.onRecord} onMarkPaid={props.panel.onMarkPaid} onTalk={props.panel.onTalk} returnFocusTo={props.panel.returnFocusTo}
+        onVisit={()=>{const host=props.panel?.host;if(host&&host!=='hercules'&&Object.hasOwn(VILLAGE_ADDRESS,host))walkToPlace(host as HarbourPlaceId);props.panel?.onClose();}}
+        onStepIn={host=>{if(host!=='hercules')stepIn(host);props.panel?.onClose();}}/>}
+      {!route.surface&&<div className="harbour-world__home-book" style={{position:'absolute',right:18,top:72,zIndex:12}}><HomeBookButton/></div>}
+      {worldReady&&!toolOpen&&!riding&&<div className="harbour-moves harbour-moves--horizon" data-harbour-moves={emotesOpen?'open':'shut'}>
+        {emotesOpen&&<div className="harbour-moves__emotes" role="group" aria-label="Emotes">
+          {EMOTE_IDS.map((id,i)=><button key={id} type="button" className="harbour-moves__emote" data-emote={id} onPointerDown={event=>event.stopPropagation()} onClick={()=>doEmote(id)}>{EMOTE_FACES[id]}<small>{i+1}</small></button>)}
+        </div>}
+        <div className="harbour-moves__row">{touch&&<><button type="button" className="harbour-moves__key" onPointerDown={event=>event.stopPropagation()} onClick={()=>{runtime.current?.jump();focusStage();}}>Jump</button><button type="button" className="harbour-moves__key" onPointerDown={event=>event.stopPropagation()} onClick={()=>{runtime.current?.accept();focusStage();}}>Interact</button></>}{mover?.stowed&&<button type="button" className="harbour-moves__key" onPointerDown={event=>event.stopPropagation()} onClick={()=>{runtime.current?.resumeEquipment();focusStage();}}>Ride {mover.stowed}</button>}<button type="button" className="harbour-moves__key" aria-keyshortcuts="V" onPointerDown={event=>event.stopPropagation()} onClick={()=>{runtime.current?.toggleCruiser();focusStage();}}>Ride</button><button type="button" className="harbour-moves__key" aria-pressed={emotesOpen} onPointerDown={event=>event.stopPropagation()} onClick={()=>setEmotesOpen(open=>!open)}>Emote</button></div>
+      </div>}
+      <p className="harbour-world__phrase" role="status" aria-live="polite">{notice}</p>
+      {statusLine&&<small className="harbour-world__supported" role="status">{statusLine}</small>}
+      {!props.ready&&worldReady&&<small className="harbour-world__checking" role="status">Checking the books · {props.freshness}</small>}
+    </div>
+    {props.children}
+  </section>;
 }

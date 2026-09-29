@@ -1715,3 +1715,17 @@ Jonathan, 29 September 2026, after being told the gates were unmet (D15 OPEN; on
 - Deviation from D15 as recommended: the flag is **kept**, not deleted in the same PR, as the one-line rollback (`"0"` and redeploy → the Mountain). Delete it once the Horizon has held on both devices.
 
 Risk **High** (default world for every member). Budget delta (5): **0** — no ledger, command, continuity, Auth/RLS or Hercules payload change; hosts still route to the same tools and the Horizon's own stores (fleet, Yacht Kitchen, homestead) stay device-local and non-financial. Engagement delta (3): **+2** intended (continuous world by default). Presence stays partitioned (`horizon:horizon-geo-1`).
+
+### 2026-09-29 — The Horizon in the old app shell (PR A of three)
+
+Jonathan, 29 September 2026: *"i should see the old ux with the skateboard, but still be able to use the yatch and boats and paracthes, i basically want the new map all of its new features in the old apps shell"*. Asked to clarify, he chose: keep the Horizon live meanwhile; drop the old app's harbour square and old Journey (the Horizon's town and Journey map stay); the old Mountain skate ported onto the Horizon; drop the Horizon's toolbar.
+
+Delivered in three PRs: **A** the old shell's chrome around the Horizon (this entry); **B** the old skate on Horizon ground; **C** Horizon doors into the old 3D rooms.
+
+PR A:
+- `HorizonWorld` wears the old shell: `.harbour-world` wrapper, `VillageHUD` (address card, Record / All tools / Simple view, room bar), the `Dock` (strip and camp card), `HostPanel`, `WalkTogether`, `MineRibbon`, `HomeBookButton`, the reading-edition overlay while loading, and the emote row (new `HorizonRuntime.emote`). This fixes PR #569's review findings P1 (Places did nothing) and P2 (no dock).
+- All tools › Places (`HARBOUR_GO_EVENT`), a panel's Visit, and a route change walk the body along the Horizon's paths to the place's host door (`returnAt`) or outdoor anchor; a panel's Step in goes through the host's door.
+- `HorizonStage` `shell` mode: no `.horizon-toolbar` (Walk/Look/Island, pages, perspective, Tools, Journey, Sound, Renovation book, homestead); the stage starts walking. The mover controls stay but appear only when relevant: the ride group while on the cruiser, cable buttons on the gondola/funicular, the fleet panel near boats, afloat or swimming, and the move/look pads only while riding (walking on a phone is tap-to-walk and drag-to-look, with Jump / Interact / Ride / Emote in the old moves row). The cruiser style picker is not shown in the shell.
+- A Horizon that cannot open (asset, chunk, runtime import or render) hands the harbour back to the old world for that visit (`HorizonEdition` + `HorizonBoundary`), fixing PR #569's review finding P2 (stranded shell).
+
+Risk **High** (the default world's chrome for every member). Budget delta (5): **+1**: the dock and host panels return to the everyday world; no ledger, command, continuity, Auth/RLS or Hercules payload change (the shell only reads `useHarbourReading`, as the Mountain does). Engagement delta (3): **+2**: the familiar shell over the new land, movers kept. Not yet in the shell: the Mountain guide (tour, monorail, race: Mountain-only), the character picker, arranging rooms, the Desk switch inside the world, and DOM twins over buildings (the Horizon has no anchor projection yet).

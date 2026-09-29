@@ -25,6 +25,8 @@ const state = vi.hoisted(() => ({ stage: null as HorizonStageProps | null, horiz
 vi.mock("../src/harbour/horizon/HorizonStage.tsx", () => ({ default: (props: HorizonStageProps) => { state.stage = props; return null; } }));
 vi.mock("../src/harbour/presence/feed.ts", () => ({ publishLocalPose: () => () => {}, useWorldFeed: () => ({ walk: null }) }));
 vi.mock("../src/softPresenceWorld.ts", () => ({ readWorldPresenceShare: () => "together" }));
+// The old shell around the Horizon reads the books for its dock and panels; this file is about where the body starts.
+vi.mock("../src/harbour/data/useHarbourReading.ts", () => ({ useHarbourReading: () => ({ reading: null, statusLine: null }) }));
 // The Mountain never draws here: a failed mount keeps the Mountain edition on its flat fallback.
 vi.mock("../src/harbour/scene/runtime.ts", () => ({ mountHarbourWorld: () => { throw new Error("no Mountain scene in this test"); }, scrubControls: () => null }));
 vi.mock("../src/harbour/court/queenPlace.ts", () => ({ loadQueenPlace: () => Promise.reject(new Error("no Queen in this test")), seatGrowthAtRoots: () => undefined }));
