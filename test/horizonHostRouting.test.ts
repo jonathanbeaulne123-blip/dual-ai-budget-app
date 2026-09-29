@@ -12,6 +12,8 @@ const state=vi.hoisted(()=>({stage:null as HorizonStageProps|null,feed:vi.fn()})
 vi.mock('../src/harbour/horizon/HorizonStage.tsx',()=>({default:(props:HorizonStageProps)=>{state.stage=props;return null;}}));
 vi.mock('../src/harbour/presence/feed.ts',()=>({publishLocalPose:()=>()=>{},useWorldFeed:(options:unknown)=>{state.feed(options);return{walk:null};}}));
 vi.mock('../src/softPresenceWorld.ts',()=>({readWorldPresenceShare:()=> 'together'}));
+// The old shell around the Horizon reads the books for its dock and panels; this file is about doors and return bodies.
+vi.mock('../src/harbour/data/useHarbourReading.ts',()=>({useHarbourReading:()=>({reading:null,statusLine:null})}));
 let root:Root|undefined;
 afterEach(()=>{if(root)act(()=>root!.unmount());root=undefined;localStorage.clear();vi.clearAllMocks();});
 const body={world:'horizon:horizon-geo-1',geo:'horizon-geo-1',place:'court',x:1490,y:14,z:1165,yaw:-Math.PI/2};
