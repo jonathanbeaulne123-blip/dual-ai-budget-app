@@ -1,0 +1,5048 @@
+{
+ "sha": "67b469f32c5e28e0e532d2775585dc5bfa4a869c",
+ "method": "headless Chromium (SwiftShader), scripts/horizon/kit-sheet-plants.html; not device evidence",
+ "records": [
+  {
+   "file": "plants_classic_summer_full_close.png",
+   "theme": "classic",
+   "season": "summer",
+   "month": 7,
+   "tier": "full",
+   "id": "classic_summer_full",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 38,
+      "drawCalls": 6,
+      "triangles": 5287,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1092
+       },
+       {
+        "key": "bloom:0",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1351
+       },
+       {
+        "key": "contact",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 120
+       },
+       {
+        "key": "palm",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1992
+       },
+       {
+        "key": "palmShell",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 672
+       },
+       {
+        "key": "tuft",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 60
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 7385
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 54,
+      "drawCalls": 6,
+      "triangles": 5218,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 312
+       },
+       {
+        "key": "bloom:2",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 350
+       },
+       {
+        "key": "contact",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 140
+       },
+       {
+        "key": "hedge",
+        "count": 36,
+        "capacity": 36,
+        "triangles": 720
+       },
+       {
+        "key": "shell:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 1680
+       },
+       {
+        "key": "tree:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 2016
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 8058
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 39,
+      "drawCalls": 7,
+      "triangles": 1692,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 580
+       },
+       {
+        "key": "bentPineShell",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 280
+       },
+       {
+        "key": "contact",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 70
+       },
+       {
+        "key": "heath",
+        "count": 22,
+        "capacity": 22,
+        "triangles": 440
+       },
+       {
+        "key": "shell:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 112
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 50
+       }
+      ]
+     },
+     "render": {
+      "calls": 11,
+      "triangles": 2538
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 59,
+      "drawCalls": 3,
+      "triangles": 2923,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 648
+       },
+       {
+        "key": "bloom:1",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 2100
+       },
+       {
+        "key": "tuft",
+        "count": 35,
+        "capacity": 35,
+        "triangles": 175
+       }
+      ]
+     },
+     "render": {
+      "calls": 4,
+      "triangles": 3027
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_classic_summer_lite_close.png",
+   "theme": "classic",
+   "season": "summer",
+   "month": 7,
+   "tier": "lite",
+   "id": "classic_summer_lite",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 28,
+      "drawCalls": 5,
+      "triangles": 2693,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 756
+       },
+       {
+        "key": "bloom:0",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 742
+       },
+       {
+        "key": "contact",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 90
+       },
+       {
+        "key": "palm",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 1080
+       },
+       {
+        "key": "tuft",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 25
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 2799
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 42,
+      "drawCalls": 5,
+      "triangles": 2520,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 216
+       },
+       {
+        "key": "bloom:2",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 204
+       },
+       {
+        "key": "contact",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 100
+       },
+       {
+        "key": "hedge",
+        "count": 28,
+        "capacity": 28,
+        "triangles": 560
+       },
+       {
+        "key": "tree:round",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 1440
+       }
+      ]
+     },
+     "render": {
+      "calls": 6,
+      "triangles": 2624
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 21,
+      "drawCalls": 5,
+      "triangles": 724,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 264
+       },
+       {
+        "key": "contact",
+        "count": 6,
+        "capacity": 6,
+        "triangles": 60
+       },
+       {
+        "key": "heath",
+        "count": 11,
+        "capacity": 11,
+        "triangles": 220
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 20
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 830
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 38,
+      "drawCalls": 3,
+      "triangles": 1654,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 360
+       },
+       {
+        "key": "bloom:1",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1224
+       },
+       {
+        "key": "tuft",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 70
+       }
+      ]
+     },
+     "render": {
+      "calls": 4,
+      "triangles": 1758
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_classic_winter_full_close.png",
+   "theme": "classic",
+   "season": "winter",
+   "month": 1,
+   "tier": "full",
+   "id": "classic_winter_full",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 31,
+      "drawCalls": 5,
+      "triangles": 3894,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1050
+       },
+       {
+        "key": "contact",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 120
+       },
+       {
+        "key": "palm",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1992
+       },
+       {
+        "key": "palmShell",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 672
+       },
+       {
+        "key": "tuft",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 60
+       }
+      ]
+     },
+     "render": {
+      "calls": 8,
+      "triangles": 5992
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 52,
+      "drawCalls": 5,
+      "triangles": 4856,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 300
+       },
+       {
+        "key": "contact",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 140
+       },
+       {
+        "key": "hedge",
+        "count": 36,
+        "capacity": 36,
+        "triangles": 720
+       },
+       {
+        "key": "shell:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 1680
+       },
+       {
+        "key": "tree:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 2016
+       }
+      ]
+     },
+     "render": {
+      "calls": 8,
+      "triangles": 7696
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 39,
+      "drawCalls": 7,
+      "triangles": 1692,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 580
+       },
+       {
+        "key": "bentPineShell",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 280
+       },
+       {
+        "key": "contact",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 70
+       },
+       {
+        "key": "heath",
+        "count": 22,
+        "capacity": 22,
+        "triangles": 440
+       },
+       {
+        "key": "shell:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 112
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 50
+       }
+      ]
+     },
+     "render": {
+      "calls": 11,
+      "triangles": 2538
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 47,
+      "drawCalls": 2,
+      "triangles": 823,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 648
+       },
+       {
+        "key": "tuft",
+        "count": 35,
+        "capacity": 35,
+        "triangles": 175
+       }
+      ]
+     },
+     "render": {
+      "calls": 3,
+      "triangles": 927
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_classic_winter_lite_close.png",
+   "theme": "classic",
+   "season": "winter",
+   "month": 1,
+   "tier": "lite",
+   "id": "classic_winter_lite",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 21,
+      "drawCalls": 4,
+      "triangles": 1909,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 714
+       },
+       {
+        "key": "contact",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 90
+       },
+       {
+        "key": "palm",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 1080
+       },
+       {
+        "key": "tuft",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 25
+       }
+      ]
+     },
+     "render": {
+      "calls": 6,
+      "triangles": 2015
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 40,
+      "drawCalls": 4,
+      "triangles": 2304,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 204
+       },
+       {
+        "key": "contact",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 100
+       },
+       {
+        "key": "hedge",
+        "count": 28,
+        "capacity": 28,
+        "triangles": 560
+       },
+       {
+        "key": "tree:round",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 1440
+       }
+      ]
+     },
+     "render": {
+      "calls": 5,
+      "triangles": 2408
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 21,
+      "drawCalls": 5,
+      "triangles": 724,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 264
+       },
+       {
+        "key": "contact",
+        "count": 6,
+        "capacity": 6,
+        "triangles": 60
+       },
+       {
+        "key": "heath",
+        "count": 11,
+        "capacity": 11,
+        "triangles": 220
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 20
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 830
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 26,
+      "drawCalls": 2,
+      "triangles": 430,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 360
+       },
+       {
+        "key": "tuft",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 70
+       }
+      ]
+     },
+     "render": {
+      "calls": 3,
+      "triangles": 534
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_taylor_summer_full_close.png",
+   "theme": "taylor",
+   "season": "summer",
+   "month": 7,
+   "tier": "full",
+   "id": "taylor_summer_full",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 38,
+      "drawCalls": 6,
+      "triangles": 5892,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1176
+       },
+       {
+        "key": "bloom:0",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 2016
+       },
+       {
+        "key": "contact",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 120
+       },
+       {
+        "key": "palm",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1848
+       },
+       {
+        "key": "palmShell",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 672
+       },
+       {
+        "key": "tuft",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 60
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 7846
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 54,
+      "drawCalls": 6,
+      "triangles": 5492,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 336
+       },
+       {
+        "key": "bloom:2",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 600
+       },
+       {
+        "key": "contact",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 140
+       },
+       {
+        "key": "hedge",
+        "count": 36,
+        "capacity": 36,
+        "triangles": 720
+       },
+       {
+        "key": "shell:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 1680
+       },
+       {
+        "key": "tree:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 2016
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 8332
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 39,
+      "drawCalls": 7,
+      "triangles": 1692,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 580
+       },
+       {
+        "key": "bentPineShell",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 280
+       },
+       {
+        "key": "contact",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 70
+       },
+       {
+        "key": "heath",
+        "count": 22,
+        "capacity": 22,
+        "triangles": 440
+       },
+       {
+        "key": "shell:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 112
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 50
+       }
+      ]
+     },
+     "render": {
+      "calls": 11,
+      "triangles": 2538
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 59,
+      "drawCalls": 3,
+      "triangles": 4423,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 648
+       },
+       {
+        "key": "bloom:1",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 3600
+       },
+       {
+        "key": "tuft",
+        "count": 35,
+        "capacity": 35,
+        "triangles": 175
+       }
+      ]
+     },
+     "render": {
+      "calls": 4,
+      "triangles": 4527
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_taylor_summer_lite_close.png",
+   "theme": "taylor",
+   "season": "summer",
+   "month": 7,
+   "tier": "lite",
+   "id": "taylor_summer_lite",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 28,
+      "drawCalls": 5,
+      "triangles": 2991,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 616
+       },
+       {
+        "key": "bloom:0",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1288
+       },
+       {
+        "key": "contact",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 90
+       },
+       {
+        "key": "palm",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 972
+       },
+       {
+        "key": "tuft",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 25
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 3097
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 42,
+      "drawCalls": 5,
+      "triangles": 2684,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 176
+       },
+       {
+        "key": "bloom:2",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 408
+       },
+       {
+        "key": "contact",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 100
+       },
+       {
+        "key": "hedge",
+        "count": 28,
+        "capacity": 28,
+        "triangles": 560
+       },
+       {
+        "key": "tree:round",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 1440
+       }
+      ]
+     },
+     "render": {
+      "calls": 6,
+      "triangles": 2788
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 21,
+      "drawCalls": 5,
+      "triangles": 724,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 264
+       },
+       {
+        "key": "contact",
+        "count": 6,
+        "capacity": 6,
+        "triangles": 60
+       },
+       {
+        "key": "heath",
+        "count": 11,
+        "capacity": 11,
+        "triangles": 220
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 20
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 830
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 38,
+      "drawCalls": 3,
+      "triangles": 2878,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 360
+       },
+       {
+        "key": "bloom:1",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 2448
+       },
+       {
+        "key": "tuft",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 70
+       }
+      ]
+     },
+     "render": {
+      "calls": 4,
+      "triangles": 2982
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_taylor_winter_full_close.png",
+   "theme": "taylor",
+   "season": "winter",
+   "month": 1,
+   "tier": "full",
+   "id": "taylor_winter_full",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 31,
+      "drawCalls": 5,
+      "triangles": 3834,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1134
+       },
+       {
+        "key": "contact",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 120
+       },
+       {
+        "key": "palm",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1848
+       },
+       {
+        "key": "palmShell",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 672
+       },
+       {
+        "key": "tuft",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 60
+       }
+      ]
+     },
+     "render": {
+      "calls": 8,
+      "triangles": 5788
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 52,
+      "drawCalls": 5,
+      "triangles": 4880,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 324
+       },
+       {
+        "key": "contact",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 140
+       },
+       {
+        "key": "hedge",
+        "count": 36,
+        "capacity": 36,
+        "triangles": 720
+       },
+       {
+        "key": "shell:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 1680
+       },
+       {
+        "key": "tree:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 2016
+       }
+      ]
+     },
+     "render": {
+      "calls": 8,
+      "triangles": 7720
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 39,
+      "drawCalls": 7,
+      "triangles": 1692,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 580
+       },
+       {
+        "key": "bentPineShell",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 280
+       },
+       {
+        "key": "contact",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 70
+       },
+       {
+        "key": "heath",
+        "count": 22,
+        "capacity": 22,
+        "triangles": 440
+       },
+       {
+        "key": "shell:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 112
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 50
+       }
+      ]
+     },
+     "render": {
+      "calls": 11,
+      "triangles": 2538
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 47,
+      "drawCalls": 2,
+      "triangles": 823,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 648
+       },
+       {
+        "key": "tuft",
+        "count": 35,
+        "capacity": 35,
+        "triangles": 175
+       }
+      ]
+     },
+     "render": {
+      "calls": 3,
+      "triangles": 927
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_taylor_winter_lite_close.png",
+   "theme": "taylor",
+   "season": "winter",
+   "month": 1,
+   "tier": "lite",
+   "id": "taylor_winter_lite",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 21,
+      "drawCalls": 4,
+      "triangles": 1661,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 574
+       },
+       {
+        "key": "contact",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 90
+       },
+       {
+        "key": "palm",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 972
+       },
+       {
+        "key": "tuft",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 25
+       }
+      ]
+     },
+     "render": {
+      "calls": 6,
+      "triangles": 1767
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 40,
+      "drawCalls": 4,
+      "triangles": 2264,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 164
+       },
+       {
+        "key": "contact",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 100
+       },
+       {
+        "key": "hedge",
+        "count": 28,
+        "capacity": 28,
+        "triangles": 560
+       },
+       {
+        "key": "tree:round",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 1440
+       }
+      ]
+     },
+     "render": {
+      "calls": 5,
+      "triangles": 2368
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 21,
+      "drawCalls": 5,
+      "triangles": 724,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 264
+       },
+       {
+        "key": "contact",
+        "count": 6,
+        "capacity": 6,
+        "triangles": 60
+       },
+       {
+        "key": "heath",
+        "count": 11,
+        "capacity": 11,
+        "triangles": 220
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 20
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 830
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 26,
+      "drawCalls": 2,
+      "triangles": 430,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 360
+       },
+       {
+        "key": "tuft",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 70
+       }
+      ]
+     },
+     "render": {
+      "calls": 3,
+      "triangles": 534
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_newfoundland_summer_full_close.png",
+   "theme": "newfoundland",
+   "season": "summer",
+   "month": 7,
+   "tier": "full",
+   "id": "newfoundland_summer_full",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 38,
+      "drawCalls": 6,
+      "triangles": 4687,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1092
+       },
+       {
+        "key": "bloom:0",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1351
+       },
+       {
+        "key": "contact",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 120
+       },
+       {
+        "key": "palm",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1392
+       },
+       {
+        "key": "palmShell",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 672
+       },
+       {
+        "key": "tuft",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 60
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 6185
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 54,
+      "drawCalls": 6,
+      "triangles": 5278,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 312
+       },
+       {
+        "key": "bloom:2",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 410
+       },
+       {
+        "key": "contact",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 140
+       },
+       {
+        "key": "hedge",
+        "count": 36,
+        "capacity": 36,
+        "triangles": 720
+       },
+       {
+        "key": "shell:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 1680
+       },
+       {
+        "key": "tree:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 2016
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 8118
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 39,
+      "drawCalls": 7,
+      "triangles": 1692,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 580
+       },
+       {
+        "key": "bentPineShell",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 280
+       },
+       {
+        "key": "contact",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 70
+       },
+       {
+        "key": "heath",
+        "count": 22,
+        "capacity": 22,
+        "triangles": 440
+       },
+       {
+        "key": "shell:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 112
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 50
+       }
+      ]
+     },
+     "render": {
+      "calls": 11,
+      "triangles": 2538
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 59,
+      "drawCalls": 3,
+      "triangles": 3139,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 648
+       },
+       {
+        "key": "bloom:1",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 2316
+       },
+       {
+        "key": "tuft",
+        "count": 35,
+        "capacity": 35,
+        "triangles": 175
+       }
+      ]
+     },
+     "render": {
+      "calls": 4,
+      "triangles": 3243
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_newfoundland_summer_lite_close.png",
+   "theme": "newfoundland",
+   "season": "summer",
+   "month": 7,
+   "tier": "lite",
+   "id": "newfoundland_summer_lite",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 28,
+      "drawCalls": 5,
+      "triangles": 2207,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 756
+       },
+       {
+        "key": "bloom:0",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 742
+       },
+       {
+        "key": "contact",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 90
+       },
+       {
+        "key": "palm",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 594
+       },
+       {
+        "key": "tuft",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 25
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 2313
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 42,
+      "drawCalls": 5,
+      "triangles": 2534,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 216
+       },
+       {
+        "key": "bloom:2",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 218
+       },
+       {
+        "key": "contact",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 100
+       },
+       {
+        "key": "hedge",
+        "count": 28,
+        "capacity": 28,
+        "triangles": 560
+       },
+       {
+        "key": "tree:round",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 1440
+       }
+      ]
+     },
+     "render": {
+      "calls": 6,
+      "triangles": 2638
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 21,
+      "drawCalls": 5,
+      "triangles": 724,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 264
+       },
+       {
+        "key": "contact",
+        "count": 6,
+        "capacity": 6,
+        "triangles": 60
+       },
+       {
+        "key": "heath",
+        "count": 11,
+        "capacity": 11,
+        "triangles": 220
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 20
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 830
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 38,
+      "drawCalls": 3,
+      "triangles": 1702,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 360
+       },
+       {
+        "key": "bloom:1",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1272
+       },
+       {
+        "key": "tuft",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 70
+       }
+      ]
+     },
+     "render": {
+      "calls": 4,
+      "triangles": 1806
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_newfoundland_winter_full_close.png",
+   "theme": "newfoundland",
+   "season": "winter",
+   "month": 1,
+   "tier": "full",
+   "id": "newfoundland_winter_full",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 31,
+      "drawCalls": 5,
+      "triangles": 3294,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1050
+       },
+       {
+        "key": "contact",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 120
+       },
+       {
+        "key": "palm",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1392
+       },
+       {
+        "key": "palmShell",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 672
+       },
+       {
+        "key": "tuft",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 60
+       }
+      ]
+     },
+     "render": {
+      "calls": 8,
+      "triangles": 4792
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 52,
+      "drawCalls": 5,
+      "triangles": 4856,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 300
+       },
+       {
+        "key": "contact",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 140
+       },
+       {
+        "key": "hedge",
+        "count": 36,
+        "capacity": 36,
+        "triangles": 720
+       },
+       {
+        "key": "shell:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 1680
+       },
+       {
+        "key": "tree:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 2016
+       }
+      ]
+     },
+     "render": {
+      "calls": 8,
+      "triangles": 7696
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 39,
+      "drawCalls": 7,
+      "triangles": 1692,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 580
+       },
+       {
+        "key": "bentPineShell",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 280
+       },
+       {
+        "key": "contact",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 70
+       },
+       {
+        "key": "heath",
+        "count": 22,
+        "capacity": 22,
+        "triangles": 440
+       },
+       {
+        "key": "shell:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 112
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 50
+       }
+      ]
+     },
+     "render": {
+      "calls": 11,
+      "triangles": 2538
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 47,
+      "drawCalls": 2,
+      "triangles": 823,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 648
+       },
+       {
+        "key": "tuft",
+        "count": 35,
+        "capacity": 35,
+        "triangles": 175
+       }
+      ]
+     },
+     "render": {
+      "calls": 3,
+      "triangles": 927
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_newfoundland_winter_lite_close.png",
+   "theme": "newfoundland",
+   "season": "winter",
+   "month": 1,
+   "tier": "lite",
+   "id": "newfoundland_winter_lite",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 21,
+      "drawCalls": 4,
+      "triangles": 1423,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 714
+       },
+       {
+        "key": "contact",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 90
+       },
+       {
+        "key": "palm",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 594
+       },
+       {
+        "key": "tuft",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 25
+       }
+      ]
+     },
+     "render": {
+      "calls": 6,
+      "triangles": 1529
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 40,
+      "drawCalls": 4,
+      "triangles": 2304,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 204
+       },
+       {
+        "key": "contact",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 100
+       },
+       {
+        "key": "hedge",
+        "count": 28,
+        "capacity": 28,
+        "triangles": 560
+       },
+       {
+        "key": "tree:round",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 1440
+       }
+      ]
+     },
+     "render": {
+      "calls": 5,
+      "triangles": 2408
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 21,
+      "drawCalls": 5,
+      "triangles": 724,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 264
+       },
+       {
+        "key": "contact",
+        "count": 6,
+        "capacity": 6,
+        "triangles": 60
+       },
+       {
+        "key": "heath",
+        "count": 11,
+        "capacity": 11,
+        "triangles": 220
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 20
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 830
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 26,
+      "drawCalls": 2,
+      "triangles": 430,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 360
+       },
+       {
+        "key": "tuft",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 70
+       }
+      ]
+     },
+     "render": {
+      "calls": 3,
+      "triangles": 534
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_classic_spring-may_full_close.png",
+   "theme": "classic",
+   "season": "spring",
+   "month": 5,
+   "tier": "full",
+   "id": "classic_spring-may_full",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 38,
+      "drawCalls": 6,
+      "triangles": 5287,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1092
+       },
+       {
+        "key": "bloom:0",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1351
+       },
+       {
+        "key": "contact",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 120
+       },
+       {
+        "key": "palm",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1992
+       },
+       {
+        "key": "palmShell",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 672
+       },
+       {
+        "key": "tuft",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 60
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 7385
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 54,
+      "drawCalls": 6,
+      "triangles": 5218,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 312
+       },
+       {
+        "key": "bloom:2",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 350
+       },
+       {
+        "key": "contact",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 140
+       },
+       {
+        "key": "hedge",
+        "count": 36,
+        "capacity": 36,
+        "triangles": 720
+       },
+       {
+        "key": "shell:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 1680
+       },
+       {
+        "key": "tree:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 2016
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 8058
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 39,
+      "drawCalls": 7,
+      "triangles": 1692,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 580
+       },
+       {
+        "key": "bentPineShell",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 280
+       },
+       {
+        "key": "contact",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 70
+       },
+       {
+        "key": "heath",
+        "count": 22,
+        "capacity": 22,
+        "triangles": 440
+       },
+       {
+        "key": "shell:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 112
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 50
+       }
+      ]
+     },
+     "render": {
+      "calls": 11,
+      "triangles": 2538
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 59,
+      "drawCalls": 3,
+      "triangles": 2923,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 648
+       },
+       {
+        "key": "bloom:1",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 2100
+       },
+       {
+        "key": "tuft",
+        "count": 35,
+        "capacity": 35,
+        "triangles": 175
+       }
+      ]
+     },
+     "render": {
+      "calls": 4,
+      "triangles": 3027
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_classic_autumn_full_close.png",
+   "theme": "classic",
+   "season": "autumn",
+   "month": 10,
+   "tier": "full",
+   "id": "classic_autumn_full",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 38,
+      "drawCalls": 6,
+      "triangles": 4461,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1092
+       },
+       {
+        "key": "bloom:0",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 525
+       },
+       {
+        "key": "contact",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 120
+       },
+       {
+        "key": "palm",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1992
+       },
+       {
+        "key": "palmShell",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 672
+       },
+       {
+        "key": "tuft",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 60
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 6559
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 54,
+      "drawCalls": 6,
+      "triangles": 4994,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 312
+       },
+       {
+        "key": "bloom:2",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 126
+       },
+       {
+        "key": "contact",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 140
+       },
+       {
+        "key": "hedge",
+        "count": 36,
+        "capacity": 36,
+        "triangles": 720
+       },
+       {
+        "key": "shell:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 1680
+       },
+       {
+        "key": "tree:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 2016
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 7834
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 39,
+      "drawCalls": 7,
+      "triangles": 1692,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 580
+       },
+       {
+        "key": "bentPineShell",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 280
+       },
+       {
+        "key": "contact",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 70
+       },
+       {
+        "key": "heath",
+        "count": 22,
+        "capacity": 22,
+        "triangles": 440
+       },
+       {
+        "key": "shell:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 112
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 50
+       }
+      ]
+     },
+     "render": {
+      "calls": 11,
+      "triangles": 2538
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 59,
+      "drawCalls": 3,
+      "triangles": 1579,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 648
+       },
+       {
+        "key": "bloom:1",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 756
+       },
+       {
+        "key": "tuft",
+        "count": 35,
+        "capacity": 35,
+        "triangles": 175
+       }
+      ]
+     },
+     "render": {
+      "calls": 4,
+      "triangles": 1683
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_classic_summer_full.png",
+   "theme": "classic",
+   "season": "summer",
+   "month": 7,
+   "tier": "full",
+   "id": "classic_summer_full",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 38,
+      "drawCalls": 6,
+      "triangles": 5287,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1092
+       },
+       {
+        "key": "bloom:0",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1351
+       },
+       {
+        "key": "contact",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 120
+       },
+       {
+        "key": "palm",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1992
+       },
+       {
+        "key": "palmShell",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 672
+       },
+       {
+        "key": "tuft",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 60
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 7385
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 54,
+      "drawCalls": 6,
+      "triangles": 5218,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 312
+       },
+       {
+        "key": "bloom:2",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 350
+       },
+       {
+        "key": "contact",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 140
+       },
+       {
+        "key": "hedge",
+        "count": 36,
+        "capacity": 36,
+        "triangles": 720
+       },
+       {
+        "key": "shell:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 1680
+       },
+       {
+        "key": "tree:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 2016
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 8058
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 39,
+      "drawCalls": 7,
+      "triangles": 1692,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 580
+       },
+       {
+        "key": "bentPineShell",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 280
+       },
+       {
+        "key": "contact",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 70
+       },
+       {
+        "key": "heath",
+        "count": 22,
+        "capacity": 22,
+        "triangles": 440
+       },
+       {
+        "key": "shell:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 112
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 50
+       }
+      ]
+     },
+     "render": {
+      "calls": 11,
+      "triangles": 2538
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 59,
+      "drawCalls": 3,
+      "triangles": 2923,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 648
+       },
+       {
+        "key": "bloom:1",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 2100
+       },
+       {
+        "key": "tuft",
+        "count": 35,
+        "capacity": 35,
+        "triangles": 175
+       }
+      ]
+     },
+     "render": {
+      "calls": 4,
+      "triangles": 3027
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_classic_summer_lite.png",
+   "theme": "classic",
+   "season": "summer",
+   "month": 7,
+   "tier": "lite",
+   "id": "classic_summer_lite",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 28,
+      "drawCalls": 5,
+      "triangles": 2693,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 756
+       },
+       {
+        "key": "bloom:0",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 742
+       },
+       {
+        "key": "contact",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 90
+       },
+       {
+        "key": "palm",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 1080
+       },
+       {
+        "key": "tuft",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 25
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 2799
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 42,
+      "drawCalls": 5,
+      "triangles": 2520,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 216
+       },
+       {
+        "key": "bloom:2",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 204
+       },
+       {
+        "key": "contact",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 100
+       },
+       {
+        "key": "hedge",
+        "count": 28,
+        "capacity": 28,
+        "triangles": 560
+       },
+       {
+        "key": "tree:round",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 1440
+       }
+      ]
+     },
+     "render": {
+      "calls": 6,
+      "triangles": 2624
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 21,
+      "drawCalls": 5,
+      "triangles": 724,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 264
+       },
+       {
+        "key": "contact",
+        "count": 6,
+        "capacity": 6,
+        "triangles": 60
+       },
+       {
+        "key": "heath",
+        "count": 11,
+        "capacity": 11,
+        "triangles": 220
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 20
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 830
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 38,
+      "drawCalls": 3,
+      "triangles": 1654,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 360
+       },
+       {
+        "key": "bloom:1",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1224
+       },
+       {
+        "key": "tuft",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 70
+       }
+      ]
+     },
+     "render": {
+      "calls": 4,
+      "triangles": 1758
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_classic_winter_full.png",
+   "theme": "classic",
+   "season": "winter",
+   "month": 1,
+   "tier": "full",
+   "id": "classic_winter_full",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 31,
+      "drawCalls": 5,
+      "triangles": 3894,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1050
+       },
+       {
+        "key": "contact",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 120
+       },
+       {
+        "key": "palm",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1992
+       },
+       {
+        "key": "palmShell",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 672
+       },
+       {
+        "key": "tuft",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 60
+       }
+      ]
+     },
+     "render": {
+      "calls": 8,
+      "triangles": 5992
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 52,
+      "drawCalls": 5,
+      "triangles": 4856,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 300
+       },
+       {
+        "key": "contact",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 140
+       },
+       {
+        "key": "hedge",
+        "count": 36,
+        "capacity": 36,
+        "triangles": 720
+       },
+       {
+        "key": "shell:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 1680
+       },
+       {
+        "key": "tree:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 2016
+       }
+      ]
+     },
+     "render": {
+      "calls": 8,
+      "triangles": 7696
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 39,
+      "drawCalls": 7,
+      "triangles": 1692,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 580
+       },
+       {
+        "key": "bentPineShell",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 280
+       },
+       {
+        "key": "contact",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 70
+       },
+       {
+        "key": "heath",
+        "count": 22,
+        "capacity": 22,
+        "triangles": 440
+       },
+       {
+        "key": "shell:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 112
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 50
+       }
+      ]
+     },
+     "render": {
+      "calls": 11,
+      "triangles": 2538
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 47,
+      "drawCalls": 2,
+      "triangles": 823,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 648
+       },
+       {
+        "key": "tuft",
+        "count": 35,
+        "capacity": 35,
+        "triangles": 175
+       }
+      ]
+     },
+     "render": {
+      "calls": 3,
+      "triangles": 927
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_classic_winter_lite.png",
+   "theme": "classic",
+   "season": "winter",
+   "month": 1,
+   "tier": "lite",
+   "id": "classic_winter_lite",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 21,
+      "drawCalls": 4,
+      "triangles": 1909,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 714
+       },
+       {
+        "key": "contact",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 90
+       },
+       {
+        "key": "palm",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 1080
+       },
+       {
+        "key": "tuft",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 25
+       }
+      ]
+     },
+     "render": {
+      "calls": 6,
+      "triangles": 2015
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 40,
+      "drawCalls": 4,
+      "triangles": 2304,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 204
+       },
+       {
+        "key": "contact",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 100
+       },
+       {
+        "key": "hedge",
+        "count": 28,
+        "capacity": 28,
+        "triangles": 560
+       },
+       {
+        "key": "tree:round",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 1440
+       }
+      ]
+     },
+     "render": {
+      "calls": 5,
+      "triangles": 2408
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 21,
+      "drawCalls": 5,
+      "triangles": 724,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 264
+       },
+       {
+        "key": "contact",
+        "count": 6,
+        "capacity": 6,
+        "triangles": 60
+       },
+       {
+        "key": "heath",
+        "count": 11,
+        "capacity": 11,
+        "triangles": 220
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 20
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 830
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 26,
+      "drawCalls": 2,
+      "triangles": 430,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 360
+       },
+       {
+        "key": "tuft",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 70
+       }
+      ]
+     },
+     "render": {
+      "calls": 3,
+      "triangles": 534
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_taylor_summer_full.png",
+   "theme": "taylor",
+   "season": "summer",
+   "month": 7,
+   "tier": "full",
+   "id": "taylor_summer_full",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 38,
+      "drawCalls": 6,
+      "triangles": 5892,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1176
+       },
+       {
+        "key": "bloom:0",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 2016
+       },
+       {
+        "key": "contact",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 120
+       },
+       {
+        "key": "palm",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1848
+       },
+       {
+        "key": "palmShell",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 672
+       },
+       {
+        "key": "tuft",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 60
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 7846
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 54,
+      "drawCalls": 6,
+      "triangles": 5492,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 336
+       },
+       {
+        "key": "bloom:2",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 600
+       },
+       {
+        "key": "contact",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 140
+       },
+       {
+        "key": "hedge",
+        "count": 36,
+        "capacity": 36,
+        "triangles": 720
+       },
+       {
+        "key": "shell:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 1680
+       },
+       {
+        "key": "tree:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 2016
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 8332
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 39,
+      "drawCalls": 7,
+      "triangles": 1692,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 580
+       },
+       {
+        "key": "bentPineShell",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 280
+       },
+       {
+        "key": "contact",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 70
+       },
+       {
+        "key": "heath",
+        "count": 22,
+        "capacity": 22,
+        "triangles": 440
+       },
+       {
+        "key": "shell:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 112
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 50
+       }
+      ]
+     },
+     "render": {
+      "calls": 11,
+      "triangles": 2538
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 59,
+      "drawCalls": 3,
+      "triangles": 4423,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 648
+       },
+       {
+        "key": "bloom:1",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 3600
+       },
+       {
+        "key": "tuft",
+        "count": 35,
+        "capacity": 35,
+        "triangles": 175
+       }
+      ]
+     },
+     "render": {
+      "calls": 4,
+      "triangles": 4527
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_taylor_summer_lite.png",
+   "theme": "taylor",
+   "season": "summer",
+   "month": 7,
+   "tier": "lite",
+   "id": "taylor_summer_lite",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 28,
+      "drawCalls": 5,
+      "triangles": 2991,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 616
+       },
+       {
+        "key": "bloom:0",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1288
+       },
+       {
+        "key": "contact",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 90
+       },
+       {
+        "key": "palm",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 972
+       },
+       {
+        "key": "tuft",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 25
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 3097
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 42,
+      "drawCalls": 5,
+      "triangles": 2684,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 176
+       },
+       {
+        "key": "bloom:2",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 408
+       },
+       {
+        "key": "contact",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 100
+       },
+       {
+        "key": "hedge",
+        "count": 28,
+        "capacity": 28,
+        "triangles": 560
+       },
+       {
+        "key": "tree:round",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 1440
+       }
+      ]
+     },
+     "render": {
+      "calls": 6,
+      "triangles": 2788
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 21,
+      "drawCalls": 5,
+      "triangles": 724,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 264
+       },
+       {
+        "key": "contact",
+        "count": 6,
+        "capacity": 6,
+        "triangles": 60
+       },
+       {
+        "key": "heath",
+        "count": 11,
+        "capacity": 11,
+        "triangles": 220
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 20
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 830
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 38,
+      "drawCalls": 3,
+      "triangles": 2878,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 360
+       },
+       {
+        "key": "bloom:1",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 2448
+       },
+       {
+        "key": "tuft",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 70
+       }
+      ]
+     },
+     "render": {
+      "calls": 4,
+      "triangles": 2982
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_taylor_winter_full.png",
+   "theme": "taylor",
+   "season": "winter",
+   "month": 1,
+   "tier": "full",
+   "id": "taylor_winter_full",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 31,
+      "drawCalls": 5,
+      "triangles": 3834,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1134
+       },
+       {
+        "key": "contact",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 120
+       },
+       {
+        "key": "palm",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1848
+       },
+       {
+        "key": "palmShell",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 672
+       },
+       {
+        "key": "tuft",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 60
+       }
+      ]
+     },
+     "render": {
+      "calls": 8,
+      "triangles": 5788
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 52,
+      "drawCalls": 5,
+      "triangles": 4880,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 324
+       },
+       {
+        "key": "contact",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 140
+       },
+       {
+        "key": "hedge",
+        "count": 36,
+        "capacity": 36,
+        "triangles": 720
+       },
+       {
+        "key": "shell:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 1680
+       },
+       {
+        "key": "tree:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 2016
+       }
+      ]
+     },
+     "render": {
+      "calls": 8,
+      "triangles": 7720
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 39,
+      "drawCalls": 7,
+      "triangles": 1692,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 580
+       },
+       {
+        "key": "bentPineShell",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 280
+       },
+       {
+        "key": "contact",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 70
+       },
+       {
+        "key": "heath",
+        "count": 22,
+        "capacity": 22,
+        "triangles": 440
+       },
+       {
+        "key": "shell:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 112
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 50
+       }
+      ]
+     },
+     "render": {
+      "calls": 11,
+      "triangles": 2538
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 47,
+      "drawCalls": 2,
+      "triangles": 823,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 648
+       },
+       {
+        "key": "tuft",
+        "count": 35,
+        "capacity": 35,
+        "triangles": 175
+       }
+      ]
+     },
+     "render": {
+      "calls": 3,
+      "triangles": 927
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_taylor_winter_lite.png",
+   "theme": "taylor",
+   "season": "winter",
+   "month": 1,
+   "tier": "lite",
+   "id": "taylor_winter_lite",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 21,
+      "drawCalls": 4,
+      "triangles": 1661,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 574
+       },
+       {
+        "key": "contact",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 90
+       },
+       {
+        "key": "palm",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 972
+       },
+       {
+        "key": "tuft",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 25
+       }
+      ]
+     },
+     "render": {
+      "calls": 6,
+      "triangles": 1767
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 40,
+      "drawCalls": 4,
+      "triangles": 2264,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 164
+       },
+       {
+        "key": "contact",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 100
+       },
+       {
+        "key": "hedge",
+        "count": 28,
+        "capacity": 28,
+        "triangles": 560
+       },
+       {
+        "key": "tree:round",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 1440
+       }
+      ]
+     },
+     "render": {
+      "calls": 5,
+      "triangles": 2368
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 21,
+      "drawCalls": 5,
+      "triangles": 724,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 264
+       },
+       {
+        "key": "contact",
+        "count": 6,
+        "capacity": 6,
+        "triangles": 60
+       },
+       {
+        "key": "heath",
+        "count": 11,
+        "capacity": 11,
+        "triangles": 220
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 20
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 830
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 26,
+      "drawCalls": 2,
+      "triangles": 430,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 360
+       },
+       {
+        "key": "tuft",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 70
+       }
+      ]
+     },
+     "render": {
+      "calls": 3,
+      "triangles": 534
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_newfoundland_summer_full.png",
+   "theme": "newfoundland",
+   "season": "summer",
+   "month": 7,
+   "tier": "full",
+   "id": "newfoundland_summer_full",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 38,
+      "drawCalls": 6,
+      "triangles": 4687,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1092
+       },
+       {
+        "key": "bloom:0",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1351
+       },
+       {
+        "key": "contact",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 120
+       },
+       {
+        "key": "palm",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1392
+       },
+       {
+        "key": "palmShell",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 672
+       },
+       {
+        "key": "tuft",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 60
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 6185
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 54,
+      "drawCalls": 6,
+      "triangles": 5278,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 312
+       },
+       {
+        "key": "bloom:2",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 410
+       },
+       {
+        "key": "contact",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 140
+       },
+       {
+        "key": "hedge",
+        "count": 36,
+        "capacity": 36,
+        "triangles": 720
+       },
+       {
+        "key": "shell:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 1680
+       },
+       {
+        "key": "tree:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 2016
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 8118
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 39,
+      "drawCalls": 7,
+      "triangles": 1692,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 580
+       },
+       {
+        "key": "bentPineShell",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 280
+       },
+       {
+        "key": "contact",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 70
+       },
+       {
+        "key": "heath",
+        "count": 22,
+        "capacity": 22,
+        "triangles": 440
+       },
+       {
+        "key": "shell:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 112
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 50
+       }
+      ]
+     },
+     "render": {
+      "calls": 11,
+      "triangles": 2538
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 59,
+      "drawCalls": 3,
+      "triangles": 3139,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 648
+       },
+       {
+        "key": "bloom:1",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 2316
+       },
+       {
+        "key": "tuft",
+        "count": 35,
+        "capacity": 35,
+        "triangles": 175
+       }
+      ]
+     },
+     "render": {
+      "calls": 4,
+      "triangles": 3243
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_newfoundland_summer_lite.png",
+   "theme": "newfoundland",
+   "season": "summer",
+   "month": 7,
+   "tier": "lite",
+   "id": "newfoundland_summer_lite",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 28,
+      "drawCalls": 5,
+      "triangles": 2207,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 756
+       },
+       {
+        "key": "bloom:0",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 742
+       },
+       {
+        "key": "contact",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 90
+       },
+       {
+        "key": "palm",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 594
+       },
+       {
+        "key": "tuft",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 25
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 2313
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 42,
+      "drawCalls": 5,
+      "triangles": 2534,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 216
+       },
+       {
+        "key": "bloom:2",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 218
+       },
+       {
+        "key": "contact",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 100
+       },
+       {
+        "key": "hedge",
+        "count": 28,
+        "capacity": 28,
+        "triangles": 560
+       },
+       {
+        "key": "tree:round",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 1440
+       }
+      ]
+     },
+     "render": {
+      "calls": 6,
+      "triangles": 2638
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 21,
+      "drawCalls": 5,
+      "triangles": 724,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 264
+       },
+       {
+        "key": "contact",
+        "count": 6,
+        "capacity": 6,
+        "triangles": 60
+       },
+       {
+        "key": "heath",
+        "count": 11,
+        "capacity": 11,
+        "triangles": 220
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 20
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 830
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 38,
+      "drawCalls": 3,
+      "triangles": 1702,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 360
+       },
+       {
+        "key": "bloom:1",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1272
+       },
+       {
+        "key": "tuft",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 70
+       }
+      ]
+     },
+     "render": {
+      "calls": 4,
+      "triangles": 1806
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_newfoundland_winter_full.png",
+   "theme": "newfoundland",
+   "season": "winter",
+   "month": 1,
+   "tier": "full",
+   "id": "newfoundland_winter_full",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 31,
+      "drawCalls": 5,
+      "triangles": 3294,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1050
+       },
+       {
+        "key": "contact",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 120
+       },
+       {
+        "key": "palm",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1392
+       },
+       {
+        "key": "palmShell",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 672
+       },
+       {
+        "key": "tuft",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 60
+       }
+      ]
+     },
+     "render": {
+      "calls": 8,
+      "triangles": 4792
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 52,
+      "drawCalls": 5,
+      "triangles": 4856,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 300
+       },
+       {
+        "key": "contact",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 140
+       },
+       {
+        "key": "hedge",
+        "count": 36,
+        "capacity": 36,
+        "triangles": 720
+       },
+       {
+        "key": "shell:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 1680
+       },
+       {
+        "key": "tree:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 2016
+       }
+      ]
+     },
+     "render": {
+      "calls": 8,
+      "triangles": 7696
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 39,
+      "drawCalls": 7,
+      "triangles": 1692,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 580
+       },
+       {
+        "key": "bentPineShell",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 280
+       },
+       {
+        "key": "contact",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 70
+       },
+       {
+        "key": "heath",
+        "count": 22,
+        "capacity": 22,
+        "triangles": 440
+       },
+       {
+        "key": "shell:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 112
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 50
+       }
+      ]
+     },
+     "render": {
+      "calls": 11,
+      "triangles": 2538
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 47,
+      "drawCalls": 2,
+      "triangles": 823,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 648
+       },
+       {
+        "key": "tuft",
+        "count": 35,
+        "capacity": 35,
+        "triangles": 175
+       }
+      ]
+     },
+     "render": {
+      "calls": 3,
+      "triangles": 927
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_newfoundland_winter_lite.png",
+   "theme": "newfoundland",
+   "season": "winter",
+   "month": 1,
+   "tier": "lite",
+   "id": "newfoundland_winter_lite",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 21,
+      "drawCalls": 4,
+      "triangles": 1423,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 714
+       },
+       {
+        "key": "contact",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 90
+       },
+       {
+        "key": "palm",
+        "count": 9,
+        "capacity": 9,
+        "triangles": 594
+       },
+       {
+        "key": "tuft",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 25
+       }
+      ]
+     },
+     "render": {
+      "calls": 6,
+      "triangles": 1529
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 40,
+      "drawCalls": 4,
+      "triangles": 2304,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 204
+       },
+       {
+        "key": "contact",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 100
+       },
+       {
+        "key": "hedge",
+        "count": 28,
+        "capacity": 28,
+        "triangles": 560
+       },
+       {
+        "key": "tree:round",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 1440
+       }
+      ]
+     },
+     "render": {
+      "calls": 5,
+      "triangles": 2408
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 21,
+      "drawCalls": 5,
+      "triangles": 724,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 264
+       },
+       {
+        "key": "contact",
+        "count": 6,
+        "capacity": 6,
+        "triangles": 60
+       },
+       {
+        "key": "heath",
+        "count": 11,
+        "capacity": 11,
+        "triangles": 220
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 4,
+        "capacity": 4,
+        "triangles": 20
+       }
+      ]
+     },
+     "render": {
+      "calls": 7,
+      "triangles": 830
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 26,
+      "drawCalls": 2,
+      "triangles": 430,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 360
+       },
+       {
+        "key": "tuft",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 70
+       }
+      ]
+     },
+     "render": {
+      "calls": 3,
+      "triangles": 534
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_classic_spring-may_full.png",
+   "theme": "classic",
+   "season": "spring",
+   "month": 5,
+   "tier": "full",
+   "id": "classic_spring-may_full",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 38,
+      "drawCalls": 6,
+      "triangles": 5287,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1092
+       },
+       {
+        "key": "bloom:0",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1351
+       },
+       {
+        "key": "contact",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 120
+       },
+       {
+        "key": "palm",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1992
+       },
+       {
+        "key": "palmShell",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 672
+       },
+       {
+        "key": "tuft",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 60
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 7385
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 54,
+      "drawCalls": 6,
+      "triangles": 5218,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 312
+       },
+       {
+        "key": "bloom:2",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 350
+       },
+       {
+        "key": "contact",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 140
+       },
+       {
+        "key": "hedge",
+        "count": 36,
+        "capacity": 36,
+        "triangles": 720
+       },
+       {
+        "key": "shell:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 1680
+       },
+       {
+        "key": "tree:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 2016
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 8058
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 39,
+      "drawCalls": 7,
+      "triangles": 1692,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 580
+       },
+       {
+        "key": "bentPineShell",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 280
+       },
+       {
+        "key": "contact",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 70
+       },
+       {
+        "key": "heath",
+        "count": 22,
+        "capacity": 22,
+        "triangles": 440
+       },
+       {
+        "key": "shell:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 112
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 50
+       }
+      ]
+     },
+     "render": {
+      "calls": 11,
+      "triangles": 2538
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 59,
+      "drawCalls": 3,
+      "triangles": 2923,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 648
+       },
+       {
+        "key": "bloom:1",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 2100
+       },
+       {
+        "key": "tuft",
+        "count": 35,
+        "capacity": 35,
+        "triangles": 175
+       }
+      ]
+     },
+     "render": {
+      "calls": 4,
+      "triangles": 3027
+     }
+    }
+   }
+  },
+  {
+   "file": "plants_classic_autumn_full.png",
+   "theme": "classic",
+   "season": "autumn",
+   "month": 10,
+   "tier": "full",
+   "id": "classic_autumn_full",
+   "stats": {
+    "palms": {
+     "planting": {
+      "items": 31,
+      "drawn": 38,
+      "drawCalls": 6,
+      "triangles": 4461,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 1092
+       },
+       {
+        "key": "bloom:0",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 525
+       },
+       {
+        "key": "contact",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 120
+       },
+       {
+        "key": "palm",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 1992
+       },
+       {
+        "key": "palmShell",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 672
+       },
+       {
+        "key": "tuft",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 60
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 6559
+     }
+    },
+    "avenue": {
+     "planting": {
+      "items": 52,
+      "drawn": 54,
+      "drawCalls": 6,
+      "triangles": 4994,
+      "layers": [
+       {
+        "key": "bed",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 312
+       },
+       {
+        "key": "bloom:2",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 126
+       },
+       {
+        "key": "contact",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 140
+       },
+       {
+        "key": "hedge",
+        "count": 36,
+        "capacity": 36,
+        "triangles": 720
+       },
+       {
+        "key": "shell:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 1680
+       },
+       {
+        "key": "tree:round",
+        "count": 14,
+        "capacity": 14,
+        "triangles": 2016
+       }
+      ]
+     },
+     "render": {
+      "calls": 9,
+      "triangles": 7834
+     }
+    },
+    "pines": {
+     "planting": {
+      "items": 39,
+      "drawn": 39,
+      "drawCalls": 7,
+      "triangles": 1692,
+      "layers": [
+       {
+        "key": "bentPine",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 580
+       },
+       {
+        "key": "bentPineShell",
+        "count": 5,
+        "capacity": 5,
+        "triangles": 280
+       },
+       {
+        "key": "contact",
+        "count": 7,
+        "capacity": 7,
+        "triangles": 70
+       },
+       {
+        "key": "heath",
+        "count": 22,
+        "capacity": 22,
+        "triangles": 440
+       },
+       {
+        "key": "shell:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 112
+       },
+       {
+        "key": "tree:pine",
+        "count": 2,
+        "capacity": 2,
+        "triangles": 160
+       },
+       {
+        "key": "tuft",
+        "count": 10,
+        "capacity": 10,
+        "triangles": 50
+       }
+      ]
+     },
+     "render": {
+      "calls": 11,
+      "triangles": 2538
+     }
+    },
+    "prairie": {
+     "planting": {
+      "items": 47,
+      "drawn": 59,
+      "drawCalls": 3,
+      "triangles": 1579,
+      "layers": [
+       {
+        "key": "bed:wild",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 648
+       },
+       {
+        "key": "bloom:1",
+        "count": 12,
+        "capacity": 12,
+        "triangles": 756
+       },
+       {
+        "key": "tuft",
+        "count": 35,
+        "capacity": 35,
+        "triangles": 175
+       }
+      ]
+     },
+     "render": {
+      "calls": 4,
+      "triangles": 1683
+     }
+    }
+   }
+  }
+ ],
+ "errors": [],
+ "note": "PNG palette-compressed (sharp, quality 90) after capture; _close = view=close (near look at 10\u201320 eu), plain = view=wide (activity-camera height along the verge)."
+}

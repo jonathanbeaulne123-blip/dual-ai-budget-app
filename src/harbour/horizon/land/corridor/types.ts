@@ -99,7 +99,12 @@ export type PlantSpecies =
   | 'shrub' | 'flowering' | 'hedge' | 'heath'                         // Mountain v2 shrub archetypes
   | 'palm' | 'flowerBed' | 'grassTuft';                               // corridor additions in the same card kit
 export type PlantingKind = 'avenue' | 'palmGrove' | 'flowerBed' | 'hedgerow' | 'framingTrees' | 'shrubCluster' | 'median';
-export interface PlantItem { species: PlantSpecies; at: Point3; scale: number; yaw: number; tint?: number }
+export interface PlantItem {
+  species: PlantSpecies; at: Point3; scale: number; yaw: number; tint?: number;
+  /** Optional wind lean (radians, toward local +x after `yaw`). A `pine` with lean ≥ 0.15 is drawn as a wind-bent
+   * (wind-clipped) pine (STYLE §3.2 shore: "wind-bent pine, leaning"); other trees tilt by it. Absent = upright. */
+  lean?: number;
+}
 /** A composed group (never a spline scatter): its items are placed together under one rule. */
 export interface PlantingGroup { id: string; kind: PlantingKind; reachId: string; side: 'left' | 'right' | 'median'; items: PlantItem[] }
 
