@@ -51,3 +51,19 @@ it('splits the definition into an index and one chunk per district, deterministi
   for (const c of first.chunks) { const ref = index.chunks.find((r: { districtId: string }) => r.districtId === c.districtId); expect(ref.sha256).toBe(sha(c.json)); expect(ref.bytes).toBe(c.json.byteLength); }
   expect(JSON.parse(first.chunks.find(c => c.districtId === 'harbour')!.json.toString()).solids.map((s: { id: string }) => s.id)).toEqual(['a@harbour', 'b@harbour']);
 });
+
+it('keeps the slim Journey land in step with the served index and terrain (REVIEW M2; bake-terrain.mjs --check holds the bytes)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { gunzipSync } = await import('node:zlib');
+  const { createHash } = await import('node:crypto');
+  const { parseHorizonIndex } = await import('../src/house/world/horizonAssets.ts');
+  const { decodeTerrainAsset } = await import('../src/harbour/horizon/land/terrain/asset.ts');
+  const { extractJourneyLand } = await import('../src/journey/land/extract.ts');
+  const { encodeJourneyLandSlim, JOURNEY_LAND_SLIM_URL } = await import('../src/journey/land/slim.ts');
+  const ab = (b: Buffer) => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer;
+  const indexJson = gunzipSync(readFileSync('public/horizon/world/horizon-geo-1.index.json.gz')), terrain = readFileSync('public/horizon/terrain/horizon-geo-1.bin');
+  const stored = readFileSync(`public${JOURNEY_LAND_SLIM_URL}`), sha = (b: Buffer) => createHash('sha256').update(b).digest('hex');
+  const expected = serializeHorizonJson(encodeJourneyLandSlim(extractJourneyLand(parseHorizonIndex(ab(indexJson)), decodeTerrainAsset(ab(terrain), 'journey')), { index: '/horizon/world/horizon-geo-1.index.json.gz', indexSha256: sha(indexJson), terrainSha256: sha(terrain) }));
+  expect(() => assertHorizonArtifact('compressed', stored, gzipSync(expected, { level: 9 }))).not.toThrow();
+  expect(stored.byteLength).toBeLessThanOrEqual(120 * 1024);
+});

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ARRIVAL_KEY_PREFIX, arrivalKey, harbourArrivalRoute, hasArrived, markArrived, type ArrivalSession } from "../src/harbour/nav/arrival.ts";
+import { ARRIVAL_KEY_PREFIX, JOURNEY_HOME_ROUTE, arrivalKey, harbourArrivalRoute, hasArrived, markArrived, type ArrivalSession } from "../src/harbour/nav/arrival.ts";
 import { COURT_ROUTE, HARBOUR_ENABLED, HARBOUR_PLACE_LEVELS, HARBOUR_PLACE_NAMES, HARBOUR_ROOMS, HARBOUR_WAYS, harbourOwnsRoute, harbourPlaceFor, harbourWayFor } from "../src/harbour/flag.ts";
 import type { HouseRoute } from "../src/hearthside/houseRoutes.ts";
 
@@ -74,48 +74,65 @@ describe("the flag", () => {
 });
 
 describe("harbourArrivalRoute", () => {
-  it("lands a fresh tab on the Court and marks the tab", () => {
+  it("names the household Journey Board as kitchen-table/above with the journey surface (D26)", () => {
+    expect(JOURNEY_HOME_ROUTE("HH-one")).toEqual({ room: "kitchen-table", level: "above", householdId: "HH-one", scope: "household", surface: "journey" });
+    // The board is the Path surface, not the Atlas place, so the harbour does not own it.
+    expect(harbourOwnsRoute(JOURNEY_HOME_ROUTE("HH-one"), "household", true)).toBe(false);
+  });
+  it("lands a fresh tab on the Journey Board and marks the tab", () => {
     const session = fakeSession();
-    const route = harbourArrivalRoute({ saved, scope: "household", householdId: "HH-one", identity, session, enabled: true });
-    expect(route).toEqual(COURT_ROUTE("HH-one"));
+    const route = harbourArrivalRoute({ edition: "illustrated", saved, scope: "household", householdId: "HH-one", identity, session, enabled: true });
+    expect(route).toEqual(JOURNEY_HOME_ROUTE("HH-one"));
     expect(session.store.get(`${ARRIVAL_KEY_PREFIX}${identity}`)).toBe("1");
     expect(hasArrived(session, identity)).toBe(true);
   });
   it("keeps the saved return route once the tab has arrived", () => {
     const session = fakeSession();
     markArrived(session, identity);
-    expect(harbourArrivalRoute({ saved, scope: "household", householdId: "HH-one", identity, session, enabled: true })).toBe(saved);
+    expect(harbourArrivalRoute({ edition: "illustrated", saved, scope: "household", householdId: "HH-one", identity, session, enabled: true })).toBe(saved);
   });
   it("keeps today's home/middle default when nothing is saved and the tab has arrived", () => {
     const session = fakeSession();
     markArrived(session, identity);
-    expect(harbourArrivalRoute({ saved: null, scope: "household", householdId: "HH-one", identity, session, enabled: true }))
+    expect(harbourArrivalRoute({ edition: "illustrated", saved: null, scope: "household", householdId: "HH-one", identity, session, enabled: true }))
       .toEqual({ room: "home", level: "middle", householdId: "HH-one", scope: "household" });
   });
   it("never touches the Personal scope", () => {
     const session = fakeSession();
     const personal: HouseRoute = { ...saved, scope: "personal" };
-    expect(harbourArrivalRoute({ saved: personal, scope: "personal", householdId: "HH-one", identity, session, enabled: true })).toBe(personal);
+    expect(harbourArrivalRoute({ edition: "illustrated", saved: personal, scope: "personal", householdId: "HH-one", identity, session, enabled: true })).toBe(personal);
     expect(session.store.size).toBe(0);
   });
   it("is today's behaviour when the flag is off", () => {
     const session = fakeSession();
-    expect(harbourArrivalRoute({ saved, scope: "household", householdId: "HH-one", identity, session })).toBe(saved);
-    expect(harbourArrivalRoute({ saved: undefined, scope: "household", householdId: "HH-one", identity, session, enabled: false }))
+    expect(harbourArrivalRoute({ edition: "illustrated", saved, scope: "household", householdId: "HH-one", identity, session })).toBe(saved);
+    expect(harbourArrivalRoute({ edition: "illustrated", saved: undefined, scope: "household", householdId: "HH-one", identity, session, enabled: false }))
       .toEqual({ room: "home", level: "middle", householdId: "HH-one", scope: "household" });
     expect(session.store.size).toBe(0);
   });
   it("keys the marker per identity so another member or environment arrives on its own", () => {
     const session = fakeSession();
-    harbourArrivalRoute({ saved, scope: "household", householdId: "HH-one", identity, session, enabled: true });
+    harbourArrivalRoute({ edition: "illustrated", saved, scope: "household", householdId: "HH-one", identity, session, enabled: true });
     const other = "production:HH-one:MEM-002:household";
-    expect(harbourArrivalRoute({ saved, scope: "household", householdId: "HH-one", identity: other, session, enabled: true })).toEqual(COURT_ROUTE("HH-one"));
+    expect(harbourArrivalRoute({ edition: "illustrated", saved, scope: "household", householdId: "HH-one", identity: other, session, enabled: true })).toEqual(JOURNEY_HOME_ROUTE("HH-one"));
     expect([...session.store.keys()].sort()).toEqual([arrivalKey(identity), arrivalKey(other)].sort());
+  });
+  it("lands the reading edition (the Desk) on the Court as before, marks the tab, then keeps the saved route (D65)", () => {
+    const session = fakeSession();
+    expect(harbourArrivalRoute({ edition: "reading", saved, scope: "household", householdId: "HH-one", identity, session, enabled: true })).toEqual(COURT_ROUTE("HH-one"));
+    expect(hasArrived(session, identity)).toBe(true);
+    expect(harbourArrivalRoute({ edition: "reading", saved, scope: "household", householdId: "HH-one", identity, session, enabled: true })).toBe(saved);
+    // The same tab switched to the illustrated edition keeps its saved route too: arrival is once per tab.
+    expect(harbourArrivalRoute({ edition: "illustrated", saved, scope: "household", householdId: "HH-one", identity, session, enabled: true })).toBe(saved);
+    // Personal and the flag-off path ignore the edition.
+    const personal: HouseRoute = { ...saved, scope: "personal" };
+    expect(harbourArrivalRoute({ edition: "reading", saved: personal, scope: "personal", householdId: "HH-one", identity, session: fakeSession(), enabled: true })).toBe(personal);
+    expect(harbourArrivalRoute({ edition: "reading", saved, scope: "household", householdId: "HH-one", identity, session: fakeSession(), enabled: false })).toBe(saved);
   });
   it("survives a storage that throws or is missing", () => {
     const broken: ArrivalSession = { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } };
-    expect(harbourArrivalRoute({ saved, scope: "household", householdId: "HH-one", identity, session: broken, enabled: true })).toEqual(COURT_ROUTE("HH-one"));
-    expect(harbourArrivalRoute({ saved, scope: "household", householdId: "HH-one", identity, session: null, enabled: true })).toEqual(COURT_ROUTE("HH-one"));
+    expect(harbourArrivalRoute({ edition: "illustrated", saved, scope: "household", householdId: "HH-one", identity, session: broken, enabled: true })).toEqual(JOURNEY_HOME_ROUTE("HH-one"));
+    expect(harbourArrivalRoute({ edition: "illustrated", saved, scope: "household", householdId: "HH-one", identity, session: null, enabled: true })).toEqual(JOURNEY_HOME_ROUTE("HH-one"));
   });
 });
 
