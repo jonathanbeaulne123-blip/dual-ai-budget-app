@@ -247,6 +247,8 @@ const mark = (gaps: Map<number, Partial<Record<SideName, CorridorGapKind>>>, i: 
  * centre (STYLE rule 12) holds nothing taller than a bench. */
 export const GREEN_CENTRE = { at: [1040, 1065] as XY, r: 160, maxHeight: .85 } as const;
 const PLANTING_BAND = 12, SIDEWALK_MIN_RUN = 12;
+/** How far beyond the paved edge a structure's own rail is looked for (eu). */
+export const RAIL_SEARCH = 2.5;
 
 export function buildCorridor(bed: BedCut, env: CorridorEnv): CorridorCore {
   const line = polyline(bed.points), total = line.total, first = bed.points[0]!, last = bed.points.at(-1)!;
@@ -371,6 +373,15 @@ export function buildCorridor(bed: BedCut, env: CorridorEnv): CorridorCore {
       // A gap is an opening only where it opens onto something at grade: the joining route's own walking width (or a flush
       // pad) just beyond the edge. Over a drop anywhere else (the flank of an oblique mouth, a route that is not there at the
       // road's height) the side keeps its guard.
+      // A structure that owns the deck but has no rail of its own on this side, over a drop that needs one: the corridor
+      // guards it (never a second rail where the structure has one: any wall, rail or parapet at body height within
+      // RAIL_SEARCH beyond the paved edge counts as the structure's).
+      if (owned && side.drop > CORRIDOR.guardDrop && !side.gap) {
+        // Railed only where something stops a body at a contact level (0.2 or 0.65 over the deck, the cruiser's and walker's) at
+        // every sample along the station: posts with a top rail at 1.05 alone do not (a rider passes between the posts under it).
+        const railed = [-step / 2, 0, step / 2].every(along => [[.12, .28], [.57, .73]].some(([y0, y1]) => { for (let o = paved - .5; o <= paved + RAIL_SEARCH; o += .25) { const q = P(o), x = q[0] + t[0] * along, z = q[1] + t[1] * along, y = h + grade[k]! * along; if (env.obstructed(x, z, y + y0!, y + y1!)) return true; } return false; }));
+        if (!railed) side.bare = true;
+      }
       if (side.gap && side.drop > CORRIDOR.guardDrop) {
         // The surface right past the edge (0.25 and 0.5 out, where a wheel leaves the road) must be the joining route's at grade.
         // A real walking surface (the joining route's own deck, a pad's slab) at grade across the band a guard would stand in.

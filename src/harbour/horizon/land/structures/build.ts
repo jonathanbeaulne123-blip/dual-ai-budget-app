@@ -124,9 +124,12 @@ function laneGuard(cuts:LandCuts):(xy:XY,above:number,ownBeds:readonly string[])
   };
 }
 /** Rail posts every ≤ 2 eu with a bar between each pair, so a clipped junction removes only a local bay. */
-function postedRail(rails:StructureSolid,path:readonly XYZ[],offset:number,height=1.05,spacing=2):void {
+/** Posts every `spacing` and a top rail; `midRail` (road decks, ROAD.md §2.5) adds a continuous rail at 0.55–0.85 (across the 0.65 contact level whether the deck top is at the path or 0.15 over it) so a vehicle
+ * or a walker is stopped at body height between the posts (a top rail at 1.05 alone passes under the cruiser's 0.2/0.65 contact
+ * levels: the Bight spur trestle's east edge let a rider through to a 9 eu drop). */
+function postedRail(rails:StructureSolid,path:readonly XYZ[],offset:number,height=1.05,spacing=2,midRail=false):void {
   const length=planLength(path),n=Math.max(1,Math.ceil(length/spacing));let prev:XYZ|undefined;
-  for(let k=0;k<=n;k++){const {p,dir}=along(path,length*k/n),xy:XY=[p[0]-dir[1]*offset,p[2]+dir[0]*offset];box(rails,xy,p[1]+height,[.1,.1],p[1]-.35);const top:XYZ=[p[0],p[1],p[2]];if(prev)slab(rails,prev,top,.09,.09,offset,height);prev=top;}
+  for(let k=0;k<=n;k++){const {p,dir}=along(path,length*k/n),xy:XY=[p[0]-dir[1]*offset,p[2]+dir[0]*offset];box(rails,xy,p[1]+height,[.1,.1],p[1]-.35);const top:XYZ=[p[0],p[1],p[2]];if(prev){slab(rails,prev,top,.09,.09,offset,height);if(midRail)slab(rails,prev,top,.08,.3,offset,.55);}prev=top;}
 }
 /** v2.0 (D-A1): MANIFEST structures.bightBridge as numbers. s runs along the V01 axis from the west control point, o is
  * the offset from that axis, + toward the Bight (the lagoon). */
@@ -363,7 +366,7 @@ function carriedDeck(id:string,route:BedCut,path:XYZ[],width:number,cuts:LandCut
   for(const r of refused){const i=bents.findIndex(b=>b>r),bay=i>0?bents[i]!-bents[i-1]!:Infinity,at=plan(along(path,r).p);
     if(bay<=24.01)cuts.diagnostics.push({id:`structures.${id}.bentOmitted`,severity:'info',message:`${id}: no bent at ${r.toFixed(1)} eu (it would stand in ${refusedWhy.get(r)}'s corridor); the ${bay.toFixed(1)} eu bay ${bay>12.01?'is carried by steel girders under both deck edges bearing on the cap beams at':'spans between the bents at'} ${bents[i-1]!.toFixed(1)} and ${bents[i]!.toFixed(1)} eu`,at,measured:bay,required:24});
     else conflict(cuts,`structures.${id}.bentInLane`,`${id}: the bent at ${r.toFixed(1)} eu stands in ${refusedWhy.get(r)}'s corridor (and 5 eu either way); it is not built and no girder carries its ${Number.isFinite(bay)?bay.toFixed(1)+' eu ':''}bay`,at,bay,24);}
-  for(const side of [-1,1])postedRail(rails,path,side*(width/2-.05));
+  for(const side of [-1,1])postedRail(rails,path,side*(width/2-.05),1.05,2,o.bedProfile==='road');
   cuts.solids.push(deck,rails);if(supports.indices.length)cuts.solids.push(supports,caps);
   const b=bed(`structure.${id}`,o.bedProfile??'walk',path,false);b.width=width;b.structureIds=[id];cuts.beds.push(b);route.structureIds.push(id);
   return {bents,refused};

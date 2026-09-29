@@ -36,13 +36,16 @@ export const CUTTING_RISE = .5;
 /** Retaining wall: centre this far beyond the built edge, thickness, coping above the bank, foot below the road. */
 export const RETAINING = Object.freeze({ setback: .3, thickness: .5, coping: .15, foot: .6 });
 
-const owned = (st: CorridorStation, side: SideName) => !!st.structureId || st[side].edge === 'structure';
+/** A side a structure owns (its deck and its rail); a bare structure side (no rail of its own) is the corridor's to guard. */
+const owned = (st: CorridorStation, side: SideName) => (!!st.structureId || st[side].edge === 'structure') && !st[side].bare;
 /** The guard (or wall) a station side needs, given the signed turn there (> 0: turning right, the left is the outer side). */
 export function guardNeed(st: CorridorStation, side: SideName, turn: number): GuardKind {
   const s = st[side];
   // The Year Walk as the footway: its own outer edge (the walk's rail or wall) guards the drop beyond it (connect, never duplicate).
   if (owned(st, side) || s.gap || s.edge === 'yearWalk') return 'none';
   if (s.drop > CORRIDOR.guardDrop) {
+    // On a structure's bare deck edge: the light rail (a parapet's mass belongs on the ground, not on a trestle).
+    if (s.bare) return 'postRail';
     if (st.context === 'mountain') return 'stoneParapet';
     const outer: SideName = turn > 0 ? 'left' : 'right';
     if (st.context === 'coastal' && side === outer && Math.abs(turn) > 1 / TIGHT_RADIUS) return 'stoneParapet';
@@ -110,7 +113,9 @@ export function planGuards(core: CorridorCore, env: GuardEnv): GuardRun[] {
     let index = 0;
     for (const sp of spans) {
       const ks = order.slice(sp.a, sp.b + 1), retaining = sp.kind === 'retaining', sign = side === 'left' ? -1 : 1;
-      const offset = round3(Math.max(...ks.map(k => builtEdge(stations[k]![side]))) + (retaining ? RETAINING.setback : CORRIDOR.guardSetback));
+      // A run wholly on a structure's bare deck edge stands on the deck, just inside its edge (never out over the void).
+      const bareRun = ks.every(k => stations[k]![side].bare);
+      const offset = round3(bareRun ? Math.min(...ks.map(k => stations[k]![side].paved)) - .2 : Math.max(...ks.map(k => builtEdge(stations[k]![side]))) + (retaining ? RETAINING.setback : CORRIDOR.guardSetback));
       const lat = lateralLine(core, sign * offset), line: XYZ[] = ks.map(k => { const p = lat[k]!; return [round3(p[0]), round3(p[1]), round3(p[2])]; }), at = [...ks];
       // A run that meets an opening runs on to the opening's true edge (GAP_CLEAR short of it), not a station short of it.
       let from = stations[ks[0]!]!.s, to = stations[ks.at(-1)!]!.s;
@@ -128,6 +133,14 @@ export function planGuards(core: CorridorCore, env: GuardEnv): GuardRun[] {
         if (end === 'end') { line.push(p); at.push(k0); to = wrapped; } else { line.unshift(p); at.unshift(k0); from = wrapped; }
       };
       reachGap('start'); reachGap('end');
+      // A run that continues onto a structure's rail reaches the structure's first station, so it meets that rail with no
+      // gap between them (the Quay Bridge's ends left 2 eu open over a 5 eu drop).
+      if (!retaining) for (const end of ['start', 'end'] as const) {
+        const i = end === 'end' ? sp.b + 1 : sp.a - 1, k = i >= 0 && i < n ? order[i] : closed ? order[(i + n) % n] : undefined;
+        if (k === undefined || !owned(stations[k]!, side) || at.includes(k)) continue;
+        const p = lat[k]!, q: XYZ = [round3(p[0]), round3(p[1]), round3(p[2])];
+        if (end === 'end') { line.push(q); at.push(k); to = stations[k]!.s; } else { line.unshift(q); at.unshift(k); from = stations[k]!.s; }
+      }
       if (line.length < 2) continue;
       const end = (i: number): GuardEnd => {
         if (retaining) return 'abutment';

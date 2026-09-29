@@ -24,7 +24,7 @@ import { districtAt, prism, solid } from '../structures/mesh';
 import { CORRIDOR, type CorridorStation, type GuardRun } from './types';
 import { lateralLine, onSegment, type CorridorCore, type CorridorEnv, type SideName } from './stations';
 import { RETAINING, retainingTop, runStations } from './guards';
-import { round3 } from './reaches';
+import { isCorridorRoad, round3 } from './reaches';
 
 /** Deck thickness, and how far below the ground a fill wall reaches. */
 export const DECK = Object.freeze({ thickness: .6, sink: .1 });
@@ -42,6 +42,10 @@ export const FILL = Object.freeze({ thickness: .5, clear: .05, reach: .5 });
  * shoulder steps back to the lanes there; deeper, the shoulder stays and the side's drop is guarded). */
 export const SHOULDER_LIP = .48, SHOULDER_CLEAR = CORRIDOR.guardDrop;
 
+/** Junction aprons (a joining road's mouth): inside the through road's carriageway the joining deck lies MOUTH_UNDER under
+ * the through road's surface; over the next APRON stations beyond it the joining deck blends from the through road's surface
+ * (extended into it) back to its own profile, built in APRON_STRIPS lateral strips so each strip edge takes its own height. */
+export const MOUTH_UNDER = .01, APRON = 4, APRON_STRIPS = 6;
 export const CORRIDOR_SOLID_KINDS = ['corridorDeck', 'corridorKerb', 'corridorWalk', 'corridorRetaining', 'corridorGuard'] as const;
 
 /** One station's cross-section of a band: signed offsets a < b (> 0 right), top heights at a and b, a flat bottom. */
@@ -53,12 +57,12 @@ interface Section { a: number; b: number; ya: number; yb: number; bottom: number
  * no seam, no mitre gap) and `removeInternalFaces` drops those coincident faces when the world is partitioned.
  * `segs` receives each prism's segment index (its district owner).
  */
-function band(out: StructureSolid, segs: number[], core: CorridorCore, ks: readonly number[], loop: boolean, section: (k: number) => Section): void {
+function band(out: StructureSolid, segs: number[], core: CorridorCore, ks: readonly number[], loop: boolean, section: (k: number) => Section, segOffset = 0): void {
   if (ks.length < 2) return;
   const cs = ks.map(k => { const s = section(k), A = lateralLine(core, round3(s.a))[k]!, B = lateralLine(core, round3(s.b))[k]!;
     return { A: [A[0], s.ya, A[2]] as XYZ, B: [B[0], s.yb, B[2]] as XYZ, bA: Math.min(s.bottom, s.ya - .01), bB: Math.min(s.bottomB ?? s.bottom, s.yb - .01) }; });
   const count = ks.length, n = loop ? count : count - 1;
-  for (let i = 0; i < n; i++) { const p = cs[i]!, q = cs[(i + 1) % count]!; prism(out, [p.A, p.B, q.B, q.A], [p.bA, p.bB, q.bB, q.bA]); segs.push(i); }
+  for (let i = 0; i < n; i++) { const p = cs[i]!, q = cs[(i + 1) % count]!; prism(out, [p.A, p.B, q.B, q.A], [p.bA, p.bB, q.bB, q.bA]); segs.push(i + segOffset); }
 }
 /** A panel along a polyline (a guard line or a wall line): `half` either side of the line, top and bottom per point; one
  * prism per segment, mitred sections shared exactly between neighbours like `band`. */
@@ -140,17 +144,26 @@ export function buildCorridorSolids(core: CorridorCore, guards: readonly GuardRu
   const ground: HeightQuery = env.ground, pieces: { whole: StructureSolid; segs: number[]; ks: number[]; loop: boolean; name: string }[] = [];
   // ---- deck: runs between owned stretches, lapping one owned station at each end. A road that starts or ends on another
   // corridor road's carriageway (a spur's mouth) starts its deck one station inside that road's (no double deck).
-  const owned = stations.map(ownedAt), runs: { ks: number[]; loop: boolean }[] = [], mouth = new Map<number, number>();
+  const owned = stations.map(ownedAt), runs: { ks: number[]; loop: boolean }[] = [];
+  // Junction aprons: `apron[k]` is the weight (1 inside the through road's carriageway, easing to 0 over APRON stations
+  // beyond it) with which station k's deck takes the through road's surface; `under[k]` is set inside the carriageway.
+  const apron = new Array<number>(n).fill(0), under = new Array<boolean>(n).fill(false);
   if (!closed) for (const dir of [1, -1] as const) {
-    // The through road owns its carriageway: a joining road's deck starts at its paved edge (a step there is a grade to fix,
-    // never a second deck standing inside the through road's lanes). Its lap station inside the through road stands no
-    // higher than the through road's surface there (a short ramp, never a wall in the through road's lanes).
     const on = (k: number) => env.otherRoadHeight(stations[k]!.at[0], stations[k]!.at[2], stations[k]!.at[1], id, CORRIDOR.guardDrop);
     let k = dir > 0 ? 0 : n - 1; const last = dir > 0 ? n - 1 : 0;
     if (on(k) === null) continue;
-    while (k !== last && on(k + dir) !== null) { owned[k] = true; k += dir; }
-    owned[k] = true; mouth.set(k, Math.min(stations[k]!.at[1], on(k)!));
+    while (on(k) !== null) { apron[k] = 1; under[k] = true; if (k === last) break; k += dir; }
+    for (let j = 1; j <= APRON && k >= 0 && k < n && !under[k]; j++, k += dir) { const t = j / (APRON + 1); apron[k] = Math.max(apron[k]!, 1 - t * t * (3 - 2 * t)); }
   }
+  // The through road's surface extended to (x, z): its centreline height at the nearest point of the nearest other corridor
+  // road within reach (the through road's deck is flat across, so this is its surface and its plane beyond its edge).
+  const throughHeight = (x: number, z: number, y: number): number | null => {
+    let best: { d: number; y: number } | null = null;
+    for (const seg of env.segments(x, z, 14)) { if (seg.bed === bed || !isCorridorRoad(seg.bed)) continue; const q = onSegment(seg.a, seg.b, x, z); if (q.d <= seg.bed.width / 2 + seg.bed.shoulder + 8 && Math.abs(q.y - y) <= CORRIDOR.guardDrop && (!best || q.d < best.d)) best = { d: q.d, y: q.y }; }
+    return best?.y ?? null;
+  };
+  // Inside the through road the joining road is bare deck: no kerb, sidewalk, verge or fill of its own in the other's lanes.
+  for (let k = 0; k < n; k++) if (under[k]) for (const side of ['left', 'right'] as const) layout[k]![side] = { deck: stations[k]![side].paved, base: stations[k]!.at[1] };
   if (!owned.some(Boolean)) runs.push({ ks: stations.map((_, k) => k), loop: closed });
   else {
     const start = owned.findIndex(Boolean), order = Array.from({ length: n }, (_, i) => closed ? (start + i) % n : i);
@@ -178,7 +191,7 @@ export function buildCorridorSolids(core: CorridorCore, guards: readonly GuardRu
   // route passes under it (reported: the deck overhangs it).
   const fill = stations.map((st, k) => {
     const h = st.at[1], bottom = h - DECK.thickness, out: { left: number | null; right: number | null } = { left: null, right: null };
-    if (ownedAt(st)) return out;
+    if (ownedAt(st) || under[k]) return out;
     for (const side of ['left', 'right'] as const) {
       const w = layout[k]![side].deck, edge = lateralLine(core, round3(sideSign(side) * w))[k]!, inner = lateralLine(core, round3(sideSign(side) * Math.max(0, w - FILL.thickness)))[k]!, past = lateralLine(core, round3(sideSign(side) * (w + FILL.reach)))[k]!;
       const g = Math.min(ground(edge[0], edge[2]), ground(inner[0], inner[2]), ground(past[0], past[2]));
@@ -193,7 +206,28 @@ export function buildCorridorSolids(core: CorridorCore, guards: readonly GuardRu
     const segs: number[] = [];
     // A lapped (owned) end station takes its neighbour's widths: the deck never tapers inside its last prism.
     const widthOf = (k: number) => { if (!owned[k] || run.loop) return k; const i = run.ks.indexOf(k), j = i === 0 ? run.ks[1] : run.ks[run.ks.length - 2]; return j !== undefined && !owned[j] ? j : k; };
-    band(whole, segs, core, run.ks, run.loop, k => { const y = mouth.get(k) ?? stations[k]!.at[1], w = widthOf(k); return { a: -layout[w]!.left.deck, b: layout[w]!.right.deck, ya: y, yb: y, bottom: y - DECK.thickness }; });
+    const plain = (k: number): Section => { const own = stations[k]!.at[1], w = widthOf(k); return { a: -layout[w]!.left.deck, b: layout[w]!.right.deck, ya: own, yb: own, bottom: own - DECK.thickness }; };
+    // Apron stations (and one plain station either side, where the apron's strips meet the plain deck on the same straight
+    // section) are built in strips; the rest of the run is one band. Both push their prisms' segment index in run.ks order.
+    const inApron = run.ks.map(k => apron[k]! > 0);
+    if (!inApron.some(Boolean)) band(whole, segs, core, run.ks, run.loop, plain);
+    else {
+      let i0 = 0;
+      while (i0 < run.ks.length - 1) {
+        const apronSeg = inApron[i0]! || inApron[i0 + 1]!;
+        let i1 = i0 + 1; while (i1 < run.ks.length - 1 && (inApron[i1]! || inApron[i1 + 1]!) === apronSeg) i1++;
+        const sub = run.ks.slice(i0, i1 + 1);
+        if (!apronSeg) band(whole, segs, core, sub, false, plain, i0);
+        else for (let j = 0; j < APRON_STRIPS; j++) band(whole, segs, core, sub, false, k => {
+          const base = plain(k), wgt = apron[k]!, own = stations[k]!.at[1];
+          const o0 = base.a + (base.b - base.a) * j / APRON_STRIPS, o1 = base.a + (base.b - base.a) * (j + 1) / APRON_STRIPS;
+          const at = (o: number) => { if (wgt <= 0) return own; const q = lateralLine(core, round3(o))[k]!, t = throughHeight(q[0], q[2], own); if (t === null) return own;
+            const onIt = under[k] && env.otherRoadHeight(q[0], q[2], t, id, .05) !== null; return round3(own + (t - (onIt ? MOUTH_UNDER : 0) - own) * wgt); };
+          const ya = at(o0), yb = at(o1); return { a: o0, b: o1, ya, yb, bottom: Math.min(ya, yb) - DECK.thickness };
+        }, i0);
+        i0 = i1;
+      }
+    }
     pieces.push({ whole, segs, ks: run.ks, loop: run.loop, name: `deck.${i + 1}` });
   });
   // ---- fill walls: runs of stations whose side needs one, closed one station beyond each end (a flush end face there).

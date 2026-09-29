@@ -10,6 +10,7 @@ import {buildCrossings} from '../../src/harbour/horizon/world/crossings.ts';
 import {resolveComputedCrossings,settleBedEdges,openRetainingPassages} from '../../src/harbour/horizon/land/beds/junctions.ts';
 import {createLandWorld,buildWorldLines} from '../../src/harbour/horizon/world/build.ts';
 import {settleCorridors} from '../../src/harbour/horizon/land/corridor/index.ts';
+import {createMountainV2Region,terraceBedExclusion} from '../../src/harbour/horizon/regions/mountainV2/index.ts';
 import {buildHorizonCards} from '../../src/harbour/horizon/sky/horizonCards.ts';
 import {parseHorizonIndex} from '../../src/house/world/horizonAssets.ts';
 import {extractJourneyLand} from '../../src/journey/land/extract.ts';
@@ -28,7 +29,10 @@ export async function bake(){
   const foundations=settleFoundations(cuts,(x,z)=>sampleTerrain(field,x,z));
   // Road main (ROAD.md §1): the corridors, last, against the final ground and the final bed points; their solids replace
   // the road beds' old strips and edges, their sidewalk beds join the path graph, and the world carries them.
-  const {corridors}=settleCorridors(cuts,(x,z)=>sampleTerrain(field,x,z));
+  // The ground a rider meets: Mountain v2's own ground inside its footprint (lowered under the Horizon decks it yields to,
+  // exactly as the runtime and the road audit load it), Horizon terrain elsewhere.
+  const terrainAt=(x:number,z:number)=>sampleTerrain(field,x,z),region=createMountainV2Region({horizonGround:terrainAt,yield:terraceBedExclusion(cuts.beds),terrainStep:field.step});
+  const {corridors}=settleCorridors(cuts,(x,z)=>region.provider.owns(x,z)?region.provider.ground(x,z):terrainAt(x,z));
   let world=createLandWorld(field,cuts,{terrainAsset:{url:'/horizon/terrain/horizon-geo-1.bin',bytes:buffer.byteLength,step:field.step},corridors});
   world=await prepareLiteWorld(world,cuts.solids);
   return{buffer,world,foundations,groundBeds,horizonCards:buildHorizonCards(field,cuts.solids)};

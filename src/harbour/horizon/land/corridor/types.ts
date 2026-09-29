@@ -61,6 +61,9 @@ export interface CorridorSide {
    * the sea side of a coastal reach 0.9); absent = no height limit beyond ROAD.md §5. */
   planting?: { inner: number; outer: number; maxHeight?: number };
   gap?: CorridorGapKind;
+  /** Road main: a structure owns the road here (its deck) but has no rail of its own on this side over a drop that needs
+   * one (the Bight spur trestle, a bridge's last deck metres before its parapet): the corridor guards this side itself. */
+  bare?: boolean;
 }
 
 export interface CorridorStation {

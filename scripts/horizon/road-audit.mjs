@@ -434,9 +434,9 @@ function staticAudit(bedId) {
     row.left = pick(L); row.right = pick(R);
     row.width = r2(L.d + R.d);
     // Kerbs present (own kerb solid at ±half, faces between h and h+0.15).
-    for (const [side, key] of [[-1, 'kerbL'], [1, 'kerbR']]) { const hits = solidsAt(p.x + rx * side * half, p.z + rz * side * half, [h + .07], .3, s => s.id.startsWith(`${bedId}.kerbs`)); row[key] = hits.size > 0; }
+    for (const [side, key] of [[-1, 'kerbL'], [1, 'kerbR']]) { const hits = new Map([...solidsAt(p.x + rx * side * half, p.z + rz * side * half, [h + .07], .3, s => s.id.startsWith(`${bedId}.kerbs`)), ...solidsAt(p.x + rx * side * edge, p.z + rz * side * edge, [h + .07], .3, s => s.id.startsWith(`${bedId}.corridor.kerb`))]); row[key] = hits.size > 0; }
     // Edge guards (own parapet / edges) and retaining.
-    for (const [side, key] of [[-1, 'guardL'], [1, 'guardR']]) { const hits = solidsAt(p.x + rx * side * edge, p.z + rz * side * edge, [h + .5], .45, s => s.role === 'rail' || s.role === 'wall' && !s.id.includes('.kerbs')); row[key] = [...hits.keys()].map(si => SOLIDS[si].id); }
+    for (const [side, key] of [[-1, 'guardL'], [1, 'guardR']]) { const hits = solidsAt(p.x + rx * side * edge, p.z + rz * side * edge, [h + .5], .45, s => s.role === 'rail' || s.role === 'wall' && !s.id.includes('.kerbs') && !s.id.includes('.corridor.kerb')); row[key] = [...hits.keys()].map(si => SOLIDS[si].id); }
     // Buried deck: visible terrain above the deck inside the carriageway.
     let buried = 0, buriedAt = null;
     for (const f of [-1, -.5, 0, .5, 1]) { const d = f * (half - .5), x = p.x + rx * d, z = p.z + rz * d; if (!api.terrainTriangleVisible(x, z, world.collision)) continue; const gr = g.ground(x, z), roof = g.ceiling(x, z, h); if (Number.isFinite(roof) && gr >= roof - .1) continue; const t = gr - h; if (t > buried) { buried = t; buriedAt = [x, z]; } }
@@ -520,7 +520,9 @@ function padAudit() {
       // Scan from the road centre straight through the pad centre and two parallels ±size/3 along the road.
       const dx = pad.centre[0] - n.p.x, dz = pad.centre[2] - n.p.z, l = Math.hypot(dx, dz) || 1, ux = l > .5 ? dx / l : -n.p.tz, uz = l > .5 ? dz / l : n.p.tx, row = {pad: pad.id, kind: pad.kind, road: id, station: r1(n.p.s), padY: r2(pad.centre[1]), roadY: r2(n.p.y), centreOffset: r2(n.d), lips: []};
       for (const par of [-reach / 1.5, 0, reach / 1.5]) { const k = Math.max(0, Math.min(path.pts.length - 1, n.i + Math.round(par / .5))), o = path.pts[k], pts = [];
-        let inside = -1; for (let d = 0; d <= l + 2; d += .1) { const x = o.x + ux * d, z = o.z + uz * d; if (inside < 0 && inPad(pad, x, z)) inside = d; if (inside >= 0 && d > inside + 4) break; pts.push({x, z, s: d, ...(d ? {} : {y: o.y})}); }
+        // A guard (rail or wall at body height) between the road and the pad closes the line: nothing drives past it.
+        let inside = -1, railed = false; for (let d = 0; d <= l + 2; d += .1) { const x = o.x + ux * d, z = o.z + uz * d; if (d > 1 && solidsAt(x, z, [n.p.y + .5, n.p.y + .8], .15, s => s.role === 'rail' || s.role === 'wall' && !/\.(kerbs|corridor\.kerb)/.test(s.id)).size) { railed = true; break; } if (inside < 0 && inPad(pad, x, z)) inside = d; if (inside >= 0 && d > inside + 4) break; pts.push({x, z, s: d, ...(d ? {} : {y: o.y})}); }
+        if (railed) { row.railed = (row.railed ?? 0) + 1; continue; }
         if (inside < 0) continue;
         for (const lp of lipLine(pts, n.p.y)) row.lips.push({par: r1(par), s: r2(lp.s), at: P3(lp.x, lp.y, lp.z), dy: lp.dy, seam: lp.seam, width: lp.width, via: lp.via, from: lp.from, to: lp.to}); }
       rows.push(row);
@@ -707,7 +709,7 @@ writeFileSync(resolve(OUT, 'audit.json'), JSON.stringify({meta, totals, drives, 
 const fmtAt = a => a ? `[${a.map(v => Math.round(v * 10) / 10).join(', ')}]` : '—';
 const fmtSt = s => Array.isArray(s) ? (s[0] === s[1] ? `${s[0]}` : `${s[0]}–${s[1]}`) : `${s}`;
 const esc = t => String(t ?? '').replace(/\|/g, '\\|');
-let md = `# Horizon road audit — before\n\nDriver's-eye audit of the committed bake with the real cruiser sim (\`stepCruiser\`, CRUISER.dt = 1/120 s). Read-only: nothing under \`src/\` or \`public/\` was changed.\n\n`;
+let md = `# Horizon road audit — ${arg('--title', 'before')}\n\nDriver's-eye audit of the committed bake with the real cruiser sim (\`stepCruiser\`, CRUISER.dt = 1/120 s). Read-only: nothing under \`src/\` or \`public/\` was changed.\n\n`;
 md += `- Command: \`${command}\` (from \`${ROOT}\`)\n- Checkout: \`${rootSha}\`; world \`${meta.bake.world}\` sha256 \`${meta.bake.worldSha256.slice(0, 16)}…\`, terrain sha256 \`${meta.bake.terrainSha256.slice(0, 16)}…\` (${world.geographyRevision})\n`;
 md += `- Wall-clock: **${wallSeconds} s** on ${meta.cpus} CPUs (${process.version}); generated ${meta.generated}\n- Roads: ${ROAD_IDS.join(', ')}\n\n`;
 md += `## Method\n\n- **World**: \`parseHorizonDefinition(horizon-geo-1.json.gz)\` + \`decodeTerrainAsset(bin,'full')\` + \`createHorizonGeography(field,{...collision, solids, diagnostics})\` + \`addDynamic(createMountainV2Region(...).provider)\` — the loader of \`test/horizonRideSituations.test.ts\`.\n`;
