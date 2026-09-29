@@ -86,8 +86,11 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
     if(!r.arrived)onArrivedRef.current?.(r.seq);
   }
   useEffect(()=>{arriveForRequest();},[request?.seq]);
-  const [walkShare,setWalkShare]=useState<WorldPresenceShare>(()=>readWorldPresenceShare(household.environment));
-  useEffect(()=>{setWalkShare(readWorldPresenceShare(household.environment));},[household.environment]);
+  // The share choice belongs to one environment: on a switch the new environment's own choice is read in the same render,
+  // never the previous one's (PR #570 review: a "live" choice must not reach another environment's presence gate).
+  const [walkShareState,setWalkShareState]=useState<{environment:string;share:WorldPresenceShare}>(()=>({environment:household.environment,share:readWorldPresenceShare(household.environment)}));
+  const walkShare=walkShareState.environment===household.environment?walkShareState.share:readWorldPresenceShare(household.environment);
+  const setWalkShare=useCallback((share:WorldPresenceShare)=>setWalkShareState({environment:household.environment,share}),[household.environment]);
   const peer=useWorldFeed({environment:household.environment,householdId:household.householdId,memberId,linked:household.linked===true,view:scope,placeId:'court',softPresenceOptedOut:props.presence?.optedOut===true,share:walkShare,world:HORIZON_PRESENCE_WORLD});
   // The app's comfort choices reach the world: calm view = Comfort.quiet, reduced motion = Comfort.motion (R1-16).
   // The world's sound, as the Mountain does it (HarbourWorld.tsx): off until a deliberate toggle, and never while comfort.sound is off.
@@ -168,7 +171,8 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
   // A route to another harbour place (the room bar, Compass) walks there; the first route is where the saved body is.
   // Only a walk actually started moves the marker, so a place chosen while a tool was open is walked to once it closes.
   // …and one chosen before the world was ready is walked to once it is (PR #570 review).
-  useEffect(()=>{if(lastHere.current===here||toolOpen||!worldReady)return;lastHere.current=here;walkToPlace(here);},[here,toolOpen,worldReady,walkToPlace]);
+  // A place chosen while riding waits until the ride is parked; only a walk actually started marks it handled (PR #570 review).
+  useEffect(()=>{if(lastHere.current===here||toolOpen||!worldReady||riding)return;if(walkToPlace(here))lastHere.current=here;},[here,toolOpen,worldReady,riding,walkToPlace]);
   /** "Step in" on a panel: through that host's door, which opens its tool as a Horizon door always has. */
   function stepIn(place:string){const world=runtime.current,host=world&&horizonHostFor(world.world,place);if(host&&world?.enterDoor(host.id))return;if(Object.hasOwn(VILLAGE_ADDRESS,place))walkToPlace(place as HarbourPlaceId);}
   // ── The old Tideline skate on Mountain v2's town island (PR B) ── the same HUD, keys, saves and progress key.
