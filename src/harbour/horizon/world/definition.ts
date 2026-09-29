@@ -42,7 +42,9 @@ export interface FlightEnvelope { ceiling: number; launches: Anchor[]; landings:
 export interface UndercroftDef { doors: Anchor[]; rooms: Polygon[]; waterBodyId?: string; skylight?: Anchor; roomVolumes?: { id: string; outline: Polygon; floor: number; ceiling: number; solidIds: string[] }[] }
 /** `kind` 'door' | 'threshold' (derived) | a corridor LampKind (ROAD.md §4.4: roadLantern, bridgeLantern, tunnelLamp, bollard).
  * Corridor lamps also carry their head, the point their light lands on and its radius. */
-export interface LightAnchor { id: string; at: Point3; kind: string; bestHour?: string; head?: Point3; pool?: Point3; poolRadius?: number; corridorId?: string }
+export interface LightAnchor { id: string; at: Point3; kind: string; bestHour?: string; head?: Point3; pool?: Point3; poolRadius?: number; corridorId?: string;
+  /** Corridor lamps: the run they switch on with (`<corridor>:<reach>`) and their place along it (0 = first on at dusk; LIGHT §3). */
+  line?: string; order?: number }
 /** An emissive light card on a face (MANIFEST v2.0 `lights`, kind 'card'; D-A5): an unlit quad a hair in front of the face,
  * no dynamic light. `corners` run bottom-left, bottom-right, top-right, top-left seen from in front; `on` is the schedule. */
 export interface FaceCard { id: string; anchor: string; corners: [Point3, Point3, Point3, Point3]; normal: Point3; on: 'goldenHourToDawn'; districtId: string }
