@@ -14,17 +14,17 @@ import {shade,mix} from '../../art/cardKit.ts';
 import type {MountainArtPalette} from './palette.ts';
 
 /** Vertex colours down a crown: dark under, lit on top (the painted-card gradient). */
-function gradient(g:THREE.BufferGeometry,low:number,high:number,y0:number,y1:number):THREE.BufferGeometry{
+export function gradient(g:THREE.BufferGeometry,low:number,high:number,y0:number,y1:number):THREE.BufferGeometry{
   const p=g.getAttribute('position'),c=new Float32Array(p.count*3);
   for(let i=0;i<p.count;i++){const t=Math.max(0,Math.min(1,(p.getY(i)-y0)/(y1-y0))),k=low+(high-low)*t;c[i*3]=c[i*3+1]=c[i*3+2]=k;}
   g.setAttribute('color',new THREE.BufferAttribute(c,3));return g;
 }
-const ico=(r:number,x:number,y:number,z:number,sx=1,sy=1,sz=1,detail=1)=>{const g=new THREE.IcosahedronGeometry(r,detail);g.scale(sx,sy,sz);g.translate(x,y,z);return g;};
-const cone=(r:number,h:number,y:number,seg=7)=>{const g=new THREE.ConeGeometry(r,h,seg,1);g.translate(0,y+h/2,0);return g;};
-const merged=(parts:THREE.BufferGeometry[])=>{const plain=parts.map(p=>{const q=p.index?p.toNonIndexed():p;if(q!==p)p.dispose();q.deleteAttribute('uv');return q;});const g=mergeGeometries(plain)!;plain.forEach(p=>p.dispose());return g;};
+export const ico=(r:number,x:number,y:number,z:number,sx=1,sy=1,sz=1,detail=1)=>{const g=new THREE.IcosahedronGeometry(r,detail);g.scale(sx,sy,sz);g.translate(x,y,z);return g;};
+export const cone=(r:number,h:number,y:number,seg=7)=>{const g=new THREE.ConeGeometry(r,h,seg,1);g.translate(0,y+h/2,0);return g;};
+export const merged=(parts:THREE.BufferGeometry[])=>{const plain=parts.map(p=>{const q=p.index?p.toNonIndexed():p;if(q!==p)p.dispose();q.deleteAttribute('uv');return q;});const g=mergeGeometries(plain)!;plain.forEach(p=>p.dispose());return g;};
 
 /** Unit crowns per archetype (size 1), in the extents `crownOf` promises the camera. */
-function crownGeometry(kind:TreeKind):THREE.BufferGeometry{
+export function crownGeometry(kind:TreeKind):THREE.BufferGeometry{
   const c=crownOf({kind,size:1});let g:THREE.BufferGeometry;
   switch(kind){
     case 'fruit':g=merged([ico(1.25,0,2.35,0,1.25,.75,1.2),ico(.8,.55,2.8,.3,1,.85,1,0),ico(.75,-.6,2.55,-.35,1,.8,1,0)]);break;
@@ -36,10 +36,10 @@ function crownGeometry(kind:TreeKind):THREE.BufferGeometry{
   }
   return gradient(g,.58,1.12,c.base,c.top);
 }
-function trunkGeometry():THREE.BufferGeometry{const g=new THREE.CylinderGeometry(.62,1,1,6,1);g.translate(0,.5,0);return gradient(g,.7,1.05,0,1);}
+export function trunkGeometry():THREE.BufferGeometry{const g=new THREE.CylinderGeometry(.62,1,1,6,1);g.translate(0,.5,0);return gradient(g,.7,1.05,0,1);}
 
 /** Wind: sway the upper part of each instance by its position phase. */
-function windy(m:THREE.MeshStandardMaterial,amp:number,key:string){
+export function windy(m:THREE.MeshStandardMaterial,amp:number,key:string){
   m.onBeforeCompile=shader=>{
     shader.uniforms.uWind=CARD_CLOCK;
     shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nuniform float uWind;').replace('#include <begin_vertex>',`#include <begin_vertex>
@@ -56,7 +56,7 @@ function windy(m:THREE.MeshStandardMaterial,amp:number,key:string){
   return m;
 }
 /** A back-face shell a little larger than the crown, in ink: the cut-paper outline. */
-function outlineMaterial(ink:string,amp:number,key:string){
+export function outlineMaterial(ink:string,amp:number,key:string){
   const m=new THREE.MeshBasicMaterial({color:ink,side:THREE.BackSide});
   m.onBeforeCompile=shader=>{
     shader.uniforms.uWind=CARD_CLOCK;
