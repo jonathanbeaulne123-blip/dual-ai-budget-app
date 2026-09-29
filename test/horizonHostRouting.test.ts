@@ -7,6 +7,7 @@ import type {HarbourWorldProps} from '../src/harbour/HarbourWorld.tsx';
 import type {HorizonStageProps} from '../src/harbour/horizon/HorizonStage.tsx';
 import type {Host} from '../src/harbour/horizon/world/definition.ts';
 import {readHouseReturnOnDevice} from '../src/house/navigation.ts';
+import {VILLAGE_ADDRESS as VILLAGE_ADDRESS_FOR_TEST} from '../src/harbour/village/layout.ts';
 Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
 const state=vi.hoisted(()=>({stage:null as HorizonStageProps|null,feed:vi.fn()}));
 vi.mock('../src/harbour/horizon/HorizonStage.tsx',()=>({default:(props:HorizonStageProps)=>{state.stage=props;return null;}}));
@@ -44,4 +45,16 @@ it('saves the walker when the stage leaves for the Reading edition',()=>{
  state.stage!.onRuntime!({savedBody:()=>body} as Parameters<NonNullable<HorizonStageProps['onRuntime']>>[0]);
  state.stage!.onRuntime!(null);
  expect(readHouseReturnOnDevice(identity,'horizon')?.body).toEqual(body);
+});
+
+it('walks to a place chosen while the world was still loading, once it is ready',()=>{
+ const {props}=mount();
+ const bankRoute={...props.route,room:'home',level:'middle',village:VILLAGE_ADDRESS_FOR_TEST.bank.village,object:undefined};
+ act(()=>root!.render(createElement(HorizonWorld,{...props,route:bankRoute} as HarbourWorldProps)));
+ const walkTo=vi.fn(()=>({points:[[1443,16,1138]]}));
+ const runtime={world:{hosts:[{id:'bank',placeIds:['bank'],returnAt:[1443,16,1138]}],places:[]},moverState:()=>({attached:false,airborne:false}),setMode:vi.fn(),walkTo,emote:vi.fn(),skate:()=>null,stopSkate:vi.fn(),routing:()=>true,body:()=>({x:1470,y:12,z:1186,yaw:0}),setAmbience:vi.fn(),setMountainDamWater:vi.fn(),setHomeBotanical:vi.fn(),savedBody:()=>body};
+ act(()=>state.stage!.onRuntime!(runtime as unknown as Parameters<NonNullable<HorizonStageProps['onRuntime']>>[0]));
+ expect(walkTo).not.toHaveBeenCalled();
+ act(()=>state.stage!.onReady!());
+ expect(walkTo).toHaveBeenCalledWith([1443,16,1138]);
 });
