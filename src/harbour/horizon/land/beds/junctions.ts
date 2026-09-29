@@ -3,6 +3,7 @@ import { addFlatPad, emitBedGeometry } from './profiles';
 import { gradeRoute, type HeightPin } from './solver';
 import { gradePadApproaches } from './padApproaches';
 import { onMountainV2Road } from '../mountainV2/beds';
+import { isCorridorRoad } from '../corridor/reaches';
 import { box, clamp, distance, districtAt, mix, nearestOnPath, plan, prism, slab, solid } from '../structures/mesh';
 
 export interface ComputedCrossing {
@@ -66,6 +67,9 @@ export function settleBedEdges(cuts:LandCuts,ground:HeightQuery):void {
   const pads=cuts.pads.filter(p=>!p.underground&&p.kind!=='host');
   for(const b of cuts.beds){
     if(!b.terrainCut||!['road','walk','trail','skate','boardwalk'].includes(b.kind))continue;
+    // ---- Road main (ROAD.md §1): a corridor road's edges are rebuilt by the corridor at the end of the bake (land/corridor). ----
+    if(isCorridorRoad(b))continue;
+    // ---- end road main ----
     const prefixes=['kerbs','edges','retaining','batter'].map(kind=>`${b.id}.${kind}`),owns=(s:StructureSolid)=>prefixes.some(p=>s.id===p||s.id.startsWith(`${p}.`));
     const generated={...cuts,solids:[],floorSource:cuts.solids} as LandCuts;emitBedGeometry(b,generated,ground,pads.map(p=>plan(p.centre)));
     cuts.solids=cuts.solids.filter(s=>!owns(s));cuts.solids.push(...generated.solids.filter(owns));

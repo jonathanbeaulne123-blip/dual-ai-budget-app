@@ -9,6 +9,7 @@ import {buildOffshoreSolids} from '../../src/harbour/horizon/land/offshore/index
 import {buildCrossings} from '../../src/harbour/horizon/world/crossings.ts';
 import {resolveComputedCrossings,settleBedEdges,openRetainingPassages} from '../../src/harbour/horizon/land/beds/junctions.ts';
 import {createLandWorld,buildWorldLines} from '../../src/harbour/horizon/world/build.ts';
+import {settleCorridors} from '../../src/harbour/horizon/land/corridor/index.ts';
 import {buildHorizonCards} from '../../src/harbour/horizon/sky/horizonCards.ts';
 import {parseHorizonIndex} from '../../src/house/world/horizonAssets.ts';
 import {extractJourneyLand} from '../../src/journey/land/extract.ts';
@@ -25,7 +26,10 @@ export async function bake(){
   openRetainingPassages(cuts,crossings);
   const groundBeds=groundTerrainBeds(cuts,(x,z)=>sampleTerrain(field,x,z));
   const foundations=settleFoundations(cuts,(x,z)=>sampleTerrain(field,x,z));
-  let world=createLandWorld(field,cuts,{terrainAsset:{url:'/horizon/terrain/horizon-geo-1.bin',bytes:buffer.byteLength,step:field.step}});
+  // Road main (ROAD.md §1): the corridors, last, against the final ground and the final bed points; their solids replace
+  // the road beds' old strips and edges, their sidewalk beds join the path graph, and the world carries them.
+  const {corridors}=settleCorridors(cuts,(x,z)=>sampleTerrain(field,x,z));
+  let world=createLandWorld(field,cuts,{terrainAsset:{url:'/horizon/terrain/horizon-geo-1.bin',bytes:buffer.byteLength,step:field.step},corridors});
   world=await prepareLiteWorld(world,cuts.solids);
   return{buffer,world,foundations,groundBeds,horizonCards:buildHorizonCards(field,cuts.solids)};
 }
