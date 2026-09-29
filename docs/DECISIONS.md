@@ -1729,3 +1729,15 @@ PR A:
 - A Horizon that cannot open (asset, chunk, runtime import or render) hands the harbour back to the old world for that visit (`HorizonEdition` + `HorizonBoundary`), fixing PR #569's review finding P2 (stranded shell).
 
 Risk **High** (the default world's chrome for every member). Budget delta (5): **+1**: the dock and host panels return to the everyday world; no ledger, command, continuity, Auth/RLS or Hercules payload change (the shell only reads `useHarbourReading`, as the Mountain does). Engagement delta (3): **+2**: the familiar shell over the new land, movers kept. Not yet in the shell: the Mountain guide (tour, monorail, race: Mountain-only), the character picker, arranging rooms, the Desk switch inside the world, and DOM twins over buildings (the Horizon has no anchor projection yet).
+
+### 2026-09-29 — The old Tideline skate on the Horizon (PR B of three)
+
+Jonathan chose "the old Mountain skate", not the Horizon's board mover. Mountain v2 stands on the Horizon as a pure translation (`MOUNTAIN_V2_OFFSET` = 1308, 54, 764), and its town island's ground is the Mountain's own ground raised by the offset. So the old skate runs **unchanged in native Mountain space** (`horizon/skate/nativeSkate.ts`): its sim, field, park meshes, spots, routes, the mountain race, tricks, decks and saved progress. Only the edges translate: the Horizon body follows the ride plus the offset, and the chase camera is offset the same way.
+
+- The board comes out on Mountain v2's town island (native radius 64, the region's ground), where the Tideline park now stands again. Elsewhere on the Horizon the board mover and its skate lines S1–S4 remain.
+- The shell renders the old `SkateHUD` ("Skate the island · B", Tideline Skate Club); B boards and leaves, P/Escape pause; progress saves under the same `skateProgressKey` as the Mountain, so existing bests, decks and settings carry over.
+- The runtime steps the skate in place of walking, gives it the camera, routes keys to its input, and hides threshold offers while riding.
+- No island obstacles are passed (the Mountain's village buildings are not drawn on the Horizon); the park's own solids and dressing still collide. The race start/finish shots are not ported (the chase camera covers the race).
+- Source fence: `horizon/HorizonWorld.tsx` joins the local gameplay-storage list (skate progress; the same as `HarbourWorld.tsx`).
+
+Risk **Medium-High** (world runtime, input routing). Budget delta (5): **0**: no money path. Engagement delta (3): **+2**: the old skate returns inside the new world.
