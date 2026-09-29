@@ -46,12 +46,16 @@ describe('R3-130 · Look → Walk from every page lands dry and walkable', () =>
       expect(out.y).toBeGreaterThan(0);
     }
   });
-  it('a standing, routable page keeps the body under its eye; D, E, G, I, J, L go to their ground points, H to the strip under its aerial eye', () => {
+  it('a standing, routable page keeps the body under its eye (E on the launch deck, v2.6); D, F, G, I, J, L go to their ground points, H to the strip under its aerial eye', () => {
     const moves = Object.fromEntries(tiers.map(({ tier, geo }) => [tier, Object.fromEntries(world.views.map(v => { const o = walkOut(v, geo); return [v.id, o.how === 'stand' ? 0 : +o.moved.toFixed(1)]; }))]));
     // Measured on candidate 6's bake (plan eu from the eye; v2.4 grounds): candidate 5 moved D 49.2, E 9.1 (off the launch deck,
     // to 156.4), I 14.7, J 232.4 (from over the sea), L 32.7 to the nearest nodes. E now stays ON the Crown launch deck (170).
-    const expected = { A: 0, B: 0, C: 0, D: 44.2, E: 6.5, F: 0, G: 41.2, H: 0, I: 14.7, J: 57.8, K: 0, L: 9.2 };
-    for (const { geo } of tiers) { expect(walkOut(world.views.find(v => v.id === 'E')!, geo)).toMatchObject({ how: 'ground', y: 170 }); expect(walkOut(world.views.find(v => v.id === 'H')!, geo).how).toBe('ground'); }
+    // v2.6 (D-M10): F's eye is on Mountain v2's crest promenade (the region's deck): Walk goes to its ground point, L01's bay (25.3).
+    // v2.6: the Crown launch deck moved to [1322,472] (clear of v2's gondola summit terminal, D-M6), so E's eye [1317.5,170,475.5]
+    // now stands on the deck itself: E stays under its eye on the deck at 170 (was 'ground', moved 6.5 onto the deck).
+    // v2.6b: F's eye moved along the promenade to promenade[10] (the east end stood inside the abutment): 17.3 to L01's bay (was 25.3).
+    const expected = { A: 0, B: 0, C: 0, D: 44.2, E: 0, F: 17.3, G: 41.2, H: 0, I: 14.7, J: 57.8, K: 0, L: 9.2 };
+    for (const { geo } of tiers) { expect(walkOut(world.views.find(v => v.id === 'E')!, geo)).toMatchObject({ how: 'stand', y: 170 }); expect(walkOut(world.views.find(v => v.id === 'H')!, geo).how).toBe('ground'); }
     expect(moves).toEqual({ full: expected, lite: expected });
   });
   it('the walk-out root is the square, and the square reaches most of the graph', () => {

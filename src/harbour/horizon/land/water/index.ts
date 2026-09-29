@@ -4,7 +4,7 @@ import { ellipse, lineOutline, polygonDistance, polylineArcs, segmentPoint } fro
 import { islandContains } from '../coast';
 
 /** Authored hydrology. Heights are independent of route grading and household state.
- * The lake's fixed 50 m level and the Cup's 100 m level therefore cannot drift. */
+ * The lake's fixed 50 m level therefore cannot drift. */
 export function buildWaterCuts(): WaterCut[] {
   const s = requireScaleFactor();
   const channel = (id: string, kind: WaterCut['kind'], xy: readonly number[][], heights: number[], width: number, depth: number, bank = 1): WaterCut => {
@@ -19,18 +19,24 @@ export function buildWaterCuts(): WaterCut[] {
   });
   const w = M.water;
   // The lower line includes a surveyed High Span station: water 9.2, bed 8.
-  const lower = [...w.river.lower.slice(0, 3), [1236.875, 1105], ...w.river.lower.slice(3)];
+  // v2.6 (D-M3): Stillwater drains over a natural rock sill (water.river.sill): the lower river begins in the lake at the
+  // sill's lip (the lake level) and falls to its old head at 22 over one weir; no dam holds the lake.
+  const sill = (w.river as { sill?: { xy: number[]; level: number } }).sill;
+  const lower = [...(sill ? [sill.xy] : []), ...w.river.lower.slice(0, 3), [1236.875, 1105], ...w.river.lower.slice(3)];
+  const lowerLevels = [...(sill ? [sill.level] : []), 22, 15, 10.8, 9.2, 6.5, 3.8, 1.8, 0.9, 0];
+  // v2.6 (D-M3): Mountain v2's river leaves its gorge onto the Foot terrace and runs v2's town channel (the region draws both);
+  // from v2's channel end [1317,833] the Horizon carries it west into Stillwater as a brook (it replaces the Cup and the upper
+  // river as the lake's inflow).
+  const mountain = (w.river as { mountain?: { pts: number[][]; levels: number[]; width_m: number; depth_m: number; kind?: WaterCut['kind'] } }).mountain;
   const bodies: WaterCut[] = [
     { id: 'water.sea', kind: 'sea', outline: [[0, 0], [M.extent.w * s, 0], [M.extent.w * s, M.extent.h * s], [0, M.extent.h * s]], points: [], level: 0, width: 0, depth: 12 * s, bank: 0 },
     // The lagoon lies in the island's open hook; its boundary is not a land carve.
     basin('water.bight', 620, 910, 98, 155, 0, 5, 'lagoon'),
     basin('water.stillwater', w.stillwater.cx, w.stillwater.cy, w.stillwater.rx, w.stillwater.ry, w.stillwater.surface, 5),
-    basin('water.cup', w.cup.cx, w.cup.cy, w.cup.rx, w.cup.ry, w.cup.surface, 3),
-    // The upper river's last reach is the lake's inlet pool, level with Stillwater from a surveyed station at
-    // [1163,716]: the Inlet Footbridge (deck 52) and the rim trail cross still water at 50, never a pool at
-    // 58–60 above the deck. Its 50 m fall from the Cup is shared evenly by the seven weirs above the station.
-    channel('water.river.upper', 'river', [...w.river.upper.slice(0, 2), [1163, 716], w.river.upper[2]!], [100, 64.3, 50, 50], 7, 1, 1.1),
-    channel('water.river.lower', 'river', lower, [22, 15, 10.8, 9.2, 6.5, 3.8, 1.8, 0.9, 0], 12, 1.2, 1),
+    // v2.6: the Cup (water.cup) and the upper river (water.river.upper) are retired (MANIFEST retired_v2_6): Mountain v2's
+    // reservoir and gorge river stand there.
+    ...(mountain ? [channel('water.river.mountain', mountain.kind ?? 'river', mountain.pts, mountain.levels, mountain.width_m, mountain.depth_m, 0.7)] : []),
+    channel('water.river.lower', 'river', lower, lowerLevels, 12, 1.2, 1),
     channel('water.brook', 'brook', w.brook.pts, [39, 32, 18, 7, 0], 5, 0.8, 0.7),
     channel('water.wash', 'dry', w.wash.pts, [35, 31, 25, 0], 11, 0.65, 0.7),
     ...w.reachChannels.map((p, i) => channel(`water.reach.${i + 1}`, 'river', p, [3.8, 2.5, 1], 7, 0.9, 0.65)),

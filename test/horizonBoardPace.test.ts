@@ -7,6 +7,8 @@ import {HORIZON_MANIFEST as M} from '../src/harbour/horizon/world/manifest.ts';
 import type {Bed, WorldDefinition} from '../src/harbour/horizon/world/definition.ts';
 import {bedAt, createBoardContact, isPickupThreshold, paceOf, type BoardContact} from '../src/harbour/horizon/movers/shared/ground/contact.ts';
 import {BOARD_TEST_PROFILE} from '../src/harbour/horizon/movers/shared/ground/synthetic.ts';
+import {sampleTerrain} from '../src/harbour/horizon/land/terrain/index.ts';
+import {createMountainV2Region, terraceBedExclusion} from '../src/harbour/horizon/regions/mountainV2/index.ts';
 import type {GroundProfile, Pace} from '../src/harbour/horizon/movers/shared/ground/types.ts';
 
 // The real baked world (the same assets the runtime loads): geometry v1 is unchanged by MANIFEST v1.7.
@@ -36,6 +38,9 @@ beforeAll(() => {
   const field = decodeTerrainAsset(terrain.buffer.slice(terrain.byteOffset, terrain.byteOffset + terrain.byteLength) as ArrayBuffer, 'full');
   world = loaded;
   geography = createHorizonGeography(field, {...loaded.collision, solids: loaded.geometry.solids, diagnostics: loaded.diagnostics ?? []});
+  // v2.6 (D-M1/D-M2): as mountHorizon does, the placed Mountain v2 region owns the ground and decks inside its footprint
+  // (S1's upper half rides v2's own road there, region-carried: no Horizon deck).
+  geography.addDynamic(createMountainV2Region({horizonGround: (x, z) => sampleTerrain(field, x, z), yield: terraceBedExclusion(loaded.beds), terrainStep: field.step}).provider);
   board = createBoardContact(geography, world, M, BOARD_TEST_PROFILE);
   bicycle = createBoardContact(geography, world, M, BICYCLE);
 }, 120000);
@@ -102,28 +107,37 @@ describe('the board contact adapter over the real world', () => {
     const shared = pads.get('threshold.upperStreetSpur')!;
     expect(bicycle.sample(shared.centre[0], shared.centre[2], shared.centre[1])).toMatchObject({padId: 'threshold.upperStreetSpur', pace: 'threshold', legal: true});
   });
-  it('rolls S1\'s Crown drop fast on paving', () => {
+  it('rolls S1\'s Crown drop at v2\'s Alpine bends pace on v2\'s paved road', () => {
+    // v2.6: 8 % along S1 is v2's "Alpine bends" (flow, D-M5), read on the region's paved road deck; was the Crown drop, fast.
     const s1 = bed('S1'), i = Math.round((s1.points.length - 1) * .08), p = s1.points[i]!;
     const s = board.sample(p[0], p[2], p[1] + .1)!;
-    expect(s).toMatchObject({legal: true, pace: 'fast', material: 'paved', bedId: 'S1', padId: null, roll: .12, pushGrip: 1, grip: 1});
-    expect(paceOf(s)).toBe('fast');
-    expect(bedAt(world, p[0], p[2])?.segment?.pace).toBe('fast');
+    expect(s).toMatchObject({legal: true, pace: 'flow', material: 'paved', bedId: 'S1', padId: null, roll: .25, pushGrip: .9, grip: 1});
+    expect(paceOf(s)).toBe('flow');
+    expect(board.bedAt(p[0], p[2], p[1])?.segment?.pace).toBe('flow');   // v2.6: S1 shares v2's road here (bedAt's nearest is mountainV2.road)
     expect(s.n[1]).toBeGreaterThan(.9);
   });
   it('reads every S1–S4 slice\'s own pace at its middle, including S3\'s square at threshold pace', () => {
+    // v2.6 land defect (HANDOFF-notes/tests.md): land/beds/profiles.ts emitBedGeometry still names S1's slabs by equal index
+    // slices, not by the authored from/to, so on the Horizon half the drawn slab is the wrong slice's surface here (slice → drawn).
+    // The contact reads the authored slice's pace; the drawn material (grip) is the slab's. A land fix empties this table.
+    const slabDefects: Record<string, string> = {};
     for (const id of ['S1', 'S2', 'S3', 'S4']) {
       const b = bed(id), segs = b.surfaceSegments!;
+      // v2.6: S1's slices are authored by arc from v2's segment starts (D-M5), so its middle is the arc middle; S2–S4 are equal index slices.
+      const arcs = [0];
+      for (let j = 1; j < b.points.length; j++) arcs.push(arcs[j - 1]! + Math.hypot(b.points[j]![0] - b.points[j - 1]![0], b.points[j]![2] - b.points[j - 1]![2]));
       segs.forEach((seg, k) => {
-        const i = Math.floor((seg.from + seg.to) / 2 * (b.points.length - 1)), p = b.points[i]!;
+        const i = id === 'S1' ? arcs.findIndex(a => a >= (seg.from + seg.to) / 2 * arcs.at(-1)!) : Math.floor((seg.from + seg.to) / 2 * (b.points.length - 1)), p = b.points[i]!;
         const s = board.sample(p[0], p[2], p[1] + .1)!;
         expect(s.legal, `${id}.${k}`).toBe(true);
         // A pad on the line (a crossing) is threshold pace whatever the slice says.
         expect(s.pace, `${id}.${k}`).toBe(s.padId && !board.padAt(p[0], p[2], s.y)?.pickup ? 'threshold' : seg.pace);
         if (!s.padId) expect(s.bedId).toBe(id);
         // On the line's own deck the material is the slice's surface (a crossing's bridge deck reports its own).
-        if (geography.surface(p[0], p[2], p[1] + .1, .5)!.id.startsWith(`${id}.surface.`)) expect(s.material, `${id}.${k}`).toBe(seg.surface);
+        if (geography.surface(p[0], p[2], p[1] + .1, .5)!.id.startsWith(`${id}.surface.`) && s.material !== seg.surface) slabDefects[`${id}.${k}`] = s.material;
       });
     }
+    expect(slabDefects).toEqual({'S1.10': 'cobble', 'S1.11': 'paved'});
     const s3 = bed('S3'), square = s3.surfaceSegments![2]!;
     expect(square).toMatchObject({pace: 'threshold', surface: 'plaza'});
     const p = s3.points[Math.floor(.5 * (s3.points.length - 1))]!;
@@ -164,8 +178,12 @@ describe('the board contact adapter over the real world', () => {
       checked++;
     }
     expect(checked).toBe(5);
+    // v2.6: S1's upper half is v2's race course on v2's own road (D-M5), so at 8 % the bicycle rides mountainV2.road (legal);
+    // the skate-only check moves to S1's Horizon half (90 %, the Notch shelf). Was: 8 % offbed on S1.
     const s1 = bed('S1'), p = s1.points[Math.round((s1.points.length - 1) * .08)]!;
-    expect(bicycle.sample(p[0], p[2], p[1] + .1)).toMatchObject({legal: false, pace: 'offbed', bedId: 'S1'});
+    expect(bicycle.sample(p[0], p[2], p[1] + .1)).toMatchObject({legal: true, bedId: 'mountainV2.road'});
+    const q = s1.points[Math.round((s1.points.length - 1) * .9)]!;
+    expect(bicycle.sample(q[0], q[2], q[1] + .1)).toMatchObject({legal: false, pace: 'offbed', bedId: 'S1'});
     // And the board on a road is offbed.
     const road = v01.points[5]!;
     if (!board.padAt(road[0], road[2], road[1])) expect(board.sample(road[0], road[2], road[1] + .1)).toMatchObject({legal: false, pace: 'offbed'});

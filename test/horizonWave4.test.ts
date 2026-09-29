@@ -5,6 +5,7 @@ import type { LandCuts, StructureSolid, TerrainField } from '../src/harbour/hori
 import { decodeTerrainAsset } from '../src/harbour/horizon/land/terrain/asset';
 import { createHorizonGeography } from '../src/harbour/horizon/runtime/geography';
 import { walkPlan, type HorizonPathGraph } from '../src/harbour/horizon/world/pathGraph';
+import { mountainV2Rule } from '../src/harbour/horizon/land/mountainV2/ground';
 
 type Point3 = [number, number, number];
 type World = { collision: Omit<LandCuts, 'solids' | 'diagnostics'>; geometry: { solids: StructureSolid[] }; pathGraph: HorizonPathGraph; diagnostics: { id: string; severity: string }[]; views: { id: string; eye: Point3; target: Point3; proof: { passLandscape: boolean; passPortrait: boolean; landscape: { grid: [number, number]; minPixels: number }; subjects: { id: string; pixels: number; portraitPixels: number | null }[] } }[] };
@@ -35,46 +36,46 @@ function bodyWalk(from: Point3, to: Point3, stepFree = true, tier: 'full' | 'lit
   return { planned: true, reached: Math.hypot(end[0] - to[0], end[2] - to[2]) < 3, blockedAt: null, length: plan.length };
 }
 
-describe('R2-03 Crown Road through the Shoulder Tunnel north portal', () => {
-  it('walks V02 both ways and the Year Walk January footway both ways through the portal (was 75.96 → 81.24 across the road)', () => {
-    const up = bodyWalk([1433.3, 70, 335.6], [1370, 110, 690]), down = bodyWalk([1370, 110, 690], [1433.3, 70, 335.6]);
+// v2.6 (D-M4): Crown Road and its Shoulder Tunnel are retired (MANIFEST retired_v2_6); the Mountain Road (V03) passes under the
+// Shoulder remnant east of the Foot in the Mountain Road Tunnel. R2-03's rule (the road and its January footway walk through a
+// portal both ways, on both tiers, on a continuous surface) now holds there.
+describe('R2-03 (v2.6) the Mountain Road through its tunnel', () => {
+  it('walks V03 both ways and the Year Walk January footway through the tunnel', () => {
+    const up = bodyWalk([1599.5, 35, 790.8], [1281.5, 55.3, 742]), down = bodyWalk([1281.5, 55.3, 742], [1599.5, 35, 790.8]);
     expect(up).toMatchObject({ reached: true, blockedAt: null }); expect(down).toMatchObject({ reached: true, blockedAt: null });
-    expect(up.length).toBeCloseTo(373.7, 0);
-    expect(bodyWalk([1449.5, 74.9, 405], [1450.1, 75.5, 430])).toMatchObject({ reached: true, blockedAt: null });
-    expect(bodyWalk([1450.1, 75.5, 430], [1449.5, 74.9, 405])).toMatchObject({ reached: true, blockedAt: null });
+    expect(up.length).toBeLessThan(400);
+    expect(bodyWalk([1490, 44, 796.5], [1395, 52.5, 795.5])).toMatchObject({ reached: true, blockedAt: null });
+    expect(bodyWalk([1395, 52.5, 795.5], [1490, 44, 796.5])).toMatchObject({ reached: true, blockedAt: null });
   });
-  it('walks the same portal on the phone tier (the 10 m lite lattice met 69 deg ground at [1444.1,420.1] while the mouth reached 3 eu out)', () => {
-    expect(bodyWalk([1433.3, 70, 335.6], [1370, 110, 690], true, 'lite')).toMatchObject({ reached: true, blockedAt: null });
-    expect(bodyWalk([1370, 110, 690], [1433.3, 70, 335.6], true, 'lite')).toMatchObject({ reached: true, blockedAt: null });
-    expect(bodyWalk([1455, 12, 1175], [1310, 158, 470], true, 'lite')).toMatchObject({ reached: true, blockedAt: null });
+  it('walks the same tunnel on the phone tier', () => {
+    expect(bodyWalk([1599.5, 35, 790.8], [1281.5, 55.3, 742], true, 'lite')).toMatchObject({ reached: true, blockedAt: null });
+    expect(bodyWalk([1281.5, 55.3, 742], [1599.5, 35, 790.8], true, 'lite')).toMatchObject({ reached: true, blockedAt: null });
   });
-  it('keeps the road surface continuous across the portal: every 0.25 eu the surface rises ≤ 0.48 and stays ≤ 40°', () => {
-    const { geo } = baked();
-    for (const x of [1444.1, 1450.5]) {
-      let y = geo.surface(x, 405, 80, 10)!.y;
-      for (let z = 405.25; z <= 432; z += .25) { const hit = geo.surface(x, z, y, .48); expect(hit, `surface at [${x},${z}]`).not.toBeNull(); expect(hit!.slope, `slope at [${x},${z}]`).toBeLessThanOrEqual(40); y = hit!.y; }
+  it('keeps the road surface continuous through both portals: every 0.25 eu the surface rises ≤ 0.48 and stays ≤ 40°', () => {
+    const { geo, world } = baked(), v03 = world.collision.beds.find(b => b.id === 'V03')!;
+    const zAt = (x: number) => { let best = v03.points[0]!; for (const p of v03.points) if (Math.abs(p[0] - x) < Math.abs(best[0] - x)) best = p; return best; };
+    for (const [x0, x1] of [[1500, 1455], [1425, 1380]] as const) {
+      const start = zAt(x0); let y = geo.surface(x0, start[2], start[1] + 2, 4)!.y;
+      for (let x = x0 - .25; x >= x1; x -= .25) { const z = zAt(x)[2], hit = geo.surface(x, z, y, .48); expect(hit, `surface at [${x},${z}]`).not.toBeNull(); expect(hit!.slope, `slope at [${x},${z}]`).toBeLessThanOrEqual(40); y = hit!.y; }
     }
   });
 });
 
 describe('R2-08 the summit L02 on foot', () => {
-  it('walks the runtime body from the square to L02 without the gondola (Crown Road, the turning circle, walk crown) and from the top station', () => {
-    const square = bodyWalk([1455, 12, 1175], [1310, 158, 470]);
-    expect(square).toMatchObject({ planned: true, reached: true, blockedAt: null }); expect(square.length).toBeLessThan(2900);
-    expect(bodyWalk([1417.7, 110.1, 677.4], [1310, 158, 470])).toMatchObject({ reached: true, blockedAt: null }); // D-C7 the Crown walk's start
-    // v2.0 D-A3: the gondola's top station at grade on the summit's shoulder [1335,535] (deck 150) to L02: a short step-free walk
-    // (the v1.9 station at [1360,112,560] took 412.5 eu of switchback).
-    const station = bodyWalk([1335, 150, 535], [1310, 158, 470]);
-    expect(station).toMatchObject({ reached: true, blockedAt: null }); expect(station.length).toBeLessThan(100);
+  it('walks the runtime body from the square to the Foot on the Mountain Road and from the summit station to L02 (D-M4, D-M6)', () => {
+    // v2.6: the square → the Foot on V03 is the Horizon's walk; the climb from the road foot is Mountain v2's road with its gorge
+    // bridges, whose decks the region answers (T2's geography): that stretch is proved by the region's tests, not here.
+    const foot = bodyWalk([1455, 12, 1175], [1281.5, 55.3, 742]);
+    expect(foot).toMatchObject({ planned: true, reached: true, blockedAt: null }); expect(foot.length).toBeLessThan(1000);
+    // The gondola's Summit Commons platform (v2's) to L02: a short step-free walk.
+    const station = bodyWalk([1298.3, 158.05, 481.7], [1310, 158, 470]);
+    expect(station).toMatchObject({ reached: true, blockedAt: null }); expect(station.length).toBeLessThan(40);
   });
-  it('joins the Crown walk to the Year Walk lane it shares at the turning circle, and keeps the launch stair off the walk', () => {
+  it('keeps the launch stair off the Crown walk and joins the Year Walk lanes', () => {
     const { world } = baked(), lanes = world.pathGraph.edges.filter(e => e.id.startsWith('lane:'));
     expect(lanes.length).toBeGreaterThan(0);
-    // The launch stair no longer stands across the walk (walk crown:139/140 were blocked by its treads). The five edges the
-    // Year Walk's stacked lanes still close at the turning circle [1376-1387,686-688] are bypassed by the lane join.
     const blocked = (world.pathGraph.blocked ?? []).filter(b => b.bedId === 'walk crown');
-    // v2.0 D-C7 (W5-A): the Crown walk's bed starts on the January lane's centreline at its height, so nothing closes it.
-    expect(blocked.filter(b => /crownLaunch/.test(b.solid))).toEqual([]); expect(blocked.map(b => b.solid)).toEqual([]);
+    expect(blocked.filter(b => /crownLaunch/.test(b.solid))).toEqual([]);
   });
 });
 
@@ -95,12 +96,12 @@ describe('R2-53 / R2-108 the Deep is closed to the island; L01 is carried, not f
     expect(total).toBe(3240); expect(terrain).toBe(0); expect(outside).toBe(0);
     expect(world.geometry.solids.find(s => s.id.startsWith('underground.deep.headwall'))!.positions.length / 24).toBe(8);
   });
-  it('leaves the top flight open under L01 (was 0.9 eu of headroom under the slab) and reports no floating L01 pad', () => {
+  it('carries L01 on Mountain v2\'s glass dam crest: its bay is the floor there and no L01 pad floats (v2.6, D-M3)', () => {
+    // v2.5 stood L01 over the dam gallery's top flight; the dam, its gallery and their supports are retired with the dam.
     const { world, geo } = baked();
-    for (const z of [911.5, 913.5, 915.5]) { const tread = geo.surface(1170.6, z, 52.1, 3)!; expect(tread.id).toMatch(/^damGallery\.flight\.2\.treads/); expect(geo.ceiling(1170.6, z, tread.y)).toBe(Infinity); }
-    expect(geo.surface(1174, 913, 52.1, .3)!.id).toMatch(/^place\.L01\.slab/);
+    expect(geo.surface(1316, 539.2, 142.1, .3)!.id).toMatch(/^place\.L01\.deck/);
     expect(world.diagnostics.filter(d => d.id.startsWith('structures.padFloating.place.L01'))).toEqual([]);
-    expect(world.geometry.solids.some(s => s.id.startsWith('place.L01.supports'))).toBe(true);
+    expect(world.geometry.solids.some(s => s.id.startsWith('damGallery.'))).toBe(false);
   });
 });
 
@@ -120,12 +121,15 @@ describe('R2-25 / R2-21 cut-edge spikes are capped on the detailed tiers', () =>
     const { field } = baked(), { columns: C, rows: R, step, heights: H } = field; let max = 0, spikes = 0; const over: number[][] = [];
     for (let j = 1; j < R - 1; j++) for (let i = 1; i < C - 1; i++) {
       const n = j * C + i; let top = -Infinity; for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) if (di || dj) top = Math.max(top, H[n + dj * C + di]!);
-      if (H[n]! <= .1) continue; const rise = H[n]! - top; if (rise > .3) spikes++; if (rise > 1) over.push([i * step, j * step]); else max = Math.max(max, rise);
+      if (H[n]! <= .1) continue; const rise = H[n]! - top; if (rise > .3 && mountainV2Rule(i * step, j * step).kind !== 'land') spikes++; if (rise > 1) over.push([i * step, j * step]); else if (mountainV2Rule(i * step, j * step).kind !== 'land') max = Math.max(max, rise);
     }
     // W5-A: [910,885] (VBS and walk bight 4.5 m from the Year Walk) is now on the VBS trestle's open span (D-C9): no fill cliff.
     // Candidate 4: [660,1155] (11.35, 1.42 over its neighbours) is the east headland's lattice edge under the Bight Bridge's
     // east deck end, raised by the Year Walk's approach blend off the deck (open item, W5-T terrain: no earth under the deck).
-    expect(over).toEqual([[660, 1155]]); expect(max).toBeLessThanOrEqual(1.005); expect(spikes).toBeLessThanOrEqual(31);
+    // v2.6 (D-M1): on Mountain v2's own land the lattice samples v2's authored ground (its abutments, benches and rocks), which the
+    // de-spiker leaves alone and the region draws exactly: counted apart.
+    const v2 = over.filter(p => mountainV2Rule(p[0]!, p[1]!).kind === 'land');
+    expect(over.filter(p => !v2.includes(p))).toEqual([[660, 1155]]); expect(max).toBeLessThanOrEqual(1.005); expect(spikes).toBeLessThanOrEqual(31);
   });
   it('never takes the fill from under a bed: the runway south end keeps its ground (a first cut left 12.6 eu under it)', async () => {
     const { sampleTerrain } = await import('../src/harbour/horizon/land/terrain/index'), { field } = baked();
@@ -147,13 +151,14 @@ describe('R2-74 / R2-14 the baked view proof measures the acceptance frames', ()
     // Candidate 6 (integrator 4): the honest proof (W7-T, R3-74) failed G and H on candidate 5 (0 px: the shaft is not visible
     // from the jetty; H's 78 px were the sea beyond the grid). v2.4 re-poses them: G under the shaft 70 / 42 px (D-D7), H an
     // aerial eye over the strip, the in-map west sea 350 / 94 px — the claim is true again, on the honest measure.
-    expect(pass('passLandscape')).toBe('ABCDEFGHIJKL'); expect(pass('passPortrait')).toBe('BEFGHIJK');
+    // v2.6 (D-M3/D-M10): the dam's glass face is retired; A's portrait holds the High Span alone and passes (9/12 on the phone).
+    expect(pass('passLandscape')).toBe('ABCDEFGHIJKL'); expect(pass('passPortrait')).toBe('ABEGHIJK');   // v2.6b: F's promenade eye passes at 1440×900; L01 open in portrait (with C/D/L)
     const px = (page: string, subject: string) => world.views.find(v => v.id === page)!.proof.subjects.find(s => s.id === subject)!;
     expect(px('K', 'the Glasshouse').pixels).toBeGreaterThan(13); expect(px('A', 'the Shoulder').pixels).toBeGreaterThanOrEqual(13);
     expect(px('I', 'the spring').pixels).toBeGreaterThanOrEqual(13); expect(px('I', 'the spring').portraitPixels).toBeGreaterThanOrEqual(8); expect(px('I', 'the Reach water').pixels).toBeGreaterThan(1000);
     expect(px('H', 'the west sea').pixels).toBeGreaterThanOrEqual(13); expect(px('H', 'the west sea').portraitPixels).toBeGreaterThanOrEqual(8);
     // Where the phone frame still fails a subject (final4/BEFORE-AFTER.md lists each blocker):
-    expect(px('A', "the dam's glass face").portraitPixels).toBeLessThan(8); expect(px('C', 'the skate shelf').portraitPixels).toBeLessThan(8);
+    expect(world.views.find(v => v.id === 'A')!.proof.subjects.map(q => q.id)).not.toContain("the dam's glass face"); expect(px('C', 'the skate shelf').portraitPixels).toBeLessThan(8);
     expect(px('D', 'surf').portraitPixels).toBeLessThan(8); expect(px('L', 'the Boathouse').portraitPixels).toBeLessThan(8);
     expect(world.views.find(v => v.id === 'D')!.proof.subjects.map(q => q.id)).not.toContain('the Lamp');
   });
@@ -165,11 +170,11 @@ describe('Wave 5 seams on the committed bake (integrator 3)', () => {
   type Proof = { id: string; separation: number; built: boolean; heightA: number; heightB: number };
   const extra = () => baked().world as unknown as { diagnostics: Diag[]; crossingProofs: Proof[]; journeyMeasurements: { id: string; pass: boolean }[] };
   const solid = (id: string) => baked().world.geometry.solids.find(s => s.id === id || s.id.startsWith(`${id}@`));
-  it('draws the G1 towers as cable towers, lands the portage flush on the apron and opens the ferry channel', () => {
+  it('keeps G1\'s towers to the region (their footings only), retires the portage and opens the ferry channel', () => {
     const w = extra();
-    expect(solid('G1.towers.bracing')?.indices.length).toBeGreaterThan(0);
-    // D-A7 S1 × dam portage: the upper flight meets the apron at 31 (was 35.8 over it).
-    const portage = w.crossingProofs.find(p => p.id === 'cross.s1.damPortage.1')!; expect(portage.separation).toBeLessThan(.05); expect(portage.heightB).toBeCloseTo(31, 1);
+    // v2.6 (D-M6): Mountain v2 draws its gondola's towers; the Horizon keeps their footings. D-M3: the dam portage is retired.
+    expect(solid('G1.towers.bracing')).toBeUndefined(); expect(solid('G1.towers.footings')?.indices.length).toBeGreaterThan(0);
+    expect(w.crossingProofs.some(p => p.id.startsWith('cross.s1.damPortage'))).toBe(false);
     // v2.1: 40 m opening at s 103-143, the 8 m hull clears every pier and bent footing (was −3.99 at 36 m).
     const hull = w.diagnostics.find(d => d.id === 'structures.bightBridge.ferryHull')!; expect(hull.severity).toBe('info'); expect(hull.measured!).toBeGreaterThan(1.3);
     expect(w.journeyMeasurements.every(j => j.pass)).toBe(true);

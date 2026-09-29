@@ -15,6 +15,7 @@ The three files every agent reads: `CONTRACT.md` (this: schema and hard rules), 
 - The seven building hosts from `src/harbour/village/layout.ts` (`VILLAGE_SITES`) and the twelve Harbour place IDs: `court`, `kitchen`, `tower`, `cellar`, `atlas`, `bank`, `library`, `glasshouse`, `kiln`, `cottage`, `boathouse`, `campfire`. Their tools, owners and room projections (`src/harbour/data/reading.ts`) are unchanged.
 - The Mandevilla Queen and chess-piece asset masters. Hercules's figure and wardrobe.
 - Presence, streaming, gate and surface/collision contracts from Mountain v2 (`CONTRACT.md` in `~/Downloads/hearth-mountain-v2`), extended per §4, never replaced.
+- `src/harbour/mountain/**` stays the old world's source. An island pass never edits it destructively; it may only add exports (a new function or a re-export another module needs), never change or remove what is already there. Pass 5 places Mountain v2 from this source under `regions[]` (below); the source itself is unchanged by that placement.
 - Auth, RLS, schema, sync envelope, Worker, deployment. Any change there is a Codex trust review, not an island pass.
 - Reduced motion, calm view and the flat/Reading edition (the Desk). The 3D island never gates the flat edition.
 
@@ -94,6 +95,14 @@ interface WorldDefinition {
     kittyPlaza: Anchor;
     lod: LodBudgets;                   // L0/L1 budgets; L2/L3 are §6
   };
+  regions: PlacedRegion[];             // placed worlds (pass 5+); authored elsewhere, stood on the Horizon
+}
+
+interface PlacedRegion {
+  id: string;                          // 'mountainV2', a names.ts id
+  kind: 'placedWorld';
+  offset: { x: number; y: number; z: number }; // horizon = native + offset (a translation only)
+  footprint: { minX: number; maxX: number; minZ: number; maxZ: number }; // horizon-space bounds the region overrides
 }
 
 interface WorldOverlay {               // derived on read, pure, never stored (SCALES.md §3.1)
@@ -121,6 +130,7 @@ Rules for the definition:
 - `districts` are the streaming unit. A district is at most one neighbourhood plus its surrounding land; the Undercroft is the Crown's child district; the sky streams by the districts under it.
 - `crossings[*].resolution` is one of `over`, `under`, `threshold`. Nothing else. In the manifest, district metadata stays on the actual crossing; `routePairNotes` preserves nearby-endpoint and shared-plan-point evidence for the land pass to verify. DEEP_RUN and ORE share [1300,420]; their vertical clearance must be solved and every actual intersection registered during land construction. These notes never exempt a computed intersection from resolution.
 - `reserves[*]` reserve a `placeId` per plot in the same namespace as hosts so a future building slots in without renumbering.
+- `regions[*]` are placed worlds: a region keeps its own authored geometry and art in its own space, standing on the Horizon under one translation (`offset`); the bake carries its ground so the Journey scale, the distant tiles and the proofs agree, and the runtime hands the region its `footprint` so it can answer ground, deck and collision queries inside it exactly.
 - The definition is data. A pass that needs a new field adds it to the interface in the same PR and updates this section.
 - The overlay is a function. No module that computes it imports a `captureCommand`; a static test enforces it (pass 02c).
 

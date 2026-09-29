@@ -1,9 +1,10 @@
 import { HORIZON_MANIFEST as M } from '../../world/manifest';
+import { regionCarryLand } from '../mountainV2/beds';
 import type { HeightQuery, LandCuts, XY, XYZ } from '../interfaces';
 import { addFlatPad, bed } from '../beds/profiles';
 import { sampleSpline } from '../beds/solver';
 import { buildStair, tunnel } from '../structures/build';
-import { box, clamp, distance, mix, nearestOnPath, pathLength, prism, slab, solid } from '../structures/mesh';
+import { box, clamp, distance, mix, nearestOnPath, pathLength, plan, prism, slab, solid } from '../structures/mesh';
 
 export const ROOM_DIMENSIONS:Record<string,{size:XY;floor:number;clear:number}>={lanternCave:{size:[46,32],floor:42,clear:18},deep:{size:[64,60],floor:38,clear:30},bellGallery:{size:[30,26],floor:90,clear:15},sealedDrift:{size:[26,18],floor:42,clear:8}};
 /** A passage lining stops at the chamber volume; room walls open only where a passage actually meets them. */
@@ -105,13 +106,15 @@ export function buildUnderground(cuts:LandCuts,base:HeightQuery):void {
     const cover=base(...p)-(floor+clear+.6);if(cover<.6)cuts.diagnostics.push({id:`underground.${id}.cover`,severity:'conflict',message:`${id}: rock cover above room roof is insufficient`,at:p,measured:cover,required:.6});
     pad.serviceBedId=`underground.${id}`;
   }
-  const oreControls=M.rail.ORE.pts as unknown as XY[],oreHeights=[40,42,68,68,40,57,96,110];
+  // v2.6 (D-M7): the South Portal stands at Mountain v2's ground (underground.doors.southPortal.h 67.5, was 110): the chain lift
+  // climbs from the Deep at 40 through [1360,480] and [1375,625] at 50 and 62 (rail.ORE.heights_v2_6; v2.5: 57, 96, 110).
+  const portal=M.underground.doors.southPortal,oreControls=M.rail.ORE.pts as unknown as XY[],oreHeights=(M.rail.ORE as unknown as {heights_v2_6?:number[]}).heights_v2_6??[40,42,68,68,40,57,96,110];
   const ore:XYZ[]=[];
   for(let i=1;i<oreControls.length;i++){
     const a=oreControls[i-1]!,b=oreControls[i]!,count=Math.ceil(distance(a,b)/4);
     for(let j=0;j<count;j++){const t=j/count;ore.push([mix(a[0]!,b[0]!,t),mix(oreHeights[i-1]!,oreHeights[i]!,t),mix(a[1]!,b[1]!,t)]);}
   }
-  ore.push([1345,110,680]);const oreBed=bed('ORE','rail',ore,false);oreBed.clearHeight=3.2;oreBed.structureIds=['oreTunnel','southPortal'];cuts.beds.push(oreBed);tunnel('oreTunnel',ore,3.6,3.2,cuts,'crown',{base});
+  ore.push([portal.xy[0]!,portal.h,portal.xy[1]!]);const oreBed=bed('ORE','rail',ore,false);oreBed.clearHeight=3.2;oreBed.structureIds=['oreTunnel','southPortal'];cuts.beds.push(oreBed);tunnel('oreTunnel',ore,3.6,3.2,cuts,'crown',{base});
   const rails=solid('ORE.rails','rail','rail','rail',['ORE'],'crown');for(let i=1;i<ore.length;i++)for(const offset of [-.45,.45])slab(rails,ore[i-1]!,ore[i]!,.09,.12,offset,.12);cuts.solids.push(rails);
   const siding=bed('ORE.siding','rail',[[1248,68,470],[1270,68,450],[1280,68,454]],false);cuts.beds.push(siding);tunnel('oreSiding',siding.points,3.6,3.2,cuts);
   // v2.0: where the siding leaves the Ore Line (and ORE drops toward the Deep) the Ore Line's roof stood 2.74 over the
@@ -161,7 +164,10 @@ export function buildUnderground(cuts:LandCuts,base:HeightQuery):void {
     cuts.mouths.push({id,kind:'portal',floor:door.h,ceiling:door.h+(id==='throat'?18:id==='seaDoor'?6:3.2),outline:[[p[0]!-width/2,p[1]!-depth/2],[p[0]!-width/2,p[1]!+depth/2],[p[0]!+width/2,p[1]!+depth/2],[p[0]!+width/2,p[1]!-depth/2]]});
     if(id==='adit'||id==='southPortal'){addFlatPad(cuts,`oreStation.${id}`,'landing',p,door.h,[10,6],0,true);const frame=solid(`${id}.portal.frame`,'portal','timber','wall',['ORE'],'crown');for(const side of [-1,1])box(frame,[p[0]!+side*2.2,p[1]!],door.h+3.8,[.5,1],door.h);box(frame,p,door.h+3.8,[4.9,1],door.h+3.2);cuts.solids.push(frame);}
   }
-  const link=bed('southPortal.link','walk',[[1345,110,680],[1355,110,685],[1370,110,690]]);cuts.beds.push(link);
+  // v2.6 (D-M4/D-M7): Crown Road's turning circle is gone; the portal opens onto Mountain v2's road (its lower switchback leg), so
+  // the link is the few metres from the door to the road's centreline at the portal's height (the region carries it: v2's road).
+  {const road=cuts.beds.find(b=>b.id==='mountainV2.road'),p=portal.xy as unknown as XY,at=road?nearestOnPath(p,road.points).at:undefined;
+    const link=bed('southPortal.link','walk',at&&distance(plan(at),p)>1?[[p[0],portal.h,p[1]],[at[0],at[1],at[2]]]:[[p[0],portal.h,p[1]],[p[0]+10,portal.h,p[1]+5]]);regionCarryLand(link);cuts.beds.push(link);}
   openRoomConnections(cuts);
   deepInterior(cuts);
   // Ignore only the named entrance neighbourhoods when measuring roof cover.

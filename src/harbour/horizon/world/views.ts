@@ -30,12 +30,12 @@ type Test = (hit: RayHit, direction: Point3, eye?: Point3) => boolean;
 const HOOK: Point2[] = [[520, 780], [545, 940], [460, 1030], [370, 950], [330, 800]];
 /** The Pass 1 subjects each page must hold at 16:9, in the manifest's frame vocabulary (portrait.frames uses the same names). */
 export const PAGE_SUBJECTS: Record<string, string[]> = {
-  A: ['the High Span', "the dam's glass face", 'the Shoulder', 'the Crown'],
+  A: ['the High Span', 'the Shoulder', 'the Crown'],   // v2.6: the dam is Mountain v2's, beyond the square's fog; page F holds it (D-M3)
   B: ['the Bight Bridge', 'the Flats', 'the hook'],
   C: ['the road deck', 'the skate shelf', 'the walk at the water'],
   D: ['surf', 'the Lamp', 'the zipline landing'],
   E: ['Stillwater', 'the Green', 'the Hollow', 'the Flats', 'the Bight', 'the sea'],
-  F: ['L01', 'the town below'],
+  F: ['L01', 'Stillwater'],   // v2.6: from v2's dam promenade over L01 to Stillwater (T1 land notes, D-M3)
   G: ['the skylight shaft'],   // D-D7 (v2.4): the Throat stays dark (D-B5); G looks up the shaft
   H: ['the strip', 'the west sea'],
   I: ['the spring', 'the Reach water'],

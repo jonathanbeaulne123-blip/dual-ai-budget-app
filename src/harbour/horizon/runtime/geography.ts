@@ -16,6 +16,13 @@ export interface DynamicGeography {
  surface(x:number,z:number,y?:number,step?:number):HorizonSurface|null;
  ceiling(x:number,z:number,y:number):number;
  contact(x:number,z:number,y:number,radius?:number):{id:string;nx:number;nz:number}|null;
+ /** Pass 5 (a placed region): the provider OWNS the ground at (x, z) — the baked terrain is then no candidate for `surface`,
+  * and `ground` / the camera's terrain test read the provider's `ground` instead. Static solids still count. */
+ owns?(x:number,z:number):boolean;
+ ground?(x:number,z:number):number;
+ /** PR #566 Codex: the owner's own water surface at (x, z) (a placed region's reservoir and river), null when dry. Read only
+  * where the provider `owns` the point; the baked `cuts.waters` still answer when it returns null. */
+ waterLevel?(x:number,z:number):number|null;
 }
 const CELL=24;
 const key=(x:number,z:number)=>`${Math.floor(x/CELL)}:${Math.floor(z/CELL)}`;
@@ -77,11 +84,18 @@ export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
     face.solid=solid;return face;
   }
   const contactFaces=new Set<number>();
+  /** The dynamic provider that owns the ground here (a placed region), if any. */
+  function owner(x:number,z:number):DynamicGeography|null{for(const d of dynamic)if(d.owns?.(x,z))return d;return null;}
+  /** Terrain height: the owning provider's ground, else the baked field. */
+  function groundAt(x:number,z:number):number{const o=owner(x,z);return o?.ground?o.ground(x,z):sampleTerrain(field,x,z);}
   function surface(x:number,z:number,y?:number,step=.48,staticOnly=false):HorizonSurface|null {
     if(x<0||z<0||x>field.width||z>field.depth)return null;
-    const g=sampleTerrain(field,x,z),normal=terrainNormal(field,x,z);
-    const n=Array.isArray(normal)?normal:[0,1,0];
-    let best:HorizonSurface|null=terrainTriangleVisible(x,z,cuts)&&(y===undefined||g<=y+step)?{id:'terrain',y:g,nx:n[0]!,ny:n[1]!,nz:n[2]!,material:'grass',slope:Math.acos(Math.min(1,n[1]!))*180/Math.PI}:null;
+    let best:HorizonSurface|null=null;
+    if(staticOnly||!owner(x,z)){
+      const g=sampleTerrain(field,x,z),normal=terrainNormal(field,x,z);
+      const n=Array.isArray(normal)?normal:[0,1,0];
+      best=terrainTriangleVisible(x,z,cuts)&&(y===undefined||g<=y+step)?{id:'terrain',y:g,nx:n[0]!,ny:n[1]!,nz:n[2]!,material:'grass',slope:Math.acos(Math.min(1,n[1]!))*180/Math.PI}:null;
+    }
     for(const id of nearby(x,z)){
       if(normals[id*3+1]!<=.001||!solids[owners[id]!]!.walkable)continue;const t=triangle(id);
       const h=projection(t,x,z);if(h===null||(y!==undefined&&h>y+step)||(best&&h<best.y))continue;
@@ -114,7 +128,10 @@ export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
   const blocked=(x:number,z:number,y:number,radius=.3)=>blocker(x,z,y,radius)!==null;
   /** Hulls query exposed water. A pedestrian supplies feet height so the Deep is
    * wet without treating a lake in an overhead room as water on a dry floor. */
+  /** PR #566 Codex: the owning provider's water at (x, z), if it draws any there. */
+  function ownedWater(x:number,z:number):number|null{return owner(x,z)?.waterLevel?.(x,z)??null;}
   function waterLevel(x:number,z:number,feet?:number):number|null {
+    const own=ownedWater(x,z);if(own!==null)return own;   // PR #566 Codex: a placed region's rendered water is its collision
     let level:number|null=null,underground=false;
     for(const w of cuts.waters){
       if(w.kind==='dry')continue;
@@ -130,6 +147,7 @@ export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
   function submerged(x:number,z:number,feet:number){
     // Visible water owns the walking boundary, including high-altitude lakes and underground water.
     // An overhead water surface in a separate room must not block its dry floor.
+    const own=ownedWater(x,z);if(own!==null&&own-feet>.35)return true;   // PR #566 Codex: under a placed region's water
     return cuts.waters.some(w=>{
       if(w.kind==='dry'||w.underground&&feet>w.level+1)return false;
       const level=waterHeightAt(w,x,z);
@@ -141,13 +159,13 @@ export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
     for(let i=1;i<=steps;i++){
       const f=i/steps,x=from[0]+(to[0]-from[0])*f,y=from[1]+(to[1]-from[1])*f,z=from[2]+(to[2]-from[2])*f;
       // From an underground origin the cave's explicit walls/roof own obstruction.
-      if(from[1]>=sampleTerrain(field,from[0],from[2])-.3&&sampleTerrain(field,x,z)>y-.15)return true;
+      if(from[1]>=groundAt(from[0],from[2])-.3&&groundAt(x,z)>y-.15)return true;
       if(blocker(x,z,y-.3,.18,undefined,ignoreDynamic))return true;
     }
     return false;
   }
   const staticOnly={surface:(x:number,z:number,y?:number,step?:number)=>surface(x,z,y,step,true),ceiling:(x:number,z:number,y:number)=>ceiling(x,z,y,true),blocked:(x:number,z:number,y:number,radius=.3)=>blocker(x,z,y,radius,undefined,true)!==null};
-  return {staticOnly,addDynamic(provider:DynamicGeography){dynamic.add(provider);return()=>dynamic.delete(provider);},surface,ceiling,blocked,blocker,contact,waterLevel,submerged,cameraBlocked,get indexStats(){return{triangles:count,referenceBytes:(owners.byteLength+offsets.byteLength+normals.byteLength)*count/Math.max(1,owners.length),cells:cells.size,chunks};},addSolids,ground:(x:number,z:number)=>sampleTerrain(field,x,z)};
+  return {staticOnly,addDynamic(provider:DynamicGeography){dynamic.add(provider);return()=>dynamic.delete(provider);},surface,ceiling,blocked,blocker,contact,waterLevel,submerged,cameraBlocked,get indexStats(){return{triangles:count,referenceBytes:(owners.byteLength+offsets.byteLength+normals.byteLength)*count/Math.max(1,owners.length),cells:cells.size,chunks};},addSolids,ground:groundAt};
 }
 export function nearestBedPoint(beds:readonly BedCut[],x:number,z:number):XYZ {
   let best:XYZ=[x,0,z],distance=Infinity;

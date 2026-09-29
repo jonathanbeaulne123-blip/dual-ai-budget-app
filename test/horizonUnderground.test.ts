@@ -8,7 +8,10 @@ import { BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshBasicMate
 it('encloses rooms and passages, preserves the only named mouths, and reports roof breaches',()=>{
   const cuts=buildLandCuts(baseHeight),f=M.underground.footprint;
   for(const [id,room]of Object.entries(M.underground.rooms)){const dim=ROOM_DIMENSIONS[id]!;for(const dx of [-dim.size[0]/2,dim.size[0]/2])for(const dz of [-dim.size[1]/2,dim.size[1]/2])expect(((room.xy[0]!+dx-f.cx)/f.rx)**2+((room.xy[1]!+dz-f.cy)/f.ry)**2).toBeLessThanOrEqual(1);expect(cuts.solids.find(s=>s.id===`underground.${id}.roof`)).toBeDefined();expect(cuts.pads.find(p=>p.id===`underground.${id}`)?.underground).toBe(true);}
-  const named=['adit','throat','seaDoor','southPortal','deep.skylight'];for(const mouth of cuts.mouths)expect(named.includes(mouth.id)||/^(prowTunnel|shoulderTunnel|duneCulvert)\.portal\.[01]$/.test(mouth.id)).toBe(true);
+  const named=['adit','throat','seaDoor','southPortal','deep.skylight'];for(const mouth of cuts.mouths)expect(named.includes(mouth.id)||/^(prowTunnel|mountainRoadTunnel|duneCulvert)\.portal\.[01]$/.test(mouth.id)).toBe(true);   // v2.6 (D-M4): the Shoulder Tunnel is retired; V03's tunnel is new
+  // D-M7: the Ore Line's South Portal stands at Mountain v2's ground (67.5); every Undercroft room keeps ≥ 40 eu of rock under the new surface.
+  expect(cuts.mouths.find(m=>m.id==='southPortal')!.floor).toBe(67.5);
+  for(const [id,room]of Object.entries(M.underground.rooms)){const dim=ROOM_DIMENSIONS[id]!;expect(baseHeight(room.xy[0]!,room.xy[1]!)-(dim.floor+dim.clear),id).toBeGreaterThanOrEqual(id==='deep'?0:40);}
   for(const b of cuts.beds.filter(b=>b.kind==='cave'||b.id==='ORE'))expect(b.terrainCut).toBe(false);
   const meshes=cuts.solids.map(s=>{const g=new BufferGeometry();g.setAttribute('position',new Float32BufferAttribute(s.positions,3));g.setIndex(s.indices);const mesh=new Mesh(g,new MeshBasicMaterial({side:DoubleSide}));mesh.updateMatrixWorld();return {s,mesh};});
   const eye=new Vector3(1300,42.2,440),direction=new Vector3(1300,110,300).sub(eye).normalize();

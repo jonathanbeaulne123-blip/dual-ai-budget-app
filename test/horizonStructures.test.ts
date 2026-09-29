@@ -40,7 +40,8 @@ describe('Horizon structural solids',()=>{
       // Bespoke spans are linked to their structural bed so junctions do not re-bridge them.
       expect(supports.bedIds).toContain(`structure.${spec.id}`);
     }
-    for(const id of ['prowTunnel','shoulderTunnel','duneCulvert','oreTunnel','seaPassage'])expect(find(cuts,`${id}.roof`)!.indices.length).toBeGreaterThan(0);
+    // v2.6 (D-M4): the Shoulder Tunnel is retired with Crown Road; the Mountain Road Tunnel carries V03.
+    for(const id of ['prowTunnel','mountainRoadTunnel','duneCulvert','oreTunnel','seaPassage'])expect(find(cuts,`${id}.roof`)!.indices.length).toBeGreaterThan(0);
     const deck=bounds(find(cuts,'highSpan.deck')!);expect(deck.max[1]).toBe(24);expect(deck.min[1]).toBeGreaterThan(23);
     expect(bounds(find(cuts,'highSpan.shelf.deck')!).max[1]).toBe(12);
   },120000);
@@ -66,18 +67,25 @@ describe('Horizon structural solids',()=>{
   },120000);
   it('follows each road tunnel floor on its road and measures the Prow Tunnel rock cover',()=>{
     const cuts=cutsOnce();
-    for(const [id,route] of [['prowTunnel','V01'],['shoulderTunnel','V02']] as const){
+    for(const [id,route] of [['prowTunnel','V01']] as const){
       const tube=cuts.beds.find(b=>b.id===id)!,road=cuts.beds.find(b=>b.id===route)!;
       expect(Math.max(...tube.points.map(p=>p[1]))-Math.min(...tube.points.map(p=>p[1]))).toBeGreaterThan(5);
       for(const p of tube.points)expect(Math.abs(nearestOnPath([p[0],p[2]],road.points).at[1]-p[1])).toBeLessThan(.05);
       expect(cuts.mouths.filter(m=>m.id.startsWith(`${id}.portal.`))).toHaveLength(2);
     }
+    // v2.6 (D-M4): the Mountain Road Tunnel is a section of V03 (no bed of its own): its floor follows V03, it has two portals and
+    // natural rock over its lined roof (the Shoulder remnant east of the Foot, 93-99 over a road at 45-52).
+    const v03=cuts.beds.find(b=>b.id==='V03')!,floor=prisms(find(cuts,'mountainRoadTunnel.floor')!);expect(cuts.beds.some(b=>b.id==='mountainRoadTunnel')).toBe(false);
+    for(const p of floor)expect(Math.abs(nearestOnPath([p.x,p.z],v03.points).at[1]-p.top),'tunnel floor on V03').toBeLessThan(.35);
+    expect(cuts.mouths.filter(m=>m.id.startsWith('mountainRoadTunnel.portal.'))).toHaveLength(2);
+    const cover=cuts.diagnostics.find(d=>d.id==='structures.mountainRoadTunnel.cover');expect(cover?.severity??'info').toBe('info');
     // v2.0 (D-A4): the Prow is a gallery at [1592,890]; its cover is reported as information (a gallery needs none, no fill).
     expect(cuts.diagnostics.find(d=>d.id==='structures.prowTunnel.cover')?.severity).toBe('info');
   },120000);
   it('carries every stair on stringers and bents no further apart than 6 eu, with posted rails',()=>{
     const cuts=cutsOnce();
-    for(const id of ['damPortage','seaStair','lampGallery.stair','zipLanding.stair','damGallery.flight.0','crownLaunch.stair']){
+    // v2.6 (D-M3): the dam portage and the dam gallery flights are retired with the dam.
+    for(const id of ['seaStair','lampGallery.stair','zipLanding.stair','crownLaunch.stair']){
       const stair=cuts.beds.find(b=>b.id===id)!,run=distance([stair.points[0]![0],stair.points[0]![2]],[stair.points[1]![0],stair.points[1]![2]]);
       expect(find(cuts,`${id}.stringers`)!.indices.length,id).toBeGreaterThan(0);
       const bents=[...new Set(prisms(find(cuts,`${id}.supports`)!).map(p=>nearestOnPath([p.x,p.z],stair.points).along.toFixed(1)))].map(Number).sort((a,b)=>a-b);
@@ -91,12 +99,13 @@ describe('Horizon structural solids',()=>{
     buildStair('test.stair',[-10,20,0],[10,34,0],3,cuts,()=>0);
     expect(cuts.diagnostics.find(d=>d.id==='structures.test.stair.clearSpan')?.severity).toBe('conflict');
   });
-  it('supports the dam apron clear of the tailrace and links the dam crest to its abutments',()=>{
-    const cuts=cutsOnce(),piers=prisms(find(cuts,'dam.apron.supports')!);
-    expect(piers.length).toBeGreaterThanOrEqual(12);for(const p of piers)expect(p.bottom).toBeLessThanOrEqual(baseHeight(p.x,p.z)-FOOTING_SINK+1e-6);
-    const river=sampleSpline(M.water_routes.RIVER_RUN.pts as unknown as XY[],2).map(p=>[p[0],0,p[1]] as XYZ);
-    for(const p of prisms(find(cuts,'dam.apron.abutments')!))expect(nearestOnPath([p.x,p.z],river).distance).toBeGreaterThan(3.5);
-    expect(find(cuts,'dam.abutments')!.bedIds).toEqual(['walk damCrest']);
+  it('retires the Stillwater dam and stands L01 on Mountain v2\'s glass dam crest as a deck bay (D-M3)',()=>{
+    const cuts=cutsOnce();
+    // No wall, crest, abutments, apron, gallery or portage: Stillwater drains over a natural sill (water.river.sill).
+    expect(cuts.solids.filter(s=>/^(dam\.|damGallery\.|damPortage)/.test(s.id))).toEqual([]);expect(cuts.beds.filter(b=>/^(walk damCrest|dam\.|damGallery\.|damPortage)/.test(b.id))).toEqual([]);
+    const L01=M.places.find(p=>p.id==='L01')!,pad=cuts.pads.find(p=>p.id==='place.L01')!;expect(pad.deck).toBe(true);expect(pad.blend).toBe(0);
+    expect(find(cuts,'place.L01.slab')).toBeUndefined();const bay=find(cuts,'place.L01.deck')!;expect(bay.walkable).toBe(true);expect(bounds(bay).max[1]).toBe(L01.h);
+    const plaque=find(cuts,'place.L01.plaque')!;expect(plaque.walkable).toBe(false);expect(bounds(plaque).max[1]).toBeCloseTo(L01.h+1.1,5);
   },120000);
   it('builds raised cable platforms and the Crown launch as decks on columns, not terrain pads',()=>{
     const cuts=cutsOnce();
@@ -134,16 +143,14 @@ describe('Horizon structural solids',()=>{
 describe('Horizon v1.9 structures (W3-A)',()=>{
   it('builds the named footbridges with every bent outside the lower corridors and the ramps and stairs they replace',()=>{
     const cuts=buildLandCuts(baseHeight);
-    for(const id of ['gardenWalkBridge','crownWalkBridge','seaStairWestLaneBridge','seaStairEastLaneBridge']){
+    // v2.6: the Crown Walk Bridge is retired with Crown Road (D-M4); the Foot's three small bridges are new (D-M3, D-M4).
+    for(const id of ['gardenWalkBridge','seaStairWestLaneBridge','seaStairEastLaneBridge','mountainRoadCanalBridge','s1InflowBridge','inflowFootbridge']){
       expect(cuts.solids.find(s=>s.id===`${id}.deck`),id).toBeDefined();expect(cuts.solids.find(s=>s.id===`${id}.supports`)?.indices.length,id).toBeGreaterThan(0);
       expect(cuts.diagnostics.filter(d=>d.id===`structures.${id}.bentInLane`||d.id===`structures.${id}.bay`),id).toEqual([]);
     }
     // The zip landing ramp is a trestle (no earth dune over the beach); the Bight pier stair reaches a jetty at the ferry stop.
     const ramp=cuts.beds.find(b=>b.id==='zipLanding.ramp')!;expect(ramp.terrainCut).toBe(false);expect(cuts.solids.find(s=>s.id==='zipLanding.ramp.supports')!.indices.length).toBeGreaterThan(0);
     const pier=cuts.beds.find(b=>b.id==='bightPierStair')!;expect(pier.points.at(-1)![1]).toBeLessThanOrEqual(1.21);expect(cuts.beds.some(b=>b.id==='jetty.bightPier')).toBe(true);
-    // The dam gallery is a stairwell south of the wall: every flight between z 909 and 926 (never in Stillwater).
-    for(let f=0;f<3;f++){const b=cuts.beds.find(b=>b.id===`damGallery.flight.${f}`)!;for(const p of b.points)expect(p[2]).toBeGreaterThanOrEqual(909);for(const p of b.points)expect(p[2]).toBeLessThanOrEqual(926);}
-    expect(cuts.diagnostics.filter(d=>/^structures\.damGallery\.flight\.\d\.clearSpan$/.test(d.id))).toEqual([]);
     // The Reach footbridge clears the river by the 4 m canoe clearance.
     expect(cuts.solids.some(s=>s.id==='reachFootbridge.deck')).toBe(true);
   },120000);
@@ -199,10 +206,11 @@ describe('Horizon v2.0 structures (W5-S)',()=>{
   },120000);
   it('builds the v2.0 named kinds: the S1 flyover, the VBS trestle, the cove cliff stair, the open gallery parapet (D-C2)',()=>{
     const cuts=cutsOnce();
-    for(const id of ['s1Flyover','bightSpurTrestle']){expect(find(cuts,`${id}.deck`),id).toBeDefined();expect(find(cuts,`${id}.supports`)?.indices.length,id).toBeGreaterThan(0);
+    // v2.6 (D-M5): the S1 flyover is retired with the Shoulder sweep.
+    expect(find(cuts,'s1Flyover.deck')).toBeUndefined();
+    for(const id of ['bightSpurTrestle']){expect(find(cuts,`${id}.deck`),id).toBeDefined();expect(find(cuts,`${id}.supports`)?.indices.length,id).toBeGreaterThan(0);
       expect(cuts.diagnostics.filter(d=>d.id===`structures.${id}.bay`),id).toEqual([]);
       for(const p of lowest(find(cuts,`${id}.supports`)!))expect(p.bottom,id).toBeLessThanOrEqual(baseHeight(p.x,p.z)-FOOTING_SINK+1e-6);}
-    const s1=cuts.diagnostics.find(d=>d.id==='structures.s1Flyover.clear')!;expect(s1.measured!).toBeCloseTo(11.56,2);   // v2.4: S1 reaches the apron bay's 31 at [1170.2,929] (was 11.50)expect(s1.message).toMatch(/9 bents, 0 refused/);
     // The one VBS bent over the Year Walk's lane is refused (reported); steel girders carry that bay (≤ 24 eu).
     const girder=cuts.diagnostics.find(d=>d.id==='structures.bightSpurTrestle.girderSpan');expect(girder?.measured??0).toBeLessThanOrEqual(24);
     expect(cuts.diagnostics.filter(d=>/^structures\.coveStair\./.test(d.id)&&d.severity==='conflict')).toEqual([]);
@@ -210,9 +218,6 @@ describe('Horizon v2.0 structures (W5-S)',()=>{
     const s4=cuts.beds.find(b=>b.id==='S4')!;for(const p of lowest(find(cuts,'bightSpurTrestle.supports')!))expect(nearestOnPath([p.x,p.z],s4.points).distance).toBeGreaterThan(s4.width/2+1);
     const f0=cuts.beds.find(b=>b.id==='coveStair.flight.0')!,f1=cuts.beds.find(b=>b.id==='coveStair.flight.1')!;
     const dock=cuts.beds.find(b=>b.id==='ferry.scholarsCove')!.points[0]![1];expect(f0.points[0]![1]).toBeCloseTo(34.1,5);expect(f1.points.at(-1)![1]).toBeCloseTo(dock,5);expect(f0.points.at(-1)![1]).toBeCloseTo((34.1+dock)/2,5);expect(bounds(find(cuts,'coveStair.landing.slab')!).max[1]).toBeCloseTo((34.1+dock)/2,5);
-    // D-C2: no solid stairwell wall stands along the gallery's south side (z 925.6) any more.
-    expect(prisms(find(cuts,'damGallery.walls')!).some(p=>Math.abs(p.z-925.6)<.5)).toBe(false);
-    expect(prisms(find(cuts,'damGallery.landing.1.rails')!).some(p=>p.top-p.bottom>1&&p.z>925)).toBe(true);
   },120000);
   it('leaves a gap in a landing rail where a stair leaves it (the crown launch closed its own stair, Wave 4)',()=>{
     const cuts=cutsOnce(),stair=cuts.beds.find(b=>b.id==='crownLaunch.stair')!,head=stair.points[0]!;
@@ -223,7 +228,12 @@ describe('Horizon v2.0 structures (W5-S)',()=>{
 describe('Horizon Wave 7 structures (W7-S)',()=>{
   it('ends every cable rope inside its station head frame, standing on the station deck (no rope ends in mid-air)',()=>{
     const cuts=cutsOnce(),g=M.cable.G1,z=M.cable.ZIP;
-    const ends:[string,readonly number[],number,string][]=[['gondolaBase',g.from,g.fromH,'G1'],['gondolaTop',g.to,g.toH,'G1'],['prowPlatform',z.from,z.fromH,'ZIP'],['zipLanding',z.to,z.toH,'ZIP']];
+    // v2.6 (D-M6): G1's stations are Mountain v2's terminals (the region draws their bullwheels): the Horizon rope is v2's own line,
+    // the cabin path + hang_eu, so it meets each station hang_eu over its platform and no Horizon head frame stands there.
+    const G=g as unknown as {hang_eu:number};for(const [xy,h] of [[g.from,g.fromH],[g.to,g.toH]] as const){const rope=prisms(find(cuts,'G1.cable')!),end=rope.reduce((a,b)=>Math.hypot(a.x-xy[0]!,a.z-xy[1]!)<Math.hypot(b.x-xy[0]!,b.z-xy[1]!)?a:b);
+      expect(Math.abs(end.top-(h+G.hang_eu))).toBeLessThan(1.2);} // the nearest rope prism's top: v2's rope climbs 42 % out of the Waterfront
+    expect(find(cuts,'platform.gondolaBase.headFrame')).toBeUndefined();expect(find(cuts,'platform.gondolaTop.headFrame')).toBeUndefined();
+    const ends:[string,readonly number[],number,string][]=[['prowPlatform',z.from,z.fromH,'ZIP'],['zipLanding',z.to,z.toH,'ZIP']];
     for(const [id,xy,h,cable] of ends){
       const frame=find(cuts,`platform.${id}.headFrame`)!;expect(frame,id).toBeDefined();expect(frame.role).toBe('support');
       // The rope's own solid ends at the station point, ROPE_END over the deck: that end lies inside the frame's bullwheel.
@@ -262,22 +272,11 @@ describe('Horizon Wave 7 structures (W7-S)',()=>{
     // The Stacks: 12-sided, not octagonal prisms.
     const stack=buildOffshoreSolids().find(s=>s.id==='offshore.stacks.1')!;expect(stack.positions.length/3%12).toBe(0);expect(stack.positions.length/3).toBeGreaterThanOrEqual(12*8);
   });
-  it('lets S1 onto a level apron and rails the apron and its lane where they drop; kerb gaps for S1 and the portage (A1.2, A1.3)',()=>{
-    const cuts=cutsOnce(),s1=cuts.beds.find(b=>b.id==='S1')!,apron=find(cuts,'dam.apron')!;
-    // Level at 31 east of the low line: S1 comes on from the east at the apron's own height, no lip or wall across it.
-    for(const x of [1152,1160,1166,1169.5])expect(solidVerticalRangeAt(apron,x,930)!.top,String(x)).toBeCloseTo(31,5);
-    const walls=prisms(find(cuts,'dam.apron.abutments')!).filter(p=>p.top>31.2&&nearestOnPath([p.x,p.z],s1.points).distance<s1.width/2+.5&&p.x>1148);
-    expect(walls).toEqual([]);
-    // The level bay and its lane: a posted rail on the east edge (the ground falls 7+ eu), open where S1 comes through it.
-    const rails=prisms(find(cuts,'dam.apron.rails')!),east=rails.filter(p=>Math.abs(p.x-1170.1)<.2&&p.top-p.bottom>1.3);
-    expect(east.length).toBeGreaterThan(4);
-    const s1East=s1.points.findIndex((p,i)=>i>0&&(s1.points[i-1]![0]-1170.1)*(p[0]-1170.1)<=0),a=s1.points[s1East-1]!,b=s1.points[s1East]!,zc=a[2]+(b[2]-a[2])*(1170.1-a[0])/(b[0]-a[0]);
-    expect(Math.min(...east.map(p=>Math.abs(p.z-zc)))).toBeGreaterThan(1.5);
-    // The apron bridge's parapet opens where the portage stair lands on it ([1160.8, 31, 940.1], S1 x dam portage).
-    // No parapet part stands within 1.5 eu of the stair's line over its last 6 eu (its approach mouth onto the deck).
-    const stair=cuts.beds.find(b=>b.id==='damPortage')!,foot=stair.points.at(-1)!,top=stair.points[0]!,len=Math.hypot(foot[0]-top[0],foot[2]-top[2]),mouth:XYZ[]=[[foot[0]-(foot[0]-top[0])*6/len,0,foot[2]-(foot[2]-top[2])*6/len],[foot[0],0,foot[2]]];
-    expect(prisms(find(cuts,'apronBridge.rails')!).filter(p=>nearestOnPath([p.x,p.z],mouth).distance<1.5)).toEqual([]);
-    expect(prisms(find(cuts,'apronBridge.rails')!).length).toBeGreaterThan(20);
+  it('carries S1 over the sill\'s rock shelf at 31 and over the tailrace on the apron bridge (v2.6, D-M3; the apron and portage are retired)',()=>{
+    const cuts=cutsOnce(),s1=cuts.beds.find(b=>b.id==='S1')!;
+    for(const at of [[1160,935],[1170.2,929]] as XY[])expect(nearestOnPath(at,s1.points).at[1],String(at)).toBeCloseTo(31,0);
+    expect(bounds(find(cuts,'apronBridge.deck')!).max[1]).toBeCloseTo(31,5);expect(prisms(find(cuts,'apronBridge.rails')!).length).toBeGreaterThan(20);
+    expect(find(cuts,'dam.apron')).toBeUndefined();expect(cuts.beds.some(b=>b.id==='damPortage')).toBe(false);
   },120000);
   it('gives S1 a quay finish a powerslide fits: 14 eu paved on grade, no rail within 6.5 eu of the line, 26 eu of run-out (item 7)',()=>{
     const cuts=cutsOnce(),s1=cuts.beds.find(b=>b.id==='S1')!,end=s1.points.at(-1)!,quay=cuts.beds.find(b=>b.id==='landingQuay')!;

@@ -32,11 +32,20 @@ const TERRAIN_TILE=32;
  * - strata ledges drawn per pixel from world height (a continuous phase following contours);
  * - smooth normals on turf, the face normal only where the ground is rock; no value step.
  */
-export function buildTerrainMeshes(field:TerrainField,cuts:Pick<LandCuts,'mouths'>,districtId:string,casts:boolean,paper:THREE.Texture|null){return finishBuild(buildTerrainSteps(field,cuts,districtId,casts,paper));}
-export function* buildTerrainSteps(field:TerrainField,cuts:Pick<LandCuts,'mouths'>,districtId:string,casts:boolean,paper:THREE.Texture|null):Generator<void,{meshes:THREE.Mesh[];material:THREE.MeshStandardMaterial;dispose():void}|null,void>{
+/**
+ * Pass 5 (T2, a placed region): which terrain cells a district's tiles leave to a region drawn over them. Both take the
+ * cell's centre (engine x, z) and the cell size. `skip`: the cell is not built at all. `split`: the cell is built into
+ * separate tiles (`…<r>.<c>.under`, returned in `under`) the runtime shows only while the region is not drawn, so the
+ * ground never has a hole while the region streams in or out.
+ */
+export type TerrainCellFilter={skip?:(x:number,z:number,step:number)=>boolean;split?:(x:number,z:number,step:number)=>boolean};
+export type TerrainMeshes={meshes:THREE.Mesh[];under:THREE.Mesh[];material:THREE.MeshStandardMaterial;dispose():void};
+export function buildTerrainMeshes(field:TerrainField,cuts:Pick<LandCuts,'mouths'>,districtId:string,casts:boolean,paper:THREE.Texture|null,filter:TerrainCellFilter={}){return finishBuild(buildTerrainSteps(field,cuts,districtId,casts,paper,filter));}
+export function* buildTerrainSteps(field:TerrainField,cuts:Pick<LandCuts,'mouths'>,districtId:string,casts:boolean,paper:THREE.Texture|null,filter:TerrainCellFilter={}):Generator<void,TerrainMeshes|null,void>{
   const C=field.columns,R=field.rows,st=field.step,H=field.heights,palette=TERRAIN_SURFACE_PALETTE.map(p=>rgb(p.color));
+  // 1: this district's cell; 2: this district's cell drawn under a region (split); 0: not drawn (another district, or skipped).
   const cells=new Uint8Array((C-1)*(R-1));let any=false;
-  for(let r=0;r<R-1;r++){yield;for(let c=0;c<C-1;c++)if(districtAt((c+.5)*st,(r+.5)*st)===districtId){cells[r*(C-1)+c]=1;any=true;}}
+  for(let r=0;r<R-1;r++){yield;for(let c=0;c<C-1;c++){const x=(c+.5)*st,z=(r+.5)*st;if(districtAt(x,z)!==districtId||filter.skip?.(x,z,st))continue;cells[r*(C-1)+c]=filter.split?.(x,z,st)?2:1;any=true;}}
   if(!any)return null;
   const deg=(dx:number,dz:number)=>Math.atan(Math.hypot(dx,dz))*180/Math.PI;
   // Per-vertex rock weight: the steepest triangle touching the vertex (both triangles of each of its four quads).
@@ -58,10 +67,10 @@ export function* buildTerrainSteps(field:TerrainField,cuts:Pick<LandCuts,'mouths
   const normalAt=(c:number,r:number):XYZ=>{const l=H[r*C+Math.max(0,c-1)]!,rt=H[r*C+Math.min(C-1,c+1)]!,u=H[Math.max(0,r-1)*C+c]!,d=H[Math.min(R-1,r+1)*C+c]!;
     const dx=(rt-l)/(st*(Math.min(C-1,c+1)-Math.max(0,c-1))),dz=(d-u)/(st*(Math.min(R-1,r+1)-Math.max(0,r-1))),n=Math.hypot(dx,1,dz);return[-dx/n,1/n,-dz/n];};
   const sets=ROCK_SETS.map(set=>({base:palette[TERRAIN_SURFACE_PALETTE.findIndex(p=>p.id===set.base)]!,ledge:palette[TERRAIN_SURFACE_PALETTE.findIndex(p=>p.id===set.ledge)]!,spacing:set.spacing}));
-  const material=terrainMaterial(paper),meshes:THREE.Mesh[]=[],geometries:THREE.BufferGeometry[]=[];
+  const material=terrainMaterial(paper),meshes:THREE.Mesh[]=[],under:THREE.Mesh[]=[],geometries:THREE.BufferGeometry[]=[];
   let complete=false;
   try {
-  for(let tr=0;tr<R-1;tr+=TERRAIN_TILE)for(let tc=0;tc<C-1;tc+=TERRAIN_TILE){
+  for(const kind of [1,2] as const)for(let tr=0;tr<R-1;tr+=TERRAIN_TILE)for(let tc=0;tc<C-1;tc+=TERRAIN_TILE){
     const pos:number[]=[],nor:number[]=[],col:number[]=[],uv:number[]=[],rb:number[]=[],rl:number[]=[],ri:number[]=[];
     // Wave 7 (E's white dotted sawtooth, R3-21): a walkable face (its own slope under the rock blend) carries NO rock; the
     // per-vertex weight (steepest incident triangle) otherwise bled a corner of rock paint into every grass triangle along a
@@ -79,7 +88,7 @@ export function* buildTerrainSteps(field:TerrainField,cuts:Pick<LandCuts,'mouths
       const face:XYZ=[fx/fl,fy/fl,fz/fl],faceRock=rockWeight(Math.acos(Math.min(1,face[1]))*180/Math.PI);vertex(a[0],a[1],face,faceRock);vertex(b[0],b[1],face,faceRock);vertex(d[0],d[1],face,faceRock);
     };
     for(let r=tr;r<Math.min(R-1,tr+TERRAIN_TILE);r++){yield;for(let c=tc;c<Math.min(C-1,tc+TERRAIN_TILE);c++){
-      if(!cells[r*(C-1)+c])continue;const x=c*st,z=r*st;
+      if(cells[r*(C-1)+c]!==kind)continue;const x=c*st,z=r*st;
       // Same split and mouth masks as sampleTerrain() and the collision (render = collision).
       if(terrainTriangleVisible(x+st/3,z+st/3,cuts))tri([c,r],[c,r+1],[c+1,r]);
       if(terrainTriangleVisible(x+st*2/3,z+st*2/3,cuts))tri([c+1,r],[c,r+1],[c+1,r+1]);
@@ -90,9 +99,9 @@ export function* buildTerrainSteps(field:TerrainField,cuts:Pick<LandCuts,'mouths
     g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
     g.setAttribute('rockBase',new THREE.Float32BufferAttribute(rb,3));g.setAttribute('rockLedge',new THREE.Float32BufferAttribute(rl,3));g.setAttribute('rockInfo',new THREE.Float32BufferAttribute(ri,2));
     g.computeBoundingSphere();
-    const mesh=new THREE.Mesh(g,material);mesh.name=`horizon.terrain.${districtId}.${tr}.${tc}`;mesh.castShadow=casts;mesh.receiveShadow=true;meshes.push(mesh);
+    const mesh=new THREE.Mesh(g,material);mesh.name=`horizon.terrain.${districtId}.${tr}.${tc}${kind===2?'.under':''}`;mesh.castShadow=casts;mesh.receiveShadow=true;meshes.push(mesh);if(kind===2)under.push(mesh);
   }
-  complete=true;return {meshes,material,dispose(){for(const g of geometries)g.dispose();material.dispose();}};
+  complete=true;return {meshes,under,material,dispose(){for(const g of geometries)g.dispose();material.dispose();}};
   } finally {if(!complete){for(const g of geometries)g.dispose();material.dispose();}}
 }
 /** Standard lit card material plus per-pixel strata: ledges every `spacing` eu of world height. */
@@ -110,20 +119,22 @@ export function terrainMaterial(paper:THREE.Texture|null){
   m.customProgramCacheKey=()=>'horizon-terrain-strata-1';
   return m;
 }
-export function buildDistrictCards(world:WorldDefinition,field:TerrainField,cuts:LandCuts,district:District,tier:'full'|'lite',coarse=false,hideBuildings=false):CardBuild{
-  return finishBuild(buildDistrictCardSteps(world,field,cuts,district,tier,coarse,hideBuildings));
+/** A district's cards; `under` holds the terrain tiles a placed region draws over (TerrainCellFilter.split), if any. */
+export type DistrictCards=CardBuild&{under?:THREE.Mesh[]};
+export function buildDistrictCards(world:WorldDefinition,field:TerrainField,cuts:LandCuts,district:District,tier:'full'|'lite',coarse=false,hideBuildings=false,filter:TerrainCellFilter={}):DistrictCards{
+  return finishBuild(buildDistrictCardSteps(world,field,cuts,district,tier,coarse,hideBuildings,filter));
 }
-export function* buildDistrictCardSteps(world:WorldDefinition,field:TerrainField,cuts:LandCuts,district:District,tier:'full'|'lite',coarse=false,hideBuildings=false):Generator<void,CardBuild,void>{
+export function* buildDistrictCardSteps(world:WorldDefinition,field:TerrainField,cuts:LandCuts,district:District,tier:'full'|'lite',coarse=false,hideBuildings=false,filter:TerrainCellFilter={}):Generator<void,DistrictCards,void>{
   const builder=new CardBuilder(`horizon.${coarse?'journey':'district'}.${district.id}`,tier,{ink:'#5b5447',cell:coarse?4096:256,shadows:!coarse});
-  let result:CardBuild|undefined,terrain:ReturnType<typeof buildTerrainMeshes>|undefined,complete=false;
+  let result:CardBuild|undefined,terrain:TerrainMeshes|null|undefined,complete=false;
   try {
     if(!coarse){const ids=new Set(district.solidIds??[]);for(const solid of world.geometry?.solids??[])if(ids.has(solid.id)&&!CABLE_LINE.test(solid.sourceId??solid.id)&&!(hideBuildings&&(solid.sourceId??solid.id).startsWith('host.')))yield* addSolidSteps(builder,solid,tier);}
     result=yield* builder.finishSteps();
-    terrain=district.childOf?null:yield* buildTerrainSteps(field,cuts,district.id,!coarse,paperGrain());
+    terrain=district.childOf?null:yield* buildTerrainSteps(field,cuts,district.id,!coarse,paperGrain(),filter);
     if(!terrain){complete=true;return result;}
     for(const mesh of terrain.meshes)result.group.add(mesh);
     const cards=result,ground=terrain;complete=true;
-    return {...cards,materials:{...cards.materials,terrain:ground.material},dispose(){cards.dispose();ground.dispose();}};
+    return {...cards,materials:{...cards.materials,terrain:ground.material},...(ground.under.length?{under:ground.under}:{}),dispose(){cards.dispose();ground.dispose();}};
   } finally {if(!complete){result?.dispose();terrain?.dispose();}}
 }
 function waterTriangle(b:CardBuilder,a:XYZ,c:XYZ,d:XYZ,color:RGB){b.water(a,c,d,[a[0]*.02,0],[c[0]*.02,1],[d[0]*.02,.5],color);}

@@ -5,6 +5,7 @@ import { decodeTerrainAsset, encodeTerrainAsset } from '../src/harbour/horizon/l
 import type { TerrainField, WaterCut } from '../src/harbour/horizon/land/interfaces';
 import { buildWaterCuts, bightMouthWidth, waterInfluence } from '../src/harbour/horizon/land/water';
 import { islandContains } from '../src/harbour/horizon/land/coast';
+import { HORIZON_MANIFEST } from '../src/harbour/horizon/world/manifest';
 import { buildNeedleArch, buildOffshoreSolids, NEEDLE } from '../src/harbour/horizon/land/offshore';
 
 /** A pool is level; within one lattice diagonal of a weir or fall the ground may stand at
@@ -19,7 +20,11 @@ describe('Horizon water and offshore land', () => {
   it('fixes lake levels and keeps every channel monotonically downstream', () => {
     const waters = buildWaterCuts();
     expect(waters.find(w => w.id === 'water.stillwater')?.level).toBe(50);
-    expect(waters.find(w => w.id === 'water.cup')?.level).toBe(100);
+    // v2.6 (D-M3/D-M5): the Cup and the upper river are retired (Mountain v2's reservoir and gorge river); the mountain brook feeds
+    // the lake from v2's town channel end, and the lower river leaves the lake at its level over the natural sill.
+    expect(waters.some(w => w.id === 'water.cup' || w.id === 'water.river.upper')).toBe(false);
+    const inflow = waters.find(w => w.id === 'water.river.mountain')!;expect(inflow.kind).toBe('brook');expect(inflow.points[0]![1]).toBeCloseTo(53.9, 5);expect(inflow.points.at(-1)![1]).toBe(50);
+    expect(waters.find(w => w.id === 'water.river.lower')?.points[0]![1]).toBe(50);
     expect(waters.find(w => w.id === 'water.deep')).toMatchObject({ level: 40, underground: true });
     expect(waters.find(w => w.id === 'water.river.lower')?.points.at(-1)).toEqual([1364, 0, 1390]);
     for (const water of waters) for (let i = 1; i < water.points.length; i++) expect(water.points[i]![1], water.id).toBeLessThanOrEqual(water.points[i - 1]![1]);
@@ -134,16 +139,15 @@ describe('Horizon water meets its banks (Stage A G6)', () => {
       expect(sample(x, z).height, `${x},${z}`).toBeGreaterThanOrEqual(a[1] - 1e-6);
     }
   });
-  it('makes the upper cascade a stair of level pools, and ends channels square like their ribbon', () => {
-    const upper = buildWaterCuts().find(w => w.id === 'water.river.upper')!;
-    const levels = new Set(upper.points.map(p => p[1])); expect(levels.size).toBeGreaterThanOrEqual(6);
-    for (let i = 1; i < upper.points.length; i++) {
-      const a = upper.points[i - 1]!, b = upper.points[i]!, run = Math.hypot(b[0] - a[0], b[2] - a[2]);
-      expect(a[1] === b[1] || run <= 1.5 + 1e-9, `segment ${i}`).toBe(true);
+  it('makes the mountain brook and the sill falls stairs of level pools, and ends channels square like their ribbon', () => {
+    // v2.6: the upper cascade is retired with the Cup; its rule (level pools joined by ≤ 1.5 m weirs) holds for the mountain brook
+    // (v2's channel end → Stillwater) and for the lower river's fall over the sill (50 → 22 in one weir, D-M3).
+    for (const id of ['water.river.mountain', 'water.river.lower']) {
+      const w = buildWaterCuts().find(q => q.id === id)!;
+      for (let i = 1; i < (id === 'water.river.lower' ? 3 : w.points.length); i++) { const a = w.points[i - 1]!, b = w.points[i]!, run = Math.hypot(b[0] - a[0], b[2] - a[2]); expect(a[1] === b[1] || run <= 1.5 + 1e-9, `${id} segment ${i}`).toBe(true); }
     }
-    // Integrator 2: the last reach is the lake's inlet pool (50) under the Inlet Footbridge (deck 55), never a pool at 58-60.
-    for (const [x, z] of [[1161.75, 725.98], [1161.12, 731.03], [1163, 716]] as [number, number][]) expect(waterInfluence(upper, x, z).level).toBe(50);
-    expect(Math.max(...upper.points.slice(0, -1).map((p, i) => p[1] - upper.points[i + 1]![1]))).toBeLessThan(7.2);
+    const sill = buildWaterCuts().find(w => w.id === 'water.river.lower')!, M_ = HORIZON_MANIFEST.water.river as unknown as { sill: { xy: number[] } };
+    expect(waterInfluence(sill, M_.sill.xy[0]!, M_.sill.xy[1]!).level).toBe(50);
     const lower = buildWaterCuts().find(w => w.id === 'water.river.lower')!, end = lower.points.at(-1)!, prev = lower.points.at(-2)!;
     const dx = end[0] - prev[0], dz = end[2] - prev[2], l = Math.hypot(dx, dz);
     // 2 m past the downstream end on the axis: dry (a round cap would still be wet).

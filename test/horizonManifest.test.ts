@@ -40,7 +40,9 @@ describe('Horizon manifest v2.0',()=>{
     expect(manifest.names.idRule).toContain('camelCase');
     for(const crossing of manifest.crossings)expect(['over','under','threshold']).toContain(crossing.resolution);
     for(const threshold of manifest.thresholds)for(const mode of threshold.modes)expect(mode).toMatch(/^[^→]+(?:→[^→]+)+$/);
-    expect(manifest.thresholds.find(threshold=>threshold.id==='damPortage')?.modes).toEqual(['canoe→feet→canoe']);
+    // v2.6 (D-M3): the dam portage is retired with the dam (kept verbatim under retired_v2_6).
+    expect(manifest.thresholds.some(threshold=>threshold.id==='damPortage')).toBe(false);
+    expect((manifest as unknown as {retired_v2_6:Record<string,{value:{modes:string[]}}>}).retired_v2_6['thresholds.damPortage']!.value.modes).toEqual(['canoe→feet→canoe']);
     expect(manifest.reserves.rotRule).toContain('rot_deg');
     for(const reserve of [manifest.reserves.terraces,manifest.reserves.bightShore]){
       expect(reserve.rot_deg).toHaveLength(reserve.plots.length);
@@ -62,7 +64,7 @@ describe('Horizon manifest v2.0',()=>{
     // "under" (D-A2) and VG x walk garden is "over" on gardenWalkBridge (D-A7). The data changed by ruling, not by test.
     expect(rows.filter(r=>r.reserved).map(r=>`${r.a} x ${r.b} ${r.resolution} ${r.reserved}`)).toEqual(['S4 x walk garden threshold D-C10']);
     const decided=rows as unknown as {a:string;b:string;resolution:string;decided?:string}[];
-    expect(decided.filter(r=>r.decided?.startsWith('D-A')).map(r=>`${r.a} x ${r.b} ${r.resolution}`).sort()).toEqual(['FERRY x bightBridge under','S1 x damPortage threshold','S4 x VG threshold','S4 x walk garden threshold','V01 x walk bightPier threshold','V01+S2 x Bight mouth over','VG x walk garden over','ZIP x G1 under']);
+    expect(decided.filter(r=>r.decided?.startsWith('D-A')).map(r=>`${r.a} x ${r.b} ${r.resolution}`).sort()).toEqual(['FERRY x bightBridge under','S4 x VG threshold','S4 x walk garden threshold','V01 x walk bightPier threshold','V01+S2 x Bight mouth over','VG x walk garden over']);   // v2.6: S1 x damPortage (D-M3) and ZIP x G1 (D-M6: v2's gondola no longer meets the zip) are retired
     const host=manifest.hosts.find(h=>h.id==='glasshouse')!;expect(host.footprint_m).toEqual([25,18]);expect(host.xy).toEqual([1007.5,790]);
     const gate=manifest.sky.gates.find(g=>g.id==='highSpan')!;expect([gate.h,...(gate.aperture_m ?? [])]).toEqual([17,40,12]);
     const views=manifest.views as unknown as {id:string;subjects:string[];portrait?:{frames:string[]}}[];
@@ -91,7 +93,7 @@ describe('Horizon manifest v2.0',()=>{
   });
   it('carries Jonathan’s 2026-09-27 rulings as numbers (v2.0) and the Wave 5 integration data (v2.1)',()=>{
     const m=manifest as unknown as Record<string,any>;
-    expect(m.version).toBe('2.5');   // was '2.4' (candidate 6). v2.2 = v2.1 + main's data-only v1.7 blocks (reconciliation); v2.3 = Wave 7 (W7-A); v2.4 = Wave 7 integrator 4; v2.5 = reconciled with main #554-#558
+    expect(m.version).toBe('2.6');   // v2.6 = Pass 5, Mountain v2 placed (D-M1..D-M10); was '2.4' (candidate 6). v2.2 = v2.1 + main's data-only v1.7 blocks (reconciliation); v2.3 = Wave 7 (W7-A); v2.4 = Wave 7 integrator 4; v2.5 = reconciled with main #554-#558
     // D-A1: 245 m, one steel arch, 11.4 clear; an 8 m hull at 46° needs 32.0 m. Ruled 36 m at s 98-134 (kept as opening.v2_0);
     // v2.1 (design lead, reversible): 40 m at s 103-143, 38 clear - the hull cleared the east pier by -3.99 at 36 m, +1.37 at 40.
     const bb=m.structures.bightBridge;expect(bb.span_m).toBe(245);expect(bb.v1_9.span_m).toBe(230);
@@ -107,13 +109,15 @@ describe('Horizon manifest v2.0',()=>{
     for(const x of spots){expect(['rail','kerb','wall','bollard','stair','bank lip']).toContain(x.kind);expect(x.groundLine.length).toBeGreaterThan(0);expect(x.requiredJump).toBe(false);}
     expect(m.skate.S2.westRamp.grade_pct).toBeLessThanOrEqual(m.profiles.skateMain.grade_max_pct);expect(m.skate.S2.eastDescent.grade_pct).toBeLessThanOrEqual(14);
     // D-A3: station [1335,535] deck 150, towers 120-200 apart and no authored height, summit target 205 (was 375).
-    const g=m.cable.G1;expect(g.to).toEqual([1335,535]);expect(g.toH).toBe(150);expect(g.towers).toHaveLength(3);
+    // v2.6 (D-M6): G1 is Mountain v2's gondola; the D-A3 line is kept as cable.G1.v2_5 (checked here as it was ruled).
+    const g=m.cable.G1.v2_5;expect(g.to).toEqual([1335,535]);expect(g.toH).toBe(150);expect(g.towers).toHaveLength(3);
     const d=[0,...g.towerDistances_m,Math.hypot(g.to[0]-g.from[0],g.to[1]-g.from[1])];
     for(let i=1;i<d.length;i++){expect(d[i]-d[i-1]).toBeGreaterThanOrEqual(m.profiles.cable.towerSpacing_m[0]);expect(d[i]-d[i-1]).toBeLessThanOrEqual(m.profiles.cable.towerSpacing_m[1]);}
     for(const t of g.towers)expect(t).toHaveLength(2);
-    expect(m.structures.gondolaStations.crownStation).toEqual([1335,535]);expect(m.walks.crownFromGondola.pts[0]).toEqual([1335,535]);
-    expect(manifest.journeys.targets_s['square→summit by gondola + walk']).toBe(205);expect(m.journeys.targets_v1_9['square→summit by gondola + walk']).toBe(375);
-    expect(manifest.journeys.at_active_scale['square→summit by gondola + walk'].time_s).toBeLessThanOrEqual(205);
+    expect(m.structures.gondolaStations.v2_5.crownStation).toEqual([1335,535]);expect(m.retired_v2_6['walks.crownFromGondola'].value.pts[0]).toEqual([1335,535]);
+    expect(m.journeys.targets_s['v2_5_square→summit by gondola + walk']).toBe(205);expect(m.journeys.targets_v1_9['square→summit by gondola + walk']).toBe(375);
+    // v2.6: the summit journey walks to v2's quay until D-M6b (measured 420.6 s on the v2.6 bake, target 465).
+    expect(manifest.journeys.targets_s['square→summit by gondola + walk']).toBe(465);
     // D-A4 gallery at candidate A; D-A5 the glass-face card; D-A8 November on the Prow top; D-C11 stairs only.
     expect(m.structures.prowTunnel).toMatchObject({xy:[1592,890],kind:'gallery',length_m:90});
     expect(m.lights.find((l:{id:string})=>l.id==='dam.glassFace').on).toContain('golden hour');
@@ -122,11 +126,13 @@ describe('Horizon manifest v2.0',()=>{
     // Group B/C: K re-posed, H at golden hour, the Throat's built aperture, L01 on the slab, plot bight.1 off the paths.
     const views=manifest.views as unknown as {id:string;xy:number[];target:number[];bestHour:string}[];
     expect(views.find(v=>v.id==='K')).toMatchObject({xy:[994,770],target:[1120,815]});expect(views.find(v=>v.id==='H')!.bestHour).toBe('golden hour');
-    expect(m.underground.doors.throat.collarAperture_m).toBe(10.8);expect(manifest.places.find(p=>p.id==='L01')!.xy).toEqual([1173,912]);
+    expect(m.underground.doors.throat.collarAperture_m).toBe(10.8);expect((manifest.places.find(p=>p.id==='L01') as unknown as {v2_5_xy:number[]}).v2_5_xy).toEqual([1173,912]);   // v2.6 (D-M3): L01 is on Mountain v2's crest (below)
     expect(manifest.reserves.bightShore.plots[0]).toEqual([813,918.8]);   // v2.3: D-D2 nudge 1.0 m (v2.0 [814,919])
     // v2.1 (Wave 5 integration, design lead): the numbers the merged bake measured.
     expect(m.structures.coveStair.to_h).toBe(1.0);expect(m.structures.coveStair.v2_0_to_h).toBe(1.8);
-    const zip=manifest.crossings.find(r=>r.a==='ZIP'&&r.b==='G1') as unknown as {resolution:string;measured:{separation_eu:number}};expect(zip.resolution).toBe('under');expect(zip.measured.separation_eu).toBe(15);
+    // v2.6 (D-M6): Mountain v2's gondola no longer meets the zip; the D-A2 row is kept under retired_v2_6.crossings.
+    const zip=(m.retired_v2_6.crossings.value as {a:string;b:string}[]).find(r=>r.a==='ZIP'&&r.b==='G1') as unknown as {resolution:string;measured:{separation_eu:number}};expect(zip.resolution).toBe('under');expect(zip.measured.separation_eu).toBe(15);
+    expect(manifest.crossings.some(r=>r.a==='ZIP'&&r.b==='G1')).toBe(false);
     expect(manifest.crossings.some(r=>r.a==='jetty.bightPier'&&r.b==='FERRY'&&JSON.stringify(r.at)==='[560,890]'&&r.resolution==='threshold')).toBe(true);
     const D=m.views.find((v:{id:string})=>v.id==='D');expect(D.subjects).toEqual(['surf','the zipline landing']);expect(D.deferred.some((x:string)=>x.startsWith('the Lamp (Pass 2b'))).toBe(true);
     expect(m.hosts.find((h:{id:string})=>h.id==='bank')).toMatchObject({footprint_m:[20,18],xy:[1443,1125],v2_0_footprint_m:[26,18]});
@@ -159,7 +165,7 @@ describe('Horizon manifest v2.0',()=>{
 });
 describe('Horizon manifest v2.2: main\'s v1.7 sky data on the v2.1 land',()=>{
   it('adds FLIGHT.md sky data without a geography change',()=>{
-    expect(manifest.version).toBe('2.5');   // was '2.4' (candidate 6); v2.5 = reconciled with main #554-#560
+    expect(manifest.version).toBe('2.6');   // v2.6 = Pass 5 (Mountain v2); was '2.4' (candidate 6); v2.5 = reconciled with main #554-#560
     expect(manifest.sky.gliderPolar).toHaveLength(5);
     expect(manifest.sky.parachute).toMatchObject({forward_ms:6,sink_ms:3,freefallCap_ms:30,autoPull_agl_m:45,minBail_agl_m:60,canopy_m:[7,3]});
     expect(manifest.sky.corridors.throat).toMatchObject({gate:12,to:[1300,420],slope_deg:30,level_m:25,splashH:42,coneDeg:25,maxBankDeg:20});
@@ -184,8 +190,8 @@ describe('Horizon manifest v2.2: main\'s v1.7 RIDE data (§8.3, D40, D42)',()=>{
   const paces=manifest.paces as unknown as Record<string,{roll:number|null;pushGrip:number|null}>;
   const surfaces=manifest.surfaces as unknown as Record<string,{pace:string;grip:number|null}>;
   it('is version 2.2 (now 2.3), dated, and says what changed',()=>{
-    expect(manifest.version).toBe('2.5');   // was '2.4' (candidate 6)
-    expect(manifest.date).toBe('2026-09-27');
+    expect(manifest.version).toBe('2.6');   // v2.6 = Pass 5 (Mountain v2); was '2.4' (candidate 6)
+    expect(manifest.date).toBe('2026-09-28');   // v2.6 (Pass 5)
     expect(manifest.status).toContain('v2.2: paces and surface grip (RIDE D42)');
   });
   it('gives every surface a numeric grip except duff, which is never a bed',()=>{
@@ -224,7 +230,10 @@ describe('Horizon manifest v2.2: main\'s v1.7 RIDE data (§8.3, D40, D42)',()=>{
     // speeds_ms (their kernels set pace; the bicycle caps at 6.0). v2.2 keeps Stage A's number; the journey rows vs the movers' ride
     // logs (D44) are an open item (RECONCILE.md).
     expect(manifest.speeds_ms.board).toBe(10);expect(manifest.speeds_ms.bicycle).toBe(6);   // v2.3: the bicycle's cap (was 8)
-    expect(manifest.skate.S1.segments.map(s=>[s.pace,s.surface])).toEqual([['fast','paved'],['flow','bankedTurf'],['flow','apron'],['fast','paved'],['slow','cobble'],['fast','paved']]);
+    // v2.6 (D-M5): S1's upper half is Mountain v2's course (its nine segments), then the sill, the Notch shelf, the Reach, the quay.
+    expect(manifest.skate.S1.segments.map(s=>s.name)).toEqual(['Summit start','Alpine bends','Dam overlook','Meadow sweep','Woodland bridges','Library balcony','Neighbourhood switchbacks','Town canal crossing','Waterfront finish','Sill','Notch shelf','Reach boardwalk','Quay finish']);
+    expect(manifest.skate.S1.segments.slice(-3).map(s=>[s.pace,s.surface])).toEqual([['fast','paved'],['slow','cobble'],['fast','paved']]);
+    expect((manifest.skate.S1 as unknown as {v2_5_segments:{pace:string;surface:string}[]}).v2_5_segments.map(s=>[s.pace,s.surface])).toEqual([['fast','paved'],['flow','bankedTurf'],['flow','apron'],['fast','paved'],['slow','cobble'],['fast','paved']]);
     expect(manifest.skate.S3.segments[2]).toMatchObject({name:'The square',pace:'threshold',surface:'plaza'});
   });
 });
@@ -244,7 +253,9 @@ describe('Horizon manifest v2.3: Stage A Wave 7 (W7-A)',()=>{
   it('D-D8: the lake-rim trail keeps its profile and ends at the gallery exit, not along the dam crest',()=>{
     expect(m.walks.lakerim.pts.at(-1)).toEqual([1166,905]);expect(m.walks.lakerim.v2_2_pts.at(-1)).toEqual([1140,905]);
     expect(manifest.crossings.some(r=>r.a==='walk lakerim'&&r.b==='river lower')).toBe(false);
-    expect(manifest.crossings.some(r=>r.a==='walk damCrest'&&r.b==='river lower')).toBe(true);
+    // v2.6 (D-M3): the dam crest walk is retired with the dam (its register row moved to retired_v2_6.crossings).
+    expect(manifest.crossings.some(r=>r.a==='walk damCrest'&&r.b==='river lower')).toBe(false);
+    expect((m.retired_v2_6.crossings.value as {a:string;b:string}[]).some(r=>r.a==='walk damCrest'&&r.b==='river lower')).toBe(true);
   });
   it('seats the market stair\'s head on the upper street (it stood 6 m over the square) and keeps D-C11',()=>{
     expect(m.structures.marketStair).toMatchObject({head:[1472,18,1115],foot:[1472,12,1134],v2_2_head:[1480,18,1150],twin:'none (stairs only)'});
@@ -274,5 +285,29 @@ describe('Horizon manifest v2.4: Stage A Wave 7 (integrator 4)',()=>{
     expect(m.structures.bightSpurTrestle).toMatchObject({from:[923.6,874.5],to:[881,926.5],length_m:68,v2_3_length_m:56});
     expect(m.structures.prowLoopFootbridge).toMatchObject({from:[1603.5,674.6],to:[1609.8,702.9],width_m:6});
     expect(m.reserves.terraces).toMatchObject({plots:[[1552,832],[1528,896],[1512,952]]});
+  });
+});
+describe('Horizon manifest v2.6: Mountain v2 placed on the Crown (Pass 5, T1 Land)',()=>{
+  const m=manifest as unknown as Record<string,any>;
+  it('declares the placed region and parses with it (D-M1, D-M2)',()=>{
+    expect(parseHorizonManifest(manifest)).toBe(manifest);
+    expect(m.regions).toEqual([expect.objectContaining({id:'mountainV2',kind:'placedWorld',offset:{x:1308,y:54,z:764},footprint:{minX:1108,maxX:1508,minZ:368,maxZ:848}})]);
+    expect(m.regions[0].decisions).toEqual(['D-M1','D-M2','D-M3','D-M4','D-M5','D-M6','D-M7','D-M8','D-M9','D-M10']);
+  });
+  it('retires Crown Road, the Shoulder Tunnel, the dam, its gallery and portage, the Cup and the upper river, verbatim',()=>{
+    expect(m.roads).not.toHaveProperty('V02');for(const k of ['shoulderTunnel','dam','lakesideSwitchback','s1Flyover','crownWalkBridge','inletFootbridge'])expect(m.structures).not.toHaveProperty(k);
+    expect(m.underground).not.toHaveProperty('damGallery');expect(m.water).not.toHaveProperty('cup');expect(m.water.river).not.toHaveProperty('upper');expect(m.walks).not.toHaveProperty('crownFromGondola');
+    for(const k of ['roads.V02','structures.shoulderTunnel','structures.dam','structures.lakesideSwitchback','underground.damGallery','water.cup','water.river.upper','thresholds.damPortage','walks.crownFromGondola'])expect(m.retired_v2_6[k]?.value,k).toBeDefined();
+    expect(m.retired_v2_6['roads.V02'].value.pts[0]).toEqual([1433.3,335.6]);
+  });
+  it('adds the Mountain Road, v2\'s gondola, L01 on v2\'s crest and S1 on v2\'s course (D-M3..D-M6)',()=>{
+    expect(m.roads.V03).toMatchObject({label:'Mountain Road',profile:'road',grade_max_pct:10});expect(m.roads.V03.pts[0]).toEqual([1599.5,790.8]);
+    expect(m.structures.mountainRoadTunnel).toMatchObject({kind:'tunnel',route:'V03'});
+    expect(m.cable.G1).toMatchObject({from:[1282,810],to:[1300,480],fromH:54.53,toH:158.05,authoredTowers:[100,128,158],drawnBy:'mountainV2'});
+    expect(m.places.find((p:{id:string})=>p.id==='L01')).toMatchObject({xy:[1316,539.2],h:142,v2_5_xy:[1173,912]});
+    expect(m.skate.S1.mountainV2.upperPts).toBeGreaterThan(100);expect(m.skate.S1.mountainV2.gates).toHaveLength(17);
+    expect(m.thresholds.find((t:{id:string})=>t.id==='gondolaBase').xy).toEqual([1279.71,810.73]);
+    expect(m.underground.doors.southPortal.h).toBe(67.5);expect(m.water.river.sill).toMatchObject({xy:[1136,896],level:50});
+    expect(m.journey.stations.find((s:{id:string})=>s.id==='jan').xy).toEqual([1364,650]);
   });
 });

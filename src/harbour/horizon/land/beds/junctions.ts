@@ -2,7 +2,8 @@ import type { BedCut, HeightQuery, LandCuts, StructureSolid, XY, XYZ } from '../
 import { addFlatPad, emitBedGeometry } from './profiles';
 import { gradeRoute, type HeightPin } from './solver';
 import { gradePadApproaches } from './padApproaches';
-import { box, clamp, distance, districtAt, maxGrade, mix, nearestOnPath, plan, prism, slab, solid } from '../structures/mesh';
+import { onMountainV2Road } from '../mountainV2/beds';
+import { box, clamp, distance, districtAt, mix, nearestOnPath, plan, prism, slab, solid } from '../structures/mesh';
 
 export interface ComputedCrossing {
   id:string;a:string;b:string;sourceA?:string;sourceB?:string;at:XY;heightA:number;heightB:number;
@@ -246,7 +247,9 @@ function alignSurfaceJoins(cuts:LandCuts,proofs:readonly ComputedCrossing[],base
     if(!c.targets.length)continue;
     const points=[...c.bed.points.map((p,i)=>({at:plan(p),along:c.arcs[i]!})),...c.targets,...c.pins.map(p=>({at:p.xy,along:nearestOnPath(p.xy,c.bed.points).along}))].sort((a,b)=>a.along-b.along).filter((v,i,all)=>!i||distance(v.at,all[i-1]!.at)>.001).map(p=>p.at);
     const old=c.bed.points,diagnostics:LandCuts['diagnostics']=[],next=gradeRoute(c.bed.id,points,(x,z)=>nearestOnPath([x,z],old).at[1],Math.min(.12,c.bed.maxGrade),c.pins,diagnostics);
-    if(maxGrade(next)>Math.min(.12,c.bed.maxGrade)+.00001)continue;
+    // v2.6: a lane on Mountain v2's road takes v2's own grades (the region owns them): the regrade's check skips those segments.
+    const steepest=next.slice(1).reduce((m,p,i)=>{const q=next[i]!;return onMountainV2Road([(p[0]+q[0])/2,(p[2]+q[2])/2])?m:Math.max(m,Math.abs(p[1]-q[1])/(distance(plan(p),plan(q))||1));},0);
+    if(steepest>Math.min(.12,c.bed.maxGrade)+.00001)continue;
     c.bed.points=next;
     const prefixes=['bed','surface','kerbs','edges','retaining','shoulders','batter'].map(s=>`${c.bed.id}.${s}`);
     cuts.solids=cuts.solids.filter(s=>!prefixes.some(prefix=>s.id===prefix||s.id.startsWith(`${prefix}.`)));

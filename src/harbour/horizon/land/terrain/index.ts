@@ -3,6 +3,7 @@ import type { BedCut, LandCuts, PadCut, TerrainField, WaterCut, XY, XYZ } from '
 import { coastCharacter, signedShoreDistance } from '../coast';
 import { buildWaterCuts, waterInfluence } from '../water';
 import { clamp, contains, linePoint, mix, polygonCentre, polygonDistance, polylineArcs, segmentPoint, smooth } from './geometry';
+import { mountainV2Height, mountainV2Rule } from '../mountainV2/ground';
 
 export const GEOGRAPHY_REVISION = 'horizon-geo-1' as const;
 /** The one walkable limit: MANIFEST `profiles.walkable.slope_max_deg` (40°, Mountain v2's body
@@ -149,6 +150,9 @@ export function baseHeight(x: number, z: number): number {
     if (d > 0) height = mix(height, clamp(height, b.min, b.max), SHOULDER_RINGED.has(b.id) && proximity > 0 ? smooth(d / (step * proximity)) : smooth(d / step));
   }
   height = stillwaterSill(x, z, throatButtress(x, z, height));
+  // Pass 5 (D-M1/D-M2): Mountain v2 stands on the Crown summit; inside its footprint its ground (or the Foot terrace, or the
+  // apron to the Horizon's own ground) replaces the bands. North of v2's summit line the Crown's north face wins where higher.
+  height = mountainV2Height(x / s, z / s, height / s) * s;
   const character = coastCharacter(x, z), shoreWidth = character === 'southBeach' ? 44 * s : character === 'bight' ? 23 * s : 10 * s;
   height = mix(0.14 * s, height, smooth(shore / shoreWidth));
   height = damWindow(x, z, notchHeight(x, z, height));
@@ -260,9 +264,18 @@ function throatJambs(x: number, z: number, height: number, cuts: LandCuts, edgeG
 export const HIGH_SPAN_EAST_RIM = 21.5;
 /** The High Span's surveyed station on the lower river (water 9.2, bed 8). */
 const HIGH_SPAN_STATION: XY = [1236.875, 1105];
+/** The Notch's own line: the lower river from its v2.5 head at the old dam foot [1140,905] (v2.6 prepends the sill's lip in
+ * the lake, D-M3; the gorge's walls keep their v2.5 progress so nothing below the sill moves). */
+let notchLine: XYZ[] | undefined;
+function notchPoints(): XYZ[] {
+  if (notchLine) return notchLine;
+  const s = getModel().scale, points = getModel().water.find(w => w.id === 'water.river.lower')!.points;
+  const head = points.findIndex(p => Math.abs(p[0] - NOTCH_HEAD[0] * s) < 1e-6 && Math.abs(p[2] - NOTCH_HEAD[1] * s) < 1e-6);
+  return notchLine = head > 0 ? points.slice(head) : points;
+}
 function notchHeight(x: number, z: number, height: number): number {
   const m = getModel(), s = m.scale, river = m.water.find(w => w.id === 'water.river.lower')!;
-  const q = linePoint(river.points, x, z);
+  const q = linePoint(notchPoints(), x, z);
   // The gorge opens progressively to the Reach; it is never a uniform trench.
   if (q.z > 1170 * s || q.z < 906 * s) return height;
   // Under the High Span the floor is a shelf at the water, ≥ 40 m across between the
@@ -309,10 +322,15 @@ export const NOTCH_RIM_RUN = 20;
  * square and the dam stands above 18 eu, and no bank shades the face at 09:00/15:00.
  * The dam's own abutments stay; the river's channel and banks are applied after this. */
 export const DAM_WINDOW = { cap: 18, feather: 20, halfWidth: 30, forecourt: 70 } as const;
-/** The dam's crest (m): the lake at 50 is held by a wall topped at 49.3–50. */
+/** The dam's crest (m): the lake at 50 is held by a wall topped at 49.3–50. v2.6 (D-M3): no dam; the same tie holds the
+ * natural sill's shoulders at the lake level either side of the lip. */
 const DAM_CREST = 50;
+/** v2.6 (D-M3): the Notch head (the v2.5 dam line, MANIFEST retired_v2_6 structures.dam.xy): the sill and its forecourt window. */
+export const NOTCH_HEAD = [1140, 905] as const;
+/** v2.6: the square→Notch-head window keeps its v2.5 eye (page A v2_5): the ground it shaped outside Mountain v2 does not move. */
+const WINDOW_EYE = [1470, 1186] as const;
 function damWindow(x: number, z: number, height: number): number {
-  const s = getModel().scale, dam = M.structures.dam.xy, view = M.views.find(v => v.id === 'A')!.xy;
+  const s = getModel().scale, dam = NOTCH_HEAD, view = WINDOW_EYE;
   const dx = dam[0]! * s, dz = dam[1]! * s;
   // The abutments tie into the ground at crest height (the lake terrace), no higher.
   if (z > dz - 12 * s && z < dz + 16 * s && Math.abs(x - dx) < 90 * s) height = Math.min(height, mix(height, DAM_CREST * s, 1 - smooth((Math.abs(x - dx) - 60 * s) / (30 * s))));
@@ -348,7 +366,7 @@ function damWindow(x: number, z: number, height: number): number {
  */
 export interface SightWindow { page: string; subject: string; eyeH: number; a: XYZ; b: XYZ; margin: number; near: number; feather: number; bedFade: number }
 export const SIGHT_WINDOWS: readonly SightWindow[] = [
-  { page: 'A', subject: "the dam's glass face", eyeH: 13.6, a: [1121, 38, 909], b: [1160, 38, 909], margin: 1, near: 40, feather: 8, bedFade: 6 },
+  { page: 'A', subject: 'the sill falls (v2.5: the dam\'s glass face)', eyeH: 13.6, a: [1121, 38, 909], b: [1160, 38, 909], margin: 1, near: 40, feather: 8, bedFade: 6 },
   { page: 'C', subject: 'the skate shelf', eyeH: 11.6, a: [1206, 11.6, 1078], b: [1206, 11.6, 1136], margin: 1.1, near: 12, feather: 6, bedFade: 4 },
   { page: 'D', subject: 'surf', eyeH: 2.65, a: [1000, 0.9, 1500], b: [1100, 0.9, 1490], margin: .3, near: 10, feather: 6, bedFade: 4 },
 ];
@@ -390,7 +408,7 @@ const waterBounds = new WeakMap<WaterCut, readonly [number, number, number, numb
  * edge stays under a level pool, and the bank meets the surface where it is drawn. */
 function applyWaters(x: number, z: number, original: number, waters: WaterCut[], rasterMargin = 0): number {
   const s = getModel().scale;
-  let h = original, wetBedCeiling = Infinity;
+  let h = original, wetBedCeiling = Infinity, lakeLip = -Infinity;
   for (const water of waters) {
     if (water.underground || water.kind === 'sea' || water.kind === 'lagoon') continue;
     const guard = water.kind === 'dry' ? 0 : rasterMargin;
@@ -419,8 +437,10 @@ function applyWaters(x: number, z: number, original: number, waters: WaterCut[],
       wetBedCeiling = Math.min(wetBedCeiling, level - depth);
       continue;
     }
-    // The dam holds Stillwater on its downstream side: no lake bank is raised there.
-    if (water.id === 'water.stillwater' && damHolds(x, z)) continue;
+    // v2.6 (D-M3): no dam holds Stillwater; its bank is raised all round (the natural sill at the Notch head), and within its
+    // bank's width no other water's bank (the outlet's fall beside the lip) pulls the ground under the lake's level: the lip holds
+    // the lake; only the outlet's own wet channel cuts it (the wet-bed ceiling below).
+    if (water.id === 'water.stillwater' && distance <= guard + bankWidth && Math.abs(x - NOTCH_HEAD[0] * s) < 90 * s && z > (NOTCH_HEAD[1] - 25) * s) lakeLip = Math.max(lakeLip, water.level);
     // The guard band IS the bank's foot: exactly at the water level (raised or cut to it); where a
     // stream meets the sea at level 0 the foot on land stays at the land floor (P05: ground > 0 inland).
     const foot = level < LAND_FLOOR * s && signedShoreDistance(x, z) > 0 ? LAND_FLOOR * s : level;
@@ -429,14 +449,7 @@ function applyWaters(x: number, z: number, original: number, waters: WaterCut[],
     if (d < bankWidth) h = mix(guard > 0 ? foot : Math.min(h, foot), Math.max(h, level + water.bank), smooth(d / bankWidth));
     else h = Math.max(h, mix(level + water.bank, h, smooth((d - bankWidth) / (outer - bankWidth))));
   }
-  return Math.min(h, wetBedCeiling);
-}
-/** South of the dam line the lake is held by the dam's solid, not by an earth bank: the forecourt in front
- * of the face stays open (DAM_WINDOW). (Stage A W3-C tried a bank foot west of the abutments for P06's
- * [1100,908]: it stood a 32 m earth wall beside the west abutment and moved no P06 sample; reverted.) */
-function damHolds(x: number, z: number): boolean {
-  const s = getModel().scale, dam = M.structures.dam.xy;
-  return z > dam[1]! * s && Math.abs(x - dam[0]! * s) < 90 * s;
+  return Math.min(Math.max(h, lakeLip), wetBedCeiling);
 }
 const padFrames = new WeakMap<PadCut, { cos: number; sin: number; xReach: number; zReach: number }>();
 function padDistance(p: PadCut, x: number, z: number): number {
@@ -680,6 +693,8 @@ export function despikeTerrain(field: TerrainField, beds: BedCut[] = []): number
       const n = j * C + i, h = H[n]!; let top = -Infinity;
       for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) if (di || dj) top = Math.max(top, H[n + dj * C + di]!);
       if (h - top <= SPIKE_RISE || signedShoreDistance(i * step, j * step) <= 0 || h >= ceiling(i * step, j * step) - .02) continue;
+      // v2.6: Mountain v2's own ground is authored (its abutments, benches and rocks), never a cut-edge remnant.
+      if (mountainV2Rule(i * step / getModel().scale, j * step / getModel().scale).kind === 'land') continue;
       next[n] = top + SPIKE_KEEP; capped++;
     }
     H.set(next);
@@ -761,6 +776,8 @@ export function terrainTriangleVisible(x: number, z: number, cuts: Pick<LandCuts
 export function bandProbeEligibility(id: string, x: number, z: number, cuts?: LandCuts): string | null {
   const m = getModel(), b = m.bands.find(f => f.id === id);
   if (!b || !contains(b.poly, x, z)) return 'outside-polygon';
+  // v2.6 (D-M1/D-M2): inside Mountain v2's reach the ground is v2's (its land, the Foot terrace and plain, the apron), not a band.
+  if (mountainV2Rule(x / m.scale, z / m.scale).kind !== 'outside') return 'mountain-v2';
   if (signedShoreDistance(x, z) <= 12 * m.scale) return 'shore-clipping-and-stroke';
   // Owner rule: only ground inside a higher band's polygon belongs to it; the blend ring is counted.
   for (const higher of m.bands) if (higher.priority > b.priority && contains(higher.poly, x, z)) return 'higher-band';

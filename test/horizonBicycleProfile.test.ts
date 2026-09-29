@@ -95,7 +95,9 @@ describe('the bicycle is a profile of the same kernel (RIDE §8.1, D45)', () => 
   it('rides roads, not walks or skate lines: a walk and S1 are offbed', () => {
     const p = pointAt(v01, 930);
     expect(bike.contact.sample(p.x, p.z, p.y + 0.1)).toMatchObject({legal: true, bedId: 'V01'});
-    const s1 = bedPath(deps.world.beds.find(b => b.id === 'S1')!), q = pointAt(s1, 60);
+    // v2.6: S1's first 60 m are v2's race course on v2's road (D-M5), where the bicycle rides mountainV2.road; the skate-only
+    // check moves to S1's Horizon half (1500 m, the Notch shelf). Was: 60 m offbed on S1.
+    const s1 = bedPath(deps.world.beds.find(b => b.id === 'S1')!), q = pointAt(s1, 1500);
     expect(bike.contact.sample(q.x, q.z, q.y + 0.1)).toMatchObject({legal: false, pace: 'offbed', bedId: 'S1'});
     const walk = bedPath(deps.world.beds.find(b => b.kind === 'walk')!);
     let checked = 0;

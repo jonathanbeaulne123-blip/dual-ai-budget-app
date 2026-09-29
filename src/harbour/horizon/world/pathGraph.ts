@@ -9,7 +9,7 @@ import { arcLengths, closestOnPolyline, distance3, length3, mixPoint } from './g
 export interface PathNode { id: string; at: Point3; kind: 'junction' | 'door' | 'station'; facing?: number }
 export interface PathEdge { id: string; bedId: string; from: string; to: string; points: Point3[]; length: number; kind: BedCut['kind']; surface: string; halfWidth: number; maxGrade: number }
 export interface BlockedEdge { edge: string; bedId: string; at: Point3; solid: string }
-export interface HorizonPathGraph { nodes: PathNode[]; edges: PathEdge[]; blocked?: BlockedEdge[] }
+export interface HorizonPathGraph { nodes: PathNode[]; edges: PathEdge[]; blocked?: BlockedEdge[]; joins?: ExtraGraphJoin[] }
 /** The body's step (runtime lip) and height: a solid rising above the step within body height
  * over a walking line is a wall the runtime stops at, so no edge may pass through it. */
 const STEP = .48, BODY = 1.25;
@@ -36,7 +36,57 @@ export interface WalkPlan { points: Point3[]; edges: string[]; length: number; s
 export interface JourneyLeg { mode: string; bedIds: string[]; lengthEu: number; lengthM: number; speed: number; seconds: number }
 export interface JourneyMeasurement { id: string; targetSeconds?: number | readonly number[]; lengthEu: number; lengthM: number; seconds: number | null; pass: boolean; legs: JourneyLeg[]; reason?: string }
 const walkKinds = new Set<BedCut['kind']>(['road', 'walk', 'trail', 'boardwalk', 'stair', 'cave']);
-export function buildPathGraph(cuts: LandCuts, intersections?: readonly Intersection[]): HorizonPathGraph {
+/**
+ * Pass 5 (T2): a placed world's own walk graph (Mountain v2's `MOUNTAIN_PATH_GRAPH`, already in Horizon space), joined to
+ * the Horizon's at named seams. Node and edge ids must be unique and prefixed (`v2:`); `seams` name the extra nodes that
+ * join the Horizon graph (the road foot to V03, the summit to the launch deck / the Crown walk), each to the nearest Horizon
+ * node within `reach` (else, with `fallback`, the nearest within that, recorded as `fallback`); besides the seams, any extra
+ * node within `LANE_JOIN` in plan and a step in height of a Horizon node is joined as a flush lip.
+ */
+export interface ExtraPathGraph {
+  id: string;
+  nodes: readonly { id: string; at: Point3; kind: PathNode['kind'] }[];
+  edges: readonly { id: string; from: string; to: string; points: readonly Point3[]; kind: BedCut['kind']; surface: string; halfWidth: number }[];
+  seams?: readonly { node: string; reach: number; fallback?: number }[];
+}
+export interface ExtraGraphJoin { from: string; to: string; distance: number; how: 'seam' | 'fallback' | 'lip' }
+/** Adds an extra graph to a Horizon graph (a copy; the input is untouched). Idempotent: a graph already holding the extra's nodes is returned as is. */
+export function withExtraGraph(graph: HorizonPathGraph, extra: ExtraPathGraph): HorizonPathGraph & { joins?: ExtraGraphJoin[] } {
+  if (!extra.nodes.length || graph.nodes.some(n => n.id === extra.nodes[0]!.id)) return graph;
+  const base = graph.nodes, joins: ExtraGraphJoin[] = [], edges: PathEdge[] = [...graph.edges];
+  // One two-point edge per polyline segment (the Horizon's own shape): a walk plan within one edge goes straight from
+  // its entry to its exit point, so a curving road or path is split at every point (intermediate nodes `<edge>#k`).
+  const inner: PathNode[] = [];
+  for (const e of extra.edges) {
+    const points = e.points.filter((p, k, all) => k === 0 || k === all.length - 1 || distance3(p, all[k - 1]!) > 1e-4).map(p => [p[0], p[1], p[2]] as Point3), ids = points.map((_, k) => k === 0 ? e.from : k === points.length - 1 ? e.to : `${e.id}#${k}`);
+    for (let k = 1; k < points.length - 1; k++) inner.push({ id: ids[k]!, at: points[k]!, kind: 'junction' });
+    for (let k = 1; k < points.length; k++) { const a = points[k - 1]!, b = points[k]!, h = Math.hypot(b[0] - a[0], b[2] - a[2]), length = distance3(a, b); edges.push({ id: `${e.id}:${k - 1}`, bedId: e.id, from: ids[k - 1]!, to: ids[k]!, points: [a, b], length, kind: e.kind, surface: e.surface, halfWidth: e.halfWidth, maxGrade: Math.abs(b[1] - a[1]) / (h || 1e-5) }); }
+  }
+  const lip = (from: PathNode | typeof extra.nodes[number], to: PathNode, how: ExtraGraphJoin['how']) => {
+    const a = from.at, b = to.at, h = Math.hypot(b[0] - a[0], b[2] - a[2]), distance = distance3(a, b);
+    edges.push({ id: `${extra.id}:${how}:${joins.length}`, bedId: 'junction', from: from.id, to: to.id, points: [[a[0], a[1], a[2]], [b[0], b[1], b[2]]], length: distance, kind: 'walk', surface: 'plaza', halfWidth: 1, maxGrade: Math.abs(b[1] - a[1]) / (h || 1e-5) });
+    joins.push({ from: from.id, to: to.id, distance, how });
+  };
+  // Only a walkable join counts: no steeper than the walking limit (40°) once a step is allowed for.
+  const nearest = (p: Point3) => { let best: PathNode | null = null, d = Infinity; for (const n of base) { const e = Math.hypot(n.at[0] - p[0], n.at[2] - p[2]); if (e < d && Math.abs(n.at[1] - p[1]) <= e * Math.tan(40 * Math.PI / 180) + STEP) { d = e; best = n; } } return { node: best, d }; };
+  const seamIds = new Set<string>();
+  for (const seam of extra.seams ?? []) {
+    const node = extra.nodes.find(n => n.id === seam.node); if (!node) continue;
+    const hit = nearest(node.at); if (!hit.node) continue;
+    if (hit.d <= seam.reach) lip(node, hit.node, 'seam'); else if (seam.fallback !== undefined && hit.d <= seam.fallback) lip(node, hit.node, 'fallback'); else continue;
+    seamIds.add(node.id);
+  }
+  for (const node of extra.nodes) {
+    if (seamIds.has(node.id)) continue;
+    const hit = nearest(node.at); if (hit.node && hit.d <= LANE_JOIN && Math.abs(hit.node.at[1] - node.at[1]) <= STEP) lip(node, hit.node, 'lip');
+  }
+  return { ...graph, nodes: [...base, ...extra.nodes.map(n => ({ id: n.id, at: [n.at[0], n.at[1], n.at[2]] as Point3, kind: n.kind })), ...inner], edges, joins };
+}
+export function buildPathGraph(cuts: LandCuts, intersections?: readonly Intersection[], extraGraph?: ExtraPathGraph): HorizonPathGraph {
+  const graph = buildBedPathGraph(cuts, intersections);
+  return extraGraph ? withExtraGraph(graph, extraGraph) : graph;
+}
+function buildBedPathGraph(cuts: LandCuts, intersections?: readonly Intersection[]): HorizonPathGraph {
   const beds = cuts.beds.filter(b => walkKinds.has(b.kind) && b.points.length > 1), bedById = new Map(beds.map(b => [b.id, b])), nodes = new Map<string, PathNode>(), edges: PathEdge[] = [];
   const split = new Map<string, Map<number, number[]>>();
   const intersectionsAll = intersections ?? computeIntersections(beds.map(b => ({ id: b.id, points: b.points, clearHeight: b.clearHeight, kind: b.kind, structureIds: b.structureIds })));

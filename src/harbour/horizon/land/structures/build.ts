@@ -16,7 +16,8 @@ export const SPANS:SpanSpec[]=[
   {id:'bightBridge',at:bightFrame().at(bightFrame().A/2,0),route:'V01',length:bightSpec().span,width:bightSpec().section[1]-bightSpec().section[0],height:bightSpec().h,clear:bightSpec().clear,abutments:true},
   {id:'apronBridge',at:[1158,949],route:'S1',length:45,width:4,height:31,clear:5},
   {id:'hollowBridge',at:[893,600],route:'walk garden',length:32,width:8,height:37,clear:4,covered:true},
-  {id:'inletFootbridge',at:[1161,731],route:'walk lakerim',length:28,width:3,height:55,clear:4},
+  // v2.6: the Inlet Footbridge is retired with the upper river (MANIFEST retired_v2_6.structures.inletFootbridge).
+  ...((M.structures as unknown as Record<string,unknown>).inletFootbridge?[{id:'inletFootbridge',at:[1161,731] as XY,route:'walk lakerim',length:28,width:3,height:55,clear:4}]:[]),
   {id:'reachFootbridge',at:[1274,1203],route:'walk reach',length:48,width:3,height:9.5,clear:4},
   {id:'reachBoardwalk',at:[1255,1251],route:'S1',length:112,width:4,height:5,clear:1},
   {id:'timberCrossing',at:[1500,1250],route:'homestead.lane',length:20,width:3,height:5,clear:2},
@@ -26,6 +27,11 @@ export const SPANS:SpanSpec[]=[
     .filter(([,s])=>s&&typeof s==='object'&&s.route&&s.span_m&&s.xy)
     .map(([id,s]):SpanSpec=>({id,at:s.xy as unknown as XY,route:s.route!,length:s.span_m!,width:s.width_m??3.2,clear:2.4,supportSpacing:7,...(s.opening_m?{opening:s.opening_m}:{}),followRoute:true})),
 ];
+/** v2.6: MANIFEST structures.<id> of kind tunnel with a `route` (the Mountain Road Tunnel on V03): [id, route, length, width]. */
+export function manifestTunnels():[string,string,number,number][] {
+  const S=M.structures as unknown as Record<string,{kind?:string;route?:string;length_m?:number;width_m?:number}>;
+  return Object.entries(S).filter(([,t])=>t&&typeof t==='object'&&t.kind==='tunnel'&&!!t.route).map(([id,t])=>[id,t.route!,t.length_m??60,t.width_m??17]);
+}
 /** Stair and landing supports stand no further apart than this (plan eu). */
 const STAIR_BENT=6;
 /** Below this drop a stair stands on masonry cheek walls; above it on stringers, piers and footings. */
@@ -669,12 +675,14 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   // Road tunnels follow their road's graded profile; the section carries the road and the Year Walk footway (+6.5 eu).
   // v2.0 (D-A4): MANIFEST kind "gallery" (the Prow) is a covered road on the hillside: the hill side keeps its lined
   // wall, the sea side is a colonnade; length_m and the headroom come from the manifest.
-  for(const [id,route,length0,width,clear0] of [['prowTunnel','V01',90,17,5],['shoulderTunnel','V02',110,17,5],['duneCulvert','S4',32,5,3]] as const){
-    const s=M.structures[id]! as unknown as {xy:number[];kind?:string;length_m?:number;section?:{headroom_eu?:number}},xy=s.xy as unknown as XY,b=cuts.beds.find(p=>p.id===route)!,isGallery=s.kind==='gallery',length=s.length_m??length0;
+  // v2.6 (D-M4): the Shoulder Tunnel is retired with Crown Road; MANIFEST tunnels with a `route` (the Mountain Road Tunnel on V03)
+  // are built here too, as sections of their route (no bed of their own: the route's bed runs through them).
+  for(const [id,route,length0,width,clear0] of [['prowTunnel','V01',90,17,5],['duneCulvert','S4',32,5,3],...manifestTunnels().map(([id,route,length,width]):[string,string,number,number,number]=>[id,route,length,width,5])] as const){
+    const s=(M.structures as unknown as Record<string,unknown>)[id]! as unknown as {xy:number[];kind?:string;length_m?:number;route?:string;section?:{headroom_eu?:number}},xy=s.xy as unknown as XY,b=cuts.beds.find(p=>p.id===route)!,isGallery=s.kind==='gallery',length=s.length_m??length0;
     // A gallery's roof follows the road's own points: GALLERY_MARGIN over the stated headroom covers the verges' cross-fall.
     const clear=isGallery?(s.section?.headroom_eu??clear0)+GALLERY_MARGIN:clear0,points=routeStretch(b,xy,length);
     const openSide=isGallery?gallerySeaSide(points,base):undefined;
-    tunnel(id,points,width,clear,cuts,districtAt(...xy),{base,...(openSide?{openSide}:{})});
+    tunnel(id,points,width,clear,cuts,districtAt(...xy),{base,...(openSide?{openSide}:{}),...(manifestTunnels().some(t=>t[0]===id)?{bedIds:[route]}:{})});
     if(isGallery)galleryHeadroom(id,points,width,clear,cuts);
     // R2-03: a floor apron as wide as the mouth mask carries the road and its footway across the portal mouth (PORTAL_MOUTH_OUT
     // outside the face, where the mask hides the terrain), so no strip of the mouth is left without a surface.
@@ -690,72 +698,12 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
     const {cover,at}=id==='duneCulvert'?(()=>{const road=cuts.beds.find(r=>r.id==='V01')!,hit=nearestOnPath(xy,road.points),under=nearestOnPath(plan(hit.at),points).at;return {cover:hit.at[1]-.6-(under[1]+clear+.6),at:plan(hit.at)};})():tunnelCover(points,clear,base);
     if(isGallery)cuts.diagnostics.push({id:`structures.${id}.cover`,severity:'info',message:`${id}: a gallery (D-A4) needs no cover; the ground over its lined roof is ${cover.toFixed(1)} eu at its lowest (reported, not faked: no fill)`,at,measured:cover,required:0});
     else if(cover<(id==='duneCulvert'?0:2))conflict(cuts,`structures.${id}.cover`,`${id}: ${id==='duneCulvert'?'the V01 deck clears the culvert roof by':'rock cover over the lined roof is'} ${cover.toFixed(1)} eu; the tube stands on its own wall footings where the ground falls away`,at,cover,2);
+    if(manifestTunnels().some(t=>t[0]===id)){b.structureIds.includes(id)||b.structureIds.push(id);continue;}
     const tunnelBed=bed(id,route==='S4'?'skateMain':'road',points,false);tunnelBed.width=width;tunnelBed.structureIds=[id];cuts.beds.push(tunnelBed);
   }
-  // The crest spans a real opening; the curved shoulders carry the spillway to its abutments.
-  const dam=solid('dam.wall','dam','stone','wall',[],'lakeside'),crest=solid('dam.crest','dam','stone','deck',['walk damCrest'],'lakeside');
-  for(let i=0;i<22;i++){
-    const x=1118+i*2,arch=Math.abs(x-1140)<10?34+Math.sqrt(Math.max(0,100-(x-1140)**2)):27;
-    box(dam,[x+1,905],52,[2.03,5],arch);if(Math.abs(x-1140)>=10)box(dam,[x+1,905],arch,[2.03,8],20);
-  }
-  slab(crest,[1118,52,903],[1162,52,903],4,.6);cuts.solids.push(dam,crest);cuts.beds.push(bed('walk damCrest','walk',[[1118,52,903],[1162,52,903]],false));
-  // The dam's end abutments carry the crest walk to the valley sides (links the crest to its crossing of the river).
-  const damAbut=solid('dam.abutments','abutment','stone','support',['walk damCrest'],'lakeside');
-  for(const x of [1116,1164])wallToGround(damAbut,[x,52.01-.6,899],[x,52.01-.6,911],4,0,base);cuts.solids.push(damAbut);
-  // Apron: a supported half-pipe slab on piers clear of the tailrace, with end abutments.
-  // Wave 7 (A1.2, R3-36): a quarter-pipe, not a half-pipe: the apron rises to 38 at the dam-abutment (west) end and runs
-  // level at 31 east of its low line (x 1151), so S1 comes onto it flush from the east at 31 (the 7 eu east lip and its
-  // abutment wall stood across S1's line at x 1166.7 and left 6.6 / 7.4 eu drops beside S1 and dam.apron.level).
-  const bowl=solid('dam.apron','halfPipe','apron','deck',['S1'],'notch'),apronH=(x:number)=>x<1151?31+7*((x-1151)/16)**2:31;
-  for(let i=0;i<16;i++){const x=1135+i*2,x2=x+2;slab(bowl,[x,apronH(x),935],[x2,apronH(x2),935],22,.6);}
-  // Wave 7: dam.apron.level (x 1166–1170, z 923–947, the lane S1 comes onto the apron by) is the apron's level east bay, a
-  // deck on the apron's piers, not a bed over nothing.
-  slab(bowl,[1167,31,935],[1170.2,31,935],24,.6);cuts.solids.push(bowl);
-  const apronPiers=solid('dam.apron.supports','pier','stone','support',['S1','dam.apron'],'notch'),apronAbut=solid('dam.apron.abutments','abutment','stone','support',['S1','dam.apron'],'notch'),tail=laneGuard(cuts);
-  {// Rails on the apron's open edges wherever the ground falls more than body height (the west lip at 38, the south edge
-    // over the tailrace bank, the east bay's edge): kerb gaps where S1, the portage and the gallery join.
-    const apronRails=solid('dam.apron.rails','deckParapet','metal','rail',['S1','dam.apron.level'],'notch'),own=['dam.apron.level'];
-    guardEdgeLater(apronRails,[[1135.1,38,923.9],[1135.1,38,946.1]],[-1,0],own,base);
-    guardEdgeLater(apronRails,[[1135,apronH(1135),946.1],...Array.from({length:17},(_,k):XYZ=>[1136+k*2,apronH(1136+k*2),946.1]),[1170.1,31,946.9]],[0,1],own,base);
-    guardEdgeLater(apronRails,[[1170.1,31,946.9],[1170.1,31,923.1]],[1,0],own,base);
-    guardEdgeLater(apronRails,[[1170.1,31,923.1],[1166,31,923.1],...Array.from({length:16},(_,k):XYZ=>[1165-k*2,apronH(1165-k*2),923.9]),[1135,apronH(1135),923.9]],[0,-1],own,base);
-    cuts.solids.push(apronRails);}
-  for(const x of [1137,1141,1162,1166,1169.4])for(const z of [926,935,944]){const xy:XY=[x,z];if(tail(xy,apronH(x),['S1','dam.apron.level'])==='RIVER_RUN')continue;pier(apronPiers,xy,Math.min(apronH(x-.5),apronH(x+.5))-.6,base,[1,1],[2.4,2.4]);}
-  for(const x of [1135.3,1166.7])wallToGround(apronAbut,[x,apronH(x)-.6,924.2],[x,apronH(x)-.6,945.8],.6,0,base);
-  // Spandrel walls under both long edges follow the curved underside in 1 eu bays, leaving the tailrace lane open.
-  for(let x=1135;x<1167;x++)for(const z of [924.6,945.4]){if(tail([x+.5,z],apronH(x+.5),['S1','dam.apron.level'])==='RIVER_RUN')continue;wallToGround(apronAbut,[x,apronH(x)-.6,z],[x+1,apronH(x+1)-.6,z],.6,0,base);}
-  cuts.solids.push(apronPiers,apronAbut);
-  cuts.beds.push(bed('dam.apron.level','skateMain',[[1168,31,923],[1168,31,947]],false));
-  // v1.9 (T3's layout): the gallery is an open stairwell in the east abutment south of the wall, never in Stillwater:
-  // three flights in x-lanes 1166.5 / 1162.4 / 1170.6 (4.1 m pitch: each flight's bents clear its neighbours) between
-  // z 910.75 and 922.75 (12 run, 7 rise, pitch 0.58), landings at z 909.5 (h 38) and 924 (h 45), the exit at h 52
-  // through the north wall to the crest at [1162,52,903]. Walls to 46.05 (the 45 landing's parapet; the top flight
-  // has its own rails), no roof: page F's eye stands 2.3 m west of the stairwell at 53.6.
-  const lanes=[1166.5,1162.4,1170.6];
-  for(let f=0;f<3;f++){const x=lanes[f]!,north=f%2===0,z0=north?922.75:910.75,z1=north?910.75:922.75;buildStair(`damGallery.flight.${f}`,[x,31+f*7,z0],[x,38+f*7,z1],3,cuts,base);}
-  landing(cuts,'damGallery.landing.0',[1164.45,909.5],38,[7.1,2.5],base);landing(cuts,'damGallery.landing.1',[1166.5,924],45,[11.2,2.5],base);
-  cuts.beds.push(bed('damGallery.exit','walk',[[1170.6,52,910.75],[1170.6,52,908],[1166,52,905],[1162,52,903]],false));
-  {const well=solid('damGallery.walls','stairwell','stone','wall',['damGallery.exit'],'lakeside'),top=46.05,seat=51.65;
-    box(well,[1160.3,916.75],top,[.6,16.5],base(1160.3,916.75)-FOOTING_SINK);
-    // R2-108: under L01's slab (z 908-916) the east wall stands to the slab's underside; south of it, to the parapet.
-    // Integrator 3 (W5-T request, D-C2 on page A's phone): the east wall's south part (z 916.8-925, to the 45 landing's
-    // parapet at 46.05, free-standing on ground at 17.8) took 2 of the dam face's portrait rays; like the south wall it is an
-    // open railed parapet now (the landing's posted rail and flight 2's own rails). The north part carries L01's slab.
-    box(well,[1172.8,912.4],seat,[.6,8.8],base(1172.8,912.4)-FOOTING_SINK);
-    // North wall with the exit door (x 1169-1172), south wall above the apron entry (h >= 34.4).
-    // D-C2 (v2.0): the south side is an open, railed parapet (the 45 landing's posted rail and the flights' own rails): the
-    // solid south wall (34.4 → 46.05 at z 925.6) hid the dam's face from page A's phone frame.
-    box(well,[1164.2,908.2],top,[8.4,.6],base(1164.2,908.2)-FOOTING_SINK);cuts.solids.push(well);
-    // R2-108: L01's 8 x 8 slab at 52 (place xy [1172,912], MANIFEST) lay over the top flight (0.9 eu over its last treads)
-    // and on nothing (ground 34.2 in the well). It is re-laid as the stair head: the flight's own 3 m opening
-    // (x 1169.1-1172.1, z > 910.75) is left open, the head strip (z 908-910.75) and the east part rest on the raised east
-    // wall and the ground east of it, and one pier between the two lower flights carries the head strip's west end.
-    const l01=cuts.solids.find(q=>q.id==='place.L01.slab');
-    if(l01){l01.positions.length=0;l01.indices.length=0;l01.kind='roofDeck';box(l01,[1172,909.375],52,[8,2.75],seat);box(l01,[1174.05,913.375],52,[3.9,5.25],seat);}
-    const l01s=solid('place.L01.supports','pier','stone','support',['place.L01'],'lakeside');pier(l01s,[1168.55,909.4],seat,base,[.5,.5],[1,1]);cuts.solids.push(l01s);}
-  // Integrator 3 (D-A7, S1 × dam portage flush, register [1160.8,940.1]): the portage's upper flight lands on the apron
-  // bridge at the apron's 31 (it crossed at 35.8); the lower flight leaves the apron's far edge for the tailrace put-in at 25.
-  buildStair('damPortage',[1150,50,910],[1160.8,31,940.1],3,cuts,base);buildStair('damPortage.lower',[1162.9,31,946.0],[1169,25,963],3,cuts,base);
+  // v2.6 (D-M3): the Stillwater dam (wall, crest, abutments), its apron, the gallery stairwell under L01 and the dam portage are
+  // retired (MANIFEST retired_v2_6): Stillwater drains over a natural rock sill (water.river.sill); L01 stands on Mountain v2's
+  // glass dam crest (the region draws it); S1 crosses the sill's rock shelf at 31 on its own bed and the apron bridge.
   // Dry Wash bowl: the invert remains an ordinary ground line, with a bank on either side; its underside sits on the ground.
   const wash=solid('wash.bowl','bowl','ochre','deck',['S2'],'flats'),washH=heightOnBeds(cuts,[465,700],base);for(let i=-12;i<12;i++){const h=washH+5*(i/12)**2,h2=washH+5*((i+1)/12)**2;slabOnGrade(wash,[465+i,h,665],[466+i,h2,665],72,base);}cuts.solids.push(wash);
   // Runway and mooring foundations contain no lamps, windsock, hangar or balloon props in Pass 1.
@@ -778,7 +726,9 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   // Wave 7 (station head frames): each station carries the head frame its rope ends in (`headFrame`), toward = the rope's
   // next anchor (the first / last G1 tower, the zip's other end).
   const g1=M.cable.G1,zipC=M.cable.ZIP;
-  for(const [id,xy,h,toward]of [['gondolaBase',g1.from,g1.fromH,g1.towers[0]!],['gondolaTop',g1.to,g1.toH,g1.towers.at(-1)!],['prowPlatform',zipC.from,zipC.fromH,zipC.to],['zipLanding',zipC.to,zipC.toH,zipC.from]] as const){
+  // v2.6 (D-M6): G1's stations are Mountain v2's terminals (cable.G1.drawnBy): the region draws them; no Horizon platform or head frame.
+  const g1Here=(g1 as {drawnBy?:string}).drawnBy!=='mountainV2';
+  for(const [id,xy,h,toward]of [...(g1Here?[['gondolaBase',g1.from,g1.fromH,g1.towers[0]!],['gondolaTop',g1.to,g1.toH,g1.towers.at(-1)!]] as const:[]),['prowPlatform',zipC.from,zipC.fromH,zipC.to],['zipLanding',zipC.to,zipC.toH,zipC.from]] as const){
     const at=xy as unknown as XY,ground=Math.min(...[[-5,-4],[-5,4],[5,4],[5,-4],[0,0]].map(([x,z])=>base(at[0]+x!,at[1]+z!)));
     if(ground>=h-1){addFlatPad(cuts,`platform.${id}`,'landing',at,h,[10,8]);headFrame(cuts,id,at,h,toward as unknown as XY,()=>true,base);continue;}
     // Wave 6: a platform never overhangs a lower route with less than body height + 0.3 under its slab (candidate 4, lite: the
@@ -814,16 +764,19 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   const crown=M.sky.launches.crown,cxy=crown.xy as unknown as XY,ch=crown.h;
   landing(cuts,'crownLaunch',cxy,ch,[12,8],base);
   {// The stair lands on the Crown walk at the nearest point a ≤ 0.7 pitch reaches (the walk's own height, not the raw ground).
-    const walk=cuts.beds.find(b=>b.id==='walk crown');let best:{from:XYZ;to:XYZ;run:number}|undefined;
-    for(const p of walk?.points??[]){const dx=p[0]-cxy[0],dz=p[2]-cxy[1],d=Math.hypot(dx,dz)||1,u:XY=[dx/d,dz/d],edge=Math.min(Math.abs(6/u[0]||Infinity),Math.abs(4/u[1]||Infinity)),from:XYZ=[cxy[0]+u[0]*edge,ch,cxy[1]+u[1]*edge],run=d-edge;
-      if(run>2&&(ch-p[1])/run<=.7&&(!best||run<best.run))best={from,to:p,run};}
+    // v2.6 (D-M6): the deck stands over Mountain v2's summit paths; the stair may land on the summit lane (`walk summit`,
+    // h 158.2, a short flight beside its own lane) or, as before, on the Crown walk. The nearest reachable point wins.
+    let walk:BedCut|undefined;let best:{from:XYZ;to:XYZ;run:number}|undefined;
+    for(const candidate of ['walk summit','walk crown'].map(id=>cuts.beds.find(b=>b.id===id))){if(!candidate)continue;
+    for(const p of candidate.points){const dx=p[0]-cxy[0],dz=p[2]-cxy[1],d=Math.hypot(dx,dz)||1,u:XY=[dx/d,dz/d],edge=Math.min(Math.abs(6/u[0]||Infinity),Math.abs(4/u[1]||Infinity)),from:XYZ=[cxy[0]+u[0]*edge,ch,cxy[1]+u[1]*edge],run=d-edge;
+      if(run>2&&(ch-p[1])/run<=.7&&(!best||run<best.run)){best={from,to:p,run};walk=candidate;}}}
     // R2-08: the flight meets the walk at ~20°, so its lower treads stood across the walk and closed it both ways. The flight
     // now runs down BESIDE the walk: its foot stands clear of the walk's edge (walk half-width + stair half-width + 0.2), at
     // the walk's height, and a level strip (the stair bed's last segment) steps across onto the walk's centreline.
     if(best){const w=walk!,i=w.points.indexOf(best.to),a=w.points[Math.max(0,i-1)]!,c=w.points[Math.min(w.points.length-1,i+1)]!,tl=Math.hypot(c[0]-a[0],c[2]-a[2])||1;
       let n:XY=[-(c[2]-a[2])/tl,(c[0]-a[0])/tl];if(n[0]*(best.from[0]-best.to[0])+n[1]*(best.from[2]-best.to[2])<0)n=[-n[0],-n[1]];
       const side=w.width/2+1.5+.2,foot:XYZ=[best.to[0]+n[0]*side,best.to[1],best.to[2]+n[1]*side];
-      buildStair('crownLaunch.stair',best.from,foot,3,cuts,base);cuts.beds.find(b=>b.id==='crownLaunch.stair')?.points.push(best.to);}else conflict(cuts,'structures.crownLaunch.stair','crownLaunch: no point on the Crown walk within a 0.7 stair pitch of the lookout deck',cxy);}
+      buildStair('crownLaunch.stair',best.from,foot,3,cuts,base,[w.id]);cuts.beds.find(b=>b.id==='crownLaunch.stair')?.points.push(best.to);}else conflict(cuts,'structures.crownLaunch.stair','crownLaunch: no point on the Crown walk within a 0.7 stair pitch of the lookout deck',cxy);}
   landing(cuts,'lampGallery',[540,1195],25,[10,8],base);
   const lampSupports=solid('lampGallery.supports','tower','stone','support',['lampGallery.ramp'],'offshore');
   // Wave 6: the ramp ends where its spiral meets the landing's north edge ([540,25,1190]; its deck overlaps the landing's edge,
