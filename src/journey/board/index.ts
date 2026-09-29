@@ -15,7 +15,7 @@ export { layoutRoute, layoutBoardRoute, daySpaceFor, stretchMidpoint, ROUTE_SAMP
 export { CROSSING_CLEARANCE_EU, findCrossings } from "./crossings.ts";
 export { createJourneyBoardScene, UNIT_MAX, UNIT_MIN, type BoardSceneHandle, type BoardSceneOptions, type JourneyBoardSceneExtras, type FocusTarget } from "./scene.ts";
 export { placeLabels, labelRankFor, LABEL_PRIORITY, type LabelBox, type LabelCandidate, type LabelRank, type PlacedLabel, type PlaceLabelsOptions } from "./labels.ts";
-export { boardMarks, boardMarkIds, skyPostIds, POST_OFFSET, SKY_POST_LIMIT, type BoardMark, type BoardMarkKind } from "./marks.ts";
+export { boardMarks, boardMarkIds, isAttentionStop, skyPostIds, POST_OFFSET, SKY_POST_LIMIT, type BoardMark, type BoardMarkKind } from "./marks.ts";
 export { BoardFlat, FLAT_UNIT, type BoardFlatProps } from "./BoardFlat.tsx";
 export { JOURNEY_BOARD_DRESSINGS, BOARD_DRESSING_KEYS, boardDressing, type FullBoardDressing } from "./dressing.ts";
 export { radiusForTier, skyFitRadius, worldPerPixel, distanceForRadius, uncoveredRect, CAMERA_MOVE_MS, NO_SAFE_AREA, type SafeArea } from "./camera.ts";

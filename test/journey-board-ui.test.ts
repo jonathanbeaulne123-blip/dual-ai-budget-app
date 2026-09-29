@@ -346,6 +346,29 @@ describe("keyboard and focus", () => {
     expect(document.activeElement).toBe(cluster);
   });
 
+  it("Back to now closes an open stop or cluster panel in the same action (PR #567 review)", async () => {
+    const { host } = await mountView();
+    const cluster = mark(host, SAMPLE_IDS.clusterToday)!;
+    await click(cluster);
+    await click(panel(host)!.querySelector(`[data-open-stop="${esc(SAMPLE_IDS.dueToday)}"]`));
+    expect(panel(host)).not.toBeNull();
+    await click(host.querySelector("[data-back-to-now]"));
+    expect(panel(host)).toBeNull();
+    expect(host.querySelector('.journey-strip__chapter[data-chapter-id="2026-09"]')!.className).toContain("is-focused");
+    // The cluster list alone (no stop opened) closes too, and so does the piece's panel through the Home key.
+    await click(mark(host, SAMPLE_IDS.clusterToday)!);
+    expect(panel(host)).not.toBeNull();
+    await click(host.querySelector("[data-back-to-now]"));
+    expect(panel(host)).toBeNull();
+    await click(mark(host, "piece")!);
+    expect(panel(host)).not.toBeNull();
+    const stage = host.querySelector<HTMLElement>(".journey-stage")!;
+    stage.focus();
+    await key(stage, "Home");
+    expect(panel(host)).toBeNull();
+    expect(live(host)).toContain(COPY.backToNow);
+  });
+
   it("arrows move a day, Page keys a month, Home goes back to now, Enter opens what is on the day; a live region announces", async () => {
     const { host } = await mountView();
     const stage = host.querySelector<HTMLElement>(".journey-stage")!;

@@ -19,7 +19,7 @@ import type { JourneyBoard, RouteSpace, Stop } from "../contracts.ts";
 import type { FullBoardDressing } from "./dressing.ts";
 import { createMarkLayer, mergedGeometry, type MarkLayer } from "./layers.ts";
 import { isNear, type NearWindow } from "./spaces.ts";
-import { boardMarks, POST_SCALE, skyPostIds } from "./marks.ts";
+import { boardMarks, isAttentionStop, POST_SCALE, skyPostIds } from "./marks.ts";
 import { pavilionShape } from "./pavilion.ts";
 import { box, merge, plate, prism, transform, type Shape } from "./shapes.ts";
 
@@ -131,9 +131,6 @@ function postFor(d: FullBoardDressing, stop: Stop): { shape: Shape; color: strin
   }
 }
 
-const isAttention = (s: Stop) =>
-  (s.kind === "commitment" && (s.status === "overdue" || s.status === "needs-review")) ||
-  (s.kind === "review" && s.reviewKind === "chapter-close" && (s.status === "close-due" || s.status === "waiting-on-you"));
 
 export type SignpostLayer = {
   layer: MarkLayer;
@@ -162,7 +159,7 @@ export function createSignposts(): SignpostLayer {
         if (m.kind === "cluster") {
           if (sky && !sky.has(m.id)) continue;
           const cluster = board.clusters.find((c) => c.id === m.id)!;
-          const attention = cluster.stopIds.some((id) => { const s = byId.get(id); return s ? isAttention(s) : false; });
+          const attention = cluster.stopIds.some((id) => { const s = byId.get(id); return s ? isAttentionStop(s) : false; });
           add([m.id, ...cluster.stopIds], m.base, m.offset, clusterShape(d, attention));
         } else if (m.kind === "stop") {
           const inCluster = board.clusters.some((c) => c.stopIds.includes(m.id));

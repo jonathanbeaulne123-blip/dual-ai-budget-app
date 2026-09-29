@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { postEntry, postOneRecurrence } from "../src/core/commands.ts";
-import { monthEndKey, monthStartKey, type DateKey } from "../src/core/calendar.ts";
+import { addAppointment, postEntry, postOneRecurrence, postVisit } from "../src/core/commands.ts";
+import { monthEndKey, monthStartKey, weekBounds, weekdaySunday0, type DateKey } from "../src/core/calendar.ts";
 import { monthMemories } from "../src/core/timeMachine.ts";
 import type { Household } from "../src/core/types.ts";
 import { dayLedger } from "../src/harbour/glass/dayLedger.ts";
@@ -8,6 +8,7 @@ import { STATION_IDS, journeyIds, type ActionCall, type JourneyBoard, type Stop 
 import { boardToList, deriveJourneyBoard } from "../src/journey/model/index.ts";
 import { calendarDays, readContext } from "../src/journey/model/window.ts";
 import { calendarWeight } from "../src/core/calendarWeight.ts";
+import { SAMPLE_TODAY, sampleJourneyBoard } from "./fixtures/journey-board-sample.ts";
 import { buildMonthBoard } from "../src/core/board.ts";
 import { calendarPresentation } from "../src/core/ledgerExperience.ts";
 import {
@@ -263,6 +264,30 @@ describe("Journey Board model — board shape", () => {
   });
 });
 
+describe("Journey Board model — an appointment occurrence keeps its stop id once posted (PR #567 review)", () => {
+  const withVisit = (nextDate: string) => {
+    const h = addAppointment(demo.household, { title: "Dentist", kind: "dentist", nextDate, cadence: { kind: "monthly", interval: 6 }, typicalCost: 140, typicalRecovery: 0, subcategoryId: "SUB-HOUSING-GAS", accountId: "ACC-CHEQUING" }).household;
+    return { h, appointmentId: h.appointments.at(-1)!.id };
+  };
+  const visitStops = (b: JourneyBoard, appointmentId: string) => b.stops.filter(stop => stop.kind === "commitment" && stop.id.startsWith(`bill:item:${appointmentId}@`));
+  for (const [what, nextDate] of [["overdue this month", "2026-09-20"], ["carried from last month", "2026-08-25"], ["due today", FIXTURE_TODAY]] as const) {
+    it(`${what}: posted today ("the full cost posts today"), the SAME stop turns Paid`, () => {
+      const { h, appointmentId } = withVisit(nextDate);
+      const before = visitStops(deriveJourneyBoard(h, BIANCA, FIXTURE_TODAY), appointmentId);
+      expect(before, "one unpaid occurrence").toHaveLength(1);
+      expect(before[0]).toMatchObject({ status: nextDate < FIXTURE_TODAY ? "overdue" : "due-today" });
+      const posted = postVisit(h, { date: FIXTURE_TODAY, amount: 140, appointmentId, accountId: "ACC-CHEQUING", expectedRecovery: 0, confirmDuplicate: true, createdBy: BIANCA }).household;
+      const after = visitStops(deriveJourneyBoard(posted, BIANCA, FIXTURE_TODAY), appointmentId);
+      expect(after.map(stop => stop.id)).toEqual([before[0]!.id]);
+      expect(after[0]).toMatchObject({ status: "paid", date: FIXTURE_TODAY, amountCents: 14_000 });
+    });
+  }
+  it("an upcoming visit keeps its own day in its id", () => {
+    const { h, appointmentId } = withVisit("2026-10-02");
+    expect(visitStops(deriveJourneyBoard(h, BIANCA, FIXTURE_TODAY), appointmentId).map(stop => stop.id)).toEqual([journeyIds.billItem(appointmentId, "2026-10-02")]);
+  });
+});
+
 describe("Journey Board model — memories, milestones, crossroads", () => {
   it("keeps only what every member kept: never a Win kept by one, never an auto-derived month memory", () => {
     const memories = board.stops.filter(stop => stop.kind === "memory");
@@ -275,6 +300,27 @@ describe("Journey Board model — memories, milestones, crossroads", () => {
     expect(byId(board, journeyIds.memory(demo.ids.halfKeptMemoryId))).toBeUndefined();
     const derived = board.chapters.flatMap(chapter => monthMemories(demo.household, chapter.id)).filter(row => row.kind !== "win");
     for (const row of derived) expect(memories.some(stop => stop.label === row.title), row.title).toBe(false);
+  });
+
+  it("keeps a shared Win on the board while its adopted memory waits on a member, or after it is withdrawn (PR #567 review)", () => {
+    const winStop = journeyIds.memoryWin(demo.ids.adoptedWinId);
+    const adoptedStop = (b: JourneyBoard) => b.stops.find(stop => stop.id.startsWith("memory:win-memory-"));
+    const withAdopted = (change: (memory: NonNullable<Household["hearthside"]>["memories"][number]) => typeof memory): Household => {
+      const h = structuredClone(demo.household);
+      h.hearthside!.memories = h.hearthside!.memories.map(memory => memory.id.startsWith("win-memory-") ? change(memory) : memory);
+      return h;
+    };
+    // Kept by everyone: the adopted memory speaks for the Win (one stop, not two).
+    expect(adoptedStop(board)).toBeDefined();
+    expect(byId(board, winStop)).toBeUndefined();
+    // Adoption waiting on the other member: the Win stays, the half-kept memory does not show.
+    const waiting = deriveJourneyBoard(withAdopted(memory => ({ ...memory, approvals: memory.approvals.filter(a => a.memberId === BIANCA) })), BIANCA, FIXTURE_TODAY);
+    expect(adoptedStop(waiting)).toBeUndefined();
+    expect(byId(waiting, winStop)).toMatchObject({ kind: "memory", memoryKind: "win", date: "2026-07-12", status: "kept-by-everyone" });
+    // Withdrawn: the Win is still kept by everyone, so it stays.
+    const withdrawn = deriveJourneyBoard(withAdopted(memory => ({ ...memory, withdrawn: true })), BIANCA, FIXTURE_TODAY);
+    expect(adoptedStop(withdrawn)).toBeUndefined();
+    expect(byId(withdrawn, winStop)).toMatchObject({ kind: "memory", memoryKind: "win" });
   });
 
   it("shows the viewer's own milestones without granting any; a partner's stay private", () => {
@@ -407,5 +453,35 @@ describe("Journey Board model — kinds × statuses the fixture exercises", () =
     for (const key of ["commitment:overdue", "commitment:paid", "commitment:upcoming", "commitment:needs-review", "income:expected", "income:confirmed", "review:chapter-close:closed", "review:chapter-close:open", "review:weekly-sitdown:scheduled", "plan:goal:backing", "plan:task:open", "plan:task:done", "milestone:granted", "milestone:ready-to-record", "memory:kept-by-everyone"]) expect(seen, key).toContain(key);
     const today = deriveJourneyBoard(demo.household, BIANCA, "2026-09-18" as DateKey);
     expect(byId(today, journeyIds.bill(demo.ids.insuranceRecurrenceId, "2026-09-18"))).toMatchObject({ status: "due-today", relation: "today" });
+  });
+});
+
+describe("the hand-written sample board follows the model's contracts (PR #567 review)", () => {
+  const sample = sampleJourneyBoard();
+  it("keys weekly Sitdowns on weekBounds' week start (a Sunday), as the model does", () => {
+    const weekly = sample.stops.filter(stop => stop.kind === "review" && stop.reviewKind === "weekly-sitdown");
+    expect(weekly.length).toBeGreaterThan(0);
+    for (const stop of weekly) {
+      if (stop.kind !== "review" || stop.reviewKind !== "weekly-sitdown") continue;
+      expect(weekBounds(stop.weekStart).start).toBe(stop.weekStart);
+      expect(stop.id).toBe(journeyIds.weeklyReview(stop.weekStart));
+    }
+    // The model agrees on a real board.
+    for (const stop of board.stops) if (stop.kind === "review" && stop.reviewKind === "weekly-sitdown") expect(weekdaySunday0(stop.weekStart)).toBe(0);
+  });
+  it("lays the flagstone on Sundays, as the model's chapters do", () => {
+    for (const chapter of [...sample.chapters, ...board.chapters]) for (const day of chapter.days) expect(day.flagstone, `${chapter.id} ${day.date}`).toBe(weekdaySunday0(day.date) === 0);
+  });
+  it("never sends recurring income, or any stop, through a prefilled plain entry; an upcoming chapter close opens the Calendar", () => {
+    const calls = (stop: Stop) => stop.actions.map(a => a.call);
+    for (const stop of sample.stops) {
+      expect(calls(stop).some(call => call.name === "openRecord" && "prefill" in call && call.prefill), stop.id).toBe(false);
+      if (stop.kind === "income" && stop.status === "expected" && stop.sourceRefs.some(ref => ref.kind === "recurrence")) {
+        expect(calls(stop).some(call => call.name === "openRecord"), stop.id).toBe(false);
+        if (stop.date <= SAMPLE_TODAY) expect(stop.actions.find(a => a.primary)?.call).toMatchObject({ name: "openDueReview" });
+      }
+      if (stop.kind === "review" && stop.reviewKind === "chapter-close" && stop.status === "upcoming") expect(stop.actions.find(a => a.primary)?.call.name, stop.id).toBe("openCalendar");
+      if (stop.kind === "commitment" && stop.date > SAMPLE_TODAY) expect(calls(stop).some(call => call.name === "openBillPaid"), stop.id).toBe(false);
+    }
   });
 });

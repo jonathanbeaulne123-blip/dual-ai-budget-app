@@ -2,7 +2,7 @@
  * Memory stops (P6): only what every active member chose to keep —
  * - hearthside memories kept by everyone (`memoryKeptByEveryone`), dated by the memory's own date;
  * - Wins in `memories(h)` (kept by every active member), dated by the Toronto day they were shown, unless the Win
- *   was already adopted as a hearthside memory (`winMemoryId`), which then speaks for it.
+ *   was already adopted as a hearthside memory (`winMemoryId`) that is itself kept by everyone, which then speaks for it.
  * Never `timeMachine.monthMemories` (auto-derived "goal filled" items are not memories); never a done task.
  */
 import { dateKeyInZone, monthKeyFromDateKey, type DateKey } from "../../core/calendar.ts";
@@ -37,7 +37,9 @@ export function memoryStops(ctx: DeriveContext): MemoryRead {
     };
     if (date) place(stop); else out.undated.push(stop);
   }
-  const adopted = new Set(stored.map(memory => memory.id));
+  // Only an adopted memory that the board places speaks for its Win (PR #567 review): while the adoption waits on the
+  // other member, or after it is withdrawn, the kept Win stays on the board.
+  const adopted = new Set(stored.filter(memory => memoryKeptByEveryone(memory, ctx.activeMemberIds)).map(memory => memory.id));
   for (const win of keptWins(ctx.household)) {
     let adoptedId: string | null = null;
     try { adoptedId = winMemoryId(ctx.household, win.id); } catch { adoptedId = null; }

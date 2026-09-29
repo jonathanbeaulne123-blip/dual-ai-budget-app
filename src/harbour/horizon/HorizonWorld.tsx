@@ -2,7 +2,7 @@ import {livingEvidence} from '../../house/interpretation.ts';
 import {DEFAULT_QUEEN_STYLE} from '../../house/queenStyle.ts';
 import {useHomeBook} from '../../home/HomeBookContext.tsx';
 import {cruiserPreferenceKey} from './movers/cruiser/tuning.ts';
-import {useEffect,useRef,useMemo,useState} from 'react';
+import {useEffect,useLayoutEffect,useRef,useMemo,useState} from 'react';
 import type {HarbourWorldProps} from '../HarbourWorld.tsx';
 import HorizonStage from './HorizonStage.tsx';
 import type {HorizonRuntime} from './runtime/index.ts';
@@ -31,8 +31,10 @@ export default function HorizonWorld(props:HarbourWorldProps){
   // yacht are never targets); a host lands on its baked `returnAt` through `runtime.arrive`, once per request.
   // Once the App has recorded the arrival (`arrived`), the request is spent for this device: a remount (Books → back to
   // the harbour) starts from the saved body, never from the board's entry point again (review MINOR 1).
-  const request=props.enterHorizonRequest??null,requestRef=useRef(request);requestRef.current=request;
-  const onArrivedRef=useRef(props.onHorizonArrived);onArrivedRef.current=props.onHorizonArrived;
+  const request=props.enterHorizonRequest??null,requestRef=useRef(request);
+  const onArrivedRef=useRef(props.onHorizonArrived);
+  // Committed props only (PR #567 review): a discarded concurrent render never leaves a stale request in the refs.
+  useLayoutEffect(()=>{requestRef.current=request;onArrivedRef.current=props.onHorizonArrived;});
   const pending=request&&!request.arrived?request:null;
   const initialBody=useMemo(():HouseBodyReturn|undefined=>pending&&'x' in pending.location?{world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',x:pending.location.x,z:pending.location.y,yaw:0}:readHouseReturnOnDevice(identity,'horizon')?.body,[identityKey,request?.seq]);
   const arrivedSeq=useRef<number|null>(request&&(request.arrived||'x' in request.location)?request.seq:null);

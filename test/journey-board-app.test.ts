@@ -95,6 +95,10 @@ import { journeyMarkDomId } from "../src/journey/ui/Marks.tsx";
 import { journeyRowDomId } from "../src/journey/ui/JourneyList.tsx";
 import { journeyPanelActionDomId } from "../src/journey/ui/StopPanel.tsx";
 import { BIANCA, FIXTURE_TODAY, emptyBoardHousehold, journeyDemoHousehold } from "./fixtures/journey-board-households.ts";
+import { chooseMotionEdition, MOTION_KEY } from "../src/harbour/nav/motionEdition.ts";
+import { arrivalKey, JOURNEY_HOME_ROUTE } from "../src/harbour/nav/arrival.ts";
+import { housePath } from "../src/hearthside/houseRoutes.ts";
+import { houseIdentity } from "../src/house/navigation.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -565,5 +569,47 @@ describe("review fixes in the App", () => {
     await waitFor(() => again.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat board on the index land");
     await waitFor(() => journeyLandTimings()?.path === "index", "the index fallback");
     expect(state.fetched).toContain(HORIZON_INDEX_URL);
+  });
+});
+
+describe("Simple view while the Journey Board is up (PR #567 Codex P1)", () => {
+  it("choosing Simple view on the board opens the Court (where the Desk opens) in place of the board, and nothing is posted", async () => {
+    const { household } = journeyDemoHousehold();
+    const before = await financialAuditHash(household);
+    const board = await openApp(household, BIANCA);
+    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat board");
+    expect(location.pathname).toBe("/house/kitchen-table/above");
+    // The Compass's Simple view control and the backtick both write through `chooseMotionEdition`.
+    await act(async () => { chooseMotionEdition("flat"); });
+    await waitFor(() => location.pathname === "/house/home/middle" && !q("[data-journey-board]"), "the Court in place of the board");
+    expect(new URLSearchParams(location.search).get("surface")).toBeNull();
+    expect(localStorage.getItem(MOTION_KEY)).toBe("flat");
+    expect(await moneyHashes()).toEqual([before]);
+  });
+
+  it("a reload on a saved Journey URL with the reading edition chosen lands on the Court, not the flat board", async () => {
+    const { household } = journeyDemoHousehold();
+    const identity = houseIdentity({ environment: "development", householdId: household.householdId, memberId: BIANCA, scope: "household" });
+    // Not the tab's first arrival (a reload): the saved URL is what the App reads back.
+    sessionStorage.setItem(arrivalKey(identity), "1");
+    localStorage.setItem(MOTION_KEY, "flat");
+    history.replaceState(null, "", housePath(JOURNEY_HOME_ROUTE(household.householdId)));
+    state.stored = household;
+    localStorage.setItem("hearth:session:v1:development", JSON.stringify({ memberId: BIANCA, view: "household", householdId: household.householdId }));
+    await act(async () => { root.render(createElement(App)); });
+    await waitFor(() => location.pathname === "/house/home/middle", "the Court", 60_000);
+    await settle(5);
+    expect(q("[data-journey-board]")).toBeNull();
+    expect(state.boardHouseholds).toHaveLength(0);
+  });
+
+  it("the same reload in the illustrated edition keeps the Journey Board", async () => {
+    const { household } = journeyDemoHousehold();
+    const identity = houseIdentity({ environment: "development", householdId: household.householdId, memberId: BIANCA, scope: "household" });
+    sessionStorage.setItem(arrivalKey(identity), "1");
+    history.replaceState(null, "", housePath(JOURNEY_HOME_ROUTE(household.householdId)));
+    const board = await openApp(household, BIANCA);
+    expect(board).toBeTruthy();
+    expect(location.pathname).toBe("/house/kitchen-table/above");
   });
 });

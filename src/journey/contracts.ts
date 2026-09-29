@@ -77,7 +77,7 @@ export const journeyIds = {
   incomeRecorded: (transactionId: string) => `income:tx:${transactionId}` as const,
   /** The Chapter's close at the Campfire. */
   review: (chapterId: ChapterId) => `review:${chapterId}` as const,
-  /** The Charter's weekly Sitdown, keyed by its Monday-to-Sunday week start (`weekBounds(date).start`). */
+  /** The Charter's weekly Sitdown, keyed by its week start: `weekBounds(date).start`, a Sunday (Hearth's weeks run Sunday to Saturday). */
   weeklyReview: (weekStart: DateKey) => `review:week:${weekStart}` as const,
   planGoal: (goalId: string) => `plan:goal:${goalId}` as const,
   planTask: (taskId: string) => `plan:task:${taskId}` as const,

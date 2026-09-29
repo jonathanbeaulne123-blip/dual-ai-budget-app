@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ARRIVAL_KEY_PREFIX, JOURNEY_HOME_ROUTE, arrivalKey, harbourArrivalRoute, hasArrived, markArrived, type ArrivalSession } from "../src/harbour/nav/arrival.ts";
+import { ARRIVAL_KEY_PREFIX, JOURNEY_HOME_ROUTE, arrivalKey, harbourArrivalRoute, hasArrived, isJourneyHomeRoute, markArrived, readingEditionRoute, type ArrivalSession } from "../src/harbour/nav/arrival.ts";
 import { COURT_ROUTE, HARBOUR_ENABLED, HARBOUR_PLACE_LEVELS, HARBOUR_PLACE_NAMES, HARBOUR_ROOMS, HARBOUR_WAYS, harbourOwnsRoute, harbourPlaceFor, harbourWayFor } from "../src/harbour/flag.ts";
 import type { HouseRoute } from "../src/hearthside/houseRoutes.ts";
 
@@ -128,6 +128,26 @@ describe("harbourArrivalRoute", () => {
     const personal: HouseRoute = { ...saved, scope: "personal" };
     expect(harbourArrivalRoute({ edition: "reading", saved: personal, scope: "personal", householdId: "HH-one", identity, session: fakeSession(), enabled: true })).toBe(personal);
     expect(harbourArrivalRoute({ edition: "reading", saved, scope: "household", householdId: "HH-one", identity, session: fakeSession(), enabled: false })).toBe(saved);
+  });
+  it("PR #567 P1: a saved Journey Board route restored in the reading edition lands on the Court; the illustrated edition keeps it", () => {
+    const session = fakeSession();
+    markArrived(session, identity);
+    const journey = { ...JOURNEY_HOME_ROUTE("HH-one"), object: "harbour-return", time: "2026-09-28" } as HouseRoute;
+    expect(harbourArrivalRoute({ edition: "reading", saved: journey, scope: "household", householdId: "HH-one", identity, session, enabled: true })).toEqual(COURT_ROUTE("HH-one"));
+    expect(harbourArrivalRoute({ edition: "illustrated", saved: journey, scope: "household", householdId: "HH-one", identity, session, enabled: true })).toBe(journey);
+    // Any other saved route is kept in the reading edition.
+    expect(harbourArrivalRoute({ edition: "reading", saved, scope: "household", householdId: "HH-one", identity, session, enabled: true })).toBe(saved);
+  });
+  it("PR #567 P1: readingEditionRoute moves only the household Journey Board route, and only for the reading edition", () => {
+    const journey = JOURNEY_HOME_ROUTE("HH-one");
+    expect(isJourneyHomeRoute(journey)).toBe(true);
+    expect(isJourneyHomeRoute({ ...journey, scope: "personal" })).toBe(false);
+    expect(isJourneyHomeRoute({ ...journey, level: "middle" })).toBe(false);
+    expect(isJourneyHomeRoute({ ...journey, surface: "planner" })).toBe(false);
+    expect(isJourneyHomeRoute(null)).toBe(false);
+    expect(readingEditionRoute(journey, "reading")).toEqual(COURT_ROUTE("HH-one"));
+    expect(readingEditionRoute(journey, "illustrated")).toBe(journey);
+    expect(readingEditionRoute(saved, "reading")).toBe(saved);
   });
   it("survives a storage that throws or is missing", () => {
     const broken: ArrivalSession = { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } };

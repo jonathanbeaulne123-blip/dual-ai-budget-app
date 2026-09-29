@@ -18,9 +18,9 @@ import { bankRoomRequest } from "./house/bankRoom.ts";
 import { HouseWorld } from './house/HouseWorld.tsx';
 import { HARBOUR_ENABLED, harbourOwnsRoute, harbourPlaceFor } from './harbour/flag.ts';
 import { VILLAGE_ADDRESS } from './harbour/village/layout.ts';
-import { harbourArrivalRoute, tabSession } from './harbour/nav/arrival.ts';
+import { harbourArrivalRoute, readingEditionRoute, isJourneyHomeRoute, tabSession } from './harbour/nav/arrival.ts';
 import { readMotionEdition } from './harbour/nav/motionEdition.ts';
-import { Compass, useEditionFlipKey, type CompassFab } from './harbour/nav/Compass.tsx';
+import { Compass, useEditionFlipKey, useMotionEdition, type CompassFab } from './harbour/nav/Compass.tsx';
 import { WorldToggle } from './harbour/nav/WorldToggle.tsx';
 import { useHarbourWorld } from './harbour/harbourWorld.ts';
 import { usePublishBarBadges } from './harbour/nav/barBadges.ts';
@@ -1072,14 +1072,17 @@ export function App() {
   useEffect(()=>{if(houseRoute?.surface==="journey")setHorizonRequest(null);},[houseRoute?.surface]);
   useLayoutEffect(() => {
     if ((!HEARTHSIDE_FLAGS.presentation && !HOUSE_WORLD_ENABLED) || !household || !session || (!HOUSE_WORLD_ENABLED && session.view !== "household")) return;
-    const locate = () => {
+    const locate = (initial=false) => {
       const canonical=parseHouseRoute(window.location.href,household.householdId);
       if(canonical&&HOUSE_WORLD_ENABLED){
         const incoming=resolveHouseRouteScope(canonical,session.view);
         // A valid same-household address owns its scope. Change the session and
         // route in this update so private and shared surfaces never briefly mix.
         if(incoming.changesScope)rememberSession({memberId:session.memberId,view:incoming.scope,householdId:household.householdId});
-        setHouseRoute(incoming.route);setTab(tabForHouseRoute(incoming.route));setWorkspaceCompact(false);return;
+        // PR #567 Codex P1: a Journey Board URL read back on load in the reading edition opens the Court (the Desk).
+        const landed=initial&&HARBOUR_ENABLED?readingEditionRoute(incoming.route,readMotionEdition()==="flat"?"reading":"illustrated"):incoming.route;
+        if(landed!==incoming.route)window.history.replaceState({hearthTab:tabForHouseRoute(landed)},"",housePath(landed));
+        setHouseRoute(landed);setTab(tabForHouseRoute(landed));setWorkspaceCompact(false);return;
       }
       if(canonical&&(!HOUSE_WORLD_ENABLED||!canonical.scope||canonical.scope===session.view)){const route=HOUSE_WORLD_ENABLED?{...canonical,scope:session.view}:canonical;setHouseRoute(route);setTab(tabForHouseRoute(route));setWorkspaceCompact(!HOUSE_WORLD_ENABLED&&route.room==="kitchen-table"&&route.level==="middle");return;}
       if(HOUSE_WORLD_ENABLED){
@@ -1101,8 +1104,20 @@ export function App() {
         }
       }
     };
-    locate(); window.addEventListener("popstate", locate); return () => window.removeEventListener("popstate", locate);
+    const onPop = () => locate();
+    locate(true); window.addEventListener("popstate", onPop); return () => window.removeEventListener("popstate", onPop);
   }, [environment, household?.householdId, session?.memberId, session?.view]);
+  // PR #567 Codex P1: choosing Simple view (the Compass control or the backtick) while the Journey Board is up opens
+  // the reading edition's home, the Court where the Desk opens, in place of the board (D65). The board cannot navigate.
+  const motionEdition=useMotionEdition();
+  const lastMotionEdition=useRef(motionEdition);
+  useEffect(()=>{
+    const was=lastMotionEdition.current;lastMotionEdition.current=motionEdition;
+    if(!HARBOUR_ENABLED||!HOUSE_WORLD_ENABLED||was===motionEdition||motionEdition!=="flat"||!household||session?.view!=="household"||!isJourneyHomeRoute(houseRoute))return;
+    const court=readingEditionRoute(houseRoute!,"reading");
+    window.history.replaceState({hearthTab:tabForHouseRoute(court)},"",housePath(court));
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  },[motionEdition]);
   useEffect(()=>{
     if(!HOUSE_WORLD_ENABLED||!household||!session||!houseRoute||houseRoute.scope!==session.view)return;
     saveHouseReturn(localStorage,{environment,householdId:household.householdId,memberId:session.memberId,scope:session.view},houseRoute,{scroll:window.scrollY});
@@ -7413,7 +7428,10 @@ export function App() {
     openCalendar: () => openHouseObject("calendar"),
     openBooks: (ref: BooksRef) => {
       if (ref.kind === "fund") { openHouseObject("fund"); return; }
-      setBooksPaneRequest(ref.kind === "month" ? `month:${ref.monthKey}` : "register");
+      // Each kind by name (PR #567 review): a kind this App does not know opens nothing rather than the wrong pane.
+      if (ref.kind === "month") setBooksPaneRequest(`month:${ref.monthKey}`);
+      else if (ref.kind === "register") setBooksPaneRequest("register");
+      else return;
       goTab("ledger");
     },
     // P2: the only hand-off to the detailed world. The request is set under the clouds with the navigation, so a

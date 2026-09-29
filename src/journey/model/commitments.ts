@@ -103,13 +103,19 @@ export function commitmentStops(ctx: DeriveContext): CommitmentStop[] {
       }));
     }
   }
-  // Visits: the Calendar's appointment rows (a carried overdue visit keys on its original date).
-  for (const row of ctx.weight.values()) {
-    if (row.item.source !== "appointment" || !row.item.appointmentId) continue;
+  // Visits: the Calendar's appointment rows. One occurrence identity for both states (PR #567 review): a visit is
+  // keyed on the day it settles — the App's Post visit posts "today", so an overdue visit (on its own day this month,
+  // or carried to today) is keyed on today, the same key its posting takes; due-today and upcoming visits keep their
+  // own day. If that appointment also has an occurrence of its own today, the overdue one keeps its scheduled day.
+  const visitRows = [...ctx.weight.values()].filter(row => row.item.source === "appointment" && row.item.appointmentId);
+  const dueTodayVisit = new Set(visitRows.filter(row => (row.scheduledDate ?? row.date) === today).map(row => row.item.appointmentId!));
+  for (const row of visitRows) {
+    const appointmentId = row.item.appointmentId!;
     const scheduled = (row.scheduledDate ?? row.date) as DateKey;
     const status = unpaidStatus(scheduled, today, row.allowPost === false);
+    const settles = scheduled < today && !dueTodayVisit.has(appointmentId) ? today : scheduled;
     out.push(build(ctx, {
-      id: journeyIds.billItem(row.item.appointmentId, scheduled), date: row.date, label: row.item.title,
+      id: journeyIds.billItem(appointmentId, settles), date: row.date, label: row.item.title,
       amountCents: Number.isFinite(row.item.amountCents) ? row.item.amountCents : null, status, setAside: null,
       recurrenceId: null, boardKind: row.item.kind, sourceRefs: [{ kind: "boardItem", id: row.item.id }],
     }));

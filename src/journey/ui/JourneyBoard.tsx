@@ -15,6 +15,7 @@ import { deriveJourneyBoard } from "../model/index.ts";
 import { buildJourneyLand, loadJourneyLand } from "../land/index.ts";
 import { layoutRoute, type BoardSceneHandle, type BoardSceneOptions, type FocusTarget, type JourneyBoardSceneExtras } from "../board/index.ts";
 import { qualityTier, readQualityInput, type QualityTier } from "../../harbour/scene/quality.ts";
+import { MOTION_KEY } from "../../harbour/nav/motionEdition.ts";
 import { JourneyBoardView, type JourneyStageSource } from "./JourneyBoardView.tsx";
 import { COPY, dueReviewWords } from "./copy.ts";
 import { useReducedMotion } from "./motion.ts";
@@ -43,7 +44,16 @@ export default function JourneyBoard(props: JourneyBoardProps & JourneyBoardSeam
   const identity = useMemo(() => ({ environment, householdId: household.householdId, memberId }), [environment, household.householdId, memberId]);
   const store = useJourneyViewStateStore(identity, props.storage);
   const reducedMotion = useReducedMotion();
-  const [quality] = useState<QualityTier>(() => props.quality ?? detectQuality());
+  const [quality, setQuality] = useState<QualityTier>(() => props.quality ?? detectQuality());
+  // PR #567 Codex P1: Simple view (`hearth:motion`) can change while the board is up — follow it (the App also
+  // moves the reading edition to the Desk; this keeps the board itself honest either way).
+  const qualitySeam = props.quality;
+  useEffect(() => {
+    if (qualitySeam) return;
+    const sync = () => setQuality(detectQuality());
+    window.addEventListener(MOTION_KEY, sync);
+    return () => window.removeEventListener(MOTION_KEY, sync);
+  }, [qualitySeam]);
 
   // Derived on read; the household snapshot is immutable, so its identity is the revision that matters.
   const derived = useMemo(() => deriveJourneyBoard(household, memberId, today), [household, memberId, today]);

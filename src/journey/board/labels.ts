@@ -7,7 +7,8 @@
  * waits for a closer zoom (the list still carries it). Ties: nearer the camera first, then id (deterministic).
  * Placement never decides DOM/tab order — that stays chronological in the UI.
  */
-import type { JourneyBoard, Stop } from "../contracts.ts";
+import type { JourneyBoard } from "../contracts.ts";
+import { isAttentionStop } from "./marks.ts";
 
 export type LabelRank =
   | "piece" | "selected" | "attention" | "crossroads" | "chapter-review" | "next" | "commitment" | "milestone" | "income" | "plan" | "memory"
@@ -75,9 +76,6 @@ export function placeLabels(candidates: readonly LabelCandidate[], options: Plac
   return candidates.map((c) => out.get(c.id)!);
 }
 
-const ATTENTION = (stop: Stop) =>
-  (stop.kind === "commitment" && (stop.status === "overdue" || stop.status === "needs-review")) ||
-  (stop.kind === "review" && stop.reviewKind === "chapter-close" && (stop.status === "close-due" || stop.status === "waiting-on-you"));
 
 /**
  * The rank of a mark id on this board (piece, month ids, cluster / stop / crossroads ids, `district:<id>`, day dates).
@@ -93,7 +91,7 @@ export function labelRankFor(board: JourneyBoard, id: string, selectedId: string
   const stops = cluster ? board.stops.filter((s) => cluster.stopIds.includes(s.id)) : board.stops.filter((s) => s.id === id);
   if (!stops.length) return "other";
   const ranks = stops.map((stop): LabelRank => {
-    if (ATTENTION(stop)) return "attention";
+    if (isAttentionStop(stop)) return "attention";
     if (stop.kind === "review" && stop.reviewKind === "chapter-close") return "chapter-review";
     if (board.summary.next.includes(stop.id)) return "next";
     if (stop.kind === "commitment") return "commitment";

@@ -46,7 +46,11 @@ export function postSide(tangent: Point2): Point2 {
   return n;
 }
 
-const isAttention = (s: Stop) =>
+/**
+ * The one "needs attention" rule for a stop (an overdue or needs-review commitment; a chapter close that is close-due
+ * or waiting on you). The label priority, the Sky posts, the post's diamond cap and the DOM mark's style all read it.
+ */
+export const isAttentionStop = (s: Stop) =>
   (s.kind === "commitment" && (s.status === "overdue" || s.status === "needs-review")) ||
   (s.kind === "review" && s.reviewKind === "chapter-close" && (s.status === "close-due" || s.status === "waiting-on-you"));
 
@@ -61,7 +65,7 @@ export function skyPostIds(board: JourneyBoard): Set<string> {
   type Cand = { id: string; rank: number; date: string };
   const cands: Cand[] = board.crossroads.map((c) => ({ id: c.id, rank: 0, date: c.date }));
   for (const s of board.stops) {
-    const rank = isAttention(s) ? 1 : board.summary.next.includes(s.id) ? 2 : s.kind === "milestone" ? 3 : s.major ? 4 : -1;
+    const rank = isAttentionStop(s) ? 1 : board.summary.next.includes(s.id) ? 2 : s.kind === "milestone" ? 3 : s.major ? 4 : -1;
     if (rank >= 0) cands.push({ id: postOf(s), rank, date: s.date });
   }
   cands.sort((a, b) => a.rank - b.rank || dist(a.date) - dist(b.date) || (a.id < b.id ? -1 : 1));
@@ -119,7 +123,8 @@ export function boardMarks(board: JourneyBoard, route: RouteSpace): BoardMark[] 
     marks.push({
       id: x.id, kind: "crossroads", base: at.base,
       offset: [-at.side[0] * POST_OFFSET + along[0] * shift, -at.side[1] * POST_OFFSET + along[1] * shift],
-      head: HEADS.crossroads, tiers: ALL, chapterId: x.chapterId, date: x.date,
+      // Only the crossroads that won a Sky post stand at Sky (PR #567 review): past SKY_POST_LIMIT they wait for a closer tier.
+      head: HEADS.crossroads, tiers: sky.has(x.id) ? ALL : CLOSE, chapterId: x.chapterId, date: x.date,
     });
   }
   return marks;

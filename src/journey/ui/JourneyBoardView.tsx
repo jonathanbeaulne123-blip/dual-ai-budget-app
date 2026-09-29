@@ -303,7 +303,10 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
   const announce = useCallback((words: string) => setAnnouncement(words), []);
 
   const backToNow = useCallback(() => {
-    patch({ focusDate: null, target: null, tier: "region" });
+    // A clean "now" (PR #567 review): the open panel, its cluster and any preview close in the same action.
+    patch({ focusDate: null, target: null, tier: "region", selectedStopId: null, expandedClusterId: null });
+    setPreviewState(null);
+    setClusterReturn(null);
     frameTo("piece", "region");
     announce(`${COPY.backToNow} · ${shortDate(board.today)} · ${board.summary.periodLabel}`);
   }, [patch, frameTo, announce, board]);

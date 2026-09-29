@@ -26,8 +26,12 @@ function bill(id: string, recurrenceId: string, date: string, label: string, cen
     ? [act(id, "books", "See it in the Books", { name: "openBooks", ref: { kind: "month", monthKey: m(date.slice(0, 7)) } }, true)]
     : status === "needs-review"
       ? [act(id, "review", "Review it in the Books", { name: "openBooks", ref: { kind: "register" } }, true)]
-      : [act(id, "mark-paid", "Mark paid…", { name: "openBillPaid", recurrenceId }, true)];
+      // As the model (`commitmentActions`): Bill paid is offered once the occurrence is due; before then the jars lead.
+      : date <= SAMPLE_TODAY
+        ? [act(id, "mark-paid", "Mark paid…", { name: "openBillPaid", recurrenceId }, true)]
+        : [act(id, "jars", "Open the bill jars", { name: "openPlace", target: "cellar-bills" }, true)];
   actions.push(act(id, "calendar", "Open the Calendar", { name: "openCalendar", date: d(date) }));
+  if (status !== "paid" && status !== "needs-review" && date <= SAMPLE_TODAY) actions.push(act(id, "jars", "Open the bill jars", { name: "openPlace", target: "cellar-bills" }));
   return {
     kind: "commitment", id, date: d(date), chapterId: m(date.slice(0, 7)), label, amountCents: cents,
     amountBasis: status === "paid" ? "recorded" : "scheduled", sourceRefs: [{ kind: "recurrence", id: recurrenceId }],
@@ -36,10 +40,20 @@ function bill(id: string, recurrenceId: string, date: string, label: string, cen
 }
 
 function income(id: string, date: string, label: string, cents: number, status: IncomeStop["status"], origin: IncomeStop["origin"], recurrenceId?: string): IncomeStop {
+  // As the model (`incomeActions`): recurring pay goes through the reviewed recurrence path (never a prefilled plain
+  // income entry); a Fund estimate or payday records income or opens the Fund; other income records or opens the Calendar.
+  const calendar = (primary: boolean) => act(id, "calendar", "Open the Calendar", { name: "openCalendar", date: d(date) }, primary);
   const actions: StopAction[] = status === "confirmed"
-    ? [act(id, "books", "See it in the Books", origin === "fund-confirmed" ? { name: "openBooks", ref: { kind: "fund" } } : { name: "openBooks", ref: { kind: "month", monthKey: m(date.slice(0, 7)) } }, true)]
-    : [act(id, "record", "Record income…", { name: "openRecord", mode: "income", ...(recurrenceId ? { prefill: { recurrenceId } } : {}) }, true),
-       act(id, "calendar", "Open the Calendar", { name: "openCalendar", date: d(date) })];
+    ? [origin === "fund-confirmed"
+        ? act(id, "fund", "Open the Fund", { name: "openBooks", ref: { kind: "fund" } }, true)
+        : act(id, "books", "See it in the Books", { name: "openBooks", ref: { kind: "month", monthKey: m(date.slice(0, 7)) } }, true)]
+    : origin === "fund-estimate" || origin === "payday"
+      ? [act(id, "record", "Record income…", { name: "openRecord", mode: "income" }, true), act(id, "fund", "Open the Fund", { name: "openBooks", ref: { kind: "fund" } })]
+      : recurrenceId
+        ? date <= SAMPLE_TODAY
+          ? [act(id, "review", "Review and record…", { name: "openDueReview", recurrenceId }, true), calendar(false)]
+          : [calendar(true)]
+        : [act(id, "record", "Record income…", { name: "openRecord", mode: "income" }, true), calendar(false)];
   return {
     kind: "income", id, date: d(date), chapterId: m(date.slice(0, 7)), label, amountCents: cents,
     amountBasis: status === "confirmed" ? "recorded" : origin === "fund-estimate" ? "estimate" : "scheduled",
@@ -52,7 +66,7 @@ function chapterReview(month: string, date: string, title: string, status: Extra
   const id = `review:${month}`;
   const actions: StopAction[] = status === "closed" || status === "no-chapter"
     ? [act(id, "books", `Read ${title} in the Books`, { name: "openBooks", ref: { kind: "month", monthKey: m(month) } }, true)]
-    : status === "upcoming" ? []
+    : status === "upcoming" ? [act(id, "calendar", "Open the Calendar", { name: "openCalendar", date: d(date) }, true)]
     : [act(id, "campfire", "Open the Campfire", { name: "openCampfire", chapterId: m(month) }, true),
        act(id, "books", `Read ${title} in the Books`, { name: "openBooks", ref: { kind: "month", monthKey: m(month) } })];
   return {
@@ -250,7 +264,7 @@ function chapter(month: string, stops: Stop[], clusters: StopCluster[], crossroa
     return {
       date, relation: relation(date), stopIds: onDay.map((s) => s.id), clusterId: clusters.find((c) => c.date === date)?.id ?? null,
       postedCount: onDay.filter((s) => (s.kind === "commitment" && s.status === "paid") || (s.kind === "income" && s.status === "confirmed")).length,
-      flagstone: weekdayOf(date) === 6, sitdown: onDay.some((s) => s.kind === "review" && s.reviewKind === "weekly-sitdown"),
+      flagstone: weekdayOf(date) === 0, sitdown: onDay.some((s) => s.kind === "review" && s.reviewKind === "weekly-sitdown"),
     };
   });
   const overdue = mine.filter((s) => s.kind === "commitment" && s.status === "overdue").length;

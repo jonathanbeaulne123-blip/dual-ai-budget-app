@@ -13,7 +13,7 @@
  */
 import type { CSSProperties } from "react";
 import type { JourneyBoard, MarkAnchor, Stop } from "../contracts.ts";
-import { labelRankFor, placeLabels, type LabelBox, type LabelCandidate } from "../board/index.ts";
+import { isAttentionStop, labelRankFor, placeLabels, type LabelBox, type LabelCandidate } from "../board/index.ts";
 import { districtName } from "../land/index.ts";
 import { COPY, KIND_WORDS, shortDate } from "./copy.ts";
 
@@ -36,9 +36,6 @@ const lastDay = (month: string) => {
   return `${month}-${String(n).padStart(2, "0")}`;
 };
 
-const isAttention = (s: Stop) =>
-  (s.kind === "commitment" && (s.status === "overdue" || s.status === "needs-review")) ||
-  (s.kind === "review" && s.reviewKind === "chapter-close" && (s.status === "close-due" || s.status === "waiting-on-you"));
 
 /**
  * The marks that get a button, in chronological DOM order. `words(id)` gives the list row's amount + status words
@@ -64,7 +61,7 @@ export function markEntries(board: JourneyBoard, words: (id: string) => { amount
     const stops = c.stopIds.map((id) => stopById.get(id)).filter((s): s is Stop => Boolean(s));
     out.push({
       id: c.id, kind: "cluster", date: c.date, order: 0, label: c.label,
-      aria: `${c.label}: ${stops.map((s) => s.label).join(", ")}`, attention: stops.some(isAttention),
+      aria: `${c.label}: ${stops.map((s) => s.label).join(", ")}`, attention: stops.some(isAttentionStop),
     });
   }
   for (const s of board.stops) {
@@ -75,7 +72,7 @@ export function markEntries(board: JourneyBoard, words: (id: string) => { amount
       id: s.id, kind: "stop", date: s.date, order: 0, stop: s,
       label: amount ? `${s.label} · ${amount}` : s.label,
       aria: [KIND_WORDS[s.kind], s.label, shortDate(s.date), w?.amount, w?.status].filter(Boolean).join(" · "),
-      attention: isAttention(s),
+      attention: isAttentionStop(s),
     });
   }
   for (const x of board.crossroads) {

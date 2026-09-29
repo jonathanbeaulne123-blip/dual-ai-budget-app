@@ -70,8 +70,24 @@ export function harbourArrivalRoute(input: ArrivalInput): HouseRoute {
   const { saved, scope, householdId, identity, session, edition, enabled = HARBOUR_ENABLED } = input;
   const fallback: HouseRoute = saved ?? { room: "home", level: "middle", householdId, scope };
   if (!enabled || scope !== "household") return fallback;
-  if (hasArrived(session, identity)) return fallback;
+  if (hasArrived(session, identity)) return readingEditionRoute(fallback, edition);
   markArrived(session, identity);
   // D65: the reading edition keeps arriving on the Court, so the Desk opens as it always has.
   return edition === "reading" ? COURT_ROUTE(householdId) : JOURNEY_HOME_ROUTE(householdId);
+}
+
+/** The household Journey Board's route (any `object` / `time` on it included). */
+export function isJourneyHomeRoute(route: HouseRoute | null | undefined): boolean {
+  return Boolean(route && route.scope === "household" && route.room === "kitchen-table" && route.level === "above" && route.surface === "journey");
+}
+
+/**
+ * PR #567 Codex P1: the reading edition's household home is the Court, where the Desk opens (D65). A household
+ * Journey Board route that is restored while the reading edition is chosen (a saved return route, or the Journey URL
+ * read back on load) lands on the Court instead; every other route, and the illustrated edition, is kept as is.
+ * The App also applies this when Simple view is chosen while the board is up. Deliberate navigation to the Journey
+ * from inside the reading edition is left alone.
+ */
+export function readingEditionRoute(route: HouseRoute, edition: ArrivalEdition): HouseRoute {
+  return edition === "reading" && isJourneyHomeRoute(route) ? COURT_ROUTE(route.householdId) : route;
 }

@@ -18,7 +18,7 @@ import { HORIZON_INDEX_URL } from "../src/house/world/horizonAssets.ts";
 import { buildJourneyLand, loadJourneyLand, resetJourneyLandCacheForTests } from "../src/journey/land/index.ts";
 import { deriveJourneyBoard } from "../src/journey/model/index.ts";
 import {
-  BOARD_DRESSING_KEYS, BoardFlat, boardMarkIds, createJourneyBoardScene, CROSSING_CLEARANCE_EU, JOURNEY_BOARD_DRESSINGS, labelRankFor,
+  BOARD_DRESSING_KEYS, BoardFlat, boardMarkIds, boardMarks, createJourneyBoardScene, isAttentionStop, CROSSING_CLEARANCE_EU, JOURNEY_BOARD_DRESSINGS, labelRankFor,
   layoutBoardRoute, layoutRoute, placeLabels, radiusForTier, ribbonWidth, skyPostIds, SKY_POST_LIMIT, type BoardSceneHandle,
   type BoardSceneOptions, type LabelCandidate,
 } from "../src/journey/board/index.ts";
@@ -215,6 +215,25 @@ describe("placeLabels", () => {
     const sky = skyPostIds(board);
     expect(sky.size).toBeLessThanOrEqual(SKY_POST_LIMIT);
     for (const c of board.crossroads.slice(0, SKY_POST_LIMIT)) expect(sky.has(c.id)).toBe(true);
+  });
+
+  it("stands only the crossroads that won a Sky post at Sky; past the limit they wait for a closer tier (PR #567 review)", () => {
+    expect(board.crossroads.length).toBeGreaterThan(0);
+    const base = board.crossroads[0]!;
+    const many: JourneyBoard = { ...board, crossroads: Array.from({ length: SKY_POST_LIMIT + 3 }, (_, i) => ({ ...base, id: `${base.id}~${i}` })) };
+    const sky = skyPostIds(many);
+    const crossroads = boardMarks(many, layoutRoute(many, land)).filter((m) => m.kind === "crossroads");
+    expect(crossroads).toHaveLength(SKY_POST_LIMIT + 3);
+    const atSky = crossroads.filter((m) => m.tiers.includes("sky"));
+    expect(atSky.length).toBeLessThanOrEqual(SKY_POST_LIMIT);
+    for (const m of crossroads) {
+      expect(m.tiers.includes("sky"), m.id).toBe(sky.has(m.id));
+      expect(m.tiers).toEqual(expect.arrayContaining(["region", "stop"]));
+    }
+    // The one attention rule reads the same everywhere.
+    const overdue = board.stops.find((st) => st.kind === "commitment" && st.status === "overdue")!;
+    expect(isAttentionStop(overdue)).toBe(true);
+    expect(labelRankFor(board, overdue.id, null)).toBe("attention");
   });
 });
 
