@@ -45,7 +45,7 @@ describe("the old shell's chrome around the Horizon (static)", () => {
   it("All tools › Places walks on the Horizon (HARBOUR_GO_EVENT), as do a panel's Visit and a route change", () => {
     expect(shell).toMatch(/window\.addEventListener\(HARBOUR_GO_EVENT,go\)/);
     expect(shell).toMatch(/onVisit=\{\(\)=>\{const host=props\.panel\?\.host;[^}]*walkToPlace/);
-    expect(shell).toMatch(/if\(lastHere\.current===here\|\|toolOpen\|\|!worldReady\)return;lastHere\.current=here;walkToPlace\(here\)/);
+    expect(shell).toMatch(/if\(lastHere\.current===here\|\|toolOpen\|\|!worldReady\|\|riding\)return;if\(walkToPlace\(here\)\)lastHere\.current=here;/);
     // Arrival makes the place current (the old shell's Places navigated there); a ride refuses the walk and says so.
     expect(shell).toMatch(/props\.onNavigateLocation\(\{\.\.\.routeRef\.current,\.\.\.VILLAGE_ADDRESS\[travelTo\],surface:undefined/);
     expect(shell).toMatch(/if\(riding\.attached\|\|riding\.airborne\)\{setTravelTo\(null\);setNotice\(/);
@@ -60,6 +60,11 @@ describe("the old shell's chrome around the Horizon (static)", () => {
     expect(stage).toMatch(/className="horizon-cruiser-controls"/);
     expect(stage).toMatch(/className="horizon-fleet"/);
     expect(stage).toMatch(/if\(latest\.current\.shell&&world\.mode\(\)!=='walk'\)/);
+  });
+
+  it("walk-together sharing is read per environment in the same render (never the previous environment's choice)", () => {
+    expect(shell).toMatch(/const walkShare=walkShareState\.environment===household\.environment\?walkShareState\.share:readWorldPresenceShare\(household\.environment\);/);
+    expect(shell).toMatch(/share:walkShare,world:HORIZON_PRESENCE_WORLD/);
   });
 
   it("a Horizon that cannot open hands the harbour back to the old world", () => {
