@@ -190,7 +190,7 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
   });
   function focusStage(){(document.querySelector('.horizon-stage') as HTMLElement|null)?.focus({preventScroll:true});}
   function doEmote(id:EmoteId){runtime.current?.emote(id);setEmotesOpen(false);focusStage();}
-  const lite=matchMedia('(max-width: 600px)').matches;
+  const lite=typeof window.matchMedia==='function'&&window.matchMedia('(max-width: 600px)').matches;
   const dock=props.dock&&!toolOpen?<Dock {...props.dock} calm={comfort.quiet} lite={lite} night={glassNight} cameraMoving={false}/>:undefined;
   const presence=<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={peer.walk} walkName={peer.walk?partnerName:null} worldUnavailable={peer.unavailable} soft={softPeer} here={here} placeName={HARBOUR_PLACE_NAMES[here]} softPresenceOptedOut={props.presence?.optedOut===true} onUnhide={props.onUnhide} hasPartner={Boolean(softPeer||props.partnerName||peer.memberId)}/>;
   return <section data-harbour-space={space} data-harbour-world="horizon" className={`harbour-world harbour-world--${theme} harbour-world--horizon${skating?' is-skating':''}${toolOpen?' has-open-object':''}`} data-world-status={worldReady?'ready':'loading'} data-world-scope={scope} data-harbour-place={here} data-harbour-tier={lite?'lite':'full'} data-horizon-riding={riding?'':undefined} aria-label={HARBOUR_PLACE_NAMES[here]}>
