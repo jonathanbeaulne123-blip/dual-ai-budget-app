@@ -56,8 +56,10 @@ export interface CorridorSide {
   paved: number;
   /** Footway band on this side (sidewalk or Year Walk), absolute offsets from the centreline. */
   footway?: { inner: number; outer: number; height: number; bedId?: string };
-  /** Planting band allowed on this side (ROAD.md §5), absolute offsets; absent = nothing grows here. */
-  planting?: { inner: number; outer: number };
+  /** Planting band allowed on this side (ROAD.md §5), absolute offsets; absent = nothing grows here. `maxHeight` (optional,
+   * L2): the tallest thing allowed in the band here (a junction's sight triangle 0.6, the Green's protected centre 0.85,
+   * the sea side of a coastal reach 0.9); absent = no height limit beyond ROAD.md §5. */
+  planting?: { inner: number; outer: number; maxHeight?: number };
   gap?: CorridorGapKind;
 }
 

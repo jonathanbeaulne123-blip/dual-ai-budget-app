@@ -1,6 +1,7 @@
 import { HORIZON_MANIFEST as M, requireScaleFactor } from '../../world/manifest';
 import type { BedCut, HeightQuery, LandCuts, StructureSolid, XY, XYZ } from '../interfaces';
 import { box, distance, districtAt, nearestOnPath, slab, solid, prism } from '../structures/mesh';
+import { isCorridorRoad } from '../corridor/reaches';
 
 /** Closed wall with a true 1:6 face, rather than a wide rectangular fence.
  * A cut leans into the hill; a fill widens toward the ground below the road. */
@@ -107,6 +108,10 @@ export const EDGE_PIECE=2.5;
 export const OPEN_RAIL_ROADS=new Set(['strip']);
 export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,thresholds:XY[]=[]):void {
   if(b.kind==='cable'||b.kind==='cave')return;
+  // Road main (ROAD.md §1, D-R1): a corridor road's kerbs, guards and retaining walls are the corridor's (land/corridor, built at
+  // the end of the bake against the final ground and replacing this bed's strip too); only its provisional deck and shoulders
+  // are emitted here, for the passes that run before the corridor (crossings, grounding).
+  const corridorEdges=isCorridorRoad(b);
   const district=b.districtIds[0]!??'harbour',deck=solid(`${b.id}.bed`,'bed',b.surface,'deck',[b.id],district);
   const kerbs=solid(`${b.id}.kerbs`,'kerb','stone','wall',[b.id],district),rails=solid(`${b.id}.edges`,'parapet','stone','rail',[b.id],district),retaining=solid(`${b.id}.retaining`,'retainingWall','rock','wall',[b.id],district);
   const shoulders=solid(`${b.id}.shoulders`,'shoulder','gravel','deck',[b.id],district);
@@ -133,6 +138,7 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
       if(shared?.has(side)){if(b.shoulder)slab(shoulders,a,p,b.shoulder,.6,side*(b.width/2+b.shoulder/2));continue;}
       const edge=b.width/2+b.shoulder;
       if(b.shoulder)slab(shoulders,a,p,b.shoulder,.6,side*(b.width/2+b.shoulder/2));
+      if(corridorEdges)continue;
       if(!gap&&b.kind==='road')slab(kerbs,a,p,.25,.15,side*b.width/2,.15);
       for(let k=0;k<pieces;k++){
         const pa=at(k/pieces),pb=at((k+1)/pieces),pm:XY=[(pa[0]+pb[0])/2,(pa[2]+pb[2])/2],ph=(pa[1]+pb[1])/2;
