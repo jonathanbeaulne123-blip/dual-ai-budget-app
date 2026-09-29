@@ -8,13 +8,13 @@ import './horizon-guide.css';
 type GuideProps={
   open:boolean;onClose:()=>void;views:readonly SketchbookPose[];
   onView:(id:string)=>void;onWalk:()=>void;onPlace:(place:HarbourPlaceId)=>void;
-  canSkate:boolean;onSkate:()=>void;onRace:()=>void;onJourney?:()=>void;
+  skateAvailable:boolean;skateHere:boolean;onSkate:()=>void;onRace:()=>void;onJourney?:()=>void;
   monorailAvailable:boolean;onMonorail:(from:number,stops:number[])=>void;
   soundOn:boolean;onSound:()=>void;
 };
 
 /** The old world's Step in entry, using the Horizon's actual views and routes. */
-export function HorizonGuide({open,onClose,views,onView,onWalk,onPlace,canSkate,onSkate,onRace,onJourney,monorailAvailable,onMonorail,soundOn,onSound}:GuideProps){
+export function HorizonGuide({open,onClose,views,onView,onWalk,onPlace,skateAvailable,skateHere,onSkate,onRace,onJourney,monorailAvailable,onMonorail,soundOn,onSound}:GuideProps){
   const [tab,setTab]=useState<'explore'|'travel'>('explore');
   const [station,setStation]=useState(0),[stops,setStops]=useState<number[]>([MONORAIL_STOPS.length-1]);
   const panel=useRef<HTMLElement>(null),opener=useRef<HTMLElement|null>(null);
@@ -41,7 +41,7 @@ export function HorizonGuide({open,onClose,views,onView,onWalk,onPlace,canSkate,
       </>}
       {tab==='travel'&&<>
         <p>The old Tideline board rides Mountain v2’s town island. The cruiser, bicycle, cable rides, boats, yacht, glider and parachute use their own marked boarding places across the Horizon.</p>
-        <div className="horizon-guide__actions">{canSkate&&<><button type="button" onClick={onSkate}>Skate here</button><button type="button" onClick={onRace}>Start downhill race</button></>}<button type="button" onClick={()=>onPlace('boathouse')}>Walk to the boats</button></div>
+        <div className="horizon-guide__actions">{skateAvailable&&<><button type="button" onClick={onSkate}>{skateHere?'Skate here':'Go skate Tideline'}</button><button type="button" onClick={onRace}>Start downhill race</button></>}<button type="button" onClick={()=>onPlace('boathouse')}>Walk to the boats</button></div>
         {monorailAvailable&&<section aria-label="Island monorail"><h3>Island monorail</h3><label>Board at <select value={station} onChange={e=>{const next=Number(e.target.value);setStation(next);setStops([next===MONORAIL_STOPS.length-1?0:MONORAIL_STOPS.length-1]);}}>{MONORAIL_STOPS.map((stop,i)=><option key={stop.id} value={i}>{stop.name}</option>)}</select></label><fieldset><legend>Choose your stops</legend>{MONORAIL_STOPS.map((stop,i)=><label key={stop.id}><input type="checkbox" disabled={i===station} checked={stops.includes(i)} onChange={()=>setStops(current=>current.includes(i)?current.filter(n=>n!==i):[...current,i])}/>{stop.name}</label>)}</fieldset><button type="button" disabled={!stops.length} onClick={()=>onMonorail(station,stops)}>Board the monorail</button></section>}
         <p>At a boarding place, use its Interact button or E. The yacht’s galley opens from its menu board.</p>
       </>}

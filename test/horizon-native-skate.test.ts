@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
-import { createNativeSkate, NATIVE_SKATE_RADIUS, toNative } from "../src/harbour/horizon/skate/nativeSkate.ts";
+import { createNativeSkate, horizonSkateEntry, NATIVE_SKATE_RADIUS, toNative } from "../src/harbour/horizon/skate/nativeSkate.ts";
 import { MOUNTAIN_V2_OFFSET as O } from "../src/harbour/horizon/regions/mountainV2/placement.ts";
 import { createBodyFigure } from "../src/harbour/body/figure.ts";
 import { groundHeightAt } from "../src/harbour/scene/ground.ts";
@@ -19,6 +19,12 @@ function mount() {
 }
 
 describe("the old skate on Mountain v2's town island", () => {
+  it("has a safe, translated Tideline entry for riders coming from elsewhere on the map", () => {
+    const entry=horizonSkateEntry(),{skate}=mount(),native=toNative(entry.x,entry.y,entry.z);
+    expect(skate.canStart(entry.x,entry.z)).toBe(true);
+    expect(Math.hypot(native.x-18.6,native.z+38.3)).toBeLessThan(15);
+    expect(entry.y).toBeCloseTo(groundHeightAt(native.x,native.z)+O.y,6);
+  });
   it("offers the board on the island and nowhere else", () => {
     const { skate } = mount();
     expect(skate.canStart(TIDELINE.x, TIDELINE.z)).toBe(true);

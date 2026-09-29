@@ -25,7 +25,7 @@ import {createBodyFigure} from '../../body/figure.ts';
 import {createPlayableFigure} from '../../body/playableFigure.ts';
 import type {PlayableAvatar} from '../../body/avatarDefinition.ts';
 import {EMOTE_LOOPS,EMOTE_SECONDS,type EmoteId} from '../../body/bodyModel.ts';
-import {createNativeSkate,type NativeSkate,type NativeSkateFrame} from '../skate/nativeSkate.ts';
+import {createNativeSkate,horizonSkateEntry,type NativeSkate,type NativeSkateFrame} from '../skate/nativeSkate.ts';
 import type {SkateProgress} from '../../skate/session.ts';
 import type {PlaceWalkSource} from '../../scene/place.ts';
 import type {HouseBodyReturn} from '../../../house/navigation.ts';
@@ -48,7 +48,7 @@ import {HORIZON_MANIFEST} from '../world/manifest.ts';
 import {restoreHorizonPosition,HORIZON_RESTORE_TOLERANCE} from './savedPosition.ts';
 import {horizonFootFrame,horizonWalkOut,type HorizonWalkProbe} from './walkOut.ts';
 import {horizonPartnerPose} from './partner.ts';
-import {walkPlan,withExtraGraph} from '../world/pathGraph.ts';
+import {nearestPathNode,walkPlan,withExtraGraph} from '../world/pathGraph.ts';
 import {createChunkGate,createChunkScheduler,createRideGate,CHUNK_REACH_EU,CHUNK_ARRIVING_STATUS,CHUNK_FAILED_STATUS} from './chunkGate.ts';
 import {createCableLayer} from './cableLayer.ts';
 import {solarPosition,solarReviewDate} from '../sun/solar.ts';
@@ -968,8 +968,26 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
       monorail.control(control,value);reportMonorail(true);schedule();return true;
     },
     /** Whether the board can be put down here (Mountain v2's town island). */
+    hasSkate(){return Boolean(skate);},
     canSkate(){return Boolean(skate&&mode==='walk'&&!monorail?.state()&&!registry.active()&&!kitchen?.active()&&skate.canStart(body.x,body.z));},
-    startSkate(progress?:SkateProgress){schedule();if(!skate||monorail?.state()||registry.active()||kitchen?.active()||mode!=='walk')return false;emote=null;path=[];clear();return skate.start({...body},progress);},
+    startSkate(progress?:SkateProgress){
+      schedule();if(!skate||monorail?.state()||registry.active()||kitchen?.active()||mode!=='walk')return false;
+      // The old shell offered the board from its main outdoor place. The Horizon is much larger:
+      // bring an explicit Skate action to the park's known start before handing control to the old driver.
+      if(!skate.canStart(body.x,body.z)){
+        const at=horizonSkateEntry();restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',...at});
+        Object.assign(body,at);yaw=at.yaw;pendingRestore=null;resnap=!gateOpen(at.x,at.z);updateCamera();
+      }
+      emote=null;path=[];clear();return skate.start({...body},progress);
+    },
+    retry(){
+      schedule();
+      if(skating()){skate!.controls.command('retry');skate!.publish(performance.now(),true);return true;}
+      if(registry.active()||monorail?.state()||kitchen?.active())return false;
+      const node=nearestPathNode(world.pathGraph!,[body.x,body.y,body.z]);if(!node)return false;
+      restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',x:node.at[0],y:node.at[1],z:node.at[2],yaw:node.facing??body.yaw});
+      fadeCut('Back on safe ground.');return true;
+    },
     stopSkate(){schedule();const at=skate?.stop();if(!at)return false;Object.assign(body,at);yaw=at.yaw;path=[];clear();return true;},
     /** The old shell's emote row: plays on the walking figure (null stops it). Riding, it does nothing. */
     emote(id:EmoteId|null){schedule();emote=id&&!registry.active()?{id,at:performance.now()}:null;},
