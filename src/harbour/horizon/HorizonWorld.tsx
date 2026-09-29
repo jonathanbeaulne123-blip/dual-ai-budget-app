@@ -110,7 +110,9 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
   function onDoor(host:Host,body:ReturnType<HorizonRuntime['savedBody']>){
     try{saveHouseReturnOnDevice(identity,route,body,'horizon');saveHouseReturnOnDevice(identity,route,body);}catch{/* In-memory return remains available. */}
     const target=HORIZON_HOST_TOOLS[host.id],place=(host.toolPlaceId??host.placeIds[0]) as HarbourPlaceId,address=VILLAGE_ADDRESS[place];
-    if(props.onNavigateLocation&&address)props.onNavigateLocation({...route,...address,surface:target,object:undefined});else if(target)props.onOpen(target);
+    // PR C: a door walks you into the old world's 3D room (the shell switches there, `harbourShellFor`); its tools open
+    // from the room's own objects, as they always did. Without a location seam the tool itself opens.
+    if(props.onNavigateLocation&&address)props.onNavigateLocation({...route,...address,surface:undefined,object:undefined});else if(target)props.onOpen(target);
   }
   // ── The old app shell around the Horizon ──
   const space=props.space==='mine'?'mine':'ours';

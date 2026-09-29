@@ -7,6 +7,8 @@ import type {HarbourWorldProps} from '../src/harbour/HarbourWorld.tsx';
 import type {HorizonStageProps} from '../src/harbour/horizon/HorizonStage.tsx';
 import type {Host} from '../src/harbour/horizon/world/definition.ts';
 import {readHouseReturnOnDevice} from '../src/house/navigation.ts';
+import {VILLAGE_ADDRESS} from '../src/harbour/village/layout.ts';
+import type {HarbourPlaceId} from '../src/harbour/flag.ts';
 Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
 const state=vi.hoisted(()=>({stage:null as HorizonStageProps|null,feed:vi.fn()}));
 vi.mock('../src/harbour/horizon/HorizonStage.tsx',()=>({default:(props:HorizonStageProps)=>{state.stage=props;return null;}}));
@@ -23,11 +25,12 @@ function mount(){
  const props={household:{environment:identity.environment,householdId:identity.householdId},memberId:identity.memberId,scope:identity.scope,route,onNavigateLocation:navigate,onOpen:open,presence:{optedOut:true}} as unknown as HarbourWorldProps;
  root=createRoot(document.createElement('div'));act(()=>root!.render(createElement(HorizonWorld,props)));return{navigate,open,props};
 }
-it('opens all seven existing tools in the same scope and saves the outward return body',()=>{
+it('walks through all seven doors into the old rooms in the same scope and saves the outward return body',()=>{
  const {navigate,open}=mount();
- for(const [id,place,target] of [['home','kitchen','conversation'],['bank','bank','loft-banks'],['library','library','books'],['glasshouse','glasshouse','planner'],['studio','kiln','pottery'],['cottage','cottage','wardrobe'],['boathouse','boathouse','wishes']]){
+ for(const [id,place] of [['home','kitchen'],['bank','bank'],['library','library'],['glasshouse','glasshouse'],['studio','kiln'],['cottage','cottage'],['boathouse','boathouse']]){
   act(()=>state.stage!.onDoor!({id,toolPlaceId:place,placeIds:[place]} as Host,body));
-  expect(navigate).toHaveBeenLastCalledWith(expect.objectContaining({householdId:identity.householdId,scope:'personal',surface:target,object:undefined}));
+  const address=VILLAGE_ADDRESS[place as HarbourPlaceId];
+  expect(navigate).toHaveBeenLastCalledWith(expect.objectContaining({householdId:identity.householdId,scope:'personal',room:address.room,level:address.level,village:address.village,surface:undefined,object:undefined}));
   expect(readHouseReturnOnDevice(identity,'horizon')?.body).toEqual(body);
  }
  expect(open).not.toHaveBeenCalled();

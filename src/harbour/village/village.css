@@ -157,3 +157,5 @@ body:has(.glass-dock) .harbour-world:not(.is-skating) .harbour-moves__row{max-wi
 /* Wave 3a: between 720 and 1099 px the Simple view bubble stands at top 100 px on the right, and the
    "Walk together" card (right 28 px, 65 px down the stage) sat under it and its pill. It starts below them. */
 @media(min-width:720px) and (max-width:1099px){.village-hud .harbour-walk-together{top:calc(100px + 1.75rem + 72px)}}
+/* "← The square" stands above the dock (PR C: it is now the way out of a room back to the Horizon). */
+body:has(.glass-dock) .harbour-world .harbour-world__stair{bottom:calc(var(--dock-height,0px) + 16px + env(safe-area-inset-bottom,0px))!important;z-index:9}
