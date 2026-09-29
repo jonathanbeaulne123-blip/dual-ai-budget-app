@@ -22,7 +22,10 @@ export function riverSamples(step=1):{p:Point3;s:number;side:V3;drop:number}[]{
   return out;
 }
 
-export function buildWaterArt(bld:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite'){
+/** `townFurniture: false` (Horizon pass 5, the placed region) keeps the river, its foam and the town channel's water but
+ * leaves out the town channel's kerbs, culvert headwalls and footbridges. Omitted: v2's own scene, unchanged. */
+export type WaterArtOptions={townFurniture?:boolean};
+export function buildWaterArt(bld:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite',options:WaterArtOptions={}){
   const R=riverSamples(tier==='full'?1:2);
   // On the mountain the water tucks under its carved banks; in town it stops at the kerbs' inner faces.
   const width=(r:{p:Point3})=>r.p[2]>-40?RIVER_HALF_WIDTH-.05:r.p[2]>-48?RIVER_HALF_WIDTH+.9-(r.p[2]+48)/8*.95:RIVER_HALF_WIDTH+.9;
@@ -52,6 +55,7 @@ export function buildWaterArt(bld:CardBuilder,pal:MountainArtPalette,tier:'full'
     // Foam lips across a drop, and pale stones in the fast water.
     if(foam(b)>.4&&i%2===0&&tier==='full'){for(let k=0;k<3;k++){const u=(hash2(i,k)-.5)*1.4,p=A(u,b);bld.box(p[0],p[2],hash2(k,i)*3,.25+hash2(i,k+4)*.2,.18,p[1]-.3,p[1]+.1,shade(pal.coping,.9),pal.stone,b.p[1]>0?bld.pencil:null);}}
   }
+  if(options.townFurniture===false)return;
   // Town channel: stone kerbs lining both banks, level with the square.
   const town=R.filter(r=>r.p[2]>-40);
   for(const s of [-1,1]){

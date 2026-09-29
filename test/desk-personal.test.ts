@@ -155,7 +155,7 @@ describe("the App's personal Desk wiring (source)", () => {
   it("stands one island for both spaces (Tool Atlas D2): the harbour mounts in Mine with the member's own source, and no personal Desk branch remains", () => {
     expect(app).not.toMatch(/personalFlat|personalDesk/);
     // The same source the personal Desk always read (never the partner's personal rows), one key for both spaces so the pill closes nothing.
-    expect(app).toMatch(/<HarbourWorld key=\{`\$\{environment\}:\$\{household\.householdId\}:\$\{actorId\}`\} household=\{view==="personal"\?\(personalSource\?\?household\):household\} memberId=\{actorId\} scope=\{view\} space=\{spaceForView\(view\)\}/);
+    expect(app).toMatch(/<HarbourWorld key=\{`\$\{environment\}:\$\{household\.householdId\}:\$\{actorId\}:\$\{harbourWorld\}`\} household=\{view==="personal"\?\(personalSource\?\?household\):household\} memberId=\{actorId\} scope=\{view\} space=\{spaceForView\(view\)\}/);
     // The flat tier's Desk inside the harbour takes the space's scope; the illustrated personal house stands only without the harbour.
     expect(app).toMatch(/\(!HARBOUR_ENABLED\|\|view==="household"\)\?<HouseWorld /);
   });
@@ -168,7 +168,7 @@ describe("the App's personal Desk wiring (source)", () => {
 
   it("serves both spaces with one glass chrome and one All-tools sheet, and no personal bottom bar", () => {
     expect(app).not.toMatch(/<EditionFlip className="house-nav-flip"/);
-    expect(app).toMatch(/HARBOUR_ENABLED\?<><Compass fab=\{harbourBarFab\}/);
+    expect(app).toMatch(/HARBOUR_ENABLED\?<><WorldToggle\/><Compass fab=\{harbourBarFab\}/);
     expect(app.match(/<QuickSheet /g) ?? []).toHaveLength(1);
     expect(app).toContain("space={spaceForView(view)} spaceSwitch={spaceSwitchNode}");
   });

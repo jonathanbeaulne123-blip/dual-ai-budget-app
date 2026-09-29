@@ -414,8 +414,10 @@ function turn(m: SituationMetrics, a: number, b: number): number {
  */
 const SITUATION_TABLE: Record<SituationId, Situation> = {
   R0: {
-    id: 'R0', title: 'The twist', where: 'S1 Crown drop (fast, paved, ~15 %), S1 at 140 m, heading 5° left of the line, 12 m/s — not the S2 Strip rim: on its ~0 % the slide stops the board before the hold commits (2.5 s)',
-    start: {x: 1304.98, z: 639.05, heading: 0.1086, speed: 12},
+    // v2.6 (D-M5, re-derived on the v2.6 land): S1's Crown drop is gone (its upper half is v2's race course); the twist holds
+    // only at 1520–1523 m and 1525 m, the Notch shelf's lower paved run. Was S1 at 140 m, {x: 1304.98, z: 639.05, heading: 0.1086}.
+    id: 'R0', title: 'The twist', where: 'S1 Notch shelf, lower run (fast, paved, ~10 %), S1 at 1522 m, heading 5° left of the line, 12 m/s — not the S2 Strip rim: on its ~0 % the slide stops the board before the hold commits (2.5 s)',
+    start: {x: 1223, z: 1147.15, heading: 0.7, speed: 12},
     // S + D held past broadside (the hold commits after twistAfter 1.8 s into and comes round at 120°/s) until the
     // lead flips at 135°; release, and the same stick (now pointing home, at fakie-straight) catches it.
     script: [{t: 0, input: {slide: true, steer: 1}}, {t: 2.85, input: {steer: 1}}, {t: 3.4, input: {}}],
@@ -434,8 +436,11 @@ const SITUATION_TABLE: Record<SituationId, Situation> = {
     },
   },
   R1: {
-    id: 'R1', title: 'Downhill carve', where: 'S1 Crown drop (fast, paved, 13–18 %), S1 at 6 m below skateLineStarts.1, 3 m/s',
-    start: {x: 1309.06, z: 505.93, heading: -0.1646, speed: 3},
+    // v2.6 (D-M5): explicitly deferred (HANDOFF-notes/tests.md). v2's course has no fast 13–18 % drop of 120 m: from v2's
+    // summit start (6 m below skateLineStarts.1, below) the Alpine bends (flow, ~10 %) stall the carve at 83.7 m. No start on
+    // S1 (or S2–S4) passes; the start stays the old one's analogue. Was {x: 1309.06, z: 505.93, heading: -0.1646}.
+    id: 'R1', title: 'Downhill carve', where: 'S1 Summit start (fast, paved, ~7 %) into the Alpine bends (flow, ~10 %), S1 at 6 m below skateLineStarts.1, 3 m/s — deferred (D-M5)',
+    start: {x: 1330.6, z: 472.65, heading: 1.2175, speed: 3},
     // No S; alternating A / D holds of 1.2 s (the first 0.6 s, so the zigzag is centred on the line) at 0.5 stick
     // (kernel note: full stick carves 40–57° per hold), while the rider holds the line with 0.6 × pure pursuit: on a
     // 4 m bed with parapets an open-loop zigzag leaves the line at the first bend (62 m).
@@ -490,8 +495,10 @@ const SITUATION_TABLE: Record<SituationId, Situation> = {
     },
   },
   R3: {
-    id: 'R3', title: 'Direction change', where: 'S1 Shoulder sweep (flow, banked turf, 17 %), S1 at 230 m, 0.6 m right of the centreline, heading 15° right of it, 9 m/s',
-    start: {x: 1325.49, z: 703.35, heading: 1.304, speed: 9},
+    // v2.6 (D-M5, re-derived on the v2.6 land with the Mountain v2 region mounted, as the runtime rides it): the Shoulder sweep is
+    // gone; v2's Meadow sweep (330–370 m all pass) is the flow run. Was S1 at 230 m, {x: 1325.49, z: 703.35, heading: 1.304}.
+    id: 'R3', title: 'Direction change', where: 'S1 Meadow sweep on v2\'s road (flow, paved, 14 %), S1 at 350 m, 0.6 m right of the centreline, heading 15° right of it, 9 m/s',
+    start: {x: 1250.33, z: 527.19, heading: -2.0719, speed: 9},
     // Kernel note: RIDE's 1.6 s + 1.2 s slides scrub the board to a stop on 15 %; shorter slides keep ≥ 2 m/s.
     // Release with the countersteer (D) so grip returns, carve on with A, then S + D the other way.
     script: [{t: 0, input: {slide: true, steer: -1}}, {t: 1.0, input: {steer: 1}}, {t: 1.25, input: {steer: -1}}, {t: 1.7, input: {slide: true, steer: 1}}, {t: 2.5, input: {}}],
@@ -514,8 +521,10 @@ const SITUATION_TABLE: Record<SituationId, Situation> = {
   },
   R4: {
     // v2.2 (re-derived on the Stage A v2.1 land): at 705–710 m S1's deck now reports grass; 650 m is the same paved 16.9 % run.
-    id: 'R4', title: 'Straightening recovery', where: 'S1 Notch shelf (fast, paved, 17 %), S1 at 650 m, 1.2 m right of the centreline, heading 20° left of it, 13 m/s',
-    start: {x: 1298.47, z: 808.34, heading: -0.577, speed: 13},
+    // v2.6 (D-M5, re-derived on the v2.6 land): the Notch shelf is now S1 1345–1610 m; its lower paved run (1550–1570 m all pass)
+    // holds the recovery. Was S1 at 650 m, {x: 1298.47, z: 808.34, heading: -0.577}.
+    id: 'R4', title: 'Straightening recovery', where: 'S1 Notch shelf, lower run (fast, paved, 12 %), S1 at 1560 m, 1.2 m right of the centreline, heading 20° left of it, 13 m/s',
+    start: {x: 1234.95, z: 1183.02, heading: 0.6464, speed: 13},
     script: [{t: 0, input: {slide: true, steer: 1}}, {t: 0.5, input: {steer: -1}}, {t: 1.0, input: {}}],
     duration: 2.0,
     asserts(m) {

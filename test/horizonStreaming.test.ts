@@ -203,7 +203,8 @@ it('chunk gate: footprints name the chunks under a step; a route lists its chunk
 it('cable layer: a span renders only once both its anchors are in, an anchor draws itself while its district is not resident, and districts never draw the line (Wave 6)', async () => {
   const { createCableLayer, spanOf, cableSystems } = await import('../src/harbour/horizon/runtime/cableLayer.ts');
   const g1 = cableSystems().find(s => s.id === 'G1')!;
-  expect(g1.anchors).toHaveLength(5); expect(spanOf(g1.anchors, 1480, 1090)).toBe(0); expect(spanOf(g1.anchors, 1335, 535)).toBe(3);
+  // v2.6 (D-M6): G1 is Mountain v2's gondola (the Waterfront [1282,810] → three towers → Summit Commons [1300,480]).
+  expect(g1.anchors).toHaveLength(5); expect(spanOf(g1.anchors, 1282, 810)).toBe(0); expect(spanOf(g1.anchors, 1300, 480)).toBe(3);
   // One cable solid with a triangle over span 0 and one over span 3; the base platform and the top platform as anchors.
   const [a0, a1] = [g1.anchors[0]!.xy, g1.anchors[1]!.xy], [a3, a4] = [g1.anchors[3]!.xy, g1.anchors[4]!.xy];
   const mid = (p: readonly number[], q: readonly number[]) => [(p[0]! + q[0]!) / 2, (p[1]! + q[1]!) / 2];
@@ -211,7 +212,7 @@ it('cable layer: a span renders only once both its anchors are in, an anchor dra
   const cable = { id: 'G1.cable@harbour', sourceId: 'G1.cable', districtId: 'harbour', kind: 'cable', surface: 'metal', role: 'rail', walkable: false, bedIds: [], positions: [m0[0]!, 40, m0[1]!, m0[0]! + 1, 40, m0[1]!, m0[0]!, 41, m0[1]!, m3[0]!, 120, m3[1]!, m3[0]! + 1, 120, m3[1]!, m3[0]!, 121, m3[1]!], indices: [0, 1, 2, 3, 4, 5] };
   const slab = (id: string, district: string, xy: readonly number[]):StructureSolid => ({ id: `${id}@${district}`, sourceId: id, districtId: district, kind: 'platform', surface: 'stone', role: 'floor', walkable: true, bedIds: [], positions: [xy[0]!, 18, xy[1]!, xy[0]! + 2, 18, xy[1]!, xy[0]!, 18, xy[1]! + 2], indices: [0, 1, 2] });
   const world = { geometry: { solids: [cable, slab('platform.gondolaBase.slab', 'harbour', a0), slab('platform.gondolaTop.slab', 'crown', a4)] } } as unknown as Parameters<typeof createCableLayer>[0];
-  const ready = new Set(['harbour']), where = (xy: readonly number[]) => [xy === a4 || xy[1]! < 800 ? 'crown' : 'harbour'];
+  const ready = new Set(['harbour']), where = (xy: readonly number[]) => [xy === a4 || xy[1]! < 600 ? 'crown' : 'harbour'];   // v2.6: towers 1-2 (z 710, 614) in the fake's harbour, tower 3 (550) and the top in crown
   const layer = createCableLayer(world, 'full', id => ready.has(id), where);
   layer.rebuild();
   // Towers 1–3 sit (for this fake) in harbour, crown for the top: spans 0–1 drawn (base + tower 1, towers 1–2), 3 not (the top's chunk is out).

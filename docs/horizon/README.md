@@ -1,6 +1,6 @@
 # The Horizon — the deck
 
-> Current canonical manifest: **v2.5** (reconciled with main #554–#560, 27–28 September 2026; see "v2.5 (reconciled with main #554–#560)" at the end), on v2.4 (Stage A Wave 7, integrator 4; see "v2.4 (Stage A Wave 7, integrator 4)"), on v2.3 (Stage A Wave 7, track W7-A; see "v2.3 (Stage A Wave 7, W7-A)"), on v2.2 (reconciled with main #549–#552, 27 September 2026; see "v2.2 (reconciled with main #549–#552)"): the Stage A land v2.1 plus main's two data-only v1.7 blocks — FLIGHT.md's sky fields (glider polar, parachute, Throat corridor, Drop Zone, landing modes, the carried `bailOut` threshold; D34 pending Jonathan) and RIDE.md's paces and surface grip (D42). v2.1 / v2.0: Stage A Wave 5 and Jonathan's rulings of 27 September 2026. v1.9 / v1.8 / v1.7: Stage A fixer, integration and design-lead data, 26 September 2026. v1.6: Jonathan confirmed full scale 1.0 and three uphill Terraces plots (seven large reserves total) on 25 September 2026. `src/harbour/horizon/world/MANIFEST.json` is authoritative; embedded manifests in `inputs/` are frozen design references. The generator mirrors the canonical data byte for byte. PIN-0 is recorded as the accepted #546 merge in `docs/DECISIONS.md`.
+> Current canonical manifest: **v2.6** (Mountain v2 placed, pass 5, 28 September 2026; see "v2.6 (Mountain v2 placed)" at the end), on v2.5 (reconciled with main #554–#560, 27–28 September 2026; see "v2.5 (reconciled with main #554–#560)" at the end), on v2.4 (Stage A Wave 7, integrator 4; see "v2.4 (Stage A Wave 7, integrator 4)"), on v2.3 (Stage A Wave 7, track W7-A; see "v2.3 (Stage A Wave 7, W7-A)"), on v2.2 (reconciled with main #549–#552, 27 September 2026; see "v2.2 (reconciled with main #549–#552)"): the Stage A land v2.1 plus main's two data-only v1.7 blocks — FLIGHT.md's sky fields (glider polar, parachute, Throat corridor, Drop Zone, landing modes, the carried `bailOut` threshold; D34 pending Jonathan) and RIDE.md's paces and surface grip (D42). v2.1 / v2.0: Stage A Wave 5 and Jonathan's rulings of 27 September 2026. v1.9 / v1.8 / v1.7: Stage A fixer, integration and design-lead data, 26 September 2026. v1.6: Jonathan confirmed full scale 1.0 and three uphill Terraces plots (seven large reserves total) on 25 September 2026. `src/harbour/horizon/world/MANIFEST.json` is authoritative; embedded manifests in `inputs/` are frozen design references. The generator mirrors the canonical data byte for byte. PIN-0 is recorded as the accepted #546 merge in `docs/DECISIONS.md`.
 
 Version 1.9 · 26 September 2026 · Owner: Jonathan (product) · Author: Claude (design lead, review)
 
@@ -32,6 +32,7 @@ Briefs cite spine keys (`MANIFEST.json → structures.highSpan`, `STYLE §1.6.4`
 | `passes/02b-kit.md` | Pass 2b, Claude subagents, parallel with 2: the kit, the sun clock, the light cards, planting, ground paint, dressings |
 | `passes/03-neighbourhoods.md` | Pass 3, Claude subagents: one template, seven neighbourhoods, two at a time |
 | `passes/04-pastimes.md` | Pass 4, Claude subagents: fourteen pastimes, Lantern Hunt first |
+| `passes/05-mountain-region.md` | Pass 5, Claude subagents: Mountain v2 placed on the Horizon as a region (Horizon v2, segment 1) |
 | `RIDE.md` | The movement foundation for wheels: one ground kernel, the tyre step, S / A / D powerslide, the pump-boost, pace as physics, profiles for the board, the bicycle and pass 4's skates, the ride log and five tuning situations; D39–D46 |
 | `REVIEW-BRIEF.md` | How any pass is reviewed (the dissection method), severity ladder, report format |
 | `NOT-THIS.md` | One-page checklist of the Mountain v2 anti-patterns, each with its "instead" |
@@ -66,6 +67,7 @@ From pass 0 on, the deck lives in the repository at `docs/horizon/` and the cano
 | 2b Kit | Claude: 6 kit subagents + integrator | reviewer subagent | Jonathan looks at the kit render sheet | `PIN-1` | `PIN-2` |
 | 3 Neighbourhoods | Claude: 2 neighbourhood subagents per wave + integrator | reviewer subagent per wave | Jonathan per wave, on devices | `PIN-2`, then each wave's pin | `PIN-3a…3d` → `PIN-3` |
 | 4 Pastimes | Claude: one subagent per pastime group + integrator | reviewer subagent | Jonathan plays each pastime on devices | `PIN-3` | `PIN-4` |
+| 5 Mountain v2 | Claude subagents | blind subagent | Jonathan by eye, on the captures | `main@9fed600` | none (`PIN-1` still open) |
 
 Rules for the order:
 - **Nothing goes on the land before Jonathan's pass-1 gate.** No kit placement, planting, dressing or mover route lands on the terrain until he has looked at the pass-1 renders and said go. Pass 2b may build and render its kit on the kit sheet before the gate; it merges only after.
@@ -112,7 +114,8 @@ Delivered to `~/Downloads/hearth-horizon-<pass>/` (for example `hearth-horizon-p
 ## 8. Review harness and capture convention
 
 - Serve: `HEARTH_REVIEW_PORT=4192 node scripts/serve-whole-house-review.mjs`
-- Open: `http://localhost:4192/__review?seed=mountain&story=growing&run=first&member=MEM-001` plus `&sun=HH:MM` (LIGHT §1).
+- Open Mountain: `http://localhost:4192/__review?seed=mountain&story=growing&run=first&member=MEM-001` plus `&sun=HH:MM` (LIGHT §1).
+- Open Horizon (DEV): same URL with `&world=horizon`, or start Vite with `VITE_HEARTH_HOUSE_WORLD=1 VITE_HEARTH_HARBOUR=1` and use the in-App **Mountain / Horizon** toggle under Compass/QuickSheet (full-App UX dissection; geography stays partitioned).
 - Runtime handle: `document.querySelector('.house-world__canvas[data-harbour-tier]').__harbour` → `shot(id)`, `body().at()`, `nearestStation`, `mountainTravel`.
 - Sizes: 1440 × 900 (full tier: needs ≥ 720 px and `hardwareConcurrency > 4`) and 390 × 844 (lite).
 - Headless captures are the builder's checks. Acceptance captures come from Jonathan's Mac and iPhone (CONTRACT §2.15, §7).
@@ -564,3 +567,38 @@ MANIFEST v2.4 → **v2.5**, 27 September 2026, Claude (reconciliation 2: Stage A
 | `moverAnchors_v2_5.comfort` | — | one comfort source for the new movers (the stricter wins) | reduced motion / calm: fleet wind and bob off, the cruiser camera cut and no lean, the parachute's comfort camera |
 
 Runtime with the data (`runtime/index.ts`): Look / Island opened from Walk is a pause — Walk resumes the physical body (main #557: the deck, a seat, the spot on the island; never re-seated onto a submerged floor). A page chosen (the page picker, `api.shot`, a comfort cut to a view) is a visit — Walk starts from it on dry path (Stage A's walk-out, R3-130). A reload while looking saves the physical body, never the camera eye. An open galley service (#559) holds the body: a page chosen while cooking returns to the galley on Walk (main's "Choose Walk and Resume"); after the kitchen's Exit a chosen page is a visit again.
+
+## v2.6 (Mountain v2 placed)
+
+MANIFEST v2.5 → **v2.6**, 28 September 2026, Claude (pass 5, Horizon v2 segment 1: Mountain v2 — the live mountain on `main`, `hearth-mountain-2` — placed on the Horizon, stripped down, at Jonathan's ruling; D-M1…D-M10, `docs/horizon/DECISIONS.md`). Mountain v2 is not rebuilt: it stands 1:1 in its own coordinates under one translation (`regions/mountainV2/placement.ts`, `MOUNTAIN_V2_OFFSET = {x:1308,y:54,z:764}`), summit on the Crown summit `[1310,470]` h 158 (D-M1). Geography revision stays `horizon-geo-1` (a placed region's own footprint ground is a bake override inside the existing revision, not a geography bump). Ids never change: every retired id's v2.5 value is kept verbatim in the new top-level `retired_v2_6` registry (`{value, why}` per dotted key), not deleted — this is D-M8's "source stays" rule applied to the manifest itself, cleaner than a `v2_5_*`-suffixed field per key.
+
+<!-- T1's own HANDOFF-notes/land.md narrative (conflict counts, the re-bake report, per-suite results) was not available when this section was written; this table is compiled directly from the canonical `src/harbour/horizon/world/MANIFEST.json` (v2.5 → v2.6) itself, so the keys and values below are the built ones, not the brief's plan. Reconcile against `HANDOFF-notes/land.md` if its account differs. -->
+
+| Key | v2.5 | v2.6 | Why (`retired_v2_6[*].why` where retired) |
+|---|---|---|---|
+| `version` / `date` | 2.5 / 2026-09-27 | **2.6** / 2026-09-28 | — |
+| `regions` | — | **new**: `[{id:"mountainV2", kind:"placedWorld", offset:{x:1308,y:54,z:764}, footprint:{minX:1108,maxX:1508,minZ:368,maxZ:848}, source, ground, data, decisions:[D-M1…D-M10], summitNote}]` (`CONTRACT.md` §4) | D-M1: v2 is a placed world, not re-authored geometry |
+| `roads.V02` (Crown Road) | climb to the turning circle, through the Shoulder Tunnel | **retired** (`retired_v2_6["roads.V02"]`) | "Crown Road retired; v2 road is the mountain road" |
+| `roads.V03` "Mountain Road" | — | **new** spur, 327 m: from Horizon Drive (V01) on the Prow cliff drive `[1599.5,790.8]`, north of the Terraces lay-bys, through the 73 m Mountain Road Tunnel and a canal bridge, to v2's town lane 22 m south of the road foot `[1282,54.65,720]`, ≤ 10 % | D-M4; confirm |
+| `structures.shoulderTunnel`, `.lakesideSwitchback`, `.s1Flyover`, `.crownWalkBridge`, `.inletFootbridge` | built | **retired** (`retired_v2_6`) | Crown Road retired (D-M4); the Shoulder sweep and its self-crossing retired, the Year Walk now rides v2's road/V03, the Cup and upper river retired so their footbridge is gone (D-M5) |
+| `structures.dam` | Stillwater dam, face south, crest with plaques, spillway apron, east-abutment gallery | **retired** (`retired_v2_6["structures.dam"]`) | "v2 glass dam is the one Fund picture; Stillwater drains over a natural rock sill" |
+| `underground.damGallery` | stair inside the east abutment | **retired** | D-M3 |
+| `water.cup`, `water.river.upper` | the Cup tarn; the river feeding the lake from it | **retired** (both) | "the Cup tarn is Mountain v2 ground; v2 reservoir is the mountain water" |
+| `water.dam` | the dam's own water record | **retired** | "the Stillwater dam is removed; L01 is on v2 dam crest" |
+| `water.stillwater` | surface 50, held by the dam | surface unchanged; note now "held by the natural sill at its south end (no dam)" | D-M3 |
+| `thresholds.damPortage` | canoe portage beside the apron | **retired** | D-M3 |
+| `pastimeData.sledding` | bed on the Shoulder's south-east meadow `[1400,760]` | `where` → "Mountain v2 meadow terraces (the meadow sweep); no Horizon bed: T2/T3 place it"; old value kept inline as `v2_5` | "the Shoulder meadow sledding bed is retired" (D-M5) |
+| `places.L01` | `xy [1172,912]` h 52, on the Stillwater dam crest | **moves** to `[1316,539.2]` h 142 (v2's `DAM_PARTS.promenade[6]` + offset); `reads` stays `BasinReading` only; v2.5 value kept as `v2_5_xy`/`v2_5_h` | D-M3: "the region draws the plaques, the Horizon keeps its place pad as a deck (no earth)" |
+| `skate.S1` | 17 points, Horizon-authored throughout | 143 points: upper half is v2's course (`mountainV2` field, `segmentRule_v2_6`, `gatesNote_v2_6`); the old line kept as `v2_5_pts`/`v2_5_segments`/`v2_5_length_m` | D-M5 |
+| `cable.G1` | `from [1480,1090] h18` → `to [1335,535] h150`, three towers, label "Gondola" | `from [1282,810] h54.53` → `to [1300,480] h158.05`, towers `[[1250,710],[1228,614],[1370,550]]`, label **"Gondola (Mountain v2)"** | D-M6 |
+| `rail.ORE` South Portal | station note "h110 (29 m from Crown Road's turning circle)" | station note **"h67.5 (Mountain v2 ground, on v2 road lower switchback leg)"**; points unchanged, only the portal's height/context note moves | D-M7 |
+| `thresholds.gondolaBase` / `gondolaTop` | `xy [1480,1090]` / `xy [1335,535]` (v1.9 `[1360,560]`) | `gondolaBase` **`[1279.71,810.73]`**, `gondolaTop` **`[1298.3,481.7]`**; old values kept as `v2_5_xy` | D-M6 |
+| `thresholds.southPortal` | cart → feet, `xy [1345,680]` | unchanged point; ground beneath it is now v2's (D-M7) | — |
+| `walks.crown` | authored points from `[1417.7,677.4]` to the summit | **replaced**: `footwayOf: {host: "mountainV2.road", offset_m: 2.4, side: "left", from_s: 237.87, to_s: 945.86}`, new `pts` on v2's road verge | D-M4/D-M5: "the Crown walk rides v2 road verge; Crown Road retired" |
+| `walks.crownFromGondola` | authored link from the old gondola top | **retired** | "the Summit Commons station joins v2 summit paths; T2 graph" |
+| `districts.lakeside` / `.crown` notes | "Stillwater, the dam, L01" / "the Shoulder and the summit…" | lakeside: "Stillwater, the sill falls (v2.6: the dam and L01 moved to Mountain v2)"; crown: "…v2.6: Mountain v2 stands here (regions.mountainV2), its glass dam and L01 on the crest" | D-M1, D-M3 |
+| `crossings` | 266 rows | 220 rows; retired rows on V02, the Shoulder Tunnel, the dam, the portage, the upper river, the Crown walk, the old G1 line and S1's upper half kept in `retired_v2_6["crossings"]`; the re-bake measures the new meetings | D-M1–D-M7 |
+
+`views.A/E/F/G` and `journeys` (summit-related targets): re-posed / re-measured only as far as the new ground requires, old values kept alongside (D-M10) — the exact poses and measured times are T1's re-bake output; read `HANDOFF-notes/land.md` and the manifest's own `v2_5_*` view fields for the final numbers once the bake report is written.
+
+Not drawn in this pass (D-M8, D-M9; source stays under `src/harbour/mountain/**`, untouched): the town square, storefronts, the road-foot gate, town-channel kerbs and culverts, the canal bridge's fittings beyond structure, the monorail, district fixtures and biome ground-detail props, most signposts/cairns/beehives/benches, pennants and laundry cloth, the waterwheel, chimney smoke, survey stakes and hoardings, engraved sign plates and wear fences, interaction gates and bells, moths and butterflies, v2's four tool buildings (home, cottage, library, glasshouse — their terraces stay as open shelves) and Hercules's cottage, and station huts' goods (their canopy stays). See the brief §4 for the full drawn / not-drawn lists.

@@ -52,6 +52,10 @@ export interface Station { id: string; month: number; anchor: Anchor; bedIds: st
 export interface HomesteadSite { id: string; anchor: Anchor; footprint: Polygon }
 export interface LodBudgets { l0Triangles: number; l0DrawCalls: number; l1Triangles: number }
 
+/** Pass 5 (T2, CONTRACT §4 region fields): a world placed on the Horizon by translation only (Mountain v2: `mountainV2`).
+ * `offset` maps its native space to engine space (engine = native + offset); `footprint` is its engine-space box. The runtime
+ * mounts a placed region only when the definition lists it (a bake without the ground override has none). */
+export interface RegionPlacement { id: string; kind: 'placedWorld'; offset: { x: number; y: number; z: number }; footprint: { minX: number; maxX: number; minZ: number; maxZ: number } }
 /** One authoritative geography, shared by the world and the Journey map. */
 export interface WorldDefinition {
   id: 'horizon';
@@ -87,6 +91,8 @@ export interface WorldDefinition {
   } };
   collision?: { beds: BedCut[]; pads: PadCut[]; mouths: MouthMask[]; waters: WaterCut[]; walkableSlopeDegrees: number; lipStepMax: number };
   pathGraph?: HorizonPathGraph;
+  /** Pass 5: placed worlds (MANIFEST `regions`), absent before the bake carries one. */
+  regions?: RegionPlacement[];
   diagnostics?: LandDiagnostic[];
   crossingProofs?: CrossingProof[];
   rawIntersections?: Intersection[];

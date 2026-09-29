@@ -184,7 +184,7 @@ describe("HarbourWorld picks the Horizon for an explicit request", () => {
   });
   it("keeps the chooser's other ways into the Horizon", () => {
     const shell = readFileSync(join(root, "src", "harbour", "HarbourWorld.tsx"), "utf8");
-    expect(shell).toMatch(/return homeBook\?\.visitRequested \|\| props\.enterHorizonRequest \|\| HARBOUR_DEV && new URLSearchParams\(window\.location\.search\)\.get\("world"\) === "horizon"/);
+    expect(shell).toMatch(/return homeBook\?\.visitRequested \|\| world === "horizon" \|\| props\.enterHorizonRequest/);
   });
 });
 

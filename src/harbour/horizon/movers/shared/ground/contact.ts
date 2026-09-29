@@ -122,12 +122,47 @@ function buildIndex(world: WorldDefinition, manifest?: Manifest): BedIndex {
   return {beds, halfWidth, boxes, cells, pads, padCells, park};
 }
 
-function segmentOf(bed: Bed, index: number): { segment: SurfaceSegment | null; segmentIndex: number } {
+/** Plan arc length at each point of a bed whose slices are authored (not equal index slices), else null. Cached per bed. */
+const authoredArcs = new WeakMap<Bed, Float64Array | null>();
+function arcsOf(bed: Bed): Float64Array | null {
+  let arcs = authoredArcs.get(bed);
+  if (arcs !== undefined) return arcs;
+  const list = bed.surfaceSegments ?? [], n = list.length;
+  const uniform = list.every((g, i) => Math.abs(g.from - i / n) < 1e-6 && Math.abs(g.to - (i + 1) / n) < 1e-6);
+  arcs = null;
+  if (!uniform) {
+    arcs = new Float64Array(bed.points.length);
+    for (let i = 1; i < bed.points.length; i++) arcs[i] = arcs[i - 1]! + Math.hypot(bed.points[i]![0] - bed.points[i - 1]![0], bed.points[i]![2] - bed.points[i - 1]![2]);
+  }
+  authoredArcs.set(bed, arcs);
+  return arcs;
+}
+/** How near (plan m) a slice join a deck solid's own slab name may overrule an authored-slice bed's arc slice. */
+const JOIN_REACH = 2;
+function segmentOf(bed: Bed, index: number, f = 0.5): { segment: SurfaceSegment | null; segmentIndex: number } {
   const list = bed.surfaceSegments;
   if (!list?.length) return {segment: null, segmentIndex: -1};
+  const arcs = arcsOf(bed);
+  if (arcs) {
+    // v2.6 (T5): S1's slices are authored by arc (MANIFEST segments[i].start, land/beds/build.ts s1OnMountain; the terrain's
+    // `progress` reads them the same way): the slice whose [from, to) holds the hit's arc fraction.
+    const total = arcs[arcs.length - 1]! || 1, q = (arcs[index]! + (arcs[index + 1]! - arcs[index]!) * f) / total;
+    let k = list.findIndex(g => q < g.to);
+    if (k < 0) k = list.length - 1;
+    return {segment: list[k]!, segmentIndex: k};
+  }
   // The geometry's own rule (profiles.ts emitBedGeometry): slab i takes the slice its start index falls in.
   const k = Math.min(list.length - 1, Math.floor(index / (bed.points.length - 1) * list.length));
   return {segment: list[k]!, segmentIndex: k};
+}
+/** On an authored-slice bed, the slab named by the deck's solid counts only at a join (within JOIN_REACH of it). */
+function slabAtJoin(hit: BedHit, k: number): boolean {
+  const arcs = arcsOf(hit.bed);
+  if (!arcs) return true;
+  if (Math.abs(k - hit.segmentIndex) !== 1) return false;
+  const list = hit.bed.surfaceSegments!, total = arcs[arcs.length - 1]!, join = (k > hit.segmentIndex ? list[k]!.from : list[hit.segmentIndex]!.from) * total;
+  const at = arcs[hit.index]! + (arcs[hit.index + 1]! - arcs[hit.index]!) * hit.f;
+  return Math.abs(at - join) <= JOIN_REACH;
 }
 
 /** Every bed whose deck (with shoulders and margin) contains (x, z); nearest centreline first. With `y`, only beds near that height. */
@@ -147,7 +182,7 @@ function bedsAt(ix: BedIndex, x: number, z: number, y?: number): BedHit[] {
     if (y !== undefined && Math.abs(py - y) > BED_HEIGHT_TOLERANCE) continue;
     const prev = best.get(i);
     if (prev && prev.distance <= distance) continue;
-    best.set(i, {bed, bedId: bed.id, kind: bedClass(bed), index: k, f, t: (k + f) / (bed.points.length - 1), ...segmentOf(bed, k), distance, at: [px, py, pz]});
+    best.set(i, {bed, bedId: bed.id, kind: bedClass(bed), index: k, f, t: (k + f) / (bed.points.length - 1), ...segmentOf(bed, k, f), distance, at: [px, py, pz]});
   }
   return [...best.values()].sort((p, q) => p.distance - q.distance);
 }
@@ -159,15 +194,22 @@ function bedsAt(ix: BedIndex, x: number, z: number, y?: number): BedHit[] {
 function padAt(ix: BedIndex, x: number, z: number, y?: number, prefer?: ReadonlySet<Pad>): PadHit | null {
   const list = ix.padCells.get(cellKey(Math.floor(x / CELL), Math.floor(z / CELL)));
   if (!list) return null;
-  let found: Pad | null = null, gap = Infinity;
+  // v2.6 (T5): a pick-up pad for another mode (feet→cable at the gondola's Waterfront platform) never hides a pad this
+  // profile can use on the same spot (the walk footQuay × G1 park pad 2.4 m beside it): it ranks after them.
+  const foreign = (p: Pad) => (prefer && p.pickup && !prefer.has(p) ? 1 : 0);
+  let found: Pad | null = null, gap = Infinity, rank = Infinity;
   for (const i of list) {
     const p = ix.pads[i]!, rx = x - p.centre[0], rz = z - p.centre[2];
     if (Math.abs(rx * p.cos + rz * p.sin) > p.size[0] / 2 || Math.abs(-rx * p.sin + rz * p.cos) > p.size[1] / 2) continue;
     const dy = y === undefined ? 0 : Math.abs(y - p.centre[1]);
     if (dy > PAD_HEIGHT_TOLERANCE) continue;
-    const tie = found !== null && Math.abs(dy - gap) < 1e-9;
-    if (dy > gap || (tie && !(prefer?.has(p) && !prefer.has(found!)))) continue;
-    found = p; gap = dy;
+    const r = foreign(p);
+    if (r > rank) continue;
+    if (r === rank) {
+      const tie = found !== null && Math.abs(dy - gap) < 1e-9;
+      if (dy > gap || (tie && !(prefer?.has(p) && !prefer.has(found!)))) continue;
+    }
+    found = p; gap = dy; rank = r;
   }
   return found && {padId: found.padId, thresholdId: found.thresholdId, centre: found.centre, size: found.size, rotationDegrees: found.rotationDegrees, pickup: found.pickup};
 }
@@ -224,7 +266,8 @@ export function createBoardContact(geography: Geography, world: WorldDefinition,
     // On the deck itself the solid names its slice (`S1.surface.3.…`), exact at slab joins.
     if (hit.bed.surfaceSegments && s.id.startsWith(`${hit.bedId}.surface.`)) {
       const k = Number.parseInt(s.id.slice(hit.bedId.length + 9), 10);
-      if (Number.isInteger(k) && hit.bed.surfaceSegments[k]) segment = hit.bed.surfaceSegments[k]!;
+      // v2.6 (T5): on S1 (authored slices) the land still names slabs by equal index slices, so its slab id is trusted only at a join.
+      if (Number.isInteger(k) && hit.bed.surfaceSegments[k] && slabAtJoin(hit, k)) segment = hit.bed.surfaceSegments[k]!;
     }
     return asPace(segment?.pace) ?? materialPace(s.material) ?? asPace(surfaces[hit.bed.surface]?.pace);
   }

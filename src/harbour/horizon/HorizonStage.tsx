@@ -8,6 +8,7 @@ import {perspectiveLabel} from './runtime/perspective.ts';
 import {HARBOUR_DEV} from '../flag.ts';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import type {HorizonRuntime,HorizonOptions,HorizonMode,HorizonMoverState} from './runtime/index.ts';
+import {cableRidingStatus,type CableControl} from './movers/gondola/hud.ts';
 import type {ThresholdOffer} from './movers/shared/threshold.ts';
 import type {ReducedMotionCut,ReducedMotionLanding} from './movers/shared/mode.ts';
 import type {Host} from './world/definition.ts';
@@ -31,7 +32,8 @@ const HOLD_MS=(HORIZON_MANIFEST.carriedThresholds.find(threshold=>threshold.id==
 const offerKey=(o:ThresholdOffer)=>`${o.thresholdId}:${o.from}:${o.to}`;
 export const WALK_STATUS='Drag to look. Walk with W A S D, Space jumps; E opens a nearby door.';
 export const RIDE_PAUSED_STATUS='The ride waits where you left it. Choose Walk to ride on.';
-export function statusTextFor({riding,offerLabel,paused,flight}:{riding:boolean;offerLabel?:string|null;paused?:boolean;flight?:boolean}):string{
+export function statusTextFor({riding,offerLabel,paused,flight,cable}:{riding:boolean;offerLabel?:string|null;paused?:boolean;flight?:boolean;cable?:'gondola'|'funicular'|null}):string{
+  if(riding&&cable)return cableRidingStatus(cable);
   if(riding)return paused?RIDE_PAUSED_STATUS:flight?'Flying. W/S set the bar, A/D bank; use the landing bubble.':'Riding. W pushes, S slides, A D steer, Space pops, E parks.';
   return offerLabel?`E · ${offerLabel}`:WALK_STATUS;
 }
@@ -46,6 +48,8 @@ export default function HorizonStage(props:HorizonStageProps){
   const [offers,setOffers]=useState<ThresholdOffer[]>([]),[mover,setMover]=useState<HorizonMoverState|null>(null),[sheet,setSheet]=useState<ReducedMotionCut|null>(null),hold=useRef<number|null>(null),jumpPointer=useRef<number|null>(null);
   const [kitchen,setKitchen]=useState<KitchenView|null>(null),kitchenSnapshot=useRef('');
   const kitchenActive=Boolean(kitchen&&kitchen.state.phase!=='idle');
+  // PR #566 Codex: the cable ride's Skip and Sit buttons (runtime.cableControls), for touch riders and keyboard/screen-reader users.
+  const [cable,setCable]=useState<CableControl[]>([]);
   const [boatActions,setBoatActions]=useState<FleetAction[]>([]),[fleetState,setFleetState]=useState<ReturnType<HorizonRuntime['fleetState']>|null>(null);
   const [tier]=useState<'full'|'lite'>(()=>new URLSearchParams(location.search).get('tier')==='lite'||matchMedia('(max-width: 600px)').matches?'lite':'full');
   useEffect(()=>{const controller=new AbortController();let current:HorizonRuntime|null=null,unregister:(()=>void)|null=null;
@@ -84,19 +88,19 @@ export default function HorizonStage(props:HorizonStageProps){
     const poll=window.setInterval(()=>{
       const world=runtime.current;if(!world)return;const actionsHome=world.homeActions?.()??[],homeKey=JSON.stringify(actionsHome);if(homeKey!==lastHome){lastHome=homeKey;setHomeActions(actionsHome);}
       const kitchenView=world.kitchenView?.();if(kitchenView){const k=JSON.stringify(kitchenView);if(k!==kitchenSnapshot.current){kitchenSnapshot.current=k;setKitchen(kitchenView);}}
-      const next={offers:world.offers(),mover:world.moverState(),mode:world.mode()},hud=next.mover.hud;
+      const next={offers:world.offers(),mover:world.moverState(),mode:world.mode(),cable:world.cableControls?.()??[]},hud=next.mover.hud;
       if(next.mode==='walk'&&!latest.current.paused&&(!next.mover.attached||isCraft(next.mover.mode))){
         const actions=world.fleetActions(),state=world.fleetState();
         // Only rendered fleet values own React updates; vessel poses stay in the runtime.
         const fleetKey=JSON.stringify([actions.map(a=>[a.id,a.label]),state.swimming,state.saveFailed,state.vessels.find(v=>v.id==='yacht')?.anchor]);
         if(fleetKey!==lastFleet){lastFleet=fleetKey;setBoatActions(actions);setFleetState(state);}
       }
-      const key=JSON.stringify([next.offers.map(offerKey),next.offers.map(o=>o.action),next.mover.mode,next.mover.attached,next.mover.airborne,next.mover.stowed,next.mover.perspective,next.mode,hud&&['pace' in hud?hud.pace:null,Math.round(hud.height??-1),Math.sign(Math.trunc((hud.lift??0)/.5)),hud.place?.label,Math.round(hud.place?.distance??0),hud.place?.action],next.mover.fade,next.mover.cut?.landings.map(landing=>landing.id)]);
-      if(key===last)return;last=key;setOffers(next.offers);setMover(next.mover);setMode(next.mode);
+      const key=JSON.stringify([next.offers.map(offerKey),next.offers.map(o=>o.action),next.mover.mode,next.mover.attached,next.mover.airborne,next.mover.stowed,next.mover.perspective,next.mode,hud&&['pace' in hud?hud.pace:null,Math.round(hud.height??-1),Math.sign(Math.trunc((hud.lift??0)/.5)),hud.place?.label,Math.round(hud.place?.distance??0),hud.place?.action],next.mover.fade,next.mover.cut?.landings.map(landing=>landing.id),next.cable]);
+      if(key===last)return;last=key;setOffers(next.offers);setMover(next.mover);setMode(next.mode);setCable(next.cable);
       if(isCraft(next.mover.mode)){setStatus(world.ridePaused?.()?RIDE_PAUSED_STATUS:'W / ↑ accelerates · S / ↓ slows then reverses · A / D steer · Space brakes · E interacts · C camera.');return;}
       if(next.mover.mode==='parachute')setStatus(`${hud?.place?.label??'Airborne'}. Space opens or retracts; A/D steer, S brakes. C changes view.`);
       else if(next.mover.mode==='cruiser')setStatus(world.ridePaused?.()?RIDE_PAUSED_STATUS:'W / ↑ accelerates · S / ↓ brakes; release and press again to reverse · A / D steer · Space hops; press again airborne for parachute · V gets off · C changes view · R recovers.');
-      else if(next.mover.attached||next.offers.length>0)setStatus(statusTextFor({riding:next.mover.attached,offerLabel:next.offers[0]?.action,paused:typeof world.ridePaused==='function'&&world.ridePaused(),flight:next.mover.mode==='glider'}));
+      else if(next.mover.attached||next.offers.length>0)setStatus(statusTextFor({riding:next.mover.attached,offerLabel:next.offers[0]?.action,paused:typeof world.ridePaused==='function'&&world.ridePaused(),flight:next.mover.mode==='glider',cable:next.mover.mode==='gondola'||next.mover.mode==='funicular'?next.mover.mode:null}));
     },200);
     return()=>window.clearInterval(poll);
   },[ready]);
@@ -160,6 +164,10 @@ export default function HorizonStage(props:HorizonStageProps){
         <label>Style <select aria-label="Cruiser style" value={skin} onChange={event=>{const next=event.target.value as CruiserSkin;setSkin(next);runtime.current?.setCruiserSkin(next);const storage=cruiserStorage();setSkinSaveFailed(!storage||!saveCruiserSkin(storage,skinKey,next));}}>{Object.entries(CRUISER_SKINS).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
         {mover?.mode==='cruiser'&&<><button onClick={()=>{runtime.current?.recoverCruiser();stage.current?.focus();}}>Recover <span aria-hidden="true">R</span></button><output aria-label="Cruiser speed">{(mover.hud as {pace?:string})?.pace??'0 km/h'}</output></>}
         {skinSaveFailed&&<span role="status">Style saved for this visit only.</span>}
+      </div>}
+      {/* PR #566 Codex: Skip (E) and Sit (Space, a toggle) as real buttons while riding the gondola or the funicular; the cruiser group's dressings. */}
+      {!kitchenActive&&ready&&!sheet&&mode==='walk'&&mover?.attached&&(mover.mode==='gondola'||mover.mode==='funicular')&&cable.length>0&&<div className="horizon-cruiser-controls horizon-cable-controls" role="group" aria-label={mover.mode==='gondola'?'Gondola ride':'Funicular ride'}>
+        {cable.map(c=><button key={c.id} aria-keyshortcuts={c.key} aria-pressed={c.id==='seat'?c.pressed===true:undefined} onClick={()=>{runtime.current?.moverAction(c.id);stage.current?.focus();}}>{c.id==='seat'?'Sit':c.label} <span aria-hidden="true">{c.key}</span></button>)}
       </div>}
       </div>
       {!kitchenActive&&ready&&mode==='walk'&&<div className="horizon-touch-controls">

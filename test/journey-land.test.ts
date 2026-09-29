@@ -73,7 +73,7 @@ describe("extracted land", () => {
       expect(s.anchor).toEqual(raw.anchor.xy);
       expect(s.month).toBe(STATION_IDS.indexOf(s.id) + 1);
     }
-    expect(land.stations[0]!.anchor).toEqual([1330, 640]);
+    expect(land.stations[0]!.anchor).toEqual([1364, 650]); // #566 moved Jan onto Mountain v2's summit (the index is the source)
     expect(land.yearWalk).toHaveLength(12);
   });
 

@@ -42,9 +42,10 @@ function fakeController(id: ModeId, log: string[]): ModeController {
 }
 
 describe('Horizon threshold offers (RIDE §10.2, 02-movers rule 1)', () => {
-  it('offers the pick-up at skateLineStarts.1 [1310,500] on foot, and nothing there on the board', () => {
+  it('offers the pick-up at skateLineStarts.1 [1325,470.5] on foot, and nothing there on the board', () => {
     const feet = offersAt(world, at('skateLineStarts.1', 1.5), 'feet');
-    expect(feet[0]).toMatchObject({thresholdId: 'skateLineStarts.1', from: 'feet', to: 'board', label: 'Pick up the board', at: [1310, 154, 500]});
+    // v2.6: skateLineStarts[0] is v2's start gate (D-M5); was [1310, 154, 500].
+    expect(feet[0]).toMatchObject({thresholdId: 'skateLineStarts.1', from: 'feet', to: 'board', label: 'Pick up the board', at: [1325, 158.2, 470.5]});
     expect(offersAt(world, at('skateLineStarts.1', 1.5), 'board').some(o => o.thresholdId === 'skateLineStarts.1')).toBe(false);
   });
   it('offers the park at landingQuay on the board, and respects the reach and |dy| rule', () => {
@@ -152,8 +153,9 @@ describe('The runtime registers the board and the bicycle (fix round)', () => {
     const geo = createHorizonGeography(field, {...world.collision, solids: world.geometry?.solids ?? [], diagnostics: world.diagnostics ?? []} as Parameters<typeof createHorizonGeography>[1]);
     realDeps = {world, geography: geo, manifest: HORIZON_MANIFEST, reducedMotion: false, calm: false, tier: 'full'};
   }, 120000);
-  it('lists the board, bicycle and shared cruiser as the default movers', () => {
-    expect(Object.keys(HORIZON_MOVERS).sort()).toEqual(['bicycle', 'board', 'cruiser']);
+  it('lists the board, bicycle, shared cruiser and the two cable rides as the default movers', () => {
+    // v2.6: the gondola and the funicular ride Mountain v2's lines (pass 5, D-M6).
+    expect(Object.keys(HORIZON_MOVERS).sort()).toEqual(['bicycle', 'board', 'cruiser', 'funicular', 'gondola']);
   });
   it('accepts skateLineStarts.1 on foot and rides an active board controller', () => {
     const registry = createMoverRegistry(realDeps);   // as mountHorizon does, then registerHorizonMovers(registry, options.movers)
@@ -166,12 +168,13 @@ describe('The runtime registers the board and the bicycle (fix round)', () => {
     expect(registry.mode()).toBe('board');
     const board = registry.active() as BoardController;
     expect(board.id).toBe('board'); expect(typeof board.state).toBe('function');
-    expect(Math.hypot(board.state().p[0] - 1310, board.state().p[2] - 500)).toBeLessThanOrEqual(OFFER_REACH);   // on the pad (under the rider since R2-11)
+    // v2.6: the pad is v2's start gate [1325,470.5] (D-M5); was [1310,500].
+    expect(Math.hypot(board.state().p[0] - 1325, board.state().p[2] - 470.5)).toBeLessThanOrEqual(OFFER_REACH);   // on the pad (under the rider since R2-11)
     let frame: MoverFrame | null = null;
     for (let i = 0; i < 60; i++) frame = board.update(1 / 60, {steer: 0, forward: 1, jump: false, sprint: false, crouch: 0, accept: false, look: {dx: 0, dy: 0}}, i * 16);
     expect(frame!.camera).not.toBeNull();
     expect(Number.isFinite(frame!.body.x) && Number.isFinite(frame!.body.y) && Number.isFinite(riderSlip(frame!.pose, board))).toBe(true);
-    expect(Math.hypot(frame!.body.x - 1310, frame!.body.z - 500)).toBeGreaterThan(0);   // W pushed it off the pad
+    expect(Math.hypot(frame!.body.x - 1325, frame!.body.z - 470.5)).toBeGreaterThan(0);   // W pushed it off the pad (v2.6: was [1310,500])
     // The bicycle is registered too (it has no pick-up threshold of its own yet).
     expect(registry.accept(parkOfferFor(world, frame!.body, 'board', realDeps.geography.ground)!, frame!.body, 1000)).toBe(true);
     expect(registry.canAccept({...pick, id: 'x:feet→bicycle', to: 'bicycle'})).toBe(true);

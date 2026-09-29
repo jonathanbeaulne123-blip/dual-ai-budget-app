@@ -16,6 +16,8 @@ import type {Host} from './world/definition.ts';
 import {useComfort} from '../../theme/comfort.ts';
 import {createWorldAmbience,type WorldAmbience} from '../mountain/audio.ts';
 import {useAppearance} from '../../theme/ThemeProvider.tsx';
+import {buildBasinReading,createBasinView} from '../mountain/basin.ts';
+import type {FundPulseFreshness} from '../../core/fundPulse.ts';
 export const HORIZON_HOST_TOOLS:Readonly<Record<string,string>>={home:'conversation',bank:'loft-banks',library:'books',glasshouse:'planner',studio:'pottery',cottage:'wardrobe',boathouse:'wishes'};
 export default function HorizonWorld(props:HarbourWorldProps){
   const homeBook=useHomeBook();
@@ -55,6 +57,12 @@ export default function HorizonWorld(props:HarbourWorldProps){
     if(next){try{audio.current=createWorldAmbience();}catch{audio.current=null;}}
     runtime.current?.setAmbience(audio.current);setSoundOn(next&&audio.current!==null);
   }
+  // Mountain v2's glass dam is the one Fund picture on the island (D-M3, CONTRACT §2.2): the same BasinReading the old
+  // world's dam reads, turned into a level by the same session-scaled view; the region draws it and reads nothing itself.
+  const basinView=useRef(createBasinView());
+  const freshness:FundPulseFreshness=props.interpretationGate?.freshness==='stale'||props.interpretationGate?.freshness==='offline'?props.interpretationGate.freshness:'current';
+  const basin=useMemo(()=>props.today?buildBasinReading(household,props.today,freshness):null,[household,props.today,freshness]);
+  useEffect(()=>{const v=basinView.current(basin);runtime.current?.setMountainDamWater?.(v.level,v.reserveLevel);},[basin]);
   useEffect(()=>publishLocalPose(()=>{const b=runtime.current?.body();return b?{target:[b.x,b.y,b.z],theta:b.yaw-Math.PI,body:{...b,world:HORIZON_PRESENCE_WORLD}}:null;}),[]);
   useEffect(()=>{const restore=(event:Event)=>{const detail=(event as CustomEvent).detail;if(detail?.identity===houseIdentity(identityRef.current)&&validHouseBody(detail.body)&&isSavedHorizonWorld(detail.body.world))runtime.current?.restore(detail.body);};window.addEventListener('hearth:house-return',restore);return()=>window.removeEventListener('hearth:house-return',restore);},[]);
   function onDoor(host:Host,body:ReturnType<HorizonRuntime['savedBody']>){
@@ -62,5 +70,5 @@ export default function HorizonWorld(props:HarbourWorldProps){
     const target=HORIZON_HOST_TOOLS[host.id],place=(host.toolPlaceId??host.placeIds[0]) as HarbourPlaceId,address=VILLAGE_ADDRESS[place];
     if(props.onNavigateLocation&&address)props.onNavigateLocation({...route,...address,surface:target,object:undefined});else if(target)props.onOpen(target);
   }
-  return <HorizonStage homePlotId={homeBook?.plotId} homeLayout={homeBook?.layout??undefined} homeDisplays={homeBook?.displays} visitHome={homeBook?.pendingVisit} onHomeVisited={homeBook?.acknowledgeVisit} onHomeBook={homeBook?.open} onHomeWorkspace={target=>{const body=runtime.current?.savedBody();if(body){saveHouseReturnOnDevice(identity,route,body,'horizon');saveHouseReturnOnDevice(identity,route,body);}props.onOpen(target);}} key={identityKey} fleetStorageKey={`hearth:horizon-fleet:v1:${identityKey}`} kitchenStorageKey={`hearth:yacht-kitchen:v1:${identityKey}`} cruiserPreference={cruiserPreferenceKey(household.environment,household.householdId,memberId)} theme={theme} onDoor={onDoor} initialBody={initialBody} onReady={()=>{arriveForRequest();props.onWorldReady?.();}} onRuntime={value=>{if(!value&&runtime.current)saveHouseReturnOnDevice(identity,route,runtime.current.savedBody(),'horizon');runtime.current=value;value?.setAmbience?.(audio.current);value?.setHomeBotanical?.(appearance.saved.queen??DEFAULT_QUEEN_STYLE,botanical);}} sound={{on:soundOn,toggle:toggleSound}} partner={peer.walk} calm={comfort.quiet} reducedMotion={comfort.motion==='reduced'} paused={homeBook?.editing===true||Boolean(route.surface&&route.surface!=='queen')} onQuickSheet={props.onQuickSheet} onJourney={props.onJourney}>{props.children}</HorizonStage>;
+  return <HorizonStage homePlotId={homeBook?.plotId} homeLayout={homeBook?.layout??undefined} homeDisplays={homeBook?.displays} visitHome={homeBook?.pendingVisit} onHomeVisited={homeBook?.acknowledgeVisit} onHomeBook={homeBook?.open} onHomeWorkspace={target=>{const body=runtime.current?.savedBody();if(body){saveHouseReturnOnDevice(identity,route,body,'horizon');saveHouseReturnOnDevice(identity,route,body);}props.onOpen(target);}} key={identityKey} fleetStorageKey={`hearth:horizon-fleet:v1:${identityKey}`} kitchenStorageKey={`hearth:yacht-kitchen:v1:${identityKey}`} cruiserPreference={cruiserPreferenceKey(household.environment,household.householdId,memberId)} theme={theme} onDoor={onDoor} initialBody={initialBody} onReady={()=>{arriveForRequest();props.onWorldReady?.();}} onRuntime={value=>{if(!value&&runtime.current)saveHouseReturnOnDevice(identity,route,runtime.current.savedBody(),'horizon');runtime.current=value;value?.setAmbience?.(audio.current);{const v=basinView.current(basin);value?.setMountainDamWater?.(v.level,v.reserveLevel);}value?.setHomeBotanical?.(appearance.saved.queen??DEFAULT_QUEEN_STYLE,botanical);}} sound={{on:soundOn,toggle:toggleSound}} partner={peer.walk} calm={comfort.quiet} reducedMotion={comfort.motion==='reduced'} paused={homeBook?.editing===true||Boolean(route.surface&&route.surface!=='queen')} onQuickSheet={props.onQuickSheet} onJourney={props.onJourney}>{props.children}</HorizonStage>;
 }

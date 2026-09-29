@@ -13,6 +13,7 @@ import {parkOfferFor, type ThresholdOffer} from '../movers/shared/threshold.ts';
 import {createBoardController} from '../movers/board/controller.ts';
 import {createCruiserController} from '../movers/cruiser/controller.ts';
 import {createBicycleController} from '../movers/bicycle/controller.ts';
+import {cableMover} from '../movers/gondola/index.ts';
 
 export type MoverControls = {forward:number;strafe:number;run:boolean};
 export interface MoverInputSources {
@@ -60,6 +61,8 @@ export const HORIZON_MOVERS:Readonly<Partial<Record<ModeId, MoverFactory>>> = Ob
   cruiser: (deps:MoverDeps) => createCruiserController(deps),
   board: (deps:MoverDeps) => createBoardController(deps),
   bicycle: (deps:MoverDeps) => createBicycleController(deps),
+  gondola: cableMover('gondola'),       // pass 5 T3: v2's gondola (D-M6), boarded at gondolaBase / gondolaTop / gondola.*.to.*
+  funicular: cableMover('funicular'),   // pass 5 T3: v2's funicular, boarded at funicular.*
 });
 /** Registers `HORIZON_MOVERS` and then `overrides` (`HorizonOptions.movers`): an override for a mode replaces the default. */
 export function registerHorizonMovers(registry:Pick<MoverRegistry, 'register'>, overrides:Partial<Record<ModeId, MoverFactory>> = {}):void {
