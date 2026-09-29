@@ -1,3 +1,21 @@
+## 2026-09-29 — Horizon Drive finished as a corridor: one road definition, driven end to end
+
+Branch `claude/horizon-main-road`, merging `main@1c436be`. Pushed; see its PR. Not merged, not deployed, not live verified.
+
+**Risk: High.** It changes shared land geometry, collision, navigation and night lighting. There is no money meaning, command, schema, sync, Auth/RLS or Hercules payload change, and no vehicle-physics change.
+
+- **Budget (5): 0.** No money path moves. The Journey board's spaces and financial stops are unchanged (`journey-road`, `journey-board-*`).
+- **Engagement (3): +2.** Horizon Drive is comfortable the whole way round and reads as one designed corridor, by day and by night.
+- **Verification:**
+  - Typecheck is clean.
+  - `horizon:check` is byte-exact.
+  - The driver's-eye audit, with the real cruiser on every corridor road in both directions and both lanes, found 0 restarts and 0 BLOCKER / 23 MAJOR / 85 MINOR, against 41 / 298 / 584 before. None of the 23 is in the lanes.
+  - 102 suite files: 1343 passed, 2 failed, both pre-existing (`horizonMoversNoMoney`).
+  - 36 SwiftShader captures and inspector snapshots.
+  - A blind review; its fixes are applied.
+  - The quick and full gates were not run. There is no device evidence.
+- **Details, rough areas, what is owed and next owner:** [the handoff](CLAUDE_HORIZON_MAIN_ROAD.md) · [ROAD.md](horizon/ROAD.md) · [audit](horizon/evidence/road/audit-after/AUDIT.md) · [captures](horizon/evidence/road/after/LOOK.md).
+
 ## 2026-09-28 — Journey Board: the household Journey as a board over the baked Horizon land
 
 Branch `claude/journey-board` from `main@9fed600`, pushed as [PR #567](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/567); not merged, not deployed, not live verified. **Risk: Medium-High** — it changes the illustrated edition's default arrival and replaces the household Journey surface, adds an App door onto the Era planner, raises the due review over the board and touches `AddSlideshow` / `DuePreviewSheet`; no money meaning, arithmetic, command, schema, sync, Auth/RLS or Hercules payload change, and every write stays behind an existing named Confirm.
