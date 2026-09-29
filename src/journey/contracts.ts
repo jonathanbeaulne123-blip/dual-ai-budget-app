@@ -675,7 +675,25 @@ export type JourneyLandData = {
   kittyPlaza: { xy: Point2; height: number };
   terrain: TerrainField;
   lod: LodBudgets;
+  /** The road's spans (ROAD.md §7), drawn as bridges at map scale. Absent in a land extracted before format 2. */
+  bridges?: JourneyLandBridge[];
+  /** Where a road runs under cover (a tunnel, the Prow gallery): drawn dimmed and dashed, with portal notches. */
+  covers?: JourneyLandCover[];
+  /** Boulevard reaches (the corridor's `boulevard` context): a slightly wider road with a planted band. Present only
+   * when the index carries corridors. */
+  boulevards?: JourneyLandBoulevard[];
 };
+/**
+ * A road bridge (index `structures` of kind bridge + its `structure.<id>` bed): the deck's centreline stretch in engine
+ * coordinates `[x, deck height (raw, uncompressed), z]`, the deck's true width (eu), the drawn lines whose own height
+ * puts them ON the deck (`lineIds`: the road, and a skate lane that shares a wide deck) and the drawn lines that pass
+ * UNDER it (`underIds`: a ferry, a river run, a lower skate lane), which the map breaks beneath the deck.
+ */
+export type JourneyLandBridge = { id: string; axis: Point3[]; width: number; lineIds: string[]; underIds: string[] };
+/** A covered stretch of a road line (plan points, portal to portal) and its two portals. */
+export type JourneyLandCover = { id: string; kind: "tunnel" | "gallery"; lineId: string; points: Point2[]; portals: Point2[] };
+/** A boulevard reach of a road line (plan points along the corridor stations); `median` when it has a planted median. */
+export type JourneyLandBoulevard = { id: string; lineId: string; points: Point2[]; median: boolean };
 export type LoadJourneyLand = (signal?: AbortSignal) => Promise<JourneyLandData>;
 
 /** A member home drawn at map scale on its plot (`buildHomeArt(layout, {detail: "map"})`). Only the viewer's own layout is on this device. */
@@ -717,6 +735,8 @@ export type JourneyLandFlatData = {
   water: { id: string; kind: string; d: string }[];
   landforms: { id: string; d: string; band: "low" | "mid" | "high" }[];
   lines: { id: string; kind: LandLineKind; d: string }[];
+  /** Road bridges: the deck's centreline and its true width (concept metres), drawn under the lines. */
+  bridges?: { id: string; d: string; width: number }[];
   hosts: { id: string; x: number; y: number }[];
   reserves: { id: string; d: string }[];
   districts: { id: string; label: string; x: number; y: number }[];

@@ -12,13 +12,20 @@
  * board's route, the one strong line on the map, at every tier. Water routes and cableways are dashed along their
  * length. Ribbons are draped on the drawn surface (compressed ground, or the water on top of it); the width offset is
  * planar. Douglas–Peucker: the data carries 4 eu (full); lite re-simplifies at 8 eu.
+ *
+ * Road pass (ROAD.md §7): the runs come from `planRoad` (`road.ts`). Ground runs are draped exactly as before. Runs on a
+ * bridge deck go in a THIRD mesh, `journey-land:lines:deck`, drawn with the bridges (after them, before the board, no
+ * depth write) so the road reads as crossing on its bridge and never hides a board mark. A covered stretch (tunnel,
+ * the Prow gallery) is dimmed and dashed with a darker, wider notch at each portal; a boulevard reach is a little wider
+ * with a thin planted band (a green inset at the centre for a median, at the edges for planted verges). Nothing else of
+ * the road's dressing (lamps, kerbs, rails, single plants) is drawn at map scale.
  */
 import * as THREE from "three";
-import type { JourneyLandDressing, JourneyLandLine, LandLineKind, Point2 } from "../contracts.ts";
-import { hexRgb, LINE_DRESSING_KEY } from "./dressing.ts";
-import { isMinorLine, LINE_TOLERANCE } from "./extract.ts";
-import { densify, simplifyLine } from "./simplify.ts";
-import type { LandSurface } from "./surface.ts";
+import type { JourneyLandDressing, LandLineKind } from "../contracts.ts";
+import { hexRgb, landExtras, LINE_DRESSING_KEY } from "./dressing.ts";
+import type { RoadPlan, RoadRun } from "./road.ts";
+
+export { DRAPE_STEP, LINE_LIFT } from "./road.ts";
 
 /** Screen width (px) per kind, and the world clamp (eu) it is held inside. The board route is 14 px. */
 export const LINE_PX: Readonly<Record<LandLineKind, number>> = { road: 3.4, skate: 2.8, walk: 2, cable: 1.4, rail: 2.2, ferry: 2, row: 1.6 };
@@ -29,13 +36,25 @@ export const LINE_WIDTH_EU: Readonly<Record<LandLineKind, { min: number; max: nu
 const MINOR_PX = 2.2, MINOR_EU = { min: 1.1, max: 6 };
 /** Dash period (eu along the line) for the dashed kinds; 0 = solid. */
 const DASH_EU: Readonly<Record<LandLineKind, number>> = { road: 0, skate: 0, walk: 0, cable: 9, rail: 0, ferry: 14, row: 10 };
-const LINE_LIFT: Readonly<Record<LandLineKind, number>> = { road: 0.6, skate: 0.7, walk: 0.6, cable: 0.9, rail: 0.65, ferry: 0.3, row: 0.3 };
-/** Longest ribbon segment (eu) before draping: one terrain lattice step. */
-const DRAPE_STEP = 20;
+/** A boulevard reach is this much wider than the road (px and clamps). */
+export const BOULEVARD_SCALE = 1.6;
+/** A covered stretch: dash period (eu) and how far its colour falls toward the portal colour. */
+export const COVER_DASH_EU = 7;
+const COVER_DIM = 0.45;
+/** A portal notch is this much wider than the road. */
+export const NOTCH_SCALE = 1.9;
 export const MINOR_LINES_NAME = "journey-land:lines:minor";
 export const MAJOR_LINES_NAME = "journey-land:lines:major";
+export const DECK_LINES_NAME = "journey-land:lines:deck";
 /** Kinds drawn in the minor mesh (plus minor roads). */
 const MINOR_KINDS = new Set<LandLineKind>(["cable", "ferry", "row"]);
+/**
+ * Draw order (opaque list). The board draws its ghost pass at 1 (against the land's depth only) and its marks at 2, so
+ * every land line is drawn between them: ground lines at 1.3, then the bridges (1.5), then the lines on the decks
+ * (1.6). A land line is therefore always drawn before — never over — a board mark.
+ */
+export const GROUND_LINES_ORDER = 1.3;
+export const DECK_LINES_ORDER = 1.6;
 
 /** The land's view uniforms, shared by every land shader (set once per frame by the board scene). */
 export type LandViewUniforms = { uWpp: { value: number }; uHostPx: { value: number } };
@@ -45,52 +64,65 @@ export function landViewUniforms(): LandViewUniforms {
 }
 
 const VERTEX = /* glsl */ `
-attribute vec2 aSide; attribute vec3 aWidth; attribute vec3 aColor; attribute vec2 aDash;
+attribute vec2 aSide; attribute vec3 aWidth; attribute vec3 aColor; attribute vec2 aDash; attribute vec2 aBand;
 uniform float uWpp;
-varying vec3 vColor; varying vec2 vDash;
+varying vec3 vColor; varying vec2 vDash; varying vec2 vBand;
 void main() {
   float w = clamp(aWidth.x * uWpp, aWidth.y, aWidth.z);
   vec3 p = position + vec3(aSide.x, 0.0, aSide.y) * (0.5 * w);
-  vColor = aColor; vDash = aDash;
+  vColor = aColor; vDash = aDash; vBand = aBand;
   gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(p, 1.0);
 }`;
 const FRAGMENT = /* glsl */ `
-varying vec3 vColor; varying vec2 vDash;
+uniform vec3 uPlanted;
+varying vec3 vColor; varying vec2 vDash; varying vec2 vBand;
 void main() {
   if (vDash.y > 0.0 && fract(vDash.x / vDash.y) > 0.56) discard;
-  gl_FragColor = vec4(vColor, 1.0);
+  float a = abs(vBand.x);
+  // vBand.y: 1 = planted median (a green band at the centre), 2 = planted verges (green inset at both edges).
+  bool planted = (vBand.y > 0.5 && vBand.y < 1.5 && a < 0.26) || (vBand.y > 1.5 && a > 0.52 && a < 0.8);
+  gl_FragColor = vec4(planted ? uPlanted : vColor, 1.0);
 }`;
 
-type Bucket = { positions: number[]; side: number[]; width: number[]; colour: number[]; kinds: LandLineKind[]; dash: number[]; index: number[] };
-const bucket = (): Bucket => ({ positions: [], side: [], width: [], colour: [], kinds: [], dash: [], index: [] });
+/** Per-vertex paint: the line kind, and whether it is covered (dimmed) or a portal notch. */
+type Paint = { kind: LandLineKind; style: 0 | 1 | 2 };
+type Bucket = { positions: number[]; side: number[]; width: number[]; paints: Paint[]; dash: number[]; band: number[]; index: number[] };
+const bucket = (): Bucket => ({ positions: [], side: [], width: [], paints: [], dash: [], band: [], index: [] });
 
-function ribbon(points: readonly Point2[], kind: LandLineKind, minor: boolean, surface: LandSurface, b: Bucket): void {
-  const path = densify(points, DRAPE_STEP);
+function ribbon(run: RoadRun, b: Bucket): void {
+  const path = run.verts;
   if (path.length < 2) return;
-  const base = b.positions.length / 3, lift = LINE_LIFT[kind];
-  const px = minor && kind === "road" ? MINOR_PX : LINE_PX[kind], eu = minor && kind === "road" ? MINOR_EU : LINE_WIDTH_EU[kind];
-  let arc = 0;
+  const base = b.positions.length / 3, kind = run.kind;
+  const px = run.minor && kind === "road" ? MINOR_PX : LINE_PX[kind], eu = run.minor && kind === "road" ? MINOR_EU : LINE_WIDTH_EU[kind];
   for (let i = 0; i < path.length; i++) {
-    if (i > 0) arc += Math.hypot(path[i]![0] - path[i - 1]![0], path[i]![1] - path[i - 1]![1]);
-    const prev = path[Math.max(0, i - 1)]!, next = path[Math.min(path.length - 1, i + 1)]!;
-    let tx = next[0] - prev[0], ty = next[1] - prev[1];
+    // Duplicated cut points (a cover / boulevard boundary) share a position: take the tangent past the duplicate.
+    let pi = i - 1, ni = i + 1;
+    while (pi > 0 && samePlace(path[pi]!, path[i]!)) pi--;
+    while (ni < path.length - 1 && samePlace(path[ni]!, path[i]!)) ni++;
+    const prev = path[Math.max(0, pi)]!, next = path[Math.min(path.length - 1, ni)]!;
+    let tx = next.x - prev.x, ty = next.z - prev.z;
     const len = Math.hypot(tx, ty) || 1; tx /= len; ty /= len;
     // Normal in plan; miter length capped so sharp corners do not spike.
     let nx = -ty, ny = tx, scale = 1;
-    if (i > 0 && i < path.length - 1) {
-      const a = path[i - 1]!, p = path[i]!, c = path[i + 1]!;
-      const l1 = Math.hypot(p[0] - a[0], p[1] - a[1]) || 1, l2 = Math.hypot(c[0] - p[0], c[1] - p[1]) || 1;
-      const n1x = -(p[1] - a[1]) / l1, n1y = (p[0] - a[0]) / l1, n2x = -(c[1] - p[1]) / l2, n2y = (c[0] - p[0]) / l2;
-      nx = n1x + n2x; ny = n1y + n2y; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
-      scale = Math.min(2, 1 / Math.max(0.2, nx * n1x + ny * n1y));
+    if (pi >= 0 && ni <= path.length - 1 && i > 0 && i < path.length - 1) {
+      const a = prev, p = path[i]!, c = next;
+      const l1 = Math.hypot(p.x - a.x, p.z - a.z), l2 = Math.hypot(c.x - p.x, c.z - p.z);
+      if (l1 > 1e-6 && l2 > 1e-6) {
+        const n1x = -(p.z - a.z) / l1, n1y = (p.x - a.x) / l1, n2x = -(c.z - p.z) / l2, n2y = (c.x - p.x) / l2;
+        nx = n1x + n2x; ny = n1y + n2y; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
+        scale = Math.min(2, 1 / Math.max(0.2, nx * n1x + ny * n1y));
+      }
     }
-    const p = path[i]!, y = surface.surfaceAt(p[0], p[1]) + lift;
+    const v = path[i]!;
+    const grow = v.notch ? NOTCH_SCALE : v.plant ? BOULEVARD_SCALE : 1;
+    const dash = v.covered && !v.notch ? COVER_DASH_EU : DASH_EU[kind];
     for (const s of [1, -1]) {
-      b.positions.push(p[0], y, p[1]);
+      b.positions.push(v.x, v.y, v.z);
       b.side.push(s * nx * scale, s * ny * scale);
-      b.width.push(px, eu.min, eu.max);
-      b.kinds.push(kind);
-      b.dash.push(arc, DASH_EU[kind]);
+      b.width.push(px * grow, eu.min * grow, eu.max * grow);
+      b.paints.push({ kind, style: v.notch ? 2 : v.covered ? 1 : 0 });
+      b.dash.push(v.arc, dash);
+      b.band.push(s, v.notch || v.covered ? 0 : v.plant);
     }
   }
   for (let i = 0; i < path.length - 1; i++) {
@@ -98,49 +130,64 @@ function ribbon(points: readonly Point2[], kind: LandLineKind, minor: boolean, s
     b.index.push(l0, r0, l1, r0, r1, l1);
   }
 }
+const samePlace = (a: { x: number; z: number }, c: { x: number; z: number }) => a.x === c.x && a.z === c.z;
 
-export type LineMeshes = { meshes: THREE.Mesh[]; minor: THREE.Mesh | null; recolour(d: JourneyLandDressing): void; dispose(): void };
+export type LineMeshes = { meshes: THREE.Mesh[]; minor: THREE.Mesh | null; deck: THREE.Mesh | null; recolour(d: JourneyLandDressing): void; dispose(): void };
 
-export function buildLines(lines: readonly JourneyLandLine[], tier: "full" | "lite", surface: LandSurface, dressing: JourneyLandDressing, view: LandViewUniforms = landViewUniforms()): LineMeshes {
-  const major = bucket(), minorBucket = bucket();
-  for (const line of lines) {
-    const minorRoad = line.kind === "road" && isMinorLine(line.id);
-    const points = tier === "lite" ? simplifyLine(line.points, LINE_TOLERANCE.lite) : line.points;
-    ribbon(points, line.kind, minorRoad, surface, minorRoad || MINOR_KINDS.has(line.kind) ? minorBucket : major);
-  }
+export function buildLines(plan: RoadPlan, dressing: JourneyLandDressing, view: LandViewUniforms = landViewUniforms()): LineMeshes {
+  const major = bucket(), minorBucket = bucket(), deckBucket = bucket();
+  for (const run of plan.ground) ribbon(run, run.minor || MINOR_KINDS.has(run.kind) ? minorBucket : major);
+  // A minor line on a deck stays in the minor mesh (hidden at Sky); none of the baked spans carries one today.
+  for (const run of plan.deck) ribbon(run, run.minor || MINOR_KINDS.has(run.kind) ? minorBucket : deckBucket);
   const meshes: THREE.Mesh[] = [], owned: { dispose(): void }[] = [], painted: { b: Bucket; geometry: THREE.BufferGeometry }[] = [];
-  let minor: THREE.Mesh | null = null;
+  let minor: THREE.Mesh | null = null, deck: THREE.Mesh | null = null;
+  const uniforms = { uWpp: view.uWpp, uPlanted: { value: new THREE.Color() } };
   const material = new THREE.ShaderMaterial({
-    uniforms: { uWpp: view.uWpp }, vertexShader: VERTEX, fragmentShader: FRAGMENT,
+    uniforms, vertexShader: VERTEX, fragmentShader: FRAGMENT,
     // Ribbons are flat; draw both faces so winding never hides one.
     side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4,
   });
   material.name = "journey-land-line";
-  owned.push(material);
-  for (const [name, b] of [[MAJOR_LINES_NAME, major], [MINOR_LINES_NAME, minorBucket]] as const) {
+  // On a deck: drawn over the bridge in order, writing no depth, so the board (drawn later) is never hidden by a
+  // raised road (the board's own depth test sees the land only there).
+  const deckMaterial = material.clone();
+  deckMaterial.uniforms = uniforms;
+  deckMaterial.depthWrite = false;
+  deckMaterial.name = "journey-land-line-deck";
+  owned.push(material, deckMaterial);
+  for (const [name, b] of [[MAJOR_LINES_NAME, major], [MINOR_LINES_NAME, minorBucket], [DECK_LINES_NAME, deckBucket]] as const) {
     if (!b.index.length) continue;
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.Float32BufferAttribute(b.positions, 3));
     geometry.setAttribute("aSide", new THREE.Float32BufferAttribute(b.side, 2));
     geometry.setAttribute("aWidth", new THREE.Float32BufferAttribute(b.width, 3));
     geometry.setAttribute("aDash", new THREE.Float32BufferAttribute(b.dash, 2));
-    geometry.setAttribute("aColor", new THREE.Float32BufferAttribute(new Float32Array(b.kinds.length * 3), 3));
+    geometry.setAttribute("aBand", new THREE.Float32BufferAttribute(b.band, 2));
+    geometry.setAttribute("aColor", new THREE.Float32BufferAttribute(new Float32Array(b.paints.length * 3), 3));
     geometry.setIndex(b.index);
-    const mesh = new THREE.Mesh(geometry, material);
+    const onDeck = name === DECK_LINES_NAME;
+    const mesh = new THREE.Mesh(geometry, onDeck ? deckMaterial : material);
     mesh.name = name;
-    mesh.renderOrder = 2;
+    mesh.renderOrder = onDeck ? DECK_LINES_ORDER : GROUND_LINES_ORDER;
     // Widths grow in the vertex shader: never cull a ribbon by its centreline box.
     mesh.frustumCulled = false;
     meshes.push(mesh); owned.push(geometry); painted.push({ b, geometry });
     if (name === MINOR_LINES_NAME) minor = mesh;
+    if (onDeck) deck = mesh;
   }
   const recolour = (d: JourneyLandDressing) => {
+    const x = landExtras(d), portal = hexRgb(x.deckRail);
+    uniforms.uPlanted.value.setRGB(...hexRgb(x.planted));
     for (const { b, geometry } of painted) {
       const attr = geometry.getAttribute("aColor") as THREE.BufferAttribute, arr = attr.array as Float32Array;
-      b.kinds.forEach((kind, n) => { arr.set(hexRgb(d[LINE_DRESSING_KEY[kind]]), n * 3); });
+      b.paints.forEach((paint, n) => {
+        const c = hexRgb(d[LINE_DRESSING_KEY[paint.kind]]);
+        const k = paint.style === 2 ? 1 : paint.style === 1 ? COVER_DIM : 0;
+        arr.set([c[0] + (portal[0] - c[0]) * k, c[1] + (portal[1] - c[1]) * k, c[2] + (portal[2] - c[2]) * k], n * 3);
+      });
       attr.needsUpdate = true;
     }
   };
   recolour(dressing);
-  return { meshes, minor, recolour, dispose() { for (const o of owned) o.dispose(); } };
+  return { meshes, minor, deck, recolour, dispose() { for (const o of owned) o.dispose(); } };
 }
