@@ -157,11 +157,13 @@ export function createRegionGeography(options:RegionGeographyOptions={}){
   /** v2's ground (terrain only), Horizon height; null outside the footprint. */
   /** The region answers here: inside the drawn footprint and not yielded to a Horizon deck. */
   const owns=(hx:number,hz:number)=>contains(hx,hz)&&!options.yield?.(hx,hz);
-  function groundAt(hx:number,hz:number):number|null{return owns(hx,hz)?groundHeightAt(hx-O.x,hz-O.z)+O.y:null;}
+  // road (L1): v2's ground as felt, held under a yielded Horizon deck's ceiling (TerraceYield.ceiling) exactly as it is drawn.
+  const ceilingOf=options.yield?.ceiling,feltGround=ceilingOf?(nx:number,nz:number)=>{const g=groundHeightAt(nx,nz),c=ceilingOf(nx+O.x,nz+O.z);return c==null?g:Math.min(g,c-O.y);}:groundHeightAt;
+  function groundAt(hx:number,hz:number):number|null{return owns(hx,hz)?feltGround(hx-O.x,hz-O.z)+O.y:null;}
   /** The highest v2 floor (ground or deck) at or under hy + step; null outside the footprint or when it is above that. */
   function surface(hx:number,hy:number|undefined,hz:number,step=STEP,decks:readonly WorldSurface[]=REGION_SURFACES):RegionSurface|null{
     if(!owns(hx,hz))return null;
-    const hit=queryWorldSurface({x:hx-O.x,z:hz-O.z,y:hy===undefined?undefined:hy-O.y,stepHeight:step},groundHeightAt,decks),y=hit.y+O.y;
+    const hit=queryWorldSurface({x:hx-O.x,z:hz-O.z,y:hy===undefined?undefined:hy-O.y,stepHeight:step},feltGround,decks),y=hit.y+O.y;
     if(hy!==undefined&&y>hy+step)return null;
     return {id:hit.id==='terrain'?'terrain':`mountainV2:${hit.id}`,y,n:[hit.nx,hit.ny,hit.nz],material:regionMaterial(hit),slope:Math.atan(hit.slope)*180/Math.PI};
   }
@@ -225,7 +227,7 @@ export function createRegionGeography(options:RegionGeographyOptions={}){
   const provider={
     owns:contains,
     // road (L1): where the region yields to a Horizon deck its ground answers under that deck (the drawn lawn does the same).
-    ground:(x:number,z:number)=>{const g=groundHeightAt(x-O.x,z-O.z)+O.y,c=options.yield?.ceiling?.(x,z);return c==null?g:Math.min(g,c);},
+    ground:(x:number,z:number)=>feltGround(x-O.x,z-O.z)+O.y,
     waterLevel,
     surface(x:number,z:number,y?:number,step?:number){return asHit(surface(x,y,z,step));},
     ceiling(x:number,z:number,y:number){return ceiling(x,y,z)??Infinity;},

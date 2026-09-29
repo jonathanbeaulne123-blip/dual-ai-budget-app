@@ -614,7 +614,10 @@ function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
   // v1.9: a threshold on a jetty stands at that jetty's deck (docks now sit 0.6 over the water they reach).
   const jettyTop=(p:XY)=>{for(const s of cuts.solids){if(!s.id.startsWith('jetty.')||s.role!=='deck')continue;let x0=Infinity,x1=-Infinity,z0=Infinity,z1=-Infinity,y1=-Infinity;const q=s.positions;for(let i=0;i<q.length;i+=3){x0=Math.min(x0,q[i]!);x1=Math.max(x1,q[i]!);y1=Math.max(y1,q[i+1]!);z0=Math.min(z0,q[i+2]!);z1=Math.max(z1,q[i+2]!);}if(p[0]>=x0-.5&&p[0]<=x1+.5&&p[1]>=z0-.5&&p[1]<=z1+.5)return y1;}return undefined;};
   const make=(id:string,p:XY,h0?:number)=>{
-    const h=h0===undefined?undefined:jettyTop(p)??h0,height=h??heightOnBeds(cuts,p,base,40),underground=['threshold.deepJetty','threshold.stepsFoot'].includes(id),ground=base(...p);
+    // road (L1): an unauthored threshold on a road's carriageway takes the road's height (the V01 × Reach walk register pad took
+    // the walk's 5.7 under the Drive's 9.2, and its blend dug a 3.5 eu pit under the Drive's edge).
+    const onRoad=h0===undefined?cuts.beds.filter(b=>b.kind==='road'&&b.terrainCut&&!b.id.startsWith('structure.')).map(b=>({b,n:nearestOnPath(p,b.points)})).filter(r=>r.n.distance<=r.b.width/2+r.b.shoulder).sort((a,c)=>a.n.distance-c.n.distance)[0]:undefined;
+    const h=h0===undefined?onRoad?.n.at[1]:jettyTop(p)??h0,height=h??heightOnBeds(cuts,p,base,40),underground=['threshold.deepJetty','threshold.stepsFoot'].includes(id),ground=base(...p);
     // A threshold above its ground or over water is a raised deck (tower top, gallery, jetty):
     // it never shapes the heightfield; its supports belong to the structure that carries it.
     // v2.6: on Mountain v2's land a threshold stands on the region's platform or paving (the Summit Commons platform, the
