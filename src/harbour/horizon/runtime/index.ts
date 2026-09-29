@@ -142,7 +142,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const geography=createHorizonGeography(field,cuts),figure=createBodyFigure(),partner=createBodyFigure({coat:'#af8760'});
   scene.add(figure.group,partner.group);partner.group.visible=false;
   // The old skate rides Mountain v2's town island in native space (`../skate/nativeSkate.ts`); without the region it has nowhere to be.
-  const skate:NativeSkate|null=placed?createNativeSkate({scene,figure,tier:options.tier,theme:options.theme,reducedMotion:()=>comfort.reducedMotion,onSkate:options.onSkate}):null;
+  const skate:NativeSkate|null=placed?createNativeSkate({scene,figure,tier:options.tier,theme:options.theme,reducedMotion:()=>comfort.reducedMotion,onSkate:options.onSkate,blocked:(x,y,z,r)=>placed.region.blocked(x,y,z,r)}):null;
   const skating=()=>Boolean(skate?.controls.active());
   // Pass 5: inside the region's footprint its provider owns the ground (v2's exact ground, decks, solids, ceilings).
   // PR #566 Codex: its decks, solids and ceilings answer only while the region's scene is drawn (showRegion); ground and water always.
@@ -474,7 +474,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(cruiser()){if(!cruiserArt){cruiserArt=createCruiserArt(cruiserTheme);cruiserArt.setSkin(cruiserSkin);scene.add(cruiserArt.root);}}
     else{cruiserArt?.dispose();cruiserArt=null;}
   }
-  function beginAirborne(at:AirborneBody,open:boolean){
+  function beginAirborne(at:AirborneBody,open:boolean){emote=null;
     // Ride chunk rule (reconciliation 2): a fall cannot wait on the ground, so it is never refused; every missing chunk is put at
     // the front of the queue (fetched bytes parsed now) and the canopy holds at an unloaded boundary (main's `airspaceReady`).
     rideGateOpen();
@@ -546,7 +546,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     return true;
   }
   /** Pick-up: save the walk FOV, blend the camera to the mover's (0.8 s; a cut under reduced motion / calm), show the deck. */
-  function startRide(){schedule();if(cruiser()){clear();cruiser()!.resetInput();}else if(isCraft(registry.mode()))clear();if(walkFov===null)walkFov=footFov;path=[];blendCamera(moverBlendMs('pickup',comfort.reducedMotion,comfort.calm),camera.fov);syncEquipment();options.onStatus?.(isCraft(registry.mode())?'W accelerates; S slows then reverses. A/D steer; Space brakes; E interacts. C changes camera.':registry.mode()==='parachute'?'Airborne. Space opens or retracts the parachute.':RIDING_STATUS);}
+  function startRide(){schedule();emote=null;if(cruiser()){clear();cruiser()!.resetInput();}else if(isCraft(registry.mode()))clear();if(walkFov===null)walkFov=footFov;path=[];blendCamera(moverBlendMs('pickup',comfort.reducedMotion,comfort.calm),camera.fov);syncEquipment();options.onStatus?.(isCraft(registry.mode())?'W accelerates; S slows then reverses. A/D steer; Space brakes; E interacts. C changes camera.':registry.mode()==='parachute'?'Airborne. Space opens or retracts the parachute.':RIDING_STATUS);}
   /** Leaving Walk (Look / Island / a page) while riding: the mover pauses where it is (R2-01). The mode, the controller and the rider's body are kept; `update` stops; the Look / Island camera takes over. */
   function pauseRide(){
     if(!hold.pause({...body}))return;
@@ -783,7 +783,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     const chosen=mode==='walk'&&!skating()?perspective.pose(body,(a,b)=>geography.cameraBlocked(a,b,yachtView()!==null),geography.ceiling(body.x,body.z,body.y)):null;
     if(chosen){camera.position.set(...chosen.eye);target.set(...chosen.target);if(camera.fov!==chosen.fov){camera.fov=chosen.fov;camera.updateProjectionMatrix();}camera.lookAt(target);}
     const firstPerson=mode==='walk'&&perspective.mode()==='first-person';
-    figure.group.visible=mode==='walk'&&!firstPerson&&!kitchen?.active();
+    // The skate's look adopts the figure and its chase camera is external, so the rider shows in any perspective (PR #571 review).
+    figure.group.visible=mode==='walk'&&(!firstPerson||skating())&&!kitchen?.active();
     // Own equipment is hidden locally in first person; activity and floating retain the full canopy.
     for(const art of moverArts)if(firstPerson)art.object.visible=false;
     if(cruiserArt)cruiserArt.root.visible=mode==='walk'&&!firstPerson;
@@ -832,10 +833,10 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function keyDown(e:KeyboardEvent){if(paused)return;schedule();const key=e.key.toLowerCase();if(skating()){if(interactive(e)||!host.contains(document.activeElement))return;if(!['b','p','escape'].includes(key)&&skate!.controls.input()?.keyDown(e))e.preventDefault();return;}if(kitchen?.active()){const focused=document.activeElement;if(!host.parentElement?.contains(focused)||focused?.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]')||(['enter',' '].includes(key)&&focused?.closest('button,a')))return;if(key==='c'&&!e.repeat){e.preventDefault();cyclePerspective();}else if(kitchen.keyDown(e))e.preventDefault();return;}if(interactive(e)||!host.contains(document.activeElement))return;if(key==='e'&&!e.repeat&&kitchen?.available()){e.preventDefault();kitchen.command({type:'open'});return;}if(suppressedKeys.has(key)){if(e.repeat){e.preventDefault();return;}suppressedKeys.delete(key);if(key===' ')consumeJumpUntilRelease=false;}if(key==='v'&&!e.repeat){e.preventDefault();toggleCruiser();return;}if(key==='r'&&cruiser()&&!e.repeat){e.preventDefault();recoverRide();return;}if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(key)){e.preventDefault();keys.add(key);if(key===' '&&!e.repeat&&!consumeJumpUntilRelease)jumpRequested=true;}if(key==='c'&&!e.repeat){e.preventDefault();cyclePerspective();}if(key==='q'&&!e.repeat&&fleetActions().some(a=>a.kind==='anchor')){e.preventDefault();fleetAction('anchor');return;}if(key==='e'){e.preventDefault();if(!e.repeat)acceptRequested=true;}if(key==='escape')path=[];}
   const suppressedKeys=new Set<string>();
   function hostBlur(event:FocusEvent){if(kitchen?.active()&&event.relatedTarget instanceof Node&&host.parentElement?.contains(event.relatedTarget))return;clear();}
-  function focusPause(){kitchen?.pause('The window lost focus. Resume when both chefs are ready.');clear();}
+  function focusPause(){kitchen?.pause('The window lost focus. Resume when both chefs are ready.');if(skating()&&!skate!.controls.paused())skate!.controls.pause(true);clear();}
   function visibilityClear(){if(document.hidden){focusPause();last=0;frameDriver?.suspend();}else schedule();}
   function keyUp(e:KeyboardEvent){if(skating()&&skate!.controls.input()?.keyUp(e))e.preventDefault();kitchen?.keyUp(e);keys.delete(e.key.toLowerCase());suppressedKeys.delete(e.key.toLowerCase());if(e.key===' '){consumeJumpUntilRelease=false;jumpHeld=false;}}
-  function clear(){kitchen?.clear();for(const key of keys)suppressedKeys.add(key);keys.clear();controls={forward:0,strafe:0,run:false};path=[];drag=null;jumpHeld=false;jumpRequested=false;moverActionRequested=null;consumeJumpUntilRelease=suppressedKeys.has(' ');acceptRequested=false;lookAcc={dx:0,dy:0};cruiser()?.resetInput();fleet.resetInput();}
+  function clear(){skate?.controls.input()?.reset();kitchen?.clear();for(const key of keys)suppressedKeys.add(key);keys.clear();controls={forward:0,strafe:0,run:false};path=[];drag=null;jumpHeld=false;jumpRequested=false;moverActionRequested=null;consumeJumpUntilRelease=suppressedKeys.has(' ');acceptRequested=false;lookAcc={dx:0,dy:0};cruiser()?.resetInput();fleet.resetInput();}
   const unlisten=[lease.listenCanvas<Event>('webglcontextlost',event=>{event.preventDefault();contextLost=true;adaptiveQuality.interrupt();frameDriver?.suspend();}),lease.listenCanvas<Event>('webglcontextrestored',()=>{if(disposed||!lease.active)return;configure(renderer);adaptiveQuality.interrupt();last=0;resize(false);requestShadow('context-restore');}),lease.listenCanvas<PointerEvent>('pointerdown',e=>{if(paused)return;host.focus({preventScroll:true});drag={x:e.clientX,y:e.clientY,id:e.pointerId,travel:0};renderer.domElement.setPointerCapture(e.pointerId);}),lease.listenCanvas<PointerEvent>('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;schedule();const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.travel+=Math.hypot(dx,dy);drag.x=e.clientX;drag.y=e.clientY;if(perspective.mode()!=='activity'&&mode==='walk')perspective.look(-dx*.005,-dy*.004);
       else{lookAcc.dx-=dx*.005;lookAcc.dy-=dy*.004;yaw-=dx*.005;pitch=Math.max(-1.2,Math.min(.8,pitch-dy*.004));}if(mode==='look'){target.set(camera.position.x+Math.sin(yaw)*Math.cos(pitch)*distance,camera.position.y+Math.sin(pitch)*distance,camera.position.z+Math.cos(yaw)*Math.cos(pitch)*distance);camera.lookAt(target);}}),lease.listenCanvas<PointerEvent>('pointerup',e=>{const click=drag&&drag.travel<5;drag=null;if(!click||mode!=='walk'||paused||registry.active()||kitchen?.active())return;const rect=renderer.domElement.getBoundingClientRect(),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);const hits=ray.intersectObjects([...stream.live.values()].map(r=>r.cards.group),true);const hit=hits[0];if(hit){const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],[hit.point.x,hit.point.y,hit.point.z],{stepFree:true});if(plan){path=[...plan.points];routeAhead(plan.points);}else options.onStatus?.('No connected walking route reaches that point.');}}),lease.listenCanvas<WheelEvent>('wheel',e=>{schedule();if(paused)return;e.preventDefault();if(perspective.mode()==='floating'&&mode==='walk'){perspective.zoom(e.deltaY);return;}if(registry.active())return;distance=Math.max(2,Math.min(45,distance*Math.exp(e.deltaY*.001)));updateCamera();},{passive:false})];
   window.addEventListener('keydown',keyDown);window.addEventListener('keyup',keyUp);window.addEventListener('blur',focusPause);document.addEventListener('visibilitychange',visibilityClear);host.addEventListener('blur',hostBlur);
@@ -930,12 +931,14 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     /** The old shell's emote row: plays on the walking figure (null stops it). Riding, it does nothing. */
     emote(id:EmoteId|null){schedule();emote=id&&!registry.active()?{id,at:performance.now()}:null;},
     input(next:Partial<typeof controls>){schedule();controls={...controls,...next};},jump(){schedule();jumpRequested=true;},look(dx:number,dy:number){schedule();if(perspective.mode()!=='activity'&&mode==='walk'){perspective.look(dx,dy);return;}lookAcc.dx+=dx;lookAcc.dy+=dy;yaw+=dx;pitch=Math.max(-1.2,Math.min(.8,pitch+dy));},
-    pause(value:boolean){paused=value;adaptiveQuality.interrupt();schedule();if(value){kitchen?.pause('Tools are open. All kitchen timers are paused.');clear();ambience?.pause();}},setDate(date:Date){schedule();const month=date.getMonth()+1;homeWorld.setSeason(month<=2||month===12?'winter':month<=5?'spring':month<=8?'summer':'autumn');currentTime=date;lastSun=-Infinity;},
+    pause(value:boolean){paused=value;adaptiveQuality.interrupt();schedule();if(value){kitchen?.pause('Tools are open. All kitchen timers are paused.');if(skating()&&!skate!.controls.paused())skate!.controls.pause(true);clear();ambience?.pause();}},setDate(date:Date){schedule();const month=date.getMonth()+1;homeWorld.setSeason(month<=2||month===12?'winter':month<=5?'spring':month<=8?'summer':'autumn');currentTime=date;lastSun=-Infinity;},
 
     /** The app's comfort choices, live (HorizonStage threads useComfort; html[data-motion] is read too). */
     setComfort(next:Partial<HorizonComfort>){applyComfort(next);},
     comfort:()=>({...comfort,motion:{...motion}}),
-    walkTo(p:XYZ){schedule();lastMovementBlocker=null;const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],p,{stepFree:true});path=plan?[...plan.points]:[];if(plan)routeAhead(plan.points);return plan;},
+    /** Whether a tapped or requested route is still being walked. */
+    routing(){return path.length>0&&!registry.active();},
+    walkTo(p:XYZ){schedule();if(registry.active()||skating())return null;lastMovementBlocker=null;const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],p,{stepFree:true});path=plan?[...plan.points]:[];if(plan)routeAhead(plan.points);return plan;},
     setHomeBotanical(...args:Parameters<typeof homeWorld.setBotanical>){schedule();homeWorld.setBotanical(...args);},
     setHome(layout:HomeLayout|undefined,displays?:HomeDisplayContent[],plotId?:string){const occupied=homeWorld.roomAt(body);homeWorld.set(layout,displays,plotId);if(occupied&&(geography.blocked(body.x,body.z,body.y)||!homeWorld.roomAt(body))){const at=homeWorld.visit();if(at)restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',...at});}requestShadow('home-renovation');},
     visitHome(){const at=homeWorld.visit();if(!at)return false;restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',...at});return true;},

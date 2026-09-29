@@ -45,7 +45,13 @@ describe("the old shell's chrome around the Horizon (static)", () => {
   it("All tools › Places walks on the Horizon (HARBOUR_GO_EVENT), as do a panel's Visit and a route change", () => {
     expect(shell).toMatch(/window\.addEventListener\(HARBOUR_GO_EVENT,go\)/);
     expect(shell).toMatch(/onVisit=\{\(\)=>\{const host=props\.panel\?\.host;[^}]*walkToPlace/);
-    expect(shell).toMatch(/if\(!toolOpen\)walkToPlace\(here\)/);
+    expect(shell).toMatch(/if\(lastHere\.current===here\|\|toolOpen\)return;lastHere\.current=here;walkToPlace\(here\)/);
+    // Arrival makes the place current (the old shell's Places navigated there); a ride refuses the walk and says so.
+    expect(shell).toMatch(/props\.onNavigateLocation\(\{\.\.\.routeRef\.current,\.\.\.VILLAGE_ADDRESS\[travelTo\],surface:undefined/);
+    expect(shell).toMatch(/if\(riding\.attached\|\|riding\.airborne\)\{setTravelTo\(null\);setNotice\(/);
+    const runtime = read("src/harbour/horizon/runtime/index.ts");
+    expect(runtime).toMatch(/walkTo\(p:XYZ\)\{schedule\(\);if\(registry\.active\(\)(\|\|skating\(\))?\)return null;/);
+    expect(runtime).toMatch(/function startRide\(\)\{schedule\(\);emote=null;/);
   });
 
   it("drops the Horizon toolbar inside the shell and keeps the movers' controls", () => {
@@ -69,6 +75,13 @@ describe("the old shell's chrome around the Horizon (static)", () => {
     const runtime = read("src/harbour/horizon/runtime/index.ts");
     expect(runtime).toMatch(/const skate:NativeSkate\|null=placed\?createNativeSkate\(/);
     expect(runtime).toMatch(/if\(skating\(\)\)skateStep\(dt\);else if\(registry\.active\(\)\)/);
+    // #571 review: travel steps off the board; the camera tests what is drawn; keys reset on blur; the rider shows in first person.
+    expect(shell).toMatch(/if\(world\.skate\(\)\?\.active\(\)\)\{world\.skate\(\)\?\.setAudio\(null\);world\.stopSkate\(\)/);
+    expect(runtime).toMatch(/blocked:\(x,y,z,r\)=>placed\.region\.blocked\(x,y,z,r\)/);
+    expect(runtime).toMatch(/function clear\(\)\{skate\?\.controls\.input\(\)\?\.reset\(\);/);
+    expect(runtime).toMatch(/figure\.group\.visible=mode==='walk'&&\(!firstPerson\|\|skating\(\)\)/);
+    expect(read("src/harbour/horizon/HorizonStage.tsx")).toMatch(/aria-label=\{props\.skating\?SKATE_STAGE_WORDS:/);
+    expect(read("src/harbour/horizon/skate/nativeSkate.ts")).not.toMatch(/worldCollisionAt/);
   });
 
   it("the Horizon figure plays the emote row", () => {
