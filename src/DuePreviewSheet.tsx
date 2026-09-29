@@ -6,8 +6,10 @@ import {RowReveal} from './RowReveal.tsx';
 import {formatCad} from './core/money.ts';
 import {billConfirmLabel,billSlipName,civilDateWords,type AddBillSlip} from './addSlideshow.ts';
 export type ReadyDueReview=Extract<DueOccurrenceReview,{kind:'ready'}>;
-/** Inline occurrence review. Motion only discloses; the named button posts. */
-export function DuePreviewSheet({rows,household,memberId,view,today,busy,isCurrent,onDismiss,onPost,onReviewActiveChange}:{rows:DueRecurrencePreviewRow[];household:Household;memberId:string;view:'household'|'personal';today:string;busy:boolean;isCurrent:()=>boolean;onDismiss:()=>void;onPost:(review:ReadyDueReview)=>Promise<boolean>;onReviewActiveChange?:(active:boolean)=>void}){
+/** Inline occurrence review. Motion only discloses; the named button posts. `focusRecurrence` (the Journey Board's
+    "Review and record…") puts focus on that occurrence's row each time its `seq` changes; it discloses nothing and
+    posts nothing. */
+export function DuePreviewSheet({rows,household,memberId,view,today,busy,isCurrent,onDismiss,onPost,onReviewActiveChange,focusRecurrence}:{rows:DueRecurrencePreviewRow[];household:Household;memberId:string;view:'household'|'personal';today:string;busy:boolean;isCurrent:()=>boolean;onDismiss:()=>void;onPost:(review:ReadyDueReview)=>Promise<boolean>;onReviewActiveChange?:(active:boolean)=>void;focusRecurrence?:{recurrenceId:string;seq:number}|null}){
  const [hidden,setHidden]=useState<string[]>([]),[accepted,setAccepted]=useState<string[]>([]);
  const activeReviews=useRef(new Set<string>()),reviewObserver=useRef(onReviewActiveChange);reviewObserver.current=onReviewActiveChange;
  const reportReview=(id:string,active:boolean)=>{if(active)activeReviews.current.add(id);else activeReviews.current.delete(id);reviewObserver.current?.(activeReviews.current.size>0);};
@@ -21,12 +23,12 @@ export function DuePreviewSheet({rows,household,memberId,view,today,busy,isCurre
   <h2 tabIndex={-1}>{visible.length?`${visible.length===1?'One':visible.length} repeating ${visible.length===1?'item is':'items are'} due`:'Due reminders are clear'}</h2>
   <p className='muted'>Review each occurrence here. Nothing posts until you press its named Confirm.</p>
   {!isCurrent()&&<p role='status'>The ledger view changed. Close these reminders and review Calendar.</p>}
-  <div className='due-preview-list'>{visible.map(row=><DueRow key={`${row.recurrenceId}:${row.nextDate}`} row={row} request={request(row)} household={household} busy={busy} isCurrent={()=>live.current.isCurrent()} onReviewActiveChange={active=>reportReview(`${row.recurrenceId}:${row.nextDate}`,active)} onPost={onPost} onAccepted={()=>setAccepted(ids=>[...ids,row.recurrenceId])} onHide={()=>{if(!live.current.isCurrent())return;hideDueOccurrence(request(row));setHidden(ids=>[...ids,row.recurrenceId]);}}/>)}</div>
+  <div className='due-preview-list'>{visible.map(row=><DueRow key={`${row.recurrenceId}:${row.nextDate}`} focusSeq={focusRecurrence?.recurrenceId===row.recurrenceId?focusRecurrence.seq:0} row={row} request={request(row)} household={household} busy={busy} isCurrent={()=>live.current.isCurrent()} onReviewActiveChange={active=>reportReview(`${row.recurrenceId}:${row.nextDate}`,active)} onPost={onPost} onAccepted={()=>setAccepted(ids=>[...ids,row.recurrenceId])} onHide={()=>{if(!live.current.isCurrent())return;hideDueOccurrence(request(row));setHidden(ids=>[...ids,row.recurrenceId]);}}/>)}</div>
   {!!accepted.length&&<p role='status'>{accepted.length} {accepted.length===1?'occurrence posted':'occurrences posted'}.</p>}
   <button className='ghost' type='button' disabled={busy} onClick={onDismiss}>Close reminders</button>
  </section>;
 }
-function DueRow({row,request,household,busy,isCurrent,onPost,onAccepted,onHide,onReviewActiveChange}:{row:DueRecurrencePreviewRow;request:DueOccurrenceRequest;household:Household;busy:boolean;isCurrent:()=>boolean;onPost:(review:ReadyDueReview)=>Promise<boolean>;onAccepted:()=>void;onHide:()=>void;onReviewActiveChange:(active:boolean)=>void}){
+function DueRow({row,request,household,busy,isCurrent,onPost,onAccepted,onHide,onReviewActiveChange,focusSeq=0}:{focusSeq?:number;row:DueRecurrencePreviewRow;request:DueOccurrenceRequest;household:Household;busy:boolean;isCurrent:()=>boolean;onPost:(review:ReadyDueReview)=>Promise<boolean>;onAccepted:()=>void;onHide:()=>void;onReviewActiveChange:(active:boolean)=>void}){
  const [review,setReview]=useState(()=>dueOccurrenceReview(household,request)),[version,setVersion]=useState(0),[pending,setPending]=useState(false),[notice,setNotice]=useState('');
  const [reviewOpen,setReviewOpen]=useState(false),reviewObserver=useRef(onReviewActiveChange);reviewObserver.current=onReviewActiveChange;
  useLayoutEffect(()=>{reviewObserver.current(reviewOpen||pending);},[reviewOpen,pending]);
@@ -37,7 +39,7 @@ function DueRow({row,request,household,busy,isCurrent,onPost,onAccepted,onHide,o
  const invalid=useRef(false);if(!matches&&!pending)invalid.current=true;const valid=matches&&!invalid.current;
  const post=async()=>{if(!valid||pending||busy||review.kind!=='ready'||!live.current.isCurrent())return;const latest=dueOccurrenceReview(live.current.household,request);if(latest.kind!=='ready'||latest.basis!==review.basis){setNotice('This occurrence changed. Review it again.');return;}setPending(true);setNotice('');try{const ok=await onPost(review);if(!mounted.current||!live.current.isCurrent())return;if(ok)onAccepted();else setNotice('Not yet accepted. Keep this occurrence here and retry when ready.');}catch(e){if(live.current.isCurrent())setNotice(e instanceof Error?e.message:String(e));}finally{if(mounted.current&&live.current.isCurrent())setPending(false);}};
  const label=review.kind==='ready'?review.title:row.title;
- return <RowReveal key={version} focusOnMount={version>0} label={label} busy={busy||pending||!isCurrent()} onRevealChange={side=>setReviewOpen(side==='right')} right={<>
+ return <RowReveal key={`${version}:${focusSeq}`} focusOnMount={version>0||focusSeq>0} label={label} busy={busy||pending||!isCurrent()} onRevealChange={side=>setReviewOpen(side==='right')} right={<>
    <p>{review.kind==='ready'?review.detail:review.reason}</p>
    {review.kind==='ready'&&!valid&&<p role='status'>This occurrence changed. Review its current details.</p>}
    {notice&&<p role='status'>{notice}</p>}

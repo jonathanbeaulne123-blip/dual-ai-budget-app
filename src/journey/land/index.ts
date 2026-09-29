@@ -1,0 +1,16 @@
+/**
+ * The Journey land (T2) — public API. The low-poly bird's-eye island derived from the real baked Horizon land
+ * (index + the 20 m `journey` terrain LOD), its SVG twin and its three dressings.
+ *
+ * Bundling note: `build.ts` (three + home art) and `JourneyLandFlat.tsx` (React, no three) are separate entries so a
+ * flat-only mount can import `./flat.ts` + `./JourneyLandFlat.tsx` without three.
+ */
+export { loadJourneyLand, journeyLandTimings, resetJourneyLandCacheForTests, type JourneyLandTimings } from "./load.ts";
+export { JOURNEY_LAND_SLIM_URL, JOURNEY_LAND_SLIM_FORMAT, encodeJourneyLandSlim, decodeJourneyLandSlim, parseJourneyLandSlim, type JourneyLandSlim, type JourneyLandSlimSource } from "./slim.ts";
+export { extractJourneyLand, isMinorLine, LINE_TOLERANCE } from "./extract.ts";
+export { buildJourneyLand, countDraws, setJourneyLandTier, setJourneyLandView, JOURNEY_LAND_BUDGET, JOURNEY_LAND_GROUP_NAME } from "./build.ts";
+export { createLandSurface, createTerrainSampler, type LandSurface } from "./surface.ts";
+export { journeyLandFlatData, landformBand } from "./flat.ts";
+export { JourneyLandFlat, type JourneyLandFlatProps } from "./JourneyLandFlat.tsx";
+export { JOURNEY_LAND_DRESSINGS, JOURNEY_LAND_EXTRAS, LAND_DRESSING_KEYS, LAND_EXTRA_KEYS, LINE_DRESSING_KEY, landDressing, landExtras, type JourneyLandExtras } from "./dressing.ts";
+export { DISTRICT_NAMES, HOST_NAMES, STATION_NAMES, districtName, hostName, reserveName } from "./names.ts";

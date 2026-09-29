@@ -1,3 +1,11 @@
+## 2026-09-28 — Journey Board: the household Journey as a board over the baked Horizon land
+
+Branch `claude/journey-board` from `main@9fed600`, pushed as [PR #567](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/567); not merged, not deployed, not live verified. **Risk: Medium-High** — it changes the illustrated edition's default arrival and replaces the household Journey surface, adds an App door onto the Era planner, raises the due review over the board and touches `AddSlideshow` / `DuePreviewSheet`; no money meaning, arithmetic, command, schema, sync, Auth/RLS or Hercules payload change, and every write stays behind an existing named Confirm.
+- Budget (5): +1. Honest statuses on the home screen (expected ≠ confirmed, overdue ≠ paid), the due reminders first, and each stop opens its real tool — expected pay through the reviewed recurrence path.
+- Engagement (3): +2. A board over the real island: the piece on today, chapters, crossroads to preview, and an explicit "Enter Horizon here".
+- Verification: typecheck clean; 14 focused files / 199 tests pass; the medium-high quick gate is `quick-gate-failed; time-budget-breached` (760 s) with every serial failure followed up (environmental, missing headless shell, or timing-sensitive in this sandbox). axe 0 violations at 390/1100. Fictional demo data, headless SwiftShader only; no phone.
+- Details, limitations, next owner and the decisions owed (D49–D67): [the handoff](CLAUDE_JOURNEY_BOARD.md) · [evidence](evidence/journey-board/INDEX.md).
+
 ## 2026-09-28 — Horizon ↔ Mountain full-App UX dissection toggle
 
 Branch `cursor/horizon-mountain-toggle-39dc` from `origin/main@9fed6002`. Tip `139dbe581c0bd0ee04177f3417f18b36d8b7bd6a`. PR #565 (draft). **Risk: Medium.** Budget (5): +0. Engagement (3): +1. No money, schema, Auth/RLS, sync, or Hercules payload change. Fictional Development only. **Not shipped. Not fully verified. Not release-ready.**

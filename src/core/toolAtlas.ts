@@ -201,7 +201,7 @@ export const TOOL_ATLAS: readonly AtlasTool[] = [
     synonyms: ["memories", "memory", "projector", "theatre", "choose three memories"],
     target: { kind: "house", target: "memories" }, spaces: "ours", score: 3.9, covers: ["T39", "T41"] }),
   tool({ id: "atlas", label: "The Atlas", subtitle: "Eras, recipes and the name of our island", group: "boathouse", host: "atlas", outcome: "buried",
-    synonyms: ["journey", "our path", "atlas", "island", "era", "eras", "map", "horizon", "recipes", "name", "atlas nook"],
+    synonyms: ["journey", "our path", "atlas", "island", "era", "eras", "map", "horizon", "recipes", "name", "atlas nook", "journey board", "home map", "chapters"],
     target: { kind: "house", target: "journey" }, spaces: "ours", score: 3.0, covers: ["T36"] }),
   tool({ id: "letters", label: "Letters", subtitle: "The writing desk: letters, voice, capsules", group: "boathouse", host: "boathouse", outcome: "buried",
     synonyms: ["letters", "letter", "writing desk", "capsule"],

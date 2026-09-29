@@ -1,3 +1,7 @@
+## 2026-09-28 — Journey Board, PR open (D49–D67 proposed)
+
+The household Journey route becomes the Journey Board: a Game-of-Life-style board (route through the twelve month stations, stops with honest statuses, the household piece on today, crossroads you can preview, chapters) over a low-poly rendering of the baked Horizon island, with a list equivalent, three themes and an explicit "Enter Horizon here". It is the illustrated edition's arrival home. Derived on read; no schema, sync, command or money-meaning change; every action opens the existing tool and its named Confirm. Not merged or deployed; real-phone performance and Jonathan's D49–D67 answers remain open. [Handoff](CLAUDE_JOURNEY_BOARD.md).
+
 ## 2026-09-23 — Tideline Skate Club v2, local integration (D-296)
 
 v2 replaces the v1 skate model (#528) with a real skate game in the Harbour's art style: flick-it controls on keys, mouse, touch and gamepad; a deterministic sim with transitions, vert, 15 grinds/slides, manuals and bails; a rebuilt Tideline park and six street spots; a new rider/board look, chase camera, HUD and pause book; and a dev-only Skate Lab. Progress stays device-local recreational data (lossless v1 migration); books and Journey keep their meaning. Claude's local branch has been integrated onto the current main candidate with the walking camera and 1–6 board emotes; see the [integration worksession](worksessions/2026-09-24-skate-v2-walking-integration.md). Human feel playtests, real phones/controllers and a two-device presence ride remain open.
