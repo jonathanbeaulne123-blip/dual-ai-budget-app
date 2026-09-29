@@ -39,6 +39,7 @@ export type NativeSkate={
   camera(dt:number,aspect:number,reduced:boolean):{eye:[number,number,number];target:[number,number,number];fov:number;roll:number}|null;
   /** Publish the HUD model (throttled; `force` for pause/enable/route changes). */
   publish(now:number,force?:boolean):void;
+  setFigure(figure:BodyFigure):void;
   setTheme(theme:ThemeId):void;
   dispose():void;
 };
@@ -124,6 +125,7 @@ export function createNativeSkate(options:{scene:THREE.Scene;figure:BodyFigure;t
       const progress=driver.progress();if(progress)options.onSkate?.({model:out,progress,revision:driver.revision()});
     },
     setTheme(next){if(next===theme)return;theme=next;buildPark();look?.setTheme(next);},
+    setFigure(next){options.figure=next;look?.setFigure(next);},
     dispose(){if(driver.active())api.stop();look?.dispose();park?.dispose();options.scene.remove(group);},
   };
   return api;

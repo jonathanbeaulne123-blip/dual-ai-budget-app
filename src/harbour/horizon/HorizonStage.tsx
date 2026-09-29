@@ -18,6 +18,8 @@ import {appCalm,appReducedMotion} from './sun/comfort.ts';
 import './horizon.css';
 import type {ThemeId} from '../../theme/scenes.ts';
 import {HORIZON_MANIFEST} from './world/manifest.ts';
+import type {MonorailState} from '../mountain/monorail.ts';
+import type {PlayableAvatar} from '../body/avatarDefinition.ts';
 export type HorizonStageProps={homePlotId?:string;homeLayout?:HomeLayout;homeDisplays?:HomeDisplayContent[];visitHome?:boolean;onHomeVisited?:()=>void;onHomeBook?:()=>void;onHomeWorkspace?:(target:string)=>void;cruiserPreference?:string;fleetStorageKey?:string;kitchenStorageKey?:string;onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onRuntime?:(runtime:HorizonRuntime|null)=>void;onQuickSheet?:()=>void;onJourney?:()=>void;initialBody?:HouseBodyReturn;partner?:PlaceWalkSource|null;paused?:boolean;children?:ReactNode;review?:boolean;theme?:ThemeId;
   /** The app's calm view (useComfort().quiet). Without it the stage reads html[data-quiet]. */calm?:boolean;
   /** The app's reduced-motion setting (useComfort().motion==='reduced'); html[data-motion] and the OS query are read too. */reducedMotion?:boolean;
@@ -32,6 +34,8 @@ export type HorizonStageProps={homePlotId?:string;homeLayout?:HomeLayout;homeDis
   onMover?:(mover:HorizonMoverState|null)=>void;
   /** The old skate's HUD frames (the shell renders SkateHUD and saves progress). */
   onSkate?:HorizonOptions['onSkate'];
+  onMonorail?:(state:MonorailState|null)=>void;
+  avatar?:PlayableAvatar|null;onAvatarStatus?:(avatar:PlayableAvatar,status:'ready'|'error')=>void;
   /** The old skate is riding: the stage names the skate's keys instead of the walking ones (PR #571 review). */
   skating?:boolean};
 /** Reduced motion is live: the app's prop (useComfort), the system setting or Hearth's own comfort choice (`data-motion`, written by `theme/comfort.ts`). */
@@ -66,7 +70,7 @@ export default function HorizonStage(props:HorizonStageProps){
   const [boatActions,setBoatActions]=useState<FleetAction[]>([]),[fleetState,setFleetState]=useState<ReturnType<HorizonRuntime['fleetState']>|null>(null);
   const [tier]=useState<'full'|'lite'>(()=>new URLSearchParams(location.search).get('tier')==='lite'||matchMedia('(max-width: 600px)').matches?'lite':'full');
   useEffect(()=>{const controller=new AbortController();let current:HorizonRuntime|null=null,unregister:(()=>void)|null=null;
-    const options:HorizonOptions={homePlotId:latest.current.homePlotId,homeLayout:latest.current.homeLayout,onHomeBook:()=>latest.current.onHomeBook?.(),onHomeWorkspace:t=>latest.current.onHomeWorkspace?.(t),tier,cruiserSkin:skin,fleetStorageKey:latest.current.fleetStorageKey,kitchenStorageKey:latest.current.kitchenStorageKey,theme:latest.current.theme,hideBuildings:HARBOUR_DEV&&new URLSearchParams(location.search).get('hideBuildings')==='1',signal:controller.signal,reducedMotion:readReducedMotion(latest.current),calm:readCalm(latest.current),onDoor:(h,b)=>latest.current.onDoor?.(h,b),onStatus:setStatus,initialBody:latest.current.initialBody,partner:()=>latest.current.partner??null,onSkate:frame=>latest.current.onSkate?.(frame)};
+    const options:HorizonOptions={homePlotId:latest.current.homePlotId,homeLayout:latest.current.homeLayout,onHomeBook:()=>latest.current.onHomeBook?.(),onHomeWorkspace:t=>latest.current.onHomeWorkspace?.(t),tier,cruiserSkin:skin,fleetStorageKey:latest.current.fleetStorageKey,kitchenStorageKey:latest.current.kitchenStorageKey,theme:latest.current.theme,hideBuildings:HARBOUR_DEV&&new URLSearchParams(location.search).get('hideBuildings')==='1',signal:controller.signal,reducedMotion:readReducedMotion(latest.current),calm:readCalm(latest.current),onDoor:(h,b)=>latest.current.onDoor?.(h,b),onStatus:setStatus,initialBody:latest.current.initialBody,partner:()=>latest.current.partner??null,onSkate:frame=>latest.current.onSkate?.(frame),onMonorail:state=>latest.current.onMonorail?.(state),avatar:latest.current.avatar,onAvatarStatus:(avatar,status)=>latest.current.onAvatarStatus?.(avatar,status)};
     // The movers (M6: the glider and the parachute) register on the runtime as soon as it exists.
     // The world is owned the moment it exists, so the effect's cleanup disposes it even if the glider import then fails (PR #570 review).
     import('../scene/worldMount.ts').then(m=>m.mountHorizonWorld(stage.current!,options)).then(async world=>{
@@ -177,7 +181,7 @@ export default function HorizonStage(props:HorizonStageProps){
       </div>}
       {!kitchenActive&&ready&&!sheet&&(!props.shell||mover?.mode==='cruiser')&&<div className="horizon-cruiser-controls" role="group" aria-label="Island cruiser">
         <button disabled={Boolean(mover?.attached&&mover.mode!=='cruiser')} aria-pressed={mover?.mode==='cruiser'} onClick={()=>{runtime.current?.toggleCruiser();stage.current?.focus();}}>{mover?.mode==='cruiser'?'Get off':'Ride'} <span aria-hidden="true">V</span></button>
-        {!props.shell&&<label>Style <select aria-label="Cruiser style" value={skin} onChange={event=>{const next=event.target.value as CruiserSkin;setSkin(next);runtime.current?.setCruiserSkin(next);const storage=cruiserStorage();setSkinSaveFailed(!storage||!saveCruiserSkin(storage,skinKey,next));}}>{Object.entries(CRUISER_SKINS).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>}
+        {(!props.shell||mover?.mode==='cruiser')&&<label>Style <select aria-label="Cruiser style" value={skin} onChange={event=>{const next=event.target.value as CruiserSkin;setSkin(next);runtime.current?.setCruiserSkin(next);const storage=cruiserStorage();setSkinSaveFailed(!storage||!saveCruiserSkin(storage,skinKey,next));}}>{Object.entries(CRUISER_SKINS).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>}
         {mover?.mode==='cruiser'&&<><button onClick={()=>{runtime.current?.recoverCruiser();stage.current?.focus();}}>Recover <span aria-hidden="true">R</span></button><output aria-label="Cruiser speed">{(mover.hud as {pace?:string})?.pace??'0 km/h'}</output></>}
         {skinSaveFailed&&<span role="status">Style saved for this visit only.</span>}
       </div>}

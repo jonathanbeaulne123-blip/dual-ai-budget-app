@@ -50,7 +50,7 @@ describe("the old shell's chrome around the Horizon (static)", () => {
     expect(shell).toMatch(/props\.onNavigateLocation\(\{\.\.\.routeRef\.current,\.\.\.VILLAGE_ADDRESS\[travelTo\],surface:undefined/);
     expect(shell).toMatch(/if\(riding\.attached\|\|riding\.airborne\)\{setTravelTo\(null\);setNotice\(/);
     const runtime = read("src/harbour/horizon/runtime/index.ts");
-    expect(runtime).toMatch(/walkTo\(p:XYZ\)\{schedule\(\);if\(registry\.active\(\)(\|\|skating\(\))?\)return null;/);
+    expect(runtime).toMatch(/walkTo\(p:XYZ\)\{schedule\(\);if\(registry\.active\(\)\|\|skating\(\)\|\|monorail\?\.state\(\)\)return null;/);
     expect(runtime).toMatch(/function startRide\(\)\{schedule\(\);emote=null;/);
   });
 
@@ -79,7 +79,7 @@ describe("the old shell's chrome around the Horizon (static)", () => {
     expect(shell).toMatch(/skateProgressKey\(household\.environment,household\.householdId,memberId\)/);
     const runtime = read("src/harbour/horizon/runtime/index.ts");
     expect(runtime).toMatch(/const skate:NativeSkate\|null=placed\?createNativeSkate\(/);
-    expect(runtime).toMatch(/if\(skating\(\)\)skateStep\(dt\);else if\(registry\.active\(\)\)/);
+    expect(runtime).toMatch(/else if\(skating\(\)\)skateStep\(dt\);else if\(registry\.active\(\)\)/);
     // #571 review: travel steps off the board; the camera tests what is drawn; keys reset on blur; the rider shows in first person.
     expect(shell).toMatch(/if\(world\.skate\(\)\?\.active\(\)\)\{world\.skate\(\)\?\.setAudio\(null\);world\.stopSkate\(\)/);
     expect(runtime).toMatch(/blocked:\(x,y,z,r\)=>placed\.region\.blocked\(x,y,z,r\)/);

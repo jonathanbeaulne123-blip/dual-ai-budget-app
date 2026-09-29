@@ -1751,3 +1751,11 @@ Outdoors is the Horizon; indoors is the old world's room with its old shell. `ha
 - Known cost: the old world still loads its island behind a room (it keeps the island standing for placed rooms). Not visible from inside; worth trimming later.
 
 Risk **Medium-High** (world routing). Budget delta (5): **0**: rooms read the books exactly as before; no money path changes. Engagement delta (3): **+2**: the old rooms are back behind Horizon doors.
+
+### 2026-09-29 — Complete the old shell's Horizon migration locally
+
+Jonathan asked for the old app to function through the Horizon world with the new map and its vehicles. This integration starts from current `main` after PR A and carries Claude's PR B (old Tideline skate) and PR C (old 3D rooms) onto the same branch. The Horizon remains the outdoor map; room doors use the old room scenes and tools. Existing Horizon movers and fleet remain on their own native boarding places.
+
+The shell now provides the old member-scoped Mine marks at projected Horizon host doors, keyboard-accessible host buttons, a Step in guide for actual Horizon views and travel, the original saved character choice, and the original Mountain monorail clock and carriage on Mountain v2's translated track. The guide can start the old downhill race only where the old skate can board. The cruiser style selector remains available while riding. The global Simple View and Journey routes continue to use their existing App controls; this work does not add another financial path. All money actions still open their established tools and remain behind their own review and Final Confirm.
+
+Risk **High** (default-world navigation, runtime and input). Budget delta (5): **0** — the Mine layer reads the current member's existing model and opens tools; no accounting, ledger, Auth, sync, schema or command writer changes. Engagement delta (3): **+2** — familiar shell access, skate, rooms, train and Horizon movers in one world. The monorail is a local world ride; it does not save a train journey to the books or cloud. Its initial boarding may select any listed station, as the old guide did. The old Mountain's small environmental moments and race framing art remain separate from this shell; the old race simulation and HUD are present. Browser, phone and authenticated cross-device acceptance are still required before claiming exact parity.

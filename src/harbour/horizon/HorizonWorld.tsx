@@ -7,6 +7,11 @@ import {HomeBookButton} from '../../home/HomeBookContext.tsx';
 import {useHarbourReading} from '../data/useHarbourReading.ts';
 import {VillageHUD} from '../village/VillageHUD.tsx';
 import {MineRibbon} from '../mine/MineRibbon.tsx';
+import {HarbourTwins} from '../court/CourtTwins.tsx';
+import type {ProjectedRect} from '../scene/runtime.ts';
+import * as THREE from 'three';
+import {MineLayer,type MineOpenKind} from '../mine/MineLayer.tsx';
+import {emptyMineLayer,mineLayer} from '../mine/mineLayer.ts';
 import {Dock} from '../glass/Dock.tsx';
 import {HostPanel} from '../panels/HostPanel.tsx';
 import {HarbourFlat} from '../flat/PlaceFlat.tsx';
@@ -38,6 +43,12 @@ import {useComfort} from '../../theme/comfort.ts';
 import {createWorldAmbience,type WorldAmbience} from '../mountain/audio.ts';
 import {useAppearance} from '../../theme/ThemeProvider.tsx';
 import {buildBasinReading,createBasinView} from '../mountain/basin.ts';
+import {useOfferWorldActions} from '../nav/worldActions.ts';
+import {HorizonGuide} from './HorizonGuide.tsx';
+import {MountainPanel,type MountainAction} from '../mountain/MountainPanel.tsx';
+import type {MonorailState} from '../mountain/monorail.ts';
+import {avatarPreferenceKey,readAvatar,saveAvatar} from '../body/avatarPreference.ts';
+import type {PlayableAvatar} from '../body/avatarDefinition.ts';
 import type {FundPulseFreshness} from '../../core/fundPulse.ts';
 export const HORIZON_HOST_TOOLS:Readonly<Record<string,string>>={home:'conversation',bank:'loft-banks',library:'books',glasshouse:'planner',studio:'pottery',cottage:'wardrobe',boathouse:'wishes'};
 const TOUCH='(hover: none) and (pointer: coarse)';
@@ -65,6 +76,12 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
   const botanical=useMemo(()=>livingEvidence(household,memberId,'personal'),[household.personalLife,household.hearthside,memberId]);
   useEffect(()=>{runtime.current?.setHomeBotanical?.(appearance.saved.queen??DEFAULT_QUEEN_STYLE,botanical);},[appearance.saved.queen,botanical]);
   const identityKey=houseIdentity(identity);
+  const avatarKey=avatarPreferenceKey(household.environment,household.householdId,memberId);
+  const [avatar,setAvatar]=useState<PlayableAvatar|null>(()=>readAvatar(localStorage,avatarKey));
+  const avatarRef=useRef(avatar);avatarRef.current=avatar;
+  const [avatarStatus,setAvatarStatus]=useState<'idle'|'loading'|'ready'|'error'>(avatar?'loading':'idle');
+  useEffect(()=>{const selected=readAvatar(localStorage,avatarKey);avatarRef.current=selected;setAvatar(selected);setAvatarStatus(selected?'loading':'idle');runtime.current?.setAvatar(selected);},[avatarKey]);
+  function chooseAvatar(next:PlayableAvatar){avatarRef.current=next;setAvatar(next);setAvatarStatus('loading');saveAvatar(localStorage,avatarKey,next);runtime.current?.setAvatar(next);}
   // "Enter Horizon here" (Journey Board, P2): an {x,y} location starts the body there with NO `y`, so
   // `restoreHorizonPosition` grounds it or snaps to the nearest walkable path node (the sea and the
   // yacht are never targets); a host lands on its baked `returnAt` through `runtime.arrive`, once per request.
@@ -121,12 +138,42 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
   const space=props.space==='mine'?'mine':'ours';
   const toolOpen=Boolean(route.surface);
   const [mover,setMover]=useState<HorizonMoverState|null>(null);
-  const riding=Boolean(mover?.attached||mover?.airborne);
+  const [monorail,setMonorail]=useState<MonorailState|null>(null);
+  const riding=Boolean(mover?.attached||mover?.airborne||monorail);
   const [touch]=useState(readTouch);
   const [emotesOpen,setEmotesOpen]=useState(false),[travelTo,setTravelTo]=useState<HarbourPlaceId|null>(null);
+  const [guideOpen,setGuideOpen]=useState(false);
   const [worldReady,setWorldReady]=useState(false);
+  const [rects,setRects]=useState<ProjectedRect[]>([]);
+  useEffect(()=>{
+    if(!worldReady)return;
+    const point=new THREE.Vector3();
+    const update=()=>{
+      const world=runtime.current,stage=document.querySelector<HTMLElement>('.horizon-stage');
+      if(!world?.world?.hosts||!stage)return;
+      const width=stage.clientWidth,height=stage.clientHeight,next:ProjectedRect[]=[];
+      world.camera.updateMatrixWorld();
+      for(const host of world.world.hosts){
+        const place=(host.toolPlaceId??host.placeIds[0]) as HarbourPlaceId|undefined;
+        if(!place||!('xy' in host.door))continue;
+        point.set(host.door.xy[0],(host.door.height??world.geography.ground(host.door.xy[0],host.door.xy[1]))+1.3,host.door.xy[1]).project(world.camera);
+        if(!Number.isFinite(point.x)||!Number.isFinite(point.y))continue;
+        const visible=point.z>=-1&&point.z<=1&&Math.abs(point.x)<=1&&Math.abs(point.y)<=1;
+        next.push({id:`visit:${place}`,kind:'anchor',group:'host',label:`Visit ${HARBOUR_PLACE_NAMES[place]}`,x:Math.max(0,Math.min(width-44,(point.x+1)*width/2-22)),y:Math.max(0,Math.min(height-44,(1-point.y)*height/2-22)),w:44,h:44,visible});
+      }
+      setRects(previous=>previous.length===next.length&&previous.every((rect,i)=>{const other=next[i];return other&&rect.id===other.id&&rect.visible===other.visible&&Math.abs(rect.x-other.x)<1&&Math.abs(rect.y-other.y)<1;})?previous:next);
+    };
+    update();const id=window.setInterval(update,250);return()=>window.clearInterval(id);
+  },[worldReady]);
   const glassNight=useGlassNight();
   const {reading,statusLine}=useHarbourReading({household,memberId,today:props.today,freshness,interpretationGate:props.interpretationGate});
+  const mineSource=props.mineHousehold??household;
+  const mine=useMemo(()=>space==='mine'?mineLayer(mineSource,memberId,props.today):emptyMineLayer(memberId),[space,mineSource,memberId,props.today]);
+  const openMine=(kind:MineOpenKind,id:string|null)=>{
+    if(props.onOpenMine){props.onOpenMine(kind,id);return;}
+    if(kind==='bank')props.onOpen('loft-banks',id?`bank/${id}`:undefined);
+    else props.onOpen('planner');
+  };
   const softPeer=useMemo(()=>props.presence?.peers?.find(p=>p.memberId!==memberId)??null,[props.presence,memberId]);
   const partnerName=useMemo(()=>{
     const walkName=peer.memberId?memberDisplayName(household.members,peer.memberId):null;
@@ -140,6 +187,7 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
   const walkToPlace=useCallback((place:HarbourPlaceId)=>{
     const world=runtime.current;if(!world)return false;
     const at=horizonPlaceTarget(world.world,place);if(!at)return false;
+    if(world.monorailState?.()){setTravelTo(null);setNotice('Step off the monorail at a platform before choosing another place.');return false;}
     // A ride owns the body (PR #570 review): refuse, and say so, rather than queue a walk the ride would never take.
     const riding=world.moverState();if(riding.attached||riding.airborne){setTravelTo(null);setNotice('Park the ride first, then choose where to go.');return false;}
     // On the board, step off first: a place chosen while skating is a walk (PR #571 review).
@@ -214,6 +262,13 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
   });
   function focusStage(){(document.querySelector('.horizon-stage') as HTMLElement|null)?.focus({preventScroll:true});}
   function doEmote(id:EmoteId){runtime.current?.emote(id);setEmotesOpen(false);focusStage();}
+  function monorailAction(action:MountainAction){
+    const world=runtime.current;if(!world)return;
+    if(action.kind==='monorail-select')world.monorailSelect(action.stop);
+    else if(action.kind==='monorail-control')world.monorailControl(action.control,action.value);
+  }
+  function showGuide(){setGuideOpen(true);}
+  useOfferWorldActions({skate:worldReady&&canSkate&&!toolOpen?startSkating:undefined});
   // The phone branch is below 720px (AGENTS.md), so the glass is lite there.
   const lite=typeof window.matchMedia==='function'&&window.matchMedia('(max-width: 719px)').matches;
   // The emote row's 1–6 shortcuts, as on the Mountain (the row shows them).
@@ -221,18 +276,22 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
     const key=(event:KeyboardEvent)=>{const slot=EMOTE_IDS[Number(event.key)-1];if(!slot||event.repeat||event.metaKey||event.ctrlKey||event.altKey)return;const stage=document.querySelector('.horizon-stage');if(!stage||document.activeElement!==stage)return;doEmote(slot);event.preventDefault();};
     window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);
   });
-  const dock=props.dock&&!toolOpen?<Dock {...props.dock} calm={comfort.quiet} lite={lite} night={glassNight} cameraMoving={false}/>:undefined;
+  const dock=props.dock&&!toolOpen?<Dock {...props.dock} calm={comfort.quiet} lite={lite} night={glassNight} cameraMoving={false} card={{...props.dock.card,onStepIn:showGuide}}/>:undefined;
   const presence=<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={peer.walk} walkName={peer.walk?partnerName:null} worldUnavailable={peer.unavailable} soft={softPeer} here={here} placeName={HARBOUR_PLACE_NAMES[here]} softPresenceOptedOut={props.presence?.optedOut===true} onUnhide={props.onUnhide} hasPartner={Boolean(softPeer||props.partnerName||peer.memberId)}/>;
   return <section data-harbour-space={space} data-harbour-world="horizon" className={`harbour-world harbour-world--${theme} harbour-world--horizon${skating?' is-skating':''}${toolOpen?' has-open-object':''}`} data-world-status={worldReady?'ready':'loading'} data-world-scope={scope} data-harbour-place={here} data-harbour-tier={lite?'lite':'full'} data-horizon-riding={riding?'':undefined} aria-label={HARBOUR_PLACE_NAMES[here]}>
     <div className="harbour-world__stage">
-      <HorizonStage shell skating={Boolean(skating)} onFailed={props.onFailed} onMover={setMover} onSkate={onSkate} homePlotId={homeBook?.plotId} homeLayout={homeBook?.layout??undefined} homeDisplays={homeBook?.displays} visitHome={homeBook?.pendingVisit} onHomeVisited={homeBook?.acknowledgeVisit} onHomeBook={homeBook?.open} onHomeWorkspace={target=>{const body=runtime.current?.savedBody();if(body){saveHouseReturnOnDevice(identity,route,body,'horizon');saveHouseReturnOnDevice(identity,route,body);}props.onOpen(target);}} key={identityKey} fleetStorageKey={`hearth:horizon-fleet:v1:${identityKey}`} kitchenStorageKey={`hearth:yacht-kitchen:v1:${identityKey}`} cruiserPreference={cruiserPreferenceKey(household.environment,household.householdId,memberId)} theme={theme} onDoor={onDoor} initialBody={initialBody} onReady={()=>{setWorldReady(true);arriveForRequest();props.onWorldReady?.();}} onRuntime={value=>{if(!value&&runtime.current)saveHouseReturnOnDevice(identity,route,runtime.current.savedBody(),'horizon');runtime.current=value;value?.setAmbience?.(audio.current);{const v=basinView.current(basin);value?.setMountainDamWater?.(v.level,v.reserveLevel);}value?.setHomeBotanical?.(appearance.saved.queen??DEFAULT_QUEEN_STYLE,botanical);}} sound={{on:soundOn,toggle:toggleSound}} partner={peer.walk} calm={comfort.quiet} reducedMotion={comfort.motion==='reduced'} paused={homeBook?.editing===true||Boolean(route.surface&&route.surface!=='queen')} />
+      <HorizonStage shell skating={Boolean(skating)} avatar={avatar} onAvatarStatus={(loaded,status)=>{if(loaded===avatarRef.current)setAvatarStatus(status);}} onFailed={props.onFailed} onMover={setMover} onSkate={onSkate} onMonorail={setMonorail} homePlotId={homeBook?.plotId} homeLayout={homeBook?.layout??undefined} homeDisplays={homeBook?.displays} visitHome={homeBook?.pendingVisit} onHomeVisited={homeBook?.acknowledgeVisit} onHomeBook={homeBook?.open} onHomeWorkspace={target=>{const body=runtime.current?.savedBody();if(body){saveHouseReturnOnDevice(identity,route,body,'horizon');saveHouseReturnOnDevice(identity,route,body);}props.onOpen(target);}} key={identityKey} fleetStorageKey={`hearth:horizon-fleet:v1:${identityKey}`} kitchenStorageKey={`hearth:yacht-kitchen:v1:${identityKey}`} cruiserPreference={cruiserPreferenceKey(household.environment,household.householdId,memberId)} theme={theme} onDoor={onDoor} initialBody={initialBody} onReady={()=>{setWorldReady(true);arriveForRequest();props.onWorldReady?.();}} onRuntime={value=>{if(!value&&runtime.current)saveHouseReturnOnDevice(identity,route,runtime.current.savedBody(),'horizon');runtime.current=value;value?.setAmbience?.(audio.current);{const v=basinView.current(basin);value?.setMountainDamWater?.(v.level,v.reserveLevel);}value?.setHomeBotanical?.(appearance.saved.queen??DEFAULT_QUEEN_STYLE,botanical);}} sound={{on:soundOn,toggle:toggleSound}} partner={peer.walk} calm={comfort.quiet} reducedMotion={comfort.motion==='reduced'} paused={guideOpen||homeBook?.editing===true||Boolean(route.surface&&route.surface!=='queen')} />
       {!worldReady&&!toolOpen&&<HarbourFlat place={here} reading={reading} status="loading" theme={theme} overlay/>}
       {!toolOpen&&<MineRibbon space={space}/>}
-      {worldReady&&!toolOpen&&<VillageHUD memberId={memberId} theme={theme} calm={comfort.quiet} lite={lite} night={glassNight} alwaysShowLabels={comfort.labels} toolsOpen={props.toolsOpen} glassBetween={dock} fab={props.fab} onQuickSheet={props.onQuickSheet} place={here} travelling={travelTo} onVisit={place=>{walkToPlace(place);}} presence={presence}/>}
+      {space==='mine'&&worldReady&&!toolOpen&&<MineLayer layer={mine} place="court" rects={rects} hidden={Boolean(riding||skating)} onOpen={openMine}/>}
+      {worldReady&&!toolOpen&&<HarbourTwins rects={rects} hidden={Boolean(riding||skating)} label="Horizon places" onActivate={rect=>{const place=rect.id.startsWith('visit:')?rect.id.slice(6):null;if(place&&Object.hasOwn(HARBOUR_PLACE_NAMES,place))walkToPlace(place as HarbourPlaceId);}}/>}
+      {worldReady&&!toolOpen&&<VillageHUD memberId={memberId} theme={theme} calm={comfort.quiet} lite={lite} night={glassNight} alwaysShowLabels={comfort.labels} toolsOpen={props.toolsOpen} glassBetween={dock} fab={props.fab} onQuickSheet={props.onQuickSheet} place={here} travelling={travelTo} onVisit={place=>{walkToPlace(place);}} onGuide={showGuide} avatar={avatar} avatarStatus={avatarStatus} onAvatar={chooseAvatar} presence={presence}/>}
+      {worldReady&&!toolOpen&&<HorizonGuide open={guideOpen} onClose={()=>{setGuideOpen(false);focusStage();}} views={runtime.current?.world?.views??[]} onView={id=>{runtime.current?.setMode('look');runtime.current?.shot(id);setGuideOpen(false);focusStage();}} onWalk={()=>{runtime.current?.setMode('walk');setGuideOpen(false);focusStage();}} onPlace={place=>{setGuideOpen(false);walkToPlace(place);}} canSkate={canSkate} onSkate={()=>{setGuideOpen(false);startSkating();}} onRace={()=>{setGuideOpen(false);startSkating();runtime.current?.skate()?.route('mountain-descent');}} monorailAvailable={runtime.current?.hasMonorail?.()??false} onMonorail={(from,stops)=>{if(runtime.current?.monorailBoard(from)){for(const stop of stops)runtime.current?.monorailSelect(stop);setGuideOpen(false);focusStage();}}} onJourney={props.onJourney} soundOn={soundOn} onSound={toggleSound}/>}
+      {monorail&&!toolOpen&&<MountainPanel open={false} monorail={monorail} partnerName={partnerName} statusLine={null} onAction={monorailAction} onOpen={props.onOpen}/>}
       {worldReady&&!toolOpen&&props.panel?.host&&<HostPanel key={props.panel.host} host={props.panel.host} reading={reading} extras={props.panel.extras} theme={theme} onClose={props.panel.onClose} onOpen={props.panel.onOpen} onRecord={props.panel.onRecord} onMarkPaid={props.panel.onMarkPaid} onTalk={props.panel.onTalk} returnFocusTo={props.panel.returnFocusTo}
         onVisit={()=>{const host=props.panel?.host;if(host&&host!=='hercules'&&Object.hasOwn(VILLAGE_ADDRESS,host))walkToPlace(host as HarbourPlaceId);props.panel?.onClose();}}
         onStepIn={host=>{if(host!=='hercules')stepIn(host);props.panel?.onClose();}}/>}
-      {worldReady&&!toolOpen&&(skating||canSkate)&&<SkateHUD model={skating} onStart={startSkating} onWalk={leaveSkating} onOpenFund={()=>{leaveSkating();props.onOpen('fund');}}
+      {worldReady&&!toolOpen&&!monorail&&(skating||canSkate)&&<SkateHUD model={skating} onStart={startSkating} onWalk={leaveSkating} onOpenFund={()=>{leaveSkating();props.onOpen('fund');}}
         onReplay={action=>runtime.current?.skate()?.replay(action)} onSettings={skateSettings} onCommand={command=>runtime.current?.skate()?.command(command)} onZonePointer={skateZone}
         gesturePath={skateGesturePath} trickBook={SKATE_TRICK_BOOK} onPause={on=>runtime.current?.skate()?.pause(on)} onRoute={id=>runtime.current?.skate()?.route(id)}
         onSpot={id=>runtime.current?.skate()?.spot(id)} onDeck={id=>runtime.current?.skate()?.deck(id)} presence={presence} onFocus={focusStage} saveFailed={skateSaveFailed}/>}
