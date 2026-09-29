@@ -113,7 +113,10 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
   const segments=b.surfaceSegments?.map((v,i)=>solid(`${b.id}.surface.${i}`,'bed',v.surface,'deck',[b.id],district));
   const runs=new Map<number,{on:boolean;count:number;last?:XYZ;nx:number;nz:number;edge:number}>([[-1,{on:false,count:0,nx:0,nz:0,edge:0}],[1,{on:false,count:0,nx:0,nz:0,edge:0}]]);
   const batters=new Map<number,BatterSection[][]>([[-1,[[]]],[1,[[]]]]),endBatter=(side:number)=>{const list=batters.get(side)!;if(list.at(-1)!.length)list.push([]);};
-  // road (L1): carried segments are known up front so the deck's mitred joints square off against them.
+  // road (L1): a corner of this bed's deck that lies on a higher-ranked road's paved area (within 0.6 of its height) takes that
+  // road's surface there: one surface where a spur, a walk or a skate lane joins or crosses a road (a joining bed was level across
+  // its width while the road under it climbed: 0.2–0.45 lips at every oblique join).
+  const onHost=hostSurface(b,cuts);
   const carriedSeg=b.points.map((p,i)=>{if(!i)return false;const a=b.points[i-1]!,mid:XY=[(a[0]!+p[0]!)/2,(a[2]!+p[2]!)/2];return !!b.carried?.some(line=>planDistance(mid,line)<1);});
   for(let i=1;i<b.points.length;i++){
     const a=b.points[i-1]!,p=b.points[i]!,dx=p[0]!-a[0]!,dz=p[2]!-a[2]!,len=Math.hypot(dx,dz);if(len<1e-6)continue;
@@ -124,7 +127,7 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
     const target=segments?segments[Math.min(segments.length-1,Math.floor((i-1)/(b.points.length-1)*segments.length))]!:deck;
     // road (L1): the deck is one continuous ribbon: mitred pieces share their corners (per-segment rectangles left 0.2–0.3 eu
     // cracks to the ground on the outside of every bend).
-    mitredSlab(target!,b.points,i,b.width,b.kind==='road'||b.kind==='skate'?.6:.35,0,0,j=>!!carriedSeg[j]);
+    mitredSlab(target!,b.points,i,b.width,b.kind==='road'||b.kind==='skate'?.6:.35,0,0,j=>!!carriedSeg[j],onHost);
     const joinedPad=cuts.pads.some(p=>{if(p.underground||p.kind==='host'||Math.abs(p.centre[1]-h)>.6)return false;const angle=p.rotationDegrees*Math.PI/180,c=Math.cos(angle),s=Math.sin(angle),x=mid[0]-p.centre[0],z=mid[1]-p.centre[2];return Math.abs(x*c+z*s)<=p.size[0]/2+b.width/2&&Math.abs(-x*s+z*c)<=p.size[1]/2+b.width/2;});
     // A pad only lifts the kerb: a guard stays wherever the ground beyond the edge (terrain or a
     // pad surface) drops more than body height. Junction mouths are opened later along the
@@ -134,9 +137,9 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
     // its middle and left 56 m of a 3.8 eu edge bare), and the drop is the larger of 1.0 and 1.5 eu beyond the edge.
     const pieces=len>2.4*EDGE_PIECE?Math.ceil(len/EDGE_PIECE):1,at=(t:number):XYZ=>[a[0]+(p[0]-a[0])*t,a[1]+(p[1]-a[1])*t,a[2]+(p[2]-a[2])*t];
     for(const side of [-1,1]){
-      if(shared?.has(side)){if(b.shoulder)slab(shoulders,a,p,b.shoulder,.6,side*(b.width/2+b.shoulder/2));continue;}
+      if(shared?.has(side)){if(b.shoulder)mitredSlab(shoulders,b.points,i,b.shoulder,.6,side*(b.width/2+b.shoulder/2),0,j=>!!carriedSeg[j],onHost);continue;}
       const edge=b.width/2+b.shoulder;
-      if(b.shoulder)slab(shoulders,a,p,b.shoulder,.6,side*(b.width/2+b.shoulder/2));
+      if(b.shoulder)mitredSlab(shoulders,b.points,i,b.shoulder,.6,side*(b.width/2+b.shoulder/2),0,j=>!!carriedSeg[j],onHost);
       if(!gap&&b.kind==='road')slab(kerbs,a,p,.25,.15,side*b.width/2,.15);
       for(let k=0;k<pieces;k++){
         const pa=at(k/pieces),pb=at((k+1)/pieces),pm:XY=[(pa[0]+pb[0])/2,(pa[2]+pb[2])/2],ph=(pa[1]+pb[1])/2;
@@ -177,6 +180,39 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
     }
     cuts.solids.push(...districts.values());
   }
+}
+/** road (L1): the rank of a bed as a surface others join: the Drive, then the Green Road and the Mountain Road, the Bight spur, other
+ * roads (spurs, service drives), skate lines, then foot routes. A bed's corner lying on a higher-ranked road takes its surface. */
+export function surfaceRank(b:Pick<BedCut,'id'|'kind'|'profile'>):number {
+  if(b.id==='V01')return 6;if(b.id==='VG'||b.id==='V03')return 5;if(b.id==='VBS')return 4;
+  if(b.kind==='road')return 3;if(b.kind==='skate')return 2;return 1;
+}
+type HostIndex={cells:Map<string,{bed:BedCut;a:XYZ;b:XYZ}[]>;beds:readonly BedCut[]};
+/** road (L1): a joining deck's corner within this of a road's paved edge also takes the road's surface (a lip-free apron). */
+const HOST_APRON=.6;
+const HOST_CELL=16,hostIndices=new WeakMap<LandCuts,{key:string;index:HostIndex}>();
+/** road (L1): the top height for a deck corner of `b` at p: the surface of the highest-ranked road (above b's own rank) whose
+ * paved area (width/2 + shoulder) holds p and whose height there is within 0.6 of the corner's own; else the corner's own. Road
+ * decks are level across their width, so a host's surface at p is its centreline height at the nearest point. */
+export function hostSurface(b:BedCut,cuts:LandCuts):((p:XYZ)=>number)|undefined {
+  if(['cable','cave','rail'].includes(b.kind)||b.id.startsWith('structure.')||!b.terrainCut)return undefined;
+  const rank=surfaceRank(b),hosts=cuts.beds.filter(h=>h!==b&&h.kind==='road'&&h.terrainCut&&!h.id.startsWith('structure.')&&!h.id.startsWith('mountainV2.')&&h.width<=12&&surfaceRank(h)>rank);
+  if(!hosts.length)return undefined;
+  const key=hosts.map(h=>`${h.id}:${h.points.length}:${h.points[0]?.[1]}:${h.points.at(-1)?.[1]}`).join('|');let cached=hostIndices.get(cuts);
+  if(!cached||cached.key!==key||cached.index.beds.length!==hosts.length||cached.index.beds.some((h,i)=>h!==hosts[i])){
+    const cells=new Map<string,{bed:BedCut;a:XYZ;b:XYZ}[]>();
+    for(const h of hosts){const r=h.width/2+h.shoulder+HOST_APRON;for(let i=1;i<h.points.length;i++){const a=h.points[i-1]!,e=h.points[i]!;
+      for(let x=Math.floor((Math.min(a[0],e[0])-r)/HOST_CELL);x<=Math.floor((Math.max(a[0],e[0])+r)/HOST_CELL);x++)for(let z=Math.floor((Math.min(a[2],e[2])-r)/HOST_CELL);z<=Math.floor((Math.max(a[2],e[2])+r)/HOST_CELL);z++){const k=`${x}:${z}`;(cells.get(k)??cells.set(k,[]).get(k)!).push({bed:h,a,b:e});}}}
+    cached={key,index:{cells,beds:hosts}};hostIndices.set(cuts,cached);}
+  const index=cached.index;
+  return (p:XYZ)=>{
+    let best:{h:number;rank:number}|undefined;
+    for(const s of index.cells.get(`${Math.floor(p[0]/HOST_CELL)}:${Math.floor(p[2]/HOST_CELL)}`)??[]){
+      if(surfaceRank(s.bed)<=rank)continue;const dx=s.b[0]-s.a[0],dz=s.b[2]-s.a[2],l=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((p[0]-s.a[0])*dx+(p[2]-s.a[2])*dz)/l));
+      const d=Math.hypot(p[0]-s.a[0]-dx*t,p[2]-s.a[2]-dz*t);if(d>s.bed.width/2+s.bed.shoulder+HOST_APRON)continue;const h=s.a[1]+(s.b[1]-s.a[1])*t;if(Math.abs(h-p[1])>=.6)continue;
+      const r=surfaceRank(s.bed);if(!best||r>best.rank||r===best.rank&&Math.abs(h-p[1])<Math.abs(best.h-p[1]))best={h,rank:r};}
+    return best?best.h:p[1];
+  };
 }
 export function heightOnBeds(cuts:LandCuts,p:XY,base:HeightQuery,maxDistance=15):number {
   let distance=Infinity,height=base(...p);

@@ -9,8 +9,10 @@ import { box, clamp, distance, districtAt, mitredSlab, mix, nearestOnPath, plan,
 
 export interface SpanSpec { id:string; at:XY; route:string; length:number; width:number; height?:number; clear?:number; covered?:boolean; supportSpacing?:number; /** A clear opening centred on the span, carried by a through truss. */ opening?:number; /** Build abutments to the ground at both ends. */ abutments?:boolean; /** v1.9: the deck follows the route's own graded points (plan and height) instead of a level chord. */ followRoute?:boolean }
 export const SPANS:SpanSpec[]=[
-  {id:'highSpan',at:[1240,1105],route:'VG',length:104,width:10,height:24,clear:14,supportSpacing:12,opening:44},
-  {id:'quayBridge',at:[1350,1345],route:'V01',length:90,width:16,height:9,clear:4},
+  // road (L1): the High Span and the Quay Bridge stand on abutments at both ends (their road approaches hung 1.5–4.4 eu over the
+  // banks for the 2 eu the span exclusion reaches past each deck end).
+  {id:'highSpan',at:[1240,1105],route:'VG',length:104,width:10,height:24,clear:14,supportSpacing:12,opening:44,abutments:true},
+  {id:'quayBridge',at:[1350,1345],route:'V01',length:90,width:16,height:9,clear:4,abutments:true},
   // v2.0 (D-A1): the Bight Bridge reads MANIFEST structures.bightBridge (span 245, section −9 … +12.6, a 36 m steel
   // through-arch over s 98–134); `buildBightBridge` builds it, this row only carries the span to the bed solver.
   {id:'bightBridge',at:bightFrame().at(bightFrame().A/2,0),route:'V01',length:bightSpec().span,width:bightSpec().section[1]-bightSpec().section[0],height:bightSpec().h,clear:bightSpec().clear,abutments:true},
@@ -336,7 +338,8 @@ export function cableTower(out:StructureSolid,bracing:StructureSolid,at:XY,top:n
 function carriedDeck(id:string,route:BedCut,path:XYZ[],width:number,cuts:LandCuts,base:HeightQuery,o:{spacing?:number;bentOffsets?:number[];avoid?:(xy:XY)=>string|undefined;kind?:string;bedProfile?:string}={}):{bents:number[];refused:number[]} {
   const district=districtAt(...plan(path[Math.floor(path.length/2)]!)),ids=[route.id,`structure.${id}`],guard=laneGuard(cuts),length=planLength(path),spacing=o.spacing??6,offsets=o.bentOffsets??[-(width/2-.6),width/2-.6];
   const deck=solid(`${id}.deck`,o.kind??'trestle','boardwalk','deck',[route.id],district),supports=solid(`${id}.supports`,'trestle','timber','support',ids,district),caps=solid(`${id}.caps`,'capBeam','timber','support',ids,district),rails=solid(`${id}.rails`,'handrail','metal','rail',[route.id],district);
-  for(let i=1;i<path.length;i++)slab(deck,path[i-1]!,path[i]!,width,.6);
+  // road (L1): one continuous deck (mitred pieces): the Bight spur trestle's per-segment rectangles left 0.2–0.4 cracks to the ground.
+  for(let i=1;i<path.length;i++)mitredSlab(deck,path,i,width,.6);
   const feetAt=(s:number)=>{const {p,dir}=along(path,s);return {p,feet:offsets.map(off=>[p[0]-dir[1]*off,p[2]+dir[0]*off] as XY)};},bents:number[]=[],refused:number[]=[],refusedWhy=new Map<number,string>();
   const blocked=(s:number)=>{const {p,feet}=feetAt(s);return feet.map(xy=>guard(xy,p[1]-.6,ids)??o.avoid?.(xy)).find(Boolean);};
   const n=Math.max(1,Math.ceil(length/spacing));
@@ -519,7 +522,7 @@ export function tunnel(id:string,points:XYZ[],width:number,clear:number,cuts:Lan
     const lintel=solid(`${id}.lintels`,'beam','stone','support',bedIds,district);
     const cols:number[]=[];for(let k=0;k<=n;k++){const sk=length*k/n;if(bays.some(b=>Math.abs(b.s-sk)<b.half))continue;cols.push(sk);const {p,dir}=along(points,sk);pier(colonnade,[p[0]-dir[1]*o0,p[2]+dir[0]*o0],p[1]+clear,base,[.7,.7],[1.8,1.8]);}
     for(const b of bays){const before=Math.max(...cols.filter(c=>c<b.s),0),after=Math.min(...cols.filter(c=>c>b.s),length);const a=along(colLine,before).p,c=along(colLine,after).p;
-      slab(lintel,[a[0],along(points,before).p[1]+clear,a[2]],[c[0],along(points,after).p[1]+clear,c[2]],.7,.6);}
+      slab(lintel,[a[0],along(points,before).p[1]+clear+.6,a[2]],[c[0],along(points,after).p[1]+clear+.6,c[2]],.7,.6);}
     if(lintel.indices.length){cuts.solids.push(lintel);cuts.diagnostics.push({id:`structures.${id}.openBays`,severity:'info',message:`${id}: ${bays.length} open bay(s) in the colonnade where a route leaves through the open side (lintels carry the roof edge; road L1)`,measured:bays.length});}
     postedRail(parapet,points,side*(width/2-.1));cuts.solids.push(colonnade,parapet);
   }

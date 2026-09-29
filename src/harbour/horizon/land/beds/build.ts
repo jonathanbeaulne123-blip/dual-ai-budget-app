@@ -268,7 +268,7 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
     b.maxGrade=limit;if('structures'in row)b.structureIds=row.structures.filter(x=>!(id==='VG'&&x==='hollowBridge'));cuts.beds.push(b);
   }
   for(const [id,pts]of Object.entries(M.roads.spurs)){
-    const name=`spur ${id}`,at=pts[0]! as unknown as XY,start=heightOnBeds(cuts,at,base,40),heights:Record<string,number>={upperStreet:18,library:48,glasshouse:34,studio:40,cottage:38,boathouse:4};
+    const name=`spur ${id}`,at=pts[0]! as unknown as XY,start=heightOnBeds(cuts,at,base,40),heights:Record<string,number>={upperStreet:18,library:48,glasshouse:34,studio:40,cottage:38,boathouse:4.6};// road (L1): boathouse 4 → 4.6: the spur leaves the Drive flush at 8.2 and could not fall to 4 within 12 % over its 36 eu (14.9 %); the Boathouse approach takes the 1.6 to the door at ≤ 8 %.
     // W3-A: where the host road carries Year Walk footway lanes (journey.yearWalk.shares), the spur
     // holds the host's height across them (a flush landing), then grades to its end: the Cottage
     // spur met the May/September lanes 0.6 eu below them at [972,692] (a lip the body cannot climb).
@@ -628,6 +628,9 @@ function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
       // surfaces, not a Horizon solid): the pad keeps its footprint for the offer, the slab is the region's (no floating slab).
       const regionPlatform=!onDeck&&mountainV2Rule(...p).kind==='land'&&(id.startsWith('threshold.funicular.')||id==='threshold.gondolaTop'||id==='threshold.gondolaBase');
       if(onDeck||regionPlatform)cuts.solids=cuts.solids.filter(s=>s.id!==`${id}.slab`);}
+    // road (L1): a threshold on a road's carriageway at the road's height (a dismount mark on the Green Road, the Bight spur) has
+    // the road as its floor: no flat slab laid over the graded road (a 6 × 5 slab stood 0.2 proud of VG and VBS at one end).
+    else if(cuts.beds.some(b=>b.kind==='road'&&b.terrainCut&&!b.id.startsWith('structure.')&&(()=>{const n=nearestOnPath(p,b.points);return n.distance<b.width/2+b.shoulder&&Math.abs(n.at[1]-height)<.5;})())){cuts.solids=cuts.solids.filter(s=>s.id!==`${id}.slab`);pad.deck=true;pad.blend=0;}
     // Integrator 4 (W7-S request 5): a manifest threshold that takes its bed's height (no authored height: skateLineStarts on
     // S1/S4) stands on that bed's own graded cut, which the bed makes anyway — built ground, not a pit. Authored heights and
     // register pads are still checked.
