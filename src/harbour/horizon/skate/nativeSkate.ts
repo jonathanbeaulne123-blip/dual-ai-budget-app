@@ -7,7 +7,7 @@ import {createHudThrottle,type SkateHudModel} from '../../skate/hud/model.ts';
 import type {SkateProgress} from '../../skate/session.ts';
 import type {BodyFigure} from '../../body/figure.ts';
 import {groundHeightAt} from '../../scene/ground.ts';
-import {worldCeilingAt,worldCollisionAt} from '../../mountain/surfaces.ts';
+import {worldCeilingAt} from '../../mountain/surfaces.ts';
 import {mountainFoliageAt} from '../../mountain/planting.ts';
 import {sceneDressingFrom} from '../../scene/place.ts';
 import {COURT_DRESSING} from '../../court/dressing.ts';
@@ -47,7 +47,9 @@ const O=MOUNTAIN_V2_OFFSET;
 export const NATIVE_SKATE_RADIUS=64;
 export const toNative=(x:number,y:number,z:number)=>({x:x-O.x,y:y-O.y,z:z-O.z});
 
-export function createNativeSkate(options:{scene:THREE.Scene;figure:BodyFigure;tier:'full'|'lite';theme?:ThemeId;reducedMotion:()=>boolean;onSkate?:(frame:NativeSkateFrame|null)=>void}):NativeSkate{
+export function createNativeSkate(options:{scene:THREE.Scene;figure:BodyFigure;tier:'full'|'lite';theme?:ThemeId;reducedMotion:()=>boolean;onSkate?:(frame:NativeSkateFrame|null)=>void;
+  /** What the Horizon actually draws there (the placed region's solids, Horizon space): the chase camera stays clear of it and of nothing else (PR #571 review). */
+  blocked?:(hx:number,hy:number,hz:number,r:number)=>boolean}):NativeSkate{
   const group=new THREE.Group();group.name='horizon-native-skate';group.position.set(O.x,O.y,O.z);options.scene.add(group);
   const field=skateField();
   let theme:ThemeId=options.theme??'classic';
@@ -107,7 +109,7 @@ export function createNativeSkate(options:{scene:THREE.Scene;figure:BodyFigure;t
       cam.setDistance(driver.current()?.camera==='far'?'far':'near');
       cam.setFastSpeed(driver.run()?.id==='mountain-descent'?SKATE_CAM.raceFastSpeed:SKATE_CAM.fastSpeed);
       const f=cam.update(p,driver.events(),dt,{aspect,reducedMotion:reduced||driver.current()?.reducedEffects===true,ceilingAt:worldCeilingAt,
-        blocked:(x,y,z)=>y<groundHeightAt(x,z)+.05||worldCollisionAt(x,y,z,.12)||mountainFoliageAt(x,y,z,options.tier)});
+        blocked:(x,y,z)=>y<groundHeightAt(x,z)+.05||Boolean(options.blocked?.(x+O.x,y+O.y,z+O.z,.12))||mountainFoliageAt(x,y,z,options.tier)});
       return {eye:[f.position[0]+O.x,f.position[1]+O.y,f.position[2]+O.z],target:[f.target[0]+O.x,f.target[1]+O.y,f.target[2]+O.z],fov:f.fov,roll:f.roll??0};
     },
     publish(now,force=false){
