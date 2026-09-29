@@ -13,6 +13,7 @@ import {sceneDressingFrom} from '../../scene/place.ts';
 import {COURT_DRESSING} from '../../court/dressing.ts';
 import type {ThemeId} from '../../../theme/scenes.ts';
 import {MOUNTAIN_V2_OFFSET} from '../regions/mountainV2/placement.ts';
+import {SKATE_SPOTS} from '../../skate/park.ts';
 
 /**
  * The old Tideline skate on the Horizon (Jonathan 2026-09-29: "the old ux with the skateboard").
@@ -47,6 +48,11 @@ const O=MOUNTAIN_V2_OFFSET;
 /** The town island's ground radius the region answers (`regions/mountainV2/geography.ts`), with a margin. */
 export const NATIVE_SKATE_RADIUS=64;
 export const toNative=(x:number,y:number,z:number)=>({x:x-O.x,y:y-O.y,z:z-O.z});
+/** A known open start on the old Tideline pad, translated into the Horizon. */
+export function horizonSkateEntry():HorizonBodyPose{
+  const spot=SKATE_SPOTS.find(item=>item.id==='tideline')!;
+  return{x:spot.start[0]+O.x,y:groundHeightAt(spot.start[0],spot.start[1])+O.y,z:spot.start[1]+O.z,yaw:spot.startYaw};
+}
 
 export function createNativeSkate(options:{scene:THREE.Scene;figure:BodyFigure;tier:'full'|'lite';theme?:ThemeId;reducedMotion:()=>boolean;onSkate?:(frame:NativeSkateFrame|null)=>void;
   /** What the Horizon actually draws there (the placed region's solids, Horizon space): the chase camera stays clear of it and of nothing else (PR #571 review). */

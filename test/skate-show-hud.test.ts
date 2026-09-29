@@ -111,6 +111,14 @@ describe('SkateHUD component', () => {
     expect(p.onStart).toHaveBeenCalled();
   });
 
+  it('makes the board marker reset explicit and sends it to the existing driver command', () => {
+    const onCommand=vi.fn();render(props({model:model(),onCommand}));
+    const reset=host.querySelector<HTMLButtonElement>('[aria-label="Reset to your marker"]');
+    expect(reset?.textContent).toContain('Reset');
+    act(()=>reset!.click());
+    expect(onCommand).toHaveBeenCalledWith('respawn');
+  });
+
   it('offers explicit device-local replay controls and refuses motion when reduced',()=>{
     const onReplay=vi.fn(),m=model();m.replay={available:true,seconds:74.2,playing:false,time:0,ghostEnabled:false,reduced:false,pose:null,path:[[0,0],[0,10]]};
     render(props({model:m,onReplay}));

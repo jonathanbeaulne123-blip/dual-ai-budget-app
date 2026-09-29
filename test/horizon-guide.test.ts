@@ -10,7 +10,7 @@ let host:HTMLDivElement,root:Root;
 beforeEach(()=>{host=document.createElement('div');document.body.append(host);root=createRoot(host);});
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();});
 const render=(props:Partial<Parameters<typeof HorizonGuide>[0]>={})=>act(async()=>root.render(createElement(HorizonGuide,{
-  open:true,onClose:vi.fn(),views:[],onView:vi.fn(),onWalk:vi.fn(),onPlace:vi.fn(),canSkate:true,onSkate:vi.fn(),onRace:vi.fn(),
+  open:true,onClose:vi.fn(),views:[],onView:vi.fn(),onWalk:vi.fn(),onPlace:vi.fn(),skateAvailable:true,skateHere:true,onSkate:vi.fn(),onRace:vi.fn(),
   monorailAvailable:true,onMonorail:vi.fn(),soundOn:false,onSound:vi.fn(),...props,
 })));
 const button=(name:string)=>[...host.querySelectorAll('button')].find(node=>node.textContent?.trim()===name)!;
@@ -28,10 +28,17 @@ describe('the old shell guide on Horizon',()=>{
     expect(onMonorail).toHaveBeenCalledWith(0,[MONORAIL_STOPS.length-1]);
   });
   it('keeps the guide honest when skate or the train is unavailable',async()=>{
-    await render({canSkate:false,monorailAvailable:false});
+    await render({skateAvailable:false,monorailAvailable:false});
     await act(async()=>button('Travel & play').click());
     expect(button('Start downhill race')).toBeUndefined();
     expect(button('Board the monorail')).toBeUndefined();
     expect(button('Walk to the boats')).toBeTruthy();
+  });
+  it('offers a trip to Tideline even when the rider is elsewhere on the Horizon',async()=>{
+    const onSkate=vi.fn();await render({skateHere:false,onSkate});
+    await act(async()=>button('Travel & play').click());
+    await act(async()=>button('Go skate Tideline').click());
+    expect(onSkate).toHaveBeenCalledOnce();
+    expect(button('Start downhill race')).toBeTruthy();
   });
 });

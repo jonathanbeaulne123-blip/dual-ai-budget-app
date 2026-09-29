@@ -73,9 +73,9 @@ describe("the old shell's chrome around the Horizon (static)", () => {
     expect(harbour).toMatch(/class HorizonBoundary extends Component/);
   });
 
-  it("the old skate: SkateHUD on Mountain v2's island, B boards, progress saved under the old key", () => {
-    expect(shell).toMatch(/\(skating\|\|canSkate\)&&<SkateHUD model=\{skating\}/);
-    expect(shell).toMatch(/if\(k==='b'\)\{if\(board\?\.active\(\)\)leaveSkating\(\);else if\(world\.canSkate\(\)\)startSkating\(\)/);
+  it("the old skate: SkateHUD reachable across the Horizon, B boards, progress saved under the old key", () => {
+    expect(shell).toMatch(/!riding&&skateAvailable&&<SkateHUD model=\{skating\}/);
+    expect(shell).toMatch(/if\(k==='b'\)\{if\(board\?\.active\(\)\)leaveSkating\(\);else if\(world\.hasSkate\?\.\(\)\)startSkating\(\)/);
     expect(shell).toMatch(/skateProgressKey\(household\.environment,household\.householdId,memberId\)/);
     const runtime = read("src/harbour/horizon/runtime/index.ts");
     expect(runtime).toMatch(/const skate:NativeSkate\|null=placed\?createNativeSkate\(/);
@@ -87,6 +87,8 @@ describe("the old shell's chrome around the Horizon (static)", () => {
     expect(runtime).toMatch(/figure\.group\.visible=mode==='walk'&&\(!firstPerson\|\|skating\(\)\)/);
     expect(read("src/harbour/horizon/HorizonStage.tsx")).toMatch(/aria-label=\{props\.skating\?SKATE_STAGE_WORDS:/);
     expect(read("src/harbour/horizon/skate/nativeSkate.ts")).not.toMatch(/worldCollisionAt/);
+    expect(shell).toContain('aria-label="Retry from safe ground"');
+    expect(runtime).toMatch(/skate!\.controls\.command\('retry'\)/);
   });
 
   it("the Horizon figure plays the emote row", () => {
