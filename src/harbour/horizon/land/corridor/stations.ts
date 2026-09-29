@@ -353,7 +353,20 @@ export function buildCorridor(bed: BedCut, env: CorridorEnv): CorridorCore {
           if (atGrade) { edge = 'sidewalk'; footway = { inner: round3(inner), outer: round3(outer), height: round3(h + CORRIDOR.kerbRise) }; }
         }
       }
-      if (owned) edge = 'structure';
+      if (owned) {
+        edge = 'structure';
+        // A foot route the structure carries beside the road (the Year Walk on the Bight Bridge) is this side's footway: the
+        // plan hangs its bridge lanterns on the rail between the road and that footway, never on the open edge.
+        let best: { o: number; bed: BedCut; y: number; d: number } | undefined;
+        for (const seg of env.segments(at[0], at[2], 14)) {
+          const b = seg.bed; if (b === bed || isCorridorRoad(b) || b.id.startsWith('structure.') || !['walk', 'trail', 'boardwalk'].includes(b.kind)) continue;
+          const q = onSegment(seg.a, seg.b, at[0], at[2]), o = (q.p[0] - at[0]) * r[0] + (q.p[1] - at[2]) * r[1];
+          const sx = seg.b[0] - seg.a[0], sz = seg.b[2] - seg.a[2], sl = Math.hypot(sx, sz) || 1;
+          if (o * sign <= paved - .5 || Math.abs(o) > 14 || Math.abs(q.y - h) > .6 || Math.abs((sx * t[0] + sz * t[1]) / sl) < .7) continue;
+          if (!best || q.d < best.d) best = { o, bed: b, y: q.y, d: q.d };
+        }
+        if (best) footway = { inner: round3(Math.max(paved, Math.abs(best.o) - best.bed.width / 2)), outer: round3(Math.abs(best.o) + best.bed.width / 2), height: round3(best.y), bedId: best.bed.id };
+      }
       const side: CorridorSide = { edge, guard: owned ? 'bridgeRail' : 'none', drop: 0, waterEu: null, paved: round3(paved), ...(footway ? { footway } : {}), ...(gap && !owned ? { gap } : {}) };
       // Drop 1.0–1.5 beyond the built edge (positive = down); a bank above the road reads as a negative drop.
       // The Year Walk is this side's footway only where it is level with the road: with a drop between them the side is a

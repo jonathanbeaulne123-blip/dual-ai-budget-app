@@ -1,5 +1,5 @@
 /**
- * TEST-ONLY adapter (Track P): approximate `CorridorStation[]` for V01 / VG / V03 from the committed bake, so the
+ * TEST-ONLY adapter (Track P): the committed bake's real corridor stations when it carries them; otherwise approximate `CorridorStation[]` for V01 / VG / V03 from the committed bake, so the
  * corridor plan can be exercised on the real island before the stations track (`land/corridor/stations.ts`, L2)
  * lands. It is NOT the corridor: it reads the baked bed points, the terrain, the Year Walk and the crossings, and
  * makes the same kind of decisions L2 makes (context from ROAD.md §3 anchors, drop and water measured from the
@@ -128,7 +128,7 @@ function resample(points: readonly Point3[], step: number, closed: boolean): { a
 
 const PAVED = 5, HALF = 4;
 
-export interface AdapterOptions { median?: boolean }
+export interface AdapterOptions { median?: boolean; /** Force the approximate stations even when the bake carries corridors. */ adapter?: boolean }
 /** Approximate stations + reaches + plan env for one of V01 / VG / V03. */
 export function adaptRoad(id: 'V01' | 'VG' | 'V03', opts: AdapterOptions = {}): { input: PlanInput; env: PlanEnv; structureKinds: Record<string, 'bridge' | 'tunnel'> } {
   const I = loadIsland(), { world } = I.bake;
@@ -288,5 +288,9 @@ export function adaptRoad(id: 'V01' | 'VG' | 'V03', opts: AdapterOptions = {}): 
     ],
     structureKind: sid2 => structureKinds[sid2] ?? 'bridge',
   };
+  // Integration: once the bake carries the real corridor (land/corridor, L2), the plan is exercised on its stations and
+  // reaches exactly as the bake runs it; the adapter's env (ground, occupied, seed) stays.
+  const real = world.corridors?.find(c => c.id === id);
+  if (real && !opts.adapter) return { input: { id: real.id, closed: real.closed, step: real.step, stations: real.stations, reaches: real.reaches }, env, structureKinds };
   return { input, env, structureKinds };
 }

@@ -125,13 +125,17 @@ describe("extract: bridges and covered stretches", () => {
   });
 
   it("without corridors: no boulevards, and everything else is exactly what the same index extracts with corridors", () => {
-    expect("boulevards" in land).toBe(false);
+    // The committed index carries the corridors (road main integration): boulevards come from them; strip them and nothing
+    // else changes. A synthetic corridor alone still yields boulevards.
+    const bare = freshWorld(); delete bare.corridors;
+    const without = extractJourneyLand(bare, journeyTerrain());
+    expect("boulevards" in without).toBe(false);
+    const { boulevards, ...rest } = land;
+    expect(boulevards?.length).toBeGreaterThan(0);
+    expect(rest).toStrictEqual(without);
     const w = freshWorld();
     w.corridors = [syntheticCorridor(w)];
-    const withCorridor = extractJourneyLand(w, journeyTerrain());
-    const { boulevards, ...rest } = withCorridor;
-    expect(boulevards?.length).toBeGreaterThan(0);
-    expect(rest).toStrictEqual(land);
+    expect(extractJourneyLand(w, journeyTerrain()).boulevards?.length).toBeGreaterThan(0);
   });
 });
 
@@ -225,8 +229,10 @@ describe("road plan: what is drawn where", () => {
     expect(v01.filter((v) => v.notch).length).toBeGreaterThanOrEqual(4);
     const v03 = plan.ground.filter((r) => r.lineId === "V03").flatMap((r) => r.verts);
     expect(v03.some((v) => v.covered)).toBe(true);
-    // No boulevard without corridors.
-    expect([...plan.ground, ...plan.deck].every((r) => r.verts.every((v) => v.plant === 0))).toBe(true);
+    // No boulevard without corridors (the same land with its boulevards stripped).
+    const { boulevards: _b, ...plain } = land; void _b;
+    const plainPlan = planRoad(plain as JourneyLandData, createLandSurface(plain as JourneyLandData), "full");
+    expect([...plainPlan.ground, ...plainPlan.deck].every((r) => r.verts.every((v) => v.plant === 0))).toBe(true);
     // A line no bridge, cover or boulevard touches is draped exactly as before: surfaceAt + lift at the densified points.
     const surface = createLandSurface(land);
     const ore = plan.ground.find((r) => r.lineId === "ORE")!;

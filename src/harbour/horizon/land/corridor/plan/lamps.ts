@@ -11,7 +11,7 @@
 import type { Point3 } from '../../../world/definition.ts';
 import type { CorridorStation, LampKind, LampSpot } from '../types.ts';
 import { CORRIDOR } from '../types.ts';
-import { LAMP_SIGHT_KINDS, type Analysis } from './context.ts';
+import type { Analysis } from './context.ts';
 import { landSide, seaSide, type Env } from './env.ts';
 import { sign, type SideName } from './frame.ts';
 import { r3 } from './rng.ts';
@@ -43,6 +43,10 @@ const NON_THRESHOLD = ['junction', 'entrance', 'crossing', 'viewpoint', 'layby']
 
 type Regime = 'developed' | 'boulevard' | 'median' | 'bridge' | 'tunnel' | 'approach' | 'none';
 
+/** A kerb-mounted lantern's set-back beyond the paved edge (eu): just clear of the road's own paved band. */
+const KERB_MOUNT = 0.35;
+/** A bridge lantern may stand on an approach's guard rail this far (eu) from a structure end. */
+const APPROACH_RAIL = 24;
 interface Slot { s: number; side: SideName | 'median'; kind: LampKind; tail?: boolean }
 
 /** The lit runs (s ranges, before the fade-out tails) the lamps were spaced for: pools overlap inside each. */
@@ -70,24 +74,41 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
   let runNo = 0;
   /** The carriageway-side rail line: the kerb rail CORRIDOR.guardSetback beyond the paved edge (types.ts guard offsets). */
   const railOffset = (st: CorridorStation, side: SideName): number => st[side].paved + CORRIDOR.guardSetback;
+  /** A road lantern's lateral set-back beyond the paved edge: CORRIDOR.lampSetback, or KERB_MOUNT where that spot is taken
+   * (a separated lane, a path or a pad right beside the road) and the kerb line is free (integration: the Quay Bridge's
+   * south approach had no legal spot for 18 eu). */
+  const setbackAt = (s: number, side: SideName): number => {
+    const st = S[F.nearestIndex(s)]!, sd = st[side], at = (o: number) => F.point(s, sign(side) * (sd.paved + o));
+    const free = (o: number) => { const p = at(o); return !env.occupied(p[0], p[2]); };
+    return free(CORRIDOR.lampSetback) || (sd.footway && sd.paved + CORRIDOR.lampSetback >= sd.footway.inner - 0.3) || !free(KERB_MOUNT) ? CORRIDOR.lampSetback : KERB_MOUNT;
+  };
   const reject = (s: number, side: SideName | 'median', kind: LampKind): string | null => {
     const i = F.nearestIndex(s), st = S[i]!;
     if (side === 'median') return st.median ? null : 'no median';
-    // Bridge lanterns stand on the structure's own rail and tunnel lamps on its wall: never off the structure.
-    if ((kind === 'bridgeLantern' || kind === 'tunnelLamp') && !A.structureAt(s)) return 'off structure';
     const sd = st[side];
+    // Bridge lanterns stand on the structure's own rail and tunnel lamps on its wall — or, a bridge lantern, on the approach's
+    // guard rail within APPROACH_RAIL of a structure end (a crowded approach has no other legal spot: the Quay Bridge's
+    // south approach, the High Span's west approach).
+    if (kind === 'tunnelLamp' && !A.structureAt(s)) return 'off structure';
+    if (kind === 'bridgeLantern' && !A.structureAt(s)) {
+      const railed = sd.guard === 'postRail' || sd.guard === 'stoneParapet';
+      let near = false; for (let d = -APPROACH_RAIL; d <= APPROACH_RAIL && !near; d += 2) near = !!A.structureAt(F.wrapS(s + d));
+      if (!railed || !near) return 'off structure';
+    }
     // Gaps stay open; a bridge lantern may stand on the end pier at the structure's own threshold (a deliberate rail end).
     if (kind !== 'tunnelLamp' && A.nearMouth(s, side, LAMP.gapClear, kind === 'bridgeLantern' ? NON_THRESHOLD : undefined)) return 'gap';
-    if (kind === 'roadLantern' && A.inSight(s, sign(side) * (sd.paved + CORRIDOR.lampSetback), 0.2, LAMP_SIGHT_KINDS)) return 'sight';
+    // Integration (design lead): a lantern's slim post may stand in a junction's sight triangle (ROAD.md §5 keeps planting
+    // over 0.6 out of it, not posts); it still keeps LAMP.gapClear from the mouth. Junctions are where light matters most
+    // (brief §3), and the triangle rule left the Quay Bridge's south approach 17.5 eu dark.
     for (const t of stops) if (t.span.side === side && Math.abs(F.delta(t.s, s)) <= Math.abs(F.delta(t.span.from, t.span.to)) / 2 + 1) return 'stop';
     if (kind === 'roadLantern') {
       if (st.structureId) return 'structure';
-      const p = F.point(s, sign(side) * (sd.paved + CORRIDOR.lampSetback));
+      const back = setbackAt(s, side), p = F.point(s, sign(side) * (sd.paved + back));
       if (env.wet(p[0], p[2])) return 'water';
-      const g = baseHeight(st, side, sd.paved + CORRIDOR.lampSetback, p);
+      const g = baseHeight(st, side, sd.paved + back, p);
       // Over a batter or a cut the lantern stands on the guard's line instead (a parapet- or rail-mounted post), else nowhere.
       if (Math.abs(g - st.at[1]) > LAMP.maxStep) return sd.guard !== 'none' && sd.guard !== 'retaining' ? null : 'step';
-      if (env.occupied(p[0], p[2]) && !(sd.footway && sd.paved + CORRIDOR.lampSetback >= sd.footway.inner - 0.3)) return 'occupied';
+      if (env.occupied(p[0], p[2]) && !(sd.footway && sd.paved + back >= sd.footway.inner - 0.3)) return 'occupied';
     }
     return null;
   };
@@ -107,7 +128,7 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
       if (slot.kind === 'tunnelLamp') { o = sg * (sd.paved + LAMP.tunnelWall); headO = sg * (sd.paved - 0.2); baseY = st.at[1]; headY = st.at[1] + LAMP.tunnelHeadHeight; }
       else if (slot.kind === 'bridgeLantern') { o = sg * railOffset(st, slot.side); headO = o - sg * LAMP.arm; baseY = st.at[1] + CORRIDOR.kerbRise; headY = baseY + CORRIDOR.lampHeight; }
       else {
-        o = sg * (sd.paved + CORRIDOR.lampSetback); headO = o - sg * LAMP.arm;
+        o = sg * (sd.paved + setbackAt(slot.s, slot.side)); headO = o - sg * LAMP.arm;
         const p = F.point(slot.s, o); baseY = baseHeight(st, slot.side, Math.abs(o), p);
         if (Math.abs(baseY - st.at[1]) > LAMP.maxStep) { o = sg * railOffset(st, slot.side); headO = o - sg * LAMP.arm; baseY = st.at[1] + CORRIDOR.kerbRise; }
         headY = baseY + CORRIDOR.lampHeight;
@@ -181,7 +202,9 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
         const share = (sd: SideName) => idxs.filter(i => !!S[i]![sd].footway).length / idxs.length;
         let sides: SideName[] = (['left', 'right'] as const).filter(sd => share(sd) > 0.5);
         if (sides.length !== 1) sides = ['left', 'right'];
-        const sp0 = Math.min(CORRIDOR.lampSpacing.structure, fit(sides.map(sd => headOffset(st, sd, 'bridgeLantern')), laneOf(st)));
+        // Fitted to the widest rail along the span (the heads furthest from the lanes), not the mid-span station alone.
+        const worstHead = (sd: SideName) => idxs.reduce((m, i) => Math.abs(headOffset(S[i]!, sd, 'bridgeLantern')) > Math.abs(m) ? headOffset(S[i]!, sd, 'bridgeLantern') : m, headOffset(st, sd, 'bridgeLantern'));
+        const sp0 = Math.min(CORRIDOR.lampSpacing.structure, fit(sides.map(worstHead), laneOf(st)));
         const k = Math.max(1, Math.ceil(sLen / sp0)), sp = sLen / k;
         for (let j = 0; j <= k; j++) slots.push({ s: sFrom + j * sp, side: sides[j % sides.length]!, kind: 'bridgeLantern' });
         continue;
@@ -241,13 +264,18 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
         const a = mine[k - 1]!, b = mine[k]!, gap = F.delta(a.s, b.s);
         if (gap <= 1) continue;
         const st = S[F.nearestIndex(a.s + gap / 2)]!, lane = laneOf(st);
-        if (Math.max(darkBetween(a, b, -lane), darkBetween(a, b, lane)) <= LAMP.maxDark - 1) continue;
+        // A margin under maxDark: the gap is measured between these two lamps only, sampled every 0.5 eu.
+        if (Math.max(darkBetween(a, b, -lane), darkBetween(a, b, lane)) <= LAMP.maxDark - 1.5) continue;
         const reg = regime[F.nearestIndex(a.s + gap / 2)]!;
         const kind: LampKind = reg === 'tunnel' ? 'tunnelLamp' : reg === 'bridge' ? 'bridgeLantern' : 'roadLantern';
         const n0 = out.length;
         // Put the extra lamp on the side the gap's lamps are not (a stagger), else the same side.
         const side: SideName | 'median' = reg === 'median' ? 'median' : kind !== 'roadLantern' ? a.l.side : a.l.side === b.l.side ? (a.l.side === 'left' ? 'right' : 'left') : a.l.side;
-        for (const f of [0.5, 0.35, 0.65]) { place({ s: a.s + gap * f, side, kind }); if (out.length > n0) break; }
+        // Try the stagger side first, then the other side (a junction mouth or a crossing may close one), across the gap.
+        const other: SideName | 'median' = side === 'median' ? 'median' : side === 'left' ? 'right' : 'left';
+        for (const sd of side === other ? [side] : [side, other]) { for (const f of [0.5, 0.35, 0.65, 0.25, 0.75, 0.15, 0.85]) { place({ s: a.s + gap * f, side: sd, kind }); if (out.length > n0) break; } if (out.length > n0) break; }
+        // Still dark beside a structure: a lantern on the approach's guard rail.
+        if (out.length === n0 && kind === 'roadLantern') for (const sd of side === other ? [side] : [side, other]) { for (const f of [0.5, 0.35, 0.65, 0.25, 0.75]) { place({ s: a.s + gap * f, side: sd, kind: 'bridgeLantern' }); if (out.length > n0) break; } if (out.length > n0) break; }
         if (out.length > n0) added = true;
       }
       if (!added) break;

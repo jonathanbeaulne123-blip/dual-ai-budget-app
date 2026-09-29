@@ -35,9 +35,12 @@ export function buildCorridors(cuts: LandCuts, ground: HeightQuery, options: Cor
   const env = createCorridorEnv(cuts, ground, options.ownership), corridors: Corridor[] = [], cores: CorridorCore[] = [], solids: LandCuts['solids'] = [], walks: BedCut[] = [];
   for (const bed of env.roads) {
     const core = buildCorridor(bed, env);
-    // The plan first (its scenic stops open viewpoint gaps), then the guards over the final gaps.
+    // A preliminary guard pass first, so the plan knows where rails will stand (a lantern over a drop is rail-mounted); then
+    // the plan (its scenic stops open viewpoint gaps), then the guards again over the final gaps.
+    planGuards(core, { ground });
     const plan = planCorridor({ id: core.id, closed: core.closed, step: core.step, stations: core.stations, reaches: core.reaches }, { ground, occupied: env.occupied, seed: options.seed ?? `corridor:${core.id}` });
     applyViewpointGaps(core, plan.stops);
+    for (const st of core.stations) for (const side of ['left', 'right'] as const) if (st[side].guard !== 'bridgeRail') st[side].guard = 'none';
     const guards: GuardRun[] = planGuards(core, { ground });
     const built = buildCorridorSolids(core, guards, env);
     solids.push(...built.solids); walks.push(...built.walks); cores.push(core);
