@@ -143,6 +143,9 @@ test/horizonBakeArtifacts.test.ts test/tool-atlas.test.ts --maxWorkers=2` → **
 Per file: model 33, route 22, ui 29, land 26, fence 7, App 11, parity 5, integration 14, harbour-arrival 17,
 harbour-source-fences 9, journey-cloud-transition 2, desk-personal-app 4, horizonBakeArtifacts 7, tool-atlas 13.
 
+**Merge of `main@0015a8a` (#565 DEV world toggle, #566 Mountain v2 on the Horizon) + PR review fixes (2026-09-28).** Both sides kept (the toggle's world-keyed shell and dam, the board's Horizon request and arrival); the slim land was re-baked from #566's index (Jan now at [1364, 650]; `horizon:check` clean). Fixes: Simple view on the board, or a restored Journey route in the reading edition, opens the Court/Desk; a kept Win stays until its adopted memory is kept by everyone; a posted visit keeps its stop id; crossroads past the Sky limit wait for a closer tier; Back to now closes the panel; the sample fixture follows the model (Sunday week start per `weekBounds`, contract comment corrected); one attention predicate; `openBooks` names each kind; HorizonWorld refs written in a layout effect.
+`pnpm typecheck` exit 0; the 14 suites above minus `horizonBakeArtifacts` plus `app-startup-p1`, `month-rehearsal-mainline`, `harbour-world-toggle`, `harbour-one-bar`, `desk-personal`, `horizonMountainRegion`, `horizonGondola` → **20 files / 357 tests passed** (124 s, `--maxWorkers=2`); `horizonBakeArtifacts` + land/route/ui/model/parity 6 files / 122 passed after the re-bake. No new browser evidence; the screenshots predate the merge.
+
 What the App-level tests (`test/journey-board-app.test.ts`, the real `App` with the real board on its flat twin) prove:
 arrival lands on the board with the piece on today; a bill's "Mark paid…" (map and list) opens Bill paid at that
 recurrence's named Confirm and closing returns the same selection and focus; select / zoom / preview / Back to now /
