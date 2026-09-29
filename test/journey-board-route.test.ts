@@ -300,7 +300,10 @@ describe("board scene", () => {
       h.scene.renderNow();
       const region = h.scene.stats();
       expect(region.triangles, `${tier} region triangles`).toBeLessThanOrEqual(JOURNEY_LOD.region.triangles[tier]);
-      expect(region.drawCalls, `${tier} region draws`).toBeLessThanOrEqual(JOURNEY_LOD.sky.drawCalls[tier]);
+      // MANIFEST `journey.lod.L1` (docs/horizon/CONTRACT.md, SCALES.md) budgets Region triangles only, so
+      // `JOURNEY_LOD.region` has no `drawCalls`. Region is deliberately held to the stricter L0 draw cap (PR #567 review).
+      const regionDrawCeiling = JOURNEY_LOD.sky.drawCalls[tier];
+      expect(region.drawCalls, `${tier} region draws (L1 sets no draw cap; held to L0's)`).toBeLessThanOrEqual(regionDrawCeiling);
       console.info(`[journey-board] ${tier}: sky ${sky.triangles} tris / ${sky.drawCalls} draws; region ${region.triangles} / ${region.drawCalls}`);
     }
   });

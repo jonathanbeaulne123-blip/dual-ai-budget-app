@@ -484,4 +484,40 @@ describe("the hand-written sample board follows the model's contracts (PR #567 r
       if (stop.kind === "commitment" && stop.date > SAMPLE_TODAY) expect(calls(stop).some(call => call.name === "openBillPaid"), stop.id).toBe(false);
     }
   });
+  it("gives memory stops the model's ids, source refs and open actions (hearthside → its own memory; Win → our memories)", () => {
+    // One contract, checked on the sample and on the model's real board: a hearthside memory cites exactly one
+    // `hearthsideMemory` ref and opens `memory/<raw id>`; a Win cites exactly one `win` ref and opens the memories
+    // place with no object.
+    const check = (stops: readonly Stop[], where: string) => {
+      const seen = { hearthside: 0, win: 0 };
+      for (const stop of stops) {
+        if (stop.kind !== "memory") continue;
+        seen[stop.memoryKind] += 1;
+        expect(stop.sourceRefs, `${where} ${stop.id}`).toHaveLength(1);
+        const ref = stop.sourceRefs[0]!;
+        expect(stop.actions, `${where} ${stop.id}`).toHaveLength(1);
+        const primary = stop.actions[0]!;
+        expect(primary.primary, `${where} ${stop.id}`).toBe(true);
+        if (stop.memoryKind === "hearthside") {
+          expect(ref.kind, `${where} ${stop.id}`).toBe("hearthsideMemory");
+          if (ref.kind !== "hearthsideMemory") continue;
+          expect(stop.id).toBe(journeyIds.memory(ref.id));
+          expect(primary.label).toBe("Open the memory");
+          expect(primary.call).toEqual({ name: "openPlace", target: "memories", object: `memory/${ref.id}` });
+        } else {
+          expect(ref.kind, `${where} ${stop.id}`).toBe("win");
+          if (ref.kind !== "win") continue;
+          expect(stop.id).toBe(journeyIds.memoryWin(ref.id));
+          expect(primary.label).toBe("Open our memories");
+          expect(primary.call).toEqual({ name: "openPlace", target: "memories" });
+        }
+      }
+      return seen;
+    };
+    const sampleSeen = check([...sample.stops, ...sample.undatedMemories], "sample");
+    expect(sampleSeen.hearthside).toBeGreaterThan(0);
+    expect(sampleSeen.win).toBeGreaterThan(0);
+    const boardSeen = check([...board.stops, ...board.undatedMemories], "model");
+    expect(boardSeen.hearthside + boardSeen.win).toBeGreaterThan(0);
+  });
 });

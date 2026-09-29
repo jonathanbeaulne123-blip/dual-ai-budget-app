@@ -9,7 +9,7 @@ import type {
   ActionCall, Chapter, ChapterId, CommitmentStop, Crossroads, DateKey, IncomeStop, JourneyBoard, MemoryStop, MilestoneStop, PlanStop,
   ReviewStop, StationId, Stop, StopAction, StopCluster,
 } from "../../src/journey/contracts.ts";
-import { STATION_IDS } from "../../src/journey/contracts.ts";
+import { STATION_IDS, journeyIds } from "../../src/journey/contracts.ts";
 
 export const SAMPLE_TODAY = "2026-09-28" as DateKey;
 export const SAMPLE_MEMBER = "MEM-001";
@@ -110,10 +110,16 @@ function milestone(awardId: string, date: string, label: string, status: Milesto
   };
 }
 
-function memory(id: string, date: string, label: string, memoryKind: "hearthside" | "win"): MemoryStop {
+function memory(rawId: string, date: string, label: string, memoryKind: "hearthside" | "win"): MemoryStop {
+  // As the model (`memoryStops`): a hearthside memory opens its own object (`memory/<raw memory id>`) and cites a
+  // `hearthsideMemory` ref; a Win opens the memories place (no object) and cites a `win` ref.
+  const id = memoryKind === "win" ? journeyIds.memoryWin(rawId) : journeyIds.memory(rawId);
   return {
-    kind: "memory", id, date: d(date), chapterId: m(date.slice(0, 7)), label, sourceRefs: [], major: true, relation: relation(date),
-    actions: [act(id, "open", "Open the memory", { name: "openPlace", target: "memories", object: `memory/${id}` }, true)],
+    kind: "memory", id, date: d(date), chapterId: m(date.slice(0, 7)), label,
+    sourceRefs: [memoryKind === "win" ? { kind: "win", id: rawId } : { kind: "hearthsideMemory", id: rawId }], major: true, relation: relation(date),
+    actions: [memoryKind === "win"
+      ? act(id, "open", "Open our memories", { name: "openPlace", target: "memories" }, true)
+      : act(id, "open", "Open the memory", { name: "openPlace", target: "memories", object: `memory/${rawId}` }, true)],
     status: "kept-by-everyone", memoryKind, hideAmounts: true,
   };
 }
@@ -157,11 +163,11 @@ export const SAMPLE_IDS = {
 const STOPS: Stop[] = [
   chapterReview("2026-03", "2026-03-31", "March 2026", "closed"),
   chapterReview("2026-04", "2026-04-30", "April 2026", "waiting-on-partner"),
-  memory(SAMPLE_IDS.memoryWin, "2026-05-10", "Paid off the couch", "win"),
+  memory("WIN-both", "2026-05-10", "Paid off the couch", "win"),
   chapterReview("2026-05", "2026-05-31", "May 2026", "waiting-on-you"),
   income(SAMPLE_IDS.incomeFundConfirmed, "2026-06-02", "Fund contribution", 60000, "confirmed", "fund-confirmed"),
   chapterReview("2026-06", "2026-06-30", "June 2026", "no-chapter"),
-  memory(SAMPLE_IDS.memoryHearthside, "2026-07-12", "The quiet Sunday", "hearthside"),
+  memory("MEMO-quiet-sunday", "2026-07-12", "The quiet Sunday", "hearthside"),
   goal("GOAL-kettle", "2026-07-20", "A proper kettle", "bought", 10, 9000, 9000),
   chapterReview("2026-07", "2026-07-31", "July 2026", "closed"),
   income(SAMPLE_IDS.incomeConfirmedSchedule, "2026-08-14", "Bianca pay", 210000, "confirmed", "schedule", "REC-pay"),
@@ -191,7 +197,7 @@ const STOPS: Stop[] = [
   chapterReview("2026-12", "2026-12-31", "December 2026", "upcoming"),
 ];
 
-const UNDATED: MemoryStop[] = [{ ...memory(SAMPLE_IDS.memoryUndated, SAMPLE_TODAY, "Our first key", "hearthside") }];
+const UNDATED: MemoryStop[] = [{ ...memory("MEMO-undated", SAMPLE_TODAY, "Our first key", "hearthside") }];
 
 const CLUSTERS: StopCluster[] = [
   { id: SAMPLE_IDS.clusterOverdue, date: d("2026-09-15"), chapterId: m("2026-09"), stopIds: [SAMPLE_IDS.overdue, SAMPLE_IDS.incomeRecorded], label: "2 on Tue 15 Sep", major: true },
