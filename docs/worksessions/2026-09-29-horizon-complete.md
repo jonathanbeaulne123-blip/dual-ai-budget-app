@@ -1,17 +1,17 @@
 # Hearth worksession — Horizon in the old app
 
-- **Status:** DRAFT PR; NOT MERGED OR DEPLOYED
+- **Status:** PR #573 MERGED; BOARD/RESET FOLLOW-UP NOT MERGED OR DEPLOYED
 - **Opened:** 2026-09-29 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `dual-ai-budget-app`
-- **Branch:** `codex/horizon-complete`
+- **Branch:** `codex/horizon-board-reset` for the follow-up
 - **Baseline SHA:** `e6ee1b0a220af420699ab3b24609d10d80a2b07a` (`origin/main`, checked 2026-09-29)
 - **Integration SHA:** `c6bfacf` (source commits `d16bc51`, `366443e`; this record has a later documentation commit)
-- **PR or issue:** #573 (draft)
+- **PR or issue:** #573 (merged); board/reset follow-up PR pending
 - **Risk:** High
 - **Decision owner:** Jonathan
-- **Environment impact:** none until separately authorized release
+- **Environment impact:** no follow-up deployment authorized
 
 ## Household outcome
 
@@ -51,7 +51,7 @@ The Horizon stays inside the familiar app shell, while the old 3D rooms, Tidelin
 - [x] Production build: `pnpm build` passed, including terrain checks, app and workspace typechecks, Vite and Hercules UI.
 - [x] Follow-up board/reset focused checks: 5 files, 47/47 cases passed, including the affected host routing test; phone-sized fictional local browser showed entry, foot Retry, active board HUD, Reset and both touch pads.
 - [ ] Follow-up High quick gate: over its 300s budget and interrupted after a test double lacked the new board method; the guard was fixed and the affected focused test passed. No clean High gate is claimed.
-- [ ] Follow-up Vite production bundle: running on a slow local machine at handoff.
+- [x] Follow-up Vite production bundle: passed locally after 12m 58s on the slow machine, with dependency and chunk-size warnings.
 - [ ] Authenticated, cross-device and physical phone/Mac playtest, including movement, camera, transport, race and Final Confirm.
 
 ## Evidence log
@@ -64,6 +64,7 @@ The Horizon stays inside the familiar app shell, while the old 3D rooms, Tidelin
 - Follow-up after Jonathan's feedback: the board entry was hidden away from Tideline; both resets were requested. The board now offers a direct trip to its authored park start, and the walk has an explicit Retry control.
 - Follow-up local browser proof at 390×844 with touch emulation: the board entry and foot Retry were visible away from the park; boarding moved the body from the Little Harbour area `(1470, 1186)` to Tideline `(1327.9, 725.5)` and showed the old skate HUD. The month card initially covered both phone pads; after a CSS correction it was hidden during skating, with Reset and both pads visibly clear. This remains fictional loopback proof, not device acceptance.
 - Follow-up High quick gate: TypeScript passed but took 304.5s, already beyond the 300s gate budget. The fast suite then found a missing `hasSkate` method in a host-routing test double; Codex stopped that run, guarded the method call, and reran that test plus the four affected files successfully (47/47). The gate's outcome remains unsuccessful for this follow-up.
+- Before the follow-up could be added to #573, that PR was merged. The board/reset change was rebased as a separate branch from the merge commit `868343c` so its review contains only the follow-up.
 
 ## Decisions
 
@@ -75,4 +76,4 @@ The broad local gate verifies code and many contracts, but visual and physical-d
 
 ## Handoff
 
-Codex owns the branch and draft PR #573. Jonathan decides on a Development release after reviewing local and device evidence. No merge or deployment is authorized by this worksession.
+PR #573 merged without the board/reset follow-up. Codex owns the separate follow-up branch. Jonathan decides on a Development release after reviewing local and device evidence. No follow-up merge or deployment is authorized by this worksession.
