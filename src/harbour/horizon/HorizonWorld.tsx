@@ -238,8 +238,11 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
   useEffect(()=>{runtime.current?.stopSkate();dropSkateAudio();setSkating(null);skateSaved.current='';setSkateSaveFailed(false);},[skateKey]); // eslint-disable-line react-hooks/exhaustive-deps
   function startSkating(){
     let progress;try{progress=readSkateProgress(localStorage,skateKey);}catch{progress=undefined;}
-    if(runtime.current?.startSkate(progress)&&progress?.settings.sound)wantSkateAudio(true);
-    setEmotesOpen(false);focusStage();
+    const world=runtime.current;if(!world)return false;
+    if(world.mode()!=='walk')world.setMode('walk');
+    if(!world.startSkate(progress)){setNotice('Park your current ride before skating.');return false;}
+    if(progress?.settings.sound)wantSkateAudio(true);
+    setEmotesOpen(false);focusStage();return true;
   }
   function leaveSkating(){dropSkateAudio();runtime.current?.stopSkate();setSkating(null);focusStage();}
   const skateSettings=(patch:Partial<SkateSettings>)=>{runtime.current?.skate()?.settings(patch);if(patch.sound!==undefined)wantSkateAudio(patch.sound);};
@@ -255,7 +258,7 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
       const k=event.key.toLowerCase(),world=runtime.current,stage=document.querySelector('.horizon-stage');
       if(!world||event.repeat||!stage||document.activeElement!==stage)return;
       const board=world.skate();
-      if(k==='b'){if(board?.active())leaveSkating();else if(world.canSkate())startSkating();else return;event.preventDefault();return;}
+      if(k==='b'){if(board?.active())leaveSkating();else if(world.hasSkate?.())startSkating();else return;event.preventDefault();return;}
       if(board?.active()&&(k==='p'||k==='escape')){board.pause(!board.paused());event.preventDefault();}
     };
     window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);
@@ -268,7 +271,8 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
     else if(action.kind==='monorail-control')world.monorailControl(action.control,action.value);
   }
   function showGuide(){setGuideOpen(true);}
-  useOfferWorldActions({skate:worldReady&&canSkate&&!toolOpen?startSkating:undefined});
+  const skateAvailable=worldReady&&Boolean(runtime.current?.hasSkate?.());
+  useOfferWorldActions({skate:skateAvailable&&!riding&&!toolOpen?startSkating:undefined});
   // The phone branch is below 720px (AGENTS.md), so the glass is lite there.
   const lite=typeof window.matchMedia==='function'&&window.matchMedia('(max-width: 719px)').matches;
   // The emote row's 1–6 shortcuts, as on the Mountain (the row shows them).
@@ -286,12 +290,12 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
       {space==='mine'&&worldReady&&!toolOpen&&<MineLayer layer={mine} place="court" rects={rects} hidden={Boolean(riding||skating)} onOpen={openMine}/>}
       {worldReady&&!toolOpen&&<HarbourTwins rects={rects} hidden={Boolean(riding||skating)} label="Horizon places" onActivate={rect=>{const place=rect.id.startsWith('visit:')?rect.id.slice(6):null;if(place&&Object.hasOwn(HARBOUR_PLACE_NAMES,place))walkToPlace(place as HarbourPlaceId);}}/>}
       {worldReady&&!toolOpen&&<VillageHUD memberId={memberId} theme={theme} calm={comfort.quiet} lite={lite} night={glassNight} alwaysShowLabels={comfort.labels} toolsOpen={props.toolsOpen} glassBetween={dock} fab={props.fab} onQuickSheet={props.onQuickSheet} place={here} travelling={travelTo} onVisit={place=>{walkToPlace(place);}} onGuide={showGuide} avatar={avatar} avatarStatus={avatarStatus} onAvatar={chooseAvatar} presence={presence}/>}
-      {worldReady&&!toolOpen&&<HorizonGuide open={guideOpen} onClose={()=>{setGuideOpen(false);focusStage();}} views={runtime.current?.world?.views??[]} onView={id=>{runtime.current?.setMode('look');runtime.current?.shot(id);setGuideOpen(false);focusStage();}} onWalk={()=>{runtime.current?.setMode('walk');setGuideOpen(false);focusStage();}} onPlace={place=>{setGuideOpen(false);walkToPlace(place);}} canSkate={canSkate} onSkate={()=>{setGuideOpen(false);startSkating();}} onRace={()=>{setGuideOpen(false);startSkating();runtime.current?.skate()?.route('mountain-descent');}} monorailAvailable={runtime.current?.hasMonorail?.()??false} onMonorail={(from,stops)=>{if(runtime.current?.monorailBoard(from)){for(const stop of stops)runtime.current?.monorailSelect(stop);setGuideOpen(false);focusStage();}}} onJourney={props.onJourney} soundOn={soundOn} onSound={toggleSound}/>}
+      {worldReady&&!toolOpen&&<HorizonGuide open={guideOpen} onClose={()=>{setGuideOpen(false);focusStage();}} views={runtime.current?.world?.views??[]} onView={id=>{runtime.current?.setMode('look');runtime.current?.shot(id);setGuideOpen(false);focusStage();}} onWalk={()=>{runtime.current?.setMode('walk');setGuideOpen(false);focusStage();}} onPlace={place=>{setGuideOpen(false);walkToPlace(place);}} skateAvailable={skateAvailable&&!riding} skateHere={canSkate} onSkate={()=>{if(startSkating())setGuideOpen(false);}} onRace={()=>{if(startSkating()){runtime.current?.skate()?.route('mountain-descent');setGuideOpen(false);}}} monorailAvailable={runtime.current?.hasMonorail?.()??false} onMonorail={(from,stops)=>{if(runtime.current?.monorailBoard(from)){for(const stop of stops)runtime.current?.monorailSelect(stop);setGuideOpen(false);focusStage();}}} onJourney={props.onJourney} soundOn={soundOn} onSound={toggleSound}/>}
       {monorail&&!toolOpen&&<MountainPanel open={false} monorail={monorail} partnerName={partnerName} statusLine={null} onAction={monorailAction} onOpen={props.onOpen}/>}
       {worldReady&&!toolOpen&&props.panel?.host&&<HostPanel key={props.panel.host} host={props.panel.host} reading={reading} extras={props.panel.extras} theme={theme} onClose={props.panel.onClose} onOpen={props.panel.onOpen} onRecord={props.panel.onRecord} onMarkPaid={props.panel.onMarkPaid} onTalk={props.panel.onTalk} returnFocusTo={props.panel.returnFocusTo}
         onVisit={()=>{const host=props.panel?.host;if(host&&host!=='hercules'&&Object.hasOwn(VILLAGE_ADDRESS,host))walkToPlace(host as HarbourPlaceId);props.panel?.onClose();}}
         onStepIn={host=>{if(host!=='hercules')stepIn(host);props.panel?.onClose();}}/>}
-      {worldReady&&!toolOpen&&!monorail&&(skating||canSkate)&&<SkateHUD model={skating} onStart={startSkating} onWalk={leaveSkating} onOpenFund={()=>{leaveSkating();props.onOpen('fund');}}
+      {worldReady&&!toolOpen&&!riding&&skateAvailable&&<SkateHUD model={skating} onStart={startSkating} onWalk={leaveSkating} onOpenFund={()=>{leaveSkating();props.onOpen('fund');}}
         onReplay={action=>runtime.current?.skate()?.replay(action)} onSettings={skateSettings} onCommand={command=>runtime.current?.skate()?.command(command)} onZonePointer={skateZone}
         gesturePath={skateGesturePath} trickBook={SKATE_TRICK_BOOK} onPause={on=>runtime.current?.skate()?.pause(on)} onRoute={id=>runtime.current?.skate()?.route(id)}
         onSpot={id=>runtime.current?.skate()?.spot(id)} onDeck={id=>runtime.current?.skate()?.deck(id)} presence={presence} onFocus={focusStage} saveFailed={skateSaveFailed}/>}
@@ -300,7 +304,7 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
         {emotesOpen&&<div className="harbour-moves__emotes" role="group" aria-label="Emotes">
           {EMOTE_IDS.map((id,i)=><button key={id} type="button" className="harbour-moves__emote" data-emote={id} onPointerDown={event=>event.stopPropagation()} onClick={()=>doEmote(id)}>{EMOTE_FACES[id]}<small>{i+1}</small></button>)}
         </div>}
-        <div className="harbour-moves__row">{touch&&<><button type="button" className="harbour-moves__key" onPointerDown={event=>event.stopPropagation()} onClick={()=>{runtime.current?.jump();focusStage();}}>Jump</button><button type="button" className="harbour-moves__key" onPointerDown={event=>event.stopPropagation()} onClick={()=>{runtime.current?.accept();focusStage();}}>Interact</button></>}{mover?.stowed&&<button type="button" className="harbour-moves__key" onPointerDown={event=>event.stopPropagation()} onClick={()=>{runtime.current?.resumeEquipment();focusStage();}}>Ride {mover.stowed}</button>}<button type="button" className="harbour-moves__key" aria-keyshortcuts="V" onPointerDown={event=>event.stopPropagation()} onClick={()=>{runtime.current?.toggleCruiser();focusStage();}}>Ride</button><button type="button" className="harbour-moves__key" aria-pressed={emotesOpen} onPointerDown={event=>event.stopPropagation()} onClick={()=>setEmotesOpen(open=>!open)}>Emote</button></div>
+        <div className="harbour-moves__row"><button type="button" className="harbour-moves__key" aria-label="Retry from safe ground" onPointerDown={event=>event.stopPropagation()} onClick={()=>{runtime.current?.retry?.();setEmotesOpen(false);focusStage();}}>Retry</button>{touch&&<><button type="button" className="harbour-moves__key" onPointerDown={event=>event.stopPropagation()} onClick={()=>{runtime.current?.jump();focusStage();}}>Jump</button><button type="button" className="harbour-moves__key" onPointerDown={event=>event.stopPropagation()} onClick={()=>{runtime.current?.accept();focusStage();}}>Interact</button></>}{mover?.stowed&&<button type="button" className="harbour-moves__key" onPointerDown={event=>event.stopPropagation()} onClick={()=>{runtime.current?.resumeEquipment();focusStage();}}>Ride {mover.stowed}</button>}<button type="button" className="harbour-moves__key" aria-keyshortcuts="V" onPointerDown={event=>event.stopPropagation()} onClick={()=>{runtime.current?.toggleCruiser();focusStage();}}>Ride</button><button type="button" className="harbour-moves__key" aria-pressed={emotesOpen} onPointerDown={event=>event.stopPropagation()} onClick={()=>setEmotesOpen(open=>!open)}>Emote</button></div>
       </div>}
       <p className="harbour-world__phrase" role="status" aria-live="polite">{notice}</p>
       {statusLine&&<small className="harbour-world__supported" role="status">{statusLine}</small>}

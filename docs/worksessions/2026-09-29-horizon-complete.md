@@ -37,6 +37,7 @@ The Horizon stays inside the familiar app shell, while the old 3D rooms, Tidelin
 - Add an accessible Step in guide for real views, places, skate/race, monorail, sound and vehicle controls.
 - Translate the old monorail route, clock, carriage, companion and doors into Mountain v2 and keep boarding, walking and skating modes mutually consistent.
 - Carry the original saved character selection into the Horizon runtime and expose cruiser styling while aboard.
+- Make the old board entry visible from across the map; restore safe-ground Retry on foot and make Reset to marker explicit on the board.
 
 ### Out of scope
 
@@ -48,6 +49,9 @@ The Horizon stays inside the familiar app shell, while the old 3D rooms, Tidelin
 - [x] Focused Horizon integration checks: 6 files, 47/47 cases passed.
 - [x] High quick gate passed on unchanged retry: 296.769s within its 300s budget, fingerprint `17f351f1d8f345d457cccd103da000cee17bc992fe98469d691b3539fdc3d0af`.
 - [x] Production build: `pnpm build` passed, including terrain checks, app and workspace typechecks, Vite and Hercules UI.
+- [x] Follow-up board/reset focused checks: 5 files, 47/47 cases passed, including the affected host routing test; phone-sized fictional local browser showed entry, foot Retry, active board HUD, Reset and both touch pads.
+- [ ] Follow-up High quick gate: over its 300s budget and interrupted after a test double lacked the new board method; the guard was fixed and the affected focused test passed. No clean High gate is claimed.
+- [ ] Follow-up Vite production bundle: running on a slow local machine at handoff.
 - [ ] Authenticated, cross-device and physical phone/Mac playtest, including movement, camera, transport, race and Final Confirm.
 
 ## Evidence log
@@ -57,6 +61,9 @@ The Horizon stays inside the familiar app shell, while the old 3D rooms, Tidelin
 - `pnpm build`: passed locally. The bundler reported existing browser-external and large-chunk warnings; there was no build failure.
 - A local fictional-data browser view rendered the Horizon in the old shell at about 555px. Browser input was unreliable, so it did not establish the travel, train, race or money-flow acceptance.
 - Source review identified and fixed stale skate state during restore/mode switch, skate/train overlap, Boathouse exit height and missing physical train companion/doors.
+- Follow-up after Jonathan's feedback: the board entry was hidden away from Tideline; both resets were requested. The board now offers a direct trip to its authored park start, and the walk has an explicit Retry control.
+- Follow-up local browser proof at 390×844 with touch emulation: the board entry and foot Retry were visible away from the park; boarding moved the body from the Little Harbour area `(1470, 1186)` to Tideline `(1327.9, 725.5)` and showed the old skate HUD. The month card initially covered both phone pads; after a CSS correction it was hidden during skating, with Reset and both pads visibly clear. This remains fictional loopback proof, not device acceptance.
+- Follow-up High quick gate: TypeScript passed but took 304.5s, already beyond the 300s gate budget. The fast suite then found a missing `hasSkate` method in a host-routing test double; Codex stopped that run, guarded the method call, and reran that test plus the four affected files successfully (47/47). The gate's outcome remains unsuccessful for this follow-up.
 
 ## Decisions
 
