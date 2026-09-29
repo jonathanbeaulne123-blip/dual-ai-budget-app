@@ -73,6 +73,10 @@ export function planGuards(core: CorridorCore, env: GuardEnv): GuardRun[] {
   for (const side of ['left', 'right'] as const) {
     // A Year Walk side is a stop too: the walk's own edge guards its drop, and no run reaches across the walk.
     const need = stations.map((st, k) => guardNeed(st, side, turns[k] ?? 0)), blocked = stations.map(st => owned(st, side) || !!st[side].gap || st[side].edge === 'yearWalk');
+    // A bare structure edge carries on the rail of the road it continues (the Mountain Road's stone parapet runs onto the canal
+    // bridge's bare end rather than a separate post rail in the shoulder).
+    for (let k = 0; k < n; k++) { if (!stations[k]![side].bare || need[k] === 'none') continue;
+      for (const d of [1, 2]) { const nb = [k - d, k + d].map(j => closed ? (j + n) % n : j).find(j => j >= 0 && j < n && !stations[j]![side].bare && need[j] !== 'none' && need[j] !== 'retaining'); if (nb !== undefined) { need[k] = need[nb]!; break; } } }
     // One run stands at one built edge: a change of edge (a kerb, a sidewalk's back) of more than EDGE_STEP starts a new run.
     const edgeAt = stations.map(st => builtEdge(st[side])), sameEdge = (i: number, j: number) => Math.abs(edgeAt[i]! - edgeAt[j]!) <= EDGE_STEP;
     // A closed loop is walked from a station that needs nothing (a blocked one if there is one), so no run wraps the seam.

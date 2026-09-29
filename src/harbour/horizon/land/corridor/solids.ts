@@ -46,6 +46,8 @@ export const SHOULDER_LIP = .48, SHOULDER_CLEAR = CORRIDOR.guardDrop;
  * the through road's surface; over the next APRON stations beyond it the joining deck blends from the through road's surface
  * (extended into it) back to its own profile, built in APRON_STRIPS lateral strips so each strip edge takes its own height. */
 export const MOUTH_UNDER = .01, APRON = 4, APRON_STRIPS = 6;
+/** A sidewalk's back meets a joining foot route within this height of the sidewalk (eu); beyond it the route is not at grade. */
+export const SIDEWALK_MEET = .6;
 export const CORRIDOR_SOLID_KINDS = ['corridorDeck', 'corridorKerb', 'corridorWalk', 'corridorRetaining', 'corridorGuard'] as const;
 
 /** One station's cross-section of a band: signed offsets a < b (> 0 right), top heights at a and b, a flat bottom. */
@@ -261,6 +263,14 @@ export function buildCorridorSolids(core: CorridorCore, guards: readonly GuardRu
       pieces.push({ whole, segs, ks, loop: false, name: `fill.${side === 'left' ? 'L' : 'R'}.${i + 1}` });
     });
   }
+  /** The surface of a foot route (walk, trail, boardwalk, stair; not a corridor road or a sidewalk) at (x, z) within
+   * SIDEWALK_MEET of height y, the one nearest that height; null where none is. */
+  const footRouteHeight = (x: number, z: number, y: number): number | null => {
+    let best: number | null = null;
+    for (const seg of env.segments(x, z, 3)) { const b = seg.bed; if (b === bed || isCorridorRoad(b) || b.id.includes('.walk.') || !['walk', 'trail', 'boardwalk', 'stair'].includes(b.kind)) continue;
+      const q = onSegment(seg.a, seg.b, x, z); if (q.d <= b.width / 2 + .25 && Math.abs(q.y - y) <= SIDEWALK_MEET && (best === null || Math.abs(q.y - y) < Math.abs(best - y))) best = q.y; }
+    return best;
+  };
   // ---- kerbs and sidewalks: runs of stations carrying one on a side.
   for (const side of ['left', 'right'] as const) {
     const sign = sideSign(side);
@@ -284,7 +294,11 @@ export function buildCorridorSolids(core: CorridorCore, guards: readonly GuardRu
       const tag = bedId.slice(`${id}.walk.`.length), whole = solid(`${id}.corridor.walk.${tag}`, 'corridorWalk', 'plaza', 'deck', [id, bedId], districtAt(stations[ks[0]!]!.at[0], stations[ks[0]!]!.at[2]));
       const segs: number[] = [];
       band(whole, segs, core, ks, false, k => { const w = layout[k]![side].walk!, [a, b] = edges(w.inner, w.outer), st = stations[k]!, pa = lateralLine(core, round3(sign * w.inner))[k]!, pb = lateralLine(core, round3(sign * w.outer))[k]!;
-        return { a, b, ya: w.height, yb: w.height, bottom: round3(Math.min(st.at[1] - .3, ground(pa[0], pa[2]) - DECK.sink, ground(pb[0], pb[2]) - DECK.sink)) }; });
+        // At a crossing or an entrance the sidewalk's outer edge comes down (or up) to the joining path's own surface: a sloped
+        // apron, never a step at the sidewalk's back (the Reach walk and the River Link met it 0.3–0.4 eu lower).
+        const meet = st[side].gap ? footRouteHeight(pb[0], pb[2], w.height) : null, outerY = meet === null ? w.height : round3(meet);
+        const [ya, yb] = sign < 0 ? [outerY, w.height] : [w.height, outerY];
+        return { a, b, ya, yb, bottom: round3(Math.min(st.at[1] - .3, ground(pa[0], pa[2]) - DECK.sink, ground(pb[0], pb[2]) - DECK.sink, outerY - .3)) }; });
       pieces.push({ whole, segs, ks, loop: false, name: `walk.${tag}` });
       walks.push(sidewalkBed(core, bedId, ks, side, layout.map(l => l[side])));
     }
