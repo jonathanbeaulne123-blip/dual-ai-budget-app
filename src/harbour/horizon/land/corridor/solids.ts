@@ -30,6 +30,8 @@ import { isCorridorRoad, round3 } from './reaches';
 export const DECK = Object.freeze({ thickness: .6, sink: .1 });
 /** Guard collider panel: thickness (inside every rail kit's volume) and how far below the rail's base it starts. */
 export const GUARD_PANEL = Object.freeze({ thickness: .12, below: .3 });
+/** A post-and-rail's buried end ramps its rails into the ground over this last bay (eu; kit/road GUARD_KIT.postRail.buriedBay). */
+export const BURIED_BAY = 2.5;
 /** The deck carries a guard's base this far past the rail's centre line (just past the collider's outer face). */
 export const GUARD_VERGE = .1;
 /** A lower route this far under the road at a station keeps the space under the deck open (no skirt). */
@@ -310,7 +312,18 @@ export function buildCorridorSolids(core: CorridorCore, guards: readonly GuardRu
     const base = ks.map((k, i) => retaining ? run.line[i]![1] : layout[k]![run.side].base), segs: number[] = [];
     // A wall stands to the bank it retains (guards.ts retainingTop, the same number as the run's height).
     if (retaining) panel(whole, segs, run.line, RETAINING.thickness / 2, i => retainingTop(core, run.side, run.offset, ks[i]!, run.line[i]!, ground), i => base[i]! - RETAINING.foot);
-    else panel(whole, segs, run.line, GUARD_PANEL.thickness / 2, i => base[i]! + run.height, i => base[i]! - GUARD_PANEL.below);
+    else {
+      // The collider is the visible rail's volume (review M1): it stands on the rail's own line (the road surface the kit draws
+      // from, not a kerb's top) and follows the kit's ends — a buried end ramps into the ground over its last bay, a flared end's
+      // top rail turns down to the ground at the end point — so no invisible wall stands where the drawn rail has gone.
+      const arc = [0]; for (let i = 1; i < run.line.length; i++) arc.push(arc[i - 1]! + Math.hypot(run.line[i]![0] - run.line[i - 1]![0], run.line[i]![2] - run.line[i - 1]![2]));
+      const L = arc[arc.length - 1]!, [e0, e1] = run.ends;
+      const factor = (i: number) => { const a = arc[i]!; let k = 1;
+        if (e0 === 'buried') k = Math.min(k, a / BURIED_BAY); if (e1 === 'buried') k = Math.min(k, (L - a) / BURIED_BAY);
+        if (e0 === 'flare' && a < 1e-6 || e1 === 'flare' && L - a < 1e-6) k = 0;
+        return Math.max(0, Math.min(1, k)); };
+      panel(whole, segs, run.line, GUARD_PANEL.thickness / 2, i => run.line[i]![1] + Math.max(.02, run.height * factor(i)), i => Math.min(run.line[i]![1], base[i]!) - GUARD_PANEL.below);
+    }
     pieces.push({ whole, segs, ks, loop: false, name: run.colliderId.slice(`${id}.corridor.`.length) });
   }
   // ---- district split, station segment by station segment.

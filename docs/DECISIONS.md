@@ -1775,8 +1775,16 @@ Jonathan, 29 September 2026: *"Implement: Horizon V2's Main Road — a beautiful
 - **Integration calls (design lead, reversible; D-R9…D-R12 in ROAD.md):** lantern posts may stand in a junction's sight triangle (never in a mouth); kerb-mounted lanterns where the setback is taken; bridge lanterns on an approach's guard rail within 24 eu of a structure; a preliminary guard pass before the plan so lanterns over drops are rail-mounted.
 - **Nothing in vehicle physics changed**: no steering assist, no snapping, no global tuning (`stepCruiser`, the board and bicycle profiles untouched).
 
-Evidence: `docs/horizon/evidence/road/audit-after/` (real `stepCruiser`, every corridor road both directions, centre and keep-right lanes: 0 restarts; 0 BLOCKER / 23 MAJOR / 85 MINOR against 41 / 298 / 584 before, every remaining MAJOR at a walk or pad join or a spur grade at exactly 12 %), `docs/horizon/evidence/road/after/` (SwiftShader captures, not device evidence).
+Evidence: `docs/horizon/evidence/road/audit-after/` (real `stepCruiser`, every corridor road both directions, centre and keep-right lanes: 0 restarts; 0 BLOCKER / 23 MAJOR / 85 MINOR against 41 / 298 / 584 before, none in the lanes: walk and pad joins at the verge, two spur grades at 12.0 %, the Bight spur trestle's south-end transition to S4 and a Glasshouse-steps retaining wall at the Glasshouse spur's edge), `docs/horizon/evidence/road/after/` (36 SwiftShader captures with `LOOK.md`; not device evidence), `docs/horizon/evidence/road/inspector/` (the `=` inspector's snapshots at five stations and the overlay at 390 / 320).
 
 Risk **High** (shared geometry, collision, navigation, night lighting). Budget delta (5): **0** — no money path, command or Journey board space moves; the Journey land gains bridges, covered stretches and boulevards at map scale only. Engagement delta (3): **+2** — the island's main road is comfortable to drive the whole way round and reads as one designed corridor by day and night.
 
-Owed to Jonathan: D-R3 (bounded shadowless point lights for road lamps, overriding STYLE §1.2 rule 1), D-R4 (palms only on Long Sands and Tideline), Tideline Park's frontage (the park sits 2.3 eu below the Drive; a flush frontage needs its pad regraded), the Crown Lookout landing (the plan proposes a 14 × 6 graded pull-off at s 848; not built without a ruling).
+Owed to Jonathan:
+- D-R3: bounded shadowless point lights for road lamps, overriding STYLE §1.2 rule 1. Every lit material pays for the six (lite: two) lights all day.
+- D-R4: palms only on Long Sands and Tideline.
+- Page L ("The quay at night"): the Quay Bridge's new south abutment hides 3 px of the Boathouse (11 of 13). Landscape now passes A–K and fails L. Choose an authored-view change or a shorter abutment.
+- Tideline Park's frontage: the park sits 2.3 eu below the Drive, so a flush frontage needs its pad regraded.
+- The Crown Lookout landing: the plan proposes a 14 × 6 graded pull-off at s 848. Not built without a ruling. The Long Sands Shore stop is built.
+- Lamp posts carry no collider, like every lantern on the island today. Should road lanterns block a rider?
+- Test measures that changed with the land, each with its reason in the test: the Year Walk's grade is measured on the baked walk; the Bight Bridge shares count fell from 800 to 750; the terraces.1 garden edge now allows 0.1 (it measures 0.085); page J's ground moved from 48.5 to 47; the west sea in page H reads 349 px.
+- Not measured: ROAD.md §8's per-district draw-call and triangle budget on the real bake. It is proven on fixtures; the inspector shows 200–446 whole-scene calls under SwiftShader. Device frame rates are also unmeasured.

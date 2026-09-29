@@ -266,7 +266,8 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
       if (dead) return;
       camera.getWorldPosition(eye.value); now.value = clock() - clockBase;
       const x = eye.value.x, z = eye.value.z;
-      const residencyChanged = resident.size !== lastResident.size || [...resident].some(id => !lastResident.has(id));
+      let residencyChanged = resident.size !== lastResident.size;
+      if (!residencyChanged) for (const id of resident) if (!lastResident.has(id)) { residencyChanged = true; break; }
       if (!lastAt || residencyChanged || Math.hypot(x - lastAt.x, z - lastAt.z) >= PLANT_RECHECK || layers.some(l => l.dirty)) evaluate(x, z, resident);
     },
     setSeason(next, nextMonth) {

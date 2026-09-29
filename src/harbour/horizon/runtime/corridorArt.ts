@@ -225,8 +225,12 @@ export function createCorridorArt(world:WorldDefinition,opts:CorridorArtOptions)
     return {id,build,instanced,detail,box,detailOn:true,lastResident:performance.now(),triangles,drawCalls,instances};
   }
   function postPiece(post:GuardPost):Piece{return {kind:'railPost',at:post.at,yaw:post.yaw,sy:post.height};}
+  const haloIds=new Set<string>();
   function refreshHalos(resident:ReadonlySet<string>){
-    const key=[...resident].filter(id=>districts.has(id)).sort().join('|');if(key===haloKey)return;haloKey=key;
+    // Every frame: an allocation-free membership check; the halo set is rebuilt only when the built resident districts change
+    // (haloKey '' forces it, as a district build or release does).
+    let same=haloKey!=='',n=0;if(same)for(const id of resident){if(!districts.has(id))continue;n++;if(!haloIds.has(id)){same=false;break;}}
+    if(same&&n===haloIds.size)return;haloIds.clear();for(const id of resident)if(districts.has(id))haloIds.add(id);haloKey='built';
     const list:V3[]=[];for(const id of resident){if(!districts.has(id))continue;for(const l of plans.get(id)?.lamps??[])list.push(l.head);}
     if(haloMesh){group.remove(haloMesh);haloMesh.dispose();haloMesh=null;}
     if(!list.length)return;

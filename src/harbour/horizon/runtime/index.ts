@@ -264,8 +264,10 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   }
   function unmountCorridor(){corridorArt.dispose();corridorPlanting.dispose();scene.remove(corridorPlanting.group);}
   mountCorridor(new Date());
-  const kitHeads=new Map(corridorArt!.lampHeads().map(h=>[h.id,h.head] as const));
-  const roadLights=createRoadLights(scene,{...world,lights:world.lights.map(a=>{const head=kitHeads.get(a.id);return head?{...a,head}:a;})},{tier,ground:(x,z,near)=>geography.surface(x,z,near+1,0)?.y??null,revision:()=>geography.indexStats.chunks});
+  // The lanterns' heads as this theme's kit draws them (review minor 2: rebuilt with the kit on a theme change).
+  const makeRoadLights=()=>{const kitHeads=new Map(corridorArt.lampHeads().map(h=>[h.id,h.head] as const));
+    return createRoadLights(scene,{...world,lights:world.lights.map(a=>{const head=kitHeads.get(a.id);return head?{...a,head}:a;})},{tier,ground:(x,z,near)=>geography.surface(x,z,near+1,0)?.y??null,revision:()=>geography.indexStats.chunks});};
+  let roadLights=makeRoadLights();
   const lightAt:[number,number,number]=[0,0,0],lightFrame:{at?:readonly [number,number,number];hidden:boolean}={hidden:false};
   // The seven windows (LIGHT §3): each host's doorway is a lit card from dusk, one instanced draw.
   const doorHosts=world.hosts.filter(h=>'xy'in h.door),doorGeometry=new THREE.PlaneGeometry(NIGHT_LIGHT_CARDS.doorSize[0],NIGHT_LIGHT_CARDS.doorSize[1]).translate(0,NIGHT_LIGHT_CARDS.doorSize[1]/2,0),doorMaterial=new THREE.MeshBasicMaterial({color:NIGHT_LIGHT_CARDS.door,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-8}),doors=new THREE.InstancedMesh(doorGeometry,doorMaterial,Math.max(1,doorHosts.length));
@@ -939,7 +941,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     setCruiserSkin(skin:CruiserSkin){schedule();cruiserSkin=skin;cruiserArt?.setSkin(skin);},
     cruiserState:()=>cruiser()?.state()??null,
     body:()=>({...body}),mode:()=>mode,shotId:()=>shotId,
-    setTheme(next:VehicleDressing){if(next===theme)return;theme=next;unmountCorridor();mountCorridor(currentTime??new Date());skate?.setTheme(next);if(regionScene||regionTask)releaseRegion();if(placed)monorail?.setTheme(placed.dressing(next));kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
+    setTheme(next:VehicleDressing){if(next===theme)return;theme=next;unmountCorridor();mountCorridor(currentTime??new Date());roadLights.dispose();roadLights=makeRoadLights();roadLights.refresh();skate?.setTheme(next);if(regionScene||regionTask)releaseRegion();if(placed)monorail?.setTheme(placed.dressing(next));kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
     setAvatar(next:PlayableAvatar|null){const previous=figure;figure=next?createPlayableFigure(next,tier,{invalidate:schedule,onStatus:options.onAvatarStatus}):createBodyFigure();scene.add(figure.group);skate?.setFigure(figure);previous.group.removeFromParent();previous.dispose();schedule();},
     settings:()=>({tier,reducedMotion:comfort.reducedMotion,calm:comfort.calm,theme}),reviewDate:()=>(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm})),setAmbience(audio:WorldAmbience|null){ambience=audio;schedule();},
     offers,

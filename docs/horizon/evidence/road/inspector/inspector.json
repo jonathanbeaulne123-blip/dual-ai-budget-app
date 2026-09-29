@@ -1,0 +1,552 @@
+{
+ "sha": "a1bce8b99eea3c68e4b8ecc4911cba7fa0e0afc7",
+ "generated": "2026-09-29T19:38:10.856Z",
+ "method": "headless Chromium (SwiftShader) review page ?diagnostics=1; cruiser via restore + toggleCruiser + input/simulateMotion; snapshot = __harbour.inspect(). Frame times are SwiftShader, not device evidence.",
+ "records": [
+  {
+   "label": "harbour-gate-developed",
+   "file": "inspector_01_harbour-gate-developed.png",
+   "placed": {
+    "index": 15
+   },
+   "snapshot": {
+    "time": "2026-09-29T19:36:23.629Z",
+    "clock": "2026-06-22T01:40:00.000Z",
+    "sha": "a1bce8b99eea3c68e4b8ecc4911cba7fa0e0afc7",
+    "tier": "full",
+    "position": {
+     "x": 1483.97,
+     "y": 17.79,
+     "z": 1041.27
+    },
+    "heading": {
+     "degrees": 73.3,
+     "compass": "E"
+    },
+    "mode": "walk",
+    "perspective": "activity",
+    "mover": "cruiser",
+    "speed": {
+     "ms": 0,
+     "kmh": 0
+    },
+    "grounded": true,
+    "surface": {
+     "id": "V01.corridor.deck.3.harbour@harbour",
+     "kind": "solid",
+     "role": "deck",
+     "solidKind": "corridorDeck",
+     "material": "paved",
+     "y": 17.79,
+     "slope": 3.69
+    },
+    "station": {
+     "road": "V01",
+     "s": 85.72,
+     "reach": "R1",
+     "context": "developed",
+     "structureId": null,
+     "offset": 2.66,
+     "distance": 2.66,
+     "side": "right",
+     "left": {
+      "edge": "sidewalk",
+      "guard": "none",
+      "paved": 5,
+      "gap": null
+     },
+     "right": {
+      "edge": "shoulder",
+      "guard": "none",
+      "paved": 5,
+      "gap": "junction"
+     },
+     "onCarriageway": true
+    },
+    "frame": {
+     "p50": 2383.2,
+     "p95": 6833.1,
+     "samples": 8
+    },
+    "render": {
+     "calls": 107,
+     "triangles": 254059
+    },
+    "resident": {
+     "count": 4,
+     "ids": [
+      "harbour",
+      "notch",
+      "prow",
+      "reach"
+     ]
+    },
+    "lights": {
+     "k": 1,
+     "linesOn": 19,
+     "lines": 19,
+     "roadLamps": 208,
+     "anchors": 105,
+     "cap": 160,
+     "roadCards": 112,
+     "anchorCards": 48,
+     "cards": 160,
+     "pointLights": 6,
+     "pointLightsLit": 5,
+     "pointAssigned": [
+      "V01.lamp.2",
+      "V01.lamp.3",
+      "V01.lamp.4",
+      "V01.lamp.7",
+      "V01.lamp.5",
+      "V01.lamp.6"
+     ],
+     "poolTriangles": 4368,
+     "conformedPools": 43
+    },
+    "blocker": {
+     "walk": null,
+     "contact": null
+    }
+   }
+  },
+  {
+   "label": "prow-gallery-structure",
+   "file": "inspector_02_prow-gallery-structure.png",
+   "placed": {
+    "index": 57
+   },
+   "snapshot": {
+    "time": "2026-09-29T19:36:46.724Z",
+    "clock": "2026-06-22T01:40:00.000Z",
+    "sha": "a1bce8b99eea3c68e4b8ecc4911cba7fa0e0afc7",
+    "tier": "full",
+    "position": {
+     "x": 1593.96,
+     "y": 27.46,
+     "z": 890.77
+    },
+    "heading": {
+     "degrees": 17.8,
+     "compass": "N"
+    },
+    "mode": "walk",
+    "perspective": "activity",
+    "mover": "cruiser",
+    "speed": {
+     "ms": 0,
+     "kmh": 0
+    },
+    "grounded": true,
+    "surface": {
+     "id": "prowTunnel.floor@prow",
+     "kind": "solid",
+     "role": "floor",
+     "solidKind": "tunnel",
+     "material": "stone",
+     "y": 27.46,
+     "slope": 4.27
+    },
+    "station": {
+     "road": "V01",
+     "s": 279.4,
+     "reach": "R2",
+     "context": "structure",
+     "structureId": "prowTunnel",
+     "offset": 2.01,
+     "distance": 2.01,
+     "side": "right",
+     "left": {
+      "edge": "structure",
+      "guard": "bridgeRail",
+      "paved": 5,
+      "gap": null
+     },
+     "right": {
+      "edge": "structure",
+      "guard": "bridgeRail",
+      "paved": 5,
+      "gap": null
+     },
+     "onCarriageway": true
+    },
+    "frame": {
+     "p50": 2633.2,
+     "p95": 6733.2,
+     "samples": 17
+    },
+    "render": {
+     "calls": 115,
+     "triangles": 378585
+    },
+    "resident": {
+     "count": 4,
+     "ids": [
+      "harbour",
+      "notch",
+      "offshore",
+      "prow"
+     ]
+    },
+    "lights": {
+     "k": 1,
+     "linesOn": 19,
+     "lines": 19,
+     "roadLamps": 208,
+     "anchors": 105,
+     "cap": 160,
+     "roadCards": 112,
+     "anchorCards": 48,
+     "cards": 160,
+     "pointLights": 6,
+     "pointLightsLit": 0,
+     "pointAssigned": [
+      "V01.lamp.2",
+      "V01.lamp.3",
+      "V01.lamp.4",
+      "V01.lamp.7",
+      "V01.lamp.5",
+      "V01.lamp.6"
+     ],
+     "poolTriangles": 4592,
+     "conformedPools": 65
+    },
+    "blocker": {
+     "walk": null,
+     "contact": null
+    }
+   }
+  },
+  {
+   "label": "crown-coast",
+   "file": "inspector_03_crown-coast.png",
+   "placed": {
+    "index": 211
+   },
+   "snapshot": {
+    "time": "2026-09-29T19:37:08.155Z",
+    "clock": "2026-06-22T01:40:00.000Z",
+    "sha": "a1bce8b99eea3c68e4b8ecc4911cba7fa0e0afc7",
+    "tier": "full",
+    "position": {
+     "x": 1323.03,
+     "y": 73.54,
+     "z": 267.67
+    },
+    "heading": {
+     "degrees": 301.5,
+     "compass": "NW"
+    },
+    "mode": "walk",
+    "perspective": "activity",
+    "mover": "cruiser",
+    "speed": {
+     "ms": 0,
+     "kmh": 0
+    },
+    "grounded": true,
+    "surface": {
+     "id": "V01.corridor.deck.1.crown@crown",
+     "kind": "solid",
+     "role": "deck",
+     "solidKind": "corridorDeck",
+     "material": "paved",
+     "y": 73.54,
+     "slope": 3.1
+    },
+    "station": {
+     "road": "V01",
+     "s": 1015.81,
+     "reach": "R4",
+     "context": "coastal",
+     "structureId": null,
+     "offset": 2,
+     "distance": 2,
+     "side": "right",
+     "left": {
+      "edge": "shoulder",
+      "guard": "none",
+      "paved": 5,
+      "gap": null
+     },
+     "right": {
+      "edge": "shoulder",
+      "guard": "none",
+      "paved": 5,
+      "gap": "crossing"
+     },
+     "onCarriageway": true
+    },
+    "frame": {
+     "p50": 3016.6,
+     "p95": 6833.1,
+     "samples": 22
+    },
+    "render": {
+     "calls": 182,
+     "triangles": 549057
+    },
+    "resident": {
+     "count": 4,
+     "ids": [
+      "crown",
+      "notch",
+      "offshore",
+      "prow"
+     ]
+    },
+    "lights": {
+     "k": 1,
+     "linesOn": 19,
+     "lines": 19,
+     "roadLamps": 208,
+     "anchors": 105,
+     "cap": 160,
+     "roadCards": 112,
+     "anchorCards": 48,
+     "cards": 160,
+     "pointLights": 6,
+     "pointLightsLit": 0,
+     "pointAssigned": [
+      "V01.lamp.32",
+      "V01.lamp.31",
+      null,
+      null,
+      null,
+      null
+     ],
+     "poolTriangles": 224,
+     "conformedPools": 67
+    },
+    "blocker": {
+     "walk": null,
+     "contact": null
+    }
+   }
+  },
+  {
+   "label": "bight-bridge-deck",
+   "file": "inspector_04_bight-bridge-deck.png",
+   "placed": {
+    "index": 549
+   },
+   "snapshot": {
+    "time": "2026-09-29T19:37:30.199Z",
+    "clock": "2026-06-22T01:40:00.000Z",
+    "sha": "a1bce8b99eea3c68e4b8ecc4911cba7fa0e0afc7",
+    "tier": "full",
+    "position": {
+     "x": 558.04,
+     "y": 12,
+     "z": 1101.07
+    },
+    "heading": {
+     "degrees": 125,
+     "compass": "SE"
+    },
+    "mode": "walk",
+    "perspective": "activity",
+    "mover": "cruiser",
+    "speed": {
+     "ms": 0,
+     "kmh": 0
+    },
+    "grounded": true,
+    "surface": {
+     "id": "bightBridge.deck@bight",
+     "kind": "solid",
+     "role": "deck",
+     "solidKind": "bridge",
+     "material": "boardwalk",
+     "y": 12,
+     "slope": 0
+    },
+    "station": {
+     "road": "V01",
+     "s": 2696.45,
+     "reach": "R9",
+     "context": "structure",
+     "structureId": "bightBridge",
+     "offset": 2,
+     "distance": 2,
+     "side": "right",
+     "left": {
+      "edge": "structure",
+      "guard": "bridgeRail",
+      "paved": 5,
+      "gap": null
+     },
+     "right": {
+      "edge": "structure",
+      "guard": "bridgeRail",
+      "paved": 5,
+      "gap": null
+     },
+     "onCarriageway": true
+    },
+    "frame": {
+     "p50": 3066.5,
+     "p95": 6833.1,
+     "samples": 28
+    },
+    "render": {
+     "calls": 366,
+     "triangles": 103717
+    },
+    "resident": {
+     "count": 3,
+     "ids": [
+      "bight",
+      "flats",
+      "offshore"
+     ]
+    },
+    "lights": {
+     "k": 1,
+     "linesOn": 19,
+     "lines": 19,
+     "roadLamps": 208,
+     "anchors": 105,
+     "cap": 160,
+     "roadCards": 112,
+     "anchorCards": 48,
+     "cards": 160,
+     "pointLights": 6,
+     "pointLightsLit": 4,
+     "pointAssigned": [
+      "V01.lamp.32",
+      "V01.lamp.31",
+      "V01.lamp.61",
+      "V01.lamp.62",
+      "V01.lamp.60",
+      "V01.lamp.63"
+     ],
+     "poolTriangles": 1792,
+     "conformedPools": 83
+    },
+    "blocker": {
+     "walk": null,
+     "contact": null
+    }
+   }
+  },
+  {
+   "label": "long-sands-boulevard",
+   "file": "inspector_05_long-sands-boulevard.png",
+   "placed": {
+    "index": 666
+   },
+   "snapshot": {
+    "time": "2026-09-29T19:37:45.815Z",
+    "clock": "2026-06-22T01:40:00.000Z",
+    "sha": "a1bce8b99eea3c68e4b8ecc4911cba7fa0e0afc7",
+    "tier": "full",
+    "position": {
+     "x": 1050.41,
+     "y": 3.88,
+     "z": 1396.65
+    },
+    "heading": {
+     "degrees": 98,
+     "compass": "E"
+    },
+    "mode": "walk",
+    "perspective": "activity",
+    "mover": "cruiser",
+    "speed": {
+     "ms": 0,
+     "kmh": 0
+    },
+    "grounded": true,
+    "surface": {
+     "id": "V01.corridor.deck.2.landing@landing",
+     "kind": "solid",
+     "role": "deck",
+     "solidKind": "corridorDeck",
+     "material": "paved",
+     "y": 3.88,
+     "slope": 2.36
+    },
+    "station": {
+     "road": "V01",
+     "s": 3281.04,
+     "reach": "R10",
+     "context": "boulevard",
+     "structureId": null,
+     "offset": 2,
+     "distance": 2,
+     "side": "right",
+     "left": {
+      "edge": "kerb",
+      "guard": "none",
+      "paved": 5,
+      "gap": null
+     },
+     "right": {
+      "edge": "kerb",
+      "guard": "none",
+      "paved": 5,
+      "gap": null
+     },
+     "onCarriageway": true
+    },
+    "frame": {
+     "p50": 2949.9,
+     "p95": 6733.2,
+     "samples": 35
+    },
+    "render": {
+     "calls": 372,
+     "triangles": 159948
+    },
+    "resident": {
+     "count": 4,
+     "ids": [
+      "green",
+      "landing",
+      "notch",
+      "reach"
+     ]
+    },
+    "lights": {
+     "k": 1,
+     "linesOn": 19,
+     "lines": 19,
+     "roadLamps": 208,
+     "anchors": 105,
+     "cap": 160,
+     "roadCards": 112,
+     "anchorCards": 48,
+     "cards": 160,
+     "pointLights": 6,
+     "pointLightsLit": 2,
+     "pointAssigned": [
+      "V01.lamp.99",
+      "V01.lamp.100",
+      "V01.lamp.61",
+      "V01.lamp.62",
+      "V01.lamp.60",
+      "V01.lamp.63"
+     ],
+     "poolTriangles": 2688,
+     "conformedPools": 114
+    },
+    "blocker": {
+     "walk": null,
+     "contact": null
+    }
+   }
+  },
+  {
+   "label": "overlay-390",
+   "file": "inspector_overlay_390.png"
+  },
+  {
+   "label": "overlay-320",
+   "file": "inspector_overlay_320.png"
+  }
+ ],
+ "errors": [
+  "Failed to load resource: the server responded with a status of 404 (Not Found)"
+ ]
+}

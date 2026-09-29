@@ -185,6 +185,20 @@ describe('the baked corridors (public/horizon)', () => {
       }
     }
   });
+  it('stands each post-and-rail collider no higher than its drawn rail: on the line, full height inside, down to the ground at buried and flared ends (review M1)', () => {
+    let ends = 0;
+    for (const c of corridors) for (const run of c.guards) {
+      if (run.kind !== 'postRail') continue;
+      const verts = tris(pieceOf(run.colliderId)).flatMap(t => t.v);
+      for (const v of verts) { const near = run.line.reduce((b, p) => Math.hypot(p[0] - v[0], p[2] - v[2]) < Math.hypot(b[0] - v[0], b[2] - v[2]) ? p : b, run.line[0]!); expect(v[1] - near[1], run.id).toBeLessThanOrEqual(run.height + 1e-3); }
+      for (const [end, kind] of [[run.line[0]!, run.ends[0]], [run.line[run.line.length - 1]!, run.ends[1]]] as const) {
+        if (kind !== 'buried' && kind !== 'flare') continue;
+        const at = verts.filter(v => Math.hypot(v[0] - end[0], v[2] - end[2]) < .2); if (!at.length) continue;
+        ends++; expect(Math.max(...at.map(v => v[1])) - end[1], `${run.id} ${kind} end`).toBeLessThanOrEqual(.1);
+      }
+    }
+    expect(ends).toBeGreaterThan(10);
+  });
   it('has no road-kind strip, shoulder, kerb, parapet or retaining solid of the old emitter on a corridor road', () => {
     const roads = corridors.map(c => c.id), old = world.geometry.solids.filter(s => roads.some(r => /^(bed|surface|shoulders|kerbs|edges|retaining|batter)(\.|$)/.test((s.sourceId ?? s.id).startsWith(`${r}.`) ? (s.sourceId ?? s.id).slice(r.length + 1) : '')));
     expect(old.map(s => s.id)).toEqual([]);

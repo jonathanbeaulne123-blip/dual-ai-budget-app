@@ -1,0 +1,2252 @@
+{
+ "set": "after",
+ "sha": "a1bce8b99eea3c68e4b8ecc4911cba7fa0e0afc7",
+ "dirtyTree": false,
+ "url": "http://127.0.0.1:5197/horizon-review.html?world=horizon&tier=full&date=2026-06-21&sun=13:00",
+ "method": "headless Chromium (SwiftShader) on the review harness; look poses via __harbour.world.views + shot(); rides via restore + toggleCruiser + input/simulateMotion (the live controller and collision). Not device evidence.",
+ "command": "node scripts/horizon/capture-road.mjs --set after --out docs/horizon/evidence/road/after",
+ "viewport": {
+  "width": 1280,
+  "height": 800
+ },
+ "date": "2026-06-21",
+ "times": {
+  "day": "13:00",
+  "night": "22:30"
+ },
+ "driverEye": {
+  "heightOverSurface": 1.9,
+  "rightLaneOffset": 2,
+  "lookAhead": 40,
+  "verticalFovDegrees": 58
+ },
+ "beds": {
+  "V01": {
+   "id": "V01",
+   "kind": "road",
+   "profile": "road",
+   "surface": "paved",
+   "width": 8,
+   "structureIds": [
+    "prowTunnel",
+    "quayBridge",
+    "bightBridge"
+   ],
+   "districtIds": [
+    "harbour",
+    "prow",
+    "crown",
+    "scholars",
+    "flats",
+    "bight",
+    "landing",
+    "reach"
+   ],
+   "pointCount": 794
+  },
+  "V03": {
+   "id": "V03",
+   "kind": "road",
+   "profile": "road",
+   "surface": "paved",
+   "width": 8,
+   "structureIds": [
+    "mountainRoadTunnel",
+    "mountainRoadCanalBridge"
+   ],
+   "districtIds": [
+    "prow",
+    "lakeside"
+   ],
+   "pointCount": 74
+  },
+  "VG": {
+   "id": "VG",
+   "kind": "road",
+   "profile": "road",
+   "surface": "paved",
+   "width": 8,
+   "structureIds": [
+    "highSpan"
+   ],
+   "districtIds": [
+    "harbour",
+    "notch",
+    "green",
+    "lakeside",
+    "hollow",
+    "scholars"
+   ],
+   "pointCount": 243
+  }
+ },
+ "runSeconds": 614,
+ "totalPngBytes": 9466118,
+ "compressed": false,
+ "records": [
+  {
+   "file": "after_01_green-road-junction-approach_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "green-road-junction-approach",
+   "note": "V01 closing its loop into the Green Road junction [1400,1060]",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 3836.3,
+    "index": 780,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    1379.42,
+    22.39,
+    1111.01
+   ],
+   "target": [
+    1395.72,
+    25.75,
+    1074.53
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 20.491049933953846,
+    "id": "V01.corridor.deck.3.notch@harbour"
+   },
+   "surfaceUnderTarget": {
+    "y": 23.85236069887793,
+    "id": "V01.corridor.deck.3.harbour@harbour"
+   },
+   "bedY": 20.49,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 265,
+    "triangles": 752324,
+    "resident": 4,
+    "frameMsMedian": 4499.9,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1379.4160614789496,
+      22.391049933953845,
+      1111.0103869396644
+     ],
+     "target": [
+      1395.7187673322157,
+      25.75236069887793,
+      1074.5321404309793
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_green-road-junction-approach"
+   },
+   "errors": [
+    {
+     "at": 0,
+     "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    }
+   ]
+  },
+  {
+   "file": "after_02_harbour-east_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "harbour-east",
+   "note": "even station: the harbour side heading east then north",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 130,
+    "index": 27,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    1524.07,
+    19.16,
+    1021.73
+   ],
+   "target": [
+    1551.18,
+    21.19,
+    991.72
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 17.260185310681326,
+    "id": "V01.corridor.deck.3.notch@harbour"
+   },
+   "surfaceUnderTarget": {
+    "y": 19.285489269195555,
+    "id": "V01.corridor.deck.3.prow@harbour"
+   },
+   "bedY": 17.26,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 68,
+    "triangles": 262706,
+    "resident": 4,
+    "frameMsMedian": 4183.2,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1524.065029483195,
+      19.160185310681324,
+      1021.7303767744845
+     ],
+     "target": [
+      1551.1750145138171,
+      21.185489269195553,
+      991.7191660363372
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_harbour-east"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_03_prow-gallery-approach_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "prow-gallery-approach",
+   "note": "approaching the Prow gallery (prowTunnel, 90 m) from the south",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 204.4,
+    "index": 44,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    1566.28,
+    23.75,
+    960.69
+   ],
+   "target": [
+    1581.92,
+    26.74,
+    923.77
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 21.85427332111663,
+    "id": "V01.corridor.deck.3.prow@prow"
+   },
+   "surfaceUnderTarget": {
+    "y": 24.843072569196828,
+    "id": "prowTunnel.floor@prow"
+   },
+   "bedY": 21.85,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 83,
+    "triangles": 391642,
+    "resident": 4,
+    "frameMsMedian": 3383.1,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1566.2844111569868,
+      23.754273321116628,
+      960.6904782804105
+     ],
+     "target": [
+      1581.9201647234704,
+      26.743072569196826,
+      923.7733758953589
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_prow-gallery-approach"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_04_prow-gallery-inside_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "prow-gallery-inside",
+   "note": "inside the Prow gallery: the colonnade open to the sea",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 274.4,
+    "index": 56,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    1592.37,
+    28.99,
+    895.55
+   ],
+   "target": [
+    1602.48,
+    31.96,
+    856.48
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 27.08506157775227,
+    "id": "prowTunnel.floor@prow"
+   },
+   "surfaceUnderTarget": {
+    "y": 30.06354332824001,
+    "id": "prowTunnel.floor@prow"
+   },
+   "bedY": 27.08,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 84,
+    "triangles": 396227,
+    "resident": 4,
+    "frameMsMedian": 3383.1,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1592.3659710520067,
+      28.98506157775227,
+      895.5488634853118
+     ],
+     "target": [
+      1602.482066605308,
+      31.963543328240007,
+      856.4838997575404
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_prow-gallery-inside"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_05_v03-junction_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "v03-junction",
+   "note": "V01 approaching the Mountain Road (V03) junction [1599.5,790.8]",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 334.9,
+    "index": 70,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    1603.5,
+    33.49,
+    835.76
+   ],
+   "target": [
+    1601.84,
+    36.48,
+    795.65
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 31.59407331667476,
+    "id": "V01.corridor.deck.1.prow@prow"
+   },
+   "surfaceUnderTarget": {
+    "y": 34.58309824258384,
+    "id": "V01.corridor.deck.1.prow@prow"
+   },
+   "bedY": 31.59,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 222,
+    "triangles": 1105904,
+    "resident": 4,
+    "frameMsMedian": 3383.1,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1603.4995355009432,
+      33.49407331667476,
+      835.7610676397851
+     ],
+     "target": [
+      1601.8418475996734,
+      36.483098242583836,
+      795.6537132564243
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_v03-junction"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_06_prow-north-climb_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "prow-north-climb",
+   "note": "even station: the climb north along the Prow",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 650,
+    "index": 130,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    1565.98,
+    57,
+    522.81
+   ],
+   "target": [
+    1557.64,
+    59.57,
+    483.29
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 55.0958815873985,
+    "id": "V01.corridor.deck.1.prow@prow"
+   },
+   "surfaceUnderTarget": {
+    "y": 57.66731357375466,
+    "id": "V01.corridor.deck.1.prow@crown"
+   },
+   "bedY": 55.1,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 67,
+    "triangles": 205029,
+    "resident": 2,
+    "frameMsMedian": 1883.3,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1565.9839036741114,
+      56.9958815873985,
+      522.8092051157655
+     ],
+     "target": [
+      1557.6384159629886,
+      59.56731357375466,
+      483.2892990261728
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_prow-north-climb"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_07_ne-cliff-corner_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "ne-cliff-corner",
+   "note": "the NE cliff corner [1433,335]",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 847.9,
+    "index": 175,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    1455.66,
+    71.32,
+    362.62
+   ],
+   "target": [
+    1431.13,
+    72.08,
+    330.64
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 69.41712129625812,
+    "id": "V01.corridor.deck.1.crown@crown"
+   },
+   "surfaceUnderTarget": {
+    "y": 70.1803068647425,
+    "id": "V01.corridor.deck.1.crown@crown"
+   },
+   "bedY": 69.42,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 117,
+    "triangles": 570972,
+    "resident": 2,
+    "frameMsMedian": 1883.3,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1455.6624490832571,
+      71.31712129625812,
+      362.61897851277007
+     ],
+     "target": [
+      1431.1302914758494,
+      72.08030686474251,
+      330.6382683925987
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_ne-cliff-corner"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_08_north-ridge_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "north-ridge",
+   "note": "even station: the high north ridge (crown / scholars)",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 1130,
+    "index": 234,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    1210.34,
+    68.74,
+    249.26
+   ],
+   "target": [
+    1170.32,
+    66.34,
+    247.49
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 66.83851927021776,
+    "id": "V01.corridor.deck.1.crown@crown"
+   },
+   "surfaceUnderTarget": {
+    "y": 64.43820064961331,
+    "id": "V01.corridor.deck.1.crown@crown"
+   },
+   "bedY": 66.84,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 91,
+    "triangles": 174176,
+    "resident": 3,
+    "frameMsMedian": 783.4,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1210.338899626201,
+      68.73851927021776,
+      249.25846010052874
+     ],
+     "target": [
+      1170.317334900235,
+      66.33820064961331,
+      247.49186436095695
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_north-ridge"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_09_north-west_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "north-west",
+   "note": "even station: the long north-west run",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 1640,
+    "index": 338,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    704.3,
+    44,
+    301.75
+   ],
+   "target": [
+    666.01,
+    43.21,
+    313.76
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 42.10152701749352,
+    "id": "V01.corridor.deck.1.scholars@scholars"
+   },
+   "surfaceUnderTarget": {
+    "y": 41.30679008144649,
+    "id": "V01.corridor.deck.1.scholars@scholars"
+   },
+   "bedY": 42.1,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 40,
+    "triangles": 68611,
+    "resident": 1,
+    "frameMsMedian": 783.4,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      704.3031980599436,
+      44.001527017493515,
+      301.7521420784009
+     ],
+     "target": [
+      666.0121058742195,
+      43.20679008144649,
+      313.7556158571671
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_north-west"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_10_west-coast_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "west-coast",
+   "note": "coastal stretch: the west coast heading south",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 2150,
+    "index": 438,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    359.78,
+    35.89,
+    623.23
+   ],
+   "target": [
+    358.17,
+    35.92,
+    663.44
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 33.994408471963915,
+    "id": "V01.corridor.deck.1.flats@flats"
+   },
+   "surfaceUnderTarget": {
+    "y": 34.01840754255353,
+    "id": "V01.corridor.deck.1.flats@flats"
+   },
+   "bedY": 33.99,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 92,
+    "triangles": 206485,
+    "resident": 2,
+    "frameMsMedian": 1883.3,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      359.77949711827046,
+      35.894408471963914,
+      623.2322552781809
+     ],
+     "target": [
+      358.1686168506655,
+      35.91840754255353,
+      663.4398167458894
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_west-coast"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_11_west-descent_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "west-descent",
+   "note": "even station: descending to the Bight",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 2420,
+    "index": 495,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    397.52,
+    26.68,
+    890.1
+   ],
+   "target": [
+    407.32,
+    24.2,
+    928.96
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 24.775608584276416,
+    "id": "V01.corridor.deck.1.flats@flats"
+   },
+   "surfaceUnderTarget": {
+    "y": 22.30338355755637,
+    "id": "V01.corridor.deck.1.flats@flats"
+   },
+   "bedY": 24.78,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 86,
+    "triangles": 134659,
+    "resident": 2,
+    "frameMsMedian": 799.9,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      397.51828685825575,
+      26.675608584276414,
+      890.1044282030872
+     ],
+     "target": [
+      407.31540610176273,
+      24.203383557556368,
+      928.9609728180294
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_west-descent"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_12_bight-bridge-west-approach_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "bight-bridge-west-approach",
+   "note": "approaching the Bight Bridge west end [460,1030]",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 2535.4,
+    "index": 515,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    433.49,
+    16.67,
+    999.96
+   ],
+   "target": [
+    458.82,
+    13.9,
+    1031.62
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 14.766729714207543,
+    "id": "V01.corridor.deck.1.flats@bight"
+   },
+   "surfaceUnderTarget": {
+    "y": 12.001860659941093,
+    "id": "V01.corridor.deck.1.bight@bight"
+   },
+   "bedY": 14.77,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 401,
+    "triangles": 294030,
+    "resident": 3,
+    "frameMsMedian": 2166.5,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      433.4891350810917,
+      16.66672971420754,
+      999.9582976300769
+     ],
+     "target": [
+      458.82083756125445,
+      13.901860659941093,
+      1031.6154181944783
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_bight-bridge-west-approach"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_13_bight-bridge-deck_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "bight-bridge-deck",
+   "note": "on the Bight Bridge deck",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 2697.4,
+    "index": 549,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    558.85,
+    13.9,
+    1101.64
+   ],
+   "target": [
+    591.62,
+    13.9,
+    1124.58
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 12.000000000000002,
+    "id": "bightBridge.deck@bight"
+   },
+   "surfaceUnderTarget": {
+    "y": 12,
+    "id": "bightBridge.deck@bight"
+   },
+   "bedY": 12,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 369,
+    "triangles": 229996,
+    "resident": 3,
+    "frameMsMedian": 2166.5,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      558.8530753112302,
+      13.900000000000002,
+      1101.6384638410407
+     ],
+     "target": [
+      591.6223521317726,
+      13.9,
+      1124.5769576158186
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_bight-bridge-deck"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_14_bight-bridge-east-approach_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "bight-bridge-east-approach",
+   "note": "approaching the Bight Bridge east end [660,1170] against point order",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 2859.5,
+    "index": 581,
+    "dir": -1,
+    "length": 3891.3
+   },
+   "eye": [
+    693.2,
+    12.09,
+    1192.48
+   ],
+   "target": [
+    661.15,
+    13.9,
+    1168.36
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 10.185618278457804,
+    "id": "yearWalk.bed.bight@bight"
+   },
+   "surfaceUnderTarget": {
+    "y": 12,
+    "id": "bightBridge.deck@bight"
+   },
+   "bedY": 10.18,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 47,
+    "triangles": 98181,
+    "resident": 4,
+    "frameMsMedian": 799.9,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      693.2021351603693,
+      12.085618278457805,
+      1192.4795970087089
+     ],
+     "target": [
+      661.1512282790935,
+      13.9,
+      1168.3645571090938
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_bight-bridge-east-approach"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_15_south-coast_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "south-coast",
+   "note": "coastal stretch: the south shore near sea level",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 3281,
+    "index": 666,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    1050.41,
+    5.78,
+    1396.65
+   ],
+   "target": [
+    1090.25,
+    4.8,
+    1401.34
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 3.8801129306963666,
+    "id": "V01.corridor.deck.2.landing@landing"
+   },
+   "surfaceUnderTarget": {
+    "y": 2.895743947864559,
+    "id": "V01.corridor.deck.2.landing@landing"
+   },
+   "bedY": 3.88,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 333,
+    "triangles": 139867,
+    "resident": 4,
+    "frameMsMedian": 716.6,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1050.4090649300024,
+      5.780112930696367,
+      1396.6464872410086
+     ],
+     "target": [
+      1090.2490523602696,
+      4.795743947864558,
+      1401.3395621711231
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_south-coast"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_16_quay-bridge-approach_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "quay-bridge-approach",
+   "note": "approaching the Quay Bridge [1350,1345] (90 m, h 9)",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 3519.9,
+    "index": 713,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    1288.6,
+    9.07,
+    1384.2
+   ],
+   "target": [
+    1327.1,
+    10.9,
+    1371.72
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 7.174949000867082,
+    "id": "V01.corridor.deck.2.landing@reach"
+   },
+   "surfaceUnderTarget": {
+    "y": 9,
+    "id": "quayBridge.deck@reach"
+   },
+   "bedY": 7.17,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 341,
+    "triangles": 210455,
+    "resident": 4,
+    "frameMsMedian": 3999.9,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1288.6028198259733,
+      9.074949000867083,
+      1384.2048507451407
+     ],
+     "target": [
+      1327.1029155471992,
+      10.9,
+      1371.7246793851775
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_quay-bridge-approach"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_17_town-stretch_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "town-stretch",
+   "note": "town stretch past the bank and home (harbour)",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 3805.5,
+    "index": 774,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    1368.01,
+    19.96,
+    1139.43
+   ],
+   "target": [
+    1383.1,
+    23.32,
+    1102.54
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 18.056546657781677,
+    "id": "V01.corridor.deck.3.notch@harbour"
+   },
+   "surfaceUnderTarget": {
+    "y": 21.416738809061385,
+    "id": "V01.corridor.deck.3.harbour@harbour"
+   },
+   "bedY": 18.06,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 446,
+    "triangles": 1404008,
+    "resident": 4,
+    "frameMsMedian": 4266.4,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1368.0065396974162,
+      19.956546657781676,
+      1139.4285335084055
+     ],
+     "target": [
+      1383.100253366703,
+      23.316738809061384,
+      1102.5381333907583
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_town-stretch"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_18_v03-mountain-road-start_13-00.png",
+   "kind": "driver",
+   "route": "V03",
+   "label": "v03-mountain-road-start",
+   "note": "V03 Mountain Road leaving V01 westward",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 30,
+    "index": 6,
+    "dir": 1,
+    "length": 327.4
+   },
+   "eye": [
+    1569.53,
+    38.1,
+    788.94
+   ],
+   "target": [
+    1529.54,
+    41.75,
+    788.34
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 36.19524486587523,
+    "id": "V03.corridor.deck.1.prow@prow"
+   },
+   "surfaceUnderTarget": {
+    "y": 39.84918903328967,
+    "id": "V03.corridor.deck.1.lakeside@prow"
+   },
+   "bedY": 36.2,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 259,
+    "triangles": 621342,
+    "resident": 4,
+    "frameMsMedian": 4266.4,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1569.5258613352626,
+      38.09524486587523,
+      788.9449651540393
+     ],
+     "target": [
+      1529.5367106821757,
+      41.74918903328967,
+      788.3410338024675
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_v03-mountain-road-start"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_19_v03-tunnel-approach_13-00.png",
+   "kind": "driver",
+   "route": "V03",
+   "label": "v03-tunnel-approach",
+   "note": "V03 approaching its 73 m tunnel",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 76.5,
+    "index": 16,
+    "dir": 1,
+    "length": 327.4
+   },
+   "eye": [
+    1523.03,
+    42.4,
+    788.24
+   ],
+   "target": [
+    1483,
+    46.4,
+    788.02
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 40.50008044894571,
+    "id": "V03.corridor.deck.1.lakeside@prow"
+   },
+   "surfaceUnderTarget": {
+    "y": 44.50033681898177,
+    "id": "mountainRoadTunnel.apron@prow"
+   },
+   "bedY": 40.5,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 226,
+    "triangles": 573340,
+    "resident": 4,
+    "frameMsMedian": 4266.4,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1523.0285585556817,
+      42.40008044894571,
+      788.241306723833
+     ],
+     "target": [
+      1483.00106887498,
+      46.40033681898177,
+      788.0155510055083
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_v03-tunnel-approach"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_20_v03-canal-bridge_13-00.png",
+   "kind": "driver",
+   "route": "V03",
+   "label": "v03-canal-bridge",
+   "note": "V03 into the canal bridge and the Mountain v2 town lane",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 270,
+    "index": 60,
+    "dir": 1,
+    "length": 327.4
+   },
+   "eye": [
+    1335.42,
+    56.99,
+    761.76
+   ],
+   "target": [
+    1298.87,
+    57.86,
+    745.46
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 55.09050903767591,
+    "id": "V03.corridor.deck.2.lakeside@lakeside"
+   },
+   "surfaceUnderTarget": {
+    "y": 55.96378449712867,
+    "id": "mountainRoadCanalBridge.deck@lakeside"
+   },
+   "bedY": 55.09,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 289,
+    "triangles": 1018167,
+    "resident": 4,
+    "frameMsMedian": 4433.1,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1335.4159613541033,
+      56.990509037675906,
+      761.7557700934051
+     ],
+     "target": [
+      1298.8738940162582,
+      57.86378449712867,
+      745.4601041870937
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_v03-canal-bridge"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_21_vg-green-road-start_13-00.png",
+   "kind": "driver",
+   "route": "VG",
+   "label": "vg-green-road-start",
+   "note": "VG Green Road leaving the junction westward",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 25,
+    "index": 7,
+    "dir": 1,
+    "length": 1180.3
+   },
+   "eye": [
+    1376.48,
+    25.27,
+    1068.69
+   ],
+   "target": [
+    1339.9,
+    23.77,
+    1084.5
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 23.365880622054092,
+    "id": "VG.corridor.deck.1.notch@harbour"
+   },
+   "surfaceUnderTarget": {
+    "y": 21.86589550041071,
+    "id": "VG.corridor.deck.1.notch@notch"
+   },
+   "bedY": 23.37,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 81,
+    "triangles": 208538,
+    "resident": 4,
+    "frameMsMedian": 1649.9,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1376.478382647387,
+      25.26588062205409,
+      1068.691409310926
+     ],
+     "target": [
+      1339.8962572412659,
+      23.765895500410707,
+      1084.502235126703
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_vg-green-road-start"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_22_vg-high-span-approach_13-00.png",
+   "kind": "driver",
+   "route": "VG",
+   "label": "vg-high-span-approach",
+   "note": "VG approaching the High Span",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 67,
+    "index": 14,
+    "dir": 1,
+    "length": 1180.3
+   },
+   "eye": [
+    1338.05,
+    23.76,
+    1085.2
+   ],
+   "target": [
+    1299.68,
+    25.59,
+    1095.33
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 21.856045726437284,
+    "id": "VG.corridor.deck.1.notch@notch"
+   },
+   "surfaceUnderTarget": {
+    "y": 23.691256274346614,
+    "id": "VG.corridor.deck.1.notch@notch"
+   },
+   "bedY": 21.85,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 172,
+    "triangles": 673746,
+    "resident": 4,
+    "frameMsMedian": 1649.9,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1338.0511575322507,
+      23.756045726437282,
+      1085.2013396221475
+     ],
+     "target": [
+      1299.683264584496,
+      25.591256274346613,
+      1095.3346702903252
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_vg-high-span-approach"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_23_vg-north_13-00.png",
+   "kind": "driver",
+   "route": "VG",
+   "label": "vg-north",
+   "note": "VG crossing the island northward",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 780,
+    "index": 160,
+    "dir": 1,
+    "length": 1180.3
+   },
+   "eye": [
+    990.75,
+    42.79,
+    665.58
+   ],
+   "target": [
+    1000.93,
+    41.38,
+    626.68
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 40.89002403070278,
+    "id": "VG.corridor.deck.2.hollow@hollow"
+   },
+   "surfaceUnderTarget": {
+    "y": 39.481501634950014,
+    "id": "VG.corridor.deck.2.hollow@hollow"
+   },
+   "bedY": 40.89,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 114,
+    "triangles": 425644,
+    "resident": 4,
+    "frameMsMedian": 1649.9,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      990.7517954200976,
+      42.79002403070278,
+      665.5795735814655
+     ],
+     "target": [
+      1000.9319959895445,
+      41.38150163495001,
+      626.6840121845605
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_vg-north"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_24_green-road-junction-approach-night_22-30.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "green-road-junction-approach-night",
+   "note": "V01 closing its loop into the Green Road junction [1400,1060]",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 3836.3,
+    "index": 780,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    1379.42,
+    22.39,
+    1111.01
+   ],
+   "target": [
+    1395.72,
+    25.75,
+    1074.53
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 20.491049933953846,
+    "id": "V01.corridor.deck.3.notch@harbour"
+   },
+   "surfaceUnderTarget": {
+    "y": 23.85236069887793,
+    "id": "V01.corridor.deck.3.harbour@harbour"
+   },
+   "bedY": 20.49,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 271,
+    "triangles": 777405,
+    "resident": 4,
+    "frameMsMedian": 7466.4,
+    "lightCards": 160,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1379.4160614789496,
+      22.391049933953845,
+      1111.0103869396644
+     ],
+     "target": [
+      1395.7187673322157,
+      25.75236069887793,
+      1074.5321404309793
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_green-road-junction-approach-night"
+   },
+   "errors": []
+  },
+  {
+   "file": "after_25_prow-gallery-approach-night_22-30.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "prow-gallery-approach-night",
+   "note": "approaching the Prow gallery (prowTunnel, 90 m) from the south",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 204.4,
+    "index": 44,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    1566.28,
+    23.75,
+    960.69
+   ],
+   "target": [
+    1581.92,
+    26.74,
+    923.77
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 21.85427332111663,
+    "id": "V01.corridor.deck.3.prow@prow"
+   },
+   "surfaceUnderTarget": {
+    "y": 24.843072569196828,
+    "id": "prowTunnel.floor@prow"
+   },
+   "bedY": 21.85,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 88,
+    "triangles": 407865,
+    "resident": 4,
+    "frameMsMedian": 7466.4,
+    "lightCards": 160,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1566.2844111569868,
+      23.754273321116628,
+      960.6904782804105
+     ],
+     "target": [
+      1581.9201647234704,
+      26.743072569196826,
+      923.7733758953589
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_prow-gallery-approach-night"
+   },
+   "errors": []
+  }
+ ],
+ "errors": [
+  {
+   "at": 0,
+   "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  },
+  {
+   "at": "after_26_bight-bridge-west-approach-night_22-30.png",
+   "message": "screenshot: Error: locator.screenshot: Element is not attached to the DOM\nCall log:\n\u001b[2m  - taking element screenshot\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - attempting scroll into view action\u001b[22m\n\u001b[2m    - waiting for element to be stable\u001b[22m\n"
+  },
+  {
+   "at": "bight-bridge-west-approach-night",
+   "message": "Error: page.evaluate: TypeError: Cannot read properties of undefined (reading 'stats')\n    at eval (eval at evaluate (:311:30), <anonymous>:1:31)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)"
+  },
+  {
+   "at": "quay-bridge-approach-night",
+   "message": "Error: page.evaluate: TypeError: Cannot read properties of undefined (reading 'world')\n    at eval (eval at evaluate (:311:30), <anonymous>:1:48)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)"
+  },
+  {
+   "at": "town-stretch-night",
+   "message": "Error: page.evaluate: TypeError: Cannot read properties of undefined (reading 'world')\n    at eval (eval at evaluate (:311:30), <anonymous>:1:48)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)"
+  },
+  {
+   "at": "ride",
+   "message": "Error: page.evaluate: TypeError: Cannot read properties of undefined (reading 'setDate')\n    at eval (eval at evaluate (:311:30), <anonymous>:1:137)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)"
+  },
+  {
+   "at": "overview-whole-loop",
+   "message": "Error: page.evaluate: TypeError: Cannot read properties of undefined (reading 'world')\n    at eval (eval at evaluate (:311:30), <anonymous>:1:42)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)"
+  },
+  {
+   "at": "aerial-ne-prow-cliff-drive",
+   "message": "Error: page.evaluate: TypeError: Cannot read properties of undefined (reading 'world')\n    at eval (eval at evaluate (:311:30), <anonymous>:1:42)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)"
+  }
+ ]
+}
