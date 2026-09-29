@@ -149,7 +149,7 @@ export const CORRIDOR = Object.freeze({
   lampSetback: 0.9,
   /** Lamp pools overlap so the road never alternates bright and dark. */
   lampSpacing: { developed: 24, structure: 30, boulevard: 28, junction: 0 } as const,
-  lampPoolRadius: 9,
+  lampPoolRadius: 12,
   /** Nothing taller than this within a junction's sight triangle. */
   sightlineMaxHeight: 0.6,
   sightlineReach: 35,

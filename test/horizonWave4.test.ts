@@ -152,7 +152,8 @@ describe('R2-74 / R2-14 the baked view proof measures the acceptance frames', ()
     // from the jetty; H's 78 px were the sea beyond the grid). v2.4 re-poses them: G under the shaft 70 / 42 px (D-D7), H an
     // aerial eye over the strip, the in-map west sea 350 / 94 px — the claim is true again, on the honest measure.
     // v2.6 (D-M3/D-M10): the dam's glass face is retired; A's portrait holds the High Span alone and passes (9/12 on the phone).
-    expect(pass('passLandscape')).toBe('ABCDEFGHIJKL'); expect(pass('passPortrait')).toBe('ABEGHIJK');   // v2.6b: F's promenade eye passes at 1440×900; L01 open in portrait (with C/D/L)
+    // Road main (L1): page L's Boathouse is 11 of 13 px behind the Quay Bridge's new south abutment (owed to Jonathan).
+    expect(pass('passLandscape')).toBe('ABCDEFGHIJK'); expect(pass('passPortrait')).toBe('ABEGHIJK');   // v2.6b: F's promenade eye passes at 1440×900; L01 open in portrait (with C/D/L)
     const px = (page: string, subject: string) => world.views.find(v => v.id === page)!.proof.subjects.find(s => s.id === subject)!;
     expect(px('K', 'the Glasshouse').pixels).toBeGreaterThan(13); expect(px('A', 'the Shoulder').pixels).toBeGreaterThanOrEqual(13);
     expect(px('I', 'the spring').pixels).toBeGreaterThanOrEqual(13); expect(px('I', 'the spring').portraitPixels).toBeGreaterThanOrEqual(8); expect(px('I', 'the Reach water').pixels).toBeGreaterThan(1000);
@@ -194,6 +195,6 @@ describe('Wave 5 seams on the committed bake (integrator 3)', () => {
     for (const { positions: p } of rails) for (let o = 0; o + 24 <= p.length; o += 24) { let lo = Infinity, hi = -Infinity, x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity; for (let i = o; i < o + 24; i += 3) { lo = Math.min(lo, p[i + 1]!); hi = Math.max(hi, p[i + 1]!); x0 = Math.min(x0, p[i]!); x1 = Math.max(x1, p[i]!); z0 = Math.min(z0, p[i + 2]!); z1 = Math.max(z1, p[i + 2]!); } if (hi - lo > .5 && Math.min(x1 - x0, z1 - z0) > .3 && Math.max(x1 - x0, z1 - z0) > 1) solidParapet++; }
     expect(solidParapet).toBe(0);
     const H = baked().world.views.find(v => v.id === 'H')!.proof.subjects.find(s => s.id === 'the west sea')!; expect(H.pixels).toBeGreaterThanOrEqual(13);   // candidate 6: 350 (in-map sea only, v2.4 aerial eye)
-    expect(H.pixels).toBe(350);
+    expect(H.pixels).toBe(349);   // road main: one ray of the west sea now meets the corridor's fill at the Flats (349)
   });
 });

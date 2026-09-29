@@ -198,7 +198,7 @@ describe('anchors from a synthetic corridor (land/corridor/lights.ts)', () => {
     const c = corridor({ length: 96, tunnelAt: 40 }), anchors = corridorLightAnchors([c]);
     expect(anchors).toHaveLength(c.lamps.length);
     const a = anchors.find(x => x.id === 'V01.lamp.36')!;
-    expect(a).toMatchObject({ kind: 'roadLantern', head: [36, 15.2, 4.5], pool: [36, 10, 2.5], poolRadius: 9, corridorId: 'V01', line: 'V01:R1' });
+    expect(a).toMatchObject({ kind: 'roadLantern', head: [36, 15.2, 4.5], pool: [36, 10, 2.5], poolRadius: CORRIDOR.lampPoolRadius, corridorId: 'V01', line: 'V01:R1' });
     expect(anchors.find(x => x.id === 'V01.tunnel')!.kind).toBe('tunnelLamp');
     expect(stationS(c.stations, 37.3, 5)).toBeCloseTo(37.3, 6);
     // Deterministic: same corridors → identical anchors.

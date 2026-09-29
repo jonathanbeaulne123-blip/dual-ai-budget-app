@@ -21,6 +21,10 @@ Evidence of the road as it stood before this pass: `docs/horizon/evidence/road/a
 | D-R6 | A dev-only **`=` inspector** is added to the Horizon runtime (it did not exist on main). | Brief §9 names it | design lead |
 | D-R7 | Road lantern = 5.2 eu post with an arm (a new STYLE §3.1 row); the 2.6 eu lantern post stays the walk/quay lantern. | A road lamp must light an 8 m carriageway | design lead |
 | D-R8 | One planted-median boulevard at most per reach, only where §3's median test passes; every other "boulevard" is planted verges. | Brief §5: medians only where the road is wide enough | design lead |
+| D-R9 | A road lantern's slim post may stand in a junction's sight triangle (ROAD §5 keeps planting over 0.6 out of it, not posts), never in a mouth; where the setback spot is taken it mounts on the kerb line; within 24 eu of a structure end it may stand on the approach's guard rail. | Brief §3: prioritise intersections and bridge approaches; the triangle rule left them dark | design lead (integration) |
+| D-R10 | Junction aprons: a joining road's deck runs through the junction just under the through road and takes the through road's cross-fall, fading over 4 stations (its own centreline grade is kept). | §2.2, §2.4: no lip at a mouth | design lead (integration) |
+| D-R11 | A structure deck edge whose own rail does not stop a body at the 0.2 / 0.65 contact levels is `bare`: the corridor guards it on the deck. A road trestle's rail is a board mounted on the deck's fascia. | §2.5; the Bight spur trestle let a rider under its rail to a 9 eu drop | design lead (integration) |
+| D-R12 | The corridor measures drops, fills and planting against Mountain v2's own ground inside the region's footprint (the ground the rider meets), Horizon terrain elsewhere. | §1: one road definition that agrees with what is felt | design lead (integration) |
 
 ## 1. The corridor: one definition
 

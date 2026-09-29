@@ -35,6 +35,9 @@ export function createRayCaster(field: TerrainField, cuts: Pick<LandCuts, 'solid
   const C = 25, GW = Math.ceil((width + 200) / C), GD = Math.ceil((depth + 200) / C), cells: number[][] = Array.from({ length: GW * GD }, () => []), tris: number[] = [], owner: number[] = [];
   const cellMin = new Float32Array(GW * GD).fill(Infinity), cellMax = new Float32Array(GW * GD).fill(-Infinity);
   cuts.solids.forEach((solid, si) => {
+    // Road main: a post-and-rail guard's collider is never drawn (the visible rail is an open kit of posts and bars); rays see
+    // through it as the eye does. A stone parapet's collider stays opaque, like the parapet.
+    if (solid.kind === 'corridorGuard' && solid.surface === 'timber') return;
     const p = solid.positions, ix = solid.indices;
     for (let k = 0; k < ix.length; k += 3) {
       const a = ix[k]! * 3, b = ix[k + 1]! * 3, c = ix[k + 2]! * 3, t = owner.length;
