@@ -158,3 +158,29 @@ when the scene (re)mounts, so a ride during a rebuild still lands its cabin. T3'
 re-bake); `horizonStreaming` 31; `horizonRuntimeGeometry` 7; `mountain-landscape` 4; `horizonWalkOut` 51; also
 `horizonCards` 7, `horizonComfort` 4, `horizonRenderWork` 10, `horizonTerrainAsset` 7, `harbour-source-fences` 9 (they read
 `runtime/index.ts` / call `cards.ts`). Fictional data only; no money read; no `src/core/` edit; nothing deleted in `mountain/**`.
+
+## 11 · PR #566 Codex review (28 Sep 2026)
+
+1. **Region load failure** (`runtime/index.ts placeHorizonRegions`): the import + `createMountainV2Region` are wrapped; a
+   rejection (v2's terrain fetch/decode) logs one `console.warn` and resolves `null` — the Horizon mounts without the region.
+   The loader is injectable (third argument) for the test.
+2. **v2 data check in the gates**: `node scripts/horizon/dump-mountain-v2.mjs --check` (≈1.5–3.5 s, Vite SSR, no browser) runs
+   in `pnpm build` (after the terrain bake check) and in `pnpm horizon:check`, which the `horizon-assets.yml` job runs; that
+   workflow now also triggers on `src/harbour/mountain/**`.
+3. **Region water** (§9's open item): `DynamicGeography.waterLevel?(x,z)`; `createHorizonGeography.waterLevel/submerged` read the
+   owning provider first (baked `cuts.waters` still answer where it returns null). v2's water: the reservoir inside damArt's
+   `reservoirOutline(RESERVOIR_LEVEL_MAX)` (the bowl, the rising shore, the dam's glass) over ground below the level →
+   86 + 54 = 140; the river within `RIVER_HALF_WIDTH` of `RIVER` → the line's height. **Not followed**: a Fund reading that
+   lowers the drawn reservoir (`setMountainDamWater`) — the collision stays at the full level; the town channel's culverts are
+   covered by their slabs (a floor above the water wins).
+4. **Blockers only while drawn**: the runtime registers `region.providerWhileDrawn(() => regionVisible)`: decks, solids and
+   ceilings answer only while the scene is visible; `owns`, `ground`, `waterLevel` always (ground-only surface = v2's terrain,
+   never the 5 m bake, so nothing falls through). **Could a body be left standing on nothing?** Yes without a hold — a body on
+   a bridge or the dam crest during the first build, a theme rebuild, or Walk after the Island map outlasted the 20 s release.
+   So inside the footprint the region counts as geometry that has not arrived: `gateOpen = chunkGateOpen && regionReady`, and
+   `step()` sets `resnap` (held, no fall, no chute) until drawn, then re-seats within a step of the held height (never up onto
+   a low deck overhead); restores and walk-outs into the footprint wait the same way; the status line says "still arriving".
+   Riders (board, bicycle, flight) skip frames there until drawn (`riderReady`); a cable ride runs on its own line (its cabin
+   transit is re-applied when the scene mounts) and its arrival onto a platform is held like a walker. The release itself
+   (20 s after nothing under the footprint is resident) cannot strand anyone: a walker inside the footprint keeps it wanted.
+5. See `rides.md` §3 item 3 (the cable buttons).

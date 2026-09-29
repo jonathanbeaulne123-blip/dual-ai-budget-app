@@ -265,3 +265,17 @@ describe('the fences', () => {
     expect(hits).toEqual([]);
   });
 });
+
+describe('PR #566 Codex: the cable actions reach touch riders', () => {
+  const stage = readFileSync(resolve(__dirname, '../src/harbour/horizon/HorizonStage.tsx'), 'utf8');
+  const runtime = readFileSync(resolve(__dirname, '../src/harbour/horizon/runtime/index.ts'), 'utf8');
+  it('the stage renders Skip and Sit as real buttons (aria-pressed Sit, key shortcuts) in the cruiser group’s dressings while riding a cable line', () => {
+    expect(stage).toMatch(/\(mover\.mode==='gondola'\|\|mover\.mode==='funicular'\)&&cable\.length>0&&<div className="horizon-cruiser-controls horizon-cable-controls" role="group"/);
+    expect(stage).toMatch(/aria-keyshortcuts=\{c\.key\} aria-pressed=\{c\.id==='seat'\?c\.pressed===true:undefined\} onClick=\{\(\)=>\{runtime\.current\?\.moverAction\(c\.id\);/);
+    expect(stage).toMatch(/cable:world\.cableControls\?\.\(\)\?\?\[\]/);
+  });
+  it('the runtime hands them to the active cable controller (never while the ride is paused)', () => {
+    expect(runtime).toMatch(/if\(action==='skip'\|\|action==='seat'\)\{const cable=hold\.paused\(\)\?null:asCableRide\(registry\.active\(\)\);if\(cable\)\{schedule\(\);if\(action==='skip'\)cable\.skip\(\);else cable\.toggleSeat\(\);\}return;\}/);
+    expect(runtime).toMatch(/cableControls\(\):CableControl\[\]\{const cable=hold\.paused\(\)\?null:asCableRide\(registry\.active\(\)\);return cable\?cableControls\(cable\.kind,cable\.state\(\)\):\[\];\}/);
+  });
+});

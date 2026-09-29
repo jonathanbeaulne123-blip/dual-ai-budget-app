@@ -31,7 +31,8 @@ import {buildDistrictCardSteps,buildDistrictCards,buildWaterCards,buildHorizonRi
 import {sampleTerrain} from '../land/terrain/index.ts';
 import type {MountainV2Region,RegionScene} from '../regions/mountainV2/index.ts';
 import {MOUNTAIN_V2_OFFSET} from '../regions/mountainV2/placement.ts';
-import {connectCableRegion} from '../movers/gondola/index.ts';
+import {connectCableRegion,asCableRide,cableControls,type CableControl} from '../movers/gondola/index.ts';
+import type {CableControlId} from '../movers/gondola/hud.ts';
 import type {PlaceDressing} from '../../scene/place.ts';
 import {createDistrictStream,districtAt,useDefinitionDistricts} from '../world/districts.ts';
 import {useCoastline} from '../land/coast/index.ts';
@@ -91,11 +92,14 @@ export type HorizonPlacedRegion={region:MountainV2Region;dressing:(theme:Vehicle
 /** A region not needed (no district under its footprint resident, or the Journey map) is released after this long. */
 export const REGION_RELEASE_MS=20_000;
 /** Loads and creates the placed Mountain v2 region when the definition lists it (dynamic: v2's definition evaluates its terrain at import). */
-export async function placeHorizonRegions(assets:Pick<HorizonAssets,'world'|'field'|'cuts'>,options:Pick<HorizonOptions,'mountainV2'>={}):Promise<HorizonPlacedRegion|null>{
+export async function placeHorizonRegions(assets:Pick<HorizonAssets,'world'|'field'|'cuts'>,options:Pick<HorizonOptions,'mountainV2'>={},load:()=>Promise<typeof import('../regions/mountainV2/index.ts')>=()=>import('../regions/mountainV2/index.ts')):Promise<HorizonPlacedRegion|null>{
   const listed=assets.world.regions?.some(r=>r.id==='mountainV2'&&r.kind==='placedWorld')===true;
   if(options.mountainV2===false||!(listed||options.mountainV2===true))return null;
-  const mod=await import('../regions/mountainV2/index.ts'),field=assets.field;
-  return {region:mod.createMountainV2Region({horizonGround:(x,z)=>sampleTerrain(field,x,z),exclude:mod.mouthExclusion(assets.cuts.mouths),terrainStep:field.step}),dressing:mod.regionDressing};
+  // PR #566 Codex: the region's import fetches/decodes v2's terrain; a failure leaves the Horizon without the region, never blocks it.
+  try{
+    const mod=await load(),field=assets.field;
+    return {region:mod.createMountainV2Region({horizonGround:(x,z)=>sampleTerrain(field,x,z),exclude:mod.mouthExclusion(assets.cuts.mouths),terrainStep:field.step}),dressing:mod.regionDressing};
+  }catch(error){console.warn('Horizon: the Mountain v2 region did not load; the island runs without it.',error);return null;}
 }
 export async function mountHorizon(host:HTMLElement,options:HorizonOptions){
   const startedAt=performance.now(),assets=await loadHorizonAssets(options.tier,options.signal);if(options.signal?.aborted)throw new DOMException('Aborted','AbortError');
@@ -132,7 +136,9 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const geography=createHorizonGeography(field,cuts),figure=createBodyFigure(),partner=createBodyFigure({coat:'#af8760'});
   scene.add(figure.group,partner.group);partner.group.visible=false;
   // Pass 5: inside the region's footprint its provider owns the ground (v2's exact ground, decks, solids, ceilings).
-  const offRegion=placed?geography.addDynamic(placed.region.provider):null;
+  // PR #566 Codex: its decks, solids and ceilings answer only while the region's scene is drawn (showRegion); ground and water always.
+  let regionVisible=false,regionSettle=false;
+  const offRegion=placed?geography.addDynamic(placed.region.providerWhileDrawn(()=>regionVisible)):null;
   const homeWorld=createHomeWorld(scene,world.reserves,options.homePlotId);homeWorld.set(options.homeLayout);const offHome=geography.addDynamic(homeWorld.collision);
   // Movers (RIDE §10.2, §11 ask 2): one registry, one active controller; the Horizon mode stays 'walk' while riding.
   // One comfort source (v2.2): the land's motion (cuts, the frozen 15:30) and the movers' registry read the same two flags.
@@ -270,7 +276,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(!positions.length)return null;const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.computeBoundingSphere();const mesh=new THREE.Mesh(geometry,chalkMaterial);mesh.visible=night;mesh.renderOrder=4;return mesh;
   }
   // Pass 5: the placed region's state (updateRegion, below).
-  let regionScene:RegionScene|null=null,regionTask:{advance():RegionScene|undefined;cancel():void}|null=null,regionVisible=false,regionIdleSince=0,regionShownAt=0,regionHooks:FogHook[]=[];
+  let regionScene:RegionScene|null=null,regionTask:{advance():RegionScene|undefined;cancel():void}|null=null,regionIdleSince=0,regionShownAt=0,regionHooks:FogHook[]=[];
   let regionWater:{level:number|null;reserve:number|null}={level:null,reserve:null},regionTransit:{cabin:{at:XYZ;yaw:number;pitch:number}|null;kind:'gondola'|'funicular'}|null=null;
   type Resident={cards:DistrictCards;chalk:THREE.Mesh|null;at:number;fadeIn(amount:number):void;dispose():void};
   function* buildResident(d:District):Generator<void,Resident,void>{
@@ -299,8 +305,14 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const cableLayer=createCableLayer(world,tier,id=>!chunks||chunks.ready(id),xy=>gate?gate.near(xy[0],xy[1],6):[districtAt(xy[0],xy[1])],build=>{for(const material of Object.values(build.materials))fogHook(material);});
   cableLayer.rebuild();scene.add(cableLayer.group);
   const offChunk=chunks?.onLoad((_id,solids)=>{if(!disposed){for(const solid of solids)solidsById.set(solid.id,solid);geography.addSolids(solids);cableLayer.rebuild();residencyRevision=-1;requestShadow('chunk-load');if(resnap&&mode==='walk'&&gate){const at=holdPoint();if(!gate.missingAt(at[0],at[1]).length){resnap=false;reseat();}}}});
-  /** The gate: resident (true) or held (false). Bytes already fetched are parsed now; the review simulation may block. */
-  function gateOpen(x:number,z:number):boolean{
+  /** The gate: resident (true) or held (false). Bytes already fetched are parsed now; the review simulation may block.
+   *  PR #566 Codex: inside the placed region, also held until its scene is drawn (its decks and solids answer only then). */
+  function gateOpen(x:number,z:number):boolean{return chunkGateOpen(x,z)&&regionReady(x,z);}
+  /** PR #566 Codex: the placed region is not in the way here: drawn, or (x, z) outside its footprint. */
+  function regionReady(x:number,z:number):boolean{return !placed||regionVisible||!placed.region.contains(x,z);}
+  /** PR #566 Codex: a rider inside the not-yet-drawn region waits (a board on a bridge keeps its deck); a cable ride runs on its line. */
+  function riderReady():boolean{const m=registry.mode();return m==='gondola'||m==='funicular'||regionReady(body.x,body.z);}
+  function chunkGateOpen(x:number,z:number):boolean{
     if(!gate||!chunks)return true;
     const missing=gate.missingAt(x,z),at:XYZ=[x,body.y,z],t=performance.now(),hold=(h:typeof chunkHolds[number])=>{chunkHolds.push(h);if(chunkHolds.length>200)chunkHolds.shift();};
     if(!missing.length){if(heldNow.length){hold({districts:heldNow,at,t,resolved:'arrived'});if(holdText)options.onStatus?.('');holdText='';}heldNow=[];return true;}
@@ -315,6 +327,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   /** R3-118: while the walker is held, one status line says why — still arriving, or failed and being retried. */
   let holdText='';
   function holdStatus(){
+    // PR #566 Codex: held inside the placed region while its scene builds: the same "still arriving" line.
+    if(!heldNow.length&&!regionReady(body.x,body.z)){if(holdText!==CHUNK_ARRIVING_STATUS){holdText=CHUNK_ARRIVING_STATUS;options.onStatus?.(holdText);}return;}
     if(!heldNow.length||!scheduler)return;
     const failedHere=scheduler.failures().some(f=>heldNow.includes(f.id)),text=failedHere?CHUNK_FAILED_STATUS:CHUNK_ARRIVING_STATUS;
     if(text!==holdText){holdText=text;options.onStatus?.(text);}
@@ -363,9 +377,13 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function holdPoint():[number,number]{return pendingWalkOut&&walkOutWait?walkOutWait:[body.x,body.z];}
   /** A chunk has landed under a held body: finish what was held (a restore's validation, a walk-out), or settle on the floor. */
   function reseat(){
+    // PR #566 Codex: a chunk landing under a body inside the not-yet-drawn region (no decks yet) keeps the hold until it is drawn.
+    {const at=holdPoint();if(!regionReady(at[0],at[1])){resnap=true;return;}}
     if(pendingRestore){const saved=pendingRestore;pendingRestore=null;const next=restoreHorizonPosition(saved,world.pathGraph!,geography.ground,restoreStand);const moved=Math.hypot(next.x-body.x,next.z-body.z);Object.assign(body,{x:next.x,y:next.y!,z:next.z,yaw:next.yaw});if(moved>.5){yaw=body.yaw;updateCamera();}return;}
     if(pendingWalkOut&&mode==='walk'){pendingWalkOut=false;walkOut(true);return;}
-    const at=geography.surface(body.x,body.z,body.y+HORIZON_BODY_HEIGHT);if(at)body.y=at.y;
+    // PR #566 Codex: a body held only for the region kept its height (a deck or v2's ground): settle within a step, never
+    // up onto a low bridge deck overhead.
+    const at=geography.surface(body.x,body.z,body.y+(regionSettle?.1:HORIZON_BODY_HEIGHT));regionSettle=false;if(at)body.y=at.y;
   }
   /**
    * Wave 7 (R3-130): Look → Walk stands the body where the page's eye stands, or — an eye over water or in the air (page J) —
@@ -652,6 +670,9 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     leftSupport=false;
     if(fleet.sitting()){figure.group.position.set(body.x,body.y,body.z);figure.group.rotation.y=body.yaw;figure.pose(0,0,now/1000,{lean:0,bank:0,run:0,air:0,rise:0,crouch:0,slide:0,emote:'sit',emoteAt:1,flourish:0});updateCamera();return;}
     // Held on ground whose chunk has not arrived (Codex P2): no movement and no airborne physics until reseat().
+    // PR #566 Codex: inside the placed region before its scene is drawn (its decks are not answered yet) the body is held the
+    // same way — a body on a bridge or the dam crest during a (re)build stays there and is re-seated on the deck once drawn.
+    if(!regionReady(body.x,body.z)){resnap=true;regionSettle=true;}
     if(bodyHeld()){velocityY=0;jumpRequested=false;holdStatus();if(!simulating){figure.group.position.set(body.x,body.y,body.z);figure.group.rotation.y=body.yaw;figure.pose(now*.007,0,now/1000);updateCamera();}return;}
     const at=geography.surface(body.x,body.z,body.y,.1),water=waterLevel(body.x,body.z,body.y);
     swimming=water!==null&&body.y<=water-.3&&(!at||at.y<water-.3);
@@ -686,12 +707,14 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function showRegion(visible:boolean){
     if(regionScene)regionScene.group.visible=visible;
     if(visible===regionVisible)return;regionVisible=visible;if(visible)regionShownAt=performance.now();
+    if(visible&&!heldNow.length&&holdText){holdText='';options.onStatus?.('');}   // PR #566 Codex: the region hold's line ends
     for(const resource of stream.live.values())for(const mesh of resource.cards.under??[])mesh.visible=!visible;
     requestShadow('region-visibility');
   }
   function updateRegion(dt:number,now:number){
     if(!placed)return;
-    const wanted=mode!=='journey'&&[...regionDistricts].some(id=>stream.live.has(id));
+    // PR #566 Codex: a walker inside the footprint always wants it (the hold above waits for it to be drawn).
+    const wanted=mode!=='journey'&&([...regionDistricts].some(id=>stream.live.has(id))||mode==='walk'&&placed.region.contains(body.x,body.z));
     if(wanted&&!regionScene&&!regionTask)regionTask=createBuildTask(placed.region.mountSteps(scene,tier,placed.dressing(theme),{season:seasonOf(currentTime??new Date()),quiet:!motion.ambientMotion}));
     if(regionTask){const done=regionTask.advance();if(done){regionTask=null;regionScene=done;done.group.visible=false;
       const materials=new Set<THREE.Material>();done.group.traverse(o=>{const m=(o as THREE.Mesh).material;if(m)for(const x of Array.isArray(m)?m:[m])materials.add(x);});
@@ -713,7 +736,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(!paused&&!document.hidden&&mode==='walk'&&!hold.paused()){physicalBody=null;tickFleet(dt);}
     if(kitchen?.active()){if(!paused&&!document.hidden&&mode==='walk')kitchen.update(dt);}
     else kitchen?.update(0);
-    if(!paused&&!document.hidden){const accept=comfortCut||kitchen?.active()?false:offersAndAccept();if(mode==='walk'&&!kitchen?.active()&&(!transition||transition.live)){stepped=true;if(registry.active()){if(!comfortCut&&hold.steps(mode))ride(dt,now,accept);}else if(!comfortCut)step(dt,now);}if(mode!=='journey')stream.update({x:body.x,z:body.z,now,mode:mode==='look'?'look':'walk',radius:mode==='look'?world.views.find(v=>v.id===shotId)?.radius:undefined,keepRadius:world.views.find(v=>v.id===shotId)?.radius,underground:body.y+HORIZON_BODY_HEIGHT<geography.ground(body.x,body.z)-.5});}
+    if(!paused&&!document.hidden){const accept=comfortCut||kitchen?.active()?false:offersAndAccept();if(mode==='walk'&&!kitchen?.active()&&(!transition||transition.live)){stepped=true;if(registry.active()){if(!comfortCut&&hold.steps(mode)&&riderReady())ride(dt,now,accept);}else if(!comfortCut)step(dt,now);}if(mode!=='journey')stream.update({x:body.x,z:body.z,now,mode:mode==='look'?'look':'walk',radius:mode==='look'?world.views.find(v=>v.id===shotId)?.radius:undefined,keepRadius:world.views.find(v=>v.id===shotId)?.radius,underground:body.y+HORIZON_BODY_HEIGHT<geography.ground(body.x,body.z)-.5});}
     // Pass 5: the ambience reads Mountain v2's geography (the river, its paths), so with the region placed it hears native space.
     const heard=placed?{x:body.x-MOUNTAIN_V2_OFFSET.x,y:body.y-MOUNTAIN_V2_OFFSET.y,z:body.z-MOUNTAIN_V2_OFFSET.z}:body;
     if(ambience){if(paused)ambience.pause();else ambience.update(heard.x,heard.y,heard.z,ambienceSpeed,false,false,comfort.calm,registry.mode()==='glider'||registry.mode()==='parachute');}
@@ -844,12 +867,16 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     settings:()=>({tier,reducedMotion:comfort.reducedMotion,calm:comfort.calm,theme}),reviewDate:()=>(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm})),setAmbience(audio:WorldAmbience|null){ambience=audio;schedule();},
     offers,
     moverState():HorizonMoverState{const fade=fadeLabel&&performance.now()-fadeLabel.at<HORIZON_FADE_LABEL_MS?fadeLabel.label:undefined;return{mode:registry.mode(),attached:registry.active()!==null,hud:lastHud,airborne:registry.mode()==='parachute'||!!registry.active()?.airborne?.(),stowed:registry.stowed(),perspective:perspective.mode(),...(fade?{fade}:{}),cut:comfortCut};},
-    moverAction(action:'fold'|'pull'|'gate'){
+    moverAction(action:'fold'|'pull'|'gate'|CableControlId){
+      // PR #566 Codex: the cable ride's Skip and Sit/Stand buttons (E / Space) reach the active controller here.
+      if(action==='skip'||action==='seat'){const cable=hold.paused()?null:asCableRide(registry.active());if(cable){schedule();if(action==='skip')cable.skip();else cable.toggleSeat();}return;}
       if(action==='pull'&&registry.mode()!=='parachute'){
         const at=registry.active()?.airborne?.();if(at)beginAirborne(at,true);else options.onStatus?.('Open the parachute while airborne.');
       }else if(action==='fold'||action==='pull')moverActionRequested=action;
     },
     cyclePerspective,
+    /** PR #566 Codex: the active cable ride's touch controls (Skip; Sit on the gondola) for the stage; [] when not riding one. */
+    cableControls():CableControl[]{const cable=hold.paused()?null:asCableRide(registry.active());return cable?cableControls(cable.kind,cable.state()):[];},
     resumeEquipment(){if(registry.resumeStowed({...body,velocity:[0,0,0]})){startRide();return true;}options.onStatus?.('Carry the board to a rideable surface.');return false;},
     airspaceReady:(x:number,z:number)=>gateOpen(x,z),
     moverArt(object:THREE.Object3D,tick:(dt:number,figure:THREE.Object3D)=>boolean,dispose?:()=>void){schedule();const art:HorizonMoverArt={object,tick,dispose};moverArts.add(art);scene.add(object);return()=>removeMoverArt(art);},

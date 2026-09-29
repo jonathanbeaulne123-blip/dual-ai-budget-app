@@ -21,7 +21,8 @@
  *  - never within `MOUTH_MARGIN` of a Horizon terrain mouth (`exclude`: the Ore Line's South Portal keeps its opening).
  */
 import {groundHeightAt} from '../../../scene/ground.ts';
-import {mountainContains,nearestOnRoute,EDGE_SOLIDS,WORLD_BOUNDS,type Point3} from '../../../mountain/definition.ts';
+import {mountainContains,nearestOnRoute,EDGE_SOLIDS,WORLD_BOUNDS,RIVER,RIVER_HALF_WIDTH,RESERVOIR_LEVEL_MAX,type Point3} from '../../../mountain/definition.ts';
+import {reservoirOutline} from '../../../mountain/art/damArt.ts';
 import {WORLD_SURFACES,WORLD_SOLIDS,queryWorldSurface,worldCeilingAt,type WorldSurface,type WorldSolid,type WorldSurfaceHit} from '../../../mountain/surfaces.ts';
 import {MOUNTAIN_V2_OFFSET as O,MOUNTAIN_V2_MASSIF_Z,MOUNTAIN_V2_SUMMIT_Z,insideMountainV2} from './placement.ts';
 
@@ -36,6 +37,8 @@ const STEP=.48,BODY=1.25;
 
 /** v2's decks this pass draws (all but the canal bridge's town race road deck). */
 export const REGION_SURFACES:readonly WorldSurface[]=WORLD_SURFACES.filter(s=>s.id!=='town-race-road');
+/** No decks: the ground-only answer while the region's scene is not drawn (PR #566 Codex). */
+const NO_DECKS:readonly WorldSurface[]=[];
 /** v2's solids this pass draws (all but the district fixtures). */
 export const REGION_SOLIDS:readonly WorldSolid[]=WORLD_SOLIDS.filter(s=>!s.id.startsWith('district-art:'));
 
@@ -78,6 +81,27 @@ function onDeck(x:number,z:number,points:readonly Point3[]){
   return p;
 }
 
+/**
+ * PR #566 Codex: v2's rendered water as collision (native x, z → native water y, null when dry).
+ *  - the reservoir: inside the drawn surface's outline (damArt `reservoirOutline` at `RESERVOIR_LEVEL_MAX`: the bowl, the
+ *    shore where v2's ground rises over the level, and the dam's glass) and over ground below the level → `RESERVOIR_LEVEL_MAX`.
+ *    The drawn water stands there until the app gives the dam a reading (`setWater`); a lower reading is not followed here;
+ *  - the river (and the town channel): within `RIVER_HALF_WIDTH` of the `RIVER` line → the line's height there.
+ */
+let reservoirPlan:{outline:[number,number][];cx:number;cz:number;reach:number}|null=null;
+function reservoirWater(x:number,z:number):number|null{
+  if(!reservoirPlan){const outline=reservoirOutline(RESERVOIR_LEVEL_MAX),cx=outline.reduce((a,p)=>a+p[0],0)/outline.length,cz=outline.reduce((a,p)=>a+p[1],0)/outline.length;
+    reservoirPlan={outline,cx,cz,reach:Math.max(...outline.map(p=>Math.hypot(p[0]-cx,p[1]-cz)))+1};}
+  const {outline,cx,cz,reach}=reservoirPlan;if(Math.hypot(x-cx,z-cz)>reach)return null;
+  let inside=false;for(let i=0,j=outline.length-1;i<outline.length;j=i++){const a=outline[i]!,b=outline[j]!;if((a[1]>z)!==(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])inside=!inside;}
+  return inside&&groundHeightAt(x,z)<RESERVOIR_LEVEL_MAX?RESERVOIR_LEVEL_MAX:null;
+}
+function riverWater(x:number,z:number):number|null{
+  const p=nearestOnRoute(x,z,RIVER);return p.distance<=RIVER_HALF_WIDTH?p.point[1]:null;
+}
+/** v2's water surface at a native point (the reservoir, else the river); null when dry. */
+export function regionWaterAt(x:number,z:number):number|null{return reservoirWater(x,z)??riverWater(x,z);}
+
 export function createRegionGeography(options:RegionGeographyOptions={}){
   const near=deckIndex(REGION_SURFACES);
   /** Inside the drawn footprint (see the module note). Horizon coordinates. */
@@ -95,9 +119,9 @@ export function createRegionGeography(options:RegionGeographyOptions={}){
   /** v2's ground (terrain only), Horizon height; null outside the footprint. */
   function groundAt(hx:number,hz:number):number|null{return contains(hx,hz)?groundHeightAt(hx-O.x,hz-O.z)+O.y:null;}
   /** The highest v2 floor (ground or deck) at or under hy + step; null outside the footprint or when it is above that. */
-  function surface(hx:number,hy:number|undefined,hz:number,step=STEP):RegionSurface|null{
+  function surface(hx:number,hy:number|undefined,hz:number,step=STEP,decks:readonly WorldSurface[]=REGION_SURFACES):RegionSurface|null{
     if(!contains(hx,hz))return null;
-    const hit=queryWorldSurface({x:hx-O.x,z:hz-O.z,y:hy===undefined?undefined:hy-O.y,stepHeight:step},groundHeightAt,REGION_SURFACES),y=hit.y+O.y;
+    const hit=queryWorldSurface({x:hx-O.x,z:hz-O.z,y:hy===undefined?undefined:hy-O.y,stepHeight:step},groundHeightAt,decks),y=hit.y+O.y;
     if(hy!==undefined&&y>hy+step)return null;
     return {id:hit.id==='terrain'?'terrain':`mountainV2:${hit.id}`,y,n:[hit.nx,hit.ny,hit.nz],material:regionMaterial(hit),slope:Math.atan(hit.slope)*180/Math.PI};
   }
@@ -152,13 +176,29 @@ export function createRegionGeography(options:RegionGeographyOptions={}){
    * terrain is not a candidate at all (the walker and the board stand on v2's exact ground, not on the higher of the two),
    * `ground()` answers v2's ground and the camera tests v2's ground. Outside the footprint it answers nothing.
    */
+  /** PR #566 Codex: v2's water (the reservoir, the river) at a Horizon point inside the footprint; null when dry or outside. */
+  function waterLevel(hx:number,hz:number):number|null{if(!contains(hx,hz))return null;const w=regionWaterAt(hx-O.x,hz-O.z);return w===null?null:w+O.y;}
+  const asHit=(s:RegionSurface|null)=>s?{id:s.id,y:s.y,nx:s.n[0],ny:s.n[1],nz:s.n[2],material:s.material,slope:s.slope}:null;
   const provider={
     owns:contains,
     ground:(x:number,z:number)=>groundHeightAt(x-O.x,z-O.z)+O.y,
-    surface(x:number,z:number,y?:number,step?:number){const s=surface(x,y,z,step);return s?{id:s.id,y:s.y,nx:s.n[0],ny:s.n[1],nz:s.n[2],material:s.material,slope:s.slope}:null;},
+    waterLevel,
+    surface(x:number,z:number,y?:number,step?:number){return asHit(surface(x,y,z,step));},
     ceiling(x:number,z:number,y:number){return ceiling(x,y,z)??Infinity;},
     contact(x:number,z:number,y:number,radius?:number){return contact(x,z,y,radius);},
   };
-  return {contains,groundAt,surface,ceiling,contact,blocked,provider};
+  /**
+   * PR #566 Codex: the provider the runtime registers — its decks, solids and ceilings answer only while `drawn()` (the
+   * region's scene is visible); `owns`, `ground` and `waterLevel` always answer, so the ground under the footprint is v2's
+   * and nothing falls through it while the scene builds, rebuilds or is released.
+   */
+  function whileDrawn(drawn:()=>boolean){
+    return {...provider,
+      surface(x:number,z:number,y?:number,step?:number){return asHit(surface(x,y,z,step,drawn()?REGION_SURFACES:NO_DECKS));},
+      ceiling(x:number,z:number,y:number){return drawn()?provider.ceiling(x,z,y):Infinity;},
+      contact(x:number,z:number,y:number,radius?:number){return drawn()?contact(x,z,y,radius):null;},
+    };
+  }
+  return {contains,groundAt,surface,ceiling,contact,blocked,waterLevel,provider,whileDrawn};
 }
 export type RegionGeography=ReturnType<typeof createRegionGeography>;

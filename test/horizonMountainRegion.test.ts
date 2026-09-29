@@ -11,7 +11,8 @@ import * as THREE from 'three';
 import {createMountainV2Region,MOUNTAIN_V2_OFFSET as O} from '../src/harbour/horizon/regions/mountainV2/index.ts';
 import {MOUNTAIN_V2_FOOTPRINT,toHorizonXYZ} from '../src/harbour/horizon/regions/mountainV2/placement.ts';
 import {groundHeightAt} from '../src/harbour/scene/ground.ts';
-import {MOUNTAIN_ROAD_LINE,EDGE_SOLIDS,DAM_PARTS,MOUNTAIN_PATH_GRAPH} from '../src/harbour/mountain/definition.ts';
+import {MOUNTAIN_ROAD_LINE,EDGE_SOLIDS,DAM_PARTS,MOUNTAIN_PATH_GRAPH,RESERVOIR_BOWL,RESERVOIR_LEVEL_MAX,RIVER} from '../src/harbour/mountain/definition.ts';
+import {placeHorizonRegions} from '../src/harbour/horizon/runtime/index.ts';
 import {SCENE_DRESSING} from '../src/harbour/scene/place.ts';
 import {decodeTerrainAsset} from '../src/harbour/horizon/land/terrain/asset.ts';
 import {sampleTerrain,terrainTriangleVisible} from '../src/harbour/horizon/land/terrain/index.ts';
@@ -80,6 +81,63 @@ describe('the Horizon geography under the region',()=>{
     let worst=0;for(const n of MOUNTAIN_PATH_GRAPH.nodes){const h=H(n.at);if(!region.contains(h[0],h[2]))continue;worst=Math.max(worst,Math.abs(geo.ground(h[0],h[2])-(groundHeightAt(n.at[0],n.at[2])+O.y)));}
     expect(worst).toBeLessThan(1e-9);
     off();expect(geo.ground(b[0],b[2])).toBe(sampleTerrain(field,b[0],b[2]));
+  });
+  it('PR #566 Codex: the rendered water is collision — the reservoir at 86 + 54, the river at its line, the Foot terrace dry',()=>{
+    const geo=createHorizonGeography(field,empty),off=geo.addDynamic(region.provider);
+    const [cx,cz]=RESERVOIR_BOWL.at,rc=[cx+O.x,cz+O.z] as const;
+    expect(region.contains(rc[0],rc[1])).toBe(true);
+    expect(geo.waterLevel(rc[0],rc[1])).toBe(RESERVOIR_LEVEL_MAX+O.y);expect(RESERVOIR_LEVEL_MAX+O.y).toBe(140);
+    expect(geo.waterLevel(rc[0],rc[1],groundHeightAt(cx,cz)+O.y)).toBe(140);                     // a walker's feet on the bowl floor
+    expect(geo.submerged(rc[0],rc[1],groundHeightAt(cx,cz)+O.y)).toBe(true);                    // …stands under the water
+    expect(geo.submerged(rc[0],rc[1],141)).toBe(false);                                          // …a swimmer's feet over it do not
+    // A point on the river between two line vertices in the gorge: the line's own height there.
+    const a=RIVER[6]!,b=RIVER[7]!,m=[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2] as const;
+    expect(region.contains(m[0]+O.x,m[2]+O.z)).toBe(true);
+    expect(geo.waterLevel(m[0]+O.x,m[2]+O.z)).toBeCloseTo(m[1]+O.y,6);
+    expect(geo.waterLevel(m[0]+O.x+6,m[2]+O.z)).toBeNull();                                      // off the river, on the gorge side: dry
+    // The Foot terrace (v2's town island, away from the channel): dry.
+    expect(region.contains(O.x+30,O.z)).toBe(true);expect(geo.waterLevel(O.x+30,O.z)).toBeNull();expect(region.waterLevel(O.x+30,O.z)).toBeNull();
+    off();expect(geo.waterLevel(rc[0],rc[1])).toBeNull();                                         // the baked cuts carry no reservoir
+  });
+  it('PR #566 Codex: decks, solids and ceilings answer only while the region is drawn; ground and water always',()=>{
+    let drawn=false;const geo=createHorizonGeography(field,empty),off=geo.addDynamic(region.providerWhileDrawn(()=>drawn));
+    const s=highestBridge(),b=H(s.at),g=groundHeightAt(s.at[0],s.at[2])+O.y;
+    const parapet=EDGE_SOLIDS.find(e=>/parapet/.test(e.id)&&e.top-e.bottom>.8)!,px=(parapet.a[0]+parapet.b[0])/2+O.x,pz=(parapet.a[1]+parapet.b[1])/2+O.z,py=parapet.top+O.y-1.1;
+    const [cx,cz]=RESERVOIR_BOWL.at;
+    // Not drawn: v2's ground only (never the 5 m bake inside the footprint, so nothing falls through), no deck, no parapet, open sky.
+    expect(geo.ground(b[0],b[2])).toBeCloseTo(g,9);
+    expect(geo.surface(b[0],b[2],b[1]+.1)?.id).toBe('terrain');expect(geo.surface(b[0],b[2],b[1]+.1)?.y).toBeCloseTo(g,9);
+    expect(geo.blocker(px,pz,py)).toBeNull();expect(geo.ceiling(b[0],b[2],g)).toBe(Infinity);
+    expect(geo.waterLevel(cx+O.x,cz+O.z)).toBe(140);
+    // Drawn: the deck, the parapet and the bridge's underside.
+    drawn=true;
+    expect(geo.surface(b[0],b[2],b[1]+.1)?.id).toBe('mountainV2:mountain-road');
+    expect(geo.blocker(px,pz,py)).toBe(`mountainV2:${parapet.id}`);expect(geo.ceiling(b[0],b[2],g)).toBeLessThan(b[1]);
+    off();
+  });
+  it('PR #566 Codex: a region that fails to load leaves the Horizon without it (null), never a rejected mount',async()=>{
+    const assets={world:{...index,regions:[{id:'mountainV2',kind:'placedWorld'}]} as unknown as WorldDefinition,field,cuts:empty};
+    let calls=0;const failing=()=>{calls++;return Promise.reject(new Error('terrain asset 404'));};
+    const warn=console.warn;console.warn=()=>{};
+    try{
+      await expect(placeHorizonRegions(assets,{},failing)).resolves.toBeNull();expect(calls).toBe(1);
+      await expect(placeHorizonRegions(assets,{mountainV2:true},()=>Promise.resolve({createMountainV2Region:()=>{throw new Error('decode');}} as never))).resolves.toBeNull();
+      await expect(placeHorizonRegions(assets,{mountainV2:false},failing)).resolves.toBeNull();expect(calls).toBe(1);   // off: never loaded
+    }finally{console.warn=warn;}
+    const placed=await placeHorizonRegions(assets,{},async()=>await import('../src/harbour/horizon/regions/mountainV2/index.ts'));
+    expect(placed?.region.id).toBe('mountainV2');
+  });
+  it('PR #566 Codex: the runtime registers the drawn-gated provider and holds a walker or rider inside the region until it is drawn',()=>{
+    const runtime=readFileSync('src/harbour/horizon/runtime/index.ts','utf8'),step=runtime.slice(runtime.indexOf('function step(dt:number,now:number){'),runtime.indexOf('function tick(now:number){'));
+    expect(runtime).toMatch(/geography\.addDynamic\(placed\.region\.providerWhileDrawn\(\(\)=>regionVisible\)\)/);
+    expect(runtime).toMatch(/function gateOpen\(x:number,z:number\):boolean\{return chunkGateOpen\(x,z\)&&regionReady\(x,z\);\}/);
+    expect(runtime).toMatch(/function regionReady\(x:number,z:number\):boolean\{return !placed\|\|regionVisible\|\|!placed\.region\.contains\(x,z\);\}/);
+    // The walker: held (resnap) before any movement or airborne branch, re-seated on the deck once drawn; a landing chunk keeps the hold.
+    const hold=step.indexOf('if(!regionReady(body.x,body.z)){resnap=true;regionSettle=true;}');expect(hold).toBeGreaterThan(0);expect(hold).toBeLessThan(step.indexOf('if(bodyHeld()){'));
+    expect(runtime).toMatch(/function reseat\(\)\{\s*\/\/[^\n]*\n\s*\{const at=holdPoint\(\);if\(!regionReady\(at\[0\],at\[1\]\)\)\{resnap=true;return;\}\}/);
+    // A rider (board, bicycle, flight) waits; a cable ride runs on its line.
+    expect(runtime).toMatch(/hold\.steps\(mode\)&&riderReady\(\)\)ride\(dt,now,accept\)/);
+    expect(runtime).toMatch(/function riderReady\(\):boolean\{const m=registry\.mode\(\);return m==='gondola'\|\|m==='funicular'\|\|regionReady\(body\.x,body\.z\);\}/);
   });
   it('hides exactly the terrain cells whose centre is inside the region (split into `under` tiles)',()=>{
     const id='crown',st=field.step;

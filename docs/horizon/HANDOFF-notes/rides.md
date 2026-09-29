@@ -95,7 +95,10 @@ interface CableTransit { setTransit(cabin: {at, yaw, pitch} | null, kind): void 
 1. After the region mounts: `const off = connectCableRegion(region, mounted /* has setTransit */, () => w / h)`; call
    `off()` on dispose. Without it the rides still work on `fallbackCableRegion()`, but no cabin moves with the rider.
 2. Status line while riding a cable mode: `cableRidingStatus(kind)` (the stage shows the board's `RIDING_STATUS` today).
-3. HUD buttons: `mountCableHud(host, {ride: () => asCableRide(runtime.registry.active()), lines: () => region.rides.lines,
+3. **Done (PR #566 Codex)**: the stage renders Skip (E) and Sit (Space; `aria-pressed`) as real 44 px buttons in the cruiser
+   group's three dressings while riding the gondola or the funicular (`runtime.cableControls()` → `cableControls`; clicks go
+   through `runtime.moverAction('skip'|'seat')` to the active controller, never while the ride is paused). `mountCableHud`
+   stays unused. Original note: HUD buttons: `mountCableHud(host, {ride: () => asCableRide(runtime.registry.active()), lines: () => region.rides.lines,
    focus: () => stage.focus()})` beside the offer row (HorizonStage.tsx), `update()` on the stage's tick. Buttons: "Skip to
    Summit Commons (E)", "Sit down / Stand up (Space)" (`aria-pressed`, `aria-keyshortcuts`); the live region announces
    boarding and arrival.

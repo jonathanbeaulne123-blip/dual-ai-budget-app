@@ -20,6 +20,9 @@ export interface DynamicGeography {
   * and `ground` / the camera's terrain test read the provider's `ground` instead. Static solids still count. */
  owns?(x:number,z:number):boolean;
  ground?(x:number,z:number):number;
+ /** PR #566 Codex: the owner's own water surface at (x, z) (a placed region's reservoir and river), null when dry. Read only
+  * where the provider `owns` the point; the baked `cuts.waters` still answer when it returns null. */
+ waterLevel?(x:number,z:number):number|null;
 }
 const CELL=24;
 const key=(x:number,z:number)=>`${Math.floor(x/CELL)}:${Math.floor(z/CELL)}`;
@@ -125,7 +128,10 @@ export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
   const blocked=(x:number,z:number,y:number,radius=.3)=>blocker(x,z,y,radius)!==null;
   /** Hulls query exposed water. A pedestrian supplies feet height so the Deep is
    * wet without treating a lake in an overhead room as water on a dry floor. */
+  /** PR #566 Codex: the owning provider's water at (x, z), if it draws any there. */
+  function ownedWater(x:number,z:number):number|null{return owner(x,z)?.waterLevel?.(x,z)??null;}
   function waterLevel(x:number,z:number,feet?:number):number|null {
+    const own=ownedWater(x,z);if(own!==null)return own;   // PR #566 Codex: a placed region's rendered water is its collision
     let level:number|null=null,underground=false;
     for(const w of cuts.waters){
       if(w.kind==='dry')continue;
@@ -141,6 +147,7 @@ export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
   function submerged(x:number,z:number,feet:number){
     // Visible water owns the walking boundary, including high-altitude lakes and underground water.
     // An overhead water surface in a separate room must not block its dry floor.
+    const own=ownedWater(x,z);if(own!==null&&own-feet>.35)return true;   // PR #566 Codex: under a placed region's water
     return cuts.waters.some(w=>{
       if(w.kind==='dry'||w.underground&&feet>w.level+1)return false;
       const level=waterHeightAt(w,x,z);

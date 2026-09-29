@@ -5,6 +5,8 @@ on:
     paths:
       - 'scripts/horizon/**'
       - 'src/harbour/horizon/**'
+      # PR #566 Codex: Mountain v2's sources feed land/mountainV2/v2-data.json (dump-mountain-v2.mjs --check).
+      - 'src/harbour/mountain/**'
       - 'public/horizon/**'
       - 'test/horizonBakeArtifacts.test.ts'
       - 'package.json'
@@ -15,6 +17,8 @@ on:
     paths:
       - 'scripts/horizon/**'
       - 'src/harbour/horizon/**'
+      # PR #566 Codex: Mountain v2's sources feed land/mountainV2/v2-data.json (dump-mountain-v2.mjs --check).
+      - 'src/harbour/mountain/**'
       - 'public/horizon/**'
       - 'test/horizonBakeArtifacts.test.ts'
       - 'package.json'
@@ -38,4 +42,5 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec vitest run test/horizonBakeArtifacts.test.ts --maxWorkers=1
+      # PR #566 Codex: horizon:check runs the terrain bake check and the Mountain v2 data check (dump-mountain-v2.mjs --check).
       - run: pnpm horizon:check

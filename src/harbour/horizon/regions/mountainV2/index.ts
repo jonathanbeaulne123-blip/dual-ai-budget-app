@@ -43,8 +43,13 @@ export interface MountainV2Region {
   blocked(hx:number,hy:number,hz:number,r:number):boolean;
   /** The lowest deck underside above hy; null when open sky (or outside). */
   ceiling(hx:number,hy:number,hz:number):number|null;
-  /** The Horizon `DynamicGeography` (plus `owns` / `ground`): register with `geography.addDynamic`. */
+  /** The Horizon `DynamicGeography` (plus `owns` / `ground` / `waterLevel`), always live (tests, tools). */
   provider:ReturnType<typeof createRegionGeography>['provider'];
+  /** PR #566 Codex: the provider the runtime registers with `geography.addDynamic`: decks, solids and ceilings only while
+   *  `drawn()` (the region's scene is visible); ownership, ground and water always. */
+  providerWhileDrawn(drawn:()=>boolean):ReturnType<typeof createRegionGeography>['provider'];
+  /** PR #566 Codex: v2's reservoir and river surface at a Horizon point (+ offset y); null when dry or outside. */
+  waterLevel(hx:number,hz:number):number|null;
   /** v2's walk graph in Horizon space, for `withExtraGraph` / `buildPathGraph(…, extraGraph)`. */
   pathGraph():ExtraPathGraph;
   rides:ReturnType<typeof regionRides>;
@@ -62,7 +67,7 @@ export function createMountainV2Region(options:MountainV2RegionOptions={}):Mount
     contains:geo.contains,hidesTerrainCell:geo.contains,groundAt:geo.groundAt,
     surface:(hx,hy,hz,step)=>geo.surface(hx,hy,hz,step),
     blocked:(hx,hy,hz,r)=>geo.blocked(hx,hy,hz,r),
-    ceiling:geo.ceiling,provider:geo.provider,
+    ceiling:geo.ceiling,provider:geo.provider,providerWhileDrawn:geo.whileDrawn,waterLevel:geo.waterLevel,
     pathGraph:regionPathGraph,rides,
     mount:(scene,tier,dressing,o)=>finishBuild(mountSteps(scene,tier,dressing,o)),
     mountSteps,
