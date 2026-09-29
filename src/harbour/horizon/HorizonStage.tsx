@@ -29,7 +29,9 @@ export type HorizonStageProps={homePlotId?:string;homeLayout?:HomeLayout;homeDis
   /** The world could not open (assets, chunk or runtime import): the host swaps in a working world. */
   onFailed?:(message:string)=>void;
   /** The mover state as the stage polls it (riding, airborne…), for the shell's own controls. */
-  onMover?:(mover:HorizonMoverState|null)=>void};
+  onMover?:(mover:HorizonMoverState|null)=>void;
+  /** The old skate's HUD frames (the shell renders SkateHUD and saves progress). */
+  onSkate?:HorizonOptions['onSkate']};
 /** Reduced motion is live: the app's prop (useComfort), the system setting or Hearth's own comfort choice (`data-motion`, written by `theme/comfort.ts`). */
 const readReducedMotion=(props?:Pick<HorizonStageProps,'reducedMotion'>)=>props?.reducedMotion===true||appReducedMotion();
 /** Calm view is the comfort module's Quiet choice: the app's prop, else `data-quiet` as applied by `applyComfort`. */
@@ -60,7 +62,7 @@ export default function HorizonStage(props:HorizonStageProps){
   const [boatActions,setBoatActions]=useState<FleetAction[]>([]),[fleetState,setFleetState]=useState<ReturnType<HorizonRuntime['fleetState']>|null>(null);
   const [tier]=useState<'full'|'lite'>(()=>new URLSearchParams(location.search).get('tier')==='lite'||matchMedia('(max-width: 600px)').matches?'lite':'full');
   useEffect(()=>{const controller=new AbortController();let current:HorizonRuntime|null=null,unregister:(()=>void)|null=null;
-    const options:HorizonOptions={homePlotId:latest.current.homePlotId,homeLayout:latest.current.homeLayout,onHomeBook:()=>latest.current.onHomeBook?.(),onHomeWorkspace:t=>latest.current.onHomeWorkspace?.(t),tier,cruiserSkin:skin,fleetStorageKey:latest.current.fleetStorageKey,kitchenStorageKey:latest.current.kitchenStorageKey,theme:latest.current.theme,hideBuildings:HARBOUR_DEV&&new URLSearchParams(location.search).get('hideBuildings')==='1',signal:controller.signal,reducedMotion:readReducedMotion(latest.current),calm:readCalm(latest.current),onDoor:(h,b)=>latest.current.onDoor?.(h,b),onStatus:setStatus,initialBody:latest.current.initialBody,partner:()=>latest.current.partner??null};
+    const options:HorizonOptions={homePlotId:latest.current.homePlotId,homeLayout:latest.current.homeLayout,onHomeBook:()=>latest.current.onHomeBook?.(),onHomeWorkspace:t=>latest.current.onHomeWorkspace?.(t),tier,cruiserSkin:skin,fleetStorageKey:latest.current.fleetStorageKey,kitchenStorageKey:latest.current.kitchenStorageKey,theme:latest.current.theme,hideBuildings:HARBOUR_DEV&&new URLSearchParams(location.search).get('hideBuildings')==='1',signal:controller.signal,reducedMotion:readReducedMotion(latest.current),calm:readCalm(latest.current),onDoor:(h,b)=>latest.current.onDoor?.(h,b),onStatus:setStatus,initialBody:latest.current.initialBody,partner:()=>latest.current.partner??null,onSkate:frame=>latest.current.onSkate?.(frame)};
     // The movers (M6: the glider and the parachute) register on the runtime as soon as it exists.
     Promise.all([import('../scene/worldMount.ts').then(m=>m.mountHorizonWorld(stage.current!,options)),import('./movers/glider/index.ts')]).then(([world,gliders])=>{
       if(controller.signal.aborted){world.dispose();return;}current=world;unregister=gliders.registerGliderModes(world);runtime.current=world;setMode(world.mode());setPage(world.shotId());setReady(true);setStatus('Drag to look. Walk with W A S D, or use the pads. Space jumps; E opens a nearby door.');if(latest.current.shell&&world.mode()!=='walk'){world.setMode('walk');setMode('walk');}latest.current.onRuntime?.(world);latest.current.onReady?.();

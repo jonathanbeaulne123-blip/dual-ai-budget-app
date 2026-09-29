@@ -62,6 +62,15 @@ describe("the old shell's chrome around the Horizon (static)", () => {
     expect(harbour).toMatch(/class HorizonBoundary extends Component/);
   });
 
+  it("the old skate: SkateHUD on Mountain v2's island, B boards, progress saved under the old key", () => {
+    expect(shell).toMatch(/\(skating\|\|canSkate\)&&<SkateHUD model=\{skating\}/);
+    expect(shell).toMatch(/if\(k==='b'\)\{if\(board\?\.active\(\)\)leaveSkating\(\);else if\(world\.canSkate\(\)\)startSkating\(\)/);
+    expect(shell).toMatch(/skateProgressKey\(household\.environment,household\.householdId,memberId\)/);
+    const runtime = read("src/harbour/horizon/runtime/index.ts");
+    expect(runtime).toMatch(/const skate:NativeSkate\|null=placed\?createNativeSkate\(/);
+    expect(runtime).toMatch(/if\(skating\(\)\)skateStep\(dt\);else if\(registry\.active\(\)\)/);
+  });
+
   it("the Horizon figure plays the emote row", () => {
     const runtime = read("src/harbour/horizon/runtime/index.ts");
     expect(runtime).toMatch(/emote\(id:EmoteId\|null\)\{/);

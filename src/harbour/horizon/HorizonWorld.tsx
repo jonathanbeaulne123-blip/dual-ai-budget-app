@@ -18,6 +18,12 @@ import {HARBOUR_PLACE_NAMES,harbourPlaceFor} from '../flag.ts';
 import {memberDisplayName} from '../../softPresence.ts';
 import {type WorldPresenceShare} from '../../softPresenceWorld.ts';
 import type {HorizonMoverState} from './runtime/index.ts';
+import {SkateHUD} from '../skate/SkateHUD.tsx';
+import {readSkateProgress,saveSkateProgress,skateProgressKey,type SkateSettings} from '../skate/session.ts';
+import {SKATE_TRICK_BOOK,skateGesturePath} from '../skate/driver.ts';
+import {createSkateAudio,type SkateAudio} from '../skate/audio.ts';
+import type {SkateHudModel,TouchZone} from '../skate/hud/model.ts';
+import type {NativeSkateFrame} from './skate/nativeSkate.ts';
 import type {HarbourWorldProps} from '../HarbourWorld.tsx';
 import HorizonStage from './HorizonStage.tsx';
 import type {HorizonRuntime} from './runtime/index.ts';
@@ -145,22 +151,63 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
   useEffect(()=>{if(lastHere.current===here)return;lastHere.current=here;if(!toolOpen)walkToPlace(here);},[here,toolOpen,walkToPlace]);
   /** "Step in" on a panel: through that host's door, which opens its tool as a Horizon door always has. */
   function stepIn(place:string){const world=runtime.current,host=world&&horizonHostFor(world.world,place);if(host&&world?.enterDoor(host.id))return;if(Object.hasOwn(VILLAGE_ADDRESS,place))walkToPlace(place as HarbourPlaceId);}
+  // ── The old Tideline skate on Mountain v2's town island (PR B) ── the same HUD, keys, saves and progress key.
+  const [skating,setSkating]=useState<SkateHudModel|null>(null),[skateSaveFailed,setSkateSaveFailed]=useState(false),[canSkate,setCanSkate]=useState(false);
+  const skateKey=skateProgressKey(household.environment,household.householdId,memberId),skateKeyRef=useRef(skateKey);skateKeyRef.current=skateKey;
+  const skateSaved=useRef(''),skateAudio=useRef<SkateAudio|null>(null);
+  const onSkate=useCallback((next:NativeSkateFrame|null)=>{
+    setSkating(next?.model??null);
+    if(next){const serialized=JSON.stringify(next.progress);if(serialized!==skateSaved.current){skateSaved.current=serialized;let saved=false;try{saved=saveSkateProgress(localStorage,skateKeyRef.current,next.progress);}catch{saved=false;}setSkateSaveFailed(!saved);}}
+  },[]);
+  const dropSkateAudio=()=>{runtime.current?.skate()?.setAudio(null);skateAudio.current?.dispose();skateAudio.current=null;};
+  /** Only inside a click or key (an AudioContext needs a gesture). */
+  const wantSkateAudio=(on:boolean)=>{if(!on){dropSkateAudio();return;}if(!skateAudio.current){try{skateAudio.current=createSkateAudio();}catch{skateAudio.current=null;}}runtime.current?.skate()?.setAudio(skateAudio.current);};
+  useEffect(()=>()=>{skateAudio.current?.dispose();skateAudio.current=null;},[]);
+  useEffect(()=>{runtime.current?.stopSkate();dropSkateAudio();setSkating(null);skateSaved.current='';setSkateSaveFailed(false);},[skateKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  function startSkating(){
+    let progress;try{progress=readSkateProgress(localStorage,skateKey);}catch{progress=undefined;}
+    if(runtime.current?.startSkate(progress)&&progress?.settings.sound)wantSkateAudio(true);
+    setEmotesOpen(false);focusStage();
+  }
+  function leaveSkating(){dropSkateAudio();runtime.current?.stopSkate();setSkating(null);focusStage();}
+  const skateSettings=(patch:Partial<SkateSettings>)=>{runtime.current?.skate()?.settings(patch);if(patch.sound!==undefined)wantSkateAudio(patch.sound);};
+  const skateZone=(zone:TouchZone,event:React.PointerEvent<HTMLElement>)=>{
+    const input=runtime.current?.skate()?.input();if(!input)return;const e=event.nativeEvent;
+    if(event.type==='pointerdown')input.touchStart(zone,e);else if(event.type==='pointermove')input.touchMove(e);else if(event.type==='pointerup')input.touchEnd(e);else input.touchCancel(e);
+  };
+  // Where the board can come out: polled, like the Horizon's own offers.
+  useEffect(()=>{if(!worldReady)return;const id=window.setInterval(()=>setCanSkate(runtime.current?.canSkate()??false),400);return()=>window.clearInterval(id);},[worldReady]);
+  // B boards and leaves (as on the Mountain); P and Escape pause the ride and open the book.
+  useEffect(()=>{
+    const key=(event:KeyboardEvent)=>{
+      const k=event.key.toLowerCase(),world=runtime.current,stage=document.querySelector('.horizon-stage');
+      if(!world||event.repeat||!stage||document.activeElement!==stage)return;
+      const board=world.skate();
+      if(k==='b'){if(board?.active())leaveSkating();else if(world.canSkate())startSkating();else return;event.preventDefault();return;}
+      if(board?.active()&&(k==='p'||k==='escape')){board.pause(!board.paused());event.preventDefault();}
+    };
+    window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);
+  });
   function focusStage(){(document.querySelector('.horizon-stage') as HTMLElement|null)?.focus({preventScroll:true});}
   function doEmote(id:EmoteId){runtime.current?.emote(id);setEmotesOpen(false);focusStage();}
   const lite=matchMedia('(max-width: 600px)').matches;
   const dock=props.dock&&!toolOpen?<Dock {...props.dock} calm={comfort.quiet} lite={lite} night={glassNight} cameraMoving={false}/>:undefined;
   const presence=<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={peer.walk} walkName={peer.walk?partnerName:null} worldUnavailable={peer.unavailable} soft={softPeer} here={here} placeName={HARBOUR_PLACE_NAMES[here]} softPresenceOptedOut={props.presence?.optedOut===true} onUnhide={props.onUnhide} hasPartner={Boolean(softPeer||props.partnerName||peer.memberId)}/>;
-  return <section data-harbour-space={space} data-harbour-world="horizon" className={`harbour-world harbour-world--${theme} harbour-world--horizon${toolOpen?' has-open-object':''}`} data-world-status={worldReady?'ready':'loading'} data-world-scope={scope} data-harbour-place={here} data-harbour-tier={lite?'lite':'full'} data-horizon-riding={riding?'':undefined} aria-label={HARBOUR_PLACE_NAMES[here]}>
+  return <section data-harbour-space={space} data-harbour-world="horizon" className={`harbour-world harbour-world--${theme} harbour-world--horizon${skating?' is-skating':''}${toolOpen?' has-open-object':''}`} data-world-status={worldReady?'ready':'loading'} data-world-scope={scope} data-harbour-place={here} data-harbour-tier={lite?'lite':'full'} data-horizon-riding={riding?'':undefined} aria-label={HARBOUR_PLACE_NAMES[here]}>
     <div className="harbour-world__stage">
-      <HorizonStage shell onFailed={props.onFailed} onMover={setMover} homePlotId={homeBook?.plotId} homeLayout={homeBook?.layout??undefined} homeDisplays={homeBook?.displays} visitHome={homeBook?.pendingVisit} onHomeVisited={homeBook?.acknowledgeVisit} onHomeBook={homeBook?.open} onHomeWorkspace={target=>{const body=runtime.current?.savedBody();if(body){saveHouseReturnOnDevice(identity,route,body,'horizon');saveHouseReturnOnDevice(identity,route,body);}props.onOpen(target);}} key={identityKey} fleetStorageKey={`hearth:horizon-fleet:v1:${identityKey}`} kitchenStorageKey={`hearth:yacht-kitchen:v1:${identityKey}`} cruiserPreference={cruiserPreferenceKey(household.environment,household.householdId,memberId)} theme={theme} onDoor={onDoor} initialBody={initialBody} onReady={()=>{setWorldReady(true);arriveForRequest();props.onWorldReady?.();}} onRuntime={value=>{if(!value&&runtime.current)saveHouseReturnOnDevice(identity,route,runtime.current.savedBody(),'horizon');runtime.current=value;value?.setAmbience?.(audio.current);{const v=basinView.current(basin);value?.setMountainDamWater?.(v.level,v.reserveLevel);}value?.setHomeBotanical?.(appearance.saved.queen??DEFAULT_QUEEN_STYLE,botanical);}} sound={{on:soundOn,toggle:toggleSound}} partner={peer.walk} calm={comfort.quiet} reducedMotion={comfort.motion==='reduced'} paused={homeBook?.editing===true||Boolean(route.surface&&route.surface!=='queen')} />
+      <HorizonStage shell onFailed={props.onFailed} onMover={setMover} onSkate={onSkate} homePlotId={homeBook?.plotId} homeLayout={homeBook?.layout??undefined} homeDisplays={homeBook?.displays} visitHome={homeBook?.pendingVisit} onHomeVisited={homeBook?.acknowledgeVisit} onHomeBook={homeBook?.open} onHomeWorkspace={target=>{const body=runtime.current?.savedBody();if(body){saveHouseReturnOnDevice(identity,route,body,'horizon');saveHouseReturnOnDevice(identity,route,body);}props.onOpen(target);}} key={identityKey} fleetStorageKey={`hearth:horizon-fleet:v1:${identityKey}`} kitchenStorageKey={`hearth:yacht-kitchen:v1:${identityKey}`} cruiserPreference={cruiserPreferenceKey(household.environment,household.householdId,memberId)} theme={theme} onDoor={onDoor} initialBody={initialBody} onReady={()=>{setWorldReady(true);arriveForRequest();props.onWorldReady?.();}} onRuntime={value=>{if(!value&&runtime.current)saveHouseReturnOnDevice(identity,route,runtime.current.savedBody(),'horizon');runtime.current=value;value?.setAmbience?.(audio.current);{const v=basinView.current(basin);value?.setMountainDamWater?.(v.level,v.reserveLevel);}value?.setHomeBotanical?.(appearance.saved.queen??DEFAULT_QUEEN_STYLE,botanical);}} sound={{on:soundOn,toggle:toggleSound}} partner={peer.walk} calm={comfort.quiet} reducedMotion={comfort.motion==='reduced'} paused={homeBook?.editing===true||Boolean(route.surface&&route.surface!=='queen')} />
       {!worldReady&&!toolOpen&&<HarbourFlat place={here} reading={reading} status="loading" theme={theme} overlay/>}
       {!toolOpen&&<MineRibbon space={space}/>}
       {worldReady&&!toolOpen&&<VillageHUD memberId={memberId} theme={theme} calm={comfort.quiet} lite={lite} night={glassNight} alwaysShowLabels={comfort.labels} toolsOpen={props.toolsOpen} glassBetween={dock} fab={props.fab} onQuickSheet={props.onQuickSheet} place={here} travelling={travelTo} onVisit={place=>{walkToPlace(place);}} presence={presence}/>}
       {worldReady&&!toolOpen&&props.panel?.host&&<HostPanel key={props.panel.host} host={props.panel.host} reading={reading} extras={props.panel.extras} theme={theme} onClose={props.panel.onClose} onOpen={props.panel.onOpen} onRecord={props.panel.onRecord} onMarkPaid={props.panel.onMarkPaid} onTalk={props.panel.onTalk} returnFocusTo={props.panel.returnFocusTo}
         onVisit={()=>{const host=props.panel?.host;if(host&&host!=='hercules'&&Object.hasOwn(VILLAGE_ADDRESS,host))walkToPlace(host as HarbourPlaceId);props.panel?.onClose();}}
         onStepIn={host=>{if(host!=='hercules')stepIn(host);props.panel?.onClose();}}/>}
-      {!route.surface&&<div className="harbour-world__home-book" style={{position:'absolute',right:18,top:72,zIndex:12}}><HomeBookButton/></div>}
-      {worldReady&&!toolOpen&&!riding&&<div className="harbour-moves harbour-moves--horizon" data-harbour-moves={emotesOpen?'open':'shut'}>
+      {worldReady&&!toolOpen&&(skating||canSkate)&&<SkateHUD model={skating} onStart={startSkating} onWalk={leaveSkating} onOpenFund={()=>{leaveSkating();props.onOpen('fund');}}
+        onReplay={action=>runtime.current?.skate()?.replay(action)} onSettings={skateSettings} onCommand={command=>runtime.current?.skate()?.command(command)} onZonePointer={skateZone}
+        gesturePath={skateGesturePath} trickBook={SKATE_TRICK_BOOK} onPause={on=>runtime.current?.skate()?.pause(on)} onRoute={id=>runtime.current?.skate()?.route(id)}
+        onSpot={id=>runtime.current?.skate()?.spot(id)} onDeck={id=>runtime.current?.skate()?.deck(id)} presence={presence} onFocus={focusStage} saveFailed={skateSaveFailed}/>}
+      {!route.surface&&!skating&&<div className="harbour-world__home-book" style={{position:'absolute',right:18,top:72,zIndex:12}}><HomeBookButton/></div>}
+      {worldReady&&!toolOpen&&!riding&&!skating&&<div className="harbour-moves harbour-moves--horizon" data-harbour-moves={emotesOpen?'open':'shut'}>
         {emotesOpen&&<div className="harbour-moves__emotes" role="group" aria-label="Emotes">
           {EMOTE_IDS.map((id,i)=><button key={id} type="button" className="harbour-moves__emote" data-emote={id} onPointerDown={event=>event.stopPropagation()} onClick={()=>doEmote(id)}>{EMOTE_FACES[id]}<small>{i+1}</small></button>)}
         </div>}
