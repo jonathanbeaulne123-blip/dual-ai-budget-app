@@ -50,7 +50,7 @@ describe("the old shell's chrome around the Horizon (static)", () => {
     expect(shell).toMatch(/props\.onNavigateLocation\(\{\.\.\.routeRef\.current,\.\.\.VILLAGE_ADDRESS\[travelTo\],surface:undefined/);
     expect(shell).toMatch(/if\(riding\.attached\|\|riding\.airborne\)\{setTravelTo\(null\);setNotice\(/);
     const runtime = read("src/harbour/horizon/runtime/index.ts");
-    expect(runtime).toMatch(/walkTo\(p:XYZ\)\{schedule\(\);if\(registry\.active\(\)\)return null;/);
+    expect(runtime).toMatch(/walkTo\(p:XYZ\)\{schedule\(\);if\(registry\.active\(\)\|\|skating\(\)\|\|monorail\?\.state\(\)\)return null;/);
     expect(runtime).toMatch(/function startRide\(\)\{schedule\(\);emote=null;/);
   });
 
@@ -71,6 +71,22 @@ describe("the old shell's chrome around the Horizon (static)", () => {
     expect(stage).toMatch(/latest\.current\.onFailed\?\.\(message\)/);
     expect(harbour).toMatch(/if\(edition==='flat'\|\|!canDraw\|\|failed\)return <MountainHarbourWorld/);
     expect(harbour).toMatch(/class HorizonBoundary extends Component/);
+  });
+
+  it("the old skate: SkateHUD on Mountain v2's island, B boards, progress saved under the old key", () => {
+    expect(shell).toMatch(/\(skating\|\|canSkate\)&&<SkateHUD model=\{skating\}/);
+    expect(shell).toMatch(/if\(k==='b'\)\{if\(board\?\.active\(\)\)leaveSkating\(\);else if\(world\.canSkate\(\)\)startSkating\(\)/);
+    expect(shell).toMatch(/skateProgressKey\(household\.environment,household\.householdId,memberId\)/);
+    const runtime = read("src/harbour/horizon/runtime/index.ts");
+    expect(runtime).toMatch(/const skate:NativeSkate\|null=placed\?createNativeSkate\(/);
+    expect(runtime).toMatch(/else if\(skating\(\)\)skateStep\(dt\);else if\(registry\.active\(\)\)/);
+    // #571 review: travel steps off the board; the camera tests what is drawn; keys reset on blur; the rider shows in first person.
+    expect(shell).toMatch(/if\(world\.skate\(\)\?\.active\(\)\)\{world\.skate\(\)\?\.setAudio\(null\);world\.stopSkate\(\)/);
+    expect(runtime).toMatch(/blocked:\(x,y,z,r\)=>placed\.region\.blocked\(x,y,z,r\)/);
+    expect(runtime).toMatch(/function clear\(\)\{skate\?\.controls\.input\(\)\?\.reset\(\);/);
+    expect(runtime).toMatch(/figure\.group\.visible=mode==='walk'&&\(!firstPerson\|\|skating\(\)\)/);
+    expect(read("src/harbour/horizon/HorizonStage.tsx")).toMatch(/aria-label=\{props\.skating\?SKATE_STAGE_WORDS:/);
+    expect(read("src/harbour/horizon/skate/nativeSkate.ts")).not.toMatch(/worldCollisionAt/);
   });
 
   it("the Horizon figure plays the emote row", () => {

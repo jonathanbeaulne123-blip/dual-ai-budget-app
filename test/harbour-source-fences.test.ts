@@ -123,7 +123,8 @@ describe("src/harbour source fences", () => {
     // Edition preferences stay in the navigation seam; terrain fetch stays in its async asset loader.
     // The merged cruiser/fleet/yacht kitchen also persist local cosmetic and game state (no ledger writes).
     const allowed = new Set(["assets/loadGlb.ts", "court/queenPlace.ts", "scene/quality.ts", "nav/QuickSheet.tsx", "nav/arrival.ts", "nav/motionEdition.ts", "HarbourWorld.tsx", "desk/flip.ts", "mountain/terrainAsset.ts", "bubbles/usage.ts"]);
-    const localGameplayStorage=new Set(["horizon/HorizonStage.tsx", "horizon/runtime/index.ts", "horizon/kitchen/storage.ts"]);
+    // The Horizon shell saves the old skate's device-local progress under the same key HarbourWorld.tsx does (no ledger writes).
+    const localGameplayStorage=new Set(["horizon/HorizonStage.tsx", "horizon/runtime/index.ts", "horizon/kitchen/storage.ts", "horizon/HorizonWorld.tsx"]);
     const offences: string[] = [];
     for (const file of files) {
       const name = relative(harbour, file).replace(/\\/g, "/");

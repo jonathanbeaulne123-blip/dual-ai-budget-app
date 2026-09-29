@@ -1729,3 +1729,33 @@ PR A:
 - A Horizon that cannot open (asset, chunk, runtime import or render) hands the harbour back to the old world for that visit (`HorizonEdition` + `HorizonBoundary`), fixing PR #569's review finding P2 (stranded shell).
 
 Risk **High** (the default world's chrome for every member). Budget delta (5): **+1**: the dock and host panels return to the everyday world; no ledger, command, continuity, Auth/RLS or Hercules payload change (the shell only reads `useHarbourReading`, as the Mountain does). Engagement delta (3): **+2**: the familiar shell over the new land, movers kept. Not yet in the shell: the Mountain guide (tour, monorail, race: Mountain-only), the character picker, arranging rooms, the Desk switch inside the world, and DOM twins over buildings (the Horizon has no anchor projection yet).
+
+### 2026-09-29 — The old Tideline skate on the Horizon (PR B of three)
+
+Jonathan chose "the old Mountain skate", not the Horizon's board mover. Mountain v2 stands on the Horizon as a pure translation (`MOUNTAIN_V2_OFFSET` = 1308, 54, 764), and its town island's ground is the Mountain's own ground raised by the offset. So the old skate runs **unchanged in native Mountain space** (`horizon/skate/nativeSkate.ts`): its sim, field, park meshes, spots, routes, the mountain race, tricks, decks and saved progress. Only the edges translate: the Horizon body follows the ride plus the offset, and the chase camera is offset the same way.
+
+- The board comes out on Mountain v2's town island (native radius 64, the region's ground), where the Tideline park now stands again. Elsewhere on the Horizon the board mover and its skate lines S1–S4 remain.
+- The shell renders the old `SkateHUD` ("Skate the island · B", Tideline Skate Club); B boards and leaves, P/Escape pause; progress saves under the same `skateProgressKey` as the Mountain, so existing bests, decks and settings carry over.
+- The runtime steps the skate in place of walking, gives it the camera, routes keys to its input, and hides threshold offers while riding.
+- No island obstacles are passed (the Mountain's village buildings are not drawn on the Horizon); the park's own solids and dressing still collide. The race start/finish shots are not ported (the chase camera covers the race).
+- Source fence: `horizon/HorizonWorld.tsx` joins the local gameplay-storage list (skate progress; the same as `HarbourWorld.tsx`).
+
+Risk **Medium-High** (world runtime, input routing). Budget delta (5): **0**: no money path. Engagement delta (3): **+2**: the old skate returns inside the new world.
+
+### 2026-09-29 — Horizon doors into the old 3D rooms (PR C of three)
+
+Outdoors is the Horizon; indoors is the old world's room with its old shell. `harbourShellFor` (HarbourWorld.tsx) picks the shell per route: the square, the island and the campfire are the Horizon whenever it is chosen; the bank (with the Queen), Loft, Cellar, Kitchen, Atlas, Library, Glasshouse, Kiln, Cottage and Boathouse mount the old world's 3D room. A Home Book visit and an unspent Journey Board "Enter Horizon here" still force the Horizon; a spent one no longer holds a room hostage.
+
+- A Horizon door now walks you into the room (route without a surface) instead of opening a flat tool; tools open from the room's own objects, as they always did. The door saves the Horizon return body, so walking out or choosing "← The square" brings the Horizon back at that door.
+- "← The square" stands above the dock (`village.css`); it had been covered by the dock card since the dock arrived, and is now the way back to the Horizon.
+- Known cost: the old world still loads its island behind a room (it keeps the island standing for placed rooms). Not visible from inside; worth trimming later.
+
+Risk **Medium-High** (world routing). Budget delta (5): **0**: rooms read the books exactly as before; no money path changes. Engagement delta (3): **+2**: the old rooms are back behind Horizon doors.
+
+### 2026-09-29 — Complete the old shell's Horizon migration locally
+
+Jonathan asked for the old app to function through the Horizon world with the new map and its vehicles. This integration starts from current `main` after PR A and carries Claude's PR B (old Tideline skate) and PR C (old 3D rooms) onto the same branch. The Horizon remains the outdoor map; room doors use the old room scenes and tools. Existing Horizon movers and fleet remain on their own native boarding places.
+
+The shell now provides the old member-scoped Mine marks at projected Horizon host doors, keyboard-accessible host buttons, a Step in guide for actual Horizon views and travel, the original saved character choice, and the original Mountain monorail clock and carriage on Mountain v2's translated track. The guide can start the old downhill race only where the old skate can board. The cruiser style selector remains available while riding. The global Simple View and Journey routes continue to use their existing App controls; this work does not add another financial path. All money actions still open their established tools and remain behind their own review and Final Confirm.
+
+Risk **High** (default-world navigation, runtime and input). Budget delta (5): **0** — the Mine layer reads the current member's existing model and opens tools; no accounting, ledger, Auth, sync, schema or command writer changes. Engagement delta (3): **+2** — familiar shell access, skate, rooms, train and Horizon movers in one world. The monorail is a local world ride; it does not save a train journey to the books or cloud. Its initial boarding may select any listed station, as the old guide did. The old Mountain's small environmental moments and race framing art remain separate from this shell; the old race simulation and HUD are present. Browser, phone and authenticated cross-device acceptance are still required before claiming exact parity.

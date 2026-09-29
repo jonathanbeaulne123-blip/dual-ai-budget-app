@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { HARBOUR_DEV, horizonEnabled } from "../src/harbour/flag.ts";
+import { harbourShellFor } from "../src/harbour/HarbourWorld.tsx";
 import { defaultHarbourWorld, harbourWorldSearch, readHarbourWorld, resetHarbourWorldPreference, setHarbourWorld } from "../src/harbour/harbourWorld.ts";
 
 describe("harbourWorldSearch (pure)", () => {
@@ -80,7 +81,8 @@ describe("D15 live switch", () => {
     expect(flag).toMatch(/HORIZON_LIVE = HARBOUR_ENABLED && import\.meta\.env\.VITE_HEARTH_HORIZON === "1"/);
     expect(flag).toMatch(/HORIZON_AVAILABLE = HARBOUR_DEV \|\| HORIZON_LIVE/);
     expect(readFileSync(join(root, "src/harbour/scene/worldMount.ts"), "utf8")).toMatch(/if\(!HORIZON_AVAILABLE\)throw/);
-    expect(readFileSync(join(root, "src/harbour/HarbourWorld.tsx"), "utf8")).toMatch(/return HORIZON_AVAILABLE && \(homeBook\?\.visitRequested/);
+    expect(readFileSync(join(root, "src/harbour/HarbourWorld.tsx"), "utf8")).toMatch(/harbourShellFor\(\{available:HORIZON_AVAILABLE,/);
+    expect(harbourShellFor({ available: false, place: "court", world: "horizon", visit: true, request: { arrived: false } })).toBe("mountain");
     const board = readFileSync(join(root, "src/journey/ui/JourneyBoardView.tsx"), "utf8");
     expect(board).toMatch(/const canEnterHorizon = live && HORIZON_AVAILABLE/);
     expect(board).not.toMatch(/horizonLocation=\{live \?/);
@@ -144,7 +146,16 @@ describe("full-App wiring (static)", () => {
 
   it("HarbourWorld uses the reactive world selector; Home Book visit still forces Horizon", () => {
     expect(world).toMatch(/useHarbourWorld/);
-    expect(world).toMatch(/homeBook\?\.visitRequested \|\| world === "horizon"/);
+    expect(world).toMatch(/visit:homeBook\?\.pendingVisit,visited:homeBook\?\.visitRequested/);
+    // #572 review: a visit already made keeps the Horizon outdoors but never holds a room.
+    expect(harbourShellFor({ available: true, place: "bank", world: "horizon", visited: true })).toBe("mountain");
+    expect(harbourShellFor({ available: true, place: "court", world: "mountain", visited: true })).toBe("horizon");
+    // Outdoors follows the world; a room is the old world's room; a Home Book visit forces the Horizon anywhere.
+    expect(harbourShellFor({ available: true, place: "court", world: "horizon" })).toBe("horizon");
+    expect(harbourShellFor({ available: true, place: "campfire", world: "horizon" })).toBe("horizon");
+    expect(harbourShellFor({ available: true, place: "cellar", world: "horizon" })).toBe("mountain");
+    expect(harbourShellFor({ available: true, place: "court", world: "mountain" })).toBe("mountain");
+    expect(harbourShellFor({ available: true, place: "cellar", world: "horizon", visit: true })).toBe("horizon");
     expect(world).not.toMatch(/URLSearchParams\(window\.location\.search\)\.get\("world"\)/);
   });
 
