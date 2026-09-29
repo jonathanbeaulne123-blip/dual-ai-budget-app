@@ -5,6 +5,10 @@ import type {District, WorldDefinition} from '../world/definition.ts';
 import type {LandCuts, StructureSolid, TerrainField, WaterCut, XYZ} from '../land/interfaces.ts';
 import {BIOME_GROUNDS, ROCK_SETS, rockWeight, TERRAIN_SURFACE_PALETTE, terrainPaintGround, terrainPaintRockSet, terrainTriangleVisible} from '../land/terrain/index.ts';
 import {districtAt} from '../world/districts.ts';
+import {addCorridorSolidSteps,isCorridorSolid} from '../kit/road/pavement.ts';
+import {CORRIDOR_SURFACE} from '../kit/road/palette.ts';
+import {corridorIndex,type CorridorIndex} from '../kit/road/frames.ts';
+import type {Corridor} from '../land/corridor/types.ts';
 /** Wave 6: the cable lines (their spans hang between anchors in other districts). */
 export const CABLE_LINE=/^(G1|ZIP)\.cable$/;
 
@@ -18,6 +22,26 @@ export function solidTriangle(builder:CardBuilder,a:XYZ,b:XYZ,c:XYZ,color:RGB,bu
 }
 const surfaceColor=(surface:string,role:string):RGB=>rgb(role==='marker'?'#e6b95b':surface.includes('water')?'#527f83':surface.includes('metal')?'#777e7f':surface.includes('wood')||surface.includes('board')?'#b59c79':role==='roof'?'#aaa398':role==='rock'?'#a3998a':'#c9c2b4');
 export function addSolid(builder:CardBuilder,solid:StructureSolid,tier:'full'|'lite'='full'){finishBuild(addSolidSteps(builder,solid,tier));}
+/**
+ * ROAD.md §4 (track K): the road corridor's solids are painted by the road kit — `corridorDeck` in swept pavement bands with
+ * slab joints, `corridorKerb` dressed stone, `corridorWalk` flags, `corridorRetaining` coursed stone with weep holes — in the
+ * corridor frame recovered from `world.corridors` stations. `corridorGuard` is a collider and is never drawn (its visible
+ * rail is the guard kit in `runtime/corridorArt.ts`). Without corridors (a bake that has none) a corridor solid falls back
+ * to its plain STYLE §1.5 colour, and a guard is still not drawn.
+ */
+const corridorIndexes=new WeakMap<readonly Corridor[],CorridorIndex>();
+export function corridorIndexOf(corridors:readonly Corridor[]|undefined):CorridorIndex|null{
+  if(!corridors?.length)return null;let index=corridorIndexes.get(corridors);if(!index){index=corridorIndex(corridors);corridorIndexes.set(corridors,index);}return index;
+}
+const CORRIDOR_FALLBACK:Record<string,RGB>={corridorDeck:CORRIDOR_SURFACE.road,corridorKerb:CORRIDOR_SURFACE.stone,corridorWalk:CORRIDOR_SURFACE.flags,corridorRetaining:CORRIDOR_SURFACE.stone};
+export function* addCorridorOrSolidSteps(builder:CardBuilder,solid:StructureSolid,tier:'full'|'lite',corridors:readonly Corridor[]|undefined):Generator<void,void,void>{
+  if(!isCorridorSolid(solid)){yield* addSolidSteps(builder,solid,tier);return;}
+  if(solid.kind==='corridorGuard')return;
+  const index=corridorIndexOf(corridors);
+  if(index){yield* addCorridorSolidSteps(builder,solid,tier,index);return;}
+  const color=CORRIDOR_FALLBACK[solid.kind]!,p=tier==='lite'?(solid.litePositions??solid.positions):solid.positions,indices=tier==='lite'?(solid.liteIndices??solid.indices):solid.indices;
+  for(let i=0;i<indices.length;i+=3){if(i%1536===0)yield;const v=(n:number):XYZ=>{const j=indices[i+n]!*3;return[p[j]!,p[j+1]!,p[j+2]!];};solidTriangle(builder,v(0),v(1),v(2),color);}
+}
 export function* addSolidSteps(builder:CardBuilder,solid:StructureSolid,tier:'full'|'lite'='full'):Generator<void,void,void>{
   const color=surfaceColor(solid.surface,solid.role),p=tier==='lite'?(solid.litePositions??solid.positions):solid.positions,indices=tier==='lite'?(solid.liteIndices??solid.indices):solid.indices;
   for(let i=0;i<indices.length;i+=3){if(i%1536===0)yield;const v=(n:number):XYZ=>{const j=indices[i+n]!*3;return[p[j]!,p[j+1]!,p[j+2]!];};solidTriangle(builder,v(0),v(1),v(2),color);}
@@ -128,7 +152,7 @@ export function* buildDistrictCardSteps(world:WorldDefinition,field:TerrainField
   const builder=new CardBuilder(`horizon.${coarse?'journey':'district'}.${district.id}`,tier,{ink:'#5b5447',cell:coarse?4096:256,shadows:!coarse});
   let result:CardBuild|undefined,terrain:TerrainMeshes|null|undefined,complete=false;
   try {
-    if(!coarse){const ids=new Set(district.solidIds??[]);for(const solid of world.geometry?.solids??[])if(ids.has(solid.id)&&!CABLE_LINE.test(solid.sourceId??solid.id)&&!(hideBuildings&&(solid.sourceId??solid.id).startsWith('host.')))yield* addSolidSteps(builder,solid,tier);}
+    if(!coarse){const ids=new Set(district.solidIds??[]);for(const solid of world.geometry?.solids??[])if(ids.has(solid.id)&&!CABLE_LINE.test(solid.sourceId??solid.id)&&!(hideBuildings&&(solid.sourceId??solid.id).startsWith('host.')))yield* addCorridorOrSolidSteps(builder,solid,tier,world.corridors);}
     result=yield* builder.finishSteps();
     terrain=district.childOf?null:yield* buildTerrainSteps(field,cuts,district.id,!coarse,paperGrain(),filter);
     if(!terrain){complete=true;return result;}
