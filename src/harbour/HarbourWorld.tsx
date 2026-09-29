@@ -225,16 +225,19 @@ const HorizonWorld = lazy(() => import("./horizon/HorizonWorld.tsx"));
  * into the room, and walking out (or "← The square") brings the Horizon back at that door. A Home Book visit and an
  * unspent Journey Board "Enter Horizon here" still force the Horizon (product paths).
  */
-export function harbourShellFor(input:{available:boolean;place:HarbourPlaceId;world:"horizon"|"mountain";visit?:boolean;request?:{arrived?:boolean}|null}):"horizon"|"mountain"{
+export function harbourShellFor(input:{available:boolean;place:HarbourPlaceId;world:"horizon"|"mountain";
+  /** A Home Book visit not yet made (`pendingVisit`): the Horizon, wherever the route stands. */visit?:boolean;
+  /** A Home Book visit already made this session (`visitRequested`): keeps the Horizon outdoors only, never a room (PR #572 review). */visited?:boolean;
+  request?:{arrived?:boolean}|null}):"horizon"|"mountain"{
   if(!input.available)return "mountain";
   const indoors=input.place!=="court"&&input.place!=="campfire";
   if(input.visit||input.request&&!input.request.arrived)return "horizon";
-  return !indoors&&(input.world==="horizon"||Boolean(input.request))?"horizon":"mountain";
+  return !indoors&&(input.world==="horizon"||Boolean(input.visited)||Boolean(input.request))?"horizon":"mountain";
 }
 export default function HarbourWorld(props: HarbourWorldProps) {
   const homeBook=useHomeBook();
   const world=useHarbourWorld();
-  const shell=harbourShellFor({available:HORIZON_AVAILABLE,place:harbourPlaceFor(props.route,props.scope,true)??"court",world,visit:homeBook?.visitRequested,request:props.enterHorizonRequest});
+  const shell=harbourShellFor({available:HORIZON_AVAILABLE,place:harbourPlaceFor(props.route,props.scope,true)??"court",world,visit:homeBook?.pendingVisit,visited:homeBook?.visitRequested,request:props.enterHorizonRequest});
   return shell==="horizon"
     ? <HorizonEdition {...props} key="horizon"/>
     : <MountainHarbourWorld {...props} key="mountain"/>;

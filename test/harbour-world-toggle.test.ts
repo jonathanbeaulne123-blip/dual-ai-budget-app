@@ -146,7 +146,10 @@ describe("full-App wiring (static)", () => {
 
   it("HarbourWorld uses the reactive world selector; Home Book visit still forces Horizon", () => {
     expect(world).toMatch(/useHarbourWorld/);
-    expect(world).toMatch(/visit:homeBook\?\.visitRequested/);
+    expect(world).toMatch(/visit:homeBook\?\.pendingVisit,visited:homeBook\?\.visitRequested/);
+    // #572 review: a visit already made keeps the Horizon outdoors but never holds a room.
+    expect(harbourShellFor({ available: true, place: "bank", world: "horizon", visited: true })).toBe("mountain");
+    expect(harbourShellFor({ available: true, place: "court", world: "mountain", visited: true })).toBe("horizon");
     // Outdoors follows the world; a room is the old world's room; a Home Book visit forces the Horizon anywhere.
     expect(harbourShellFor({ available: true, place: "court", world: "horizon" })).toBe("horizon");
     expect(harbourShellFor({ available: true, place: "campfire", world: "horizon" })).toBe("horizon");

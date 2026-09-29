@@ -186,7 +186,7 @@ describe("HarbourWorld picks the Horizon for an explicit request", () => {
   });
   it("keeps the chooser's other ways into the Horizon", () => {
     const shell = readFileSync(join(root, "src", "harbour", "HarbourWorld.tsx"), "utf8");
-    expect(shell).toMatch(/visit:homeBook\?\.visitRequested,request:props\.enterHorizonRequest/);
+    expect(shell).toMatch(/visit:homeBook\?\.pendingVisit,visited:homeBook\?\.visitRequested,request:props\.enterHorizonRequest/);
     // An unspent "Enter Horizon here" and a Home Book visit force the Horizon even from a room; a spent one does not.
     expect(harbourShellFor({ available: true, place: "bank", world: "mountain", request: { arrived: false } })).toBe("horizon");
     expect(harbourShellFor({ available: true, place: "bank", world: "horizon", request: { arrived: true } })).toBe("mountain");
