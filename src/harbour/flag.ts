@@ -12,6 +12,14 @@ import type { LedgerView } from "../core/types.ts";
 export const HARBOUR_DEV = import.meta.env.DEV;
 export const horizonEnabled = (search:string):boolean => HARBOUR_DEV && new URLSearchParams(search).get("world") === "horizon";
 export const HARBOUR_ENABLED = HOUSE_WORLD_ENABLED && import.meta.env.VITE_HEARTH_HARBOUR === "1";
+/**
+ * D15 (Jonathan, 2026-09-29): the Horizon replaces the Mountain for everyone when the build sets
+ * `VITE_HEARTH_HORIZON=1`. Off (or unset) is the rollback: the Mountain returns on the next deploy.
+ * Devices without WebGL, on Save-Data, or in the flat edition keep the Mountain either way (`HorizonEdition`).
+ */
+export const HORIZON_LIVE = HARBOUR_ENABLED && import.meta.env.VITE_HEARTH_HORIZON === "1";
+/** The Horizon may mount: in development (review, the world toggle) or when the live switch is on. */
+export const HORIZON_AVAILABLE = HARBOUR_DEV || HORIZON_LIVE;
 
 /** Slice 2: one room, three places — one per level (BUILD_PLAN_SLICE2 §0). */
 export type HarbourPlaceId = "court" | "bank" | "tower" | "cellar" | "glasshouse" | "kitchen" | "boathouse" | "library" | "cottage" | "kiln" | "campfire" | "atlas";

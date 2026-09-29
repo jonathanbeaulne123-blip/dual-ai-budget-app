@@ -75,3 +75,19 @@
 .horizon-shell--kitchen .horizon-top-controls{top:auto;bottom:12px;left:12px;right:12px;align-items:center;pointer-events:none}
 .horizon-shell--kitchen .horizon-toolbar{pointer-events:auto;width:max-content;max-width:100%;margin-inline:auto}
 .horizon-shell--kitchen .horizon-status{display:none}
+/* ── The Horizon inside the old app shell (Jonathan 2026-09-29) ──
+   The shell's chrome leads: the address card top-left, the dock, Record / All tools / Simple view and the emote row.
+   The Horizon keeps only what moves you — ride, cable, boats, pads — placed around the dock the way the old moves are. */
+.app .horizon-shell--in-shell .horizon-top-controls,.horizon-shell--in-shell .horizon-top-controls{position:fixed;top:calc(max(12px,env(safe-area-inset-top)) + 72px);bottom:auto;left:50%;right:auto;transform:translateX(-50%);width:auto;max-width:min(520px,calc(100vw - 32px));align-items:center;z-index:4}
+@media(max-width:719px){.app .horizon-shell--in-shell .horizon-top-controls,.horizon-shell--in-shell .horizon-top-controls{top:calc(max(12px,env(safe-area-inset-top)) + 236px)}}
+.horizon-shell--in-shell .horizon-cruiser-controls{width:auto}
+.horizon-shell--in-shell .horizon-touch-controls{position:fixed;bottom:calc(var(--dock-height,0px) + 110px + env(safe-area-inset-bottom,0px));z-index:3}
+.horizon-shell--in-shell .horizon-status{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.horizon-shell--in-shell .horizon-fleet{position:fixed;top:calc(max(12px,env(safe-area-inset-top)) + 196px);right:120px;max-height:40%}
+@media(max-width:719px){.horizon-shell--in-shell .horizon-fleet{top:calc(max(12px,env(safe-area-inset-top)) + 236px);right:.5rem;left:.5rem}}
+.horizon-shell--in-shell .horizon-offer{bottom:calc(var(--dock-height,0px) + 64px + env(safe-area-inset-bottom,0px))}
+/* The large month card sits over the old skate's two phone pads. Keep the small
+   All tools and Record bubbles, and return the card when the board is put away. */
+.harbour-world--horizon.is-skating .glass-dock{display:none}
+/* The in-shell stage is sized by the old shell's stage, not the viewport (PR #570 review: the canvas overflowed on phones). */
+.app[data-harbour-court] .harbour-world--horizon .horizon-shell,.harbour-world--horizon .horizon-shell{height:100%;min-height:0}

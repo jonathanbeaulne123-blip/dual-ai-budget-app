@@ -137,7 +137,7 @@ export function SkateHUD(p: SkateHUDProps) {
           <RideBadge speed={m.speed} stance={m.stance}/>
         </div>
         <nav className="skate-top__nav" aria-label="Skate session">
-          <button type="button" onClick={() => command(racing ? 'retry' : 'respawn')} aria-label={racing ? 'Retry from the last gate' : 'Back to your marker'}><span aria-hidden="true">↺</span><span className="skate-top__word">Retry</span></button>
+          <button type="button" className="skate-top__reset" onClick={() => command(racing ? 'retry' : 'respawn')} aria-label={racing ? 'Retry from the last gate' : 'Reset to your marker'}><span aria-hidden="true">↺</span><span className="skate-top__word">{racing?'Retry':'Reset'}</span></button>
           {!racing && <button type="button" onClick={() => openBook('challenges')} aria-label={`Goals, ${m.challenges.done} of ${m.challenges.total}`}><span aria-hidden="true">◇</span><span className="skate-top__word">Goals</span><span className="skate-top__count" aria-hidden="true">{m.challenges.done}/{m.challenges.total}</span></button>}
           <button type="button" onClick={() => openBook()} aria-label="Pause and open the skate book"><span aria-hidden="true">❚❚</span><span className="skate-top__word">Book</span></button>
         </nav>

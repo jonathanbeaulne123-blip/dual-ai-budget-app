@@ -1,10 +1,12 @@
 import { useSyncExternalStore } from "react";
-import { HARBOUR_DEV, horizonEnabled } from "./flag.ts";
+import { HARBOUR_DEV, HORIZON_LIVE, horizonEnabled } from "./flag.ts";
 
 /**
- * Dev-only XOR between Mountain v2 and Horizon for full-App UX dissection.
- * Geography and presence stay partitioned; this only chooses which shell mounts.
- * Production never reads or writes the world query (D15 switch stays open).
+ * Which world shell mounts: Mountain v2 or the Horizon. Geography and presence stay partitioned.
+ *
+ * D15 (Jonathan, 2026-09-29): with the live switch on (`HORIZON_LIVE`, `VITE_HEARTH_HORIZON=1`) the Horizon
+ * is the world for everyone; with it off the Mountain is. Production never reads or writes the world query.
+ * In development the in-App toggle still flips between the two for UX dissection, from the same default.
  *
  * Preference is kept in memory because App `housePath` history writes drop
  * unrelated query keys (including `world`). An explicit `world=horizon` in the
@@ -14,7 +16,7 @@ export type HarbourWorldId = "mountain" | "horizon";
 
 export const HARBOUR_WORLD_EVENT = "hearth:harbour-world";
 
-/** DEV session preference. Null means "follow the URL / default mountain". */
+/** DEV session preference. Null means "follow the URL / the build's default world". */
 let preference: HarbourWorldId | null = null;
 
 /** Test seam: clear the in-memory preference between cases. */
@@ -22,13 +24,19 @@ export function resetHarbourWorldPreference(): void {
   preference = null;
 }
 
-export function readHarbourWorld(search: string = typeof location === "undefined" ? "" : location.search): HarbourWorldId {
-  if (!HARBOUR_DEV) return "mountain";
+/** The world a build shows when nobody has chosen one: the Horizon once D15's switch is on. */
+export function defaultHarbourWorld(live: boolean = HORIZON_LIVE): HarbourWorldId {
+  return live ? "horizon" : "mountain";
+}
+
+/** `dev` and `live` are test seams; production reads the flags. */
+export function readHarbourWorld(search: string = typeof location === "undefined" ? "" : location.search, dev: boolean = HARBOUR_DEV, live: boolean = HORIZON_LIVE): HarbourWorldId {
+  if (!dev) return defaultHarbourWorld(live);
   if (horizonEnabled(search)) {
     preference = "horizon";
     return "horizon";
   }
-  return preference ?? "mountain";
+  return preference ?? defaultHarbourWorld(live);
 }
 
 /** Pure: next search string with only the `world` query param changed. */
@@ -49,7 +57,7 @@ export function setHarbourWorld(
   historyApi: Pick<History, "replaceState"> & { state?: unknown } = typeof history === "undefined" ? { replaceState() { /* no browser history */ } } : history,
   loc: Pick<Location, "pathname" | "search" | "hash"> = typeof location === "undefined" ? { pathname: "/", search: "", hash: "" } : location,
 ): HarbourWorldId {
-  if (!HARBOUR_DEV) return "mountain";
+  if (!HARBOUR_DEV) return defaultHarbourWorld();
   preference = next;
   const search = harbourWorldSearch(loc.search, next);
   if (!(search === loc.search || (!search && !loc.search))) {
@@ -79,9 +87,9 @@ function subscribeHarbourWorld(listener: () => void): () => void {
   };
 }
 
-const serverWorld = (): HarbourWorldId => "mountain";
+const serverWorld = (): HarbourWorldId => defaultHarbourWorld();
 
-/** Reactive DEV world id. Always `"mountain"` outside development. */
+/** Reactive world id. Outside development it is always the build's default (D15). */
 export function useHarbourWorld(): HarbourWorldId {
   return useSyncExternalStore(subscribeHarbourWorld, () => readHarbourWorld(), serverWorld);
 }

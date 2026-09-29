@@ -286,6 +286,8 @@ body:has(.harbour-world.is-skating) :is(.nav.compass,.herc-litter,.sync-freshnes
   .skate-touch__row{gap:5px}
   .skate-zone__label{font-size:10px;letter-spacing:.06em}
 }
+/* The marker reset must stay named even when the rest of the session strip uses icons. */
+@container skatehud (max-width:1000px){.skate-top__reset .skate-top__word{display:inline;font-size:11px}}
 @media(max-width:400px){body:has(.harbour-world.is-skating) .sync-freshness__updated{display:none}}
 @container skatehud (max-width:719px) and (max-height:700px){
   .skate-band{top:98px;gap:4px}

@@ -22,6 +22,11 @@ import {HARBOUR_DEV} from '../../flag.ts';
 import * as THREE from 'three';
 import {acquireWorldRenderer} from '../../../house/world/rendererOwner.ts';
 import {createBodyFigure} from '../../body/figure.ts';
+import {createPlayableFigure} from '../../body/playableFigure.ts';
+import type {PlayableAvatar} from '../../body/avatarDefinition.ts';
+import {EMOTE_LOOPS,EMOTE_SECONDS,type EmoteId} from '../../body/bodyModel.ts';
+import {createNativeSkate,horizonSkateEntry,type NativeSkate,type NativeSkateFrame} from '../skate/nativeSkate.ts';
+import type {SkateProgress} from '../../skate/session.ts';
 import type {PlaceWalkSource} from '../../scene/place.ts';
 import type {HouseBodyReturn} from '../../../house/navigation.ts';
 import {HORIZON_GEOGRAPHY,HORIZON_PRESENCE_WORLD} from '../../../worldGeography.ts';
@@ -31,6 +36,9 @@ import {buildDistrictCardSteps,buildDistrictCards,buildWaterCards,buildHorizonRi
 import {sampleTerrain} from '../land/terrain/index.ts';
 import type {MountainV2Region,RegionScene} from '../regions/mountainV2/index.ts';
 import {MOUNTAIN_V2_OFFSET} from '../regions/mountainV2/placement.ts';
+import {createHorizonMonorail} from '../monorail/HorizonMonorail.ts';
+import type {MonorailState,MonorailView} from '../../mountain/monorail.ts';
+import {MONORAIL_STOPS} from '../../mountain/definition.ts';
 import {connectCableRegion,asCableRide,cableControls,type CableControl} from '../movers/gondola/index.ts';
 import type {CableControlId} from '../movers/gondola/hud.ts';
 import type {PlaceDressing} from '../../scene/place.ts';
@@ -40,7 +48,7 @@ import {HORIZON_MANIFEST} from '../world/manifest.ts';
 import {restoreHorizonPosition,HORIZON_RESTORE_TOLERANCE} from './savedPosition.ts';
 import {horizonFootFrame,horizonWalkOut,type HorizonWalkProbe} from './walkOut.ts';
 import {horizonPartnerPose} from './partner.ts';
-import {walkPlan,withExtraGraph} from '../world/pathGraph.ts';
+import {nearestPathNode,walkPlan,withExtraGraph} from '../world/pathGraph.ts';
 import {createChunkGate,createChunkScheduler,createRideGate,CHUNK_REACH_EU,CHUNK_ARRIVING_STATUS,CHUNK_FAILED_STATUS} from './chunkGate.ts';
 import {createCableLayer} from './cableLayer.ts';
 import {solarPosition,solarReviewDate} from '../sun/solar.ts';
@@ -91,7 +99,11 @@ export type HorizonOptions={homePlotId?:string;homeLayout?:HomeLayout;onHomeBook
   movers?:Partial<Record<ModeId,(deps:MoverDeps)=>ModeController>>;
   /** Pass 5: Mountain v2 placed on the Horizon. Mounted when the definition lists the `mountainV2` region (a bake with the
    *  ground override); `false` keeps it out, `true` mounts it on any bake (review; also `?mountainV2` in development). */
-  mountainV2?:boolean};
+  mountainV2?:boolean;
+  /** The old Tideline skate's HUD frames (model, progress, revision), null when the board is picked up. Only with Mountain v2 placed. */
+  onSkate?:(frame:NativeSkateFrame|null)=>void;
+  onMonorail?:(state:MonorailState|null)=>void;
+  avatar?:PlayableAvatar|null;onAvatarStatus?:(avatar:PlayableAvatar,status:'ready'|'error')=>void};
 /** Pass 5 (T2): a placed region and the dressing its scene is built in. */
 export type HorizonPlacedRegion={region:MountainV2Region;dressing:(theme:VehicleDressing)=>PlaceDressing};
 /** A region not needed (no district under its footprint resident, or the Journey map) is released after this long. */
@@ -139,8 +151,13 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   // streams in behind it, nearest the body first, one chunk at a time, each added to the collision index as it lands.
   const chunks=assets.chunks;
   const bytesBeforeFirstFrame={definition:chunks?.bytes()??assets.definitionBytes,terrain:assets.bytes};
-  const geography=createHorizonGeography(field,cuts),figure=createBodyFigure(),partner=createBodyFigure({coat:'#af8760'});
+  const geography=createHorizonGeography(field,cuts);
+  let figure=options.avatar?createPlayableFigure(options.avatar,tier,{invalidate:()=>schedule(),onStatus:options.onAvatarStatus}):createBodyFigure();
+  const partner=createBodyFigure({coat:'#af8760'});
   scene.add(figure.group,partner.group);partner.group.visible=false;
+  // The old skate rides Mountain v2's town island in native space (`../skate/nativeSkate.ts`); without the region it has nowhere to be.
+  const skate:NativeSkate|null=placed?createNativeSkate({scene,figure,tier:options.tier,theme:options.theme,reducedMotion:()=>comfort.reducedMotion,onSkate:options.onSkate,blocked:(x,y,z,r)=>placed.region.blocked(x,y,z,r)}):null;
+  const skating=()=>Boolean(skate?.controls.active());
   // Pass 5: inside the region's footprint its provider owns the ground (v2's exact ground, decks, solids, ceilings).
   // PR #566 Codex: its decks, solids and ceilings answer only while the region's scene is drawn (showRegion); ground and water always.
   let regionVisible=false,regionSettle=false;
@@ -150,6 +167,9 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   // One comfort source (v2.2): the land's motion (cuts, the frozen 15:30) and the movers' registry read the same two flags.
   let comfort:HorizonComfort={calm:options.calm===true,reducedMotion:options.reducedMotion===true||appReducedMotion()},motion=horizonMotion(comfort);
   let theme=options.theme??'classic';const perspective=createPerspective();
+  const monorail=placed?createHorizonMonorail(scene,tier,placed.dressing(theme)):null;
+  let lastMonorailReport=0;
+  const reportMonorail=(force=false)=>{const now=performance.now();if(force||now-lastMonorailReport>250){lastMonorailReport=now;options.onMonorail?.(monorail?.state()??null);}};
   const registry=createMoverRegistry({world,geography,manifest:HORIZON_MANIFEST,reducedMotion:comfort.reducedMotion,calm:comfort.calm,tier});
   registerHorizonMovers(registry,options.movers);
   const sharedWind=constantWind();
@@ -446,7 +466,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   }
   function restore(saved:HouseBodyReturn){
     schedule();
-    kitchen?.exit();fleet.stand();physicalBody=null;pageChosen=false;parkRide();if(transition?.live)transition=null;rideGate.clear();
+    if(skating()){skate?.controls.setAudio(null);skate?.stop();skate?.publish(performance.now(),true);}
+    monorail?.cancel();reportMonorail(true);kitchen?.exit();fleet.stand();physicalBody=null;pageChosen=false;parkRide();if(transition?.live)transition=null;rideGate.clear();
     // Wave 7 (R3-122 a): a same-revision restore into ground whose chunk has not arrived is NOT validated against the partial
     // collision (the terrain under a missing deck, or the water under it): the body holds at its saved height, and the full
     // validation runs when the chunk lands (reseat). Only a restore onto resident ground is validated now.
@@ -459,7 +480,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   }
 
   /** While riding, a reload restores on foot at the nearest threshold of the mode (RIDE §6.5). */
-  function savedBody():HouseBodyReturn{saveFleet();const physical=hold.body??physicalBody??body,activeCruiser=cruiser();const at=activeCruiser?(activeCruiser.dismount()??activeCruiser.state().safe):registry.active()&&!isCraft(registry.mode())?savedRideBody(world,physical,registry.mode(),geography.ground):physical;return{x:at.x,y:at.y,z:at.z,yaw:at.yaw,place:'court',world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY};}
+  function savedBody():HouseBodyReturn{saveFleet();const physical=hold.body??physicalBody??body,activeCruiser=cruiser(),stop=monorail?.state()?.station,platform=stop===undefined?null:MONORAIL_STOPS[stop];const at=platform?{x:platform.at[0]+MOUNTAIN_V2_OFFSET.x,y:platform.at[1]+MOUNTAIN_V2_OFFSET.y,z:platform.at[2]+MOUNTAIN_V2_OFFSET.z,yaw:body.yaw}:activeCruiser?(activeCruiser.dismount()??activeCruiser.state().safe):registry.active()&&!isCraft(registry.mode())?savedRideBody(world,physical,registry.mode(),geography.ground):physical;return{x:at.x,y:at.y,z:at.z,yaw:at.yaw,place:'court',world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY};}
   // ---- The mover hook ----
   function fadeCut(label:string){
     // The mover has already moved the body: show black at once and fade back in (300 ms); a cut under reduced motion / calm.
@@ -484,7 +505,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(cruiser()){if(!cruiserArt){cruiserArt=createCruiserArt(cruiserTheme);cruiserArt.setSkin(cruiserSkin);scene.add(cruiserArt.root);}}
     else{cruiserArt?.dispose();cruiserArt=null;}
   }
-  function beginAirborne(at:AirborneBody,open:boolean){
+  function beginAirborne(at:AirborneBody,open:boolean){emote=null;
     // Ride chunk rule (reconciliation 2): a fall cannot wait on the ground, so it is never refused; every missing chunk is put at
     // the front of the queue (fetched bytes parsed now) and the canopy holds at an unloaded boundary (main's `airspaceReady`).
     rideGateOpen();
@@ -556,7 +577,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     return true;
   }
   /** Pick-up: save the walk FOV, blend the camera to the mover's (0.8 s; a cut under reduced motion / calm), show the deck. */
-  function startRide(){schedule();if(cruiser()){clear();cruiser()!.resetInput();}else if(isCraft(registry.mode()))clear();if(walkFov===null)walkFov=footFov;path=[];blendCamera(moverBlendMs('pickup',comfort.reducedMotion,comfort.calm),camera.fov);syncEquipment();options.onStatus?.(isCraft(registry.mode())?'W accelerates; S slows then reverses. A/D steer; Space brakes; E interacts. C changes camera.':registry.mode()==='parachute'?'Airborne. Space opens or retracts the parachute.':RIDING_STATUS);}
+  function startRide(){schedule();emote=null;if(cruiser()){clear();cruiser()!.resetInput();}else if(isCraft(registry.mode()))clear();if(walkFov===null)walkFov=footFov;path=[];blendCamera(moverBlendMs('pickup',comfort.reducedMotion,comfort.calm),camera.fov);syncEquipment();options.onStatus?.(isCraft(registry.mode())?'W accelerates; S slows then reverses. A/D steer; Space brakes; E interacts. C changes camera.':registry.mode()==='parachute'?'Airborne. Space opens or retracts the parachute.':RIDING_STATUS);}
   /** Leaving Walk (Look / Island / a page) while riding: the mover pauses where it is (R2-01). The mode, the controller and the rider's body are kept; `update` stops; the Look / Island camera takes over. */
   function pauseRide(){
     if(!hold.pause({...body}))return;
@@ -629,12 +650,15 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     enterDoor();return false;
   }
   function enterDoor(hostId?:string){if(kitchen?.active()||registry.active())return false;
+    if(monorail?.state())return false;
     if(!hostId&&homeWorld.actions(body).some(a=>a.id==='home-book')){clear();options.onHomeBook?.();return true;}   // a rider parks first: a door is not a mode threshold
     const h=hostId?world.hosts.find(h=>h.id===hostId):world.hosts.find(h=>'xy'in h.door&&Math.hypot(body.x-h.door.xy[0],body.z-h.door.xy[1],body.y-(h.door.height??0))<2.4);if(!h)return false;
     doorCooldown=performance.now()+1800;const out=h.returnAt;if(out){Object.assign(body,{x:out[0],y:out[1],z:out[2],yaw:h.facing??0});yaw=body.yaw;}path=[];options.onDoor?.(h,savedBody());return true;
   }
   function setMode(next:HorizonMode){
     schedule();
+    if(monorail?.state()&&next!=='walk')return;
+    if(skating()){const at=skate?.stop();if(at){Object.assign(body,at);yaw=at.yaw;}skate?.controls.setAudio(null);skate?.publish(performance.now(),true);}
     let resumeFoot=false;
     if(next!=='walk')kitchen?.pause('The island view is open. Choose Walk and Resume to continue.');
     if(next!=='walk'){if(mode==='walk')leaveWalk();pauseRide();}
@@ -659,6 +683,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   }
   function cyclePerspective(){if(mode!=='walk')return;if(kitchen?.active()&&kitchen.view().state.players===2){options.onStatus?.('Shared kitchen view keeps both chefs in sight.');return;}perspective.cycle(body,camera.position.toArray(),target.toArray());transition=null;options.onStatus?.(`${perspectiveLabel(perspective.mode())}. C changes the view.`);}
   function updateCamera(){if(mode!=='walk')return;
+    if(monorail?.state())return;
     if(!registry.active()&&camera.fov!==footFov){camera.fov=footFov;camera.updateProjectionMatrix();}
     const craft=isCraft(registry.mode())?fleet.get(registry.mode() as CraftId):null;
     const aboard=yachtView()!==null;
@@ -685,6 +710,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
       moved+=length/steps;
     }return moved;
   }
+  let emote:{id:EmoteId;at:number}|null=null;
   function step(dt:number,now:number){
     leftSupport=false;
     if(fleet.sitting()){figure.group.position.set(body.x,body.y,body.z);figure.group.rotation.y=body.yaw;figure.pose(0,0,now/1000,{lean:0,bank:0,run:0,air:0,rise:0,crouch:0,slide:0,emote:'sit',emoteAt:1,flourish:0});updateCamera();return;}
@@ -716,7 +742,9 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(swimming&&wet!==null)body.y=wet-.5;
     jumpRequested=false;
     if(moved>0&&now>doorCooldown&&!swimming){const door=world.hosts.find(h=>'xy'in h.door&&Math.hypot(body.x-h.door.xy[0],body.z-h.door.xy[1],body.y-(h.door.height??0))<1.15);if(door)enterDoor(door.id);}
-    if(!simulating){figure.group.position.set(body.x,body.y,body.z);figure.group.rotation.y=body.yaw;figure.pose(now*.007,moved>0?1:0,now/1000);updateCamera();}
+    // The old shell's emote row (walk-moves): an emote plays while standing; walking or its own length ends it.
+    if(emote&&(moved>0||!EMOTE_LOOPS[emote.id]&&(now-emote.at)/1000>EMOTE_SECONDS[emote.id]))emote=null;
+    if(!simulating){figure.group.position.set(body.x,body.y,body.z);figure.group.rotation.y=body.yaw;if(emote)figure.pose(0,0,now/1000,{lean:0,bank:0,run:0,air:0,rise:0,crouch:0,slide:0,emote:emote.id,emoteAt:(now-emote.at)/1000,flourish:0});else figure.pose(now*.007,moved>0?1:0,now/1000);updateCamera();}
   }
   // ---- Pass 5: the placed region (Mountain v2) ----
   // Mounted (one v2 builder per frame) when a district under its footprint is resident outside the Journey map, drawn while
@@ -724,6 +752,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function releaseRegion(){regionTask?.cancel();regionTask=null;regionScene?.dispose();regionScene=null;regionHooks=[];showRegion(false);}
   function showRegion(visible:boolean){
     if(regionScene)regionScene.group.visible=visible;
+    if(monorail)monorail.group.visible=visible||Boolean(monorail.state());
     if(visible===regionVisible)return;regionVisible=visible;if(visible)regionShownAt=performance.now();
     if(visible&&!heldNow.length&&holdText){holdText='';options.onStatus?.('');}   // PR #566 Codex: the region hold's line ends
     for(const resource of stream.live.values())for(const mesh of resource.cards.under??[])mesh.visible=!visible;
@@ -749,12 +778,28 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   let peerKey='',paintCount=0;
   const readPeer=()=>horizonPartnerPose(options.partner?.());
   const partnerKey=(peer:ReturnType<typeof readPeer>)=>peer?`${peer.x}:${peer.y}:${peer.z}:${peer.yaw}:${peer.opacity}:${peer.moving}`:'';
+  /** One skating frame: the old skate steps in native space; the Horizon body follows it and its chase camera leads. */
+  function skateStep(dt:number){
+    const frame=skate?.step(skate.controls.paused()?0:dt);if(!frame)return;
+    body.x=frame.body.x;body.y=frame.body.y;body.z=frame.body.z;body.yaw=frame.body.yaw;path=[];
+    const shot=skate!.camera(dt,camera.aspect||1.6,comfort.reducedMotion);if(!shot)return;
+    camera.position.set(...shot.eye);target.set(...shot.target);camera.up.set(0,1,0);camera.lookAt(target);if(shot.roll)camera.rotateZ(shot.roll);
+    if(Math.abs(camera.fov-shot.fov)>1e-3){camera.fov=shot.fov;camera.updateProjectionMatrix();}
+  }
+  function monorailStep(dt:number,now:number){
+    const pose=monorail?.update(dt);if(!pose)return;
+    Object.assign(body,{x:pose.at[0],y:pose.at[1],z:pose.at[2],yaw:pose.yaw});yaw=pose.yaw;path=[];
+    figure.group.position.set(body.x,body.y,body.z);figure.group.rotation.y=body.yaw;
+    figure.pose(0,0,now/1000,{lean:0,bank:0,run:0,air:0,rise:0,crouch:0,slide:0,emote:monorail?.state()?.seated?'sit':null,emoteAt:1,flourish:0});
+    const view=monorail!.camera();if(view){camera.position.set(...view.eye);target.set(...view.target);camera.lookAt(target);}
+    reportMonorail();
+  }
   function tick(now:number){if(disposed)return false;const workStarted=performance.now(),frameMs=last?now-last:0;if(qualityDirty&&lease.active){applyHorizonQuality(renderer,sun,adaptiveQuality.profile(window.devicePixelRatio));qualityDirty=false;}const dt=Math.min(kitchen?.active() ? .1 : cruiser() ? .1 : .05,Math.max(0,(now-(last||now))/1000));if(last)frameTimes.push(now-last);if(frameTimes.length>3600)frameTimes.shift();last=now;
     let stepped=false;
-    if(!paused&&!document.hidden&&mode==='walk'&&!hold.paused()){physicalBody=null;tickFleet(dt);}
+    if(!paused&&!document.hidden&&mode==='walk'&&!hold.paused()&&!monorail?.state()){physicalBody=null;tickFleet(dt);}
     if(kitchen?.active()){if(!paused&&!document.hidden&&mode==='walk')kitchen.update(dt);}
     else kitchen?.update(0);
-    if(!paused&&!document.hidden){const accept=comfortCut||kitchen?.active()?false:offersAndAccept();if(mode==='walk'&&!kitchen?.active()&&(!transition||transition.live)){stepped=true;if(registry.active()){if(!comfortCut&&hold.steps(mode)&&riderReady())ride(dt,now,accept);}else if(!comfortCut)step(dt,now);}if(mode!=='journey')stream.update({x:body.x,z:body.z,now,mode:mode==='look'?'look':'walk',radius:mode==='look'?world.views.find(v=>v.id===shotId)?.radius:undefined,keepRadius:world.views.find(v=>v.id===shotId)?.radius,underground:body.y+HORIZON_BODY_HEIGHT<geography.ground(body.x,body.z)-.5});}
+    if(!paused&&!document.hidden){const accept=comfortCut||kitchen?.active()||monorail?.state()?false:offersAndAccept();if(mode==='walk'&&!kitchen?.active()&&(!transition||transition.live)){stepped=true;if(monorail?.state())monorailStep(dt,now);else if(skating())skateStep(dt);else if(registry.active()){if(!comfortCut&&hold.steps(mode)&&riderReady())ride(dt,now,accept);}else if(!comfortCut)step(dt,now);}if(mode!=='journey')stream.update({x:body.x,z:body.z,now,mode:mode==='look'?'look':'walk',radius:mode==='look'?world.views.find(v=>v.id===shotId)?.radius:undefined,keepRadius:world.views.find(v=>v.id===shotId)?.radius,underground:body.y+HORIZON_BODY_HEIGHT<geography.ground(body.x,body.z)-.5});}
     // Pass 5: the ambience reads Mountain v2's geography (the river, its paths), so with the region placed it hears native space.
     // PR #566 CodeRabbit: only inside the region's footprint; elsewhere the Horizon body is what it hears.
     const heard=placed&&placed.region.contains(body.x,body.z)?{x:body.x-MOUNTAIN_V2_OFFSET.x,y:body.y-MOUNTAIN_V2_OFFSET.y,z:body.z-MOUNTAIN_V2_OFFSET.z}:body;
@@ -779,10 +824,12 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
       if(transition.fov!==undefined&&transition.toFov!==undefined){const fov=transition.fov+(transition.toFov-transition.fov)*ease;if(Math.abs(camera.fov-fov)>1e-3){camera.fov=fov;camera.updateProjectionMatrix();}}
       if(t===1)transition=null;
     }
-    const chosen=mode==='walk'?perspective.pose(body,(a,b)=>geography.cameraBlocked(a,b,yachtView()!==null),geography.ceiling(body.x,body.z,body.y)):null;
+    skate?.publish(now);
+    const chosen=mode==='walk'&&!skating()&&!monorail?.state()?perspective.pose(body,(a,b)=>geography.cameraBlocked(a,b,yachtView()!==null),geography.ceiling(body.x,body.z,body.y)):null;
     if(chosen){camera.position.set(...chosen.eye);target.set(...chosen.target);if(camera.fov!==chosen.fov){camera.fov=chosen.fov;camera.updateProjectionMatrix();}camera.lookAt(target);}
     const firstPerson=mode==='walk'&&perspective.mode()==='first-person';
-    figure.group.visible=mode==='walk'&&!firstPerson&&!kitchen?.active();
+    // The skate's look adopts the figure and its chase camera is external, so the rider shows in any perspective (PR #571 review).
+    figure.group.visible=mode==='walk'&&(!firstPerson||skating())&&!kitchen?.active();
     // Own equipment is hidden locally in first person; activity and floating retain the full canopy.
     for(const art of moverArts)if(firstPerson)art.object.visible=false;
     if(cruiserArt)cruiserArt.root.visible=mode==='walk'&&!firstPerson;
@@ -798,13 +845,13 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     skyDome.follow(camera);renderer.render(scene,camera);paintCount++;if(interactiveAt===null){interactiveAt=performance.now();options.onReady?.();void prefetchChunks();}if(drawSamples.length===0||now-drawSamples.at(-1)!.at>500){drawSamples.push({at:now,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,resident:stream.live.size});if(drawSamples.length>600)drawSamples.shift();}
     const building=stream.building||!!regionTask||corridorArt.building()||stream.live.size<stream.cap&&Boolean(stream.history.at(-1)?.pending.some(id=>!chunks||chunks.ready(id)));
     const fading=motion.districtFadeMs>0&&([...stream.live.values()].some(resource=>now-resource.at<motion.districtFadeMs)||regionVisible&&performance.now()-regionShownAt<motion.districtFadeMs);
-    const continuous=!paused&&(mode==='walk'||!!transition||mode!=='journey'&&(building||fading||!!peer&&motion.ambientMotion||roadLights.busy(now))||moverArts.size>0);
+    const continuous=!paused&&(mode==='walk'||skating()||!!transition||mode!=='journey'&&(building||fading||!!peer&&motion.ambientMotion||roadLights.busy(now))||moverArts.size>0);
     // Queue a quality change for the next paint: resizing after render would clear this frame.
     if(continuous&&frameMs>0&&adaptiveQuality.sample(frameMs,performance.now()-workStarted))qualityDirty=true;
     return continuous;
   }
   function schedule(){frameDriver?.wake();}
-  const offers=()=>!kitchen?.active()&&mode==='walk'&&!paused?registry.offers(body):[];
+  const offers=()=>!kitchen?.active()&&mode==='walk'&&!paused&&!skating()&&!monorail?.state()?registry.offers(body):[];
   function acceptPublic(offer?:ThresholdOffer):HorizonAccept|null|void{
     if(kitchen?.active())return null;
     if(!offer){acceptRequested=true;return;}
@@ -828,13 +875,13 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     return true;
   }
   const interactive=(event:KeyboardEvent)=>event.composedPath().some(t=>t instanceof Element&&Boolean(t.closest('input,textarea,select,button,a,[contenteditable="true"],[role="dialog"],[role="textbox"]')));
-  function keyDown(e:KeyboardEvent){if(paused)return;schedule();const key=e.key.toLowerCase();if(kitchen?.active()){const focused=document.activeElement;if(!host.parentElement?.contains(focused)||focused?.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]')||(['enter',' '].includes(key)&&focused?.closest('button,a')))return;if(key==='c'&&!e.repeat){e.preventDefault();cyclePerspective();}else if(kitchen.keyDown(e))e.preventDefault();return;}if(interactive(e)||!host.contains(document.activeElement))return;if(!e.repeat&&inspector.keyDown(e))return;if(key==='e'&&!e.repeat&&kitchen?.available()){e.preventDefault();kitchen.command({type:'open'});return;}if(suppressedKeys.has(key)){if(e.repeat){e.preventDefault();return;}suppressedKeys.delete(key);if(key===' ')consumeJumpUntilRelease=false;}if(key==='v'&&!e.repeat){e.preventDefault();toggleCruiser();return;}if(key==='r'&&cruiser()&&!e.repeat){e.preventDefault();recoverRide();return;}if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(key)){e.preventDefault();keys.add(key);if(key===' '&&!e.repeat&&!consumeJumpUntilRelease)jumpRequested=true;}if(key==='c'&&!e.repeat){e.preventDefault();cyclePerspective();}if(key==='q'&&!e.repeat&&fleetActions().some(a=>a.kind==='anchor')){e.preventDefault();fleetAction('anchor');return;}if(key==='e'){e.preventDefault();if(!e.repeat)acceptRequested=true;}if(key==='escape')path=[];}
+  function keyDown(e:KeyboardEvent){if(paused)return;schedule();const key=e.key.toLowerCase();if(monorail?.state())return;if(skating()){if(interactive(e)||!host.contains(document.activeElement))return;if(!['b','p','escape'].includes(key)&&skate!.controls.input()?.keyDown(e))e.preventDefault();return;}if(kitchen?.active()){const focused=document.activeElement;if(!host.parentElement?.contains(focused)||focused?.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]')||(['enter',' '].includes(key)&&focused?.closest('button,a')))return;if(key==='c'&&!e.repeat){e.preventDefault();cyclePerspective();}else if(kitchen.keyDown(e))e.preventDefault();return;}if(interactive(e)||!host.contains(document.activeElement))return;if(!e.repeat&&inspector.keyDown(e))return;if(key==='e'&&!e.repeat&&kitchen?.available()){e.preventDefault();kitchen.command({type:'open'});return;}if(suppressedKeys.has(key)){if(e.repeat){e.preventDefault();return;}suppressedKeys.delete(key);if(key===' ')consumeJumpUntilRelease=false;}if(key==='v'&&!e.repeat){e.preventDefault();toggleCruiser();return;}if(key==='r'&&cruiser()&&!e.repeat){e.preventDefault();recoverRide();return;}if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(key)){e.preventDefault();keys.add(key);if(key===' '&&!e.repeat&&!consumeJumpUntilRelease)jumpRequested=true;}if(key==='c'&&!e.repeat){e.preventDefault();cyclePerspective();}if(key==='q'&&!e.repeat&&fleetActions().some(a=>a.kind==='anchor')){e.preventDefault();fleetAction('anchor');return;}if(key==='e'){e.preventDefault();if(!e.repeat)acceptRequested=true;}if(key==='escape')path=[];}
   const suppressedKeys=new Set<string>();
   function hostBlur(event:FocusEvent){if(kitchen?.active()&&event.relatedTarget instanceof Node&&host.parentElement?.contains(event.relatedTarget))return;clear();}
-  function focusPause(){kitchen?.pause('The window lost focus. Resume when both chefs are ready.');clear();}
+  function focusPause(){kitchen?.pause('The window lost focus. Resume when both chefs are ready.');if(skating()&&!skate!.controls.paused())skate!.controls.pause(true);clear();}
   function visibilityClear(){if(document.hidden){focusPause();last=0;frameDriver?.suspend();}else schedule();}
-  function keyUp(e:KeyboardEvent){kitchen?.keyUp(e);keys.delete(e.key.toLowerCase());suppressedKeys.delete(e.key.toLowerCase());if(e.key===' '){consumeJumpUntilRelease=false;jumpHeld=false;}}
-  function clear(){kitchen?.clear();for(const key of keys)suppressedKeys.add(key);keys.clear();controls={forward:0,strafe:0,run:false};path=[];drag=null;jumpHeld=false;jumpRequested=false;moverActionRequested=null;consumeJumpUntilRelease=suppressedKeys.has(' ');acceptRequested=false;lookAcc={dx:0,dy:0};cruiser()?.resetInput();fleet.resetInput();}
+  function keyUp(e:KeyboardEvent){if(skating()&&skate!.controls.input()?.keyUp(e))e.preventDefault();kitchen?.keyUp(e);keys.delete(e.key.toLowerCase());suppressedKeys.delete(e.key.toLowerCase());if(e.key===' '){consumeJumpUntilRelease=false;jumpHeld=false;}}
+  function clear(){skate?.controls.input()?.reset();kitchen?.clear();for(const key of keys)suppressedKeys.add(key);keys.clear();controls={forward:0,strafe:0,run:false};path=[];drag=null;jumpHeld=false;jumpRequested=false;moverActionRequested=null;consumeJumpUntilRelease=suppressedKeys.has(' ');acceptRequested=false;lookAcc={dx:0,dy:0};cruiser()?.resetInput();fleet.resetInput();}
   const unlisten=[lease.listenCanvas<Event>('webglcontextlost',event=>{event.preventDefault();contextLost=true;adaptiveQuality.interrupt();frameDriver?.suspend();}),lease.listenCanvas<Event>('webglcontextrestored',()=>{if(disposed||!lease.active)return;configure(renderer);adaptiveQuality.interrupt();last=0;resize(false);requestShadow('context-restore');}),lease.listenCanvas<PointerEvent>('pointerdown',e=>{if(paused)return;host.focus({preventScroll:true});drag={x:e.clientX,y:e.clientY,id:e.pointerId,travel:0};renderer.domElement.setPointerCapture(e.pointerId);}),lease.listenCanvas<PointerEvent>('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;schedule();const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.travel+=Math.hypot(dx,dy);drag.x=e.clientX;drag.y=e.clientY;if(perspective.mode()!=='activity'&&mode==='walk')perspective.look(-dx*.005,-dy*.004);
       else{lookAcc.dx-=dx*.005;lookAcc.dy-=dy*.004;yaw-=dx*.005;pitch=Math.max(-1.2,Math.min(.8,pitch-dy*.004));}if(mode==='look'){target.set(camera.position.x+Math.sin(yaw)*Math.cos(pitch)*distance,camera.position.y+Math.sin(pitch)*distance,camera.position.z+Math.cos(yaw)*Math.cos(pitch)*distance);camera.lookAt(target);}}),lease.listenCanvas<PointerEvent>('pointerup',e=>{const click=drag&&drag.travel<5;drag=null;if(!click||mode!=='walk'||paused||registry.active()||kitchen?.active())return;const rect=renderer.domElement.getBoundingClientRect(),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);const hits=ray.intersectObjects([...stream.live.values()].map(r=>r.cards.group),true);const hit=hits[0];if(hit){const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],[hit.point.x,hit.point.y,hit.point.z],{stepFree:true});if(plan){path=[...plan.points];routeAhead(plan.points);}else options.onStatus?.('No connected walking route reaches that point.');}}),lease.listenCanvas<WheelEvent>('wheel',e=>{schedule();if(paused)return;e.preventDefault();if(perspective.mode()==='floating'&&mode==='walk'){perspective.zoom(e.deltaY);return;}if(registry.active())return;distance=Math.max(2,Math.min(45,distance*Math.exp(e.deltaY*.001)));updateCamera();},{passive:false})];
   window.addEventListener('keydown',keyDown);window.addEventListener('keyup',keyUp);window.addEventListener('blur',focusPause);document.addEventListener('visibilitychange',visibilityClear);host.addEventListener('blur',hostBlur);
@@ -892,7 +939,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     setCruiserSkin(skin:CruiserSkin){schedule();cruiserSkin=skin;cruiserArt?.setSkin(skin);},
     cruiserState:()=>cruiser()?.state()??null,
     body:()=>({...body}),mode:()=>mode,shotId:()=>shotId,
-    setTheme(next:VehicleDressing){if(next===theme)return;theme=next;unmountCorridor();mountCorridor(currentTime??new Date());if(regionScene||regionTask)releaseRegion();kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
+    setTheme(next:VehicleDressing){if(next===theme)return;theme=next;unmountCorridor();mountCorridor(currentTime??new Date());skate?.setTheme(next);if(regionScene||regionTask)releaseRegion();if(placed)monorail?.setTheme(placed.dressing(next));kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
+    setAvatar(next:PlayableAvatar|null){const previous=figure;figure=next?createPlayableFigure(next,tier,{invalidate:schedule,onStatus:options.onAvatarStatus}):createBodyFigure();scene.add(figure.group);skate?.setFigure(figure);previous.group.removeFromParent();previous.dispose();schedule();},
     settings:()=>({tier,reducedMotion:comfort.reducedMotion,calm:comfort.calm,theme}),reviewDate:()=>(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm})),setAmbience(audio:WorldAmbience|null){ambience=audio;schedule();},
     offers,
     moverState():HorizonMoverState{const fade=fadeLabel&&performance.now()-fadeLabel.at<HORIZON_FADE_LABEL_MS?fadeLabel.label:undefined;return{mode:registry.mode(),attached:registry.active()!==null,hud:lastHud,airborne:registry.mode()==='parachute'||!!registry.active()?.airborne?.(),stowed:registry.stowed(),perspective:perspective.mode(),...(fade?{fade}:{}),cut:comfortCut};},
@@ -928,13 +976,57 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     /** Compatibility (main #552): one comfort path — `setComfort` sets the land's motion and the movers' registry together. */
     setReducedMotion(on:boolean){applyComfort({reducedMotion:on});},
     setCalm(on:boolean){applyComfort({calm:on});},
+    /** The old Tideline skate (the shell's SkateHUD drives these). Null without Mountain v2 placed. */
+    skate(){return skate?.controls??null;},
+    monorailState:()=>monorail?.state()??null,
+    hasMonorail:()=>monorail!==null,
+    monorailBoard(station:number,companion=false){if(!monorail||registry.active()||skating()||kitchen?.active())return false;const pose=monorail.board(station,companion);if(!pose)return false;mode='walk';path=[];clear();Object.assign(body,{x:pose.at[0],y:pose.at[1],z:pose.at[2],yaw:pose.yaw});yaw=pose.yaw;transition=null;physicalBody=null;pageChosen=false;reportMonorail(true);schedule();return true;},
+    monorailSelect(stop:number){monorail?.select(stop);reportMonorail(true);schedule();},
+    monorailControl(control:'pause'|'brake'|'seat'|'companion'|'speed'|'view'|'exit'|'bell',value?:number|boolean|MonorailView){
+      if(!monorail?.state())return false;
+      if(control==='exit'){
+        const pose=monorail.pose();if(!pose||monorail.state()?.phase!=='doors-open')return false;
+        if(!gateOpen(pose.at[0],pose.at[2])||!regionReady(pose.at[0],pose.at[2])){options.onStatus?.('The platform is still arriving. Wait a moment before stepping off.');return false;}
+        const foot=restoreHorizonPosition({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',x:pose.at[0],y:pose.at[1],z:pose.at[2],yaw:pose.yaw},world.pathGraph!,geography.ground,restoreStand);
+        if(!gateOpen(foot.x,foot.z)){options.onStatus?.('The walkway is still arriving. Wait a moment before stepping off.');return false;}
+        monorail.control('exit');Object.assign(body,{x:foot.x,y:foot.y!,z:foot.z,yaw:foot.yaw});yaw=foot.yaw;reportMonorail(true);updateCamera();schedule();return true;
+      }
+      if(control==='bell')ambience?.bell();
+      monorail.control(control,value);reportMonorail(true);schedule();return true;
+    },
+    /** Whether the board can be put down here (Mountain v2's town island). */
+    hasSkate(){return Boolean(skate);},
+    canSkate(){return Boolean(skate&&mode==='walk'&&!monorail?.state()&&!registry.active()&&!kitchen?.active()&&skate.canStart(body.x,body.z));},
+    startSkate(progress?:SkateProgress){
+      schedule();if(!skate||monorail?.state()||registry.active()||kitchen?.active()||mode!=='walk')return false;
+      // The old shell offered the board from its main outdoor place. The Horizon is much larger:
+      // bring an explicit Skate action to the park's known start before handing control to the old driver.
+      if(!skate.canStart(body.x,body.z)){
+        const at=horizonSkateEntry();restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',...at});
+        Object.assign(body,at);yaw=at.yaw;pendingRestore=null;resnap=!gateOpen(at.x,at.z);updateCamera();
+      }
+      emote=null;path=[];clear();return skate.start({...body},progress);
+    },
+    retry(){
+      schedule();
+      if(skating()){skate!.controls.command('retry');skate!.publish(performance.now(),true);return true;}
+      if(registry.active()||monorail?.state()||kitchen?.active())return false;
+      const node=nearestPathNode(world.pathGraph!,[body.x,body.y,body.z]);if(!node)return false;
+      restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',x:node.at[0],y:node.at[1],z:node.at[2],yaw:node.facing??body.yaw});
+      fadeCut('Back on safe ground.');return true;
+    },
+    stopSkate(){schedule();const at=skate?.stop();if(!at)return false;Object.assign(body,at);yaw=at.yaw;path=[];clear();return true;},
+    /** The old shell's emote row: plays on the walking figure (null stops it). Riding, it does nothing. */
+    emote(id:EmoteId|null){schedule();emote=id&&!registry.active()?{id,at:performance.now()}:null;},
     input(next:Partial<typeof controls>){schedule();controls={...controls,...next};},jump(){schedule();jumpRequested=true;},look(dx:number,dy:number){schedule();if(perspective.mode()!=='activity'&&mode==='walk'){perspective.look(dx,dy);return;}lookAcc.dx+=dx;lookAcc.dy+=dy;yaw+=dx;pitch=Math.max(-1.2,Math.min(.8,pitch+dy));},
-    pause(value:boolean){paused=value;adaptiveQuality.interrupt();schedule();if(value){kitchen?.pause('Tools are open. All kitchen timers are paused.');clear();ambience?.pause();}},setDate(date:Date){schedule();const month=date.getMonth()+1;homeWorld.setSeason(month<=2||month===12?'winter':month<=5?'spring':month<=8?'summer':'autumn');currentTime=date;lastSun=-Infinity;},
+    pause(value:boolean){paused=value;adaptiveQuality.interrupt();schedule();if(value){kitchen?.pause('Tools are open. All kitchen timers are paused.');if(skating()&&!skate!.controls.paused())skate!.controls.pause(true);clear();ambience?.pause();}},setDate(date:Date){schedule();const month=date.getMonth()+1;homeWorld.setSeason(month<=2||month===12?'winter':month<=5?'spring':month<=8?'summer':'autumn');currentTime=date;lastSun=-Infinity;},
 
     /** The app's comfort choices, live (HorizonStage threads useComfort; html[data-motion] is read too). */
     setComfort(next:Partial<HorizonComfort>){applyComfort(next);},
     comfort:()=>({...comfort,motion:{...motion}}),
-    walkTo(p:XYZ){schedule();lastMovementBlocker=null;const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],p,{stepFree:true});path=plan?[...plan.points]:[];if(plan)routeAhead(plan.points);return plan;},
+    /** Whether a tapped or requested route is still being walked. */
+    routing(){return path.length>0&&!registry.active();},
+    walkTo(p:XYZ){schedule();if(registry.active()||skating()||monorail?.state())return null;lastMovementBlocker=null;const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],p,{stepFree:true});path=plan?[...plan.points]:[];if(plan)routeAhead(plan.points);return plan;},
     setHomeBotanical(...args:Parameters<typeof homeWorld.setBotanical>){schedule();homeWorld.setBotanical(...args);},
     setHome(layout:HomeLayout|undefined,displays?:HomeDisplayContent[],plotId?:string){const occupied=homeWorld.roomAt(body);homeWorld.set(layout,displays,plotId);if(occupied&&(geography.blocked(body.x,body.z,body.y)||!homeWorld.roomAt(body))){const at=homeWorld.visit();if(at)restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',...at});}requestShadow('home-renovation');},
     visitHome(){const at=homeWorld.visit();if(!at)return false;restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',...at});return true;},
@@ -957,7 +1049,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     /** Pass 5: the water picture at v2's dam, as given (0…1; null = unknown, frosted glass). The runtime and the region read
      *  nothing themselves: the app feeds the one reading L01 shows (CONTRACT §2.2). */
     setMountainDamWater(level:number|null,reserve:number|null){regionWater={level,reserve};regionScene?.setWater(level,reserve);schedule();},
-    dispose(){kitchen?.dispose();releaseRegion();offRegion?.();offCable?.();saveFleet();window.removeEventListener('pagehide',saveAll);offFleet();offHome();homeWorld.dispose();fleetArt.dispose();disposed=true;window.clearTimeout(fadeTimer);registry.dispose();cruiserArt?.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();offChunk?.();frameDriver?.dispose();observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',focusPause);document.removeEventListener('visibilitychange',visibilityClear);host.removeEventListener('blur',hostBlur);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();roadLights.dispose();unmountCorridor();inspector.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
+    dispose(){monorail?.dispose();skate?.dispose();kitchen?.dispose();releaseRegion();offRegion?.();offCable?.();saveFleet();window.removeEventListener('pagehide',saveAll);offFleet();offHome();homeWorld.dispose();fleetArt.dispose();disposed=true;window.clearTimeout(fadeTimer);registry.dispose();cruiserArt?.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();offChunk?.();frameDriver?.dispose();observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',focusPause);document.removeEventListener('visibilitychange',visibilityClear);host.removeEventListener('blur',hostBlur);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();roadLights.dispose();unmountCorridor();inspector.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
   };
   // Pass 5 (T3's contract, HANDOFF-notes/rides.md): the cable rides move the region's cabins through `setTransit`.
   const offCable=placed&&api.mountainRegion?connectCableRegion(placed.region,api.mountainRegion,()=>camera.aspect):null;

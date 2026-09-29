@@ -1579,7 +1579,7 @@ These entries transcribe the supplied Horizon deck v1.5 and the explicit D1 quot
 | D12 | Three uphill Terraces plots, four Bight Shore plots, plus the sealed drift and hangar bay; seaward plot 4 is removed without relocation | Three uphill plots only | 25 Sep 2026: “Keep only three uphill — seven reserve plots total” | APPROVED | — |
 | D13 | Full concept scale: engine units = concept metres × 1.0, including height | Previous 0.6 recommendation superseded | 25 Sep 2026: “1.0 — full concept scale” | APPROVED | — |
 | D14 | The Kitty reserve chambers retire from the dam; Kitty Banks are read in the Loft as now; `L01` shows the Fund basin only | Claude recommends retire | No answer recorded in the supplied deck | OPEN | 03 (Lakeside) |
-| D15 | When the app switches from the current island/mountain to the Horizon: behind one Development flag (`VITE_HEARTH_HORIZON`) from pass 1, flipped for everyone when Little Harbour (pass 3, first neighbourhood) is accepted on both devices, and the flag deleted in the same PR | Claude recommends as stated | No answer recorded in the supplied deck | OPEN | 03 |
+| D15 | When the app switches from the current island/mountain to the Horizon: behind one Development flag (`VITE_HEARTH_HORIZON`) from pass 1, flipped for everyone when Little Harbour (pass 3, first neighbourhood) is accepted on both devices, and the flag deleted in the same PR | Claude recommends as stated | 29 Sep 2026: “i want it fully implemented” … “ovewrite any blockers, i am ready you have my permission” — switched on for everyone now, without waiting for the pass-3 device acceptance; the flag is kept as the rollback (see “D15 answered” below) | APPROVED | — |
 | D17 | The zipline needs a 30 m tower at the Prow (deck h 100, shared with the glider launch) and a landing tower on the dune crest (deck h 12, Town Weave passes beneath); a line from the cliff top alone dips to 2 m over the harbour | Claude recommends the towers | No answer recorded in the supplied deck | OPEN | 02 |
 | D16 | The day/night cycle follows the real sun in the device's time zone at 44° N, with the sundial scrub, reduced-motion freeze at 15:30, and a deterministic almanac | — | Stated by Jonathan 25 Sep 2026; exact words not recorded in the supplied status table | APPROVED | — |
 | D18 | Retire weather-from-money on the Horizon (bills → clouds, storm, Fund mist, payday sunrise); the timeline strip carries them explicitly | Claude recommends yes | No answer recorded in the supplied deck | OPEN | 02c |
@@ -1703,3 +1703,65 @@ Mountain v2 (`src/harbour/mountain/**`, the live mountain on `main`, `hearth-mou
 Risk **High** (shared geometry, navigation, presentation). Budget delta (5): **+0** — no money path changes; `L01` moves with the dam onto v2's crest plaques and still reads `BasinReading` only, nothing else on the mountain touches money. Engagement delta (3): **+2** — the beautiful mountain, preserved at its original quality and stripped of clutter, is now on the island. Fictional data only, per `CONTRACT.md` §2.12. See the [worksession](worksessions/2026-09-28-horizon-v2-mountain.md) for tracks, verification and uncertainty.
 
 Status: PR #566 merged to `main` as `0015a8a` (2026-09-29); Workers build on `main` succeeded and the live worker serves it; the Horizon itself stays dev-gated (`/horizon/**` is not deployed; `?world=horizon` is DEV-only), so the pass is merged and deployed but not live-visible, and not pinned (device evidence owed). Known pre-existing gap (#564): the Home Book's *Visit my saved home* still routes live users to the Horizon edition, which refuses to mount in production with a status message — the gate is an open product decision, not this pass's.
+
+### 2026-09-29 — D15 answered: the Horizon is live for everyone
+
+Jonathan, 29 September 2026, after being told the gates were unmet (D15 OPEN; only PIN-0 recorded; no PIN-1…PIN-3 device acceptance): *"i want it fully implemented"*, then *"ovewrite any blockers, i am ready you have my permission"*. This answers D15 and explicitly waives the pass-1 and pass-3 device gates as release conditions. The pass reviews themselves are not recorded as passed.
+
+- `VITE_HEARTH_HORIZON=1` (`src/harbour/flag.ts` → `HORIZON_LIVE`, requires `HARBOUR_ENABLED`) makes the Horizon the default world in the live build; `pages.yml` sets it. `HORIZON_AVAILABLE = DEV || HORIZON_LIVE` gates the mount (`scene/worldMount.ts`), the product paths (Home Book visit, Journey Board "Enter Horizon here") and the Journey Board's Enter buttons, so a build with the switch off never offers a dead end.
+- The dev Mountain ↔ Horizon toggle stays dev-only and starts from the build's default. Review-only controls (`simulateWalk`, `settle`, `?bail=`, `?mountainV2`, `?hideBuildings`, `window.__harbour`) stay on `HARBOUR_DEV`.
+- Devices without WebGL, on Save-Data or in the flat edition keep the Mountain (`HorizonEdition`, unchanged).
+- `public/.assetsignore` now uploads the chunked Horizon assets (index, 14 district chunks, terrain, cards, Journey slim land, the gzipped monolith fallback) and excludes only the raw `horizon-geo-*.json` bake artefact (27.7 MB > 25 MiB). This also gives the live Journey Board its slim land file, which `/horizon/**` had been withholding.
+- Deviation from D15 as recommended: the flag is **kept**, not deleted in the same PR, as the one-line rollback (`"0"` and redeploy → the Mountain). Delete it once the Horizon has held on both devices.
+
+Risk **High** (default world for every member). Budget delta (5): **0** — no ledger, command, continuity, Auth/RLS or Hercules payload change; hosts still route to the same tools and the Horizon's own stores (fleet, Yacht Kitchen, homestead) stay device-local and non-financial. Engagement delta (3): **+2** intended (continuous world by default). Presence stays partitioned (`horizon:horizon-geo-1`).
+
+### 2026-09-29 — The Horizon in the old app shell (PR A of three)
+
+Jonathan, 29 September 2026: *"i should see the old ux with the skateboard, but still be able to use the yatch and boats and paracthes, i basically want the new map all of its new features in the old apps shell"*. Asked to clarify, he chose: keep the Horizon live meanwhile; drop the old app's harbour square and old Journey (the Horizon's town and Journey map stay); the old Mountain skate ported onto the Horizon; drop the Horizon's toolbar.
+
+Delivered in three PRs: **A** the old shell's chrome around the Horizon (this entry); **B** the old skate on Horizon ground; **C** Horizon doors into the old 3D rooms.
+
+PR A:
+- `HorizonWorld` wears the old shell: `.harbour-world` wrapper, `VillageHUD` (address card, Record / All tools / Simple view, room bar), the `Dock` (strip and camp card), `HostPanel`, `WalkTogether`, `MineRibbon`, `HomeBookButton`, the reading-edition overlay while loading, and the emote row (new `HorizonRuntime.emote`). This fixes PR #569's review findings P1 (Places did nothing) and P2 (no dock).
+- All tools › Places (`HARBOUR_GO_EVENT`), a panel's Visit, and a route change walk the body along the Horizon's paths to the place's host door (`returnAt`) or outdoor anchor; a panel's Step in goes through the host's door.
+- `HorizonStage` `shell` mode: no `.horizon-toolbar` (Walk/Look/Island, pages, perspective, Tools, Journey, Sound, Renovation book, homestead); the stage starts walking. The mover controls stay but appear only when relevant: the ride group while on the cruiser, cable buttons on the gondola/funicular, the fleet panel near boats, afloat or swimming, and the move/look pads only while riding (walking on a phone is tap-to-walk and drag-to-look, with Jump / Interact / Ride / Emote in the old moves row). The cruiser style picker is not shown in the shell.
+- A Horizon that cannot open (asset, chunk, runtime import or render) hands the harbour back to the old world for that visit (`HorizonEdition` + `HorizonBoundary`), fixing PR #569's review finding P2 (stranded shell).
+
+Risk **High** (the default world's chrome for every member). Budget delta (5): **+1**: the dock and host panels return to the everyday world; no ledger, command, continuity, Auth/RLS or Hercules payload change (the shell only reads `useHarbourReading`, as the Mountain does). Engagement delta (3): **+2**: the familiar shell over the new land, movers kept. Not yet in the shell: the Mountain guide (tour, monorail, race: Mountain-only), the character picker, arranging rooms, the Desk switch inside the world, and DOM twins over buildings (the Horizon has no anchor projection yet).
+
+### 2026-09-29 — The old Tideline skate on the Horizon (PR B of three)
+
+Jonathan chose "the old Mountain skate", not the Horizon's board mover. Mountain v2 stands on the Horizon as a pure translation (`MOUNTAIN_V2_OFFSET` = 1308, 54, 764), and its town island's ground is the Mountain's own ground raised by the offset. So the old skate runs **unchanged in native Mountain space** (`horizon/skate/nativeSkate.ts`): its sim, field, park meshes, spots, routes, the mountain race, tricks, decks and saved progress. Only the edges translate: the Horizon body follows the ride plus the offset, and the chase camera is offset the same way.
+
+- The board comes out on Mountain v2's town island (native radius 64, the region's ground), where the Tideline park now stands again. Elsewhere on the Horizon the board mover and its skate lines S1–S4 remain.
+- The shell renders the old `SkateHUD` ("Skate the island · B", Tideline Skate Club); B boards and leaves, P/Escape pause; progress saves under the same `skateProgressKey` as the Mountain, so existing bests, decks and settings carry over.
+- The runtime steps the skate in place of walking, gives it the camera, routes keys to its input, and hides threshold offers while riding.
+- No island obstacles are passed (the Mountain's village buildings are not drawn on the Horizon); the park's own solids and dressing still collide. The race start/finish shots are not ported (the chase camera covers the race).
+- Source fence: `horizon/HorizonWorld.tsx` joins the local gameplay-storage list (skate progress; the same as `HarbourWorld.tsx`).
+
+Risk **Medium-High** (world runtime, input routing). Budget delta (5): **0**: no money path. Engagement delta (3): **+2**: the old skate returns inside the new world.
+
+### 2026-09-29 — Horizon doors into the old 3D rooms (PR C of three)
+
+Outdoors is the Horizon; indoors is the old world's room with its old shell. `harbourShellFor` (HarbourWorld.tsx) picks the shell per route: the square, the island and the campfire are the Horizon whenever it is chosen; the bank (with the Queen), Loft, Cellar, Kitchen, Atlas, Library, Glasshouse, Kiln, Cottage and Boathouse mount the old world's 3D room. A Home Book visit and an unspent Journey Board "Enter Horizon here" still force the Horizon; a spent one no longer holds a room hostage.
+
+- A Horizon door now walks you into the room (route without a surface) instead of opening a flat tool; tools open from the room's own objects, as they always did. The door saves the Horizon return body, so walking out or choosing "← The square" brings the Horizon back at that door.
+- "← The square" stands above the dock (`village.css`); it had been covered by the dock card since the dock arrived, and is now the way back to the Horizon.
+- Known cost: the old world still loads its island behind a room (it keeps the island standing for placed rooms). Not visible from inside; worth trimming later.
+
+Risk **Medium-High** (world routing). Budget delta (5): **0**: rooms read the books exactly as before; no money path changes. Engagement delta (3): **+2**: the old rooms are back behind Horizon doors.
+
+### 2026-09-29 — Complete the old shell's Horizon migration locally
+
+Jonathan asked for the old app to function through the Horizon world with the new map and its vehicles. This integration starts from current `main` after PR A and carries Claude's PR B (old Tideline skate) and PR C (old 3D rooms) onto the same branch. The Horizon remains the outdoor map; room doors use the old room scenes and tools. Existing Horizon movers and fleet remain on their own native boarding places.
+
+The shell now provides the old member-scoped Mine marks at projected Horizon host doors, keyboard-accessible host buttons, a Step in guide for actual Horizon views and travel, the original saved character choice, and the original Mountain monorail clock and carriage on Mountain v2's translated track. The guide can start the old downhill race only where the old skate can board. The cruiser style selector remains available while riding. The global Simple View and Journey routes continue to use their existing App controls; this work does not add another financial path. All money actions still open their established tools and remain behind their own review and Final Confirm.
+
+Risk **High** (default-world navigation, runtime and input). Budget delta (5): **0** — the Mine layer reads the current member's existing model and opens tools; no accounting, ledger, Auth, sync, schema or command writer changes. Engagement delta (3): **+2** — familiar shell access, skate, rooms, train and Horizon movers in one world. The monorail is a local world ride; it does not save a train journey to the books or cloud. Its initial boarding may select any listed station, as the old guide did. The old Mountain's small environmental moments and race framing art remain separate from this shell; the old race simulation and HUD are present. Browser, phone and authenticated cross-device acceptance are still required before claiming exact parity.
+
+### 2026-09-29 — Keep the board and both resets visible across the Horizon
+
+Jonathan reported that the board features and reset had disappeared, and clarified that both safe-ground Retry and the board's marker reset are needed. The old Tideline session, spots, routes, decks, tricks and progress remain the source. Its entry and race actions now appear wherever the person stands on foot on the Horizon; choosing one moves to Tideline's authored start, then uses the old board driver and HUD. On foot, Retry returns to a walkable path node through the same restore and chunk hold. On the board, Reset calls the existing marker/race retry action. The large month card moves out of the way while skating so the two phone pads stay usable; the small Record and All tools bubbles remain. This is a local-world navigation change, not a ledger reset or a cloud-data deletion.
+
+Risk **High** (world position and input). Budget delta (5): **0** — no money or Confirm path changed. Engagement delta (3): **+1** — the existing board experience and recoveries are findable without first discovering the park by walking.

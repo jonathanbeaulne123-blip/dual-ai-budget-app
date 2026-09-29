@@ -29,6 +29,7 @@ import { journeyMarkDomId, markEntries, Marks } from "./Marks.tsx";
 import { PiecePanel } from "./PieceLook.tsx";
 import { Stage, type FlatView, type StageMode, type StageSize } from "./Stage.tsx";
 import { ChapterPanel, ClusterPanel, StopPanel } from "./StopPanel.tsx";
+import { HORIZON_AVAILABLE } from "../../harbour/flag.ts";
 import "./journey-board.css";
 
 export type JourneyStageSource = {
@@ -171,6 +172,8 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
   const panelHeading = useRef<HTMLHeadingElement | null>(null);
   const readySent = useRef(false);
   const live = stage.mode === "live";
+  /** "Enter Horizon here" is offered only where the Horizon can mount (development, or live under D15). */
+  const canEnterHorizon = live && HORIZON_AVAILABLE;
 
   const onViewStateChange = useRef(props.onViewStateChange);
   onViewStateChange.current = props.onViewStateChange;
@@ -554,7 +557,7 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
         row={rowsById.get(stop.id)}
         actions={actions}
         onClose={closePanel}
-        horizonLocation={live ? horizonLocationFor(stop.placeRef, stage.land) : null}
+        horizonLocation={canEnterHorizon ? horizonLocationFor(stop.placeRef, stage.land) : null}
         onEnterHorizon={enterHorizon}
         back={back ? { label: `${COPY.backToCluster} · ${back.label}`, onBack: () => select(back.id) } : null}
         nameOf={props.nameOf}
@@ -602,7 +605,7 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
             <div className="journey-toolbar" role="group" aria-label="Map view">
               <button type="button" className="journey-toolbar__zoom" aria-label={COPY.zoomOut} data-zoom="out" disabled={!live && tier === "sky"} onClick={() => zoom(-1)}><span aria-hidden="true">−</span></button>
               <button type="button" className="journey-toolbar__zoom" aria-label={COPY.zoomIn} data-zoom="in" disabled={!live && tier === "stop"} onClick={() => zoom(1)}><span aria-hidden="true">+</span></button>
-              {live && tier === "stop" ? (
+              {canEnterHorizon && tier === "stop" ? (
                 <button type="button" className="journey-toolbar__enter" data-enter-horizon="" disabled={!centreOnLand} title={centreOnLand ? undefined : COPY.enterHorizonOverWater} onClick={enterHere}>{COPY.enterHorizon}</button>
               ) : null}
             </div>

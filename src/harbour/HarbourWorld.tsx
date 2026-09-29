@@ -24,7 +24,7 @@ import type {SkateFrame} from './scene/runtime.ts';
 import {useDesignClient} from '../hearthside/DesignProvider.tsx';
 import {snapshotKittyDesignRevision} from '../hearthside/design.ts';
 import type {VillageDisplayContent} from './village/displays.ts';
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { Component, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useGlassNight } from "./bubbles/glassMode.ts";
 import { useHerculesSuggestion } from "./nav/barBadges.ts";
 /** The words Hercules's twin adds to its name while he has a fresh suggestion. */
@@ -47,7 +47,7 @@ import { useHarbourReading } from "./data/useHarbourReading.ts";
 import { HarbourFlat } from "./flat/PlaceFlat.tsx";
 import { DeskShell } from "./desk/DeskShell.tsx";
 import { HarbourTwins } from "./court/CourtTwins.tsx";
-import { HARBOUR_LANDMARKS, HARBOUR_PLACE_NAMES, harbourPlaceFor, harbourWayFor, type HarbourPlaceId } from "./flag.ts";
+import { HARBOUR_LANDMARKS, HORIZON_AVAILABLE, HARBOUR_PLACE_NAMES, harbourPlaceFor, harbourWayFor, type HarbourPlaceId } from "./flag.ts";
 import { HARBOUR_GO_EVENT } from "./nav/QuickSheet.tsx";
 import { HOUSE_LEVELS, HOUSE_ROOMS } from "../hearthside/houseRoutes.ts";
 import { classifyGesture, gestureAction, spark, type QueenAction, type QueenRegion, type QueenSpark } from "./court/queenTouch.ts";
@@ -218,18 +218,45 @@ const EMOTE_FACES: Readonly<Record<EmoteId, string>> = Object.freeze({
 const pulseFreshness = (gate: InterpretationGate | undefined): FundPulseFreshness => (gate?.freshness === "stale" || gate?.freshness === "offline" ? gate.freshness : "current");
 
 const HorizonWorld = lazy(() => import("./horizon/HorizonWorld.tsx"));
+/**
+ * Which shell stands for a route. Outdoors (the square, the island, the campfire) is the Horizon whenever it is chosen;
+ * indoors — the bank, the Loft, the Cellar, the Kitchen, the Atlas, the Library, the Glasshouse, the Kiln, the Cottage,
+ * the Boathouse — is the old world's 3D room with its old shell (Jonathan 2026-09-29, PR C): a Horizon door walks you
+ * into the room, and walking out (or "← The square") brings the Horizon back at that door. A Home Book visit and an
+ * unspent Journey Board "Enter Horizon here" still force the Horizon (product paths).
+ */
+export function harbourShellFor(input:{available:boolean;place:HarbourPlaceId;world:"horizon"|"mountain";
+  /** A Home Book visit not yet made (`pendingVisit`): the Horizon, wherever the route stands. */visit?:boolean;
+  /** A Home Book visit already made this session (`visitRequested`): keeps the Horizon outdoors only, never a room (PR #572 review). */visited?:boolean;
+  request?:{arrived?:boolean}|null}):"horizon"|"mountain"{
+  if(!input.available)return "mountain";
+  const indoors=input.place!=="court"&&input.place!=="campfire";
+  if(input.visit||input.request&&!input.request.arrived)return "horizon";
+  return !indoors&&(input.world==="horizon"||Boolean(input.visited)||Boolean(input.request))?"horizon":"mountain";
+}
 export default function HarbourWorld(props: HarbourWorldProps) {
   const homeBook=useHomeBook();
   const world=useHarbourWorld();
-  // Home Book visit and the Journey Board's "Enter Horizon" still force Horizon (product paths). Otherwise the DEV world toggle.
-  return homeBook?.visitRequested || world === "horizon" || props.enterHorizonRequest
+  const shell=harbourShellFor({available:HORIZON_AVAILABLE,place:harbourPlaceFor(props.route,props.scope,true)??"court",world,visit:homeBook?.pendingVisit,visited:homeBook?.visitRequested,request:props.enterHorizonRequest});
+  return shell==="horizon"
     ? <HorizonEdition {...props} key="horizon"/>
     : <MountainHarbourWorld {...props} key="mountain"/>;
 }
 function HorizonEdition(props:HarbourWorldProps){
   const edition=useMotionEdition();
   const [canDraw]=useState(()=>{const input=readQualityInput(window,window.innerWidth);return input.webgl&&!input.saveData;});
-  return edition==='flat'||!canDraw ? <MountainHarbourWorld {...props}/> : <Suspense fallback={<p role="status">Loading the Horizon…</p>}><HorizonWorld {...props}/></Suspense>;
+  // A Horizon that cannot open (an asset, a chunk, the runtime import) never strands the harbour: the old world takes
+  // over for this visit, with its dock, panels and Desk (D15 follow-up; PR #569 review P2).
+  const [failed,setFailed]=useState(false);
+  if(edition==='flat'||!canDraw||failed)return <MountainHarbourWorld {...props}/>;
+  return <HorizonBoundary onFailed={()=>setFailed(true)}><Suspense fallback={<HarbourFlat place="court" reading={null} status="loading"/>}><HorizonWorld {...props} onFailed={()=>setFailed(true)}/></Suspense></HorizonBoundary>;
+}
+/** Catches a Horizon render or lazy-import failure and hands the harbour back to the old world. */
+class HorizonBoundary extends Component<{onFailed:()=>void;children:ReactNode},{failed:boolean}>{
+  state={failed:false};
+  static getDerivedStateFromError(){return {failed:true};}
+  componentDidCatch(){this.props.onFailed();}
+  render(){return this.state.failed?null:this.props.children;}
 }
 
 function MountainHarbourWorld(props: HarbourWorldProps) {

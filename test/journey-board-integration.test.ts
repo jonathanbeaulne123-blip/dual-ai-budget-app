@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import HarbourWorld, { type HarbourWorldProps } from "../src/harbour/HarbourWorld.tsx";
+import HarbourWorld, { harbourShellFor, type HarbourWorldProps } from "../src/harbour/HarbourWorld.tsx";
 import HorizonWorld from "../src/harbour/horizon/HorizonWorld.tsx";
 import type { HorizonStageProps } from "../src/harbour/horizon/HorizonStage.tsx";
 import { JOURNEY_HOME_ROUTE, harbourArrivalRoute, markArrived, type ArrivalSession } from "../src/harbour/nav/arrival.ts";
@@ -25,6 +25,8 @@ const state = vi.hoisted(() => ({ stage: null as HorizonStageProps | null, horiz
 vi.mock("../src/harbour/horizon/HorizonStage.tsx", () => ({ default: (props: HorizonStageProps) => { state.stage = props; return null; } }));
 vi.mock("../src/harbour/presence/feed.ts", () => ({ publishLocalPose: () => () => {}, useWorldFeed: () => ({ walk: null }) }));
 vi.mock("../src/softPresenceWorld.ts", () => ({ readWorldPresenceShare: () => "together" }));
+// The old shell around the Horizon reads the books for its dock and panels; this file is about where the body starts.
+vi.mock("../src/harbour/data/useHarbourReading.ts", () => ({ useHarbourReading: () => ({ reading: null, statusLine: null }) }));
 // The Mountain never draws here: a failed mount keeps the Mountain edition on its flat fallback.
 vi.mock("../src/harbour/scene/runtime.ts", () => ({ mountHarbourWorld: () => { throw new Error("no Mountain scene in this test"); }, scrubControls: () => null }));
 vi.mock("../src/harbour/court/queenPlace.ts", () => ({ loadQueenPlace: () => Promise.reject(new Error("no Queen in this test")), seatGrowthAtRoots: () => undefined }));
@@ -184,7 +186,12 @@ describe("HarbourWorld picks the Horizon for an explicit request", () => {
   });
   it("keeps the chooser's other ways into the Horizon", () => {
     const shell = readFileSync(join(root, "src", "harbour", "HarbourWorld.tsx"), "utf8");
-    expect(shell).toMatch(/return homeBook\?\.visitRequested \|\| world === "horizon" \|\| props\.enterHorizonRequest/);
+    expect(shell).toMatch(/visit:homeBook\?\.pendingVisit,visited:homeBook\?\.visitRequested,request:props\.enterHorizonRequest/);
+    // An unspent "Enter Horizon here" and a Home Book visit force the Horizon even from a room; a spent one does not.
+    expect(harbourShellFor({ available: true, place: "bank", world: "mountain", request: { arrived: false } })).toBe("horizon");
+    expect(harbourShellFor({ available: true, place: "bank", world: "horizon", request: { arrived: true } })).toBe("mountain");
+    expect(harbourShellFor({ available: true, place: "court", world: "mountain", request: { arrived: true } })).toBe("horizon");
+    expect(harbourShellFor({ available: true, place: "tower", world: "horizon", visit: true })).toBe("horizon");
   });
 });
 
