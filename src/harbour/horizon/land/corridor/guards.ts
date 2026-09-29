@@ -44,8 +44,6 @@ export function guardNeed(st: CorridorStation, side: SideName, turn: number): Gu
   // The Year Walk as the footway: its own outer edge (the walk's rail or wall) guards the drop beyond it (connect, never duplicate).
   if (owned(st, side) || s.gap || s.edge === 'yearWalk') return 'none';
   if (s.drop > CORRIDOR.guardDrop) {
-    // On a structure's bare deck edge: the light rail (a parapet's mass belongs on the ground, not on a trestle).
-    if (s.bare) return 'postRail';
     if (st.context === 'mountain') return 'stoneParapet';
     const outer: SideName = turn > 0 ? 'left' : 'right';
     if (st.context === 'coastal' && side === outer && Math.abs(turn) > 1 / TIGHT_RADIUS) return 'stoneParapet';

@@ -119,6 +119,14 @@ export function buildCorridorSolids(core: CorridorCore, guards: readonly GuardRu
   const cover = { left: new Map<number, GuardRun>(), right: new Map<number, GuardRun>() };
   for (const run of guards) for (const k of runStations(core, run)) cover[run.side].set(k, run);
   const layout = stations.map((st, k) => ({ left: sideLayout(st, 'left', cover.left.get(k)), right: sideLayout(st, 'right', cover.right.get(k)) }));
+  // A guard run that continues onto a structure reaches the structure's first station (guards.ts); its kerb or verge laps
+  // that station too (as the deck does), so no slot opens between the last kerb and the structure's deck under the rail
+  // (the Quay Bridge's ends dropped 1.6–5 eu between them).
+  for (const run of guards) {
+    if (run.kind === 'retaining') continue;
+    const ks = runStations(core, run);
+    ks.forEach((k, i) => { if (!ownedAt(stations[k]!)) return; const nb = ks[i + 1] !== undefined && !ownedAt(stations[ks[i + 1]!]!) ? ks[i + 1]! : ks[i - 1] !== undefined && !ownedAt(stations[ks[i - 1]!]!) ? ks[i - 1]! : undefined; if (nb === undefined) return; const src = layout[nb]![run.side]; layout[k]![run.side] = { deck: src.deck, base: stations[k]!.at[1] + (src.base - stations[nb]!.at[1]), ...(src.kerb ? { kerb: { ...src.kerb } } : {}) }; });
+  }
   // A run carried on past its last station toward an opening (guards.ts: to the opening's true edge) stands on the deck: the
   // opening's station carries the rail's verge too, so the deck under that last half step is as wide as the rail needs.
   for (const run of guards) {
@@ -221,8 +229,12 @@ export function buildCorridorSolids(core: CorridorCore, guards: readonly GuardRu
         else for (let j = 0; j < APRON_STRIPS; j++) band(whole, segs, core, sub, false, k => {
           const base = plain(k), wgt = apron[k]!, own = stations[k]!.at[1];
           const o0 = base.a + (base.b - base.a) * j / APRON_STRIPS, o1 = base.a + (base.b - base.a) * (j + 1) / APRON_STRIPS;
+          // Inside the through road: its surface (just under it). Beyond it: the joining road keeps its own centreline profile
+          // and takes only the through road's cross-fall, fading over the apron (a steep spur's grade is never steepened).
+          const centre = (() => { const q = stations[k]!.at; return throughHeight(q[0], q[2], own); })();
           const at = (o: number) => { if (wgt <= 0) return own; const q = lateralLine(core, round3(o))[k]!, t = throughHeight(q[0], q[2], own); if (t === null) return own;
-            const onIt = under[k] && env.otherRoadHeight(q[0], q[2], t, id, .05) !== null; return round3(own + (t - (onIt ? MOUTH_UNDER : 0) - own) * wgt); };
+            if (under[k]) return round3(t - (env.otherRoadHeight(q[0], q[2], t, id, .05) !== null ? MOUTH_UNDER : 0));
+            return round3(own + (t - (centre ?? t)) * wgt); };
           const ya = at(o0), yb = at(o1); return { a: o0, b: o1, ya, yb, bottom: Math.min(ya, yb) - DECK.thickness };
         }, i0);
         i0 = i1;
@@ -231,6 +243,7 @@ export function buildCorridorSolids(core: CorridorCore, guards: readonly GuardRu
     pieces.push({ whole, segs, ks: run.ks, loop: run.loop, name: `deck.${i + 1}` });
   });
   // ---- fill walls: runs of stations whose side needs one, closed one station beyond each end (a flush end face there).
+  const lapped = new Map<string, number>();
   for (const side of ['left', 'right'] as const) {
     const sign = sideSign(side), need = (k: number) => fill[k]![side] !== null;
     const runs2: number[][] = []; let cur: number[] = [];
@@ -238,10 +251,13 @@ export function buildCorridorSolids(core: CorridorCore, guards: readonly GuardRu
     if (closed && runs2.length > 1 && runs2[0]![0] === 0 && runs2.at(-1)!.at(-1) === n - 1) { const first = runs2.shift()!; runs2[runs2.length - 1] = [...runs2.at(-1)!, ...first]; }
     runs2.forEach((ks0, i) => {
       const ks = [...ks0]; const before = closed ? (ks[0]! - 1 + n) % n : ks[0]! - 1, after = closed ? (ks.at(-1)! + 1) % n : ks.at(-1)! + 1;
-      if (before >= 0 && !ks.includes(before) && !ownedAt(stations[before]!)) ks.unshift(before); if (after < n && !ks.includes(after) && !ownedAt(stations[after]!)) ks.push(after);
+      // The flush end face stands one station beyond each end; next to a structure it stands under the deck's lap station (the
+      // deck laps the structure's first station), carried at the neighbour's footing, so the lapped deck never hangs free.
+      if (before >= 0 && !ks.includes(before)) { ks.unshift(before); if (ownedAt(stations[before]!)) lapped.set(`${side}:${before}`, ks[1]!); }
+      if (after < n && !ks.includes(after)) { ks.push(after); if (ownedAt(stations[after]!)) lapped.set(`${side}:${after}`, ks[ks.length - 2]!); }
       if (ks.length < 2) return;
       const whole = solid(`${id}.corridor.fill.${side === 'left' ? 'L' : 'R'}.${i + 1}`, 'corridorRetaining', 'rock', 'wall', [id], districtAt(stations[ks[0]!]!.at[0], stations[ks[0]!]!.at[2])), segs: number[] = [];
-      band(whole, segs, core, ks, false, k => { const w = layout[k]![side].deck, [a, b] = sign < 0 ? [-w, -(w - FILL.thickness)] : [w - FILL.thickness, w], top = stations[k]!.at[1] - DECK.thickness; return { a, b, ya: top, yb: top, bottom: fill[k]![side] ?? top - .01 }; });
+      band(whole, segs, core, ks, false, k => { const nb = lapped.get(`${side}:${k}`), w = layout[nb ?? k]![side].deck, [a, b] = sign < 0 ? [-w, -(w - FILL.thickness)] : [w - FILL.thickness, w], top = stations[k]!.at[1] - DECK.thickness; return { a, b, ya: top, yb: top, bottom: fill[k]![side] ?? (nb !== undefined ? fill[nb]![side] : null) ?? top - .01 }; });
       pieces.push({ whole, segs, ks, loop: false, name: `fill.${side === 'left' ? 'L' : 'R'}.${i + 1}` });
     });
   }
