@@ -1795,3 +1795,9 @@ Owed to Jonathan:
 - Lamp posts carry no collider, like every lantern on the island today. Should road lanterns block a rider?
 - Test measures that changed with the land, each with its reason in the test: the Year Walk's grade is measured on the baked walk; the Bight Bridge shares count fell from 800 to 750; the terraces.1 garden edge now allows 0.1 (it measures 0.085); page J's ground moved from 48.5 to 47; the west sea in page H reads 349 px.
 - Not measured: ROAD.md §8's per-district draw-call and triangle budget on the real bake. It is proven on fixtures; the inspector shows 200–446 whole-scene calls under SwiftShader. Device frame rates are also unmeasured.
+
+### 2026-09-30 — Horizon Airport begins with three new powered aircraft
+
+Jonathan clarified that he had not used an airplane and asked for three flying vehicles before building their airport. Inventory found no implemented powered flight to preserve. Kestrel (high wing), Swift (biplane) and Heron (twin engine) therefore share a new powered-flight controller integrated with Horizon's existing movement registry, camera, geography, wind and parachute. The aircraft are fixed local identities with explicit recovery; reload cannot resume an unowned airborne controller or create duplicates. No financial bookings, fuel purchases or activity posting are added.
+
+The airport uses its existing baked runway and an airport-owned raised road connection. A connected cedar/copper terminal, café, accessible observation roof, garden promenade and open workshop form one walkable campus. Road-owned geometry, collision and dressing are unchanged. Both Journey map renderers share the same layout. Budget delta **0**, Engagement delta **+3**, risk **High**. Validation and limitations: [worksession](worksessions/2026-09-30-horizon-airport.md). This decision records local implementation, not permission to merge or deploy.
