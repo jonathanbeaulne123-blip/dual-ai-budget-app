@@ -736,7 +736,7 @@ export type JourneyLandFlatData = {
   landforms: { id: string; d: string; band: "low" | "mid" | "high" }[];
   lines: { id: string; kind: LandLineKind; d: string }[];
   /** Road bridges: the deck's centreline and its true width (concept metres), drawn under the lines. */
-  bridges?: { id: string; d: string; width: number; landmark?: JourneyLandBridge['landmark'] }[];
+  bridges?: { id: string; d: string; width: number; underIds?: string[]; landmark?: JourneyLandBridge['landmark'] }[];
   hosts: { id: string; x: number; y: number }[];
   reserves: { id: string; d: string }[];
   districts: { id: string; label: string; x: number; y: number }[];

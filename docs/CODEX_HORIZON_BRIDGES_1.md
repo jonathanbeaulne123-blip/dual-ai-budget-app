@@ -1,6 +1,6 @@
 # Horizon bridges — local implementation handoff
 
-Jonathan said “build them” after the Bridge Book. Work is local on `codex/horizon-bridge-book`, based on `e77309efbc48a76e8328f2b427613ecc6082bb61`. Jonathan subsequently requested a mergeable PR including the airport update. Airport PR #576 is already merged; this branch integrates main at `324cd5f` and retains both runtime lifecycles. PR verification is in progress; there is no bridge merge, deployment or device acceptance. Main's unrelated Bianca Month failure remains named and unchanged.
+Jonathan said “build them” after the Bridge Book. Work is local on `codex/horizon-bridge-book`, based on `e77309efbc48a76e8328f2b427613ecc6082bb61`. Jonathan subsequently requested a mergeable PR including the airport update. Airport PR #576 is already merged; this branch integrates main at `324cd5f` and retains both runtime lifecycles. PR [#577](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/577) is open; there is no bridge merge, deployment or device acceptance. Main's unrelated Bianca Month failure remains named and unchanged.
 
 ## Household outcome
 
@@ -39,9 +39,9 @@ The actual bridge-only batches use3 calls in all themes/tiers. Against the corre
 
 Evidence lives under `docs/horizon/evidence/bridges/after/`. All browser images/replays use desktop headless SwiftShader and are **not phone or Mac device evidence**. The first independent visual review recognized the suspension silhouette but could not establish stair safety from the two overview images alone.
 
-## Validation and next owner
+## Pre-PR validation record
 
-Final world SHA256 is `c662fb3bed3aaa0256fd7f6627b843fe37e6b9d940f62efdd11d68ee9dc4782a`. The bake took220.024s; the byte-exact check passed in217.147s, and Mountain serialization check passed. All9,504 walking-envelope samples and1,690 meeting-grid samples are clear. The final-bake runtime stair replay repeats266/266/52 steps, maximum goal error0.064m, with no browser errors. Bight's11 focused tests pass. A final standalone TypeScript check after the parity-test changes also passes (328.038s).
+Pre-review world SHA256 was `c662fb3bed3aaa0256fd7f6627b843fe37e6b9d940f62efdd11d68ee9dc4782a`. The bake took220.024s; the byte-exact check passed in217.147s, and Mountain serialization check passed. All9,504 walking-envelope samples and1,690 meeting-grid samples are clear. The final-bake runtime stair replay repeats266/266/52 steps, maximum goal error0.064m, with no browser errors. Bight's11 focused tests pass. A final standalone TypeScript check after the parity-test changes also passes (328.038s).
 
 All24 Bight Region/Stop map captures across320/390/720/1100 and three themes have unclipped name/glyph labels. Each isolated-map run logged one resource404, retained in its report. Three final night air captures have no browser errors or pending districts; recorded calls are50/139/58. Neither these nor the other screenshots are physical-device evidence.
 
@@ -58,3 +58,9 @@ The full cast is incomplete. The full per-PR105-file world/Journey/harbour sweep
 ## Airport integration
 
 The historical controller inventory above predates airport PR #576. Kestrel, Swift and Heron now exist on the integrated branch. Complete airport circuits are being rechecked against the bridge bake. Under-bridge plane passages remain unverified: the 11m Bight aperture is narrower than Heron's 14m wingspan and is not an all-aircraft route. A theme-switch review fixed bridge glow initialization at stable night; airport theme updates and both cleanup paths are retained. See [PR integration record](worksessions/2026-09-30-horizon-bridge-pr.md).
+
+## PR review bake
+
+The fresh review bake is `d16ba180ec578c95746d814dc177ccd7feaca28b9f480695e5852add76c08c25`, superseding the pre-review bake for current source. All7 landing proofs are clear after moving Reach's meeting bay east; all10 bridge walking envelopes and meeting areas remain measured/built. Bight's grounded end anchors moved clear of S2, with raised cable ties. Flat-map underpass masks and partitioned planter colours are repaired. Source and current verification are tracked in the [PR integration record](worksessions/2026-09-30-horizon-bridge-pr.md) and PR #577. Earlier captures and audits retain their recorded hashes and do not silently become evidence for this bake.
+
+The105-file requested integration sweep has run:1,368 passed assertions,10 failed assertions and3 worker errors before repairs/reruns. CI subsequently passed691 assertions on `d59e9a9` in263.787s; this precedes the review bake. Jonathan authorized the fixed-date Bianca Month fixture repair. Final post-review CI and targeted evidence are recorded separately.

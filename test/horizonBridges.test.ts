@@ -9,7 +9,7 @@ import { bridgeFrame, bridgeLength } from '../src/harbour/horizon/land/bridges/f
 import { solidVerticalRangeAt } from '../src/harbour/horizon/world/geometry';
 import { bounds } from '../src/harbour/horizon/land/structures/mesh';
 import { BRIDGE_GLYPHS } from '../src/journey/land/bridgeGlyph';
-import { bridgeDistrictSteps, createBridgeArt } from '../src/harbour/horizon/runtime/bridgeArt';
+import { bridgeDistrictSteps, createBridgeArt, bridgeMaterialColour } from '../src/harbour/horizon/runtime/bridgeArt';
 import { finishBuild } from '../src/house/world/buildTask';
 import type { WorldDefinition } from '../src/harbour/horizon/world/definition';
 const cuts=buildLandCuts(baseHeight),bridges=finalizeBridges(cuts);
@@ -91,6 +91,18 @@ describe('baked bridge envelopes',()=>{
  it('has supported, unobstructed walking strips and full flat meeting areas for all ten landmarks',()=>{
   expect(baked.bridges).toHaveLength(10);
   for(const b of baked.bridges!){expect(b.passages[0]!.status,b.id).toBe('measured');expect(b.meeting.status,b.id).toBe('built');}
+ });
+ it('preserves every authored landing field, including the Reach regatta bay boundary',()=>{
+  expect(baked.sky.proofs!.landings.length).toBeGreaterThan(0);
+  for(const field of baked.sky.proofs!.landings)expect(field.clear,`${field.id}: ${field.obstructionIds.join(', ')}`).toBe(true);
+ });
+ it('keeps planter colours after district partitioning',()=>{
+  const planter=baked.geometry!.solids.find(s=>s.sourceId==='gardenWalkBridge.planters')!;
+  expect(planter).toBeDefined();expect(planter.id).toContain('@');
+  for(const theme of ['classic','taylor','newfoundland'] as const){
+   expect(bridgeMaterialColour(planter,theme)).toEqual(bridgeMaterialColour({...planter,id:planter.sourceId!},theme));
+   expect(bridgeMaterialColour(planter,theme)).not.toEqual(bridgeMaterialColour({...planter,id:'plain',sourceId:'plain'},theme));
+  }
  });
  it('keeps both entire structural flight apertures clear',()=>{
   for(const id of ['bightBridge','highSpan'])expect(baked.bridges!.find(b=>b.id===id)!.passages.find(p=>p.mode==='glider')!.status).toBe('measured');

@@ -17,7 +17,7 @@ export const BRIDGE_PALETTES={
   newfoundland:{ink:'#293e43',stone:'#b4b5ac',timber:'#89968a',metal:'#374c55',roof:'#486776',trim:'#bc5e42',glass:'#ffdb8a'},
 } as const;
 export const bridgeMaterialColour=(s:StructureSolid,theme:BridgeTheme):RGB=>{
-  const p=BRIDGE_PALETTES[theme];return rgb(s.role==='roof'?p.roof:s.surface==='metal'?p.metal:/timber|boardwalk|wood/.test(s.surface)?p.timber:s.id.endsWith('planters')?'#718a51':p.stone);
+  const p=BRIDGE_PALETTES[theme];return rgb(s.role==='roof'?p.roof:s.surface==='metal'?p.metal:/timber|boardwalk|wood/.test(s.surface)?p.timber:(s.sourceId??s.id).endsWith('planters')?'#718a51':p.stone);
 };
 const oStep=(tier:string)=>tier==='full'?4:8;
 export function* bridgeDistrictSteps(world:WorldDefinition,id:string,tier:'full'|'lite',theme:BridgeTheme):Generator<void,CardBuild,void>{

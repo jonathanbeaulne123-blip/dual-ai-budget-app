@@ -351,6 +351,25 @@ describe("three.js land with the road", () => {
     }
   });
 
+  it("masks only roads beneath a bridge and gives each mounted flat map distinct mask IDs", () => {
+    const flat=journeyLandFlatData(land);
+    const garden=flat.bridges!.find(b=>b.id==='gardenWalkBridge')!;
+    expect(garden.underIds).toContain('VG');
+    for(const theme of ['classic','taylor','newfoundland'] as const){
+      const html=renderToStaticMarkup(createElement('div',null,
+        createElement(JourneyLandFlat,{data:flat,theme}),createElement(JourneyLandFlat,{data:flat,theme})));
+      const ids=[...html.matchAll(/<mask[^>]* id="([^"]+)"/g)].map(m=>m[1]);
+      expect(ids.length).toBeGreaterThan(0);expect(new Set(ids).size).toBe(ids.length);
+      const vgMasks=[...html.matchAll(/<mask[^>]*data-land-under-mask="VG"[^>]*>([\s\S]*?)<\/mask>/g)];
+      expect(vgMasks).toHaveLength(2);
+      for(const mask of vgMasks){expect(mask[1]).toContain('fill="white"');expect(mask[1]).toContain('data-under-bridge="gardenWalkBridge"');expect(mask[1]).not.toContain('data-under-bridge="highSpan"');}
+      const vg=html.match(/<path[^>]*data-land-line="VG"[^>]*>/)?.[0];expect(vg).toContain('mask="url(#');
+      // Decks remain before carried lines; masking an underpass must not erase a carried road.
+      expect(flat.bridges!.filter(b=>b.underIds?.includes('V01')).some(b=>b.id==='bightBridge')).toBe(false);
+      expect(html.indexOf('data-land-bridge="highSpan"')).toBeLessThan(html.indexOf('data-land-line="VG"'));
+    }
+  });
+
   it("authors the road's colours for every theme, and the flat twin draws the bridges at their true width", () => {
     for (const key of ["deck", "deckRail", "planted"] as const) {
       expect(LAND_EXTRA_KEYS).toContain(key);

@@ -193,14 +193,20 @@ export function buildBightBridge(cuts:LandCuts,base:HeightQuery):BightReport {
   // Suspension: twin saddles on the existing grounded pier lines, side spans anchored
   // to the approach abutments. The central cable's low point stays above S2's roof envelope.
   // Keep the logical arch solid ID for source references; its member family is now suspension.
-  const ribY=(s:number)=>s<op0?mix(H+1.8,H+21,(s-s0)/(op0-s0)):s>op1?mix(H+21,H+1.8,(s-op1)/(s1-op1)):H+13+8*((s-sc)/halfOpen)**2;
+  const anchorBlocks=solid('bightBridge.cableAnchors','pier','stone','support',ids,district);
+  const ribY=(s:number)=>s<op0?mix(H+4,H+21,(s-s0)/(op0-s0)):s>op1?mix(H+21,H+4,(s-op1)/(s1-op1)):H+13+8*((s-sc)/halfOpen)**2;
   for(const o of rib){
     for(const s of [op0,op1])box(arch,F.at(s,o),H+21.5,[1.1,1.1],cap,F.rot);
     for(const [a0,b0] of [[s0,op0],[op0,op1],[op1,s1]]){const n=Math.ceil((b0!-a0!)/2);
       for(let k=0;k<n;k++){const a=mix(a0!,b0!,k/n),b=mix(a0!,b0!,(k+1)/n);slab(arch,P(a,o,ribY(a)),P(b,o,ribY(b)),.26,.3);}}
     for(let s=s0+4;s<s1;s+=4){box(arch,F.at(s,o),ribY(s)-.25,[.13,.13],cap+.05,F.rot);
       const shoe=o<oc?o0+.5:o1-.5;slab(arch,P(s,o,H-.1),P(s,shoe,H-.1),.3,.35);report.arch.push({s,rib:ribY(s)});}
-    for(const s of [s0, s1]){box(arch,F.at(s,o),H+1.8,[2,1.8],cap,F.rot);slab(arch,P(s,o,H-.1),P(s,o<oc?o0+1:o1-1,H-.1),2,.5);}
+    // Grounded anchors sit beyond S2's curved approach, including its full width.
+    // Elevated ties cross above the path; the former low blocks/shoes blocked entry.
+    for(const s of [s0,s1]){const anchorO=o+(o<oc?-12:12);
+      pier(anchorBlocks,F.at(s,anchorO),H+4,base,[1.4,1.4],[2.2,2.2],F.rot);
+      slab(arch,P(s,o,H+4),P(s,anchorO,H+4),.26,.3);
+    }
   }
   for(const s of [op0,op1])slab(arch,P(s,rib[0],H+20),P(s,rib[1],H+20),.8,1);
   (cuts.bridgeLightSeeds??={}).bightBridge=[];
@@ -281,7 +287,7 @@ export function buildBightBridge(cuts:LandCuts,base:HeightQuery):BightReport {
     if(b-from>.5)edgeRail(from,b,o,kerbs);
     if(gaps.length)cuts.diagnostics.push({id:'structures.bightBridge.kerbGap',severity:'info',message:`bightBridge: the kerb rail at o ${o.toFixed(2)} opens for S2 at s ${gaps.map(g=>`${g[0].toFixed(1)}–${g[1].toFixed(1)}`).join(', ')}`,at:F.at((gaps[0]![0]+gaps[0]![1])/2,o),measured:gaps[0]![1]-gaps[0]![0],required:laneW});};
   kerbRun(s0,ramps[0]!.from,ramps[0]!.o-laneW/2-.1);kerbRun(ramps[1]!.to,s1,ramps[1]!.o+laneW/2+.1);
-  cuts.solids.push(deck,lookout,caps,bents,piers,arch,rails,kerbs);if(bracing.indices.length)cuts.solids.push(bracing);
+  cuts.solids.push(deck,lookout,caps,bents,piers,arch,anchorBlocks,rails,kerbs);if(bracing.indices.length)cuts.solids.push(bracing);
   // Abutments: a masonry block under each deck end down to the ground, then the V01 approach walled down to grade.
   const abut=solid('bightBridge.abutments','abutment','stone','support',ids,district);
   for(const [end,out] of [[s0,-1],[s1,1]] as const)wallToGround(abut,P(end-out*1.5,0,cap),P(end+out*2,0,cap),width+1,-oc,base);

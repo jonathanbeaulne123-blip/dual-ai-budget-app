@@ -92,15 +92,18 @@ export function buildBridgeLandmarks(cuts:LandCuts,ground:HeightQuery):void {
     }
     const route=get('deck')?.bedIds.find(id=>!id.startsWith('structure.'))??carried.id;
     const meetingBed=c.id==='bightBridge'?cuts.beds.find(b=>b.id==='structure.bightBridge.lookout'):undefined;
-    const ms=Math.min(4,L/4),meetingAt=cuts.bridgeMeetingSeeds?.[c.id]??(meetingBed?bridgeFrame(meetingBed.points,bridgeLength(meetingBed.points)/2):P(ms,W/2+2.75));
+    // Reach's west side borders the protected reachMeadow landing disk. Keep the
+    // regatta bay on the east side, retaining the existing end-of-rail approach.
+    const meetingSide=c.id==='reachBoardwalk'?-1:1;
+    const ms=Math.min(4,L/4),meetingAt=cuts.bridgeMeetingSeeds?.[c.id]??(meetingBed?bridgeFrame(meetingBed.points,bridgeLength(meetingBed.points)/2):P(ms,meetingSide*(W/2+2.75)));
     if(!meetingBed){
       // A side bay follows the carried grade so its entire entrance meets the deck.
       // Its connector opens the existing delayed rail run, using the ordinary junction rule.
       const floor=make('meetingDeck','bridge','boardwalk','deck'),rail=make('meetingRail','handrail','metal','rail'),legs=make('meetingSupports','beam','metal');
-      const Q=(s:number,o:number):XYZ=>{const p=P(s,o),blend=Math.max(0,Math.min(1,(o-(W/2-.1))/.9));return[p[0],mix(p[1],meetingAt[1],blend),p[2]];};
+      const Q=(s:number,o:number):XYZ=>{const p=P(s,meetingSide*o),blend=Math.max(0,Math.min(1,(o-(W/2-.1))/.9));return[p[0],mix(p[1],meetingAt[1],blend),p[2]];};
       // The inner 0.9 m blends the route grade into a flat 3 m standing bay.
       for(let s=ms-2.5;s<ms+2.5;s+=.25)for(const [a,b] of [[W/2-.1,W/2+.8],[W/2+.8,W/2+5.3]]){
-        const corners=[Q(s,a!),Q(s,b!),Q(s+.25,b!),Q(s+.25,a!)];prism(floor,corners,corners.map(p=>p[1]-.6));
+        const corners=[Q(s,a!),Q(s,b!),Q(s+.25,b!),Q(s+.25,a!)];if(meetingSide<0)corners.reverse();prism(floor,corners,corners.map(p=>p[1]-.6));
       }
       const boundary=[Q(ms-2.5,W/2-.05),...Array.from({length:21},(_,i)=>Q(ms-2.5+i*.25,W/2+5.25)),Q(ms+2.5,W/2-.05)];
       for(let k=1;k<boundary.length;k++){const a=boundary[k-1]!,b=boundary[k]!;slab(rail,a,b,.16,1.05,0,1.05);}
