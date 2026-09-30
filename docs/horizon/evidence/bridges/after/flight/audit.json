@@ -1,6 +1,6 @@
 {
   "method": "Real stepWing and world environment; airborne probe placement, no position correction, default wind and authored lift, walls active. Not full-course or device acceptance.",
-  "worldSha256": "c662fb3bed3aaa0256fd7f6627b843fe37e6b9d940f62efdd11d68ee9dc4782a",
+  "worldSha256": "7719d7a8ab9c17143ff47ab0081a00ce0de78a2970bd93627c571b75227b50d4",
   "runs": [
     {
       "id": "bightBridge",

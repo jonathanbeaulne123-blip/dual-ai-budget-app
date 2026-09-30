@@ -49,3 +49,5 @@ All105 requested files ran one at a time in1709.85s. Initial result:95 file exit
 ## Fresh review bake
 
 Baked successfully in186.34s. World SHA256: `d16ba180ec578c95746d814dc177ccd7feaca28b9f480695e5852add76c08c25`. All7 landing proofs are clear; all10 walking envelopes and meeting areas retain measured/built status. All12 original landscape views pass; portrait exceptions remain unchanged. The byte-exact check and targeted runtime replays are running; their eventual outcome is separate from static proof.
+
+Fresh-bake validation: byte-exact check129.46s passed; existing full/lite S2 walking9 tests passed; Wave4 view/body15 tests passed; flat Journey road/map16 tests passed; all4 bounded real-glider passages passed. Bight remains3 bridge-only draws in each theme/tier, with full additions7,974/6,840/9,990 and lite6,770/6,698/6,898 (within18,000/7,000). Updated budget and glider reports carry the compressed-world SHA; the uncompressed-world SHA above is a different byte representation.
