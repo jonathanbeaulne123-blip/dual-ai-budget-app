@@ -1,0 +1,28 @@
+{
+  "base": "e77309efbc48a76e8328f2b427613ecc6082bb61",
+  "road": {
+    "blocker": 0,
+    "major": 23,
+    "minor": 85,
+    "restarts": 0,
+    "seconds": 166.8
+  },
+  "views": {
+    "passed": 11,
+    "seconds": 68.05,
+    "limitation": "Existing authored view exceptions remain encoded, not all visual acceptance."
+  },
+  "mainCI": {
+    "passed": 82,
+    "failed": 1,
+    "failure": "Missing Bianca Month income Start",
+    "job": "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/36668086911/job/109736975882"
+  },
+  "deps": "Reused local package links; not clean lockfile install",
+  "noClaims": [
+    "full suite",
+    "bake/check",
+    "physical device",
+    "deployment"
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "baseSha": "324cd5f246ab295af5cf64d553ebf78fad57f7b5",
+  "changeFingerprint": "b0b6d520fe203966e9b8b695e584c11b7acc9eb8be8d7f20287cfb18bbd779c7",
+  "workingTreeClean": true,
+  "breachPhase": null,
+  "budgetMs": 300000,
+  "elapsedMs": 289329,
+  "slowestPhase": "vitest-fast",
+  "timeBudgetBreached": false,
+  "classification": "quick-gate-passed",
+  "focusReason": "Bridge geometry rendering airport integration and authorized month-end fixture repair",
+  "headSha": "ebbe5dd6d657b81512553d9751e9dd5aa14628f9",
+  "phases": [
+    {
+      "elapsedMs": 556,
+      "name": "diff-check",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 1368,
+      "name": "ai-surface",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 79070,
+      "name": "typescript",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 13565,
+      "name": "test-discovery",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 128878,
+      "name": "vitest-fast",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 61509,
+      "name": "vitest-serial",
+      "status": "passed"
+    }
+  ],
+  "risk": "high",
+  "selectedTests": [
+    "test/app-startup-p1.test.ts",
+    "test/command-contract.test.ts",
+    "test/command-runtime.test.ts",
+    "test/harbour-arrival.test.ts",
+    "test/harbour-source-fences.test.ts",
+    "test/horizon-airport-flight.test.ts",
+    "test/horizon-airport-world.test.ts",
+    "test/horizon-old-shell.test.ts",
+    "test/horizonBoardThresholds.test.ts",
+    "test/horizonBridges.test.ts",
+    "test/horizonChute.test.ts",
+    "test/horizonGliderBodies.test.ts",
+    "test/horizonGliderCamera.test.ts",
+    "test/horizonGliderController.test.ts",
+    "test/horizonGliderJourneys.test.ts",
+    "test/horizonGliderJourneysWind.test.ts",
+    "test/horizonGliderLanding.test.ts",
+    "test/horizonGliderLift.test.ts",
+    "test/horizonGliderNoMoney.test.ts",
+    "test/horizonGliderPolar.test.ts",
+    "test/horizonGliderReducedMotion.test.ts",
+    "test/horizonManifest.test.ts",
+    "test/horizonModeRegistry.test.ts",
+    "test/horizonMoverAudio.test.ts",
+    "test/horizonMoverHook.test.ts",
+    "test/horizonQuickLayerModes.test.ts",
+    "test/horizonSkyEnvelope.test.ts",
+    "test/horizonStructures.test.ts",
+    "test/horizonThresholds.test.ts",
+    "test/horizonThroat.test.ts",
+    "test/horizonViews.test.ts",
+    "test/horizonWave4.test.ts",
+    "test/horizonWind.test.ts",
+    "test/journey-board-app.test.ts",
+    "test/journey-board-fence.test.ts",
+    "test/journey-board-integration.test.ts",
+    "test/journey-board-model.test.ts",
+    "test/journey-board-parity.test.ts",
+    "test/journey-board-route.test.ts",
+    "test/journey-board-ui.test.ts",
+    "test/journey-cloud-transition.test.ts",
+    "test/journey-land.test.ts",
+    "test/journey-road.test.ts",
+    "test/month-rehearsal-mainline.test.ts",
+    "test/onboarding-lifecycle.test.ts",
+    "test/proof-matrix.test.ts"
+  ],
+  "uiProofRequired": true
+}

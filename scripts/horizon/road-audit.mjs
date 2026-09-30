@@ -19,7 +19,7 @@ import {readFileSync, writeFileSync, mkdirSync, existsSync} from 'node:fs';
 import {resolve, dirname, relative} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
-import {execSync} from 'node:child_process';
+import {execFileSync} from 'node:child_process';
 import os from 'node:os';
 import {nativeRoadGuardOwnership} from './native-road-guards.mjs';
 
@@ -44,6 +44,7 @@ const log = (...a) => console.log(`[${((Date.now() - T0) / 1000).toFixed(1)}s]`,
 // ─── Load the real modules and the committed bake ────────────────────────────────────────────────────────────────────
 const bundle = await build({
   stdin: {contents: [
+    `export {SPANS, structureStretches} from './src/harbour/horizon/land/structures/build.ts';`,
     `export {parseHorizonDefinition} from './src/house/world/horizonAssets.ts';`,
     `export {decodeTerrainAsset} from './src/harbour/horizon/land/terrain/asset.ts';`,
     `export {sampleTerrain, terrainTriangleVisible} from './src/harbour/horizon/land/terrain/index.ts';`,
@@ -63,7 +64,9 @@ const bundle = await build({
 const api = await import('data:text/javascript;base64,' + Buffer.from(bundle.outputFiles[0].text).toString('base64'));
 const {CRUISER: C} = api;
 const WORLD_PATH = resolve(ROOT, 'public/horizon/world/horizon-geo-1.json.gz'), TERRAIN_PATH = resolve(ROOT, 'public/horizon/terrain/horizon-geo-1.bin');
-const worldBytes = readFileSync(WORLD_PATH), terrainBytes = readFileSync(TERRAIN_PATH);
+const baselineRef = arg('--baseline-ref', null);
+const assetBytes = path => baselineRef ? execFileSync('git', ['-C', ROOT, 'show', `${baselineRef}:${relative(ROOT, path)}`], {maxBuffer: 64 * 1024 * 1024}) : readFileSync(path);
+const worldBytes = assetBytes(WORLD_PATH), terrainBytes = assetBytes(TERRAIN_PATH);
 const ab = b => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
 const world = api.parseHorizonDefinition(ab(worldBytes));
 const field = api.decodeTerrainAsset(ab(terrainBytes), 'full');
@@ -71,7 +74,7 @@ const g = api.createHorizonGeography(field, {...world.collision, solids: world.g
 const region = api.createMountainV2Region({horizonGround: (x, z) => api.sampleTerrain(field, x, z), yield: api.terraceBedExclusion(world.collision.beds), exclude: api.mouthExclusion(world.collision.mouths), terrainStep: field.step});
 g.addDynamic(region.provider);
 const sha = b => createHash('sha256').update(b).digest('hex');
-let rootSha = 'unknown'; try { rootSha = execSync(`git -C "${ROOT}" rev-parse HEAD`).toString().trim(); } catch { /* not a checkout */ }
+let rootSha = 'unknown'; try { rootSha = execFileSync('git', ['-C', ROOT, 'rev-parse', baselineRef ?? 'HEAD']).toString().trim(); } catch { /* not a checkout */ }
 log('loaded', ROOT, rootSha.slice(0, 10));
 
 // ─── Read-only helpers over the baked solids (a second index, never written back) ────────────────────────────────────
@@ -204,7 +207,11 @@ const PATHS = new Map(ROAD_IDS.map(id => { const b = bedById.get(id), p = b.poin
 function nearestOn(path, x, z) { let best = Infinity, bi = 0; for (let i = 0; i < path.pts.length; i += 2) { const p = path.pts[i], d = (p.x - x) ** 2 + (p.z - z) ** 2; if (d < best) { best = d; bi = i; } } for (let i = Math.max(0, bi - 3); i < Math.min(path.pts.length, bi + 4); i++) { const p = path.pts[i], d = (p.x - x) ** 2 + (p.z - z) ** 2; if (d < best) { best = d; bi = i; } } return {i: bi, d: Math.sqrt(best), p: path.pts[bi]}; }
 
 // Structure beds that carry the audited roads (their spans are transitions).
-const STRUCTURE_BEDS = BEDS.filter(b => b.id.startsWith('structure.') || b.id === 'prowTunnel');
+const structureOwners = new Map([...api.SPANS.map(s => [s.id, s.route]), ...api.structureStretches(BEDS).map(s => [s.structureId, s.bedId])]);
+const nativeStructureBeds = MOUNTAIN_CHAIN ? (world.corridors ?? []).flatMap(c => (c.sourceBridges ?? []).map(b => ({id:`native.${b.id}`,points:b.axis,width:b.width,auditOwner:c.id}))) : [];
+const STRUCTURE_BEDS = [...BEDS.filter(b => b.id.startsWith('structure.') || b.id === 'prowTunnel'), ...nativeStructureBeds];
+// Keep longitudinal probes inside the carriageway with body clearance. Edge/drop probes remain independent.
+const roadScanOffsets = (id, five = false, station = 0) => { const edge = Math.min(3, Math.max(0, halfAt(id,station) - .3)); return five ? [-edge, -edge / 2, 0, edge / 2, edge] : [-edge, 0, edge]; };
 const YEAR_WALK = bedById.get('yearWalk');
 const events = [];
 const telemetry = [];
@@ -544,7 +551,7 @@ function junctionAudit() {
     const scans = [];
     if (ob) { let bi = 0, bd = Infinity; ob.points.forEach((q, i) => { const d = Math.hypot(q[0] - c.at[0], q[2] - c.at[1]); if (d < bd) { bd = d; bi = i; } }); scans.push(['other+', linePoints(ob.points, bi, 20).map((q, i) => i ? q : {...q, y: ob.points[bi][1]})], ['other-', linePoints(ob.points, bi, -20).map((q, i) => i ? q : {...q, y: ob.points[bi][1]})]); }
     else row.note = `other route ${other} has no collision bed (skate/line only)`;
-    for (const off of [-3, 0, 3]) scans.push([`road${off >= 0 ? '+' : ''}${off}`, offsetLine(path, n.i, -15, 15, off).map((q, i) => i ? {x: q.x, z: q.z, s: q.s} : q)]);
+    for (const off of roadScanOffsets(road, false, n.p.s)) scans.push([`road${off >= 0 ? '+' : ''}${off}`, offsetLine(path, n.i, -15, 15, off).map((q, i) => i ? {x: q.x, z: q.z, s: q.s} : q)]);
     for (const [name, pts] of scans) if (pts.length > 2) for (const l of lipLine(pts, n.p.y)) { const bedR = bedById.get(road); if (name.startsWith('road') ? Math.abs(l.s) > (ob ? ob.width / 2 + 4 : 8) : Math.abs(l.s) > bedR.width / 2 + (bedR.shoulder ?? 0) + 6) continue; row.lips.push({line: name, s: r2(l.s), at: P3(l.x, l.y, l.z), dy: l.dy, seam: l.seam, width: l.width, via: l.via, from: l.from, to: l.to}); };
     rows.push(row);
   }
@@ -575,11 +582,14 @@ function transitionAudit() {
   const rows = [];
   for (const sb of STRUCTURE_BEDS) {
     for (const id of ROAD_IDS) {
+      const owner = sb.auditOwner ?? structureOwners.get(sb.id.replace(/^structure\./, '').split('.')[0]);
+      if (id === 'mountain-chain' ? !chainReaches.parts.some(p => p.id === owner) : owner !== id) continue;
       const path = PATHS.get(id);
       for (const [end, q] of [['start', sb.points[0]], ['end', sb.points.at(-1)]]) {
-        const n = nearestOn(path, q[0], q[2]); if (n.d > 12) continue;
+        const n = nearestOn(path, q[0], q[2]); // A nearby side bay is not a longitudinal road handover. Its connector is audited as a crossing.
+        if (n.d > halfAt(id,n.p.s)) continue;
         const row = {structure: sb.id, road: id, end, station: r1(n.p.s), structureY: r2(q[1]), roadBedY: r2(n.p.y), bedStep: r2(q[1] - n.p.y), offset: r2(n.d), lips: []};
-        for (const off of [-3, -1.5, 0, 1.5, 3]) { const pts = offsetLine(path, n.i, -15, 15, off).map((q, i) => i ? {x: q.x, z: q.z, s: q.s} : q);
+        for (const off of roadScanOffsets(id, true, n.p.s)) { const pts = offsetLine(path, n.i, -15, 15, off).map((q, i) => i ? {x: q.x, z: q.z, s: q.s} : q);
           for (const l of lipLine(pts, n.p.y)) row.lips.push({off, s: r2(l.s), at: P3(l.x, l.y, l.z), dy: l.dy, seam: l.seam, width: l.width, via: l.via, from: l.from, to: l.to}); }
         rows.push(row);
       }
@@ -738,7 +748,8 @@ const totals = Object.fromEntries(ROAD_IDS.map(id => [id, {BLOCKER: 0, MAJOR: 0,
 const wallSeconds = r1((Date.now() - T0) / 1000);
 const command = `node scripts/horizon/road-audit.mjs ${argv.join(' ')}`.trim();
 mkdirSync(OUT, {recursive: true});
-const meta = {generated: new Date().toISOString(), command, root: ROOT, rootSha, wallSeconds, node: process.version, cpus: os.cpus().length,
+let currentCodeHead = 'unknown'; try { currentCodeHead = execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], {encoding: 'utf8'}).trim(); } catch { /* not a checkout */ }
+const meta = {baselineRef, auditorSha256: sha(readFileSync(fileURLToPath(import.meta.url))), currentCodeHead, comparisonMethod: 'Both asset sets use current auditor and controller/geography source; not a historical runtime replay.', generated: new Date().toISOString(), command, root: ROOT, rootSha, wallSeconds, node: process.version, cpus: os.cpus().length,
   sourceProof: {runtimeBundleSha256:sha(bundle.outputFiles[0].text),auditSha256:sha(readFileSync(resolve(ROOT,'scripts/horizon/road-audit.mjs')))},
   bake: {world: WORLD_PATH.replace(ROOT + '/', ''), worldSha256: sha(worldBytes), terrain: TERRAIN_PATH.replace(ROOT + '/', ''), terrainSha256: sha(terrainBytes), revision: world.geographyRevision},
   cruiser: {...C}, driver: {lookahead: '6–8 m (6 + 0.125·v)', lateralAccel: A_LAT, planDecel: B_DEC, laneOffsets: [0, 2], note: 'pure pursuit on the lane line through stepCruiser at CRUISER.dt; no snapping; a restart (logged) only after a 2 s stall or leaving the corridor'},

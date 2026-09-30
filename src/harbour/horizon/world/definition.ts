@@ -101,6 +101,8 @@ export interface WorldDefinition {
   corridors?: Corridor[];
   /** Continuous multi-owner routes, measured from the same source as their audit. */
   roadChains?: import('../land/corridor/chain').RoadChain[];
+
+  bridges?: import('../land/bridges/types').BridgeDefinition[];
   /** Pass 5: placed worlds (MANIFEST `regions`), absent before the bake carries one. */
   regions?: RegionPlacement[];
   diagnostics?: LandDiagnostic[];

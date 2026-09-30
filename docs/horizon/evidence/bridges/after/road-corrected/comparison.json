@@ -1,0 +1,158 @@
+{
+  "before": {
+    "BLOCKER": 0,
+    "MAJOR": 13,
+    "MINOR": 83
+  },
+  "after": {
+    "BLOCKER": 0,
+    "MAJOR": 13,
+    "MINOR": 82
+  },
+  "beforeRestarts": 0,
+  "afterRestarts": 0,
+  "added": [
+    {
+      "bed": "V01",
+      "dir": "static",
+      "type": "unguarded-step",
+      "severity": "MINOR",
+      "side": "right",
+      "station": [
+        3548,
+        3548
+      ],
+      "at": [
+        1315.38,
+        8.95,
+        1375.28
+      ],
+      "value": 0.93,
+      "unit": "m drop",
+      "lateral": 5.25,
+      "note": "right edge: 0.93 m step off at 5.25 m (launches the cruiser if it drifts out: groundSnap 0.55)",
+      "id": "e19"
+    }
+  ],
+  "removed": [
+    {
+      "bed": "V01",
+      "dir": "static",
+      "type": "unguarded-step",
+      "severity": "MINOR",
+      "side": "right",
+      "station": [
+        3548,
+        3548
+      ],
+      "at": [
+        1315.38,
+        8.95,
+        1375.28
+      ],
+      "value": 0.92,
+      "unit": "m drop",
+      "lateral": 5.25,
+      "note": "right edge: 0.92 m step off at 5.25 m (launches the cruiser if it drifts out: groundSnap 0.55)",
+      "id": "e19"
+    },
+    {
+      "bed": "VG",
+      "dir": "static",
+      "type": "scenery",
+      "severity": "MINOR",
+      "station": [
+        674,
+        674
+      ],
+      "at": [
+        968.77,
+        36.03,
+        768.97
+      ],
+      "value": 5,
+      "unit": "m from centre",
+      "ids": [
+        "gardenWalkBridge.supports@lakeside"
+      ],
+      "kind": "pier",
+      "role": "support",
+      "note": "pier/support gardenWalkBridge.supports@lakeside within 1 m of it (5 m from centre, lowest face 0.3 m above the deck)",
+      "id": "e32"
+    }
+  ],
+  "auditorHashesMatch": true,
+  "addedLocations": [],
+  "removedLocations": [
+    {
+      "bed": "VG",
+      "dir": "static",
+      "type": "scenery",
+      "severity": "MINOR",
+      "station": [
+        674,
+        674
+      ],
+      "at": [
+        968.77,
+        36.03,
+        768.97
+      ],
+      "value": 5,
+      "unit": "m from centre",
+      "ids": [
+        "gardenWalkBridge.supports@lakeside"
+      ],
+      "kind": "pier",
+      "role": "support",
+      "note": "pier/support gardenWalkBridge.supports@lakeside within 1 m of it (5 m from centre, lowest face 0.3 m above the deck)",
+      "id": "e32"
+    }
+  ],
+  "changedMeasurements": [
+    {
+      "before": {
+        "bed": "V01",
+        "dir": "static",
+        "type": "unguarded-step",
+        "severity": "MINOR",
+        "side": "right",
+        "station": [
+          3548,
+          3548
+        ],
+        "at": [
+          1315.38,
+          8.95,
+          1375.28
+        ],
+        "value": 0.92,
+        "unit": "m drop",
+        "lateral": 5.25,
+        "note": "right edge: 0.92 m step off at 5.25 m (launches the cruiser if it drifts out: groundSnap 0.55)",
+        "id": "e19"
+      },
+      "after": {
+        "bed": "V01",
+        "dir": "static",
+        "type": "unguarded-step",
+        "severity": "MINOR",
+        "side": "right",
+        "station": [
+          3548,
+          3548
+        ],
+        "at": [
+          1315.38,
+          8.95,
+          1375.28
+        ],
+        "value": 0.93,
+        "unit": "m drop",
+        "lateral": 5.25,
+        "note": "right edge: 0.93 m step off at 5.25 m (launches the cruiser if it drifts out: groundSnap 0.55)",
+        "id": "e19"
+      }
+    }
+  ]
+}

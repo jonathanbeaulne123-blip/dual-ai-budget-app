@@ -96,6 +96,10 @@ export interface LandDiagnostic {
   required?: number;
 }
 export interface LandCuts {
+  bridges?: import('./bridges/types').BridgeDefinition[];
+  bridgeMeetingSeeds?: Record<string, XYZ>;
+  bridgeBearingSeeds?: Record<string, {stations:number[];offsets:number[]}>;
+  bridgeLightSeeds?: Record<string, XYZ[]>;
   beds: BedCut[];
   pads: PadCut[];
   mouths: MouthMask[];

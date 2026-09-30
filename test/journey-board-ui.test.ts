@@ -556,6 +556,29 @@ describe("safe area and district names (fix pass)", () => {
     expect(safeAreaFor([{ x0: 0, x1: 1100, y0: -48, y1: 0 }], 1100, 740)).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
   });
 
+  it("shows readable bridge identities without adding an action or a focus target", async () => {
+    const entries=markEntries(sample,()=>undefined);
+    const landmark={name:"Suspension Bridge",glyph:"suspension" as const,at:[0,12,0] as const};
+    const anchors=[{id:"bridge:bightBridge",x:200,y:180,depth:10,visible:true,bridge:landmark},
+      {id:"bridge:hidden",x:200,y:280,depth:10,visible:false,bridge:landmark}];
+    const {host}=await mount(createElement(Marks,{board:sample,entries,anchors,size:{width:390,height:740},selectedId:null,onSelect:()=>undefined}));
+    const tags=[...host.querySelectorAll<HTMLElement>(".journey-bridge-label")];
+    expect(tags).toHaveLength(1);expect(tags[0]!.textContent).toContain("Suspension Bridge");
+    expect(tags[0]!.querySelector("svg path")).not.toBeNull();expect(tags[0]!.tabIndex).toBe(-1);
+    expect(tags[0]!.closest("button")).toBeNull();
+  });
+
+  it("shows the baked Suspension Bridge name and glyph through the real flat Stage without an action", async () => {
+    const bridge=land.bridges!.find(b=>b.id==="bightBridge")!;
+    const {host,actions}=await mountView({reducedMotion:true,initialFocusOverride:{target:{x:bridge.landmark!.at[0],y:bridge.landmark!.at[2]},tier:"region"}});
+    expect(host.querySelector('[data-stage-mode="flat"]')).not.toBeNull();
+    const label=host.querySelector('[data-bridge-id="bightBridge"]');
+    expect(label?.textContent).toBe(bridge.landmark!.name);
+    expect(label?.querySelector('svg path')).not.toBeNull();
+    expect(label?.closest('button')).toBeNull();
+    await click(label);expect(totalCalls(actions)).toBe(0);
+  });
+
   it("draws district names as aria-hidden tags at the lowest priority, outside the tab order", async () => {
     const entries = markEntries(sample, () => undefined);
     const piece = { id: "piece", x: 200, y: 200, depth: 10, visible: true };

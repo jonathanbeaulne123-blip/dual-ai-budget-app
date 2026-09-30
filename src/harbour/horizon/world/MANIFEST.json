@@ -4987,7 +4987,7 @@
    "route": "walk garden",
    "span_m": 40,
    "opening_m": 26,
-   "width_m": 3.2,
+   "width_m": 5.6,
    "deck": "the Garden Walk on its own grade (51-55)",
    "under": "Green Road (37) and its May/September footway lanes, 15 eu below",
    "note": "v1.9: the Garden Walk hung 16.7 eu over Green Road at [971,765] with no structure (the generated span found no footing within 20 m); the reserved at-grade threshold row VG x walk garden (R-A7) is unchanged",
@@ -5516,6 +5516,10 @@
      1080
     ],
     "h": 6,
+    "aperture_m": [
+     11,
+     8
+    ],
     "note": "under the deck"
    },
    {

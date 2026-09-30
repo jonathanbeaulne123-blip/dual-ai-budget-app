@@ -63,3 +63,12 @@ Two more physical Horizon joins are integrated and being rebaked: a supported Su
 Serial focused results in this checkpoint: road-ground 4, original Horizon joins 4, Foot Year Walk yield 2, orchard exact footprint 2, supplemental footway joins 4, bicycle metadata 5, audit helper Node tests 18. Full required serial file lane, final TypeScript/Quick High, byte-exact asset checks, final captures and final movement acceptance remain owed.
 
 All three themed corridor furniture/plant/halo triangle totals fit the 25k full / 10k lite threshold on the measured whole corridor set. Crown peaks at 22,712 full and 9,760 lite. These totals explicitly exclude baked solid geometry and native terrain/art; they are not whole-scene GPU costs. Lakeside drawing batches remain above 12: 18 full / 15 lite against inherited 17 / 14. No waiver or device performance claim is implied.
+
+
+### Main integration, 10:35 EDT
+
+Preserved the current Mountain work in local checkpoint `4649b21`, then integrated `origin/main@1cf76c551e6f49124b6257162bc4d36ca18d7bd1` locally. PR #577 is now merged. Its CI run36717496580, Cloudflare Workers run36717496697 and Horizon baked-assets run36717496479 were all verified successful through the GitHub API. Main includes the separately authorized Bianca Month fixture correction; this Mountain task did not author that change. Earlier notes about red main or an unmerged bridge contract are historical.
+
+The merge preserves the bridge landmark contract, theme art, bounded lighting, graph/map glyphs and Bight stair work alongside Mountain chain, native branch approvals and Stillwater. Generated assets are being rebuilt from combined sources, never text-merged. The merged audit preserves source hashes, variable chain width and native guard ownership. Structure transitions now include the chain's real component owners and all three source-owned native bridges; main's narrower-road/body-clearance scan limits remain.
+
+Two native proposals remain unapplied pending Jonathan's written answers: the two folded road frames and awning entry fairing. Dam entry repair is within the existing explicit shared-landing approval. No push, PR, remote merge, deployment or device acceptance is implied by this local integration.

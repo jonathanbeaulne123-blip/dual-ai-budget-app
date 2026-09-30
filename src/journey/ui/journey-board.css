@@ -607,3 +607,5 @@
   .journey-summary::before, .journey-panel::before { display: none; }
   .journey-mark--attention .journey-mark__label::before { background: CanvasText; forced-color-adjust: none; }
 }
+
+.journey-bridge-label{position:absolute;display:flex;align-items:center;gap:6px;pointer-events:none;white-space:nowrap;padding:3px 7px;border:1px solid currentColor;border-radius:3px;background:var(--journey-paper,#f5ecd8);color:var(--journey-ink,#40382e);font:600 11px/1.2 Georgia,serif;z-index:0}.journey-bridge-label svg{width:30px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}.journey-board[data-theme="taylor"] .journey-bridge-label{border-style:dashed;transform-origin:center;background:#f7e8e9}.journey-board[data-theme="newfoundland"] .journey-bridge-label{border-radius:0;border-width:0 0 2px;background:#e3ebe3;color:#2b4b50}@media(forced-colors:active){.journey-bridge-label{color:CanvasText;background:Canvas}}

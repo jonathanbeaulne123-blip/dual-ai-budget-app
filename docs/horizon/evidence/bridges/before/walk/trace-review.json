@@ -1,0 +1,143 @@
+{
+  "method": "Offline nearest carried-bed projection of saved runtime traces. No barrier, body-envelope or deck-containment pass inferred. Partial snapshot; compare run counts.",
+  "runs": [
+    {
+      "bridge": "highSpan",
+      "direction": 1,
+      "status": "destination-reached-review-path",
+      "samples": 199,
+      "maxDistanceFromCarriedCentreline": 0.01275897769856127,
+      "maxHeightDifferenceFromCarriedBed": 0.03117569800892639,
+      "stationRange": [
+        110.07937072957624,
+        225.40075143954928
+      ],
+      "requestedStations": [
+        109.71937072957641,
+        225.7193707295764
+      ]
+    },
+    {
+      "bridge": "highSpan",
+      "direction": -1,
+      "status": "destination-reached-review-path",
+      "samples": 199,
+      "maxDistanceFromCarriedCentreline": 0.010609650699422574,
+      "maxHeightDifferenceFromCarriedBed": 0.027266863093416305,
+      "stationRange": [
+        110.03804685581882,
+        225.3593707295765
+      ],
+      "requestedStations": [
+        109.71937072957641,
+        225.7193707295764
+      ]
+    },
+    {
+      "bridge": "quayBridge",
+      "direction": 1,
+      "status": "destination-reached-review-path",
+      "samples": 176,
+      "maxDistanceFromCarriedCentreline": 0.02223402643844241,
+      "maxHeightDifferenceFromCarriedBed": 0.011193471856485004,
+      "stationRange": [
+        3544.3072221156635,
+        3645.716879738371
+      ],
+      "requestedStations": [
+        3543.9472221156684,
+        3645.9472221156684
+      ]
+    },
+    {
+      "bridge": "quayBridge",
+      "direction": -1,
+      "status": "destination-reached-review-path",
+      "samples": 176,
+      "maxDistanceFromCarriedCentreline": 0.024341411412291496,
+      "maxHeightDifferenceFromCarriedBed": 0.008957938901408724,
+      "stationRange": [
+        3544.178256487401,
+        3645.587222115664
+      ],
+      "requestedStations": [
+        3543.9472221156684,
+        3645.9472221156684
+      ]
+    },
+    {
+      "bridge": "bightBridge",
+      "direction": 1,
+      "status": "destination-reached-review-path",
+      "samples": 440,
+      "maxDistanceFromCarriedCentreline": 0.02252489318941743,
+      "maxHeightDifferenceFromCarriedBed": 0.007145125954773235,
+      "stationRange": [
+        2569.3011306013605,
+        2825.622236618945
+      ],
+      "requestedStations": [
+        2568.9411306013626,
+        2825.9411306013626
+      ]
+    },
+    {
+      "bridge": "bightBridge",
+      "direction": -1,
+      "status": "destination-reached-review-path",
+      "samples": 440,
+      "maxDistanceFromCarriedCentreline": 0.020161305330503736,
+      "maxHeightDifferenceFromCarriedBed": 0.008837781392925237,
+      "stationRange": [
+        2569.2601142846047,
+        2825.5811306013597
+      ],
+      "requestedStations": [
+        2568.9411306013626,
+        2825.9411306013626
+      ]
+    },
+    {
+      "bridge": "apronBridge",
+      "direction": 1,
+      "status": "no-route",
+      "samples": 0,
+      "maxDistanceFromCarriedCentreline": null,
+      "maxHeightDifferenceFromCarriedBed": null,
+      "stationRange": null,
+      "requestedStations": [
+        1263.7554667396134,
+        1320.7554667396134
+      ]
+    },
+    {
+      "bridge": "apronBridge",
+      "direction": -1,
+      "status": "no-route",
+      "samples": 0,
+      "maxDistanceFromCarriedCentreline": null,
+      "maxHeightDifferenceFromCarriedBed": null,
+      "stationRange": null,
+      "requestedStations": [
+        1263.7554667396134,
+        1320.7554667396134
+      ]
+    },
+    {
+      "bridge": "hollowBridge",
+      "direction": 1,
+      "status": "destination-reached-review-path",
+      "samples": 77,
+      "maxDistanceFromCarriedCentreline": 0.01768918133043141,
+      "maxHeightDifferenceFromCarriedBed": 0.0011855640127080846,
+      "stationRange": [
+        200.40958110089073,
+        243.73226775351762
+      ],
+      "requestedStations": [
+        200.0495811008905,
+        244.0495811008905
+      ]
+    }
+  ]
+}

@@ -6,6 +6,26 @@ The [Mountain Road book](horizon/MOUNTAIN_ROAD.md) proposes one Horizon-side cha
 
 The original corridor stays **0/23/85, zero restarts**. The combined cruiser chain finds **5/22/22 with seven restarts**. Bicycle/Horizon-board/walking full-chain attempts finish **0/6**; native full-chain endpoints are outside the shell skate launch radius. Region **15/15** and dump check pass. High gate checks pass but **538.729 s exceeds the 300 s budget**. Known Bianca Month main CI failure remains unchanged. Headless static captures and all gaps are named in the [handoff](CODEX_HORIZON_MOUNTAIN_ROAD_1.md) and [LOOK](horizon/evidence/mountain-road/before/LOOK.md). Two independent-review findings were fixed and rechecked. **Next: Jonathan's D-MR choices; Codex for approved work and outstanding evidence.**
 
+## 2026-09-30 — Bridge PR integrates merged airport
+
+Jonathan requested a mergeable PR for the bridge work and airport update. Airport #576 is already merged at `324cd5f`; `codex/horizon-bridge-book` now includes it. Bridge implementation is committed, with shared runtime theme/disposal conflicts resolved and stable-night bridge lighting repaired. High risk; Budget delta 0. PR #577 is open. The 105-file integration sweep is complete with failures recorded; CI on d59e9a9 passed 691 assertions before review repairs. Jonathan authorized the deterministic Bianca Month fixture fix. The fresh review bake clears all 7 landing fields and moves Bight end anchors away from S2; final roof winding and repeat-build isolation regressions pass, as do the renewed byte-exact bake, bridge budgets and glider passages. Final clean-head gate status is tracked in the PR. Historical evidence below remains tied to its recorded revision. Full cast/device/performance acceptance remains open; no bridge merge or deployment is authorized.
+
+[Integration record](worksessions/2026-09-30-horizon-bridge-pr.md).
+
+## 2026-09-30 — Horizon bridges: local implementation underway
+
+Jonathan subsequently said “build them.” `codex/horizon-bridge-book`, base e77309e, remains local and uncommitted. High risk; Budget (5):0, Engagement (3):+2 target. Ten structural families, shared theme art, derived lanterns, fixed Bight tower stair and ten map glyph/name pairs are implemented; the final bake is byte-identical, stair replay passes,24 responsive map captures fit, and corrected road counts do not regress. High quick gate remains failed after timing/budget errors; all six affected files pass sequentially (121 tests). Full mode/device/scene-budget acceptance remains open. Quay is seated and the Ribbon's pumpable dip is not yet implemented. No PR, merge, deployment or device acceptance.
+
+[Implementation handoff](CODEX_HORIZON_BRIDGES_1.md) and [build worksession](worksessions/2026-09-30-horizon-bridges-build.md) record the current local state. The earlier Phase1 entry below is historical. Do not treat the local build or its passed static samples as complete multi-mode acceptance. Main's unrelated Bianca Month failure remains unchanged.
+
+## 2026-09-30 — Horizon Bridge Book: local proposal, Phase 0 partial
+
+`codex/horizon-bridge-book` from `main@e77309e`. **Phase 1 draft only; no Phase 2 implementation, PR, merge or deployment.** Risk:High. Budget (5):0. Engagement (3):+2 target, not implemented.
+
+Ten proposed bridge identities, sixteen measured current structures, three-theme map baselines and explicit gate/STYLE/moving-span decisions. Fresh road audit0/23/85 with0 restarts; views11/11 retain baseline exceptions. Ground probes34 unverified endpoints/40 incomplete/22 not applicable. Main CI remains red; local High gate breached its time budget. Full swept-envelope and device acceptance remain open.
+
+[Bridge Book](horizon/BRIDGES.md) · [exact evidence, rough areas and next owners](CODEX_HORIZON_BRIDGES_0.md). Jonathan owns design choices; Codex owns remaining Phase0 evidence. No geometry, controller, financial or cloud behavior changed.
+
 ## 2026-09-29 — Horizon Drive finished as a corridor: one road definition, driven end to end
 
 Branch `claude/horizon-main-road`, merging `main@1c436be`. Pushed; see its PR. Not merged, not deployed, not live verified.

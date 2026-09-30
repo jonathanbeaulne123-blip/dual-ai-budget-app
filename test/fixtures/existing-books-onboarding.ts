@@ -67,7 +67,8 @@ function isoAfter(base: string, minutes: number): string {
 }
 
 export function existingBooksActivationAt(): string {
-  return new Date(Date.now() + 24 * 60 * 60 * 1_000).toISOString();
+  // Stable month-end fixture: callers that render date-sensitive UI must pin their clock too.
+  return "2026-09-30T16:00:00.000Z";
 }
 
 /** Canonical legacy books with every adoptable chapter fact, but no onboarding record. */

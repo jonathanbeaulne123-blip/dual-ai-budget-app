@@ -1,11 +1,15 @@
 import {mountainRoadChain} from '../land/corridor/chain';
+
+import { measureBridgeEnvelopes, measureBridgeFlightEnvelopes } from '../land/bridges/measure';
+import { createHorizonGeography } from '../runtime/geography';
+import { finalizeBridges } from '../land/bridges/build';
 import type { LandCuts, StructureSolid, TerrainField, PadCut } from '../land/interfaces.ts';
 import type { Anchor, Bed, FaceCard, Host, Line, Point2, Point3, RegionPlacement, Threshold, WorldDefinition } from './definition.ts';
 import { HORIZON_MANIFEST, requireScaleFactor } from './manifest.ts';
 import { buildCrossings, registerRowKey } from './crossings.ts';
 import type { CrossingProof } from './crossings.ts';
 import { buildDistricts, districtAt, partitionWorldSolids } from './districts.ts';
-import { arcLengths, closestOnPolyline, ellipse, length3, padOutline, rectangle, solidBounds, terrainHeight } from './geometry.ts';
+import { arcLengths, closestOnPolyline, ellipse, length3, padOutline, rectangle, solidBounds, solidVerticalRangeAt, terrainHeight } from './geometry.ts';
 import { buildPathGraph, measureJourneys, yearWalkStretch, type ExtraPathGraph } from './pathGraph.ts';
 import { buildFlightEnvelope } from './sky.ts';
 import { buildViews, protectedGreenOutline } from './views.ts';
@@ -108,6 +112,16 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
   const cuts: LandCuts = { ...input, solids: [...input.solids, ...(options.extraSolids ?? [])] };
   assertUniqueSolidIds(cuts.solids);
   const hosts = buildHosts(cuts), lines = buildWorldLines(terrain, cuts), crossing = buildCrossings(cuts, lines, { ground: (x, z) => terrainHeight(terrain, x, z), waterAt: waterHeightAt }), graph = buildPathGraph(cuts, crossing.proofs, options.extraGraph), sky = buildFlightEnvelope(terrain, cuts), views = buildViews(terrain, cuts), geometry = partitionWorldSolids(cuts.solids), districts = buildDistricts(terrain, cuts.beds, geometry), thresholds = buildThresholds(terrain, cuts, crossing.proofs);
+  const bridges=finalizeBridges(cuts),deckBounds=cuts.solids.filter(s=>s.walkable).map(s=>({s,b:solidBounds(s)}));
+  // High cable/rib bulbs are emissive art, not pools projected through open air
+  // onto the lagoon. Only deck lanterns enter the existing bounded light pool.
+  const bridgeLights=bridges.flatMap(bridge=>bridge.lights.filter(l=>l.kind!=='necklace'&&l.kind!=='rib').flatMap((l,i)=>{
+    const [x,y,z]=l.at;let floor=-Infinity;
+    for(const {s,b} of deckBounds){if(x<b.min[0]||x>b.max[0]||z<b.min[2]||z>b.max[2]||b.min[1]>y)continue;
+      const hit=solidVerticalRangeAt(s,x,z);if(hit&&hit.top<=y+.01)floor=Math.max(floor,hit.top);}
+    if(!Number.isFinite(floor))return []; // Keep emissive art; never invent a lit floor beneath an open span.
+    return[{id:l.id,at:l.at,head:l.at,pool:[x,floor,z] as Point3,poolRadius:3,kind:'bridgeLantern',line:bridge.id,order:i}];
+  }));
   const sourceMap: Record<string, string[]> = {}, regions = buildRegions();
   for (const solid of geometry) (sourceMap[solid.sourceId] ??= []).push(solid.id);
   for (const host of hosts) host.solidIds = host.solidIds?.flatMap(id => sourceMap[id] ?? []);
@@ -115,6 +129,8 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
   const yearCut = cuts.beds.find(b => b.id === 'yearWalk'), toBed = (b: typeof cuts.beds[number]): Bed => ({ id: b.id, kind: b.kind, profile: b.profile, surface: b.surface, points: b.points, width: b.width, clearHeight: b.clearHeight, structureIds: b.structureIds, surfaceSegments: b.surfaceSegments, districtIds: [...new Set(b.points.map(p => districtAt(p[0], p[2], s)))] });
   const yearWalk: Bed = yearCut ? toBed(yearCut) : { id: 'yearWalk', profile: 'walk', surface: 'gravel', points: [], districtIds: [] };
   const measurements = measureJourneys(graph, cuts, hosts, lines, sky), diagnostics = [...cuts.diagnostics];
+  measureBridgeEnvelopes(bridges,createHorizonGeography(terrain,cuts),diagnostics);
+  measureBridgeFlightEnvelopes(bridges,cuts.solids,sky,diagnostics);
   for (const p of crossing.proofs) if (!p.registered || !p.built) diagnostics.push({ id: p.id, severity: p.built ? 'info' : 'conflict', message: `${p.a} × ${p.b}: ${p.registered ? 'registered' : 'proposed for design lead'} ${p.resolution}; ${p.built ? 'built' : 'physical resolution incomplete'}.`, at: p.at, measured: p.separation, required: p.requiredClearance });
   for (const p of views) if (!p.proof!.pass) { const q = p.proof!; diagnostics.push({ id: `view.${p.id}`, severity: 'conflict', message: `Sketchbook pose fails the ID-buffer proof (1440×900 ${q.passLandscape ? 'pass' : 'FAIL'}, portrait ${q.passPortrait ? 'pass' : 'FAIL'}): ${[...(!q.eyeAboveFloor ? ['eye below the ground'] : []), ...(!q.eyeAboveWater ? ['eye below water'] : []), ...(!q.horizonInFrame ? [`horizon not in frame (pitch ${q.landscape.pitchDegrees.toFixed(1)}°, sky/sea on the horizon rows ${q.landscape.horizonRowSkyOrSea}/${q.portrait?.horizonRowSkyOrSea ?? 0} px)`] : []), ...q.subjects.filter(s => !s.pass).map(s => `${s.id}: ${!s.exists ? 'no built geometry mapped' : `${s.pixels} px at 1440×900 (min ${q.landscape.minPixels})${s.portraitRequired ? `, ${s.portraitPixels} px portrait (min ${q.portrait?.minPixels})` : ''}`}`)].join('; ')}.` }); }
   for (const p of measurements) if (!p.pass) diagnostics.push({ id: `journey.${p.id}`, severity: 'conflict', message: p.reason ?? `Measured journey ${p.seconds!.toFixed(1)} s exceeds the unchanged target.`, measured: p.seconds ?? undefined });
@@ -139,8 +155,9 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
     crossings: crossing.crossings, crossingProofs: crossing.proofs, rawIntersections: crossing.rawIntersections, thresholds,
     reserves: cuts.pads.filter(p => p.kind === 'reserve').map(p => ({ id: p.id, placeId: p.placeId ?? p.id, outline: padOutline(p), door: anchor(`${p.id}.door`, p.door ?? p.centre), rotationDegrees: p.rotationDegrees })), sky,
     underground: { doors: Object.entries(m.underground.doors).map(([id, door]) => anchor(id, [door.xy[0]! * s, door.h * s, door.xy[1]! * s])), rooms: roomVolumes.map(room => room.outline), roomVolumes, waterBodyId: cuts.waters.find(w => w.kind === 'deep')?.id, skylight: anchor('deep.skylight', [m.underground.rooms.deep.skylight.to[0]! * s, m.underground.rooms.deep.skylight.topH * s, m.underground.rooms.deep.skylight.to[1]! * s]) },
-    lights: [...hosts.map(h => { const d = h.door as { xy: Point2; height: number }; return { id: `door.${h.id}.lamp`, at: [d.xy[0], d.height + 2.2, d.xy[1]] as Point3, kind: 'door' }; }), ...thresholds.filter(t => !t.carried).map(t => ({ id: `${t.id}.lamp`, at: [t.at[0], (t.height ?? 0) + .8, t.at[1]] as Point3, kind: 'threshold' })), ...corridorLightAnchors(options.corridors ?? [])], faceCards: buildFaceCards(geometry), views, lanterns: [],
+    lights: [...hosts.map(h => { const d = h.door as { xy: Point2; height: number }; return { id: `door.${h.id}.lamp`, at: [d.xy[0], d.height + 2.2, d.xy[1]] as Point3, kind: 'door' }; }), ...thresholds.filter(t => !t.carried).map(t => ({ id: `${t.id}.lamp`, at: [t.at[0], (t.height ?? 0) + .8, t.at[1]] as Point3, kind: 'threshold' })), ...corridorLightAnchors(options.corridors ?? []), ...bridgeLights], faceCards: buildFaceCards(geometry), views, lanterns: [],
     protected: [{ id: 'green', outline: protectedGreenOutline(), reason: 'No building, plot or tall prop inside the protected centre.' }],
+    bridges,
     geometry: { solids: geometry, sourceMap }, collision: { beds: cuts.beds, pads: cuts.pads, mouths: cuts.mouths, waters: cuts.waters, walkableSlopeDegrees: 40, lipStepMax: .48 }, pathGraph: graph, diagnostics, journeyMeasurements: measurements, ...(regions.length ? { regions } : {}), ...(options.corridors ? { corridors: options.corridors } : {}), roadChains: [mountainRoadChain(cuts.beds)].filter((c):c is NonNullable<typeof c>=>c!==null),
     journey: {
       stations: m.journey.stations.map((station, i) => { const pad = resolvePad(cuts, `station.${station.id}`), prev = m.journey.stations[(i + 11) % 12]!, points = yearWalkStretch(yearWalk.points, prev.xy.map(v => v * s), station.xy.map(v => v * s)), len = length3(points); return { id: station.id, month: station.month, anchor: anchor(`station.${station.id}`, pad?.centre ?? [station.xy[0]! * s, terrainHeight(terrain, station.xy[0]! * s, station.xy[1]! * s), station.xy[1]! * s]), bedIds: [], padId: pad?.id, footprint: pad ? padOutline(pad) : [], bedPositions: pad ? stationPositions(pad, s) : [], stretch: { from: prev.id, lengthEu: len, lengthM: len / s, spacing: [28, 29, 30, 31].map(days => ({ days, eu: len / days })), points } }; }), yearWalk,

@@ -157,9 +157,10 @@ function extractBridges(world: WorldDefinition, lines: readonly JourneyLandLine[
   const out: NonNullable<JourneyLandData["bridges"]> = [];
   for (const s of world.structures) {
     const id = baseId(s.id);
-    if (s.kind !== "bridge" || s.role !== "deck" || seen.has(id) || !s.bedIds.some((b) => roadLines.has(b))) continue;
+    const landmark=world.bridges?.find(b=>b.id===id);
+    if (s.role !== "deck" || seen.has(id) || (!landmark && (s.kind !== "bridge" || !s.bedIds.some((b) => roadLines.has(b))))) continue;
     const bed = beds.get(`structure.${id}`);
-    if (!bed || bed.kind !== "road" || bed.points.length < 2 || !(bed.width && bed.width > 0)) continue;
+    if (!bed || (!landmark && bed.kind !== "road") || bed.points.length < 2 || !(bed.width && bed.width > 0)) continue;
     seen.add(id);
     const axis = bed.points.map((p) => [round(p[0]), round(p[1]), round(p[2])] as const);
     const half = bed.width / 2 + DECK_SIDE_SLACK;
@@ -174,7 +175,7 @@ function extractBridges(world: WorldDefinition, lines: readonly JourneyLandLine[
       }
       if (on) lineIds.push(line.id); else if (under) underIds.push(line.id);
     }
-    out.push({ id, axis, width: round(bed.width), lineIds: lineIds.sort(), underIds: underIds.sort() });
+    out.push({ id, axis, width: round(bed.width), lineIds: lineIds.sort(), underIds: underIds.sort(), ...(landmark?{landmark:{name:landmark.name,glyph:landmark.map.glyph,at:landmark.map.at}}:{}) });
   }
   for(const c of world.corridors??[])for(const b of c.sourceBridges??[]){
     if(seen.has(b.id))continue;seen.add(b.id);

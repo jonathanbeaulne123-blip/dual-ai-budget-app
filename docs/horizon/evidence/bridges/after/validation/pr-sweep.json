@@ -1,0 +1,1274 @@
+{
+  "base": "324cd5f246ab295af5cf64d553ebf78fad57f7b5",
+  "method": "105 requested Horizon/Journey/harbour files, one at a time with maxWorkers=1; existing serial-file timeouts only. Integration sweep with test repairs in progress; targeted post-repair verification is separate. Bake stayed c662fb3 throughout this sweep.",
+  "elapsedSeconds": 1709.85,
+  "assertions": {
+    "passed": 1368,
+    "failed": 10,
+    "todo": 2,
+    "skipped": 1
+  },
+  "workerErrors": 3,
+  "files": [
+    {
+      "file": "test/harbour-source-fences.test.ts",
+      "code": 0,
+      "seconds": 2.25,
+      "assertions": {
+        "passed": 9,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/harbour-walk-everywhere.test.ts",
+      "code": 0,
+      "seconds": 16.76,
+      "assertions": {
+        "passed": 81,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/harbour-walk-focus.test.ts",
+      "code": 0,
+      "seconds": 9.41,
+      "assertions": {
+        "passed": 27,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/harbour-world-toggle.test.ts",
+      "code": 0,
+      "seconds": 5.15,
+      "assertions": {
+        "passed": 16,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizon-airport-flight.test.ts",
+      "code": 0,
+      "seconds": 0.82,
+      "assertions": {
+        "passed": 10,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizon-airport-world.test.ts",
+      "code": 0,
+      "seconds": 4.13,
+      "assertions": {
+        "passed": 7,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizon-guide.test.ts",
+      "code": 0,
+      "seconds": 2.68,
+      "assertions": {
+        "passed": 3,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizon-monorail.test.ts",
+      "code": 0,
+      "seconds": 2.49,
+      "assertions": {
+        "passed": 2,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizon-native-skate.test.ts",
+      "code": 0,
+      "seconds": 6.0,
+      "assertions": {
+        "passed": 6,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizon-old-shell.test.ts",
+      "code": 1,
+      "seconds": 5.48,
+      "assertions": {
+        "passed": 19,
+        "failed": 1,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonAdaptiveQuality.test.ts",
+      "code": 0,
+      "seconds": 1.05,
+      "assertions": {
+        "passed": 11,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonAssets.test.ts",
+      "code": 0,
+      "seconds": 1.11,
+      "assertions": {
+        "passed": 3,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonBakeArtifacts.test.ts",
+      "code": 0,
+      "seconds": 1.17,
+      "assertions": {
+        "passed": 7,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonBeds.test.ts",
+      "code": 0,
+      "seconds": 101.02,
+      "assertions": {
+        "passed": 17,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonBicycleProfile.test.ts",
+      "code": 0,
+      "seconds": 2.88,
+      "assertions": {
+        "passed": 6,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonBoardCamera.test.ts",
+      "code": 0,
+      "seconds": 9.58,
+      "assertions": {
+        "passed": 7,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonBoardLanding.test.ts",
+      "code": 0,
+      "seconds": 9.41,
+      "assertions": {
+        "passed": 8,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonBoardPace.test.ts",
+      "code": 0,
+      "seconds": 2.92,
+      "assertions": {
+        "passed": 15,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonBoardThresholds.test.ts",
+      "code": 1,
+      "seconds": 4.45,
+      "assertions": {
+        "passed": 8,
+        "failed": 1,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonBridges.test.ts",
+      "code": 1,
+      "seconds": 14.24,
+      "assertions": {
+        "passed": 11,
+        "failed": 1,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonCards.test.ts",
+      "code": 0,
+      "seconds": 0.97,
+      "assertions": {
+        "passed": 7,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonChute.test.ts",
+      "code": 0,
+      "seconds": 0.88,
+      "assertions": {
+        "passed": 13,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonComfort.test.ts",
+      "code": 0,
+      "seconds": 0.97,
+      "assertions": {
+        "passed": 4,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonCorridor.test.ts",
+      "code": 0,
+      "seconds": 2.03,
+      "assertions": {
+        "passed": 16,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonCorridorArt.test.ts",
+      "code": 0,
+      "seconds": 5.72,
+      "assertions": {
+        "passed": 10,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonCorridorPlan.test.ts",
+      "code": 0,
+      "seconds": 8.41,
+      "assertions": {
+        "passed": 10,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 1
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonCorridorPlanting.test.ts",
+      "code": 0,
+      "seconds": 4.52,
+      "assertions": {
+        "passed": 11,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonCrossings.test.ts",
+      "code": 0,
+      "seconds": 1.67,
+      "assertions": {
+        "passed": 12,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonCruiser.test.ts",
+      "code": 0,
+      "seconds": 1.4,
+      "assertions": {
+        "passed": 23,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonFleet.test.ts",
+      "code": 0,
+      "seconds": 4.87,
+      "assertions": {
+        "passed": 37,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonGliderBodies.test.ts",
+      "code": 0,
+      "seconds": 0.94,
+      "assertions": {
+        "passed": 3,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonGliderCamera.test.ts",
+      "code": 0,
+      "seconds": 1.98,
+      "assertions": {
+        "passed": 11,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonGliderController.test.ts",
+      "code": 0,
+      "seconds": 3.78,
+      "assertions": {
+        "passed": 24,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonGliderJourneys.test.ts",
+      "code": 0,
+      "seconds": 5.7,
+      "assertions": {
+        "passed": 22,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonGliderJourneysWind.test.ts",
+      "code": 0,
+      "seconds": 1.51,
+      "assertions": {
+        "passed": 6,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonGliderLanding.test.ts",
+      "code": 0,
+      "seconds": 2.63,
+      "assertions": {
+        "passed": 12,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonGliderLift.test.ts",
+      "code": 0,
+      "seconds": 2.04,
+      "assertions": {
+        "passed": 8,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonGliderNoMoney.test.ts",
+      "code": 0,
+      "seconds": 0.81,
+      "assertions": {
+        "passed": 49,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonGliderPolar.test.ts",
+      "code": 0,
+      "seconds": 0.79,
+      "assertions": {
+        "passed": 13,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonGliderReducedMotion.test.ts",
+      "code": 0,
+      "seconds": 2.81,
+      "assertions": {
+        "passed": 16,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonGondola.test.ts",
+      "code": 0,
+      "seconds": 2.41,
+      "assertions": {
+        "passed": 17,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonHeldWalkOut.test.ts",
+      "code": 0,
+      "seconds": 9.77,
+      "assertions": {
+        "passed": 29,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonHostRouting.test.ts",
+      "code": 0,
+      "seconds": 12.12,
+      "assertions": {
+        "passed": 4,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonHostsDoors.test.ts",
+      "code": 1,
+      "seconds": 49.94,
+      "assertions": {
+        "passed": 2,
+        "failed": 1,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonInspector.test.ts",
+      "code": 0,
+      "seconds": 1.45,
+      "assertions": {
+        "passed": 10,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonJourneys.test.ts",
+      "code": 0,
+      "seconds": 1.57,
+      "assertions": {
+        "passed": 5,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonKitchenArt.test.ts",
+      "code": 0,
+      "seconds": 2.35,
+      "assertions": {
+        "passed": 5,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonKitchenHUD.test.ts",
+      "code": 0,
+      "seconds": 1.64,
+      "assertions": {
+        "passed": 17,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonLandRepairs.test.ts",
+      "code": 0,
+      "seconds": 1.58,
+      "assertions": {
+        "passed": 10,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonLandforms.test.ts",
+      "code": 0,
+      "seconds": 3.69,
+      "assertions": {
+        "passed": 11,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonManifest.test.ts",
+      "code": 0,
+      "seconds": 1.36,
+      "assertions": {
+        "passed": 35,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonModeRegistry.test.ts",
+      "code": 0,
+      "seconds": 6.6,
+      "assertions": {
+        "passed": 16,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonMountainRegion.test.ts",
+      "code": 0,
+      "seconds": 23.56,
+      "assertions": {
+        "passed": 15,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonMoverAudio.test.ts",
+      "code": 0,
+      "seconds": 2.42,
+      "assertions": {
+        "passed": 3,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonMoverHook.test.ts",
+      "code": 0,
+      "seconds": 5.67,
+      "assertions": {
+        "passed": 20,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonMoversNoMoney.test.ts",
+      "code": 1,
+      "seconds": 1.27,
+      "assertions": {
+        "passed": 3,
+        "failed": 2,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonPartner.test.ts",
+      "code": 0,
+      "seconds": 1.88,
+      "assertions": {
+        "passed": 1,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonPedestrianWater.test.ts",
+      "code": 0,
+      "seconds": 4.05,
+      "assertions": {
+        "passed": 5,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonPerspective.test.ts",
+      "code": 0,
+      "seconds": 1.36,
+      "assertions": {
+        "passed": 3,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonPresence.test.ts",
+      "code": 0,
+      "seconds": 1.94,
+      "assertions": {
+        "passed": 3,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonQuickLayerModes.test.ts",
+      "code": 0,
+      "seconds": 11.11,
+      "assertions": {
+        "passed": 12,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonReconcile2.test.ts",
+      "code": 0,
+      "seconds": 6.02,
+      "assertions": {
+        "passed": 5,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonRenderWork.test.ts",
+      "code": 0,
+      "seconds": 3.23,
+      "assertions": {
+        "passed": 10,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonReserves.test.ts",
+      "code": 0,
+      "seconds": 27.92,
+      "assertions": {
+        "passed": 1,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonRideSituations.test.ts",
+      "code": 0,
+      "seconds": 31.3,
+      "assertions": {
+        "passed": 7,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonRoadLights.test.ts",
+      "code": 0,
+      "seconds": 2.02,
+      "assertions": {
+        "passed": 19,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonRuntimeGeometry.test.ts",
+      "code": 0,
+      "seconds": 2.92,
+      "assertions": {
+        "passed": 7,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonSavedPosition.test.ts",
+      "code": 0,
+      "seconds": 1.53,
+      "assertions": {
+        "passed": 4,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonSkateLines.test.ts",
+      "code": 1,
+      "seconds": 350.19,
+      "assertions": {
+        "passed": 5,
+        "failed": 0,
+        "todo": 2,
+        "skipped": 0
+      },
+      "errors": 1
+    },
+    {
+      "file": "test/horizonSkyEnvelope.test.ts",
+      "code": 0,
+      "seconds": 1.85,
+      "assertions": {
+        "passed": 5,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonSolar.test.ts",
+      "code": 0,
+      "seconds": 2.3,
+      "assertions": {
+        "passed": 12,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonStreaming.test.ts",
+      "code": 0,
+      "seconds": 4.68,
+      "assertions": {
+        "passed": 31,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonStructures.test.ts",
+      "code": 1,
+      "seconds": 75.51,
+      "assertions": {
+        "passed": 23,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 1
+    },
+    {
+      "file": "test/horizonTerrainAsset.test.ts",
+      "code": 0,
+      "seconds": 12.52,
+      "assertions": {
+        "passed": 7,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonTerrainCuts.test.ts",
+      "code": 0,
+      "seconds": 5.41,
+      "assertions": {
+        "passed": 18,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonThresholds.test.ts",
+      "code": 0,
+      "seconds": 73.34,
+      "assertions": {
+        "passed": 8,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonThroat.test.ts",
+      "code": 0,
+      "seconds": 3.28,
+      "assertions": {
+        "passed": 8,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonUnderground.test.ts",
+      "code": 1,
+      "seconds": 165.94,
+      "assertions": {
+        "passed": 4,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 1
+    },
+    {
+      "file": "test/horizonViews.test.ts",
+      "code": 0,
+      "seconds": 72.58,
+      "assertions": {
+        "passed": 11,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonWalkOut.test.ts",
+      "code": 0,
+      "seconds": 10.88,
+      "assertions": {
+        "passed": 51,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonWater.test.ts",
+      "code": 0,
+      "seconds": 21.71,
+      "assertions": {
+        "passed": 11,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonWave4.test.ts",
+      "code": 1,
+      "seconds": 34.92,
+      "assertions": {
+        "passed": 13,
+        "failed": 2,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonWave6.test.ts",
+      "code": 1,
+      "seconds": 7.52,
+      "assertions": {
+        "passed": 7,
+        "failed": 2,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonWind.test.ts",
+      "code": 0,
+      "seconds": 1.69,
+      "assertions": {
+        "passed": 2,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/horizonWorldDefinition.test.ts",
+      "code": 0,
+      "seconds": 10.32,
+      "assertions": {
+        "passed": 3,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-board-app.test.ts",
+      "code": 0,
+      "seconds": 87.81,
+      "assertions": {
+        "passed": 14,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-board-fence.test.ts",
+      "code": 0,
+      "seconds": 2.04,
+      "assertions": {
+        "passed": 7,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-board-integration.test.ts",
+      "code": 0,
+      "seconds": 16.9,
+      "assertions": {
+        "passed": 14,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-board-model.test.ts",
+      "code": 0,
+      "seconds": 13.67,
+      "assertions": {
+        "passed": 42,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-board-parity.test.ts",
+      "code": 0,
+      "seconds": 14.51,
+      "assertions": {
+        "passed": 5,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-board-route.test.ts",
+      "code": 0,
+      "seconds": 15.9,
+      "assertions": {
+        "passed": 23,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-board-ui.test.ts",
+      "code": 0,
+      "seconds": 14.03,
+      "assertions": {
+        "passed": 32,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-cloud-transition.test.ts",
+      "code": 0,
+      "seconds": 1.33,
+      "assertions": {
+        "passed": 2,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-focus.test.ts",
+      "code": 0,
+      "seconds": 1.04,
+      "assertions": {
+        "passed": 2,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-free-roam-ui.test.ts",
+      "code": 0,
+      "seconds": 19.01,
+      "assertions": {
+        "passed": 16,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-fullscreen-ui.test.ts",
+      "code": 0,
+      "seconds": 5.42,
+      "assertions": {
+        "passed": 2,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-game-mode-ui.test.ts",
+      "code": 0,
+      "seconds": 8.25,
+      "assertions": {
+        "passed": 15,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-integrated-ui.test.ts",
+      "code": 0,
+      "seconds": 14.53,
+      "assertions": {
+        "passed": 13,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-land.test.ts",
+      "code": 0,
+      "seconds": 6.71,
+      "assertions": {
+        "passed": 26,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-loader-recovery.test.ts",
+      "code": 0,
+      "seconds": 3.67,
+      "assertions": {
+        "passed": 1,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-mini-model.test.ts",
+      "code": 0,
+      "seconds": 3.48,
+      "assertions": {
+        "passed": 14,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-mini-story.test.ts",
+      "code": 0,
+      "seconds": 125.4,
+      "assertions": {
+        "passed": 4,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-mini-ui.test.ts",
+      "code": 0,
+      "seconds": 14.92,
+      "assertions": {
+        "passed": 12,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-road.test.ts",
+      "code": 0,
+      "seconds": 5.73,
+      "assertions": {
+        "passed": 16,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    },
+    {
+      "file": "test/journey-roam-camera.test.ts",
+      "code": 0,
+      "seconds": 0.75,
+      "assertions": {
+        "passed": 30,
+        "failed": 0,
+        "todo": 0,
+        "skipped": 0
+      },
+      "errors": 0
+    }
+  ]
+}
