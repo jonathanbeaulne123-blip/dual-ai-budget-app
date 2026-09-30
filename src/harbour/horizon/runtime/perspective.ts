@@ -8,6 +8,7 @@ export function createPerspective(){
   let mode:Perspective='activity',viewYaw=0,pitch=-.2,distance=22;
   return{
     mode:()=>mode,
+    followHeading(delta:number){if(mode==='first-person')viewYaw+=delta;},
     cycle(_body:MoverBody,eye:readonly number[],target:readonly number[]){
       mode=PERSPECTIVES[(PERSPECTIVES.indexOf(mode)+1)%PERSPECTIVES.length]!;
       viewYaw=Math.atan2(target[0]!-eye[0]!,target[2]!-eye[2]!);

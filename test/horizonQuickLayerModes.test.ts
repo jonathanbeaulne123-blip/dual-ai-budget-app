@@ -13,12 +13,14 @@ import type {FleetAction} from '../src/harbour/horizon/movers/fleet/model.ts';
 const world={
   moverState:{mode:'feet',attached:false,hud:null} as HorizonMoverState,
   offers:[] as ThresholdOffer[],
+  airportPower:vi.fn(),airportBrake:vi.fn(),airportAction:vi.fn(),
   moverAction:vi.fn(),accept:vi.fn(),setTheme:vi.fn(),setCruiserTheme:vi.fn(),setCruiserSkin:vi.fn(),toggleCruiser:vi.fn(),recoverCruiser:vi.fn(),input:vi.fn(),jump:vi.fn(),mode:'walk',
   fleetActions:[] as FleetAction[],fleetAction:vi.fn(),cycleCamera:vi.fn(),jumpHold:vi.fn(),
 };
 const register=vi.fn(()=>()=>{});
 vi.mock('../src/harbour/scene/worldMount.ts',()=>({mountHorizonWorld:async()=>({
   setHome:vi.fn(),visitHome:vi.fn(()=>true),homeActions:()=>[],mode:()=>world.mode,shotId:()=>'A',offers:()=>world.offers,moverState:()=>world.moverState,moverAction:world.moverAction,accept:world.accept,
+  airportActions:()=>[],airportState:()=>({selected:world.moverState.mode==='plane'?'kestrel':null,power:0,speed:0,grounded:true,disabled:false,pitch:0,bank:0,velocity:[0,0,0],saveFailed:false,inventory:[]}),airportPower:world.airportPower,airportBrake:world.airportBrake,airportAction:world.airportAction,
   fleetActions:()=>world.fleetActions,fleetState:()=>({vessels:[],swimming:false,perspective:'activity',sitting:null,saveFailed:false}),fleetAction:world.fleetAction,cycleCamera:world.cycleCamera,jumpHold:world.jumpHold,
   setTheme:world.setTheme,setCruiserTheme:world.setCruiserTheme,setCruiserSkin:world.setCruiserSkin,toggleCruiser:world.toggleCruiser,recoverCruiser:world.recoverCruiser,cyclePerspective(){},resumeEquipment(){},pause(){},setComfort(){},setReducedMotion(){},setCalm(){},setMode(){},dispose(){},input:world.input,look(){},jump:world.jump,enterDoor(){},cutTo(){},world:{views:[]},
 })}));
@@ -31,7 +33,7 @@ beforeAll(()=>{
 });
 const tick=(ms=260)=>act(async()=>{await new Promise(r=>setTimeout(r,ms));});
 let root:ReturnType<typeof createRoot>|null=null,host:HTMLElement|null=null,commits=0;
-afterEach(()=>{act(()=>root?.unmount());host?.remove();root=null;host=null;});
+afterEach(()=>{act(()=>root?.unmount());host?.remove();root=null;host=null;world.moverState={mode:'feet',attached:false,hud:null};world.offers=[];});
 async function mount(){
   const {default:HorizonStage}=await import('../src/harbour/horizon/HorizonStage.tsx');
   host=document.createElement('div');document.body.append(host);root=createRoot(host);
@@ -129,6 +131,12 @@ describe('the quick layer in every mover phase',()=>{
     world.offers=[{id:'bailOut:plane→parachute',thresholdId:'bailOut',from:'plane',to:'parachute',action:'Jump',label:'Jump',at:[1040,200,1000]}];hud(true,{height:180},'plane');await tick();
     const jump=h.querySelector('.horizon-offers .horizon-offer')!;expect(jump.textContent).toBe('Jump');expect(jump.classList.contains('horizon-offer--hold')).toBe(true);expect(jump.getAttribute('aria-label')).toBe('Jump (press and hold)');
     world.offers=[];
+  });
+  it('shows aircraft power controls and preserves the two pads without the cruiser panel',async()=>{
+    hud(true,{height:0},'plane');const h=await mount();await tick();
+    expect(h.querySelector('.horizon-cruiser-controls')).toBeNull();expect(h.querySelectorAll('.horizon-pad')).toHaveLength(2);
+    const flight=[...h.querySelectorAll<HTMLButtonElement>('.horizon-airport button')].find(b=>b.textContent==='Flight')!;act(()=>flight.click());expect(world.airportPower).toHaveBeenCalledWith(.8);
+    const stop=[...h.querySelectorAll<HTMLButtonElement>('.horizon-airport button')].find(b=>b.textContent==='Stop / ground brake')!;act(()=>stop.click());expect(world.airportPower).toHaveBeenLastCalledWith(0);expect(world.airportBrake).toHaveBeenLastCalledWith(true);
   });
   it('renders and changes cruiser style when the browser storage getter is blocked',async()=>{
     const storage=vi.spyOn(window,'localStorage','get').mockImplementation(()=>{throw new DOMException('Storage blocked','SecurityError');});

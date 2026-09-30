@@ -1,3 +1,4 @@
+import {buildAirportMap} from "./airport.ts";
 /**
  * `buildJourneyLand()` (T2): the low-poly bird's-eye island as one three.js Group the board layer stands on.
  *
@@ -81,6 +82,7 @@ export const buildJourneyLand: BuildJourneyLand = (data: JourneyLandData, option
   const lines = buildLines(road, dressing, view);
   const bridges = buildBridges(road.bridges, surface, dressing, view);
   const hosts = buildHosts(data, surface, dressing, view);
+  const airport=buildAirportMap(dressing.hostRoof,dressing.road);group.add(airport.mesh);
   group.add(water.sea, terrain.mesh);
   if (water.bodies) group.add(water.bodies);
   for (const mesh of lines.meshes) group.add(mesh);
@@ -110,7 +112,7 @@ export const buildJourneyLand: BuildJourneyLand = (data: JourneyLandData, option
     setTheme(next: ThemeId) {
       if (next === theme) return;
       theme = next; dressing = landDressing(next);
-      terrain.recolour(dressing); water.recolour(dressing); lines.recolour(dressing); bridges.recolour(dressing); hosts.recolour(dressing); homes.recolour(dressing);
+      airport.recolour(dressing.hostRoof,dressing.road);terrain.recolour(dressing); water.recolour(dressing); lines.recolour(dressing); bridges.recolour(dressing); hosts.recolour(dressing); homes.recolour(dressing);
     },
     setHomes(next: JourneyHome[]) {
       if (disposed) return;
@@ -123,7 +125,7 @@ export const buildJourneyLand: BuildJourneyLand = (data: JourneyLandData, option
       if (disposed) return;
       disposed = true;
       group.removeFromParent();
-      terrain.dispose(); water.dispose(); lines.dispose(); bridges.dispose(); hosts.dispose(); homes.dispose();
+      airport.dispose();terrain.dispose(); water.dispose(); lines.dispose(); bridges.dispose(); hosts.dispose(); homes.dispose();
       group.clear();
     },
   };
