@@ -1,3 +1,4 @@
+import {AIRPORT,AIRPORT_BOXES,AIRPORT_DECKS} from "../../harbour/horizon/airport/layout.ts";
 /**
  * `<JourneyLandFlat data theme>{overlay}</JourneyLandFlat>` (T2): the island as SVG for the flat tier, no WebGL, a
  * failed land load or a lost context. Same data and concept coordinates as the 3D land (viewBox 0 0 2000 1800), so
@@ -88,6 +89,10 @@ export function JourneyLandFlat({ data, theme, children, className, showDistrict
             />
           );
         })}
+        <g data-land-airport={AIRPORT.id}>
+          {[...AIRPORT_DECKS,{id:'strip',a:AIRPORT.runway.a,b:AIRPORT.runway.b,width:30}].map(route=><path key={route.id} d={`M ${route.a[0]} ${route.a[2]} L ${route.b[0]} ${route.b[2]}`} stroke={d.road} strokeWidth={route.width} fill="none"/>)}
+          {AIRPORT_BOXES.filter(b=>b.roof).map(b=><rect key={b.id} x={b.x-b.w/2} y={b.z-b.d/2} width={b.w} height={b.d} fill={d.hostRoof}/>)}
+        </g>
         {data.hosts.map((host) => (
           <rect
             key={host.id} x={host.x - HOST_HALF} y={host.y - HOST_HALF} width={HOST_HALF * 2} height={HOST_HALF * 2} rx={2}

@@ -1,3 +1,6 @@
+import {createAirport} from '../airport/campus.ts';
+import {AIRPORT,AIRPORT_VIEWS} from '../airport/layout.ts';
+import {AIRCRAFT,FLIGHT_CONTROLS,type AircraftId} from '../airport/aircraft.ts';
 import {createAdaptiveQuality} from '../../../house/world/adaptiveQuality.ts';
 import {applyHorizonQuality} from './quality.ts';
 import {createHorizonFrameLoop} from './frameLoop.ts';
@@ -16,7 +19,7 @@ import type {CruiserSkin} from '../movers/cruiser/tuning.ts';
 import {createFleet,isCraft,HANDLING,toWorld,toLocal,type CraftId} from '../movers/fleet/model.ts';
 import {createWatercraftController} from '../movers/fleet/controller.ts';
 import {createFleetArt} from '../movers/fleet/art.ts';
-import {constantWind} from '../movers/shared/wind.ts';
+import {constantWind,windVelocity} from '../movers/shared/wind.ts';
 import {createPerspective,perspectiveLabel,type Perspective} from './perspective.ts';
 import {HARBOUR_DEV} from '../../flag.ts';
 import * as THREE from 'three';
@@ -152,6 +155,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const chunks=assets.chunks;
   const bytesBeforeFirstFrame={definition:chunks?.bytes()??assets.definitionBytes,terrain:assets.bytes};
   const geography=createHorizonGeography(field,cuts);
+  for(const view of AIRPORT_VIEWS)if(!world.views.some(v=>v.id===view.id))world.views.push({...view,fovDegrees:50,radius:80});
   let figure=options.avatar?createPlayableFigure(options.avatar,tier,{invalidate:()=>schedule(),onStatus:options.onAvatarStatus}):createBodyFigure();
   const partner=createBodyFigure({coat:'#af8760'});
   scene.add(figure.group,partner.group);partner.group.visible=false;
@@ -173,6 +177,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const registry=createMoverRegistry({world,geography,manifest:HORIZON_MANIFEST,reducedMotion:comfort.reducedMotion,calm:comfort.calm,tier});
   registerHorizonMovers(registry,options.movers);
   const sharedWind=constantWind();
+  const airportStorageKey=(options.fleetStorageKey??'hearth:horizon-fleet:review:v1')+':aircraft:v1';
+  const airport=createAirport(scene,geography,options.theme??'classic',{load:()=>JSON.parse(localStorage.getItem(airportStorageKey)??'null'),save:states=>localStorage.setItem(airportStorageKey,JSON.stringify(states))},()=>comfort.calm?[0,0]:windVelocity(sharedWind.sample(0,0,0,performance.now()/1000)));
   const waterLevel=geography.waterLevel;
   // Hull clearance uses static island geometry. Dynamic yacht collision is queried by people and flight.
   const hullGeography=geography.staticOnly;
@@ -193,7 +199,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   let swimming=false,lastFleetSave=0,fleetSaveFailed=false;
   let lastFleetCutaway='';
   let carriedVelocity={x:0,z:0};
-  function saveFleet(){const activeCruiser=cruiser();const at=activeCruiser?(activeCruiser.dismount()??activeCruiser.state().safe):hold.body??physicalBody??body;try{localStorage.setItem(fleetKey,JSON.stringify(fleet.snapshot(at)));fleetSaveFailed=false;}catch{fleetSaveFailed=true;}}
+  function saveFleet(){const activeCruiser=cruiser();const at=registry.mode()==='plane'?AIRPORT.arrival:activeCruiser?(activeCruiser.dismount()??activeCruiser.state().safe):hold.body??physicalBody??body;try{localStorage.setItem(fleetKey,JSON.stringify(fleet.snapshot(at)));fleetSaveFailed=false;}catch{fleetSaveFailed=true;}}
   function cycleCamera(){cyclePerspective();}
   // Visual occupancy survives a jump or a seat's half-metre offset. Physics still
   // requires actual foot support; this never carries an airborne body.
@@ -482,7 +488,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   }
 
   /** While riding, a reload restores on foot at the nearest threshold of the mode (RIDE §6.5). */
-  function savedBody():HouseBodyReturn{saveFleet();const physical=hold.body??physicalBody??body,activeCruiser=cruiser(),stop=monorail?.state()?.station,platform=stop===undefined?null:MONORAIL_STOPS[stop];const at=platform?{x:platform.at[0]+MOUNTAIN_V2_OFFSET.x,y:platform.at[1]+MOUNTAIN_V2_OFFSET.y,z:platform.at[2]+MOUNTAIN_V2_OFFSET.z,yaw:body.yaw}:activeCruiser?(activeCruiser.dismount()??activeCruiser.state().safe):registry.active()&&!isCraft(registry.mode())?savedRideBody(world,physical,registry.mode(),geography.ground):physical;return{x:at.x,y:at.y,z:at.z,yaw:at.yaw,place:'court',world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY};}
+  function savedBody():HouseBodyReturn{saveFleet();airport.save();const physical=hold.body??physicalBody??body,activeCruiser=cruiser(),stop=monorail?.state()?.station,platform=stop===undefined?null:MONORAIL_STOPS[stop];const at=registry.mode()==='plane'?AIRPORT.arrival:platform?{x:platform.at[0]+MOUNTAIN_V2_OFFSET.x,y:platform.at[1]+MOUNTAIN_V2_OFFSET.y,z:platform.at[2]+MOUNTAIN_V2_OFFSET.z,yaw:body.yaw}:activeCruiser?(activeCruiser.dismount()??activeCruiser.state().safe):registry.active()&&!isCraft(registry.mode())?savedRideBody(world,physical,registry.mode(),geography.ground):physical;return{x:at.x,y:at.y,z:at.z,yaw:at.yaw,place:'court',world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY};}
   // ---- The mover hook ----
   function fadeCut(label:string){
     // The mover has already moved the body: show black at once and fade back in (300 ms); a cut under reduced motion / calm.
@@ -518,6 +524,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   /** The figure over the deck: it faces the travel (body.yaw + slip), feet on the deck top; the deck keeps the nose heading, pitch and roll in world space and stays on the ground under a crouch. */
   const proxyTurn=new THREE.Quaternion(),proxyEuler=new THREE.Euler(0,0,0,'YXZ'),figureInverse=new THREE.Quaternion();
   function poseRider(pose:MoverFrame['pose'],active:ModeController,now:number){
+    if(active.id==='plane'){figure.group.position.set(body.x,body.y-.45,body.z);figure.group.rotation.set(-pose.pitch,body.yaw,-pose.roll,'YXZ');figure.pose(0,0,now/1000,{lean:0,bank:0,run:0,air:0,rise:0,crouch:0,slide:0,emote:'sit',emoteAt:1,flourish:0});return;}
     if(active.id==='cruiser'){
       const state=(active as CruiserController).state();
       figure.group.position.set(body.x,body.y+.265,body.z-.12*Math.cos(body.yaw));figure.group.position.x-=.12*Math.sin(body.yaw);
@@ -596,6 +603,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   /** A reload / arrive while riding: the mode ends at the saved-body rule's `mode→feet` threshold through `registry.accept` (the controller exits and is disposed). */
   function parkRide(){
     if(!registry.active())return;
+    if(registry.mode()==='plane'){hold.resume();registry.finish();onFoot({...AIRPORT.arrival},'Aircraft secured. Recover it at the terminal if needed.');airport.save();return;}
     if(cruiser()){const controller=cruiser()!,at=controller.dismount()??controller.state().safe;hold.resume();registry.finish();onFoot(at,'Cruiser put away.');return;}
     if(isCraft(registry.mode())){const at=hold.resume()??{...body};clear();registry.finish();onFoot(at,'Boat left here.');return;}
     const name=registry.mode(),parked=hold.park({...body},performance.now());
@@ -615,6 +623,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     lastInput=input;
     if(isCraft(active.id))fleetLook+=input.look.dx;
     const f=active.update(dt,input,now);
+    if(active.id==='plane')perspective.followHeading(f.body.yaw-body.yaw);
     Object.assign(body,{x:f.body.x,y:f.body.y,z:f.body.z,yaw:f.body.yaw});yaw=f.body.yaw;
     ambienceSpeed=f.pose.speed;
     const wet=waterLevel(body.x,body.z),deck=fleet.surface(body.x,body.z,body.y,.1);
@@ -638,14 +647,25 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     }
   }
   /** Offers and the E / Enter edge, once per frame. Returns whether the edge is still unspent (for the mover's `accept`). */
+  function airportActions(){return mode==='walk'&&!paused&&!skating()&&!kitchen?.active()&&!monorail?.state()?airport.actions(body,registry.mode()):[];}
+  function airportAction(id:string){
+    if(!airportActions().some(a=>a.id===id))return false;
+    if(id==='stand'){airport.stand();return true;}if(id.startsWith('sit:')){const seat=airport.sit(id.slice(4));if(seat){clear();Object.assign(body,seat);yaw=seat.yaw;return true;}return false;}
+    if(id==='info'){options.onStatus?.('Three local aircraft: Kestrel is gentle, Swift is nimble, Heron is steady. Walk to a parked plane to board. Taxi at low power; align with runway 18 or 36, then add power and gently pull back. '+FLIGHT_CONTROLS);return true;}
+    if(id==='exit'){const s=airport.selected();if(!s)return false;if(!s.grounded){const at=registry.active()?.airborne?.();if(!at||!beginAirborne(at,false))return false;}else{const at=airport.exit();if(!at){options.onStatus?.('Stop the aircraft before getting out.');return false;}registry.finish();onFoot(at,'Aircraft parked. Welcome back.');}clear();airport.save();return true;}
+    if(id.startsWith('recover:')){const aircraftId=id.slice(8) as AircraftId;const active=registry.mode()==='plane';if(active){registry.finish();onFoot({...AIRPORT.arrival},'Back at the airport.');}if(!airport.recover(aircraftId)){options.onStatus?.('That stand is occupied. Move the other aircraft first.');return false;}options.onStatus?.(AIRCRAFT[aircraftId].name+' recovered to its stand.');clear();return true;}
+    if(id.startsWith('board:')){if(!rideGateOpen()){options.onStatus?.(RIDE_WAITS_STATUS);return false;}const aircraftId=id.slice(6) as AircraftId,controller=airport.controller(aircraftId);if(!registry.attach(controller,{id,thresholdId:id,from:'feet',to:'plane',at:[body.x,body.y,body.z],action:'Board',label:'Board'},body,performance.now()))return false;clear();startRide();if(comfort.reducedMotion||comfort.calm)openComfortCut({...AIRPORT.arrival});options.onStatus?.(FLIGHT_CONTROLS);airport.save();return true;}return false;
+  }
+  const travelOffers=()=>registry.offers(body).filter(o=>o.to!=='plane'&&o.from!=='plane');
   function offersAndAccept():boolean{
-    const offer=mode==='walk'&&(!transition||transition.live)?offerToShow(registry.offers(body),registry.canAccept):null;
+    const offer=mode==='walk'&&(!transition||transition.live)?offerToShow(travelOffers(),registry.canAccept):null;
     if(!sameOffer(offer,lastOffer)){lastOffer=offer;options.onOffer?.(offer);}
     // A held boarding stays held while the rider is still at its threshold (a Walk camera tween or a paused frame hides the offer
     // row, not the offer); it boards once every chunk is in, and is dropped only when its offer is no longer there.
     const held=rideGate.pending();
     if(held&&mode==='walk'){rideGateOpen();const here=registry.offers(body).find(o=>o.id===held.id)??null,go=rideGate.poll(here);if(go&&acceptOffer(go)){acceptRequested=false;return false;}}
     if(!acceptRequested)return false;acceptRequested=false;
+    const airAction=airportActions()[0];if(airAction&&airportAction(airAction.id))return false;
     const boatAction=fleetActions()[0];if(boatAction&&fleetAction(boatAction.id))return false;
     if(offer&&acceptOffer(offer))return false;
     if(registry.active())return true;
@@ -715,6 +735,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   let emote:{id:EmoteId;at:number}|null=null;
   function step(dt:number,now:number){
     leftSupport=false;
+    if(airport.seated()){if(keys.size||controls.forward||controls.strafe||jumpRequested)airport.stand();else{figure.group.position.set(body.x,body.y,body.z);figure.group.rotation.y=body.yaw;figure.pose(0,0,now/1000,{lean:0,bank:0,run:0,air:0,rise:0,crouch:0,slide:0,emote:'sit',emoteAt:1,flourish:0});updateCamera();return;}}
     if(fleet.sitting()){figure.group.position.set(body.x,body.y,body.z);figure.group.rotation.y=body.yaw;figure.pose(0,0,now/1000,{lean:0,bank:0,run:0,air:0,rise:0,crouch:0,slide:0,emote:'sit',emoteAt:1,flourish:0});updateCamera();return;}
     // Held on ground whose chunk has not arrived (Codex P2): no movement and no airborne physics until reseat().
     // PR #566 Codex: inside the placed region before its scene is drawn (its decks are not answered yet) the body is held the
@@ -844,6 +865,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     // Calm and reduced motion hold the frozen 15:30 (no night, no sun step); a review date never overrides them.
     if(now-lastSun>=60_000){setLight(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm}));lastSun=now;}
     updateLocalLights(now);
+    airport.update(paused||mode!=='walk'?0:Math.max(0,frameMs/1000),mode==='journey',camera.position,night?1:0,perspective.mode()==='first-person');
     skyDome.follow(camera);renderer.render(scene,camera);paintCount++;if(interactiveAt===null){interactiveAt=performance.now();options.onReady?.();void prefetchChunks();}if(drawSamples.length===0||now-drawSamples.at(-1)!.at>500){drawSamples.push({at:now,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,resident:stream.live.size});if(drawSamples.length>600)drawSamples.shift();}
     const building=stream.building||!!regionTask||corridorArt.building()||stream.live.size<stream.cap&&Boolean(stream.history.at(-1)?.pending.some(id=>!chunks||chunks.ready(id)));
     const fading=motion.districtFadeMs>0&&([...stream.live.values()].some(resource=>now-resource.at<motion.districtFadeMs)||regionVisible&&performance.now()-regionShownAt<motion.districtFadeMs);
@@ -853,7 +875,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     return continuous;
   }
   function schedule(){frameDriver?.wake();}
-  const offers=()=>!kitchen?.active()&&mode==='walk'&&!paused&&!skating()&&!monorail?.state()?registry.offers(body):[];
+  const offers=()=>!kitchen?.active()&&mode==='walk'&&!paused&&!skating()&&!monorail?.state()?travelOffers():[];
   function acceptPublic(offer?:ThresholdOffer):HorizonAccept|null|void{
     if(kitchen?.active())return null;
     if(!offer){acceptRequested=true;return;}
@@ -877,20 +899,20 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     return true;
   }
   const interactive=(event:KeyboardEvent)=>event.composedPath().some(t=>t instanceof Element&&Boolean(t.closest('input,textarea,select,button,a,[contenteditable="true"],[role="dialog"],[role="textbox"]')));
-  function keyDown(e:KeyboardEvent){if(paused)return;schedule();const key=e.key.toLowerCase();if(monorail?.state())return;if(skating()){if(interactive(e)||!host.contains(document.activeElement))return;if(!['b','p','escape'].includes(key)&&skate!.controls.input()?.keyDown(e))e.preventDefault();return;}if(kitchen?.active()){const focused=document.activeElement;if(!host.parentElement?.contains(focused)||focused?.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]')||(['enter',' '].includes(key)&&focused?.closest('button,a')))return;if(key==='c'&&!e.repeat){e.preventDefault();cyclePerspective();}else if(kitchen.keyDown(e))e.preventDefault();return;}if(interactive(e)||!host.contains(document.activeElement))return;if(!e.repeat&&inspector.keyDown(e))return;if(key==='e'&&!e.repeat&&kitchen?.available()){e.preventDefault();kitchen.command({type:'open'});return;}if(suppressedKeys.has(key)){if(e.repeat){e.preventDefault();return;}suppressedKeys.delete(key);if(key===' ')consumeJumpUntilRelease=false;}if(key==='v'&&!e.repeat){e.preventDefault();toggleCruiser();return;}if(key==='r'&&cruiser()&&!e.repeat){e.preventDefault();recoverRide();return;}if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(key)){e.preventDefault();keys.add(key);if(key===' '&&!e.repeat&&!consumeJumpUntilRelease)jumpRequested=true;}if(key==='c'&&!e.repeat){e.preventDefault();cyclePerspective();}if(key==='q'&&!e.repeat&&fleetActions().some(a=>a.kind==='anchor')){e.preventDefault();fleetAction('anchor');return;}if(key==='e'){e.preventDefault();if(!e.repeat)acceptRequested=true;}if(key==='escape')path=[];}
+  function keyDown(e:KeyboardEvent){if(paused)return;schedule();const key=e.key.toLowerCase();if(monorail?.state())return;if(skating()){if(interactive(e)||!host.contains(document.activeElement))return;if(!['b','p','escape'].includes(key)&&skate!.controls.input()?.keyDown(e))e.preventDefault();return;}if(kitchen?.active()){const focused=document.activeElement;if(!host.parentElement?.contains(focused)||focused?.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]')||(['enter',' '].includes(key)&&focused?.closest('button,a')))return;if(key==='c'&&!e.repeat){e.preventDefault();cyclePerspective();}else if(kitchen.keyDown(e))e.preventDefault();return;}if(interactive(e)||!host.contains(document.activeElement))return;if(!e.repeat&&inspector.keyDown(e))return;if(key==='e'&&!e.repeat&&kitchen?.available()){e.preventDefault();kitchen.command({type:'open'});return;}if(suppressedKeys.has(key)){if(e.repeat){e.preventDefault();return;}suppressedKeys.delete(key);if(key===' ')consumeJumpUntilRelease=false;}if(registry.mode()==='plane'&&['[',']','x'].includes(key)){e.preventDefault();if(key==='x')airport.brake(true);else airport.power((airport.selected()?.throttle??0)+(key===']'?.1:-.1));return;}if(key==='v'&&!e.repeat){e.preventDefault();toggleCruiser();return;}if(key==='r'&&cruiser()&&!e.repeat){e.preventDefault();recoverRide();return;}if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(key)){e.preventDefault();keys.add(key);if(key===' '&&!e.repeat&&!consumeJumpUntilRelease)jumpRequested=true;}if(key==='c'&&!e.repeat){e.preventDefault();cyclePerspective();}if(key==='q'&&!e.repeat&&fleetActions().some(a=>a.kind==='anchor')){e.preventDefault();fleetAction('anchor');return;}if(key==='e'){e.preventDefault();if(!e.repeat)acceptRequested=true;}if(key==='escape')path=[];}
   const suppressedKeys=new Set<string>();
   function hostBlur(event:FocusEvent){if(kitchen?.active()&&event.relatedTarget instanceof Node&&host.parentElement?.contains(event.relatedTarget))return;clear();}
   function focusPause(){kitchen?.pause('The window lost focus. Resume when both chefs are ready.');if(skating()&&!skate!.controls.paused())skate!.controls.pause(true);clear();}
   function visibilityClear(){if(document.hidden){focusPause();last=0;frameDriver?.suspend();}else schedule();}
-  function keyUp(e:KeyboardEvent){if(skating()&&skate!.controls.input()?.keyUp(e))e.preventDefault();kitchen?.keyUp(e);keys.delete(e.key.toLowerCase());suppressedKeys.delete(e.key.toLowerCase());if(e.key===' '){consumeJumpUntilRelease=false;jumpHeld=false;}}
-  function clear(){skate?.controls.input()?.reset();kitchen?.clear();for(const key of keys)suppressedKeys.add(key);keys.clear();controls={forward:0,strafe:0,run:false};path=[];drag=null;jumpHeld=false;jumpRequested=false;moverActionRequested=null;consumeJumpUntilRelease=suppressedKeys.has(' ');acceptRequested=false;lookAcc={dx:0,dy:0};cruiser()?.resetInput();fleet.resetInput();}
+  function keyUp(e:KeyboardEvent){if(e.key.toLowerCase()==='x')airport.brake(false);if(skating()&&skate!.controls.input()?.keyUp(e))e.preventDefault();kitchen?.keyUp(e);keys.delete(e.key.toLowerCase());suppressedKeys.delete(e.key.toLowerCase());if(e.key===' '){consumeJumpUntilRelease=false;jumpHeld=false;}}
+  function clear(){airport.brake(false);skate?.controls.input()?.reset();kitchen?.clear();for(const key of keys)suppressedKeys.add(key);keys.clear();controls={forward:0,strafe:0,run:false};path=[];drag=null;jumpHeld=false;jumpRequested=false;moverActionRequested=null;consumeJumpUntilRelease=suppressedKeys.has(' ');acceptRequested=false;lookAcc={dx:0,dy:0};cruiser()?.resetInput();fleet.resetInput();}
   const unlisten=[lease.listenCanvas<Event>('webglcontextlost',event=>{event.preventDefault();contextLost=true;adaptiveQuality.interrupt();frameDriver?.suspend();}),lease.listenCanvas<Event>('webglcontextrestored',()=>{if(disposed||!lease.active)return;configure(renderer);adaptiveQuality.interrupt();last=0;resize(false);requestShadow('context-restore');}),lease.listenCanvas<PointerEvent>('pointerdown',e=>{if(paused)return;host.focus({preventScroll:true});drag={x:e.clientX,y:e.clientY,id:e.pointerId,travel:0};renderer.domElement.setPointerCapture(e.pointerId);}),lease.listenCanvas<PointerEvent>('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;schedule();const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.travel+=Math.hypot(dx,dy);drag.x=e.clientX;drag.y=e.clientY;if(perspective.mode()!=='activity'&&mode==='walk')perspective.look(-dx*.005,-dy*.004);
       else{lookAcc.dx-=dx*.005;lookAcc.dy-=dy*.004;yaw-=dx*.005;pitch=Math.max(-1.2,Math.min(.8,pitch-dy*.004));}if(mode==='look'){target.set(camera.position.x+Math.sin(yaw)*Math.cos(pitch)*distance,camera.position.y+Math.sin(pitch)*distance,camera.position.z+Math.cos(yaw)*Math.cos(pitch)*distance);camera.lookAt(target);}}),lease.listenCanvas<PointerEvent>('pointerup',e=>{const click=drag&&drag.travel<5;drag=null;if(!click||mode!=='walk'||paused||registry.active()||kitchen?.active())return;const rect=renderer.domElement.getBoundingClientRect(),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);const hits=ray.intersectObjects([...stream.live.values()].map(r=>r.cards.group),true);const hit=hits[0];if(hit){const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],[hit.point.x,hit.point.y,hit.point.z],{stepFree:true});if(plan){path=[...plan.points];routeAhead(plan.points);}else options.onStatus?.('No connected walking route reaches that point.');}}),lease.listenCanvas<WheelEvent>('wheel',e=>{schedule();if(paused)return;e.preventDefault();if(perspective.mode()==='floating'&&mode==='walk'){perspective.zoom(e.deltaY);return;}if(registry.active())return;distance=Math.max(2,Math.min(45,distance*Math.exp(e.deltaY*.001)));updateCamera();},{passive:false})];
   window.addEventListener('keydown',keyDown);window.addEventListener('keyup',keyUp);window.addEventListener('blur',focusPause);document.addEventListener('visibilitychange',visibilityClear);host.addEventListener('blur',hostBlur);
   shot(new URLSearchParams(location.search).get('shot')??'A');if(options.initialBody)restore(options.initialBody);
   if(fleetRestore){Object.assign(body,fleetRestore.body);yaw=body.yaw;mode='walk';if(fleetRestore.pilot){const id=fleetRestore.pilot;registry.accept({id:'restore-fleet',thresholdId:'fleet-restore',from:'feet',to:id,at:[body.x,body.y,body.z],action:'Resume boat',label:'Resume boat'},body,performance.now());startRide();}updateCamera();}
   kitchen=createKitchenActivity({fleet,scene,storageKey:options.kitchenStorageKey??'hearth:yacht-kitchen:review:v1',theme,viewport:()=>({width:host.clientWidth,height:host.clientHeight}),body:()=>body,setBody:at=>{Object.assign(body,at);yaw=at.yaw;velocityY=0;},canOpen:()=>mode==='walk'&&!paused&&!registry.active()&&!fleet.sitting()&&velocityY===0,canPlay:()=>mode==='walk'&&!paused&&!document.hidden,movementYaw:()=>perspective.mode()==='activity'?0:Math.atan2(target.x-camera.position.x,target.z-camera.position.z)-fleet.yacht.yaw,perspective:()=>perspective.mode(),choosePerspective:value=>{for(let i=0;i<3&&perspective.mode()!==value;i++)perspective.cycle(body,camera.position.toArray(),target.toArray());transition=null;},status:message=>options.onStatus?.(message),clearWorldInput:clear,reducedMotion:()=>comfort.reducedMotion});
-  const saveAll=()=>{saveFleet();kitchen?.save();};window.addEventListener('pagehide',saveAll);
+  const saveAll=()=>{airport.save();saveFleet();kitchen?.save();};window.addEventListener('pagehide',saveAll);
   frameDriver=createHorizonFrameLoop({active:()=>!disposed&&!contextLost&&!document.hidden&&lease.active,request:callback=>lease.requestFrame(callback),cancel:id=>lease.cancelFrame(id),
     frame:(now,resumed)=>{if(resumed){last=0;adaptiveQuality.interrupt();}return tick(now);},
     poll:()=>performance.now()-lastSun>=60_000||mode!=='journey'&&partnerKey(readPeer())!==peerKey||!paused&&mode!=='journey'&&performance.now()>=stream.nextMaintenanceAt,
@@ -919,12 +941,12 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   // ---- The `=` inspector (dev or ?diagnostics=1; runtime/inspector.ts) ----
   const inspectorSource:InspectorSource={tier,sha:new URLSearchParams(location.search).get('sha'),   // scripts pass ?sha=<git sha> (flag.ts alone reads the build env)
     body:()=>body,mode:()=>mode,perspective:()=>perspective.mode(),mover:()=>registry.mode(),
-    motion:()=>{const c=cruiser()?.state();return c?{speed:Math.hypot(c.vx,c.vz),grounded:c.grounded,contact:c.contact}:registry.active()?{speed:ambienceSpeed,grounded:registry.active()?.airborne?.()?false:null}:{speed:null,grounded:null};},
+    motion:()=>{const plane=airport.selected();if(plane)return{speed:plane.speed,grounded:plane.grounded,contact:plane.disabled?'aircraft-stopped':null};const c=cruiser()?.state();return c?{speed:Math.hypot(c.vx,c.vz),grounded:c.grounded,contact:c.contact}:registry.active()?{speed:ambienceSpeed,grounded:registry.active()?.airborne?.()?false:null}:{speed:null,grounded:null};},
     surface:(x,z,y)=>geography.surface(x,z,y),solid:id=>{const s=solidsById.get(id);return s?{role:s.role,kind:s.kind,surface:s.surface}:null;},
     corridors:()=>world.corridors,frames:()=>frameTimes,render:()=>drawSamples.at(-1)??null,resident:()=>[...stream.live.keys()],
     lights:()=>({...roadLights.stats()}),blocker:()=>lastMovementBlocker,clock:()=>api.reviewDate()};
   const inspector=createInspector(host,inspectorSource,{enabled:inspectorEnabled(location.search,HARBOUR_DEV),focusBack:()=>host.focus({preventScroll:true})});
-  const api={world,assets,scene,camera,geography,shot:pickPage,setMode,restore,savedBody,enterDoor,
+  const api={world,assets,scene,camera,geography,airportActions,airportAction,airportState:airport.state,airportPower:(value:number)=>{schedule();airport.power(value);},airportBrake:(on:boolean)=>{schedule();airport.brake(on);},shot:pickPage,setMode,restore,savedBody,enterDoor,
     /** Development replay uses the exact live controllers/collision without waiting for rendered frames. */
     simulateMotion(seconds:number){if(!HARBOUR_DEV)throw new Error('Development replay only.');const steps=Math.ceil(Math.max(0,Math.min(120,seconds))*60);for(let i=0;i<steps;i++){if(paused||mode!=='walk'||hold.paused())break;physicalBody=null;tickFleet(1/60);if(kitchen?.active())kitchen.update(1/60);else if(registry.active())ride(1/60,performance.now()+i*1000/60,false);else step(1/60,performance.now()+i*1000/60);}homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);return{body:{...body},vessels:fleet.snapshot().vessels};},
     kitchenView:()=>kitchen!.view(),kitchenCommand:(command:KitchenCommand)=>{if(command.type==='resume'&&mode!=='walk')setMode('walk');return kitchen!.command(command);},kitchenInput:(chef:ChefId,value:Partial<KitchenChefInput>)=>kitchen!.input(chef,value),setKitchenSound:(on:boolean,gesture=false)=>kitchen!.setSound(on,gesture),
@@ -937,11 +959,11 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
       schedule();return{pending:stream.history.at(-1)?.pending??[],region:placed?{mounted:regionScene!==null,building:regionTask!==null}:null};},
     simulateWalk(seconds:number){if(!HARBOUR_DEV)throw new Error('Simulation is a review-only control.');const count=Math.ceil(Math.max(0,Math.min(seconds,3600))/.05);simulating=true;try{for(let i=0;i<count&&path.length;i++)step(.05,performance.now()+i*50);}finally{simulating=false;updateCamera();}return{body:{...body},remaining:path.length,blocker:lastMovementBlocker};},
     toggleCruiser,recoverCruiser:recoverRide,
-    setCruiserTheme(theme:VehicleDressing){schedule();if(cruiserTheme===theme)return;cruiserTheme=theme;if(cruiserArt){cruiserArt.dispose();cruiserArt=createCruiserArt(theme);cruiserArt.setSkin(cruiserSkin);scene.add(cruiserArt.root);}},
+    setCruiserTheme(theme:VehicleDressing){schedule();if(cruiserTheme===theme)return;cruiserTheme=theme;airport.setTheme(theme);if(cruiserArt){cruiserArt.dispose();cruiserArt=createCruiserArt(theme);cruiserArt.setSkin(cruiserSkin);scene.add(cruiserArt.root);}},
     setCruiserSkin(skin:CruiserSkin){schedule();cruiserSkin=skin;cruiserArt?.setSkin(skin);},
     cruiserState:()=>cruiser()?.state()??null,
     body:()=>({...body}),mode:()=>mode,shotId:()=>shotId,
-    setTheme(next:VehicleDressing){if(next===theme)return;theme=next;unmountCorridor();mountCorridor(currentTime??new Date());roadLights.dispose();roadLights=makeRoadLights();roadLights.refresh();skate?.setTheme(next);if(regionScene||regionTask)releaseRegion();if(placed)monorail?.setTheme(placed.dressing(next));kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
+    setTheme(next:VehicleDressing){if(next===theme)return;theme=next;airport.setTheme(next);unmountCorridor();mountCorridor(currentTime??new Date());roadLights.dispose();roadLights=makeRoadLights();roadLights.refresh();skate?.setTheme(next);if(regionScene||regionTask)releaseRegion();if(placed)monorail?.setTheme(placed.dressing(next));kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
     setAvatar(next:PlayableAvatar|null){const previous=figure;figure=next?createPlayableFigure(next,tier,{invalidate:schedule,onStatus:options.onAvatarStatus}):createBodyFigure();scene.add(figure.group);skate?.setFigure(figure);previous.group.removeFromParent();previous.dispose();schedule();},
     settings:()=>({tier,reducedMotion:comfort.reducedMotion,calm:comfort.calm,theme}),reviewDate:()=>(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm})),setAmbience(audio:WorldAmbience|null){ambience=audio;schedule();},
     offers,
@@ -1051,7 +1073,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     /** Pass 5: the water picture at v2's dam, as given (0…1; null = unknown, frosted glass). The runtime and the region read
      *  nothing themselves: the app feeds the one reading L01 shows (CONTRACT §2.2). */
     setMountainDamWater(level:number|null,reserve:number|null){regionWater={level,reserve};regionScene?.setWater(level,reserve);schedule();},
-    dispose(){monorail?.dispose();skate?.dispose();kitchen?.dispose();releaseRegion();offRegion?.();offCable?.();saveFleet();window.removeEventListener('pagehide',saveAll);offFleet();offHome();homeWorld.dispose();fleetArt.dispose();disposed=true;window.clearTimeout(fadeTimer);registry.dispose();cruiserArt?.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();offChunk?.();frameDriver?.dispose();observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',focusPause);document.removeEventListener('visibilitychange',visibilityClear);host.removeEventListener('blur',hostBlur);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();roadLights.dispose();unmountCorridor();inspector.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
+    dispose(){airport.dispose();monorail?.dispose();skate?.dispose();kitchen?.dispose();releaseRegion();offRegion?.();offCable?.();saveFleet();window.removeEventListener('pagehide',saveAll);offFleet();offHome();homeWorld.dispose();fleetArt.dispose();disposed=true;window.clearTimeout(fadeTimer);registry.dispose();cruiserArt?.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();offChunk?.();frameDriver?.dispose();observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',focusPause);document.removeEventListener('visibilitychange',visibilityClear);host.removeEventListener('blur',hostBlur);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();roadLights.dispose();unmountCorridor();inspector.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
   };
   // Pass 5 (T3's contract, HANDOFF-notes/rides.md): the cable rides move the region's cabins through `setTransit`.
   const offCable=placed&&api.mountainRegion?connectCableRegion(placed.region,api.mountainRegion,()=>camera.aspect):null;
