@@ -86,7 +86,7 @@ describe("the old shell's chrome around the Horizon (static)", () => {
     // Airport brake reset precedes skating input reset; both must remain in the shared blur handler.
     expect(runtime).toMatch(/function clear\(\)\{airport\.brake\(false\);skate\?\.controls\.input\(\)\?\.reset\(\);/);
     expect(runtime).toMatch(/figure\.group\.visible=mode==='walk'&&\(!firstPerson\|\|skating\(\)\)/);
-    expect(read("src/harbour/horizon/HorizonStage.tsx")).toMatch(/aria-label=\{props\.skating\?SKATE_STAGE_WORDS:/);
+    expect(read("src/harbour/horizon/HorizonStage.tsx")).toMatch(/aria-label=\{mover\?\.mode==='plane'\?FLIGHT_CONTROLS:props\.skating\?SKATE_STAGE_WORDS:/);
     expect(read("src/harbour/horizon/skate/nativeSkate.ts")).not.toMatch(/worldCollisionAt/);
     expect(shell).toContain('aria-label="Retry from safe ground"');
     expect(runtime).toMatch(/skate!\.controls\.command\('retry'\)/);
