@@ -706,7 +706,8 @@ const totals = Object.fromEntries(ROAD_IDS.map(id => [id, {BLOCKER: 0, MAJOR: 0,
 const wallSeconds = r1((Date.now() - T0) / 1000);
 const command = `node scripts/horizon/road-audit.mjs ${argv.join(' ')}`.trim();
 mkdirSync(OUT, {recursive: true});
-const meta = {baselineRef, auditorSha256: sha(readFileSync(fileURLToPath(import.meta.url))), currentCodeHead: execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], {encoding: 'utf8'}).trim(), comparisonMethod: 'Both asset sets use current auditor and controller/geography source; not a historical runtime replay.', generated: new Date().toISOString(), command, root: ROOT, rootSha, wallSeconds, node: process.version, cpus: os.cpus().length,
+let currentCodeHead = 'unknown'; try { currentCodeHead = execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], {encoding: 'utf8'}).trim(); } catch { /* not a checkout */ }
+const meta = {baselineRef, auditorSha256: sha(readFileSync(fileURLToPath(import.meta.url))), currentCodeHead, comparisonMethod: 'Both asset sets use current auditor and controller/geography source; not a historical runtime replay.', generated: new Date().toISOString(), command, root: ROOT, rootSha, wallSeconds, node: process.version, cpus: os.cpus().length,
   bake: {world: WORLD_PATH.replace(ROOT + '/', ''), worldSha256: sha(worldBytes), terrain: TERRAIN_PATH.replace(ROOT + '/', ''), terrainSha256: sha(terrainBytes), revision: world.geographyRevision},
   cruiser: {...C}, driver: {lookahead: '6–8 m (6 + 0.125·v)', lateralAccel: A_LAT, planDecel: B_DEC, laneOffsets: [0, 2], note: 'pure pursuit on the lane line through stepCruiser at CRUISER.dt; no snapping; a restart (logged) only after a 2 s stall or leaving the corridor'},
   stationStep: STATION, roads: ROAD_IDS};

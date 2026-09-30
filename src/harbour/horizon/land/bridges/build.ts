@@ -52,7 +52,8 @@ export function buildBridgeLandmarks(cuts:LandCuts,ground:HeightQuery):void {
       for(let s=0;s<L;s+=4){const e=Math.min(L,s+4);for(const side of [-1,1]){
         slab(roof,P(s,0,6),P(e,0,6),.12,.35); // ridge closes the seam
         const a=P(s,side*(W/2+.5),4),b=P(s,0,6),d=P(e,0,6),eave=P(e,side*(W/2+.5),4);
-        const n=roof.positions.length/3;for(const p of [a,b,d,eave])roof.positions.push(p[0],p[1]-.35,p[2]);for(const p of [a,b,d,eave])roof.positions.push(...p);
+        const corners=side<0?[a,b,d,eave]:[eave,d,b,a];
+        const n=roof.positions.length/3;for(const p of corners)roof.positions.push(p[0],p[1]-.35,p[2]);for(const p of corners)roof.positions.push(...p);
         roof.indices.push(...[0,2,1,0,3,2,4,5,6,4,6,7,0,1,5,0,5,4,1,2,6,1,6,5,2,3,7,2,7,6,3,0,4,3,4,7].map(i=>i+n));
         if(s%8===0){beam(truss,s,e,side*(W/2-.4),1.3,3.8,.22,.24);post(truss,s,side*(W/2-.45),2.6,4.3,.12);lamp(s,side*(W/2-.45),2.65,'window');}}
       }
@@ -128,5 +129,5 @@ export function buildBridgeLandmarks(cuts:LandCuts,ground:HeightQuery):void {
 }
 /** Refresh references after all rail gaps and final-ground settlement. */
 export function finalizeBridges(cuts:LandCuts):BridgeDefinition[]{
-  return (cuts.bridges??[]).map(b=>{const members=cuts.solids.filter(s=>s.id.startsWith(b.id+'.'));return {...b,members:members.map(s=>({id:s.id,role:s.role,surface:s.surface})),districtIds:[...new Set(members.map(s=>s.districtId))],budget:{...b.budget,fullTriangles:members.reduce((n,s)=>n+s.indices.length/3,0),liteTriangles:members.reduce((n,s)=>n+(s.liteIndices??s.indices).length/3,0)}};});
+  return (cuts.bridges??[]).map(b=>{const members=cuts.solids.filter(s=>s.id.startsWith(b.id+'.'));return {...b,passages:b.passages.map(p=>({...p})),meeting:{...b.meeting},members:members.map(s=>({id:s.id,role:s.role,surface:s.surface})),districtIds:[...new Set(members.map(s=>s.districtId))],budget:{...b.budget,fullTriangles:members.reduce((n,s)=>n+s.indices.length/3,0),liteTriangles:members.reduce((n,s)=>n+(s.liteIndices??s.indices).length/3,0)}};});
 }

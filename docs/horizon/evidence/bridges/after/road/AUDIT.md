@@ -1,4 +1,4 @@
-# Horizon road audit — before
+# Horizon road audit — after
 
 Driver's-eye audit of the committed bake with the real cruiser sim (`stepCruiser`, CRUISER.dt = 1/120 s). Read-only: nothing under `src/` or `public/` was changed.
 

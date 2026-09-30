@@ -5,6 +5,8 @@ import { buildLandCuts } from '../src/harbour/horizon/land/beds/build';
 import { baseHeight } from '../src/harbour/horizon/land/terrain';
 import { BRIDGE_CAST } from '../src/harbour/horizon/land/bridges/catalog';
 import { finalizeBridges } from '../src/harbour/horizon/land/bridges/build';
+import { measureBridgeEnvelopes, measureBridgeFlightEnvelopes } from '../src/harbour/horizon/land/bridges/measure';
+import { createHorizonGeography } from '../src/harbour/horizon/runtime/geography';
 import { bridgeFrame, bridgeLength } from '../src/harbour/horizon/land/bridges/frames';
 import { solidVerticalRangeAt } from '../src/harbour/horizon/world/geometry';
 import { bounds } from '../src/harbour/horizon/land/structures/mesh';
@@ -20,6 +22,33 @@ describe('the authored bridge cast',()=>{
   for(const b of bridges){expect(b.name).toBe(BRIDGE_CAST.find(c=>c.id===b.id)!.name);expect(BRIDGE_GLYPHS[b.map.glyph]).toBeTruthy();
    const carried=cuts.beds.find(c=>c.id===`structure.${b.id}`)!;expect(b.path).toEqual(carried.points);expect(b.width).toBe(carried.width);
    expect(b.members.every(m=>cuts.solids.some(s=>s.id===m.id))).toBe(true);expect(b.budget.fullTriangles).toBeGreaterThan(0);
+  }
+ });
+ it('isolates repeated finalization from mutable envelope measurements',()=>{
+  const before=JSON.stringify(cuts.bridges),first=finalizeBridges(cuts),untouched=finalizeBridges(cuts);
+  const sky=JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json','utf8')).sky;
+  const measure=(items:typeof first)=>{
+   measureBridgeEnvelopes(items,{surface:()=>null,ceiling:()=>Infinity,blocker:()=>null},[]);
+   measureBridgeFlightEnvelopes(items,[],sky,[]);
+  };
+  measure(first);const firstSnapshot=JSON.stringify(first);
+  expect(JSON.stringify(cuts.bridges)).toBe(before);
+  expect(untouched.map(b=>b.passages.length)).toEqual(cuts.bridges!.map(b=>b.passages.length));
+  expect(untouched.every(b=>b.meeting.status==='built')).toBe(true);
+  const second=finalizeBridges(cuts);measure(second);
+  expect(JSON.stringify(second)).toBe(firstSnapshot);
+  expect(JSON.stringify(first)).toBe(firstSnapshot);
+  expect(JSON.stringify(cuts.bridges)).toBe(before);
+ });
+ it('uses the underside of both Hollow roof slopes as the collision ceiling',()=>{
+  const roof=cuts.solids.find(s=>s.id==='hollowBridge.roof')!,b=bridges.find(b=>b.id==='hollowBridge')!;
+  const field={revision:'horizon-geo-1' as const,width:2000,depth:1800,step:2000,columns:2,rows:2,heights:new Float32Array(4),surfaces:new Uint8Array(4)};
+  const g=createHorizonGeography(field,{...cuts,solids:[roof]});
+  for(const side of [-1,1]){
+   const p=bridgeFrame(b.path,2,side*(b.width/2+.5)/2);
+   const range=solidVerticalRangeAt(roof,p[0],p[2])!;
+   expect(range.top-range.bottom).toBeCloseTo(.35,4);
+   expect(g.ceiling(p[0],p[2],p[1])).toBeCloseTo(range.bottom,4);
   }
  });
  it('keeps Bight road, S2 flyover and under-deck opening at their authored levels',()=>{
