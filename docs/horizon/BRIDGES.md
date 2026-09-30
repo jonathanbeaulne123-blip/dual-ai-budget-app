@@ -1,3 +1,5 @@
+> Current PR integration: airport #576 is merged and included in this branch. Historical references below to an absent plane controller describe the pre-airport baseline only. All three powered aircraft now exist; under-bridge aircraft acceptance remains unverified. See [integration record](../worksessions/2026-09-30-horizon-bridge-pr.md).
+
 # The Bridge Book — ten places to meet
 
 30 September 2026 · Local implementation in progress · Jonathan is the decision owner.

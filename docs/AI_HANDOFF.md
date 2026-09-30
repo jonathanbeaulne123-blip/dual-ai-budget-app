@@ -1,3 +1,9 @@
+## 2026-09-30 — Bridge PR integrates merged airport
+
+Jonathan requested a mergeable PR for the bridge work and airport update. Airport #576 is already merged at `324cd5f`; `codex/horizon-bridge-book` now includes it. Bridge implementation is committed, with shared runtime theme/disposal conflicts resolved and stable-night bridge lighting repaired. High risk; Budget delta 0. The combined 105-file serial sweep and PR checks are pending. Historical evidence below remains tied to its recorded revision. Full cast/device/performance acceptance remains open; no bridge merge or deployment is authorized.
+
+[Integration record](worksessions/2026-09-30-horizon-bridge-pr.md).
+
 ## 2026-09-30 — Horizon bridges: local implementation underway
 
 Jonathan subsequently said “build them.” `codex/horizon-bridge-book`, base e77309e, remains local and uncommitted. High risk; Budget (5):0, Engagement (3):+2 target. Ten structural families, shared theme art, derived lanterns, fixed Bight tower stair and ten map glyph/name pairs are implemented; the final bake is byte-identical, stair replay passes,24 responsive map captures fit, and corrected road counts do not regress. High quick gate remains failed after timing/budget errors; all six affected files pass sequentially (121 tests). Full mode/device/scene-budget acceptance remains open. Quay is seated and the Ribbon's pumpable dip is not yet implemented. No PR, merge, deployment or device acceptance.
