@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Road kit sheet (dev)</title>
+<style>html,body{margin:0;height:100%;background:#1c1b1a}#sheet{width:100vw;height:100vh}</style>
+</head>
+<body>
+<div id="sheet"></div>
+<script type="module">
+import {mountSheet} from './sheet.ts';
+const tier=new URLSearchParams(location.search).get('tier')==='lite'?'lite':'full';
+window.__roadSheetReady=mountSheet(document.getElementById('sheet'),tier);
+</script>
+</body>
+</html>

@@ -10,11 +10,16 @@ import { buildFlightEnvelope } from './sky.ts';
 import { buildViews, protectedGreenOutline } from './views.ts';
 import { waterHeightAt } from '../land/water/index.ts';
 import { buildCoastline } from '../land/coast/index.ts';
+import type { Corridor } from '../land/corridor/types.ts';
+import { corridorLightAnchors } from '../land/corridor/lights.ts';
 
 export const GEOGRAPHY_REVISION = 'horizon-geo-1';
 export interface LandWorldOptions { terrainAsset?: { url: string; bytes: number; step: number }; extraSolids?: StructureSolid[];
   /** Pass 5 (T2): a placed world's walk graph in engine space (Mountain v2's), joined to the bed graph at its seams. */
-  extraGraph?: ExtraPathGraph }
+  extraGraph?: ExtraPathGraph;
+  /** Road main (ROAD.md §1): the corridors the bake built (`land/corridor settleCorridors`); written to `world.corridors`,
+   * their lamps appended to `world.lights`. */
+  corridors?: Corridor[] }
 /** Pass 5 (T2): the manifest's `regions` (placed worlds), in engine units; empty when the manifest has none. */
 export function buildRegions(): RegionPlacement[] {
   const s = requireScaleFactor(), list = (HORIZON_MANIFEST as unknown as { regions?: readonly { id: string; kind?: string; offset: { x: number; y: number; z: number } | readonly number[]; footprint: { minX: number; maxX: number; minZ: number; maxZ: number } | readonly number[] }[] }).regions;
@@ -42,6 +47,20 @@ export function buildWorldLines(input: LandCuts | TerrainField, supplied?: LandC
   // ROW is a traversable water domain, not an invented centreline.
   lines.push({ id: 'ROW', mode: 'row', bedIds: [], points: [], waterBodyIds: cuts.waters.filter(w => w.kind !== 'dry' && w.kind !== 'brook').map(w => w.id) });
   return lines;
+}
+/**
+ * Road main (ROAD.md §3, review of #575): the destinations beside the road whose frontage the corridor plan lights — the
+ * journey stations, the host doors and the Tideline / campfire places — at exactly the anchors `createLandWorld` publishes
+ * (`world.journey.stations[].anchor`, `world.hosts[].door`, `world.places[].anchor`), so the baked plan and the plan tests
+ * read one list.
+ */
+export function corridorDestinations(cuts: LandCuts): { id: string; at: Point2 }[] {
+  const m = HORIZON_MANIFEST, s = requireScaleFactor();
+  return [
+    ...m.journey.stations.map(station => { const pad = resolvePad(cuts, `station.${station.id}`); return { id: station.id, at: (pad ? [pad.centre[0], pad.centre[2]] : [station.xy[0]! * s, station.xy[1]! * s]) as Point2 }; }),
+    ...buildHosts(cuts).map(h => ({ id: h.id, at: [...(h.door as { xy: Point2 }).xy] as Point2 })),
+    ...m.places.filter(p => /tideline|campfire/i.test(p.id)).map(p => ({ id: p.id, at: [p.xy[0]! * s, p.xy[1]! * s] as Point2 })),
+  ];
 }
 function buildHosts(cuts: LandCuts): Host[] {
   const m = HORIZON_MANIFEST, s = requireScaleFactor();
@@ -109,9 +128,9 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
     crossings: crossing.crossings, crossingProofs: crossing.proofs, rawIntersections: crossing.rawIntersections, thresholds,
     reserves: cuts.pads.filter(p => p.kind === 'reserve').map(p => ({ id: p.id, placeId: p.placeId ?? p.id, outline: padOutline(p), door: anchor(`${p.id}.door`, p.door ?? p.centre), rotationDegrees: p.rotationDegrees })), sky,
     underground: { doors: Object.entries(m.underground.doors).map(([id, door]) => anchor(id, [door.xy[0]! * s, door.h * s, door.xy[1]! * s])), rooms: roomVolumes.map(room => room.outline), roomVolumes, waterBodyId: cuts.waters.find(w => w.kind === 'deep')?.id, skylight: anchor('deep.skylight', [m.underground.rooms.deep.skylight.to[0]! * s, m.underground.rooms.deep.skylight.topH * s, m.underground.rooms.deep.skylight.to[1]! * s]) },
-    lights: [...hosts.map(h => { const d = h.door as { xy: Point2; height: number }; return { id: `door.${h.id}.lamp`, at: [d.xy[0], d.height + 2.2, d.xy[1]] as Point3, kind: 'door' }; }), ...thresholds.filter(t => !t.carried).map(t => ({ id: `${t.id}.lamp`, at: [t.at[0], (t.height ?? 0) + .8, t.at[1]] as Point3, kind: 'threshold' }))], faceCards: buildFaceCards(geometry), views, lanterns: [],
+    lights: [...hosts.map(h => { const d = h.door as { xy: Point2; height: number }; return { id: `door.${h.id}.lamp`, at: [d.xy[0], d.height + 2.2, d.xy[1]] as Point3, kind: 'door' }; }), ...thresholds.filter(t => !t.carried).map(t => ({ id: `${t.id}.lamp`, at: [t.at[0], (t.height ?? 0) + .8, t.at[1]] as Point3, kind: 'threshold' })), ...corridorLightAnchors(options.corridors ?? [])], faceCards: buildFaceCards(geometry), views, lanterns: [],
     protected: [{ id: 'green', outline: protectedGreenOutline(), reason: 'No building, plot or tall prop inside the protected centre.' }],
-    geometry: { solids: geometry, sourceMap }, collision: { beds: cuts.beds, pads: cuts.pads, mouths: cuts.mouths, waters: cuts.waters, walkableSlopeDegrees: 40, lipStepMax: .48 }, pathGraph: graph, diagnostics, journeyMeasurements: measurements, ...(regions.length ? { regions } : {}),
+    geometry: { solids: geometry, sourceMap }, collision: { beds: cuts.beds, pads: cuts.pads, mouths: cuts.mouths, waters: cuts.waters, walkableSlopeDegrees: 40, lipStepMax: .48 }, pathGraph: graph, diagnostics, journeyMeasurements: measurements, ...(regions.length ? { regions } : {}), ...(options.corridors ? { corridors: options.corridors } : {}),
     journey: {
       stations: m.journey.stations.map((station, i) => { const pad = resolvePad(cuts, `station.${station.id}`), prev = m.journey.stations[(i + 11) % 12]!, points = yearWalkStretch(yearWalk.points, prev.xy.map(v => v * s), station.xy.map(v => v * s)), len = length3(points); return { id: station.id, month: station.month, anchor: anchor(`station.${station.id}`, pad?.centre ?? [station.xy[0]! * s, terrainHeight(terrain, station.xy[0]! * s, station.xy[1]! * s), station.xy[1]! * s]), bedIds: [], padId: pad?.id, footprint: pad ? padOutline(pad) : [], bedPositions: pad ? stationPositions(pad, s) : [], stretch: { from: prev.id, lengthEu: len, lengthM: len / s, spacing: [28, 29, 30, 31].map(days => ({ days, eu: len / days })), points } }; }), yearWalk,
       homestead: m.journey.homestead.sites.map(site => { const pad = resolvePad(cuts, `homestead.${site.id}`), host = hosts.find(h => h.id === site.id), fallback = site.id === 'reserveBasin' ? m.places.find(p => p.id === 'L01')!.xy : site.xy ?? m.hosts[0]!.xy, p: Point3 = pad?.centre ?? [fallback[0]! * s, terrainHeight(terrain, fallback[0]! * s, fallback[1]! * s), fallback[1]! * s]; return { id: site.id, anchor: anchor(`homestead.${site.id}`, p), footprint: pad ? padOutline(pad) : host?.footprint ?? [] }; }),

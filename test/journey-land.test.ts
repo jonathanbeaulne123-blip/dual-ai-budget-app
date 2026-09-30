@@ -12,7 +12,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { compressHeight, JOURNEY_LOD, JOURNEY_THEMES, STATION_IDS, type JourneyLandData } from "../src/journey/contracts.ts";
 import {
   buildJourneyLand, countDraws, extractJourneyLand, JOURNEY_LAND_DRESSINGS, journeyLandFlatData, JourneyLandFlat, journeyLandTimings,
-  JOURNEY_LAND_SLIM_URL, LAND_DRESSING_KEYS, loadJourneyLand, parseJourneyLandSlim, resetJourneyLandCacheForTests, setJourneyLandTier,
+  JOURNEY_LAND_SLIM_FORMAT, JOURNEY_LAND_SLIM_URL, LAND_DRESSING_KEYS, loadJourneyLand, parseJourneyLandSlim, resetJourneyLandCacheForTests, setJourneyLandTier,
 } from "../src/journey/land/index.ts";
 import { HORIZON_INDEX_URL, parseHorizonIndex } from "../src/house/world/horizonAssets.ts";
 import { decodeTerrainAsset } from "../src/harbour/horizon/land/terrain/asset.ts";
@@ -103,7 +103,8 @@ describe("extracted land", () => {
     const json = JSON.stringify(land);
     for (const key of ["pathGraph", "collision", "geometry", "solids", "crossings", "beds"]) expect(json).not.toContain(`"${key}"`);
     expect(Object.keys(land).sort()).toEqual(
-      ["coastline", "districts", "extent", "homestead", "hosts", "kittyPlaza", "landforms", "lines", "lod", "reserves", "revision", "seaLevel", "stations", "terrain", "water", "yearWalk"].sort(),
+      // bridges / covers: the road pass (ROAD.md §7); `boulevards`: the committed index carries the corridors (journey-road.test.ts).
+      ["boulevards", "bridges", "coastline", "covers", "districts", "extent", "homestead", "hosts", "kittyPlaza", "landforms", "lines", "lod", "reserves", "revision", "seaLevel", "stations", "terrain", "water", "yearWalk"].sort(),
     );
     expect(json.length).toBeLessThan(400_000);
     console.info(`[journey-land] extracted data ${(json.length / 1024).toFixed(1)} KB as JSON (terrain typed arrays included)`);
@@ -140,7 +141,7 @@ describe("slim artefact (REVIEW M2)", () => {
   it("is small: one request of at most 120 KB gzip, the terrain lattice embedded", () => {
     expect(SLIM_GZ.byteLength).toBeLessThanOrEqual(120 * 1024);
     expect(gunzipSync(Buffer.from(SLIM_GZ)).byteLength).toBeLessThan(400_000);
-    expect(SLIM_JSON).toMatchObject({ id: "journey-land", format: 1, revision: "horizon-geo-1", source: { index: HORIZON_INDEX_URL } });
+    expect(SLIM_JSON).toMatchObject({ id: "journey-land", format: JOURNEY_LAND_SLIM_FORMAT, revision: "horizon-geo-1", source: { index: HORIZON_INDEX_URL } });
     const terrain = (SLIM_JSON.land as { terrain: { columns: number; rows: number; heightsCm: number[] } }).terrain;
     expect(terrain.heightsCm).toHaveLength(terrain.columns * terrain.rows);
     console.info(`[journey-land] slim ${(SLIM_GZ.byteLength / 1024).toFixed(1)} KB gz vs index ${(INDEX_GZ.byteLength / 1024).toFixed(0)} KB gz + terrain ${(TERRAIN.byteLength / 1024).toFixed(0)} KB`);
@@ -158,7 +159,8 @@ describe("slim artefact (REVIEW M2)", () => {
 
   it("rejects a different revision, an unknown format and a malformed lattice", () => {
     expect(() => parseJourneyLandSlim(gz({ ...SLIM_JSON, revision: "horizon-geo-2" }))).toThrow(/revision/);
-    expect(() => parseJourneyLandSlim(gz({ ...SLIM_JSON, format: 2 }))).toThrow(/format/);
+    expect(() => parseJourneyLandSlim(gz({ ...SLIM_JSON, format: 1 }))).toThrow(/format/);
+    expect(() => parseJourneyLandSlim(gz({ ...SLIM_JSON, format: JOURNEY_LAND_SLIM_FORMAT + 1 }))).toThrow(/format/);
     const landJson = SLIM_JSON.land as { terrain: { heightsCm: number[] } };
     expect(() => parseJourneyLandSlim(gz({ ...SLIM_JSON, land: { ...landJson, terrain: { ...landJson.terrain, heightsCm: landJson.terrain.heightsCm.slice(1) } } }))).toThrow(/lattice/);
   });

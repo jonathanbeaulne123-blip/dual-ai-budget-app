@@ -96,6 +96,7 @@ interface WorldDefinition {
     lod: LodBudgets;                   // L0/L1 budgets; L2/L3 are §6
   };
   regions: PlacedRegion[];             // placed worlds (pass 5+); authored elsewhere, stood on the Horizon
+  corridors?: Corridor[];              // road main (ROAD.md §1): the one road definition — stations, reaches, guards, markings, lamps, planting, stops
 }
 
 interface PlacedRegion {
@@ -131,6 +132,7 @@ Rules for the definition:
 - `crossings[*].resolution` is one of `over`, `under`, `threshold`. Nothing else. In the manifest, district metadata stays on the actual crossing; `routePairNotes` preserves nearby-endpoint and shared-plan-point evidence for the land pass to verify. DEEP_RUN and ORE share [1300,420]; their vertical clearance must be solved and every actual intersection registered during land construction. These notes never exempt a computed intersection from resolution.
 - `reserves[*]` reserve a `placeId` per plot in the same namespace as hosts so a future building slots in without renumbering.
 - `regions[*]` are placed worlds: a region keeps its own authored geometry and art in its own space, standing on the Horizon under one translation (`offset`); the bake carries its ground so the Journey scale, the distant tiles and the proofs agree, and the runtime hands the region its `footprint` so it can answer ground, deck and collision queries inside it exactly.
+- `corridors[*]` (ROAD.md §1, D-R1) are the one road definition for every corridor road (V01, VG, V03, VBS, the six spurs, the plot service roads): stations every `CORRIDOR.step` along the final bed with context, sides (edge, guard, drop, footway, planting band, gap, `bare`), reaches, guard runs, markings, lamps (also appended to `lights` with `head`, `pool`, `poolRadius`, `line`, `order`), planting groups and scenic stops. The corridor's solids (`corridorDeck`, `corridorKerb`, `corridorWalk`, `corridorRetaining`, `corridorGuard`) replace the road beds' old strip and edge solids; a `corridorGuard` is a collider only (its visible rail is drawn from the same `GuardRun.line`). Corridors ride in the index (never per-district chunks).
 - The definition is data. A pass that needs a new field adds it to the interface in the same PR and updates this section.
 - The overlay is a function. No module that computes it imports a `captureCommand`; a static test enforces it (pass 02c).
 

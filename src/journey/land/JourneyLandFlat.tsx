@@ -6,7 +6,7 @@
  */
 import type { ReactNode } from "react";
 import type { JourneyLandFlatData, LandLineKind, ThemeId } from "../contracts.ts";
-import { LINE_DRESSING_KEY, landDressing } from "./dressing.ts";
+import { LINE_DRESSING_KEY, landDressing, landExtras } from "./dressing.ts";
 import { isMinorLine } from "./extract.ts";
 
 export type JourneyLandFlatProps = {
@@ -42,7 +42,7 @@ export function fitDistrictLabels(districts: JourneyLandFlatData["districts"], s
 }
 
 export function JourneyLandFlat({ data, theme, children, className, showDistrictLabels = true }: JourneyLandFlatProps) {
-  const d = landDressing(theme);
+  const d = landDressing(theme), x = landExtras(d);
   const [x0, y0, w, h] = data.viewBox;
   const band = { low: d.grass, mid: d.forest, high: d.rock } as const;
   const hasOverlay = children !== undefined && children !== null && children !== false;
@@ -68,6 +68,13 @@ export function JourneyLandFlat({ data, theme, children, className, showDistrict
         ))}
         {data.reserves.map((r) => (
           <path key={r.id} d={r.d} fill="none" stroke={d.reserve} strokeWidth={1} strokeDasharray="3 2" vectorEffect="non-scaling-stroke" data-land-reserve={r.id} />
+        ))}
+        {(data.bridges ?? []).map((br) => (
+          <g key={br.id} data-land-bridge={br.id}>
+            {/* The rail edge (a darker, slightly wider stroke), then the deck at its true width (concept metres). */}
+            <path d={br.d} fill="none" stroke={x.deckRail} strokeWidth={br.width + 2} strokeLinecap="butt" strokeLinejoin="round" />
+            <path d={br.d} fill="none" stroke={x.deck} strokeWidth={br.width} strokeLinecap="butt" strokeLinejoin="round" />
+          </g>
         ))}
         {data.lines.map((l) => {
           const minor = l.kind === "road" && isMinorLine(l.id), s = STROKE[l.kind];

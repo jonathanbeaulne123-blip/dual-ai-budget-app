@@ -62,3 +62,58 @@ export function faceCardOn(sun: { localMinutes: number; sunrise: number; sunset:
   if (calm) return false;
   return sun.localMinutes >= sun.sunset - FACE_CARD_LIGHT.goldenHourMinutes || sun.localMinutes < sun.sunrise;
 }
+
+/**
+ * Road lamps on the world clock (ROAD.md §6, D-R3; LIGHT §3; STYLE §1.11 lantern post). One ramp, read from the sun's
+ * elevation only (so dawn and dusk are the same curve and a reload mid-evening lands on the same value):
+ * `k` = smoothstep from +2° (off) to −6° (civil dusk, full). Tunnel lamps ignore it (STYLE tunnel portal: interior lamps
+ * always on). A line switches on (and off at dawn) in sequence along its `order`, `sequenceMs` apart, the whole line
+ * settling within `settleMs`; a lamp warms over `warmMs`. The point-light pool (D-R3, overriding STYLE §1.2 rule 1 for
+ * road lamps only) is a FIXED number of shadowless lights that never leave the scene: intensity 0 by day, so dusk never
+ * changes the light count and never recompiles a shader.
+ */
+export const ROAD_LIGHTS = {
+  colour: '#ffd98e',
+  /** Sun elevation (degrees) where the ramp starts (k = 0) and where it is full (k = 1). */
+  rampOn: 2,
+  rampFull: -6,
+  sequenceMs: 1000,
+  settleMs: 5000,
+  warmMs: 300,
+  /** How fast the displayed ramp follows the clock's (per second); the first reading is taken as-is (no blink on reload). */
+  rampRate: 1,
+  /** D-R3 pool: fixed count, candela, cut-off distance (eu), decay, cross-fade (s), and the distance it fades out over (eu). */
+  pointLights: { full: 6, lite: 2 } as const,
+  pointIntensity: 30,
+  pointDistance: 26,
+  pointDecay: 2,
+  pointFadeS: 0.4,
+  pointFade: [48, 84] as const,
+  /** Glow core / halo radius (eu) and pool strength per lamp kind (STYLE §1.11: lantern post 0.35 / 1.2). */
+  kinds: {
+    roadLantern: { glow: 0.35, halo: 1.2, pool: 0.24 },
+    bridgeLantern: { glow: 0.3, halo: 1.1, pool: 0.22 },
+    tunnelLamp: { glow: 0.25, halo: 1.0, pool: 0.2 },
+    bollard: { glow: 0.15, halo: 0.6, pool: 0.18 },
+  } as const,
+  /** Pool decals fade out by this distance (eu) on the full tier; the lite tier draws them only near (ROAD.md §8: glow cards only beyond 30 eu). */
+  poolFade: { full: [150, 220] as const, lite: [22, 30] as const },
+  /** Glow cards fade out as they approach the pick radius (fraction of it), so a lamp leaving the nearest set is already dark. */
+  glowFadeFraction: 0.25,
+  /** A pool decal sits this far above the station surface (plus polygon offset). */
+  poolLift: 0.02,
+} as const;
+export type RoadLampKind = keyof typeof ROAD_LIGHTS.kinds;
+/** The light-card cap (NIGHT_LIGHT_CARDS full 160 / lite 48) split so road lamps and door/threshold lamps each keep a share;
+ * a share the other class does not need is lent to it, and the total never exceeds the cap. */
+export const LIGHT_CARD_SHARES = { full: { road: 112, anchor: 48 }, lite: { road: 32, anchor: 16 } } as const;
+/** The road-lamp ramp k ∈ [0, 1] from the sun's elevation (degrees): smoothstep +2° → −6°, the same at dawn and dusk. */
+export function roadLampRamp(elevation: number): number {
+  const t = Math.min(1, Math.max(0, (ROAD_LIGHTS.rampOn - elevation) / (ROAD_LIGHTS.rampOn - ROAD_LIGHTS.rampFull)));
+  return t * t * (3 - 2 * t);
+}
+/** Delay (ms) of lamp `order` on a line of `count` lamps: 1 s apart, compressed so the line settles within `settleMs`. */
+export function roadLampDelay(order: number, count: number): number {
+  const step = count > 1 ? Math.min(ROAD_LIGHTS.sequenceMs, ROAD_LIGHTS.settleMs / (count - 1)) : 0;
+  return Math.max(0, order) * step;
+}

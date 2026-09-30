@@ -106,13 +106,19 @@ describe('the follow camera (RIDE §10.2)', () => {
     // 966–972 m: inside the culvert where it clears a rider (≥ 1.7 m). The ground clamp alone put the eye 0.6 above
     // the dune, with the dune between it and the rider.
     const s4 = bedPath(deps.world.beds.find(b => b.id === 'S4')!), board = createBoardController(deps);
-    for (const d of [966, 968, 972]) {
-      const p = pointAt(s4, d);
+    // Road main (L1): the Drive now crosses on an embankment and the culvert's tube is the passage under it; the covered
+    // stations are found, not assumed (966 m is now the tube's open mouth).
+    let covered = 0;
+    for (let d = 940; d <= 1000; d += 2) {
+      const p = pointAt(s4, d), roof = deps.geography.ceiling(p.x, p.z, p.y + .2);
+      if (!(Number.isFinite(roof) && roof < p.y + 4 && deps.geography.ground(p.x, p.z) > p.y + 1.7)) continue;
+      covered++;
       board.place({x: p.x, z: p.z, y: p.y, heading: p.heading, speed: 3});
       const {eye, target} = board.update(DT, moverInputOf({}), 0).camera!;
       expect(eye[1], `${d} m: under the dune`).toBeLessThan(deps.geography.ground(eye[0], eye[2]));
       expect(deps.geography.cameraBlocked([target[0], target[1], target[2]], [eye[0], eye[1], eye[2]]), `${d} m: in sight`).toBe(false);
     }
+    expect(covered).toBeGreaterThanOrEqual(2);
   });
 
   it('springs free look back behind the rider over ~1.5 s', () => {

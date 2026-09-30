@@ -50,6 +50,10 @@ export type JourneyLandExtras = {
   cottageWall: string; cottageRoof: string;
   timber: string; boathouseRoof: string;
   chimney: string;
+  /** Road bridges at map scale (ROAD.md §7): the deck (sides and piers are shades of it) and its parapet rail line. */
+  deck: string; deckRail: string;
+  /** The planted band of a boulevard reach (a green inset line on the road). */
+  planted: string;
 };
 
 export const JOURNEY_LAND_EXTRAS: Record<ThemeId, JourneyLandExtras> = {
@@ -63,6 +67,7 @@ export const JOURNEY_LAND_EXTRAS: Record<ThemeId, JourneyLandExtras> = {
     cottageWall: "#f3ead6", cottageRoof: "#c9a453",
     timber: "#8a6444", boathouseRoof: "#3f5f68",
     chimney: "#7b5a47",
+    deck: "#c3b699", deckRail: "#7c6a55", planted: "#7fa05f",
   },
   taylor: {
     highland: "#b1ac92", peak: "#c6b7b3", settled: "#dcc9b1", wetSand: "#e2cfa9",
@@ -74,6 +79,7 @@ export const JOURNEY_LAND_EXTRAS: Record<ThemeId, JourneyLandExtras> = {
     cottageWall: "#fbf3e8", cottageRoof: "#d8b466",
     timber: "#9a7462", boathouseRoof: "#6983a6",
     chimney: "#8c6a70",
+    deck: "#ccb7aa", deckRail: "#8f6f7c", planted: "#8db27a",
   },
   newfoundland: {
     highland: "#8f9a84", peak: "#aaaba3", settled: "#bfbeae", wetSand: "#c2bba3",
@@ -85,6 +91,7 @@ export const JOURNEY_LAND_EXTRAS: Record<ThemeId, JourneyLandExtras> = {
     cottageWall: "#f0d9a0", cottageRoof: "#3a4a52",
     timber: "#5e5448", boathouseRoof: "#2e6b52",
     chimney: "#4a4f52",
+    deck: "#a9aca4", deckRail: "#4f5d64", planted: "#6f8f6c",
   },
 };
 

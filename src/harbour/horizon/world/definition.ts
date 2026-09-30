@@ -4,6 +4,7 @@ import type { HorizonPathGraph, JourneyMeasurement } from './pathGraph.ts';
 import type { CrossingProof, Intersection } from './crossings.ts';
 import type { ViewProof } from './views.ts';
 import type { SkyProof } from './sky.ts';
+import type { Corridor } from '../land/corridor/types.ts';
 export type Point2 = readonly [number, number];
 export type Point3 = readonly [number, number, number];
 export type Polygon = readonly Point2[];
@@ -39,7 +40,11 @@ export interface CorridorSpec { gateId: string; mouth: Point3; to: Point3; water
 export interface DropZoneSpec { xy: Point2; height: number; rings: number[] }
 export interface FlightEnvelope { ceiling: number; launches: Anchor[]; landings: Anchor[]; gates: Anchor[]; volumes?: FlightVolume[]; launchPads?: { id: string; padId?: string; edge: Point3[]; graded: boolean }[]; glider?: { speed: number; sink: number }; proofs?: SkyProof; gliderPolar?: PolarPoint[]; parachute?: ParachuteSpec; corridors?: { throat?: CorridorSpec }; dropZone?: DropZoneSpec }
 export interface UndercroftDef { doors: Anchor[]; rooms: Polygon[]; waterBodyId?: string; skylight?: Anchor; roomVolumes?: { id: string; outline: Polygon; floor: number; ceiling: number; solidIds: string[] }[] }
-export interface LightAnchor { id: string; at: Point3; kind: string; bestHour?: string }
+/** `kind` 'door' | 'threshold' (derived) | a corridor LampKind (ROAD.md §4.4: roadLantern, bridgeLantern, tunnelLamp, bollard).
+ * Corridor lamps also carry their head, the point their light lands on and its radius. */
+export interface LightAnchor { id: string; at: Point3; kind: string; bestHour?: string; head?: Point3; pool?: Point3; poolRadius?: number; corridorId?: string;
+  /** Corridor lamps: the run they switch on with (`<corridor>:<reach>`) and their place along it (0 = first on at dusk; LIGHT §3). */
+  line?: string; order?: number }
 /** An emissive light card on a face (MANIFEST v2.0 `lights`, kind 'card'; D-A5): an unlit quad a hair in front of the face,
  * no dynamic light. `corners` run bottom-left, bottom-right, top-right, top-left seen from in front; `on` is the schedule. */
 export interface FaceCard { id: string; anchor: string; corners: [Point3, Point3, Point3, Point3]; normal: Point3; on: 'goldenHourToDawn'; districtId: string }
@@ -91,6 +96,9 @@ export interface WorldDefinition {
   } };
   collision?: { beds: BedCut[]; pads: PadCut[]; mouths: MouthMask[]; waters: WaterCut[]; walkableSlopeDegrees: number; lipStepMax: number };
   pathGraph?: HorizonPathGraph;
+  /** The road corridors (ROAD.md): one definition per road bed that the deck, collision, edges, markings, lamps and
+   * planting are all derived from. Absent before a bake carries them. */
+  corridors?: Corridor[];
   /** Pass 5: placed worlds (MANIFEST `regions`), absent before the bake carries one. */
   regions?: RegionPlacement[];
   diagnostics?: LandDiagnostic[];

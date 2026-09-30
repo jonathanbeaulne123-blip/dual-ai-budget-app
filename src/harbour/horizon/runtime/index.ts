@@ -58,6 +58,11 @@ import {horizonMotion,appReducedMotion,type HorizonComfort} from '../sun/comfort
 import {shadowFrame} from '../sun/shadow.ts';
 import {createSkyDome} from '../sky/dome.ts';
 import {nightLight,nightDome,NIGHT_LIGHT_CARDS,NIGHT_FLOOR,faceCardOn,FACE_CARD_LIGHT} from '../sky/night.ts';
+import {createRoadLights} from './roadLights.ts';
+import {createCorridorArt,type CorridorArt} from './corridorArt.ts';
+import {createCorridorPlanting,type CorridorPlanting} from './corridorPlanting.ts';
+import {roadLampRamp} from '../sky/night.ts';
+import {createInspector,inspectorEnabled,buildInspectorSnapshot,type InspectorSource} from './inspector.ts';
 import {sketchbookLens} from '../world/lens.ts';
 import type {XYZ} from '../land/interfaces.ts';
 import type {Host,SketchbookPose} from '../world/definition.ts';
@@ -241,11 +246,29 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const ambient=new THREE.HemisphereLight('#d9e7e8','#786b57',1.2),sun=new THREE.DirectionalLight('#fff0d5',2.2),moon=new THREE.DirectionalLight('#9badcd',.26);
   sun.castShadow=true;{const size=tier==='full'?2048:1024;sun.shadow.mapSize.set(size,size);}sun.shadow.camera.near=1;sun.shadow.normalBias=.05;sun.shadow.bias=-.00006;
   scene.add(ambient,sun,sun.target,moon);
-  // No dynamic point lights (STYLE §1.2.1): night is the moonlit floor plus one instanced batch of
-  // light cards (a warm ground pool and a bead) at the definition's door and threshold lamps.
-  const lightCardCap=NIGHT_LIGHT_CARDS[tier],poolGeometry=new THREE.CircleGeometry(NIGHT_LIGHT_CARDS.poolRadius,20).rotateX(-Math.PI/2),beadGeometry=new THREE.SphereGeometry(NIGHT_LIGHT_CARDS.beadRadius,8,6);
-  const poolMaterial=new THREE.MeshBasicMaterial({color:NIGHT_LIGHT_CARDS.pool,transparent:true,opacity:NIGHT_LIGHT_CARDS.poolOpacity,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-8}),beadMaterial=new THREE.MeshBasicMaterial({color:NIGHT_LIGHT_CARDS.bead});
-  const pools=new THREE.InstancedMesh(poolGeometry,poolMaterial,lightCardCap),beads=new THREE.InstancedMesh(beadGeometry,beadMaterial,lightCardCap);pools.renderOrder=3;pools.frustumCulled=beads.frustumCulled=false;pools.count=beads.count=0;scene.add(pools,beads);
+  // ---- Light cards and road lamps (runtime/roadLights.ts; ROAD.md §6, D-R3) ----
+  // Night is the moonlit floor plus the light cards of every `world.lights` anchor (door and threshold pool + bead; corridor
+  // lamps: conformed pool decal + glow/halo) under one cap, and, for road lamps only (D-R3 overrides STYLE §1.2.1), a fixed
+  // pool of shadowless point lights. Lamps ramp on the world clock (the sun's elevation); `updateLocalLights` drives it.
+  // ---- Road main: the corridor's dressing and planting (runtime/corridorArt.ts, corridorPlanting.ts; ROAD.md §4–§6, §8) ----
+  // Markings, guard kits, lamps and stop furniture, and the roadside planting, per resident district; hidden on the Journey map.
+  // The kit's lamp heads feed roadLights so the pools, glow cards and point lights sit on the lanterns as drawn.
+  const seasonOf=(date:Date)=>{const month=date.getMonth()+1;return month<=2||month===12?'winter' as const:month<=5?'spring' as const:month<=8?'summer' as const:'autumn' as const;};
+  let corridorArt:CorridorArt,corridorPlanting:CorridorPlanting,corridorSeason='',corridorNight=-1;
+  function mountCorridor(date:Date){
+    corridorArt=createCorridorArt(world,{tier,theme,ground:(x,z)=>geography.ground(x,z)});
+    corridorSeason=seasonOf(date);corridorNight=-1;
+    corridorPlanting=createCorridorPlanting(world,{tier,theme,season:corridorSeason as ReturnType<typeof seasonOf>,month:date.getMonth()+1});
+    scene.add(corridorArt.group,corridorPlanting.group);
+    for(const material of Object.values(corridorArt.materials))fogHook(material);for(const material of corridorPlanting.materials())fogHook(material);
+  }
+  function unmountCorridor(){corridorArt.dispose();corridorPlanting.dispose();scene.remove(corridorPlanting.group);}
+  mountCorridor(new Date());
+  // The lanterns' heads as this theme's kit draws them (review minor 2: rebuilt with the kit on a theme change).
+  const makeRoadLights=()=>{const kitHeads=new Map(corridorArt.lampHeads().map(h=>[h.id,h.head] as const));
+    return createRoadLights(scene,{...world,lights:world.lights.map(a=>{const head=kitHeads.get(a.id);return head?{...a,head}:a;})},{tier,ground:(x,z,near)=>geography.surface(x,z,near+1,0)?.y??null,revision:()=>geography.indexStats.chunks});};
+  let roadLights=makeRoadLights();
+  const lightAt:[number,number,number]=[0,0,0],lightFrame:{at?:readonly [number,number,number];hidden:boolean}={hidden:false};
   // The seven windows (LIGHT §3): each host's doorway is a lit card from dusk, one instanced draw.
   const doorHosts=world.hosts.filter(h=>'xy'in h.door),doorGeometry=new THREE.PlaneGeometry(NIGHT_LIGHT_CARDS.doorSize[0],NIGHT_LIGHT_CARDS.doorSize[1]).translate(0,NIGHT_LIGHT_CARDS.doorSize[1]/2,0),doorMaterial=new THREE.MeshBasicMaterial({color:NIGHT_LIGHT_CARDS.door,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-8}),doors=new THREE.InstancedMesh(doorGeometry,doorMaterial,Math.max(1,doorHosts.length));
   doorHosts.forEach((h,i)=>{const d=h.door as {xy:readonly [number,number];height?:number},facing=h.facing??0;doors.setMatrixAt(i,new THREE.Matrix4().makeRotationY(facing).setPosition(d.xy[0]+Math.sin(facing)*.08,(d.height??0)+.02,d.xy[1]+Math.cos(facing)*.08));});doors.count=doorHosts.length;doors.visible=false;scene.add(doors);
@@ -253,19 +276,15 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const faceCardMaterial=new THREE.MeshBasicMaterial({color:FACE_CARD_LIGHT.colour,transparent:true,opacity:FACE_CARD_LIGHT.opacity,side:THREE.FrontSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4}),faceCards=new THREE.Group();
   for(const card of world.faceCards??[]){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(card.corners.flat(),3));g.setIndex([0,1,2,0,2,3]);g.computeVertexNormals();const mesh=new THREE.Mesh(g,faceCardMaterial);mesh.name=`faceCard.${card.id}`;mesh.renderOrder=2;faceCards.add(mesh);}
   faceCards.visible=false;scene.add(faceCards);let faceCardsLit=false;
-  let night=false,lastLocalLights=-Infinity,lastLightAt:XYZ=[Infinity,0,0],lastSolar={elevation:30,azimuth:180},ambience:WorldAmbience|null=null;
+  let night=false,lastSolar={elevation:30,azimuth:180},ambience:WorldAmbience|null=null;
   const shadowRequests:{at:number;reason:string}[]=[];
   function requestShadow(reason:string){schedule();renderer.shadowMap.needsUpdate=true;shadowRequests.push({at:performance.now(),reason});if(shadowRequests.length>120)shadowRequests.shift();}
   function updateFog(){const fog=horizonFog({tier,eyeAboveGround:Math.max(0,camera.position.y-geography.ground(camera.position.x,camera.position.z)),elevation:lastSolar.elevation,sunAzimuth:lastSolar.azimuth,heading:yaw*180/Math.PI});scene.fog=mode==='journey'?null:new THREE.Fog(fog.color,fog.near,fog.far);if(lastSkyColors)skyDome.update(lastSkyColors,fog.color,lastSunDirection);}
-  const lightMatrix=new THREE.Matrix4();
+  /** Every frame: the lamps' ramp, sequence and point-light cross-fades (cheap; re-picks the nearest set every 500 ms / 20 eu). */
   function updateLocalLights(now:number){
-    if(now-lastLocalLights<500)return;lastLocalLights=now;
-    const at:XYZ=mode==='look'?[camera.position.x,camera.position.y,camera.position.z]:[body.x,body.y,body.z];
-    doors.visible=night&&mode!=='journey';if(!night){pools.count=beads.count=0;return;}
-    if(Math.hypot(at[0]-lastLightAt[0],at[2]-lastLightAt[2])<20&&pools.count>0)return;lastLightAt=at;
-    const near=world.lights.map(anchor=>({anchor,distance:Math.hypot(anchor.at[0]-at[0],anchor.at[2]-at[2])})).sort((a,b)=>a.distance-b.distance).slice(0,lightCardCap);
-    near.forEach(({anchor},i)=>{const lift=anchor.kind==='door'?2.2:.8,ground=anchor.at[1]-lift;lightMatrix.makeTranslation(anchor.at[0],ground+.06,anchor.at[2]);pools.setMatrixAt(i,lightMatrix);lightMatrix.makeTranslation(anchor.at[0],anchor.at[1],anchor.at[2]);beads.setMatrixAt(i,lightMatrix);});
-    pools.count=beads.count=near.length;pools.instanceMatrix.needsUpdate=beads.instanceMatrix.needsUpdate=true;
+    doors.visible=night&&mode!=='journey';lightAt[0]=body.x;lightAt[1]=body.y;lightAt[2]=body.z;lightFrame.at=mode==='look'?undefined:lightAt;lightFrame.hidden=mode==='journey';
+    roadLights.update(camera,lastSolar.elevation,now,lightFrame);
+    const k=Math.round(roadLampRamp(lastSolar.elevation)*100)/100;if(k!==corridorNight){corridorNight=k;corridorArt.setNight(k);}
   }
   let interactiveAt:number|null=null;
   let doorCooldown=0,lastMovementBlocker:unknown=null,simulating=false;
@@ -368,8 +387,9 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function resize(reframe=true){schedule();adaptiveQuality.interrupt();if(lease.active)applyHorizonQuality(renderer,sun,adaptiveQuality.profile(window.devicePixelRatio));const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(reframe&&mode==='look'&&!transition){const pose=world.views.find(p=>p.id===shotId);if(pose)lookAt(pose);}}
   const observer=new ResizeObserver(()=>resize());observer.observe(host);resize();
   function setLight(date:Date){const month=date.getMonth()+1;homeWorld.setSeason(month<=2||month===12?'winter':month<=5?'spring':month<=8?'summer':'autumn');
+    if(seasonOf(date)!==corridorSeason){corridorSeason=seasonOf(date);corridorPlanting.setSeason(seasonOf(date),month);}
     const position=solarPosition(date),colors=skyGradient(position.elevation),lookHeight=camera.position.y-geography.ground(camera.position.x,camera.position.z),fog=horizonFog({tier,eyeAboveGround:Math.max(0,lookHeight),elevation:position.elevation,sunAzimuth:position.azimuth,heading:yaw*180/Math.PI}),floor=nightLight(position.elevation,colors);
-    lastSolar=position;night=floor.lightCards;faceCardsLit=faceCardOn(position,comfort.calm);faceCards.visible=faceCardsLit&&mode!=='journey';lastLocalLights=-Infinity;lastLightAt=[Infinity,0,0];
+    lastSolar=position;night=floor.lightCards;faceCardsLit=faceCardOn(position,comfort.calm);faceCards.visible=faceCardsLit&&mode!=='journey';roadLights.refresh();
     lastSkyColors=nightDome(colors,floor.nightness);lastSunDirection=[position.direction[0],position.direction[1],position.direction[2]];skyDome.update(lastSkyColors,fog.color,lastSunDirection);
     scene.fog=mode==='journey'?null:new THREE.Fog(fog.color,fog.near,fog.far);
     ambient.color.set(floor.hemisphereSky);ambient.groundColor.set(floor.hemisphereGround);ambient.intensity=floor.hemisphereIntensity;
@@ -731,7 +751,6 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   // ---- Pass 5: the placed region (Mountain v2) ----
   // Mounted (one v2 builder per frame) when a district under its footprint is resident outside the Journey map, drawn while
   // that holds, released REGION_RELEASE_MS after it stops. Its materials take the Horizon's fog stage and fade in like a district.
-  const seasonOf=(date:Date)=>{const month=date.getMonth()+1;return month<=2||month===12?'winter' as const:month<=5?'spring' as const:month<=8?'summer' as const:'autumn' as const;};
   function releaseRegion(){regionTask?.cancel();regionTask=null;regionScene?.dispose();regionScene=null;regionHooks=[];showRegion(false);}
   function showRegion(visible:boolean){
     if(regionScene)regionScene.group.visible=visible;
@@ -798,6 +817,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     }
     // Fine districts rise from the fog colour over 0.8 s (a cut under reduced motion); the coarse card they replace hides at once.
     for(const resource of stream.live.values()){resource.cards.group.visible=mode!=='journey';if(resource.chalk)resource.chalk.visible=night&&mode!=='journey';resource.fadeIn(motion.districtFadeMs>0?Math.min(1,Math.max(0,(now-resource.at)/motion.districtFadeMs)):1);}
+    // Road main: the corridor's art and planting follow the resident districts (hidden on the Journey map).
+    corridorArt.group.visible=corridorPlanting.group.visible=mode!=='journey';if(mode!=='journey'){corridorArt.update(camera,residentIds);corridorPlanting.update(camera,residentIds);}
     if(transition){
       if(transition.live&&stepped){transition.toEye.copy(camera.position);transition.toTarget.copy(target);}   // ride()/step() just set this frame's goal camera
       const t=transition.duration>0?Math.min(1,Math.max(0,(now-transition.at)/transition.duration)):1,ease=transition.live?moverBlendEase(now-transition.at,transition.duration):t*t*(3-2*t);
@@ -824,9 +845,9 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(now-lastSun>=60_000){setLight(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm}));lastSun=now;}
     updateLocalLights(now);
     skyDome.follow(camera);renderer.render(scene,camera);paintCount++;if(interactiveAt===null){interactiveAt=performance.now();options.onReady?.();void prefetchChunks();}if(drawSamples.length===0||now-drawSamples.at(-1)!.at>500){drawSamples.push({at:now,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,resident:stream.live.size});if(drawSamples.length>600)drawSamples.shift();}
-    const building=stream.building||!!regionTask||stream.live.size<stream.cap&&Boolean(stream.history.at(-1)?.pending.some(id=>!chunks||chunks.ready(id)));
+    const building=stream.building||!!regionTask||corridorArt.building()||stream.live.size<stream.cap&&Boolean(stream.history.at(-1)?.pending.some(id=>!chunks||chunks.ready(id)));
     const fading=motion.districtFadeMs>0&&([...stream.live.values()].some(resource=>now-resource.at<motion.districtFadeMs)||regionVisible&&performance.now()-regionShownAt<motion.districtFadeMs);
-    const continuous=!paused&&(mode==='walk'||skating()||!!transition||mode!=='journey'&&(building||fading||!!peer&&motion.ambientMotion)||moverArts.size>0);
+    const continuous=!paused&&(mode==='walk'||skating()||!!transition||mode!=='journey'&&(building||fading||!!peer&&motion.ambientMotion||roadLights.busy(now))||moverArts.size>0);
     // Queue a quality change for the next paint: resizing after render would clear this frame.
     if(continuous&&frameMs>0&&adaptiveQuality.sample(frameMs,performance.now()-workStarted))qualityDirty=true;
     return continuous;
@@ -856,7 +877,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     return true;
   }
   const interactive=(event:KeyboardEvent)=>event.composedPath().some(t=>t instanceof Element&&Boolean(t.closest('input,textarea,select,button,a,[contenteditable="true"],[role="dialog"],[role="textbox"]')));
-  function keyDown(e:KeyboardEvent){if(paused)return;schedule();const key=e.key.toLowerCase();if(monorail?.state())return;if(skating()){if(interactive(e)||!host.contains(document.activeElement))return;if(!['b','p','escape'].includes(key)&&skate!.controls.input()?.keyDown(e))e.preventDefault();return;}if(kitchen?.active()){const focused=document.activeElement;if(!host.parentElement?.contains(focused)||focused?.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]')||(['enter',' '].includes(key)&&focused?.closest('button,a')))return;if(key==='c'&&!e.repeat){e.preventDefault();cyclePerspective();}else if(kitchen.keyDown(e))e.preventDefault();return;}if(interactive(e)||!host.contains(document.activeElement))return;if(key==='e'&&!e.repeat&&kitchen?.available()){e.preventDefault();kitchen.command({type:'open'});return;}if(suppressedKeys.has(key)){if(e.repeat){e.preventDefault();return;}suppressedKeys.delete(key);if(key===' ')consumeJumpUntilRelease=false;}if(key==='v'&&!e.repeat){e.preventDefault();toggleCruiser();return;}if(key==='r'&&cruiser()&&!e.repeat){e.preventDefault();recoverRide();return;}if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(key)){e.preventDefault();keys.add(key);if(key===' '&&!e.repeat&&!consumeJumpUntilRelease)jumpRequested=true;}if(key==='c'&&!e.repeat){e.preventDefault();cyclePerspective();}if(key==='q'&&!e.repeat&&fleetActions().some(a=>a.kind==='anchor')){e.preventDefault();fleetAction('anchor');return;}if(key==='e'){e.preventDefault();if(!e.repeat)acceptRequested=true;}if(key==='escape')path=[];}
+  function keyDown(e:KeyboardEvent){if(paused)return;schedule();const key=e.key.toLowerCase();if(monorail?.state())return;if(skating()){if(interactive(e)||!host.contains(document.activeElement))return;if(!['b','p','escape'].includes(key)&&skate!.controls.input()?.keyDown(e))e.preventDefault();return;}if(kitchen?.active()){const focused=document.activeElement;if(!host.parentElement?.contains(focused)||focused?.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]')||(['enter',' '].includes(key)&&focused?.closest('button,a')))return;if(key==='c'&&!e.repeat){e.preventDefault();cyclePerspective();}else if(kitchen.keyDown(e))e.preventDefault();return;}if(interactive(e)||!host.contains(document.activeElement))return;if(!e.repeat&&inspector.keyDown(e))return;if(key==='e'&&!e.repeat&&kitchen?.available()){e.preventDefault();kitchen.command({type:'open'});return;}if(suppressedKeys.has(key)){if(e.repeat){e.preventDefault();return;}suppressedKeys.delete(key);if(key===' ')consumeJumpUntilRelease=false;}if(key==='v'&&!e.repeat){e.preventDefault();toggleCruiser();return;}if(key==='r'&&cruiser()&&!e.repeat){e.preventDefault();recoverRide();return;}if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(key)){e.preventDefault();keys.add(key);if(key===' '&&!e.repeat&&!consumeJumpUntilRelease)jumpRequested=true;}if(key==='c'&&!e.repeat){e.preventDefault();cyclePerspective();}if(key==='q'&&!e.repeat&&fleetActions().some(a=>a.kind==='anchor')){e.preventDefault();fleetAction('anchor');return;}if(key==='e'){e.preventDefault();if(!e.repeat)acceptRequested=true;}if(key==='escape')path=[];}
   const suppressedKeys=new Set<string>();
   function hostBlur(event:FocusEvent){if(kitchen?.active()&&event.relatedTarget instanceof Node&&host.parentElement?.contains(event.relatedTarget))return;clear();}
   function focusPause(){kitchen?.pause('The window lost focus. Resume when both chefs are ready.');if(skating()&&!skate!.controls.paused())skate!.controls.pause(true);clear();}
@@ -895,6 +916,14 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     return acceptOffer({id:'cruiser-pickup',thresholdId:'beside-rider',from:'feet',to:'cruiser',at:[at.x,at.y,at.z],action:'Ride',label:'Ride'});
   }
   function recoverRide(){const active=cruiser();if(!active)return false;clear();const ok=active.recover();options.onStatus?.(ok?'Ready to ride.':'No clear recovery spot nearby.');return ok;}
+  // ---- The `=` inspector (dev or ?diagnostics=1; runtime/inspector.ts) ----
+  const inspectorSource:InspectorSource={tier,sha:new URLSearchParams(location.search).get('sha'),   // scripts pass ?sha=<git sha> (flag.ts alone reads the build env)
+    body:()=>body,mode:()=>mode,perspective:()=>perspective.mode(),mover:()=>registry.mode(),
+    motion:()=>{const c=cruiser()?.state();return c?{speed:Math.hypot(c.vx,c.vz),grounded:c.grounded,contact:c.contact}:registry.active()?{speed:ambienceSpeed,grounded:registry.active()?.airborne?.()?false:null}:{speed:null,grounded:null};},
+    surface:(x,z,y)=>geography.surface(x,z,y),solid:id=>{const s=solidsById.get(id);return s?{role:s.role,kind:s.kind,surface:s.surface}:null;},
+    corridors:()=>world.corridors,frames:()=>frameTimes,render:()=>drawSamples.at(-1)??null,resident:()=>[...stream.live.keys()],
+    lights:()=>({...roadLights.stats()}),blocker:()=>lastMovementBlocker,clock:()=>api.reviewDate()};
+  const inspector=createInspector(host,inspectorSource,{enabled:inspectorEnabled(location.search,HARBOUR_DEV),focusBack:()=>host.focus({preventScroll:true})});
   const api={world,assets,scene,camera,geography,shot:pickPage,setMode,restore,savedBody,enterDoor,
     /** Development replay uses the exact live controllers/collision without waiting for rendered frames. */
     simulateMotion(seconds:number){if(!HARBOUR_DEV)throw new Error('Development replay only.');const steps=Math.ceil(Math.max(0,Math.min(120,seconds))*60);for(let i=0;i<steps;i++){if(paused||mode!=='walk'||hold.paused())break;physicalBody=null;tickFleet(1/60);if(kitchen?.active())kitchen.update(1/60);else if(registry.active())ride(1/60,performance.now()+i*1000/60,false);else step(1/60,performance.now()+i*1000/60);}homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);return{body:{...body},vessels:fleet.snapshot().vessels};},
@@ -912,7 +941,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     setCruiserSkin(skin:CruiserSkin){schedule();cruiserSkin=skin;cruiserArt?.setSkin(skin);},
     cruiserState:()=>cruiser()?.state()??null,
     body:()=>({...body}),mode:()=>mode,shotId:()=>shotId,
-    setTheme(next:VehicleDressing){if(next===theme)return;theme=next;skate?.setTheme(next);if(regionScene||regionTask)releaseRegion();if(placed)monorail?.setTheme(placed.dressing(next));kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
+    setTheme(next:VehicleDressing){if(next===theme)return;theme=next;unmountCorridor();mountCorridor(currentTime??new Date());roadLights.dispose();roadLights=makeRoadLights();roadLights.refresh();skate?.setTheme(next);if(regionScene||regionTask)releaseRegion();if(placed)monorail?.setTheme(placed.dressing(next));kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
     setAvatar(next:PlayableAvatar|null){const previous=figure;figure=next?createPlayableFigure(next,tier,{invalidate:schedule,onStatus:options.onAvatarStatus}):createBodyFigure();scene.add(figure.group);skate?.setFigure(figure);previous.group.removeFromParent();previous.dispose();schedule();},
     settings:()=>({tier,reducedMotion:comfort.reducedMotion,calm:comfort.calm,theme}),reviewDate:()=>(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm})),setAmbience(audio:WorldAmbience|null){ambience=audio;schedule();},
     offers,
@@ -1005,24 +1034,34 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     visitHome(){const at=homeWorld.visit();if(!at)return false;restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',...at});return true;},
     homeActions(){return !paused&&mode==='walk'&&!registry.active()?homeWorld.actions(body):[];},
     activateHome(id:string){const action=!paused&&!registry.active()?homeWorld.actions(body).find(a=>a.id===id):null;if(!action)return false;clear();if(action.id==='home-book')options.onHomeBook?.();else if(action.target)options.onHomeWorkspace?.(action.target);return true;},
-    stats(){const gl=renderer.getContext(),debug=gl.getExtension('WEBGL_debug_renderer_info');return{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),revision:world.geographyRevision,terrainBytes:assets.bytes,collisionIndex:geography.indexStats,bytesBeforeFirstFrame,chunksLoaded:chunks?chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId):null,cables:cableLayer.stats(),chunks:chunks?{resident:chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId),total:chunks.refs.length,queued:scheduler!.queued(),heldAt:heldNow.length?{districts:[...heldNow],body:{...body}}:null,holds:chunkHolds.map(h=>({...h,at:[...h.at]})),ride:rideGate.stats(),failures:scheduler!.failures()}:null,walkOut:lastWalkOut,walkOutWait:pendingWalkOut?walkOutWait:null,definitionBytesSoFar:chunks?.bytes()??assets.definitionBytes,shadowRequests:[...shadowRequests],comfort:{...comfort,motion:{...motion}},lightCards:pools.count,shadow:{half:sun.shadow.camera.right,centre:sun.target.position.toArray()},paintCount,quality:{...adaptiveQuality.stats(),...adaptiveQuality.profile(window.devicePixelRatio),appliedPixelRatio:renderer.getPixelRatio(),pending:qualityDirty,shadowMapSize:sun.shadow.map?.width??null},firstInteractiveMs:interactiveAt===null?null:interactiveAt-startedAt,assetLoadMs:assetLoadedAt-startedAt,mode,shot:shotId,body:{...body},frames:[...frameTimes],drawSamples:[...drawSamples],stream:[...stream.history],camera:{eye:camera.position.toArray(),target:target.toArray(),fov:camera.fov},diagnostics:world.diagnostics,region:placed?{id:placed.region.id,mounted:regionScene!==null,building:regionTask!==null,visible:regionVisible,districts:[...regionDistricts],joins:world.pathGraph?.joins??[],...(regionScene?regionScene.stats():{})}:null};},
+    stats(){const gl=renderer.getContext(),debug=gl.getExtension('WEBGL_debug_renderer_info');return{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),revision:world.geographyRevision,terrainBytes:assets.bytes,collisionIndex:geography.indexStats,bytesBeforeFirstFrame,chunksLoaded:chunks?chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId):null,cables:cableLayer.stats(),chunks:chunks?{resident:chunks.refs.filter(r=>chunks.ready(r.districtId)).map(r=>r.districtId),total:chunks.refs.length,queued:scheduler!.queued(),heldAt:heldNow.length?{districts:[...heldNow],body:{...body}}:null,holds:chunkHolds.map(h=>({...h,at:[...h.at]})),ride:rideGate.stats(),failures:scheduler!.failures()}:null,walkOut:lastWalkOut,walkOutWait:pendingWalkOut?walkOutWait:null,definitionBytesSoFar:chunks?.bytes()??assets.definitionBytes,shadowRequests:[...shadowRequests],comfort:{...comfort,motion:{...motion}},lightCards:roadLights.stats().cards,roadLights:roadLights.stats(),shadow:{half:sun.shadow.camera.right,centre:sun.target.position.toArray()},paintCount,quality:{...adaptiveQuality.stats(),...adaptiveQuality.profile(window.devicePixelRatio),appliedPixelRatio:renderer.getPixelRatio(),pending:qualityDirty,shadowMapSize:sun.shadow.map?.width??null},firstInteractiveMs:interactiveAt===null?null:interactiveAt-startedAt,assetLoadMs:assetLoadedAt-startedAt,mode,shot:shotId,body:{...body},frames:[...frameTimes],drawSamples:[...drawSamples],stream:[...stream.history],camera:{eye:camera.position.toArray(),target:target.toArray(),fov:camera.fov},diagnostics:world.diagnostics,region:placed?{id:placed.region.id,mounted:regionScene!==null,building:regionTask!==null,visible:regionVisible,districts:[...regionDistricts],joins:world.pathGraph?.joins??[],...(regionScene?regionScene.stats():{})}:null};},
+    // ---- road lights and the `=` inspector (ROAD.md §6, D-R6) ----
+    /** The inspector's snapshot (the `=` overlay's facts as JSON); also what Copy / `+` pushes to `inspectorLog`. */
+    inspect:()=>buildInspectorSnapshot(inspectorSource),
+    /** Snapshots copied with Copy / `+` this session (headless scripts read them). */
+    inspectorLog:inspector.log,
+    /** Opens or closes the inspector overlay (dev / ?diagnostics=1); returns whether it is open. */
+    toggleInspector:()=>inspector.toggle(),
+    /** Review: set the world clock (as `setDate`); null returns to the device clock / `?sun=`. */
+    setClock(date:Date|null){if(date)api.setDate(date);else{currentTime=null;lastSun=-Infinity;schedule();}},
+    roadLights:()=>roadLights.stats(),
     /** Pass 5: the placed Mountain v2 region (null when not placed). T3's rides move its cabins through `setTransit`. */
     mountainRegion:placed?{region:placed.region,scene:()=>regionScene,visible:()=>regionVisible,
       setTransit(cabin:{at:XYZ;yaw:number;pitch:number}|null,kind:'gondola'|'funicular'){regionTransit={cabin,kind};regionScene?.setTransit(cabin,kind);}}:null,
     /** Pass 5: the water picture at v2's dam, as given (0…1; null = unknown, frosted glass). The runtime and the region read
      *  nothing themselves: the app feeds the one reading L01 shows (CONTRACT §2.2). */
     setMountainDamWater(level:number|null,reserve:number|null){regionWater={level,reserve};regionScene?.setWater(level,reserve);schedule();},
-    dispose(){monorail?.dispose();skate?.dispose();kitchen?.dispose();releaseRegion();offRegion?.();offCable?.();saveFleet();window.removeEventListener('pagehide',saveAll);offFleet();offHome();homeWorld.dispose();fleetArt.dispose();disposed=true;window.clearTimeout(fadeTimer);registry.dispose();cruiserArt?.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();offChunk?.();frameDriver?.dispose();observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',focusPause);document.removeEventListener('visibilitychange',visibilityClear);host.removeEventListener('blur',hostBlur);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();poolGeometry.dispose();beadGeometry.dispose();poolMaterial.dispose();beadMaterial.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
+    dispose(){monorail?.dispose();skate?.dispose();kitchen?.dispose();releaseRegion();offRegion?.();offCable?.();saveFleet();window.removeEventListener('pagehide',saveAll);offFleet();offHome();homeWorld.dispose();fleetArt.dispose();disposed=true;window.clearTimeout(fadeTimer);registry.dispose();cruiserArt?.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();offChunk?.();frameDriver?.dispose();observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',focusPause);document.removeEventListener('visibilitychange',visibilityClear);host.removeEventListener('blur',hostBlur);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();roadLights.dispose();unmountCorridor();inspector.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
   };
   // Pass 5 (T3's contract, HANDOFF-notes/rides.md): the cable rides move the region's cabins through `setTransit`.
   const offCable=placed&&api.mountainRegion?connectCableRegion(placed.region,api.mountainRegion,()=>camera.aspect):null;
   return api;
 }
 
-const CHALK_SOLID=/(^|\.)(edges|kerbs|parapet|parapets|rails|retaining|coping|lip|marker)(\.|@|$)/;
+const CHALK_SOLID=/(^|\.)(edges|kerbs|kerb|guard|parapet|parapets|rails|retaining|coping|lip|marker)(\.|@|$)/;
 /** Solids whose vertical faces also take the night face colour (walls that bound a walk and, Wave 6, rails: P28 C and L
  * read their rails at 1.25 / 2.69 : 1 against the moonlit ground; not markers). */
-const CHALK_FACE_SOLID=/(^|\.)(edges|kerbs|parapet|parapets|retaining|coping|rails)(\.|@|$)/;
+const CHALK_FACE_SOLID=/(^|\.)(edges|kerbs|kerb|parapet|parapets|retaining|coping|rails)(\.|@|$)/;
 type FogHook={fade:{value:number};cap:{value:number}};
 const fogHooks=new WeakMap<THREE.Material,FogHook>();
 /** One fog stage for land and cards: Three's fog, capped (horizon cards: 0.7), then a fade from the fog colour. */
