@@ -51,6 +51,21 @@ describe('the authored bridge cast',()=>{
 
 // Cooperative rendering must keep scheduling beyond the first resident batch.
 describe('bridge residency',()=>{
+ it('applies the retained night intensity to lazily mounted replacement theme art',()=>{
+  const baked=JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json','utf8')) as WorldDefinition;
+  const sample=baked.bridges!.find(b=>b.id==='bightBridge')!;
+  const solids=baked.geometry!.solids.filter(s=>s.id.startsWith('bightBridge.'));
+  const world={bridges:[sample],geometry:{solids}} as unknown as WorldDefinition;
+  for(const theme of ['classic','taylor','newfoundland'] as const){
+   const art=createBridgeArt(world,{tier:'lite',theme});art.setNight(1);
+   const residents=new Set(solids.map(s=>s.districtId));art.update(residents);
+   for(let frame=0;art.building()&&frame<1000;frame++)art.update(residents);
+   const glows:import('three').Material[]=[];
+   art.group.traverse(o=>{const mesh=o as import('three').Mesh;if(mesh.isMesh){const materials=Array.isArray(mesh.material)?mesh.material:[mesh.material];for(const m of materials)if(m.transparent)glows.push(m);}});
+   expect(glows.length).toBeGreaterThan(0);expect(glows.every(m=>m.opacity===1)).toBe(true);
+   art.setNight(0);expect(glows.every(m=>m.opacity===.12)).toBe(true);art.dispose();
+  }
+ });
  it('finishes every resident, invalidates shadows on mount and eviction, and counts line draws',()=>{
   const source=cuts.solids.find(s=>s.id==='bightBridge.deck')!;
   const sample=bridges.find(b=>b.id==='bightBridge')!;

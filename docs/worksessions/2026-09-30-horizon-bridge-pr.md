@@ -17,3 +17,11 @@ The requested 105 Horizon/Journey/harbour files are running one at a time on the
 ## Limits
 
 Ten bridge families and meeting/map identities are implemented. Drawbridge operation, Ribbon pumpable dip, complete route/vehicle acceptance, whole-scene performance acceptance and physical-device review remain open. Powered aircraft now exist, but prior glider aperture evidence does not certify their swept wings. Bight's 11m gate does not accommodate Heron's 14m wingspan. This is reviewable implementation progress, not full feature/release acceptance.
+
+## Review and sweep repairs
+
+Jonathan explicitly approved the Bianca Month fixture repair during this PR. The fixture now returns a fixed September30 activation, and its App test pins calendar time ten minutes later. Real elapsed-time UI waits use `performance.now()` so date freezing cannot hang their deadline. Production Month behavior is unchanged; fixture lifecycle consumers are included in validation.
+
+The airport had added brake release ahead of skate reset; the old-shell source fence now requires both operations. A night-light regression test checks all three replacement bridge themes using actual baked district membership, retained night intensity and daytime dimming.
+
+The S1/S4 exact-blocker census removes three cleared rail samples: Apron1312/1314 and Hollow148. Independent comparison with main confirms S4 station150 has identical coordinates and board surface y35.95915937: the same existing Hollow neck / D-C10 obstruction is now owned by `hollowBridge.deck`, replacing `walk garden.bed.hollow`. That named exception remains; no route-traversal acceptance is inferred.

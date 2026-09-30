@@ -312,9 +312,10 @@ async function settleUi(ms = 100): Promise<void> {
 }
 
 async function waitForUi(assertion: () => void, timeout = 30_000): Promise<void> {
-  const deadline = Date.now() + timeout;
+  // Elapsed-time waits must keep advancing when a scenario pins calendar time.
+  const deadline = performance.now() + timeout;
   let lastError: unknown = new Error("UI condition was not met.");
-  while (Date.now() < deadline) {
+  while (performance.now() < deadline) {
     try {
       assertion();
       return;
@@ -501,6 +502,7 @@ describe("cached-shell startup books gate", () => {
     act(() => root.unmount());
     container.remove();
     vi.restoreAllMocks();
+    vi.useRealTimers();
     vi.unstubAllEnvs();
     setContinuityStore(null);
   });
@@ -1585,6 +1587,10 @@ describe("cached-shell startup books gate", () => {
 
   it("keeps Bianca Month inside the current App and opens the current income slideshow", async () => {
     const activationAt = existingBooksActivationAt();
+    // Keep the App and completed books in the same deterministic Toronto month,
+    // including the last-day boundary that previously moved activation into October.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(Date.parse(activationAt) + 10 * 60_000));
     startup.cached = completedExistingBooksHousehold(activationAt);
     const rehearsalMonth = todayKey(new Date(activationAt), startup.cached.timezone).slice(0, 7);
     startup.cached = startMonthRehearsal(startup.cached!, {

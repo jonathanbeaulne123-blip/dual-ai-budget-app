@@ -83,7 +83,8 @@ describe("the old shell's chrome around the Horizon (static)", () => {
     // #571 review: travel steps off the board; the camera tests what is drawn; keys reset on blur; the rider shows in first person.
     expect(shell).toMatch(/if\(world\.skate\(\)\?\.active\(\)\)\{world\.skate\(\)\?\.setAudio\(null\);world\.stopSkate\(\)/);
     expect(runtime).toMatch(/blocked:\(x,y,z,r\)=>placed\.region\.blocked\(x,y,z,r\)/);
-    expect(runtime).toMatch(/function clear\(\)\{skate\?\.controls\.input\(\)\?\.reset\(\);/);
+    // Airport brake reset precedes skating input reset; both must remain in the shared blur handler.
+    expect(runtime).toMatch(/function clear\(\)\{airport\.brake\(false\);skate\?\.controls\.input\(\)\?\.reset\(\);/);
     expect(runtime).toMatch(/figure\.group\.visible=mode==='walk'&&\(!firstPerson\|\|skating\(\)\)/);
     expect(read("src/harbour/horizon/HorizonStage.tsx")).toMatch(/aria-label=\{props\.skating\?SKATE_STAGE_WORDS:/);
     expect(read("src/harbour/horizon/skate/nativeSkate.ts")).not.toMatch(/worldCollisionAt/);

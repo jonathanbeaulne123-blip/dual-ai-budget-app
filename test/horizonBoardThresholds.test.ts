@@ -301,14 +301,15 @@ const LINE_BLOCKERS: Record<LineId, Record<string, number[]>> = {
   S1: {
     // v2.6: the library balcony's landing ramp (a region deck) stood in S1's clearance at 614–616 m; PR #566 CodeRabbit: the
     // region applies v2's own junction rule (a branch's mouth is open road), so it stops nobody on S1 — no entry here.
-    'apronBridge.rails@notch': [1312, 1314],
+    // Bridge rebuild clears the old Apron rail contacts at 1312/1314; no replacement exception.
     'reachBoardwalk.rails@reach': [1686],   // across the run-out before landingQuay
   },
   S2: {},
   S3: {},
   S4: {
-    'hollowBridge.rails@hollow': [148],
-    'walk garden.bed.hollow@hollow': [150],   // the Hollow neck (D-C10, reserved)
+    // The old rail contact at 148 is clear. At 150 the bridge now owns the same carried
+    // surface and blocker location (board y35.95915937): the Hollow neck (D-C10) remains.
+    'hollowBridge.deck@hollow': [150],
   },
 };
 
