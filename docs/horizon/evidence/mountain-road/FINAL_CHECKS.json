@@ -1,0 +1,38 @@
+{
+  "checkedAt": "2026-09-30T11:32:59.702517+00:00",
+  "head": "324cd5f246ab295af5cf64d553ebf78fad57f7b5",
+  "stage": "Phase 1 proposal, no product implementation",
+  "checks": {
+    "gitDiffCheck": "pass",
+    "localLinks": {
+      "checked": 95,
+      "broken": 0
+    },
+    "captureFiles": {
+      "records": 32,
+      "missing": 0,
+      "occludedContextShots": 1
+    },
+    "javascriptParse": {
+      "passed": 6
+    },
+    "pythonAstParse": "pass",
+    "productSourceDiff": []
+  },
+  "scriptsSha256": {
+    "scripts/horizon/road-audit.mjs": "b8254b47960fc7cd1fa1d2a1e1b6fbd8811b0c9f4f23229a639f4c3e5752cf87",
+    "scripts/horizon/mountain-road-inventory.mjs": "3a3cc54ea7f841681959ee77f5a4956e0410312920a1cd6a123748c8d640af2e",
+    "scripts/horizon/mountain-road-neighbours.mjs": "0ba6b2d82bf3673ec1511c762ddc8e3a5111b3f578645120ab2aea515077030a",
+    "scripts/horizon/capture-mountain-road.mjs": "2567dea90be327ffaa3ef6ad31e9463dd44dd7448ea21b506e442cad387cd91d",
+    "scripts/horizon/mountain-road-drawings.py": "7738cb3b662e364ed84c4abcf51df42d6b2e80ec5e2f346b0e22d1da0cb303bc",
+    "docs/horizon/evidence/mountain-road/before/modes/probe.mjs": "0172e122e05ed4df28fbc56f6f45301f66855565f2747a5690e26f66f3640ad1",
+    "docs/horizon/evidence/mountain-road/before/modes/native-probe.mjs": "c01d198728c00bc4b5ce6095c166cf9958a8eb3fe721ce4f04ceac49c25ff563"
+  },
+  "quickGate": {
+    "classification": "quick-gate-passed; time-budget-breached",
+    "elapsedMs": 538729,
+    "budgetMs": 300000,
+    "changeFingerprint": "cf44599339b84d40ddd5c3e86af6a0cb477b30be6612b1de4db48861cbd6875d",
+    "note": "before final documentation/provenance edits; unchanged product source; no rerun claimed"
+  }
+}

@@ -1,3 +1,11 @@
+## 2026-09-30 — Mountain Road inventory and book, Phase 1 stop
+
+Local `codex/mountain-road-book` from `main@324cd5f246ab295af5cf64d553ebf78fad57f7b5` (#576). Uncommitted docs, evidence and diagnostic tooling only; no PR, merge, deployment or live verification. **Risk: High. Budget (5): 0. Engagement (3): 0 delivered; +2 target.**
+
+The [Mountain Road book](horizon/MOUNTAIN_ROAD.md) proposes one Horizon-side chain, source-owned native surfaces and a Stillwater grade-link study with its missing descent explicitly included. Other links remain views or deferred fit studies. Jonathan's prompt requires this stop before Phase 2; native Mountain edits remain a separate decision.
+
+The original corridor stays **0/23/85, zero restarts**. The combined cruiser chain finds **5/22/22 with seven restarts**. Bicycle/Horizon-board/walking full-chain attempts finish **0/6**; native full-chain endpoints are outside the shell skate launch radius. Region **15/15** and dump check pass. High gate checks pass but **538.729 s exceeds the 300 s budget**. Known Bianca Month main CI failure remains unchanged. Headless static captures and all gaps are named in the [handoff](CODEX_HORIZON_MOUNTAIN_ROAD_1.md) and [LOOK](horizon/evidence/mountain-road/before/LOOK.md). Two independent-review findings were fixed and rechecked. **Next: Jonathan's D-MR choices; Codex for approved work and outstanding evidence.**
+
 ## 2026-09-29 — Horizon Drive finished as a corridor: one road definition, driven end to end
 
 Branch `claude/horizon-main-road`, merging `main@1c436be`. Pushed; see its PR. Not merged, not deployed, not live verified.

@@ -32,6 +32,8 @@ const OUT = resolve(ROOT, arg('--out', `docs/horizon/evidence/road/audit-${arg('
 const STATION = Number(arg('--station', '2'));
 const ONLY = arg('--beds', null)?.split(',');
 const DRIVE = !flag('--no-drive'), STATIC = !flag('--no-static');
+// Phase 0 evidence only: an in-memory path over existing surfaces; never added to the bake.
+const MOUNTAIN_CHAIN = flag('--mountain-chain');
 /** --trace V01:fwd:2:3580:3605 prints every step of that pass inside that station window (debugging a finding). */
 const TRACE = arg('--trace', null)?.split(':');
 /** --probe-line x0,z0,x1,z1,y prints the physical surface every 0.1 m along a line and exits (debugging a lip). */
@@ -154,9 +156,28 @@ if (PROBE) { const [x0, z0, x1, z1, y] = PROBE, L = Math.hypot(x1 - x0, z1 - z0)
   console.log('lipLine →', JSON.stringify(lipLine(pts, y).map(l => ({s: r2(l.s), dy: r3(l.dy), seam: l.seam, from: l.from, to: l.to}))));
   process.exit(0); }
 // ─── Beds and resampled centrelines ──────────────────────────────────────────────────────────────────────────────────
-const BEDS = world.collision.beds;
+const BEDS = [...world.collision.beds];
+let chainReaches = null;
+let chainWidths = null;
+if (MOUNTAIN_CHAIN && STATIC) throw new Error('--mountain-chain requires --no-static: variable-width static adapter not implemented');
+if (MOUNTAIN_CHAIN) {
+  const v2 = JSON.parse(readFileSync(resolve(ROOT, 'src/harbour/horizon/land/mountainV2/v2-data.json'), 'utf8'));
+  const approach = BEDS.find(b => b.id === 'V03'), mountain = BEDS.find(b => b.id === 'mountainV2.road');
+  const end = approach.points.at(-1), foot = mountain.points[0];
+  const nearest = (pts, q) => pts.reduce((best, p, i) => Math.hypot(p[0]-q[0], p[2]-q[2]) < Math.hypot(pts[best][0]-q[0], pts[best][2]-q[2]) ? i : best, 0);
+  const a = nearest(v2.course.points, foot), b = nearest(v2.course.points, end);
+  const join = v2.course.points.slice(a, b + 1).reverse();
+  if (Math.hypot(join[0][0]-end[0],join[0][2]-end[2]) > 2 || Math.hypot(join.at(-1)[0]-foot[0],join.at(-1)[2]-foot[2]) > .1) throw new Error('Unverified Foot lane alignment');
+  const points = [...approach.points, ...join.filter(p => p[2] < end[2]), ...mountain.points.slice(1)];
+  const length = pts => pts.slice(1).reduce((n,p,i)=>n+Math.hypot(p[0]-pts[i][0],p[2]-pts[i][2]),0);
+  chainReaches = {approachEnd:length(approach.points), mountainStart:length(points.slice(0, points.length-mountain.points.length+1)), note:'Existing V03, course town lane in reverse, native mountain road. Widths follow V03, 3.5-half-width lane and native per-sample export. Static chain audit intentionally unavailable.'};
+  let arc = 0;
+  chainWidths = points.map((p,i)=>{if(i)arc+=Math.hypot(p[0]-points[i-1][0],p[2]-points[i-1][2]);const m=Math.max(0,i-(points.length-mountain.points.length));return {s:arc,hw:i<approach.points.length?approach.width/2:i<points.length-mountain.points.length?3.5:v2.road.samples[m].hw};});
+  BEDS.push({...mountain, id:'mountain-chain', shoulder:0, points});
+}
+
 const bedById = new Map(BEDS.map(b => [b.id, b]));
-const ROAD_IDS = BEDS.filter(b => b.kind === 'road' && (['V01', 'VG', 'V03', 'VBS'].includes(b.id) || b.id.startsWith('spur ') || /^plot\..*\.service$/.test(b.id))).map(b => b.id)
+const ROAD_IDS = MOUNTAIN_CHAIN ? ['mountain-chain'] : BEDS.filter(b => b.kind === 'road' && (['V01', 'VG', 'V03', 'VBS'].includes(b.id) || b.id.startsWith('spur ') || /^plot\..*\.service$/.test(b.id))).map(b => b.id)
   .filter(id => !ONLY || ONLY.includes(id));
 const MAIN = new Set(['V01', 'VG', 'V03']);
 function resample(points, closed, ds = .5) {
@@ -186,6 +207,7 @@ function nearestOn(path, x, z) { let best = Infinity, bi = 0; for (let i = 0; i 
 const STRUCTURE_BEDS = BEDS.filter(b => b.id.startsWith('structure.') || b.id === 'prowTunnel');
 const YEAR_WALK = bedById.get('yearWalk');
 const events = [];
+const telemetry = [];
 let eid = 0;
 function event(e) { e.id = `e${++eid}`; events.push(e); return e; }
 
@@ -209,7 +231,7 @@ function lanePath(path, dir, lane) {
 const spanOf = (path, a, b) => { const lo = Math.min(a, b), hi = Math.max(a, b); return path.closed && hi - lo > path.length / 2 ? [r1(hi), r1(lo)] : [r1(lo), r1(hi)]; };
 function runDrive(bedId, dir, lane) {
   const bed = bedById.get(bedId), path = PATHS.get(bedId), Q = lanePath(path, dir, lane), n = Q.length, closed = path.closed;
-  const half = bed.width / 2, pass = `${dir}/${lane ? 'right+2' : 'centre'}`;
+  let half = bed.width / 2; const pass = `${dir}/${lane ? 'right+2' : 'centre'}`;
   const tag = {bed: bedId, dir, lane, pass};
   const at = k => closed ? Q[((k % n) + n) % n] : Q[Math.max(0, Math.min(n - 1, k))];
   const total = closed ? path.length + 10 : path.length - 1.5;
@@ -226,7 +248,7 @@ function runDrive(bedId, dir, lane) {
   let stallT = 0, stallOpen = null, air = null, slide = null, off = null, corner = null, mism = null, lastContact = null, lastContactT = -1;
   const maxT = total / 3 + 180; let speedSum = 0;
   function closeSlide(sl) {
-      const d = describe(sl.idKey), inLane = sl.nearestIn <= half - C.radius;
+      const d = describe(sl.idKey), inLane = MOUNTAIN_CHAIN ? sl.inLane : sl.nearestIn <= half - C.radius;
       event({...tag, type: 'contact', severity: inLane ? 'MAJOR' : 'MINOR', station: spanOf(path, sl.start, sl.end), at: sl.at, ids: [sl.idKey], role: d?.role, kind: d?.kind,
         value: r2(sl.steps * C.dt), unit: 's', speedIn: sl.speedIn, minSpeed: r1(sl.minSpeed), offCentre: sl.offCentre,
         note: `${inLane ? 'in-lane' : 'edge'} contact with ${sl.idKey} (${d?.kind}/${d?.role}) for ${(sl.steps * C.dt).toFixed(2)} s, ${sl.speedIn}→${r1(sl.minSpeed)} m/s`});
@@ -242,6 +264,7 @@ function runDrive(bedId, dir, lane) {
     for (let j = k - 6; j <= k + 40; j++) { if (!closed && (j < 0 || j >= n)) continue; const q = at(j), d = (q.x - s.x) ** 2 + (q.z - s.z) ** 2; if (d < best) { best = d; bk = j; } }
     progress += (bk - k) * .5; k = bk;
     const q = at(k), speed = api.cruiserSpeed(s);
+    if (MOUNTAIN_CHAIN) half = chainWidths.reduce((a,b)=>Math.abs(a.s-q.s)<Math.abs(b.s-q.s)?a:b).hw;
     const L = Math.max(6, Math.min(8, 6 + speed * .125)), tgt = at(k + Math.round(L / .5));
     const alpha = Math.atan2(Math.sin(Math.atan2(tgt.x - s.x, tgt.z - s.z) - s.yaw), Math.cos(Math.atan2(tgt.x - s.x, tgt.z - s.z) - s.yaw));
     const D = Math.max(1, Math.hypot(tgt.x - s.x, tgt.z - s.z)), kappa = 2 * Math.sin(alpha) / D;
@@ -252,6 +275,7 @@ function runDrive(bedId, dir, lane) {
     const next = api.stepCruiser(s, {forward, steer, jump: false}, g);
     if (TRACE && TRACE[0] === bedId && TRACE[1] === dir && Number(TRACE[2]) === lane && q.s >= Number(TRACE[3]) && q.s <= Number(TRACE[4])) { const u = g.surface(next.x, next.z, next.y + .05, .1); console.log('trace', r2(q.s), P3(next.x, next.y, next.z).join(','), 'v', r2(api.cruiserSpeed(next)), 'vy', r2(next.vy), next.grounded ? 'G' : 'AIR', 'contact', next.contact, 'under', u?.id, u ? r2(u.y) : '-', 'off', r2((next.x - q.cx) * q.rx + (next.z - q.cz) * q.rz), 'steer', r2(steer), 'fwd', r2(forward)); }
     t += C.dt; stats.steps++;
+    if (MOUNTAIN_CHAIN && stats.steps % 12 === 0) telemetry.push({...tag, s:r2(q.s), speed:r2(api.cruiserSpeed(next)), radius:q.k ? r2(1/q.k):null, lateralDemand:r2(api.cruiserSpeed(next)**2*q.k), gripModel:C.grip, x:r2(next.x), y:r2(next.y), z:r2(next.z), grounded:next.grounded, contact:next.contact??null});
     const ns = api.cruiserSpeed(next); speedSum += ns; stats.maxSpeed = Math.max(stats.maxSpeed, ns);
     const offC = (next.x - q.cx) * q.rx + (next.z - q.cz) * q.rz;
     const where = () => ({station: r1(q.s), at: P3(next.x, next.y, next.z)});
@@ -270,6 +294,7 @@ function runDrive(bedId, dir, lane) {
         if (slide) closeSlide(slide);
         slide = {...tag, type: 'contact', idKey: next.contact, ...where(), start: q.s, end: q.s, steps: 0, speedIn: r1(speed), minSpeed: ns, nearestIn: Math.abs(offC), offCentre: r2(offC)};
       }
+      slide.inLane ||= Math.abs(offC) <= half-C.radius;
       slide.steps++; slide.end = q.s; slide.minSpeed = Math.min(slide.minSpeed, ns); slide.nearestIn = Math.min(slide.nearestIn, Math.abs(offC)); // the closest approach to the centreline: a slide that reaches into the lane at any point is in-lane
     } else if (slide) { closeSlide(slide); slide = null; }
     // Airborne.
@@ -700,8 +725,8 @@ mkdirSync(OUT, {recursive: true});
 const meta = {generated: new Date().toISOString(), command, root: ROOT, rootSha, wallSeconds, node: process.version, cpus: os.cpus().length,
   bake: {world: WORLD_PATH.replace(ROOT + '/', ''), worldSha256: sha(worldBytes), terrain: TERRAIN_PATH.replace(ROOT + '/', ''), terrainSha256: sha(terrainBytes), revision: world.geographyRevision},
   cruiser: {...C}, driver: {lookahead: '6–8 m (6 + 0.125·v)', lateralAccel: A_LAT, planDecel: B_DEC, laneOffsets: [0, 2], note: 'pure pursuit on the lane line through stepCruiser at CRUISER.dt; no snapping; a restart (logged) only after a 2 s stall or leaving the corridor'},
-  stationStep: STATION, roads: ROAD_IDS};
-writeFileSync(resolve(OUT, 'audit.json'), JSON.stringify({meta, totals, drives, issues: byBed, events, junctions, pads: padRows.filter(p => p.lips.length), transitions, bightBridge: bight, doubleParapets: doubles,
+  driveEnabled:DRIVE, staticEnabled:STATIC, mountainChain:MOUNTAIN_CHAIN, stationStep: STATION, roads: ROAD_IDS};
+writeFileSync(resolve(OUT, 'audit.json'), JSON.stringify({meta, chainReaches, telemetry, totals, drives, issues: byBed, events, junctions, pads: padRows.filter(p => p.lips.length), transitions, bightBridge: bight, doubleParapets: doubles,
   planting: {trees: planting.trees, shrubs: planting.shrubs, hits: planting.hits}, context: contexts, kerbCoverage: Object.fromEntries(Object.entries(statics).map(([id, r]) => [id, r.kerbCoverage])),
   stations: Object.fromEntries(Object.entries(statics).map(([id, rows]) => [id, rows.map(r => ({s: r.s, at: [r.x, r.y, r.z], w: r.width, L: r.left.kind, Ld: r.left.d, R: r.right.kind, Rd: r.right.d, st: r.structure, ceil: r.ceiling, bur: r.buried, kL: r.kerbL, kR: r.kerbR, surf: r.surface}))]))}, null, 1));
 
@@ -712,6 +737,7 @@ const esc = t => String(t ?? '').replace(/\|/g, '\\|');
 let md = `# Horizon road audit — ${arg('--title', 'before')}\n\nDriver's-eye audit of the committed bake with the real cruiser sim (\`stepCruiser\`, CRUISER.dt = 1/120 s). Read-only: nothing under \`src/\` or \`public/\` was changed.\n\n`;
 md += `- Command: \`${command}\` (from ${ROOT === process.cwd() ? 'the repo root' : `\`${relative(process.cwd(), ROOT) || '.'}\``})\n- Checkout: \`${rootSha}\`; world \`${meta.bake.world}\` sha256 \`${meta.bake.worldSha256.slice(0, 16)}…\`, terrain sha256 \`${meta.bake.terrainSha256.slice(0, 16)}…\` (${world.geographyRevision})\n`;
 md += `- Wall-clock: **${wallSeconds} s** on ${meta.cpus} CPUs (${process.version}); generated ${meta.generated}\n- Roads: ${ROAD_IDS.join(', ')}\n\n`;
+md += `**Scope:** drive ${DRIVE ? 'enabled' : 'disabled'}; static sweep ${STATIC ? 'enabled' : 'disabled'}. ${MOUNTAIN_CHAIN ? 'The synthetic mountain chain is a variable-width drive-only probe; the generic static-method description below does not mean those scans ran. Endpoint completion after restarts is not uninterrupted acceptance.' : ''}\n\n`;
 md += `## Method\n\n- **World**: \`parseHorizonDefinition(horizon-geo-1.json.gz)\` + \`decodeTerrainAsset(bin,'full')\` + \`createHorizonGeography(field,{...collision, solids, diagnostics})\` + \`addDynamic(createMountainV2Region(...).provider)\` — the loader of \`test/horizonRideSituations.test.ts\`.\n`;
 md += `- **Drive**: pure pursuit (lookahead 6–8 m) on the lane line; target speed = min(${C.speed}, √(${A_LAT}/κ)) braked back at ${B_DEC} m/s²; throttle/coast/brake only through \`stepCruiser\` inputs; no snapping. Passes: forward and reverse, centreline and keep-right +2 m (5 m-wide spurs: centreline only). V01 is driven round the whole loop (+10 m). A stall longer than 2 s, or leaving the corridor (> half-width + shoulder + 5 m, or 4 m below the bed), is logged and the drive restarts 6–8 m further on (listed per pass).\n`;
 md += `- **Static** (every ${STATION} m station, no driving): *lateral scan* both sides in 0.25 m steps from the centreline at the deck height — \`geography.contact\` (r 0.2) at the rider's body band, surface continuity (±0.5 m), water, > ${C.maxSlope}°, or no ground; a transverse crack between segment prisms (deck continues 0.15 m either side along the road, or within 0.6 m further out) is stepped over, not an edge → usable width, drop depth beyond the first edge. *Missing guard* = a drop > 1.25 m that starts within the bed edge + 1.5 m with no rail/wall stopping the scan first (drops further out are listed as MINOR \`verge-drop\`). *Unguarded step* = 0.5–1.25 m drop at the edge. *Buried* = visible terrain above the deck at five points across the carriageway (skipped under a roof whose underside is below that terrain). *Floating edge* = deck-edge bottom (deck − 0.6 m) more than 0.3 m above the terrain 0.3 m outside the edge with no wall/rail/support solid below it (not on structures). *Headroom* = every downward-facing static face whose plan falls inside the carriageway box of that station with its underside 0.1–5 m above the deck (this road's own parapet coping excluded), plus the dynamic (Mountain v2) ceiling. *Kerbs* = own kerb solid at ±half-width. *Scenery* = non-walkable static solids not belonging to the road, and v2 dynamic solids, within the carriageway + 1 m, 0.3–4.5 m above the deck.\n`;

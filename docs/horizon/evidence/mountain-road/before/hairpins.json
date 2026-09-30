@@ -1,0 +1,205 @@
+[
+  {
+    "id": "H1",
+    "s0": 122.37740161501506,
+    "s1": 140.4301596094203,
+    "at": [
+      1378.0096780311515,
+      64.03680704987786,
+      687.0218588747452
+    ],
+    "minRadius": 11.96367007991472,
+    "guardLeft": "open",
+    "guardRight": "kerb",
+    "grade": 0.09451072859215273,
+    "halfWidth": 4.8,
+    "passes": [
+      {
+        "lane": 0,
+        "entrySpeed": 8.36,
+        "maxLateralDemand": 4.34,
+        "minSteerRateMargin": 1.1886965026395173
+      },
+      {
+        "lane": 2,
+        "entrySpeed": 8.38,
+        "maxLateralDemand": 4.31,
+        "minSteerRateMargin": 1.189850225225225
+      }
+    ]
+  },
+  {
+    "id": "H2",
+    "s0": 184.62472406316985,
+    "s1": 204.69478360911586,
+    "at": [
+      1327.017717245867,
+      69.59994027055727,
+      671.3195216051563
+    ],
+    "minRadius": 10.462138211929792,
+    "guardLeft": "open",
+    "guardRight": "kerb",
+    "grade": 0.09687438130267712,
+    "halfWidth": 4.8,
+    "passes": [
+      {
+        "lane": 0,
+        "entrySpeed": 10.44,
+        "maxLateralDemand": 4.12,
+        "minSteerRateMargin": 1.1676024746192892
+      },
+      {
+        "lane": 2,
+        "entrySpeed": 10.2,
+        "maxLateralDemand": 4.26,
+        "minSteerRateMargin": 1.1676024746192892
+      }
+    ]
+  },
+  {
+    "id": "H3",
+    "s0": 312.4701195402218,
+    "s1": 328.60137511965655,
+    "at": [
+      1396.6782804480863,
+      84.51484416682683,
+      601.6774578253647
+    ],
+    "minRadius": 20.03656276688921,
+    "guardLeft": "open",
+    "guardRight": "kerb",
+    "grade": 0.1333388207913079,
+    "halfWidth": 4.8,
+    "passes": [
+      {
+        "lane": 0,
+        "entrySpeed": 10.27,
+        "maxLateralDemand": 4,
+        "minSteerRateMargin": 1.2211415705512283
+      },
+      {
+        "lane": 2,
+        "entrySpeed": 10.15,
+        "maxLateralDemand": 4.1,
+        "minSteerRateMargin": 1.2211415705512283
+      }
+    ]
+  },
+  {
+    "id": "H4",
+    "s0": 349.78360096546675,
+    "s1": 352.8098369541959,
+    "at": [
+      1365.115073046452,
+      89.08197665170405,
+      605.8622805776905
+    ],
+    "minRadius": 26.908996454757155,
+    "guardLeft": "open",
+    "guardRight": "open",
+    "grade": 0.13794247638282464,
+    "halfWidth": 4.8,
+    "passes": [
+      {
+        "lane": 0,
+        "entrySpeed": 9.89,
+        "maxLateralDemand": 4,
+        "minSteerRateMargin": 1.2320873287671232
+      },
+      {
+        "lane": 2,
+        "entrySpeed": 10.02,
+        "maxLateralDemand": 4,
+        "minSteerRateMargin": 1.2320873287671232
+      }
+    ]
+  },
+  {
+    "id": "H5",
+    "s0": 379.0487524601302,
+    "s1": 395.13489856095646,
+    "at": [
+      1338.328587930487,
+      94.3659334706879,
+      582.4520498127177
+    ],
+    "minRadius": 14.805159507826374,
+    "guardLeft": "bridge",
+    "guardRight": "bridge",
+    "grade": 0.10211385889948005,
+    "halfWidth": 4.8,
+    "passes": [
+      {
+        "lane": 0,
+        "entrySpeed": 10.34,
+        "maxLateralDemand": 4.3,
+        "minSteerRateMargin": 1.193620170193192
+      },
+      {
+        "lane": 2,
+        "entrySpeed": 10.16,
+        "maxLateralDemand": 4.18,
+        "minSteerRateMargin": 1.2127722457627121
+      }
+    ]
+  },
+  {
+    "id": "H6",
+    "s0": 810.1973061424613,
+    "s1": 828.3144299347023,
+    "at": [
+      1352.8037660026387,
+      145.83426953931405,
+      500.6252895493834
+    ],
+    "minRadius": 13.11969945485246,
+    "guardLeft": "parapet",
+    "guardRight": "open",
+    "grade": 0.12193592996829154,
+    "halfWidth": 4.8,
+    "passes": [
+      {
+        "lane": 0,
+        "entrySpeed": 9.79,
+        "maxLateralDemand": 4.17,
+        "minSteerRateMargin": 1.200342001748252
+      },
+      {
+        "lane": 2,
+        "entrySpeed": 10.05,
+        "maxLateralDemand": 4,
+        "minSteerRateMargin": 1.200342001748252
+      }
+    ]
+  },
+  {
+    "id": "H7",
+    "s0": 860.527519348888,
+    "s1": 884.6240614616809,
+    "at": [
+      1392.942148221572,
+      151.4717117271892,
+      479.6858610199251
+    ],
+    "minRadius": 10.035260797010379,
+    "guardLeft": "parapet",
+    "guardRight": "kerb",
+    "grade": 0.09947306346746887,
+    "halfWidth": 4.8,
+    "passes": [
+      {
+        "lane": 0,
+        "entrySpeed": 10.12,
+        "maxLateralDemand": 4.31,
+        "minSteerRateMargin": 1.1616666666666666
+      },
+      {
+        "lane": 2,
+        "entrySpeed": 10,
+        "maxLateralDemand": 4.31,
+        "minSteerRateMargin": 1.1616666666666666
+      }
+    ]
+  }
+]
