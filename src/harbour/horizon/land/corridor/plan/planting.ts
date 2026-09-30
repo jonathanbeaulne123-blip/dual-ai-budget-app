@@ -89,6 +89,8 @@ export function fits(c: Ctx, k: Cand, why?: (reason: string) => void): PlantItem
     if (t.span.side !== side || k.median) continue;
     if (Math.abs(F.delta(t.s, pr.s)) <= Math.abs(F.delta(t.span.from, t.span.to)) / 2 + PLANT.stopClear + canopy) return no('stop');
   }
+  // The full mature crown also respects native trees, buildings, paths and reserved plots.
+  if(env.occupied(x,z,canopy,height))return no('occupied-crown');
   // Ground: dry, unoccupied, holdable.
   const foot = form.tree ? 0.6 : Math.min(canopy, 1);
   for (const [dx, dz] of [[0, 0], [foot, 0], [-foot, 0], [0, foot], [0, -foot]] as const) {
@@ -285,7 +287,7 @@ function drifts(c: Ctx, R: Rand, tag: number, pred: (st: CorridorStation) => boo
 export function planPlanting(A: Analysis, env: Env, stops: readonly { span: StopSpan; s: number }[]): PlantingGroup[] {
   const c: Ctx = { A, env, stops, grid: new Map(), groups: [], groupS: [], counts: new Map() };
   const F = A.frame, S = A.stations;
-  if (!A.main) return [];
+  if (!A.furnished) return [];
   const R = stream(env.seed, 11);
   const styleIs = (...ss: Style[]) => (st: CorridorStation) => !st.structureId && ss.includes(A.style(st));
   const ctxIs = (...cs: CorridorStation['context'][]) => (st: CorridorStation) => cs.includes(st.context);
@@ -305,7 +307,10 @@ export function planPlanting(A: Analysis, env: Env, stops: readonly { span: Stop
   // R3 / R8 / mountain: only a few framing groups, inland, set back ≥ 6 (fits enforces the setback).
   groves(c, R, 100, and(styleIs('R3', 'R8', 'V03', 'ctx:mountain'), not(ctxIs('structure', 'developed'))), {
     sides: inland, kind: 'framingTrees', length: [12, 18], gapFactor: (_s, u) => 7 + u * 5, count: [4, 7], depth: 9, min: 3, startGap: 30,
-    species: (u) => pick([['pine', 6], ['birch', 1], ['heath', 3]] as const, u), scale: lowScale,
+    // The new routes join existing woodland instead of adding a second species
+    // collection to every district: silver birch at Stillwater, pine higher up.
+    // Choose before fits(), so each authored crown receives its own real clearance.
+    species: (u) => A.id === 'spur stillwater' ? 'birch' : A.id === 'mountainV2.road' ? 'pine' : pick([['pine', 6], ['birch', 1], ['heath', 3]] as const, u), scale: lowScale,
   });
 
   // R4 Crown Coast: wind-bent pine + heath inland only, 5–9 per group, groups ≥ 1.5 × their length apart; the sea side open.

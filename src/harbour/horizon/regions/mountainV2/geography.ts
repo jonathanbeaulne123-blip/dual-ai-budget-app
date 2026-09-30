@@ -20,10 +20,12 @@
  *    and the channel; the shore that falls to v2's sea is the Horizon's lake shore);
  *  - never within `MOUTH_MARGIN` of a Horizon terrain mouth (`exclude`: the Ore Line's South Portal keeps its opening).
  */
+import {drawnRoadFloor} from './drawnRoadFloor.ts';
+import {drawnRoadGroundCeiling} from './drawnRoadGround.ts';
 import {groundHeightAt} from '../../../scene/ground.ts';
-import {mountainContains,nearestOnRoute,EDGE_SOLIDS,WORLD_BOUNDS,RIVER,RIVER_HALF_WIDTH,RESERVOIR_LEVEL_MAX,type Point3} from '../../../mountain/definition.ts';
+import {mountainContains,nearestOnRoute,MOUNTAIN_ROAD_LINE,ORCHARD_LANE_LINE,EDGE_SOLIDS,WORLD_BOUNDS,RIVER,RIVER_HALF_WIDTH,RESERVOIR_LEVEL_MAX,type Point3} from '../../../mountain/definition.ts';
 import {reservoirOutline} from '../../../mountain/art/damArt.ts';
-import {WORLD_SURFACES,WORLD_SOLIDS,queryWorldSurface,worldCeilingAt,type WorldSurface,type WorldSolid,type WorldSurfaceHit} from '../../../mountain/surfaces.ts';
+import {WORLD_SURFACES,WORLD_SOLIDS,queryWorldSurface,worldCeilingAt,worldDeckAt,type WorldSurface,type WorldSolid,type WorldSurfaceHit} from '../../../mountain/surfaces.ts';
 import {MOUNTAIN_V2_OFFSET as O,MOUNTAIN_V2_MASSIF_Z,MOUNTAIN_V2_SUMMIT_Z,insideMountainV2} from './placement.ts';
 
 /** The Foot terrace's radius (native, round v2's square): the terrace, the lawn and the channel; not the falling shore. */
@@ -35,8 +37,37 @@ const LAND=-.2;
 /** The Horizon body (runtime/geography.ts): a solid above the step and below the head stops it. */
 const STEP=.48,BODY=1.25;
 
-/** v2's decks this pass draws (all but the canal bridge's town race road deck). */
-export const REGION_SURFACES:readonly WorldSurface[]=WORLD_SURFACES.filter(s=>s.id!=='town-race-road');
+/** The road's authored swept bands, before the 5cm paint lift. Projecting onto a coarse
+ * centreline jumps between different heights at a hairpin's outside edge. These are the
+ * same full-detail vertices/diagonals drawn by routeArt and bridgeArt, with no native edit. */
+function drawnRoadSurface(line:typeof MOUNTAIN_ROAD_LINE):WorldSurface {
+  return {...WORLD_SURFACES.find(s=>s.id===line.id)!,points:line.samples.map(s=>s.at),widths:line.samples.map(s=>s.halfWidth),
+    landingRows:line.samples.map(s=>[-s.halfWidth,-s.halfWidth+.55,-.45,.45,s.halfWidth-.55,s.halfWidth].map(w=>
+      [s.at[0]+s.normal[0]*w,s.at[1],s.at[2]+s.normal[2]*w] as Point3))};
+}
+export const REGION_ROAD=drawnRoadSurface(MOUNTAIN_ROAD_LINE);
+export const REGION_ORCHARD=drawnRoadSurface(ORCHARD_LANE_LINE);
+/** Both roads use their actual swept triangles: the orchard endpoint's nearest-point
+ * projection extended an invisible round cap into the main road and stopped a bicycle wheel. */
+export const REGION_SURFACES:readonly WorldSurface[]=WORLD_SURFACES.filter(s=>s.id!=='town-race-road').map(s=>s.id==='mountain-road'?REGION_ROAD:s.id==='orchard-lane'?REGION_ORCHARD:s);
+const DRAWN_ROADS=[REGION_ROAD,REGION_ORCHARD] as const;
+const REGION_OTHER_SURFACES=REGION_SURFACES.filter(s=>!DRAWN_ROADS.includes(s));
+const exactRoadFloors=DRAWN_ROADS.map(surface=>({surface,floor:drawnRoadFloor(surface.landingRows!)}));
+const roadGroundCeiling=drawnRoadGroundCeiling(REGION_ROAD);
+/** One road selector whether the surrounding ground is native terrain or a masked portal. */
+function highestDrawnFloor(x:number,z:number,y:number|undefined,step:number,ground:(x:number,z:number)=>number,decks:readonly WorldSurface[]):WorldSurfaceHit{
+  const ceiling=y===undefined?Infinity:y+step;
+  const other=decks===REGION_SURFACES?REGION_OTHER_SURFACES:decks.filter(s=>!DRAWN_ROADS.includes(s));
+  let hit=queryWorldSurface({x,z,y,stepHeight:step},ground,other);
+  for(const {surface,floor} of exactRoadFloors){
+    const road=decks.includes(surface)?floor(x,z,ceiling):null;
+    if(road&&(hit.y>ceiling||road.y>hit.y)){
+      const inv=1/Math.hypot(road.gx,1,road.gz);
+      hit={id:surface.id,y:road.y,nx:-road.gx*inv,ny:inv,nz:-road.gz*inv,material:'path',slope:Math.hypot(road.gx,road.gz)};
+    }
+  }
+  return hit;
+}
 /** No decks: the ground-only answer while the region's scene is not drawn (PR #566 Codex). */
 const NO_DECKS:readonly WorldSurface[]=[];
 /** v2's solids this pass draws (all but the district fixtures). */
@@ -80,14 +111,7 @@ function deckIndex(surfaces:readonly WorldSurface[]){
  * feet is the branch's mouth or landing ramp — an open road junction — and stops nobody on the road under it. */
 const BRANCH_ENDS=new Map(REGION_SURFACES.filter(s=>s.kind==='branch').map(s=>[s.id,[s.points[0]!,s.points[s.points.length-1]!] as const]));
 function branchJunction(s:WorldSurface,over:number,x:number,z:number):boolean{
-  const ends=BRANCH_ENDS.get(s.id);return !!ends&&over<3&&ends.some(at=>Math.hypot(x-at[0],z-at[2])<18);
-}
-/** Nearest point of a deck's polyline, null past its square ends (as v2's `onDeck`). */
-function onDeck(x:number,z:number,points:readonly Point3[]){
-  const p=nearestOnRoute(x,z,points),n=points.length;
-  if(p.index===0&&p.t===0){const a=points[0]!,b=points[1]!,dx=b[0]-a[0],dz=b[2]-a[2],l=Math.hypot(dx,dz)||1;if(((x-a[0])*dx+(z-a[2])*dz)/l<-.35)return null;}
-  if(p.index===n-2&&p.t===1){const a=points[n-2]!,b=points[n-1]!,dx=b[0]-a[0],dz=b[2]-a[2],l=Math.hypot(dx,dz)||1;if(((x-b[0])*dx+(z-b[2])*dz)/l>.35)return null;}
-  return p;
+  const ends=BRANCH_ENDS.get(s.id);return !s.landingRows&&!!ends&&over<3&&ends.some(at=>Math.hypot(x-at[0],z-at[2])<18);
 }
 
 /**
@@ -116,7 +140,7 @@ export function regionWaterAt(x:number,z:number):number|null{return reservoirWat
  * the bed is region-carried (land/mountainV2/beds.ts regionCarryLand) and stays the region's (PR #566 CodeRabbit, tests.md §3).
  * road (L1): the Mountain Road (V03) crosses the Foot terrace on its own deck to the town lane: the region's lawn stood 0.56
  * over the carriageway at V03 246–274 (a buried road). The default now yields V03's corridor too. */
-export const TERRACE_YIELD_BEDS=['S1','V03'] as const;
+export const TERRACE_YIELD_BEDS=['S1','V03','spur stillwater','yearWalk'] as const;
 /** A terrace yield, which may also carry the height the region's DRAWN ground must stay under (road L1): drawn as the region,
  * felt as the Horizon, and never drawn over the Horizon deck it yields to. */
 export type TerraceYield=((hx:number,hz:number)=>boolean)&{ceiling?:(hx:number,hz:number)=>number|null};
@@ -124,13 +148,27 @@ export type TerraceYield=((hx:number,hz:number)=>boolean)&{ceiling?:(hx:number,h
  * rise (2 eu up per eu out) back to v2's ground from BATTER_FROM beyond the corridor, so v2's authored lawn is lowered only in a
  * narrow band beside the deck. */
 const DECK_CLEARANCE=.05,BATTER_FROM=1.5,BATTER=.5;
-export function terraceBedExclusion(beds:readonly {id:string;points:readonly Point3[];width?:number;shoulder?:number}[],ids:readonly string[]=TERRACE_YIELD_BEDS):TerraceYield{
+export function terraceBedExclusion(beds:readonly {id:string;points:readonly Point3[];width?:number;shoulder?:number;carried?:readonly (readonly (readonly number[])[])[]}[],ids:readonly string[]=TERRACE_YIELD_BEDS):TerraceYield{
   const from=O.z+MOUNTAIN_V2_MASSIF_Z;
   const runs=beds.filter(b=>ids.includes(b.id)).flatMap(b=>{
-    const pts=b.points.filter(p=>p[2]>=from-2);if(pts.length<2)return [];
+    // The Year Walk owns a visible ribbon on the Foot terrace too. Split at every
+    // omitted/carried segment, using the emitter's midpoint/1m carry contract; joining
+    // filtered points would lower native ground across gaps with no Horizon floor.
+    const groups:Point3[][]=[];
+    if(b.id==='yearWalk'){
+      const carried=(b.carried??[]).map(line=>line.map(p=>[p[0]!,0,p[1]!] as Point3));
+      let run:Point3[]=[];
+      for(let i=1;i<b.points.length;i++){
+        const a=b.points[i-1]!,p=b.points[i]!,mx=(a[0]+p[0])/2,mz=(a[2]+p[2])/2;
+        const owns=a[2]>=from-2&&p[2]>=from-2&&!carried.some(line=>nearestOnRoute(mx,mz,line).distance<1);
+        if(owns){if(!run.length)run.push(a);run.push(p);}else if(run.length){groups.push(run);run=[];}
+      }
+      if(run.length)groups.push(run);
+    }else{const pts=b.points.filter(p=>p[2]>=from-2);if(pts.length>1)groups.push(pts);}
+    return groups.map(pts=>{
     // A skate bed's shoulder is 0 in the bake (land/beds/profiles.ts); the published world carries the width only.
     const half=(b.width??4)/2+(b.shoulder??0),xs=pts.map(p=>p[0]),zs=pts.map(p=>p[2]),grow=half+BATTER_FROM+8;
-    return [{pts,half,box:[Math.min(...xs)-half,Math.min(...zs)-half,Math.max(...xs)+half,Math.max(...zs)+half] as const,wide:[Math.min(...xs)-grow,Math.min(...zs)-grow,Math.max(...xs)+grow,Math.max(...zs)+grow] as const}];
+    return {pts,half,box:[Math.min(...xs)-half,Math.min(...zs)-half,Math.max(...xs)+half,Math.max(...zs)+half] as const,wide:[Math.min(...xs)-grow,Math.min(...zs)-grow,Math.max(...xs)+grow,Math.max(...zs)+grow] as const};});
   });
   const test:TerraceYield=(hx:number,hz:number)=>hz>=from&&runs.some(r=>hx>=r.box[0]&&hz>=r.box[1]&&hx<=r.box[2]&&hz<=r.box[3]&&nearestOnRoute(hx,hz,r.pts).distance<=r.half);
   // road (L1): the drawn lawn keeps DECK_CLEARANCE under the deck across its corridor and BATTER_FROM beyond, then rises back to
@@ -143,6 +181,13 @@ export function terraceBedExclusion(beds:readonly {id:string;points:readonly Poi
 }
 export function createRegionGeography(options:RegionGeographyOptions={}){
   const near=deckIndex(REGION_SURFACES);
+  // A terrain mouth removes rock, not the road or repaired branch visibly crossing it.
+  // Keep ground masking unchanged. Only explicit, physically drawn deck triangles span it.
+  const mouthDecks=REGION_SURFACES.filter(s=>s.landingRows);
+  const inMouth=(hx:number,hz:number)=>insideMountainV2(hx,hz)&&Boolean(options.exclude?.(hx,hz));
+  const deckAcrossMouth=(hx:number,hz:number)=>inMouth(hx,hz)&&mouthDecks.some(s=>{
+    const p=worldDeckAt(s,hx-O.x,hz-O.z);return p&&p.distance<=p.halfWidth+1e-6;
+  });
   /** Inside the drawn footprint (see the module note). Horizon coordinates. */
   function contains(hx:number,hz:number):boolean{
     if(!insideMountainV2(hx,hz)||options.exclude?.(hx,hz))return false;
@@ -159,18 +204,36 @@ export function createRegionGeography(options:RegionGeographyOptions={}){
   /** The region answers here: inside the drawn footprint and not yielded to a Horizon deck. */
   const owns=(hx:number,hz:number)=>contains(hx,hz)&&!options.yield?.(hx,hz);
   // road (L1): v2's ground as felt, held under a yielded Horizon deck's ceiling (TerraceYield.ceiling) exactly as it is drawn.
-  const ceilingOf=options.yield?.ceiling,feltGround=ceilingOf?(nx:number,nz:number)=>{const g=groundHeightAt(nx,nz),c=ceilingOf(nx+O.x,nz+O.z);return c==null?g:Math.min(g,c-O.y);}:groundHeightAt;
+  const groundCeiling=(hx:number,hz:number):number|null=>{
+    const yielded=options.yield?.ceiling?.(hx,hz)??null,road=roadGroundCeiling(hx-O.x,hz-O.z),drawn=road===null?null:road+O.y;
+    return yielded===null?drawn:drawn===null?yielded:Math.min(yielded,drawn);
+  };
+  // One height ceiling feeds the visible region ground and its collision authority.
+  // Only ground is cut: native source data, road faces and bridge underpasses stay intact.
+  const feltGround=(nx:number,nz:number)=>{const g=groundHeightAt(nx,nz),c=groundCeiling(nx+O.x,nz+O.z);return c===null?g:Math.min(g,c-O.y);};
   function groundAt(hx:number,hz:number):number|null{return owns(hx,hz)?feltGround(hx-O.x,hz-O.z)+O.y:null;}
   /** The highest v2 floor (ground or deck) at or under hy + step; null outside the footprint or when it is above that. */
   function surface(hx:number,hy:number|undefined,hz:number,step=STEP,decks:readonly WorldSurface[]=REGION_SURFACES):RegionSurface|null{
-    if(!owns(hx,hz))return null;
-    const hit=queryWorldSurface({x:hx-O.x,z:hz-O.z,y:hy===undefined?undefined:hy-O.y,stepHeight:step},feltGround,decks),y=hit.y+O.y;
+    // D-MR3: yielding lowers the lawn beneath a real Horizon slab; it must not erase all support. S1 is
+    // region-carried at the road Foot, and its edge slivers have no static slab. The shared highest-floor
+    // merge still chooses a Horizon deck over this lowered ground wherever that deck actually exists.
+    if(!contains(hx,hz)){
+      if(!decks.length||!inMouth(hx,hz))return null;
+      const hit=highestDrawnFloor(hx-O.x,hz-O.z,hy===undefined?undefined:hy-O.y,step,()=>-1e6,mouthDecks);
+      if(hit.id==='terrain')return null;
+      return {id:`mountainV2:${hit.id}`,y:hit.y+O.y,n:[hit.nx,hit.ny,hit.nz],material:regionMaterial(hit),slope:Math.atan(hit.slope)*180/Math.PI};
+    }
+    const hit=highestDrawnFloor(hx-O.x,hz-O.z,hy===undefined?undefined:hy-O.y,step,feltGround,decks);
+    const y=hit.y+O.y;
     if(hy!==undefined&&y>hy+step)return null;
     return {id:hit.id==='terrain'?'terrain':`mountainV2:${hit.id}`,y,n:[hit.nx,hit.ny,hit.nz],material:regionMaterial(hit),slope:Math.atan(hit.slope)*180/Math.PI};
   }
   /** The lowest v2 deck underside above the feet; null when none (or outside). */
   function ceiling(hx:number,hy:number,hz:number):number|null{
-    if(!owns(hx,hz))return null;
+    if(!owns(hx,hz)){
+      if(!inMouth(hx,hz))return null;
+      const c=worldCeilingAt(hx-O.x,hz-O.z,hy-O.y,.2,mouthDecks);return Number.isFinite(c)?c+O.y:null;
+    }
     const c=worldCeilingAt(hx-O.x,hz-O.z,hy-O.y,.2,REGION_SURFACES);
     return Number.isFinite(c)?c+O.y:null;
   }
@@ -180,35 +243,36 @@ export function createRegionGeography(options:RegionGeographyOptions={}){
    * branch supports) and its edge slabs (parapets, bridge rails, retaining walls). The normal points from the solid to
    * the body (for sliding). Null outside the footprint.
    */
-  function contact(hx:number,hz:number,feet:number,radius=.3):RegionContact|null{
-    if(!owns(hx,hz))return null;
-    const x=hx-O.x,z=hz-O.z,lo=feet-O.y+STEP,hi=feet-O.y+BODY;
-    for(const si of near(x,z)){const s=REGION_SURFACES[si]!,p=onDeck(x,z,s.points);if(!p||p.distance>=s.halfWidth+radius)continue;
+  function contact(hx:number,hz:number,feet:number,radius=.3,travel?:readonly [number,number],bodyHeight=BODY):RegionContact|null{
+    if(!owns(hx,hz)&&!deckAcrossMouth(hx,hz))return null;
+    const x=hx-O.x,z=hz-O.z,lo=feet-O.y+STEP,hi=feet-O.y+bodyHeight;
+    const incoming=(nx:number,nz:number)=>!travel||nx*travel[0]+nz*travel[1]<=1e-8;
+    for(const si of near(x,z)){const s=REGION_SURFACES[si]!,p=worldDeckAt(s,x,z);if(!p||p.distance>=p.halfWidth+radius)continue;
       const top=p.point[1]+.08,bottom=p.point[1]-.28;if(top<=lo||bottom>=hi)continue;
       // PR #566 CodeRabbit (R5-13): a skill branch's mouth is an open road junction, not a wall — v2's `worldCeilingAt` rule.
       // The library balcony's landing ramp rejoins the road 0.8–1.7 m over S1's bed (native x 79–85) and read as a blocker.
       if(branchJunction(s,p.point[1]-(feet-O.y),x,z))continue;
-      const dx=x-p.point[0],dz=z-p.point[2],d=Math.hypot(dx,dz)||1;return {id:`mountainV2:${s.id}`,nx:dx/d,nz:dz/d};}
+      const dx=x-p.point[0],dz=z-p.point[2],d=Math.hypot(dx,dz)||1;if(incoming(dx/d,dz/d))return {id:`mountainV2:${s.id}`,nx:dx/d,nz:dz/d};}
     for(const s of REGION_SOLIDS){
       if(s.max[1]<=lo||s.min[1]>=hi||x<=s.min[0]-radius||x>=s.max[0]+radius||z<=s.min[2]-radius||z>=s.max[2]+radius)continue;
       const px=Math.max(s.min[0],Math.min(s.max[0],x)),pz=Math.max(s.min[2],Math.min(s.max[2],z)),dx=x-px,dz=z-pz,d=Math.hypot(dx,dz);
-      if(d>0)return {id:`mountainV2:${s.id}`,nx:dx/d,nz:dz/d};
+      if(d>0){if(incoming(dx/d,dz/d))return {id:`mountainV2:${s.id}`,nx:dx/d,nz:dz/d};continue;}
       // Inside the box: out through its nearest face.
       const faces=[[x-s.min[0],-1,0],[s.max[0]-x,1,0],[z-s.min[2],0,-1],[s.max[2]-z,0,1]] as const,f=faces.reduce((a,b)=>b[0]<a[0]?b:a);
-      return {id:`mountainV2:${s.id}`,nx:f[1],nz:f[2]};
+      if(incoming(f[1],f[2]))return {id:`mountainV2:${s.id}`,nx:f[1],nz:f[2]};
     }
     if(z<-40)for(const s of EDGE_SOLIDS){
       if(s.top<=lo||s.bottom>=hi)continue;
       const ax=s.a[0],az=s.a[1],dx=s.b[0]-ax,dz=s.b[1]-az,l=dx*dx+dz*dz,t=Math.max(0,Math.min(1,((x-ax)*dx+(z-az)*dz)/(l||1))),qx=x-ax-dx*t,qz=z-az-dz*t,d=Math.hypot(qx,qz);
-      if(d<s.thickness/2+radius){if(d>1e-6)return {id:`mountainV2:${s.id}`,nx:qx/d,nz:qz/d};const n=Math.sqrt(l)||1;return {id:`mountainV2:${s.id}`,nx:-dz/n,nz:dx/n};}
+      if(d<s.thickness/2+radius){if(d>1e-6){if(incoming(qx/d,qz/d))return {id:`mountainV2:${s.id}`,nx:qx/d,nz:qz/d};continue;}const n=Math.sqrt(l)||1;if(incoming(-dz/n,dx/n))return {id:`mountainV2:${s.id}`,nx:-dz/n,nz:dx/n};}
     }
     return null;
   }
   /** v2's point test (`worldCollisionAt`'s shape) over the drawn solids: is (hx, hy, hz) inside a solid, within r? */
   function blocked(hx:number,hy:number,hz:number,r=.2):boolean{
-    if(!owns(hx,hz))return false;
+    if(!owns(hx,hz)&&!deckAcrossMouth(hx,hz))return false;
     const x=hx-O.x,y=hy-O.y,z=hz-O.z;
-    for(const si of near(x,z)){const s=REGION_SURFACES[si]!,p=onDeck(x,z,s.points);if(p&&p.distance<s.halfWidth+r&&y>p.point[1]-.28&&y<p.point[1]+.08)return true;}
+    for(const si of near(x,z)){const s=REGION_SURFACES[si]!,p=worldDeckAt(s,x,z);if(p&&p.distance<p.halfWidth+r&&y>p.point[1]-.28&&y<p.point[1]+.08)return true;}
     if(REGION_SOLIDS.some(s=>x>s.min[0]-r&&x<s.max[0]+r&&z>s.min[2]-r&&z<s.max[2]+r&&y>s.min[1]&&y<s.max[1]))return true;
     if(z<-40)for(const s of EDGE_SOLIDS){
       if(y<s.bottom||y>s.top)continue;
@@ -232,7 +296,7 @@ export function createRegionGeography(options:RegionGeographyOptions={}){
     waterLevel,
     surface(x:number,z:number,y?:number,step?:number){return asHit(surface(x,y,z,step));},
     ceiling(x:number,z:number,y:number){return ceiling(x,y,z)??Infinity;},
-    contact(x:number,z:number,y:number,radius?:number){return contact(x,z,y,radius);},
+    contact(x:number,z:number,y:number,radius?:number,travel?:readonly [number,number],bodyHeight?:number){return contact(x,z,y,radius,travel,bodyHeight);},
   };
   /**
    * PR #566 Codex: the provider the runtime registers — its decks, solids and ceilings answer only while `drawn()` (the
@@ -243,9 +307,10 @@ export function createRegionGeography(options:RegionGeographyOptions={}){
     return {...provider,
       surface(x:number,z:number,y?:number,step?:number){return asHit(surface(x,y,z,step,drawn()?REGION_SURFACES:NO_DECKS));},
       ceiling(x:number,z:number,y:number){return drawn()?provider.ceiling(x,z,y):Infinity;},
-      contact(x:number,z:number,y:number,radius?:number){return drawn()?contact(x,z,y,radius):null;},
+      contact(x:number,z:number,y:number,radius?:number,travel?:readonly [number,number],bodyHeight?:number){return drawn()?contact(x,z,y,radius,travel,bodyHeight):null;},
     };
   }
-  return {contains,groundAt,surface,ceiling,contact,blocked,waterLevel,provider,whileDrawn};
+  const requiresScene=(hx:number,hz:number)=>contains(hx,hz)||deckAcrossMouth(hx,hz);
+  return {contains,requiresScene,groundAt,groundCeiling,surface,ceiling,contact,blocked,waterLevel,provider,whileDrawn};
 }
 export type RegionGeography=ReturnType<typeof createRegionGeography>;

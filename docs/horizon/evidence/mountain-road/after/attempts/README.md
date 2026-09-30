@@ -1,0 +1,3 @@
+# Intermediate attempts
+
+These preserve failed and partial runs while repairs were being integrated. Each report records its baked asset identity. They are not final end-to-end acceptance. `footways-before-ground-joins` predates the latest native ground clipping, January apron and SummitStation/Crown landing. `joined-ground-*` includes the ground clipping and January/summit road repairs but predates the supplemental SummitStation/Crown stair landing. Native bend fairing and awning entrance are still unapproved and absent. The paced native skate completes both the main road and Stillwater in both directions; the car still resets twice on downhill keep-right.

@@ -15,7 +15,7 @@ export type HorizonSurface = {id:string;y:number;nx:number;ny:number;nz:number;m
 export interface DynamicGeography {
  surface(x:number,z:number,y?:number,step?:number):HorizonSurface|null;
  ceiling(x:number,z:number,y:number):number;
- contact(x:number,z:number,y:number,radius?:number):{id:string;nx:number;nz:number}|null;
+ contact(x:number,z:number,y:number,radius?:number,travel?:readonly [number,number],bodyHeight?:number):{id:string;nx:number;nz:number}|null;
  /** Pass 5 (a placed region): the provider OWNS the ground at (x, z) — the baked terrain is then no candidate for `surface`,
   * and `ground` / the camera's terrain test read the provider's `ground` instead. Static solids still count. */
  owns?(x:number,z:number):boolean;
@@ -110,18 +110,18 @@ export function createHorizonGeography(field:TerrainField,cuts:LandCuts){
     if(!staticOnly)for(const d of dynamic)value=Math.min(value,d.ceiling(x,z,y));
     return value;
   }
-  function contact(x:number,z:number,y:number,radius=.3,travel?:readonly [number,number],ignoreDynamic=false):{id:string;nx:number;nz:number}|null{
+  function contact(x:number,z:number,y:number,radius=.3,travel?:readonly [number,number],ignoreDynamic=false,bodyHeight=HORIZON_BODY_HEIGHT):{id:string;nx:number;nz:number}|null{
     if(x<radius||z<radius||x>field.width-radius||z>field.depth-radius){const nx=x<radius?1:x>field.width-radius?-1:0,nz=z<radius?1:z>field.depth-radius?-1:0,n=Math.hypot(nx,nz);return {id:'world-boundary',nx:nx/n,nz:nz/n};}
-    if(!ignoreDynamic)for(const d of dynamic){const h=d.contact(x,z,y,radius);if(h)return h;}
+    if(!ignoreDynamic)for(const d of dynamic){const h=d.contact(x,z,y,radius,travel,bodyHeight);if(h&&(!travel||h.nx*travel[0]+h.nz*travel[1]<=1e-8))return h;}
     const all=contactFaces;all.clear();
     for(let ix=-1;ix<=1;ix++)for(let iz=-1;iz<=1;iz++)for(const t of nearby(x+ix*radius,z+iz*radius))all.add(t);
     for(const id of all){if(Math.abs(normals[id*3+1]!)>.95)continue;const t=triangle(id);
       // A body already overlapping a lip can leave it; only an approaching side blocks motion.
       if(travel&&t.normal[0]*travel[0]+t.normal[2]*travel[1]>=-1e-8)continue;
-      if(Math.max(t.a[1],t.b[1],t.c[1])<=y+HORIZON_STEP_HEIGHT||Math.min(t.a[1],t.b[1],t.c[1])>y+HORIZON_BODY_HEIGHT)continue;
-      for(let level=0;level<3;level++){const h=y+(level===0?.2:level===1?.65:HORIZON_BODY_HEIGHT);if(touchesAtHeight(t,h,x,z,radius)){const length=Math.hypot(t.normal[0],t.normal[2]);return {id:t.solid.id,nx:t.normal[0]/length,nz:t.normal[2]/length};}}
+      if(Math.max(t.a[1],t.b[1],t.c[1])<=y+HORIZON_STEP_HEIGHT||Math.min(t.a[1],t.b[1],t.c[1])>y+bodyHeight)continue;
+      for(let level=0;level<3;level++){const h=y+(level===0?.2:level===1?.65:bodyHeight);if(touchesAtHeight(t,h,x,z,radius)){const length=Math.hypot(t.normal[0],t.normal[2]);return {id:t.solid.id,nx:t.normal[0]/length,nz:t.normal[2]/length};}}
     }
-    for(const id of nearby(x,z)){if(normals[id*3+1]!>=-.001)continue;const t=triangle(id);const h=projection(t,x,z);if(h!==null&&h>y+.1&&h<y+HORIZON_BODY_HEIGHT)return {id:t.solid.id,nx:0,nz:0};}
+    for(const id of nearby(x,z)){if(normals[id*3+1]!>=-.001)continue;const t=triangle(id);const h=projection(t,x,z);if(h!==null&&h>y+.1&&h<y+bodyHeight)return {id:t.solid.id,nx:0,nz:0};}
     return null;
   }
   const blocker=(x:number,z:number,y:number,radius=.3,travel?:readonly [number,number],ignoreDynamic=false)=>contact(x,z,y,radius,travel,ignoreDynamic)?.id??null;

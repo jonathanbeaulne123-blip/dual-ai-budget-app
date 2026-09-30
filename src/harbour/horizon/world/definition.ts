@@ -29,7 +29,7 @@ export interface Line { id: string; bedIds: string[]; mode: string; points: Poin
 export interface Structure { id: string; kind: string; footprint: Polygon; bedIds: string[]; geometryId?: string; districtId?: string; role?: StructureSolid['role']; bounds?: { min: Point3; max: Point3 } }
 export interface Crossing { a: string; b: string; at: Point2; resolution: 'over' | 'under' | 'threshold'; structure?: string; id?: string; proof?: CrossingProof }
 /** A `carried` threshold has no pad or marker: a vehicle (the plane's door) supplies its place each frame; `at` is [NaN, NaN] in the definition. */
-export interface Threshold { id: string; at: Point2; modes: readonly `${string}→${string}`[]; action: string; height?: number; padId?: string; markerId?: string; kerbGap?: boolean; sourceId?: string; built?: boolean; carried?: string; minAgl?: number }
+export interface Threshold { /** Named through carriageways retain their own surface pace at this crossing. */ throughBedIds?: readonly string[]; id: string; at: Point2; modes: readonly `${string}→${string}`[]; action: string; height?: number; padId?: string; markerId?: string; kerbGap?: boolean; sourceId?: string; built?: boolean; carried?: string; minAgl?: number }
 export interface Reserve { id: string; placeId: string; outline: Polygon; door: Anchor; rotationDegrees: number }
 export interface FlightVolume { id: string; kind: 'gate' | 'thermal' | 'ridge' | 'sink' | 'landing'; centre: Point3; halfSize: Point3; yaw: number; radius?: number; hours?: readonly number[]; modes?: string[]; aperture?: Point2; waterBodyId?: string }
 /** [airspeed m/s, still-air sink m/s], bar pushed out full → pulled in full (FLIGHT.md §2.2). */
@@ -99,6 +99,8 @@ export interface WorldDefinition {
   /** The road corridors (ROAD.md): one definition per road bed that the deck, collision, edges, markings, lamps and
    * planting are all derived from. Absent before a bake carries them. */
   corridors?: Corridor[];
+  /** Continuous multi-owner routes, measured from the same source as their audit. */
+  roadChains?: import('../land/corridor/chain').RoadChain[];
   /** Pass 5: placed worlds (MANIFEST `regions`), absent before the bake carries one. */
   regions?: RegionPlacement[];
   diagnostics?: LandDiagnostic[];

@@ -33,6 +33,8 @@ export interface MountainV2Region {
   footprint:typeof MOUNTAIN_V2_FOOTPRINT;
   /** Inside the drawn footprint (Horizon x, z). */
   contains(hx:number,hz:number):boolean;
+  /** Draw/readiness demand includes visible decks spanning an excluded terrain mouth. */
+  requiresScene(hx:number,hz:number):boolean;
   /** The Horizon terrain cell whose centre is (hx, hz) is hidden under the region's ground (= `contains` at the centre). */
   hidesTerrainCell(hx:number,hz:number):boolean;
   /** v2's exact ground (+ offset y); null outside. */
@@ -61,10 +63,10 @@ export function createMountainV2Region(options:MountainV2RegionOptions={}):Mount
   const geo=createRegionGeography(options),terrainStep=options.terrainStep??5,rides=regionRides();
   // The ground mesh's triangle selection depends on the footprint; with a baked field it is this region's own.
   const groundCache=options.horizonGround?new Map():undefined;
-  const mountSteps=(scene:THREE.Scene,tier:'full'|'lite',dressing:PlaceDressing,o:MountainV2MountOptions={})=>mountRegionSteps(scene,tier,dressing,{contains:geo.contains,terrainStep,season:o.season,quiet:o.quiet,groundCache,...(options.yield?.ceiling?{groundCeiling:options.yield.ceiling}:{})});
+  const mountSteps=(scene:THREE.Scene,tier:'full'|'lite',dressing:PlaceDressing,o:MountainV2MountOptions={})=>mountRegionSteps(scene,tier,dressing,{contains:geo.contains,terrainStep,season:o.season,quiet:o.quiet,groundCache,groundCeiling:geo.groundCeiling});
   return {
     id:MOUNTAIN_V2_REGION_ID,offset:MOUNTAIN_V2_OFFSET,footprint:MOUNTAIN_V2_FOOTPRINT,
-    contains:geo.contains,hidesTerrainCell:geo.contains,groundAt:geo.groundAt,
+    contains:geo.contains,requiresScene:geo.requiresScene,hidesTerrainCell:geo.contains,groundAt:geo.groundAt,
     surface:(hx,hy,hz,step)=>geo.surface(hx,hy,hz,step),
     blocked:(hx,hy,hz,r)=>geo.blocked(hx,hy,hz,r),
     ceiling:geo.ceiling,provider:geo.provider,providerWhileDrawn:geo.whileDrawn,waterLevel:geo.waterLevel,

@@ -56,14 +56,14 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
   const F = A.frame, S = A.stations, n = S.length;
   const regimeOf = (st: CorridorStation): Regime => {
     if (st.structureId) return env.structureKind(st.structureId) === 'tunnel' ? 'tunnel' : 'bridge';
-    if (!A.main) return 'none';
+    if (!A.furnished) return 'none';
     if (st.context === 'developed') return 'developed';
     if (st.context === 'boulevard') return st.median ? 'median' : 'boulevard';
     return 'none';
   };
   const regime: Regime[] = S.map(regimeOf);
   // Approaches to bridges and tunnels (main roads): 40 eu of light before each structure end, where it is otherwise dark.
-  if (A.main) for (const x of A.structures) {
+  if (A.furnished) for (const x of A.structures) {
     for (const [edge, dir] of [[x.run.from, -1], [x.run.to, 1]] as const) {
       if (!F.closed && (edge <= 0.01 && dir < 0 || edge >= F.length - 0.01 && dir > 0)) continue;
       for (let d = CORRIDOR.step / 2; d <= LAMP.approach; d += CORRIDOR.step / 2) { const i = F.nearestIndex(edge + dir * d); if (regime[i] === 'none') regime[i] = 'approach'; }
@@ -73,14 +73,14 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
   const out: { l: LampSpot; s: number; run: number }[] = [];
   let runNo = 0;
   /** The carriageway-side rail line: the kerb rail CORRIDOR.guardSetback beyond the paved edge (types.ts guard offsets). */
-  const railOffset = (st: CorridorStation, side: SideName): number => st[side].paved + CORRIDOR.guardSetback;
+  const railOffset = (st: CorridorStation, side: SideName): number => st[side].guardOffset ?? st[side].paved + CORRIDOR.guardSetback;
   /** A road lantern's lateral set-back beyond the paved edge: CORRIDOR.lampSetback, or KERB_MOUNT where that spot is taken
    * (a separated lane, a path or a pad right beside the road) and the kerb line is free (integration: the Quay Bridge's
    * south approach had no legal spot for 18 eu). */
   const setbackAt = (s: number, side: SideName): number => {
-    const st = S[F.nearestIndex(s)]!, sd = st[side], at = (o: number) => F.point(s, sign(side) * (sd.paved + o));
+    const st = S[F.nearestIndex(s)]!, sd = st[side], measured=env.lampSetback?.(s,side),setback=measured??CORRIDOR.lampSetback, at = (o: number) => F.point(s, sign(side) * (sd.paved + o));
     const free = (o: number) => { const p = at(o); return !env.occupied(p[0], p[2]); };
-    return free(CORRIDOR.lampSetback) || (sd.footway && sd.paved + CORRIDOR.lampSetback >= sd.footway.inner - 0.3) || !free(KERB_MOUNT) ? CORRIDOR.lampSetback : KERB_MOUNT;
+    return measured!==undefined?setback:free(setback) || (sd.footway && sd.paved + setback >= sd.footway.inner - 0.3) || !free(KERB_MOUNT) ? setback : KERB_MOUNT;
   };
   const reject = (s: number, side: SideName | 'median', kind: LampKind): string | null => {
     const i = F.nearestIndex(s), st = S[i]!;
@@ -106,6 +106,9 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
       const back = setbackAt(s, side), p = F.point(s, sign(side) * (sd.paved + back));
       if (env.wet(p[0], p[2])) return 'water';
       const g = baseHeight(st, side, sd.paved + back, p);
+      if(env.lampSetback?.(s,side)!==undefined)for(const dx of [-.2,0,.2])for(const dz of [-.2,0,.2]){
+        if(env.occupied(p[0]+dx,p[2]+dz)||env.wet(p[0]+dx,p[2]+dz)||Math.abs(env.ground(p[0]+dx,p[2]+dz)-g)>.14)return 'post-footprint';
+      }
       // Over a batter or a cut the lantern stands on the guard's line instead (a parapet- or rail-mounted post), else nowhere.
       if (Math.abs(g - st.at[1]) > LAMP.maxStep) return sd.guard !== 'none' && sd.guard !== 'retaining' ? null : 'step';
       if (env.occupied(p[0], p[2]) && !(sd.footway && sd.paved + back >= sd.footway.inner - 0.3)) return 'occupied';
@@ -165,7 +168,7 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
     const sd = st[side], sg = sign(side);
     if (kind === 'tunnelLamp') return sg * (sd.paved - 0.2);
     if (kind === 'bridgeLantern') return sg * (railOffset(st, side) - LAMP.arm);
-    return sg * (sd.paved + CORRIDOR.lampSetback - LAMP.arm);
+    return sg * (sd.paved + (env.lampSetback?.(st.s,side)??CORRIDOR.lampSetback) - LAMP.arm);
   };
 
   // 1. Lit runs.
@@ -309,7 +312,7 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
   const lampNear = (s: number, r: number) => out.some(o => Math.abs(F.delta(o.s, s)) < r);
   // (Destination entrances and pedestrian crossings in the dark get the same pair: brief §3 "prioritise intersections …
   // and destination entrances"; a crossing is lit so a walker on it is seen.)
-  if (A.main) for (const m of A.mouths) {
+  if (A.furnished) for (const m of A.mouths) {
     if (m.kind !== 'junction' && m.kind !== 'entrance' && m.kind !== 'crossing') continue;
     const i = F.nearestIndex(m.s);
     if (regime[i] !== 'none' || lampNear(m.s, CORRIDOR.lampPoolRadius)) continue;
@@ -318,7 +321,7 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
     // Opposite the mouth, a lantern either side of it; at a crossroads, on the mouth side just beyond its sight triangle.
     for (const d of [-1, 1]) place({ s: m.s + d * (farOpen ? LAMP.pairHalf : m.half + CORRIDOR.sightlineReach - 3), side: farOpen ? far : m.side, kind: 'roadLantern' });
   }
-  if (A.main) for (const d of env.destinations) {
+  if (A.furnished) for (const d of env.destinations) {
     let best = { s: 0, o: 0, d: Infinity };
     for (let k = 0; k < n; k += 10) { const p = F.project(d.at[0], d.at[1], k, 10); if (p.d < best.d) best = p; }
     if (best.d > DESTINATION_REACH) continue;
@@ -333,8 +336,26 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
     for (const d of [-half, half]) place({ s: t.s + d, side: t.span.side, kind: 'roadLantern' });
   }
 
+  // Sustained native bends: along-road proximity alone can leave an apex dark around a sharp curve.
+  // Reuse the same legal post planner, and check the actual two running-lane points against its pools.
+  if(A.furnished)for(const bend of env.lightBends??[]){
+    const samples=[bend.apex];for(let s=bend.from;s<=bend.to;s+=1)samples.push(s);
+    for(let pass=0;pass<3;pass++){
+      let worst:{s:number;distance:number}|null=null;
+      for(const s of samples){const st=S[F.nearestIndex(s)]!,lane=laneOf(st);
+        const distance=Math.max(...[-lane,lane].map(o=>{const p=F.point(s,o);return Math.min(...out.map(l=>Math.hypot(p[0]-l.l.pool[0],p[2]-l.l.pool[2])-l.l.poolRadius));}));
+        if(distance>.05&&(!worst||distance>worst.distance))worst={s,distance};
+        // First light the actual apex when it is dark, before repairing either shoulder of the curve.
+        if(pass===0&&s===bend.apex&&distance>.05)break;
+      }
+      if(!worst)break;
+      const before=out.length;place({s:worst.s,side:landSide(S[F.nearestIndex(worst.s)]!),kind:'roadLantern'});
+      if(out.length===before)break;
+    }
+  }
+
   // 3. A minor road (a spur) ending at a developed destination: one lantern at its end (ROAD.md §3 'other roads').
-  if (!A.main && n > 3) {
+  if (!A.furnished && n > 3) {
     const endSt = S[n - 1]!;
     if (S.slice(Math.max(0, n - 6)).some(st => st.context === 'developed') && F.length > 12) place({ s: F.length - 4, side: endSt.right.gap ? 'left' : 'right', kind: 'roadLantern' });
   }

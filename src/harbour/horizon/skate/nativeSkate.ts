@@ -1,3 +1,4 @@
+import {createHorizonSkateWorld,type HorizonSkateGeography} from './world.ts';
 import * as THREE from 'three';
 import {createSkateDriver,SKATE_CATALOGS,skateField,type SkateControls} from '../../skate/driver.ts';
 import {createSkaterLook,type SkaterLook} from '../../skate/look/index.ts';
@@ -29,7 +30,7 @@ export type NativeSkate={
   /** The old skate's controls (HUD commands, settings, input), unchanged. */
   controls:SkateControls;
   /** Whether a board may be put down here: the Mountain v2 town island, where the park stands. */
-  canStart(x:number,z:number):boolean;
+  canStart(x:number,z:number,y?:number):boolean;
   /** Put the board down at a Horizon position. */
   start(at:HorizonBodyPose,progress?:SkateProgress):boolean;
   /** Pick the board up; returns where the body stands on the Horizon (null if not skating). */
@@ -56,17 +57,28 @@ export function horizonSkateEntry():HorizonBodyPose{
 
 export function createNativeSkate(options:{scene:THREE.Scene;figure:BodyFigure;tier:'full'|'lite';theme?:ThemeId;reducedMotion:()=>boolean;onSkate?:(frame:NativeSkateFrame|null)=>void;
   /** What the Horizon actually draws there (the placed region's solids, Horizon space): the chase camera stays clear of it and of nothing else (PR #571 review). */
-  blocked?:(hx:number,hy:number,hz:number,r:number)=>boolean}):NativeSkate{
+  blocked?:(hx:number,hy:number,hz:number,r:number)=>boolean;
+  /** Optional host geometry; omitted preserves standalone native world behavior. */
+  geography?:HorizonSkateGeography;
+  /** Runtime streaming/region gate in Horizon coordinates. */
+  ready?:(hx:number,hz:number)=>boolean;
+  /** Explicit route/spot/retry destinations: request remote streaming before any surface query or reset. */
+  destination?:{ready(hx:number,hz:number):boolean;clear():void};
+  nativeVisible?:(hx:number,hz:number)=>boolean}):NativeSkate{
   const group=new THREE.Group();group.name='horizon-native-skate';group.position.set(O.x,O.y,O.z);options.scene.add(group);
   const field=skateField();
+  const hosted=options.geography?createHorizonSkateWorld(options.geography,field):null;
   let theme:ThemeId=options.theme??'classic';
   let park:SkatePark|null=null;
   function buildPark(){if(park){group.remove(park.group);park.dispose();}park=buildSkatePark(sceneDressingFrom(COURT_DRESSING[theme]),{tier:options.tier,field});group.add(park.group);}
   buildPark();
   // The Mountain's island obstacles were its village buildings; the Horizon does not draw them, so none are ridden into.
-  const driver=createSkateDriver({obstacles:[]},{reducedMotion:options.reducedMotion});
+  const driver=createSkateDriver({obstacles:[],...(hosted?{field:hosted.field,physics:hosted.physics}:{})},{reducedMotion:options.reducedMotion,...(options.destination?{destination:{
+    ready:(x:number,z:number)=>options.destination!.ready(x+O.x,z+O.z),clear:()=>options.destination!.clear(),
+  }}:{})});
   let look:SkaterLook|null=null,lookDeck=driver.deckId();
-  const cam:SkateCamera=createSkateCamera({ground:(x,z)=>groundHeightAt(x,z)});
+  const cameraGround=hosted?.field.ground??groundHeightAt;
+  const cam:SkateCamera=createSkateCamera({ground:cameraGround});
   let camLive=false;
   const throttle=createHudThrottle(100);let builtAt=-Infinity,had=false;
   function ensureLook(){
@@ -90,11 +102,11 @@ export function createNativeSkate(options:{scene:THREE.Scene;figure:BodyFigure;t
   };
   const api:NativeSkate={
     controls,
-    canStart(x,z){const n=toNative(x,0,z);return Math.hypot(n.x,n.z)<NATIVE_SKATE_RADIUS;},
+    canStart(x,z,y){if(options.ready&&!options.ready(x,z))return false;if(hosted)return hosted.canStart(x,z,y);const n=toNative(x,0,z);return Math.hypot(n.x,n.z)<NATIVE_SKATE_RADIUS;},
     start(at,progress){
       if(driver.active())return true;
       const n=toNative(at.x,at.y,at.z);
-      if(Math.hypot(n.x,n.z)>=NATIVE_SKATE_RADIUS)return false;
+      if(!api.canStart(at.x,at.z,at.y))return false;
       driver.mount(n.x,n.z,at.yaw,progress,{y:n.y});camLive=false;draw(0);return true;
     },
     stop(){
@@ -106,6 +118,14 @@ export function createNativeSkate(options:{scene:THREE.Scene;figure:BodyFigure;t
     },
     step(dt){
       if(!driver.active())return null;
+      // Poll the remote destination first: the current body may be outside its streaming region.
+      if(!driver.flushDestination()){draw(0);return {moving:true,body:bodyOf()!};}
+      const p=driver.present()!;
+      // Hold before a missing chunk/deck. Include the next frame's sweep and a small start-from-rest reach.
+      const reach=Math.max(0,Math.min(.1,dt)),hx=p.x+O.x,hz=p.z+O.z;
+      if(options.ready&&(!options.ready(hx,hz)||!options.ready(hx+p.vx*reach+Math.sin(p.heading)*.3,hz+p.vz*reach+Math.cos(p.heading)*.3))){
+        draw(0);return {moving:true,body:bodyOf()!};
+      }
       const ride=driver.step(dt);draw(dt);
       if(ride.banked>0&&!options.reducedMotion())look?.celebrate(Math.min(1,.25+ride.banked/6000));
       const body=bodyOf();return body?{moving:ride.moving,body}:null;
@@ -115,8 +135,8 @@ export function createNativeSkate(options:{scene:THREE.Scene;figure:BodyFigure;t
       if(!camLive||driver.takeCut()){cam.snap(p);camLive=true;}
       cam.setDistance(driver.current()?.camera==='far'?'far':'near');
       cam.setFastSpeed(driver.run()?.id==='mountain-descent'?SKATE_CAM.raceFastSpeed:SKATE_CAM.fastSpeed);
-      const f=cam.update(p,driver.events(),dt,{aspect,reducedMotion:reduced||driver.current()?.reducedEffects===true,ceilingAt:worldCeilingAt,
-        blocked:(x,y,z)=>y<groundHeightAt(x,z)+.05||Boolean(options.blocked?.(x+O.x,y+O.y,z+O.z,.12))||mountainFoliageAt(x,y,z,options.tier)});
+      const f=cam.update(p,driver.events(),dt,{aspect,reducedMotion:reduced||driver.current()?.reducedEffects===true,ceilingAt:hosted?.field.ceilingAt??worldCeilingAt,
+        blocked:(x,y,z)=>y<cameraGround(x,z)+.05||(options.geography?options.geography.blocked(x+O.x,z+O.z,y+O.y,.12)||Boolean(options.nativeVisible?.(x+O.x,z+O.z)&&mountainFoliageAt(x,y,z,options.tier)):Boolean(options.blocked?.(x+O.x,y+O.y,z+O.z,.12))||mountainFoliageAt(x,y,z,options.tier))});
       return {eye:[f.position[0]+O.x,f.position[1]+O.y,f.position[2]+O.z],target:[f.target[0]+O.x,f.target[1]+O.y,f.target[2]+O.z],fov:f.fov,roll:f.roll??0};
     },
     publish(now,force=false){

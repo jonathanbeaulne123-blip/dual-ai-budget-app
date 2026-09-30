@@ -80,7 +80,11 @@ export type SkateSimOptions = {
    */
   extraSolids?: readonly SkateSolid[];
   /** Shoreline clamp (e.g. body/obstacles.ts holdAshore); injected by integration. */
-  shore?: (x: number, z: number) => { x: number; z: number; ashore: boolean };
+  shore?: ((x: number, z: number) => { x: number; z: number; ashore: boolean }) | null;
+  /** Embedding-world walls. Called inside the existing short collision sweep, in field coordinates. */
+  contact?: (x:number,z:number,feet:number,radius:number,travel:readonly [number,number]) => {id:string;nx:number;nz:number;top?:number}|null;
+  /** Actual water at the rider's feet, rather than a radial island boundary. */
+  submerged?: (x:number,z:number,feet:number) => boolean;
 };
 export type SkateSim = {
   step(intent: SkateIntent, dt: number): { present: SkatePresent; events: readonly SkateSimEvent[] };
@@ -91,6 +95,8 @@ export type SkateSim = {
   load(saved: unknown): void;
   setMarker(): boolean;
   toMarker(): void;
+  /** Read-only destination of an explicit marker return, before querying destination support. */
+  markerTarget(): {x:number;z:number};
   /** Put the rider down at a pose (a race gate's safe pose): its height and support pick the deck. */
   placeAt(x: number, z: number, yaw: number, y?: number, supportId?: string | null): void;
   /**
@@ -146,8 +152,8 @@ type SimState = {
   marker: Pose | null; spawn: Pose;
 };
 
-type Sample = { y: number; nx: number; ny: number; nz: number; kind: SurfaceKind; feature: string | null; lip: SurfaceSample['lip'] };
-const sampleScratch = (): Sample => ({ y: 0, nx: 0, ny: 1, nz: 0, kind: 'concrete', feature: null, lip: null });
+type Sample = { supported: boolean; y: number; nx: number; ny: number; nz: number; kind: SurfaceKind; feature: string | null; lip: SurfaceSample['lip'] };
+const sampleScratch = (): Sample => ({ supported: true, y: 0, nx: 0, ny: 1, nz: 0, kind: 'concrete', feature: null, lip: null });
 const KINDS: ReadonlySet<string> = new Set(['grass', 'path', 'sand', 'cobble', 'concrete', 'wood', 'metal']);
 /** Standing rider height, and the height a crouched rider ducks to under a low deck. */
 const RIDER_HEIGHT = 1.55, DUCK_HEIGHT = 1.08;
@@ -201,6 +207,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     if (ny < 0.08) ny = 0.08;
     const len = Math.hypot(nx, ny, nz) || 1;
     nx /= len; ny /= len; nz /= len;
+    out.supported = !!s && Number.isFinite(s.y) && s.supported !== false;
     out.y = y; out.nx = nx; out.ny = ny; out.nz = nz;
     out.kind = s && KINDS.has(s.kind) ? s.kind : 'concrete';
     out.feature = s && typeof s.feature === 'string' ? s.feature : null;
@@ -211,7 +218,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
   function freshState(x: number, z: number, yaw: number, stance: Stance, y?:number, vy=0, supportId?:string): SimState {
     x = fin(x); z = fin(z); yaw = wrap(fin(yaw));
     sample(x, z, S0, y??0, y===undefined, supportId);
-    const height=y===undefined?S0.y:Math.max(y,S0.y),air=height-S0.y>.08;
+    const height=y===undefined?S0.y:Math.max(y,S0.y),air=!S0.supported||height-S0.y>.08;
     return {
       ver: 2, t: 0, acc: 0, seq: 0, mode: air?'air':'ground',
       x, y: height, z, vx: 0, vy:air?vy:0, vz: 0,
@@ -302,7 +309,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     S.safeT = 0;
     if (S.gny < 0.93 || S.slide || S.manual) return;
     sample(S.x, S.z, SX, S.y);
-    if (SX.lip) return;
+    if (!SX.supported || SX.lip || (opts.contact || opts.submerged) && !safeToStand(S.x, S.z, S.y)) return;
     pushOutAll(S.x, S.z, S.y, T.RADIUS + 0.15, island, solids, H);
     if (H.id) return;
     const pose: Pose = { x: S.x, z: S.z, yaw: travelYaw(),y:S.y,supportId:S.feature };
@@ -456,12 +463,25 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     const n = Math.max(1, Math.ceil(d / 0.08));
     let px = x0, pz = z0, what: 'clear' | 'solid' | 'shore' = 'clear', nx = 0, nz = 0;
     const has = island.length + solids.length > 0;
+    if (opts.contact) { H.id = null; H.top = y; }
     for (let i = 1; i <= n; i++) {
       const tx = x0 + ((x1 - x0) * i) / n, tz = z0 + ((z1 - z0) * i) / n;
       let rx = tx, rz = tz;
       if (has) {
         pushOutAll(tx, tz, y, T.RADIUS, island, solids, H);
         if (H.id) { rx = H.x; rz = H.z; what = 'solid'; nx = H.nx; nz = H.nz; }
+      }
+      if (opts.contact) {
+        const external = opts.contact(rx, rz, y, T.RADIUS, [tx - px, tz - pz]);
+        if (external) {
+          const length = Math.hypot(external.nx, external.nz), travel = Math.hypot(tx - px, tz - pz);
+          nx = length > 1e-9 ? external.nx / length : travel > 1e-9 ? (px - tx) / travel : 0;
+          nz = length > 1e-9 ? external.nz / length : travel > 1e-9 ? (pz - tz) / travel : 0;
+          // Keep the last clear point. No penetration correction or route relocation.
+          rx = px; rz = pz; what = 'solid'; H.id = external.id;
+          // Unknown height is not an infinitely tall wallride target.
+          H.top = external.top ?? y;
+        }
       }
       if (shore) {
         let s: { x: number; z: number; ashore: boolean } | null = null;
@@ -678,14 +698,14 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
 
     // Does the ground fall away faster than free fall? (crest, ledge, stair nose) → airborne, no impulse.
     const yFree = y0 + vby * dt - 0.5 * G * dt * dt;
-    if (S1.y < yFree - T.AIR_EPS) {
+    if (!S1.supported || S1.y < yFree - T.AIR_EPS) {
       S.x = x1; S.z = z1; S.y = yFree;
       S.vx = vbx; S.vy = vby - G * dt; S.vz = vbz;
       const hadManual = S.manual !== null;
       endManual();
       S.manualResume = hadManual;
       enterAir(false, false);
-      S.clearance = S.y - S1.y;
+      S.clearance = S1.supported ? S.y - S1.y : Number.MAX_SAFE_INTEGER;
       return;
     }
 
@@ -1085,8 +1105,8 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     if (tryLock(y0, x1, y1, z1)) return;
 
     sample(x1, z1, S1, y1);
-    S.clearance = Math.max(0, y1 - S1.y);
-    if (y1 <= S1.y) {
+    S.clearance = S1.supported ? Math.max(0, y1 - S1.y) : Number.MAX_SAFE_INTEGER;
+    if (S1.supported && y1 <= S1.y) {
       const pen = S1.y - y1;
       const horiz = Math.hypot(x1 - x0, z1 - z0);
       const slope = Math.hypot(S1.nx, S1.nz) / S1.ny;
@@ -1466,7 +1486,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     const pop = S.pendPop;
     const off = pop !== null || W.t > T.WALLRIDE_MAX_TIME || h < 2 || !wallStillThere(W, x1, z1, y1);
     sample(x1, z1, S1, y1);
-    if (y1 <= S1.y) { S.x = x1; S.z = z1; S.y = S1.y; endWall(); S.mode = 'air'; land(); return; }
+    if (S1.supported && y1 <= S1.y) { S.x = x1; S.z = z1; S.y = S1.y; endWall(); S.mode = 'air'; land(); return; }
     S.x = x1; S.y = y1; S.z = z1;
     S.boardRoll += (W.side * (Math.PI / 2 - 0.25) * (S.lead < 0 ? -1 : 1) - S.boardRoll) * ease(14, dt);
     S.boardPitch += (0 - S.boardPitch) * ease(10, dt);
@@ -1484,7 +1504,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     const b = S.bail!;
     b.t += dt;
     sample(S.x, S.z, S1, S.y);
-    if (S.y > S1.y + 0.01) S.vy -= G * dt;
+    if (!S1.supported || S.y > S1.y + 0.01) S.vy -= G * dt;
     else { S.vy = 0; S.y = S1.y; const k = Math.exp(-3.5 * dt); S.vx *= k; S.vz *= k; }
     const x1 = S.x + S.vx * dt, z1 = S.z + S.vz * dt;
     const w = sweepXZ(S.x, S.z, x1, z1, S.y);
@@ -1493,7 +1513,8 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     sample(nx, nz, SX, S.y);
     if (SX.y > S.y + 0.15) { nx = S.x; nz = S.z; S.vx = 0; S.vz = 0; } // tumbling doesn't climb walls
     S.x = nx; S.z = nz;
-    S.y = Math.max(S.y + S.vy * dt, sample(S.x, S.z, SX, S.y).y);
+    sample(S.x, S.z, SX, S.y);
+    S.y = SX.supported ? Math.max(S.y + S.vy * dt, SX.y) : S.y + S.vy * dt;
     S.boardPitch *= Math.exp(-4 * dt);
     if (b.t >= T.BAIL_TIME) recover();
   }
@@ -1506,13 +1527,14 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
    */
   function safeToStand(x: number, z: number, y: number): boolean {
     const c = sample(x, z, SX, y);
-    if (c.lip || c.ny < T.GET_UP_MIN_NY) return false;
+    if (!c.supported || c.lip || c.ny < T.GET_UP_MIN_NY) return false;
     const cy = c.y, R = T.RADIUS;
     for (let k = 0; k < 4; k++) {
       const ox = k === 0 ? R : k === 1 ? -R : 0, oz = k === 2 ? R : k === 3 ? -R : 0;
       const s = sample(x + ox, z + oz, SX, cy);
-      if (s.lip || s.ny < T.GET_UP_MIN_NY || Math.abs(s.y - cy) > T.GET_UP_STEP) return false;
+      if (!s.supported || s.lip || s.ny < T.GET_UP_MIN_NY || Math.abs(s.y - cy) > T.GET_UP_STEP) return false;
     }
+    if (opts.submerged?.(x, z, cy) || opts.contact?.(x, z, cy, R + 0.05, [0, 0])) return false;
     pushOutAll(x, z, cy, R + 0.05, island, solids, H);
     if (H.id) return false;
     for (let li = 0; li < lines.length; li++) {
@@ -1548,10 +1570,14 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       const p = S.safe[i]!;
       if (Math.hypot(p.x - bx, p.z - bz) < 0.8 && i > 0) continue;
       pushOutAll(p.x, p.z, sample(p.x, p.z, SX, p.y??S.y,false,p.supportId).y, T.RADIUS, island, solids, H);
-      if (H.id || SX.lip || SX.ny < 0.9) continue;
+      if (H.id || !SX.supported || SX.lip || SX.ny < 0.9 || (opts.contact || opts.submerged) && !safeToStand(p.x, p.z, p.y ?? S.y)) continue;
       pick = p; break;
     }
-    if (!pick) pick = S.marker ?? S.spawn;
+    if (!pick) {
+      const candidates = [S.marker, S.spawn];
+      pick = candidates.find(p => p && (!(opts.contact || opts.submerged) || safeToStand(p.x, p.z, p.y ?? S.y))) ?? null;
+      if (!pick) return; // Keep the bail visible until a genuinely safe support is available.
+    }
     const hazard = b && (b.reason === 'wall' || b.reason === 'water');
     const yaw = hazard ? wrap(pick.yaw + Math.PI) : pick.yaw;
     placeAt(pick.x, pick.z, yaw,pick.y,pick.supportId);
@@ -1563,6 +1589,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
 
   function placeAt(x: number, z: number, yaw: number,y?:number,supportId?:string|null): void {
     sample(x, z, S1, y??S.y,false,supportId);
+    if (!S1.supported) return;
     S.x = x; S.z = z; S.y = S1.y;
     S.vx = 0; S.vy = 0; S.vz = 0;
     S.gnx = S1.nx; S.gny = S1.ny; S.gnz = S1.nz; S.kind = S1.kind; S.feature = S1.feature;
@@ -1604,6 +1631,11 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
         S.recoverT -= dt;
         if (S.recoverT <= 0) { S.recoverT = 0; S.mode = 'ground'; }
         break;
+    }
+
+    if (S.mode !== 'bail' && opts.submerged?.(S.x, S.z, S.y)) {
+      if (runout) { S.x=beforeX; S.y=beforeY; S.z=beforeZ; S.vx=0; S.vy=0; S.vz=0; }
+      else bail('water');
     }
 
     // A jump cannot pass up through a bridge. A low passage is ducked under
@@ -1754,12 +1786,14 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     setMarker() {
       if (S.mode !== 'ground' || S.recoverT > 0 || speed3() > T.MARKER_MAX_SPEED || S.gny < 0.9) return false;
       sample(S.x, S.z, SX, S.y);
-      if (SX.lip) return false;
+      if (!SX.supported || SX.lip || (opts.contact || opts.submerged) && !safeToStand(S.x, S.z, S.y)) return false;
       S.marker = { x: S.x, z: S.z,y:S.y,supportId:S.feature, yaw: wrap(S.boardYaw - S.slideAngle + (S.lead < 0 ? Math.PI : 0)) };
       return true;
     },
+    markerTarget(){const p=S.marker??S.spawn;return {x:p.x,z:p.z};},
     toMarker() {
       const p = S.marker ?? S.spawn;
+      if ((opts.contact || opts.submerged) && !safeToStand(p.x, p.z, p.y ?? S.y)) return;
       placeAt(p.x, p.z, p.yaw,p.y,p.supportId);
       S.safe = [{ ...p }];
       writePresent();

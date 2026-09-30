@@ -1,18 +1,16 @@
 # The Mountain Road book
 
-30 September 2026 · Local Phase 1 proposal · Jonathan is the decision owner
+30 September 2026 · Implementation in progress · Jonathan is the decision owner
 
-**Recommendation:** finish the existing Prow → Foot → Summit chain on the Horizon side first. Study a short Foot → Stillwater rim connector next, including the separate descent needed to reach Green Road. Keep the western, northern and Shoulder links as views until their fitted profiles justify a road. Do not change native Mountain v2 or start a second bridge contract.
+The Prow → Foot → Summit chain and the fitted Stillwater → Green Road link are being built following Jonathan's “build everything, make it beautiful.” The road keeps its native mountain surface and bridges; Horizon supplies the connections, route metadata, furniture and lighting. The library and dam landing repairs are explicitly approved in both worlds. An additional awning-return repair has been submitted for a separate native-world choice.
 
-The household outcome is a mountain that can be reached and crossed comfortably without losing the existing summit, dam, neighbourhoods or transport. This stage measures what stands today and makes the choices reviewable. It does not yet deliver the finished road.
+**Budget delta (5): 0. Engagement delta (3): +2 target, awaiting completed traversal and visual acceptance. Risk: High.** No money, command, schema, sync, Auth/RLS or Hercules payload changes.
 
-**Budget delta (5): 0. Engagement delta (3): 0 delivered in this inventory; +2 target for the finished experience. Risk: High.**
-
-**Delivery:** local branch `codex/mountain-road-book`, base/head `324cd5f246ab295af5cf64d553ebf78fad57f7b5`, including airport #576. No product source, Mountain v2 geometry, public bake, money path or hosted data changed. No PR, merge, deployment or live verification. The requested Phase 1 stop applies here. Phase 0 evidence gaps below remain open; this is not full acceptance.
+**Delivery:** local branch `codex/mountain-road-book`, based on `324cd5f246ab295af5cf64d553ebf78fad57f7b5`. No PR, merge, deployment or live verification. The original Phase 1 inventory is preserved in commit `750150f`; its measurements below are explicitly the before state, not current results. Follow [the build worksession](../worksessions/2026-09-30-mountain-road-build.md) and the implementation section below for current scope.
 
 Read with [worksession](../worksessions/2026-09-30-mountain-road-book.md), [ROAD](ROAD.md), [road handoff](../CLAUDE_HORIZON_MAIN_ROAD.md), [inventory](evidence/mountain-road/before/inventory.json), [chain audit](evidence/mountain-road/before/chain/AUDIT.md), [baseline corridor audit](evidence/mountain-road/before/corridor/AUDIT.md), and [LOOK](evidence/mountain-road/before/LOOK.md).
 
-## 1. What the measurements change
+## 1. Before-state measurements
 
 - V03 is **327.375 m in plan**, from `[1599.5,34.957,790.8]` to `[1281.5,55.3,742]`. The Prow junction's road height is about 35, not the landform's 40–70 height range.
 - The town lane is a real part of the chain: **22.014 m along the course-derived line**, 0.65 m between endpoint elevations. It is not a 0.65 m vertical step; the profile must be tested between them. The straight endpoint distance is 22.006 m.
@@ -25,9 +23,9 @@ Read with [worksession](../worksessions/2026-09-30-mountain-road-book.md), [ROAD
 
 Main CI remains red for the named Bianca Month month-end regression: [CI run](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/36685087825), 82 passed / 1 failed in `app-startup-p1.test.ts`, “Missing Bianca Month income Start”. That fixture/test is unchanged. Horizon asset CI passed; neither fact means this road is accepted.
 
-## 2. Proposed decisions D-MR1 onward
+## 2. Decisions D-MR1 onward
 
-These are proposals for Jonathan, except preserved constraints explicitly required in the prompt.
+D-MR1–7 and D-MR11–12 guide the authorized build. D-MR8 advances to the fitted Stillwater link described below. D-MR9–10 preserve the view-only verdicts and shared bridge-contract boundary. New native source changes remain individually approved.
 
 | ID | Proposed choice | Reason / owner |
 |---|---|---|
@@ -210,7 +208,20 @@ The [handoff](../CODEX_HORIZON_MOUNTAIN_ROAD_1.md) lists the exact runs and chan
 
 The [independent review](evidence/mountain-road/REVIEW.md) raised two P2 documentation/evidence findings, both corrected and rechecked: centreline calculations were overstated as measured lateral demand and steering reserve, and decisive neighbour numbers lacked a reproducible source artifact. No remaining actionable finding was reported within that bounded review; it does not close the acceptance gaps below.
 
-## 10. Owed list and next owner
+## 10. Implementation and remaining gates
+
+- **One physical route:** the published chain joins V03, 22.014 m of existing native Foot lane and the mountain road. The lane is now road metadata for bicycle/navigation consumers while its native S1 mesh remains the sole floor.
+- **Shared landings:** the library and dam use one triangulated landing mesh for drawing, surface queries and body collision in both worlds. The library's terrain-constrained solve runs offline; its generated product is hashed and checked. Its road entry is conformed across the full width while the reading roof is retained. Approval: Jonathan's explicit “Yes—repair the shared landings in both worlds.”
+- **Foot and Ore Line:** Horizon's overlapping Year Walk shoulder follows the native Foot road. The Ore station apron follows the road, its duplicate threshold slab is removed, and the lining/doorway end before the road's clear width. The rail alignment remains fixed. Jonathan also approved the shared awning return: its first rail and main road remain intact, while a longer tapered return rejoins about18 m farther up the same hairpin.
+- **Native everyday skate on Horizon:** the ordinary native controller now queries the composed world for floors, walls, ceilings and water. Native standalone defaults are retained. Streaming readiness holds input/relocation until its destination exists; it never invents support or snaps a rider onto the route.
+- **Furniture and map:** native-source stations preserve the three existing bridges and visible guards; no second road deck or guard is drawn. Exact native water/building/path/tree footprints constrain planting and supported lantern sites. A physically supported garden bench connects to the library path. Six sustained bends receive strategic lighting through the existing clock and bounded light pool. Classic, Taylor and Newfoundland use their authored kits; lite subtracts detail.
+- **Stillwater link:** 341.094 m fitted route from the Foot through the rim to Green Road; maximum grade 8.222%. A 104 m lined tunnel passes beneath the intervening ground and Year Walk, with 12 m internal width and 5.4 m clear height. The same bed and section drive visible/collision geometry, corridor and Journey. Portal aprons lap the corridor ownership boundaries. This is a grade/tunnel link, not a new landmark bridge or bridge contract.
+- **Verification status:** local focused library, support, furniture, native host and readiness tests have passed. Intermediate full-chain cruiser centreline and walking passes complete both ways; keep-right and native/bicycle joins are being repaired and rerun. These intermediate results are not final acceptance. One parallel typecheck was stopped during severe memory paging and is not a pass. Final serialized verification and final baked/captured evidence remain required.
+
+### Historical Phase 1 owed list
+
+The following is retained from the inventory; the implementation bullets above supersede its construction status. Final acceptance will replace this list with measured results and genuinely outstanding items.
+
 
 1. Resolve the five drive blockers using the retained captures, layered-floor queries and controller traces; preserve each failed/incomplete attempt. Static poses corroborate overlaps, but do not prove a moving rider hit or launch. Do not treat a probe as final geometry authority.
 2. Finish full-chain all-mode and all-footway evidence, including native skate and natural downhill trials; separate automatic recovery from successful travel.
@@ -221,4 +232,4 @@ The [independent review](evidence/mountain-road/REVIEW.md) raised two P2 documen
 7. After approved geometry changes: source-derived bake, byte-exact check, dump check, focused High gate, required horizon/Journey/walk/native suite files serially, view proofs and blind review. No exhaustive suite without its separate exact-SHA request.
 8. Phase 2 stops for Jonathan's visual look/optional phone ride. Phase 3 is one PR per approved link, grade first, then any bridge.
 
-**Next owner: Jonathan.** Review D-MR1–12 and the recommendation. Approval to proceed on the Horizon side would not authorize native Mountain v2 edits, a new landmark bridge, moved flight/transport/view envelopes, merge or deployment. Codex owns closing evidence gaps and implementing the approved bounded phase.
+**Next owner: Codex.** Complete the authorized implementation and exact-source checks. Jonathan owns optional real-device acceptance. Merge, deployment, new landmark bridges and moved flight/cable/view envelopes remain separate decisions.

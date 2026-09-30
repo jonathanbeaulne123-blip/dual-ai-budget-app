@@ -28,7 +28,7 @@ import {createBodyFigure} from '../../body/figure.ts';
 import {createPlayableFigure} from '../../body/playableFigure.ts';
 import type {PlayableAvatar} from '../../body/avatarDefinition.ts';
 import {EMOTE_LOOPS,EMOTE_SECONDS,type EmoteId} from '../../body/bodyModel.ts';
-import {createNativeSkate,horizonSkateEntry,type NativeSkate,type NativeSkateFrame} from '../skate/nativeSkate.ts';
+import {createNativeSkate,type NativeSkate,type NativeSkateFrame} from '../skate/nativeSkate.ts';
 import type {SkateProgress} from '../../skate/session.ts';
 import type {PlaceWalkSource} from '../../scene/place.ts';
 import type {HouseBodyReturn} from '../../../house/navigation.ts';
@@ -160,11 +160,12 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const partner=createBodyFigure({coat:'#af8760'});
   scene.add(figure.group,partner.group);partner.group.visible=false;
   // The old skate rides Mountain v2's town island in native space (`../skate/nativeSkate.ts`); without the region it has nowhere to be.
-  const skate:NativeSkate|null=placed?createNativeSkate({scene,figure,tier:options.tier,theme:options.theme,reducedMotion:()=>comfort.reducedMotion,onSkate:options.onSkate,blocked:(x,y,z,r)=>placed.region.blocked(x,y,z,r)}):null;
+  const skate:NativeSkate|null=placed?createNativeSkate({scene,figure,tier:options.tier,theme:options.theme,geography,ready:(x,z)=>gateOpen(x,z),destination:{ready:prepareSkateDestination,clear:clearSkateDestination},nativeVisible:(x,z)=>regionVisible&&placed.region.requiresScene(x,z),reducedMotion:()=>comfort.reducedMotion,onSkate:options.onSkate,blocked:(x,y,z,r)=>placed.region.blocked(x,y,z,r)}):null;
   const skating=()=>Boolean(skate?.controls.active());
   // Pass 5: inside the region's footprint its provider owns the ground (v2's exact ground, decks, solids, ceilings).
   // PR #566 Codex: its decks, solids and ceilings answer only while the region's scene is drawn (showRegion); ground and water always.
   let regionVisible=false,regionSettle=false;
+  let skateDestination:{x:number;z:number}|null=null;
   const offRegion=placed?geography.addDynamic(placed.region.providerWhileDrawn(()=>regionVisible)):null;
   const homeWorld=createHomeWorld(scene,world.reserves,options.homePlotId);homeWorld.set(options.homeLayout);const offHome=geography.addDynamic(homeWorld.collision);
   // Movers (RIDE §10.2, §11 ask 2): one registry, one active controller; the Horizon mode stays 'walk' while riding.
@@ -242,7 +243,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const regionCells:TerrainCellFilter=placed?{split:(x,z)=>placed.region.hidesTerrainCell(x,z)}:{};
   const coarseCells:TerrainCellFilter=placed?{split:(x,z,st)=>[[0,0],[-1,-1],[1,-1],[-1,1],[1,1]].every(([u,v])=>placed.region.contains(x+u!*st/2,z+v!*st/2))}:{};
   const regionDistricts=new Set<string>();
-  if(placed){const f=placed.region.footprint;for(let x=f.minX;x<=f.maxX;x+=10)for(let z=f.minZ;z<=f.maxZ;z+=10)if(placed.region.contains(x,z))regionDistricts.add(districtAt(x,z));}
+  if(placed){const f=placed.region.footprint;for(let x=f.minX;x<=f.maxX;x+=10)for(let z=f.minZ;z<=f.maxZ;z+=10)if(placed.region.requiresScene(x,z))regionDistricts.add(districtAt(x,z));}
   const coarse=new Map(world.districts.map(d=>{const cards=buildDistrictCards(world,journey,cuts,d,tier,true,false,coarseCells);scene.add(cards.group);return[d.id,cards] as const;}));
   const water=buildWaterCards(cuts,tier),ring=buildHorizonRing(assets.horizonCards,tier);scene.add(water.group,ring.group);
   // Horizon cards are fogged like the land but never beyond 70 % (STYLE §1.8), so they never vanish and never poke through.
@@ -354,8 +355,24 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   /** The gate: resident (true) or held (false). Bytes already fetched are parsed now; the review simulation may block.
    *  PR #566 Codex: inside the placed region, also held until its scene is drawn (its decks and solids answer only then). */
   function gateOpen(x:number,z:number):boolean{return chunkGateOpen(x,z)&&regionReady(x,z);}
+  /** A remote skate command keeps its source pose while its target chunks and region become drawable. */
+  function clearSkateDestination(){
+    if(!skateDestination)return;
+    skateDestination=null;
+    if(!heldNow.length&&holdText){holdText='';options.onStatus?.('');}
+  }
+  function prepareSkateDestination(x:number,z:number):boolean{
+    skateDestination={x,z};schedule();
+    // This is an active demand, not a passive current-position readiness check.
+    const chunksReady=chunkGateOpen(x,z),ready=chunksReady&&regionReady(x,z);
+    if(!ready){
+      if(!heldNow.length){if(holdText!==CHUNK_ARRIVING_STATUS){holdText=CHUNK_ARRIVING_STATUS;options.onStatus?.(holdText);}}
+      else holdStatus();
+    }
+    return ready;
+  }
   /** PR #566 Codex: the placed region is not in the way here: drawn, or (x, z) outside its footprint. */
-  function regionReady(x:number,z:number):boolean{return !placed||regionVisible||!placed.region.contains(x,z);}
+  function regionReady(x:number,z:number):boolean{return !placed||regionVisible||!placed.region.requiresScene(x,z);}
   /** PR #566 Codex: a rider inside the not-yet-drawn region waits (a board on a bridge keeps its deck); a cable ride runs on its line. */
   function riderReady():boolean{const m=registry.mode();return m==='gondola'||m==='funicular'||regionReady(body.x,body.z);}
   function chunkGateOpen(x:number,z:number):boolean{
@@ -784,7 +801,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function updateRegion(dt:number,now:number){
     if(!placed)return;
     // PR #566 Codex: a walker inside the footprint always wants it (the hold above waits for it to be drawn).
-    const wanted=mode!=='journey'&&([...regionDistricts].some(id=>stream.live.has(id))||mode==='walk'&&placed.region.contains(body.x,body.z));
+    const wanted=mode!=='journey'&&([...regionDistricts].some(id=>stream.live.has(id))||mode==='walk'&&(placed.region.requiresScene(body.x,body.z)||Boolean(skateDestination&&placed.region.requiresScene(skateDestination.x,skateDestination.z))));
     if(wanted&&!regionScene&&!regionTask)regionTask=createBuildTask(placed.region.mountSteps(scene,tier,placed.dressing(theme),{season:seasonOf(currentTime??new Date()),quiet:!motion.ambientMotion}));
     if(regionTask){const done=regionTask.advance();if(done){regionTask=null;regionScene=done;done.group.visible=false;
       const materials=new Set<THREE.Material>();done.group.traverse(o=>{const m=(o as THREE.Mesh).material;if(m)for(const x of Array.isArray(m)?m:[m])materials.add(x);});
@@ -825,7 +842,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(!paused&&!document.hidden){const accept=comfortCut||kitchen?.active()||monorail?.state()?false:offersAndAccept();if(mode==='walk'&&!kitchen?.active()&&(!transition||transition.live)){stepped=true;if(monorail?.state())monorailStep(dt,now);else if(skating())skateStep(dt);else if(registry.active()){if(!comfortCut&&hold.steps(mode)&&riderReady())ride(dt,now,accept);}else if(!comfortCut)step(dt,now);}if(mode!=='journey')stream.update({x:body.x,z:body.z,now,mode:mode==='look'?'look':'walk',radius:mode==='look'?world.views.find(v=>v.id===shotId)?.radius:undefined,keepRadius:world.views.find(v=>v.id===shotId)?.radius,underground:body.y+HORIZON_BODY_HEIGHT<geography.ground(body.x,body.z)-.5});}
     // Pass 5: the ambience reads Mountain v2's geography (the river, its paths), so with the region placed it hears native space.
     // PR #566 CodeRabbit: only inside the region's footprint; elsewhere the Horizon body is what it hears.
-    const heard=placed&&placed.region.contains(body.x,body.z)?{x:body.x-MOUNTAIN_V2_OFFSET.x,y:body.y-MOUNTAIN_V2_OFFSET.y,z:body.z-MOUNTAIN_V2_OFFSET.z}:body;
+    const heard=placed&&placed.region.requiresScene(body.x,body.z)?{x:body.x-MOUNTAIN_V2_OFFSET.x,y:body.y-MOUNTAIN_V2_OFFSET.y,z:body.z-MOUNTAIN_V2_OFFSET.z}:body;
     if(ambience){if(paused)ambience.pause();else ambience.update(heard.x,heard.y,heard.z,ambienceSpeed,false,false,comfort.calm,registry.mode()==='glider'||registry.mode()==='parachute');}
     // The shared card clock (wind in v2's planting, water sheen) runs with ambient motion; calm and reduced motion hold it.
     if(placed&&motion.ambientMotion)CARD_CLOCK.value=now/1000;
@@ -1020,14 +1037,12 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     },
     /** Whether the board can be put down here (Mountain v2's town island). */
     hasSkate(){return Boolean(skate);},
-    canSkate(){return Boolean(skate&&mode==='walk'&&!monorail?.state()&&!registry.active()&&!kitchen?.active()&&skate.canStart(body.x,body.z));},
+    canSkate(){return Boolean(skate&&mode==='walk'&&!monorail?.state()&&!registry.active()&&!kitchen?.active()&&skate.canStart(body.x,body.z,body.y));},
     startSkate(progress?:SkateProgress){
       schedule();if(!skate||monorail?.state()||registry.active()||kitchen?.active()||mode!=='walk')return false;
-      // The old shell offered the board from its main outdoor place. The Horizon is much larger:
-      // bring an explicit Skate action to the park's known start before handing control to the old driver.
-      if(!skate.canStart(body.x,body.z)){
-        const at=horizonSkateEntry();restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',...at});
-        Object.assign(body,at);yaw=at.yaw;pendingRestore=null;resnap=!gateOpen(at.x,at.z);updateCamera();
+      if(!gateOpen(body.x,body.z)){holdStatus();return false;}
+      if(!skate.canStart(body.x,body.z,body.y)){
+        options.onStatus?.('Stand on clear, dry ground to put down the board.');return false;
       }
       emote=null;path=[];clear();return skate.start({...body},progress);
     },

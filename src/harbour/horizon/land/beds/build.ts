@@ -1,4 +1,7 @@
+import {mountainRoadChain} from '../corridor/chain';
+import {fitMountainHorizonJoins} from '../mountainV2/joins';
 import { HORIZON_MANIFEST as M, requireScaleFactor } from '../../world/manifest';
+import { buildStillwaterLink } from '../mountainV2/stillwater';
 import type { BedCut, HeightQuery, LandCuts, XY, XYZ } from '../interfaces';
 import { buildStructures, cableTower, duneCulvertCentre, SPANS, spanDeckLength, structureStretches } from '../structures/build';
 import { box, distance, districtAt, mix, nearestOnPath, pathLength, plan, slab, solid } from '../structures/mesh';
@@ -6,7 +9,7 @@ import { pier } from '../structures/foundations';
 import { buildReserves, reserveServiceLines } from '../reserves/build';
 import { buildTown, squareWalkPins } from '../town/build';
 import { buildHostSites } from '../town/hosts';
-import { buildUnderground } from '../underground/build';
+import { buildUnderground, oreStationFloor } from '../underground/build';
 import { addFlatPad, bed, emitBedGeometry, heightOnBeds, planDistance } from './profiles';
 import { gradeRoute, listSteepStretches, sampleSpline, type HeightPin } from './solver';
 import { registerRowKey } from '../../world/crossings';
@@ -617,7 +620,7 @@ function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
     // road (L1): an unauthored threshold on a road's carriageway takes the road's height (the V01 × Reach walk register pad took
     // the walk's 5.7 under the Drive's 9.2, and its blend dug a 3.5 eu pit under the Drive's edge).
     const onRoad=h0===undefined?cuts.beds.filter(b=>b.kind==='road'&&b.terrainCut&&!b.id.startsWith('structure.')).map(b=>({b,n:nearestOnPath(p,b.points)})).filter(r=>r.n.distance<=r.b.width/2+r.b.shoulder).sort((a,c)=>a.n.distance-c.n.distance)[0]:undefined;
-    const h=h0===undefined?onRoad?.n.at[1]:jettyTop(p)??h0,height=h??heightOnBeds(cuts,p,base,40),underground=['threshold.deepJetty','threshold.stepsFoot'].includes(id),ground=base(...p);
+    const h=id==='threshold.southPortal'?oreStationFloor(cuts,p[0],p[1],h0!):h0===undefined?onRoad?.n.at[1]:jettyTop(p)??h0,height=h??heightOnBeds(cuts,p,base,40),underground=['threshold.deepJetty','threshold.stepsFoot'].includes(id),ground=base(...p);
     // A threshold above its ground or over water is a raised deck (tower top, gallery, jetty):
     // it never shapes the heightfield; its supports belong to the structure that carries it.
     // v2.6: on Mountain v2's land a threshold stands on the region's platform or paving (the Summit Commons platform, the
@@ -630,7 +633,7 @@ function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
       // v2.6 (R5-02): a cable platform on Mountain v2's land stands on the region's own station platform (v2 art and
       // surfaces, not a Horizon solid): the pad keeps its footprint for the offer, the slab is the region's (no floating slab).
       const regionPlatform=!onDeck&&mountainV2Rule(...p).kind==='land'&&(id.startsWith('threshold.funicular.')||id==='threshold.gondolaTop'||id==='threshold.gondolaBase');
-      if(onDeck||regionPlatform)cuts.solids=cuts.solids.filter(s=>s.id!==`${id}.slab`);}
+      if(onDeck||regionPlatform||id==='threshold.southPortal')cuts.solids=cuts.solids.filter(s=>s.id!==`${id}.slab`);}
     // road (L1): a threshold on a road's carriageway at the road's height (a dismount mark on the Green Road, the Bight spur) has
     // the road as its floor: no flat slab laid over the graded road (a 6 × 5 slab stood 0.2 proud of VG and VBS at one end).
     if(cuts.beds.some(b=>b.kind==='road'&&b.terrainCut&&!b.id.startsWith('structure.')&&(()=>{const n=nearestOnPath(p,b.points);return n.distance<b.width/2+b.shoulder&&Math.abs(n.at[1]-height)<.5;})())){cuts.solids=cuts.solids.filter(s=>s.id!==`${id}.slab`);pad.deck=true;pad.blend=0;}
@@ -717,7 +720,14 @@ export function buildLandCuts(baseHeight:HeightQuery):LandCuts {
   // road (L1): the Drive crosses the dune culvert on an embankment (the culvert runs through it; its tube is the passage): the
   // 12 eu exclusion that stood here left the Drive 2–3.5 eu over the dunes for 24 m with nothing under its edges.
   settleYearWalkShares(cuts,shares);{const s2=cuts.beds.find(b=>b.id==='S2');if(s2)carryS2(cuts,baseHeight,s2);}carryNamedStructures(cuts);carrySpanLanes(cuts);carryRoadLanes(cuts);carryStructureStretches(cuts);guardWater(cuts,baseHeight);checkRailGrades(cuts);
+  buildStillwaterLink(cuts,baseHeight);
   cables(cuts,baseHeight);const markers=thresholds(cuts,baseHeight);
+  fitMountainHorizonJoins(cuts,baseHeight);
   for(const b of cuts.beds)if(!b.id.startsWith('structure.')&&!b.id.startsWith('underground.')&&!['ORE','DEEP_RUN','ORE.siding','prowTunnel','duneCulvert'].includes(b.id))emitBedGeometry(b,cuts,baseHeight,markers);
+  // Publish the existing native town lane as road metadata. The region's S1 mesh remains
+  // its sole floor: this bed cuts no terrain and emits no replacement geometry.
+  const chain=mountainRoadChain(cuts.beds);
+  if(chain){const part=chain.parts[1]!,points=chain.points.filter((_,i)=>chain.widths[i]!.s>=part.from-1e-6&&chain.widths[i]!.s<=part.to+1e-6);
+    const lane=bed(part.id,'road',points,false);lane.width=7;lane.shoulder=0;regionCarry(lane);cuts.beds.push(lane);}
   return cuts;
 }

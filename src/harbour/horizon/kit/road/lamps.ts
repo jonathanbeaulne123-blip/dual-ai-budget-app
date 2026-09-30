@@ -58,9 +58,9 @@ function paneLantern(b:CardBuilder,P:L,o:V3,cx:number,yb:number,r:number,body:nu
   for(const [a,c] of [[[-r,-r],[r,-r]],[[r,-r],[r,r]],[[r,r],[-r,r]],[[-r,r],[-r,-r]]] as const)b.glow(q(a[0],a[1],yb),q(c[0],c[1],yb),q(c[0],c[1],yb+body),q(a[0],a[1],yb+body),glass);
   if(full)for(const [u,v] of [[-r,-r],[r,-r],[r,r],[-r,r]] as const)b.post(o[0]+cx+u,o[2]+v,o[1]+yb,o[1]+yb+body,.022,frame,4,'steel');
   b.cone(o[0]+cx,o[2],o[1]+yb-.07,o[1]+yb,r*.55,r+.05,frame,4,'steel');
-  b.cone(o[0]+cx,o[2],o[1]+yb+body,o[1]+yb+body+.05,r+.07,r+.07,frame,4,'steel');
+  if(full)b.cone(o[0]+cx,o[2],o[1]+yb+body,o[1]+yb+body+.05,r+.07,r+.07,frame,4,'steel');
   b.cone(o[0]+cx,o[2],o[1]+yb+body+.05,o[1]+yb+body+.25,r+.08,.035,hood,4,'steel',full);
-  b.cone(o[0]+cx,o[2],o[1]+yb+body+.25,o[1]+yb+body+.32,.05,.05,frame,6,'steel');
+  if(full)b.cone(o[0]+cx,o[2],o[1]+yb+body+.25,o[1]+yb+body+.32,.05,.05,frame,6,'steel');
 }
 
 function roadLantern(b:CardBuilder,pal:RoadKitPalette,o:V3,full:boolean){
@@ -70,42 +70,44 @@ function roadLantern(b:CardBuilder,pal:RoadKitPalette,o:V3,full:boolean){
   if(pal.theme==='classic'){
     const sides=full?8:6;
     b.post(o[0],o[2],o[1]+ROAD_LAMP.plinth,o[1]+top,.075,pal.post,sides,'steel');
-    for(const y of full?[ROAD_LAMP.plinth+.05,2.4,top-.08]:[2.4])b.post(o[0],o[2],o[1]+y,o[1]+y+.09,.095,pal.postBand,sides,'steel');
-    b.cone(o[0],o[2],o[1]+top,o[1]+top+.16,.1,.02,pal.postBand,sides,'steel');
+    for(const y of full?[ROAD_LAMP.plinth+.05,2.4,top-.08]:[])b.post(o[0],o[2],o[1]+y,o[1]+y+.09,.095,pal.postBand,sides,'steel');
+    if(full)b.cone(o[0],o[2],o[1]+top,o[1]+top+.16,.1,.02,pal.postBand,sides,'steel');
     b.beam(P(-.04,arm),P(R+.08,arm),.07,.09,pal.post,full?b.ink:null,'steel');
-    // The scrolled brace under the arm (a straight strut on lite), and a brass finial ball at the arm's end.
-    const brace:V3[]=[];for(let k=0,n=full?6:2;k<=n;k++){const t=k/n;brace.push(P(.05+t*.78,arm-.62+Math.sin(t*Math.PI/2)*.58));}b.tube(brace,.028,pal.post,full?5:4);
+    // Lite subtracts the scroll and finials; the post, arm, lantern and every
+    // light position remain. These tiny fittings used most of the mountain's lite budget.
+    if(full){const brace:V3[]=[];for(let k=0;k<=6;k++){const t=k/6;brace.push(P(.05+t*.78,arm-.62+Math.sin(t*Math.PI/2)*.58));}b.tube(brace,.028,pal.post,5);}
     if(full)b.cone(o[0]+R+.12,o[2],o[1]+arm-.05,o[1]+arm+.05,.05,.05,pal.postBand,6,'steel');
     b.line(P(R,arm-.05),P(R,4.93),pal.post);
     paneLantern(b,P,o,R,4.3,.17,.5,pal.frame,pal.lanternRoof,pal.glassNight,full);
   }else if(pal.theme==='taylor'){
     b.box(o[0],o[2],0,.075,.075,o[1]+ROAD_LAMP.plinth,o[1]+top,shade(pal.post,1.06),pal.post,full?b.ink:null,.8);
-    for(const [y,c] of [[1.1,pal.tape[0]!],[2.6,pal.tape[1]!],[4.1,pal.tape[2]!]] as const)b.box(o[0],o[2],.35,.085,.085,o[1]+y,o[1]+y+.16,c,c,null);
-    b.box(o[0],o[2],0,.1,.1,o[1]+top,o[1]+top+.05,pal.paperEdge,pal.paperEdge,null);
+    for(const [y,c] of (full?[[1.1,pal.tape[0]!],[2.6,pal.tape[1]!],[4.1,pal.tape[2]!]]:[]) as [number,RGB][])b.box(o[0],o[2],.35,.085,.085,o[1]+y,o[1]+y+.16,c,c,null);
+    if(full)b.box(o[0],o[2],0,.1,.1,o[1]+top,o[1]+top+.05,pal.paperEdge,pal.paperEdge,null);
     b.beam(P(-.05,arm),P(R+.06,arm),.08,.1,pal.timberLight,full?b.ink:null);
-    b.beam(P(.06,arm-.6),P(.7,arm-.02),.06,.07,pal.timberLight,null);
+    if(full)b.beam(P(.06,arm-.6),P(.7,arm-.02),.06,.07,pal.timberLight,null);
     b.line(P(R,arm-.05),P(R,4.95),pal.frame);
     // Washi lantern: a round paper body that glows whole, a lilac cap and foot, a heart cut on each face.
     const cx=o[0]+R,cz=o[2],y0=o[1]+4.22;
-    glowCone(b,cx,cz,y0,y0+.18,.16,.26,pal.glassNight,10);glowCone(b,cx,cz,y0+.18,y0+.52,.26,.24,pal.glassNight,10);glowCone(b,cx,cz,y0+.52,y0+.68,.24,.13,pal.glassNight,10);
-    b.cone(cx,cz,y0-.05,y0,.1,.16,pal.lanternRoof,8);b.cone(cx,cz,y0+.68,y0+.74,.14,.1,pal.lanternRoof,8);
+    glowCone(b,cx,cz,y0,y0+.18,.16,.26,pal.glassNight,full?10:6);glowCone(b,cx,cz,y0+.18,y0+.52,.26,.24,pal.glassNight,full?10:6);glowCone(b,cx,cz,y0+.52,y0+.68,.24,.13,pal.glassNight,full?10:6);
+    b.cone(cx,cz,y0-.05,y0,.1,.16,pal.lanternRoof,full?8:6);b.cone(cx,cz,y0+.68,y0+.74,.14,.1,pal.lanternRoof,full?8:6);
     const heart=[[0,-.1],[.09,0],[.07,.07],[0,.04],[-.07,.07],[-.09,0]] as const;
-    for(const s of [-1,1]){const zc=cz+s*.262;b.flat(heart.map(([u,v])=>[u+.1,v+.1] as const),[cx-.1,y0+.3,zc],[cx+.1,y0+.3,zc],pal.lanternRoof,null);}
+    if(full)for(const s of [-1,1]){const zc=cz+s*.262;b.flat(heart.map(([u,v])=>[u+.1,v+.1] as const),[cx-.1,y0+.3,zc],[cx+.1,y0+.3,zc],pal.lanternRoof,null);}
   }else{
     b.box(o[0],o[2],0,.08,.08,o[1]+ROAD_LAMP.plinth,o[1]+top,shade(pal.post,1.04),pal.post,full?b.ink:null,.8);
-    b.box(o[0],o[2],0,.09,.09,o[1]+1.6,o[1]+1.85,pal.postBand,shade(pal.postBand,.85),null);
-    b.box(o[0],o[2],0,.11,.11,o[1]+top,o[1]+top+.08,pal.postBand,shade(pal.postBand,.85),null);
+    if(full)b.box(o[0],o[2],0,.09,.09,o[1]+1.6,o[1]+1.85,pal.postBand,shade(pal.postBand,.85),null);
+    if(full)b.box(o[0],o[2],0,.11,.11,o[1]+top,o[1]+top+.08,pal.postBand,shade(pal.postBand,.85),null);
     // Gallows arm with a knee brace; the rope bracket: a rope looped over the arm's end and down to the lantern's bail.
     b.beam(P(-.06,arm),P(R+.12,arm),.09,.11,pal.post,full?b.ink:null);
-    b.beam(P(.06,arm-.7),P(.72,arm-.03),.07,.08,pal.post,null);
-    const rope:V3[]=[P(R-.05,arm+.06),P(R,arm+.1),P(R+.05,arm+.06),P(R+.02,arm-.1),P(R,4.84)];b.tube(rope,.025,pal.rope,4);
-    b.tube([P(R,4.84),P(R-.09,4.8),P(R-.11,4.72),P(R,4.69),P(R+.11,4.72),P(R+.09,4.8),P(R,4.84)],.012,pal.galvanised,4);
+    if(full)b.beam(P(.06,arm-.7),P(.72,arm-.03),.07,.08,pal.post,null);
+    const rope:V3[]=[P(R-.05,arm+.06),P(R,arm+.1),P(R+.05,arm+.06),P(R+.02,arm-.1),P(R,4.84)];
+    if(full){b.tube(rope,.025,pal.rope,4);b.tube([P(R,4.84),P(R-.09,4.8),P(R-.11,4.72),P(R,4.69),P(R+.11,4.72),P(R+.09,4.8),P(R,4.84)],.012,pal.galvanised,4);}
+    else b.line(P(R,arm),P(R,4.74),pal.rope);
     // Hurricane lantern: galvanised font, a glass globe (bulging), wire guards, a vented cap.
     const cx=o[0]+R,cz=o[2],y0=o[1]+4.08;
-    b.cone(cx,cz,y0,y0+.12,.15,.16,pal.galvanised,8,'steel');
-    glowCone(b,cx,cz,y0+.12,y0+.34,.1,.15,pal.glassNight,8);glowCone(b,cx,cz,y0+.34,y0+.54,.15,.08,pal.glassNight,8);
+    b.cone(cx,cz,y0,y0+.12,.15,.16,pal.galvanised,full?8:6,'steel');
+    glowCone(b,cx,cz,y0+.12,y0+.34,.1,.15,pal.glassNight,full?8:6);glowCone(b,cx,cz,y0+.34,y0+.54,.15,.08,pal.glassNight,full?8:6);
     if(full)for(let k=0;k<4;k++){const a=k/4*Math.PI*2+.4;b.line([cx+Math.cos(a)*.13,y0+.12,cz+Math.sin(a)*.13],[cx+Math.cos(a)*.17,y0+.34,cz+Math.sin(a)*.17],pal.galvanised);b.line([cx+Math.cos(a)*.17,y0+.34,cz+Math.sin(a)*.17],[cx+Math.cos(a)*.1,y0+.56,cz+Math.sin(a)*.1],pal.galvanised);}
-    b.cone(cx,cz,y0+.54,y0+.6,.11,.11,pal.galvanised,8,'steel');b.cone(cx,cz,y0+.6,y0+.66,.12,.04,pal.galvanised,8,'steel');
+    b.cone(cx,cz,y0+.54,y0+.6,.11,.11,pal.galvanised,full?8:6,'steel');b.cone(cx,cz,y0+.6,y0+.66,.12,.04,pal.galvanised,full?8:6,'steel');
   }
 }
 

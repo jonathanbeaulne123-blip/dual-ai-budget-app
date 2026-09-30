@@ -6,8 +6,11 @@ import type { SideName } from './frame.ts';
 
 export type StructureKind = 'bridge' | 'tunnel';
 export interface Env {
+  /** Lazily measured and memoized post setback for a specific candidate, beyond the paved edge. */
+  lampSetback?(s:number,side:'left'|'right'):number|undefined;
+  lightBends?: readonly {from:number;to:number;apex:number}[];
   ground(x: number, z: number): number;
-  occupied(x: number, z: number): boolean;
+  occupied(x: number, z: number, radius?: number, height?: number): boolean;
   wet(x: number, z: number): boolean;
   structureKind(id: string): StructureKind;
   walks: readonly { id: string; points: readonly Point3[] }[];

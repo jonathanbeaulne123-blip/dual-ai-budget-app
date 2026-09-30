@@ -68,7 +68,7 @@ export const BENT_PINE_LEAN = 0.15;
 type Rec = { district: string; x: number; z: number; far: number; m: THREE.Matrix4; colour: RGB | null; stretch?: number; trunk?: RGB; on: boolean; /** Clock (s) it joined by residency while already inside its fade-free radius: it scales in from then. */ born: number };
 type Layer = { key: string; family: LayerFamily; mesh: THREE.InstancedMesh; recs: Rec[]; tris: number; stretch: boolean; twoTone: boolean; dirty: boolean };
 type Spec = { family: LayerFamily; geometry: () => THREE.BufferGeometry; material: THREE.Material; depth?: THREE.Material; cast: boolean; order?: number; stretch?: boolean; twoTone?: boolean };
-type Item = { groupId: string; index: number; item: PlantItem; district: string; kept: boolean; rank: number };
+type Item = { corridorId:string; groupId: string; index: number; item: PlantItem; district: string; kept: boolean; rank: number };
 
 const hash = (s: string) => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return ((h >>> 0) % 100000) / 100000; };
 const finite = (p: PlantItem) => [p.at[0], p.at[1], p.at[2], p.scale, p.yaw].every(Number.isFinite) && p.scale > 0;
@@ -94,8 +94,13 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
   // Items, with their district and lite selection. Non-finite items are skipped (never NaN in a matrix).
   const items: Item[] = [];
   for (const c of world.corridors ?? []) for (const g of c.planting) {
+    // The carried mountain already draws its native forest on both tiers. Lite
+    // omits alternate additional framing groves, retaining the complete shapes
+    // of those it draws and all of the native trees. Full keeps every new grove.
+    const extraGrove = c.id === 'mountainV2.road' ? /\.framingTrees\.(\d+)$/.exec(g.id) : null;
+    if (!full && extraGrove && Number(extraGrove[1]) % 2 === 1) continue;
     const keep = full ? g.items.map(() => true) : liteKeep(g.items, g.id);
-    g.items.forEach((item, index) => { if (finite(item)) items.push({ groupId: g.id, index, item, district: districtAt(item.at[0], item.at[2], 1), kept: keep[index]!, rank: hash(`${g.id}#${index}`) }); });
+    g.items.forEach((item, index) => { if (finite(item)) items.push({ corridorId:c.id, groupId: g.id, index, item, district: districtAt(item.at[0], item.at[2], 1), kept: keep[index]!, rank: hash(`${g.id}#${index}`) }); });
   }
   // Materials: built once, stable across seasons (so the runtime can fog-hook them once).
   const mats: THREE.Material[] = [], own = <M extends THREE.Material>(m: M) => { mats.push(m); return m; };
@@ -134,6 +139,8 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
     // Unit geometries shared by several layers are built once per build (the palm body and its shell come together).
     let palmPair: ReturnType<typeof palmGeometry> | null = null; const palm = () => (palmPair ??= palmGeometry(pal, tier));
     const add = (key: string, spec: Spec, rec: Omit<Rec, 'on' | 'far' | 'born'>, it: Item) => {
+      // Lite keeps the authored mountain silhouettes and bend lights; subtract only secondary ground shadows.
+      if(!full&&it.corridorId==='mountainV2.road'&&spec.family==='contact')return;
       let b = buckets.get(key); if (!b) { b = { ...spec, recs: [] }; buckets.set(key, b); }
       b.recs.push({ ...rec, far: farOf(spec.family, tier, it.rank), on: false, born: -1e9 });
     };

@@ -5,8 +5,9 @@ import {TOWN_LANE_DECK} from './course.ts';
 import {PATH_EDGES,mountainWalkPlan} from './pathGraph.ts';
 import {TRANSPORT_LINES} from './transport.ts';
 import {ORCHARD_LANE_HALF_WIDTH} from './roadLine.ts';
+import {landingSample,type LandingRows} from './branchLandings.ts';
 export {SKILL_BRANCHES} from './definition.ts';
-export type WorldSurface={id:string;points:readonly Point3[];halfWidth:number;material:'path'|'wood'|'metal';walkable:boolean;kind?:'road'|'lane'|'stair'|'bridge'|'promenade'|'platform'|'branch'};
+export type WorldSurface={id:string;points:readonly Point3[];halfWidth:number;material:'path'|'wood'|'metal';walkable:boolean;kind?:'road'|'lane'|'stair'|'bridge'|'promenade'|'platform'|'branch';landingRows?:LandingRows;widths?:readonly number[]};
 const platform=(kind:string,id:string,p:{at:Point3;yaw:number;half:readonly[number,number]}):WorldSurface=>{
   const dx=Math.sin(p.yaw)*p.half[0],dz=Math.cos(p.yaw)*p.half[0];
   return {id:`station:${kind}:${id}`,points:[[p.at[0]-dx,p.at[1],p.at[2]-dz],[p.at[0]+dx,p.at[1],p.at[2]+dz]],halfWidth:p.half[1],material:kind==='gondola'?'metal':'wood',walkable:true,kind:'platform'};
@@ -20,7 +21,7 @@ export const WORLD_SURFACES:readonly WorldSurface[]=[
   {id:'orchard-lane',points:ORCHARD_LANE_LINE.samples.filter((_,i,all)=>i%2===0||i===all.length-1).map(s=>s.at),halfWidth:ORCHARD_LANE_HALF_WIDTH,material:'path',walkable:true,kind:'lane'},
   ...PATH_EDGES.filter(e=>e.kind!=='path').map(e=>({id:`path:${e.id}`,points:e.points,halfWidth:e.halfWidth,material:(e.kind==='promenade'?'metal':e.kind==='bridge'?'wood':'path') as WorldSurface['material'],walkable:true,kind:e.kind as WorldSurface['kind']})),
   ...Object.values(TRANSPORT_LINES).flatMap(line=>line.stations.map(s=>platform(line.kind,s.id,s.platform))),
-  ...SKILL_BRANCHES.map(b=>({id:b.id,points:b.points,halfWidth:b.halfWidth,material:b.material,walkable:true,kind:'branch' as const})),
+  ...SKILL_BRANCHES.map(b=>({id:b.id,points:b.points,halfWidth:b.halfWidth,material:b.material,walkable:true,kind:'branch' as const,...(b.landingRows?{landingRows:b.landingRows}:{})})),
 ];
 export type SurfaceRequest={x:number;z:number;y?:number;supportId?:string|null;stepHeight?:number};
 export type WorldSurfaceHit={id:string;y:number;nx:number;ny:number;nz:number;material:'path'|'wood'|'metal'|'grass';slope:number};
@@ -50,6 +51,18 @@ function onDeck(x:number,z:number,points:readonly Point3[]){
   if(p.index===n-2&&p.t===1){const a=points[n-2]!,b=points[n-1]!,dx=b[0]-a[0],dz=b[2]-a[2],l=Math.hypot(dx,dz)||1;if(((x-b[0])*dx+(z-b[2])*dz)/l>.35)return null;}
   return p;
 }
+/** One deck projection for native and Horizon floor, ceiling and body queries. */
+export function worldDeckAt(surface:WorldSurface,x:number,z:number){
+  const p=onDeck(x,z,surface.points);if(!p)return null;
+  if(surface.landingRows){
+    // Explicit landing meshes end at their visible triangles. The legacy polyline's end-cap
+    // tolerance must not invent a flat floor or ceiling beyond this apron.
+    const hit=landingSample(surface.landingRows,x,z);if(!hit)return null;
+    p.point=[p.point[0],hit.y,p.point[2]];p.gradientX=hit.gx;p.gradientZ=hit.gz;
+  }
+  const widths=surface.widths,halfWidth=widths?widths[p.index]!+(widths[p.index+1]!-widths[p.index]!)*p.t:surface.halfWidth;
+  return {...p,halfWidth};
+}
 
 /** A bridge deck whose square end lands on the bank at ground level eases into the bank over its end
  * segment (an approach slab): a flat deck on a cross-sloped bank would otherwise meet it with a riser of
@@ -72,11 +85,11 @@ export function queryWorldSurface(input:SurfaceRequest,ground:(x:number,z:number
   let height=gy,dx=gx,dz=gz,id='terrain',material:WorldSurfaceHit['material']='grass';
   const ceiling=input.y===undefined?Infinity:input.y+(input.stepHeight??.48);
   let preferred=false;
-  for(const si of near(input.x,input.z,surfaces)){const surface=surfaces[si]!,p=onDeck(input.x,input.z,surface.points);if(!p)continue;
-    const slab=p.distance<=surface.halfWidth+1e-6?approachSlab(surface,p,input.x,input.z,ground,gy,gx,gz):null;
+  for(const si of near(input.x,input.z,surfaces)){const surface=surfaces[si]!,p=worldDeckAt(surface,input.x,input.z);if(!p)continue;
+    const slab=p.distance<=p.halfWidth+1e-6?approachSlab(surface,p,input.x,input.z,ground,gy,gx,gz):null;
     if(slab){p.point=[p.point[0],slab.y,p.point[2]];p.gradientX=slab.gx;p.gradientZ=slab.gz;}
     const supported=surface.id===input.supportId&&input.y!==undefined&&Math.abs(p.point[1]-input.y)<1;
-    if(p.distance>surface.halfWidth+1e-6||p.point[1]>ceiling||p.point[1]<gy-.12||(!supported&&p.point[1]<height-.12))continue;
+    if(p.distance>p.halfWidth+1e-6||p.point[1]>ceiling||p.point[1]<gy-.12||(!supported&&p.point[1]<height-.12))continue;
     if(preferred&&!supported)continue;if(supported)preferred=true;
     height=p.point[1];dx=p.gradientX;dz=p.gradientZ;id=surface.id;material=surface.material;
   }
@@ -87,18 +100,18 @@ const branchById=new Map(SKILL_BRANCHES.map(b=>[b.id,b]));
 /** Undersides are independent of the supporting floor, including at stacked crossings. */
 export function worldCeilingAt(x:number,z:number,feet:number,radius=.2,surfaces:readonly WorldSurface[]=WORLD_SURFACES):number{
   let ceiling=Infinity;
-  for(const si of near(x,z,surfaces)){const s=surfaces[si]!,p=onDeck(x,z,s.points);if(!p)continue;
+  for(const si of near(x,z,surfaces)){const s=surfaces[si]!,p=worldDeckAt(s,x,z);if(!p)continue;
     // A branch mouth is an open road junction, not an overhead bridge slab.
     const branch=branchById.get(s.id),ends=branch?[branch.points[0]!,branch.points[branch.points.length-1]!]:[];
-    const junction=p.point[1]-feet<3&&ends.some(at=>Math.hypot(x-at[0],z-at[2])<18);
-    if(!junction&&p.distance<=s.halfWidth+radius&&p.point[1]>feet+.48)ceiling=Math.min(ceiling,p.point[1]-.28);
+    const junction=!s.landingRows&&p.point[1]-feet<3&&ends.some(at=>Math.hypot(x-at[0],z-at[2])<18);
+    if(!junction&&p.distance<=p.halfWidth+radius&&p.point[1]>feet+.48)ceiling=Math.min(ceiling,p.point[1]-.28);
   }
   return ceiling;
 }
 // Abutment body walls would block the authored maintenance shortcut; retain its corridor.
 export const WORLD_SOLIDS:readonly WorldSolid[]=[...DAM_SOLIDS.filter(s=>s.id.startsWith('dam:plinth:')),...STATION_SOLIDS,...DISTRICT_ART_SOLIDS,...SUMMIT_ART_SOLIDS,...SKILL_BRANCHES.flatMap(s=>s.points.flatMap((p,i)=>{
   if(i%8!==0)return [];const a=s.points[Math.max(0,i-1)]!,b=s.points[Math.min(s.points.length-1,i+1)]!,dx=b[0]-a[0],dz=b[2]-a[2],l=Math.hypot(dx,dz)||1;
-  return [-1,1].flatMap(side=>{const x=p[0]+dz/l*(s.halfWidth+.4)*side,z=p[2]-dx/l*(s.halfWidth+.4)*side,y=mountainBaseHeight(x,z);
+  return [-1,1].flatMap(side=>{const row=s.landingRows?.[i],edge=row?.[side<0?0:row.length-1],width=edge?Math.hypot(edge[0]-p[0],edge[2]-p[2]):s.halfWidth,x=edge?p[0]+(edge[0]-p[0])*(1+.4/width):p[0]+dz/l*(s.halfWidth+.4)*side,z=edge?p[2]+(edge[2]-p[2])*(1+.4/width):p[2]-dx/l*(s.halfWidth+.4)*side,y=mountainBaseHeight(x,z);
     if(nearestOnRoute(x,z).distance<ROAD_HALF_WIDTH+1||p[1]-y<1)return [];
     return [{id:`${s.id}:support:${i}:${side}`,min:[x-.12,y,z-.12] as Point3,max:[x+.12,p[1]-.25,z+.12] as Point3}];
   });
@@ -113,7 +126,7 @@ function edgeHit(x:number,y:number,z:number,radius:number):boolean{
   return false;
 }
 export function worldCollisionAt(x:number,y:number,z:number,radius=.2):boolean{
-  return near(x,z,WORLD_SURFACES).some(si=>{const s=WORLD_SURFACES[si]!,p=onDeck(x,z,s.points);return !!p&&p.distance<s.halfWidth+radius&&y>p.point[1]-.28&&y<p.point[1]+.08;})||
+  return near(x,z,WORLD_SURFACES).some(si=>{const s=WORLD_SURFACES[si]!,p=worldDeckAt(s,x,z);return !!p&&p.distance<p.halfWidth+radius&&y>p.point[1]-.28&&y<p.point[1]+.08;})||
     WORLD_SOLIDS.some(s=>x>s.min[0]-radius&&x<s.max[0]+radius&&z>s.min[2]-radius&&z<s.max[2]+radius&&y>s.min[1]&&y<s.max[1])||(z<-40&&edgeHit(x,y,z,radius));
 }
 /** Walk the path graph (roads, paths, stairs, bridges); never a straight tap route through the gorge. */

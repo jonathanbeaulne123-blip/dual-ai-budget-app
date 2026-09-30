@@ -566,7 +566,7 @@ function tunnelCover(points:readonly XYZ[],clear:number,base:HeightQuery,portal=
   return {cover,at};
 }
 /** Portal mouth, rotated to the tube axis: from 6 eu inside the face to 3 eu outside it. */
-function portalMouth(id:string,end:XYZ,outward:XY,width:number,clear:number,out=3):import('../interfaces').MouthMask {
+export function portalMouth(id:string,end:XYZ,outward:XY,width:number,clear:number,out=3):import('../interfaces').MouthMask {
   const n:XY=[-outward[1],outward[0]],w=width/2+1,pt=(u:number,v:number):XY=>[end[0]+outward[0]*u+n[0]*v,end[2]+outward[1]*u+n[1]*v];
   return {id,kind:'portal',floor:end[1],ceiling:end[1]+clear+.6,outline:[pt(-6,-w),pt(-6,w),pt(out,w),pt(out,-w)]};
 }

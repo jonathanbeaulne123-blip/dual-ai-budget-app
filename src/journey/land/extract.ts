@@ -176,6 +176,15 @@ function extractBridges(world: WorldDefinition, lines: readonly JourneyLandLine[
     }
     out.push({ id, axis, width: round(bed.width), lineIds: lineIds.sort(), underIds: underIds.sort() });
   }
+  for(const c of world.corridors??[])for(const b of c.sourceBridges??[]){
+    if(seen.has(b.id))continue;seen.add(b.id);
+    const axis=b.axis.map(p=>[round(p[0]),round(p[1]),round(p[2])] as const),lineIds:string[]=[],underIds:string[]=[];
+    for(const line of world.lines){if(!drawn.has(line.id))continue;let on=false,under=false;
+      for(const p of line.points){const d=deckDelta(p,axis,b.width/2+DECK_SIDE_SLACK);if(d===null)continue;if(Math.abs(d)<=DECK_HEIGHT_SLACK)on=true;else if(d<0)under=true;}
+      if(on)lineIds.push(line.id);else if(under)underIds.push(line.id);
+    }
+    out.push({id:b.id,axis,width:round(b.width),lineIds:lineIds.sort(),underIds:underIds.sort()});
+  }
   return out.sort((a, b) => (a.id < b.id ? -1 : 1));
 }
 

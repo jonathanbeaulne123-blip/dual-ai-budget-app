@@ -10,6 +10,9 @@ import {roadTagS} from './roadLine.ts';
 import {islandHeight} from './islandShape.ts';
 import {DAM,GEOGRAPHY_REVISION,MOUNTAIN_VERSION,RIVER} from './places.ts';
 import {arcLengths,authorCurve,mix,type Point3} from './math.ts';
+import {repairBranchLanding,type LandingRows} from './branchLandings.ts';
+import libraryLanding from './generated/library-landing.json';
+import awningLanding from './generated/awning-landing.json';
 
 /** Legacy uphill polyline of the mountain road (every third 1-unit sample, ends included). */
 export const MOUNTAIN_ROAD:readonly Point3[]=(()=>{const S=MOUNTAIN_ROAD_LINE.samples,out:Point3[]=[];for(let i=0;i<S.length;i+=3)out.push(S[i]!.at);if(out[out.length-1]!==S[S.length-1]!.at)out.push(S[S.length-1]!.at);return out;})();
@@ -56,9 +59,9 @@ export const courseIndexAt=(uphillPlanS:number)=>{let best=0,d=Infinity;ROAD_PLA
 const townIndex=(x:number,z:number)=>{let best=roadCount,d=Infinity;for(let i=roadCount;i<MOUNTAIN_COURSE_POINTS.length;i++){const p=MOUNTAIN_COURSE_POINTS[i]!,e=Math.hypot(p[0]-x,p[2]-z);if(e<d){d=e;best=i;}}return best;};
 
 // ——— Skill branches ————————————————————————————————————————————————————————————
-export type BranchSegment={kind:'ramp'|'deck'|'rail'|'landing';points:readonly Point3[]};
+export type BranchSegment={kind:'ramp'|'deck'|'rail'|'landing';points:readonly Point3[];landingRows?:LandingRows};
 export type SkillBranch={id:string;name:string;kind:'rail'|'balcony'|'awning';entry:number;exit:number;halfWidth:number;material:'wood'|'metal';
-  points:readonly Point3[];segments:readonly BranchSegment[];branchLength:number;roadLength:number};
+  points:readonly Point3[];segments:readonly BranchSegment[];branchLength:number;roadLength:number;landingRows?:LandingRows};
 function branch(id:string,name:string,kind:SkillBranch['kind'],material:'wood'|'metal',halfWidth:number,entry:number,exit:number,
   parts:readonly {kind:BranchSegment['kind'];via:readonly Point3[]}[],even=false):SkillBranch{
   const a=MOUNTAIN_COURSE_POINTS[entry]!,b=MOUNTAIN_COURSE_POINTS[exit]!;
@@ -75,12 +78,22 @@ function branch(id:string,name:string,kind:SkillBranch['kind'],material:'wood'|'
     const top=Math.max(...[-1,0,1].map(side=>mountainGround(p[0]+dz/l*halfWidth*side,p[2]-dx/l*halfWidth*side)));
     pts[i]=[p[0],Math.max(p[1],top+.03),p[2]];
   }
+  // D-MR: Jonathan approved the two shared native landings. Keep the skill features and
+  // fair each mouth across its full width. The library contour's terrain-constrained heights
+  // are generated offline; scene, surface, body and Horizon all consume these same rows.
+  const repaired=id==='library-balcony'||id==='dam-promenade',raw=pts.map(p=>[...p] as Point3);
+  const authoredLanding=repaired?repairBranchLanding(raw,halfWidth,MOUNTAIN_ROAD_LINE.samples,id==='library-balcony'?.36:.39):undefined;
+  // The generator replaces this JSON import with null while reading the authored input.
+  const generated=libraryLanding as unknown as {points:Point3[];rows:LandingRows}|null;
+  const landing=id==='library-balcony'&&generated?generated:authoredLanding,rows=landing?.rows;
+  if(landing)for(let i=1;i<pts.length-1;i++)pts[i]=landing.points[i]!;
   // Segment boundaries at the authored via points.
   const segments:BranchSegment[]=[];let cursor=0;
   for(const part of parts){const end=part.via[part.via.length-1]!;let j=cursor;let best=Infinity;for(let k=cursor;k<pts.length;k++){const e=Math.hypot(pts[k]![0]-end[0],pts[k]![2]-end[2]);if(e<best){best=e;j=k;}}segments.push({kind:part.kind,points:pts.slice(cursor,j+1)});cursor=j;}
   segments.push({kind:'landing',points:pts.slice(cursor)});
+  if(rows){let start=0;for(const seg of segments){seg.landingRows=rows.slice(start,start+seg.points.length);start+=seg.points.length-1;}}
   const points:Point3[]=pts.map(p=>[p[0],p[1],p[2]] as Point3);points[0]=a;points[points.length-1]=b;
-  return {id,name,kind,entry,exit,halfWidth,material,points,segments,branchLength:arcLengths(points).at(-1)!,roadLength:COURSE_S[exit]!-COURSE_S[entry]!};
+  return {id,name,kind,entry,exit,halfWidth,material,points,segments,branchLength:arcLengths(points).at(-1)!,roadLength:COURSE_S[exit]!-COURSE_S[entry]!,...(rows?{landingRows:rows}:{})};
 }
 const damArc=(from:number,to:number,y0:number,y1:number,radius:number,n=8):Point3[]=>Array.from({length:n},(_,k)=>{const t=(k+.5)/n,a=mix(from,to,t);return [DAM.centre[0]+Math.sin(a)*radius,mix(y0,y1,t),DAM.centre[2]+Math.cos(a)*radius];});
 const LIBRARY_DEPARTURE=BRANCH_DEPARTURES.find(d=>d.id==='library-balcony')!;
@@ -97,8 +110,10 @@ export const SKILL_BRANCHES:readonly SkillBranch[]=[
   branch('library-balcony','Library roof and balcony','balcony','wood',LIBRARY_DEPARTURE.halfWidth,courseIndexAt(LIBRARY_DEPARTURE.planS),courseIndexAt(roadTagS('library')-31),[
     {kind:'ramp',via:[LIBRARY_DEPARTURE.toward]},
     {kind:'deck',via:[[45,41.35,-181.4],[56,41.1,-180.4]]},
-    {kind:'deck',via:[[62,40.4,-177]]},
-    {kind:'ramp',via:[[70,37.6,-172.5],[77,34.6,-168.8]]},
+    // The landing follows the contour outside the reading room before descending. Lowering the
+    // old straight ramp alone would cut through the library's roof. This adds about 8 m of run.
+    {kind:'deck',via:[[61,41.1,-179.5]]},
+    {kind:'ramp',via:[[68,39,-176],[75,36.8,-173.5],[82,34.5,-173.5],[89,32.5,-170]]},
   ]),
   // Neighbourhood awnings: across the inside of the second hairpin on awnings and a ramp, back onto the leg above town.
   branch('hearth-awning','Neighbourhood awnings','awning','wood',1.5,courseIndexAt(roadTagS('hearth')-16),courseIndexAt(roadTagS('hairpin-2')-16),[
@@ -107,7 +122,16 @@ export const SKILL_BRANCHES:readonly SkillBranch[]=[
     {kind:'deck',via:[[33.6,16,-90]]},
     {kind:'ramp',via:[[36.6,14.4,-86.4]]},
   ]),
-];
+].map(br=>{
+  // The original branch remains the generator input. The shared product preserves its first
+  // nine rows (entry and grind rail) and replaces only the contour return and arrival.
+  const generated=awningLanding as unknown as {points:Point3[];rows:LandingRows;exit:number}|null;
+  if(br.id!=='hearth-awning'||!generated)return br;
+  const {points,rows,exit}=generated;
+  const ranges:readonly [number,number,BranchSegment['kind']][]=[[0,5,'deck'],[5,8,'rail'],[8,18,'deck'],[18,28,'ramp'],[28,points.length-1,'landing']];
+  const segments=ranges.map(([a,b,kind]):BranchSegment=>({kind,points:points.slice(a,b+1),landingRows:rows.slice(a,b+1)}));
+  return {...br,exit,points,segments,landingRows:rows,branchLength:arcLengths(points).at(-1)!,roadLength:COURSE_S[exit]!-COURSE_S[br.entry]!};
+});
 
 // ——— Gates ——————————————————————————————————————————————————————————————————————
 export type RaceGate={id:string;at:Point3;normal:readonly[number,number];halfWidth:number;halfHeight:number;name?:string;segment?:string;height?:number};

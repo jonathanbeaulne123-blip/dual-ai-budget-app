@@ -88,6 +88,8 @@ export type SkateWorldField = Omit<SkateField, 'grindables'> & {
   readonly grindables: readonly SkateGrindable[];
   /** Invisible authored areas where the full ramp, gravity and landing model applies. */
   trickZoneAt(x:number,z:number):boolean;
+  /** Only the authored park pads, aprons and features; excludes native terrain and Mountain decks. */
+  samplePark(x: number, z: number): SurfaceSample | null;
   /** Height only (no normal): the cheapest query. */
   heightAt(x: number, z: number): number;
   /** Zero-allocation variant of `sample` (a `lip` object is allocated only on lips). */
@@ -245,7 +247,7 @@ export function createSkateField(ground: (x: number, z: number) => number, opts:
   const hit = newHit(), sd = new Float64Array(3);
   // Winner scratch.
   let wy = 0, wgx = 0, wgz = 0, wkind: SurfaceKind = 'grass', wfeature: string | null = null, wlip = false, wlipYaw = 0, wvert = false;
-  function core(x: number, z: number, withGradient: boolean): void {
+  function core(x: number, z: number, withGradient: boolean): boolean {
     const i = Math.floor((x - ORIGIN) / CELL), j = Math.floor((z - ORIGIN) / CELL);
     const cell = i >= 0 && i < N && j >= 0 && j < N ? j * N + i : -1;
     let y = ground(x, z), open = true;
@@ -287,6 +289,7 @@ export function createSkateField(ground: (x: number, z: number) => number, opts:
         const g = Math.hypot(wgx, wgz); if (g > MAX_SLOPE) { wgx *= MAX_SLOPE / g; wgz *= MAX_SLOPE / g; }
       }
     }
+    return !open;
   }
   function write(out: SurfaceSample): SurfaceSample {
     const inv = 1 / Math.sqrt(wgx * wgx + wgz * wgz + 1);
@@ -384,6 +387,10 @@ export function createSkateField(ground: (x: number, z: number) => number, opts:
     // The same overhead the walker reads: a ramp or path mouth rising off the road is never a roof.
     ceilingAt:(x,z,feet)=>z<-40?overheadAt(x,z,feet):Infinity,
     tier, ground, pads, grindables, solids, spots,
+    samplePark(x, z) {
+      if (!core(x, z, true)) return null;
+      return write({y: 0, nx: 0, ny: 1, nz: 0, kind: 'concrete', feature: null, lip: null});
+    },
     trickZoneAt(x,z) {
       for(const pad of pads){
         const dx=x-pad.frame.x,dz=z-pad.frame.z,c=Math.cos(pad.frame.yaw),s=Math.sin(pad.frame.yaw);

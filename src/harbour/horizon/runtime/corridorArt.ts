@@ -174,7 +174,7 @@ export function createCorridorArt(world:WorldDefinition,opts:CorridorArtOptions)
     if(!c.stations.length)continue;
     const f=corridorSampler(c);
     for(const run of c.markings)for(const q of markingQuads(run,f,opts.deck)){const cx=(q[0][0]+q[2][0])/2,cz=(q[0][2]+q[2][2])/2;plan(districtOf(cx,cz)).markings.q.push(q);}
-    for(const run of c.guards){if(run.kind!=='stoneParapet'&&run.kind!=='postRail')continue;for(const p of splitRun(run,districtOf))plan(p.district).guards.push(p.run);}
+    for(const run of c.guards){if(run.owner==='region'||run.kind!=='stoneParapet'&&run.kind!=='postRail')continue;for(const p of splitRun(run,districtOf))plan(p.district).guards.push(p.run);}
     for(const spot of c.lamps){const place=placeLamp(spot,opts.theme);plan(districtOf(place.base[0],place.base[2])).lamps.push(place);heads.push({id:place.id,head:[place.head[0],place.head[1],place.head[2]]});}
     for(const stop of c.stops){plan(districtOf(stop.at[0],stop.at[2])).stops.push({corridor:c,stop});
       const lay=stopLayout(stop,opts.ground??(()=>stop.at[1]));
@@ -195,7 +195,7 @@ export function createCorridorArt(world:WorldDefinition,opts:CorridorArtOptions)
     yield;
     const pieces:Piece[]=[];
     for(const run of p.guards){const out=buildGuardRun(b,pal,run,{tier,...(opts.ground?{ground:opts.ground}:{})});for(const post of out.posts)pieces.push(postPiece(post));yield;}
-    for(const {stop} of p.stops){buildScenicStop(b,pal,stop,{tier,ground:opts.ground??(()=>stop.at[1]),flags:!opts.bakedStopFloors?.has(stop.id)});yield;}
+    for(const {stop} of p.stops){buildScenicStop(b,pal,stop,{tier,ground:opts.ground??(()=>stop.at[1]),flags:!stop.existingFloor&&!opts.bakedStopFloors?.has(stop.id)});yield;}
     for(const l of p.lamps)pieces.push({kind:l.kind,at:l.base,yaw:l.yaw,sy:1});
     // Instanced pieces: their ink and contact shadows join the district's merged batches.
     const byKind=new Map<LampKind|'railPost',Piece[]>();for(const q of pieces){let l=byKind.get(q.kind);if(!l)byKind.set(q.kind,l=[]);l.push(q);}

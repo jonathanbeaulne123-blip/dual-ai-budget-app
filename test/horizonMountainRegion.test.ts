@@ -131,7 +131,7 @@ describe('the Horizon geography under the region',()=>{
     const runtime=readFileSync('src/harbour/horizon/runtime/index.ts','utf8'),step=runtime.slice(runtime.indexOf('function step(dt:number,now:number){'),runtime.indexOf('function tick(now:number){'));
     expect(runtime).toMatch(/geography\.addDynamic\(placed\.region\.providerWhileDrawn\(\(\)=>regionVisible\)\)/);
     expect(runtime).toMatch(/function gateOpen\(x:number,z:number\):boolean\{return chunkGateOpen\(x,z\)&&regionReady\(x,z\);\}/);
-    expect(runtime).toMatch(/function regionReady\(x:number,z:number\):boolean\{return !placed\|\|regionVisible\|\|!placed\.region\.contains\(x,z\);\}/);
+    expect(runtime).toMatch(/function regionReady\(x:number,z:number\):boolean\{return !placed\|\|regionVisible\|\|!placed\.region\.requiresScene\(x,z\);\}/);
     // The walker: held (resnap) before any movement or airborne branch, re-seated on the deck once drawn; a landing chunk keeps the hold.
     const hold=step.indexOf('if(!regionReady(body.x,body.z)){resnap=true;regionSettle=true;}');expect(hold).toBeGreaterThan(0);expect(hold).toBeLessThan(step.indexOf('if(bodyHeld()){'));
     expect(runtime).toMatch(/function reseat\(\)\{\s*\/\/[^\n]*\n\s*\{const at=holdPoint\(\);if\(!regionReady\(at\[0\],at\[1\]\)\)\{resnap=true;return;\}\}/);

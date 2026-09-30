@@ -17,14 +17,18 @@ export const PLAN_DESTINATION_REACH = 45; // = DESTINATION_REACH in plan/lamps.t
 import { MARK, planMarkings } from './plan/markings.ts';
 import { planPlanting } from './plan/planting.ts';
 import { seedOf } from './plan/rng.ts';
-import { planStops, type StopProposal } from './plan/stops.ts';
+import { planStops, type StopProposal, type PlannedStop } from './plan/stops.ts';
 
 export interface PlanInput { id: string; closed: boolean; step: number; stations: readonly CorridorStation[]; reaches: readonly CorridorReach[] }
 export interface PlanEnv {
+  /** Lazily measured and memoized post setback for a specific candidate, beyond the paved edge. */
+  lampSetback?(s:number,side:'left'|'right'):number|undefined;
+  /** Explicit sustained native bends, in plan metres; light both running lanes through each bend. */
+  lightBends?: readonly {from:number;to:number;apex:number}[];
   /** Final baked ground height (terrain or walkable solid top) at x,z. */
   ground(x: number, z: number): number;
   /** True where a point is on or inside any bed or solid footprint that planting must avoid. */
-  occupied?(x: number, z: number): boolean;
+  occupied?(x: number, z: number, radius?: number, height?: number): boolean;
   /** Season-independent seed so re-bakes are byte-identical. */
   seed: string;
   /** Optional: true where (x, z) is open water (sea, lagoon, river, lake). Default: ground ≤ sea level 0 + 0.05. */
@@ -44,6 +48,8 @@ export interface PlanEnv {
    * lane MARK.giveWayInset eu in from that end, i.e. at the host's paved edge; no centre line within a junction box of
    * it). Default: V01 none (it is the host everywhere), VG both ends (it tees into V01 at both), V03 its start, every
    * other road its start (spurs and service roads are laid from their host junction outward). */
+  /** Existing supported native stops participate in the same lamp and planting reservations. */
+  authoredStops?: readonly ScenicStop[];
   giveWayAt?: readonly ('start' | 'end')[];
 }
 export interface CorridorPlan {
@@ -66,6 +72,8 @@ export function planCorridor(input: PlanInput, env: PlanEnv): CorridorPlan {
   const A = new Analysis(input.id, input.closed, stations, input.reaches);
   const E: Env = {
     ground: env.ground,
+    lightBends:env.lightBends??[],
+    lampSetback:env.lampSetback,
     occupied: env.occupied ?? (() => false),
     wet: env.water ?? ((x, z) => env.ground(x, z) <= 0.05),
     structureKind: env.structureKind ?? defaultStructureKind,
@@ -76,6 +84,11 @@ export function planCorridor(input: PlanInput, env: PlanEnv): CorridorPlan {
   };
   const notes: string[] = [], proposals: StopProposal[] = [];
   const planned = planStops(A, E, notes, proposals);
+  for(const stop of env.authoredStops??[]){
+    let q={s:0,o:0,d:Infinity};for(let k=0;k<stations.length;k+=10){const p=A.frame.project(stop.at[0],stop.at[2],k,10);if(p.d<q.d)q=p;}
+    const side=q.o<0?'left':'right',half=Math.max(1,...stop.outline.map(p=>Math.hypot(p[0]-stop.at[0],p[1]-stop.at[2])));
+    planned.push({stop,s:q.s,span:{side,from:q.s-half,to:q.s+half},reach:0} satisfies PlannedStop);
+  }
   const giveWayAt = env.giveWayAt ?? (input.id === 'V01' ? [] : input.id === 'VG' ? ['start', 'end'] as const : ['start'] as const);
   const markings = planMarkings(A, { giveWayAt, giveWayInset: MARK.giveWayInset });
   const litRuns: LitRun[] = [];

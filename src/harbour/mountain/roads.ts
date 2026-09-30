@@ -62,6 +62,13 @@ function classify(points:readonly Point3[],id:string,halfWidthAt:(i:number)=>num
 export const BRANCH_DEPARTURES=[
   {id:'library-balcony',line:'mountain-road',planS:roadTagS('b2-east')-1,toward:[37,41.2,-181.6] as Point3,halfWidth:1.6},
 ] as const;
+/** D-MR: the regraded shared landings now arrive at road level, through a real opening.
+ * This same edge data removes both the drawn rail and its body collider. */
+const BRANCH_ARRIVALS=[
+  {id:'hearth-awning:landing',line:'mountain-road',planS:roadTagS('hairpin-2')+2,toward:[24.5,15.6,-90] as Point3,halfWidth:1.2},
+  {id:'library-balcony:landing',line:'mountain-road',planS:roadTagS('library')-31,toward:[88,32.5,-170] as Point3,halfWidth:1.6},
+  {id:'dam-promenade:landing',line:'mountain-road',planS:roadTagS('b3-west')+10,toward:[-18,71,-225.5] as Point3,halfWidth:1.7},
+] as const;
 /** A gap in a road edge: a branch deck or a path/stair leaves the road there, so the rail, parapet or
  * retaining wall stops for it (edge samples inside it are `open` and carry no collision). */
 export type EdgeOpening={id:string;line:string;side:'left'|'right';s0:number;s1:number;by:'branch'|'path'|'junction';corridor:readonly Point3[];halfWidth:number};
@@ -71,7 +78,7 @@ const OPENED={left:new WeakSet<RoadSample>(),right:new WeakSet<RoadSample>()};
 /** Where each departure's first leg crosses the road edge (half-width plus a body's clearance each side). */
 function departures(line:RoadLine):{id:string;by:'branch'|'path';corridor:Point3[];halfWidth:number}[]{
   const out:{id:string;by:'branch'|'path';corridor:Point3[];halfWidth:number}[]=[];
-  for(const d of BRANCH_DEPARTURES){if(d.line!==line.id)continue;
+  for(const d of [...BRANCH_DEPARTURES,...BRANCH_ARRIVALS]){if(d.line!==line.id)continue;
     out.push({id:d.id,by:'branch',corridor:[line.samples[Math.max(0,Math.min(line.samples.length-1,Math.round(d.planS/ROAD_PLAN_STEP)))]!.at,d.toward],halfWidth:d.halfWidth});}
   // Every path and stair that starts at a junction on this line leaves it through the edge beside the junction.
   const prefix=line.id==='mountain-road'?'road:':'lane:';
