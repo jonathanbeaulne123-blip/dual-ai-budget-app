@@ -1,0 +1,3310 @@
+[
+  {
+    "id": "A",
+    "cameraUnchanged": true,
+    "before": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "the High Span",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 48,
+          "portraitPixels": 11,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the Shoulder",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 39,
+          "portraitPixels": null,
+          "portraitRequired": false,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.402623457,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 5218,
+        "pitchDegrees": 2.502736378,
+        "verticalHalfFovDegrees": 17.991698886,
+        "horizonInFrame": true,
+        "subjects": {
+          "the High Span": 48,
+          "the Shoulder": 39
+        },
+        "top": [
+          [
+            "sky",
+            0.4026
+          ],
+          [
+            "town.square",
+            0.3157
+          ],
+          [
+            "terrain",
+            0.1008
+          ],
+          [
+            "host.bank",
+            0.0603
+          ],
+          [
+            "kittyPlaza.slab",
+            0.0507
+          ],
+          [
+            "host.home",
+            0.0273
+          ],
+          [
+            "town.bankLink",
+            0.0215
+          ],
+          [
+            "V01.corridor",
+            0.0076
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.48025641,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 3746,
+        "pitchDegrees": 2.824562849,
+        "verticalHalfFovDegrees": 41.906793121,
+        "horizonInFrame": true,
+        "subjects": {
+          "the High Span": 11
+        },
+        "top": [
+          [
+            "sky",
+            0.4803
+          ],
+          [
+            "town.square",
+            0.3031
+          ],
+          [
+            "host.home",
+            0.1373
+          ],
+          [
+            "terrain",
+            0.0436
+          ],
+          [
+            "kittyPlaza.slab",
+            0.0141
+          ],
+          [
+            "town.bankLink",
+            0.0086
+          ],
+          [
+            "host.bank",
+            0.0051
+          ],
+          [
+            "V01.corridor",
+            0.0028
+          ]
+        ]
+      },
+      "pass": true,
+      "passLandscape": true,
+      "passPortrait": true,
+      "deferred": [
+        "the Reach (outside any lens that holds the dam from the square; page I carries it)",
+        "the Crown (hidden from the square by the Shoulder's own rim, 4\u201316 eu over the sight line inside its band; page E holds it)"
+      ]
+    },
+    "after": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "the High Span",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 52,
+          "portraitPixels": 12,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the Shoulder",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 39,
+          "portraitPixels": null,
+          "portraitRequired": false,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.402314815,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 5214,
+        "pitchDegrees": 2.502736378,
+        "verticalHalfFovDegrees": 17.991698886,
+        "horizonInFrame": true,
+        "subjects": {
+          "the High Span": 52,
+          "the Shoulder": 39
+        },
+        "top": [
+          [
+            "sky",
+            0.4023
+          ],
+          [
+            "town.square",
+            0.3157
+          ],
+          [
+            "terrain",
+            0.1009
+          ],
+          [
+            "host.bank",
+            0.0603
+          ],
+          [
+            "kittyPlaza.slab",
+            0.0507
+          ],
+          [
+            "host.home",
+            0.0273
+          ],
+          [
+            "town.bankLink",
+            0.0215
+          ],
+          [
+            "V01.corridor",
+            0.0076
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.480128205,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 3745,
+        "pitchDegrees": 2.824562849,
+        "verticalHalfFovDegrees": 41.906793121,
+        "horizonInFrame": true,
+        "subjects": {
+          "the High Span": 12
+        },
+        "top": [
+          [
+            "sky",
+            0.4801
+          ],
+          [
+            "town.square",
+            0.3031
+          ],
+          [
+            "host.home",
+            0.1373
+          ],
+          [
+            "terrain",
+            0.0436
+          ],
+          [
+            "kittyPlaza.slab",
+            0.0141
+          ],
+          [
+            "town.bankLink",
+            0.0086
+          ],
+          [
+            "host.bank",
+            0.0051
+          ],
+          [
+            "V01.corridor",
+            0.0028
+          ]
+        ]
+      },
+      "pass": true,
+      "passLandscape": true,
+      "passPortrait": true,
+      "deferred": [
+        "the Reach (outside any lens that holds the dam from the square; page I carries it)",
+        "the Crown (hidden from the square by the Shoulder's own rim, 4\u201316 eu over the sight line inside its band; page E holds it)"
+      ]
+    }
+  },
+  {
+    "id": "B",
+    "cameraUnchanged": true,
+    "before": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "the Bight Bridge",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 1954,
+          "portraitPixels": 331,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the Flats",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 546,
+          "portraitPixels": null,
+          "portraitRequired": false,
+          "pass": true
+        },
+        {
+          "id": "the hook",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 1171,
+          "portraitPixels": 203,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.410108025,
+        "seaShare": 0.183796296,
+        "horizonRowSkyOrSea": 5315,
+        "pitchDegrees": -1.196545977,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "the Bight Bridge": 1954,
+          "the Flats": 546,
+          "the hook": 1171
+        },
+        "top": [
+          [
+            "sky",
+            0.4101
+          ],
+          [
+            "water.sea",
+            0.1838
+          ],
+          [
+            "terrain",
+            0.1425
+          ],
+          [
+            "lampGallery.ramp",
+            0.0672
+          ],
+          [
+            "bightBridge.deck",
+            0.0445
+          ],
+          [
+            "bightBridge.arch",
+            0.032
+          ],
+          [
+            "water.bight",
+            0.0276
+          ],
+          [
+            "bightBridge.supports",
+            0.0216
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.467051282,
+        "seaShare": 0.071923077,
+        "horizonRowSkyOrSea": 3643,
+        "pitchDegrees": -1.926805381,
+        "verticalHalfFovDegrees": 45.294501885,
+        "horizonInFrame": true,
+        "subjects": {
+          "the Bight Bridge": 331,
+          "the hook": 203
+        },
+        "top": [
+          [
+            "sky",
+            0.4671
+          ],
+          [
+            "lampGallery.slab",
+            0.3213
+          ],
+          [
+            "water.sea",
+            0.0719
+          ],
+          [
+            "terrain",
+            0.0418
+          ],
+          [
+            "lampGallery.ramp",
+            0.0417
+          ],
+          [
+            "bightBridge.deck",
+            0.0127
+          ],
+          [
+            "bightBridge.arch",
+            0.0091
+          ],
+          [
+            "water.bight",
+            0.0082
+          ]
+        ]
+      },
+      "pass": true,
+      "passLandscape": true,
+      "passPortrait": true,
+      "deferred": []
+    },
+    "after": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "the Bight Bridge",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 2244,
+          "portraitPixels": 399,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the Flats",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 487,
+          "portraitPixels": null,
+          "portraitRequired": false,
+          "pass": true
+        },
+        {
+          "id": "the hook",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 1028,
+          "portraitPixels": 178,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.403549383,
+        "seaShare": 0.183564815,
+        "horizonRowSkyOrSea": 5230,
+        "pitchDegrees": -1.196545977,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "the Bight Bridge": 2244,
+          "the Flats": 487,
+          "the hook": 1028
+        },
+        "top": [
+          [
+            "sky",
+            0.4035
+          ],
+          [
+            "water.sea",
+            0.1836
+          ],
+          [
+            "terrain",
+            0.1284
+          ],
+          [
+            "lampGallery.ramp",
+            0.0672
+          ],
+          [
+            "bightBridge.arch",
+            0.0491
+          ],
+          [
+            "bightBridge.deck",
+            0.0448
+          ],
+          [
+            "water.bight",
+            0.0275
+          ],
+          [
+            "bightBridge.supports",
+            0.0216
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.465128205,
+        "seaShare": 0.071153846,
+        "horizonRowSkyOrSea": 3628,
+        "pitchDegrees": -1.926805381,
+        "verticalHalfFovDegrees": 45.294501885,
+        "horizonInFrame": true,
+        "subjects": {
+          "the Bight Bridge": 399,
+          "the hook": 178
+        },
+        "top": [
+          [
+            "sky",
+            0.4651
+          ],
+          [
+            "lampGallery.slab",
+            0.3213
+          ],
+          [
+            "water.sea",
+            0.0712
+          ],
+          [
+            "lampGallery.ramp",
+            0.0417
+          ],
+          [
+            "terrain",
+            0.0368
+          ],
+          [
+            "bightBridge.arch",
+            0.0156
+          ],
+          [
+            "bightBridge.deck",
+            0.0129
+          ],
+          [
+            "water.bight",
+            0.0076
+          ]
+        ]
+      },
+      "pass": true,
+      "passLandscape": true,
+      "passPortrait": true,
+      "deferred": []
+    }
+  },
+  {
+    "id": "C",
+    "cameraUnchanged": true,
+    "before": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "the road deck",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 644,
+          "portraitPixels": 124,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the skate shelf",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 30,
+          "portraitPixels": 4,
+          "portraitRequired": true,
+          "pass": false
+        },
+        {
+          "id": "the walk at the water",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 284,
+          "portraitPixels": 54,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.239429012,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 3103,
+        "pitchDegrees": 3.373095564,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "the road deck": 644,
+          "the skate shelf": 30,
+          "the walk at the water": 284
+        },
+        "top": [
+          [
+            "terrain",
+            0.2996
+          ],
+          [
+            "sky",
+            0.2394
+          ],
+          [
+            "water.river.lower",
+            0.1379
+          ],
+          [
+            "highSpan.truss",
+            0.059
+          ],
+          [
+            "highSpan.overlook",
+            0.0526
+          ],
+          [
+            "highSpan.deck",
+            0.0497
+          ],
+          [
+            "highSpan.supports",
+            0.0462
+          ],
+          [
+            "walk reach.retaining",
+            0.0325
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.416666667,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 3250,
+        "pitchDegrees": 3.997130776,
+        "verticalHalfFovDegrees": 45.294501885,
+        "horizonInFrame": true,
+        "subjects": {
+          "the road deck": 124,
+          "the skate shelf": 4,
+          "the walk at the water": 54
+        },
+        "top": [
+          [
+            "sky",
+            0.4167
+          ],
+          [
+            "highSpan.overlook",
+            0.3065
+          ],
+          [
+            "terrain",
+            0.1338
+          ],
+          [
+            "water.river.lower",
+            0.0554
+          ],
+          [
+            "highSpan.truss",
+            0.0246
+          ],
+          [
+            "highSpan.deck",
+            0.0159
+          ],
+          [
+            "highSpan.supports",
+            0.0146
+          ],
+          [
+            "walk reach.retaining",
+            0.0076
+          ]
+        ]
+      },
+      "pass": false,
+      "passLandscape": true,
+      "passPortrait": false,
+      "deferred": []
+    },
+    "after": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "the road deck",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 953,
+          "portraitPixels": 189,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the skate shelf",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 30,
+          "portraitPixels": 4,
+          "portraitRequired": true,
+          "pass": false
+        },
+        {
+          "id": "the walk at the water",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 284,
+          "portraitPixels": 54,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.254166667,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 3294,
+        "pitchDegrees": 3.373095564,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "the road deck": 953,
+          "the skate shelf": 30,
+          "the walk at the water": 284
+        },
+        "top": [
+          [
+            "terrain",
+            0.3029
+          ],
+          [
+            "sky",
+            0.2542
+          ],
+          [
+            "water.river.lower",
+            0.1388
+          ],
+          [
+            "highSpan.deck",
+            0.0735
+          ],
+          [
+            "highSpan.overlook",
+            0.0526
+          ],
+          [
+            "highSpan.supports",
+            0.0468
+          ],
+          [
+            "walk reach.retaining",
+            0.0325
+          ],
+          [
+            "highSpan.rails",
+            0.0237
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.416153846,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 3246,
+        "pitchDegrees": 3.997130776,
+        "verticalHalfFovDegrees": 45.294501885,
+        "horizonInFrame": true,
+        "subjects": {
+          "the road deck": 189,
+          "the skate shelf": 4,
+          "the walk at the water": 54
+        },
+        "top": [
+          [
+            "sky",
+            0.4162
+          ],
+          [
+            "highSpan.overlook",
+            0.3065
+          ],
+          [
+            "terrain",
+            0.1346
+          ],
+          [
+            "water.river.lower",
+            0.0555
+          ],
+          [
+            "highSpan.deck",
+            0.0242
+          ],
+          [
+            "highSpan.ribs",
+            0.0149
+          ],
+          [
+            "highSpan.supports",
+            0.0149
+          ],
+          [
+            "highSpan.rails",
+            0.0087
+          ]
+        ]
+      },
+      "pass": false,
+      "passLandscape": true,
+      "passPortrait": false,
+      "deferred": []
+    }
+  },
+  {
+    "id": "D",
+    "cameraUnchanged": true,
+    "before": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "surf",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 14,
+          "portraitPixels": 0,
+          "portraitRequired": true,
+          "pass": false
+        },
+        {
+          "id": "the zipline landing",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 1231,
+          "portraitPixels": 220,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.408950617,
+        "seaShare": 0.001080247,
+        "horizonRowSkyOrSea": 5314,
+        "pitchDegrees": 0.395505187,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "surf": 14,
+          "the zipline landing": 1231
+        },
+        "top": [
+          [
+            "terrain",
+            0.4858
+          ],
+          [
+            "sky",
+            0.409
+          ],
+          [
+            "zipLanding.stair",
+            0.0514
+          ],
+          [
+            "platform.zipLanding",
+            0.0331
+          ],
+          [
+            "zipLanding.ramp",
+            0.0105
+          ],
+          [
+            "S3.surface",
+            0.0038
+          ],
+          [
+            "walk dune.bed",
+            0.0019
+          ],
+          [
+            "ZIP.cable",
+            0.0013
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.472051282,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 3682,
+        "pitchDegrees": 0.277568773,
+        "verticalHalfFovDegrees": 45.294501885,
+        "horizonInFrame": true,
+        "subjects": {
+          "surf": 0,
+          "the zipline landing": 220
+        },
+        "top": [
+          [
+            "terrain",
+            0.4974
+          ],
+          [
+            "sky",
+            0.4721
+          ],
+          [
+            "zipLanding.stair",
+            0.0158
+          ],
+          [
+            "platform.zipLanding",
+            0.0096
+          ],
+          [
+            "zipLanding.ramp",
+            0.0028
+          ],
+          [
+            "S3.surface",
+            0.0015
+          ],
+          [
+            "ZIP.cable",
+            0.0003
+          ],
+          [
+            "walk dune.bed",
+            0.0003
+          ]
+        ]
+      },
+      "pass": false,
+      "passLandscape": true,
+      "passPortrait": false,
+      "deferred": [
+        "a bench (Pass 3 dressing)",
+        "the Lamp (Pass 2b subject: 670 eu from the eye, 9 px of 13 at 1440 \u00d7 900 by size; the Pass 2b lighthouse and its 25 m gallery make it legible; design lead, Stage A Wave 5 integration 2026-09-27)"
+      ]
+    },
+    "after": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "surf",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 14,
+          "portraitPixels": 0,
+          "portraitRequired": true,
+          "pass": false
+        },
+        {
+          "id": "the zipline landing",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 1231,
+          "portraitPixels": 220,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.408950617,
+        "seaShare": 0.001080247,
+        "horizonRowSkyOrSea": 5314,
+        "pitchDegrees": 0.395505187,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "surf": 14,
+          "the zipline landing": 1231
+        },
+        "top": [
+          [
+            "terrain",
+            0.4858
+          ],
+          [
+            "sky",
+            0.409
+          ],
+          [
+            "zipLanding.stair",
+            0.0514
+          ],
+          [
+            "platform.zipLanding",
+            0.0331
+          ],
+          [
+            "zipLanding.ramp",
+            0.0105
+          ],
+          [
+            "S3.surface",
+            0.0038
+          ],
+          [
+            "walk dune.bed",
+            0.0019
+          ],
+          [
+            "ZIP.cable",
+            0.0013
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.472051282,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 3682,
+        "pitchDegrees": 0.277568773,
+        "verticalHalfFovDegrees": 45.294501885,
+        "horizonInFrame": true,
+        "subjects": {
+          "surf": 0,
+          "the zipline landing": 220
+        },
+        "top": [
+          [
+            "terrain",
+            0.4974
+          ],
+          [
+            "sky",
+            0.4721
+          ],
+          [
+            "zipLanding.stair",
+            0.0158
+          ],
+          [
+            "platform.zipLanding",
+            0.0096
+          ],
+          [
+            "zipLanding.ramp",
+            0.0028
+          ],
+          [
+            "S3.surface",
+            0.0015
+          ],
+          [
+            "ZIP.cable",
+            0.0003
+          ],
+          [
+            "walk dune.bed",
+            0.0003
+          ]
+        ]
+      },
+      "pass": false,
+      "passLandscape": true,
+      "passPortrait": false,
+      "deferred": [
+        "a bench (Pass 3 dressing)",
+        "the Lamp (Pass 2b subject: 670 eu from the eye, 9 px of 13 at 1440 \u00d7 900 by size; the Pass 2b lighthouse and its 25 m gallery make it legible; design lead, Stage A Wave 5 integration 2026-09-27)"
+      ]
+    }
+  },
+  {
+    "id": "E",
+    "cameraUnchanged": true,
+    "before": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "Stillwater",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 622,
+          "portraitPixels": 133,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the Green",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 340,
+          "portraitPixels": 84,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the Hollow",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 14,
+          "portraitPixels": null,
+          "portraitRequired": false,
+          "pass": true
+        },
+        {
+          "id": "the Flats",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 102,
+          "portraitPixels": null,
+          "portraitRequired": false,
+          "pass": true
+        },
+        {
+          "id": "the Bight",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 207,
+          "portraitPixels": null,
+          "portraitRequired": false,
+          "pass": true
+        },
+        {
+          "id": "the sea",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 497,
+          "portraitPixels": 34,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.404552469,
+        "seaShare": 0.038348765,
+        "horizonRowSkyOrSea": 1008,
+        "pitchDegrees": -14.410431956,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "Stillwater": 622,
+          "the Green": 340,
+          "the Hollow": 14,
+          "the Flats": 102,
+          "the Bight": 207,
+          "the sea": 497
+        },
+        "top": [
+          [
+            "sky",
+            0.4046
+          ],
+          [
+            "terrain",
+            0.3641
+          ],
+          [
+            "crownLaunch.rails",
+            0.114
+          ],
+          [
+            "water.stillwater",
+            0.048
+          ],
+          [
+            "water.sea",
+            0.0383
+          ],
+          [
+            "water.bight",
+            0.016
+          ],
+          [
+            "plot.bight",
+            0.0039
+          ],
+          [
+            "yearWalk.bed",
+            0.0037
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.46474359,
+        "seaShare": 0.004358974,
+        "horizonRowSkyOrSea": 3000,
+        "pitchDegrees": -16.426205144,
+        "verticalHalfFovDegrees": 48.439574648,
+        "horizonInFrame": true,
+        "subjects": {
+          "the Green": 84,
+          "Stillwater": 133,
+          "the sea": 34
+        },
+        "top": [
+          [
+            "sky",
+            0.4647
+          ],
+          [
+            "terrain",
+            0.3678
+          ],
+          [
+            "crownLaunch.rails",
+            0.095
+          ],
+          [
+            "crownLaunch.slab",
+            0.0394
+          ],
+          [
+            "water.stillwater",
+            0.0171
+          ],
+          [
+            "water.sea",
+            0.0044
+          ],
+          [
+            "water.bight",
+            0.004
+          ],
+          [
+            "yearWalk.bed",
+            0.0014
+          ]
+        ]
+      },
+      "pass": true,
+      "passLandscape": true,
+      "passPortrait": true,
+      "deferred": []
+    },
+    "after": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "Stillwater",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 622,
+          "portraitPixels": 133,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the Green",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 340,
+          "portraitPixels": 84,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the Hollow",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 14,
+          "portraitPixels": null,
+          "portraitRequired": false,
+          "pass": true
+        },
+        {
+          "id": "the Flats",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 102,
+          "portraitPixels": null,
+          "portraitRequired": false,
+          "pass": true
+        },
+        {
+          "id": "the Bight",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 207,
+          "portraitPixels": null,
+          "portraitRequired": false,
+          "pass": true
+        },
+        {
+          "id": "the sea",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 497,
+          "portraitPixels": 34,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.404552469,
+        "seaShare": 0.038348765,
+        "horizonRowSkyOrSea": 1008,
+        "pitchDegrees": -14.410431956,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "Stillwater": 622,
+          "the Green": 340,
+          "the Hollow": 14,
+          "the Flats": 102,
+          "the Bight": 207,
+          "the sea": 497
+        },
+        "top": [
+          [
+            "sky",
+            0.4046
+          ],
+          [
+            "terrain",
+            0.3641
+          ],
+          [
+            "crownLaunch.rails",
+            0.114
+          ],
+          [
+            "water.stillwater",
+            0.048
+          ],
+          [
+            "water.sea",
+            0.0383
+          ],
+          [
+            "water.bight",
+            0.016
+          ],
+          [
+            "plot.bight",
+            0.0039
+          ],
+          [
+            "yearWalk.bed",
+            0.0037
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.46474359,
+        "seaShare": 0.004358974,
+        "horizonRowSkyOrSea": 3000,
+        "pitchDegrees": -16.426205144,
+        "verticalHalfFovDegrees": 48.439574648,
+        "horizonInFrame": true,
+        "subjects": {
+          "the Green": 84,
+          "Stillwater": 133,
+          "the sea": 34
+        },
+        "top": [
+          [
+            "sky",
+            0.4647
+          ],
+          [
+            "terrain",
+            0.3678
+          ],
+          [
+            "crownLaunch.rails",
+            0.095
+          ],
+          [
+            "crownLaunch.slab",
+            0.0394
+          ],
+          [
+            "water.stillwater",
+            0.0171
+          ],
+          [
+            "water.sea",
+            0.0044
+          ],
+          [
+            "water.bight",
+            0.004
+          ],
+          [
+            "yearWalk.bed",
+            0.0014
+          ]
+        ]
+      },
+      "pass": true,
+      "passLandscape": true,
+      "passPortrait": true,
+      "deferred": []
+    }
+  },
+  {
+    "id": "F",
+    "cameraUnchanged": true,
+    "before": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "L01",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 161,
+          "portraitPixels": 0,
+          "portraitRequired": true,
+          "pass": false
+        },
+        {
+          "id": "Stillwater",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 1231,
+          "portraitPixels": 259,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.459567901,
+        "seaShare": 0.000231481,
+        "horizonRowSkyOrSea": 3024,
+        "pitchDegrees": -9.508127966,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "L01": 161,
+          "Stillwater": 1231
+        },
+        "top": [
+          [
+            "sky",
+            0.4596
+          ],
+          [
+            "terrain",
+            0.4019
+          ],
+          [
+            "water.stillwater",
+            0.095
+          ],
+          [
+            "place.L01",
+            0.0124
+          ],
+          [
+            "yearWalk.bed",
+            0.0093
+          ],
+          [
+            "yearWalk.shoulders",
+            0.0052
+          ],
+          [
+            "plot.bight",
+            0.0038
+          ],
+          [
+            "G1.cable",
+            0.0025
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.507179487,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 3360,
+        "pitchDegrees": -8.273849905,
+        "verticalHalfFovDegrees": 41.906793121,
+        "horizonInFrame": true,
+        "subjects": {
+          "L01": 0,
+          "Stillwater": 259
+        },
+        "top": [
+          [
+            "sky",
+            0.5072
+          ],
+          [
+            "terrain",
+            0.4476
+          ],
+          [
+            "water.stillwater",
+            0.0332
+          ],
+          [
+            "yearWalk.bed",
+            0.0036
+          ],
+          [
+            "yearWalk.shoulders",
+            0.0027
+          ],
+          [
+            "walk lakerim.retaining",
+            0.0013
+          ],
+          [
+            "plot.bight",
+            0.0012
+          ],
+          [
+            "G1.cable",
+            0.001
+          ]
+        ]
+      },
+      "pass": false,
+      "passLandscape": true,
+      "passPortrait": false,
+      "deferred": []
+    },
+    "after": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "L01",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 161,
+          "portraitPixels": 0,
+          "portraitRequired": true,
+          "pass": false
+        },
+        {
+          "id": "Stillwater",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 1231,
+          "portraitPixels": 259,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.459567901,
+        "seaShare": 0.000231481,
+        "horizonRowSkyOrSea": 3024,
+        "pitchDegrees": -9.508127966,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "L01": 161,
+          "Stillwater": 1231
+        },
+        "top": [
+          [
+            "sky",
+            0.4596
+          ],
+          [
+            "terrain",
+            0.4019
+          ],
+          [
+            "water.stillwater",
+            0.095
+          ],
+          [
+            "place.L01",
+            0.0124
+          ],
+          [
+            "yearWalk.bed",
+            0.0093
+          ],
+          [
+            "yearWalk.shoulders",
+            0.0052
+          ],
+          [
+            "plot.bight",
+            0.0038
+          ],
+          [
+            "G1.cable",
+            0.0025
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.507179487,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 3360,
+        "pitchDegrees": -8.273849905,
+        "verticalHalfFovDegrees": 41.906793121,
+        "horizonInFrame": true,
+        "subjects": {
+          "L01": 0,
+          "Stillwater": 259
+        },
+        "top": [
+          [
+            "sky",
+            0.5072
+          ],
+          [
+            "terrain",
+            0.4476
+          ],
+          [
+            "water.stillwater",
+            0.0332
+          ],
+          [
+            "yearWalk.bed",
+            0.0036
+          ],
+          [
+            "yearWalk.shoulders",
+            0.0027
+          ],
+          [
+            "walk lakerim.retaining",
+            0.0013
+          ],
+          [
+            "plot.bight",
+            0.0012
+          ],
+          [
+            "G1.cable",
+            0.001
+          ]
+        ]
+      },
+      "pass": false,
+      "passLandscape": true,
+      "passPortrait": false,
+      "deferred": []
+    }
+  },
+  {
+    "id": "G",
+    "cameraUnchanged": true,
+    "before": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "the skylight shaft",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 70,
+          "portraitPixels": 42,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.005401235,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 70,
+        "pitchDegrees": 70.506938089,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": false,
+        "subjects": {
+          "the skylight shaft": 70
+        },
+        "top": [
+          [
+            "underground.deep",
+            0.8708
+          ],
+          [
+            "deep.skylight",
+            0.1077
+          ],
+          [
+            "underground.throat",
+            0.016
+          ],
+          [
+            "sky",
+            0.0054
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.005384615,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 42,
+        "pitchDegrees": 70.506938089,
+        "verticalHalfFovDegrees": 41.906793121,
+        "horizonInFrame": false,
+        "subjects": {
+          "the skylight shaft": 42
+        },
+        "top": [
+          [
+            "underground.deep",
+            0.9403
+          ],
+          [
+            "deep.skylight",
+            0.0531
+          ],
+          [
+            "sky",
+            0.0054
+          ],
+          [
+            "underground.throat",
+            0.0013
+          ]
+        ]
+      },
+      "pass": true,
+      "passLandscape": true,
+      "passPortrait": true,
+      "deferred": []
+    },
+    "after": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "the skylight shaft",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 70,
+          "portraitPixels": 42,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.005401235,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 70,
+        "pitchDegrees": 70.506938089,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": false,
+        "subjects": {
+          "the skylight shaft": 70
+        },
+        "top": [
+          [
+            "underground.deep",
+            0.8708
+          ],
+          [
+            "deep.skylight",
+            0.1077
+          ],
+          [
+            "underground.throat",
+            0.016
+          ],
+          [
+            "sky",
+            0.0054
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.005384615,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 42,
+        "pitchDegrees": 70.506938089,
+        "verticalHalfFovDegrees": 41.906793121,
+        "horizonInFrame": false,
+        "subjects": {
+          "the skylight shaft": 42
+        },
+        "top": [
+          [
+            "underground.deep",
+            0.9403
+          ],
+          [
+            "deep.skylight",
+            0.0531
+          ],
+          [
+            "sky",
+            0.0054
+          ],
+          [
+            "underground.throat",
+            0.0013
+          ]
+        ]
+      },
+      "pass": true,
+      "passLandscape": true,
+      "passPortrait": true,
+      "deferred": []
+    }
+  },
+  {
+    "id": "H",
+    "cameraUnchanged": true,
+    "before": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "the strip",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 46,
+          "portraitPixels": 59,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the west sea",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 349,
+          "portraitPixels": 94,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.477777778,
+        "seaShare": 0.088194444,
+        "horizonRowSkyOrSea": 5184,
+        "pitchDegrees": -4.060205814,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "the strip": 46,
+          "the west sea": 349
+        },
+        "top": [
+          [
+            "sky",
+            0.4778
+          ],
+          [
+            "terrain",
+            0.2657
+          ],
+          [
+            "station.jul",
+            0.1093
+          ],
+          [
+            "water.sea",
+            0.0882
+          ],
+          [
+            "V01.corridor",
+            0.0352
+          ],
+          [
+            "yearWalk.bed",
+            0.0108
+          ],
+          [
+            "walk flats.bed",
+            0.0048
+          ],
+          [
+            "yearWalk.shoulders",
+            0.0047
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.492307692,
+        "seaShare": 0.031025641,
+        "horizonRowSkyOrSea": 3720,
+        "pitchDegrees": -4.168633995,
+        "verticalHalfFovDegrees": 45.294501885,
+        "horizonInFrame": true,
+        "subjects": {
+          "the strip": 59,
+          "the west sea": 94
+        },
+        "top": [
+          [
+            "sky",
+            0.4923
+          ],
+          [
+            "terrain",
+            0.2459
+          ],
+          [
+            "station.jul",
+            0.1215
+          ],
+          [
+            "yearWalk.bed",
+            0.0567
+          ],
+          [
+            "water.sea",
+            0.031
+          ],
+          [
+            "yearWalk.shoulders",
+            0.0258
+          ],
+          [
+            "V01.corridor",
+            0.0172
+          ],
+          [
+            "strip.edges",
+            0.0032
+          ]
+        ]
+      },
+      "pass": true,
+      "passLandscape": true,
+      "passPortrait": true,
+      "deferred": [
+        "the windsock (Pass 2b kit: mast and sock; only its footing is built)",
+        "the balloon at its mooring (Pass 2 mover and 2b kit)"
+      ]
+    },
+    "after": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "the strip",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 46,
+          "portraitPixels": 59,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the west sea",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 349,
+          "portraitPixels": 94,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.477777778,
+        "seaShare": 0.088194444,
+        "horizonRowSkyOrSea": 5184,
+        "pitchDegrees": -4.060205814,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "the strip": 46,
+          "the west sea": 349
+        },
+        "top": [
+          [
+            "sky",
+            0.4778
+          ],
+          [
+            "terrain",
+            0.2657
+          ],
+          [
+            "station.jul",
+            0.1093
+          ],
+          [
+            "water.sea",
+            0.0882
+          ],
+          [
+            "V01.corridor",
+            0.0352
+          ],
+          [
+            "yearWalk.bed",
+            0.0108
+          ],
+          [
+            "walk flats.bed",
+            0.0048
+          ],
+          [
+            "yearWalk.shoulders",
+            0.0047
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.492307692,
+        "seaShare": 0.031025641,
+        "horizonRowSkyOrSea": 3720,
+        "pitchDegrees": -4.168633995,
+        "verticalHalfFovDegrees": 45.294501885,
+        "horizonInFrame": true,
+        "subjects": {
+          "the strip": 59,
+          "the west sea": 94
+        },
+        "top": [
+          [
+            "sky",
+            0.4923
+          ],
+          [
+            "terrain",
+            0.2459
+          ],
+          [
+            "station.jul",
+            0.1215
+          ],
+          [
+            "yearWalk.bed",
+            0.0567
+          ],
+          [
+            "water.sea",
+            0.031
+          ],
+          [
+            "yearWalk.shoulders",
+            0.0258
+          ],
+          [
+            "V01.corridor",
+            0.0172
+          ],
+          [
+            "strip.edges",
+            0.0032
+          ]
+        ]
+      },
+      "pass": true,
+      "passLandscape": true,
+      "passPortrait": true,
+      "deferred": [
+        "the windsock (Pass 2b kit: mast and sock; only its footing is built)",
+        "the balloon at its mooring (Pass 2 mover and 2b kit)"
+      ]
+    }
+  },
+  {
+    "id": "I",
+    "cameraUnchanged": true,
+    "before": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "the spring",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 87,
+          "portraitPixels": 22,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the Reach water",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 2674,
+          "portraitPixels": null,
+          "portraitRequired": false,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.212885802,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 2759,
+        "pitchDegrees": -0.404913807,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "the spring": 87,
+          "the Reach water": 2674
+        },
+        "top": [
+          [
+            "terrain",
+            0.4136
+          ],
+          [
+            "sky",
+            0.2129
+          ],
+          [
+            "water.river.lower",
+            0.2083
+          ],
+          [
+            "reachFootbridge.supports",
+            0.0495
+          ],
+          [
+            "reachFootbridge.rails",
+            0.0269
+          ],
+          [
+            "reachFootbridge.deck",
+            0.0208
+          ],
+          [
+            "walk reach.bed",
+            0.0137
+          ],
+          [
+            "highSpan.supports",
+            0.0093
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.407948718,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 3182,
+        "pitchDegrees": -0.404913807,
+        "verticalHalfFovDegrees": 41.906793121,
+        "horizonInFrame": true,
+        "subjects": {
+          "the spring": 22
+        },
+        "top": [
+          [
+            "sky",
+            0.4079
+          ],
+          [
+            "water.reach.1",
+            0.2291
+          ],
+          [
+            "terrain",
+            0.196
+          ],
+          [
+            "water.river.lower",
+            0.1101
+          ],
+          [
+            "reachFootbridge.supports",
+            0.0182
+          ],
+          [
+            "reachFootbridge.rails",
+            0.0079
+          ],
+          [
+            "reachFootbridge.deck",
+            0.0064
+          ],
+          [
+            "highSpan.supports",
+            0.0042
+          ]
+        ]
+      },
+      "pass": true,
+      "passLandscape": true,
+      "passPortrait": true,
+      "deferred": [
+        "reeds at hand height",
+        "the heron"
+      ]
+    },
+    "after": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "the spring",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 87,
+          "portraitPixels": 22,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the Reach water",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 2674,
+          "portraitPixels": null,
+          "portraitRequired": false,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.209876543,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 2720,
+        "pitchDegrees": -0.404913807,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "the spring": 87,
+          "the Reach water": 2674
+        },
+        "top": [
+          [
+            "terrain",
+            0.4143
+          ],
+          [
+            "sky",
+            0.2099
+          ],
+          [
+            "water.river.lower",
+            0.2085
+          ],
+          [
+            "reachFootbridge.supports",
+            0.0495
+          ],
+          [
+            "reachFootbridge.rails",
+            0.0269
+          ],
+          [
+            "reachFootbridge.deck",
+            0.0208
+          ],
+          [
+            "walk reach.bed",
+            0.0137
+          ],
+          [
+            "highSpan.supports",
+            0.0094
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.406794872,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 3173,
+        "pitchDegrees": -0.404913807,
+        "verticalHalfFovDegrees": 41.906793121,
+        "horizonInFrame": true,
+        "subjects": {
+          "the spring": 22
+        },
+        "top": [
+          [
+            "sky",
+            0.4068
+          ],
+          [
+            "water.reach.1",
+            0.2291
+          ],
+          [
+            "terrain",
+            0.1963
+          ],
+          [
+            "water.river.lower",
+            0.1103
+          ],
+          [
+            "reachFootbridge.supports",
+            0.0182
+          ],
+          [
+            "reachFootbridge.rails",
+            0.0079
+          ],
+          [
+            "reachFootbridge.deck",
+            0.0064
+          ],
+          [
+            "highSpan.supports",
+            0.0042
+          ]
+        ]
+      },
+      "pass": true,
+      "passLandscape": true,
+      "passPortrait": true,
+      "deferred": [
+        "reeds at hand height",
+        "the heron"
+      ]
+    }
+  },
+  {
+    "id": "J",
+    "cameraUnchanged": true,
+    "before": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "the arch",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 1743,
+          "portraitPixels": 307,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the Prow",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 1163,
+          "portraitPixels": 2975,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.177777778,
+        "seaShare": 0.597993827,
+        "horizonRowSkyOrSea": 1152,
+        "pitchDegrees": -14.102509484,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "the arch": 1743,
+          "the Prow": 1163
+        },
+        "top": [
+          [
+            "water.sea",
+            0.598
+          ],
+          [
+            "sky",
+            0.1778
+          ],
+          [
+            "offshore.needle",
+            0.1345
+          ],
+          [
+            "terrain",
+            0.0897
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.407692308,
+        "seaShare": 0.171538462,
+        "horizonRowSkyOrSea": 3000,
+        "pitchDegrees": -14.102509484,
+        "verticalHalfFovDegrees": 45.294501885,
+        "horizonInFrame": true,
+        "subjects": {
+          "the arch": 307,
+          "the Prow": 2975
+        },
+        "top": [
+          [
+            "sky",
+            0.4077
+          ],
+          [
+            "terrain",
+            0.3814
+          ],
+          [
+            "water.sea",
+            0.1715
+          ],
+          [
+            "offshore.needle",
+            0.0394
+          ]
+        ]
+      },
+      "pass": true,
+      "passLandscape": true,
+      "passPortrait": true,
+      "deferred": [
+        "the Stacks (not on J's east line through the arch, 60-65\u00b0 to its right; D-D6)"
+      ]
+    },
+    "after": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "the arch",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 1743,
+          "portraitPixels": 307,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the Prow",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 1163,
+          "portraitPixels": 2975,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.177777778,
+        "seaShare": 0.597993827,
+        "horizonRowSkyOrSea": 1152,
+        "pitchDegrees": -14.102509484,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "the arch": 1743,
+          "the Prow": 1163
+        },
+        "top": [
+          [
+            "water.sea",
+            0.598
+          ],
+          [
+            "sky",
+            0.1778
+          ],
+          [
+            "offshore.needle",
+            0.1345
+          ],
+          [
+            "terrain",
+            0.0897
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.407692308,
+        "seaShare": 0.171538462,
+        "horizonRowSkyOrSea": 3000,
+        "pitchDegrees": -14.102509484,
+        "verticalHalfFovDegrees": 45.294501885,
+        "horizonInFrame": true,
+        "subjects": {
+          "the arch": 307,
+          "the Prow": 2975
+        },
+        "top": [
+          [
+            "sky",
+            0.4077
+          ],
+          [
+            "terrain",
+            0.3814
+          ],
+          [
+            "water.sea",
+            0.1715
+          ],
+          [
+            "offshore.needle",
+            0.0394
+          ]
+        ]
+      },
+      "pass": true,
+      "passLandscape": true,
+      "passPortrait": true,
+      "deferred": [
+        "the Stacks (not on J's east line through the arch, 60-65\u00b0 to its right; D-D6)"
+      ]
+    }
+  },
+  {
+    "id": "K",
+    "cameraUnchanged": true,
+    "before": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "the Glasshouse",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 3089,
+          "portraitPixels": 955,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "Stillwater",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 792,
+          "portraitPixels": 169,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.191049383,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 2476,
+        "pitchDegrees": -1.988789676,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "the Glasshouse": 3089,
+          "Stillwater": 792
+        },
+        "top": [
+          [
+            "terrain",
+            0.4222
+          ],
+          [
+            "host.glasshouse",
+            0.2383
+          ],
+          [
+            "sky",
+            0.191
+          ],
+          [
+            "walk lakerim.bed",
+            0.0758
+          ],
+          [
+            "water.stillwater",
+            0.0611
+          ],
+          [
+            "walk lakerim.retaining",
+            0.0077
+          ],
+          [
+            "yearWalk.shoulders",
+            0.0006
+          ],
+          [
+            "inflowFootbridge.supports",
+            0.0006
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.35474359,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 2767,
+        "pitchDegrees": -1.988789676,
+        "verticalHalfFovDegrees": 41.906793121,
+        "horizonInFrame": true,
+        "subjects": {
+          "the Glasshouse": 955,
+          "Stillwater": 169
+        },
+        "top": [
+          [
+            "sky",
+            0.3547
+          ],
+          [
+            "terrain",
+            0.2712
+          ],
+          [
+            "walk lakerim.bed",
+            0.2265
+          ],
+          [
+            "host.glasshouse",
+            0.1224
+          ],
+          [
+            "water.stillwater",
+            0.0217
+          ],
+          [
+            "walk lakerim.retaining",
+            0.0029
+          ],
+          [
+            "inflowFootbridge.supports",
+            0.0003
+          ],
+          [
+            "mountainRoadTunnel.walls",
+            0.0001
+          ]
+        ]
+      },
+      "pass": true,
+      "passLandscape": true,
+      "passPortrait": true,
+      "deferred": [
+        "lit from inside",
+        "seed pots in silhouette"
+      ]
+    },
+    "after": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "the Glasshouse",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 3089,
+          "portraitPixels": 955,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "Stillwater",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 792,
+          "portraitPixels": 169,
+          "portraitRequired": true,
+          "pass": true
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.191049383,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 2476,
+        "pitchDegrees": -1.988789676,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "the Glasshouse": 3089,
+          "Stillwater": 792
+        },
+        "top": [
+          [
+            "terrain",
+            0.4222
+          ],
+          [
+            "host.glasshouse",
+            0.2383
+          ],
+          [
+            "sky",
+            0.191
+          ],
+          [
+            "walk lakerim.bed",
+            0.0758
+          ],
+          [
+            "water.stillwater",
+            0.0611
+          ],
+          [
+            "walk lakerim.retaining",
+            0.0077
+          ],
+          [
+            "yearWalk.shoulders",
+            0.0006
+          ],
+          [
+            "inflowFootbridge.supports",
+            0.0006
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.35474359,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 2767,
+        "pitchDegrees": -1.988789676,
+        "verticalHalfFovDegrees": 41.906793121,
+        "horizonInFrame": true,
+        "subjects": {
+          "the Glasshouse": 955,
+          "Stillwater": 169
+        },
+        "top": [
+          [
+            "sky",
+            0.3547
+          ],
+          [
+            "terrain",
+            0.2712
+          ],
+          [
+            "walk lakerim.bed",
+            0.2265
+          ],
+          [
+            "host.glasshouse",
+            0.1224
+          ],
+          [
+            "water.stillwater",
+            0.0217
+          ],
+          [
+            "walk lakerim.retaining",
+            0.0029
+          ],
+          [
+            "inflowFootbridge.supports",
+            0.0003
+          ],
+          [
+            "mountainRoadTunnel.walls",
+            0.0001
+          ]
+        ]
+      },
+      "pass": true,
+      "passLandscape": true,
+      "passPortrait": true,
+      "deferred": [
+        "lit from inside",
+        "seed pots in silhouette"
+      ]
+    }
+  },
+  {
+    "id": "L",
+    "cameraUnchanged": true,
+    "before": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "Lantern Row",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 5188,
+          "portraitPixels": 3036,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the Boathouse",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": "not the first hit of enough rays",
+          "pixels": 11,
+          "portraitPixels": 4,
+          "portraitRequired": true,
+          "pass": false
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.423919753,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 5494,
+        "pitchDegrees": -0.171884674,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "Lantern Row": 5188,
+          "the Boathouse": 11
+        },
+        "top": [
+          [
+            "sky",
+            0.4239
+          ],
+          [
+            "town.quay",
+            0.3496
+          ],
+          [
+            "terrain",
+            0.125
+          ],
+          [
+            "town quay.lip",
+            0.0288
+          ],
+          [
+            "S3.retaining",
+            0.0247
+          ],
+          [
+            "town quay.bollards",
+            0.0138
+          ],
+          [
+            "quayBridge.rails",
+            0.0071
+          ],
+          [
+            "town quay.bed",
+            0.0049
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.468205128,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 3652,
+        "pitchDegrees": -0.195724237,
+        "verticalHalfFovDegrees": 41.906793121,
+        "horizonInFrame": true,
+        "subjects": {
+          "Lantern Row": 3036,
+          "the Boathouse": 4
+        },
+        "top": [
+          [
+            "sky",
+            0.4682
+          ],
+          [
+            "town.quay",
+            0.2741
+          ],
+          [
+            "town quay.bed",
+            0.1146
+          ],
+          [
+            "terrain",
+            0.1145
+          ],
+          [
+            "S3.retaining",
+            0.0151
+          ],
+          [
+            "S3.surface",
+            0.0036
+          ],
+          [
+            "quayBridge.rails",
+            0.0029
+          ],
+          [
+            "quayBridge.deck",
+            0.0024
+          ]
+        ]
+      },
+      "pass": false,
+      "passLandscape": false,
+      "passPortrait": false,
+      "deferred": [
+        "the floatplane rocking (Pass 2 mover; its dock is at the quay's east end, behind this pose)",
+        "lantern cards"
+      ]
+    },
+    "after": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "Lantern Row",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 5188,
+          "portraitPixels": 3036,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the Boathouse",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 13,
+          "portraitPixels": 5,
+          "portraitRequired": true,
+          "pass": false
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.419135802,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 5432,
+        "pitchDegrees": -0.171884674,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "Lantern Row": 5188,
+          "the Boathouse": 13
+        },
+        "top": [
+          [
+            "sky",
+            0.4191
+          ],
+          [
+            "town.quay",
+            0.3496
+          ],
+          [
+            "terrain",
+            0.1248
+          ],
+          [
+            "town quay.lip",
+            0.0288
+          ],
+          [
+            "S3.retaining",
+            0.0247
+          ],
+          [
+            "town quay.bollards",
+            0.0138
+          ],
+          [
+            "quayBridge.rails",
+            0.0066
+          ],
+          [
+            "town quay.bed",
+            0.0049
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.466538462,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 3639,
+        "pitchDegrees": -0.195724237,
+        "verticalHalfFovDegrees": 41.906793121,
+        "horizonInFrame": true,
+        "subjects": {
+          "Lantern Row": 3036,
+          "the Boathouse": 5
+        },
+        "top": [
+          [
+            "sky",
+            0.4665
+          ],
+          [
+            "town.quay",
+            0.2741
+          ],
+          [
+            "town quay.bed",
+            0.1146
+          ],
+          [
+            "terrain",
+            0.1145
+          ],
+          [
+            "S3.retaining",
+            0.0151
+          ],
+          [
+            "S3.surface",
+            0.0036
+          ],
+          [
+            "quayBridge.rails",
+            0.0027
+          ],
+          [
+            "quayBridge.deck",
+            0.0024
+          ]
+        ]
+      },
+      "pass": false,
+      "passLandscape": true,
+      "passPortrait": false,
+      "deferred": [
+        "the floatplane rocking (Pass 2 mover; its dock is at the quay's east end, behind this pose)",
+        "lantern cards"
+      ]
+    }
+  }
+]

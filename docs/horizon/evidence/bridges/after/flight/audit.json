@@ -1,0 +1,198 @@
+{
+  "method": "Real stepWing and world environment; airborne probe placement, no position correction, default wind and authored lift, walls active. Not full-course or device acceptance.",
+  "worldSha256": "c662fb3bed3aaa0256fd7f6627b843fe37e6b9d940f62efdd11d68ee9dc4782a",
+  "runs": [
+    {
+      "id": "bightBridge",
+      "direction": 1,
+      "initial": {
+        "x": 562.8673117202223,
+        "y": 8,
+        "z": 1075.9038403962888,
+        "heading": -0.4006524876033784,
+        "bank": 0,
+        "airspeed": 11,
+        "vs": 0,
+        "phase": "flight",
+        "stallT": 0,
+        "t": 0
+      },
+      "end": {
+        "x": 543.1323381635142,
+        "y": 2.480000000000084,
+        "z": 1104.0966597863955,
+        "heading": -0.4006524876033784,
+        "bank": 0,
+        "airspeed": 11,
+        "vs": -1.2,
+        "phase": "flare",
+        "stallT": 0,
+        "t": 4.599999999999989,
+        "flareT": 0,
+        "lift": 0,
+        "ground": [
+          -4.29021164276161,
+          6.128873780451247
+        ]
+      },
+      "reason": "traversed",
+      "steps": 276,
+      "gateAt": {
+        "y": 7.1800000000000175,
+        "lateral": 2.0483822971151255e-12,
+        "within": true
+      },
+      "crossed": true,
+      "bridgeCentre": [
+        551.6362590651693,
+        12,
+        1091.9482013354639
+      ],
+      "groundAtStart": 0
+    },
+    {
+      "id": "bightBridge",
+      "direction": -1,
+      "initial": {
+        "x": 543.1490163779654,
+        "y": 8,
+        "z": 1104.072833765707,
+        "heading": 2.3207932131931717,
+        "bank": 0,
+        "airspeed": 11,
+        "vs": 0,
+        "phase": "flight",
+        "stallT": 0,
+        "t": 0
+      },
+      "end": {
+        "x": 562.8680885913974,
+        "y": 5.060000000000063,
+        "z": 1075.902730580336,
+        "heading": 2.3207932131931717,
+        "bank": 0,
+        "airspeed": 11,
+        "vs": -1.2,
+        "phase": "flare",
+        "stallT": 0,
+        "t": 2.449999999999996,
+        "flareT": 0,
+        "lift": 0,
+        "ground": [
+          8.048600903440825,
+          -11.498001300155364
+        ]
+      },
+      "reason": "traversed",
+      "steps": 147,
+      "gateAt": {
+        "y": 5.480000000000054,
+        "lateral": 6.129964591483628e-12,
+        "within": true
+      },
+      "crossed": true,
+      "bridgeCentre": [
+        551.6362590651693,
+        12,
+        1091.9482013354639
+      ],
+      "groundAtStart": 0
+    },
+    {
+      "id": "highSpan",
+      "direction": 1,
+      "initial": {
+        "x": 1239.8087933610445,
+        "y": 19,
+        "z": 1113.9683687674165,
+        "heading": 3.127847324376384,
+        "bank": 0,
+        "airspeed": 11,
+        "vs": 0,
+        "phase": "flight",
+        "stallT": 0,
+        "t": 0
+      },
+      "end": {
+        "x": 1240.05070353752,
+        "y": 17.07936127076064,
+        "z": 1089.9700313611079,
+        "heading": 3.127847324376384,
+        "bank": 0,
+        "airspeed": 11,
+        "vs": -1.2057188731603827,
+        "phase": "flare",
+        "stallT": 0,
+        "t": 1.5999999999999992,
+        "flareT": 0,
+        "lift": -0.005718873160382831,
+        "ground": [
+          0.15119386029719512,
+          -14.998960878947084
+        ]
+      },
+      "reason": "traversed",
+      "steps": 96,
+      "gateAt": {
+        "y": 17.480000000000032,
+        "lateral": 1.6959280117398445e-13,
+        "within": true
+      },
+      "crossed": true,
+      "bridgeCentre": [
+        1239.3992902258756,
+        24,
+        1104.9637836140662
+      ],
+      "groundAtStart": 9.2
+    },
+    {
+      "id": "highSpan",
+      "direction": -1,
+      "initial": {
+        "x": 1240.0503988844728,
+        "y": 19,
+        "z": 1090.0002540112077,
+        "heading": -0.00641456596617699,
+        "bank": 0,
+        "airspeed": 11,
+        "vs": 0,
+        "phase": "flight",
+        "stallT": 0,
+        "t": 0
+      },
+      "end": {
+        "x": 1239.8081437711373,
+        "y": 14.878494468256513,
+        "z": 1114.0328103611587,
+        "heading": -0.00641456596617699,
+        "bank": 0,
+        "airspeed": 11,
+        "vs": -1.2,
+        "phase": "flare",
+        "stallT": 0,
+        "t": 3.433333333333326,
+        "flareT": 0,
+        "lift": 0,
+        "ground": [
+          -0.07055974174271473,
+          6.9997736941650395
+        ]
+      },
+      "reason": "traversed",
+      "steps": 206,
+      "gateAt": {
+        "y": 18.138494468256443,
+        "lateral": 4.037722196523208e-12,
+        "within": true
+      },
+      "crossed": true,
+      "bridgeCentre": [
+        1239.3992902258756,
+        24,
+        1104.9637836140662
+      ],
+      "groundAtStart": 10
+    }
+  ]
+}

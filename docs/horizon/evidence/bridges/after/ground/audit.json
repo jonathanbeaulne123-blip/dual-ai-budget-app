@@ -1,0 +1,4572 @@
+{
+  "schema": 2,
+  "baseline": null,
+  "drive": true,
+  "scriptSha256": "e12aa4f6a8fd841d16e017058a7b56724c49a25df2c4b1b5a33d3ac15447e681",
+  "sha": "e77309efbc48a76e8328f2b427613ecc6082bb61",
+  "worldSha256": "c662fb3bed3aaa0256fd7f6627b843fe37e6b9d940f62efdd11d68ee9dc4782a",
+  "terrainSha256": "2ebc6cd90226c63bf3bc03fbb6f2eb8c382aa89f895d0631bbf329d17b80e5d8",
+  "method": "Source inventory, baked surface queries and real ground controllers. No model or physics changes. Not full bridge acceptance.",
+  "rows": [
+    {
+      "id": "highSpan",
+      "at": [
+        1240,
+        1105
+      ],
+      "route": "VG",
+      "length": 104,
+      "width": 10,
+      "height": 24,
+      "clear": 14,
+      "supportSpacing": 12,
+      "opening": 44,
+      "abutments": true,
+      "from": 109.71937072957641,
+      "to": 225.7193707295764,
+      "deckSolids": [
+        {
+          "id": "highSpan.deck@notch",
+          "bounds": {
+            "min": [
+              1187.585288132,
+              23.4,
+              1093.099342222
+            ],
+            "max": [
+              1292.535023499,
+              24,
+              1110.087680906
+            ]
+          },
+          "triangles": 276
+        },
+        {
+          "id": "highSpan.shelf.deck@notch",
+          "bounds": {
+            "min": [
+              1202,
+              11.4,
+              1078
+            ],
+            "max": [
+              1206,
+              12,
+              1135
+            ]
+          },
+          "triangles": 12
+        },
+        {
+          "id": "highSpan.walk.deck@notch",
+          "bounds": {
+            "min": [
+              1220.076090027,
+              8.4,
+              1083.487915783
+            ],
+            "max": [
+              1241.317834303,
+              10.8,
+              1130.716458478
+            ]
+          },
+          "triangles": 60
+        },
+        {
+          "id": "highSpan.overlook.deck@notch",
+          "bounds": {
+            "min": [
+              1264.5,
+              9.4,
+              1142
+            ],
+            "max": [
+              1271.5,
+              10,
+              1148
+            ]
+          },
+          "triangles": 12
+        },
+        {
+          "id": "highSpan.overlook.approach@notch",
+          "bounds": {
+            "min": [
+              1244.5372557,
+              7.4,
+              1141.160639563
+            ],
+            "max": [
+              1264.6627443,
+              10,
+              1146.239360437
+            ]
+          },
+          "triangles": 12
+        },
+        {
+          "id": "highSpan.meetingDeck@notch",
+          "bounds": {
+            "min": [
+              1283.2532509,
+              23.4,
+              1089.248999842
+            ],
+            "max": [
+              1289.11893821,
+              24,
+              1095.466089318
+            ]
+          },
+          "triangles": 248
+        },
+        {
+          "id": "highSpan.walk.bed.notch@notch",
+          "bounds": {
+            "min": [
+              1220.076090027,
+              8.65,
+              1083.487915783
+            ],
+            "max": [
+              1241.317834303,
+              10.8,
+              1130.716458478
+            ]
+          },
+          "triangles": 60
+        },
+        {
+          "id": "highSpan.overlook.bed.notch@notch",
+          "bounds": {
+            "min": [
+              1244.5372557,
+              7.55,
+              1141.160639563
+            ],
+            "max": [
+              1268,
+              10,
+              1146.25
+            ]
+          },
+          "triangles": 24
+        }
+      ],
+      "solidCount": 23,
+      "triangles": 6408,
+      "surfaceProbe": {
+        "count": 233,
+        "missing": 0,
+        "maxBedMismatch": 0.03353694027778076,
+        "headroom": {
+          "state": "open-sky",
+          "minimum": null
+        },
+        "blockedSamples": 0,
+        "witnesses": [
+          {
+            "s": 115.71937072957641,
+            "at": [
+              1291.5525341501304,
+              23.96646305972222,
+              1099.0534468277885
+            ],
+            "surfaceId": "highSpan.deck@notch",
+            "y": 24,
+            "bedY": 23.96646305972222,
+            "ceiling": null,
+            "blocker": null
+          },
+          {
+            "s": 219.7193707295764,
+            "at": [
+              1188.501593829064,
+              23.974927726182894,
+              1098.0146635611634
+            ],
+            "surfaceId": "highSpan.deck@notch",
+            "y": 24,
+            "bedY": 23.974927726182894,
+            "ceiling": null,
+            "blocker": null
+          },
+          {
+            "s": 116.21937072957641,
+            "at": [
+              1291.062282024401,
+              23.97630031457546,
+              1099.1516957627332
+            ],
+            "surfaceId": "highSpan.deck@notch",
+            "y": 24,
+            "bedY": 23.97630031457546,
+            "ceiling": null,
+            "blocker": null
+          }
+        ]
+      },
+      "runs": [
+        {
+          "start": [
+            1297.4311018196674,
+            23.80444221106409,
+            1097.8527653554363
+          ],
+          "final": [
+            1224.3535578819167,
+            11.277121660310737,
+            1149.0804262994989
+          ],
+          "progress": 0.20518719598277357,
+          "mode": "board",
+          "direction": 1,
+          "status": "incomplete-probe",
+          "seconds": 0.8833333333333333,
+          "maxLateral": 45.22324950715879,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1182.6056419244078,
+            23.821122934484443,
+            1096.902339479184
+          ],
+          "final": [
+            1208.4775539430395,
+            11.157117934758206,
+            1101.5181748503592
+          ],
+          "progress": 26.592844393297213,
+          "mode": "board",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 12.383333333333333,
+          "maxLateral": 2.795096840590254,
+          "airSteps": 135,
+          "events": [
+            "fadeBack",
+            "fade",
+            "airborne",
+            "land"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1297.4311018196674,
+            23.80444221106409,
+            1097.8527653554363
+          ],
+          "final": [
+            1183.302684546973,
+            23.84868189390272,
+            1097.3338433959702
+          ],
+          "progress": 115.0926172526622,
+          "mode": "bicycle",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 22.658333333333335,
+          "maxLateral": 0.29444607479439067,
+          "airSteps": 9,
+          "events": [
+            "airborne",
+            "land"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1182.6056419244078,
+            23.821122934484443,
+            1096.902339479184
+          ],
+          "final": [
+            1296.7466418470826,
+            23.834074037817487,
+            1098.291108609046
+          ],
+          "progress": 115.19286679296012,
+          "mode": "bicycle",
+          "direction": -1,
+          "status": "end-reached-unverified",
+          "seconds": 22.633333333333333,
+          "maxLateral": 0.2877902269260451,
+          "airSteps": 10,
+          "events": [
+            "airborne",
+            "land"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1297.4311018196674,
+            23.80444221106409,
+            1097.8527653554363
+          ],
+          "final": [
+            1183.2616790414993,
+            23.845748689826657,
+            1097.1082044413035
+          ],
+          "progress": 115.18361225838541,
+          "mode": "cruiser",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 8.325,
+          "maxLateral": 0.3750943629726927,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1182.6056419244078,
+            23.821122934484443,
+            1096.902339479184
+          ],
+          "final": [
+            1296.7885332882076,
+            23.83072711459151,
+            1098.0775447228982
+          ],
+          "progress": 115.19198969176261,
+          "mode": "cruiser",
+          "direction": -1,
+          "status": "end-reached-unverified",
+          "seconds": 8.325,
+          "maxLateral": 0.38714682460735683,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        }
+      ]
+    },
+    {
+      "id": "quayBridge",
+      "at": [
+        1350,
+        1345
+      ],
+      "route": "V01",
+      "length": 90,
+      "width": 16,
+      "height": 9,
+      "clear": 4,
+      "abutments": true,
+      "from": 3543.9472221156684,
+      "to": 3645.9472221156684,
+      "deckSolids": [
+        {
+          "id": "quayBridge.deck@reach",
+          "bounds": {
+            "min": [
+              1314.237222748,
+              8.4,
+              1300.418015987
+            ],
+            "max": [
+              1371.14357484,
+              9,
+              1382.001932319
+            ]
+          },
+          "triangles": 252
+        },
+        {
+          "id": "quayBridge.meetingDeck@reach",
+          "bounds": {
+            "min": [
+              1321.978314191,
+              8.4,
+              1378.601226998
+            ],
+            "max": [
+              1329.665304071,
+              9,
+              1385.937266329
+            ]
+          },
+          "triangles": 248
+        }
+      ],
+      "solidCount": 10,
+      "triangles": 3580,
+      "surfaceProbe": {
+        "count": 205,
+        "missing": 0,
+        "maxBedMismatch": 0.01120588404046785,
+        "headroom": {
+          "state": "open-sky",
+          "minimum": null
+        },
+        "blockedSamples": 0,
+        "witnesses": []
+      },
+      "runs": [
+        {
+          "start": [
+            1311.5917424210613,
+            8.851113784705491,
+            1376.7282134638729
+          ],
+          "final": [
+            1354.979647286459,
+            9,
+            1341.2825873495674
+          ],
+          "progress": 57.218406223304555,
+          "mode": "board",
+          "direction": 1,
+          "status": "incomplete-probe",
+          "seconds": 120,
+          "maxLateral": 3.7113790949627488,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1364.581361360187,
+            8.99043234140578,
+            1296.2762443284003
+          ],
+          "final": [
+            1375.2308307677367,
+            7.806533421293944,
+            1335.1965591848962
+          ],
+          "progress": 0.3114585880366576,
+          "mode": "board",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 0.9,
+          "maxLateral": 19.87596706298292,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1311.5917424210613,
+            8.851113784705491,
+            1376.7282134638729
+          ],
+          "final": [
+            1364.7030797127566,
+            8.992443754989148,
+            1297.085537800988
+          ],
+          "progress": 101.09670040769197,
+          "mode": "bicycle",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 20.058333333333334,
+          "maxLateral": 0.31337435689237586,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1364.581361360187,
+            8.99043234140578,
+            1296.2762443284003
+          ],
+          "final": [
+            1312.3870771722447,
+            8.872956010220774,
+            1376.6743656606052
+          ],
+          "progress": 101.09921548838611,
+          "mode": "bicycle",
+          "direction": -1,
+          "status": "end-reached-unverified",
+          "seconds": 19.841666666666665,
+          "maxLateral": 0.31520386854470495,
+          "airSteps": 7,
+          "events": [
+            "airborne",
+            "land"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1311.5917424210613,
+            8.851113784705491,
+            1376.7282134638729
+          ],
+          "final": [
+            1364.52376768156,
+            8.992336730473752,
+            1297.01239745595
+          ],
+          "progress": 101.13479952568014,
+          "mode": "cruiser",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 7.583333333333333,
+          "maxLateral": 0.635472638211971,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1364.581361360187,
+            8.99043234140578,
+            1296.2762443284003
+          ],
+          "final": [
+            1312.402728412434,
+            8.870620016648274,
+            1376.9042249248084
+          ],
+          "progress": 101.18027980371653,
+          "mode": "cruiser",
+          "direction": -1,
+          "status": "end-reached-unverified",
+          "seconds": 7.616666666666666,
+          "maxLateral": 0.6184780973221989,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        }
+      ]
+    },
+    {
+      "id": "bightBridge",
+      "at": [
+        560,
+        1100
+      ],
+      "route": "V01",
+      "length": 245,
+      "width": 21.6,
+      "height": 12,
+      "clear": 8,
+      "abutments": true,
+      "from": 2568.9411306013626,
+      "to": 2825.9411306013626,
+      "deckSolids": [
+        {
+          "id": "bightBridge.towerStair.treads@bight",
+          "bounds": {
+            "min": [
+              552.941861383,
+              11.966666667,
+              1077.10583543
+            ],
+            "max": [
+              571.997195854,
+              24,
+              1091.196624463
+            ]
+          },
+          "triangles": 864
+        },
+        {
+          "id": "bightBridge.towerBalcony@bight",
+          "bounds": {
+            "min": [
+              550.312126918,
+              23.6,
+              1075.139678821
+            ],
+            "max": [
+              554.146132306,
+              24,
+              1078.826222463
+            ]
+          },
+          "triangles": 12
+        },
+        {
+          "id": "bightBridge.s2Ramp.lagoon.deck@bight",
+          "bounds": {
+            "min": [
+              489.650206461,
+              11.5,
+              1037.123980034
+            ],
+            "max": [
+              549.003559103,
+              17.6,
+              1080.133655861
+            ]
+          },
+          "triangles": 60
+        },
+        {
+          "id": "bightBridge.s2Ramp.sea.deck@bight",
+          "bounds": {
+            "min": [
+              563.096440897,
+              11.5,
+              1109.966344139
+            ],
+            "max": [
+              622.449793539,
+              17.6,
+              1152.976019966
+            ]
+          },
+          "triangles": 60
+        },
+        {
+          "id": "bightBridge.s2Flyover.deck@bight",
+          "bounds": {
+            "min": [
+              546.499208606,
+              17,
+              1077.378022243
+            ],
+            "max": [
+              565.606014941,
+              17.6,
+              1112.716023935
+            ]
+          },
+          "triangles": 96
+        },
+        {
+          "id": "bightBridge.deck@bight",
+          "bounds": {
+            "min": [
+              454.482928637,
+              11.4,
+              1019.428540617
+            ],
+            "max": [
+              667.581535803,
+              12,
+              1177.622224469
+            ]
+          },
+          "triangles": 284
+        },
+        {
+          "id": "bightBridge.lookout@bight",
+          "bounds": {
+            "min": [
+              552.425745273,
+              11.4,
+              1076.57675494
+            ],
+            "max": [
+              574.006016038,
+              12,
+              1093.08085788
+            ]
+          },
+          "triangles": 56
+        }
+      ],
+      "solidCount": 22,
+      "triangles": 22064,
+      "surfaceProbe": {
+        "count": 515,
+        "missing": 0,
+        "maxBedMismatch": 0.008332264284632629,
+        "headroom": {
+          "state": "measured",
+          "minimum": 4.999999999999998,
+          "station": 2693.4411306013626,
+          "at": [
+            556.7230723178981,
+            12,
+            1097.7061506225784
+          ],
+          "surfaceId": "bightBridge.deck@bight"
+        },
+        "blockedSamples": 0,
+        "witnesses": []
+      },
+      "runs": [
+        {
+          "start": [
+            455.00121683457303,
+            12.116853851157796,
+            1025.9552239843508
+          ],
+          "final": [
+            466.1,
+            12.000000000000004,
+            1021.3
+          ],
+          "progress": 0.3170298776612981,
+          "mode": "board",
+          "direction": 1,
+          "status": "incomplete-probe",
+          "seconds": 0.925,
+          "maxLateral": 10.617420435459925,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            665.2437134682721,
+            11.883880842539527,
+            1173.7289193632787
+          ],
+          "final": [
+            658.8292122630855,
+            11.767522131635126,
+            1178.997915136296
+          ],
+          "progress": 4.364398547562814,
+          "mode": "board",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 4.066666666666666,
+          "maxLateral": 8.020582802813516,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade",
+            "lip",
+            "twist"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            455.00121683457303,
+            12.116853851157796,
+            1025.9552239843508
+          ],
+          "final": [
+            664.5909402245248,
+            11.906408209756492,
+            1173.2752660679398
+          ],
+          "progress": 256.1155034790422,
+          "mode": "bicycle",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 50.858333333333334,
+          "maxLateral": 0.3096744455799477,
+          "airSteps": 5,
+          "events": [
+            "airborne",
+            "land"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            665.2437134682721,
+            11.883880842539527,
+            1173.7289193632787
+          ],
+          "final": [
+            455.46374168910427,
+            12.096484598991042,
+            1026.6006345312733
+          ],
+          "progress": 256.0995083762605,
+          "mode": "bicycle",
+          "direction": -1,
+          "status": "end-reached-unverified",
+          "seconds": 51.25,
+          "maxLateral": 0.31143905989418846,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            455.00121683457303,
+            12.116853851157796,
+            1025.9552239843508
+          ],
+          "final": [
+            664.7013240333354,
+            11.903909240385076,
+            1173.312967512968
+          ],
+          "progress": 256.1836327173096,
+          "mode": "cruiser",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 17.083333333333332,
+          "maxLateral": 0.09110827696929412,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            665.2437134682721,
+            11.883880842539527,
+            1173.7289193632787
+          ],
+          "final": [
+            455.40258041463306,
+            12.097929769260116,
+            1026.5778152000228
+          ],
+          "progress": 256.1598772602297,
+          "mode": "cruiser",
+          "direction": -1,
+          "status": "end-reached-unverified",
+          "seconds": 17.091666666666665,
+          "maxLateral": 0.19336434438771624,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        }
+      ]
+    },
+    {
+      "id": "apronBridge",
+      "at": [
+        1158,
+        949
+      ],
+      "route": "S1",
+      "length": 45,
+      "width": 4,
+      "height": 31,
+      "clear": 5,
+      "followRoute": true,
+      "from": 1263.7554667396134,
+      "to": 1320.7554667396134,
+      "deckSolids": [
+        {
+          "id": "apronBridge.deck@lakeside",
+          "bounds": {
+            "min": [
+              1151.551593027,
+              30.4,
+              928.230292054
+            ],
+            "max": [
+              1167.577583576,
+              31,
+              950.421039968
+            ]
+          },
+          "triangles": 81
+        },
+        {
+          "id": "apronBridge.deck@notch",
+          "bounds": {
+            "min": [
+              1147.646140876,
+              30.4,
+              945.961817252
+            ],
+            "max": [
+              1156.795039058,
+              31,
+              970.062618027
+            ]
+          },
+          "triangles": 51
+        },
+        {
+          "id": "apronBridge.meetingDeck@lakeside",
+          "bounds": {
+            "min": [
+              1156.188549378,
+              30.4,
+              924.279158834
+            ],
+            "max": [
+              1164.40489833,
+              31,
+              932.343080408
+            ]
+          },
+          "triangles": 248
+        }
+      ],
+      "solidCount": 11,
+      "triangles": 2676,
+      "surfaceProbe": {
+        "count": 115,
+        "missing": 0,
+        "maxBedMismatch": 0.009158910281545474,
+        "headroom": {
+          "state": "open-sky",
+          "minimum": null
+        },
+        "blockedSamples": 0,
+        "witnesses": []
+      },
+      "runs": [
+        {
+          "start": [
+            1172.0165282108608,
+            31.61914757055023,
+            927.3606903910177
+          ],
+          "final": [
+            1148.8760243394904,
+            30.737631592962927,
+            974.9581164359469
+          ],
+          "progress": 56.148086045930086,
+          "mode": "board",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 9.566666666666666,
+          "maxLateral": 0.47159744729338166,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1149.0267991171133,
+            30.682537460478592,
+            975.7724859926574
+          ],
+          "final": [
+            1171.1735069984697,
+            31.489284772187844,
+            927.368166826105
+          ],
+          "progress": 56.09486355782269,
+          "mode": "board",
+          "direction": -1,
+          "status": "end-reached-unverified",
+          "seconds": 10.433333333333334,
+          "maxLateral": 0.49390516466912465,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1172.0165282108608,
+            31.61914757055023,
+            927.3606903910177
+          ],
+          "final": [
+            1148.8714369815063,
+            30.737440477984766,
+            974.9606018046367
+          ],
+          "progress": 56.094870746520655,
+          "mode": "bicycle",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 12.35,
+          "maxLateral": 0.7528336412262769,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1149.0267991171133,
+            30.682537460478592,
+            975.7724859926574
+          ],
+          "final": [
+            1169.9514338747886,
+            31.209359842398833,
+            928.4655290803556
+          ],
+          "progress": 55.68459834967143,
+          "mode": "bicycle",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 18.308333333333334,
+          "maxLateral": 0.9769297403088464,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "mode": "cruiser",
+          "direction": 1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        },
+        {
+          "mode": "cruiser",
+          "direction": -1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        }
+      ]
+    },
+    {
+      "id": "hollowBridge",
+      "at": [
+        893,
+        600
+      ],
+      "route": "walk garden",
+      "length": 32,
+      "width": 8,
+      "height": 37,
+      "clear": 4,
+      "covered": true,
+      "followRoute": true,
+      "from": 200.0495811008905,
+      "to": 244.0495811008905,
+      "deckSolids": [
+        {
+          "id": "hollowBridge.deck@hollow",
+          "bounds": {
+            "min": [
+              882.445813731,
+              36.394726855,
+              583.782341237
+            ],
+            "max": [
+              900.799948274,
+              37.171226195,
+              616.136035018
+            ]
+          },
+          "triangles": 96
+        },
+        {
+          "id": "hollowBridge.meetingDeck@hollow",
+          "bounds": {
+            "min": [
+              878.421395726,
+              36.4,
+              588.73401773
+            ],
+            "max": [
+              885.438580239,
+              37.051226195,
+              595.503886152
+            ]
+          },
+          "triangles": 248
+        }
+      ],
+      "solidCount": 11,
+      "triangles": 1984,
+      "surfaceProbe": {
+        "count": 89,
+        "missing": 0,
+        "maxBedMismatch": 0.004813964511015456,
+        "headroom": {
+          "state": "measured",
+          "minimum": 5.61508649894283,
+          "station": 227.0495811008905,
+          "at": [
+            894.6752414549911,
+            37,
+            604.7105153926757
+          ],
+          "surfaceId": "hollowBridge.deck@hollow"
+        },
+        "blockedSamples": 0,
+        "witnesses": []
+      },
+      "runs": [
+        {
+          "start": [
+            883.2270590005945,
+            37.5845713998764,
+            580.2944730516898
+          ],
+          "final": [
+            898.2787993693818,
+            36.393737413635925,
+            592.2707247418431
+          ],
+          "progress": 20.6861302089564,
+          "mode": "board",
+          "direction": 1,
+          "status": "incomplete-probe",
+          "seconds": 4.958333333333333,
+          "maxLateral": 8.025451178555358,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade",
+            "lip",
+            "twist"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            897.5390282074563,
+            36.337528925703126,
+            621.4445256321753
+          ],
+          "final": [
+            893.9974844973024,
+            37,
+            595.1388603147404
+          ],
+          "progress": 27.611747594135153,
+          "mode": "board",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 19.55,
+          "maxLateral": 3.503218459198305,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade",
+            "lip"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            883.2270590005945,
+            37.5845713998764,
+            580.2944730516898
+          ],
+          "final": [
+            930,
+            38.013624061499996,
+            650
+          ],
+          "progress": 0.318671772341645,
+          "mode": "bicycle",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 0.9333333333333333,
+          "maxLateral": 1.6077746776921858e-13,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            897.5390282074563,
+            36.337528925703126,
+            621.4445256321753
+          ],
+          "final": [
+            928.1152857548825,
+            37.78240495216518,
+            647.3356684217541
+          ],
+          "progress": 0.20604719756298095,
+          "mode": "bicycle",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 6.141666666666667,
+          "maxLateral": 0.16659018759404293,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "mode": "cruiser",
+          "direction": 1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        },
+        {
+          "mode": "cruiser",
+          "direction": -1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        }
+      ]
+    },
+    {
+      "id": "reachFootbridge",
+      "at": [
+        1274,
+        1203
+      ],
+      "route": "walk reach",
+      "length": 48,
+      "width": 3,
+      "height": 9.5,
+      "clear": 4,
+      "from": 124.02563640393623,
+      "to": 184.02563640393623,
+      "deckSolids": [
+        {
+          "id": "reachFootbridge.deck@reach",
+          "bounds": {
+            "min": [
+              1256.683523992,
+              8.9,
+              1184.288694373
+            ],
+            "max": [
+              1291.316476008,
+              9.5,
+              1221.711305627
+            ]
+          },
+          "triangles": 12
+        }
+      ],
+      "solidCount": 3,
+      "triangles": 1324,
+      "surfaceProbe": {
+        "count": 121,
+        "missing": 0,
+        "maxBedMismatch": 0.10988599361650842,
+        "headroom": {
+          "state": "measured",
+          "minimum": 1,
+          "station": 169.52563640393623,
+          "at": [
+            1264.6013996679278,
+            9.5,
+            1190.914072666564
+          ],
+          "surfaceId": "walk reach.bed.reach@reach"
+        },
+        "blockedSamples": 30,
+        "witnesses": [
+          {
+            "s": 130.02563640393623,
+            "at": [
+              1290.6990285518534,
+              9.390114006383492,
+              1220.125143628653
+            ],
+            "surfaceId": "reachFootbridge.deck@reach",
+            "y": 9.5,
+            "bedY": 9.390114006383492,
+            "ceiling": null,
+            "blocker": null
+          },
+          {
+            "s": 130.52563640393623,
+            "at": [
+              1290.3157523651798,
+              9.428422128971203,
+              1219.80405273073
+            ],
+            "surfaceId": "reachFootbridge.deck@reach",
+            "y": 9.5,
+            "bedY": 9.428422128971203,
+            "ceiling": null,
+            "blocker": null
+          },
+          {
+            "s": 131.02563640393623,
+            "at": [
+              1289.932476178506,
+              9.466730251558914,
+              1219.4829618328072
+            ],
+            "surfaceId": "reachFootbridge.deck@reach",
+            "y": 9.5,
+            "bedY": 9.466730251558914,
+            "ceiling": null,
+            "blocker": null
+          },
+          {
+            "s": 147.02563640393623,
+            "at": [
+              1278.0246182536564,
+              9.5,
+              1208.80099366401
+            ],
+            "surfaceId": "walk reach.bed.reach@reach",
+            "y": 9.5,
+            "bedY": 9.5,
+            "ceiling": null,
+            "blocker": "reachFootbridge.rails@reach"
+          },
+          {
+            "s": 147.52563640393623,
+            "at": [
+              1277.6716301714443,
+              9.5,
+              1208.4468758674846
+            ],
+            "surfaceId": "walk reach.bed.reach@reach",
+            "y": 9.5,
+            "bedY": 9.5,
+            "ceiling": null,
+            "blocker": "reachFootbridge.rails@reach"
+          },
+          {
+            "s": 148.02563640393623,
+            "at": [
+              1277.318642089232,
+              9.5,
+              1208.0927580709588
+            ],
+            "surfaceId": "walk reach.bed.reach@reach",
+            "y": 9.5,
+            "bedY": 9.5,
+            "ceiling": null,
+            "blocker": "reachFootbridge.rails@reach"
+          },
+          {
+            "s": 148.52563640393623,
+            "at": [
+              1276.96565400702,
+              9.5,
+              1207.7386402744332
+            ],
+            "surfaceId": "walk reach.bed.reach@reach",
+            "y": 9.5,
+            "bedY": 9.5,
+            "ceiling": null,
+            "blocker": "reachFootbridge.rails@reach"
+          },
+          {
+            "s": 149.02563640393623,
+            "at": [
+              1276.612665924808,
+              9.5,
+              1207.3845224779075
+            ],
+            "surfaceId": "walk reach.bed.reach@reach",
+            "y": 9.5,
+            "bedY": 9.5,
+            "ceiling": null,
+            "blocker": "reachFootbridge.rails@reach"
+          },
+          {
+            "s": 149.52563640393623,
+            "at": [
+              1276.2596778425957,
+              9.5,
+              1207.0304046813817
+            ],
+            "surfaceId": "walk reach.bed.reach@reach",
+            "y": 9.5,
+            "bedY": 9.5,
+            "ceiling": null,
+            "blocker": "reachFootbridge.rails@reach"
+          },
+          {
+            "s": 150.02563640393623,
+            "at": [
+              1275.9066897603836,
+              9.5,
+              1206.6762868848562
+            ],
+            "surfaceId": "walk reach.bed.reach@reach",
+            "y": 9.5,
+            "bedY": 9.5,
+            "ceiling": null,
+            "blocker": "reachFootbridge.rails@reach"
+          },
+          {
+            "s": 150.52563640393623,
+            "at": [
+              1275.5537016781716,
+              9.5,
+              1206.3221690883304
+            ],
+            "surfaceId": "walk reach.bed.reach@reach",
+            "y": 9.5,
+            "bedY": 9.5,
+            "ceiling": null,
+            "blocker": "reachFootbridge.rails@reach"
+          },
+          {
+            "s": 151.02563640393623,
+            "at": [
+              1275.2007135959595,
+              9.5,
+              1205.9680512918046
+            ],
+            "surfaceId": "walk reach.bed.reach@reach",
+            "y": 9.5,
+            "bedY": 9.5,
+            "ceiling": null,
+            "blocker": "reachFootbridge.rails@reach"
+          }
+        ]
+      },
+      "runs": [
+        {
+          "start": [
+            1295.3244169934997,
+            8.934600669664059,
+            1223.9467632321719
+          ],
+          "final": [
+            1251.5760294810657,
+            5,
+            1235.6570325070652
+          ],
+          "progress": 0.20910753332130128,
+          "mode": "board",
+          "direction": 1,
+          "status": "incomplete-probe",
+          "seconds": 0.8666666666666667,
+          "maxLateral": 37.692033564545284,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1258.47994301658,
+            9.200669905704954,
+            1177.7734573536995
+          ],
+          "final": [
+            1236.738943372915,
+            6.581751734416402,
+            1184.745759882173
+          ],
+          "progress": 0.2051396015656053,
+          "mode": "board",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 0.8833333333333333,
+          "maxLateral": 22.73346068435253,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1295.3244169934997,
+            8.934600669664059,
+            1223.9467632321719
+          ],
+          "final": [
+            1250.916800935986,
+            5,
+            1235.1647880954
+          ],
+          "progress": 0.20910753332130128,
+          "mode": "bicycle",
+          "direction": 1,
+          "status": "incomplete-probe",
+          "seconds": 0.8666666666666667,
+          "maxLateral": 37.81093154665052,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1258.47994301658,
+            9.200669905704954,
+            1177.7734573536995
+          ],
+          "final": [
+            1241.017449388,
+            5,
+            1196.773730735
+          ],
+          "progress": 0.2051396015719149,
+          "mode": "bicycle",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 0.8833333333333333,
+          "maxLateral": 23.72941659341988,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "mode": "cruiser",
+          "direction": 1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        },
+        {
+          "mode": "cruiser",
+          "direction": -1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        }
+      ]
+    },
+    {
+      "id": "reachBoardwalk",
+      "at": [
+        1255,
+        1251
+      ],
+      "route": "S1",
+      "length": 112,
+      "width": 4,
+      "height": 5,
+      "clear": 1,
+      "from": 1568.9190698331236,
+      "to": 1692.9190698331236,
+      "deckSolids": [
+        {
+          "id": "reachBoardwalk.deck@reach",
+          "bounds": {
+            "min": [
+              1239.080796914,
+              4.4,
+              1196.274353928
+            ],
+            "max": [
+              1270.919203086,
+              5,
+              1305.725646072
+            ]
+          },
+          "triangles": 12
+        },
+        {
+          "id": "reachBoardwalk.meetingDeck@reach",
+          "bounds": {
+            "min": [
+              1234.323200464,
+              4.4,
+              1198.700628058
+            ],
+            "max": [
+              1240.800604162,
+              5,
+              1204.890576623
+            ]
+          },
+          "triangles": 248
+        }
+      ],
+      "solidCount": 6,
+      "triangles": 3312,
+      "surfaceProbe": {
+        "count": 249,
+        "missing": 0,
+        "maxBedMismatch": 0.015725439207106895,
+        "headroom": {
+          "state": "measured",
+          "minimum": 1,
+          "station": 1686.9190698331236,
+          "at": [
+            1267.3275397348243,
+            4.984274560792893,
+            1305.5531443651232
+          ],
+          "surfaceId": "reachBoardwalk.deck@reach"
+        },
+        "blockedSamples": 4,
+        "witnesses": [
+          {
+            "s": 1686.9190698331236,
+            "at": [
+              1267.3275397348243,
+              4.984274560792893,
+              1305.5531443651232
+            ],
+            "surfaceId": "reachBoardwalk.deck@reach",
+            "y": 5,
+            "bedY": 4.984274560792893,
+            "ceiling": 6,
+            "blocker": "reachBoardwalk.rails@reach"
+          },
+          {
+            "s": 1686.4190698331236,
+            "at": [
+              1267.2681180572722,
+              4.991820280497477,
+              1305.0566878572226
+            ],
+            "surfaceId": "reachBoardwalk.deck@reach",
+            "y": 5,
+            "bedY": 4.991820280497477,
+            "ceiling": null,
+            "blocker": "reachBoardwalk.rails@reach"
+          },
+          {
+            "s": 1685.9190698331236,
+            "at": [
+              1267.2086963797203,
+              4.999366000202063,
+              1304.5602313493218
+            ],
+            "surfaceId": "reachBoardwalk.deck@reach",
+            "y": 5.000000000000001,
+            "bedY": 4.999366000202063,
+            "ceiling": null,
+            "blocker": "reachBoardwalk.rails@reach"
+          },
+          {
+            "s": 1685.4190698331236,
+            "at": [
+              1267.1438627316961,
+              5,
+              1304.064455322328
+            ],
+            "surfaceId": "S1.surface.12.reach@reach",
+            "y": 5,
+            "bedY": 5,
+            "ceiling": null,
+            "blocker": "reachBoardwalk.rails@reach"
+          }
+        ]
+      },
+      "runs": [
+        {
+          "start": [
+            1238.6896638548023,
+            5.743941622426927,
+            1191.2001485043918
+          ],
+          "final": [
+            1268.2216836545383,
+            4.906660410433806,
+            1310.707298942702
+          ],
+          "progress": 123.16665970429949,
+          "mode": "board",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 20.95,
+          "maxLateral": 0.30227132656829986,
+          "airSteps": 7,
+          "events": [
+            "airborne",
+            "land"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1268.0277827705015,
+            4.896156852640025,
+            1311.5121033897033
+          ],
+          "final": [
+            1267.368713480285,
+            4.980491721567294,
+            1305.795827490359
+          ],
+          "progress": 5.696608794326266,
+          "mode": "board",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 7.533333333333333,
+          "maxLateral": 0.02411452644053405,
+          "airSteps": 0,
+          "events": [
+            "lip",
+            "bail"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1238.6896638548023,
+            5.743941622426927,
+            1191.2001485043918
+          ],
+          "final": [
+            1268.224380879589,
+            4.9068446811906705,
+            1310.6933316813816
+          ],
+          "progress": 123.11361321774734,
+          "mode": "bicycle",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 24.958333333333332,
+          "maxLateral": 0.6369659226653255,
+          "airSteps": 7,
+          "events": [
+            "fadeBack",
+            "fade",
+            "airborne",
+            "land"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1268.0277827705015,
+            4.896156852640025,
+            1311.5121033897033
+          ],
+          "final": [
+            1240.4082485834701,
+            5.203219041545673,
+            1195.1845663207826
+          ],
+          "progress": 122.50840000034054,
+          "mode": "bicycle",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 30.808333333333334,
+          "maxLateral": 1.6821287748391531,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "mode": "cruiser",
+          "direction": 1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        },
+        {
+          "mode": "cruiser",
+          "direction": -1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        }
+      ]
+    },
+    {
+      "id": "timberCrossing",
+      "at": [
+        1500,
+        1250
+      ],
+      "route": "homestead.lane",
+      "length": 20,
+      "width": 3,
+      "height": 5,
+      "clear": 2,
+      "from": 76.88757523575097,
+      "to": 108.88757523575097,
+      "deckSolids": [
+        {
+          "id": "timberCrossing.deck@harbour",
+          "bounds": {
+            "min": [
+              1492.677102245,
+              4.4,
+              1241.185185514
+            ],
+            "max": [
+              1507.322897755,
+              5,
+              1258.814814486
+            ]
+          },
+          "triangles": 12
+        }
+      ],
+      "solidCount": 3,
+      "triangles": 568,
+      "surfaceProbe": {
+        "count": 65,
+        "missing": 0,
+        "maxBedMismatch": 0.35540505158075053,
+        "headroom": {
+          "state": "measured",
+          "minimum": 1,
+          "station": 96.88757523575097,
+          "at": [
+            1496.6877090464452,
+            4.684084398594888,
+            1252.2424826953625
+          ],
+          "surfaceId": "timberCrossing.deck@harbour"
+        },
+        "blockedSamples": 2,
+        "witnesses": [
+          {
+            "s": 97.38757523575097,
+            "at": [
+              1496.273672677251,
+              4.6445949484192495,
+              1252.5227930322826
+            ],
+            "surfaceId": "timberCrossing.deck@harbour",
+            "y": 5,
+            "bedY": 4.6445949484192495,
+            "ceiling": 6,
+            "blocker": "timberCrossing.rails@harbour"
+          },
+          {
+            "s": 96.88757523575097,
+            "at": [
+              1496.6877090464452,
+              4.684084398594888,
+              1252.2424826953625
+            ],
+            "surfaceId": "timberCrossing.deck@harbour",
+            "y": 5,
+            "bedY": 4.684084398594888,
+            "ceiling": 6,
+            "blocker": "timberCrossing.rails@harbour"
+          },
+          {
+            "s": 96.38757523575097,
+            "at": [
+              1497.1017454156397,
+              4.723573848770527,
+              1251.962172358442
+            ],
+            "surfaceId": "timberCrossing.deck@harbour",
+            "y": 5,
+            "bedY": 4.723573848770527,
+            "ceiling": null,
+            "blocker": null
+          },
+          {
+            "s": 95.88757523575097,
+            "at": [
+              1497.515781784834,
+              4.763063298946166,
+              1251.6818620215217
+            ],
+            "surfaceId": "timberCrossing.deck@harbour",
+            "y": 5,
+            "bedY": 4.763063298946166,
+            "ceiling": null,
+            "blocker": null
+          },
+          {
+            "s": 95.38757523575097,
+            "at": [
+              1497.9298181540282,
+              4.802552749121805,
+              1251.4015516846016
+            ],
+            "surfaceId": "timberCrossing.deck@harbour",
+            "y": 5,
+            "bedY": 4.802552749121805,
+            "ceiling": null,
+            "blocker": null
+          },
+          {
+            "s": 94.88757523575097,
+            "at": [
+              1498.3438545232227,
+              4.842042199297444,
+              1251.1212413476812
+            ],
+            "surfaceId": "timberCrossing.deck@harbour",
+            "y": 5,
+            "bedY": 4.842042199297444,
+            "ceiling": null,
+            "blocker": null
+          },
+          {
+            "s": 94.38757523575097,
+            "at": [
+              1498.757890892417,
+              4.881531649473082,
+              1250.8409310107609
+            ],
+            "surfaceId": "timberCrossing.deck@harbour",
+            "y": 5,
+            "bedY": 4.881531649473082,
+            "ceiling": null,
+            "blocker": null
+          },
+          {
+            "s": 93.88757523575097,
+            "at": [
+              1499.1719272616112,
+              4.921021099648722,
+              1250.5606206738405
+            ],
+            "surfaceId": "timberCrossing.deck@harbour",
+            "y": 5,
+            "bedY": 4.921021099648722,
+            "ceiling": null,
+            "blocker": null
+          },
+          {
+            "s": 105.88757523575097,
+            "at": [
+              1489.1158565220924,
+              4.0381565017902625,
+              1257.0558137121714
+            ],
+            "surfaceId": "homestead.lane.bed.harbour@harbour",
+            "y": 4.0807291642454615,
+            "bedY": 4.0381565017902625,
+            "ceiling": null,
+            "blocker": null
+          },
+          {
+            "s": 108.88757523575097,
+            "at": [
+              1488.9656594344074,
+              3.7981565015776453,
+              1259.1974176988836
+            ],
+            "surfaceId": "homestead.lane.bed.harbour@harbour",
+            "y": 3.8404867447204163,
+            "bedY": 3.7981565015776453,
+            "ceiling": null,
+            "blocker": null
+          },
+          {
+            "s": 106.38757523575097,
+            "at": [
+              1488.7341633793917,
+              3.9981565017943224,
+              1257.3787848328852
+            ],
+            "surfaceId": "homestead.lane.bed.harbour@harbour",
+            "y": 4.038855872651028,
+            "bedY": 3.9981565017943224,
+            "ceiling": null,
+            "blocker": null
+          },
+          {
+            "s": 93.38757523575097,
+            "at": [
+              1499.5859636308057,
+              4.9605105498243605,
+              1250.2803103369204
+            ],
+            "surfaceId": "timberCrossing.deck@harbour",
+            "y": 5,
+            "bedY": 4.9605105498243605,
+            "ceiling": null,
+            "blocker": null
+          }
+        ]
+      },
+      "runs": [
+        {
+          "start": [
+            1509.2336753122506,
+            6.280000000181033,
+            1236.9519878465014
+          ],
+          "final": [
+            1468.705539359,
+            6.9590448769999975,
+            1253.61516035
+          ],
+          "progress": 0.3079692744047122,
+          "mode": "board",
+          "direction": 1,
+          "status": "incomplete-probe",
+          "seconds": 0.9583333333333334,
+          "maxLateral": 19.786435509795744,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1488.9656594344074,
+            3.7981565015776453,
+            1259.1974176988836
+          ],
+          "final": [
+            1470,
+            6.582474625,
+            1260
+          ],
+          "progress": 0.21516084974292937,
+          "mode": "board",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 0.8666666666666667,
+          "maxLateral": 18.110770276274835,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1509.2336753122506,
+            6.280000000181033,
+            1236.9519878465014
+          ],
+          "final": [
+            1506.138798549,
+            5,
+            1242.106005297
+          ],
+          "progress": 6.018830706385856,
+          "mode": "bicycle",
+          "direction": 1,
+          "status": "incomplete-probe",
+          "seconds": 6.966666666666667,
+          "maxLateral": 0.5311029369095651,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade",
+            "lip"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1488.9656594344074,
+            3.7981565015776453,
+            1259.1974176988836
+          ],
+          "final": [
+            1506.138798549,
+            4.999999999999999,
+            1242.106005297
+          ],
+          "progress": 29.08928074146675,
+          "mode": "bicycle",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 14.608333333333333,
+          "maxLateral": 3.4495170773210835,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade",
+            "lip"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "mode": "cruiser",
+          "direction": 1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        },
+        {
+          "mode": "cruiser",
+          "direction": -1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        }
+      ]
+    },
+    {
+      "id": "gardenWalkBridge",
+      "at": [
+        965.7,
+        761.1
+      ],
+      "route": "walk garden",
+      "length": 40,
+      "width": 5.6,
+      "clear": 2.4,
+      "supportSpacing": 7,
+      "opening": 26,
+      "followRoute": true,
+      "from": 397.6738700256024,
+      "to": 449.6738700256024,
+      "deckSolids": [
+        {
+          "id": "gardenWalkBridge.deck@hollow",
+          "bounds": {
+            "min": [
+              949.405871214,
+              49.305480772,
+              745.17513148
+            ],
+            "max": [
+              965.008694054,
+              51.903866438,
+              761.026072647
+            ]
+          },
+          "triangles": 43
+        },
+        {
+          "id": "gardenWalkBridge.deck@lakeside",
+          "bounds": {
+            "min": [
+              958.054869643,
+              50.787472649,
+              753.985150007
+            ],
+            "max": [
+              983.101324405,
+              54.705480772,
+              775.705086354
+            ]
+          },
+          "triangles": 65
+        },
+        {
+          "id": "gardenWalkBridge.meetingDeck@hollow",
+          "bounds": {
+            "min": [
+              946.571567984,
+              49.485480772,
+              750.035114882
+            ],
+            "max": [
+              953.968535321,
+              50.685480772,
+              757.429368074
+            ]
+          },
+          "triangles": 248
+        }
+      ],
+      "solidCount": 13,
+      "triangles": 2776,
+      "surfaceProbe": {
+        "count": 105,
+        "missing": 0,
+        "maxBedMismatch": 0.0025677023849794978,
+        "headroom": {
+          "state": "open-sky",
+          "minimum": null
+        },
+        "blockedSamples": 0,
+        "witnesses": []
+      },
+      "runs": [
+        {
+          "start": [
+            947.3911581503664,
+            49.18548516334619,
+            742.670574944997
+          ],
+          "final": [
+            924.3838973269839,
+            21.629660695917103,
+            752.81964604918
+          ],
+          "progress": 0.20259392877682103,
+          "mode": "board",
+          "direction": 1,
+          "status": "incomplete-probe",
+          "seconds": 0.8416666666666667,
+          "maxLateral": 23.9725519745613,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            986.1958131928044,
+            55.425469150551294,
+            777.0930695679509
+          ],
+          "final": [
+            941.288011398,
+            19.43259629601646,
+            791.684103399
+          ],
+          "progress": 0.4121624593074671,
+          "mode": "board",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 1,
+          "maxLateral": 39.124426548869685,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            947.3911581503664,
+            49.18548516334619,
+            742.670574944997
+          ],
+          "final": [
+            972.268935800358,
+            37.93703576626744,
+            746.8993845091907
+          ],
+          "progress": 0.20259392877682103,
+          "mode": "bicycle",
+          "direction": 1,
+          "status": "incomplete-probe",
+          "seconds": 0.8416666666666667,
+          "maxLateral": 15.015504814666382,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            986.1958131928044,
+            55.425469150551294,
+            777.0930695679509
+          ],
+          "final": [
+            989.6631392535472,
+            55.94947353066148,
+            779.7453153160084
+          ],
+          "progress": 0.4121624593074671,
+          "mode": "bicycle",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 6.366666666666666,
+          "maxLateral": 0.004089851613295858,
+          "airSteps": 8,
+          "events": [
+            "fadeBack",
+            "fade",
+            "airborne",
+            "land",
+            "lip"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "mode": "cruiser",
+          "direction": 1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        },
+        {
+          "mode": "cruiser",
+          "direction": -1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        }
+      ]
+    },
+    {
+      "id": "seaStairWestLaneBridge",
+      "at": [
+        1630.9,
+        762.8
+      ],
+      "route": "yearWalk",
+      "length": 14,
+      "width": 5.4,
+      "clear": 2.4,
+      "supportSpacing": 7,
+      "opening": 7,
+      "followRoute": true,
+      "from": 8358.419233881266,
+      "to": 8384.419233881266,
+      "deckSolids": [
+        {
+          "id": "seaStairWestLaneBridge.deck@prow",
+          "bounds": {
+            "min": [
+              1627.899220984,
+              51.345923199,
+              755.729144161
+            ],
+            "max": [
+              1633.541384488,
+              53.063378681,
+              769.821626602
+            ]
+          },
+          "triangles": 48
+        }
+      ],
+      "solidCount": 4,
+      "triangles": 888,
+      "surfaceProbe": {
+        "count": 53,
+        "missing": 0,
+        "maxBedMismatch": 0.017240187961853337,
+        "headroom": {
+          "state": "open-sky",
+          "minimum": null
+        },
+        "blockedSamples": 0,
+        "witnesses": []
+      },
+      "runs": [
+        {
+          "start": [
+            1630.360471176492,
+            51.53454877073494,
+            749.8095494688033
+          ],
+          "final": [
+            1398.3,
+            79.36243831186692,
+            639.33
+          ],
+          "progress": 0.20933614144269086,
+          "mode": "board",
+          "direction": 1,
+          "status": "incomplete-probe",
+          "seconds": 0.8666666666666667,
+          "maxLateral": 35.92128756044242,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1630.8790563081968,
+            53.40828258586377,
+            775.8020614310083
+          ],
+          "final": [
+            1378.25,
+            63.58259346099093,
+            691.93
+          ],
+          "progress": 0.3214613271647977,
+          "mode": "board",
+          "direction": -1,
+          "status": "end-reached-unverified",
+          "seconds": 0.9416666666666667,
+          "maxLateral": 0.00020280776288612357,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1630.360471176492,
+            51.53454877073494,
+            749.8095494688033
+          ],
+          "final": [
+            1630.84258787693,
+            53.05646776652356,
+            769.9629520040694
+          ],
+          "progress": 24.357737392176205,
+          "mode": "bicycle",
+          "direction": 1,
+          "status": "incomplete-probe",
+          "seconds": 17.958333333333332,
+          "maxLateral": 0.28606883055332877,
+          "airSteps": 19,
+          "events": [
+            "fadeBack",
+            "fade",
+            "airborne",
+            "land"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1630.8790563081968,
+            53.40828258586377,
+            775.8020614310083
+          ],
+          "final": [
+            1630.6257265742654,
+            51.59401190416566,
+            750.5947125858042
+          ],
+          "progress": 25.09361503487162,
+          "mode": "bicycle",
+          "direction": -1,
+          "status": "end-reached-unverified",
+          "seconds": 5.7,
+          "maxLateral": 0.22477924058255638,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "mode": "cruiser",
+          "direction": 1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        },
+        {
+          "mode": "cruiser",
+          "direction": -1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        }
+      ]
+    },
+    {
+      "id": "seaStairEastLaneBridge",
+      "at": [
+        1650.3,
+        766.8
+      ],
+      "route": "yearWalk",
+      "length": 16,
+      "width": 5.4,
+      "clear": 2.4,
+      "supportSpacing": 7,
+      "opening": 8,
+      "followRoute": true,
+      "from": 8643.065224966658,
+      "to": 8671.065224966658,
+      "deckSolids": [
+        {
+          "id": "seaStairEastLaneBridge.deck@prow",
+          "bounds": {
+            "min": [
+              1647.559301296,
+              49.819137091,
+              758.774201294
+            ],
+            "max": [
+              1653.078968229,
+              51.280547471,
+              774.814967277
+            ]
+          },
+          "triangles": 36
+        }
+      ],
+      "solidCount": 4,
+      "triangles": 896,
+      "surfaceProbe": {
+        "count": 57,
+        "missing": 0,
+        "maxBedMismatch": 0.00036950474658681287,
+        "headroom": {
+          "state": "open-sky",
+          "minimum": null
+        },
+        "blockedSamples": 0,
+        "witnesses": []
+      },
+      "runs": [
+        {
+          "start": [
+            1650.4044438703365,
+            51.482962030127474,
+            780.7995809883212
+          ],
+          "final": [
+            1378.4569534429145,
+            64.04648015430982,
+            686.7735938171805
+          ],
+          "progress": 0.3181292300214409,
+          "mode": "board",
+          "direction": 1,
+          "status": "incomplete-probe",
+          "seconds": 6.258333333333334,
+          "maxLateral": 2.2999911087085723,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade",
+            "twist"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1650.1792630959453,
+            50.027761510757784,
+            752.8006457529575
+          ],
+          "final": [
+            1398.3,
+            79.36243831186692,
+            639.33
+          ],
+          "progress": 0.2096112179042393,
+          "mode": "board",
+          "direction": -1,
+          "status": "end-reached-unverified",
+          "seconds": 0.8666666666666667,
+          "maxLateral": 0.0001712940890568216,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1650.4044438703365,
+            51.482962030127474,
+            780.7995809883212
+          ],
+          "final": [
+            1650.294810103056,
+            50.083604246427626,
+            753.5703442095484
+          ],
+          "progress": 27.165781230751236,
+          "mode": "bicycle",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 6.991666666666666,
+          "maxLateral": 0.10282738312531561,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1650.1792630959453,
+            50.027761510757784,
+            752.8006457529575
+          ],
+          "final": [
+            1650.391533755313,
+            51.30955918254528,
+            775.6121383441166
+          ],
+          "progress": 26.53010200497738,
+          "mode": "bicycle",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 18.183333333333334,
+          "maxLateral": 0.1772909025033758,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "mode": "cruiser",
+          "direction": 1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        },
+        {
+          "mode": "cruiser",
+          "direction": -1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        }
+      ]
+    },
+    {
+      "id": "mountainRoadCanalBridge",
+      "at": [
+        1300.5,
+        748
+      ],
+      "route": "V03",
+      "length": 18,
+      "width": 17,
+      "clear": 2.4,
+      "supportSpacing": 7,
+      "followRoute": true,
+      "from": 292.4530600151875,
+      "to": 322.4530600151875,
+      "deckSolids": [
+        {
+          "id": "mountainRoadCanalBridge.deck@lakeside",
+          "bounds": {
+            "min": [
+              1289.340261865,
+              55.171642643,
+              736.937510559
+            ],
+            "max": [
+              1312.09745236,
+              56,
+              759.777259801
+            ]
+          },
+          "triangles": 60
+        },
+        {
+          "id": "mountainRoadCanalBridge.meetingDeck@lakeside",
+          "bounds": {
+            "min": [
+              1306.137959677,
+              55.341938662,
+              736.799721555
+            ],
+            "max": [
+              1312.950083489,
+              55.995691133,
+              743.79740203
+            ]
+          },
+          "triangles": 248
+        }
+      ],
+      "solidCount": 7,
+      "triangles": 1720,
+      "surfaceProbe": {
+        "count": 61,
+        "missing": 0,
+        "maxBedMismatch": 0.006218844258185641,
+        "headroom": {
+          "state": "open-sky",
+          "minimum": null
+        },
+        "blockedSamples": 0,
+        "witnesses": []
+      },
+      "runs": [
+        {
+          "start": [
+            1314.0023774523675,
+            55.68905789219052,
+            754.5478416834209
+          ],
+          "final": [
+            1282.267736459771,
+            54.78006117959583,
+            757.1702101927586
+          ],
+          "progress": 0.20466754876269988,
+          "mode": "board",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 0.875,
+          "maxLateral": 1.1368683772161603e-13,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1286.2453062103307,
+            55.50665780862259,
+            743.304983645932
+          ],
+          "final": [
+            1283.0488166286154,
+            55.40021088244677,
+            743.4869488472855
+          ],
+          "progress": 0.20421799425747622,
+          "mode": "board",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 6.141666666666667,
+          "maxLateral": 1.4252184712543772,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1314.0023774523675,
+            55.68905789219052,
+            754.5478416834209
+          ],
+          "final": [
+            1287.05440887312,
+            55.542587205895664,
+            743.2218343535537
+          ],
+          "progress": 29.146200843840063,
+          "mode": "bicycle",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 6.775,
+          "maxLateral": 0.2989832066462872,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1286.2453062103307,
+            55.50665780862259,
+            743.304983645932
+          ],
+          "final": [
+            1313.4369809940388,
+            55.72207629906429,
+            753.9634308631838
+          ],
+          "progress": 29.149888845972725,
+          "mode": "bicycle",
+          "direction": -1,
+          "status": "end-reached-unverified",
+          "seconds": 7.033333333333333,
+          "maxLateral": 0.30366283196298327,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1314.0023774523675,
+            55.68905789219052,
+            754.5478416834209
+          ],
+          "final": [
+            1287.0900362779632,
+            55.542328554634786,
+            743.0768015927064
+          ],
+          "progress": 29.120010643343335,
+          "mode": "cruiser",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 2.9166666666666665,
+          "maxLateral": 0.4457063861671063,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1286.2453062103307,
+            55.50665780862259,
+            743.304983645932
+          ],
+          "final": [
+            1313.4130483468944,
+            55.71935319485147,
+            754.169661331795
+          ],
+          "progress": 29.17405260590698,
+          "mode": "cruiser",
+          "direction": -1,
+          "status": "end-reached-unverified",
+          "seconds": 2.9,
+          "maxLateral": 0.2688794472114447,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        }
+      ]
+    },
+    {
+      "id": "s1InflowBridge",
+      "at": [
+        1270.5,
+        836.5
+      ],
+      "route": "S1",
+      "length": 12,
+      "width": 5,
+      "clear": 2.4,
+      "supportSpacing": 7,
+      "followRoute": true,
+      "from": 1111.6293811897194,
+      "to": 1135.6293811897194,
+      "deckSolids": [
+        {
+          "id": "s1InflowBridge.deck@lakeside",
+          "bounds": {
+            "min": [
+              1264.797154064,
+              51.905606281,
+              829.824367122
+            ],
+            "max": [
+              1275.638314696,
+              53.263657487,
+              842.662480339
+            ]
+          },
+          "triangles": 48
+        }
+      ],
+      "solidCount": 3,
+      "triangles": 560,
+      "surfaceProbe": {
+        "count": 49,
+        "missing": 0,
+        "maxBedMismatch": 0.010930394000858712,
+        "headroom": {
+          "state": "open-sky",
+          "minimum": null
+        },
+        "blockedSamples": 0,
+        "witnesses": []
+      },
+      "runs": [
+        {
+          "start": [
+            1278.2194035448554,
+            53.492238766737685,
+            827.4983162798592
+          ],
+          "final": [
+            1263.8937482027711,
+            52.05403815929597,
+            845.5935967704909
+          ],
+          "progress": 23.11098033600524,
+          "mode": "board",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 4.283333333333333,
+          "maxLateral": 0.2594263049542745,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1263.711630594267,
+            51.98433136058476,
+            846.3865709064755
+          ],
+          "final": [
+            1277.5116855156134,
+            53.47488328122749,
+            827.8487827296416
+          ],
+          "progress": 23.180915453162015,
+          "mode": "board",
+          "direction": -1,
+          "status": "end-reached-unverified",
+          "seconds": 5.708333333333333,
+          "maxLateral": 0.15936364726093716,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1278.2194035448554,
+            53.492238766737685,
+            827.4983162798592
+          ],
+          "final": [
+            1263.9361943077681,
+            52.05404932690568,
+            845.6198282136163
+          ],
+          "progress": 23.109455702074,
+          "mode": "bicycle",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 5.208333333333333,
+          "maxLateral": 0.37524342016534046,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1263.711630594267,
+            51.98433136058476,
+            846.3865709064755
+          ],
+          "final": [
+            1275.6634716429126,
+            53.40235562634474,
+            829.7765490309812
+          ],
+          "progress": 22.927594416364173,
+          "mode": "bicycle",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 13.583333333333334,
+          "maxLateral": 0.4030757084522642,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "mode": "cruiser",
+          "direction": 1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        },
+        {
+          "mode": "cruiser",
+          "direction": -1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        }
+      ]
+    },
+    {
+      "id": "inflowFootbridge",
+      "at": [
+        1249,
+        835.5
+      ],
+      "route": "walk lakerim",
+      "length": 10,
+      "width": 3.2,
+      "clear": 2.4,
+      "supportSpacing": 7,
+      "followRoute": true,
+      "from": 343.886958975181,
+      "to": 365.886958975181,
+      "deckSolids": [
+        {
+          "id": "inflowFootbridge.deck@lakeside",
+          "bounds": {
+            "min": [
+              1248.282063082,
+              52.990057314,
+              830.621006513
+            ],
+            "max": [
+              1252.761334896,
+              53.614229857,
+              841.106280619
+            ]
+          },
+          "triangles": 48
+        }
+      ],
+      "solidCount": 3,
+      "triangles": 528,
+      "surfaceProbe": {
+        "count": 45,
+        "missing": 0,
+        "maxBedMismatch": 0.0007935891682322449,
+        "headroom": {
+          "state": "open-sky",
+          "minimum": null
+        },
+        "blockedSamples": 0,
+        "witnesses": []
+      },
+      "runs": [
+        {
+          "start": [
+            1251.3547370907004,
+            53.64155753236708,
+            824.7208540893217
+          ],
+          "final": [
+            1269.393941161798,
+            52.90239597605927,
+            837.4564388531794
+          ],
+          "progress": 0.3123002949164402,
+          "mode": "board",
+          "direction": 1,
+          "status": "incomplete-probe",
+          "seconds": 0.9083333333333333,
+          "maxLateral": 18.746897779940877,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1247.5477175041085,
+            53.681117222544984,
+            846.1488279808859
+          ],
+          "final": [
+            1259.6281629987136,
+            51.242789445858534,
+            853.0817935483274
+          ],
+          "progress": 0.31409182187758233,
+          "mode": "board",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 0.9083333333333333,
+          "maxLateral": 13.889594807670717,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1251.3547370907004,
+            53.64155753236708,
+            824.7208540893217
+          ],
+          "final": [
+            1248.2189811603132,
+            53.671991289781495,
+            845.5942608760572
+          ],
+          "progress": 21.145014618337314,
+          "mode": "bicycle",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 6.166666666666667,
+          "maxLateral": 0.3655063435450979,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1247.5477175041085,
+            53.681117222544984,
+            846.1488279808859
+          ],
+          "final": [
+            1251.5984418984028,
+            53.635537351270514,
+            825.5248645337267
+          ],
+          "progress": 21.16744844500988,
+          "mode": "bicycle",
+          "direction": -1,
+          "status": "end-reached-unverified",
+          "seconds": 6.058333333333334,
+          "maxLateral": 0.3463518050067273,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "mode": "cruiser",
+          "direction": 1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        },
+        {
+          "mode": "cruiser",
+          "direction": -1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        }
+      ]
+    },
+    {
+      "id": "prowLoopFootbridge",
+      "at": [
+        1606.65,
+        688.75
+      ],
+      "route": "yearWalk",
+      "length": 29,
+      "width": 6,
+      "from": 8269.864665856747,
+      "to": 8310.864665856747,
+      "deckSolids": [
+        {
+          "id": "prowLoopFootbridge.deck@prow",
+          "bounds": {
+            "min": [
+              1600.600893667,
+              45.032322768,
+              673.857104164
+            ],
+            "max": [
+              1612.733155944,
+              47.830333401,
+              703.481226169
+            ]
+          },
+          "triangles": 60
+        },
+        {
+          "id": "prowLoopFootbridge.meetingDeck@prow",
+          "bounds": {
+            "min": [
+              1595.830415616,
+              45.152322768,
+              676.757849668
+            ],
+            "max": [
+              1602.249023359,
+              46.152322768,
+              682.767294383
+            ]
+          },
+          "triangles": 248
+        }
+      ],
+      "solidCount": 7,
+      "triangles": 4856,
+      "surfaceProbe": {
+        "count": 83,
+        "missing": 0,
+        "maxBedMismatch": 0.010387082326019481,
+        "headroom": {
+          "state": "open-sky",
+          "minimum": null
+        },
+        "blockedSamples": 0,
+        "witnesses": []
+      },
+      "runs": [
+        {
+          "start": [
+            1601.7418833131405,
+            45.330388102522036,
+            668.8667388582705
+          ],
+          "final": [
+            1400.0253941629644,
+            80.14852497074358,
+            633.5693984985679
+          ],
+          "progress": 0.21237243991345167,
+          "mode": "board",
+          "direction": 1,
+          "status": "incomplete-probe",
+          "seconds": 0.875,
+          "maxLateral": 39.59537460734286,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1611.0233258201636,
+            48.28583890392972,
+            708.7776689137593
+          ],
+          "final": [
+            1399.3,
+            79.75257291951444,
+            636.51
+          ],
+          "progress": 0.3088932239024871,
+          "mode": "board",
+          "direction": -1,
+          "status": "end-reached-unverified",
+          "seconds": 0.9583333333333334,
+          "maxLateral": 0.0007056748064327999,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1601.7418833131405,
+            45.330388102522036,
+            668.8667388582705
+          ],
+          "final": [
+            1588.2895908943476,
+            43.734213933629036,
+            673.2898986219195
+          ],
+          "progress": 0.21237243991345167,
+          "mode": "bicycle",
+          "direction": 1,
+          "status": "incomplete-probe",
+          "seconds": 2.2916666666666665,
+          "maxLateral": 8.011763256802675,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            1611.0233258201636,
+            48.28583890392972,
+            708.7776689137593
+          ],
+          "final": [
+            1590.4696297159967,
+            41.481003310010024,
+            703.7332289767181
+          ],
+          "progress": 0.3088932239024871,
+          "mode": "bicycle",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 6.225,
+          "maxLateral": 6.395940543805714,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "mode": "cruiser",
+          "direction": 1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        },
+        {
+          "mode": "cruiser",
+          "direction": -1,
+          "status": "not-applicable",
+          "reason": "No authored road on this deck"
+        }
+      ]
+    },
+    {
+      "id": "bightSpurTrestle",
+      "at": [
+        897.1701476874496,
+        895.7243187554014
+      ],
+      "route": "VBS",
+      "length": 69.51080582530153,
+      "width": 5,
+      "from": 33.19138334220093,
+      "to": 114.70218916750245,
+      "deckSolids": [
+        {
+          "id": "bightSpurTrestle.deck@lakeside",
+          "bounds": {
+            "min": [
+              919.48331016,
+              26.77651406,
+              871.188105735
+            ],
+            "max": [
+              926.755438393,
+              27.985076255,
+              875.748626172
+            ]
+          },
+          "triangles": 5
+        },
+        {
+          "id": "bightSpurTrestle.deck@green",
+          "bounds": {
+            "min": [
+              919.48331016,
+              26.77651406,
+              873.535361472
+            ],
+            "max": [
+              926.755438393,
+              27.985076255,
+              878.065002661
+            ]
+          },
+          "triangles": 4
+        },
+        {
+          "id": "bightSpurTrestle.deck@bight",
+          "bounds": {
+            "min": [
+              878.682614608,
+              21.491515916,
+              871.188105735
+            ],
+            "max": [
+              924.705644903,
+              27.385076255,
+              929.28306206
+            ]
+          },
+          "triangles": 171
+        },
+        {
+          "id": "bightSpurTrestle.deckFill@green",
+          "bounds": {
+            "min": [
+              921.593331925,
+              26.77651406,
+              875.73038409
+            ],
+            "max": [
+              926.931720633,
+              27.985076255,
+              878.454587654
+            ]
+          },
+          "triangles": 12
+        },
+        {
+          "id": "bightSpurTrestle.deckFill@lakeside",
+          "bounds": {
+            "min": [
+              926.747239219,
+              27.385076255,
+              875.73038409
+            ],
+            "max": [
+              926.931720633,
+              27.985076255,
+              876.140830929
+            ]
+          },
+          "triangles": 2
+        },
+        {
+          "id": "bightSpurTrestle.deckFill@bight",
+          "bounds": {
+            "min": [
+              883.185963286,
+              21.491515916,
+              878.046914441
+            ],
+            "max": [
+              921.78401331,
+              27.37651406,
+              929.46663995
+            ]
+          },
+          "triangles": 166
+        },
+        {
+          "id": "bightSpurTrestle.meetingDeck@lakeside",
+          "bounds": {
+            "min": [
+              919.340499498,
+              26.957108777,
+              866.96889212
+            ],
+            "max": [
+              923.378484642,
+              27.824588451,
+              872.714171587
+            ]
+          },
+          "triangles": 94
+        },
+        {
+          "id": "bightSpurTrestle.meetingDeck@bight",
+          "bounds": {
+            "min": [
+              916.395898652,
+              26.705802897,
+              867.686319841
+            ],
+            "max": [
+              921.782302489,
+              27.637352679,
+              873.998390143
+            ]
+          },
+          "triangles": 154
+        }
+      ],
+      "solidCount": 22,
+      "triangles": 3452,
+      "surfaceProbe": {
+        "count": 164,
+        "missing": 0,
+        "maxBedMismatch": 0.013027366087470682,
+        "headroom": {
+          "state": "open-sky",
+          "minimum": null
+        },
+        "blockedSamples": 0,
+        "witnesses": []
+      },
+      "runs": [
+        {
+          "start": [
+            929.0776324585593,
+            28.377035475705842,
+            872.0536352200983
+          ],
+          "final": [
+            916.670934309,
+            17.318514832003,
+            862.697861098
+          ],
+          "progress": 0.3162043557695924,
+          "mode": "board",
+          "direction": 1,
+          "status": "incomplete-probe",
+          "seconds": 0.9916666666666667,
+          "maxLateral": 13.537886328901703,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            879.0241657433546,
+            21.85178584587233,
+            932.2021049662766
+          ],
+          "final": [
+            869.8985732315329,
+            21.146587095173633,
+            930.927004439851
+          ],
+          "progress": 0.21220574054851227,
+          "mode": "board",
+          "direction": -1,
+          "status": "incomplete-probe",
+          "seconds": 0.875,
+          "maxLateral": 8.736955580414499,
+          "airSteps": 0,
+          "events": [
+            "fadeBack",
+            "fade"
+          ],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            929.0776324585593,
+            28.377035475705842,
+            872.0536352200983
+          ],
+          "final": [
+            879.5981245420554,
+            21.891817766308286,
+            931.653795925195
+          ],
+          "progress": 80.6381842219607,
+          "mode": "bicycle",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 12.125,
+          "maxLateral": 0.8698009584662778,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            879.0241657433546,
+            21.85178584587233,
+            932.2021049662766
+          ],
+          "final": [
+            928.2467527691607,
+            28.291621212714116,
+            872.1162401326352
+          ],
+          "progress": 80.69730613858397,
+          "mode": "bicycle",
+          "direction": -1,
+          "status": "end-reached-unverified",
+          "seconds": 26.483333333333334,
+          "maxLateral": 0.26575181795294206,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            929.0776324585593,
+            28.377035475705842,
+            872.0536352200983
+          ],
+          "final": [
+            879.3227614005117,
+            21.892585003283568,
+            931.5047015036204
+          ],
+          "progress": 80.61964067143433,
+          "mode": "cruiser",
+          "direction": 1,
+          "status": "end-reached-unverified",
+          "seconds": 6.3,
+          "maxLateral": 1.0023688776303004,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        },
+        {
+          "start": [
+            879.0241657433546,
+            21.85178584587233,
+            932.2021049662766
+          ],
+          "final": [
+            928.3805134497848,
+            28.295556649720254,
+            872.337810171779
+          ],
+          "progress": 80.62532166494901,
+          "mode": "cruiser",
+          "direction": -1,
+          "status": "end-reached-unverified",
+          "seconds": 6.308333333333334,
+          "maxLateral": 0.9771588837873282,
+          "airSteps": 0,
+          "events": [],
+          "note": "Input-only pursuit driver; no position reset after start. Incomplete is not classified as a world fault until visually corroborated."
+        }
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "id": "structures.bightBridge.s2Flyover.clear",
+      "severity": "info",
+      "message": "bightBridge: the S2 flyover's underside stands 5.00 eu over the road deck (need 5)",
+      "at": [
+        555.023489933,
+        1096.516442953
+      ],
+      "measured": 5,
+      "required": 5
+    },
+    {
+      "id": "structures.bightBridge.kerbGap",
+      "severity": "info",
+      "message": "bightBridge: the kerb rail at o 8.72 opens for S2 at s -4.5–16.3, -3.9–16.9",
+      "at": [
+        469.798556823,
+        1026.217202565
+      ],
+      "measured": 20.8,
+      "required": 3.5
+    },
+    {
+      "id": "structures.bightBridge.ferryHull",
+      "severity": "info",
+      "message": "bightBridge: an 8 m ferry hull on the FERRY line passes 1.38 eu clear of the nearest arch pier or bent footing (the opening s 103–143 is centred on s 123; the ferry crosses the deck edges at s ≈ 113–131)",
+      "at": [
+        565.7,
+        1121.42
+      ],
+      "measured": 1.384989982,
+      "required": 0
+    },
+    {
+      "id": "structures.bightBridge.summary",
+      "severity": "info",
+      "message": "bightBridge: 245 eu deck at 12, 17 timber bents + 2 arch piers, suspension saddle 33.0, opening 38 eu clear × 11.4 eu under the deck",
+      "at": [
+        560.765526224,
+        1100.535868357
+      ],
+      "measured": 38,
+      "required": 38
+    },
+    {
+      "id": "structures.apronBridge.bentInLane",
+      "severity": "conflict",
+      "message": "apronBridge: the bent at 22.5 eu stands in RIVER_RUN's corridor (and 6 eu outward); it is not built",
+      "at": [
+        1154.13,
+        947.79
+      ]
+    },
+    {
+      "id": "structures.bightPierStair.girderSpan",
+      "severity": "info",
+      "message": "bightPierStair: stringers carry a 11.9 eu clear span over a protected lane",
+      "at": [
+        509.9,
+        896
+      ],
+      "measured": 11.9,
+      "required": 24
+    },
+    {
+      "id": "structures.lampGallery.stair.girderSpan",
+      "severity": "info",
+      "message": "lampGallery.stair: stringers carry a 6.7 eu clear span over a protected lane",
+      "at": [
+        540,
+        1241.916666667
+      ],
+      "measured": 6.722222222,
+      "required": 24
+    },
+    {
+      "id": "structures.lampGallery.stair.girderSpan",
+      "severity": "info",
+      "message": "lampGallery.stair: stringers carry a 22.9 eu clear span over a protected lane",
+      "at": [
+        540,
+        1227.111111111
+      ],
+      "measured": 22.888888889,
+      "required": 24
+    },
+    {
+      "id": "structures.bightSpurTrestle.girderSpan",
+      "severity": "info",
+      "message": "bightSpurTrestle: steel girders carry a 16.3 eu bay over a lower route",
+      "at": [
+        902.373473875,
+        887.940532111
+      ],
+      "measured": 16.300420168,
+      "required": 24
+    },
+    {
+      "id": "structures.bightSpurTrestle.bentOmitted",
+      "severity": "info",
+      "message": "bightSpurTrestle: no bent at 28.3 eu (it would stand in yearWalk's corridor); the 16.3 eu bay is carried by steel girders under both deck edges bearing on the cap beams at 19.6 and 35.9 eu",
+      "at": [
+        902.0757623,
+        888.342238245
+      ],
+      "measured": 16.300420168,
+      "required": 24
+    },
+    {
+      "id": "structures.prowLoopFootbridge.cantilever",
+      "severity": "info",
+      "message": "Route-following edge arms replace intermediate bents; lower-route clearance requires a fresh swept-body audit."
+    },
+    {
+      "id": "underground.deep.interior",
+      "severity": "info",
+      "message": "the Deep: 65 tube prisms opened inside the room (Ore Line tube, Sea Passage walls); the Ore Line crosses on a timber trestle to the floor at 38; every room has a floor slab",
+      "at": [
+        1300,
+        420
+      ],
+      "measured": 65,
+      "required": 0
+    },
+    {
+      "id": "S2.westRamp.trestle",
+      "severity": "info",
+      "message": "S2's west ramp crosses the Wash mouth on 19 timber bents (5 % from the Wash rim to the Bight deck, D-A1)",
+      "measured": 19
+    },
+    {
+      "id": "junction.cross.fERRY.bightBridgeTowerStair.3",
+      "severity": "info",
+      "message": "structure.bightBridge.towerStair is carried over the crossing by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        560,
+        1082.422559913
+      ],
+      "measured": 19.644242096
+    },
+    {
+      "id": "junction.cross.fERRY.bightBridgeTowerStair.4",
+      "severity": "info",
+      "message": "structure.bightBridge is carried over the crossing by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        560,
+        1097.802819989
+      ],
+      "measured": 12
+    },
+    {
+      "id": "junction.cross.fERRY.bightBridgeTowerStair.1",
+      "severity": "info",
+      "message": "structure.bightBridge is carried over the crossing by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        560.327937315,
+        1098.03237611
+      ],
+      "measured": 12
+    },
+    {
+      "id": "junction.cross.fERRY.bightBridgeTowerStair.2",
+      "severity": "info",
+      "message": "structure.bightBridge.towerStair is carried over the crossing by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        562.62349852,
+        1084.259008878
+      ],
+      "measured": 17.897484973
+    },
+    {
+      "id": "junction.cross.highSpanOverlook.riverLower.2",
+      "severity": "conflict",
+      "message": "The registered at-grade junction has incompatible heights; fixed grades remain. Any separated physical passage still requires design reconciliation.",
+      "at": [
+        1251.221115538,
+        1143.256308101
+      ],
+      "measured": 2.201533865,
+      "required": 0.48
+    },
+    {
+      "id": "junction.cross.highSpanOverlook.riverLower.1",
+      "severity": "conflict",
+      "message": "A land or rail route intersects open water without a separated deck or named boarding interface; no dry pad was placed in the channel",
+      "at": [
+        1251.221115538,
+        1143.256308101
+      ],
+      "measured": 2.091633466
+    },
+    {
+      "id": "junction.cross.s1.riverLower.1",
+      "severity": "info",
+      "message": "structure.apronBridge is carried over the crossing by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        1155.502643786,
+        943.756609465
+      ],
+      "measured": 12
+    },
+    {
+      "id": "junction.cross.s1.riverLower.2",
+      "severity": "info",
+      "message": "structure.apronBridge is carried over the crossing by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        1155.502643786,
+        943.756609465
+      ],
+      "measured": 12.61728355
+    },
+    {
+      "id": "junction.cross.s1.structureApronBridgeMeeting.1",
+      "severity": "conflict",
+      "message": "An at-grade junction lies on a bridge deck: a threshold there needs a widened, guarded deck; no pad was placed and no parapet was cut",
+      "at": [
+        1163.241791736,
+        932.109297275
+      ],
+      "measured": 0
+    },
+    {
+      "id": "junction.cross.s1.structureReachBoardwalkMeeting.2",
+      "severity": "conflict",
+      "message": "An at-grade junction lies on a bridge deck: a threshold there needs a widened, guarded deck; no pad was placed and no parapet was cut",
+      "at": [
+        1241.534310676,
+        1200.771294348
+      ],
+      "measured": 0
+    },
+    {
+      "id": "junction.cross.s1.structureReachBoardwalkMeeting.1",
+      "severity": "conflict",
+      "message": "An at-grade junction lies on a bridge deck: a threshold there needs a widened, guarded deck; no pad was placed and no parapet was cut",
+      "at": [
+        1242.016203003,
+        1200.647035683
+      ],
+      "measured": 0
+    },
+    {
+      "id": "junction.cross.s1.vG.1",
+      "severity": "info",
+      "message": "structure.highSpan is carried over S1 by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        1203.690138454,
+        1100.631479329
+      ],
+      "measured": 11.929225618
+    },
+    {
+      "id": "junction.cross.s1.waterRiverMountain.1",
+      "severity": "info",
+      "message": "structure.s1InflowBridge is carried over the crossing by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        1270.049807397,
+        836.50249037
+      ],
+      "measured": 2.933589595
+    },
+    {
+      "id": "junction.cross.s2.bightBridgeTowerStair.1",
+      "severity": "info",
+      "message": "structure.bightBridge.s2Flyover is carried over structure.bightBridge by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        556.127525404,
+        1095.092087772
+      ],
+      "measured": 5.6
+    },
+    {
+      "id": "junction.cross.fERRY.s2.3",
+      "severity": "info",
+      "message": "structure.bightBridge.s2Flyover is carried over the crossing by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        559.221762274,
+        1105.058545217
+      ],
+      "measured": 17.6
+    },
+    {
+      "id": "junction.cross.fERRY.s2.2",
+      "severity": "info",
+      "message": "structure.bightBridge.s2Ramp.sea is carried over the crossing by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        564.738888889,
+        1111.847222222
+      ],
+      "measured": 17.537610938
+    },
+    {
+      "id": "junction.cross.s3.structureQuayBridgeMeeting.1",
+      "severity": "conflict",
+      "message": "An at-grade junction lies on a bridge deck: a threshold there needs a widened, guarded deck; no pad was placed and no parapet was cut",
+      "at": [
+        1320.998941342,
+        1373.266306712
+      ],
+      "measured": 0
+    },
+    {
+      "id": "junction.cross.s3.v01.3",
+      "severity": "conflict",
+      "message": "An at-grade junction lies on a bridge deck: a threshold there needs a widened, guarded deck; no pad was placed and no parapet was cut",
+      "at": [
+        1321.912400796,
+        1372.336369712
+      ],
+      "measured": 0
+    },
+    {
+      "id": "junction.cross.s3.v01.1",
+      "severity": "conflict",
+      "message": "An at-grade junction lies on a bridge deck: a threshold there needs a widened, guarded deck; no pad was placed and no parapet was cut",
+      "at": [
+        1350,
+        1345
+      ],
+      "measured": 0
+    },
+    {
+      "id": "junction.cross.s4.walkGarden.1",
+      "severity": "conflict",
+      "message": "An at-grade junction lies on a bridge deck: a threshold there needs a widened, guarded deck; no pad was placed and no parapet was cut",
+      "at": [
+        893,
+        600
+      ],
+      "measured": 0
+    },
+    {
+      "id": "junction.cross.fERRY.structureBightBridgeLookout.2",
+      "severity": "info",
+      "message": "structure.bightBridge.lookout is carried over the crossing by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        560,
+        1082.577689951
+      ],
+      "measured": 12
+    },
+    {
+      "id": "junction.cross.fERRY.structureBightBridgeLookout.1",
+      "severity": "info",
+      "message": "structure.bightBridge.lookout is carried over the crossing by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        562.600344783,
+        1084.3979313
+      ],
+      "measured": 12
+    },
+    {
+      "id": "junction.cross.v01.riverLower.1",
+      "severity": "info",
+      "message": "structure.quayBridge is carried over the crossing by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        1350,
+        1345
+      ],
+      "measured": 8.1
+    },
+    {
+      "id": "junction.cross.s2.v01.1",
+      "severity": "info",
+      "message": "structure.bightBridge.s2Flyover is carried over V01 by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        556.95804281,
+        1097.870629967
+      ],
+      "measured": 5.6
+    },
+    {
+      "id": "junction.cross.s3.v01.4",
+      "severity": "conflict",
+      "message": "An at-grade junction lies on a bridge deck: a threshold there needs a widened, guarded deck; no pad was placed and no parapet was cut",
+      "at": [
+        1321.912400796,
+        1372.336369712
+      ],
+      "measured": 0
+    },
+    {
+      "id": "junction.cross.s3.v01.2",
+      "severity": "conflict",
+      "message": "An at-grade junction lies on a bridge deck: a threshold there needs a widened, guarded deck; no pad was placed and no parapet was cut",
+      "at": [
+        1350,
+        1345
+      ],
+      "measured": 0
+    },
+    {
+      "id": "junction.cross.v01.structureQuayBridgeMeeting.1",
+      "severity": "conflict",
+      "message": "An at-grade junction lies on a bridge deck: a threshold there needs a widened, guarded deck; no pad was placed and no parapet was cut",
+      "at": [
+        1320.807308403,
+        1372.867848379
+      ],
+      "measured": 0
+    },
+    {
+      "id": "junction.cross.v03.structureMountainRoadCanalBridgeMeeting.1",
+      "severity": "conflict",
+      "message": "An at-grade junction lies on a bridge deck: a threshold there needs a widened, guarded deck; no pad was placed and no parapet was cut",
+      "at": [
+        1304.909605264,
+        750.38600523
+      ],
+      "measured": 0
+    },
+    {
+      "id": "junction.cross.vBS.structureBightSpurTrestleMeeting.1",
+      "severity": "conflict",
+      "message": "An at-grade junction lies on a bridge deck: a threshold there needs a widened, guarded deck; no pad was placed and no parapet was cut",
+      "at": [
+        922.082125299,
+        875.108200745
+      ],
+      "measured": 0
+    },
+    {
+      "id": "junction.cross.vG.highSpanWalk.1",
+      "severity": "info",
+      "message": "structure.highSpan is carried over highSpan.walk by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        1228.826125883,
+        1104.075650104
+      ],
+      "measured": 13.988248598
+    },
+    {
+      "id": "junction.cross.vG.riverLower.2",
+      "severity": "info",
+      "message": "structure.highSpan is carried over the crossing by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        1236.802262243,
+        1104.806032648
+      ],
+      "measured": 15.608324255
+    },
+    {
+      "id": "junction.cross.vG.riverLower.1",
+      "severity": "info",
+      "message": "structure.highSpan is carried over the crossing by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        1236.802262243,
+        1104.806032648
+      ],
+      "measured": 14.689516148
+    },
+    {
+      "id": "junction.cross.vG.structureHighSpanMeeting.1",
+      "severity": "conflict",
+      "message": "An at-grade junction lies on a bridge deck: a threshold there needs a widened, guarded deck; no pad was placed and no parapet was cut",
+      "at": [
+        1287.625840249,
+        1099.815438311
+      ],
+      "measured": 0
+    },
+    {
+      "id": "junction.cross.vG.walkGarden.1",
+      "severity": "info",
+      "message": "structure.gardenWalkBridge is carried over VG by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        969.509106006,
+        764.210828121
+      ],
+      "measured": 16.456499586
+    },
+    {
+      "id": "junction.cross.hostGlasshouseApproach.walkGlasshouseSteps.1",
+      "severity": "conflict",
+      "message": "Two foot routes (host.glasshouse.approach over walk glasshouseSteps) cross 4.65 eu apart: a named footbridge or a regraded at-grade junction is needed; no deck is generated across a foot route",
+      "at": [
+        997.088140243,
+        811.788496306
+      ],
+      "measured": 4.646530524,
+      "required": 0.48
+    },
+    {
+      "id": "junction.cross.walkLakerim.waterRiverMountain.1",
+      "severity": "info",
+      "message": "structure.inflowFootbridge is carried over the crossing by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        1250.891933881,
+        834.237202696
+      ],
+      "measured": 3.591165437
+    },
+    {
+      "id": "junction.cross.riverLower.walkReach.3",
+      "severity": "info",
+      "message": "structure.reachFootbridge is carried over the crossing by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        1273.36503285,
+        1202.306754266
+      ],
+      "measured": 5.102852956
+    },
+    {
+      "id": "junction.cross.riverLower.walkReach.1",
+      "severity": "info",
+      "message": "structure.reachFootbridge is carried over the crossing by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        1273.36503285,
+        1202.306754266
+      ],
+      "measured": 4.8
+    },
+    {
+      "id": "junction.cross.bightBridgeTowerStair.yearWalk.1",
+      "severity": "conflict",
+      "message": "An at-grade junction lies on a bridge deck: a threshold there needs a widened, guarded deck; no pad was placed and no parapet was cut",
+      "at": [
+        479.907622934,
+        1041.738156043
+      ],
+      "measured": 0
+    },
+    {
+      "id": "junction.cross.bightBridgeTowerStair.yearWalk.2",
+      "severity": "conflict",
+      "message": "An at-grade junction lies on a bridge deck: a threshold there needs a widened, guarded deck; no pad was placed and no parapet was cut",
+      "at": [
+        582.550707893,
+        1113.588315514
+      ],
+      "measured": 0
+    },
+    {
+      "id": "junction.cross.s2.yearWalk.1",
+      "severity": "info",
+      "message": "structure.bightBridge.s2Flyover is carried over yearWalk by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        555.660299426,
+        1093.558532562
+      ],
+      "measured": 5.6
+    },
+    {
+      "id": "junction.cross.s2.yearWalk.2",
+      "severity": "info",
+      "message": "structure.bightBridge.s2Flyover is carried over yearWalk by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        556.638014798,
+        1096.799958445
+      ],
+      "measured": 5.6
+    },
+    {
+      "id": "junction.cross.seaStair.yearWalk.2",
+      "severity": "info",
+      "message": "structure.seaStairWestLaneBridge is carried over seaStair by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        1630.739328627,
+        761.89517564
+      ],
+      "measured": 3.3262326
+    },
+    {
+      "id": "junction.cross.seaStair.yearWalk.1",
+      "severity": "info",
+      "message": "structure.seaStairEastLaneBridge is carried over seaStair by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        1650.318672877,
+        765.350354037
+      ],
+      "measured": 14.387234991
+    },
+    {
+      "id": "junction.cross.vBS.yearWalk.3",
+      "severity": "info",
+      "message": "structure.bightSpurTrestle is carried over yearWalk by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        904.152132516,
+        885.924524904
+      ],
+      "measured": 8.159188679
+    },
+    {
+      "id": "junction.cross.walkGarden.yearWalk.1",
+      "severity": "info",
+      "message": "structure.gardenWalkBridge is carried over yearWalk by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        961.047966832,
+        756.971874904
+      ],
+      "measured": 14.733896857
+    },
+    {
+      "id": "junction.cross.walkGarden.yearWalk.2",
+      "severity": "info",
+      "message": "structure.gardenWalkBridge is carried over yearWalk by the structure it rides here; no generated deck (road L1)",
+      "at": [
+        963.729282045,
+        759.41249993
+      ],
+      "measured": 15.381780077
+    },
+    {
+      "id": "bridges.bightBridge.walkEnvelope",
+      "severity": "info",
+      "message": "Suspension Bridge: 0 blocked and 0 unsupported of 2943 collision samples; maximum surface error 0.0078. Static samples only.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.bightBridge.meetingEnvelope",
+      "severity": "info",
+      "message": "Gateway Terrace: 0 failing samples of 169 across the flat 3 x 3 m standing area. Walking access remains a separate runtime test.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.highSpan.walkEnvelope",
+      "severity": "info",
+      "message": "The Arch: 0 blocked and 0 unsupported of 1254 collision samples; maximum surface error 0.0000. Static samples only.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.highSpan.meetingEnvelope",
+      "severity": "info",
+      "message": "Gorge Balcony: 0 failing samples of 169 across the flat 3 x 3 m standing area. Walking access remains a separate runtime test.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.quayBridge.walkEnvelope",
+      "severity": "info",
+      "message": "Drawbridge: 0 blocked and 0 unsupported of 1083 collision samples; maximum surface error 0.0000. Static samples only.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.quayBridge.meetingEnvelope",
+      "severity": "info",
+      "message": "Bell House: 0 failing samples of 169 across the flat 3 x 3 m standing area. Walking access remains a separate runtime test.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.apronBridge.walkEnvelope",
+      "severity": "info",
+      "message": "Ribbon: 0 blocked and 0 unsupported of 546 collision samples; maximum surface error 0.0000. Static samples only.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.apronBridge.meetingEnvelope",
+      "severity": "info",
+      "message": "Ribbon Landing: 0 failing samples of 169 across the flat 3 x 3 m standing area. Walking access remains a separate runtime test.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.hollowBridge.walkEnvelope",
+      "severity": "info",
+      "message": "Covered Bridge: 0 blocked and 0 unsupported of 387 collision samples; maximum surface error 0.0012. Static samples only.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.hollowBridge.meetingEnvelope",
+      "severity": "info",
+      "message": "Lantern Shelter: 0 failing samples of 169 across the flat 3 x 3 m standing area. Walking access remains a separate runtime test.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.mountainRoadCanalBridge.walkEnvelope",
+      "severity": "info",
+      "message": "Stone Bridge: 0 blocked and 0 unsupported of 222 collision samples; maximum surface error 0.0069. Static samples only.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.mountainRoadCanalBridge.meetingEnvelope",
+      "severity": "info",
+      "message": "Keystone Landing: 0 failing samples of 169 across the flat 3 x 3 m standing area. Walking access remains a separate runtime test.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.prowLoopFootbridge.walkEnvelope",
+      "severity": "info",
+      "message": "Cantilever Walk: 0 blocked and 0 unsupported of 351 collision samples; maximum surface error 0.0030. Static samples only.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.prowLoopFootbridge.meetingEnvelope",
+      "severity": "info",
+      "message": "Lookout Knot: 0 failing samples of 169 across the flat 3 x 3 m standing area. Walking access remains a separate runtime test.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.bightSpurTrestle.walkEnvelope",
+      "severity": "info",
+      "message": "Trestle: 0 blocked and 0 unsupported of 885 collision samples; maximum surface error 0.0145. Static samples only.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.bightSpurTrestle.meetingEnvelope",
+      "severity": "info",
+      "message": "Bight Railwatch: 0 failing samples of 169 across the flat 3 x 3 m standing area. Walking access remains a separate runtime test.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.gardenWalkBridge.walkEnvelope",
+      "severity": "info",
+      "message": "Garden Bridge: 0 blocked and 0 unsupported of 486 collision samples; maximum surface error 0.0030. Static samples only.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.gardenWalkBridge.meetingEnvelope",
+      "severity": "info",
+      "message": "Garden Seat: 0 failing samples of 169 across the flat 3 x 3 m standing area. Walking access remains a separate runtime test.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.reachBoardwalk.walkEnvelope",
+      "severity": "info",
+      "message": "Boardwalk: 0 blocked and 0 unsupported of 1347 collision samples; maximum surface error 0.0000. Static samples only.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.reachBoardwalk.meetingEnvelope",
+      "severity": "info",
+      "message": "Regatta Landing: 0 failing samples of 169 across the flat 3 x 3 m standing area. Walking access remains a separate runtime test.",
+      "measured": 0,
+      "required": 0
+    },
+    {
+      "id": "bridges.bightBridge.flightEnvelope",
+      "severity": "info",
+      "message": "Full crossing aperture tested against member triangles; 0 intersecting solids: none. A ridden flight and terrain envelope remain separate.",
+      "measured": 0,
+      "required": 0,
+      "at": [
+        551.636259065,
+        1091.948201335
+      ]
+    },
+    {
+      "id": "bridges.highSpan.flightEnvelope",
+      "severity": "info",
+      "message": "Full crossing aperture tested against member triangles; 0 intersecting solids: none. A ridden flight and terrain envelope remain separate.",
+      "measured": 0,
+      "required": 0,
+      "at": [
+        1239.399290226,
+        1104.963783614
+      ]
+    },
+    {
+      "id": "cross.fERRY.bightBridgeTowerStair.3",
+      "severity": "info",
+      "message": "bightBridge.towerStair × FERRY: proposed for design lead over; built.",
+      "at": [
+        560,
+        1082.422559913
+      ],
+      "measured": 19.644242096,
+      "required": 4
+    },
+    {
+      "id": "cross.fERRY.bightBridgeTowerStair.4",
+      "severity": "conflict",
+      "message": "bightBridge.towerStair × FERRY: proposed for design lead over; physical resolution incomplete.",
+      "at": [
+        560,
+        1097.802819989
+      ],
+      "measured": 12,
+      "required": 4
+    },
+    {
+      "id": "cross.fERRY.bightBridgeTowerStair.1",
+      "severity": "conflict",
+      "message": "bightBridge.towerStair × FERRY: proposed for design lead over; physical resolution incomplete.",
+      "at": [
+        560.327937315,
+        1098.03237611
+      ],
+      "measured": 12,
+      "required": 4
+    },
+    {
+      "id": "cross.fERRY.bightBridgeTowerStair.2",
+      "severity": "info",
+      "message": "bightBridge.towerStair × FERRY: proposed for design lead over; built.",
+      "at": [
+        562.62349852,
+        1084.259008878
+      ],
+      "measured": 17.897484973,
+      "required": 4
+    },
+    {
+      "id": "cross.bightBridgeTowerStair.structureBightBridgeTowerStairApproach.1",
+      "severity": "info",
+      "message": "bightBridge.towerStair × structure.bightBridge.towerStair.approach: proposed for design lead threshold; built.",
+      "at": [
+        571.481079744,
+        1090.459315734
+      ],
+      "measured": 0,
+      "required": 0.5
+    },
+    {
+      "id": "cross.bightBridgeTowerStair.structureBightBridgeTowerStairBalcony.1",
+      "severity": "info",
+      "message": "bightBridge.towerStair × structure.bightBridge.towerStair.balcony: proposed for design lead threshold; built.",
+      "at": [
+        553.457977493,
+        1077.843144158
+      ],
+      "measured": 0,
+      "required": 0.5
+    },
+    {
+      "id": "cross.highSpanOverlook.riverLower.2",
+      "severity": "conflict",
+      "message": "highSpan.overlook × river lower: registered threshold; physical resolution incomplete.",
+      "at": [
+        1251.221115538,
+        1143.256308101
+      ],
+      "measured": 2.201533865,
+      "required": 0.5
+    },
+    {
+      "id": "cross.highSpanOverlook.riverLower.1",
+      "severity": "conflict",
+      "message": "highSpan.overlook × river lower: registered threshold; physical resolution incomplete.",
+      "at": [
+        1251.221115538,
+        1143.256308101
+      ],
+      "measured": 2.091633466,
+      "required": 0.5
+    },
+    {
+      "id": "cross.s1.structureApronBridgeMeeting.1",
+      "severity": "conflict",
+      "message": "S1 × structure.apronBridge.meeting: proposed for design lead threshold; physical resolution incomplete.",
+      "at": [
+        1163.241791736,
+        932.109297275
+      ],
+      "measured": 0,
+      "required": 0.5
+    },
+    {
+      "id": "cross.s2.bightBridgeTowerStair.1",
+      "severity": "info",
+      "message": "S2 × bightBridge.towerStair: proposed for design lead over; built.",
+      "at": [
+        556.127525404,
+        1095.092087772
+      ],
+      "measured": 5.6,
+      "required": 5
+    },
+    {
+      "id": "cross.s3.structureQuayBridgeMeeting.1",
+      "severity": "conflict",
+      "message": "S3 × structure.quayBridge.meeting: proposed for design lead threshold; physical resolution incomplete.",
+      "at": [
+        1320.998941342,
+        1373.266306712
+      ],
+      "measured": 0,
+      "required": 0.5
+    },
+    {
+      "id": "cross.fERRY.structureBightBridgeLookout.2",
+      "severity": "conflict",
+      "message": "structure.bightBridge.lookout × FERRY: proposed for design lead over; physical resolution incomplete.",
+      "at": [
+        560,
+        1082.577689951
+      ],
+      "measured": 12,
+      "required": 4
+    },
+    {
+      "id": "cross.fERRY.structureBightBridgeLookout.1",
+      "severity": "conflict",
+      "message": "structure.bightBridge.lookout × FERRY: proposed for design lead over; physical resolution incomplete.",
+      "at": [
+        562.600344783,
+        1084.3979313
+      ],
+      "measured": 12,
+      "required": 4
+    },
+    {
+      "id": "cross.structureBightBridgeLookout.structureBightBridgeTowerStairApproach.1",
+      "severity": "conflict",
+      "message": "structure.bightBridge.towerStair.approach × structure.bightBridge.lookout: proposed for design lead threshold; physical resolution incomplete.",
+      "at": [
+        572.227431781,
+        1091.136892198
+      ],
+      "measured": 0,
+      "required": 0.5
+    },
+    {
+      "id": "cross.v01.structureQuayBridgeMeeting.1",
+      "severity": "conflict",
+      "message": "V01 × structure.quayBridge.meeting: proposed for design lead threshold; physical resolution incomplete.",
+      "at": [
+        1320.807308403,
+        1372.867848379
+      ],
+      "measured": 0,
+      "required": 0.5
+    },
+    {
+      "id": "cross.v03.structureMountainRoadCanalBridgeMeeting.1",
+      "severity": "conflict",
+      "message": "V03 × structure.mountainRoadCanalBridge.meeting: proposed for design lead threshold; physical resolution incomplete.",
+      "at": [
+        1304.909605264,
+        750.38600523
+      ],
+      "measured": 0,
+      "required": 0.5
+    },
+    {
+      "id": "cross.vBS.structureBightSpurTrestleMeeting.1",
+      "severity": "conflict",
+      "message": "VBS × structure.bightSpurTrestle.meeting: proposed for design lead threshold; physical resolution incomplete.",
+      "at": [
+        922.082125299,
+        875.108200745
+      ],
+      "measured": 0,
+      "required": 0.5
+    },
+    {
+      "id": "cross.vG.structureHighSpanMeeting.1",
+      "severity": "conflict",
+      "message": "VG × structure.highSpan.meeting: proposed for design lead threshold; physical resolution incomplete.",
+      "at": [
+        1287.625840249,
+        1099.815438311
+      ],
+      "measured": 0,
+      "required": 0.5
+    },
+    {
+      "id": "cross.structureGardenWalkBridgeMeeting.walkGarden.1",
+      "severity": "info",
+      "message": "walk garden × structure.gardenWalkBridge.meeting: proposed for design lead threshold; built.",
+      "at": [
+        954.185681047,
+        750.007381531
+      ],
+      "measured": 0,
+      "required": 0.5
+    },
+    {
+      "id": "cross.structureHollowBridgeMeeting.walkGarden.1",
+      "severity": "info",
+      "message": "walk garden × structure.hollowBridge.meeting: proposed for design lead threshold; built.",
+      "at": [
+        887.81832323,
+        589.177963096
+      ],
+      "measured": 0,
+      "required": 0.5
+    },
+    {
+      "id": "cross.bightBridgeTowerStair.yearWalk.1",
+      "severity": "conflict",
+      "message": "yearWalk × bightBridge.towerStair: proposed for design lead threshold; physical resolution incomplete.",
+      "at": [
+        479.907622934,
+        1041.738156043
+      ],
+      "measured": 0,
+      "required": 0.5
+    },
+    {
+      "id": "cross.bightBridgeTowerStair.yearWalk.2",
+      "severity": "conflict",
+      "message": "yearWalk × bightBridge.towerStair: proposed for design lead threshold; physical resolution incomplete.",
+      "at": [
+        582.550707893,
+        1113.588315514
+      ],
+      "measured": 0,
+      "required": 0.5
+    },
+    {
+      "id": "cross.structureProwLoopFootbridgeMeeting.yearWalk.1",
+      "severity": "info",
+      "message": "yearWalk × structure.prowLoopFootbridge.meeting: proposed for design lead threshold; built.",
+      "at": [
+        1604.490027099,
+        678.470542628
+      ],
+      "measured": 0,
+      "required": 0.5
+    }
+  ],
+  "unverified": {
+    "walk": "Runtime closure: use browser simulateMotion; static body probe here is not walking simulation",
+    "ferry": "No registered controller at baseline",
+    "rowboat": "No registered controller at baseline; fleet kayak is a different craft",
+    "plane": "No registered controller at baseline",
+    "zip": "No registered controller at baseline",
+    "glider": "Implemented; authored-course bidirectional replay not yet audited",
+    "gondola": "Implemented; cable swept envelope not yet measured",
+    "monorail": "Implemented kinematic transport; swept envelope not yet measured",
+    "skate": "Board deck runs only; S2/S4 grind lines not covered"
+  }
+}

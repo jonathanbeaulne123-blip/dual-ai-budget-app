@@ -45,13 +45,13 @@ describe('Horizon structural solids',()=>{
     const deck=bounds(find(cuts,'highSpan.deck')!);expect(deck.max[1]).toBe(24);expect(deck.min[1]).toBeGreaterThan(23);
     expect(bounds(find(cuts,'highSpan.shelf.deck')!).max[1]).toBe(12);
   },120000);
-  it('carries the High Span gate opening on a through truss with no pier inside the 44 eu aperture',()=>{
+  it('carries the High Span gate opening on outboard arch ribs with no pier inside the 44 eu aperture',()=>{
     const cuts=cutsOnce(),route=cuts.beds.find(b=>b.id==='structure.highSpan')!,mid=nearestOnPath([1240,1105],route.points).along;
     const piers=prisms(find(cuts,'highSpan.supports')!).map(p=>Math.abs(nearestOnPath([p.x,p.z],route.points).along-mid));
     expect(Math.min(...piers)).toBeGreaterThanOrEqual(21.99);
-    const truss=find(cuts,'highSpan.truss')!;expect(truss.role).toBe('support');const t=bounds(truss);expect(t.max[1]).toBeCloseTo(28.5,5);
-    // The bottom chords bear directly under the deck edges (deck underside 23.4).
-    expect(prisms(truss).some(p=>Math.abs(p.top-23.4)<1e-6)).toBe(true);
+    const truss=find(cuts,'highSpan.ribs')!;expect(truss.role).toBe('support');const t=bounds(truss);expect(t.max[1]).toBeCloseTo(33,5);
+    // Approved bridge cast: ribs spring above/outside the deck, preserving gate3 top23.
+    expect(t.min[1]).toBeGreaterThanOrEqual(23.299);
   },120000);
   it('lays the Reach gallery on the west bank beside the river and the overlook at camera C',()=>{
     const cuts=cutsOnce(),river=sampleSpline(M.water_routes.RIVER_RUN.pts as unknown as XY[],2).map(p=>[p[0],0,p[1]] as XYZ);
@@ -115,8 +115,8 @@ describe('Horizon structural solids',()=>{
   },120000);
   it('extends lowest footings, wall feet and rock bases to the final ground without moving fixed decks',()=>{
     const cuts=buildLandCuts(baseHeight),deck=find(cuts,'highSpan.deck')!,before=[...deck.positions];cuts.solids.push(...buildOffshoreSolids());
-    const beam=solid('test.beam','beam','stone','support');box(beam,[0,0],10,[20,1],9.4);cuts.solids.push(beam);const beamBefore=[...beam.positions],truss=[...find(cuts,'highSpan.truss')!.positions],settled=settleFoundations(cuts,()=>-20);expect(beam.positions).toEqual(beamBefore);
-    expect(find(cuts,'highSpan.truss')!.positions).toEqual(truss);
+    const beam=solid('test.beam','beam','stone','support');box(beam,[0,0],10,[20,1],9.4);cuts.solids.push(beam);const beamBefore=[...beam.positions],truss=[...find(cuts,'highSpan.ribs')!.positions],settled=settleFoundations(cuts,()=>-20);expect(beam.positions).toEqual(beamBefore);
+    expect(find(cuts,'highSpan.ribs')!.positions).toEqual(truss);
     expect(settled.some(p=>p.id==='highSpan.supports')).toBe(true);expect(settled.every(p=>p.settledFoot<=-20.25&&p.extension>0)).toBe(true);expect(deck.positions).toEqual(before);expect(bounds(find(cuts,'highSpan.supports')!).min[1]).toBe(-20.25);
     for(const id of ['offshore.needle','offshore.stacks.1','offshore.wreck.reef'])expect(bounds(find(cuts,id)!).min[1]).toBe(-20.25);
     expect(bounds(find(cuts,'bightBridge.abutments')!).min[1]).toBe(-20.25);
@@ -159,7 +159,7 @@ describe('Horizon v1.9 structures (W3-A)',()=>{
 // v2.0 (Wave 5, Jonathan's rulings 2026-09-27): the structures follow MANIFEST v2.0.
 describe('Horizon v2.0 structures (W5-S)',()=>{
   const F=bightFrame(),B=bightSpec(),so=(x:number,z:number)=>F.so([x,z]);
-  it('builds the Bight Bridge per D-A1: 245 eu deck at 12, 8 + 9 timber bents, two arch piers, a 36 eu steel through-arch',()=>{
+  it('builds the Bight Bridge per D-A1: 245 eu deck at 12, 8 + 9 timber bents, two existing piers, a suspension cable and saddles',()=>{
     const cuts=cutsOnce(),deck=find(cuts,'bightBridge.deck')!,ss=prisms(deck).flatMap(p=>p.corners.map(c=>so(c[0],c[2])));
     expect(B.span).toBe(245);expect(Math.max(...ss.map(q=>q.s))-Math.min(...ss.map(q=>q.s))).toBeCloseTo(245,1);
     expect(Math.min(...ss.map(q=>q.o))).toBeCloseTo(-9,2);expect(Math.max(...ss.map(q=>q.o))).toBeCloseTo(12.6,2);
@@ -170,8 +170,9 @@ describe('Horizon v2.0 structures (W5-S)',()=>{
     const pierS=prisms(find(cuts,'bightBridge.archPiers')!).filter(p=>p.top>11).flatMap(p=>p.corners.map(c=>so(c[0],c[2]).s));expect(Math.min(...pierS.filter(v=>v>116))-Math.max(...pierS.filter(v=>v<116))).toBeGreaterThanOrEqual(34-1e-6);
     // Every timber bay ≤ 12 eu (timber limit): 10.9 west, 11.0 east.
     const all=r.bents.map(b=>b.s).sort((a,b)=>a-b),bays=all.slice(1).map((v,i)=>v-all[i]!).filter(v=>v<30);expect(Math.max(...bays)).toBeLessThanOrEqual(12);
-    // The arch: rise 15 over the deck (crown 27 ≥ 22), its ribs bear on the arch piers; hangers every 4.5 eu.
-    const arch=bounds(find(cuts,'bightBridge.arch')!);expect(arch.max[1]).toBeCloseTo(27,1);expect(r.arch).toHaveLength(14);
+    // Approved suspension replaces the former crown27 with saddle33.5; cables bear on the arch piers; hangers every 4.5 eu.
+    const arch=bounds(find(cuts,'bightBridge.arch')!);expect(arch.max[1]).toBeCloseTo(33.5,1);// Suspension hangers now cover the full 245 eu span at 4 eu intervals on both sides.
+    expect(r.arch).toHaveLength(122);
     // Footings: every lowest bent and arch-pier prism sinks below the ground it stands on.
     for(const id of ['bightBridge.supports','bightBridge.archPiers'])for(const p of lowest(find(cuts,id)!))expect(p.bottom,id).toBeLessThanOrEqual(baseHeight(p.x,p.z)-FOOTING_SINK+1e-6);
   },120000);

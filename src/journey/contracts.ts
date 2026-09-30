@@ -689,7 +689,7 @@ export type JourneyLandData = {
  * puts them ON the deck (`lineIds`: the road, and a skate lane that shares a wide deck) and the drawn lines that pass
  * UNDER it (`underIds`: a ferry, a river run, a lower skate lane), which the map breaks beneath the deck.
  */
-export type JourneyLandBridge = { id: string; axis: Point3[]; width: number; lineIds: string[]; underIds: string[] };
+export type JourneyLandBridge = { id: string; axis: Point3[]; width: number; lineIds: string[]; underIds: string[]; landmark?: { name:string; glyph:import('./land/bridgeGlyph').BridgeGlyph; at:Point3 } };
 /** A covered stretch of a road line (plan points, portal to portal) and its two portals. */
 export type JourneyLandCover = { id: string; kind: "tunnel" | "gallery"; lineId: string; points: Point2[]; portals: Point2[] };
 /** A boulevard reach of a road line (plan points along the corridor stations); `median` when it has a planted median. */
@@ -736,7 +736,7 @@ export type JourneyLandFlatData = {
   landforms: { id: string; d: string; band: "low" | "mid" | "high" }[];
   lines: { id: string; kind: LandLineKind; d: string }[];
   /** Road bridges: the deck's centreline and its true width (concept metres), drawn under the lines. */
-  bridges?: { id: string; d: string; width: number }[];
+  bridges?: { id: string; d: string; width: number; landmark?: JourneyLandBridge['landmark'] }[];
   hosts: { id: string; x: number; y: number }[];
   reserves: { id: string; d: string }[];
   districts: { id: string; label: string; x: number; y: number }[];
@@ -747,7 +747,7 @@ export type JourneyLandFlatData = {
 // Board scene (T3) — mounted by the UI (T4)
 
 /** A projected screen anchor for one DOM mark (the canvas is aria-hidden; marks are real buttons). */
-export type MarkAnchor = { id: string; x: number; y: number; depth: number; visible: boolean };
+export type MarkAnchor = { id: string; x: number; y: number; depth: number; visible: boolean; bridge?: JourneyLandBridge['landmark'] };
 
 export type JourneyBoardSceneOptions = {
   land: JourneyLandHandle;

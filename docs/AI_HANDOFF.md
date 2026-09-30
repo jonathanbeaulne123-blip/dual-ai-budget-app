@@ -1,3 +1,17 @@
+## 2026-09-30 — Horizon bridges: local implementation underway
+
+Jonathan subsequently said “build them.” `codex/horizon-bridge-book`, base e77309e, remains local and uncommitted. High risk; Budget (5):0, Engagement (3):+2 target. Ten structural families, shared theme art, derived lanterns, fixed Bight tower stair and ten map glyph/name pairs are implemented; the final bake is byte-identical, stair replay passes,24 responsive map captures fit, and corrected road counts do not regress. High quick gate remains failed after timing/budget errors; all six affected files pass sequentially (121 tests). Full mode/device/scene-budget acceptance remains open. Quay is seated and the Ribbon's pumpable dip is not yet implemented. No PR, merge, deployment or device acceptance.
+
+[Implementation handoff](CODEX_HORIZON_BRIDGES_1.md) and [build worksession](worksessions/2026-09-30-horizon-bridges-build.md) record the current local state. The earlier Phase1 entry below is historical. Do not treat the local build or its passed static samples as complete multi-mode acceptance. Main's unrelated Bianca Month failure remains unchanged.
+
+## 2026-09-30 — Horizon Bridge Book: local proposal, Phase 0 partial
+
+`codex/horizon-bridge-book` from `main@e77309e`. **Phase 1 draft only; no Phase 2 implementation, PR, merge or deployment.** Risk:High. Budget (5):0. Engagement (3):+2 target, not implemented.
+
+Ten proposed bridge identities, sixteen measured current structures, three-theme map baselines and explicit gate/STYLE/moving-span decisions. Fresh road audit0/23/85 with0 restarts; views11/11 retain baseline exceptions. Ground probes34 unverified endpoints/40 incomplete/22 not applicable. Main CI remains red; local High gate breached its time budget. Full swept-envelope and device acceptance remain open.
+
+[Bridge Book](horizon/BRIDGES.md) · [exact evidence, rough areas and next owners](CODEX_HORIZON_BRIDGES_0.md). Jonathan owns design choices; Codex owns remaining Phase0 evidence. No geometry, controller, financial or cloud behavior changed.
+
 ## 2026-09-29 — Horizon Drive finished as a corridor: one road definition, driven end to end
 
 Branch `claude/horizon-main-road`, merging `main@1c436be`. Pushed; see its PR. Not merged, not deployed, not live verified.

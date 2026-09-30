@@ -1,3 +1,4 @@
+import { buildBridgeLandmarks } from '../bridges/build';
 import { HORIZON_MANIFEST as M } from '../../world/manifest';
 import type { BedCut, HeightQuery, LandCuts, StructureSolid, XY, XYZ } from '../interfaces';
 import { addFlatPad, bed, heightOnBeds } from '../beds/profiles';
@@ -16,8 +17,8 @@ export const SPANS:SpanSpec[]=[
   // v2.0 (D-A1): the Bight Bridge reads MANIFEST structures.bightBridge (span 245, section −9 … +12.6, a 36 m steel
   // through-arch over s 98–134); `buildBightBridge` builds it, this row only carries the span to the bed solver.
   {id:'bightBridge',at:bightFrame().at(bightFrame().A/2,0),route:'V01',length:bightSpec().span,width:bightSpec().section[1]-bightSpec().section[0],height:bightSpec().h,clear:bightSpec().clear,abutments:true},
-  {id:'apronBridge',at:[1158,949],route:'S1',length:45,width:4,height:31,clear:5},
-  {id:'hollowBridge',at:[893,600],route:'walk garden',length:32,width:8,height:37,clear:4,covered:true},
+  {id:'apronBridge',at:[1158,949],route:'S1',length:45,width:4,height:31,clear:5,followRoute:true},
+  {id:'hollowBridge',at:[893,600],route:'walk garden',length:32,width:8,height:37,clear:4,covered:true,followRoute:true},
   // v2.6: the Inlet Footbridge is retired with the upper river (MANIFEST retired_v2_6.structures.inletFootbridge).
   ...((M.structures as unknown as Record<string,unknown>).inletFootbridge?[{id:'inletFootbridge',at:[1161,731] as XY,route:'walk lakerim',length:28,width:3,height:55,clear:4}]:[]),
   {id:'reachFootbridge',at:[1274,1203],route:'walk reach',length:48,width:3,height:9.5,clear:4},
@@ -45,7 +46,7 @@ export function structureStretches(beds:readonly Pick<BedCut,'id'|'points'>[]):S
   const out:StructureStretch[]=[],S=M.structures as unknown as Record<string,{kind?:string;route?:string;xy?:number[];length_m?:number;span_m?:number;from?:number[];to?:number[]}>;
   const arcOf=(b:Pick<BedCut,'points'>,q:XY)=>nearestOnPath(q,b.points).along,total=(b:Pick<BedCut,'points'>)=>planLength(b.points);
   const push=(bedId:string,structureId:string,kind:StructureStretch['kind'],a:number,b:number)=>{const bed=beds.find(x=>x.id===bedId);if(!bed)return;const L=total(bed);out.push({bedId,structureId,kind,from:clamp(Math.min(a,b),0,L),to:clamp(Math.max(a,b),0,L)});};
-  for(const spec of SPANS){const bed=beds.find(b=>b.id===spec.route);if(!bed||spec.height===undefined||!['V01','VG','V03','VBS'].includes(spec.route))continue;
+  for(const spec of SPANS){const bed=beds.find(b=>b.id===spec.route);if(!bed||(spec.id!=='hollowBridge'&&(spec.height===undefined||!['V01','VG','V03','VBS'].includes(spec.route))))continue; // Hollow owns its walking deck and outer guards too.
     if(spec.id==='bightBridge'){const F=bightFrame(),B=bightSpec(),s0=F.A/2-B.span/2,s1=F.A/2+B.span/2;push(spec.route,spec.id,'bridge',arcOf(bed,F.at(s0,0)),arcOf(bed,F.at(s1,0)));continue;}
     const mid=arcOf(bed,spec.at),half=spanDeckLength(spec)/2;push(spec.route,spec.id,'bridge',mid-half,mid+half);}
   for(const [id,route,length] of [['prowTunnel','V01',90],...manifestTunnels().map(([i,r,l])=>[i,r,l] as [string,string,number])] as [string,string,number][]){
@@ -189,12 +190,47 @@ export function buildBightBridge(cuts:LandCuts,base:HeightQuery):BightReport {
   // Crown lookout bay (MANIFEST bightBridge.lookout): the deck widened to its outer edge between s from and to, a deck part, not a pad.
   const lookout=solid('bightBridge.lookout','bridge','boardwalk','deck',['V01'],district);
   for(let i=1;i<stations.length;i++){const a=Math.max(stations[i-1]!,B.lookout.from),b=Math.min(stations[i]!,B.lookout.to);if(b-a>.01)slab(lookout,P(a,0,H),P(b,0,H),B.lookout.outer-o1,T,-(o1+B.lookout.outer)/2);}
-  // Steel through-arch: two ribs springing from the arch piers at deck level, rise archRise, hangers every 4.5 eu to shoes at the deck edges.
-  const ribY=(s:number)=>H+B.archRise*(1-((s-sc)/halfOpen)**2),N=16;
-  for(const o of rib)for(let k=0;k<N;k++){const a=op0+(op1-op0)*k/N,b=op0+(op1-op0)*(k+1)/N;slab(arch,P(a,o,ribY(a)),P(b,o,ribY(b)),.8,1.2,0,0);}
-  for(const s of hangers)for(const o of rib){box(arch,F.at(s,o),ribY(s)-1.1,[.25,.25],cap+.05,F.rot);box(arch,F.at(s,o+(o<0?.1:-.1)),H-.05,[.8,.8],cap+.05,F.rot);report.arch.push({s,rib:ribY(s)});}
-  // Portal struts between the ribs (they carry the flyover's hangers).
-  const struts=[108,116,124].map(s=>op0+(s-98)/36*(op1-op0));for(const s of struts)slab(arch,P(s,rib[0],ribY(s)),P(s,rib[1],ribY(s)),.6,.8);
+  // Suspension: twin saddles on the existing grounded pier lines, side spans anchored
+  // to the approach abutments. The central cable's low point stays above S2's roof envelope.
+  // Keep the logical arch solid ID for source references; its member family is now suspension.
+  const ribY=(s:number)=>s<op0?mix(H+1.8,H+21,(s-s0)/(op0-s0)):s>op1?mix(H+21,H+1.8,(s-op1)/(s1-op1)):H+13+8*((s-sc)/halfOpen)**2;
+  for(const o of rib){
+    for(const s of [op0,op1])box(arch,F.at(s,o),H+21.5,[1.1,1.1],cap,F.rot);
+    for(const [a0,b0] of [[s0,op0],[op0,op1],[op1,s1]]){const n=Math.ceil((b0!-a0!)/2);
+      for(let k=0;k<n;k++){const a=mix(a0!,b0!,k/n),b=mix(a0!,b0!,(k+1)/n);slab(arch,P(a,o,ribY(a)),P(b,o,ribY(b)),.26,.3);}}
+    for(let s=s0+4;s<s1;s+=4){box(arch,F.at(s,o),ribY(s)-.25,[.13,.13],cap+.05,F.rot);
+      const shoe=o<oc?o0+.5:o1-.5;slab(arch,P(s,o,H-.1),P(s,shoe,H-.1),.3,.35);report.arch.push({s,rib:ribY(s)});}
+    for(const s of [s0, s1]){box(arch,F.at(s,o),H+1.8,[2,1.8],cap,F.rot);slab(arch,P(s,o,H-.1),P(s,o<oc?o0+1:o1-1,H-.1),2,.5);}
+  }
+  for(const s of [op0,op1])slab(arch,P(s,rib[0],H+20),P(s,rib[1],H+20),.8,1);
+  (cuts.bridgeLightSeeds??={}).bightBridge=[];
+  for(const o of rib)for(let s=s0;s<=s1;s+=8)cuts.bridgeLightSeeds.bightBridge.push(P(s,o,ribY(s)));
+  // Crossbeams suspended from the main cables carry S2's existing flyover hangers.
+  const struts=[108,116,124].map(s=>op0+(s-98)/36*(op1-op0));
+  for(const s of struts)slab(arch,P(s,rib[0],ribY(s)),P(s,rib[1],ribY(s)),.6,.8);
+  // The tower stair hangs from the cable frame above the existing terrace. No new
+  // footing enters the navigation opening. Fixed treads and rails share collision/art.
+  const stairId='bightBridge.towerStair',treads=solid(stairId+'.treads','stair','timber','deck',[stairId],district),
+    stairRails=solid(stairId+'.rails','handrail','metal','rail',[stairId],district),
+    stairFrame=solid(stairId+'.frame','beam','metal','support',[stairId],district);
+  const stairPoint=(t:number)=>P(mix(126,104,t),14.4,mix(H,24,t)),risers=72;
+  for(let k=0;k<risers;k++){const a=stairPoint(k/risers),b=stairPoint((k+1)/risers);slab(treads,[a[0],b[1],a[2]],b,1.8,.2);}
+  for(const o of [13.5,15.3]){slab(stairFrame,P(126,o,H-.1),P(104,o,23.9),.18,.4);postedRail(stairRails,[P(126,o,H),P(104,o,24)],0,1.05,1);}
+  for(let station=106;station<=122;station+=4){const y=mix(24,H,(station-104)/22);
+    slab(stairFrame,P(station,13,ribY(station)),P(station,15.5,ribY(station)),.25,.3);
+    box(stairFrame,F.at(station,15.5),ribY(station)-.2,[.12,.12],y-.1,F.rot);
+    slab(stairFrame,P(station,13.4,y-.1),P(station,15.5,y-.1),.25,.3);
+  }
+  const balcony=solid('bightBridge.towerBalcony','bridge','boardwalk','deck',[stairId],district);
+  slab(balcony,P(101,14.4,24),P(104,14.4,24),2.4,.4);
+  for(const o of [13.2,15.6])postedRail(stairRails,[P(101,o,24),P(104,o,24)],0);
+  postedRail(stairRails,[P(101,13.2,24),P(101,15.6,24)],0);
+  slab(stairFrame,P(103,13,23.6),P(103,15.6,23.6),.5,.5);
+  const stairBed=bed('structure.'+stairId,'stair',[stairPoint(0),stairPoint(1)],false);stairBed.width=1.8;stairBed.maxGrade=10;stairBed.structureIds=['bightBridge'];cuts.beds.push(stairBed);
+  for(const [id,points] of [['approach',[P(127,7.4,H),P(127,14.4,H),stairPoint(0)]],['balcony',[stairPoint(1),P(102,14.4,24)]]] as [string,XYZ[]][]){const walk=bed('structure.'+stairId+'.'+id,'walk',points,false);walk.width=1;walk.structureIds=['bightBridge'];cuts.beds.push(walk);}
+  cuts.solids.push(treads,stairRails,stairFrame,balcony);
+  (cuts.bridgeMeetingSeeds??={}).bightBridge=P(122,10.5,H);
+  cuts.bridgeLightSeeds.bightBridge.push(P(101,15.6,25.1));
   // S2 on the deck (MANIFEST skate.S2.deckLanes, bightBridge.s2Flyover): the lagoon ramp rises 12 → flyover height on its
   // lane, the flyover crosses the road and the Year Walk footways under the arch crown, the sea ramp comes back down.
   const fly=B.flyover,fa=F.so(fly.from),fb=F.so(fly.to),laneW=3.5,rampRise=fly.h-H,rampRun=rampRise/.08;
@@ -266,7 +302,7 @@ export function buildBightBridge(cuts:LandCuts,base:HeightQuery):BightReport {
   const deckBed=bed('structure.bightBridge','road',axis(s0,s1,oc,H),false);deckBed.width=width;deckBed.structureIds=['bightBridge'];cuts.beds.push(deckBed);
   const lookBed=bed('structure.bightBridge.lookout','walk',axis(B.lookout.from,B.lookout.to,(o1+B.lookout.outer)/2,H),false);lookBed.width=B.lookout.outer-o1;lookBed.structureIds=['bightBridge'];cuts.beds.push(lookBed);
   if(route)route.structureIds.push('bightBridge');const s2=cuts.beds.find(b=>b.id==='S2');if(s2&&!s2.structureIds.includes('bightBridge'))s2.structureIds.push('bightBridge');
-  cuts.diagnostics.push({id:'structures.bightBridge.summary',severity:'info',message:`bightBridge: ${B.span} eu deck at ${H}, ${report.bents.filter(b=>b.side!=='arch'&&b.built).length} timber bents + 2 arch piers, arch crown ${(H+B.archRise).toFixed(1)}, opening ${op1-op0-2} eu clear × ${cap} eu under the deck`,at:F.at(sc,0),measured:op1-op0-2,required:B.clearWidth});
+  cuts.diagnostics.push({id:'structures.bightBridge.summary',severity:'info',message:`bightBridge: ${B.span} eu deck at ${H}, ${report.bents.filter(b=>b.side!=='arch'&&b.built).length} timber bents + 2 arch piers, suspension saddle ${(H+21).toFixed(1)}, opening ${op1-op0-2} eu clear × ${cap} eu under the deck`,at:F.at(sc,0),measured:op1-op0-2,required:B.clearWidth});
   return report;
 }
 /** A closed perimeter rail (posts ≤ 2 eu, bars between kept posts) left open for 1.8 eu either side of each gap point. */
@@ -358,6 +394,7 @@ function carriedDeck(id:string,route:BedCut,path:XYZ[],width:number,cuts:LandCut
     const at=feetAt(s);for(const xy of at.feet)pier(supports,xy,at.p[1]-1.2,base,[.5,.5],[1.4,1.4]);
     const e0=at.feet[0]!,e1=at.feet.at(-1)!,d=distance(e0,e1)||1,ex=.45/d;slab(caps,[e0[0]-(e1[0]-e0[0])*ex,at.p[1]-.6,e0[1]-(e1[1]-e0[1])*ex],[e1[0]+(e1[0]-e0[0])*ex,at.p[1]-.6,e1[1]+(e1[1]-e0[1])*ex],.6,.6);bents.push(s);}
   bents.sort((a,b)=>a-b);
+  (cuts.bridgeBearingSeeds??={})[id]={stations:[...new Set(bents)],offsets:[...offsets]};
   // A bay over 12 eu (a refused bent over a lower route) is carried by steel girders under both deck edges, bearing on the
   // cap beams either side (≤ 24 eu, reported as information); longer is a conflict.
   const girders=solid(`${id}.girders`,'truss','metal','support',ids,district);
@@ -370,7 +407,7 @@ function carriedDeck(id:string,route:BedCut,path:XYZ[],width:number,cuts:LandCut
     if(bay<=24.01)cuts.diagnostics.push({id:`structures.${id}.bentOmitted`,severity:'info',message:`${id}: no bent at ${r.toFixed(1)} eu (it would stand in ${refusedWhy.get(r)}'s corridor); the ${bay.toFixed(1)} eu bay ${bay>12.01?'is carried by steel girders under both deck edges bearing on the cap beams at':'spans between the bents at'} ${bents[i-1]!.toFixed(1)} and ${bents[i]!.toFixed(1)} eu`,at,measured:bay,required:24});
     else conflict(cuts,`structures.${id}.bentInLane`,`${id}: the bent at ${r.toFixed(1)} eu stands in ${refusedWhy.get(r)}'s corridor (and 5 eu either way); it is not built and no girder carries its ${Number.isFinite(bay)?bay.toFixed(1)+' eu ':''}bay`,at,bay,24);}
   // A road deck's rail is mounted on the deck's outside face (its whole width stays carriageway); others stand just inside.
-  for(const side of [-1,1])postedRail(rails,path,side*(o.bedProfile==='road'?width/2+.06:width/2-.05),1.05,2,o.bedProfile==='road');
+  for(const side of [-1,1]){const line=offsetLine(path,side*(o.bedProfile==='road'?width/2+.06:width/2-.05));railLineLater(line,ids,run=>postedRail(rails,run,0,1.05,2,o.bedProfile==='road'));}
   cuts.solids.push(deck,rails);if(supports.indices.length)cuts.solids.push(supports,caps);
   const b=bed(`structure.${id}`,o.bedProfile??'walk',path,false);b.width=width;b.structureIds=[id];cuts.beds.push(b);route.structureIds.push(id);
   return {bents,refused};
@@ -502,7 +539,7 @@ export function buildSpan(spec:SpanSpec,cuts:LandCuts,base:HeightQuery):void {
     const roof=solid(`${spec.id}.roof`,'roof','stone','roof',[spec.route],deck.districtId);slab(roof,a,b,spec.width+1,.35,0,4);cuts.solids.push(roof);
     // Roof posts stand on the deck directly over the pier caps.
     const posts=solid(`${spec.id}.posts`,'post','timber','support',bedIds,deck.districtId);
-    for(const s of placed)for(const side of [-1,1]){const {p,dir}=along(path,s);box(posts,[p[0]-dir[1]*side*(spec.width/2-.6),p[2]+dir[0]*side*(spec.width/2-.6)],h+4,[.25,.25],h-.9);}
+    for(const s of placed)for(const side of [-1,1]){const {p,dir}=along(path,s);box(posts,[p[0]-dir[1]*side*(spec.width/2-.6),p[2]+dir[0]*side*(spec.width/2-.6)],(spec.followRoute?p[1]:h)+4,[.25,.25],(spec.followRoute?p[1]:h)-.9);}
     cuts.solids.push(posts);void normal;
   }
 }
@@ -855,5 +892,6 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   const galleryBed=bed('lampGallery.ramp','walk',lampRamp,false);galleryBed.maxGrade=.08;cuts.beds.push(galleryBed);
   buildStair('lampGallery.stair',[540,1,1250],[540,25,1198.5],3,cuts,base);
   buildNamedKinds(cuts,base);
+  buildBridgeLandmarks(cuts,base);
   flushRails(cuts);
 }

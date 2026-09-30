@@ -1,3 +1,4 @@
+import { BRIDGE_GLYPHS } from '../land/bridgeGlyph';
 /**
  * The board's DOM marks (T4): real `<button>`s over the aria-hidden canvas (or the flat SVG twin), one per piece,
  * month space, cluster, unclustered stop and crossroads, positioned at the anchors the stage reports each frame.
@@ -131,6 +132,8 @@ export function Marks({ board, entries, anchors, size, selectedId, obstacles, on
     districts.push({ id: a.id, label, x: a.x, y: a.y });
     candidates.push({ id: a.id, x: a.x, y: a.y + LABEL_LIFT + chip.height / 2, width: chip.width, height: chip.height, depth: a.depth, visible: true, rank: "district" });
   }
+  const bridges=anchors.filter(a=>a.bridge&&a.visible);
+  for(const a of bridges){const chip=chipSize(a.bridge!.name);candidates.push({id:a.id,x:a.x,y:a.y,width:chip.width+30,height:30,depth:a.depth,visible:true,rank:"bridge"});}
   const placed = new Map(placeLabels(candidates, { width: size.width, height: size.height, obstacles, lift: LABEL_LIFT }).map((p) => [p.id, p] as const));
   const preview = previewTag ? byId.get(previewTag) : undefined;
   return (
@@ -167,6 +170,9 @@ export function Marks({ board, entries, anchors, size, selectedId, obstacles, on
           </button>
         );
       })}
+      {bridges.map(a=>placed.get(a.id)?.placed?<span key={a.id} className="journey-bridge-label" data-bridge-id={a.id.slice(7)} style={{transform:`translate(${a.x}px, ${a.y-LABEL_LIFT}px) translate(-50%,-100%)`}}>
+        <svg viewBox="0 0 64 32" aria-hidden="true"><path d={BRIDGE_GLYPHS[a.bridge!.glyph]}/></svg>{a.bridge!.name}
+      </span>:null)}
       {districts.map((d) => placed.get(d.id)?.placed ? (
         <span key={d.id} className="journey-district" data-district-id={d.id.slice(DISTRICT_PREFIX.length)} aria-hidden="true" style={{ transform: `translate(${d.x.toFixed(1)}px, ${d.y.toFixed(1)}px) translate(-50%, -50%)` }}>{d.label}</span>
       ) : null)}

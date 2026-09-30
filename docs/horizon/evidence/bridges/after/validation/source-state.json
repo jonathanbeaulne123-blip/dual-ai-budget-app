@@ -1,0 +1,25 @@
+{
+  "head": "e77309efbc48a76e8328f2b427613ecc6082bb61",
+  "dirty": true,
+  "trackedSourceDiffSha256": "fd20459b730be75dadbcff5e6674c936ce8d2ccad5ea3d57a731713b9eba1dd1",
+  "untrackedSourceSha256": {
+    "scripts/horizon/bridge-art-budget.mjs": "8d9a97a327d4f260df8bd17affa8f63768033acfe5f956c2434e16df1374265b",
+    "scripts/horizon/bridge-audit.mjs": "e12aa4f6a8fd841d16e017058a7b56724c49a25df2c4b1b5a33d3ac15447e681",
+    "scripts/horizon/bridge-flight-audit.mjs": "134ae8af575c8fb1fe821c9cc1337a0c78cd1452c0a1d970afe04b8ce7e734af",
+    "scripts/horizon/bridge-stair-audit.mjs": "e8c2d9dac3fb2910c23cacb3ccc07229c34fc70a43016dc1fdf9a2b22362fa94",
+    "scripts/horizon/bridge-walk-audit.mjs": "a7ab75d7ecd1aee6c3a23d1c74a4bc868275ee8981af832a99b19cb34cfa5850",
+    "scripts/horizon/capture-bridges.mjs": "0454bc198aad4ba7125db7b8604efec49c086aa2999cc4c2a7773b8456c73199",
+    "src/harbour/horizon/land/bridges/build.ts": "12cb11d0895be2d96f1b0d97e1e68a4c80f1352e1eba2a708ba1edf0f606d497",
+    "src/harbour/horizon/land/bridges/catalog.ts": "e7c6e0114f12b1c2f73e6556d1febf8f5cb58d622c83bfea63d836f8599ed9aa",
+    "src/harbour/horizon/land/bridges/frames.ts": "e15edec85bd15f6c3dd6e916402fa8131c79de933cdfc95c862e9349b988d6bd",
+    "src/harbour/horizon/land/bridges/measure.ts": "227bded1fe9b33f80c697e0d20ffcbe3e5e05b72f474e3a7cd959e113ab6a0fa",
+    "src/harbour/horizon/land/bridges/types.ts": "6cf45f1f77312d03f5b485be4d29071f1271d5f1d4bbe2e1759450200f59b72e",
+    "src/harbour/horizon/runtime/bridgeArt.ts": "bee03cd3c46a8943d596d2e2cb48e6fc7f2359ae4dea9586be18b34daee8427b",
+    "src/journey/land/bridgeGlyph.ts": "8c35d37316182c45a7d91921bc4471bb38f409921bb99e18c72d5d25422437f0",
+    "test/horizonBridges.test.ts": "a019661995001c4b23fca702f43dc5d6a02f0890de78b5562c7263288537bf5a"
+  },
+  "typecheckLast": {
+    "code": 0,
+    "seconds": 328.03779196739197
+  }
+}

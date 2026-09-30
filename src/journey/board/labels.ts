@@ -12,9 +12,9 @@ import { isAttentionStop } from "./marks.ts";
 
 export type LabelRank =
   | "piece" | "selected" | "attention" | "crossroads" | "chapter-review" | "next" | "commitment" | "milestone" | "income" | "plan" | "memory"
-  | "month" | "district" | "other";
+  | "month" | "bridge" | "district" | "other";
 export const LABEL_PRIORITY: readonly LabelRank[] = [
-  "piece", "selected", "attention", "crossroads", "chapter-review", "next", "commitment", "milestone", "income", "plan", "memory", "month", "district", "other",
+  "piece", "selected", "attention", "crossroads", "chapter-review", "next", "commitment", "milestone", "income", "plan", "memory", "month", "bridge", "district", "other",
 ];
 
 export type LabelBox = { x0: number; y0: number; x1: number; y1: number };

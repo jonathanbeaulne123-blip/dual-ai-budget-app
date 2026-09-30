@@ -2,6 +2,7 @@ import { HORIZON_MANIFEST as M, requireScaleFactor } from '../../world/manifest'
 import type { BedCut, HeightQuery, LandCuts, XY, XYZ } from '../interfaces';
 import { buildStructures, cableTower, duneCulvertCentre, SPANS, spanDeckLength, structureStretches } from '../structures/build';
 import { box, distance, districtAt, mix, nearestOnPath, pathLength, plan, slab, solid } from '../structures/mesh';
+import { bridgeFrame } from '../bridges/frames';
 import { pier } from '../structures/foundations';
 import { buildReserves, reserveServiceLines } from '../reserves/build';
 import { buildTown, squareWalkPins } from '../town/build';
@@ -210,7 +211,17 @@ function carryStructureStretches(cuts:LandCuts):void {
   for(const r of structureStretches(cuts.beds)){
     const b=cuts.beds.find(x=>x.id===r.bedId);if(!b)continue;
     const arcs=[0];for(let i=1;i<b.points.length;i++)arcs.push(arcs[i-1]!+distance(plan(b.points[i-1]!),plan(b.points[i]!)));
+    if(r.structureId==='hollowBridge'){
+      // Exact deck boundaries: filtering coarse walk control points left the last
+      // 5.61 m carrying its own internal edge. Split before suppressing segments,
+      // so the guard on the approach outside the bridge remains present.
+      const first=bridgeFrame(b.points,r.from),last=bridgeFrame(b.points,r.to);
+      const inside=b.points.filter((_,i)=>arcs[i]!>r.from&&arcs[i]!<r.to);
+      (b.carried??=[]).push([first,...inside,last].map(plan));
+      b.points=[...b.points.filter((_,i)=>arcs[i]!<r.from),first,...inside,last,...b.points.filter((_,i)=>arcs[i]!>r.to)];
+    }else{
     const run=b.points.filter((_,i)=>arcs[i]!>=r.from+.5&&arcs[i]!<=r.to-.5).map(plan);if(run.length>1)(b.carried??=[]).push(run);
+    }
   }
 }
 /** After span exclusions exist: a bed's stretch on another route's span is carried by that deck. */
