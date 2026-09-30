@@ -25,3 +25,5 @@ Jonathan explicitly approved the Bianca Month fixture repair during this PR. The
 The airport had added brake release ahead of skate reset; the old-shell source fence now requires both operations. A night-light regression test checks all three replacement bridge themes using actual baked district membership, retained night intensity and daytime dimming.
 
 The S1/S4 exact-blocker census removes three cleared rail samples: Apron1312/1314 and Hollow148. Independent comparison with main confirms S4 station150 has identical coordinates and board surface y35.95915937: the same existing Hollow neck / D-C10 obstruction is now owned by `hollowBridge.deck`, replacing `walk garden.bed.hollow`. That named exception remains; no route-traversal acceptance is inferred.
+
+Final interaction review restored bridge groups to the tap-to-walk raycast. Their geometry moved out of district cards, so omitting the new group could select terrain below a bridge. The regression proof also raycasts the real meeting deck in each theme.

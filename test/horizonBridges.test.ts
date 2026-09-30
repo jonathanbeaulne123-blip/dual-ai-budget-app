@@ -1,4 +1,5 @@
 import {readFileSync} from 'node:fs';
+import {Raycaster,Vector3} from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildLandCuts } from '../src/harbour/horizon/land/beds/build';
 import { baseHeight } from '../src/harbour/horizon/land/terrain';
@@ -62,6 +63,10 @@ describe('bridge residency',()=>{
    for(let frame=0;art.building()&&frame<1000;frame++)art.update(residents);
    const glows:import('three').Material[]=[];
    art.group.traverse(o=>{const mesh=o as import('three').Mesh;if(mesh.isMesh){const materials=Array.isArray(mesh.material)?mesh.material:[mesh.material];for(const m of materials)if(m.transparent)glows.push(m);}});
+   // Bridges moved out of district cards; their replacement meshes still expose the meeting deck to walking picks.
+   art.group.updateMatrixWorld(true);const [x,y,z]=sample.meeting.at;
+   const hit=new Raycaster(new Vector3(x,y+2,z),new Vector3(0,-1,0),0,3).intersectObject(art.group,true)[0];
+   expect(hit).toBeDefined();expect(hit!.point.y).toBeCloseTo(y,2);
    expect(glows.length).toBeGreaterThan(0);expect(glows.every(m=>m.opacity===1)).toBe(true);
    art.setNight(0);expect(glows.every(m=>m.opacity===.12)).toBe(true);art.dispose();
   }
