@@ -1,0 +1,187 @@
+{
+  "after-classic-bight-region.png": {
+    "view": {
+      "x": 560,
+      "y": 1100,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 27769,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 13463,
+      "drawCalls": 12
+    },
+    "anchors": 543,
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 119.54531860351562,
+          "y": 318.1000061035156,
+          "width": 158.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ]
+  },
+  "after-classic-bight-stop.png": {
+    "view": {
+      "x": 560,
+      "y": 1100,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 27769,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 13463,
+      "drawCalls": 12
+    },
+    "anchors": 543,
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 127.74531555175781,
+          "y": 236.39999389648438,
+          "width": 158.10935974121094,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ]
+  },
+  "errors-classic": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "after-taylor-bight-region.png": {
+    "view": {
+      "x": 560,
+      "y": 1100,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 27769,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 13463,
+      "drawCalls": 12
+    },
+    "anchors": 543,
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 119.54531860351562,
+          "y": 318.1000061035156,
+          "width": 158.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ]
+  },
+  "after-taylor-bight-stop.png": {
+    "view": {
+      "x": 560,
+      "y": 1100,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 27769,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 13463,
+      "drawCalls": 12
+    },
+    "anchors": 543,
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 127.74531555175781,
+          "y": 236.39999389648438,
+          "width": 158.10935974121094,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ]
+  },
+  "errors-taylor": [],
+  "after-newfoundland-bight-region.png": {
+    "view": {
+      "x": 560,
+      "y": 1100,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 27769,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 13463,
+      "drawCalls": 12
+    },
+    "anchors": 543,
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 120.54531860351562,
+          "y": 318.1000061035156,
+          "width": 156.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ]
+  },
+  "after-newfoundland-bight-stop.png": {
+    "view": {
+      "x": 560,
+      "y": 1100,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 27769,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 13463,
+      "drawCalls": 12
+    },
+    "anchors": 543,
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 128.7453155517578,
+          "y": 236.39999389648438,
+          "width": 156.10935974121094,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ]
+  },
+  "errors-newfoundland": []
+}

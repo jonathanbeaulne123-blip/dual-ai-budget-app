@@ -1,3 +1,4 @@
+import { BRIDGE_CAST } from '../src/harbour/horizon/land/bridges/catalog';
 /**
  * The road on the Journey land (ROAD.md §7, Jonathan's brief §8): bridges drawn as bridges, covered stretches dimmed,
  * boulevard reaches as a wider road with a planted band — extracted from the REAL baked index + journey terrain LOD in
@@ -6,7 +7,7 @@
  */
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
-import type * as THREE from "three";
+import * as THREE from "three";
 import { beforeAll, describe, expect, it } from "vitest";
 import { compressHeight, STATION_IDS, type JourneyLandData, type Point2 } from "../src/journey/contracts.ts";
 import {
@@ -93,7 +94,7 @@ function syntheticCorridor(w: LoadedWorld): Corridor {
 describe("extract: bridges and covered stretches", () => {
   it("draws the road's named spans as bridges, each carrying its road, with the deck's own axis and width", () => {
     const byId = new Map((land.bridges ?? []).map((b) => [b.id, b]));
-    expect([...byId.keys()].sort()).toEqual(Object.keys(SPANS).sort());
+    expect([...byId.keys()].sort()).toEqual(BRIDGE_CAST.map(b=>b.id).sort());
     for (const [id, road] of Object.entries(SPANS)) {
       const b = byId.get(id)!, bed = world.beds.find((x) => x.id === `structure.${id}`)!;
       expect(b.lineIds, id).toContain(road);
@@ -107,8 +108,9 @@ describe("extract: bridges and covered stretches", () => {
     expect(byId.get("quayBridge")!.lineIds).toEqual(["S3", "V01"]);
     expect(byId.get("bightBridge")!.underIds).toContain("FERRY");
     expect(byId.get("highSpan")!.underIds).toContain("S1");
-    // Footbridges and walk bridges are not road spans.
-    for (const walkBridge of ["hollowBridge", "reachFootbridge", "gardenWalkBridge"]) expect(byId.has(walkBridge)).toBe(false);
+    // The bridge cast now includes walking landmarks; the unnamed companion stays quiet.
+    for (const id of ["hollowBridge", "gardenWalkBridge"]) expect(byId.has(id)).toBe(true);
+    expect(byId.has("reachFootbridge")).toBe(false);
   });
 
   it("marks the Prow gallery and the Mountain Road tunnel as covered, portal to portal", () => {
@@ -164,10 +166,11 @@ const LINE_TOLERANCE_FULL = 4;
 describe("slim round-trip", () => {
   it("the baked slim file is this format and decodes to what the index extracts, bridges and covers included", () => {
     expect(SLIM.format).toBe(JOURNEY_LAND_SLIM_FORMAT);
-    expect(JOURNEY_LAND_SLIM_FORMAT).toBe(2);
+    // Format 3 carries baked landmark identities for road and walking crossings.
+    expect(JOURNEY_LAND_SLIM_FORMAT).toBe(3);
     const decoded = decodeJourneyLandSlim(SLIM);
     expect(decoded).toStrictEqual(land);
-    expect(decoded.bridges?.length).toBe(4);
+    expect(decoded.bridges?.length).toBe(10);
   });
 
   it("carries boulevards through encode → JSON → decode, and refuses malformed road fields", () => {
@@ -177,6 +180,7 @@ describe("slim round-trip", () => {
     const json = JSON.parse(JSON.stringify(encodeJourneyLandSlim(withCorridor, { index: "x", indexSha256: "a", terrainSha256: "b" }))) as { land: Record<string, unknown> };
     expect(decodeJourneyLandSlim(json)).toStrictEqual(withCorridor);
     const bad = (patch: Record<string, unknown>) => () => decodeJourneyLandSlim({ ...json, land: { ...json.land, ...patch } });
+    for (const glyph of ["constructor", "toString", "missing"]) expect(bad({bridges:[{...withCorridor.bridges![0]!,landmark:{name:"Bridge",glyph,at:[0,0,0]}}]})).toThrow(/landmark/);
     expect(bad({ bridges: undefined })).toThrow(/bridges/);
     expect(bad({ covers: undefined })).toThrow(/covers/);
     expect(bad({ bridges: [{ ...withCorridor.bridges![0]!, lineIds: ["NOPE"] }] })).toThrow(/does not draw/);
@@ -280,12 +284,27 @@ describe("the board overlay does not move and is never drawn over", () => {
     const all = extractJourneyLand(w, journeyTerrain());
     for (const s of all.stations) {
       for (const b of all.bridges!) {
-        const axis = b.axis.map((p) => [p[0], p[2]] as const), deckHeight = Math.max(...b.axis.map((p) => compressHeight(p[1])));
-        const reach = b.width / 2 + RAMP_EU + deckHeight;
+        const axis = b.axis.map((p) => [p[0], p[2]] as const);
+        // All ten landmarks now include elevated inland walks. Absolute deck altitude
+        // overestimates their shadow by the underlying hillside height; keep the
+        // ramp bound here and test the actual rendered shadow triangles below.
+        const reach = b.width / 2 + RAMP_EU;
         expect(polyDist(s.anchor, axis) - reach, `${b.id} vs ${s.id}`).toBeGreaterThan(padRadius);
       }
       for (const c of all.covers!) expect(polyDist(s.anchor, c.points), `${c.id} vs ${s.id}`).toBeGreaterThan(padRadius);
     }
+    const drawn=buildJourneyLand(all,{theme:'classic',tier:'full',homes:[]});
+    const geometry=(drawn.group.getObjectByName(BRIDGES_NAME) as THREE.Mesh).geometry;
+    const pos=geometry.getAttribute('position'),ix=geometry.index!,side=geometry.getAttribute('aSide'),width=geometry.getAttribute('aWidth');
+    let railReach=0;for(let i=0;i<pos.count;i++)railReach=Math.max(railReach,Math.hypot(side.getX(i),side.getY(i))*width.getZ(i)/2);
+    const triangle=new THREE.Triangle(),point=new THREE.Vector3(),nearest=new THREE.Vector3();
+    for(const station of all.stations){let minimum=Infinity;point.set(station.anchor[0],0,station.anchor[1]);
+      for(let i=0;i<ix.count;i+=3){for(let k=0;k<3;k++){const n=ix.getX(i+k);(k===0?triangle.a:k===1?triangle.b:triangle.c).set(pos.getX(n),0,pos.getZ(n));}
+        if(triangle.getArea()<1e-8){for(const [a,b] of [[triangle.a,triangle.b],[triangle.b,triangle.c],[triangle.c,triangle.a]]){new THREE.Line3(a,b).closestPointToPoint(point,true,nearest);minimum=Math.min(minimum,nearest.distanceTo(point));}}else{triangle.closestPointToPoint(point,nearest);minimum=Math.min(minimum,nearest.distanceTo(point));}}
+      // Reserve the rail shader's maximum half-width including each corner miter as well as the unchanged pad.
+      expect(minimum-railReach,`rendered bridge or shadow vs ${station.id}`).toBeGreaterThan(padRadius);
+    }
+    drawn.dispose();
     // The real boulevards (R10 Long Sands, R13 Harbour Avenue) must pass the same check once the corridor lands; the
     // synthetic ones here only prove the check runs.
     expect(all.boulevards!.length).toBeGreaterThan(0);
@@ -332,13 +351,32 @@ describe("three.js land with the road", () => {
     }
   });
 
+  it("masks only roads beneath a bridge and gives each mounted flat map distinct mask IDs", () => {
+    const flat=journeyLandFlatData(land);
+    const garden=flat.bridges!.find(b=>b.id==='gardenWalkBridge')!;
+    expect(garden.underIds).toContain('VG');
+    for(const theme of ['classic','taylor','newfoundland'] as const){
+      const html=renderToStaticMarkup(createElement('div',null,
+        createElement(JourneyLandFlat,{data:flat,theme}),createElement(JourneyLandFlat,{data:flat,theme})));
+      const ids=[...html.matchAll(/<mask[^>]* id="([^"]+)"/g)].map(m=>m[1]);
+      expect(ids.length).toBeGreaterThan(0);expect(new Set(ids).size).toBe(ids.length);
+      const vgMasks=[...html.matchAll(/<mask[^>]*data-land-under-mask="VG"[^>]*>([\s\S]*?)<\/mask>/g)];
+      expect(vgMasks).toHaveLength(2);
+      for(const mask of vgMasks){expect(mask[1]).toContain('fill="white"');expect(mask[1]).toContain('data-under-bridge="gardenWalkBridge"');expect(mask[1]).not.toContain('data-under-bridge="highSpan"');}
+      const vg=html.match(/<path[^>]*data-land-line="VG"[^>]*>/)?.[0];expect(vg).toContain('mask="url(#');
+      // Decks remain before carried lines; masking an underpass must not erase a carried road.
+      expect(flat.bridges!.filter(b=>b.underIds?.includes('V01')).some(b=>b.id==='bightBridge')).toBe(false);
+      expect(html.indexOf('data-land-bridge="highSpan"')).toBeLessThan(html.indexOf('data-land-line="VG"'));
+    }
+  });
+
   it("authors the road's colours for every theme, and the flat twin draws the bridges at their true width", () => {
     for (const key of ["deck", "deckRail", "planted"] as const) {
       expect(LAND_EXTRA_KEYS).toContain(key);
       for (const theme of ["classic", "taylor", "newfoundland"] as const) expect(JOURNEY_LAND_EXTRAS[theme][key]).toMatch(/^#[0-9a-f]{6}$/);
     }
     const flat = journeyLandFlatData(land);
-    expect(flat.bridges!.map((b) => b.id).sort()).toEqual(Object.keys(SPANS).sort());
+    expect(flat.bridges!.map((b) => b.id).sort()).toEqual(BRIDGE_CAST.map(b=>b.id).sort());
     const html = renderToStaticMarkup(createElement(JourneyLandFlat, { data: flat, theme: "taylor" }));
     for (const id of Object.keys(SPANS)) expect(html).toContain(`data-land-bridge="${id}"`);
     expect(html).toContain(`stroke-width="${land.bridges!.find((b) => b.id === "bightBridge")!.width}"`);

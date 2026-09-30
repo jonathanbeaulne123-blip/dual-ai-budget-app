@@ -1,0 +1,55 @@
+{
+  "worldSha256": "aee8f9daaec7af94a6b649f89b9badb139beab50413989914fcb307944977e97",
+  "baselineRef": "e77309efbc48a76e8328f2b427613ecc6082bb61",
+  "method": "Actual generated bridge-only CardBuilder geometry across its resident districts; baseline final partitioned structural mesh. Whole-scene and hardware budgets remain separate.",
+  "rows": [
+    {
+      "tier": "full",
+      "theme": "classic",
+      "triangles": 23498,
+      "calls": 3,
+      "baseline": 15524,
+      "addedTriangles": 7974
+    },
+    {
+      "tier": "full",
+      "theme": "taylor",
+      "triangles": 22364,
+      "calls": 3,
+      "baseline": 15524,
+      "addedTriangles": 6840
+    },
+    {
+      "tier": "full",
+      "theme": "newfoundland",
+      "triangles": 25514,
+      "calls": 3,
+      "baseline": 15524,
+      "addedTriangles": 9990
+    },
+    {
+      "tier": "lite",
+      "theme": "classic",
+      "triangles": 20610,
+      "calls": 3,
+      "baseline": 13840,
+      "addedTriangles": 6770
+    },
+    {
+      "tier": "lite",
+      "theme": "taylor",
+      "triangles": 20538,
+      "calls": 3,
+      "baseline": 13840,
+      "addedTriangles": 6698
+    },
+    {
+      "tier": "lite",
+      "theme": "newfoundland",
+      "triangles": 20738,
+      "calls": 3,
+      "baseline": 13840,
+      "addedTriangles": 6898
+    }
+  ]
+}

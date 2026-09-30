@@ -1,0 +1,1087 @@
+{
+  "before-classic-bight-region.png": {
+    "view": {
+      "x": 560,
+      "y": 1100,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 28105,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-bight-stop.png": {
+    "view": {
+      "x": 560,
+      "y": 1100,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 26737,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-highspan-region.png": {
+    "view": {
+      "x": 1240,
+      "y": 1105,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 33695,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-highspan-stop.png": {
+    "view": {
+      "x": 1240,
+      "y": 1105,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 29195,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-quay-region.png": {
+    "view": {
+      "x": 1350,
+      "y": 1345,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 28621,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-quay-stop.png": {
+    "view": {
+      "x": 1350,
+      "y": 1345,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 26667,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-apron-region.png": {
+    "view": {
+      "x": 1158,
+      "y": 949,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 39195,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-apron-stop.png": {
+    "view": {
+      "x": 1158,
+      "y": 949,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 31357,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-hollow-region.png": {
+    "view": {
+      "x": 893,
+      "y": 600,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 38035,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-hollow-stop.png": {
+    "view": {
+      "x": 893,
+      "y": 600,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 34679,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-canal-region.png": {
+    "view": {
+      "x": 1300.5,
+      "y": 748,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 36249,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-canal-stop.png": {
+    "view": {
+      "x": 1300.5,
+      "y": 748,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 31153,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-prow-loop-region.png": {
+    "view": {
+      "x": 1606.65,
+      "y": 688.75,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 28879,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-prow-loop-stop.png": {
+    "view": {
+      "x": 1606.65,
+      "y": 688.75,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 26699,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-trestle-region.png": {
+    "view": {
+      "x": 902.3,
+      "y": 900.5,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 38641,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-trestle-stop.png": {
+    "view": {
+      "x": 902.3,
+      "y": 900.5,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 33351,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-garden-region.png": {
+    "view": {
+      "x": 965.7,
+      "y": 761.1,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 39937,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-garden-stop.png": {
+    "view": {
+      "x": 965.7,
+      "y": 761.1,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 35007,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-reach-region.png": {
+    "view": {
+      "x": 1255,
+      "y": 1251,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 30983,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-classic-reach-stop.png": {
+    "view": {
+      "x": 1255,
+      "y": 1251,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 27831,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "errors-classic": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "before-taylor-bight-region.png": {
+    "view": {
+      "x": 560,
+      "y": 1100,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 28105,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-bight-stop.png": {
+    "view": {
+      "x": 560,
+      "y": 1100,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 26737,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-highspan-region.png": {
+    "view": {
+      "x": 1240,
+      "y": 1105,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 33695,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-highspan-stop.png": {
+    "view": {
+      "x": 1240,
+      "y": 1105,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 29195,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-quay-region.png": {
+    "view": {
+      "x": 1350,
+      "y": 1345,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 28621,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-quay-stop.png": {
+    "view": {
+      "x": 1350,
+      "y": 1345,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 26667,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-apron-region.png": {
+    "view": {
+      "x": 1158,
+      "y": 949,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 39195,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-apron-stop.png": {
+    "view": {
+      "x": 1158,
+      "y": 949,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 31357,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-hollow-region.png": {
+    "view": {
+      "x": 893,
+      "y": 600,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 38035,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-hollow-stop.png": {
+    "view": {
+      "x": 893,
+      "y": 600,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 34679,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-canal-region.png": {
+    "view": {
+      "x": 1300.5,
+      "y": 748,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 36249,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-canal-stop.png": {
+    "view": {
+      "x": 1300.5,
+      "y": 748,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 31153,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-prow-loop-region.png": {
+    "view": {
+      "x": 1606.65,
+      "y": 688.75,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 28879,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-prow-loop-stop.png": {
+    "view": {
+      "x": 1606.65,
+      "y": 688.75,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 26699,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-trestle-region.png": {
+    "view": {
+      "x": 902.3,
+      "y": 900.5,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 38641,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-trestle-stop.png": {
+    "view": {
+      "x": 902.3,
+      "y": 900.5,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 33351,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-garden-region.png": {
+    "view": {
+      "x": 965.7,
+      "y": 761.1,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 39937,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-garden-stop.png": {
+    "view": {
+      "x": 965.7,
+      "y": 761.1,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 35007,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-reach-region.png": {
+    "view": {
+      "x": 1255,
+      "y": 1251,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 30983,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-taylor-reach-stop.png": {
+    "view": {
+      "x": 1255,
+      "y": 1251,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 27831,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "errors-taylor": [],
+  "before-newfoundland-bight-region.png": {
+    "view": {
+      "x": 560,
+      "y": 1100,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 28105,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-bight-stop.png": {
+    "view": {
+      "x": 560,
+      "y": 1100,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 26737,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-highspan-region.png": {
+    "view": {
+      "x": 1240,
+      "y": 1105,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 33695,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-highspan-stop.png": {
+    "view": {
+      "x": 1240,
+      "y": 1105,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 29195,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-quay-region.png": {
+    "view": {
+      "x": 1350,
+      "y": 1345,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 28621,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-quay-stop.png": {
+    "view": {
+      "x": 1350,
+      "y": 1345,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 26667,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-apron-region.png": {
+    "view": {
+      "x": 1158,
+      "y": 949,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 39195,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-apron-stop.png": {
+    "view": {
+      "x": 1158,
+      "y": 949,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 31357,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-hollow-region.png": {
+    "view": {
+      "x": 893,
+      "y": 600,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 38035,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-hollow-stop.png": {
+    "view": {
+      "x": 893,
+      "y": 600,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 34679,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-canal-region.png": {
+    "view": {
+      "x": 1300.5,
+      "y": 748,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 36249,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-canal-stop.png": {
+    "view": {
+      "x": 1300.5,
+      "y": 748,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 31153,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-prow-loop-region.png": {
+    "view": {
+      "x": 1606.65,
+      "y": 688.75,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 28879,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-prow-loop-stop.png": {
+    "view": {
+      "x": 1606.65,
+      "y": 688.75,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 26699,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-trestle-region.png": {
+    "view": {
+      "x": 902.3,
+      "y": 900.5,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 38641,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-trestle-stop.png": {
+    "view": {
+      "x": 902.3,
+      "y": 900.5,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 33351,
+      "drawCalls": 28
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-garden-region.png": {
+    "view": {
+      "x": 965.7,
+      "y": 761.1,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 39937,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-garden-stop.png": {
+    "view": {
+      "x": 965.7,
+      "y": 761.1,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 35007,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-reach-region.png": {
+    "view": {
+      "x": 1255,
+      "y": 1251,
+      "radius": 250,
+      "tier": "region",
+      "worldPerPixel": 0.29144228634687414
+    },
+    "stats": {
+      "triangles": 30983,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "before-newfoundland-reach-stop.png": {
+    "view": {
+      "x": 1255,
+      "y": 1251,
+      "radius": 80,
+      "tier": "stop",
+      "worldPerPixel": 0.09326153163099972
+    },
+    "stats": {
+      "triangles": 27831,
+      "drawCalls": 30
+    },
+    "land": {
+      "triangles": 12431,
+      "drawCalls": 12
+    },
+    "anchors": 533
+  },
+  "errors-newfoundland": []
+}

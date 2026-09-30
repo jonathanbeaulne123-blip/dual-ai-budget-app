@@ -1,0 +1,1302 @@
+[
+  {
+    "id": "highSpan",
+    "runsUnchanged": true,
+    "before": {
+      "count": 233,
+      "missing": 0,
+      "maxBedMismatch": 0.03353694027778076,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": [
+        {
+          "s": 115.71937072957641,
+          "at": [
+            1291.5525341501304,
+            23.96646305972222,
+            1099.0534468277885
+          ],
+          "surfaceId": "highSpan.deck@notch",
+          "y": 24,
+          "bedY": 23.96646305972222,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 219.7193707295764,
+          "at": [
+            1188.501593829064,
+            23.974927726182894,
+            1098.0146635611634
+          ],
+          "surfaceId": "highSpan.deck@notch",
+          "y": 24,
+          "bedY": 23.974927726182894,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 116.21937072957641,
+          "at": [
+            1291.062282024401,
+            23.97630031457546,
+            1099.1516957627332
+          ],
+          "surfaceId": "highSpan.deck@notch",
+          "y": 24,
+          "bedY": 23.97630031457546,
+          "ceiling": null,
+          "blocker": null
+        }
+      ]
+    },
+    "after": {
+      "count": 233,
+      "missing": 0,
+      "maxBedMismatch": 0.03353694027778076,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": [
+        {
+          "s": 115.71937072957641,
+          "at": [
+            1291.5525341501304,
+            23.96646305972222,
+            1099.0534468277885
+          ],
+          "surfaceId": "highSpan.deck@notch",
+          "y": 24,
+          "bedY": 23.96646305972222,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 219.7193707295764,
+          "at": [
+            1188.501593829064,
+            23.974927726182894,
+            1098.0146635611634
+          ],
+          "surfaceId": "highSpan.deck@notch",
+          "y": 24,
+          "bedY": 23.974927726182894,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 116.21937072957641,
+          "at": [
+            1291.062282024401,
+            23.97630031457546,
+            1099.1516957627332
+          ],
+          "surfaceId": "highSpan.deck@notch",
+          "y": 24,
+          "bedY": 23.97630031457546,
+          "ceiling": null,
+          "blocker": null
+        }
+      ]
+    }
+  },
+  {
+    "id": "quayBridge",
+    "runsUnchanged": true,
+    "before": {
+      "count": 205,
+      "missing": 0,
+      "maxBedMismatch": 0.01120588404046785,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    },
+    "after": {
+      "count": 205,
+      "missing": 0,
+      "maxBedMismatch": 0.01120588404046785,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    }
+  },
+  {
+    "id": "bightBridge",
+    "runsUnchanged": true,
+    "before": {
+      "count": 515,
+      "missing": 0,
+      "maxBedMismatch": 0.008332264284632629,
+      "headroom": {
+        "state": "measured",
+        "minimum": 4.999999999999998,
+        "station": 2693.4411306013626,
+        "at": [
+          556.7230723178981,
+          12,
+          1097.7061506225784
+        ],
+        "surfaceId": "bightBridge.deck@bight"
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    },
+    "after": {
+      "count": 515,
+      "missing": 0,
+      "maxBedMismatch": 0.008332264284632629,
+      "headroom": {
+        "state": "measured",
+        "minimum": 4.999999999999998,
+        "station": 2693.4411306013626,
+        "at": [
+          556.7230723178981,
+          12,
+          1097.7061506225784
+        ],
+        "surfaceId": "bightBridge.deck@bight"
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    }
+  },
+  {
+    "id": "apronBridge",
+    "runsUnchanged": false,
+    "before": {
+      "count": 115,
+      "missing": 0,
+      "maxBedMismatch": 0.009158910281545474,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    },
+    "after": {
+      "count": 115,
+      "missing": 0,
+      "maxBedMismatch": 0.009158910281545474,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    }
+  },
+  {
+    "id": "hollowBridge",
+    "runsUnchanged": false,
+    "before": {
+      "count": 89,
+      "missing": 0,
+      "maxBedMismatch": 0.004813964511015456,
+      "headroom": {
+        "state": "measured",
+        "minimum": 5.61508649894283,
+        "station": 227.0495811008905,
+        "at": [
+          894.6752414549911,
+          37,
+          604.7105153926757
+        ],
+        "surfaceId": "hollowBridge.deck@hollow"
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    },
+    "after": {
+      "count": 89,
+      "missing": 0,
+      "maxBedMismatch": 0.004813964511015456,
+      "headroom": {
+        "state": "measured",
+        "minimum": 5.61508649894283,
+        "station": 227.0495811008905,
+        "at": [
+          894.6752414549911,
+          37,
+          604.7105153926757
+        ],
+        "surfaceId": "hollowBridge.deck@hollow"
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    }
+  },
+  {
+    "id": "reachFootbridge",
+    "runsUnchanged": true,
+    "before": {
+      "count": 121,
+      "missing": 0,
+      "maxBedMismatch": 0.10988599361650842,
+      "headroom": {
+        "state": "measured",
+        "minimum": 1,
+        "station": 169.52563640393623,
+        "at": [
+          1264.6013996679278,
+          9.5,
+          1190.914072666564
+        ],
+        "surfaceId": "walk reach.bed.reach@reach"
+      },
+      "blockedSamples": 30,
+      "witnesses": [
+        {
+          "s": 130.02563640393623,
+          "at": [
+            1290.6990285518534,
+            9.390114006383492,
+            1220.125143628653
+          ],
+          "surfaceId": "reachFootbridge.deck@reach",
+          "y": 9.5,
+          "bedY": 9.390114006383492,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 130.52563640393623,
+          "at": [
+            1290.3157523651798,
+            9.428422128971203,
+            1219.80405273073
+          ],
+          "surfaceId": "reachFootbridge.deck@reach",
+          "y": 9.5,
+          "bedY": 9.428422128971203,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 131.02563640393623,
+          "at": [
+            1289.932476178506,
+            9.466730251558914,
+            1219.4829618328072
+          ],
+          "surfaceId": "reachFootbridge.deck@reach",
+          "y": 9.5,
+          "bedY": 9.466730251558914,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 147.02563640393623,
+          "at": [
+            1278.0246182536564,
+            9.5,
+            1208.80099366401
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        },
+        {
+          "s": 147.52563640393623,
+          "at": [
+            1277.6716301714443,
+            9.5,
+            1208.4468758674846
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        },
+        {
+          "s": 148.02563640393623,
+          "at": [
+            1277.318642089232,
+            9.5,
+            1208.0927580709588
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        },
+        {
+          "s": 148.52563640393623,
+          "at": [
+            1276.96565400702,
+            9.5,
+            1207.7386402744332
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        },
+        {
+          "s": 149.02563640393623,
+          "at": [
+            1276.612665924808,
+            9.5,
+            1207.3845224779075
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        },
+        {
+          "s": 149.52563640393623,
+          "at": [
+            1276.2596778425957,
+            9.5,
+            1207.0304046813817
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        },
+        {
+          "s": 150.02563640393623,
+          "at": [
+            1275.9066897603836,
+            9.5,
+            1206.6762868848562
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        },
+        {
+          "s": 150.52563640393623,
+          "at": [
+            1275.5537016781716,
+            9.5,
+            1206.3221690883304
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        },
+        {
+          "s": 151.02563640393623,
+          "at": [
+            1275.2007135959595,
+            9.5,
+            1205.9680512918046
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        }
+      ]
+    },
+    "after": {
+      "count": 121,
+      "missing": 0,
+      "maxBedMismatch": 0.10988599361650842,
+      "headroom": {
+        "state": "measured",
+        "minimum": 1,
+        "station": 169.52563640393623,
+        "at": [
+          1264.6013996679278,
+          9.5,
+          1190.914072666564
+        ],
+        "surfaceId": "walk reach.bed.reach@reach"
+      },
+      "blockedSamples": 30,
+      "witnesses": [
+        {
+          "s": 130.02563640393623,
+          "at": [
+            1290.6990285518534,
+            9.390114006383492,
+            1220.125143628653
+          ],
+          "surfaceId": "reachFootbridge.deck@reach",
+          "y": 9.5,
+          "bedY": 9.390114006383492,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 130.52563640393623,
+          "at": [
+            1290.3157523651798,
+            9.428422128971203,
+            1219.80405273073
+          ],
+          "surfaceId": "reachFootbridge.deck@reach",
+          "y": 9.5,
+          "bedY": 9.428422128971203,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 131.02563640393623,
+          "at": [
+            1289.932476178506,
+            9.466730251558914,
+            1219.4829618328072
+          ],
+          "surfaceId": "reachFootbridge.deck@reach",
+          "y": 9.5,
+          "bedY": 9.466730251558914,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 147.02563640393623,
+          "at": [
+            1278.0246182536564,
+            9.5,
+            1208.80099366401
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        },
+        {
+          "s": 147.52563640393623,
+          "at": [
+            1277.6716301714443,
+            9.5,
+            1208.4468758674846
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        },
+        {
+          "s": 148.02563640393623,
+          "at": [
+            1277.318642089232,
+            9.5,
+            1208.0927580709588
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        },
+        {
+          "s": 148.52563640393623,
+          "at": [
+            1276.96565400702,
+            9.5,
+            1207.7386402744332
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        },
+        {
+          "s": 149.02563640393623,
+          "at": [
+            1276.612665924808,
+            9.5,
+            1207.3845224779075
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        },
+        {
+          "s": 149.52563640393623,
+          "at": [
+            1276.2596778425957,
+            9.5,
+            1207.0304046813817
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        },
+        {
+          "s": 150.02563640393623,
+          "at": [
+            1275.9066897603836,
+            9.5,
+            1206.6762868848562
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        },
+        {
+          "s": 150.52563640393623,
+          "at": [
+            1275.5537016781716,
+            9.5,
+            1206.3221690883304
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        },
+        {
+          "s": 151.02563640393623,
+          "at": [
+            1275.2007135959595,
+            9.5,
+            1205.9680512918046
+          ],
+          "surfaceId": "walk reach.bed.reach@reach",
+          "y": 9.5,
+          "bedY": 9.5,
+          "ceiling": null,
+          "blocker": "reachFootbridge.rails@reach"
+        }
+      ]
+    }
+  },
+  {
+    "id": "reachBoardwalk",
+    "runsUnchanged": false,
+    "before": {
+      "count": 249,
+      "missing": 0,
+      "maxBedMismatch": 0.015725439207106895,
+      "headroom": {
+        "state": "measured",
+        "minimum": 1,
+        "station": 1686.9190698331236,
+        "at": [
+          1267.3275397348243,
+          4.984274560792893,
+          1305.5531443651232
+        ],
+        "surfaceId": "reachBoardwalk.deck@reach"
+      },
+      "blockedSamples": 4,
+      "witnesses": [
+        {
+          "s": 1686.9190698331236,
+          "at": [
+            1267.3275397348243,
+            4.984274560792893,
+            1305.5531443651232
+          ],
+          "surfaceId": "reachBoardwalk.deck@reach",
+          "y": 5,
+          "bedY": 4.984274560792893,
+          "ceiling": 6,
+          "blocker": "reachBoardwalk.rails@reach"
+        },
+        {
+          "s": 1686.4190698331236,
+          "at": [
+            1267.2681180572722,
+            4.991820280497477,
+            1305.0566878572226
+          ],
+          "surfaceId": "reachBoardwalk.deck@reach",
+          "y": 5,
+          "bedY": 4.991820280497477,
+          "ceiling": null,
+          "blocker": "reachBoardwalk.rails@reach"
+        },
+        {
+          "s": 1685.9190698331236,
+          "at": [
+            1267.2086963797203,
+            4.999366000202063,
+            1304.5602313493218
+          ],
+          "surfaceId": "reachBoardwalk.deck@reach",
+          "y": 5.000000000000001,
+          "bedY": 4.999366000202063,
+          "ceiling": null,
+          "blocker": "reachBoardwalk.rails@reach"
+        },
+        {
+          "s": 1685.4190698331236,
+          "at": [
+            1267.1438627316961,
+            5,
+            1304.064455322328
+          ],
+          "surfaceId": "S1.surface.12.reach@reach",
+          "y": 5,
+          "bedY": 5,
+          "ceiling": null,
+          "blocker": "reachBoardwalk.rails@reach"
+        }
+      ]
+    },
+    "after": {
+      "count": 249,
+      "missing": 0,
+      "maxBedMismatch": 0.015725439207106895,
+      "headroom": {
+        "state": "measured",
+        "minimum": 1,
+        "station": 1686.9190698331236,
+        "at": [
+          1267.3275397348243,
+          4.984274560792893,
+          1305.5531443651232
+        ],
+        "surfaceId": "reachBoardwalk.deck@reach"
+      },
+      "blockedSamples": 4,
+      "witnesses": [
+        {
+          "s": 1686.9190698331236,
+          "at": [
+            1267.3275397348243,
+            4.984274560792893,
+            1305.5531443651232
+          ],
+          "surfaceId": "reachBoardwalk.deck@reach",
+          "y": 5,
+          "bedY": 4.984274560792893,
+          "ceiling": 6,
+          "blocker": "reachBoardwalk.rails@reach"
+        },
+        {
+          "s": 1686.4190698331236,
+          "at": [
+            1267.2681180572722,
+            4.991820280497477,
+            1305.0566878572226
+          ],
+          "surfaceId": "reachBoardwalk.deck@reach",
+          "y": 5,
+          "bedY": 4.991820280497477,
+          "ceiling": null,
+          "blocker": "reachBoardwalk.rails@reach"
+        },
+        {
+          "s": 1685.9190698331236,
+          "at": [
+            1267.2086963797203,
+            4.999366000202063,
+            1304.5602313493218
+          ],
+          "surfaceId": "reachBoardwalk.deck@reach",
+          "y": 5.000000000000001,
+          "bedY": 4.999366000202063,
+          "ceiling": null,
+          "blocker": "reachBoardwalk.rails@reach"
+        },
+        {
+          "s": 1685.4190698331236,
+          "at": [
+            1267.1438627316961,
+            5,
+            1304.064455322328
+          ],
+          "surfaceId": "S1.surface.12.reach@reach",
+          "y": 5,
+          "bedY": 5,
+          "ceiling": null,
+          "blocker": "reachBoardwalk.rails@reach"
+        }
+      ]
+    }
+  },
+  {
+    "id": "timberCrossing",
+    "runsUnchanged": true,
+    "before": {
+      "count": 65,
+      "missing": 0,
+      "maxBedMismatch": 0.35540505158075053,
+      "headroom": {
+        "state": "measured",
+        "minimum": 1,
+        "station": 96.88757523575097,
+        "at": [
+          1496.6877090464452,
+          4.684084398594888,
+          1252.2424826953625
+        ],
+        "surfaceId": "timberCrossing.deck@harbour"
+      },
+      "blockedSamples": 2,
+      "witnesses": [
+        {
+          "s": 97.38757523575097,
+          "at": [
+            1496.273672677251,
+            4.6445949484192495,
+            1252.5227930322826
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.6445949484192495,
+          "ceiling": 6,
+          "blocker": "timberCrossing.rails@harbour"
+        },
+        {
+          "s": 96.88757523575097,
+          "at": [
+            1496.6877090464452,
+            4.684084398594888,
+            1252.2424826953625
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.684084398594888,
+          "ceiling": 6,
+          "blocker": "timberCrossing.rails@harbour"
+        },
+        {
+          "s": 96.38757523575097,
+          "at": [
+            1497.1017454156397,
+            4.723573848770527,
+            1251.962172358442
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.723573848770527,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 95.88757523575097,
+          "at": [
+            1497.515781784834,
+            4.763063298946166,
+            1251.6818620215217
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.763063298946166,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 95.38757523575097,
+          "at": [
+            1497.9298181540282,
+            4.802552749121805,
+            1251.4015516846016
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.802552749121805,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 94.88757523575097,
+          "at": [
+            1498.3438545232227,
+            4.842042199297444,
+            1251.1212413476812
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.842042199297444,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 94.38757523575097,
+          "at": [
+            1498.757890892417,
+            4.881531649473082,
+            1250.8409310107609
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.881531649473082,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 93.88757523575097,
+          "at": [
+            1499.1719272616112,
+            4.921021099648722,
+            1250.5606206738405
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.921021099648722,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 105.88757523575097,
+          "at": [
+            1489.1158565220924,
+            4.0381565017902625,
+            1257.0558137121714
+          ],
+          "surfaceId": "homestead.lane.bed.harbour@harbour",
+          "y": 4.0807291642454615,
+          "bedY": 4.0381565017902625,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 108.88757523575097,
+          "at": [
+            1488.9656594344074,
+            3.7981565015776453,
+            1259.1974176988836
+          ],
+          "surfaceId": "homestead.lane.bed.harbour@harbour",
+          "y": 3.8404867447204163,
+          "bedY": 3.7981565015776453,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 106.38757523575097,
+          "at": [
+            1488.7341633793917,
+            3.9981565017943224,
+            1257.3787848328852
+          ],
+          "surfaceId": "homestead.lane.bed.harbour@harbour",
+          "y": 4.038855872651028,
+          "bedY": 3.9981565017943224,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 93.38757523575097,
+          "at": [
+            1499.5859636308057,
+            4.9605105498243605,
+            1250.2803103369204
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.9605105498243605,
+          "ceiling": null,
+          "blocker": null
+        }
+      ]
+    },
+    "after": {
+      "count": 65,
+      "missing": 0,
+      "maxBedMismatch": 0.35540505158075053,
+      "headroom": {
+        "state": "measured",
+        "minimum": 1,
+        "station": 96.88757523575097,
+        "at": [
+          1496.6877090464452,
+          4.684084398594888,
+          1252.2424826953625
+        ],
+        "surfaceId": "timberCrossing.deck@harbour"
+      },
+      "blockedSamples": 2,
+      "witnesses": [
+        {
+          "s": 97.38757523575097,
+          "at": [
+            1496.273672677251,
+            4.6445949484192495,
+            1252.5227930322826
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.6445949484192495,
+          "ceiling": 6,
+          "blocker": "timberCrossing.rails@harbour"
+        },
+        {
+          "s": 96.88757523575097,
+          "at": [
+            1496.6877090464452,
+            4.684084398594888,
+            1252.2424826953625
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.684084398594888,
+          "ceiling": 6,
+          "blocker": "timberCrossing.rails@harbour"
+        },
+        {
+          "s": 96.38757523575097,
+          "at": [
+            1497.1017454156397,
+            4.723573848770527,
+            1251.962172358442
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.723573848770527,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 95.88757523575097,
+          "at": [
+            1497.515781784834,
+            4.763063298946166,
+            1251.6818620215217
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.763063298946166,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 95.38757523575097,
+          "at": [
+            1497.9298181540282,
+            4.802552749121805,
+            1251.4015516846016
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.802552749121805,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 94.88757523575097,
+          "at": [
+            1498.3438545232227,
+            4.842042199297444,
+            1251.1212413476812
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.842042199297444,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 94.38757523575097,
+          "at": [
+            1498.757890892417,
+            4.881531649473082,
+            1250.8409310107609
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.881531649473082,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 93.88757523575097,
+          "at": [
+            1499.1719272616112,
+            4.921021099648722,
+            1250.5606206738405
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.921021099648722,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 105.88757523575097,
+          "at": [
+            1489.1158565220924,
+            4.0381565017902625,
+            1257.0558137121714
+          ],
+          "surfaceId": "homestead.lane.bed.harbour@harbour",
+          "y": 4.0807291642454615,
+          "bedY": 4.0381565017902625,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 108.88757523575097,
+          "at": [
+            1488.9656594344074,
+            3.7981565015776453,
+            1259.1974176988836
+          ],
+          "surfaceId": "homestead.lane.bed.harbour@harbour",
+          "y": 3.8404867447204163,
+          "bedY": 3.7981565015776453,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 106.38757523575097,
+          "at": [
+            1488.7341633793917,
+            3.9981565017943224,
+            1257.3787848328852
+          ],
+          "surfaceId": "homestead.lane.bed.harbour@harbour",
+          "y": 4.038855872651028,
+          "bedY": 3.9981565017943224,
+          "ceiling": null,
+          "blocker": null
+        },
+        {
+          "s": 93.38757523575097,
+          "at": [
+            1499.5859636308057,
+            4.9605105498243605,
+            1250.2803103369204
+          ],
+          "surfaceId": "timberCrossing.deck@harbour",
+          "y": 5,
+          "bedY": 4.9605105498243605,
+          "ceiling": null,
+          "blocker": null
+        }
+      ]
+    }
+  },
+  {
+    "id": "gardenWalkBridge",
+    "runsUnchanged": true,
+    "before": {
+      "count": 105,
+      "missing": 0,
+      "maxBedMismatch": 0.0025677023849794978,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    },
+    "after": {
+      "count": 105,
+      "missing": 0,
+      "maxBedMismatch": 0.0025677023849794978,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    }
+  },
+  {
+    "id": "seaStairWestLaneBridge",
+    "runsUnchanged": true,
+    "before": {
+      "count": 53,
+      "missing": 0,
+      "maxBedMismatch": 0.017240187961853337,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    },
+    "after": {
+      "count": 53,
+      "missing": 0,
+      "maxBedMismatch": 0.017240187961853337,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    }
+  },
+  {
+    "id": "seaStairEastLaneBridge",
+    "runsUnchanged": true,
+    "before": {
+      "count": 57,
+      "missing": 0,
+      "maxBedMismatch": 0.00036950474658681287,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    },
+    "after": {
+      "count": 57,
+      "missing": 0,
+      "maxBedMismatch": 0.00036950474658681287,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    }
+  },
+  {
+    "id": "mountainRoadCanalBridge",
+    "runsUnchanged": true,
+    "before": {
+      "count": 61,
+      "missing": 0,
+      "maxBedMismatch": 0.006218844258185641,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    },
+    "after": {
+      "count": 61,
+      "missing": 0,
+      "maxBedMismatch": 0.006218844258185641,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    }
+  },
+  {
+    "id": "s1InflowBridge",
+    "runsUnchanged": true,
+    "before": {
+      "count": 49,
+      "missing": 0,
+      "maxBedMismatch": 0.010930394000858712,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    },
+    "after": {
+      "count": 49,
+      "missing": 0,
+      "maxBedMismatch": 0.010930394000858712,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    }
+  },
+  {
+    "id": "inflowFootbridge",
+    "runsUnchanged": true,
+    "before": {
+      "count": 45,
+      "missing": 0,
+      "maxBedMismatch": 0.0007935891682322449,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    },
+    "after": {
+      "count": 45,
+      "missing": 0,
+      "maxBedMismatch": 0.0007935891682322449,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    }
+  },
+  {
+    "id": "prowLoopFootbridge",
+    "runsUnchanged": true,
+    "before": {
+      "count": 83,
+      "missing": 0,
+      "maxBedMismatch": 0.010387082326019481,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    },
+    "after": {
+      "count": 83,
+      "missing": 0,
+      "maxBedMismatch": 0.010387082326019481,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    }
+  },
+  {
+    "id": "bightSpurTrestle",
+    "runsUnchanged": true,
+    "before": {
+      "count": 164,
+      "missing": 0,
+      "maxBedMismatch": 0.013027366087470682,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    },
+    "after": {
+      "count": 164,
+      "missing": 0,
+      "maxBedMismatch": 0.013027366087470682,
+      "headroom": {
+        "state": "open-sky",
+        "minimum": null
+      },
+      "blockedSamples": 0,
+      "witnesses": []
+    }
+  }
+]

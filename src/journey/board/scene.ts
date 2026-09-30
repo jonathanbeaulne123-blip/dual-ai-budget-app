@@ -17,6 +17,7 @@
  * - The scene holds NO actions: its options carry no `JourneyBoardActions`, and nothing here opens, posts, completes,
  *   stores or fetches anything. Selecting, previewing, focusing and animating only change pixels.
  */
+import { compressHeight } from "../contracts.ts";
 import * as THREE from "three";
 import type {
   CameraTier, ChapterId, CreateJourneyBoardScene, DateKey, JourneyBoard, JourneyBoardSceneHandle, JourneyBoardSceneOptions,
@@ -414,6 +415,9 @@ export function createJourneyBoardScene(host: HTMLElement, options: BoardSceneOp
       if (!d.heart) continue;
       // District names are read at Sky and Region (the UI labels them, lowest priority); at Stop they would crowd the days.
       push(`district:${d.id}`, d.heart[0], land.heightAt(d.heart[0], d.heart[1]), d.heart[1], tier !== "stop");
+    }
+    for(const b of land.data.bridges??[]){if(!b.landmark)continue;const {at}=b.landmark;
+      push(`bridge:${b.id}`,at[0],compressHeight(at[1])+5,at[2],tier!=="sky");out[out.length-1]!.bridge=b.landmark;
     }
     const found = findAlternative(board, preview);
     const pm = found ? marks.find((m) => m.id === found.crossroads.id) : undefined;

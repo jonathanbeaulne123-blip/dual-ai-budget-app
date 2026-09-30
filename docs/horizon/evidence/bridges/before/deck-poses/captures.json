@@ -1,0 +1,2455 @@
+{
+  "sha": "e77309efbc48a76e8328f2b427613ecc6082bb61",
+  "method": "Headless Chrome SwiftShader. Current geometry only; no device evidence. Below pose is not necessarily on navigable water. Air pose is not a flown controller.",
+  "records": [
+    {
+      "id": "bightBridge",
+      "kind": "deck-height",
+      "file": "bightBridge-deck-height.png",
+      "eye": [
+        461.28255357747696,
+        13.6,
+        1030.8977875041837
+      ],
+      "target": [
+        477.66719198799433,
+        13.6,
+        1042.367034391255
+      ],
+      "draw": {
+        "at": 133181.1,
+        "calls": 323,
+        "triangles": 103877,
+        "resident": 3
+      },
+      "pending": [],
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+      "region": {
+        "id": "mountainV2",
+        "mounted": false,
+        "building": false,
+        "visible": false,
+        "districts": [
+          "crown",
+          "hollow",
+          "lakeside",
+          "prow"
+        ],
+        "joins": [
+          {
+            "from": "v2:road:foot",
+            "to": "path:1282.000:54.650:720.000",
+            "distance": 0.000023035623996747745,
+            "how": "seam"
+          },
+          {
+            "from": "v2:overlook:summit",
+            "to": "path:1313.694:158.050:472.378",
+            "distance": 9.769940111747367,
+            "how": "seam"
+          },
+          {
+            "from": "v2:door:observatory",
+            "to": "path:1307.249:158.012:472.751",
+            "distance": 2.4012809084941527,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:quay",
+            "to": "path:1282.922:54.705:803.630",
+            "distance": 8.932429187352959,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:north",
+            "to": "path:1284.370:54.650:719.650",
+            "distance": 20.677926070606045,
+            "how": "seam"
+          },
+          {
+            "from": "v2:station:gondola:summit",
+            "to": "path:1298.300:158.050:481.700",
+            "distance": 0.004163056034290434,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:hearth",
+            "to": "path:1364.000:73.200:650.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:summit",
+            "to": "path:1310.000:158.000:470.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:apron:home",
+            "to": "path:1363.267:73.200:653.111",
+            "distance": 0.5282507736169731,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth",
+            "to": "path:1356.540:72.960:664.090",
+            "distance": 1.0059127674393906,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg1-steps",
+            "to": "path:1343.310:61.730:698.730",
+            "distance": 1.0010445043652418,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps",
+            "to": "path:1357.750:66.180:681.980",
+            "distance": 1.0039633572552549,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps-b",
+            "to": "path:1363.740:65.590:681.590",
+            "distance": 0.005233131752729715,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg3-steps",
+            "to": "path:1347.590:72.020:663.190",
+            "distance": 0.005740741487091112,
+            "how": "lip"
+          },
+          {
+            "from": "v2:lane:junction",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:station-steps",
+            "to": "path:1327.330:61.380:690.520",
+            "distance": 0.9996081968337618,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hairpin-2-west",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 1.005877166959262,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:library",
+            "to": "path:1354.380:90.610:604.130",
+            "distance": 1.0099854875714513,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-west",
+            "to": "path:1277.870:99.750:564.780",
+            "distance": 0.006413563022931606,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:glasshouse",
+            "to": "path:1230.860:116.010:528.260",
+            "distance": 1.009997790525484,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:clearing",
+            "to": "path:1210.830:109.780:560.740",
+            "distance": 1.0154597863578734,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:west",
+            "to": "path:1294.140:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:east",
+            "to": "path:1337.860:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-stairs",
+            "to": "path:1268.310:121.380:534.770",
+            "distance": 0.005676868224024889,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:reservoir",
+            "to": "path:1365.090:143.340:513.110",
+            "distance": 1.0059927760179226,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b3-east",
+            "to": "path:1362.740:130.060:554.900",
+            "distance": 1.007586856263229,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-east",
+            "to": "path:1339.420:93.470:590.280",
+            "distance": 0.0040743830341541205,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-steps",
+            "to": "path:1332.780:95.000:578.310",
+            "distance": 1.0008214997564517,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-top",
+            "to": "path:1348.290:127.820:551.020",
+            "distance": 1.0058185013480072,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:summit",
+            "to": "path:1325.000:158.200:470.500",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:shelf",
+            "to": "path:1400.920:80.930:627.670",
+            "distance": 1.009806916265936,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:high-terrace",
+            "to": "path:1388.830:150.560:487.310",
+            "distance": 0.005529161781846945,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-overlook",
+            "to": "path:1354.150:128.710:552.210",
+            "distance": 1.0096000110869667,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth-lane",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          }
+        ]
+      },
+      "mode": "look"
+    },
+    {
+      "id": "highSpan",
+      "kind": "deck-height",
+      "file": "highSpan-deck-height.png",
+      "eye": [
+        1289.5909237467417,
+        25.6,
+        1099.4433538500439
+      ],
+      "target": [
+        1269.8792703211022,
+        25.6,
+        1102.8154034442616
+      ],
+      "draw": {
+        "at": 225060.8,
+        "calls": 164,
+        "triangles": 348236,
+        "resident": 3
+      },
+      "pending": [],
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+      "region": {
+        "id": "mountainV2",
+        "mounted": false,
+        "building": false,
+        "visible": false,
+        "districts": [
+          "crown",
+          "hollow",
+          "lakeside",
+          "prow"
+        ],
+        "joins": [
+          {
+            "from": "v2:road:foot",
+            "to": "path:1282.000:54.650:720.000",
+            "distance": 0.000023035623996747745,
+            "how": "seam"
+          },
+          {
+            "from": "v2:overlook:summit",
+            "to": "path:1313.694:158.050:472.378",
+            "distance": 9.769940111747367,
+            "how": "seam"
+          },
+          {
+            "from": "v2:door:observatory",
+            "to": "path:1307.249:158.012:472.751",
+            "distance": 2.4012809084941527,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:quay",
+            "to": "path:1282.922:54.705:803.630",
+            "distance": 8.932429187352959,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:north",
+            "to": "path:1284.370:54.650:719.650",
+            "distance": 20.677926070606045,
+            "how": "seam"
+          },
+          {
+            "from": "v2:station:gondola:summit",
+            "to": "path:1298.300:158.050:481.700",
+            "distance": 0.004163056034290434,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:hearth",
+            "to": "path:1364.000:73.200:650.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:summit",
+            "to": "path:1310.000:158.000:470.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:apron:home",
+            "to": "path:1363.267:73.200:653.111",
+            "distance": 0.5282507736169731,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth",
+            "to": "path:1356.540:72.960:664.090",
+            "distance": 1.0059127674393906,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg1-steps",
+            "to": "path:1343.310:61.730:698.730",
+            "distance": 1.0010445043652418,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps",
+            "to": "path:1357.750:66.180:681.980",
+            "distance": 1.0039633572552549,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps-b",
+            "to": "path:1363.740:65.590:681.590",
+            "distance": 0.005233131752729715,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg3-steps",
+            "to": "path:1347.590:72.020:663.190",
+            "distance": 0.005740741487091112,
+            "how": "lip"
+          },
+          {
+            "from": "v2:lane:junction",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:station-steps",
+            "to": "path:1327.330:61.380:690.520",
+            "distance": 0.9996081968337618,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hairpin-2-west",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 1.005877166959262,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:library",
+            "to": "path:1354.380:90.610:604.130",
+            "distance": 1.0099854875714513,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-west",
+            "to": "path:1277.870:99.750:564.780",
+            "distance": 0.006413563022931606,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:glasshouse",
+            "to": "path:1230.860:116.010:528.260",
+            "distance": 1.009997790525484,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:clearing",
+            "to": "path:1210.830:109.780:560.740",
+            "distance": 1.0154597863578734,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:west",
+            "to": "path:1294.140:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:east",
+            "to": "path:1337.860:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-stairs",
+            "to": "path:1268.310:121.380:534.770",
+            "distance": 0.005676868224024889,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:reservoir",
+            "to": "path:1365.090:143.340:513.110",
+            "distance": 1.0059927760179226,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b3-east",
+            "to": "path:1362.740:130.060:554.900",
+            "distance": 1.007586856263229,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-east",
+            "to": "path:1339.420:93.470:590.280",
+            "distance": 0.0040743830341541205,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-steps",
+            "to": "path:1332.780:95.000:578.310",
+            "distance": 1.0008214997564517,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-top",
+            "to": "path:1348.290:127.820:551.020",
+            "distance": 1.0058185013480072,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:summit",
+            "to": "path:1325.000:158.200:470.500",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:shelf",
+            "to": "path:1400.920:80.930:627.670",
+            "distance": 1.009806916265936,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:high-terrace",
+            "to": "path:1388.830:150.560:487.310",
+            "distance": 0.005529161781846945,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-overlook",
+            "to": "path:1354.150:128.710:552.210",
+            "distance": 1.0096000110869667,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth-lane",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          }
+        ]
+      },
+      "mode": "look"
+    },
+    {
+      "id": "quayBridge",
+      "kind": "deck-height",
+      "file": "quayBridge-deck-height.png",
+      "eye": [
+        1319.0049209191463,
+        10.6,
+        1373.7346813262561
+      ],
+      "target": [
+        1335.7223920906517,
+        10.6,
+        1362.904120126393
+      ],
+      "draw": {
+        "at": 266525.7,
+        "calls": 692,
+        "triangles": 441163,
+        "resident": 4
+      },
+      "pending": [],
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+      "region": {
+        "id": "mountainV2",
+        "mounted": false,
+        "building": false,
+        "visible": false,
+        "districts": [
+          "crown",
+          "hollow",
+          "lakeside",
+          "prow"
+        ],
+        "joins": [
+          {
+            "from": "v2:road:foot",
+            "to": "path:1282.000:54.650:720.000",
+            "distance": 0.000023035623996747745,
+            "how": "seam"
+          },
+          {
+            "from": "v2:overlook:summit",
+            "to": "path:1313.694:158.050:472.378",
+            "distance": 9.769940111747367,
+            "how": "seam"
+          },
+          {
+            "from": "v2:door:observatory",
+            "to": "path:1307.249:158.012:472.751",
+            "distance": 2.4012809084941527,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:quay",
+            "to": "path:1282.922:54.705:803.630",
+            "distance": 8.932429187352959,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:north",
+            "to": "path:1284.370:54.650:719.650",
+            "distance": 20.677926070606045,
+            "how": "seam"
+          },
+          {
+            "from": "v2:station:gondola:summit",
+            "to": "path:1298.300:158.050:481.700",
+            "distance": 0.004163056034290434,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:hearth",
+            "to": "path:1364.000:73.200:650.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:summit",
+            "to": "path:1310.000:158.000:470.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:apron:home",
+            "to": "path:1363.267:73.200:653.111",
+            "distance": 0.5282507736169731,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth",
+            "to": "path:1356.540:72.960:664.090",
+            "distance": 1.0059127674393906,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg1-steps",
+            "to": "path:1343.310:61.730:698.730",
+            "distance": 1.0010445043652418,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps",
+            "to": "path:1357.750:66.180:681.980",
+            "distance": 1.0039633572552549,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps-b",
+            "to": "path:1363.740:65.590:681.590",
+            "distance": 0.005233131752729715,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg3-steps",
+            "to": "path:1347.590:72.020:663.190",
+            "distance": 0.005740741487091112,
+            "how": "lip"
+          },
+          {
+            "from": "v2:lane:junction",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:station-steps",
+            "to": "path:1327.330:61.380:690.520",
+            "distance": 0.9996081968337618,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hairpin-2-west",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 1.005877166959262,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:library",
+            "to": "path:1354.380:90.610:604.130",
+            "distance": 1.0099854875714513,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-west",
+            "to": "path:1277.870:99.750:564.780",
+            "distance": 0.006413563022931606,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:glasshouse",
+            "to": "path:1230.860:116.010:528.260",
+            "distance": 1.009997790525484,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:clearing",
+            "to": "path:1210.830:109.780:560.740",
+            "distance": 1.0154597863578734,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:west",
+            "to": "path:1294.140:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:east",
+            "to": "path:1337.860:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-stairs",
+            "to": "path:1268.310:121.380:534.770",
+            "distance": 0.005676868224024889,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:reservoir",
+            "to": "path:1365.090:143.340:513.110",
+            "distance": 1.0059927760179226,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b3-east",
+            "to": "path:1362.740:130.060:554.900",
+            "distance": 1.007586856263229,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-east",
+            "to": "path:1339.420:93.470:590.280",
+            "distance": 0.0040743830341541205,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-steps",
+            "to": "path:1332.780:95.000:578.310",
+            "distance": 1.0008214997564517,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-top",
+            "to": "path:1348.290:127.820:551.020",
+            "distance": 1.0058185013480072,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:summit",
+            "to": "path:1325.000:158.200:470.500",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:shelf",
+            "to": "path:1400.920:80.930:627.670",
+            "distance": 1.009806916265936,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:high-terrace",
+            "to": "path:1388.830:150.560:487.310",
+            "distance": 0.005529161781846945,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-overlook",
+            "to": "path:1354.150:128.710:552.210",
+            "distance": 1.0096000110869667,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth-lane",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          }
+        ]
+      },
+      "mode": "look"
+    },
+    {
+      "id": "apronBridge",
+      "kind": "deck-height",
+      "file": "apronBridge-deck-height.png",
+      "eye": [
+        1164.8870702716902,
+        32.6,
+        930.9721699555945
+      ],
+      "target": [
+        1154.2774908071824,
+        32.6,
+        947.3130681893048
+      ],
+      "draw": {
+        "at": 308407.4,
+        "calls": 71,
+        "triangles": 71539,
+        "resident": 3
+      },
+      "pending": [],
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+      "region": {
+        "id": "mountainV2",
+        "mounted": true,
+        "building": false,
+        "visible": true,
+        "districts": [
+          "crown",
+          "hollow",
+          "lakeside",
+          "prow"
+        ],
+        "joins": [
+          {
+            "from": "v2:road:foot",
+            "to": "path:1282.000:54.650:720.000",
+            "distance": 0.000023035623996747745,
+            "how": "seam"
+          },
+          {
+            "from": "v2:overlook:summit",
+            "to": "path:1313.694:158.050:472.378",
+            "distance": 9.769940111747367,
+            "how": "seam"
+          },
+          {
+            "from": "v2:door:observatory",
+            "to": "path:1307.249:158.012:472.751",
+            "distance": 2.4012809084941527,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:quay",
+            "to": "path:1282.922:54.705:803.630",
+            "distance": 8.932429187352959,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:north",
+            "to": "path:1284.370:54.650:719.650",
+            "distance": 20.677926070606045,
+            "how": "seam"
+          },
+          {
+            "from": "v2:station:gondola:summit",
+            "to": "path:1298.300:158.050:481.700",
+            "distance": 0.004163056034290434,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:hearth",
+            "to": "path:1364.000:73.200:650.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:summit",
+            "to": "path:1310.000:158.000:470.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:apron:home",
+            "to": "path:1363.267:73.200:653.111",
+            "distance": 0.5282507736169731,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth",
+            "to": "path:1356.540:72.960:664.090",
+            "distance": 1.0059127674393906,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg1-steps",
+            "to": "path:1343.310:61.730:698.730",
+            "distance": 1.0010445043652418,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps",
+            "to": "path:1357.750:66.180:681.980",
+            "distance": 1.0039633572552549,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps-b",
+            "to": "path:1363.740:65.590:681.590",
+            "distance": 0.005233131752729715,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg3-steps",
+            "to": "path:1347.590:72.020:663.190",
+            "distance": 0.005740741487091112,
+            "how": "lip"
+          },
+          {
+            "from": "v2:lane:junction",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:station-steps",
+            "to": "path:1327.330:61.380:690.520",
+            "distance": 0.9996081968337618,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hairpin-2-west",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 1.005877166959262,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:library",
+            "to": "path:1354.380:90.610:604.130",
+            "distance": 1.0099854875714513,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-west",
+            "to": "path:1277.870:99.750:564.780",
+            "distance": 0.006413563022931606,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:glasshouse",
+            "to": "path:1230.860:116.010:528.260",
+            "distance": 1.009997790525484,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:clearing",
+            "to": "path:1210.830:109.780:560.740",
+            "distance": 1.0154597863578734,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:west",
+            "to": "path:1294.140:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:east",
+            "to": "path:1337.860:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-stairs",
+            "to": "path:1268.310:121.380:534.770",
+            "distance": 0.005676868224024889,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:reservoir",
+            "to": "path:1365.090:143.340:513.110",
+            "distance": 1.0059927760179226,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b3-east",
+            "to": "path:1362.740:130.060:554.900",
+            "distance": 1.007586856263229,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-east",
+            "to": "path:1339.420:93.470:590.280",
+            "distance": 0.0040743830341541205,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-steps",
+            "to": "path:1332.780:95.000:578.310",
+            "distance": 1.0008214997564517,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-top",
+            "to": "path:1348.290:127.820:551.020",
+            "distance": 1.0058185013480072,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:summit",
+            "to": "path:1325.000:158.200:470.500",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:shelf",
+            "to": "path:1400.920:80.930:627.670",
+            "distance": 1.009806916265936,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:high-terrace",
+            "to": "path:1388.830:150.560:487.310",
+            "distance": 0.005529161781846945,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-overlook",
+            "to": "path:1354.150:128.710:552.210",
+            "distance": 1.0096000110869667,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth-lane",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          }
+        ],
+        "triangles": 485570,
+        "drawCalls": 121,
+        "groundTriangles": 73309,
+        "benches": 1
+      },
+      "mode": "look"
+    },
+    {
+      "id": "hollowBridge",
+      "kind": "deck-height",
+      "file": "hollowBridge-deck-height.png",
+      "eye": [
+        886.9176220877954,
+        38.608279765584435,
+        587.3922657064072
+      ],
+      "target": [
+        894.9277597591574,
+        38.6,
+        605.6779565738643
+      ],
+      "draw": {
+        "at": 357322.1,
+        "calls": 372,
+        "triangles": 309706,
+        "resident": 3
+      },
+      "pending": [],
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+      "region": {
+        "id": "mountainV2",
+        "mounted": true,
+        "building": false,
+        "visible": true,
+        "districts": [
+          "crown",
+          "hollow",
+          "lakeside",
+          "prow"
+        ],
+        "joins": [
+          {
+            "from": "v2:road:foot",
+            "to": "path:1282.000:54.650:720.000",
+            "distance": 0.000023035623996747745,
+            "how": "seam"
+          },
+          {
+            "from": "v2:overlook:summit",
+            "to": "path:1313.694:158.050:472.378",
+            "distance": 9.769940111747367,
+            "how": "seam"
+          },
+          {
+            "from": "v2:door:observatory",
+            "to": "path:1307.249:158.012:472.751",
+            "distance": 2.4012809084941527,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:quay",
+            "to": "path:1282.922:54.705:803.630",
+            "distance": 8.932429187352959,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:north",
+            "to": "path:1284.370:54.650:719.650",
+            "distance": 20.677926070606045,
+            "how": "seam"
+          },
+          {
+            "from": "v2:station:gondola:summit",
+            "to": "path:1298.300:158.050:481.700",
+            "distance": 0.004163056034290434,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:hearth",
+            "to": "path:1364.000:73.200:650.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:summit",
+            "to": "path:1310.000:158.000:470.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:apron:home",
+            "to": "path:1363.267:73.200:653.111",
+            "distance": 0.5282507736169731,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth",
+            "to": "path:1356.540:72.960:664.090",
+            "distance": 1.0059127674393906,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg1-steps",
+            "to": "path:1343.310:61.730:698.730",
+            "distance": 1.0010445043652418,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps",
+            "to": "path:1357.750:66.180:681.980",
+            "distance": 1.0039633572552549,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps-b",
+            "to": "path:1363.740:65.590:681.590",
+            "distance": 0.005233131752729715,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg3-steps",
+            "to": "path:1347.590:72.020:663.190",
+            "distance": 0.005740741487091112,
+            "how": "lip"
+          },
+          {
+            "from": "v2:lane:junction",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:station-steps",
+            "to": "path:1327.330:61.380:690.520",
+            "distance": 0.9996081968337618,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hairpin-2-west",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 1.005877166959262,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:library",
+            "to": "path:1354.380:90.610:604.130",
+            "distance": 1.0099854875714513,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-west",
+            "to": "path:1277.870:99.750:564.780",
+            "distance": 0.006413563022931606,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:glasshouse",
+            "to": "path:1230.860:116.010:528.260",
+            "distance": 1.009997790525484,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:clearing",
+            "to": "path:1210.830:109.780:560.740",
+            "distance": 1.0154597863578734,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:west",
+            "to": "path:1294.140:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:east",
+            "to": "path:1337.860:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-stairs",
+            "to": "path:1268.310:121.380:534.770",
+            "distance": 0.005676868224024889,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:reservoir",
+            "to": "path:1365.090:143.340:513.110",
+            "distance": 1.0059927760179226,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b3-east",
+            "to": "path:1362.740:130.060:554.900",
+            "distance": 1.007586856263229,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-east",
+            "to": "path:1339.420:93.470:590.280",
+            "distance": 0.0040743830341541205,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-steps",
+            "to": "path:1332.780:95.000:578.310",
+            "distance": 1.0008214997564517,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-top",
+            "to": "path:1348.290:127.820:551.020",
+            "distance": 1.0058185013480072,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:summit",
+            "to": "path:1325.000:158.200:470.500",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:shelf",
+            "to": "path:1400.920:80.930:627.670",
+            "distance": 1.009806916265936,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:high-terrace",
+            "to": "path:1388.830:150.560:487.310",
+            "distance": 0.005529161781846945,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-overlook",
+            "to": "path:1354.150:128.710:552.210",
+            "distance": 1.0096000110869667,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth-lane",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          }
+        ],
+        "triangles": 485570,
+        "drawCalls": 121,
+        "groundTriangles": 73309,
+        "benches": 1
+      },
+      "mode": "look"
+    },
+    {
+      "id": "mountainRoadCanalBridge",
+      "kind": "deck-height",
+      "file": "mountainRoadCanalBridge-deck-height.png",
+      "eye": [
+        1306.7276276401517,
+        57.55379289594693,
+        751.2195486546258
+      ],
+      "target": [
+        1288.1706300824944,
+        57.201650580536956,
+        743.8463966004098
+      ],
+      "draw": {
+        "at": 497083.2,
+        "calls": 144,
+        "triangles": 478499,
+        "resident": 4
+      },
+      "pending": [],
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+      "region": {
+        "id": "mountainV2",
+        "mounted": true,
+        "building": false,
+        "visible": true,
+        "districts": [
+          "crown",
+          "hollow",
+          "lakeside",
+          "prow"
+        ],
+        "joins": [
+          {
+            "from": "v2:road:foot",
+            "to": "path:1282.000:54.650:720.000",
+            "distance": 0.000023035623996747745,
+            "how": "seam"
+          },
+          {
+            "from": "v2:overlook:summit",
+            "to": "path:1313.694:158.050:472.378",
+            "distance": 9.769940111747367,
+            "how": "seam"
+          },
+          {
+            "from": "v2:door:observatory",
+            "to": "path:1307.249:158.012:472.751",
+            "distance": 2.4012809084941527,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:quay",
+            "to": "path:1282.922:54.705:803.630",
+            "distance": 8.932429187352959,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:north",
+            "to": "path:1284.370:54.650:719.650",
+            "distance": 20.677926070606045,
+            "how": "seam"
+          },
+          {
+            "from": "v2:station:gondola:summit",
+            "to": "path:1298.300:158.050:481.700",
+            "distance": 0.004163056034290434,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:hearth",
+            "to": "path:1364.000:73.200:650.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:summit",
+            "to": "path:1310.000:158.000:470.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:apron:home",
+            "to": "path:1363.267:73.200:653.111",
+            "distance": 0.5282507736169731,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth",
+            "to": "path:1356.540:72.960:664.090",
+            "distance": 1.0059127674393906,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg1-steps",
+            "to": "path:1343.310:61.730:698.730",
+            "distance": 1.0010445043652418,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps",
+            "to": "path:1357.750:66.180:681.980",
+            "distance": 1.0039633572552549,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps-b",
+            "to": "path:1363.740:65.590:681.590",
+            "distance": 0.005233131752729715,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg3-steps",
+            "to": "path:1347.590:72.020:663.190",
+            "distance": 0.005740741487091112,
+            "how": "lip"
+          },
+          {
+            "from": "v2:lane:junction",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:station-steps",
+            "to": "path:1327.330:61.380:690.520",
+            "distance": 0.9996081968337618,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hairpin-2-west",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 1.005877166959262,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:library",
+            "to": "path:1354.380:90.610:604.130",
+            "distance": 1.0099854875714513,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-west",
+            "to": "path:1277.870:99.750:564.780",
+            "distance": 0.006413563022931606,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:glasshouse",
+            "to": "path:1230.860:116.010:528.260",
+            "distance": 1.009997790525484,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:clearing",
+            "to": "path:1210.830:109.780:560.740",
+            "distance": 1.0154597863578734,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:west",
+            "to": "path:1294.140:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:east",
+            "to": "path:1337.860:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-stairs",
+            "to": "path:1268.310:121.380:534.770",
+            "distance": 0.005676868224024889,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:reservoir",
+            "to": "path:1365.090:143.340:513.110",
+            "distance": 1.0059927760179226,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b3-east",
+            "to": "path:1362.740:130.060:554.900",
+            "distance": 1.007586856263229,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-east",
+            "to": "path:1339.420:93.470:590.280",
+            "distance": 0.0040743830341541205,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-steps",
+            "to": "path:1332.780:95.000:578.310",
+            "distance": 1.0008214997564517,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-top",
+            "to": "path:1348.290:127.820:551.020",
+            "distance": 1.0058185013480072,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:summit",
+            "to": "path:1325.000:158.200:470.500",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:shelf",
+            "to": "path:1400.920:80.930:627.670",
+            "distance": 1.009806916265936,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:high-terrace",
+            "to": "path:1388.830:150.560:487.310",
+            "distance": 0.005529161781846945,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-overlook",
+            "to": "path:1354.150:128.710:552.210",
+            "distance": 1.0096000110869667,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth-lane",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          }
+        ],
+        "triangles": 485570,
+        "drawCalls": 121,
+        "groundTriangles": 73309,
+        "benches": 1
+      },
+      "mode": "look"
+    },
+    {
+      "id": "prowLoopFootbridge",
+      "kind": "deck-height",
+      "file": "prowLoopFootbridge-deck-height.png",
+      "eye": [
+        1604.0101429269998,
+        47.3889265255005,
+        676.5342693443681
+      ],
+      "target": [
+        1608.3834116463752,
+        48.94064495560097,
+        696.0485420903966
+      ],
+      "draw": {
+        "at": 563097.3,
+        "calls": 316,
+        "triangles": 171701,
+        "resident": 2
+      },
+      "pending": [],
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+      "region": {
+        "id": "mountainV2",
+        "mounted": true,
+        "building": false,
+        "visible": true,
+        "districts": [
+          "crown",
+          "hollow",
+          "lakeside",
+          "prow"
+        ],
+        "joins": [
+          {
+            "from": "v2:road:foot",
+            "to": "path:1282.000:54.650:720.000",
+            "distance": 0.000023035623996747745,
+            "how": "seam"
+          },
+          {
+            "from": "v2:overlook:summit",
+            "to": "path:1313.694:158.050:472.378",
+            "distance": 9.769940111747367,
+            "how": "seam"
+          },
+          {
+            "from": "v2:door:observatory",
+            "to": "path:1307.249:158.012:472.751",
+            "distance": 2.4012809084941527,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:quay",
+            "to": "path:1282.922:54.705:803.630",
+            "distance": 8.932429187352959,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:north",
+            "to": "path:1284.370:54.650:719.650",
+            "distance": 20.677926070606045,
+            "how": "seam"
+          },
+          {
+            "from": "v2:station:gondola:summit",
+            "to": "path:1298.300:158.050:481.700",
+            "distance": 0.004163056034290434,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:hearth",
+            "to": "path:1364.000:73.200:650.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:summit",
+            "to": "path:1310.000:158.000:470.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:apron:home",
+            "to": "path:1363.267:73.200:653.111",
+            "distance": 0.5282507736169731,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth",
+            "to": "path:1356.540:72.960:664.090",
+            "distance": 1.0059127674393906,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg1-steps",
+            "to": "path:1343.310:61.730:698.730",
+            "distance": 1.0010445043652418,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps",
+            "to": "path:1357.750:66.180:681.980",
+            "distance": 1.0039633572552549,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps-b",
+            "to": "path:1363.740:65.590:681.590",
+            "distance": 0.005233131752729715,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg3-steps",
+            "to": "path:1347.590:72.020:663.190",
+            "distance": 0.005740741487091112,
+            "how": "lip"
+          },
+          {
+            "from": "v2:lane:junction",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:station-steps",
+            "to": "path:1327.330:61.380:690.520",
+            "distance": 0.9996081968337618,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hairpin-2-west",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 1.005877166959262,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:library",
+            "to": "path:1354.380:90.610:604.130",
+            "distance": 1.0099854875714513,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-west",
+            "to": "path:1277.870:99.750:564.780",
+            "distance": 0.006413563022931606,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:glasshouse",
+            "to": "path:1230.860:116.010:528.260",
+            "distance": 1.009997790525484,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:clearing",
+            "to": "path:1210.830:109.780:560.740",
+            "distance": 1.0154597863578734,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:west",
+            "to": "path:1294.140:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:east",
+            "to": "path:1337.860:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-stairs",
+            "to": "path:1268.310:121.380:534.770",
+            "distance": 0.005676868224024889,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:reservoir",
+            "to": "path:1365.090:143.340:513.110",
+            "distance": 1.0059927760179226,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b3-east",
+            "to": "path:1362.740:130.060:554.900",
+            "distance": 1.007586856263229,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-east",
+            "to": "path:1339.420:93.470:590.280",
+            "distance": 0.0040743830341541205,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-steps",
+            "to": "path:1332.780:95.000:578.310",
+            "distance": 1.0008214997564517,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-top",
+            "to": "path:1348.290:127.820:551.020",
+            "distance": 1.0058185013480072,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:summit",
+            "to": "path:1325.000:158.200:470.500",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:shelf",
+            "to": "path:1400.920:80.930:627.670",
+            "distance": 1.009806916265936,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:high-terrace",
+            "to": "path:1388.830:150.560:487.310",
+            "distance": 0.005529161781846945,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-overlook",
+            "to": "path:1354.150:128.710:552.210",
+            "distance": 1.0096000110869667,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth-lane",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          }
+        ],
+        "triangles": 485570,
+        "drawCalls": 121,
+        "groundTriangles": 73309,
+        "benches": 1
+      },
+      "mode": "look"
+    },
+    {
+      "id": "bightSpurTrestle",
+      "kind": "deck-height",
+      "file": "bightSpurTrestle-deck-height.png",
+      "eye": [
+        921.7481099586033,
+        29.117928023498905,
+        875.2583288893522
+      ],
+      "target": [
+        904.6213131749519,
+        27.49820118757381,
+        885.4129246690828
+      ],
+      "draw": {
+        "at": 568980.3,
+        "calls": 84,
+        "triangles": 148009,
+        "resident": 4
+      },
+      "pending": [],
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+      "region": {
+        "id": "mountainV2",
+        "mounted": true,
+        "building": false,
+        "visible": true,
+        "districts": [
+          "crown",
+          "hollow",
+          "lakeside",
+          "prow"
+        ],
+        "joins": [
+          {
+            "from": "v2:road:foot",
+            "to": "path:1282.000:54.650:720.000",
+            "distance": 0.000023035623996747745,
+            "how": "seam"
+          },
+          {
+            "from": "v2:overlook:summit",
+            "to": "path:1313.694:158.050:472.378",
+            "distance": 9.769940111747367,
+            "how": "seam"
+          },
+          {
+            "from": "v2:door:observatory",
+            "to": "path:1307.249:158.012:472.751",
+            "distance": 2.4012809084941527,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:quay",
+            "to": "path:1282.922:54.705:803.630",
+            "distance": 8.932429187352959,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:north",
+            "to": "path:1284.370:54.650:719.650",
+            "distance": 20.677926070606045,
+            "how": "seam"
+          },
+          {
+            "from": "v2:station:gondola:summit",
+            "to": "path:1298.300:158.050:481.700",
+            "distance": 0.004163056034290434,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:hearth",
+            "to": "path:1364.000:73.200:650.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:summit",
+            "to": "path:1310.000:158.000:470.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:apron:home",
+            "to": "path:1363.267:73.200:653.111",
+            "distance": 0.5282507736169731,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth",
+            "to": "path:1356.540:72.960:664.090",
+            "distance": 1.0059127674393906,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg1-steps",
+            "to": "path:1343.310:61.730:698.730",
+            "distance": 1.0010445043652418,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps",
+            "to": "path:1357.750:66.180:681.980",
+            "distance": 1.0039633572552549,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps-b",
+            "to": "path:1363.740:65.590:681.590",
+            "distance": 0.005233131752729715,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg3-steps",
+            "to": "path:1347.590:72.020:663.190",
+            "distance": 0.005740741487091112,
+            "how": "lip"
+          },
+          {
+            "from": "v2:lane:junction",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:station-steps",
+            "to": "path:1327.330:61.380:690.520",
+            "distance": 0.9996081968337618,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hairpin-2-west",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 1.005877166959262,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:library",
+            "to": "path:1354.380:90.610:604.130",
+            "distance": 1.0099854875714513,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-west",
+            "to": "path:1277.870:99.750:564.780",
+            "distance": 0.006413563022931606,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:glasshouse",
+            "to": "path:1230.860:116.010:528.260",
+            "distance": 1.009997790525484,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:clearing",
+            "to": "path:1210.830:109.780:560.740",
+            "distance": 1.0154597863578734,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:west",
+            "to": "path:1294.140:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:east",
+            "to": "path:1337.860:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-stairs",
+            "to": "path:1268.310:121.380:534.770",
+            "distance": 0.005676868224024889,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:reservoir",
+            "to": "path:1365.090:143.340:513.110",
+            "distance": 1.0059927760179226,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b3-east",
+            "to": "path:1362.740:130.060:554.900",
+            "distance": 1.007586856263229,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-east",
+            "to": "path:1339.420:93.470:590.280",
+            "distance": 0.0040743830341541205,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-steps",
+            "to": "path:1332.780:95.000:578.310",
+            "distance": 1.0008214997564517,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-top",
+            "to": "path:1348.290:127.820:551.020",
+            "distance": 1.0058185013480072,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:summit",
+            "to": "path:1325.000:158.200:470.500",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:shelf",
+            "to": "path:1400.920:80.930:627.670",
+            "distance": 1.009806916265936,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:high-terrace",
+            "to": "path:1388.830:150.560:487.310",
+            "distance": 0.005529161781846945,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-overlook",
+            "to": "path:1354.150:128.710:552.210",
+            "distance": 1.0096000110869667,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth-lane",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          }
+        ],
+        "triangles": 485570,
+        "drawCalls": 121,
+        "groundTriangles": 73309,
+        "benches": 1
+      },
+      "mode": "look"
+    },
+    {
+      "id": "gardenWalkBridge",
+      "kind": "deck-height",
+      "file": "gardenWalkBridge-deck-height.png",
+      "eye": [
+        952.8158680768836,
+        51.74548516338226,
+        748.5501697980807
+      ],
+      "target": [
+        967.236246251528,
+        54.14547523188858,
+        762.3805917448835
+      ],
+      "draw": {
+        "at": 573746.8,
+        "calls": 774,
+        "triangles": 897491,
+        "resident": 4
+      },
+      "pending": [],
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+      "region": {
+        "id": "mountainV2",
+        "mounted": true,
+        "building": false,
+        "visible": true,
+        "districts": [
+          "crown",
+          "hollow",
+          "lakeside",
+          "prow"
+        ],
+        "joins": [
+          {
+            "from": "v2:road:foot",
+            "to": "path:1282.000:54.650:720.000",
+            "distance": 0.000023035623996747745,
+            "how": "seam"
+          },
+          {
+            "from": "v2:overlook:summit",
+            "to": "path:1313.694:158.050:472.378",
+            "distance": 9.769940111747367,
+            "how": "seam"
+          },
+          {
+            "from": "v2:door:observatory",
+            "to": "path:1307.249:158.012:472.751",
+            "distance": 2.4012809084941527,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:quay",
+            "to": "path:1282.922:54.705:803.630",
+            "distance": 8.932429187352959,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:north",
+            "to": "path:1284.370:54.650:719.650",
+            "distance": 20.677926070606045,
+            "how": "seam"
+          },
+          {
+            "from": "v2:station:gondola:summit",
+            "to": "path:1298.300:158.050:481.700",
+            "distance": 0.004163056034290434,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:hearth",
+            "to": "path:1364.000:73.200:650.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:summit",
+            "to": "path:1310.000:158.000:470.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:apron:home",
+            "to": "path:1363.267:73.200:653.111",
+            "distance": 0.5282507736169731,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth",
+            "to": "path:1356.540:72.960:664.090",
+            "distance": 1.0059127674393906,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg1-steps",
+            "to": "path:1343.310:61.730:698.730",
+            "distance": 1.0010445043652418,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps",
+            "to": "path:1357.750:66.180:681.980",
+            "distance": 1.0039633572552549,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps-b",
+            "to": "path:1363.740:65.590:681.590",
+            "distance": 0.005233131752729715,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg3-steps",
+            "to": "path:1347.590:72.020:663.190",
+            "distance": 0.005740741487091112,
+            "how": "lip"
+          },
+          {
+            "from": "v2:lane:junction",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:station-steps",
+            "to": "path:1327.330:61.380:690.520",
+            "distance": 0.9996081968337618,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hairpin-2-west",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 1.005877166959262,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:library",
+            "to": "path:1354.380:90.610:604.130",
+            "distance": 1.0099854875714513,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-west",
+            "to": "path:1277.870:99.750:564.780",
+            "distance": 0.006413563022931606,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:glasshouse",
+            "to": "path:1230.860:116.010:528.260",
+            "distance": 1.009997790525484,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:clearing",
+            "to": "path:1210.830:109.780:560.740",
+            "distance": 1.0154597863578734,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:west",
+            "to": "path:1294.140:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:east",
+            "to": "path:1337.860:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-stairs",
+            "to": "path:1268.310:121.380:534.770",
+            "distance": 0.005676868224024889,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:reservoir",
+            "to": "path:1365.090:143.340:513.110",
+            "distance": 1.0059927760179226,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b3-east",
+            "to": "path:1362.740:130.060:554.900",
+            "distance": 1.007586856263229,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-east",
+            "to": "path:1339.420:93.470:590.280",
+            "distance": 0.0040743830341541205,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-steps",
+            "to": "path:1332.780:95.000:578.310",
+            "distance": 1.0008214997564517,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-top",
+            "to": "path:1348.290:127.820:551.020",
+            "distance": 1.0058185013480072,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:summit",
+            "to": "path:1325.000:158.200:470.500",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:shelf",
+            "to": "path:1400.920:80.930:627.670",
+            "distance": 1.009806916265936,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:high-terrace",
+            "to": "path:1388.830:150.560:487.310",
+            "distance": 0.005529161781846945,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-overlook",
+            "to": "path:1354.150:128.710:552.210",
+            "distance": 1.0096000110869667,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth-lane",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          }
+        ],
+        "triangles": 485570,
+        "drawCalls": 121,
+        "groundTriangles": 73309,
+        "benches": 1
+      },
+      "mode": "look"
+    },
+    {
+      "id": "reachBoardwalk",
+      "kind": "deck-height",
+      "file": "reachBoardwalk-deck-height.png",
+      "eye": [
+        1240.971909077723,
+        6.6,
+        1198.8676947004315
+      ],
+      "target": [
+        1246.5766841212653,
+        6.6,
+        1218.0662574694356
+      ],
+      "draw": {
+        "at": 585463,
+        "calls": 62,
+        "triangles": 151769,
+        "resident": 3
+      },
+      "pending": [],
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+      "region": {
+        "id": "mountainV2",
+        "mounted": true,
+        "building": false,
+        "visible": false,
+        "districts": [
+          "crown",
+          "hollow",
+          "lakeside",
+          "prow"
+        ],
+        "joins": [
+          {
+            "from": "v2:road:foot",
+            "to": "path:1282.000:54.650:720.000",
+            "distance": 0.000023035623996747745,
+            "how": "seam"
+          },
+          {
+            "from": "v2:overlook:summit",
+            "to": "path:1313.694:158.050:472.378",
+            "distance": 9.769940111747367,
+            "how": "seam"
+          },
+          {
+            "from": "v2:door:observatory",
+            "to": "path:1307.249:158.012:472.751",
+            "distance": 2.4012809084941527,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:quay",
+            "to": "path:1282.922:54.705:803.630",
+            "distance": 8.932429187352959,
+            "how": "seam"
+          },
+          {
+            "from": "v2:town:north",
+            "to": "path:1284.370:54.650:719.650",
+            "distance": 20.677926070606045,
+            "how": "seam"
+          },
+          {
+            "from": "v2:station:gondola:summit",
+            "to": "path:1298.300:158.050:481.700",
+            "distance": 0.004163056034290434,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:hearth",
+            "to": "path:1364.000:73.200:650.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:district:summit",
+            "to": "path:1310.000:158.000:470.000",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:apron:home",
+            "to": "path:1363.267:73.200:653.111",
+            "distance": 0.5282507736169731,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth",
+            "to": "path:1356.540:72.960:664.090",
+            "distance": 1.0059127674393906,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg1-steps",
+            "to": "path:1343.310:61.730:698.730",
+            "distance": 1.0010445043652418,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps",
+            "to": "path:1357.750:66.180:681.980",
+            "distance": 1.0039633572552549,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg2-steps-b",
+            "to": "path:1363.740:65.590:681.590",
+            "distance": 0.005233131752729715,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:leg3-steps",
+            "to": "path:1347.590:72.020:663.190",
+            "distance": 0.005740741487091112,
+            "how": "lip"
+          },
+          {
+            "from": "v2:lane:junction",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:station-steps",
+            "to": "path:1327.330:61.380:690.520",
+            "distance": 0.9996081968337618,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hairpin-2-west",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 1.005877166959262,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:library",
+            "to": "path:1354.380:90.610:604.130",
+            "distance": 1.0099854875714513,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-west",
+            "to": "path:1277.870:99.750:564.780",
+            "distance": 0.006413563022931606,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:glasshouse",
+            "to": "path:1230.860:116.010:528.260",
+            "distance": 1.009997790525484,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:clearing",
+            "to": "path:1210.830:109.780:560.740",
+            "distance": 1.0154597863578734,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:west",
+            "to": "path:1294.140:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:dam:east",
+            "to": "path:1337.860:142.000:526.540",
+            "distance": 1.2014127940559949,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-stairs",
+            "to": "path:1268.310:121.380:534.770",
+            "distance": 0.005676868224024889,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:reservoir",
+            "to": "path:1365.090:143.340:513.110",
+            "distance": 1.0059927760179226,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b3-east",
+            "to": "path:1362.740:130.060:554.900",
+            "distance": 1.007586856263229,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:b2-east",
+            "to": "path:1339.420:93.470:590.280",
+            "distance": 0.0040743830341541205,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-steps",
+            "to": "path:1332.780:95.000:578.310",
+            "distance": 1.0008214997564517,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:rim-top",
+            "to": "path:1348.290:127.820:551.020",
+            "distance": 1.0058185013480072,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:summit",
+            "to": "path:1325.000:158.200:470.500",
+            "distance": 0,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:shelf",
+            "to": "path:1400.920:80.930:627.670",
+            "distance": 1.009806916265936,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:high-terrace",
+            "to": "path:1388.830:150.560:487.310",
+            "distance": 0.005529161781846945,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:dam-overlook",
+            "to": "path:1354.150:128.710:552.210",
+            "distance": 1.0096000110869667,
+            "how": "lip"
+          },
+          {
+            "from": "v2:road:hearth-lane",
+            "to": "path:1327.070:69.700:670.320",
+            "distance": 0.9967740903536644,
+            "how": "lip"
+          }
+        ],
+        "triangles": 0,
+        "drawCalls": 0,
+        "groundTriangles": 73309,
+        "benches": 1
+      },
+      "mode": "look"
+    }
+  ],
+  "errors": []
+}

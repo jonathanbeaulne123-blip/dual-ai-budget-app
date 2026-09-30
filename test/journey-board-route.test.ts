@@ -536,7 +536,11 @@ describe("pieces, dressings and the flat twin", () => {
     expect(new Set(flatIds)).toEqual(new Set(boardMarkIds(board, route)));
     const h = mount("full");
     h.scene.renderNow();
-    const sceneIds = h.anchors().map((a) => a.id).filter((id) => !id.startsWith("district:") && !id.startsWith("preview:"));
+    // Landmark labels, like district names, are passive land overlays, not BoardFlat action marks.
+    // Keep exact financial mark parity, and separately prove every bridge identity reaches the overlay.
+    expect(h.anchors().filter(a=>a.bridge).map(a=>({id:a.id,bridge:a.bridge}))).toEqual(
+      land.bridges!.filter(b=>b.landmark).map(b=>({id:`bridge:${b.id}`,bridge:b.landmark})));
+    const sceneIds = h.anchors().filter(a=>!a.bridge).map((a) => a.id).filter((id) => !id.startsWith("district:") && !id.startsWith("preview:"));
     expect(new Set(sceneIds)).toEqual(new Set(flatIds));
     expect(html).toContain('data-kind="piece"');
     expect(html).toContain('aria-hidden="true"');

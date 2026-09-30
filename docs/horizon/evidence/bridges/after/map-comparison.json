@@ -1,0 +1,410 @@
+[
+  {
+    "width": 320,
+    "file": "after-classic-bight-region.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 84.54531860351562,
+          "y": 318.1000061035156,
+          "width": 158.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 320,
+    "file": "after-classic-bight-stop.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 92.74531555175781,
+          "y": 236.39999389648438,
+          "width": 158.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 320,
+    "file": "after-taylor-bight-region.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 84.54531860351562,
+          "y": 318.1000061035156,
+          "width": 158.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 320,
+    "file": "after-taylor-bight-stop.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 92.74531555175781,
+          "y": 236.39999389648438,
+          "width": 158.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 320,
+    "file": "after-newfoundland-bight-region.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 85.54531860351562,
+          "y": 318.1000061035156,
+          "width": 156.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 320,
+    "file": "after-newfoundland-bight-stop.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 93.74531555175781,
+          "y": 236.39999389648438,
+          "width": 156.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 390,
+    "file": "after-classic-bight-region.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 119.54531860351562,
+          "y": 318.1000061035156,
+          "width": 158.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 390,
+    "file": "after-classic-bight-stop.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 127.74531555175781,
+          "y": 236.39999389648438,
+          "width": 158.10935974121094,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 390,
+    "file": "after-taylor-bight-region.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 119.54531860351562,
+          "y": 318.1000061035156,
+          "width": 158.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 390,
+    "file": "after-taylor-bight-stop.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 127.74531555175781,
+          "y": 236.39999389648438,
+          "width": 158.10935974121094,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 390,
+    "file": "after-newfoundland-bight-region.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 120.54531860351562,
+          "y": 318.1000061035156,
+          "width": 156.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 390,
+    "file": "after-newfoundland-bight-stop.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 128.7453155517578,
+          "y": 236.39999389648438,
+          "width": 156.10935974121094,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 720,
+    "file": "after-classic-bight-region.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 284.5453186035156,
+          "y": 318.1000061035156,
+          "width": 158.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 720,
+    "file": "after-classic-bight-stop.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 292.74530029296875,
+          "y": 236.39999389648438,
+          "width": 158.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 720,
+    "file": "after-taylor-bight-region.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 284.5453186035156,
+          "y": 318.1000061035156,
+          "width": 158.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 720,
+    "file": "after-taylor-bight-stop.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 292.74530029296875,
+          "y": 236.39999389648438,
+          "width": 158.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 720,
+    "file": "after-newfoundland-bight-region.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 285.5453186035156,
+          "y": 318.1000061035156,
+          "width": 156.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 720,
+    "file": "after-newfoundland-bight-stop.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 293.74530029296875,
+          "y": 236.39999389648438,
+          "width": 156.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 1100,
+    "file": "after-classic-bight-region.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 474.5452880859375,
+          "y": 318.1000061035156,
+          "width": 158.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 1100,
+    "file": "after-classic-bight-stop.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 482.74530029296875,
+          "y": 236.39999389648438,
+          "width": 158.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 1100,
+    "file": "after-taylor-bight-region.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 474.5452880859375,
+          "y": 318.1000061035156,
+          "width": 158.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 1100,
+    "file": "after-taylor-bight-stop.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 482.74530029296875,
+          "y": 236.39999389648438,
+          "width": 158.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 1100,
+    "file": "after-newfoundland-bight-region.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 475.5452880859375,
+          "y": 318.1000061035156,
+          "width": 156.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  },
+  {
+    "width": 1100,
+    "file": "after-newfoundland-bight-stop.png",
+    "labels": [
+      {
+        "text": "Suspension Bridge",
+        "rect": {
+          "x": 483.74530029296875,
+          "y": 236.39999389648438,
+          "width": 156.109375,
+          "height": 28
+        },
+        "clipped": false
+      }
+    ],
+    "drawCalls": 28
+  }
+]

@@ -1,0 +1,779 @@
+{
+ "set": "before",
+ "sha": "e77309efbc48a76e8328f2b427613ecc6082bb61",
+ "dirtyTree": false,
+ "url": "http://127.0.0.1:5197/horizon-review.html?world=horizon&tier=full&date=2026-06-21&sun=13:00",
+ "method": "headless Chromium (SwiftShader) on the review harness; look poses via __harbour.world.views + shot(); rides via restore + toggleCruiser + input/simulateMotion (the live controller and collision). Not device evidence.",
+ "command": "node scripts/horizon/capture-road.mjs --set before --out docs/horizon/evidence/bridges/before/road-approaches --only bight-bridge,quay-bridge,v03-canal-bridge,vg-high-span",
+ "viewport": {
+  "width": 1280,
+  "height": 800
+ },
+ "date": "2026-06-21",
+ "times": {
+  "day": "13:00",
+  "night": "22:30"
+ },
+ "driverEye": {
+  "heightOverSurface": 1.9,
+  "rightLaneOffset": 2,
+  "lookAhead": 40,
+  "verticalFovDegrees": 58
+ },
+ "beds": {
+  "V01": {
+   "id": "V01",
+   "kind": "road",
+   "profile": "road",
+   "surface": "paved",
+   "width": 8,
+   "structureIds": [
+    "prowTunnel",
+    "quayBridge",
+    "bightBridge"
+   ],
+   "districtIds": [
+    "harbour",
+    "prow",
+    "crown",
+    "scholars",
+    "flats",
+    "bight",
+    "landing",
+    "reach"
+   ],
+   "pointCount": 794
+  },
+  "V03": {
+   "id": "V03",
+   "kind": "road",
+   "profile": "road",
+   "surface": "paved",
+   "width": 8,
+   "structureIds": [
+    "mountainRoadTunnel",
+    "mountainRoadCanalBridge"
+   ],
+   "districtIds": [
+    "prow",
+    "lakeside"
+   ],
+   "pointCount": 74
+  },
+  "VG": {
+   "id": "VG",
+   "kind": "road",
+   "profile": "road",
+   "surface": "paved",
+   "width": 8,
+   "structureIds": [
+    "highSpan"
+   ],
+   "districtIds": [
+    "harbour",
+    "notch",
+    "green",
+    "lakeside",
+    "hollow",
+    "scholars"
+   ],
+   "pointCount": 243
+  }
+ },
+ "runSeconds": 437,
+ "totalPngBytes": 2930316,
+ "compressed": false,
+ "records": [
+  {
+   "file": "before_01_bight-bridge-west-approach_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "bight-bridge-west-approach",
+   "note": "approaching the Bight Bridge west end [460,1030]",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 2535.4,
+    "index": 515,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    433.49,
+    16.67,
+    999.96
+   ],
+   "target": [
+    458.82,
+    13.9,
+    1031.62
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 14.766729714207543,
+    "id": "V01.corridor.deck.1.flats@bight"
+   },
+   "surfaceUnderTarget": {
+    "y": 12.001860659941093,
+    "id": "V01.corridor.deck.1.bight@bight"
+   },
+   "bedY": 14.77,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 335,
+    "triangles": 122682,
+    "resident": 3,
+    "frameMsMedian": 4266.5,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      433.4891350810917,
+      16.66672971420754,
+      999.9582976300769
+     ],
+     "target": [
+      458.82083756125445,
+      13.901860659941093,
+      1031.6154181944783
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_bight-bridge-west-approach"
+   },
+   "errors": [
+    {
+     "at": 0,
+     "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    }
+   ]
+  },
+  {
+   "file": "before_02_bight-bridge-deck_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "bight-bridge-deck",
+   "note": "on the Bight Bridge deck",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 2697.4,
+    "index": 549,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    558.85,
+    13.9,
+    1101.64
+   ],
+   "target": [
+    591.62,
+    13.9,
+    1124.58
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 12.000000000000002,
+    "id": "bightBridge.deck@bight"
+   },
+   "surfaceUnderTarget": {
+    "y": 12,
+    "id": "bightBridge.deck@bight"
+   },
+   "bedY": 12,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 316,
+    "triangles": 76146,
+    "resident": 3,
+    "frameMsMedian": 4266.5,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      558.8530753112302,
+      13.900000000000002,
+      1101.6384638410407
+     ],
+     "target": [
+      591.6223521317726,
+      13.9,
+      1124.5769576158186
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_bight-bridge-deck"
+   },
+   "errors": []
+  },
+  {
+   "file": "before_03_bight-bridge-east-approach_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "bight-bridge-east-approach",
+   "note": "approaching the Bight Bridge east end [660,1170] against point order",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 2859.5,
+    "index": 581,
+    "dir": -1,
+    "length": 3891.3
+   },
+   "eye": [
+    693.2,
+    12.09,
+    1192.48
+   ],
+   "target": [
+    661.15,
+    13.9,
+    1168.36
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 10.185618278457804,
+    "id": "yearWalk.bed.bight@bight"
+   },
+   "surfaceUnderTarget": {
+    "y": 12,
+    "id": "bightBridge.deck@bight"
+   },
+   "bedY": 10.18,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 107,
+    "triangles": 268242,
+    "resident": 4,
+    "frameMsMedian": 2833.2,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      693.2021351603693,
+      12.085618278457805,
+      1192.4795970087089
+     ],
+     "target": [
+      661.1512282790935,
+      13.9,
+      1168.3645571090938
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_bight-bridge-east-approach"
+   },
+   "errors": []
+  },
+  {
+   "file": "before_04_quay-bridge-approach_13-00.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "quay-bridge-approach",
+   "note": "approaching the Quay Bridge [1350,1345] (90 m, h 9)",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 3519.9,
+    "index": 713,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    1288.6,
+    9.07,
+    1384.2
+   ],
+   "target": [
+    1327.1,
+    10.9,
+    1371.72
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 7.174949000867082,
+    "id": "V01.corridor.deck.2.landing@reach"
+   },
+   "surfaceUnderTarget": {
+    "y": 9,
+    "id": "quayBridge.deck@reach"
+   },
+   "bedY": 7.17,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 342,
+    "triangles": 210549,
+    "resident": 3,
+    "frameMsMedian": 16.8,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1288.6028198259733,
+      9.074949000867083,
+      1384.2048507451407
+     ],
+     "target": [
+      1327.1029155471992,
+      10.9,
+      1371.7246793851775
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_quay-bridge-approach"
+   },
+   "errors": []
+  },
+  {
+   "file": "before_05_v03-canal-bridge_13-00.png",
+   "kind": "driver",
+   "route": "V03",
+   "label": "v03-canal-bridge",
+   "note": "V03 into the canal bridge and the Mountain v2 town lane",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 270,
+    "index": 60,
+    "dir": 1,
+    "length": 327.4
+   },
+   "eye": [
+    1335.42,
+    56.99,
+    761.76
+   ],
+   "target": [
+    1298.87,
+    57.86,
+    745.46
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 55.09050903767591,
+    "id": "V03.corridor.deck.2.lakeside@lakeside"
+   },
+   "surfaceUnderTarget": {
+    "y": 55.96378449712867,
+    "id": "mountainRoadCanalBridge.deck@lakeside"
+   },
+   "bedY": 55.09,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 155,
+    "triangles": 470480,
+    "resident": 4,
+    "frameMsMedian": 16.7,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1335.4159613541033,
+      56.990509037675906,
+      761.7557700934051
+     ],
+     "target": [
+      1298.8738940162582,
+      57.86378449712867,
+      745.4601041870937
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_v03-canal-bridge"
+   },
+   "errors": []
+  },
+  {
+   "file": "before_06_vg-high-span-approach_13-00.png",
+   "kind": "driver",
+   "route": "VG",
+   "label": "vg-high-span-approach",
+   "note": "VG approaching the High Span",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 67,
+    "index": 14,
+    "dir": 1,
+    "length": 1180.3
+   },
+   "eye": [
+    1338.05,
+    23.76,
+    1085.2
+   ],
+   "target": [
+    1299.68,
+    25.59,
+    1095.33
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 21.856045726437284,
+    "id": "VG.corridor.deck.1.notch@notch"
+   },
+   "surfaceUnderTarget": {
+    "y": 23.691256274346614,
+    "id": "VG.corridor.deck.1.notch@notch"
+   },
+   "bedY": 21.85,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 71,
+    "triangles": 192308,
+    "resident": 4,
+    "frameMsMedian": 2149.9,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1338.0511575322507,
+      23.756045726437282,
+      1085.2013396221475
+     ],
+     "target": [
+      1299.683264584496,
+      25.591256274346613,
+      1095.3346702903252
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_vg-high-span-approach"
+   },
+   "errors": []
+  },
+  {
+   "file": "before_07_bight-bridge-west-approach-night_22-30.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "bight-bridge-west-approach-night",
+   "note": "approaching the Bight Bridge west end [460,1030]",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 2535.4,
+    "index": 515,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    433.49,
+    16.67,
+    999.96
+   ],
+   "target": [
+    458.82,
+    13.9,
+    1031.62
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 14.766729714207543,
+    "id": "V01.corridor.deck.1.flats@bight"
+   },
+   "surfaceUnderTarget": {
+    "y": 12.001860659941093,
+    "id": "V01.corridor.deck.1.bight@bight"
+   },
+   "bedY": 14.77,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 342,
+    "triangles": 154839,
+    "resident": 3,
+    "frameMsMedian": 2683.3,
+    "lightCards": 160,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      433.4891350810917,
+      16.66672971420754,
+      999.9582976300769
+     ],
+     "target": [
+      458.82083756125445,
+      13.901860659941093,
+      1031.6154181944783
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_bight-bridge-west-approach-night"
+   },
+   "errors": []
+  },
+  {
+   "file": "before_08_quay-bridge-approach-night_22-30.png",
+   "kind": "driver",
+   "route": "V01",
+   "label": "quay-bridge-approach-night",
+   "note": "approaching the Quay Bridge [1350,1345] (90 m, h 9)",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "perspective": "look pose (driver eye)",
+   "station": {
+    "s": 3519.9,
+    "index": 713,
+    "dir": 1,
+    "length": 3891.3
+   },
+   "eye": [
+    1288.6,
+    9.07,
+    1384.2
+   ],
+   "target": [
+    1327.1,
+    10.9,
+    1371.72
+   ],
+   "verticalFovDegrees": 58,
+   "eyeSource": "surface",
+   "surfaceUnderEye": {
+    "y": 7.174949000867082,
+    "id": "V01.corridor.deck.2.landing@reach"
+   },
+   "surfaceUnderTarget": {
+    "y": 9,
+    "id": "quayBridge.deck@reach"
+   },
+   "bedY": 7.17,
+   "settle": {
+    "pendingFirst": [],
+    "pendingFinal": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 348,
+    "triangles": 236018,
+    "resident": 3,
+    "frameMsMedian": 3616.4,
+    "lightCards": 160,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1288.6028198259733,
+      9.074949000867083,
+      1384.2048507451407
+     ],
+     "target": [
+      1327.1029155471992,
+      10.9,
+      1371.7246793851775
+     ],
+     "fov": 58
+    },
+    "mode": "look",
+    "shot": "ROAD_quay-bridge-approach-night"
+   },
+   "errors": []
+  }
+ ],
+ "errors": [
+  {
+   "at": 0,
+   "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  }
+ ]
+}

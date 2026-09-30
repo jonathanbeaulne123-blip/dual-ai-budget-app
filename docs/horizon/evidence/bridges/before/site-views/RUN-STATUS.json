@@ -1,0 +1,10 @@
+{
+  "status": "partial-failed",
+  "savedCandidates": 19,
+  "failure": "Prow below-view locator screenshot exceeded 90 seconds",
+  "knownInvalidFrames": [
+    "hollowBridge-deck-height.png"
+  ],
+  "acceptedFrames": "Not established; manual inspection required",
+  "scriptRevision": "Run used original off-route deck pose. Current capture script uses carried-bed deck pose and direct canvas clip screenshot."
+}

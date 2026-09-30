@@ -99,6 +99,7 @@ export interface WorldDefinition {
   /** The road corridors (ROAD.md): one definition per road bed that the deck, collision, edges, markings, lamps and
    * planting are all derived from. Absent before a bake carries them. */
   corridors?: Corridor[];
+  bridges?: import('../land/bridges/types').BridgeDefinition[];
   /** Pass 5: placed worlds (MANIFEST `regions`), absent before the bake carries one. */
   regions?: RegionPlacement[];
   diagnostics?: LandDiagnostic[];

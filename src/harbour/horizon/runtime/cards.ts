@@ -1,3 +1,4 @@
+import { bridgeOwner } from '../land/bridges/catalog';
 import {finishBuild} from '../../../house/world/buildTask.ts';
 import * as THREE from 'three';
 import {CardBuilder, paperGrain, rgb, type CardBuild, type RGB} from '../../art/cardScene.ts';
@@ -152,7 +153,7 @@ export function* buildDistrictCardSteps(world:WorldDefinition,field:TerrainField
   const builder=new CardBuilder(`horizon.${coarse?'journey':'district'}.${district.id}`,tier,{ink:'#5b5447',cell:coarse?4096:256,shadows:!coarse});
   let result:CardBuild|undefined,terrain:TerrainMeshes|null|undefined,complete=false;
   try {
-    if(!coarse){const ids=new Set(district.solidIds??[]);for(const solid of world.geometry?.solids??[])if(ids.has(solid.id)&&!CABLE_LINE.test(solid.sourceId??solid.id)&&!(hideBuildings&&(solid.sourceId??solid.id).startsWith('host.')))yield* addCorridorOrSolidSteps(builder,solid,tier,world.corridors);}
+    if(!coarse){const ids=new Set(district.solidIds??[]);for(const solid of world.geometry?.solids??[])if(ids.has(solid.id)&&!(world.bridges?.length&&bridgeOwner(solid.sourceId??solid.id))&&!CABLE_LINE.test(solid.sourceId??solid.id)&&!(hideBuildings&&(solid.sourceId??solid.id).startsWith('host.')))yield* addCorridorOrSolidSteps(builder,solid,tier,world.corridors);}
     result=yield* builder.finishSteps();
     terrain=district.childOf?null:yield* buildTerrainSteps(field,cuts,district.id,!coarse,paperGrain(),filter);
     if(!terrain){complete=true;return result;}
