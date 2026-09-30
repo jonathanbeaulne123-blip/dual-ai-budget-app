@@ -1,6 +1,6 @@
 # Horizon Airport and three aircraft
 
-- Status: local implementation; focused and in-app validation passed; final gate pending. No merge or deployment.
+- Status: implemented locally and ready for review; broader gate is not green (details below). No merge or deployment.
 - Owner and decision owner: Jonathan. Assignee: Codex.
 - Repository: dual-ai-budget-app. Branch: `codex/horizon-airport`.
 - Baseline: `e77309efbc48a76e8328f2b427613ecc6082bb61` (`origin/main`, finished Horizon Drive).
@@ -41,6 +41,16 @@ E on the ground requires a stop. E airborne enters freefall; Space leaves and op
 - `node node_modules/vite/bin/vite.js build`: **passed**, 3m04s. Existing PGlite/browser-external, eval and chunk-size warnings remain. This was the Vite client build, not the deployment command.
 - Initial broad quick gate: **failed, time-budget-breached** at 367.3s. 486 tests passed / 8 failed: six old UI fixture failures, one storage boundary fence (both repaired above), one existing Journey model timing assertion during concurrent build load. TypeScript passed. A final gate follows the repairs; this earlier result is not reported as green.
 
+### Final verification on implementation commit `e323e47df28470c935f462a91ce72e9429f06c57`
+
+- `pnpm_config_verify_deps_before_run=false pnpm test -- --risk=high --focus=test/horizon-airport-flight.test.ts --focus=test/horizon-airport-world.test.ts --focus=test/horizonQuickLayerModes.test.ts --focus=test/journey-land.test.ts --focus-reason="Complete powered flight, road clearance, aircraft controls, shared island collision and map rendering budgets"`: **quick-gate-failed**, **196.8s, no time-budget breach**. TypeScript, AI surface and diff checks passed. 494 tests passed; the one failure was unchanged Journey model timing: 625.3ms versus 400ms. All **55 airport, road, map and aircraft UI tests passed**.
+- `node node_modules/vitest/vitest.mjs run test/journey-board-model.test.ts --maxWorkers=1`: **42/42 passed**, warm derivation median **83.6ms**. The broad gate is still recorded as failed; this isolated result does not relabel it.
+- Ran the gate's remaining serial file directly: `node node_modules/vitest/vitest.mjs run test/app-startup-p1.test.ts --maxWorkers=1 --testTimeout=30000`: **82 passed / 1 failed** (missing Bianca Month income Start button). The failing case also fails alone and reproduces identically against an untouched `git archive origin/main` source snapshot at **e77309e**, with the same dependencies. No Month or financial code was changed to mask this baseline failure.
+- `node node_modules/vite/bin/vite.js build` repeated on **e323e47**: **passed**, **41.87s**, with existing external-module/eval/chunk-size warnings.
+- Night Harley-style cruiser, rendered runtime inputs: road → court → road, every waypoint passed, then dismount. Day Vespa and night Harley share the existing cruiser physics.
+- Axe 4.13 scan scoped to the new aircraft panel at 390×844, Newfoundland: **zero violations**. Keyboard `]` changed power to 10%; C switched to first person. Reduced-motion boarding opened the existing destination-cut interface. This is not a whole-app accessibility certification or physical screen-reader test.
+- Main was refreshed after validation and remains **e77309e**; no airport/road integration conflict was introduced upstream.
+
 ## Evidence and limits
 
 Local captures and diagnostics: `.codex-artifacts/horizon-airport/` in the workspace parent, outside the checkout. Includes `day.png`, `night.png`, `interior.png`, `night-interior.png`, `observation.png`, `road-connection.png`, `arrival-driven.png`, `aircraft-departure.png`, `cockpit.png`, `aircraft-parked.png`, and inspector JSON. These are actual rendered in-app views; no generated images.
@@ -49,4 +59,4 @@ The tower is an architectural landmark, not an accessible control room. No backg
 
 ## Handoff
 
-Next owner: Codex completes local validation and Jonathan reviews the local airport. A later explicit release instruction is required to merge and deploy. Main-road coordination is unnecessary for the current geometry because no road-owned file is modified.
+Next owner: Jonathan reviews the local airport and draft change. The implementation is complete; broader gate limitations and physical-device acceptance remain explicit. A later explicit release instruction is required to merge and deploy. Main-road coordination is unnecessary for the current geometry because no road-owned file is modified.
