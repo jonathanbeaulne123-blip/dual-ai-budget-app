@@ -1,0 +1,30 @@
+$ node scripts/horizon/bake-terrain.mjs
+{
+  "revision": "horizon-geo-1",
+  "terrainBytes": 571191,
+  "definitionBytes": 28584075,
+  "definitionCompressedBytes": 5987178,
+  "indexCompressedBytes": 1878099,
+  "journeyCompressedBytes": 25183,
+  "chunkCompressedBytes": {
+    "bight": 496761,
+    "crown": 220451,
+    "flats": 204190,
+    "green": 174905,
+    "harbour": 240850,
+    "hollow": 571957,
+    "lakeside": 425961,
+    "landing": 290629,
+    "notch": 92833,
+    "offshore": 106841,
+    "prow": 474953,
+    "reach": 187771,
+    "scholars": 311280,
+    "undercroft": 329513
+  },
+  "sha256": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+  "solids": 1077,
+  "diagnostics": 747,
+  "conflicts": 142,
+  "seconds": 76.6539905
+}

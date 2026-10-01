@@ -1,0 +1,2 @@
+$ node scripts/generate-mountain-landings.mjs --check && node scripts/horizon/bake-terrain.mjs --check && node scripts/horizon/dump-mountain-v2.mjs --check
+[ELIFECYCLE] Command failed.

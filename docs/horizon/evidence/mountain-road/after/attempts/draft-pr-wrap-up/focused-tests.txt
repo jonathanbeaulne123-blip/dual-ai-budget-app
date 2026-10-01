@@ -1,0 +1,85 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/horizon-walking-ground-patch.test.ts (8 tests | 4 failed) 444ms
+   ✓ one physical and drawn local ground patch > queries the exact final Float32 face height and normal, not the analytic input 56ms
+   × one physical and drawn local ground patch > uses identical canonical top triangles in two different existing render grids 43ms
+     → Render collar face inverted after Float32 conversion
+   × one physical and drawn local ground patch > retains original grid vertices and every face wholly outside the explicit1.5m drawing collar 34ms
+     → Render collar face inverted after Float32 conversion
+   ✓ one physical and drawn local ground patch > restores baseline bitwise through the finite outer ring and rejects an escaping cut 7ms
+   × one physical and drawn local ground patch > preserves original paint and applies the exact source interpolation to clipped vertices 16ms
+     → Render collar face inverted after Float32 conversion
+   ✓ one physical and drawn local ground patch > refines only perimeter cells and queries every added face with complete stamped-paint interpolation 25ms
+   × one physical and drawn local ground patch > joins a curved physical core to each original tier through a closed drawing collar, without curtains 32ms
+     → Render collar face inverted after Float32 conversion
+   ✓ one physical and drawn local ground patch > splits an exterior grid edge that continues past a collar corner 228ms
+ ✓ test/horizon-funicular-render-precision.test.ts (5 tests) 19ms
+ ✓ test/horizon-ground-mask-cache.test.ts (1 test) 10ms
+ ✓ test/horizon-funicular-streaming.test.ts (5 tests) 11ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/horizon-walking-ground-patch.test.ts > one physical and drawn local ground patch > uses identical canonical top triangles in two different existing render grids
+Error: Render collar face inverted after Float32 conversion
+ ❯ addFace src/harbour/horizon/regions/mountainV2/walkingGroundPatch.ts:145:55
+    143|  const addFace=(out:Face[],a:number,b:number,c:number,source:Triple)=>{
+    144|   const A=get(a),C=get(b),D=get(c),ny=(C[2]-A[2])*(D[0]-A[0])-(C[0]-A[…
+    145|   if(a===b||a===c||b===c||ny===0)return;if(ny<0)throw new Error('Rende…
+       |                                                       ^
+    146|  };
+    147|  const appendBase=(p:V[],ids:Triple)=>{
+ ❯ composeWalkingGround src/harbour/horizon/regions/mountainV2/walkingGroundPatch.ts:182:36
+ ❯ test/horizon-walking-ground-patch.test.ts:29:46
+ ❯ test/horizon-walking-ground-patch.test.ts:29:36
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  test/horizon-walking-ground-patch.test.ts > one physical and drawn local ground patch > retains original grid vertices and every face wholly outside the explicit1.5m drawing collar
+Error: Render collar face inverted after Float32 conversion
+ ❯ addFace src/harbour/horizon/regions/mountainV2/walkingGroundPatch.ts:145:55
+    143|  const addFace=(out:Face[],a:number,b:number,c:number,source:Triple)=>{
+    144|   const A=get(a),C=get(b),D=get(c),ny=(C[2]-A[2])*(D[0]-A[0])-(C[0]-A[…
+    145|   if(a===b||a===c||b===c||ny===0)return;if(ny<0)throw new Error('Rende…
+       |                                                       ^
+    146|  };
+    147|  const appendBase=(p:V[],ids:Triple)=>{
+ ❯ composeWalkingGround src/harbour/horizon/regions/mountainV2/walkingGroundPatch.ts:182:36
+ ❯ test/horizon-walking-ground-patch.test.ts:35:97
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  test/horizon-walking-ground-patch.test.ts > one physical and drawn local ground patch > preserves original paint and applies the exact source interpolation to clipped vertices
+Error: Render collar face inverted after Float32 conversion
+ ❯ addFace src/harbour/horizon/regions/mountainV2/walkingGroundPatch.ts:145:55
+    143|  const addFace=(out:Face[],a:number,b:number,c:number,source:Triple)=>{
+    144|   const A=get(a),C=get(b),D=get(c),ny=(C[2]-A[2])*(D[0]-A[0])-(C[0]-A[…
+    145|   if(a===b||a===c||b===c||ny===0)return;if(ny<0)throw new Error('Rende…
+       |                                                       ^
+    146|  };
+    147|  const appendBase=(p:V[],ids:Triple)=>{
+ ❯ composeWalkingGround src/harbour/horizon/regions/mountainV2/walkingGroundPatch.ts:182:36
+ ❯ test/horizon-walking-ground-patch.test.ts:48:35
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  test/horizon-walking-ground-patch.test.ts > one physical and drawn local ground patch > joins a curved physical core to each original tier through a closed drawing collar, without curtains
+Error: Render collar face inverted after Float32 conversion
+ ❯ addFace src/harbour/horizon/regions/mountainV2/walkingGroundPatch.ts:145:55
+    143|  const addFace=(out:Face[],a:number,b:number,c:number,source:Triple)=>{
+    144|   const A=get(a),C=get(b),D=get(c),ny=(C[2]-A[2])*(D[0]-A[0])-(C[0]-A[…
+    145|   if(a===b||a===c||b===c||ny===0)return;if(ny<0)throw new Error('Rende…
+       |                                                       ^
+    146|  };
+    147|  const appendBase=(p:V[],ids:Triple)=>{
+ ❯ composeWalkingGround src/harbour/horizon/regions/mountainV2/walkingGroundPatch.ts:182:36
+ ❯ test/horizon-walking-ground-patch.test.ts:66:38
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  4 failed | 15 passed (19)
+   Start at  10:47:18
+   Duration  2.94s (transform 662ms, setup 0ms, collect 1.53s, tests 484ms, environment 1ms, prepare 277ms)
+

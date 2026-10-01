@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonBoardThresholds.test.ts (25 tests) 1231ms
+
+ Test Files  1 passed (1)
+      Tests  25 passed (25)
+   Start at  02:27:45
+   Duration  2.47s (transform 586ms, setup 0ms, collect 1.03s, tests 1.23s, environment 0ms, prepare 62ms)
+

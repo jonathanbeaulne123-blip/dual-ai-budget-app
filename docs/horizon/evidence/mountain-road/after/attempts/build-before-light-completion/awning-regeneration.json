@@ -1,0 +1,32 @@
+{
+  "changedKeys": [
+    "sourceSha256",
+    "horizonTerrainSha256",
+    "rows",
+    "points",
+    "diagnostics"
+  ],
+  "maxPointDifferenceM": 0.05911159829884127,
+  "maxRowVertexDifferenceM": 0.06851714877037551,
+  "planUnchanged": true,
+  "lockedFirst9RowsUnchanged": true,
+  "beforeDiagnostics": {
+    "maxGrade": 0.39805386394613135,
+    "maxConstraintDeficit": 0.001165208720976807,
+    "maxCrossfall": 0.29002928465386546,
+    "iterations": 1500,
+    "vertices": 175,
+    "triangles": 272,
+    "constraints": 20602
+  },
+  "afterDiagnostics": {
+    "maxGrade": 0.3950005606229532,
+    "maxConstraintDeficit": 7.392966949737456e-08,
+    "maxCrossfall": 0.29000001312350143,
+    "iterations": 1500,
+    "vertices": 175,
+    "triangles": 272,
+    "constraints": 20602
+  },
+  "reason": "Regenerated approved shared return against repaired Horizon Ore portal terrain. First entry/rail remains locked."
+}

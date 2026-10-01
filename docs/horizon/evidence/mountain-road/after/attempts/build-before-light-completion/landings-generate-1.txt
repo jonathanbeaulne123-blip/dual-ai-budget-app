@@ -1,0 +1,3 @@
+{"bytes":25248,"sourceSha256":"4b8bd8e7da399b68275f264f20a07b07d03c3359710c828145e494595e2d2a2a","maxGrade":0.39501155406641003,"maxConstraintDeficit":0.002040069183337323,"maxCrossfall":0.27949754719643494,"iterations":1500,"vertices":350,"triangles":552,"constraints":27893}
+11:50:51 AM [vite] (ssr) page reload src/harbour/mountain/generated/library-landing.json
+{"awningBytes":13047,"sourceSha256":"ee9e5bae7e7dba268adfb6985a5c9ba5d15eddc6352ae071ab17b5b71b2d2572","maxGrade":0.39805386394613135,"maxConstraintDeficit":0.001165208720976807,"maxCrossfall":0.29002928465386546,"iterations":1500,"vertices":175,"triangles":272,"constraints":20602}

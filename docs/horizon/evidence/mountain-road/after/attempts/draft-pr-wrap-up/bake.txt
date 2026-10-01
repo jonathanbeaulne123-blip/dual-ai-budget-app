@@ -1,0 +1,4 @@
+$ node scripts/horizon/bake-terrain.mjs
+[ELIFECYCLE] Command failed.
+
+Bounded draft wrap-up stopped this command at its recorded deadline; INCOMPLETE, NOT A PASS.

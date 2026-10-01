@@ -1,0 +1,36 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/mountain-planting-preservation.test.ts (10 tests) 102ms
+ ❯ test/mountain-road-frame-fairing.test.ts (2 tests | 1 failed) 26ms
+   ✓ approved native road frame repair > preserves every authored centre and scenery frame within the measured edge envelope 20ms
+   × approved native road frame repair > has no folded drawn triangles across the full road width 5ms
+     → expected false to be true // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/mountain-road-frame-fairing.test.ts > approved native road frame repair > has no folded drawn triangles across the full road width
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ test/mountain-road-frame-fairing.test.ts:32:62
+     30|       for(const [p,q,r] of [[a,b,c],[a,c,d]])signs.push((q![0]!-p![0]!…
+     31|     }
+     32|     expect(signs.every(s=>s>1e-8)||signs.every(s=>s< -1e-8)).toBe(true…
+       |                                                              ^
+     33|   });
+     34| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  1 failed | 11 passed (12)
+   Start at  01:26:35
+   Duration  1.00s (transform 224ms, setup 0ms, collect 584ms, tests 128ms, environment 0ms, prepare 90ms)
+

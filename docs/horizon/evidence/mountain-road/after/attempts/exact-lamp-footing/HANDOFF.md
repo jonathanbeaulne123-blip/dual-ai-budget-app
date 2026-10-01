@@ -1,0 +1,11 @@
+# Narrow legal H2 lamp site
+
+Patch: `/tmp/mountain-lamp-fine-search.patch`. Only planner search sampling and its pure regression change. Exact current source hashes in BASE.json. No checkout edits or execution by the reviewer.
+
+The unchanged actual test still rejected H2 after invalid Year Walk parapet occupancy was removed. `/tmp/mountain-h2-lamp-diagnostic/report.json` preserves the first dense first-target failure. Root then ran `/tmp/mountain-h2-lamp-relocation.mjs`, which inspected all pending H2 points with a .25m station grid and permitted a coverage-preserving relocation as an experiment. It succeeded without relocating anything: one legal right-side ground post at s=189.37178313634874, at H[1336.726,70.642,669.812], head H[1335.203,75.842,670.3], pool H[1335.203,69.452,670.3]. It covers all 11 pending targets with minimum 1.3919527441m pool margin; the other 645 required points retain coverage. The candidate has 35 planned full/lite lamps, all 656 road targets covered and no actual independent support-validation failures. Its report and candidate corridor are under `/tmp/mountain-h2-lamp-relocation/`.
+
+Production therefore needs no relocation or deletion logic. It runs the original 1.5m required-site search first; only if that fails does the exact same function use .25m station increments inside the same +/-12m interval. Every reject/make rule, nine-point actual foot, reserve/occupancy/water check, 4m same-side spacing, guard proof, coverage radius and lateral setback search is unchanged. No native/world geometry, shape, appearance or controller changes.
+
+The focused two-case test offers one actual 0.41m-long supported patch. At x=30 the ordinary search succeeds and the fine search must not execute. At x=30.25 every ordinary station fails and the fine search must find the unique valid 0.4m footprint after the complete ordinary search, without extending reach. Existing unsupported/mount rejection tests remain unchanged.
+
+Root should run `horizon-lamp-footprint` and `horizonNativeFurniture` serially, then re-bake and remeasure actual runtime anchor coverage and budgets. The successful temporary candidate is not final served-asset acceptance. The earlier failed evidence is retained.

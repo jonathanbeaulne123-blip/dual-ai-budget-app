@@ -1,0 +1,18 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/horizonSkateLines.test.ts > the headless rider rides S1–S4 (RIDE §12) > S1's moving time is reported against the manifest target (P24: reported, not failed; D44: no retarget)
+S1 moving time 301.1 s over the built 1712 m (drawn 1712 m, 2 legs across land defects): misses the manifest target [70, 130] s by 171.1 s (D44, Jonathan's decision)
+
+ ✓ test/horizonSkateLines.test.ts (8 tests | 2 skipped) 107357ms
+   ✓ the headless rider rides S1–S4 (RIDE §12) > scheduling checkpoints preserve the exact short rider trace  523ms
+   ✓ the headless rider rides S1–S4 (RIDE §12) > S1 start → end  32221ms
+   ✓ the headless rider rides S1–S4 (RIDE §12) > S2 start → end  14239ms
+   ✓ the headless rider rides S1–S4 (RIDE §12) > S3 start → end  29635ms
+   ✓ the headless rider rides S1–S4 (RIDE §12) > S4 start → end  30366ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed | 2 todo (8)
+   Start at  02:35:11
+   Duration  108.56s (transform 521ms, setup 0ms, collect 896ms, tests 107.36s, environment 0ms, prepare 83ms)
+

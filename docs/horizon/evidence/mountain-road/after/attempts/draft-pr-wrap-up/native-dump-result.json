@@ -1,0 +1,9 @@
+{
+  "command": "node scripts/horizon/dump-mountain-v2.mjs --check",
+  "exitCode": 0,
+  "accepted": true,
+  "bytes": 696991,
+  "roadSamples": 941,
+  "coursePoints": 391,
+  "scope": "Standalone native export check only; no final world bake or visual acceptance."
+}

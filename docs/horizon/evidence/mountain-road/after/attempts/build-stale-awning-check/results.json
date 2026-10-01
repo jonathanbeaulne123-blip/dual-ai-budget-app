@@ -1,0 +1,16 @@
+{
+  "startedAt": "2026-09-30T15:49:10Z",
+  "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+  "runs": [
+    {
+      "name": "landings-check",
+      "command": [
+        "node",
+        "scripts/generate-mountain-landings.mjs",
+        "--check"
+      ],
+      "exitCode": 1,
+      "seconds": 3.829
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonRideSituations.test.ts (7 tests) 8615ms
+   ✓ the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > R3 Direction change  353ms
+   ✓ the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > R5 Boost exit  453ms
+   ✓ the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > keeps R1 Downhill carve explicitly deferred on v2's course (D-M5; measured: never reaches 120 m, stalls at 83.9 m)  5641ms
+   ✓ the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > R5 without W, and with W 0.6 s late, shows no rise  867ms
+ ❯ test/horizonBoardPace.test.ts (17 tests | 1 failed) 729ms
+   ✓ MANIFEST v1.7 paces resolve (RIDE §8.3) > has one gravity (D40) 1ms
+   ✓ MANIFEST v1.7 paces resolve (RIDE §8.3) > resolves every surface id and every skate segment pace to one paces row 2ms
+   × the board contact adapter over the real world > samples every built pad at its dismount, pick-up, or named legal through-road pace 45ms
+     → crossing.cross.s1.walkFootQuay.1: expected [ 'paved', 'cobble', 'stone' ] to include 'gravel'
+   ✓ the board contact adapter over the real world > 'southPortal' preserves only the bicycle's named paved through-road, while the board dismounts 1ms
+   ✓ the board contact adapter over the real world > 'crossing.cross.mountainV2FootLane.mou…' preserves only the bicycle's named paved through-road, while the board dismounts 1ms
+   ✓ the board contact adapter over the real world > rolls a pick-up pad at the pace of the line it starts; park pads and crossings stay threshold 1ms
+   ✓ the board contact adapter over the real world > rolls S1's Crown drop at v2's Alpine bends pace on v2's paved road 0ms
+   ✓ the board contact adapter over the real world > reads every S1–S4 slice's own pace at its middle, including S3's square at threshold pace 4ms
+   ✓ the board contact adapter over the real world > counts the edge of the deck plus the margin as the bed, and grass beyond it as offbed 0ms
+   ✓ the board contact adapter over the real world > samples terrain 30 m off any bed as offbed and illegal 6ms
+   ✓ the board contact adapter over the real world > gives the bicycle roads and trails, and puts it offbed on the skate lines 1ms
+   ✓ the board contact adapter over the real world > fades back to the nearest point of the bed from 20 m beside S1 5ms
+   ✓ the board contact adapter over the real world > fades back to dry deck, never into the water, beside S2 on the Bight Bridge 16ms
+   ✓ the board contact adapter over the real world > grips pads and the park like pavement (the stone row), with the park at flow pace 6ms
+   ✓ the board contact adapter over the real world > delegates water and solids to the geography 2ms
+   ✓ the board contact adapter over the real world > is cheap enough for three samples per 1/120 s step 116ms
+   ✓ keeps the pace vocabulary the kernel knows 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/horizonBoardPace.test.ts > the board contact adapter over the real world > samples every built pad at its dismount, pick-up, or named legal through-road pace
+AssertionError: crossing.cross.s1.walkFootQuay.1: expected [ 'paved', 'cobble', 'stone' ] to include 'gravel'
+ ❯ test/horizonBoardPace.test.ts:95:58
+     93|           const support = geography.surface(pad.centre[0], pad.centre[…
+     94|           expect(s!.material, owner.id).toBe(support.material);
+     95|           expect(['paved', 'cobble', 'stone'], owner.id).toContain(sup…
+       |                                                          ^
+     96|           if (owner.id === 'crossing.cross.s1.walkFootQuay.1') expect(…
+     97|           const material = surfaces[support.material]!, pace = support…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  1 failed | 23 passed (24)
+   Start at  02:42:15
+   Duration  12.25s (transform 989ms, setup 0ms, collect 2.38s, tests 9.34s, environment 0ms, prepare 157ms)
+

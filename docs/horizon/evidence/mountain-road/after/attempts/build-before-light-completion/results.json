@@ -1,0 +1,78 @@
+{
+  "startedAt": "2026-09-30T15:50:47Z",
+  "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+  "runs": [
+    {
+      "name": "landings-generate-1",
+      "command": [
+        "node",
+        "scripts/generate-mountain-landings.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 5.377
+    },
+    {
+      "name": "native-export-1",
+      "command": [
+        "node",
+        "scripts/horizon/dump-mountain-v2.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 1.16
+    },
+    {
+      "name": "bake-1",
+      "command": [
+        "pnpm",
+        "horizon:bake"
+      ],
+      "exitCode": 0,
+      "seconds": 135.668
+    },
+    {
+      "name": "landings-generate-2",
+      "command": [
+        "node",
+        "scripts/generate-mountain-landings.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 4.41
+    },
+    {
+      "name": "native-export-2",
+      "command": [
+        "node",
+        "scripts/horizon/dump-mountain-v2.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 1.752
+    },
+    {
+      "name": "bake-2",
+      "command": [
+        "pnpm",
+        "horizon:bake"
+      ],
+      "exitCode": 0,
+      "seconds": 144.388
+    },
+    {
+      "name": "byte-exact-check",
+      "command": [
+        "pnpm",
+        "horizon:check"
+      ],
+      "exitCode": 0,
+      "seconds": 136.722
+    }
+  ],
+  "assets": {
+    "src/harbour/horizon/land/mountainV2/v2-data.json": "418eab3afb34746b1341d6f80c16efc7d6921eb71ad301e31e249b63b46cab8f",
+    "src/harbour/mountain/generated/awning-landing.json": "36084212958ad49edcbfd4f8bd9302a8cc0ae6a85710d25be72b39adda64b6c4",
+    "public/horizon/world/horizon-geo-1.json": "6dcdae3f1c484bac779b6c9969815e12743ca6978ecd26c95feb64fc95b217a0",
+    "public/horizon/world/horizon-geo-1.json.gz": "ad3082f8c9c9f97c2c8674c5a890ff39eebb0a7284b47b9f4cfc15b189944bbe",
+    "public/horizon/world/horizon-geo-1.journey.json.gz": "8af506959843638788cc7552a4cbd62a7202fc40c135ed6248de9f2aeb670946",
+    "public/horizon/terrain/horizon-geo-1.bin": "b8532036cf93e5ba9e7682e5041a69f216c47a91a955c372638e73dcb5a19d8d"
+  },
+  "finishedAt": "2026-09-30T15:57:56Z"
+}

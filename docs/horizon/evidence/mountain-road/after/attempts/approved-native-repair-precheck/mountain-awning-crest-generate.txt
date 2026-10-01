@@ -1,0 +1,12 @@
+1:25:05 AM [vite] (ssr) page reload src/harbour/mountain/roadFrameFairing.ts
+1:25:05 AM [vite] (ssr) page reload src/harbour/mountain/generated/library-landing.json
+{"bytes":25248,"sourceSha256":"4b8bd8e7da399b68275f264f20a07b07d03c3359710c828145e494595e2d2a2a","maxGrade":0.39501155406641003,"maxConstraintDeficit":0.002040069183337323,"maxCrossfall":0.27949754719643494,"iterations":1500,"vertices":350,"triangles":552,"constraints":27893}
+file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/mountain-road-book/scripts/horizon/awning-return-solver.mjs:55
+ if(maxGrade>.4||maxConstraintDeficit>.003||maxCrossfall>.3)throw new Error(`Awning return does not converge: ${JSON.stringify({maxGrade,maxConstraintDeficit,maxCrossfall})}`);
+                                                                  ^
+
+Error: Awning return does not converge: {"maxGrade":0.39521708971553976,"maxConstraintDeficit":0.3637773362976672,"maxCrossfall":0.2900000000000009}
+    at generateAwningReturn (file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/mountain-road-book/scripts/horizon/awning-return-solver.mjs:55:67)
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/mountain-road-book/scripts/generate-mountain-landings.mjs:75:22
+
+Node.js v24.21.0
