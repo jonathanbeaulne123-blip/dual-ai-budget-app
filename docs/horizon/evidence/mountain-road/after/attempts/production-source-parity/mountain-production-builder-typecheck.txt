@@ -1,0 +1,6 @@
+$ node --max-old-space-size=6144 node_modules/typescript/bin/tsc --noEmit
+test/horizon-foot-lane-apron.test.ts(139,20): error TS2345: Argument of type '{ points: [number, number, number][]; }' is not assignable to parameter of type 'Bed'.
+  Type '{ points: [number, number, number][]; }' is missing the following properties from type 'Bed': id, profile, surface, districtIds
+test/horizon-foot-lane-apron.test.ts(157,20): error TS2345: Argument of type '{ points: [number, number, number][]; }' is not assignable to parameter of type 'Bed'.
+  Type '{ points: [number, number, number][]; }' is missing the following properties from type 'Bed': id, profile, surface, districtIds
+[ELIFECYCLE] Command failed with exit code 2.

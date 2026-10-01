@@ -1,0 +1,46 @@
+{
+  "snapshotManifestSha256": "940852aceed26bf06487a5afc4e248da8a2faf61e949a4027a5005d103147ced",
+  "instrumentedSourceSha256": "d8eb7e70114d36ece934ed14d43bd21179ad505b974e6f6a922e18ff59fc6ba3",
+  "bundleSha256": "48c4b4a4e5246a9fb91cd3d18d41781083d83869e5d4299fcf7057d7cfa7c26b",
+  "sourceDrift": [],
+  "comparisons": [
+    {
+      "id": "mountainV2.footLane.apron",
+      "sourceTriangles": 2004,
+      "servedTriangles": 2004,
+      "exactSortedFaces": true,
+      "sourceOrigin": [
+        null
+      ],
+      "servedOrigin": [
+        null
+      ]
+    },
+    {
+      "id": "mountainV2.funicularFoot.apron",
+      "sourceTriangles": 16036,
+      "servedTriangles": 16036,
+      "exactSortedFaces": true,
+      "sourceOrigin": [
+        [
+          1286,
+          55,
+          726
+        ]
+      ],
+      "servedOrigin": [
+        [
+          1286,
+          55,
+          726
+        ]
+      ]
+    }
+  ],
+  "wallMs": 19257.967042,
+  "cpu": {
+    "user": 19439058,
+    "system": 419350
+  },
+  "limits": "Exact production prejoin replay and sorted face parity only; geometry is instrumented for timing. No movement, visual, budget or full byte-exact asset claim."
+}
