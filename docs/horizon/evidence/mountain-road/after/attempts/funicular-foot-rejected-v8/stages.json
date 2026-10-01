@@ -1,0 +1,317 @@
+[
+  {
+    "name": "source-snapshot",
+    "elapsedMs": 23,
+    "files": 11
+  },
+  {
+    "name": "bundle",
+    "elapsedMs": 204,
+    "sha256": "dfdca0017e68f2f9633f85ab99f31e66ec2387145205dcedfa497f524c799db3"
+  },
+  {
+    "name": "world-loaded",
+    "elapsedMs": 1104
+  },
+  {
+    "name": "construction-start",
+    "elapsedMs": 1945
+  },
+  {
+    "name": "construction-finished",
+    "elapsedMs": 6541
+  },
+  {
+    "name": "walker-start",
+    "elapsedMs": 6893
+  },
+  {
+    "name": "walker-finished",
+    "elapsedMs": 21096,
+    "attempts": [
+      {
+        "id": "native funicular Foot",
+        "offset": -1.45,
+        "reverse": false,
+        "reason": "end"
+      },
+      {
+        "id": "native funicular Foot",
+        "offset": -1.45,
+        "reverse": true,
+        "reason": "end"
+      },
+      {
+        "id": "native funicular Foot",
+        "offset": 0,
+        "reverse": false,
+        "reason": "end"
+      },
+      {
+        "id": "native funicular Foot",
+        "offset": 0,
+        "reverse": true,
+        "reason": "end"
+      },
+      {
+        "id": "native funicular Foot",
+        "offset": 1.45,
+        "reverse": false,
+        "reason": "end"
+      },
+      {
+        "id": "native funicular Foot",
+        "offset": 1.45,
+        "reverse": true,
+        "reason": "end"
+      },
+      {
+        "id": "Year Walk crossing",
+        "offset": 0,
+        "reverse": false,
+        "reason": "end"
+      },
+      {
+        "id": "Year Walk crossing",
+        "offset": 0,
+        "reverse": true,
+        "reason": "end"
+      }
+    ]
+  },
+  {
+    "name": "sweeps-finished",
+    "elapsedMs": 47715,
+    "failures": 4
+  },
+  {
+    "name": "continuous-sweeps-finished",
+    "elapsedMs": 88026,
+    "failures": 0
+  },
+  {
+    "name": "drawn-ground-before-start",
+    "elapsedMs": 88060,
+    "tier": "full"
+  },
+  {
+    "name": "drawn-ground-before-finished",
+    "elapsedMs": 110371,
+    "tier": "full"
+  },
+  {
+    "name": "drawn-ground-diff-finished",
+    "elapsedMs": 111913,
+    "tier": "full",
+    "vertices": 59,
+    "triangles": 366
+  },
+  {
+    "name": "drawn-ground-before-start",
+    "elapsedMs": 111913,
+    "tier": "lite"
+  },
+  {
+    "name": "drawn-ground-before-finished",
+    "elapsedMs": 121176,
+    "tier": "lite"
+  },
+  {
+    "name": "drawn-ground-diff-finished",
+    "elapsedMs": 121806,
+    "tier": "lite",
+    "vertices": 35,
+    "triangles": 222
+  },
+  {
+    "name": "drawn-ground-finished",
+    "elapsedMs": 121994,
+    "tier": "full",
+    "localTriangles": 540,
+    "proud": 0,
+    "maxProud": -0.021831442876589335,
+    "worst": {
+      "q": [
+        1293.2755745231334,
+        55.404068077118026,
+        732.3609909344568
+      ],
+      "ground": 55.38223663424144
+    }
+  },
+  {
+    "name": "drawn-ground-finished",
+    "elapsedMs": 122075,
+    "tier": "lite",
+    "localTriangles": 260,
+    "proud": 0,
+    "maxProud": -0.020943702718575707,
+    "worst": {
+      "q": [
+        1293.6677907163853,
+        55.40956348118234,
+        731.3315632569316
+      ],
+      "ground": 55.38861977846376
+    }
+  },
+  {
+    "name": "boundary-continuity-finished",
+    "elapsedMs": 287390,
+    "edges": 1027,
+    "failures": 800,
+    "maxDelta": 0.16862021336535093
+  },
+  {
+    "name": "footprint-inventory-finished",
+    "elapsedMs": 287914,
+    "paths": [
+      "path:town:north~station:funicular:town",
+      "path:station:funicular:town~road:foot"
+    ],
+    "solids": 3,
+    "trees": 0
+  },
+  {
+    "name": "geometry-results-written",
+    "elapsedMs": 288082
+  },
+  {
+    "name": "art-start",
+    "elapsedMs": 288082,
+    "tier": "full",
+    "theme": "classic"
+  },
+  {
+    "name": "art-built",
+    "elapsedMs": 288820,
+    "tier": "full",
+    "theme": "classic",
+    "artBuildMs": 642
+  },
+  {
+    "name": "art-finished",
+    "elapsedMs": 296338,
+    "tier": "full",
+    "theme": "classic",
+    "triangles": 1766,
+    "stones": 4,
+    "buried": 2,
+    "hover": 0
+  },
+  {
+    "name": "art-start",
+    "elapsedMs": 296346,
+    "tier": "full",
+    "theme": "taylor"
+  },
+  {
+    "name": "art-built",
+    "elapsedMs": 297691,
+    "tier": "full",
+    "theme": "taylor",
+    "artBuildMs": 882
+  },
+  {
+    "name": "art-finished",
+    "elapsedMs": 303210,
+    "tier": "full",
+    "theme": "taylor",
+    "triangles": 1766,
+    "stones": 4,
+    "buried": 2,
+    "hover": 0
+  },
+  {
+    "name": "art-start",
+    "elapsedMs": 303211,
+    "tier": "full",
+    "theme": "newfoundland"
+  },
+  {
+    "name": "art-built",
+    "elapsedMs": 303764,
+    "tier": "full",
+    "theme": "newfoundland",
+    "artBuildMs": 475
+  },
+  {
+    "name": "art-finished",
+    "elapsedMs": 309266,
+    "tier": "full",
+    "theme": "newfoundland",
+    "triangles": 1766,
+    "stones": 4,
+    "buried": 2,
+    "hover": 0
+  },
+  {
+    "name": "art-start",
+    "elapsedMs": 309268,
+    "tier": "lite",
+    "theme": "classic"
+  },
+  {
+    "name": "art-built",
+    "elapsedMs": 309767,
+    "tier": "lite",
+    "theme": "classic",
+    "artBuildMs": 448
+  },
+  {
+    "name": "art-finished",
+    "elapsedMs": 315225,
+    "tier": "lite",
+    "theme": "classic",
+    "triangles": 1766,
+    "stones": 2,
+    "buried": 2,
+    "hover": 0
+  },
+  {
+    "name": "art-start",
+    "elapsedMs": 315226,
+    "tier": "lite",
+    "theme": "taylor"
+  },
+  {
+    "name": "art-built",
+    "elapsedMs": 315721,
+    "tier": "lite",
+    "theme": "taylor",
+    "artBuildMs": 446
+  },
+  {
+    "name": "art-finished",
+    "elapsedMs": 321205,
+    "tier": "lite",
+    "theme": "taylor",
+    "triangles": 1766,
+    "stones": 2,
+    "buried": 2,
+    "hover": 0
+  },
+  {
+    "name": "art-start",
+    "elapsedMs": 321207,
+    "tier": "lite",
+    "theme": "newfoundland"
+  },
+  {
+    "name": "art-built",
+    "elapsedMs": 321699,
+    "tier": "lite",
+    "theme": "newfoundland",
+    "artBuildMs": 441
+  },
+  {
+    "name": "art-finished",
+    "elapsedMs": 327183,
+    "tier": "lite",
+    "theme": "newfoundland",
+    "triangles": 1766,
+    "stones": 2,
+    "buried": 2,
+    "hover": 0
+  }
+]

@@ -1,0 +1,17 @@
+[
+  {
+    "file": "instrumented-source.ts",
+    "rawSha256": "690a948700631815090d39d5ca886eea0d36edb5086ad2f0013bc3f0b3799d8d",
+    "rawBytes": 30734
+  },
+  {
+    "file": "terms.json.gz",
+    "rawSha256": "61b24e4cf51662e76e5bc01eb6d81be6327579f9858d86245e1ce906b0d0eb5f",
+    "rawBytes": 281348
+  },
+  {
+    "file": "bundle.mjs.gz",
+    "rawSha256": "755579df7eb88104fa5f18f06432f0397e40d769b6ace044a848efa7ffa8350e",
+    "rawBytes": 1620297
+  }
+]

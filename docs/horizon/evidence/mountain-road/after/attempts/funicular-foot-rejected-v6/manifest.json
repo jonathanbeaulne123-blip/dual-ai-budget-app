@@ -1,0 +1,77 @@
+[
+  {
+    "file": "asset-provenance.json",
+    "rawBytes": 268,
+    "sha256": "bbab5469da415052aa1f7112930f509a1dac33d06fda1cdac743e874a726c5f1"
+  },
+  {
+    "file": "frozen-source-hashes.json",
+    "rawBytes": 2655,
+    "sha256": "ba4093e0f56417420ff1055900bb981d5f41d2b1da576ff318e03c3951270b43"
+  },
+  {
+    "file": "runtime-bundle.mjs.gz",
+    "rawBytes": 2130905,
+    "sha256": "4d7f5169c8ea592980be944079ef373d5170b0b4292bfb13ef7a95be6fb11cf6"
+  },
+  {
+    "file": "sources/src/harbour/geometry/capGroundMesh.ts",
+    "rawBytes": 2703,
+    "sha256": "a160e36b088cce88d5cdba1ca4ad876ca1d6842e6efd4d8c9a5d1bc2ebc6d39d"
+  },
+  {
+    "file": "sources/src/harbour/horizon/land/mountainV2/footLaneJoin.ts",
+    "rawBytes": 29758,
+    "sha256": "890cea0368c7cbeaf515e35820b92c567e197452b395d5c79976c6969a23ec0f"
+  },
+  {
+    "file": "sources/src/harbour/horizon/land/mountainV2/funicularFootStation.ts",
+    "rawBytes": 941,
+    "sha256": "53cecbebbba60e4b5a44512a7ef11e74064d208490d1fe07abef5eaccc5cb607"
+  },
+  {
+    "file": "sources/src/harbour/horizon/regions/mountainV2/funicularFootPath.ts",
+    "rawBytes": 8623,
+    "sha256": "3c17b04c7bb2f63b3d44ec03fe74838be915d40d87a56f5aa7b961a89db883f0"
+  },
+  {
+    "file": "sources/src/harbour/horizon/regions/mountainV2/geography.ts",
+    "rawBytes": 25176,
+    "sha256": "41abf65b8b8d29c6d0c81acd040940ad49ae21c7af6bae7a65c5bb3830f23106"
+  },
+  {
+    "file": "sources/src/harbour/horizon/regions/mountainV2/ground.ts",
+    "rawBytes": 4973,
+    "sha256": "f3e47a5c1f0985e178253aa9f3c545bcee9e942a8aae1d5bcba9d3296feeb13e"
+  },
+  {
+    "file": "sources/src/harbour/horizon/regions/mountainV2/index.ts",
+    "rawBytes": 5926,
+    "sha256": "48d106fb527a10d1721fbcb0f3e1fbd18abdcbebef298235c147c44f1113f377"
+  },
+  {
+    "file": "sources/src/harbour/horizon/regions/mountainV2/scene.ts",
+    "rawBytes": 15491,
+    "sha256": "05a19270458c2a12e78a3620862b7bb57b6788a3bb793e8d3ff3854effe4b056"
+  },
+  {
+    "file": "sources/src/harbour/horizon/regions/mountainV2/walkingJoinGround.ts",
+    "rawBytes": 2501,
+    "sha256": "171bf2ca379eeef843dd3873c79d4bd8945708ef674ba7fbe98561574904148a"
+  },
+  {
+    "file": "sources/src/harbour/horizon/runtime/index.ts.gz",
+    "rawBytes": 127610,
+    "sha256": "7e0a499dfeeb33bb64c7fcb1204da5ae505a9d61d65d6c231ffe2eba64046e29"
+  },
+  {
+    "file": "sources/src/harbour/mountain/art/routeArt.ts",
+    "rawBytes": 15890,
+    "sha256": "8d9624344d1a8e8a08321ca767160da33beee859894d009706c1fc9edd2feec1"
+  },
+  {
+    "file": "stages.json",
+    "rawBytes": 337,
+    "sha256": "287a1f98d38bfd7ec23ac17ff165d16b2e0e983c2edc0b1d898d933f4f11615d"
+  }
+]

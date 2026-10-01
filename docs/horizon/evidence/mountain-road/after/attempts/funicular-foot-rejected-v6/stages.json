@@ -1,0 +1,20 @@
+[
+  {
+    "name": "source-snapshot",
+    "elapsedMs": 28,
+    "files": 11
+  },
+  {
+    "name": "bundle",
+    "elapsedMs": 346,
+    "sha256": "4d7f5169c8ea592980be944079ef373d5170b0b4292bfb13ef7a95be6fb11cf6"
+  },
+  {
+    "name": "world-loaded",
+    "elapsedMs": 2155
+  },
+  {
+    "name": "construction-start",
+    "elapsedMs": 2913
+  }
+]

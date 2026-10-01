@@ -1,0 +1,30 @@
+[
+  {
+    "original": "/tmp/mountain-funicular-v9-shape-diagnostic.mjs",
+    "saved": "mountain-funicular-v9-shape-diagnostic.mjs",
+    "sha256": "905bf6a568a87afb0b7fc1afd79c40f439a76260a5ff4e71d9a7e3e5a29c18c9",
+    "bytes": 6003,
+    "storedBytes": 6003
+  },
+  {
+    "original": "/tmp/mountain-funicular-v9-shape.txt",
+    "saved": "mountain-funicular-v9-shape.txt",
+    "sha256": "f8cd224def8ae5b3b8c3d9750c6030917c273acab790b6f443057de8aad766d6",
+    "bytes": 763,
+    "storedBytes": 763
+  },
+  {
+    "original": "/tmp/mountain-funicular-v9-shape/instrumented-source.ts",
+    "saved": "instrumented-source.ts",
+    "sha256": "d3ca679b461af5522734b80d74490e5000fc3cc84c2c7fc73d7d32561e7c4640",
+    "bytes": 31455,
+    "storedBytes": 31455
+  },
+  {
+    "original": "/tmp/mountain-funicular-v9-shape/bundle.mjs",
+    "saved": "bundle.mjs.gz",
+    "sha256": "7ac921fe532add57115c6d5ceacf2daba6c05776cfed53fa012d66d592b4ed42",
+    "bytes": 1622070,
+    "storedBytes": 440954
+  }
+]
