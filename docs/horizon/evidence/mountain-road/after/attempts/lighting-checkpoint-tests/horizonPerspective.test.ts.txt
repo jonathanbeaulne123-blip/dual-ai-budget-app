@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonPerspective.test.ts (3 tests) 3ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  12:29:00
+   Duration  230ms (transform 30ms, setup 0ms, collect 27ms, tests 3ms, environment 0ms, prepare 56ms)
+

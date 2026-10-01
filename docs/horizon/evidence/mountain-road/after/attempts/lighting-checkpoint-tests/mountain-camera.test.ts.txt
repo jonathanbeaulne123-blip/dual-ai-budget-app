@@ -1,0 +1,81 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/mountain-camera.test.ts (48 tests | 1 failed) 24915ms
+   ✓ the signature view (C1) > frames the town square in the foreground and the dam crest above it (desktop 1.60) 3ms
+   ✓ the signature view (C1) > frames the town square in the foreground and the dam crest above it (desktop 1.57) 1ms
+   ✓ the signature view (C1) > frames the town square in the foreground and the dam crest above it (phone 0.46) 1ms
+   ✓ the signature view (C1) > is derived from the dam's position, not written down: it aims along the square→dam line 1ms
+   ✓ the signature view (C1) > is the Court's first frame (the place's own `court` pose), on a phone and a desktop  2866ms
+   ✓ the overview, the dam and the summit (C5, C12) > holds all six districts, the town, the dam and the summit (desktop 1.60) 5ms
+   ✓ the overview, the dam and the summit (C5, C12) > frames the dam and the view from the summit (desktop 1.60) 1ms
+   ✓ the overview, the dam and the summit (C5, C12) > holds all six districts, the town, the dam and the summit (desktop 1.57) 4ms
+   ✓ the overview, the dam and the summit (C5, C12) > frames the dam and the view from the summit (desktop 1.57) 0ms
+   ✓ the overview, the dam and the summit (C5, C12) > holds all six districts, the town, the dam and the summit (phone 0.46) 2ms
+   ✓ the overview, the dam and the summit (C5, C12) > frames the dam and the view from the summit (phone 0.46) 0ms
+   ✓ the overview, the dam and the summit (C5, C12) > gives a portrait phone at least 40° across (C12) 0ms
+   ✓ the walking camera (C2, C12) > walks the open world at 10–14° down, 4.5 behind (4.0 on a phone), looking 1.2 above the feet 1ms
+   ✓ the walking camera (C2, C12) > keeps the close, higher pitch inside rooms 1ms
+   ✓ the walking camera (C2, C12) > never stands the eye under the terrain, and pulls in fast and gives back slowly 119ms
+   ✓ the walking camera (C2, C12) > counts terrain and every camera solid on the line (C11): storefronts, abutments, the dam glass, pillars 2ms
+   ✓ the walking camera (C2, C12) > ignores a Look target far from the body when Walk takes over (C3) 1ms
+   ✓ Look is safe and flies at a walking pace (C8, C9) > keeps the eye over the land at every heading round the dam 67ms
+   ✓ Look is safe and flies at a walking pace (C8, C9) > flies every tour hop at no more than 120 u/s and starts gently 35ms
+   ✓ Look is safe and flies at a walking pace (C8, C9) > arcs a flight over the terrain and scales its duration with the distance 2ms
+   ✓ Look is safe and flies at a walking pace (C8, C9) > cuts instead of flying under reduced motion 1ms
+   ✓ zooming out to the Journey (C5) > fires only on pulls made at the far limit, and only after the affordance has shown 2ms
+   ✓ arrivals, exits and small moments (C3, C7) > faces every Visit arrival at its building's door (dot > 0.7), and the walking camera looks there too 2ms
+   ✓ arrivals, exits and small moments (C3, C7) > faces away from the door on the way out 1ms
+   ✓ arrivals, exits and small moments (C3, C7) > gives every small moment its own θ and φ, and every overlook and bench looks at the town (or the dam) 2ms
+   ✓ Close frames the nearest landmark (point 9) > never flies to the fountain from the mountain 1ms
+   ✓ the ride camera (C4) > keeps the rider in frame every frame: gondola 0→1 (desktop)  804ms
+   ✓ the ride camera (C4) > keeps the rider in frame every frame: gondola 1→0 (desktop)  990ms
+   ✓ the ride camera (C4) > keeps the rider in frame every frame: funicular 0→3 (desktop)  585ms
+   ✓ the ride camera (C4) > keeps the rider in frame every frame: funicular 3→1 (desktop)  476ms
+   ✓ the ride camera (C4) > keeps the rider in frame every frame: gondola 0→1 (phone)  780ms
+   ✓ the ride camera (C4) > keeps the rider in frame every frame: gondola 1→0 (phone)  980ms
+   ✓ the ride camera (C4) > keeps the rider in frame every frame: funicular 0→3 (phone)  599ms
+   ✓ the ride camera (C4) > keeps the rider in frame every frame: funicular 3→1 (phone)  486ms
+   ✓ the ride camera (C4) > faces along the travel while it rides 1ms
+   ✓ the ride camera (C4) > hands back at the station facing away from the platform, toward where you walk next 1ms
+   ✓ the skate camera on the mountain (minor) > keeps the lens breathing across a race and blends into a mode change 15ms
+   ✓ the skate camera on the mountain (minor) > opens the race on an authored start shot down the first bends, then hands over 1ms
+   ✓ the skate camera on the mountain (minor) > finishes on the quay with the Fund bank's door in the frame 1ms
+   ✓ the hand-off is the view on screen (C3, pure) > leaves Look exactly where Walk was: the next frame does not move 3ms
+   ✓ the runtime's camera (C1, C3, C10) > keeps Run across place changes and clears interrupted ride camera state  3434ms
+   ✓ the runtime's camera (C1, C3, C10) > releases moving transport before an explicit view or downhill race  2210ms
+   × the runtime's camera (C1, C3, C10) > app reduced motion loads opaque district detail and hides flying wildlife after cuts 1437ms
+     → expected true to be false // Object.is equality
+   ✓ the runtime's camera (C1, C3, C10) > opens on the signature shot: the square below, the dam crest above  2437ms
+   ✓ the runtime's camera (C1, C3, C10) > walks the open world on the open-world pitch, and hands off to Look on a tool without a jump  1586ms
+   ✓ the runtime's camera (C1, C3, C10) > comes out of the Library behind the body, facing away from its door (the dissection's 211-unit case)  1461ms
+   ✓ the runtime's camera (C1, C3, C10) > Escape's way back (body.follow) never flies to town, and Close holds the nearest landmark  1703ms
+   ✓ the runtime's camera (C1, C3, C10) > pins distant detail only for overview; tools retain the walking radius  1796ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/mountain-camera.test.ts > the runtime's camera (C1, C3, C10) > app reduced motion loads opaque district detail and hides flying wildlife after cuts
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ test/mountain-camera.test.ts:461:92
+    459|       expect(birds).toBeGreaterThan(0);expect(hidden).toBe(birds);
+    460|       const materials:THREE.Material[]=[];stage.place().group.traverse…
+    461|       expect(materials.length).toBeGreaterThan(0);expect(materials.som…
+       |                                                                                            ^
+    462|     }finally{delete document.documentElement.dataset.motion;}
+    463|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 47 passed (48)
+   Start at  13:04:33
+   Duration  46.18s (transform 10.69s, setup 0ms, collect 19.12s, tests 24.92s, environment 1.20s, prepare 220ms)
+

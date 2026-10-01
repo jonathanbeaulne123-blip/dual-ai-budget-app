@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonCards.test.ts (7 tests) 120ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  12:25:55
+   Duration  792ms (transform 327ms, setup 0ms, collect 438ms, tests 120ms, environment 0ms, prepare 71ms)
+

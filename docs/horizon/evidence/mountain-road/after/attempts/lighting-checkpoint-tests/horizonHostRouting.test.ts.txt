@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonHostRouting.test.ts (4 tests) 142ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  12:27:00
+   Duration  6.96s (transform 3.62s, setup 0ms, collect 5.30s, tests 142ms, environment 921ms, prepare 209ms)
+

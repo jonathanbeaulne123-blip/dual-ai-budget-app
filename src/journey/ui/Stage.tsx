@@ -165,8 +165,8 @@ export function Stage(props: StageProps) {
   const flatData = useMemo(() => (land ? journeyLandFlatData(land) : null), [land]);
   const box = useMemo(() => (land ? flatViewBox(props.flatView, land.extent, size) : null), [land, props.flatView, size]);
   const flatMarks = useMemo(
-    () => (mode === "flat" && route && box ? flatAnchors(board, route, box, size, props.flatView.tier) : []),
-    [mode, route, box, board, size, props.flatView.tier],
+    () => (mode === "flat" && route && box ? [...flatAnchors(board, route, box, size, props.flatView.tier), ...(land?.bridges??[]).flatMap(b=>{if(!b.landmark)return [];const p=flatProject(b.landmark.at[0],b.landmark.at[2],box,size);return [{id:`bridge:${b.id}`,x:p.x,y:p.y,depth:0,visible:props.flatView.tier!=="sky"&&p.x>=0&&p.x<=size.width&&p.y>=0&&p.y<=size.height,bridge:b.landmark}];})] : []),
+    [mode, route, box, board, size, props.flatView.tier, land],
   );
   const flatShown = mode === "flat" && flatData && route && box;
   useEffect(() => {

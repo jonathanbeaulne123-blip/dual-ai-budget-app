@@ -1,0 +1,78 @@
+{
+  "scope": "Read-only completed summary/compression-manifest review; no renderer, imports or test run.",
+  "source": "/tmp/mountain-shade-parity-v2-matrix-compressed",
+  "summarySha256": "0a4a46cf6e4f2c515a504255cb9f98ef0818fd800ad1839b5fb203bfe6d38f34",
+  "status": "complete",
+  "allExact": true,
+  "errors": [],
+  "pairs": 288,
+  "uniquePairs": 288,
+  "colorExact": 288,
+  "colorComparedPixels": 77414400,
+  "shadowExact": 144,
+  "shadowComparedPixels": 377487360,
+  "shadowAttachmentByTier": {
+    "full": {
+      "pairs": 72,
+      "emptyColorAttachments": 0,
+      "minNonClearPixels": 1520,
+      "maxNonClearPixels": 2017
+    },
+    "lite": {
+      "pairs": 72,
+      "emptyColorAttachments": 72,
+      "minNonClearPixels": 0,
+      "maxNonClearPixels": 0
+    }
+  },
+  "returnViewHashComparisons": 144,
+  "returnViewHashEqual": 144,
+  "lightStatsEqualPairs": 288,
+  "plantStatsEqualPairs": 288,
+  "passStates": {
+    "partitioned": 144,
+    "partial": 144
+  },
+  "shadeCallsEveryPair": 2,
+  "shadeTriangleRange": {
+    "full": {
+      "old": [
+        2520,
+        2520
+      ],
+      "new": [
+        1260,
+        1296
+      ]
+    },
+    "lite": {
+      "old": [
+        1680,
+        1680
+      ],
+      "new": [
+        840,
+        864
+      ]
+    }
+  },
+  "compression": {
+    "rows": 864,
+    "unique": 864,
+    "roundTripExact": true,
+    "rawBytes": 3639214080,
+    "compressedBytes": 28587928
+  },
+  "methodologyCorrections": [
+    "72 lite shadow attachments are empty; qualify exact shadow-byte parity accordingly. Only72 full-tier attachments exercise nonempty shadow color silhouettes.",
+    "The consumed depthTexture is present but not read; no depth-precision acceptance follows from color-attachment equality.",
+    "Matrix timing contains first-render shader compilation and is not a warmed CPU comparison; dedicatedCPU2 remains pending."
+  ],
+  "actionableRuntimeFinding": null,
+  "pending": [
+    "Actual Long Sands nonflat36pair proof",
+    "Dedicated two-peak CPU sample",
+    "Apply byte-identical group type correction and configured tsc",
+    "Final baked full budget matrix/live/device acceptance as required by root"
+  ]
+}

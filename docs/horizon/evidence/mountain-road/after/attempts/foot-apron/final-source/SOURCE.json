@@ -1,0 +1,9 @@
+{
+  "sourceSha256": "9ab29105d786870d3a81f052d9f33b11b0ee5d334c8fdee04cf82b28cffde4f7",
+  "scope": "Source candidate proof before final rebuild; short independent Foot routes do not establish a whole chain journey.",
+  "candidate": "Corrected one-metre grid, continuous V03 departure and native edge ceiling.",
+  "limits": [
+    "Half-metre and earlier unbuffered/buffer-only reports are failed intermediate attempts, not accepted geometry.",
+    "All final route and capture proof must be rerun against rebuilt served assets."
+  ]
+}

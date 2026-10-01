@@ -16,7 +16,7 @@ import { mountainV2Rule } from './ground';
 export const MOUNTAIN_V2_ROAD_ID = 'mountainV2.road';
 type Sample = { s: number; at: number[]; hw: number; support: string; bridge: string | null };
 const samples = V2.road.samples as Sample[];
-/** v2's road, foot → summit, every third v2 sample, exact heights (Horizon space). */
+/** v2's road, foot → summit, every swept source section and exact height (Horizon space). */
 export function mountainV2RoadPoints(): XYZ[] { return samples.map(p => [p.at[0]!, p.at[1]!, p.at[2]!] as XYZ); }
 /** Arc length (v2's own `s`) of each road point, for footways that take a stretch of it. */
 export function mountainV2RoadArcs(): number[] { return samples.map(p => p.s); }
@@ -79,12 +79,14 @@ export function onMountainV2Road(xy: XY, margin = 3): boolean {
   }
   return false;
 }
-/** v2's glass dam crest promenade (13 points at the crest, west → east) and its link from the east end to v2's road at the
- * dam overlook: the walk to L01 (D-M3). Carried: the region draws the crest. */
+/** The native dam-crest walk, west abutment → east abutment. This is route metadata for
+ * the region-owned crest, not a new connection to the road. Native stairs and paths
+ * remain in regionPathGraph; a nearest-road chord here had no drawn/supporting deck. */
 export function mountainV2Promenade(): BedCut {
-  const prom = (V2.dam.promenade as number[][]).map(p => [p[0]!, p[1]!, p[2]!] as XYZ), end = prom.at(-1)!;
-  let best = samples[0]!, d = Infinity; for (const p of samples) { const e = Math.hypot(p.at[0]! - end[0], p.at[2]! - end[2]); if (e < d) { d = e; best = p; } }
-  const b = bed('walk mountainV2.promenade', 'walk', [...prom, [best.at[0]!, best.at[1]!, best.at[2]!]], true);
-  b.width = 2.4; b.districtIds = ['crown']; regionCarry(b);
+  const crest = V2.nativePlanning.walks.find(w => w.id === 'promenade:dam-crest');
+  if (!crest) throw new Error('Mountain export is missing promenade:dam-crest');
+  const points = crest.points.map(p => [p[0]!, p[1]!, p[2]!] as XYZ);
+  const b = bed('walk mountainV2.promenade', 'walk', points, false);
+  b.width = crest.halfWidth * 2; b.surface = 'paved'; b.districtIds = ['crown']; regionCarry(b);
   return b;
 }

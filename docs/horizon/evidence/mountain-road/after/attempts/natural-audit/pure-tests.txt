@@ -1,0 +1,23 @@
+✔ native spatial station uses horizontal segment lengths, not spatial s + offset (5.593583ms)
+✔ mapping rejects different source geometry, chain geometry, count and length (0.566583ms)
+✔ only the named Foot/native start accepts its known 23 micrometre height alias (1.476417ms)
+✔ legacy native d omits initial half metre, reverses locally, and then adds reach offset (0.242959ms)
+✔ actual heading/velocity derivatives wrap and low-speed curvature stays unavailable (3.681584ms)
+✔ post-step local projection respects reversed canonical station direction (0.365041ms)
+✔ reverse entry speed uses a same-attempt bracket (1.393416ms)
+✔ small hairpin crossed between observations is reached but has no invented turn/steer metrics (0.509583ms)
+✔ restart, recovery, unexplained jump, and stop before turn cannot fill an unsampled hairpin (1.20025ms)
+✔ legacy restarted trace allows only explicit interior evidence and no cross-boundary interpolation (3.94225ms)
+✔ legacy averaged curvature crossing a group boundary is not an interior peak (1.628083ms)
+✔ lamp distance is to baked pool in plan and retains its vertical difference (1.201417ms)
+✔ report-only CLI keeps scenarios separate, selects baked lite IDs, and rejects mixed bakes (847.33625ms)
+✔ native and walking/bicycle finish cannot combine old station progress with a later return to the line (0.862541ms)
+✔ unmeasured legacy off-bed samples remain unavailable instead of green zero (0.662042ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1627.200458

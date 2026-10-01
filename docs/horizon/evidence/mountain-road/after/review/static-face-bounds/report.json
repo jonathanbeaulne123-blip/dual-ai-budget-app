@@ -1,0 +1,117 @@
+{
+  "source": {
+    "baseline": "85c887fc440344ee4b6e6e48b77270e5fc2e4e084a28e4ee27b838f170c4f5bc",
+    "candidate": "1acfa0d8ffa70756f81e7a47072191b435d0b145b2d75bc01364890627afb438",
+    "inputHashes": {
+      "/tmp/mountain-funicular-foot-candidate-proof-v16/candidate-solid.json": "6e2f9550f4e1dcc8fd698109f7533cceaf7ec29e4963d2c80ed6aeb3e17f8477",
+      "/tmp/mountain-funicular-foot-candidate-proof-v16/before-source-solids.json": "d5074bdc87e76f473ff54ccf57215c0dc86b5a9a90eb983633c4a9ba282ebacb",
+      "/tmp/mountain-funicular-foot-candidate-proof-v16/walkers.json": "e993acde43cb293af3dd6ada3a0056f3f63be0c9e6e167d5bfbf9b94506fac25",
+      "/tmp/mountain-funicular-foot-candidate-proof-v16/raw-sweeps.json": "5ff20f615643d317d78c2c248f12d25db08bfa0d3ecacc603d2f5112c9bdeb28",
+      "/tmp/mountain-funicular-foot-candidate-proof-v16/asset-provenance.json": "bbab5469da415052aa1f7112930f509a1dac33d06fda1cdac743e874a726c5f1"
+    },
+    "terrainSha256": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+    "beforeBundleSha256": "6881c7b9f4ddb5f98e63098f4424bba814dd8baf891488082953d111cadd68c1",
+    "candidateBundleSha256": "c20d0b86812ea919916a61287c3f4923db5fcc92ba27b79ed1d7108190f1f8e1",
+    "changedInputs": []
+  },
+  "method": "Exact deep equality on all returned fields, preserved original face/order, saved v16 triangles and actual terrain. Static query parity first; unchanged synthetic dynamic providers and streamed additions separately. CPU wall timings use uninstrumented source, no GPU.",
+  "mismatches": [],
+  "timing": [
+    {
+      "kind": "build-before",
+      "ms": 67.297125
+    },
+    {
+      "kind": "build-candidate",
+      "ms": 104.87374999999997
+    },
+    {
+      "kind": "exact-parity",
+      "queries": 6069,
+      "ms": 59690.54025
+    },
+    {
+      "kind": "before",
+      "round": 0,
+      "queries": 2023,
+      "ms": 10531.991999999998,
+      "checksum": 31954.12812717024
+    },
+    {
+      "kind": "candidate",
+      "round": 0,
+      "queries": 2023,
+      "ms": 9069.287292000008,
+      "checksum": 31954.12812717024
+    },
+    {
+      "kind": "candidate",
+      "round": 1,
+      "queries": 2023,
+      "ms": 8882.605375,
+      "checksum": 31954.12812717024
+    },
+    {
+      "kind": "before",
+      "round": 1,
+      "queries": 2023,
+      "ms": 10660.673249999993,
+      "checksum": 31954.12812717024
+    },
+    {
+      "kind": "before",
+      "round": 2,
+      "queries": 2023,
+      "ms": 10956.361250000002,
+      "checksum": 31954.12812717024
+    },
+    {
+      "kind": "candidate",
+      "round": 2,
+      "queries": 2023,
+      "ms": 8862.196167000002,
+      "checksum": 31954.12812717024
+    },
+    {
+      "kind": "candidate",
+      "round": 3,
+      "queries": 2023,
+      "ms": 8795.465582999983,
+      "checksum": 31954.12812717024
+    },
+    {
+      "kind": "before",
+      "round": 3,
+      "queries": 2023,
+      "ms": 10443.362125000014,
+      "checksum": 31954.12812717024
+    }
+  ],
+  "limits": [
+    "Saved v16 geometry is not final accepted funicular geometry.",
+    "Finite regression corpus is not an exhaustive floating-point proof.",
+    "Fresh full movement/art runner speed and all results must still be measured before adopting this optimization.",
+    "Indexed solid XZ positions/indices are immutable after addSolids, as required already by bucket ownership and precomputed normals."
+  ],
+  "index": {
+    "before": {
+      "triangles": 31084,
+      "referenceBytes": 621680,
+      "cells": 26,
+      "chunks": 1
+    },
+    "candidate": {
+      "triangles": 31084,
+      "referenceBytes": 1616368,
+      "cells": 26,
+      "chunks": 1
+    },
+    "addedActiveReferenceBytes": 994688
+  },
+  "queries": {
+    "saved": 6069,
+    "synthetic": 5400,
+    "uniqueSavedPoints": 867
+  },
+  "parityPassed": true
+}

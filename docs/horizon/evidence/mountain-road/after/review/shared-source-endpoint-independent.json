@@ -1,0 +1,79 @@
+[
+  {
+    "id": "cross.s1.mountainV2Road.107",
+    "courseRow": 122,
+    "ownerVertex": 576,
+    "maxBoxError": 0.001598991000037131,
+    "passes": true
+  },
+  {
+    "id": "cross.s1.mountainV2Road.154",
+    "courseRow": 162,
+    "ownerVertex": 456,
+    "maxBoxError": 0.0028704950000246754,
+    "passes": true
+  },
+  {
+    "id": "cross.s1.mountainV2Road.310",
+    "courseRow": 314,
+    "ownerVertex": 0,
+    "maxBoxError": 0,
+    "passes": true
+  },
+  {
+    "id": "cross.s1.mountainV2Road.241",
+    "courseRow": 248,
+    "ownerVertex": 198,
+    "maxBoxError": 0.0038657420000163256,
+    "passes": true
+  },
+  {
+    "id": "cross.s1.mountainV2Road.279",
+    "courseRow": 284,
+    "ownerVertex": 90,
+    "maxBoxError": 0.0007717769999544544,
+    "passes": true
+  },
+  {
+    "id": "cross.s1.mountainV2Road.76",
+    "courseRow": 82,
+    "ownerVertex": 696,
+    "maxBoxError": 0.0011443870000675815,
+    "passes": true
+  },
+  {
+    "id": "cross.s1.mountainV2Road.41",
+    "courseRow": 43,
+    "ownerVertex": 813,
+    "maxBoxError": 0.0042609260000290305,
+    "passes": true
+  },
+  {
+    "id": "cross.s1.mountainV2Road.190",
+    "courseRow": 196,
+    "ownerVertex": 354,
+    "maxBoxError": 0.0009465220000492991,
+    "passes": true
+  },
+  {
+    "id": "cross.s1.mountainV2Road.48",
+    "courseRow": 51,
+    "ownerVertex": 789,
+    "maxBoxError": 0.004278182000007291,
+    "passes": true
+  },
+  {
+    "id": "cross.s1.mountainV2Road.49",
+    "courseRow": 53,
+    "ownerVertex": 783,
+    "maxBoxError": 0.003451645000041026,
+    "passes": true
+  },
+  {
+    "id": "cross.s1.mountainV2Road.199",
+    "courseRow": 210,
+    "ownerVertex": 312,
+    "maxBoxError": 0.0015311319999682382,
+    "passes": true
+  }
+]

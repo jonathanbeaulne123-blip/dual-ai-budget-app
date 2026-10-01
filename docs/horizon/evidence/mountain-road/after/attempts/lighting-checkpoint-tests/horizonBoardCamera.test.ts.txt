@@ -1,0 +1,13 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonBoardCamera.test.ts (7 tests) 7306ms
+   ✓ the follow camera (RIDE §10.2) > keeps the FOV at 54 under reduced motion, calm and lite, and widens it with speed at full tier  980ms
+   ✓ the follow camera (RIDE §10.2) > kicks the FOV by at most 4° and only in the 0.3 s after a boost, at full tier  644ms
+   ✓ the follow camera (RIDE §10.2) > keeps the eye at least 0.6 above the ground in every situation  4541ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  12:25:16
+   Duration  7.85s (transform 242ms, setup 0ms, collect 320ms, tests 7.31s, environment 0ms, prepare 59ms)
+

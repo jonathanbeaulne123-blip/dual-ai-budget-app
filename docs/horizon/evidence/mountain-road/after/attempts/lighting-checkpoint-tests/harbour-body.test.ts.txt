@@ -1,0 +1,771 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stderr | test/harbour-body.test.ts > the body is a person in a model village > shows the rider when a skateboard mount interrupts a fall recovery
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at context2d (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/look/deckArt.ts:34:24)
+    at createSkateboard (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/board.ts:54:51)
+    at createSkaterLook (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/look/index.ts:78:17)
+    at ensureLook (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/body/walker.ts:234:20)
+    at drawSkate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/body/walker.ts:240:13)
+    at Object.enable (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/body/walker.ts:263:204)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:77:31 undefined
+
+stderr | test/harbour-body.test.ts > the body is a person in a model village > shows the rider when a skateboard restore interrupts a fall recovery
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at context2d (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/look/deckArt.ts:34:24)
+    at createSkateboard (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/board.ts:54:51)
+    at createSkaterLook (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/look/index.ts:78:17)
+    at ensureLook (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/body/walker.ts:234:20)
+    at drawSkate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/body/walker.ts:240:13)
+    at Object.enable (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/body/walker.ts:263:204)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:66:21 undefined
+
+stderr | test/harbour-body.test.ts > the body is a person in a model village > plays all six emotes without putting the skateboard away
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at context2d (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/look/deckArt.ts:34:24)
+    at createSkateboard (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/board.ts:54:51)
+    at createSkaterLook (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/look/index.ts:78:17)
+    at ensureLook (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/body/walker.ts:234:20)
+    at drawSkate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/body/walker.ts:240:13)
+    at Object.enable (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/body/walker.ts:263:204)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:97:24 undefined
+
+stderr | test/harbour-body.test.ts > the body collides > collides with the tree ring the island actually planted
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at paperGrain (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/art/cardScene.ts:34:18)
+    at Module.createGround (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/ground.ts:156:114)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:261:22
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20
+    at new Promise (<anonymous>) undefined
+
+stderr | test/harbour-body.test.ts > the keys drive the body, not the camera > raises a body in the Court and leaves the Look camera in charge until you move
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at paperTexture (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:48:18)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:190:15)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:981:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at stencilAtlas (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:68:18)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:190:36)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:981:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:981:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:981:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:981:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:981:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:981:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:981:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:981:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+
+stderr | test/harbour-body.test.ts > the keys drive the body, not the camera > walks a straight line while a direction is held, not a circle
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at paperTexture (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:48:18)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:190:15)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:990:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at stencilAtlas (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:68:18)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:190:36)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:990:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:990:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:990:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:990:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:990:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:990:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:990:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:990:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+
+stderr | test/harbour-body.test.ts > the keys drive the body, not the camera > walks the body, and leaves the Look camera's own target where it was
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at paperTexture (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:48:18)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:190:15)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1007:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at stencilAtlas (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:68:18)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:190:36)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1007:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1007:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1007:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1007:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1007:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1007:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1007:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1007:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+
+stderr | test/harbour-body.test.ts > the keys drive the body, not the camera > comes back to rest: the body stops, and the world stops asking for frames
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at paperTexture (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:48:18)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:190:15)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1024:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at stencilAtlas (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:68:18)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:190:36)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1024:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1024:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1024:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1024:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1024:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1024:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1024:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1024:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+
+stderr | test/harbour-body.test.ts > the keys drive the body, not the camera > walks to a tap on the open ground, and hands the view back on request
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at paperTexture (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:48:18)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:190:15)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1040:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at stencilAtlas (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:68:18)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:190:36)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1040:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1040:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1040:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1040:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1040:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1040:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1040:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1040:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+
+stderr | test/harbour-body.test.ts > the keys drive the body, not the camera > raises a body on the placed loft floor and puts you down at its own way in
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at paperTexture (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:48:18)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:190:15)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1054:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at stencilAtlas (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:68:18)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:190:36)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1054:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1054:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1054:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1054:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1054:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1054:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1054:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1054:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+
+stderr | test/harbour-body.test.ts > the keys drive the body, not the camera > never lets your own body swallow a tap meant for a door
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at paperTexture (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:48:18)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:190:15)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1074:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at stencilAtlas (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:68:18)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:190:36)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1074:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1074:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1074:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1074:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1074:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1074:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1074:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at engravedPlate (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:102:22)
+    at EngravedPlate.set (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/court/engraved.ts:196:21)
+    at buildSkatePark (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/skate/parkScene.ts:232:11)
+    at Module.mountHarbourWorld (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/scene/runtime.ts:456:19)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/test/harbour-body.test.ts:1074:13
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26 undefined
+
+ ✓ test/harbour-body.test.ts (67 tests) 5563ms
+   ✓ the body is a person in a model village > shows the rider when a skateboard mount interrupts a fall recovery  301ms
+   ✓ the body collides > collides with the tree ring the island actually planted  2807ms
+
+ Test Files  1 passed (1)
+      Tests  67 passed (67)
+   Start at  12:20:44
+   Duration  10.60s (transform 2.50s, setup 0ms, collect 4.21s, tests 5.56s, environment 525ms, prepare 74ms)
+

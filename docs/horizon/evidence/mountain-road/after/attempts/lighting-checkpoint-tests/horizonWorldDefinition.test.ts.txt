@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonWorldDefinition.test.ts (3 tests) 6772ms
+   ✓ assembles named v3 data from typed cuts while exposing missing physical work  3492ms
+   ✓ carries its own partition, offshore rules and coastline, and refuses duplicate solid ids (R1-67, R1-69)  3269ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  12:46:42
+   Duration  9.89s (transform 1.48s, setup 0ms, collect 2.13s, tests 6.77s, environment 0ms, prepare 347ms)
+

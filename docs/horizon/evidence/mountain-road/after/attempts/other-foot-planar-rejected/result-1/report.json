@@ -1,0 +1,110 @@
+{
+  "status": "UNACCEPTED_SAVED_MESH_EXPERIMENT",
+  "inputSha256": "1b65afae61000ab2b1d0ba0e780113c5ad8435be98fa193fb222b33b8af0f492",
+  "experimentSha256": "d0658053e2059f33ffc53f7a122ee9c447dc94602d968c5437092a1a4575db87",
+  "input": "/tmp/mountain-other-planar-reduction/S1.surface.8.lakeside.footJoin.json",
+  "baseline": {
+    "triangles": 164,
+    "vertices": 80,
+    "topology": [],
+    "variants": [
+      {
+        "variant": "double",
+        "tops": 52,
+        "maxTopDegrees": 8.600819475541092,
+        "invalid": 0,
+        "witnesses": []
+      },
+      {
+        "variant": "bake9",
+        "tops": 52,
+        "maxTopDegrees": 8.600819588935277,
+        "invalid": 0,
+        "witnesses": []
+      },
+      {
+        "variant": "bake9-localFloat32",
+        "tops": 52,
+        "maxTopDegrees": 8.601933330379007,
+        "invalid": 0,
+        "witnesses": []
+      }
+    ]
+  },
+  "after": {
+    "triangles": 162,
+    "referencedVertices": 79,
+    "retainedPositionValues": 240,
+    "removedTriangles": 2,
+    "removedVertices": 1
+  },
+  "constraints": {
+    "planeDistance": 1e-11,
+    "finalGeometryTolerance": 1e-9,
+    "topMaxDegrees": 40,
+    "minTopDeterminant": 1e-8,
+    "originalPositionArrayExact": true,
+    "logicalOriginExact": true
+  },
+  "proof": {
+    "sourceToCandidate": {
+      "maxError": 0,
+      "maxCoverageError": 2.275957200481571e-14,
+      "failureCount": 0,
+      "witnesses": []
+    },
+    "candidateToSource": {
+      "maxError": 0,
+      "maxCoverageError": 5.551115123125783e-17,
+      "failureCount": 0,
+      "witnesses": []
+    }
+  },
+  "topologyFailures": [],
+  "variants": [
+    {
+      "variant": "double",
+      "tops": 51,
+      "maxTopDegrees": 8.600819475541092,
+      "invalid": 0,
+      "witnesses": []
+    },
+    {
+      "variant": "bake9",
+      "tops": 51,
+      "maxTopDegrees": 8.600819588935277,
+      "invalid": 0,
+      "witnesses": []
+    },
+    {
+      "variant": "bake9-localFloat32",
+      "tops": 51,
+      "maxTopDegrees": 8.601933330379007,
+      "invalid": 0,
+      "witnesses": []
+    }
+  ],
+  "attempts": 81,
+  "rejections": {
+    "plane-or-triangulation": 80
+  },
+  "bounded": {
+    "maxSeconds": 30,
+    "maxRemovals": 10000,
+    "maxAttempts": 50000,
+    "remainingQueue": 0
+  },
+  "numericalGatesPass": true,
+  "wallMs": 18.242458,
+  "cpu": {
+    "user": 33105,
+    "system": 1576
+  },
+  "limits": [
+    "Numerical saved-mesh checks only; not accepted production geometry.",
+    "Original doubles retained; no Float32 deduplication or geometry optimizer.",
+    "Common refinement uses stated area-roundoff tolerance max(1e-15, projected area * 1e-9); all measured plane differences are <=1e-9.",
+    "Unreferenced original vertices remain in positions deliberately; only indices change.",
+    "Every actual surface/contact/ceiling/movement/art/host ownership and budget gate remains required."
+  ]
+}

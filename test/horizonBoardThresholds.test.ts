@@ -7,10 +7,11 @@ import {HORIZON_MANIFEST as M} from '../src/harbour/horizon/world/manifest.ts';
 import type {WorldDefinition} from '../src/harbour/horizon/world/definition.ts';
 import type {MoverDeps} from '../src/harbour/horizon/movers/shared/registry.ts';
 import {offersAt, type ThresholdOffer} from '../src/harbour/horizon/movers/shared/threshold.ts';
-import {BOARD_TEST_PROFILE} from '../src/harbour/horizon/movers/shared/ground/synthetic.ts';
+import {BOARD_TEST_PROFILE, syntheticQuery} from '../src/harbour/horizon/movers/shared/ground/synthetic.ts';
 import {groundGuard, groundSpeed} from '../src/harbour/horizon/movers/shared/ground/kernel.ts';
 import {BOARD_PARK_PROFILE, BOARD_PROFILE, boardProfileAt, parkBox, PARK_FORGIVENESS} from '../src/harbour/horizon/movers/board/profile.ts';
 import {createBoardController, type BoardController} from '../src/harbour/horizon/movers/board/controller.ts';
+import {BICYCLE_PROFILE} from '../src/harbour/horizon/movers/bicycle/profile.ts';
 import {bedClass} from '../src/harbour/horizon/movers/shared/ground/contact.ts';
 import {bedPath, moverInputOf, pointAt, progressOf, runLine, type BedPath, type LineId} from '../src/harbour/horizon/movers/board/situations.ts';
 import {sampleTerrain} from '../src/harbour/horizon/land/terrain/index.ts';
@@ -24,7 +25,7 @@ beforeAll(() => {
   const field = decodeTerrainAsset(terrain.buffer.slice(terrain.byteOffset, terrain.byteOffset + terrain.byteLength) as ArrayBuffer, 'full');
   const geography = createHorizonGeography(field, {...loaded.collision, solids: loaded.geometry.solids, diagnostics: loaded.diagnostics ?? []} as Parameters<typeof createHorizonGeography>[1]);
   // v2.6 (D-M1/D-M2): as mountHorizon does, the Mountain v2 region owns the ground, decks and solids inside its footprint.
-  geography.addDynamic(createMountainV2Region({horizonGround: (x, z) => sampleTerrain(field, x, z), yield: terraceBedExclusion(loaded.beds), terrainStep: field.step}).provider);
+  geography.addDynamic(createMountainV2Region({walkingJoinSolids:loaded.geometry.solids,horizonGround: (x, z) => sampleTerrain(field, x, z), yield: terraceBedExclusion(loaded.beds), terrainStep: field.step}).provider);
   world = loaded;
   deps = {world, geography, manifest: M, reducedMotion: false, calm: false, tier: 'full'};
   board = createBoardController(deps);
@@ -301,14 +302,15 @@ const LINE_BLOCKERS: Record<LineId, Record<string, number[]>> = {
   S1: {
     // v2.6: the library balcony's landing ramp (a region deck) stood in S1's clearance at 614–616 m; PR #566 CodeRabbit: the
     // region applies v2's own junction rule (a branch's mouth is open road), so it stops nobody on S1 — no entry here.
-    'apronBridge.rails@notch': [1312, 1314],
+    // Bridge rebuild clears the old Apron rail contacts at 1312/1314; no replacement exception.
     'reachBoardwalk.rails@reach': [1686],   // across the run-out before landingQuay
   },
   S2: {},
   S3: {},
   S4: {
-    'hollowBridge.rails@hollow': [148],
-    'walk garden.bed.hollow@hollow': [150],   // the Hollow neck (D-C10, reserved)
+    // The old rail contact at 148 is clear. At 150 the bridge now owns the same carried
+    // surface and blocker location (board y35.95915937): the Hollow neck (D-C10) remains.
+    'hollowBridge.deck@hollow': [150],
   },
 };
 
@@ -328,5 +330,94 @@ describe('no invisible collider on a line (P19)', () => {
     }
     expect(found).toEqual(LINE_BLOCKERS);
     expect(blocked).toBe(Object.values(LINE_BLOCKERS).reduce((n, line) => n + Object.values(line).reduce((k, ds) => k + ds.length, 0), 0));
+  });
+});
+
+
+// A controlled graded contact isolates the handover lifecycle from the real summit's
+// changing geometry. The existing skateLineStarts.1 case above remains the baked-world proof.
+describe.each([
+  {id: 'board' as const, profile: BOARD_PROFILE},
+  {id: 'bicycle' as const, profile: BICYCLE_PROFILE},
+])('$id pickup on a 4.8% slope', ({id, profile}) => {
+  function setup(enter = true, surface: 'legal' | 'illegal' | 'air' = 'legal') {
+    const query = syntheticQuery({gradePct: 4.8});
+    let steps = 0;
+    const c = createBoardController({...deps, geography: {...deps.geography,
+      ground: (x, z) => query.sample(x, z, 0)!.y, cameraBlocked: () => false,
+    }}, profile, {id, contact: {...query, sample: (x, z, y) => {
+      const sample = query.sample(x, z, y)!;
+      return surface === 'air' ? null : surface === 'illegal'
+        ? {...sample, legal: false, pace: 'offbed', roll: 6, pushGrip: 0} : sample;
+    }, bedAt: () => null, padAt: () => null}, onStep: () => {steps++;}});
+    const pickup: ThresholdOffer = {id: 'graded-pickup', thresholdId: 'graded-pickup',
+      at: [0, 0, 0], from: 'feet', to: id, action: 'Pick up', label: 'Pick up'};
+    if (enter) c.enter(pickup, {x: 0, y: 0, z: 0, yaw: 0}, 0);
+    return {c, pickup, steps: () => steps};
+  }
+
+  it('holds only the initial idle handover, without physics backlog or losing the first push', () => {
+    const held = setup(), ordinary = setup(false);
+    ordinary.c.place({x: 0, y: 0, z: 0, heading: 0, speed: 0});
+    for (let i = 0; i < 120; i++) held.c.update(1 / 60,
+      {...moverInputOf({}), look: {dx: .01, dy: 0}}, i / 60);
+    expect(held.c.state().p).toEqual([0, 0, 0]);
+    expect(groundSpeed(held.c.state())).toBe(0);
+    expect(held.steps()).toBe(0);
+    held.c.update(.1, moverInputOf({push: true}), 2);
+    ordinary.c.update(.1, moverInputOf({push: true}), 0);
+    expect(held.steps()).toBe(12);
+    expect(held.c.state().p).toEqual(ordinary.c.state().p);
+    expect(held.c.state().v).toEqual(ordinary.c.state().v);
+    held.c.update(.1, moverInputOf({}), 2.1);
+    ordinary.c.update(.1, moverInputOf({}), .1);
+    expect(held.steps()).toBe(24);
+    expect(held.c.state().v).toEqual(ordinary.c.state().v);
+  });
+
+  it.each([{steer: .1}, {steer: -.1}, {slide: true}])('releases on an ordinary supported action %j', action => {
+    const {c, steps} = setup();
+    c.update(.1, moverInputOf(action), 0);
+    expect(steps()).toBe(12);
+    if (action.steer) expect(Math.abs(c.state().heading)).toBeGreaterThan(0);
+    c.update(.1, moverInputOf({}), .1);
+    expect(steps()).toBe(24);
+  });
+
+  it.each(['illegal', 'air'] as const)('does not freeze an unsupported or illegal pickup (%s)', surface => {
+    const {c, steps} = setup(true, surface);
+    c.update(.1, moverInputOf({}), 0);
+    expect(steps()).toBe(12);
+    if (surface === 'air') expect(c.state().p[1]).toBeLessThan(0);
+  });
+
+  it('place and successful physical resume clear a pending hold even at zero speed', () => {
+    const placed = setup();
+    placed.c.place({x: 0, y: 0, z: 0, heading: 0, speed: 0});
+    placed.c.update(.1, moverInputOf({}), 0);
+    expect(placed.steps()).toBe(12);
+    expect(groundSpeed(placed.c.state())).toBeGreaterThan(0);
+    const resumed = setup();
+    expect(resumed.c.resumeAt!({x: 0, y: 0, z: 0, yaw: 0, velocity: [0, 0, 0]})).toBe(true);
+    resumed.c.update(.1, moverInputOf({}), 0);
+    expect(resumed.steps()).toBe(12);
+    expect(groundSpeed(resumed.c.state())).toBeGreaterThan(0);
+  });
+
+  it('charges the board pop while held and respects the bicycle no-pop profile', () => {
+    const {c, steps} = setup();
+    for (let i = 0; i < 30; i++) c.update(1 / 60, {...moverInputOf({}), jump: true}, i / 60);
+    expect(steps()).toBe(0);
+    expect(c.state().p).toEqual([0, 0, 0]);
+    const frame = c.update(DT, moverInputOf({}), .5);
+    if (profile.pop) {
+      expect(steps()).toBe(1);
+      expect(frame.events).toContain('airborne');
+      expect(c.state().contact.on).toBe(false);
+      expect(c.state().p[1]).toBeGreaterThan(0);
+    } else {
+      expect(steps()).toBe(0);
+      expect(frame.events).not.toContain('airborne');
+    }
   });
 });

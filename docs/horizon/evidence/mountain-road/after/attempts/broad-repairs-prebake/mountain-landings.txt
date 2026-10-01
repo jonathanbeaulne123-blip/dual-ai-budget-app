@@ -1,0 +1,38 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/mountain-landings.test.ts (12 tests | 1 failed) 1473ms
+   ✓ shared native and Horizon mountain landings > keeps every actual deck triangle within the authored 40% grade limit 13ms
+   ✓ shared native and Horizon mountain landings > keeps the repaired library exit above terrain, including the narrow baked mound missed by row-only tests 219ms
+   ✓ shared native and Horizon mountain landings > supports the full repaired width and admits the rider in native and the actual composed Horizon  329ms
+   ✓ shared native and Horizon mountain landings > retains original joins and the primary library roof above its unchanged walls 5ms
+   ✓ shared native and Horizon mountain landings > leaves through-road riders on one flat floor at each repaired mouth in both worlds 39ms
+   ✓ shared awning contour return > preserves the original first grind rail and entry, with a real course rejoin 2ms
+   ✓ shared awning contour return > keeps every rebuilt return cell clear of terrain and flush with the actual road 158ms
+   × shared awning contour return > supports the actual tapered width with no rider contacts in both worlds 12ms
+     → expected 17.09848999167486 to be close to 17.088373827167505, received difference is 0.010116164507355307, but expected 5e-9
+   ✓ shared awning contour return > removes the old return ceiling and leaves both road directions open across the new arrival 107ms
+   ✓ shared dam entry landing > limits the repair to entry heights and preserves the rail, exit, endpoints and every plan coordinate 9ms
+   ✓ shared dam entry landing > draws and queries the same entry triangles with less than 20mm overlap error  329ms
+   ✓ shared dam entry landing > adds no entry lip at center and +/-2m in either direction, retaining three exact native road limitations 247ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/mountain-landings.test.ts > shared awning contour return > supports the actual tapered width with no rider contacts in both worlds
+AssertionError: expected 17.09848999167486 to be close to 17.088373827167505, received difference is 0.010116164507355307, but expected 5e-9
+ ❯ test/mountain-landings.test.ts:147:83
+    145|   for(let i=9;i<rows.length;i++)for(let step=0;step<=10;step++)for(con…
+    146|    const [x,y,z]=landingPointAt(rows,i,step/10,across);
+    147|    const deck=landingSample(rows,x,z);expect(deck).not.toBeNull();expe…
+       |                                                                                   ^
+    148|    const n=queryWorldSurface({x,z,y,supportId:awning.id},groundHeightA…
+    149|    pushOutAll(x,z,y,.24,obstacles,[],out);const contact=horizon.contac…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 11 passed (12)
+   Start at  01:19:41
+   Duration  3.25s (transform 472ms, setup 0ms, collect 1.55s, tests 1.47s, environment 0ms, prepare 66ms)
+

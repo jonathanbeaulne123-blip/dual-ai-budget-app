@@ -1,0 +1,79 @@
+[
+  {
+    "id": "S1.surface.7.lakeside.footJoin",
+    "path": "/tmp/mountain-other-planar-reduction/S1.surface.7.lakeside.footJoin.json",
+    "triangles": 1060,
+    "testOrigin": [
+      0,
+      0,
+      0
+    ],
+    "note": "Zero test origin models actual default absolute Float32 cards; no production metadata modified."
+  },
+  {
+    "id": "S1.surface.8.lakeside.footJoin",
+    "path": "/tmp/mountain-other-planar-reduction/S1.surface.8.lakeside.footJoin.json",
+    "triangles": 164,
+    "testOrigin": [
+      0,
+      0,
+      0
+    ],
+    "note": "Zero test origin models actual default absolute Float32 cards; no production metadata modified."
+  },
+  {
+    "id": "yearWalk.bed.lakeside.footJoin",
+    "path": "/tmp/mountain-other-planar-reduction/yearWalk.bed.lakeside.footJoin.json",
+    "triangles": 2656,
+    "testOrigin": [
+      0,
+      0,
+      0
+    ],
+    "note": "Zero test origin models actual default absolute Float32 cards; no production metadata modified."
+  },
+  {
+    "id": "yearWalk.shoulders.lakeside.footJoin",
+    "path": "/tmp/mountain-other-planar-reduction/yearWalk.shoulders.lakeside.footJoin.json",
+    "triangles": 1876,
+    "testOrigin": [
+      0,
+      0,
+      0
+    ],
+    "note": "Zero test origin models actual default absolute Float32 cards; no production metadata modified."
+  },
+  {
+    "id": "S1.batter.footJoin",
+    "path": "/tmp/mountain-other-planar-reduction/S1.batter.footJoin.json",
+    "triangles": 88,
+    "testOrigin": [
+      0,
+      0,
+      0
+    ],
+    "note": "Zero test origin models actual default absolute Float32 cards; no production metadata modified."
+  },
+  {
+    "id": "yearWalk.batter.footJoin",
+    "path": "/tmp/mountain-other-planar-reduction/yearWalk.batter.footJoin.json",
+    "triangles": 304,
+    "testOrigin": [
+      0,
+      0,
+      0
+    ],
+    "note": "Zero test origin models actual default absolute Float32 cards; no production metadata modified."
+  },
+  {
+    "id": "mountainV2.footLane.apron",
+    "path": "/tmp/mountain-other-planar-reduction/mountainV2.footLane.apron.json",
+    "triangles": 2004,
+    "testOrigin": [
+      0,
+      0,
+      0
+    ],
+    "note": "Zero test origin models actual default absolute Float32 cards; no production metadata modified."
+  }
+]

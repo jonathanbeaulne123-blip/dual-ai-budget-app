@@ -1,0 +1,1657 @@
+{
+  "createdAt": "2026-10-01T08:21:52.415Z",
+  "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+  "sourceHashes": {
+    "src/harbour/horizon/land/terrain/geometry.ts": "dce99968a6f68bc6ba4c0225edeb5e331f31c9f6c358579454b424b3375501b4",
+    "src/harbour/horizon/land/terrain/index.ts": "5fd5c8225b6d70ad33f6bf611ebf297cc8f34b4abd9db89bcf9304511b08f888",
+    "src/harbour/horizon/world/MANIFEST.json": "718c4e93f1e04ed3fa6fcd0cb63554bd29a09d4e96d5d89d79fab7e8c53343f4",
+    "src/harbour/horizon/world/manifest.ts": "980d0c15f7661077905e48556089e0f63f952221ae1f95345b81600b09e06867",
+    "src/harbour/horizon/land/coast/index.ts": "695480ed50f80c29a87a28ec589cda09bc5de399b272c7b56f2703f68ac37dac",
+    "src/harbour/horizon/land/water/index.ts": "224f6e0f4e7527e5fb1f52642846e53611237b8bd1dc15f0b289941ceab904df",
+    "src/harbour/horizon/world/geometry.ts": "f621ab28a5178289d7139912912bc080f0ca980900f30134406fae3663a4bef3",
+    "src/harbour/horizon/world/raycast.ts": "ef88513e226b68be87557d1915b05771fff789ef6599aee104b3ae1ff6d468f2",
+    "src/harbour/horizon/world/lens.ts": "5dc5cbdb741511fc718714a3cac12dd16048c3577d336a893bf829cbf164ff6c",
+    "src/harbour/horizon/sky/gradient.ts": "bd9c6d4979619eaf1c68f7dbc9e39cb9b04145b5421186bf3c4189629f0d3609",
+    "src/harbour/horizon/sky/fog.ts": "1f38d2d9408a0995ecd5835264bd3b4fd4e72ab3ba296b8bf4857a6d00e96e00",
+    "src/harbour/horizon/world/views.ts": "40c90948b93c7d9662aea20a029939afbcb42cac999e8f91604bd5aad96c18b5",
+    "src/harbour/horizon/land/terrain/asset.ts": "c25f3a3c45ad43fa7c77c94ec0c68d67d0d9847f82fd378c7fb92ae1c4cd8839",
+    "public/horizon/world/horizon-geo-1.json": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+    "public/horizon/terrain/horizon-geo-1.bin": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+    "../../../../../../../tmp/mountain-page-L-diagnostic.mjs": "7ee294517fc6ccccd28f3977e6a1088c25978b5d7f1059fa8bbb771e3df04980"
+  },
+  "bundleSha256": "61f3b0ce26e06417e9bec94f2c5a91e6d982929acdad842ff826b0834421649c",
+  "original": {
+    "id": "L",
+    "label": "The quay at night",
+    "eye": [
+      1484,
+      4.6,
+      1295
+    ],
+    "target": [
+      1285,
+      4,
+      1315
+    ],
+    "floor": 3,
+    "underground": false,
+    "fovDegrees": 55,
+    "aspect": 1.777777778,
+    "radius": 240,
+    "bestHour": "night",
+    "also": "dawn",
+    "portrait": {
+      "eye": [
+        1460,
+        4.6,
+        1300
+      ],
+      "target": [
+        1285,
+        4,
+        1315
+      ],
+      "fovDegrees": 45,
+      "frames": [
+        "Lantern Row",
+        "the Boathouse"
+      ]
+    },
+    "deferred": [
+      "the floatplane rocking (Pass 2 mover; its dock is at the quay's east end, behind this pose)",
+      "lantern cards"
+    ],
+    "ground": [
+      1477,
+      3,
+      1289
+    ],
+    "subjectIds": [
+      "Lantern Row",
+      "the Boathouse"
+    ],
+    "proof": {
+      "eyeAboveFloor": true,
+      "eyeAboveWater": true,
+      "horizonInFrame": true,
+      "subjects": [
+        {
+          "id": "Lantern Row",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 5188,
+          "portraitPixels": 3036,
+          "portraitRequired": true,
+          "pass": true
+        },
+        {
+          "id": "the Boathouse",
+          "exists": true,
+          "inFrame": true,
+          "occludedBy": null,
+          "pixels": 13,
+          "portraitPixels": 5,
+          "portraitRequired": true,
+          "pass": false
+        }
+      ],
+      "landscape": {
+        "grid": [
+          144,
+          90
+        ],
+        "pixels": 12960,
+        "minPixels": 13,
+        "skyShare": 0.419135802,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 5432,
+        "pitchDegrees": -0.171884674,
+        "verticalHalfFovDegrees": 16.321031614,
+        "horizonInFrame": true,
+        "subjects": {
+          "Lantern Row": 5188,
+          "the Boathouse": 13
+        },
+        "top": [
+          [
+            "sky",
+            0.4191
+          ],
+          [
+            "town.quay",
+            0.3496
+          ],
+          [
+            "terrain",
+            0.1248
+          ],
+          [
+            "town quay.lip",
+            0.0288
+          ],
+          [
+            "S3.retaining",
+            0.0247
+          ],
+          [
+            "town quay.bollards",
+            0.0138
+          ],
+          [
+            "quayBridge.rails",
+            0.0066
+          ],
+          [
+            "town quay.bed",
+            0.0049
+          ]
+        ]
+      },
+      "portrait": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.466538462,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 3639,
+        "pitchDegrees": -0.195724237,
+        "verticalHalfFovDegrees": 41.906793121,
+        "horizonInFrame": true,
+        "subjects": {
+          "Lantern Row": 3036,
+          "the Boathouse": 5
+        },
+        "top": [
+          [
+            "sky",
+            0.4665
+          ],
+          [
+            "town.quay",
+            0.2741
+          ],
+          [
+            "town quay.bed",
+            0.1146
+          ],
+          [
+            "terrain",
+            0.1145
+          ],
+          [
+            "S3.retaining",
+            0.0151
+          ],
+          [
+            "S3.surface",
+            0.0036
+          ],
+          [
+            "quayBridge.rails",
+            0.0027
+          ],
+          [
+            "quayBridge.deck",
+            0.0024
+          ]
+        ]
+      },
+      "pass": false,
+      "passLandscape": true,
+      "passPortrait": false,
+      "deferred": [
+        "the floatplane rocking (Pass 2 mover; its dock is at the quay's east end, behind this pose)",
+        "lantern cards"
+      ]
+    }
+  },
+  "limits": [
+    "Existing bake only; decoded terrain is centimetre-quantized and may differ at marginal rays from source bake proof. Original count must be reproduced before interpreting variants.",
+    "Baked solids/terrain/water only; runtime furniture and native-renderer art are absent. Actual authored captures still required.",
+    "Optional camera variants are unapproved diagnostic proposals, not revised source or valid walkable camera placements. All retain the original 8-pixel portrait rule."
+  ],
+  "variants": [
+    {
+      "id": "original",
+      "lens": {
+        "eye": [
+          1460,
+          4.6,
+          1300
+        ],
+        "target": [
+          1285,
+          4,
+          1315
+        ],
+        "horizontalFovDegrees": 45,
+        "verticalFovDegrees": 83.81358624103996,
+        "portrait": true
+      },
+      "pixels": {
+        "grid": [
+          60,
+          130
+        ],
+        "pixels": 7800,
+        "minPixels": 8,
+        "skyShare": 0.4665384615384615,
+        "seaShare": 0,
+        "horizonRowSkyOrSea": 3639,
+        "pitchDegrees": -0.19572423726636307,
+        "verticalHalfFovDegrees": 41.90679312051998,
+        "horizonInFrame": true,
+        "subjects": {
+          "Lantern Row": 3036,
+          "the Boathouse": 5
+        },
+        "top": [
+          [
+            "sky",
+            0.4665
+          ],
+          [
+            "town.quay",
+            0.1969
+          ],
+          [
+            "town quay.bed",
+            0.1918
+          ],
+          [
+            "terrain",
+            0.1145
+          ],
+          [
+            "S3.retaining",
+            0.0151
+          ],
+          [
+            "S3.surface",
+            0.0036
+          ],
+          [
+            "quayBridge.rails",
+            0.0027
+          ],
+          [
+            "quayBridge.deck",
+            0.0024
+          ]
+        ]
+      },
+      "subjectSilhouettePixelsIgnoringOcclusion": 26,
+      "blockers": {
+        "quayBridge.abutments": 2,
+        "terrain": 12,
+        "S3.surface.1.harbour": 7
+      },
+      "hostRays": [
+        {
+          "pixel": [
+            26,
+            62
+          ],
+          "direction": [
+            -0.9905860656334559,
+            0.03104687025416758,
+            0.1333241854287948
+          ],
+          "firstHit": {
+            "kind": "solid",
+            "t": 166.06330909248783,
+            "id": "host.boathouse.roof@reach",
+            "sourceId": "host.boathouse.roof",
+            "role": "roof",
+            "point": [
+              1295.5,
+              9.755746011372196,
+              1322.140255414366
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.roof@reach",
+            "sourceId": "host.boathouse.roof",
+            "triangle": 9,
+            "p": [
+              [
+                1295.5,
+                9.65,
+                1322.5
+              ],
+              [
+                1295.5,
+                10,
+                1307.5
+              ],
+              [
+                1295.5,
+                10,
+                1322.5
+              ]
+            ],
+            "t": 166.06330909248783,
+            "point": [
+              1295.5,
+              9.755746011372196,
+              1322.140255414366
+            ]
+          },
+          "fogged": false,
+          "hostFirst": true
+        },
+        {
+          "pixel": [
+            27,
+            62
+          ],
+          "direction": [
+            -0.9923288246435509,
+            0.031064578995207776,
+            0.1196599169036957
+          ],
+          "firstHit": {
+            "kind": "solid",
+            "t": 165.7716634998375,
+            "id": "host.boathouse.roof@reach",
+            "sourceId": "host.boathouse.roof",
+            "role": "roof",
+            "point": [
+              1295.5,
+              9.749626935957703,
+              1319.836223479378
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.roof@reach",
+            "sourceId": "host.boathouse.roof",
+            "triangle": 9,
+            "p": [
+              [
+                1295.5,
+                9.65,
+                1322.5
+              ],
+              [
+                1295.5,
+                10,
+                1307.5
+              ],
+              [
+                1295.5,
+                10,
+                1322.5
+              ]
+            ],
+            "t": 165.7716634998375,
+            "point": [
+              1295.5,
+              9.749626935957703,
+              1319.836223479378
+            ]
+          },
+          "fogged": false,
+          "hostFirst": true
+        },
+        {
+          "pixel": [
+            28,
+            62
+          ],
+          "direction": [
+            -0.9938846784437736,
+            0.031076401671185097,
+            0.10595991324028324
+          ],
+          "firstHit": {
+            "kind": "solid",
+            "t": 165.51216008035698,
+            "id": "host.boathouse.roof@reach",
+            "sourceId": "host.boathouse.roof",
+            "role": "roof",
+            "point": [
+              1295.5,
+              9.743522368122662,
+              1317.5376541223266
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.roof@reach",
+            "sourceId": "host.boathouse.roof",
+            "triangle": 8,
+            "p": [
+              [
+                1295.5,
+                9.65,
+                1322.5
+              ],
+              [
+                1295.5,
+                9.65,
+                1307.5
+              ],
+              [
+                1295.5,
+                10,
+                1307.5
+              ]
+            ],
+            "t": 165.512160080357,
+            "point": [
+              1295.5,
+              9.743522368122662,
+              1317.5376541223266
+            ]
+          },
+          "fogged": false,
+          "hostFirst": true
+        },
+        {
+          "pixel": [
+            29,
+            62
+          ],
+          "direction": [
+            -0.9952523104838399,
+            0.031082318073381344,
+            0.09223192494881327
+          ],
+          "firstHit": {
+            "kind": "solid",
+            "t": 165.2847205348648,
+            "id": "host.boathouse.roof@reach",
+            "sourceId": "host.boathouse.roof",
+            "role": "roof",
+            "point": [
+              1295.5,
+              9.737432256334612,
+              1315.2445279395572
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.roof@reach",
+            "sourceId": "host.boathouse.roof",
+            "triangle": 8,
+            "p": [
+              [
+                1295.5,
+                9.65,
+                1322.5
+              ],
+              [
+                1295.5,
+                9.65,
+                1307.5
+              ],
+              [
+                1295.5,
+                10,
+                1307.5
+              ]
+            ],
+            "t": 165.28472053486482,
+            "point": [
+              1295.5,
+              9.737432256334614,
+              1315.2445279395572
+            ]
+          },
+          "fogged": false,
+          "hostFirst": true
+        },
+        {
+          "pixel": [
+            30,
+            62
+          ],
+          "direction": [
+            -0.9964307243011346,
+            0.031082318073381344,
+            0.07848376374704172
+          ],
+          "firstHit": {
+            "kind": "solid",
+            "t": 165.08924904475938,
+            "id": "host.boathouse.roof@reach",
+            "sourceId": "host.boathouse.roof",
+            "role": "roof",
+            "point": [
+              1295.5,
+              9.731356549304877,
+              1312.9568256192053
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.roof@reach",
+            "sourceId": "host.boathouse.roof",
+            "triangle": 8,
+            "p": [
+              [
+                1295.5,
+                9.65,
+                1322.5
+              ],
+              [
+                1295.5,
+                9.65,
+                1307.5
+              ],
+              [
+                1295.5,
+                10,
+                1307.5
+              ]
+            ],
+            "t": 165.08924904475938,
+            "point": [
+              1295.5,
+              9.731356549304877,
+              1312.9568256192053
+            ]
+          },
+          "fogged": false,
+          "hostFirst": true
+        },
+        {
+          "pixel": [
+            31,
+            62
+          ],
+          "direction": [
+            -0.9974192469757601,
+            0.031076401671185097,
+            0.06472328036710535
+          ],
+          "firstHit": {
+            "kind": "solid",
+            "t": 88.99146687699972,
+            "id": "quayBridge.abutments@reach",
+            "sourceId": "quayBridge.abutments",
+            "role": "support",
+            "point": [
+              1371.2381981202745,
+              7.365534569977607,
+              1305.75981966096
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.roof@reach",
+            "sourceId": "host.boathouse.roof",
+            "triangle": 8,
+            "p": [
+              [
+                1295.5,
+                9.65,
+                1322.5
+              ],
+              [
+                1295.5,
+                9.65,
+                1307.5
+              ],
+              [
+                1295.5,
+                10,
+                1307.5
+              ]
+            ],
+            "t": 164.92563232439588,
+            "point": [
+              1295.5,
+              9.725295195987115,
+              1310.6745279406541
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            32,
+            62
+          ],
+          "direction": [
+            -0.9982175310505136,
+            0.03106457899520777,
+            0.050958342155795575
+          ],
+          "firstHit": {
+            "kind": "solid",
+            "t": 88.64514875997652,
+            "id": "quayBridge.abutments@reach",
+            "sourceId": "quayBridge.abutments",
+            "role": "support",
+            "point": [
+              1371.5128584652107,
+              7.353724226196235,
+              1304.5172098209623
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.roof@reach",
+            "sourceId": "host.boathouse.roof",
+            "triangle": 8,
+            "p": [
+              [
+                1295.5,
+                9.65,
+                1322.5
+              ],
+              [
+                1295.5,
+                9.65,
+                1307.5
+              ],
+              [
+                1295.5,
+                10,
+                1307.5
+              ]
+            ],
+            "t": 164.793739724128,
+            "point": [
+              1295.5,
+              9.719248145575882,
+              1308.3976157739953
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            27,
+            63
+          ],
+          "direction": [
+            -0.9926595338002434,
+            0.01728053644287897,
+            0.11970143280566814
+          ],
+          "firstHit": {
+            "kind": "terrain",
+            "t": 54.10546875,
+            "id": "terrain",
+            "point": [
+              1406.2916906145813,
+              5.5349715244934234,
+              1306.4765021319972
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.walls@reach",
+            "sourceId": "host.boathouse.walls",
+            "triangle": 21,
+            "p": [
+              [
+                1295,
+                3,
+                1322
+              ],
+              [
+                1295,
+                9.65,
+                1316.2
+              ],
+              [
+                1295,
+                9.65,
+                1322
+              ]
+            ],
+            "t": 166.22013326998737,
+            "point": [
+              1295,
+              7.472373070512216,
+              1319.8967881135666
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            28,
+            63
+          ],
+          "direction": [
+            -0.9942162499851384,
+            0.01728711814513805,
+            0.10599624432839422
+          ],
+          "firstHit": {
+            "kind": "terrain",
+            "t": 53.892578125,
+            "id": "terrain",
+            "point": [
+              1406.4191230745314,
+              5.531647365192957,
+              1305.7124108784246
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.walls@reach",
+            "sourceId": "host.boathouse.walls",
+            "triangle": 20,
+            "p": [
+              [
+                1295,
+                3,
+                1322
+              ],
+              [
+                1295,
+                3,
+                1316.2
+              ],
+              [
+                1295,
+                9.65,
+                1316.2
+              ]
+            ],
+            "t": 165.95987040290925,
+            "point": [
+              1295,
+              7.468967887006892,
+              1317.5911229719354
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            29,
+            63
+          ],
+          "direction": [
+            -0.9955845384017438,
+            0.01729041181766842,
+            0.09226304002449777
+          ],
+          "firstHit": {
+            "kind": "terrain",
+            "t": 53.5673828125,
+            "id": "terrain",
+            "point": [
+              1406.6691419092276,
+              5.526202108822818,
+              1304.9422895844373
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.walls@reach",
+            "sourceId": "host.boathouse.walls",
+            "triangle": 33,
+            "p": [
+              [
+                1295,
+                5.6,
+                1316.2
+              ],
+              [
+                1295,
+                9.65,
+                1313.8
+              ],
+              [
+                1295,
+                9.65,
+                1316.2
+              ]
+            ],
+            "t": 165.7317823204465,
+            "point": [
+              1295,
+              7.465570767596699,
+              1315.2909180655627
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            30,
+            63
+          ],
+          "direction": [
+            -0.9967634012169087,
+            0.017290411817668425,
+            0.0785096405142439
+          ],
+          "firstHit": {
+            "kind": "terrain",
+            "t": 51.4423828125,
+            "id": "terrain",
+            "point": [
+              1408.7241155411102,
+              5.489459983710272,
+              1304.0387229818054
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.walls@reach",
+            "sourceId": "host.boathouse.walls",
+            "triangle": 9,
+            "p": [
+              [
+                1295,
+                3,
+                1313.8
+              ],
+              [
+                1295,
+                9.65,
+                1308
+              ],
+              [
+                1295,
+                9.65,
+                1313.8
+              ]
+            ],
+            "t": 165.5357728810649,
+            "point": [
+              1295,
+              7.462181683669641,
+              1312.99615402114
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            31,
+            63
+          ],
+          "direction": [
+            -0.9977521647414029,
+            0.017287118145138055,
+            0.06474390550530931
+          ],
+          "firstHit": {
+            "kind": "terrain",
+            "t": 49.4365234375,
+            "id": "terrain",
+            "point": [
+              1410.6746017229452,
+              5.454615021348949,
+              1303.2007136019486
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.walls@reach",
+            "sourceId": "host.boathouse.walls",
+            "triangle": 9,
+            "p": [
+              [
+                1295,
+                3,
+                1313.8
+              ],
+              [
+                1295,
+                9.65,
+                1308
+              ],
+              [
+                1295,
+                9.65,
+                1313.8
+              ]
+            ],
+            "t": 165.37172840187685,
+            "point": [
+              1295,
+              7.458800606748927,
+              1310.706811556901
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            32,
+            63
+          ],
+          "direction": [
+            -0.9985504813535544,
+            0.017280536442878965,
+            0.05097371135037172
+          ],
+          "firstHit": {
+            "kind": "terrain",
+            "t": 47.4970703125,
+            "id": "terrain",
+            "point": [
+              1412.5717775765695,
+              5.42077485446514,
+              1302.4211019520976
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.walls@reach",
+            "sourceId": "host.boathouse.walls",
+            "triangle": 8,
+            "p": [
+              [
+                1295,
+                3,
+                1313.8
+              ],
+              [
+                1295,
+                3,
+                1308
+              ],
+              [
+                1295,
+                9.65,
+                1308
+              ]
+            ],
+            "t": 165.23951776212587,
+            "point": [
+              1295,
+              7.455427508492162,
+              1308.4228714820813
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            27,
+            64
+          ],
+          "direction": [
+            -0.9928015547046463,
+            0.0034853346348955017,
+            0.11972019636853315
+          ],
+          "firstHit": {
+            "kind": "terrain",
+            "t": 46.54833984375,
+            "id": "terrain",
+            "point": [
+              1413.7867358342048,
+              4.762236541054308,
+              1305.572776386723
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.walls@reach",
+            "sourceId": "host.boathouse.walls",
+            "triangle": 20,
+            "p": [
+              [
+                1295,
+                3,
+                1322
+              ],
+              [
+                1295,
+                3,
+                1316.2
+              ],
+              [
+                1295,
+                9.65,
+                1316.2
+              ]
+            ],
+            "t": 166.19635537243565,
+            "point": [
+              1295,
+              5.179249913572951,
+              1319.8970603009225
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            28,
+            64
+          ],
+          "direction": [
+            -0.9943586936200808,
+            0.00348666261306755,
+            0.1060124125090518
+          ],
+          "firstHit": {
+            "kind": "terrain",
+            "t": 47.55078125,
+            "id": "terrain",
+            "point": [
+              1412.7174672756357,
+              4.765793531206528,
+              1305.0409730370027
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.walls@reach",
+            "sourceId": "host.boathouse.walls",
+            "triangle": 20,
+            "p": [
+              [
+                1295,
+                3,
+                1322
+              ],
+              [
+                1295,
+                3,
+                1316.2
+              ],
+              [
+                1295,
+                9.65,
+                1316.2
+              ]
+            ],
+            "t": 165.9360963590492,
+            "point": [
+              1295,
+              5.178563183333471,
+              1317.5912858973572
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            29,
+            64
+          ],
+          "direction": [
+            -0.9957273060870659,
+            0.0034873271716395183,
+            0.09227659758461354
+          ],
+          "firstHit": {
+            "kind": "terrain",
+            "t": 44.95849609375,
+            "id": "terrain",
+            "point": [
+              1415.2335977988444,
+              4.756784985023783,
+              1304.1486170520525
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.walls@reach",
+            "sourceId": "host.boathouse.walls",
+            "triangle": 44,
+            "p": [
+              [
+                1275.4,
+                3,
+                1322
+              ],
+              [
+                1275.4,
+                3,
+                1308
+              ],
+              [
+                1275.4,
+                9.65,
+                1308
+              ]
+            ],
+            "t": 185.3921237988612,
+            "point": [
+              1275.4,
+              5.246522990731726,
+              1317.1073544031444
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            30,
+            64
+          ],
+          "direction": [
+            -0.9969063935937121,
+            0.003487327171639518,
+            0.07852057667373889
+          ],
+          "firstHit": {
+            "kind": "terrain",
+            "t": 44.314453125,
+            "id": "terrain",
+            "point": [
+              1415.8226383510787,
+              4.754538996479158,
+              1303.4795964143564
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.walls@reach",
+            "sourceId": "host.boathouse.walls",
+            "triangle": 9,
+            "p": [
+              [
+                1295,
+                3,
+                1313.8
+              ],
+              [
+                1295,
+                9.65,
+                1308
+              ],
+              [
+                1295,
+                9.65,
+                1313.8
+              ]
+            ],
+            "t": 165.51202907345936,
+            "point": [
+              1295,
+              5.177194596221065,
+              1312.9960999692887
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            31,
+            64
+          ],
+          "direction": [
+            -0.9978952820655743,
+            0.0034866626130675496,
+            0.06475221397829006
+          ],
+          "firstHit": {
+            "kind": "terrain",
+            "t": 43.69677734375,
+            "id": "terrain",
+            "point": [
+              1416.395192047202,
+              4.75235591987599,
+              1302.829463076724
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.walls@reach",
+            "sourceId": "host.boathouse.walls",
+            "triangle": 8,
+            "p": [
+              [
+                1295,
+                3,
+                1313.8
+              ],
+              [
+                1295,
+                3,
+                1308
+              ],
+              [
+                1295,
+                9.65,
+                1308
+              ]
+            ],
+            "t": 165.34801092401335,
+            "point": [
+              1295,
+              5.176512727833842,
+              1310.7066497842363
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            32,
+            64
+          ],
+          "direction": [
+            -0.9986936237911196,
+            0.003485334634895501,
+            0.05097939035967538
+          ],
+          "firstHit": {
+            "kind": "terrain",
+            "t": 43.10498046875,
+            "id": "terrain",
+            "point": [
+              1416.9513308522187,
+              4.750235281364228,
+              1302.1974656257626
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.walls@reach",
+            "sourceId": "host.boathouse.walls",
+            "triangle": 8,
+            "p": [
+              [
+                1295,
+                3,
+                1313.8
+              ],
+              [
+                1295,
+                3,
+                1308
+              ],
+              [
+                1295,
+                9.65,
+                1308
+              ]
+            ],
+            "t": 165.21583403491354,
+            "point": [
+              1295,
+              5.175832468595031,
+              1308.4226024968652
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            26,
+            65
+          ],
+          "direction": [
+            -0.99101027155425,
+            -0.010307271233127925,
+            0.13338816226974076
+          ],
+          "firstHit": {
+            "kind": "solid",
+            "t": 32.244449879107215,
+            "id": "S3.surface.1.harbour@harbour",
+            "sourceId": "S3.surface.1.harbour",
+            "role": "deck",
+            "point": [
+              1428.0454189691886,
+              4.267647709333042,
+              1304.301027912773
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.approach.retaining.reach@reach",
+            "sourceId": "host.boathouse.approach.retaining.reach",
+            "triangle": 30,
+            "p": [
+              [
+                1303.234227839,
+                2.966769439,
+                1322.730107478
+              ],
+              [
+                1305.105656411,
+                2.786306846,
+                1318.444393192
+              ],
+              [
+                1304.959405713,
+                3.924286058,
+                1318.380530388
+              ]
+            ],
+            "t": 157.43852900829194,
+            "point": [
+              1303.9768006143909,
+              2.977238378966856,
+              1321.0004360548674
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            27,
+            65
+          ],
+          "direction": [
+            -0.9927545906323441,
+            -0.010313157084347373,
+            0.11971617087662155
+          ],
+          "firstHit": {
+            "kind": "solid",
+            "t": 31.570073504329194,
+            "id": "S3.surface.1.harbour@harbour",
+            "sourceId": "S3.surface.1.harbour",
+            "role": "deck",
+            "point": [
+              1428.6586646019766,
+              4.27441287278546,
+              1303.7794483142318
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.approach.retaining.reach@reach",
+            "sourceId": "host.boathouse.approach.retaining.reach",
+            "triangle": 30,
+            "p": [
+              [
+                1303.234227839,
+                2.966769439,
+                1322.730107478
+              ],
+              [
+                1305.105656411,
+                2.786306846,
+                1318.444393192
+              ],
+              [
+                1304.959405713,
+                3.924286058,
+                1318.380530388
+              ]
+            ],
+            "t": 156.16485157097316,
+            "point": [
+              1304.9666267074977,
+              2.9894473546947617,
+              1318.6954580555928
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            28,
+            65
+          ],
+          "direction": [
+            -0.994311711653582,
+            -0.010317086591533225,
+            0.10600838548335191
+          ],
+          "firstHit": {
+            "kind": "solid",
+            "t": 30.932398269287884,
+            "id": "S3.surface.1.harbour@harbour",
+            "sourceId": "S3.surface.1.harbour",
+            "role": "deck",
+            "point": [
+              1429.243554131314,
+              4.280867768571964,
+              1303.2790935996552
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.approach.retaining.reach@reach",
+            "sourceId": "host.boathouse.approach.retaining.reach",
+            "triangle": 42,
+            "p": [
+              [
+                1305.185602807,
+                2.677487578,
+                1318.277234847
+              ],
+              [
+                1306.059072194,
+                2.527429429,
+                1315.69705992
+              ],
+              [
+                1305.894391934,
+                3.720652457,
+                1315.641310535
+              ]
+            ],
+            "t": 155.142830582682,
+            "point": [
+              1305.7396665725519,
+              2.9993779828229004,
+              1316.4464409893874
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            29,
+            65
+          ],
+          "direction": [
+            -0.9956803151657952,
+            -0.01031905303024354,
+            0.09227256979136178
+          ],
+          "firstHit": {
+            "kind": "solid",
+            "t": 30.3252925465368,
+            "id": "S3.surface.1.harbour@harbour",
+            "sourceId": "S3.surface.1.harbour",
+            "role": "deck",
+            "point": [
+              1429.8057031597693,
+              4.287071698054637,
+              1302.7981926729437
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.approach.bed.reach@reach",
+            "sourceId": "host.boathouse.approach.bed.reach",
+            "triangle": 78,
+            "p": [
+              [
+                1304.28889962,
+                2.744995588,
+                1318.044875743
+              ],
+              [
+                1305.788478352,
+                2.744995588,
+                1313.615212263
+              ],
+              [
+                1305.788478352,
+                3.611691903,
+                1313.615212263
+              ]
+            ],
+            "t": 155.11784608179917,
+            "point": [
+              1305.5522141254348,
+              2.9993307203447586,
+              1314.3131222784684
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            30,
+            65
+          ],
+          "direction": [
+            -0.9968594026724417,
+            -0.01031905303024354,
+            0.07851654888048715
+          ],
+          "firstHit": {
+            "kind": "solid",
+            "t": 29.747010759558393,
+            "id": "S3.surface.1.harbour@harbour",
+            "sourceId": "S3.surface.1.harbour",
+            "role": "deck",
+            "point": [
+              1430.346412622936,
+              4.293039018480892,
+              1302.3356326243513
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.approach.batter@reach",
+            "sourceId": "host.boathouse.approach.batter",
+            "triangle": 47,
+            "p": [
+              [
+                1304.399851504,
+                2.814647877,
+                1313.815677926
+              ],
+              [
+                1305.520584925,
+                3.027759801,
+                1310.49617227
+              ],
+              [
+                1304.399851504,
+                3.611691903,
+                1313.815677926
+              ]
+            ],
+            "t": 155.5475838516444,
+            "point": [
+              1304.9409284745082,
+              2.9948962335086273,
+              1312.2130594707294
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            31,
+            65
+          ],
+          "direction": [
+            -0.9978483000990759,
+            -0.010317086591533225,
+            0.0647481869525902
+          ],
+          "firstHit": {
+            "kind": "solid",
+            "t": 29.195934808429303,
+            "id": "S3.surface.1.harbour@harbour",
+            "sourceId": "S3.surface.1.harbour",
+            "role": "deck",
+            "point": [
+              1430.8668860816053,
+              4.298783012460675,
+              1301.8903838452318
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.apron.slab@reach",
+            "sourceId": "host.boathouse.apron.slab",
+            "triangle": 8,
+            "p": [
+              [
+                1304,
+                2.65,
+                1320
+              ],
+              [
+                1304,
+                2.65,
+                1310
+              ],
+              [
+                1304,
+                3,
+                1310
+              ]
+            ],
+            "t": 156.33638899270642,
+            "point": [
+              1304,
+              2.987063937354626,
+              1310.1224977419927
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        },
+        {
+          "pixel": [
+            32,
+            65
+          ],
+          "direction": [
+            -0.9986466597188176,
+            -0.010313157084347373,
+            0.05097536486776378
+          ],
+          "firstHit": {
+            "kind": "solid",
+            "t": 28.668711862128248,
+            "id": "S3.surface.1.harbour@harbour",
+            "sourceId": "S3.surface.1.harbour",
+            "role": "deck",
+            "point": [
+              1431.3700866604445,
+              4.304335071159978,
+              1301.4613980474608
+            ]
+          },
+          "hostHit": {
+            "id": "host.boathouse.slab@reach",
+            "sourceId": "host.boathouse.slab",
+            "triangle": 8,
+            "p": [
+              [
+                1296,
+                2.65,
+                1323
+              ],
+              [
+                1296,
+                2.65,
+                1307
+              ],
+              [
+                1296,
+                3,
+                1307
+              ]
+            ],
+            "t": 164.22224858407517,
+            "point": [
+              1296,
+              2.9063501536076894,
+              1308.371289040978
+            ]
+          },
+          "fogged": false,
+          "hostFirst": false
+        }
+      ],
+      "passSubjects": false,
+      "horizonPass": true
+    }
+  ],
+  "originalPixelProofReproduced": true,
+  "originalFullPixelsReproduced": false,
+  "sourceChanged": [],
+  "completedAt": "2026-10-01T08:21:53.529Z"
+}

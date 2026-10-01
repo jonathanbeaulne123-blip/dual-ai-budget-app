@@ -1,0 +1,1677 @@
+{
+  "scope": "Existing saved results only; not final source or current runtime proof. Exact witness equality is limited to the stated fields, not complete route/terrain inheritance.",
+  "files": {
+    "docs/horizon/evidence/mountain-road/after/attempts/expanded-native-footway-comparison/baseline-results.json.gz": "89bec4a8ce41428d936a008dad0d4695789361019728295f2abcfd38485498d1",
+    "docs/horizon/evidence/mountain-road/after/attempts/expanded-native-footway-comparison/current-results.json.gz": "c8f3d7e4fb7acacd9f0a125979542ede85c5d45d6f525f0c9207a11fb10c0ef8",
+    "docs/horizon/evidence/mountain-road/after/attempts/expanded-native-footway-comparison/mountain-native-footways-comparison.json": "4b842a8b87d0761055454759f5600b4cd3b78a30b628dad002087f2b978ebb55"
+  },
+  "comparisonFields": [
+    "completed",
+    "reason",
+    "completedDistanceM",
+    "finalPosition",
+    "walkBlocker",
+    "contacts",
+    "airborneFrames",
+    "offbedFrames",
+    "bails"
+  ],
+  "baseline": {
+    "head": "1cf76c551e6f49124b6257162bc4d36ca18d7bd1",
+    "worldSha256": "aee8f9daaec7af94a6b649f89b9badb139beab50413989914fcb307944977e97",
+    "terrainSha256": "f01ed1c94a2bea3d0cbffd7f996e71543cb4acb1b72bbd23ea6ee7d1b013ec10",
+    "sourceProof": {
+      "telemetryHelperSha256": "5f80197f95413efa84a6476cd11003d9e17d6d82df68c7188aff21baa1061109",
+      "runtimeBundleSha256": "34738a3f3c224859541375c9ce5de465b1d83cc2dddfa0185352de252578e096",
+      "walkingRuntimeSha256": "d2671a83a32019eb811618d9d3974042e3bf347c2128299f8cd4238804b502ec",
+      "auditSha256": "f12c3caf0e8cf008cfddd64e4a63d9fbb0915fee49288f0111f12dc13f0d4b66",
+      "walkingClearanceSha256": "a37cb293334666ab30a701ce493723f84c043ac37c1ce8089a6c3302456ce25a",
+      "walkingClearance": false
+    }
+  },
+  "current": {
+    "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+    "worldSha256": "def4e4bde244810e37838e9d34634a3d7a690b2a82a5fc81be84413ae3ef254d",
+    "terrainSha256": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+    "sourceProof": {
+      "telemetryHelperSha256": "5f80197f95413efa84a6476cd11003d9e17d6d82df68c7188aff21baa1061109",
+      "runtimeBundleSha256": "1318518f1fef26e83d4f7b352014bc5f753190d6671b5d256096db1dc97a3198",
+      "walkingRuntimeSha256": "d2671a83a32019eb811618d9d3974042e3bf347c2128299f8cd4238804b502ec",
+      "auditSha256": "f12c3caf0e8cf008cfddd64e4a63d9fbb0915fee49288f0111f12dc13f0d4b66",
+      "walkingClearanceSha256": "a37cb293334666ab30a701ce493723f84c043ac37c1ce8089a6c3302456ce25a",
+      "walkingClearance": false
+    }
+  },
+  "rows": [
+    {
+      "route": "native path:station:funicular:town~road:foot",
+      "direction": "forward",
+      "classification": "introduced failure after baseline completion",
+      "differentFields": [
+        "completed",
+        "reason",
+        "completedDistanceM",
+        "finalPosition",
+        "walkBlocker"
+      ],
+      "baseline": {
+        "completed": true,
+        "reason": "end",
+        "completedDistanceM": 6.560000000001233,
+        "finalPosition": [
+          1285.8239382727259,
+          55.06622649639128,
+          723.4025725032513
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 4.480000000000299,
+        "finalPosition": [
+          1287.3778395259903,
+          55.19443335997459,
+          724.785247770661
+        ],
+        "walkBlocker": {
+          "at": [
+            1287.3479568049631,
+            55.19443335997459,
+            724.7586578668626
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 55.14629164392315,
+            "nx": -0.6234490740225924,
+            "ny": 0.5377675485292465,
+            "nz": -0.5675537999601593,
+            "material": "grass",
+            "slope": 57.468204872008215
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:station:funicular:town~road:foot",
+      "direction": "reverse",
+      "classification": "introduced failure after baseline completion",
+      "differentFields": [
+        "completed",
+        "reason",
+        "completedDistanceM",
+        "finalPosition",
+        "walkBlocker"
+      ],
+      "baseline": {
+        "completed": true,
+        "reason": "end",
+        "completedDistanceM": 6.560000000000862,
+        "finalPosition": [
+          1290.748165474987,
+          55.65085412364115,
+          727.7841917802776
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 1.7200000000004128,
+        "finalPosition": [
+          1287.1323556378818,
+          54.593013460571854,
+          724.5668140868919
+        ],
+        "walkBlocker": {
+          "at": [
+            1287.1622383570664,
+            54.593013460571854,
+            724.5934039927612
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 54.64925261807923,
+            "nx": -0.6359817722832029,
+            "ny": 0.5156953996733897,
+            "nz": -0.5740953231643847,
+            "material": "grass",
+            "slope": 58.9560521975152
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native stair:harbour-steps",
+      "direction": "forward",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 9.165785983850133,
+        "finalPosition": [
+          1351.890683028412,
+          65.25549148550165,
+          688.9829272056495
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 9.165785983850133,
+        "finalPosition": [
+          1351.890683028412,
+          65.25549148550165,
+          688.9829272056495
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native stair:harbour-steps",
+      "direction": "reverse",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 2.556377108485479,
+        "finalPosition": [
+          1352.9682473543453,
+          65.87081257324371,
+          688.4246666249853
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 2.556377108485479,
+        "finalPosition": [
+          1352.9682473543453,
+          65.87081257324371,
+          688.4246666249853
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:town:north~path:river-west",
+      "direction": "forward",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 6.762834884874736,
+        "finalPosition": [
+          1303.6111768221676,
+          55.06639897162359,
+          713.8844395785567
+        ],
+        "walkBlocker": {
+          "at": [
+            1303.6061848201475,
+            55.06639897162359,
+            713.8447523020586
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 55.07001008396596,
+            "nx": 0.27064623769614443,
+            "ny": 0.9611896284940017,
+            "nz": 0.05352674188183905,
+            "material": "grass",
+            "slope": 16.01497358601097
+          },
+          "obstacle": "mountainV2:path:bridge:river-footbridge",
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 6.762834884874736,
+        "finalPosition": [
+          1303.6111768221676,
+          55.06639897162359,
+          713.8844395785567
+        ],
+        "walkBlocker": {
+          "at": [
+            1303.6061848201475,
+            55.06639897162359,
+            713.8447523020586
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 55.07001008396596,
+            "nx": 0.27064623769614443,
+            "ny": 0.9611896284940017,
+            "nz": 0.05352674188183905,
+            "material": "grass",
+            "slope": 16.01497358601097
+          },
+          "obstacle": "mountainV2:path:bridge:river-footbridge",
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:town:north~path:river-west",
+      "direction": "reverse",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 0.3600000000000205,
+        "finalPosition": [
+          1303.6116314565425,
+          56.2,
+          713.8930500646157
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 0.3600000000000205,
+        "finalPosition": [
+          1303.6116314565425,
+          56.2,
+          713.8930500646157
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:road:library~apron:library",
+      "direction": "forward",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 0,
+        "finalPosition": [
+          1355.0978536850105,
+          89.42526349026292,
+          598.821576586916
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 0,
+        "finalPosition": [
+          1355.0978536850105,
+          89.42526349026292,
+          598.821576586916
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:road:library~overlook:gorge-balcony",
+      "direction": "forward",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 5.473399511402022e-14,
+        "finalPosition": [
+          1343.0808812149369,
+          91.31611450988505,
+          603.9163229498121
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 5.473399511402022e-14,
+        "finalPosition": [
+          1343.0808812149369,
+          91.31611450988505,
+          603.9163229498121
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:road:library~overlook:gorge-balcony",
+      "direction": "reverse",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 1.0799999999995455,
+        "finalPosition": [
+          1329.9561838381426,
+          92.80565863667348,
+          600.6131301897074
+        ],
+        "walkBlocker": {
+          "at": [
+            1329.9930492562487,
+            92.80565863667348,
+            600.6286524623458
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 92.79735984839365,
+            "nx": -0.7753466811261619,
+            "ny": 0.5569356418833563,
+            "nz": 0.2977586520432608,
+            "material": "grass",
+            "slope": 56.15585925582393
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 1.0799999999995455,
+        "finalPosition": [
+          1329.9561838381426,
+          92.80565863667348,
+          600.6131301897074
+        ],
+        "walkBlocker": {
+          "at": [
+            1329.9930492562487,
+            92.80565863667348,
+            600.6286524623458
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 92.79735984839365,
+            "nx": -0.7753466811261619,
+            "ny": 0.5569356418833563,
+            "nz": 0.2977586520432608,
+            "material": "grass",
+            "slope": 56.15585925582393
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:station:funicular:library~overlook:gorge-balcony",
+      "direction": "forward",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 3.1200000000004793,
+        "finalPosition": [
+          1326.8189275555053,
+          93.6,
+          604.1413889029918
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 3.1200000000004793,
+        "finalPosition": [
+          1326.8189275555053,
+          93.6,
+          604.1413889029918
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:station:funicular:library~overlook:gorge-balcony",
+      "direction": "reverse",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 4.880000000000656,
+        "finalPosition": [
+          1326.4765040831794,
+          91.63115875502521,
+          604.9849638187868
+        ],
+        "walkBlocker": {
+          "at": [
+            1326.4614595015182,
+            91.63115875502521,
+            605.022026745852
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 91.67489638880409,
+            "nx": 0,
+            "ny": 0.5974314566436437,
+            "nz": -0.8019199801804755,
+            "material": "grass",
+            "slope": 53.313840080781034
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 4.880000000000656,
+        "finalPosition": [
+          1326.4765040831794,
+          91.63115875502521,
+          604.9849638187868
+        ],
+        "walkBlocker": {
+          "at": [
+            1326.4614595015182,
+            91.63115875502521,
+            605.022026745852
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 91.67489638880409,
+            "nx": 0,
+            "ny": 0.5974314566436437,
+            "nz": -0.8019199801804755,
+            "material": "grass",
+            "slope": 53.313840080781034
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native stair:dam-west-steps",
+      "direction": "forward",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 18.713290447903013,
+        "finalPosition": [
+          1283.633778037654,
+          133.31535808519328,
+          523.1824204049625
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 18.713290447903013,
+        "finalPosition": [
+          1283.633778037654,
+          133.31535808519328,
+          523.1824204049625
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native stair:dam-west-steps",
+      "direction": "reverse",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 0.11999999999977062,
+        "finalPosition": [
+          1294.539913176526,
+          142,
+          525.7883227919898
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 0.11999999999977062,
+        "finalPosition": [
+          1294.539913176526,
+          142,
+          525.7883227919898
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:dam:east~door:pavilion",
+      "direction": "forward",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 0,
+        "finalPosition": [
+          1337.2966444213953,
+          139.2535141275872,
+          525.6914056041429
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 0,
+        "finalPosition": [
+          1337.2966444213953,
+          139.2535141275872,
+          525.6914056041429
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:dam:east~door:pavilion",
+      "direction": "reverse",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 0,
+        "finalPosition": [
+          1351.5215125786046,
+          142.79264919587456,
+          518.250299395857
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 0,
+        "finalPosition": [
+          1351.5215125786046,
+          142.79264919587456,
+          518.250299395857
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:door:pavilion~district:reservoir",
+      "direction": "forward",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 5.218048215738236e-15,
+        "finalPosition": [
+          1352.5295135791293,
+          143.3766459354293,
+          518.1059026416939
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 5.218048215738236e-15,
+        "finalPosition": [
+          1352.5295135791293,
+          143.3766459354293,
+          518.1059026416939
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:station:funicular:reservoir~dam:east",
+      "direction": "forward",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 4.6407322429331543e-14,
+        "finalPosition": [
+          1344.5558520226243,
+          134.0056840291594,
+          536.1276940203635
+        ],
+        "walkBlocker": {
+          "at": [
+            1344.5316559444343,
+            134.0056840291594,
+            536.0958420219926
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 133.85740819770265,
+            "nx": -0.2306992853653793,
+            "ny": 0.251219259324042,
+            "nz": -0.9400354905409599,
+            "material": "grass",
+            "slope": 75.45032660286924
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 4.6407322429331543e-14,
+        "finalPosition": [
+          1344.5558520226243,
+          134.0056840291594,
+          536.1276940203635
+        ],
+        "walkBlocker": {
+          "at": [
+            1344.5316559444343,
+            134.0056840291594,
+            536.0958420219926
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 133.85740819770265,
+            "nx": -0.2306992853653793,
+            "ny": 0.251219259324042,
+            "nz": -0.9400354905409599,
+            "material": "grass",
+            "slope": 75.45032660286924
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:station:funicular:reservoir~dam:east",
+      "direction": "reverse",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 2.6867397195928788e-14,
+        "finalPosition": [
+          1337.1206080289753,
+          139.39510343172026,
+          526.3398549404392
+        ],
+        "walkBlocker": {
+          "at": [
+            1337.1448041112933,
+            139.39510343172026,
+            526.3717069356743
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 139.13184171187197,
+            "nx": 0.5626687106648322,
+            "ny": 0.15263645584389224,
+            "nz": 0.8124690974961393,
+            "material": "grass",
+            "slope": 81.22025592229696
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 2.6867397195928788e-14,
+        "finalPosition": [
+          1337.1206080289753,
+          139.39510343172026,
+          526.3398549404392
+        ],
+        "walkBlocker": {
+          "at": [
+            1337.1448041112933,
+            139.39510343172026,
+            526.3717069356743
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 139.13184171187197,
+            "nx": 0.5626687106648322,
+            "ny": 0.15263645584389224,
+            "nz": 0.8124690974961393,
+            "material": "grass",
+            "slope": 81.22025592229696
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:district:library~road:b2-east",
+      "direction": "forward",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 2.7600000000073166,
+        "finalPosition": [
+          1352.9731659877073,
+          89.09886379954156,
+          586.7892663950829
+        ],
+        "walkBlocker": {
+          "at": [
+            1352.9360269200718,
+            89.09886379954156,
+            586.7744107680287
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 89.13759051887132,
+            "nx": 0.7050567406336912,
+            "ny": 0.7051197657078458,
+            "nz": 0.07550568518402093,
+            "material": "grass",
+            "slope": 45.16077944811217
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 2.7600000000073166,
+        "finalPosition": [
+          1352.9731659877073,
+          89.09886379954156,
+          586.7892663950829
+        ],
+        "walkBlocker": {
+          "at": [
+            1352.9360269200718,
+            89.09886379954156,
+            586.7744107680287
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 89.13759051887132,
+            "nx": 0.7050567406336912,
+            "ny": 0.7051197657078458,
+            "nz": 0.07550568518402093,
+            "material": "grass",
+            "slope": 45.16077944811217
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:district:library~road:b2-east",
+      "direction": "reverse",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 5.1958437552457326e-14,
+        "finalPosition": [
+          1344.5102536798197,
+          89.58762151702648,
+          585.4213142687051
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 5.1958437552457326e-14,
+        "finalPosition": [
+          1344.5102536798197,
+          89.58762151702648,
+          585.4213142687051
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:road:summit~district:summit",
+      "direction": "forward",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 5.760000000000993,
+        "finalPosition": [
+          1314.0960608694204,
+          90.00000000000001,
+          470.1365355494267
+        ],
+        "walkBlocker": {
+          "at": [
+            1314.056083073295,
+            90.00000000000001,
+            470.1352029516071
+          ],
+          "surface": {
+            "id": "underground.bellGallery.floor@undercroft",
+            "y": 90,
+            "nx": 0,
+            "ny": 1,
+            "nz": 0,
+            "material": "rock",
+            "slope": 0
+          },
+          "obstacle": "underground.bellGallery.passage.walls@undercroft",
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 5.760000000000993,
+        "finalPosition": [
+          1314.0960608694204,
+          90.00000000000001,
+          470.1365355494267
+        ],
+        "walkBlocker": {
+          "at": [
+            1314.056083073295,
+            90.00000000000001,
+            470.1352029516071
+          ],
+          "surface": {
+            "id": "underground.bellGallery.floor@undercroft",
+            "y": 90,
+            "nx": 0,
+            "ny": 1,
+            "nz": 0,
+            "material": "rock",
+            "slope": 0
+          },
+          "obstacle": "underground.bellGallery.passage.walls@undercroft",
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:district:summit~door:observatory",
+      "direction": "forward",
+      "classification": "baseline failed; changed witness, not exact inheritance",
+      "differentFields": [
+        "finalPosition",
+        "walkBlocker"
+      ],
+      "baseline": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 0.11999999999992983,
+        "finalPosition": [
+          1309.389281089112,
+          158,
+          470.10687568424925
+        ],
+        "walkBlocker": {
+          "at": [
+            1309.3498798693827,
+            158,
+            470.1137708915588
+          ],
+          "surface": {
+            "id": "place.L02.slab@crown",
+            "y": 158,
+            "nx": 0,
+            "ny": 1,
+            "nz": 0,
+            "material": "stone",
+            "slope": 0
+          },
+          "obstacle": "mountainV2:summit-art:parapet:2",
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 0.11999999999992983,
+        "finalPosition": [
+          1309.389281089112,
+          158.00159342510864,
+          470.10687568424925
+        ],
+        "walkBlocker": {
+          "at": [
+            1309.3498798693827,
+            158.00159342510864,
+            470.1137708915588
+          ],
+          "surface": {
+            "id": "walk summitStation.join@crown",
+            "y": 158.001696226732,
+            "nx": 0.0022204979322850704,
+            "ny": 0.9999950528144836,
+            "nz": -0.0022204979322850704,
+            "material": "gravel",
+            "slope": 0.18022577739447643
+          },
+          "obstacle": "mountainV2:summit-art:parapet:2",
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:district:summit~door:observatory",
+      "direction": "reverse",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 1.1599999999995605,
+        "finalPosition": [
+          1307.6351505809903,
+          158,
+          470.41384868079047
+        ],
+        "walkBlocker": {
+          "at": [
+            1307.6745517979189,
+            158,
+            470.4069534574768
+          ],
+          "surface": {
+            "id": "place.L02.slab@crown",
+            "y": 158,
+            "nx": 0,
+            "ny": 1,
+            "nz": 0,
+            "material": "stone",
+            "slope": 0
+          },
+          "obstacle": "mountainV2:summit-art:parapet:2",
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 1.1599999999995605,
+        "finalPosition": [
+          1307.6351505809903,
+          158,
+          470.41384868079047
+        ],
+        "walkBlocker": {
+          "at": [
+            1307.6745517979189,
+            158,
+            470.4069534574768
+          ],
+          "surface": {
+            "id": "place.L02.slab@crown",
+            "y": 158,
+            "nx": 0,
+            "ny": 1,
+            "nz": 0,
+            "material": "stone",
+            "slope": 0
+          },
+          "obstacle": "mountainV2:summit-art:parapet:2",
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:district:summit~station:gondola:summit",
+      "direction": "reverse",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 1.5199999999998122,
+        "finalPosition": [
+          1299.7312996979967,
+          90,
+          480.2687003020033
+        ],
+        "walkBlocker": {
+          "at": [
+            1299.7595839692442,
+            90,
+            480.24041603075585
+          ],
+          "surface": {
+            "id": "underground.bellGallery.floor@undercroft",
+            "y": 90,
+            "nx": 0,
+            "ny": 1,
+            "nz": 0,
+            "material": "rock",
+            "slope": 0
+          },
+          "obstacle": "underground.bellGallery.walls@undercroft",
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 1.5199999999998122,
+        "finalPosition": [
+          1299.7312996979967,
+          90,
+          480.2687003020033
+        ],
+        "walkBlocker": {
+          "at": [
+            1299.7595839692442,
+            90,
+            480.24041603075585
+          ],
+          "surface": {
+            "id": "underground.bellGallery.floor@undercroft",
+            "y": 90,
+            "nx": 0,
+            "ny": 1,
+            "nz": 0,
+            "material": "rock",
+            "slope": 0
+          },
+          "obstacle": "underground.bellGallery.walls@undercroft",
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:district:summit~overlook:summit",
+      "direction": "forward",
+      "classification": "baseline failed; changed witness, not exact inheritance",
+      "differentFields": [
+        "reason",
+        "completedDistanceM",
+        "finalPosition",
+        "walkBlocker",
+        "airborneFrames"
+      ],
+      "baseline": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 4.560000000000099,
+        "finalPosition": [
+          1310.8384349768376,
+          158,
+          475.030608987947
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 10.60000000000055,
+        "finalPosition": [
+          1311.824828885829,
+          154.87459106771374,
+          480.94897253341344
+        ],
+        "walkBlocker": {
+          "at": [
+            1311.8314048405769,
+            154.87459106771374,
+            480.98842829115745
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 154.85305848622477,
+            "nx": 0.1153658374589468,
+            "ny": 0.7208399540502465,
+            "nz": -0.6834328673631628,
+            "material": "grass",
+            "slope": 43.87612779205137
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:district:summit~overlook:summit",
+      "direction": "reverse",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 0,
+        "finalPosition": [
+          1311.9178005663307,
+          156.41807497707543,
+          481.5068030280867
+        ],
+        "walkBlocker": {
+          "at": [
+            1311.9112246116372,
+            156.41807497707543,
+            481.4673472703337
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 156.2952670092186,
+            "nx": 0.025292892842827198,
+            "ny": 0.3046462992038502,
+            "nz": -0.9521296665649271,
+            "material": "grass",
+            "slope": 72.26311430858496
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 0,
+        "finalPosition": [
+          1311.9178005663307,
+          156.41807497707543,
+          481.5068030280867
+        ],
+        "walkBlocker": {
+          "at": [
+            1311.9112246116372,
+            156.41807497707543,
+            481.4673472703337
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 156.2952670092186,
+            "nx": 0.025292892842827198,
+            "ny": 0.3046462992038502,
+            "nz": -0.9521296665649271,
+            "material": "grass",
+            "slope": 72.26311430858496
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native town:west-lanes",
+      "direction": "forward",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 16.679999999998255,
+        "finalPosition": [
+          1305.7462515130658,
+          54.970012596036675,
+          738.1637848005382
+        ],
+        "walkBlocker": {
+          "at": [
+            1305.7479890020368,
+            54.970012596036675,
+            738.2037470468724
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 54.96582550906979,
+            "nx": -0.6336961666388219,
+            "ny": 0.7659492054571011,
+            "nz": 0.10840195130576868,
+            "material": "grass",
+            "slope": 40.00848839389698
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 16.679999999998255,
+        "finalPosition": [
+          1305.7462515130658,
+          54.970012596036675,
+          738.1637848005382
+        ],
+        "walkBlocker": {
+          "at": [
+            1305.7479890020368,
+            54.970012596036675,
+            738.2037470468724
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 54.96582550906979,
+            "nx": -0.6336961666388219,
+            "ny": 0.7659492054571011,
+            "nz": 0.10840195130576868,
+            "material": "grass",
+            "slope": 40.00848839389698
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native town:west-lanes",
+      "direction": "reverse",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 37.60979700374914,
+        "finalPosition": [
+          1280.8210584341582,
+          54.81186498687886,
+          770.1789417303419
+        ],
+        "walkBlocker": {
+          "at": [
+            1280.8493427012932,
+            54.81186498687886,
+            770.1506574549819
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 54.781562504833374,
+            "nx": 0.7360997199966846,
+            "ny": 0.6026392645107932,
+            "nz": -0.30819331448085097,
+            "material": "grass",
+            "slope": 52.94084418078833
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "stalled-no-progress-5s",
+        "completedDistanceM": 37.60979700374914,
+        "finalPosition": [
+          1280.8210584341582,
+          54.81186498687886,
+          770.1789417303419
+        ],
+        "walkBlocker": {
+          "at": [
+            1280.8493427012932,
+            54.81186498687886,
+            770.1506574549819
+          ],
+          "surface": {
+            "id": "terrain",
+            "y": 54.781562504833374,
+            "nx": 0.7360997199966846,
+            "ny": 0.6026392645107932,
+            "nz": -0.30819331448085097,
+            "material": "grass",
+            "slope": 52.94084418078833
+          },
+          "obstacle": null,
+          "water": false
+        },
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native path:road:clearing~gate:woodland-clearing",
+      "direction": "forward",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 0,
+        "finalPosition": [
+          1211.8103499541785,
+          108.18946750225373,
+          570.4069733488539
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "walking-airborne-handoff",
+        "completedDistanceM": 0,
+        "finalPosition": [
+          1211.8103499541785,
+          108.18946750225373,
+          570.4069733488539
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 1,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native link:lane-junction",
+      "direction": "forward",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "walking-invalid-route",
+        "completedDistanceM": 0,
+        "finalPosition": [
+          1327.338727,
+          69.791128,
+          669.364469
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "walking-invalid-route",
+        "completedDistanceM": 0,
+        "finalPosition": [
+          1327.338727,
+          69.791128,
+          669.364469
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    },
+    {
+      "route": "native link:lane-junction",
+      "direction": "reverse",
+      "classification": "exact retained failure witness",
+      "differentFields": [],
+      "baseline": {
+        "completed": false,
+        "reason": "walking-invalid-route",
+        "completedDistanceM": 0,
+        "finalPosition": [
+          1327.338727,
+          69.791128,
+          669.364469
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      },
+      "current": {
+        "completed": false,
+        "reason": "walking-invalid-route",
+        "completedDistanceM": 0,
+        "finalPosition": [
+          1327.338727,
+          69.791128,
+          669.364469
+        ],
+        "walkBlocker": null,
+        "contacts": {},
+        "airborneFrames": 0,
+        "offbedFrames": 0,
+        "bails": 0
+      }
+    }
+  ]
+}

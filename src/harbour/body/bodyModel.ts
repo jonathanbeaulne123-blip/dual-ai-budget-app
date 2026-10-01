@@ -354,7 +354,7 @@ export const strideAt = (speed: number): number => STRIDE * (1 + STRIDE_STRETCH 
 /** A body standing at a point, facing the way it is put. */
 export function createBodyState(x: number, z: number, yaw: number, world: BodyWorld, y?: number): BodyState {
   const ashore = holdInWorld(x, z, world);
-  const clear = pushOut(ashore.x, ashore.z, BODY_RADIUS, world.obstacles);
+  const clear = pushOut(ashore.x, ashore.z, BODY_RADIUS, world.obstacles, y);
   // A known height (a return record, a station platform) picks the level it names: the deck, or the ground under it.
   // Without one, the level at the ground: a deck overhead never captures a body put down under it.
   const under = supportIn(world, clear.x, clear.z, y ?? world.groundHeightAt(clear.x, clear.z), null);

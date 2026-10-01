@@ -250,7 +250,7 @@ function fakeRenderer() {
 }
 
 describe("flat marks ⊇ the 3D anchors at every visible tier", () => {
-  it("every anchor the scene draws at Sky, Region and Stop is a BoardFlat data-id, drawn at that tier, with a flat mark button", async () => {
+  it("every non-landmark anchor at Sky, Region and Stop has its BoardFlat mark and action button", async () => {
     const frames: FrameRequestCallback[] = [];
     vi.stubGlobal("requestAnimationFrame", vi.fn((cb: FrameRequestCallback) => { frames.push(cb); return frames.length; }));
     vi.stubGlobal("cancelAnimationFrame", vi.fn());
@@ -279,7 +279,9 @@ describe("flat marks ⊇ the 3D anchors at every visible tier", () => {
         scene.focus(target, tier, false);
         scene.renderNow();
         expect(scene.view().tier, `${tier} framing`).toBe(tier);
-        const visible = last.filter((a) => a.visible && !a.id.startsWith("district:") && !a.id.startsWith("preview:"));
+        // Bridge identities are passive labels (covered by the real flat Stage test), not
+        // financial action marks. The exact button/callback parity below remains unchanged.
+        const visible = last.filter((a) => a.visible && !a.bridge && !a.id.startsWith("district:") && !a.id.startsWith("preview:"));
         expect(visible.length, `${tier}: something is drawn`).toBeGreaterThan(0);
         seenVisible.set(tier, (seenVisible.get(tier) ?? 0) + visible.length);
         const missing = visible.map((a) => a.id).filter((id) => !flatIds.has(id));

@@ -56,3 +56,52 @@ it('shares appended static collision with hulls without exposing dynamic decks o
  expect(hull.surface(50,50,8)?.id).toBe('bridge');expect(hull.ceiling(50,50,0)).toBeCloseTo(7.4);expect(query.indexStats.chunks).toBe(1);
  remove();expect(query.surface(50,50,8)).toEqual(hull.surface(50,50,8));expect(retained).toEqual(before);
 });
+
+
+describe('static query results survive face rejection and streamed growth',()=>{
+ it('retains supported and overhead faces inside the existing barycentric fringe',()=>{
+  const top=solid('fringe-top','landing','stone','deck');top.positions=[50,8,50,50,8,51,51,8,50];top.indices=[0,1,2];
+  const underside=solid('fringe-under','landing','stone','wall');underside.positions=[50,9,50,51,9,50,50,9,51];underside.indices=[0,1,2];
+  const g=createHorizonGeography(field,{...empty,solids:[top,underside]});
+  // The admitted point is outside the exact XZ AABB, but inside the established
+  // projected face tolerance. Neither surface nor ceiling may lose it.
+  expect(g.surface(50-.5e-6,50.5,8)?.id).toBe(top.id);
+  expect(g.ceiling(50-.5e-6,50.5,8)).toBeCloseTo(9,12);
+  expect(g.contact(50-.5e-6,50.5,8,.01)?.id).toBe(underside.id);
+  expect(g.surface(50-2e-6,50.5,8)?.id).toBe('terrain');
+  expect(g.ceiling(50-2e-6,50.5,8)).toBe(Infinity);
+ });
+ it('preserves last equal-height surface, first wall contact and dynamic priority',()=>{
+  const a=solid('deck-first','landing','stone','deck'),b=solid('deck-last','landing','stone','deck');
+  for(const s of[a,b])box(s,[50,50],8,[4,4],7.5);
+  const wallA=solid('wall-first','rail','stone','rail'),wallB=solid('wall-last','rail','stone','rail');
+  for(const s of[wallA,wallB])box(s,[60,50],1.05,[1,5],0);
+  const g=createHorizonGeography(field,{...empty,solids:[a,b,wallA,wallB]});
+  expect(g.surface(50,50,8)?.id).toBe(b.id);
+  expect(g.blocker(59.3,50,0,.3,[1,0])).toBe(wallA.id);
+  expect(g.blocker(59.3,50,0,.3,[-1,0])).toBeNull();
+  const remove=g.addDynamic({surface:()=>({id:'dynamic-tie',y:8,nx:0,ny:1,nz:0,material:'wood',slope:0}),ceiling:()=>Infinity,contact:()=>({id:'dynamic-first',nx:-1,nz:0})});
+  expect(g.surface(50,50,8)?.id).toBe(b.id);expect(g.blocker(59.3,50,0,.3,[1,0])).toBe('dynamic-first');
+  remove();expect(g.blocker(59.3,50,0,.3,[1,0])).toBe(wallA.id);
+ });
+ it('keeps tiny supported faces and vertical walls distinct from degenerate faces',()=>{
+  const thin=solid('thin-top','landing','stone','deck');thin.positions=[50,8,50,50,8,50+2e-8,51,8,50];thin.indices=[0,1,2];
+  const collapsed=solid('collapsed','landing','stone','deck');collapsed.positions=[50,100,50,50.5,100,50,51,100,50];collapsed.indices=[0,1,2];
+  const wall=solid('vertical-wall','rail','stone','rail');wall.positions=[50,0,55,50,8,55,51,8,55];wall.indices=[0,1,2];
+  const g=createHorizonGeography(field,{...empty,solids:[thin,collapsed,wall]});
+  expect(g.surface(50.25,50+5e-9,8)?.id).toBe(thin.id);
+  expect(g.surface(50.25,50+5e-9,100)?.id).toBe(thin.id);
+  expect(g.ceiling(50.25,50+5e-9,0)).toBe(Infinity);
+  expect(g.contact(50.5,54.9,7,.3,undefined,false,.65)?.id).toBe(wall.id);
+ });
+ it('retains earlier chunk answers when enough later faces force index growth',()=>{
+  const deck=solid('earlier-bridge','bridge','stone','deck');box(deck,[50,50],8,[20,8],7.4);
+  const wall=solid('earlier-wall','rail','stone','rail');box(wall,[60,70],1.05,[1,5],0);
+  const g=createHorizonGeography(field,empty);g.addSolids([deck,wall]);
+  const before={surface:g.surface(50,50,8),ceiling:g.ceiling(50,50,0),contact:g.contact(59.3,70,0,.3,[1,0])};
+  const later=solid('later-chunk','landing','stone','deck');later.positions=[10,2,10,10,2,11,11,2,10];later.indices=Array.from({length:1100},()=>[0,1,2]).flat();g.addSolids([later]);
+  expect(g.indexStats.triangles).toBeGreaterThan(1024);expect(g.indexStats.chunks).toBe(2);
+  expect({surface:g.surface(50,50,8),ceiling:g.ceiling(50,50,0),contact:g.contact(59.3,70,0,.3,[1,0])}).toEqual(before);
+  expect(g.surface(10.25,10.25,2)?.id).toBe(later.id);
+ });
+});

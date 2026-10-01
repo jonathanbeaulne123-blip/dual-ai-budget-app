@@ -9,6 +9,9 @@ export { loadJourneyLand, journeyLandTimings, resetJourneyLandCacheForTests, typ
 export { JOURNEY_LAND_SLIM_URL, JOURNEY_LAND_SLIM_FORMAT, encodeJourneyLandSlim, decodeJourneyLandSlim, parseJourneyLandSlim, type JourneyLandSlim, type JourneyLandSlimSource } from "./slim.ts";
 export { extractJourneyLand, isMinorLine, LINE_TOLERANCE } from "./extract.ts";
 export { buildJourneyLand, countDraws, setJourneyLandTier, setJourneyLandView, JOURNEY_LAND_BUDGET, JOURNEY_LAND_GROUP_NAME } from "./build.ts";
+export { planRoad, planBridges, type RoadPlan, type RoadRun, type RoadVertex, type BridgePlan } from "./road.ts";
+export { buildBridges, BRIDGES_NAME } from "./bridges.ts";
+export { DECK_LINES_NAME, MAJOR_LINES_NAME, MINOR_LINES_NAME } from "./lines.ts";
 export { createLandSurface, createTerrainSampler, type LandSurface } from "./surface.ts";
 export { journeyLandFlatData, landformBand } from "./flat.ts";
 export { JourneyLandFlat, type JourneyLandFlatProps } from "./JourneyLandFlat.tsx";

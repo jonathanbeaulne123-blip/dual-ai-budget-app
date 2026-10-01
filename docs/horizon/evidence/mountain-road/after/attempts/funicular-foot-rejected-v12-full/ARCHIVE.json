@@ -1,0 +1,167 @@
+{
+  "status": "Rejected diagnostic; not final acceptance",
+  "files": [
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/art-full-classic.json",
+      "saved": "art-full-classic.json.gz",
+      "sourceBytes": 480446,
+      "sourceSHA256": "a130752e56163fbc2c6110cdbee3f6472706edff2ceec15036ba1e08622317b9"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/art-full-newfoundland.json",
+      "saved": "art-full-newfoundland.json.gz",
+      "sourceBytes": 480446,
+      "sourceSHA256": "a130752e56163fbc2c6110cdbee3f6472706edff2ceec15036ba1e08622317b9"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/art-full-taylor.json",
+      "saved": "art-full-taylor.json.gz",
+      "sourceBytes": 480446,
+      "sourceSHA256": "a130752e56163fbc2c6110cdbee3f6472706edff2ceec15036ba1e08622317b9"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/art-lite-classic.json",
+      "saved": "art-lite-classic.json.gz",
+      "sourceBytes": 453194,
+      "sourceSHA256": "0c315ceca7c3874ab0df0ec19c6232744adb06480d1c9a77c032b610d5075d43"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/art-lite-newfoundland.json",
+      "saved": "art-lite-newfoundland.json.gz",
+      "sourceBytes": 453194,
+      "sourceSHA256": "0c315ceca7c3874ab0df0ec19c6232744adb06480d1c9a77c032b610d5075d43"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/art-lite-taylor.json",
+      "saved": "art-lite-taylor.json.gz",
+      "sourceBytes": 453194,
+      "sourceSHA256": "0c315ceca7c3874ab0df0ec19c6232744adb06480d1c9a77c032b610d5075d43"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/asset-provenance.json",
+      "saved": "asset-provenance.json",
+      "sourceBytes": 268,
+      "sourceSHA256": "bbab5469da415052aa1f7112930f509a1dac33d06fda1cdac743e874a726c5f1"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/boundary-disposition.json",
+      "saved": "boundary-disposition.json.gz",
+      "sourceBytes": 1862655,
+      "sourceSHA256": "89a94585b9d735899496ec9afbc1b4e7dc66f0604ff255c1c57da919814e3a9f"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/candidate-solid.json",
+      "saved": "candidate-solid.json.gz",
+      "sourceBytes": 587285,
+      "sourceSHA256": "c4ddee0bb563148ef9f569081197d50ec9a3afd6ddb6faa470b61d57a0c45fe6"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/footprint-inventory.json",
+      "saved": "footprint-inventory.json.gz",
+      "sourceBytes": 582923,
+      "sourceSHA256": "fd200219c7fcf2c57aaca82882e00dd0ad3815a4a253203bc50dc925a38e3671"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/frozen-source-hashes.json",
+      "saved": "frozen-source-hashes.json",
+      "sourceBytes": 2655,
+      "sourceSHA256": "eede14b947f8b3b073a050a40f20d81419d87882212446acd5b61a47d18fa373"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/geometry-results.json",
+      "saved": "geometry-results.json.gz",
+      "sourceBytes": 3074751,
+      "sourceSHA256": "4f52e7547adfac7898f9e2ed71538bd3701cedf47a710388fd62ad4935771b7d"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/ground-impact.json",
+      "saved": "ground-impact.json.gz",
+      "sourceBytes": 355430,
+      "sourceSHA256": "8c58bd65d0c850349657501f9556948424e98ae39f679e56ae8d7e775ee23ff0"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/results.json",
+      "saved": "results.json.gz",
+      "sourceBytes": 5312589,
+      "sourceSHA256": "e05f98bf14b255757532b6f1e97e03b39407acbf9e84152446b24feac9f84ba3"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/runtime-bundle.mjs",
+      "saved": "runtime-bundle.mjs.gz",
+      "sourceBytes": 2165870,
+      "sourceSHA256": "8fd8d4d287355a9abb6d60bd2274980df6b3ba8fa7f8389936f93be009b7d6a2"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/sources/src/harbour/geometry/capGroundMesh.ts",
+      "saved": "sources/src/harbour/geometry/capGroundMesh.ts",
+      "sourceBytes": 2703,
+      "sourceSHA256": "a160e36b088cce88d5cdba1ca4ad876ca1d6842e6efd4d8c9a5d1bc2ebc6d39d"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/sources/src/harbour/horizon/land/mountainV2/footLaneJoin.ts",
+      "saved": "sources/src/harbour/horizon/land/mountainV2/footLaneJoin.ts",
+      "sourceBytes": 37320,
+      "sourceSHA256": "3870332394f092e86314657f1925b02b53419fcdeaa0329ee50b61f2830f4b02"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/sources/src/harbour/horizon/land/mountainV2/funicularFootStation.ts",
+      "saved": "sources/src/harbour/horizon/land/mountainV2/funicularFootStation.ts",
+      "sourceBytes": 2660,
+      "sourceSHA256": "1b6e7cf32389275fd046214562ca36cc3e1a5b052348bc043fdbf4f4aafdbd0f"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/sources/src/harbour/horizon/regions/mountainV2/funicularFootPath.ts",
+      "saved": "sources/src/harbour/horizon/regions/mountainV2/funicularFootPath.ts",
+      "sourceBytes": 9343,
+      "sourceSHA256": "886f4a1934eba44373f2ecc0611cdffbda20a6b9438ec4f1f1453de4ac2192c6"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/sources/src/harbour/horizon/regions/mountainV2/geography.ts",
+      "saved": "sources/src/harbour/horizon/regions/mountainV2/geography.ts",
+      "sourceBytes": 26126,
+      "sourceSHA256": "d6ce57a50c763c3552f1624eb0555aafee4ead84fdd88719a92dfab48070bd20"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/sources/src/harbour/horizon/regions/mountainV2/ground.ts",
+      "saved": "sources/src/harbour/horizon/regions/mountainV2/ground.ts",
+      "sourceBytes": 4973,
+      "sourceSHA256": "f3e47a5c1f0985e178253aa9f3c545bcee9e942a8aae1d5bcba9d3296feeb13e"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/sources/src/harbour/horizon/regions/mountainV2/index.ts",
+      "saved": "sources/src/harbour/horizon/regions/mountainV2/index.ts",
+      "sourceBytes": 5926,
+      "sourceSHA256": "48d106fb527a10d1721fbcb0f3e1fbd18abdcbebef298235c147c44f1113f377"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/sources/src/harbour/horizon/regions/mountainV2/scene.ts",
+      "saved": "sources/src/harbour/horizon/regions/mountainV2/scene.ts",
+      "sourceBytes": 15491,
+      "sourceSHA256": "05a19270458c2a12e78a3620862b7bb57b6788a3bb793e8d3ff3854effe4b056"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/sources/src/harbour/horizon/regions/mountainV2/walkingJoinGround.ts",
+      "saved": "sources/src/harbour/horizon/regions/mountainV2/walkingJoinGround.ts",
+      "sourceBytes": 3127,
+      "sourceSHA256": "edc29961f75fc1360f9cf78bf8e3f71f288e65d84b1a9b623dcf8389efe8563e"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/sources/src/harbour/horizon/runtime/index.ts",
+      "saved": "sources/src/harbour/horizon/runtime/index.ts.gz",
+      "sourceBytes": 127838,
+      "sourceSHA256": "a092e292ef13143dd74efda975e5bacbd3952379dd484c6532e480312e9f7887"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/sources/src/harbour/mountain/art/routeArt.ts",
+      "saved": "sources/src/harbour/mountain/art/routeArt.ts",
+      "sourceBytes": 15890,
+      "sourceSHA256": "8d9624344d1a8e8a08321ca767160da33beee859894d009706c1fc9edd2feec1"
+    },
+    {
+      "source": "/tmp/mountain-funicular-foot-candidate-proof-v12/stages.json",
+      "saved": "stages.json",
+      "sourceBytes": 6752,
+      "sourceSHA256": "4acd948620962a77c960315167467b423e569647b2bc5083fc7a4bb6881f5f50"
+    }
+  ]
+}

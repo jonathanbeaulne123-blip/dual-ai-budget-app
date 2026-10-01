@@ -1,0 +1,2020 @@
+{
+  "method": "Same current audit input driver, baseline1cf76c5 and current real source/runtime/assets; all52 original path exports byte-equal after source dumper transform. Independent routes, no network completion claim. Currentassetsprovisional; finalrebake pending.",
+  "baseline": {
+    "head": "1cf76c551e6f49124b6257162bc4d36ca18d7bd1",
+    "source": {
+      "diagnostic": "Native-only baseline comparison using unchanged current input driver and real baseline source/runtime/assets",
+      "source": "/tmp/mountain-baseline-native-paths/snapshot.json",
+      "sha256": "a73cd50dabf74631f1689eb37e7e43ea47761a016a8bc94f83d3a5770c1ca8e4",
+      "walks": 52,
+      "baseline": {
+        "source": "/tmp/mountain-baseline-native-paths/snapshot.json",
+        "sha256": "a73cd50dabf74631f1689eb37e7e43ea47761a016a8bc94f83d3a5770c1ca8e4",
+        "walks": 52
+      }
+    }
+  },
+  "current": {
+    "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+    "source": {
+      "source": "src/harbour/horizon/land/mountainV2/v2-data.json",
+      "sha256": "e56f8f614e7b11b0b69ddcd734adabe9efacf73dadcae4a450af0f1175284b2a",
+      "walks": 52,
+      "baseline": {
+        "source": "1cf76c551e6f49124b6257162bc4d36ca18d7bd1:src/harbour/horizon/land/mountainV2/v2-data.json",
+        "sha256": "647d8adc10b4f10bbe8991679199ad48cadf5cddd3bec1db17ba9f3e77525ab1",
+        "walks": 0
+      }
+    }
+  },
+  "beforeReasons": {
+    "end": 74,
+    "walking-airborne-handoff": 14,
+    "stalled-no-progress-5s": 14,
+    "walking-invalid-route": 2
+  },
+  "afterReasons": {
+    "end": 73,
+    "stalled-no-progress-5s": 16,
+    "walking-airborne-handoff": 13,
+    "walking-invalid-route": 2
+  },
+  "rows": [
+    {
+      "route": "native path:town:north~station:funicular:town",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1291.535046637836,
+        55.65085412364115,
+        727.9314023323927
+      ],
+      "afterFinal": [
+        1291.535046637836,
+        55.65085412364115,
+        727.9314023323927
+      ]
+    },
+    {
+      "route": "native path:town:north~station:funicular:town",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1304.6074348237537,
+        55.06453322771731,
+        721.2523605683047
+      ],
+      "afterFinal": [
+        1304.6074348237537,
+        55.06453322771731,
+        721.2523605683047
+      ]
+    },
+    {
+      "route": "native path:station:funicular:town~road:foot",
+      "direction": "forward",
+      "before": "end",
+      "after": "stalled-no-progress-5s",
+      "beforeCompleted": true,
+      "afterCompleted": false,
+      "progressDeltaM": -2.0800000000009344,
+      "beforeFinal": [
+        1285.8239382727259,
+        55.06622649639128,
+        723.4025725032513
+      ],
+      "afterFinal": [
+        1287.3778395259903,
+        55.19443335997459,
+        724.785247770661
+      ]
+    },
+    {
+      "route": "native path:station:funicular:town~road:foot",
+      "direction": "reverse",
+      "before": "end",
+      "after": "stalled-no-progress-5s",
+      "beforeCompleted": true,
+      "afterCompleted": false,
+      "progressDeltaM": -4.840000000000449,
+      "beforeFinal": [
+        1290.748165474987,
+        55.65085412364115,
+        727.7841917802776
+      ],
+      "afterFinal": [
+        1287.1323556378818,
+        54.593013460571854,
+        724.5668140868919
+      ]
+    },
+    {
+      "route": "native path:apron:home~door:home",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1365.8478645339405,
+        73.19999999999999,
+        648.9640578803868
+      ],
+      "afterFinal": [
+        1365.8478645339405,
+        73.2,
+        648.9640578803868
+      ]
+    },
+    {
+      "route": "native path:apron:home~door:home",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1363.8587726124817,
+        73.20000000000002,
+        653.0451251909802
+      ],
+      "afterFinal": [
+        1363.8587726124817,
+        73.21166144250705,
+        653.0451251909802
+      ]
+    },
+    {
+      "route": "native path:road:hearth~apron:home",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1363.4057411240458,
+        73.25991188846734,
+        653.8993239231257
+      ],
+      "afterFinal": [
+        1363.4057411240458,
+        73.30485333553217,
+        653.8993239231257
+      ]
+    },
+    {
+      "route": "native path:road:hearth~apron:home",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1360.5511750168405,
+        73.45139713132119,
+        658.8705961577726
+      ],
+      "afterFinal": [
+        1360.5511750168405,
+        73.49587301472293,
+        658.8705961577726
+      ]
+    },
+    {
+      "route": "native path:district:hearth~apron:home",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1363.6961894452602,
+        73.2,
+        653.0046795414564
+      ],
+      "afterFinal": [
+        1363.6961894452602,
+        73.20120930687423,
+        653.0046795414564
+      ]
+    },
+    {
+      "route": "native path:district:hearth~apron:home",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1363.95228255474,
+        73.19999999999999,
+        650.4719244585435
+      ],
+      "afterFinal": [
+        1363.95228255474,
+        73.2,
+        650.4719244585435
+      ]
+    },
+    {
+      "route": "native stair:harbour-steps",
+      "direction": "forward",
+      "before": "walking-airborne-handoff",
+      "after": "walking-airborne-handoff",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1351.890683028412,
+        65.25549148550165,
+        688.9829272056495
+      ],
+      "afterFinal": [
+        1351.890683028412,
+        65.25549148550165,
+        688.9829272056495
+      ]
+    },
+    {
+      "route": "native stair:harbour-steps",
+      "direction": "reverse",
+      "before": "walking-airborne-handoff",
+      "after": "walking-airborne-handoff",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1352.9682473543453,
+        65.87081257324371,
+        688.4246666249853
+      ],
+      "afterFinal": [
+        1352.9682473543453,
+        65.87081257324371,
+        688.4246666249853
+      ]
+    },
+    {
+      "route": "native stair:hearth-steps",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1349.9279824542964,
+        72.01725642314082,
+        668.4817625711194
+      ],
+      "afterFinal": [
+        1349.9279824542964,
+        72.01725642314082,
+        668.4817625711194
+      ]
+    },
+    {
+      "route": "native stair:hearth-steps",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1362.5699039242293,
+        65.5917270118036,
+        676.1518676714429
+      ],
+      "afterFinal": [
+        1362.5699039242293,
+        65.5917270118036,
+        676.1518676714429
+      ]
+    },
+    {
+      "route": "native stair:station-steps",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1314.8310656897047,
+        69.6,
+        677.374261678104
+      ],
+      "afterFinal": [
+        1314.8310656897047,
+        69.6,
+        677.374261678104
+      ]
+    },
+    {
+      "route": "native stair:station-steps",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1328.4620277958988,
+        61.406883405699006,
+        685.5441507619084
+      ],
+      "afterFinal": [
+        1328.4620277958988,
+        61.406883405699006,
+        685.5441507619084
+      ]
+    },
+    {
+      "route": "native bridge:station-walk",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1322.1587858907678,
+        69.59996220362463,
+        673.0234260808993
+      ],
+      "afterFinal": [
+        1322.1587858907678,
+        69.59996220362463,
+        673.0234260808993
+      ]
+    },
+    {
+      "route": "native bridge:station-walk",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1314.8132579174576,
+        69.6,
+        676.9103301828095
+      ],
+      "afterFinal": [
+        1314.8132579174576,
+        69.6,
+        676.9103301828095
+      ]
+    },
+    {
+      "route": "native path:town:north~path:river-west",
+      "direction": "forward",
+      "before": "stalled-no-progress-5s",
+      "after": "stalled-no-progress-5s",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1303.6111768221676,
+        55.06639897162359,
+        713.8844395785567
+      ],
+      "afterFinal": [
+        1303.6111768221676,
+        55.06639897162359,
+        713.8844395785567
+      ]
+    },
+    {
+      "route": "native path:town:north~path:river-west",
+      "direction": "reverse",
+      "before": "walking-airborne-handoff",
+      "after": "walking-airborne-handoff",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1303.6116314565425,
+        56.2,
+        713.8930500646157
+      ],
+      "afterFinal": [
+        1303.6116314565425,
+        56.2,
+        713.8930500646157
+      ]
+    },
+    {
+      "route": "native bridge:river-footbridge",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1313.0867709094628,
+        56.583470836378524,
+        707.2479374543217
+      ],
+      "afterFinal": [
+        1313.0867709094628,
+        56.583470836378524,
+        707.2479374543217
+      ]
+    },
+    {
+      "route": "native bridge:river-footbridge",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1303.9132290905372,
+        56.21652916362148,
+        712.7520625456783
+      ],
+      "afterFinal": [
+        1303.9132290905372,
+        56.21652916362148,
+        712.7520625456783
+      ]
+    },
+    {
+      "route": "native path:path:river-east~road:station-steps",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1324.2638970192734,
+        61.327380978948945,
+        695.2978244701176
+      ],
+      "afterFinal": [
+        1324.2638970192734,
+        61.327380978948945,
+        695.2978244701176
+      ]
+    },
+    {
+      "route": "native path:path:river-east~road:station-steps",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1313.8270136049107,
+        56.072778763737816,
+        706.6478313560351
+      ],
+      "afterFinal": [
+        1313.8270136049107,
+        56.072778763737816,
+        706.6478313560351
+      ]
+    },
+    {
+      "route": "native path:district:hearth~overlook:hearth",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1354.436690083858,
+        73.2,
+        653.8253239664568
+      ],
+      "afterFinal": [
+        1354.436690083858,
+        73.2,
+        653.8253239664568
+      ]
+    },
+    {
+      "route": "native path:district:hearth~overlook:hearth",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1363.563309916142,
+        73.2,
+        650.1746760335432
+      ],
+      "afterFinal": [
+        1363.563309916142,
+        73.2,
+        650.1746760335432
+      ]
+    },
+    {
+      "route": "native path:district:hearth~stair:woods-bottom",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1358.2479374543225,
+        73.15999984741211,
+        640.4132290905372
+      ],
+      "afterFinal": [
+        1358.2479374543225,
+        73.174999847,
+        640.4132290905372
+      ]
+    },
+    {
+      "route": "native path:district:hearth~stair:woods-bottom",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1363.7520625456775,
+        73.2,
+        649.5867709094628
+      ],
+      "afterFinal": [
+        1363.7520625456775,
+        73.2,
+        649.5867709094628
+      ]
+    },
+    {
+      "route": "native stair:woods-steps-1",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1350.2095392444385,
+        81.28260311486909,
+        624.4190782937588
+      ],
+      "afterFinal": [
+        1350.2095392444385,
+        81.28260311486909,
+        624.4190782937588
+      ]
+    },
+    {
+      "route": "native stair:woods-steps-1",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1357.7904607555615,
+        73.4173968851309,
+        639.5809217062412
+      ],
+      "afterFinal": [
+        1357.7904607555615,
+        73.4173968851309,
+        639.5809217062412
+      ]
+    },
+    {
+      "route": "native stair:woods-steps-mid",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1346.0614734636251,
+        89.5,
+        608.4917568655675
+      ],
+      "afterFinal": [
+        1346.0614734636251,
+        89.5,
+        608.4917568655675
+      ]
+    },
+    {
+      "route": "native stair:woods-steps-mid",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1349.8259901989436,
+        81.73874630961575,
+        623.5359681763572
+      ],
+      "afterFinal": [
+        1349.8259901989436,
+        81.73874630961575,
+        623.5359681763572
+      ]
+    },
+    {
+      "route": "native stair:woods-steps-2",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1348.067218688436,
+        89.8475488010655,
+        606.820590446798
+      ],
+      "afterFinal": [
+        1348.067218688436,
+        89.8475488010655,
+        606.820590446798
+      ]
+    },
+    {
+      "route": "native stair:woods-steps-2",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1346.418522353936,
+        89.57036359397819,
+        607.7612206274678
+      ],
+      "afterFinal": [
+        1346.418522353936,
+        89.57036359397819,
+        607.7612206274678
+      ]
+    },
+    {
+      "route": "native path:apron:library~door:library",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1358.7684559733123,
+        88.95000076293945,
+        586.9782380458678
+      ],
+      "afterFinal": [
+        1358.7684559733123,
+        88.95000076293945,
+        586.9782380458678
+      ]
+    },
+    {
+      "route": "native path:apron:library~door:library",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1357.5595889884949,
+        88.96669385366823,
+        591.3543359435814
+      ],
+      "afterFinal": [
+        1357.5595889884949,
+        88.96669385366823,
+        591.3543359435814
+      ]
+    },
+    {
+      "route": "native path:district:library~apron:library",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1357.2573305822955,
+        88.96658917732752,
+        591.3519426914586
+      ],
+      "afterFinal": [
+        1357.2573305822955,
+        88.96658917732752,
+        591.3519426914586
+      ]
+    },
+    {
+      "route": "native path:district:library~apron:library",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1356.1744484177045,
+        88.97000122070312,
+        588.4650653085414
+      ],
+      "afterFinal": [
+        1356.1744484177045,
+        88.97000122070312,
+        588.4650653085414
+      ]
+    },
+    {
+      "route": "native path:road:library~apron:library",
+      "direction": "forward",
+      "before": "walking-airborne-handoff",
+      "after": "walking-airborne-handoff",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0,
+      "beforeFinal": [
+        1355.0978536850105,
+        89.42526349026292,
+        598.821576586916
+      ],
+      "afterFinal": [
+        1355.0978536850105,
+        89.42526349026292,
+        598.821576586916
+      ]
+    },
+    {
+      "route": "native path:road:library~apron:library",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1355.0735663970263,
+        90.73771442912908,
+        598.8944675243757
+      ],
+      "afterFinal": [
+        1355.0735663970263,
+        90.73771442912908,
+        598.8944675243757
+      ]
+    },
+    {
+      "route": "native path:road:library~overlook:gorge-balcony",
+      "direction": "forward",
+      "before": "walking-airborne-handoff",
+      "after": "walking-airborne-handoff",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1343.0808812149369,
+        91.31611450988505,
+        603.9163229498121
+      ],
+      "afterFinal": [
+        1343.0808812149369,
+        91.31611450988505,
+        603.9163229498121
+      ]
+    },
+    {
+      "route": "native path:road:library~overlook:gorge-balcony",
+      "direction": "reverse",
+      "before": "stalled-no-progress-5s",
+      "after": "stalled-no-progress-5s",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1329.9561838381426,
+        92.80565863667348,
+        600.6131301897074
+      ],
+      "afterFinal": [
+        1329.9561838381426,
+        92.80565863667348,
+        600.6131301897074
+      ]
+    },
+    {
+      "route": "native path:station:funicular:library~overlook:gorge-balcony",
+      "direction": "forward",
+      "before": "walking-airborne-handoff",
+      "after": "walking-airborne-handoff",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1326.8189275555053,
+        93.6,
+        604.1413889029918
+      ],
+      "afterFinal": [
+        1326.8189275555053,
+        93.6,
+        604.1413889029918
+      ]
+    },
+    {
+      "route": "native path:station:funicular:library~overlook:gorge-balcony",
+      "direction": "reverse",
+      "before": "stalled-no-progress-5s",
+      "after": "stalled-no-progress-5s",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1326.4765040831794,
+        91.63115875502521,
+        604.9849638187868
+      ],
+      "afterFinal": [
+        1326.4765040831794,
+        91.63115875502521,
+        604.9849638187868
+      ]
+    },
+    {
+      "route": "native path:apron:cottage~door:cottage",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1240.9412498899783,
+        81.95000076293945,
+        637.7310259633765
+      ],
+      "afterFinal": [
+        1240.9412498899783,
+        81.95000076293945,
+        637.7310259633765
+      ]
+    },
+    {
+      "route": "native path:apron:cottage~door:cottage",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1243.1195981273277,
+        81.62322348750371,
+        641.7142910271591
+      ],
+      "afterFinal": [
+        1243.1195981273277,
+        81.62322348750371,
+        641.7142910271591
+      ]
+    },
+    {
+      "route": "native path:lane:orchard~apron:cottage",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1243.6303768368984,
+        81.58232459917815,
+        642.5444306550181
+      ],
+      "afterFinal": [
+        1243.6303768368984,
+        81.58232459917815,
+        642.5444306550181
+      ]
+    },
+    {
+      "route": "native path:lane:orchard~apron:cottage",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1243.9946270037838,
+        81.57999992370605,
+        643.0756084542317
+      ],
+      "afterFinal": [
+        1243.9946270037838,
+        81.57999992370605,
+        643.0756084542317
+      ]
+    },
+    {
+      "route": "native path:lane:orchard~district:orchard",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1240.350219500939,
+        81.96999931335449,
+        640.350219500939
+      ],
+      "afterFinal": [
+        1240.350219500939,
+        81.96999931335449,
+        640.350219500939
+      ]
+    },
+    {
+      "route": "native path:lane:orchard~district:orchard",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1243.4931074990611,
+        81.57999992370605,
+        643.493107499061
+      ],
+      "afterFinal": [
+        1243.4931074990611,
+        81.57999992370605,
+        643.493107499061
+      ]
+    },
+    {
+      "route": "native path:apron:glasshouse~door:glasshouse",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1234.6672041191691,
+        115.95000076293945,
+        543.5562511830673
+      ],
+      "afterFinal": [
+        1234.6672041191691,
+        115.95000076293945,
+        543.5562511830673
+      ]
+    },
+    {
+      "route": "native path:apron:glasshouse~door:glasshouse",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1236.131751880831,
+        116,
+        547.8535408169333
+      ],
+      "afterFinal": [
+        1236.131751880831,
+        116,
+        547.8535408169333
+      ]
+    },
+    {
+      "route": "native stair:meadow-steps-1",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1264.458038281221,
+        101.90831226814761,
+        558.960313477227
+      ],
+      "afterFinal": [
+        1264.458038281221,
+        101.90831226814761,
+        558.960313477227
+      ]
+    },
+    {
+      "route": "native stair:meadow-steps-1",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1266.2086286214367,
+        101.63780307046012,
+        559.5730198008902
+      ],
+      "afterFinal": [
+        1266.2086286214367,
+        101.63780307046012,
+        559.5730198008902
+      ]
+    },
+    {
+      "route": "native stair:meadow-steps-2",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1236.7324438848873,
+        115.77096866103318,
+        548.4977613930338
+      ],
+      "afterFinal": [
+        1236.7324438848873,
+        115.77096866103318,
+        548.4977613930338
+      ]
+    },
+    {
+      "route": "native stair:meadow-steps-2",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1263.5380109131868,
+        102.20812145922369,
+        558.6537034987886
+      ],
+      "afterFinal": [
+        1263.5380109131868,
+        102.20812145922369,
+        558.6537034987886
+      ]
+    },
+    {
+      "route": "native path:district:glasshouse~apron:glasshouse",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1236.2037296903911,
+        115.94542875096747,
+        548.7971308411755
+      ],
+      "afterFinal": [
+        1236.2037296903911,
+        115.94542875096747,
+        548.7971308411755
+      ]
+    },
+    {
+      "route": "native path:district:glasshouse~apron:glasshouse",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1236.0828643096088,
+        115.86583157935343,
+        549.5107491588244
+      ],
+      "afterFinal": [
+        1236.0828643096088,
+        115.86583157935343,
+        549.5107491588244
+      ]
+    },
+    {
+      "route": "native path:road:glasshouse~district:glasshouse",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1235.8657508759184,
+        115.95708711536531,
+        549.5277661233855
+      ],
+      "afterFinal": [
+        1235.8657508759184,
+        115.95708711536531,
+        549.5277661233855
+      ]
+    },
+    {
+      "route": "native path:road:glasshouse~district:glasshouse",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1231.3021320166486,
+        115.7781102300531,
+        533.4747939071578
+      ],
+      "afterFinal": [
+        1231.3021320166486,
+        115.7781102300531,
+        533.4747939071578
+      ]
+    },
+    {
+      "route": "native stair:dam-west-steps",
+      "direction": "forward",
+      "before": "walking-airborne-handoff",
+      "after": "walking-airborne-handoff",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1283.633778037654,
+        133.31535808519328,
+        523.1824204049625
+      ],
+      "afterFinal": [
+        1283.633778037654,
+        133.31535808519328,
+        523.1824204049625
+      ]
+    },
+    {
+      "route": "native stair:dam-west-steps",
+      "direction": "reverse",
+      "before": "walking-airborne-handoff",
+      "after": "walking-airborne-handoff",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1294.539913176526,
+        142,
+        525.7883227919898
+      ],
+      "afterFinal": [
+        1294.539913176526,
+        142,
+        525.7883227919898
+      ]
+    },
+    {
+      "route": "native promenade:dam-crest",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1336.6527282223128,
+        142,
+        526.4115239018724
+      ],
+      "afterFinal": [
+        1336.6527282223128,
+        142,
+        526.4115239018724
+      ]
+    },
+    {
+      "route": "native promenade:dam-crest",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1295.3472717776872,
+        142,
+        526.4115239018724
+      ],
+      "afterFinal": [
+        1295.3472717776872,
+        142,
+        526.4115239018724
+      ]
+    },
+    {
+      "route": "native path:dam:east~door:pavilion",
+      "direction": "forward",
+      "before": "walking-airborne-handoff",
+      "after": "walking-airborne-handoff",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0,
+      "beforeFinal": [
+        1337.2966444213953,
+        139.2535141275872,
+        525.6914056041429
+      ],
+      "afterFinal": [
+        1337.2966444213953,
+        139.2535141275872,
+        525.6914056041429
+      ]
+    },
+    {
+      "route": "native path:dam:east~door:pavilion",
+      "direction": "reverse",
+      "before": "walking-airborne-handoff",
+      "after": "walking-airborne-handoff",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0,
+      "beforeFinal": [
+        1351.5215125786046,
+        142.79264919587456,
+        518.250299395857
+      ],
+      "afterFinal": [
+        1351.5215125786046,
+        142.79264919587456,
+        518.250299395857
+      ]
+    },
+    {
+      "route": "native path:door:pavilion~district:reservoir",
+      "direction": "forward",
+      "before": "walking-airborne-handoff",
+      "after": "walking-airborne-handoff",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1352.5295135791293,
+        143.3766459354293,
+        518.1059026416939
+      ],
+      "afterFinal": [
+        1352.5295135791293,
+        143.3766459354293,
+        518.1059026416939
+      ]
+    },
+    {
+      "route": "native path:door:pavilion~district:reservoir",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1352.488367452119,
+        143.90908417082642,
+        518.0976734575551
+      ],
+      "afterFinal": [
+        1352.488367452119,
+        143.90908417082642,
+        518.0976734575551
+      ]
+    },
+    {
+      "route": "native path:road:reservoir~district:reservoir",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1362.1413561078946,
+        143.54713996475152,
+        519.5254644471478
+      ],
+      "afterFinal": [
+        1362.1413561078946,
+        143.54713996475152,
+        519.5254644471478
+      ]
+    },
+    {
+      "route": "native path:road:reservoir~district:reservoir",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1362.6451980960455,
+        143.495459420904,
+        517.8340546136017
+      ],
+      "afterFinal": [
+        1362.6451980960455,
+        143.495459420904,
+        517.8340546136017
+      ]
+    },
+    {
+      "route": "native path:station:funicular:reservoir~dam:east",
+      "direction": "forward",
+      "before": "stalled-no-progress-5s",
+      "after": "stalled-no-progress-5s",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1344.5558520226243,
+        134.0056840291594,
+        536.1276940203635
+      ],
+      "afterFinal": [
+        1344.5558520226243,
+        134.0056840291594,
+        536.1276940203635
+      ]
+    },
+    {
+      "route": "native path:station:funicular:reservoir~dam:east",
+      "direction": "reverse",
+      "before": "stalled-no-progress-5s",
+      "after": "stalled-no-progress-5s",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1337.1206080289753,
+        139.39510343172026,
+        526.3398549404392
+      ],
+      "afterFinal": [
+        1337.1206080289753,
+        139.39510343172026,
+        526.3398549404392
+      ]
+    },
+    {
+      "route": "native stair:reservoir-steps",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1345.2502616784886,
+        141.6,
+        536.7906574794156
+      ],
+      "afterFinal": [
+        1345.2502616784886,
+        141.6,
+        536.7906574794156
+      ]
+    },
+    {
+      "route": "native stair:reservoir-steps",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1365.2682791020065,
+        130.2152548468718,
+        550.2301608950593
+      ],
+      "afterFinal": [
+        1365.2682791020065,
+        130.2152548468718,
+        550.2301608950593
+      ]
+    },
+    {
+      "route": "native stair:rim-steps",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1348.2920038234724,
+        127.96150155044948,
+        556.1604407420896
+      ],
+      "afterFinal": [
+        1348.2920038234724,
+        127.96150155044948,
+        556.1604407420896
+      ]
+    },
+    {
+      "route": "native stair:rim-steps",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1335.4606001867492,
+        94.92147468068106,
+        573.9224672742444
+      ],
+      "afterFinal": [
+        1335.4606001867492,
+        94.92147468068106,
+        573.9224672742444
+      ]
+    },
+    {
+      "route": "native path:district:library~road:b2-east",
+      "direction": "forward",
+      "before": "stalled-no-progress-5s",
+      "after": "stalled-no-progress-5s",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1352.9731659877073,
+        89.09886379954156,
+        586.7892663950829
+      ],
+      "afterFinal": [
+        1352.9731659877073,
+        89.09886379954156,
+        586.7892663950829
+      ]
+    },
+    {
+      "route": "native path:district:library~road:b2-east",
+      "direction": "reverse",
+      "before": "walking-airborne-handoff",
+      "after": "walking-airborne-handoff",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1344.5102536798197,
+        89.58762151702648,
+        585.4213142687051
+      ],
+      "afterFinal": [
+        1344.5102536798197,
+        89.58762151702648,
+        585.4213142687051
+      ]
+    },
+    {
+      "route": "native path:road:summit~district:summit",
+      "direction": "forward",
+      "before": "stalled-no-progress-5s",
+      "after": "stalled-no-progress-5s",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1314.0960608694204,
+        90.00000000000001,
+        470.1365355494267
+      ],
+      "afterFinal": [
+        1314.0960608694204,
+        90.00000000000001,
+        470.1365355494267
+      ]
+    },
+    {
+      "route": "native path:road:summit~district:summit",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1319.8545267858672,
+        158.18000030517578,
+        470.3284841345063
+      ],
+      "afterFinal": [
+        1319.8545267858672,
+        158.18000030517578,
+        470.3284841345063
+      ]
+    },
+    {
+      "route": "native path:district:summit~door:observatory",
+      "direction": "forward",
+      "before": "stalled-no-progress-5s",
+      "after": "stalled-no-progress-5s",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1309.389281089112,
+        158,
+        470.10687568424925
+      ],
+      "afterFinal": [
+        1309.389281089112,
+        158.00159342510864,
+        470.10687568424925
+      ]
+    },
+    {
+      "route": "native path:district:summit~door:observatory",
+      "direction": "reverse",
+      "before": "stalled-no-progress-5s",
+      "after": "stalled-no-progress-5s",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1307.6351505809903,
+        158,
+        470.41384868079047
+      ],
+      "afterFinal": [
+        1307.6351505809903,
+        158,
+        470.41384868079047
+      ]
+    },
+    {
+      "route": "native path:district:summit~station:gondola:summit",
+      "direction": "forward",
+      "before": "stalled-no-progress-5s",
+      "after": "end",
+      "beforeCompleted": false,
+      "afterCompleted": true,
+      "progressDeltaM": 5.519999999999159,
+      "beforeFinal": [
+        1302.5470945262948,
+        157.55021199703415,
+        477.45290547370513
+      ],
+      "afterFinal": [
+        1298.6438650941457,
+        158.05,
+        481.3561349058543
+      ]
+    },
+    {
+      "route": "native path:district:summit~station:gondola:summit",
+      "direction": "reverse",
+      "before": "stalled-no-progress-5s",
+      "after": "stalled-no-progress-5s",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1299.7312996979967,
+        90,
+        480.2687003020033
+      ],
+      "afterFinal": [
+        1299.7312996979967,
+        90,
+        480.2687003020033
+      ]
+    },
+    {
+      "route": "native path:district:summit~overlook:summit",
+      "direction": "forward",
+      "before": "walking-airborne-handoff",
+      "after": "stalled-no-progress-5s",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 6.040000000000451,
+      "beforeFinal": [
+        1310.8384349768376,
+        158,
+        475.030608987947
+      ],
+      "afterFinal": [
+        1311.824828885829,
+        154.87459106771374,
+        480.94897253341344
+      ]
+    },
+    {
+      "route": "native path:district:summit~overlook:summit",
+      "direction": "reverse",
+      "before": "stalled-no-progress-5s",
+      "after": "stalled-no-progress-5s",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0,
+      "beforeFinal": [
+        1311.9178005663307,
+        156.41807497707543,
+        481.5068030280867
+      ],
+      "afterFinal": [
+        1311.9178005663307,
+        156.41807497707543,
+        481.5068030280867
+      ]
+    },
+    {
+      "route": "native path:town:quay~station:gondola:quay",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1279.397240803147,
+        54.53,
+        810.358096547935
+      ],
+      "afterFinal": [
+        1279.397240803147,
+        54.53,
+        810.358096547935
+      ]
+    },
+    {
+      "route": "native path:town:quay~station:gondola:quay",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1274.316941315117,
+        54.48695852241997,
+        804.3733653516766
+      ],
+      "afterFinal": [
+        1274.316941315117,
+        54.48695852241997,
+        804.3733653516766
+      ]
+    },
+    {
+      "route": "native town:west-lanes",
+      "direction": "forward",
+      "before": "stalled-no-progress-5s",
+      "after": "stalled-no-progress-5s",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1305.7462515130658,
+        54.970012596036675,
+        738.1637848005382
+      ],
+      "afterFinal": [
+        1305.7462515130658,
+        54.970012596036675,
+        738.1637848005382
+      ]
+    },
+    {
+      "route": "native town:west-lanes",
+      "direction": "reverse",
+      "before": "stalled-no-progress-5s",
+      "after": "stalled-no-progress-5s",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1280.8210584341582,
+        54.81186498687886,
+        770.1789417303419
+      ],
+      "afterFinal": [
+        1280.8210584341582,
+        54.81186498687886,
+        770.1789417303419
+      ]
+    },
+    {
+      "route": "native path:gate:woodland-clearing~plot:woodland-clearing",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1204.3999999590114,
+        108.41667056762907,
+        568.3000000546471
+      ],
+      "afterFinal": [
+        1204.3999999590114,
+        108.41667056762907,
+        568.3000000546471
+      ]
+    },
+    {
+      "route": "native path:gate:woodland-clearing~plot:woodland-clearing",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1211.6000000409886,
+        108.18405634477121,
+        573.6999999453529
+      ],
+      "afterFinal": [
+        1211.6000000409886,
+        108.18405634477121,
+        573.6999999453529
+      ]
+    },
+    {
+      "route": "native path:gate:sunny-shelf~plot:sunny-shelf",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1409.6527626202069,
+        80.06984478565144,
+        630.3472373797932
+      ],
+      "afterFinal": [
+        1409.6527626202069,
+        80.06984478565144,
+        630.3472373797932
+      ]
+    },
+    {
+      "route": "native path:gate:sunny-shelf~plot:sunny-shelf",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1405.3472373797931,
+        80.08419677293563,
+        634.6527626202068
+      ],
+      "afterFinal": [
+        1405.3472373797931,
+        80.08419677293563,
+        634.6527626202068
+      ]
+    },
+    {
+      "route": "native path:gate:high-terrace~plot:high-terrace",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1387.7411427574318,
+        150.0940992046578,
+        497.6117141361468
+      ],
+      "afterFinal": [
+        1387.7411427574318,
+        150.0940992046578,
+        497.6117141361468
+      ]
+    },
+    {
+      "route": "native path:gate:high-terrace~plot:high-terrace",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1385.8588572425679,
+        149.9871665368135,
+        494.7882858638531
+      ],
+      "afterFinal": [
+        1385.8588572425679,
+        149.9871665368135,
+        494.7882858638531
+      ]
+    },
+    {
+      "route": "native path:road:shelf~gate:sunny-shelf",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1403.8107925988022,
+        80.01406632928821,
+        635.5658215869557
+      ],
+      "afterFinal": [
+        1403.8107925988022,
+        80.00696773223314,
+        635.5658215869557
+      ]
+    },
+    {
+      "route": "native path:road:shelf~gate:sunny-shelf",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1403.6564325275485,
+        80.05415636194162,
+        635.2116083512152
+      ],
+      "afterFinal": [
+        1403.6564325275485,
+        80.0445835111494,
+        635.2116083512152
+      ]
+    },
+    {
+      "route": "native path:road:clearing~gate:woodland-clearing",
+      "direction": "forward",
+      "before": "walking-airborne-handoff",
+      "after": "walking-airborne-handoff",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0,
+      "beforeFinal": [
+        1211.8103499541785,
+        108.18946750225373,
+        570.4069733488539
+      ],
+      "afterFinal": [
+        1211.8103499541785,
+        108.18946750225373,
+        570.4069733488539
+      ]
+    },
+    {
+      "route": "native path:road:clearing~gate:woodland-clearing",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1211.8070835234168,
+        108.80378454191205,
+        570.3450877940692
+      ],
+      "afterFinal": [
+        1211.8070835234168,
+        108.80378454191205,
+        570.3450877940692
+      ]
+    },
+    {
+      "route": "native path:road:high-terrace~gate:high-terrace",
+      "direction": "forward",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1384.3486445116275,
+        149.93037506646854,
+        491.6610229914665
+      ],
+      "afterFinal": [
+        1384.3486445116275,
+        149.93911811968496,
+        491.6610229914665
+      ]
+    },
+    {
+      "route": "native path:road:high-terrace~gate:high-terrace",
+      "direction": "reverse",
+      "before": "end",
+      "after": "end",
+      "beforeCompleted": true,
+      "afterCompleted": true,
+      "progressDeltaM": 0.0,
+      "beforeFinal": [
+        1384.6166005239527,
+        149.96822851402663,
+        491.4004970443263
+      ],
+      "afterFinal": [
+        1384.6166005239527,
+        149.97555050543906,
+        491.4004970443263
+      ]
+    },
+    {
+      "route": "native link:lane-junction",
+      "direction": "forward",
+      "before": "walking-invalid-route",
+      "after": "walking-invalid-route",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0,
+      "beforeFinal": [
+        1327.338727,
+        69.791128,
+        669.364469
+      ],
+      "afterFinal": [
+        1327.338727,
+        69.791128,
+        669.364469
+      ]
+    },
+    {
+      "route": "native link:lane-junction",
+      "direction": "reverse",
+      "before": "walking-invalid-route",
+      "after": "walking-invalid-route",
+      "beforeCompleted": false,
+      "afterCompleted": false,
+      "progressDeltaM": 0,
+      "beforeFinal": [
+        1327.338727,
+        69.791128,
+        669.364469
+      ],
+      "afterFinal": [
+        1327.338727,
+        69.791128,
+        669.364469
+      ]
+    }
+  ]
+}

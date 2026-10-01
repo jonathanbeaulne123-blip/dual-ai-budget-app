@@ -1,0 +1,146 @@
+[
+  {
+    "id": "stillwater",
+    "name": "Foot to Stillwater rim",
+    "start": [
+      1282,
+      54.649977,
+      720
+    ],
+    "end": [
+      1237.119568,
+      53.992993,
+      757.534399
+    ],
+    "plan": 58.507,
+    "drop": 0.657,
+    "minimum10": 58.507,
+    "verdict": "Grade study first. This does not complete the Green Road loop."
+  },
+  {
+    "id": "green-direct",
+    "name": "Foot directly to Green Road",
+    "start": [
+      1282,
+      54.649977,
+      720
+    ],
+    "end": [
+      995.162826,
+      40.212977,
+      643.031082
+    ],
+    "plan": 296.984,
+    "drop": 14.437,
+    "minimum10": 296.984,
+    "verdict": "Reject chord: up to 54.594 m cut in the baked terrain."
+  },
+  {
+    "id": "hollow",
+    "name": "Orchard Lane to Hollow",
+    "start": [
+      1246,
+      81.6,
+      646
+    ],
+    "end": [
+      1000.258287,
+      39.031826,
+      617.314761
+    ],
+    "plan": 247.41,
+    "drop": 42.568,
+    "minimum10": 425.682,
+    "verdict": "Contour study only. No bridge alignment or clearances approved."
+  },
+  {
+    "id": "clearing",
+    "name": "Upper clearing to Green Road",
+    "start": [
+      1214,
+      109.04648,
+      565
+    ],
+    "end": [
+      1000,
+      38.213493,
+      600
+    ],
+    "plan": 216.843,
+    "drop": 70.833,
+    "minimum10": 708.33,
+    "verdict": "Reject this departure: Woodland Clearing plot and excessive descent."
+  },
+  {
+    "id": "north",
+    "name": "Summit to north coast",
+    "start": [
+      1325,
+      158.2,
+      470.5
+    ],
+    "end": [
+      1300,
+      72.252793,
+      260
+    ],
+    "plan": 211.979,
+    "drop": 85.947,
+    "minimum10": 859.472,
+    "verdict": "Leave as a view for now. Throat, skylight and flight envelopes remain."
+  },
+  {
+    "id": "shoulder",
+    "name": "Sunny Shelf to Shoulder",
+    "start": [
+      1401,
+      81,
+      627
+    ],
+    "end": [
+      1450,
+      69.35,
+      650
+    ],
+    "plan": 54.129,
+    "drop": 11.65,
+    "minimum10": 116.5,
+    "verdict": "View only. Ends in terrain, crosses reserved Sunny Shelf."
+  },
+  {
+    "id": "prow",
+    "name": "Existing Prow approach",
+    "start": [
+      1599.5,
+      34.957364,
+      790.8
+    ],
+    "end": [
+      1281.5,
+      55.3,
+      742
+    ],
+    "plan": 321.72,
+    "drop": -20.343,
+    "minimum10": 321.72,
+    "verdict": "Existing V03 is 327.375 m along its plan; retain and repair handovers."
+  },
+  {
+    "id": "scholars",
+    "name": "Upper clearing to Scholars\u2019 Edge",
+    "start": [
+      1214,
+      109.04648,
+      565
+    ],
+    "end": [
+      940,
+      46.315118732,
+      460
+    ],
+    "plan": 293.429719,
+    "drop": 62.731361268,
+    "minimum10": 627.31361268,
+    "verdict": "View only. Existing Green Road approach serves this neighbour."
+  }
+]

@@ -1,0 +1,857 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/horizonBeds.test.ts > Horizon cut profiles > builds all source beds, exact widths, surface segments, station slots and year stretches
+{
+  "beds": 135,
+  "pads": 124,
+  "solids": 802,
+  "triangles": 410072,
+  "grades": [
+    {
+      "id": "mountainV2.road",
+      "max": 0.15434136330570883,
+      "limit": 0.14
+    },
+    {
+      "id": "walk mountainV2.promenade",
+      "max": 0.11155975109035693,
+      "limit": 0.12
+    },
+    {
+      "id": "V01",
+      "max": 0.10000000000000028,
+      "limit": 0.1
+    },
+    {
+      "id": "VG",
+      "max": 0.11999999999999951,
+      "limit": 0.12
+    },
+    {
+      "id": "VBS",
+      "max": 0.10786492232951603,
+      "limit": 0.12
+    },
+    {
+      "id": "V03",
+      "max": 0.10000000000000074,
+      "limit": 0.1
+    },
+    {
+      "id": "spur upperStreet",
+      "max": 0.03929627539369106,
+      "limit": 0.12
+    },
+    {
+      "id": "spur library",
+      "max": 0.060000000000003224,
+      "limit": 0.12
+    },
+    {
+      "id": "spur glasshouse",
+      "max": 0.12000000000000224,
+      "limit": 0.12
+    },
+    {
+      "id": "spur studio",
+      "max": 0.06306518624833729,
+      "limit": 0.12
+    },
+    {
+      "id": "spur cottage",
+      "max": 0.12000000000000113,
+      "limit": 0.12
+    },
+    {
+      "id": "spur boathouse",
+      "max": 0.12000000000000013,
+      "limit": 0.12
+    },
+    {
+      "id": "S1",
+      "max": 0.17716828458355457,
+      "limit": 0.18
+    },
+    {
+      "id": "S2",
+      "max": 0.12780516711585632,
+      "limit": 0.18
+    },
+    {
+      "id": "S3",
+      "max": 0.14000000000000073,
+      "limit": 0.18
+    },
+    {
+      "id": "S4",
+      "max": 0.1400000000000007,
+      "limit": 0.18
+    },
+    {
+      "id": "walk garden",
+      "max": 0.12000000000000162,
+      "limit": 0.12
+    },
+    {
+      "id": "walk lakerim",
+      "max": 0.08000000000000133,
+      "limit": 0.12
+    },
+    {
+      "id": "walk prow",
+      "max": 0.11301432577183489,
+      "limit": 0.12
+    },
+    {
+      "id": "walk bight",
+      "max": 0.10939125406840823,
+      "limit": 0.12
+    },
+    {
+      "id": "walk bightPier",
+      "max": 0.12000000000000118,
+      "limit": 0.12
+    },
+    {
+      "id": "walk coveWalk",
+      "max": 0.12000000000000087,
+      "limit": 0.12
+    },
+    {
+      "id": "walk dune",
+      "max": 0.12000000000000001,
+      "limit": 0.12
+    },
+    {
+      "id": "walk crown",
+      "max": 0.276867470636823,
+      "limit": 0.12
+    },
+    {
+      "id": "walk glasshouseSteps",
+      "max": 0.1032459055806818,
+      "limit": 0.12
+    },
+    {
+      "id": "walk flats",
+      "max": 0.12000000000000012,
+      "limit": 0.12
+    },
+    {
+      "id": "walk reach",
+      "max": 0.07713112332754861,
+      "limit": 0.12
+    },
+    {
+      "id": "walk square",
+      "max": 0.12000000000000012,
+      "limit": 0.12
+    },
+    {
+      "id": "walk footQuay",
+      "max": 0.04650948525229016,
+      "limit": 0.12
+    },
+    {
+      "id": "yearWalk",
+      "max": 0.18155116331041724,
+      "limit": 0.12
+    },
+    {
+      "id": "marketStair.landingWalk.0",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "marketStair.landingWalk.1",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "marketStair.foot",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "town.upperStreetWalk",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "town.storefront",
+      "max": 0.10656252308941638,
+      "limit": 0.12
+    },
+    {
+      "id": "town.bankLink",
+      "max": 0.07999999999999999,
+      "limit": 0.12
+    },
+    {
+      "id": "town.northLink",
+      "max": 0.1200000000000001,
+      "limit": 0.12
+    },
+    {
+      "id": "town.quayLink",
+      "max": 0.08000000000000027,
+      "limit": 0.12
+    },
+    {
+      "id": "town.riverLink",
+      "max": 0.1199999999999996,
+      "limit": 0.12
+    },
+    {
+      "id": "walk summit",
+      "max": 0.08409378142587533,
+      "limit": 0.12
+    },
+    {
+      "id": "walk summitStation",
+      "max": 0.003504051916769901,
+      "limit": 0.12
+    },
+    {
+      "id": "homestead.lane",
+      "max": 0.08000000000000022,
+      "limit": 0.12
+    },
+    {
+      "id": "plot.terraces.1.service",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "plot.terraces.2.service",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "plot.terraces.3.service",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "plot.bight.1.service",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "plot.bight.2.service",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "plot.bight.3.service",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "plot.bight.4.service",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "plot.flats.1.service",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "host.home.approach",
+      "max": 0.08000000000000015,
+      "limit": 0.08
+    },
+    {
+      "id": "host.bank.approach",
+      "max": 0.08000000000000014,
+      "limit": 0.08
+    },
+    {
+      "id": "host.library.approach",
+      "max": 0.0000898922528808489,
+      "limit": 0.08
+    },
+    {
+      "id": "host.glasshouse.approach",
+      "max": 0.07023342792152003,
+      "limit": 0.08
+    },
+    {
+      "id": "host.studio.approach",
+      "max": 0.000007729597314209968,
+      "limit": 0.08
+    },
+    {
+      "id": "host.cottage.approach",
+      "max": 0.014347291386114777,
+      "limit": 0.08
+    },
+    {
+      "id": "host.boathouse.approach",
+      "max": 0.07999999999999989,
+      "limit": 0.08
+    },
+    {
+      "id": "structure.highSpan",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.quayBridge",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.bightBridge.towerStair.approach",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.bightBridge.towerStair.balcony",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.bightBridge.s2Ramp.lagoon",
+      "max": 0.08000000000000031,
+      "limit": 0.18
+    },
+    {
+      "id": "structure.bightBridge.s2Ramp.sea",
+      "max": 0.08000000000000063,
+      "limit": 0.18
+    },
+    {
+      "id": "structure.bightBridge.s2Flyover",
+      "max": 0,
+      "limit": 0.18
+    },
+    {
+      "id": "structure.bightBridge",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.bightBridge.lookout",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.apronBridge",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.hollowBridge",
+      "max": 0.07999999999999985,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.reachFootbridge",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.reachBoardwalk",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.timberCrossing",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.gardenWalkBridge",
+      "max": 0.12000000000000859,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.seaStairWestLaneBridge",
+      "max": 0.07999999999999997,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.seaStairEastLaneBridge",
+      "max": 0.061543217815310074,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.mountainRoadCanalBridge",
+      "max": 0.037410543371448356,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.s1InflowBridge",
+      "max": 0.08702072792136592,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.inflowFootbridge",
+      "max": 0.010078872081380594,
+      "limit": 0.12
+    },
+    {
+      "id": "highSpan.walk",
+      "max": 0.04278293966218938,
+      "limit": 0.12
+    },
+    {
+      "id": "highSpan.overlook",
+      "max": 0.10515785526326966,
+      "limit": 0.12
+    },
+    {
+      "id": "prowTunnel",
+      "max": 0.07470984550156846,
+      "limit": 0.12
+    },
+    {
+      "id": "duneCulvert",
+      "max": 0.13999999999999485,
+      "limit": 0.18
+    },
+    {
+      "id": "strip",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "jetty.bightShore",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "jetty.deep",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "jetty.lamp",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "jetty.seaDoor",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "jetty.boathouse",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "jetty.bightPier",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "ferry.landing",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "ferry.bight",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "ferry.flats",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "ferry.scholarsCove",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "ferry.seaDoor",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "floatplaneDock",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "landingQuay",
+      "max": 0.002891787434185922,
+      "limit": 0.12
+    },
+    {
+      "id": "town quay",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "zipLanding.ramp",
+      "max": 0.08000000000000033,
+      "limit": 0.08
+    },
+    {
+      "id": "lampGallery.ramp",
+      "max": 0.05095004061774439,
+      "limit": 0.08
+    },
+    {
+      "id": "structure.bightSpurTrestle",
+      "max": 0.10699186930814823,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.prowLoopFootbridge",
+      "max": 0.08000000000001066,
+      "limit": 0.12
+    },
+    {
+      "id": "coveStair.landing",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.highSpan.meeting",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.quayBridge.meeting",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.apronBridge.meeting",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.hollowBridge.meeting",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.mountainRoadCanalBridge.meeting",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.prowLoopFootbridge.meeting",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.bightSpurTrestle.meeting",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.gardenWalkBridge.meeting",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "structure.reachBoardwalk.meeting",
+      "max": 0,
+      "limit": 0.12
+    },
+    {
+      "id": "ORE",
+      "max": 0.6599663291074672,
+      "limit": 10
+    },
+    {
+      "id": "ORE.siding",
+      "max": 0,
+      "limit": 10
+    },
+    {
+      "id": "underground.lanternCave",
+      "max": 0,
+      "limit": 10
+    },
+    {
+      "id": "underground.sealedDrift",
+      "max": 0,
+      "limit": 10
+    },
+    {
+      "id": "underground.bellGallery",
+      "max": 0.33954987505086615,
+      "limit": 10
+    },
+    {
+      "id": "underground.deepAccess",
+      "max": 0.03499999999999996,
+      "limit": 10
+    },
+    {
+      "id": "underground.throat",
+      "max": 0.5833333333333334,
+      "limit": 10
+    },
+    {
+      "id": "DEEP_RUN",
+      "max": 0.3000000000000019,
+      "limit": 10
+    },
+    {
+      "id": "southPortal.link",
+      "max": 0.023920896324748045,
+      "limit": 0.12
+    },
+    {
+      "id": "spur stillwater",
+      "max": 0.08221768630387125,
+      "limit": 0.1
+    },
+    {
+      "id": "G1",
+      "max": 0.5275421111683517,
+      "limit": 10
+    },
+    {
+      "id": "ZIP",
+      "max": 0.13401172182837973,
+      "limit": 10
+    },
+    {
+      "id": "mountainV2.footLane",
+      "max": 0.07985638763726559,
+      "limit": 0.12
+    }
+  ],
+  "conflicts": [
+    {
+      "id": "grade.yearWalk.138",
+      "severity": "conflict",
+      "message": "yearWalk: fixed heights need 0.0 eu more route length between controls",
+      "at": [
+        885,
+        905
+      ],
+      "measured": 3.6371857252552218,
+      "required": 3.6849709981119956
+    },
+    {
+      "id": "grade.yearWalk.149",
+      "severity": "conflict",
+      "message": "yearWalk: fixed heights need 3.6 eu more route length between controls",
+      "at": [
+        947.027696793003,
+        1381.137026239067
+      ],
+      "measured": 10.905528828422575,
+      "required": 14.457891871911448
+    },
+    {
+      "id": "grade.yearWalk.179",
+      "severity": "conflict",
+      "message": "yearWalk: fixed heights need 0.8 eu more route length between controls",
+      "at": [
+        413.8799451303155,
+        900.0874074074075
+      ],
+      "measured": 3.458180258835455,
+      "required": 4.226927481340947
+    },
+    {
+      "id": "gradeStretch.yearWalk.2910",
+      "severity": "conflict",
+      "message": "yearWalk: 3.6 eu over 8% from arc 2910; maximum 12.16%",
+      "at": [
+        885,
+        905
+      ],
+      "measured": 0.1215765575848927,
+      "required": 0.12
+    },
+    {
+      "id": "gradeStretch.yearWalk.3442",
+      "severity": "conflict",
+      "message": "yearWalk: 10.9 eu over 8% from arc 3442; maximum 17.64%",
+      "at": [
+        947.027696793003,
+        1381.137026239067
+      ],
+      "measured": 0.17636289938857755,
+      "required": 0.12
+    },
+    {
+      "id": "gradeStretch.yearWalk.4705",
+      "severity": "conflict",
+      "message": "yearWalk: 3.5 eu over 8% from arc 4705; maximum 14.67%",
+      "at": [
+        413.8799451303155,
+        900.0874074074075
+      ],
+      "measured": 0.1466757831564687,
+      "required": 0.12
+    },
+    {
+      "id": "structures.apronBridge.bentInLane",
+      "severity": "conflict",
+      "message": "apronBridge: the bent at 22.5 eu stands in RIVER_RUN's corridor (and 6 eu outward); it is not built",
+      "at": [
+        1154.13,
+        947.79
+      ]
+    },
+    {
+      "id": "yearWalk.separation.S4",
+      "severity": "conflict",
+      "message": "Year Walk runs -5.5 eu edge-to-edge from S4 at 4.7 eu height difference (32 samples); the rule is width + 15 m plan separation or one shared bed",
+      "at": [
+        921.4927113702624,
+        573.1778425655976
+      ],
+      "measured": -5.477520148881764,
+      "required": 15
+    },
+    {
+      "id": "yearWalk.separation.VBS",
+      "severity": "conflict",
+      "message": "Year Walk runs -5.0 eu edge-to-edge from VBS at 8.3 eu height difference (10 samples); the rule is width + 15 m plan separation or one shared bed",
+      "at": [
+        903.1344307270233,
+        885.0548696844993
+      ],
+      "measured": -4.962160080119765,
+      "required": 15
+    },
+    {
+      "id": "yearWalk.separation.walk bight",
+      "severity": "conflict",
+      "message": "Year Walk runs -4.8 eu edge-to-edge from walk bight at 8.1 eu height difference (5 samples); the rule is width + 15 m plan separation or one shared bed",
+      "at": [
+        907.556927297668,
+        888.8340192043896
+      ],
+      "measured": -4.762795947649571,
+      "required": 15
+    },
+    {
+      "id": "yearWalk.separation.strip",
+      "severity": "conflict",
+      "message": "Year Walk runs -14.8 eu edge-to-edge from strip at 9.6 eu height difference (37 samples); the rule is width + 15 m plan separation or one shared bed",
+      "at": [
+        440,
+        860
+      ],
+      "measured": -14.808628134125028,
+      "required": 15
+    },
+    {
+      "id": "yearWalk.separation.yearWalk",
+      "severity": "conflict",
+      "message": "Year Walk runs -4.7 eu edge-to-edge from yearWalk at 3.4 eu height difference (161 samples); the rule is width + 15 m plan separation or one shared bed",
+      "at": [
+        1606.0332271279017,
+        685.0546199362767
+      ],
+      "measured": -4.721726261294776,
+      "required": 15
+    },
+    {
+      "id": "gradeStretch.ORE.73",
+      "severity": "conflict",
+      "message": "ORE: 71.6 eu over 6% from arc 73; maximum 36.32%",
+      "at": [
+        1160,
+        520
+      ],
+      "measured": 0.3631837538001856,
+      "required": 0.06
+    },
+    {
+      "id": "gradeStretch.ORE.224",
+      "severity": "conflict",
+      "message": "ORE: 19.3 eu over 6% from arc 224; maximum 66.00%",
+      "at": [
+        1283.6363636363637,
+        436.3636363636364
+      ],
+      "measured": 0.6599663291074672,
+      "required": 0.06
+    },
+    {
+      "id": "threshold.adit.pit",
+      "severity": "conflict",
+      "message": "threshold.adit is authored 60.8 eu below its ground; the pad would dig a pit",
+      "at": [
+        1090,
+        540
+      ],
+      "measured": 40,
+      "required": 100.81168523669672
+    },
+    {
+      "id": "threshold.lampDock.pit",
+      "severity": "conflict",
+      "message": "threshold.lampDock is authored 6.4 eu below its ground; the pad would dig a pit",
+      "at": [
+        540,
+        1250
+      ],
+      "measured": 1,
+      "required": 7.444719212290203
+    },
+    {
+      "id": "crossing.v01.walkBightPier.1.pit",
+      "severity": "conflict",
+      "message": "crossing.v01.walkBightPier.1 is authored 11.7 eu below its ground; the pad would dig a pit",
+      "at": [
+        402.3,
+        894.5
+      ],
+      "measured": 24.471258149192337,
+      "required": 36.174764055724054
+    }
+  ]
+}
+
+ ❯ test/horizonBeds.test.ts (17 tests | 1 failed) 20373ms
+   ✓ Horizon cut profiles > limits continuous samples, including a short steep input, without losing pinned endpoints 2ms
+   ✓ Horizon cut profiles > builds all source beds, exact widths, surface segments, station slots and year stretches  8455ms
+   ✓ Horizon cut profiles > lays the Year Walk verbatim from the v1.7 manifest, as a footway of its hosts, never on water  11708ms
+   ✓ Horizon v1.9 beds (W3-A) > keeps the Year Walk off the Garden Walk at Scholars and every stretch of it within the 12 % walk grade 93ms
+   ✓ Horizon v1.9 beds (W3-A) > lays Horizon Drive's north-east corner on land at the height it held for Crown Road (retired, D-M4) 2ms
+   ✓ Horizon v1.9 beds (W3-A) > holds the Cottage spur at Green Road's height across the Year Walk footway lanes 1ms
+   ✓ Horizon v1.9 beds (W3-A) > makes the Bight trail the Bight Shore spur's footway and serves the hangar bay from the strip (D-2, P31) 2ms
+   ✓ Horizon v2.0 beds (W5-A, Jonathan's rulings 2026-09-27) > lays the summit station walk to L02 and the Crown walk on Mountain v2's road (D-M5, D-M6; v2.5: D-A3, D-C7 retired) 88ms
+   ✓ Horizon v2.0 beds (W5-A, Jonathan's rulings 2026-09-27) > lays G1 as Mountain v2's gondola: authored tower tops, the cabin path at the platforms, no zip crossing (D-M6) 2ms
+   ✓ Horizon v2.0 beds (W5-A, Jonathan's rulings 2026-09-27) > lays S2 on its authored Bight profile: a 5 % west ramp on a trestle, the deck lanes carried, a 7.1 % east descent (D-A1) 1ms
+   ✓ Horizon v2.0 beds (W5-A, Jonathan's rulings 2026-09-27) > turns November's pad 90°, makes the D-A7 thresholds flush, retires the market ramp and keeps the homestead lane on land 1ms
+   ✓ Horizon v2.0 beds (W5-A, Jonathan's rulings 2026-09-27) > leaves the named carriers' routes as open spans: VBS on the trestle (D-C9; v2.6: the S1 flyover is retired with the Shoulder sweep, D-M5) 1ms
+   × Horizon v2.3 beds (W7-A, Wave 7) > D-D8: the lake-rim trail keeps its 2.5 m profile, the Year Walk carries the February share, and the trail ends on the sill's east lip (v2.6) 10ms
+     → expected true to be false // Object.is equality
+   ✓ Horizon v2.3 beds (W7-A, Wave 7) > seats the market stair on the upper street: head at 18 on the street's edge, foot at 12 joined to the square walk 0ms
+   ✓ Horizon v2.3 beds (W7-A, Wave 7) > A1.3: S4 meets the Year Walk flush at the studio terrace (0.68 of 2.4 under) and S4 × VBS is one tread (1.72 step) 0ms
+   ✓ Horizon v2.3 beds (W7-A, Wave 7) > A1.3 / D-D2: the June lane meets plot bight.1's service drive at grade (1.97 of 2.4 under) within the walk grade 3ms
+   ✓ Horizon v2.3 beds (W7-A, Wave 7) > the homestead lane leaves the yard east of the Year Walk's lanes (it started 3.5 over them) 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/horizonBeds.test.ts > Horizon v2.3 beds (W7-A, Wave 7) > D-D8: the lake-rim trail keeps its 2.5 m profile, the Year Walk carries the February share, and the trail ends on the sill's east lip (v2.6)
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ test/horizonBeds.test.ts:182:204
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 16 passed (17)
+   Start at  12:24:25
+   Duration  48.23s (transform 398ms, setup 0ms, collect 27.61s, tests 20.37s, environment 0ms, prepare 56ms)
+

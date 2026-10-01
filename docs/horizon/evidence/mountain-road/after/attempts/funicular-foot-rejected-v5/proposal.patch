@@ -1,0 +1,522 @@
+--- a/src/harbour/mountain/art/routeArt.ts
++++ b/src/harbour/mountain/art/routeArt.ts
+@@ -129,10 +129,14 @@
+ }
+ 
+ /** Ground paths (worn gravel with edge stones) and stairs (real risers, cheek walls, a rail). */
+-function paths(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite'){
++export type GroundPathPlacement=(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite',path:typeof PATH_EDGES[number])=>boolean;
++function paths(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite',placement?:GroundPathPlacement){
+   const woods=DISTRICTS.find(d=>d.id==='library')!;
+   for(const e of PATH_EDGES){
+     if(e.kind==='path'){
++      // Native callers omit this hook and retain their exact authored output.
++      // A placed world may replace one explicitly owned ground-path picture.
++      if(placement?.(b,pal,tier,e))continue;
+       const pts=resample(e.points,1);
+       const frames:Frame[]=pts.map((p,i)=>{const a=pts[Math.max(0,i-1)]!,c=pts[Math.min(pts.length-1,i+1)]!,dx=c[0]-a[0],dz=c[2]-a[2],l=Math.hypot(dx,dz)||1;
+         const g=groundHeightAt(p[0],p[2]),y=p[1]-g>.35?p[1]:g;return {p:[p[0],y+.04,p[2]],side:[dz/l,0,-dx/l],up:UP};});
+@@ -198,11 +202,11 @@
+   }
+ }
+ 
+-export function buildRouteArt(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite'){
++export function buildRouteArt(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite',placement?:GroundPathPlacement){
+   const step=tier==='full'?1:2;
+   roadLine(b,pal,MOUNTAIN_ROAD_LINE,step);
+   roadLine(b,pal,ORCHARD_LANE_LINE,step);
+   retainingWalls(b,pal);
+-  paths(b,pal,tier);
++  paths(b,pal,tier,placement);
+   overlooks(b,pal);
+ }
+--- a/src/harbour/horizon/regions/mountainV2/index.ts
++++ b/src/harbour/horizon/regions/mountainV2/index.ts
+@@ -9,6 +9,7 @@
+  * runtime imports it dynamically, once the Horizon's assets are in hand.
+  */
+ import type * as THREE from 'three';
++import type {StructureSolid} from '../../land/interfaces.ts';
+ import {SCENE_DRESSING,type PlaceDressing} from '../../../scene/place.ts';
+ import {finishBuild} from '../../../../house/world/buildTask.ts';
+ import {createRegionGeography,mouthExclusion,terraceBedExclusion,type RegionGeographyOptions,type RegionSurface} from './geography.ts';
+@@ -25,6 +26,8 @@
+ export type MountainV2RegionOptions=RegionGeographyOptions&{
+   /** The Horizon terrain's cell size (`TerrainField.step`): the hidden-tile grid the ground mesh covers. Default 5. */
+   terrainStep?:number;
++  /** Final baked source surfaces for the explicitly owned town walking join. */
++  walkingJoinSolids?:readonly StructureSolid[];
+ };
+ export type MountainV2MountOptions={season?:RegionSeason;quiet?:boolean};
+ export interface MountainV2Region {
+@@ -63,7 +66,7 @@
+   const geo=createRegionGeography(options),terrainStep=options.terrainStep??5,rides=regionRides();
+   // The ground mesh's triangle selection depends on the footprint; with a baked field it is this region's own.
+   const groundCache=options.horizonGround?new Map():undefined;
+-  const mountSteps=(scene:THREE.Scene,tier:'full'|'lite',dressing:PlaceDressing,o:MountainV2MountOptions={})=>mountRegionSteps(scene,tier,dressing,{contains:geo.contains,terrainStep,season:o.season,quiet:o.quiet,groundCache,groundCeiling:geo.groundCeiling});
++  const mountSteps=(scene:THREE.Scene,tier:'full'|'lite',dressing:PlaceDressing,o:MountainV2MountOptions={})=>mountRegionSteps(scene,tier,dressing,{contains:geo.contains,terrainStep,season:o.season,quiet:o.quiet,groundCache,groundCeiling:geo.groundCeiling,walkingJoinSolids:options.walkingJoinSolids,capGroundLattice:geo.capGroundLattice});
+   return {
+     id:MOUNTAIN_V2_REGION_ID,offset:MOUNTAIN_V2_OFFSET,footprint:MOUNTAIN_V2_FOOTPRINT,
+     contains:geo.contains,requiresScene:geo.requiresScene,hidesTerrainCell:geo.contains,groundAt:geo.groundAt,
+--- a/src/harbour/horizon/runtime/index.ts
++++ b/src/harbour/horizon/runtime/index.ts
+@@ -120,7 +120,7 @@
+   try{
+     const mod=await load(),field=assets.field;
+     // PR #566 CodeRabbit: across the Foot terrace S1 runs on the Horizon's own slab — drawn under the region, answered by the Horizon.
+-    return {region:mod.createMountainV2Region({horizonGround:(x,z)=>sampleTerrain(field,x,z),exclude:mod.mouthExclusion(assets.cuts.mouths),yield:mod.terraceBedExclusion(assets.cuts.beds),terrainStep:field.step}),dressing:mod.regionDressing};
++    return {region:mod.createMountainV2Region({horizonGround:(x,z)=>sampleTerrain(field,x,z),exclude:mod.mouthExclusion(assets.cuts.mouths),yield:mod.terraceBedExclusion(assets.cuts.beds),terrainStep:field.step,walkingJoinSolids:assets.cuts.solids}),dressing:mod.regionDressing};
+   }catch(error){console.warn('Horizon: the Mountain v2 region did not load; the island runs without it.',error);return null;}
+ }
+ export async function mountHorizon(host:HTMLElement,options:HorizonOptions){
+--- a/src/harbour/horizon/regions/mountainV2/scene.ts
++++ b/src/harbour/horizon/regions/mountainV2/scene.ts
+@@ -40,13 +40,15 @@
+ import {buildPlantArt} from '../../../mountain/art/plantArt.ts';
+ import {drawBench} from '../../../mountain/art/propArt.ts';
+ import {mountainProps,type PropPlacement} from '../../../mountain/art/placements.ts';
+-import {buildRegionGround,type PreparedGround} from './ground.ts';
++import {buildRegionGround,prepareRegionGround,type PreparedGround} from './ground.ts';
++import {funicularFootPathPlacement} from './funicularFootPath.ts';
++import type {StructureSolid} from '../../land/interfaces.ts';
+ import {MOUNTAIN_V2_OFFSET as O,toNativeXYZ} from './placement.ts';
+ 
+ export type RegionTier='full'|'lite';
+ export type RegionSeason='spring'|'summer'|'autumn'|'winter';
+ export type RegionCabinPose={at:readonly [number,number,number];yaw:number;pitch:number};
+-export type RegionMountOptions={contains:(hx:number,hz:number)=>boolean;terrainStep:number;season?:RegionSeason;quiet?:boolean;groundCache?:Map<string,PreparedGround>;/** road (L1): the drawn ground's ceiling under a yielded Horizon deck (Horizon heights). */groundCeiling?:(hx:number,hz:number)=>number|null};
++export type RegionMountOptions={contains:(hx:number,hz:number)=>boolean;terrainStep:number;season?:RegionSeason;quiet?:boolean;groundCache?:Map<string,PreparedGround>;/** road (L1): the drawn ground's ceiling under a yielded Horizon deck (Horizon heights). */groundCeiling?:(hx:number,hz:number)=>number|null;walkingJoinSolids?:readonly StructureSolid[];capGroundLattice?:(lattice:PreparedGround['lattice'])=>unknown};
+ export type RegionScene={
+   group:THREE.Group;
+   animate(dt:number,clock:number):boolean;
+@@ -107,9 +109,11 @@
+   let complete=false;
+   try{
+     const pal=mountainArtPalette(dressing);
+-    const ground=track(buildRegionGround(tier,dressing,options.contains,options.terrainStep,options.groundCache,options.groundCeiling));host.add(ground.mesh);yield;
++    const ground=track(buildRegionGround(tier,dressing,options.contains,options.terrainStep,options.groundCache,options.groundCeiling,options.capGroundLattice));host.add(ground.mesh);yield;
+     const card=new CardBuilder('Mountain v2 card',tier,{ink:pal.ink});
+-    buildRouteArt(card,pal,tier);yield;
++    const walkingPlacement=options.walkingJoinSolids?.some(s=>(s.sourceId??s.id.split('@')[0])==='mountainV2.funicularFoot.apron')
++      ?funicularFootPathPlacement(options.walkingJoinSolids,prepareRegionGround(tier,options.contains,options.terrainStep,options.groundCache,options.groundCeiling,options.capGroundLattice)):undefined;
++    buildRouteArt(card,pal,tier,walkingPlacement);yield;
+     buildBridgeArt(card,pal);yield;
+     buildWaterArt(card,pal,tier,{townFurniture:false});yield;
+     buildBranchArt(card,pal);yield;
+--- /dev/null
++++ b/src/harbour/horizon/regions/mountainV2/funicularFootPath.ts
+@@ -0,0 +1,95 @@
++/** Horizon placement of one repaired ground path. Native route/road/plant art
++ * remains untouched. Gravel triangles are clipped to the exact highest drawn
++ * host/apron/ground triangles; old floating ribbon and verge stones are replaced. */
++import type {StructureSolid,XYZ} from '../../land/interfaces.ts';
++import type {PreparedGround} from './ground.ts';
++import type {GroundPathPlacement} from '../../../mountain/art/routeArt.ts';
++import {shade,mix,type V3} from '../../../art/cardScene.ts';
++import {hash2} from '../../../art/cardKit.ts';
++import {MOUNTAIN_V2_OFFSET as O} from './placement.ts';
++import {funicularFootStationTop} from '../../land/mountainV2/funicularFootStation.ts';
++
++type Point=[number,number];type Face={p:XYZ[];box:readonly[number,number,number,number];order:number};
++export type FootPathArtProof={discardedFans?:{area:number;altitude:number}[];ribbon:XYZ[][];stones:{x:number;z:number;bottom:number;top:number;support:number[]}[]};
++const eps=1e-8;
++const cross=(a:Point,b:Point,p:Point)=>(b[0]-a[0])*(p[1]-a[1])-(b[1]-a[1])*(p[0]-a[0]);
++// Work in a local frame: absolute shoelace products around kilometre-scale
++// coordinates can turn a zero-area clipping residue into a valid polygon.
++const area=(p:Point[])=>{const a=p[0];if(!a)return 0;let sum=0;for(let i=1;i<p.length-1;i++)sum+=cross(a,p[i]!,p[i+1]!);return sum;};
++const clean=(p:Point[])=>{const out:Point[]=[];for(const q of p){const last=out[out.length-1];if(!last||Math.hypot(q[0]-last[0],q[1]-last[1])>eps)out.push(q);}if(out.length>1&&Math.hypot(out[0]![0]-out[out.length-1]![0],out[0]![1]-out[out.length-1]![1])<=eps)out.pop();return out;};
++function split(poly:Point[],distance:(p:Point)=>number):[Point[],Point[]]{
++ const inside:Point[]=[],outside:Point[]=[];
++ for(let i=0;i<poly.length;i++){const a=poly[i]!,b=poly[(i+1)%poly.length]!,da=distance(a),db=distance(b),ia=da>=0,ib=db>=0;(ia?inside:outside).push(a);if(ia!==ib){const t=da/(da-db),p:Point=[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];inside.push(p);outside.push(p);}}
++ return[clean(inside),clean(outside)];
++}
++const valid=(p:Point[])=>p.length>=3&&Math.abs(area(p))>1e-10;
++function planes(p:Point[]):((q:Point)=>number)[]{const sign=Math.sign(area(p));return p.map((a,i)=>{const b=p[(i+1)%p.length]!;return q=>sign*cross(a,b,q);});}
++function intersect(p:Point[],boundary:((p:Point)=>number)[]):Point[]{for(const d of boundary){p=split(p,d)[0];if(!valid(p))return[];}return p;}
++function subtract(p:Point[],boundary:((p:Point)=>number)[]):Point[][]{let kept=p;const result:Point[][]=[];for(const d of boundary){const pair=split(kept,d);kept=pair[0];if(valid(pair[1]))result.push(pair[1]);if(!valid(kept))return result;}return result;}
++function yAt(face:Face,x:number,z:number):number{
++ const[a,b,c]=face.p as [XYZ,XYZ,XYZ],D=(b[2]-c[2])*(a[0]-c[0])+(c[0]-b[0])*(a[2]-c[2]);
++ const u=((b[2]-c[2])*(x-c[0])+(c[0]-b[0])*(z-c[2]))/D,v=((c[2]-a[2])*(x-c[0])+(a[0]-c[0])*(z-c[2]))/D;
++ return u*a[1]+v*b[1]+(1-u-v)*c[1];
++}
++function resample(points:readonly XYZ[]):XYZ[]{const out:XYZ[]=[points[0]!];let carry=0;for(let i=1;i<points.length;i++){const a=points[i-1]!,c=points[i]!,l=Math.hypot(c[0]-a[0],c[2]-a[2]);let t=1-carry;while(t<l){const u=t/l;out.push([a[0]+(c[0]-a[0])*u,a[1]+(c[1]-a[1])*u,a[2]+(c[2]-a[2])*u]);t++;}carry=l-(t-1);}out.push(points[points.length-1]!);return out;}
++export function funicularFootPathPlacement(solids:readonly StructureSolid[],ground:PreparedGround,proof?:FootPathArtProof):GroundPathPlacement{
++ const faces:Face[]=[];
++ const append=(p:XYZ[])=>{
++  const[a,b,c]=p as [XYZ,XYZ,XYZ],ny=(b[2]-a[2])*(c[0]-a[0])-(b[0]-a[0])*(c[2]-a[2]);if(ny<=1e-9)return;
++  const box=[Math.min(...p.map(v=>v[0])),Math.min(...p.map(v=>v[2])),Math.max(...p.map(v=>v[0])),Math.max(...p.map(v=>v[2]))] as const;
++  if(box[2]<1282||box[0]>1294||box[3]<720||box[1]>731||Math.max(...p.map(v=>v[1]))>58)return;
++  faces.push({p,box,order:faces.length});
++ };
++ const gp=ground.lattice.positions;for(let k=0;k<ground.index.length;k+=3)append([0,1,2].map(j=>{const i=ground.index[k+j]!;return[gp[i*3]!+O.x,gp[i*3+1]!+O.y,gp[i*3+2]!+O.z] as XYZ;}));
++ for(const s of solids){if(!s.walkable)continue;for(let k=0;k<s.indices.length;k+=3)append([0,1,2].map(j=>{const i=s.indices[k+j]!;return[s.positions[i*3]!,s.positions[i*3+1]!,s.positions[i*3+2]!] as XYZ;}));}
++ // The native station's actual planked rectangle is another drawn host.
++ // Its art extends .05m beyond the platform contract at each edge. Preserve
++ // those corners and paint over this real deck, not over its lower lawn.
++ for(const tri of funicularFootStationTop())append(tri);
++ const boundaries=new Map(faces.map(f=>[f,planes(f.p.map(p=>[p[0],p[2]] as Point))]));
++ const support=(x:number,z:number):number=>{let h=-Infinity;for(const f of faces)if(boundaries.get(f)!.every(d=>d([x,z])>=-eps))h=Math.max(h,yAt(f,x,z));if(!Number.isFinite(h))throw new Error(`Missing drawn Foot path support ${x},${z}`);return h;};
++ return(b,pal,tier,path)=>{
++  if(path.id!=='path:station:funicular:town~road:foot')return false;
++  const pts=resample(path.points),frames=pts.map((p,i)=>{const a=pts[Math.max(0,i-1)]!,c=pts[Math.min(pts.length-1,i+1)]!,dx=c[0]-a[0],dz=c[2]-a[2],l=Math.hypot(dx,dz)||1;return{p,side:[dz/l,-dx/l] as Point};});
++  const across=[-path.halfWidth,-path.halfWidth+.35,path.halfWidth-.35,path.halfWidth];
++  const point=(i:number,k:number):Point=>{const f=frames[i]!;return[f.p[0]+f.side[0]*across[k]!+O.x,f.p[2]+f.side[1]*across[k]!+O.z];};
++  for(let i=1;i<frames.length;i++)for(let k=0;k<3;k++){
++   const band=[point(i-1,k),point(i,k),point(i,k+1),point(i-1,k+1)],clip=planes(band),color=shade(k===1?pal.gravel:mix(pal.gravel,pal.verge,.5),.95+hash2(i,k)*.08);
++   const candidates=faces.filter(f=>f.box[0]<=Math.max(...band.map(p=>p[0]))&&f.box[2]>=Math.min(...band.map(p=>p[0]))&&f.box[1]<=Math.max(...band.map(p=>p[1]))&&f.box[3]>=Math.min(...band.map(p=>p[1])));
++   for(const f of candidates){let pieces=[intersect(f.p.map(p=>[p[0],p[2]] as Point),clip)].filter(valid);
++    for(const other of candidates){if(other===f)continue;
++     const higher=(q:Point)=>yAt(other,q[0],q[1])-yAt(f,q[0],q[1])+(other.order>f.order?1e-10:-1e-10);
++     // Subtract only the actual higher planar part of the overlapping triangle.
++     // A centroid-only owner test could leave a floating edge over a lower host.
++     pieces=pieces.flatMap(p=>{
++      if(!p.some(q=>higher(q)>0))return[p];
++      const boundary=[...boundaries.get(other)!,higher];
++      // Subtract only positive-area overlap. Splitting a disjoint polygon by
++      // extended triangle lines would multiply fragments without removing any
++      // visible area, turning this one short path into minutes of build work.
++      return valid(intersect(p,boundary))?subtract(p,boundary):[p];
++     });if(!pieces.length)break;
++    }
++    for(const poly of pieces)for(let j=1;j<poly.length-1;j++){
++     let q=[poly[0]!,poly[j]!,poly[j+1]!];const determinant=area(q),longest=Math.max(...q.map((p,i)=>Math.hypot(p[0]-q[(i+1)%3]![0],p[1]-q[(i+1)%3]![1]))),altitude=longest?Math.abs(determinant)/longest:0;
++     // A valid polygon can still produce duplicate-point or microscopic fan
++     // triangles. Apply the existing plan-area and coordinate eps to each
++     // emitted triangle, retaining all positive-area visible fragments.
++     if(!valid(q)||altitude<=eps){proof?.discardedFans?.push({area:Math.abs(determinant)/2,altitude});continue;}
++     if(determinant>0)q=[q[0]!,q[2]!,q[1]!];
++     const left=point(i-1,k),right=point(i-1,k+1),dx=right[0]-left[0],dz=right[1]-left[1],den=dx*dx+dz*dz;
++     const lift=(p:Point)=>{const u=Math.max(0,Math.min(1,((p[0]-left[0])*dx+(p[1]-left[1])*dz)/den));return .04+.01*(k===1?1:k===0?u:1-u);};
++     const triangle=q.map(p=>[p[0],yAt(f,p[0],p[1])+lift(p),p[1]] as XYZ);
++     proof?.ribbon.push(triangle);b.tri(...triangle.map(p=>[p[0]-O.x,p[1]-O.y,p[2]-O.z] as V3) as [V3,V3,V3],color,'flat');
++    }
++   }
++  }
++  const every=tier==='full'?1.7:3.4;let next=0,acc=0;
++  for(let i=1;i<frames.length;i++){acc++;if(acc<next)continue;next=acc+every;const f=frames[i]!,side=(i%2?1:-1)*(path.halfWidth+.12),x=f.p[0]+f.side[0]*side,z=f.p[2]+f.side[1]*side,yaw=Math.atan2(f.side[0],f.side[1])+hash2(i,3)*.6,hx=.22+hash2(i,1)*.1,hz=.16;
++   const heights=[[-hx,-hz],[-hx,hz],[hx,-hz],[hx,hz]].map(([u,v])=>support(x+O.x+u!*Math.cos(yaw)+v!*Math.sin(yaw),z+O.z-u!*Math.sin(yaw)+v!*Math.cos(yaw)));
++   const bottom=Math.min(...heights)-.15,top=Math.max(...heights)+.05+hash2(i,2)*.04;
++   proof?.stones.push({x:x+O.x,z:z+O.z,bottom,top,support:heights});b.box(x,z,yaw,hx,hz,bottom-O.y,top-O.y,shade(pal.coping,.92),pal.stone,b.pencil);
++  }
++  return true;
++ };
++}
+--- a/src/harbour/horizon/regions/mountainV2/geography.ts
++++ b/src/harbour/horizon/regions/mountainV2/geography.ts
+@@ -21,6 +21,8 @@
+  *    and the channel; the shore that falls to v2's sea is the Horizon's lake shore);
+  *  - never within `MOUTH_MARGIN` of a Horizon terrain mouth (`exclude`: the Ore Line's South Portal keeps its opening).
+  */
++import {walkingJoinGround} from './walkingJoinGround.ts';
++import type {StructureSolid} from '../../land/interfaces.ts';
+ import {drawnRoadFloor} from './drawnRoadFloor.ts';
+ import {drawnRoadGroundCeiling} from './drawnRoadGround.ts';
+ import {groundHeightAt} from '../../../scene/ground.ts';
+@@ -81,6 +83,7 @@
+ export type RegionSurface={id:string;y:number;n:[number,number,number];material:string;slope:number};
+ export type RegionContact={id:string;nx:number;nz:number};
+ export type RegionGeographyOptions={
++  walkingJoinSolids?:readonly StructureSolid[];
+   /** The Horizon's baked ground (terrain only) at a Horizon point: decides the north face (D-M2). Omitted: native z ≥ −310. */
+   horizonGround?:(hx:number,hz:number)=>number;
+   /** Horizon points the region leaves to the Horizon (its terrain mouths: a portal's opening must stay open). */
+@@ -185,6 +188,7 @@
+   return test;
+ }
+ export function createRegionGeography(options:RegionGeographyOptions={}){
++  const walkingGround=walkingJoinGround(options.walkingJoinSolids);
+   const near=deckIndex(REGION_SURFACES);
+   // A terrain mouth removes rock, not the road or repaired branch visibly crossing it.
+   // Keep ground masking unchanged. Only explicit, physically drawn deck triangles span it.
+@@ -211,7 +215,7 @@
+   // road (L1): v2's ground as felt, held under a yielded Horizon deck's ceiling (TerraceYield.ceiling) exactly as it is drawn.
+   const groundCeiling=(hx:number,hz:number):number|null=>{
+     const yielded=options.yield?.ceiling?.(hx,hz)??null,road=roadGroundCeiling(hx-O.x,hz-O.z),drawn=road===null?null:road+O.y;
+-    return yielded===null?drawn:drawn===null?yielded:Math.min(yielded,drawn);
++    const walking=walkingGround?.ceiling(hx,hz)??null,values=[yielded,drawn,walking].filter((v):v is number=>v!==null);return values.length?Math.min(...values):null;
+   };
+   // One height ceiling feeds the visible region ground and its collision authority.
+   // Only ground is cut: native source data, road faces and bridge underpasses stay intact.
+@@ -316,6 +320,6 @@
+     };
+   }
+   const requiresScene=(hx:number,hz:number)=>contains(hx,hz)||deckAcrossMouth(hx,hz);
+-  return {contains,requiresScene,groundAt,groundCeiling,surface,ceiling,contact,blocked,waterLevel,provider,whileDrawn};
++  return {contains,requiresScene,groundAt,groundCeiling,capGroundLattice:walkingGround?.capLattice,surface,ceiling,contact,blocked,waterLevel,provider,whileDrawn};
+ }
+ export type RegionGeography=ReturnType<typeof createRegionGeography>;
+--- a/src/harbour/horizon/regions/mountainV2/ground.ts
++++ b/src/harbour/horizon/regions/mountainV2/ground.ts
+@@ -26,11 +26,12 @@
+   return (hx:number,hz:number)=>{const c=Math.floor(hx/step),r=Math.floor(hz/step),k=r*65536+c;let v=memo.get(k);if(v===undefined){v=contains((c+.5)*step,(r+.5)*step);memo.set(k,v);}return v;};
+ }
+ /** The lattice, its masks (dressing-free) and the kept triangles, once per tier and footprint. */
+-export function prepareRegionGround(tier:Tier,contains:(hx:number,hz:number)=>boolean,terrainStep:number,cache:Map<string,PreparedGround>=prepared,ceiling?:(hx:number,hz:number)=>number|null):PreparedGround{
++export function prepareRegionGround(tier:Tier,contains:(hx:number,hz:number)=>boolean,terrainStep:number,cache:Map<string,PreparedGround>=prepared,ceiling?:(hx:number,hz:number)=>number|null,capLattice?:(lattice:Lattice)=>unknown):PreparedGround{
+   const id=`${tier}:${terrainStep}${ceiling?':yield':''}`,hit=cache.get(id);if(hit)return hit;
+   // road (L1): the drawn ground stays under a yielded Horizon deck (its `ceiling`, Horizon heights): the lawn was drawn over V03.
+   const height=ceiling?(x:number,z:number)=>{const g=groundHeightAt(x,z),c=ceiling(x+O.x,z+O.z);return c===null?g:Math.min(g,c-O.y);}:groundHeightAt;
+-  const lattice=buildLattice(TERRAIN_LATTICE_BOUNDS,tier,height),masks=groundMasks(lattice,tier,height),p=lattice.positions,n=p.length/3;
++  const lattice=buildLattice(TERRAIN_LATTICE_BOUNDS,tier,height);capLattice?.(lattice);
++  const masks=groundMasks(lattice,tier,height),p=lattice.positions,n=p.length/3;
+   const hidden=hiddenCell(contains,terrainStep),flag=new Uint8Array(n);
+   for(let i=0;i<n;i++){const hx=p[i*3]!+O.x,hz=p[i*3+2]!+O.z;flag[i]=contains(hx,hz)||hidden(hx,hz)?1:0;}
+   const kept:number[]=[];const ix=lattice.indices;
+@@ -38,8 +39,8 @@
+   const result={lattice,masks,index:new Uint32Array(kept)};cache.set(id,result);return result;
+ }
+ export type RegionGround={mesh:THREE.Mesh;triangles:number;setDressing(d:PlaceDressing):void;dispose():void};
+-export function buildRegionGround(tier:Tier,dressing:PlaceDressing,contains:(hx:number,hz:number)=>boolean,terrainStep:number,cache?:Map<string,PreparedGround>,ceiling?:(hx:number,hz:number)=>number|null):RegionGround{
+-  const {lattice,masks,index}=prepareRegionGround(tier,contains,terrainStep,cache,ceiling),positions=lattice.positions,colors=new Float32Array(positions.length);
++export function buildRegionGround(tier:Tier,dressing:PlaceDressing,contains:(hx:number,hz:number)=>boolean,terrainStep:number,cache?:Map<string,PreparedGround>,ceiling?:(hx:number,hz:number)=>number|null,capLattice?:(lattice:Lattice)=>unknown):RegionGround{
++  const {lattice,masks,index}=prepareRegionGround(tier,contains,terrainStep,cache,ceiling,capLattice),positions=lattice.positions,colors=new Float32Array(positions.length);
+   paintGround(colors,lattice,masks,dressing);
+   const geometry=new THREE.BufferGeometry();
+   geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));
+--- /dev/null
++++ b/src/harbour/geometry/capGroundMesh.ts
+@@ -0,0 +1,28 @@
++/** Lower-only portable terrain cap. Supplied physical deck triangles are the
++ * authority. Every terrain/deck overlap is a convex polygon; their height
++ * difference is linear, so its maximum occurs at an intersection vertex. */
++export type CapPoint=readonly[number,number,number];
++export type CapTriangle=readonly[CapPoint,CapPoint,CapPoint];
++type Face={p:CapPoint;q:CapPoint;r:CapPoint;det:number;gx:number;gz:number};
++export function capGroundMesh(lattice:{positions:Float32Array;indices:Uint32Array},triangles:readonly CapTriangle[],clearance:number){
++ const size=2,cells=new Map<string,Face[]>();
++ for(const[p,q,r]of triangles){const ux=q[0]-p[0],uz=q[2]-p[2],vx=r[0]-p[0],vz=r[2]-p[2],det=ux*vz-uz*vx;if(Math.abs(det)<1e-12)continue;
++  const f={p,q,r,det,gx:((q[1]-p[1])*vz-(r[1]-p[1])*uz)/det,gz:(ux*(r[1]-p[1])-vx*(q[1]-p[1]))/det};
++  for(let x=Math.floor(Math.min(p[0],q[0],r[0])/size);x<=Math.floor(Math.max(p[0],q[0],r[0])/size);x++)for(let z=Math.floor(Math.min(p[2],q[2],r[2])/size);z<=Math.floor(Math.max(p[2],q[2],r[2])/size);z++){const key=`${x}:${z}`,a=cells.get(key)??[];a.push(f);cells.set(key,a);}
++ }
++ const P=lattice.positions,I=lattice.indices,original=P.slice(),affected=new Set<number>(),point=(i:number):CapPoint=>[P[i*3]!,P[i*3+1]!,P[i*3+2]!];
++ const clip=(poly:CapPoint[],a:CapPoint,b:CapPoint,sign:number)=>{const out:CapPoint[]=[];for(let i=0;i<poly.length;i++){
++  const p=poly[i]!,q=poly[(i+1)%poly.length]!,cross=(v:CapPoint)=>sign*((b[0]-a[0])*(v[2]-a[2])-(b[2]-a[2])*(v[0]-a[0])),u=cross(p),v=cross(q);
++  if(u>=-1e-10)out.push(p);if((u>=0)!==(v>=0)){const t=u/(u-v);out.push([p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t,p[2]+(q[2]-p[2])*t]);}
++ }return out;};
++ for(let i=0;i<I.length;i+=3){const ids=[I[i]!,I[i+1]!,I[i+2]!],initial=ids.map(point),near=new Set<Face>();
++  for(let x=Math.floor(Math.min(...initial.map(p=>p[0]))/size);x<=Math.floor(Math.max(...initial.map(p=>p[0]))/size);x++)for(let z=Math.floor(Math.min(...initial.map(p=>p[2]))/size);z<=Math.floor(Math.max(...initial.map(p=>p[2]))/size);z++)for(const f of cells.get(`${x}:${z}`)??[])near.add(f);
++  for(const f of near){let poly=ids.map(point);for(const[a,b]of[[f.p,f.q],[f.q,f.r],[f.r,f.p]]){poly=clip(poly,a!,b!,Math.sign(f.det));if(!poly.length)break;}
++   let excess=0;for(const p of poly)excess=Math.max(excess,p[1]-(f.p[1]+f.gx*(p[0]-f.p[0])+f.gz*(p[2]-f.p[2])-clearance));
++   // Native-space heights use Float32. Padding exceeds their ULP without
++   // changing the deck, support tolerances, or visible cap clearance.
++   if(excess>0)for(const id of ids){P[id*3+1]=P[id*3+1]!-excess-1e-5;affected.add(id);}
++  }
++ }
++ return [...affected].map(i=>({index:i,at:point(i),delta:P[i*3+1]!-original[i*3+1]!}));
++}
+--- /dev/null
++++ b/src/harbour/horizon/regions/mountainV2/walkingJoinGround.ts
+@@ -0,0 +1,27 @@
++/** One explicit Horizon walking replacement owns this ground cut. Native ground
++ * functions/data remain unchanged. Both render tiers use the actual apron top. */
++import type {StructureSolid} from '../../land/interfaces.ts';
++import {capGroundMesh,type CapPoint,type CapTriangle} from '../../../geometry/capGroundMesh.ts';
++import {MOUNTAIN_V2_OFFSET as O} from './placement.ts';
++export function walkingJoinGround(solids:readonly StructureSolid[]=[]){
++ const triangles:CapTriangle[]=[],edgeCounts=new Map<string,{a:CapPoint;b:CapPoint;count:number}>();
++ for(const s of solids){if((s.sourceId??s.id.split('@')[0])!=='mountainV2.funicularFoot.apron')continue;
++  for(let k=0;k<s.indices.length;k+=3){const ids=s.indices.slice(k,k+3),p=ids.map(i=>[s.positions[i*3]!-O.x,s.positions[i*3+1]!-O.y,s.positions[i*3+2]!-O.z] as CapPoint) as [CapPoint,CapPoint,CapPoint];
++   const[a,b,c]=p,ny=(b[2]-a[2])*(c[0]-a[0])-(b[0]-a[0])*(c[2]-a[2]);if(ny<=1e-9)continue;triangles.push(p);
++   for(let i=0;i<3;i++){const a=p[i]!,b=p[(i+1)%3]!,A=a.join(','),B=b.join(','),key=A<B?`${A}:${B}`:`${B}:${A}`,old=edgeCounts.get(key);if(old)old.count++;else edgeCounts.set(key,{a,b,count:1});}
++  }
++ }
++ if(!triangles.length)return null;const boundary=[...edgeCounts.values()].filter(e=>e.count===1),clearance=.02;
++ const bounds={x0:Math.min(...triangles.flatMap(t=>t.map(p=>p[0])))-1.5,x1:Math.max(...triangles.flatMap(t=>t.map(p=>p[0])))+1.5,z0:Math.min(...triangles.flatMap(t=>t.map(p=>p[2])))-1.5,z1:Math.max(...triangles.flatMap(t=>t.map(p=>p[2])))+1.5};
++ const ceiling=(hx:number,hz:number):number|null=>{
++  const x=hx-O.x,z=hz-O.z;if(x<bounds.x0||x>bounds.x1||z<bounds.z0||z>bounds.z1)return null;let top=-Infinity;
++  for(const[a,b,c]of triangles){const D=(b[2]-c[2])*(a[0]-c[0])+(c[0]-b[0])*(a[2]-c[2]);if(Math.abs(D)<1e-12)continue;
++   const u=((b[2]-c[2])*(x-c[0])+(c[0]-b[0])*(z-c[2]))/D,v=((c[2]-a[2])*(x-c[0])+(a[0]-c[0])*(z-c[2]))/D;
++   if(u>=-1e-8&&v>=-1e-8&&u+v<=1+1e-8)top=Math.max(top,u*a[1]+v*b[1]+(1-u-v)*c[1]);
++  }
++  if(Number.isFinite(top))return top+O.y-clearance;
++  let distance=Infinity,y=0;for(const{a,b}of boundary){const dx=b[0]-a[0],dz=b[2]-a[2],t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[2])*dz)/(dx*dx+dz*dz||1))),d=Math.hypot(x-a[0]-dx*t,z-a[2]-dz*t);if(d<distance){distance=d;y=a[1]+(b[1]-a[1])*t;}}
++  return distance<=1.5?y+O.y-clearance+2*distance:null;
++ };
++ return{ceiling,triangles,capLattice:(lattice:{positions:Float32Array;indices:Uint32Array})=>capGroundMesh(lattice,triangles,clearance)};
++}
+--- /dev/null
++++ b/src/harbour/horizon/land/mountainV2/funicularFootStation.ts
+@@ -0,0 +1,12 @@
++/** Exact top of the unchanged native town station plank picture. This is only
++ * used by the explicitly owned Horizon path repair; native defaults retain the
++ * existing station/query/art. The 5cm visible plank fringe needs real support. */
++import V2 from './v2-data.json';
++import type {XYZ} from '../interfaces.ts';
++export function funicularFootStationTop():[XYZ,XYZ,XYZ][]{
++ const st=V2.nativePlanning.surfaces.find(s=>s.id==='station:funicular:town');if(!st)throw new Error('Missing native town station');
++ const a=st.points[0]!,b=st.points[st.points.length-1]!,dx=b[0]!-a[0]!,dz=b[2]!-a[2]!,length=Math.hypot(dx,dz),tx=dx/length,tz=dz/length,nx=tz,nz=-tx,half=st.halfWidth+.05;
++ const A:XYZ=[a[0]!-tx*.05,a[1]!,a[2]!-tz*.05],B:XYZ=[b[0]!+tx*.05,b[1]!,b[2]!+tz*.05];
++ const side=(p:XYZ,n:number):XYZ=>[p[0]+nx*half*n,p[1],p[2]+nz*half*n],q=[side(A,-1),side(B,-1),side(B,1),side(A,1)];
++ return[[q[0]!,q[1]!,q[2]!],[q[0]!,q[2]!,q[3]!]];
++}
+--- a/src/harbour/horizon/land/mountainV2/footLaneJoin.ts
++++ b/src/harbour/horizon/land/mountainV2/footLaneJoin.ts
+@@ -6,6 +6,7 @@
+ import {mitredSlab,nearestOnPath,solid} from '../structures/mesh';
+ import {mountainJoinRoadTop} from './joins';
+ import V2 from './v2-data.json';
++import {funicularFootStationTop} from './funicularFootStation.ts';
+ 
+ const FOOT='mountainV2.footLane', STEP=1;
+ const vertex=(positions:readonly number[],i:number):XYZ=>[positions[i*3]!,positions[i*3+1]!,positions[i*3+2]!];
+@@ -137,10 +138,10 @@
+ /** End Horizon's local join on the actual native floor boundary. Keeping a
+  * second coarse triangle over that boundary can put its interior above native
+  * even when all of its vertices were below the sampled native top. */
+-function clipFootJoinToNative(source:StructureSolid,ground:HeightQuery):void{
++function clipFootJoinToNative(source:StructureSolid,ground:HeightQuery,hostTriangles:readonly Triangle[]=nativeFootTriangles,approach:(x:number,z:number)=>number=nativeApproachTop,clearance=.005,projectInserted=false,projectBoundaries:readonly Triangle[]=[]):void{
+   type Vertex={x:number;y:number;z:number;bottom:number};
+   const area=(p:readonly Vertex[])=>p.reduce((s,a,i)=>{const b=p[(i+1)%p.length]!;return s+a.x*b.z-b.x*a.z;},0);
+-  const faces=nativeFootTriangles.map(t=>({t,x0:Math.min(...t.map(p=>p[0])),x1:Math.max(...t.map(p=>p[0])),z0:Math.min(...t.map(p=>p[2])),z1:Math.max(...t.map(p=>p[2]))}));
++  const faces=hostTriangles.map(t=>({t,x0:Math.min(...t.map(p=>p[0])),x1:Math.max(...t.map(p=>p[0])),z0:Math.min(...t.map(p=>p[2])),z1:Math.max(...t.map(p=>p[2]))}));
+   const out:StructureSolid={...source,positions:[],indices:[]},vertices=new Map<string,number>(),edges=new Map<string,{a:number;b:number;count:number}>();
+   const vertex=(v:Vertex)=>{
+     const bottom=Math.min(v.bottom,v.y-.1,ground(v.x,v.z)-.1),key=[v.x,v.y,v.z,bottom].join(',');let i=vertices.get(key);
+@@ -151,7 +152,7 @@
+     // Clipping also inserts knots on extended triangle lines. Those knots
+     // must obey the same continuous approach envelope before triangulation;
+     // interpolating the coarse pre-cut face can otherwise recreate a proud lip.
+-    for(const v of p)v.y=Math.min(v.y,nativeApproachTop(v.x,v.z));
++    for(const v of p)v.y=projectInserted?approach(v.x,v.z):Math.min(v.y,approach(v.x,v.z));
+     const ids=p.map(vertex);
+     for(let i=1;i<ids.length-1;i++){const a=ids[0]!,b=ids[i]!,c=ids[i+1]!;out.indices.push(a,b,c,a+1,c+1,b+1);}
+     for(let i=0;i<ids.length;i++){const a=ids[i]!,b=ids[(i+1)%ids.length]!,key=a<b?`${a}:${b}`:`${b}:${a}`,old=edges.get(key);if(old)old.count++;else edges.set(key,{a,b,count:1});}
+@@ -178,7 +179,7 @@
+     if(left.length<3||Math.abs(area(left))<1e-9)return[poly];
+     // Only true triangle-boundary vertices lower to the road. Intersections on
+     // an extended clipping line outside the native triangle retain their height.
+-    for(const polygon of outside)for(const v of polygon){const y=insideTriangle(v);if(y!==null)v.y=Math.min(v.y,y-.005);}
++    for(const polygon of outside)for(const v of polygon){const y=insideTriangle(v);if(y!==null)v.y=Math.min(v.y,y-clearance);}
+     return outside;
+   };
+   // Local fitted grids store top/bottom vertex pairs. Only upward faces become
+@@ -188,6 +189,23 @@
+     if(area(p)>=-1e-9)continue;
+     let pieces=[p];const x0=Math.min(...p.map(v=>v.x)),x1=Math.max(...p.map(v=>v.x)),z0=Math.min(...p.map(v=>v.z)),z1=Math.max(...p.map(v=>v.z));
+     for(const f of faces){if(f.x1<x0||f.x0>x1||f.z1<z0||f.z0>z1)continue;pieces=pieces.flatMap(poly=>subtract(poly,f.t));if(!pieces.length)break;}
++
++    // The unchanged station picture is a fixed rectangular host, including its
++    // 5cm plank fringe. Split crossing cells on that actual boundary before
++    // projecting, so no face interpolates a slope across its flat top.
++    for(const tri of projectBoundaries){
++      const tx0=Math.min(...tri.map(v=>v[0])),tx1=Math.max(...tri.map(v=>v[0])),tz0=Math.min(...tri.map(v=>v[2])),tz1=Math.max(...tri.map(v=>v[2]));
++      pieces=pieces.flatMap(poly=>{
++        if(Math.max(...poly.map(v=>v.x))<tx0||Math.min(...poly.map(v=>v.x))>tx1||Math.max(...poly.map(v=>v.z))<tz0||Math.min(...poly.map(v=>v.z))>tz1)return[poly];
++        let parts=[poly];for(let k=0;k<3;k++){
++          const a=tri[k]!,b=tri[(k+1)%3]!,distance=(v:Vertex)=>(b[0]-a[0])*(v.z-a[2])-(b[2]-a[2])*(v.x-a[0]);
++          parts=parts.flatMap(face=>{const left:Vertex[]=[],right:Vertex[]=[];for(let j=0;j<face.length;j++){
++            const A=face[j]!,B=face[(j+1)%face.length]!,da=distance(A),db=distance(B),ia=da>=0,ib=db>=0;(ia?left:right).push(A);
++            if(ia!==ib){const t=da/(da-db),v:Vertex={x:A.x+(B.x-A.x)*t,y:A.y+(B.y-A.y)*t,z:A.z+(B.z-A.z)*t,bottom:A.bottom+(B.bottom-A.bottom)*t};left.push(v);right.push(v);}
++          }return[left,right].filter(p=>p.length>=3&&Math.abs(area(p))>=1e-9);});
++        }return parts;
++      });
++    }
+     for(const poly of pieces)append(poly);
+   }
+   sealFootJoin(out,ground);
+@@ -196,10 +214,10 @@
+ 
+ /** Dense closed quad using shared top/bottom vertices. Only perimeter faces are
+  * emitted: internal vertical prism walls would waste geometry and contacts. */
+-function fittedQuad(out:StructureSolid,q:XYZ[],bottom:number[],top:(p:XYZ)=>number,ground:HeightQuery):void{
++function fittedQuad(out:StructureSolid,q:XYZ[],bottom:number[],top:(p:XYZ)=>number,ground:HeightQuery,step=STEP):void{
+   const distance=(a:XYZ,b:XYZ)=>Math.hypot(a[0]-b[0],a[2]-b[2]);
+-  const cols=Math.max(1,Math.ceil(Math.max(distance(q[0]!,q[1]!),distance(q[3]!,q[2]!))/STEP));
+-  const rows=Math.max(1,Math.ceil(Math.max(distance(q[0]!,q[3]!),distance(q[1]!,q[2]!))/STEP));
++  const cols=Math.max(1,Math.ceil(Math.max(distance(q[0]!,q[1]!),distance(q[3]!,q[2]!))/step));
++  const rows=Math.max(1,Math.ceil(Math.max(distance(q[0]!,q[3]!),distance(q[1]!,q[2]!))/step));
+   const bilinear=(values:number[],u:number,v:number)=>(values[0]!*(1-u)+values[1]!*u)*(1-v)+(values[3]!*(1-u)+values[2]!*u)*v;
+   const start=out.positions.length/3;
+   for(let j=0;j<=rows;j++)for(let i=0;i<=cols;i++){
+@@ -280,4 +298,90 @@
+     fittedQuad(apron,q,[0,1,2,3].map(k=>template.positions[(v+k)*3+1]!),p=>height(p,true),ground);
+   }
+   clipFootJoinToNative(apron,ground);cuts.solids.push(apron);lane.structureIds.push(apron.id);
+-}
++  fitFunicularFootJoin(cuts,ground);
++}
++
++/** The unchanged native ground path meets a newly lowered Horizon bank here.
++ * A short source-owned walking join reaches from the real station slab edge to
++ * the actual Foot apron edge. Its local side fairing meets the existing Year
++ * Walk/S1 surfaces; neither source route nor the through-road is moved. */
++export function fitFunicularFootJoin(cuts:LandCuts,ground:HeightQuery):void{
++ const id='mountainV2.funicularFoot.apron';if(cuts.solids.some(s=>s.id===id))return;
++ const path=V2.nativePlanning.walks.find(p=>p.id==='path:station:funicular:town~road:foot');if(!path)throw new Error('Missing native funicular Foot path');
++ const A=path.points[0]!,B=path.points[path.points.length-1]!,length=Math.hypot(B[0]!-A[0]!,B[2]!-A[2]!),tx=(B[0]!-A[0]!)/length,tz=(B[2]!-A[2]!)/length,half=path.halfWidth;
++ const station=floorTriangles(cuts.solids.filter(s=>(s.sourceId??s.id.split('@')[0])==='threshold.funicular.town.to.hearth.slab'));
++ const road=floorTriangles(cuts.solids.filter(s=>(s.sourceId??s.id.split('@')[0])===`${FOOT}.apron`));
++ if(!station.length||!road.length)throw new Error('Funicular Foot join requires final station and Foot source triangles');
++ const coordinate=(p:XYZ):[number,number]=>[(p[0]-A[0]!)*tx+(p[2]-A[2]!)*tz,-(p[0]-A[0]!)*tz+(p[2]-A[2]!)*tx];
++ const at=(s:number,u:number,y=0):XYZ=>[A[0]!+s*tx-u*tz,y,A[2]!+s*tz+u*tx];
++ const interval=(tri:Triangle,u:number):[number,number]|null=>{
++  const q=tri.map(coordinate),hits:number[]=[];
++  for(let i=0;i<3;i++){const a=q[i]!,b=q[(i+1)%3]!;if(Math.abs(u-a[1])<1e-8)hits.push(a[0]);if((a[1]<u&&u<b[1])||(b[1]<u&&u<a[1]))hits.push(a[0]+(b[0]-a[0])*(u-a[1])/(b[1]-a[1]));}
++  if(hits.length<2)return null;const lo=Math.min(...hits),hi=Math.max(...hits);return hi-lo>1e-8?[lo,hi]:null;
++ };
++ const nativeStation=V2.nativePlanning.surfaces.find(s=>s.id==='station:funicular:town');if(!nativeStation)throw new Error('Missing native station host');
++ const capsuleEnd=(u:number)=>{let end=-Infinity;for(const q of nativeStation.points){const [s,v]=coordinate(q as XYZ),r2=nativeStation.halfWidth**2-(u-v)**2;if(r2>=0)end=Math.max(end,s+Math.sqrt(r2));}return end;};
++ const stationDraw=funicularFootStationTop();
++ const spans=new Map<number,{start:number;end:number;y0:number;y1:number}>();
++ const span=(offset:number)=>{
++  const u=Math.max(-half,Math.min(half,offset)),cached=spans.get(u);if(cached)return cached;
++  const beginnings=station.map(t=>interval(t,u)).filter((v):v is [number,number]=>v!==null);
++  if(!beginnings.length)throw new Error(`Missing station support across full native path: ${u}`);
++  const drawnBeginnings=stationDraw.map(t=>interval(t,u)).filter((v):v is [number,number]=>v!==null);
++  const start=Math.max(...beginnings.map(v=>v[1]),...drawnBeginnings.map(v=>v[1]),capsuleEnd(u)),ends=road.map(t=>interval(t,u)).filter((v):v is [number,number]=>v!==null&&v[1]>start+1e-6&&v[0]<length+5);
++  if(!ends.length)throw new Error(`Missing Foot road support across full native path: ${u}`);
++  const end=Math.min(...ends.map(v=>Math.max(start,v[0]))),p=at(start,u),q=at(end,u),y0=Math.max(floorAt(station,p[0],p[2],58)??-Infinity,nativeStation.points[0]![1]!),y1=floorAt(road,q[0],q[2],58);
++  if(y0===null||y1===null||end-start<.1)throw new Error('Invalid exact walking host boundary');
++  const value={start,end,y0,y1};spans.set(u,value);return value;
++ };
++ // The actual existing physical host is also the local side boundary. Keep a
++ // graded walking shoulder at the Year Walk crossing; do not put the ordinary
++ // steep earth batter across its usable walking width.
++ const nearby=floorTriangles(cuts.solids.filter(s=>s.walkable&&s.positions.some((x,i)=>i%3===0&&x>1280&&x<1296&&s.positions[i+2]!>717&&s.positions[i+2]!<733)));
++ const base=(x:number,z:number)=>Math.max(ground(x,z),floorAt(nearby,x,z,58)??-Infinity);
++ const fairing=2,limit=Math.max(...[-half,0,half].map(u=>span(u).end))+fairing;
++ // Both sides of an exact host boundary need a continuous extension. An
++ // upper envelope alone leaves the last outside vertex BELOW its host and
++ // creates a steep positive-area sliver at a clipping knot. The 35% walking
++ // envelope is not a road-grade allowance; the through-road is unchanged.
++ const upperHosts=[...road,...nativeFootTriangles],lowerHosts=[...upperHosts,...stationDraw];
++ const envelope=(x:number,z:number,lower:boolean)=>{let y=lower?-Infinity:Infinity;const grade=.35;
++  for(const tri of lower?lowerHosts:upperHosts)for(let i=0;i<3;i++){
++   const a=tri[i]!,b=tri[(i+1)%3]!,dx=b[0]-a[0],dz=b[2]-a[2],length=Math.hypot(dx,dz);if(length<1e-9)continue;
++   const along=((x-a[0])*dx+(z-a[2])*dz)/length,away=Math.abs((x-a[0])*dz-(z-a[2])*dx)/length,slope=(b[1]-a[1])/length;
++   const t=lower?(slope>=grade?1:slope<=-grade?0:Math.max(0,Math.min(1,(along+slope*away/Math.sqrt(grade*grade-slope*slope))/length))):(slope>=grade?0:slope<=-grade?1:Math.max(0,Math.min(1,(along-slope*away/Math.sqrt(grade*grade-slope*slope))/length)));
++   const h=a[1]+(b[1]-a[1])*t+(lower?-grade:grade)*Math.hypot(along-length*t,away);y=lower?Math.max(y,h):Math.min(y,h);
++  }return y;
++ };
++ const height=(x:number,z:number)=>{
++  const [s,u]=coordinate([x,0,z]),host=span(u),t=Math.max(0,Math.min(1,(s-host.start)/(host.end-host.start))),target=host.y0+(host.y1-host.y0)*t;
++  const lateral=Math.max(0,Math.min(1,(half+fairing-Math.abs(u))/fairing)),longitudinal=Math.max(0,Math.min(1,s/fairing,(limit-s)/fairing));
++  const b=base(x,z),lower=Math.max(envelope(x,z,true),floorAt(stationDraw,x,z,58)??-Infinity),upper=envelope(x,z,false);
++  if(lower>upper+1e-6)throw new Error(`Incompatible fixed walking hosts ${x},${z}: ${lower}>${upper}`);
++  return Math.min(Math.max(b+Math.max(0,target-b)*lateral*longitudinal,lower),upper);
++ };
++ const out=solid(id,'landing','paved','deck',[FOOT,'yearWalk'],'lakeside');
++ // Include every projected host vertex: fixed-width uniform sampling alone can
++ // cross an oblique host corner and miss its real boundary. Clipping inserts
++ // all remaining intersection knots and the shared sealer closes the result.
++ const across=new Set<number>([-half-fairing,-half,half,half+fairing]);
++ for(let u=-half-fairing;u<half+fairing;u+=.5)across.add(u);
++ for(const tri of [...station,...stationDraw,...road])for(const p of tri){const [s,u]=coordinate(p);if(u>-half-fairing&&u<half+fairing&&s>=0&&s<=limit)across.add(u);}
++ const columns=[...across].sort((a,b)=>a-b),rows=Math.ceil(limit/.5);
++ for(let j=0;j<rows;j++)for(let i=1;i<columns.length;i++){
++  const s0=j/rows*limit,s1=(j+1)/rows*limit,u0=columns[i-1]!,u1=columns[i]!;
++  const q=[at(s0,u0),at(s1,u0),at(s1,u1),at(s0,u1)];
++  // Winding follows fittedQuad's upward convention. All hidden bottoms are
++  // grounded; no hollow span or lower passage is being invented.
++  const signed=(q[1]![0]-q[0]![0])*(q[2]![2]-q[0]![2])-(q[1]![2]-q[0]![2])*(q[2]![0]-q[0]![0]);if(signed>0)q.reverse();
++  if(q.every(p=>height(p[0],p[2])-base(p[0],p[2])<1e-6))continue;
++  fittedQuad(out,q,q.map(p=>ground(p[0],p[2])-.1),p=>height(p[0],p[2]),ground,.5);
++ }
++ // The unchanged station and through-road remain the sole physical owners at
++ // overlap. This is actual polygon subtraction, never a surface-query filter.
++ // Every inserted knot samples the same final field, not a minimum with a
++ // stale pre-clipping interpolation. Existing native/Foot callers retain the
++ // original lower-only projection through the default false option.
++ clipFootJoinToNative(out,ground,[...station,...road,...nativeFootTriangles],height,0,true,stationDraw);
++ cuts.solids.push(out);cuts.beds.find(b=>b.id===FOOT)!.structureIds.push(id);
++}

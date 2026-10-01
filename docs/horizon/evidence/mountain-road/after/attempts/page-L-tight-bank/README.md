@@ -1,0 +1,3 @@
+# Rejected tighter Page L bank candidate
+
+Both orientations of all12 pages were compared without source, camera, bridge or S3 changes. The portrait Boathouse remains5/8; two terrain rays instead hit the unchanged quay-link bed. The cut lowers29 full-lattice vertices by up to2.202425m over the reported bounded area. There are63 genuinely new town.quayLink underside exposures (worst previously buried0.2128m, now open0.7374m), plus24 worsened pre-existing bridge-span gaps (up to0.4944m more gap). No sampled walk floor changes. One affected face was already above40degrees but worsens from40.298654to40.603649degrees. It does not pass visibility or physical support. Process completion is diagnostic only; no candidate source was applied.

@@ -1,0 +1,2087 @@
+{
+  "method": "pure JSON arithmetic; no source module import/world generation; consecutive |dy|<=0.12*horizontal ds is required for any continuous height-only profile on fixed XY. All immutable anchor pairs must satisfy it. Triangle grades use six actual road transverse bands, same constant top paint lift on all vertices omitted.",
+  "source": {
+    "path": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/horizon/land/mountainV2/v2-data.json",
+    "sha256": "418eab3afb34746b1341d6f80c16efc7d6921eb71ad301e31e249b63b46cab8f",
+    "samples": 941,
+    "framePlanMaxDifferenceM": 1.2121932968511828e-06
+  },
+  "audit": {
+    "path": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/docs/horizon/evidence/mountain-road/after/attempts/joined-ground-cruiser/audit.json",
+    "sha256": "36c9c01817c44fccb9e147d486e16b97ea0c65318c1991dcc9d8cb274c6b5969",
+    "bake": {
+      "world": "public/horizon/world/horizon-geo-1.json.gz",
+      "worldSha256": "dd252b36ff5d5ded6ea059a6d9d3ecaa9e00fef49ffb8e28a8ba878ba83f0f35",
+      "terrain": "public/horizon/terrain/horizon-geo-1.bin",
+      "terrainSha256": "908a33ea9a00114444ad14164b37306699578614eb33961bb9bc6e6943c8f948",
+      "revision": "horizon-geo-1"
+    },
+    "chainLengthDifferenceM": -4.447429091669619e-10
+  },
+  "endpoints": [
+    {
+      "row": 0,
+      "H": [
+        1282,
+        54.649977,
+        720
+      ],
+      "nativeSpatialS": 0,
+      "nativePlanS": 0.0,
+      "chainPlanS": 349.388554272
+    },
+    {
+      "row": 940,
+      "H": [
+        1325,
+        158.2,
+        470.5
+      ],
+      "nativeSpatialS": 945.8612120548714,
+      "nativePlanS": 939.5952078545554,
+      "chainPlanS": 1288.9837621265553
+    }
+  ],
+  "bridges": [
+    {
+      "id": "mountainV2:b-foot",
+      "name": "Harbour bridge",
+      "rows": [
+        35,
+        58
+      ],
+      "taggedAxisBounds": [
+        {
+          "row": 35,
+          "H": [
+            1291.893207,
+            59.232755,
+            689.591725
+          ],
+          "nativeSpatialS": 35.29588521325128,
+          "nativePlanS": 34.986340049995334,
+          "chainPlanS": 384.3748943219954
+        },
+        {
+          "row": 58,
+          "H": [
+            1314.133616,
+            60.962616,
+            685.882874
+          ],
+          "nativeSpatialS": 58.359067700905385,
+          "nativePlanS": 57.97804271278122,
+          "chainPlanS": 407.36659698478127
+        }
+      ],
+      "renderedRows": [
+        34,
+        59
+      ],
+      "renderedBounds": [
+        {
+          "row": 34,
+          "H": [
+            1291.02913,
+            59.109084,
+            690.094382
+          ],
+          "nativeSpatialS": 34.28861830126772,
+          "nativePlanS": 33.9866935516879,
+          "chainPlanS": 383.3752478236879
+        },
+        {
+          "row": 59,
+          "H": [
+            1315.102647,
+            61.001048,
+            686.128302
+          ],
+          "nativeSpatialS": 59.35943421154728,
+          "nativePlanS": 58.977670634632496,
+          "chainPlanS": 408.3662249066325
+        }
+      ],
+      "width": 9.6,
+      "maxCentreline": {
+        "a": {
+          "row": 35,
+          "H": [
+            1291.893207,
+            59.232755,
+            689.591725
+          ],
+          "nativeSpatialS": 35.29588521325128,
+          "nativePlanS": 34.986340049995334,
+          "chainPlanS": 384.3748943219954
+        },
+        "b": {
+          "row": 36,
+          "H": [
+            1292.772863,
+            59.351892,
+            689.116858
+          ],
+          "nativeSpatialS": 36.30260619437549,
+          "nativePlanS": 35.98598666056566,
+          "chainPlanS": 385.37454093256565
+        },
+        "riseM": 0.11913700000000205,
+        "planLengthM": 0.9996466105703234,
+        "requiredGrade": 0.11917911664006084,
+        "allowedRiseAt12M": 0.11995759326843881,
+        "excessRiseM": -0.0008205932684367673,
+        "minimumLengthAt12M": 0.9928083333333504,
+        "extraPlanLengthAt12M": -0.006838277236973056
+      },
+      "maxFixedFace": {
+        "fromRow": 35,
+        "toRow": 36,
+        "grade": 0.14121615469856014,
+        "band": 0,
+        "triangle": [
+          [
+            1294.2403921776001,
+            59.232755,
+            693.778695472
+          ],
+          [
+            1294.9828561135998,
+            59.351892,
+            693.37783564
+          ],
+          [
+            1294.7296277359999,
+            59.351892,
+            692.88959861875
+          ]
+        ]
+      },
+      "taggedMax10m": {
+        "a": {
+          "planS": 34.986340049995334,
+          "chainS": 384.3748943219954,
+          "rows": [
+            35,
+            36
+          ],
+          "t": 0.0,
+          "H": [
+            1291.893207,
+            59.232755,
+            689.591725
+          ]
+        },
+        "b": {
+          "planS": 44.986340049995334,
+          "chainS": 394.3748943219954,
+          "rows": [
+            45,
+            46
+          ],
+          "t": 0.0035216766127398992,
+          "H": [
+            1301.2422525605,
+            60.22183945740819,
+            686.1511280103401
+          ]
+        },
+        "lengthM": 10,
+        "riseM": 0.9890844574081896,
+        "grade": 0.09890844574081896,
+        "excessRiseM": -0.21091554259181033
+      },
+      "renderedMax10m": {
+        "a": {
+          "planS": 33.9866935516879,
+          "chainS": 383.3752478236879,
+          "rows": [
+            34,
+            35
+          ],
+          "t": 0.0,
+          "H": [
+            1291.02913,
+            59.109084,
+            690.094382
+          ]
+        },
+        "b": {
+          "planS": 43.9866935516879,
+          "chainS": 393.3752478236879,
+          "rows": [
+            44,
+            45
+          ],
+          "t": 0.0035309916752031658,
+          "H": [
+            1300.2669935925692,
+            60.14186244755509,
+            686.3705827637157
+          ]
+        },
+        "lengthM": 10,
+        "riseM": 1.0327784475550885,
+        "grade": 0.10327784475550886,
+        "excessRiseM": -0.16722155244491144
+      },
+      "auditGridTaggedMax10m": {
+        "a": {
+          "planS": 36.61144572799998,
+          "chainS": 386.0,
+          "rows": [
+            36,
+            37
+          ],
+          "t": 0.6256872991922793,
+          "H": [
+            1293.3327724191156,
+            59.42346124171811,
+            688.8381099283987
+          ]
+        },
+        "b": {
+          "planS": 46.61144572799998,
+          "chainS": 396.0,
+          "rows": [
+            46,
+            47
+          ],
+          "t": 0.6291813519599956,
+          "H": [
+            1302.8396950366148,
+            60.34347138679472,
+            685.8531736774479
+          ]
+        },
+        "lengthM": 10,
+        "riseM": 0.9200101450766098,
+        "grade": 0.09200101450766099,
+        "excessRiseM": -0.2799898549233901
+      },
+      "auditGridRenderedMax10m": {
+        "a": {
+          "planS": 34.61144572799998,
+          "chainS": 384.0,
+          "rows": [
+            34,
+            35
+          ],
+          "t": 0.6249731053626322,
+          "H": [
+            1291.5691548859625,
+            59.1863750489133,
+            689.7802348937778
+          ]
+        },
+        "b": {
+          "planS": 44.61144572799998,
+          "chainS": 394.0,
+          "rows": [
+            44,
+            45
+          ],
+          "t": 0.628498274306692,
+          "H": [
+            1300.8764916850212,
+            60.19185420546006,
+            686.2333699468794
+          ]
+        },
+        "lengthM": 10,
+        "riseM": 1.0054791565467625,
+        "grade": 0.10054791565467625,
+        "excessRiseM": -0.1945208434532375
+      }
+    },
+    {
+      "id": "mountainV2:b2",
+      "name": "High woodland bridge",
+      "rows": [
+        388,
+        445
+      ],
+      "taggedAxisBounds": [
+        {
+          "row": 388,
+          "H": [
+            1338.778666,
+            94.262996,
+            583.342704
+          ],
+          "nativeSpatialS": 390.11703541026566,
+          "nativePlanS": 387.82406715295645,
+          "chainPlanS": 737.2126214249565
+        },
+        {
+          "row": 445,
+          "H": [
+            1285.303812,
+            98.741736,
+            567.731187
+          ],
+          "nativeSpatialS": 447.2778840744914,
+          "nativePlanS": 444.8012021238375,
+          "chainPlanS": 794.1897563958375
+        }
+      ],
+      "renderedRows": [
+        387,
+        446
+      ],
+      "renderedBounds": [
+        {
+          "row": 387,
+          "H": [
+            1339.054894,
+            94.157112,
+            584.302224
+          ],
+          "nativeSpatialS": 389.1129479034788,
+          "nativePlanS": 386.8255780251318,
+          "chainPlanS": 736.2141322971318
+        },
+        {
+          "row": 446,
+          "H": [
+            1284.383615,
+            98.860794,
+            567.340537
+          ],
+          "nativeSpatialS": 448.28463345879914,
+          "nativePlanS": 445.80088704485473,
+          "chainPlanS": 795.1894413168548
+        }
+      ],
+      "width": 9.6,
+      "maxCentreline": {
+        "a": {
+          "row": 444,
+          "H": [
+            1286.227382,
+            98.624917,
+            568.113784
+          ],
+          "nativeSpatialS": 446.27140098684714,
+          "nativePlanS": 443.80152117007833,
+          "chainPlanS": 793.1900754420783
+        },
+        "b": {
+          "row": 445,
+          "H": [
+            1285.303812,
+            98.741736,
+            567.731187
+          ],
+          "nativeSpatialS": 447.2778840744914,
+          "nativePlanS": 444.8012021238375,
+          "chainPlanS": 794.1897563958375
+        },
+        "riseM": 0.11681900000000667,
+        "planLengthM": 0.9996809537591957,
+        "requiredGrade": 0.11685628255767105,
+        "allowedRiseAt12M": 0.11996171445110348,
+        "excessRiseM": -0.0031427144510968175,
+        "minimumLengthAt12M": 0.9734916666667223,
+        "extraPlanLengthAt12M": -0.02618928709247348
+      },
+      "maxFixedFace": {
+        "fromRow": 388,
+        "toRow": 389,
+        "grade": 1.5272080491949378,
+        "band": 4,
+        "triangle": [
+          [
+            1334.82257319875,
+            94.262996,
+            584.8957106822501
+          ],
+          [
+            1334.2829025904,
+            94.365933,
+            585.0351546352
+          ],
+          [
+            1334.3106082479999,
+            94.262996,
+            585.0966880176001
+          ]
+        ]
+      },
+      "taggedMax10m": {
+        "a": {
+          "planS": 434.8012021238375,
+          "chainS": 784.1897563958375,
+          "rows": [
+            434,
+            435
+          ],
+          "t": 0.9965262203021007,
+          "H": [
+            1294.8768872921278,
+            97.69181712450727,
+            570.4954026390866
+          ]
+        },
+        "b": {
+          "planS": 444.8012021238375,
+          "chainS": 794.1897563958375,
+          "rows": [
+            445,
+            446
+          ],
+          "t": 0.0,
+          "H": [
+            1285.303812,
+            98.741736,
+            567.731187
+          ]
+        },
+        "lengthM": 10,
+        "riseM": 1.049918875492736,
+        "grade": 0.1049918875492736,
+        "excessRiseM": -0.15008112450726396
+      },
+      "renderedMax10m": {
+        "a": {
+          "planS": 435.80088704485473,
+          "chainS": 785.1894413168548,
+          "rows": [
+            435,
+            436
+          ],
+          "t": 0.9965506648547773,
+          "H": [
+            1293.887511568682,
+            97.78401894025559,
+            570.3522111758982
+          ]
+        },
+        "b": {
+          "planS": 445.80088704485473,
+          "chainS": 795.1894413168548,
+          "rows": [
+            446,
+            447
+          ],
+          "t": 0.0,
+          "H": [
+            1284.383615,
+            98.860794,
+            567.340537
+          ]
+        },
+        "lengthM": 10,
+        "riseM": 1.0767750597444063,
+        "grade": 0.10767750597444063,
+        "excessRiseM": -0.1232249402555936
+      },
+      "auditGridTaggedMax10m": {
+        "a": {
+          "planS": 434.611445728,
+          "chainS": 784.0,
+          "rows": [
+            434,
+            435
+          ],
+          "t": 0.8067063917222239,
+          "H": [
+            1295.0652597445148,
+            97.674829768408,
+            570.518278585908
+          ]
+        },
+        "b": {
+          "planS": 444.611445728,
+          "chainS": 794.0,
+          "rows": [
+            444,
+            445
+          ],
+          "t": 0.8101830437761273,
+          "H": [
+            1285.4791212462599,
+            98.71956177299089,
+            567.8038103980003
+          ]
+        },
+        "lengthM": 10,
+        "riseM": 1.0447320045828832,
+        "grade": 0.10447320045828831,
+        "excessRiseM": -0.15526799541711678
+      },
+      "auditGridRenderedMax10m": {
+        "a": {
+          "planS": 434.611445728,
+          "chainS": 784.0,
+          "rows": [
+            434,
+            435
+          ],
+          "t": 0.8067063917222239,
+          "H": [
+            1295.0652597445148,
+            97.674829768408,
+            570.518278585908
+          ]
+        },
+        "b": {
+          "planS": 444.611445728,
+          "chainS": 794.0,
+          "rows": [
+            444,
+            445
+          ],
+          "t": 0.8101830437761273,
+          "H": [
+            1285.4791212462599,
+            98.71956177299089,
+            567.8038103980003
+          ]
+        },
+        "lengthM": 10,
+        "riseM": 1.0447320045828832,
+        "grade": 0.10447320045828831,
+        "excessRiseM": -0.15526799541711678
+      }
+    },
+    {
+      "id": "mountainV2:b3",
+      "name": "Dam glass bridge",
+      "rows": [
+        618,
+        691
+      ],
+      "taggedAxisBounds": [
+        {
+          "row": 618,
+          "H": [
+            1276.375324,
+            122.366703,
+            538.744678
+          ],
+          "nativeSpatialS": 621.8260757666643,
+          "nativePlanS": 617.7383297034204,
+          "chainPlanS": 967.1268839754205
+        },
+        {
+          "row": 691,
+          "H": [
+            1346.288234,
+            127.527215,
+            550.98624
+          ],
+          "nativeSpatialS": 695.0223306018379,
+          "nativePlanS": 690.7146518017354,
+          "chainPlanS": 1040.1032060737355
+        }
+      ],
+      "renderedRows": [
+        617,
+        692
+      ],
+      "renderedBounds": [
+        {
+          "row": 617,
+          "H": [
+            1275.473003,
+            122.26959,
+            538.314346
+          ],
+          "nativeSpatialS": 620.8216853154771,
+          "nativePlanS": 616.7386453446026,
+          "chainPlanS": 966.1271996166026
+        },
+        {
+          "row": 692,
+          "H": [
+            1347.287764,
+            127.670549,
+            550.975852
+          ],
+          "nativeSpatialS": 696.0321382399509,
+          "nativePlanS": 691.7142357809206,
+          "chainPlanS": 1041.1027900529207
+        }
+      ],
+      "width": 9.6,
+      "maxCentreline": {
+        "a": {
+          "row": 690,
+          "H": [
+            1345.290319,
+            127.38552,
+            551.044297
+          ],
+          "nativeSpatialS": 694.0127348011489,
+          "nativePlanS": 689.7150493995402,
+          "chainPlanS": 1039.1036036715402
+        },
+        "b": {
+          "row": 691,
+          "H": [
+            1346.288234,
+            127.527215,
+            550.98624
+          ],
+          "nativeSpatialS": 695.0223306018379,
+          "nativePlanS": 690.7146518017354,
+          "chainPlanS": 1040.1032060737355
+        },
+        "riseM": 0.14169499999999857,
+        "planLengthM": 0.9996024021951371,
+        "requiredGrade": 0.14175136002958266,
+        "allowedRiseAt12M": 0.11995228826341645,
+        "excessRiseM": 0.021742711736582127,
+        "minimumLengthAt12M": 1.180791666666655,
+        "extraPlanLengthAt12M": 0.18118926447151784
+      },
+      "maxFixedFace": {
+        "fromRow": 690,
+        "toRow": 691,
+        "grade": 0.18057981309260068,
+        "band": 0,
+        "triangle": [
+          [
+            1345.6690607008,
+            127.38552,
+            555.8293314544001
+          ],
+          [
+            1346.4526150640002,
+            127.527215,
+            555.7834244736
+          ],
+          [
+            1346.43377973375,
+            127.527215,
+            555.233747086
+          ]
+        ]
+      },
+      "taggedMax10m": {
+        "a": {
+          "planS": 680.7146518017354,
+          "chainS": 1030.1032060737355,
+          "rows": [
+            680,
+            681
+          ],
+          "t": 0.9966014321102289,
+          "H": [
+            1336.4468620380646,
+            126.20984980854968,
+            552.6802399007482
+          ]
+        },
+        "b": {
+          "planS": 690.7146518017354,
+          "chainS": 1040.1032060737355,
+          "rows": [
+            691,
+            692
+          ],
+          "t": 0.0,
+          "H": [
+            1346.288234,
+            127.527215,
+            550.98624
+          ]
+        },
+        "lengthM": 10,
+        "riseM": 1.317365191450321,
+        "grade": 0.1317365191450321,
+        "excessRiseM": 0.1173651914503211
+      },
+      "renderedMax10m": {
+        "a": {
+          "planS": 681.7142357809206,
+          "chainS": 1031.1027900529207,
+          "rows": [
+            681,
+            682
+          ],
+          "t": 0.9965035067096439,
+          "H": [
+            1337.4248760764162,
+            126.3296251270968,
+            552.4737063650243
+          ]
+        },
+        "b": {
+          "planS": 691.7142357809206,
+          "chainS": 1041.1027900529207,
+          "rows": [
+            692,
+            693
+          ],
+          "t": 0.0,
+          "H": [
+            1347.287764,
+            127.670549,
+            550.975852
+          ]
+        },
+        "lengthM": 10,
+        "riseM": 1.3409238729031898,
+        "grade": 0.13409238729031897,
+        "excessRiseM": 0.14092387290318986
+      },
+      "auditGridTaggedMax10m": {
+        "a": {
+          "planS": 680.611445728,
+          "chainS": 1030.0,
+          "rows": [
+            680,
+            681
+          ],
+          "t": 0.8933619316421705,
+          "H": [
+            1336.3456154729136,
+            126.19781456054312,
+            552.7002555621409
+          ]
+        },
+        "b": {
+          "planS": 690.611445728,
+          "chainS": 1040.0,
+          "rows": [
+            690,
+            691
+          ],
+          "t": 0.896752875434564,
+          "H": [
+            1346.1852021456893,
+            127.51258539868469,
+            550.9922342183108
+          ]
+        },
+        "lengthM": 10,
+        "riseM": 1.3147708381415697,
+        "grade": 0.13147708381415696,
+        "excessRiseM": 0.11477083814156974
+      },
+      "auditGridRenderedMax10m": {
+        "a": {
+          "planS": 680.611445728,
+          "chainS": 1030.0,
+          "rows": [
+            680,
+            681
+          ],
+          "t": 0.8933619316421705,
+          "H": [
+            1336.3456154729136,
+            126.19781456054312,
+            552.7002555621409
+          ]
+        },
+        "b": {
+          "planS": 690.611445728,
+          "chainS": 1040.0,
+          "rows": [
+            690,
+            691
+          ],
+          "t": 0.896752875434564,
+          "H": [
+            1346.1852021456893,
+            127.51258539868469,
+            550.9922342183108
+          ]
+        },
+        "lengthM": 10,
+        "riseM": 1.3147708381415697,
+        "grade": 0.13147708381415696,
+        "excessRiseM": 0.11477083814156974
+      }
+    }
+  ],
+  "gradeGroups": [
+    {
+      "eventId": "e120",
+      "chainPlanRange": [
+        350,
+        398
+      ],
+      "reportedMax10mPercent": 15.26,
+      "worstStartStationApprox": 366,
+      "worstStartH": [
+        1280.82,
+        56.55,
+        703.55
+      ],
+      "worst10mWindowApprox": [
+        366,
+        376
+      ],
+      "bridgeOverlap": [
+        {
+          "bridge": "Harbour bridge",
+          "kind": "tagged-axis",
+          "chainPlanRange": [
+            384.3748943219954,
+            398
+          ],
+          "lengthM": 13.625105678004616
+        },
+        {
+          "bridge": "Harbour bridge",
+          "kind": "rendered-native-deck",
+          "chainPlanRange": [
+            383.3752478236879,
+            398
+          ],
+          "lengthM": 14.624752176312086
+        }
+      ]
+    },
+    {
+      "eventId": "e121",
+      "chainPlanRange": [
+        470,
+        750
+      ],
+      "reportedMax10mPercent": 14.07,
+      "worstStartStationApprox": 706,
+      "worstStartH": [
+        1357.44,
+        90.16,
+        605.15
+      ],
+      "worst10mWindowApprox": [
+        706,
+        716
+      ],
+      "bridgeOverlap": [
+        {
+          "bridge": "High woodland bridge",
+          "kind": "tagged-axis",
+          "chainPlanRange": [
+            737.2126214249565,
+            750
+          ],
+          "lengthM": 12.787378575043476
+        },
+        {
+          "bridge": "High woodland bridge",
+          "kind": "rendered-native-deck",
+          "chainPlanRange": [
+            736.2141322971318,
+            750
+          ],
+          "lengthM": 13.785867702868245
+        }
+      ]
+    },
+    {
+      "eventId": "e122",
+      "chainPlanRange": [
+        776,
+        976
+      ],
+      "reportedMax10mPercent": 14.03,
+      "worstStartStationApprox": 816,
+      "worstStartH": [
+        1264.23,
+        101.65,
+        564.94
+      ],
+      "worst10mWindowApprox": [
+        816,
+        826
+      ],
+      "bridgeOverlap": [
+        {
+          "bridge": "High woodland bridge",
+          "kind": "tagged-axis",
+          "chainPlanRange": [
+            776,
+            794.1897563958375
+          ],
+          "lengthM": 18.18975639583755
+        },
+        {
+          "bridge": "High woodland bridge",
+          "kind": "rendered-native-deck",
+          "chainPlanRange": [
+            776,
+            795.1894413168548
+          ],
+          "lengthM": 19.189441316854754
+        },
+        {
+          "bridge": "Dam glass bridge",
+          "kind": "tagged-axis",
+          "chainPlanRange": [
+            967.1268839754205,
+            976
+          ],
+          "lengthM": 8.87311602457953
+        },
+        {
+          "bridge": "Dam glass bridge",
+          "kind": "rendered-native-deck",
+          "chainPlanRange": [
+            966.1271996166026,
+            976
+          ],
+          "lengthM": 9.872800383397362
+        }
+      ]
+    },
+    {
+      "eventId": "e123",
+      "chainPlanRange": [
+        1016,
+        1284
+      ],
+      "reportedMax10mPercent": 15.1,
+      "worstStartStationApprox": 1048,
+      "worstStartH": [
+        1354.06,
+        128.69,
+        552.18
+      ],
+      "worst10mWindowApprox": [
+        1048,
+        1058
+      ],
+      "bridgeOverlap": [
+        {
+          "bridge": "Dam glass bridge",
+          "kind": "tagged-axis",
+          "chainPlanRange": [
+            1016,
+            1040.1032060737355
+          ],
+          "lengthM": 24.103206073735464
+        },
+        {
+          "bridge": "Dam glass bridge",
+          "kind": "rendered-native-deck",
+          "chainPlanRange": [
+            1016,
+            1041.1027900529207
+          ],
+          "lengthM": 25.10279005292068
+        }
+      ]
+    }
+  ],
+  "taggedBridgeConstraints": {
+    "fixedRows": 158,
+    "feasible": false,
+    "consecutiveAnchorViolations": [
+      {
+        "a": {
+          "row": 0,
+          "H": [
+            1282,
+            54.649977,
+            720
+          ],
+          "nativeSpatialS": 0,
+          "nativePlanS": 0.0,
+          "chainPlanS": 349.388554272
+        },
+        "b": {
+          "row": 35,
+          "H": [
+            1291.893207,
+            59.232755,
+            689.591725
+          ],
+          "nativeSpatialS": 35.29588521325128,
+          "nativePlanS": 34.986340049995334,
+          "chainPlanS": 384.3748943219954
+        },
+        "riseM": 4.582777999999998,
+        "planLengthM": 34.986340049995334,
+        "requiredGrade": 0.13098763670195931,
+        "allowedRiseAt12M": 4.19836080599944,
+        "excessRiseM": 0.38441719400055785,
+        "minimumLengthAt12M": 38.18981666666665,
+        "extraPlanLengthAt12M": 3.203476616671317,
+        "owners": [
+          "Foot",
+          "mountainV2:b-foot"
+        ]
+      },
+      {
+        "a": {
+          "row": 445,
+          "H": [
+            1285.303812,
+            98.741736,
+            567.731187
+          ],
+          "nativeSpatialS": 447.2778840744914,
+          "nativePlanS": 444.8012021238375,
+          "chainPlanS": 794.1897563958375
+        },
+        "b": {
+          "row": 618,
+          "H": [
+            1276.375324,
+            122.366703,
+            538.744678
+          ],
+          "nativeSpatialS": 621.8260757666643,
+          "nativePlanS": 617.7383297034204,
+          "chainPlanS": 967.1268839754205
+        },
+        "riseM": 23.624966999999998,
+        "planLengthM": 172.93712757958286,
+        "requiredGrade": 0.1366101503514806,
+        "allowedRiseAt12M": 20.752455309549944,
+        "excessRiseM": 2.872511690450054,
+        "minimumLengthAt12M": 196.87472499999998,
+        "extraPlanLengthAt12M": 23.93759742041712,
+        "owners": [
+          "mountainV2:b2",
+          "mountainV2:b3"
+        ]
+      },
+      {
+        "a": {
+          "row": 682,
+          "H": [
+            1337.428296,
+            126.330044,
+            552.472984
+          ],
+          "nativeSpatialS": 685.945945776801,
+          "nativePlanS": 681.717731161951,
+          "chainPlanS": 1031.106285433951
+        },
+        "b": {
+          "row": 683,
+          "H": [
+            1338.404809,
+            126.452907,
+            552.258987
+          ],
+          "nativeSpatialS": 686.9531531023912,
+          "nativePlanS": 682.7174172902821,
+          "chainPlanS": 1032.105971562282
+        },
+        "riseM": 0.12286299999999528,
+        "planLengthM": 0.9996861283311773,
+        "requiredGrade": 0.1229015753225427,
+        "allowedRiseAt12M": 0.11996233539974127,
+        "excessRiseM": 0.0029006646002540104,
+        "minimumLengthAt12M": 1.023858333333294,
+        "extraPlanLengthAt12M": 0.024172205002116698,
+        "owners": [
+          "mountainV2:b3",
+          "mountainV2:b3"
+        ]
+      },
+      {
+        "a": {
+          "row": 683,
+          "H": [
+            1338.404809,
+            126.452907,
+            552.258987
+          ],
+          "nativeSpatialS": 686.9531531023912,
+          "nativePlanS": 682.7174172902821,
+          "chainPlanS": 1032.105971562282
+        },
+        "b": {
+          "row": 684,
+          "H": [
+            1339.38091,
+            126.578679,
+            552.043116
+          ],
+          "nativeSpatialS": 687.9607201798308,
+          "nativePlanS": 683.7171039666175,
+          "chainPlanS": 1033.1056582386175
+        },
+        "riseM": 0.12577199999999777,
+        "planLengthM": 0.9996866763353864,
+        "requiredGrade": 0.12581141969506687,
+        "allowedRiseAt12M": 0.11996240116024637,
+        "excessRiseM": 0.0058095988397514065,
+        "minimumLengthAt12M": 1.0480999999999816,
+        "extraPlanLengthAt12M": 0.048413323664595165,
+        "owners": [
+          "mountainV2:b3",
+          "mountainV2:b3"
+        ]
+      },
+      {
+        "a": {
+          "row": 684,
+          "H": [
+            1339.38091,
+            126.578679,
+            552.043116
+          ],
+          "nativeSpatialS": 687.9607201798308,
+          "nativePlanS": 683.7171039666175,
+          "chainPlanS": 1033.1056582386175
+        },
+        "b": {
+          "row": 685,
+          "H": [
+            1340.357856,
+            126.707201,
+            551.831113
+          ],
+          "nativeSpatialS": 688.9686321996904,
+          "nativePlanS": 684.7167882962561,
+          "chainPlanS": 1034.1053425682562
+        },
+        "riseM": 0.1285220000000038,
+        "planLengthM": 0.999684329638626,
+        "requiredGrade": 0.12856258339716395,
+        "allowedRiseAt12M": 0.1199621195566351,
+        "excessRiseM": 0.008559880443368695,
+        "minimumLengthAt12M": 1.0710166666666985,
+        "extraPlanLengthAt12M": 0.07133233702807251,
+        "owners": [
+          "mountainV2:b3",
+          "mountainV2:b3"
+        ]
+      },
+      {
+        "a": {
+          "row": 685,
+          "H": [
+            1340.357856,
+            126.707201,
+            551.831113
+          ],
+          "nativeSpatialS": 688.9686321996904,
+          "nativePlanS": 684.7167882962561,
+          "chainPlanS": 1034.1053425682562
+        },
+        "b": {
+          "row": 686,
+          "H": [
+            1341.336876,
+            126.838315,
+            551.628934
+          ],
+          "nativeSpatialS": 689.976872419456,
+          "nativePlanS": 685.7164664986998,
+          "chainPlanS": 1035.1050207706999
+        },
+        "riseM": 0.13111399999999662,
+        "planLengthM": 0.999678202443647,
+        "requiredGrade": 0.13115620574650638,
+        "allowedRiseAt12M": 0.11996138429323763,
+        "excessRiseM": 0.01115261570675899,
+        "minimumLengthAt12M": 1.0926166666666386,
+        "extraPlanLengthAt12M": 0.09293846422299157,
+        "owners": [
+          "mountainV2:b3",
+          "mountainV2:b3"
+        ]
+      },
+      {
+        "a": {
+          "row": 686,
+          "H": [
+            1341.336876,
+            126.838315,
+            551.628934
+          ],
+          "nativeSpatialS": 689.976872419456,
+          "nativePlanS": 685.7164664986998,
+          "chainPlanS": 1035.1050207706999
+        },
+        "b": {
+          "row": 687,
+          "H": [
+            1342.319055,
+            126.971863,
+            551.442753
+          ],
+          "nativeSpatialS": 690.9854223923417,
+          "nativePlanS": 686.7161359204597,
+          "chainPlanS": 1036.1046901924597
+        },
+        "riseM": 0.13354800000000466,
+        "planLengthM": 0.9996694217599043,
+        "requiredGrade": 0.13359216266202806,
+        "allowedRiseAt12M": 0.1199603306111885,
+        "excessRiseM": 0.013587669388816156,
+        "minimumLengthAt12M": 1.1129000000000389,
+        "extraPlanLengthAt12M": 0.1132305782401346,
+        "owners": [
+          "mountainV2:b3",
+          "mountainV2:b3"
+        ]
+      },
+      {
+        "a": {
+          "row": 687,
+          "H": [
+            1342.319055,
+            126.971863,
+            551.442753
+          ],
+          "nativeSpatialS": 690.9854223923417,
+          "nativePlanS": 686.7161359204597,
+          "chainPlanS": 1036.1046901924597
+        },
+        "b": {
+          "row": 688,
+          "H": [
+            1343.305195,
+            127.107686,
+            551.278932
+          ],
+          "nativeSpatialS": 691.9942625359935,
+          "nativePlanS": 687.715790570647,
+          "chainPlanS": 1037.104344842647
+        },
+        "riseM": 0.13582300000000203,
+        "planLengthM": 0.9996546501872672,
+        "requiredGrade": 0.13586992265234604,
+        "allowedRiseAt12M": 0.11995855802247206,
+        "excessRiseM": 0.015864441977529967,
+        "minimumLengthAt12M": 1.1318583333333503,
+        "extraPlanLengthAt12M": 0.1322036831460831,
+        "owners": [
+          "mountainV2:b3",
+          "mountainV2:b3"
+        ]
+      },
+      {
+        "a": {
+          "row": 688,
+          "H": [
+            1343.305195,
+            127.107686,
+            551.278932
+          ],
+          "nativeSpatialS": 691.9942625359935,
+          "nativePlanS": 687.715790570647,
+          "chainPlanS": 1037.104344842647
+        },
+        "b": {
+          "row": 689,
+          "H": [
+            1344.295679,
+            127.245624,
+            551.143953
+          ],
+          "nativeSpatialS": 693.0033730096536,
+          "nativePlanS": 688.7154294477907,
+          "chainPlanS": 1038.1039837197907
+        },
+        "riseM": 0.13793800000000545,
+        "planLengthM": 0.9996388771437523,
+        "requiredGrade": 0.1379878305595045,
+        "allowedRiseAt12M": 0.11995666525725028,
+        "excessRiseM": 0.017981334742755165,
+        "minimumLengthAt12M": 1.1494833333333787,
+        "extraPlanLengthAt12M": 0.14984445618962638,
+        "owners": [
+          "mountainV2:b3",
+          "mountainV2:b3"
+        ]
+      },
+      {
+        "a": {
+          "row": 689,
+          "H": [
+            1344.295679,
+            127.245624,
+            551.143953
+          ],
+          "nativeSpatialS": 693.0033730096536,
+          "nativePlanS": 688.7154294477907,
+          "chainPlanS": 1038.1039837197907
+        },
+        "b": {
+          "row": 690,
+          "H": [
+            1345.290319,
+            127.38552,
+            551.044297
+          ],
+          "nativeSpatialS": 694.0127348011489,
+          "nativePlanS": 689.7150493995402,
+          "chainPlanS": 1039.1036036715402
+        },
+        "riseM": 0.13989599999999314,
+        "planLengthM": 0.999619951749537,
+        "requiredGrade": 0.1399491874438349,
+        "allowedRiseAt12M": 0.11995439420994443,
+        "excessRiseM": 0.019941605790048708,
+        "minimumLengthAt12M": 1.1657999999999429,
+        "extraPlanLengthAt12M": 0.1661800482504059,
+        "owners": [
+          "mountainV2:b3",
+          "mountainV2:b3"
+        ]
+      },
+      {
+        "a": {
+          "row": 690,
+          "H": [
+            1345.290319,
+            127.38552,
+            551.044297
+          ],
+          "nativeSpatialS": 694.0127348011489,
+          "nativePlanS": 689.7150493995402,
+          "chainPlanS": 1039.1036036715402
+        },
+        "b": {
+          "row": 691,
+          "H": [
+            1346.288234,
+            127.527215,
+            550.98624
+          ],
+          "nativeSpatialS": 695.0223306018379,
+          "nativePlanS": 690.7146518017354,
+          "chainPlanS": 1040.1032060737355
+        },
+        "riseM": 0.14169499999999857,
+        "planLengthM": 0.9996024021951371,
+        "requiredGrade": 0.14175136002958266,
+        "allowedRiseAt12M": 0.11995228826341645,
+        "excessRiseM": 0.021742711736582127,
+        "minimumLengthAt12M": 1.180791666666655,
+        "extraPlanLengthAt12M": 0.18118926447151784,
+        "owners": [
+          "mountainV2:b3",
+          "mountainV2:b3"
+        ]
+      },
+      {
+        "a": {
+          "row": 691,
+          "H": [
+            1346.288234,
+            127.527215,
+            550.98624
+          ],
+          "nativeSpatialS": 695.0223306018379,
+          "nativePlanS": 690.7146518017354,
+          "chainPlanS": 1040.1032060737355
+        },
+        "b": {
+          "row": 940,
+          "H": [
+            1325,
+            158.2,
+            470.5
+          ],
+          "nativeSpatialS": 945.8612120548714,
+          "nativePlanS": 939.5952078545554,
+          "chainPlanS": 1288.9837621265553
+        },
+        "riseM": 30.67278499999999,
+        "planLengthM": 248.88055605282,
+        "requiredGrade": 0.12324299449688748,
+        "allowedRiseAt12M": 29.8656667263384,
+        "excessRiseM": 0.8071182736615903,
+        "minimumLengthAt12M": 255.6065416666666,
+        "extraPlanLengthAt12M": 6.725985613846603,
+        "owners": [
+          "mountainV2:b3",
+          "Summit"
+        ]
+      }
+    ],
+    "worstAllPairs": {
+      "a": {
+        "row": 445,
+        "H": [
+          1285.303812,
+          98.741736,
+          567.731187
+        ],
+        "nativeSpatialS": 447.2778840744914,
+        "nativePlanS": 444.8012021238375,
+        "chainPlanS": 794.1897563958375
+      },
+      "b": {
+        "row": 618,
+        "H": [
+          1276.375324,
+          122.366703,
+          538.744678
+        ],
+        "nativeSpatialS": 621.8260757666643,
+        "nativePlanS": 617.7383297034204,
+        "chainPlanS": 967.1268839754205
+      },
+      "riseM": 23.624966999999998,
+      "planLengthM": 172.93712757958286,
+      "requiredGrade": 0.1366101503514806,
+      "allowedRiseAt12M": 20.752455309549944,
+      "excessRiseM": 2.872511690450054,
+      "minimumLengthAt12M": 196.87472499999998,
+      "extraPlanLengthAt12M": 23.93759742041712,
+      "owners": [
+        "mountainV2:b2",
+        "mountainV2:b3"
+      ]
+    },
+    "maxConeConflict": {
+      "row": 451,
+      "lower": 102.33401820841556,
+      "lowerOwnerRow": 618,
+      "upper": 99.46150651796549,
+      "upperOwnerRow": 445,
+      "incompatibilityM": 2.872511690450068
+    },
+    "tenMetreTelescopingWitness": {
+      "a": {
+        "planS": 437.7383297034204,
+        "chainS": 787.1268839754205,
+        "rows": [
+          437,
+          438
+        ],
+        "t": 0.9346818377431402,
+        "H": [
+          1291.9835149797957,
+          97.97095132241655,
+          569.9950280694509
+        ]
+      },
+      "b": {
+        "planS": 617.7383297034204,
+        "chainS": 967.1268839754205,
+        "rows": [
+          618,
+          619
+        ],
+        "t": 0.0,
+        "H": [
+          1276.375324,
+          122.366703,
+          538.744678
+        ]
+      },
+      "lengthM": 180,
+      "riseM": 24.395751677583448,
+      "grade": 0.13553195376435248,
+      "excessRiseM": 2.79575167758345,
+      "tenMetreIntervals": 18,
+      "note": "Starting witness moves backwards within fixed High woodland bridge; the interval is an exact multiple of10m, leaving no unconstrained remainder."
+    }
+  },
+  "renderedBridgeConstraints": {
+    "fixedRows": 164,
+    "feasible": false,
+    "consecutiveAnchorViolations": [
+      {
+        "a": {
+          "row": 0,
+          "H": [
+            1282,
+            54.649977,
+            720
+          ],
+          "nativeSpatialS": 0,
+          "nativePlanS": 0.0,
+          "chainPlanS": 349.388554272
+        },
+        "b": {
+          "row": 34,
+          "H": [
+            1291.02913,
+            59.109084,
+            690.094382
+          ],
+          "nativeSpatialS": 34.28861830126772,
+          "nativePlanS": 33.9866935516879,
+          "chainPlanS": 383.3752478236879
+        },
+        "riseM": 4.459107000000003,
+        "planLengthM": 33.9866935516879,
+        "requiredGrade": 0.1312015537262685,
+        "allowedRiseAt12M": 4.078403226202548,
+        "excessRiseM": 0.380703773797455,
+        "minimumLengthAt12M": 37.15922500000003,
+        "extraPlanLengthAt12M": 3.172531448312128,
+        "owners": [
+          "Foot",
+          "mountainV2:b-foot rendered apron"
+        ]
+      },
+      {
+        "a": {
+          "row": 34,
+          "H": [
+            1291.02913,
+            59.109084,
+            690.094382
+          ],
+          "nativeSpatialS": 34.28861830126772,
+          "nativePlanS": 33.9866935516879,
+          "chainPlanS": 383.3752478236879
+        },
+        "b": {
+          "row": 35,
+          "H": [
+            1291.893207,
+            59.232755,
+            689.591725
+          ],
+          "nativeSpatialS": 35.29588521325128,
+          "nativePlanS": 34.986340049995334,
+          "chainPlanS": 384.3748943219954
+        },
+        "riseM": 0.12367099999999454,
+        "planLengthM": 0.9996464983074347,
+        "requiredGrade": 0.12371473336763526,
+        "allowedRiseAt12M": 0.11995757979689216,
+        "excessRiseM": 0.003713420203102377,
+        "minimumLengthAt12M": 1.0305916666666213,
+        "extraPlanLengthAt12M": 0.030945168359186592,
+        "owners": [
+          "mountainV2:b-foot rendered apron",
+          "mountainV2:b-foot rendered apron"
+        ]
+      },
+      {
+        "a": {
+          "row": 446,
+          "H": [
+            1284.383615,
+            98.860794,
+            567.340537
+          ],
+          "nativeSpatialS": 448.28463345879914,
+          "nativePlanS": 445.80088704485473,
+          "chainPlanS": 795.1894413168548
+        },
+        "b": {
+          "row": 617,
+          "H": [
+            1275.473003,
+            122.26959,
+            538.314346
+          ],
+          "nativeSpatialS": 620.8216853154771,
+          "nativePlanS": 616.7386453446026,
+          "chainPlanS": 966.1271996166026
+        },
+        "riseM": 23.408795999999995,
+        "planLengthM": 170.93775829974783,
+        "requiredGrade": 0.13694338941166825,
+        "allowedRiseAt12M": 20.512530995969737,
+        "excessRiseM": 2.8962650040302584,
+        "minimumLengthAt12M": 195.07329999999996,
+        "extraPlanLengthAt12M": 24.135541700252134,
+        "owners": [
+          "mountainV2:b2 rendered apron",
+          "mountainV2:b3 rendered apron"
+        ]
+      },
+      {
+        "a": {
+          "row": 682,
+          "H": [
+            1337.428296,
+            126.330044,
+            552.472984
+          ],
+          "nativeSpatialS": 685.945945776801,
+          "nativePlanS": 681.717731161951,
+          "chainPlanS": 1031.106285433951
+        },
+        "b": {
+          "row": 683,
+          "H": [
+            1338.404809,
+            126.452907,
+            552.258987
+          ],
+          "nativeSpatialS": 686.9531531023912,
+          "nativePlanS": 682.7174172902821,
+          "chainPlanS": 1032.105971562282
+        },
+        "riseM": 0.12286299999999528,
+        "planLengthM": 0.9996861283311773,
+        "requiredGrade": 0.1229015753225427,
+        "allowedRiseAt12M": 0.11996233539974127,
+        "excessRiseM": 0.0029006646002540104,
+        "minimumLengthAt12M": 1.023858333333294,
+        "extraPlanLengthAt12M": 0.024172205002116698,
+        "owners": [
+          "mountainV2:b3 rendered apron",
+          "mountainV2:b3 rendered apron"
+        ]
+      },
+      {
+        "a": {
+          "row": 683,
+          "H": [
+            1338.404809,
+            126.452907,
+            552.258987
+          ],
+          "nativeSpatialS": 686.9531531023912,
+          "nativePlanS": 682.7174172902821,
+          "chainPlanS": 1032.105971562282
+        },
+        "b": {
+          "row": 684,
+          "H": [
+            1339.38091,
+            126.578679,
+            552.043116
+          ],
+          "nativeSpatialS": 687.9607201798308,
+          "nativePlanS": 683.7171039666175,
+          "chainPlanS": 1033.1056582386175
+        },
+        "riseM": 0.12577199999999777,
+        "planLengthM": 0.9996866763353864,
+        "requiredGrade": 0.12581141969506687,
+        "allowedRiseAt12M": 0.11996240116024637,
+        "excessRiseM": 0.0058095988397514065,
+        "minimumLengthAt12M": 1.0480999999999816,
+        "extraPlanLengthAt12M": 0.048413323664595165,
+        "owners": [
+          "mountainV2:b3 rendered apron",
+          "mountainV2:b3 rendered apron"
+        ]
+      },
+      {
+        "a": {
+          "row": 684,
+          "H": [
+            1339.38091,
+            126.578679,
+            552.043116
+          ],
+          "nativeSpatialS": 687.9607201798308,
+          "nativePlanS": 683.7171039666175,
+          "chainPlanS": 1033.1056582386175
+        },
+        "b": {
+          "row": 685,
+          "H": [
+            1340.357856,
+            126.707201,
+            551.831113
+          ],
+          "nativeSpatialS": 688.9686321996904,
+          "nativePlanS": 684.7167882962561,
+          "chainPlanS": 1034.1053425682562
+        },
+        "riseM": 0.1285220000000038,
+        "planLengthM": 0.999684329638626,
+        "requiredGrade": 0.12856258339716395,
+        "allowedRiseAt12M": 0.1199621195566351,
+        "excessRiseM": 0.008559880443368695,
+        "minimumLengthAt12M": 1.0710166666666985,
+        "extraPlanLengthAt12M": 0.07133233702807251,
+        "owners": [
+          "mountainV2:b3 rendered apron",
+          "mountainV2:b3 rendered apron"
+        ]
+      },
+      {
+        "a": {
+          "row": 685,
+          "H": [
+            1340.357856,
+            126.707201,
+            551.831113
+          ],
+          "nativeSpatialS": 688.9686321996904,
+          "nativePlanS": 684.7167882962561,
+          "chainPlanS": 1034.1053425682562
+        },
+        "b": {
+          "row": 686,
+          "H": [
+            1341.336876,
+            126.838315,
+            551.628934
+          ],
+          "nativeSpatialS": 689.976872419456,
+          "nativePlanS": 685.7164664986998,
+          "chainPlanS": 1035.1050207706999
+        },
+        "riseM": 0.13111399999999662,
+        "planLengthM": 0.999678202443647,
+        "requiredGrade": 0.13115620574650638,
+        "allowedRiseAt12M": 0.11996138429323763,
+        "excessRiseM": 0.01115261570675899,
+        "minimumLengthAt12M": 1.0926166666666386,
+        "extraPlanLengthAt12M": 0.09293846422299157,
+        "owners": [
+          "mountainV2:b3 rendered apron",
+          "mountainV2:b3 rendered apron"
+        ]
+      },
+      {
+        "a": {
+          "row": 686,
+          "H": [
+            1341.336876,
+            126.838315,
+            551.628934
+          ],
+          "nativeSpatialS": 689.976872419456,
+          "nativePlanS": 685.7164664986998,
+          "chainPlanS": 1035.1050207706999
+        },
+        "b": {
+          "row": 687,
+          "H": [
+            1342.319055,
+            126.971863,
+            551.442753
+          ],
+          "nativeSpatialS": 690.9854223923417,
+          "nativePlanS": 686.7161359204597,
+          "chainPlanS": 1036.1046901924597
+        },
+        "riseM": 0.13354800000000466,
+        "planLengthM": 0.9996694217599043,
+        "requiredGrade": 0.13359216266202806,
+        "allowedRiseAt12M": 0.1199603306111885,
+        "excessRiseM": 0.013587669388816156,
+        "minimumLengthAt12M": 1.1129000000000389,
+        "extraPlanLengthAt12M": 0.1132305782401346,
+        "owners": [
+          "mountainV2:b3 rendered apron",
+          "mountainV2:b3 rendered apron"
+        ]
+      },
+      {
+        "a": {
+          "row": 687,
+          "H": [
+            1342.319055,
+            126.971863,
+            551.442753
+          ],
+          "nativeSpatialS": 690.9854223923417,
+          "nativePlanS": 686.7161359204597,
+          "chainPlanS": 1036.1046901924597
+        },
+        "b": {
+          "row": 688,
+          "H": [
+            1343.305195,
+            127.107686,
+            551.278932
+          ],
+          "nativeSpatialS": 691.9942625359935,
+          "nativePlanS": 687.715790570647,
+          "chainPlanS": 1037.104344842647
+        },
+        "riseM": 0.13582300000000203,
+        "planLengthM": 0.9996546501872672,
+        "requiredGrade": 0.13586992265234604,
+        "allowedRiseAt12M": 0.11995855802247206,
+        "excessRiseM": 0.015864441977529967,
+        "minimumLengthAt12M": 1.1318583333333503,
+        "extraPlanLengthAt12M": 0.1322036831460831,
+        "owners": [
+          "mountainV2:b3 rendered apron",
+          "mountainV2:b3 rendered apron"
+        ]
+      },
+      {
+        "a": {
+          "row": 688,
+          "H": [
+            1343.305195,
+            127.107686,
+            551.278932
+          ],
+          "nativeSpatialS": 691.9942625359935,
+          "nativePlanS": 687.715790570647,
+          "chainPlanS": 1037.104344842647
+        },
+        "b": {
+          "row": 689,
+          "H": [
+            1344.295679,
+            127.245624,
+            551.143953
+          ],
+          "nativeSpatialS": 693.0033730096536,
+          "nativePlanS": 688.7154294477907,
+          "chainPlanS": 1038.1039837197907
+        },
+        "riseM": 0.13793800000000545,
+        "planLengthM": 0.9996388771437523,
+        "requiredGrade": 0.1379878305595045,
+        "allowedRiseAt12M": 0.11995666525725028,
+        "excessRiseM": 0.017981334742755165,
+        "minimumLengthAt12M": 1.1494833333333787,
+        "extraPlanLengthAt12M": 0.14984445618962638,
+        "owners": [
+          "mountainV2:b3 rendered apron",
+          "mountainV2:b3 rendered apron"
+        ]
+      },
+      {
+        "a": {
+          "row": 689,
+          "H": [
+            1344.295679,
+            127.245624,
+            551.143953
+          ],
+          "nativeSpatialS": 693.0033730096536,
+          "nativePlanS": 688.7154294477907,
+          "chainPlanS": 1038.1039837197907
+        },
+        "b": {
+          "row": 690,
+          "H": [
+            1345.290319,
+            127.38552,
+            551.044297
+          ],
+          "nativeSpatialS": 694.0127348011489,
+          "nativePlanS": 689.7150493995402,
+          "chainPlanS": 1039.1036036715402
+        },
+        "riseM": 0.13989599999999314,
+        "planLengthM": 0.999619951749537,
+        "requiredGrade": 0.1399491874438349,
+        "allowedRiseAt12M": 0.11995439420994443,
+        "excessRiseM": 0.019941605790048708,
+        "minimumLengthAt12M": 1.1657999999999429,
+        "extraPlanLengthAt12M": 0.1661800482504059,
+        "owners": [
+          "mountainV2:b3 rendered apron",
+          "mountainV2:b3 rendered apron"
+        ]
+      },
+      {
+        "a": {
+          "row": 690,
+          "H": [
+            1345.290319,
+            127.38552,
+            551.044297
+          ],
+          "nativeSpatialS": 694.0127348011489,
+          "nativePlanS": 689.7150493995402,
+          "chainPlanS": 1039.1036036715402
+        },
+        "b": {
+          "row": 691,
+          "H": [
+            1346.288234,
+            127.527215,
+            550.98624
+          ],
+          "nativeSpatialS": 695.0223306018379,
+          "nativePlanS": 690.7146518017354,
+          "chainPlanS": 1040.1032060737355
+        },
+        "riseM": 0.14169499999999857,
+        "planLengthM": 0.9996024021951371,
+        "requiredGrade": 0.14175136002958266,
+        "allowedRiseAt12M": 0.11995228826341645,
+        "excessRiseM": 0.021742711736582127,
+        "minimumLengthAt12M": 1.180791666666655,
+        "extraPlanLengthAt12M": 0.18118926447151784,
+        "owners": [
+          "mountainV2:b3 rendered apron",
+          "mountainV2:b3 rendered apron"
+        ]
+      },
+      {
+        "a": {
+          "row": 691,
+          "H": [
+            1346.288234,
+            127.527215,
+            550.98624
+          ],
+          "nativeSpatialS": 695.0223306018379,
+          "nativePlanS": 690.7146518017354,
+          "chainPlanS": 1040.1032060737355
+        },
+        "b": {
+          "row": 692,
+          "H": [
+            1347.287764,
+            127.670549,
+            550.975852
+          ],
+          "nativeSpatialS": 696.0321382399509,
+          "nativePlanS": 691.7142357809206,
+          "chainPlanS": 1041.1027900529207
+        },
+        "riseM": 0.14333399999999585,
+        "planLengthM": 0.9995839791852177,
+        "requiredGrade": 0.1433936547450775,
+        "allowedRiseAt12M": 0.11995007750222612,
+        "excessRiseM": 0.02338392249776973,
+        "minimumLengthAt12M": 1.1944499999999656,
+        "extraPlanLengthAt12M": 0.1948660208147479,
+        "owners": [
+          "mountainV2:b3 rendered apron",
+          "mountainV2:b3 rendered apron"
+        ]
+      },
+      {
+        "a": {
+          "row": 692,
+          "H": [
+            1347.287764,
+            127.670549,
+            550.975852
+          ],
+          "nativeSpatialS": 696.0321382399509,
+          "nativePlanS": 691.7142357809206,
+          "chainPlanS": 1041.1027900529207
+        },
+        "b": {
+          "row": 940,
+          "H": [
+            1325,
+            158.2,
+            470.5
+          ],
+          "nativeSpatialS": 945.8612120548714,
+          "nativePlanS": 939.5952078545554,
+          "chainPlanS": 1288.9837621265553
+        },
+        "riseM": 30.529450999999995,
+        "planLengthM": 247.88097207363478,
+        "requiredGrade": 0.12316173663757865,
+        "allowedRiseAt12M": 29.745716648836172,
+        "excessRiseM": 0.7837343511638224,
+        "minimumLengthAt12M": 254.41209166666664,
+        "extraPlanLengthAt12M": 6.53111959303186,
+        "owners": [
+          "mountainV2:b3 rendered apron",
+          "Summit"
+        ]
+      }
+    ],
+    "worstAllPairs": {
+      "a": {
+        "row": 446,
+        "H": [
+          1284.383615,
+          98.860794,
+          567.340537
+        ],
+        "nativeSpatialS": 448.28463345879914,
+        "nativePlanS": 445.80088704485473,
+        "chainPlanS": 795.1894413168548
+      },
+      "b": {
+        "row": 617,
+        "H": [
+          1275.473003,
+          122.26959,
+          538.314346
+        ],
+        "nativeSpatialS": 620.8216853154771,
+        "nativePlanS": 616.7386453446026,
+        "chainPlanS": 966.1271996166026
+      },
+      "riseM": 23.408795999999995,
+      "planLengthM": 170.93775829974783,
+      "requiredGrade": 0.13694338941166825,
+      "allowedRiseAt12M": 20.512530995969737,
+      "excessRiseM": 2.8962650040302584,
+      "minimumLengthAt12M": 195.07329999999996,
+      "extraPlanLengthAt12M": 24.135541700252134,
+      "owners": [
+        "mountainV2:b2 rendered apron",
+        "mountainV2:b3 rendered apron"
+      ]
+    },
+    "maxConeConflict": {
+      "row": 454,
+      "lower": 102.71673506938751,
+      "lowerOwnerRow": 617,
+      "upper": 99.82047006535724,
+      "upperOwnerRow": 446,
+      "incompatibilityM": 2.896265004030269
+    },
+    "tenMetreTelescopingWitness": {
+      "a": {
+        "planS": 436.73864534460256,
+        "chainS": 786.1271996166026,
+        "rows": [
+          436,
+          437
+        ],
+        "t": 0.9346355107100781,
+        "H": [
+          1292.9633549768855,
+          97.87316195503135,
+          570.1930794454962
+        ]
+      },
+      "b": {
+        "planS": 616.7386453446026,
+        "chainS": 966.1271996166026,
+        "rows": [
+          617,
+          618
+        ],
+        "t": 0.0,
+        "H": [
+          1275.473003,
+          122.26959,
+          538.314346
+        ]
+      },
+      "lengthM": 180,
+      "riseM": 24.396428044968644,
+      "grade": 0.13553571136093692,
+      "excessRiseM": 2.7964280449686463,
+      "tenMetreIntervals": 18,
+      "note": "Starting witness moves backwards within fixed High woodland bridge; the interval is an exact multiple of10m, leaving no unconstrained remainder."
+    }
+  },
+  "auditGridTelescopingWitness": {
+    "a": {
+      "planS": 438.611445728,
+      "chainS": 788.0,
+      "rows": [
+        438,
+        439
+      ],
+      "t": 0.808132282017006,
+      "H": [
+        1291.1346457536201,
+        98.05897963367426,
+        569.7908736568588
+      ]
+    },
+    "b": {
+      "planS": 618.611445728,
+      "chainS": 968.0,
+      "rows": [
+        618,
+        619
+      ],
+      "t": 0.8733919165092286,
+      "H": [
+        1277.1659445645817,
+        122.44838086524811,
+        539.115151636361
+      ]
+    },
+    "lengthM": 180,
+    "riseM": 24.389401231573856,
+    "grade": 0.13549667350874364,
+    "excessRiseM": 2.7894012315738586,
+    "tenMetreIntervals": 18
+  }
+}

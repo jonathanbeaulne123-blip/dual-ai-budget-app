@@ -1,12 +1,13 @@
+import {AIRPORT,AIRPORT_BOXES,AIRPORT_DECKS} from "../../harbour/horizon/airport/layout.ts";
 /**
  * `<JourneyLandFlat data theme>{overlay}</JourneyLandFlat>` (T2): the island as SVG for the flat tier, no WebGL, a
  * failed land load or a lost context. Same data and concept coordinates as the 3D land (viewBox 0 0 2000 1800), so
  * the board's flat overlay (T3 `BoardFlat`) projects the same route points by x/z. The land is decoration: its layers
  * are `aria-hidden`; the overlay slot is not, so real marks inside it stay reachable. Nothing financial is drawn here.
  */
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import type { JourneyLandFlatData, LandLineKind, ThemeId } from "../contracts.ts";
-import { LINE_DRESSING_KEY, landDressing } from "./dressing.ts";
+import { LINE_DRESSING_KEY, landDressing, landExtras } from "./dressing.ts";
 import { isMinorLine } from "./extract.ts";
 
 export type JourneyLandFlatProps = {
@@ -42,8 +43,13 @@ export function fitDistrictLabels(districts: JourneyLandFlatData["districts"], s
 }
 
 export function JourneyLandFlat({ data, theme, children, className, showDistrictLabels = true }: JourneyLandFlatProps) {
-  const d = landDressing(theme);
+  const d = landDressing(theme), x = landExtras(d);
   const [x0, y0, w, h] = data.viewBox;
+  const maskPrefix=useId().replace(/:/g,'');
+  const underMasks=new Map(data.lines.flatMap((line,index)=>{
+    const bridges=(data.bridges??[]).filter(bridge=>bridge.underIds?.includes(line.id));
+    return bridges.length?[[line.id,{id:`${maskPrefix}-under-${index}`,bridges}] as const]:[];
+  }));
   const band = { low: d.grass, mid: d.forest, high: d.rock } as const;
   const hasOverlay = children !== undefined && children !== null && children !== false;
   return (
@@ -55,6 +61,14 @@ export function JourneyLandFlat({ data, theme, children, className, showDistrict
       data-theme={theme}
       aria-hidden={hasOverlay ? undefined : true}
     >
+      <defs>
+        {[...underMasks].map(([lineId,mask])=>(
+          <mask key={lineId} id={mask.id} maskUnits="userSpaceOnUse" x={x0-w} y={y0-h} width={w*3} height={h*3} data-land-under-mask={lineId}>
+            <rect x={x0-w} y={y0-h} width={w*3} height={h*3} fill="white" />
+            {mask.bridges.map(br=><path key={br.id} d={br.d} fill="none" stroke="black" strokeWidth={br.width+2} strokeLinecap="butt" strokeLinejoin="round" data-under-bridge={br.id}/>)}
+          </mask>
+        ))}
+      </defs>
       <g className="journey-land-flat__land" aria-hidden="true">
         <rect x={x0 - w} y={y0 - h} width={w * 3} height={h * 3} fill={d.sea} />
         {/* The shallows rim, then the land with a sand ring (T7: the same shore as the 3D land). */}
@@ -69,18 +83,29 @@ export function JourneyLandFlat({ data, theme, children, className, showDistrict
         {data.reserves.map((r) => (
           <path key={r.id} d={r.d} fill="none" stroke={d.reserve} strokeWidth={1} strokeDasharray="3 2" vectorEffect="non-scaling-stroke" data-land-reserve={r.id} />
         ))}
+        {(data.bridges ?? []).map((br) => (
+          <g key={br.id} data-land-bridge={br.id}>
+            {/* The rail edge (a darker, slightly wider stroke), then the deck at its true width (concept metres). */}
+            <path d={br.d} fill="none" stroke={x.deckRail} strokeWidth={br.width + 2} strokeLinecap="butt" strokeLinejoin="round" />
+            <path d={br.d} fill="none" stroke={x.deck} strokeWidth={br.width} strokeLinecap="butt" strokeLinejoin="round" />
+          </g>
+        ))}
         {data.lines.map((l) => {
           const minor = l.kind === "road" && isMinorLine(l.id), s = STROKE[l.kind];
           // Water routes and cableways are faint: at the flat map's whole-island scale they would outline the island.
           const faint = l.kind === "ferry" || l.kind === "row" || l.kind === "cable";
           return (
             <path
-              key={l.id} d={l.d} fill="none" stroke={d[LINE_DRESSING_KEY[l.kind]]} strokeOpacity={faint ? 0.4 : undefined}
+              key={l.id} d={l.d} mask={underMasks.has(l.id)?`url(#${underMasks.get(l.id)!.id})`:undefined} fill="none" stroke={d[LINE_DRESSING_KEY[l.kind]]} strokeOpacity={faint ? 0.4 : undefined}
               strokeWidth={minor ? 0.8 : s.width} strokeDasharray={s.dash} strokeLinecap="round" strokeLinejoin="round"
               vectorEffect="non-scaling-stroke" data-land-line={l.id} data-land-kind={l.kind}
             />
           );
         })}
+        <g data-land-airport={AIRPORT.id}>
+          {[...AIRPORT_DECKS,{id:'strip',a:AIRPORT.runway.a,b:AIRPORT.runway.b,width:30}].map(route=><path key={route.id} d={`M ${route.a[0]} ${route.a[2]} L ${route.b[0]} ${route.b[2]}`} stroke={d.road} strokeWidth={route.width} fill="none"/>)}
+          {AIRPORT_BOXES.filter(b=>b.roof).map(b=><rect key={b.id} x={b.x-b.w/2} y={b.z-b.d/2} width={b.w} height={b.d} fill={d.hostRoof}/>)}
+        </g>
         {data.hosts.map((host) => (
           <rect
             key={host.id} x={host.x - HOST_HALF} y={host.y - HOST_HALF} width={HOST_HALF * 2} height={HOST_HALF * 2} rx={2}

@@ -1,0 +1,74 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/mountain-landings.test.ts (12 tests | 1 failed) 1547ms
+   ✓ shared native and Horizon mountain landings > keeps every actual deck triangle within the authored 40% grade limit 13ms
+   ✓ shared native and Horizon mountain landings > keeps the repaired library exit above terrain, including the narrow baked mound missed by row-only tests 218ms
+   ✓ shared native and Horizon mountain landings > supports the full repaired width and admits the rider in native and the actual composed Horizon  339ms
+   ✓ shared native and Horizon mountain landings > retains original joins and the primary library roof above its unchanged walls 6ms
+   ✓ shared native and Horizon mountain landings > leaves through-road riders on one flat floor at each repaired mouth in both worlds 41ms
+   ✓ shared awning contour return > preserves the original first grind rail and entry, with a real course rejoin 3ms
+   ✓ shared awning contour return > keeps every rebuilt return cell clear of terrain and flush with the actual road 161ms
+   ✓ shared awning contour return > supports the actual tapered width with no rider contacts in both worlds  301ms
+   ✓ shared awning contour return > removes the old return ceiling and leaves both road directions open across the new arrival 40ms
+   ✓ shared dam entry landing > limits the repair to entry heights and preserves the rail, exit, endpoints and every plan coordinate 8ms
+   ✓ shared dam entry landing > draws and queries the same entry triangles with less than 20mm overlap error 226ms
+   × shared dam entry landing > keeps both road directions continuous at center and +/-2m in native and composed Horizon 189ms
+     → expected [ { off: -2, i: 79, …(2) }, …(1) ] to deeply equal []
+ ❯ test/horizon-foot-lane-apron.test.ts (2 tests | 1 failed) 1791ms
+   × visible Foot apron > keeps both primary lanes and wider edge witnesses continuous in both directions 1738ms
+     → expected 54.688881901318375 to be less than or equal to 54.653357743392846
+   ✓ visible Foot apron > preserves source routes and unrelated geometry and owns one real closed apron 52ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/horizon-foot-lane-apron.test.ts > visible Foot apron > keeps both primary lanes and wider edge witnesses continuous in both directions
+AssertionError: expected 54.688881901318375 to be less than or equal to 54.653357743392846
+ ❯ test/horizon-foot-lane-apron.test.ts:49:89
+     47|     const floor=geo.surface(x,z,previous??p.y,.5);expect(floor).not.to…
+     48|     if(previous!==null)expect(Math.abs(floor!.y-previous)).toBeLessTha…
+     49|     const native=mountainJoinRoadTop(x,z,floor!.y+.8);if(native!==null…
+       |                                                                                         ^
+     50|     expect(geo.contact(x,z,floor!.y,.25)).toBeNull();expect(geo.ceilin…
+     51|    }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/mountain-landings.test.ts > shared dam entry landing > keeps both road directions continuous at center and +/-2m in native and composed Horizon
+AssertionError: expected [ { off: -2, i: 79, …(2) }, …(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "baselineStep": 0.08789190618772125,
++     "i": 79,
++     "off": -2,
++     "step": 0.08789190618772125,
++   },
++   {
++     "baselineStep": 0.07710466449535147,
++     "i": 141,
++     "off": -2,
++     "step": 0.07710466449535147,
++   },
++ ]
+
+ ❯ test/mountain-landings.test.ts:217:31
+    215|    if(step>.06&&!unchangedWitness)failures.push({off,i,step,baselineSt…
+    216|   }
+    217|   expect(failures.slice(0,8)).toEqual([]);
+       |                               ^
+    218|  });
+    219| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  2 failed | 12 passed (14)
+   Start at  11:00:57
+   Duration  7.03s (transform 869ms, setup 0ms, collect 3.05s, tests 3.34s, environment 0ms, prepare 222ms)
+

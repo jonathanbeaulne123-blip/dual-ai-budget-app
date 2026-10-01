@@ -1,0 +1,705 @@
+{
+ "set": "after-r",
+ "sha": "a1bce8b99eea3c68e4b8ecc4911cba7fa0e0afc7",
+ "dirtyTree": true,
+ "url": "http://127.0.0.1:5197/horizon-review.html?world=horizon&tier=full&date=2026-06-21&sun=13:00",
+ "method": "headless Chromium (SwiftShader) on the review harness; look poses via __harbour.world.views + shot(); rides via restore + toggleCruiser + input/simulateMotion (the live controller and collision). Not device evidence.",
+ "command": "node scripts/horizon/capture-road.mjs --set after-r --out /tmp/claude-0/cap-ride --only ride,overview,aerial-ne",
+ "viewport": {
+  "width": 1280,
+  "height": 800
+ },
+ "date": "2026-06-21",
+ "times": {
+  "day": "13:00",
+  "night": "22:30"
+ },
+ "driverEye": {
+  "heightOverSurface": 1.9,
+  "rightLaneOffset": 2,
+  "lookAhead": 40,
+  "verticalFovDegrees": 58
+ },
+ "beds": {
+  "V01": {
+   "id": "V01",
+   "kind": "road",
+   "profile": "road",
+   "surface": "paved",
+   "width": 8,
+   "structureIds": [
+    "prowTunnel",
+    "quayBridge",
+    "bightBridge"
+   ],
+   "districtIds": [
+    "harbour",
+    "prow",
+    "crown",
+    "scholars",
+    "flats",
+    "bight",
+    "landing",
+    "reach"
+   ],
+   "pointCount": 794
+  },
+  "V03": {
+   "id": "V03",
+   "kind": "road",
+   "profile": "road",
+   "surface": "paved",
+   "width": 8,
+   "structureIds": [
+    "mountainRoadTunnel",
+    "mountainRoadCanalBridge"
+   ],
+   "districtIds": [
+    "prow",
+    "lakeside"
+   ],
+   "pointCount": 74
+  },
+  "VG": {
+   "id": "VG",
+   "kind": "road",
+   "profile": "road",
+   "surface": "paved",
+   "width": 8,
+   "structureIds": [
+    "highSpan"
+   ],
+   "districtIds": [
+    "harbour",
+    "notch",
+    "green",
+    "lakeside",
+    "hollow",
+    "scholars"
+   ],
+   "pointCount": 243
+  }
+ },
+ "runSeconds": 172,
+ "totalPngBytes": 3736331,
+ "compressed": false,
+ "records": [
+  {
+   "file": "after-r_01_ride-activity-vespa_13-00.png",
+   "kind": "ride",
+   "route": "V01",
+   "label": "ride-activity-vespa",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "skin": "vespa",
+   "perspective": "activity",
+   "eye": [
+    1463.83,
+    21.54,
+    1045.12
+   ],
+   "target": [
+    1469.03,
+    19.99,
+    1043.68
+   ],
+   "verticalFovDegrees": 58,
+   "cruiser": {
+    "x": 1469.0337794689644,
+    "y": 18.944488946794877,
+    "z": 1043.6779854220504,
+    "yaw": 1.8401566159456197,
+    "vx": 0,
+    "vz": 0,
+    "vy": 0,
+    "grounded": true,
+    "reverse": false,
+    "brakeHeld": false,
+    "jumpHeld": false,
+    "pitch": -0.0939944494504345,
+    "lean": 1.0060753931103516e-8,
+    "safe": {
+     "x": 1469.0337794689644,
+     "y": 18.944488946794877,
+     "z": 1043.6779854220504,
+     "yaw": 1.8401566159456197
+    },
+    "contact": null
+   },
+   "drive": {
+    "start": {
+     "x": 1400,
+     "y": 24,
+     "z": 1060,
+     "yaw": 1.7940171798431188
+    },
+    "end": {
+     "x": 1469.0337794689644,
+     "y": 18.944488946794877,
+     "z": 1043.6779854220504,
+     "yaw": 1.8401566159456197,
+     "vx": 0,
+     "vz": 0,
+     "vy": 0,
+     "grounded": true,
+     "reverse": false,
+     "brakeHeld": true,
+     "jumpHeld": false,
+     "pitch": -0.09436366253682434,
+     "lean": 0.00000903302066900254,
+     "safe": {
+      "x": 1469.0337794689644,
+      "y": 18.944488946794877,
+      "z": 1043.6779854220504,
+      "yaw": 1.8401566159456197
+     },
+     "contact": null
+    },
+    "travel": 65.89982813763682,
+    "maxSpeed": 12.799962047176733,
+    "contacts": 0,
+    "drivenSeconds": 6,
+    "pointIndex": 16
+   },
+   "stats": {
+    "drawCalls": 109,
+    "triangles": 245774,
+    "resident": 4,
+    "frameMsMedian": 2866.6,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1463.8284961639208,
+      21.544490038866307,
+      1045.1150051554691
+     ],
+     "target": [
+      1469.0337794689644,
+      19.994490038866306,
+      1043.6779854220504
+     ],
+     "fov": 58
+    },
+    "mode": "walk",
+    "shot": "A"
+   },
+   "errors": [
+    {
+     "at": 0,
+     "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    }
+   ]
+  },
+  {
+   "file": "after-r_02_ride-first-person-vespa_13-00.png",
+   "kind": "ride",
+   "route": "V01",
+   "label": "ride-first-person-vespa",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "skin": "vespa",
+   "perspective": "first-person",
+   "eye": [
+    1469.03,
+    20.09,
+    1043.68
+   ],
+   "target": [
+    1478.3,
+    17.34,
+    1041.12
+   ],
+   "verticalFovDegrees": 62,
+   "cruiser": {
+    "x": 1469.0337794689644,
+    "y": 18.944488946794877,
+    "z": 1043.6779854220504,
+    "yaw": 1.8401566159456197,
+    "vx": 0,
+    "vz": 0,
+    "vy": 0,
+    "grounded": true,
+    "reverse": false,
+    "brakeHeld": false,
+    "jumpHeld": false,
+    "pitch": -0.09399403879200684,
+    "lean": 2.4938115705627566e-11,
+    "safe": {
+     "x": 1469.0337794689644,
+     "y": 18.944488946794877,
+     "z": 1043.6779854220504,
+     "yaw": 1.8401566159456197
+    },
+    "contact": null
+   },
+   "drive": {
+    "start": {
+     "x": 1400,
+     "y": 24,
+     "z": 1060,
+     "yaw": 1.7940171798431188
+    },
+    "end": {
+     "x": 1469.0337794689644,
+     "y": 18.944488946794877,
+     "z": 1043.6779854220504,
+     "yaw": 1.8401566159456197,
+     "vx": 0,
+     "vz": 0,
+     "vy": 0,
+     "grounded": true,
+     "reverse": false,
+     "brakeHeld": true,
+     "jumpHeld": false,
+     "pitch": -0.09436366253682434,
+     "lean": 0.00000903302066900254,
+     "safe": {
+      "x": 1469.0337794689644,
+      "y": 18.944488946794877,
+      "z": 1043.6779854220504,
+      "yaw": 1.8401566159456197
+     },
+     "contact": null
+    },
+    "travel": 65.89982813763682,
+    "maxSpeed": 12.799962047176733,
+    "contacts": 0,
+    "drivenSeconds": 6,
+    "pointIndex": 16
+   },
+   "stats": {
+    "drawCalls": 171,
+    "triangles": 574297,
+    "resident": 4,
+    "frameMsMedian": 2733.1,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1469.0337794689644,
+      20.094488946794876,
+      1043.6779854220504
+     ],
+     "target": [
+      1478.299062036357,
+      17.335525157956965,
+      1041.1201234714651
+     ],
+     "fov": 62
+    },
+    "mode": "walk",
+    "shot": "A"
+   },
+   "errors": []
+  },
+  {
+   "file": "after-r_03_ride-floating-harley_13-00.png",
+   "kind": "ride",
+   "route": "V01",
+   "label": "ride-floating-harley",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "skin": "harley",
+   "perspective": "floating",
+   "eye": [
+    1450.95,
+    31.59,
+    1048.67
+   ],
+   "target": [
+    1469.03,
+    20.09,
+    1043.68
+   ],
+   "verticalFovDegrees": 55,
+   "cruiser": {
+    "x": 1469.0337794689644,
+    "y": 18.944488946794877,
+    "z": 1043.6779854220504,
+    "yaw": 1.8401566159456197,
+    "vx": 0,
+    "vz": 0,
+    "vy": 0,
+    "grounded": true,
+    "reverse": false,
+    "brakeHeld": false,
+    "jumpHeld": false,
+    "pitch": -0.09399403777255162,
+    "lean": 2.4308335833649754e-14,
+    "safe": {
+     "x": 1469.0337794689644,
+     "y": 18.944488946794877,
+     "z": 1043.6779854220504,
+     "yaw": 1.8401566159456197
+    },
+    "contact": null
+   },
+   "drive": {
+    "start": {
+     "x": 1400,
+     "y": 24,
+     "z": 1060,
+     "yaw": 1.7940171798431188
+    },
+    "end": {
+     "x": 1469.0337794689644,
+     "y": 18.944488946794877,
+     "z": 1043.6779854220504,
+     "yaw": 1.8401566159456197,
+     "vx": 0,
+     "vz": 0,
+     "vy": 0,
+     "grounded": true,
+     "reverse": false,
+     "brakeHeld": true,
+     "jumpHeld": false,
+     "pitch": -0.09436366253682434,
+     "lean": 0.00000903302066900254,
+     "safe": {
+      "x": 1469.0337794689644,
+      "y": 18.944488946794877,
+      "z": 1043.6779854220504,
+      "yaw": 1.8401566159456197
+     },
+     "contact": null
+    },
+    "travel": 65.89982813763682,
+    "maxSpeed": 12.799962047176733,
+    "contacts": 0,
+    "drivenSeconds": 6,
+    "pointIndex": 16
+   },
+   "stats": {
+    "drawCalls": 108,
+    "triangles": 241490,
+    "resident": 4,
+    "frameMsMedian": 2483.2,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1450.9545395790267,
+      31.59360798326938,
+      1048.669112187328
+     ],
+     "target": [
+      1469.0337794689644,
+      20.094488946794876,
+      1043.6779854220504
+     ],
+     "fov": 55
+    },
+    "mode": "walk",
+    "shot": "A"
+   },
+   "errors": []
+  },
+  {
+   "file": "after-r_04_ride-activity-harley_13-00.png",
+   "kind": "ride",
+   "route": "V01",
+   "label": "ride-activity-harley",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "skin": "harley",
+   "perspective": "activity",
+   "eye": [
+    1463.83,
+    21.54,
+    1045.12
+   ],
+   "target": [
+    1469.03,
+    19.99,
+    1043.68
+   ],
+   "verticalFovDegrees": 58,
+   "cruiser": {
+    "x": 1469.0337794689644,
+    "y": 18.944488946794877,
+    "z": 1043.6779854220504,
+    "yaw": 1.8401566159456197,
+    "vx": 0,
+    "vz": 0,
+    "vy": 0,
+    "grounded": true,
+    "reverse": false,
+    "brakeHeld": false,
+    "jumpHeld": false,
+    "pitch": -0.0939940377715572,
+    "lean": 6.245791907974541e-18,
+    "safe": {
+     "x": 1469.0337794689644,
+     "y": 18.944488946794877,
+     "z": 1043.6779854220504,
+     "yaw": 1.8401566159456197
+    },
+    "contact": null
+   },
+   "drive": {
+    "start": {
+     "x": 1400,
+     "y": 24,
+     "z": 1060,
+     "yaw": 1.7940171798431188
+    },
+    "end": {
+     "x": 1469.0337794689644,
+     "y": 18.944488946794877,
+     "z": 1043.6779854220504,
+     "yaw": 1.8401566159456197,
+     "vx": 0,
+     "vz": 0,
+     "vy": 0,
+     "grounded": true,
+     "reverse": false,
+     "brakeHeld": true,
+     "jumpHeld": false,
+     "pitch": -0.09436366253682434,
+     "lean": 0.00000903302066900254,
+     "safe": {
+      "x": 1469.0337794689644,
+      "y": 18.944488946794877,
+      "z": 1043.6779854220504,
+      "yaw": 1.8401566159456197
+     },
+     "contact": null
+    },
+    "travel": 65.89982813763682,
+    "maxSpeed": 12.799962047176733,
+    "contacts": 0,
+    "drivenSeconds": 6,
+    "pointIndex": 16
+   },
+   "stats": {
+    "drawCalls": 111,
+    "triangles": 245542,
+    "resident": 4,
+    "frameMsMedian": 2349.9,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1463.828496286175,
+      21.54448894679488,
+      1045.1150055983073
+     ],
+     "target": [
+      1469.0337794689644,
+      19.994488946794878,
+      1043.6779854220504
+     ],
+     "fov": 58
+    },
+    "mode": "walk",
+    "shot": "A"
+   },
+   "errors": []
+  },
+  {
+   "file": "after-r_05_overview-whole-loop_13-00.png",
+   "kind": "aerial",
+   "label": "overview-whole-loop",
+   "note": "the whole island from high over the south sea (V01 loop, V03, VG)",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (aerial)",
+   "eye": [
+    1000,
+    1400,
+    1900
+   ],
+   "target": [
+    1000,
+    0,
+    820
+   ],
+   "verticalFovDegrees": 36,
+   "settle": {
+    "pending": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 418,
+    "triangles": 245729,
+    "resident": 4,
+    "frameMsMedian": 3066.6,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1000,
+      1400,
+      1900
+     ],
+     "target": [
+      1000,
+      0,
+      820
+     ],
+     "fov": 36
+    },
+    "mode": "look",
+    "shot": "ROAD_overview-whole-loop"
+   },
+   "errors": []
+  },
+  {
+   "file": "after-r_06_aerial-ne-prow-cliff-drive_13-00.png",
+   "kind": "aerial",
+   "label": "aerial-ne-prow-cliff-drive",
+   "note": "oblique aerial of the NE Prow cliff drive from offshore east",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "perspective": "look pose (aerial)",
+   "eye": [
+    1860,
+    230,
+    760
+   ],
+   "target": [
+    1500,
+    55,
+    520
+   ],
+   "verticalFovDegrees": 50,
+   "settle": {
+    "pending": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 268,
+    "triangles": 655390,
+    "resident": 4,
+    "frameMsMedian": 2799.9,
+    "lightCards": 15,
+    "residentDistricts": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ],
+    "streamPending": [],
+    "camera": {
+     "eye": [
+      1860,
+      230,
+      760
+     ],
+     "target": [
+      1500,
+      55,
+      520
+     ],
+     "fov": 50
+    },
+    "mode": "look",
+    "shot": "ROAD_aerial-ne-prow-cliff-drive"
+   },
+   "errors": []
+  }
+ ],
+ "errors": [
+  {
+   "at": 0,
+   "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  }
+ ]
+}

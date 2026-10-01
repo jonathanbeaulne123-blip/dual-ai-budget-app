@@ -1,0 +1,13 @@
+$ node scripts/run-quick-gate.mjs -- --risk=high --focus=test/horizon-walking-ground-patch.test.ts --focus=test/horizon-funicular-render-precision.test.ts '--focus-reason=Draft PR wrap-up: shared ground construction and preserved funicular render geometry'
+[quick-gate] risk=high base=1cf76c551e6f49124b6257162bc4d36ca18d7bd1 head=df77030298d5ff960d2eeaa5eb62c8558008694b
+[quick-gate] changed-files=2072 fingerprint=bef0502207b1fe0040bf690f19f76fdaf369f0cb943d2c4a9ba15dbda8dea515 clean=false
+[quick-gate] diff-check started
+[quick-gate] diff-check passed in 2.0s
+[quick-gate] ai-surface started
+$ node scripts/verify-ai-surface.mjs
+AI surface verified: 48 required files, 2 Clerk fences, docs-only MCP, bounded roles, guards, and proof gate.
+[quick-gate] ai-surface passed in 1.0s
+[quick-gate] typescript started
+$ node --max-old-space-size=6144 node_modules/typescript/bin/tsc --noEmit
+
+Bounded draft wrap-up stopped this command at its recorded deadline; INCOMPLETE, NOT A PASS.

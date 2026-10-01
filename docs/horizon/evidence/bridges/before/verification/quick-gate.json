@@ -1,0 +1,31 @@
+{
+  "baseSha": "e77309efbc48a76e8328f2b427613ecc6082bb61",
+  "changeFingerprint": "17313abef6d3577fcfb690ba4fb79938b1e81599d694a601bc58b45079165705",
+  "workingTreeClean": false,
+  "breachPhase": "typescript",
+  "budgetMs": 300000,
+  "elapsedMs": 609826,
+  "slowestPhase": "typescript",
+  "timeBudgetBreached": true,
+  "classification": "quick-gate-failed; time-budget-breached",
+  "headSha": "e77309efbc48a76e8328f2b427613ecc6082bb61",
+  "phases": [
+    {
+      "elapsedMs": 379,
+      "name": "diff-check",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 5671,
+      "name": "ai-surface",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 593639,
+      "name": "typescript",
+      "status": "failed"
+    }
+  ],
+  "risk": "high",
+  "termination": "Integrator terminated typecheck after budget breach; typecheck remains unverified. No focused suite ran in this attempt."
+}

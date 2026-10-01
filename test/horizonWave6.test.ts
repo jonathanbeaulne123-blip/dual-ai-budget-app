@@ -82,8 +82,10 @@ describe('Wave 6 floor slabs as ground beside a bed edge', () => {
     // Candidate 6 (v2.3, W7-A): plot bight.1 moved 1.0 m and its service drive meets the June lane at grade, so the drop the
     // drive's rail guarded at [867.5,944.7] is gone (P09 lists neither plot.bight.1.service nor VBS on candidate 6). The
     // slab rule still leaves both beds' own guards standing beside the lay-by: the drive's kerb and VBS's retaining wall.
+    // Road main (ROAD.md §1): the corridor owns both roads' edges now — the service drive's deck and fill, VBS's fill and its
+    // guard stand beside the lay-by; nothing of either stands on the lay-by's own spot.
     expect(solidsNear('plot.bight.1.service.edges', 867.5, 944.7, 2)).toHaveLength(0);
-    expect(solidsNear('plot.bight.1.service.kerbs', 867.5, 944.7, 30).length).toBeGreaterThan(0);
-    expect(solidsNear('VBS.retaining', 864.3, 952.4, 2)).toHaveLength(0); expect(solidsNear('VBS.retaining', 864.3, 952.4, 20).length).toBeGreaterThan(0);
+    expect(solidsNear('plot.bight.1.service.corridor.fill', 867.5, 944.7, 30).length).toBeGreaterThan(0);
+    expect(solidsNear('VBS.corridor.guard', 864.3, 952.4, 2)).toHaveLength(0); expect(solidsNear('VBS.corridor.guard', 864.3, 952.4, 20).length).toBeGreaterThan(0);
   });
 });

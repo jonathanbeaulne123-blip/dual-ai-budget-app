@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/journey-loader-recovery.test.ts (1 test) 1595ms
+   ✓ retries an interrupted staged read on the same household without changing books  1592ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  12:55:08
+   Duration  12.72s (transform 6.64s, setup 0ms, collect 9.32s, tests 1.59s, environment 1.13s, prepare 177ms)
+

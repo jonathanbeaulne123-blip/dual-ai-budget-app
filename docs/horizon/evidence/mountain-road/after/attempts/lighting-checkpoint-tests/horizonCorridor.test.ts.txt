@@ -1,0 +1,57 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/horizonCorridor.test.ts (16 tests | 2 failed) 942ms
+   ✓ corridor on a synthetic land > places stations every CORRIDOR.step along the final bed, continuous, with tangents, grades and one reach 86ms
+   ✓ corridor on a synthetic land > measures drops beyond the paved edge, marks mouths and flush pads as gaps, and a cutting side as retaining 22ms
+   ✓ corridor on a synthetic land > guards every station with a drop over CORRIDOR.guardDrop outside gaps, with deliberate ends and ≥ MIN_RUN 12ms
+   ✓ corridor on a synthetic land > builds one continuous deck ribbon whose top is the station surface and whose sections are shared (no crack) 22ms
+   ✓ corridor on a synthetic land > keeps the guard collider inside the visible guard line and never across a declared gap 18ms
+   ✓ corridor on a synthetic land > puts nothing but the deck inside the carriageway, replaces the old strip and keeps other beds' solids 10ms
+   ✓ corridor on a synthetic land > drives the collision the rider meets: the deck carries the body, the guard stops it, the gap does not 14ms
+   ✓ corridor on a synthetic land > is deterministic: the same land gives byte-identical corridors and solids 18ms
+   ✓ sidewalks on a developed reach > lays a kerbed sidewalk with dropped kerbs (≤ 8 %) at a crossing and a walk bed the path graph can use 29ms
+   ✓ the reach table (ROAD.md §3) > covers Horizon Drive with the thirteen named reaches in order and names only the corridor roads 0ms
+   × the baked corridors (public/horizon) > carries one corridor per road bed with continuous stations and contiguous reaches 7ms
+     → expected 19 to be 17 // Object.is equality
+   ✓ the baked corridors (public/horizon) > guards every station with a drop over CORRIDOR.guardDrop (outside gaps, structures and Year Walk footways) 7ms
+   × the baked corridors (public/horizon) > builds each guard collider inside its visible line, never across a declared gap, and lists it by id 105ms
+     → mountainV2:mountain-road:left:bridge:35: expected 0 to be greater than 0
+   ✓ the baked corridors (public/horizon) > stands each post-and-rail collider no higher than its drawn rail: on the line, full height inside, down to the ground at buried and flared ends (review M1) 118ms
+   ✓ the baked corridors (public/horizon) > has no road-kind strip, shoulder, kerb, parapet or retaining solid of the old emitter on a corridor road 4ms
+   ✓ the baked corridors (public/horizon) > writes the corridor deck top at the station surface, and appends corridor lamps to world.lights 79ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/horizonCorridor.test.ts > the baked corridors (public/horizon) > carries one corridor per road bed with continuous stations and contiguous reaches
+AssertionError: expected 19 to be 17 // Object.is equality
+
+- Expected
++ Received
+
+- 17
++ 19
+
+ ❯ test/horizonCorridor.test.ts:159:30
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/horizonCorridor.test.ts > the baked corridors (public/horizon) > builds each guard collider inside its visible line, never across a declared gap, and lists it by id
+AssertionError: mountainV2:mountain-road:left:bridge:35: expected 0 to be greater than 0
+ ❯ test/horizonCorridor.test.ts:178:79
+    176|   it('builds each guard collider inside its visible line, never across…
+    177|     for (const c of corridors) for (const run of c.guards) {
+    178|       const col = pieceOf(run.colliderId); expect(col.length, run.coll…
+       |                                                                               ^
+    179|       if (run.kind === 'retaining') continue;
+    180|       const gaps = c.stations.filter(st => st[run.side].gap).map(st =>…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 14 passed (16)
+   Start at  12:26:00
+   Duration  1.71s (transform 386ms, setup 0ms, collect 537ms, tests 942ms, environment 0ms, prepare 57ms)
+

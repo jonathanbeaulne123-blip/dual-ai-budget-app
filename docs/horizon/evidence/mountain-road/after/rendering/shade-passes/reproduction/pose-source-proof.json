@@ -1,0 +1,84 @@
+{
+  "worldSha256": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+  "terrainSha256": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+  "stop": {
+    "id": "mountainV2.stop.library-garden",
+    "label": "Library garden bench",
+    "at": [
+      1364,
+      89,
+      592
+    ],
+    "outline": [
+      [
+        1361.878679656,
+        592.424264069
+      ],
+      [
+        1363.575735931,
+        594.121320344
+      ],
+      [
+        1366.121320344,
+        591.575735931
+      ],
+      [
+        1364.424264069,
+        589.878679656
+      ]
+    ],
+    "facing": 0.785398163,
+    "connectsTo": [
+      "mountainV2:path:apron:library~door:library"
+    ],
+    "existingFloor": true
+  },
+  "bench": [
+    1364.0,
+    89.0,
+    592.0
+  ],
+  "lamp": {
+    "id": "mountainV2.road.lamp.21",
+    "kind": "roadLantern",
+    "at": [
+      1350.614,
+      91.722,
+      595.511
+    ],
+    "head": [
+      1349.605,
+      96.922,
+      596.753
+    ],
+    "pool": [
+      1349.605,
+      91.81,
+      596.753
+    ],
+    "poolRadius": 12,
+    "yaw": -0.682,
+    "side": "right",
+    "reachId": "M5"
+  },
+  "lampShadeFloat32Y": 91.77200317382812,
+  "terrainRecord": {
+    "columns": 401,
+    "rows": 361,
+    "step": 5.0,
+    "dataStart": 192
+  },
+  "method": "Pure-data extraction, stopLayout formula and exact frozen full-grid triangulation/Float32 sample conversion; no world imports or geometry construction. Both full/lite diagnostic bundles use this same full ground. No composed native surface seating claim.",
+  "benchContactSampleHeights": {
+    "full": {
+      "minY": 89.05,
+      "maxY": 89.05,
+      "range": 0.0
+    },
+    "lite": {
+      "minY": 89.05,
+      "maxY": 89.05,
+      "range": 0.0
+    }
+  }
+}

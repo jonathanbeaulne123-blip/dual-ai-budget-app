@@ -4,6 +4,7 @@ import { coastCharacter, signedShoreDistance } from '../coast';
 import { buildWaterCuts, waterInfluence } from '../water';
 import { clamp, contains, linePoint, mix, polygonCentre, polygonDistance, polylineArcs, segmentPoint, smooth } from './geometry';
 import { mountainV2Height, mountainV2Rule } from '../mountainV2/ground';
+import { oreRoadGroundCeiling } from '../underground/oreRoad';
 
 export const GEOGRAPHY_REVISION = 'horizon-geo-1' as const;
 /** The one walkable limit: MANIFEST `profiles.walkable.slope_max_deg` (40°, Mountain v2's body
@@ -500,17 +501,20 @@ export function raiseForbidden(x: number, z: number): boolean {
 /** Two beds whose decks overlap in plan within this height are one level (at grade). */
 export const BED_LEVEL_TOLERANCE = .5;
 /** Exact local segment lookup, exported for equivalence probes against brute force. */
-export function createBedSampler(beds: BedCut[]): (x: number, z: number, original: number) => { height: number; surface: number | null; edgeGap: number } {
+export function createBedSampler(beds: BedCut[]): (x: number, z: number, original: number) => { height: number; surface: number | null; edgeGap: number; roadFloor: number } {
   const prepared = prepareBeds(beds), s = getModel().scale;
   return (x, z, original) => {
     let height = original, surface: number | null = null, active: BedCut | null = null;
     let distance = Infinity, target = 0, progress = 0, excluded = false;
     let footprintHeight = Infinity, footprintSurface: number | null = null, footprintCore = false;
-    let deckHeight = -Infinity, deckSurface: number | null = null, edgeGap = Infinity;
+    let deckHeight = -Infinity, deckSurface: number | null = null, edgeGap = Infinity, roadFloor = -Infinity;
     const apply = () => {
       if (!active || excluded) return;
       const edge = active.width / 2 + active.shoulder, blend = Math.max(active.blend, 15 * s);
       edgeGap = Math.min(edgeGap, distance - edge);
+      // road (L1): a road stands on ground (its embankment), never on a pad's pull: within ROAD_BATTER_REACH of its edge the
+      // ground may fall no lower than the deck's underside and then ROAD_BATTER (1 : 1.5) away from it (cutHeight applies it).
+      if (active.kind === 'road' && !active.id.startsWith('structure.') && distance - edge <= ROAD_BATTER_REACH) roadFloor = Math.max(roadFloor, target - BED_TERRAIN_CLEARANCE - Math.max(0, distance - edge - ROAD_BERM) * ROAD_BATTER);
       const weight = 1 - smooth((distance - edge) / blend);
       if (weight <= 0) return;
       height = mix(height, target, weight);
@@ -545,9 +549,17 @@ export function createBedSampler(beds: BedCut[]): (x: number, z: number, origina
     if (result > original && raiseForbidden(x, z)) result = original;
     // No route or deck builds ground above the Crown's summit (it stays the island's highest point).
     if (result > original) result = Math.min(result, Math.max(original, crownSummitHeight() - 1 * s));
-    return { height: result, surface: paint, edgeGap };
+    return { height: result, surface: paint, edgeGap, roadFloor };
   };
 }
+/** road (L1): a road's embankment: the ground beside a road falls at most 1 : 1.5 from the deck's underside at its edge, over
+ * ROAD_BATTER_REACH, whatever a pad's blend or margin would pull it to (plot terraces.1's pad blend dug 6 eu under V03's edge). */
+export const ROAD_BATTER = 1 / 1.5, ROAD_BATTER_REACH = 12;
+/** road (L1): a level verge (eu) beyond the paved edge before the batter starts: half a 5 eu lattice cell, so the lattice triangle
+ * that straddles the edge does not start falling at the edge itself (a 0.6 step off the shoulder at the Tideline park). */
+export const ROAD_BERM = 2.5;
+/** road (L1): no embankment is built deeper than this over the natural ground (a cliff drive keeps its cliff; its edge is L2's guard). */
+export const ROAD_EMBANKMENT_MAX_FILL = 8;
 /** Five centimetres survives centimetre encoding without terrain sharing the road's top face. */
 export const BED_TERRAIN_CLEARANCE = .05;
 
@@ -562,7 +574,7 @@ export function createBedClearanceSampler(beds: BedCut[], rasterMargin = 0): (x:
   const isSpan=(b:BedCut)=>b.id.startsWith('structure.')&&b.structureIds.length>0;
   const clearanceBeds=beds.map(b=>isSpan(b)?{...b,terrainCut:true,terrainExclusions:[]}:b);
   const prepared = prepareBeds(clearanceBeds, rasterMargin), s = getModel().scale;
-  const floor = LAND_FLOOR * s;
+  const floor = LAND_FLOOR * s, oreCeiling = oreRoadGroundCeiling(beds, rasterMargin);
   return (x, z) => {
     let ceiling = Infinity;
     const candidates: { value: number; plane: number; core: boolean; bed: BedCut }[] = [];
@@ -600,10 +612,17 @@ export function createBedClearanceSampler(beds: BedCut[], rasterMargin = 0): (x:
       // through the lane (S4 at 206–221 m, [915.5, 669]: ground 0.3 → 2.5 eu over the deck, the rider stopped at 204 m;
       // walk garden 7.3 eu higher, 10 eu beside). A near-level neighbour (VBS, walk bight, the bight.1 service at 1.5–2 eu,
       // 3.5–4.5 eu beside at [870, 948]) still wins its margin, or it would hang 1.4–1.5 eu over a pit (A1.1).
-      if (!c.core && (above(decks, c) || above(c.bed.kind === 'skate' ? terraceless(near, c) : near, c))) continue;
+      // road (L1): a ROAD's margin does not yield to a route on a terrace either: the Glasshouse steps (16 eu over the Glasshouse
+      // spur's end, 4–5 eu beside it) held their lattice vertices at 50 and the face between buried the spur's carriageway
+      // 11.7 eu; the steps' prisms are grounded to the cut instead (groundTerrainBeds), a retaining mass.
+      // A road's margin yields only to another ROAD's footprint (a walk's blend 1 eu over the Drive, 6 eu beside it, lifted the
+      // lattice vertex between them into the Drive's carriageway at 3200: terrain 0.25 over the deck).
+      const road = c.bed.kind === 'road' && !c.bed.id.startsWith('structure.');
+      const neighbours = road ? new Map([...terraceless(near, c)].filter(([b]) => b.kind === 'road')) : c.bed.kind === 'skate' ? terraceless(near, c) : near;
+      if (!c.core && (above(decks, c) || above(neighbours, c))) continue;
       ceiling = Math.min(ceiling, c.value);
     }
-    return ceiling;
+    return Math.min(ceiling, oreCeiling(x, z));
   };
 }
 /** R2-08: height (eu) above which another route's deck no longer shields a lower route's raster margin (an overpass). */
@@ -634,6 +653,15 @@ function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<
     height = mix(height, p.centre[1], 1 - smooth(distance / Math.max(p.blend, 0.01)));
     if (distance <= 0) surface = p.kind === 'reserve' ? 13 : 14;
   }
+  // road (L1): a road stands on its embankment: the ground beside it is at least bedded.roadFloor (flush with the deck at the
+  // paved edge, then falling 1 : 1.5), whatever a pad, another bed's blend or the natural ground would leave there (the Drive
+  // stood 0.7–2.6 over the ground at the upper street and the Tideline park; its edges hung over the dunes by the culvert).
+  // Never over the sea floor or a basin (raiseForbidden), never above another bed's deck (the bed ceiling below).
+  // The fill is measured against the ground the beds gave (before pads): a pad's blend or margin may not dig under a road's
+  // embankment (the plot terraces.1 pad pulled the ground 6.3 under V03's south lane), but a pad's own footprint (not its margin) is its floor —
+  // a reserve plot's too (integration: plot terraces.1 carries a personal home, #560; V03's edge over its corner stands on the
+  // corridor's fill wall instead of an embankment heaped 3.6 eu into the home's footprint).
+  if (height < bedded.roadFloor && !raiseForbidden(x, z) && bedded.roadFloor - ground <= ROAD_EMBANKMENT_MAX_FILL && !cuts.pads.some(p => !p.underground && !p.deck && p.centre[1] < bedded.roadFloor - .5 && padDistance(p, x, z) <= (p.kind === 'reserve' ? 0 : -p.margin))) height = bedded.roadFloor;
   // A threshold or landing is a mark on the ground or a structure's deck, never
   // an earth mound: its fill is capped, and no pad raises the sea floor or tops the summit.
   if (height > ground) {

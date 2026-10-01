@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/journey-fullscreen-ui.test.ts (2 tests) 2854ms
+   ✓ Journey map full screen toggle > sits in the simple view's corner and takes the map full screen, then back  1322ms
+   ✓ Journey map full screen toggle > leaves full screen on Escape and when the tent opens, and asks for native full screen where it exists  1530ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  12:52:52
+   Duration  13.79s (transform 6.42s, setup 0ms, collect 9.14s, tests 2.85s, environment 1.16s, prepare 193ms)
+

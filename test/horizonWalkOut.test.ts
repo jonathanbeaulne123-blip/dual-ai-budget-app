@@ -42,7 +42,7 @@ describe('R3-130 · Look → Walk from every page lands dry and walkable', () =>
     expect(graphDistance(world.pathGraph, J.eye[0], J.eye[1] - 1.6, J.eye[2])).toBeGreaterThan(HORIZON_WALKOUT_SNAP);
     for (const { geo } of tiers) {
       const out = walkOut(J, geo);
-      expect(out.how).toBe('ground'); expect([out.x, +out.y.toFixed(1), out.z]).toEqual([1607.3, 48.5, 690.9]);
+      expect(out.how).toBe('ground'); expect([out.x, +out.y.toFixed(1), out.z]).toEqual([1607.3, 47, 690.9]);   // road main (L1): the Prow cliff drive's verge is cut to its batter (48.5 → 47)
       expect(out.y).toBeGreaterThan(0);
     }
   });

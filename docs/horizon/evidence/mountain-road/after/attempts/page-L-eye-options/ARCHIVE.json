@@ -1,0 +1,23 @@
+{
+  "status": "Rejected diagnostic; not final acceptance",
+  "files": [
+    {
+      "source": "/tmp/mountain-page-L-eye-options/report.json",
+      "saved": "report.json.gz",
+      "sourceBytes": 143600,
+      "sourceSHA256": "412650892bdd795e94abb59bf1a0167673de98f7c7b83b0961f6c5dc305a7d1f"
+    },
+    {
+      "source": "/tmp/mountain-page-L-eye-options/runtime.mjs",
+      "saved": "runtime.mjs.gz",
+      "sourceBytes": 401750,
+      "sourceSHA256": "61f3b0ce26e06417e9bec94f2c5a91e6d982929acdad842ff826b0834421649c"
+    },
+    {
+      "source": "/tmp/mountain-page-L-eye-options/terrain-readonly-adapter.ts",
+      "saved": "terrain-readonly-adapter.ts",
+      "sourceBytes": 1104,
+      "sourceSHA256": "ad03b52c4cf70c47af7f8e49ad4bbad92f1619f7791f4ac092e66ec62de09ee9"
+    }
+  ]
+}

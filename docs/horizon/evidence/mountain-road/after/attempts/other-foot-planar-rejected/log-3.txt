@@ -1,0 +1,8 @@
+{
+  "status": "UNACCEPTED_SAVED_MESH_EXPERIMENT",
+  "numericalGatesPass": false,
+  "before": 1876,
+  "after": 1468,
+  "removals": 204,
+  "wallMs": 165.25674999999998
+}

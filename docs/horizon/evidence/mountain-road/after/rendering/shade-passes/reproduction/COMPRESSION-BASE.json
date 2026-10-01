@@ -1,0 +1,7 @@
+{
+  "originalDriverSha256": "b91ded22d8cb349a603c7483541a3689c75a16d0c77159cf133c0d21aba426e5",
+  "compressedDriverSha256": "d5ee3c5bf850378b40760d51652eead54a06d7364566f4ca285a05128960a705",
+  "onlyChange": "Node-side lossless RGBA attachment storage/decoding and compression proof. Browser diagnostic append, frozen bundles, source preflight, render calls, all pixel-diff arithmetic, PNG and state unchanged.",
+  "retainedInterruptedAttempt": "/tmp/mountain-shade-parity-v2-matrix (root interrupted exit130; no completed pairs reported)",
+  "execution": "Source preparation only; no execution by agent."
+}

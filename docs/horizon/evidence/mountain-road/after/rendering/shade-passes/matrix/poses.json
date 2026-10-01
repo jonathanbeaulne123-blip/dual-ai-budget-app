@@ -1,0 +1,194 @@
+[
+  {
+    "id": "crown-original-10476",
+    "eye": [
+      1307.639,
+      74.32700000000001,
+      262.155
+    ],
+    "target": [
+      1308.5770652079912,
+      74.32700000000001,
+      262.50145875015136
+    ],
+    "fov": 58,
+    "source": "Retained interim NL/lite spring/night triangle peak; same view, not a claim that fresh-planting parity recreates sweep residency."
+  },
+  {
+    "id": "crown-near-plane-10406",
+    "eye": [
+      1364.16,
+      75.839,
+      313.571
+    ],
+    "target": [
+      1365.16,
+      75.839,
+      313.571
+    ],
+    "fov": 58,
+    "source": "Retained ordered-v1 NL/lite spring/night peak; actual diagnostic840tri,16 near-plane uncertainty, all other612 clipped/48back/164front. Fresh single-pose total10366 differs from sweep10406."
+  },
+  {
+    "id": "library-bench-above",
+    "eye": [
+      1368,
+      92,
+      596
+    ],
+    "target": [
+      1364,
+      89.3,
+      592
+    ],
+    "fov": 58,
+    "source": "Actual baked Library garden bench, exact stopLayout plan and frozen harness full-grid terrain ground.",
+    "at": [
+      1364,
+      89,
+      592
+    ],
+    "sourceId": "mountainV2.stop.library-garden"
+  },
+  {
+    "id": "library-bench-below",
+    "eye": [
+      1366,
+      88,
+      594
+    ],
+    "target": [
+      1364,
+      89.05,
+      592
+    ],
+    "fov": 58,
+    "source": "Isolated under-card shader stress at actual Library bench; not a valid rider camera or in-world acceptance."
+  },
+  {
+    "id": "library-lamp-above",
+    "eye": [
+      1352.614,
+      93.77200317382812,
+      597.511
+    ],
+    "target": [
+      1350.614,
+      91.77200317382812,
+      595.511
+    ],
+    "fov": 58,
+    "source": "Actual baked standing lamp21 foot; horizontal contact ellipse, upper view.",
+    "sourceId": "mountainV2.road.lamp.21",
+    "at": [
+      1350.614,
+      91.722,
+      595.511
+    ]
+  },
+  {
+    "id": "library-lamp-below",
+    "eye": [
+      1352.614,
+      90.77200317382812,
+      597.511
+    ],
+    "target": [
+      1350.614,
+      91.77200317382812,
+      595.511
+    ],
+    "fov": 58,
+    "source": "Same lamp shade from below; isolated shader stress, not surface-seated rider view."
+  },
+  {
+    "id": "library-lamp-grazing",
+    "eye": [
+      1352.614,
+      91.77200317382812,
+      595.511
+    ],
+    "target": [
+      1350.614,
+      91.77200317382812,
+      595.511
+    ],
+    "fov": 58,
+    "source": "Camera exactly on Float32 lamp-shade plane. Observe uncertainty, do not require a guessed rasterizer facing."
+  },
+  {
+    "id": "library-lamp-near-approach",
+    "eye": [
+      1351.1000517029265,
+      91.79700317382813,
+      595.7757457025501
+    ],
+    "target": [
+      1350.614,
+      91.77200317382812,
+      595.511
+    ],
+    "fov": 58,
+    "source": "Approach fixed .08 camera near plane at one source outer-ellipse vertex; actual callback status is recorded."
+  },
+  {
+    "id": "library-lamp-near-cross",
+    "eye": [
+      1350.9750517029265,
+      91.79700317382813,
+      595.7757457025501
+    ],
+    "target": [
+      1350.614,
+      91.77200317382812,
+      595.511
+    ],
+    "fov": 58,
+    "source": "Step across the same source vertex with .08 near plane unchanged; retain any near-plane uncertainty in both passes."
+  },
+  {
+    "id": "library-lamp-near-inside",
+    "eye": [
+      1350.8800517029265,
+      91.79700317382813,
+      595.7757457025501
+    ],
+    "target": [
+      1350.614,
+      91.77200317382812,
+      595.511
+    ],
+    "fov": 58,
+    "source": "Continue within same shadow footprint; no camera/controller acceptance claim."
+  },
+  {
+    "id": "library-lamp-above-return",
+    "eye": [
+      1352.614,
+      93.77200317382812,
+      597.511
+    ],
+    "target": [
+      1350.614,
+      91.77200317382812,
+      595.511
+    ],
+    "fov": 58,
+    "source": "Return exactly to earlier above view in same page/renderer/camera/art meshes/materials; catches stale group/index state."
+  },
+  {
+    "id": "library-bench-above-return",
+    "eye": [
+      1368,
+      92,
+      596
+    ],
+    "target": [
+      1364,
+      89.3,
+      592
+    ],
+    "fov": 58,
+    "source": "Return exactly to earlier actual bench view with persistent art; fresh planting remains deterministic per pose."
+  }
+]

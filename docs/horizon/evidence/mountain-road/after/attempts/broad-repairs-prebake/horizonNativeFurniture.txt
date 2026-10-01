@@ -1,0 +1,31 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/horizonNativeFurniture.test.ts (5 tests | 1 failed) 3183ms
+   ✓ native mountain furniture uses its real environment > recognizes the rendered reservoir and solid pavilion columns absent from ordinary Horizon cuts 3ms
+   ✓ native mountain furniture uses its real environment > rejects mature crowns which would overlap an existing native tree although the new trunk is clear 3ms
+   ✓ native mountain furniture uses its real environment > keeps one supported library garden stop with its whole walking attachment clear 180ms
+   ✓ native mountain furniture uses its real environment > lights both Stillwater portal approaches without adding a main-road centre line 6ms
+   × native mountain furniture uses its real environment > lights both running lanes through the real bend spans with supported posts outside every running lane and walking section 2988ms
+     → mountainV2.road.lamp.8 unsupported stone foot at 1370.5820105023631,690.0479588907501: expected 0.15478481898627194 to be less than or equal to 0.141
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/horizonNativeFurniture.test.ts > native mountain furniture uses its real environment > lights both running lanes through the real bend spans with supported posts outside every running lane and walking section
+AssertionError: mountainV2.road.lamp.8 unsupported stone foot at 1370.5820105023631,690.0479588907501: expected 0.15478481898627194 to be less than or equal to 0.141
+ ❯ test/horizonNativeFurniture.test.ts:105:95
+    103|         }else{
+    104|           expect(E.occupied?.(x,z),`${l.id} post footprint occupies ro…
+    105|           expect(Math.abs(ground(x,z)-l.at[1]),`${l.id} unsupported st…
+       |                                                                                               ^
+    106|         }
+    107|       }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 passed (5)
+   Start at  01:19:51
+   Duration  5.06s (transform 821ms, setup 0ms, collect 1.63s, tests 3.18s, environment 0ms, prepare 61ms)
+

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560"><rect width="1000" height="560" fill="#f5f1e7"/><style>text{font-family:Arial,sans-serif;fill:#203a34}.small{font-size:13px}.label{font-size:17px}</style><text x="34" y="42" font-size="25">Upper clearing to Green Road</text>
+<text x="34" y="70" class="small">Endpoint chord only — a feasibility drawing, not a fitted road or clearance proof</text>
+<polyline fill="none" stroke="#b8b7ac" stroke-width="3" points="467.4,234.7 463.4,235.4 459.3,236.3 455.3,237.3 451.4,238.3 447.5,239.7 443.7,241.3 439.9,242.9 436.0,244.3 432.0,245.1 427.9,245.5 423.8,245.6 419.6,245.4 415.6,245.0 411.5,244.3 407.5,243.3 403.5,242.2 399.7,240.8 396.0,239.0 392.6,236.6 389.8,233.6 387.6,230.1 385.8,226.4 384.5,222.5 383.8,218.5 383.9,214.4 384.9,210.4 386.3,206.5 388.2,202.9 390.5,199.5 393.2,196.3 396.3,193.6 399.7,191.4 403.4,189.5 407.2,188.0 411.1,186.7 415.1,185.5 419.1,184.6 423.2,184.0 427.3,183.6 431.4,183.5 435.5,183.7 439.6,184.3 443.6,185.3 447.5,186.6 451.4,188.0 455.2,189.5 459.0,191.0 462.8,192.7 466.5,194.5"/>
+<polyline fill="none" stroke="#b8b7ac" stroke-width="3" points="88.1,355.0 90.1,348.0 92.0,341.1 93.7,334.2 95.2,327.5 96.5,320.8 97.6,314.2 98.4,307.8 98.9,301.6 99.0,295.5 98.8,289.6 98.1,284.0 97.3,280.1 96.1,275.7 94.7,271.0 92.9,265.8 90.9,260.4 88.6,254.6 86.1,248.6 83.4,242.3 80.5,235.7 77.4,229.0 74.2,222.1 70.9,215.1 67.5,207.9 64.0,200.7 60.4,193.4 56.9,186.0 53.3,178.7 49.8,171.4 46.3,164.2"/>
+<path d="M391.9366197183099,235.96830985915494 L98.06338028169014,284.03169014084506" stroke="#b66136" stroke-width="3" stroke-dasharray="7 5"/>
+<circle cx="391.9366197183099" cy="235.96830985915494" r="5" fill="#203a34"/><text x="400.9366197183099" y="227.96830985915494" class="label">A</text>
+<circle cx="98.06338028169014" cy="284.03169014084506" r="5" fill="#203a34"/><text x="107.06338028169014" y="276.03169014084506" class="label">B</text>
+<text x="40" y="115" class="label">Plan · north ↑</text>
+<text x="35" y="446" class="small">A [1214.0, 109.05, 565.0] → B [1000.0, 38.21, 600.0]</text>
+<text x="545" y="115" class="label">Profile · vertical scale exaggerated</text>
+<path d="M550,395H940 M550,395V135" fill="none" stroke="#adb3a9"/>
+<path d="M550,172.1114125672079 L935,367.8885874327921" fill="none" stroke="#b66136" stroke-width="3" stroke-dasharray="7 5"/>
+<text x="534" y="160.1114125672079" class="small">109.05</text>
+<text x="919" y="355.8885874327921" class="small">38.21</text>
+<text x="552" y="423" class="small">0 m</text><text x="862" y="423" class="small">216.8 m</text><text x="552" y="448" class="small">At ≤10%: necessary route length ≥708.3 m</text>
+<text x="34" y="502" class="label">Reject this departure: Woodland Clearing plot and excessive descent.</text><text x="34" y="535" class="small">Horizon xyz, eu/metres. Measured endpoints at main 324cd5f. Terrain between endpoints is not drawn.</text></svg>

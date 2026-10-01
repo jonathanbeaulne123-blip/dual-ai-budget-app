@@ -1,0 +1,145 @@
+{
+  "out": "/tmp/mountain-v20-baked-budget.json",
+  "rows": [
+    {
+      "district": "prow",
+      "tier": "full",
+      "before": {
+        "triangles": 51270,
+        "drawCalls": 9
+      },
+      "after": {
+        "triangles": 51270,
+        "drawCalls": 9
+      },
+      "addedTriangles": 0,
+      "addedDrawCalls": 0
+    },
+    {
+      "district": "prow",
+      "tier": "lite",
+      "before": {
+        "triangles": 28998,
+        "drawCalls": 6
+      },
+      "after": {
+        "triangles": 28998,
+        "drawCalls": 6
+      },
+      "addedTriangles": 0,
+      "addedDrawCalls": 0
+    },
+    {
+      "district": "lakeside",
+      "tier": "full",
+      "before": {
+        "triangles": 26207,
+        "drawCalls": 14
+      },
+      "after": {
+        "triangles": 59505,
+        "drawCalls": 18
+      },
+      "addedTriangles": 33298,
+      "addedDrawCalls": 4
+    },
+    {
+      "district": "lakeside",
+      "tier": "lite",
+      "before": {
+        "triangles": 15579,
+        "drawCalls": 10
+      },
+      "after": {
+        "triangles": 44939,
+        "drawCalls": 13
+      },
+      "addedTriangles": 29360,
+      "addedDrawCalls": 3
+    },
+    {
+      "district": "crown",
+      "tier": "full",
+      "before": {
+        "triangles": 26718,
+        "drawCalls": 20
+      },
+      "after": {
+        "triangles": 33062,
+        "drawCalls": 20
+      },
+      "addedTriangles": 6344,
+      "addedDrawCalls": 0
+    },
+    {
+      "district": "crown",
+      "tier": "lite",
+      "before": {
+        "triangles": 9754,
+        "drawCalls": 14
+      },
+      "after": {
+        "triangles": 16170,
+        "drawCalls": 14
+      },
+      "addedTriangles": 6416,
+      "addedDrawCalls": 0
+    },
+    {
+      "district": "hollow",
+      "tier": "full",
+      "before": {
+        "triangles": 44112,
+        "drawCalls": 9
+      },
+      "after": {
+        "triangles": 48890,
+        "drawCalls": 11
+      },
+      "addedTriangles": 4778,
+      "addedDrawCalls": 2
+    },
+    {
+      "district": "hollow",
+      "tier": "lite",
+      "before": {
+        "triangles": 26344,
+        "drawCalls": 7
+      },
+      "after": {
+        "triangles": 29792,
+        "drawCalls": 8
+      },
+      "addedTriangles": 3448,
+      "addedDrawCalls": 1
+    },
+    {
+      "district": "green",
+      "tier": "full",
+      "before": {
+        "triangles": 17950,
+        "drawCalls": 12
+      },
+      "after": {
+        "triangles": 17950,
+        "drawCalls": 12
+      },
+      "addedTriangles": 0,
+      "addedDrawCalls": 0
+    },
+    {
+      "district": "green",
+      "tier": "lite",
+      "before": {
+        "triangles": 6402,
+        "drawCalls": 8
+      },
+      "after": {
+        "triangles": 6402,
+        "drawCalls": 8
+      },
+      "addedTriangles": 0,
+      "addedDrawCalls": 0
+    }
+  ]
+}

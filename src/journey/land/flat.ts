@@ -21,6 +21,8 @@ export function journeyLandFlatData(data: JourneyLandData): JourneyLandFlatData 
       .sort((a, b) => a.maxHeight - b.maxHeight)
       .map((l) => ({ id: l.id, d: pathData(closedRing(l.outline), true), band: landformBand(l.maxHeight) })),
     lines: data.lines.map((l) => ({ id: l.id, kind: l.kind, d: pathData(l.points, false) })),
+    // Road bridges (ROAD.md §7): the deck's centreline at its true width, drawn under the lines.
+    bridges: (data.bridges ?? []).map((br) => ({ id: br.id, d: pathData(br.axis.map((p) => [p[0], p[2]] as const), false), width: br.width, underIds: [...br.underIds], ...(br.landmark?{landmark:br.landmark}:{}) })),
     hosts: data.hosts.map((h) => ({ id: h.id, x: h.door[0], y: h.door[1] })),
     reserves: data.reserves.map((r) => ({ id: r.id, d: pathData(closedRing(r.outline), true) })),
     districts: data.districts.flatMap((d) => (d.heart ? [{ id: d.id, label: d.label, x: d.heart[0], y: d.heart[1] }] : [])),

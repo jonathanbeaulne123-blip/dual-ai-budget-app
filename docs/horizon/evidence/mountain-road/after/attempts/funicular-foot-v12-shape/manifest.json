@@ -1,0 +1,62 @@
+[
+  {
+    "source": "/tmp/mountain-funicular-v12-shape/before-flips.json",
+    "savedAs": "before-flips.json.gz",
+    "bytes": 587285,
+    "sha256": "3badf50abefb88b022f720dbe83c668d45ddbedb52f9b31d5288313f7c31b849"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v12-shape/bundle.mjs",
+    "savedAs": "bundle.mjs.gz",
+    "bytes": 1626929,
+    "sha256": "b8dc4bf9ebb16ec30145279927bf4d2aa66a123589e4367b681e6da9b8f88429"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v12-shape/candidate-solid.json",
+    "savedAs": "candidate-solid.json.gz",
+    "bytes": 587285,
+    "sha256": "c4ddee0bb563148ef9f569081197d50ec9a3afd6ddb6faa470b61d57a0c45fe6"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v12-shape/flips.json",
+    "savedAs": "flips.json",
+    "bytes": 2469,
+    "sha256": "440977e34f4ecb5919c21edc8ace9ce26431dce7e886236f04ddd0066f7b0cc8"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v12-shape/grades.json",
+    "savedAs": "grades.json",
+    "bytes": 3415,
+    "sha256": "62e41fabad417832f211e49985cdedea464057dc8ffe0f1372a51b1fd44170f4"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v12-shape/instrumented-source.ts",
+    "savedAs": "instrumented-source.ts",
+    "bytes": 37682,
+    "sha256": "f237ac86fde4356c4f8001824599b59ca1d99629df06a7b2df6c4745e7cc0153"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v12-shape/source-hashes.json",
+    "savedAs": "source-hashes.json",
+    "bytes": 2633,
+    "sha256": "79cff1c45de03c931527294b024e828417a95c540195285f057c57e4c3c9619d"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v12/shape.mjs",
+    "savedAs": "shape.mjs",
+    "bytes": 7027,
+    "sha256": "fb892559b783b82ad8a0f7ff0f354e82080aca61b700817bc3412b45f8bfabb1"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v12/README.md",
+    "savedAs": "README.md",
+    "bytes": 2633,
+    "sha256": "7f5d611bc3f1825eded1c0fcc8a7873274940632759cf3e967232f08f32c019a"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v12-shape.txt",
+    "savedAs": "mountain-funicular-v12-shape.txt",
+    "bytes": 540,
+    "sha256": "1d8d36b9064a3be814d4410a5f2dd60689d2380952cb38a2de4b67dfe34c3863"
+  }
+]

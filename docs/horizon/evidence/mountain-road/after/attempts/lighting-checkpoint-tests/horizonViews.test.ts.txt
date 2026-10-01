@@ -1,0 +1,15 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonViews.test.ts (11 tests) 44681ms
+   ✓ keeps twelve immutable camera xy/FOV/radii and the specified flight eye height  2896ms
+   ✓ projects forward subjects and exposes a missing or out-of-frame subject as failure  2796ms
+   ✓ rejects an authored eye below a visible river surface even when above terrain  3157ms
+   ✓ holds the page horizontal FOV on a portrait phone (MANIFEST v1.7 viewRule.portrait)  3037ms
+   ✓ the honest proof on candidate 6's bake: G (under the shaft) and H (the aerial eye) pass; the phone fails A, C, D, L (R3-74)  32674ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  12:43:39
+   Duration  46.27s (transform 641ms, setup 0ms, collect 864ms, tests 44.68s, environment 0ms, prepare 200ms)
+

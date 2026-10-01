@@ -1,0 +1,6 @@
+$ node --max-old-space-size=6144 node_modules/typescript/bin/tsc --noEmit
+src/harbour/horizon/land/mountainV2/footLaneJoin.ts(441,110): error TS2352: Conversion of type 'number[]' to type 'XYZ' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Target requires 3 element(s) but source may have fewer.
+src/harbour/horizon/land/mountainV2/footLaneJoin.ts(578,19): error TS2352: Conversion of type 'number[]' to type 'XYZ' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Target requires 3 element(s) but source may have fewer.
+[ELIFECYCLE] Command failed with exit code 2.

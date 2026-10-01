@@ -1,0 +1,3 @@
+# Rejected funicular shape attempt v10b
+
+Construction completes with15,336 triangles and five positive-area top faces above40degrees; maximum86.5401334483degrees. Exact field derivatives at their vertices are0.99–21.27degrees. The steep emitted triangles cross curved support/height branches in skinny planar fans (the worst has1.705mm minimum altitude). This is a real emitted geometry failure, not a threshold waiver or merely a numerical exception. The source field is unchanged in the next tessellation proposal. Exact shapes, scalar derivatives and bundles are retained losslessly. No full movement/art acceptance is claimed for this rejected attempt.

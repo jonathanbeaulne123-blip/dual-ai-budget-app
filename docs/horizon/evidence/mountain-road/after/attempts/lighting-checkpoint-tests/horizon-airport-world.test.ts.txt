@@ -1,0 +1,13 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizon-airport-world.test.ts (7 tests) 1509ms
+   ✓ Airport on the actual baked island > the mounted cruiser clears the terminal floor and drives in and back out  444ms
+   ✓ Airport on the actual baked island > kestrel takes off along the real runway without terrain collision  308ms
+   ✓ Airport on the actual baked island > swift takes off along the real runway without terrain collision  439ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  12:22:27
+   Duration  3.01s (transform 464ms, setup 0ms, collect 1.12s, tests 1.51s, environment 0ms, prepare 94ms)
+

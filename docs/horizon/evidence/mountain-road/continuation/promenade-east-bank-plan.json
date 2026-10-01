@@ -1,0 +1,158 @@
+{
+  "status": "SOURCE/JSON PLAN ONLY; NOT BUILT, NOT MOVEMENT VERIFIED",
+  "pointsHorizon": [
+    [
+      1336.8181574142563,
+      142,
+      525.9417051494015
+    ],
+    [
+      1340,
+      143.7,
+      523
+    ],
+    [
+      1343,
+      144.7,
+      520
+    ],
+    [
+      1345.4,
+      145.05,
+      517
+    ],
+    [
+      1345.4,
+      145.2,
+      512
+    ],
+    [
+      1350.4710590141044,
+      144.90901767884748,
+      510.99168094195977
+    ],
+    [
+      1354.411248819002,
+      144.90901767884748,
+      508.250348364292
+    ]
+  ],
+  "pointsNative": [
+    [
+      28.818157414256348,
+      88,
+      -238.0582948505985
+    ],
+    [
+      32,
+      89.69999999999999,
+      -241
+    ],
+    [
+      35,
+      90.69999999999999,
+      -244
+    ],
+    [
+      37.40000000000009,
+      91.05000000000001,
+      -247
+    ],
+    [
+      37.40000000000009,
+      91.19999999999999,
+      -252
+    ],
+    [
+      42.47105901410441,
+      90.90901767884748,
+      -253.00831905804023
+    ],
+    [
+      46.41124881900191,
+      90.90901767884748,
+      -255.749651635708
+    ]
+  ],
+  "width": 2.4,
+  "planLength": 27.38817886243556,
+  "maxGrade": 0.39230796757542447,
+  "maxAngle": 21.420472787296408,
+  "minimumWaterFreeboard": 2,
+  "joinRoadSample": 810,
+  "joinRoadStation": 815.2312146563306,
+  "roadSide": "left/inside west",
+  "proposedKerbOpeningWidth": 2.8,
+  "existingBranchId": "dam-promenade",
+  "mins": {
+    "branchPlanGap": 0.07342991738261295,
+    "bodyBoxPlanGap": 0.6039723604763367,
+    "pavilionRoofPlanGap": 0.2749289311349514,
+    "nativeGuardPlanGap": 5.6670194957892805
+  },
+  "witnesses": {
+    "branch": {
+      "at": [
+        1354.411248819002,
+        144.90901767884748,
+        508.250348364292
+      ],
+      "branchAt": [
+        1356.596662419836,
+        144.4875310561927,
+        510.26659558794165
+      ],
+      "centreDistance": 2.973429917382613,
+      "branchHalfWidth": 1.7
+    },
+    "box": {
+      "id": "dam-promenade:support:24:-1",
+      "at": [
+        1336.8904720184778,
+        142.03863636363636,
+        525.8748482141879
+      ],
+      "box": {
+        "id": "dam-promenade:support:24:-1",
+        "min": [
+          1338.6944443789541,
+          136.89814742426796,
+          525.743806701361
+        ],
+        "max": [
+          1338.9344443789541,
+          142.1189310713972,
+          525.983806701361
+        ]
+      }
+    },
+    "roof": {
+      "at": [
+        1345.4,
+        145.098,
+        515.4
+      ],
+      "local": [
+        -4.865217860238746,
+        5.162330401321949
+      ]
+    },
+    "guard": {
+      "at": [
+        1351.918475677128,
+        144.90901767884748,
+        509.9846608113879
+      ],
+      "id": "mountain-road:left:parapet:821:0"
+    }
+  },
+  "sourceSnapshotSha256": "99cdcfd6fb8d7258d19b940f49dbeed888dcf240b14b0d2bdf9fc546c6dbde6d",
+  "sourceNativeExportSha256": "418eab3afb34746b1341d6f80c16efc7d6921eb71ad301e31e249b63b46cab8f",
+  "limits": [
+    "Sampled .1m centreline with full1.2m footprint radius; conservative AABB obstacles only.",
+    "Final4.8m is existing native road; custom approach must taper/conform to its actual triangles.",
+    "No terrain lattice/ground/roof source execution; bank footing depths and full-width source floor grades unmeasured.",
+    "No native road profile, dam, columns or skill branch movement proposed. A visible local road kerb opening remains an explicit native change unless an existing gap can be reused.",
+    "No controller or rendering acceptance claimed."
+  ]
+}

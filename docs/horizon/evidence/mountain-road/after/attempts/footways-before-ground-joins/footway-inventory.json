@@ -1,0 +1,634 @@
+{
+  "baseline": {
+    "source": "324cd5f246ab295af5cf64d553ebf78fad57f7b5",
+    "sha256": "16bfa5985484be9b0224665ee4452de4b6be31006923bd22c3d7b1cbf327a864"
+  },
+  "limits": [
+    "Independent contiguous route attempts; no full Year Walk or whole-chain completion claim.",
+    "January entries deliberately overlap Year Walk clips.",
+    "All named lines and local approaches are retained even when walking fails."
+  ],
+  "routes": [
+    {
+      "id": "walk mountainV2.promenade",
+      "kind": "footway",
+      "sourceBedId": "walk mountainV2.promenade",
+      "sourceKind": "walk",
+      "scope": "complete authored walking line",
+      "sourceRange": [
+        0,
+        13
+      ],
+      "start": [
+        1294.14,
+        142,
+        526.54
+      ],
+      "end": [
+        1355.031336,
+        144.735683,
+        509.033424
+      ],
+      "lengthM": 77.37251365631683,
+      "lengthConvention": "horizontal plan distance, matching controller progress",
+      "independentAttempt": true,
+      "validAttempt": true,
+      "baseline": {
+        "status": "source-centreline-changed",
+        "sourcePointsSha256": "15afb56375652bfbd5a3f870e8668552f417f718ff736d1c5f52b0402e2990b2",
+        "currentSourcePointsSha256": "37655ee2c391afa038df7eaa1644e5e73bebcfff03548829ad4e1997797cdae5",
+        "limit": "Centreline comparison only; surfaces/structures may have changed."
+      }
+    },
+    {
+      "id": "walk crown",
+      "kind": "footway",
+      "sourceBedId": "walk crown",
+      "sourceKind": "walk",
+      "scope": "complete authored walking line",
+      "sourceRange": [
+        0,
+        711
+      ],
+      "start": [
+        1359.339893501,
+        73.28842887,
+        661.652226363
+      ],
+      "end": [
+        1325.04546707,
+        158.151911,
+        473.101548467
+      ],
+      "lengthM": 704.2712162008845,
+      "lengthConvention": "horizontal plan distance, matching controller progress",
+      "independentAttempt": true,
+      "validAttempt": true,
+      "baseline": {
+        "status": "source-centreline-changed",
+        "sourcePointsSha256": "28c8a6f5808ebcc86eeb05a6b50dfcd6c5e71ffb6d806763f286328dc4a0bf39",
+        "currentSourcePointsSha256": "9fd1ef3978e426e188f3d910803bdb2bbc2a6a828cb280fefc91691da2d4d463",
+        "limit": "Centreline comparison only; surfaces/structures may have changed."
+      }
+    },
+    {
+      "id": "walk summit",
+      "kind": "footway",
+      "sourceBedId": "walk summit",
+      "sourceKind": "walk",
+      "scope": "complete authored walking line",
+      "sourceRange": [
+        0,
+        10
+      ],
+      "start": [
+        1325,
+        158.2,
+        470.5
+      ],
+      "end": [
+        1310,
+        159.582709484,
+        440
+      ],
+      "lengthM": 45.90317085281334,
+      "lengthConvention": "horizontal plan distance, matching controller progress",
+      "independentAttempt": true,
+      "validAttempt": true,
+      "baseline": {
+        "status": "protected-centreline-unchanged",
+        "sourcePointsSha256": "ddc8374eaa1b173fd3a606a8417ea34f29383bdf0e0a90453e08466aa5c9f5c4",
+        "currentSourcePointsSha256": "ddc8374eaa1b173fd3a606a8417ea34f29383bdf0e0a90453e08466aa5c9f5c4",
+        "limit": "Centreline comparison only; surfaces/structures may have changed."
+      }
+    },
+    {
+      "id": "walk summitStation",
+      "kind": "footway",
+      "sourceBedId": "walk summitStation",
+      "sourceKind": "walk",
+      "scope": "complete authored walking line",
+      "sourceRange": [
+        0,
+        4
+      ],
+      "start": [
+        1298.3,
+        158.05,
+        481.7
+      ],
+      "end": [
+        1310,
+        158,
+        470
+      ],
+      "lengthM": 16.546298679765236,
+      "lengthConvention": "horizontal plan distance, matching controller progress",
+      "independentAttempt": true,
+      "validAttempt": true,
+      "baseline": {
+        "status": "protected-centreline-unchanged",
+        "sourcePointsSha256": "82063fae2bd0b9030637c80dcba93e407f9b8194f06f9d5425c2166a3e70f14e",
+        "currentSourcePointsSha256": "82063fae2bd0b9030637c80dcba93e407f9b8194f06f9d5425c2166a3e70f14e",
+        "limit": "Centreline comparison only; surfaces/structures may have changed."
+      }
+    },
+    {
+      "id": "crownLaunch.stair",
+      "kind": "footway",
+      "sourceBedId": "crownLaunch.stair",
+      "sourceKind": "stair",
+      "scope": "complete authored walking line",
+      "sourceRange": [
+        0,
+        2
+      ],
+      "start": [
+        1319.108997805,
+        170,
+        468
+      ],
+      "end": [
+        1309.65,
+        158.81597646,
+        454.9125
+      ],
+      "lengthM": 17.524277854914004,
+      "lengthConvention": "horizontal plan distance, matching controller progress",
+      "independentAttempt": true,
+      "validAttempt": true,
+      "baseline": {
+        "status": "protected-centreline-unchanged",
+        "sourcePointsSha256": "8f53d8c360390ee2a1b2fc2f81ccc7724220b2ea8399bfee5355daa0700924ac",
+        "currentSourcePointsSha256": "8f53d8c360390ee2a1b2fc2f81ccc7724220b2ea8399bfee5355daa0700924ac",
+        "limit": "Centreline comparison only; surfaces/structures may have changed."
+      }
+    },
+    {
+      "id": "walk footQuay",
+      "kind": "footway",
+      "sourceBedId": "walk footQuay",
+      "sourceKind": "walk",
+      "scope": "complete authored walking line",
+      "sourceRange": [
+        0,
+        17
+      ],
+      "start": [
+        1281.5,
+        55.3,
+        742
+      ],
+      "end": [
+        1282,
+        54.478177585,
+        810
+      ],
+      "lengthM": 69.66444542992797,
+      "lengthConvention": "horizontal plan distance, matching controller progress",
+      "independentAttempt": true,
+      "validAttempt": true,
+      "baseline": {
+        "status": "protected-centreline-unchanged",
+        "sourcePointsSha256": "e955769d3bb47aef0532f73c5ef9865096a66752b1093f993d550722e12fda7f",
+        "currentSourcePointsSha256": "e955769d3bb47aef0532f73c5ef9865096a66752b1093f993d550722e12fda7f",
+        "limit": "Centreline comparison only; surfaces/structures may have changed."
+      }
+    },
+    {
+      "id": "walk lakerim",
+      "kind": "footway",
+      "sourceBedId": "walk lakerim",
+      "sourceKind": "trail",
+      "scope": "complete authored walking line",
+      "sourceRange": [
+        0,
+        97
+      ],
+      "start": [
+        990,
+        56,
+        780
+      ],
+      "end": [
+        1166,
+        52,
+        905
+      ],
+      "lengthM": 473.02062455629147,
+      "lengthConvention": "horizontal plan distance, matching controller progress",
+      "independentAttempt": true,
+      "validAttempt": true,
+      "baseline": {
+        "status": "source-centreline-changed",
+        "sourcePointsSha256": "9d6c6c82d6b0eb20dda7f00a2b80a842ab2a38390f2de67570c9ff6ec39085ad",
+        "currentSourcePointsSha256": "ce34996e23e5d29785000d25a202da5d32e4657fde7969f2b20665dc6016f6a8",
+        "limit": "Centreline comparison only; surfaces/structures may have changed."
+      }
+    },
+    {
+      "id": "southPortal.link",
+      "kind": "footway",
+      "sourceBedId": "southPortal.link",
+      "sourceKind": "walk",
+      "scope": "complete authored walking line",
+      "sourceRange": [
+        0,
+        1
+      ],
+      "start": [
+        1345,
+        67.455208057,
+        680
+      ],
+      "end": [
+        1344.870463018,
+        67.455208057,
+        681.868016744
+      ],
+      "lengthM": 1.8725027064252755,
+      "lengthConvention": "horizontal plan distance, matching controller progress",
+      "independentAttempt": true,
+      "validAttempt": true,
+      "baseline": {
+        "status": "source-centreline-changed",
+        "sourcePointsSha256": "6e64bed74efdfa071473bdb51975479259c3656fbc9404c9967c2a9b47b39444",
+        "currentSourcePointsSha256": "0df0aea343259edad6c1fda62e07153ba826c63a4d55cf68ad08eb242db87f11",
+        "limit": "Centreline comparison only; surfaces/structures may have changed."
+      }
+    },
+    {
+      "id": "yearWalk mountain/Stillwater part 1",
+      "kind": "footway",
+      "sourceBedId": "yearWalk",
+      "sourceKind": "walk",
+      "scope": "contiguous Year Walk inside native footprint or Stillwater local area",
+      "sourceRange": [
+        0,
+        172.27091920349065
+      ],
+      "start": [
+        1364,
+        73.2,
+        650
+      ],
+      "end": [
+        1051.795978714558,
+        57.39266591731337,
+        669.873255121
+      ],
+      "lengthM": 535.2434307886762,
+      "lengthConvention": "horizontal plan distance, matching controller progress",
+      "independentAttempt": true,
+      "validAttempt": true,
+      "baseline": {
+        "status": "source-centreline-changed",
+        "sourcePointsSha256": "3738481be2c334940a3913b847ef87b0f06d1b51b567b19391fdda7dab7de040",
+        "currentSourcePointsSha256": "d68f89eff1e1398c3e89bcc04ca6b3c8e5d3e5a85a81c4647a29e6e674f071ea",
+        "limit": "Centreline comparison only; surfaces/structures may have changed."
+      },
+      "selectionBoxes": [
+        {
+          "minX": 1108,
+          "maxX": 1508,
+          "minZ": 368,
+          "maxZ": 848
+        },
+        {
+          "minX": 968,
+          "maxX": 1294,
+          "minZ": 669.873255121,
+          "maxZ": 769.534398635
+        }
+      ],
+      "januaryAnchorEnd": "departure"
+    },
+    {
+      "id": "yearWalk mountain/Stillwater part 2",
+      "kind": "footway",
+      "sourceBedId": "yearWalk",
+      "sourceKind": "walk",
+      "scope": "contiguous Year Walk inside native footprint or Stillwater local area",
+      "sourceRange": [
+        735.1636171780758,
+        753.9773853720492
+      ],
+      "start": [
+        968,
+        39.11203710783476,
+        732.9871457893988
+      ],
+      "end": [
+        980.8720650771473,
+        41.240609905961065,
+        669.873255121
+      ],
+      "lengthM": 64.49211259540324,
+      "lengthConvention": "horizontal plan distance, matching controller progress",
+      "independentAttempt": true,
+      "validAttempt": true,
+      "baseline": {
+        "status": "source-centreline-changed",
+        "sourcePointsSha256": "3738481be2c334940a3913b847ef87b0f06d1b51b567b19391fdda7dab7de040",
+        "currentSourcePointsSha256": "d68f89eff1e1398c3e89bcc04ca6b3c8e5d3e5a85a81c4647a29e6e674f071ea",
+        "limit": "Centreline comparison only; surfaces/structures may have changed."
+      },
+      "selectionBoxes": [
+        {
+          "minX": 1108,
+          "maxX": 1508,
+          "minZ": 368,
+          "maxZ": 848
+        },
+        {
+          "minX": 968,
+          "maxX": 1294,
+          "minZ": 669.873255121,
+          "maxZ": 769.534398635
+        }
+      ],
+      "januaryAnchorEnd": null
+    },
+    {
+      "id": "yearWalk mountain/Stillwater part 3",
+      "kind": "footway",
+      "sourceBedId": "yearWalk",
+      "sourceKind": "walk",
+      "scope": "contiguous Year Walk inside native footprint or Stillwater local area",
+      "sourceRange": [
+        2005.5741113348572,
+        2019.653438629233
+      ],
+      "start": [
+        968,
+        41.11641007537996,
+        714.0721862417788
+      ],
+      "end": [
+        977.7385011237583,
+        41.29913811220961,
+        669.873255121
+      ],
+      "lengthM": 45.31116877969163,
+      "lengthConvention": "horizontal plan distance, matching controller progress",
+      "independentAttempt": true,
+      "validAttempt": true,
+      "baseline": {
+        "status": "source-centreline-changed",
+        "sourcePointsSha256": "3738481be2c334940a3913b847ef87b0f06d1b51b567b19391fdda7dab7de040",
+        "currentSourcePointsSha256": "d68f89eff1e1398c3e89bcc04ca6b3c8e5d3e5a85a81c4647a29e6e674f071ea",
+        "limit": "Centreline comparison only; surfaces/structures may have changed."
+      },
+      "selectionBoxes": [
+        {
+          "minX": 1108,
+          "maxX": 1508,
+          "minZ": 368,
+          "maxZ": 848
+        },
+        {
+          "minX": 968,
+          "maxX": 1294,
+          "minZ": 669.873255121,
+          "maxZ": 769.534398635
+        }
+      ],
+      "januaryAnchorEnd": null
+    },
+    {
+      "id": "yearWalk mountain/Stillwater part 4",
+      "kind": "footway",
+      "sourceBedId": "yearWalk",
+      "sourceKind": "walk",
+      "scope": "contiguous Year Walk inside native footprint or Stillwater local area",
+      "sourceRange": [
+        2432.84517460875,
+        2460.887198608612
+      ],
+      "start": [
+        1446.3688810850804,
+        69.47500380236484,
+        368
+      ],
+      "end": [
+        1508,
+        62.498350502668096,
+        439.00881597259166
+      ],
+      "lengthM": 94.08881990519615,
+      "lengthConvention": "horizontal plan distance, matching controller progress",
+      "independentAttempt": true,
+      "validAttempt": true,
+      "baseline": {
+        "status": "source-centreline-changed",
+        "sourcePointsSha256": "3738481be2c334940a3913b847ef87b0f06d1b51b567b19391fdda7dab7de040",
+        "currentSourcePointsSha256": "d68f89eff1e1398c3e89bcc04ca6b3c8e5d3e5a85a81c4647a29e6e674f071ea",
+        "limit": "Centreline comparison only; surfaces/structures may have changed."
+      },
+      "selectionBoxes": [
+        {
+          "minX": 1108,
+          "maxX": 1508,
+          "minZ": 368,
+          "maxZ": 848
+        },
+        {
+          "minX": 968,
+          "maxX": 1294,
+          "minZ": 669.873255121,
+          "maxZ": 769.534398635
+        }
+      ],
+      "januaryAnchorEnd": null
+    },
+    {
+      "id": "yearWalk mountain/Stillwater part 5",
+      "kind": "footway",
+      "sourceBedId": "yearWalk",
+      "sourceKind": "walk",
+      "scope": "contiguous Year Walk inside native footprint or Stillwater local area",
+      "sourceRange": [
+        3108.1939634515893,
+        3265
+      ],
+      "start": [
+        1508,
+        41.992747311176785,
+        796.5321944627512
+      ],
+      "end": [
+        1364,
+        73.2,
+        650
+      ],
+      "lengthM": 512.7346935738569,
+      "lengthConvention": "horizontal plan distance, matching controller progress",
+      "independentAttempt": true,
+      "validAttempt": true,
+      "baseline": {
+        "status": "source-centreline-changed",
+        "sourcePointsSha256": "3738481be2c334940a3913b847ef87b0f06d1b51b567b19391fdda7dab7de040",
+        "currentSourcePointsSha256": "d68f89eff1e1398c3e89bcc04ca6b3c8e5d3e5a85a81c4647a29e6e674f071ea",
+        "limit": "Centreline comparison only; surfaces/structures may have changed."
+      },
+      "selectionBoxes": [
+        {
+          "minX": 1108,
+          "maxX": 1508,
+          "minZ": 368,
+          "maxZ": 848
+        },
+        {
+          "minX": 968,
+          "maxX": 1294,
+          "minZ": 669.873255121,
+          "maxZ": 769.534398635
+        }
+      ],
+      "januaryAnchorEnd": "arrival"
+    },
+    {
+      "id": "yearWalk January arrival part 1",
+      "kind": "footway",
+      "sourceBedId": "yearWalk",
+      "sourceKind": "walk",
+      "scope": "contiguous authored January arrival stretch in the local area",
+      "sourceRange": [
+        190.19396345158935,
+        348
+      ],
+      "start": [
+        1508,
+        41.992747311176785,
+        796.5321944627512
+      ],
+      "end": [
+        1364,
+        73.2,
+        650
+      ],
+      "lengthM": 512.7346935738569,
+      "lengthConvention": "horizontal plan distance, matching controller progress",
+      "independentAttempt": true,
+      "validAttempt": true,
+      "baseline": {
+        "status": "source-centreline-changed",
+        "sourcePointsSha256": "3738481be2c334940a3913b847ef87b0f06d1b51b567b19391fdda7dab7de040",
+        "currentSourcePointsSha256": "d68f89eff1e1398c3e89bcc04ca6b3c8e5d3e5a85a81c4647a29e6e674f071ea",
+        "limit": "Centreline comparison only; surfaces/structures may have changed."
+      },
+      "sourceGeometry": "journey.stations.jan.stretch.points",
+      "sourceStretchFrom": "dec",
+      "overlappingCoverage": "Overlaps the Year Walk inventory; independent view of January access, never additional or whole-loop coverage."
+    },
+    {
+      "id": "walk garden Stillwater local part 1",
+      "kind": "footway",
+      "sourceBedId": "walk garden",
+      "sourceKind": "walk",
+      "scope": "existing authored approach in Stillwater local area",
+      "sourceRange": [
+        140.38375003434345,
+        143.9776176375792
+      ],
+      "start": [
+        968,
+        52.66348002013743,
+        763.0000294992334
+      ],
+      "end": [
+        976.260265107065,
+        53.927391011960566,
+        769.534398635
+      ],
+      "lengthM": 10.532636778968378,
+      "lengthConvention": "horizontal plan distance, matching controller progress",
+      "independentAttempt": true,
+      "validAttempt": true,
+      "baseline": {
+        "status": "protected-centreline-unchanged",
+        "sourcePointsSha256": "a1fd4adf9fba53692c88efe530db6eb130121c5ac588d98e42bb8bfe27bab9a7",
+        "currentSourcePointsSha256": "a1fd4adf9fba53692c88efe530db6eb130121c5ac588d98e42bb8bfe27bab9a7",
+        "limit": "Centreline comparison only; surfaces/structures may have changed."
+      },
+      "selectionBoxes": [
+        {
+          "minX": 968,
+          "maxX": 1294,
+          "minZ": 669.873255121,
+          "maxZ": 769.534398635
+        }
+      ]
+    },
+    {
+      "id": "structure.gardenWalkBridge Stillwater local part 1",
+      "kind": "footway",
+      "sourceBedId": "structure.gardenWalkBridge",
+      "sourceKind": "walk",
+      "scope": "existing authored approach in Stillwater local area",
+      "sourceRange": [
+        5.189359391944202,
+        6.9888560636431745
+      ],
+      "start": [
+        968,
+        52.663122132940025,
+        762.9952850162105
+      ],
+      "end": [
+        976.2604913360902,
+        53.927412428489895,
+        769.534398635
+      ],
+      "lengthM": 10.535752463077749,
+      "lengthConvention": "horizontal plan distance, matching controller progress",
+      "independentAttempt": true,
+      "validAttempt": true,
+      "baseline": {
+        "status": "protected-centreline-unchanged",
+        "sourcePointsSha256": "53d0bb745a9843141ec517c417ff5f3a1a60227d398eebcdef0ee68281082dcb",
+        "currentSourcePointsSha256": "53d0bb745a9843141ec517c417ff5f3a1a60227d398eebcdef0ee68281082dcb",
+        "limit": "Centreline comparison only; surfaces/structures may have changed."
+      },
+      "selectionBoxes": [
+        {
+          "minX": 968,
+          "maxX": 1294,
+          "minZ": 669.873255121,
+          "maxZ": 769.534398635
+        }
+      ]
+    },
+    {
+      "id": "Stillwater approach on road",
+      "kind": "footway",
+      "sourceBedId": "spur stillwater",
+      "sourceKind": "road",
+      "scope": "new walkable road approach; independent from road-chain attempts",
+      "sourceRange": [
+        0,
+        280
+      ],
+      "start": [
+        1282,
+        54.649977,
+        720
+      ],
+      "end": [
+        980,
+        42,
+        700
+      ],
+      "lengthM": 341.09404433663576,
+      "lengthConvention": "horizontal plan distance, matching controller progress",
+      "independentAttempt": true,
+      "validAttempt": true,
+      "baseline": {
+        "status": "not-compared",
+        "sourcePointsSha256": null,
+        "currentSourcePointsSha256": "999eb572a8ca6aa9c96fdad4a646ba3e9a25e9162dd9aefa2186dca8a04743c4",
+        "limit": "Centreline comparison only; surfaces/structures may have changed."
+      }
+    }
+  ]
+}

@@ -1,0 +1,385 @@
+--- a/src/harbour/horizon/runtime/orderedContactShade.ts
++++ b/src/harbour/horizon/runtime/orderedContactShade.ts
+@@ -1,95 +1,106 @@
+ import * as THREE from 'three';
+ 
+-// Contact cards have no lighting, environment map, or facing-dependent shader.
+-// Preserve r185's stable BackSide-then-FrontSide primitive order in one indexed
+-// DoubleSide draw. An ambiguous view keeps the original two-pass submission.
+-// This is only for the corridor builder's owned, static contact-shade geometry.
++// r185 draws transparent DoubleSide meshes BackSide, then FrontSide. Keep those
++// two shader/culling states and that object's stable sort position. Only a face
++// with a certain side is omitted from the pass where the rasterizer culls it.
++// Near-plane/grazing uncertainty stays in BOTH original-order pass lists.
+ const FLOAT_GUARD = 32 * 2 ** -23;
+-type Result = 'ordered' | 'grazing' | 'near-plane' | 'unsupported';
++export type ContactShadePassMaterials = {back: THREE.MeshBasicMaterial; front: THREE.MeshBasicMaterial};
++type Counts = {source: number; back: number; front: number; clipped: number; nearPlane: number; grazing: number; degenerate: number; unsupported: boolean};
+ 
+-export function orderContactShade(mesh: THREE.Mesh): () => void {
+-  const geometry = mesh.geometry, position = geometry.getAttribute('position');
+-  if (!position || position.itemSize !== 3 || (position as THREE.InterleavedBufferAttribute).isInterleavedBufferAttribute) throw new Error('Contact shade needs an ordinary position attribute');
++export function orderContactShade(mesh: THREE.Mesh, passes: ContactShadePassMaterials): () => void {
++  const geometry = mesh.geometry, position = geometry.getAttribute('position'), originalMaterial = mesh.material;
++  if (!position || position.itemSize !== 3 || (position as THREE.InterleavedBufferAttribute).isInterleavedBufferAttribute || geometry.groups.length) throw new Error('Contact shade needs owned, ungrouped ordinary geometry');
++  if (passes.back === passes.front || passes.back.side !== THREE.BackSide || passes.front.side !== THREE.FrontSide) throw new Error('Contact shade needs distinct BackSide/FrontSide materials');
+   const sourceIndex = geometry.index, source = Uint32Array.from({length: sourceIndex?.count ?? position.count}, (_, i) => sourceIndex ? sourceIndex.getX(i) : i);
+   const index = new THREE.BufferAttribute(source.slice(), 1).setUsage(THREE.DynamicDrawUsage);
+-  const sides = new Uint8Array(Math.ceil(source.length / 3));
++  const sides = new Uint8Array(Math.ceil(source.length / 3)); // 0 back, 1 front, 2 uncertain/both.
+   const inverse = new THREE.Matrix4(), view = new THREE.Matrix4(), eye = new THREE.Vector3(), towardEye = new THREE.Vector3();
+   const before = mesh.onBeforeRender, after = mesh.onAfterRender, positionVersion = (position as THREE.BufferAttribute).version;
+-  let saved: {material: THREE.Material; single: boolean; side: THREE.Side} | null = null, disposed = false;
++  const materials = [passes.back, passes.front];
++  let disposed = false;
+   geometry.setIndex(index);
++  geometry.addGroup(0, source.length, 0); geometry.addGroup(0, source.length, 1);
++  // r185 render-list entries keep these same group objects by reference. Never
++  // replace them during a render: the callback narrows the current live range.
++  const backGroup = geometry.groups[0]!, frontGroup = geometry.groups[1]!;
++  mesh.material = materials;
+ 
+-  function order(camera: THREE.Camera): Result {
++  function classify(camera: THREE.Camera): Counts {
++    const counts: Counts = {source: 0, back: 0, front: 0, clipped: 0, nearPlane: 0, grazing: 0, degenerate: 0, unsupported: false};
+     const perspective = (camera as THREE.PerspectiveCamera).isPerspectiveCamera === true;
+     const orthographic = (camera as THREE.OrthographicCamera).isOrthographicCamera === true;
+     const near = (camera as THREE.PerspectiveCamera | THREE.OrthographicCamera).near;
+     const start = geometry.drawRange.start, count = Math.min(source.length - start, geometry.drawRange.count);
+-    if ((!perspective && !orthographic) || !Number.isFinite(near) || near < 0 || geometry.groups.length ||
+-        (position as THREE.BufferAttribute).version !== positionVersion || geometry.index !== index ||
+-        !Number.isInteger(start) || start < 0 || start % 3 || !Number.isInteger(count) || count < 0 || count % 3 ||
+-        Math.abs(mesh.matrixWorld.determinant()) < 1e-12) return 'unsupported';
+-    inverse.copy(mesh.matrixWorld).invert();
+-    view.multiplyMatrices(camera.matrixWorldInverse, mesh.matrixWorld);
++    const supported = (perspective || orthographic) && Number.isFinite(near) && near >= 0 &&
++      geometry.groups.length === 2 && geometry.groups[0] === backGroup && geometry.groups[1] === frontGroup &&
++      (position as THREE.BufferAttribute).version === positionVersion && geometry.index === index && mesh.material === materials &&
++      Number.isInteger(start) && start >= 0 && start % 3 === 0 && Number.isInteger(count) && count >= 0 && count % 3 === 0 &&
++      Math.abs(mesh.matrixWorld.determinant()) >= 1e-12 && !(mesh as THREE.InstancedMesh).isInstancedMesh && !geometry.morphAttributes.position &&
++      materials.every((m, i) => m.isMeshBasicMaterial && m.transparent && !m.depthWrite && !m.envMap && m.side === (i ? THREE.FrontSide : THREE.BackSide));
++    sides.fill(2);
++    if (!supported) { counts.unsupported = true; counts.source = Number.isFinite(count) ? Math.max(0, count / 3) : 0; return counts; }
++    inverse.copy(mesh.matrixWorld).invert(); view.multiplyMatrices(camera.matrixWorldInverse, mesh.matrixWorld);
+     eye.setFromMatrixPosition(camera.matrixWorld).applyMatrix4(inverse);
+     towardEye.set(0, 0, 1).transformDirection(camera.matrixWorld).transformDirection(inverse);
+     const e = view.elements;
+     for (let offset = start; offset < start + count; offset += 3) {
++      counts.source++;
+       const ia = source[offset]!, ib = source[offset + 1]!, ic = source[offset + 2]!;
+       const ax = position.getX(ia), ay = position.getY(ia), az = position.getZ(ia);
+       const ux = position.getX(ib) - ax, uy = position.getY(ib) - ay, uz = position.getZ(ib) - az;
+       const vx = position.getX(ic) - ax, vy = position.getY(ic) - ay, vz = position.getZ(ic) - az;
+       const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx, length = Math.hypot(nx, ny, nz);
+-      if (!length) { sides[offset / 3] = 0; continue; }
++      if (!length) { counts.degenerate++; continue; }
+       let behind = 0, inFront = 0;
+       for (let corner = 0; corner < 3; corner++) {
+-        const vertex = source[offset + corner]!;
+-        const x = position.getX(vertex), y = position.getY(vertex), z = position.getZ(vertex);
++        const vertex = source[offset + corner]!, x = position.getX(vertex), y = position.getY(vertex), z = position.getZ(vertex);
+         const depth = -(e[2]! * x + e[6]! * y + e[10]! * z + e[14]!) - near;
+         const error = FLOAT_GUARD * (Math.abs(e[2]! * x) + Math.abs(e[6]! * y) + Math.abs(e[10]! * z) + Math.abs(e[14]!) + near + 1);
+         if (depth + error < 0) behind++; else if (depth - error > 0) inFront++;
+       }
+-      // Entirely near-clipped triangles produce no fragments; retain them once.
+-      if (behind === 3) { sides[offset / 3] = 0; continue; }
+-      if (inFront !== 3) return 'near-plane';
++      // Fully near-clipped triangles cannot produce fragments. Retain one copy.
++      if (behind === 3) { counts.clipped++; sides[offset / 3] = 0; continue; }
++      if (inFront !== 3) { counts.nearPlane++; continue; }
+       const dx = perspective ? eye.x - ax : towardEye.x, dy = perspective ? eye.y - ay : towardEye.y, dz = perspective ? eye.z - az : towardEye.z;
+       const facing = nx * dx + ny * dy + nz * dz;
+       const scale = perspective ? Math.max(1, Math.abs(eye.x), Math.abs(eye.y), Math.abs(eye.z), Math.abs(ax), Math.abs(ay), Math.abs(az)) : 1;
+-      // Do not guess a rasterizer's facing at an almost edge-on float boundary.
+-      if (!Number.isFinite(facing) || Math.abs(facing) <= FLOAT_GUARD * scale * length) return 'grazing';
+-      sides[offset / 3] = facing > 0 ? 1 : 0;
++      if (!Number.isFinite(facing) || Math.abs(facing) <= FLOAT_GUARD * scale * length) { counts.grazing++; continue; }
++      sides[offset / 3] = facing > 0 ? 1 : 0; counts[facing > 0 ? 'front' : 'back']++;
+     }
+-    let write = start;
+-    for (let side = 0; side < 2; side++) for (let offset = start; offset < start + count; offset += 3) if (sides[offset / 3] === side) {
+-      for (let k = 0; k < 3; k++) index.array[write++] = source[offset + k]!;
+-    }
+-    return 'ordered';
++    return counts;
+   }
+-  function restoreMaterial() {
+-    if (saved) { saved.material.forceSinglePass = saved.single; saved.material.side = saved.side; saved = null; }
++  function reset() {
++    index.array.set(source); index.needsUpdate = true;
++    backGroup.start = frontGroup.start = 0; backGroup.count = frontGroup.count = source.length;
+   }
+   mesh.onBeforeRender = function(...args) {
+-    restoreMaterial(); before.apply(mesh, args);
+-    index.array.set(source); // Inactive draw-range indices and every fallback retain original order.
+-    const material = mesh.material;
+-    const supported = !Array.isArray(material) && (material as THREE.MeshBasicMaterial).isMeshBasicMaterial &&
+-      material.transparent && !material.depthWrite && material.side === THREE.DoubleSide &&
+-      !(material as THREE.MeshBasicMaterial).envMap && !(mesh as THREE.InstancedMesh).isInstancedMesh && !geometry.morphAttributes.position;
+-    const result = supported ? order(args[2]) : 'unsupported';
+-    mesh.userData.contactShadePass = result;
+-    index.needsUpdate = true; // r185 BindingStates uploads the index after this callback, in the same draw.
+-    if (supported && !Array.isArray(material)) {
+-      saved = {material, single: material.forceSinglePass, side: material.side};
+-      material.forceSinglePass = result === 'ordered';
++    before.apply(mesh, args); reset();
++    const group = args[5], side = group === backGroup ? 0 : group === frontGroup ? 1 : -1;
++    const counts = classify(args[2]);
++    if (group && side >= 0 && !counts.unsupported) {
++      const start = geometry.drawRange.start, count = Math.min(source.length - start, geometry.drawRange.count); let write = start;
++      for (let offset = start; offset < start + count; offset += 3) if (sides[offset / 3] === side || sides[offset / 3] === 2) {
++        for (let k = 0; k < 3; k++) index.array[write++] = source[offset + k]!;
++      }
++      // Keep drawRange intact. Both passes reuse this same index window; r185
++      // uploads it after each callback and reads this group's bounds then.
++      group.start = start; group.count = write - start;
+     }
++    mesh.userData.contactShadePass = counts.unsupported || side < 0 ? 'unsupported' : counts.nearPlane || counts.grazing || counts.degenerate ? 'partial' : 'partitioned';
++    mesh.userData.contactShadeCounts = counts;
++    index.needsUpdate = true;
+   };
+-  mesh.onAfterRender = function(...args) { try { after.apply(mesh, args); } finally { restoreMaterial(); } };
++  mesh.onAfterRender = function(...args) { try { after.apply(mesh, args); } finally { reset(); } };
+   const installedBefore = mesh.onBeforeRender, installedAfter = mesh.onAfterRender;
+   function dispose() {
+-    if (disposed) return; disposed = true; restoreMaterial();
++    if (disposed) return; disposed = true; reset();
+     if (mesh.onBeforeRender === installedBefore) mesh.onBeforeRender = before;
+     if (mesh.onAfterRender === installedAfter) mesh.onAfterRender = after;
+-    index.array.set(source); index.needsUpdate = true;
+-    geometry.removeEventListener('dispose', dispose);
+-    // The builder owns geometry/index disposal. No material clone or texture is created.
++    if (mesh.material === materials) mesh.material = originalMaterial;
++    geometry.clearGroups(); geometry.removeEventListener('dispose', dispose);
++    // Keep the owned index attached so WebGLGeometries' disposal listener frees
++    // its GPU buffer. Shared pass materials are disposed once by CorridorArt.
+   }
+   geometry.addEventListener('dispose', dispose);
+   return dispose;
+--- a/src/harbour/horizon/runtime/corridorArt.ts
++++ b/src/harbour/horizon/runtime/corridorArt.ts
+@@ -101,6 +101,8 @@
+   const lampDepth=new THREE.MeshDepthMaterial();
+   lampDepth.onBeforeCompile=shader=>packedMatrixShader(shader,false);lampDepth.customProgramCacheKey=()=>'horizon-road-lamp-packed-depth-1';
+   const shade=new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-3});
++  // Explicit old back/front passes share source material state and get independent fog hooks.
++  const shadeBack=shade.clone(),shadeFront=shade.clone();shadeBack.side=THREE.BackSide;shadeFront.side=THREE.FrontSide;
+   // Ink: 1 px lines whose opacity fades with view depth (STYLE §1.2 rule 7: full to 60 eu, 0 at 180 eu).
+   const ink=new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:tier==='full'?.78:.62});
+   ink.onBeforeCompile=shader=>{
+@@ -109,7 +111,7 @@
+       .replace('#include <color_fragment>',`#include <color_fragment>\ndiffuseColor.a*=1.0-smoothstep(${CORRIDOR_DETAIL.inkFull.toFixed(1)},${CORRIDOR_DETAIL.inkZero.toFixed(1)},vInkDepth);`);};
+   ink.customProgramCacheKey=()=>'horizon-road-ink-1';
+   const halo=haloMaterial(tier);
+-  return {materials:{card,steel,markings,lamp,packedLamp,lampDepth,shade,ink,halo} as Record<string,THREE.Material>,night,halo,markings,lamp,packedLamp,lampDepth};
++  return {materials:{card,steel,markings,lamp,packedLamp,lampDepth,shade,shadeBack,shadeFront,ink,halo} as Record<string,THREE.Material>,night,halo,markings,lamp,packedLamp,lampDepth};
+ }
+ 
+ /** The halo glow card (STYLE §1.11): a camera-facing soft disc, additive, fogged, instanced. Opacity is the night level. */
+@@ -225,7 +227,7 @@
+     const detail:THREE.Object3D[]=[],replaced=new Set<THREE.Material>();
+     for(const obj of [...build.group.children]){const mesh=obj as THREE.Mesh,key=Object.entries(build.materials).find(([,mat])=>mat===mesh.material)?.[0];
+       const to=key==='flat'?markings:key==='glow'?lamp:key&&materials[key]?materials[key]:null;if(to){replaced.add(mesh.material as THREE.Material);mesh.material=to;}
+-      if(key==='shade')orderContactShade(mesh);
++      if(key==='shade')orderContactShade(mesh,{back:materials.shadeBack as THREE.MeshBasicMaterial,front:materials.shadeFront as THREE.MeshBasicMaterial});
+       if(key==='flat'||key==='shade')detail.push(mesh);}
+     // The builder's own copies of the replaced materials are released now (any it keeps, e.g. decals, stay with the build).
+     for(const mat of replaced)mat.dispose();
+--- a/test/horizon-ordered-contact-shade.test.ts
++++ b/test/horizon-ordered-contact-shade.test.ts
+@@ -1,102 +1,127 @@
+ import {readFileSync} from 'node:fs';
+ import * as THREE from 'three';
+ import {describe, expect, it, vi} from 'vitest';
+-import {orderContactShade} from '../src/harbour/horizon/runtime/orderedContactShade';
++import {orderContactShade, type ContactShadePassMaterials} from '../src/harbour/horizon/runtime/orderedContactShade';
+ 
+-function mesh(facing = [1, -1, 1, -1], material = new THREE.MeshBasicMaterial({transparent: true, depthWrite: false, side: THREE.DoubleSide})) {
++function mesh(facing = [1, -1, 1, -1]) {
+   const positions: number[] = [];
+   for (const [i, side] of facing.entries()) {
+     const a = [-1, -1, -i * .1], b = [1, -1, -i * .1], c = [0, 1, -i * .1];
+     positions.push(...a, ...(side > 0 ? b : c), ...(side > 0 ? c : b));
+   }
+   const geometry = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+-  return new THREE.Mesh(geometry, material);
++  return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({transparent: true, depthWrite: false, side: THREE.DoubleSide}));
++}
++function materials(): ContactShadePassMaterials {
++  return {back: new THREE.MeshBasicMaterial({transparent: true, depthWrite: false, side: THREE.BackSide}), front: new THREE.MeshBasicMaterial({transparent: true, depthWrite: false, side: THREE.FrontSide})};
+ }
+ function camera(ortho = false) {
+   const value = ortho ? new THREE.OrthographicCamera(-3, 3, 3, -3, .1, 100) : new THREE.PerspectiveCamera(60, 1, .1, 100);
+   value.position.set(0, 0, 5); value.lookAt(0, 0, 0); value.updateMatrixWorld(true); return value;
+ }
+-function begin(m: THREE.Mesh, c: THREE.Camera) {
++function draw(m: THREE.Mesh, c: THREE.Camera, pass: 0 | 1) {
+   m.updateMatrixWorld(true); c.updateMatrixWorld(true);
+-  m.onBeforeRender({} as THREE.WebGLRenderer, {} as THREE.Scene, c, m.geometry, m.material as THREE.Material, null as never);
++  // This is the same group object retained by r185's already-built render list.
++  const group = m.geometry.groups[pass]!, mat = (m.material as THREE.Material[])[pass]!;
++  m.onBeforeRender({} as THREE.WebGLRenderer, {} as THREE.Scene, c, m.geometry, mat, group);
++  const start = Math.max(group.start, m.geometry.drawRange.start), end = Math.min(group.start + group.count, m.geometry.drawRange.start + m.geometry.drawRange.count, m.geometry.index!.count);
++  const result = {indices: Array.from(m.geometry.index!.array.slice(start, end)), group, counts: {...m.userData.contactShadeCounts}, state: m.userData.contactShadePass};
++  m.onAfterRender({} as THREE.WebGLRenderer, {} as THREE.Scene, c, m.geometry, mat, group);
++  return result;
+ }
+-function end(m: THREE.Mesh, c: THREE.Camera) {
+-  m.onAfterRender({} as THREE.WebGLRenderer, {} as THREE.Scene, c, m.geometry, m.material as THREE.Material, null as never);
++function install(m: THREE.Mesh, p = materials()) {
++  const original = m.material as THREE.Material, cleanup = orderContactShade(m, p);
++  return {p, cleanup, dispose() {m.geometry.dispose(); original.dispose(); p.back.dispose(); p.front.dispose();}};
+ }
+-const indices = (m: THREE.Mesh) => Array.from(m.geometry.index!.array);
+ 
+-describe('corridor contact shade preserves two-pass primitive order', () => {
+-  it.each([false, true])('stably puts back faces before front faces (orthographic=%s)', ortho => {
+-    const m = mesh(), c = camera(ortho), original = m.geometry.getAttribute('position').array.slice();
+-    orderContactShade(m); begin(m, c);
+-    expect(indices(m)).toEqual([3, 4, 5, 9, 10, 11, 0, 1, 2, 6, 7, 8]);
+-    expect(m.material.forceSinglePass).toBe(true); expect(m.material.side).toBe(THREE.DoubleSide);
++describe('corridor contact shade retains exact conservative back/front passes', () => {
++  it.each([false, true])('keeps each original pass ordered without opposite-facing submissions (orthographic=%s)', ortho => {
++    const m = mesh(), c = camera(ortho), original = m.geometry.getAttribute('position').array.slice(), owner = install(m);
++    const back = draw(m, c, 0), front = draw(m, c, 1);
++    expect(back.indices).toEqual([3, 4, 5, 9, 10, 11]); expect(front.indices).toEqual([0, 1, 2, 6, 7, 8]);
++    expect(back.state).toBe('partitioned'); expect(front.state).toBe('partitioned');
+     expect(m.geometry.getAttribute('position').array).toEqual(original);
+-    end(m, c); expect(m.material.forceSinglePass).toBe(false); expect(m.material.side).toBe(THREE.DoubleSide);
+-    m.geometry.dispose(); m.material.dispose();
++    expect(owner.p.back.side).toBe(THREE.BackSide); expect(owner.p.front.side).toBe(THREE.FrontSide);
++    expect(owner.p.back.forceSinglePass).toBe(false); expect(owner.p.front.forceSinglePass).toBe(false); owner.dispose();
+   });
+-  it.each([false, true])('handles independent world transforms and mirrored winding (orthographic=%s)', ortho => {
++  it.each([false, true])('retains mirrored, rotated and nonuniform world-transform semantics (orthographic=%s)', ortho => {
+     const m = mesh(), c = camera(ortho);
+     m.position.set(1300, 90, 600); m.rotation.y = .7; m.scale.set(-2, 1.3, .8); m.updateMatrixWorld(true);
+     c.position.copy(new THREE.Vector3(0, 0, 5).applyMatrix4(m.matrixWorld)); c.lookAt(m.position); c.updateMatrixWorld(true);
+-    orderContactShade(m); begin(m, c);
+-    expect(indices(m)).toEqual([3, 4, 5, 9, 10, 11, 0, 1, 2, 6, 7, 8]);
+-    end(m, c); m.geometry.dispose(); m.material.dispose();
++    const owner = install(m); expect(draw(m, c, 0).indices).toEqual([3, 4, 5, 9, 10, 11]); expect(draw(m, c, 1).indices).toEqual([0, 1, 2, 6, 7, 8]); owner.dispose();
+   });
+-  it('retains alpha compositing order for overlapping cards with different fogged colors', () => {
+-    const m = mesh(), c = camera(); orderContactShade(m); begin(m, c);
+-    const colors = [[.1, .09, .08], [.2, .25, .3], [.3, .4, .5], [.4, .5, .6]], alpha = [.26, .19, .13, .21];
++  it.each(['near-plane', 'grazing'] as const)('duplicates only the uncertain face in both stable lists (%s)', mode => {
++    const m = mesh([1, -1, 1]), c = camera(), p = m.geometry.getAttribute('position');
++    if (mode === 'near-plane') p.setXYZ(0, -1, -1, 4.95);
++    else {p.setXYZ(0, 0, -1, -1); p.setXYZ(1, 0, 1, -1); p.setXYZ(2, 0, 0, -2);}
++    const owner = install(m), back = draw(m, c, 0), front = draw(m, c, 1);
++    expect(back.indices).toEqual([0, 1, 2, 3, 4, 5]); expect(front.indices).toEqual([0, 1, 2, 6, 7, 8]);
++    expect(back.state).toBe('partial'); expect(back.counts[mode === 'near-plane' ? 'nearPlane' : 'grazing']).toBe(1);
++    expect(back.indices.length + front.indices.length).toBe(12); // Four submissions, not the old six.
++    owner.dispose();
++  });
++  it('keeps a wholly near-clipped face once and a zero-area uncertain face in both passes', () => {
++    const m = mesh([1, -1, 1]), c = camera(), p = m.geometry.getAttribute('position');
++    for (let k = 0; k < 3; k++) p.setZ(k, 5.2);
++    for (let k = 6; k < 9; k++) p.setXYZ(k, 0, 0, 0);
++    const owner = install(m), back = draw(m, c, 0), front = draw(m, c, 1);
++    expect(back.indices).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]); expect(front.indices).toEqual([6, 7, 8]);
++    expect(back.counts.clipped).toBe(1); expect(back.counts.degenerate).toBe(1); owner.dispose();
++  });
++  it('does not reorder visible alpha fragments with distinct fogged colors', () => {
++    const m = mesh(), c = camera(), owner = install(m), colors = [[.1, .09, .08], [.2, .25, .3], [.3, .4, .5], [.4, .5, .6]], alpha = [.26, .19, .13, .21];
+     const blend = (order: number[]) => order.reduce((rgb, face) => rgb.map((value, channel) => value * (1 - alpha[face]!) + colors[face]![channel]! * alpha[face]!), [.7, .7, .7]);
+-    const order = indices(m).filter((_, i) => i % 3 === 0).map(vertex => vertex / 3);
+-    expect(blend(order)).toEqual(blend([1, 3, 0, 2]));
+-    expect(blend(order)).not.toEqual(blend([0, 1, 2, 3]));
+-    end(m, c); m.geometry.dispose(); m.material.dispose();
++    const visible = [...draw(m, c, 0).indices, ...draw(m, c, 1).indices].filter((_, i) => i % 3 === 0).map(vertex => vertex / 3);
++    expect(blend(visible)).toEqual(blend([1, 3, 0, 2])); expect(blend(visible)).not.toEqual(blend([0, 1, 2, 3])); owner.dispose();
+   });
+-  it('keeps inactive indexed draw-range data and each triangle exactly once', () => {
++  it('preserves indexed drawRange and resets the shared index window after each pass', () => {
+     const m = mesh(); m.geometry.setIndex([0, 1, 2, 6, 7, 8, 3, 4, 5, 9, 10, 11]); m.geometry.setDrawRange(3, 6);
+-    const c = camera(); orderContactShade(m); begin(m, c);
+-    expect(indices(m)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+-    expect(m.geometry.drawRange).toEqual({start: 3, count: 6});
+-    end(m, c); m.geometry.dispose(); m.material.dispose();
++    const source = Array.from(m.geometry.index!.array), c = camera(), owner = install(m), groups = [...m.geometry.groups];
++    expect(draw(m, c, 0).indices).toEqual([3, 4, 5]); expect(Array.from(m.geometry.index!.array)).toEqual(source);
++    expect(draw(m, c, 1).indices).toEqual([6, 7, 8]); expect(Array.from(m.geometry.index!.array)).toEqual(source);
++    expect(m.geometry.drawRange).toEqual({start: 3, count: 6}); expect(m.geometry.groups[0]).toBe(groups[0]); expect(m.geometry.groups[1]).toBe(groups[1]); owner.dispose();
+   });
+-  it('restores original two-pass order for near-plane and grazing ambiguity', () => {
+-    for (const mode of ['near-plane', 'grazing'] as const) {
+-      const m = mesh([1, -1]), c = camera();
+-      const p = m.geometry.getAttribute('position');
+-      if (mode === 'near-plane') p.setXYZ(0, -1, -1, 4.95);
+-      else { p.setXYZ(0, 0, -1, -1); p.setXYZ(1, 0, 1, -1); p.setXYZ(2, 0, 0, -2); }
+-      orderContactShade(m); begin(m, c);
+-      expect(m.userData.contactShadePass).toBe(mode); expect(m.material.forceSinglePass).toBe(false);
+-      expect(indices(m)).toEqual([0, 1, 2, 3, 4, 5]);
+-      end(m, c); m.geometry.dispose(); m.material.dispose();
++  it('reclassifies sequential camera moves without stale group data or shared material changes', () => {
++    const a = mesh(), b = mesh([1]), c = camera(), p = materials(), owner = install(a, p), other = install(b, p);
++    const states = [p.back.side, p.front.side, p.back.forceSinglePass, p.front.forceSinglePass];
++    expect(draw(a, c, 0).indices).toEqual([3, 4, 5, 9, 10, 11]); expect(draw(a, c, 1).indices).toEqual([0, 1, 2, 6, 7, 8]);
++    c.position.z = -5; c.lookAt(0, 0, 0); c.updateMatrixWorld(true);
++    expect(draw(a, c, 0).indices).toEqual([0, 1, 2, 6, 7, 8]); expect(draw(a, c, 1).indices).toEqual([3, 4, 5, 9, 10, 11]);
++    expect(draw(b, c, 0).indices).toEqual([0, 1, 2]); expect(draw(b, c, 1).indices).toEqual([]);
++    expect([p.back.side, p.front.side, p.back.forceSinglePass, p.front.forceSinglePass]).toEqual(states);
++    a.geometry.dispose(); b.geometry.dispose(); owner.cleanup(); other.cleanup(); p.back.dispose(); p.front.dispose();
++  });
++  it('retains original full back/front lists for unsupported cameras and changed positions', () => {
++    for (const changed of [false, true]) {
++      const m = mesh([1, -1]), owner = install(m), c = changed ? camera() : new THREE.Camera();
++      if (changed) m.geometry.getAttribute('position').needsUpdate = true;
++      const back = draw(m, c, 0), front = draw(m, c, 1);
++      expect(back.state).toBe('unsupported'); expect(back.indices).toEqual([0, 1, 2, 3, 4, 5]); expect(front.indices).toEqual(back.indices); owner.dispose();
+     }
+   });
+-  it('does not leak shared material state and restores callbacks on geometry disposal', () => {
+-    const a = mesh(), b = mesh([1], a.material), c = camera(), before = vi.fn(), after = vi.fn();
+-    a.onBeforeRender = before; a.onAfterRender = after;
+-    orderContactShade(a); orderContactShade(b); begin(a, c); end(a, c);
+-    expect(a.material.forceSinglePass).toBe(false); begin(b, c); end(b, c);
+-    expect(a.material.forceSinglePass).toBe(false); expect(a.material.side).toBe(THREE.DoubleSide);
+-    expect(before).toHaveBeenCalledTimes(1); expect(after).toHaveBeenCalledTimes(1);
+-    a.geometry.dispose(); expect(a.onBeforeRender).toBe(before); expect(a.onAfterRender).toBe(after);
+-    b.geometry.dispose(); a.material.dispose();
++  it('restores prior callbacks/material and leaves shared material disposal to the owner', () => {
++    const m = mesh(), original = m.material, c = camera(), before = vi.fn(), after = vi.fn(), p = materials(), disposeBack = vi.fn(), disposeFront = vi.fn();
++    m.onBeforeRender = before; m.onAfterRender = after; p.back.addEventListener('dispose', disposeBack); p.front.addEventListener('dispose', disposeFront);
++    const cleanup = orderContactShade(m, p), index = m.geometry.index;
++    draw(m, c, 0); draw(m, c, 1); expect(before).toHaveBeenCalledTimes(2); expect(after).toHaveBeenCalledTimes(2);
++    m.geometry.dispose(); cleanup(); expect(m.onBeforeRender).toBe(before); expect(m.onAfterRender).toBe(after); expect(m.material).toBe(original);
++    expect(m.geometry.index).toBe(index); expect(m.geometry.groups).toEqual([]); expect(disposeBack).not.toHaveBeenCalled(); expect(disposeFront).not.toHaveBeenCalled();
++    p.back.dispose(); p.front.dispose(); original.dispose(); expect(disposeBack).toHaveBeenCalledTimes(1); expect(disposeFront).toHaveBeenCalledTimes(1);
+   });
+-  it('retains two passes for unsupported cameras and environment-dependent materials', () => {
+-    for (const env of [false, true]) {
+-      const m = mesh(), c = env ? camera() : new THREE.Camera();
+-      if (env) m.material.envMap = new THREE.Texture();
+-      orderContactShade(m); begin(m, c);
+-      expect(m.userData.contactShadePass).toBe('unsupported'); expect(m.material.forceSinglePass).toBe(false);
+-      end(m, c); m.geometry.dispose(); m.material.envMap?.dispose(); m.material.dispose();
+-    }
++  it('uses installed r185 group references, stable object ordering and same-pass index upload', () => {
++    const renderer = readFileSync('node_modules/three/src/renderers/WebGLRenderer.js', 'utf8');
++    const project = renderer.slice(renderer.indexOf('function projectObject('), renderer.indexOf('function renderObjects('));
++    expect(project).toContain('const group = groups[ i ];'); expect(project).toContain('currentRenderList.push( object, geometry, groupMaterial, groupOrder, _vector4.z, group );');
++    const renderObject = renderer.slice(renderer.indexOf('function renderObject('), renderer.indexOf('function getProgram(', renderer.indexOf('function renderObject(')));
++    expect(renderObject.indexOf('object.onBeforeRender(')).toBeLessThan(renderObject.indexOf('_this.renderBufferDirect('));
++    expect(renderer).toContain('drawStart = Math.max( drawStart, group.start * rangeFactor );'); expect(renderer).toContain('( group.start + group.count ) * rangeFactor');
++    const list = readFileSync('node_modules/three/src/renderers/webgl/WebGLRenderLists.js', 'utf8');
++    expect(list).toContain('group: group'); expect(list).toContain('return a.id - b.id;'); expect(list).toContain('transparent.sort( customTransparentSort || reversePainterSortStable );');
++    expect(readFileSync('node_modules/three/src/renderers/webgl/WebGLBindingStates.js', 'utf8')).toContain('attributes.update( index, gl.ELEMENT_ARRAY_BUFFER );');
+   });
+-  it('targets the installed renderer order and same-draw index upload, not a guessed API', () => {
+-    const renderer = readFileSync('node_modules/three/src/renderers/WebGLRenderer.js', 'utf8');
+-    const renderObject = renderer.slice(renderer.indexOf('function renderObject('), renderer.indexOf('function getProgram(', renderer.indexOf('function renderObject(')));
+-    expect(renderObject).toContain('material.side = BackSide;'); expect(renderObject).toContain('material.side = FrontSide;');
+-    expect(renderObject.indexOf('material.side = BackSide;')).toBeLessThan(renderObject.indexOf('material.side = FrontSide;'));
+-    expect(renderObject).toContain('object.onBeforeRender( _this, scene, camera, geometry, material, group );');
+-    const bindings = readFileSync('node_modules/three/src/renderers/webgl/WebGLBindingStates.js', 'utf8');
+-    expect(bindings).toContain('attributes.update( index, gl.ELEMENT_ARRAY_BUFFER );');
++  it('registers both fog-visible pass materials once and uses the existing shared disposal owner', () => {
++    const source = readFileSync('src/harbour/horizon/runtime/corridorArt.ts', 'utf8');
++    expect(source).toContain('shadeBack=shade.clone(),shadeFront=shade.clone()'); expect(source).toContain('shadeBack.side=THREE.BackSide;shadeFront.side=THREE.FrontSide;');
++    expect(source).toContain('lampDepth,shade,shadeBack,shadeFront,ink,halo} as Record'); expect(source).toContain('for(const mat of Object.values(materials))mat.dispose();');
+   });
+ });

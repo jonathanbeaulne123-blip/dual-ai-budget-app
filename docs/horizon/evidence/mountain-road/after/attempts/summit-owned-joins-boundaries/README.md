@@ -1,0 +1,7 @@
+# Summit source boundary proof
+
+Final probe3 exits0 with2,922 terminal/circle boundary samples,9,400 actual road face samples with0 changed cap error,340 clear rail-opening samples and30 retained body-band samples. All original stair members and source walk metadata are preserved. Full ground raises2 vertices by at most20.0081cm, changing11 incident faces and5 existing flatter-diagonal choices; highest changed face is3.9654degrees. Lite vertices/indices are unchanged. The original failing walking witness has only2.7–3.8mm full/3.2–8.6mm lite drawn/query separation afterward.
+
+The first two probes failed diagnostic assumptions:1 incorrectly required an identical ground index despite the existing height-dependent diagonal choice;2 grouped the region-filtered indices into source cells, which is invalid where that filtering retains one triangle. Probe3 verifies each changed cell in the original structured lattice, preserving the same four vertices, proving an approved local height changed, and checking both old/new cell slopes. All original outputs remain here. No production source or acceptance slope/step threshold changed to fix these diagnostic assumptions.
+
+The circle includes unrelated inherited ground mesh approximations up to7.28cm full and15.00cm lite; those largest witnesses are unchanged. This is bounded Summit source proof, not complete walking, baked-world, image or device acceptance.

@@ -1,0 +1,16 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/horizonCorridorPlanting.test.ts > performance: a 40-group reach (ROAD §8: ≤ 25k triangles full / 10k lite, ≤ 12 draw calls per district) > measures a Long Sands boulevard reach of 40 groups
+40-group reach {"classic/full":{"items":310,"drawCalls":6,"triangles":23226,"layers":{"bed":"22×156","bloom:0":"17×193","contact":"36×10","palm":"83×166","palmShell":"40×56","tuft":"27×5"}},"classic/lite":{"items":310,"drawCalls":5,"triangles":8958,"layers":{"bed":"17×108","bloom:0":"17×106","contact":"22×10","palm":"42×120","tuft":"12×5"}},"taylor/full":{"items":310,"drawCalls":6,"triangles":24109,"layers":{"bed":"22×168","bloom:0":"17×288","contact":"36×10","palm":"83×154","palmShell":"40×56","tuft":"27×5"}},"taylor/lite":{"items":310,"drawCalls":5,"triangles":9440,"layers":{"bed":"17×88","bloom:0":"17×184","contact":"22×10","palm":"42×108","tuft":"12×5"}},"newfoundland/full":{"items":310,"drawCalls":6,"triangles":19076,"layers":{"bed":"22×156","bloom:0":"17×193","contact":"36×10","palm":"83×116","palmShell":"40×56","tuft":"27×5"}},"newfoundland/lite":{"items":310,"drawCalls":5,"triangles":6690,"layers":{"bed":"17×108","bloom:0":"17×106","contact":"22×10","palm":"42×66","tuft":"12×5"}}}
+
+stdout | test/horizonCorridorPlanting.test.ts > performance: a 40-group reach (ROAD §8: ≤ 25k triangles full / 10k lite, ≤ 12 draw calls per district) > measures a Harbour Avenue reach of 40 groups (v2 maples with ink shells, hedges, beds)
+40-group avenue {"classic/full":{"items":416,"drawCalls":6,"triangles":24250,"layers":{"bed":"8×156","bloom:2":"4×175","contact":"49×10","hedge":"139×20","shell:round":"53×120","tree:round":"88×144"}},"classic/lite":{"items":416,"drawCalls":5,"triangles":9562,"layers":{"bed":"5×108","bloom:2":"4×102","contact":"29×10","hedge":"85×20","tree:round":"46×144"}},"taylor/full":{"items":416,"drawCalls":6,"triangles":24846,"layers":{"bed":"8×168","bloom:2":"4×300","contact":"49×10","hedge":"139×20","shell:round":"53×120","tree:round":"88×144"}},"taylor/lite":{"items":416,"drawCalls":5,"triangles":9870,"layers":{"bed":"5×88","bloom:2":"4×204","contact":"29×10","hedge":"85×20","tree:round":"46×144"}},"newfoundland/full":{"items":416,"drawCalls":6,"triangles":24370,"layers":{"bed":"8×156","bloom:2":"4×205","contact":"49×10","hedge":"139×20","shell:round":"53×120","tree:round":"88×144"}},"newfoundland/lite":{"items":416,"drawCalls":5,"triangles":9590,"layers":{"bed":"5×108","bloom:2":"4×109","contact":"29×10","hedge":"85×20","tree:round":"46×144"}}}
+
+ ✓ test/horizonCorridorPlanting.test.ts (11 tests) 486ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  12:26:13
+   Duration  1.57s (transform 409ms, setup 0ms, collect 870ms, tests 486ms, environment 0ms, prepare 57ms)
+

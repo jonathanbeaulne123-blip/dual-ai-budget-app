@@ -23,6 +23,8 @@ export type SurfaceKind = 'grass' | 'path' | 'sand' | 'cobble' | 'concrete' | 'w
 
 /** One point of rideable ground, including every ramp/bowl/transition. */
 export type SurfaceSample = {
+  /** Explicitly absent support (a streamed host gap); omitted means the existing supported field. */
+  supported?: boolean;
   y: number;
   /** Unit normal, ny > 0. Transitions stop at ≤ 84° so ny ≥ ~0.1. */
   nx: number; ny: number; nz: number;

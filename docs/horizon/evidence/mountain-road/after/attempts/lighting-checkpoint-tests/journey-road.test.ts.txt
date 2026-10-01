@@ -1,0 +1,1002 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/journey-road.test.ts (16 tests | 7 failed) 7708ms
+   × extract: bridges and covered stretches > draws the road's named spans as bridges, each carrying its road, with the deck's own axis and width 22ms
+     → expected [ 'apronBridge', 'bightBridge', …(11) ] to deeply equal [ 'apronBridge', 'bightBridge', …(8) ]
+   × extract: bridges and covered stretches > marks the Prow gallery and the Mountain Road tunnel as covered, portal to portal 2ms
+     → expected [ …(3) ] to deeply equal [ …(2) ]
+   × extract: bridges and covered stretches > without corridors: no boulevards, and everything else is exactly what the same index extracts with corridors 655ms
+     → expected { revision: 'horizon-geo-1', …(17) } to strictly equal { revision: 'horizon-geo-1', …(17) }
+   ✓ extract: boulevard reaches from the corridor > reads boulevard stations as runs (a structure station breaks one, a reach may wrap the loop), with the median flag  352ms
+   × slim round-trip > the baked slim file is this format and decodes to what the index extracts, bridges and covers included 127ms
+     → expected 13 to be 10 // Object.is equality
+   ✓ slim round-trip > carries boulevards through encode → JSON → decode, and refuses malformed road fields  453ms
+   ✓ slim round-trip > a rebake that moves a span's deck moves the drawn bridge and the road on it (no stale geometry)  418ms
+   ✓ road plan: what is drawn where > puts the carried road ON the deck, breaks what passes under it, and blends back to the ground past its ends 205ms
+   ✓ road plan: what is drawn where > dims and dashes the covered stretches with a notch at each portal, and leaves every other line as it was 255ms
+   ✓ road plan: what is drawn where > flags boulevard reaches (median / verges) when the corridor is there  478ms
+   ✓ the board overlay does not move and is never drawn over > lays out the same route, stations, spaces and crossings with or without the road fields  2473ms
+   × the board overlay does not move and is never drawn over > keeps every bridge, cover and boulevard clear of every station pad at its largest (Sky) size 439ms
+     → stillwaterTunnel vs feb: expected 24.332077771875557 to be greater than 37.400000000000006
+   ✓ the board overlay does not move and is never drawn over > draws every land mesh before the board, and the bridges and deck lines write no depth (so they never hide a mark)  430ms
+   × three.js land with the road > stays inside the land budget on full and lite and recolours the bridges per theme 800ms
+     → expected 3268 to be less than 1500
+   ✓ three.js land with the road > masks only roads beneath a bridge and gives each mounted flat map distinct mask IDs 72ms
+   × three.js land with the road > authors the road's colours for every theme, and the flat twin draws the bridges at their true width 4ms
+     → expected [ 'apronBridge', 'bightBridge', …(11) ] to deeply equal [ 'apronBridge', 'bightBridge', …(8) ]
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/journey-road.test.ts > extract: bridges and covered stretches > draws the road's named spans as bridges, each carrying its road, with the deck's own axis and width
+AssertionError: expected [ 'apronBridge', 'bightBridge', …(11) ] to deeply equal [ 'apronBridge', 'bightBridge', …(8) ]
+
+- Expected
++ Received
+
+@@ -4,9 +4,12 @@
+    "bightSpurTrestle",
+    "gardenWalkBridge",
+    "highSpan",
+    "hollowBridge",
+    "mountainRoadCanalBridge",
++   "mountainV2:b-foot",
++   "mountainV2:b2",
++   "mountainV2:b3",
+    "prowLoopFootbridge",
+    "quayBridge",
+    "reachBoardwalk",
+  ]
+
+ ❯ test/journey-road.test.ts:97:37
+     95|   it("draws the road's named spans as bridges, each carrying its road,…
+     96|     const byId = new Map((land.bridges ?? []).map((b) => [b.id, b]));
+     97|     expect([...byId.keys()].sort()).toEqual(BRIDGE_CAST.map(b=>b.id).s…
+       |                                     ^
+     98|     for (const [id, road] of Object.entries(SPANS)) {
+     99|       const b = byId.get(id)!, bed = world.beds.find((x) => x.id === `…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  test/journey-road.test.ts > extract: bridges and covered stretches > marks the Prow gallery and the Mountain Road tunnel as covered, portal to portal
+AssertionError: expected [ …(3) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+    "mountainRoadTunnel:tunnel:V03",
+    "prowTunnel:gallery:V01",
++   "stillwaterTunnel:tunnel:spur stillwater",
+  ]
+
+ ❯ test/journey-road.test.ts:118:64
+    116|   it("marks the Prow gallery and the Mountain Road tunnel as covered, …
+    117|     const covers = land.covers ?? [];
+    118|     expect(covers.map((c) => `${c.id}:${c.kind}:${c.lineId}`)).toEqual…
+       |                                                                ^
+    119|     const mouths = new Map((world.collision?.mouths ?? []).map((m) => …
+    120|     for (const c of covers) {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  test/journey-road.test.ts > extract: bridges and covered stretches > without corridors: no boulevards, and everything else is exactly what the same index extracts with corridors
+AssertionError: expected { revision: 'horizon-geo-1', …(17) } to strictly equal { revision: 'horizon-geo-1', …(17) }
+
+- Expected
++ Received
+
+@@ -534,10 +534,823 @@
+        "width": 17,
+      },
+      {
+        "axis": [
+          [
++           1291.89,
++           59.23,
++           689.59,
++         ],
++         [
++           1292.77,
++           59.35,
++           689.12,
++         ],
++         [
++           1293.67,
++           59.47,
++           688.67,
++         ],
++         [
++           1294.58,
++           59.58,
++           688.26,
++         ],
++         [
++           1295.5,
++           59.68,
++           687.87,
++         ],
++         [
++           1296.44,
++           59.78,
++           687.52,
++         ],
++         [
++           1297.38,
++           59.88,
++           687.19,
++         ],
++         [
++           1298.33,
++           59.97,
++           686.89,
++         ],
++         [
++           1299.29,
++           60.06,
++           686.62,
++         ],
++         [
++           1300.26,
++           60.14,
++           686.37,
++         ],
++         [
++           1301.24,
++           60.22,
++           686.15,
++         ],
++         [
++           1302.22,
++           60.3,
++           685.96,
++         ],
++         [
++           1303.21,
++           60.37,
++           685.79,
++         ],
++         [
++           1304.19,
++           60.44,
++           685.65,
++         ],
++         [
++           1305.19,
++           60.51,
++           685.52,
++         ],
++         [
++           1306.18,
++           60.57,
++           685.43,
++         ],
++         [
++           1307.18,
++           60.63,
++           685.36,
++         ],
++         [
++           1308.18,
++           60.68,
++           685.32,
++         ],
++         [
++           1309.18,
++           60.74,
++           685.32,
++         ],
++         [
++           1310.18,
++           60.79,
++           685.35,
++         ],
++         [
++           1311.17,
++           60.83,
++           685.41,
++         ],
++         [
++           1312.17,
++           60.88,
++           685.52,
++         ],
++         [
++           1313.16,
++           60.92,
++           685.68,
++         ],
++         [
++           1314.13,
++           60.96,
++           685.88,
++         ],
++       ],
++       "id": "mountainV2:b-foot",
++       "lineIds": [
++         "S1",
++         "mountainV2.road",
++       ],
++       "underIds": [],
++       "width": 9.6,
++     },
++     {
++       "axis": [
++         [
++           1338.78,
++           94.26,
++           583.34,
++         ],
++         [
++           1338.33,
++           94.37,
++           582.45,
++         ],
++         [
++           1337.71,
++           94.47,
++           581.67,
++         ],
++         [
++           1336.99,
++           94.56,
++           580.97,
++         ],
++         [
++           1336.21,
++           94.66,
++           580.35,
++         ],
++         [
++           1335.39,
++           94.75,
++           579.78,
++         ],
++         [
++           1334.54,
++           94.84,
++           579.26,
++         ],
++         [
++           1333.67,
++           94.92,
++           578.77,
++         ],
++         [
++           1332.78,
++           95,
++           578.31,
++         ],
++         [
++           1331.87,
++           95.09,
++           577.89,
++         ],
++         [
++           1330.96,
++           95.16,
++           577.48,
++         ],
++         [
++           1330.03,
++           95.24,
++           577.1,
++         ],
++         [
++           1329.1,
++           95.31,
++           576.73,
++         ],
++         [
++           1328.17,
++           95.39,
++           576.38,
++         ],
++         [
++           1327.23,
++           95.46,
++           576.04,
++         ],
++         [
++           1326.28,
++           95.53,
++           575.72,
++         ],
++         [
++           1325.33,
++           95.59,
++           575.41,
++         ],
++         [
++           1324.38,
++           95.66,
++           575.1,
++         ],
++         [
++           1323.43,
++           95.73,
++           574.81,
++         ],
++         [
++           1322.47,
++           95.79,
++           574.52,
++         ],
++         [
++           1321.51,
++           95.85,
++           574.24,
++         ],
++         [
++           1320.55,
++           95.91,
++           573.97,
++         ],
++         [
++           1319.58,
++           95.97,
++           573.7,
++         ],
++         [
++           1318.62,
++           96.03,
++           573.44,
++         ],
++         [
++           1317.65,
++           96.09,
++           573.19,
++         ],
++         [
++           1316.68,
++           96.15,
++           572.93,
++         ],
++         [
++           1315.72,
++           96.21,
++           572.68,
++         ],
++         [
++           1314.75,
++           96.27,
++           572.44,
++         ],
++         [
++           1313.77,
++           96.33,
++           572.21,
++         ],
++         [
++           1312.79,
++           96.39,
++           572.02,
++         ],
++         [
++           1311.81,
++           96.45,
++           571.85,
++         ],
++         [
++           1310.82,
++           96.51,
++           571.71,
++         ],
++         [
++           1309.83,
++           96.57,
++           571.58,
++         ],
++         [
++           1308.83,
++           96.64,
++           571.48,
++         ],
++         [
++           1307.84,
++           96.7,
++           571.39,
++         ],
++         [
++           1306.84,
++           96.77,
++           571.31,
++         ],
++         [
++           1305.84,
++           96.83,
++           571.25,
++         ],
++         [
++           1304.84,
++           96.9,
++           571.19,
++         ],
++         [
++           1303.84,
++           96.97,
++           571.14,
++         ],
++         [
++           1302.85,
++           97.04,
++           571.09,
++         ],
++         [
++           1301.85,
++           97.12,
++           571.04,
++         ],
++         [
++           1300.85,
++           97.19,
++           570.99,
++         ],
++         [
++           1299.85,
++           97.27,
++           570.94,
++         ],
++         [
++           1298.85,
++           97.35,
++           570.87,
++         ],
++         [
++           1297.86,
++           97.43,
++           570.8,
++         ],
++         [
++           1296.86,
++           97.52,
++           570.72,
++         ],
++         [
++           1295.87,
++           97.6,
++           570.62,
++         ],
++         [
++           1294.87,
++           97.69,
++           570.49,
++         ],
++         [
++           1293.88,
++           97.78,
++           570.35,
++         ],
++         [
++           1292.9,
++           97.88,
++           570.18,
++         ],
++         [
++           1291.92,
++           97.98,
++           569.98,
++         ],
++         [
++           1290.95,
++           98.08,
++           569.75,
++         ],
++         [
++           1289.99,
++           98.18,
++           569.47,
++         ],
++         [
++           1289.03,
++           98.29,
++           569.17,
++         ],
++         [
++           1288.09,
++           98.4,
++           568.84,
++         ],
++         [
++           1287.16,
++           98.51,
++           568.48,
++         ],
++         [
++           1286.23,
++           98.62,
++           568.11,
++         ],
++         [
++           1285.3,
++           98.74,
++           567.73,
++         ],
++       ],
++       "id": "mountainV2:b2",
++       "lineIds": [
++         "S1",
++         "mountainV2.road",
++       ],
++       "underIds": [],
++       "width": 9.6,
++     },
++     {
++       "axis": [
++         [
++           1276.38,
++           122.37,
++           538.74,
++         ],
++         [
++           1277.28,
++           122.46,
++           539.17,
++         ],
++         [
++           1278.19,
++           122.55,
++           539.59,
++         ],
++         [
++           1279.1,
++           122.64,
++           540.01,
++         ],
++         [
++           1280,
++           122.72,
++           540.44,
++         ],
++         [
++           1280.9,
++           122.8,
++           540.87,
++         ],
++         [
++           1281.79,
++           122.87,
++           541.32,
++         ],
++         [
++           1282.69,
++           122.94,
++           541.76,
++         ],
++         [
++           1283.58,
++           123.01,
++           542.21,
++         ],
++         [
++           1284.48,
++           123.08,
++           542.66,
++         ],
++         [
++           1285.37,
++           123.14,
++           543.11,
++         ],
++         [
++           1286.26,
++           123.2,
++           543.56,
++         ],
++         [
++           1287.15,
++           123.26,
++           544.01,
++         ],
++         [
++           1288.05,
++           123.32,
++           544.46,
++         ],
++         [
++           1288.94,
++           123.37,
++           544.9,
++         ],
++         [
++           1289.84,
++           123.42,
++           545.34,
++         ],
++         [
++           1290.74,
++           123.47,
++           545.78,
++         ],
++         [
++           1291.64,
++           123.52,
++           546.21,
++         ],
++         [
++           1292.54,
++           123.56,
++           546.64,
++         ],
++         [
++           1293.45,
++           123.61,
++           547.06,
++         ],
++         [
++           1294.36,
++           123.65,
++           547.47,
++         ],
++         [
++           1295.28,
++           123.69,
++           547.87,
++         ],
++         [
++           1296.2,
++           123.73,
++           548.27,
++         ],
++         [
++           1297.12,
++           123.77,
++           548.65,
++         ],
++         [
++           1298.05,
++           123.81,
++           549.02,
++         ],
++         [
++           1298.98,
++           123.85,
++           549.38,
++         ],
++         [
++           1299.92,
++           123.89,
++           549.73,
++         ],
++         [
++           1300.86,
++           123.92,
++           550.05,
++         ],
++         [
++           1301.81,
++           123.96,
++           550.37,
++         ],
++         [
++           1302.77,
++           124,
++           550.66,
++         ],
++         [
++           1303.73,
++           124.03,
++           550.93,
++         ],
++         [
++           1304.7,
++           124.07,
++           551.18,
++         ],
++         [
++           1305.67,
++           124.11,
++           551.41,
++         ],
++         [
++           1306.65,
++           124.14,
++           551.63,
++         ],
++         [
++           1307.63,
++           124.18,
++           551.83,
++         ],
++         [
++           1308.61,
++           124.22,
++           552.02,
++         ],
++         [
++           1309.59,
++           124.26,
++           552.2,
++         ],
++         [
++           1310.58,
++           124.3,
++           552.36,
++         ],
++         [
++           1311.57,
++           124.34,
++           552.51,
++         ],
++         [
++           1312.56,
++           124.38,
++           552.65,
++         ],
++         [
++           1313.55,
++           124.43,
++           552.77,
++         ],
++         [
++           1314.54,
++           124.47,
++           552.89,
++         ],
++         [
++           1315.54,
++           124.52,
++           552.99,
++         ],
++         [
++           1316.53,
++           124.57,
++           553.09,
++         ],
++         [
++           1317.53,
++           124.62,
++           553.17,
++         ],
++         [
++           1318.52,
++           124.68,
++           553.24,
++         ],
++         [
++           1319.52,
++           124.73,
++           553.31,
++         ],
++         [
++           1320.52,
++           124.79,
++           553.37,
++         ],
++         [
++           1321.52,
++           124.86,
++           553.41,
++         ],
++         [
++           1322.52,
++           124.92,
++           553.45,
++         ],
++         [
++           1323.52,
++           124.99,
++           553.48,
++         ],
++         [
++           1324.52,
++           125.06,
++           553.51,
++         ],
++         [
++           1325.52,
++           125.14,
++           553.52,
++         ],
++         [
++           1326.51,
++           125.21,
++           553.53,
++         ],
++         [
++           1327.51,
++           125.3,
++           553.53,
++         ],
++         [
++           1328.51,
++           125.38,
++           553.52,
++         ],
++         [
++           1329.51,
++           125.47,
++           553.51,
++         ],
++         [
++           1330.51,
++           125.56,
++           553.48,
++         ],
++         [
++           1331.51,
++           125.66,
++           553.42,
++         ],
++         [
++           1332.51,
++           125.76,
++           553.33,
++         ],
++         [
++           1333.5,
++           125.87,
++           553.2,
++         ],
++         [
++           1334.49,
++           125.98,
++           553.05,
++         ],
++         [
++           1335.47,
++           126.09,
++           552.87,
++         ],
++         [
++           1336.45,
++           126.21,
++           552.68,
++         ],
++         [
++           1337.43,
++           126.33,
++           552.47,
++         ],
++         [
++           1338.4,
++           126.45,
++           552.26,
++         ],
++         [
++           1339.38,
++           126.58,
++           552.04,
++         ],
++         [
++           1340.36,
++           126.71,
++           551.83,
++         ],
++         [
++           1341.34,
++           126.84,
++           551.63,
++         ],
++         [
++           1342.32,
++           126.97,
++           551.44,
++         ],
++         [
++           1343.31,
++           127.11,
++           551.28,
++         ],
++         [
++           1344.3,
++           127.25,
++           551.14,
++         ],
++         [
++           1345.29,
++           127.39,
++           551.04,
++         ],
++         [
++           1346.29,
++           127.53,
++           550.99,
++         ],
++       ],
++       "id": "mountainV2:b3",
++       "lineIds": [
++         "S1",
++         "mountainV2.road",
++       ],
++       "underIds": [],
++       "width": 9.6,
++     },
++     {
++       "axis": [
++         [
+            1603.51,
+            45.63,
+            674.59,
+          ],
+          [
+
+ ❯ test/journey-road.test.ts:137:18
+    135|     const { boulevards, ...rest } = land;
+    136|     expect(boulevards?.length).toBeGreaterThan(0);
+    137|     expect(rest).toStrictEqual(without);
+       |                  ^
+    138|     const w = freshWorld();
+    139|     w.corridors = [syntheticCorridor(w)];
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  test/journey-road.test.ts > slim round-trip > the baked slim file is this format and decodes to what the index extracts, bridges and covers included
+AssertionError: expected 13 to be 10 // Object.is equality
+
+- Expected
++ Received
+
+- 10
++ 13
+
+ ❯ test/journey-road.test.ts:173:37
+    171|     const decoded = decodeJourneyLandSlim(SLIM);
+    172|     expect(decoded).toStrictEqual(land);
+    173|     expect(decoded.bridges?.length).toBe(10);
+       |                                     ^
+    174|   });
+    175| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+ FAIL  test/journey-road.test.ts > the board overlay does not move and is never drawn over > keeps every bridge, cover and boulevard clear of every station pad at its largest (Sky) size
+AssertionError: stillwaterTunnel vs feb: expected 24.332077771875557 to be greater than 37.400000000000006
+ ❯ test/journey-road.test.ts:294:95
+    292|         expect(polyDist(s.anchor, axis) - reach, `${b.id} vs ${s.id}`)…
+    293|       }
+    294|       for (const c of all.covers!) expect(polyDist(s.anchor, c.points)…
+       |                                                                                               ^
+    295|     }
+    296|     const drawn=buildJourneyLand(all,{theme:'classic',tier:'full',home…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯
+
+ FAIL  test/journey-road.test.ts > three.js land with the road > stays inside the land budget on full and lite and recolours the bridges per theme
+AssertionError: expected 3268 to be less than 1500
+ ❯ test/journey-road.test.ts:344:20
+    342|       const tris = (bridges.geometry.index?.count ?? 0) / 3;
+    343|       expect(tris).toBeGreaterThan(50);
+    344|       expect(tris).toBeLessThan(1500);
+       |                    ^
+    345|       const classic = colours();
+    346|       handle.setTheme("newfoundland");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯
+
+ FAIL  test/journey-road.test.ts > three.js land with the road > authors the road's colours for every theme, and the flat twin draws the bridges at their true width
+AssertionError: expected [ 'apronBridge', 'bightBridge', …(11) ] to deeply equal [ 'apronBridge', 'bightBridge', …(8) ]
+
+- Expected
++ Received
+
+@@ -4,9 +4,12 @@
+    "bightSpurTrestle",
+    "gardenWalkBridge",
+    "highSpan",
+    "hollowBridge",
+    "mountainRoadCanalBridge",
++   "mountainV2:b-foot",
++   "mountainV2:b2",
++   "mountainV2:b3",
+    "prowLoopFootbridge",
+    "quayBridge",
+    "reachBoardwalk",
+  ]
+
+ ❯ test/journey-road.test.ts:379:51
+    377|     }
+    378|     const flat = journeyLandFlatData(land);
+    379|     expect(flat.bridges!.map((b) => b.id).sort()).toEqual(BRIDGE_CAST.…
+       |                                                   ^
+    380|     const html = renderToStaticMarkup(createElement(JourneyLandFlat, {…
+    381|     for (const id of Object.keys(SPANS)) expect(html).toContain(`data-…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  7 failed | 9 passed (16)
+   Start at  13:03:11
+   Duration  16.41s (transform 5.66s, setup 0ms, collect 8.07s, tests 7.71s, environment 0ms, prepare 193ms)
+

@@ -1,0 +1,13 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizon-funicular-render-precision.test.ts (5 tests) 25ms
+ ✓ test/horizon-funicular-streaming.test.ts (5 tests) 6ms
+ ✓ test/horizon-walking-ground-patch.test.ts (5 tests) 130ms
+ ✓ test/horizon-ground-mask-cache.test.ts (1 test) 8ms
+
+ Test Files  4 passed (4)
+      Tests  16 passed (16)
+   Start at  05:59:23
+   Duration  2.68s (transform 635ms, setup 0ms, collect 1.60s, tests 169ms, environment 0ms, prepare 263ms)
+

@@ -1,0 +1,18 @@
+{
+  "root": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book",
+  "files": [
+    {
+      "path": "src/harbour/horizon/runtime/orderedContactShade.ts",
+      "baseSha256": "0d68301305f51fc6b6c09db78d6002d44c400693fecbf697827128998bf52748",
+      "candidateSha256": "b08acec0a27ceeb3f80d9209e2840880eaa63f9d9cb00513677fd9ec9699517d",
+      "scratch": "/tmp/mountain-shade-group-types/orderedContactShade.ts"
+    },
+    {
+      "path": "test/horizon-ordered-contact-shade.test.ts",
+      "baseSha256": "dedf0320db33c75e6801b562fda9c22fc1f6f54f46a96d748e33f6d943f3c420",
+      "candidateSha256": "909ca1b38efd2143a262028eb4ddfa3132da60946b0c1d54e0260c2e0795e515",
+      "scratch": "/tmp/mountain-shade-group-types/horizon-ordered-contact-shade.test.ts"
+    }
+  ],
+  "cause": "Five configured tsc diagnostics: r185 callback supplies BufferGeometry group, but installed @types uses THREE.Group. Only the type boundary is asserted; same group objects/identity at runtime."
+}

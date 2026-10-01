@@ -1,0 +1,220 @@
+{
+  "head": "1cf76c551e6f49124b6257162bc4d36ca18d7bd1",
+  "method": "Only existing failed files from the current serial suite, replayed one at a time on integrated main with its own baked assets. No source modifications.",
+  "startedAt": "2026-09-30T17:10:32Z",
+  "files": [
+    "test/harbour-hercules.test.ts",
+    "test/harbour-open-world.test.ts",
+    "test/harbour-skate-model.test.ts",
+    "test/harbour-skate-presence.test.ts",
+    "test/hearth-mountain-channel.test.ts",
+    "test/hearth-mountain.test.ts",
+    "test/horizonBeds.test.ts",
+    "test/horizonBoardPace.test.ts",
+    "test/horizonBoardThresholds.test.ts",
+    "test/horizonCorridor.test.ts",
+    "test/horizonMountainRegion.test.ts",
+    "test/horizonMoversNoMoney.test.ts",
+    "test/horizonRideSituations.test.ts",
+    "test/horizonSkateLines.test.ts",
+    "test/horizonStructures.test.ts",
+    "test/horizonUnderground.test.ts",
+    "test/journey-board-route.test.ts",
+    "test/journey-land.test.ts",
+    "test/journey-road.test.ts",
+    "test/mountain-branch-finishing.test.ts",
+    "test/mountain-camera.test.ts",
+    "test/skate-int-dressing.test.ts",
+    "test/skate-int-feel.test.ts",
+    "test/skate-int-grinds-human.test.ts",
+    "test/skate-int-park.test.ts",
+    "test/skate-lab.test.ts",
+    "test/skate-look-craft.test.ts",
+    "test/skate-show-framing.test.ts",
+    "test/skate-world-mesh.test.ts",
+    "test/skate-world.test.ts"
+  ],
+  "results": [
+    {
+      "file": "test/harbour-hercules.test.ts",
+      "exitCode": 1,
+      "seconds": 11.155,
+      "log": "harbour-hercules.test.ts.txt"
+    },
+    {
+      "file": "test/harbour-open-world.test.ts",
+      "exitCode": 1,
+      "seconds": 32.741,
+      "log": "harbour-open-world.test.ts.txt"
+    },
+    {
+      "file": "test/harbour-skate-model.test.ts",
+      "exitCode": 1,
+      "seconds": 2.238,
+      "log": "harbour-skate-model.test.ts.txt"
+    },
+    {
+      "file": "test/harbour-skate-presence.test.ts",
+      "exitCode": 1,
+      "seconds": 1.684,
+      "log": "harbour-skate-presence.test.ts.txt"
+    },
+    {
+      "file": "test/hearth-mountain-channel.test.ts",
+      "exitCode": 1,
+      "seconds": 2.587,
+      "log": "hearth-mountain-channel.test.ts.txt"
+    },
+    {
+      "file": "test/hearth-mountain.test.ts",
+      "exitCode": 0,
+      "seconds": 2.294,
+      "log": "hearth-mountain.test.ts.txt"
+    },
+    {
+      "file": "test/horizonBeds.test.ts",
+      "exitCode": 0,
+      "seconds": 24.511,
+      "log": "horizonBeds.test.ts.txt"
+    },
+    {
+      "file": "test/horizonBoardPace.test.ts",
+      "exitCode": 0,
+      "seconds": 2.248,
+      "log": "horizonBoardPace.test.ts.txt"
+    },
+    {
+      "file": "test/horizonBoardThresholds.test.ts",
+      "exitCode": 0,
+      "seconds": 4.747,
+      "log": "horizonBoardThresholds.test.ts.txt"
+    },
+    {
+      "file": "test/horizonCorridor.test.ts",
+      "exitCode": 0,
+      "seconds": 4.481,
+      "log": "horizonCorridor.test.ts.txt"
+    },
+    {
+      "file": "test/horizonMountainRegion.test.ts",
+      "exitCode": 0,
+      "seconds": 25.908,
+      "log": "horizonMountainRegion.test.ts.txt"
+    },
+    {
+      "file": "test/horizonMoversNoMoney.test.ts",
+      "exitCode": 1,
+      "seconds": 2.511,
+      "log": "horizonMoversNoMoney.test.ts.txt"
+    },
+    {
+      "file": "test/horizonRideSituations.test.ts",
+      "exitCode": 0,
+      "seconds": 18.638,
+      "log": "horizonRideSituations.test.ts.txt"
+    },
+    {
+      "file": "test/horizonSkateLines.test.ts",
+      "exitCode": 1,
+      "seconds": 327.757,
+      "log": "horizonSkateLines.test.ts.txt"
+    },
+    {
+      "file": "test/horizonStructures.test.ts",
+      "exitCode": 1,
+      "seconds": 65.966,
+      "log": "horizonStructures.test.ts.txt"
+    },
+    {
+      "file": "test/horizonUnderground.test.ts",
+      "exitCode": 1,
+      "seconds": 93.058,
+      "log": "horizonUnderground.test.ts.txt"
+    },
+    {
+      "file": "test/journey-board-route.test.ts",
+      "exitCode": 0,
+      "seconds": 26.101,
+      "log": "journey-board-route.test.ts.txt"
+    },
+    {
+      "file": "test/journey-land.test.ts",
+      "exitCode": 0,
+      "seconds": 19.144,
+      "log": "journey-land.test.ts.txt"
+    },
+    {
+      "file": "test/journey-road.test.ts",
+      "exitCode": 0,
+      "seconds": 16.171,
+      "log": "journey-road.test.ts.txt"
+    },
+    {
+      "file": "test/mountain-branch-finishing.test.ts",
+      "exitCode": 0,
+      "seconds": 6.465,
+      "log": "mountain-branch-finishing.test.ts.txt"
+    },
+    {
+      "file": "test/mountain-camera.test.ts",
+      "exitCode": 1,
+      "seconds": 37.914,
+      "log": "mountain-camera.test.ts.txt"
+    },
+    {
+      "file": "test/skate-int-dressing.test.ts",
+      "exitCode": 1,
+      "seconds": 6.154,
+      "log": "skate-int-dressing.test.ts.txt"
+    },
+    {
+      "file": "test/skate-int-feel.test.ts",
+      "exitCode": 1,
+      "seconds": 10.849,
+      "log": "skate-int-feel.test.ts.txt"
+    },
+    {
+      "file": "test/skate-int-grinds-human.test.ts",
+      "exitCode": 1,
+      "seconds": 9.35,
+      "log": "skate-int-grinds-human.test.ts.txt"
+    },
+    {
+      "file": "test/skate-int-park.test.ts",
+      "exitCode": 1,
+      "seconds": 5.838,
+      "log": "skate-int-park.test.ts.txt"
+    },
+    {
+      "file": "test/skate-lab.test.ts",
+      "exitCode": 1,
+      "seconds": 7.177,
+      "log": "skate-lab.test.ts.txt"
+    },
+    {
+      "file": "test/skate-look-craft.test.ts",
+      "exitCode": 1,
+      "seconds": 5.786,
+      "log": "skate-look-craft.test.ts.txt"
+    },
+    {
+      "file": "test/skate-show-framing.test.ts",
+      "exitCode": 1,
+      "seconds": 10.096,
+      "log": "skate-show-framing.test.ts.txt"
+    },
+    {
+      "file": "test/skate-world-mesh.test.ts",
+      "exitCode": 1,
+      "seconds": 21.439,
+      "log": "skate-world-mesh.test.ts.txt"
+    },
+    {
+      "file": "test/skate-world.test.ts",
+      "exitCode": 1,
+      "seconds": 10.462,
+      "log": "skate-world.test.ts.txt"
+    }
+  ],
+  "finishedAt": "2026-09-30T17:24:08Z"
+}

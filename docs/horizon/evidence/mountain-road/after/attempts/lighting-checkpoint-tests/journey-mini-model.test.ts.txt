@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/journey-mini-model.test.ts (14 tests) 880ms
+
+ Test Files  1 passed (1)
+      Tests  14 passed (14)
+   Start at  12:55:25
+   Duration  11.45s (transform 7.04s, setup 0ms, collect 9.78s, tests 880ms, environment 1ms, prepare 236ms)
+

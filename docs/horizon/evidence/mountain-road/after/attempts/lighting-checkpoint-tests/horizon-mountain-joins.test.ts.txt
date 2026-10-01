@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizon-mountain-joins.test.ts (4 tests) 352ms
+   ✓ Horizon physical joins to the carried Mountain Road > keeps the connected home footway traversable both ways and stays below native road paint  302ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  12:23:03
+   Duration  1.91s (transform 576ms, setup 0ms, collect 1.34s, tests 352ms, environment 0ms, prepare 68ms)
+

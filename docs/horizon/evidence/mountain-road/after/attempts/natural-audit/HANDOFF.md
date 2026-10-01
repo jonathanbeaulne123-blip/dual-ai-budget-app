@@ -1,0 +1,36 @@
+# Separate natural-downhill audit proposal
+
+Patch: `/tmp/mountain-natural-downhill-audit.patch`. Proposal files: `/tmp/mountain-natural-audit/scripts/horizon/`. Checkout remains untouched. Base head and exact before/proposal file hashes are in `BASE.json`.
+
+`road-audit.mjs --natural-downhill` selects open routes with more than 0.5 m net descent. It uses the same real cruiser, pure-pursuit steering, and unchanged failure/time limits. Throttle is 1 below 1.5 m/s and 0 otherwise; brake/jump are always zero. Each pass has one initial validated resampled endpoint pose; there is no start search ahead or audit restart. A stall, corridor loss, or the kernel's water recovery ends the attempt. Kernel recovery remains separately recorded and cannot count as completion. This is a separate scenario with its own default output suffix; using an existing opposite-scenario output is rejected.
+
+The existing paced steering/throttle/brake equations, initial-pose search, restart behavior and thresholds are unchanged. Telemetry/metadata additions do not replace saved paced reports. Legacy `radius`, `lateralDemand`, `gripModel`, `s`, native `d`, `off` and `t` remain explicitly identified; measured fields are additional.
+
+Important physics limitation: the cruiser does not accelerate downhill while grounded. Its no-input coasting term decelerates toward rest, so this natural-downhill scenario will repeatedly use the permitted very-low-speed recovery throttle. It is an unpaced/no-brake input run, not a gravitational free-roll or downhill top-speed test. The unchanged time limit (`total/3+180` seconds) can expire before a long route finishes at that recovery speed. That remains an incomplete result. Grip is `exp(-22*dt)` lateral velocity damping, not a finite tyre force; physical grip margin is unavailable. No physics/tuning/native source changes are proposed.
+
+The cruiser records actual velocity, heading, applied steer/forward, brake, one-step body/velocity turn rates and velocity curvature every 0.1 s plus first/last step. Native skate keeps its existing paced/natural inputs; natural traces gain the same measured fields at 10 Hz while paced traces retain 1 Hz. Native contact totals keep the existing 1 Hz probe cadence. New native samples include post-step canonical chain station, distinct from legacy pre-step monotone `d` minus its initial 0.5 m. Failures and recovery discontinuities are retained.
+
+The shared pure helper validates full exported native point order/coordinates against both baked native road and canonical chain. Native spatial `s` is then mapped through cumulative horizontal segments, rather than added to the chain offset. It handles reverse direction and each separately clipped reach. The one explicit shared-start alias is the existing Foot endpoint `[1282,54.65,720]` retained where native road point0 is `[1282,54.649977,720]`: a 0.000023 m height difference and zero plan displacement. Its named maximum height difference is 0.000025 m, restricted to row0 at this known coordinate/height witness, native source s=0, and the adjacent `mountainV2.footLane` → `mountainV2.road` shared station. Plan coordinates must be exactly equal; source-to-road and all other chain rows retain the original 0.000020 m position tolerance. The returned mapping retains the raw maximum error and a `sharedStartHeightAlias` explanation; plan-length tolerance stays unchanged. The parent measured this existing bake witness; this update used only the supplied coordinates, without reloading the world.
+
+The report-only summarizer imports no world/controller/renderer. It reads supplied reports, compressed baked JSON and the exported full source station map. It refuses mixed world/terrain generations and refuses mismatched source/baked native geometry. It retains separate per-scenario, per-direction/per-lane results for each hairpin. Reach requires a direct interior observation or a same-attempt boundary bracket; restart gaps cannot create reach. Entry speed interpolation is marked, undersampled interior turns stay unavailable, and legacy cruiser reports without actual steering/velocity keep those columns unavailable. Native legacy velocity curvature is explicitly an interval average; only intervals entirely within the hairpin contribute an interior curvature maximum.
+
+Steering reserve means `1-abs(applied steer)`, the available input command fraction. It is not tyre grip or physical force reserve. Guard inventory tags remain identified as before-source descriptors, next to final static collision-edge/missing-guard evidence if a final static cruiser report is supplied. Nearest full/lite lamp measurements use baked corridor lamp pools at each inventory hairpin apex, applying `liteLampIds` exactly. They retain fixture ID, pool/base plan distance, head distance and vertical offset. The shared 6/full and 2/lite active light pool, dusk scheduling, occlusion, themes and visible guard quality still need their own acceptance.
+
+## Checks performed here
+
+- All four proposed executable/helper modules pass `node --check`.
+- 13 tiny standard-library data tests pass: source-to-plan mapping, the exact shared-start alias and rejected plan/other-row/source/owner/height deviations, reverse/partial-route mapping, angle wrapping, unavailable low-speed curvature, bounded projection, entry brackets, unreached/restarted/recovered traces, undersampling, legacy curvature limits, lamp distances, mixed-bake rejection and an end-to-end synthetic reducer fixture.
+- No actual world imports, geometry/controller runs, Chromium, bake, typecheck or broad test run. These checks validate audit math, not the mountain's behavior.
+
+## Suggested serial commands after applying and finishing the final bake
+
+Use the current checkout and new evidence directories; do not overwrite earlier failed runs. A final paced cruiser report with static stations supplies guard diagnostics; it may be an existing report for the exact same final bake. Re-running paced with the new auditor adds actual steering/velocity metrics without changing the driving policy.
+
+```sh
+node --test scripts/horizon/mountain-audit-telemetry.test.mjs
+node scripts/horizon/road-audit.mjs --mountain-chain --no-static --natural-downhill --title after --out docs/horizon/evidence/mountain-road/after/natural-cruiser
+MOUNTAIN_ROUTES=mountain-road node scripts/horizon/mountain-native-audit.mjs . docs/horizon/evidence/mountain-road/after/natural-native natural-downhill
+node scripts/horizon/summarize-mountain-hairpins.mjs --cruiser FINAL_PACED_CRUISER_AUDIT_JSON --cruiser docs/horizon/evidence/mountain-road/after/natural-cruiser/audit.json --native FINAL_PACED_NATIVE_RESULTS_JSON --native docs/horizon/evidence/mountain-road/after/natural-native/native-results.json --inventory docs/horizon/evidence/mountain-road/before/inventory.json --out docs/horizon/evidence/mountain-road/after/hairpin-observations
+```
+
+The summarizer emits `HAIRPINS.json` and `HAIRPINS.md`. `--cruiser` and `--native` may repeat; supply reports from one final bake. An old hairpin-only JSON array can replace `--inventory`. Optional `--world` and `--native-source` select the exact retained baked/source artifacts if summarizing outside the current checkout. A failed/incomplete controller result remains failed/incomplete in the table's attempt details.

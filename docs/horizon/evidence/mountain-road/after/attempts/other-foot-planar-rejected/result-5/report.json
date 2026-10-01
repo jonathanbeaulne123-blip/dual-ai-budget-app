@@ -1,0 +1,110 @@
+{
+  "status": "UNACCEPTED_SAVED_MESH_EXPERIMENT",
+  "inputSha256": "d5923b5799ae53d742ee15f1169ffce28bcb1baa35ba25a39051ed166697af69",
+  "experimentSha256": "d0658053e2059f33ffc53f7a122ee9c447dc94602d968c5437092a1a4575db87",
+  "input": "/tmp/mountain-other-planar-reduction/yearWalk.batter.footJoin.json",
+  "baseline": {
+    "triangles": 304,
+    "vertices": 158,
+    "topology": [],
+    "variants": [
+      {
+        "variant": "double",
+        "tops": 103,
+        "maxTopDegrees": 5.71059313751951,
+        "invalid": 0,
+        "witnesses": []
+      },
+      {
+        "variant": "bake9",
+        "tops": 103,
+        "maxTopDegrees": 5.710593482132624,
+        "invalid": 0,
+        "witnesses": []
+      },
+      {
+        "variant": "bake9-localFloat32",
+        "tops": 103,
+        "maxTopDegrees": 5.707542433250365,
+        "invalid": 0,
+        "witnesses": []
+      }
+    ]
+  },
+  "after": {
+    "triangles": 228,
+    "referencedVertices": 120,
+    "retainedPositionValues": 474,
+    "removedTriangles": 76,
+    "removedVertices": 38
+  },
+  "constraints": {
+    "planeDistance": 1e-11,
+    "finalGeometryTolerance": 1e-9,
+    "topMaxDegrees": 40,
+    "minTopDeterminant": 1e-8,
+    "originalPositionArrayExact": true,
+    "logicalOriginExact": true
+  },
+  "proof": {
+    "sourceToCandidate": {
+      "maxError": 1.5916157281026244e-12,
+      "maxCoverageError": 4.241051954068098e-14,
+      "failureCount": 0,
+      "witnesses": []
+    },
+    "candidateToSource": {
+      "maxError": 2.2737367544323206e-13,
+      "maxCoverageError": 5.3290705182007514e-14,
+      "failureCount": 0,
+      "witnesses": []
+    }
+  },
+  "topologyFailures": [],
+  "variants": [
+    {
+      "variant": "double",
+      "tops": 73,
+      "maxTopDegrees": 5.71059313751951,
+      "invalid": 0,
+      "witnesses": []
+    },
+    {
+      "variant": "bake9",
+      "tops": 73,
+      "maxTopDegrees": 5.710593482132624,
+      "invalid": 0,
+      "witnesses": []
+    },
+    {
+      "variant": "bake9-localFloat32",
+      "tops": 73,
+      "maxTopDegrees": 5.707542433250365,
+      "invalid": 0,
+      "witnesses": []
+    }
+  ],
+  "attempts": 211,
+  "rejections": {
+    "plane-or-triangulation": 173
+  },
+  "bounded": {
+    "maxSeconds": 30,
+    "maxRemovals": 10000,
+    "maxAttempts": 50000,
+    "remainingQueue": 0
+  },
+  "numericalGatesPass": true,
+  "wallMs": 33.540292,
+  "cpu": {
+    "user": 69426,
+    "system": 3102
+  },
+  "limits": [
+    "Numerical saved-mesh checks only; not accepted production geometry.",
+    "Original doubles retained; no Float32 deduplication or geometry optimizer.",
+    "Common refinement uses stated area-roundoff tolerance max(1e-15, projected area * 1e-9); all measured plane differences are <=1e-9.",
+    "Unreferenced original vertices remain in positions deliberately; only indices change.",
+    "Every actual surface/contact/ceiling/movement/art/host ownership and budget gate remains required."
+  ]
+}

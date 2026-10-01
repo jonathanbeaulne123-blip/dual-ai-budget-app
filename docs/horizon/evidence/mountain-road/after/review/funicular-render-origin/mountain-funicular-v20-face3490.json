@@ -1,0 +1,37 @@
+{
+  "source": "/tmp/mountain-funicular-v20-shape/candidate-solid.json",
+  "face": 3490,
+  "indices": [
+    7040,
+    2160,
+    2162
+  ],
+  "points": [
+    [
+      1287.1086202103306,
+      55.28072724622705,
+      731.1078805107695
+    ],
+    [
+      1287.0115343667242,
+      55.25275616135629,
+      731.1594722782448
+    ],
+    [
+      1287.011526764146,
+      55.25275355852482,
+      731.1594777806675
+    ]
+  ],
+  "oldOrigin": [
+    1308,
+    54,
+    764
+  ],
+  "sourceAabbOrigin": [
+    1286,
+    55,
+    726
+  ],
+  "reason": "Native offset causes a nonpositive Float32 plan determinant; whole-solid rounded AABB origin preserves positive orientation. Every face audit in v20-centred-quantization.json."
+}

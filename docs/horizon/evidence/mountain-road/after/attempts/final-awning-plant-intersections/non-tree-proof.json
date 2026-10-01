@@ -1,0 +1,437 @@
+{
+  "method": "Pure saved-JSON plus source primitive arithmetic, not module replay",
+  "results": [
+    {
+      "tier": "full",
+      "kind": "shrubs",
+      "index": 4,
+      "itemHash": "3ae241c30aa4ffbfc231072c4e5bb48e4fb25cfa7bd2954fde0cf31b333ed3d1",
+      "item": {
+        "x": 29.08388087379753,
+        "y": 14.69486445381949,
+        "z": -90.97538761948014,
+        "size": 0.8,
+        "spin": -2.0143743028758467,
+        "kind": "hedge",
+        "tint": 0.7438481692224741,
+        "stretch": 2.6
+      },
+      "envelope": {
+        "min": [
+          27.98333555442172,
+          14.12486445381949,
+          -92.07593293885596
+        ],
+        "max": [
+          30.184426193173337,
+          15.69486445381949,
+          -89.87484230010433
+        ]
+      },
+      "possibleBranches": [
+        "hearth-awning"
+      ],
+      "classification": "Conservative envelope overlap, NOT a confirmed rendered intersection and NOT a removal candidate.",
+      "actualStaticPrimitiveIntersection": true,
+      "hits": [
+        {
+          "branch": "hearth-awning",
+          "triangle": 205,
+          "plantTriangle": 4,
+          "plantFace": [
+            [
+              29.855381616445975,
+              14.644864453819489,
+              -91.76023576026465
+            ],
+            [
+              28.96269988041751,
+              14.644864453819489,
+              -89.88153426237808
+            ],
+            [
+              28.312380131149084,
+              14.644864453819489,
+              -90.19053947869564
+            ]
+          ],
+          "branchFace": [
+            [
+              29.26183440147625,
+              14.471923915840446,
+              -91.16322788829575
+            ],
+            [
+              29.492929481458184,
+              14.471923915840446,
+              -91.22799720208047
+            ],
+            [
+              29.492929481458184,
+              15.470561111822951,
+              -91.22799720208047
+            ]
+          ]
+        }
+      ],
+      "primitiveNote": "Analytic source-defined tuft triangles, Float32 ico0 bushes, or exact planar hedge box; no wind/outline, no full containment test. Pending Awning changes invalidate its current result."
+    },
+    {
+      "tier": "full",
+      "kind": "shrubs",
+      "index": 5,
+      "itemHash": "a405366e2c9b4ac354afdedc43e8d2a37ec8a9d779d6d27deb8a6e0df183ea1e",
+      "item": {
+        "x": 26.159459334934724,
+        "y": 15.849580794798264,
+        "z": -93.41265395865706,
+        "size": 0.8,
+        "spin": -2.472378781522536,
+        "kind": "hedge",
+        "tint": 0.6402062582783401,
+        "stretch": 2.6
+      },
+      "envelope": {
+        "min": [
+          25.058914015558916,
+          15.279580794798264,
+          -94.51319927803287
+        ],
+        "max": [
+          27.26000465431053,
+          16.849580794798264,
+          -92.31210863928125
+        ]
+      },
+      "possibleBranches": [
+        "hearth-awning"
+      ],
+      "classification": "Conservative envelope overlap, NOT a confirmed rendered intersection and NOT a removal candidate.",
+      "actualStaticPrimitiveIntersection": false,
+      "hits": [],
+      "primitiveNote": "Analytic source-defined tuft triangles, Float32 ico0 bushes, or exact planar hedge box; no wind/outline, no full containment test. Pending Awning changes invalidate its current result."
+    },
+    {
+      "tier": "full",
+      "kind": "shrubs",
+      "index": 175,
+      "itemHash": "c9bad79f37688edfe345590c09cbcea067da512b4a807e9322f2d82db2e2a6d1",
+      "item": {
+        "x": 82.24333603167906,
+        "y": 32.237154141886165,
+        "z": -174.27371792215854,
+        "size": 0.5055944596417248,
+        "spin": 2.718192568840226,
+        "kind": "shrub",
+        "tint": 0.9323354847729206,
+        "stretch": 1
+      },
+      "envelope": {
+        "min": [
+          81.66190240309108,
+          31.858517743119044,
+          -174.8551515507465
+        ],
+        "max": [
+          82.82476966026705,
+          32.86914721643832,
+          -173.69228429357057
+        ]
+      },
+      "possibleBranches": [
+        "library-balcony"
+      ],
+      "classification": "Conservative envelope overlap, NOT a confirmed rendered intersection and NOT a removal candidate.",
+      "actualStaticPrimitiveIntersection": false,
+      "hits": [],
+      "primitiveNote": "Analytic source-defined tuft triangles, Float32 ico0 bushes, or exact planar hedge box; no wind/outline, no full containment test. Pending Awning changes invalidate its current result."
+    },
+    {
+      "tier": "full",
+      "kind": "shrubs",
+      "index": 896,
+      "itemHash": "31bbf71477d05c49b4421f01fa7d959c3a684171bbceb2eb5fdcb4567e4e4003",
+      "item": {
+        "x": 76.69854791136459,
+        "y": 33.323894043872,
+        "z": -175.75711357593536,
+        "size": 0.9574804018251597,
+        "spin": 1.1255869657106232,
+        "kind": "shrub",
+        "tint": 0.5824151756241918,
+        "stretch": 1
+      },
+      "envelope": {
+        "min": [
+          75.59744544926565,
+          32.65153178268565,
+          -176.8582160380343
+        ],
+        "max": [
+          77.79965037346352,
+          34.52074454615345,
+          -174.65601111383643
+        ]
+      },
+      "possibleBranches": [
+        "library-balcony"
+      ],
+      "classification": "Conservative envelope overlap, NOT a confirmed rendered intersection and NOT a removal candidate.",
+      "actualStaticPrimitiveIntersection": false,
+      "hits": [],
+      "primitiveNote": "Analytic source-defined tuft triangles, Float32 ico0 bushes, or exact planar hedge box; no wind/outline, no full containment test. Pending Awning changes invalidate its current result."
+    },
+    {
+      "tier": "full",
+      "kind": "tufts",
+      "index": 201,
+      "itemHash": "45abc564a495629f16b5cd6f5211870c79bf1005a5a23fadde84a570ce54ffde",
+      "item": {
+        "x": 29.44350613093237,
+        "y": 14.492540835646803,
+        "z": -90.28153353274256,
+        "size": 1.0077941607218235,
+        "spin": 0.1781887815911323,
+        "tint": 0.933772569289431
+      },
+      "envelope": {
+        "min": [
+          29.080700233072513,
+          14.472540835646804,
+          -90.64433943060241
+        ],
+        "max": [
+          29.806312028792227,
+          15.293672236700434,
+          -89.9187276348827
+        ]
+      },
+      "possibleBranches": [
+        "hearth-awning"
+      ],
+      "classification": "Conservative envelope overlap, NOT a confirmed rendered intersection and NOT a removal candidate.",
+      "actualStaticPrimitiveIntersection": false,
+      "hits": [],
+      "primitiveNote": "Analytic source-defined tuft triangles, Float32 ico0 bushes, or exact planar hedge box; no wind/outline, no full containment test. Pending Awning changes invalidate its current result."
+    },
+    {
+      "tier": "full",
+      "kind": "tufts",
+      "index": 202,
+      "itemHash": "1c033d6b4be31d2e69ac744092f6d4cef807ed9b46b9f0933801bf19b91a9ff1",
+      "item": {
+        "x": 27.897866696716434,
+        "y": 14.704051274872423,
+        "z": -90.89674800291674,
+        "size": 0.7756135426927357,
+        "spin": 3.914219045760576,
+        "tint": 0.4799235549289733
+      },
+      "envelope": {
+        "min": [
+          27.618645821347048,
+          14.684051274872424,
+          -91.17596887828613
+        ],
+        "max": [
+          28.17708757208582,
+          15.224483375544308,
+          -90.61752712754735
+        ]
+      },
+      "possibleBranches": [
+        "hearth-awning"
+      ],
+      "classification": "Conservative envelope overlap, NOT a confirmed rendered intersection and NOT a removal candidate.",
+      "actualStaticPrimitiveIntersection": true,
+      "hits": [
+        {
+          "branch": "hearth-awning",
+          "triangle": 229,
+          "plantTriangle": 0,
+          "plantFace": [
+            [
+              27.881978110589856,
+              14.684051274872424,
+              -90.92782443931753
+            ],
+            [
+              27.913755282843013,
+              14.684051274872424,
+              -90.86567156651594
+            ],
+            [
+              27.765273897947523,
+              15.037410729028533,
+              -90.82895669793143
+            ]
+          ],
+          "branchFace": [
+            [
+              27.262908511301383,
+              15.37955343070545,
+              -92.58048621278016
+            ],
+            [
+              27.751564977721056,
+              14.730918267080641,
+              -90.17502573358269
+            ],
+            [
+              28.20551319897259,
+              14.92240374228179,
+              -90.37333954733623
+            ]
+          ]
+        }
+      ],
+      "primitiveNote": "Analytic source-defined tuft triangles, Float32 ico0 bushes, or exact planar hedge box; no wind/outline, no full containment test. Pending Awning changes invalidate its current result."
+    },
+    {
+      "tier": "full",
+      "kind": "tufts",
+      "index": 203,
+      "itemHash": "b4402e9076cc0eb9a630657587ff58c6f8772e1c47b89cad1c9277d0c016383b",
+      "item": {
+        "x": 26.79316441371584,
+        "y": 15.316349064330353,
+        "z": -92.41773810141407,
+        "size": 0.5064880652353168,
+        "spin": 3.020307205938036,
+        "tint": 0.7114720805548131
+      },
+      "envelope": {
+        "min": [
+          26.610828710231125,
+          15.296349064330354,
+          -92.60007380489878
+        ],
+        "max": [
+          26.975500117200554,
+          15.679751788207735,
+          -92.23540239792936
+        ]
+      },
+      "possibleBranches": [
+        "hearth-awning"
+      ],
+      "classification": "Conservative envelope overlap, NOT a confirmed rendered intersection and NOT a removal candidate.",
+      "actualStaticPrimitiveIntersection": true,
+      "hits": [
+        {
+          "branch": "hearth-awning",
+          "triangle": 225,
+          "plantTriangle": 3,
+          "plantFace": [
+            [
+              26.773398628547323,
+              15.296349064330354,
+              -92.40638965205164
+            ],
+            [
+              26.812930198884356,
+              15.296349064330354,
+              -92.4290865507765
+            ],
+            [
+              26.881934505385722,
+              15.547035463348555,
+              -92.26312573655208
+            ]
+          ],
+          "branchFace": [
+            [
+              27.262908511301383,
+              15.71955343070545,
+              -92.58048621278016
+            ],
+            [
+              26.792395646374047,
+              15.601726233050623,
+              -92.37495019732816
+            ],
+            [
+              26.792395646374047,
+              15.261726233050624,
+              -92.37495019732816
+            ]
+          ]
+        }
+      ],
+      "primitiveNote": "Analytic source-defined tuft triangles, Float32 ico0 bushes, or exact planar hedge box; no wind/outline, no full containment test. Pending Awning changes invalidate its current result."
+    },
+    {
+      "tier": "full",
+      "kind": "tufts",
+      "index": 246,
+      "itemHash": "71f2a7e16b9d6d0e88df2e89fa0216387a78b7127bdc8e73fec1065d9941d2d8",
+      "item": {
+        "x": 90.15681270626428,
+        "y": 30.75041616422224,
+        "z": -168.35933335304483,
+        "size": 0.9319905158597976,
+        "spin": 5.812322807457764,
+        "tint": 0.9890655272174627
+      },
+      "envelope": {
+        "min": [
+          89.82129612055475,
+          30.73041616422224,
+          -168.69484993875434
+        ],
+        "max": [
+          90.4923292919738,
+          31.503182658935987,
+          -168.02381676733532
+        ]
+      },
+      "possibleBranches": [
+        "library-balcony"
+      ],
+      "classification": "Conservative envelope overlap, NOT a confirmed rendered intersection and NOT a removal candidate.",
+      "actualStaticPrimitiveIntersection": true,
+      "hits": [
+        {
+          "branch": "library-balcony",
+          "triangle": 1359,
+          "plantTriangle": 0,
+          "plantFace": [
+            [
+              90.12759113421907,
+              30.73041616422224,
+              -168.3292496794175
+            ],
+            [
+              90.18603427830948,
+              30.73041616422224,
+              -168.38941702667216
+            ],
+            [
+              90.28516971983161,
+              31.235686569926667,
+              -168.23465464333069
+            ]
+          ],
+          "branchFace": [
+            [
+              89.82482860659044,
+              30.879835305564775,
+              -169.19574420297909
+            ],
+            [
+              90.25405965575878,
+              30.82760227416489,
+              -167.7522154091412
+            ],
+            [
+              90.62246700535371,
+              30.85648953981148,
+              -169.13431957584646
+            ]
+          ]
+        }
+      ],
+      "primitiveNote": "Analytic source-defined tuft triangles, Float32 ico0 bushes, or exact planar hedge box; no wind/outline, no full containment test. Pending Awning changes invalidate its current result."
+    }
+  ]
+}

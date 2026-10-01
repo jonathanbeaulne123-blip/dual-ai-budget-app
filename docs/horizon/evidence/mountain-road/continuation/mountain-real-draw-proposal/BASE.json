@@ -1,0 +1,41 @@
+{
+  "status": "source-only proposal; unbundled, unexecuted, no tests or browser",
+  "createdUtc": "2026-09-30T17:20:11.794069+00:00",
+  "root": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book",
+  "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+  "sourceHashes": {
+    "src/harbour/horizon/runtime/corridorArt.ts": "a0eacb3812c0c3103ee2cfba1122b011935504a8441c117938e61be32abd500a",
+    "src/harbour/horizon/runtime/corridorPlanting.ts": "b995bcb320e9ae6ed235af2077575155997443d3089be6cc8631a63cce084fd5",
+    "src/harbour/horizon/runtime/roadLights.ts": "ece234a44c27e09b3419a20773622a6e712031be301c5130b597ee26e05ac543",
+    "src/harbour/horizon/runtime/index.ts": "efafc2f3c9f8dd2670da34413f09a5c1f4b51ba20157f22ea8f28e8c1d4bf518",
+    "src/harbour/horizon/kit/plants/materials.ts": "87f3397db4528e47cab3e8e80165bc533d4314241e8eb460f87ce047977163cd",
+    "src/harbour/horizon/kit/plants/geometry.ts": "9a4916b8f06a8158c68c23e02eac92e5b175d5b01b4058110e2e3a7a8c19dba8",
+    "src/harbour/horizon/kit/plants/archetypes.ts": "5f6d2e50e1800b522fab7357ad793bb684d2e87a9f217fac1ed01848005a647e",
+    "src/harbour/mountain/art/plantArt.ts": "7670bfb5955cdb3e97888af8603a63c2c004d1a9b3ca4604fd33d84bc15a9164",
+    "src/harbour/mountain/planting.ts": "37d58c29cee5c08de35b26874e18c3e31e70995da15f8e40d11dd5c82261208b",
+    "src/harbour/horizon/movers/board/controller.ts": "bfde7e720c5f9d1c04dbb3675f1a38eaafee458e6c97c3d13f3df64688d91cfd",
+    "src/harbour/horizon/movers/bicycle/controller.ts": "aab7ea386f82fcd1a3e998fab25334a197c84934486890894ae1a6f980687510",
+    "src/harbour/horizon/movers/shared/registry.ts": "903079bcbca920ed7ad2d2f28fa966479887ae7c61e342b453976045b6927282",
+    "src/harbour/horizon/movers/board/situations.ts": "48b48665d03916fd6a8877076ef72fb8a9d3e844caee1a9bc54ffcb6f49a30da",
+    "test/horizonBoardThresholds.test.ts": "c766c89e19c05979c87e5a86e3508b320b3725393169216e7e866285afb3761b",
+    "test/horizonSkateLines.test.ts": "e6895ffa3e71aebf2c3869e756fb6266b1bb596adc9b7c91828a629851689024",
+    "scripts/horizon/mountain-budgets.mjs": "741db1222b6a9c409f9a02988aaddcf8f93ad0a3cd46a4f8a88cda870cdcc7dd",
+    "scripts/horizon/capture-mountain-finish.mjs": "7e07d14770e2dea43ad68df6ae5ac0e3ad0f98b2fe1d332492cd8812992e2da8",
+    "docs/horizon/ROAD.md": "104d097f410484d6dddba06a90b6fb52805b8bb7e144b4c3f2da70fb754e1d15",
+    "node_modules/three/package.json": "1d5c438acdc1fe5a52fb8ede2e417afd91fec91d22275c40f7b739591b24e4df",
+    "node_modules/three/src/renderers/WebGLRenderer.js": "867948b57a6abb84d4cfd7619b38ea14fbb2c100c1b6f78d59de2383662ab7a0",
+    "node_modules/three/src/objects/BatchedMesh.js": "a7b4154d996fe13b73bfd986e09903779c902ad4dd86d8e667a83abd77aab329"
+  },
+  "assets": {
+    "public/horizon/world/horizon-geo-1.json": "0e129df837d3000d674b6ce1dc56446cfb0f690515064e51455047fe1ead0e33",
+    "public/horizon/terrain/horizon-geo-1.bin": "b8532036cf93e5ba9e7682e5041a69f216c47a91a955c372638e73dcb5a19d8d"
+  },
+  "proposalHashes": {
+    "/tmp/mountain-real-draw-proposal/renderer-audit.mjs": "3a1e25a9ba1dec690af5828e71db27804ec517898d29bb7f89fe6784536aad30",
+    "/tmp/mountain-real-draw-proposal/renderer-audit.page.ts": "9401abd7cd9edb15e72ce9ee1ba784852f2303d55d231ae54e26157a56e89da0",
+    "/tmp/mountain-real-draw-proposal/HANDOFF.md": "ffc2316c0b0772f34a5052e95517a6f2a47ad278326b76774f6c2e953f09a8c2",
+    "/tmp/mountain-lakeside-rendering-options.md": "9523ae4272208b35467597cca01eb00b44a3fcf51fe2798c9722c27005fc6a69",
+    "/tmp/mountain-lakeside-rendering-options.json": "733e39e2188151293fee340fe6e056f12c947e467852e6ed9bcbd3d206722b97",
+    "/tmp/mountain-pickup-lifecycle-independent-review.md": "3d0e677743932ec325a019a8bd1a835be580669c2deecc4521c07248666e14c9"
+  }
+}

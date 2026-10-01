@@ -62,6 +62,7 @@ export interface PadHit {
   padId: string; thresholdId: string; centre: XYZ; size: [number, number]; rotationDegrees: number;
   /** A pick-up pad: its threshold's modes hold no `X→feet` step (only `feet→board`, `feet→bicycle`, …). It rolls at the pace of the bed it starts. */
   pickup: boolean;
+  throughBedIds?: readonly string[];
 }
 
 /** True when no mode of a threshold steps onto feet (`board→feet`, `feet→feet`, `canoe→feet→canoe` all do): a pure pick-up. */
@@ -113,7 +114,7 @@ function buildIndex(world: WorldDefinition, manifest?: Manifest): BedIndex {
     const centre: XYZ = cut ? [cut.centre[0], cut.centre[1], cut.centre[2]] : [t.at[0], t.height ?? 0, t.at[1]];
     const size: [number, number] = cut ? [cut.size[0], cut.size[1]] : [6, 5], rotationDegrees = cut?.rotationDegrees ?? 0;
     const a = rotationDegrees * Math.PI / 180, reach = Math.hypot(size[0], size[1]) / 2;
-    const pad: Pad = {padId: t.padId ?? `threshold.${t.id}`, thresholdId: t.id, centre, size, rotationDegrees, pickup: isPickupThreshold(t.modes ?? []), cos: Math.cos(a), sin: Math.sin(a), reach, takes: (t.modes ?? []).map(m => m.split('→').at(-1)!)};
+    const pad: Pad = {padId: t.padId ?? `threshold.${t.id}`, thresholdId: t.id, centre, size, rotationDegrees, pickup: isPickupThreshold(t.modes ?? []), throughBedIds:t.throughBedIds, cos: Math.cos(a), sin: Math.sin(a), reach, takes: (t.modes ?? []).map(m => m.split('→').at(-1)!)};
     cover(padCells, centre[0] - reach, centre[2] - reach, centre[0] + reach, centre[2] + reach, pads.length);
     pads.push(pad);
   }
@@ -211,7 +212,7 @@ function padAt(ix: BedIndex, x: number, z: number, y?: number, prefer?: Readonly
     }
     found = p; gap = dy; rank = r;
   }
-  return found && {padId: found.padId, thresholdId: found.thresholdId, centre: found.centre, size: found.size, rotationDegrees: found.rotationDegrees, pickup: found.pickup};
+  return found && {padId: found.padId, thresholdId: found.thresholdId, centre: found.centre, size: found.size, rotationDegrees: found.rotationDegrees, pickup: found.pickup, throughBedIds:found.throughBedIds};
 }
 
 const inPark = (ix: BedIndex, x: number, z: number) => !!ix.park && Math.abs(x - ix.park.x) <= ix.park.hw && Math.abs(z - ix.park.z) <= ix.park.hd;
@@ -284,7 +285,11 @@ export function createBoardContact(geography: Geography, world: WorldDefinition,
     const pad = padAt(ix, x, z, s.y, ownPickups);
     if (pad) {
       if (!legalKinds.has('pad')) return offbed(null, pad.padId);
-      if (!pad.pickup) return legal('threshold', null, pad.padId);
+      if (!pad.pickup) {
+        const through=bedsAt(ix,x,z,s.y).find(h=>pad.throughBedIds?.includes(h.bedId)&&legalKinds.has(h.kind));
+        const pace=through&&bedPace(through,s);
+        return through&&pace?legal(pace,through.bedId,pad.padId):legal('threshold',null,pad.padId);
+      }
       // A pick-up pad is the line's pace, not threshold pace: the bed it starts, else the surface's own pace, else fast.
       const start = pick(x, z, s.y);
       return legal((start && bedPace(start, s)) ?? materialPace(material) ?? PICKUP_FALLBACK_PACE, start?.bedId ?? null, pad.padId);

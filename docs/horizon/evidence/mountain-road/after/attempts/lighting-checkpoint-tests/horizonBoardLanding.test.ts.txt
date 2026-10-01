@@ -1,0 +1,14 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonBoardLanding.test.ts (8 tests) 6778ms
+   ✓ landing — one rule (RIDE §6.3) > lands a 1.2 m drop onto S1 and keeps at least 45 % of its speed, no bail  626ms
+   ✓ landing — one rule (RIDE §6.3) > lands sideways (45° across the travel) with grip ≈ cos²β and resolves it as a slide, not a bail  1127ms
+   ✓ landing — one rule (RIDE §6.3) > bails on a landing at 9 m/s of normal speed, and holds the rider still for the recovery  446ms
+   ✓ landing — one rule (RIDE §6.3) > counts the bail hold in kernel steps: a bail and its recovery take the same steps at 30, 60, 120 and 144 fps (review R2-10)  3713ms
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  12:25:25
+   Duration  7.31s (transform 245ms, setup 0ms, collect 320ms, tests 6.78s, environment 0ms, prepare 56ms)
+

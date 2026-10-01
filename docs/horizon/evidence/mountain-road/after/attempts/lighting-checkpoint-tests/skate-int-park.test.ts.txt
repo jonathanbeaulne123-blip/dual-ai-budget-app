@@ -1,0 +1,72 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/skate-int-park.test.ts (7 tests | 4 failed) 1056ms
+   ✓ skate v2 integration · lips on the real Tideline park > airs the Chimney (vert) above the coping and comes back down INTO the transition, clean, fakie  327ms
+   × skate v2 integration · lips on the real Tideline park > launches forward off the Hatch kicker and lands on the landing block 78ms
+     → expected -1 to be greater than 0
+   × skate v2 integration · lips on the real Tideline park > drops into the Kettle bowl from its deck and rides it without a bail 103ms
+     → expected 2.3906412135467177 to be less than 1.15
+   × skate v2 integration · lips on the real Tideline park > pumps the Breadbin mini-ramp: extending in the transitions climbs higher wall by wall, into airs 221ms
+     → expected 1 to be greater than or equal to 6
+   × skate v2 integration · lips on the real Tideline park > holds a line at a wall peak: a stall never swings the board across the transition 48ms
+     → expected 0 to be greater than 0
+   ✓ skate v2 integration · island solids and shoreline > merges the island obstacles (buildings) into the sim 153ms
+   ✓ skate v2 integration · island solids and shoreline > never rides into the sea 122ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/skate-int-park.test.ts > skate v2 integration · lips on the real Tideline park > launches forward off the Hatch kicker and lands on the landing block
+AssertionError: expected -1 to be greater than 0
+ ❯ test/skate-int-park.test.ts:51:17
+     49|     const {events,frames}=run(rider(9,2.5,PLUS_X+Math.PI,8),2);
+     50|     const pop=frames.findIndex(f=>f.phase==='air');
+     51|     expect(pop).toBeGreaterThan(0);
+       |                 ^
+     52|     const land=events.find(e=>e.kind==='land') as Extract<SkateSimEven…
+     53|     // Over the planter onto the landing block, or all the way to the …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  test/skate-int-park.test.ts > skate v2 integration · lips on the real Tideline park > drops into the Kettle bowl from its deck and rides it without a bail
+AssertionError: expected 2.3906412135467177 to be less than 1.15
+ ❯ test/skate-int-park.test.ts:62:45
+     60|     const {events,frames}=run(rider(-13.4,-5.8,PLUS_X,2.5),5);
+     61|     expect(events.some(e=>e.kind==='bail')).toBe(false);
+     62|     expect(Math.min(...frames.map(f=>f.y))).toBeLessThan(1.15); // dow…
+       |                                             ^
+     63|     expect(frames.filter(f=>f.surface==='concrete').length).toBeGreate…
+     64|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  test/skate-int-park.test.ts > skate v2 integration · lips on the real Tideline park > pumps the Breadbin mini-ramp: extending in the transitions climbs higher wall by wall, into airs
+AssertionError: expected 1 to be greater than or equal to 6
+ ❯ test/skate-int-park.test.ts:71:26
+     69|       if(f.vy>.05)rising=true;if(rising&&f.vy<=0){rising=false;peaks.p…
+     70|     });
+     71|     expect(peaks.length).toBeGreaterThanOrEqual(6);
+       |                          ^
+     72|     expect(peaks[3]!).toBeGreaterThan(peaks[0]!+.15);
+     73|     expect(Math.max(...peaks)).toBeGreaterThan(.1); // above the coping
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  test/skate-int-park.test.ts > skate v2 integration · lips on the real Tideline park > holds a line at a wall peak: a stall never swings the board across the transition
+AssertionError: expected 0 to be greater than 0
+ ❯ test/skate-int-park.test.ts:78:25
+     76|     const {frames}=run(rider(-9,6.4,PLUS_X,3.5),2);
+     77|     const slow=frames.filter(f=>f.speed<.3&&f.y>1);
+     78|     expect(slow.length).toBeGreaterThan(0);
+       |                         ^
+     79|     for(const f of slow){const d=Math.atan2(Math.sin(f.boardYaw-PLUS_X…
+     80|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 3 passed (7)
+   Start at  13:07:59
+   Duration  4.04s (transform 1.16s, setup 0ms, collect 2.46s, tests 1.06s, environment 0ms, prepare 138ms)
+

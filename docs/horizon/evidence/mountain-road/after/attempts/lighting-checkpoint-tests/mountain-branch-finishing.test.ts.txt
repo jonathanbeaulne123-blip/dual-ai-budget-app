@@ -1,0 +1,38 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/mountain-branch-finishing.test.ts (1 test | 1 failed) 858ms
+   × rides the neighbourhood awning at race speed with full-tier solids 856ms
+     → expected { speed: 8, bails: 1, arrived: true } to deeply equal { speed: 8, bails: +0, arrived: true }
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/mountain-branch-finishing.test.ts > rides the neighbourhood awning at race speed with full-tier solids
+AssertionError: expected { speed: 8, bails: 1, arrived: true } to deeply equal { speed: 8, bails: +0, arrived: true }
+
+- Expected
++ Received
+
+  {
+    "arrived": true,
+-   "bails": 0,
++   "bails": 1,
+    "speed": 8,
+  }
+
+ ❯ test/mountain-branch-finishing.test.ts:19:32
+     17|  const r=sim.step(intent({push:p.speed<3,steer:p.phase==='air'?0:Math.…
+     18|  }
+     19|  expect({speed,bails,arrived}).toEqual({speed,bails:0,arrived:true});
+       |                                ^
+     20|  }
+     21| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  13:04:21
+   Duration  5.63s (transform 2.01s, setup 0ms, collect 4.18s, tests 858ms, environment 0ms, prepare 187ms)
+

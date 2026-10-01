@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/native-body-height-spawn.test.ts (4 tests) 317ms
+   ✓ explicit-height native body placement > preserves the actual dam exit deck start above its native plinth  310ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  13:06:48
+   Duration  2.89s (transform 857ms, setup 0ms, collect 1.96s, tests 317ms, environment 1ms, prepare 156ms)
+

@@ -1,0 +1,211 @@
+{
+  "baselineRef": "1cf76c551e6f49124b6257162bc4d36ca18d7bd1",
+  "baselineWorldSha256": "7ae2357ff113a3eadf195a4e2d95832b621eee2deb3703fd4ffd37af6d60e3bb",
+  "worldSha256": "ce5cd66a1a19012afb08de728d7cd0721f027f5b6edceed620e88b330e85471e",
+  "runtimeBundleSha256": "b839b742f9aa2a518b4e1b225c2dd47ec994ddd4a4c58fb53bf2e55e5b7f38ad",
+  "auditSha256": "66ad1ff0ac4e2f6db010fb4729c28c2abb85dfa38946b68d3118f82b91f73622",
+  "rows": [
+    {
+      "district": "prow",
+      "tier": "full",
+      "before": {
+        "triangles": 51270,
+        "drawCalls": 9
+      },
+      "after": {
+        "triangles": 51270,
+        "drawCalls": 9
+      },
+      "addedTriangles": 0,
+      "addedDrawCalls": 0
+    },
+    {
+      "district": "prow",
+      "tier": "lite",
+      "before": {
+        "triangles": 28998,
+        "drawCalls": 6
+      },
+      "after": {
+        "triangles": 28998,
+        "drawCalls": 6
+      },
+      "addedTriangles": 0,
+      "addedDrawCalls": 0
+    },
+    {
+      "district": "lakeside",
+      "tier": "full",
+      "before": {
+        "triangles": 26207,
+        "drawCalls": 14
+      },
+      "after": {
+        "triangles": 59505,
+        "drawCalls": 18
+      },
+      "addedTriangles": 33298,
+      "addedDrawCalls": 4
+    },
+    {
+      "district": "lakeside",
+      "tier": "lite",
+      "before": {
+        "triangles": 15579,
+        "drawCalls": 10
+      },
+      "after": {
+        "triangles": 44939,
+        "drawCalls": 13
+      },
+      "addedTriangles": 29360,
+      "addedDrawCalls": 3
+    },
+    {
+      "district": "crown",
+      "tier": "full",
+      "before": {
+        "triangles": 26718,
+        "drawCalls": 20
+      },
+      "after": {
+        "triangles": 33062,
+        "drawCalls": 20
+      },
+      "addedTriangles": 6344,
+      "addedDrawCalls": 0
+    },
+    {
+      "district": "crown",
+      "tier": "lite",
+      "before": {
+        "triangles": 9754,
+        "drawCalls": 14
+      },
+      "after": {
+        "triangles": 16170,
+        "drawCalls": 14
+      },
+      "addedTriangles": 6416,
+      "addedDrawCalls": 0
+    },
+    {
+      "district": "hollow",
+      "tier": "full",
+      "before": {
+        "triangles": 44112,
+        "drawCalls": 9
+      },
+      "after": {
+        "triangles": 48890,
+        "drawCalls": 11
+      },
+      "addedTriangles": 4778,
+      "addedDrawCalls": 2
+    },
+    {
+      "district": "hollow",
+      "tier": "lite",
+      "before": {
+        "triangles": 26344,
+        "drawCalls": 7
+      },
+      "after": {
+        "triangles": 29792,
+        "drawCalls": 8
+      },
+      "addedTriangles": 3448,
+      "addedDrawCalls": 1
+    },
+    {
+      "district": "green",
+      "tier": "full",
+      "before": {
+        "triangles": 17950,
+        "drawCalls": 12
+      },
+      "after": {
+        "triangles": 17950,
+        "drawCalls": 12
+      },
+      "addedTriangles": 0,
+      "addedDrawCalls": 0
+    },
+    {
+      "district": "green",
+      "tier": "lite",
+      "before": {
+        "triangles": 6402,
+        "drawCalls": 8
+      },
+      "after": {
+        "triangles": 6402,
+        "drawCalls": 8
+      },
+      "addedTriangles": 0,
+      "addedDrawCalls": 0
+    }
+  ],
+  "changedSourceIds": [
+    "S1.batter.footJoin",
+    "S1.surface.7.lakeside.footJoin",
+    "S1.surface.8.lakeside",
+    "S1.surface.8.lakeside.footJoin",
+    "adit.portal.frame",
+    "crossing.cross.mountainV2FootLane.mountainV2Road.1.marker",
+    "crossing.cross.s1.yearWalk.1.marker",
+    "crossing.cross.spurCottage.spurStillwater.1.marker",
+    "crossing.cross.spurStillwater.yearWalk.2.marker",
+    "crossing.cross.spurStillwater.yearWalk.3.marker",
+    "crownLaunch.columns",
+    "crownLaunch.roadSpan",
+    "crownLaunch.stair.landing",
+    "crownLaunch.stair.landingRails",
+    "crownLaunch.stair.supports",
+    "mountainV2.footLane.apron",
+    "mountainV2.funicularFoot.apron",
+    "oreStation.southPortal.crossing",
+    "oreStation.southPortal.roadRetaining",
+    "oreStation.southPortal.slab",
+    "oreTunnel.floor",
+    "oreTunnel.footings",
+    "oreTunnel.roof",
+    "oreTunnel.walls",
+    "place.L02.slab",
+    "southPortal.portal.frame",
+    "spur stillwater.corridor.deck.1.lakeside",
+    "spur stillwater.corridor.deck.2.hollow",
+    "spur stillwater.corridor.deck.2.lakeside",
+    "spur stillwater.corridor.fill.L.1.lakeside",
+    "spur stillwater.corridor.fill.R.1.hollow",
+    "spur stillwater.corridor.guard.L.1.lakeside",
+    "station.jan.slab",
+    "stillwaterTunnel.apron",
+    "stillwaterTunnel.floor",
+    "stillwaterTunnel.footings",
+    "stillwaterTunnel.roof",
+    "stillwaterTunnel.walls",
+    "threshold.funicular.town.to.hearth.slab",
+    "threshold.southPortal.marker",
+    "walk lakerim.bed.lakeside",
+    "walk summitStation.join",
+    "yearWalk.batter.footJoin",
+    "yearWalk.bed.hollow",
+    "yearWalk.bed.lakeside",
+    "yearWalk.bed.lakeside.footJoin",
+    "yearWalk.edges.hollow",
+    "yearWalk.edges.lakeside",
+    "yearWalk.retaining.hollow",
+    "yearWalk.retaining.lakeside",
+    "yearWalk.shoulders.hollow",
+    "yearWalk.shoulders.lakeside",
+    "yearWalk.shoulders.lakeside.footJoin"
+  ],
+  "method": "Before and after assets rendered with the same current buildDistrictCards implementation. Counts resident capacity of baked solid meshes and ink after the real tier/pavement handling.",
+  "limits": [
+    "No GPU timing, frustum/distance culling, shadow passes or physical-device claim.",
+    "Terrain, water, native Mountain scene, bridge-theme art and corridor-theme art/plants/halos are separate runtime layers and excluded here.",
+    "Bridge-owned collision solids are omitted by the real runtime builder and rendered by bridgeArt.",
+    "Counts are not a whole-scene performance pass. Combine with corridor and native/bridge layer evidence."
+  ]
+}

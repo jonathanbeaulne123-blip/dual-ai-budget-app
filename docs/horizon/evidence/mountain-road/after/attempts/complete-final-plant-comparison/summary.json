@@ -1,0 +1,176 @@
+{
+  "baseline": {
+    "root": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof",
+    "head": "1cf76c551e6f49124b6257162bc4d36ca18d7bd1",
+    "snapshotSha": "969b888927b79916ac8bef3962a271ec11b1818652a7f0f6c4387757a0927632"
+  },
+  "current": {
+    "root": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book",
+    "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+    "snapshotSha": "8a5b7b5c0f00f680e8e2147d63a837a0f8f18b4b5c9c16da7aca766a00e36670"
+  },
+  "counts": {
+    "full.trees": {
+      "baseline": 865,
+      "current": 864,
+      "exact": 864,
+      "removed": 1,
+      "added": 0,
+      "retainedOrderPreserved": true,
+      "locality": {
+        "method": "Horizontal distance to the nearest changed actual branch triangle AABB, a conservative lower bound; no arbitrary locality pass threshold.",
+        "removedMaxLowerBound": 0.4890497015789281,
+        "addedMaxLowerBound": 0
+      }
+    },
+    "full.shrubs": {
+      "baseline": 1149,
+      "current": 1148,
+      "exact": 1148,
+      "removed": 1,
+      "added": 0,
+      "retainedOrderPreserved": true,
+      "locality": {
+        "method": "Horizontal distance to the nearest changed actual branch triangle AABB, a conservative lower bound; no arbitrary locality pass threshold.",
+        "removedMaxLowerBound": 0,
+        "addedMaxLowerBound": 0
+      }
+    },
+    "full.flowers": {
+      "baseline": 68,
+      "current": 68,
+      "exact": 68,
+      "removed": 0,
+      "added": 0,
+      "retainedOrderPreserved": true,
+      "locality": {
+        "method": "Horizontal distance to the nearest changed actual branch triangle AABB, a conservative lower bound; no arbitrary locality pass threshold.",
+        "removedMaxLowerBound": 0,
+        "addedMaxLowerBound": 0
+      }
+    },
+    "full.tufts": {
+      "baseline": 374,
+      "current": 371,
+      "exact": 371,
+      "removed": 3,
+      "added": 0,
+      "retainedOrderPreserved": true,
+      "locality": {
+        "method": "Horizontal distance to the nearest changed actual branch triangle AABB, a conservative lower bound; no arbitrary locality pass threshold.",
+        "removedMaxLowerBound": 0,
+        "addedMaxLowerBound": 0
+      }
+    },
+    "lite.trees": {
+      "baseline": 368,
+      "current": 368,
+      "exact": 368,
+      "removed": 0,
+      "added": 0,
+      "retainedOrderPreserved": true,
+      "locality": {
+        "method": "Horizontal distance to the nearest changed actual branch triangle AABB, a conservative lower bound; no arbitrary locality pass threshold.",
+        "removedMaxLowerBound": 0,
+        "addedMaxLowerBound": 0
+      }
+    },
+    "lite.shrubs": {
+      "baseline": 495,
+      "current": 495,
+      "exact": 495,
+      "removed": 0,
+      "added": 0,
+      "retainedOrderPreserved": true,
+      "locality": {
+        "method": "Horizontal distance to the nearest changed actual branch triangle AABB, a conservative lower bound; no arbitrary locality pass threshold.",
+        "removedMaxLowerBound": 0,
+        "addedMaxLowerBound": 0
+      }
+    },
+    "lite.flowers": {
+      "baseline": 44,
+      "current": 44,
+      "exact": 44,
+      "removed": 0,
+      "added": 0,
+      "retainedOrderPreserved": true,
+      "locality": {
+        "method": "Horizontal distance to the nearest changed actual branch triangle AABB, a conservative lower bound; no arbitrary locality pass threshold.",
+        "removedMaxLowerBound": 0,
+        "addedMaxLowerBound": 0
+      }
+    },
+    "lite.tufts": {
+      "baseline": 158,
+      "current": 158,
+      "exact": 158,
+      "removed": 0,
+      "added": 0,
+      "retainedOrderPreserved": true,
+      "locality": {
+        "method": "Horizontal distance to the nearest changed actual branch triangle AABB, a conservative lower bound; no arbitrary locality pass threshold.",
+        "removedMaxLowerBound": 0,
+        "addedMaxLowerBound": 0
+      }
+    },
+    "props": {
+      "baseline": 50,
+      "current": 50,
+      "exact": 50,
+      "removed": 0,
+      "added": 0,
+      "retainedOrderPreserved": true,
+      "locality": {
+        "method": "Horizontal distance to the nearest changed actual branch triangle AABB, a conservative lower bound; no arbitrary locality pass threshold.",
+        "removedMaxLowerBound": 0,
+        "addedMaxLowerBound": 0
+      }
+    },
+    "fixtures": {
+      "baseline": 31,
+      "current": 31,
+      "exact": 31,
+      "removed": 0,
+      "added": 0,
+      "retainedOrderPreserved": true,
+      "locality": {
+        "method": "Horizontal distance to the nearest changed actual branch triangle AABB, a conservative lower bound; no arbitrary locality pass threshold.",
+        "removedMaxLowerBound": 0,
+        "addedMaxLowerBound": 0
+      }
+    }
+  },
+  "meshCounts": {
+    "dam-promenade": {
+      "baseline": 2430,
+      "current": 2574,
+      "newOrChangedTriangles": 1721
+    },
+    "library-balcony": {
+      "baseline": 1040,
+      "current": 1400,
+      "newOrChangedTriangles": 1400
+    },
+    "hearth-awning": {
+      "baseline": 314,
+      "current": 564,
+      "newOrChangedTriangles": 474
+    }
+  },
+  "treeIntersections": 1,
+  "runtimeColliderIntersections": 0,
+  "otherEnvelopeCandidates": 8,
+  "related": {
+    "pavilionColumnsByteEqual": true,
+    "strataFullByteEqual": true,
+    "strataLiteByteEqual": true
+  },
+  "limitations": [
+    "No removal is applied or authorized by this report. Changed geometry membership must be checked against approved landing ranges; first awning entry/rail and protected native road are excluded from automatic decisions.",
+    "Tree tests compare actual static crown/trunk mesh faces. Wind, ink outline, blossom and fruit attachments are not included. A mesh entirely containing another without surface crossing is not reported by the triangle test.",
+    "Shrubs, flowers and tufts are conservative envelope candidates requiring exact follow-up before deletion.",
+    "Source WORLD_SOLIDS and original branch payloads are retained in both snapshots for support/collision follow-up; surface triangle witnesses include actual drawn posts, cross braces, deck skins and ground supports. Runtime support collider mismatches are not silently treated as equivalent to drawn supports.",
+    "Locality distances are lower bounds to actual changed triangle boxes; large distances prove nonlocal drift, small distances alone do not prove an approved local change."
+  ]
+}

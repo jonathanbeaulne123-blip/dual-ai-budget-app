@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560"><rect width="1000" height="560" fill="#f5f1e7"/><style>text{font-family:Arial,sans-serif;fill:#203a34}.small{font-size:13px}.label{font-size:17px}</style><text x="34" y="42" font-size="25">Summit to north coast</text>
+<text x="34" y="70" class="small">Endpoint chord only — a feasibility drawing, not a fitted road or clearance proof</text>
+<polyline fill="none" stroke="#b8b7ac" stroke-width="3" points="317.1,419.4 314.0,418.8 310.8,419.1 307.6,419.2 304.4,418.7 301.2,418.1 298.1,417.4 295.1,416.4 292.2,415.1 289.8,412.9 288.4,410.1 287.9,406.9 288.5,403.8 290.5,401.3 293.1,399.5 295.9,397.9 298.9,396.7 302.0,395.9 305.2,395.6 308.4,395.5 311.6,395.4 314.7,394.9 315.2,373.8 312.0,374.0 308.8,374.4 305.6,374.8 302.4,375.2 299.3,375.8 296.2,376.6 293.1,377.6 290.1,378.6 287.0,379.4 283.8,380.0 280.6,380.0 277.5,379.4 274.4,378.5 271.4,377.4 268.4,376.3 265.4,375.2 262.3,374.1 259.4,373.0 258.4,372.6"/>
+<polyline fill="none" stroke="#b8b7ac" stroke-width="3" points="316.1,192.3 310.3,191.2 304.4,190.2 298.8,188.9 293.6,187.5 289.2,185.7 286.3,184.0 283.2,181.7 280.0,178.9 276.6,175.6 272.9,172.1 268.9,168.4 264.6,164.7 260.1,161.0 255.1,157.5 249.9,154.2 244.2,151.4 238.1,149.1 231.6,147.4 229.1,147.0 226.2,146.5 223.0,146.0 219.4,145.5 215.6,145.0 211.4,144.5 207.0,144.0 202.4,143.5 197.5,143.0 192.4,142.4 187.2,141.9 181.7,141.5 176.1,141.0"/>
+<path d="M258.36898395721926,372.5668449197861 L231.63101604278074,147.4331550802139" stroke="#b66136" stroke-width="3" stroke-dasharray="7 5"/>
+<circle cx="258.36898395721926" cy="372.5668449197861" r="5" fill="#203a34"/><text x="267.36898395721926" y="364.5668449197861" class="label">A</text>
+<circle cx="231.63101604278074" cy="147.4331550802139" r="5" fill="#203a34"/><text x="240.63101604278074" y="139.4331550802139" class="label">B</text>
+<text x="40" y="115" class="label">Plan · north ↑</text>
+<text x="35" y="446" class="small">A [1325.0, 158.20, 470.5] → B [1300.0, 72.25, 260.0]</text>
+<text x="545" y="115" class="label">Profile · vertical scale exaggerated</text>
+<path d="M550,395H940 M550,395V135" fill="none" stroke="#adb3a9"/>
+<path d="M550,168.8332771097888 L935,371.1667228902112" fill="none" stroke="#b66136" stroke-width="3" stroke-dasharray="7 5"/>
+<text x="534" y="156.8332771097888" class="small">158.20</text>
+<text x="919" y="359.1667228902112" class="small">72.25</text>
+<text x="552" y="423" class="small">0 m</text><text x="862" y="423" class="small">212.0 m</text><text x="552" y="448" class="small">At ≤10%: necessary route length ≥859.5 m</text>
+<text x="34" y="502" class="label">Leave as a view for now. Throat, skylight and flight envelopes remain.</text><text x="34" y="535" class="small">Horizon xyz, eu/metres. Measured endpoints at main 324cd5f. Terrain between endpoints is not drawn.</text></svg>

@@ -1,0 +1,12 @@
+[
+  {
+    "path": "src/harbour/mountain/art/routeArt.ts",
+    "baseSHA256": "8d9624344d1a8e8a08321ca767160da33beee859894d009706c1fc9edd2feec1",
+    "sha256": "dcc19de2c01220dfd9bd35c5f0c38a636454ac1eef6244512dc3915cf1567ea8"
+  },
+  {
+    "path": "src/harbour/horizon/regions/mountainV2/funicularFootPath.ts",
+    "baseSHA256": "886f4a1934eba44373f2ecc0611cdffbda20a6b9438ec4f1f1453de4ac2192c6",
+    "sha256": "8f5708f0dfb4aaa1b781f9509f9cdb30bc4409553b10b4f6e321d6e55427d6de"
+  }
+]

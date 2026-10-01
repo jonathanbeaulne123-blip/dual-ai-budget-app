@@ -1,0 +1,7 @@
+{
+  "rawEvidenceWarnings": 367,
+  "patchWarnings": 65,
+  "textLogWarnings": 302,
+  "outsideEvidenceWarnings": 0,
+  "resolution": "Scoped Git whitespace attributes preserve exact raw diagnostic logs and proposal patches. Application source checks remain enabled."
+}

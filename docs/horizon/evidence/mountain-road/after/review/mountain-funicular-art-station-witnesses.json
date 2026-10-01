@@ -1,0 +1,354 @@
+[
+  {
+    "p": [
+      1289.613807341393,
+      55.69991589870199,
+      724.789960031292
+    ],
+    "floor": {
+      "id": "mountainV2.funicularFoot.apron",
+      "y": 55.6336339593113,
+      "nx": -0.104219950735569,
+      "ny": 0.9890495538711548,
+      "nz": 0.10449464619159698,
+      "material": "paved",
+      "slope": 8.486930478667874
+    },
+    "gap": 0.06628193939069149,
+    "matches": [
+      {
+        "triangle": 174,
+        "det": -0.005064719302209605,
+        "globalArea": -0.005064719240181148
+      }
+    ],
+    "along": 6.4488574717875435,
+    "lateral": 1.6050892431701476,
+    "stationLength": 6.3999999568688395,
+    "insideDrawnRectangle": true,
+    "insideNativeSurfaceCapsule": false,
+    "capsuleDistance": 1.6058326610529967,
+    "stationDrawnY": 55.650854,
+    "aboveActualDrawnStation": 0.04906189870198574
+  },
+  {
+    "p": [
+      1289.6175704714638,
+      55.70001820204443,
+      724.7981014404972
+    ],
+    "floor": {
+      "id": "mountainV2.funicularFoot.apron",
+      "y": 55.633170342064346,
+      "nx": -0.104219950735569,
+      "ny": 0.9890495538711548,
+      "nz": 0.10449464619159698,
+      "material": "paved",
+      "slope": 8.486930478667874
+    },
+    "gap": 0.06684785998008635,
+    "matches": [
+      {
+        "triangle": 174,
+        "det": -0.005064719302209605,
+        "globalArea": -0.005064719240181148
+      }
+    ],
+    "along": 6.4408600762194865,
+    "lateral": 1.6010290269316378,
+    "stationLength": 6.3999999568688395,
+    "insideDrawnRectangle": true,
+    "insideNativeSurfaceCapsule": false,
+    "capsuleDistance": 1.601550340898161,
+    "stationDrawnY": 55.650854,
+    "aboveActualDrawnStation": 0.04916420204443028
+  },
+  {
+    "p": [
+      1289.5706796365466,
+      55.700805284122644,
+      724.7932522250463
+    ],
+    "floor": {
+      "id": "mountainV2.funicularFoot.apron",
+      "y": 55.62874160213347,
+      "nx": -0.104219950735569,
+      "ny": 0.9890495538711548,
+      "nz": 0.10449464619159698,
+      "material": "paved",
+      "slope": 8.486930478667874
+    },
+    "gap": 0.0720636819891709,
+    "matches": [
+      {
+        "triangle": 176,
+        "det": -3.848098029836634e-05,
+        "globalArea": -3.8480968214571476e-05
+      }
+    ],
+    "along": 6.44398024045569,
+    "lateral": 1.6480665636959422,
+    "stationLength": 6.3999999568688395,
+    "insideDrawnRectangle": true,
+    "insideNativeSurfaceCapsule": false,
+    "capsuleDistance": 1.6486532879040794,
+    "stationDrawnY": 55.650854,
+    "aboveActualDrawnStation": 0.04995128412264194
+  },
+  {
+    "p": [
+      1289.5732453624835,
+      55.70083938523679,
+      724.7971328769784
+    ],
+    "floor": {
+      "id": "mountainV2.funicularFoot.apron",
+      "y": 55.62860196553292,
+      "nx": -0.104219950735569,
+      "ny": 0.9890495538711548,
+      "nz": 0.10449464619159698,
+      "material": "paved",
+      "slope": 8.486930478667874
+    },
+    "gap": 0.07223741970386754,
+    "matches": [
+      {
+        "triangle": 176,
+        "det": -3.848098029836634e-05,
+        "globalArea": -3.8480968214571476e-05
+      }
+    ],
+    "along": 6.440196646376681,
+    "lateral": 1.6453597528702797,
+    "stationLength": 6.3999999568688395,
+    "insideDrawnRectangle": true,
+    "insideNativeSurfaceCapsule": false,
+    "capsuleDistance": 1.645850688918268,
+    "stationDrawnY": 55.650854,
+    "aboveActualDrawnStation": 0.04998538523678775
+  },
+  {
+    "p": [
+      1289.569482232413,
+      55.700737081894346,
+      724.788991467773
+    ],
+    "floor": {
+      "id": "mountainV2.funicularFoot.apron",
+      "y": 55.629065582779916,
+      "nx": -0.104219950735569,
+      "ny": 0.9890495538711548,
+      "nz": 0.10449464619159698,
+      "material": "paved",
+      "slope": 8.486930478667874
+    },
+    "gap": 0.07167149911443005,
+    "matches": [
+      {
+        "triangle": 176,
+        "det": -3.848098029836634e-05,
+        "globalArea": -3.8480968214571476e-05
+      }
+    ],
+    "along": 6.44819404194486,
+    "lateral": 1.6494199691085665,
+    "stationLength": 6.3999999568688395,
+    "insideDrawnRectangle": true,
+    "insideNativeSurfaceCapsule": false,
+    "capsuleDistance": 1.6501239057508437,
+    "stationDrawnY": 55.650854,
+    "aboveActualDrawnStation": 0.049883081894343206
+  },
+  {
+    "p": [
+      1289.5693113147436,
+      55.70083938523679,
+      724.7936323303879
+    ],
+    "floor": {
+      "id": "mountainV2.funicularFoot.apron",
+      "y": 55.62855725808758,
+      "nx": -0.104219950735569,
+      "ny": 0.9890495538711548,
+      "nz": 0.10449464619159698,
+      "material": "paved",
+      "slope": 8.486930478667874
+    },
+    "gap": 0.07228212714920801,
+    "matches": [
+      {
+        "triangle": 176,
+        "det": -3.848098029836634e-05,
+        "globalArea": -3.8480968214571476e-05
+      }
+    ],
+    "along": 6.443550033045194,
+    "lateral": 1.6494199691087403,
+    "stationLength": 6.3999999568688395,
+    "insideDrawnRectangle": true,
+    "insideNativeSurfaceCapsule": false,
+    "capsuleDistance": 1.6499948010917018,
+    "stationDrawnY": 55.650854,
+    "aboveActualDrawnStation": 0.04998538523678775
+  },
+  {
+    "p": [
+      1289.6141061778762,
+      55.70085399999999,
+      724.8534130779872
+    ],
+    "floor": {
+      "id": "mountainV2.funicularFoot.apron",
+      "y": 55.62696153457546,
+      "nx": -0.104219950735569,
+      "ny": 0.9890495538711548,
+      "nz": 0.10449464619159698,
+      "material": "paved",
+      "slope": 8.486930478667874
+    },
+    "gap": 0.0738924654245352,
+    "matches": [
+      {
+        "triangle": 453,
+        "det": -0.04743383542473063,
+        "globalArea": -0.047433835454285145
+      }
+    ],
+    "along": 6.385458412454181,
+    "lateral": 1.6024552891491437,
+    "stationLength": 6.3999999568688395,
+    "insideDrawnRectangle": true,
+    "insideNativeSurfaceCapsule": false,
+    "capsuleDistance": 1.6024552891491437,
+    "stationDrawnY": 55.650854,
+    "aboveActualDrawnStation": 0.04999999999999005
+  },
+  {
+    "p": [
+      1289.5888868473912,
+      55.70085399999999,
+      724.8309727195624
+    ],
+    "floor": {
+      "id": "mountainV2.funicularFoot.apron",
+      "y": 55.62667493616239,
+      "nx": -0.104219950735569,
+      "ny": 0.9890495538711548,
+      "nz": 0.10449464619159698,
+      "material": "paved",
+      "slope": 8.486930478667874
+    },
+    "gap": 0.07417906383760453,
+    "matches": [
+      {
+        "triangle": 454,
+        "det": -0.001081144870782709,
+        "globalArea": -0.0010811449028551579
+      }
+    ],
+    "along": 6.406955397806137,
+    "lateral": 1.6284834265608472,
+    "stationLength": 6.3999999568688395,
+    "insideDrawnRectangle": true,
+    "insideNativeSurfaceCapsule": false,
+    "capsuleDistance": 1.6284982802391872,
+    "stationDrawnY": 55.650854,
+    "aboveActualDrawnStation": 0.04999999999999005
+  },
+  {
+    "p": [
+      1289.584952799651,
+      55.700854,
+      724.827472172972
+    ],
+    "floor": {
+      "id": "mountainV2.funicularFoot.apron",
+      "y": 55.626630228717005,
+      "nx": -0.104219950735569,
+      "ny": 0.9890495538711548,
+      "nz": 0.10449464619159698,
+      "material": "paved",
+      "slope": 8.486930478667874
+    },
+    "gap": 0.07422377128299473,
+    "matches": [
+      {
+        "triangle": 454,
+        "det": -0.001081144870782709,
+        "globalArea": -0.0010811449028551579
+      }
+    ],
+    "along": 6.410308784474641,
+    "lateral": 1.632543642799535,
+    "stationLength": 6.3999999568688395,
+    "insideDrawnRectangle": true,
+    "insideNativeSurfaceCapsule": false,
+    "capsuleDistance": 1.6325761904339358,
+    "stationDrawnY": 55.650854,
+    "aboveActualDrawnStation": 0.04999999999999716
+  },
+  {
+    "p": [
+      1289.582439768298,
+      55.70085399999999,
+      724.879947523664
+    ],
+    "floor": {
+      "id": "mountainV2.funicularFoot.apron",
+      "y": 55.62082131754498,
+      "nx": -0.104219950735569,
+      "ny": 0.9890495538711548,
+      "nz": 0.10449464619159698,
+      "material": "paved",
+      "slope": 8.486930478667874
+    },
+    "gap": 0.0800326824550126,
+    "matches": [
+      {
+        "triangle": 455,
+        "det": -0.08946367327689073,
+        "globalArea": -0.08946367318276316
+      }
+    ],
+    "along": 6.357776496108363,
+    "lateral": 1.6331236736905437,
+    "stationLength": 6.3999999568688395,
+    "insideDrawnRectangle": true,
+    "insideNativeSurfaceCapsule": false,
+    "capsuleDistance": 1.6331236736905437,
+    "stationDrawnY": 55.650854,
+    "aboveActualDrawnStation": 0.04999999999999005
+  },
+  {
+    "p": [
+      1289.5687825965642,
+      55.700854,
+      725.2507755250988
+    ],
+    "floor": {
+      "id": "mountainV2.funicularFoot.apron",
+      "y": 55.62302516042505,
+      "nx": -0.1718260645866394,
+      "ny": 0.9844372272491455,
+      "nz": -0.036866724491119385,
+      "material": "paved",
+      "slope": 10.121525361310152
+    },
+    "gap": 0.07782883957494846,
+    "matches": [
+      {
+        "triangle": 455,
+        "det": -0.08946367327689073,
+        "globalArea": -0.08946367318276316
+      }
+    ],
+    "along": 5.98669709087561,
+    "lateral": 1.6331236736907244,
+    "stationLength": 6.3999999568688395,
+    "insideDrawnRectangle": true,
+    "insideNativeSurfaceCapsule": false,
+    "capsuleDistance": 1.6331236736907244,
+    "stationDrawnY": 55.650854,
+    "aboveActualDrawnStation": 0.04999999999999716
+  }
+]

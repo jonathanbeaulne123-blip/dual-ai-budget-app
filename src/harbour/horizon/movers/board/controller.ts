@@ -97,6 +97,9 @@ export function createBoardController(deps: MoverDeps, profile: GroundProfile = 
   const acc = {t: 0};
   let holdSteps = 0, jumpHeld = 0, prevJump = false, travelYaw: number | null = null, lean = 0;
   let input: GroundInput = {...NEUTRAL_INPUT};
+  // A mode handover begins with the rider holding the board/bicycle still. Once they move,
+  // ordinary gravity applies, including rolling back when they stop on a slope (RIDE §6.5).
+  let pickupHeld = false;
 
   function body(): MoverBody { return {x: state.p[0], y: state.p[1], z: state.p[2], yaw: state.heading}; }
 
@@ -111,7 +114,7 @@ export function createBoardController(deps: MoverDeps, profile: GroundProfile = 
       state.contact.on = false; state.contact.kind = 'air'; state.contact.n = [0, 1, 0];
     }
     if (speed) { const f = boardFrame(heading, 1, state.contact.n); state.v = [f.a[0] * speed, f.a[1] * speed, f.a[2] * speed]; }
-    acc.t = 0; holdSteps = 0; jumpHeld = 0; prevJump = false; travelYaw = null; lean = 0; input = {...NEUTRAL_INPUT};
+    acc.t = 0; holdSteps = 0; pickupHeld = false; jumpHeld = 0; prevJump = false; travelYaw = null; lean = 0; input = {...NEUTRAL_INPUT};
     camera.snap(state, flags);
   }
 
@@ -215,6 +218,7 @@ export function createBoardController(deps: MoverDeps, profile: GroundProfile = 
       }
       const heading = bedHeadingAt(contact, ox, oz, oy) ?? bedHeadingAt(contact, x, z, y) ?? from.yaw;
       reset([x, y, z], heading, 0);
+      pickupHeld = state.contact.on && state.contact.legal;
     },
     update(dt: number, m: MoverInput): MoverFrame {
       const look = m.look ?? {dx: 0, dy: 0};
@@ -224,7 +228,11 @@ export function createBoardController(deps: MoverDeps, profile: GroundProfile = 
         prevJump = !!m.jump; jumpHeld = 0;
         input = axes(m);
       } else input = groundInput(dt, m);
-      const events = stepFrame(dt, input);
+      // Selecting a mode or looking around is not a push. Keep the existing stopped/gripped
+      // pickup contract on a graded, visible deck too; do not flatten that deck or change
+      // the ground kernel. Space can charge while held and releases the hold on its pop.
+      if (pickupHeld && (input.push || input.slide || input.pop || input.steer !== 0)) pickupHeld = false;
+      const events = pickupHeld ? [] : stepFrame(dt, input);
       return frame(dt, input, events, look);
     },
     airborne(){return !state.contact.on&&holdSteps===0?{...body(),velocity:[...state.v] as [number,number,number]}:null;},
@@ -237,14 +245,14 @@ export function createBoardController(deps: MoverDeps, profile: GroundProfile = 
       state.contact={...state.contact,on:true,kind:'ground',n:[...c.n],material:c.material,pace:c.pace,legal:true,slope:c.slope};
       state.legs={...state.legs,boost:0,charge:0,window:0,crouch:0,stroke:-1};
       state.latch={...state.latch,boostAccel:0,popBuffer:0,prevPop:false,popped:false,prevPush:true};
-      state.airborneFor=0;state.offbedFor=0;state.yawRate=0;state.stopped=0;state.slideFor=0;acc.t=0;holdSteps=0;jumpHeld=0;prevJump=false;camera.snap(state,flags);
+      pickupHeld=false;state.airborneFor=0;state.offbedFor=0;state.yawRate=0;state.stopped=0;state.slideFor=0;acc.t=0;holdSteps=0;jumpHeld=0;prevJump=false;camera.snap(state,flags);
       return true;
     },
     exit(): MoverBody { return body(); },
     reducedMotion(on) { flags.reducedMotion = on; },
     calm(on) { flags.calm = on; },
     tier(t) { flags.tier = t; },
-    dispose() { acc.t = 0; holdSteps = 0; },
+    dispose() { acc.t = 0; holdSteps = 0; pickupHeld = false; },
     state: () => state,
     place(start) {
       // Without y: on the topmost ground there. With y: on the ground only if it is within 0.15 m, else airborne at y.

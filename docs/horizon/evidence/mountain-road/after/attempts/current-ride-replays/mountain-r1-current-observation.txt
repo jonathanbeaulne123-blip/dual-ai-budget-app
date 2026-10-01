@@ -1,0 +1,14 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/mountain-r1-observation.test.ts > records the original deferred R1 checks without changing its controller inputs
+R1_CURRENT_OBSERVATION {"checks":{"speed at 120 m 11–13.5 (RIDE §9)":[false,null],"speed rises to 120 m":[false,83.9],"|β| < 8° throughout":[false,10.6],"lateral acceleration ≤ 0.9 G (7.2, +3 % servo overshoot) to 120 m":[true,null],"heading change per carve against the line 20–35°":[false,"24.7–51.7"],"no bail":[true,0],"on the bed":[false,262]},"failures":["R1 speed at 120 m 11–13.5 (RIDE §9): got NaN","R1 speed rises to 120 m: got 83.9","R1 |β| < 8° throughout: got 10.6","R1 heading change per carve against the line 20–35°: got 24.7–51.7","R1 on the bed: got 262"],"distance":83.91538370626311,"events":[{"kind":"airborne","t":12.025,"data":{"reason":"crest"}},{"kind":"land","t":12.141666666666666,"data":{"impact":0.7192224580074179,"airTime":0.11666666666666665}},{"kind":"fadeBack","t":13.441666666666666,"data":{"reason":"offbed","found":1}}],"allLegal":false}
+
+ ✓ test/mountain-r1-observation.test.ts (1 test) 3435ms
+   ✓ records the original deferred R1 checks without changing its controller inputs  3101ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  02:30:28
+   Duration  4.46s (transform 472ms, setup 0ms, collect 862ms, tests 3.44s, environment 0ms, prepare 53ms)
+

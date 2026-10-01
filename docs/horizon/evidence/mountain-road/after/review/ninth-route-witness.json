@@ -1,0 +1,97 @@
+{
+  "source": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/horizon/land/mountainV2/v2-data.json",
+  "sha256": "418eab3afb34746b1341d6f80c16efc7d6921eb71ad301e31e249b63b46cab8f",
+  "chord": [
+    [
+      7.715598107341353,
+      -191.3168118322227
+    ],
+    [
+      88.67828044808631,
+      -162.32254217463523
+    ]
+  ],
+  "trees": [
+    {
+      "index": 52,
+      "id": "mountain-tree-52",
+      "at": [
+        66.51898699999992,
+        33.3865,
+        -170.24537399999997
+      ],
+      "kind": "round",
+      "size": 0.8393683217000216,
+      "collisionRadius": 0.18466103077400475,
+      "gateChord": {
+        "distance": 0.012079532253363896,
+        "segment": 0,
+        "t": 0.7263526827650298,
+        "at": [
+          66.52305962939437,
+          0.0,
+          -170.25674628162133
+        ]
+      },
+      "pathClearance": -0.4475814985206409,
+      "actualRoad": {
+        "distance": 7.3208987018307266,
+        "segment": 335,
+        "t": 0.8739518138651563,
+        "at": [
+          69.09251859829531,
+          33.29802777918088,
+          -163.39172585357153
+        ]
+      },
+      "branches": {
+        "dam-promenade": {
+          "distance": 72.72598648230783,
+          "segment": 35,
+          "t": 0.5767154815580189,
+          "at": [
+            23.45153462176025,
+            84.85717251210033,
+            -228.8479648597297
+          ]
+        },
+        "library-balcony": {
+          "distance": 5.8707391245666445,
+          "segment": 40,
+          "t": 0.5065124276042796,
+          "at": [
+            68.8507639344879,
+            37.64996730388279,
+            -175.63317449709592
+          ]
+        },
+        "hearth-awning": {
+          "distance": 75.43486680896234,
+          "segment": 0,
+          "t": 0,
+          "at": [
+            36.59830299999999,
+            17.716644000000002,
+            -100.99819500000001
+          ]
+        }
+      },
+      "sweptRoad": {
+        "method": "Union of all941 source-normal/actual-halfwidth quad strips in plan; positions1e-6/normals1e-9 precision. This is actual exported source frame, not perpendicular replacement.",
+        "distanceToDrawnWidth": 2.5210488893004057,
+        "segment": 335,
+        "nearest": [
+          67.4055476950358,
+          -167.88535331444226
+        ],
+        "trunkClearance": 2.336387858526401,
+        "bodyCircleClearanceAtRoadEdge": 2.061387858526401,
+        "nearestSourceHalfWidths": [
+          4.8,
+          4.8
+        ]
+      }
+    }
+  ],
+  "limits": "Current exported full planting, positions rounded 1e-6. Kind/size inferred from exact crown base/top ratios because dump omits these. Source logs may predate this current export; exact obstacle identity needs reserved runtime probe."
+}

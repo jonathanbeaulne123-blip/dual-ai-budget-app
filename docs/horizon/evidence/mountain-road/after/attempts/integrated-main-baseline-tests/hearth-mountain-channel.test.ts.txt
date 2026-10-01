@@ -1,0 +1,25 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof
+
+ ❯ test/hearth-mountain-channel.test.ts (4 tests | 1 failed) 1221ms
+   ✓ town channel physical and visible ground > exposes the existing river below the actual full and lite terrain triangles  1198ms
+   ✓ town channel physical and visible ground > preserves both edges and centres of unsupported village lane causeways 17ms
+   ✓ town channel physical and visible ground > preserves town room foundations and their rotated doorway aprons 1ms
+   × town channel physical and visible ground > retains town race and transport support heights above the cut including the finish 6ms
+     → expected -0.04999999999999985 to be close to 0.57, received difference is 0.6199999999999998, but expected 5e-7
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/hearth-mountain-channel.test.ts > town channel physical and visible ground > retains town race and transport support heights above the cut including the finish
+AssertionError: expected -0.04999999999999985 to be close to 0.57, received difference is 0.6199999999999998, but expected 5e-7
+ ❯ test/hearth-mountain-channel.test.ts:46:199
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 3 passed (4)
+   Start at  13:11:21
+   Duration  1.81s (transform 184ms, setup 0ms, collect 438ms, tests 1.22s, environment 0ms, prepare 36ms)
+

@@ -1,0 +1,51 @@
+$ node scripts/generate-mountain-landings.mjs --check && node scripts/horizon/bake-terrain.mjs --check && node scripts/horizon/dump-mountain-v2.mjs --check
+{"bytes":25248,"sourceSha256":"4b8bd8e7da399b68275f264f20a07b07d03c3359710c828145e494595e2d2a2a","maxGrade":0.39501155406641003,"maxConstraintDeficit":0.002040069183337323,"maxCrossfall":0.27949754719643494,"iterations":1500,"vertices":350,"triangles":552,"constraints":27893}
+{"awningBytes":16020,"sourceSha256":"f06b728d3aa9ddec9440ebe52d1cad073cda66f0fb84a640ab0936d974bbf6a4","maxGrade":0.3950000000000521,"maxConstraintDeficit":0.001713177341569505,"maxCrossfall":0.2900000000000009,"iterations":6000,"vertices":175,"triangles":272,"constraints":20694,"fixedRoadCrests":[{"row":24,"column":4,"gradeDropPerMetre":0.014984513167029714},{"row":25,"column":2,"gradeDropPerMetre":0.00971809809217543},{"row":25,"column":3,"gradeDropPerMetre":0.016305165264429083},{"row":25,"column":4,"gradeDropPerMetre":0.02852086534781852},{"row":26,"column":0,"gradeDropPerMetre":0.0218304869465088},{"row":26,"column":1,"gradeDropPerMetre":0.0192487600252611},{"row":26,"column":2,"gradeDropPerMetre":0.013687062214536637},{"row":26,"column":3,"gradeDropPerMetre":0.027853088278694555},{"row":26,"column":4,"gradeDropPerMetre":-0.010521286625351471},{"row":27,"column":0,"gradeDropPerMetre":-2.0754693749865587e-14},{"row":27,"column":1,"gradeDropPerMetre":0.005315279962454755},{"row":27,"column":2,"gradeDropPerMetre":0.01988531982662541},{"row":27,"column":3,"gradeDropPerMetre":-0.0019495278620136486},{"row":27,"column":4,"gradeDropPerMetre":-2.012960457074944e-15},{"row":28,"column":0,"gradeDropPerMetre":0.007225570800473234},{"row":28,"column":1,"gradeDropPerMetre":0.021155090739738258},{"row":28,"column":2,"gradeDropPerMetre":0.004319921361202457},{"row":28,"column":3,"gradeDropPerMetre":-0.003656179795788063},{"row":28,"column":4,"gradeDropPerMetre":0.00869952525310908},{"row":29,"column":0,"gradeDropPerMetre":0.008157861572190278},{"row":29,"column":1,"gradeDropPerMetre":4.969449442488016e-16},{"row":29,"column":2,"gradeDropPerMetre":8.040644255881746e-15},{"row":29,"column":3,"gradeDropPerMetre":1.5318836185364837e-14},{"row":29,"column":4,"gradeDropPerMetre":0.02452584240965596},{"row":30,"column":0,"gradeDropPerMetre":0.006785506615401102},{"row":30,"column":1,"gradeDropPerMetre":0.0023750088176369795},{"row":30,"column":2,"gradeDropPerMetre":0.0023315620260955998},{"row":30,"column":3,"gradeDropPerMetre":0.007728313528830655},{"row":30,"column":4,"gradeDropPerMetre":0.0022976247982916982},{"row":31,"column":0,"gradeDropPerMetre":3.36431855643922e-16},{"row":31,"column":1,"gradeDropPerMetre":6.898674836276451e-15},{"row":31,"column":2,"gradeDropPerMetre":6.9813369260767886e-15},{"row":31,"column":3,"gradeDropPerMetre":0.01886049452058656},{"row":31,"column":4,"gradeDropPerMetre":-8.49328262600808e-15},{"row":32,"column":0,"gradeDropPerMetre":0.0015801470429814143},{"row":32,"column":1,"gradeDropPerMetre":0.0015559726960306208},{"row":32,"column":2,"gradeDropPerMetre":0.0015250881046981284},{"row":32,"column":3,"gradeDropPerMetre":0.005755841641416658},{"row":32,"column":4,"gradeDropPerMetre":0.010712184226851012},{"row":33,"column":0,"gradeDropPerMetre":0.007657125547303467},{"row":33,"column":1,"gradeDropPerMetre":0.012418230036000101},{"row":33,"column":2,"gradeDropPerMetre":0.015161123114974716},{"row":33,"column":3,"gradeDropPerMetre":0.003894475116146989},{"row":33,"column":4,"gradeDropPerMetre":0.004618967205967043}],"roadFieldDifferenceAtVertices":0.04601726296146147}
+{
+  "revision": "horizon-geo-1",
+  "terrainBytes": 571191,
+  "definitionBytes": 29138873,
+  "definitionCompressedBytes": 6144715,
+  "indexCompressedBytes": 1878796,
+  "journeyCompressedBytes": 25185,
+  "chunkCompressedBytes": {
+    "bight": 496761,
+    "crown": 217782,
+    "flats": 204190,
+    "green": 174905,
+    "harbour": 240850,
+    "hollow": 571957,
+    "lakeside": 587170,
+    "landing": 290629,
+    "notch": 92833,
+    "offshore": 106841,
+    "prow": 474953,
+    "reach": 187771,
+    "scholars": 311280,
+    "undercroft": 329513
+  },
+  "sha256": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+  "solids": 1077,
+  "diagnostics": 744,
+  "conflicts": 142,
+  "seconds": 92.591010208
+}
+mountainV2 data /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/horizon/land/mountainV2/v2-data.json 696991 bytes; road samples 941 course points 391
+       98.49 real       103.12 user         2.44 sys
+           727105536  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+              419874  page reclaims
+                6466  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                 301  messages sent
+                 326  messages received
+                 746  signals received
+                4193  voluntary context switches
+              126812  involuntary context switches
+          3279038421  instructions retired
+          1138894403  cycles elapsed
+            97098176  peak memory footprint

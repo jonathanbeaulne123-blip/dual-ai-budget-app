@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizon-ground-mask-cache.test.ts (1 test) 8ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  05:58:21
+   Duration  806ms (transform 236ms, setup 0ms, collect 543ms, tests 8ms, environment 0ms, prepare 94ms)
+

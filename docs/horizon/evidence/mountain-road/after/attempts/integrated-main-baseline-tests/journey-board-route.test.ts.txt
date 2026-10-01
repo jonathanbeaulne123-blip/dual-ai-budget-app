@@ -1,0 +1,21 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof
+
+stdout | test/journey-board-route.test.ts > board scene > fits the L0 budget at Sky (≤ 40k tris / 60 draws full; ≤ 25k / 40 lite) and L1 at Region
+[journey-board] full: sky 23335 tris / 23 draws; region 39611 / 31
+[journey-board] lite: sky 23283 tris / 23 draws; region 36177 / 31
+
+ ✓ test/journey-board-route.test.ts (23 tests) 14966ms
+   ✓ route layout on the baked stations > is deterministic, and a stretch keeps its shape when the window moves  2285ms
+   ✓ route layout on the baked stations > lays out quiet, busy and empty households  3097ms
+   ✓ board scene > fits the L0 budget at Sky (≤ 40k tris / 60 draws full; ≤ 25k / 40 lite) and L1 at Region  728ms
+   ✓ board scene > frames inside the safe area: Sky fits the island clear of a left card, a pristine view re-frames, a moved view holds still  401ms
+   ✓ board scene > focus / select / preview / zoom call nothing outside the scene, and idle draws no frames  580ms
+   ✓ board scene > settles the piece in ≤ 600 ms when today's chapter changes; a milestone settle ends on any input  2128ms
+   ✓ board scene > rebuilds on data, theme and piece-look changes and releases the lease on dispose  1920ms
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  13:20:57
+   Duration  23.19s (transform 4.77s, setup 0ms, collect 6.78s, tests 14.97s, environment 852ms, prepare 150ms)
+

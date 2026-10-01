@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonKitchenHUD.test.ts (17 tests) 451ms
+
+ Test Files  1 passed (1)
+      Tests  17 passed (17)
+   Start at  12:28:03
+   Duration  2.01s (transform 189ms, setup 0ms, collect 253ms, tests 451ms, environment 815ms, prepare 150ms)
+

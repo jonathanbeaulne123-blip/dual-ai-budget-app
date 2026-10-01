@@ -1,0 +1,1833 @@
+{
+  "sourceSHA256": "8d9624344d1a8e8a08321ca767160da33beee859894d009706c1fc9edd2feec1",
+  "proposalSHA256": "dcc19de2c01220dfd9bd35c5f0c38a636454ac1eef6244512dc3915cf1567ea8",
+  "method": "Exact original path body extracted without alterations; actual CardBuilder sweep method expands into recorded primitive arguments, using actual native ground, paths, palettes and hash seeds.",
+  "rows": [
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:town:north~station:funicular:town",
+      "primitives": 56,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:station:funicular:town~road:foot",
+      "primitives": 28,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:apron:home~door:home",
+      "primitives": 21,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:road:hearth~apron:home",
+      "primitives": 25,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:district:hearth~apron:home",
+      "primitives": 14,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:town:north~path:river-west",
+      "primitives": 32,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:path:river-east~road:station-steps",
+      "primitives": 60,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:district:hearth~overlook:hearth",
+      "primitives": 39,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:district:hearth~stair:woods-bottom",
+      "primitives": 42,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:apron:library~door:library",
+      "primitives": 21,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:district:library~apron:library",
+      "primitives": 18,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:road:library~apron:library",
+      "primitives": 28,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:road:library~overlook:gorge-balcony",
+      "primitives": 56,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:station:funicular:library~overlook:gorge-balcony",
+      "primitives": 32,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:apron:cottage~door:cottage",
+      "primitives": 21,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:lane:orchard~apron:cottage",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:lane:orchard~district:orchard",
+      "primitives": 21,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:apron:glasshouse~door:glasshouse",
+      "primitives": 21,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:district:glasshouse~apron:glasshouse",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:road:glasshouse~district:glasshouse",
+      "primitives": 63,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:dam:east~door:pavilion",
+      "primitives": 63,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:door:pavilion~district:reservoir",
+      "primitives": 39,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:road:reservoir~district:reservoir",
+      "primitives": 11,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:station:funicular:reservoir~dam:east",
+      "primitives": 49,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:district:library~road:b2-east",
+      "primitives": 49,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:road:summit~district:summit",
+      "primitives": 39,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:district:summit~door:observatory",
+      "primitives": 18,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:district:summit~station:gondola:summit",
+      "primitives": 60,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:district:summit~overlook:summit",
+      "primitives": 46,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:town:quay~station:gondola:quay",
+      "primitives": 32,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "town:west-lanes",
+      "primitives": 350,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:gate:woodland-clearing~plot:woodland-clearing",
+      "primitives": 39,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:gate:sunny-shelf~plot:sunny-shelf",
+      "primitives": 28,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:gate:high-terrace~plot:high-terrace",
+      "primitives": 18,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:road:shelf~gate:sunny-shelf",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:road:clearing~gate:woodland-clearing",
+      "primitives": 18,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:road:high-terrace~gate:high-terrace",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "link:lane-junction",
+      "primitives": 4,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:town:north~station:funicular:town",
+      "primitives": 52,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:station:funicular:town~road:foot",
+      "primitives": 26,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:apron:home~door:home",
+      "primitives": 20,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:road:hearth~apron:home",
+      "primitives": 23,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:district:hearth~apron:home",
+      "primitives": 13,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:town:north~path:river-west",
+      "primitives": 30,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:path:river-east~road:station-steps",
+      "primitives": 56,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:district:hearth~overlook:hearth",
+      "primitives": 36,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:district:hearth~stair:woods-bottom",
+      "primitives": 39,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:apron:library~door:library",
+      "primitives": 20,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:district:library~apron:library",
+      "primitives": 17,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:road:library~apron:library",
+      "primitives": 26,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:road:library~overlook:gorge-balcony",
+      "primitives": 52,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:station:funicular:library~overlook:gorge-balcony",
+      "primitives": 30,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:apron:cottage~door:cottage",
+      "primitives": 20,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:lane:orchard~apron:cottage",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:lane:orchard~district:orchard",
+      "primitives": 20,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:apron:glasshouse~door:glasshouse",
+      "primitives": 20,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:district:glasshouse~apron:glasshouse",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:road:glasshouse~district:glasshouse",
+      "primitives": 59,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:dam:east~door:pavilion",
+      "primitives": 59,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:door:pavilion~district:reservoir",
+      "primitives": 36,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:road:reservoir~district:reservoir",
+      "primitives": 10,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:station:funicular:reservoir~dam:east",
+      "primitives": 46,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:district:library~road:b2-east",
+      "primitives": 46,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:road:summit~district:summit",
+      "primitives": 36,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:district:summit~door:observatory",
+      "primitives": 17,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:district:summit~station:gondola:summit",
+      "primitives": 56,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:district:summit~overlook:summit",
+      "primitives": 43,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:town:quay~station:gondola:quay",
+      "primitives": 30,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "town:west-lanes",
+      "primitives": 325,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:gate:woodland-clearing~plot:woodland-clearing",
+      "primitives": 36,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:gate:sunny-shelf~plot:sunny-shelf",
+      "primitives": 26,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:gate:high-terrace~plot:high-terrace",
+      "primitives": 17,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:road:shelf~gate:sunny-shelf",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:road:clearing~gate:woodland-clearing",
+      "primitives": 17,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:road:high-terrace~gate:high-terrace",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "link:lane-junction",
+      "primitives": 4,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:town:north~station:funicular:town",
+      "primitives": 56,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:station:funicular:town~road:foot",
+      "primitives": 28,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:apron:home~door:home",
+      "primitives": 21,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:road:hearth~apron:home",
+      "primitives": 25,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:district:hearth~apron:home",
+      "primitives": 14,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:town:north~path:river-west",
+      "primitives": 32,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:path:river-east~road:station-steps",
+      "primitives": 60,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:district:hearth~overlook:hearth",
+      "primitives": 39,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:district:hearth~stair:woods-bottom",
+      "primitives": 42,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:apron:library~door:library",
+      "primitives": 21,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:district:library~apron:library",
+      "primitives": 18,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:road:library~apron:library",
+      "primitives": 28,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:road:library~overlook:gorge-balcony",
+      "primitives": 56,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:station:funicular:library~overlook:gorge-balcony",
+      "primitives": 32,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:apron:cottage~door:cottage",
+      "primitives": 21,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:lane:orchard~apron:cottage",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:lane:orchard~district:orchard",
+      "primitives": 21,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:apron:glasshouse~door:glasshouse",
+      "primitives": 21,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:district:glasshouse~apron:glasshouse",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:road:glasshouse~district:glasshouse",
+      "primitives": 63,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:dam:east~door:pavilion",
+      "primitives": 63,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:door:pavilion~district:reservoir",
+      "primitives": 39,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:road:reservoir~district:reservoir",
+      "primitives": 11,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:station:funicular:reservoir~dam:east",
+      "primitives": 49,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:district:library~road:b2-east",
+      "primitives": 49,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:road:summit~district:summit",
+      "primitives": 39,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:district:summit~door:observatory",
+      "primitives": 18,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:district:summit~station:gondola:summit",
+      "primitives": 60,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:district:summit~overlook:summit",
+      "primitives": 46,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:town:quay~station:gondola:quay",
+      "primitives": 32,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "town:west-lanes",
+      "primitives": 350,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:gate:woodland-clearing~plot:woodland-clearing",
+      "primitives": 39,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:gate:sunny-shelf~plot:sunny-shelf",
+      "primitives": 28,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:gate:high-terrace~plot:high-terrace",
+      "primitives": 18,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:road:shelf~gate:sunny-shelf",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:road:clearing~gate:woodland-clearing",
+      "primitives": 18,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:road:high-terrace~gate:high-terrace",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "link:lane-junction",
+      "primitives": 4,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:town:north~station:funicular:town",
+      "primitives": 52,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:station:funicular:town~road:foot",
+      "primitives": 26,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:apron:home~door:home",
+      "primitives": 20,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:road:hearth~apron:home",
+      "primitives": 23,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:district:hearth~apron:home",
+      "primitives": 13,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:town:north~path:river-west",
+      "primitives": 30,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:path:river-east~road:station-steps",
+      "primitives": 56,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:district:hearth~overlook:hearth",
+      "primitives": 36,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:district:hearth~stair:woods-bottom",
+      "primitives": 39,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:apron:library~door:library",
+      "primitives": 20,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:district:library~apron:library",
+      "primitives": 17,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:road:library~apron:library",
+      "primitives": 26,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:road:library~overlook:gorge-balcony",
+      "primitives": 52,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:station:funicular:library~overlook:gorge-balcony",
+      "primitives": 30,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:apron:cottage~door:cottage",
+      "primitives": 20,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:lane:orchard~apron:cottage",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:lane:orchard~district:orchard",
+      "primitives": 20,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:apron:glasshouse~door:glasshouse",
+      "primitives": 20,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:district:glasshouse~apron:glasshouse",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:road:glasshouse~district:glasshouse",
+      "primitives": 59,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:dam:east~door:pavilion",
+      "primitives": 59,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:door:pavilion~district:reservoir",
+      "primitives": 36,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:road:reservoir~district:reservoir",
+      "primitives": 10,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:station:funicular:reservoir~dam:east",
+      "primitives": 46,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:district:library~road:b2-east",
+      "primitives": 46,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:road:summit~district:summit",
+      "primitives": 36,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:district:summit~door:observatory",
+      "primitives": 17,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:district:summit~station:gondola:summit",
+      "primitives": 56,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:district:summit~overlook:summit",
+      "primitives": 43,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:town:quay~station:gondola:quay",
+      "primitives": 30,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "town:west-lanes",
+      "primitives": 325,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:gate:woodland-clearing~plot:woodland-clearing",
+      "primitives": 36,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:gate:sunny-shelf~plot:sunny-shelf",
+      "primitives": 26,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:gate:high-terrace~plot:high-terrace",
+      "primitives": 17,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:road:shelf~gate:sunny-shelf",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:road:clearing~gate:woodland-clearing",
+      "primitives": 17,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:road:high-terrace~gate:high-terrace",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "link:lane-junction",
+      "primitives": 4,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:town:north~station:funicular:town",
+      "primitives": 56,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:station:funicular:town~road:foot",
+      "primitives": 28,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:apron:home~door:home",
+      "primitives": 21,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:road:hearth~apron:home",
+      "primitives": 25,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:district:hearth~apron:home",
+      "primitives": 14,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:town:north~path:river-west",
+      "primitives": 32,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:path:river-east~road:station-steps",
+      "primitives": 60,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:district:hearth~overlook:hearth",
+      "primitives": 39,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:district:hearth~stair:woods-bottom",
+      "primitives": 42,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:apron:library~door:library",
+      "primitives": 21,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:district:library~apron:library",
+      "primitives": 18,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:road:library~apron:library",
+      "primitives": 28,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:road:library~overlook:gorge-balcony",
+      "primitives": 56,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:station:funicular:library~overlook:gorge-balcony",
+      "primitives": 32,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:apron:cottage~door:cottage",
+      "primitives": 21,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:lane:orchard~apron:cottage",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:lane:orchard~district:orchard",
+      "primitives": 21,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:apron:glasshouse~door:glasshouse",
+      "primitives": 21,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:district:glasshouse~apron:glasshouse",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:road:glasshouse~district:glasshouse",
+      "primitives": 63,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:dam:east~door:pavilion",
+      "primitives": 63,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:door:pavilion~district:reservoir",
+      "primitives": 39,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:road:reservoir~district:reservoir",
+      "primitives": 11,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:station:funicular:reservoir~dam:east",
+      "primitives": 49,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:district:library~road:b2-east",
+      "primitives": 49,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:road:summit~district:summit",
+      "primitives": 39,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:district:summit~door:observatory",
+      "primitives": 18,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:district:summit~station:gondola:summit",
+      "primitives": 60,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:district:summit~overlook:summit",
+      "primitives": 46,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:town:quay~station:gondola:quay",
+      "primitives": 32,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "town:west-lanes",
+      "primitives": 350,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:gate:woodland-clearing~plot:woodland-clearing",
+      "primitives": 39,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:gate:sunny-shelf~plot:sunny-shelf",
+      "primitives": 28,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:gate:high-terrace~plot:high-terrace",
+      "primitives": 18,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:road:shelf~gate:sunny-shelf",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:road:clearing~gate:woodland-clearing",
+      "primitives": 18,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:road:high-terrace~gate:high-terrace",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "link:lane-junction",
+      "primitives": 4,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:town:north~station:funicular:town",
+      "primitives": 52,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:station:funicular:town~road:foot",
+      "primitives": 26,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:apron:home~door:home",
+      "primitives": 20,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:road:hearth~apron:home",
+      "primitives": 23,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:district:hearth~apron:home",
+      "primitives": 13,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:town:north~path:river-west",
+      "primitives": 30,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:path:river-east~road:station-steps",
+      "primitives": 56,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:district:hearth~overlook:hearth",
+      "primitives": 36,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:district:hearth~stair:woods-bottom",
+      "primitives": 39,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:apron:library~door:library",
+      "primitives": 20,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:district:library~apron:library",
+      "primitives": 17,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:road:library~apron:library",
+      "primitives": 26,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:road:library~overlook:gorge-balcony",
+      "primitives": 52,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:station:funicular:library~overlook:gorge-balcony",
+      "primitives": 30,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:apron:cottage~door:cottage",
+      "primitives": 20,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:lane:orchard~apron:cottage",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:lane:orchard~district:orchard",
+      "primitives": 20,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:apron:glasshouse~door:glasshouse",
+      "primitives": 20,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:district:glasshouse~apron:glasshouse",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:road:glasshouse~district:glasshouse",
+      "primitives": 59,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:dam:east~door:pavilion",
+      "primitives": 59,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:door:pavilion~district:reservoir",
+      "primitives": 36,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:road:reservoir~district:reservoir",
+      "primitives": 10,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:station:funicular:reservoir~dam:east",
+      "primitives": 46,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:district:library~road:b2-east",
+      "primitives": 46,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:road:summit~district:summit",
+      "primitives": 36,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:district:summit~door:observatory",
+      "primitives": 17,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:district:summit~station:gondola:summit",
+      "primitives": 56,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:district:summit~overlook:summit",
+      "primitives": 43,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:town:quay~station:gondola:quay",
+      "primitives": 30,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "town:west-lanes",
+      "primitives": 325,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:gate:woodland-clearing~plot:woodland-clearing",
+      "primitives": 36,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:gate:sunny-shelf~plot:sunny-shelf",
+      "primitives": 26,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:gate:high-terrace~plot:high-terrace",
+      "primitives": 17,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:road:shelf~gate:sunny-shelf",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:road:clearing~gate:woodland-clearing",
+      "primitives": 17,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:road:high-terrace~gate:high-terrace",
+      "primitives": 7,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "link:lane-junction",
+      "primitives": 4,
+      "defaultExact": true,
+      "selectedExact": true
+    }
+  ],
+  "expectedCases": 228,
+  "accepted": true
+}

@@ -1,3 +1,65 @@
+## 2026-10-01 — Mountain Road and Stillwater draft PR wrap-up
+
+Jonathan asked to stop expanding the work and create a PR: “i think youve done enough work, wrap up what you are working on and create a pr”. The existing branch `codex/mountain-road-book` is being submitted as one draft checkpoint, with main `1cf76c5` integrated. **High risk; Budget (5) 0; Engagement (3) +2 target, not accepted. No merge or deployment.**
+
+The road chain, Stillwater link, supported three-theme lighting, Journey projection and written native repairs are included. The final planar funicular reduction was removed: it changed canonical ground by 25.892 cm despite isolated surface parity. The actual-served v7 ground preflight passes both tiers, but four focused synthetic-grid collar tests fail. The existing 16,036-triangle apron remains; the combined rendering budget is still exceeded. The 178-file intermediate lane finished 147 passed / 31 failed. The native capture run was stopped at 87/132 images, with one settling timeout.
+
+The [current handoff](CODEX_HORIZON_MOUNTAIN_ROAD_2.md) lists current blockers, bounded final check receipts, frozen evidence and deferred studies. **Next owner: Jonathan for review priorities; a subsequent implementation session for named blockers.** Earlier entries below describe historical states and do not authorize automatic continuation.
+
+## 2026-09-30 — Mountain Road and Stillwater local build, verification underway
+
+Jonathan authorized “build everything, make it beautiful”, the shared library/dam landings, and the longer awning return. He explicitly retained the original native grades as measured exceptions (D-MR17). Risk **High**; Budget (5) **0**; Engagement (3) **+2 target**. Branch `codex/mountain-road-book` integrates main `1cf76c5` (#577) at local head `df77030298d5ff960d2eeaa5eb62c8558008694b`; the working changes are local. No PR, push, deployment or live verification.
+
+The continuous chain, Foot and Ore joins, shared landing meshes, composed native-skate contact, sparse supported three-theme lighting and Stillwater grade/tunnel link are built. The completed lighting checkpoint has a byte-exact bake/check and **28/28 focused checks**. The required 178-file serial lane is in progress. It exposed summit pickup creep and artificial S1/road crossing markers from differently sampled aliases of the same road; source repairs and fresh affected checks are in progress. Older failures are being replayed against the integrated main baseline. Whole-route, natural descent, visual/clearance, budget and High-gate acceptance remains open. Earlier Phase 1 entries below are historical.
+
+October 1: Jonathan withdrew the pause request and explicitly approved the native frame fairing and first-five-row awning entry repair (D-MR19). Both are applied; final both-world verification remains in progress. Original grade acceptance does not waive folds, steps, guards or failed journeys. [Current handoff](CODEX_HORIZON_MOUNTAIN_ROAD_2.md) and [build work session](worksessions/2026-09-30-mountain-road-build.md) identify source versions and remaining work. **Next owner: Codex for authorized implementation/verification; Jonathan for final look/device ride.**
+
+## 2026-09-30 — Mountain Road inventory and book, Phase 1 stop
+
+Local `codex/mountain-road-book` from `main@324cd5f246ab295af5cf64d553ebf78fad57f7b5` (#576). Uncommitted docs, evidence and diagnostic tooling only; no PR, merge, deployment or live verification. **Risk: High. Budget (5): 0. Engagement (3): 0 delivered; +2 target.**
+
+The [Mountain Road book](horizon/MOUNTAIN_ROAD.md) proposes one Horizon-side chain, source-owned native surfaces and a Stillwater grade-link study with its missing descent explicitly included. Other links remain views or deferred fit studies. Jonathan's prompt requires this stop before Phase 2; native Mountain edits remain a separate decision.
+
+The original corridor stays **0/23/85, zero restarts**. The combined cruiser chain finds **5/22/22 with seven restarts**. Bicycle/Horizon-board/walking full-chain attempts finish **0/6**; native full-chain endpoints are outside the shell skate launch radius. Region **15/15** and dump check pass. High gate checks pass but **538.729 s exceeds the 300 s budget**. Known Bianca Month main CI failure remains unchanged. Headless static captures and all gaps are named in the [handoff](CODEX_HORIZON_MOUNTAIN_ROAD_1.md) and [LOOK](horizon/evidence/mountain-road/before/LOOK.md). Two independent-review findings were fixed and rechecked. **Next: Jonathan's D-MR choices; Codex for approved work and outstanding evidence.**
+
+## 2026-09-30 — Bridge PR integrates merged airport
+
+Jonathan requested a mergeable PR for the bridge work and airport update. Airport #576 is already merged at `324cd5f`; `codex/horizon-bridge-book` now includes it. Bridge implementation is committed, with shared runtime theme/disposal conflicts resolved and stable-night bridge lighting repaired. High risk; Budget delta 0. PR #577 is open. The 105-file integration sweep is complete with failures recorded; CI on d59e9a9 passed 691 assertions before review repairs. Jonathan authorized the deterministic Bianca Month fixture fix. The fresh review bake clears all 7 landing fields and moves Bight end anchors away from S2; final roof winding and repeat-build isolation regressions pass, as do the renewed byte-exact bake, bridge budgets and glider passages. Final clean-head gate status is tracked in the PR. Historical evidence below remains tied to its recorded revision. Full cast/device/performance acceptance remains open; no bridge merge or deployment is authorized.
+
+[Integration record](worksessions/2026-09-30-horizon-bridge-pr.md).
+
+## 2026-09-30 — Horizon bridges: local implementation underway
+
+Jonathan subsequently said “build them.” `codex/horizon-bridge-book`, base e77309e, remains local and uncommitted. High risk; Budget (5):0, Engagement (3):+2 target. Ten structural families, shared theme art, derived lanterns, fixed Bight tower stair and ten map glyph/name pairs are implemented; the final bake is byte-identical, stair replay passes,24 responsive map captures fit, and corrected road counts do not regress. High quick gate remains failed after timing/budget errors; all six affected files pass sequentially (121 tests). Full mode/device/scene-budget acceptance remains open. Quay is seated and the Ribbon's pumpable dip is not yet implemented. No PR, merge, deployment or device acceptance.
+
+[Implementation handoff](CODEX_HORIZON_BRIDGES_1.md) and [build worksession](worksessions/2026-09-30-horizon-bridges-build.md) record the current local state. The earlier Phase1 entry below is historical. Do not treat the local build or its passed static samples as complete multi-mode acceptance. Main's unrelated Bianca Month failure remains unchanged.
+
+## 2026-09-30 — Horizon Bridge Book: local proposal, Phase 0 partial
+
+`codex/horizon-bridge-book` from `main@e77309e`. **Phase 1 draft only; no Phase 2 implementation, PR, merge or deployment.** Risk:High. Budget (5):0. Engagement (3):+2 target, not implemented.
+
+Ten proposed bridge identities, sixteen measured current structures, three-theme map baselines and explicit gate/STYLE/moving-span decisions. Fresh road audit0/23/85 with0 restarts; views11/11 retain baseline exceptions. Ground probes34 unverified endpoints/40 incomplete/22 not applicable. Main CI remains red; local High gate breached its time budget. Full swept-envelope and device acceptance remain open.
+
+[Bridge Book](horizon/BRIDGES.md) · [exact evidence, rough areas and next owners](CODEX_HORIZON_BRIDGES_0.md). Jonathan owns design choices; Codex owns remaining Phase0 evidence. No geometry, controller, financial or cloud behavior changed.
+
+## 2026-09-29 — Horizon Drive finished as a corridor: one road definition, driven end to end
+
+Branch `claude/horizon-main-road`, merging `main@1c436be`. Pushed; see its PR. Not merged, not deployed, not live verified.
+
+**Risk: High.** It changes shared land geometry, collision, navigation and night lighting. There is no money meaning, command, schema, sync, Auth/RLS or Hercules payload change, and no vehicle-physics change.
+
+- **Budget (5): 0.** No money path moves. The Journey board's spaces and financial stops are unchanged (`journey-road`, `journey-board-*`).
+- **Engagement (3): +2.** Horizon Drive is comfortable the whole way round and reads as one designed corridor, by day and by night.
+- **Verification:**
+  - Typecheck is clean.
+  - `horizon:check` is byte-exact.
+  - The driver's-eye audit, with the real cruiser on every corridor road in both directions and both lanes, found 0 restarts and 0 BLOCKER / 23 MAJOR / 85 MINOR, against 41 / 298 / 584 before. None of the 23 is in the lanes.
+  - 102 suite files: 1343 passed, 2 failed, both pre-existing (`horizonMoversNoMoney`).
+  - 36 SwiftShader captures and inspector snapshots.
+  - A blind review; its fixes are applied.
+  - The quick and full gates were not run. There is no device evidence.
+- **Details, rough areas, what is owed and next owner:** [the handoff](CLAUDE_HORIZON_MAIN_ROAD.md) · [ROAD.md](horizon/ROAD.md) · [audit](horizon/evidence/road/audit-after/AUDIT.md) · [captures](horizon/evidence/road/after/LOOK.md).
+
 ## 2026-09-28 — Journey Board: the household Journey as a board over the baked Horizon land
 
 Branch `claude/journey-board` from `main@9fed600`, pushed as [PR #567](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/567); not merged, not deployed, not live verified. **Risk: Medium-High** — it changes the illustrated edition's default arrival and replaces the household Journey surface, adds an App door onto the Era planner, raises the due review over the board and touches `AddSlideshow` / `DuePreviewSheet`; no money meaning, arithmetic, command, schema, sync, Auth/RLS or Hercules payload change, and every write stays behind an existing named Confirm.

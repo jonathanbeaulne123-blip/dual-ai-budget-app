@@ -7,3 +7,7 @@
 *.glb binary
 *.mtl text eol=lf
 
+# Preserve exact diagnostic output and executable proposal-patch context.
+# Source-code whitespace checks remain enabled.
+docs/horizon/evidence/mountain-road/**/*.txt -whitespace
+docs/horizon/evidence/mountain-road/**/*.patch -whitespace

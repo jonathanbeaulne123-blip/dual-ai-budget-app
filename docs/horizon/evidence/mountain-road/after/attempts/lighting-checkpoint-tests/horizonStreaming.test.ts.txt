@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonStreaming.test.ts (31 tests) 3932ms
+   ✓ loads the index, then one district chunk on request, appending its solids once; a stale chunk is refused (R1-72)  594ms
+   ✓ cable layer: a span renders only once both its anchors are in, an anchor draws itself while its district is not resident, and districts never draw the line (Wave 6)  2890ms
+
+ Test Files  1 passed (1)
+      Tests  31 passed (31)
+   Start at  12:37:18
+   Duration  5.93s (transform 2.29s, setup 0ms, collect 899ms, tests 3.93s, environment 1ms, prepare 503ms)
+

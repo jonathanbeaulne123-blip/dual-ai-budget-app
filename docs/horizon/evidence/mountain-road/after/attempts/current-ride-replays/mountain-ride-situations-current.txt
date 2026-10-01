@@ -1,0 +1,33 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/horizonRideSituations.test.ts (7 tests | 1 failed) 5286ms
+   ✓ the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > R0 The twist 178ms
+   ✓ the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > R2 Sustained slide (the pendulum) 104ms
+   ✓ the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > R3 Direction change 262ms
+   ✓ the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > R4 Straightening recovery 271ms
+   ✓ the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > R5 Boost exit 268ms
+   × the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > keeps R1 Downhill carve explicitly deferred on v2's course (D-M5; measured: never reaches 120 m, stalls at 83.7 m) 3259ms
+     → expected 83.91538370626311 to be close to 83.75, received difference is 0.16538370626311405, but expected 0.05
+   ✓ the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > R5 without W, and with W 0.6 s late, shows no rise  536ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/horizonRideSituations.test.ts > the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > keeps R1 Downhill carve explicitly deferred on v2's course (D-M5; measured: never reaches 120 m, stalls at 83.7 m)
+AssertionError: expected 83.91538370626311 to be close to 83.75, received difference is 0.16538370626311405, but expected 0.05
+ ❯ test/horizonRideSituations.test.ts:58:37
+     56|     const run = runSituation(deps, 'R1');
+     57|     expect(run.checks['speed at 120 m 11–13.5 (RIDE §9)']![0]).toBe(fa…
+     58|     expect(run.metrics.dist.at(-1)).toBeCloseTo(83.75, 1);
+       |                                     ^
+     59|     expect(run.checks['no bail']![0]).toBe(true);
+     60|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 6 passed (7)
+   Start at  02:28:09
+   Duration  6.80s (transform 685ms, setup 0ms, collect 1.28s, tests 5.29s, environment 0ms, prepare 93ms)
+

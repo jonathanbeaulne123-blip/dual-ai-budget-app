@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonWalkOut.test.ts (51 tests) 929ms
+
+ Test Files  1 passed (1)
+      Tests  51 passed (51)
+   Start at  12:44:28
+   Duration  7.33s (transform 2.17s, setup 0ms, collect 5.69s, tests 929ms, environment 0ms, prepare 187ms)
+

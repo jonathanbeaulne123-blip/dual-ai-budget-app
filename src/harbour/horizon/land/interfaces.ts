@@ -64,6 +64,8 @@ export interface StructureSolid {
   id: string;
   /** Original logical solid when its indexed triangles are partitioned for streaming. */
   sourceId?: string;
+  /** Stable logical-mesh origin, set before partitioning; only drawing uses it. */
+  renderOrigin?: XYZ;
   kind: string;
   /** Indexed, outward-facing solid geometry including sides and underside. */
   positions: number[];
@@ -96,6 +98,10 @@ export interface LandDiagnostic {
   required?: number;
 }
 export interface LandCuts {
+  bridges?: import('./bridges/types').BridgeDefinition[];
+  bridgeMeetingSeeds?: Record<string, XYZ>;
+  bridgeBearingSeeds?: Record<string, {stations:number[];offsets:number[]}>;
+  bridgeLightSeeds?: Record<string, XYZ[]>;
   beds: BedCut[];
   pads: PadCut[];
   mouths: MouthMask[];

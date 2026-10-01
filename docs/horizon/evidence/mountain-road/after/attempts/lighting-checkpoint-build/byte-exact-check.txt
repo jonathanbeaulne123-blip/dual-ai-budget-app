@@ -1,0 +1,33 @@
+$ node scripts/generate-mountain-landings.mjs --check && node scripts/horizon/bake-terrain.mjs --check && node scripts/horizon/dump-mountain-v2.mjs --check
+{"bytes":25248,"sourceSha256":"4b8bd8e7da399b68275f264f20a07b07d03c3359710c828145e494595e2d2a2a","maxGrade":0.39501155406641003,"maxConstraintDeficit":0.002040069183337323,"maxCrossfall":0.27949754719643494,"iterations":1500,"vertices":350,"triangles":552,"constraints":27893}
+{"awningBytes":13044,"sourceSha256":"c174ef0361bd8ba883bc68f65c63089b681bcc7ff7023cfb7963d6685126dad3","maxGrade":0.3950005606229532,"maxConstraintDeficit":7.392966949737456e-8,"maxCrossfall":0.29000001312350143,"iterations":1500,"vertices":175,"triangles":272,"constraints":20602}
+{
+  "revision": "horizon-geo-1",
+  "terrainBytes": 571191,
+  "definitionBytes": 28733570,
+  "definitionCompressedBytes": 5999504,
+  "indexCompressedBytes": 1888567,
+  "journeyCompressedBytes": 25180,
+  "chunkCompressedBytes": {
+    "bight": 496761,
+    "crown": 227843,
+    "flats": 204190,
+    "green": 174905,
+    "harbour": 240850,
+    "hollow": 571957,
+    "lakeside": 425769,
+    "landing": 290629,
+    "notch": 92833,
+    "offshore": 106841,
+    "prow": 474953,
+    "reach": 187771,
+    "scholars": 311280,
+    "undercroft": 329513
+  },
+  "sha256": "b8532036cf93e5ba9e7682e5041a69f216c47a91a955c372638e73dcb5a19d8d",
+  "solids": 1224,
+  "diagnostics": 747,
+  "conflicts": 142,
+  "seconds": 152.81431195899998
+}
+mountainV2 data /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/src/harbour/horizon/land/mountainV2/v2-data.json 697423 bytes; road samples 941 course points 391

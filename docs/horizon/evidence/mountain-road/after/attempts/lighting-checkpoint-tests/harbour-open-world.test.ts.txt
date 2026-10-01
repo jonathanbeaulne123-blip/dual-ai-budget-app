@@ -1,0 +1,48 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/harbour-open-world.test.ts (7 tests | 3 failed) 11640ms
+   ✓ a roomy, connected island > keeps each visible path clear of walls, trees and landmark posts 268ms
+   × a roomy, connected island > connects every destination pair without crossing a solid (full) 5706ms
+     → kitchen to orchard: expected null not to be null
+   × a roomy, connected island > connects every destination pair without crossing a solid (lite) 5547ms
+     → kitchen to orchard: expected null not to be null
+   × a roomy, connected island > keeps major buildings within a comfortable stroll of the square and wilderness beyond them 1ms
+     → expected 63.03905854701773 to be less than 30
+   ✓ a roomy, connected island > walks around obstacles all the way to a distant door and lets manual input cancel the route 113ms
+   ✓ world scale doorway > opens the Journey on the outward gesture that crosses the far edge 0ms
+   ✓ world scale doorway > binds explicit avatar choices to the environment, household and member 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/harbour-open-world.test.ts > a roomy, connected island > connects every destination pair without crossing a solid (full)
+ FAIL  test/harbour-open-world.test.ts > a roomy, connected island > connects every destination pair without crossing a solid (lite)
+AssertionError: kitchen to orchard: expected null not to be null
+ ❯ test/harbour-open-world.test.ts:32:84
+     30|     for(const from of destinations)for(const to of destinations){
+     31|       if(from===to)continue;
+     32|       const path=findPath(from,to,world);expect(path,`${from.id} to ${…
+       |                                                                                    ^
+     33|       let previous=from;
+     34|       for(const point of path!){expect(pathSegmentClear(previous,point…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  test/harbour-open-world.test.ts > a roomy, connected island > keeps major buildings within a comfortable stroll of the square and wilderness beyond them
+AssertionError: expected 63.03905854701773 to be less than 30
+ ❯ test/harbour-open-world.test.ts:40:51
+     38|     for(const site of Object.values(VILLAGE_SITES)){
+     39|       expect(Math.hypot(...site.spot)/WALK_SPEED).toBeGreaterThan(12);
+     40|       expect(Math.hypot(...site.spot)/WALK_SPEED).toBeLessThan(30);
+       |                                                   ^
+     41|     }
+     42|     expect(SHORE_RADIUS).toBeGreaterThan(70);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 4 passed (7)
+   Start at  12:21:02
+   Duration  13.70s (transform 734ms, setup 0ms, collect 1.34s, tests 11.64s, environment 475ms, prepare 67ms)
+

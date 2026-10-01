@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/mountainStreamingChurn.test.ts (2 tests) 12ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  13:06:39
+   Duration  579ms (transform 72ms, setup 0ms, collect 77ms, tests 12ms, environment 0ms, prepare 144ms)
+

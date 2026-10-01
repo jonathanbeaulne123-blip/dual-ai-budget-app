@@ -1,0 +1,17 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof
+
+ ✓ test/horizonRideSituations.test.ts (7 tests) 13544ms
+   ✓ the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > R0 The twist  564ms
+   ✓ the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > R2 Sustained slide (the pendulum)  378ms
+   ✓ the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > R3 Direction change  343ms
+   ✓ the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > R4 Straightening recovery  1638ms
+   ✓ the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > R5 Boost exit  874ms
+   ✓ the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > keeps R1 Downhill carve explicitly deferred on v2's course (D-M5; measured: never reaches 120 m, stalls at 83.7 m)  7542ms
+   ✓ the ride situations on the real beds (RIDE §9; each re-derived range says why in its check name or beside it in situations.ts) > R5 without W, and with W 0.6 s late, shows no rise  1423ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  13:12:31
+   Duration  16.79s (transform 1.44s, setup 0ms, collect 2.73s, tests 13.54s, environment 0ms, prepare 148ms)
+

@@ -1,0 +1,578 @@
+{
+  "inventoryMode": "road-chain",
+  "baseline": null,
+  "createdAt": "2026-09-30T15:13:42.703Z",
+  "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+  "worldSha256": "09d23d7f69ba638b78277afb6ecf804e358bb3a2d2e452fb67c181286d403bae",
+  "terrainSha256": "6fa7fbb5114e7c8ac55bc5f304e94461b6f1a62d54446daf0a1fded8b42fbb18",
+  "method": "Actual unmodified bicycle controller and extracted runtime walking move(), full terrain and current baked surroundings, local candidate source solids substituted, always-active Mountain region; ordinary input after one initial placement per independent attempt.",
+  "limits": [
+    "walking stops at first airborne handoff (no parachute continuation)",
+    "scripted pursuit is not skilled human acceptance; brake/sliding driver can cause avoidable deviations",
+    "board profile legal beds are skate/park/pad, bicycle road/trail/pad; footway may deliberately be illegal",
+    "all reaches are separate initial placements and never count as full uninterrupted chain",
+    "0.5 m omitted at each endpoint for initial pose and end tolerance",
+    "no assist, pops, snaps, retries or restart within an attempt",
+    "camera collision callback omitted for headless performance; all body collision geography unchanged; rendering/streaming/region readiness and device behavior untested",
+    "Walking gateOpen is hard-coded true; production gate/streaming readiness is not tested. No board/native-skate attempt was run in this four-attempt Foot proof.",
+    "Candidate source-emitter reconstruction is not the final composed/partitioned bake. Full baked replay remains required."
+  ],
+  "results": [
+    {
+      "driverPolicy": "original-4-adaptive-lookahead",
+      "restarts": 0,
+      "route": "mountainV2.footLane",
+      "routeKind": "reach",
+      "direction": "forward",
+      "mode": "bicycle",
+      "attemptedDistanceM": 21.5139848685326,
+      "completedDistanceM": 21.02781933559171,
+      "travelM": 21.029469817425607,
+      "elapsedS": 6.4,
+      "completed": true,
+      "reason": "end",
+      "maxDeviationM": 0.02757132334600808,
+      "airborneFrames": 0,
+      "offbedFrames": 0,
+      "bails": 0,
+      "contacts": {},
+      "events": [
+        {
+          "atS": 6.35,
+          "distanceM": 21.31031506954508,
+          "kind": "slideStart",
+          "p": [
+            1281.9416292472367,
+            54.70040021852505,
+            720.6287684962309
+          ]
+        }
+      ],
+      "samples": [
+        {
+          "t": 0,
+          "d": 1.1435297153639112e-14,
+          "p": [
+            1281.489687767326,
+            55.28753460426966,
+            741.4998567153027
+          ],
+          "speed": 0,
+          "off": 1.1220244858724774e-13,
+          "legal": true
+        },
+        {
+          "t": 1,
+          "d": 1.3386108382142385,
+          "p": [
+            1281.4614271824003,
+            55.268023326161384,
+            740.1289211221555
+          ],
+          "speed": 1.979898099728077,
+          "off": 0.006318656060837033,
+          "legal": true
+        },
+        {
+          "t": 2,
+          "d": 3.968438689819008,
+          "p": [
+            1281.4168871806985,
+            55.303639975792706,
+            737.48049261453
+          ],
+          "speed": 3.104632135451414,
+          "off": 0.019330522429403797,
+          "legal": true
+        },
+        {
+          "t": 3,
+          "d": 7.548225852346102,
+          "p": [
+            1281.4150641389108,
+            55.30245691890122,
+            733.8883879755682
+          ],
+          "speed": 3.8283254924835557,
+          "off": 0.022636461731857765,
+          "legal": true
+        },
+        {
+          "t": 4,
+          "d": 11.379627626954015,
+          "p": [
+            1281.4834891371452,
+            55.22793663287646,
+            730.0571284200676
+          ],
+          "speed": 3.837437289426387,
+          "off": 0.018726383726166303,
+          "legal": true
+        },
+        {
+          "t": 5,
+          "d": 15.246706319802705,
+          "p": [
+            1281.6304242426534,
+            55.06887828359926,
+            726.1913342739715
+          ],
+          "speed": 3.9077892005959347,
+          "off": 0.02076805810697395,
+          "legal": true
+        },
+        {
+          "t": 6,
+          "d": 19.303750773405284,
+          "p": [
+            1281.8448072280169,
+            54.81240467341005,
+            722.1344483871959
+          ],
+          "speed": 4.2222879769297075,
+          "off": 0.026955982519297973,
+          "legal": true
+        }
+      ],
+      "speedPlan": {
+        "kind": "backward-braking",
+        "stepM": 0.5,
+        "decelerationMs2": 1
+      },
+      "finalPosition": [
+        1281.9553819464513,
+        54.688327034157126,
+        720.4843627615136
+      ],
+      "surface": {
+        "id": "yearWalk.shoulders.lakeside.footJoin",
+        "y": 54.688327034157126,
+        "nx": 0.0017599209677428007,
+        "ny": 0.9966198801994324,
+        "nz": -0.08213257044553757,
+        "material": "gravel",
+        "slope": 4.712225697275129
+      },
+      "blocker": null
+    },
+    {
+      "driverPolicy": null,
+      "restarts": 0,
+      "route": "mountainV2.footLane",
+      "routeKind": "reach",
+      "direction": "forward",
+      "mode": "walking",
+      "attemptedDistanceM": 21.5139848685326,
+      "completedDistanceM": 21.040150700932205,
+      "travelM": 21.040000000001037,
+      "elapsedS": 8.766666666666666,
+      "completed": true,
+      "reason": "end",
+      "maxDeviationM": 0.004056717568338649,
+      "airborneFrames": 0,
+      "offbedFrames": 0,
+      "bails": 0,
+      "contacts": {},
+      "events": [],
+      "samples": [
+        {
+          "t": 0,
+          "d": 1.1435297153639112e-14,
+          "p": [
+            1281.4889884191566,
+            55.2831632248419,
+            741.4601124517088
+          ],
+          "speed": 2.4,
+          "off": 1.1220244858724774e-13
+        },
+        {
+          "t": 1,
+          "d": 2.400008719792515,
+          "p": [
+            1281.453888164945,
+            55.28626169980185,
+            739.0603705166649
+          ],
+          "speed": 2.4,
+          "off": 0.00015776638668126163
+        },
+        {
+          "t": 2,
+          "d": 4.800017119386486,
+          "p": [
+            1281.4326141715278,
+            55.30907156213408,
+            736.6604747822311
+          ],
+          "speed": 2.4,
+          "off": 0.0015565314298643367
+        },
+        {
+          "t": 3,
+          "d": 7.20004076078763,
+          "p": [
+            1281.435912181035,
+            55.3049365471058,
+            734.2604877240561
+          ],
+          "speed": 2.4,
+          "off": 0.000886666641636675
+        },
+        {
+          "t": 4,
+          "d": 9.600064913374924,
+          "p": [
+            1281.4648498511638,
+            55.276007029788474,
+            731.860674036371
+          ],
+          "speed": 2.4,
+          "off": 0.001961009517891125
+        },
+        {
+          "t": 5,
+          "d": 12.00007511938219,
+          "p": [
+            1281.5193530819863,
+            55.21203385682753,
+            729.4613066160673
+          ],
+          "speed": 2.4,
+          "off": 0.0012441598191916133
+        },
+        {
+          "t": 6,
+          "d": 14.40012955970382,
+          "p": [
+            1281.612084266218,
+            55.109280692266736,
+            727.0631182094036
+          ],
+          "speed": 2.4,
+          "off": 0.0014383413145225216
+        },
+        {
+          "t": 7,
+          "d": 16.80014170367998,
+          "p": [
+            1281.7315647201208,
+            54.97996481012136,
+            724.6661026929088
+          ],
+          "speed": 2.4,
+          "off": 0.00044518877208063836
+        },
+        {
+          "t": 8,
+          "d": 19.200150908191507,
+          "p": [
+            1281.8645790525516,
+            54.8213168064836,
+            722.2697979479572
+          ],
+          "speed": 2.4,
+          "off": 0.0008058448965089377
+        }
+      ],
+      "finalPosition": [
+        1281.971689356161,
+        54.68736080240357,
+        720.472987664239
+      ],
+      "surface": {
+        "id": "yearWalk.shoulders.lakeside.footJoin",
+        "y": 54.68736080240357,
+        "nx": 0.0017599209677428007,
+        "ny": 0.9966198801994324,
+        "nz": -0.08213257044553757,
+        "material": "gravel",
+        "slope": 4.712225697275129
+      },
+      "blocker": null
+    },
+    {
+      "driverPolicy": "original-4-adaptive-lookahead",
+      "restarts": 0,
+      "route": "mountainV2.footLane",
+      "routeKind": "reach",
+      "direction": "reverse",
+      "mode": "bicycle",
+      "attemptedDistanceM": 21.513984868532606,
+      "completedDistanceM": 21.034705677973303,
+      "travelM": 21.037521300444524,
+      "elapsedS": 7.816666666666666,
+      "completed": true,
+      "reason": "end",
+      "maxDeviationM": 0.02730286339705418,
+      "airborneFrames": 0,
+      "offbedFrames": 0,
+      "bails": 0,
+      "contacts": {},
+      "events": [],
+      "samples": [
+        {
+          "t": 0,
+          "d": 1.3655743202889425e-14,
+          "p": [
+            1281.9700652046404,
+            54.6895222559261,
+            720.498913255995
+          ],
+          "speed": 0,
+          "off": 1.8109881665431103e-14,
+          "legal": true
+        },
+        {
+          "t": 1,
+          "d": 0.6821973732613864,
+          "p": [
+            1281.9281346103428,
+            54.74582051954501,
+            721.1977564943127
+          ],
+          "speed": 1.0797438998401439,
+          "off": 1.5153892819287046e-12,
+          "legal": true
+        },
+        {
+          "t": 2,
+          "d": 2.3076580744931263,
+          "p": [
+            1281.829904500543,
+            54.858994999406065,
+            722.8349249910916
+          ],
+          "speed": 1.9641058400896196,
+          "off": 8.367257874223212e-12,
+          "legal": true
+        },
+        {
+          "t": 3,
+          "d": 4.533082881706474,
+          "p": [
+            1281.6961226702877,
+            55.003921250073944,
+            725.0646221621697
+          ],
+          "speed": 2.451684244876723,
+          "off": 0.013474798845690045,
+          "legal": true
+        },
+        {
+          "t": 4,
+          "d": 7.253589447682917,
+          "p": [
+            1281.5589087281255,
+            55.143044084641595,
+            727.7887196743468
+          ],
+          "speed": 2.858350547632317,
+          "off": 0.01992307433333118,
+          "legal": true
+        },
+        {
+          "t": 5,
+          "d": 10.426725328362219,
+          "p": [
+            1281.4599508173628,
+            55.25229429747227,
+            730.9706195860192
+          ],
+          "speed": 3.4530840595697345,
+          "off": 0.020630636805022966,
+          "legal": true
+        },
+        {
+          "t": 6,
+          "d": 14.141019880048672,
+          "p": [
+            1281.4106608735688,
+            55.30780739928818,
+            734.6910574488342
+          ],
+          "speed": 3.8234322671778505,
+          "off": 0.021627468768477622,
+          "legal": true
+        },
+        {
+          "t": 7,
+          "d": 17.94263007789541,
+          "p": [
+            1281.4218916213038,
+            55.29383400499993,
+            738.4927732833211
+          ],
+          "speed": 3.803897538617028,
+          "off": 0.02401579817525857,
+          "legal": true
+        }
+      ],
+      "speedPlan": {
+        "kind": "backward-braking",
+        "stepM": 0.5,
+        "decelerationMs2": 1
+      },
+      "finalPosition": [
+        1281.4732483921803,
+        55.288475998294,
+        741.5211705230544
+      ],
+      "surface": {
+        "id": "mountainV2.footLane.apron",
+        "y": 55.288475998294,
+        "nx": -0.06172369047999382,
+        "ny": 0.9968345761299133,
+        "nz": -0.05011057108640671,
+        "material": "paved",
+        "slope": 4.560035186259001
+      },
+      "blocker": null
+    },
+    {
+      "driverPolicy": null,
+      "restarts": 0,
+      "route": "mountainV2.footLane",
+      "routeKind": "reach",
+      "direction": "reverse",
+      "mode": "walking",
+      "attemptedDistanceM": 21.513984868532606,
+      "completedDistanceM": 21.040152560599147,
+      "travelM": 21.03999999999683,
+      "elapsedS": 8.766666666666666,
+      "completed": true,
+      "reason": "end",
+      "maxDeviationM": 0.004108476626877354,
+      "airborneFrames": 0,
+      "offbedFrames": 0,
+      "bails": 0,
+      "contacts": {},
+      "events": [],
+      "samples": [
+        {
+          "t": 0,
+          "d": 1.3655743202889425e-14,
+          "p": [
+            1281.967658163007,
+            54.69299410967972,
+            720.5390306165515
+          ],
+          "speed": 2.4,
+          "off": 1.8109881665431103e-14
+        },
+        {
+          "t": 1,
+          "d": 2.3999979625723626,
+          "p": [
+            1281.8255524259694,
+            54.86565637448251,
+            722.9348180427337
+          ],
+          "speed": 2.4,
+          "off": 0.0014818624643851
+        },
+        {
+          "t": 2,
+          "d": 4.800008612889902,
+          "p": [
+            1281.6958106153686,
+            55.01987801101757,
+            725.3313080036346
+          ],
+          "speed": 2.4,
+          "off": 0.00012147286427659355
+        },
+        {
+          "t": 3,
+          "d": 7.200029720244059,
+          "p": [
+            1281.582852369867,
+            55.14020013917643,
+            727.7286382247754
+          ],
+          "speed": 2.4,
+          "off": 0.0016806546163104148
+        },
+        {
+          "t": 4,
+          "d": 9.600069650753797,
+          "p": [
+            1281.5017643693634,
+            55.22979180037138,
+            730.1272340117862
+          ],
+          "speed": 2.4,
+          "off": 0.00150642816105604
+        },
+        {
+          "t": 5,
+          "d": 12.000095842026296,
+          "p": [
+            1281.454343353456,
+            55.28684420276785,
+            732.5267530381948
+          ],
+          "speed": 2.4,
+          "off": 0.001250168747224595
+        },
+        {
+          "t": 6,
+          "d": 14.400105878907157,
+          "p": [
+            1281.4325210829866,
+            55.30937633681668,
+            734.926641448993
+          ],
+          "speed": 2.4,
+          "off": 0.0017646786135581832
+        },
+        {
+          "t": 7,
+          "d": 16.800130068588754,
+          "p": [
+            1281.4361575487762,
+            55.30465805671645,
+            737.3266280344553
+          ],
+          "speed": 2.4,
+          "off": 0.000838555640048254
+        },
+        {
+          "t": 8,
+          "d": 19.200141572430386,
+          "p": [
+            1281.4628747044098,
+            55.27607042542576,
+            739.7264753288719
+          ],
+          "speed": 2.4,
+          "off": 0.00026843230611559336
+        }
+      ],
+      "finalPosition": [
+        1281.491249622227,
+        55.2898458422041,
+        741.5262474039774
+      ],
+      "surface": {
+        "id": "mountainV2.footLane.apron",
+        "y": 55.2898458422041,
+        "nx": -0.06172369047999382,
+        "ny": 0.9968345761299133,
+        "nz": -0.05011057108640671,
+        "material": "paved",
+        "slope": 4.560035186259001
+      },
+      "blocker": null
+    }
+  ],
+  "sourceProof": {
+    "runtimeBundleSha256": "97297d4e5e6d1f855f8b92fca1005cc5598f397c6a344e21ece1244888ae62c1",
+    "walkingRuntimeSha256": "d2671a83a32019eb811618d9d3974042e3bf347c2128299f8cd4238804b502ec",
+    "auditSha256": "4c8877adc9d9ce94fcfad323eb76dce44a064d573aee2ed7144f847f1f258558",
+    "walkingClearanceSha256": "a37cb293334666ab30a701ce493723f84c043ac37c1ce8089a6c3302456ce25a",
+    "walkingClearance": false,
+    "candidateSourceSha256": "af9434f448d0c9f53102c48628066af4bbb30fa73b7dc4ceac8de5ec60389ec6",
+    "candidateGeometrySha256": "ce61de9d1124ea897a461d501fa691795e69888a5e241aa4c887a60506e88d60"
+  }
+}

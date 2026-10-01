@@ -1,0 +1,32 @@
+# Conservative per-pass contact shade — source-only candidate
+
+Patch `/tmp/mountain-partitioned-shade.patch` targets root-current files, hashes in `BASE.json`. Root remains sole checkout writer. No agent import, test, typecheck, GPU, world build or bake was run. This replaces the first ordered-shade attempt; retain its real budget failure and exact diagnostic.
+
+## Measured reason and bounded prediction
+
+The root-executed single-pose diagnostic at `/tmp/mountain-shade-fallback-observed/summary.json` is complete and pixel-identical against the proper pre-helper bundle (`mountain-real-draw-packed-depthfix`, with current fog/default lamp depth). At the Crown view `V01.plant.framingTrees.7:root:2:heading:0`, eye `[1364.16,75.839,313.571]`, Newfoundland/lite/spring/night, the actual helper reports `near-plane`. Its 840 source triangles comprise 48 definite back,164 front,612 fully near-clipped and16 uncertain near-plane triangles. Whole-mesh fallback submits1680 shade triangles in2calls. The isolated view totals10366 triangles; the full sweep's10406 differs in actual planting residency and remains the authoritative sweep failure. Neither is waived.
+
+This candidate retains the16 uncertain faces in both lists. It predicts676 BackSide submissions (48+612+16) and180 FrontSide (164+16),856total and824 fewer triangles than1680. Two shade calls remain, including a possibly empty pass. Predicted sweep total9582 assumes unchanged other submissions; this is arithmetic, **not a measured budget pass**.
+
+## Exact material/pass order
+
+The same shade Mesh now has two stable groups and two explicit shared registry materials, `shadeBack` and `shadeFront`. Both are cloned before the live fog stage, so they preserve every original source material property and are independently fog-wrapped through the public `materials` registry. They remain BackSide and FrontSide, matching the renderer's original shader/culling states; no `forceSinglePass`, side, opacity or visibility state is changed during a callback. No polygon, vertex, alpha, ground-following bench shadow, physical item, lamp or light is removed.
+
+Within each pass, selected indices remain in original order. A certain face is omitted only from the pass that would cull it. A near-plane or grazing uncertainty, degenerate face, changed position or unsupported configuration is retained in both appropriate original-order lists. Fully near-clipped faces remain submitted once because they cannot produce fragments. A conservative float guard is retained unchanged. Physical thresholds and budget limits are unchanged. GPU parity is still required; a source derivation is not device acceptance.
+
+Installed Three r185 stores each geometry group **by reference** in its render list (`WebGLRenderer.projectObject`, `WebGLRenderLists.getNextRenderItem`). Both group entries share the same object id, depth, renderOrder and groupOrder; the default transparent comparator ties on those values, and stable sort keeps BackSide immediately before FrontSide. No second scene object is introduced. A custom transparent sorting policy would require new validation; the runtime uses the installed default.
+
+`renderObject` calls the object's callback before `renderBufferDirect` intersects the current referenced group bounds with `geometry.drawRange`, then `WebGLBindingStates.setup` uploads the current index. The candidate reuses one N-index window: it prepares the back list immediately before the back group draw and prepares the front list immediately before the front group draw. It never changes the drawRange or group objects, and restores the original full index/window after each callback. This avoids doubling GPU index storage and preserves outside-render source/capacity accounting. Two linear classification passes and two index uploads replace the old whole-mesh classification; CPU/device cost must be measured.
+
+Perspective/orthographic cameras use actual camera and mesh world matrices, including mirrored/nonuniform transforms. Geometry bounding sphere, object identity, transparent depth sorting and clipping are unchanged. The original callbacks run around each actual pass, as r185 does for grouped meshes. Per-object `contactShadePass` reports partitioned/partial/unsupported and `contactShadeCounts` preserves counts. Actual per-group renderer counters remain authoritative.
+
+## Ownership and cleanup
+
+Pass materials are created once by `cardMaterials`, exposed through its shared registry, and disposed once by the existing `CorridorArt.dispose` registry owner after the builders are disposed. The helper never disposes shared materials. Its geometry listener restores prior callbacks and original material, removes owned groups, and leaves the owned index attached so Three's subsequent geometry-disposal listener can free its GPU buffer. No new texture or prototype is created.
+
+## Validation for root
+
+1. Run `test/horizon-ordered-contact-shade.test.ts` (14 expanded cases). It checks separate stable lists, uncertainty duplicated in original position, clipped/degenerate handling, actual transformed cameras, distinct fog-color alpha order, indexed drawRange, persistent group references, sequential views/shared state, unsupported fallback, cleanup, live fog registry and installed r185 pointer/update contracts. No test was executed here.
+2. Build the candidate's frozen budget bundle, keeping the same current world/terrain assets. The actual one-pose diagnostic should report676+180 shade triangles; if actual classification differs, record it and do not substitute the prediction.
+3. Reuse `/tmp/mountain-batching-visual-parity/run.mjs` with the proper old packed-depthfix bundle and the new frozen bundle. Compare all three themes/full-lite/day-night, Crown old and new peaks, the actual Library bench, above/below/grazing/near-plane sequential camera views, fog on. Retain exact color and shadow-color-attachment comparison limits; the latter is not the actual depthTexture. A diagnostics/sequential-pose append is still pending; broad parity was intentionally held after the first budget failure.
+4. Rerun the same32-case Newfoundland/lite sweep with every frame retained, then the complete root-selected budget scope. Keep12 calls and10k lite triangles unchanged. If remaining ambiguous duplication or any other source still breaches them, retain the failure. Do not infer exhaustive or device acceptance from sampled peaks.

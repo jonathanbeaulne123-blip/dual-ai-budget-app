@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonReserves.test.ts (1 test) 8197ms
+   ✓ reserves seven served flat rotated plots and two small sites, outside the protected Green  8196ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  12:29:19
+   Duration  8.96s (transform 375ms, setup 0ms, collect 500ms, tests 8.20s, environment 0ms, prepare 55ms)
+

@@ -1,0 +1,79 @@
+{
+  "method": "Every upward local source triangle, centroid and three80/10/10interior barycentric points; actual composed highestfloor check. Roadmembership uses7mFootband plus0.5mendmargin; nativeedge rectangle separatelyretained.",
+  "upwardTriangles": 3044,
+  "exposedSamples": 5670,
+  "maxRoadFace": {
+    "id": "yearWalk.shoulders.lakeside.footJoin",
+    "index": 450,
+    "grade": 10.767277573864746,
+    "slopeDegrees": 6.145519388931364,
+    "at": [
+      1278.7489837897451,
+      54.68768198799944,
+      720.8503900758349
+    ],
+    "vertices": [
+      [
+        1278.8989369686346,
+        54.686035315204904,
+        720.8739512825168
+      ],
+      [
+        1278.4726915707693,
+        54.65366382644491,
+        720.4511950931761
+      ],
+      [
+        1277.8256505776037,
+        54.73487353191024,
+        721.0610954050377
+      ]
+    ],
+    "floor": {
+      "id": "yearWalk.shoulders.lakeside.footJoin",
+      "y": 54.68768198799944,
+      "nx": 0.027187395840883255,
+      "ny": 0.9942532181739807,
+      "nz": -0.103544220328331,
+      "material": "gravel",
+      "slope": 6.145513648235502
+    }
+  },
+  "maxNearNativeFace": {
+    "id": "yearWalk.bed.lakeside.footJoin",
+    "index": 3948,
+    "grade": 12.159967949632062,
+    "slopeDegrees": 6.93311003192134,
+    "at": [
+      1278.2957245029638,
+      54.680379955816505,
+      720.42546057029
+    ],
+    "vertices": [
+      [
+        1277.957715293819,
+        54.71512569999569,
+        720.9069374568171
+      ],
+      [
+        1278.4997937408182,
+        54.65676230784061,
+        720.3421498067496
+      ],
+      [
+        1278.4296644742547,
+        54.66925185961323,
+        720.0272944473036
+      ]
+    ],
+    "floor": {
+      "id": "yearWalk.bed.lakeside.footJoin",
+      "y": 54.680379955816534,
+      "nx": 0.12004701793193817,
+      "ny": 0.9926877617835999,
+      "nz": 0.012638868764042854,
+      "material": "gravel",
+      "slope": 6.933105200853652
+    }
+  }
+}

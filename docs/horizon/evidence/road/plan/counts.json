@@ -1,0 +1,230 @@
+{
+ "V01.R1": {
+  "length": 158,
+  "lamps": {
+   "roadLantern": 13,
+   "bridgeLantern": 0,
+   "tunnelLamp": 0
+  },
+  "groups": 1,
+  "items": 4,
+  "species": {
+   "round": 4
+  },
+  "stops": 0
+ },
+ "V01.R2": {
+  "length": 222,
+  "lamps": {
+   "roadLantern": 7,
+   "bridgeLantern": 0,
+   "tunnelLamp": 8
+  },
+  "groups": 0,
+  "items": 0,
+  "species": {},
+  "stops": 0
+ },
+ "V01.R3": {
+  "length": 294,
+  "lamps": {
+   "roadLantern": 6,
+   "bridgeLantern": 0,
+   "tunnelLamp": 0
+  },
+  "groups": 2,
+  "items": 10,
+  "species": {
+   "heath": 6,
+   "birch": 2,
+   "pine": 2
+  },
+  "stops": 0
+ },
+ "V01.R4": {
+  "length": 546,
+  "lamps": {
+   "roadLantern": 2,
+   "bridgeLantern": 0,
+   "tunnelLamp": 0
+  },
+  "groups": 7,
+  "items": 46,
+  "species": {
+   "heath": 37,
+   "pine": 9
+  },
+  "stops": 0
+ },
+ "V01.R5": {
+  "length": 404,
+  "lamps": {
+   "roadLantern": 23,
+   "bridgeLantern": 0,
+   "tunnelLamp": 0
+  },
+  "groups": 7,
+  "items": 49,
+  "species": {
+   "birch": 22,
+   "pine": 17,
+   "round": 2,
+   "shrub": 8
+  },
+  "stops": 0
+ },
+ "V01.R6": {
+  "length": 366,
+  "lamps": {
+   "roadLantern": 5,
+   "bridgeLantern": 0,
+   "tunnelLamp": 0
+  },
+  "groups": 11,
+  "items": 87,
+  "species": {
+   "pine": 37,
+   "birch": 24,
+   "round": 12,
+   "shrub": 14
+  },
+  "stops": 0
+ },
+ "V01.R7": {
+  "length": 390,
+  "lamps": {
+   "roadLantern": 2,
+   "bridgeLantern": 0,
+   "tunnelLamp": 0
+  },
+  "groups": 11,
+  "items": 133,
+  "species": {
+   "grassTuft": 73,
+   "flowering": 31,
+   "flowerBed": 29
+  },
+  "stops": 0
+ },
+ "V01.R8": {
+  "length": 194,
+  "lamps": {
+   "roadLantern": 10,
+   "bridgeLantern": 1,
+   "tunnelLamp": 0
+  },
+  "groups": 1,
+  "items": 4,
+  "species": {
+   "pine": 2,
+   "birch": 1,
+   "heath": 1
+  },
+  "stops": 0
+ },
+ "V01.R9": {
+  "length": 244,
+  "lamps": {
+   "roadLantern": 0,
+   "bridgeLantern": 15,
+   "tunnelLamp": 0
+  },
+  "groups": 0,
+  "items": 0,
+  "species": {},
+  "stops": 0
+ },
+ "V01.R10": {
+  "length": 512,
+  "lamps": {
+   "roadLantern": 39,
+   "bridgeLantern": 1,
+   "tunnelLamp": 0
+  },
+  "groups": 24,
+  "items": 139,
+  "species": {
+   "palm": 40,
+   "flowerBed": 81,
+   "grassTuft": 18
+  },
+  "stops": 0
+ },
+ "V01.R11": {
+  "length": 200,
+  "lamps": {
+   "roadLantern": 9,
+   "bridgeLantern": 0,
+   "tunnelLamp": 0
+  },
+  "groups": 1,
+  "items": 9,
+  "species": {
+   "grassTuft": 4,
+   "flowerBed": 5
+  },
+  "stops": 1
+ },
+ "V01.R12": {
+  "length": 152,
+  "lamps": {
+   "roadLantern": 5,
+   "bridgeLantern": 6,
+   "tunnelLamp": 0
+  },
+  "groups": 0,
+  "items": 0,
+  "species": {},
+  "stops": 0
+ },
+ "V01.R13": {
+  "length": 208,
+  "lamps": {
+   "roadLantern": 15,
+   "bridgeLantern": 0,
+   "tunnelLamp": 0
+  },
+  "groups": 5,
+  "items": 58,
+  "species": {
+   "round": 20,
+   "hedge": 38
+  },
+  "stops": 0
+ },
+ "VG.all": {
+  "length": 1180,
+  "lamps": {
+   "roadLantern": 46,
+   "bridgeLantern": 6,
+   "tunnelLamp": 0
+  },
+  "groups": 15,
+  "items": 95,
+  "species": {
+   "round": 18,
+   "birch": 6,
+   "pine": 6,
+   "flowerBed": 30,
+   "grassTuft": 27,
+   "shrub": 8
+  },
+  "stops": 0
+ },
+ "V03.all": {
+  "length": 326,
+  "lamps": {
+   "roadLantern": 16,
+   "bridgeLantern": 0,
+   "tunnelLamp": 6
+  },
+  "groups": 2,
+  "items": 11,
+  "species": {
+   "birch": 2,
+   "pine": 7,
+   "heath": 2
+  },
+  "stops": 0
+ }
+}

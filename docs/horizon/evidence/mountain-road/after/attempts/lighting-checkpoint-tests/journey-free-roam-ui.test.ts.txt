@@ -1,0 +1,26 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/journey-free-roam-ui.test.ts (16 tests) 22166ms
+   ✓ one clear control hands the camera over (D-286) > offers Free roam beside Minimize, latched, with a real pressed state and a 44px target  1286ms
+   ✓ one clear control hands the camera over (D-286) > unlatches on the control, names the mode on the island, and puts focus where the keys land  934ms
+   ✓ one clear control hands the camera over (D-286) > takes the camera back on the same control and flies home to the two of you  1120ms
+   ✓ one clear control hands the camera over (D-286) > has no free roam at all without WebGL, and its outline says so  1236ms
+   ✓ a drag takes the camera, quietly (D-286) > says one line, offers the way back, and settles into a plain state chip  7352ms
+   ✓ a drag takes the camera, quietly (D-286) > Return to us latches the camera and flies home  409ms
+   ✓ a drag takes the camera, quietly (D-286) > Where we are and Space (the island's own key) both latch and fly home  305ms
+   ✓ a drag takes the camera, quietly (D-286) > the island's own latch key toggles the same control  495ms
+   ✓ what a free camera still does, and what it no longer suffers (D-286) > still travels to a pick from either view, and stays free when it lands  999ms
+   ✓ what a free camera still does, and what it no longer suffers (D-286) > is never yanked by Replay or a date change, though the month still moves  1461ms
+   ✓ what a free camera still does, and what it no longer suffers (D-286) > keeps reporting where it rests, so the simple view follows, and says the month out loud  1026ms
+   ✓ what a free camera still does, and what it no longer suffers (D-286) > latches again when the world is minimized, so the next opening starts with the two of you  1065ms
+   ✓ the corner radar, so you can find your way back (D-286) > draws the land, the camera's cone and the two of you, and flies where it is tapped  1037ms
+   ✓ the corner radar, so you can find your way back (D-286) > moves the camera's mark without rebuilding the map, and disappears when the camera is latched  1091ms
+   ✓ the controls, spelled out once per device (D-286) > lists every way of moving, is dismissible, and is remembered  1151ms
+   ✓ the controls, spelled out once per device (D-286) > stays away on a device that has already seen it  1195ms
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  12:52:12
+   Duration  37.11s (transform 9.30s, setup 0ms, collect 13.38s, tests 22.17s, environment 910ms, prepare 132ms)
+

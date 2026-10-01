@@ -1,0 +1,696 @@
+{
+  "path": {
+    "id": "path:town:north~station:funicular:town",
+    "kind": "path",
+    "halfWidth": 1.6,
+    "points": [
+      [
+        1305,
+        55.046518,
+        721
+      ],
+      [
+        1303.833333,
+        55.098484,
+        721.75
+      ],
+      [
+        1302.666667,
+        55.148683,
+        722.5
+      ],
+      [
+        1301.5,
+        55.195634,
+        723.25
+      ],
+      [
+        1300.333333,
+        55.238612,
+        724
+      ],
+      [
+        1299.166667,
+        55.278023,
+        724.75
+      ],
+      [
+        1298,
+        55.316206,
+        725.5
+      ],
+      [
+        1296.619648,
+        55.358331,
+        726.019138
+      ],
+      [
+        1295.239295,
+        55.410824,
+        726.538276
+      ],
+      [
+        1293.858943,
+        55.477929,
+        727.057414
+      ],
+      [
+        1292.478591,
+        55.559649,
+        727.576552
+      ],
+      [
+        1291.098239,
+        55.650854,
+        728.09569
+      ]
+    ]
+  },
+  "contacts": [
+    {
+      "x": 1292.7439527978524,
+      "z": 725.7673373429574,
+      "offset": -1.6,
+      "reverse": true,
+      "nearest": {
+        "segment": 9,
+        "t": 0.3997244795225537,
+        "distance": 1.6000000000000527,
+        "signedLateral": -1.6000000000000056
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000005267,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.07892737070246526,
+        "nz": 0.9968803690282981
+      }
+    },
+    {
+      "x": 1292.7626726581511,
+      "z": 725.76029697149,
+      "offset": -1.6,
+      "reverse": true,
+      "nearest": {
+        "segment": 9,
+        "t": 0.3861628225693341,
+        "distance": 1.6000000000000527,
+        "signedLateral": -1.6000000000000079
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000005267,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.1438650770484037,
+        "nz": 0.9895973118424773
+      }
+    },
+    {
+      "x": 1292.7813925184498,
+      "z": 725.7532566000226,
+      "offset": -1.6,
+      "reverse": true,
+      "nearest": {
+        "segment": 9,
+        "t": 0.37260116561611456,
+        "distance": 1.6000000000000527,
+        "signedLateral": -1.600000000000011
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000005267,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.21006691597438887,
+        "nz": 0.977687010659858
+      }
+    },
+    {
+      "x": 1292.818832239047,
+      "z": 725.7391758570878,
+      "offset": -1.6,
+      "reverse": true,
+      "nearest": {
+        "segment": 9,
+        "t": 0.34547785170981976,
+        "distance": 1.6000000000001593,
+        "signedLateral": -1.6000000000000962
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000015925,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.34262291202073664,
+        "nz": 0.9394730119372405
+      }
+    },
+    {
+      "x": 1292.8375520993457,
+      "z": 725.7321354856205,
+      "offset": -1.6,
+      "reverse": true,
+      "nearest": {
+        "segment": 9,
+        "t": 0.3319161947566003,
+        "distance": 1.6000000000001593,
+        "signedLateral": -1.600000000000099
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000015925,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.4070431828719086,
+        "nz": 0.913408915698498
+      }
+    },
+    {
+      "x": 1292.8562719596443,
+      "z": 725.7250951141531,
+      "offset": -1.6,
+      "reverse": true,
+      "nearest": {
+        "segment": 9,
+        "t": 0.3183545378033807,
+        "distance": 1.6000000000001593,
+        "signedLateral": -1.600000000000102
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000015925,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.4689945000795677,
+        "nz": 0.8832010863303533
+      }
+    },
+    {
+      "x": 1292.874991819943,
+      "z": 725.7180547426858,
+      "offset": -1.6,
+      "reverse": true,
+      "nearest": {
+        "segment": 9,
+        "t": 0.3047928808501883,
+        "distance": 1.6000000000000527,
+        "signedLateral": -1.599999999999998
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000005267,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.5276954604813338,
+        "nz": 0.8494336354226816
+      }
+    },
+    {
+      "x": 1292.8937116802417,
+      "z": 725.7110143712184,
+      "offset": -1.6,
+      "reverse": true,
+      "nearest": {
+        "segment": 9,
+        "t": 0.29123122389696876,
+        "distance": 1.6000000000000527,
+        "signedLateral": -1.6000000000000008
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000005267,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.5825362429369769,
+        "nz": 0.8128047278804862
+      }
+    },
+    {
+      "x": 1292.9124315405404,
+      "z": 725.703973999751,
+      "offset": -1.6,
+      "reverse": true,
+      "nearest": {
+        "segment": 9,
+        "t": 0.2776695669437492,
+        "distance": 1.6000000000000527,
+        "signedLateral": -1.6000000000000034
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000005267,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.6331021060473465,
+        "nz": 0.7740682937043826
+      }
+    },
+    {
+      "x": 1292.931151400839,
+      "z": 725.6969336282837,
+      "offset": -1.6,
+      "reverse": true,
+      "nearest": {
+        "segment": 9,
+        "t": 0.26410790999052963,
+        "distance": 1.6000000000000527,
+        "signedLateral": -1.600000000000006
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000005267,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.6791739730923853,
+        "nz": 0.7339773254494338
+      }
+    },
+    {
+      "x": 1292.9685911214362,
+      "z": 725.6828528853489,
+      "offset": -1.6,
+      "reverse": true,
+      "nearest": {
+        "segment": 9,
+        "t": 0.23698459608423492,
+        "distance": 1.6000000000001593,
+        "signedLateral": -1.6000000000000916
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000015925,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.7578152162902696,
+        "nz": 0.6524692314269939
+      }
+    },
+    {
+      "x": 1292.987310981735,
+      "z": 725.6758125138815,
+      "offset": -1.6,
+      "reverse": true,
+      "nearest": {
+        "segment": 9,
+        "t": 0.2234229391310153,
+        "distance": 1.6000000000001593,
+        "signedLateral": -1.6000000000000947
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000015925,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.7907045344156673,
+        "nz": 0.6121979575713258
+      }
+    },
+    {
+      "x": 1293.0060308420336,
+      "z": 725.6687721424141,
+      "offset": -1.6,
+      "reverse": true,
+      "nearest": {
+        "segment": 9,
+        "t": 0.20986128217779584,
+        "distance": 1.6000000000001593,
+        "signedLateral": -1.6000000000000971
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000015925,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.8196676649648299,
+        "nz": 0.5728393483439344
+      }
+    },
+    {
+      "x": 1293.0017156016054,
+      "z": 725.6703950656145,
+      "offset": 1.6,
+      "reverse": false,
+      "nearest": {
+        "segment": 9,
+        "t": 0.21298747059077866,
+        "distance": 1.6000000000001593,
+        "signedLateral": -1.6000000000001073
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000015925,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.8133224400242482,
+        "nz": 0.5818132076130647
+      }
+    },
+    {
+      "x": 1292.9829957413067,
+      "z": 725.6774354370818,
+      "offset": 1.6,
+      "reverse": false,
+      "nearest": {
+        "segment": 9,
+        "t": 0.22654912754399825,
+        "distance": 1.6000000000001593,
+        "signedLateral": -1.6000000000001042
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000015925,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.7834826421976245,
+        "nz": 0.621413670090246
+      }
+    },
+    {
+      "x": 1292.964275881008,
+      "z": 725.6844758085492,
+      "offset": 1.6,
+      "reverse": false,
+      "nearest": {
+        "segment": 9,
+        "t": 0.24011078449721776,
+        "distance": 1.6000000000001593,
+        "signedLateral": -1.6000000000001016
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000015925,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.7496450342203226,
+        "nz": 0.6618401035513121
+      }
+    },
+    {
+      "x": 1292.9455560207093,
+      "z": 725.6915161800166,
+      "offset": 1.6,
+      "reverse": false,
+      "nearest": {
+        "segment": 9,
+        "t": 0.2536724414504373,
+        "distance": 1.6000000000001593,
+        "signedLateral": -1.600000000000099
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000015925,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.711534147114938,
+        "nz": 0.7026515192393864
+      }
+    },
+    {
+      "x": 1292.9081163001122,
+      "z": 725.7055969229514,
+      "offset": 1.6,
+      "reverse": false,
+      "nearest": {
+        "segment": 9,
+        "t": 0.28079575535673207,
+        "distance": 1.6000000000000527,
+        "signedLateral": -1.6000000000000134
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000005267,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.6218394674969505,
+        "nz": 0.7831447354500375
+      }
+    },
+    {
+      "x": 1292.8893964398135,
+      "z": 725.7126372944188,
+      "offset": 1.6,
+      "reverse": false,
+      "nearest": {
+        "segment": 9,
+        "t": 0.29435741230995155,
+        "distance": 1.6000000000000527,
+        "signedLateral": -1.6000000000000107
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000005267,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.5702617951988233,
+        "nz": 0.8214630149535739
+      }
+    },
+    {
+      "x": 1292.8706765795148,
+      "z": 725.7196776658861,
+      "offset": 1.6,
+      "reverse": false,
+      "nearest": {
+        "segment": 9,
+        "t": 0.30791906926317114,
+        "distance": 1.6000000000000527,
+        "signedLateral": -1.6000000000000079
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000005267,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.5144871310509089,
+        "nz": 0.8574981002795311
+      }
+    },
+    {
+      "x": 1292.851956719216,
+      "z": 725.7267180373535,
+      "offset": 1.6,
+      "reverse": false,
+      "nearest": {
+        "segment": 9,
+        "t": 0.3214807262163907,
+        "distance": 1.6000000000000527,
+        "signedLateral": -1.6000000000000056
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000005267,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.45497603400356845,
+        "nz": 0.8905036824642466
+      }
+    },
+    {
+      "x": 1292.8332368589174,
+      "z": 725.7337584088208,
+      "offset": 1.6,
+      "reverse": false,
+      "nearest": {
+        "segment": 9,
+        "t": 0.3350423831695831,
+        "distance": 1.6000000000001593,
+        "signedLateral": -1.6000000000001091
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000015925,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.3923808224461967,
+        "nz": 0.9198028539727666
+      }
+    },
+    {
+      "x": 1292.8145169986187,
+      "z": 725.7407987802882,
+      "offset": 1.6,
+      "reverse": false,
+      "nearest": {
+        "segment": 9,
+        "t": 0.3486040401228026,
+        "distance": 1.6000000000001593,
+        "signedLateral": -1.6000000000001062
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000015925,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.32751667711843796,
+        "nz": 0.9448453980463135
+      }
+    },
+    {
+      "x": 1292.79579713832,
+      "z": 725.7478391517556,
+      "offset": 1.6,
+      "reverse": false,
+      "nearest": {
+        "segment": 9,
+        "t": 0.3621656970760222,
+        "distance": 1.6000000000001593,
+        "signedLateral": -1.6000000000001038
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000015925,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.26131120262770985,
+        "nz": 0.9652546065061074
+      }
+    },
+    {
+      "x": 1292.758357417723,
+      "z": 725.7619198946903,
+      "offset": 1.6,
+      "reverse": false,
+      "nearest": {
+        "segment": 9,
+        "t": 0.38928901098231694,
+        "distance": 1.6000000000000527,
+        "signedLateral": -1.6000000000000183
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000005267,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.12875347839678572,
+        "nz": 0.9916766316701875
+      }
+    },
+    {
+      "x": 1292.7396375574242,
+      "z": 725.7689602661577,
+      "offset": 1.6,
+      "reverse": false,
+      "nearest": {
+        "segment": 9,
+        "t": 0.40285066793553653,
+        "distance": 1.6000000000000527,
+        "signedLateral": -1.6000000000000154
+      },
+      "bodyRadius": 0.3,
+      "bodyBeyondAuthoredHalfWidth": 0.30000000000005267,
+      "beforeContactExact": true,
+      "beforeBlocked": true,
+      "contact": {
+        "id": "mountainV2:station-art:funicular:town:post:2",
+        "nx": 0.06422153630783706,
+        "nz": 0.9979356664005258
+      }
+    }
+  ],
+  "bodySafeCentreHalfWidth": 1.3,
+  "with05Margin": 1.25,
+  "withinBodySafeSweeps": [
+    {
+      "offset": -1.3,
+      "reverse": false,
+      "samples": 627,
+      "failures": 0
+    },
+    {
+      "offset": -1.3,
+      "reverse": true,
+      "samples": 622,
+      "failures": 0
+    },
+    {
+      "offset": 0,
+      "reverse": false,
+      "samples": 619,
+      "failures": 0
+    },
+    {
+      "offset": 0,
+      "reverse": true,
+      "samples": 618,
+      "failures": 0
+    },
+    {
+      "offset": 1.3,
+      "reverse": false,
+      "samples": 625,
+      "failures": 0
+    },
+    {
+      "offset": 1.3,
+      "reverse": true,
+      "samples": 624,
+      "failures": 0
+    }
+  ],
+  "walkingAttempts": [
+    {
+      "offset": -1.25,
+      "reverse": false,
+      "completed": true,
+      "restarts": 0
+    },
+    {
+      "offset": -1.25,
+      "reverse": true,
+      "completed": true,
+      "restarts": 0
+    },
+    {
+      "offset": 0,
+      "reverse": false,
+      "completed": true,
+      "restarts": 0
+    },
+    {
+      "offset": 0,
+      "reverse": true,
+      "completed": true,
+      "restarts": 0
+    },
+    {
+      "offset": 1.25,
+      "reverse": false,
+      "completed": true,
+      "restarts": 0
+    },
+    {
+      "offset": 1.25,
+      "reverse": true,
+      "completed": true,
+      "restarts": 0
+    }
+  ],
+  "interpretation": "Outer sweep centres at the authored ribbon edge deliberately extend a0.3m-radius body beyond the3.2m authored width. Retain these as boundary-furnishing witnesses; access proof uses full body inside the actual width, not a contact tolerance change."
+}

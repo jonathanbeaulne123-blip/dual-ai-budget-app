@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonHostsDoors.test.ts (3 tests) 45633ms
+   ✓ leaves all seven physical doorways open and connects their aprons to public paths  34424ms
+   ✓ keeps the Year Walk outside the rotated Library foundation and avoids a needless Glasshouse climb  11205ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  12:27:08
+   Duration  46.49s (transform 432ms, setup 0ms, collect 593ms, tests 45.63s, environment 0ms, prepare 71ms)
+

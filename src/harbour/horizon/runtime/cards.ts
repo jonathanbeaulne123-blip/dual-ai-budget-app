@@ -1,3 +1,4 @@
+import { bridgeOwner } from '../land/bridges/catalog';
 import {finishBuild} from '../../../house/world/buildTask.ts';
 import * as THREE from 'three';
 import {CardBuilder, paperGrain, rgb, type CardBuild, type RGB} from '../../art/cardScene.ts';
@@ -5,22 +6,46 @@ import type {District, WorldDefinition} from '../world/definition.ts';
 import type {LandCuts, StructureSolid, TerrainField, WaterCut, XYZ} from '../land/interfaces.ts';
 import {BIOME_GROUNDS, ROCK_SETS, rockWeight, TERRAIN_SURFACE_PALETTE, terrainPaintGround, terrainPaintRockSet, terrainTriangleVisible} from '../land/terrain/index.ts';
 import {districtAt} from '../world/districts.ts';
+import {addCorridorSolidSteps,isCorridorSolid} from '../kit/road/pavement.ts';
+import {CORRIDOR_SURFACE} from '../kit/road/palette.ts';
+import {corridorIndex,type CorridorIndex} from '../kit/road/frames.ts';
+import type {Corridor} from '../land/corridor/types.ts';
 /** Wave 6: the cable lines (their spans hang between anchors in other districts). */
 export const CABLE_LINE=/^(G1|ZIP)\.cable$/;
 
 /** Preserve outward winding, especially the visible undersides. cardKit.tri is top-facing. */
-export function solidTriangle(builder:CardBuilder,a:XYZ,b:XYZ,c:XYZ,color:RGB,bucket:'card'|'pad'='card'){
+export function solidTriangle(builder:CardBuilder,a:XYZ,b:XYZ,c:XYZ,color:RGB,bucket:'card'|'pad'='card',localOrigin?:XYZ){
   const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
   const nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx,n=Math.hypot(nx,ny,nz);if(n<1e-8)return;
   const data=builder.at((a[0]+b[0]+c[0])/3,(a[2]+b[2]+c[2])/3).data[bucket];
   const shade=ny/n<-.2?.65:Math.abs(ny/n)<.45?.82:1;
-  for(const p of [a,b,c]){data.positions.push(...p);data.normals.push(nx/n,ny/n,nz/n);data.colors.push(color[0]*shade,color[1]*shade,color[2]*shade);data.uvs.push(p[0]*.03,p[2]*.03);}
+  for(const p of [a,b,c]){if(localOrigin)data.positions.push(p[0]-localOrigin[0],p[1]-localOrigin[1],p[2]-localOrigin[2]);else data.positions.push(...p);data.normals.push(nx/n,ny/n,nz/n);data.colors.push(color[0]*shade,color[1]*shade,color[2]*shade);data.uvs.push(p[0]*.03,p[2]*.03);}
 }
 const surfaceColor=(surface:string,role:string):RGB=>rgb(role==='marker'?'#e6b95b':surface.includes('water')?'#527f83':surface.includes('metal')?'#777e7f':surface.includes('wood')||surface.includes('board')?'#b59c79':role==='roof'?'#aaa398':role==='rock'?'#a3998a':'#c9c2b4');
 export function addSolid(builder:CardBuilder,solid:StructureSolid,tier:'full'|'lite'='full'){finishBuild(addSolidSteps(builder,solid,tier));}
-export function* addSolidSteps(builder:CardBuilder,solid:StructureSolid,tier:'full'|'lite'='full'):Generator<void,void,void>{
-  const color=surfaceColor(solid.surface,solid.role),p=tier==='lite'?(solid.litePositions??solid.positions):solid.positions,indices=tier==='lite'?(solid.liteIndices??solid.indices):solid.indices;
+/**
+ * ROAD.md §4 (track K): the road corridor's solids are painted by the road kit — `corridorDeck` in swept pavement bands with
+ * slab joints, `corridorKerb` dressed stone, `corridorWalk` flags, `corridorRetaining` coursed stone with weep holes — in the
+ * corridor frame recovered from `world.corridors` stations. `corridorGuard` is a collider and is never drawn (its visible
+ * rail is the guard kit in `runtime/corridorArt.ts`). Without corridors (a bake that has none) a corridor solid falls back
+ * to its plain STYLE §1.5 colour, and a guard is still not drawn.
+ */
+const corridorIndexes=new WeakMap<readonly Corridor[],CorridorIndex>();
+export function corridorIndexOf(corridors:readonly Corridor[]|undefined):CorridorIndex|null{
+  if(!corridors?.length)return null;let index=corridorIndexes.get(corridors);if(!index){index=corridorIndex(corridors);corridorIndexes.set(corridors,index);}return index;
+}
+const CORRIDOR_FALLBACK:Record<string,RGB>={corridorDeck:CORRIDOR_SURFACE.road,corridorKerb:CORRIDOR_SURFACE.stone,corridorWalk:CORRIDOR_SURFACE.flags,corridorRetaining:CORRIDOR_SURFACE.stone};
+export function* addCorridorOrSolidSteps(builder:CardBuilder,solid:StructureSolid,tier:'full'|'lite',corridors:readonly Corridor[]|undefined):Generator<void,void,void>{
+  if(!isCorridorSolid(solid)){yield* addSolidSteps(builder,solid,tier);return;}
+  if(solid.kind==='corridorGuard')return;
+  const index=corridorIndexOf(corridors);
+  if(index){yield* addCorridorSolidSteps(builder,solid,tier,index);return;}
+  const color=CORRIDOR_FALLBACK[solid.kind]!,p=tier==='lite'?(solid.litePositions??solid.positions):solid.positions,indices=tier==='lite'?(solid.liteIndices??solid.indices):solid.indices;
   for(let i=0;i<indices.length;i+=3){if(i%1536===0)yield;const v=(n:number):XYZ=>{const j=indices[i+n]!*3;return[p[j]!,p[j+1]!,p[j+2]!];};solidTriangle(builder,v(0),v(1),v(2),color);}
+}
+export function* addSolidSteps(builder:CardBuilder,solid:StructureSolid,tier:'full'|'lite'='full',localOrigin?:XYZ):Generator<void,void,void>{
+  const color=surfaceColor(solid.surface,solid.role),p=tier==='lite'?(solid.litePositions??solid.positions):solid.positions,indices=tier==='lite'?(solid.liteIndices??solid.indices):solid.indices;
+  for(let i=0;i<indices.length;i+=3){if(i%1536===0)yield;const v=(n:number):XYZ=>{const j=indices[i+n]!*3;return[p[j]!,p[j+1]!,p[j+2]!];};solidTriangle(builder,v(0),v(1),v(2),color,'card',localOrigin);}
 }
 /** Terrain cells per mesh tile: frustum culling still works across a district. */
 const TERRAIN_TILE=32;
@@ -126,16 +151,34 @@ export function buildDistrictCards(world:WorldDefinition,field:TerrainField,cuts
 }
 export function* buildDistrictCardSteps(world:WorldDefinition,field:TerrainField,cuts:LandCuts,district:District,tier:'full'|'lite',coarse=false,hideBuildings=false,filter:TerrainCellFilter={}):Generator<void,DistrictCards,void>{
   const builder=new CardBuilder(`horizon.${coarse?'journey':'district'}.${district.id}`,tier,{ink:'#5b5447',cell:coarse?4096:256,shadows:!coarse});
+  // The finely clipped walking join needs a nearby render origin. Only its
+  // own source/partition fragments use this builder; generic cards are unchanged.
+  let localOrigin:XYZ|undefined;
+  let localBuilder:CardBuilder|undefined,local:CardBuild|undefined;
   let result:CardBuild|undefined,terrain:TerrainMeshes|null|undefined,complete=false;
   try {
-    if(!coarse){const ids=new Set(district.solidIds??[]);for(const solid of world.geometry?.solids??[])if(ids.has(solid.id)&&!CABLE_LINE.test(solid.sourceId??solid.id)&&!(hideBuildings&&(solid.sourceId??solid.id).startsWith('host.')))yield* addSolidSteps(builder,solid,tier);}
+    if(!coarse){const ids=new Set(district.solidIds??[]);for(const solid of world.geometry?.solids??[])if(ids.has(solid.id)&&!(world.bridges?.length&&bridgeOwner(solid.sourceId??solid.id))&&!CABLE_LINE.test(solid.sourceId??solid.id)&&!(hideBuildings&&(solid.sourceId??solid.id).startsWith('host.'))){
+      if((solid.sourceId??solid.id.split('@')[0])==='mountainV2.funicularFoot.apron'){
+        const origin=solid.renderOrigin;
+        if(!origin||origin.length!==3||!origin.every(Number.isFinite))throw new Error('Walking join needs its baked logical render origin');
+        if(localOrigin&&origin.some((v,i)=>v!==localOrigin![i]))throw new Error('Walking join fragments disagree on their logical render origin');
+        localOrigin=origin;
+        localBuilder??=new CardBuilder(`horizon.walking-join.${district.id}`,tier,{ink:'#5b5447',cell:256,shadows:true});
+        yield* addSolidSteps(localBuilder,solid,tier,localOrigin);
+      }else yield* addCorridorOrSolidSteps(builder,solid,tier,world.corridors);
+    }}
     result=yield* builder.finishSteps();
+    if(localBuilder){
+      local=yield* localBuilder.finishSteps();local.group.position.set(...localOrigin!);result.group.add(local.group);
+      const cards=result,join=local;
+      result={...cards,materials:{...cards.materials,...Object.fromEntries(Object.entries(join.materials).map(([key,value])=>[`walkingJoin.${key}`,value]))},dispose(){join.dispose();cards.dispose();}};
+    }
     terrain=district.childOf?null:yield* buildTerrainSteps(field,cuts,district.id,!coarse,paperGrain(),filter);
     if(!terrain){complete=true;return result;}
     for(const mesh of terrain.meshes)result.group.add(mesh);
     const cards=result,ground=terrain;complete=true;
     return {...cards,materials:{...cards.materials,terrain:ground.material},...(ground.under.length?{under:ground.under}:{}),dispose(){cards.dispose();ground.dispose();}};
-  } finally {if(!complete){result?.dispose();terrain?.dispose();}}
+  } finally {if(!complete){local?.dispose();result?.dispose();terrain?.dispose();}}
 }
 function waterTriangle(b:CardBuilder,a:XYZ,c:XYZ,d:XYZ,color:RGB){b.water(a,c,d,[a[0]*.02,0],[c[0]*.02,1],[d[0]*.02,.5],color);}
 function addWater(builder:CardBuilder,w:WaterCut){

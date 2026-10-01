@@ -3,7 +3,7 @@
  * ground meets the deck across the full width, so every abutment lands on real ground.
  */
 import {baseHeight} from './terrainBase.ts';
-import {ROAD_CENTRE,ORCHARD_LANE_CENTRE,ORCHARD_LANE_HALF_WIDTH,BRIDGE_TAGS,roadTagS,laneTagS} from './roadLine.ts';
+import {ROAD_CENTRE,ORCHARD_LANE_AUTHORED_CENTRE as ORCHARD_LANE_CENTRE,ORCHARD_LANE_HALF_WIDTH,BRIDGE_TAGS,roadTagS,laneTagS} from './roadLine.ts';
 import {arcLengths,type Point3} from './math.ts';
 
 export type BridgeType='timber'|'masonry'|'metal-glass';

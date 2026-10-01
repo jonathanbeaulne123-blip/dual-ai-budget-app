@@ -1,0 +1,13 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/skate-input-human.test.ts (6 tests) 3121ms
+   ✓ flick-it · a human model > keyboard: the intended trick lands ≥ 95 %, a wrong one ≤ 2 % (every trick, 80 tries each)  801ms
+   ✓ flick-it · a human model > gamepad: the intended trick lands ≥ 95 %, a wrong one ≤ 2 % (every trick, 80 tries each)  1452ms
+   ✓ flick-it · a human model > mouse: the intended trick lands ≥ 95 %, a wrong one ≤ 2 % (every trick, 80 tries each)  752ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  13:07:09
+   Duration  3.93s (transform 277ms, setup 0ms, collect 343ms, tests 3.12s, environment 0ms, prepare 132ms)
+

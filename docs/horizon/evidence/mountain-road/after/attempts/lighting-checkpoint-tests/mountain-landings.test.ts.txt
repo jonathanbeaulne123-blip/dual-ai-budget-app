@@ -1,0 +1,16 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/mountain-landings.test.ts (12 tests) 2827ms
+   ✓ shared native and Horizon mountain landings > keeps the repaired library exit above terrain, including the narrow baked mound missed by row-only tests  449ms
+   ✓ shared native and Horizon mountain landings > supports the full repaired width and admits the rider in native and the actual composed Horizon  637ms
+   ✓ shared awning contour return > keeps every rebuilt return cell clear of terrain and flush with the actual road  328ms
+   ✓ shared awning contour return > supports the actual tapered width with no rider contacts in both worlds  453ms
+   ✓ shared dam entry landing > draws and queries the same entry triangles with less than 20mm overlap error  390ms
+   ✓ shared dam entry landing > adds no entry lip at center and +/-2m in either direction, retaining three exact native road limitations  309ms
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  13:05:29
+   Duration  6.58s (transform 1.13s, setup 0ms, collect 3.24s, tests 2.83s, environment 0ms, prepare 163ms)
+

@@ -1,0 +1,18 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/journey-board-route.test.ts > board scene > fits the L0 budget at Sky (≤ 40k tris / 60 draws full; ≤ 25k / 40 lite) and L1 at Region
+[journey-board] full: sky 23955 tris / 23 draws; region 40201 / 31
+[journey-board] lite: sky 23883 tris / 23 draws; region 36743 / 31
+
+ ✓ test/journey-board-route.test.ts (23 tests) 4804ms
+   ✓ route layout on the baked stations > is deterministic, and a stretch keeps its shape when the window moves  609ms
+   ✓ route layout on the baked stations > lays out quiet, busy and empty households  646ms
+   ✓ board scene > settles the piece in ≤ 600 ms when today's chapter changes; a milestone settle ends on any input  734ms
+   ✓ board scene > rebuilds on data, theme and piece-look changes and releases the lease on dispose  765ms
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  01:20:16
+   Duration  8.08s (transform 1.93s, setup 0ms, collect 2.62s, tests 4.80s, environment 408ms, prepare 64ms)
+

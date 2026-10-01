@@ -1,0 +1,47 @@
+[
+  {
+    "source": "/tmp/mountain-funicular-v15-shape/grades.json",
+    "archive": "grades.json.gz",
+    "sha256": "ee65d2b607e77ac55f7a29a448496f14121cfbbfc6d4fe01ae847f6f802c8001"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v15-shape/source-hashes.json",
+    "archive": "source-hashes.json.gz",
+    "sha256": "0b484b8e8ffc130de9d6641772fd40ca06c656add6bb375870921b06abd31e59"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v15-shape/before-flips.json",
+    "archive": "before-flips.json.gz",
+    "sha256": "1581d735e748a81c7c3fb8b3d17781bfcac81be23d5066566ee049d8158cafe4"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v15-shape/instrumented-source.ts",
+    "archive": "instrumented-source.ts.gz",
+    "sha256": "420bc2d43527022ae47fdb32f009f8990902e39bf02c5f3a34e97c9817454f73"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v15-shape/flips.json",
+    "archive": "flips.json.gz",
+    "sha256": "991edfc81a6dd440885e43107c624983382f97b4dc8c9efc5f995d8fc63f3abf"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v15-shape/previous-witness-neighborhoods.json",
+    "archive": "previous-witness-neighborhoods.json.gz",
+    "sha256": "25ef4c59417ef608de90f3404b94090a6d09a2a3594650e7503e9fc7fdd1cd50"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v15-shape/candidate-solid.json",
+    "archive": "candidate-solid.json.gz",
+    "sha256": "6e2f9550f4e1dcc8fd698109f7533cceaf7ec29e4963d2c80ed6aeb3e17f8477"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v15-shape/fixture.ts",
+    "archive": "fixture.ts.gz",
+    "sha256": "4e3639b170863017bf51a69e5754e0653dbe876759900f56d87594f6357f1086"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v15-shape/bundle.mjs",
+    "archive": "bundle.mjs.gz",
+    "sha256": "b2420559ae757cf41e35960762f4b75e4c8072f9a7bb6fbcb50c6d2f92792ad5"
+  }
+]

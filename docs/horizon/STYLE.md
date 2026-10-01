@@ -170,6 +170,7 @@ A dressing swaps what an object is made of and how it is built (roof shape, join
 8. **Trunks visible.** Broadleaf trunks show ≥ 30 % of tree height below the crown; conifers show ≥ 10 % trunk under a skirt. Crowns sit on trunks, never on the ground.
 9. **Rocks follow strata.** Boulders take their neighbourhood's strata set (§3.3), long axis along the contour, sunk 30 % into the ground.
 10. **Clearance.** Nothing grows on a road, lane, walk, trail, stair, bed, bridge, platform, apron, plot or skate line, or in a Sketchbook page's framed subject.
+   **Bridge Book exception (Jonathan: “build them”, 2026-09-30):** Garden Bridge alone may carry low authored planting in its outboard planter solids. Keep the original 3.2 eu walking strip clear; no generic biome scatter, tree trunks, money meaning or planting on other bridge travel surfaces. Classic flowers, Taylor folded petals and Newfoundland grasses/heather are separate detail kits.
 11. **Biome blend.** Biomes meet in a soft band 8–20 m wide where drifts of both interleave; never a hard seam, never a colour gradient without plants.
 12. **The Green's protected centre** (`protected.green`, r 160 m) holds no prop taller than a bench (0.85 eu, the top of a bench back): no lantern posts, no baskets, no signs on posts there. The Drop Zone target is paint on the turf. The bur oak is a tree, not a prop.
 

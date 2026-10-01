@@ -1,0 +1,1910 @@
+{
+  "status": "complete",
+  "root": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book",
+  "bundleInfo": {
+    "old": {
+      "path": "/tmp/mountain-real-draw-smoke-v2/harness.js",
+      "bundleSha256": "653b964066b976706c2e12f83236d67bdbcaecc87d7571d8d99c38c299b5b74f",
+      "diagnosticAppendSha256": "657100ec11a8a7bcee52cc4340a9a5b857baf07000b43c91390a572fc0b5d3e5",
+      "servedSha256": "74fafa96f7ca7413e859c240931a62e7c7f9a167c277cc3861fdef6bea0fd204"
+    },
+    "new": {
+      "path": "/tmp/mountain-real-draw-packed-fogfix/harness.js",
+      "bundleSha256": "827b996f0e3c0adc0e959e39a3627ce47949619b816e7fd98a75449612773db6",
+      "diagnosticAppendSha256": "657100ec11a8a7bcee52cc4340a9a5b857baf07000b43c91390a572fc0b5d3e5",
+      "servedSha256": "b31058a5c9eab6c0ea6156f494732b58fc3e0154f56a8ff7f48d23943a0540e2"
+    }
+  },
+  "environmentProof": {
+    "runtimeSha256": "efafc2f3c9f8dd2670da34413f09a5c1f4b51ba20157f22ea8f28e8c1d4bf518",
+    "fogHookSourceSha256": "ee36ebbcaf52b8f5dcda49dfa7c82d8d54b10501147903173bcafa4fc8d92934",
+    "fogHookJsSha256": "94d66be26b99d19e825c0591bd48fe22ad4f710d994442a93613c543da9016eb",
+    "environmentJsSha256": "8c10bbf9107ff5a091c331cbc05838b901f192b6282b8afeaae164c770aab257",
+    "inputs": {
+      "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.core.js": "3718df126d69c125362a03340913204470d8c50238605150e57f808840fb7759",
+      "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js": "bbf5ed13fe4373f5bd38b14ea8e62e9f157327da5638edc6d3863e08b167c9c7",
+      "src/harbour/horizon/land/terrain/geometry.ts": "dce99968a6f68bc6ba4c0225edeb5e331f31c9f6c358579454b424b3375501b4",
+      "src/harbour/horizon/sky/gradient.ts": "bd9c6d4979619eaf1c68f7dbc9e39cb9b04145b5421186bf3c4189629f0d3609",
+      "src/harbour/horizon/sky/fog.ts": "1f38d2d9408a0995ecd5835264bd3b4fd4e72ab3ba296b8bf4857a6d00e96e00",
+      "src/harbour/horizon/sun/shadow.ts": "42bf5752d5f97ce094d6317fae21e6d5046b12f175eb508fefa2bbe11de1f31d"
+    }
+  },
+  "worldSha256": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+  "terrainSha256": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+  "oldSmokeAssetsMatch": true,
+  "newSmokeAssetsMatch": true,
+  "themes": [
+    "classic"
+  ],
+  "tiers": [
+    "full"
+  ],
+  "times": [
+    "day"
+  ],
+  "modes": [
+    "color",
+    "shadow"
+  ],
+  "winds": [
+    7.25
+  ],
+  "poses": [
+    {
+      "id": "grove-close",
+      "eye": [
+        981.297,
+        33.209,
+        889.303
+      ],
+      "target": [
+        974.297,
+        31.209,
+        882.303
+      ],
+      "fov": 58,
+      "source": "Fixed view derived from unchanged old baked plant root",
+      "at": [
+        974.297,
+        29.209,
+        882.303
+      ],
+      "species": "pine"
+    },
+    {
+      "id": "pine-close",
+      "eye": [
+        1372.142,
+        58.005,
+        768.043
+      ],
+      "target": [
+        1365.142,
+        56.005,
+        761.043
+      ],
+      "fov": 58,
+      "source": "Fixed view derived from unchanged old baked plant root",
+      "at": [
+        1365.142,
+        54.005,
+        761.043
+      ],
+      "species": "birch"
+    },
+    {
+      "id": "lamp-close",
+      "eye": [
+        929.34,
+        30.88,
+        879.014
+      ],
+      "target": [
+        925.34,
+        29.88,
+        875.014
+      ],
+      "fov": 58,
+      "source": "Fixed oblique view from old VBS.lamp.1 pool witness",
+      "at": [
+        925.34,
+        27.88,
+        875.014
+      ]
+    }
+  ],
+  "width": 640,
+  "height": 420,
+  "cases": [
+    {
+      "key": "classic_full_day_color_7.25_grove-close",
+      "theme": "classic",
+      "tier": "full",
+      "time": "day",
+      "mode": "color",
+      "wind": 7.25,
+      "pose": "grove-close",
+      "color": {
+        "exactEqual": true,
+        "differingPixels": 0,
+        "totalPixels": 268800,
+        "differingChannels": 0,
+        "maxChannelDifference": 0,
+        "meanAbsoluteChannelDifference": 0
+      },
+      "shadow": null,
+      "old": {
+        "renderer": {
+          "frame": 1,
+          "calls": 17,
+          "triangles": 11422,
+          "points": 0,
+          "lines": 571
+        },
+        "lights": {
+          "k": 0,
+          "linesOn": 0,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 160,
+          "roadCards": 24,
+          "anchorCards": 0,
+          "cards": 24,
+          "pointLights": 6,
+          "pointLightsLit": 0,
+          "pointAssigned": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "poolTriangles": 560,
+          "conformedPools": 5
+        },
+        "plants": {
+          "items": 610,
+          "drawn": 11,
+          "drawCalls": 8,
+          "triangles": 1560,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 4,
+              "capacity": 54,
+              "triangles": 160
+            },
+            {
+              "key": "contact",
+              "count": 4,
+              "capacity": 223,
+              "triangles": 40
+            },
+            {
+              "key": "dots:0.12",
+              "count": 0,
+              "capacity": 272,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 43,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 34,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "palmShell",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "shell:birch",
+              "count": 1,
+              "capacity": 67,
+              "triangles": 120
+            },
+            {
+              "key": "shell:pine",
+              "count": 1,
+              "capacity": 75,
+              "triangles": 56
+            },
+            {
+              "key": "shell:round",
+              "count": 2,
+              "capacity": 49,
+              "triangles": 240
+            },
+            {
+              "key": "tree:birch",
+              "count": 4,
+              "capacity": 67,
+              "triangles": 576
+            },
+            {
+              "key": "tree:pine",
+              "count": 1,
+              "capacity": 75,
+              "triangles": 80
+            },
+            {
+              "key": "tree:round",
+              "count": 2,
+              "capacity": 49,
+              "triangles": 288
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 95,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000
+      },
+      "new": {
+        "renderer": {
+          "frame": 1,
+          "calls": 11,
+          "triangles": 12652,
+          "points": 0,
+          "lines": 571
+        },
+        "lights": {
+          "k": 0,
+          "linesOn": 0,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 160,
+          "roadCards": 24,
+          "anchorCards": 0,
+          "cards": 24,
+          "pointLights": 6,
+          "pointLightsLit": 0,
+          "pointAssigned": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "poolTriangles": 560,
+          "conformedPools": 5
+        },
+        "plants": {
+          "items": 610,
+          "drawn": 11,
+          "drawCalls": 3,
+          "triangles": 1560,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 4,
+              "capacity": 54,
+              "triangles": 160
+            },
+            {
+              "key": "contact",
+              "count": 4,
+              "capacity": 223,
+              "triangles": 40
+            },
+            {
+              "key": "dots:0.12",
+              "count": 0,
+              "capacity": 272,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 43,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 34,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "palmShell",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "shell:birch",
+              "count": 1,
+              "capacity": 67,
+              "triangles": 120
+            },
+            {
+              "key": "shell:pine",
+              "count": 1,
+              "capacity": 75,
+              "triangles": 56
+            },
+            {
+              "key": "shell:round",
+              "count": 2,
+              "capacity": 49,
+              "triangles": 240
+            },
+            {
+              "key": "tree:birch",
+              "count": 4,
+              "capacity": 67,
+              "triangles": 576
+            },
+            {
+              "key": "tree:pine",
+              "count": 1,
+              "capacity": 75,
+              "triangles": 80
+            },
+            {
+              "key": "tree:round",
+              "count": 2,
+              "capacity": 49,
+              "triangles": 288
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 95,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000
+      }
+    },
+    {
+      "key": "classic_full_day_color_7.25_pine-close",
+      "theme": "classic",
+      "tier": "full",
+      "time": "day",
+      "mode": "color",
+      "wind": 7.25,
+      "pose": "pine-close",
+      "color": {
+        "exactEqual": true,
+        "differingPixels": 0,
+        "totalPixels": 268800,
+        "differingChannels": 0,
+        "maxChannelDifference": 0,
+        "meanAbsoluteChannelDifference": 0
+      },
+      "shadow": null,
+      "old": {
+        "renderer": {
+          "frame": 1,
+          "calls": 16,
+          "triangles": 13450,
+          "points": 0,
+          "lines": 571
+        },
+        "lights": {
+          "k": 0,
+          "linesOn": 0,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 160,
+          "roadCards": 24,
+          "anchorCards": 0,
+          "cards": 24,
+          "pointLights": 6,
+          "pointLightsLit": 0,
+          "pointAssigned": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "poolTriangles": 896,
+          "conformedPools": 8
+        },
+        "plants": {
+          "items": 610,
+          "drawn": 11,
+          "drawCalls": 6,
+          "triangles": 2122,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 9,
+              "capacity": 223,
+              "triangles": 90
+            },
+            {
+              "key": "dots:0.12",
+              "count": 0,
+              "capacity": 272,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 2,
+              "capacity": 43,
+              "triangles": 40
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 34,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "palmShell",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "shell:birch",
+              "count": 6,
+              "capacity": 67,
+              "triangles": 720
+            },
+            {
+              "key": "shell:pine",
+              "count": 3,
+              "capacity": 75,
+              "triangles": 168
+            },
+            {
+              "key": "shell:round",
+              "count": 0,
+              "capacity": 49,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 6,
+              "capacity": 67,
+              "triangles": 864
+            },
+            {
+              "key": "tree:pine",
+              "count": 3,
+              "capacity": 75,
+              "triangles": 240
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 49,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 95,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000
+      },
+      "new": {
+        "renderer": {
+          "frame": 1,
+          "calls": 12,
+          "triangles": 13550,
+          "points": 0,
+          "lines": 571
+        },
+        "lights": {
+          "k": 0,
+          "linesOn": 0,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 160,
+          "roadCards": 24,
+          "anchorCards": 0,
+          "cards": 24,
+          "pointLights": 6,
+          "pointLightsLit": 0,
+          "pointAssigned": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "poolTriangles": 896,
+          "conformedPools": 8
+        },
+        "plants": {
+          "items": 610,
+          "drawn": 11,
+          "drawCalls": 4,
+          "triangles": 2122,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 9,
+              "capacity": 223,
+              "triangles": 90
+            },
+            {
+              "key": "dots:0.12",
+              "count": 0,
+              "capacity": 272,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 2,
+              "capacity": 43,
+              "triangles": 40
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 34,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "palmShell",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "shell:birch",
+              "count": 6,
+              "capacity": 67,
+              "triangles": 720
+            },
+            {
+              "key": "shell:pine",
+              "count": 3,
+              "capacity": 75,
+              "triangles": 168
+            },
+            {
+              "key": "shell:round",
+              "count": 0,
+              "capacity": 49,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 6,
+              "capacity": 67,
+              "triangles": 864
+            },
+            {
+              "key": "tree:pine",
+              "count": 3,
+              "capacity": 75,
+              "triangles": 240
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 49,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 95,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000
+      }
+    },
+    {
+      "key": "classic_full_day_color_7.25_lamp-close",
+      "theme": "classic",
+      "tier": "full",
+      "time": "day",
+      "mode": "color",
+      "wind": 7.25,
+      "pose": "lamp-close",
+      "color": {
+        "exactEqual": true,
+        "differingPixels": 0,
+        "totalPixels": 268800,
+        "differingChannels": 0,
+        "maxChannelDifference": 0,
+        "meanAbsoluteChannelDifference": 0
+      },
+      "shadow": null,
+      "old": {
+        "renderer": {
+          "frame": 1,
+          "calls": 6,
+          "triangles": 7416,
+          "points": 0,
+          "lines": 571
+        },
+        "lights": {
+          "k": 0,
+          "linesOn": 0,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 160,
+          "roadCards": 24,
+          "anchorCards": 0,
+          "cards": 24,
+          "pointLights": 6,
+          "pointLightsLit": 0,
+          "pointAssigned": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "poolTriangles": 112,
+          "conformedPools": 1
+        },
+        "plants": {
+          "items": 610,
+          "drawn": 10,
+          "drawCalls": 8,
+          "triangles": 1416,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 4,
+              "capacity": 54,
+              "triangles": 160
+            },
+            {
+              "key": "contact",
+              "count": 4,
+              "capacity": 223,
+              "triangles": 40
+            },
+            {
+              "key": "dots:0.12",
+              "count": 0,
+              "capacity": 272,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 43,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 34,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "palmShell",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "shell:birch",
+              "count": 1,
+              "capacity": 67,
+              "triangles": 120
+            },
+            {
+              "key": "shell:pine",
+              "count": 1,
+              "capacity": 75,
+              "triangles": 56
+            },
+            {
+              "key": "shell:round",
+              "count": 2,
+              "capacity": 49,
+              "triangles": 240
+            },
+            {
+              "key": "tree:birch",
+              "count": 3,
+              "capacity": 67,
+              "triangles": 432
+            },
+            {
+              "key": "tree:pine",
+              "count": 1,
+              "capacity": 75,
+              "triangles": 80
+            },
+            {
+              "key": "tree:round",
+              "count": 2,
+              "capacity": 49,
+              "triangles": 288
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 95,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000
+      },
+      "new": {
+        "renderer": {
+          "frame": 1,
+          "calls": 5,
+          "triangles": 8646,
+          "points": 0,
+          "lines": 571
+        },
+        "lights": {
+          "k": 0,
+          "linesOn": 0,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 160,
+          "roadCards": 24,
+          "anchorCards": 0,
+          "cards": 24,
+          "pointLights": 6,
+          "pointLightsLit": 0,
+          "pointAssigned": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "poolTriangles": 112,
+          "conformedPools": 1
+        },
+        "plants": {
+          "items": 610,
+          "drawn": 10,
+          "drawCalls": 3,
+          "triangles": 1416,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 4,
+              "capacity": 54,
+              "triangles": 160
+            },
+            {
+              "key": "contact",
+              "count": 4,
+              "capacity": 223,
+              "triangles": 40
+            },
+            {
+              "key": "dots:0.12",
+              "count": 0,
+              "capacity": 272,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 43,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 34,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "palmShell",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "shell:birch",
+              "count": 1,
+              "capacity": 67,
+              "triangles": 120
+            },
+            {
+              "key": "shell:pine",
+              "count": 1,
+              "capacity": 75,
+              "triangles": 56
+            },
+            {
+              "key": "shell:round",
+              "count": 2,
+              "capacity": 49,
+              "triangles": 240
+            },
+            {
+              "key": "tree:birch",
+              "count": 3,
+              "capacity": 67,
+              "triangles": 432
+            },
+            {
+              "key": "tree:pine",
+              "count": 1,
+              "capacity": 75,
+              "triangles": 80
+            },
+            {
+              "key": "tree:round",
+              "count": 2,
+              "capacity": 49,
+              "triangles": 288
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 95,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000
+      }
+    },
+    {
+      "key": "classic_full_day_shadow_7.25_grove-close",
+      "theme": "classic",
+      "tier": "full",
+      "time": "day",
+      "mode": "shadow",
+      "wind": 7.25,
+      "pose": "grove-close",
+      "color": {
+        "exactEqual": true,
+        "differingPixels": 0,
+        "totalPixels": 268800,
+        "differingChannels": 0,
+        "maxChannelDifference": 0,
+        "meanAbsoluteChannelDifference": 0
+      },
+      "shadow": {
+        "exactEqual": false,
+        "differingPixels": 190,
+        "totalPixels": 4194304,
+        "differingChannels": 759,
+        "maxChannelDifference": 255,
+        "meanAbsoluteChannelDifference": 0.004239797592163086,
+        "oldNonClearPixels": 1741,
+        "newNonClearPixels": 1741
+      },
+      "old": {
+        "renderer": {
+          "frame": 1,
+          "calls": 25,
+          "triangles": 20574,
+          "points": 0,
+          "lines": 571
+        },
+        "lights": {
+          "k": 0,
+          "linesOn": 0,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 160,
+          "roadCards": 24,
+          "anchorCards": 0,
+          "cards": 24,
+          "pointLights": 6,
+          "pointLightsLit": 0,
+          "pointAssigned": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "poolTriangles": 560,
+          "conformedPools": 5
+        },
+        "plants": {
+          "items": 610,
+          "drawn": 11,
+          "drawCalls": 8,
+          "triangles": 1560,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 4,
+              "capacity": 54,
+              "triangles": 160
+            },
+            {
+              "key": "contact",
+              "count": 4,
+              "capacity": 223,
+              "triangles": 40
+            },
+            {
+              "key": "dots:0.12",
+              "count": 0,
+              "capacity": 272,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 43,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 34,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "palmShell",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "shell:birch",
+              "count": 1,
+              "capacity": 67,
+              "triangles": 120
+            },
+            {
+              "key": "shell:pine",
+              "count": 1,
+              "capacity": 75,
+              "triangles": 56
+            },
+            {
+              "key": "shell:round",
+              "count": 2,
+              "capacity": 49,
+              "triangles": 240
+            },
+            {
+              "key": "tree:birch",
+              "count": 4,
+              "capacity": 67,
+              "triangles": 576
+            },
+            {
+              "key": "tree:pine",
+              "count": 1,
+              "capacity": 75,
+              "triangles": 80
+            },
+            {
+              "key": "tree:round",
+              "count": 2,
+              "capacity": 49,
+              "triangles": 288
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 95,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000
+      },
+      "new": {
+        "renderer": {
+          "frame": 1,
+          "calls": 14,
+          "triangles": 22242,
+          "points": 0,
+          "lines": 571
+        },
+        "lights": {
+          "k": 0,
+          "linesOn": 0,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 160,
+          "roadCards": 24,
+          "anchorCards": 0,
+          "cards": 24,
+          "pointLights": 6,
+          "pointLightsLit": 0,
+          "pointAssigned": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "poolTriangles": 560,
+          "conformedPools": 5
+        },
+        "plants": {
+          "items": 610,
+          "drawn": 11,
+          "drawCalls": 3,
+          "triangles": 1560,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 4,
+              "capacity": 54,
+              "triangles": 160
+            },
+            {
+              "key": "contact",
+              "count": 4,
+              "capacity": 223,
+              "triangles": 40
+            },
+            {
+              "key": "dots:0.12",
+              "count": 0,
+              "capacity": 272,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 43,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 34,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "palmShell",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "shell:birch",
+              "count": 1,
+              "capacity": 67,
+              "triangles": 120
+            },
+            {
+              "key": "shell:pine",
+              "count": 1,
+              "capacity": 75,
+              "triangles": 56
+            },
+            {
+              "key": "shell:round",
+              "count": 2,
+              "capacity": 49,
+              "triangles": 240
+            },
+            {
+              "key": "tree:birch",
+              "count": 4,
+              "capacity": 67,
+              "triangles": 576
+            },
+            {
+              "key": "tree:pine",
+              "count": 1,
+              "capacity": 75,
+              "triangles": 80
+            },
+            {
+              "key": "tree:round",
+              "count": 2,
+              "capacity": 49,
+              "triangles": 288
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 95,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000
+      }
+    },
+    {
+      "key": "classic_full_day_shadow_7.25_pine-close",
+      "theme": "classic",
+      "tier": "full",
+      "time": "day",
+      "mode": "shadow",
+      "wind": 7.25,
+      "pose": "pine-close",
+      "color": {
+        "exactEqual": true,
+        "differingPixels": 0,
+        "totalPixels": 268800,
+        "differingChannels": 0,
+        "maxChannelDifference": 0,
+        "meanAbsoluteChannelDifference": 0
+      },
+      "shadow": {
+        "exactEqual": false,
+        "differingPixels": 250,
+        "totalPixels": 4194304,
+        "differingChannels": 1000,
+        "maxChannelDifference": 255,
+        "meanAbsoluteChannelDifference": 0.005360066890716553,
+        "oldNonClearPixels": 2119,
+        "newNonClearPixels": 2119
+      },
+      "old": {
+        "renderer": {
+          "frame": 1,
+          "calls": 22,
+          "triangles": 22940,
+          "points": 0,
+          "lines": 571
+        },
+        "lights": {
+          "k": 0,
+          "linesOn": 0,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 160,
+          "roadCards": 24,
+          "anchorCards": 0,
+          "cards": 24,
+          "pointLights": 6,
+          "pointLightsLit": 0,
+          "pointAssigned": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "poolTriangles": 896,
+          "conformedPools": 8
+        },
+        "plants": {
+          "items": 610,
+          "drawn": 11,
+          "drawCalls": 6,
+          "triangles": 2122,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 9,
+              "capacity": 223,
+              "triangles": 90
+            },
+            {
+              "key": "dots:0.12",
+              "count": 0,
+              "capacity": 272,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 2,
+              "capacity": 43,
+              "triangles": 40
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 34,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "palmShell",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "shell:birch",
+              "count": 6,
+              "capacity": 67,
+              "triangles": 720
+            },
+            {
+              "key": "shell:pine",
+              "count": 3,
+              "capacity": 75,
+              "triangles": 168
+            },
+            {
+              "key": "shell:round",
+              "count": 0,
+              "capacity": 49,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 6,
+              "capacity": 67,
+              "triangles": 864
+            },
+            {
+              "key": "tree:pine",
+              "count": 3,
+              "capacity": 75,
+              "triangles": 240
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 49,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 95,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000
+      },
+      "new": {
+        "renderer": {
+          "frame": 1,
+          "calls": 15,
+          "triangles": 23140,
+          "points": 0,
+          "lines": 571
+        },
+        "lights": {
+          "k": 0,
+          "linesOn": 0,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 160,
+          "roadCards": 24,
+          "anchorCards": 0,
+          "cards": 24,
+          "pointLights": 6,
+          "pointLightsLit": 0,
+          "pointAssigned": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "poolTriangles": 896,
+          "conformedPools": 8
+        },
+        "plants": {
+          "items": 610,
+          "drawn": 11,
+          "drawCalls": 4,
+          "triangles": 2122,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 9,
+              "capacity": 223,
+              "triangles": 90
+            },
+            {
+              "key": "dots:0.12",
+              "count": 0,
+              "capacity": 272,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 2,
+              "capacity": 43,
+              "triangles": 40
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 34,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "palmShell",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "shell:birch",
+              "count": 6,
+              "capacity": 67,
+              "triangles": 720
+            },
+            {
+              "key": "shell:pine",
+              "count": 3,
+              "capacity": 75,
+              "triangles": 168
+            },
+            {
+              "key": "shell:round",
+              "count": 0,
+              "capacity": 49,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 6,
+              "capacity": 67,
+              "triangles": 864
+            },
+            {
+              "key": "tree:pine",
+              "count": 3,
+              "capacity": 75,
+              "triangles": 240
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 49,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 95,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000
+      }
+    },
+    {
+      "key": "classic_full_day_shadow_7.25_lamp-close",
+      "theme": "classic",
+      "tier": "full",
+      "time": "day",
+      "mode": "shadow",
+      "wind": 7.25,
+      "pose": "lamp-close",
+      "color": {
+        "exactEqual": true,
+        "differingPixels": 0,
+        "totalPixels": 268800,
+        "differingChannels": 0,
+        "maxChannelDifference": 0,
+        "meanAbsoluteChannelDifference": 0
+      },
+      "shadow": {
+        "exactEqual": false,
+        "differingPixels": 117,
+        "totalPixels": 4194304,
+        "differingChannels": 467,
+        "maxChannelDifference": 255,
+        "meanAbsoluteChannelDifference": 0.0026193857192993164,
+        "oldNonClearPixels": 1660,
+        "newNonClearPixels": 1660
+      },
+      "old": {
+        "renderer": {
+          "frame": 1,
+          "calls": 14,
+          "triangles": 16424,
+          "points": 0,
+          "lines": 571
+        },
+        "lights": {
+          "k": 0,
+          "linesOn": 0,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 160,
+          "roadCards": 24,
+          "anchorCards": 0,
+          "cards": 24,
+          "pointLights": 6,
+          "pointLightsLit": 0,
+          "pointAssigned": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "poolTriangles": 112,
+          "conformedPools": 1
+        },
+        "plants": {
+          "items": 610,
+          "drawn": 10,
+          "drawCalls": 8,
+          "triangles": 1416,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 4,
+              "capacity": 54,
+              "triangles": 160
+            },
+            {
+              "key": "contact",
+              "count": 4,
+              "capacity": 223,
+              "triangles": 40
+            },
+            {
+              "key": "dots:0.12",
+              "count": 0,
+              "capacity": 272,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 43,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 34,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "palmShell",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "shell:birch",
+              "count": 1,
+              "capacity": 67,
+              "triangles": 120
+            },
+            {
+              "key": "shell:pine",
+              "count": 1,
+              "capacity": 75,
+              "triangles": 56
+            },
+            {
+              "key": "shell:round",
+              "count": 2,
+              "capacity": 49,
+              "triangles": 240
+            },
+            {
+              "key": "tree:birch",
+              "count": 3,
+              "capacity": 67,
+              "triangles": 432
+            },
+            {
+              "key": "tree:pine",
+              "count": 1,
+              "capacity": 75,
+              "triangles": 80
+            },
+            {
+              "key": "tree:round",
+              "count": 2,
+              "capacity": 49,
+              "triangles": 288
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 95,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000
+      },
+      "new": {
+        "renderer": {
+          "frame": 1,
+          "calls": 8,
+          "triangles": 18092,
+          "points": 0,
+          "lines": 571
+        },
+        "lights": {
+          "k": 0,
+          "linesOn": 0,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 160,
+          "roadCards": 24,
+          "anchorCards": 0,
+          "cards": 24,
+          "pointLights": 6,
+          "pointLightsLit": 0,
+          "pointAssigned": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "poolTriangles": 112,
+          "conformedPools": 1
+        },
+        "plants": {
+          "items": 610,
+          "drawn": 10,
+          "drawCalls": 3,
+          "triangles": 1416,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 4,
+              "capacity": 54,
+              "triangles": 160
+            },
+            {
+              "key": "contact",
+              "count": 4,
+              "capacity": 223,
+              "triangles": 40
+            },
+            {
+              "key": "dots:0.12",
+              "count": 0,
+              "capacity": 272,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 43,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 34,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "palmShell",
+              "count": 0,
+              "capacity": 32,
+              "triangles": 0
+            },
+            {
+              "key": "shell:birch",
+              "count": 1,
+              "capacity": 67,
+              "triangles": 120
+            },
+            {
+              "key": "shell:pine",
+              "count": 1,
+              "capacity": 75,
+              "triangles": 56
+            },
+            {
+              "key": "shell:round",
+              "count": 2,
+              "capacity": 49,
+              "triangles": 240
+            },
+            {
+              "key": "tree:birch",
+              "count": 3,
+              "capacity": 67,
+              "triangles": 432
+            },
+            {
+              "key": "tree:pine",
+              "count": 1,
+              "capacity": 75,
+              "triangles": 80
+            },
+            {
+              "key": "tree:round",
+              "count": 2,
+              "capacity": 49,
+              "triangles": 288
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 95,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000
+      }
+    }
+  ],
+  "errors": [],
+  "limits": [
+    "No acceptance tolerance: every differing pixel is recorded; exact equality is reported separately.",
+    "Same old frozen assets are deliberately used for both bundles; source runtime lamp refinements can still create real visual differences.",
+    "Isolated corridor art/plants and real shared lights, exact extracted live fog hook plus horizonFog and shadowFrame helpers. Sky/hemi/sun energy remains the same probe ambience, not a complete live world.",
+    "Color mode retains original audit sun/hemisphere settings. Shadow mode uses exact runtime walk shadowFrame, full2048/lite1024 resolution, PCFSoftShadowMap, near1, normalBias.05 and bias-.00006; point lights remain shadowless.",
+    "Shadow readback is packed RGBA depth, not linear world-distance error.",
+    "Shadow silhouette comparison has no extra receiver plane and does not replace final in-world theme/device captures.",
+    "One fresh planting per pose makes first-evaluation born=-1e9; browser performance/Date clocks and CARD_CLOCK are fixed."
+  ],
+  "allExact": false
+}

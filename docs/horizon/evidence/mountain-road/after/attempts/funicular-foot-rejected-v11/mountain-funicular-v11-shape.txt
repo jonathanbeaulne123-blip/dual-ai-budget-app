@@ -1,0 +1,9 @@
+file:///private/tmp/mountain-funicular-v11-shape/bundle.mjs:18893
+  if (!finished) throw new Error("Walking field intersection did not meet40-degree faces within10 local refinements");
+                       ^
+
+Error: Walking field intersection did not meet40-degree faces within10 local refinements
+    at Module.fitFunicularFootJoin (file:///private/tmp/mountain-funicular-v11-shape/bundle.mjs:18893:24)
+    at file:///private/tmp/mountain-funicular-v11-shape-diagnostic.mjs:17:286
+
+Node.js v24.21.0

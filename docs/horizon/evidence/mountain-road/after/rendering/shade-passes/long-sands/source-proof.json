@@ -1,0 +1,42 @@
+{
+  "oldSummarySha256": "125543442b020840267a9ea8fa30c1bb1e54fe61813b52fd4583031df89497cc",
+  "newSummarySha256": "904dea95c94141a1a59871ec1119d7065fef5857755302cb47e49daeb5ab9390",
+  "entrySha256": "cecd8b7c92cbe96f6956d81f2c36bfe885a6221000636502c87cc41b69681375",
+  "rawChanges": [
+    {
+      "path": "src/harbour/horizon/runtime/corridorArt.ts",
+      "old": "5e1225cddc62697924305ab884271f5df992a696dba0806d566d50f3ea576453",
+      "new": "94ef6f8a065c557b5edab34e98186a10e029b45188402f47c17967ac30264574",
+      "adapterEquivalent": false
+    },
+    {
+      "path": "src/harbour/mountain/planting.ts",
+      "old": "bc18f11d18732cd9af180846590d38f2ff16951ee833d3f22d4a5803e0472dc8",
+      "new": "211fe984e4694d7f198837e25f99345c9b357a7213efbac609739f5c97c99687",
+      "adapterEquivalent": true
+    },
+    {
+      "path": "src/harbour/horizon/runtime/orderedContactShade.ts",
+      "old": null,
+      "new": "0d68301305f51fc6b6c09db78d6002d44c400693fecbf697827128998bf52748",
+      "adapterEquivalent": false
+    }
+  ],
+  "effectiveChanges": [
+    {
+      "path": "src/harbour/horizon/runtime/corridorArt.ts",
+      "old": "5e1225cddc62697924305ab884271f5df992a696dba0806d566d50f3ea576453",
+      "new": "94ef6f8a065c557b5edab34e98186a10e029b45188402f47c17967ac30264574",
+      "adapterEquivalent": false
+    },
+    {
+      "path": "src/harbour/horizon/runtime/orderedContactShade.ts",
+      "old": null,
+      "new": "0d68301305f51fc6b6c09db78d6002d44c400693fecbf697827128998bf52748",
+      "adapterEquivalent": false
+    }
+  ],
+  "adapterHashesIdentical": true,
+  "oldArtRecoveredSha256": "5e1225cddc62697924305ab884271f5df992a696dba0806d566d50f3ea576453",
+  "onlyReviewedShadeDelta": true
+}

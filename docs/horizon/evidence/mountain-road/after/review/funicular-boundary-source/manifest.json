@@ -1,0 +1,32 @@
+[
+  {
+    "source": "/tmp/mountain-funicular-v12-ownership/ownership.json",
+    "saved": "ownership.json",
+    "sha256": "86ea91fdbcb0767e0cb97cfa599c3cd3362b4e63b3c35d87c06c928c7c1aa334"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v12-ownership-diagnostic.mjs",
+    "saved": "mountain-funicular-v12-ownership-diagnostic.mjs",
+    "sha256": "8f6e65881e070d3c1b7f104c477351af50cc2ade39fc0ff788b9790bb1b8774f"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v12-boundary-hosts.json",
+    "saved": "mountain-funicular-v12-boundary-hosts.json",
+    "sha256": "85474c82530f8be609922eef88c3089716b16447f389a37cea788e3d1658d757"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v13-runtime-face-threshold.json",
+    "saved": "mountain-funicular-v13-runtime-face-threshold.json",
+    "sha256": "20497eda068fff4d54eb9d9b45b16feef2abcabd2a44f5ae3b4dc5a94eed89c6"
+  },
+  {
+    "source": "/tmp/mountain-funicular-edge-source-support/edge-source-support.json",
+    "saved": "edge-source-support.json",
+    "sha256": "efcd5f6309ec3d5f751ac4f515c4b57284feb8bea0a0939f20084da605a99c45"
+  },
+  {
+    "source": "/tmp/mountain-funicular-edge-source-support.mjs",
+    "saved": "mountain-funicular-edge-source-support.mjs",
+    "sha256": "cf278eab128f3f8a43617837d83d1440137ab0f8f5a6eacb367e86061e6f2ca9"
+  }
+]

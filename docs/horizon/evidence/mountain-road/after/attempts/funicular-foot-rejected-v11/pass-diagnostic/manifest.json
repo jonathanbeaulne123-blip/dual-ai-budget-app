@@ -1,0 +1,92 @@
+[
+  {
+    "source": "/tmp/mountain-funicular-v11-passes/bundle.mjs",
+    "savedAs": "bundle.mjs.gz",
+    "bytes": 1624517,
+    "sha256": "8ddfde3ae6096f0d169ff0078c2d4be61d418dc27f246e0cb34474d4a75633db"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v11-passes/last-mesh.json",
+    "savedAs": "last-mesh.json.gz",
+    "bytes": 629667,
+    "sha256": "f83aab7d0c28f3367bfbf54e5259cd5f8f6adaa8127f7673bbd136bd96cea005"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v11-passes/pass-0.json",
+    "savedAs": "pass-0.json",
+    "bytes": 2204,
+    "sha256": "1109d02fa969d492bb249aa5a6bfd230ea39890a303b1187bdaafcb93b2061c6"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v11-passes/pass-1.json",
+    "savedAs": "pass-1.json",
+    "bytes": 1379,
+    "sha256": "fbccef741faa0b7dbf8d503553a01403568de4cc321803e2c40f96be73f2cf6d"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v11-passes/pass-2.json",
+    "savedAs": "pass-2.json",
+    "bytes": 1796,
+    "sha256": "ed578b93a46a41712137f43cf33e09e2fba5f29aa1181c064a4d5c925b2f7a3b"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v11-passes/pass-3.json",
+    "savedAs": "pass-3.json",
+    "bytes": 1377,
+    "sha256": "84950463369989e10242ec8fed395fdfe41342ed63780fcfa5e205e130853a4d"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v11-passes/pass-4.json",
+    "savedAs": "pass-4.json",
+    "bytes": 1379,
+    "sha256": "5871c793ae1145aa918c3c13d8850adfa7b161811416c35189a4d58d6fe123ef"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v11-passes/pass-5.json",
+    "savedAs": "pass-5.json",
+    "bytes": 968,
+    "sha256": "5f58c8bb9d30c4b64ffd64f5fd8ad54ab873b307425d08c95ab584584305290d"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v11-passes/pass-6.json",
+    "savedAs": "pass-6.json",
+    "bytes": 964,
+    "sha256": "39f72eecb1a90fe200c9177a43220df39f9674cac7611d9182e6ee140fc46a08"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v11-passes/pass-7.json",
+    "savedAs": "pass-7.json",
+    "bytes": 967,
+    "sha256": "d28379d84cd565b7dde5b659fcd3da9e1566ef169bcf960dc8351f48f74bb6ac"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v11-passes/pass-8.json",
+    "savedAs": "pass-8.json",
+    "bytes": 968,
+    "sha256": "83efdb5ead290394e1594eaa85cf1623c324b2ff2e9b8c5ae1e87b0abc3f5d13"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v11-passes/pass-9.json",
+    "savedAs": "pass-9.json",
+    "bytes": 551,
+    "sha256": "f03d3c906b0d825fcf46bc893f2cdc3ec702e7361c7c06eb00f1bf0c3ea91bd8"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v11-passes/status.json",
+    "savedAs": "status.json",
+    "bytes": 120,
+    "sha256": "330b4b38515bd5cf1dc3f934c2dfba754d67d6208e3c156e5e9429164f1fb7ba"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v11-pass-diagnostic.mjs",
+    "savedAs": "mountain-funicular-v11-pass-diagnostic.mjs",
+    "bytes": 2289,
+    "sha256": "f8ef2468a88e8d2a84a836fea5a89e406ce5d2c8679a8f640e13739a5355c503"
+  },
+  {
+    "source": "/tmp/mountain-funicular-v11-passes.txt",
+    "savedAs": "mountain-funicular-v11-passes.txt",
+    "bytes": 1117,
+    "sha256": "1042aab2f1e211c8c7be380e1fce4ffc2f1438260eeef2f0f236845f2dc141f6"
+  }
+]

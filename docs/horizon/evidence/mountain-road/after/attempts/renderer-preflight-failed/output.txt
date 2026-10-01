@@ -1,0 +1,9 @@
+✘ [ERROR] Could not resolve "node:fs/promises"
+
+    src/harbour/mountain/terrainAsset.ts:36:36:
+      36 │       const {readFile}=await import('node:fs/promises');
+         ╵                                     ~~~~~~~~~~~~~~~~~~
+
+  The package "node:fs/promises" wasn't found on the file system but is built into node. Are you trying to bundle for node? You can use "platform: 'node'" to do that, which will remove this error.
+
+/tmp/mountain-real-draw-smoke

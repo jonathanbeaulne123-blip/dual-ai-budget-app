@@ -1,3 +1,4 @@
+import {applyOrchardCentreProfile} from './orchardJunction.ts';
 /**
  * The mountain road alignment: plan waypoints with authored elevations, eased into a
  * continuous centreline, and the bridge spans along it. Uphill from the town foot.
@@ -57,7 +58,8 @@ export const ORCHARD_LANE_WAYPOINTS:readonly RoadWaypoint[]=[
 ];
 export const ORCHARD_LANE_HALF_WIDTH=3.2;
 const lane=authorCurve(ORCHARD_LANE_WAYPOINTS.map(w=>[w.at[0],w.y,w.at[1]] as Point3),ROAD_STEP,16);
-export const ORCHARD_LANE_CENTRE:readonly Point3[]=lane.points;
+export const ORCHARD_LANE_AUTHORED_CENTRE:readonly Point3[]=lane.points;
+export const ORCHARD_LANE_CENTRE:readonly Point3[]=applyOrchardCentreProfile(lane.points);
 export const ORCHARD_LANE_WAY_S:readonly number[]=lane.wayS;
 export const laneTagS=(tag:string)=>{const i=ORCHARD_LANE_WAYPOINTS.findIndex(w=>w.tag===tag);if(i<0)throw new Error(`lane tag ${tag}`);return ORCHARD_LANE_WAY_S[i]!;};
 /** Tagged bridge spans (the actual spans grow to the rims where the ground meets the deck). */

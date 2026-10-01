@@ -1,0 +1,201 @@
+{
+ "sha": "67b469f32c5e28e0e532d2775585dc5bfa4a869c",
+ "tier": "lite",
+ "method": "headless Chromium (SwiftShader) on the vite dev server; a synthetic fixture, not the island; not device evidence",
+ "view": {
+  "width": 1280,
+  "height": 800
+ },
+ "records": [
+  {
+   "file": "classic_driver-developed_day_lite.png",
+   "pose": "driver-developed",
+   "time": "13:00",
+   "theme": "classic",
+   "tier": "lite",
+   "elevation": 69.44,
+   "night": 0,
+   "drawCalls": 29,
+   "triangles": 320410,
+   "corridorArt": {
+    "districts": {
+     "fixture": {
+      "drawCalls": 9,
+      "triangles": 2828,
+      "instances": 17
+     }
+    },
+    "lamps": 8
+   }
+  },
+  {
+   "file": "classic_driver-mountain_day_lite.png",
+   "pose": "driver-mountain",
+   "time": "13:00",
+   "theme": "classic",
+   "tier": "lite",
+   "elevation": 69.44,
+   "night": 0,
+   "drawCalls": 13,
+   "triangles": 318344,
+   "corridorArt": {
+    "districts": {
+     "fixture": {
+      "drawCalls": 9,
+      "triangles": 2828,
+      "instances": 17
+     }
+    },
+    "lamps": 8
+   }
+  },
+  {
+   "file": "classic_driver-developed_night_lite.png",
+   "pose": "driver-developed",
+   "time": "22:30",
+   "theme": "classic",
+   "tier": "lite",
+   "elevation": -14.09,
+   "night": 1,
+   "drawCalls": 30,
+   "triangles": 320426,
+   "corridorArt": {
+    "districts": {
+     "fixture": {
+      "drawCalls": 9,
+      "triangles": 2828,
+      "instances": 17
+     }
+    },
+    "lamps": 8
+   }
+  },
+  {
+   "file": "taylor_driver-developed_day_lite.png",
+   "pose": "driver-developed",
+   "time": "13:00",
+   "theme": "taylor",
+   "tier": "lite",
+   "elevation": 69.44,
+   "night": 0,
+   "drawCalls": 29,
+   "triangles": 320786,
+   "corridorArt": {
+    "districts": {
+     "fixture": {
+      "drawCalls": 9,
+      "triangles": 3204,
+      "instances": 17
+     }
+    },
+    "lamps": 8
+   }
+  },
+  {
+   "file": "taylor_driver-mountain_day_lite.png",
+   "pose": "driver-mountain",
+   "time": "13:00",
+   "theme": "taylor",
+   "tier": "lite",
+   "elevation": 69.44,
+   "night": 0,
+   "drawCalls": 13,
+   "triangles": 318484,
+   "corridorArt": {
+    "districts": {
+     "fixture": {
+      "drawCalls": 9,
+      "triangles": 3204,
+      "instances": 17
+     }
+    },
+    "lamps": 8
+   }
+  },
+  {
+   "file": "taylor_driver-developed_night_lite.png",
+   "pose": "driver-developed",
+   "time": "22:30",
+   "theme": "taylor",
+   "tier": "lite",
+   "elevation": -14.09,
+   "night": 1,
+   "drawCalls": 30,
+   "triangles": 320802,
+   "corridorArt": {
+    "districts": {
+     "fixture": {
+      "drawCalls": 9,
+      "triangles": 3204,
+      "instances": 17
+     }
+    },
+    "lamps": 8
+   }
+  },
+  {
+   "file": "newfoundland_driver-developed_day_lite.png",
+   "pose": "driver-developed",
+   "time": "13:00",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "elevation": 69.44,
+   "night": 0,
+   "drawCalls": 29,
+   "triangles": 321074,
+   "corridorArt": {
+    "districts": {
+     "fixture": {
+      "drawCalls": 9,
+      "triangles": 3492,
+      "instances": 17
+     }
+    },
+    "lamps": 8
+   }
+  },
+  {
+   "file": "newfoundland_driver-mountain_day_lite.png",
+   "pose": "driver-mountain",
+   "time": "13:00",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "elevation": 69.44,
+   "night": 0,
+   "drawCalls": 13,
+   "triangles": 318344,
+   "corridorArt": {
+    "districts": {
+     "fixture": {
+      "drawCalls": 9,
+      "triangles": 3492,
+      "instances": 17
+     }
+    },
+    "lamps": 8
+   }
+  },
+  {
+   "file": "newfoundland_driver-developed_night_lite.png",
+   "pose": "driver-developed",
+   "time": "22:30",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "elevation": -14.09,
+   "night": 1,
+   "drawCalls": 30,
+   "triangles": 321090,
+   "corridorArt": {
+    "districts": {
+     "fixture": {
+      "drawCalls": 9,
+      "triangles": 3492,
+      "instances": 17
+     }
+    },
+    "lamps": 8
+   }
+  }
+ ],
+ "errors": []
+}

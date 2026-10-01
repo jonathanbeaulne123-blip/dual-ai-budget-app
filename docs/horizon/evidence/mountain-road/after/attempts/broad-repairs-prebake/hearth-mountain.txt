@@ -1,0 +1,71 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/hearth-mountain.test.ts > the landform > carves a real gorge at least 25 deep where the river runs, with raised banks
+Gorge depth along the upper river: 44.2 25.4 27.3 29.9 32.9 29.8
+
+stdout | test/hearth-mountain.test.ts > the landform > keeps the river on its bed: the water line is never more than 0.3 above the ground under it
+River highest above its bed (mountain): 0.28
+
+stdout | test/hearth-mountain.test.ts > the landform > has no cut walls the render lattice cannot draw: walkable ground agrees with the lite lattice
+Walkable ground vs lite lattice: {
+  samples: 3241,
+  p50: '0.022',
+  p95: '0.250',
+  over03: '3.8%',
+  max: '5.30'
+}
+
+stdout | test/hearth-mountain.test.ts > the mountain road > is 800–950 rideable units with an eased grade (target 8–12%, never above 18%)
+Road {
+  length: '945.9',
+  maxGrade: '15.4',
+  '<4%': '7',
+  '4-8%': '12',
+  '8-12%': '28',
+  '12-15%': '49',
+  '15-18%': '4'
+}
+
+stdout | test/hearth-mountain.test.ts > the mountain road > winds like a mountain road: varied bends, little straight, crossing the fall line diagonally
+Road bends { straightFraction: '22.4%', tight: 38, medium: 352, gentle: 340 }
+
+stdout | test/hearth-mountain.test.ts > the mountain road > is edge-safe: every drop beyond body height has a parapet, wall or bridge rail with collision
+Largest edge drop: 51.3 guarded by bridge
+
+stdout | test/hearth-mountain.test.ts > the glass dam and basin > faces the town and is visible from the square at eye height
+Dam crest visible from the square: 7 of 9
+
+stdout | test/hearth-mountain.test.ts > paths, stairs and doors > reaches every district, door, station and plot from the town square; stairs keep Library close
+Square → district over the path graph: {
+  hearth: '170u walk 85s run 44s',
+  orchard: '220u walk 109s run 57s',
+  library: '246u walk 127s run 67s',
+  glasshouse: '371u walk 194s run 102s',
+  reservoir: '459u walk 240s run 126s',
+  summit: '608u walk 312s run 164s'
+}
+
+stdout | test/hearth-mountain.test.ts > rides the whole descent with the shipped skate options: finishes, no bails, every gate in order
+Summit to Sea, input-driven descent (shipped options): {
+  seconds: 94.4,
+  index: 390,
+  points: 391,
+  bails: 0,
+  bailAt: [],
+  maxError: '2.27',
+  gateIndex: 17,
+  gates: 17
+}
+
+stdout | test/hearth-mountain.test.ts > keeps every mountain ground sample finite and the terrain function cheap to call
+groundHeightAt µs/call: 0.126
+
+ ✓ test/hearth-mountain.test.ts (37 tests) 1484ms
+   ✓ rides the whole descent with the shipped skate options: finishes, no bails, every gate in order  966ms
+
+ Test Files  1 passed (1)
+      Tests  37 passed (37)
+   Start at  01:19:45
+   Duration  2.96s (transform 641ms, setup 0ms, collect 1.26s, tests 1.48s, environment 0ms, prepare 61ms)
+

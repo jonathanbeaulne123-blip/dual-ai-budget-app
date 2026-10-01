@@ -1,0 +1,25 @@
+{
+  "kind": "exact served monolith, not source-regeneration parity",
+  "logicalId": "mountainV2.funicularFoot.apron",
+  "solidCount": 1077,
+  "beforeSolidCount": 1076,
+  "removedOnly": [
+    "mountainV2.funicularFoot.apron@lakeside"
+  ],
+  "apron": {
+    "id": "mountainV2.funicularFoot.apron@lakeside",
+    "sourceId": "mountainV2.funicularFoot.apron",
+    "renderOrigin": [
+      1286,
+      55,
+      726
+    ],
+    "vertices": 7948,
+    "triangles": 16036,
+    "positionsSha256": "0e52cd18eab38cf7968b229fb20c028c81fb1b87640099ee9fe427452674fc1a",
+    "indicesSha256": "967263faab94273fd8f2f4a87ed5f15d7b920e62c4129aa2935c11e775fc7ad0"
+  },
+  "sourceFitterImported": false,
+  "sourceFitterCalled": false,
+  "collisionMetadataUnchanged": true
+}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { strToU8, zipSync } from 'fflate';
 import { captureDiagnosticIncident, diagnosticChecks, diagnosticState, diagnosticVisuals, diagnosticsRecording, diagnosticsWindow, inspectDiagnostic, isInspectorKeyCandidate, recordDiagnostic, sampleDiagnostics, setDiagnosticsRecording, setDiagnosticsWindow, subscribeDiagnostics, type DiagnosticHit, type DiagnosticVisual, type Incident } from './inspectorCore.ts';
+import { canVerifyCaptureTab, isCurrentHearthTab, registerCaptureIdentity } from './captureIdentity.ts';
 import './inspector.css';
 
 const BINDINGS = ['=', 'F8', 'F9', 'F10'] as const;
@@ -18,12 +19,13 @@ function report(incident: Incident) {
   return `Horizon Inspector incident ${incident.id}\nObserved facts\nTime: ${incident.at}\nBuild: ${incident.build}\nScene: ${s.scene} / ${s.view} / ${s.activity}\nPlayer: ${pos(s.player)}\nCamera: ${pos(s.camera)}\nWorld revision: ${s.worldRevision ?? 'Not instrumented'}\nRendered revision: ${s.renderedRevision ?? 'Not instrumented'}\nMovement: ${JSON.stringify(s.movement)}\nInteraction: ${JSON.stringify(s.interaction)}\nPerformance: frame ${s.frame ?? 'Not instrumented'}, ${fmt(s.frameMs)} ms; ${s.drawCalls ?? 'Not instrumented'} draw calls\nViewport: ${incident.viewport.width} × ${incident.viewport.height} CSS px @${incident.viewport.pixelRatio}\nRecorder sample overhead: ${fmt(incident.recorder.sampleMsAverage, 2)} ms average; overlay React render: ${fmt(incident.recorder.overlayRenderMsAverage, 2)} ms average\nImage: ${incident.imageStatus}${incident.imageAt ? ` at ${incident.imageAt}` : ''}\nHistory: ${incident.historyAvailable ? `${incident.events.length} events, ${incident.samples.length} samples` : 'Unavailable before capture'}\n\nRecent actions\n${recent || 'No recorded actions'}\n\nDescription\n${incident.description || 'None supplied'}\n\nTriggered checks\n${diagnosticChecks(s).join('\n') || 'No check triggered.'}\n\nPossible explanations\nNone asserted. Correlation does not establish cause.\n\nThis package is evidence, not a deterministic replay. Screenshot and state were captured at different times.\n`;
 }
 async function chooseImage(): Promise<{ image: Blob; maskedImage: Blob | null; at: string; status: string }> {
+  if (!canVerifyCaptureTab()) throw new Error('This browser cannot verify that the selected tab is Hearth. Attach a manual screenshot.');
   if (!navigator.mediaDevices?.getDisplayMedia) throw new Error('Display capture is unavailable on this runtime.');
   const stream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: 'browser' }, audio: false });
   try {
     const track = stream.getVideoTracks()[0];
     if (!track) throw new Error('No video track was supplied.');
-    if (track.getSettings().displaySurface !== 'browser') throw new Error('Select the Hearth browser tab; screen and window capture are excluded.');
+    if (!isCurrentHearthTab(track)) throw new Error('Select this Hearth tab; other tabs, screens and windows are excluded.');
     const video = document.createElement('video'); video.muted = true; video.srcObject = stream; await video.play();
     if (!video.videoWidth || !video.videoHeight) throw new Error('The selected source has no visible frame.');
     const canvas = document.createElement('canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight;
@@ -42,12 +44,13 @@ async function chooseImage(): Promise<{ image: Blob; maskedImage: Blob | null; a
       for (const element of sensitive) { const rect = element.getBoundingClientRect(); if (rect.width && rect.height) ctx.fillRect(Math.floor(rect.left * sx), Math.floor(rect.top * sy), Math.ceil(rect.width * sx), Math.ceil(rect.height * sy)); }
       maskedImage = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
     }
-    return { image: blob, maskedImage, at: new Date().toISOString(), status: maskedImage ? 'Captured browser frame. Known form, chat and card regions are masked in the share-safe copy; review all remaining pixels.' : 'Captured display frame. Source alignment was unverified, so share-safe export will omit the image.' };
+    return { image: blob, maskedImage, at: new Date().toISOString(), status: maskedImage ? 'Captured this Hearth tab. Known form, chat and card regions are masked in the share-safe copy; review all remaining pixels.' : 'Captured this Hearth tab. Viewport alignment was unverified, so share-safe export will omit the image.' };
   } finally { stream.getTracks().forEach(track => track.stop()); }
 }
 function saveFile(name: string, blob: Blob) { const url = URL.createObjectURL(blob), link = document.createElement('a'); link.href = url; link.download = name; link.click(); setTimeout(() => URL.revokeObjectURL(url), 30_000); }
 
 export default function HorizonInspector() {
+  useEffect(() => { registerCaptureIdentity(); }, []);
   const [visible, setVisible] = useState(false), [expanded, setExpanded] = useState(() => readBinding('hearth:inspector-layout', 'compact') === 'expanded');
   const [imageCaptureActive, setImageCaptureActive] = useState(false);
   const [toggleKey, setToggleKey] = useState(() => readBinding('hearth:inspector-toggle', '=')), [captureKey, setCaptureKey] = useState(() => readBinding('hearth:inspector-capture', 'F8'));

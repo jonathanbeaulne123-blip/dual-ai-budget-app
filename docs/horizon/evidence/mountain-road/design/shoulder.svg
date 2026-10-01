@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560"><rect width="1000" height="560" fill="#f5f1e7"/><style>text{font-family:Arial,sans-serif;fill:#203a34}.small{font-size:13px}.label{font-size:17px}</style><text x="34" y="42" font-size="25">Sunny Shelf to Shoulder</text>
+<text x="34" y="70" class="small">Endpoint chord only — a feasibility drawing, not a fitted road or clearance proof</text>
+<polyline fill="none" stroke="#b8b7ac" stroke-width="3" points="-11.0,457.5 -1.7,460.0 7.8,461.9 17.4,463.0 27.1,463.3 36.7,462.8 46.3,461.6 55.8,459.5 65.0,456.5 74.0,452.9 82.4,448.2 89.1,441.4 92.6,432.4 93.3,422.7 90.1,413.8 82.8,407.5 74.2,403.2 65.0,400.1 55.4,398.8 45.8,399.0 36.1,399.7 26.5,400.3 16.8,400.3 7.1,400.4 -2.6,400.4 -6.3,339.6 3.3,340.7 12.9,341.8 22.5,342.5 32.2,342.4 41.8,341.1 51.2,338.9 60.5,336.2 69.6,333.0 78.6,329.5 87.6,325.8 96.5,321.9 105.2,317.7 113.7,313.1 121.8,307.8 129.3,301.7 136.2,294.9 142.4,287.5 148.0,279.7 153.0,271.4 157.3,262.7 160.5,253.6 162.8,244.2 164.5,234.7 165.7,225.1 166.7,215.5 167.3,205.8 167.4,196.1 166.7,186.5 165.3,176.9 163.5,167.4 161.2,158.0 157.7,149.0 152.0,141.2 144.1,135.7 135.2,132.0 125.8,129.9 116.1,129.5 106.6,131.4 97.5,134.5 88.5,137.9 79.5,141.5 70.9,145.9 62.3,150.5 53.4,154.0 43.8,155.2 34.2,154.4 24.7,152.3 15.6,149.1 6.8,145.2 -1.6,140.4 -9.4,134.6"/>
+<path d="M165.96774193548387,222.90322580645162 L324.0322580645161,297.0967741935484" stroke="#b66136" stroke-width="3" stroke-dasharray="7 5"/>
+<circle cx="165.96774193548387" cy="222.90322580645162" r="5" fill="#203a34"/><text x="174.96774193548387" y="214.90322580645162" class="label">A</text>
+<circle cx="324.0322580645161" cy="297.0967741935484" r="5" fill="#203a34"/><text x="333.0322580645161" y="289.0967741935484" class="label">B</text>
+<text x="40" y="115" class="label">Plan · north ↑</text>
+<text x="35" y="446" class="small">A [1401.0, 81.00, 627.0] → B [1450.0, 69.35, 650.0]</text>
+<text x="545" y="115" class="label">Profile · vertical scale exaggerated</text>
+<path d="M550,395H940 M550,395V135" fill="none" stroke="#adb3a9"/>
+<path d="M550,219.4394213381555 L935,320.5605786618445" fill="none" stroke="#b66136" stroke-width="3" stroke-dasharray="7 5"/>
+<text x="534" y="207.4394213381555" class="small">81.00</text>
+<text x="919" y="308.5605786618445" class="small">69.35</text>
+<text x="552" y="423" class="small">0 m</text><text x="862" y="423" class="small">54.1 m</text><text x="552" y="448" class="small">At ≤10%: necessary route length ≥116.5 m</text>
+<text x="34" y="502" class="label">View only. Ends in terrain, crosses reserved Sunny Shelf.</text><text x="34" y="535" class="small">Horizon xyz, eu/metres. Measured endpoints at main 324cd5f. Terrain between endpoints is not drawn.</text></svg>

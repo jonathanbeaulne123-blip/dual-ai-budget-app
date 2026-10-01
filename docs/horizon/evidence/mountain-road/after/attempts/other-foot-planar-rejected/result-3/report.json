@@ -1,0 +1,814 @@
+{
+  "status": "UNACCEPTED_SAVED_MESH_EXPERIMENT",
+  "inputSha256": "46ec4dc171f1ee243327dbb5fa991827a96af0f019ef9e9ff6001f79c27cd2d7",
+  "experimentSha256": "d0658053e2059f33ffc53f7a122ee9c447dc94602d968c5437092a1a4575db87",
+  "input": "/tmp/mountain-other-planar-reduction/yearWalk.shoulders.lakeside.footJoin.json",
+  "baseline": {
+    "triangles": 1876,
+    "vertices": 958,
+    "topology": [],
+    "variants": [
+      {
+        "variant": "double",
+        "tops": 623,
+        "maxTopDegrees": 37.55310487426197,
+        "invalid": 0,
+        "witnesses": []
+      },
+      {
+        "variant": "bake9",
+        "tops": 623,
+        "maxTopDegrees": 37.55310489478102,
+        "invalid": 0,
+        "witnesses": []
+      },
+      {
+        "variant": "bake9-localFloat32",
+        "tops": 623,
+        "maxTopDegrees": 37.552838587340695,
+        "invalid": 24,
+        "witnesses": [
+          {
+            "f": [
+              850,
+              114,
+              70
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              851,
+              71,
+              115
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "collapsed or orientation changed"
+          },
+          {
+            "f": [
+              856,
+              112,
+              158
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              857,
+              159,
+              113
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "collapsed or orientation changed"
+          },
+          {
+            "f": [
+              860,
+              72,
+              122
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              861,
+              123,
+              73
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "collapsed or orientation changed"
+          },
+          {
+            "f": [
+              864,
+              150,
+              954
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              865,
+              955,
+              151
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "collapsed or orientation changed"
+          },
+          {
+            "f": [
+              940,
+              816,
+              780
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              941,
+              781,
+              817
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "collapsed or orientation changed"
+          }
+        ]
+      }
+    ]
+  },
+  "after": {
+    "triangles": 1468,
+    "referencedVertices": 754,
+    "retainedPositionValues": 2874,
+    "removedTriangles": 408,
+    "removedVertices": 204
+  },
+  "constraints": {
+    "planeDistance": 1e-11,
+    "finalGeometryTolerance": 1e-9,
+    "topMaxDegrees": 40,
+    "minTopDeterminant": 1e-8,
+    "originalPositionArrayExact": true,
+    "logicalOriginExact": true
+  },
+  "proof": {
+    "sourceToCandidate": {
+      "maxError": 9.897860309138196e-12,
+      "maxCoverageError": 0.2926128805402527,
+      "failureCount": 50,
+      "witnesses": [
+        {
+          "f": [
+            50,
+            54,
+            60
+          ],
+          "reason": "coverage",
+          "area": 0.2885298824847852,
+          "covered": 0.42000539858347297,
+          "miss": 0.13147551609868774
+        },
+        {
+          "f": [
+            50,
+            60,
+            56
+          ],
+          "reason": "coverage",
+          "area": 0.2905713815124911,
+          "covered": 0.2906395507384447,
+          "miss": 0.00006816922595359598
+        },
+        {
+          "f": [
+            58,
+            62,
+            64
+          ],
+          "reason": "coverage",
+          "area": 0.2926128805402527,
+          "covered": 0.5852257610805054,
+          "miss": 0.2926128805402527
+        },
+        {
+          "f": [
+            64,
+            62,
+            68
+          ],
+          "reason": "coverage",
+          "area": 0.2905713815125862,
+          "covered": 0.32562627996943044,
+          "miss": 0.03505489845684423
+        },
+        {
+          "f": [
+            62,
+            66,
+            72
+          ],
+          "reason": "coverage",
+          "area": 0.28852988248469197,
+          "covered": 0.28922444373484746,
+          "miss": 0.0006945612501554899
+        },
+        {
+          "f": [
+            852,
+            62,
+            72
+          ],
+          "reason": "coverage",
+          "area": 0.09685712717078268,
+          "covered": 0.09689070665647669,
+          "miss": 0.00003357948569400471
+        },
+        {
+          "f": [
+            852,
+            68,
+            62
+          ],
+          "reason": "coverage",
+          "area": 0.09685712717078408,
+          "covered": 0.09689384549622491,
+          "miss": 0.00003671832544083209
+        },
+        {
+          "f": [
+            153,
+            161,
+            957
+          ],
+          "reason": "coverage",
+          "area": 0.2636463052177772,
+          "covered": 0.3219254876361672,
+          "miss": 0.058279182418389974
+        },
+        {
+          "f": [
+            153,
+            155,
+            161
+          ],
+          "reason": "coverage",
+          "area": 0.2628329121765592,
+          "covered": 0.35840888729835574,
+          "miss": 0.09557597512179655
+        },
+        {
+          "f": [
+            157,
+            163,
+            155
+          ],
+          "reason": "coverage",
+          "area": 0.2628329121765677,
+          "covered": 0.42267075013927113,
+          "miss": 0.15983783796270346
+        },
+        {
+          "f": [
+            157,
+            165,
+            163
+          ],
+          "reason": "coverage",
+          "area": 0.2620195191354091,
+          "covered": 0.4679813090216378,
+          "miss": 0.2059617898862287
+        },
+        {
+          "f": [
+            155,
+            167,
+            161
+          ],
+          "reason": "coverage",
+          "area": 0.2636463052177127,
+          "covered": 0.5272519057586851,
+          "miss": 0.2636056005409724
+        },
+        {
+          "f": [
+            155,
+            163,
+            167
+          ],
+          "reason": "coverage",
+          "area": 0.2628329121764945,
+          "covered": 0.5256410805140134,
+          "miss": 0.26280816833751885
+        },
+        {
+          "f": [
+            165,
+            169,
+            163
+          ],
+          "reason": "coverage",
+          "area": 0.26283291217651356,
+          "covered": 0.5155574434693547,
+          "miss": 0.25272453129284117
+        },
+        {
+          "f": [
+            165,
+            171,
+            169
+          ],
+          "reason": "coverage",
+          "area": 0.26201951913535526,
+          "covered": 0.5043017791886544,
+          "miss": 0.24228226005329911
+        },
+        {
+          "f": [
+            163,
+            173,
+            167
+          ],
+          "reason": "coverage",
+          "area": 0.2636463052177208,
+          "covered": 0.42784339028133606,
+          "miss": 0.16419708506361524
+        },
+        {
+          "f": [
+            163,
+            169,
+            173
+          ],
+          "reason": "coverage",
+          "area": 0.2628329121765409,
+          "covered": 0.36312659224533256,
+          "miss": 0.10029368006879164
+        },
+        {
+          "f": [
+            171,
+            175,
+            169
+          ],
+          "reason": "coverage",
+          "area": 0.26283291217663063,
+          "covered": 0.28763630164622195,
+          "miss": 0.02480338946959132
+        },
+        {
+          "f": [
+            171,
+            177,
+            175
+          ],
+          "reason": "coverage",
+          "area": 0.26201951913537136,
+          "covered": 0.2746831921091985,
+          "miss": 0.012663672973827145
+        },
+        {
+          "f": [
+            186,
+            190,
+            192
+          ],
+          "reason": "coverage",
+          "area": 0.23825862462777994,
+          "covered": 0.46451999010915235,
+          "miss": 0.2262613654813724
+        }
+      ]
+    },
+    "candidateToSource": {
+      "maxError": 3.410605131648481e-11,
+      "maxCoverageError": 0.8569627340651271,
+      "failureCount": 31,
+      "witnesses": [
+        {
+          "f": [
+            58,
+            62,
+            64
+          ],
+          "reason": "coverage",
+          "area": 0.2926128805402527,
+          "covered": 0.5852257610805055,
+          "miss": 0.2926128805402528
+        },
+        {
+          "f": [
+            64,
+            62,
+            68
+          ],
+          "reason": "coverage",
+          "area": 0.2905713815125862,
+          "covered": 0.32562627996943044,
+          "miss": 0.03505489845684423
+        },
+        {
+          "f": [
+            62,
+            66,
+            72
+          ],
+          "reason": "coverage",
+          "area": 0.28852988248469197,
+          "covered": 0.28922444373484746,
+          "miss": 0.0006945612501554899
+        },
+        {
+          "f": [
+            612,
+            610,
+            618
+          ],
+          "reason": "coverage",
+          "area": 0.269140168751466,
+          "covered": 0.38181105080526434,
+          "miss": 0.11267088205379833
+        },
+        {
+          "f": [
+            612,
+            618,
+            620
+          ],
+          "reason": "coverage",
+          "area": 0.281517214015324,
+          "covered": 0.5409186103694656,
+          "miss": 0.25940139635414167
+        },
+        {
+          "f": [
+            610,
+            616,
+            622
+          ],
+          "reason": "coverage",
+          "area": 0.256763123487557,
+          "covered": 0.29844348279409827,
+          "miss": 0.04168035930654129
+        },
+        {
+          "f": [
+            610,
+            622,
+            618
+          ],
+          "reason": "coverage",
+          "area": 0.26914016875141494,
+          "covered": 0.42329720609670896,
+          "miss": 0.154157037345294
+        },
+        {
+          "f": [
+            654,
+            658,
+            664
+          ],
+          "reason": "coverage",
+          "area": 0.20790217889804713,
+          "covered": 0.21358779016687202,
+          "miss": 0.005685611268824886
+        },
+        {
+          "f": [
+            714,
+            712,
+            720
+          ],
+          "reason": "coverage",
+          "area": 0.2396068478973307,
+          "covered": 0.24129080721381566,
+          "miss": 0.001683959316484962
+        },
+        {
+          "f": [
+            712,
+            718,
+            724
+          ],
+          "reason": "coverage",
+          "area": 0.22790104935895283,
+          "covered": 0.35635218341195807,
+          "miss": 0.12845113405300523
+        },
+        {
+          "f": [
+            712,
+            724,
+            720
+          ],
+          "reason": "coverage",
+          "area": 0.23960684789733355,
+          "covered": 0.2410154398524848,
+          "miss": 0.0014085919551512505
+        },
+        {
+          "f": [
+            56,
+            52,
+            54
+          ],
+          "reason": "coverage",
+          "area": 0.581142763024904,
+          "covered": 0.5894459202687464,
+          "miss": 0.008303157243842452
+        },
+        {
+          "f": [
+            54,
+            60,
+            56
+          ],
+          "reason": "coverage",
+          "area": 0.28852988248477834,
+          "covered": 0.41177041056557734,
+          "miss": 0.123240528080799
+        },
+        {
+          "f": [
+            185,
+            957,
+            865
+          ],
+          "reason": "coverage",
+          "area": 1.7576420347850914,
+          "covered": 2.6146047688502185,
+          "miss": 0.8569627340651271
+        },
+        {
+          "f": [
+            865,
+            151,
+            183
+          ],
+          "reason": "coverage",
+          "area": 0.8733983971178224,
+          "covered": 1.2277959691271656,
+          "miss": 0.3543975720093432
+        },
+        {
+          "f": [
+            185,
+            865,
+            183
+          ],
+          "reason": "coverage",
+          "area": 2.4503958701768838,
+          "covered": 3.082068737292034,
+          "miss": 0.6316728671151504
+        },
+        {
+          "f": [
+            190,
+            198,
+            200
+          ],
+          "reason": "coverage",
+          "area": 0.2392015982786424,
+          "covered": 0.3446733320506676,
+          "miss": 0.10547173377202518
+        },
+        {
+          "f": [
+            186,
+            190,
+            200
+          ],
+          "reason": "coverage",
+          "area": 0.4765172492554878,
+          "covered": 0.9245145827986834,
+          "miss": 0.4479973335431956
+        },
+        {
+          "f": [
+            198,
+            190,
+            196
+          ],
+          "reason": "coverage",
+          "area": 0.2392015982787002,
+          "covered": 0.2536422060231635,
+          "miss": 0.014440607744463319
+        },
+        {
+          "f": [
+            747,
+            739,
+            759
+          ],
+          "reason": "coverage",
+          "area": 1.7153979080182749,
+          "covered": 2.338816334591021,
+          "miss": 0.6234184265727463
+        }
+      ]
+    }
+  },
+  "topologyFailures": [],
+  "variants": [
+    {
+      "variant": "double",
+      "tops": 475,
+      "maxTopDegrees": 37.55310487426197,
+      "invalid": 0,
+      "witnesses": []
+    },
+    {
+      "variant": "bake9",
+      "tops": 475,
+      "maxTopDegrees": 37.55310489478102,
+      "invalid": 0,
+      "witnesses": []
+    },
+    {
+      "variant": "bake9-localFloat32",
+      "tops": 475,
+      "maxTopDegrees": 37.552838587340695,
+      "invalid": 24,
+      "witnesses": [
+        {
+          "f": [
+            850,
+            114,
+            70
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            851,
+            71,
+            115
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "collapsed or orientation changed"
+        },
+        {
+          "f": [
+            856,
+            112,
+            158
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            857,
+            159,
+            113
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "collapsed or orientation changed"
+        },
+        {
+          "f": [
+            860,
+            72,
+            122
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            861,
+            123,
+            73
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "collapsed or orientation changed"
+        },
+        {
+          "f": [
+            864,
+            150,
+            954
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            865,
+            955,
+            151
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "collapsed or orientation changed"
+        },
+        {
+          "f": [
+            940,
+            816,
+            780
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            941,
+            781,
+            817
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "collapsed or orientation changed"
+        }
+      ]
+    }
+  ],
+  "attempts": 1251,
+  "rejections": {
+    "plane-or-triangulation": 1047
+  },
+  "bounded": {
+    "maxSeconds": 30,
+    "maxRemovals": 10000,
+    "maxAttempts": 50000,
+    "remainingQueue": 0
+  },
+  "numericalGatesPass": false,
+  "wallMs": 165.25674999999998,
+  "cpu": {
+    "user": 323217,
+    "system": 12021
+  },
+  "limits": [
+    "Numerical saved-mesh checks only; not accepted production geometry.",
+    "Original doubles retained; no Float32 deduplication or geometry optimizer.",
+    "Common refinement uses stated area-roundoff tolerance max(1e-15, projected area * 1e-9); all measured plane differences are <=1e-9.",
+    "Unreferenced original vertices remain in positions deliberately; only indices change.",
+    "Every actual surface/contact/ceiling/movement/art/host ownership and budget gate remains required."
+  ]
+}
