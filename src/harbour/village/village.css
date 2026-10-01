@@ -108,6 +108,14 @@
 @media (forced-colors:active){.village-address[data-glass-card]{border:1px solid transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
 .village-address[data-glass-card]::before{display:none}}
 /* Things that stood clear of the bar now stand clear of the bubbles' row. */
+.harbour-world--horizon .horizon-recovery{position:fixed;top:calc(150px + env(safe-area-inset-top,0px));left:16px;z-index:31;min-height:44px;padding:0 14px;border:1px solid #f3dfb6;border-radius:12px;background:#243f37ed;color:#fff8e8;box-shadow:0 3px 0 #102c26,0 8px 22px #102c2666;font-family:inherit;font-size:13px;font-weight:600;line-height:1.2;cursor:pointer;display:flex;align-items:center;gap:8px}
+.harbour-world--horizon .horizon-recovery span{font-size:20px;line-height:1}
+.harbour-world--horizon .horizon-recovery:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.harbour-world--taylor .horizon-recovery{background:#623c57ed;border-color:#ffe0e9;box-shadow:0 3px 0 #40253b,0 8px 22px #40253b66}
+.harbour-world--newfoundland .horizon-recovery{background:#244e5aed;border-color:#f3e9d2;box-shadow:0 3px 0 #143440,0 8px 22px #14344066}
+@media(max-width:719px){.harbour-world--horizon .horizon-recovery{top:calc(clamp(250px,36dvh,330px) + env(safe-area-inset-top,0px));left:12px}}
+@media(max-width:719px){.harbour-world--horizon[data-horizon-riding] .horizon-recovery{top:calc(clamp(200px,24dvh,230px) + env(safe-area-inset-top,0px))}}
+@media(max-height:560px){.harbour-world--horizon .horizon-recovery,.harbour-world--horizon[data-horizon-riding] .horizon-recovery{top:calc(78px + env(safe-area-inset-top,0px))}}
 .harbour-world__supported,.harbour-world__checking{bottom:88px}
 .harbour-world__supported + .harbour-world__checking{bottom:120px}
 .harbour-world:not(.is-skating) .harbour-moves{bottom:88px}

@@ -1105,9 +1105,14 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     retry(){
       schedule();
       if(skating()){skate!.controls.command('retry');skate!.publish(performance.now(),true);return true;}
-      if(registry.active()||monorail?.state()||kitchen?.active())return false;
-      const node=nearestPathNode(world.pathGraph!,[body.x,body.y,body.z]);if(!node)return false;
-      restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',x:node.at[0],y:node.at[1],z:node.at[2],yaw:node.facing??body.yaw});
+      // The live vehicle pose can be in water or air. Use the same safe foot
+      // position that a reload would choose before selecting a walkable path.
+      const saved=savedBody();
+      const anchor:[number,number,number]=[saved.x,saved.y,saved.z].every(Number.isFinite)
+        ?[saved.x,saved.y!,saved.z]:[AIRPORT.arrival.x,AIRPORT.arrival.y,AIRPORT.arrival.z];
+      const node=nearestPathNode(world.pathGraph!,anchor);
+      if(!node){options.onStatus?.('A safe path is still loading. Please try again.');return false;}
+      restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',x:node.at[0],y:node.at[1],z:node.at[2],yaw:node.facing??(Number.isFinite(saved.yaw)?saved.yaw:0)});
       fadeCut('Back on safe ground.');return true;
     },
     stopSkate(){schedule();const at=skate?.stop();if(!at)return false;Object.assign(body,at);yaw=at.yaw;path=[];clear();return true;},

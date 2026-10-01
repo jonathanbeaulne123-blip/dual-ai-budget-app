@@ -51,7 +51,7 @@ describe("the old shell's chrome around the Horizon (static)", () => {
     expect(shell).toMatch(/if\(riding\.attached\|\|riding\.airborne\)\{setTravelTo\(null\);setNotice\(/);
     const runtime = read("src/harbour/horizon/runtime/index.ts");
     expect(runtime).toMatch(/walkTo\(p:XYZ\)\{schedule\(\);if\(registry\.active\(\)\|\|skating\(\)\|\|monorail\?\.state\(\)\)return null;/);
-    expect(runtime).toMatch(/function startRide\(\)\{schedule\(\);emote=null;/);
+    expect(runtime).toMatch(/function startRide\(\)\{schedule\(\);(?:recordDiagnostic\([^;]+\);)?emote=null;/);
   });
 
   it("drops the Horizon toolbar inside the shell and keeps the movers' controls", () => {
@@ -88,8 +88,10 @@ describe("the old shell's chrome around the Horizon (static)", () => {
     expect(runtime).toMatch(/figure\.group\.visible=mode==='walk'&&\(!firstPerson\|\|skating\(\)\)/);
     expect(read("src/harbour/horizon/HorizonStage.tsx")).toMatch(/aria-label=\{mover\?\.mode==='plane'\?FLIGHT_CONTROLS:props\.skating\?SKATE_STAGE_WORDS:/);
     expect(read("src/harbour/horizon/skate/nativeSkate.ts")).not.toMatch(/worldCollisionAt/);
-    expect(shell).toContain('aria-label="Retry from safe ground"');
+    expect(shell).toContain('worldReady&&!toolOpen&&!skating&&<button type="button" className="horizon-recovery" aria-label="Reset position to safe ground"');
     expect(runtime).toMatch(/skate!\.controls\.command\('retry'\)/);
+    expect(runtime).toMatch(/const saved=savedBody\(\);[\s\S]*?const node=nearestPathNode/);
+    expect(runtime).not.toMatch(/if\(registry\.active\(\)\|\|monorail\?\.state\(\)\|\|kitchen\?\.active\(\)\)return false;/);
   });
 
   it("the Horizon figure plays the emote row", () => {
