@@ -1,0 +1,3 @@
+# Ten-pass replay of rejected v11
+
+Exact frozen v11 bundle with diagnostic callback only. The process exited2 after all ten bounded passes failed to eliminate steep top faces. Pass0 has5 steep faces,86.540133deg maximum; pass4 creates an almost vertical89.999654deg sliver; pass9 retains1 face at49.103662deg. Source triangles increase5158to5208 and final closed mesh has15472triangles. No slope or iteration limit was relaxed and no checkout geometry was integrated. Every pass report and the final rejected mesh are retained losslessly. This diagnosis motivates triangulation repair instead of blind additional density.

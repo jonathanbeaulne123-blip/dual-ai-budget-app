@@ -1,0 +1,15 @@
+{
+  "samples": 8033,
+  "minimum": {
+    "d": 22.0139848685326,
+    "offset": 3.5,
+    "x": 1285.4937169591303,
+    "z": 720.2096230175476,
+    "lower": 54.067080036006466,
+    "upper": 54.716856752705,
+    "gap": 0.6497767166985327
+  },
+  "hostEdges": 27,
+  "nativeEdges": 83,
+  "method": "exact continuous source edge envelopes sampled over entire7mFootwidth,0.08mstation/0.25mcross spacing"
+}

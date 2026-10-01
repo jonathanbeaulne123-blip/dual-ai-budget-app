@@ -1,0 +1,10 @@
+{"pass":0,"elapsedMs":41461,"sourceTriangles":5158,"triangles":15336,"maxDegrees":86.54013344830263,"steep":5}
+{"pass":1,"elapsedMs":52706,"sourceTriangles":5166,"triangles":15360,"maxDegrees":51.91328577548793,"steep":3}
+{"pass":2,"elapsedMs":61935,"sourceTriangles":5172,"triangles":15380,"maxDegrees":62.835343980337555,"steep":4}
+{"pass":3,"elapsedMs":72340,"sourceTriangles":5180,"triangles":15396,"maxDegrees":54.59608050709032,"steep":3}
+{"pass":4,"elapsedMs":82082,"sourceTriangles":5186,"triangles":15416,"maxDegrees":89.99965427437562,"steep":3}
+{"pass":5,"elapsedMs":93300,"sourceTriangles":5192,"triangles":15428,"maxDegrees":89.99957673307175,"steep":2}
+{"pass":6,"elapsedMs":102571,"sourceTriangles":5196,"triangles":15440,"maxDegrees":68.63023415078655,"steep":2}
+{"pass":7,"elapsedMs":113036,"sourceTriangles":5200,"triangles":15448,"maxDegrees":62.856258286862094,"steep":2}
+{"pass":8,"elapsedMs":122369,"sourceTriangles":5204,"triangles":15464,"maxDegrees":55.405371812847356,"steep":2}
+{"pass":9,"elapsedMs":131505,"sourceTriangles":5208,"triangles":15472,"maxDegrees":49.10366238613532,"steep":1}

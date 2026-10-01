@@ -1,0 +1,37 @@
+[
+  {
+    "original": "/tmp/mountain-funicular-v10b-shape/grades.json",
+    "saved": "shape/grades.json",
+    "sha256": "b2a6fa314fff8b97c3f121b42820ca17fac09f9b128324643c8cf9a537567d26"
+  },
+  {
+    "original": "/tmp/mountain-funicular-v10b-shape/candidate-solid.json",
+    "saved": "shape/candidate-solid.json.gz",
+    "sha256": "c455ed5fcce83f85654f993c9681bf279d33a274c1a84cf0c7524e8feeeedba9"
+  },
+  {
+    "original": "/tmp/mountain-funicular-v10b-shape/instrumented-source.ts",
+    "saved": "shape/instrumented-source.ts",
+    "sha256": "1b1db8c09f45cdf022c1015c46adacb2c1a82e763f84f5754ef555f97988425d"
+  },
+  {
+    "original": "/tmp/mountain-funicular-v10b-shape/bundle.mjs",
+    "saved": "shape/bundle.mjs.gz",
+    "sha256": "398c1a07655fb33d9796b2c60ae8b3097bd63756e28fa059933558f0ddda4eac"
+  },
+  {
+    "original": "/tmp/mountain-funicular-v10b-field/terms.json",
+    "saved": "field/terms.json.gz",
+    "sha256": "7d4d962b045f608fe7ad906f20d964fed9209dd6276cee371fe43a09ac99ce7a"
+  },
+  {
+    "original": "/tmp/mountain-funicular-v10b-field/instrumented-source.ts",
+    "saved": "field/instrumented-source.ts",
+    "sha256": "514ef9cbaeb19a4c62e73993a25b506741cd61fac94e97b7bd99425f1f6bd532"
+  },
+  {
+    "original": "/tmp/mountain-funicular-v10b-field/bundle.mjs",
+    "saved": "field/bundle.mjs.gz",
+    "sha256": "617915defab273a2e7c4c235642cd7b89ff7d8b4939bf762bd00d1dfd388b130"
+  }
+]

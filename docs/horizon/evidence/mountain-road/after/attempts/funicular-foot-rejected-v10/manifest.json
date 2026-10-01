@@ -1,0 +1,17 @@
+[
+  {
+    "original": "/tmp/mountain-funicular-v10-shape/instrumented-source.ts",
+    "saved": "instrumented-source.ts",
+    "sha256": "b36aaf1a0d3d6d95399220dcebf830d4c35991a6a25fe1236e1b817625de3120"
+  },
+  {
+    "original": "/tmp/mountain-funicular-v10-shape/bundle.mjs",
+    "saved": "bundle.mjs.gz",
+    "sha256": "d6e3ef26c2690acd41f4aa5b0c09034f94f802392a595dfde7a76611aa832ffc"
+  },
+  {
+    "original": "/tmp/mountain-funicular-v10-shape.txt",
+    "saved": "mountain-funicular-v10-shape.txt",
+    "sha256": "d1f5c2e2418e3a028bdbaa6f5c6719e4e2e0f0529a22fe8cb4a750b60ada8bab"
+  }
+]

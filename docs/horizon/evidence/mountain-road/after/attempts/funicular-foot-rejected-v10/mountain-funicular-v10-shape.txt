@@ -1,0 +1,12 @@
+file:///private/tmp/mountain-funicular-v10-shape/bundle.mjs:18767
+    if (lower > upper + 1e-6) throw new Error(`Incompatible fixed walking hosts ${x2},${z}: ${lower}>${upper}`);
+                                    ^
+
+Error: Incompatible fixed walking hosts 1282.3366166225806,720.031810389237: 54.65227850949376>54.6509736844674
+    at height (file:///private/tmp/mountain-funicular-v10-shape/bundle.mjs:18767:37)
+    at delta (file:///private/tmp/mountain-funicular-v10-shape/bundle.mjs:18803:26)
+    at appendFill (file:///private/tmp/mountain-funicular-v10-shape/bundle.mjs:18812:15)
+    at Module.fitFunicularFootJoin (file:///private/tmp/mountain-funicular-v10-shape/bundle.mjs:18840:5)
+    at file:///private/tmp/mountain-funicular-v10-shape-diagnostic.mjs:17:286
+
+Node.js v24.21.0

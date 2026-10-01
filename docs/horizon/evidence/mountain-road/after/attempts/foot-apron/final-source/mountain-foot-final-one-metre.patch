@@ -1,0 +1,105 @@
+--- a/src/harbour/horizon/land/mountainV2/footLaneJoin.ts
++++ b/src/harbour/horizon/land/mountainV2/footLaneJoin.ts
+@@ -7,7 +7,7 @@
+ import {mountainJoinRoadTop} from './joins';
+ import V2 from './v2-data.json';
+ 
+-const FOOT='mountainV2.footLane', STEP=.5;
++const FOOT='mountainV2.footLane', STEP=1;
+ const vertex=(positions:readonly number[],i:number):XYZ=>[positions[i*3]!,positions[i*3+1]!,positions[i*3+2]!];
+ // The actual first road edge, including its authored transverse frames. A gentle
+ // visible approach starts before that oblique edge, rather than dropping abruptly
+@@ -148,6 +148,10 @@
+   };
+   const append=(p:Vertex[])=>{
+     if(p.length<3||Math.abs(area(p))<1e-9)return;
++    // Clipping also inserts knots on extended triangle lines. Those knots
++    // must obey the same continuous approach envelope before triangulation;
++    // interpolating the coarse pre-cut face can otherwise recreate a proud lip.
++    for(const v of p)v.y=Math.min(v.y,nativeApproachTop(v.x,v.z));
+     const ids=p.map(vertex);
+     for(let i=1;i<ids.length-1;i++){const a=ids[0]!,b=ids[i]!,c=ids[i+1]!;out.indices.push(a,b,c,a+1,c+1,b+1);}
+     for(let i=0;i<ids.length;i++){const a=ids[i]!,b=ids[(i+1)%ids.length]!,key=a<b?`${a}:${b}`:`${b}:${a}`,old=edges.get(key);if(old)old.count++;else edges.set(key,{a,b,count:1});}
+@@ -213,20 +217,41 @@
+ }
+ export function fitFootLaneJoin(cuts:LandCuts,ground:HeightQuery):void{
+   const lane=cuts.beds.find(b=>b.id===FOOT);if(!lane||cuts.solids.some(s=>s.id===`${FOOT}.apron`))return;
+-  const margin=lane.width/2+1,x0=Math.min(...lane.points.map(p=>p[0]))-margin,x1=Math.max(...lane.points.map(p=>p[0]))+margin,z0=Math.min(...lane.points.map(p=>p[2]))-1,z1=Math.max(...lane.points.map(p=>p[2]))+1;
++  // A fitted cell has two edges no longer than STEP. Keep its entire
++  // possible diagonal outside the usable lane before feathering source beds;
++  // otherwise an outside raised vertex tilts a top triangle across the road.
++  const margin=lane.width/2+2*STEP+1,x0=Math.min(...lane.points.map(p=>p[0]))-margin,x1=Math.max(...lane.points.map(p=>p[0]))+margin,z0=Math.min(...lane.points.map(p=>p[2]))-2*STEP-1,z1=Math.max(...lane.points.map(p=>p[2]))+2*STEP+1;
+   const near=(q:XYZ[])=>Math.max(...q.map(p=>p[0]))>=x0&&Math.min(...q.map(p=>p[0]))<=x1&&Math.max(...q.map(p=>p[2]))>=z0&&Math.min(...q.map(p=>p[2]))<=z1;
+   // Read the final V03 entrance surface, including its real transverse grade.
+   const hosts=floorTriangles(cuts.solids.filter(s=>s.walkable&&s.bedIds.includes('V03')&&s.id.includes('.corridor.deck'))).filter(t=>near([...t]));
++  // Depart continuously from the actual V03 deck boundary, including its bank.
++  // A per-point host hit/fallback jumps at the last host triangle. This lower
++  // extension descends at at most 8% from every point on the real host edges.
++  const hostApproach=(x:number,z:number):number=>{
++    const grade=.08;let top=-Infinity;
++    for(const tri of hosts)for(let k=0;k<3;k++){
++      const a=tri[k]!,b=tri[(k+1)%3]!,dx=b[0]-a[0],dz=b[2]-a[2],length=Math.hypot(dx,dz);
++      if(length<1e-9){top=Math.max(top,a[1]-grade*Math.hypot(x-a[0],z-a[2]));continue;}
++      const along=((x-a[0])*dx+(z-a[2])*dz)/length,away=Math.abs((x-a[0])*dz-(z-a[2])*dx)/length,slope=(b[1]-a[1])/length;
++      const t=slope>=grade?1:slope<=-grade?0:Math.max(0,Math.min(1,(along+slope*away/Math.sqrt(grade*grade-slope*slope))/length));
++      top=Math.max(top,a[1]+(b[1]-a[1])*t-grade*Math.hypot(along-length*t,away));
++    }
++    return top;
++  };
+   const height=(p:XYZ,apron=false):number=>{
+     const n=nearestOnPath([p[0],p[2]],lane.points),a=lane.points[n.segment]!,b=lane.points[n.segment+1]!;
+     const dx=b[0]-a[0],dz=b[2]-a[2],t=((p[0]-a[0])*dx+(p[2]-a[2])*dz)/(dx*dx+dz*dz);
+-    const longitudinal=t<0?n.segment===0?Math.max(0,1+t*Math.hypot(dx,dz)):1:t>1&&n.segment===lane.points.length-2?Math.max(0,1-(t-1)*Math.hypot(dx,dz)):1;
++    const longitudinal=t<0?n.segment===0?Math.max(0,Math.min(1,1+2*STEP+t*Math.hypot(dx,dz))):1:t>1&&n.segment===lane.points.length-2?Math.max(0,Math.min(1,1+2*STEP-(t-1)*Math.hypot(dx,dz))):1;
+     const weight=apron?1:Math.min(1,Math.max(0,margin-n.distance))*longitudinal;
+-    if(!weight)return p[1];
+-    let y=Math.min(floorAt(hosts,p[0],p[2],n.at[1]+.8)??n.at[1],nativeApproachTop(p[0],p[2]));
++    // The final blend must also respect the continuous native edge envelope.
++    // Otherwise a fading source vertex stays proud beside a clipped boundary,
++    // producing a steep sliver even when every native overlap was removed.
++    const approach=nativeApproachTop(p[0],p[2]);
++    if(!weight)return Math.min(p[1],approach);
++    let y=Math.min(Math.max(floorAt(hosts,p[0],p[2],n.at[1]+.8)??-Infinity,n.at[1],hostApproach(p[0],p[2])),approach);
+     // Leave the unmodified native top highest at every physical overlap.
+     const native=mountainJoinRoadTop(p[0],p[2],n.at[1]+.8);if(native!==null)y=Math.min(y,native-.005);
+-    return p[1]+(y-p[1])*weight;
++    return Math.min(p[1]+(y-p[1])*weight,approach);
+   };
+   const localJoins:StructureSolid[]=[];
+   for(const piece of cuts.solids){
+--- a/test/horizon-foot-lane-apron.test.ts
++++ b/test/horizon-foot-lane-apron.test.ts
+@@ -74,6 +74,33 @@
+    }
+   }
+  });
++ it('keeps new road faces below 12% and local walkable shoulders below 40 degrees',()=>{
++  const inRoad=(x:number,z:number)=>lane.points.some((a,i)=>{
++   const b=lane.points[i+1];if(!b)return false;
++   const dx=b[0]-a[0],dz=b[2]-a[2],length=Math.hypot(dx,dz),t=((x-a[0])*dx+(z-a[2])*dz)/(length*length);
++   return t>=-(i===0?.5/length:0)&&t<=1+(i===lane.points.length-2?.5/length:0)&&Math.abs((x-a[0])*dz-(z-a[2])*dx)/length<=lane.width/2;
++  });
++  // These were exposed 51–89 degree slivers created by clipping a proud
++  // interpolated knot beside the real native boundary. Include nearby faces,
++  // not just centreline stations, so a sub-centimetre triangle cannot hide.
++  for(const [x,y,z]of[[1278.611070900676,54.65748394302046,720.587334092059],[1284.0381584724093,54.657107356798555,719.6986301806443],[1282.346400842526,54.64775303895683,719.9510001721824],[1281.5560624085037,54.646521715998965,720.066414086224]]){
++   const floor=geo.surface(x!,z!,y!,.5);expect(floor).not.toBeNull();
++   expect(Math.tan(floor!.slope*Math.PI/180)).toBeLessThanOrEqual(.12+1e-7);
++  }
++  for(const mesh of cuts.solids.filter(s=>s.id.includes('.footJoin')||s.id==='mountainV2.footLane.apron'))for(let k=0;k<mesh.indices.length;k+=3){
++   const v=mesh.indices.slice(k,k+3).map(i=>mesh.positions.slice(i*3,i*3+3));
++   const a=v[0]!,b=v[1]!,c=v[2]!,u=b.map((n,j)=>n-a[j]!),w=c.map((n,j)=>n-a[j]!);
++   const normal=[u[1]!*w[2]!-u[2]!*w[1]!,u[2]!*w[0]!-u[0]!*w[2]!,u[0]!*w[1]!-u[1]!*w[0]!];
++   if(normal[1]!<=1e-9)continue;
++   const grade=Math.hypot(normal[0]!,normal[2]!)/normal[1]!;
++   expect(Math.atan(grade)*180/Math.PI,`${mesh.id} upward face ${k}`).toBeLessThanOrEqual(40+1e-7);
++   for(const weights of[[1/3,1/3,1/3],[.8,.1,.1],[.1,.8,.1],[.1,.1,.8]]){
++    const p=[0,1,2].map(j=>weights.reduce((sum,w,i)=>sum+w*v[i]![j]!,0));if(!inRoad(p[0]!,p[2]!))continue;
++    const floor=geo.surface(p[0]!,p[2]!,p[1]!, .5);
++    if(floor&&Math.abs(floor.y-p[1]!)<1e-5)expect(grade,`${mesh.id} exposed road face ${k}`).toBeLessThanOrEqual(.12+1e-7);
++   }
++  }
++ });
+  it('closes every fitted source mesh without open or nonmanifold edges',()=>{
+   for(const mesh of cuts.solids.filter(s=>s.id.includes('.footJoin')||s.id==='mountainV2.footLane.apron')){
+    const edges=new Map<string,{count:number;balance:number}>();

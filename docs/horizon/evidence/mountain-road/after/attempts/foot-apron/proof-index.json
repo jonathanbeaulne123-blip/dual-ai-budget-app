@@ -1,0 +1,935 @@
+{
+  "worldSha256": "09d23d7f69ba638b78277afb6ecf804e358bb3a2d2e452fb67c181286d403bae",
+  "sourceSha256": "91225f9cff5204156d7fc808645460e3a2b3045ad5345e8c835c60b812c93b25",
+  "patchSha256": "4305ac257bd2f1c6699ca5e644f6a3dc6d4a23f27a584459e1709519c1c7c4a4",
+  "controllerMethod": "real unmodified bicycle and Horizon board controllers; exact extracted walking runtime move() with full terrain, baked solids, always-active Mountain region; inputs only after one initial placement per attempt",
+  "geometryMethod": "Regenerated real local YearWalk/S1 source prisms from baked bed points and final terrain, then final source join; physical mesh consumed by exact composed Horizon and Mountain geography. Full mouthExclusion and terraceBedExclusion retained. Served vertex-compacted solids are never interpreted as source prisms.",
+  "preservedFailures": [
+    "/tmp/mountain-foot-batter-corner-only-probe.json",
+    "/tmp/mountain-foot-apron-first-probe.json",
+    "/tmp/mountain-foot-apron-modes/results.json"
+  ],
+  "scope": "Independent22.014m Foot route only. One initial place per attempt,0.5m start and end margins; not full chain or V03 turn acceptance. Walking extraction retains gateOpen=true limitation.",
+  "results": [
+    {
+      "mode": "bicycle",
+      "direction": "forward",
+      "completed": true,
+      "reason": "end",
+      "completedDistanceM": 21.027398492379888,
+      "attemptedDistanceM": 21.5139848685326,
+      "elapsedS": 6.4,
+      "maxDeviationM": 0.02757132334600808,
+      "contacts": {},
+      "airborneFrames": 0,
+      "offbedFrames": 0,
+      "bails": 0,
+      "restarts": 0
+    },
+    {
+      "mode": "walking",
+      "direction": "forward",
+      "completed": true,
+      "reason": "end",
+      "completedDistanceM": 21.040150700932205,
+      "attemptedDistanceM": 21.5139848685326,
+      "elapsedS": 8.766666666666666,
+      "maxDeviationM": 0.004056717568338649,
+      "contacts": {},
+      "airborneFrames": 0,
+      "offbedFrames": 0,
+      "bails": 0,
+      "restarts": 0
+    },
+    {
+      "mode": "bicycle",
+      "direction": "reverse",
+      "completed": true,
+      "reason": "end",
+      "completedDistanceM": 21.054587400021447,
+      "attemptedDistanceM": 21.513984868532606,
+      "elapsedS": 8,
+      "maxDeviationM": 0.027372221536808964,
+      "contacts": {},
+      "airborneFrames": 0,
+      "offbedFrames": 0,
+      "bails": 0,
+      "restarts": 0
+    },
+    {
+      "mode": "walking",
+      "direction": "reverse",
+      "completed": true,
+      "reason": "end",
+      "completedDistanceM": 21.040152560599147,
+      "attemptedDistanceM": 21.513984868532606,
+      "elapsedS": 8.766666666666666,
+      "maxDeviationM": 0.004108476626877354,
+      "contacts": {},
+      "airborneFrames": 0,
+      "offbedFrames": 0,
+      "bails": 0,
+      "restarts": 0
+    }
+  ],
+  "rawOffsetSweepResults": [
+    {
+      "name": "before",
+      "off": -3.4,
+      "direction": 1,
+      "maxStep": 0.4941517347891775,
+      "maxMismatch": 0.6402417744971842,
+      "contacts": 15,
+      "events": [
+        {
+          "d": 327.4,
+          "off": -3.4,
+          "x": 1278.1001982511718,
+          "z": 742.0446630036938,
+          "delta": 0.07449940169301073,
+          "from": "yearWalk.bed.lakeside@lakeside",
+          "to": "yearWalk.shoulders.lakeside@lakeside",
+          "y": 55.293678591607154
+        },
+        {
+          "d": 327.56,
+          "off": -3.4,
+          "x": 1278.096899983113,
+          "z": 741.8846970028442,
+          "delta": 0.10904288672161044,
+          "from": "yearWalk.shoulders.lakeside@lakeside",
+          "to": "terrain",
+          "y": 55.17914775144607
+        },
+        {
+          "d": 337.28,
+          "off": -3.4,
+          "x": 1278.0591692709718,
+          "z": 732.0502044727763,
+          "delta": 0.4941517347891775,
+          "from": "terrain",
+          "to": "yearWalk.shoulders.lakeside@lakeside",
+          "y": 55.17392326856695
+        },
+        {
+          "d": 343.4,
+          "off": -3.4,
+          "x": 1278.2659492407402,
+          "z": 725.7978494519949,
+          "delta": 0.16372932262309803,
+          "from": "yearWalk.bed.lakeside@lakeside",
+          "to": "S1.batter@lakeside",
+          "y": 54.82540219291896
+        }
+      ]
+    },
+    {
+      "name": "before",
+      "off": -3.4,
+      "direction": -1,
+      "maxStep": 0.5204382119446365,
+      "maxMismatch": 0.6402417744971842,
+      "contacts": 11,
+      "events": [
+        {
+          "d": 343.36,
+          "off": -3.4,
+          "x": 1278.2627724607019,
+          "z": 725.8614284096845,
+          "delta": 0.16372932262309803,
+          "from": "S1.batter@lakeside",
+          "to": "yearWalk.bed.lakeside@lakeside",
+          "y": 54.66167287029586
+        },
+        {
+          "d": 337.08000000000004,
+          "off": -3.4,
+          "x": 1278.0565204966776,
+          "z": 732.2501869319939,
+          "delta": 0.5204382119446365,
+          "from": "yearWalk.shoulders.lakeside@lakeside",
+          "to": "terrain",
+          "y": 54.67753133420089
+        },
+        {
+          "d": 327.52000000000004,
+          "off": -3.4,
+          "x": 1278.0977245501279,
+          "z": 741.9246885030565,
+          "delta": 0.10904288672160334,
+          "from": "terrain",
+          "to": "yearWalk.shoulders.lakeside@lakeside",
+          "y": 55.28819063816767
+        },
+        {
+          "d": 327.36,
+          "off": -3.4,
+          "x": 1280.6205382419942,
+          "z": 745.2843202163805,
+          "delta": 0.07449940169301783,
+          "from": "yearWalk.shoulders.lakeside@lakeside",
+          "to": "yearWalk.bed.lakeside@lakeside",
+          "y": 55.368177993300165
+        }
+      ]
+    },
+    {
+      "name": "before",
+      "off": -2.625,
+      "direction": 1,
+      "maxStep": 0.24717733837880473,
+      "maxMismatch": 0.3730491592159666,
+      "contacts": 0,
+      "events": [
+        {
+          "d": 327.4,
+          "off": -2.625,
+          "x": 1278.875033567787,
+          "z": 742.0286870177843,
+          "delta": 0.07102965681525575,
+          "from": "yearWalk.bed.lakeside@lakeside",
+          "to": "yearWalk.shoulders.lakeside@lakeside",
+          "y": 55.30322599524999
+        },
+        {
+          "d": 328.76,
+          "off": -2.625,
+          "x": 1278.849697468509,
+          "z": 740.6498093604582,
+          "delta": 0.060754990845964585,
+          "from": "yearWalk.shoulders.lakeside@lakeside",
+          "to": "terrain",
+          "y": 55.20830375057691
+        },
+        {
+          "d": 336.2,
+          "off": -2.625,
+          "x": 1278.8197979192512,
+          "z": 733.1403737529419,
+          "delta": 0.10489209947542832,
+          "from": "terrain",
+          "to": "yearWalk.shoulders.lakeside@lakeside",
+          "y": 55.29359251247543
+        },
+        {
+          "d": 338.84,
+          "off": -2.625,
+          "x": 1278.865014123051,
+          "z": 730.4830464719305,
+          "delta": 0.1587898037898583,
+          "from": "yearWalk.bed.lakeside@lakeside",
+          "to": "yearWalk.shoulders.lakeside@lakeside",
+          "y": 55.222945436888956
+        },
+        {
+          "d": 343.4,
+          "off": -2.625,
+          "x": 1279.0398493643656,
+          "z": 725.8391241252549,
+          "delta": 0.24717733837880473,
+          "from": "yearWalk.bed.lakeside@lakeside",
+          "to": "S1.batter@lakeside",
+          "y": 54.95456885957181
+        },
+        {
+          "d": 344.92,
+          "off": -2.625,
+          "x": 1279.1208009815982,
+          "z": 724.3212813021446,
+          "delta": 0.13215112306501453,
+          "from": "S1.batter@lakeside",
+          "to": "yearWalk.bed.lakeside@lakeside",
+          "y": 54.73374376103402
+        }
+      ]
+    },
+    {
+      "name": "before",
+      "off": -2.625,
+      "direction": -1,
+      "maxStep": 0.24717733837880473,
+      "maxMismatch": 0.3730491592159666,
+      "contacts": 0,
+      "events": [
+        {
+          "d": 344.88,
+          "off": -2.625,
+          "x": 1279.1186706758815,
+          "z": 724.3612245343318,
+          "delta": 0.13215112306501453,
+          "from": "yearWalk.bed.lakeside@lakeside",
+          "to": "S1.batter@lakeside",
+          "y": 54.865894884099035
+        },
+        {
+          "d": 343.36,
+          "off": -2.625,
+          "x": 1279.0369410519393,
+          "z": 725.8973170198744,
+          "delta": 0.24717733837880473,
+          "from": "S1.batter@lakeside",
+          "to": "yearWalk.bed.lakeside@lakeside",
+          "y": 54.707391521193
+        },
+        {
+          "d": 338.8,
+          "off": -2.625,
+          "x": 1278.8642142830029,
+          "z": 730.5230384743297,
+          "delta": 0.1587898037898583,
+          "from": "yearWalk.shoulders.lakeside@lakeside",
+          "to": "yearWalk.bed.lakeside@lakeside",
+          "y": 55.0641556330991
+        },
+        {
+          "d": 336.16,
+          "off": -2.625,
+          "x": 1278.8192681643923,
+          "z": 733.1803702447854,
+          "delta": 0.10489209947542832,
+          "from": "yearWalk.shoulders.lakeside@lakeside",
+          "to": "terrain",
+          "y": 55.188700413
+        },
+        {
+          "d": 328.72,
+          "off": -2.625,
+          "x": 1278.8502307544413,
+          "z": 740.6898058053766,
+          "delta": 0.060754990845964585,
+          "from": "terrain",
+          "to": "yearWalk.shoulders.lakeside@lakeside",
+          "y": 55.269058741422874
+        },
+        {
+          "d": 327.36,
+          "off": -2.625,
+          "x": 1280.8242080261264,
+          "z": 744.5365611515531,
+          "delta": 0.07102965681526285,
+          "from": "yearWalk.shoulders.lakeside@lakeside",
+          "to": "yearWalk.bed.lakeside@lakeside",
+          "y": 55.374255652065244
+        }
+      ]
+    },
+    {
+      "name": "before",
+      "off": -2,
+      "direction": 1,
+      "maxStep": 0.27937410575879795,
+      "maxMismatch": 0.2933348068231396,
+      "contacts": 0,
+      "events": [
+        {
+          "d": 327.4,
+          "off": -2,
+          "x": 1279.4999007586057,
+          "z": 742.0158031581798,
+          "delta": 0.06071241828121998,
+          "from": "yearWalk.bed.lakeside@lakeside",
+          "to": "yearWalk.bed.lakeside@lakeside",
+          "y": 55.3084890188512
+        },
+        {
+          "d": 332.88,
+          "off": -2,
+          "x": 1279.43,
+          "z": 736.4950753342722,
+          "delta": 0.060000000000002274,
+          "from": "terrain",
+          "to": "S1.surface.7.lakeside@lakeside",
+          "y": 55.31
+        },
+        {
+          "d": 343.4,
+          "off": -2,
+          "x": 1279.663962367289,
+          "z": 725.8724101520775,
+          "delta": 0.27937410575879795,
+          "from": "yearWalk.bed.lakeside@lakeside",
+          "to": "S1.batter@lakeside",
+          "y": 55.058735526228055
+        },
+        {
+          "d": 344.92,
+          "off": -2,
+          "x": 1279.7449139845216,
+          "z": 724.3545673289672,
+          "delta": 0.19951966528412868,
+          "from": "S1.batter@lakeside",
+          "to": "yearWalk.bed.lakeside@lakeside",
+          "y": 54.7705418854885
+        }
+      ]
+    },
+    {
+      "name": "before",
+      "off": -2,
+      "direction": -1,
+      "maxStep": 0.27937410575879795,
+      "maxMismatch": 0.2933348068231396,
+      "contacts": 0,
+      "events": [
+        {
+          "d": 344.88,
+          "off": -2,
+          "x": 1279.742783678805,
+          "z": 724.3945105611543,
+          "delta": 0.19951966528412868,
+          "from": "yearWalk.bed.lakeside@lakeside",
+          "to": "S1.batter@lakeside",
+          "y": 54.97006155077263
+        },
+        {
+          "d": 343.36,
+          "off": -2,
+          "x": 1279.6612705610019,
+          "z": 725.9262594474469,
+          "delta": 0.27937410575879795,
+          "from": "S1.batter@lakeside",
+          "to": "yearWalk.bed.lakeside@lakeside",
+          "y": 54.77936142046926
+        },
+        {
+          "d": 332.84000000000003,
+          "off": -2,
+          "x": 1279.4301436907444,
+          "z": 736.5483197463717,
+          "delta": 0.060000000000002274,
+          "from": "S1.surface.7.lakeside@lakeside",
+          "to": "terrain",
+          "y": 55.25
+        },
+        {
+          "d": 327.36,
+          "off": -2,
+          "x": 1280.9884578520393,
+          "z": 743.9335296476601,
+          "delta": 0.06071241828123419,
+          "from": "yearWalk.bed.lakeside@lakeside",
+          "to": "yearWalk.bed.lakeside@lakeside",
+          "y": 55.36920143713242
+        }
+      ]
+    },
+    {
+      "name": "before",
+      "off": 0,
+      "direction": 1,
+      "maxStep": 0.010949556950677675,
+      "maxMismatch": 0.08198739142166289,
+      "contacts": 0,
+      "events": []
+    },
+    {
+      "name": "before",
+      "off": 0,
+      "direction": -1,
+      "maxStep": 0.010949556950677675,
+      "maxMismatch": 0.08198739142166289,
+      "contacts": 0,
+      "events": []
+    },
+    {
+      "name": "before",
+      "off": 2,
+      "direction": 1,
+      "maxStep": 0.3637484320467408,
+      "maxMismatch": 0.22481522978450386,
+      "contacts": 6,
+      "events": [
+        {
+          "d": 327.4,
+          "off": 2,
+          "x": 1283.4990507798457,
+          "z": 741.933346456711,
+          "delta": 0.0642351731447448,
+          "from": "yearWalk.bed.lakeside@lakeside",
+          "to": "yearWalk.bed.lakeside@lakeside",
+          "y": 55.38311439699854
+        },
+        {
+          "d": 346.4,
+          "off": 2,
+          "x": 1283.81741832961,
+          "z": 723.102973936815,
+          "delta": 0.3637484320467408,
+          "from": "yearWalk.batter@lakeside",
+          "to": "S1.surface.7.lakeside@lakeside",
+          "y": 54.64406406057275
+        }
+      ]
+    },
+    {
+      "name": "before",
+      "off": 2,
+      "direction": -1,
+      "maxStep": 0.3637484320467337,
+      "maxMismatch": 0.22481522978449675,
+      "contacts": 6,
+      "events": [
+        {
+          "d": 346.36,
+          "off": 2,
+          "x": 1283.8159282090323,
+          "z": 723.1296415418955,
+          "delta": 0.3637484320467337,
+          "from": "S1.surface.7.lakeside@lakeside",
+          "to": "yearWalk.batter@lakeside",
+          "y": 55.00781249261949
+        },
+        {
+          "d": 327.36,
+          "off": 2,
+          "x": 1282.0396567378832,
+          "z": 740.0741280227445,
+          "delta": 0.0642351731447377,
+          "from": "yearWalk.bed.lakeside@lakeside",
+          "to": "yearWalk.bed.lakeside@lakeside",
+          "y": 55.3188792238538
+        }
+      ]
+    },
+    {
+      "name": "before",
+      "off": 2.625,
+      "direction": 1,
+      "maxStep": 0.38362522237679997,
+      "maxMismatch": 0.44909093717661364,
+      "contacts": 13,
+      "events": [
+        {
+          "d": 327.4,
+          "off": 2.625,
+          "x": 1284.1239179706643,
+          "z": 741.9204625971065,
+          "delta": 0.08379910735870055,
+          "from": "yearWalk.bed.lakeside@lakeside",
+          "to": "yearWalk.bed.lakeside@lakeside",
+          "y": 55.40567138330891
+        },
+        {
+          "d": 341.72,
+          "off": 2.625,
+          "x": 1284.2070162701318,
+          "z": 727.7620722634874,
+          "delta": 0.14681332282031434,
+          "from": "yearWalk.shoulders.lakeside@lakeside",
+          "to": "terrain",
+          "y": 54.991920282264445
+        },
+        {
+          "d": 342.64,
+          "off": 2.625,
+          "x": 1284.2479672515008,
+          "z": 726.8596610059234,
+          "delta": 0.38362522237679997,
+          "from": "terrain",
+          "to": "yearWalk.batter@lakeside",
+          "y": 55.03492530962679
+        },
+        {
+          "d": 346.48,
+          "off": 2.625,
+          "x": 1284.4460877412844,
+          "z": 723.0605502308828,
+          "delta": 0.2543585193499496,
+          "from": "yearWalk.batter@lakeside",
+          "to": "spur stillwater.corridor.deck.1.lakeside@lakeside",
+          "y": 54.64902172291742
+        }
+      ]
+    },
+    {
+      "name": "before",
+      "off": 2.625,
+      "direction": -1,
+      "maxStep": 0.3836252223768071,
+      "maxMismatch": 0.44909093717660653,
+      "contacts": 13,
+      "events": [
+        {
+          "d": 346.44,
+          "off": 2.625,
+          "x": 1284.4436920496553,
+          "z": 723.1004784247014,
+          "delta": 0.2543585193499496,
+          "from": "spur stillwater.corridor.deck.1.lakeside@lakeside",
+          "to": "yearWalk.batter@lakeside",
+          "y": 54.90338024226737
+        },
+        {
+          "d": 342.6,
+          "off": 2.625,
+          "x": 1284.246114936136,
+          "z": 726.8996180945034,
+          "delta": 0.3836252223768071,
+          "from": "yearWalk.batter@lakeside",
+          "to": "terrain",
+          "y": 54.65130008724999
+        },
+        {
+          "d": 341.68,
+          "off": 2.625,
+          "x": 1284.2054175485978,
+          "z": 727.8020403018363,
+          "delta": 0.14681332282031434,
+          "from": "terrain",
+          "to": "yearWalk.shoulders.lakeside@lakeside",
+          "y": 55.13873360508476
+        },
+        {
+          "d": 327.36,
+          "off": 2.625,
+          "x": 1282.2039065637962,
+          "z": 739.4710965188515,
+          "delta": 0.08379910735869345,
+          "from": "yearWalk.bed.lakeside@lakeside",
+          "to": "yearWalk.bed.lakeside@lakeside",
+          "y": 55.32187227595021
+        }
+      ]
+    },
+    {
+      "name": "before",
+      "off": 3.4,
+      "direction": 1,
+      "maxStep": 0.2350260262915711,
+      "maxMismatch": 0.42122353638509935,
+      "contacts": 2,
+      "events": [
+        {
+          "d": 327.4,
+          "off": 3.4,
+          "x": 1284.8987532872795,
+          "z": 741.904486611197,
+          "delta": 0.11719808751455929,
+          "from": "yearWalk.bed.lakeside@lakeside",
+          "to": "yearWalk.bed.lakeside@lakeside",
+          "y": 55.43364204633378
+        },
+        {
+          "d": 342.76,
+          "off": 3.4,
+          "x": 1285.0276927888322,
+          "z": 726.7756783503733,
+          "delta": 0.2350260262915711,
+          "from": "terrain",
+          "to": "yearWalk.batter@lakeside",
+          "y": 54.904314545739005
+        },
+        {
+          "d": 349.12,
+          "off": 3.4,
+          "x": 1285.377812144042,
+          "z": 720.4717059641669,
+          "delta": 0.08354074639624542,
+          "from": "yearWalk.bed.lakeside@lakeside",
+          "to": "terrain",
+          "y": 54.599977
+        }
+      ]
+    },
+    {
+      "name": "before",
+      "off": 3.4,
+      "direction": -1,
+      "maxStep": 0.235026026291564,
+      "maxMismatch": 0.42122353638509935,
+      "contacts": 2,
+      "events": [
+        {
+          "d": 349.08000000000004,
+          "off": 3.4,
+          "x": 1285.375416452413,
+          "z": 720.5116341579854,
+          "delta": 0.08354074639624542,
+          "from": "terrain",
+          "to": "yearWalk.bed.lakeside@lakeside",
+          "y": 54.68351774639625
+        },
+        {
+          "d": 342.72,
+          "off": 3.4,
+          "x": 1285.0258404734675,
+          "z": 726.8156354389532,
+          "delta": 0.235026026291564,
+          "from": "yearWalk.batter@lakeside",
+          "to": "terrain",
+          "y": 54.669288519447434
+        },
+        {
+          "d": 327.36,
+          "off": 3.4,
+          "x": 1282.4075763479284,
+          "z": 738.7233374540241,
+          "delta": 0.11719808751455929,
+          "from": "yearWalk.bed.lakeside@lakeside",
+          "to": "yearWalk.bed.lakeside@lakeside",
+          "y": 55.31644395881922
+        }
+      ]
+    },
+    {
+      "name": "candidate",
+      "off": -3.4,
+      "direction": 1,
+      "maxStep": 0.06948857032962508,
+      "maxMismatch": 0.06760033226085937,
+      "contacts": 0,
+      "events": [
+        {
+          "d": 327.4,
+          "off": -3.4,
+          "x": 1278.1001982511718,
+          "z": 742.0446630036938,
+          "delta": 0.06948857032962508,
+          "from": "yearWalk.bed.lakeside",
+          "to": "mountainV2.footLane.apron",
+          "y": 55.29868942306419
+        }
+      ]
+    },
+    {
+      "name": "candidate",
+      "off": -3.4,
+      "direction": -1,
+      "maxStep": 0.06948857032963218,
+      "maxMismatch": 0.06760033226085937,
+      "contacts": 0,
+      "events": [
+        {
+          "d": 327.36,
+          "off": -3.4,
+          "x": 1280.6205382419942,
+          "z": 745.2843202163805,
+          "delta": 0.06948857032963218,
+          "from": "mountainV2.footLane.apron",
+          "to": "yearWalk.bed.lakeside",
+          "y": 55.368177993393815
+        }
+      ]
+    },
+    {
+      "name": "candidate",
+      "off": -2.625,
+      "direction": 1,
+      "maxStep": 0.07214452705093777,
+      "maxMismatch": 0.07025628898217207,
+      "contacts": 0,
+      "events": [
+        {
+          "d": 327.4,
+          "off": -2.625,
+          "x": 1278.875033567787,
+          "z": 742.0286870177843,
+          "delta": 0.07214452705093777,
+          "from": "yearWalk.bed.lakeside",
+          "to": "mountainV2.footLane.apron",
+          "y": 55.29868942306419
+        }
+      ]
+    },
+    {
+      "name": "candidate",
+      "off": -2.625,
+      "direction": -1,
+      "maxStep": 0.07214452705094487,
+      "maxMismatch": 0.07025628898217207,
+      "contacts": 0,
+      "events": [
+        {
+          "d": 327.36,
+          "off": -2.625,
+          "x": 1280.8242080261264,
+          "z": 744.5365611515531,
+          "delta": 0.07214452705094487,
+          "from": "mountainV2.footLane.apron",
+          "to": "yearWalk.bed.lakeside",
+          "y": 55.37083395011513
+        }
+      ]
+    },
+    {
+      "name": "candidate",
+      "off": -2,
+      "direction": 1,
+      "maxStep": 0.06635770453688394,
+      "maxMismatch": 0.06446946646811824,
+      "contacts": 0,
+      "events": [
+        {
+          "d": 327.4,
+          "off": -2,
+          "x": 1279.4999007586057,
+          "z": 742.0158031581798,
+          "delta": 0.06635770453688394,
+          "from": "yearWalk.bed.lakeside",
+          "to": "mountainV2.footLane.apron",
+          "y": 55.29868942306419
+        }
+      ]
+    },
+    {
+      "name": "candidate",
+      "off": -2,
+      "direction": -1,
+      "maxStep": 0.06635770453689105,
+      "maxMismatch": 0.06446946646811824,
+      "contacts": 0,
+      "events": [
+        {
+          "d": 327.36,
+          "off": -2,
+          "x": 1280.9884578520393,
+          "z": 743.9335296476601,
+          "delta": 0.06635770453689105,
+          "from": "mountainV2.footLane.apron",
+          "to": "yearWalk.bed.lakeside",
+          "y": 55.36504712760107
+        }
+      ]
+    },
+    {
+      "name": "candidate",
+      "off": 0,
+      "direction": 1,
+      "maxStep": 0.004736362230133295,
+      "maxMismatch": 0.031497536154496686,
+      "contacts": 0,
+      "events": []
+    },
+    {
+      "name": "candidate",
+      "off": 0,
+      "direction": -1,
+      "maxStep": 0.004736362230140401,
+      "maxMismatch": 0.03149753615448958,
+      "contacts": 0,
+      "events": []
+    },
+    {
+      "name": "candidate",
+      "off": 2,
+      "direction": 1,
+      "maxStep": 0.07548559768797247,
+      "maxMismatch": 0.11466963588964774,
+      "contacts": 0,
+      "events": [
+        {
+          "d": 327.4,
+          "off": 2,
+          "x": 1283.4990507798457,
+          "z": 741.933346456711,
+          "delta": 0.07548559768797247,
+          "from": "V03.corridor.deck.3.lakeside@lakeside",
+          "to": "yearWalk.bed.lakeside",
+          "y": 55.375976351710634
+        }
+      ]
+    },
+    {
+      "name": "candidate",
+      "off": 2,
+      "direction": -1,
+      "maxStep": 0.07548559768797247,
+      "maxMismatch": 0.11466963588964774,
+      "contacts": 0,
+      "events": [
+        {
+          "d": 327.36,
+          "off": 2,
+          "x": 1282.0396567378832,
+          "z": 740.0741280227445,
+          "delta": 0.07548559768797247,
+          "from": "yearWalk.bed.lakeside",
+          "to": "V03.corridor.deck.3.lakeside@lakeside",
+          "y": 55.30049075402266
+        }
+      ]
+    },
+    {
+      "name": "candidate",
+      "off": 2.625,
+      "direction": 1,
+      "maxStep": 0.1004027369824243,
+      "maxMismatch": 0.13895049443496532,
+      "contacts": 0,
+      "events": [
+        {
+          "d": 327.4,
+          "off": 2.625,
+          "x": 1284.1239179706643,
+          "z": 741.9204625971065,
+          "delta": 0.1004027369824243,
+          "from": "V03.corridor.deck.3.lakeside@lakeside",
+          "to": "yearWalk.bed.lakeside",
+          "y": 55.40086567960115
+        }
+      ]
+    },
+    {
+      "name": "candidate",
+      "off": 2.625,
+      "direction": -1,
+      "maxStep": 0.1004027369824172,
+      "maxMismatch": 0.13895049443496532,
+      "contacts": 0,
+      "events": [
+        {
+          "d": 327.36,
+          "off": 2.625,
+          "x": 1282.2039065637962,
+          "z": 739.4710965188515,
+          "delta": 0.1004027369824172,
+          "from": "yearWalk.bed.lakeside",
+          "to": "V03.corridor.deck.3.lakeside@lakeside",
+          "y": 55.30046294261872
+        }
+      ]
+    },
+    {
+      "name": "candidate",
+      "off": 3.4,
+      "direction": 1,
+      "maxStep": 0.1315233610489912,
+      "maxMismatch": 0.1706422262424212,
+      "contacts": 0,
+      "events": [
+        {
+          "d": 327.4,
+          "off": 3.4,
+          "x": 1284.8987532872795,
+          "z": 741.904486611197,
+          "delta": 0.1315233610489912,
+          "from": "V03.corridor.deck.3.lakeside@lakeside",
+          "to": "yearWalk.bed.lakeside",
+          "y": 55.431951817526844
+        }
+      ]
+    },
+    {
+      "name": "candidate",
+      "off": 3.4,
+      "direction": -1,
+      "maxStep": 0.1315233610489912,
+      "maxMismatch": 0.1706422262424212,
+      "contacts": 0,
+      "events": [
+        {
+          "d": 327.36,
+          "off": 3.4,
+          "x": 1282.4075763479284,
+          "z": 738.7233374540241,
+          "delta": 0.1315233610489912,
+          "from": "yearWalk.bed.lakeside",
+          "to": "V03.corridor.deck.3.lakeside@lakeside",
+          "y": 55.30042845647785
+        }
+      ]
+    }
+  ],
+  "rawOffsetFrameJumpCaveat": "All remaining candidate events above0.06m occur at s327.4/327.36, where the90degree V03 turn changes offset orientation. At offset-2m the sample jumps from H[1280.988458,*,743.933530] to H[1279.499901,*,742.015803], approximately2.43m apart despite0.04m station step; offset+2m similarly jumps approximately2.36m. These raw events are retained, not declared physical lips or erased. All subsequent neighboring Foot samples have no>0.06m delta and zero contacts; V03 turn remains a separate controller acceptance gate.",
+  "tests": "Focused Vitest regression proposed in patch but not run (root serial testing). No full bake, budget, tsc, browser or full-chain rerun."
+}
