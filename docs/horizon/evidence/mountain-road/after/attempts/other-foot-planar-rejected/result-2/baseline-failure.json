@@ -1,0 +1,430 @@
+{
+  "triangles": 2656,
+  "vertices": 1320,
+  "topology": [
+    {
+      "key": "1122:1124",
+      "count": 2,
+      "balance": 2
+    },
+    {
+      "key": "1123:1125",
+      "count": 2,
+      "balance": -2
+    },
+    {
+      "key": "74:1124",
+      "count": 2,
+      "balance": -2
+    },
+    {
+      "key": "75:1125",
+      "count": 2,
+      "balance": 2
+    },
+    {
+      "key": "74:76",
+      "count": 2,
+      "balance": 2
+    },
+    {
+      "key": "75:77",
+      "count": 2,
+      "balance": -2
+    },
+    {
+      "key": "76:1116",
+      "count": 2,
+      "balance": 2
+    },
+    {
+      "key": "77:1117",
+      "count": 2,
+      "balance": -2
+    },
+    {
+      "key": "100:1116",
+      "count": 2,
+      "balance": -2
+    },
+    {
+      "key": "101:1117",
+      "count": 2,
+      "balance": 2
+    },
+    {
+      "key": "1122:1123",
+      "count": 2,
+      "balance": -2
+    },
+    {
+      "key": "100:101",
+      "count": 2,
+      "balance": 2
+    }
+  ],
+  "variants": [
+    {
+      "variant": "double",
+      "tops": 1066,
+      "maxTopDegrees": 33.32325619508239,
+      "invalid": 8,
+      "witnesses": [
+        {
+          "f": [
+            1168,
+            162,
+            146
+          ],
+          "n": [
+            6.350807206512155e-11,
+            9.070400604216378e-9,
+            -4.610789213540384e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1170,
+            168,
+            150
+          ],
+          "n": [
+            1.4323221428358401e-11,
+            4.488423308371403e-9,
+            -2.6854147497281516e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1172,
+            154,
+            174
+          ],
+          "n": [
+            1.4171634352133644e-11,
+            4.441453260728423e-9,
+            -2.6572922681711297e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1174,
+            156,
+            178
+          ],
+          "n": [
+            3.5159737968304405e-11,
+            8.789319827506858e-9,
+            -5.88059564585186e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1178,
+            146,
+            162
+          ],
+          "n": [
+            1.744638548212274e-11,
+            8.135484211649335e-9,
+            -3.7633289101104625e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1180,
+            150,
+            168
+          ],
+          "n": [
+            -2.8113679786945234e-11,
+            4.086447428705564e-9,
+            -2.0572692377776591e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1182,
+            174,
+            154
+          ],
+          "n": [
+            1.4017220544004783e-12,
+            4.14228634726399e-9,
+            -2.367011517345752e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1184,
+            178,
+            156
+          ],
+          "n": [
+            2.950610719296143e-11,
+            8.321957650769818e-9,
+            -5.532259034560227e-10
+          ],
+          "reason": "top below runtime determinant"
+        }
+      ]
+    },
+    {
+      "variant": "bake9",
+      "tops": 1066,
+      "maxTopDegrees": 33.32325620022592,
+      "invalid": 8,
+      "witnesses": [
+        {
+          "f": [
+            1168,
+            162,
+            146
+          ],
+          "n": [
+            3.3714402797313525e-11,
+            9.248161713867886e-9,
+            -4.724959868892056e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1170,
+            168,
+            150
+          ],
+          "n": [
+            -1.7002851210312642e-10,
+            4.561400054545195e-9,
+            -2.8610761568063914e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1172,
+            154,
+            174
+          ],
+          "n": [
+            1.0318192654457103e-10,
+            4.356039168262882e-9,
+            -5.284678319950054e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1174,
+            156,
+            178
+          ],
+          "n": [
+            -3.2848764940779374e-11,
+            8.824441982691056e-9,
+            -3.88928390361587e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1178,
+            146,
+            162
+          ],
+          "n": [
+            -1.117050549281906e-11,
+            8.299648623748268e-9,
+            -3.84581310021578e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1180,
+            150,
+            168
+          ],
+          "n": [
+            -2.0242793379032786e-10,
+            4.163744859314589e-9,
+            -2.1394247490128318e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1182,
+            174,
+            154
+          ],
+          "n": [
+            9.716835712783589e-11,
+            4.074564269318515e-9,
+            -4.949081127553212e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1184,
+            178,
+            156
+          ],
+          "n": [
+            -4.225624277570672e-11,
+            8.350265534584622e-9,
+            -3.5738897345011233e-10
+          ],
+          "reason": "top below runtime determinant"
+        }
+      ]
+    },
+    {
+      "variant": "bake9-localFloat32",
+      "tops": 1066,
+      "maxTopDegrees": 175.9607235119745,
+      "invalid": 58,
+      "witnesses": [
+        {
+          "f": [
+            1166,
+            160,
+            148
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1167,
+            149,
+            161
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "collapsed or orientation changed"
+        },
+        {
+          "f": [
+            1168,
+            162,
+            146
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1169,
+            147,
+            163
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "collapsed or orientation changed"
+        },
+        {
+          "f": [
+            1170,
+            168,
+            150
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1171,
+            151,
+            169
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "collapsed or orientation changed"
+        },
+        {
+          "f": [
+            1172,
+            154,
+            174
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1173,
+            175,
+            155
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "collapsed or orientation changed"
+        },
+        {
+          "f": [
+            1174,
+            156,
+            178
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            1175,
+            179,
+            157
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "collapsed or orientation changed"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,363 @@
+{
+  "allPass": true,
+  "executionComplete": true,
+  "processStatus": 0,
+  "sourceBefore": {
+    "scripts/horizon/mountain-modes-audit.mjs": "f12c3caf0e8cf008cfddd64e4a63d9fbb0915fee49288f0111f12dc13f0d4b66",
+    "scripts/horizon/walking-clearance-aim.mjs": "a37cb293334666ab30a701ce493723f84c043ac37c1ce8089a6c3302456ce25a",
+    "scripts/horizon/mountain-footway-routes.mjs": "68027eee3632b70ab79126b6fc86823652b77644c209c503c7fe81e41d0fc7a7",
+    "scripts/horizon/mountain-audit-telemetry.mjs": "5f80197f95413efa84a6476cd11003d9e17d6d82df68c7188aff21baa1061109",
+    "src/harbour/horizon/runtime/index.ts": "109f0fc58793c3722375d1f1876b3539853718f54084ba197b34ba4ab79da4e8",
+    "src/harbour/horizon/runtime/savedPosition.ts": "eac34ee78064db0ed26668fb35537b4e7ac46eacc8827f8bc72d8b6d8547d6c8",
+    "src/worldGeography.ts": "05a66a7210223e0b4a48391c93a2e697d8340992f2439388d019a230cce70e71",
+    "src/harbour/horizon/regions/mountainV2/geography.ts": "087ef1b25b94f77d14d6d1dfe6f2b83e9dbf3b4c71c59725144f64a128e0c58e",
+    "src/harbour/horizon/land/mountainV2/v2-data.json": "876d70fe90947672f9efb3e2dc54c5fa1be9136ae4bc6972ff2a2d6520d05499",
+    "public/horizon/world/horizon-geo-1.json.gz": "def4e4bde244810e37838e9d34634a3d7a690b2a82a5fc81be84413ae3ef254d",
+    "public/horizon/terrain/horizon-geo-1.bin": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+    "public/mountain/terrain/hearth-mountain-geo-2.bin": "16e7a64647985f0a6bc5d90e91ba7b5311b5a9a2732f712934befaf0a9a6fd77"
+  },
+  "sourceAfter": {
+    "scripts/horizon/mountain-modes-audit.mjs": "f12c3caf0e8cf008cfddd64e4a63d9fbb0915fee49288f0111f12dc13f0d4b66",
+    "scripts/horizon/walking-clearance-aim.mjs": "a37cb293334666ab30a701ce493723f84c043ac37c1ce8089a6c3302456ce25a",
+    "scripts/horizon/mountain-footway-routes.mjs": "68027eee3632b70ab79126b6fc86823652b77644c209c503c7fe81e41d0fc7a7",
+    "scripts/horizon/mountain-audit-telemetry.mjs": "5f80197f95413efa84a6476cd11003d9e17d6d82df68c7188aff21baa1061109",
+    "src/harbour/horizon/runtime/index.ts": "109f0fc58793c3722375d1f1876b3539853718f54084ba197b34ba4ab79da4e8",
+    "src/harbour/horizon/runtime/savedPosition.ts": "eac34ee78064db0ed26668fb35537b4e7ac46eacc8827f8bc72d8b6d8547d6c8",
+    "src/worldGeography.ts": "05a66a7210223e0b4a48391c93a2e697d8340992f2439388d019a230cce70e71",
+    "src/harbour/horizon/regions/mountainV2/geography.ts": "087ef1b25b94f77d14d6d1dfe6f2b83e9dbf3b4c71c59725144f64a128e0c58e",
+    "src/harbour/horizon/land/mountainV2/v2-data.json": "876d70fe90947672f9efb3e2dc54c5fa1be9136ae4bc6972ff2a2d6520d05499",
+    "public/horizon/world/horizon-geo-1.json.gz": "def4e4bde244810e37838e9d34634a3d7a690b2a82a5fc81be84413ae3ef254d",
+    "public/horizon/terrain/horizon-geo-1.bin": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+    "public/mountain/terrain/hearth-mountain-geo-2.bin": "16e7a64647985f0a6bc5d90e91ba7b5311b5a9a2732f712934befaf0a9a6fd77"
+  },
+  "sourceChanged": [],
+  "selectedRoutes": 2,
+  "expectedAttempts": 4,
+  "actualAttempts": 4,
+  "legalWidthCompletions": 4,
+  "ordinaryEnds": 4,
+  "wrongOrMissingInitialSupport": 0,
+  "limits": [
+    "Each source path and direction is an independent initial placement; no connected-network claim.",
+    "Original centreline evidence retained verbatim; clearance steering does not erase it.",
+    "Helper, input speed, movement tolerances, geometry and route points unchanged.",
+    "A failed greedy lookahead is not an impossibility proof for all human walking lines.",
+    "The half-width check measures full .3m body membership at every simulated move; no out-of-width end is a legal-width pass.",
+    "Alternate start uses the actual runtime restoreHorizonPosition and its restoreStand callback; source XY must remain fixed, otherwise the attempt is rejected. Source heights/paths are never rewritten. Original legacy-start failures remain separate.",
+    "No current success is final frozen-bake proof unless the parent establishes that source/asset state."
+  ],
+  "attempts": [
+    {
+      "route": "native path:road:summit~district:summit",
+      "direction": "forward",
+      "reason": "end",
+      "ordinaryEnd": true,
+      "withinWidth": true,
+      "validInitial": true,
+      "legalWidthCompletion": true,
+      "initialSupport": {
+        "source": [
+          1319.8528635389516,
+          157.50373239670176,
+          470.3284288116476
+        ],
+        "selected": {
+          "id": "terrain",
+          "y": 158.18000030517578,
+          "nx": 0,
+          "ny": 1,
+          "nz": 0,
+          "material": "grass",
+          "slope": 0
+        },
+        "unconstrained": {
+          "id": "crownLaunch.slab@crown",
+          "y": 170,
+          "nx": 0,
+          "ny": 1,
+          "nz": 0,
+          "material": "stone",
+          "slope": 0
+        },
+        "selectedDeltaM": 0.6762679084740171
+      },
+      "startPlacement": {
+        "policy": "actual-same-revision-restore",
+        "authored": [
+          1319.8528635389516,
+          157.50373239670176,
+          470.3284288116476
+        ],
+        "placed": {
+          "x": 1319.8528635389516,
+          "y": 158.18000030517578,
+          "z": 470.3284288116476,
+          "yaw": -1.6041168688933782,
+          "place": "court",
+          "world": "horizon:horizon-geo-1",
+          "geo": "horizon-geo-1"
+        },
+        "sameXZ": true,
+        "standValidated": true,
+        "heightDeltaM": 0.6762679084740171,
+        "restoreToleranceM": 1.6
+      },
+      "footprintChecks": 234,
+      "maxPhysicalFootprintExcessM": -1.1999998362767372,
+      "widestBodyWitness": {
+        "p": [
+          1312.7368157999213,
+          158,
+          470.0912272604107
+        ],
+        "progress": 7.620000000005227,
+        "centrelineDistanceM": 1.6372326272839763e-07,
+        "bodyRadiusM": 0.3,
+        "sourceWidthM": 3
+      },
+      "walkingPlanQueries": 39,
+      "steeringFrames": 0,
+      "maxPlannedOffsetM": 0,
+      "completedDistanceM": 9.360000000006629,
+      "finalPosition": [
+        1310.498059206293,
+        158,
+        470.01660210050443
+      ]
+    },
+    {
+      "route": "native path:road:summit~district:summit",
+      "direction": "reverse",
+      "reason": "end",
+      "ordinaryEnd": true,
+      "withinWidth": true,
+      "validInitial": true,
+      "legalWidthCompletion": true,
+      "initialSupport": {
+        "source": [
+          1310.4997224477954,
+          157.9562490548248,
+          470.0166575859427
+        ],
+        "selected": {
+          "id": "place.L02.slab@crown",
+          "y": 158,
+          "nx": 0,
+          "ny": 1,
+          "nz": 0,
+          "material": "stone",
+          "slope": 0
+        },
+        "unconstrained": {
+          "id": "place.L02.slab@crown",
+          "y": 158,
+          "nx": 0,
+          "ny": 1,
+          "nz": 0,
+          "material": "stone",
+          "slope": 0
+        },
+        "selectedDeltaM": 0.043750945175190736
+      },
+      "startPlacement": {
+        "policy": "actual-same-revision-restore",
+        "authored": [
+          1310.4997224477954,
+          157.9562490548248,
+          470.0166575859427
+        ],
+        "placed": {
+          "x": 1310.4997224477954,
+          "y": 158,
+          "z": 470.0166575859427,
+          "yaw": 1.537474989074163,
+          "place": "court",
+          "world": "horizon:horizon-geo-1",
+          "geo": "horizon-geo-1"
+        },
+        "sameXZ": true,
+        "standValidated": true,
+        "heightDeltaM": 0.043750945175190736,
+        "restoreToleranceM": 1.6
+      },
+      "footprintChecks": 234,
+      "maxPhysicalFootprintExcessM": -1.1999998147303605,
+      "widestBodyWitness": {
+        "p": [
+          1311.3792339624813,
+          158,
+          470.04597474022836
+        ],
+        "progress": 1.3800000000004629,
+        "centrelineDistanceM": 1.8526963945656048e-07,
+        "bodyRadiusM": 0.3,
+        "sourceWidthM": 3
+      },
+      "walkingPlanQueries": 39,
+      "steeringFrames": 0,
+      "maxPlannedOffsetM": 0,
+      "completedDistanceM": 9.359999999998424,
+      "finalPosition": [
+        1319.8545267853954,
+        158.18000030517578,
+        470.32848414859836
+      ]
+    },
+    {
+      "route": "native path:district:summit~station:gondola:summit",
+      "direction": "forward",
+      "reason": "end",
+      "ordinaryEnd": true,
+      "withinWidth": true,
+      "validInitial": true,
+      "legalWidthCompletion": true,
+      "initialSupport": {
+        "source": [
+          1309.6464466094067,
+          157.860002643241,
+          470.3535533905933
+        ],
+        "selected": {
+          "id": "walk summitStation.join@crown",
+          "y": 158.00157013682553,
+          "nx": 0.0022204979322850704,
+          "ny": 0.9999950528144836,
+          "nz": -0.0022204979322850704,
+          "material": "gravel",
+          "slope": 0.18022577739447643
+        },
+        "unconstrained": {
+          "id": "walk summitStation.join@crown",
+          "y": 158.00157013682553,
+          "nx": 0.0022204979322850704,
+          "ny": 0.9999950528144836,
+          "nz": -0.0022204979322850704,
+          "material": "gravel",
+          "slope": 0.18022577739447643
+        },
+        "selectedDeltaM": 0.1415674935845459
+      },
+      "startPlacement": {
+        "policy": "actual-same-revision-restore",
+        "authored": [
+          1309.6464466094067,
+          157.860002643241,
+          470.3535533905933
+        ],
+        "placed": {
+          "x": 1309.6464466094067,
+          "y": 158.00157013682553,
+          "z": 470.3535533905933,
+          "yaw": -0.7853981633974192,
+          "place": "court",
+          "world": "horizon:horizon-geo-1",
+          "geo": "horizon-geo-1"
+        },
+        "sameXZ": true,
+        "standValidated": true,
+        "heightDeltaM": 0.1415674935845459,
+        "restoreToleranceM": 1.6
+      },
+      "footprintChecks": 389,
+      "maxPhysicalFootprintExcessM": -1.1999999999998796,
+      "widestBodyWitness": {
+        "p": [
+          1302.2076832713253,
+          158.03183084931908,
+          477.7923167286746
+        ],
+        "progress": 11.01999999999844,
+        "centrelineDistanceM": 1.2034761256300848e-13,
+        "bodyRadiusM": 0.3,
+        "sourceWidthM": 3
+      },
+      "walkingPlanQueries": 65,
+      "steeringFrames": 0,
+      "maxPlannedOffsetM": 0,
+      "completedDistanceM": 15.559999999997672,
+      "finalPosition": [
+        1298.6438650941457,
+        158.05,
+        481.3561349058543
+      ]
+    },
+    {
+      "route": "native path:district:summit~station:gondola:summit",
+      "direction": "reverse",
+      "reason": "end",
+      "ordinaryEnd": true,
+      "withinWidth": true,
+      "validInitial": true,
+      "legalWidthCompletion": true,
+      "initialSupport": {
+        "source": [
+          1298.6564973905934,
+          157.3064673038061,
+          481.3435026094067
+        ],
+        "selected": {
+          "id": "mountainV2:station:gondola:summit",
+          "y": 158.05,
+          "nx": 0,
+          "ny": 1,
+          "nz": 0,
+          "material": "paved",
+          "slope": 0
+        },
+        "unconstrained": {
+          "id": "mountainV2:station:gondola:summit",
+          "y": 158.05,
+          "nx": 0,
+          "ny": 1,
+          "nz": 0,
+          "material": "paved",
+          "slope": 0
+        },
+        "selectedDeltaM": 0.7435326961939097
+      },
+      "startPlacement": {
+        "policy": "actual-same-revision-restore",
+        "authored": [
+          1298.6564973905934,
+          157.3064673038061,
+          481.3435026094067
+        ],
+        "placed": {
+          "x": 1298.6564973905934,
+          "y": 158.05,
+          "z": 481.3435026094067,
+          "yaw": 2.3561944901922867,
+          "place": "court",
+          "world": "horizon:horizon-geo-1",
+          "geo": "horizon-geo-1"
+        },
+        "sameXZ": true,
+        "standValidated": true,
+        "heightDeltaM": 0.7435326961939097,
+        "restoreToleranceM": 1.6
+      },
+      "footprintChecks": 389,
+      "maxPhysicalFootprintExcessM": -1.1999999999999198,
+      "widestBodyWitness": {
+        "p": [
+          1308.0468754447493,
+          158.0086738604993,
+          471.9531245552508
+        ],
+        "progress": 13.779999999998019,
+        "centrelineDistanceM": 8.023172463874091e-14,
+        "bodyRadiusM": 0.3,
+        "sourceWidthM": 3
+      },
+      "walkingPlanQueries": 65,
+      "steeringFrames": 0,
+      "maxPlannedOffsetM": 0,
+      "completedDistanceM": 15.559999999997672,
+      "finalPosition": [
+        1309.6590789058544,
+        158.00151403657486,
+        470.3409210941457
+      ]
+    }
+  ]
+}

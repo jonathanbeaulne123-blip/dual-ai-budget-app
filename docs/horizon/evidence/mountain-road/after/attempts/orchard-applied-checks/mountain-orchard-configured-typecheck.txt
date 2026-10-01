@@ -1,0 +1,3 @@
+$ node --max-old-space-size=6144 node_modules/typescript/bin/tsc --noEmit
+src/harbour/mountain/roads.ts(8,21): error TS6133: 'ORCHARD_LANE_CENTRE' is declared but its value is never read.
+[ELIFECYCLE] Command failed with exit code 2.

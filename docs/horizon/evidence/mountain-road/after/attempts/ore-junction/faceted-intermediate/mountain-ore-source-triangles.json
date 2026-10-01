@@ -1,0 +1,28 @@
+[
+  {
+    "kind": "before",
+    "total": 36204,
+    "solids": {
+      "oreTunnel.floor": 1476,
+      "oreTunnel.walls": 2988,
+      "oreTunnel.roof": 1452,
+      "oreTunnel.footings": 2952,
+      "oreStation.southPortal.slab": 2880,
+      "southPortal.portal.frame": 36
+    }
+  },
+  {
+    "kind": "after",
+    "total": 38476,
+    "solids": {
+      "oreTunnel.floor": 4584,
+      "oreTunnel.walls": 2976,
+      "oreTunnel.roof": 2292,
+      "oreTunnel.footings": 2928,
+      "oreStation.southPortal.slab": 144,
+      "southPortal.portal.frame": 36,
+      "oreStation.southPortal.crossing": 904,
+      "oreStation.southPortal.roadRetaining": 192
+    }
+  }
+]

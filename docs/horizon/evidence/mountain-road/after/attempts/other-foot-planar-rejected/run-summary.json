@@ -1,0 +1,93 @@
+[
+  {
+    "id": "S1.surface.7.lakeside.footJoin",
+    "path": "/tmp/mountain-other-planar-reduction/S1.surface.7.lakeside.footJoin.json",
+    "triangles": 1060,
+    "testOrigin": [
+      0,
+      0,
+      0
+    ],
+    "note": "Zero test origin models actual default absolute Float32 cards; no production metadata modified.",
+    "exitCode": 0,
+    "seconds": 0.198173125
+  },
+  {
+    "id": "S1.surface.8.lakeside.footJoin",
+    "path": "/tmp/mountain-other-planar-reduction/S1.surface.8.lakeside.footJoin.json",
+    "triangles": 164,
+    "testOrigin": [
+      0,
+      0,
+      0
+    ],
+    "note": "Zero test origin models actual default absolute Float32 cards; no production metadata modified.",
+    "exitCode": 0,
+    "seconds": 0.08555041600000002
+  },
+  {
+    "id": "yearWalk.bed.lakeside.footJoin",
+    "path": "/tmp/mountain-other-planar-reduction/yearWalk.bed.lakeside.footJoin.json",
+    "triangles": 2656,
+    "testOrigin": [
+      0,
+      0,
+      0
+    ],
+    "note": "Zero test origin models actual default absolute Float32 cards; no production metadata modified.",
+    "exitCode": 1,
+    "seconds": 0.08791295899999996
+  },
+  {
+    "id": "yearWalk.shoulders.lakeside.footJoin",
+    "path": "/tmp/mountain-other-planar-reduction/yearWalk.shoulders.lakeside.footJoin.json",
+    "triangles": 1876,
+    "testOrigin": [
+      0,
+      0,
+      0
+    ],
+    "note": "Zero test origin models actual default absolute Float32 cards; no production metadata modified.",
+    "exitCode": 0,
+    "seconds": 0.244038792
+  },
+  {
+    "id": "S1.batter.footJoin",
+    "path": "/tmp/mountain-other-planar-reduction/S1.batter.footJoin.json",
+    "triangles": 88,
+    "testOrigin": [
+      0,
+      0,
+      0
+    ],
+    "note": "Zero test origin models actual default absolute Float32 cards; no production metadata modified.",
+    "exitCode": 0,
+    "seconds": 0.08311524999999997
+  },
+  {
+    "id": "yearWalk.batter.footJoin",
+    "path": "/tmp/mountain-other-planar-reduction/yearWalk.batter.footJoin.json",
+    "triangles": 304,
+    "testOrigin": [
+      0,
+      0,
+      0
+    ],
+    "note": "Zero test origin models actual default absolute Float32 cards; no production metadata modified.",
+    "exitCode": 0,
+    "seconds": 0.0807432079999999
+  },
+  {
+    "id": "mountainV2.footLane.apron",
+    "path": "/tmp/mountain-other-planar-reduction/mountainV2.footLane.apron.json",
+    "triangles": 2004,
+    "testOrigin": [
+      0,
+      0,
+      0
+    ],
+    "note": "Zero test origin models actual default absolute Float32 cards; no production metadata modified.",
+    "exitCode": 0,
+    "seconds": 0.25981495899999996
+  }
+]

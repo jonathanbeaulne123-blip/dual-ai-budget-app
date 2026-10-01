@@ -1,0 +1,19 @@
+[
+  {
+    "id": "V01.plant.framingTrees.7:root:2:heading:0",
+    "kind": "plant-root",
+    "eye": [
+      1364.16,
+      75.839,
+      313.571
+    ],
+    "target": [
+      1365.16,
+      75.839,
+      313.571
+    ],
+    "fov": 58,
+    "district": "crown",
+    "source": "Baked anchor +1.65m; no composed surface seating claim"
+  }
+]

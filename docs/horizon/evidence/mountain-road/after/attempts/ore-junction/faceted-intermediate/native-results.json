@@ -1,0 +1,549 @@
+{
+  "inventoryMode": "road-chain",
+  "baseline": null,
+  "createdAt": "2026-09-30T15:10:59.520Z",
+  "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+  "worldSha256": "09d23d7f69ba638b78277afb6ecf804e358bb3a2d2e452fb67c181286d403bae",
+  "terrainSha256": "6fa7fbb5114e7c8ac55bc5f304e94461b6f1a62d54446daf0a1fded8b42fbb18",
+  "method": "real native skate driver and Horizon world adapter on the same candidate geography; ordinary unchanged paced pursuit; both directions; no restarts",
+  "limits": [
+    "walking stops at first airborne handoff (no parachute continuation)",
+    "scripted pursuit is not skilled human acceptance; brake/sliding driver can cause avoidable deviations",
+    "board profile legal beds are skate/park/pad, bicycle road/trail/pad; footway may deliberately be illegal",
+    "all reaches are separate initial placements and never count as full uninterrupted chain",
+    "0.5 m omitted at each endpoint for initial pose and end tolerance",
+    "no assist, pops, snaps, retries or restart within an attempt",
+    "camera collision callback omitted for headless performance; all body collision geography unchanged; rendering/streaming/region readiness and device behavior untested"
+  ],
+  "results": [
+    {
+      "route": "Ore-south-crossing-road-offset-2m",
+      "routeKind": "reach",
+      "direction": "forward",
+      "mode": "hosted-native-shell-skate-driver",
+      "attempted": true,
+      "shellStartEligible": true,
+      "nativeStartRadius": 98.79777978933862,
+      "pathLengthM": 35.07542382368606,
+      "restarts": 0,
+      "attemptedDistanceM": 34.57542382368606,
+      "endResidualM": 0.44580269265509287,
+      "maxSpeed": 4.095094496906589,
+      "maxTurnRate": 0.20537736442655774,
+      "maxLateralAcceleration": 0.7992256056805581,
+      "contacts": {},
+      "gripMargin": null,
+      "completedDistanceM": 34.129621131030966,
+      "completed": true,
+      "reason": "end",
+      "elapsedS": 9.183333333333334,
+      "maxDeviationM": 0.045233537378445814,
+      "airborneFrames": 0,
+      "events": [],
+      "samples": [
+        {
+          "t": 0,
+          "d": 0,
+          "p": [
+            1365.321120839812,
+            65.44134631729902,
+            683.5314247441083
+          ],
+          "speed": 0.06705417593566464,
+          "velocity": [
+            -0.06670862097564365,
+            0.0066488372013475275,
+            0.0014196343927076307
+          ],
+          "heading": -1.5495184151964136,
+          "turnRate": 0.09910169984708617,
+          "lateralAcceleration": 0.006612434564960084,
+          "steer": -0.04146705124618757,
+          "brake": false,
+          "bendRadius": 144.29187560411924,
+          "phase": "push",
+          "off": 3.584220121337165e-14,
+          "contact": null
+        },
+        {
+          "t": 1,
+          "d": 2.8674515685208877,
+          "p": [
+            1362.3946887122247,
+            65.73844630854549,
+            683.6809756276289
+          ],
+          "speed": 3.900845353664041,
+          "velocity": [
+            -3.872771158892669,
+            0.3835328554726368,
+            0.26672190165877796
+          ],
+          "heading": -1.5020338361801147,
+          "turnRate": 0.025013329397229892,
+          "lateralAcceleration": 0.09710036911241793,
+          "steer": -0.0072729394913336074,
+          "brake": false,
+          "bendRadius": 85.04601371408086,
+          "phase": "push",
+          "off": 0.0020496699254042546,
+          "contact": null
+        },
+        {
+          "t": 2,
+          "d": 6.683760615068367,
+          "p": [
+            1358.587449195214,
+            66.1091432573586,
+            683.9292996115656
+          ],
+          "speed": 3.8164299064134135,
+          "velocity": [
+            -3.7965575857082716,
+            0.34612632568881796,
+            0.17743814593495807
+          ],
+          "heading": -1.5240937237752947,
+          "turnRate": -0.0667133818101373,
+          "lateralAcceleration": 0.2535576670361479,
+          "steer": 0.03755574104093445,
+          "brake": false,
+          "bendRadius": 164.12051593192587,
+          "phase": "push",
+          "off": 0.0125835357894969,
+          "contact": null
+        },
+        {
+          "t": 3,
+          "d": 10.508871013460936,
+          "p": [
+            1354.7644127662347,
+            66.4774331119378,
+            683.9917796996093
+          ],
+          "speed": 3.7984666236870304,
+          "velocity": [
+            -3.7799846351846087,
+            0.3742281454243471,
+            0.00425960149292616
+          ],
+          "heading": -1.569669443989544,
+          "turnRate": 0.002016200128265311,
+          "lateralAcceleration": 0.007621210345253192,
+          "steer": -0.004474371776195163,
+          "brake": false,
+          "bendRadius": 2093.7723067555125,
+          "phase": "push",
+          "off": 0.003282447077852789,
+          "contact": null
+        },
+        {
+          "t": 4,
+          "d": 14.336049758091407,
+          "p": [
+            1350.9370376040379,
+            66.86554071907626,
+            684.012088586588
+          ],
+          "speed": 3.810650001286683,
+          "velocity": [
+            -3.7981894976658612,
+            0.30736154274530064,
+            0.01840799196480118
+          ],
+          "heading": -1.5659498472152582,
+          "turnRate": -0.013319646550793431,
+          "lateralAcceleration": 0.050591135792196276,
+          "steer": 0.009436447638944979,
+          "brake": false,
+          "bendRadius": 75.44476591182956,
+          "phase": "push",
+          "off": 0.00022671265911211057,
+          "contact": null
+        },
+        {
+          "t": 5,
+          "d": 18.137728670241625,
+          "p": [
+            1347.136267376054,
+            67.22472988322605,
+            683.9756248213508
+          ],
+          "speed": 3.8147777623492556,
+          "velocity": [
+            -3.794694312445064,
+            0.37167864069976847,
+            -0.12115873579338042
+          ],
+          "heading": -1.602713941279902,
+          "turnRate": -0.060079452276498024,
+          "lateralAcceleration": 0.22809933227082851,
+          "steer": 0.032052668809642616,
+          "brake": false,
+          "bendRadius": 35.39841454639396,
+          "phase": "push",
+          "off": 0.010955502601086213,
+          "contact": null
+        },
+        {
+          "t": 6,
+          "d": 21.965788096064895,
+          "p": [
+            1343.3212892118736,
+            67.58307508849377,
+            683.6959720144173
+          ],
+          "speed": 3.8232994657629713,
+          "velocity": [
+            -3.7803812361160145,
+            0.3232738820208813,
+            -0.4709888658222456
+          ],
+          "heading": -1.6947453080214174,
+          "turnRate": -0.11778236782511883,
+          "lateralAcceleration": 0.4487046459092754,
+          "steer": 0.05712976465826487,
+          "brake": false,
+          "bendRadius": 50.92337357749941,
+          "phase": "push",
+          "off": 0.02555501440473585,
+          "contact": null
+        },
+        {
+          "t": 7,
+          "d": 25.770731484808675,
+          "p": [
+            1339.5772450775173,
+            67.93940515391154,
+            683.038145580354
+          ],
+          "speed": 3.810237010655458,
+          "velocity": [
+            -3.7053213446051636,
+            0.36865705167739155,
+            -0.80783153493198
+          ],
+          "heading": -1.7854565806645861,
+          "turnRate": -0.0743517443833186,
+          "lateralAcceleration": 0.281968617462931,
+          "steer": 0.037808536605136216,
+          "brake": false,
+          "bendRadius": 31.56754429229255,
+          "phase": "push",
+          "off": 0.013485153117537218,
+          "contact": null
+        },
+        {
+          "t": 8,
+          "d": 29.58499880461924,
+          "p": [
+            1335.8953528210118,
+            68.28943139707398,
+            682.0562226551278
+          ],
+          "speed": 3.816319715030854,
+          "velocity": [
+            -3.6098167313131473,
+            0.3634636401439652,
+            -1.1838131254375182
+          ],
+          "heading": -1.8876875108480782,
+          "turnRate": -0.13919906922100544,
+          "lateralAcceleration": 0.5288134047388385,
+          "steer": 0.07222543206855407,
+          "brake": false,
+          "bendRadius": 18.028283409520107,
+          "phase": "push",
+          "off": 0.02650882830452788,
+          "contact": null
+        },
+        {
+          "t": 9,
+          "d": 33.41808588740738,
+          "p": [
+            1332.3783061995803,
+            68.62669289822297,
+            680.5605829413813
+          ],
+          "speed": 3.818354364704765,
+          "velocity": [
+            -3.3642159984709767,
+            0.3573428498522098,
+            -1.7703634818170426
+          ],
+          "heading": -2.055209889383425,
+          "turnRate": -0.1057078166171266,
+          "lateralAcceleration": 0.40185846836187594,
+          "steer": 0.03988171127357792,
+          "brake": false,
+          "bendRadius": null,
+          "phase": "push",
+          "off": 0.04161808761931109,
+          "contact": null
+        }
+      ],
+      "finalPosition": [
+        1331.8089821097435,
+        68.67577062146515,
+        680.2549485662222
+      ],
+      "finalPhase": "push"
+    },
+    {
+      "route": "Ore-south-crossing-road-offset-2m",
+      "routeKind": "reach",
+      "direction": "reverse",
+      "mode": "hosted-native-shell-skate-driver",
+      "attempted": true,
+      "shellStartEligible": true,
+      "nativeStartRadius": 87.0370304214462,
+      "pathLengthM": 35.075423823686066,
+      "restarts": 0,
+      "attemptedDistanceM": 34.575423823686066,
+      "endResidualM": 0.48908124667767083,
+      "maxSpeed": 4.319444407734586,
+      "maxTurnRate": 0.3033780299234845,
+      "maxLateralAcceleration": 0.925260669646547,
+      "contacts": {},
+      "gripMargin": null,
+      "completedDistanceM": 34.086342577008395,
+      "completed": true,
+      "reason": "end",
+      "elapsedS": 8.233333333333333,
+      "maxDeviationM": 0.027430242225463697,
+      "airborneFrames": 0,
+      "events": [],
+      "samples": [
+        {
+          "t": 0,
+          "d": 0,
+          "p": [
+            1331.8496963488392,
+            68.6718225254064,
+            680.2947133952013
+          ],
+          "speed": 0.10680027739489793,
+          "velocity": [
+            0.09091625667022683,
+            -0.0076408760711524845,
+            0.055517119319772615
+          ],
+          "heading": 1.0225898765184456,
+          "turnRate": 0.3033780299234845,
+          "lateralAcceleration": 0.03231782969632995,
+          "steer": -0.1291512578558934,
+          "brake": false,
+          "bendRadius": 21.3001507797732,
+          "phase": "push",
+          "off": 0,
+          "contact": null
+        },
+        {
+          "t": 1,
+          "d": 3.315866999056532,
+          "p": [
+            1334.9104860075543,
+            68.38226559609724,
+            681.7251672529444
+          ],
+          "speed": 4.294275019209349,
+          "velocity": [
+            4.019492289658628,
+            -0.345175333417481,
+            1.4715072759522536
+          ],
+          "heading": 1.2198574640585162,
+          "turnRate": 0.1764521155646337,
+          "lateralAcceleration": 0.7552820855079952,
+          "steer": -0.0757033562937828,
+          "brake": false,
+          "bendRadius": 38.021876781711406,
+          "phase": "roll",
+          "off": 0.017242291827535224,
+          "contact": null
+        },
+        {
+          "t": 2,
+          "d": 7.572319830718849,
+          "p": [
+            1338.9945768198922,
+            67.9943791961251,
+            682.905858934539
+          ],
+          "speed": 4.316614219778018,
+          "velocity": [
+            4.188295570293781,
+            -0.38602512198282674,
+            0.9707333019142952
+          ],
+          "heading": 1.3430447912034476,
+          "turnRate": 0.0845350904856712,
+          "lateralAcceleration": 0.3634433114880432,
+          "steer": -0.03753044540067121,
+          "brake": false,
+          "bendRadius": 38.711972849757764,
+          "phase": "roll",
+          "off": 0.01577391765557339,
+          "contact": null
+        },
+        {
+          "t": 3,
+          "d": 11.827593242097215,
+          "p": [
+            1343.1753693945293,
+            67.59556741734679,
+            683.6763316824453
+          ],
+          "speed": 4.283259553011426,
+          "velocity": [
+            4.233068775049188,
+            -0.36214952608186124,
+            0.5443242277594229
+          ],
+          "heading": 1.4429095532008396,
+          "turnRate": 0.12447760837527522,
+          "lateralAcceleration": 0.5312607513080446,
+          "steer": -0.05899413917421015,
+          "brake": false,
+          "bendRadius": 48.681606857139506,
+          "phase": "roll",
+          "off": 0.025295715699976587,
+          "contact": null
+        },
+        {
+          "t": 4,
+          "d": 16.08147622307078,
+          "p": [
+            1347.4134911966469,
+            67.19834171566822,
+            683.9823168114561
+          ],
+          "speed": 4.2453517122275315,
+          "velocity": [
+            4.225816322840676,
+            -0.3896248508239881,
+            0.11696171060188545
+          ],
+          "heading": 1.5431254938498975,
+          "turnRate": 0.06623480208963084,
+          "lateralAcceleration": 0.28000329673243335,
+          "steer": -0.02792083177879729,
+          "brake": false,
+          "bendRadius": 188.39923923381593,
+          "phase": "roll",
+          "off": 0.012196595371277354,
+          "contact": null
+        },
+        {
+          "t": 5,
+          "d": 20.33568338146456,
+          "p": [
+            1351.6671760953852,
+            66.79205391347037,
+            684.0067514500502
+          ],
+          "speed": 4.253675005079816,
+          "velocity": [
+            4.229903380198275,
+            -0.4481281790116735,
+            -0.029147524829068582
+          ],
+          "heading": 1.577687042936728,
+          "turnRate": 0.006358496998872809,
+          "lateralAcceleration": 0.026896466494579496,
+          "steer": -0.0002139637500963243,
+          "brake": false,
+          "bendRadius": 619.5955238807819,
+          "phase": "roll",
+          "off": 0.0005418096103604876,
+          "contact": null
+        },
+        {
+          "t": 6,
+          "d": 24.586439792573767,
+          "p": [
+            1355.9181302705128,
+            66.36276443663031,
+            683.9927014912349
+          ],
+          "speed": 4.2680386984070635,
+          "velocity": [
+            4.247601277542704,
+            -0.41664925922648804,
+            -0.021002688015316275
+          ],
+          "heading": 1.5757408862015196,
+          "turnRate": 0.03993686632719928,
+          "lateralAcceleration": 0.169637958139275,
+          "steer": -0.026500026370682186,
+          "brake": false,
+          "bendRadius": 63.71283108354867,
+          "phase": "roll",
+          "off": 0.003673679656706977,
+          "contact": null
+        },
+        {
+          "t": 7,
+          "d": 28.840002163556598,
+          "p": [
+            1360.1667718022434,
+            65.95767229530935,
+            683.8371082669196
+          ],
+          "speed": 4.25534260226074,
+          "velocity": [
+            4.22588918639354,
+            -0.41652158538913353,
+            -0.2762444856323258
+          ],
+          "heading": 1.6360730055212862,
+          "turnRate": 0.033871760580646,
+          "lateralAcceleration": 0.14344380850515467,
+          "steer": -0.010698988454758983,
+          "brake": false,
+          "bendRadius": 85.64787078383343,
+          "phase": "roll",
+          "off": 0.006996745271423226,
+          "contact": null
+        },
+        {
+          "t": 8,
+          "d": 33.092568141118186,
+          "p": [
+            1364.411422465359,
+            65.53524358732814,
+            683.5730427430633
+          ],
+          "speed": 4.298776323772437,
+          "velocity": [
+            4.273736284950053,
+            -0.4248369059896305,
+            -0.18485034984262744
+          ],
+          "heading": 1.6140220184757101,
+          "turnRate": -0.04317125397982568,
+          "lateralAcceleration": 0.18467505675558493,
+          "steer": 0.016384296574420844,
+          "brake": false,
+          "bendRadius": null,
+          "phase": "roll",
+          "off": 0.013881665188497157,
+          "contact": null
+        }
+      ],
+      "finalPosition": [
+        1365.3329936222906,
+        65.44018201842786,
+        683.5371100152779
+      ],
+      "finalPhase": "roll"
+    }
+  ],
+  "sourceProof": {
+    "runtimeBundleSha256": "dadc602dc90f73bc6703cf1d7f63c11154971e5b25f1a8060f26d01880b5646b",
+    "walkingRuntimeSha256": "d2671a83a32019eb811618d9d3974042e3bf347c2128299f8cd4238804b502ec",
+    "auditSha256": "4c8877adc9d9ce94fcfad323eb76dce44a064d573aee2ed7144f847f1f258558",
+    "walkingClearanceSha256": "a37cb293334666ab30a701ce493723f84c043ac37c1ce8089a6c3302456ce25a",
+    "walkingClearance": false
+  }
+}

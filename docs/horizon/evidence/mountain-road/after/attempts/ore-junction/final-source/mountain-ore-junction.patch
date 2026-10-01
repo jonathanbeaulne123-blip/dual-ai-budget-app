@@ -1,0 +1,502 @@
+--- /dev/null
++++ b/src/harbour/horizon/land/mountainV2/roadSource.ts
+@@ -0,0 +1,18 @@
++/** Offline access to the carried road's authored transverse frames. The source
++ * is lazy: importing the terrain sampler must not build a road index at runtime. */
++import V2 from './v2-data.json';
++import {drawnRoadFloor} from '../../regions/mountainV2/drawnRoadFloor';
++import {drawnRoadGroundCeiling} from '../../regions/mountainV2/drawnRoadGround';
++
++function source(){
++  const samples=V2.road.samples;
++  const rows=samples.map(s=>[-s.hw,-s.hw+.55,-.45,.45,s.hw-.55,s.hw].map(w=>
++    [s.at[0]!+s.normal[0]!*w,s.at[1]!,s.at[2]!+s.normal[2]!*w] as [number,number,number]));
++  const points=samples.map(s=>s.at as [number,number,number]),floor=drawnRoadFloor(rows);
++  const groundCeiling=drawnRoadGroundCeiling({id:'mountain-road',kind:'road',points,walkable:true,halfWidth:Math.max(...samples.map(s=>s.hw)),widths:samples.map(s=>s.hw),landingRows:rows,material:'path'});
++  return {samples,rows,points,floor,groundCeiling};
++}
++let cached:ReturnType<typeof source>|undefined;
++export const mountainRoadSource=()=>cached??=source();
++/** Physical top; the five-centimetre paint lift is decorative, not another floor. */
++export const mountainJoinRoadTop=(x:number,z:number,ceiling=Infinity):number|null=>mountainRoadSource().floor(x,z,ceiling)?.y??null;
+--- a/src/harbour/horizon/land/mountainV2/joins.ts
++++ b/src/harbour/horizon/land/mountainV2/joins.ts
+@@ -1,22 +1,12 @@
+ /** Horizon's local joins to the carried mountain. Native terrain, road and landmarks are never rewritten. */
+-import V2 from './v2-data.json';
+ import type {HeightQuery,LandCuts,StructureSolid,XYZ} from '../interfaces';
+-import {drawnRoadFloor} from '../../regions/mountainV2/drawnRoadFloor';
+-import {drawnRoadGroundCeiling} from '../../regions/mountainV2/drawnRoadGround';
+ import {v2GroundAt} from './ground';
+ import {box,mitredSlab,nearestOnPath,prism,slab,solid} from '../structures/mesh';
+ import {pier} from '../structures/foundations';
+ 
+-// Read every source RoadSample, including its actual transverse frame. Rebuilding
+-// a normal from the centreline would lose any authored frame fairing at a bend.
+-const samples=V2.road.samples;
+-const roadRows=samples.map(s=>[-s.hw,-s.hw+.55,-.45,.45,s.hw-.55,s.hw].map(w=>
+-  [s.at[0]!+s.normal[0]!*w,s.at[1]!,s.at[2]!+s.normal[2]!*w] as [number,number,number]));
+-const roadFloor=drawnRoadFloor(roadRows);
+-const roadPoints=samples.map(s=>s.at as [number,number,number]);
+-const roadGroundCeiling=drawnRoadGroundCeiling({id:'mountain-road',kind:'road',points:roadPoints,walkable:true,halfWidth:Math.max(...samples.map(s=>s.hw)),widths:samples.map(s=>s.hw),landingRows:roadRows,material:'path'});
+-/** Offline source-derived road top, in Horizon coordinates. */
+-export const mountainJoinRoadTop=(x:number,z:number,ceiling=Infinity):number|null=>roadFloor(x,z,ceiling)?.y??null;
++import {mountainRoadSource} from './roadSource';
++export {mountainJoinRoadTop} from './roadSource';
++const {samples,points:roadPoints,floor:roadFloor,groundCeiling:roadGroundCeiling}=mountainRoadSource();
+ 
+ /** A painted offer footprint needs no second floor over the region's graded road. */
+ function summitThreshold(cuts:LandCuts):void {
+--- /dev/null
++++ b/src/harbour/horizon/land/underground/oreRoad.ts
+@@ -0,0 +1,214 @@
++/** The Ore Line's existing south mouth joins the carried road at grade. Only
++ * Horizon's lining, apron and exposed ground change; rail points and native
++ * Mountain surfaces remain authoritative. */
++import {HORIZON_MANIFEST as M} from '../../world/manifest';
++import type {BedCut,HeightQuery,LandCuts,StructureSolid,XY,XYZ} from '../interfaces';
++import {mountainRoadSource} from '../mountainV2/roadSource';
++import {clamp,distance,mix,nearestOnPath,plan,prism,solid} from '../structures/mesh';
++
++const door=M.underground.doors.southPortal;
++const mouth=[door.xy[0]-8,door.xy[0]+8,door.xy[1]-9,door.xy[1]+9] as const;
++const inMouth=(x:number,z:number,margin=0)=>x>=mouth[0]-margin&&x<=mouth[1]+margin&&z>=mouth[2]-margin&&z<=mouth[3]+margin;
++const lerp=(a:XYZ,b:XYZ,t:number):XYZ=>[mix(a[0],b[0],t),mix(a[1],b[1],t),mix(a[2],b[2],t)];
++
++type CrossingPlane={gx:number;gz:number;c:number};
++const crossingProfiles=new WeakMap<LandCuts,{x:number;z:number;planes:CrossingPlane[]}>();
++function crossingProfile(cuts:LandCuts){
++  const cached=crossingProfiles.get(cuts);if(cached)return cached;
++  const ore=cuts.beds.find(b=>b.id==='ORE');if(!ore)return null;
++  const end=ore.points.at(-1)!,previous=ore.points.at(-2)!,l=distance(plan(previous),plan(end)),ux=(end[0]-previous[0])/l,uz=(end[2]-previous[2])/l,grade=(end[1]-previous[1])/l;
++  const corners=[[-3.8,-.54],[-3.8,.54],[0,.54],[0,-.54]].map(([s,w])=>({x:ux*s!-uz*w!,z:uz*s!+ux*w!,y:end[1]+.115+grade*s!}));
++  const planes:CrossingPlane[]=[{gx:grade*ux,gz:grade*uz,c:end[1]+.115}];
++  for(let i=0;i<16;i++){
++    const x=Math.cos(i*Math.PI/8),z=Math.sin(i*Math.PI/8),G=.115;
++    planes.push({gx:-G*x,gz:-G*z,c:Math.max(...corners.map(p=>p.y+G*(x*p.x+z*p.z)))});
++  }
++  const profile={x:end[0],z:end[2],planes};crossingProfiles.set(cuts,profile);return profile;
++}
++const planeAt=(p:CrossingPlane,x:number,z:number,profile:{x:number;z:number})=>p.c+p.gx*(x-profile.x)+p.gz*(z-profile.z);
++/** A faceted stone apron, at most 11.5% absolute grade. Its central 1.08 x 3.8m
++ * infill is 5mm below the fixed rail heads; each surrounding facet descends to
++ * the road. Explicit facet intersections keep the rendered mesh within 12%. */
++export function oreCrossingTop(cuts:LandCuts,x:number,z:number):number {
++  const p=crossingProfile(cuts);return p?Math.min(...p.planes.map(q=>planeAt(q,x,z,p))):-Infinity;
++}
++
++/** Extend the exact lower road plane for just the 2m paved transition beyond its
++ * edge. This is a mesh shaping function, never a runtime surface candidate. */
++export function oreStationFloor(cuts:LandCuts,x:number,z:number,height:number):number{
++  if(!cuts.beds.some(b=>b.id==='mountainV2.road'))return height;
++  const {floor,points}=mountainRoadSource(),at=floor(x,z,height+1),crossing=oreCrossingTop(cuts,x,z);
++  if(at)return Math.max(crossing,Math.min(height,at.y));
++  const near=nearestOnPath([x,z],points);if(Math.abs(near.at[1]-height)>1.5||near.distance>8)return Math.max(height,crossing);
++  let outside=0,inside=1;
++  for(let k=0;k<24;k++){
++    const t=(outside+inside)/2;
++    if(floor(mix(x,near.at[0],t),mix(z,near.at[2],t),height+1))inside=t;else outside=t;
++  }
++  const X=mix(x,near.at[0],inside),Z=mix(z,near.at[2],inside),edge=floor(X,Z,height+1);if(!edge)return Math.max(height,crossing);
++  const t=clamp(Math.hypot(x-X,z-Z)/2,0,1),road=edge.y+edge.gx*(x-X)+edge.gz*(z-Z);
++  return Math.max(crossing,Math.min(height,mix(road,height,t*t*(3-2*t))));
++}
++
++/** Same apron footprint, now sharing the actual road triangles across its top. */
++export function oreStationApron(cuts:LandCuts,p:XY,height:number):void{
++  if(!cuts.beds.some(b=>b.id==='mountainV2.road'))return;
++  const id='oreStation.southPortal.slab',out=solid(id,'pad','stone','floor',[],'crown');
++  const top=(x:number,z:number):XYZ=>[x,oreStationFloor(cuts,x,z,height),z];
++  for(let x=p[0]-5;x<p[0]+5-.01;x+=.5)for(let z=p[1]-3;z<p[1]+3-.01;z+=.5){
++    const corners=[top(x,z),top(x,z+.5),top(x+.5,z+.5),top(x+.5,z)];
++    if(corners.every(q=>mountainRoadSource().floor(q[0],q[2],height+1)))continue;
++    prism(out,corners,corners.map(q=>q[1]-.35));
++  }
++  cuts.solids=cuts.solids.map(s=>s.id===id?out:s);
++}
++
++/** Keep the existing portal frame's plan placement outside the lower road. */
++export function orePortalFrame(cuts:LandCuts,ore:readonly XYZ[]):{at:XYZ;normal:XY}{
++  const road=cuts.beds.find(b=>b.id==='mountainV2.road')!;
++  for(let i=ore.length-1;i>0;i--){
++    const a=ore[i]!,b=ore[i-1]!,l=distance(plan(a),plan(b));
++    for(let d=0;d<=l;d+=.25){const p=lerp(a,b,d/l);
++      if(nearestOnPath(plan(p),road.points).distance>road.width/2+3)return {at:p,normal:[-(a[2]-b[2])/l,(a[0]-b[0])/l]};
++    }
++  }
++  throw new Error('Ore portal has no frame position clear of the Mountain Road');
++}
++
++/** The one-metre-deep lintel clears the uphill rail bed at its whole footprint. */
++export function orePortalLintelRise(cuts:LandCuts,ore:readonly XYZ[]):number{
++  const a=ore.at(-2)!,b=ore.at(-1)!,l=distance(plan(a),plan(b)),u:XY=[(b[0]-a[0])/l,(b[2]-a[2])/l],frame=orePortalFrame(cuts,ore);
++  let rise=Math.abs(b[1]-a[1])/l*.5;
++  for(const d of [-.5,.5])for(let w=-1.95;w<=1.95;w+=.15){
++    const x=frame.at[0]+u[0]*d-u[1]*w,z=frame.at[2]+u[1]*d+u[0]*w;
++    rise=Math.max(rise,oreCrossingTop(cuts,x,z)-frame.at[1]);
++  }
++  return rise+.002;
++}
++
++/** A closed paving course within the actual road triangles and at most 18m
++ * downhill / 10m uphill. Clip every ramp facet against its neighbours and the
++ * native road plane: no triangle straddles two grades and invents a steeper lip. */
++export function addOreLevelCrossing(cuts:LandCuts):void {
++  const profile=crossingProfile(cuts);if(!profile)return;
++  const {rows,points}=mountainRoadSource(),at=nearestOnPath(door.xy as XY,points).along;
++  const out=solid('oreStation.southPortal.crossing','levelCrossing','stone','floor',['mountainV2.road','ORE'],'crown'),vertices=new Map<string,number>(),edges=new Map<string,{a:number;b:number;count:number}>();
++  const clip=(polygon:readonly XYZ[],value:(p:XYZ)=>number):XYZ[]=>{
++    const result:XYZ[]=[];
++    for(let i=0;i<polygon.length;i++){
++      const a=polygon[i]!,b=polygon[(i+1)%polygon.length]!,fa=value(a),fb=value(b),inside=fa>=-1e-9;
++      if(inside)result.push(a);if(inside!==(fb>=-1e-9))result.push(lerp(a,b,fa/(fa-fb)));
++    }
++    return result;
++  };
++  const vertex=(p:XYZ,top:number)=>{
++    const key=`${p[0].toFixed(7)}:${p[2].toFixed(7)}`,existing=vertices.get(key);if(existing!==undefined)return existing;
++    const id=out.positions.length/3;out.positions.push(p[0],top,p[2],p[0],p[1]-.12,p[2]);vertices.set(key,id);return id;
++  };
++  const edge=(a:number,b:number)=>{const key=a<b?`${a}:${b}`:`${b}:${a}`,e=edges.get(key);if(e)e.count++;else edges.set(key,{a,b,count:1});};
++  let along=0;
++  for(let i=1;i<rows.length;i++){
++    const a=points[i-1]!,b=points[i]!,l=distance(plan(a),plan(b)),s0=along,s1=along+l;along=s1;
++    if(s1<at-18||s0>at+10)continue;
++    const station=(p:XYZ)=>s0+((p[0]-a[0])*(b[0]-a[0])+(p[2]-a[2])*(b[2]-a[2]))/l;
++    for(let k=1;k<rows[i]!.length;k++)for(const triangle of [[rows[i-1]![k-1]!,rows[i]![k-1]!,rows[i]![k]!],[rows[i-1]![k-1]!,rows[i]![k]!,rows[i-1]![k]!] ] as const){
++      const boundary=clip(clip(triangle,p=>station(p)-(at-18)),p=>at+10-station(p));if(boundary.length<3)continue;
++      if(boundary.some(p=>(Math.abs(station(p)-(at-18))<1e-5||Math.abs(station(p)-(at+10))<1e-5)&&oreCrossingTop(cuts,p[0],p[2])>p[1]+1e-5))throw new Error('Ore crossing does not close inside its approved 28m road reach');
++      for(const plane of profile.planes){
++        let polygon=clip(boundary,p=>planeAt(plane,p[0],p[2],profile)-p[1]);
++        for(const other of profile.planes){if(other===plane)continue;polygon=clip(polygon,p=>planeAt(other,p[0],p[2],profile)-planeAt(plane,p[0],p[2],profile));if(polygon.length<3)break;}
++        if(polygon.length<3)continue;
++        const q=polygon.map(p=>vertex(p,planeAt(plane,p[0],p[2],profile))).filter((v,k,all)=>v!==all[(k+all.length-1)%all.length]);if(q.length<3)continue;
++        const p=(i:number)=>out.positions.slice(q[i]!*3,q[i]!*3+3),A=p(0),B=p(1),C=p(2),ny=(B[2]!-A[2]!)*(C[0]!-A[0]!)-(B[0]!-A[0]!)*(C[2]!-A[2]!);
++        if(Math.abs(ny)<1e-10)continue;if(ny<0)q.reverse();
++        for(let k=1;k<q.length-1;k++)out.indices.push(q[0]!,q[k]!,q[k+1]!,q[0]!+1,q[k+1]!+1,q[k]!+1);
++        for(let k=0;k<q.length;k++)edge(q[k]!,q[(k+1)%q.length]!);
++      }
++    }
++  }
++  for(const {a,b,count}of edges.values())if(count===1)out.indices.push(a,a+1,b+1,a,b+1,b);
++  if(out.indices.length)cuts.solids.push(out);
++}
++
++/** End roof and walls at the existing portal frame, retaining the earlier road
++ * underpass. The floor continues as a closed stone apron down to the road. */
++export function openOreRoadJunction(cuts:LandCuts,base:HeightQuery):void{
++  const ore=cuts.beds.find(b=>b.id==='ORE');if(!ore||!cuts.beds.some(b=>b.id==='mountainV2.road'))return;
++  const frame=orePortalFrame(cuts,ore.points),end=ore.points.at(-1)!,prev=ore.points.at(-2)!,L=distance(plan(prev),plan(end));
++  const u:XY=[(end[0]-prev[0])/L,(end[2]-prev[2])/L],station=(p:XYZ)=>(p[0]-frame.at[0])*u[0]+(p[2]-frame.at[2])*u[1];
++  for(const id of ['oreTunnel.walls','oreTunnel.roof','oreTunnel.floor','oreTunnel.footings']){
++    const original=cuts.solids.find(s=>s.id===id);if(!original)continue;
++    const out:StructureSolid={...original,positions:[],indices:[]};
++    for(let o=0;o<original.positions.length;o+=24){
++      const v=Array.from({length:8},(_,k):XYZ=>[original.positions[o+k*3]!,original.positions[o+k*3+1]!,original.positions[o+k*3+2]!]);
++      const a=lerp(v[4]!,v[5]!, .5),b=lerp(v[7]!,v[6]!, .5),s0=station(a),s1=station(b);
++      // Only the final straight portal approach is edited, never another Ore leg.
++      const begin=id==='oreTunnel.floor'||id==='oreTunnel.roof'?-2:0;
++      if(distance(plan(a),plan(end))>20||distance(plan(b),plan(end))>20||Math.min(s0,s1)<-12||Math.max(s0,s1)<=begin){prism(out,v.slice(4),v.slice(0,4).map(p=>p[1]));continue;}
++      const split=clamp((begin-s0)/(s1-s0||1),0,1);
++      const strip=(from:number,to:number)=>{
++        const corners=[lerp(v[4]!,v[7]!,from),lerp(v[5]!,v[6]!,from),lerp(v[5]!,v[6]!,to),lerp(v[4]!,v[7]!,to)];
++        prism(out,corners,[mix(v[0]![1],v[3]![1],from),mix(v[1]![1],v[2]![1],from),mix(v[1]![1],v[2]![1],to),mix(v[0]![1],v[3]![1],to)]);
++      };
++      if(split>0)strip(0,split);
++      if(id!=='oreTunnel.floor'&&id!=='oreTunnel.roof')continue;
++      const to=id==='oreTunnel.roof'?clamp(-s0/(s1-s0||1),0,1):1,from=s0>=begin?0:split;if(to<=from)continue;
++      const along=Math.max(1,Math.ceil(distance(plan(a),plan(b))*(to-from)/.4)),across=id==='oreTunnel.roof'?12:9;
++      const q=(t:number,w:number):XYZ=>{const p=lerp(lerp(v[4]!,v[7]!,t),lerp(v[5]!,v[6]!,t),w),h=id==='oreTunnel.roof'?Math.max(p[1],oreStationFloor(cuts,p[0],p[2],p[1]-3.8)+3.8)+.01:oreStationFloor(cuts,p[0],p[2],p[1]);return[p[0],h,p[2]];};
++      for(let j=0;j<along;j++)for(let k=0;k<across;k++){
++        const t0=mix(from,to,j/along),t1=mix(from,to,(j+1)/along),w0=k/across,w1=(k+1)/across;
++        const corners=[q(t0,w0),q(t0,w1),q(t1,w1),q(t1,w0)];prism(out,corners,corners.map(p=>id==='oreTunnel.roof'?p[1]-.6:Math.min(p[1]-.6,base(p[0],p[2])-.25)));
++      }
++    }
++    original.positions=out.positions;original.indices=out.indices;
++  }
++  // The rail geometry and authored cart route remain fixed. Bearing strips fill
++  // only the space below the original rail toes where the apron was lowered.
++  const bearings=solid('ORE.southPortal.railBearings','beam','stone','support',['ORE'],'crown'),normal:XY=[-u[1],u[0]],run=distance(plan(frame.at),plan(end)),count=Math.ceil(run/.4);
++  for(let j=0;j<count;j++)for(const side of [-.45,.45]){
++    const a=lerp(frame.at,end,j/count),b=lerp(frame.at,end,(j+1)/count),q=(p:XYZ,w:number):XYZ=>[p[0]+normal[0]*w,p[1],p[2]+normal[1]*w];
++    const corners=[q(a,side-.045),q(a,side+.045),q(b,side+.045),q(b,side-.045)],bottom=corners.map(p=>Math.min(p[1]-.005,oreStationFloor(cuts,p[0],p[2],p[1])-.01));
++    if(corners.some((p,i)=>p[1]-bottom[i]!>.011))prism(bearings,corners,bottom);
++  }
++  if(bearings.indices.length)cuts.solids.push(bearings);
++  addOreLevelCrossing(cuts);
++  // A real retaining face supports the outer road edge across the exposed mouth.
++  // It stays below the road and beyond the existing cart terminal, not across it.
++  const retaining=solid('oreStation.southPortal.roadRetaining','retainingWall','stone','support',['mountainV2.road'],'crown'),{samples}=mountainRoadSource();
++  for(let i=1;i<samples.length;i++){
++    const a=samples[i-1]!,b=samples[i]!;if(a.support==='bridge'||b.support==='bridge'||Math.abs(a.at[1]-door.h)>1.5)continue;
++    const corner=(s:typeof a,w:number):XYZ=>[s.at[0]!+s.normal[0]!*w,s.at[1]!-.02,s.at[2]!+s.normal[2]!*w];
++    const A=corner(a,a.hw),B=corner(b,b.hw);if(!inMouth(A[0],A[2])&&!inMouth(B[0],B[2]))continue;
++    const corners=[corner(a,a.hw-.2),corner(a,a.hw+.35),corner(b,b.hw+.35),corner(b,b.hw-.2)];
++    const [p,q,r]=corners;if((q![2]-p![2])*(r![0]-p![0])-(q![0]-p![0])*(r![2]-p![2])<0)corners.reverse();
++    if(corners.some(p=>nearestOnPath(plan(p),ore.points).distance<2.6))throw new Error('Ore retaining face entered the protected cart aperture');
++    prism(retaining,corners,corners.map(p=>Math.min(p[1]-.35,base(p[0],p[2])-.25)));
++  }
++  if(retaining.indices.length)cuts.solids.push(retaining);
++}
++
++/** Every full/lite lattice triangle touching the exposed south-mouth road lies
++ * below its actual source triangle planes. Only Horizon terrain is lowered;
++ * the region's native ground and the upper road underpass remain unchanged. */
++export function oreRoadGroundCeiling(beds:readonly BedCut[],rasterMargin=0):(x:number,z:number)=>number{
++  if(!beds.some(b=>b.id==='mountainV2.road')||!beds.some(b=>b.id==='ORE'))return()=>Infinity;
++  const ore=beds.find(b=>b.id==='ORE')!,{rows}=mountainRoadSource(),triangles:{a:XYZ;gx:number;gz:number;minX:number;maxX:number;minZ:number;maxZ:number}[]=[];
++  for(let i=1;i<rows.length;i++){
++    if(Math.abs(rows[i]![0]![1]-door.h)>1.5)continue;
++    for(let k=1;k<rows[i]!.length;k++)for(const [a,b,c]of [[rows[i-1]![k-1]!,rows[i]![k-1]!,rows[i]![k]!],[rows[i-1]![k-1]!,rows[i]![k]!,rows[i-1]![k]!] ] as const){
++      const minX=Math.min(a[0],b[0],c[0]),maxX=Math.max(a[0],b[0],c[0]),minZ=Math.min(a[2],b[2],c[2]),maxZ=Math.max(a[2],b[2],c[2]);
++      if(maxX<mouth[0]||minX>mouth[1]||maxZ<mouth[2]||minZ>mouth[3])continue;
++      const dx=b[0]-a[0],dz=b[2]-a[2],ex=c[0]-a[0],ez=c[2]-a[2],det=dx*ez-dz*ex;if(Math.abs(det)<1e-9)continue;
++      triangles.push({a,gx:((b[1]-a[1])*ez-(c[1]-a[1])*dz)/det,gz:(dx*(c[1]-a[1])-ex*(b[1]-a[1]))/det,minX,maxX,minZ,maxZ});
++    }
++  }
++  return(x,z)=>{
++    if(!inMouth(x,z,rasterMargin))return Infinity;
++    // A road-only lattice cap can put previously overhead earth inside the cart
++    // envelope. Keep that same mouth lattice below the visible Ore floor too.
++    const near=nearestOnPath([x,z],ore.points);let value=near.distance<=ore.width/2+rasterMargin?near.at[1]-.25:Infinity;
++    for(const t of triangles)if(x>=t.minX-rasterMargin&&x<=t.maxX+rasterMargin&&z>=t.minZ-rasterMargin&&z<=t.maxZ+rasterMargin)
++      value=Math.min(value,t.a[1]+t.gx*(x-t.a[0])+t.gz*(z-t.a[2])-.08);
++    return value;
++  };
++}
+--- a/src/harbour/horizon/land/underground/build.ts
++++ b/src/harbour/horizon/land/underground/build.ts
+@@ -6,65 +6,10 @@
+ import { buildStair, tunnel } from '../structures/build';
+ import { box, clamp, distance, mix, nearestOnPath, pathLength, plan, prism, slab, solid } from '../structures/mesh';
+ 
++import {oreStationApron,openOreRoadJunction,orePortalFrame,orePortalLintelRise} from './oreRoad';
++
+ export const ROOM_DIMENSIONS:Record<string,{size:XY;floor:number;clear:number}>={lanternCave:{size:[46,32],floor:42,clear:18},deep:{size:[64,60],floor:38,clear:30},bellGallery:{size:[30,26],floor:90,clear:15},sealedDrift:{size:[26,18],floor:42,clear:8}};
+-/** The train end stays at its authored level; the road edge shares the road's grade. */
+-export function oreStationFloor(cuts:LandCuts,x:number,z:number,height:number):number{
+-  const road=cuts.beds.find(b=>b.id==='mountainV2.road');if(!road)return height;
+-  const hit=nearestOnPath([x,z],road.points),t=clamp((hit.distance-road.width/2-.4)/2,0,1);
+-  return mix(hit.at[1],height,t*t*(3-2*t));
+-}
+-/** The station stays level at the train; its road-side apron follows the through road.
+-
+- * A single tessellated solid supplies the visible floor, underside and body collision. */
+-export function oreStationApron(cuts:LandCuts,p:XY,height:number):void{
+-  const road=cuts.beds.find(b=>b.id==='mountainV2.road');if(!road)return;
+-  const id='oreStation.southPortal.slab',apron=solid(id,'pad','stone','floor',[],'crown');
+-  const top=(x:number,z:number):XYZ=>[x,oreStationFloor(cuts,x,z,height),z];
+-  for(let x=p[0]-5;x<p[0]+5-.01;x+=.5)for(let z=p[1]-3;z<p[1]+3-.01;z+=.5){
+-    const corners=[top(x,z),top(x,z+.5),top(x+.5,z+.5),top(x+.5,z)];prism(apron,corners,corners.map(q=>q[1]-.35));
+-  }
+-  cuts.solids=cuts.solids.map(s=>s.id===id?apron:s);
+-}
+-
+-/** End the Ore Line lining at the carriageway, including body clearance on its edges.
+- * The opening is cut from the actual mesh, so drawing and collision keep the same boundary. */
+-export function openOreRoadJunction(cuts:LandCuts):void{
+-  const road=cuts.beds.find(b=>b.id==='mountainV2.road'),wall=cuts.solids.find(s=>s.id==='oreTunnel.walls');
+-  if(!road||!wall)return;
+-  const out={...wall,positions:[] as number[],indices:[] as number[]};
+-  const lerp=(a:XYZ,b:XYZ,t:number):XYZ=>[mix(a[0],b[0],t),mix(a[1],b[1],t),mix(a[2],b[2],t)];
+-  for(let o=0;o<wall.positions.length;o+=24){
+-    const v=Array.from({length:8},(_,i):XYZ=>[wall.positions[o+i*3]!,wall.positions[o+i*3+1]!,wall.positions[o+i*3+2]!]);
+-    const count=Math.max(1,Math.ceil(distance(plan(v[4]!),plan(v[7]!))/.25));
+-    let start:number|null=null;
+-    for(let k=0;k<=count;k++){
+-      const t=(k+.5)/count,q=lerp(v[4]!,v[7]!,t),hit=nearestOnPath(plan(q),road.points);
+-      const open=k<count&&hit.distance<road.width/2+1&&q[1]>hit.at[1]+.2&&v[0]![1]<hit.at[1]+3.2;
+-      if(k<count&&!open&&start===null)start=k/count;
+-      if((open||k===count)&&start!==null){
+-        const end=k/count;
+-        prism(out,[lerp(v[4]!,v[7]!,start),lerp(v[5]!,v[6]!,start),lerp(v[5]!,v[6]!,end),lerp(v[4]!,v[7]!,end)],
+-          [mix(v[0]![1],v[3]![1],start),mix(v[1]![1],v[2]![1],start),mix(v[1]![1],v[2]![1],end),mix(v[0]![1],v[3]![1],end)]);
+-        start=null;
+-      }
+-    }
+-  }
+-  wall.positions=out.positions;wall.indices=out.indices;
+-}
+-
+-/** Seat the south doorway on the rail approach before it enters the road's clear width. */
+-export function orePortalFrame(cuts:LandCuts,ore:readonly XYZ[]):{at:XYZ;normal:XY}{
+-  const road=cuts.beds.find(b=>b.id==='mountainV2.road')!;
+-  for(let i=ore.length-1;i>0;i--){
+-    const a=ore[i]!,b=ore[i-1]!,l=distance(plan(a),plan(b));
+-    for(let d=0;d<=l;d+=.25){
+-      const t=d/l,p:XYZ=[mix(a[0],b[0],t),mix(a[1],b[1],t),mix(a[2],b[2],t)];
+-      if(nearestOnPath(plan(p),road.points).distance>road.width/2+3)
+-        return{at:p,normal:[-(a[2]-b[2])/l,(a[0]-b[0])/l]};
+-    }
+-  }
+-  throw new Error('Ore portal has no frame position clear of the Mountain Road');
+-}
++export {oreStationFloor,oreStationApron,openOreRoadJunction,orePortalFrame} from './oreRoad';
+ 
+ /** A passage lining stops at the chamber volume; room walls open only where a passage actually meets them. */
+ function openRoomConnections(cuts:LandCuts):void {
+@@ -225,10 +170,10 @@
+       addFlatPad(cuts,`oreStation.${id}`,'landing',p,door.h,[10,6],0,true);
+       if(id==='southPortal')oreStationApron(cuts,p,door.h);
+       const placement=id==='southPortal'?orePortalFrame(cuts,ore):{at:[p[0],door.h,p[1]] as XYZ,normal:[1,0] as XY};
+-      const q=placement.at,n=placement.normal,rotation=Math.atan2(n[1],n[0])*180/Math.PI;
++      const q=placement.at,n=placement.normal,rotation=Math.atan2(n[1],n[0])*180/Math.PI,lintelRise=id==='southPortal'?orePortalLintelRise(cuts,ore):0;
+       const frame=solid(`${id}.portal.frame`,'portal','timber','wall',['ORE'],'crown');
+       for(const side of [-1,1])box(frame,[q[0]+n[0]*side*2.2,q[2]+n[1]*side*2.2],q[1]+3.8,[.5,1],q[1]-.1,rotation);
+-      box(frame,plan(q),q[1]+3.8,[4.9,1],q[1]+3.2,rotation);cuts.solids.push(frame);
++      box(frame,plan(q),q[1]+3.8+lintelRise,[4.9,1],q[1]+3.2+lintelRise,rotation);cuts.solids.push(frame);
+     }
+   }
+   // v2.6 (D-M4/D-M7): Crown Road's turning circle is gone; the portal opens onto Mountain v2's road (its lower switchback leg), so
+@@ -236,7 +181,7 @@
+   {const road=cuts.beds.find(b=>b.id==='mountainV2.road'),p=portal.xy as unknown as XY,at=road?nearestOnPath(p,road.points).at:undefined;
+     const link=bed('southPortal.link','walk',at&&distance(plan(at),p)>1?[[p[0],portal.h,p[1]],[at[0],at[1],at[2]]]:[[p[0],portal.h,p[1]],[p[0]+10,portal.h,p[1]+5]]);regionCarryLand(link);cuts.beds.push(link);}
+   openRoomConnections(cuts);
+-  openOreRoadJunction(cuts);
++  openOreRoadJunction(cuts,base);
+   deepInterior(cuts);
+   // Ignore only the named entrance neighbourhoods when measuring roof cover.
+   let low=Infinity,lowAt:XY=[0,0];
+--- a/src/harbour/horizon/land/terrain/index.ts
++++ b/src/harbour/horizon/land/terrain/index.ts
+@@ -4,6 +4,7 @@
+ import { buildWaterCuts, waterInfluence } from '../water';
+ import { clamp, contains, linePoint, mix, polygonCentre, polygonDistance, polylineArcs, segmentPoint, smooth } from './geometry';
+ import { mountainV2Height, mountainV2Rule } from '../mountainV2/ground';
++import { oreRoadGroundCeiling } from '../underground/oreRoad';
+ 
+ export const GEOGRAPHY_REVISION = 'horizon-geo-1' as const;
+ /** The one walkable limit: MANIFEST `profiles.walkable.slope_max_deg` (40°, Mountain v2's body
+@@ -573,7 +574,7 @@
+   const isSpan=(b:BedCut)=>b.id.startsWith('structure.')&&b.structureIds.length>0;
+   const clearanceBeds=beds.map(b=>isSpan(b)?{...b,terrainCut:true,terrainExclusions:[]}:b);
+   const prepared = prepareBeds(clearanceBeds, rasterMargin), s = getModel().scale;
+-  const floor = LAND_FLOOR * s;
++  const floor = LAND_FLOOR * s, oreCeiling = oreRoadGroundCeiling(beds, rasterMargin);
+   return (x, z) => {
+     let ceiling = Infinity;
+     const candidates: { value: number; plane: number; core: boolean; bed: BedCut }[] = [];
+@@ -621,7 +622,7 @@
+       if (!c.core && (above(decks, c) || above(neighbours, c))) continue;
+       ceiling = Math.min(ceiling, c.value);
+     }
+-    return ceiling;
++    return Math.min(ceiling, oreCeiling(x, z));
+   };
+ }
+ /** R2-08: height (eu) above which another route's deck no longer shields a lower route's raster margin (an overpass). */
+--- /dev/null
++++ b/test/horizon-ore-road-junction.test.ts
+@@ -0,0 +1,112 @@
++import {describe,expect,it} from 'vitest';
++import {HORIZON_MANIFEST as M} from '../src/harbour/horizon/world/manifest';
++import {mountainV2Road} from '../src/harbour/horizon/land/mountainV2/beds';
++import {mountainRoadSource,mountainJoinRoadTop} from '../src/harbour/horizon/land/mountainV2/roadSource';
++import {buildUnderground} from '../src/harbour/horizon/land/underground/build';
++import {orePortalFrame,orePortalLintelRise,oreRoadGroundCeiling} from '../src/harbour/horizon/land/underground/oreRoad';
++import {baseHeight,conserveBedFootprint,sampleTerrain} from '../src/harbour/horizon/land/terrain';
++import {createHorizonGeography} from '../src/harbour/horizon/runtime/geography';
++import {createRegionGeography,mouthExclusion} from '../src/harbour/horizon/regions/mountainV2/geography';
++import {solidTopAt,solidVerticalRangeAt} from '../src/harbour/horizon/world/geometry';
++import {nearestOnPath,slab,solid} from '../src/harbour/horizon/land/structures/mesh';
++import type {LandCuts,TerrainField,XYZ} from '../src/harbour/horizon/land/interfaces';
++
++// The underground builder only: no full land solve, world bake or browser.
++const cuts:LandCuts={beds:[mountainV2Road()],pads:[],mouths:[],waters:[],solids:[],diagnostics:[]};
++buildUnderground(cuts,baseHeight);
++const ore=cuts.beds.find(b=>b.id==='ORE')!,end=ore.points.at(-1)!,previous=ore.points.at(-2)!;
++const length=Math.hypot(end[0]-previous[0],end[2]-previous[2]),u=[(end[0]-previous[0])/length,(end[2]-previous[2])/length] as const,n=[-u[1],u[0]] as const;
++const field:TerrainField={revision:'horizon-geo-1',width:2000,depth:2000,step:2000,columns:2,rows:2,heights:new Float32Array(4),surfaces:new Uint8Array(4)};
++const geography=createHorizonGeography(field,cuts),region=createRegionGeography({horizonGround:()=>0,exclude:mouthExclusion(cuts.mouths)});geography.addDynamic(region.provider);
++const point=(d:number,across=0):XYZ=>[end[0]+u[0]*d+n[0]*across,end[1]+(end[1]-previous[1])/length*d,end[2]+u[1]*d+n[1]*across];
++const roadPoints=(()=>{
++  const {samples}=mountainRoadSource(),out:XYZ[]=[];
++  for(let i=1;i<samples.length;i++){
++    const a=samples[i-1]!,b=samples[i]!;if(a.at[0]!<1337||a.at[0]!>1364||Math.abs(a.at[1]!-67.5)>1.5)continue;
++    for(let t=0;t<=1;t+=.25)for(const offset of [-4.8,-3.6,-2,0,2,3.6,4.8]){
++      const x=a.at[0]!+(b.at[0]!-a.at[0]!)*t+(a.normal[0]!+(b.normal[0]!-a.normal[0]!)*t)*offset;
++      const z=a.at[2]!+(b.at[2]!-a.at[2]!)*t+(a.normal[2]!+(b.normal[2]!-a.normal[2]!)*t)*offset;
++      const y=mountainJoinRoadTop(x,z);if(y!==null)out.push([x,y,z]);
++    }
++  }
++  return out;
++})();
++
++describe('Ore south portal physical road join',()=>{
++  it('draws a closed graded crossing within the original road and approved 28m reach',()=>{
++    const crossing=cuts.solids.find(s=>s.id==='oreStation.southPortal.crossing')!,edges=new Map<string,number>();
++    const {points}=mountainRoadSource(),origin=nearestOnPath([end[0],end[2]],points).along;
++    expect(crossing.indices.length).toBeGreaterThan(0);
++    for(let i=0;i<crossing.positions.length;i+=6){
++      const [x,y,z]=crossing.positions.slice(i,i+3) as XYZ,road=mountainJoinRoadTop(x,z);
++      expect(road).not.toBeNull();expect(y).toBeGreaterThanOrEqual(road!-1e-6);
++      const at=nearestOnPath([x,z],points).along-origin;expect(at).toBeGreaterThanOrEqual(-18-1e-6);expect(at).toBeLessThanOrEqual(10+1e-6);
++    }
++    for(let i=0;i<crossing.indices.length;i+=3){
++      for(let k=0;k<3;k++){const a=crossing.indices[i+k]!,b=crossing.indices[i+(k+1)%3]!,key=a<b?`${a}:${b}`:`${b}:${a}`;edges.set(key,(edges.get(key)??0)+1);}
++      const [a,b,c]=crossing.indices.slice(i,i+3).map(k=>crossing.positions.slice(k*3,k*3+3) as XYZ),u=[b![0]-a![0],b![1]-a![1],b![2]-a![2]],v=[c![0]-a![0],c![1]-a![1],c![2]-a![2]];
++      const nx=u[1]!*v[2]!-u[2]!*v[1]!,ny=u[2]!*v[0]!-u[0]!*v[2]!,nz=u[0]!*v[1]!-u[1]!*v[0]!;
++      if(ny>1e-8)expect(Math.hypot(nx,nz)/ny).toBeLessThanOrEqual(.12);
++    }
++    expect([...edges.values()].every(n=>n===2)).toBe(true);
++    // Both old floor-lip witnesses are on the ordinary road lane; nearby physical
++    // samples must now change with the ramp grade, not a vertical floor step.
++    for(const [x,z]of [[1347.03,679.93],[1346.94,680.18]])for(const direction of [-1,1]){
++      const y=mountainJoinRoadTop(x!,z!)!,a=geography.surface(x!,z!,y,.48)!,b=geography.surface(x!+direction*.025,z!,a.y,.48)!;
++      expect(Math.abs(b.y-a.y)).toBeLessThan(.0031);
++    }
++    for(const d of [-2,-1,0])for(const across of [-.495,-.45,-.405,.405,.45,.495]){
++      const [x,y,z]=point(d,across);if(mountainJoinRoadTop(x,z)===null)continue;
++      const floor=geography.surface(x,z,y,.48)!;expect(y+.12-floor.y).toBeCloseTo(.005,5);
++    }
++  });
++  it('clears five metres above every sampled lane across the original 9.6m carriageway',()=>{
++    expect(roadPoints.length).toBeGreaterThan(300);
++    // The serialized source edge can lie sub-millimetres outside the runtime
++    // triangle. Clearance is measured above the physical road top there, never
++    // above the lower bank selected by a query just beyond that exact edge.
++    for(const [x,y,z]of roadPoints){const floor=Math.max(y,geography.surface(x,z,y,.48)?.y??y);expect(geography.ceiling(x,z,floor)-floor).toBeGreaterThanOrEqual(5);}
++  });
++  it('retains the rail route and rail meshes, keeps the upper crossing, and clears the entire portal lintel',()=>{
++    const expected=solid('ORE.rails','rail','rail','rail',['ORE'],'crown');
++    for(let i=1;i<ore.points.length;i++)for(const offset of [-.45,.45])slab(expected,ore.points[i-1]!,ore.points[i]!,.09,.12,offset,.12);
++    expect(cuts.solids.find(s=>s.id===expected.id)).toEqual(expected);
++    expect(end).toEqual([M.underground.doors.southPortal.xy[0],67.5,M.underground.doors.southPortal.xy[1]]);
++    const frame=orePortalFrame(cuts,ore.points),lintel=cuts.solids.find(s=>s.id==='southPortal.portal.frame')!;
++    expect(frame.at[0]).toBeCloseTo(1348.1918433593717,8);expect(frame.at[2]).toBeCloseTo(674.1482871744854,8);
++    expect(orePortalLintelRise(cuts,ore.points)).toBeCloseTo(.11018983033892948,10);
++    for(let d=-.5;d<=.5;d+=.1)for(const across of [-1.7,0,1.7]){
++      const x=frame.at[0]+u[0]*d+n[0]*across,z=frame.at[2]+u[1]*d+n[1]*across,y=frame.at[1]+(end[1]-previous[1])/length*d;
++      const floor=geography.surface(x,z,y,.48)!;expect(solidVerticalRangeAt(lintel,x,z)!.bottom-floor.y).toBeGreaterThanOrEqual(3.2-1e-8);
++    }
++    for(let d=-28;d<=0;d+=.25)for(const across of [-1.7,0,1.7]){
++      const [x,y,z]=point(d,across),floor=geography.surface(x,z,y,.48)!;expect(geography.ceiling(x,z,floor.y)-floor.y).toBeGreaterThanOrEqual(3.2-1e-7);
++    }
++    const [x,y,z]=point(-16);expect(solidVerticalRangeAt(cuts.solids.find(s=>s.id==='oreTunnel.roof')!,x,z)!.bottom-y).toBeCloseTo(3.2,8);
++    expect(mountainJoinRoadTop(x,z)!-.28-y).toBeGreaterThan(5.5);
++  });
++  it('supports the fixed rails and draws a grounded retaining face without occupying the cart aperture',()=>{
++    const retaining=cuts.solids.find(s=>s.id==='oreStation.southPortal.roadRetaining')!;
++    expect(retaining.indices.length).toBeGreaterThan(0);
++    const [x,y,z]=point(-.2,-.45),crossing=cuts.solids.find(s=>s.id==='oreStation.southPortal.crossing')!;expect(solidTopAt(crossing,x,z)).toBeCloseTo(y+.115,8);
++    for(let i=0;i<retaining.positions.length;i+=24)for(let k=0;k<4;k++){
++      const x=retaining.positions[i+k*3]!,z=retaining.positions[i+k*3+2]!;
++      expect(retaining.positions[i+k*3+1]!).toBeLessThanOrEqual(baseHeight(x,z)-.25+1e-7);
++      const dx=x-end[0],dz=z-end[2],along=dx*u[0]+dz*u[1],across=Math.abs(dx*n[0]+dz*n[1]);
++      expect(along>2.6||across>2.6).toBe(true);
++    }
++  });
++  it('cuts actual full and lite lattice triangles below the road only around the exposed south mouth',()=>{
++    const beds=cuts.beds.filter(b=>['ORE','mountainV2.road'].includes(b.id));
++    for(const step of [5,10]){
++      const size=1400,count=size/step+1,f:TerrainField={revision:'horizon-geo-1',width:size,depth:size,step,columns:count,rows:count,heights:new Float32Array(count*count).fill(80),surfaces:new Uint8Array(count*count)};
++      conserveBedFootprint(f,beds);for(let i=0;i<f.heights.length;i++)f.heights[i]=Math.round(f.heights[i]!*100)/100;
++      for(const [x,y,z]of roadPoints)if(x>=1337&&x<=1353)expect(sampleTerrain(f,x,z)).toBeLessThanOrEqual(y-.07);
++      // Lowering the road lattice must not create a new earth floor inside Ore's
++      // covered envelope. The same cap clears the actual lining floor too.
++      for(let d=-9;d<=0;d+=.5)for(const across of [-1.7,0,1.7]){const [x,y,z]=point(d,across);expect(sampleTerrain(f,x,z)).toBeLessThan(y-.02);}
++      expect(sampleTerrain(f,1250,680)).toBe(80);
++      const ceiling=oreRoadGroundCeiling(beds,step*Math.SQRT2);expect(ceiling(1353.6,640)).toBe(Infinity);
++    }
++  });
++});

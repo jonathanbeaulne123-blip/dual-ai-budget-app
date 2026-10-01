@@ -1,0 +1,589 @@
+{
+  "status": "complete",
+  "root": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book",
+  "bundleInfo": {
+    "old": {
+      "path": "/tmp/mountain-real-draw-packed-depthfix/harness.js",
+      "bundleSha256": "d6d0a5ac6181dab8d0503f2d5910c042008da075072752fe439f359bf743b5f8",
+      "diagnosticAppendSha256": "72435dbd4547fa8d95bbec969964daefb69d257e5c6076fe89361e8efd105679",
+      "servedSha256": "7264624e88682d3bf4283611e45c4f469ba7d7b326a3f3ff218ac2d53e1c66bf"
+    },
+    "new": {
+      "path": "/tmp/mountain-real-draw-ordered-nl-lite/harness.js",
+      "bundleSha256": "75a92fb4add18f102bd8f5a3fab8c3c9a0e65e1ad6e6e6acae9cb30f50df0b4d",
+      "diagnosticAppendSha256": "72435dbd4547fa8d95bbec969964daefb69d257e5c6076fe89361e8efd105679",
+      "servedSha256": "845f82abe910aa72d2d74eba4eaeea2539ac0738cbb4a582a8342ba939642401"
+    }
+  },
+  "environmentProof": {
+    "runtimeSha256": "efafc2f3c9f8dd2670da34413f09a5c1f4b51ba20157f22ea8f28e8c1d4bf518",
+    "fogHookSourceSha256": "ee36ebbcaf52b8f5dcda49dfa7c82d8d54b10501147903173bcafa4fc8d92934",
+    "fogHookJsSha256": "94d66be26b99d19e825c0591bd48fe22ad4f710d994442a93613c543da9016eb",
+    "environmentJsSha256": "8c10bbf9107ff5a091c331cbc05838b901f192b6282b8afeaae164c770aab257",
+    "inputs": {
+      "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.core.js": "3718df126d69c125362a03340913204470d8c50238605150e57f808840fb7759",
+      "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js": "bbf5ed13fe4373f5bd38b14ea8e62e9f157327da5638edc6d3863e08b167c9c7",
+      "src/harbour/horizon/land/terrain/geometry.ts": "dce99968a6f68bc6ba4c0225edeb5e331f31c9f6c358579454b424b3375501b4",
+      "src/harbour/horizon/sky/gradient.ts": "bd9c6d4979619eaf1c68f7dbc9e39cb9b04145b5421186bf3c4189629f0d3609",
+      "src/harbour/horizon/sky/fog.ts": "1f38d2d9408a0995ecd5835264bd3b4fd4e72ab3ba296b8bf4857a6d00e96e00",
+      "src/harbour/horizon/sun/shadow.ts": "42bf5752d5f97ce094d6317fae21e6d5046b12f175eb508fefa2bbe11de1f31d"
+    }
+  },
+  "worldSha256": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+  "terrainSha256": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+  "oldSmokeAssetsMatch": true,
+  "newSmokeAssetsMatch": true,
+  "themes": [
+    "newfoundland"
+  ],
+  "tiers": [
+    "lite"
+  ],
+  "times": [
+    "night"
+  ],
+  "modes": [
+    "color"
+  ],
+  "winds": [
+    7.25
+  ],
+  "poses": [
+    {
+      "id": "V01.plant.framingTrees.7:root:2:heading:0",
+      "kind": "plant-root",
+      "eye": [
+        1364.16,
+        75.839,
+        313.571
+      ],
+      "target": [
+        1365.16,
+        75.839,
+        313.571
+      ],
+      "fov": 58,
+      "district": "crown",
+      "source": "Baked anchor +1.65m; no composed surface seating claim"
+    }
+  ],
+  "width": 640,
+  "height": 420,
+  "cases": [
+    {
+      "key": "newfoundland_lite_night_color_7.25_V01.plant.framingTrees.7-root-2-heading-0",
+      "theme": "newfoundland",
+      "tier": "lite",
+      "time": "night",
+      "mode": "color",
+      "wind": 7.25,
+      "pose": "V01.plant.framingTrees.7:root:2:heading:0",
+      "color": {
+        "exactEqual": true,
+        "differingPixels": 0,
+        "totalPixels": 268800,
+        "differingChannels": 0,
+        "maxChannelDifference": 0,
+        "meanAbsoluteChannelDifference": 0
+      },
+      "shadow": null,
+      "old": {
+        "shades": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "pass": "legacy-two-pass",
+            "draws": [
+              {
+                "category": "furniture",
+                "name": "horizon.corridorArt.crown 0:0 shade",
+                "uuid": "879d96d8-efb6-4c37-ad89-fba97cf1fd0a",
+                "calls": 2,
+                "triangles": 1680,
+                "lines": 0,
+                "instances": null
+              }
+            ],
+            "counts": {
+              "source": 840,
+              "back": 48,
+              "front": 164,
+              "clipped": 612,
+              "nearPlane": 16,
+              "grazing": 0,
+              "degenerate": 0
+            },
+            "witnesses": [
+              {
+                "triangle": 0,
+                "reason": "nearPlane",
+                "points": [
+                  [
+                    1364,
+                    89.05000305175781,
+                    592
+                  ],
+                  [
+                    1364.622314453125,
+                    89.05000305175781,
+                    591.3777465820312
+                  ],
+                  [
+                    1364.59130859375,
+                    89.05000305175781,
+                    591.7112426757812
+                  ]
+                ]
+              },
+              {
+                "triangle": 3,
+                "reason": "nearPlane",
+                "points": [
+                  [
+                    1364,
+                    89.05000305175781,
+                    592
+                  ],
+                  [
+                    1364.59130859375,
+                    89.05000305175781,
+                    591.7112426757812
+                  ],
+                  [
+                    1364.2138671875,
+                    89.05000305175781,
+                    592.2139282226562
+                  ]
+                ]
+              },
+              {
+                "triangle": 5,
+                "reason": "nearPlane",
+                "points": [
+                  [
+                    1364.59130859375,
+                    89.05000305175781,
+                    591.7112426757812
+                  ],
+                  [
+                    1364.388916015625,
+                    89.05000305175781,
+                    592.388916015625
+                  ],
+                  [
+                    1364.2138671875,
+                    89.05000305175781,
+                    592.2139282226562
+                  ]
+                ]
+              },
+              {
+                "triangle": 7,
+                "reason": "nearPlane",
+                "points": [
+                  [
+                    1364.2138671875,
+                    89.05000305175781,
+                    592.2139282226562
+                  ],
+                  [
+                    1364.388916015625,
+                    89.05000305175781,
+                    592.388916015625
+                  ],
+                  [
+                    1363.4749755859375,
+                    89.05000305175781,
+                    593.0750122070312
+                  ]
+                ]
+              },
+              {
+                "triangle": 18,
+                "reason": "nearPlane",
+                "points": [
+                  [
+                    1364,
+                    89.05000305175781,
+                    592
+                  ],
+                  [
+                    1363.7861328125,
+                    89.05000305175781,
+                    591.7860717773438
+                  ],
+                  [
+                    1364.2886962890625,
+                    89.05000305175781,
+                    591.4087524414062
+                  ]
+                ]
+              }
+            ],
+            "materials": [
+              {
+                "side": 2,
+                "forceSinglePass": false
+              }
+            ]
+          }
+        ],
+        "renderer": {
+          "frame": 1,
+          "calls": 10,
+          "triangles": 10366,
+          "points": 0,
+          "lines": 0
+        },
+        "lights": {
+          "k": 1,
+          "linesOn": 38,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 48,
+          "roadCards": 32,
+          "anchorCards": 16,
+          "cards": 48,
+          "pointLights": 2,
+          "pointLightsLit": 2,
+          "pointAssigned": [
+            "V01.lamp.31",
+            "V01.lamp.32"
+          ],
+          "poolTriangles": 60,
+          "conformedPools": 1
+        },
+        "plants": {
+          "items": 606,
+          "drawn": 22,
+          "drawCalls": 3,
+          "triangles": 1080,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 40,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 4,
+              "capacity": 175,
+              "triangles": 40
+            },
+            {
+              "key": "heath",
+              "count": 12,
+              "capacity": 28,
+              "triangles": 240
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 26,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 25,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "tree:pine",
+              "count": 10,
+              "capacity": 59,
+              "triangles": 800
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 41,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 58,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000,
+        "shadowReadback": null
+      },
+      "new": {
+        "shades": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "pass": "near-plane",
+            "draws": [
+              {
+                "category": "furniture",
+                "name": "horizon.corridorArt.crown 0:0 shade",
+                "uuid": "ae9f56af-25c2-47f7-aea9-617ee09e6772",
+                "calls": 2,
+                "triangles": 1680,
+                "lines": 0,
+                "instances": null
+              }
+            ],
+            "counts": {
+              "source": 840,
+              "back": 48,
+              "front": 164,
+              "clipped": 612,
+              "nearPlane": 16,
+              "grazing": 0,
+              "degenerate": 0
+            },
+            "witnesses": [
+              {
+                "triangle": 0,
+                "reason": "nearPlane",
+                "points": [
+                  [
+                    1364,
+                    89.05000305175781,
+                    592
+                  ],
+                  [
+                    1364.622314453125,
+                    89.05000305175781,
+                    591.3777465820312
+                  ],
+                  [
+                    1364.59130859375,
+                    89.05000305175781,
+                    591.7112426757812
+                  ]
+                ]
+              },
+              {
+                "triangle": 3,
+                "reason": "nearPlane",
+                "points": [
+                  [
+                    1364,
+                    89.05000305175781,
+                    592
+                  ],
+                  [
+                    1364.59130859375,
+                    89.05000305175781,
+                    591.7112426757812
+                  ],
+                  [
+                    1364.2138671875,
+                    89.05000305175781,
+                    592.2139282226562
+                  ]
+                ]
+              },
+              {
+                "triangle": 5,
+                "reason": "nearPlane",
+                "points": [
+                  [
+                    1364.59130859375,
+                    89.05000305175781,
+                    591.7112426757812
+                  ],
+                  [
+                    1364.388916015625,
+                    89.05000305175781,
+                    592.388916015625
+                  ],
+                  [
+                    1364.2138671875,
+                    89.05000305175781,
+                    592.2139282226562
+                  ]
+                ]
+              },
+              {
+                "triangle": 7,
+                "reason": "nearPlane",
+                "points": [
+                  [
+                    1364.2138671875,
+                    89.05000305175781,
+                    592.2139282226562
+                  ],
+                  [
+                    1364.388916015625,
+                    89.05000305175781,
+                    592.388916015625
+                  ],
+                  [
+                    1363.4749755859375,
+                    89.05000305175781,
+                    593.0750122070312
+                  ]
+                ]
+              },
+              {
+                "triangle": 18,
+                "reason": "nearPlane",
+                "points": [
+                  [
+                    1364,
+                    89.05000305175781,
+                    592
+                  ],
+                  [
+                    1363.7861328125,
+                    89.05000305175781,
+                    591.7860717773438
+                  ],
+                  [
+                    1364.2886962890625,
+                    89.05000305175781,
+                    591.4087524414062
+                  ]
+                ]
+              }
+            ],
+            "materials": [
+              {
+                "side": 2,
+                "forceSinglePass": false
+              }
+            ]
+          }
+        ],
+        "renderer": {
+          "frame": 1,
+          "calls": 10,
+          "triangles": 10366,
+          "points": 0,
+          "lines": 0
+        },
+        "lights": {
+          "k": 1,
+          "linesOn": 38,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 48,
+          "roadCards": 32,
+          "anchorCards": 16,
+          "cards": 48,
+          "pointLights": 2,
+          "pointLightsLit": 2,
+          "pointAssigned": [
+            "V01.lamp.31",
+            "V01.lamp.32"
+          ],
+          "poolTriangles": 60,
+          "conformedPools": 1
+        },
+        "plants": {
+          "items": 606,
+          "drawn": 22,
+          "drawCalls": 3,
+          "triangles": 1080,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 40,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 4,
+              "capacity": 175,
+              "triangles": 40
+            },
+            {
+              "key": "heath",
+              "count": 12,
+              "capacity": 28,
+              "triangles": 240
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 26,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 25,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "tree:pine",
+              "count": 10,
+              "capacity": 59,
+              "triangles": 800
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 41,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 58,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000,
+        "shadowReadback": null
+      }
+    }
+  ],
+  "errors": [],
+  "limits": [
+    "No acceptance tolerance: every differing pixel is recorded; exact equality is reported separately.",
+    "Same old frozen assets are deliberately used for both bundles; source runtime lamp refinements can still create real visual differences.",
+    "Isolated corridor art/plants and real shared lights, exact extracted live fog hook plus horizonFog and shadowFrame helpers. Sky/hemi/sun energy remains the same probe ambience, not a complete live world.",
+    "Color mode retains original audit sun/hemisphere settings. Shadow mode uses exact runtime walk shadowFrame, full2048/lite1024 resolution, requested PCFSoftShadowMap (effective renderer type recorded), near1, normalBias.05 and bias-.00006; point lights remain shadowless.",
+    "Shadow readback is the RGBA color attachment, with material-dependent Basic/RGBA depth encoding. The actual depthTexture consumed by the shadow shader is not read or compared; no depth precision or world-distance equality is claimed.",
+    "Shadow silhouette comparison has no extra receiver plane and does not replace final in-world theme/device captures.",
+    "One fresh planting per pose makes first-evaluation born=-1e9; browser performance/Date clocks and CARD_CLOCK are fixed."
+  ],
+  "allExact": true
+}
