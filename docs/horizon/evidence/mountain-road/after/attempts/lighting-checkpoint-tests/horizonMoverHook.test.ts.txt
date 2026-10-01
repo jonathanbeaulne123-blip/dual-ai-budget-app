@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonMoverHook.test.ts (20 tests) 463ms
+
+ Test Files  1 passed (1)
+      Tests  20 passed (20)
+   Start at  12:28:46
+   Duration  3.30s (transform 1.50s, setup 0ms, collect 2.44s, tests 463ms, environment 0ms, prepare 128ms)
+

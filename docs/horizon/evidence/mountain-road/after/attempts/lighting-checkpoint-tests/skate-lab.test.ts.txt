@@ -1,0 +1,75 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/skate-lab.test.ts (22 tests | 2 failed) 2085ms
+   ✓ skate lab · scenarios (headless, real driver) > push-away: Push away (W held)  467ms
+   ✓ skate lab · scenarios (headless, real driver) > ollie: Ollie on the flat (flick-it: ↓ then ↑ on the right stick) 44ms
+   ✓ skate lab · scenarios (headless, real driver) > kickflip: Kickflip (flick-it ↓ then ↖) 36ms
+   ✓ skate lab · scenarios (headless, real driver) > heelflip: Heelflip (flick-it ↓ then ↗) 43ms
+   ✓ skate lab · scenarios (headless, real driver) > pop-shuvit: Pop shove-it (flick-it: sweep round the heel side) 41ms
+   × skate lab · scenarios (headless, real driver) > 360-flip: 360 flip off the Hatch kicker (raw intent pop at the lip) 72ms
+     → 360-flip: pop:360-flip bail recovered: expected false to be true // Object.is equality
+   ✓ skate lab · scenarios (headless, real driver) > fs-180: Frontside 180 ollie (carve left through the air) 34ms
+   × skate lab · scenarios (headless, real driver) > indy-kicker: Indy grab off the Hatch kicker (E held) 37ms
+     → indy-kicker: bail: expected false to be true // Object.is equality
+   ✓ skate lab · scenarios (headless, real driver) > grind-5050: Ollie to 50-50 on the Rolling Pin 54ms
+   ✓ skate lab · scenarios (headless, real driver) > space-grind: Release Space to jump, hold it again to find the Rolling Pin 41ms
+   ✓ skate lab · scenarios (headless, real driver) > grind-boardslide: Boardslide on the Rolling Pin (board turned 90° in the air: place shortcut) 43ms
+   ✓ skate lab · scenarios (headless, real driver) > grind-smith: Smith on the Breadboard ledge (board angled nose-in, no lean) 37ms
+   ✓ skate lab · scenarios (headless, real driver) > manual: Ollie onto the Breadboard, land into a manual (M held, balanced) 50ms
+   ✓ skate lab · scenarios (headless, real driver) > bowl: Drop into the Kettle and carve the bowl 61ms
+   ✓ skate lab · scenarios (headless, real driver) > vert-air: Vert air on the Chimney, back in fakie 59ms
+   ✓ skate lab · scenarios (headless, real driver) > powerslide: Powerslide round to fakie (C + carve) 33ms
+   ✓ skate lab · scenarios (headless, real driver) > bail: Bail (a triple kickflip popped too low) and get up 47ms
+   ✓ skate lab · scenarios (headless, real driver) > line: A line: ollie to 50-50 the Rolling Pin, roll out, kickflip, manual 71ms
+   ✓ skate lab · scenarios (headless, real driver) > is deterministic: the same scenario twice gives the same trace 192ms
+   ✓ skate lab · dev only > nothing under src/ imports the lab  614ms
+   ✓ skate lab · dev only > the production build has no lab entry (vite input is index.html; no lab html in the root) 1ms
+   ✓ skate lab · dev only > a built dist (when present) carries no lab code 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/skate-lab.test.ts > skate lab · scenarios (headless, real driver) > 360-flip: 360 flip off the Hatch kicker (raw intent pop at the lip)
+AssertionError: 360-flip: pop:360-flip bail recovered: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ test/skate-lab.test.ts:19:77
+     17|       const kinds=lab.kinds();
+     18|       if(process.env.LAB_DEBUG)console.log(sc.name,kinds.join(' '));
+     19|       expect(inOrder(kinds,sc.expect.seq),`${sc.name}: ${kinds.join(' …
+       |                                                                             ^
+     20|       for(const n of sc.expect.not??[])expect(kinds.some(k=>k===n||k.s…
+     21|       expect(lab.trace()).toHaveLength(sc.frames);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/skate-lab.test.ts > skate lab · scenarios (headless, real driver) > indy-kicker: Indy grab off the Hatch kicker (E held)
+AssertionError: indy-kicker: bail: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ test/skate-lab.test.ts:19:77
+     17|       const kinds=lab.kinds();
+     18|       if(process.env.LAB_DEBUG)console.log(sc.name,kinds.join(' '));
+     19|       expect(inOrder(kinds,sc.expect.seq),`${sc.name}: ${kinds.join(' …
+       |                                                                             ^
+     20|       for(const n of sc.expect.not??[])expect(kinds.some(k=>k===n||k.s…
+     21|       expect(lab.trace()).toHaveLength(sc.frames);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 20 passed (22)
+   Start at  13:08:11
+   Duration  4.98s (transform 1.20s, setup 0ms, collect 2.38s, tests 2.08s, environment 0ms, prepare 155ms)
+

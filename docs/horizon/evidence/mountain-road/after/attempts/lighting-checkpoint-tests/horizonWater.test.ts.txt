@@ -1,0 +1,19 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/horizonWater.test.ts > Horizon water and offshore land > places surfaces below both banks and above beds except at named confluences
+HORIZON_WATER_BANKS {"water.stillwater":{"bankSamples":40,"confluencesOrSea":8},"water.river.mountain":{"bankSamples":172,"confluencesOrSea":8},"water.river.lower":{"bankSamples":817,"confluencesOrSea":143},"water.brook":{"bankSamples":1395,"confluencesOrSea":85},"water.wash":{"bankSamples":60,"confluencesOrSea":0},"water.reach.1":{"bankSamples":152,"confluencesOrSea":8},"water.reach.2":{"bankSamples":46,"confluencesOrSea":114},"water.spring":{"bankSamples":26,"confluencesOrSea":22}}
+
+stdout | test/horizonWater.test.ts > Horizon water and offshore land > measures the Bight mouth and preserves its lagoon and submerged sandbar
+HORIZON_BIGHT_MOUTH 243.7649156462039
+
+ ✓ test/horizonWater.test.ts (11 tests) 15550ms
+   ✓ Horizon water and offshore land > places surfaces below both banks and above beds except at named confluences  2884ms
+   ✓ Horizon water and offshore land > keeps the entire wet width below its water plane after 5 m triangle interpolation  11054ms
+   ✓ Horizon water and offshore land > keeps lite 10 m and Journey 20 m wet widths below water after conservative decimation  1492ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  12:44:40
+   Duration  20.81s (transform 2.99s, setup 0ms, collect 3.92s, tests 15.55s, environment 0ms, prepare 279ms)
+

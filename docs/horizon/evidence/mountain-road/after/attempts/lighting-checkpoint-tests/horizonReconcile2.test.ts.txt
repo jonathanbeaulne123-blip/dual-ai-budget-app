@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonReconcile2.test.ts (5 tests) 2633ms
+   ✓ v2.5: the fleet's code-owned anchors are the ones the manifest records > the launch body stands on the floatplane dock, dry (candidate-6 bake)  506ms
+   ✓ v2.5: a fall that ends in water or on unwalkable ground never returns the body to a submerged node > every fade on an 80 m grid (water and > 40° ground) lands on a dry surface within 1 m of its node  2014ms
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  12:29:13
+   Duration  3.26s (transform 310ms, setup 0ms, collect 375ms, tests 2.63s, environment 0ms, prepare 74ms)
+

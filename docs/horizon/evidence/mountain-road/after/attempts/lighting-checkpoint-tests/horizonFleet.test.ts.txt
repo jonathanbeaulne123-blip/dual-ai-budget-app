@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonFleet.test.ts (37 tests) 1378ms
+   ✓ yacht floors, interiors and future galley > every room and interaction connects from boarding through initially closed doors  680ms
+
+ Test Files  1 passed (1)
+      Tests  37 passed (37)
+   Start at  12:26:18
+   Duration  1.97s (transform 287ms, setup 0ms, collect 363ms, tests 1.38s, environment 0ms, prepare 62ms)
+

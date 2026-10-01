@@ -1,0 +1,40 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/horizonCorridorPlan.test.ts > the corridor plan (Track P) on the committed bake's corridor stations > reports per-reach counts within sensible bounds
+R1         158 m  lamps   8  groups   1  items    4  {"round":4}
+R2         222 m  lamps  17  groups   0  items    0  {}
+R3         294 m  lamps   6  groups   2  items   10  {"heath":6,"birch":2,"pine":2}
+R4         547 m  lamps   2  groups  10  items   63  {"heath":50,"pine":13}
+R5a        174 m  lamps   3  groups   3  items   15  {"birch":6,"pine":6,"round":2,"shrub":1}
+R5b        201 m  lamps   8  groups   0  items    0  {}
+R5c         30 m  lamps   2  groups   2  items   16  {"shrub":5,"pine":6,"round":3,"birch":2}
+R6a        171 m  lamps   1  groups   8  items   63  {"pine":25,"birch":22,"round":10,"shrub":6}
+R6b        195 m  lamps   0  groups   1  items    7  {"pine":3,"round":3,"shrub":1}
+R7         388 m  lamps   2  groups  11  items  141  {"flowerBed":38,"grassTuft":73,"flowering":30}
+R8         196 m  lamps   9  groups   0  items    0  {}
+R9         244 m  lamps  11  groups   0  items    0  {}
+R10        511 m  lamps  36  groups  21  items  136  {"flowerBed":78,"grassTuft":18,"palm":40}
+R11a        60 m  lamps   5  groups   3  items   12  {"flowerBed":9,"palm":3}
+R11b       141 m  lamps   7  groups   0  items    0  {}  stops 1
+R12        151 m  lamps   9  groups   0  items    0  {}
+R13a       101 m  lamps   7  groups   4  items   42  {"round":13,"hedge":29}
+R13b       108 m  lamps   6  groups   1  items    4  {"round":4}
+V01 total: markings 33, lamps 139, groups 67, items 513, stops 1; plan 454 ms
+  note: Crown Lookout (R4) skipped: no 14 × 6 eu outline is flat (≤ 8 %, within 0.3 eu of a plane, entrance within 0.35 eu of the road), clear and looking at the view (station-sides refused: slope 364, gap 86, view 66, footway 28, not flat 4).
+  note: Crown Lookout: best site if graded — s 848 right, centre [1460.6, 69.4, 359.2], today 22.2 % with 1.21 eu of relief and the entrance 0.24 eu off the road; visible drop 69.4 eu, yearWalk 16.6 eu away. A 14 × 6 landing pad at road height there (like the Terraces laybys, walled on its drop side) makes it pass.
+  note: Bight Descent Lookout (R8) skipped: no 14 × 6 eu outline is flat (≤ 8 %, within 0.3 eu of a plane, entrance within 0.35 eu of the road), clear and looking at the view (station-sides refused: gap 68, structure 40, occupied 38, slope 32, view 14, no view 4).
+  note: Long Sands Shore: s 3419 right, slope 1.0 %, visible drop 3.1 eu, no walk within 25 eu.
+VG        1180 m  lamps  45  groups  13  items   87  {"round":18,"birch":4,"flowerBed":27,"grassTuft":27,"shrub":8,"pine":3}
+VG total: markings 18, lamps 45, groups 13, items 87, stops 0; plan 59 ms
+V03        327 m  lamps  23  groups   2  items   11  {"birch":2,"pine":6,"heath":3}
+V03 total: markings 8, lamps 23, groups 2, items 11, stops 0; plan 9 ms
+
+ ✓ test/horizonCorridorPlan.test.ts (11 tests | 1 skipped) 2272ms
+   ✓ the corridor plan (Track P) on the committed bake's corridor stations > is deterministic: same stations, reaches and seed → the same plan; another seed moves planting only  745ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed | 1 skipped (11)
+   Start at  12:26:09
+   Duration  2.99s (transform 265ms, setup 0ms, collect 496ms, tests 2.27s, environment 0ms, prepare 56ms)
+

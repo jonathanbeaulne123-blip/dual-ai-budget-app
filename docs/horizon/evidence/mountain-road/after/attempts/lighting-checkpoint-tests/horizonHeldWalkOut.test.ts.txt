@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonHeldWalkOut.test.ts (29 tests) 4448ms
+   ✓ Codex P2 · a restore into a missing chunk is held too, then validated > Bight Bridge deck (bight delayed): the saved body over water is held, not dropped; the deck carries it once bight lands  406ms
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  12:26:51
+   Duration  6.32s (transform 378ms, setup 0ms, collect 1.56s, tests 4.45s, environment 0ms, prepare 78ms)
+

@@ -1,0 +1,1258 @@
+{
+  "startedAt": "2026-09-30T16:20:35Z",
+  "sourceStart": "b6e8662d7ca27bfe30a96058f6256d1e69aa6fd5cc27e9c3b5deba31855f2b54",
+  "method": "Explicit change-required files, one Vitest process at a time. Not the exhaustive gate.",
+  "files": [
+    "test/desk-mountain-integration.test.ts",
+    "test/harbour-body.test.ts",
+    "test/harbour-hercules.test.ts",
+    "test/harbour-open-world.test.ts",
+    "test/harbour-skate-model.test.ts",
+    "test/harbour-skate-presence.test.ts",
+    "test/harbour-source-fences.test.ts",
+    "test/harbour-walk-everywhere.test.ts",
+    "test/harbour-walk-focus.test.ts",
+    "test/harbour-world-toggle.test.ts",
+    "test/hearth-mountain-art.test.ts",
+    "test/hearth-mountain-channel.test.ts",
+    "test/hearth-mountain.test.ts",
+    "test/horizon-airport-flight.test.ts",
+    "test/horizon-airport-world.test.ts",
+    "test/horizon-corridor-light-integration.test.ts",
+    "test/horizon-foot-lane-apron.test.ts",
+    "test/horizon-guide.test.ts",
+    "test/horizon-monorail.test.ts",
+    "test/horizon-mountain-footway-joins.test.ts",
+    "test/horizon-mountain-joins.test.ts",
+    "test/horizon-mountain-light-tiers.test.ts",
+    "test/horizon-mountain-road-floor.test.ts",
+    "test/horizon-mountain-road-ground.test.ts",
+    "test/horizon-native-skate-geometry.test.ts",
+    "test/horizon-native-skate-world.test.ts",
+    "test/horizon-native-skate.test.ts",
+    "test/horizon-old-shell.test.ts",
+    "test/horizon-ore-road-junction.test.ts",
+    "test/horizonAdaptiveQuality.test.ts",
+    "test/horizonAssets.test.ts",
+    "test/horizonBakeArtifacts.test.ts",
+    "test/horizonBeds.test.ts",
+    "test/horizonBicycleProfile.test.ts",
+    "test/horizonBoardCamera.test.ts",
+    "test/horizonBoardLanding.test.ts",
+    "test/horizonBoardPace.test.ts",
+    "test/horizonBoardThresholds.test.ts",
+    "test/horizonBridges.test.ts",
+    "test/horizonCards.test.ts",
+    "test/horizonChute.test.ts",
+    "test/horizonComfort.test.ts",
+    "test/horizonCorridor.test.ts",
+    "test/horizonCorridorArt.test.ts",
+    "test/horizonCorridorPlan.test.ts",
+    "test/horizonCorridorPlanting.test.ts",
+    "test/horizonCrossings.test.ts",
+    "test/horizonCruiser.test.ts",
+    "test/horizonFleet.test.ts",
+    "test/horizonFootYearWalkYield.test.ts",
+    "test/horizonGliderBodies.test.ts",
+    "test/horizonGliderCamera.test.ts",
+    "test/horizonGliderController.test.ts",
+    "test/horizonGliderJourneys.test.ts",
+    "test/horizonGliderJourneysWind.test.ts",
+    "test/horizonGliderLanding.test.ts",
+    "test/horizonGliderLift.test.ts",
+    "test/horizonGliderNoMoney.test.ts",
+    "test/horizonGliderPolar.test.ts",
+    "test/horizonGliderReducedMotion.test.ts",
+    "test/horizonGondola.test.ts",
+    "test/horizonHeldWalkOut.test.ts",
+    "test/horizonHostRouting.test.ts",
+    "test/horizonHostsDoors.test.ts",
+    "test/horizonInspector.test.ts",
+    "test/horizonJourneys.test.ts",
+    "test/horizonKitchenArt.test.ts",
+    "test/horizonKitchenHUD.test.ts",
+    "test/horizonLandRepairs.test.ts",
+    "test/horizonLandforms.test.ts",
+    "test/horizonManifest.test.ts",
+    "test/horizonModeRegistry.test.ts",
+    "test/horizonMountainRegion.test.ts",
+    "test/horizonMountainRoad.test.ts",
+    "test/horizonMoverAudio.test.ts",
+    "test/horizonMoverHook.test.ts",
+    "test/horizonMoversNoMoney.test.ts",
+    "test/horizonNativeFurniture.test.ts",
+    "test/horizonPartner.test.ts",
+    "test/horizonPedestrianWater.test.ts",
+    "test/horizonPerspective.test.ts",
+    "test/horizonPresence.test.ts",
+    "test/horizonQuickLayerModes.test.ts",
+    "test/horizonReconcile2.test.ts",
+    "test/horizonRenderWork.test.ts",
+    "test/horizonReserves.test.ts",
+    "test/horizonRideSituations.test.ts",
+    "test/horizonRoadLights.test.ts",
+    "test/horizonRuntimeGeometry.test.ts",
+    "test/horizonSavedPosition.test.ts",
+    "test/horizonSkateLines.test.ts",
+    "test/horizonSkyEnvelope.test.ts",
+    "test/horizonSolar.test.ts",
+    "test/horizonStillwaterLink.test.ts",
+    "test/horizonStreaming.test.ts",
+    "test/horizonStructures.test.ts",
+    "test/horizonTerrainAsset.test.ts",
+    "test/horizonTerrainCuts.test.ts",
+    "test/horizonThresholds.test.ts",
+    "test/horizonThroat.test.ts",
+    "test/horizonUnderground.test.ts",
+    "test/horizonViews.test.ts",
+    "test/horizonWalkOut.test.ts",
+    "test/horizonWater.test.ts",
+    "test/horizonWave4.test.ts",
+    "test/horizonWave6.test.ts",
+    "test/horizonWind.test.ts",
+    "test/horizonWorldDefinition.test.ts",
+    "test/journey-board-app.test.ts",
+    "test/journey-board-fence.test.ts",
+    "test/journey-board-integration.test.ts",
+    "test/journey-board-model.test.ts",
+    "test/journey-board-parity.test.ts",
+    "test/journey-board-route.test.ts",
+    "test/journey-board-ui.test.ts",
+    "test/journey-cloud-transition.test.ts",
+    "test/journey-focus.test.ts",
+    "test/journey-free-roam-ui.test.ts",
+    "test/journey-fullscreen-ui.test.ts",
+    "test/journey-game-mode-ui.test.ts",
+    "test/journey-integrated-ui.test.ts",
+    "test/journey-land.test.ts",
+    "test/journey-loader-recovery.test.ts",
+    "test/journey-mini-model.test.ts",
+    "test/journey-mini-story.test.ts",
+    "test/journey-mini-ui.test.ts",
+    "test/journey-road.test.ts",
+    "test/journey-roam-camera.test.ts",
+    "test/mountain-art-kit.test.ts",
+    "test/mountain-bicycle-metadata.test.ts",
+    "test/mountain-branch-finishing.test.ts",
+    "test/mountain-camera.test.ts",
+    "test/mountain-finishing.test.ts",
+    "test/mountain-frame-study.test.ts",
+    "test/mountain-landings.test.ts",
+    "test/mountain-landscape.test.ts",
+    "test/mountain-life.test.ts",
+    "test/mountain-movement.test.ts",
+    "test/mountain-orchard-floor.test.ts",
+    "test/mountain-yearwalk-foot-hosts.test.ts",
+    "test/mountainRaceRetry.test.ts",
+    "test/mountainStreamingChurn.test.ts",
+    "test/mountainStreamingReducedMotion.test.ts",
+    "test/mountainTerrainAsset.test.ts",
+    "test/native-body-height-spawn.test.ts",
+    "test/native-library-entry.test.ts",
+    "test/skate-controller-pause.test.ts",
+    "test/skate-destination-readiness.test.ts",
+    "test/skate-input-human.test.ts",
+    "test/skate-input.test.ts",
+    "test/skate-int-bail.test.ts",
+    "test/skate-int-dressing.test.ts",
+    "test/skate-int-feel.test.ts",
+    "test/skate-int-grinds-human.test.ts",
+    "test/skate-int-grinds.test.ts",
+    "test/skate-int-look.test.ts",
+    "test/skate-int-park.test.ts",
+    "test/skate-island-travel.test.ts",
+    "test/skate-lab.test.ts",
+    "test/skate-look-board.test.ts",
+    "test/skate-look-craft.test.ts",
+    "test/skate-look-figure.test.ts",
+    "test/skate-look-fx.test.ts",
+    "test/skate-look-rider.test.ts",
+    "test/skate-race-replay.test.ts",
+    "test/skate-show-audio.test.ts",
+    "test/skate-show-camera.test.ts",
+    "test/skate-show-framing.test.ts",
+    "test/skate-show-hud.test.ts",
+    "test/skate-show-session.test.ts",
+    "test/skate-sim-ride.test.ts",
+    "test/skate-sim-tricks.test.ts",
+    "test/skate-tricks.test.ts",
+    "test/skate-world-mesh.test.ts",
+    "test/skate-world.test.ts",
+    "test/world-presence-lane.test.ts",
+    "test/world-presence-worker.test.ts",
+    "test/world-presence.test.ts"
+  ],
+  "results": [
+    {
+      "file": "test/desk-mountain-integration.test.ts",
+      "exitCode": 0,
+      "seconds": 8.236,
+      "log": "desk-mountain-integration.test.ts.txt"
+    },
+    {
+      "file": "test/harbour-body.test.ts",
+      "exitCode": 0,
+      "seconds": 11.712,
+      "log": "harbour-body.test.ts.txt"
+    },
+    {
+      "file": "test/harbour-hercules.test.ts",
+      "exitCode": 1,
+      "seconds": 6.339,
+      "log": "harbour-hercules.test.ts.txt"
+    },
+    {
+      "file": "test/harbour-open-world.test.ts",
+      "exitCode": 1,
+      "seconds": 14.963,
+      "log": "harbour-open-world.test.ts.txt"
+    },
+    {
+      "file": "test/harbour-skate-model.test.ts",
+      "exitCode": 1,
+      "seconds": 3.434,
+      "log": "harbour-skate-model.test.ts.txt"
+    },
+    {
+      "file": "test/harbour-skate-presence.test.ts",
+      "exitCode": 1,
+      "seconds": 3.852,
+      "log": "harbour-skate-presence.test.ts.txt"
+    },
+    {
+      "file": "test/harbour-source-fences.test.ts",
+      "exitCode": 0,
+      "seconds": 3.768,
+      "log": "harbour-source-fences.test.ts.txt"
+    },
+    {
+      "file": "test/harbour-walk-everywhere.test.ts",
+      "exitCode": 0,
+      "seconds": 21.842,
+      "log": "harbour-walk-everywhere.test.ts.txt"
+    },
+    {
+      "file": "test/harbour-walk-focus.test.ts",
+      "exitCode": 0,
+      "seconds": 18.061,
+      "log": "harbour-walk-focus.test.ts.txt"
+    },
+    {
+      "file": "test/harbour-world-toggle.test.ts",
+      "exitCode": 0,
+      "seconds": 6.205,
+      "log": "harbour-world-toggle.test.ts.txt"
+    },
+    {
+      "file": "test/hearth-mountain-art.test.ts",
+      "exitCode": 0,
+      "seconds": 2.435,
+      "log": "hearth-mountain-art.test.ts.txt"
+    },
+    {
+      "file": "test/hearth-mountain-channel.test.ts",
+      "exitCode": 1,
+      "seconds": 4.52,
+      "log": "hearth-mountain-channel.test.ts.txt"
+    },
+    {
+      "file": "test/hearth-mountain.test.ts",
+      "exitCode": 1,
+      "seconds": 4.268,
+      "log": "hearth-mountain.test.ts.txt"
+    },
+    {
+      "file": "test/horizon-airport-flight.test.ts",
+      "exitCode": 0,
+      "seconds": 1.218,
+      "log": "horizon-airport-flight.test.ts.txt"
+    },
+    {
+      "file": "test/horizon-airport-world.test.ts",
+      "exitCode": 0,
+      "seconds": 3.92,
+      "log": "horizon-airport-world.test.ts.txt"
+    },
+    {
+      "file": "test/horizon-corridor-light-integration.test.ts",
+      "exitCode": 0,
+      "seconds": 2.108,
+      "log": "horizon-corridor-light-integration.test.ts.txt"
+    },
+    {
+      "file": "test/horizon-foot-lane-apron.test.ts",
+      "exitCode": 0,
+      "seconds": 16.167,
+      "log": "horizon-foot-lane-apron.test.ts.txt"
+    },
+    {
+      "file": "test/horizon-guide.test.ts",
+      "exitCode": 0,
+      "seconds": 4.641,
+      "log": "horizon-guide.test.ts.txt"
+    },
+    {
+      "file": "test/horizon-monorail.test.ts",
+      "exitCode": 0,
+      "seconds": 4.359,
+      "log": "horizon-monorail.test.ts.txt"
+    },
+    {
+      "file": "test/horizon-mountain-footway-joins.test.ts",
+      "exitCode": 0,
+      "seconds": 4.936,
+      "log": "horizon-mountain-footway-joins.test.ts.txt"
+    },
+    {
+      "file": "test/horizon-mountain-joins.test.ts",
+      "exitCode": 0,
+      "seconds": 2.829,
+      "log": "horizon-mountain-joins.test.ts.txt"
+    },
+    {
+      "file": "test/horizon-mountain-light-tiers.test.ts",
+      "exitCode": 0,
+      "seconds": 2.279,
+      "log": "horizon-mountain-light-tiers.test.ts.txt"
+    },
+    {
+      "file": "test/horizon-mountain-road-floor.test.ts",
+      "exitCode": 0,
+      "seconds": 4.061,
+      "log": "horizon-mountain-road-floor.test.ts.txt"
+    },
+    {
+      "file": "test/horizon-mountain-road-ground.test.ts",
+      "exitCode": 0,
+      "seconds": 48.27,
+      "log": "horizon-mountain-road-ground.test.ts.txt"
+    },
+    {
+      "file": "test/horizon-native-skate-geometry.test.ts",
+      "exitCode": 0,
+      "seconds": 3.8,
+      "log": "horizon-native-skate-geometry.test.ts.txt"
+    },
+    {
+      "file": "test/horizon-native-skate-world.test.ts",
+      "exitCode": 0,
+      "seconds": 1.235,
+      "log": "horizon-native-skate-world.test.ts.txt"
+    },
+    {
+      "file": "test/horizon-native-skate.test.ts",
+      "exitCode": 0,
+      "seconds": 5.465,
+      "log": "horizon-native-skate.test.ts.txt"
+    },
+    {
+      "file": "test/horizon-old-shell.test.ts",
+      "exitCode": 0,
+      "seconds": 6.908,
+      "log": "horizon-old-shell.test.ts.txt"
+    },
+    {
+      "file": "test/horizon-ore-road-junction.test.ts",
+      "exitCode": 0,
+      "seconds": 2.862,
+      "log": "horizon-ore-road-junction.test.ts.txt"
+    },
+    {
+      "file": "test/horizonAdaptiveQuality.test.ts",
+      "exitCode": 0,
+      "seconds": 1.122,
+      "log": "horizonAdaptiveQuality.test.ts.txt"
+    },
+    {
+      "file": "test/horizonAssets.test.ts",
+      "exitCode": 0,
+      "seconds": 1.552,
+      "log": "horizonAssets.test.ts.txt"
+    },
+    {
+      "file": "test/horizonBakeArtifacts.test.ts",
+      "exitCode": 0,
+      "seconds": 1.547,
+      "log": "horizonBakeArtifacts.test.ts.txt"
+    },
+    {
+      "file": "test/horizonBeds.test.ts",
+      "exitCode": 1,
+      "seconds": 49.248,
+      "log": "horizonBeds.test.ts.txt"
+    },
+    {
+      "file": "test/horizonBicycleProfile.test.ts",
+      "exitCode": 0,
+      "seconds": 2.35,
+      "log": "horizonBicycleProfile.test.ts.txt"
+    },
+    {
+      "file": "test/horizonBoardCamera.test.ts",
+      "exitCode": 0,
+      "seconds": 8.747,
+      "log": "horizonBoardCamera.test.ts.txt"
+    },
+    {
+      "file": "test/horizonBoardLanding.test.ts",
+      "exitCode": 0,
+      "seconds": 8.204,
+      "log": "horizonBoardLanding.test.ts.txt"
+    },
+    {
+      "file": "test/horizonBoardPace.test.ts",
+      "exitCode": 1,
+      "seconds": 3.007,
+      "log": "horizonBoardPace.test.ts.txt"
+    },
+    {
+      "file": "test/horizonBoardThresholds.test.ts",
+      "exitCode": 1,
+      "seconds": 4.479,
+      "log": "horizonBoardThresholds.test.ts.txt"
+    },
+    {
+      "file": "test/horizonBridges.test.ts",
+      "exitCode": 0,
+      "seconds": 14.647,
+      "log": "horizonBridges.test.ts.txt"
+    },
+    {
+      "file": "test/horizonCards.test.ts",
+      "exitCode": 0,
+      "seconds": 1.756,
+      "log": "horizonCards.test.ts.txt"
+    },
+    {
+      "file": "test/horizonChute.test.ts",
+      "exitCode": 0,
+      "seconds": 1.352,
+      "log": "horizonChute.test.ts.txt"
+    },
+    {
+      "file": "test/horizonComfort.test.ts",
+      "exitCode": 0,
+      "seconds": 1.557,
+      "log": "horizonComfort.test.ts.txt"
+    },
+    {
+      "file": "test/horizonCorridor.test.ts",
+      "exitCode": 1,
+      "seconds": 2.615,
+      "log": "horizonCorridor.test.ts.txt"
+    },
+    {
+      "file": "test/horizonCorridorArt.test.ts",
+      "exitCode": 0,
+      "seconds": 6.118,
+      "log": "horizonCorridorArt.test.ts.txt"
+    },
+    {
+      "file": "test/horizonCorridorPlan.test.ts",
+      "exitCode": 0,
+      "seconds": 3.873,
+      "log": "horizonCorridorPlan.test.ts.txt"
+    },
+    {
+      "file": "test/horizonCorridorPlanting.test.ts",
+      "exitCode": 0,
+      "seconds": 2.407,
+      "log": "horizonCorridorPlanting.test.ts.txt"
+    },
+    {
+      "file": "test/horizonCrossings.test.ts",
+      "exitCode": 0,
+      "seconds": 1.215,
+      "log": "horizonCrossings.test.ts.txt"
+    },
+    {
+      "file": "test/horizonCruiser.test.ts",
+      "exitCode": 0,
+      "seconds": 1.645,
+      "log": "horizonCruiser.test.ts.txt"
+    },
+    {
+      "file": "test/horizonFleet.test.ts",
+      "exitCode": 0,
+      "seconds": 2.871,
+      "log": "horizonFleet.test.ts.txt"
+    },
+    {
+      "file": "test/horizonFootYearWalkYield.test.ts",
+      "exitCode": 0,
+      "seconds": 3.265,
+      "log": "horizonFootYearWalkYield.test.ts.txt"
+    },
+    {
+      "file": "test/horizonGliderBodies.test.ts",
+      "exitCode": 0,
+      "seconds": 1.32,
+      "log": "horizonGliderBodies.test.ts.txt"
+    },
+    {
+      "file": "test/horizonGliderCamera.test.ts",
+      "exitCode": 0,
+      "seconds": 2.818,
+      "log": "horizonGliderCamera.test.ts.txt"
+    },
+    {
+      "file": "test/horizonGliderController.test.ts",
+      "exitCode": 0,
+      "seconds": 2.524,
+      "log": "horizonGliderController.test.ts.txt"
+    },
+    {
+      "file": "test/horizonGliderJourneys.test.ts",
+      "exitCode": 0,
+      "seconds": 2.373,
+      "log": "horizonGliderJourneys.test.ts.txt"
+    },
+    {
+      "file": "test/horizonGliderJourneysWind.test.ts",
+      "exitCode": 0,
+      "seconds": 1.819,
+      "log": "horizonGliderJourneysWind.test.ts.txt"
+    },
+    {
+      "file": "test/horizonGliderLanding.test.ts",
+      "exitCode": 0,
+      "seconds": 1.814,
+      "log": "horizonGliderLanding.test.ts.txt"
+    },
+    {
+      "file": "test/horizonGliderLift.test.ts",
+      "exitCode": 0,
+      "seconds": 1.799,
+      "log": "horizonGliderLift.test.ts.txt"
+    },
+    {
+      "file": "test/horizonGliderNoMoney.test.ts",
+      "exitCode": 0,
+      "seconds": 1.204,
+      "log": "horizonGliderNoMoney.test.ts.txt"
+    },
+    {
+      "file": "test/horizonGliderPolar.test.ts",
+      "exitCode": 0,
+      "seconds": 2.017,
+      "log": "horizonGliderPolar.test.ts.txt"
+    },
+    {
+      "file": "test/horizonGliderReducedMotion.test.ts",
+      "exitCode": 0,
+      "seconds": 4.003,
+      "log": "horizonGliderReducedMotion.test.ts.txt"
+    },
+    {
+      "file": "test/horizonGondola.test.ts",
+      "exitCode": 0,
+      "seconds": 4.668,
+      "log": "horizonGondola.test.ts.txt"
+    },
+    {
+      "file": "test/horizonHeldWalkOut.test.ts",
+      "exitCode": 0,
+      "seconds": 7.626,
+      "log": "horizonHeldWalkOut.test.ts.txt"
+    },
+    {
+      "file": "test/horizonHostRouting.test.ts",
+      "exitCode": 0,
+      "seconds": 9.733,
+      "log": "horizonHostRouting.test.ts.txt"
+    },
+    {
+      "file": "test/horizonHostsDoors.test.ts",
+      "exitCode": 0,
+      "seconds": 47.984,
+      "log": "horizonHostsDoors.test.ts.txt"
+    },
+    {
+      "file": "test/horizonInspector.test.ts",
+      "exitCode": 0,
+      "seconds": 3.206,
+      "log": "horizonInspector.test.ts.txt"
+    },
+    {
+      "file": "test/horizonJourneys.test.ts",
+      "exitCode": 0,
+      "seconds": 1.37,
+      "log": "horizonJourneys.test.ts.txt"
+    },
+    {
+      "file": "test/horizonKitchenArt.test.ts",
+      "exitCode": 0,
+      "seconds": 2.218,
+      "log": "horizonKitchenArt.test.ts.txt"
+    },
+    {
+      "file": "test/horizonKitchenHUD.test.ts",
+      "exitCode": 0,
+      "seconds": 4.003,
+      "log": "horizonKitchenHUD.test.ts.txt"
+    },
+    {
+      "file": "test/horizonLandRepairs.test.ts",
+      "exitCode": 0,
+      "seconds": 3.813,
+      "log": "horizonLandRepairs.test.ts.txt"
+    },
+    {
+      "file": "test/horizonLandforms.test.ts",
+      "exitCode": 0,
+      "seconds": 4.604,
+      "log": "horizonLandforms.test.ts.txt"
+    },
+    {
+      "file": "test/horizonManifest.test.ts",
+      "exitCode": 0,
+      "seconds": 1.348,
+      "log": "horizonManifest.test.ts.txt"
+    },
+    {
+      "file": "test/horizonModeRegistry.test.ts",
+      "exitCode": 0,
+      "seconds": 4.343,
+      "log": "horizonModeRegistry.test.ts.txt"
+    },
+    {
+      "file": "test/horizonMountainRegion.test.ts",
+      "exitCode": 1,
+      "seconds": 17.951,
+      "log": "horizonMountainRegion.test.ts.txt"
+    },
+    {
+      "file": "test/horizonMountainRoad.test.ts",
+      "exitCode": 0,
+      "seconds": 3.715,
+      "log": "horizonMountainRoad.test.ts.txt"
+    },
+    {
+      "file": "test/horizonMoverAudio.test.ts",
+      "exitCode": 0,
+      "seconds": 3.101,
+      "log": "horizonMoverAudio.test.ts.txt"
+    },
+    {
+      "file": "test/horizonMoverHook.test.ts",
+      "exitCode": 0,
+      "seconds": 4.859,
+      "log": "horizonMoverHook.test.ts.txt"
+    },
+    {
+      "file": "test/horizonMoversNoMoney.test.ts",
+      "exitCode": 1,
+      "seconds": 1.254,
+      "log": "horizonMoversNoMoney.test.ts.txt"
+    },
+    {
+      "file": "test/horizonNativeFurniture.test.ts",
+      "exitCode": 1,
+      "seconds": 5.937,
+      "log": "horizonNativeFurniture.test.ts.txt"
+    },
+    {
+      "file": "test/horizonPartner.test.ts",
+      "exitCode": 0,
+      "seconds": 1.11,
+      "log": "horizonPartner.test.ts.txt"
+    },
+    {
+      "file": "test/horizonPedestrianWater.test.ts",
+      "exitCode": 0,
+      "seconds": 1.864,
+      "log": "horizonPedestrianWater.test.ts.txt"
+    },
+    {
+      "file": "test/horizonPerspective.test.ts",
+      "exitCode": 0,
+      "seconds": 1.061,
+      "log": "horizonPerspective.test.ts.txt"
+    },
+    {
+      "file": "test/horizonPresence.test.ts",
+      "exitCode": 0,
+      "seconds": 1.189,
+      "log": "horizonPresence.test.ts.txt"
+    },
+    {
+      "file": "test/horizonQuickLayerModes.test.ts",
+      "exitCode": 0,
+      "seconds": 10.278,
+      "log": "horizonQuickLayerModes.test.ts.txt"
+    },
+    {
+      "file": "test/horizonReconcile2.test.ts",
+      "exitCode": 0,
+      "seconds": 4.182,
+      "log": "horizonReconcile2.test.ts.txt"
+    },
+    {
+      "file": "test/horizonRenderWork.test.ts",
+      "exitCode": 0,
+      "seconds": 2.088,
+      "log": "horizonRenderWork.test.ts.txt"
+    },
+    {
+      "file": "test/horizonReserves.test.ts",
+      "exitCode": 0,
+      "seconds": 9.888,
+      "log": "horizonReserves.test.ts.txt"
+    },
+    {
+      "file": "test/horizonRideSituations.test.ts",
+      "exitCode": 1,
+      "seconds": 10.691,
+      "log": "horizonRideSituations.test.ts.txt"
+    },
+    {
+      "file": "test/horizonRoadLights.test.ts",
+      "exitCode": 0,
+      "seconds": 1.523,
+      "log": "horizonRoadLights.test.ts.txt"
+    },
+    {
+      "file": "test/horizonRuntimeGeometry.test.ts",
+      "exitCode": 0,
+      "seconds": 2.391,
+      "log": "horizonRuntimeGeometry.test.ts.txt"
+    },
+    {
+      "file": "test/horizonSavedPosition.test.ts",
+      "exitCode": 0,
+      "seconds": 2.192,
+      "log": "horizonSavedPosition.test.ts.txt"
+    },
+    {
+      "file": "test/horizonSkateLines.test.ts",
+      "exitCode": 1,
+      "seconds": 428.354,
+      "log": "horizonSkateLines.test.ts.txt"
+    },
+    {
+      "file": "test/horizonSkyEnvelope.test.ts",
+      "exitCode": 0,
+      "seconds": 5.139,
+      "log": "horizonSkyEnvelope.test.ts.txt"
+    },
+    {
+      "file": "test/horizonSolar.test.ts",
+      "exitCode": 0,
+      "seconds": 5.918,
+      "log": "horizonSolar.test.ts.txt"
+    },
+    {
+      "file": "test/horizonStillwaterLink.test.ts",
+      "exitCode": 0,
+      "seconds": 8.577,
+      "log": "horizonStillwaterLink.test.ts.txt"
+    },
+    {
+      "file": "test/horizonStreaming.test.ts",
+      "exitCode": 0,
+      "seconds": 11.375,
+      "log": "horizonStreaming.test.ts.txt"
+    },
+    {
+      "file": "test/horizonStructures.test.ts",
+      "exitCode": 1,
+      "seconds": 103.339,
+      "log": "horizonStructures.test.ts.txt"
+    },
+    {
+      "file": "test/horizonTerrainAsset.test.ts",
+      "exitCode": 0,
+      "seconds": 20.639,
+      "log": "horizonTerrainAsset.test.ts.txt"
+    },
+    {
+      "file": "test/horizonTerrainCuts.test.ts",
+      "exitCode": 0,
+      "seconds": 8.508,
+      "log": "horizonTerrainCuts.test.ts.txt"
+    },
+    {
+      "file": "test/horizonThresholds.test.ts",
+      "exitCode": 0,
+      "seconds": 91.819,
+      "log": "horizonThresholds.test.ts.txt"
+    },
+    {
+      "file": "test/horizonThroat.test.ts",
+      "exitCode": 0,
+      "seconds": 5.907,
+      "log": "horizonThroat.test.ts.txt"
+    },
+    {
+      "file": "test/horizonUnderground.test.ts",
+      "exitCode": 1,
+      "seconds": 141.321,
+      "log": "horizonUnderground.test.ts.txt"
+    },
+    {
+      "file": "test/horizonViews.test.ts",
+      "exitCode": 0,
+      "seconds": 49.856,
+      "log": "horizonViews.test.ts.txt"
+    },
+    {
+      "file": "test/horizonWalkOut.test.ts",
+      "exitCode": 0,
+      "seconds": 10.262,
+      "log": "horizonWalkOut.test.ts.txt"
+    },
+    {
+      "file": "test/horizonWater.test.ts",
+      "exitCode": 0,
+      "seconds": 27.227,
+      "log": "horizonWater.test.ts.txt"
+    },
+    {
+      "file": "test/horizonWave4.test.ts",
+      "exitCode": 0,
+      "seconds": 29.134,
+      "log": "horizonWave4.test.ts.txt"
+    },
+    {
+      "file": "test/horizonWave6.test.ts",
+      "exitCode": 0,
+      "seconds": 61.351,
+      "log": "horizonWave6.test.ts.txt"
+    },
+    {
+      "file": "test/horizonWind.test.ts",
+      "exitCode": 0,
+      "seconds": 4.53,
+      "log": "horizonWind.test.ts.txt"
+    },
+    {
+      "file": "test/horizonWorldDefinition.test.ts",
+      "exitCode": 0,
+      "seconds": 13.761,
+      "log": "horizonWorldDefinition.test.ts.txt"
+    },
+    {
+      "file": "test/journey-board-app.test.ts",
+      "exitCode": 0,
+      "seconds": 127.986,
+      "log": "journey-board-app.test.ts.txt"
+    },
+    {
+      "file": "test/journey-board-fence.test.ts",
+      "exitCode": 0,
+      "seconds": 4.866,
+      "log": "journey-board-fence.test.ts.txt"
+    },
+    {
+      "file": "test/journey-board-integration.test.ts",
+      "exitCode": 0,
+      "seconds": 20.209,
+      "log": "journey-board-integration.test.ts.txt"
+    },
+    {
+      "file": "test/journey-board-model.test.ts",
+      "exitCode": 0,
+      "seconds": 19.78,
+      "log": "journey-board-model.test.ts.txt"
+    },
+    {
+      "file": "test/journey-board-parity.test.ts",
+      "exitCode": 0,
+      "seconds": 62.171,
+      "log": "journey-board-parity.test.ts.txt"
+    },
+    {
+      "file": "test/journey-board-route.test.ts",
+      "exitCode": 1,
+      "seconds": 32.381,
+      "log": "journey-board-route.test.ts.txt"
+    },
+    {
+      "file": "test/journey-board-ui.test.ts",
+      "exitCode": 0,
+      "seconds": 42.683,
+      "log": "journey-board-ui.test.ts.txt"
+    },
+    {
+      "file": "test/journey-cloud-transition.test.ts",
+      "exitCode": 0,
+      "seconds": 3.691,
+      "log": "journey-cloud-transition.test.ts.txt"
+    },
+    {
+      "file": "test/journey-focus.test.ts",
+      "exitCode": 0,
+      "seconds": 3.675,
+      "log": "journey-focus.test.ts.txt"
+    },
+    {
+      "file": "test/journey-free-roam-ui.test.ts",
+      "exitCode": 0,
+      "seconds": 39.774,
+      "log": "journey-free-roam-ui.test.ts.txt"
+    },
+    {
+      "file": "test/journey-fullscreen-ui.test.ts",
+      "exitCode": 0,
+      "seconds": 16.491,
+      "log": "journey-fullscreen-ui.test.ts.txt"
+    },
+    {
+      "file": "test/journey-game-mode-ui.test.ts",
+      "exitCode": 0,
+      "seconds": 44.199,
+      "log": "journey-game-mode-ui.test.ts.txt"
+    },
+    {
+      "file": "test/journey-integrated-ui.test.ts",
+      "exitCode": 0,
+      "seconds": 45.966,
+      "log": "journey-integrated-ui.test.ts.txt"
+    },
+    {
+      "file": "test/journey-land.test.ts",
+      "exitCode": 1,
+      "seconds": 30.044,
+      "log": "journey-land.test.ts.txt"
+    },
+    {
+      "file": "test/journey-loader-recovery.test.ts",
+      "exitCode": 0,
+      "seconds": 15.095,
+      "log": "journey-loader-recovery.test.ts.txt"
+    },
+    {
+      "file": "test/journey-mini-model.test.ts",
+      "exitCode": 0,
+      "seconds": 15.454,
+      "log": "journey-mini-model.test.ts.txt"
+    },
+    {
+      "file": "test/journey-mini-story.test.ts",
+      "exitCode": 0,
+      "seconds": 426.539,
+      "log": "journey-mini-story.test.ts.txt"
+    },
+    {
+      "file": "test/journey-mini-ui.test.ts",
+      "exitCode": 0,
+      "seconds": 25.748,
+      "log": "journey-mini-ui.test.ts.txt"
+    },
+    {
+      "file": "test/journey-road.test.ts",
+      "exitCode": 1,
+      "seconds": 18.878,
+      "log": "journey-road.test.ts.txt"
+    },
+    {
+      "file": "test/journey-roam-camera.test.ts",
+      "exitCode": 0,
+      "seconds": 2.49,
+      "log": "journey-roam-camera.test.ts.txt"
+    },
+    {
+      "file": "test/mountain-art-kit.test.ts",
+      "exitCode": 0,
+      "seconds": 12.268,
+      "log": "mountain-art-kit.test.ts.txt"
+    },
+    {
+      "file": "test/mountain-bicycle-metadata.test.ts",
+      "exitCode": 0,
+      "seconds": 35.896,
+      "log": "mountain-bicycle-metadata.test.ts.txt"
+    },
+    {
+      "file": "test/mountain-branch-finishing.test.ts",
+      "exitCode": 1,
+      "seconds": 7.97,
+      "log": "mountain-branch-finishing.test.ts.txt"
+    },
+    {
+      "file": "test/mountain-camera.test.ts",
+      "exitCode": 1,
+      "seconds": 52.568,
+      "log": "mountain-camera.test.ts.txt"
+    },
+    {
+      "file": "test/mountain-finishing.test.ts",
+      "exitCode": 0,
+      "seconds": 5.571,
+      "log": "mountain-finishing.test.ts.txt"
+    },
+    {
+      "file": "test/mountain-frame-study.test.ts",
+      "exitCode": 0,
+      "seconds": 2.599,
+      "log": "mountain-frame-study.test.ts.txt"
+    },
+    {
+      "file": "test/mountain-landings.test.ts",
+      "exitCode": 0,
+      "seconds": 8.449,
+      "log": "mountain-landings.test.ts.txt"
+    },
+    {
+      "file": "test/mountain-landscape.test.ts",
+      "exitCode": 0,
+      "seconds": 20.131,
+      "log": "mountain-landscape.test.ts.txt"
+    },
+    {
+      "file": "test/mountain-life.test.ts",
+      "exitCode": 0,
+      "seconds": 5.019,
+      "log": "mountain-life.test.ts.txt"
+    },
+    {
+      "file": "test/mountain-movement.test.ts",
+      "exitCode": 0,
+      "seconds": 18.402,
+      "log": "mountain-movement.test.ts.txt"
+    },
+    {
+      "file": "test/mountain-orchard-floor.test.ts",
+      "exitCode": 0,
+      "seconds": 4.082,
+      "log": "mountain-orchard-floor.test.ts.txt"
+    },
+    {
+      "file": "test/mountain-yearwalk-foot-hosts.test.ts",
+      "exitCode": 0,
+      "seconds": 8.48,
+      "log": "mountain-yearwalk-foot-hosts.test.ts.txt"
+    },
+    {
+      "file": "test/mountainRaceRetry.test.ts",
+      "exitCode": 0,
+      "seconds": 4.923,
+      "log": "mountainRaceRetry.test.ts.txt"
+    },
+    {
+      "file": "test/mountainStreamingChurn.test.ts",
+      "exitCode": 0,
+      "seconds": 2.485,
+      "log": "mountainStreamingChurn.test.ts.txt"
+    },
+    {
+      "file": "test/mountainStreamingReducedMotion.test.ts",
+      "exitCode": 0,
+      "seconds": 3.608,
+      "log": "mountainStreamingReducedMotion.test.ts.txt"
+    },
+    {
+      "file": "test/mountainTerrainAsset.test.ts",
+      "exitCode": 0,
+      "seconds": 2.913,
+      "log": "mountainTerrainAsset.test.ts.txt"
+    },
+    {
+      "file": "test/native-body-height-spawn.test.ts",
+      "exitCode": 0,
+      "seconds": 4.956,
+      "log": "native-body-height-spawn.test.ts.txt"
+    },
+    {
+      "file": "test/native-library-entry.test.ts",
+      "exitCode": 0,
+      "seconds": 6.126,
+      "log": "native-library-entry.test.ts.txt"
+    },
+    {
+      "file": "test/skate-controller-pause.test.ts",
+      "exitCode": 0,
+      "seconds": 5.335,
+      "log": "skate-controller-pause.test.ts.txt"
+    },
+    {
+      "file": "test/skate-destination-readiness.test.ts",
+      "exitCode": 0,
+      "seconds": 5.077,
+      "log": "skate-destination-readiness.test.ts.txt"
+    },
+    {
+      "file": "test/skate-input-human.test.ts",
+      "exitCode": 0,
+      "seconds": 5.881,
+      "log": "skate-input-human.test.ts.txt"
+    },
+    {
+      "file": "test/skate-input.test.ts",
+      "exitCode": 0,
+      "seconds": 3.32,
+      "log": "skate-input.test.ts.txt"
+    },
+    {
+      "file": "test/skate-int-bail.test.ts",
+      "exitCode": 0,
+      "seconds": 5.821,
+      "log": "skate-int-bail.test.ts.txt"
+    },
+    {
+      "file": "test/skate-int-dressing.test.ts",
+      "exitCode": 1,
+      "seconds": 7.151,
+      "log": "skate-int-dressing.test.ts.txt"
+    },
+    {
+      "file": "test/skate-int-feel.test.ts",
+      "exitCode": 1,
+      "seconds": 7.048,
+      "log": "skate-int-feel.test.ts.txt"
+    },
+    {
+      "file": "test/skate-int-grinds-human.test.ts",
+      "exitCode": 1,
+      "seconds": 8.872,
+      "log": "skate-int-grinds-human.test.ts.txt"
+    },
+    {
+      "file": "test/skate-int-grinds.test.ts",
+      "exitCode": 0,
+      "seconds": 5.497,
+      "log": "skate-int-grinds.test.ts.txt"
+    },
+    {
+      "file": "test/skate-int-look.test.ts",
+      "exitCode": 0,
+      "seconds": 6.189,
+      "log": "skate-int-look.test.ts.txt"
+    },
+    {
+      "file": "test/skate-int-park.test.ts",
+      "exitCode": 1,
+      "seconds": 5.916,
+      "log": "skate-int-park.test.ts.txt"
+    },
+    {
+      "file": "test/skate-island-travel.test.ts",
+      "exitCode": 0,
+      "seconds": 5.547,
+      "log": "skate-island-travel.test.ts.txt"
+    },
+    {
+      "file": "test/skate-lab.test.ts",
+      "exitCode": 1,
+      "seconds": 6.985,
+      "log": "skate-lab.test.ts.txt"
+    },
+    {
+      "file": "test/skate-look-board.test.ts",
+      "exitCode": 0,
+      "seconds": 4.113,
+      "log": "skate-look-board.test.ts.txt"
+    },
+    {
+      "file": "test/skate-look-craft.test.ts",
+      "exitCode": 1,
+      "seconds": 5.77,
+      "log": "skate-look-craft.test.ts.txt"
+    },
+    {
+      "file": "test/skate-look-figure.test.ts",
+      "exitCode": 0,
+      "seconds": 4.94,
+      "log": "skate-look-figure.test.ts.txt"
+    },
+    {
+      "file": "test/skate-look-fx.test.ts",
+      "exitCode": 0,
+      "seconds": 2.299,
+      "log": "skate-look-fx.test.ts.txt"
+    },
+    {
+      "file": "test/skate-look-rider.test.ts",
+      "exitCode": 0,
+      "seconds": 4.808,
+      "log": "skate-look-rider.test.ts.txt"
+    },
+    {
+      "file": "test/skate-race-replay.test.ts",
+      "exitCode": 0,
+      "seconds": 4.765,
+      "log": "skate-race-replay.test.ts.txt"
+    },
+    {
+      "file": "test/skate-show-audio.test.ts",
+      "exitCode": 0,
+      "seconds": 2.391,
+      "log": "skate-show-audio.test.ts.txt"
+    },
+    {
+      "file": "test/skate-show-camera.test.ts",
+      "exitCode": 0,
+      "seconds": 4.623,
+      "log": "skate-show-camera.test.ts.txt"
+    },
+    {
+      "file": "test/skate-show-framing.test.ts",
+      "exitCode": 1,
+      "seconds": 9.066,
+      "log": "skate-show-framing.test.ts.txt"
+    },
+    {
+      "file": "test/skate-show-hud.test.ts",
+      "exitCode": 0,
+      "seconds": 5.616,
+      "log": "skate-show-hud.test.ts.txt"
+    },
+    {
+      "file": "test/skate-show-session.test.ts",
+      "exitCode": 0,
+      "seconds": 3.987,
+      "log": "skate-show-session.test.ts.txt"
+    },
+    {
+      "file": "test/skate-sim-ride.test.ts",
+      "exitCode": 0,
+      "seconds": 6.022,
+      "log": "skate-sim-ride.test.ts.txt"
+    },
+    {
+      "file": "test/skate-sim-tricks.test.ts",
+      "exitCode": 0,
+      "seconds": 3.267,
+      "log": "skate-sim-tricks.test.ts.txt"
+    },
+    {
+      "file": "test/skate-tricks.test.ts",
+      "exitCode": 0,
+      "seconds": 2.396,
+      "log": "skate-tricks.test.ts.txt"
+    },
+    {
+      "file": "test/skate-world-mesh.test.ts",
+      "exitCode": 1,
+      "seconds": 12.27,
+      "log": "skate-world-mesh.test.ts.txt"
+    },
+    {
+      "file": "test/skate-world.test.ts",
+      "exitCode": 1,
+      "seconds": 10.021,
+      "log": "skate-world.test.ts.txt"
+    },
+    {
+      "file": "test/world-presence-lane.test.ts",
+      "exitCode": 0,
+      "seconds": 4.198,
+      "log": "world-presence-lane.test.ts.txt"
+    },
+    {
+      "file": "test/world-presence-worker.test.ts",
+      "exitCode": 0,
+      "seconds": 20.786,
+      "log": "world-presence-worker.test.ts.txt"
+    },
+    {
+      "file": "test/world-presence.test.ts",
+      "exitCode": 0,
+      "seconds": 9.626,
+      "log": "world-presence.test.ts.txt"
+    }
+  ],
+  "sourceEnd": "b6e8662d7ca27bfe30a96058f6256d1e69aa6fd5cc27e9c3b5deba31855f2b54",
+  "sourceStable": true,
+  "finishedAt": "2026-09-30T17:10:18Z"
+}

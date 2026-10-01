@@ -1,0 +1,75 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof
+
+ ❯ test/harbour-hercules.test.ts (29 tests | 2 failed) 568ms
+   ✓ Hercules follows > walks to a heel point behind your shoulder, and is never underfoot 13ms
+   ✓ Hercules follows > breaks into a run when you sprint and slows to a walk when you do 3ms
+   ✓ Hercules follows > catches up from a long way behind, at a run 3ms
+   ✓ Hercules follows > refuses the water: he stops on the grass where you walk on to the sand 9ms
+   ✓ Hercules has moods, and every one of them ends > settles after you stand still, and then asks for no more frames 8ms
+   ✓ Hercules has moods, and every one of them ends > every mood falls to a terminal one, in at most two hops 1ms
+   ✓ Hercules has moods, and every one of them ends > answers a wave by coming, a dance by bouncing and a sit by sitting 4ms
+   ✓ Hercules has moods, and every one of them ends > looks up when you jump 3ms
+   ✓ Hercules has moods, and every one of them ends > one wave is one answer: it is not re-answered every frame 0ms
+   ✓ Hercules has moods, and every one of them ends > takes the Queen's warm flagstone when you stop beside it, and gives it up when you walk on 25ms
+   ✓ Hercules has moods, and every one of them ends > reduced motion keeps him following and drops the flourishes 8ms
+   ✓ Hercules leads you to what needs attention > reads only what the reading already says, and invents nothing 1ms
+   ✓ Hercules leads you to what needs attention > names the building each honest reading stands in front of 1ms
+   ✓ Hercules leads you to what needs attention > derives each attention target from the canonical village door 3ms
+   ✓ Hercules leads you to what needs attention > the key changes only when the thing does 1ms
+   × Hercules leads you to what needs attention > stands his door in front of the building, on the island and out of the sea 11ms
+     → expected 128.533739639852 to be less than 73.2
+   ✓ Hercules leads you to what needs attention > walks to the door, waits there, and lays a trail of paws that leads to it 27ms
+   ✓ Hercules leads you to what needs attention > a wave beats the errand for as long as the answer lasts 3ms
+   ✓ what Hercules is made of > is a carved cat at village scale, inside a handful of meshes 26ms
+   ✓ what Hercules is made of > stands on the island, walks inside the frame it is given, and comes to rest 41ms
+   ✓ what Hercules is made of > safely catches up across a long, obstructed journey without starting frames 8ms
+   ✓ what Hercules is made of > refuses a catch-up across a closed room wall 7ms
+   ✓ what Hercules is made of > walks bounded pathfinder waypoints around a building and tree to a far errand 12ms
+   ✓ what Hercules is made of > uses bounded waypoints to regain a heel point behind the same barrier 29ms
+   ✓ what Hercules is made of > stays with a person exploring the orchard instead of repeatedly leaving for a distant task 295ms
+   ✓ what Hercules is made of > leaves an already-shown door and settles beside the person again 15ms
+   ✓ what Hercules is made of > leaves a paw print, not a footprint 2ms
+   ✓ what a cat may never do > writes no money, reads no storage, and never owns a frame 3ms
+   × what a cat may never do > never claims a state the reading does not carry 5ms
+     → expected false to be true // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/harbour-hercules.test.ts > Hercules leads you to what needs attention > stands his door in front of the building, on the island and out of the sea
+AssertionError: expected 128.533739639852 to be less than 73.2
+ ❯ test/harbour-hercules.test.ts:264:42
+    262|     for (const name of Object.keys(ATTENTION_SPOTS) as (keyof typeof A…
+    263|       const door = attentionDoor(name);
+    264|       expect(Math.hypot(door.x, door.z)).toBeLessThan(73.2);
+       |                                          ^
+    265|       // And he faces the thing he brought you to.
+    266|       const target = name === "stairhead" || name === "kitchen-cottage…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/harbour-hercules.test.ts > what a cat may never do > never claims a state the reading does not carry
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ test/harbour-hercules.test.ts:463:39
+    461|     expect(ERRAND_MET).toBeGreaterThan(DOOR_REACH);
+    462|     expect(MOOD_AFTER).toBeGreaterThan(0);
+    463|     expect(spotless(ATTENTION_SPOTS)).toBe(true);
+       |                                       ^
+    464|   });
+    465| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 27 passed (29)
+   Start at  13:10:34
+   Duration  9.09s (transform 4.60s, setup 0ms, collect 7.25s, tests 568ms, environment 707ms, prepare 172ms)
+

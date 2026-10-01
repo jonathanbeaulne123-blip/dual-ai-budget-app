@@ -1,0 +1,57 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof
+
+ ❯ test/skate-int-feel.test.ts (5 tests | 3 failed) 2104ms
+   × feel · the Breadbin mini (issue 1) > pumps for a minute: gets above the coping, levels off, stays centred, never bails 961ms
+     → expected 1 to be greater than 30
+   × feel · the Hatch kicker (issue 2) > an ollie at the lip rises 0.8–1.4 above it at 7–9 u/s (was 1.6–2.5) and clears the gap 79ms
+     → 7 u/s: expected -0.4657479862108418 to be greater than 0.8
+   × feel · the Hatch kicker (issue 2) > a 360 flip popped at the lip is caught and lands clean at 8–9 u/s 41ms
+     → 8 u/s: expected [ 'pop', 'bail', 'recovered' ] to include 'flip-caught'
+   ✓ feel · transitions and stalls (issue 4) > the board never jumps heading through the Hob at any angle and speed; slow straight climbs roll back fakie  706ms
+   ✓ feel · names on a full line (issue 8) > the lab line names Ollie to Backside 50-50, then Kickflip to Manual (a gap on the way does not break the link)  313ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/skate-int-feel.test.ts > feel · the Breadbin mini (issue 1) > pumps for a minute: gets above the coping, levels off, stays centred, never bails
+AssertionError: expected 1 to be greater than 30
+ ❯ test/skate-int-feel.test.ts:43:26
+     41|     }
+     42|     expect(events.some(e=>e.kind==='bail')).toBe(false);
+     43|     expect(peaks.length).toBeGreaterThan(30);
+       |                          ^
+     44|     expect(peaks.findIndex(h=>h>0)).toBeLessThanOrEqual(4);          /…
+     45|     const late=peaks.slice(-12);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  test/skate-int-feel.test.ts > feel · the Hatch kicker (issue 2) > an ollie at the lip rises 0.8–1.4 above it at 7–9 u/s (was 1.6–2.5) and clears the gap
+AssertionError: 7 u/s: expected -0.4657479862108418 to be greater than 0.8
+ ❯ test/skate-int-feel.test.ts:69:33
+     67|     for(const v of [7,8,9]){
+     68|       const r=hatch(v,null,5.75);
+     69|       expect(r.apex,`${v} u/s`).toBeGreaterThan(.8);expect(r.apex,`${v…
+       |                                 ^
+     70|       expect(r.ev.some(e=>e.kind==='bail'),`${v} u/s`).toBe(false);
+     71|       // The landing block starts at lx 3.2: the gap (and the planter)…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  test/skate-int-feel.test.ts > feel · the Hatch kicker (issue 2) > a 360 flip popped at the lip is caught and lands clean at 8–9 u/s
+AssertionError: 8 u/s: expected [ 'pop', 'bail', 'recovered' ] to include 'flip-caught'
+ ❯ test/skate-int-feel.test.ts:78:32
+     76|     for(const v of [8,8.5,9]){
+     77|       const r=hatch(v,'360-flip',5.75),kinds=r.ev.map(e=>e.kind);
+     78|       expect(kinds,`${v} u/s`).toContain('flip-caught');
+       |                                ^
+     79|       expect(kinds,`${v} u/s`).not.toContain('bail');
+     80|       expect(r.apex,`${v} u/s`).toBeLessThan(1.45);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 2 passed (5)
+   Start at  13:22:49
+   Duration  7.72s (transform 2.24s, setup 0ms, collect 4.73s, tests 2.10s, environment 1ms, prepare 303ms)
+

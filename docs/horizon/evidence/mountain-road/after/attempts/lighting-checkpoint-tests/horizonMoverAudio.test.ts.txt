@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonMoverAudio.test.ts (3 tests) 58ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  12:28:43
+   Duration  1.85s (transform 597ms, setup 0ms, collect 1.50s, tests 58ms, environment 0ms, prepare 113ms)
+

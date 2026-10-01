@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonAdaptiveQuality.test.ts (11 tests) 14ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  12:24:20
+   Duration  288ms (transform 42ms, setup 0ms, collect 73ms, tests 14ms, environment 0ms, prepare 57ms)
+

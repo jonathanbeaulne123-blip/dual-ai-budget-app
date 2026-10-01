@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof
+
+ ✓ test/horizonCorridor.test.ts (16 tests) 1517ms
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  13:11:58
+   Duration  2.79s (transform 601ms, setup 0ms, collect 806ms, tests 1.52s, environment 0ms, prepare 141ms)
+

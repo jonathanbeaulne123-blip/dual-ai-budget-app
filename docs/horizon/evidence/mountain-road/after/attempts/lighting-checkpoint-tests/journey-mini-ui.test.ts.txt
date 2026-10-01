@@ -1,0 +1,22 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/journey-mini-ui.test.ts (12 tests) 12629ms
+   ✓ JourneyMini — the journey's simple view > draws the flat map without WebGL, with the lane trackers, and opens the world with the shared focus  875ms
+   ✓ JourneyMini — the journey's simple view > never shows a partner's private to-do  547ms
+   ✓ JourneyMini — the journey's simple view > zooms through the five levels with the scale, the keyboard and the +/− buttons, telling the world each time  1846ms
+   ✓ JourneyMini — the journey's simple view > marks the current Chapter and only enters Harbour after an intentional extra closest zoom  1103ms
+   ✓ JourneyMini — the journey's simple view > slides through time with the arrows and the scrubber, and says where it is  1624ms
+   ✓ JourneyMini — the journey's simple view > follows the world: a level, a date and a pick arriving from the other view  908ms
+   ✓ JourneyMini — the journey's simple view > opens a small card from any label, with a door into the world and Escape back to where you were  841ms
+   ✓ JourneyMini — the journey's simple view > has an outline at every level, and its rows open the same cards  1831ms
+   ✓ JourneyMini — the journey's simple view > drives the 3D renderer when WebGL is there: scene, view, wheel zoom and picking  1784ms
+   ✓ JourneyMini — the journey's simple view > keeps to the flat map at the Lite quality  307ms
+   ✓ JourneyMini — the journey's simple view > as a corner minimap: tiny scale, no card, a pick only moves the shared focus  495ms
+   ✓ JourneyMini — the journey's simple view > rebuilds after a lost WebGL context  465ms
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  13:02:46
+   Duration  23.06s (transform 6.14s, setup 0ms, collect 8.59s, tests 12.63s, environment 1.14s, prepare 232ms)
+

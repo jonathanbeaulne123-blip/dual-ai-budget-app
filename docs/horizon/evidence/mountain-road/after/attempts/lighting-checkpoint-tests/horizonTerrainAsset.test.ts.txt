@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonTerrainAsset.test.ts (7 tests) 12559ms
+   ✓ Horizon terrain mesh (render = the baked lattice) > casts shadows, weights rock per triangle slope and shades turf smoothly (no 0.82 step)  11984ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  12:39:14
+   Duration  14.25s (transform 2.18s, setup 0ms, collect 818ms, tests 12.56s, environment 0ms, prepare 250ms)
+

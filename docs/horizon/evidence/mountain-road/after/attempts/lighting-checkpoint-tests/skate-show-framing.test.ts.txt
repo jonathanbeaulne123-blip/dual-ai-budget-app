@@ -1,0 +1,75 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/skate-show-framing.test.ts (36 tests | 2 failed) 4004ms
+   × skate chase camera · every lab scenario > push-away (desktop): rider framed, eye clear of the park 640ms
+     → push-away: out of frame at #150 air: expected 1 to be less than or equal to 0
+   ✓ skate chase camera · every lab scenario > push-away (phone): rider framed, eye clear of the park 124ms
+   ✓ skate chase camera · every lab scenario > ollie (desktop): rider framed, eye clear of the park 75ms
+   ✓ skate chase camera · every lab scenario > ollie (phone): rider framed, eye clear of the park 72ms
+   ✓ skate chase camera · every lab scenario > kickflip (desktop): rider framed, eye clear of the park 73ms
+   ✓ skate chase camera · every lab scenario > kickflip (phone): rider framed, eye clear of the park 67ms
+   ✓ skate chase camera · every lab scenario > heelflip (desktop): rider framed, eye clear of the park 65ms
+   ✓ skate chase camera · every lab scenario > heelflip (phone): rider framed, eye clear of the park 55ms
+   ✓ skate chase camera · every lab scenario > pop-shuvit (desktop): rider framed, eye clear of the park 55ms
+   ✓ skate chase camera · every lab scenario > pop-shuvit (phone): rider framed, eye clear of the park 57ms
+   ✓ skate chase camera · every lab scenario > 360-flip (desktop): rider framed, eye clear of the park 117ms
+   ✓ skate chase camera · every lab scenario > 360-flip (phone): rider framed, eye clear of the park 113ms
+   ✓ skate chase camera · every lab scenario > fs-180 (desktop): rider framed, eye clear of the park 60ms
+   ✓ skate chase camera · every lab scenario > fs-180 (phone): rider framed, eye clear of the park 53ms
+   ✓ skate chase camera · every lab scenario > indy-kicker (desktop): rider framed, eye clear of the park 72ms
+   ✓ skate chase camera · every lab scenario > indy-kicker (phone): rider framed, eye clear of the park 70ms
+   ✓ skate chase camera · every lab scenario > grind-5050 (desktop): rider framed, eye clear of the park 76ms
+   ✓ skate chase camera · every lab scenario > grind-5050 (phone): rider framed, eye clear of the park 78ms
+   ✓ skate chase camera · every lab scenario > space-grind (desktop): rider framed, eye clear of the park 68ms
+   ✓ skate chase camera · every lab scenario > space-grind (phone): rider framed, eye clear of the park 66ms
+   ✓ skate chase camera · every lab scenario > grind-boardslide (desktop): rider framed, eye clear of the park 69ms
+   ✓ skate chase camera · every lab scenario > grind-boardslide (phone): rider framed, eye clear of the park 80ms
+   ✓ skate chase camera · every lab scenario > grind-smith (desktop): rider framed, eye clear of the park 72ms
+   ✓ skate chase camera · every lab scenario > grind-smith (phone): rider framed, eye clear of the park 71ms
+   ✓ skate chase camera · every lab scenario > manual (desktop): rider framed, eye clear of the park 108ms
+   ✓ skate chase camera · every lab scenario > manual (phone): rider framed, eye clear of the park 108ms
+   ✓ skate chase camera · every lab scenario > bowl (desktop): rider framed, eye clear of the park 125ms
+   ✓ skate chase camera · every lab scenario > bowl (phone): rider framed, eye clear of the park 124ms
+   ✓ skate chase camera · every lab scenario > vert-air (desktop): rider framed, eye clear of the park 180ms
+   ✓ skate chase camera · every lab scenario > vert-air (phone): rider framed, eye clear of the park 199ms
+   ✓ skate chase camera · every lab scenario > powerslide (desktop): rider framed, eye clear of the park 57ms
+   ✓ skate chase camera · every lab scenario > powerslide (phone): rider framed, eye clear of the park 58ms
+   ✓ skate chase camera · every lab scenario > bail (desktop): rider framed, eye clear of the park 113ms
+   ✓ skate chase camera · every lab scenario > bail (phone): rider framed, eye clear of the park 132ms
+   × skate chase camera · every lab scenario > line (desktop): rider framed, eye clear of the park 211ms
+     → line: out of frame at #171 air, #172 air, #173 air, #174 air, #175 manual, #176 manual: expected 6 to be less than or equal to 0
+   ✓ skate chase camera · every lab scenario > line (phone): rider framed, eye clear of the park 230ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/skate-show-framing.test.ts > skate chase camera · every lab scenario > push-away (desktop): rider framed, eye clear of the park
+AssertionError: push-away: out of frame at #150 air: expected 1 to be less than or equal to 0
+ ❯ test/skate-show-framing.test.ts:50:122
+     48|       // The bail tumble may briefly put the head off the edge; everyt…
+     49|       const allowed = shots.filter(s => s.phase === 'bail' || s.phase …
+     50|       expect(bad.length, `${sc.name}: out of frame at ${bad.slice(0, 8…
+       |                                                                                                                          ^
+     51|       const buried = shots.filter(s => s.eyeClear < 0.12);
+     52|       expect(buried.map(s => `#${s.frame}`), `${sc.name}: eye inside t…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/skate-show-framing.test.ts > skate chase camera · every lab scenario > line (desktop): rider framed, eye clear of the park
+AssertionError: line: out of frame at #171 air, #172 air, #173 air, #174 air, #175 manual, #176 manual: expected 6 to be less than or equal to 0
+ ❯ test/skate-show-framing.test.ts:50:122
+     48|       // The bail tumble may briefly put the head off the edge; everyt…
+     49|       const allowed = shots.filter(s => s.phase === 'bail' || s.phase …
+     50|       expect(bad.length, `${sc.name}: out of frame at ${bad.slice(0, 8…
+       |                                                                                                                          ^
+     51|       const buried = shots.filter(s => s.eyeClear < 0.12);
+     52|       expect(buried.map(s => `#${s.frame}`), `${sc.name}: eye inside t…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 34 passed (36)
+   Start at  13:08:51
+   Duration  7.02s (transform 1.22s, setup 0ms, collect 2.52s, tests 4.00s, environment 0ms, prepare 151ms)
+

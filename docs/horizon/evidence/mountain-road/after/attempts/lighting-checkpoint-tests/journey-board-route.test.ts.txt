@@ -1,0 +1,52 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/journey-board-route.test.ts > board scene > fits the L0 budget at Sky (≤ 40k tris / 60 draws full; ≤ 25k / 40 lite) and L1 at Region
+[journey-board] full: sky 25911 tris / 23 draws; region 42251 / 31
+
+ ❯ test/journey-board-route.test.ts (23 tests | 1 failed) 11739ms
+   ✓ route layout on the baked stations > puts each month space on its station anchor (±0.5 eu) with a compressed height 216ms
+   ✓ route layout on the baked stations > gives every month's stretch one space per day, day N on the station, ids = the board's dates 66ms
+   ✓ route layout on the baked stations > spaces days by arc length: strictly increasing, on the ribbon's centreline 39ms
+   ✓ route layout on the baked stations > finds the self-crossings, draws the later month over, and keeps every day space ≥ 12 eu clear 57ms
+   ✓ route layout on the baked stations > is deterministic, and a stretch keeps its shape when the window moves  1626ms
+   ✓ route layout on the baked stations > lays out quiet, busy and empty households  1435ms
+   ✓ route layout on the baked stations > nudges days out of a blocked arc without reordering them 2ms
+   ✓ placeLabels > always places the piece, clamped inside the stage 1ms
+   ✓ placeLabels > lets the higher priority win an overlap, never overlaps, never hangs off the stage 1ms
+   ✓ placeLabels > ranks the demo board's marks by the plan's priority 1ms
+   ✓ placeLabels > stands at most eight posts at Sky, crossroads first 1ms
+   ✓ placeLabels > stands only the crossroads that won a Sky post at Sky; past the limit they wait for a closer tier (PR #567 review) 15ms
+   × board scene > fits the L0 budget at Sky (≤ 40k tris / 60 draws full; ≤ 25k / 40 lite) and L1 at Region 611ms
+     → lite sky triangles: expected 25839 to be less than or equal to 25000
+   ✓ board scene > opens at Region on the piece, reports anchors for every mark and calls onReady once 216ms
+   ✓ board scene > frames inside the safe area: Sky fits the island clear of a left card, a pristine view re-frames, a moved view holds still  414ms
+   ✓ board scene > focus / select / preview / zoom call nothing outside the scene, and idle draws no frames 221ms
+   ✓ board scene > only reports a pick; a canvas click or drag never runs anything 205ms
+   ✓ board scene > settles the piece in ≤ 600 ms when today's chapter changes; a milestone settle ends on any input  1587ms
+   ✓ board scene > keeps the frozen contract: options carry no actions, and ground points come back in concept metres 171ms
+   ✓ board scene > rebuilds on data, theme and piece-look changes and releases the lease on dispose  1811ms
+   ✓ pieces, dressings and the flat twin > authors all three themes and four original piece looks 9ms
+   ✓ pieces, dressings and the flat twin > BoardFlat exposes the same data-ids as the 3D marks 271ms
+   ✓ pieces, dressings and the flat twin > keeps the window's chapters in calendar order across the lap 15ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/journey-board-route.test.ts > board scene > fits the L0 budget at Sky (≤ 40k tris / 60 draws full; ≤ 25k / 40 lite) and L1 at Region
+AssertionError: lite sky triangles: expected 25839 to be less than or equal to 25000
+ ❯ test/journey-board-route.test.ts:297:54
+    295|       expect(h.scene.view().tier).toBe("sky");
+    296|       const sky = h.scene.stats();
+    297|       expect(sky.triangles, `${tier} sky triangles`).toBeLessThanOrEqu…
+       |                                                      ^
+    298|       expect(sky.drawCalls, `${tier} sky draws`).toBeLessThanOrEqual(J…
+    299|       h.scene.focus("piece", "region", false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 22 passed (23)
+   Start at  12:50:54
+   Duration  24.91s (transform 6.89s, setup 0ms, collect 9.90s, tests 11.74s, environment 1.94s, prepare 330ms)
+

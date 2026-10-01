@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/journey-mini-story.test.ts (4 tests) 422324ms
+   ✓ the simple view on Our Story > reads four eras: Moving in crossed, Make it ours current, the house and retirement planned  422311ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  12:55:40
+   Duration  423.29s (transform 110ms, setup 0ms, collect 136ms, tests 422.32s, environment 1ms, prepare 263ms)
+

@@ -1,0 +1,34 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof
+
+stdout | test/horizonMountainRegion.test.ts > the Horizon geography under the region > the seam: the Horizon’s baked ground meets the region’s within 0.5 m at lattice points just inside the footprint edge
+[region seam] |baked − region| at the edge probes: 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.03, 0.07
+
+stdout | test/horizonMountainRegion.test.ts > the walk graph crosses the seam > v2’s graph joins the Horizon’s and walk plans run from the Horizon to the observatory
+[region seam] joins: v2:road:foot→path:1282.000:54.650:720.000 0.0 m (seam); v2:overlook:summit→path:1313.694:158.050:472.378 9.8 m (seam); v2:door:observatory→path:1307.249:158.012:472.751 2.4 m (seam); v2:town:quay→path:1282.922:54.705:803.630 8.9 m (seam); v2:town:north→path:1309.598:55.972:740.160 19.7 m (seam) ; lips 29
+
+stdout | test/horizonMountainRegion.test.ts > the stripped-down scene (D-M8) > mounts in every dressing and tier, draws only the kept list, and releases everything
+[region budget] full: 478969 triangles (ground 72619), 121 draw calls | lite: 216519 triangles (ground 30490), 92 draw calls
+
+stderr | test/horizonMountainRegion.test.ts > the stripped-down scene (D-M8) > mounts in every dressing and tier, draws only the kept list, and releases everything
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/jsdom@26.1.0_supports-color@10.2.2/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at paperGrain (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof/src/harbour/art/cardScene.ts:34:18)
+    at buildRegionGround (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof/src/harbour/horizon/regions/mountainV2/ground.ts:52:103)
+    at mountRegionSteps (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof/src/harbour/horizon/regions/mountainV2/scene.ts:110:24)
+    at mountRegionSteps.next (<anonymous>)
+    at finishBuild (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof/src/house/world/buildTask.ts:3:18)
+    at Object.mount (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof/src/harbour/horizon/regions/mountainV2/index.ts:72:36)
+    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof/test/horizonMountainRegion.test.ts:191:46 undefined
+
+ ✓ test/horizonMountainRegion.test.ts (15 tests) 13329ms
+   ✓ the Horizon geography under the region > hides exactly the terrain cells whose centre is inside the region (split into `under` tiles)  2508ms
+   ✓ the stripped-down scene (D-M8) > mounts in every dressing and tier, draws only the kept list, and releases everything  10581ms
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  13:12:02
+   Duration  23.96s (transform 6.22s, setup 0ms, collect 9.30s, tests 13.33s, environment 812ms, prepare 129ms)
+

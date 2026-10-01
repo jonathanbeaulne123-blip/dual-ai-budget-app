@@ -1,0 +1,41 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof
+
+ ❯ test/skate-int-grinds-human.test.ts (2 tests | 2 failed) 4336ms
+   × skate v2 · grinds by hand (keys, human timing, real park) > all 15 on the Rolling Pin, 6 tries each with jittered timing 2524ms
+     → 5-0→undefined, 5-0→undefined, 5-0→undefined, 5-0→undefined, 5-0→undefined, 5-0→undefined, nosegrind→undefined, nosegrind→undefined, nosegrind→undefined, nosegrind→undefined, nosegrind→undefined, nosegrind→undefined, crooked→undefined, crooked→undefined, crooked→undefined, crooked→undefined, crooked→undefined, crooked→undefined, overcrook→undefined, overcrook→undefined, overcrook→undefined, overcrook→undefined, overcrook→undefined, overcrook→undefined, suski→undefined, suski→undefined, suski→undefined, suski→undefined, suski→undefined, suski→undefined, salad→undefined, salad→undefined, salad→undefined, salad→undefined, salad→undefined, salad→undefined, noseslide→undefined, noseslide→undefined, noseslide→undefined, noseslide→undefined, noseslide→undefined, noseslide→undefined, tailslide→undefined, tailslide→undefined, tailslide→undefined, tailslide→undefined, tailslide→undefined, tailslide→undefined, bluntslide→undefined, bluntslide→undefined, bluntslide→undefined, bluntslide→undefined, bluntslide→undefined, bluntslide→undefined, noseblunt→undefined, noseblunt→undefined, noseblunt→undefined, noseblunt→undefined, noseblunt→undefined, noseblunt→undefined: expected 60 to be less than or equal to 1
+   × skate v2 · grinds by hand (keys, human timing, real park) > all 15 on the Breadboard ledge, 6 tries each with jittered timing 1810ms
+     → 5-0→undefined, nosegrind→undefined, crooked→undefined, suski→undefined, salad→bluntslide, salad→bluntslide, noseslide→overcrook, noseblunt→undefined, noseblunt→undefined: expected 9 to be less than or equal to 1
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/skate-int-grinds-human.test.ts > skate v2 · grinds by hand (keys, human timing, real park) > all 15 on the Rolling Pin, 6 tries each with jittered timing
+AssertionError: 5-0→undefined, 5-0→undefined, 5-0→undefined, 5-0→undefined, 5-0→undefined, 5-0→undefined, nosegrind→undefined, nosegrind→undefined, nosegrind→undefined, nosegrind→undefined, nosegrind→undefined, nosegrind→undefined, crooked→undefined, crooked→undefined, crooked→undefined, crooked→undefined, crooked→undefined, crooked→undefined, overcrook→undefined, overcrook→undefined, overcrook→undefined, overcrook→undefined, overcrook→undefined, overcrook→undefined, suski→undefined, suski→undefined, suski→undefined, suski→undefined, suski→undefined, suski→undefined, salad→undefined, salad→undefined, salad→undefined, salad→undefined, salad→undefined, salad→undefined, noseslide→undefined, noseslide→undefined, noseslide→undefined, noseslide→undefined, noseslide→undefined, noseslide→undefined, tailslide→undefined, tailslide→undefined, tailslide→undefined, tailslide→undefined, tailslide→undefined, tailslide→undefined, bluntslide→undefined, bluntslide→undefined, bluntslide→undefined, bluntslide→undefined, bluntslide→undefined, bluntslide→undefined, noseblunt→undefined, noseblunt→undefined, noseblunt→undefined, noseblunt→undefined, noseblunt→undefined, noseblunt→undefined: expected 60 to be less than or equal to 1
+ ❯ test/skate-int-grinds-human.test.ts:77:47
+     75|       }
+     76|       // A person gets what they asked for (at most one miss in the 90…
+     77|       expect(misses.length,misses.join(', ')).toBeLessThanOrEqual(1);
+       |                                               ^
+     78|     });
+     79|   }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/skate-int-grinds-human.test.ts > skate v2 · grinds by hand (keys, human timing, real park) > all 15 on the Breadboard ledge, 6 tries each with jittered timing
+AssertionError: 5-0→undefined, nosegrind→undefined, crooked→undefined, suski→undefined, salad→bluntslide, salad→bluntslide, noseslide→overcrook, noseblunt→undefined, noseblunt→undefined: expected 9 to be less than or equal to 1
+ ❯ test/skate-int-grinds-human.test.ts:77:47
+     75|       }
+     76|       // A person gets what they asked for (at most one miss in the 90…
+     77|       expect(misses.length,misses.join(', ')).toBeLessThanOrEqual(1);
+       |                                               ^
+     78|     });
+     79|   }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  13:22:59
+   Duration  7.34s (transform 1.22s, setup 0ms, collect 2.43s, tests 4.34s, environment 0ms, prepare 157ms)
+

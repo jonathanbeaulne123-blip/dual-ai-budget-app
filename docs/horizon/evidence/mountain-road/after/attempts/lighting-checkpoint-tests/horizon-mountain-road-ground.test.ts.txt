@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizon-mountain-road-ground.test.ts (4 tests) 44026ms
+   ✓ Horizon drawn road ground clearance > removes the measured grass ridges in both directions while keeping the actual road floor  455ms
+   ✓ Horizon drawn road ground clearance > keeps the actual full and lite drawn ground triangles below the road at reported stops  43490ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  12:23:12
+   Duration  46.98s (transform 885ms, setup 0ms, collect 2.69s, tests 44.03s, environment 0ms, prepare 61ms)
+

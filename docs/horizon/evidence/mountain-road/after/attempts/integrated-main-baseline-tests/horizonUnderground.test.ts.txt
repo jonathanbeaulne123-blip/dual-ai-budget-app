@@ -1,0 +1,29 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof
+
+ ✓ test/horizonUnderground.test.ts (4 tests) 87775ms
+   ✓ encloses rooms and passages, preserves the only named mouths, and reports roof breaches  20793ms
+   ✓ gives every underground solid a unique id and opens the Deep roof only at the manifest skylight (v1.9: closed over the Throat)  21979ms
+   ✓ v2.0: checks the Throat against the collar aperture and keeps ceilings off the Ore Line and its branches  19809ms
+   ✓ gives the Deep a floor, carries the Ore Line across it on a trestle and opens the tubes onto the lake (page G, Wave 7)  25190ms
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-worker]: Timeout calling "onTaskUpdate"
+ ❯ Object.onTimeoutError ../../../budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/vitest@3.2.7_@types+node@20.19.43_jsdom@26.1.0_supports-color@10.2.2__supports-color@10.2.2_yaml@2.9.0/node_modules/vitest/dist/chunks/rpc.-pEldfrD.js:53:10
+ ❯ Timeout._onTimeout ../../../budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/vitest@3.2.7_@types+node@20.19.43_jsdom@26.1.0_supports-color@10.2.2__supports-color@10.2.2_yaml@2.9.0/node_modules/vitest/dist/chunks/index.B521nVV-.js:59:62
+ ❯ listOnTimeout node:internal/timers:685:17
+ ❯ processTimers node:internal/timers:618:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+     Errors  1 error
+   Start at  13:19:24
+   Duration  90.36s (transform 753ms, setup 0ms, collect 1.05s, tests 87.78s, environment 0ms, prepare 378ms)
+

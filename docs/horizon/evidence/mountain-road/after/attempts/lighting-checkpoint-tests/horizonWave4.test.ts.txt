@@ -1,0 +1,14 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonWave4.test.ts (15 tests) 21837ms
+   ✓ R2-03 (v2.6) the Mountain Road through its tunnel > walks V03 both ways and the Year Walk January footway through the tunnel  4898ms
+   ✓ R2-03 (v2.6) the Mountain Road through its tunnel > walks the same tunnel on the phone tier  2022ms
+   ✓ R2-08 the summit L02 on foot > walks the runtime body from the square to the Foot on the Mountain Road and from the summit station to L02 (D-M4, D-M6)  3746ms
+   ✓ R2-53 / R2-108 the Deep is closed to the island; L01 is carried, not floating over the gallery stair > ray-casts page G from the jetty: no ray reaches the terrain from below or leaves the rock outside the Throat  10468ms
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  12:45:07
+   Duration  24.06s (transform 1.20s, setup 0ms, collect 1.11s, tests 21.84s, environment 0ms, prepare 325ms)
+

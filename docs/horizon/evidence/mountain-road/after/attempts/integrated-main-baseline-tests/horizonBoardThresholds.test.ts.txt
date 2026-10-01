@@ -1,0 +1,13 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof
+
+ ✓ test/horizonBoardThresholds.test.ts (9 tests) 2249ms
+   ✓ pick up and park at the thresholds (RIDE §6.5, P17) > makes every board→feet pad threshold pace, and three real pads stop a 4.5 m/s board inside 6 m  553ms
+   ✓ pick up and park at the thresholds (RIDE §6.5, P17) > brakes for the landingQuay pad with S held from 10 m/s (the pendulum), on the line, and stops on the line before it (v2.4)  399ms
+   ✓ no invisible collider on a line (P19) > blocks S1–S4 only at the named land defects, sampled every 2 m along the centreline  536ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  13:11:52
+   Duration  3.62s (transform 550ms, setup 0ms, collect 1.06s, tests 2.25s, environment 0ms, prepare 42ms)
+

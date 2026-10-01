@@ -1,0 +1,58 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/horizonSkateLines.test.ts > the headless rider rides S1–S4 (RIDE §12) > S1's moving time is reported against the manifest target (P24: reported, not failed; D44: no retarget)
+S1 moving time 400.0 s over the built 1712 m (drawn 1712 m, 1 legs across land defects): misses the manifest target [70, 130] s by 270.0 s (D44, Jonathan's decision)
+
+ ❯ test/horizonSkateLines.test.ts (7 tests | 1 failed | 2 skipped) 417122ms
+   × the headless rider rides S1–S4 (RIDE §12) > S1 start → end 77626ms
+     → expected false to be true // Object.is equality
+   ✓ the headless rider rides S1–S4 (RIDE §12) > S2 start → end  127556ms
+   ✓ the headless rider rides S1–S4 (RIDE §12) > S3 start → end  138847ms
+   ✓ the headless rider rides S1–S4 (RIDE §12) > S4 start → end  71226ms
+   ↓ the headless rider rides S1–S4 (RIDE §12) > S1 end to end with no land-defect stop — waits on the land track to clear: 493, 498, 522, 535, 559 m wall S1.retaining.lakeside@lakeside; 531 m step S1.surface.2.lakeside@lakeside (deck wedge gap); 601, 607, 613, 618, 624 m wall S1.retaining.lakeside@lakeside; 792 m wall S1.retaining.lakeside@lakeside; 807, 821 m wall S1.retaining.notch@lakeside; 841 m wall apronBridge.rails@lakeside; 846 m wall dam.apron@lakeside; 879 m wall apronBridge.rails@notch; 1007, 1024 m wall S1.retaining.notch@notch; 1123, 1168 m step (terrain over the deck); 1186 m wall yearWalk.retaining.reach@reach
+   ↓ the headless rider rides S1–S4 (RIDE §12) > S2–S4 end to end with no land-defect stop — waits on the land track (the stops are in evidence/rides/board_S2…S4.json and HANDOFF-notes/board.md)
+   ✓ the headless rider rides S1–S4 (RIDE §12) > S1's moving time is reported against the manifest target (P24: reported, not failed; D44: no retarget) 11ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/horizonSkateLines.test.ts > the headless rider rides S1–S4 (RIDE §12) > S1 start → end
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ test/horizonSkateLines.test.ts:79:29
+     77|       // terrace (7.3 eu up, 10 eu beside): a skate lane now keeps its…
+     78|       // SKATE_TERRACE). Measured on the W7-T scratch bake; the integr…
+     79|       expect(run.completed).toBe(true);
+       |                             ^
+     80|       expect(run.stops.filter(s => s.kind === 'rider')).toEqual([]);
+     81|       run.legs.forEach((leg, i) => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-worker]: Timeout calling "onTaskUpdate"
+ ❯ Object.onTimeoutError ../../../budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/vitest@3.2.7_@types+node@20.19.43_jsdom@26.1.0_supports-color@10.2.2__supports-color@10.2.2_yaml@2.9.0/node_modules/vitest/dist/chunks/rpc.-pEldfrD.js:53:10
+ ❯ Timeout._onTimeout ../../../budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/vitest@3.2.7_@types+node@20.19.43_jsdom@26.1.0_supports-color@10.2.2__supports-color@10.2.2_yaml@2.9.0/node_modules/vitest/dist/chunks/index.B521nVV-.js:59:62
+ ❯ listOnTimeout node:internal/timers:685:17
+ ❯ processTimers node:internal/timers:618:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 passed | 2 todo (7)
+     Errors  1 error
+   Start at  12:29:48
+   Duration  423.97s (transform 3.24s, setup 0ms, collect 6.17s, tests 417.12s, environment 1ms, prepare 184ms)
+

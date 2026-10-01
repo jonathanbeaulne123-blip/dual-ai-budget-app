@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/native-library-entry.test.ts (1 test) 1897ms
+   ✓ library entry actual road edge > preserves the roof and clears native ground without a board-stopping road lip  1895ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  13:06:53
+   Duration  4.32s (transform 832ms, setup 0ms, collect 1.96s, tests 1.90s, environment 0ms, prepare 138ms)
+

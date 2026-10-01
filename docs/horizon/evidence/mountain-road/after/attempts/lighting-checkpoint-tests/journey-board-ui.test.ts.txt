@@ -1,0 +1,28 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/journey-board-ui.test.ts (32 tests) 30047ms
+   ✓ the calm header > shows the period, the Everyday figure, the attention count, what is next and the quick actions  519ms
+   ✓ the calm header > an attention item tied to a stop only selects it; one without a stop runs its own call once  413ms
+   ✓ map ↔ list parity > every stop has a mark (or its cluster's) and every crossroads a mark; the list has a row for each  538ms
+   ✓ map ↔ list parity > each panel action calls exactly its callback once with the call's args, and the list's same action calls the same  5779ms
+   ✓ map ↔ list parity > panels print the exact amount, the date and explicit status words (the same words as the list)  1882ms
+   ✓ the board is inert until an action is pressed > selecting, hovering, zooming, moving the day, chapters, Back to now and previewing call nothing  7766ms
+   ✓ crossroads > preview → banner + provisional drawing; return without changing; continue opens the owning surface once  1240ms
+   ✓ keyboard and focus > Escape closes the panel and returns focus to the mark that opened it  636ms
+   ✓ keyboard and focus > Back to now closes an open stop or cluster panel in the same action (PR #567 review)  920ms
+   ✓ keyboard and focus > arrows move a day, Page keys a month, Home goes back to now, Enter opens what is on the day; a live region announces  768ms
+   ✓ keyboard and focus > keeps the keyboard order summary → strip → Map/List → Back to now → marks → panel  338ms
+   ✓ motion, themes, empty > reduced motion renders no animated class  485ms
+   ✓ motion, themes, empty > renders the three authored theme classes  812ms
+   ✓ motion, themes, empty > never offers Enter Horizon on the flat board  467ms
+   ✓ layout fix pass (F3): Compass clearance, glance, summary card, resize framing, mark semantics > marks open a panel: aria-expanded + aria-controls (the panel slot), never aria-pressed  305ms
+   ✓ live wiring (JourneyBoard) > derives the demo board, loads the land, draws the scene, places DOM marks and calls onReady once  1695ms
+   ✓ live wiring (JourneyBoard) > falls back to the flat twin (no WebGL) and still calls onReady once  624ms
+   ✓ live wiring (JourneyBoard) > a failed land load leaves the summary and the list, and still calls onReady  394ms
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  12:51:22
+   Duration  39.99s (transform 5.83s, setup 0ms, collect 8.25s, tests 30.05s, environment 993ms, prepare 167ms)
+

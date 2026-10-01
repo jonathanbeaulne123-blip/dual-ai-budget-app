@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/journey-board-parity.test.ts (5 tests) 41141ms
+   ✓ the demo board's list is the map's list > the map's panel and the list run the SAME calls for every stop and crossroads, and print the same amount and status words  36073ms
+   ✓ flat marks ⊇ the 3D anchors at every visible tier > every non-landmark anchor at Sky, Region and Stop has its BoardFlat mark and action button  1651ms
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  12:49:47
+   Duration  58.96s (transform 10.49s, setup 0ms, collect 15.33s, tests 41.14s, environment 1.22s, prepare 205ms)
+

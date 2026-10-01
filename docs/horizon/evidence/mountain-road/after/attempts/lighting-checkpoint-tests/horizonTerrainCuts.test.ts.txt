@@ -1,0 +1,13 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonTerrainCuts.test.ts (18 tests) 2751ms
+   ✓ Horizon spatial bed cut solver > retains exact brute-force cut heights across bin boundaries, route crossings and excluded spans  529ms
+   ✓ Sketchbook sight windows (Stage A W3-C, P27) > holds the open ground between a page eye and its subject under the sight plane, never on a bed  893ms
+   ✓ Stage A W5 terrain for Jonathan's rulings (MANIFEST v2.0) > D-A8: the ground under the November station pad [1626,904] (turned 90°, + 2 m) is solid at 54–57  308ms
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  12:39:31
+   Duration  5.13s (transform 962ms, setup 0ms, collect 1.42s, tests 2.75s, environment 0ms, prepare 242ms)
+

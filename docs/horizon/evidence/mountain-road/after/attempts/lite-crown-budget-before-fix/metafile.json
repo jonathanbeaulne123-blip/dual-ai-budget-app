@@ -1,0 +1,802 @@
+{
+  "inputs": {
+    "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.core.js": {
+      "bytes": 1443056,
+      "imports": [],
+      "format": "esm"
+    },
+    "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js": {
+      "bytes": 650153,
+      "imports": [
+        {
+          "path": "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.core.js",
+          "kind": "import-statement",
+          "original": "./three.core.js"
+        },
+        {
+          "path": "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.core.js",
+          "kind": "import-statement",
+          "original": "./three.core.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/runtime/packedInstances.ts": {
+      "bytes": 6982,
+      "imports": [
+        {
+          "path": "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js",
+          "kind": "import-statement",
+          "original": "three"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/house/world/buildTask.ts": {
+      "bytes": 734,
+      "imports": [],
+      "format": "esm"
+    },
+    "src/harbour/skate/world/profiles.ts": {
+      "bytes": 6017,
+      "imports": [],
+      "format": "esm"
+    },
+    "src/harbour/skate/world/features.ts": {
+      "bytes": 16363,
+      "imports": [
+        {
+          "path": "src/harbour/skate/world/profiles.ts",
+          "kind": "import-statement",
+          "original": "./profiles.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/art/cardKit.ts": {
+      "bytes": 17698,
+      "imports": [
+        {
+          "path": "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js",
+          "kind": "import-statement",
+          "original": "three"
+        },
+        {
+          "path": "src/harbour/skate/world/features.ts",
+          "kind": "import-statement",
+          "original": "../skate/world/features.ts"
+        },
+        {
+          "path": "src/harbour/skate/world/profiles.ts",
+          "kind": "import-statement",
+          "original": "../skate/world/profiles.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/art/cardScene.ts": {
+      "bytes": 22025,
+      "imports": [
+        {
+          "path": "src/house/world/buildTask.ts",
+          "kind": "import-statement",
+          "original": "../../house/world/buildTask.ts"
+        },
+        {
+          "path": "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js",
+          "kind": "import-statement",
+          "original": "three"
+        },
+        {
+          "path": "src/harbour/art/cardKit.ts",
+          "kind": "import-statement",
+          "original": "./cardKit.ts"
+        },
+        {
+          "path": "src/harbour/art/cardKit.ts",
+          "kind": "import-statement",
+          "original": "./cardKit.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/world/MANIFEST.json": {
+      "bytes": 314339,
+      "imports": []
+    },
+    "src/harbour/horizon/world/manifest.ts": {
+      "bytes": 5003,
+      "imports": [
+        {
+          "path": "src/harbour/horizon/world/MANIFEST.json",
+          "kind": "import-statement",
+          "original": "./MANIFEST.json"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/world/geometry.ts": {
+      "bytes": 7054,
+      "imports": [],
+      "format": "esm"
+    },
+    "src/harbour/horizon/world/districts.ts": {
+      "bytes": 20871,
+      "imports": [
+        {
+          "path": "src/harbour/horizon/world/manifest.ts",
+          "kind": "import-statement",
+          "original": "./manifest.ts"
+        },
+        {
+          "path": "src/harbour/horizon/world/geometry.ts",
+          "kind": "import-statement",
+          "original": "./geometry.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/land/terrain/geometry.ts": {
+      "bytes": 3738,
+      "imports": [],
+      "format": "esm"
+    },
+    "src/harbour/horizon/sky/gradient.ts": {
+      "bytes": 1943,
+      "imports": [
+        {
+          "path": "src/harbour/horizon/land/terrain/geometry.ts",
+          "kind": "import-statement",
+          "original": "../land/terrain/geometry"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/sky/night.ts": {
+      "bytes": 7811,
+      "imports": [
+        {
+          "path": "src/harbour/horizon/sky/gradient.ts",
+          "kind": "import-statement",
+          "original": "./gradient"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/house/queenStyle.ts": {
+      "bytes": 1028,
+      "imports": [],
+      "format": "esm"
+    },
+    "src/theme/scenes.ts": {
+      "bytes": 12449,
+      "imports": [
+        {
+          "path": "src/house/queenStyle.ts",
+          "kind": "import-statement",
+          "original": "../house/queenStyle.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/court/dressing.ts": {
+      "bytes": 5858,
+      "imports": [
+        {
+          "path": "src/theme/scenes.ts",
+          "kind": "import-statement",
+          "original": "../../theme/scenes.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/scene/place.ts": {
+      "bytes": 889,
+      "imports": [
+        {
+          "path": "src/harbour/court/dressing.ts",
+          "kind": "import-statement",
+          "original": "../court/dressing.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/mountain/art/palette.ts": {
+      "bytes": 5466,
+      "imports": [
+        {
+          "path": "src/harbour/court/dressing.ts",
+          "kind": "import-statement",
+          "original": "../../court/dressing.ts"
+        },
+        {
+          "path": "src/harbour/art/cardKit.ts",
+          "kind": "import-statement",
+          "original": "../../art/cardKit.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/kit/road/palette.ts": {
+      "bytes": 4310,
+      "imports": [
+        {
+          "path": "src/harbour/scene/place.ts",
+          "kind": "import-statement",
+          "original": "../../../scene/place.ts"
+        },
+        {
+          "path": "src/harbour/mountain/art/palette.ts",
+          "kind": "import-statement",
+          "original": "../../../mountain/art/palette.ts"
+        },
+        {
+          "path": "src/harbour/art/cardKit.ts",
+          "kind": "import-statement",
+          "original": "../../../art/cardKit.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/kit/road/frames.ts": {
+      "bytes": 5698,
+      "imports": [],
+      "format": "esm"
+    },
+    "src/harbour/horizon/kit/road/markings.ts": {
+      "bytes": 4092,
+      "imports": [
+        {
+          "path": "src/harbour/horizon/kit/road/frames.ts",
+          "kind": "import-statement",
+          "original": "./frames.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/land/corridor/types.ts": {
+      "bytes": 9829,
+      "imports": [],
+      "format": "esm"
+    },
+    "src/harbour/horizon/kit/road/guards.ts": {
+      "bytes": 11561,
+      "imports": [
+        {
+          "path": "src/harbour/horizon/land/corridor/types.ts",
+          "kind": "import-statement",
+          "original": "../../land/corridor/types.ts"
+        },
+        {
+          "path": "src/harbour/art/cardScene.ts",
+          "kind": "import-statement",
+          "original": "../../../art/cardScene.ts"
+        },
+        {
+          "path": "src/harbour/art/cardKit.ts",
+          "kind": "import-statement",
+          "original": "../../../art/cardKit.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/land/corridor/lights.ts": {
+      "bytes": 4351,
+      "imports": [],
+      "format": "esm"
+    },
+    "src/harbour/horizon/kit/road/lamps.ts": {
+      "bytes": 12841,
+      "imports": [
+        {
+          "path": "src/harbour/art/cardScene.ts",
+          "kind": "import-statement",
+          "original": "../../../art/cardScene.ts"
+        },
+        {
+          "path": "src/harbour/horizon/land/corridor/types.ts",
+          "kind": "import-statement",
+          "original": "../../land/corridor/types.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/kit/road/stops.ts": {
+      "bytes": 8329,
+      "imports": [
+        {
+          "path": "src/harbour/art/cardScene.ts",
+          "kind": "import-statement",
+          "original": "../../../art/cardScene.ts"
+        },
+        {
+          "path": "src/harbour/art/cardKit.ts",
+          "kind": "import-statement",
+          "original": "../../../art/cardKit.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/runtime/corridorArt.ts": {
+      "bytes": 26443,
+      "imports": [
+        {
+          "path": "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js",
+          "kind": "import-statement",
+          "original": "three"
+        },
+        {
+          "path": "src/harbour/horizon/runtime/packedInstances.ts",
+          "kind": "import-statement",
+          "original": "./packedInstances"
+        },
+        {
+          "path": "src/house/world/buildTask.ts",
+          "kind": "import-statement",
+          "original": "../../../house/world/buildTask.ts"
+        },
+        {
+          "path": "src/harbour/art/cardScene.ts",
+          "kind": "import-statement",
+          "original": "../../art/cardScene.ts"
+        },
+        {
+          "path": "src/harbour/horizon/world/districts.ts",
+          "kind": "import-statement",
+          "original": "../world/districts.ts"
+        },
+        {
+          "path": "src/harbour/horizon/sky/night.ts",
+          "kind": "import-statement",
+          "original": "../sky/night.ts"
+        },
+        {
+          "path": "src/harbour/horizon/kit/road/palette.ts",
+          "kind": "import-statement",
+          "original": "../kit/road/palette.ts"
+        },
+        {
+          "path": "src/harbour/horizon/kit/road/frames.ts",
+          "kind": "import-statement",
+          "original": "../kit/road/frames.ts"
+        },
+        {
+          "path": "src/harbour/horizon/kit/road/markings.ts",
+          "kind": "import-statement",
+          "original": "../kit/road/markings.ts"
+        },
+        {
+          "path": "src/harbour/horizon/kit/road/guards.ts",
+          "kind": "import-statement",
+          "original": "../kit/road/guards.ts"
+        },
+        {
+          "path": "src/harbour/horizon/land/corridor/lights.ts",
+          "kind": "import-statement",
+          "original": "../land/corridor/lights"
+        },
+        {
+          "path": "src/harbour/horizon/land/corridor/types.ts",
+          "kind": "import-statement",
+          "original": "../land/corridor/types"
+        },
+        {
+          "path": "src/harbour/horizon/kit/road/lamps.ts",
+          "kind": "import-statement",
+          "original": "../kit/road/lamps.ts"
+        },
+        {
+          "path": "src/harbour/horizon/kit/road/stops.ts",
+          "kind": "import-statement",
+          "original": "../kit/road/stops.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js": {
+      "bytes": 37621,
+      "imports": [
+        {
+          "path": "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js",
+          "kind": "import-statement",
+          "original": "three"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/mountain/planting.ts": {
+      "bytes": 784,
+      "imports": [],
+      "format": "esm"
+    },
+    "src/harbour/mountain/art/plantArt.ts": {
+      "bytes": 15751,
+      "imports": [
+        {
+          "path": "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js",
+          "kind": "import-statement",
+          "original": "three"
+        },
+        {
+          "path": "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js",
+          "kind": "import-statement",
+          "original": "three/addons/utils/BufferGeometryUtils.js"
+        },
+        {
+          "path": "src/harbour/mountain/planting.ts",
+          "kind": "import-statement",
+          "original": "../planting.ts"
+        },
+        {
+          "path": "src/harbour/art/cardScene.ts",
+          "kind": "import-statement",
+          "original": "../../art/cardScene.ts"
+        },
+        {
+          "path": "src/harbour/art/cardKit.ts",
+          "kind": "import-statement",
+          "original": "../../art/cardKit.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/kit/plants/materials.ts": {
+      "bytes": 7535,
+      "imports": [
+        {
+          "path": "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js",
+          "kind": "import-statement",
+          "original": "three"
+        },
+        {
+          "path": "src/harbour/horizon/runtime/packedInstances.ts",
+          "kind": "import-statement",
+          "original": "../../runtime/packedInstances"
+        },
+        {
+          "path": "src/harbour/art/cardScene.ts",
+          "kind": "import-statement",
+          "original": "../../../art/cardScene.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/kit/plants/archetypes.ts": {
+      "bytes": 4585,
+      "imports": [
+        {
+          "path": "src/harbour/art/cardKit.ts",
+          "kind": "import-statement",
+          "original": "../../../art/cardKit.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/kit/plants/geometry.ts": {
+      "bytes": 33110,
+      "imports": [
+        {
+          "path": "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js",
+          "kind": "import-statement",
+          "original": "three"
+        },
+        {
+          "path": "src/harbour/mountain/art/plantArt.ts",
+          "kind": "import-statement",
+          "original": "../../../mountain/art/plantArt.ts"
+        },
+        {
+          "path": "src/harbour/mountain/planting.ts",
+          "kind": "import-statement",
+          "original": "../../../mountain/planting.ts"
+        },
+        {
+          "path": "src/harbour/art/cardKit.ts",
+          "kind": "import-statement",
+          "original": "../../../art/cardKit.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/kit/plants/sets.ts": {
+      "bytes": 5630,
+      "imports": [
+        {
+          "path": "src/harbour/art/cardKit.ts",
+          "kind": "import-statement",
+          "original": "../../../art/cardKit.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/runtime/corridorPlanting.ts": {
+      "bytes": 28727,
+      "imports": [
+        {
+          "path": "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js",
+          "kind": "import-statement",
+          "original": "three"
+        },
+        {
+          "path": "src/harbour/horizon/runtime/packedInstances.ts",
+          "kind": "import-statement",
+          "original": "./packedInstances"
+        },
+        {
+          "path": "src/harbour/horizon/world/districts.ts",
+          "kind": "import-statement",
+          "original": "../world/districts.ts"
+        },
+        {
+          "path": "src/harbour/scene/place.ts",
+          "kind": "import-statement",
+          "original": "../../scene/place.ts"
+        },
+        {
+          "path": "src/harbour/mountain/art/palette.ts",
+          "kind": "import-statement",
+          "original": "../../mountain/art/palette.ts"
+        },
+        {
+          "path": "src/harbour/mountain/art/plantArt.ts",
+          "kind": "import-statement",
+          "original": "../../mountain/art/plantArt.ts"
+        },
+        {
+          "path": "src/harbour/mountain/planting.ts",
+          "kind": "import-statement",
+          "original": "../../mountain/planting.ts"
+        },
+        {
+          "path": "src/harbour/art/cardKit.ts",
+          "kind": "import-statement",
+          "original": "../../art/cardKit.ts"
+        },
+        {
+          "path": "src/harbour/horizon/kit/plants/materials.ts",
+          "kind": "import-statement",
+          "original": "../kit/plants/materials.ts"
+        },
+        {
+          "path": "src/harbour/horizon/kit/plants/archetypes.ts",
+          "kind": "import-statement",
+          "original": "../kit/plants/archetypes.ts"
+        },
+        {
+          "path": "src/harbour/horizon/kit/plants/geometry.ts",
+          "kind": "import-statement",
+          "original": "../kit/plants/geometry.ts"
+        },
+        {
+          "path": "src/harbour/horizon/kit/plants/materials.ts",
+          "kind": "import-statement",
+          "original": "../kit/plants/materials.ts"
+        },
+        {
+          "path": "src/harbour/horizon/kit/plants/sets.ts",
+          "kind": "import-statement",
+          "original": "../kit/plants/sets.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/runtime/roadLights.ts": {
+      "bytes": 28100,
+      "imports": [
+        {
+          "path": "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js",
+          "kind": "import-statement",
+          "original": "three"
+        },
+        {
+          "path": "src/harbour/horizon/land/corridor/lights.ts",
+          "kind": "import-statement",
+          "original": "../land/corridor/lights.ts"
+        },
+        {
+          "path": "src/harbour/horizon/sky/night.ts",
+          "kind": "import-statement",
+          "original": "../sky/night.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/land/terrain/index.ts": {
+      "bytes": 1072,
+      "imports": [
+        {
+          "path": "src/harbour/horizon/land/terrain/geometry.ts",
+          "kind": "import-statement",
+          "original": "./geometry.ts"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/harbour/horizon/land/terrain/asset.ts": {
+      "bytes": 5944,
+      "imports": [
+        {
+          "path": "src/harbour/horizon/land/terrain/index.ts",
+          "kind": "import-statement",
+          "original": "./index"
+        }
+      ],
+      "format": "esm"
+    },
+    "<stdin>": {
+      "bytes": 11825,
+      "imports": [
+        {
+          "path": "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js",
+          "kind": "import-statement",
+          "original": "three"
+        },
+        {
+          "path": "src/harbour/horizon/runtime/corridorArt.ts",
+          "kind": "import-statement",
+          "original": "@repo/src/harbour/horizon/runtime/corridorArt.ts"
+        },
+        {
+          "path": "src/harbour/horizon/runtime/corridorPlanting.ts",
+          "kind": "import-statement",
+          "original": "@repo/src/harbour/horizon/runtime/corridorPlanting.ts"
+        },
+        {
+          "path": "src/harbour/horizon/runtime/roadLights.ts",
+          "kind": "import-statement",
+          "original": "@repo/src/harbour/horizon/runtime/roadLights.ts"
+        },
+        {
+          "path": "src/harbour/horizon/sky/night.ts",
+          "kind": "import-statement",
+          "original": "@repo/src/harbour/horizon/sky/night.ts"
+        },
+        {
+          "path": "src/harbour/horizon/world/districts.ts",
+          "kind": "import-statement",
+          "original": "@repo/src/harbour/horizon/world/districts.ts"
+        },
+        {
+          "path": "src/harbour/horizon/land/terrain/asset.ts",
+          "kind": "import-statement",
+          "original": "@repo/src/harbour/horizon/land/terrain/asset.ts"
+        },
+        {
+          "path": "src/harbour/horizon/land/terrain/index.ts",
+          "kind": "import-statement",
+          "original": "@repo/src/harbour/horizon/land/terrain/index.ts"
+        },
+        {
+          "path": "src/harbour/art/cardScene.ts",
+          "kind": "import-statement",
+          "original": "@repo/src/harbour/art/cardScene.ts"
+        }
+      ],
+      "format": "esm"
+    }
+  },
+  "outputs": {
+    "stdin.js": {
+      "imports": [],
+      "exports": [],
+      "entryPoint": "<stdin>",
+      "inputs": {
+        "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.core.js": {
+          "bytesInOutput": 582316
+        },
+        "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js": {
+          "bytesInOutput": 587841
+        },
+        "src/harbour/horizon/runtime/packedInstances.ts": {
+          "bytesInOutput": 5491
+        },
+        "src/house/world/buildTask.ts": {
+          "bytesInOutput": 661
+        },
+        "src/harbour/skate/world/profiles.ts": {
+          "bytesInOutput": 172
+        },
+        "src/harbour/skate/world/features.ts": {
+          "bytesInOutput": 73
+        },
+        "src/harbour/art/cardKit.ts": {
+          "bytesInOutput": 9365
+        },
+        "src/harbour/art/cardScene.ts": {
+          "bytesInOutput": 20920
+        },
+        "src/harbour/horizon/world/MANIFEST.json": {
+          "bytesInOutput": 373472
+        },
+        "src/harbour/horizon/world/manifest.ts": {
+          "bytesInOutput": 4292
+        },
+        "src/harbour/horizon/world/districts.ts": {
+          "bytesInOutput": 1154
+        },
+        "src/harbour/horizon/land/terrain/geometry.ts": {
+          "bytesInOutput": 67
+        },
+        "src/harbour/horizon/sky/night.ts": {
+          "bytesInOutput": 2341
+        },
+        "src/theme/scenes.ts": {
+          "bytesInOutput": 7046
+        },
+        "src/harbour/court/dressing.ts": {
+          "bytesInOutput": 2772
+        },
+        "src/harbour/scene/place.ts": {
+          "bytesInOutput": 790
+        },
+        "src/harbour/mountain/art/palette.ts": {
+          "bytesInOutput": 4176
+        },
+        "src/harbour/horizon/kit/road/palette.ts": {
+          "bytesInOutput": 2416
+        },
+        "src/harbour/horizon/kit/road/frames.ts": {
+          "bytesInOutput": 1745
+        },
+        "src/harbour/horizon/kit/road/markings.ts": {
+          "bytesInOutput": 2228
+        },
+        "src/harbour/horizon/land/corridor/types.ts": {
+          "bytesInOutput": 1037
+        },
+        "src/harbour/horizon/kit/road/guards.ts": {
+          "bytesInOutput": 8071
+        },
+        "src/harbour/horizon/land/corridor/lights.ts": {
+          "bytesInOutput": 1893
+        },
+        "src/harbour/horizon/kit/road/lamps.ts": {
+          "bytesInOutput": 11261
+        },
+        "src/harbour/horizon/kit/road/stops.ts": {
+          "bytesInOutput": 7448
+        },
+        "src/harbour/horizon/runtime/corridorArt.ts": {
+          "bytesInOutput": 19979
+        },
+        "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js": {
+          "bytesInOutput": 6607
+        },
+        "src/harbour/mountain/planting.ts": {
+          "bytesInOutput": 791
+        },
+        "src/harbour/mountain/art/plantArt.ts": {
+          "bytesInOutput": 2154
+        },
+        "src/harbour/horizon/kit/plants/materials.ts": {
+          "bytesInOutput": 4136
+        },
+        "src/harbour/horizon/kit/plants/archetypes.ts": {
+          "bytesInOutput": 2238
+        },
+        "src/harbour/horizon/kit/plants/geometry.ts": {
+          "bytesInOutput": 23181
+        },
+        "src/harbour/horizon/kit/plants/sets.ts": {
+          "bytesInOutput": 2926
+        },
+        "src/harbour/horizon/runtime/corridorPlanting.ts": {
+          "bytesInOutput": 19660
+        },
+        "src/harbour/horizon/runtime/roadLights.ts": {
+          "bytesInOutput": 21182
+        },
+        "src/harbour/horizon/land/terrain/index.ts": {
+          "bytesInOutput": 620
+        },
+        "src/harbour/horizon/land/terrain/asset.ts": {
+          "bytesInOutput": 1772
+        },
+        "<stdin>": {
+          "bytesInOutput": 11139
+        }
+      },
+      "bytes": 1757379
+    }
+  }
+}

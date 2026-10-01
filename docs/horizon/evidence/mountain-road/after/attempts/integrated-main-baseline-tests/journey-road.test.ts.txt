@@ -1,0 +1,15 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof
+
+ ✓ test/journey-road.test.ts (16 tests) 5279ms
+   ✓ extract: bridges and covered stretches > without corridors: no boulevards, and everything else is exactly what the same index extracts with corridors  815ms
+   ✓ extract: boulevard reaches from the corridor > reads boulevard stations as runs (a structure station breaks one, a reach may wrap the loop), with the median flag  522ms
+   ✓ slim round-trip > carries boulevards through encode → JSON → decode, and refuses malformed road fields  330ms
+   ✓ the board overlay does not move and is never drawn over > lays out the same route, stations, spaces and crossings with or without the road fields  2009ms
+   ✓ the board overlay does not move and is never drawn over > keeps every bridge, cover and boulevard clear of every station pad at its largest (Sky) size  316ms
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  13:21:43
+   Duration  12.64s (transform 4.63s, setup 0ms, collect 6.70s, tests 5.28s, environment 0ms, prepare 192ms)
+

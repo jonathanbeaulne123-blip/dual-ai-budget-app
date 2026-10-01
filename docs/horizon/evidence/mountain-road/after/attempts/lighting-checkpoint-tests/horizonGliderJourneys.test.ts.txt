@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonGliderJourneys.test.ts (22 tests) 458ms
+
+ Test Files  1 passed (1)
+      Tests  22 passed (22)
+   Start at  12:26:31
+   Duration  1.45s (transform 465ms, setup 0ms, collect 717ms, tests 458ms, environment 0ms, prepare 94ms)
+

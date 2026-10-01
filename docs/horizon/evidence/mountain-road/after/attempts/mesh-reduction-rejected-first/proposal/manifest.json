@@ -1,0 +1,7 @@
+{
+  "files": {
+    "experiment.mjs": "8de963161d39a217ca8e8018d9800083f8757e4a5803a68df3c90001aec09035",
+    "PROPOSAL.md": "e3dc8a2d892d549501b035036eb7a0e7b9e3712da585f18026fc675d36eb32e1"
+  },
+  "executed": "node --check only; no simplifier/world imports or candidate execution"
+}

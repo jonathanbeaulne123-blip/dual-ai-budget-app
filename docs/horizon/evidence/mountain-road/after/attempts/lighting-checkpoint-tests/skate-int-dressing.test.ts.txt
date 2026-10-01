@@ -1,0 +1,54 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/skate-int-dressing.test.ts (5 tests | 2 failed) 667ms
+   ✓ skate v2 integration · dressing colliders > turns every dressing piece into a height-aware sim solid, the same in every theme and tier  396ms
+   × skate v2 integration · dressing colliders > leaves every spot start, route checkpoint and route segment clear for the rider 172ms
+     → expected [ …(2) ] to deeply equal []
+   × skate v2 integration · dressing colliders > a rider rolling across the grass into a hedge bumps and stops at it instead of passing through 79ms
+     → expected -0.13517914524672547 to be greater than -0.02
+   ✓ skate v2 integration · dressing colliders > dressing is soft: a hedge hit at speed stops the rider but never bails (a hard solid would) 17ms
+   ✓ skate v2 integration · dressing colliders > an air clears a low piece: the collider has a top 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/skate-int-dressing.test.ts > skate v2 integration · dressing colliders > leaves every spot start, route checkpoint and route segment clear for the rider
+AssertionError: expected [ …(2) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "mountain-descent seg 14 @0.48: dressing:tideline-hedge-+z-7",
++   "mountain-descent seg 15 @0.46: dressing:bookends-hedge--z-2",
++ ]
+
+ ❯ test/skate-int-dressing.test.ts:61:21
+     59|       }
+     60|     }
+     61|     expect(blocked).toEqual([]);
+       |                     ^
+     62|   });
+     63| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/skate-int-dressing.test.ts > skate v2 integration · dressing colliders > a rider rolling across the grass into a hedge bumps and stops at it instead of passing through
+AssertionError: expected -0.13517914524672547 to be greater than -0.02
+ ❯ test/skate-int-dressing.test.ts:89:45
+     87|     expect(without[0]!+without[2]!).toBeGreaterThan(0); // proves the …
+     88|     expect(withIt[0]).toBe(0);expect(withIt[2]).toBe(0);
+     89|     expect(Math.min(withIt[1]!,withIt[3]!)).toBeGreaterThan(-.02); // …
+       |                                             ^
+     90|   });
+     91| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 3 passed (5)
+   Start at  13:07:25
+   Duration  4.08s (transform 1.34s, setup 0ms, collect 2.82s, tests 667ms, environment 0ms, prepare 149ms)
+

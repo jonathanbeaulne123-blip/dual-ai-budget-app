@@ -1,0 +1,1246 @@
+{
+  "worldSha256": "6dcdae3f1c484bac779b6c9969815e12743ca6978ecd26c95feb64fc95b217a0",
+  "terrainSha256": "b8532036cf93e5ba9e7682e5041a69f216c47a91a955c372638e73dcb5a19d8d",
+  "sourceNativeSha256": "418eab3afb34746b1341d6f80c16efc7d6921eb71ad301e31e249b63b46cab8f",
+  "limitations": [
+    "Bounded replay against final served world, not a new bake. Baseline replay had 53 lamps versus 52 from pre-corridor source environment.",
+    "The three coverage additions are distinct from the lower-site replay shift; final bake must rerun strict coverage and budgets.",
+    "Coverage measures actual runtime road-light pool anchors including actual stop fallback, not legacy threshold/bead lights.",
+    "No brightness/perceptual/device or rendered night acceptance claimed."
+  ],
+  "changed": [
+    {
+      "id": "mountainV2.road.lamp.11",
+      "kind": "roadLantern",
+      "at": [
+        1352.208,
+        66.52,
+        675.301
+      ],
+      "head": [
+        1352.222,
+        71.72,
+        676.901
+      ],
+      "pool": [
+        1352.222,
+        66.725,
+        676.901
+      ],
+      "poolRadius": 12,
+      "yaw": 0.008,
+      "side": "right",
+      "reachId": "M4",
+      "nearestGuard": {
+        "distance": 1.899525802341508,
+        "id": "mountain-road:right:wall:154",
+        "at": [
+          1352.2260692370032,
+          66.7249172575373,
+          677.2004398585992
+        ],
+        "height": 0
+      },
+      "footprint": [
+        {
+          "x": 1352.008,
+          "z": 675.101,
+          "y": 66.5277254547119,
+          "dy": 0.007725454711902557,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1352.008,
+          "z": 675.301,
+          "y": 66.53212547912597,
+          "dy": 0.012125479125970173,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1352.008,
+          "z": 675.5010000000001,
+          "y": 66.53652550354003,
+          "dy": 0.01652550354003779,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1352.208,
+          "z": 675.101,
+          "y": 66.51532524719238,
+          "dy": -0.0046747528076167555,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1352.208,
+          "z": 675.301,
+          "y": 66.51972527160645,
+          "dy": -0.0002747283935491396,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1352.208,
+          "z": 675.5010000000001,
+          "y": 66.52412529602051,
+          "dy": 0.004125296020518476,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1352.4080000000001,
+          "z": 675.101,
+          "y": 66.50292503967285,
+          "dy": -0.01707496032715028,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1352.4080000000001,
+          "z": 675.301,
+          "y": 66.50732506408691,
+          "dy": -0.012674935913082663,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1352.4080000000001,
+          "z": 675.5010000000001,
+          "y": 66.51172508850098,
+          "dy": -0.008274911499015047,
+          "wet": false,
+          "occupied": false
+        }
+      ]
+    },
+    {
+      "id": "mountainV2.road.lamp.12",
+      "kind": "roadLantern",
+      "at": [
+        1347.084,
+        67.321,
+        686.782
+      ],
+      "head": [
+        1347.145,
+        72.521,
+        685.183
+      ],
+      "pool": [
+        1347.145,
+        67.219,
+        685.183
+      ],
+      "poolRadius": 12,
+      "yaw": 3.104,
+      "side": "left",
+      "reachId": "M4",
+      "nearestGuard": {
+        "distance": 0.00429415554612349,
+        "id": "mountain-road:left:parapet:164",
+        "at": [
+          1347.0838811358046,
+          67.22300207970436,
+          686.7862925101232
+        ],
+        "height": 1.1
+      },
+      "footprint": [
+        {
+          "x": 1346.884,
+          "z": 686.582,
+          "y": 65.30368439178474,
+          "dy": -2.017315608215256,
+          "wet": false,
+          "occupied": true
+        },
+        {
+          "x": 1346.884,
+          "z": 686.782,
+          "y": 65.09848434906002,
+          "dy": -2.2225156509399824,
+          "wet": false,
+          "occupied": true
+        },
+        {
+          "x": 1346.884,
+          "z": 686.9820000000001,
+          "y": 64.8932843063353,
+          "dy": -2.4277156936646946,
+          "wet": false,
+          "occupied": true
+        },
+        {
+          "x": 1347.084,
+          "z": 686.582,
+          "y": 65.28848450164801,
+          "dy": -2.0325154983519838,
+          "wet": false,
+          "occupied": true
+        },
+        {
+          "x": 1347.084,
+          "z": 686.782,
+          "y": 65.08328445892329,
+          "dy": -2.2377155410767102,
+          "wet": false,
+          "occupied": true
+        },
+        {
+          "x": 1347.084,
+          "z": 686.9820000000001,
+          "y": 64.87808441619858,
+          "dy": -2.4429155838014225,
+          "wet": false,
+          "occupied": true
+        },
+        {
+          "x": 1347.284,
+          "z": 686.582,
+          "y": 65.27328461151129,
+          "dy": -2.0477153884887116,
+          "wet": false,
+          "occupied": true
+        },
+        {
+          "x": 1347.284,
+          "z": 686.782,
+          "y": 65.06808456878656,
+          "dy": -2.252915431213438,
+          "wet": false,
+          "occupied": true
+        },
+        {
+          "x": 1347.284,
+          "z": 686.9820000000001,
+          "y": 64.86288452606185,
+          "dy": -2.4581154739381503,
+          "wet": false,
+          "occupied": true
+        }
+      ]
+    },
+    {
+      "id": "mountainV2.road.lamp.40",
+      "kind": "bridgeLantern",
+      "at": [
+        1284.99,
+        123.411,
+        548.295
+      ],
+      "head": [
+        1285.71,
+        128.611,
+        546.865
+      ],
+      "pool": [
+        1285.71,
+        123.261,
+        546.865
+      ],
+      "poolRadius": 12,
+      "yaw": 2.675,
+      "side": "right",
+      "reachId": "M7",
+      "nearestGuard": {
+        "distance": 0.00041905739523979843,
+        "id": "mountain-road:right:bridge:619",
+        "at": [
+          1284.9901883792359,
+          123.26033042747092,
+          548.2946256707812
+        ],
+        "height": 1.1
+      },
+      "footprint": [
+        {
+          "x": 1284.79,
+          "z": 548.0949999999999,
+          "y": 123.16488629519603,
+          "dy": -0.24611370480397454,
+          "wet": false,
+          "occupied": true
+        },
+        {
+          "x": 1284.79,
+          "z": 548.295,
+          "y": 123.23238037300109,
+          "dy": -0.1786196269989091,
+          "wet": false,
+          "occupied": true
+        },
+        {
+          "x": 1284.79,
+          "z": 548.495,
+          "y": 123.23481407356262,
+          "dy": -0.17618592643738396,
+          "wet": false,
+          "occupied": true
+        },
+        {
+          "x": 1284.99,
+          "z": 548.0949999999999,
+          "y": 123.17516901187663,
+          "dy": -0.235830988123368,
+          "wet": false,
+          "occupied": true
+        },
+        {
+          "x": 1284.99,
+          "z": 548.295,
+          "y": 123.18144327666197,
+          "dy": -0.22955672333803534,
+          "wet": false,
+          "occupied": true
+        },
+        {
+          "x": 1284.99,
+          "z": 548.495,
+          "y": 123.24066654396057,
+          "dy": -0.17033345603942962,
+          "wet": false,
+          "occupied": true
+        },
+        {
+          "x": 1285.19,
+          "z": 548.0949999999999,
+          "y": 122.96655777168291,
+          "dy": -0.4444422283170866,
+          "wet": false,
+          "occupied": true
+        },
+        {
+          "x": 1285.19,
+          "z": 548.295,
+          "y": 122.38887062263476,
+          "dy": -1.0221293773652462,
+          "wet": false,
+          "occupied": true
+        },
+        {
+          "x": 1285.19,
+          "z": 548.495,
+          "y": 121.81118347358662,
+          "dy": -1.5998165264133775,
+          "wet": false,
+          "occupied": true
+        }
+      ]
+    },
+    {
+      "id": "mountainV2.road.lamp.52",
+      "kind": "roadLantern",
+      "at": [
+        1397.255,
+        150.955,
+        488.612
+      ],
+      "head": [
+        1395.97,
+        156.155,
+        487.659
+      ],
+      "pool": [
+        1395.97,
+        150.974,
+        487.659
+      ],
+      "poolRadius": 12,
+      "yaw": -2.208,
+      "side": "right",
+      "reachId": "M8",
+      "nearestGuard": {
+        "distance": 4.0779932474966465,
+        "id": "mountain-road:right:kerb:870",
+        "at": [
+          1396.852912,
+          151.175086,
+          484.553878
+        ],
+        "height": 0.22
+      },
+      "footprint": [
+        {
+          "x": 1397.055,
+          "z": 488.41200000000003,
+          "y": 150.96189986465453,
+          "dy": 0.006899864654513976,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1397.055,
+          "z": 488.612,
+          "y": 150.96537849472045,
+          "dy": 0.010378494720441722,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1397.055,
+          "z": 488.812,
+          "y": 150.96885712478638,
+          "dy": 0.013857124786369468,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1397.255,
+          "z": 488.41200000000003,
+          "y": 150.9511169239807,
+          "dy": -0.003883076019320697,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1397.255,
+          "z": 488.612,
+          "y": 150.95512686508178,
+          "dy": 0.00012686508176784628,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1397.255,
+          "z": 488.812,
+          "y": 150.95913680618287,
+          "dy": 0.00413680618285639,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1397.4550000000002,
+          "z": 488.41200000000003,
+          "y": 150.94033398330689,
+          "dy": -0.014666016693126949,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1397.4550000000002,
+          "z": 488.612,
+          "y": 150.9448752354431,
+          "dy": -0.01012476455690603,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1397.4550000000002,
+          "z": 488.812,
+          "y": 150.94941648757933,
+          "dy": -0.0055835124206851106,
+          "wet": false,
+          "occupied": false
+        }
+      ]
+    },
+    {
+      "id": "mountainV2.road.lamp.55",
+      "kind": "roadLantern",
+      "at": [
+        1328.67,
+        158.107,
+        465.285
+      ],
+      "head": [
+        1328.083,
+        163.307,
+        466.773
+      ],
+      "pool": [
+        1328.083,
+        158.125,
+        466.773
+      ],
+      "poolRadius": 12,
+      "yaw": -0.376,
+      "side": "right",
+      "reachId": "M-top",
+      "nearestGuard": {
+        "distance": 11.000731570849046,
+        "id": "mountain-road:left:kerb:937",
+        "at": [
+          1324.6444845821065,
+          158.12557033580953,
+          475.52274001985677
+        ],
+        "height": 0.22
+      },
+      "footprint": [
+        {
+          "x": 1328.47,
+          "z": 465.08500000000004,
+          "y": 158.11547376518251,
+          "dy": 0.00847376518251508,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1328.47,
+          "z": 465.285,
+          "y": 158.113738703537,
+          "dy": 0.006738703536996127,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1328.47,
+          "z": 465.485,
+          "y": 158.11200364189148,
+          "dy": 0.005003641891477173,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1328.67,
+          "z": 465.08500000000004,
+          "y": 158.11005308799744,
+          "dy": 0.0030530879974435265,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1328.67,
+          "z": 465.285,
+          "y": 158.10723556785584,
+          "dy": 0.00023556785583878082,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1328.67,
+          "z": 465.485,
+          "y": 158.10441804771423,
+          "dy": -0.002581952285765965,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1328.8700000000001,
+          "z": 465.08500000000004,
+          "y": 158.10463241081237,
+          "dy": -0.0023675891876280275,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1328.8700000000001,
+          "z": 465.285,
+          "y": 158.10073243217465,
+          "dy": -0.006267567825346987,
+          "wet": false,
+          "occupied": false
+        },
+        {
+          "x": 1328.8700000000001,
+          "z": 465.485,
+          "y": 158.096832453537,
+          "dy": -0.010167546463009103,
+          "wet": false,
+          "occupied": false
+        }
+      ]
+    }
+  ],
+  "coverage": [
+    {
+      "theme": "classic",
+      "tier": "full",
+      "fixtures": 57,
+      "planned": 56,
+      "targets": 657,
+      "maxDistance": 11.495141067612,
+      "uncovered": [],
+      "named": [
+        {
+          "index": 499,
+          "at": [
+            1389.3940464442587,
+            489.89296381718515
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 6.945052879838945,
+          "radius": 12
+        },
+        {
+          "index": 501,
+          "at": [
+            1389.884993550902,
+            489.52047886008626
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 6.363364442817405,
+          "radius": 12
+        },
+        {
+          "index": 503,
+          "at": [
+            1390.371184233392,
+            489.14358216183865
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 5.792298523355771,
+          "radius": 12
+        },
+        {
+          "index": 608,
+          "at": [
+            1288.232146846376,
+            541.8657833967936
+          ],
+          "id": "mountainV2.road.lamp.40",
+          "d": 5.599409911808458,
+          "radius": 12
+        },
+        {
+          "index": 609,
+          "at": [
+            1286.0744556253107,
+            546.1534830824687
+          ],
+          "id": "mountainV2.road.lamp.40",
+          "d": 0.799427436828298,
+          "radius": 12
+        },
+        {
+          "index": 654,
+          "at": [
+            1324.1117689433524,
+            472.72958417308337
+          ],
+          "id": "mountainV2.road.lamp.55",
+          "d": 7.159020262320096,
+          "radius": 12
+        },
+        {
+          "index": 655,
+          "at": [
+            1325.8882319460347,
+            468.2704161789279
+          ],
+          "id": "mountainV2.road.lamp.55",
+          "d": 2.6569271769512306,
+          "radius": 12
+        },
+        {
+          "index": 656,
+          "at": [
+            1364,
+            592
+          ],
+          "id": "mountainV2.stop.library-garden.lamp",
+          "d": 1.9037310734451505,
+          "radius": 12
+        }
+      ],
+      "stopAnchors": [
+        {
+          "id": "mountainV2.stop.library-garden.lamp",
+          "kind": "bridgeLantern",
+          "at": [
+            1362.1332380976673,
+            89,
+            592.3733523804665
+          ],
+          "head": [
+            1362.1332380976673,
+            91.83,
+            592.3733523804665
+          ],
+          "pool": [
+            1362.1332380976673,
+            89,
+            592.3733523804665
+          ],
+          "poolRadius": 12,
+          "corridorId": "mountainV2.road",
+          "line": "mountainV2.road:stop:mountainV2.stop.library-garden",
+          "order": 0
+        }
+      ]
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "fixtures": 35,
+      "planned": 34,
+      "targets": 657,
+      "maxDistance": 11.977001102676246,
+      "uncovered": [],
+      "named": [
+        {
+          "index": 499,
+          "at": [
+            1389.3940464442587,
+            489.89296381718515
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 6.945052879838945,
+          "radius": 12
+        },
+        {
+          "index": 501,
+          "at": [
+            1389.884993550902,
+            489.52047886008626
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 6.363364442817405,
+          "radius": 12
+        },
+        {
+          "index": 503,
+          "at": [
+            1390.371184233392,
+            489.14358216183865
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 5.792298523355771,
+          "radius": 12
+        },
+        {
+          "index": 608,
+          "at": [
+            1288.232146846376,
+            541.8657833967936
+          ],
+          "id": "mountainV2.road.lamp.40",
+          "d": 5.599409911808458,
+          "radius": 12
+        },
+        {
+          "index": 609,
+          "at": [
+            1286.0744556253107,
+            546.1534830824687
+          ],
+          "id": "mountainV2.road.lamp.40",
+          "d": 0.799427436828298,
+          "radius": 12
+        },
+        {
+          "index": 654,
+          "at": [
+            1324.1117689433524,
+            472.72958417308337
+          ],
+          "id": "mountainV2.road.lamp.55",
+          "d": 7.159020262320096,
+          "radius": 12
+        },
+        {
+          "index": 655,
+          "at": [
+            1325.8882319460347,
+            468.2704161789279
+          ],
+          "id": "mountainV2.road.lamp.55",
+          "d": 2.6569271769512306,
+          "radius": 12
+        },
+        {
+          "index": 656,
+          "at": [
+            1364,
+            592
+          ],
+          "id": "mountainV2.stop.library-garden.lamp",
+          "d": 1.9037310734451505,
+          "radius": 12
+        }
+      ],
+      "stopAnchors": [
+        {
+          "id": "mountainV2.stop.library-garden.lamp",
+          "kind": "bridgeLantern",
+          "at": [
+            1362.1332380976673,
+            89,
+            592.3733523804665
+          ],
+          "head": [
+            1362.1332380976673,
+            91.83,
+            592.3733523804665
+          ],
+          "pool": [
+            1362.1332380976673,
+            89,
+            592.3733523804665
+          ],
+          "poolRadius": 12,
+          "corridorId": "mountainV2.road",
+          "line": "mountainV2.road:stop:mountainV2.stop.library-garden",
+          "order": 0
+        }
+      ]
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "fixtures": 57,
+      "planned": 56,
+      "targets": 657,
+      "maxDistance": 11.495141067612,
+      "uncovered": [],
+      "named": [
+        {
+          "index": 499,
+          "at": [
+            1389.3940464442587,
+            489.89296381718515
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 6.945052879838945,
+          "radius": 12
+        },
+        {
+          "index": 501,
+          "at": [
+            1389.884993550902,
+            489.52047886008626
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 6.363364442817405,
+          "radius": 12
+        },
+        {
+          "index": 503,
+          "at": [
+            1390.371184233392,
+            489.14358216183865
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 5.792298523355771,
+          "radius": 12
+        },
+        {
+          "index": 608,
+          "at": [
+            1288.232146846376,
+            541.8657833967936
+          ],
+          "id": "mountainV2.road.lamp.40",
+          "d": 5.599409911808458,
+          "radius": 12
+        },
+        {
+          "index": 609,
+          "at": [
+            1286.0744556253107,
+            546.1534830824687
+          ],
+          "id": "mountainV2.road.lamp.40",
+          "d": 0.799427436828298,
+          "radius": 12
+        },
+        {
+          "index": 654,
+          "at": [
+            1324.1117689433524,
+            472.72958417308337
+          ],
+          "id": "mountainV2.road.lamp.55",
+          "d": 7.159020262320096,
+          "radius": 12
+        },
+        {
+          "index": 655,
+          "at": [
+            1325.8882319460347,
+            468.2704161789279
+          ],
+          "id": "mountainV2.road.lamp.55",
+          "d": 2.6569271769512306,
+          "radius": 12
+        },
+        {
+          "index": 656,
+          "at": [
+            1364,
+            592
+          ],
+          "id": "mountainV2.stop.library-garden.lamp",
+          "d": 1.9037310734451505,
+          "radius": 12
+        }
+      ],
+      "stopAnchors": [
+        {
+          "id": "mountainV2.stop.library-garden.lamp",
+          "kind": "bridgeLantern",
+          "at": [
+            1362.1332380976673,
+            89,
+            592.3733523804665
+          ],
+          "head": [
+            1362.1332380976673,
+            91.86,
+            592.3733523804665
+          ],
+          "pool": [
+            1362.1332380976673,
+            89,
+            592.3733523804665
+          ],
+          "poolRadius": 12,
+          "corridorId": "mountainV2.road",
+          "line": "mountainV2.road:stop:mountainV2.stop.library-garden",
+          "order": 0
+        }
+      ]
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "fixtures": 35,
+      "planned": 34,
+      "targets": 657,
+      "maxDistance": 11.977001102676246,
+      "uncovered": [],
+      "named": [
+        {
+          "index": 499,
+          "at": [
+            1389.3940464442587,
+            489.89296381718515
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 6.945052879838945,
+          "radius": 12
+        },
+        {
+          "index": 501,
+          "at": [
+            1389.884993550902,
+            489.52047886008626
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 6.363364442817405,
+          "radius": 12
+        },
+        {
+          "index": 503,
+          "at": [
+            1390.371184233392,
+            489.14358216183865
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 5.792298523355771,
+          "radius": 12
+        },
+        {
+          "index": 608,
+          "at": [
+            1288.232146846376,
+            541.8657833967936
+          ],
+          "id": "mountainV2.road.lamp.40",
+          "d": 5.599409911808458,
+          "radius": 12
+        },
+        {
+          "index": 609,
+          "at": [
+            1286.0744556253107,
+            546.1534830824687
+          ],
+          "id": "mountainV2.road.lamp.40",
+          "d": 0.799427436828298,
+          "radius": 12
+        },
+        {
+          "index": 654,
+          "at": [
+            1324.1117689433524,
+            472.72958417308337
+          ],
+          "id": "mountainV2.road.lamp.55",
+          "d": 7.159020262320096,
+          "radius": 12
+        },
+        {
+          "index": 655,
+          "at": [
+            1325.8882319460347,
+            468.2704161789279
+          ],
+          "id": "mountainV2.road.lamp.55",
+          "d": 2.6569271769512306,
+          "radius": 12
+        },
+        {
+          "index": 656,
+          "at": [
+            1364,
+            592
+          ],
+          "id": "mountainV2.stop.library-garden.lamp",
+          "d": 1.9037310734451505,
+          "radius": 12
+        }
+      ],
+      "stopAnchors": [
+        {
+          "id": "mountainV2.stop.library-garden.lamp",
+          "kind": "bridgeLantern",
+          "at": [
+            1362.1332380976673,
+            89,
+            592.3733523804665
+          ],
+          "head": [
+            1362.1332380976673,
+            91.86,
+            592.3733523804665
+          ],
+          "pool": [
+            1362.1332380976673,
+            89,
+            592.3733523804665
+          ],
+          "poolRadius": 12,
+          "corridorId": "mountainV2.road",
+          "line": "mountainV2.road:stop:mountainV2.stop.library-garden",
+          "order": 0
+        }
+      ]
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "fixtures": 57,
+      "planned": 56,
+      "targets": 657,
+      "maxDistance": 11.495141067612,
+      "uncovered": [],
+      "named": [
+        {
+          "index": 499,
+          "at": [
+            1389.3940464442587,
+            489.89296381718515
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 6.945052879838945,
+          "radius": 12
+        },
+        {
+          "index": 501,
+          "at": [
+            1389.884993550902,
+            489.52047886008626
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 6.363364442817405,
+          "radius": 12
+        },
+        {
+          "index": 503,
+          "at": [
+            1390.371184233392,
+            489.14358216183865
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 5.792298523355771,
+          "radius": 12
+        },
+        {
+          "index": 608,
+          "at": [
+            1288.232146846376,
+            541.8657833967936
+          ],
+          "id": "mountainV2.road.lamp.40",
+          "d": 5.599409911808458,
+          "radius": 12
+        },
+        {
+          "index": 609,
+          "at": [
+            1286.0744556253107,
+            546.1534830824687
+          ],
+          "id": "mountainV2.road.lamp.40",
+          "d": 0.799427436828298,
+          "radius": 12
+        },
+        {
+          "index": 654,
+          "at": [
+            1324.1117689433524,
+            472.72958417308337
+          ],
+          "id": "mountainV2.road.lamp.55",
+          "d": 7.159020262320096,
+          "radius": 12
+        },
+        {
+          "index": 655,
+          "at": [
+            1325.8882319460347,
+            468.2704161789279
+          ],
+          "id": "mountainV2.road.lamp.55",
+          "d": 2.6569271769512306,
+          "radius": 12
+        },
+        {
+          "index": 656,
+          "at": [
+            1364,
+            592
+          ],
+          "id": "mountainV2.stop.library-garden.lamp",
+          "d": 1.9037310734451505,
+          "radius": 12
+        }
+      ],
+      "stopAnchors": [
+        {
+          "id": "mountainV2.stop.library-garden.lamp",
+          "kind": "bridgeLantern",
+          "at": [
+            1362.1332380976673,
+            89,
+            592.3733523804665
+          ],
+          "head": [
+            1362.1332380976673,
+            91.8,
+            592.3733523804665
+          ],
+          "pool": [
+            1362.1332380976673,
+            89,
+            592.3733523804665
+          ],
+          "poolRadius": 12,
+          "corridorId": "mountainV2.road",
+          "line": "mountainV2.road:stop:mountainV2.stop.library-garden",
+          "order": 0
+        }
+      ]
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "fixtures": 35,
+      "planned": 34,
+      "targets": 657,
+      "maxDistance": 11.977001102676246,
+      "uncovered": [],
+      "named": [
+        {
+          "index": 499,
+          "at": [
+            1389.3940464442587,
+            489.89296381718515
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 6.945052879838945,
+          "radius": 12
+        },
+        {
+          "index": 501,
+          "at": [
+            1389.884993550902,
+            489.52047886008626
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 6.363364442817405,
+          "radius": 12
+        },
+        {
+          "index": 503,
+          "at": [
+            1390.371184233392,
+            489.14358216183865
+          ],
+          "id": "mountainV2.road.lamp.52",
+          "d": 5.792298523355771,
+          "radius": 12
+        },
+        {
+          "index": 608,
+          "at": [
+            1288.232146846376,
+            541.8657833967936
+          ],
+          "id": "mountainV2.road.lamp.40",
+          "d": 5.599409911808458,
+          "radius": 12
+        },
+        {
+          "index": 609,
+          "at": [
+            1286.0744556253107,
+            546.1534830824687
+          ],
+          "id": "mountainV2.road.lamp.40",
+          "d": 0.799427436828298,
+          "radius": 12
+        },
+        {
+          "index": 654,
+          "at": [
+            1324.1117689433524,
+            472.72958417308337
+          ],
+          "id": "mountainV2.road.lamp.55",
+          "d": 7.159020262320096,
+          "radius": 12
+        },
+        {
+          "index": 655,
+          "at": [
+            1325.8882319460347,
+            468.2704161789279
+          ],
+          "id": "mountainV2.road.lamp.55",
+          "d": 2.6569271769512306,
+          "radius": 12
+        },
+        {
+          "index": 656,
+          "at": [
+            1364,
+            592
+          ],
+          "id": "mountainV2.stop.library-garden.lamp",
+          "d": 1.9037310734451505,
+          "radius": 12
+        }
+      ],
+      "stopAnchors": [
+        {
+          "id": "mountainV2.stop.library-garden.lamp",
+          "kind": "bridgeLantern",
+          "at": [
+            1362.1332380976673,
+            89,
+            592.3733523804665
+          ],
+          "head": [
+            1362.1332380976673,
+            91.8,
+            592.3733523804665
+          ],
+          "pool": [
+            1362.1332380976673,
+            89,
+            592.3733523804665
+          ],
+          "poolRadius": 12,
+          "corridorId": "mountainV2.road",
+          "line": "mountainV2.road:stop:mountainV2.stop.library-garden",
+          "order": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/skate-int-bail.test.ts (3 tests) 346ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  13:07:18
+   Duration  3.89s (transform 1.52s, setup 0ms, collect 3.05s, tests 346ms, environment 0ms, prepare 146ms)
+

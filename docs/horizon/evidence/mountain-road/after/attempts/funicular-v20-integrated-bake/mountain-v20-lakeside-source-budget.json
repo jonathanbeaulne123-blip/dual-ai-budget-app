@@ -1,0 +1,422 @@
+[
+  {
+    "id": "mountainV2.funicularFoot.apron",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      16036,
+      16036
+    ],
+    "delta": [
+      16036,
+      16036
+    ]
+  },
+  {
+    "id": "yearWalk.bed.lakeside.footJoin",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      2656,
+      2656
+    ],
+    "delta": [
+      2656,
+      2656
+    ]
+  },
+  {
+    "id": "mountainV2.footLane.apron",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      2004,
+      2004
+    ],
+    "delta": [
+      2004,
+      2004
+    ]
+  },
+  {
+    "id": "yearWalk.shoulders.lakeside.footJoin",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      1876,
+      1876
+    ],
+    "delta": [
+      1876,
+      1876
+    ]
+  },
+  {
+    "id": "stillwaterTunnel.footings",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      1860,
+      1860
+    ],
+    "delta": [
+      1860,
+      1860
+    ]
+  },
+  {
+    "id": "stillwaterTunnel.walls",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      1860,
+      1860
+    ],
+    "delta": [
+      1860,
+      1860
+    ]
+  },
+  {
+    "id": "S1.surface.7.lakeside.footJoin",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      1060,
+      1060
+    ],
+    "delta": [
+      1060,
+      1060
+    ]
+  },
+  {
+    "id": "stillwaterTunnel.roof",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      932,
+      932
+    ],
+    "delta": [
+      932,
+      932
+    ]
+  },
+  {
+    "id": "stillwaterTunnel.floor",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      932,
+      932
+    ],
+    "delta": [
+      932,
+      932
+    ]
+  },
+  {
+    "id": "spur stillwater.corridor.deck.1.lakeside",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      636,
+      636
+    ],
+    "delta": [
+      636,
+      636
+    ]
+  },
+  {
+    "id": "stillwaterTunnel.apron",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      360,
+      360
+    ],
+    "delta": [
+      360,
+      360
+    ]
+  },
+  {
+    "id": "spur stillwater.corridor.fill.L.1.lakeside",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      308,
+      308
+    ],
+    "delta": [
+      308,
+      308
+    ]
+  },
+  {
+    "id": "yearWalk.batter.footJoin",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      304,
+      304
+    ],
+    "delta": [
+      304,
+      304
+    ]
+  },
+  {
+    "id": "spur stillwater.corridor.guard.L.1.lakeside",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      268,
+      268
+    ],
+    "delta": [
+      268,
+      268
+    ]
+  },
+  {
+    "id": "S1.surface.8.lakeside.footJoin",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      164,
+      164
+    ],
+    "delta": [
+      164,
+      164
+    ]
+  },
+  {
+    "id": "S1.batter.footJoin",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      88,
+      88
+    ],
+    "delta": [
+      88,
+      88
+    ]
+  },
+  {
+    "id": "crossing.cross.spurStillwater.yearWalk.3.marker",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      12,
+      12
+    ],
+    "delta": [
+      12,
+      12
+    ]
+  },
+  {
+    "id": "crossing.cross.spurStillwater.yearWalk.2.marker",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      12,
+      12
+    ],
+    "delta": [
+      12,
+      12
+    ]
+  },
+  {
+    "id": "crossing.cross.mountainV2FootLane.mountainV2Road.1.marker",
+    "before": [
+      0,
+      0
+    ],
+    "after": [
+      12,
+      12
+    ],
+    "delta": [
+      12,
+      12
+    ]
+  },
+  {
+    "id": "crossing.cross.s1.yearWalk.2.marker",
+    "before": [
+      12,
+      12
+    ],
+    "after": [
+      0,
+      0
+    ],
+    "delta": [
+      -12,
+      -12
+    ]
+  },
+  {
+    "id": "walk lakerim.bed.lakeside",
+    "before": [
+      816,
+      684
+    ],
+    "after": [
+      804,
+      672
+    ],
+    "delta": [
+      -12,
+      -12
+    ]
+  },
+  {
+    "id": "yearWalk.batter",
+    "before": [
+      12,
+      12
+    ],
+    "after": [
+      0,
+      0
+    ],
+    "delta": [
+      -12,
+      -12
+    ]
+  },
+  {
+    "id": "S1.surface.8.lakeside",
+    "before": [
+      448,
+      208
+    ],
+    "after": [
+      428,
+      188
+    ],
+    "delta": [
+      -20,
+      -20
+    ]
+  },
+  {
+    "id": "S1.surface.7.lakeside",
+    "before": [
+      136,
+      56
+    ],
+    "after": [
+      0,
+      0
+    ],
+    "delta": [
+      -136,
+      -56
+    ]
+  },
+  {
+    "id": "yearWalk.retaining.lakeside",
+    "before": [
+      1006,
+      1006
+    ],
+    "after": [
+      760,
+      760
+    ],
+    "delta": [
+      -246,
+      -246
+    ]
+  },
+  {
+    "id": "yearWalk.edges.lakeside",
+    "before": [
+      1284,
+      780
+    ],
+    "after": [
+      1014,
+      642
+    ],
+    "delta": [
+      -270,
+      -138
+    ]
+  },
+  {
+    "id": "yearWalk.bed.lakeside",
+    "before": [
+      2324,
+      1844
+    ],
+    "after": [
+      1848,
+      1404
+    ],
+    "delta": [
+      -476,
+      -440
+    ]
+  },
+  {
+    "id": "yearWalk.shoulders.lakeside",
+    "before": [
+      4632,
+      2996
+    ],
+    "after": [
+      3716,
+      2236
+    ],
+    "delta": [
+      -916,
+      -760
+    ]
+  }
+]

@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonRuntimeGeometry.test.ts (7 tests) 12ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  12:29:42
+   Duration  1.42s (transform 629ms, setup 0ms, collect 1.14s, tests 12ms, environment 0ms, prepare 66ms)
+

@@ -1,0 +1,71 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/horizonBoardThresholds.test.ts (9 tests | 2 failed) 1934ms
+   ✓ the board profile (RIDE §8.1) > is the kernel's board column, with forgiving landings only inside the Tideline park 2ms
+   × pick up and park at the thresholds (RIDE §6.5, P17) > picks the board up at skateLineStarts.1 under the rider, clamped into the pad, stopped, gripped, facing down S1, at S1's pace 55ms
+     → expected 0.04571560002903319 to be +0 // Object.is equality
+   ✓ pick up and park at the thresholds (RIDE §6.5, P17) > makes every board→feet pad threshold pace, and three real pads stop a 4.5 m/s board inside 6 m  491ms
+   ✓ pick up and park at the thresholds (RIDE §6.5, P17) > overruns the landingQuay pad without S, digs in within 10 m, and fades back onto the bed stopped 152ms
+   ✓ pick up and park at the thresholds (RIDE §6.5, P17) > brakes for the landingQuay pad with S held from 10 m/s (the pendulum), on the line, and stops on the line before it (v2.4)  321ms
+   × pick up and park at the thresholds (RIDE §6.5, P17) > puts terrain 3 m off S1 offbed, where the wheels dig in 7ms
+     → expected { y: 123.21974245059977, …(10) } to match object { pace: 'offbed', legal: false, …(2) }
+(7 matching properties omitted from actual)
+   ✓ pick up and park at the thresholds (RIDE §6.5, P17) > parks: exit() puts the rider on foot where the board stopped 2ms
+   ✓ no bed passes a threshold (RIDE §6.5, P17) > ends every board bed at the board→feet pad it meets (offbed or another bed 3 m and 6 m beyond), and runs through pads only at crossings 13ms
+   ✓ no invisible collider on a line (P19) > blocks S1–S4 only at the named land defects, sampled every 2 m along the centreline  359ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/horizonBoardThresholds.test.ts > pick up and park at the thresholds (RIDE §6.5, P17) > picks the board up at skateLineStarts.1 under the rider, clamped into the pad, stopped, gripped, facing down S1, at S1's pace
+AssertionError: expected 0.04571560002903319 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 0.04571560002903319
+
+ ❯ test/horizonBoardThresholds.test.ts:86:40
+     84|     const at = [...st.p], f = board.update(0.5, moverInputOf({}), 0.5);
+     85|     expect(Math.hypot(f.body.x - at[0]!, f.body.z - at[2]!)).toBeLessT…
+     86|     expect(groundSpeed(board.state())).toBe(0);
+       |                                        ^
+     87|     expect(f.hud.pace).toMatch(/^fast · /);
+     88|     // A rider standing on the pad gets the board exactly under their …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/horizonBoardThresholds.test.ts > pick up and park at the thresholds (RIDE §6.5, P17) > puts terrain 3 m off S1 offbed, where the wheels dig in
+AssertionError: expected { y: 123.21974245059977, …(10) } to match object { pace: 'offbed', legal: false, …(2) }
+(7 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "legal": false,
++   "legal": true,
+    "material": "grass",
+-   "pace": "offbed",
+-   "pushGrip": 0,
++   "pace": "threshold",
++   "pushGrip": 0.5,
+  }
+
+ ❯ test/horizonBoardThresholds.test.ts:197:49
+    195|     expect(spot).not.toBeNull();
+    196|     const {x, z, y, heading} = spot!;
+    197|     expect(board.contact.sample(x, z, y + 0.1)).toMatchObject({pace: '…
+       |                                                 ^
+    198|     board.place({x, z, y, heading, speed: 4});
+    199|     const s0 = groundSpeed(board.state());
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 7 passed (9)
+   Start at  12:25:36
+   Duration  3.59s (transform 788ms, setup 0ms, collect 1.44s, tests 1.93s, environment 0ms, prepare 55ms)
+

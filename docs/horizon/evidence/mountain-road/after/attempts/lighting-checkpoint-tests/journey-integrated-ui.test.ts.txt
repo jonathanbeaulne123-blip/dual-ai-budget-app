@@ -1,0 +1,131 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stderr | test/journey-integrated-ui.test.ts > One journey, two views (D-284 + D-285) > moves the world when the simple view zooms or picks, and the simple view when the world moves
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | test/journey-integrated-ui.test.ts > One journey, two views (D-284 + D-285) > moves the world when the simple view zooms or picks, and the simple view when the world moves
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | test/journey-integrated-ui.test.ts > One journey, two views (D-284 + D-285) > moves the world when the simple view zooms or picks, and the simple view when the world moves
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | test/journey-integrated-ui.test.ts > One journey, two views (D-284 + D-285) > moves the world when the simple view zooms or picks, and the simple view when the world moves
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ✓ test/journey-integrated-ui.test.ts (13 tests) 29097ms
+   ✓ One journey, two views (D-284 + D-285) > mounts the simple view on the page by default, and a compact copy in the open world's corner; the page copy pauses  2189ms
+   ✓ One journey, two views (D-284 + D-285) > moves the world when the simple view zooms or picks, and the simple view when the world moves  2516ms
+   ✓ One journey, two views (D-284 + D-285) > reads a minimap pick of a past era the way the world does: that era, from its first month, in both copies  1531ms
+   ✓ One journey, two views (D-284 + D-285) > reads a minimap pick of a future era the way the world does: that era, from its first month, in both copies  1665ms
+   ✓ One journey, two views (D-284 + D-285) > keeps Replay on the simple view's month, and the simple view on Replay's  2352ms
+   ✓ One journey, two views (D-284 + D-285) > hides my private to-dos from the simple view at the Dim lantern, as the world does  2919ms
+   ✓ Both views say the same thing (D-284 + D-285) > shares era names, months, the Chapter and canonical Fund lanes with model flag 0  2979ms
+   ✓ Both views say the same thing (D-284 + D-285) > shares era names, months, the Chapter and canonical Fund lanes with model flag 1  1717ms
+   ✓ Both views say the same thing (D-284 + D-285) > holds the Fund's numbers back from the world at the Dim lantern  3490ms
+   ✓ The world's camera report (pathWorld3d, D-285) > finds the grown month nearest the aim, or none off the island  670ms
+   ✓ Journey label frame layout > reads classic label sizes before visibility writes and leaves settled styles alone  2214ms
+   ✓ Journey label frame layout > reads taylor label sizes before visibility writes and leaves settled styles alone  1909ms
+   ✓ Journey label frame layout > reads newfoundland label sizes before visibility writes and leaves settled styles alone  2939ms
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  12:53:53
+   Duration  42.86s (transform 8.36s, setup 0ms, collect 10.83s, tests 29.10s, environment 1.67s, prepare 372ms)
+

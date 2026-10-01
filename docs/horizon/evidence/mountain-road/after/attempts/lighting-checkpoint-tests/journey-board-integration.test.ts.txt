@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/journey-board-integration.test.ts (14 tests) 2674ms
+   ✓ HarbourWorld picks the Horizon for an explicit request > mounts the Horizon edition while `enterHorizonRequest` is set, and the Mountain without it  2168ms
+
+ Test Files  1 passed (1)
+      Tests  14 passed (14)
+   Start at  12:49:07
+   Duration  17.54s (transform 8.81s, setup 0ms, collect 13.04s, tests 2.67s, environment 1.17s, prepare 175ms)
+
