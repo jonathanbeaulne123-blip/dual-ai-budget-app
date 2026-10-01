@@ -1,0 +1,220 @@
+{
+  "originalDirectory": "/tmp/mountain-shade-parity-v2-smoke",
+  "files": [
+    {
+      "file": "old-served.js",
+      "bytes": 2242142,
+      "sha256": "92e9e1510267bbf7677d5a20cb256b6ddd330abd3f316b008514711298b592c6"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-near-plane-10406.new.json",
+      "bytes": 5353,
+      "sha256": "ada9e2734797a0f977971c86aaf6787b30dc5d06be1eee749cda10daf82b9ca4"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-grazing.new.png",
+      "bytes": 37186,
+      "sha256": "0e1ffa68c92cc36b2fadacd8c18faa29d74d4a50f0f4b3ee5dc7899eb1ceee30"
+    },
+    {
+      "file": "summary.json",
+      "bytes": 79469,
+      "sha256": "cda1c64ca61238f6b21530b420ca2f30b6a4e27716f8d5c45471dac70ad767d9"
+    },
+    {
+      "file": "new-served.js",
+      "bytes": 2249178,
+      "sha256": "c4832493fc228fc07756c9f339d749815a6101c7212c0425f05d814d9f790832"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-cross.new.rgba",
+      "bytes": 1075200,
+      "sha256": "254425b946cc4ffa6aaa352f4d65283992f2b54b59a624983390c082d5bca3ca"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-approach.new.json",
+      "bytes": 5382,
+      "sha256": "d2c1ff080317dc1e62d2fe8e40ee162f9aec2fc3d1a0d67c15bdd7f09faf12a1"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-inside.old.json",
+      "bytes": 3206,
+      "sha256": "cb04580e34a6c03a678a6a632def38e4782245d50dc94193f57e614ee7822139"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-above-return.new.png",
+      "bytes": 40494,
+      "sha256": "e49acb0f5f4ca945431b2e7a6b4200bc25a7b9c2bfbcd95ac679b72a7391de77"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-above-return.old.rgba",
+      "bytes": 1075200,
+      "sha256": "98079a230bcb982301f1cc6551f5dac1fe415d53a65f8f8ff288ce857150da0c"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-grazing.new.json",
+      "bytes": 5387,
+      "sha256": "fcb68850c0ea6f3892e7ee43e4576a9ffee2718690ae1b55244973a3185db3bc"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-near-plane-10406.old.png",
+      "bytes": 19294,
+      "sha256": "193ef07fb72097fe5bf964ef92d7d217910c0181228d7a37ac39b22137653d4e"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-inside.old.png",
+      "bytes": 72341,
+      "sha256": "8f79f8583614fe2c2209a22059ea08eefc423443f9dbf8dc6385a2a145e377dd"
+    },
+    {
+      "file": "exact-live-fog-hook.ts",
+      "bytes": 1256,
+      "sha256": "ee36ebbcaf52b8f5dcda49dfa7c82d8d54b10501147903173bcafa4fc8d92934"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-cross.old.rgba",
+      "bytes": 1075200,
+      "sha256": "254425b946cc4ffa6aaa352f4d65283992f2b54b59a624983390c082d5bca3ca"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-near-plane-10406.old.json",
+      "bytes": 3193,
+      "sha256": "eb994c5e183caa29b2cf88ff3ba3dca31eb95aa5ba45fac430ab62bac6a751c1"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-grazing.old.json",
+      "bytes": 3219,
+      "sha256": "f7539377fb6780d875d7e72262bb085424f4d13c80a892b6e5017ec97ad01bfb"
+    },
+    {
+      "file": "poses.json",
+      "bytes": 2143,
+      "sha256": "f0b8f470b7a072d545fc73fdd411d7c8ffb36628b09ee28868ae567c4ca9cf24"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-approach.new.png",
+      "bytes": 76839,
+      "sha256": "274c6e8f33c30d199c9121b28707f2853c4bb88f72147f1d8fc773937e58bc59"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-above-return.new.rgba",
+      "bytes": 1075200,
+      "sha256": "98079a230bcb982301f1cc6551f5dac1fe415d53a65f8f8ff288ce857150da0c"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-cross.old.png",
+      "bytes": 78968,
+      "sha256": "f72189dd7bf94fd606b58fb68cf19bda8309e39c3b786b969c1b8e7b5033dcc1"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-approach.old.json",
+      "bytes": 3206,
+      "sha256": "03b1de211efc6c5dd2ff5de3bcc692ee7cad1976620e76ecfdf99e7b5968261b"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-inside.new.json",
+      "bytes": 5366,
+      "sha256": "439a3c847ca1342bd7e638fda1030dbc89db66d714b07ee28936475cd5aabb4c"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-cross.old.json",
+      "bytes": 3206,
+      "sha256": "065ce60b310e23b7c9e940529067d56bef9893f2c5f17aaadb707ff51120351f"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-near-plane-10406.old.rgba",
+      "bytes": 1075200,
+      "sha256": "ca3f3a6808ab669dbcdeef39e4ec7ee1e2791af6ddb9de554c9508872efd5b77"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-inside.new.png",
+      "bytes": 72341,
+      "sha256": "8f79f8583614fe2c2209a22059ea08eefc423443f9dbf8dc6385a2a145e377dd"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-cross.new.png",
+      "bytes": 78968,
+      "sha256": "f72189dd7bf94fd606b58fb68cf19bda8309e39c3b786b969c1b8e7b5033dcc1"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-grazing.old.rgba",
+      "bytes": 1075200,
+      "sha256": "2091ea6d291457c8792f5fa66dc99f74a5e8669092eb1193b53d7fcb282c681e"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-approach.old.png",
+      "bytes": 76839,
+      "sha256": "274c6e8f33c30d199c9121b28707f2853c4bb88f72147f1d8fc773937e58bc59"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-approach.old.rgba",
+      "bytes": 1075200,
+      "sha256": "a0997612a9bcdff17155a3341522a4c7f9fe5a6b806a73d96d7e72167d335428"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-inside.new.rgba",
+      "bytes": 1075200,
+      "sha256": "3bbe5c31f7de04effe3e6a5edd16edde3c9a835df3d6665a2c33742f050c8166"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-above-return.new.json",
+      "bytes": 5366,
+      "sha256": "345f22e0c5ee91ca0c4f9d1c6df0889455d321a7d55025badb16c243b50ca926"
+    },
+    {
+      "file": "source-proof.json",
+      "bytes": 1702,
+      "sha256": "e7d53e5d3158d5cda5d974acacc9c1b7ffcadfb6b6d8155ef93306f6366e8433"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-near-plane-10406.new.rgba",
+      "bytes": 1075200,
+      "sha256": "ca3f3a6808ab669dbcdeef39e4ec7ee1e2791af6ddb9de554c9508872efd5b77"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-cross.new.json",
+      "bytes": 5366,
+      "sha256": "519744ac3e62fce04bfa4934d2059c0d1e01e4e32d7879d34d3302d2c3078e65"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-grazing.old.png",
+      "bytes": 37186,
+      "sha256": "0e1ffa68c92cc36b2fadacd8c18faa29d74d4a50f0f4b3ee5dc7899eb1ceee30"
+    },
+    {
+      "file": "exact-environment.js",
+      "bytes": 477885,
+      "sha256": "8c10bbf9107ff5a091c331cbc05838b901f192b6282b8afeaae164c770aab257"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-above-return.old.json",
+      "bytes": 3206,
+      "sha256": "712cc0b694916d0f04f248e92060434e3585d89bb6eb57fabd983f0a6e013c81"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-approach.new.rgba",
+      "bytes": 1075200,
+      "sha256": "a0997612a9bcdff17155a3341522a4c7f9fe5a6b806a73d96d7e72167d335428"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-near-inside.old.rgba",
+      "bytes": 1075200,
+      "sha256": "3bbe5c31f7de04effe3e6a5edd16edde3c9a835df3d6665a2c33742f050c8166"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-near-plane-10406.new.png",
+      "bytes": 19294,
+      "sha256": "193ef07fb72097fe5bf964ef92d7d217910c0181228d7a37ac39b22137653d4e"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-above-return.old.png",
+      "bytes": 40494,
+      "sha256": "e49acb0f5f4ca945431b2e7a6b4200bc25a7b9c2bfbcd95ac679b72a7391de77"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_library-lamp-grazing.new.rgba",
+      "bytes": 1075200,
+      "sha256": "2091ea6d291457c8792f5fa66dc99f74a5e8669092eb1193b53d7fcb282c681e"
+    }
+  ]
+}

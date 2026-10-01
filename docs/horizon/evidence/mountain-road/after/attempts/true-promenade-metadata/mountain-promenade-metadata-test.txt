@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizon-mountain-promenade-metadata.test.ts (2 tests) 15ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  01:40:43
+   Duration  1.01s (transform 360ms, setup 0ms, collect 718ms, tests 15ms, environment 0ms, prepare 104ms)
+

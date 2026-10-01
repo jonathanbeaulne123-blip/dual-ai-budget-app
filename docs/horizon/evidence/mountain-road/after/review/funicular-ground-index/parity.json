@@ -1,0 +1,10 @@
+{
+  "scope": "Pure saved v12 mesh ceiling parity; no streaming, full native runtime, or cap execution",
+  "meshSha256": "c4ddee0bb563148ef9f569081197d50ec9a3afd6ddb6faa470b61d57a0c45fe6",
+  "oldSha256": "edc29961f75fc1360f9cf78bf8e3f71f288e65d84b1a9b623dcf8389efe8563e",
+  "newSha256": "f079dfdd4333ccc6d554d972476e6dc9b3a27d62087ea5b4d0e73c4e04d3839d",
+  "samples": 6831,
+  "oldMs": 738.3020839999999,
+  "newMs": 232.91758299999992,
+  "mismatches": []
+}

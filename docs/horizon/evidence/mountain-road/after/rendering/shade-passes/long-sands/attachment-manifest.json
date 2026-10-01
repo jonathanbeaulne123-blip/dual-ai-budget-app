@@ -1,0 +1,1125 @@
+{
+  "originalDirectory": "/tmp/mountain-shade-parity-v2-long-sands-compressed",
+  "files": [
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-above.old.json",
+      "bytes": 3163,
+      "sha256": "450471201111da029e46b5c4fa7db09ca10217679dc80028de8668e4b95eb75c"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-above.old.json",
+      "bytes": 3163,
+      "sha256": "3ff32ff43036d29e380e81884b246f8461a285efb5172d5298b38e6625b4028e"
+    },
+    {
+      "file": "old-served.js",
+      "bytes": 2242142,
+      "sha256": "92e9e1510267bbf7677d5a20cb256b6ddd330abd3f316b008514711298b592c6"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-below.new.rgba.gz",
+      "bytes": 116756,
+      "sha256": "b5e17ffe6c587e8c837460cc7c1d6c22dbdd30d48529f793bfc82dd8fe33c7dc"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-below.new.png",
+      "bytes": 241700,
+      "sha256": "45fe35d3bc7018c0ec7a9a9361ac2354572a920983d68247b2ad10b5b94a8199"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-below.old.json",
+      "bytes": 3756,
+      "sha256": "b0ba7c3c6e8a69a8a1bc3e5aec8aa46ec0b1627b29b4ea0b59a3967374ae9f07"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-above.new.png",
+      "bytes": 194390,
+      "sha256": "485cac5eaf1a0b227d77d27b3613b53d754d253ce62ab3724798e374bd58388c"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-above.new.png",
+      "bytes": 209418,
+      "sha256": "cf187136525d2a4463360a92d5a04c672b1d5213f4e66174d9265637a802205c"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-near-grazing.old.png",
+      "bytes": 105635,
+      "sha256": "f9f1084d1042fec19fc06aa83cbe29461a36b9cf253529bb27848238ab6002b2"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-below.new.json",
+      "bytes": 5372,
+      "sha256": "104885c37df62980280b265c994d4ed18f3a48f169e4f9f6126c7b4afa7b557d"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-below.new.rgba.gz",
+      "bytes": 127737,
+      "sha256": "7dfcd8366ce2a8acfbf8c6e1d6724b2b6af1e59f3737c9f72c2603a84098e23d"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-near-grazing.old.json",
+      "bytes": 3755,
+      "sha256": "4e7ac189c35d59764e622566192a03916e5edfe932ce3c2f3b41a563e0f8bde6"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-below.new.png",
+      "bytes": 223328,
+      "sha256": "5f248194da1895694e16aa27008f8922e69079372c56a3973243e2a641a13266"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-below.new.png",
+      "bytes": 223820,
+      "sha256": "919f5a7c0fe808ce97ef812c05554d329172debcb46cdd8920f37d42418f5a94"
+    },
+    {
+      "file": "summary.json",
+      "bytes": 455585,
+      "sha256": "c434c044bba66e565d38555bca4c9f06d1dbdade5f53651ccaf7777770bbedfb"
+    },
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-below.new.rgba.gz",
+      "bytes": 124130,
+      "sha256": "544c60a38a31a3fff5ed262c3b830cab40f938a1f1a5371f5ddb1a8b63a9b76d"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-above.old.rgba.gz",
+      "bytes": 79166,
+      "sha256": "89cee9145d9f1a674bfeae4b22a12cd081c4c0a6c00818c42f0ad2f9b12d407e"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-above.new.png",
+      "bytes": 243475,
+      "sha256": "f64a5a21110e5bddfaa089bd3724d91e2817b497d2cabaa0051bad475f23e1a5"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-near-grazing.new.rgba.gz",
+      "bytes": 71054,
+      "sha256": "34894e03f7ec99b1c35fa71963576ff5c0ce1d62beb862a58b6512808311227a"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-below.new.rgba.gz",
+      "bytes": 135239,
+      "sha256": "71497004627b2a4ac36426e5e4e65cd76ceadee6339385069810804b443d000c"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-near-grazing.old.json",
+      "bytes": 3669,
+      "sha256": "18a5371fd433555278cfca8f6284369432bdb77058568a4500928281c080148a"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-above.old.rgba.gz",
+      "bytes": 95807,
+      "sha256": "27c4854e8274bc572e2af41c8f729b80c3fd37cca7186130d65a032c86760c46"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-below.old.png",
+      "bytes": 222665,
+      "sha256": "ee65704c9cf72e62a5499df62067e866c4c9e72acb7f98a2e076b81832e882ce"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-below.old.rgba.gz",
+      "bytes": 128202,
+      "sha256": "e3cc3f536deac5ea942274a8a1ca4e3618c5069b72fd5a8ca3705ad9e44b7de2"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-near-grazing.old.rgba.gz",
+      "bytes": 71210,
+      "sha256": "382a44c3d5e3aabb434a2cc55f1f08053c3c3cb0516419c531926f569114c623"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-below.new.rgba.gz",
+      "bytes": 137619,
+      "sha256": "c98e56add13ede21b58be84c2ec46d2ee97938a50c33920cde4409434cd54a9e"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-above.old.json",
+      "bytes": 3670,
+      "sha256": "33c8c53339549c3175f4fec5afc3baf6f2ea202c80edba642b93198fa3eed952"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-above.old.json",
+      "bytes": 3669,
+      "sha256": "5db1d4c375ef02c1fdcc6136939d9ba35c50ea8a784fae0d710535c24920ad57"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-near-grazing.old.json",
+      "bytes": 3756,
+      "sha256": "a1a70d90e86ca48fa2c0a9cd18e0767c62f52760055437702ad723be7bd513df"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-near-grazing.old.rgba.gz",
+      "bytes": 81616,
+      "sha256": "3e42a80616cb363078360a2964695d8da3661a9fb9ac9b45e2c82cdcae01bf55"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-above.old.png",
+      "bytes": 155677,
+      "sha256": "c8c8dde2a33a5ff5142eccc8e4ecfadea8ae63d35386341224179a399d955f0d"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-above.old.json",
+      "bytes": 3190,
+      "sha256": "7e06ae4ba9edec75f8dc38d2b95933d057166e0b0e246f79bd341db6b84fdb27"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-below.old.rgba.gz",
+      "bytes": 139252,
+      "sha256": "1b5cfab48fb19a23c25dfae0f1eaf9bd54f9595a961c532e3074803d90b6311d"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-below.new.rgba.gz",
+      "bytes": 126590,
+      "sha256": "21c95951012fb5d551a088ebf6c169b3e94e41ee73b3cfa103249d3e21fdedd1"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-near-grazing.old.rgba.gz",
+      "bytes": 71212,
+      "sha256": "56ff24bf858b739fa6202af542718bb86321ca4fe02ede4d773f5276b03cb54c"
+    },
+    {
+      "file": "new-served.js",
+      "bytes": 2249178,
+      "sha256": "c4832493fc228fc07756c9f339d749815a6101c7212c0425f05d814d9f790832"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-above.new.json",
+      "bytes": 5935,
+      "sha256": "2cbc889ec2fce34077eec828a45bd9342761580ef3107c07bc7b10ac202a5ec3"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-above.old.json",
+      "bytes": 3755,
+      "sha256": "73d8c41feaa79536777c50363026012e8c14d1bdb40e70d76942d35644c2f45b"
+    },
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-near-grazing.old.rgba.gz",
+      "bytes": 69306,
+      "sha256": "e6923fddd71e32df50b3e63b877a5a61145167f5d4320b3cb054e172f4d278bc"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-near-grazing.old.png",
+      "bytes": 112314,
+      "sha256": "c5c6abcdc0c9274872399106a6c5af289858e7b058983b7bb76218f43e8d4eee"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-above.new.rgba.gz",
+      "bytes": 115601,
+      "sha256": "4d0dad4295fcf193e776ad379859c84fc722a66c9860b56d389b830e513beb9d"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-above.new.json",
+      "bytes": 5848,
+      "sha256": "e7a315b3d6babaa47b744fe80e0c04ce496a29cb2d16917471c882a4952e8b48"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-near-grazing.old.json",
+      "bytes": 3670,
+      "sha256": "eb3ef2b47b7a7439def40139e9c7f96be5469178edd934f75e67f8f67ff604f4"
+    },
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-above.new.rgba.gz",
+      "bytes": 77754,
+      "sha256": "3c4239e70f0f5ff34fae874e03093df639bb5d198ce58e3e9e0fa3fda3b9faea"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-below.old.rgba.gz",
+      "bytes": 126246,
+      "sha256": "1ca28925320029b0b7220813dbe563e02d1a9a34fa50478453ba8736dd6793da"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-near-grazing.old.rgba.gz",
+      "bytes": 73329,
+      "sha256": "ad44d7bf680cdecda30a79ca0726994b10fbaf5edba7ca74097a009aae0a66d0"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-above.new.rgba.gz",
+      "bytes": 137483,
+      "sha256": "1f9bb1c1f204708b28866bc25226e12c3782550d93d4a6c99c1674db5306dae5"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-near-grazing.new.json",
+      "bytes": 5340,
+      "sha256": "73ab7ea652ab553aabe9fa7cab8bd4159a71ddac5596eef4e661c93fed05e4e4"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-near-grazing.old.rgba.gz",
+      "bytes": 78525,
+      "sha256": "6ec28122c12064835dc51a548cb88a267d435b3eb1936351b98a156d755411ce"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-above.new.json",
+      "bytes": 5342,
+      "sha256": "5e7fb9300ab6bf26a6e915eaa0ab59e2e9847bf1f3f3145f6f18f5644f437616"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-above.old.rgba.gz",
+      "bytes": 113014,
+      "sha256": "d944fa65be4bdd74478e0732caf1923ff24e40b60d2c88b87cefa683c29a71a8"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-above.new.rgba.gz",
+      "bytes": 126017,
+      "sha256": "cfbfb86b3f235d19d29f014246e6331e2cdc84f869941363b23358de13e9ccdc"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-above.new.rgba.gz",
+      "bytes": 96046,
+      "sha256": "cc1e5e563a0f0ee14c99826ade8882d4f80b59d3524a3cbea1f29b222bc283d1"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-above.new.png",
+      "bytes": 189444,
+      "sha256": "285585e5b56d8b010106dfc73d532807543b220f52d42d4bd6b8fd18903acc7f"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-near-grazing.old.json",
+      "bytes": 3146,
+      "sha256": "3e06e6534d2d5323d393066bcd54d5fe8550c983345a2fdfca1aa209c4960c44"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-below.old.rgba.gz",
+      "bytes": 133397,
+      "sha256": "4ca72b6ea8b2709b1f7e60edcf42ee5e080a6563668202903458dfb42969c5a9"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-above.old.rgba.gz",
+      "bytes": 134486,
+      "sha256": "89a9eb38fe9145a04888127d143a336274626497aeaba199b09c71d43293764a"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-below.old.json",
+      "bytes": 3188,
+      "sha256": "20733b2aaf34a07a99d6e2f42855d0bbbd08ba5df285e20776a8fdec83f4d6fb"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-below.new.png",
+      "bytes": 235004,
+      "sha256": "1e2158cd805959416dd3e897796bac28f31d159e5f321710451f4d43c2081647"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-above.new.rgba.gz",
+      "bytes": 104782,
+      "sha256": "ca10c9e9a7edf39a91859b53fd5c12dca41593aaca81eaf0c93e40aaa690efc8"
+    },
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-near-grazing.new.png",
+      "bytes": 105334,
+      "sha256": "69fce7dedce6481af18f5217c72382b49c937f93d0b1701253f5dbd0d04d4a00"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-near-grazing.new.json",
+      "bytes": 5356,
+      "sha256": "0e36e67e8ca8f8e571e543620e40be5105ee8097eec57fa36ee88c912d0c3a52"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-below.old.png",
+      "bytes": 221440,
+      "sha256": "51752ab09362276563bb0d11da3518022476d678d3bf56e5ed2d88f4c87e1a8b"
+    },
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-above.new.png",
+      "bytes": 154813,
+      "sha256": "991634846dd7d5aab0b975aa69fb9848df271fb55eb9063ab49f7c96c3ad8d86"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-above.new.json",
+      "bytes": 5849,
+      "sha256": "104f6424584cecbc9dc8a22a5d28acb6d1a65a10fe37a7dc91b212b6420a87ac"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-near-grazing.old.png",
+      "bytes": 116897,
+      "sha256": "f9f17b5480cadf7733660a3b2db06b8a8eb53f1aa42e9c113073550a360211ba"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-near-grazing.new.png",
+      "bytes": 122121,
+      "sha256": "511d2af6f18db7ae67e1e08e49f24f0a6704c4708ba2e94afeda73cb1dbddfc9"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-below.old.rgba.gz",
+      "bytes": 127737,
+      "sha256": "7dfcd8366ce2a8acfbf8c6e1d6724b2b6af1e59f3737c9f72c2603a84098e23d"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-above.new.json",
+      "bytes": 5848,
+      "sha256": "17bbe39e84491e2a4eb002a19c6f88eb659523a3ab71727d0f9eb165019e4ed1"
+    },
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-below.old.rgba.gz",
+      "bytes": 124130,
+      "sha256": "544c60a38a31a3fff5ed262c3b830cab40f938a1f1a5371f5ddb1a8b63a9b76d"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-above.new.rgba.gz",
+      "bytes": 79166,
+      "sha256": "89cee9145d9f1a674bfeae4b22a12cd081c4c0a6c00818c42f0ad2f9b12d407e"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-near-grazing.new.json",
+      "bytes": 5823,
+      "sha256": "3e1735450a241c61e679316f7bc1e2d008497571f47d4202b40258866409572c"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-near-grazing.new.png",
+      "bytes": 110330,
+      "sha256": "d349167ded2ef5ff343742db579655013c9c733c184b2028e9412857496da017"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-above.old.png",
+      "bytes": 231749,
+      "sha256": "1f30f8ee45c20f463fba7794de4316b96c1067117aca327d2ed5f281972aed65"
+    },
+    {
+      "file": "exact-live-fog-hook.ts",
+      "bytes": 1256,
+      "sha256": "ee36ebbcaf52b8f5dcda49dfa7c82d8d54b10501147903173bcafa4fc8d92934"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-below.old.png",
+      "bytes": 239131,
+      "sha256": "e16f3b909eb778fad37c72aa91180d2e28abf60470151f9bec0c3b168426d5e7"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-above.old.json",
+      "bytes": 3741,
+      "sha256": "9fb772cff28e78f87c299a3086e70292e97a1988d11955fa3bb45ad979e81e74"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-below.old.rgba.gz",
+      "bytes": 116756,
+      "sha256": "b5e17ffe6c587e8c837460cc7c1d6c22dbdd30d48529f793bfc82dd8fe33c7dc"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-above.new.json",
+      "bytes": 5382,
+      "sha256": "2942f910dccf46cbebda774909bf731c0d11f1212a5b52203dc0ab6827ee7f9f"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-above.old.png",
+      "bytes": 198708,
+      "sha256": "70a74daaf7dcbd2987301fb5a1f686f84c1dd78e6993ba1d112e61da28347d8c"
+    },
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-below.new.png",
+      "bytes": 219656,
+      "sha256": "ff020aee3bed11aac7064a602c11f5e23064c004e6e35801c65a6a9136972e26"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-near-grazing.new.json",
+      "bytes": 5895,
+      "sha256": "85cfa450d8dddb1dbabb8c0925f182b251c4bb91525a837078ddf3ed7ad2902b"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-below.old.json",
+      "bytes": 3203,
+      "sha256": "2bbe3c86f1f257a1040b4ff8ca3430746eae6425a8307b8925314f931ee94608"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-near-grazing.new.rgba.gz",
+      "bytes": 81616,
+      "sha256": "3e42a80616cb363078360a2964695d8da3661a9fb9ac9b45e2c82cdcae01bf55"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-near-grazing.new.rgba.gz",
+      "bytes": 71212,
+      "sha256": "56ff24bf858b739fa6202af542718bb86321ca4fe02ede4d773f5276b03cb54c"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-below.new.rgba.gz",
+      "bytes": 139252,
+      "sha256": "1b5cfab48fb19a23c25dfae0f1eaf9bd54f9595a961c532e3074803d90b6311d"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-below.new.json",
+      "bytes": 5927,
+      "sha256": "ac0f859285744d8bef4c3b9ed3f0d016dd66cf7d2cbcd1a940421d0bb7fe2f25"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-below.old.rgba.gz",
+      "bytes": 126590,
+      "sha256": "21c95951012fb5d551a088ebf6c169b3e94e41ee73b3cfa103249d3e21fdedd1"
+    },
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-above.new.json",
+      "bytes": 5327,
+      "sha256": "f7ee4f983ccfb0d09a54fcde6c3c2fef221cf4517c1c53ba406f0d5e1da2b74d"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-above.new.json",
+      "bytes": 5327,
+      "sha256": "1b7e7f18e4504cc6cf9e36b446bdc07b12577fd36ffbaa3c2cedd452f2fb96a8"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-near-grazing.old.rgba.gz",
+      "bytes": 71054,
+      "sha256": "34894e03f7ec99b1c35fa71963576ff5c0ce1d62beb862a58b6512808311227a"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-below.old.rgba.gz",
+      "bytes": 135239,
+      "sha256": "71497004627b2a4ac36426e5e4e65cd76ceadee6339385069810804b443d000c"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-near-grazing.old.png",
+      "bytes": 116380,
+      "sha256": "c3a7eff368800b2b953efe3085944d971ab8d2e2e2712a6ac3b4d295a67c8428"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-above.new.rgba.gz",
+      "bytes": 95807,
+      "sha256": "27c4854e8274bc572e2af41c8f729b80c3fd37cca7186130d65a032c86760c46"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-near-grazing.new.png",
+      "bytes": 112235,
+      "sha256": "9c7959c53e6b00c473f524368d7fbb0bdef18fbf2054f32cead20a12a934876f"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-near-grazing.new.png",
+      "bytes": 103306,
+      "sha256": "bfcc9954b19cdaef490358161e77bef30219e3f36f6421d4145bc3e761941ec2"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-near-grazing.old.png",
+      "bytes": 115568,
+      "sha256": "38d4e654facca78da85549a8b6b7d671617f7c72bb76837f1383c968fee12b9c"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-below.new.rgba.gz",
+      "bytes": 128202,
+      "sha256": "e3cc3f536deac5ea942274a8a1ca4e3618c5069b72fd5a8ca3705ad9e44b7de2"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-near-grazing.new.json",
+      "bytes": 5909,
+      "sha256": "fd4b73c6113a71c1d225cc24ef9d4ad0f35df620b096dd2d13d1154e3d0b5739"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-near-grazing.new.rgba.gz",
+      "bytes": 71210,
+      "sha256": "382a44c3d5e3aabb434a2cc55f1f08053c3c3cb0516419c531926f569114c623"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-below.old.rgba.gz",
+      "bytes": 137619,
+      "sha256": "c98e56add13ede21b58be84c2ec46d2ee97938a50c33920cde4409434cd54a9e"
+    },
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-above.old.rgba.gz",
+      "bytes": 77754,
+      "sha256": "3c4239e70f0f5ff34fae874e03093df639bb5d198ce58e3e9e0fa3fda3b9faea"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-below.new.rgba.gz",
+      "bytes": 126246,
+      "sha256": "1ca28925320029b0b7220813dbe563e02d1a9a34fa50478453ba8736dd6793da"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-above.new.png",
+      "bytes": 212188,
+      "sha256": "a75807a0f878309c62207822d159938d5d3a9f80dd8c19e4a32c46c0cba19670"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-near-grazing.new.json",
+      "bytes": 5316,
+      "sha256": "3019aa641a1953e170aaa05f66b6ae4888e3fac47504d3fb7162cabd5ffeb5a3"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-below.old.png",
+      "bytes": 237970,
+      "sha256": "370e6f6a011d7187d7c7a86725da615ce3059a5f223498b823bcb58f37a619b0"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-near-grazing.new.rgba.gz",
+      "bytes": 73329,
+      "sha256": "ad44d7bf680cdecda30a79ca0726994b10fbaf5edba7ca74097a009aae0a66d0"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-near-grazing.old.png",
+      "bytes": 107766,
+      "sha256": "75f79b19e49bb9d2245f87afd4fb9cb8d37a9241d0822586970752f9a288b57f"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-above.old.rgba.gz",
+      "bytes": 137483,
+      "sha256": "1f9bb1c1f204708b28866bc25226e12c3782550d93d4a6c99c1674db5306dae5"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-near-grazing.new.rgba.gz",
+      "bytes": 78525,
+      "sha256": "6ec28122c12064835dc51a548cb88a267d435b3eb1936351b98a156d755411ce"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-below.new.png",
+      "bytes": 226896,
+      "sha256": "48cda60ca2757a0c043d8d37eafbe60b090fe6b2265d36d55f424409b3b7d672"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-above.old.json",
+      "bytes": 3163,
+      "sha256": "6551275768e943915da1728347f3b737d817b8804d1eb9939fe959fe58df06b5"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-above.new.png",
+      "bytes": 246579,
+      "sha256": "f74643eaf3eb45a218f59e9f42189010beb5c2395c5a939de28297ff373bb5a4"
+    },
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-near-grazing.new.rgba.gz",
+      "bytes": 69306,
+      "sha256": "e6923fddd71e32df50b3e63b877a5a61145167f5d4320b3cb054e172f4d278bc"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-near-grazing.old.json",
+      "bytes": 3203,
+      "sha256": "b1ca3e90d103f05aabca5aa243ba63ae76ce4a9ff89662be4a152654beff7a27"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-above.old.png",
+      "bytes": 190091,
+      "sha256": "2ebe5b864d8683188a382bbb1043f6a78e065a7e682dfd21afca3f518649d7b7"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-below.new.json",
+      "bytes": 5356,
+      "sha256": "a72b37b78ebe493730d5645f5ad154ac0b089860610f1c5a2af6a986859068ad"
+    },
+    {
+      "file": "poses.json",
+      "bytes": 1383,
+      "sha256": "f92f3b53ab34b798f6a399c03d9d6c410dbbcf8e184f3dac783fae855a7b36ca"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-below.new.png",
+      "bytes": 208673,
+      "sha256": "4d2304539139de41f19ff705d8d730a1948da0f7657e5a19065ca81f5de510ba"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-above.old.rgba.gz",
+      "bytes": 115601,
+      "sha256": "4d0dad4295fcf193e776ad379859c84fc722a66c9860b56d389b830e513beb9d"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-above.old.json",
+      "bytes": 3669,
+      "sha256": "354fa1007ab31a36f51810a79e1521a8aaffac2bdbb7d933bc5790a65a945866"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-above.new.rgba.gz",
+      "bytes": 134486,
+      "sha256": "89a9eb38fe9145a04888127d143a336274626497aeaba199b09c71d43293764a"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-above.old.rgba.gz",
+      "bytes": 104782,
+      "sha256": "ca10c9e9a7edf39a91859b53fd5c12dca41593aaca81eaf0c93e40aaa690efc8"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-above.new.png",
+      "bytes": 161275,
+      "sha256": "072b7d47124584c9936b85c60e032eecd8089882baeea0740ececcc4214030e6"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-above.new.json",
+      "bytes": 5934,
+      "sha256": "49e82da975c13ef88980903cecfe71eab659724e6530715f22fa0390a5cefc18"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-near-grazing.old.json",
+      "bytes": 3186,
+      "sha256": "504764a9d8d4a382d4272913e065d7cfe90ce221bd98165544c0d5393dff01f1"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-above.new.rgba.gz",
+      "bytes": 113014,
+      "sha256": "d944fa65be4bdd74478e0732caf1923ff24e40b60d2c88b87cefa683c29a71a8"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-above.old.rgba.gz",
+      "bytes": 126017,
+      "sha256": "cfbfb86b3f235d19d29f014246e6331e2cdc84f869941363b23358de13e9ccdc"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-below.new.png",
+      "bytes": 208733,
+      "sha256": "2ee61672efaef7dcdcb82cc93b85c382a771e85723bdb43cdf890b605a6c3467"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-near-grazing.new.png",
+      "bytes": 109644,
+      "sha256": "40b230ec39ae97024d97690e7d9d2d0879b1a5a44c3b76e2cfeced1a9fab6afc"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-above.old.rgba.gz",
+      "bytes": 96046,
+      "sha256": "cc1e5e563a0f0ee14c99826ade8882d4f80b59d3524a3cbea1f29b222bc283d1"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-near-grazing.new.json",
+      "bytes": 5823,
+      "sha256": "4eb0ff2e6532eb29ea041bdf3ea9e7ca9f23f41318360b9c0104f428593a7677"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-below.new.rgba.gz",
+      "bytes": 133397,
+      "sha256": "4ca72b6ea8b2709b1f7e60edcf42ee5e080a6563668202903458dfb42969c5a9"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-near-grazing.new.png",
+      "bytes": 116380,
+      "sha256": "c3a7eff368800b2b953efe3085944d971ab8d2e2e2712a6ac3b4d295a67c8428"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-below.new.json",
+      "bytes": 5841,
+      "sha256": "3195141b779f9d6040a78b2c7ddd39fd67894c22814efbf59603f4ad0b6a989f"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-below.new.json",
+      "bytes": 5841,
+      "sha256": "8ac3f884789a0ea4bf903e23e4d9abc9a5c22f75c6704ee7dc8ce827a8ef6978"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-near-grazing.old.png",
+      "bytes": 112235,
+      "sha256": "9c7959c53e6b00c473f524368d7fbb0bdef18fbf2054f32cead20a12a934876f"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-near-grazing.old.png",
+      "bytes": 103306,
+      "sha256": "bfcc9954b19cdaef490358161e77bef30219e3f36f6421d4145bc3e761941ec2"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-near-grazing.new.png",
+      "bytes": 115568,
+      "sha256": "38d4e654facca78da85549a8b6b7d671617f7c72bb76837f1383c968fee12b9c"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-below.old.rgba.gz",
+      "bytes": 115251,
+      "sha256": "73c4c563ad3da1741af3d8f08a4834f6531b16a1ef0b16721549a7dc11b0c002"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-near-grazing.new.json",
+      "bytes": 5823,
+      "sha256": "0f6188ec9c0023cb68f63fd4c3ac2cde4563b4cd4449bbe8ead7fbfadba5d1cf"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-below.old.json",
+      "bytes": 3755,
+      "sha256": "d10029ac59041f922ae87923732730a24a1c00a69d8af6d04e9a390412932668"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-near-grazing.old.json",
+      "bytes": 3739,
+      "sha256": "8b2ff4f2309639ff9e8b48be063d51cfb94b3326a8911221a37ed6692ed6dcaf"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-below.new.json",
+      "bytes": 5372,
+      "sha256": "3f4eb1df7d5b32f7c9c6627f54b92f5ec631cd086fd073886a804afff512c31d"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-below.new.png",
+      "bytes": 239131,
+      "sha256": "e16f3b909eb778fad37c72aa91180d2e28abf60470151f9bec0c3b168426d5e7"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-above.old.json",
+      "bytes": 3203,
+      "sha256": "647a50feb4acd28558345c4deb0340d50c44a655352b9877a6032d800fac68d3"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-near-grazing.new.rgba.gz",
+      "bytes": 75774,
+      "sha256": "4b629e33f77b26a623977cdbd67a7412caaaa8d716cb7ab71755b5696c0b7027"
+    },
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-below.new.json",
+      "bytes": 5332,
+      "sha256": "3920ee5d7ff7d55a82574d4c778866153ae7c66728e784be9706a5f16327a5ef"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-below.new.json",
+      "bytes": 5332,
+      "sha256": "2345dac3bafda24df2561999168ae13c922d60830444ce9b7f9a6c604f5690b8"
+    },
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-near-grazing.new.json",
+      "bytes": 5316,
+      "sha256": "39640350419418d0b37bc1edc3687c7d2e4a9a816bae06da1d5eba16f1d90a14"
+    },
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-below.old.png",
+      "bytes": 219656,
+      "sha256": "ff020aee3bed11aac7064a602c11f5e23064c004e6e35801c65a6a9136972e26"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-above.new.png",
+      "bytes": 198708,
+      "sha256": "70a74daaf7dcbd2987301fb5a1f686f84c1dd78e6993ba1d112e61da28347d8c"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-above.new.json",
+      "bytes": 5934,
+      "sha256": "0ac8945111e058617b391227e513a1d38ee69923bbef5a8f3b5de8e41a1c6099"
+    },
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-above.old.png",
+      "bytes": 154813,
+      "sha256": "991634846dd7d5aab0b975aa69fb9848df271fb55eb9063ab49f7c96c3ad8d86"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-above.new.rgba.gz",
+      "bytes": 99765,
+      "sha256": "724968ac451e773aad659b97589b3c0d0a22600e3af35fa5ab39150fffd88954"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-below.new.png",
+      "bytes": 221440,
+      "sha256": "51752ab09362276563bb0d11da3518022476d678d3bf56e5ed2d88f4c87e1a8b"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-near-grazing.new.png",
+      "bytes": 116897,
+      "sha256": "f9f17b5480cadf7733660a3b2db06b8a8eb53f1aa42e9c113073550a360211ba"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-near-grazing.old.rgba.gz",
+      "bytes": 67543,
+      "sha256": "128500ea12a6710ccbf4ee2366baf4d078b8cece3a096f39b5ae8c7f30fe6600"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-near-grazing.old.png",
+      "bytes": 122121,
+      "sha256": "511d2af6f18db7ae67e1e08e49f24f0a6704c4708ba2e94afeda73cb1dbddfc9"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-near-grazing.old.rgba.gz",
+      "bytes": 76331,
+      "sha256": "cb61e96cb2113a98d035c26666134f0cf9aadf8366fb33d0efff9f3a84ed302a"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-near-grazing.old.png",
+      "bytes": 110330,
+      "sha256": "d349167ded2ef5ff343742db579655013c9c733c184b2028e9412857496da017"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-above.new.png",
+      "bytes": 231749,
+      "sha256": "1f30f8ee45c20f463fba7794de4316b96c1067117aca327d2ed5f281972aed65"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-above.old.rgba.gz",
+      "bytes": 82668,
+      "sha256": "534b4d5502ea61d7205e32e7174e8daed46273adb31b7eba3ac7f302ce220f14"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-below.old.png",
+      "bytes": 208733,
+      "sha256": "2ee61672efaef7dcdcb82cc93b85c382a771e85723bdb43cdf890b605a6c3467"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-near-grazing.old.png",
+      "bytes": 109644,
+      "sha256": "40b230ec39ae97024d97690e7d9d2d0879b1a5a44c3b76e2cfeced1a9fab6afc"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-below.old.json",
+      "bytes": 3162,
+      "sha256": "e1440a1b24041efc1326ae97d33feab90344b821324bb87d7363608bdb832b45"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-near-grazing.old.rgba.gz",
+      "bytes": 74221,
+      "sha256": "6dc80b66e7dd8ea835822b6d2dd05ce3b6600c7810c1e61349f0b1441a4dafb8"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-above.old.png",
+      "bytes": 161275,
+      "sha256": "072b7d47124584c9936b85c60e032eecd8089882baeea0740ececcc4214030e6"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-above.new.json",
+      "bytes": 5381,
+      "sha256": "9b4b0695a83dbb1f619757d0156807f16f6ab44b975e56d2a4580c0d752cf452"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-near-grazing.new.json",
+      "bytes": 5316,
+      "sha256": "0e1039135f10fa3fa25ef8f434c7f85a1afa52be5bc4e0b687ebfa75208d9597"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-near-grazing.old.rgba.gz",
+      "bytes": 65615,
+      "sha256": "f9971c621c1c9b7df554c344447446149c9be976665deda8e6c6fea7a81ce533"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-above.old.png",
+      "bytes": 246579,
+      "sha256": "f74643eaf3eb45a218f59e9f42189010beb5c2395c5a939de28297ff373bb5a4"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-below.old.json",
+      "bytes": 3653,
+      "sha256": "e02bd7fe9df947eebf781ac5f6ceaceab64e4b19ed745558527aedf6ade0b39d"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-below.new.json",
+      "bytes": 5911,
+      "sha256": "8414caa43f0a9d62f84183f6f72fc0b95e2afb91e746e53cee33016508077ab6"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-above.new.png",
+      "bytes": 190091,
+      "sha256": "2ebe5b864d8683188a382bbb1043f6a78e065a7e682dfd21afca3f518649d7b7"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-below.old.png",
+      "bytes": 208673,
+      "sha256": "4d2304539139de41f19ff705d8d730a1948da0f7657e5a19065ca81f5de510ba"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-near-grazing.new.json",
+      "bytes": 5356,
+      "sha256": "25afeadb05e0f9bf5ec521bfc55813f4509c073b47dfac5ce2cb960dd6210b9b"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-above.old.png",
+      "bytes": 212188,
+      "sha256": "a75807a0f878309c62207822d159938d5d3a9f80dd8c19e4a32c46c0cba19670"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-below.new.png",
+      "bytes": 237970,
+      "sha256": "370e6f6a011d7187d7c7a86725da615ce3059a5f223498b823bcb58f37a619b0"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-near-grazing.new.png",
+      "bytes": 107766,
+      "sha256": "75f79b19e49bb9d2245f87afd4fb9cb8d37a9241d0822586970752f9a288b57f"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-below.new.rgba.gz",
+      "bytes": 124087,
+      "sha256": "02c846c35cb01d0c9974634e7b099b6791f2aa94fa17fa3ac2f654d610fa0c72"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-below.old.png",
+      "bytes": 226896,
+      "sha256": "48cda60ca2757a0c043d8d37eafbe60b090fe6b2265d36d55f424409b3b7d672"
+    },
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-near-grazing.old.json",
+      "bytes": 3146,
+      "sha256": "c0b9c1d345a1485abce5f04fab72229bb90f08c82fa7251f88436edf06f1155f"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-above.old.json",
+      "bytes": 3741,
+      "sha256": "2951a08adffb2e8369495e97ffe8839d72e1e97de09b6026b9c35c80927e9419"
+    },
+    {
+      "file": "rgba-compression.ndjson",
+      "bytes": 23556,
+      "sha256": "5247712d472f75f6c334c8109165b9ae9b709fe2c8f98f02510eedbbe96c6aba"
+    },
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-below.old.json",
+      "bytes": 3162,
+      "sha256": "d7680a5faae7ccd694cec919db35dcfb857d5d6300f38226093c09d583c997be"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-above.new.png",
+      "bytes": 155677,
+      "sha256": "c8c8dde2a33a5ff5142eccc8e4ecfadea8ae63d35386341224179a399d955f0d"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-below.old.json",
+      "bytes": 3148,
+      "sha256": "2911196252826b0955734a8992dfb7a879bdf83d328b0bb9533cf62707108a4c"
+    },
+    {
+      "file": "source-proof.json",
+      "bytes": 1702,
+      "sha256": "e7d53e5d3158d5cda5d974acacc9c1b7ffcadfb6b6d8155ef93306f6366e8433"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_long-sands-bench-above.new.json",
+      "bytes": 5382,
+      "sha256": "92aaa388fbd8e40ab7727d9ac23db6437b39d61959fce0083c15cd77cb3732f9"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-below.new.png",
+      "bytes": 222665,
+      "sha256": "ee65704c9cf72e62a5499df62067e866c4c9e72acb7f98a2e076b81832e882ce"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-below.new.rgba.gz",
+      "bytes": 115251,
+      "sha256": "73c4c563ad3da1741af3d8f08a4834f6531b16a1ef0b16721549a7dc11b0c002"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-near-grazing.new.rgba.gz",
+      "bytes": 67543,
+      "sha256": "128500ea12a6710ccbf4ee2366baf4d078b8cece3a096f39b5ae8c7f30fe6600"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-above.old.rgba.gz",
+      "bytes": 99765,
+      "sha256": "724968ac451e773aad659b97589b3c0d0a22600e3af35fa5ab39150fffd88954"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-below.old.png",
+      "bytes": 223328,
+      "sha256": "5f248194da1895694e16aa27008f8922e69079372c56a3973243e2a641a13266"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-below.old.png",
+      "bytes": 223820,
+      "sha256": "919f5a7c0fe808ce97ef812c05554d329172debcb46cdd8920f37d42418f5a94"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-below.old.json",
+      "bytes": 3669,
+      "sha256": "e86a1469f12a79ba44e4db00a8fcd6e24302b673ca8861a80ad698a9b3eeeff7"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-below.old.json",
+      "bytes": 3669,
+      "sha256": "d6b8e286c171e1b35d0daf7ef2b11d9debdc18e46e044362a15c7667b636fc24"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-above.old.png",
+      "bytes": 243475,
+      "sha256": "f64a5a21110e5bddfaa089bd3724d91e2817b497d2cabaa0051bad475f23e1a5"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-near-grazing.new.rgba.gz",
+      "bytes": 76331,
+      "sha256": "cb61e96cb2113a98d035c26666134f0cf9aadf8366fb33d0efff9f3a84ed302a"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-below.old.json",
+      "bytes": 3188,
+      "sha256": "f37e4e5acb289f9181b8962fdbd0fd7cd515b235aa21ebbb35f2423d0c671f10"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-near-grazing.new.json",
+      "bytes": 5895,
+      "sha256": "d22b2cd6277ab6517021cfec0a20a19f289df15cbb66cb0ab3f0ce798b366343"
+    },
+    {
+      "file": "classic_full_night_color_7.25_long-sands-bench-below.old.png",
+      "bytes": 241700,
+      "sha256": "45fe35d3bc7018c0ec7a9a9361ac2354572a920983d68247b2ad10b5b94a8199"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-above.old.png",
+      "bytes": 194390,
+      "sha256": "485cac5eaf1a0b227d77d27b3613b53d754d253ce62ab3724798e374bd58388c"
+    },
+    {
+      "file": "classic_lite_night_color_7.25_long-sands-bench-above.old.png",
+      "bytes": 209418,
+      "sha256": "cf187136525d2a4463360a92d5a04c672b1d5213f4e66174d9265637a802205c"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-near-grazing.new.png",
+      "bytes": 105635,
+      "sha256": "f9f1084d1042fec19fc06aa83cbe29461a36b9cf253529bb27848238ab6002b2"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-near-grazing.old.rgba.gz",
+      "bytes": 75774,
+      "sha256": "4b629e33f77b26a623977cdbd67a7412caaaa8d716cb7ab71755b5696c0b7027"
+    },
+    {
+      "file": "newfoundland_full_night_color_7.25_long-sands-bench-below.new.json",
+      "bytes": 5911,
+      "sha256": "df36dffc59acfd68cfb52b14029752f161cf02ce7920e09281b9e6371d5421a2"
+    },
+    {
+      "file": "exact-environment.js",
+      "bytes": 477885,
+      "sha256": "8c10bbf9107ff5a091c331cbc05838b901f192b6282b8afeaae164c770aab257"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-near-grazing.old.json",
+      "bytes": 3670,
+      "sha256": "1ebcbc39ae2f2f64a899fcffa57d19e3660f5cf7031db77b970c7e6864a034ab"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-below.old.png",
+      "bytes": 235004,
+      "sha256": "1e2158cd805959416dd3e897796bac28f31d159e5f321710451f4d43c2081647"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-near-grazing.new.rgba.gz",
+      "bytes": 74221,
+      "sha256": "6dc80b66e7dd8ea835822b6d2dd05ce3b6600c7810c1e61349f0b1441a4dafb8"
+    },
+    {
+      "file": "taylor_full_night_color_7.25_long-sands-bench-below.old.json",
+      "bytes": 3755,
+      "sha256": "7b30deb9fb8eb6c50e83e99cf9fd282d14fd436c26c03ef7f9f43c1304c9022a"
+    },
+    {
+      "file": "taylor_lite_day_color_7.25_long-sands-bench-near-grazing.old.png",
+      "bytes": 105334,
+      "sha256": "69fce7dedce6481af18f5217c72382b49c937f93d0b1701253f5dbd0d04d4a00"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-below.new.json",
+      "bytes": 5841,
+      "sha256": "91269f1ca3c062c5194bbed28e4b85804e8388ff0206cb84ab9581f51c3035b1"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-near-grazing.new.rgba.gz",
+      "bytes": 65615,
+      "sha256": "f9971c621c1c9b7df554c344447446149c9be976665deda8e6c6fea7a81ce533"
+    },
+    {
+      "file": "newfoundland_lite_day_color_7.25_long-sands-bench-above.new.rgba.gz",
+      "bytes": 82668,
+      "sha256": "534b4d5502ea61d7205e32e7174e8daed46273adb31b7eba3ac7f302ce220f14"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-near-grazing.old.json",
+      "bytes": 3186,
+      "sha256": "ae54a0abcecaa6f5249318e9cff864110229face7bd40c128474458271fa19ec"
+    },
+    {
+      "file": "taylor_full_day_color_7.25_long-sands-bench-above.old.png",
+      "bytes": 189444,
+      "sha256": "285585e5b56d8b010106dfc73d532807543b220f52d42d4bd6b8fd18903acc7f"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-below.new.json",
+      "bytes": 5316,
+      "sha256": "6d28286cc36276c3ec22e96055a48ec25635826168537de01d225ce88765ba3c"
+    },
+    {
+      "file": "newfoundland_full_day_color_7.25_long-sands-bench-below.old.rgba.gz",
+      "bytes": 124087,
+      "sha256": "02c846c35cb01d0c9974634e7b099b6791f2aa94fa17fa3ac2f654d610fa0c72"
+    },
+    {
+      "file": "taylor_lite_night_color_7.25_long-sands-bench-above.old.json",
+      "bytes": 3202,
+      "sha256": "796d3206e2fe3544042ff3847ac3b3d60173e08e30e548657a87103d76a425ae"
+    },
+    {
+      "file": "classic_lite_day_color_7.25_long-sands-bench-near-grazing.old.json",
+      "bytes": 3162,
+      "sha256": "f3bdde8a05128f21a91eed71f10c4f1fe38a461f90c1f657bf817837e48ee7d6"
+    },
+    {
+      "file": "classic_full_day_color_7.25_long-sands-bench-near-grazing.new.png",
+      "bytes": 112314,
+      "sha256": "c5c6abcdc0c9274872399106a6c5af289858e7b058983b7bb76218f43e8d4eee"
+    }
+  ]
+}

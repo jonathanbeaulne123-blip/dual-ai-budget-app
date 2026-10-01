@@ -1,0 +1,1 @@
+Ground5/5 and landing guard6/6 focused regressions passed with clean exit. Root hoisted constant end-plane arithmetic from the proposed patch before execution. This does not yet establish the final baked full/lite terminal neighborhood, complete summit walking, or visual acceptance.

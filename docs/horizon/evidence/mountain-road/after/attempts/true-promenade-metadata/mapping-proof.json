@@ -1,0 +1,133 @@
+{
+  "method": "Saved exported JSON arithmetic only; no source import, generation or walking replay.",
+  "sourceSha256": "e56f8f614e7b11b0b69ddcd734adabe9efacf73dadcae4a450af0f1175284b2a",
+  "crest": {
+    "id": "promenade:dam-crest",
+    "pointCount": 37,
+    "width": 3.6,
+    "start": [
+      1295.181843,
+      142,
+      525.941705
+    ],
+    "end": [
+      1336.818157,
+      142,
+      525.941705
+    ],
+    "planLength": 52.968943431278525,
+    "minY": 142,
+    "maxGrade": 0.0
+  },
+  "removedMetadataOnlyChord": {
+    "fromPoint": [
+      1337.86,
+      142,
+      526.54
+    ],
+    "toPoint": [
+      1355.031336,
+      144.735683,
+      509.033424
+    ],
+    "planLength": 24.522132518781348
+  },
+  "oldLandmarkEndpointDisplacements": [
+    1.2014132276922664,
+    1.2014132276922664
+  ],
+  "approaches": [
+    {
+      "id": "stair:dam-west-steps",
+      "pointCount": 23,
+      "width": 2.8,
+      "start": [
+        1270.861139,
+        121.380449,
+        530.153265
+      ],
+      "end": [
+        1295.181843,
+        142,
+        525.941705
+      ],
+      "planLength": 31.126430548608003,
+      "minY": 121.380449,
+      "maxGrade": 0.7289974595326169
+    },
+    {
+      "id": "path:dam:east~door:pavilion",
+      "pointCount": 13,
+      "width": 3.0,
+      "start": [
+        1336.818157,
+        142,
+        525.941705
+      ],
+      "end": [
+        1352,
+        144,
+        518
+      ],
+      "planLength": 17.133564579027816,
+      "minY": 123.468958,
+      "maxGrade": 3.9288812797549775
+    },
+    {
+      "id": "path:station:funicular:reservoir~dam:east",
+      "pointCount": 10,
+      "width": 3.0,
+      "start": [
+        1344.858303,
+        141.6,
+        536.525844
+      ],
+      "end": [
+        1336.818157,
+        142,
+        525.941705
+      ],
+      "planLength": 13.291649486525117,
+      "minY": 123.13029,
+      "maxGrade": 4.17950317625125
+    },
+    {
+      "id": "path:door:pavilion~district:reservoir",
+      "pointCount": 8,
+      "width": 3.0,
+      "start": [
+        1352,
+        144,
+        518
+      ],
+      "end": [
+        1362,
+        144,
+        520
+      ],
+      "planLength": 10.198039027185912,
+      "minY": 140.447931,
+      "maxGrade": 1.246708129141396
+    },
+    {
+      "id": "path:road:reservoir~district:reservoir",
+      "pointCount": 3,
+      "width": 3.0,
+      "start": [
+        1362.786554,
+        143.80382,
+        517.359519
+      ],
+      "end": [
+        1362,
+        144,
+        520
+      ],
+      "planLength": 2.7551419394067462,
+      "minY": 143.80382,
+      "maxGrade": 0.08231376100328514
+    }
+  ],
+  "nativePhysicalFilesChanged": [],
+  "controllerAcceptance": false
+}

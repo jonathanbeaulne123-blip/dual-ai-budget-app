@@ -1,0 +1,462 @@
+[
+  {
+    "p": [
+      1291.0616961611452,
+      55.410710511213495,
+      732.8975668732534
+    ],
+    "previousDelta": 0.00010506294817957951,
+    "newDelta": 0.24014361242765858,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 55.410710511213495,
+    "horizonTerrain": 54.92768888156261,
+    "actualBakeGround": 55.410710511213495,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 55.410710511213495,
+      "nx": 0.003378890704733629,
+      "ny": 0.9999435642852861,
+      "nz": 0.010072305696484525,
+      "material": "grass",
+      "slope": 0.6087187614557055
+    }
+  },
+  {
+    "p": [
+      1291.0484012127652,
+      55.64381738567546,
+      732.9125082368984
+    ],
+    "previousDelta": 0.00010609419430096523,
+    "newDelta": 0.2331068744619671,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 55.410604417019194,
+    "horizonTerrain": 54.92729662500894,
+    "actualBakeGround": 55.410604417019194,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 55.410604417019194,
+      "nx": 0.003376131276049033,
+      "ny": 0.999942901580593,
+      "nz": 0.010138802502841007,
+      "material": "grass",
+      "slope": 0.6122823492738555
+    }
+  },
+  {
+    "p": [
+      1291.0711863525007,
+      55.4105928710155,
+      732.9060113236519
+    ],
+    "previousDelta": 0.0001055990855007849,
+    "newDelta": 0.23993938796100878,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 55.4105928710155,
+    "horizonTerrain": 54.928045323167986,
+    "actualBakeGround": 55.4105928710155,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 55.4105928710155,
+      "nx": 0.0034209560506875884,
+      "ny": 0.9999426804100697,
+      "nz": 0.01014558790925097,
+      "material": "grass",
+      "slope": 0.6134670512096333
+    }
+  },
+  {
+    "p": [
+      1291.0578914041207,
+      55.640663698833926,
+      732.9209526872969
+    ],
+    "previousDelta": 0.00010662966968766341,
+    "newDelta": 0.23007082781842314,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 55.410486241345815,
+    "horizonTerrain": 54.927653066614326,
+    "actualBakeGround": 55.410486241345815,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 55.410486241345815,
+      "nx": 0.0034182211305398085,
+      "ny": 0.9999420130952703,
+      "nz": 0.01021206204843723,
+      "material": "grass",
+      "slope": 0.6170277446304899
+    }
+  },
+  {
+    "p": [
+      1291.080676543856,
+      55.41047421299712,
+      732.9144557740506
+    ],
+    "previousDelta": 0.00010613526629299486,
+    "newDelta": 0.23690435913782437,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 55.41047421299712,
+    "horizonTerrain": 54.92840176477336,
+    "actualBakeGround": 55.41047421299712,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 55.41047421299712,
+      "nx": 0.003462974977581522,
+      "ny": 0.9999417899484022,
+      "nz": 0.010218831591235013,
+      "material": "grass",
+      "slope": 0.6182138480559328
+    }
+  },
+  {
+    "p": [
+      1291.067381595476,
+      55.63744193674016,
+      732.9293971376956
+    ],
+    "previousDelta": 0.00010716518777087458,
+    "newDelta": 0.2269677237430372,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 55.41036704780935,
+    "horizonTerrain": 54.9280095082197,
+    "actualBakeGround": 55.41036704780935,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 55.41036704780935,
+      "nx": 0.0034602645711105497,
+      "ny": 0.9999411180276355,
+      "nz": 0.010285283017014318,
+      "material": "grass",
+      "slope": 0.621771677983597
+    }
+  },
+  {
+    "p": [
+      1291.0806765382963,
+      55.41047421301289,
+      732.9144557743922
+    ],
+    "previousDelta": 0.00010716527573606527,
+    "newDelta": 0.226967721297072,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 55.41047421301289,
+    "horizonTerrain": 54.92840176458571,
+    "actualBakeGround": 55.41047421301289,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 55.41047421301289,
+      "nx": 0.003462974964060291,
+      "ny": 0.9999417899485461,
+      "nz": 0.010218831581737229,
+      "material": "grass",
+      "slope": 0.6182138472918499
+    }
+  },
+  {
+    "p": [
+      1291.0939714797055,
+      55.64737857445139,
+      732.8995144045446
+    ],
+    "previousDelta": 0.00010613535346237768,
+    "newDelta": 0.2369043614384978,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 55.41058034836635,
+    "horizonTerrain": 54.92879402087755,
+    "actualBakeGround": 55.41058034836635,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 55.41058034836635,
+      "nx": 0.0034657043643021436,
+      "ny": 0.9999424583957829,
+      "nz": 0.010152280071844575,
+      "material": "grass",
+      "slope": 0.6146539763529226
+    }
+  },
+  {
+    "p": [
+      1291.071186338601,
+      55.41059287105439,
+      732.9060113245059
+    ],
+    "previousDelta": 0.00010662975695652221,
+    "newDelta": 0.23007082546306634,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 55.41059287105439,
+    "horizonTerrain": 54.92804532269882,
+    "actualBakeGround": 55.41059287105439,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 55.41059287105439,
+      "nx": 0.003420956016841901,
+      "ny": 0.9999426804104268,
+      "nz": 0.010145587885489782,
+      "material": "grass",
+      "slope": 0.6134670492998676
+    }
+  },
+  {
+    "p": [
+      1291.08448128001,
+      55.65053226129295,
+      732.8910699546583
+    ],
+    "previousDelta": 0.00010559917198804669,
+    "newDelta": 0.23993939023856115,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 55.41069847022638,
+    "horizonTerrain": 54.92843757899066,
+    "actualBakeGround": 55.41069847022638,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 55.41069847022638,
+      "nx": 0.0034237099179334003,
+      "ny": 0.9999433442410137,
+      "nz": 0.010079013766007025,
+      "material": "grass",
+      "slope": 0.6099043230284853
+    }
+  },
+  {
+    "p": [
+      1285.1309228876328,
+      54.904302359268215,
+      726.8793056016656
+    ],
+    "previousDelta": 0.009658696680830303,
+    "newDelta": 0.18166102933140849,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 54.904302359268215,
+    "horizonTerrain": 54.557812969886115,
+    "actualBakeGround": 54.904302359268215,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 54.904302359268215,
+      "nx": -0.5954132906486095,
+      "ny": 0.44707826127480627,
+      "nz": -0.6675357980022423,
+      "material": "grass",
+      "slope": 63.44361781995225
+    }
+  },
+  {
+    "p": [
+      1285.1577223680765,
+      54.9672902655398,
+      726.8975874029039
+    ],
+    "previousDelta": 0.009658696680830303,
+    "newDelta": 0.10991613207714579,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 54.9672902655398,
+    "horizonTerrain": 54.55809797915244,
+    "actualBakeGround": 54.9672902655398,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 54.9672902655398,
+      "nx": -0.59541329064862,
+      "ny": 0.44707826127481415,
+      "nz": -0.6675357980022276,
+      "material": "grass",
+      "slope": 63.44361781995175
+    }
+  },
+  {
+    "p": [
+      1285.218333960715,
+      55.05977819459056,
+      726.8663036811555
+    ],
+    "previousDelta": 0.009658696681135837,
+    "newDelta": 0.06813480950268058,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 55.00130208176901,
+    "horizonTerrain": 54.55888786947795,
+    "actualBakeGround": 55.00130208176901,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 55.00130208176901,
+      "nx": -0.59541329064862,
+      "ny": 0.44707826127481415,
+      "nz": -0.6675357980022276,
+      "material": "grass",
+      "slope": 63.44361781995175
+    }
+  },
+  {
+    "p": [
+      1285.232563585249,
+      54.9486247432568,
+      726.8183311221183
+    ],
+    "previousDelta": 0.006562494114227491,
+    "newDelta": 0.1220342995170256,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 54.9486247432568,
+    "horizonTerrain": 54.55915458363846,
+    "actualBakeGround": 54.9486247432568,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 54.9486247432568,
+      "nx": -0.5954132906490974,
+      "ny": 0.44707826127519246,
+      "nz": -0.6675357980015483,
+      "material": "grass",
+      "slope": 63.44361781992751
+    }
+  },
+  {
+    "p": [
+      1285.2145912091926,
+      54.88222865800711,
+      726.7898933142326
+    ],
+    "previousDelta": 0.006562494114220385,
+    "newDelta": 0.1991923756956453,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 54.88222865800711,
+    "horizonTerrain": 54.55899581166707,
+    "actualBakeGround": 54.88222865800711,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 54.88222865800711,
+      "nx": -0.5954132906491106,
+      "ny": 0.44707826127516265,
+      "nz": -0.6675357980015567,
+      "material": "grass",
+      "slope": 63.44361781992943
+    }
+  },
+  {
+    "p": [
+      1285.8426667654728,
+      54.67089375071819,
+      720.4688733289892
+    ],
+    "previousDelta": 0,
+    "newDelta": 0.07091675071819026,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 54.599977,
+    "horizonTerrain": 54.58655283388608,
+    "actualBakeGround": 54.599977,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 54.599977,
+      "nx": 0,
+      "ny": 1,
+      "nz": 0,
+      "material": "grass",
+      "slope": 0
+    }
+  },
+  {
+    "p": [
+      1285.8429999674213,
+      54.6716750224434,
+      720.4770181849442
+    ],
+    "previousDelta": 0,
+    "newDelta": 0.07169802244339962,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 54.599977,
+    "horizonTerrain": 54.586523585685214,
+    "actualBakeGround": 54.599977,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 54.599977,
+      "nx": 0,
+      "ny": 1,
+      "nz": 0,
+      "material": "grass",
+      "slope": 0
+    }
+  },
+  {
+    "p": [
+      1285.8633715454189,
+      54.66530108470719,
+      720.4856921888901
+    ],
+    "previousDelta": 0,
+    "newDelta": 0.06532408470718565,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 54.599977,
+    "horizonTerrain": 54.58669260154682,
+    "actualBakeGround": 54.599977,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 54.599977,
+      "nx": 0,
+      "ny": 1,
+      "nz": 0,
+      "material": "grass",
+      "slope": 0
+    }
+  },
+  {
+    "p": [
+      1285.863620782803,
+      54.666013755623545,
+      720.4917845980239
+    ],
+    "previousDelta": 0,
+    "newDelta": 0.06603675562354283,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 54.599977,
+    "horizonTerrain": 54.58667072368833,
+    "actualBakeGround": 54.599977,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 54.599977,
+      "nx": 0,
+      "ny": 1,
+      "nz": 0,
+      "material": "grass",
+      "slope": 0
+    }
+  },
+  {
+    "p": [
+      1285.8844435923354,
+      54.599977,
+      720.4707633516753
+    ],
+    "previousDelta": 0,
+    "newDelta": 0.06158762453872413,
+    "owns": true,
+    "contains": true,
+    "rawRegionGround": 54.599977,
+    "horizonTerrain": 54.586963035516284,
+    "actualBakeGround": 54.599977,
+    "beforeSurface": {
+      "id": "terrain",
+      "y": 54.599977,
+      "nx": 0,
+      "ny": 1,
+      "nz": 0,
+      "material": "grass",
+      "slope": 0
+    }
+  }
+]

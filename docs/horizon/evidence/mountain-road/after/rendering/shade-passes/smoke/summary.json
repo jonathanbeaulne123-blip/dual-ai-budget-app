@@ -1,0 +1,2964 @@
+{
+  "status": "complete",
+  "root": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book",
+  "bundleInfo": {
+    "old": {
+      "path": "/tmp/mountain-real-draw-packed-depthfix/harness.js",
+      "bundleSha256": "d6d0a5ac6181dab8d0503f2d5910c042008da075072752fe439f359bf743b5f8",
+      "diagnosticAppendSha256": "4acdcc4e0a3c3415ee3ceaf68c7a427ebf426fcbccbb6b6ac19145f2e0e7c487",
+      "servedSha256": "92e9e1510267bbf7677d5a20cb256b6ddd330abd3f316b008514711298b592c6"
+    },
+    "new": {
+      "path": "/tmp/mountain-real-draw-partitioned-nl-lite/harness.js",
+      "bundleSha256": "859e40a58f3ae00f079bf612f309089316fd403537f8c77b47a0c7952c85360c",
+      "diagnosticAppendSha256": "4acdcc4e0a3c3415ee3ceaf68c7a427ebf426fcbccbb6b6ac19145f2e0e7c487",
+      "servedSha256": "c4832493fc228fc07756c9f339d749815a6101c7212c0425f05d814d9f790832"
+    }
+  },
+  "environmentProof": {
+    "runtimeSha256": "efafc2f3c9f8dd2670da34413f09a5c1f4b51ba20157f22ea8f28e8c1d4bf518",
+    "fogHookSourceSha256": "ee36ebbcaf52b8f5dcda49dfa7c82d8d54b10501147903173bcafa4fc8d92934",
+    "fogHookJsSha256": "94d66be26b99d19e825c0591bd48fe22ad4f710d994442a93613c543da9016eb",
+    "environmentJsSha256": "8c10bbf9107ff5a091c331cbc05838b901f192b6282b8afeaae164c770aab257",
+    "inputs": {
+      "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.core.js": "3718df126d69c125362a03340913204470d8c50238605150e57f808840fb7759",
+      "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js": "bbf5ed13fe4373f5bd38b14ea8e62e9f157327da5638edc6d3863e08b167c9c7",
+      "src/harbour/horizon/land/terrain/geometry.ts": "dce99968a6f68bc6ba4c0225edeb5e331f31c9f6c358579454b424b3375501b4",
+      "src/harbour/horizon/sky/gradient.ts": "bd9c6d4979619eaf1c68f7dbc9e39cb9b04145b5421186bf3c4189629f0d3609",
+      "src/harbour/horizon/sky/fog.ts": "1f38d2d9408a0995ecd5835264bd3b4fd4e72ab3ba296b8bf4857a6d00e96e00",
+      "src/harbour/horizon/sun/shadow.ts": "42bf5752d5f97ce094d6317fae21e6d5046b12f175eb508fefa2bbe11de1f31d"
+    }
+  },
+  "worldSha256": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+  "terrainSha256": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+  "sourceProof": {
+    "oldSummarySha256": "125543442b020840267a9ea8fa30c1bb1e54fe61813b52fd4583031df89497cc",
+    "newSummarySha256": "904dea95c94141a1a59871ec1119d7065fef5857755302cb47e49daeb5ab9390",
+    "entrySha256": "cecd8b7c92cbe96f6956d81f2c36bfe885a6221000636502c87cc41b69681375",
+    "rawChanges": [
+      {
+        "path": "src/harbour/horizon/runtime/corridorArt.ts",
+        "old": "5e1225cddc62697924305ab884271f5df992a696dba0806d566d50f3ea576453",
+        "new": "94ef6f8a065c557b5edab34e98186a10e029b45188402f47c17967ac30264574",
+        "adapterEquivalent": false
+      },
+      {
+        "path": "src/harbour/mountain/planting.ts",
+        "old": "bc18f11d18732cd9af180846590d38f2ff16951ee833d3f22d4a5803e0472dc8",
+        "new": "211fe984e4694d7f198837e25f99345c9b357a7213efbac609739f5c97c99687",
+        "adapterEquivalent": true
+      },
+      {
+        "path": "src/harbour/horizon/runtime/orderedContactShade.ts",
+        "old": null,
+        "new": "0d68301305f51fc6b6c09db78d6002d44c400693fecbf697827128998bf52748",
+        "adapterEquivalent": false
+      }
+    ],
+    "effectiveChanges": [
+      {
+        "path": "src/harbour/horizon/runtime/corridorArt.ts",
+        "old": "5e1225cddc62697924305ab884271f5df992a696dba0806d566d50f3ea576453",
+        "new": "94ef6f8a065c557b5edab34e98186a10e029b45188402f47c17967ac30264574",
+        "adapterEquivalent": false
+      },
+      {
+        "path": "src/harbour/horizon/runtime/orderedContactShade.ts",
+        "old": null,
+        "new": "0d68301305f51fc6b6c09db78d6002d44c400693fecbf697827128998bf52748",
+        "adapterEquivalent": false
+      }
+    ],
+    "adapterHashesIdentical": true,
+    "oldArtRecoveredSha256": "5e1225cddc62697924305ab884271f5df992a696dba0806d566d50f3ea576453",
+    "onlyReviewedShadeDelta": true
+  },
+  "sequential": true,
+  "season": "spring",
+  "cpuRepeats": 0,
+  "oldSmokeAssetsMatch": true,
+  "newSmokeAssetsMatch": true,
+  "themes": [
+    "newfoundland"
+  ],
+  "tiers": [
+    "lite"
+  ],
+  "times": [
+    "night"
+  ],
+  "modes": [
+    "color"
+  ],
+  "winds": [
+    7.25
+  ],
+  "poses": [
+    {
+      "id": "crown-near-plane-10406",
+      "eye": [
+        1364.16,
+        75.839,
+        313.571
+      ],
+      "target": [
+        1365.16,
+        75.839,
+        313.571
+      ],
+      "fov": 58,
+      "source": "Retained ordered-v1 NL/lite spring/night peak; actual diagnostic840tri,16 near-plane uncertainty, all other612 clipped/48back/164front. Fresh single-pose total10366 differs from sweep10406."
+    },
+    {
+      "id": "library-lamp-grazing",
+      "eye": [
+        1352.614,
+        91.77200317382812,
+        595.511
+      ],
+      "target": [
+        1350.614,
+        91.77200317382812,
+        595.511
+      ],
+      "fov": 58,
+      "source": "Camera exactly on Float32 lamp-shade plane. Observe uncertainty, do not require a guessed rasterizer facing."
+    },
+    {
+      "id": "library-lamp-near-approach",
+      "eye": [
+        1351.1000517029265,
+        91.79700317382813,
+        595.7757457025501
+      ],
+      "target": [
+        1350.614,
+        91.77200317382812,
+        595.511
+      ],
+      "fov": 58,
+      "source": "Approach fixed .08 camera near plane at one source outer-ellipse vertex; actual callback status is recorded."
+    },
+    {
+      "id": "library-lamp-near-cross",
+      "eye": [
+        1350.9750517029265,
+        91.79700317382813,
+        595.7757457025501
+      ],
+      "target": [
+        1350.614,
+        91.77200317382812,
+        595.511
+      ],
+      "fov": 58,
+      "source": "Step across the same source vertex with .08 near plane unchanged; retain any near-plane uncertainty in both passes."
+    },
+    {
+      "id": "library-lamp-near-inside",
+      "eye": [
+        1350.8800517029265,
+        91.79700317382813,
+        595.7757457025501
+      ],
+      "target": [
+        1350.614,
+        91.77200317382812,
+        595.511
+      ],
+      "fov": 58,
+      "source": "Continue within same shadow footprint; no camera/controller acceptance claim."
+    },
+    {
+      "id": "library-lamp-above-return",
+      "eye": [
+        1352.614,
+        93.77200317382812,
+        597.511
+      ],
+      "target": [
+        1350.614,
+        91.77200317382812,
+        595.511
+      ],
+      "fov": 58,
+      "source": "Return exactly to earlier above view in same page/renderer/camera/art meshes/materials; catches stale group/index state."
+    }
+  ],
+  "width": 640,
+  "height": 420,
+  "cases": [
+    {
+      "key": "newfoundland_lite_night_color_7.25_crown-near-plane-10406",
+      "theme": "newfoundland",
+      "tier": "lite",
+      "time": "night",
+      "mode": "color",
+      "wind": 7.25,
+      "season": "spring",
+      "pose": "crown-near-plane-10406",
+      "poseIndex": 0,
+      "sequential": true,
+      "color": {
+        "exactEqual": true,
+        "differingPixels": 0,
+        "totalPixels": 268800,
+        "differingChannels": 0,
+        "maxChannelDifference": 0,
+        "meanAbsoluteChannelDifference": 0
+      },
+      "shadow": null,
+      "old": {
+        "renderer": {
+          "frame": 1,
+          "calls": 10,
+          "triangles": 10366,
+          "points": 0,
+          "lines": 0
+        },
+        "lights": {
+          "k": 1,
+          "linesOn": 38,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 48,
+          "roadCards": 32,
+          "anchorCards": 16,
+          "cards": 48,
+          "pointLights": 2,
+          "pointLightsLit": 2,
+          "pointAssigned": [
+            "V01.lamp.31",
+            "V01.lamp.32"
+          ],
+          "poolTriangles": 60,
+          "conformedPools": 1
+        },
+        "plants": {
+          "items": 606,
+          "drawn": 22,
+          "drawCalls": 3,
+          "triangles": 1080,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 40,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 4,
+              "capacity": 175,
+              "triangles": 40
+            },
+            {
+              "key": "heath",
+              "count": 12,
+              "capacity": 28,
+              "triangles": 240
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 26,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 25,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "tree:pine",
+              "count": 10,
+              "capacity": 59,
+              "triangles": 800
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 41,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 58,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000,
+        "dateNow": 1800000000000,
+        "wind": 7.25,
+        "shadowReadback": null,
+        "cpu": [
+          {
+            "repeat": 0,
+            "renderSubmitMs": 317.19999998807907,
+            "renderer": {
+              "frame": 1,
+              "calls": 10,
+              "triangles": 10366,
+              "points": 0,
+              "lines": 0
+            }
+          }
+        ],
+        "shadeEvents": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "legacy-two-pass",
+            "counts": null,
+            "side": 2,
+            "forceSinglePass": false,
+            "group": null,
+            "indexCount": null,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "legacy-two-pass",
+            "counts": null,
+            "side": 2,
+            "forceSinglePass": false,
+            "group": null,
+            "indexCount": null,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          }
+        ],
+        "shadeDraws": [
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "7442b6e1-146d-4b0e-b20f-5ed3d8436e51",
+            "calls": 2,
+            "triangles": 1680,
+            "lines": 0,
+            "instances": null
+          }
+        ],
+        "shadeMaterials": {
+          "shade": {
+            "side": 2,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          }
+        },
+        "nonClearPixels": null
+      },
+      "new": {
+        "renderer": {
+          "frame": 1,
+          "calls": 10,
+          "triangles": 9542,
+          "points": 0,
+          "lines": 0
+        },
+        "lights": {
+          "k": 1,
+          "linesOn": 38,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 48,
+          "roadCards": 32,
+          "anchorCards": 16,
+          "cards": 48,
+          "pointLights": 2,
+          "pointLightsLit": 2,
+          "pointAssigned": [
+            "V01.lamp.31",
+            "V01.lamp.32"
+          ],
+          "poolTriangles": 60,
+          "conformedPools": 1
+        },
+        "plants": {
+          "items": 606,
+          "drawn": 22,
+          "drawCalls": 3,
+          "triangles": 1080,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 40,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 4,
+              "capacity": 175,
+              "triangles": 40
+            },
+            {
+              "key": "heath",
+              "count": 12,
+              "capacity": 28,
+              "triangles": 240
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 26,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 25,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "tree:pine",
+              "count": 10,
+              "capacity": 59,
+              "triangles": 800
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 41,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 58,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000,
+        "dateNow": 1800000000000,
+        "wind": 7.25,
+        "shadowReadback": null,
+        "cpu": [
+          {
+            "repeat": 0,
+            "renderSubmitMs": 395.2999999523163,
+            "renderer": {
+              "frame": 1,
+              "calls": 10,
+              "triangles": 9542,
+              "points": 0,
+              "lines": 0
+            }
+          }
+        ],
+        "shadeEvents": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 48,
+              "front": 164,
+              "clipped": 612,
+              "nearPlane": 16,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 1,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 2028,
+              "materialIndex": 0
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 48,
+              "front": 164,
+              "clipped": 612,
+              "nearPlane": 16,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 1,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 2520,
+              "materialIndex": 0
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 48,
+              "front": 164,
+              "clipped": 612,
+              "nearPlane": 16,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 0,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 540,
+              "materialIndex": 1
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 48,
+              "front": 164,
+              "clipped": 612,
+              "nearPlane": 16,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 0,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 2520,
+              "materialIndex": 1
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          }
+        ],
+        "shadeDraws": [
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "4401f951-0c13-4c84-8273-85cef376fdbd",
+            "calls": 1,
+            "triangles": 676,
+            "lines": 0,
+            "instances": null
+          },
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "4401f951-0c13-4c84-8273-85cef376fdbd",
+            "calls": 1,
+            "triangles": 180,
+            "lines": 0,
+            "instances": null
+          }
+        ],
+        "shadeMaterials": {
+          "shade": {
+            "side": 2,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          },
+          "shadeBack": {
+            "side": 1,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          },
+          "shadeFront": {
+            "side": 0,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          }
+        },
+        "nonClearPixels": null
+      }
+    },
+    {
+      "key": "newfoundland_lite_night_color_7.25_library-lamp-grazing",
+      "theme": "newfoundland",
+      "tier": "lite",
+      "time": "night",
+      "mode": "color",
+      "wind": 7.25,
+      "season": "spring",
+      "pose": "library-lamp-grazing",
+      "poseIndex": 1,
+      "sequential": true,
+      "color": {
+        "exactEqual": true,
+        "differingPixels": 0,
+        "totalPixels": 268800,
+        "differingChannels": 0,
+        "maxChannelDifference": 0,
+        "meanAbsoluteChannelDifference": 0
+      },
+      "shadow": null,
+      "old": {
+        "renderer": {
+          "frame": 2,
+          "calls": 8,
+          "triangles": 9686,
+          "points": 0,
+          "lines": 0
+        },
+        "lights": {
+          "k": 1,
+          "linesOn": 38,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 48,
+          "roadCards": 32,
+          "anchorCards": 16,
+          "cards": 48,
+          "pointLights": 2,
+          "pointLightsLit": 2,
+          "pointAssigned": [
+            "mountainV2.road.lamp.21",
+            "mountainV2.stop.library-garden.lamp"
+          ],
+          "poolTriangles": 300,
+          "conformedPools": 6
+        },
+        "plants": {
+          "items": 606,
+          "drawn": 2,
+          "drawCalls": 1,
+          "triangles": 160,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 40,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 0,
+              "capacity": 175,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 28,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 26,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 25,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "tree:pine",
+              "count": 2,
+              "capacity": 59,
+              "triangles": 160
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 41,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 58,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000,
+        "dateNow": 1800000000000,
+        "wind": 7.25,
+        "shadowReadback": null,
+        "cpu": [
+          {
+            "repeat": 0,
+            "renderSubmitMs": 10.900000035762787,
+            "renderer": {
+              "frame": 2,
+              "calls": 8,
+              "triangles": 9686,
+              "points": 0,
+              "lines": 0
+            }
+          }
+        ],
+        "shadeEvents": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "legacy-two-pass",
+            "counts": null,
+            "side": 2,
+            "forceSinglePass": false,
+            "group": null,
+            "indexCount": null,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "legacy-two-pass",
+            "counts": null,
+            "side": 2,
+            "forceSinglePass": false,
+            "group": null,
+            "indexCount": null,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          }
+        ],
+        "shadeDraws": [
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "7442b6e1-146d-4b0e-b20f-5ed3d8436e51",
+            "calls": 2,
+            "triangles": 1680,
+            "lines": 0,
+            "instances": null
+          }
+        ],
+        "shadeMaterials": {
+          "shade": {
+            "side": 2,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          }
+        },
+        "nonClearPixels": null
+      },
+      "new": {
+        "renderer": {
+          "frame": 2,
+          "calls": 8,
+          "triangles": 8870,
+          "points": 0,
+          "lines": 0
+        },
+        "lights": {
+          "k": 1,
+          "linesOn": 38,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 48,
+          "roadCards": 32,
+          "anchorCards": 16,
+          "cards": 48,
+          "pointLights": 2,
+          "pointLightsLit": 2,
+          "pointAssigned": [
+            "mountainV2.road.lamp.21",
+            "mountainV2.stop.library-garden.lamp"
+          ],
+          "poolTriangles": 300,
+          "conformedPools": 6
+        },
+        "plants": {
+          "items": 606,
+          "drawn": 2,
+          "drawCalls": 1,
+          "triangles": 160,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 40,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 0,
+              "capacity": 175,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 28,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 26,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 25,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "tree:pine",
+              "count": 2,
+              "capacity": 59,
+              "triangles": 160
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 41,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 58,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000,
+        "dateNow": 1800000000000,
+        "wind": 7.25,
+        "shadowReadback": null,
+        "cpu": [
+          {
+            "repeat": 0,
+            "renderSubmitMs": 11.300000011920929,
+            "renderer": {
+              "frame": 2,
+              "calls": 8,
+              "triangles": 8870,
+              "points": 0,
+              "lines": 0
+            }
+          }
+        ],
+        "shadeEvents": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 144,
+              "front": 336,
+              "clipped": 336,
+              "nearPlane": 0,
+              "grazing": 24,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 1,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 1512,
+              "materialIndex": 0
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 144,
+              "front": 336,
+              "clipped": 336,
+              "nearPlane": 0,
+              "grazing": 24,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 1,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 2520,
+              "materialIndex": 0
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 144,
+              "front": 336,
+              "clipped": 336,
+              "nearPlane": 0,
+              "grazing": 24,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 0,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 1080,
+              "materialIndex": 1
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 144,
+              "front": 336,
+              "clipped": 336,
+              "nearPlane": 0,
+              "grazing": 24,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 0,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 2520,
+              "materialIndex": 1
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          }
+        ],
+        "shadeDraws": [
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "4401f951-0c13-4c84-8273-85cef376fdbd",
+            "calls": 1,
+            "triangles": 504,
+            "lines": 0,
+            "instances": null
+          },
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "4401f951-0c13-4c84-8273-85cef376fdbd",
+            "calls": 1,
+            "triangles": 360,
+            "lines": 0,
+            "instances": null
+          }
+        ],
+        "shadeMaterials": {
+          "shade": {
+            "side": 2,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          },
+          "shadeBack": {
+            "side": 1,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          },
+          "shadeFront": {
+            "side": 0,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          }
+        },
+        "nonClearPixels": null
+      }
+    },
+    {
+      "key": "newfoundland_lite_night_color_7.25_library-lamp-near-approach",
+      "theme": "newfoundland",
+      "tier": "lite",
+      "time": "night",
+      "mode": "color",
+      "wind": 7.25,
+      "season": "spring",
+      "pose": "library-lamp-near-approach",
+      "poseIndex": 2,
+      "sequential": true,
+      "color": {
+        "exactEqual": true,
+        "differingPixels": 0,
+        "totalPixels": 268800,
+        "differingChannels": 0,
+        "maxChannelDifference": 0,
+        "meanAbsoluteChannelDifference": 0
+      },
+      "shadow": null,
+      "old": {
+        "renderer": {
+          "frame": 3,
+          "calls": 8,
+          "triangles": 9686,
+          "points": 0,
+          "lines": 0
+        },
+        "lights": {
+          "k": 1,
+          "linesOn": 38,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 48,
+          "roadCards": 32,
+          "anchorCards": 16,
+          "cards": 48,
+          "pointLights": 2,
+          "pointLightsLit": 2,
+          "pointAssigned": [
+            "mountainV2.road.lamp.21",
+            "mountainV2.road.lamp.23"
+          ],
+          "poolTriangles": 300,
+          "conformedPools": 6
+        },
+        "plants": {
+          "items": 606,
+          "drawn": 2,
+          "drawCalls": 1,
+          "triangles": 160,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 40,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 0,
+              "capacity": 175,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 28,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 26,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 25,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "tree:pine",
+              "count": 2,
+              "capacity": 59,
+              "triangles": 160
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 41,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 58,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000,
+        "dateNow": 1800000000000,
+        "wind": 7.25,
+        "shadowReadback": null,
+        "cpu": [
+          {
+            "repeat": 0,
+            "renderSubmitMs": 7.300000011920929,
+            "renderer": {
+              "frame": 3,
+              "calls": 8,
+              "triangles": 9686,
+              "points": 0,
+              "lines": 0
+            }
+          }
+        ],
+        "shadeEvents": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "legacy-two-pass",
+            "counts": null,
+            "side": 2,
+            "forceSinglePass": false,
+            "group": null,
+            "indexCount": null,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "legacy-two-pass",
+            "counts": null,
+            "side": 2,
+            "forceSinglePass": false,
+            "group": null,
+            "indexCount": null,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          }
+        ],
+        "shadeDraws": [
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "7442b6e1-146d-4b0e-b20f-5ed3d8436e51",
+            "calls": 2,
+            "triangles": 1680,
+            "lines": 0,
+            "instances": null
+          }
+        ],
+        "shadeMaterials": {
+          "shade": {
+            "side": 2,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          }
+        },
+        "nonClearPixels": null
+      },
+      "new": {
+        "renderer": {
+          "frame": 3,
+          "calls": 8,
+          "triangles": 8846,
+          "points": 0,
+          "lines": 0
+        },
+        "lights": {
+          "k": 1,
+          "linesOn": 38,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 48,
+          "roadCards": 32,
+          "anchorCards": 16,
+          "cards": 48,
+          "pointLights": 2,
+          "pointLightsLit": 2,
+          "pointAssigned": [
+            "mountainV2.road.lamp.21",
+            "mountainV2.road.lamp.23"
+          ],
+          "poolTriangles": 300,
+          "conformedPools": 6
+        },
+        "plants": {
+          "items": 606,
+          "drawn": 2,
+          "drawCalls": 1,
+          "triangles": 160,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 40,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 0,
+              "capacity": 175,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 28,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 26,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 25,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "tree:pine",
+              "count": 2,
+              "capacity": 59,
+              "triangles": 160
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 41,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 58,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000,
+        "dateNow": 1800000000000,
+        "wind": 7.25,
+        "shadowReadback": null,
+        "cpu": [
+          {
+            "repeat": 0,
+            "renderSubmitMs": 5.199999988079071,
+            "renderer": {
+              "frame": 3,
+              "calls": 8,
+              "triangles": 8846,
+              "points": 0,
+              "lines": 0
+            }
+          }
+        ],
+        "shadeEvents": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "partitioned",
+            "counts": {
+              "source": 840,
+              "back": 72,
+              "front": 480,
+              "clipped": 288,
+              "nearPlane": 0,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 1,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 1080,
+              "materialIndex": 0
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "partitioned",
+            "counts": {
+              "source": 840,
+              "back": 72,
+              "front": 480,
+              "clipped": 288,
+              "nearPlane": 0,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 1,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 2520,
+              "materialIndex": 0
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "partitioned",
+            "counts": {
+              "source": 840,
+              "back": 72,
+              "front": 480,
+              "clipped": 288,
+              "nearPlane": 0,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 0,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 1440,
+              "materialIndex": 1
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "partitioned",
+            "counts": {
+              "source": 840,
+              "back": 72,
+              "front": 480,
+              "clipped": 288,
+              "nearPlane": 0,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 0,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 2520,
+              "materialIndex": 1
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          }
+        ],
+        "shadeDraws": [
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "4401f951-0c13-4c84-8273-85cef376fdbd",
+            "calls": 1,
+            "triangles": 360,
+            "lines": 0,
+            "instances": null
+          },
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "4401f951-0c13-4c84-8273-85cef376fdbd",
+            "calls": 1,
+            "triangles": 480,
+            "lines": 0,
+            "instances": null
+          }
+        ],
+        "shadeMaterials": {
+          "shade": {
+            "side": 2,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          },
+          "shadeBack": {
+            "side": 1,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          },
+          "shadeFront": {
+            "side": 0,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          }
+        },
+        "nonClearPixels": null
+      }
+    },
+    {
+      "key": "newfoundland_lite_night_color_7.25_library-lamp-near-cross",
+      "theme": "newfoundland",
+      "tier": "lite",
+      "time": "night",
+      "mode": "color",
+      "wind": 7.25,
+      "season": "spring",
+      "pose": "library-lamp-near-cross",
+      "poseIndex": 3,
+      "sequential": true,
+      "color": {
+        "exactEqual": true,
+        "differingPixels": 0,
+        "totalPixels": 268800,
+        "differingChannels": 0,
+        "maxChannelDifference": 0,
+        "meanAbsoluteChannelDifference": 0
+      },
+      "shadow": null,
+      "old": {
+        "renderer": {
+          "frame": 4,
+          "calls": 8,
+          "triangles": 9686,
+          "points": 0,
+          "lines": 0
+        },
+        "lights": {
+          "k": 1,
+          "linesOn": 38,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 48,
+          "roadCards": 32,
+          "anchorCards": 16,
+          "cards": 48,
+          "pointLights": 2,
+          "pointLightsLit": 2,
+          "pointAssigned": [
+            "mountainV2.road.lamp.21",
+            "mountainV2.road.lamp.23"
+          ],
+          "poolTriangles": 300,
+          "conformedPools": 6
+        },
+        "plants": {
+          "items": 606,
+          "drawn": 2,
+          "drawCalls": 1,
+          "triangles": 160,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 40,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 0,
+              "capacity": 175,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 28,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 26,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 25,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "tree:pine",
+              "count": 2,
+              "capacity": 59,
+              "triangles": 160
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 41,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 58,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000,
+        "dateNow": 1800000000000,
+        "wind": 7.25,
+        "shadowReadback": null,
+        "cpu": [
+          {
+            "repeat": 0,
+            "renderSubmitMs": 4.800000011920929,
+            "renderer": {
+              "frame": 4,
+              "calls": 8,
+              "triangles": 9686,
+              "points": 0,
+              "lines": 0
+            }
+          }
+        ],
+        "shadeEvents": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "legacy-two-pass",
+            "counts": null,
+            "side": 2,
+            "forceSinglePass": false,
+            "group": null,
+            "indexCount": null,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "legacy-two-pass",
+            "counts": null,
+            "side": 2,
+            "forceSinglePass": false,
+            "group": null,
+            "indexCount": null,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          }
+        ],
+        "shadeDraws": [
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "7442b6e1-146d-4b0e-b20f-5ed3d8436e51",
+            "calls": 2,
+            "triangles": 1680,
+            "lines": 0,
+            "instances": null
+          }
+        ],
+        "shadeMaterials": {
+          "shade": {
+            "side": 2,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          }
+        },
+        "nonClearPixels": null
+      },
+      "new": {
+        "renderer": {
+          "frame": 4,
+          "calls": 8,
+          "triangles": 8849,
+          "points": 0,
+          "lines": 0
+        },
+        "lights": {
+          "k": 1,
+          "linesOn": 38,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 48,
+          "roadCards": 32,
+          "anchorCards": 16,
+          "cards": 48,
+          "pointLights": 2,
+          "pointLightsLit": 2,
+          "pointAssigned": [
+            "mountainV2.road.lamp.21",
+            "mountainV2.road.lamp.23"
+          ],
+          "poolTriangles": 300,
+          "conformedPools": 6
+        },
+        "plants": {
+          "items": 606,
+          "drawn": 2,
+          "drawCalls": 1,
+          "triangles": 160,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 40,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 0,
+              "capacity": 175,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 28,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 26,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 25,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "tree:pine",
+              "count": 2,
+              "capacity": 59,
+              "triangles": 160
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 41,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 58,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000,
+        "dateNow": 1800000000000,
+        "wind": 7.25,
+        "shadowReadback": null,
+        "cpu": [
+          {
+            "repeat": 0,
+            "renderSubmitMs": 4.600000023841858,
+            "renderer": {
+              "frame": 4,
+              "calls": 8,
+              "triangles": 8849,
+              "points": 0,
+              "lines": 0
+            }
+          }
+        ],
+        "shadeEvents": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 69,
+              "front": 480,
+              "clipped": 288,
+              "nearPlane": 3,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 1,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 1080,
+              "materialIndex": 0
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 69,
+              "front": 480,
+              "clipped": 288,
+              "nearPlane": 3,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 1,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 2520,
+              "materialIndex": 0
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 69,
+              "front": 480,
+              "clipped": 288,
+              "nearPlane": 3,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 0,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 1449,
+              "materialIndex": 1
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 69,
+              "front": 480,
+              "clipped": 288,
+              "nearPlane": 3,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 0,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 2520,
+              "materialIndex": 1
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          }
+        ],
+        "shadeDraws": [
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "4401f951-0c13-4c84-8273-85cef376fdbd",
+            "calls": 1,
+            "triangles": 360,
+            "lines": 0,
+            "instances": null
+          },
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "4401f951-0c13-4c84-8273-85cef376fdbd",
+            "calls": 1,
+            "triangles": 483,
+            "lines": 0,
+            "instances": null
+          }
+        ],
+        "shadeMaterials": {
+          "shade": {
+            "side": 2,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          },
+          "shadeBack": {
+            "side": 1,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          },
+          "shadeFront": {
+            "side": 0,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          }
+        },
+        "nonClearPixels": null
+      }
+    },
+    {
+      "key": "newfoundland_lite_night_color_7.25_library-lamp-near-inside",
+      "theme": "newfoundland",
+      "tier": "lite",
+      "time": "night",
+      "mode": "color",
+      "wind": 7.25,
+      "season": "spring",
+      "pose": "library-lamp-near-inside",
+      "poseIndex": 4,
+      "sequential": true,
+      "color": {
+        "exactEqual": true,
+        "differingPixels": 0,
+        "totalPixels": 268800,
+        "differingChannels": 0,
+        "maxChannelDifference": 0,
+        "meanAbsoluteChannelDifference": 0
+      },
+      "shadow": null,
+      "old": {
+        "renderer": {
+          "frame": 5,
+          "calls": 8,
+          "triangles": 9686,
+          "points": 0,
+          "lines": 0
+        },
+        "lights": {
+          "k": 1,
+          "linesOn": 38,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 48,
+          "roadCards": 32,
+          "anchorCards": 16,
+          "cards": 48,
+          "pointLights": 2,
+          "pointLightsLit": 2,
+          "pointAssigned": [
+            "mountainV2.road.lamp.21",
+            "mountainV2.road.lamp.23"
+          ],
+          "poolTriangles": 300,
+          "conformedPools": 6
+        },
+        "plants": {
+          "items": 606,
+          "drawn": 2,
+          "drawCalls": 1,
+          "triangles": 160,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 40,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 0,
+              "capacity": 175,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 28,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 26,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 25,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "tree:pine",
+              "count": 2,
+              "capacity": 59,
+              "triangles": 160
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 41,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 58,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000,
+        "dateNow": 1800000000000,
+        "wind": 7.25,
+        "shadowReadback": null,
+        "cpu": [
+          {
+            "repeat": 0,
+            "renderSubmitMs": 4.899999976158142,
+            "renderer": {
+              "frame": 5,
+              "calls": 8,
+              "triangles": 9686,
+              "points": 0,
+              "lines": 0
+            }
+          }
+        ],
+        "shadeEvents": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "legacy-two-pass",
+            "counts": null,
+            "side": 2,
+            "forceSinglePass": false,
+            "group": null,
+            "indexCount": null,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "legacy-two-pass",
+            "counts": null,
+            "side": 2,
+            "forceSinglePass": false,
+            "group": null,
+            "indexCount": null,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          }
+        ],
+        "shadeDraws": [
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "7442b6e1-146d-4b0e-b20f-5ed3d8436e51",
+            "calls": 2,
+            "triangles": 1680,
+            "lines": 0,
+            "instances": null
+          }
+        ],
+        "shadeMaterials": {
+          "shade": {
+            "side": 2,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          }
+        },
+        "nonClearPixels": null
+      },
+      "new": {
+        "renderer": {
+          "frame": 5,
+          "calls": 8,
+          "triangles": 8851,
+          "points": 0,
+          "lines": 0
+        },
+        "lights": {
+          "k": 1,
+          "linesOn": 38,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 48,
+          "roadCards": 32,
+          "anchorCards": 16,
+          "cards": 48,
+          "pointLights": 2,
+          "pointLightsLit": 2,
+          "pointAssigned": [
+            "mountainV2.road.lamp.21",
+            "mountainV2.road.lamp.23"
+          ],
+          "poolTriangles": 300,
+          "conformedPools": 6
+        },
+        "plants": {
+          "items": 606,
+          "drawn": 2,
+          "drawCalls": 1,
+          "triangles": 160,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 40,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 0,
+              "capacity": 175,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 28,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 26,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 25,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "tree:pine",
+              "count": 2,
+              "capacity": 59,
+              "triangles": 160
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 41,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 58,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000,
+        "dateNow": 1800000000000,
+        "wind": 7.25,
+        "shadowReadback": null,
+        "cpu": [
+          {
+            "repeat": 0,
+            "renderSubmitMs": 5.099999964237213,
+            "renderer": {
+              "frame": 5,
+              "calls": 8,
+              "triangles": 8851,
+              "points": 0,
+              "lines": 0
+            }
+          }
+        ],
+        "shadeEvents": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 67,
+              "front": 480,
+              "clipped": 288,
+              "nearPlane": 5,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 1,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 1080,
+              "materialIndex": 0
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 67,
+              "front": 480,
+              "clipped": 288,
+              "nearPlane": 5,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 1,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 2520,
+              "materialIndex": 0
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 67,
+              "front": 480,
+              "clipped": 288,
+              "nearPlane": 5,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 0,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 1455,
+              "materialIndex": 1
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 67,
+              "front": 480,
+              "clipped": 288,
+              "nearPlane": 5,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 0,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 2520,
+              "materialIndex": 1
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          }
+        ],
+        "shadeDraws": [
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "4401f951-0c13-4c84-8273-85cef376fdbd",
+            "calls": 1,
+            "triangles": 360,
+            "lines": 0,
+            "instances": null
+          },
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "4401f951-0c13-4c84-8273-85cef376fdbd",
+            "calls": 1,
+            "triangles": 485,
+            "lines": 0,
+            "instances": null
+          }
+        ],
+        "shadeMaterials": {
+          "shade": {
+            "side": 2,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          },
+          "shadeBack": {
+            "side": 1,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          },
+          "shadeFront": {
+            "side": 0,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          }
+        },
+        "nonClearPixels": null
+      }
+    },
+    {
+      "key": "newfoundland_lite_night_color_7.25_library-lamp-above-return",
+      "theme": "newfoundland",
+      "tier": "lite",
+      "time": "night",
+      "mode": "color",
+      "wind": 7.25,
+      "season": "spring",
+      "pose": "library-lamp-above-return",
+      "poseIndex": 5,
+      "sequential": true,
+      "color": {
+        "exactEqual": true,
+        "differingPixels": 0,
+        "totalPixels": 268800,
+        "differingChannels": 0,
+        "maxChannelDifference": 0,
+        "meanAbsoluteChannelDifference": 0
+      },
+      "shadow": null,
+      "old": {
+        "renderer": {
+          "frame": 6,
+          "calls": 8,
+          "triangles": 9686,
+          "points": 0,
+          "lines": 0
+        },
+        "lights": {
+          "k": 1,
+          "linesOn": 38,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 48,
+          "roadCards": 32,
+          "anchorCards": 16,
+          "cards": 48,
+          "pointLights": 2,
+          "pointLightsLit": 2,
+          "pointAssigned": [
+            "mountainV2.road.lamp.21",
+            "mountainV2.road.lamp.23"
+          ],
+          "poolTriangles": 300,
+          "conformedPools": 6
+        },
+        "plants": {
+          "items": 606,
+          "drawn": 2,
+          "drawCalls": 1,
+          "triangles": 160,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 40,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 0,
+              "capacity": 175,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 28,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 26,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 25,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "tree:pine",
+              "count": 2,
+              "capacity": 59,
+              "triangles": 160
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 41,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 58,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000,
+        "dateNow": 1800000000000,
+        "wind": 7.25,
+        "shadowReadback": null,
+        "cpu": [
+          {
+            "repeat": 0,
+            "renderSubmitMs": 4.399999976158142,
+            "renderer": {
+              "frame": 6,
+              "calls": 8,
+              "triangles": 9686,
+              "points": 0,
+              "lines": 0
+            }
+          }
+        ],
+        "shadeEvents": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "legacy-two-pass",
+            "counts": null,
+            "side": 2,
+            "forceSinglePass": false,
+            "group": null,
+            "indexCount": null,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "legacy-two-pass",
+            "counts": null,
+            "side": 2,
+            "forceSinglePass": false,
+            "group": null,
+            "indexCount": null,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          }
+        ],
+        "shadeDraws": [
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "7442b6e1-146d-4b0e-b20f-5ed3d8436e51",
+            "calls": 2,
+            "triangles": 1680,
+            "lines": 0,
+            "instances": null
+          }
+        ],
+        "shadeMaterials": {
+          "shade": {
+            "side": 2,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          }
+        },
+        "nonClearPixels": null
+      },
+      "new": {
+        "renderer": {
+          "frame": 6,
+          "calls": 8,
+          "triangles": 8854,
+          "points": 0,
+          "lines": 0
+        },
+        "lights": {
+          "k": 1,
+          "linesOn": 38,
+          "lines": 38,
+          "roadLamps": 340,
+          "anchors": 107,
+          "cap": 48,
+          "roadCards": 32,
+          "anchorCards": 16,
+          "cards": 48,
+          "pointLights": 2,
+          "pointLightsLit": 2,
+          "pointAssigned": [
+            "mountainV2.road.lamp.21",
+            "mountainV2.road.lamp.23"
+          ],
+          "poolTriangles": 300,
+          "conformedPools": 6
+        },
+        "plants": {
+          "items": 606,
+          "drawn": 2,
+          "drawCalls": 1,
+          "triangles": 160,
+          "layers": [
+            {
+              "key": "bed",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bloom:0",
+              "count": 0,
+              "capacity": 161,
+              "triangles": 0
+            },
+            {
+              "key": "bush",
+              "count": 0,
+              "capacity": 40,
+              "triangles": 0
+            },
+            {
+              "key": "contact",
+              "count": 0,
+              "capacity": 175,
+              "triangles": 0
+            },
+            {
+              "key": "heath",
+              "count": 0,
+              "capacity": 28,
+              "triangles": 0
+            },
+            {
+              "key": "hedge",
+              "count": 0,
+              "capacity": 26,
+              "triangles": 0
+            },
+            {
+              "key": "palm",
+              "count": 0,
+              "capacity": 25,
+              "triangles": 0
+            },
+            {
+              "key": "tree:birch",
+              "count": 0,
+              "capacity": 54,
+              "triangles": 0
+            },
+            {
+              "key": "tree:pine",
+              "count": 2,
+              "capacity": 59,
+              "triangles": 160
+            },
+            {
+              "key": "tree:round",
+              "count": 0,
+              "capacity": 41,
+              "triangles": 0
+            },
+            {
+              "key": "tuft",
+              "count": 0,
+              "capacity": 58,
+              "triangles": 0
+            }
+          ]
+        },
+        "clock": 100000,
+        "dateNow": 1800000000000,
+        "wind": 7.25,
+        "shadowReadback": null,
+        "cpu": [
+          {
+            "repeat": 0,
+            "renderSubmitMs": 5.199999988079071,
+            "renderer": {
+              "frame": 6,
+              "calls": 8,
+              "triangles": 8854,
+              "points": 0,
+              "lines": 0
+            }
+          }
+        ],
+        "shadeEvents": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 87,
+              "front": 456,
+              "clipped": 289,
+              "nearPlane": 8,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 1,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 1152,
+              "materialIndex": 0
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 87,
+              "front": 456,
+              "clipped": 289,
+              "nearPlane": 8,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 1,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 2520,
+              "materialIndex": 0
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "before",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 87,
+              "front": 456,
+              "clipped": 289,
+              "nearPlane": 8,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 0,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 1392,
+              "materialIndex": 1
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "phase": "after",
+            "pass": "partial",
+            "counts": {
+              "source": 840,
+              "back": 87,
+              "front": 456,
+              "clipped": 289,
+              "nearPlane": 8,
+              "grazing": 0,
+              "degenerate": 0,
+              "unsupported": false
+            },
+            "side": 0,
+            "forceSinglePass": false,
+            "group": {
+              "start": 0,
+              "count": 2520,
+              "materialIndex": 1
+            },
+            "indexCount": 2520,
+            "drawRange": {
+              "start": 0,
+              "count": null
+            }
+          }
+        ],
+        "shadeDraws": [
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "4401f951-0c13-4c84-8273-85cef376fdbd",
+            "calls": 1,
+            "triangles": 384,
+            "lines": 0,
+            "instances": null
+          },
+          {
+            "category": "furniture",
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "uuid": "4401f951-0c13-4c84-8273-85cef376fdbd",
+            "calls": 1,
+            "triangles": 464,
+            "lines": 0,
+            "instances": null
+          }
+        ],
+        "shadeMaterials": {
+          "shade": {
+            "side": 2,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          },
+          "shadeBack": {
+            "side": 1,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          },
+          "shadeFront": {
+            "side": 0,
+            "forceSinglePass": false,
+            "transparent": true,
+            "depthWrite": false
+          }
+        },
+        "nonClearPixels": null
+      }
+    }
+  ],
+  "errors": [],
+  "limits": [
+    "No acceptance tolerance: every differing pixel is recorded; exact equality is reported separately.",
+    "Both frozen attempts and served buffers have identical world/terrain hashes; exact integration/source preflight isolates only the reviewed shade delta. A raw native planting source change is recorded separately when its actual narrow adapter bytes are identical.",
+    "Isolated corridor art/plants and real shared lights, exact extracted live fog hook plus horizonFog and shadowFrame helpers. Sky/hemi/sun energy remains the same probe ambience, not a complete live world.",
+    "Color mode retains original audit sun/hemisphere settings. Shadow mode uses exact runtime walk shadowFrame, full2048/lite1024 resolution, requested PCFSoftShadowMap (effective renderer type recorded), near1, normalBias.05 and bias-.00006; point lights remain shadowless.",
+    "Shadow readback is the RGBA color attachment, with material-dependent Basic/RGBA depth encoding. The actual depthTexture consumed by the shadow shader is not read or compared; no depth precision or world-distance equality is claimed.",
+    "Shadow silhouette comparison has no extra receiver plane and does not replace final in-world theme/device captures.",
+    "With --sequential the same renderer, camera, art meshes/materials and lights survive every ordered pose within a theme/tier/time/mode/wind case. Planting is deliberately recreated per pose by existing api.begin for deterministic born=-1e9, so this is not plant-streaming acceptance. Browser visual performance/Date clocks and CARD_CLOCK are fixed.",
+    "CPU render-submit duration uses a saved original bound performance.now captured before the visual clock override. It is real CPU/WebGL submission wall time, not GPU timer/query time. First render may include shader compilation; cpu-repeats retains separate warmed submissions without adding/omitting render objects."
+  ],
+  "allExact": true
+}

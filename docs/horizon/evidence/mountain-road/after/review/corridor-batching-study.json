@@ -1,0 +1,179 @@
+{
+  "scope": "Read-only source and existing budget JSON; no world imports, renderer, geometry/controller tests, bake, or checkout writes.",
+  "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+  "budgetPath": "/tmp/mountain-light-gap/candidate-budgets.json",
+  "budgetSha256": "7e8e7f866b50ac5be99eb7d642a697db80911ad1edcc1029ce0bffcbe44efa43",
+  "budgetWorldSha256": "63c4d1e47b6205c66667812377f98a677439ba94ecb389fdf479fbebcf6af91d",
+  "threeVersion": "0.185.1",
+  "sources": {
+    "docs/horizon/ROAD.md": "104d097f410484d6dddba06a90b6fb52805b8bb7e144b4c3f2da70fb754e1d15",
+    "src/harbour/horizon/runtime/corridorArt.ts": "a0eacb3812c0c3103ee2cfba1122b011935504a8441c117938e61be32abd500a",
+    "src/harbour/horizon/runtime/corridorPlanting.ts": "b995bcb320e9ae6ed235af2077575155997443d3089be6cc8631a63cce084fd5",
+    "src/harbour/horizon/kit/plants/materials.ts": "87f3397db4528e47cab3e8e80165bc533d4314241e8eb460f87ce047977163cd",
+    "src/harbour/mountain/art/plantArt.ts": "7670bfb5955cdb3e97888af8603a63c2c004d1a9b3ca4604fd33d84bc15a9164",
+    "node_modules/three/src/objects/BatchedMesh.js": "a7b4154d996fe13b73bfd986e09903779c902ad4dd86d8e667a83abd77aab329",
+    "node_modules/three/src/renderers/WebGLRenderer.js": "867948b57a6abb84d4cfd7619b38ea14fbb2c100c1b6f78d59de2383662ab7a0",
+    "node_modules/three/src/renderers/webgl/WebGLBufferRenderer.js": "ebab65ed80fa55e0afe39bf36c48228203569e6b6d07696f886347f1dcc263ad"
+  },
+  "draws": {
+    "classic.full": {
+      "hollow": {
+        "furniture": 5,
+        "plants": 6,
+        "beforeSharedNight": 11,
+        "withSharedNightCharged": 13
+      },
+      "lakeside": {
+        "furniture": 8,
+        "plants": 9,
+        "beforeSharedNight": 17,
+        "withSharedNightCharged": 19
+      },
+      "prow": {
+        "furniture": 5,
+        "plants": 6,
+        "beforeSharedNight": 11,
+        "withSharedNightCharged": 13
+      },
+      "crown": {
+        "furniture": 7,
+        "plants": 4,
+        "beforeSharedNight": 11,
+        "withSharedNightCharged": 13
+      }
+    },
+    "classic.lite": {
+      "hollow": {
+        "furniture": 5,
+        "plants": 4,
+        "beforeSharedNight": 9,
+        "withSharedNightCharged": 11
+      },
+      "lakeside": {
+        "furniture": 8,
+        "plants": 6,
+        "beforeSharedNight": 14,
+        "withSharedNightCharged": 16
+      },
+      "prow": {
+        "furniture": 5,
+        "plants": 4,
+        "beforeSharedNight": 9,
+        "withSharedNightCharged": 11
+      },
+      "crown": {
+        "furniture": 7,
+        "plants": 3,
+        "beforeSharedNight": 10,
+        "withSharedNightCharged": 12
+      }
+    },
+    "taylor.full": {
+      "hollow": {
+        "furniture": 5,
+        "plants": 6,
+        "beforeSharedNight": 11,
+        "withSharedNightCharged": 13
+      },
+      "lakeside": {
+        "furniture": 8,
+        "plants": 9,
+        "beforeSharedNight": 17,
+        "withSharedNightCharged": 19
+      },
+      "prow": {
+        "furniture": 5,
+        "plants": 6,
+        "beforeSharedNight": 11,
+        "withSharedNightCharged": 13
+      },
+      "crown": {
+        "furniture": 7,
+        "plants": 4,
+        "beforeSharedNight": 11,
+        "withSharedNightCharged": 13
+      }
+    },
+    "taylor.lite": {
+      "hollow": {
+        "furniture": 5,
+        "plants": 4,
+        "beforeSharedNight": 9,
+        "withSharedNightCharged": 11
+      },
+      "lakeside": {
+        "furniture": 8,
+        "plants": 6,
+        "beforeSharedNight": 14,
+        "withSharedNightCharged": 16
+      },
+      "prow": {
+        "furniture": 5,
+        "plants": 4,
+        "beforeSharedNight": 9,
+        "withSharedNightCharged": 11
+      },
+      "crown": {
+        "furniture": 7,
+        "plants": 3,
+        "beforeSharedNight": 10,
+        "withSharedNightCharged": 12
+      }
+    },
+    "newfoundland.full": {
+      "hollow": {
+        "furniture": 5,
+        "plants": 6,
+        "beforeSharedNight": 11,
+        "withSharedNightCharged": 13
+      },
+      "lakeside": {
+        "furniture": 8,
+        "plants": 9,
+        "beforeSharedNight": 17,
+        "withSharedNightCharged": 19
+      },
+      "prow": {
+        "furniture": 5,
+        "plants": 6,
+        "beforeSharedNight": 11,
+        "withSharedNightCharged": 13
+      },
+      "crown": {
+        "furniture": 7,
+        "plants": 4,
+        "beforeSharedNight": 11,
+        "withSharedNightCharged": 13
+      }
+    },
+    "newfoundland.lite": {
+      "hollow": {
+        "furniture": 4,
+        "plants": 4,
+        "beforeSharedNight": 8,
+        "withSharedNightCharged": 10
+      },
+      "lakeside": {
+        "furniture": 8,
+        "plants": 6,
+        "beforeSharedNight": 14,
+        "withSharedNightCharged": 16
+      },
+      "prow": {
+        "furniture": 4,
+        "plants": 4,
+        "beforeSharedNight": 8,
+        "withSharedNightCharged": 10
+      },
+      "crown": {
+        "furniture": 7,
+        "plants": 3,
+        "beforeSharedNight": 10,
+        "withSharedNightCharged": 12
+      }
+    }
+  },
+  "maximumTheoreticalLampSaving": 4,
+  "lakesideFullLowerBoundEvenAtMaximumLampSaving": 15,
+  "verdict": "No small portable optimization proven to meet the current combined draw limit. Conditional lamp/post prototype batching is a bounded option only; planting requires a larger shader/instance-data adaptation."
+}

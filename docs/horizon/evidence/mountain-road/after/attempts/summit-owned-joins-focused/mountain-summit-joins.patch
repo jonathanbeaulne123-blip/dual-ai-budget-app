@@ -1,0 +1,116 @@
+--- a/src/harbour/horizon/regions/mountainV2/drawnRoadGround.ts
++++ b/src/harbour/horizon/regions/mountainV2/drawnRoadGround.ts
+@@ -11,6 +11,16 @@
+  });
+  return(x:number,z:number):number|null=>{
+   const top=floor(x,z);if(top)return top.y-clearance;
++  // The final swept cross-section is an open at-grade junction. Earlier
++  // segments' clamped radial batters must not cut backwards across its receiving
++  // footway. The true face above always wins; this only restores existing ground
++  // beyond the end plane, within the terminal shoulder neighbourhood.
++  const endRow=road.landingRows!.at(-1)!,previous=road.points.at(-2)!,end=road.points.at(-1)!;
++  const left=endRow[0]!,right=endRow.at(-1)!,ex=right[0]-left[0],ez=right[2]-left[2],length=Math.hypot(ex,ez);
++  const side=(px:number,pz:number)=>ex*(pz-left[2])-ez*(px-left[0]);
++  const insideSign=Math.sign(side(previous[0],previous[2]));
++  const terminalWidth=road.widths?.at(-1)??road.halfWidth;
++  if(length>0&&insideSign&&side(x,z)*insideSign< -1e-8&&Math.hypot(x-end[0],z-end[2])<=terminalWidth+batterWidth)return null;
+   // The shoulder cut returns to the existing ground outside this narrow 2:1 batter.
+   // Do not fill missing road triangles or extend a floor beyond the drawn footprint.
+   let nearest:{distance:number;over:number;x:number;z:number}|null=null;
+--- a/src/harbour/horizon/land/mountainV2/joins.ts
++++ b/src/harbour/horizon/land/mountainV2/joins.ts
+@@ -182,13 +182,33 @@
+   // A new raised landing has its own visible guard, joined to the existing
+   // flight rail. Its narrow posts stay at the edge, outside the walking width.
+   const rail=solid('crownLaunch.stair.landingRails','handrail','metal','rail',[bed.id],'crown');
++  const receivingWalk=cuts.beds.find(b=>b.id==='walk summit');
++  // The existing full-width walk is the landing entrance, not a guarded edge.
++  // The post half-diagonal plus 1cm clears the full-width walk at any heading;
++  // every retained segment keeps
++  // the same top rail and the same solid 0.25–0.95m body-contact band.
++  const gap=(p:XYZ)=>receivingWalk?nearestOnPath([p[0],p[2]],receivingWalk.points).distance-receivingWalk.width/2-Math.SQRT2*.06-.01:Infinity;
++  const mix=(a:XYZ,b:XYZ,t:number):XYZ=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
++  const openingEdge=(a:XYZ,b:XYZ):XYZ=>{
++    let lo=0,hi=1;const aInside=gap(a)<=0;
++    for(let i=0;i<40;i++){const mid=(lo+hi)/2;if((gap(mix(a,b,mid))<=0)===aInside)lo=mid;else hi=mid;}
++    return mix(a,b,(lo+hi)/2);
++  };
+   for(const side of [0,across]){
+     let lastPost=-Infinity;
+     for(let r=1;r<rows.length;r++){
+-      const a=rows[r-1]![side]!,b=rows[r]![side]!;slab(rail,a,b,.09,.09,0,1.05);slab(rail,a,b,.08,.7,0,.95);
++      let a=rows[r-1]![side]!,b=rows[r]![side]!;const ga=gap(a),gb=gap(b);
++      if(ga<=0&&gb<=0){lastPost=-Infinity;continue;}
++      // This authored junction crosses each short rail segment at most once.
++      // Fail closed after a future route/landing change rather than silently
++      // spanning a second opening or dropping a guard farther up the flight.
++      if(ga>0&&gb>0&&gap(mix(a,b,.5))<=0)throw new Error('Crown landing walk opening needs a new rail subdivision');
++      const startOpening=ga<=0,endOpening=gb<=0;
++      if(startOpening)a=openingEdge(a,b);else if(endOpening)b=openingEdge(a,b);
++      slab(rail,a,b,.09,.09,0,1.05);slab(rail,a,b,.08,.7,0,.95);
+       const along=Math.hypot(a[0]-join[0],a[2]-join[2]);
+-      if(r===1||along-lastPost>=1.75){box(rail,[a[0],a[2]],a[1]+1.05,[.12,.12],a[1]-.1);lastPost=along;}
+-      if(r===rows.length-1)box(rail,[b[0],b[2]],b[1]+1.05,[.12,.12],b[1]-.1);
++      if(r===1||startOpening||along-lastPost>=1.75){box(rail,[a[0],a[2]],a[1]+1.05,[.12,.12],a[1]-.1);lastPost=along;}
++      if(r===rows.length-1||endOpening)box(rail,[b[0],b[2]],b[1]+1.05,[.12,.12],b[1]-.1);
+     }
+   }
+   cuts.solids.push(rail);
+--- a/test/horizon-mountain-road-ground.test.ts
++++ b/test/horizon-mountain-road-ground.test.ts
+@@ -15,6 +15,23 @@
+ const makeRegion=()=>createRegionGeography({horizonGround:(x,z)=>sampleTerrain(terrain,x,z),yield:terraceBedExclusion(world.collision.beds),exclude:mouthExclusion(world.collision.mouths)});
+ const O={x:1308,y:54,z:764};
+ describe('Horizon drawn road ground clearance',()=>{
++ it('does not project radial shoulder cuts behind the final actual road section',()=>{
++  const cap=drawnRoadGroundCeiling(REGION_ROAD),floor=drawnRoadFloor(REGION_ROAD.landingRows!);
++  // Expanded ordinary walking audit: the x±6cm stencil crossed a false
++  // 25.0004cm cut and reported 64.359 degrees on an unchanged flat native bench.
++  const hx=1324.1302169332484,hz=470.73125184711256,geo=makeRegion();
++  for(const dx of[-.06,0,.06]){
++   const x=hx+dx-O.x,z=hz-O.z;
++   expect(floor(x,z)).toBeNull();expect(cap(x,z)).toBeNull();
++   expect(geo.groundAt(hx+dx,hz)).toBeCloseTo(groundHeightAt(x,z)+O.y,9);
++  }
++  const hit=geo.surface(hx,158.18000030517578,hz,.48)!;
++  expect(hit.y).toBeCloseTo(158.18000030517578,7);expect(hit.slope).toBeLessThan(.01);
++  // The real terminal face still receives its original 8cm ground clearance.
++  const end=REGION_ROAD.points.at(-1)!;
++  expect(cap(end[0],end[2])).toBeCloseTo(floor(end[0],end[2])!.y-.08,9);
++ });
++
+  it('removes the measured grass ridges in both directions while keeping the actual road floor',()=>{
+   const geo=makeRegion(),composed=createHorizonGeography(terrain,{...world.collision,solids:world.geometry.solids,diagnostics:world.diagnostics??[]});composed.addDynamic(geo.provider);
+   for(const[x,y,z]of[[1344.0086,127.2256,551.1936],[1344.015,127.2256,553.47],[1287.017,98.427,570.989],[1330,68.846,679.64]]){
+--- a/test/horizon-mountain-footway-joins.test.ts
++++ b/test/horizon-mountain-footway-joins.test.ts
+@@ -49,6 +49,29 @@
+   return'timeout';
+ }
+ describe('physical SummitStation and Crown stair joins',()=>{
++  it('keeps the source summit walk open through its full width without deleting the remaining landing guards',()=>{
++    const cuts=fixture(),walk=bed('walk summit','walk',[[1309.792592593,159.075883075,448.503703704],[1309.65,158.81597646,454.9125],[1309.585185185,158.549485133,461.340740741]]);
++    walk.width=2.5;cuts.beds.push(walk);const old=structuredClone(cuts);fitMountainHorizonJoins(cuts,baseHeight);
++    expect(cuts.beds.find(b=>b.id===walk.id)!.points).toEqual(old.beds.find(b=>b.id===walk.id)!.points);
++    const rail=cuts.solids.find(s=>s.id==='crownLaunch.stair.landingRails')!,landing=cuts.solids.find(s=>s.id==='crownLaunch.stair.landing')!;
++    const g=createHorizonGeography(field,{beds:[],pads:[],mouths:[],waters:[],diagnostics:[],solids:[rail]});
++    // Independently sweep the declared path, not the rail builder's gap helper.
++    let checks=0;
++    for(let i=1;i<walk.points.length;i++){
++      const a=walk.points[i-1]!,b=walk.points[i]!,length=Math.hypot(b[0]-a[0],b[2]-a[2]),nx=-(b[2]-a[2])/length,nz=(b[0]-a[0])/length;
++      for(let s=0;s<=length;s+=.05)for(const offset of[-.95,0,.95]){
++        const x=a[0]+(b[0]-a[0])*s/length+nx*offset,z=a[2]+(b[2]-a[2])*s/length+nz*offset,top=solidTopAt(landing,x,z);
++        if(top===null)continue;expect(g.contact(x,z,top,.3,undefined,false,.65)).toBeNull();checks++;
++      }
++    }
++    expect(checks).toBeGreaterThan(40);expect(rail.indices.length).toBeGreaterThan(0);
++    const a=12*7*6,b=13*7*6,x=(landing.positions[a]!+landing.positions[b]!)/2,z=(landing.positions[a+2]!+landing.positions[b+2]!)/2,y=(landing.positions[a+1]!+landing.positions[b+1]!)/2;
++    expect(g.contact(x,z,y,.1,undefined,false,.65)?.id).toBe(rail.id);
++    // The original stair rails/treads remain byte-for-byte; the separate existing
++    // between-post 0.65m guard-band regression also remains unchanged below.
++    for(const suffix of['treads','rails','stringers','supports','cheeks'])expect(cuts.solids.find(s=>s.id==='crownLaunch.stair.'+suffix)).toEqual(old.solids.find(s=>s.id==='crownLaunch.stair.'+suffix));
++  });
++
+   it('closes both original failures with rendered geometry and unchanged walking limits',()=>{
+     expect(replay(before,'walk summitStation',false)).toBe('air');expect(replay(before,'walk summitStation',true)).toBe('stalled');
+     expect(replay(before,'crownLaunch.stair',true)).toBe('stalled');

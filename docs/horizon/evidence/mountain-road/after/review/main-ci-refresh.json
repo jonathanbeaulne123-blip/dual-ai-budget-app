@@ -1,0 +1,51 @@
+{
+  "queried": "2026-10-01",
+  "source": "https://api.github.com/repos/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs?branch=main&per_page=4",
+  "records": [
+    {
+      "id": 36717496580,
+      "workflow": "CI",
+      "commit": "1cf76c551e6f49124b6257162bc4d36ca18d7bd1",
+      "status": "completed",
+      "conclusion": "success",
+      "createdAt": "2026-09-30T12:51:16Z",
+      "updatedAt": "2026-09-30T12:56:57Z",
+      "url": "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/36717496580"
+    },
+    {
+      "id": 36717496697,
+      "workflow": "Cloudflare Workers",
+      "commit": "1cf76c551e6f49124b6257162bc4d36ca18d7bd1",
+      "status": "completed",
+      "conclusion": "success",
+      "createdAt": "2026-09-30T12:51:16Z",
+      "updatedAt": "2026-09-30T12:57:05Z",
+      "url": "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/36717496697"
+    },
+    {
+      "id": 36717496479,
+      "workflow": "Horizon baked assets",
+      "commit": "1cf76c551e6f49124b6257162bc4d36ca18d7bd1",
+      "status": "completed",
+      "conclusion": "success",
+      "createdAt": "2026-09-30T12:51:15Z",
+      "updatedAt": "2026-09-30T12:54:17Z",
+      "url": "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/36717496479"
+    },
+    {
+      "id": 36685088018,
+      "workflow": "Horizon baked assets",
+      "commit": "324cd5f246ab295af5cf64d553ebf78fad57f7b5",
+      "status": "completed",
+      "conclusion": "success",
+      "createdAt": "2026-09-30T07:40:46Z",
+      "updatedAt": "2026-09-30T07:43:44Z",
+      "url": "https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/36685088018"
+    }
+  ],
+  "scope": "Read-only latest main workflow status. These runs do not validate this local Mountain Road branch.",
+  "verifiedMainBranch": {
+    "source": "https://api.github.com/repos/jonathanbeaulne123-blip/dual-ai-budget-app/branches/main",
+    "commit": "1cf76c551e6f49124b6257162bc4d36ca18d7bd1"
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "stop": {
+    "id": "V01.stop.longSandsShore",
+    "label": "Long Sands Shore",
+    "at": [
+      1229.25,
+      3.906,
+      1398.689
+    ],
+    "outline": [
+      [
+        1221.92,
+        1396.55
+      ],
+      [
+        1225.403,
+        1396.134
+      ],
+      [
+        1228.887,
+        1395.711
+      ],
+      [
+        1232.374,
+        1395.281
+      ],
+      [
+        1235.854,
+        1394.846
+      ],
+      [
+        1236.604,
+        1400.799
+      ],
+      [
+        1233.117,
+        1401.235
+      ],
+      [
+        1229.613,
+        1401.667
+      ],
+      [
+        1226.118,
+        1402.091
+      ],
+      [
+        1222.625,
+        1402.509
+      ]
+    ],
+    "facing": 0.121
+  },
+  "bench": [
+    1229.4212729677795,
+    3.690473666724502,
+    1400.0785281756844
+  ],
+  "districtOwner": "reach",
+  "districtRule": "Actual baked hearts; runtime districtAt chooses nearest heart for stop.at. Engine scale1 adopted by useDefinitionDistricts.",
+  "nearestHearts": [
+    {
+      "id": "reach",
+      "heart": [
+        1280,
+        1260
+      ],
+      "distance": 147.68277225526347
+    },
+    {
+      "id": "landing",
+      "heart": [
+        1060,
+        1410
+      ],
+      "distance": 169.62753674153262
+    },
+    {
+      "id": "notch",
+      "heart": [
+        1205,
+        1070
+      ],
+      "distance": 329.5823436123362
+    }
+  ],
+  "contactSampleHeights": {
+    "full": {
+      "minY": 3.6611640453338623,
+      "maxY": 3.791106939315796,
+      "heightRange": 0.1299428939819336,
+      "maxDistanceFromFirstFullFacePlane": 0.05529602549757011,
+      "sampleCount": 25
+    },
+    "lite": {
+      "minY": 3.660478115081787,
+      "maxY": 3.7902705669403076,
+      "heightRange": 0.1297924518585205,
+      "maxDistanceFromFirstFullFacePlane": 0.05529602549757011,
+      "sampleCount": 17
+    }
+  },
+  "firstFullFace": [
+    [
+      1229.4212646484375,
+      3.740473747253418,
+      1400.0784912109375
+    ],
+    [
+      1230.2947998046875,
+      3.766636371612549,
+      1399.9722900390625
+    ],
+    [
+      1230.196044921875,
+      3.7430267333984375,
+      1400.13671875
+    ]
+  ],
+  "firstFullFaceNormal": [
+    0.001794515352230519,
+    -0.13314637541770935,
+    -0.018040162103716284
+  ],
+  "grazingEye": [
+    1232.4212646484375,
+    3.577770238476868,
+    1401.5784912109375
+  ],
+  "worldSha256": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+  "terrainSha256": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+  "method": "Read-only source/JSON/binary arithmetic; exact stopLayout and CardBuilder.shadow sampling, then actual Float32 conversion. No runtime/world imports, renderer, shader or geometry mutation."
+}

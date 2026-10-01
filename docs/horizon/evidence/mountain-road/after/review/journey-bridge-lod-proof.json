@@ -1,0 +1,895 @@
+{
+  "method": "Pure JSON arithmetic matching proposed draw-index DP; no runtime imports. Exact mesh-chord savings; conservative total assumes every original possible pier renders. Piers and all full axes unchanged.",
+  "journeySha256": "33f9ce3ef16f9b71e97ca29b21fa3645df69404632088edbfe9d9576f9908ef9",
+  "planBound": 0.15,
+  "rawHeightBound": 0.02,
+  "bridges": [
+    {
+      "id": "apronBridge",
+      "width": 4,
+      "lineIds": [
+        "S1"
+      ],
+      "underIds": [],
+      "inputPoints": 12,
+      "drawPoints": 9,
+      "drawIndices": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        6,
+        8,
+        9,
+        11
+      ],
+      "endpoints": [
+        [
+          1166.63,
+          31,
+          929.99
+        ],
+        [
+          1149.63,
+          31,
+          969.8
+        ]
+      ],
+      "endpointsExact": true,
+      "directionPreserved": true,
+      "planWitness": {
+        "sourceIndex": 7,
+        "chordIndices": [
+          6,
+          8
+        ],
+        "sourceXYZ": [
+          1153.48,
+          31,
+          949.88
+        ],
+        "planError": 0.12515181394637212,
+        "rawHeightError": 0.0,
+        "projection": 0.48310574461792843
+      },
+      "heightWitness": {
+        "sourceIndex": 0,
+        "chordIndices": [
+          0,
+          2
+        ],
+        "sourceXYZ": [
+          1166.63,
+          31,
+          929.99
+        ],
+        "planError": 0.0,
+        "rawHeightError": 0,
+        "projection": 0.0
+      },
+      "trianglesSaved": 36,
+      "drawTrianglesWithoutPiers": 100,
+      "maximumPierTriangles": 0
+    },
+    {
+      "id": "bightBridge",
+      "width": 21.6,
+      "lineIds": [
+        "S2",
+        "V01"
+      ],
+      "underIds": [
+        "FERRY"
+      ],
+      "inputPoints": 2,
+      "drawPoints": 2,
+      "drawIndices": [
+        0,
+        1
+      ],
+      "endpoints": [
+        [
+          460.68,
+          12,
+          1028.28
+        ],
+        [
+          661.39,
+          12,
+          1168.77
+        ]
+      ],
+      "endpointsExact": true,
+      "directionPreserved": true,
+      "planWitness": {
+        "sourceIndex": 0,
+        "chordIndices": [
+          0,
+          1
+        ],
+        "sourceXYZ": [
+          460.68,
+          12,
+          1028.28
+        ],
+        "planError": 0.0,
+        "rawHeightError": 0,
+        "projection": 0.0
+      },
+      "heightWitness": {
+        "sourceIndex": 0,
+        "chordIndices": [
+          0,
+          1
+        ],
+        "sourceXYZ": [
+          460.68,
+          12,
+          1028.28
+        ],
+        "planError": 0.0,
+        "rawHeightError": 0,
+        "projection": 0.0
+      },
+      "trianglesSaved": 0,
+      "drawTrianglesWithoutPiers": 16,
+      "maximumPierTriangles": 96
+    },
+    {
+      "id": "bightSpurTrestle",
+      "width": 5,
+      "lineIds": [
+        "VBS"
+      ],
+      "underIds": [],
+      "inputPoints": 16,
+      "drawPoints": 13,
+      "drawIndices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        9,
+        11,
+        12,
+        13,
+        15
+      ],
+      "endpoints": [
+        [
+          925.73,
+          27.99,
+          873.47
+        ],
+        [
+          880.94,
+          22.09,
+          928.22
+        ]
+      ],
+      "endpointsExact": true,
+      "directionPreserved": true,
+      "planWitness": {
+        "sourceIndex": 8,
+        "chordIndices": [
+          7,
+          9
+        ],
+        "sourceXYZ": [
+          897.81,
+          24.93,
+          894.61
+        ],
+        "planError": 0.11348471898543848,
+        "rawHeightError": 0.007458002994464974,
+        "projection": 0.4783432135734131
+      },
+      "heightWitness": {
+        "sourceIndex": 14,
+        "chordIndices": [
+          13,
+          15
+        ],
+        "sourceXYZ": [
+          883.18,
+          22.4,
+          923.48
+        ],
+        "planError": 0.0019991506853683167,
+        "rawHeightError": 0.01324001001856051,
+        "projection": 0.5102424090627892
+      },
+      "trianglesSaved": 36,
+      "drawTrianglesWithoutPiers": 148,
+      "maximumPierTriangles": 16
+    },
+    {
+      "id": "gardenWalkBridge",
+      "width": 5.6,
+      "lineIds": [],
+      "underIds": [
+        "VG"
+      ],
+      "inputPoints": 10,
+      "drawPoints": 5,
+      "drawIndices": [
+        0,
+        3,
+        4,
+        6,
+        9
+      ],
+      "endpoints": [
+        [
+          951.45,
+          49.91,
+          747.09
+        ],
+        [
+          981.41,
+          54.71,
+          773.47
+        ]
+      ],
+      "endpointsExact": true,
+      "directionPreserved": true,
+      "planWitness": {
+        "sourceIndex": 5,
+        "chordIndices": [
+          4,
+          6
+        ],
+        "sourceXYZ": [
+          967.15,
+          52.53,
+          762.31
+        ],
+        "planError": 0.06963150181590107,
+        "rawHeightError": 0.002759586422544147,
+        "projection": 0.4751821314980745
+      },
+      "heightWitness": {
+        "sourceIndex": 1,
+        "chordIndices": [
+          0,
+          3
+        ],
+        "sourceXYZ": [
+          954.57,
+          50.45,
+          750.42
+        ],
+        "planError": 0.05444294061730773,
+        "rawHeightError": 0.006869931654795325,
+        "projection": 0.3695067105775676
+      },
+      "trianglesSaved": 60,
+      "drawTrianglesWithoutPiers": 52,
+      "maximumPierTriangles": 0
+    },
+    {
+      "id": "highSpan",
+      "width": 10,
+      "lineIds": [
+        "VG"
+      ],
+      "underIds": [
+        "S1"
+      ],
+      "inputPoints": 24,
+      "drawPoints": 9,
+      "drawIndices": [
+        0,
+        4,
+        6,
+        8,
+        10,
+        13,
+        16,
+        19,
+        23
+      ],
+      "endpoints": [
+        [
+          1291.55,
+          24,
+          1099.05
+        ],
+        [
+          1188.5,
+          24,
+          1098.01
+        ]
+      ],
+      "endpointsExact": true,
+      "directionPreserved": true,
+      "planWitness": {
+        "sourceIndex": 11,
+        "chordIndices": [
+          10,
+          13
+        ],
+        "sourceXYZ": [
+          1240,
+          24,
+          1105
+        ],
+        "planError": 0.1253687901432811,
+        "rawHeightError": 0.0,
+        "projection": 0.3775291448243429
+      },
+      "heightWitness": {
+        "sourceIndex": 0,
+        "chordIndices": [
+          0,
+          4
+        ],
+        "sourceXYZ": [
+          1291.55,
+          24,
+          1099.05
+        ],
+        "planError": 0.0,
+        "rawHeightError": 0,
+        "projection": 0.0
+      },
+      "trianglesSaved": 180,
+      "drawTrianglesWithoutPiers": 100,
+      "maximumPierTriangles": 32
+    },
+    {
+      "id": "hollowBridge",
+      "width": 8,
+      "lineIds": [
+        "S4"
+      ],
+      "underIds": [],
+      "inputPoints": 9,
+      "drawPoints": 6,
+      "drawIndices": [
+        0,
+        1,
+        5,
+        6,
+        7,
+        8
+      ],
+      "endpoints": [
+        [
+          886,
+          37.17,
+          585.61
+        ],
+        [
+          896.85,
+          36.99,
+          615.49
+        ]
+      ],
+      "endpointsExact": true,
+      "directionPreserved": true,
+      "planWitness": {
+        "sourceIndex": 3,
+        "chordIndices": [
+          1,
+          5
+        ],
+        "sourceXYZ": [
+          890.49,
+          37,
+          594.58
+        ],
+        "planError": 0.09408148042690026,
+        "rawHeightError": 0.0,
+        "projection": 0.5689803886436255
+      },
+      "heightWitness": {
+        "sourceIndex": 0,
+        "chordIndices": [
+          0,
+          1
+        ],
+        "sourceXYZ": [
+          886,
+          37.17,
+          585.61
+        ],
+        "planError": 0.0,
+        "rawHeightError": 0.0,
+        "projection": 0.0
+      },
+      "trianglesSaved": 36,
+      "drawTrianglesWithoutPiers": 64,
+      "maximumPierTriangles": 0
+    },
+    {
+      "id": "mountainRoadCanalBridge",
+      "width": 17,
+      "lineIds": [
+        "V03"
+      ],
+      "underIds": [],
+      "inputPoints": 6,
+      "drawPoints": 6,
+      "drawIndices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "endpoints": [
+        [
+          1308.54,
+          55.9,
+          752.06
+        ],
+        [
+          1292,
+          55.77,
+          745.01
+        ]
+      ],
+      "endpointsExact": true,
+      "directionPreserved": true,
+      "planWitness": {
+        "sourceIndex": 0,
+        "chordIndices": [
+          0,
+          1
+        ],
+        "sourceXYZ": [
+          1308.54,
+          55.9,
+          752.06
+        ],
+        "planError": 0.0,
+        "rawHeightError": 0.0,
+        "projection": -0.0
+      },
+      "heightWitness": {
+        "sourceIndex": 0,
+        "chordIndices": [
+          0,
+          1
+        ],
+        "sourceXYZ": [
+          1308.54,
+          55.9,
+          752.06
+        ],
+        "planError": 0.0,
+        "rawHeightError": 0.0,
+        "projection": -0.0
+      },
+      "trianglesSaved": 0,
+      "drawTrianglesWithoutPiers": 64,
+      "maximumPierTriangles": 0
+    },
+    {
+      "id": "mountainV2:b-foot",
+      "width": 9.6,
+      "lineIds": [
+        "S1",
+        "mountainV2.road"
+      ],
+      "underIds": [],
+      "inputPoints": 24,
+      "drawPoints": 6,
+      "drawIndices": [
+        0,
+        3,
+        6,
+        12,
+        18,
+        23
+      ],
+      "endpoints": [
+        [
+          1291.89,
+          59.23,
+          689.59
+        ],
+        [
+          1314.13,
+          60.96,
+          685.88
+        ]
+      ],
+      "endpointsExact": true,
+      "directionPreserved": true,
+      "planWitness": {
+        "sourceIndex": 21,
+        "chordIndices": [
+          18,
+          23
+        ],
+        "sourceXYZ": [
+          1312.17,
+          60.88,
+          685.52
+        ],
+        "planError": 0.13738623928053095,
+        "rawHeightError": 0.0077975185464296826,
+        "projection": 0.6009203702435071
+      },
+      "heightWitness": {
+        "sourceIndex": 8,
+        "chordIndices": [
+          6,
+          12
+        ],
+        "sourceXYZ": [
+          1299.29,
+          60.06,
+          686.62
+        ],
+        "planError": 0.10826019528475996,
+        "rawHeightError": 0.017343646119919592,
+        "projection": 0.3319517426124119
+      },
+      "trianglesSaved": 216,
+      "drawTrianglesWithoutPiers": 64,
+      "maximumPierTriangles": 0
+    },
+    {
+      "id": "mountainV2:b2",
+      "width": 9.6,
+      "lineIds": [
+        "S1",
+        "mountainV2.road"
+      ],
+      "underIds": [],
+      "inputPoints": 58,
+      "drawPoints": 13,
+      "drawIndices": [
+        0,
+        1,
+        3,
+        7,
+        12,
+        19,
+        30,
+        36,
+        41,
+        46,
+        50,
+        53,
+        57
+      ],
+      "endpoints": [
+        [
+          1338.78,
+          94.26,
+          583.34
+        ],
+        [
+          1285.3,
+          98.74,
+          567.73
+        ]
+      ],
+      "endpointsExact": true,
+      "directionPreserved": true,
+      "planWitness": {
+        "sourceIndex": 26,
+        "chordIndices": [
+          19,
+          30
+        ],
+        "sourceXYZ": [
+          1315.72,
+          96.21,
+          572.68
+        ],
+        "planError": 0.14485921884815714,
+        "rawHeightError": 9.653499166539792e-05,
+        "projection": 0.6365099015025076
+      },
+      "heightWitness": {
+        "sourceIndex": 15,
+        "chordIndices": [
+          12,
+          19
+        ],
+        "sourceXYZ": [
+          1326.28,
+          95.53,
+          575.72
+        ],
+        "planError": 0.0664078308635167,
+        "rawHeightError": 0.014316742081446454,
+        "projection": 0.42850678733031394
+      },
+      "trianglesSaved": 540,
+      "drawTrianglesWithoutPiers": 148,
+      "maximumPierTriangles": 16
+    },
+    {
+      "id": "mountainV2:b3",
+      "width": 9.6,
+      "lineIds": [
+        "S1",
+        "mountainV2.road"
+      ],
+      "underIds": [],
+      "inputPoints": 74,
+      "drawPoints": 15,
+      "drawIndices": [
+        0,
+        5,
+        13,
+        19,
+        26,
+        31,
+        36,
+        41,
+        46,
+        51,
+        55,
+        59,
+        62,
+        69,
+        73
+      ],
+      "endpoints": [
+        [
+          1276.38,
+          122.37,
+          538.74
+        ],
+        [
+          1346.29,
+          127.53,
+          550.99
+        ]
+      ],
+      "endpointsExact": true,
+      "directionPreserved": true,
+      "planWitness": {
+        "sourceIndex": 71,
+        "chordIndices": [
+          69,
+          73
+        ],
+        "sourceXYZ": [
+          1344.3,
+          127.25,
+          551.14
+        ],
+        "planError": 0.07508592869960422,
+        "rawHeightError": 0.00048761542027536686,
+        "projection": 0.5008707418219203
+      },
+      "heightWitness": {
+        "sourceIndex": 9,
+        "chordIndices": [
+          5,
+          13
+        ],
+        "sourceXYZ": [
+          1284.48,
+          123.08,
+          542.66
+        ],
+        "planError": 0.006711944190179555,
+        "rawHeightError": 0.01985539894955385,
+        "projection": 0.5002780789431717
+      },
+      "trianglesSaved": 708,
+      "drawTrianglesWithoutPiers": 172,
+      "maximumPierTriangles": 16
+    },
+    {
+      "id": "prowLoopFootbridge",
+      "width": 6,
+      "lineIds": [],
+      "underIds": [],
+      "inputPoints": 6,
+      "drawPoints": 3,
+      "drawIndices": [
+        0,
+        3,
+        5
+      ],
+      "endpoints": [
+        [
+          1603.51,
+          45.63,
+          674.59
+        ],
+        [
+          1609.8,
+          47.83,
+          702.87
+        ]
+      ],
+      "endpointsExact": true,
+      "directionPreserved": true,
+      "planWitness": {
+        "sourceIndex": 1,
+        "chordIndices": [
+          0,
+          3
+        ],
+        "sourceXYZ": [
+          1604.76,
+          46.04,
+          679.55
+        ],
+        "planError": 0.09262042638905624,
+        "rawHeightError": 0.00407257719857218,
+        "projection": 0.30520858857249994
+      },
+      "heightWitness": {
+        "sourceIndex": 4,
+        "chordIndices": [
+          3,
+          5
+        ],
+        "sourceXYZ": [
+          1608.56,
+          47.41,
+          696.92
+        ],
+        "planError": 0.0012196667226660025,
+        "rawHeightError": 0.01283580929458622,
+        "projection": 0.5024875755234607
+      },
+      "trianglesSaved": 36,
+      "drawTrianglesWithoutPiers": 28,
+      "maximumPierTriangles": 0
+    },
+    {
+      "id": "quayBridge",
+      "width": 16,
+      "lineIds": [
+        "S3",
+        "V01"
+      ],
+      "underIds": [
+        "RIVER_RUN"
+      ],
+      "inputPoints": 22,
+      "drawPoints": 13,
+      "drawIndices": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        7,
+        8,
+        10,
+        12,
+        13,
+        15,
+        18,
+        21
+      ],
+      "endpoints": [
+        [
+          1317.19,
+          9,
+          1374.57
+        ],
+        [
+          1363.33,
+          9,
+          1302.14
+        ]
+      ],
+      "endpointsExact": true,
+      "directionPreserved": true,
+      "planWitness": {
+        "sourceIndex": 6,
+        "chordIndices": [
+          5,
+          7
+        ],
+        "sourceXYZ": [
+          1337.9,
+          9,
+          1360.91
+        ],
+        "planError": 0.14765481804129466,
+        "rawHeightError": 0.0,
+        "projection": 0.5099546307260415
+      },
+      "heightWitness": {
+        "sourceIndex": 0,
+        "chordIndices": [
+          0,
+          2
+        ],
+        "sourceXYZ": [
+          1317.19,
+          9,
+          1374.57
+        ],
+        "planError": 0.0,
+        "rawHeightError": 0,
+        "projection": 0.0
+      },
+      "trianglesSaved": 108,
+      "drawTrianglesWithoutPiers": 148,
+      "maximumPierTriangles": 32
+    },
+    {
+      "id": "reachBoardwalk",
+      "width": 4,
+      "lineIds": [
+        "S1"
+      ],
+      "underIds": [],
+      "inputPoints": 2,
+      "drawPoints": 2,
+      "drawIndices": [
+        0,
+        1
+      ],
+      "endpoints": [
+        [
+          1241.02,
+          5,
+          1196.77
+        ],
+        [
+          1268.98,
+          5,
+          1305.23
+        ]
+      ],
+      "endpointsExact": true,
+      "directionPreserved": true,
+      "planWitness": {
+        "sourceIndex": 0,
+        "chordIndices": [
+          0,
+          1
+        ],
+        "sourceXYZ": [
+          1241.02,
+          5,
+          1196.77
+        ],
+        "planError": 0.0,
+        "rawHeightError": 0,
+        "projection": 0.0
+      },
+      "heightWitness": {
+        "sourceIndex": 0,
+        "chordIndices": [
+          0,
+          1
+        ],
+        "sourceXYZ": [
+          1241.02,
+          5,
+          1196.77
+        ],
+        "planError": 0.0,
+        "rawHeightError": 0,
+        "projection": 0.0
+      },
+      "trianglesSaved": 0,
+      "drawTrianglesWithoutPiers": 16,
+      "maximumPierTriangles": 32
+    }
+  ],
+  "trianglesSaved": 1956,
+  "combinedBridgeTriangleUpperBound": 1360,
+  "predictedFromObserved": {
+    "liteLand": 14273,
+    "fullLand": 14351,
+    "liteSky": 23883,
+    "fullSky": 23955
+  },
+  "rendererExecuted": false
+}

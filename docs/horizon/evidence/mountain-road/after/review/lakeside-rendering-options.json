@@ -1,0 +1,836 @@
+{
+  "scope": "Source and baked JSON only; no renderer, TS/world import, test or bake. Distances are plan distances; they do not establish visual substitutability.",
+  "currentWorldSha256": "0e129df837d3000d674b6ce1dc56446cfb0f690515064e51455047fe1ead0e33",
+  "currentV2Sha256": "418eab3afb34746b1341d6f80c16efc7d6921eb71ad301e31e249b63b46cab8f",
+  "items": [
+    {
+      "corridorId": "VG",
+      "groupId": "VG.plant.framingTrees.1",
+      "index": 0,
+      "species": "pine",
+      "at": [
+        974.297,
+        29.209,
+        882.303
+      ],
+      "scale": 0.928,
+      "yaw": 0.181,
+      "tint": 0.029,
+      "nearestNative": {
+        "at": [
+          1191.351059,
+          71.140397,
+          677.969783
+        ],
+        "base": 1.2644794732928277,
+        "top": 3.951498354040086,
+        "radius": 1.738659275777638,
+        "trunk": 0.17386592757776378,
+        "trunkTop": 2.054779144100845
+      },
+      "nearestNativePlanM": 298.10153991206516
+    },
+    {
+      "corridorId": "VG",
+      "groupId": "VG.plant.framingTrees.1",
+      "index": 1,
+      "species": "shrub",
+      "at": [
+        974.103,
+        27.533,
+        892.017
+      ],
+      "scale": 1.022,
+      "yaw": 2.991,
+      "tint": 0.476,
+      "nearestNative": {
+        "at": [
+          1191.351059,
+          71.140397,
+          677.969783
+        ],
+        "base": 1.2644794732928277,
+        "top": 3.951498354040086,
+        "radius": 1.738659275777638,
+        "trunk": 0.17386592757776378,
+        "trunkTop": 2.054779144100845
+      },
+      "nearestNativePlanM": 304.9802128740693
+    },
+    {
+      "corridorId": "VG",
+      "groupId": "VG.plant.framingTrees.1",
+      "index": 2,
+      "species": "shrub",
+      "at": [
+        973.72,
+        27.899,
+        888.711
+      ],
+      "scale": 0.757,
+      "yaw": 1.073,
+      "tint": 0.171,
+      "nearestNative": {
+        "at": [
+          1191.351059,
+          71.140397,
+          677.969783
+        ],
+        "base": 1.2644794732928277,
+        "top": 3.951498354040086,
+        "radius": 1.738659275777638,
+        "trunk": 0.17386592757776378,
+        "trunkTop": 2.054779144100845
+      },
+      "nearestNativePlanM": 302.9441175928369
+    },
+    {
+      "corridorId": "VG",
+      "groupId": "VG.plant.framingTrees.1",
+      "index": 3,
+      "species": "birch",
+      "at": [
+        978.199,
+        31.188,
+        879.493
+      ],
+      "scale": 0.929,
+      "yaw": 1.133,
+      "tint": 0.18,
+      "nearestNative": {
+        "at": [
+          1191.351059,
+          71.140397,
+          677.969783
+        ],
+        "base": 1.2644794732928277,
+        "top": 3.951498354040086,
+        "radius": 1.738659275777638,
+        "trunk": 0.17386592757776378,
+        "trunkTop": 2.054779144100845
+      },
+      "nearestNativePlanM": 293.3349744677041
+    },
+    {
+      "corridorId": "VG",
+      "groupId": "VG.plant.framingTrees.1",
+      "index": 4,
+      "species": "round",
+      "at": [
+        979.468,
+        26.364,
+        892.348
+      ],
+      "scale": 1.023,
+      "yaw": 6.145,
+      "tint": 0.978,
+      "nearestNative": {
+        "at": [
+          1191.351059,
+          71.140397,
+          677.969783
+        ],
+        "base": 1.2644794732928277,
+        "top": 3.951498354040086,
+        "radius": 1.738659275777638,
+        "trunk": 0.17386592757776378,
+        "trunkTop": 2.054779144100845
+      },
+      "nearestNativePlanM": 301.41740264174626
+    },
+    {
+      "corridorId": "VG",
+      "groupId": "VG.plant.framingTrees.1",
+      "index": 5,
+      "species": "shrub",
+      "at": [
+        971.972,
+        28.995,
+        881.848
+      ],
+      "scale": 0.933,
+      "yaw": 6.15,
+      "tint": 0.979,
+      "nearestNative": {
+        "at": [
+          1191.351059,
+          71.140397,
+          677.969783
+        ],
+        "base": 1.2644794732928277,
+        "top": 3.951498354040086,
+        "radius": 1.738659275777638,
+        "trunk": 0.17386592757776378,
+        "trunkTop": 2.054779144100845
+      },
+      "nearestNativePlanM": 299.48872916159064
+    },
+    {
+      "corridorId": "VG",
+      "groupId": "VG.plant.framingTrees.1",
+      "index": 6,
+      "species": "round",
+      "at": [
+        980.261,
+        28.022,
+        887.14
+      ],
+      "scale": 0.932,
+      "yaw": 5.131,
+      "tint": 0.817,
+      "nearestNative": {
+        "at": [
+          1191.351059,
+          71.140397,
+          677.969783
+        ],
+        "base": 1.2644794732928277,
+        "top": 3.951498354040086,
+        "radius": 1.738659275777638,
+        "trunk": 0.17386592757776378,
+        "trunkTop": 2.054779144100845
+      },
+      "nearestNativePlanM": 297.1719917631044
+    },
+    {
+      "corridorId": "VG",
+      "groupId": "VG.plant.framingTrees.1",
+      "index": 7,
+      "species": "shrub",
+      "at": [
+        973.224,
+        28.164,
+        886.783
+      ],
+      "scale": 1.088,
+      "yaw": 1.329,
+      "tint": 0.212,
+      "nearestNative": {
+        "at": [
+          1191.351059,
+          71.140397,
+          677.969783
+        ],
+        "base": 1.2644794732928277,
+        "top": 3.951498354040086,
+        "radius": 1.738659275777638,
+        "trunk": 0.17386592757776378,
+        "trunkTop": 2.054779144100845
+      },
+      "nearestNativePlanM": 301.9641923504815
+    },
+    {
+      "corridorId": "V03",
+      "groupId": "V03.plant.framingTrees.1",
+      "index": 2,
+      "species": "heath",
+      "at": [
+        1361.155,
+        54.309,
+        764.013
+      ],
+      "scale": 0.784,
+      "yaw": 5.995,
+      "tint": 0.954,
+      "nearestNative": {
+        "at": [
+          1338.405335,
+          61.016535,
+          706.840942
+        ],
+        "base": 1.448601891302969,
+        "top": 7.449952583843841,
+        "radius": 1.1381872003094757,
+        "trunk": 0.16555450186319648,
+        "trunkTop": 2.690260655276943
+      },
+      "nearestNativePlanM": 61.53203615652249
+    },
+    {
+      "corridorId": "V03",
+      "groupId": "V03.plant.framingTrees.1",
+      "index": 3,
+      "species": "pine",
+      "at": [
+        1356.315,
+        54.685,
+        759.948
+      ],
+      "scale": 0.933,
+      "yaw": 1.135,
+      "tint": 0.181,
+      "nearestNative": {
+        "at": [
+          1338.405335,
+          61.016535,
+          706.840942
+        ],
+        "base": 1.448601891302969,
+        "top": 7.449952583843841,
+        "radius": 1.1381872003094757,
+        "trunk": 0.16555450186319648,
+        "trunkTop": 2.690260655276943
+      },
+      "nearestNativePlanM": 56.04565736814573
+    },
+    {
+      "corridorId": "V03",
+      "groupId": "V03.plant.framingTrees.1",
+      "index": 4,
+      "species": "heath",
+      "at": [
+        1357.452,
+        54.605,
+        763.475
+      ],
+      "scale": 1.039,
+      "yaw": 5.12,
+      "tint": 0.815,
+      "nearestNative": {
+        "at": [
+          1338.405335,
+          61.016535,
+          706.840942
+        ],
+        "base": 1.448601891302969,
+        "top": 7.449952583843841,
+        "radius": 1.1381872003094757,
+        "trunk": 0.16555450186319648,
+        "trunkTop": 2.690260655276943
+      },
+      "nearestNativePlanM": 59.75108344766303
+    },
+    {
+      "corridorId": "spur stillwater",
+      "groupId": "spur stillwater.plant.framingTrees.0",
+      "index": 0,
+      "species": "birch",
+      "at": [
+        1238.692,
+        54.018,
+        735.907
+      ],
+      "scale": 0.93,
+      "yaw": 5.093,
+      "tint": 0.811,
+      "nearestNative": {
+        "at": [
+          1272.13618,
+          56.034069,
+          708.462252
+        ],
+        "base": 1.662389891035855,
+        "top": 5.194968409487046,
+        "radius": 2.2857861001743007,
+        "trunk": 0.22857861001743005,
+        "trunkTop": 2.7013835729332643
+      },
+      "nearestNativePlanM": 43.263464593764354
+    },
+    {
+      "corridorId": "spur stillwater",
+      "groupId": "spur stillwater.plant.framingTrees.0",
+      "index": 1,
+      "species": "birch",
+      "at": [
+        1238.218,
+        54.082,
+        740.038
+      ],
+      "scale": 0.962,
+      "yaw": 0.77,
+      "tint": 0.123,
+      "nearestNative": {
+        "at": [
+          1272.13618,
+          56.034069,
+          708.462252
+        ],
+        "base": 1.662389891035855,
+        "top": 5.194968409487046,
+        "radius": 2.2857861001743007,
+        "trunk": 0.22857861001743005,
+        "trunkTop": 2.7013835729332643
+      },
+      "nearestNativePlanM": 46.340811346715704
+    },
+    {
+      "corridorId": "spur stillwater",
+      "groupId": "spur stillwater.plant.framingTrees.0",
+      "index": 2,
+      "species": "birch",
+      "at": [
+        1243.017,
+        54.058,
+        734.349
+      ],
+      "scale": 0.903,
+      "yaw": 2.277,
+      "tint": 0.362,
+      "nearestNative": {
+        "at": [
+          1272.13618,
+          56.034069,
+          708.462252
+        ],
+        "base": 1.662389891035855,
+        "top": 5.194968409487046,
+        "radius": 2.2857861001743007,
+        "trunk": 0.22857861001743005,
+        "trunkTop": 2.7013835729332643
+      },
+      "nearestNativePlanM": 38.962165826451425
+    },
+    {
+      "corridorId": "spur stillwater",
+      "groupId": "spur stillwater.plant.framingTrees.0",
+      "index": 3,
+      "species": "birch",
+      "at": [
+        1242.71,
+        53.975,
+        731.237
+      ],
+      "scale": 0.982,
+      "yaw": 1.147,
+      "tint": 0.183,
+      "nearestNative": {
+        "at": [
+          1272.13618,
+          56.034069,
+          708.462252
+        ],
+        "base": 1.662389891035855,
+        "top": 5.194968409487046,
+        "radius": 2.2857861001743007,
+        "trunk": 0.22857861001743005,
+        "trunkTop": 2.7013835729332643
+      },
+      "nearestNativePlanM": 37.210068742961184
+    },
+    {
+      "corridorId": "spur stillwater",
+      "groupId": "spur stillwater.plant.framingTrees.0",
+      "index": 4,
+      "species": "birch",
+      "at": [
+        1241.39,
+        54.084,
+        737.705
+      ],
+      "scale": 1.085,
+      "yaw": 5.892,
+      "tint": 0.938,
+      "nearestNative": {
+        "at": [
+          1272.13618,
+          56.034069,
+          708.462252
+        ],
+        "base": 1.662389891035855,
+        "top": 5.194968409487046,
+        "radius": 2.2857861001743007,
+        "trunk": 0.22857861001743005,
+        "trunkTop": 2.7013835729332643
+      },
+      "nearestNativePlanM": 42.43189714335074
+    },
+    {
+      "corridorId": "spur stillwater",
+      "groupId": "spur stillwater.plant.framingTrees.0",
+      "index": 5,
+      "species": "birch",
+      "at": [
+        1235.922,
+        54.034,
+        737.693
+      ],
+      "scale": 1.077,
+      "yaw": 5.203,
+      "tint": 0.828,
+      "nearestNative": {
+        "at": [
+          1220.159538,
+          60.257906,
+          695.760365
+        ],
+        "base": 1.4181083784694783,
+        "top": 3.708898835997097,
+        "radius": 2.0726199377630836,
+        "trunk": 0.21817051976453514,
+        "trunkTop": 2.0726199377630836
+      },
+      "nearestNativePlanM": 44.797333473597135
+    },
+    {
+      "corridorId": "mountainV2.road",
+      "groupId": "mountainV2.road.plant.framingTrees.0",
+      "index": 1,
+      "species": "pine",
+      "at": [
+        1350.045,
+        55.042,
+        716.847
+      ],
+      "scale": 0.926,
+      "yaw": 2.513,
+      "tint": 0.4,
+      "nearestNative": {
+        "at": [
+          1338.405335,
+          61.016535,
+          706.840942
+        ],
+        "base": 1.448601891302969,
+        "top": 7.449952583843841,
+        "radius": 1.1381872003094757,
+        "trunk": 0.16555450186319648,
+        "trunkTop": 2.690260655276943
+      },
+      "nearestNativePlanM": 15.34936474293289
+    },
+    {
+      "corridorId": "mountainV2.road",
+      "groupId": "mountainV2.road.plant.framingTrees.0",
+      "index": 3,
+      "species": "pine",
+      "at": [
+        1357.028,
+        56.76,
+        715.813
+      ],
+      "scale": 1.08,
+      "yaw": 0.326,
+      "tint": 0.052,
+      "nearestNative": {
+        "at": [
+          1338.405335,
+          61.016535,
+          706.840942
+        ],
+        "base": 1.448601891302969,
+        "top": 7.449952583843841,
+        "radius": 1.1381872003094757,
+        "trunk": 0.16555450186319648,
+        "trunkTop": 2.690260655276943
+      },
+      "nearestNativePlanM": 20.671271766816663
+    }
+  ],
+  "bySpecies": {
+    "pine": 4,
+    "shrub": 4,
+    "birch": 7,
+    "round": 2,
+    "heath": 2
+  },
+  "baselineBakedComparison": {
+    "VG": {
+      "baselinePresent": true,
+      "plantingEqual": true,
+      "baselineGroups": 12,
+      "currentGroups": 12
+    },
+    "V03": {
+      "baselinePresent": true,
+      "plantingEqual": true,
+      "baselineGroups": 2,
+      "currentGroups": 2
+    },
+    "spur stillwater": {
+      "baselinePresent": false
+    },
+    "mountainV2.road": {
+      "baselinePresent": false
+    }
+  },
+  "budgetWorldSha256": "63c4d1e47b6205c66667812377f98a677439ba94ecb389fdf479fbebcf6af91d",
+  "budgetAuditSha256": "741db1222b6a9c409f9a02988aaddcf8f93ad0a3cd46a4f8a88cda870cdcc7dd",
+  "lakesideSavedCounts": {
+    "classic.full": {
+      "furniture": 8,
+      "plantSampled": 8,
+      "plantCapacity": 9,
+      "nightSampled": 2,
+      "componentPeakSum": 18,
+      "capacitySum": 19,
+      "layers": [
+        {
+          "name": "Corridor bush",
+          "trianglesEach": 40,
+          "count": 4
+        },
+        {
+          "name": "Corridor contact",
+          "trianglesEach": 10,
+          "count": 13
+        },
+        {
+          "name": "Corridor shell:birch",
+          "trianglesEach": 120,
+          "count": 7
+        },
+        {
+          "name": "Corridor shell:pine",
+          "trianglesEach": 56,
+          "count": 4
+        },
+        {
+          "name": "Corridor shell:round",
+          "trianglesEach": 120,
+          "count": 2
+        },
+        {
+          "name": "Corridor tree:birch",
+          "trianglesEach": 144,
+          "count": 7
+        },
+        {
+          "name": "Corridor tree:pine",
+          "trianglesEach": 80,
+          "count": 4
+        },
+        {
+          "name": "Corridor tree:round",
+          "trianglesEach": 144,
+          "count": 2
+        },
+        {
+          "name": "Corridor heath",
+          "trianglesEach": 20,
+          "count": 2
+        }
+      ]
+    },
+    "classic.lite": {
+      "furniture": 8,
+      "plantSampled": 5,
+      "plantCapacity": 6,
+      "nightSampled": 2,
+      "componentPeakSum": 15,
+      "capacitySum": 16,
+      "layers": [
+        {
+          "name": "Corridor bush",
+          "trianglesEach": 40,
+          "count": 2
+        },
+        {
+          "name": "Corridor contact",
+          "trianglesEach": 10,
+          "count": 9
+        },
+        {
+          "name": "Corridor tree:birch",
+          "trianglesEach": 144,
+          "count": 5
+        },
+        {
+          "name": "Corridor tree:pine",
+          "trianglesEach": 80,
+          "count": 3
+        },
+        {
+          "name": "Corridor tree:round",
+          "trianglesEach": 144,
+          "count": 2
+        },
+        {
+          "name": "Corridor heath",
+          "trianglesEach": 20,
+          "count": 1
+        }
+      ]
+    },
+    "taylor.full": {
+      "furniture": 8,
+      "plantSampled": 8,
+      "plantCapacity": 9,
+      "nightSampled": 2,
+      "componentPeakSum": 18,
+      "capacitySum": 19,
+      "layers": [
+        {
+          "name": "Corridor bush",
+          "trianglesEach": 40,
+          "count": 4
+        },
+        {
+          "name": "Corridor contact",
+          "trianglesEach": 10,
+          "count": 13
+        },
+        {
+          "name": "Corridor shell:birch",
+          "trianglesEach": 120,
+          "count": 7
+        },
+        {
+          "name": "Corridor shell:pine",
+          "trianglesEach": 56,
+          "count": 4
+        },
+        {
+          "name": "Corridor shell:round",
+          "trianglesEach": 120,
+          "count": 2
+        },
+        {
+          "name": "Corridor tree:birch",
+          "trianglesEach": 144,
+          "count": 7
+        },
+        {
+          "name": "Corridor tree:pine",
+          "trianglesEach": 80,
+          "count": 4
+        },
+        {
+          "name": "Corridor tree:round",
+          "trianglesEach": 144,
+          "count": 2
+        },
+        {
+          "name": "Corridor heath",
+          "trianglesEach": 20,
+          "count": 2
+        }
+      ]
+    },
+    "taylor.lite": {
+      "furniture": 8,
+      "plantSampled": 5,
+      "plantCapacity": 6,
+      "nightSampled": 2,
+      "componentPeakSum": 15,
+      "capacitySum": 16,
+      "layers": [
+        {
+          "name": "Corridor bush",
+          "trianglesEach": 40,
+          "count": 2
+        },
+        {
+          "name": "Corridor contact",
+          "trianglesEach": 10,
+          "count": 9
+        },
+        {
+          "name": "Corridor tree:birch",
+          "trianglesEach": 144,
+          "count": 5
+        },
+        {
+          "name": "Corridor tree:pine",
+          "trianglesEach": 80,
+          "count": 3
+        },
+        {
+          "name": "Corridor tree:round",
+          "trianglesEach": 144,
+          "count": 2
+        },
+        {
+          "name": "Corridor heath",
+          "trianglesEach": 20,
+          "count": 1
+        }
+      ]
+    },
+    "newfoundland.full": {
+      "furniture": 8,
+      "plantSampled": 8,
+      "plantCapacity": 9,
+      "nightSampled": 2,
+      "componentPeakSum": 18,
+      "capacitySum": 19,
+      "layers": [
+        {
+          "name": "Corridor bush",
+          "trianglesEach": 40,
+          "count": 4
+        },
+        {
+          "name": "Corridor contact",
+          "trianglesEach": 10,
+          "count": 13
+        },
+        {
+          "name": "Corridor shell:birch",
+          "trianglesEach": 120,
+          "count": 7
+        },
+        {
+          "name": "Corridor shell:pine",
+          "trianglesEach": 56,
+          "count": 4
+        },
+        {
+          "name": "Corridor shell:round",
+          "trianglesEach": 120,
+          "count": 2
+        },
+        {
+          "name": "Corridor tree:birch",
+          "trianglesEach": 144,
+          "count": 7
+        },
+        {
+          "name": "Corridor tree:pine",
+          "trianglesEach": 80,
+          "count": 4
+        },
+        {
+          "name": "Corridor tree:round",
+          "trianglesEach": 144,
+          "count": 2
+        },
+        {
+          "name": "Corridor heath",
+          "trianglesEach": 20,
+          "count": 2
+        }
+      ]
+    },
+    "newfoundland.lite": {
+      "furniture": 8,
+      "plantSampled": 5,
+      "plantCapacity": 6,
+      "nightSampled": 2,
+      "componentPeakSum": 15,
+      "capacitySum": 16,
+      "layers": [
+        {
+          "name": "Corridor bush",
+          "trianglesEach": 40,
+          "count": 2
+        },
+        {
+          "name": "Corridor contact",
+          "trianglesEach": 10,
+          "count": 9
+        },
+        {
+          "name": "Corridor tree:birch",
+          "trianglesEach": 144,
+          "count": 5
+        },
+        {
+          "name": "Corridor tree:pine",
+          "trianglesEach": 80,
+          "count": 3
+        },
+        {
+          "name": "Corridor tree:round",
+          "trianglesEach": 144,
+          "count": 2
+        },
+        {
+          "name": "Corridor heath",
+          "trianglesEach": 20,
+          "count": 1
+        }
+      ]
+    }
+  }
+}
