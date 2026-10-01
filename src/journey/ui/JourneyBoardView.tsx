@@ -30,6 +30,8 @@ import { PiecePanel } from "./PieceLook.tsx";
 import { Stage, type FlatView, type StageMode, type StageSize } from "./Stage.tsx";
 import { ChapterPanel, ClusterPanel, StopPanel } from "./StopPanel.tsx";
 import { HORIZON_AVAILABLE } from "../../harbour/flag.ts";
+import { HORIZON_GEOGRAPHY } from "../../worldGeography.ts";
+import { recordDiagnostic, registerDiagnosticProvider } from "../../diagnostics/inspectorCore.ts";
 import "./journey-board.css";
 
 export type JourneyStageSource = {
@@ -174,6 +176,20 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
   const live = stage.mode === "live";
   /** "Enter Horizon here" is offered only where the Horizon can mount (development, or live under D15). */
   const canEnterHorizon = live && HORIZON_AVAILABLE;
+  const inspectorState = useRef({ vs, scene, stage, board });
+  inspectorState.current = { vs, scene, stage, board };
+  useEffect(() => {
+    recordDiagnostic('scene', 'enter Journey map', 'accepted');
+    return registerDiagnosticProvider({ read: () => {
+      const current = inspectorState.current, camera = current.scene?.view();
+      return { scene: 'journey', view: current.vs.listMode, activity: current.vs.selectedStopId ? 'selected stop' : 'map', worldRevision: HORIZON_GEOGRAPHY, renderedRevision: current.stage.land?.revision ?? null,
+        player: null, camera: null, location: current.vs.focusDate ?? current.board.today,
+        movement: { controller: 'map', state: 'Not applicable', horizontalSpeed: null, verticalVelocity: null, grounded: null },
+        interaction: { target: current.vs.selectedStopId, inputOwner: current.vs.listMode === 'list' ? 'Journey list' : 'Journey map' },
+        context: { selectedDate: current.vs.focusDate, selectedStopId: current.vs.selectedStopId, zoomTier: current.vs.tier, mapX: camera?.x ?? null, mapY: camera?.y ?? null, mapRadius: camera?.radius ?? null, panel: current.vs.selectedStopId ? 'stop' : 'none', coordinateConvention: 'map X/Y are concept world units; no player position', dataRevision: 'Not instrumented' },
+        rendering: { quality: current.stage.quality, stageMode: current.stage.mode, landStatus: current.stage.status }, frame: null, frameMs: null, drawCalls: null, triangles: null, idle: true, paused: false };
+    } });
+  }, []);
 
   const onViewStateChange = useRef(props.onViewStateChange);
   onViewStateChange.current = props.onViewStateChange;
@@ -294,6 +310,7 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
   }, [live, scene, stage.landHandle, openCentre]);
 
   const zoom = useCallback((dir: 1 | -1) => {
+    recordDiagnostic('map', 'zoom', 'accepted', dir > 0 ? 'in' : 'out');
     cameraTaken();
     if (live) { scene?.zoomBy(dir > 0 ? 0.5 : 2, animate); return; }
     setFlatView((prev) => {
@@ -441,7 +458,7 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
       case "PageDown": moveTo(addMonths(current, 1)); break;
       case "PageUp": moveTo(addMonths(current, -1)); break;
       case "Home": backToNow(); break;
-      case "+": case "=": zoom(1); break;
+      case "+": zoom(1); break;
       case "-": case "_": zoom(-1); break;
       case "Enter":
         if (!onStage) { handled = false; break; }

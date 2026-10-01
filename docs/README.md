@@ -143,3 +143,4 @@ Start from the repository [README](../README.md) to run the app. Compatibility f
 - [Hercules Workspace handoff](briefs/HERCULES_WORKSPACE_HANDOFF.md) — exact baseline, reproducible local proof and remaining Release acceptance.
 - [Hercules Play implementation and acceptance](features/HERCULES_PLAY.md) — room/state architecture, local proof and outstanding full-plan gates.
 - [Horizon land repairs: Claude review and enhancement](briefs/HORIZON_LAND_REPAIRS_CLAUDE_HANDOFF.md) — current-main repair candidate, independent audit, measured acceptance and reserved design decisions.
+Horizon Inspector: [controls, local incident evidence and limitations](HORIZON_INSPECTOR.md).
