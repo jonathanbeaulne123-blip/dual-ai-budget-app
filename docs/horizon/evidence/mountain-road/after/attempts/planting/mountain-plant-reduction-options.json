@@ -1,0 +1,940 @@
+{
+  "worldSha256": "9649630225b517d916984161cee0fea0bdaa9fdbc3aa8263ce151bdc0445a2cd",
+  "nativeSnapshotSha256": "40578a4359b603e17e7baf8a1438474eeab7ac577a473c743952e35389ab6219",
+  "method": "JSON-only source item inventory, exact baked district hearts, runtime liteKeep source port for these three species, runtime geometry triangle constants from prior actual-builder layers. Not a new runtime build, GPU count or terrain/visibility proof.",
+  "groups": [
+    {
+      "id": "V03.plant.framingTrees.0",
+      "reach": "V03",
+      "items": [
+        {
+          "index": 0,
+          "at": [
+            1547.395,
+            34.307,
+            777.458
+          ],
+          "species": "birch",
+          "district": "prow",
+          "liteKept": true,
+          "fullTriangles": 274,
+          "liteTriangles": 154,
+          "nearestNativeRoot": 153.36731969227347,
+          "nearestNativeRootVerticalDelta": 21.108765999999996,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 1,
+          "at": [
+            1552.793,
+            31.792,
+            774.581
+          ],
+          "species": "pine",
+          "district": "prow",
+          "liteKept": true,
+          "fullTriangles": 146,
+          "liteTriangles": 90,
+          "nearestNativeRoot": 156.29369032873976,
+          "nearestNativeRootVerticalDelta": 23.623765999999996,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 2,
+          "at": [
+            1557.578,
+            33.453,
+            777.576
+          ],
+          "species": "pine",
+          "district": "prow",
+          "liteKept": true,
+          "fullTriangles": 146,
+          "liteTriangles": 90,
+          "nearestNativeRoot": 161.93862023688484,
+          "nearestNativeRootVerticalDelta": 21.962765999999995,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 3,
+          "at": [
+            1547.075,
+            32.073,
+            774.383
+          ],
+          "species": "birch",
+          "district": "prow",
+          "liteKept": true,
+          "fullTriangles": 274,
+          "liteTriangles": 154,
+          "nearestNativeRoot": 151.38600532140362,
+          "nearestNativeRootVerticalDelta": 23.342765999999997,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 4,
+          "at": [
+            1555.77,
+            31.99,
+            775.134
+          ],
+          "species": "birch",
+          "district": "prow",
+          "liteKept": false,
+          "fullTriangles": 274,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 159.10810047107603,
+          "nearestNativeRootVerticalDelta": 23.425766,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 5,
+          "at": [
+            1554.267,
+            33.926,
+            777.84
+          ],
+          "species": "birch",
+          "district": "prow",
+          "liteKept": true,
+          "fullTriangles": 274,
+          "liteTriangles": 154,
+          "nearestNativeRoot": 159.29564320058486,
+          "nearestNativeRootVerticalDelta": 21.489765999999996,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 6,
+          "at": [
+            1544.376,
+            34.595,
+            777.444
+          ],
+          "species": "pine",
+          "district": "prow",
+          "liteKept": true,
+          "fullTriangles": 146,
+          "liteTriangles": 90,
+          "nearestNativeRoot": 150.87671115102557,
+          "nearestNativeRootVerticalDelta": 20.820766,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        }
+      ],
+      "removeSavings": {
+        "full": 1534,
+        "lite": 732
+      },
+      "districtSavings": {
+        "prow": {
+          "full": 1534,
+          "lite": 732
+        }
+      }
+    },
+    {
+      "id": "V03.plant.framingTrees.1",
+      "reach": "V03",
+      "items": [
+        {
+          "index": 0,
+          "at": [
+            1367.183,
+            53.948,
+            766.006
+          ],
+          "species": "heath",
+          "district": "prow",
+          "liteKept": true,
+          "fullTriangles": 20,
+          "liteTriangles": 20,
+          "nearestNativeRoot": 65.79253826229525,
+          "nearestNativeRootVerticalDelta": 7.068534999999997,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 1,
+          "at": [
+            1365.142,
+            54.005,
+            761.043
+          ],
+          "species": "birch",
+          "district": "prow",
+          "liteKept": true,
+          "fullTriangles": 274,
+          "liteTriangles": 154,
+          "nearestNativeRoot": 60.43767324076591,
+          "nearestNativeRootVerticalDelta": 7.011534999999995,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 2,
+          "at": [
+            1361.155,
+            54.309,
+            764.013
+          ],
+          "species": "heath",
+          "district": "lakeside",
+          "liteKept": false,
+          "fullTriangles": 20,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 61.53203615652249,
+          "nearestNativeRootVerticalDelta": 6.707535,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 3,
+          "at": [
+            1356.315,
+            54.685,
+            759.948
+          ],
+          "species": "pine",
+          "district": "lakeside",
+          "liteKept": true,
+          "fullTriangles": 146,
+          "liteTriangles": 90,
+          "nearestNativeRoot": 56.04565736814573,
+          "nearestNativeRootVerticalDelta": 6.331534999999995,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 4,
+          "at": [
+            1357.452,
+            54.605,
+            763.475
+          ],
+          "species": "heath",
+          "district": "lakeside",
+          "liteKept": true,
+          "fullTriangles": 20,
+          "liteTriangles": 20,
+          "nearestNativeRoot": 59.75108344766303,
+          "nearestNativeRootVerticalDelta": 6.411535000000001,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        }
+      ],
+      "removeSavings": {
+        "full": 480,
+        "lite": 284
+      },
+      "districtSavings": {
+        "prow": {
+          "full": 294,
+          "lite": 174
+        },
+        "lakeside": {
+          "full": 186,
+          "lite": 110
+        }
+      }
+    },
+    {
+      "id": "spur stillwater.plant.framingTrees.0",
+      "reach": "spur stillwater",
+      "items": [
+        {
+          "index": 0,
+          "at": [
+            1238.692,
+            54.018,
+            735.907
+          ],
+          "species": "birch",
+          "district": "lakeside",
+          "liteKept": true,
+          "fullTriangles": 274,
+          "liteTriangles": 154,
+          "nearestNativeRoot": 43.263464593764354,
+          "nearestNativeRootVerticalDelta": 2.0160690000000017,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 1,
+          "at": [
+            1238.218,
+            54.082,
+            740.038
+          ],
+          "species": "birch",
+          "district": "lakeside",
+          "liteKept": false,
+          "fullTriangles": 274,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 46.340811346715704,
+          "nearestNativeRootVerticalDelta": 1.9520690000000016,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 2,
+          "at": [
+            1243.017,
+            54.058,
+            734.349
+          ],
+          "species": "birch",
+          "district": "lakeside",
+          "liteKept": true,
+          "fullTriangles": 274,
+          "liteTriangles": 154,
+          "nearestNativeRoot": 38.962165826451425,
+          "nearestNativeRootVerticalDelta": 1.9760690000000025,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 3,
+          "at": [
+            1242.71,
+            53.975,
+            731.237
+          ],
+          "species": "birch",
+          "district": "lakeside",
+          "liteKept": false,
+          "fullTriangles": 274,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 37.210068742961184,
+          "nearestNativeRootVerticalDelta": 2.059069000000001,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 4,
+          "at": [
+            1241.39,
+            54.084,
+            737.705
+          ],
+          "species": "birch",
+          "district": "lakeside",
+          "liteKept": true,
+          "fullTriangles": 274,
+          "liteTriangles": 154,
+          "nearestNativeRoot": 42.43189714335074,
+          "nearestNativeRootVerticalDelta": 1.9500689999999992,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 5,
+          "at": [
+            1235.922,
+            54.034,
+            737.693
+          ],
+          "species": "birch",
+          "district": "lakeside",
+          "liteKept": true,
+          "fullTriangles": 274,
+          "liteTriangles": 154,
+          "nearestNativeRoot": 44.797333473597135,
+          "nearestNativeRootVerticalDelta": 6.2239059999999995,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        }
+      ],
+      "removeSavings": {
+        "full": 1644,
+        "lite": 616
+      },
+      "districtSavings": {
+        "lakeside": {
+          "full": 1644,
+          "lite": 616
+        }
+      }
+    },
+    {
+      "id": "spur stillwater.plant.framingTrees.1",
+      "reach": "spur stillwater",
+      "items": [
+        {
+          "index": 0,
+          "at": [
+            989.628,
+            41.873,
+            685.442
+          ],
+          "species": "birch",
+          "district": "hollow",
+          "liteKept": true,
+          "fullTriangles": 274,
+          "liteTriangles": 154,
+          "nearestNativeRoot": 181.96798024911274,
+          "nearestNativeRootVerticalDelta": 42.895939000000006,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 1,
+          "at": [
+            991.594,
+            41.741,
+            683.16
+          ],
+          "species": "birch",
+          "district": "hollow",
+          "liteKept": true,
+          "fullTriangles": 274,
+          "liteTriangles": 154,
+          "nearestNativeRoot": 179.2645701344621,
+          "nearestNativeRootVerticalDelta": 43.027939,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 2,
+          "at": [
+            989.658,
+            41.794,
+            683.61
+          ],
+          "species": "birch",
+          "district": "hollow",
+          "liteKept": true,
+          "fullTriangles": 274,
+          "liteTriangles": 154,
+          "nearestNativeRoot": 181.22354322394622,
+          "nearestNativeRootVerticalDelta": 42.974939000000006,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 3,
+          "at": [
+            994.72,
+            41.82,
+            681.965
+          ],
+          "species": "birch",
+          "district": "hollow",
+          "liteKept": false,
+          "fullTriangles": 274,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 175.91993195933057,
+          "nearestNativeRootVerticalDelta": 42.948939,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 4,
+          "at": [
+            993.419,
+            41.59,
+            680.974
+          ],
+          "species": "birch",
+          "district": "hollow",
+          "liteKept": false,
+          "fullTriangles": 274,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 176.73812519703696,
+          "nearestNativeRootVerticalDelta": 43.178939,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 5,
+          "at": [
+            988.909,
+            41.901,
+            687.615
+          ],
+          "species": "birch",
+          "district": "hollow",
+          "liteKept": true,
+          "fullTriangles": 274,
+          "liteTriangles": 154,
+          "nearestNativeRoot": 183.4957895837763,
+          "nearestNativeRootVerticalDelta": 42.867939,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        }
+      ],
+      "removeSavings": {
+        "full": 1644,
+        "lite": 616
+      },
+      "districtSavings": {
+        "hollow": {
+          "full": 1644,
+          "lite": 616
+        }
+      }
+    },
+    {
+      "id": "mountainV2.road.plant.framingTrees.0",
+      "reach": "M4",
+      "items": [
+        {
+          "index": 0,
+          "at": [
+            1369.151,
+            55.88,
+            716.127
+          ],
+          "species": "pine",
+          "district": "prow",
+          "liteKept": true,
+          "fullTriangles": 146,
+          "liteTriangles": 80,
+          "nearestNativeRoot": 32.117390763752844,
+          "nearestNativeRootVerticalDelta": 5.136534999999995,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 1,
+          "at": [
+            1350.045,
+            55.042,
+            716.847
+          ],
+          "species": "pine",
+          "district": "lakeside",
+          "liteKept": false,
+          "fullTriangles": 146,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 15.34936474293289,
+          "nearestNativeRootVerticalDelta": 5.974534999999996,
+          "nativeRootsWithin25m": 2,
+          "nearbyNativeCrownTopRelativeRange": [
+            10.562530193333771,
+            13.424487583843842
+          ]
+        },
+        {
+          "index": 2,
+          "at": [
+            1354.514,
+            58.61,
+            713.822
+          ],
+          "species": "pine",
+          "district": "crown",
+          "liteKept": true,
+          "fullTriangles": 146,
+          "liteTriangles": 80,
+          "nearestNativeRoot": 17.556316780053486,
+          "nearestNativeRootVerticalDelta": 2.406534999999998,
+          "nativeRootsWithin25m": 1,
+          "nearbyNativeCrownTopRelativeRange": [
+            9.856487583843844,
+            9.856487583843844
+          ]
+        },
+        {
+          "index": 3,
+          "at": [
+            1357.028,
+            56.76,
+            715.813
+          ],
+          "species": "pine",
+          "district": "lakeside",
+          "liteKept": true,
+          "fullTriangles": 146,
+          "liteTriangles": 80,
+          "nearestNativeRoot": 20.671271766816663,
+          "nearestNativeRootVerticalDelta": 4.2565349999999995,
+          "nativeRootsWithin25m": 1,
+          "nearbyNativeCrownTopRelativeRange": [
+            11.706487583843845,
+            11.706487583843845
+          ]
+        },
+        {
+          "index": 4,
+          "at": [
+            1368.681,
+            58.451,
+            713.233
+          ],
+          "species": "pine",
+          "district": "prow",
+          "liteKept": false,
+          "fullTriangles": 146,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 30.94308156385842,
+          "nearestNativeRootVerticalDelta": 2.565534999999997,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 5,
+          "at": [
+            1363.884,
+            58.646,
+            713.756
+          ],
+          "species": "pine",
+          "district": "prow",
+          "liteKept": true,
+          "fullTriangles": 146,
+          "liteTriangles": 80,
+          "nearestNativeRoot": 26.40038631015828,
+          "nearestNativeRootVerticalDelta": 2.3705349999999967,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        }
+      ],
+      "removeSavings": {
+        "full": 876,
+        "lite": 320
+      },
+      "districtSavings": {
+        "prow": {
+          "full": 438,
+          "lite": 160
+        },
+        "crown": {
+          "full": 146,
+          "lite": 80
+        },
+        "lakeside": {
+          "full": 292,
+          "lite": 80
+        }
+      }
+    },
+    {
+      "id": "mountainV2.road.plant.framingTrees.1",
+      "reach": "M5",
+      "items": [
+        {
+          "index": 0,
+          "at": [
+            1418.236,
+            83.9,
+            614.08
+          ],
+          "species": "pine",
+          "district": "crown",
+          "liteKept": false,
+          "fullTriangles": 146,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 28.236139929568534,
+          "nearestNativeRootVerticalDelta": -1.7893490000000014,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 1,
+          "at": [
+            1414.504,
+            83.663,
+            614.317
+          ],
+          "species": "pine",
+          "district": "crown",
+          "liteKept": false,
+          "fullTriangles": 146,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 24.639494614950312,
+          "nearestNativeRootVerticalDelta": -1.5523489999999924,
+          "nativeRootsWithin25m": 1,
+          "nearbyNativeCrownTopRelativeRange": [
+            4.229679811899956,
+            4.229679811899956
+          ]
+        },
+        {
+          "index": 2,
+          "at": [
+            1413.18,
+            86.445,
+            610.588
+          ],
+          "species": "pine",
+          "district": "crown",
+          "liteKept": false,
+          "fullTriangles": 146,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 25.03180665797364,
+          "nearestNativeRootVerticalDelta": -4.334348999999989,
+          "nativeRootsWithin25m": 0,
+          "nearbyNativeCrownTopRelativeRange": null
+        },
+        {
+          "index": 3,
+          "at": [
+            1414.321,
+            80.117,
+            618.116
+          ],
+          "species": "pine",
+          "district": "crown",
+          "liteKept": false,
+          "fullTriangles": 146,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 23.388944451175345,
+          "nearestNativeRootVerticalDelta": 1.9936509999999998,
+          "nativeRootsWithin25m": 1,
+          "nearbyNativeCrownTopRelativeRange": [
+            7.775679811899948,
+            7.775679811899948
+          ]
+        }
+      ],
+      "removeSavings": {
+        "full": 584,
+        "lite": 0
+      },
+      "districtSavings": {
+        "crown": {
+          "full": 584,
+          "lite": 0
+        }
+      }
+    },
+    {
+      "id": "mountainV2.road.plant.framingTrees.2",
+      "reach": "M6",
+      "items": [
+        {
+          "index": 0,
+          "at": [
+            1242.766,
+            107.845,
+            558.747
+          ],
+          "species": "pine",
+          "district": "crown",
+          "liteKept": true,
+          "fullTriangles": 146,
+          "liteTriangles": 80,
+          "nearestNativeRoot": 16.50725693297874,
+          "nearestNativeRootVerticalDelta": 1.216142000000005,
+          "nativeRootsWithin25m": 9,
+          "nearbyNativeCrownTopRelativeRange": [
+            6.294683719587525,
+            17.649051465565307
+          ]
+        },
+        {
+          "index": 1,
+          "at": [
+            1239.028,
+            110.998,
+            556.359
+          ],
+          "species": "pine",
+          "district": "crown",
+          "liteKept": false,
+          "fullTriangles": 146,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 13.218687964974913,
+          "nearestNativeRootVerticalDelta": -1.9368580000000009,
+          "nativeRootsWithin25m": 11,
+          "nearbyNativeCrownTopRelativeRange": [
+            3.141683719587519,
+            14.496051465565301
+          ]
+        },
+        {
+          "index": 2,
+          "at": [
+            1244.162,
+            109.586,
+            555.954
+          ],
+          "species": "pine",
+          "district": "crown",
+          "liteKept": true,
+          "fullTriangles": 146,
+          "liteTriangles": 80,
+          "nearestNativeRoot": 18.298285288227795,
+          "nearestNativeRootVerticalDelta": -0.5248579999999947,
+          "nativeRootsWithin25m": 7,
+          "nearbyNativeCrownTopRelativeRange": [
+            4.553683719587525,
+            16.588864061707085
+          ]
+        },
+        {
+          "index": 3,
+          "at": [
+            1240.892,
+            111.646,
+            554.189
+          ],
+          "species": "pine",
+          "district": "crown",
+          "liteKept": true,
+          "fullTriangles": 146,
+          "liteTriangles": 80,
+          "nearestNativeRoot": 15.680191512841105,
+          "nearestNativeRootVerticalDelta": -2.584857999999997,
+          "nativeRootsWithin25m": 10,
+          "nearbyNativeCrownTopRelativeRange": [
+            2.4936837195875228,
+            13.848051465565305
+          ]
+        }
+      ],
+      "removeSavings": {
+        "full": 584,
+        "lite": 240
+      },
+      "districtSavings": {
+        "crown": {
+          "full": 584,
+          "lite": 240
+        }
+      }
+    },
+    {
+      "id": "mountainV2.road.plant.framingTrees.3",
+      "reach": "M-top",
+      "items": [
+        {
+          "index": 0,
+          "at": [
+            1360.186,
+            150.167,
+            457.983
+          ],
+          "species": "pine",
+          "district": "crown",
+          "liteKept": false,
+          "fullTriangles": 146,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 7.549188403437833,
+          "nearestNativeRootVerticalDelta": 4.30202700000001,
+          "nativeRootsWithin25m": 6,
+          "nearbyNativeCrownTopRelativeRange": [
+            7.251998392160232,
+            13.955382603614026
+          ]
+        },
+        {
+          "index": 1,
+          "at": [
+            1360.051,
+            152.495,
+            461.158
+          ],
+          "species": "pine",
+          "district": "crown",
+          "liteKept": false,
+          "fullTriangles": 146,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 4.3746315308377755,
+          "nearestNativeRootVerticalDelta": 1.9740270000000066,
+          "nativeRootsWithin25m": 6,
+          "nearbyNativeCrownTopRelativeRange": [
+            4.923998392160229,
+            11.627382603614024
+          ]
+        },
+        {
+          "index": 2,
+          "at": [
+            1369.308,
+            149.67,
+            458.764
+          ],
+          "species": "pine",
+          "district": "crown",
+          "liteKept": false,
+          "fullTriangles": 146,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 5.421914562292517,
+          "nearestNativeRootVerticalDelta": 3.8946570000000236,
+          "nativeRootsWithin25m": 11,
+          "nearbyNativeCrownTopRelativeRange": [
+            5.759765884622027,
+            11.238196400440444
+          ]
+        },
+        {
+          "index": 3,
+          "at": [
+            1369.322,
+            147.828,
+            455.204
+          ],
+          "species": "pine",
+          "district": "crown",
+          "liteKept": false,
+          "fullTriangles": 146,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 8.920848668192917,
+          "nearestNativeRootVerticalDelta": 5.736657000000008,
+          "nativeRootsWithin25m": 9,
+          "nearbyNativeCrownTopRelativeRange": [
+            7.6017658846220115,
+            13.080196400440428
+          ]
+        },
+        {
+          "index": 4,
+          "at": [
+            1366.235,
+            151.323,
+            460.169
+          ],
+          "species": "pine",
+          "district": "crown",
+          "liteKept": false,
+          "fullTriangles": 146,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 4.245193168844121,
+          "nearestNativeRootVerticalDelta": 2.2416570000000036,
+          "nativeRootsWithin25m": 10,
+          "nearbyNativeCrownTopRelativeRange": [
+            4.106765884622007,
+            10.042971368777046
+          ]
+        },
+        {
+          "index": 5,
+          "at": [
+            1364.217,
+            149.398,
+            455.791
+          ],
+          "species": "pine",
+          "district": "crown",
+          "liteKept": false,
+          "fullTriangles": 146,
+          "liteTriangles": 0,
+          "nearestNativeRoot": 9.065896363890333,
+          "nearestNativeRootVerticalDelta": 4.166657000000015,
+          "nativeRootsWithin25m": 7,
+          "nearbyNativeCrownTopRelativeRange": [
+            7.449296745101407,
+            11.967971368777057
+          ]
+        }
+      ],
+      "removeSavings": {
+        "full": 876,
+        "lite": 0
+      },
+      "districtSavings": {
+        "crown": {
+          "full": 876,
+          "lite": 0
+        }
+      }
+    }
+  ]
+}

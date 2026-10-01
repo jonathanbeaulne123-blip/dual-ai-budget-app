@@ -1,0 +1,9 @@
+$ node --max-old-space-size=6144 node_modules/typescript/bin/tsc --noEmit
+src/harbour/horizon/runtime/orderedContactShade.ts(79,35): error TS2367: This comparison appears to be unintentional because the types 'Group<Object3DEventMap>' and 'GeometryGroup' have no overlap.
+src/harbour/horizon/runtime/orderedContactShade.ts(79,61): error TS2367: This comparison appears to be unintentional because the types 'Group<Object3DEventMap>' and 'GeometryGroup' have no overlap.
+src/harbour/horizon/runtime/orderedContactShade.ts(88,13): error TS2339: Property 'start' does not exist on type 'Group<Object3DEventMap>'.
+test/horizon-ordered-contact-shade.test.ts(26,86): error TS2345: Argument of type 'GeometryGroup' is not assignable to parameter of type 'Group<Object3DEventMap>'.
+  Type 'GeometryGroup' is missing the following properties from type 'Group<Object3DEventMap>': isGroup, isObject3D, id, uuid, and 75 more.
+test/horizon-ordered-contact-shade.test.ts(29,85): error TS2345: Argument of type 'GeometryGroup' is not assignable to parameter of type 'Group<Object3DEventMap>'.
+  Type 'GeometryGroup' is missing the following properties from type 'Group<Object3DEventMap>': isGroup, isObject3D, id, uuid, and 75 more.
+[ELIFECYCLE] Command failed with exit code 2.
