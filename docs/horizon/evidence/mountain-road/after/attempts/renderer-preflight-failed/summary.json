@@ -1,0 +1,56 @@
+{
+  "status": "failed",
+  "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+  "root": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book",
+  "worldPath": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/public/horizon/world/horizon-geo-1.json",
+  "worldSha256": "0e129df837d3000d674b6ce1dc56446cfb0f690515064e51455047fe1ead0e33",
+  "terrainPath": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/public/horizon/terrain/horizon-geo-1.bin",
+  "terrainSha256": "b8532036cf93e5ba9e7682e5041a69f216c47a91a955c372638e73dcb5a19d8d",
+  "scriptSha256": "3a1e25a9ba1dec690af5828e71db27804ec517898d29bb7f89fe6784536aad30",
+  "entrySha256": "9401abd7cd9edb15e72ce9ee1ba784852f2303d55d231ae54e26157a56e89da0",
+  "districts": [
+    "lakeside"
+  ],
+  "themes": [
+    "classic"
+  ],
+  "tiers": [
+    "full"
+  ],
+  "seasons": [
+    "summer"
+  ],
+  "times": [
+    "day",
+    "night"
+  ],
+  "corridorIds": "all",
+  "reviewViewSource": null,
+  "reviewViewsMatchWorld": null,
+  "cases": [],
+  "renderers": [],
+  "errors": [
+    {
+      "error": "Error: Build failed with 1 error:\nsrc/harbour/mountain/terrainAsset.ts:36:36: ERROR: Could not resolve \"node:fs/promises\"\n    at failureErrorWithLog (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild/lib/main.js:1752:15)\n    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild/lib/main.js:1211:25\n    at runOnEndCallbacks (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild/lib/main.js:1592:45)\n    at buildResponseToResult (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild/lib/main.js:1209:7)\n    at /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild/lib/main.js:1236:16\n    at responseCallbacks.<computed> (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild/lib/main.js:886:9)\n    at handleIncomingPacket (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild/lib/main.js:941:12)\n    at Socket.readFromStdout (/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/horizon-complete/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild/lib/main.js:864:7)\n    at Socket.emit (node:events:514:28)\n    at addChunk (node:internal/streams/readable:568:12)"
+    }
+  ],
+  "limits": [
+    "Finite camera/season samples. A sampled peak below12 is not an exhaustive ROAD district bound or a device acceptance.",
+    "Real WebGL base-pass renderer.info calls, including actual transparent double-sided passes. Shadow maps and other render passes are disabled, matching the existing base-pass corridor budget scope.",
+    "Furniture and plants are isolated to one resident district; the actual globally shared road glow/pool draws are charged in full. Door/threshold geometry is excluded from corridor attribution but still competes under the unchanged shared lighting cap.",
+    "Existing physical objects, authored full/lite geometry, all themes, material hooks, wind and plant residency/fade are retained. Hidden/faded primitives count whenever submitted.",
+    "No terrain, native world, buildings, sky or non-corridor structure geometry is rendered. Ground conformation uses the same baked-terrain approximation as mountain-budgets; no visual/support or occlusion acceptance is claimed.",
+    "Budget route/pool eyes are nominal anchor+1.65m, not newly surface-seated views. Plant-root diagnostics have four explicit headings. Captured review poses, if supplied, are copied exactly and their source/hash is recorded.",
+    "Camera traversal order and existing plant hysteresis are retained within each case; all four seasons and day/night are separate cases. Submitted work, not GPU elapsed time, is measured.",
+    "Any retained capacity report is a separate unmodified reference. Asset hash mismatches are explicit and never silently treated as current evidence. Its per-mesh draw counts are not a guaranteed upper bound on WebGL calls: transparent DoubleSide materials may submit twice.",
+    "The actual builder materials and hooks are used; the live global fog hook/environment is not mounted. This count-only harness is not visual or material-appearance acceptance.",
+    "Plant scale-in time follows the browser clock and is retained, not forced complete. It does not exempt any submitted zero-scale or zero-alpha work from the measured call count."
+  ],
+  "capacityReference": {
+    "path": "/tmp/mountain-light-gap/candidate-budgets.json",
+    "sha256": "7e8e7f866b50ac5be99eb7d642a697db80911ad1edcc1029ce0bffcbe44efa43",
+    "worldSha256": "63c4d1e47b6205c66667812377f98a677439ba94ecb389fdf479fbebcf6af91d",
+    "terrainSha256": "b8532036cf93e5ba9e7682e5041a69f216c47a91a955c372638e73dcb5a19d8d",
+    "matchesAssets": false
+  }
+}

@@ -1,0 +1,799 @@
+{
+  "status": "ENVELOPE FEASIBILITY ONLY; NO CONSTRUCTED CANDIDATE OR CONTROLLER PASS",
+  "createdAt": "2026-09-30T17:24:20.185Z",
+  "worldSha256": "0e129df837d3000d674b6ce1dc56446cfb0f690515064e51455047fe1ead0e33",
+  "terrainSha256": "b8532036cf93e5ba9e7682e5041a69f216c47a91a955c372638e73dcb5a19d8d",
+  "runtimeBundleSha256": "986dd910f08e3d187e969637118dd62576d07c3e237081d39b66ee212f4728be",
+  "candidatePlanSha256": "47c0d0e15aa64b67416bb89c1a251a8a09b437700b08202f487e03019bbb5559",
+  "sourceDrift": {
+    "crest": 0,
+    "road": 0
+  },
+  "actualCrest": {
+    "id": "promenade:dam-crest",
+    "points": [
+      [
+        1295.1818425857437,
+        142,
+        525.9417051494015
+      ],
+      [
+        1295.673862971713,
+        142,
+        527.3455103748396
+      ],
+      [
+        1296.1658833576826,
+        142,
+        528.7493156002777
+      ],
+      [
+        1296.657903743652,
+        142,
+        530.1531208257159
+      ],
+      [
+        1297.693840589638,
+        142,
+        531.1934215903336
+      ],
+      [
+        1298.729777435624,
+        142,
+        532.2337223549514
+      ],
+      [
+        1299.7657142816101,
+        142,
+        533.2740231195692
+      ],
+      [
+        1300.9669536151468,
+        142,
+        534.1180698560121
+      ],
+      [
+        1302.1681929486836,
+        142,
+        534.9621165924551
+      ],
+      [
+        1303.3694322822203,
+        142,
+        535.8061633288982
+      ],
+      [
+        1304.6992799388545,
+        142,
+        536.4281730071834
+      ],
+      [
+        1306.0291275954885,
+        142,
+        537.0501826854686
+      ],
+      [
+        1307.3589752521227,
+        142,
+        537.672192363754
+      ],
+      [
+        1308.7768084789623,
+        142,
+        538.0531645026374
+      ],
+      [
+        1310.1946417058018,
+        142,
+        538.4341366415208
+      ],
+      [
+        1311.6124749326414,
+        142,
+        538.8151087804043
+      ],
+      [
+        1313.0749832884276,
+        142,
+        538.9434058536028
+      ],
+      [
+        1314.5374916442138,
+        142,
+        539.0717029268014
+      ],
+      [
+        1316,
+        142,
+        539.2
+      ],
+      [
+        1317.4625083557862,
+        142,
+        539.0717029268014
+      ],
+      [
+        1318.9250167115724,
+        142,
+        538.9434058536028
+      ],
+      [
+        1320.3875250673586,
+        142,
+        538.8151087804043
+      ],
+      [
+        1321.8053582941982,
+        142,
+        538.4341366415208
+      ],
+      [
+        1323.2231915210377,
+        142,
+        538.0531645026374
+      ],
+      [
+        1324.6410247478773,
+        142,
+        537.672192363754
+      ],
+      [
+        1325.9708724045115,
+        142,
+        537.0501826854686
+      ],
+      [
+        1327.3007200611455,
+        142,
+        536.4281730071834
+      ],
+      [
+        1328.6305677177797,
+        142,
+        535.8061633288982
+      ],
+      [
+        1329.8318070513164,
+        142,
+        534.9621165924551
+      ],
+      [
+        1331.0330463848532,
+        142,
+        534.1180698560121
+      ],
+      [
+        1332.2342857183899,
+        142,
+        533.2740231195692
+      ],
+      [
+        1333.270222564376,
+        142,
+        532.2337223549514
+      ],
+      [
+        1334.306159410362,
+        142,
+        531.1934215903336
+      ],
+      [
+        1335.342096256348,
+        142,
+        530.1531208257159
+      ],
+      [
+        1335.8341166423174,
+        142,
+        528.7493156002777
+      ],
+      [
+        1336.326137028287,
+        142,
+        527.3455103748396
+      ],
+      [
+        1336.8181574142563,
+        142,
+        525.9417051494015
+      ]
+    ],
+    "halfWidth": 1.8
+  },
+  "points": [
+    [
+      1336.8181574142563,
+      142,
+      525.9417051494015
+    ],
+    [
+      1340,
+      143.7,
+      523
+    ],
+    [
+      1343,
+      144.7,
+      520
+    ],
+    [
+      1345.4,
+      145.05,
+      517
+    ],
+    [
+      1345.4,
+      145.2,
+      512
+    ],
+    [
+      1350.4710590141044,
+      144.90901767884748,
+      510.99168094195977
+    ],
+    [
+      1354.411248819002,
+      144.90901767884748,
+      508.250348364292
+    ]
+  ],
+  "width": 2.4,
+  "parts": [
+    {
+      "segment": 0,
+      "from": 0,
+      "to": 4.333330292796435,
+      "grade": 0.39230796757542447,
+      "steps": 10,
+      "insideExistingRoad": false
+    },
+    {
+      "segment": 1,
+      "from": 4.333330292796435,
+      "to": 8.57597097991572,
+      "grade": 0.2357022603955158,
+      "steps": 6,
+      "insideExistingRoad": false
+    },
+    {
+      "segment": 2,
+      "from": 8.57597097991572,
+      "to": 12.417845522375487,
+      "grade": 0.09110136110169145,
+      "steps": 0,
+      "insideExistingRoad": false
+    },
+    {
+      "segment": 3,
+      "from": 12.417845522375487,
+      "to": 17.417845522375487,
+      "grade": 0.029999999999995454,
+      "steps": 0,
+      "insideExistingRoad": false
+    },
+    {
+      "segment": 4,
+      "from": 17.417845522375487,
+      "to": 22.58817886243547,
+      "grade": -0.05627921876873347,
+      "steps": 0,
+      "insideExistingRoad": false
+    },
+    {
+      "segment": 5,
+      "from": 22.58817886243547,
+      "to": 27.38817886243556,
+      "grade": 0,
+      "steps": 0,
+      "insideExistingRoad": true
+    }
+  ],
+  "contracts": {
+    "bodyHeight": 1.25,
+    "bodyRadius": 0.3,
+    "stepHeight": 0.48,
+    "walkableDegrees": 40,
+    "proposedDeckThickness": 0.3,
+    "nativeRoadUnchanged": true,
+    "nativeKerbUnchanged": true,
+    "kerbTopAboveQueryRoad": 0.22,
+    "kerbTopAbovePaintedRoad": 0.17
+  },
+  "summary": {
+    "samples": 2912,
+    "hardFailures": 4,
+    "maxTerrainIntrusion": 0.027636296266052796,
+    "maxSupportDepth": 5.932612150335245,
+    "maxNativeVsHorizonGroundDifference": 0.09334186191500748,
+    "minimumFiniteHeadroom": null,
+    "lowerPathChecks": 187,
+    "flaggedFootings": 1,
+    "bridgeLikeRuns": 1
+  },
+  "bridgeLikeRuns": [
+    {
+      "from": 0.2954543381452115,
+      "to": 9.856595827402309,
+      "maxDepth": 5.932612150335245,
+      "overWater": true,
+      "length": 9.561141489257098
+    }
+  ],
+  "spanRuns": [
+    {
+      "from": 0.2954543381452115,
+      "to": 9.856595827402309,
+      "maxDepth": 5.932612150335245,
+      "overWater": true,
+      "length": 9.561141489257098
+    },
+    {
+      "from": 13.517845522375486,
+      "to": 16.817845522375485,
+      "maxDepth": 2.3866140747069835,
+      "overWater": false,
+      "length": 3.299999999999999
+    },
+    {
+      "from": 17.417845522375487,
+      "to": 17.517275009684333,
+      "maxDepth": 2.2069915110000125,
+      "overWater": false,
+      "length": 0.09942948730884638
+    }
+  ],
+  "footings": [
+    {
+      "s": 0,
+      "side": -1,
+      "at": [
+        1336.173244678992,
+        142,
+        525.2441468623073
+      ],
+      "bottom": 140.92542929397897,
+      "top": 141.7,
+      "height": 0.7745707060210236,
+      "water": null,
+      "submergedFooting": false,
+      "underDecks": [],
+      "pathConflicts": []
+    },
+    {
+      "s": 0,
+      "side": 1,
+      "at": [
+        1337.4630701495207,
+        142,
+        526.6392634364958
+      ],
+      "bottom": 136.73404786956803,
+      "top": 141.7,
+      "height": 4.965952130431958,
+      "water": null,
+      "submergedFooting": false,
+      "underDecks": [],
+      "pathConflicts": [
+        {
+          "id": "path:dam:east~door:pavilion",
+          "kind": "path",
+          "at": [
+            1337.0380125626357,
+            141.02516990545507,
+            525.8266977150836
+          ],
+          "planDistance": 0.9170261739899287
+        },
+        {
+          "id": "path:station:funicular:reservoir~dam:east",
+          "kind": "path",
+          "at": [
+            1337.390137444704,
+            138.04796602536942,
+            526.6946661105694
+          ],
+          "planDistance": 0.09158949572090687
+        }
+      ]
+    },
+    {
+      "s": 2.954543381452115,
+      "side": -1,
+      "at": [
+        1338.3426828056354,
+        143.1590909090909,
+        523.2384388058972
+      ],
+      "bottom": 137.13657308017835,
+      "top": 142.8590909090909,
+      "height": 5.722517828912544,
+      "water": 140,
+      "submergedFooting": true,
+      "underDecks": [],
+      "pathConflicts": []
+    },
+    {
+      "s": 2.954543381452115,
+      "side": 1,
+      "at": [
+        1339.6325082761641,
+        143.1590909090909,
+        524.6335553800857
+      ],
+      "bottom": 137.81601549279623,
+      "top": 142.8590909090909,
+      "height": 5.04307541629467,
+      "water": 140,
+      "submergedFooting": true,
+      "underDecks": [],
+      "pathConflicts": []
+    },
+    {
+      "s": 6.01065335514592,
+      "side": -1,
+      "at": [
+        1340.5142950695006,
+        144.0953488372093,
+        521.142202046245
+      ],
+      "bottom": 139.93138806936003,
+      "top": 143.79534883720927,
+      "height": 3.8639607678492496,
+      "water": null,
+      "submergedFooting": false,
+      "underDecks": [],
+      "pathConflicts": []
+    },
+    {
+      "s": 6.01065335514592,
+      "side": 1,
+      "at": [
+        1341.8577979537552,
+        144.0953488372093,
+        522.4857049304993
+      ],
+      "bottom": 140.6760172302209,
+      "top": 143.79534883720927,
+      "height": 3.119331606988368,
+      "water": null,
+      "submergedFooting": false,
+      "underDecks": [],
+      "pathConflicts": []
+    },
+    {
+      "s": 8.970009394526977,
+      "side": -1,
+      "at": [
+        1342.504328477183,
+        144.7358974358974,
+        519.0988473971311
+      ],
+      "bottom": 142.22267323076468,
+      "top": 144.4358974358974,
+      "height": 2.2132242051327182,
+      "water": null,
+      "submergedFooting": false,
+      "underDecks": [],
+      "pathConflicts": []
+    },
+    {
+      "s": 8.970009394526977,
+      "side": 1,
+      "at": [
+        1343.9879792151248,
+        144.7358974358974,
+        520.2857679874844
+      ],
+      "bottom": 142.81597148973142,
+      "top": 144.4358974358974,
+      "height": 1.6199259461659778,
+      "water": null,
+      "submergedFooting": false,
+      "underDecks": [],
+      "pathConflicts": []
+    },
+    {
+      "s": 12.023807107764227,
+      "side": -1,
+      "at": [
+        1344.4120207848753,
+        145.0141025641026,
+        516.7142320125156
+      ],
+      "bottom": 143.2349422017632,
+      "top": 144.71410256410257,
+      "height": 1.4791603623393712,
+      "water": null,
+      "submergedFooting": false,
+      "underDecks": [],
+      "pathConflicts": []
+    },
+    {
+      "s": 12.023807107764227,
+      "side": 1,
+      "at": [
+        1345.895671522817,
+        145.0141025641026,
+        517.9011526028689
+      ],
+      "bottom": 143.63247035493885,
+      "top": 144.71410256410257,
+      "height": 1.081632209163729,
+      "water": null,
+      "submergedFooting": false,
+      "underDecks": [],
+      "pathConflicts": []
+    },
+    {
+      "s": 15.017845522375486,
+      "side": -1,
+      "at": [
+        1344.45,
+        145.128,
+        514.4
+      ],
+      "bottom": 142.44644569396974,
+      "top": 144.82799999999997,
+      "height": 2.381554306030239,
+      "water": null,
+      "submergedFooting": false,
+      "underDecks": [],
+      "pathConflicts": []
+    },
+    {
+      "s": 15.017845522375486,
+      "side": 1,
+      "at": [
+        1346.3500000000001,
+        145.128,
+        514.4
+      ],
+      "bottom": 143.2161899566651,
+      "top": 144.82799999999997,
+      "height": 1.6118100433348843,
+      "water": null,
+      "submergedFooting": false,
+      "underDecks": [],
+      "pathConflicts": []
+    },
+    {
+      "s": 18.01442244622856,
+      "side": -1,
+      "at": [
+        1345.7998530744926,
+        145.1664251167901,
+        510.95189621463663
+      ],
+      "bottom": 143.6738055291822,
+      "top": 144.86642511679008,
+      "height": 1.1926195876078793,
+      "water": null,
+      "submergedFooting": false,
+      "underDecks": [],
+      "pathConflicts": []
+    },
+    {
+      "s": 18.01442244622856,
+      "side": 1,
+      "at": [
+        1346.1703913133779,
+        145.1664251167901,
+        512.8154147719695
+      ],
+      "bottom": 142.77423073531716,
+      "top": 144.86642511679008,
+      "height": 2.092194381472922,
+      "water": null,
+      "submergedFooting": false,
+      "underDecks": [],
+      "pathConflicts": []
+    },
+    {
+      "s": 20.997307065493935,
+      "side": -1,
+      "at": [
+        1348.7254640441681,
+        144.99855070074057,
+        510.3701736811519
+      ],
+      "bottom": 144.18475331186028,
+      "top": 144.69855070074055,
+      "height": 0.5137973888802776,
+      "water": null,
+      "submergedFooting": false,
+      "underDecks": [],
+      "pathConflicts": []
+    },
+    {
+      "s": 20.997307065493935,
+      "side": 1,
+      "at": [
+        1349.0960022830534,
+        144.99855070074057,
+        512.2336922384848
+      ],
+      "bottom": 144.2252739525171,
+      "top": 144.69855070074055,
+      "height": 0.4732767482234408,
+      "water": null,
+      "submergedFooting": false,
+      "underDecks": [],
+      "pathConflicts": []
+    }
+  ],
+  "failures": [
+    {
+      "s": 21.991601938582395,
+      "kind": "section",
+      "lateral": -1.2,
+      "at": [
+        1349.6519126692942,
+        144.94259256205737,
+        509.93106635981496
+      ],
+      "mode": "smooth",
+      "why": [
+        "terrain-above-proposed-floor"
+      ],
+      "context": {
+        "nativeGround": 144.96486137798064,
+        "ground": 144.96486137798064,
+        "bakedGround": 144.91567886756025,
+        "floor": {
+          "id": "terrain",
+          "y": 144.96486137798064,
+          "nx": 0.00843728528753918,
+          "ny": 0.999056371355646,
+          "nz": 0.04260491838586765,
+          "material": "grass",
+          "slope": 2.489271948177253
+        },
+        "ceiling": null,
+        "headroom": null,
+        "water": null,
+        "directWater": null,
+        "waterFreeboard": null,
+        "terrainIntrusion": 0.022268815923268903,
+        "supportDepth": 0,
+        "contacts": null,
+        "otherDecks": [],
+        "bodyBelow": [],
+        "coveredLower": [],
+        "road": null,
+        "branch": null
+      }
+    },
+    {
+      "s": 21.991601938582395,
+      "kind": "section",
+      "lateral": -1.2,
+      "at": [
+        1349.6519126692942,
+        144.94259256205737,
+        509.93106635981496
+      ],
+      "mode": "tread",
+      "why": [
+        "terrain-above-proposed-floor"
+      ],
+      "context": {
+        "nativeGround": 144.96486137798064,
+        "ground": 144.96486137798064,
+        "bakedGround": 144.91567886756025,
+        "floor": {
+          "id": "terrain",
+          "y": 144.96486137798064,
+          "nx": 0.00843728528753918,
+          "ny": 0.999056371355646,
+          "nz": 0.04260491838586765,
+          "material": "grass",
+          "slope": 2.489271948177253
+        },
+        "ceiling": null,
+        "headroom": null,
+        "water": null,
+        "directWater": null,
+        "waterFreeboard": null,
+        "terrainIntrusion": 0.022268815923268903,
+        "supportDepth": 0,
+        "contacts": null,
+        "otherDecks": [],
+        "bodyBelow": [],
+        "coveredLower": [],
+        "road": null,
+        "branch": null
+      }
+    },
+    {
+      "s": 22.09103142589124,
+      "kind": "section",
+      "lateral": -1.2,
+      "at": [
+        1349.74943303495,
+        144.93699674818907,
+        509.9116756086988
+      ],
+      "mode": "smooth",
+      "why": [
+        "terrain-above-proposed-floor"
+      ],
+      "context": {
+        "nativeGround": 144.96463304445513,
+        "ground": 144.96463304445513,
+        "bakedGround": 144.93096178707742,
+        "floor": {
+          "id": "terrain",
+          "y": 144.96463304445513,
+          "nx": 0.010514921690097368,
+          "ny": 0.971726087535299,
+          "nz": -0.23587676279191164,
+          "material": "grass",
+          "slope": 13.657122272721429
+        },
+        "ceiling": null,
+        "headroom": null,
+        "water": null,
+        "directWater": null,
+        "waterFreeboard": null,
+        "terrainIntrusion": 0.027636296266052796,
+        "supportDepth": 0,
+        "contacts": null,
+        "otherDecks": [],
+        "bodyBelow": [],
+        "coveredLower": [],
+        "road": null,
+        "branch": null
+      }
+    },
+    {
+      "s": 22.09103142589124,
+      "kind": "section",
+      "lateral": -1.2,
+      "at": [
+        1349.74943303495,
+        144.93699674818907,
+        509.9116756086988
+      ],
+      "mode": "tread",
+      "why": [
+        "terrain-above-proposed-floor"
+      ],
+      "context": {
+        "nativeGround": 144.96463304445513,
+        "ground": 144.96463304445513,
+        "bakedGround": 144.93096178707742,
+        "floor": {
+          "id": "terrain",
+          "y": 144.96463304445513,
+          "nx": 0.010514921690097368,
+          "ny": 0.971726087535299,
+          "nz": -0.23587676279191164,
+          "material": "grass",
+          "slope": 13.657122272721429
+        },
+        "ceiling": null,
+        "headroom": null,
+        "water": null,
+        "directWater": null,
+        "waterFreeboard": null,
+        "terrainIntrusion": 0.027636296266052796,
+        "supportDepth": 0,
+        "contacts": null,
+        "otherDecks": [],
+        "bodyBelow": [],
+        "coveredLower": [],
+        "road": null,
+        "branch": null
+      }
+    }
+  ],
+  "limitations": [
+    "This is the one candidate plan, not a built connector. Existing-floor mismatch is expected where new support is owed; terrain intrusion is a separate failure.",
+    "Tread envelopes quantize first two climbs at<=.17m rise, without yet adding flight-end level landings or a complete corner mesh. Smooth and tread conflicts are both retained.",
+    "Exact branch landing rows and current native APIs are used; no coarse snapshot band is substituted.",
+    "Existing kerb is preserved; its drawn .22m top is reported separately because it is absent from native body EDGE_SOLIDS. Do not claim a physical step pass from an absent query shape.",
+    "Support columns are conservative proposed .36m footprints every3m, not finished structural art. Any flagged lower route needs an open bay or moved footing, never silent solid fill.",
+    "Any long unsupported or water-crossing run is flagged for an explicit span/support contract; no landmark span is authorized by this probe.",
+    "Actual ground draw lattice, a closed candidate mesh, highest face/grade/closure, real walking both directions and captures remain required before acceptance."
+  ]
+}
