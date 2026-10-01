@@ -23,6 +23,8 @@ import { readMotionEdition } from './harbour/nav/motionEdition.ts';
 import { Compass, useEditionFlipKey, useMotionEdition, type CompassFab } from './harbour/nav/Compass.tsx';
 import { WorldToggle } from './harbour/nav/WorldToggle.tsx';
 import { useHarbourWorld } from './harbour/harbourWorld.ts';
+import HorizonInspector, { openHorizonInspector } from './diagnostics/HorizonInspector.tsx';
+import { recordOverlayRender } from './diagnostics/inspectorCore.ts';
 import { usePublishBarBadges } from './harbour/nav/barBadges.ts';
 import { HARBOUR_GO_EVENT, QuickSheet, useAtlasSearchKeys } from './harbour/nav/QuickSheet.tsx';
 import type { HouseholdWord } from './harbour/nav/atlasSearch.ts';
@@ -100,7 +102,7 @@ import { fetchLedgerSnapshot } from "./ledgerSync/discovery.ts";
 import { captureExplicit } from './ledgerSync/capture.ts';
 import { LedgerSyncClient, LedgerCommandRejectedError } from "./ledgerSync/client.ts";
 import { ledgerSyncEnabled, localLedgerIdentity } from "./ledgerSync/mode.ts";
-import { Suspense, lazy, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Profiler, Suspense, lazy, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { BooksRef, HorizonLocation, JourneyBoardActions } from "./journey/contracts.ts";
 import { useHomeBook } from "./home/HomeBookContext.tsx";
 import { pathEras } from "./core/pathEras.ts";
@@ -7501,6 +7503,7 @@ export function App() {
 
   return (
     <HearthsideDesignProvider key={ledgerRenderScopeKey} household={household} memberId={session.memberId} identity={ledgerRenderScopeKey} source={()=>ledgerSyncRef.current}><HomeBookProvider household={household} memberId={session.memberId} today={today} run={runKitchen} onOpen={openAtlasTarget} onVisit={()=>navigateHouseSurface({householdId:household.householdId,scope:view,room:"home",level:"middle",...(view==="household"?{village:{place:"court" as const}}:{})})}><WornLookContext.Provider value={import.meta.env.VITE_HERCULES_DRESSING_ROOM==='1'&&household.companionProfile?.scope.memberId===session.memberId?household.companionProfile.wornLook.value:null}><div className="app" data-house-world={HOUSE_WORLD_ENABLED||undefined} data-harbour-court={harbourOwnsRoute(activeHouseRoute,view)&&!activeHouseRoute.surface||undefined} data-harbour-door={harbourOwnsRoute(activeHouseRoute,view)&&Boolean(activeHouseRoute.surface)||undefined} data-ledger-mode={view} data-ledger-tab={tab} data-world-home={queenWorldHome ? "true" : undefined} data-books-readiness={booksReadiness.phase} data-ledger-live={useLedgerSync && realtimeStatus === "SUBSCRIBED"} data-ledger-transaction-count={household.transactions.length}>
+      <Profiler id="Horizon Inspector" onRender={(_id, _phase, actualDuration) => recordOverlayRender(actualDuration)}><HorizonInspector /></Profiler>
       {!HOUSE_WORLD_ENABLED&&!(HEARTHSIDE_FLAGS.presentation&&view==="household"&&tab==="play")&&!hearthsideToolReturn&&["planner", "timeMachine", "hercules", "play"].includes(tab) && <button type="button" className="secondary-back chip" onClick={() => {goTab(secondaryOrigin.current); requestAnimationFrame(() => {if (secondaryTrigger.current?.isConnected) secondaryTrigger.current.focus(); else { const target = document.querySelector<HTMLElement>('nav.nav button[aria-current="page"]') ?? document.querySelector<HTMLElement>('.app'); if (target) { if (!target.hasAttribute("tabindex")) target.tabIndex = -1; target.focus(); } }});}}>Back to {secondaryOrigin.current === "ledger" ? "Books" : secondaryOrigin.current === "more" ? "Status Centre" : secondaryOrigin.current === "plan" ? "Plan" : secondaryOrigin.current === "together" ? "Together" : secondaryOrigin.current === "calendar" ? "Calendar" : secondaryOrigin.current === "shift" ? "Shifts" : secondaryOrigin.current === "till" ? "Till" : "Home"}</button>}
       {fundModelBlocked && <div className="kitchen-notice fund-model-blocked" role="status"><p>Hearth hasn't sorted our money the new way yet. {fundModelBlocked}</p></div>}
       {fundModelReloadRequired(household) && <div className="kitchen-notice fund-model-reload" role="alert"><p>{FUND_MODEL_RELOAD_MESSAGE}</p><button type="button" className="chip" onClick={() => window.location.reload()}>Reload Hearth</button></div>}
@@ -8376,6 +8379,9 @@ export function App() {
           {/* K9: the Queen's look (formerly her dressing screen in Mine) is an Appearance choice. */}
           <QueenDressing variant="settings" onPreview={() => undefined} onView={() => undefined} evidence={[]} />
           <ComfortControls environment={environment} />
+          </StatusFold>
+          <StatusFold id="inspector" title="Horizon Inspector">
+          <section className="card"><header><h2>Diagnostics</h2></header><p className="muted">Default controls: = toggles the Inspector; F8 captures an incident. Open it to see or change the current keys, recording and capture controls.</p><button type="button" onClick={openHorizonInspector}>Open Inspector settings and controls</button></section>
           </StatusFold>
           <StatusFold id="sources" title="Sources and continuity">
           <section className="card">

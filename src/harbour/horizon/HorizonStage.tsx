@@ -20,6 +20,7 @@ import {appCalm,appReducedMotion} from './sun/comfort.ts';
 import './horizon.css';
 import type {ThemeId} from '../../theme/scenes.ts';
 import {HORIZON_MANIFEST} from './world/manifest.ts';
+import {recordDiagnostic,registerDiagnosticProvider} from '../../diagnostics/inspectorCore.ts';
 import type {MonorailState} from '../mountain/monorail.ts';
 import type {PlayableAvatar} from '../body/avatarDefinition.ts';
 export type HorizonStageProps={homePlotId?:string;homeLayout?:HomeLayout;homeDisplays?:HomeDisplayContent[];visitHome?:boolean;onHomeVisited?:()=>void;onHomeBook?:()=>void;onHomeWorkspace?:(target:string)=>void;cruiserPreference?:string;fleetStorageKey?:string;kitchenStorageKey?:string;onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onRuntime?:(runtime:HorizonRuntime|null)=>void;onQuickSheet?:()=>void;onJourney?:()=>void;initialBody?:HouseBodyReturn;partner?:PlaceWalkSource|null;paused?:boolean;children?:ReactNode;review?:boolean;theme?:ThemeId;
@@ -72,7 +73,7 @@ export default function HorizonStage(props:HorizonStageProps){
   const [cable,setCable]=useState<CableControl[]>([]);
   const [boatActions,setBoatActions]=useState<FleetAction[]>([]),[fleetState,setFleetState]=useState<ReturnType<HorizonRuntime['fleetState']>|null>(null);
   const [tier]=useState<'full'|'lite'>(()=>new URLSearchParams(location.search).get('tier')==='lite'||matchMedia('(max-width: 600px)').matches?'lite':'full');
-  useEffect(()=>{const controller=new AbortController();let current:HorizonRuntime|null=null,unregister:(()=>void)|null=null;
+  useEffect(()=>{const controller=new AbortController();let current:HorizonRuntime|null=null,unregister:(()=>void)|null=null,unregisterDiagnostics:(()=>void)|null=null;
     const options:HorizonOptions={homePlotId:latest.current.homePlotId,homeLayout:latest.current.homeLayout,onHomeBook:()=>latest.current.onHomeBook?.(),onHomeWorkspace:t=>latest.current.onHomeWorkspace?.(t),tier,cruiserSkin:skin,fleetStorageKey:latest.current.fleetStorageKey,kitchenStorageKey:latest.current.kitchenStorageKey,theme:latest.current.theme,hideBuildings:HARBOUR_DEV&&new URLSearchParams(location.search).get('hideBuildings')==='1',signal:controller.signal,reducedMotion:readReducedMotion(latest.current),calm:readCalm(latest.current),onDoor:(h,b)=>latest.current.onDoor?.(h,b),onStatus:setStatus,initialBody:latest.current.initialBody,partner:()=>latest.current.partner??null,onSkate:frame=>latest.current.onSkate?.(frame),onMonorail:state=>latest.current.onMonorail?.(state),avatar:latest.current.avatar,onAvatarStatus:(avatar,status)=>latest.current.onAvatarStatus?.(avatar,status)};
     // The movers (M6: the glider and the parachute) register on the runtime as soon as it exists.
     // The world is owned the moment it exists, so the effect's cleanup disposes it even if the glider import then fails (PR #570 review).
@@ -80,9 +81,10 @@ export default function HorizonStage(props:HorizonStageProps){
       if(controller.signal.aborted){world.dispose();return;}current=world;
       const gliders=await import('./movers/glider/index.ts');if(controller.signal.aborted)return;
       unregister=gliders.registerGliderModes(world);runtime.current=world;setMode(world.mode());setPage(world.shotId());setReady(true);setStatus('Drag to look. Walk with W A S D, or use the pads. Space jumps; E opens a nearby door.');if(latest.current.shell&&world.mode()!=='walk'){world.setMode('walk');setMode('walk');}latest.current.onRuntime?.(world);latest.current.onReady?.();
+      let lastFrame=-1;unregisterDiagnostics=registerDiagnosticProvider({read:()=>{const d=world.inspectorRead(),idle=d.frame===lastFrame||d.rendering.hidden||d.rendering.paused;lastFrame=d.frame;return{scene:'horizon',view:d.mode,activity:d.movement.state,worldRevision:d.worldRevision,renderedRevision:d.loadedRevision,player:d.body,camera:{x:d.camera.eye[0],y:d.camera.eye[1],z:d.camera.eye[2],target:d.camera.target,mode:d.camera.mode,owner:d.camera.owner,transitioning:d.camera.transitioning},location:d.region??`Page ${d.shot}`,movement:d.movement,interaction:d.interaction,context:{page:d.shot,region:d.region,coordinateConvention:'X east / Y up / Z north; world units',grounded:d.movement.grounded,...d.details},rendering:d.rendering,frame:d.frame,frameMs:idle?null:d.frameMs,frameTimes:idle?[]:d.recentFrames,drawCalls:d.drawCalls,triangles:d.triangles,idle,paused:d.rendering.paused};},inspect:(x,y)=>world.inspectorHit(x,y),visuals:()=>world.inspectorVisuals()});recordDiagnostic('scene','enter Horizon','accepted',world.mode());
       if(HARBOUR_DEV)(window as unknown as {__harbour:unknown}).__harbour=world;
     }).catch(error=>{if(controller.signal.aborted)return;const message=error instanceof Error?error.message:'The Horizon could not open.';setStatus(message);latest.current.onFailed?.(message);});
-    return()=>{controller.abort();unregister?.();current?.dispose();if(HARBOUR_DEV){const debug=window as unknown as {__harbour?:HorizonRuntime};if(debug.__harbour===current)delete debug.__harbour;}runtime.current=null;latest.current.onRuntime?.(null);};
+    return()=>{controller.abort();unregisterDiagnostics?.();unregister?.();current?.dispose();if(HARBOUR_DEV){const debug=window as unknown as {__harbour?:HorizonRuntime};if(debug.__harbour===current)delete debug.__harbour;}runtime.current=null;latest.current.onRuntime?.(null);};
   },[tier]);
   useEffect(()=>{runtime.current?.setHome(props.homeLayout,props.homeDisplays,props.homePlotId);},[props.homeLayout,props.homeDisplays,props.homePlotId,ready]);
   useEffect(()=>{if(ready&&props.visitHome&&runtime.current?.visitHome()){latest.current.onHomeVisited?.();setMode('walk');}},[ready,props.visitHome,props.homePlotId]);
@@ -236,7 +238,7 @@ export default function HorizonStage(props:HorizonStageProps){
       </div>}
       <p className="horizon-status" role="status">{status}</p>
     </>}
-    <div hidden={props.paused===true}>{ready&&kitchen&&<KitchenHUD view={kitchen} theme={props.theme??'classic'} reducedMotion={reducedMotion} onCommand={command=>{const previous=runtime.current?.kitchenView()?.state.phase;runtime.current?.kitchenCommand(command);const next=runtime.current?.kitchenView()??null;kitchenSnapshot.current=JSON.stringify(next);setKitchen(next);if(command.type==='exit'||next?.state.phase==='playing'&&previous!=='playing')stage.current?.focus({preventScroll:true});}} onInput={(chef,value)=>runtime.current?.kitchenInput(chef,value)}/>}</div>
+    <div hidden={props.paused===true}>{ready&&kitchen&&<KitchenHUD view={kitchen} theme={props.theme??'classic'} reducedMotion={reducedMotion} onCommand={command=>{const previous=runtime.current?.kitchenView()?.state.phase;runtime.current?.kitchenCommand(command);const next=runtime.current?.kitchenView()??null;recordDiagnostic('kitchen',command.type,next?.state.phase===previous?'received':'state changed',next?.state.phase);kitchenSnapshot.current=JSON.stringify(next);setKitchen(next);if(command.type==='exit'||next?.state.phase==='playing'&&previous!=='playing')stage.current?.focus({preventScroll:true});}} onInput={(chef,value)=>runtime.current?.kitchenInput(chef,value)}/>}</div>
     {props.children}
   </section>;
 }

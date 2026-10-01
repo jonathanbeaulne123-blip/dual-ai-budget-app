@@ -50,7 +50,7 @@ describe('one physical and drawn local ground patch',()=>{
   expect(r.recipes.length).toBeGreaterThan(0);for(const q of r.recipes)for(let c=0;c<3;c++){const src=q.source==='base'?baseColors:patchColors;let expected=q.ids.reduce((sum,id,k)=>sum+src[id*3+c]!*q.weights[k]!,0);if(q.patchBlend){const b=q.patchBlend,to=b.ids.reduce((sum,id,k)=>sum+patchColors[id*3+c]!*b.weights[k]!,0);expected+=(to-expected)*b.amount;}expect(out[q.vertex*3+c]).toBe(Math.fround(expected));}
  });
  it('refines only perimeter cells and queries every added face with complete stamped-paint interpolation',()=>{
-  const curved=(x:number,z:number)=>1+.1*Math.sin(x*4),high:CapTriangle[]=[[[0,10,0],[0,10,1],[1,10,1]],[[0,10,0],[1,10,1],[1,10,0]]];
+  const curved=(x:number,_z:number)=>1+.1*Math.sin(x*4),high:CapTriangle[]=[[[0,10,0],[0,10,1],[1,10,1]],[[0,10,0],[1,10,1],[1,10,0]]];
   const p=createWalkingGroundPatch(high,curved,()=>null,()=>true);
   expect(p.proof.boundaryRefinement.addedVertices).toBeGreaterThan(0);expect(p.proof.maxBoundaryPhysicalDelta).toBeLessThanOrEqual(.02);
   expect(p.paintLattice.positions.length/3).toBe((p.paintLattice.cols+1)*(p.paintLattice.rows+1));

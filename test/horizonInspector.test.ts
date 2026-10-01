@@ -88,10 +88,10 @@ describe('the snapshot', () => {
 });
 
 describe('keys and the overlay (D-R6)', () => {
-  it('maps = to toggle and + / Shift+= to copy; ignores modified keys', () => {
+  it('accepts only unmodified =; leaves + and shifted Equal alone', () => {
     const k = (key: string, code: string, shiftKey = false, ctrlKey = false) => inspectorKey({ key, code, shiftKey, ctrlKey, metaKey: false, altKey: false });
-    expect(k('=', 'Equal')).toBe('toggle'); expect(k('+', 'Equal', true)).toBe('copy'); expect(k('+', 'NumpadAdd')).toBe('copy');
-    expect(k('0', 'Equal')).toBe('toggle');   // a layout where the Equal key types something else
+    expect(k('=', 'Equal')).toBe('toggle'); expect(k('+', 'Equal', true)).toBeNull(); expect(k('+', 'NumpadAdd')).toBeNull(); expect(k('=', 'Equal', true)).toBeNull();
+    expect(k('0', 'Equal')).toBeNull();   // only the produced unmodified equals character counts
     expect(k('=', 'Equal', false, true)).toBeNull(); expect(k('e', 'KeyE')).toBeNull();
   });
   it('is dev-only unless ?diagnostics=1', () => {
@@ -107,23 +107,24 @@ describe('keys and the overlay (D-R6)', () => {
     let x = 140; const src = source({ body: () => ({ x, y: 5, z: 201, yaw: 0 }) }), focusBack = vi.fn();
     const inspector = createInspector(host, src, { enabled: true, focusBack });
     expect(inspector.keyDown(new KeyboardEvent('keydown', { key: '=', code: 'Equal' }))).toBe(true);
-    const panel = host.querySelector<HTMLElement>('.horizon-inspector')!;
+    const panel = host.querySelector<HTMLElement>('.horizon-road-inspector')!;
     expect(panel.hidden).toBe(false); expect(panel.style.left).toBe('0.5rem'); expect(panel.getAttribute('role')).toBe('region');
     const live = panel.querySelector('[aria-live]')!; expect(live.getAttribute('aria-live')).toBe('off');
     expect(live.textContent).toContain('pos 140.0');
     x = 150; vi.advanceTimersByTime(260); expect(live.textContent).toContain('pos 150.0');
-    // Copy: clipboard + log.
-    expect(inspector.keyDown(new KeyboardEvent('keydown', { key: '+', code: 'Equal', shiftKey: true }))).toBe(true);
+    // + remains available to the world; the explicit Copy button owns snapshots.
+    expect(inspector.keyDown(new KeyboardEvent('keydown', { key: '+', code: 'Equal', shiftKey: true }))).toBe(false);
+    expect(writeText).not.toHaveBeenCalled();
+    panel.querySelector<HTMLButtonElement>('button:nth-of-type(1)')!.click();
     expect(writeText).toHaveBeenCalledTimes(1); expect(JSON.parse((writeText.mock.calls[0] as unknown as [string])[0]).position.x).toBe(150);
     expect(inspector.log).toHaveLength(1);
-    panel.querySelector<HTMLButtonElement>('button:nth-of-type(1)')!.click(); expect(inspector.log).toHaveLength(2);
     // Announce toggles polite.
     const box = panel.querySelector<HTMLInputElement>('input[type=checkbox]')!; box.checked = true; box.dispatchEvent(new Event('change')); expect(live.getAttribute('aria-live')).toBe('polite');
     // Escape inside the panel closes it and hands focus back.
     panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(panel.hidden).toBe(true); expect(focusBack).toHaveBeenCalled();
     x = 170; vi.advanceTimersByTime(1000); expect(live.textContent).not.toContain('pos 170');   // no updates while closed
-    inspector.dispose(); expect(host.querySelector('.horizon-inspector')).toBeNull();
+    inspector.dispose(); expect(host.querySelector('.horizon-road-inspector')).toBeNull();
     vi.useRealTimers();
   });
 });

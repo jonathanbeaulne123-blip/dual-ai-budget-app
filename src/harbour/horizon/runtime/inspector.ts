@@ -1,7 +1,7 @@
 /**
- * The `=` diagnostic inspector (ROAD.md D-R6; brief §9). Development only: mounted when HARBOUR_DEV (a dev build, flag.ts) or the page
- * carries `?diagnostics=1`. `=` toggles a small overlay (top-left, under the toolbar, readable at 320 px, never over the
- * pads); `+` (Shift+= on a US layout) or the Copy button copies a JSON snapshot to the clipboard and appends it to the
+ * The road-specific diagnostic probe (ROAD.md D-R6; brief §9). Development only: mounted when HARBOUR_DEV (a dev build, flag.ts) or the page
+ * carries `?diagnostics=1`. The global Horizon Inspector owns the `=` shortcut. This probe remains available through
+ * the review runtime API; its Copy button copies a JSON snapshot to the clipboard and appends it to the
  * runtime's `inspectorLog` (`window.__harbour.inspectorLog` in dev) so headless scripts can collect it;
  * `window.__harbour.inspect()` returns the same snapshot. Escape inside the panel closes it and gives focus back.
  * The text refreshes at 4 Hz while open; nothing runs per frame (the runtime's frame ring is read at 4 Hz).
@@ -62,13 +62,9 @@ const r2 = (v: number) => Math.round(v * 100) / 100;
 export function inspectorEnabled(search: string, dev: boolean): boolean {
   return dev || new URLSearchParams(search).get('diagnostics') === '1';
 }
-/** `=` toggles (also `=` typed with Shift on layouts that need it); `+` copies (Shift+= on US, its own key elsewhere). */
+/** Only an unmodified equals character is a toggle candidate. The global Inspector owns live keyboard input. */
 export function inspectorKey(e: Pick<KeyboardEvent, 'key' | 'code' | 'shiftKey' | 'ctrlKey' | 'metaKey' | 'altKey'>): 'toggle' | 'copy' | null {
-  if (e.ctrlKey || e.metaKey || e.altKey) return null;
-  if (e.key === '=') return 'toggle';
-  if (e.key === '+') return 'copy';
-  if (e.code === 'Equal') return e.shiftKey ? 'copy' : 'toggle';
-  return null;
+  return e.key === '=' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey ? 'toggle' : null;
 }
 
 /** p50 / p95 of the last `n` frame deltas (ms). */
@@ -170,7 +166,7 @@ export interface Inspector {
   close(): void;
   snapshot(): InspectorSnapshot;
   copy(): InspectorSnapshot;
-  /** Handles `=` / `+` from the runtime's key handler; true when consumed. */
+  /** Review API only; the global Inspector handles page keyboard input. */
   keyDown(e: KeyboardEvent): boolean;
   dispose(): void;
 }
@@ -180,8 +176,8 @@ export function createInspector(host: HTMLElement, source: InspectorSource, opti
   let panel: HTMLElement | null = null, text: HTMLElement | null = null, status: HTMLElement | null = null, timer = 0, isOpen = false;
   function build() {
     const doc = host.ownerDocument;
-    panel = doc.createElement('section'); panel.className = 'horizon-inspector'; panel.tabIndex = 0;
-    panel.setAttribute('role', 'region'); panel.setAttribute('aria-label', 'Horizon inspector (= to close, + to copy)');
+    panel = doc.createElement('section'); panel.className = 'horizon-road-inspector'; panel.tabIndex = 0;
+    panel.setAttribute('role', 'region'); panel.setAttribute('aria-label', 'Horizon road probe');
     Object.assign(panel.style, { boxSizing: 'border-box', position: 'absolute', left: '.5rem', top: 'var(--horizon-toolbar-bottom, 4.5rem)', zIndex: '6', maxWidth: 'min(24rem, calc(100% - 1rem))', maxHeight: '45%', overflow: 'auto',
       padding: '.4rem .55rem', borderRadius: '.5rem', background: 'rgba(20,28,34,.84)', color: '#f3ecd9', font: '12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', boxShadow: '0 4px 16px #0006', pointerEvents: 'auto' } as Partial<CSSStyleDeclaration>);
     const bar = doc.createElement('div'); Object.assign(bar.style, { display: 'flex', gap: '.35rem', alignItems: 'center', marginBottom: '.25rem', flexWrap: 'wrap' });
