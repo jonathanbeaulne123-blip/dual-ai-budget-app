@@ -1,0 +1,754 @@
+[
+  {
+    "id": "native",
+    "offset": -1.8,
+    "reverse": false,
+    "at": [
+      1286.0318801693065,
+      725.9970206632929
+    ],
+    "step": 0.1456580503351148,
+    "beforeStep": 0.0011722113462155903,
+    "contact": null,
+    "beforeContact": null,
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "native",
+    "offset": -1.5,
+    "reverse": false,
+    "at": [
+      1285.8727118205848,
+      725.453821402648
+    ],
+    "step": 0.12189666365461704,
+    "beforeStep": 0.0007477578480674651,
+    "contact": null,
+    "beforeContact": null,
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "native",
+    "offset": 1.5,
+    "reverse": true,
+    "at": [
+      1285.8812310630808,
+      725.4614018990591
+    ],
+    "step": 0.1207135701995341,
+    "beforeStep": 0.0007477578480674651,
+    "contact": null,
+    "beforeContact": null,
+    "contactExact": true,
+    "sameFloor": false,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "native",
+    "offset": 1.8,
+    "reverse": true,
+    "at": [
+      1286.0553407717016,
+      726.017896112294
+    ],
+    "step": 0.14711985954544105,
+    "beforeStep": 0.0012152378336907077,
+    "contact": null,
+    "beforeContact": null,
+    "contactExact": true,
+    "sameFloor": false,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "yearWalk",
+    "offset": -2.3,
+    "reverse": false,
+    "at": [
+      1285.8614697025353,
+      721.4469519740503
+    ],
+    "step": 0.06702103112613855,
+    "beforeStep": 0.0016628015700916876,
+    "contact": null,
+    "beforeContact": null,
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "yearWalk",
+    "offset": 2.3,
+    "reverse": true,
+    "at": [
+      1285.8922279719652,
+      721.410728976002
+    ],
+    "step": 0.068231525950047,
+    "beforeStep": 0.002843745697276745,
+    "contact": null,
+    "beforeContact": null,
+    "contactExact": true,
+    "sameFloor": false,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": -1.6,
+    "reverse": true,
+    "at": [
+      1292.7439527978524,
+      725.7673373429574
+    ],
+    "step": 0,
+    "beforeStep": 0,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.07892737070246526,
+      "nz": 0.9968803690282981
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.07892737070246526,
+      "nz": 0.9968803690282981
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": -1.6,
+    "reverse": true,
+    "at": [
+      1292.7626726581511,
+      725.76029697149
+    ],
+    "step": 0,
+    "beforeStep": 0,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.1438650770484037,
+      "nz": 0.9895973118424773
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.1438650770484037,
+      "nz": 0.9895973118424773
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": -1.6,
+    "reverse": true,
+    "at": [
+      1292.7813925184498,
+      725.7532566000226
+    ],
+    "step": 0,
+    "beforeStep": 0,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.21006691597438887,
+      "nz": 0.977687010659858
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.21006691597438887,
+      "nz": 0.977687010659858
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": -1.6,
+    "reverse": true,
+    "at": [
+      1292.818832239047,
+      725.7391758570878
+    ],
+    "step": 0,
+    "beforeStep": 0.0008541236411474529,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.34262291202073664,
+      "nz": 0.9394730119372405
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.34262291202073664,
+      "nz": 0.9394730119372405
+    },
+    "contactExact": true,
+    "sameFloor": false,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": -1.6,
+    "reverse": true,
+    "at": [
+      1292.8375520993457,
+      725.7321354856205
+    ],
+    "step": 0.0008541236411616637,
+    "beforeStep": 1.4210854715202004e-14,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.4070431828719086,
+      "nz": 0.913408915698498
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.4070431828719086,
+      "nz": 0.913408915698498
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": -1.6,
+    "reverse": true,
+    "at": [
+      1292.8562719596443,
+      725.7250951141531
+    ],
+    "step": 7.105427357601002e-15,
+    "beforeStep": 7.105427357601002e-15,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.4689945000795677,
+      "nz": 0.8832010863303533
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.4689945000795677,
+      "nz": 0.8832010863303533
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": -1.6,
+    "reverse": true,
+    "at": [
+      1292.874991819943,
+      725.7180547426858
+    ],
+    "step": 7.105427357601002e-15,
+    "beforeStep": 7.105427357601002e-15,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.5276954604813338,
+      "nz": 0.8494336354226816
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.5276954604813338,
+      "nz": 0.8494336354226816
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": -1.6,
+    "reverse": true,
+    "at": [
+      1292.8937116802417,
+      725.7110143712184
+    ],
+    "step": 7.105427357601002e-15,
+    "beforeStep": 7.105427357601002e-15,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.5825362429369769,
+      "nz": 0.8128047278804862
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.5825362429369769,
+      "nz": 0.8128047278804862
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": -1.6,
+    "reverse": true,
+    "at": [
+      1292.9124315405404,
+      725.703973999751
+    ],
+    "step": 0,
+    "beforeStep": 0,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.6331021060473465,
+      "nz": 0.7740682937043826
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.6331021060473465,
+      "nz": 0.7740682937043826
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": -1.6,
+    "reverse": true,
+    "at": [
+      1292.931151400839,
+      725.6969336282837
+    ],
+    "step": 0,
+    "beforeStep": 0,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.6791739730923853,
+      "nz": 0.7339773254494338
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.6791739730923853,
+      "nz": 0.7339773254494338
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": -1.6,
+    "reverse": true,
+    "at": [
+      1292.9685911214362,
+      725.6828528853489
+    ],
+    "step": 7.105427357601002e-15,
+    "beforeStep": 7.105427357601002e-15,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.7578152162902696,
+      "nz": 0.6524692314269939
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.7578152162902696,
+      "nz": 0.6524692314269939
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": -1.6,
+    "reverse": true,
+    "at": [
+      1292.987310981735,
+      725.6758125138815
+    ],
+    "step": 7.105427357601002e-15,
+    "beforeStep": 7.105427357601002e-15,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.7907045344156673,
+      "nz": 0.6121979575713258
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.7907045344156673,
+      "nz": 0.6121979575713258
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": -1.6,
+    "reverse": true,
+    "at": [
+      1293.0060308420336,
+      725.6687721424141
+    ],
+    "step": 7.105427357601002e-15,
+    "beforeStep": 7.105427357601002e-15,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.8196676649648299,
+      "nz": 0.5728393483439344
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.8196676649648299,
+      "nz": 0.5728393483439344
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": 1.6,
+    "reverse": false,
+    "at": [
+      1293.0017156016054,
+      725.6703950656145
+    ],
+    "step": 7.105427357601002e-15,
+    "beforeStep": 7.105427357601002e-15,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.8133224400242482,
+      "nz": 0.5818132076130647
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.8133224400242482,
+      "nz": 0.5818132076130647
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": 1.6,
+    "reverse": false,
+    "at": [
+      1292.9829957413067,
+      725.6774354370818
+    ],
+    "step": 7.105427357601002e-15,
+    "beforeStep": 7.105427357601002e-15,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.7834826421976245,
+      "nz": 0.621413670090246
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.7834826421976245,
+      "nz": 0.621413670090246
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": 1.6,
+    "reverse": false,
+    "at": [
+      1292.964275881008,
+      725.6844758085492
+    ],
+    "step": 7.105427357601002e-15,
+    "beforeStep": 7.105427357601002e-15,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.7496450342203226,
+      "nz": 0.6618401035513121
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.7496450342203226,
+      "nz": 0.6618401035513121
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": 1.6,
+    "reverse": false,
+    "at": [
+      1292.9455560207093,
+      725.6915161800166
+    ],
+    "step": 0,
+    "beforeStep": 0,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.711534147114938,
+      "nz": 0.7026515192393864
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.711534147114938,
+      "nz": 0.7026515192393864
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": 1.6,
+    "reverse": false,
+    "at": [
+      1292.9081163001122,
+      725.7055969229514
+    ],
+    "step": 0,
+    "beforeStep": 0,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.6218394674969505,
+      "nz": 0.7831447354500375
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.6218394674969505,
+      "nz": 0.7831447354500375
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": 1.6,
+    "reverse": false,
+    "at": [
+      1292.8893964398135,
+      725.7126372944188
+    ],
+    "step": 7.105427357601002e-15,
+    "beforeStep": 7.105427357601002e-15,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.5702617951988233,
+      "nz": 0.8214630149535739
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.5702617951988233,
+      "nz": 0.8214630149535739
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": 1.6,
+    "reverse": false,
+    "at": [
+      1292.8706765795148,
+      725.7196776658861
+    ],
+    "step": 1.4210854715202004e-14,
+    "beforeStep": 1.4210854715202004e-14,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.5144871310509089,
+      "nz": 0.8574981002795311
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.5144871310509089,
+      "nz": 0.8574981002795311
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": 1.6,
+    "reverse": false,
+    "at": [
+      1292.851956719216,
+      725.7267180373535
+    ],
+    "step": 0,
+    "beforeStep": 0,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.45497603400356845,
+      "nz": 0.8905036824642466
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.45497603400356845,
+      "nz": 0.8905036824642466
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": 1.6,
+    "reverse": false,
+    "at": [
+      1292.8332368589174,
+      725.7337584088208
+    ],
+    "step": 0.0008541236411474529,
+    "beforeStep": 0,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.3923808224461967,
+      "nz": 0.9198028539727666
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.3923808224461967,
+      "nz": 0.9198028539727666
+    },
+    "contactExact": true,
+    "sameFloor": false,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": 1.6,
+    "reverse": false,
+    "at": [
+      1292.8145169986187,
+      725.7407987802882
+    ],
+    "step": 0,
+    "beforeStep": 0,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.32751667711843796,
+      "nz": 0.9448453980463135
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.32751667711843796,
+      "nz": 0.9448453980463135
+    },
+    "contactExact": true,
+    "sameFloor": false,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": 1.6,
+    "reverse": false,
+    "at": [
+      1292.79579713832,
+      725.7478391517556
+    ],
+    "step": 0,
+    "beforeStep": 1.4210854715202004e-14,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.26131120262770985,
+      "nz": 0.9652546065061074
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.26131120262770985,
+      "nz": 0.9652546065061074
+    },
+    "contactExact": true,
+    "sameFloor": false,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": 1.6,
+    "reverse": false,
+    "at": [
+      1292.758357417723,
+      725.7619198946903
+    ],
+    "step": 0,
+    "beforeStep": 0.0008541236411616637,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.12875347839678572,
+      "nz": 0.9916766316701875
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.12875347839678572,
+      "nz": 0.9916766316701875
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  },
+  {
+    "id": "town station",
+    "offset": 1.6,
+    "reverse": false,
+    "at": [
+      1292.7396375574242,
+      725.7689602661577
+    ],
+    "step": 0,
+    "beforeStep": 0,
+    "contact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.06422153630783706,
+      "nz": 0.9979356664005258
+    },
+    "beforeContact": {
+      "id": "mountainV2:station-art:funicular:town:post:2",
+      "nx": 0.06422153630783706,
+      "nz": 0.9979356664005258
+    },
+    "contactExact": true,
+    "sameFloor": true,
+    "headroom": null,
+    "beforeHeadroom": null
+  }
+]

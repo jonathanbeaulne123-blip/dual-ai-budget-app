@@ -1,0 +1,3 @@
+# Rejected funicular path candidate v5
+
+Root executed this frozen source overlay serially. All8 independent walking attempts complete, continuous4cm full-width sweeps report0failures, both drawn ground tiers stay below the deck, all6 theme/tier gravel checks have0buried/0hover samples, and the closed mesh has0nonmanifold edges. These successes do not accept the candidate: its actual maximum top face is88.199794degrees and its boundary scan reports1108witnesses, with maximum0.461301m step. Both inherited station-edge steps and newly steep apron faces remain in the full record; no suppression or threshold waiver. Candidate is NOT applied. Source snapshots/runtime bundle/runner/proposal are retained for repair and review. This is no GPU or device proof.

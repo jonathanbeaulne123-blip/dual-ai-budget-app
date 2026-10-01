@@ -1,0 +1,11 @@
+node:fs:2491
+    validateStringAfterArrayBufferView(data, 'data');
+    ^
+
+TypeError [ERR_INVALID_ARG_TYPE]: The "data" argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received undefined
+    at writeFileSync (node:fs:2491:5)
+    at file:///private/tmp/mountain-funicular-v21/shape-lips.mjs:21:66 {
+  code: 'ERR_INVALID_ARG_TYPE'
+}
+
+Node.js v24.21.0
