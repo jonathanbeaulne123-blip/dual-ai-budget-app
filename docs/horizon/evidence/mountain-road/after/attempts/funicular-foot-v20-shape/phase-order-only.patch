@@ -1,0 +1,37 @@
+--- a/src/harbour/horizon/land/mountainV2/footLaneJoin.ts
++++ b/src/harbour/horizon/land/mountainV2/footLaneJoin.ts
+@@ -270,7 +270,7 @@
+     // is BELOW the proposed plane. Lowering its vertices would manufacture a
+     // different face for subsequent comparisons. Equality knots already came
+     // from the exact plane intersection and require no extra cap.
+-    if(!higherOnly)for(const polygon of outside)for(const v of polygon){const y=insideTriangle(v);if(y!==null)v.y=Math.min(v.y,y-clearance);}
++    if(!higherOnly&&!projectInserted)for(const polygon of outside)for(const v of polygon){const y=insideTriangle(v);if(y!==null)v.y=Math.min(v.y,y-clearance);}
+     return outside;
+   };
+   const projectionEdgeCounts=new Map<string,{a:XYZ;b:XYZ;count:number}>();
+@@ -285,7 +285,10 @@
+     const ids=source.indices.slice(i,i+3),p=ids.map(j=>({x:source.positions[j*3]!,y:source.positions[j*3+1]!,z:source.positions[j*3+2]!,bottom:source.positions[(j+1)*3+1]!}));
+     if(area(p)>=-1e-9)continue;
+     let pieces=[p];const x0=Math.min(...p.map(v=>v.x)),x1=Math.max(...p.map(v=>v.x)),z0=Math.min(...p.map(v=>v.z)),z1=Math.max(...p.map(v=>v.z));
+-    if(!projectInserted)for(const f of faces){if(f.x1<x0||f.x0>x1||f.z1<z0||f.z0>z1)continue;pieces=pieces.flatMap(poly=>subtract(poly,f.t,f.higherOnly));if(!pieces.length)break;}
++    // The walking replacement first subtracts only the hard hosts' PLAN
++    // union. Intermediate Y caps are irrelevant and must not mutate this plan
++    // partition. The constrained field is sampled after all hard cuts below.
++    for(const f of faces){if(projectInserted&&f.higherOnly)continue;if(f.x1<x0||f.x0>x1||f.z1<z0||f.z0>z1)continue;pieces=pieces.flatMap(poly=>subtract(poly,f.t,f.higherOnly));if(!pieces.length)break;}
+ 
+     // The unchanged station picture is a fixed rectangular host, including its
+     // 5cm plank fringe. Split crossing cells on that actual boundary before
+@@ -316,10 +319,9 @@
+         }return result;
+       });
+       pieces=fan(pieces.map(poly=>poly.map(v=>({...v,y:approach(v.x,v.z)}))));
+-      for(const f of faces){if(f.higherOnly||f.x1<x0||f.x0>x1||f.z1<z0||f.z0>z1)continue;pieces=pieces.flatMap(poly=>subtract(poly,f.t));if(!pieces.length)break;}
+-      // Hard native/plank boundaries may cap a polygon edge. Resolve its
+-      // resulting drawn fan before testing other static floors against it.
+-      pieces=fan(pieces);
++      // These are now final sampled planes meeting the hard-host plan
++      // partition. Higher-only static ownership can clip them without altering
++      // their heights, and append never re-samples a removed host boundary.
+       for(const f of faces){if(!f.higherOnly||f.x1<x0||f.x0>x1||f.z1<z0||f.z0>z1)continue;pieces=pieces.flatMap(poly=>subtract(poly,f.t,true));if(!pieces.length)break;}
+     }
+     for(const poly of pieces)append(poly);

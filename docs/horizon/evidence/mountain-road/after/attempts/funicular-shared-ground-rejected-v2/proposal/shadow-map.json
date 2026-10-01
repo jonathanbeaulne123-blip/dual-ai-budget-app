@@ -1,0 +1,16 @@
+{
+  "src/harbour/geometry/capGroundMesh.ts": "/tmp/mountain-funicular-shared-ground-v2/source/src/harbour/geometry/capGroundMesh.ts",
+  "src/harbour/horizon/land/mountainV2/footLaneJoin.ts": "/tmp/mountain-funicular-shared-ground-v2/source/src/harbour/horizon/land/mountainV2/footLaneJoin.ts",
+  "src/harbour/horizon/land/mountainV2/funicularFootStation.ts": "/tmp/mountain-funicular-shared-ground-v2/source/src/harbour/horizon/land/mountainV2/funicularFootStation.ts",
+  "src/harbour/horizon/land/mountainV2/sourceEnvironment.ts": "/tmp/mountain-funicular-shared-ground-v2/source/src/harbour/horizon/land/mountainV2/sourceEnvironment.ts",
+  "src/harbour/horizon/regions/mountainV2/funicularFootPath.ts": "/tmp/mountain-funicular-shared-ground-v2/source/src/harbour/horizon/regions/mountainV2/funicularFootPath.ts",
+  "src/harbour/horizon/regions/mountainV2/geography.ts": "/tmp/mountain-funicular-shared-ground-v2/source/src/harbour/horizon/regions/mountainV2/geography.ts",
+  "src/harbour/horizon/regions/mountainV2/ground.ts": "/tmp/mountain-funicular-shared-ground-v2/source/src/harbour/horizon/regions/mountainV2/ground.ts",
+  "src/harbour/horizon/regions/mountainV2/index.ts": "/tmp/mountain-funicular-shared-ground-v2/source/src/harbour/horizon/regions/mountainV2/index.ts",
+  "src/harbour/horizon/regions/mountainV2/scene.ts": "/tmp/mountain-funicular-shared-ground-v2/source/src/harbour/horizon/regions/mountainV2/scene.ts",
+  "src/harbour/horizon/regions/mountainV2/walkingGroundPatch.ts": "/tmp/mountain-funicular-shared-ground-v2/source/src/harbour/horizon/regions/mountainV2/walkingGroundPatch.ts",
+  "src/harbour/horizon/regions/mountainV2/walkingJoinGround.ts": "/tmp/mountain-funicular-shared-ground-v2/source/src/harbour/horizon/regions/mountainV2/walkingJoinGround.ts",
+  "src/harbour/horizon/runtime/index.ts": "/tmp/mountain-funicular-shared-ground-v2/source/src/harbour/horizon/runtime/index.ts",
+  "src/harbour/mountain/art/routeArt.ts": "/tmp/mountain-funicular-shared-ground-v2/source/src/harbour/mountain/art/routeArt.ts",
+  "src/harbour/scene/groundPaint.ts": "/tmp/mountain-funicular-shared-ground-v2/source/src/harbour/scene/groundPaint.ts"
+}

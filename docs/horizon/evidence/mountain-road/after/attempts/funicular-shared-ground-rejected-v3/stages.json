@@ -1,0 +1,46 @@
+[
+  {
+    "name": "source-snapshot",
+    "elapsedMs": 14,
+    "files": 14
+  },
+  {
+    "name": "bundle",
+    "elapsedMs": 404,
+    "sha256": "7da7a1cdd693fa32378f02a68764b216fe00ebeacbe55dc79ed6dbc5a1bf2255"
+  },
+  {
+    "name": "world-loaded",
+    "elapsedMs": 948,
+    "servedSolids": 1077,
+    "apron": {
+      "id": "mountainV2.funicularFoot.apron@lakeside",
+      "sourceId": "mountainV2.funicularFoot.apron",
+      "renderOrigin": [
+        1286,
+        55,
+        726
+      ],
+      "vertices": 7948,
+      "triangles": 16036,
+      "positionsSha256": "0e52cd18eab38cf7968b229fb20c028c81fb1b87640099ee9fe427452674fc1a",
+      "indicesSha256": "967263faab94273fd8f2f4a87ed5f15d7b920e62c4129aa2935c11e775fc7ad0"
+    }
+  },
+  {
+    "name": "region-rebuild-measurement",
+    "elapsedMs": 1201,
+    "regionBuildMs": 232.75020800000016,
+    "scope": "createRegionGeography with all exact served walkingJoinSolids; served JSON/decode and module import already complete; no offline fitting"
+  },
+  {
+    "name": "prepare-ground-before",
+    "elapsedMs": 1296,
+    "tier": "full"
+  },
+  {
+    "name": "prepare-ground-after",
+    "elapsedMs": 13994,
+    "tier": "full"
+  }
+]

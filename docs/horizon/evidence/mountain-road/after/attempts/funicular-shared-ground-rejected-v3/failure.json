@@ -1,0 +1,15 @@
+{
+  "message": "Render collar exceeded its bounded8192-face allocation",
+  "stack": "Error: Render collar exceeded its bounded8192-face allocation\n    at composeWalkingGround (file:///private/tmp/mountain-funicular-served-ground-proof-3/runtime-bundle.mjs:19881:54)\n    at Module.prepareRegionGround (file:///private/tmp/mountain-funicular-served-ground-proof-3/runtime-bundle.mjs:22451:64)\n    at file:///private/tmp/mountain-funicular-shared-ground-v3/run-ground-served.mjs:59:54",
+  "proof": {
+    "refinementPasses": 5,
+    "triangles": 9088,
+    "outer": {
+      "x0": -35,
+      "x1": -8,
+      "z0": -51,
+      "z1": -25
+    }
+  },
+  "regionBuildMs": null
+}

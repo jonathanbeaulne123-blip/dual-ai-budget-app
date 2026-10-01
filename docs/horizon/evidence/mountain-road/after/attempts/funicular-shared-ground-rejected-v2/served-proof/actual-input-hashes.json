@@ -1,0 +1,298 @@
+[
+  {
+    "path": "../horizon-complete/node_modules/.pnpm/fflate@0.8.2/node_modules/fflate/esm/index.mjs",
+    "sha256": "b71c2efc7bbd3379c883bc59223c53f5ddb47a6db4f01adb19675b213bed0e9c"
+  },
+  {
+    "path": "src/harbour/horizon/world/MANIFEST.json",
+    "sha256": "718c4e93f1e04ed3fa6fcd0cb63554bd29a09d4e96d5d89d79fab7e8c53343f4"
+  },
+  {
+    "path": "src/harbour/horizon/world/manifest.ts",
+    "sha256": "980d0c15f7661077905e48556089e0f63f952221ae1f95345b81600b09e06867"
+  },
+  {
+    "path": "src/harbour/horizon/land/terrain/geometry.ts",
+    "sha256": "dce99968a6f68bc6ba4c0225edeb5e331f31c9f6c358579454b424b3375501b4"
+  },
+  {
+    "path": "src/harbour/horizon/land/coast/index.ts",
+    "sha256": "695480ed50f80c29a87a28ec589cda09bc5de399b272c7b56f2703f68ac37dac"
+  },
+  {
+    "path": "src/harbour/horizon/land/water/index.ts",
+    "sha256": "224f6e0f4e7527e5fb1f52642846e53611237b8bd1dc15f0b289941ceab904df"
+  },
+  {
+    "path": "src/harbour/horizon/regions/mountainV2/placement.ts",
+    "sha256": "d5dd7888acbb1200307f5ec0f2271abfb42f194ad0169b65aaf18dc72054a030"
+  },
+  {
+    "path": "src/harbour/horizon/land/mountainV2/ground.ts",
+    "sha256": "ec81a1a941c0673e2cc8c5bdd3aeb06582dabe2fba747d7065601288e2ed9ebd"
+  },
+  {
+    "path": "src/harbour/horizon/land/mountainV2/v2-data.json",
+    "sha256": "876d70fe90947672f9efb3e2dc54c5fa1be9136ae4bc6972ff2a2d6520d05499"
+  },
+  {
+    "path": "src/harbour/horizon/regions/mountainV2/drawnRoadFloor.ts",
+    "sha256": "b554ba2f34071756a16420b000a2b2b9e02283812eba1820d08a6cfdc2276385"
+  },
+  {
+    "path": "src/harbour/horizon/regions/mountainV2/drawnRoadGround.ts",
+    "sha256": "6701fa9c3499144a0eff30ce1a0244f9f3df999bd5d7949eb9390fe064100637"
+  },
+  {
+    "path": "src/harbour/horizon/land/mountainV2/roadSource.ts",
+    "sha256": "bfeae3956aca1b4533657e2622baabcc68444e2460e33484ef8331ebceb28876"
+  },
+  {
+    "path": "src/harbour/horizon/land/structures/mesh.ts",
+    "sha256": "b9999aca0f04299849a1ad5c7baedb5c94091fd4ed32e95d139950def16bf006"
+  },
+  {
+    "path": "src/harbour/horizon/land/underground/oreRoad.ts",
+    "sha256": "c84dcb23b2ded6de0bd2a2ed58fd50a198cd84a8e84e97c1c1aceab557de6d9a"
+  },
+  {
+    "path": "src/harbour/horizon/land/terrain/index.ts",
+    "sha256": "5fd5c8225b6d70ad33f6bf611ebf297cc8f34b4abd9db89bcf9304511b08f888"
+  },
+  {
+    "path": "src/harbour/horizon/land/terrain/asset.ts",
+    "sha256": "c25f3a3c45ad43fa7c77c94ec0c68d67d0d9847f82fd378c7fb92ae1c4cd8839"
+  },
+  {
+    "path": "src/worldGeography.ts",
+    "sha256": "05a66a7210223e0b4a48391c93a2e697d8340992f2439388d019a230cce70e71"
+  },
+  {
+    "path": "src/house/world/horizonAssets.ts",
+    "sha256": "1b3e339ddf92c55832959e9a880923e94f876e503d168fb38c2e54b113f14547"
+  },
+  {
+    "path": "src/harbour/worldDistricts.ts",
+    "sha256": "c21629b39fddf626e7aa600ca5a206388137932ef47f92b13aa29471893626a9"
+  },
+  {
+    "path": "src/harbour/mountain/places.ts",
+    "sha256": "725a14a7dd2fe13aecb4ce0f7507f4e255588c10d2c0967c52ea4c17954830aa"
+  },
+  {
+    "path": "src/harbour/mountain/terrainAsset.ts",
+    "sha256": "fc97a8044b6527db9acbf86fa69993d50888a4ec204c7210153ca7952f50c6ba"
+  },
+  {
+    "path": "src/harbour/mountain/math.ts",
+    "sha256": "b21d1ff99152726fb16e0ebf08f112f88d6434880af171b208043f61b015adfd"
+  },
+  {
+    "path": "src/harbour/mountain/natural.ts",
+    "sha256": "f40b7a8e9506b93474b6a6f50c1a087f01f66667f63bb9eea91b0c8ca7efef2e"
+  },
+  {
+    "path": "src/harbour/mountain/orchardJunction.generated.json",
+    "sha256": "3dede61cd6946b7effdd41a56b73cb71ceadc3139f625393fe054fe2baf25a70"
+  },
+  {
+    "path": "src/harbour/mountain/orchardJunction.ts",
+    "sha256": "3c85c90358f9618be42834cc36bee8e40fa52c6fe31bb096950907a68b116547"
+  },
+  {
+    "path": "src/harbour/mountain/islandShape.ts",
+    "sha256": "0c0193950c09edd0f11e8f2f3c6da83aa81d2992ddb91dd21f163b4a32fdab6e"
+  },
+  {
+    "path": "src/harbour/mountain/roadLine.ts",
+    "sha256": "fce03602c3e6f06ddb3e38b182f54c032c15563a70a9b37d5a08de1ac3b80360"
+  },
+  {
+    "path": "src/harbour/mountain/terrainBase.ts",
+    "sha256": "f24b6acee02030c6bb13590de4693f5ca0bf68bcce69fce504d2799a728ba8a4"
+  },
+  {
+    "path": "src/harbour/mountain/transport.ts",
+    "sha256": "43b6f9465f00a42df7bb594a41351974c9699c5fa08ff3888f13bfe4cdef7b63"
+  },
+  {
+    "path": "src/harbour/village/layout.ts",
+    "sha256": "c16dd823638b6d48f99502e8021e3f4ad6ca5da2c328e12bca4dd41040596bb3"
+  },
+  {
+    "path": "src/harbour/village/world.ts",
+    "sha256": "6fe7b30f9676dfb64b69ba3586517bf57bb6abd01148c24fb9ace32cb8f84726"
+  },
+  {
+    "path": "src/harbour/mountain/roadFrameFairing.ts",
+    "sha256": "3d69668388de4c9893d8d9a3fac52f489fce206912f8d657b874f896b9df0d3d"
+  },
+  {
+    "path": "src/harbour/mountain/bridges.ts",
+    "sha256": "4df3f34ca2594fd94d52686b907e5f04a006576a5e49e6880e7b363e7b8e9f49"
+  },
+  {
+    "path": "src/harbour/mountain/terrain.ts",
+    "sha256": "cec7bcc9b2f480952e06d82a3d4dae6179e4c42ff49de09dfeb68c10d9014085"
+  },
+  {
+    "path": "src/harbour/mountain/pathGraph.ts",
+    "sha256": "a7a6146b59eee6676c4dd9dd7aaa6030809a84ebc924028037f7138158cb0a6b"
+  },
+  {
+    "path": "src/harbour/mountain/damParts.ts",
+    "sha256": "9efacded2bd69cfa36c7d7c73b3816d835c84933d714645887a6d988bc35118d"
+  },
+  {
+    "path": "src/harbour/mountain/benches.ts",
+    "sha256": "38c30be40d620f20067d4c2df81af1882a956c549bd20016732646cd4b600836"
+  },
+  {
+    "path": "src/harbour/mountain/mountainGround.ts",
+    "sha256": "7cacae3529a2f2bc10607bdd70bddd34bf5de5fd77d47927aa114b353b03cce9"
+  },
+  {
+    "path": "src/harbour/mountain/roads.ts",
+    "sha256": "311da4177ce0d9d733f292033328ac2474102e703b2bdb0d3ff4a81093b2d59d"
+  },
+  {
+    "path": "src/harbour/mountain/branchLandings.ts",
+    "sha256": "dd4bb7e204bf5359879b3c41f86790a21dd1c4790485db60788c3ac8eda7a78d"
+  },
+  {
+    "path": "src/harbour/mountain/damEntry.ts",
+    "sha256": "dab096bbce82f167284d67fbb820a4b4c51e6fbf7129aa48f9927ff940293da5"
+  },
+  {
+    "path": "src/harbour/mountain/generated/library-landing.json",
+    "sha256": "da0710ea0363da6ecc234db1d57d48ab7f636ca86c38ae758bfb1c2608eb2a5f"
+  },
+  {
+    "path": "src/harbour/mountain/generated/awning-landing.json",
+    "sha256": "53cf0e1fa4690812d38779265d41bf7d2e873d56c9e22a3bf7dc6c43efe88e3f"
+  },
+  {
+    "path": "src/harbour/mountain/course.ts",
+    "sha256": "11d7865cae026f04c7a07ee443ab5064a5e7ae2d6ee65c46783ff5944bb2d2a2"
+  },
+  {
+    "path": "src/harbour/mountain/townSquare.ts",
+    "sha256": "589ffd69d3e647ed7a231f92ed98780f4792c5fa26b45a245489a59816b01259"
+  },
+  {
+    "path": "src/harbour/mountain/townChannel.ts",
+    "sha256": "a103a43a105e26279a06c294538db123e29bd4ecd5363038beceb3676fcee472"
+  },
+  {
+    "path": "src/harbour/mountain/transportAll.ts",
+    "sha256": "50aff96c7da31ccf3eb7f1c60742264fc22b6566951d7d27478d4ede3616b4ce"
+  },
+  {
+    "path": "src/harbour/mountain/crossings.ts",
+    "sha256": "f32b896b045428efcfac74cb7498f7990aaaaa3dec73e172c0eae976db57e0d5"
+  },
+  {
+    "path": "src/harbour/mountain/definition.ts",
+    "sha256": "5af0871bfa6fdd476516d8f367fbfdf6cf7e8da172c3803fff893f52e024c5d9"
+  },
+  {
+    "path": "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.core.js",
+    "sha256": "3718df126d69c125362a03340913204470d8c50238605150e57f808840fb7759"
+  },
+  {
+    "path": "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js",
+    "sha256": "bbf5ed13fe4373f5bd38b14ea8e62e9f157327da5638edc6d3863e08b167c9c7"
+  },
+  {
+    "path": "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js",
+    "sha256": "5c552223a9309883743b80538d6e9cdb45e3227f30d3ec56fb2c39b46e78d595"
+  },
+  {
+    "path": "src/harbour/mountain/race.ts",
+    "sha256": "ca054ed67b8873cab637c92ab056953f3665985c19f675f9b5f85a741421e2a6"
+  },
+  {
+    "path": "src/harbour/mountain/damSolids.ts",
+    "sha256": "6e62b2d3cce33fb696b35acceeba561b52eb48cb710736aa986f5db2ecac1ec7"
+  },
+  {
+    "path": "src/harbour/mountain/generated/planting-authoring-corridors.json",
+    "sha256": "f3e38151dc1c9f6a3441cba40c3358aaef7b77fab27e30e372fcf7502e709a96"
+  },
+  {
+    "path": "src/harbour/mountain/art/land.ts",
+    "sha256": "374cc61ae2473a39d00f4f9a4f27e7b5820d02cfb522eded15783eac709de7c1"
+  },
+  {
+    "path": "src/harbour/mountain/art/spots.ts",
+    "sha256": "2e5ee1485d9f4a4234bae91ebc653bf025cb16fffa953ff10f856900cfb983db"
+  },
+  {
+    "path": "src/harbour/mountain/artGeometry.ts",
+    "sha256": "80b45659cc3343e1163e78af91673dfe26e849f6169b64893eec450f6f9bd345"
+  },
+  {
+    "path": "src/harbour/horizon/runtime/geography.ts",
+    "sha256": "1acfa0d8ffa70756f81e7a47072191b435d0b145b2d75bc01364890627afb438"
+  },
+  {
+    "path": "src/harbour/mountain/surfaces.ts",
+    "sha256": "2a8a8ad0be2890775653ceddcf2e95d2fd8f98f3e81bbca3dbec6661d9e37425"
+  },
+  {
+    "path": "src/harbour/body/overhead.ts",
+    "sha256": "a5d5a46b76bad226d8aa2e4eaa231fc52ed85fab9a084151fe5a3d6b2f322c2b"
+  },
+  {
+    "path": "src/harbour/skate/world/profiles.ts",
+    "sha256": "10b8c9b282bda09bf483bc5609dfc81360066f66dc5b7283181dadd54cdfd414"
+  },
+  {
+    "path": "src/harbour/skate/world/features.ts",
+    "sha256": "86ec73f6bfa2d39c1a942d57f0a5fcb00384d7e088b48a7422a614e63d2da4cb"
+  },
+  {
+    "path": "src/harbour/skate/world/layout.ts",
+    "sha256": "75ccb2d652f1704bd301057dc208dd136ed4dd5761191fe7899c81fbb309ea21"
+  },
+  {
+    "path": "src/harbour/skate/world/field.ts",
+    "sha256": "4a5e90ecec125282279f919d33c00e100638ef2aaf1f0aab48c46ec7dfab42f0"
+  },
+  {
+    "path": "src/harbour/skate/park.ts",
+    "sha256": "fdcb64ace83f5ba7236f9c8820882ac903edd4f746dd16519e7244e49e0ad42e"
+  },
+  {
+    "path": "src/harbour/scene/planting.ts",
+    "sha256": "18af9e1eb8a5a217b262a644e74fa5dd6af3daa46fc55f631110704f44dac053"
+  },
+  {
+    "path": "src/harbour/scene/quality.ts",
+    "sha256": "f448663f60177946d8f74fe0eba6d8544b92029f3c68ebf9ada248fe4828917c"
+  },
+  {
+    "path": "src/harbour/scene/lightRig.ts",
+    "sha256": "685ea399f8bbbe53bfae42f3f7e2ca18023beda46825bb68f5b13ad50c3bb1ef"
+  },
+  {
+    "path": "src/house/world/buildTask.ts",
+    "sha256": "9893c9447be6cd41188888210de147ded872bb5dd471401063b5b73ba587d82f"
+  },
+  {
+    "path": "src/harbour/art/cardKit.ts",
+    "sha256": "966edb49455a6a13f5c80c7032c39fd171652d667845a65356098215510024a2"
+  },
+  {
+    "path": "src/harbour/art/cardScene.ts",
+    "sha256": "97ce87236d5c8f1718e4cb4b6c2d5b447d09046a3552e6607c754349ceed322c"
+  },
+  {
+    "path": "src/harbour/scene/ground.ts",
+    "sha256": "792e423d071f4c11f6c605d5a9fc8e0775f8ab13fa6bda30dd7b7baad1f62c79"
+  },
+  {
+    "path": "src/harbour/mountain/art/damArt.ts",
+    "sha256": "13b50521d943cf251d3855ce7811f3e4306116a54f507db7339c7112233cb9a7"
+  }
+]
