@@ -1,0 +1,217 @@
+{
+  "status": "complete",
+  "captureDirectory": "/private/tmp/mountain-packed-parity-smoke",
+  "captureSummarySha256": "a2cd9df24bf9f65fd00cb110580541ffe2be810da873ea1c01b13f0144b26ea3",
+  "scriptSha256": "fce8beb417870536cb50e1ccb7fcd6045fbb4642903d9c2d3add291d469fd5b2",
+  "sourceProof": {
+    "packing": {
+      "path": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/node_modules/three/src/renderers/shaders/ShaderChunk/packing.glsl.js",
+      "sha256": "baaf3e0633bab03dd145e32705f66db08f72a2a73ad63dfc1dc70201ac722b32"
+    },
+    "depthFragment": {
+      "path": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/node_modules/three/src/renderers/shaders/ShaderLib/depth.glsl.js",
+      "sha256": "860fa71a028d9678198f7aea0e6a4336c9663bbb761be6f34437fbbd4c257891"
+    },
+    "defaultDepth": {
+      "path": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/node_modules/three/src/materials/MeshDepthMaterial.js",
+      "sha256": "30faf8368568b703e4b1db209d49c66b196891109628bcbfe4cef49f0ff4c7d9"
+    },
+    "shadowMap": {
+      "path": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/node_modules/three/src/renderers/webgl/WebGLShadowMap.js",
+      "sha256": "7d69ca09821ed119d7e1db25e88ad43c2b8c7dd87e8746e1c63f8b86086b3e05"
+    },
+    "oldServed": {
+      "path": "/private/tmp/mountain-packed-parity-smoke/old-served.js",
+      "sha256": "74fafa96f7ca7413e859c240931a62e7c7f9a167c277cc3861fdef6bea0fd204"
+    },
+    "newServed": {
+      "path": "/private/tmp/mountain-packed-parity-smoke/new-served.js",
+      "sha256": "b31058a5c9eab6c0ea6156f494732b58fc3e0154f56a8ff7f48d23943a0540e2"
+    }
+  },
+  "threeVersion": "0.185.1",
+  "worldSha256": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+  "terrainSha256": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+  "method": {
+    "target": "shadow.map COLOR attachment readRenderTargetPixels RGBA8, not shadow.map.depthTexture",
+    "clearRgba": [
+      255,
+      255,
+      255,
+      255
+    ],
+    "maskRule": "Any channel differs from the source-established all-white clear sentinel; exact per-pixel mask comparison.",
+    "rgbaDecoder": "(255 * (R * 65536 + G * 256 + B) + A) / (255 * 16777216)",
+    "rgbaDecoderMeaning": "Exact real-arithmetic evaluation of installed unpackRGBAToDepth on normalized RGBA8 bytes; not a simulation of GPU floating-point evaluation.",
+    "ordinaryLampDepth": "BasicDepthPacking: grayscale 1-z, normalized RGBA8. Centre estimate z=1-R/255, half-bin=0.5/255.",
+    "packedLampDepth": "RGBADepthPacking in this retained pre-fix fixture. Existing plant custom-depth code remains RGBA on both sides.",
+    "classification": "Changed old grayscale/opaque texels are checked against the source-identified Basic-to-RGBA encoding hypothesis; no object-ID attribution is inferred from color alone.",
+    "intervalCheck": "Exact integer rational comparison against the old 8-bit grayscale quantization bin; this is encoding compatibility, not a geometry or depth acceptance tolerance.",
+    "requestedShadowType": "PCFSoftShadowMap",
+    "installedEffectiveShadowType": "PCFShadowMap (installed WebGLShadowMap translates the deprecated requested type)"
+  },
+  "cases": [
+    {
+      "key": "classic_full_day_shadow_7.25_grove-close",
+      "width": 2048,
+      "height": 2048,
+      "bytesPerBuffer": 16777216,
+      "pixelsPerBuffer": 4194304,
+      "oldRawSha256": "36349578f9c56a17552d4737635493127111c1afc2d88d5c6e4afebadbf720d5",
+      "newRawSha256": "0ea40491f6d1ec53db6930195aededd225a77b74abcf0ef88581b6666c121634",
+      "differingPixels": 190,
+      "differingChannels": 759,
+      "oldNonClearPixels": 1741,
+      "newNonClearPixels": 1741,
+      "exactNonClearMask": true,
+      "maskMismatchPixels": 0,
+      "maskMismatchWitnesses": [],
+      "changedPixelsCompatibleWithBasicToRgbaHypothesis": 190,
+      "unclassifiedChangedPixels": 0,
+      "unclassifiedWitnesses": [],
+      "maximumDecodedCentreDifference": 0.0019537483944612392,
+      "oldBasicQuantizationHalfBin": 0.00196078431372549,
+      "maximumExcessBeyondOldBasicBin": 0.0,
+      "allClassifiedChangesWithinOldBasicBin": true,
+      "maximumWitness": {
+        "pixelIndex": 2499891,
+        "xyFromBottom": [
+          1331,
+          1220
+        ],
+        "old": [
+          138,
+          138,
+          138,
+          255
+        ],
+        "new": [
+          116,
+          245,
+          107,
+          0
+        ],
+        "oldBasicCentreDepth": 0.4588235294117647,
+        "newRgbaDecodedDepth": 0.45686978101730347,
+        "absoluteCentreDifference": 0.0019537483944612392,
+        "oldBasicBinHalfWidth": 0.00196078431372549,
+        "withinOldBasicQuantizationBin": true
+      },
+      "actualDepthTextureMaximumDifference": null,
+      "colorRasterExactInOriginalSummary": true
+    },
+    {
+      "key": "classic_full_day_shadow_7.25_pine-close",
+      "width": 2048,
+      "height": 2048,
+      "bytesPerBuffer": 16777216,
+      "pixelsPerBuffer": 4194304,
+      "oldRawSha256": "04582f43d94bef7e5fde9cf7622396bed1941617027ca4fd1a5ac1d9837b3361",
+      "newRawSha256": "2e30ae006541a22e0ef6baf25a759ca469fcc3055fb7d5604bf6c95ed8e27f40",
+      "differingPixels": 250,
+      "differingChannels": 1000,
+      "oldNonClearPixels": 2119,
+      "newNonClearPixels": 2119,
+      "exactNonClearMask": true,
+      "maskMismatchPixels": 0,
+      "maskMismatchWitnesses": [],
+      "changedPixelsCompatibleWithBasicToRgbaHypothesis": 250,
+      "unclassifiedChangedPixels": 0,
+      "unclassifiedWitnesses": [],
+      "maximumDecodedCentreDifference": 0.00196075579699348,
+      "oldBasicQuantizationHalfBin": 0.00196078431372549,
+      "maximumExcessBeyondOldBasicBin": 0.0,
+      "allClassifiedChangesWithinOldBasicBin": true,
+      "maximumWitness": {
+        "pixelIndex": 3316560,
+        "xyFromBottom": [
+          848,
+          1619
+        ],
+        "old": [
+          133,
+          133,
+          133,
+          255
+        ],
+        "new": [
+          122,
+          250,
+          250,
+          128
+        ],
+        "oldBasicCentreDepth": 0.47843137254901963,
+        "newRgbaDecodedDepth": 0.4803921283460131,
+        "absoluteCentreDifference": 0.00196075579699348,
+        "oldBasicBinHalfWidth": 0.00196078431372549,
+        "withinOldBasicQuantizationBin": true
+      },
+      "actualDepthTextureMaximumDifference": null,
+      "colorRasterExactInOriginalSummary": true
+    },
+    {
+      "key": "classic_full_day_shadow_7.25_lamp-close",
+      "width": 2048,
+      "height": 2048,
+      "bytesPerBuffer": 16777216,
+      "pixelsPerBuffer": 4194304,
+      "oldRawSha256": "cdc68b330e20f8c88ad97b24fe3da6df02cb286bdad595b544d3ce44671c5586",
+      "newRawSha256": "3099091652ae24dd452e929ed76e8421698647ce3b7baeddd9d2de3941549b5c",
+      "differingPixels": 117,
+      "differingChannels": 467,
+      "oldNonClearPixels": 1660,
+      "newNonClearPixels": 1660,
+      "exactNonClearMask": true,
+      "maskMismatchPixels": 0,
+      "maskMismatchWitnesses": [],
+      "changedPixelsCompatibleWithBasicToRgbaHypothesis": 117,
+      "unclassifiedChangedPixels": 0,
+      "unclassifiedWitnesses": [],
+      "maximumDecodedCentreDifference": 0.001946535531212302,
+      "oldBasicQuantizationHalfBin": 0.00196078431372549,
+      "maximumExcessBeyondOldBasicBin": 0.0,
+      "allClassifiedChangesWithinOldBasicBin": true,
+      "maximumWitness": {
+        "pixelIndex": 2168216,
+        "xyFromBottom": [
+          1432,
+          1058
+        ],
+        "old": [
+          141,
+          141,
+          141,
+          255
+        ],
+        "new": [
+          113,
+          242,
+          225,
+          0
+        ],
+        "oldBasicCentreDepth": 0.4470588235294118,
+        "newRgbaDecodedDepth": 0.44511228799819946,
+        "absoluteCentreDifference": 0.001946535531212302,
+        "oldBasicBinHalfWidth": 0.00196078431372549,
+        "withinOldBasicQuantizationBin": true
+      },
+      "actualDepthTextureMaximumDifference": null,
+      "colorRasterExactInOriginalSummary": true
+    }
+  ],
+  "limits": [
+    "These existing files cannot establish exact equality of the actual sampled depthTexture.",
+    "Do not decode the old ordinary-lamp grayscale values with unpackRGBAToDepth.",
+    "Equal nonclear counts alone would be insufficient: this audit compares their exact masks.",
+    "An unchanged RGBA color-attachment pixel can still conceal depth differences below its packing precision; BasicDepthPacking has only eight-bit color precision.",
+    "The mixed-encoding difference is not evidence of an ULP-only delta. Actual depth delta is unavailable from these captures.",
+    "The original lamp-close camera was later found to target a nonresident fixture; the corrected V03.lamp.17 pose is outside this retained smoke.",
+    "Finite frozen Classic/full/day smoke only; no exhaustive theme, time, wind, device or complete live-world parity claim."
+  ],
+  "conclusion": {
+    "exactMasksForAllCases": true,
+    "allChangedPixelsCompatibleWithKnownEncodingChange": true,
+    "actualDepthTextureEquality": "unavailable",
+    "safeClaim": "For these retained smoke views, shadow color-attachment nonclear masks match exactly; every changed texel is compatible with the known grayscale-to-RGBA material encoding change. Actual depthTexture equality remains unmeasured."
+  }
+}
