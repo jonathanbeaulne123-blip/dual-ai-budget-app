@@ -1,0 +1,956 @@
+{
+  "createdAt": "2026-10-01T08:55:13.042885+00:00",
+  "status": "decision-needed-no-waiver-applied",
+  "baselineIntegratedMain": "1cf76c551e6f49124b6257162bc4d36ca18d7bd1",
+  "originalBefore": "324cd5f",
+  "exactSubjectComparison": [
+    {
+      "page": "C",
+      "subject": "the skate shelf",
+      "thresholds": {
+        "landscape": 13,
+        "portrait": 8
+      },
+      "snapshots": {
+        "current": {
+          "worldSha256": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+          "pixels": 30,
+          "portraitPixels": 4,
+          "eye": [
+            1268,
+            11.6,
+            1145
+          ],
+          "target": [
+            1210,
+            16,
+            1098
+          ],
+          "portrait": {
+            "eye": [
+              1268,
+              11.6,
+              1145
+            ],
+            "target": [
+              1222,
+              16,
+              1102
+            ],
+            "fovDegrees": 50,
+            "frames": [
+              "the road deck",
+              "the skate shelf",
+              "the walk at the water"
+            ]
+          },
+          "passLandscape": true,
+          "passPortrait": false
+        },
+        "integrated-main": {
+          "worldSha256": "7ae2357ff113a3eadf195a4e2d95832b621eee2deb3703fd4ffd37af6d60e3bb",
+          "pixels": 30,
+          "portraitPixels": 4,
+          "eye": [
+            1268,
+            11.6,
+            1145
+          ],
+          "target": [
+            1210,
+            16,
+            1098
+          ],
+          "portrait": {
+            "eye": [
+              1268,
+              11.6,
+              1145
+            ],
+            "target": [
+              1222,
+              16,
+              1102
+            ],
+            "fovDegrees": 50,
+            "frames": [
+              "the road deck",
+              "the skate shelf",
+              "the walk at the water"
+            ]
+          },
+          "passLandscape": true,
+          "passPortrait": false
+        },
+        "original324": {
+          "worldSha256": "16bfa5985484be9b0224665ee4452de4b6be31006923bd22c3d7b1cbf327a864",
+          "pixels": 30,
+          "portraitPixels": 4,
+          "eye": [
+            1268,
+            11.6,
+            1145
+          ],
+          "target": [
+            1210,
+            16,
+            1098
+          ],
+          "portrait": {
+            "eye": [
+              1268,
+              11.6,
+              1145
+            ],
+            "target": [
+              1222,
+              16,
+              1102
+            ],
+            "fovDegrees": 50,
+            "frames": [
+              "the road deck",
+              "the skate shelf",
+              "the walk at the water"
+            ]
+          },
+          "passLandscape": true,
+          "passPortrait": false
+        }
+      }
+    },
+    {
+      "page": "D",
+      "subject": "surf",
+      "thresholds": {
+        "landscape": 13,
+        "portrait": 8
+      },
+      "snapshots": {
+        "current": {
+          "worldSha256": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+          "pixels": 14,
+          "portraitPixels": 0,
+          "eye": [
+            1185,
+            2.649999952,
+            1445
+          ],
+          "target": [
+            700,
+            6,
+            1462
+          ],
+          "portrait": {
+            "eye": [
+              1185,
+              2.649999952,
+              1445
+            ],
+            "target": [
+              700,
+              5,
+              1454
+            ],
+            "fovDegrees": 50,
+            "frames": [
+              "surf",
+              "the zipline landing"
+            ]
+          },
+          "passLandscape": true,
+          "passPortrait": false
+        },
+        "integrated-main": {
+          "worldSha256": "7ae2357ff113a3eadf195a4e2d95832b621eee2deb3703fd4ffd37af6d60e3bb",
+          "pixels": 14,
+          "portraitPixels": 0,
+          "eye": [
+            1185,
+            2.649999952,
+            1445
+          ],
+          "target": [
+            700,
+            6,
+            1462
+          ],
+          "portrait": {
+            "eye": [
+              1185,
+              2.649999952,
+              1445
+            ],
+            "target": [
+              700,
+              5,
+              1454
+            ],
+            "fovDegrees": 50,
+            "frames": [
+              "surf",
+              "the zipline landing"
+            ]
+          },
+          "passLandscape": true,
+          "passPortrait": false
+        },
+        "original324": {
+          "worldSha256": "16bfa5985484be9b0224665ee4452de4b6be31006923bd22c3d7b1cbf327a864",
+          "pixels": 14,
+          "portraitPixels": 0,
+          "eye": [
+            1185,
+            2.649999952,
+            1445
+          ],
+          "target": [
+            700,
+            6,
+            1462
+          ],
+          "portrait": {
+            "eye": [
+              1185,
+              2.649999952,
+              1445
+            ],
+            "target": [
+              700,
+              5,
+              1454
+            ],
+            "fovDegrees": 50,
+            "frames": [
+              "surf",
+              "the zipline landing"
+            ]
+          },
+          "passLandscape": true,
+          "passPortrait": false
+        }
+      }
+    },
+    {
+      "page": "F",
+      "subject": "L01",
+      "thresholds": {
+        "landscape": 13,
+        "portrait": 8
+      },
+      "snapshots": {
+        "current": {
+          "worldSha256": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+          "pixels": 161,
+          "portraitPixels": 0,
+          "eye": [
+            1332.23,
+            143.7,
+            533.27
+          ],
+          "target": [
+            1150,
+            100,
+            720
+          ],
+          "portrait": {
+            "eye": [
+              1332.23,
+              143.7,
+              533.27
+            ],
+            "target": [
+              1150,
+              101.4,
+              760
+            ],
+            "fovDegrees": 45,
+            "frames": [
+              "L01",
+              "Stillwater"
+            ]
+          },
+          "passLandscape": true,
+          "passPortrait": false
+        },
+        "integrated-main": {
+          "worldSha256": "7ae2357ff113a3eadf195a4e2d95832b621eee2deb3703fd4ffd37af6d60e3bb",
+          "pixels": 161,
+          "portraitPixels": 0,
+          "eye": [
+            1332.23,
+            143.7,
+            533.27
+          ],
+          "target": [
+            1150,
+            100,
+            720
+          ],
+          "portrait": {
+            "eye": [
+              1332.23,
+              143.7,
+              533.27
+            ],
+            "target": [
+              1150,
+              101.4,
+              760
+            ],
+            "fovDegrees": 45,
+            "frames": [
+              "L01",
+              "Stillwater"
+            ]
+          },
+          "passLandscape": true,
+          "passPortrait": false
+        },
+        "original324": {
+          "worldSha256": "16bfa5985484be9b0224665ee4452de4b6be31006923bd22c3d7b1cbf327a864",
+          "pixels": 161,
+          "portraitPixels": 0,
+          "eye": [
+            1332.23,
+            143.7,
+            533.27
+          ],
+          "target": [
+            1150,
+            100,
+            720
+          ],
+          "portrait": {
+            "eye": [
+              1332.23,
+              143.7,
+              533.27
+            ],
+            "target": [
+              1150,
+              101.4,
+              760
+            ],
+            "fovDegrees": 45,
+            "frames": [
+              "L01",
+              "Stillwater"
+            ]
+          },
+          "passLandscape": true,
+          "passPortrait": false
+        }
+      }
+    },
+    {
+      "page": "L",
+      "subject": "the Boathouse",
+      "thresholds": {
+        "landscape": 13,
+        "portrait": 8
+      },
+      "snapshots": {
+        "current": {
+          "worldSha256": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+          "pixels": 13,
+          "portraitPixels": 5,
+          "eye": [
+            1484,
+            4.6,
+            1295
+          ],
+          "target": [
+            1285,
+            4,
+            1315
+          ],
+          "portrait": {
+            "eye": [
+              1460,
+              4.6,
+              1300
+            ],
+            "target": [
+              1285,
+              4,
+              1315
+            ],
+            "fovDegrees": 45,
+            "frames": [
+              "Lantern Row",
+              "the Boathouse"
+            ]
+          },
+          "passLandscape": true,
+          "passPortrait": false
+        },
+        "integrated-main": {
+          "worldSha256": "7ae2357ff113a3eadf195a4e2d95832b621eee2deb3703fd4ffd37af6d60e3bb",
+          "pixels": 13,
+          "portraitPixels": 5,
+          "eye": [
+            1484,
+            4.6,
+            1295
+          ],
+          "target": [
+            1285,
+            4,
+            1315
+          ],
+          "portrait": {
+            "eye": [
+              1460,
+              4.6,
+              1300
+            ],
+            "target": [
+              1285,
+              4,
+              1315
+            ],
+            "fovDegrees": 45,
+            "frames": [
+              "Lantern Row",
+              "the Boathouse"
+            ]
+          },
+          "passLandscape": true,
+          "passPortrait": false
+        },
+        "original324": {
+          "worldSha256": "16bfa5985484be9b0224665ee4452de4b6be31006923bd22c3d7b1cbf327a864",
+          "pixels": 11,
+          "portraitPixels": 4,
+          "eye": [
+            1484,
+            4.6,
+            1295
+          ],
+          "target": [
+            1285,
+            4,
+            1315
+          ],
+          "portrait": {
+            "eye": [
+              1460,
+              4.6,
+              1300
+            ],
+            "target": [
+              1285,
+              4,
+              1315
+            ],
+            "fovDegrees": 45,
+            "frames": [
+              "Lantern Row",
+              "the Boathouse"
+            ]
+          },
+          "passLandscape": false,
+          "passPortrait": false
+        }
+      }
+    }
+  ],
+  "files": [
+    {
+      "path": "/tmp/mountain-page-L-saved-views.json",
+      "bytes": 55413,
+      "sha256": "2ffe66e80e2c9468866af57933791c06197799de0bdb87cc5dc457b81b4932db"
+    },
+    {
+      "path": "/tmp/mountain-page-L-observed/report.json",
+      "bytes": 41099,
+      "sha256": "1e19d281562eeece8d2a41b6892e31b609a33e796250c56046b5759bfac775a1",
+      "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+      "sourceHashes": {
+        "src/harbour/horizon/land/terrain/geometry.ts": "dce99968a6f68bc6ba4c0225edeb5e331f31c9f6c358579454b424b3375501b4",
+        "src/harbour/horizon/land/terrain/index.ts": "5fd5c8225b6d70ad33f6bf611ebf297cc8f34b4abd9db89bcf9304511b08f888",
+        "src/harbour/horizon/world/MANIFEST.json": "718c4e93f1e04ed3fa6fcd0cb63554bd29a09d4e96d5d89d79fab7e8c53343f4",
+        "src/harbour/horizon/world/manifest.ts": "980d0c15f7661077905e48556089e0f63f952221ae1f95345b81600b09e06867",
+        "src/harbour/horizon/land/coast/index.ts": "695480ed50f80c29a87a28ec589cda09bc5de399b272c7b56f2703f68ac37dac",
+        "src/harbour/horizon/land/water/index.ts": "224f6e0f4e7527e5fb1f52642846e53611237b8bd1dc15f0b289941ceab904df",
+        "src/harbour/horizon/world/geometry.ts": "f621ab28a5178289d7139912912bc080f0ca980900f30134406fae3663a4bef3",
+        "src/harbour/horizon/world/raycast.ts": "ef88513e226b68be87557d1915b05771fff789ef6599aee104b3ae1ff6d468f2",
+        "src/harbour/horizon/world/lens.ts": "5dc5cbdb741511fc718714a3cac12dd16048c3577d336a893bf829cbf164ff6c",
+        "src/harbour/horizon/sky/gradient.ts": "bd9c6d4979619eaf1c68f7dbc9e39cb9b04145b5421186bf3c4189629f0d3609",
+        "src/harbour/horizon/sky/fog.ts": "1f38d2d9408a0995ecd5835264bd3b4fd4e72ab3ba296b8bf4857a6d00e96e00",
+        "src/harbour/horizon/world/views.ts": "40c90948b93c7d9662aea20a029939afbcb42cac999e8f91604bd5aad96c18b5",
+        "src/harbour/horizon/land/terrain/asset.ts": "c25f3a3c45ad43fa7c77c94ec0c68d67d0d9847f82fd378c7fb92ae1c4cd8839",
+        "public/horizon/world/horizon-geo-1.json": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+        "public/horizon/terrain/horizon-geo-1.bin": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+        "../../../../../../../tmp/mountain-page-L-diagnostic.mjs": "7ee294517fc6ccccd28f3977e6a1088c25978b5d7f1059fa8bbb771e3df04980"
+      },
+      "sourceChanged": [],
+      "originalPixelProofReproduced": true,
+      "originalFullPixelsReproduced": false,
+      "variants": [
+        {
+          "id": "original",
+          "subjects": {
+            "Lantern Row": 3036,
+            "the Boathouse": 5
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        }
+      ]
+    },
+    {
+      "path": "/tmp/mountain-page-L-bank-probe-observed/report.json",
+      "bytes": 86681,
+      "sha256": "2b693e702f723636f7da8e5f289620fb51a7955417865e267ed221b01f987109",
+      "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+      "sourceHashes": {
+        "src/harbour/horizon/land/terrain/geometry.ts": "dce99968a6f68bc6ba4c0225edeb5e331f31c9f6c358579454b424b3375501b4",
+        "src/harbour/horizon/land/terrain/index.ts": "5fd5c8225b6d70ad33f6bf611ebf297cc8f34b4abd9db89bcf9304511b08f888",
+        "src/harbour/horizon/world/MANIFEST.json": "718c4e93f1e04ed3fa6fcd0cb63554bd29a09d4e96d5d89d79fab7e8c53343f4",
+        "src/harbour/horizon/world/manifest.ts": "980d0c15f7661077905e48556089e0f63f952221ae1f95345b81600b09e06867",
+        "src/harbour/horizon/land/coast/index.ts": "695480ed50f80c29a87a28ec589cda09bc5de399b272c7b56f2703f68ac37dac",
+        "src/harbour/horizon/land/water/index.ts": "224f6e0f4e7527e5fb1f52642846e53611237b8bd1dc15f0b289941ceab904df",
+        "src/harbour/horizon/world/geometry.ts": "f621ab28a5178289d7139912912bc080f0ca980900f30134406fae3663a4bef3",
+        "src/harbour/horizon/world/raycast.ts": "ef88513e226b68be87557d1915b05771fff789ef6599aee104b3ae1ff6d468f2",
+        "src/harbour/horizon/world/lens.ts": "5dc5cbdb741511fc718714a3cac12dd16048c3577d336a893bf829cbf164ff6c",
+        "src/harbour/horizon/sky/gradient.ts": "bd9c6d4979619eaf1c68f7dbc9e39cb9b04145b5421186bf3c4189629f0d3609",
+        "src/harbour/horizon/sky/fog.ts": "1f38d2d9408a0995ecd5835264bd3b4fd4e72ab3ba296b8bf4857a6d00e96e00",
+        "src/harbour/horizon/world/views.ts": "40c90948b93c7d9662aea20a029939afbcb42cac999e8f91604bd5aad96c18b5",
+        "src/harbour/horizon/land/terrain/asset.ts": "c25f3a3c45ad43fa7c77c94ec0c68d67d0d9847f82fd378c7fb92ae1c4cd8839",
+        "public/horizon/world/horizon-geo-1.json": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+        "public/horizon/terrain/horizon-geo-1.bin": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+        "../../../../../../../tmp/mountain-page-L-bank-probe.mjs": "9ab3c1d18a0b5e86e8258687e02bfdaa16b2448aebe44b5546847b2a3bdd92fa"
+      },
+      "sourceChanged": [],
+      "originalPixelProofReproduced": true,
+      "originalFullPixelsReproduced": false,
+      "variants": [
+        {
+          "id": "original",
+          "subjects": {
+            "Lantern Row": 3036,
+            "the Boathouse": 5
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "bank-cap-preserve-all-beds",
+          "subjects": {
+            "Lantern Row": 3036,
+            "the Boathouse": 5
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        }
+      ]
+    },
+    {
+      "path": "/tmp/mountain-page-L-tight-bank-observed/report.json",
+      "bytes": 621725,
+      "sha256": "ead796010fb6fe3b00f32dd4445c31291441f3d513e501bcd27e3707612f8959",
+      "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+      "sourceHashes": {
+        "src/harbour/horizon/land/terrain/geometry.ts": "dce99968a6f68bc6ba4c0225edeb5e331f31c9f6c358579454b424b3375501b4",
+        "src/harbour/horizon/land/terrain/index.ts": "5fd5c8225b6d70ad33f6bf611ebf297cc8f34b4abd9db89bcf9304511b08f888",
+        "src/harbour/horizon/world/MANIFEST.json": "718c4e93f1e04ed3fa6fcd0cb63554bd29a09d4e96d5d89d79fab7e8c53343f4",
+        "src/harbour/horizon/world/manifest.ts": "980d0c15f7661077905e48556089e0f63f952221ae1f95345b81600b09e06867",
+        "src/harbour/horizon/land/coast/index.ts": "695480ed50f80c29a87a28ec589cda09bc5de399b272c7b56f2703f68ac37dac",
+        "src/harbour/horizon/land/water/index.ts": "224f6e0f4e7527e5fb1f52642846e53611237b8bd1dc15f0b289941ceab904df",
+        "src/harbour/horizon/world/geometry.ts": "f621ab28a5178289d7139912912bc080f0ca980900f30134406fae3663a4bef3",
+        "src/harbour/horizon/world/raycast.ts": "ef88513e226b68be87557d1915b05771fff789ef6599aee104b3ae1ff6d468f2",
+        "src/harbour/horizon/world/lens.ts": "5dc5cbdb741511fc718714a3cac12dd16048c3577d336a893bf829cbf164ff6c",
+        "src/harbour/horizon/sky/gradient.ts": "bd9c6d4979619eaf1c68f7dbc9e39cb9b04145b5421186bf3c4189629f0d3609",
+        "src/harbour/horizon/sky/fog.ts": "1f38d2d9408a0995ecd5835264bd3b4fd4e72ab3ba296b8bf4857a6d00e96e00",
+        "src/harbour/horizon/world/views.ts": "40c90948b93c7d9662aea20a029939afbcb42cac999e8f91604bd5aad96c18b5",
+        "src/harbour/horizon/land/terrain/asset.ts": "c25f3a3c45ad43fa7c77c94ec0c68d67d0d9847f82fd378c7fb92ae1c4cd8839",
+        "public/horizon/world/horizon-geo-1.json": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+        "public/horizon/terrain/horizon-geo-1.bin": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+        "../../../../../../../tmp/mountain-page-L-tight-bank-probe.mjs": "2afd982713507d0f653bf80f1ee405cda6ddc30369f4c8defd1fbe6247132a13"
+      },
+      "sourceChanged": [],
+      "originalPixelProofReproduced": true,
+      "originalFullPixelsReproduced": false,
+      "variants": [
+        {
+          "id": "original",
+          "subjects": {
+            "Lantern Row": 3036,
+            "the Boathouse": 5
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "tight-bank-cap-original-solid-paths",
+          "subjects": {
+            "Lantern Row": 3045,
+            "the Boathouse": 5
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        }
+      ]
+    },
+    {
+      "path": "/tmp/mountain-page-L-eye-options/report.json",
+      "bytes": 143600,
+      "sha256": "412650892bdd795e94abb59bf1a0167673de98f7c7b83b0961f6c5dc305a7d1f",
+      "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+      "sourceHashes": {
+        "src/harbour/horizon/land/terrain/geometry.ts": "dce99968a6f68bc6ba4c0225edeb5e331f31c9f6c358579454b424b3375501b4",
+        "src/harbour/horizon/land/terrain/index.ts": "5fd5c8225b6d70ad33f6bf611ebf297cc8f34b4abd9db89bcf9304511b08f888",
+        "src/harbour/horizon/world/MANIFEST.json": "718c4e93f1e04ed3fa6fcd0cb63554bd29a09d4e96d5d89d79fab7e8c53343f4",
+        "src/harbour/horizon/world/manifest.ts": "980d0c15f7661077905e48556089e0f63f952221ae1f95345b81600b09e06867",
+        "src/harbour/horizon/land/coast/index.ts": "695480ed50f80c29a87a28ec589cda09bc5de399b272c7b56f2703f68ac37dac",
+        "src/harbour/horizon/land/water/index.ts": "224f6e0f4e7527e5fb1f52642846e53611237b8bd1dc15f0b289941ceab904df",
+        "src/harbour/horizon/world/geometry.ts": "f621ab28a5178289d7139912912bc080f0ca980900f30134406fae3663a4bef3",
+        "src/harbour/horizon/world/raycast.ts": "ef88513e226b68be87557d1915b05771fff789ef6599aee104b3ae1ff6d468f2",
+        "src/harbour/horizon/world/lens.ts": "5dc5cbdb741511fc718714a3cac12dd16048c3577d336a893bf829cbf164ff6c",
+        "src/harbour/horizon/sky/gradient.ts": "bd9c6d4979619eaf1c68f7dbc9e39cb9b04145b5421186bf3c4189629f0d3609",
+        "src/harbour/horizon/sky/fog.ts": "1f38d2d9408a0995ecd5835264bd3b4fd4e72ab3ba296b8bf4857a6d00e96e00",
+        "src/harbour/horizon/world/views.ts": "40c90948b93c7d9662aea20a029939afbcb42cac999e8f91604bd5aad96c18b5",
+        "src/harbour/horizon/land/terrain/asset.ts": "c25f3a3c45ad43fa7c77c94ec0c68d67d0d9847f82fd378c7fb92ae1c4cd8839",
+        "public/horizon/world/horizon-geo-1.json": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+        "public/horizon/terrain/horizon-geo-1.bin": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+        "../../../../../../../tmp/mountain-page-L-diagnostic.mjs": "7ee294517fc6ccccd28f3977e6a1088c25978b5d7f1059fa8bbb771e3df04980"
+      },
+      "sourceChanged": [],
+      "originalPixelProofReproduced": true,
+      "originalFullPixelsReproduced": false,
+      "variants": [
+        {
+          "id": "original",
+          "subjects": {
+            "Lantern Row": 3036,
+            "the Boathouse": 5
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "portrait-eye-plus-0.3",
+          "subjects": {
+            "Lantern Row": 2879,
+            "the Boathouse": 5
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "portrait-eye-plus-0.6",
+          "subjects": {
+            "Lantern Row": 2720,
+            "the Boathouse": 5
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "portrait-eye-plus-1",
+          "subjects": {
+            "Lantern Row": 2516,
+            "the Boathouse": 5
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        }
+      ]
+    },
+    {
+      "path": "/tmp/mountain-page-L-quay-options/report.json",
+      "bytes": 1151014,
+      "sha256": "9b80cf544be1c21d5ab1ad3edbe4c698af6350dbc2fab0edd29a7840467bbe3a",
+      "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+      "sourceHashes": {
+        "src/harbour/horizon/land/terrain/geometry.ts": "dce99968a6f68bc6ba4c0225edeb5e331f31c9f6c358579454b424b3375501b4",
+        "src/harbour/horizon/land/terrain/index.ts": "5fd5c8225b6d70ad33f6bf611ebf297cc8f34b4abd9db89bcf9304511b08f888",
+        "src/harbour/horizon/world/MANIFEST.json": "718c4e93f1e04ed3fa6fcd0cb63554bd29a09d4e96d5d89d79fab7e8c53343f4",
+        "src/harbour/horizon/world/manifest.ts": "980d0c15f7661077905e48556089e0f63f952221ae1f95345b81600b09e06867",
+        "src/harbour/horizon/land/coast/index.ts": "695480ed50f80c29a87a28ec589cda09bc5de399b272c7b56f2703f68ac37dac",
+        "src/harbour/horizon/land/water/index.ts": "224f6e0f4e7527e5fb1f52642846e53611237b8bd1dc15f0b289941ceab904df",
+        "src/harbour/horizon/world/geometry.ts": "f621ab28a5178289d7139912912bc080f0ca980900f30134406fae3663a4bef3",
+        "src/harbour/horizon/world/raycast.ts": "ef88513e226b68be87557d1915b05771fff789ef6599aee104b3ae1ff6d468f2",
+        "src/harbour/horizon/world/lens.ts": "5dc5cbdb741511fc718714a3cac12dd16048c3577d336a893bf829cbf164ff6c",
+        "src/harbour/horizon/sky/gradient.ts": "bd9c6d4979619eaf1c68f7dbc9e39cb9b04145b5421186bf3c4189629f0d3609",
+        "src/harbour/horizon/sky/fog.ts": "1f38d2d9408a0995ecd5835264bd3b4fd4e72ab3ba296b8bf4857a6d00e96e00",
+        "src/harbour/horizon/world/views.ts": "40c90948b93c7d9662aea20a029939afbcb42cac999e8f91604bd5aad96c18b5",
+        "src/harbour/horizon/land/terrain/asset.ts": "c25f3a3c45ad43fa7c77c94ec0c68d67d0d9847f82fd378c7fb92ae1c4cd8839",
+        "public/horizon/world/horizon-geo-1.json": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+        "public/horizon/terrain/horizon-geo-1.bin": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+        "../../../../../../../tmp/mountain-page-L-quay-probe.mjs": "3c563143da80fbfee6dd4a490e7097d27c58f455e33233d3f19dac7f9fd7b3e6"
+      },
+      "sourceChanged": [],
+      "originalPixelProofReproduced": true,
+      "originalFullPixelsReproduced": false,
+      "variants": [
+        {
+          "id": "original",
+          "subjects": {
+            "Lantern Row": 3036,
+            "the Boathouse": 5
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1444-1295",
+          "subjects": {
+            "Lantern Row": 2043,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1452-1291",
+          "subjects": {
+            "Lantern Row": 2969,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1452-1295",
+          "subjects": {
+            "Lantern Row": 3311,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1456-1291",
+          "subjects": {
+            "Lantern Row": 3244,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1456-1295",
+          "subjects": {
+            "Lantern Row": 3420,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1456-1300",
+          "subjects": {
+            "Lantern Row": 1415,
+            "the Boathouse": 5
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1458-1291",
+          "subjects": {
+            "Lantern Row": 3295,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1458-1295",
+          "subjects": {
+            "Lantern Row": 3453,
+            "the Boathouse": 2
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1458-1300",
+          "subjects": {
+            "Lantern Row": 2448,
+            "the Boathouse": 5
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1460-1291",
+          "subjects": {
+            "Lantern Row": 3328,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1460-1295",
+          "subjects": {
+            "Lantern Row": 3483,
+            "the Boathouse": 2
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1462-1291",
+          "subjects": {
+            "Lantern Row": 3350,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1462-1295",
+          "subjects": {
+            "Lantern Row": 3504,
+            "the Boathouse": 3
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1462-1300",
+          "subjects": {
+            "Lantern Row": 3260,
+            "the Boathouse": 5
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1464-1291",
+          "subjects": {
+            "Lantern Row": 3368,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1464-1295",
+          "subjects": {
+            "Lantern Row": 3521,
+            "the Boathouse": 3
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1464-1300",
+          "subjects": {
+            "Lantern Row": 3092,
+            "the Boathouse": 5
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1468-1291",
+          "subjects": {
+            "Lantern Row": 3388,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1468-1295",
+          "subjects": {
+            "Lantern Row": 3572,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1468-1300",
+          "subjects": {
+            "Lantern Row": 2955,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1476-1291",
+          "subjects": {
+            "Lantern Row": 3470,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1476-1295",
+          "subjects": {
+            "Lantern Row": 3661,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1476-1300",
+          "subjects": {
+            "Lantern Row": 2896,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1484-1291",
+          "subjects": {
+            "Lantern Row": 3659,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1484-1295",
+          "subjects": {
+            "Lantern Row": 3673,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        },
+        {
+          "id": "quay-1484-1300",
+          "subjects": {
+            "Lantern Row": 2902,
+            "the Boathouse": 0
+          },
+          "minPixels": 8,
+          "horizonInFrame": true
+        }
+      ]
+    },
+    {
+      "path": "/tmp/mountain-page-L-solid-lines.json",
+      "bytes": 22293,
+      "sha256": "ce911c40c73b23618bcda3f65da968ccad991755865a7cc17a56d0c251b690f7"
+    },
+    {
+      "path": "/tmp/mountain-page-L-investigation.md",
+      "bytes": 10966,
+      "sha256": "5778479a23630d2831eeecf36c6a04bad041b3e5d755472f53eb91f987c9c274"
+    },
+    {
+      "path": "/tmp/mountain-page-L-bank-disposition.md",
+      "bytes": 6019,
+      "sha256": "05933614a30cb976b909979801c4c2ade41955a231a777e3a1c60e336b306292"
+    }
+  ],
+  "copyInstructions": "Copy each full observed output directory including runtime.mjs, terrain-readonly-adapter.ts, report.json and root log to distinct durable evidence folders; retain each unsuccessful candidate. Copy the final disposition and this manifest. Hashes identify original artifacts independently of destination paths. No source/camera/bake modifications from these proposals were applied.",
+  "limits": [
+    "Root executed observed diagnostics; neighbors performed source reads, saved-JSON analysis and syntax checks only.",
+    "All view candidates are unapproved and unsuccessful; no source exception has been granted.",
+    "Baked proof does not include all separately generated runtime furniture; final authored captures remain necessary."
+  ]
+}

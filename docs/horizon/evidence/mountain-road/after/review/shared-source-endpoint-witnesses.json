@@ -1,0 +1,270 @@
+{
+  "method": "Root arithmetic over existing JSON only; first proposal audit, no runtime import or world build. These witnesses require bounded endpoint classification before applying the proposal.",
+  "worldSha256": "0e129df837d3000d674b6ce1dc56446cfb0f690515064e51455047fe1ead0e33",
+  "nativeExportSha256": "418eab3afb34746b1341d6f80c16efc7d6921eb71ad301e31e249b63b46cab8f",
+  "mappedSegments": 314,
+  "pairProofs": 310,
+  "unclassifiedNonOverlap": [
+    {
+      "id": "cross.s1.mountainV2Road.107",
+      "courseSegment": 122,
+      "roadSegment": 576,
+      "span": [
+        573,
+        575
+      ],
+      "at": [
+        1236.748401009,
+        527.140247655
+      ],
+      "heightDifference": 0.0018830079999929694,
+      "endpointDistances": [
+        {
+          "courseRow": 122,
+          "planDistance": 0.0016180559994195783
+        },
+        {
+          "courseRow": 123,
+          "planDistance": 3.003793729430357
+        }
+      ]
+    },
+    {
+      "id": "cross.s1.mountainV2Road.154",
+      "courseSegment": 162,
+      "roadSegment": 456,
+      "span": [
+        453,
+        455
+      ],
+      "at": [
+        1274.952870495,
+        564.110658641
+      ],
+      "heightDifference": 0.00024178299999277897,
+      "endpointDistances": [
+        {
+          "courseRow": 162,
+          "planDistance": 0.0029450890499290007
+        },
+        {
+          "courseRow": 163,
+          "planDistance": 2.9929354159100137
+        }
+      ]
+    },
+    {
+      "id": "cross.s1.mountainV2Road.310",
+      "courseSegment": 314,
+      "roadSegment": 0,
+      "span": null,
+      "at": [
+        1282,
+        720
+      ],
+      "heightDifference": -2.2999999998774e-05,
+      "endpointDistances": [
+        {
+          "courseRow": 314,
+          "planDistance": 0.0
+        },
+        {
+          "courseRow": 315,
+          "planDistance": 1.5026975743641784
+        }
+      ]
+    },
+    {
+      "id": "cross.s1.mountainV2Road.241",
+      "courseSegment": 247,
+      "roadSegment": 197,
+      "span": [
+        198,
+        200
+      ],
+      "at": [
+        1330.213865742,
+        665.327396859
+      ],
+      "heightDifference": -0.0020131590000005417,
+      "endpointDistances": [
+        {
+          "courseRow": 247,
+          "planDistance": 2.98520571301954
+        },
+        {
+          "courseRow": 248,
+          "planDistance": 0.004660504723376693
+        }
+      ]
+    },
+    {
+      "id": "cross.s1.mountainV2Road.279",
+      "courseSegment": 284,
+      "roadSegment": 90,
+      "span": [
+        87,
+        89
+      ],
+      "at": [
+        1343.309228223,
+        698.729621284
+      ],
+      "heightDifference": 0.00368937900000077,
+      "endpointDistances": [
+        {
+          "courseRow": 284,
+          "planDistance": 0.0008596892149578386
+        },
+        {
+          "courseRow": 285,
+          "planDistance": 2.9955548348454943
+        }
+      ]
+    },
+    {
+      "id": "cross.s1.mountainV2Road.76",
+      "courseSegment": 81,
+      "roadSegment": 695,
+      "span": [
+        696,
+        698
+      ],
+      "at": [
+        1351.251144387,
+        551.450299908
+      ],
+      "heightDifference": -0.0031497440000123333,
+      "endpointDistances": [
+        {
+          "courseRow": 81,
+          "planDistance": 2.9967495882716917
+        },
+        {
+          "courseRow": 82,
+          "planDistance": 0.0011830327190659447
+        }
+      ]
+    },
+    {
+      "id": "cross.s1.mountainV2Road.41",
+      "courseSegment": 43,
+      "roadSegment": 813,
+      "span": [
+        810,
+        812
+      ],
+      "at": [
+        1353.120307247,
+        505.550643074
+      ],
+      "heightDifference": -0.002754831999993712,
+      "endpointDistances": [
+        {
+          "courseRow": 43,
+          "planDistance": 0.0007127025245818461
+        },
+        {
+          "courseRow": 44,
+          "planDistance": 2.991627518773864
+        }
+      ]
+    },
+    {
+      "id": "cross.s1.mountainV2Road.190",
+      "courseSegment": 196,
+      "roadSegment": 354,
+      "span": [
+        351,
+        353
+      ],
+      "at": [
+        1360.140153478,
+        605.760013346
+      ],
+      "heightDifference": 0.004206186000004664,
+      "endpointDistances": [
+        {
+          "courseRow": 196,
+          "planDistance": 0.00015405717176262377
+        },
+        {
+          "courseRow": 197,
+          "planDistance": 3.001129001788197
+        }
+      ]
+    },
+    {
+      "id": "cross.s1.mountainV2Road.48",
+      "courseSegment": 50,
+      "roadSegment": 788,
+      "span": [
+        789,
+        791
+      ],
+      "at": [
+        1373.999393182,
+        513.980026295
+      ],
+      "heightDifference": -0.0029612700000143377,
+      "endpointDistances": [
+        {
+          "courseRow": 50,
+          "planDistance": 3.0022079581899725
+        },
+        {
+          "courseRow": 51,
+          "planDistance": 0.0006073874481835672
+        }
+      ]
+    },
+    {
+      "id": "cross.s1.mountainV2Road.49",
+      "courseSegment": 52,
+      "roadSegment": 782,
+      "span": [
+        783,
+        785
+      ],
+      "at": [
+        1379.926548355,
+        514.259403275
+      ],
+      "heightDifference": 0.0018755549999980303,
+      "endpointDistances": [
+        {
+          "courseRow": 52,
+          "planDistance": 2.99025733088875
+        },
+        {
+          "courseRow": 53,
+          "planDistance": 0.0035028465470210123
+        }
+      ]
+    },
+    {
+      "id": "cross.s1.mountainV2Road.199",
+      "courseSegment": 210,
+      "roadSegment": 312,
+      "span": [
+        309,
+        311
+      ],
+      "at": [
+        1398.430311418,
+        604.090789868
+      ],
+      "heightDifference": -0.0038124520000053508,
+      "endpointDistances": [
+        {
+          "courseRow": 210,
+          "planDistance": 0.0008490421827238038
+        },
+        {
+          "courseRow": 211,
+          "planDistance": 2.998167463273623
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+[
+  "src/harbour/mountain/roads.ts",
+  "src/harbour/mountain/roadFrameFairing.ts",
+  "src/harbour/mountain/roadPlacement.ts",
+  "src/harbour/mountain/planting.ts",
+  "src/harbour/mountain/art/placements.ts",
+  "src/harbour/mountain/art/townArt.ts",
+  "src/harbour/mountain/course.ts"
+]

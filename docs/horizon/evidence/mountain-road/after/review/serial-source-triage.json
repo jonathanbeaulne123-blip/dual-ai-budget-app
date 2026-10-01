@@ -1,0 +1,293 @@
+{
+  "baselineCommit": "1cf76c551e6f49124b6257162bc4d36ca18d7bd1",
+  "currentHead": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+  "method": "Read-only git blob and source-file comparisons; arithmetic from unchanged coordinate literals; no test runner, TS/world imports or baseline execution. Dirty working tree source hash recorded per dependency.",
+  "dependencies": [
+    {
+      "path": "test/harbour-hercules.test.ts",
+      "baselineSha256": "7fee99e71822f7677bd6098435a303363df30bbbc6e87025932d13a268344d7f",
+      "currentSha256": "7fee99e71822f7677bd6098435a303363df30bbbc6e87025932d13a268344d7f",
+      "identical": true
+    },
+    {
+      "path": "test/harbour-open-world.test.ts",
+      "baselineSha256": "24e3d67887cd603f7dbb8dd48379f295aa7a6465964dcd9af5f9f17ed8ce1bae",
+      "currentSha256": "24e3d67887cd603f7dbb8dd48379f295aa7a6465964dcd9af5f9f17ed8ce1bae",
+      "identical": true
+    },
+    {
+      "path": "test/harbour-skate-model.test.ts",
+      "baselineSha256": "2612bd16790290ce10afb47e75469fa99efd4ef5cf5aeaef3e65223afc1abacd",
+      "currentSha256": "2612bd16790290ce10afb47e75469fa99efd4ef5cf5aeaef3e65223afc1abacd",
+      "identical": true
+    },
+    {
+      "path": "test/harbour-skate-presence.test.ts",
+      "baselineSha256": "2fcd0cb89aca9a59cc593e35ec44378ae24ee4dc8922f6f018adafa7dd59237f",
+      "currentSha256": "2fcd0cb89aca9a59cc593e35ec44378ae24ee4dc8922f6f018adafa7dd59237f",
+      "identical": true
+    },
+    {
+      "path": "test/hearth-mountain.test.ts",
+      "baselineSha256": "05ea30f21e1227d70c8af40a38013de54674927cc34ceb00397cd1966a7d42ee",
+      "currentSha256": "05ea30f21e1227d70c8af40a38013de54674927cc34ceb00397cd1966a7d42ee",
+      "identical": true
+    },
+    {
+      "path": "test/hearth-mountain-channel.test.ts",
+      "baselineSha256": "934825c385c09fa5f16abf7620669dc8ce73e3e3190e3c1082fcfd87f9c0dabf",
+      "currentSha256": "934825c385c09fa5f16abf7620669dc8ce73e3e3190e3c1082fcfd87f9c0dabf",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/data/attention.ts",
+      "baselineSha256": "86e1b34be605c2a3911d25e5fa6a3152e03a5486a12d9f191714dbfbd8f30b81",
+      "currentSha256": "86e1b34be605c2a3911d25e5fa6a3152e03a5486a12d9f191714dbfbd8f30b81",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/village/layout.ts",
+      "baselineSha256": "c16dd823638b6d48f99502e8021e3f4ad6ca5da2c328e12bca4dd41040596bb3",
+      "currentSha256": "c16dd823638b6d48f99502e8021e3f4ad6ca5da2c328e12bca4dd41040596bb3",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/village/world.ts",
+      "baselineSha256": "6fe7b30f9676dfb64b69ba3586517bf57bb6abd01148c24fb9ace32cb8f84726",
+      "currentSha256": "6fe7b30f9676dfb64b69ba3586517bf57bb6abd01148c24fb9ace32cb8f84726",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/scene/place.ts",
+      "baselineSha256": "12bc35c40556a12f78c739f03d978e7661213910dcc3133e49592129604a96f0",
+      "currentSha256": "12bc35c40556a12f78c739f03d978e7661213910dcc3133e49592129604a96f0",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/body/obstacles.ts",
+      "baselineSha256": "4c29f2cd77c631f6dd15c40ef95ca709abb8bddab1e06976575f76c8a6247622",
+      "currentSha256": "4c29f2cd77c631f6dd15c40ef95ca709abb8bddab1e06976575f76c8a6247622",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/body/pathfinder.ts",
+      "baselineSha256": "c012dd41ee7fafa4dffdd8feef2086a78095bf80c7c864932d748ebdff6b66fd",
+      "currentSha256": "c012dd41ee7fafa4dffdd8feef2086a78095bf80c7c864932d748ebdff6b66fd",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/body/route.ts",
+      "baselineSha256": "1e82fcbadd2619bfea60a6957eae9db78a857344b43a2f1b07f2bd40596cf200",
+      "currentSha256": "1e82fcbadd2619bfea60a6957eae9db78a857344b43a2f1b07f2bd40596cf200",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/body/bodyModel.ts",
+      "baselineSha256": "2fd234f6deef53ccc22e6f60c09fd975aa085fe6449cef5ed0f00ee5959edc0d",
+      "currentSha256": "b0e8d1497fab1cff0d693f255858309f3c15f8eec6e4eb52802e65cb5b1d61cc",
+      "identical": false
+    },
+    {
+      "path": "src/harbour/body/geography.ts",
+      "baselineSha256": "a0c3c41b1e92043e37148dab464ebc2359ab4f46e2ed64784dd97354defcb196",
+      "currentSha256": "a0c3c41b1e92043e37148dab464ebc2359ab4f46e2ed64784dd97354defcb196",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/mountain/places.ts",
+      "baselineSha256": "725a14a7dd2fe13aecb4ce0f7507f4e255588c10d2c0967c52ea4c17954830aa",
+      "currentSha256": "725a14a7dd2fe13aecb4ce0f7507f4e255588c10d2c0967c52ea4c17954830aa",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/mountain/roadLine.ts",
+      "baselineSha256": "540f365ddaff8994c045dcf290a27a1eeea4cca5a6b8e28e17441093a0d99cb0",
+      "currentSha256": "540f365ddaff8994c045dcf290a27a1eeea4cca5a6b8e28e17441093a0d99cb0",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/mountain/math.ts",
+      "baselineSha256": "b21d1ff99152726fb16e0ebf08f112f88d6434880af171b208043f61b015adfd",
+      "currentSha256": "b21d1ff99152726fb16e0ebf08f112f88d6434880af171b208043f61b015adfd",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/mountain/islandShape.ts",
+      "baselineSha256": "0c0193950c09edd0f11e8f2f3c6da83aa81d2992ddb91dd21f163b4a32fdab6e",
+      "currentSha256": "0c0193950c09edd0f11e8f2f3c6da83aa81d2992ddb91dd21f163b4a32fdab6e",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/mountain/roads.ts",
+      "baselineSha256": "5c5ea58eb22052b476e698bf444c9f5755f12d3898350d91e696d6b59a594a03",
+      "currentSha256": "df95e75bd9b3c80537b9b2ed144af675630be1b81cba85123d2de90cf55c31c8",
+      "identical": false
+    },
+    {
+      "path": "src/harbour/mountain/course.ts",
+      "baselineSha256": "7aa7a1b66ebdd2fece042b67052a7cc2bd4de32cd8408cfec934af5cceea3446",
+      "currentSha256": "43ec80a5897a8bfa97e3254b6b78f7310be86919e6e08327008770745db167aa",
+      "identical": false
+    },
+    {
+      "path": "src/harbour/mountain/race.ts",
+      "baselineSha256": "ca054ed67b8873cab637c92ab056953f3665985c19f675f9b5f85a741421e2a6",
+      "currentSha256": "ca054ed67b8873cab637c92ab056953f3665985c19f675f9b5f85a741421e2a6",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/mountain/definition.ts",
+      "baselineSha256": "5af0871bfa6fdd476516d8f367fbfdf6cf7e8da172c3803fff893f52e024c5d9",
+      "currentSha256": "5af0871bfa6fdd476516d8f367fbfdf6cf7e8da172c3803fff893f52e024c5d9",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/mountain/planting.ts",
+      "baselineSha256": "37d58c29cee5c08de35b26874e18c3e31e70995da15f8e40d11dd5c82261208b",
+      "currentSha256": "37d58c29cee5c08de35b26874e18c3e31e70995da15f8e40d11dd5c82261208b",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/mountain/artGeometry.ts",
+      "baselineSha256": "aba64c1e715d4fd5b0553668ef304fba034f28382e7b3b3c9a2837c2aa2ce5dd",
+      "currentSha256": "aba64c1e715d4fd5b0553668ef304fba034f28382e7b3b3c9a2837c2aa2ce5dd",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/mountain/surfaces.ts",
+      "baselineSha256": "6ba9217b783ed99aa1a5dd13bf0501e54de0bbd614eaa64905569465e142652b",
+      "currentSha256": "87118aa038f1f393af5add055b7cfd6232feb567d2f8e680fcf8bc671373bc03",
+      "identical": false
+    },
+    {
+      "path": "src/harbour/mountain/transport.ts",
+      "baselineSha256": "43b6f9465f00a42df7bb594a41351974c9699c5fa08ff3888f13bfe4cdef7b63",
+      "currentSha256": "43b6f9465f00a42df7bb594a41351974c9699c5fa08ff3888f13bfe4cdef7b63",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/mountain/transportAll.ts",
+      "baselineSha256": "50aff96c7da31ccf3eb7f1c60742264fc22b6566951d7d27478d4ede3616b4ce",
+      "currentSha256": "50aff96c7da31ccf3eb7f1c60742264fc22b6566951d7d27478d4ede3616b4ce",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/mountain/townChannel.ts",
+      "baselineSha256": "a103a43a105e26279a06c294538db123e29bd4ecd5363038beceb3676fcee472",
+      "currentSha256": "a103a43a105e26279a06c294538db123e29bd4ecd5363038beceb3676fcee472",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/scene/ground.ts",
+      "baselineSha256": "711d655ae105a94362580f90ceaba4ae54589d4fcb80939021839f097e9091cc",
+      "currentSha256": "711d655ae105a94362580f90ceaba4ae54589d4fcb80939021839f097e9091cc",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/scene/planting.ts",
+      "baselineSha256": "18af9e1eb8a5a217b262a644e74fa5dd6af3daa46fc55f631110704f44dac053",
+      "currentSha256": "18af9e1eb8a5a217b262a644e74fa5dd6af3daa46fc55f631110704f44dac053",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/skate/park.ts",
+      "baselineSha256": "fdcb64ace83f5ba7236f9c8820882ac903edd4f746dd16519e7244e49e0ad42e",
+      "currentSha256": "fdcb64ace83f5ba7236f9c8820882ac903edd4f746dd16519e7244e49e0ad42e",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/skate/world/layout.ts",
+      "baselineSha256": "75ccb2d652f1704bd301057dc208dd136ed4dd5761191fe7899c81fbb309ea21",
+      "currentSha256": "75ccb2d652f1704bd301057dc208dd136ed4dd5761191fe7899c81fbb309ea21",
+      "identical": true
+    },
+    {
+      "path": "src/ledgerSync/worldMotion.ts",
+      "baselineSha256": "247eb33a29c26a17fca25fbd215ebf2a497b2902a186bfca5bd5b98d45f92e8b",
+      "currentSha256": "247eb33a29c26a17fca25fbd215ebf2a497b2902a186bfca5bd5b98d45f92e8b",
+      "identical": true
+    },
+    {
+      "path": "src/ledgerSync/worldPresenceWire.ts",
+      "baselineSha256": "33ea99d9c673a9ec75f2d14bf5b1de22d87e40a66ca5cf36726a137e2a21abdd",
+      "currentSha256": "33ea99d9c673a9ec75f2d14bf5b1de22d87e40a66ca5cf36726a137e2a21abdd",
+      "identical": true
+    },
+    {
+      "path": "src/worldGeography.ts",
+      "baselineSha256": "05a66a7210223e0b4a48391c93a2e697d8340992f2439388d019a230cce70e71",
+      "currentSha256": "05a66a7210223e0b4a48391c93a2e697d8340992f2439388d019a230cce70e71",
+      "identical": true
+    },
+    {
+      "path": "src/harbour/mountain/generated/awning-landing.json",
+      "baselineSha256": null,
+      "currentSha256": "36084212958ad49edcbfd4f8bd9302a8cc0ae6a85710d25be72b39adda64b6c4",
+      "identical": false
+    }
+  ],
+  "sourceBlockComparisons": [
+    {
+      "name": "course main road/town lane/gates input",
+      "identical": true
+    },
+    {
+      "name": "course gate plan and geometry",
+      "identical": true
+    },
+    {
+      "name": "native road classify",
+      "identical": true
+    }
+  ],
+  "coordinateWitnesses": {
+    "homeCentre": [
+      58,
+      -119
+    ],
+    "homeRadius": 132.38202294873724,
+    "homeWalkSeconds": 63.03905854701773,
+    "stairheadDoor": [
+      58.07133545626789,
+      -114.66752907484695
+    ],
+    "summitPoint": [
+      17,
+      -293.5
+    ],
+    "summitRadius": 293.9919216577218,
+    "stairheadDoorRadius": 128.533739639852
+  },
+  "logs": [
+    {
+      "path": "docs/horizon/evidence/mountain-road/after/final/tests/harbour-hercules.test.ts.txt",
+      "sha256": "2b46ff588837be9d89df25aeefcdf478d783c0a7ca0c33174f5b567aa6c8699e",
+      "bytes": 5024
+    },
+    {
+      "path": "docs/horizon/evidence/mountain-road/after/final/tests/harbour-open-world.test.ts.txt",
+      "sha256": "e1815af76d104a939307d0bf440f28d44a232359a41a26d0168db76c8bbd80e5",
+      "bytes": 2940
+    },
+    {
+      "path": "docs/horizon/evidence/mountain-road/after/final/tests/harbour-skate-model.test.ts.txt",
+      "sha256": "872606cf249a2dd3809c85675c7d52721ea219c83835f03a5a6f828efc103a04",
+      "bytes": 4675
+    },
+    {
+      "path": "docs/horizon/evidence/mountain-road/after/final/tests/harbour-skate-presence.test.ts.txt",
+      "sha256": "67f4ae67afdbb5b8044c9937b1c9097829ac912f09722cb4361f84e58e7ec4c4",
+      "bytes": 1896
+    },
+    {
+      "path": "docs/horizon/evidence/mountain-road/after/final/tests/hearth-mountain.test.ts.txt",
+      "sha256": "8d8fc0d25d5ab4c0aa58279de0dce0e8f32b7fee3d4bdf6cb72de9400e22ed5f",
+      "bytes": 9140
+    },
+    {
+      "path": "docs/horizon/evidence/mountain-road/after/final/tests/hearth-mountain-channel.test.ts.txt",
+      "sha256": "7f65365aaeb818c3c7ae3aea8da87893c0e5f33acc8c25872c9580b4521f0f40",
+      "bytes": 1494
+    }
+  ]
+}
