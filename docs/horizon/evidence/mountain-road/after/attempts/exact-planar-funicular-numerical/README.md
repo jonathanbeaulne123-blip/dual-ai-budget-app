@@ -1,0 +1,3 @@
+# Exact planar funicular reduction — numerical proof only
+
+The actual unrounded production funicular apron reduces from 16,036 to 6,704 faces, with 2,487 positive top faces. The deterministic search exhausts its queue after 4,666 vertex removals; all original position values and the logical render origin are retained. Independent bidirectional triangle common refinement measures maximum 2.5850965812423965e-10 m surface difference, with no missing coverage. Closed oriented topology, double, nine-decimal bake, and origin-relative Float32 checks all pass. Runtime movement, ground-generation differences, artwork and final budget remain unproven. This saved candidate is not yet production source.
