@@ -1,3 +1,6 @@
+import plantingAuthoring from './generated/planting-authoring-corridors.json';
+import {keepAuthoredPlant} from './plantingLandingOmissions.ts';
+import {placementRoadNormal} from './roadPlacement.ts';
 /**
  * The mountain's authored planting plan (pure data, seeded, shared by the renderer, trunk
  * collision and the camera's foliage clearance).
@@ -11,7 +14,7 @@
  */
 import {DISTRICTS,RESERVED_PLOTS,MOUNTAIN_ROAD_LINE,ORCHARD_LANE_LINE,RIVER,DAM,BUILDING_SITES,SUMMIT_OBSERVATORY_SITE,GOAL_PAVILION_SITE,FUNICULAR_LINE,GONDOLA_LINE,KITTY_CHAMBERS,SKILL_BRANCHES,mountainBaseHeight,type Biome,type Point3} from './definition.ts';
 import {PATH_EDGES} from './pathGraph.ts';
-import {groundHeightAt} from '../scene/ground.ts';
+import {authoredGroundHeightAt as groundHeightAt} from '../scene/ground.ts';
 
 export type TreeKind='round'|'fruit'|'birch'|'pine'|'alpine'|'poplar';
 export type ShrubKind='shrub'|'flowering'|'hedge'|'heath'|'boulder';
@@ -25,9 +28,9 @@ function noise(x:number,z:number){const xi=Math.floor(x),zi=Math.floor(z),fx=x-x
 
 /** A spatial index of everything planting must keep clear of: [x, z, radius] discs and polyline corridors. */
 type Corridor={points:readonly (readonly [number,number])[];half:number};
-let corridors:Corridor[]|null=null;
-function keepClear():Corridor[]{
-  if(corridors)return corridors;
+const corridorCache=new Map<boolean,Corridor[]>();
+function keepClear(authored=false):Corridor[]{
+  const cached=corridorCache.get(authored);if(cached)return cached;
   const c:Corridor[]=[];
   const line=(pts:readonly Point3[],half:number,every=1)=>c.push({points:pts.filter((_,i)=>i%every===0||i===pts.length-1).map(p=>[p[0],p[2]] as const),half});
   line(MOUNTAIN_ROAD_LINE.samples.map(s=>s.at),MOUNTAIN_ROAD_LINE.samples[40]!.halfWidth+.6,2);
@@ -35,8 +38,11 @@ function keepClear():Corridor[]{
   for(const e of PATH_EDGES)line(e.points,e.halfWidth+.4);
   line(RIVER,3.4);
   line(FUNICULAR_LINE.path,2.6,3);
-  for(const b of SKILL_BRANCHES)line(b.points,b.halfWidth+1,2);
-  corridors=c;return c;
+  // Historical corridors affect authoring decisions only. Physical clearance below
+  // always reads current SKILL_BRANCHES, including the repaired landing geometry.
+  const branches=authored?plantingAuthoring.branches as unknown as readonly {points:readonly Point3[];halfWidth:number}[]:SKILL_BRANCHES;
+  for(const b of branches)line(b.points,b.halfWidth+1,2);
+  corridorCache.set(authored,c);return c;
 }
 const discs=():[number,number,number][]=>[
   ...Object.values(BUILDING_SITES).map(s=>[s[0],s[1],8] as [number,number,number]),
@@ -47,9 +53,13 @@ const discs=():[number,number,number][]=>[
   ...KITTY_CHAMBERS.map(k=>[k.at[0],k.at[2],k.radius+3] as [number,number,number]),
 ];
 /** Horizontal clearance from every corridor edge and keep-out disc (negative inside). */
-export function plantingClearance(x:number,z:number,opts:{bowl?:boolean}={}):number{
+export function plantingClearance(x:number,z:number,opts:{bowl?:boolean}={}):number{return clearance(x,z,opts,false);}
+/** Authoring-only helper, shared by planting and decorative strata. Never a runtime
+ * route, support, body or surface query; not exported through the native facade. */
+export function authoredSceneryClearance(x:number,z:number,opts:{bowl?:boolean}={}):number{return clearance(x,z,opts,true);}
+function clearance(x:number,z:number,opts:{bowl?:boolean},authored:boolean):number{
   let best=Infinity;
-  for(const c of keepClear()){const P=c.points;for(let i=1;i<P.length;i++){const a=P[i-1]!,b=P[i]!;if(Math.abs(x-a[0])>40&&Math.abs(x-b[0])>40)continue;if(Math.abs(z-a[1])>40&&Math.abs(z-b[1])>40)continue;
+  for(const c of keepClear(authored)){const P=c.points;for(let i=1;i<P.length;i++){const a=P[i-1]!,b=P[i]!;if(Math.abs(x-a[0])>40&&Math.abs(x-b[0])>40)continue;if(Math.abs(z-a[1])>40&&Math.abs(z-b[1])>40)continue;
     const dx=b[0]-a[0],dz=b[1]-a[1],l=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[1])*dz)/l)),d=Math.hypot(x-a[0]-dx*t,z-a[1]-dz*t)-c.half;if(d<best)best=d;}}
   for(const [dx,dz,r] of discs()){const d=Math.hypot(x-dx,z-dz)-r;if(d<best)best=d;}
   // The dam, its apron and the reservoir bowl (`bowl:false` keeps only the dam's own band, for rock that may line the bowl).
@@ -90,7 +100,7 @@ export function mountainPlanting(tier:'full'|'lite'):Plan{
     const y=mountainBaseHeight(x,z);if(y<1.2)return false;
     if(slopeAt(x,z)>(kind==='pine'||kind==='alpine'||kind===null?1.25:1.05))return false;
     const r=(kind==='poplar'||kind==='birch'||kind==='alpine'?1.1:1.7)*size;
-    if(plantingClearance(x,z)<r*.9+need-1)return false;
+    if(authoredSceneryClearance(x,z)<r*.9+need-1)return false;
     if(!free(x,z,r*pack))return false;
     const b=biomeAt(x,z,y),k=kind??pick(ARCHETYPES[b],rand());
     // The trunk's foot must reach the ground on every side: no tree on a carved step or a bench lip.
@@ -115,13 +125,13 @@ export function mountainPlanting(tier:'full'|'lite'):Plan{
     const S=line.samples;
     for(let i=12;i<S.length-6;i+=lite?11:7){const s=S[i]!;if(s.support==='bridge')continue;
       if(noise(i*.035,line===MOUNTAIN_ROAD_LINE?3:9)<.42)continue;
-      for(const side of [1,-1]){const off=s.halfWidth+3.4+rand()*2.2,x=s.at[0]+s.normal[0]*off*side,z=s.at[2]+s.normal[2]*off*side;
+      for(const side of [1,-1]){const off=s.halfWidth+3.4+rand()*2.2,x=s.at[0]+placementRoadNormal(s)[0]*off*side,z=s.at[2]+placementRoadNormal(s)[2]*off*side;
         const y=mountainBaseHeight(x,z);if(Math.abs(y-s.at[1])>3)continue;
         const b=biomeAt(x,z,y),kind:TreeKind=b==='alpine'||b==='summit'?'alpine':b==='woods'?(rand()<.5?'birch':'pine'):b==='orchard'?'fruit':rand()<.4?'poplar':'round';
         tryTree(x,z,kind,.7+rand()*.35);
         // Hedge segments between the avenue trees in the lower, garden districts.
-        if((b==='garden'||b==='orchard')&&rand()<.55){const hx=s.at[0]+s.normal[0]*(s.halfWidth+2.1)*side,hz=s.at[2]+s.normal[2]*(s.halfWidth+2.1)*side,hy=mountainBaseHeight(hx,hz);
-          if(plantingClearance(hx,hz)>.2&&Math.abs(hy-s.at[1])<1.6)shrubs.push({x:hx,y:hy,z:hz,size:.8,spin:Math.atan2(s.tangent[0],s.tangent[2]),kind:'hedge',tint:rand(),stretch:2.6});}
+        if((b==='garden'||b==='orchard')&&rand()<.55){const hx=s.at[0]+placementRoadNormal(s)[0]*(s.halfWidth+2.1)*side,hz=s.at[2]+placementRoadNormal(s)[2]*(s.halfWidth+2.1)*side,hy=mountainBaseHeight(hx,hz);
+          if(authoredSceneryClearance(hx,hz)>.2&&Math.abs(hy-s.at[1])<1.6)shrubs.push({x:hx,y:hy,z:hz,size:.8,spin:Math.atan2(s.tangent[0],s.tangent[2]),kind:'hedge',tint:rand(),stretch:2.6});}
       }
     }
   }
@@ -130,7 +140,7 @@ export function mountainPlanting(tier:'full'|'lite'):Plan{
   const stands=lite?34:62;let made=0;
   for(let g=0;g<stands*8&&made<stands;g++){
     const cx=(rand()-.5)*336,cz=-64-rand()*312,cy=mountainBaseHeight(cx,cz);
-    if(cy<2.5||noise(cx/27,cz/27)<.42||plantingClearance(cx,cz)<3||slopeAt(cx,cz)>1)continue;
+    if(cy<2.5||noise(cx/27,cz/27)<.42||authoredSceneryClearance(cx,cz)<3||slopeAt(cx,cz)>1)continue;
     made++;
     const lead=pick(ARCHETYPES[biomeAt(cx,cz,cy)],rand()),n=(lite?6:9)+Math.floor(rand()*(lite?4:7)),spread=4.5+rand()*5.5;
     let placed=0;
@@ -140,7 +150,7 @@ export function mountainPlanting(tier:'full'|'lite'):Plan{
   // 4. Shrubs, heath, boulders: under the trees' edges and on the open slopes.
   for(let i=0;i<(lite?900:2200);i++){
     const x=(rand()-.5)*330,z=-58-rand()*315,y=mountainBaseHeight(x,z);if(y<1.2)continue;
-    const cl=plantingClearance(x,z);if(cl<.8)continue;const sl=slopeAt(x,z);if(sl>1.25)continue;
+    const cl=authoredSceneryClearance(x,z);if(cl<.8)continue;const sl=slopeAt(x,z);if(sl>1.25)continue;
     const b=biomeAt(x,z,y),u=rand();
     const kind:ShrubKind=b==='summit'?(u<.7?'heath':'boulder'):b==='alpine'?(u<.45?'boulder':u<.8?'heath':'shrub'):b==='meadow'?(u<.5?'flowering':'shrub'):b==='garden'?(u<.4?'flowering':'shrub'):'shrub';
     if(kind==='boulder'&&cl<2)continue;
@@ -150,16 +160,17 @@ export function mountainPlanting(tier:'full'|'lite'):Plan{
   for(const d of DISTRICTS){
     const n=d.biome==='meadow'?60:d.biome==='orchard'?40:d.biome==='garden'?34:d.biome==='woods'?16:d.biome==='alpine'?16:10;
     for(let k=0;k<n*(lite?.6:1);k++){const a=rand()*6.283,r=d.radius*.6+rand()*(d.radius+18),x=d.at[0]+Math.cos(a)*r,z=d.at[2]+Math.sin(a)*r,y=mountainBaseHeight(x,z);
-      if(plantingClearance(x,z)<.6||slopeAt(x,z)>.8||y<1)continue;
+      if(authoredSceneryClearance(x,z)<.6||slopeAt(x,z)>.8||y<1)continue;
       flowers.push({x,y,z,radius:.9+rand()*1.6,count:6+Math.floor(rand()*(d.biome==='meadow'?14:9)),colour:Math.floor(rand()*5),seed:Math.floor(rand()*1e6)});}
   }
   // 6. Grass tufts along the path and road verges.
   for(const e of PATH_EDGES){if(e.kind!=='path')continue;for(let i=0;i<e.points.length;i+=lite?3:1){const p=e.points[i]!;for(const side of [-1,1]){if(rand()<.35)continue;
     const a=i+1<e.points.length?e.points[i+1]!:e.points[i-1]!,dx=a[0]-p[0],dz=a[2]-p[2],l=Math.hypot(dx,dz)||1,off=e.halfWidth+.35+rand()*.8,x=p[0]-dz/l*off*side,z=p[2]+dx/l*off*side;
-    if(plantingClearance(x,z)<-.05)continue;tufts.push({x,y:mountainBaseHeight(x,z),z,size:.5+rand()*.5,spin:rand()*6.283,tint:rand()});}}}
-  for(let i=20;i<MOUNTAIN_ROAD_LINE.samples.length;i+=lite?6:3){const s=MOUNTAIN_ROAD_LINE.samples[i]!;if(s.support==='bridge')continue;for(const side of [1,-1]){if(rand()<.5)continue;const off=s.halfWidth+.7+rand()*1.2,x=s.at[0]+s.normal[0]*off*side,z=s.at[2]+s.normal[2]*off*side,y=mountainBaseHeight(x,z);
-    if(Math.abs(y-s.at[1])>.8||plantingClearance(x,z)<-.1)continue;tufts.push({x,y,z,size:.5+rand()*.6,spin:rand()*6.283,tint:rand()});}}
-  const plan={trees,shrubs,flowers,tufts};plans.set(tier,plan);return plan;
+    if(authoredSceneryClearance(x,z)<-.05)continue;tufts.push({x,y:mountainBaseHeight(x,z),z,size:.5+rand()*.5,spin:rand()*6.283,tint:rand()});}}}
+  for(let i=20;i<MOUNTAIN_ROAD_LINE.samples.length;i+=lite?6:3){const s=MOUNTAIN_ROAD_LINE.samples[i]!;if(s.support==='bridge')continue;for(const side of [1,-1]){if(rand()<.5)continue;const off=s.halfWidth+.7+rand()*1.2,x=s.at[0]+placementRoadNormal(s)[0]*off*side,z=s.at[2]+placementRoadNormal(s)[2]*off*side,y=mountainBaseHeight(x,z);
+    if(Math.abs(y-s.at[1])>.8||authoredSceneryClearance(x,z)<-.1)continue;tufts.push({x,y,z,size:.5+rand()*.6,spin:rand()*6.283,tint:rand()});}}
+  // Omit only measured landing conflicts after all RNG/occupancy decisions finish.
+  const plan={trees:trees.filter(p=>keepAuthoredPlant(tier,'trees',p)),shrubs:shrubs.filter(p=>keepAuthoredPlant(tier,'shrubs',p)),flowers:flowers.filter(p=>keepAuthoredPlant(tier,'flowers',p)),tufts:tufts.filter(p=>keepAuthoredPlant(tier,'tufts',p))};plans.set(tier,plan);return plan;
 }
 /** The renderer, trunk collision and camera foliage clearance share one seeded plan. */
 export function mountainTrees(tier:'full'|'lite'):readonly MountainTree[]{return mountainPlanting(tier).trees;}

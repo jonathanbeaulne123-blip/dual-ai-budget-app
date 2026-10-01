@@ -19,10 +19,12 @@
  *   glow cards (the slot N drives), and gives the markings the night chalk (`NIGHT_LIGHT_CARDS.chalk`).
  */
 import * as THREE from 'three';
+import { packInstances, packedMatrixShader, type PackedInstances } from './packedInstances';
+import {orderContactShade} from './orderedContactShade';
 import {createBuildTask,finishBuild} from '../../../house/world/buildTask.ts';
 import {CardBuilder,paperGrain,type CardBuild,type V3} from '../../art/cardScene.ts';
 import type {Bucket} from '../../art/cardKit.ts';
-import type {WorldDefinition} from '../world/definition.ts';
+import type {WorldDefinition,LightAnchor} from '../world/definition.ts';
 import type {Corridor,GuardRun,LampKind,LampSpot} from '../land/corridor/types.ts';
 import {districtAt} from '../world/districts.ts';
 import {NIGHT_LIGHT_CARDS} from '../sky/night.ts';
@@ -30,6 +32,8 @@ import {roadKitPalette,type RoadKitPalette,type RoadTheme} from '../kit/road/pal
 import {corridorSampler} from '../kit/road/frames.ts';
 import {markingQuads} from '../kit/road/markings.ts';
 import {buildGuardRun,buildRailPost,type GuardPost} from '../kit/road/guards.ts';
+import {corridorLightAnchors,lampsForTier} from '../land/corridor/lights';
+import {CORRIDOR} from '../land/corridor/types';
 import {drawLamp,lampPlacement,LAMP_HEAD,type LampPlacement} from '../kit/road/lamps.ts';
 import {buildScenicStop,stopLayout} from '../kit/road/stops.ts';
 
@@ -43,6 +47,8 @@ export type CorridorArtOptions={
   deck?:(x:number,z:number,fallback:number)=>number;
   /** Stops whose floor a baked solid already carries (their flags are not drawn again). */
   bakedStopFloors?:ReadonlySet<string>;
+  /** The live road light system owns capped, clock-sequenced halos. Standalone kit previews retain their own. */
+  externalLampHalos?:boolean;
 };
 export type CorridorArtStats={districts:Record<string,{drawCalls:number;triangles:number;instances:number}>;lamps:number};
 export type CorridorArt={
@@ -51,6 +57,8 @@ export type CorridorArt={
   update(camera:THREE.Camera,resident:ReadonlySet<string>):void;
   /** Every corridor lamp head as the kit draws it (world), for the night track's pools and point-light pool. */
   lampHeads():readonly {id:string;head:[number,number,number]}[];
+  /** Every retained fixture, including a stop's fallback, at its actual themed head. */
+  lampAnchors():readonly LightAnchor[];
   /** 0 day → 1 night: lamp glass, halo glow cards, markings' night chalk. */
   setNight(k:number):void;
   /** The shared materials (for the runtime's fog stage) and the night hooks N may drive directly. */
@@ -69,7 +77,7 @@ export const CORRIDOR_DETAIL={hideBeyond:320,showWithin:280,inkFull:60,inkZero:1
 
 type Proto={geometry:THREE.BufferGeometry|null;ink:{p:number[];c:number[]};shade:{p:number[];c:number[]}};
 type Piece={kind:LampKind|'railPost';at:V3;yaw:number;sy:number};
-type DistrictArt={id:string;build:CardBuild;instanced:THREE.InstancedMesh[];detail:THREE.Object3D[];box:THREE.Box3;detailOn:boolean;lastResident:number;triangles:number;drawCalls:number;instances:number};
+type DistrictArt={id:string;build:CardBuild;instanced:THREE.InstancedMesh[];packed:PackedInstances|null;detail:THREE.Object3D[];box:THREE.Box3;detailOn:boolean;lastResident:number;triangles:number;drawCalls:number;instances:number};
 
 function cardMaterials(tier:'full'|'lite',theme:RoadKitPalette){
   const paper=paperGrain(),night={value:0};
@@ -87,7 +95,14 @@ function cardMaterials(tier:'full'|'lite',theme:RoadKitPalette){
       .replace('#include <color_fragment>','#include <color_fragment>\nvec3 roadLit=diffuseColor.rgb;diffuseColor.rgb=mix(diffuseColor.rgb,mix(uDayGlass,roadLit,uNight),vGlow);')
       .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance+=roadLit*vGlow*uNight*1.35;');};
   lamp.customProgramCacheKey=()=>'horizon-road-lamp-1';
+  // Capture the kit stage before the runtime independently wraps both materials with fog.
+  const lampCompile=lamp.onBeforeCompile;
+  const packedLamp=lamp.clone();packedLamp.onBeforeCompile=(shader,renderer)=>{lampCompile(shader,renderer);packedMatrixShader(shader,false);};packedLamp.customProgramCacheKey=()=>'horizon-road-lamp-packed-1';
+  const lampDepth=new THREE.MeshDepthMaterial();
+  lampDepth.onBeforeCompile=shader=>packedMatrixShader(shader,false);lampDepth.customProgramCacheKey=()=>'horizon-road-lamp-packed-depth-1';
   const shade=new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-3});
+  // Explicit old back/front passes share source material state and get independent fog hooks.
+  const shadeBack=shade.clone(),shadeFront=shade.clone();shadeBack.side=THREE.BackSide;shadeFront.side=THREE.FrontSide;
   // Ink: 1 px lines whose opacity fades with view depth (STYLE §1.2 rule 7: full to 60 eu, 0 at 180 eu).
   const ink=new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:tier==='full'?.78:.62});
   ink.onBeforeCompile=shader=>{
@@ -96,7 +111,7 @@ function cardMaterials(tier:'full'|'lite',theme:RoadKitPalette){
       .replace('#include <color_fragment>',`#include <color_fragment>\ndiffuseColor.a*=1.0-smoothstep(${CORRIDOR_DETAIL.inkFull.toFixed(1)},${CORRIDOR_DETAIL.inkZero.toFixed(1)},vInkDepth);`);};
   ink.customProgramCacheKey=()=>'horizon-road-ink-1';
   const halo=haloMaterial(tier);
-  return {materials:{card,steel,markings,lamp,shade,ink,halo} as Record<string,THREE.Material>,night,halo,markings,lamp};
+  return {materials:{card,steel,markings,lamp,packedLamp,lampDepth,shade,shadeBack,shadeFront,ink,halo} as Record<string,THREE.Material>,night,halo,markings,lamp,packedLamp,lampDepth};
 }
 
 /** The halo glow card (STYLE §1.11): a camera-facing soft disc, additive, fogged, instanced. Opacity is the night level. */
@@ -164,23 +179,25 @@ function splitRun(run:GuardRun,districtOf:(x:number,z:number)=>string):{district
 export function createCorridorArt(world:WorldDefinition,opts:CorridorArtOptions):CorridorArt{
   const tier=opts.tier,pal=roadKitPalette(opts.theme),corridors:readonly Corridor[]=world.corridors??[];
   const districtOf=opts.districtOf??((x:number,z:number)=>districtAt(x,z));
-  const {materials,night,halo,markings,lamp}=cardMaterials(tier,pal);
+  const {materials,night,halo,markings,lamp,packedLamp,lampDepth}=cardMaterials(tier,pal);
   const group=new THREE.Group();group.name='horizon.corridorArt';
   // ---- Plan: every piece's district, computed once (pure data; geometry is built lazily per district). ----
   type Plan={markings:{q:[V3,V3,V3,V3][]};guards:GuardRun[];lamps:LampPlacement[];stops:{corridor:Corridor;stop:Corridor['stops'][number]}[]};
   const plans=new Map<string,Plan>(),plan=(id:string)=>{let p=plans.get(id);if(!p)plans.set(id,p={markings:{q:[]},guards:[],lamps:[],stops:[]});return p;};
   const heads:{id:string;head:[number,number,number]}[]=[];
+  const anchors:LightAnchor[]=[],planned=new Map(corridorLightAnchors(corridors.map(c=>({...c,lamps:[...lampsForTier(c,tier)]}))).map(a=>[a.id,a]));
   for(const c of corridors){
     if(!c.stations.length)continue;
     const f=corridorSampler(c);
     for(const run of c.markings)for(const q of markingQuads(run,f,opts.deck)){const cx=(q[0][0]+q[2][0])/2,cz=(q[0][2]+q[2][2])/2;plan(districtOf(cx,cz)).markings.q.push(q);}
     for(const run of c.guards){if(run.owner==='region'||run.kind!=='stoneParapet'&&run.kind!=='postRail')continue;for(const p of splitRun(run,districtOf))plan(p.district).guards.push(p.run);}
-    for(const spot of c.lamps){const place=placeLamp(spot,opts.theme);plan(districtOf(place.base[0],place.base[2])).lamps.push(place);heads.push({id:place.id,head:[place.head[0],place.head[1],place.head[2]]});}
+    for(const spot of lampsForTier(c,tier)){const place=placeLamp(spot,opts.theme);plan(districtOf(place.base[0],place.base[2])).lamps.push(place);heads.push({id:place.id,head:[place.head[0],place.head[1],place.head[2]]});anchors.push({...planned.get(place.id)!,head:[...place.head]});}
     for(const stop of c.stops){plan(districtOf(stop.at[0],stop.at[2])).stops.push({corridor:c,stop});
       const lay=stopLayout(stop,opts.ground??(()=>stop.at[1]));
       if(lay.lamp&&!c.lamps.some(l=>Math.hypot(l.at[0]-lay.lamp!.at[0],l.at[2]-lay.lamp!.at[2])<6)){
         const place=placeLamp({id:`${stop.id}.lamp`,kind:'bridgeLantern',at:lay.lamp.at,head:lay.lamp.at,yaw:stop.facing},opts.theme);
-        plan(districtOf(place.base[0],place.base[2])).lamps.push(place);heads.push({id:place.id,head:[place.head[0],place.head[1],place.head[2]]});}}
+        plan(districtOf(place.base[0],place.base[2])).lamps.push(place);heads.push({id:place.id,head:[place.head[0],place.head[1],place.head[2]]});
+        anchors.push({id:place.id,kind:'bridgeLantern',at:[...place.base],head:[...place.head],pool:[...place.base],poolRadius:CORRIDOR.lampPoolRadius,corridorId:c.id,line:`${c.id}:stop:${stop.id}`,order:0});}}
   }
   // ---- Instanced prototypes (built on first use) ----
   const protos=new Map<LampKind|'railPost',Proto>();
@@ -210,6 +227,7 @@ export function createCorridorArt(world:WorldDefinition,opts:CorridorArtOptions)
     const detail:THREE.Object3D[]=[],replaced=new Set<THREE.Material>();
     for(const obj of [...build.group.children]){const mesh=obj as THREE.Mesh,key=Object.entries(build.materials).find(([,mat])=>mat===mesh.material)?.[0];
       const to=key==='flat'?markings:key==='glow'?lamp:key&&materials[key]?materials[key]:null;if(to){replaced.add(mesh.material as THREE.Material);mesh.material=to;}
+      if(key==='shade')orderContactShade(mesh,{back:materials.shadeBack as THREE.MeshBasicMaterial,front:materials.shadeFront as THREE.MeshBasicMaterial});
       if(key==='flat'||key==='shade')detail.push(mesh);}
     // The builder's own copies of the replaced materials are released now (any it keeps, e.g. decals, stay with the build).
     for(const mat of replaced)mat.dispose();
@@ -217,16 +235,21 @@ export function createCorridorArt(world:WorldDefinition,opts:CorridorArtOptions)
     for(const [kind,list] of byKind){const pr=protoOf(kind);instances+=list.length;if(!pr.geometry)continue;
       const im=new THREE.InstancedMesh(pr.geometry,lamp,list.length);im.name=`horizon.corridorArt.${id}.${kind}`;
       list.forEach((q,i)=>im.setMatrixAt(i,matrix(q)));
-      im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();im.castShadow=tier==='full';im.receiveShadow=true;build.group.add(im);instanced.push(im);}
+      im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();im.castShadow=tier==='full';im.receiveShadow=true;instanced.push(im);}
+    const packed=instanced.length?packInstances(instanced.map(mesh=>({key:mesh.name,mesh})),packedLamp,{name:`horizon.corridorArt.${id}.fixtures`,depth:lampDepth}):null;
+    if(packed)build.group.add(packed.mesh);
     const box=new THREE.Box3().setFromObject(build.group);
-    let triangles=0,drawCalls=0;build.group.traverse(o=>{const mesh=o as THREE.Mesh;if(!mesh.geometry)return;drawCalls++;if(o instanceof THREE.LineSegments)return;const g=mesh.geometry,n=g.index?g.index.count:g.getAttribute('position').count;
+    // Packed positions remain local; use the source instance bounds for detail residency.
+    for(const im of instanced){im.computeBoundingBox();if(im.boundingBox)box.union(im.boundingBox);}
+    let triangles=0,drawCalls=0;build.group.traverse(o=>{const mesh=o as THREE.Mesh;if(!mesh.geometry)return;const mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];drawCalls+=mats.reduce((n,m)=>n+(m.transparent&&m.side===THREE.DoubleSide&&!m.forceSinglePass?2:1),0);if(o instanceof THREE.LineSegments)return;const g=mesh.geometry,total=g.index?g.index.count:g.getAttribute('position').count,n=Math.min(total-g.drawRange.start,g.drawRange.count);
       triangles+=n/3*((o as THREE.InstancedMesh).isInstancedMesh?(o as THREE.InstancedMesh).count:1);});
     build.group.name=`horizon.corridorArt.${id}`;build.group.visible=false;group.add(build.group);
-    return {id,build,instanced,detail,box,detailOn:true,lastResident:performance.now(),triangles,drawCalls,instances};
+    return {id,build,instanced,packed,detail,box,detailOn:true,lastResident:performance.now(),triangles,drawCalls,instances};
   }
   function postPiece(post:GuardPost):Piece{return {kind:'railPost',at:post.at,yaw:post.yaw,sy:post.height};}
   const haloIds=new Set<string>();
   function refreshHalos(resident:ReadonlySet<string>){
+    if(opts.externalLampHalos)return;
     // Every frame: an allocation-free membership check; the halo set is rebuilt only when the built resident districts change
     // (haloKey '' forces it, as a district build or release does).
     let same=haloKey!=='',n=0;if(same)for(const id of resident){if(!districts.has(id))continue;n++;if(!haloIds.has(id)){same=false;break;}}
@@ -251,7 +274,7 @@ export function createCorridorArt(world:WorldDefinition,opts:CorridorArtOptions)
     camera.getWorldPosition(eye);
     for(const [id,d] of districts){
       const on=resident.has(id);d.build.group.visible=on;if(on)d.lastResident=now;
-      else if(now-d.lastResident>CORRIDOR_DETAIL.releaseMs){group.remove(d.build.group);d.build.dispose();for(const im of d.instanced)im.dispose();districts.delete(id);haloKey='';continue;}
+      else if(now-d.lastResident>CORRIDOR_DETAIL.releaseMs){group.remove(d.build.group);d.build.dispose();d.packed?.dispose();for(const im of d.instanced)im.dispose();districts.delete(id);haloKey='';continue;}
       const dist=d.box.distanceToPoint(eye);
       if(d.detailOn&&dist>CORRIDOR_DETAIL.hideBeyond)d.detailOn=false;else if(!d.detailOn&&dist<CORRIDOR_DETAIL.showWithin)d.detailOn=true;
       for(const o of d.detail)o.visible=d.detailOn;
@@ -263,10 +286,10 @@ export function createCorridorArt(world:WorldDefinition,opts:CorridorArtOptions)
     const chalk=new THREE.Color(NIGHT_LIGHT_CARDS.chalk);markings.emissive.copy(chalk).multiplyScalar(.34*k);
   }
   return {group,update,setNight,materials,night,building:()=>pending,
-    lampHeads:()=>heads,
+    lampHeads:()=>heads,lampAnchors:()=>anchors,
     prebuild(ids){for(const id of ids)if(!districts.has(id)&&plans.has(id))districts.set(id,finishBuild(buildDistrictSteps(id)));const all=new Set(districts.keys());for(const d of districts.values())d.build.group.visible=true;refreshHalos(all);},
     stats(){const out:CorridorArtStats={districts:{},lamps:heads.length};for(const [id,d] of districts)out.districts[id]={drawCalls:d.drawCalls,triangles:d.triangles,instances:d.instances};return out;},
-    dispose(){for(const d of districts.values()){d.build.dispose();for(const im of d.instanced)im.dispose();}districts.clear();
+    dispose(){for(const d of districts.values()){d.build.dispose();d.packed?.dispose();for(const im of d.instanced)im.dispose();}districts.clear();
       if(haloMesh){haloMesh.dispose();}haloGeometry.dispose();task?.run.cancel();task=null;for(const p of protos.values())p.geometry?.dispose();protos.clear();
       for(const mat of Object.values(materials))mat.dispose();group.removeFromParent();group.clear();},
   };

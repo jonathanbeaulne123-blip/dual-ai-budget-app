@@ -16,6 +16,7 @@ import { landSide, seaSide, type Env } from './env.ts';
 import { sign, type SideName } from './frame.ts';
 import { r3 } from './rng.ts';
 import type { StopSpan } from './stops.ts';
+import {roadLampFootSupported} from './lampFootprint.ts';
 
 export const LAMP = Object.freeze({
   arm: 1.6,
@@ -74,11 +75,28 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
   let runNo = 0;
   /** The carriageway-side rail line: the kerb rail CORRIDOR.guardSetback beyond the paved edge (types.ts guard offsets). */
   const railOffset = (st: CorridorStation, side: SideName): number => st[side].guardOffset ?? st[side].paved + CORRIDOR.guardSetback;
+  /** One serializer for both measured candidates and emitted fixtures: same frame, head direction and rounding. */
+  const packedLamp=(s:number,slotSide:SideName|'median',kind:LampKind,o:number,headO:number,baseY:number,headY:number):LampSpot=>{
+    const f=F.frameAt(s),at=F.point(s,o),head=F.point(s,headO),st=S[F.nearestIndex(s)]!;
+    const dx=slotSide==='median'?f.right[0]:head[0]-at[0],dz=slotSide==='median'?f.right[1]:head[2]-at[2];
+    return {id:'',kind,at:[r3(at[0]),r3(baseY),r3(at[2])],head:[r3(head[0]),r3(headY),r3(head[2])],
+      pool:[r3(head[0]),r3(f.at[1]),r3(head[2])],poolRadius:CORRIDOR.lampPoolRadius,yaw:r3(Math.atan2(dx,dz)),
+      side:slotSide==='median'?'right':slotSide,reachId:st.reachId};
+  };
+  const roadCandidate=(s:number,side:SideName,back:number):LampSpot=>{
+    const st=S[F.nearestIndex(s)]!,sg=sign(side),o=sg*(st[side].paved+back),p=F.point(s,o),baseY=baseHeight(st,side,Math.abs(o),p);
+    return packedLamp(s,side,'roadLantern',o,o-sg*LAMP.arm,baseY,baseY+CORRIDOR.lampHeight);
+  };
+  const mountedCandidate=(s:number,side:SideName):LampSpot=>{
+    const st=S[F.nearestIndex(s)]!,sg=sign(side),o=sg*railOffset(st,side),y=st.at[1]+CORRIDOR.kerbRise;
+    return packedLamp(s,side,'roadLantern',o,o-sg*LAMP.arm,y,y+CORRIDOR.lampHeight);
+  };
+  const measuredSetback=(s:number,side:SideName)=>env.lampSetback?.(s,side,{roadHeight:S[F.nearestIndex(s)]!.at[1],candidate:back=>roadCandidate(s,side,back)});
   /** A road lantern's lateral set-back beyond the paved edge: CORRIDOR.lampSetback, or KERB_MOUNT where that spot is taken
    * (a separated lane, a path or a pad right beside the road) and the kerb line is free (integration: the Quay Bridge's
    * south approach had no legal spot for 18 eu). */
   const setbackAt = (s: number, side: SideName): number => {
-    const st = S[F.nearestIndex(s)]!, sd = st[side], measured=env.lampSetback?.(s,side),setback=measured??CORRIDOR.lampSetback, at = (o: number) => F.point(s, sign(side) * (sd.paved + o));
+    const st = S[F.nearestIndex(s)]!, sd = st[side], measured=measuredSetback(s,side),setback=measured??CORRIDOR.lampSetback, at = (o: number) => F.point(s, sign(side) * (sd.paved + o));
     const free = (o: number) => { const p = at(o); return !env.occupied(p[0], p[2]); };
     return measured!==undefined?setback:free(setback) || (sd.footway && sd.paved + setback >= sd.footway.inner - 0.3) || !free(KERB_MOUNT) ? setback : KERB_MOUNT;
   };
@@ -106,11 +124,17 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
       const back = setbackAt(s, side), p = F.point(s, sign(side) * (sd.paved + back));
       if (env.wet(p[0], p[2])) return 'water';
       const g = baseHeight(st, side, sd.paved + back, p);
-      if(env.lampSetback?.(s,side)!==undefined)for(const dx of [-.2,0,.2])for(const dz of [-.2,0,.2]){
-        if(env.occupied(p[0]+dx,p[2]+dz)||env.wet(p[0]+dx,p[2]+dz)||Math.abs(env.ground(p[0]+dx,p[2]+dz)-g)>.14)return 'post-footprint';
-      }
       // Over a batter or a cut the lantern stands on the guard's line instead (a parapet- or rail-mounted post), else nowhere.
-      if (Math.abs(g - st.at[1]) > LAMP.maxStep) return sd.guard !== 'none' && sd.guard !== 'retaining' ? null : 'step';
+      if (Math.abs((env.lampSetback?r3(g):g) - st.at[1]) > LAMP.maxStep) {
+        if(sd.guard==='none'||sd.guard==='retaining')return 'step';
+        // Moving from a shoulder onto masonry changes the actual footprint. Check
+        // that final candidate before the ordinary bounded slide/side search accepts it.
+        return env.lampMountAllowed&&!env.lampMountAllowed(mountedCandidate(s,side),side)?'mount-footprint':null;
+      }
+      // A measured environment must accept the actual emitted rotated foot. An undefined
+      // search result cannot fall back to an unchecked ground post. Explicit guard mounts
+      // above retain their separate real-masonry support proof.
+      if(env.lampSetback&&(measuredSetback(s,side)===undefined||!roadLampFootSupported(roadCandidate(s,side,back),{ground:env.ground,occupied:env.occupied,water:env.wet})))return 'post-footprint';
       if (env.occupied(p[0], p[2]) && !(sd.footway && sd.paved + back >= sd.footway.inner - 0.3)) return 'occupied';
     }
     return null;
@@ -121,7 +145,7 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
     return env.ground(p[0], p[2]);
   };
   const make = (slot: Slot): LampSpot | null => {
-    const i = F.nearestIndex(slot.s), st = S[i]!, f = F.frameAt(slot.s);
+    const i = F.nearestIndex(slot.s), st = S[i]!;
     let o: number, headO: number, headY: number, baseY: number;
     if (slot.side === 'median') {
       // A median lantern: a twin-arm post on the median's centre; `head` is its lantern over the median (both arms light both carriageways).
@@ -133,20 +157,11 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
       else {
         o = sg * (sd.paved + setbackAt(slot.s, slot.side)); headO = o - sg * LAMP.arm;
         const p = F.point(slot.s, o); baseY = baseHeight(st, slot.side, Math.abs(o), p);
-        if (Math.abs(baseY - st.at[1]) > LAMP.maxStep) { o = sg * railOffset(st, slot.side); headO = o - sg * LAMP.arm; baseY = st.at[1] + CORRIDOR.kerbRise; }
+        if (Math.abs((env.lampSetback?r3(baseY):baseY) - st.at[1]) > LAMP.maxStep)return mountedCandidate(slot.s,slot.side);
         headY = baseY + CORRIDOR.lampHeight;
       }
     }
-    const at = F.point(slot.s, o), head = F.point(slot.s, headO);
-    const road = f.at[1];
-    const side: SideName = slot.side === 'median' ? 'right' : slot.side;
-    // yaw faces the road: from the post toward its head (a median lantern faces the right-hand carriageway).
-    const dx = slot.side === 'median' ? f.right[0] : head[0] - at[0], dz = slot.side === 'median' ? f.right[1] : head[2] - at[2];
-    return {
-      id: '', kind: slot.kind,
-      at: [r3(at[0]), r3(baseY), r3(at[2])], head: [r3(head[0]), r3(headY), r3(head[2])], pool: [r3(head[0]), r3(road), r3(head[2])],
-      poolRadius: CORRIDOR.lampPoolRadius, yaw: r3(Math.atan2(dx, dz)), side, reachId: st.reachId,
-    };
+    return packedLamp(slot.s,slot.side,slot.kind,o,headO,baseY,headY);
   };
   /**
    * The largest spacing at which consecutive pools (heads at the cyclic lateral offsets `heads`) leave at most
@@ -168,7 +183,7 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
     const sd = st[side], sg = sign(side);
     if (kind === 'tunnelLamp') return sg * (sd.paved - 0.2);
     if (kind === 'bridgeLantern') return sg * (railOffset(st, side) - LAMP.arm);
-    return sg * (sd.paved + (env.lampSetback?.(st.s,side)??CORRIDOR.lampSetback) - LAMP.arm);
+    return sg * (sd.paved + (measuredSetback(st.s,side)??CORRIDOR.lampSetback) - LAMP.arm);
   };
 
   // 1. Lit runs.
@@ -352,6 +367,43 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
       const before=out.length;place({s:worst.s,side:landSide(S[F.nearestIndex(worst.s)]!),kind:'roadLantern'});
       if(out.length===before)break;
     }
+  }
+
+  // Required safety targets include route ends and openings as well as bends. Search
+  // real, supported sites near each uncovered point; a moved post only counts when
+  // its actual pool covers that point. Ordinary corridor plans omit this refinement.
+  const required=env.lightTargets??[];
+  const covers=(lamp:LampSpot,p:readonly [number,number])=>Math.hypot(p[0]-lamp.pool[0],p[1]-lamp.pool[2])<=lamp.poolRadius;
+  for(let pass=0;pass<required.length;pass++){
+    const pending=required.filter(p=>!out.some(o=>covers(o.l,p)));
+    if(!pending.length)break;
+    const findSite=(stationStep:number)=>{
+      let best:{l:LampSpot;s:number;score:number;margin:number}|null=null;
+      for(const p of pending){
+        let near={s:0,d:Infinity};for(let i=0;i<n;i+=10){const q=F.project(p[0],p[1],i,10);if(q.d<near.d)near=q;}
+        for(let d=-12;d<=12;d+=stationStep){const s=F.wrapS(near.s+d);if(!F.closed&&(s<=.2||s>=F.length-.2))continue;
+          const st=S[F.nearestIndex(s)]!,kind:LampKind=st.structureId?(env.structureKind(st.structureId)==='tunnel'?'tunnelLamp':'bridgeLantern'):'roadLantern';
+          for(const side of ['left','right'] as const){
+            if(kind==='bridgeLantern'&&(seaSide(st)===side||!['bridgeRail','postRail','stoneParapet'].includes(st[side].guard)))continue;
+            // A missing ground site is usable only through the explicit final-mount
+            // validator in reject(). Ordinary measured environments retain the strict
+            // ground-only rule; a guard label alone never invents a legal foot.
+            if(kind==='roadLantern'&&env.lampSetback&&measuredSetback(s,side)===undefined&&!env.lampMountAllowed)continue;
+            if(reject(s,side,kind)||out.some(o=>o.l.kind===kind&&o.l.side===side&&Math.abs(F.delta(o.s,s))<4))continue;
+            const l=make({s,side,kind});if(!l||!covers(l,p))continue;
+            const covered=pending.filter(t=>covers(l,t)),score=covered.length,margin=Math.min(...covered.map(t=>l.poolRadius-Math.hypot(t[0]-l.pool[0],t[1]-l.pool[2])));
+            if(!best||score>best.score||score===best.score&&margin>best.margin)best={l,s,score,margin};
+          }
+        }
+      }
+      return best;
+    };
+    // Preserve the ordinary plan first. A narrow real footing can fall between
+    // its 1.5m stations; refine only a failed required target search, over the
+    // same +/-12m interval with identical support, gap, spacing and pool checks.
+    const best=findSite(1.5)??findSite(.25);
+    if(!best)throw new Error(`${A.id}: no supported lamp site covers safety target ${pending[0]}`);
+    out.push({l:best.l,s:best.s,run:runNo});
   }
 
   // 3. A minor road (a spur) ending at a developed destination: one lantern at its end (ROAD.md §3 'other roads').

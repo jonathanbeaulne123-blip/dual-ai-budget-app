@@ -1,3 +1,4 @@
+import {setImmediate as yieldEventLoop} from 'node:timers/promises';
 import {mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {env} from 'node:process';
 import {beforeAll, describe, expect, it} from 'vitest';
@@ -7,7 +8,7 @@ import {createHorizonGeography} from '../src/harbour/horizon/runtime/geography.t
 import {HORIZON_MANIFEST as M} from '../src/harbour/horizon/world/manifest.ts';
 import type {MoverDeps} from '../src/harbour/horizon/movers/shared/registry.ts';
 import {groundGuard} from '../src/harbour/horizon/movers/shared/ground/kernel.ts';
-import {bedPath, lineLegSteps, type LineId, type LineLegs} from '../src/harbour/horizon/movers/board/situations.ts';
+import {bedPath, lineWorkSteps, runLine, runLineSteps, type LineId, type LineLegs} from '../src/harbour/horizon/movers/board/situations.ts';
 import {sampleTerrain} from '../src/harbour/horizon/land/terrain/index.ts';
 import {createMountainV2Region, terraceBedExclusion} from '../src/harbour/horizon/regions/mountainV2/index.ts';
 
@@ -21,7 +22,7 @@ beforeAll(() => {
   // v2.6 (D-M1/D-M2, D-M5): as mountHorizon does, the Mountain v2 region owns the ground and decks inside its footprint: S1's
   // upper half is v2's race course on v2's road, region-carried (no Horizon deck), so without the region it rides the bake's
   // 5 m lattice and leaves the bed. With it S1 rides end to end with 5 land-defect stops (HANDOFF-notes/tests.md).
-  geography.addDynamic(createMountainV2Region({horizonGround: (x, z) => sampleTerrain(field, x, z), yield: terraceBedExclusion(world.beds), terrainStep: field.step}).provider);
+  geography.addDynamic(createMountainV2Region({walkingJoinSolids:world.geometry.solids,horizonGround: (x, z) => sampleTerrain(field, x, z), yield: terraceBedExclusion(world.beds), terrainStep: field.step}).provider);
   deps = {world, geography, manifest: M, reducedMotion: false, calm: false, tier: 'full'};
   groundGuard.strict = true;
 }, 120000);
@@ -32,15 +33,15 @@ const WRITE_EVIDENCE = env.RIDE_EVIDENCE === '1';
 const runs = new Map<LineId, LineLegs>();
 
 /**
- * Rides a line leg by leg, handing the event loop back between legs: a whole line is up to a minute of synchronous
- * kernel stepping since the wheel footprint (kernel fix round 2), and a worker blocked that long misses vitest's RPC.
+ * Rides each leg with deterministic 120-update checkpoints, handing the event loop back within long legs
+ * as well as between them. The complete line, inputs, simulation clock and assertions are unchanged.
  */
 async function rideLine(id: LineId): Promise<LineLegs> {
-  const legs = lineLegSteps(deps, id);
+  const legs = lineWorkSteps(deps, id);
   for (;;) {
     const next = legs.next();
     if (next.done) return next.value;
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await yieldEventLoop();
   }
 }
 
@@ -67,6 +68,22 @@ function evidence(id: LineId, run: LineLegs, rows: boolean): void {
  * the line is covered start to end.
  */
 describe('the headless rider rides S1–S4 (RIDE §12)', () => {
+  it('scheduling checkpoints preserve the exact short rider trace', async () => {
+    const options = {maxTime: 1.1};
+    const expected = runLine(deps, 'S1', options), steps = runLineSteps(deps, 'S1', options);
+    let checkpoints = 0;
+    for (;;) {
+      const next = steps.next();
+      if (next.done) {
+        expect(checkpoints).toBeGreaterThan(0);
+        expect(next.value).toEqual(expected);
+        break;
+      }
+      checkpoints++;
+      await yieldEventLoop();
+    }
+  });
+
   for (const id of ['S1', 'S2', 'S3', 'S4'] as LineId[]) {
     it(`${id} start → end`, async () => {
       const run = await rideLine(id);

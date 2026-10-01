@@ -9,6 +9,7 @@
  * runtime imports it dynamically, once the Horizon's assets are in hand.
  */
 import type * as THREE from 'three';
+import type {StructureSolid} from '../../land/interfaces.ts';
 import {SCENE_DRESSING,type PlaceDressing} from '../../../scene/place.ts';
 import {finishBuild} from '../../../../house/world/buildTask.ts';
 import {createRegionGeography,mouthExclusion,terraceBedExclusion,type RegionGeographyOptions,type RegionSurface} from './geography.ts';
@@ -25,6 +26,8 @@ export const MOUNTAIN_V2_REGION_ID='mountainV2';
 export type MountainV2RegionOptions=RegionGeographyOptions&{
   /** The Horizon terrain's cell size (`TerrainField.step`): the hidden-tile grid the ground mesh covers. Default 5. */
   terrainStep?:number;
+  /** Final baked source surfaces for the explicitly owned town walking join. */
+  walkingJoinSolids?:readonly StructureSolid[];
 };
 export type MountainV2MountOptions={season?:RegionSeason;quiet?:boolean};
 export interface MountainV2Region {
@@ -55,22 +58,60 @@ export interface MountainV2Region {
   /** v2's walk graph in Horizon space, for `withExtraGraph` / `buildPathGraph(…, extraGraph)`. */
   pathGraph():ExtraPathGraph;
   rides:ReturnType<typeof regionRides>;
+  /** Refresh only the explicitly owned walking join. Invalidate the drawn/in-flight scene
+   * synchronously before publishing new floor/ground answers; remount uses a fresh cache. */
+  refreshWalkingJoinSolids(solids:readonly StructureSolid[],invalidate:()=>void):boolean;
   /** Builds the scene at once (tests, tools). The runtime uses `mountSteps` (one builder per step). */
   mount(scene:THREE.Scene,tier:'full'|'lite',dressing:PlaceDressing,options?:MountainV2MountOptions):RegionScene;
   mountSteps(scene:THREE.Scene,tier:'full'|'lite',dressing:PlaceDressing,options?:MountainV2MountOptions):Generator<void,RegionScene,void>;
 }
+type RegionProvider=MountainV2Region['provider'];
+/** Consumers retain these provider objects; each call follows the current geometry snapshot. */
+function forwardProvider(read:()=>RegionProvider):RegionProvider{
+  return {
+    owns:(...args:Parameters<RegionProvider['owns']>)=>read().owns(...args),
+    ground:(...args:Parameters<RegionProvider['ground']>)=>read().ground(...args),
+    waterLevel:(...args:Parameters<RegionProvider['waterLevel']>)=>read().waterLevel(...args),
+    surface:(...args:Parameters<RegionProvider['surface']>)=>read().surface(...args),
+    ceiling:(...args:Parameters<RegionProvider['ceiling']>)=>read().ceiling(...args),
+    contact:(...args:Parameters<RegionProvider['contact']>)=>read().contact(...args),
+  };
+}
+const isWalkingJoin=(solid:StructureSolid)=>(solid.sourceId??solid.id.split('@')[0])==='mountainV2.funicularFoot.apron';
 export function createMountainV2Region(options:MountainV2RegionOptions={}):MountainV2Region{
-  const geo=createRegionGeography(options),terrainStep=options.terrainStep??5,rides=regionRides();
-  // The ground mesh's triangle selection depends on the footprint; with a baked field it is this region's own.
-  const groundCache=options.horizonGround?new Map():undefined;
-  const mountSteps=(scene:THREE.Scene,tier:'full'|'lite',dressing:PlaceDressing,o:MountainV2MountOptions={})=>mountRegionSteps(scene,tier,dressing,{contains:geo.contains,terrainStep,season:o.season,quiet:o.quiet,groundCache,groundCeiling:geo.groundCeiling});
+  // Chunk loading appends to the caller's array. Geography, ground and path art
+  // must share an immutable membership snapshot for each mounted generation.
+  let walkingJoinSolids=options.walkingJoinSolids?[...options.walkingJoinSolids]:undefined;
+  let walkingJoins=walkingJoinSolids?.filter(isWalkingJoin)??[];
+  let geo=createRegionGeography({...options,walkingJoinSolids});
+  const terrainStep=options.terrainStep??5,rides=regionRides();
+  // Native/default callers keep the previous shared ground-cache behavior.
+  let groundCache=options.horizonGround||walkingJoinSolids?new Map():undefined;
+  const mountSteps=(scene:THREE.Scene,tier:'full'|'lite',dressing:PlaceDressing,o:MountainV2MountOptions={})=>mountRegionSteps(scene,tier,dressing,{contains:geo.contains,terrainStep,season:o.season,quiet:o.quiet,groundCache,groundCeiling:geo.groundCeiling,walkingJoinSolids,walkingGroundPatch:geo.walkingGroundPatch});
+  function refreshWalkingJoinSolids(solids:readonly StructureSolid[],invalidate:()=>void):boolean{
+    const nextJoins=solids.filter(isWalkingJoin);
+    if(nextJoins.length===walkingJoins.length&&nextJoins.every((solid,i)=>solid===walkingJoins[i]))return false;
+    const nextSolids=[...solids],nextGeo=createRegionGeography({...options,walkingJoinSolids:nextSolids});
+    // No await: old scene/build is removed before any query can observe new
+    // support. The runtime's existing region-ready gate holds movement until
+    // the replacement terrain, paths and native structures are drawn together.
+    invalidate();
+    groundCache??=new Map();groundCache.clear();
+    walkingJoinSolids=nextSolids;walkingJoins=nextJoins;geo=nextGeo;
+    return true;
+  }
   return {
     id:MOUNTAIN_V2_REGION_ID,offset:MOUNTAIN_V2_OFFSET,footprint:MOUNTAIN_V2_FOOTPRINT,
-    contains:geo.contains,requiresScene:geo.requiresScene,hidesTerrainCell:geo.contains,groundAt:geo.groundAt,
+    contains:(x,z)=>geo.contains(x,z),requiresScene:(x,z)=>geo.requiresScene(x,z),hidesTerrainCell:(x,z)=>geo.contains(x,z),groundAt:(x,z)=>geo.groundAt(x,z),
     surface:(hx,hy,hz,step)=>geo.surface(hx,hy,hz,step),
     blocked:(hx,hy,hz,r)=>geo.blocked(hx,hy,hz,r),
-    ceiling:geo.ceiling,provider:geo.provider,providerWhileDrawn:geo.whileDrawn,waterLevel:geo.waterLevel,
-    pathGraph:regionPathGraph,rides,
+    ceiling:(x,y,z)=>geo.ceiling(x,y,z),provider:forwardProvider(()=>geo.provider),
+    providerWhileDrawn(drawn){
+      let current=geo,view=current.whileDrawn(drawn);
+      return forwardProvider(()=>{if(current!==geo){current=geo;view=current.whileDrawn(drawn);}return view;});
+    },
+    waterLevel:(x,z)=>geo.waterLevel(x,z),pathGraph:regionPathGraph,rides,
+    refreshWalkingJoinSolids,
     mount:(scene,tier,dressing,o)=>finishBuild(mountSteps(scene,tier,dressing,o)),
     mountSteps,
   };

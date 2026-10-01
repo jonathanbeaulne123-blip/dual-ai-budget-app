@@ -49,6 +49,29 @@ function replay(cuts:LandCuts,id:string,reverse:boolean){
   return'timeout';
 }
 describe('physical SummitStation and Crown stair joins',()=>{
+  it('keeps the source summit walk open through its full width without deleting the remaining landing guards',()=>{
+    const cuts=fixture(),walk=bed('walk summit','walk',[[1309.792592593,159.075883075,448.503703704],[1309.65,158.81597646,454.9125],[1309.585185185,158.549485133,461.340740741]]);
+    walk.width=2.5;cuts.beds.push(walk);const old=structuredClone(cuts);fitMountainHorizonJoins(cuts,baseHeight);
+    expect(cuts.beds.find(b=>b.id===walk.id)!.points).toEqual(old.beds.find(b=>b.id===walk.id)!.points);
+    const rail=cuts.solids.find(s=>s.id==='crownLaunch.stair.landingRails')!,landing=cuts.solids.find(s=>s.id==='crownLaunch.stair.landing')!;
+    const g=createHorizonGeography(field,{beds:[],pads:[],mouths:[],waters:[],diagnostics:[],solids:[rail]});
+    // Independently sweep the declared path, not the rail builder's gap helper.
+    let checks=0;
+    for(let i=1;i<walk.points.length;i++){
+      const a=walk.points[i-1]!,b=walk.points[i]!,length=Math.hypot(b[0]-a[0],b[2]-a[2]),nx=-(b[2]-a[2])/length,nz=(b[0]-a[0])/length;
+      for(let s=0;s<=length;s+=.05)for(const offset of[-.95,0,.95]){
+        const x=a[0]+(b[0]-a[0])*s/length+nx*offset,z=a[2]+(b[2]-a[2])*s/length+nz*offset,top=solidTopAt(landing,x,z);
+        if(top===null)continue;expect(g.contact(x,z,top,.3,undefined,false,.65)).toBeNull();checks++;
+      }
+    }
+    expect(checks).toBeGreaterThan(40);expect(rail.indices.length).toBeGreaterThan(0);
+    const a=12*7*6,b=13*7*6,x=(landing.positions[a]!+landing.positions[b]!)/2,z=(landing.positions[a+2]!+landing.positions[b+2]!)/2,y=(landing.positions[a+1]!+landing.positions[b+1]!)/2;
+    expect(g.contact(x,z,y,.1,undefined,false,.65)?.id).toBe(rail.id);
+    // The original stair rails/treads remain byte-for-byte; the separate existing
+    // between-post 0.65m guard-band regression also remains unchanged below.
+    for(const suffix of['treads','rails','stringers','supports','cheeks'])expect(cuts.solids.find(s=>s.id==='crownLaunch.stair.'+suffix)).toEqual(old.solids.find(s=>s.id==='crownLaunch.stair.'+suffix));
+  });
+
   it('closes both original failures with rendered geometry and unchanged walking limits',()=>{
     expect(replay(before,'walk summitStation',false)).toBe('air');expect(replay(before,'walk summitStation',true)).toBe('stalled');
     expect(replay(before,'crownLaunch.stair',true)).toBe('stalled');

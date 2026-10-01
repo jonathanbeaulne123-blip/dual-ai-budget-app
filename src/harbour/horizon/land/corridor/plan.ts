@@ -11,6 +11,7 @@ import type { CorridorReach, CorridorStation, LampSpot, MarkingRun, PlantingGrou
 import { Analysis, defaultLowZones, type LowZone } from './plan/context.ts';
 import { defaultStructureKind, type Env, type StructureKind } from './plan/env.ts';
 import { planLamps, type LitRun } from './plan/lamps.ts';
+import type {RoadLampSites,RoadLampFootCandidate} from './plan/lampFootprint.ts';
 export { LAMP } from './plan/lamps.ts';
 /** How far from the centreline a destination may lie and still have its frontage lit. */
 export const PLAN_DESTINATION_REACH = 45; // = DESTINATION_REACH in plan/lamps.ts
@@ -21,10 +22,14 @@ import { planStops, type StopProposal, type PlannedStop } from './plan/stops.ts'
 
 export interface PlanInput { id: string; closed: boolean; step: number; stations: readonly CorridorStation[]; reaches: readonly CorridorReach[] }
 export interface PlanEnv {
-  /** Lazily measured and memoized post setback for a specific candidate, beyond the paved edge. */
-  lampSetback?(s:number,side:'left'|'right'):number|undefined;
+  /** Measured setback using the planner's actual rounded candidates, beyond the paved edge. */
+  lampSetback?(s:number,side:'left'|'right',sites:RoadLampSites):number|undefined;
+  /** Exact final parapet-mounted foot must clear other routes, water and native keepouts. */
+  lampMountAllowed?(lamp:RoadLampFootCandidate,side:'left'|'right'):boolean;
   /** Explicit sustained native bends, in plan metres; light both running lanes through each bend. */
   lightBends?: readonly {from:number;to:number;apex:number}[];
+  /** Required pool coverage, checked against real legal fixture sites after nominal spacing. */
+  lightTargets?: readonly (readonly [number,number])[];
   /** Final baked ground height (terrain or walkable solid top) at x,z. */
   ground(x: number, z: number): number;
   /** True where a point is on or inside any bed or solid footprint that planting must avoid. */
@@ -73,7 +78,9 @@ export function planCorridor(input: PlanInput, env: PlanEnv): CorridorPlan {
   const E: Env = {
     ground: env.ground,
     lightBends:env.lightBends??[],
+    lightTargets:env.lightTargets??[],
     lampSetback:env.lampSetback,
+    lampMountAllowed:env.lampMountAllowed,
     occupied: env.occupied ?? (() => false),
     wet: env.water ?? ((x, z) => env.ground(x, z) <= 0.05),
     structureKind: env.structureKind ?? defaultStructureKind,

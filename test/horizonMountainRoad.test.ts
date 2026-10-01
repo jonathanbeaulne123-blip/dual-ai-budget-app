@@ -10,7 +10,7 @@ const buffer=(path:string)=>{const b=readFileSync(path);return b.buffer.slice(b.
 const world=parseHorizonDefinition(buffer('public/horizon/world/horizon-geo-1.json.gz'));
 const field=decodeTerrainAsset(buffer('public/horizon/terrain/horizon-geo-1.bin'),'full');
 const yielded=terraceBedExclusion(world.collision.beds);
-const region=createMountainV2Region({horizonGround:(x,z)=>sampleTerrain(field,x,z),yield:yielded,exclude:mouthExclusion(world.collision.mouths),terrainStep:field.step});
+const region=createMountainV2Region({walkingJoinSolids:world.geometry.solids,horizonGround:(x,z)=>sampleTerrain(field,x,z),yield:yielded,exclude:mouthExclusion(world.collision.mouths),terrainStep:field.step});
 const geography=createHorizonGeography(field,{...world.collision,solids:world.geometry.solids,diagnostics:world.diagnostics??[]});
 geography.addDynamic(region.provider);
 

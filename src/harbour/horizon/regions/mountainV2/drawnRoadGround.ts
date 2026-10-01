@@ -9,8 +9,18 @@ export function drawnRoadGroundCeiling(road:WorldSurface,clearance=.08,batterWid
    const key=`${x}:${z}`,list=cells.get(key)??[];list.push(i);cells.set(key,list);
   }return{a,b,wa,wb};
  });
+ const endRow=road.landingRows!.at(-1)!,previous=road.points.at(-2)!,end=road.points.at(-1)!;
+ const left=endRow[0]!,right=endRow.at(-1)!,ex=right[0]-left[0],ez=right[2]-left[2],length=Math.hypot(ex,ez);
+ const side=(px:number,pz:number)=>ex*(pz-left[2])-ez*(px-left[0]);
+ const insideSign=Math.sign(side(previous[0],previous[2]));
+ const terminalWidth=road.widths?.at(-1)??road.halfWidth;
  return(x:number,z:number):number|null=>{
   const top=floor(x,z);if(top)return top.y-clearance;
+  // The final swept cross-section is an open at-grade junction. Earlier
+  // segments' clamped radial batters must not cut backwards across its receiving
+  // footway. The true face above always wins; this only restores existing ground
+  // beyond the end plane, within the terminal shoulder neighbourhood.
+  if(length>0&&insideSign&&side(x,z)*insideSign< -1e-8&&Math.hypot(x-end[0],z-end[2])<=terminalWidth+batterWidth)return null;
   // The shoulder cut returns to the existing ground outside this narrow 2:1 batter.
   // Do not fill missing road triangles or extend a floor beyond the drawn footprint.
   let nearest:{distance:number;over:number;x:number;z:number}|null=null;

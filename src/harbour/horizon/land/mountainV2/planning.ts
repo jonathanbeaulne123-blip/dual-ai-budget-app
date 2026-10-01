@@ -4,12 +4,13 @@ import {nearestOnPath} from '../structures/mesh';
 import {pointInPolygon} from '../../world/geometry';
 import type {Point2,Point3} from '../../world/definition';
 const N=V2.nativePlanning;
+const reservoirOutline=N.reservoir.outline.map((p):Point2=>[p[0]!,p[1]!]);
 const path=(p:readonly number[][])=>p as unknown as readonly Point3[];
 export const nativeWalks=N.walks.map(w=>({...w,points:path(w.points)}));
 /** Height of the rendered native water at x,z, null on dry land. */
 export function nativeWaterLevel(x:number,z:number,ground:(x:number,z:number)=>number):number|null{
   const r=N.reservoir,g=ground(x,z);
-  if(g<r.level&&pointInPolygon(x,z,r.outline as Point2[]))return r.level;
+  if(g<r.level&&pointInPolygon(x,z,reservoirOutline))return r.level;
   const q=nearestOnPath([x,z],path(V2.river.points));
   return q.distance<=V2.river.halfWidth&&g<q.at[1]?q.at[1]:null;
 }

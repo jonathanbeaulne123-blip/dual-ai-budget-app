@@ -6,6 +6,7 @@ import {sceneDressingFrom} from '../../src/harbour/scene/place.ts';
 import {poseFrom} from '../../src/harbour/camera/poses.ts';
 import {groundHeightAt} from '../../src/harbour/scene/ground.ts';
 import {queryWorldSurface} from '../../src/harbour/mountain/surfaces.ts';
+import {MOUNTAIN_ROAD_LINE,ORCHARD_LANE_LINE} from '../../src/harbour/mountain/roads.ts';
 import {SKILL_BRANCHES,MOUNTAIN_VERSION,GEOGRAPHY_REVISION} from '../../src/harbour/mountain/definition.ts';
 import {setWorldDiagnostics} from '../../src/house/world/diagnostics.ts';
 
@@ -22,10 +23,28 @@ const eyeAt=(p,id)=>{const hit=queryWorldSurface({x:p[0],z:p[2],y:p[1],supportId
 const poses=[];
 for(const id of ['library-balcony','dam-promenade','hearth-awning']){
  const b=SKILL_BRANCHES.find(b=>b.id===id);if(!b)throw Error('Missing native branch '+id);const p=b.points,last=p.length-1,back=inwards(p,last,8);
- for(const [suffix,i,j]of [...(id==='hearth-awning'?[]:[['entry',0,inwards(p,0,8)]]),['landing-down',back,last],['landing-up',last,back]]){
+ for(const [suffix,i,j]of [['entry',0,inwards(p,0,8)],['landing-down',back,last],['landing-up',last,back]]){
   const seated=eyeAt(p[i],id),target=eyeAt(p[j],id).eye;if(distance(seated.eye,target)<.01)throw Error('Zero camera direction '+id+suffix);
   poses.push({id:id+'-'+suffix,branchId:id,...seated,target});
  }
+}
+// Inspect the separately approved D-MR19/20 frames and D-MR22 junction in the
+// actual native renderer, with the same queried support used by other poses.
+const roadPose=(id,line,index,reverse=false)=>{
+ const points=line.samples.map(s=>s.at),p=points[index],step=reverse?-8:8;
+ const j=Math.max(0,Math.min(points.length-1,index+step));
+ const targetIndex=j===index?Math.max(0,Math.min(points.length-1,index-step)):j;
+ const seated=eyeAt(p,line.id);let target=eyeAt(points[targetIndex],line.id).eye;
+ if(j===index)target=target.map((n,k)=>2*seated.eye[k]-n);
+ poses.push({id,...seated,target});
+};
+for(const [name,anchor] of [['lower-bend',[70,-77]],['awning-bend',[85,-284]],['orchard-bend',[19,-93]]]){
+ const samples=MOUNTAIN_ROAD_LINE.samples;
+ const i=samples.reduce((best,s,n)=>Math.hypot(s.at[0]-anchor[0],s.at[2]-anchor[1])<Math.hypot(samples[best].at[0]-anchor[0],samples[best].at[2]-anchor[1])?n:best,0);
+ for(const reverse of[false,true])roadPose(name+(reverse?'-down':'-up'),MOUNTAIN_ROAD_LINE,i,reverse);
+}
+for(const [name,index]of[['orchard-entry',0],['orchard-bridge-start',8],['orchard-bridge-fairing-end',26]]){
+ for(const reverse of[false,true])roadPose(name+(reverse?'-back':'-out'),ORCHARD_LANE_LINE,index,reverse);
 }
 poses.push({id:'native-overview',shot:'view:world'});
 const snapshot=()=>({ready,failed,theme,tier,worldVersion:MOUNTAIN_VERSION,geographyRevision:GEOGRAPHY_REVISION,lighting:'fixed authored daylight; native runtime has no day/night clock',requested,camera:world.camera(),pose:world.pose(),resident:world.resident(),drawCalls:Number(host.dataset.drawCalls??0),geometries:Number(host.dataset.geometries??0),textures:Number(host.dataset.textures??0),renderMs:Number(host.dataset.renderMs??0),cameraGround:groundHeightAt(world.camera()[0],world.camera()[2]),measure:world.measure('read')});

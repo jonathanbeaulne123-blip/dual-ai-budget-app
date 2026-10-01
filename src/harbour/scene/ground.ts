@@ -1,3 +1,4 @@
+import {orchardGroundCeiling} from '../mountain/orchardJunction.ts';
 import {townChannelHeight} from '../mountain/townChannel.ts';
 import {mountainBaseHeight} from '../mountain/definition.ts';
 import {mountainGround as mountainGroundRaw} from '../mountain/mountainGround.ts';
@@ -37,11 +38,16 @@ export const TERRAIN_LATTICE_BOUNDS = {minX:-200,maxX:200,minZ:-396,maxZ:84} as 
  * baked mountain heightfield (landform, plateaus, gorge, and every road/path/foundation bench).
  * One function for physics and the render lattice; it has no vertical discontinuities.
  */
-export function groundHeightAt(x: number, z: number): number {
+/** Original field for deterministic scenery authoring: new cuts cannot reroll planting. */
+export function authoredGroundHeightAt(x: number, z: number): number {
   if(z < -48)return Math.max(islandHeight(x,z),mountainBaseHeight(x,z));
   // The island's north edge also carries the road foot's embankment and the funicular platform (raise-only).
   const island=z<-30?Math.max(islandHeight(x,z),mountainGroundRaw(x,z)):islandHeight(x,z);
   return townChannelHeight(x,z,island);
+}
+export function groundHeightAt(x:number,z:number):number{
+  const original=authoredGroundHeightAt(x,z),ceiling=orchardGroundCeiling(x,z);
+  return ceiling===null?original:Math.min(original,ceiling);
 }
 
 /**

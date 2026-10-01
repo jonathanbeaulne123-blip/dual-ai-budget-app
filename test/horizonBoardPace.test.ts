@@ -5,7 +5,7 @@ import {decodeTerrainAsset} from '../src/harbour/horizon/land/terrain/asset.ts';
 import {createHorizonGeography, HORIZON_G} from '../src/harbour/horizon/runtime/geography.ts';
 import {HORIZON_MANIFEST as M} from '../src/harbour/horizon/world/manifest.ts';
 import type {Bed, WorldDefinition} from '../src/harbour/horizon/world/definition.ts';
-import {bedAt, createBoardContact, isPickupThreshold, paceOf, type BoardContact} from '../src/harbour/horizon/movers/shared/ground/contact.ts';
+import {bedAt, bedClass, createBoardContact, isPickupThreshold, paceOf, type BoardContact} from '../src/harbour/horizon/movers/shared/ground/contact.ts';
 import {BOARD_TEST_PROFILE} from '../src/harbour/horizon/movers/shared/ground/synthetic.ts';
 import {sampleTerrain} from '../src/harbour/horizon/land/terrain/index.ts';
 import {createMountainV2Region, terraceBedExclusion} from '../src/harbour/horizon/regions/mountainV2/index.ts';
@@ -40,7 +40,7 @@ beforeAll(() => {
   geography = createHorizonGeography(field, {...loaded.collision, solids: loaded.geometry.solids, diagnostics: loaded.diagnostics ?? []});
   // v2.6 (D-M1/D-M2): as mountHorizon does, the placed Mountain v2 region owns the ground and decks inside its footprint
   // (S1's upper half rides v2's own road there, region-carried: no Horizon deck).
-  geography.addDynamic(createMountainV2Region({horizonGround: (x, z) => sampleTerrain(field, x, z), yield: terraceBedExclusion(loaded.beds), terrainStep: field.step}).provider);
+  geography.addDynamic(createMountainV2Region({walkingJoinSolids:loaded.geometry.solids,horizonGround: (x, z) => sampleTerrain(field, x, z), yield: terraceBedExclusion(loaded.beds), terrainStep: field.step}).provider);
   board = createBoardContact(geography, world, M, BOARD_TEST_PROFILE);
   bicycle = createBoardContact(geography, world, M, BICYCLE);
 }, 120000);
@@ -59,7 +59,7 @@ describe('MANIFEST v1.7 paces resolve (RIDE §8.3)', () => {
 });
 
 describe('the board contact adapter over the real world', () => {
-  it('samples every built threshold pad legal for the board and the bicycle: threshold pace, or a pick-up pad at its line\'s pace', () => {
+  it('samples every built pad at its dismount, pick-up, or named legal through-road pace', () => {
     // A carried threshold (#552: the plane's bailOut) has no pad by design; it failed here on main @ ca8ed7e too.
     const built = world.thresholds.filter(t => t.built && !t.carried);
     expect(built.length).toBeGreaterThan(80);   // v2.2 (Stage A land): 91 built thresholds (D-A7 flush rows, the re-authored register)
@@ -68,22 +68,59 @@ describe('the board contact adapter over the real world', () => {
     for (const t of built) {
       const pad = pads.get(t.padId!)!;
       expect(pad, t.id).toBeDefined();
-      for (const query of [board, bicycle]) {
+      for (const [query, profile] of [[board, BOARD_TEST_PROFILE], [bicycle, BICYCLE]] as const) {
         const s = query.sample(pad.centre[0], pad.centre[2], pad.centre[1]);
         expect(s, t.id).not.toBeNull();
         expect(s!.legal, t.id).toBe(true);
         // Two thresholds may share one spot (skateLineStarts.3 and upperStreetSpur): either pad is the ground.
         const found = pads.get(s!.padId!)!, owner = byPad.get(s!.padId!)!;
         expect(Math.hypot(found.centre[0] - pad.centre[0], found.centre[2] - pad.centre[2]), t.id).toBeLessThan(Math.hypot(...pad.size) / 2);
+        // The real Foot junction exposes the existing throughBedIds contract, also used by South Portal:
+        // only a named road physically under this pad and legal for this profile keeps its surface pace.
+        const through = bedAt({...world, beds: world.beds.filter(b => owner.throughBedIds?.includes(b.id) && profile.beds.includes(bedClass(b)))},
+          pad.centre[0], pad.centre[2], s!.y);
         if (isPickupThreshold(owner.modes)) {
           expect(s!.pace, `${t.id} → ${owner.id}`).not.toBe('threshold');
           expect(s!.roll).toBe(paces[s!.pace]!.roll);
+        } else if (through) {
+          expect(['V03', 'mountainV2.road', 'mountainV2.footLane', 'spur stillwater'], owner.id).toContain(through.bedId);
+          expect(owner.throughBedIds, owner.id).toContain(through.bedId);
+          expect(profile.beds, owner.id).toContain('road');
+          expect(through.bed, owner.id).toMatchObject({kind: 'road', profile: 'road', surface: 'paved'});
+          expect(through.bed.surfaceSegments ?? [], owner.id).toEqual([]);
+          // A road's metadata may say paved while a real crossing's top is gravel (Foot Quay).
+          // Read the supporting geography independently; pad stone lends grip, not its threshold pace.
+          const support = geography.surface(pad.centre[0], pad.centre[2], pad.centre[1], .5)!;
+          expect(s!.material, owner.id).toBe(support.material);
+          expect(['paved', 'cobble', 'gravel', 'stone'], owner.id).toContain(support.material);
+          if (owner.id === 'crossing.cross.s1.walkFootQuay.1') expect(support.material, owner.id).toBe('gravel');
+          const material = surfaces[support.material]!, pace = support.material === 'stone' ? surfaces[through.bed.surface]!.pace : material.pace;
+          expect(s, `${t.id} → ${owner.id}`).toMatchObject({legal: true, bedId: through.bedId, padId: owner.padId,
+            pace, roll: paces[pace]!.roll, pushGrip: paces[pace]!.pushGrip, grip: material.grip});
         } else {
           expect({id: t.id, pace: s!.pace}).toEqual({id: t.id, pace: 'threshold'});
           expect(s!.roll).toBe(1.8); expect(s!.pushGrip).toBe(0.5);
         }
       }
     }
+  });
+  it.each([
+    {id: 'southPortal', throughIds: ['mountainV2.road']},
+    {id: 'crossing.cross.mountainV2FootLane.mountainV2Road.1', throughIds: ['mountainV2.road', 'spur stillwater', 'mountainV2.footLane']},
+  ])('$id preserves only the bicycle\'s named paved through-road, while the board dismounts', ({id, throughIds}) => {
+    const t = world.thresholds.find(row => row.id === id)!;
+    expect(t, id).toBeDefined();
+    expect(t.throughBedIds, id).toEqual(throughIds);
+    expect(isPickupThreshold(t.modes), id).toBe(false);
+    const p = world.collision!.pads.find(row => row.id === t.padId)!;
+    const sample = bicycle.sample(p.centre[0], p.centre[2], p.centre[1])!;
+    expect(throughIds, id).toContain(sample.bedId);
+    expect(BICYCLE.beds).toContain(bedClass(bed(sample.bedId!)));
+    expect(BOARD_TEST_PROFILE.beds).not.toContain('road');
+    expect(surfaces.paved).toMatchObject({pace: 'fast', grip: 1});
+    expect(sample, id).toMatchObject({legal: true, padId: t.padId, pace: 'fast', roll: .12, pushGrip: 1, grip: 1});
+    expect(board.sample(p.centre[0], p.centre[2], p.centre[1]), id).toMatchObject({legal: true, padId: t.padId,
+      bedId: null, pace: 'threshold', roll: 1.8, pushGrip: .5, grip: 1});
   });
   it('rolls a pick-up pad at the pace of the line it starts; park pads and crossings stay threshold', () => {
     expect(isPickupThreshold(['feet→board'])).toBe(true);

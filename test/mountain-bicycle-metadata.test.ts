@@ -19,7 +19,7 @@ const baked=parseHorizonDefinition(ab(readFileSync('public/horizon/world/horizon
 // One source build proves the actual publication site, independently of stale baked metadata.
 const source=buildLandCuts(baseHeight),cuts={...baked.collision,beds:source.beds,solids:baked.geometry.solids,diagnostics:[]} satisfies LandCuts;
 const world={...baked,beds:source.beds,collision:cuts,thresholds:buildThresholds(field,cuts,baked.crossingProofs)};
-const geography=createHorizonGeography(field,cuts);geography.addDynamic(createMountainV2Region({horizonGround:(x,z)=>sampleTerrain(field,x,z),yield:terraceBedExclusion(world.collision.beds),exclude:mouthExclusion(world.collision.mouths),terrainStep:field.step}).provider);
+const geography=createHorizonGeography(field,cuts);geography.addDynamic(createMountainV2Region({walkingJoinSolids:cuts.solids,horizonGround:(x,z)=>sampleTerrain(field,x,z),yield:terraceBedExclusion(world.collision.beds),exclude:mouthExclusion(world.collision.mouths),terrainStep:field.step}).provider);
 const bike=createBoardContact(geography,world,M,BICYCLE_PROFILE),board=createBoardContact(geography,world,M,BOARD_PROFILE),withoutMarkers=createBoardContact(geography,{...world,thresholds:[]},M,BICYCLE_PROFILE);
 const chain=mountainRoadChain(source.beds)!,part=chain.parts.find(p=>p.id==='mountainV2.footLane')!,path=bedPath({...baked.beds.find(b=>b.id==='V03')!,points:chain.points});
 const at=(d:number)=>{const p=pointAt(path,part.from+d),surface=geography.surface(p.x,p.z,p.y,.5)!;return{x:p.x,z:p.z,y:surface.y};};
@@ -48,7 +48,7 @@ describe('Mountain through-road source metadata',()=>{
     // physical pad; its id names the native routes, not every route it carries.
     const foot=world.collision.pads.find(p=>p.id===footId)!;
     for(const crossingId of ['cross.mountainV2Road.spurStillwater.1','cross.s1.spurStillwater.1','cross.mountainV2FootLane.spurStillwater.1']){
-      const proof=baked.crossingProofs.find(p=>p.id===crossingId)!;
+      const proof=baked.crossingProofs!.find(p=>p.id===crossingId)!;
       expect(proof,crossingId).toMatchObject({padId:footId,resolution:'threshold',built:true,clearancePass:true});
       expect(proof.at,crossingId).toEqual([foot.centre[0],foot.centre[2]]);
       // The full native curve starts at54.649977 while the authored Foot anchor
@@ -63,7 +63,7 @@ describe('Mountain through-road source metadata',()=>{
     expect(Math.abs(linkStart[1]-foot.centre[1])).toBeLessThan(.00003);
     // The higher Year Walk crossing shares the pad id but fails clearance. It
     // must never become the reason the through-road exemption is published.
-    const higher=baked.crossingProofs.find(p=>p.id==='cross.spurStillwater.yearWalk.1')!;
+    const higher=baked.crossingProofs!.find(p=>p.id==='cross.spurStillwater.yearWalk.1')!;
     expect(higher).toMatchObject({padId:footId,built:false,clearancePass:false});
     expect(world.thresholds.filter(t=>t.throughBedIds?.includes('spur stillwater')).map(t=>t.id).sort()).toEqual([...ids].sort());
     for(const id of ids){
@@ -85,9 +85,9 @@ describe('Mountain through-road source metadata',()=>{
       // The crossing still offers the joining board its deliberate dismount pace.
       expect(board.sample(p[0],p[2],surface.y)!.pace,id).toBe('threshold');
     }
-    const onlyFailedFootProof=buildThresholds(field,cuts,baked.crossingProofs.filter(p=>p.padId!==footId||p.id===higher.id));
+    const onlyFailedFootProof=buildThresholds(field,cuts,baked.crossingProofs!.filter(p=>p.padId!==footId||p.id===higher.id));
     expect(onlyFailedFootProof.find(t=>t.padId===footId)!.throughBedIds).not.toContain('spur stillwater');
-    const unproved=buildThresholds(field,cuts,baked.crossingProofs.map(p=>p.padId&&ids.includes(p.padId)?{...p,clearancePass:false}:p));
+    const unproved=buildThresholds(field,cuts,baked.crossingProofs!.map(p=>p.padId&&ids.includes(p.padId)?{...p,clearancePass:false}:p));
     expect(unproved.some(t=>t.throughBedIds?.includes('spur stillwater'))).toBe(false);
     // Unrelated pads retain exactly their previous through-route metadata.
     for(const t of world.thresholds.filter(t=>!ids.includes(t.id)))expect(unproved.find(q=>q.id===t.id)?.throughBedIds,t.id).toEqual(t.throughBedIds);

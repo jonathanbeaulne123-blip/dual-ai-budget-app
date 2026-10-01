@@ -1,3 +1,4 @@
+import type {SharedRoadProof} from '../mountainV2/sharedRoad';
 import type { BedCut, HeightQuery, LandCuts, StructureSolid, XY, XYZ } from '../interfaces';
 import { addFlatPad, emitBedGeometry } from './profiles';
 import { gradeRoute, type HeightPin } from './solver';
@@ -9,7 +10,7 @@ import { box, clamp, distance, districtAt, mix, nearestOnPath, plan, prism, slab
 export interface ComputedCrossing {
   id:string;a:string;b:string;sourceA?:string;sourceB?:string;at:XY;heightA:number;heightB:number;
   resolution:'threshold'|'over'|'under';requiredClearance:number;built?:boolean;clearancePass?:boolean;
-  kind?:string;
+  kind?:string;sharedSource?:SharedRoadProof;
 }
 // Junction cuts only remove geometry, so the original bounds remain conservative
 // for every later cut of this solid. Most walls are nowhere near a given join.
@@ -245,7 +246,7 @@ function alignSurfaceJoins(cuts:LandCuts,proofs:readonly ComputedCrossing[],base
     let c=contexts.get(b.id);if(c)return c;
     const arcs=[0];for(let i=1;i<b.points.length;i++)arcs.push(arcs[i-1]!+distance(plan(b.points[i-1]!),plan(b.points[i]!)));
     const pins:HeightPin[]=[{xy:plan(b.points[0]!),height:b.points[0]![1],reason:'fixed start'},{xy:plan(b.points.at(-1)!),height:b.points.at(-1)![1],reason:'fixed finish'}];
-    for(const row of proofs)if(row.resolution==='threshold'&&Math.abs(row.heightA-row.heightB)<=.5&&[row.sourceA??row.a,row.sourceB??row.b].includes(b.id))pins.push({xy:row.at,height:nearestOnPath(row.at,b.points).at[1],reason:'existing connected junction'});
+    for(const row of proofs)if(!row.sharedSource&&row.resolution==='threshold'&&Math.abs(row.heightA-row.heightB)<=.5&&[row.sourceA??row.a,row.sourceB??row.b].includes(b.id))pins.push({xy:row.at,height:nearestOnPath(row.at,b.points).at[1],reason:'existing connected junction'});
     b.points.forEach(p=>{if(b.terrainExclusions?.some(e=>distance(plan(p),e.at)<=e.radius))pins.push({xy:plan(p),height:p[1],reason:'structure profile'});});
     const upperStreet=cuts.pads.find(p=>p.id==='town.upperStreet');if(upperStreet)for(const p of b.points)if(Math.abs(p[0]-upperStreet.centre[0])<=upperStreet.size[0]/2+4&&Math.abs(p[2]-upperStreet.centre[2])<=upperStreet.size[1]/2+4&&Math.abs(p[1]-upperStreet.centre[1])<.01)pins.push({xy:plan(p),height:upperStreet.centre[1],reason:'fixed upper street floor'});
     // Keep the level Cottage landing when reconciling neighbouring crossings;
@@ -260,7 +261,7 @@ function alignSurfaceJoins(cuts:LandCuts,proofs:readonly ComputedCrossing[],base
     for(const pin of c.pins){const d=Math.abs(nearestOnPath(pin.xy,b.points).along-hit.along)*Math.min(.12,b.maxGrade);lo=Math.max(lo,pin.height-d);hi=Math.min(hi,pin.height+d);}
     return [lo,hi];
   };
-  for(const row of proofs.filter(p=>p.resolution==='threshold'&&Math.abs(p.heightA-p.heightB)>.01)){
+  for(const row of proofs.filter(p=>!p.sharedSource&&p.resolution==='threshold'&&Math.abs(p.heightA-p.heightB)>.01)){
     const a=routeFor(cuts,row.sourceA,row.a),b=routeFor(cuts,row.sourceB,row.b);if(!a||!b||![a,b].every(b=>['road','walk','trail','skate','boardwalk'].includes(b.kind)))continue;
     const ra=range(a,row.at),rb=range(b,row.at),lo=Math.max(ra[0],rb[0]),hi=Math.min(ra[1],rb[1]);if(lo>hi)continue;
     // The Year Walk on a shared stretch is its host's footway at the host's solved height: the other route meets it there.
@@ -296,7 +297,7 @@ function alignSurfaceJoins(cuts:LandCuts,proofs:readonly ComputedCrossing[],base
 function junctionAprons(cuts:LandCuts,proofs:readonly ComputedCrossing[],base:HeightQuery):void {
   const touched=new Set<BedCut>();
   for(const row of proofs){
-    if(row.resolution!=='threshold'||row.kind==='waterConfluence'||row.kind==='modeTransfer')continue;
+    if(row.sharedSource||row.resolution!=='threshold'||row.kind==='waterConfluence'||row.kind==='modeTransfer')continue;
     const a=routeFor(cuts,row.sourceA,row.a),b=routeFor(cuts,row.sourceB,row.b);if(!a||!b||a===b)continue;
     const [host,guest]=a.width>=b.width?[a,b]:[b,a];
     if(host.kind!=='road'||!['walk','trail'].includes(guest.kind)||guest.id==='yearWalk'||!guest.terrainCut)continue;
@@ -322,7 +323,8 @@ export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedC
   alignSurfaceJoins(cuts,proofs,base);
   junctionAprons(cuts,proofs,base);
   for(const row of proofs){
-    if(row.kind==='waterConfluence'||row.kind==='modeTransfer')continue;
+    // Same-source rows prove metadata ownership; neither polyline nor geometry moves.
+    if(row.sharedSource||row.kind==='waterConfluence'||row.kind==='modeTransfer')continue;
     // A pad can already exist while a regenerated bed still has a wall across it.
     // Every at-grade junction must cut its visible approach openings.
     const a=routeFor(cuts,row.sourceA,row.a),b=routeFor(cuts,row.sourceB,row.b),heightA=a?nearestOnPath(row.at,a.points).at[1]:row.heightA,heightB=b?nearestOnPath(row.at,b.points).at[1]:row.heightB,difference=Math.abs(heightA-heightB);

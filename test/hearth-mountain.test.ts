@@ -11,6 +11,7 @@ import {createBasinView,type BasinReading} from '../src/harbour/mountain/basin.t
 import {createSkateField} from '../src/harbour/skate/world/field.ts';
 import {groundHeightAt,TERRAIN_LATTICE_BOUNDS} from '../src/harbour/scene/ground.ts';
 import {islandHeight} from '../src/harbour/mountain/islandShape.ts';
+import {landingPointAt} from '../src/harbour/mountain/branchLandings.ts';
 import {createDetailStream} from '../src/harbour/mountain/streaming.ts';
 import {VILLAGE_SITES} from '../src/harbour/village/layout.ts';
 import type {Point3} from '../src/harbour/mountain/math.ts';
@@ -350,10 +351,15 @@ it('keeps the complete width of each optional branch supported, clear and inside
  for(const branch of SKILL_BRANCHES)for(let i=1;i<branch.points.length;i++){
   const a=branch.points[i-1]!,b=branch.points[i]!,dx=b[0]-a[0],dz=b[2]-a[2],l=Math.hypot(dx,dz)||1;
   for(let k=0;k<=4;k++)for(const side of [-.95,0,.95]){
-   const t=k/4,x=a[0]+dx*t+dz/l*branch.halfWidth*side,z=a[2]+dz*t-dx/l*branch.halfWidth*side,y=a[1]+(b[1]-a[1])*t;
+   const t=k/4,centreY=a[1]+(b[1]-a[1])*t;
+   // A repaired deck may taper or bank. Keep the same 95% edge stations and
+   // support/contact tolerances, sampled on its actual triangle width.
+   const point:Point3=branch.landingRows?landingPointAt(branch.landingRows,i,t,(side+1)/2):
+    [a[0]+dx*t+dz/l*branch.halfWidth*side,a[1]+(b[1]-a[1])*t,a[2]+dz*t-dx/l*branch.halfWidth*side];
+   const [x,y,z]=point;
    const surface=queryWorldSurface({x,z,y,supportId:branch.id},groundHeightAt);
    pushOutAll(x,z,y,.24,obstacles,[],out);
-   if(Math.abs(surface.y-y)>.3||out.id||!holdAshore(x,z).ashore)failures.push({branch:branch.id,i,x,y,z,surface:surface.y,solid:out.id});
+   if(Math.abs(surface.y-y)>.3||Math.abs(surface.y-centreY)>.3||out.id||!holdAshore(x,z).ashore)failures.push({branch:branch.id,i,x,y,z,centreY,surface:surface.y,solid:out.id});
   }
  }
  expect(failures.slice(0,8)).toEqual([]);

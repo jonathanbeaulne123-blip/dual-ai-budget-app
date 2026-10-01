@@ -15,9 +15,13 @@ import {buildLattice,groundMasks,paintGround,type GroundMasks,type Lattice} from
 import type {PlaceDressing} from '../../../scene/place.ts';
 import {paperGrain} from '../../../art/cardScene.ts';
 import {MOUNTAIN_V2_OFFSET as O} from './placement.ts';
+import {composeWalkingGround,composeGroundColors,paintWalkingGroundPatch,type GroundRender,type WalkingGroundPatch} from './walkingGroundPatch.ts';
 
 type Tier='full'|'lite';
-export type PreparedGround={lattice:Lattice;masks:GroundMasks;index:Uint32Array};
+export type PreparedGround={lattice:Lattice;masks:GroundMasks;index:Uint32Array;render:GroundRender;walkingPatch?:WalkingGroundPatch;patchMasks?:GroundMasks};
+// Private to each canonical patch generation. Native default masks remain in
+// groundPaint's existing cache; Horizon grids can never poison that cache.
+const patchMasksByMesh=new WeakMap<WalkingGroundPatch,GroundMasks>();
 /** Shared per tier when the footprint does not depend on a runtime's baked field (tests, tools). */
 const prepared=new Map<string,PreparedGround>();
 /** Hidden Horizon cell test at a Horizon point: the cell (of `step`) holding it has its centre inside `contains`. */
@@ -26,21 +30,28 @@ export function hiddenCell(contains:(hx:number,hz:number)=>boolean,step:number){
   return (hx:number,hz:number)=>{const c=Math.floor(hx/step),r=Math.floor(hz/step),k=r*65536+c;let v=memo.get(k);if(v===undefined){v=contains((c+.5)*step,(r+.5)*step);memo.set(k,v);}return v;};
 }
 /** The lattice, its masks (dressing-free) and the kept triangles, once per tier and footprint. */
-export function prepareRegionGround(tier:Tier,contains:(hx:number,hz:number)=>boolean,terrainStep:number,cache:Map<string,PreparedGround>=prepared,ceiling?:(hx:number,hz:number)=>number|null):PreparedGround{
-  const id=`${tier}:${terrainStep}${ceiling?':yield':''}`,hit=cache.get(id);if(hit)return hit;
+export function prepareRegionGround(tier:Tier,contains:(hx:number,hz:number)=>boolean,terrainStep:number,cache:Map<string,PreparedGround>=prepared,ceiling?:(hx:number,hz:number)=>number|null,walkingPatch?:WalkingGroundPatch):PreparedGround{
+  const id=`${tier}:${terrainStep}${ceiling?':yield':''}`,hit=cache.get(id);if(hit&&hit.walkingPatch===walkingPatch)return hit;
   // road (L1): the drawn ground stays under a yielded Horizon deck (its `ceiling`, Horizon heights): the lawn was drawn over V03.
   const height=ceiling?(x:number,z:number)=>{const g=groundHeightAt(x,z),c=ceiling(x+O.x,z+O.z);return c===null?g:Math.min(g,c-O.y);}:groundHeightAt;
-  const lattice=buildLattice(TERRAIN_LATTICE_BOUNDS,tier,height),masks=groundMasks(lattice,tier,height),p=lattice.positions,n=p.length/3;
+  const lattice=buildLattice(TERRAIN_LATTICE_BOUNDS,tier,height);
+  const masks=groundMasks(lattice,tier,height,new Map()),p=lattice.positions,n=p.length/3;
   const hidden=hiddenCell(contains,terrainStep),flag=new Uint8Array(n);
   for(let i=0;i<n;i++){const hx=p[i*3]!+O.x,hz=p[i*3+2]!+O.z;flag[i]=contains(hx,hz)||hidden(hx,hz)?1:0;}
   const kept:number[]=[];const ix=lattice.indices;
   for(let t=0;t<ix.length;t+=3){const a=ix[t]!,b=ix[t+1]!,c=ix[t+2]!;if(flag[a]||flag[b]||flag[c])kept.push(a,b,c);}
-  const result={lattice,masks,index:new Uint32Array(kept)};cache.set(id,result);return result;
+  const index=new Uint32Array(kept),render:GroundRender=walkingPatch?composeWalkingGround({positions:lattice.positions,indices:index},walkingPatch):{
+    positions:lattice.positions,indices:index,baseVertices:lattice.positions.length/3,patchVertices:0,recipes:[],patchIndexStart:index.length,patchIndexCount:0,seamTriangles:0,clippedBaseTriangles:0,boundaryGaps:[],maxBoundaryDrawnGap:0};
+  let patchMasks=walkingPatch?patchMasksByMesh.get(walkingPatch):undefined;
+  if(walkingPatch&&!patchMasks){patchMasks=groundMasks(walkingPatch.paintLattice,'full',walkingPatch.height,new Map());patchMasksByMesh.set(walkingPatch,patchMasks);}
+  const result={lattice,masks,index,render,walkingPatch,patchMasks};cache.set(id,result);return result;
 }
 export type RegionGround={mesh:THREE.Mesh;triangles:number;setDressing(d:PlaceDressing):void;dispose():void};
-export function buildRegionGround(tier:Tier,dressing:PlaceDressing,contains:(hx:number,hz:number)=>boolean,terrainStep:number,cache?:Map<string,PreparedGround>,ceiling?:(hx:number,hz:number)=>number|null):RegionGround{
-  const {lattice,masks,index}=prepareRegionGround(tier,contains,terrainStep,cache,ceiling),positions=lattice.positions,colors=new Float32Array(positions.length);
-  paintGround(colors,lattice,masks,dressing);
+export function buildRegionGround(tier:Tier,dressing:PlaceDressing,contains:(hx:number,hz:number)=>boolean,terrainStep:number,cache?:Map<string,PreparedGround>,ceiling?:(hx:number,hz:number)=>number|null,walkingPatch?:WalkingGroundPatch):RegionGround{
+  const {lattice,masks,render,patchMasks}=prepareRegionGround(tier,contains,terrainStep,cache,ceiling,walkingPatch),positions=render.positions,index=render.indices,colors=new Float32Array(positions.length);
+  const baseColors=new Float32Array(lattice.positions.length),patchColors=new Float32Array(walkingPatch?.lattice.positions.length??0),patchSourceColors=new Float32Array(walkingPatch?.paintLattice.positions.length??0);
+  const paint=(d:PlaceDressing)=>{paintGround(baseColors,lattice,masks,d);if(walkingPatch&&patchMasks){paintGround(patchSourceColors,walkingPatch.paintLattice,patchMasks,d);paintWalkingGroundPatch(patchColors,patchSourceColors,walkingPatch);}composeGroundColors(colors,baseColors,patchColors,render);};
+  paint(dressing);
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));
   geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));
@@ -52,6 +63,6 @@ export function buildRegionGround(tier:Tier,dressing:PlaceDressing,contains:(hx:
   const material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.95,flatShading:true,map:paperGrain()});
   const mesh=new THREE.Mesh(geometry,material);mesh.name='Mountain v2 ground';mesh.receiveShadow=true;mesh.castShadow=true;mesh.userData.ground=true;
   return {mesh,triangles:index.length/3,
-    setDressing(d){paintGround(colors,lattice,masks,d);geometry.getAttribute('color').needsUpdate=true;},
+    setDressing(d){paint(d);geometry.getAttribute('color').needsUpdate=true;},
     dispose(){mesh.removeFromParent();geometry.dispose();material.dispose();}};
 }

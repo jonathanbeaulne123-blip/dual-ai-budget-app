@@ -120,7 +120,7 @@ export async function placeHorizonRegions(assets:Pick<HorizonAssets,'world'|'fie
   try{
     const mod=await load(),field=assets.field;
     // PR #566 CodeRabbit: across the Foot terrace S1 runs on the Horizon's own slab — drawn under the region, answered by the Horizon.
-    return {region:mod.createMountainV2Region({horizonGround:(x,z)=>sampleTerrain(field,x,z),exclude:mod.mouthExclusion(assets.cuts.mouths),yield:mod.terraceBedExclusion(assets.cuts.beds),terrainStep:field.step}),dressing:mod.regionDressing};
+    return {region:mod.createMountainV2Region({horizonGround:(x,z)=>sampleTerrain(field,x,z),exclude:mod.mouthExclusion(assets.cuts.mouths),yield:mod.terraceBedExclusion(assets.cuts.beds),terrainStep:field.step,walkingJoinSolids:assets.cuts.solids}),dressing:mod.regionDressing};
   }catch(error){console.warn('Horizon: the Mountain v2 region did not load; the island runs without it.',error);return null;}
 }
 export async function mountHorizon(host:HTMLElement,options:HorizonOptions){
@@ -141,6 +141,9 @@ export async function mountHorizon(host:HTMLElement,options:HorizonOptions){
     await Promise.all([...ids].map(id=>loader.load(id,options.signal)));if(options.signal?.aborted)throw new DOMException('Aborted','AbortError');
   }
   const placed=await placing;if(options.signal?.aborted)throw new DOMException('Aborted','AbortError');
+  // Region creation races entry-chunk loading above. No scene exists yet; close
+  // that race before registering its providers or starting its first build.
+  placed?.region.refreshWalkingJoinSolids(assets.cuts.solids,()=>{});
   return createRuntime(host,assets,options,startedAt,placed);
 }
 function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOptions,startedAt:number,placed:HorizonPlacedRegion|null=null){
@@ -264,7 +267,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const seasonOf=(date:Date)=>{const month=date.getMonth()+1;return month<=2||month===12?'winter' as const:month<=5?'spring' as const:month<=8?'summer' as const:'autumn' as const;};
   let corridorArt:CorridorArt,corridorPlanting:CorridorPlanting,corridorSeason='',corridorNight=-1;
   function mountCorridor(date:Date){
-    corridorArt=createCorridorArt(world,{tier,theme,ground:(x,z)=>geography.ground(x,z)});
+    corridorArt=createCorridorArt(world,{tier,theme,ground:(x,z)=>geography.ground(x,z),externalLampHalos:true});
     corridorSeason=seasonOf(date);corridorNight=-1;
     corridorPlanting=createCorridorPlanting(world,{tier,theme,season:corridorSeason as ReturnType<typeof seasonOf>,month:date.getMonth()+1});
     scene.add(corridorArt.group,corridorPlanting.group);
@@ -274,8 +277,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   let bridgeArt=createBridgeArt(world,{tier,theme,material:fogHook,changed:()=>requestShadow('bridge-art')});scene.add(bridgeArt.group);
   mountCorridor(new Date());
   // The lanterns' heads as this theme's kit draws them (review minor 2: rebuilt with the kit on a theme change).
-  const makeRoadLights=()=>{const kitHeads=new Map(corridorArt.lampHeads().map(h=>[h.id,h.head] as const));
-    return createRoadLights(scene,{...world,lights:world.lights.map(a=>{const head=kitHeads.get(a.id);return head?{...a,head}:a;})},{tier,ground:(x,z,near)=>geography.surface(x,z,near+1,0)?.y??null,revision:()=>geography.indexStats.chunks});};
+  const makeRoadLights=()=>createRoadLights(scene,world,{tier,corridorAnchors:corridorArt.lampAnchors(),ground:(x,z,near)=>geography.surface(x,z,near+1,0)?.y??null,revision:()=>geography.indexStats.chunks});
   let roadLights=makeRoadLights();
   const lightAt:[number,number,number]=[0,0,0],lightFrame:{at?:readonly [number,number,number];hidden:boolean}={hidden:false};
   // The seven windows (LIGHT §3): each host's doorway is a lit card from dusk, one instanced draw.
@@ -353,7 +355,14 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   // Wave 6: cables span by span with their anchors (runtime/cableLayer.ts), rebuilt as chunks land.
   const cableLayer=createCableLayer(world,tier,id=>!chunks||chunks.ready(id),xy=>gate?gate.near(xy[0],xy[1],6):[districtAt(xy[0],xy[1])],build=>{for(const material of Object.values(build.materials))fogHook(material);});
   cableLayer.rebuild();scene.add(cableLayer.group);
-  const offChunk=chunks?.onLoad((_id,solids)=>{if(!disposed){for(const solid of solids)solidsById.set(solid.id,solid);geography.addSolids(solids);cableLayer.rebuild();residencyRevision=-1;requestShadow('chunk-load');if(resnap&&mode==='walk'&&gate){const at=holdPoint();if(!gate.missingAt(at[0],at[1]).length){resnap=false;reseat();}}}});
+  const offChunk=chunks?.onLoad((_id,solids)=>{if(!disposed){
+    // The town apron can arrive after the Mountain scene is already drawn. Its
+    // new ground cut and path paint require the same visible generation as its
+    // provider: cancel/dispose first, then rebuild through updateRegion's gate.
+    placed?.region.refreshWalkingJoinSolids(cuts.solids,releaseRegion);
+    for(const solid of solids)solidsById.set(solid.id,solid);geography.addSolids(solids);cableLayer.rebuild();residencyRevision=-1;requestShadow('chunk-load');
+    if(resnap&&mode==='walk'&&gate){const at=holdPoint();if(!gate.missingAt(at[0],at[1]).length){resnap=false;reseat();}}
+  }});
   /** The gate: resident (true) or held (false). Bytes already fetched are parsed now; the review simulation may block.
    *  PR #566 Codex: inside the placed region, also held until its scene is drawn (its decks and solids answer only then). */
   function gateOpen(x:number,z:number):boolean{return chunkGateOpen(x,z)&&regionReady(x,z);}
@@ -1084,6 +1093,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     /** Review: set the world clock (as `setDate`); null returns to the device clock / `?sun=`. */
     setClock(date:Date|null){if(date)api.setDate(date);else{currentTime=null;lastSun=-Infinity;schedule();}},
     bridgeArt:()=>bridgeArt.stats(),roadLights:()=>roadLights.stats(),
+    /** Read-only capture readiness: settle() alone does not drive deferred corridor builders. */
+    corridorRenderStatus:()=>({building:corridorArt.building(),furniture:corridorArt.stats(),planting:corridorPlanting.stats()}),
     /** Pass 5: the placed Mountain v2 region (null when not placed). T3's rides move its cabins through `setTransit`. */
     mountainRegion:placed?{region:placed.region,scene:()=>regionScene,visible:()=>regionVisible,
       setTransit(cabin:{at:XYZ;yaw:number;pitch:number}|null,kind:'gondola'|'funicular'){regionTransit={cabin,kind};regionScene?.setTransit(cabin,kind);}}:null,

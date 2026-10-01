@@ -87,12 +87,15 @@ export function buildBridges(bridges: readonly BridgePlan[], surface: Pick<LandS
   // Painter's order across ALL bridges: shadows, then piers, then sides, then tops, then rails.
   const layers: Record<Role, (() => void)[]> = { shadow: [], pier: [], under: [], side: [], top: [], rail: [] };
   for (const b of bridges) {
-    const frames = b.plan.map((_, i) => frameAt(b, i));
+    // Decimate the visible mesh only. Retained sections keep their ORIGINAL source
+    // frame and width; the pier loop below still uses the full plan/arc/top arrays.
+    const draw = b.drawIndices ?? b.plan.map((_, i) => i);
+    const frames = draw.map(i => frameAt(b, i));
     const edge = (i: number, s: 1 | -1, inset = 0): Point2 => {
       const f = frames[i]!, r = (b.half - inset) * f.miter * s;
       return [f.p[0] + f.n[0] * r, f.p[1] + f.n[1] * r];
     };
-    const top = (i: number) => b.tops[i]!;
+    const top = (i: number) => b.tops[draw[i]!]!;
     // The shadow: the deck's plan outline pushed down-sun by its height over the surface, laid on that surface.
     layers.shadow.push(() => {
       const ids: number[][] = [];

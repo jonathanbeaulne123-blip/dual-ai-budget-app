@@ -1,3 +1,4 @@
+import {capOrchardGroundLattice} from '../mountain/orchardJunction.ts';
 /**
  * The terrain's render lattice and its painting (vertex colours only; heights are
  * `groundHeightAt`'s, untouched).
@@ -41,6 +42,7 @@ export function buildLattice(bounds:{minX:number;maxX:number;minZ:number;maxZ:nu
     if(ad<=bc){indices[k++]=a;indices[k++]=c;indices[k++]=d;indices[k++]=a;indices[k++]=d;indices[k++]=b;}
     else{indices[k++]=a;indices[k++]=c;indices[k++]=b;indices[k++]=b;indices[k++]=c;indices[k++]=d;}
   }
+  capOrchardGroundLattice({positions,indices});
   return {positions,indices,cols,rows,xs,zs};
 }
 
@@ -83,8 +85,8 @@ function stamp(field:Float32Array,L:Lattice,points:readonly Point3[],halfWidth:n
 }
 
 const maskCache=new Map<RenderTier,GroundMasks>();
-export function groundMasks(L:Lattice,tier:RenderTier,height:(x:number,z:number)=>number):GroundMasks{
-  const cached=maskCache.get(tier);if(cached)return cached;
+export function groundMasks(L:Lattice,tier:RenderTier,height:(x:number,z:number)=>number,cache:Map<RenderTier,GroundMasks>=maskCache):GroundMasks{
+  const cached=cache.get(tier);if(cached)return cached;
   const n=L.positions.length/3,P=L.positions,F=()=>new Float32Array(n);
   const m:GroundMasks={n,slope:F(),nx:F(),ny:F(),nz:F(),cavity:F(),sun:F(),road:F().fill(99),path:F().fill(99),river:F().fill(99),scree:F(),
     biome:Object.fromEntries(BIOMES.map(b=>[b,F()])) as Record<Biome,Float32Array>,mountain:F(),bowl:F(),grain:F()};
@@ -123,7 +125,7 @@ export function groundMasks(L:Lattice,tier:RenderTier,height:(x:number,z:number)
   for(const e of PATH_EDGES)if(e.kind==='path'||e.kind==='stair')stamp(m.path,L,e.points,e.halfWidth,2.5,onGround);
   const dense:Point3[]=[];for(let i=1;i<RIVER.length;i++){const a=RIVER[i-1]!,b=RIVER[i]!,k=Math.ceil(Math.hypot(b[0]-a[0],b[2]-a[2])/2);for(let j=0;j<k;j++){const t=j/k;dense.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t]);}}
   dense.push(RIVER[RIVER.length-1]!);stamp(m.river,L,dense,RIVER_HALF_WIDTH,6);
-  maskCache.set(tier,m);return m;
+  cache.set(tier,m);return m;
 }
 
 type Col=[number,number,number];

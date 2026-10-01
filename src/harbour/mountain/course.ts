@@ -10,6 +10,7 @@ import {roadTagS} from './roadLine.ts';
 import {islandHeight} from './islandShape.ts';
 import {DAM,GEOGRAPHY_REVISION,MOUNTAIN_VERSION,RIVER} from './places.ts';
 import {arcLengths,authorCurve,mix,type Point3} from './math.ts';
+import {repairDamEntry} from './damEntry.ts';
 import {repairBranchLanding,type LandingRows} from './branchLandings.ts';
 import libraryLanding from './generated/library-landing.json';
 import awningLanding from './generated/awning-landing.json';
@@ -60,6 +61,9 @@ const townIndex=(x:number,z:number)=>{let best=roadCount,d=Infinity;for(let i=ro
 
 // ——— Skill branches ————————————————————————————————————————————————————————————
 export type BranchSegment={kind:'ramp'|'deck'|'rail'|'landing';points:readonly Point3[];landingRows?:LandingRows};
+/** `halfWidth` is the conservative authored envelope used by keep-outs and broad
+ * queries. With landingRows, local width/crossfall is defined by those rows:
+ * landingPointAt / landingHalfWidthAt describe the same triangles as art and floor. */
 export type SkillBranch={id:string;name:string;kind:'rail'|'balcony'|'awning';entry:number;exit:number;halfWidth:number;material:'wood'|'metal';
   points:readonly Point3[];segments:readonly BranchSegment[];branchLength:number;roadLength:number;landingRows?:LandingRows};
 function branch(id:string,name:string,kind:SkillBranch['kind'],material:'wood'|'metal',halfWidth:number,entry:number,exit:number,
@@ -85,7 +89,7 @@ function branch(id:string,name:string,kind:SkillBranch['kind'],material:'wood'|'
   const authoredLanding=repaired?repairBranchLanding(raw,halfWidth,MOUNTAIN_ROAD_LINE.samples,id==='library-balcony'?.36:.39):undefined;
   // The generator replaces this JSON import with null while reading the authored input.
   const generated=libraryLanding as unknown as {points:Point3[];rows:LandingRows}|null;
-  const landing=id==='library-balcony'&&generated?generated:authoredLanding,rows=landing?.rows;
+  const landing=id==='library-balcony'&&generated?generated:id==='dam-promenade'&&authoredLanding?repairDamEntry(authoredLanding,MOUNTAIN_ROAD_LINE.samples):authoredLanding,rows=landing?.rows;
   if(landing)for(let i=1;i<pts.length-1;i++)pts[i]=landing.points[i]!;
   // Segment boundaries at the authored via points.
   const segments:BranchSegment[]=[];let cursor=0;
@@ -123,8 +127,8 @@ export const SKILL_BRANCHES:readonly SkillBranch[]=[
     {kind:'ramp',via:[[36.6,14.4,-86.4]]},
   ]),
 ].map(br=>{
-  // The original branch remains the generator input. The shared product preserves its first
-  // nine rows (entry and grind rail) and replaces only the contour return and arrival.
+  // The original branch remains the generator input. The approved shared product conforms
+  // entry rows 0–4, preserves the first grind rail at rows 5–8, and replaces the return/arrival.
   const generated=awningLanding as unknown as {points:Point3[];rows:LandingRows;exit:number}|null;
   if(br.id!=='hearth-awning'||!generated)return br;
   const {points,rows,exit}=generated;
@@ -176,8 +180,9 @@ export function crossesRaceGate(from:Point3,to:Point3,gate:RaceGate):boolean{
   const t=-a/(b-a),x=from[0]+(to[0]-from[0])*t-gate.at[0],z=from[2]+(to[2]-from[2])*t-gate.at[2],y=from[1]+(to[1]-from[1])*t;
   return Math.abs(x*nz-z*nx)<=gate.halfWidth&&Math.abs(y-gate.at[1])<=gate.halfHeight;
 }
-// Road and shortcut geometry participate even when a gate itself did not move.
-const courseGeometry=JSON.stringify([MOUNTAIN_VERSION,GEOGRAPHY_REVISION,MOUNTAIN_COURSE_POINTS,SKILL_BRANCHES.map(b=>[b.id,b.entry,b.exit,b.halfWidth,b.points])]);
+// Road footprints and shortcut geometry participate even when no gate moves. A
+// transverse-frame repair changes physical driving and must invalidate saved race times.
+const courseGeometry=JSON.stringify([MOUNTAIN_VERSION,GEOGRAPHY_REVISION,MOUNTAIN_COURSE_POINTS,MOUNTAIN_ROAD_LINE.samples.map(s=>[s.at,s.normal,s.halfWidth]),SKILL_BRANCHES.map(b=>[b.id,b.entry,b.exit,b.halfWidth,b.points,b.landingRows??null])]);
 let courseHash=2166136261;for(let i=0;i<courseGeometry.length;i++)courseHash=Math.imul(courseHash^courseGeometry.charCodeAt(i),16777619);
 export const MOUNTAIN_RACE_REVISION=`${MOUNTAIN_VERSION}-${(courseHash>>>0).toString(16)}`;
 export const MOUNTAIN_RACE={id:'mountain-descent',name:'Summit to sea',detail:'Summit start, alpine bends, the dam, the meadows, the woodland bridge, the Library, the switchbacks, the canal and the quay · aim for 60–120 seconds',revision:MOUNTAIN_RACE_REVISION,seconds:[75,95,120] as const,points:MOUNTAIN_GATES.map(g=>[g.at[0],g.at[2]] as const),gates:MOUNTAIN_GATES};

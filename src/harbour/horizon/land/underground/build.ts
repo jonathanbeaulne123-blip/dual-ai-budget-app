@@ -6,65 +6,10 @@ import { sampleSpline } from '../beds/solver';
 import { buildStair, tunnel } from '../structures/build';
 import { box, clamp, distance, mix, nearestOnPath, pathLength, plan, prism, slab, solid } from '../structures/mesh';
 
+import {oreStationApron,openOreRoadJunction,orePortalFrame,orePortalLintelRise} from './oreRoad';
+
 export const ROOM_DIMENSIONS:Record<string,{size:XY;floor:number;clear:number}>={lanternCave:{size:[46,32],floor:42,clear:18},deep:{size:[64,60],floor:38,clear:30},bellGallery:{size:[30,26],floor:90,clear:15},sealedDrift:{size:[26,18],floor:42,clear:8}};
-/** The train end stays at its authored level; the road edge shares the road's grade. */
-export function oreStationFloor(cuts:LandCuts,x:number,z:number,height:number):number{
-  const road=cuts.beds.find(b=>b.id==='mountainV2.road');if(!road)return height;
-  const hit=nearestOnPath([x,z],road.points),t=clamp((hit.distance-road.width/2-.4)/2,0,1);
-  return mix(hit.at[1],height,t*t*(3-2*t));
-}
-/** The station stays level at the train; its road-side apron follows the through road.
-
- * A single tessellated solid supplies the visible floor, underside and body collision. */
-export function oreStationApron(cuts:LandCuts,p:XY,height:number):void{
-  const road=cuts.beds.find(b=>b.id==='mountainV2.road');if(!road)return;
-  const id='oreStation.southPortal.slab',apron=solid(id,'pad','stone','floor',[],'crown');
-  const top=(x:number,z:number):XYZ=>[x,oreStationFloor(cuts,x,z,height),z];
-  for(let x=p[0]-5;x<p[0]+5-.01;x+=.5)for(let z=p[1]-3;z<p[1]+3-.01;z+=.5){
-    const corners=[top(x,z),top(x,z+.5),top(x+.5,z+.5),top(x+.5,z)];prism(apron,corners,corners.map(q=>q[1]-.35));
-  }
-  cuts.solids=cuts.solids.map(s=>s.id===id?apron:s);
-}
-
-/** End the Ore Line lining at the carriageway, including body clearance on its edges.
- * The opening is cut from the actual mesh, so drawing and collision keep the same boundary. */
-export function openOreRoadJunction(cuts:LandCuts):void{
-  const road=cuts.beds.find(b=>b.id==='mountainV2.road'),wall=cuts.solids.find(s=>s.id==='oreTunnel.walls');
-  if(!road||!wall)return;
-  const out={...wall,positions:[] as number[],indices:[] as number[]};
-  const lerp=(a:XYZ,b:XYZ,t:number):XYZ=>[mix(a[0],b[0],t),mix(a[1],b[1],t),mix(a[2],b[2],t)];
-  for(let o=0;o<wall.positions.length;o+=24){
-    const v=Array.from({length:8},(_,i):XYZ=>[wall.positions[o+i*3]!,wall.positions[o+i*3+1]!,wall.positions[o+i*3+2]!]);
-    const count=Math.max(1,Math.ceil(distance(plan(v[4]!),plan(v[7]!))/.25));
-    let start:number|null=null;
-    for(let k=0;k<=count;k++){
-      const t=(k+.5)/count,q=lerp(v[4]!,v[7]!,t),hit=nearestOnPath(plan(q),road.points);
-      const open=k<count&&hit.distance<road.width/2+1&&q[1]>hit.at[1]+.2&&v[0]![1]<hit.at[1]+3.2;
-      if(k<count&&!open&&start===null)start=k/count;
-      if((open||k===count)&&start!==null){
-        const end=k/count;
-        prism(out,[lerp(v[4]!,v[7]!,start),lerp(v[5]!,v[6]!,start),lerp(v[5]!,v[6]!,end),lerp(v[4]!,v[7]!,end)],
-          [mix(v[0]![1],v[3]![1],start),mix(v[1]![1],v[2]![1],start),mix(v[1]![1],v[2]![1],end),mix(v[0]![1],v[3]![1],end)]);
-        start=null;
-      }
-    }
-  }
-  wall.positions=out.positions;wall.indices=out.indices;
-}
-
-/** Seat the south doorway on the rail approach before it enters the road's clear width. */
-export function orePortalFrame(cuts:LandCuts,ore:readonly XYZ[]):{at:XYZ;normal:XY}{
-  const road=cuts.beds.find(b=>b.id==='mountainV2.road')!;
-  for(let i=ore.length-1;i>0;i--){
-    const a=ore[i]!,b=ore[i-1]!,l=distance(plan(a),plan(b));
-    for(let d=0;d<=l;d+=.25){
-      const t=d/l,p:XYZ=[mix(a[0],b[0],t),mix(a[1],b[1],t),mix(a[2],b[2],t)];
-      if(nearestOnPath(plan(p),road.points).distance>road.width/2+3)
-        return{at:p,normal:[-(a[2]-b[2])/l,(a[0]-b[0])/l]};
-    }
-  }
-  throw new Error('Ore portal has no frame position clear of the Mountain Road');
-}
+export {oreStationFloor,oreStationApron,openOreRoadJunction,orePortalFrame} from './oreRoad';
 
 /** A passage lining stops at the chamber volume; room walls open only where a passage actually meets them. */
 function openRoomConnections(cuts:LandCuts):void {
@@ -225,10 +170,10 @@ export function buildUnderground(cuts:LandCuts,base:HeightQuery):void {
       addFlatPad(cuts,`oreStation.${id}`,'landing',p,door.h,[10,6],0,true);
       if(id==='southPortal')oreStationApron(cuts,p,door.h);
       const placement=id==='southPortal'?orePortalFrame(cuts,ore):{at:[p[0],door.h,p[1]] as XYZ,normal:[1,0] as XY};
-      const q=placement.at,n=placement.normal,rotation=Math.atan2(n[1],n[0])*180/Math.PI;
+      const q=placement.at,n=placement.normal,rotation=Math.atan2(n[1],n[0])*180/Math.PI,lintelRise=id==='southPortal'?orePortalLintelRise(cuts,ore):0;
       const frame=solid(`${id}.portal.frame`,'portal','timber','wall',['ORE'],'crown');
       for(const side of [-1,1])box(frame,[q[0]+n[0]*side*2.2,q[2]+n[1]*side*2.2],q[1]+3.8,[.5,1],q[1]-.1,rotation);
-      box(frame,plan(q),q[1]+3.8,[4.9,1],q[1]+3.2,rotation);cuts.solids.push(frame);
+      box(frame,plan(q),q[1]+3.8+lintelRise,[4.9,1],q[1]+3.2+lintelRise,rotation);cuts.solids.push(frame);
     }
   }
   // v2.6 (D-M4/D-M7): Crown Road's turning circle is gone; the portal opens onto Mountain v2's road (its lower switchback leg), so
@@ -236,7 +181,7 @@ export function buildUnderground(cuts:LandCuts,base:HeightQuery):void {
   {const road=cuts.beds.find(b=>b.id==='mountainV2.road'),p=portal.xy as unknown as XY,at=road?nearestOnPath(p,road.points).at:undefined;
     const link=bed('southPortal.link','walk',at&&distance(plan(at),p)>1?[[p[0],portal.h,p[1]],[at[0],at[1],at[2]]]:[[p[0],portal.h,p[1]],[p[0]+10,portal.h,p[1]+5]]);regionCarryLand(link);cuts.beds.push(link);}
   openRoomConnections(cuts);
-  openOreRoadJunction(cuts);
+  openOreRoadJunction(cuts,base);
   deepInterior(cuts);
   // Ignore only the named entrance neighbourhoods when measuring roof cover.
   let low=Infinity,lowAt:XY=[0,0];

@@ -5,12 +5,13 @@
  * front, a pencil line on the lip — so a cliff reads as strata in a hand-built model rather
  * than one smooth faceted sheet. Pure placement data (`mountainStrata`) plus a card drawing.
  *
- * The ledges never touch a road, lane, path, stair, platform, plot or the dam (`plantingClearance`);
+ * The ledges retain their authored route keepouts (`authoredSceneryClearance`);
+ * new landing overlaps are checked against the emitted ledges, not a widened XY exclusion.
  * they do line the reservoir bowl's walls, where they read as the water's level marks. They stand
  * only on faces a body cannot climb, and do not collide.
  */
 import {mountainBaseHeight} from '../definition.ts';
-import {plantingClearance} from '../planting.ts';
+import {authoredSceneryClearance} from '../planting.ts';
 import {CardBuilder,shade,mix,inkLift,type V3} from '../../art/cardScene.ts';
 import {hash2} from '../../art/cardKit.ts';
 import type {MountainArtPalette} from './palette.ts';
@@ -49,7 +50,7 @@ export function mountainStrata(tier:'full'|'lite'):readonly Ledge[]{
     const cx=X(i+.5),cz=Z(j+.5),[gx,gz]=gradient(cx,cz),g=Math.hypot(gx,gz);
     if(g<STRATA_GRADE)continue;
     if(mountainBaseHeight(cx+gx/g*6,cz+gz/g*6)-mountainBaseHeight(cx-gx/g*6,cz-gz/g*6)<STRATA_FALL)continue;
-    if(plantingClearance(cx,cz,{bowl:false})<2.5)continue;
+    if(authoredSceneryClearance(cx,cz,{bowl:false})<2.5)continue;
     const dir:[number,number]=[-gx/g,-gz/g];
     for(let k=Math.ceil(lo/interval);k*interval<hi;k++){
       const y=k*interval,pts:[number,number][]=[];
@@ -59,7 +60,7 @@ export function mountainStrata(tier:'full'|'lite'):readonly Ledge[]{
       for(let n=0;n+1<pts.length;n+=2){const a=onContour(pts[n]!,y),b=onContour(pts[n+1]!,y);if(Math.hypot(b[0]-a[0],b[1]-a[1])<.05)continue;
         // Drop a ledge that would not sit on the face (a crease or a sheer step the contour cannot follow).
         if(Math.abs(mountainBaseHeight(a[0],a[1])-y)>.3||Math.abs(mountainBaseHeight(b[0],b[1])-y)>.3||Math.abs(mountainBaseHeight((a[0]+b[0])/2,(a[1]+b[1])/2)-y)/g>.45)continue;
-        if(Math.hypot(a[0]-cx,a[1]-cz)>step*1.5||Math.hypot(b[0]-cx,b[1]-cz)>step*1.5||plantingClearance((a[0]+b[0])/2,(a[1]+b[1])/2,{bowl:false})<2)continue;
+        if(Math.hypot(a[0]-cx,a[1]-cz)>step*1.5||Math.hypot(b[0]-cx,b[1]-cz)>step*1.5||authoredSceneryClearance((a[0]+b[0])/2,(a[1]+b[1])/2,{bowl:false})<2)continue;
         out.push({a,b,y,out:dir,lip:.42+hash2(i*3+k,j*5)*.3,grade:g});}
     }
   }

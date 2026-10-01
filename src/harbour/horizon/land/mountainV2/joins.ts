@@ -1,22 +1,12 @@
 /** Horizon's local joins to the carried mountain. Native terrain, road and landmarks are never rewritten. */
-import V2 from './v2-data.json';
 import type {HeightQuery,LandCuts,StructureSolid,XYZ} from '../interfaces';
-import {drawnRoadFloor} from '../../regions/mountainV2/drawnRoadFloor';
-import {drawnRoadGroundCeiling} from '../../regions/mountainV2/drawnRoadGround';
 import {v2GroundAt} from './ground';
 import {box,mitredSlab,nearestOnPath,prism,slab,solid} from '../structures/mesh';
 import {pier} from '../structures/foundations';
 
-// Read every source RoadSample, including its actual transverse frame. Rebuilding
-// a normal from the centreline would lose any authored frame fairing at a bend.
-const samples=V2.road.samples;
-const roadRows=samples.map(s=>[-s.hw,-s.hw+.55,-.45,.45,s.hw-.55,s.hw].map(w=>
-  [s.at[0]!+s.normal[0]!*w,s.at[1]!,s.at[2]!+s.normal[2]!*w] as [number,number,number]));
-const roadFloor=drawnRoadFloor(roadRows);
-const roadPoints=samples.map(s=>s.at as [number,number,number]);
-const roadGroundCeiling=drawnRoadGroundCeiling({id:'mountain-road',kind:'road',points:roadPoints,walkable:true,halfWidth:Math.max(...samples.map(s=>s.hw)),widths:samples.map(s=>s.hw),landingRows:roadRows,material:'path'});
-/** Offline source-derived road top, in Horizon coordinates. */
-export const mountainJoinRoadTop=(x:number,z:number,ceiling=Infinity):number|null=>roadFloor(x,z,ceiling)?.y??null;
+import {mountainRoadSource} from './roadSource';
+export {mountainJoinRoadTop} from './roadSource';
+const {samples,points:roadPoints,floor:roadFloor,groundCeiling:roadGroundCeiling}=mountainRoadSource();
 
 /** A painted offer footprint needs no second floor over the region's graded road. */
 function summitThreshold(cuts:LandCuts):void {
@@ -163,7 +153,7 @@ function crownStairLanding(cuts:LandCuts,base:HeightQuery):void {
   // freshly calculated turn miter must not widen a protected stair footprint.
   const template=solid('crown.stair.plan','bed','stone','deck');
   mitredSlab(template,bed.points,1,bed.width,.35);mitredSlab(template,bed.points,2,bed.width,.35);slab(template,head,foot,bed.width,.35);
-  const footprints:XYZ[][]=[];for(let k=0;k<template.positions.length;k+=24)footprints.push([4,5,6,7].map(v=>template.positions.slice(k+v*3,k+v*3+3) as XYZ));
+  const footprints:XYZ[][]=[];for(let k=0;k<template.positions.length;k+=24)footprints.push([4,5,6,7].map((v):XYZ=>[template.positions[k+v*3]!,template.positions[k+v*3+1]!,template.positions[k+v*3+2]!]));
   const inPlan=(x:number,z:number)=>footprints.some(poly=>poly.every((p,i)=>{const q=poly[(i+1)%4]!;return(q[0]-p[0])*(z-p[2])-(q[2]-p[2])*(x-p[0])<=1e-7;}));
   const out=solid('crownLaunch.stair.landing','landing','stone','deck',[bed.id],'crown');
   const rows:XYZ[][]=[],across=6;
@@ -192,13 +182,33 @@ function crownStairLanding(cuts:LandCuts,base:HeightQuery):void {
   // A new raised landing has its own visible guard, joined to the existing
   // flight rail. Its narrow posts stay at the edge, outside the walking width.
   const rail=solid('crownLaunch.stair.landingRails','handrail','metal','rail',[bed.id],'crown');
+  const receivingWalk=cuts.beds.find(b=>b.id==='walk summit');
+  // The existing full-width walk is the landing entrance, not a guarded edge.
+  // The post half-diagonal plus 1cm clears the full-width walk at any heading;
+  // every retained segment keeps
+  // the same top rail and the same solid 0.25–0.95m body-contact band.
+  const gap=(p:XYZ)=>receivingWalk?nearestOnPath([p[0],p[2]],receivingWalk.points).distance-receivingWalk.width/2-Math.SQRT2*.06-.01:Infinity;
+  const mix=(a:XYZ,b:XYZ,t:number):XYZ=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
+  const openingEdge=(a:XYZ,b:XYZ):XYZ=>{
+    let lo=0,hi=1;const aInside=gap(a)<=0;
+    for(let i=0;i<40;i++){const mid=(lo+hi)/2;if((gap(mix(a,b,mid))<=0)===aInside)lo=mid;else hi=mid;}
+    return mix(a,b,(lo+hi)/2);
+  };
   for(const side of [0,across]){
     let lastPost=-Infinity;
     for(let r=1;r<rows.length;r++){
-      const a=rows[r-1]![side]!,b=rows[r]![side]!;slab(rail,a,b,.09,.09,0,1.05);slab(rail,a,b,.08,.7,0,.95);
+      let a=rows[r-1]![side]!,b=rows[r]![side]!;const ga=gap(a),gb=gap(b);
+      if(ga<=0&&gb<=0){lastPost=-Infinity;continue;}
+      // This authored junction crosses each short rail segment at most once.
+      // Fail closed after a future route/landing change rather than silently
+      // spanning a second opening or dropping a guard farther up the flight.
+      if(ga>0&&gb>0&&gap(mix(a,b,.5))<=0)throw new Error('Crown landing walk opening needs a new rail subdivision');
+      const startOpening=ga<=0,endOpening=gb<=0;
+      if(startOpening)a=openingEdge(a,b);else if(endOpening)b=openingEdge(a,b);
+      slab(rail,a,b,.09,.09,0,1.05);slab(rail,a,b,.08,.7,0,.95);
       const along=Math.hypot(a[0]-join[0],a[2]-join[2]);
-      if(r===1||along-lastPost>=1.75){box(rail,[a[0],a[2]],a[1]+1.05,[.12,.12],a[1]-.1);lastPost=along;}
-      if(r===rows.length-1)box(rail,[b[0],b[2]],b[1]+1.05,[.12,.12],b[1]-.1);
+      if(r===1||startOpening||along-lastPost>=1.75){box(rail,[a[0],a[2]],a[1]+1.05,[.12,.12],a[1]-.1);lastPost=along;}
+      if(r===rows.length-1||endOpening)box(rail,[b[0],b[2]],b[1]+1.05,[.12,.12],b[1]-.1);
     }
   }
   cuts.solids.push(rail);

@@ -129,6 +129,8 @@ export interface Corridor {
   markings: MarkingRun[];
   guards: GuardRun[];
   lamps: LampSpot[];
+  /** IDs retained on lite; other whole lamps are omitted. Retained lamps keep their authored shape. */
+  liteLampIds?: string[];
   planting: PlantingGroup[];
   stops: ScenicStop[];
   /** Furniture/map adapter over a source-owned road; no second deck or guard is emitted. */

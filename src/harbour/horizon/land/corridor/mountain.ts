@@ -1,12 +1,17 @@
 /** D-MR: furniture and map over the region-owned road. Never a second road or guard mesh. */
 import V2 from '../mountainV2/v2-data.json';
 import type {Point2,Point3} from '../../world/definition';
-import type {Corridor,CorridorReach,CorridorSide,CorridorStation,GuardKind,ScenicStop} from './types';
-import type {CorridorEnv} from './stations';
-import {planCorridor,type PlanEnv} from './plan';
+import type {Corridor,CorridorReach,CorridorSide,CorridorStation,GuardKind} from './types';
+import {createCorridorEnv,type CorridorEnv} from './stations';
+import {planCorridor,LAMP,type PlanEnv} from './plan';
+import {roadLampFootClear,selectSupportedRoadLampSetback} from './plan/lampFootprint';
 import {nearestOnPath} from '../structures/mesh';
 import {nativeOccupied,nativeWaterLevel,nativeWalks} from '../mountainV2/planning';
+import {Frame} from './plan/frame';
+import {selectLiteLamps} from './lights';
 import {nativeScenicStops} from './nativeStops';
+import {stopLayout} from '../../kit/road/stops';
+import {CORRIDOR} from './types';
 
 const SOURCE=V2.road.frames;
 const r=(n:number)=>Math.round(n*1e6)/1e6;
@@ -28,9 +33,16 @@ function frame(s:number){
  * reserved plots and edge runs join the ordinary bed/solid inventory; no false empty native lawn. */
 export function mountainPlanEnvironment(env:CorridorEnv,destinations:NonNullable<PlanEnv['destinations']>):PlanEnv{
   const setbackCache=new Map<string,number|undefined>();
-  const E:PlanEnv={lampSetback:(s,side)=>{const key=`${r(s)}:${side}`;if(!setbackCache.has(key)){const f=frame(s);setbackCache.set(key,lampSetback(env,E,f.at,f.tangent,f.half,side==='left'?-1:1));}return setbackCache.get(key);},ground:env.ground,water:(x,z)=>env.wet(x,z)||nativeWaterLevel(x,z,env.ground)!==null,seed:'mountain-road:1',giveWayAt:[],destinations,
+  let offRoad:CorridorEnv|undefined;
+  const E:PlanEnv={lampSetback:(s,side,sites)=>{const key=`${r(s)}:${side}`;if(!setbackCache.has(key))setbackCache.set(key,selectSupportedRoadLampSetback(sites,E,LAMP.maxStep));return setbackCache.get(key);},ground:env.ground,water:(x,z)=>env.wet(x,z)||nativeWaterLevel(x,z,env.ground)!==null,seed:'mountain-road:1',giveWayAt:[],destinations,
     walks:[...env.cuts.beds.filter(b=>['walk','trail','boardwalk'].includes(b.kind)).map(b=>({id:b.id,points:b.points})),...nativeWalks],
     occupied:(x,z,radius=0,height=6)=>env.occupied(x,z)||nativeOccupied(x,z,env.ground,radius,height),
+    lampMountAllowed:lamp=>{
+      // A masonry mount may meet only its own road. Year Walk, S1, other beds,
+      // pads and solids retain their existing occupancy widths and checks.
+      offRoad??=createCorridorEnv({...env.cuts,beds:env.cuts.beds.filter(b=>b.id!=='mountainV2.road')},env.ground);
+      return roadLampFootClear(lamp,{water:E.water,occupied:(x,z)=>offRoad!.occupied(x,z)||nativeOccupied(x,z,()=>lamp.at[1],0,6,'mountain-road')});
+    },
   };
   return E;
 }
@@ -50,19 +62,13 @@ export function mountainBendTargets(){
     return[{id:`mountain-bend-${i}`,s:apex.s,from:g[0]!.s,to:g.at(-1)!.s,turn,at:[apex.at[0]!,apex.at[2]!] as Point2}];
   });
 }
-/** A post's whole 0.4 m stone foot stays outside running/walking sections and stands on existing dry support. */
-function lampSetback(env:CorridorEnv,E:PlanEnv,at:Point3,tangent:Point2,half:number,sign:number):number|undefined{
-  for(let back=.9;back<=5;back+=.25){
-    const x=at[0]-tangent[1]*sign*(half+back),z=at[2]+tangent[0]*sign*(half+back),y=env.ground(x,z);
-    if(Math.abs(y-at[1])>1.2)continue;
-    let clear=true;
-    for(const dx of [-.2,0,.2])for(const dz of [-.2,0,.2]){
-      const px=x+dx,pz=z+dz,g=env.ground(px,pz);
-      if(Math.abs(g-y)>.14||E.occupied?.(px,pz,0,6)||E.water?.(px,pz))clear=false;
-    }
-    if(clear)return r(back);
-  }
-  return undefined;
+/** Both riding lines through each bend, every source opening, and the route ends.
+ * These targets derive from the same native frames as the full-tier lamp plan. */
+export function mountainLightTargets(stations:readonly CorridorStation[]):Point2[]{
+  const F=new Frame(stations,false),targets:Point2[]=[],lanes=(s:number)=>{const st=F.st(F.nearestIndex(s));for(const side of[-1,1]){const p=F.point(s,side*st.half/2);targets.push([p[0],p[2]]);}};
+  for(const bend of mountainBendTargets()){lanes(bend.s);const n=Math.ceil((bend.to-bend.from)/.5);for(let i=0;i<=n;i++)lanes(bend.from+(bend.to-bend.from)*i/n);}
+  for(const opening of V2.road.openings){const mid=(opening.s0+opening.s1)/2;const nearest=SOURCE.reduce((a,b)=>Math.abs(a.spatialS-mid)<Math.abs(b.spatialS-mid)?a:b);lanes(nearest.s);}
+  lanes(0);lanes(length);return targets;
 }
 
 export function buildMountainCorridor(env:CorridorEnv,destinations:NonNullable<PlanEnv['destinations']>):Corridor|null{
@@ -82,9 +88,21 @@ export function buildMountainCorridor(env:CorridorEnv,destinations:NonNullable<P
   }
   const stops=nativeScenicStops(env);
   const bends=mountainBendTargets();
-  const plan=planCorridor({id:'mountainV2.road',closed:false,step,stations,reaches:MOUNTAIN_REACHES},{...E,authoredStops:stops,lightBends:bends.map(b=>({from:b.from,to:b.to,apex:b.s})),destinations:[...destinations,...stops.map(s=>({id:s.id,at:[s.at[0],s.at[2]] as Point2}))]});
+  const plan=planCorridor({id:'mountainV2.road',closed:false,step,stations,reaches:MOUNTAIN_REACHES},{...E,authoredStops:stops,lightBends:bends.map(b=>({from:b.from,to:b.to,apex:b.s})),lightTargets:mountainLightTargets(stations),destinations:[...destinations,...stops.map(s=>({id:s.id,at:[s.at[0],s.at[2]] as Point2}))]});
+  // Exactly the stop fixture condition and placement used by corridorArt. Its
+  // independent lamp stays in both tiers, so it can cover the garden target.
+  const stopPools=stops.flatMap(stop=>{const lamp=stopLayout(stop,env.ground).lamp;return lamp&&!plan.lamps.some(l=>Math.hypot(l.at[0]-lamp.at[0],l.at[2]-lamp.at[2])<6)?[{pool:lamp.at,poolRadius:CORRIDOR.lampPoolRadius}]:[];});
+  // Mountain lights safety places, with dark stretches between them. The same
+  // essential fixture set serves both tiers; lite subtracts secondary kit details,
+  // not a required lamp. Other corridors keep their own full-tier lighting plans.
+  const liteLampIds=selectLiteLamps(plan.lamps,[...mountainLightTargets(stations),...stops.map(s=>[s.at[0],s.at[2]] as Point2)],stopPools);
+  const essential=new Set(liteLampIds),lamps=plan.lamps.filter(l=>essential.has(l.id));
   const project=(p:Point3)=>nearestOnPath([p[0],p[2]],stations.map(s=>s.at)).along;
-  return {id:'mountainV2.road',source:'mountain-v2',closed:false,step,stations,reaches:MOUNTAIN_REACHES,markings:[],lamps:plan.lamps,planting:plan.planting,stops,
+  // The native meadow and summit already carry dense forest here (6–11 nearby
+  // native trees per proposed addition). Keep the lower approach accents and
+  // leave those upper clearings framed by their existing authored woodland.
+  const planting=plan.planting.filter(g=>g.kind!=='framingTrees'||!['M6','M-top'].includes(g.reachId));
+  return {id:'mountainV2.road',source:'mountain-v2',closed:false,step,stations,reaches:MOUNTAIN_REACHES,markings:[],lamps,liteLampIds,planting,stops,
     sourceBridges:V2.road.bridges.map(b=>({...b,axis:b.axis.map(P)})),
     guards:V2.road.guards.filter(g=>g.points.length>1).map(g=>({id:`mountainV2:${g.id}`,owner:'region',side:g.side as 'left'|'right',kind:kind(g.kind),from:project(P(g.points[0]!)),to:project(P(g.points.at(-1)!)),offset:4.8,height:g.height,line:g.points.map(P),ends:['continues','continues'],colliderId:`mountainV2:${g.id}`})),
   };

@@ -23,7 +23,7 @@ beforeAll(() => {
   const field = decodeTerrainAsset(terrain.buffer.slice(terrain.byteOffset, terrain.byteOffset + terrain.byteLength) as ArrayBuffer, 'full');
   const geography = createHorizonGeography(field, {...world.collision, solids: world.geometry.solids, diagnostics: world.diagnostics ?? []} as Parameters<typeof createHorizonGeography>[1]);
   // v2.6 (D-M1/D-M2): as mountHorizon does, the Mountain v2 region owns the ground and decks inside its footprint (R3 rides v2's road).
-  geography.addDynamic(createMountainV2Region({horizonGround: (x, z) => sampleTerrain(field, x, z), yield: terraceBedExclusion(world.beds), terrainStep: field.step}).provider);
+  geography.addDynamic(createMountainV2Region({walkingJoinSolids:world.geometry.solids,horizonGround: (x, z) => sampleTerrain(field, x, z), yield: terraceBedExclusion(world.beds), terrainStep: field.step}).provider);
   deps = {world, geography, manifest: M, reducedMotion: false, calm: false, tier: 'full'};
   groundGuard.strict = true;
 }, 120000);
@@ -51,11 +51,13 @@ describe('the ride situations on the real beds (RIDE §9; each re-derived range 
 
   // v2.6 (D-M5): S1's upper half is v2's race course, which has no fast 13–18 % drop of 120 m for RIDE §9's R1; no start on the
   // v2.6 lines passes (HANDOFF-notes/tests.md). Pinned as measured, as the D39 journeys are, until Jonathan rules (a new R1 home,
-  // or R1's range re-derived for v2's paces). From v2's summit start the carve stalls at 83.7 m and leaves the 4 m bed.
-  it('keeps R1 Downhill carve explicitly deferred on v2\'s course (D-M5; measured: never reaches 120 m, stalls at 83.7 m)', () => {
+  // or R1's range re-derived for v2's paces). With D-MR19–20 and the shared-surface repairs in place, the same
+  // failed trace now ends at83.9153837063m instead of83.75m. The original inputs,120m requirement and no-bail assertion stay fixed;
+  // after/attempts/current-ride-replays retains the crest/landing and offbed fadeBack. This is still deferred, not a pass.
+  it('keeps R1 Downhill carve explicitly deferred on v2\'s course (D-M5; measured: never reaches 120 m, stalls at 83.9 m)', () => {
     const run = runSituation(deps, 'R1');
     expect(run.checks['speed at 120 m 11–13.5 (RIDE §9)']![0]).toBe(false);
-    expect(run.metrics.dist.at(-1)).toBeCloseTo(83.75, 1);
+    expect(run.metrics.dist.at(-1)).toBeCloseTo(83.9153837063, 1);
     expect(run.checks['no bail']![0]).toBe(true);
   });
 

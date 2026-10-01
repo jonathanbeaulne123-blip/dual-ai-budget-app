@@ -13,13 +13,34 @@ import {Frame} from '../src/harbour/horizon/land/corridor/plan/frame';
 import {nearestOnPath} from '../src/harbour/horizon/land/structures/mesh';
 import {planCorridor} from '../src/harbour/horizon/land/corridor/plan';
 import type {CorridorStation} from '../src/harbour/horizon/land/corridor/types';
+import V2 from '../src/harbour/horizon/land/mountainV2/v2-data.json';
+import {pointInPolygon} from '../src/harbour/horizon/world/geometry';
+import type {Point2} from '../src/harbour/horizon/world/definition';
 const world=JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json','utf8'));
 const bytes=readFileSync('public/horizon/terrain/horizon-geo-1.bin');
 const field=decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength) as ArrayBuffer);
 const terrain=(x:number,z:number)=>sampleTerrain(field,x,z);
-const region=createMountainV2Region({horizonGround:terrain,yield:terraceBedExclusion(world.collision.beds),terrainStep:field.step});
+const region=createMountainV2Region({walkingJoinSolids:world.geometry.solids,horizonGround:terrain,yield:terraceBedExclusion(world.collision.beds),terrainStep:field.step});
 const ground=(x:number,z:number)=>region.provider.owns(x,z)?region.provider.ground(x,z):terrain(x,z);
 const cuts:LandCuts={...world.collision,solids:world.geometry.solids,diagnostics:[]};
+/** Actual native parapet bodies, not the collider run's extra end samples. routeArt.ts
+ * draws this 0..0.5 m masonry strip from y-0.05 to y+0.95; full/lite use every 1/2 rows. */
+function parapetCells(id:string,step:1|2){
+  const guard=V2.road.guards.find(g=>`mountainV2:${g.id}`===id&&g.kind==='parapet');
+  if(!guard)throw new Error(`No native masonry support ${id}`);
+  const side=guard.side==='left'?1:-1;
+  const samples=V2.road.samples.filter(s=>s.s>=guard.s0&&s.s<=guard.s1);
+  const rows=samples.filter((_,i)=>i%step===0||i===samples.length-1).map(s=>{
+    const point=(extra:number):Point2=>[s.at[0]!+s.normal[0]!*(s.hw+extra)*side,s.at[2]!+s.normal[2]!*(s.hw+extra)*side];
+    return {inside:point(0),outside:point(.5),y:s.at[1]!};
+  });
+  return rows.slice(1).map((b,i)=>{const a=rows[i]!;return {
+    outline:[a.inside,b.inside,b.outside,a.outside],
+    // These conservative endpoint heights stay inside the entire sloping body.
+    bottom:Math.max(a.y,b.y)-.05,top:Math.min(a.y,b.y)+.95,
+  };});
+}
+
 describe('native mountain furniture uses its real environment',()=>{
   it('recognizes the rendered reservoir and solid pavilion columns absent from ordinary Horizon cuts',()=>{
     expect(nativeWaterLevel(1282,497,ground)).toBe(140);
@@ -59,20 +80,48 @@ describe('native mountain furniture uses its real environment',()=>{
         expect(corridor.lamps.some(l=>Math.hypot(p[0]-l.pool[0],p[2]-l.pool[2])<=l.poolRadius+.01),`dark running lane at bend ${bend.id} s=${s}`).toBe(true);
       }}
     }
-    let measured=0;
+    const roadLamps=corridor.lamps.filter(l=>l.kind==='roadLantern'),measured:string[]=[];
+    // A parapet mount may meet its own road edge. No other Horizon bed, solid or
+    // native walk/building/tree gets that exception.
+    const offRoad=createCorridorEnv({...cuts,beds:cuts.beds.filter(b=>b.id!==corridor.id)},ground);
     for(const l of corridor.lamps){
       const q=nearestOnPath([l.at[0],l.at[2]],corridor.stations.map(s=>s.at)),st=F.st(F.nearestIndex(q.along));
       expect(q.distance,`${l.id} inside running lane`).toBeGreaterThan(st.half/2+.6);
-      if(l.kind!=='roadLantern'||E.lampSetback?.(q.along,l.side)===undefined||Math.abs(ground(l.at[0],l.at[2])-l.at[1])>1.2)continue;
-      measured++;
-      for(const dx of [-.2,0,.2])for(const dz of [-.2,0,.2]){
-        const x=l.at[0]+dx,z=l.at[2]+dz;
-        expect(E.occupied?.(x,z),`${l.id} post footprint occupies route/native keepout`).toBe(false);
-        expect(E.water?.(x,z)).toBe(false);
-        expect(Math.abs(ground(x,z)-l.at[1])).toBeLessThanOrEqual(.141);
+      if(l.kind!=='roadLantern')continue;
+      const dx=l.head[0]-l.at[0],dz=l.head[2]-l.at[2],len=Math.hypot(dx,dz);
+      expect(len).toBeGreaterThan(.3);
+      // Same local +x arm direction and rotation as lampPlacement: test the real
+      // rotated 0.4 x 0.4 m stone foot, not a new site at a projected station.
+      const foot=(u:number,v:number):Point2=>[l.at[0]+dx/len*u-dz/len*v,l.at[2]+dz/len*u+dx/len*v];
+      const mount=corridor.guards.find(g=>g.owner==='region'&&g.kind==='stoneParapet'&&g.side===l.side&&nearestOnPath([l.at[0],l.at[2]],g.line).distance<.2);
+      for(const u of [-.2,0,.2])for(const v of [-.2,0,.2]){
+        const [x,z]=foot(u,v);
+        expect(E.water?.(x,z),`${l.id} wet post footprint`).toBe(false);
+        if(mount){
+          expect(offRoad.occupied(x,z),`${l.id} parapet mount overlaps another Horizon route/solid`).toBe(false);
+          expect(nativeOccupied(x,z,()=>l.at[1],0,6,'mountain-road'),`${l.id} parapet mount overlaps native walk/keepout`).toBe(false);
+        }else{
+          expect(E.occupied?.(x,z),`${l.id} post footprint occupies route/native keepout`).toBe(false);
+          expect(Math.abs(ground(x,z)-l.at[1]),`${l.id} unsupported stone foot at ${x},${z}`).toBeLessThanOrEqual(.141);
+        }
       }
+      if(mount){
+        // The planner deliberately embeds a road-lantern post in a parapet on a
+        // steep shoulder (lamps.ts make). Prove a 0.1 x 0.4 x 0.2 m portion of
+        // its actual plinth is inside the visible masonry in BOTH tiers; being
+        // near a guard label, collider or road is not sufficient support.
+        for(const step of [1,2] as const){
+          const cells=parapetCells(mount.id,step);
+          for(const u of [-.2,-.15,-.1])for(const v of [-.2,0,.2]){
+            const [x,z]=foot(u,v);
+            expect(cells.some(c=>pointInPolygon(x,z,c.outline)&&l.at[1]+.1>=c.bottom&&l.at[1]+.3<=c.top),`${l.id} lacks native masonry anchorage at ${x},${z} (step ${step})`).toBe(true);
+          }
+        }
+      }
+      measured.push(l.id);
     }
-    expect(measured).toBeGreaterThan(20);
+    expect(measured).toEqual(roadLamps.map(l=>l.id)); // every actual road lantern, no environmental skip
+    expect(measured.length).toBeGreaterThan(20);
   });
 
 });

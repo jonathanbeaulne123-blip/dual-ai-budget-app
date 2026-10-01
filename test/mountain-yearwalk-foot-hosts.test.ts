@@ -13,7 +13,7 @@ const source=structuredClone(world.collision),year=source.beds.find(b=>b.id==='y
 // Regenerate the real source emitter's visible/collision ribbon, never a height-query override.
 emitBedGeometry(year,cuts,(x,z)=>sampleTerrain(field,x,z));
 const ids=/^yearWalk\.(bed|surface|shoulders)(\.|$)/,solids=[...world.geometry.solids.filter(s=>!ids.test(s.id)),...cuts.solids.filter(s=>ids.test(s.id))];
-const geography=createHorizonGeography(field,{...world.collision,solids,diagnostics:[]});geography.addDynamic(createMountainV2Region({horizonGround:(x,z)=>sampleTerrain(field,x,z),yield:terraceBedExclusion(world.collision.beds),exclude:mouthExclusion(world.collision.mouths),terrainStep:field.step}).provider);
+const geography=createHorizonGeography(field,{...world.collision,solids,diagnostics:[]});geography.addDynamic(createMountainV2Region({walkingJoinSolids:solids,horizonGround:(x,z)=>sampleTerrain(field,x,z),yield:terraceBedExclusion(world.collision.beds),exclude:mouthExclusion(world.collision.mouths),terrainStep:field.step}).provider);
 describe('Year Walk Foot joins use the source host surfaces',()=>{
   it('removes the second Year Walk ribbon roof above the Stillwater Foot approach',()=>{
     for(let d=0;d<=1;d+=.05){const x=1276.427372984+d*.767,z=724.660498914-d*.642,floor=geography.surface(x,z,54.568422079,.48)!;

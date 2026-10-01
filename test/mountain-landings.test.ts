@@ -12,13 +12,16 @@ import {sampleTerrain} from '../src/harbour/horizon/land/terrain/index.ts';
 import {createHorizonGeography} from '../src/harbour/horizon/runtime/geography.ts';
 import {createRegionGeography,terraceBedExclusion,mouthExclusion} from '../src/harbour/horizon/regions/mountainV2/geography.ts';
 import {MOUNTAIN_V2_OFFSET as O} from '../src/harbour/horizon/regions/mountainV2/placement.ts';
-import {landingSample} from '../src/harbour/mountain/branchLandings.ts';
+import {repairDamEntry} from '../src/harbour/mountain/damEntry.ts';
+import {landingSample,landingPointAt} from '../src/harbour/mountain/branchLandings.ts';
 import type {Point3} from '../src/harbour/mountain/math.ts';
+import authoredPlanting from '../src/harbour/mountain/generated/planting-authoring-corridors.json';
+import {drawnRoadFloor} from '../src/harbour/horizon/regions/mountainV2/drawnRoadFloor.ts';
 
 const bytes=(path:string)=>{const b=readFileSync(path);return b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength) as ArrayBuffer;};
 const world=parseHorizonDefinition(bytes('public/horizon/world/horizon-geo-1.json.gz'));
 const terrain=decodeTerrainAsset(bytes('public/horizon/terrain/horizon-geo-1.bin'),'full');
-const region=createRegionGeography({horizonGround:(x,z)=>sampleTerrain(terrain,x,z),exclude:mouthExclusion(world.collision.mouths),yield:terraceBedExclusion(world.collision.beds),terrainStep:terrain.step});
+const region=createRegionGeography({walkingJoinSolids:world.geometry.solids,horizonGround:(x,z)=>sampleTerrain(terrain,x,z),exclude:mouthExclusion(world.collision.mouths),yield:terraceBedExclusion(world.collision.beds)});
 const horizon=createHorizonGeography(terrain,{...world.collision,solids:world.geometry.solids,diagnostics:world.diagnostics??[]});
 horizon.addDynamic(region.provider);
 const branches=SKILL_BRANCHES.filter(b=>b.id==='library-balcony'||b.id==='dam-promenade');
@@ -104,16 +107,11 @@ describe('shared native and Horizon mountain landings',()=>{
 
 describe('shared awning contour return',()=>{
  const awning=SKILL_BRANCHES.find(b=>b.id==='hearth-awning')!;
- const road=MOUNTAIN_ROAD_LINE.samples.filter(s=>s.s>165&&s.s<229);
- const roadAt=(x:number,z:number)=>{
-  let nearest={distance:Infinity,y:0};
-  for(let i=1;i<road.length;i++){
-   const a=road[i-1]!.at,b=road[i]!.at,dx=b[0]-a[0],dz=b[2]-a[2],t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[2])*dz)/(dx*dx+dz*dz)));
-   const distance=Math.hypot(x-a[0]-dx*t,z-a[2]-dz*t);
-   if(distance<nearest.distance)nearest={distance,y:a[1]+(b[1]-a[1])*t};
-  }return nearest;
- };
- it('preserves the original first grind rail and entry, with a real course rejoin',()=>{
+ // Match the existing rendered/native road surfaces, not a 4.8m capsule around
+ // the nearest 1m centreline. The approved road frames change the swept footprint.
+ const roadRows=MOUNTAIN_ROAD_LINE.samples.map(s=>[-s.halfWidth,-s.halfWidth+.55,-.45,.45,s.halfWidth-.55,s.halfWidth].map(w=>[s.at[0]+s.normal[0]*w,s.at[1],s.at[2]+s.normal[2]*w] as Point3));
+ const roadAt=drawnRoadFloor(roadRows);
+ it('preserves the original first grind rail and departure point, with a real course rejoin',()=>{
   expect(awning.segments[1]!.points).toEqual([
    [34.82506414443134,17.68656601983504,-96.28165997086504],
    [34.244163975907405,17.55442502311574,-95.45734681700047],
@@ -128,22 +126,50 @@ describe('shared awning contour return',()=>{
   // at the NEXT band, including its connection to the protected rail endpoint.
   for(const t of triangles(awning.landingRows!,9))expect(triangleGrade(...t)).toBeLessThanOrEqual(.4);
  });
+ it('conforms only the approved first five entrance rows to the road before the unchanged first rail',()=>{
+  // D-MR19 replaces the formerly flat entrance with the existing road crossfall.
+  // Its measured 25.2cm bound is absolute movement; plan positions never change.
+  const original=authoredPlanting.branches.find(b=>b.id===awning.id)!.points;
+  const sourceRows=MOUNTAIN_ROAD_LINE.samples.map(s=>[-s.halfWidth,-s.halfWidth+.55,-.45,.45,s.halfWidth-.55,s.halfWidth].map(w=>[s.at[0]+s.normal[0]*w,s.at[1],s.at[2]+s.normal[2]*w] as Point3));
+  const roadFloor=drawnRoadFloor(sourceRows);
+  for(let i=0;i<=8;i++){
+   const p=original[i]!,a=original[Math.max(0,i-1)]!,b=original[i+1]!,dx=b[0]!-a[0]!,dz=b[2]!-a[2]!,length=Math.hypot(dx,dz);
+   for(let k=0;k<5;k++){
+    const expected:Point3=[p[0]!+dz/length*1.5*(k/2-1),p[1]!,p[2]!-dx/length*1.5*(k/2-1)],row=awning.landingRows![i]![k]!;
+    expect(row[0]).toBe(expected[0]);expect(row[2]).toBe(expected[2]);
+    if(i<5){expect(Math.abs(row[1]-expected[1])).toBeLessThanOrEqual(.251677);expect(row[1]).toBeCloseTo(roadFloor(row[0],row[2])!.y,10);}
+    else expect(row).toEqual(expected);
+   }
+  }
+ });
+ it('has no folded or degenerate triangles after the protected rail',()=>{
+  // Previously bands 8→9 and 9→10 reversed on the inside of the splice;
+  // overlapping positive/negative cells made draw and queried floors disagree.
+  for(const [a,b,c] of triangles(awning.landingRows!,9)){
+   const area=(b[0]-a[0])*(c[2]-a[2])-(b[2]-a[2])*(c[0]-a[0]);
+   expect(area).toBeLessThan(-1e-8);
+  }
+ });
  it('keeps every rebuilt return cell clear of terrain and flush with the actual road',()=>{
-  let minimumClearance=Infinity,roadError=0;
+  let minimumClearance=Infinity,roadError=0,maximumExposedSupport=0;
   for(const [a,b,c] of triangles(awning.landingRows!,9)){
    const n=Math.ceil(Math.max(Math.hypot(b[0]-a[0],b[2]-a[2]),Math.hypot(c[0]-a[0],c[2]-a[2]))/.05);
    for(let i=0;i<=n;i++)for(let j=0;j<=n-i;j++){
     const u=i/n,v=j/n,x=a[0]+(b[0]-a[0])*u+(c[0]-a[0])*v,z=a[2]+(b[2]-a[2])*u+(c[2]-a[2])*v,y=a[1]+(b[1]-a[1])*u+(c[1]-a[1])*v,r=roadAt(x,z);
-    if(r.distance>4.8){const native=groundHeightAt(x,z),exposed=mouthExclusion(world.collision.mouths)(x+O.x,z+O.z)?sampleTerrain(terrain,x+O.x,z+O.z)-O.y:-Infinity;minimumClearance=Math.min(minimumClearance,y-Math.max(native,exposed));}else roadError=Math.max(roadError,Math.abs(y-r.y));
+    if(!r){const native=groundHeightAt(x,z),exposed=mouthExclusion(world.collision.mouths)(x+O.x,z+O.z)?sampleTerrain(terrain,x+O.x,z+O.z)-O.y:-Infinity;minimumClearance=Math.min(minimumClearance,y-Math.max(native,exposed));}else roadError=Math.max(roadError,Math.abs(y-r.y));
+    // Only selected/visible support constrains this apron. The unchanged native
+    // preferred-landing and through-road queries below remain independent gates.
+    maximumExposedSupport=Math.max(maximumExposedSupport,(r?.y??-Infinity)-y);
    }
   }
   expect(minimumClearance).toBeGreaterThanOrEqual(0);expect(roadError).toBeLessThanOrEqual(.03);
+  expect(maximumExposedSupport).toBeLessThanOrEqual(.01);
  });
  it('supports the actual tapered width with no rider contacts in both worlds',()=>{
   const obstacles=courtObstacles('lite'),out=hit(),failures:unknown[]=[],rows=awning.landingRows!;
   for(let i=9;i<rows.length;i++)for(let step=0;step<=10;step++)for(const across of[.05,.25,.5,.75,.95]){
-   const t=step/10,a=rows[i-1]!,b=rows[i]!,x=(a[0]![0]*(1-across)+a[4]![0]*across)*(1-t)+(b[0]![0]*(1-across)+b[4]![0]*across)*t,z=(a[0]![2]*(1-across)+a[4]![2]*across)*(1-t)+(b[0]![2]*(1-across)+b[4]![2]*across)*t;
-   const deck=landingSample(rows,x,z);expect(deck).not.toBeNull();const y=deck!.y;
+   const [x,y,z]=landingPointAt(rows,i,step/10,across);
+   const deck=landingSample(rows,x,z);expect(deck).not.toBeNull();expect(deck!.y).toBeCloseTo(y,8);
    const n=queryWorldSurface({x,z,y,supportId:awning.id},groundHeightAt),h=horizon.surface(x+O.x,z+O.z,y+O.y,.4);
    pushOutAll(x,z,y,.24,obstacles,[],out);const contact=horizon.contact(x+O.x,z+O.z,y+O.y,.24);
    if(Math.abs(n.y-y)>.01||!h||Math.abs(h.y-O.y-y)>.01||out.id||contact)failures.push({i,x,z,y,native:n.y,horizon:h?.y,solid:out.id,contact:contact?.id});
@@ -155,8 +181,81 @@ describe('shared awning contour return',()=>{
   // terrain/nearest-route floor differences are covered by the road regression, not waived here.
   for(const s of MOUNTAIN_ROAD_LINE.samples.filter(p=>p.s>155&&p.s<190))for(const off of[-3.85,-2,0,2,3.85]){
    const x=s.at[0]+s.normal[0]*off,z=s.at[2]+s.normal[2]*off,y=worldDeckAt(nativeRoad,x,z)!.point[1];
-   pushOutAll(x,z,y,.24,obstacles,[],out);const contact=horizon.contact(x+O.x,z+O.z,y+O.y,.24),ceiling=horizon.ceiling(x+O.x,z+O.z,y+O.y,.24);
+   pushOutAll(x,z,y,.24,obstacles,[],out);const contact=horizon.contact(x+O.x,z+O.z,y+O.y,.24),ceiling=horizon.ceiling(x+O.x,z+O.z,y+O.y);
    if(out.id||contact||worldCeilingAt(x,z,y)<y+1.45||ceiling<y+O.y+1.45||worldCollisionAt(x,y+.7,z,.24))failures.push({x,z,y,solid:out.id,contact:contact?.id,ceiling});
   }expect(failures.slice(0,8)).toEqual([]);
+ });
+});
+
+describe('shared dam entry landing',()=>{
+ const dam=SKILL_BRANCHES.find(b=>b.id==='dam-promenade')!,rows=dam.landingRows!;
+ const first=dam.points[0]!,entry=MOUNTAIN_ROAD_LINE.samples.reduce((a,b)=>Math.hypot(a.at[0]-first[0],a.at[2]-first[2])<Math.hypot(b.at[0]-first[0],b.at[2]-first[2])?a:b);
+ const local=MOUNTAIN_ROAD_LINE.samples.filter(s=>Math.abs(s.s-entry.s)<24),roadRows=local.map(s=>[-s.halfWidth,-s.halfWidth+.55,-.45,.45,s.halfWidth-.55,s.halfWidth].map(w=>[s.at[0]+s.normal[0]*w,s.at[1],s.at[2]+s.normal[2]*w] as Point3));
+ it('limits the repair to entry heights and preserves the rail, exit, endpoints and every plan coordinate',()=>{
+  const before={points:[...dam.points],rows},unchanged=JSON.stringify(before),again=repairDamEntry(before,MOUNTAIN_ROAD_LINE.samples);
+  expect(JSON.stringify(before)).toBe(unchanged);
+  expect(again.points[0]).toEqual(before.points[0]);expect(again.points.at(-1)).toEqual(before.points.at(-1));
+  expect(again.points.slice(13)).toEqual(before.points.slice(13));expect(again.rows.slice(13)).toEqual(before.rows.slice(13));
+  for(let i=0;i<rows.length;i++)for(let k=0;k<rows[i]!.length;k++)expect([again.rows[i]![k]![0],again.rows[i]![k]![2]]).toEqual([rows[i]![k]![0],rows[i]![k]![2]]);
+  // The first maintenance rail starts at row18; the complete five-row separation stays authored.
+  expect(dam.segments[1]!.points[0]).toEqual(dam.points[18]);
+ });
+ it('draws and queries the same entry triangles with less than 20mm overlap error',()=>{
+  const surface=WORLD_SURFACES.find(s=>s.id===dam.id)!;let compared=0,maximum=0,minimumExteriorClearance=Infinity;
+  for(const [a,b,c] of triangles(rows.slice(0,14)))for(let i=0;i<=10;i++)for(let j=0;j<=10-i;j++){
+   const u=i/10,v=j/10,x=a[0]+(b[0]-a[0])*u+(c[0]-a[0])*v,z=a[2]+(b[2]-a[2])*u+(c[2]-a[2])*v,deck=landingSample(rows,x,z)!,road=landingSample(roadRows,x,z);
+   expect(triangleGrade(a,b,c)).toBeLessThanOrEqual(.4);
+   const queried=worldDeckAt(surface,x,z);expect(queried).not.toBeNull();expect(queried!.point[1]).toBeCloseTo(deck.y,9);
+   if(road){compared++;maximum=Math.max(maximum,Math.abs(deck.y-road.y));}else minimumExteriorClearance=Math.min(minimumExteriorClearance,deck.y-groundHeightAt(x,z));
+  }
+  expect(minimumExteriorClearance).toBeGreaterThanOrEqual(0);expect(compared).toBeGreaterThan(2000);expect(maximum).toBeLessThan(.02);
+  // buildBranchArt uses these rows and the same quad diagonal, with its existing 2cm paint lift.
+  expect(dam.segments[0]!.landingRows).toEqual(rows.slice(0,19));
+ });
+ it('adds no entry lip at center and +/-2m in either direction, retaining three exact native road limitations',()=>{
+  const failures:unknown[]=[],lanes=new Map<number,{native:number;base:number;s:number}[]>(),withoutDam=WORLD_SURFACES.filter(s=>s.id!==dam.id);
+  for(let i=1;i<local.length;i++){
+   const a=local[i-1]!,b=local[i]!;if(Math.abs(a.s-entry.s)>9)continue;
+   for(let j=0;j<10;j++)for(const off of[-2,0,2]){
+    const t=j/10,x=a.at[0]+(b.at[0]-a.at[0])*t+(a.normal[0]+(b.normal[0]-a.normal[0])*t)*off,z=a.at[2]+(b.at[2]-a.at[2])*t+(a.normal[2]+(b.normal[2]-a.normal[2])*t)*off,y=landingSample(roadRows,x,z)!.y;
+    const nativeBase=queryWorldSurface({x,z,y,stepHeight:.48},groundHeightAt,withoutDam),native=queryWorldSurface({x,z,y,stepHeight:.48},groundHeightAt),h=horizon.surface(x+O.x,z+O.z,y+O.y,.48);
+    // Keep the inherited native road selector as the baseline; the landing may not add a lip.
+    const lane=lanes.get(off)??[];lane.push({native:native.y,base:nativeBase.y,s:a.s+(b.s-a.s)*t});lanes.set(off,lane);
+    if(!h||Math.abs(h.y-O.y-y)>.02||worldCollisionAt(x,y+.7,z,.3))failures.push({x,z,y,nativeBase:nativeBase.y,native:native.y,horizon:h?.y});
+    for(const dir of[-1,1]){const hit=horizon.blocker(x+O.x,z+O.z,y+O.y,.3,[dir*(b.at[0]-a.at[0]),dir*(b.at[2]-a.at[2])]);if(hit)failures.push({x,z,dir,hit});}
+   }
+  }
+  // Three specific inherited coarse-road projection switches on the -2m lane.
+  // course.ts decimates the rendered road to every third sample; nearestOnRoute
+  // changes segment here before reaching the common vertex. The original and
+  // repaired native source return exactly these same road-only heights. These are
+  // retained source limitations, not continuous floors or permission for new lips.
+  const witnesses=[
+   {name:'entry-minus-0.15m',step:.08789190618772125,points:[
+    {s:812.01041990782,x:49.786268008824855,z:-255.36004067062694,y:90.45524493076074,base:90.43828910086188,index:268},
+    {s:812.1111381600629,x:49.713191601064885,z:-255.39983541628067,y:90.47138799347671,base:90.5261810070496,index:269}]},
+   {name:'entry-plus-3.07m',step:.10301467242125284,points:[
+    {s:815.2312146563306,x:48.05299457104254,z:-256.89187354306955,y:90.85901767884745,base:90.80503004360301,index:269},
+    {s:815.3318789045454,x:48.01300430203281,z:-256.9579149792493,y:90.8690257892576,base:90.90804471602426,index:270}]},
+   {name:'entry-plus-6.09m',step:.07710466449535147,points:[
+    {s:818.2513692884962,x:47.02853563535578,z:-259.0476061030744,y:91.22661926595174,base:91.19221279500577,index:270},
+    {s:818.3520452501972,x:47.007256263194705,z:-259.1271103217448,y:91.23707336196352,base:91.26931745950112,index:271}]},
+  ];
+  const nativeRoad=WORLD_SURFACES.find(s=>s.id==='mountain-road')!;
+  for(const witness of witnesses)for(const p of witness.points){
+   const control=queryWorldSurface({x:p.x,z:p.z,y:p.y,stepHeight:.48},groundHeightAt,withoutDam),actual=queryWorldSurface({x:p.x,z:p.z,y:p.y,stepHeight:.48},groundHeightAt);
+   expect(control.id,witness.name).toBe('mountain-road');expect(control.y,witness.name).toBeCloseTo(p.base,8);
+   expect(worldDeckAt(nativeRoad,p.x,p.z)!.index,witness.name).toBe(p.index);
+   expect(actual,witness.name).toEqual(control);
+  }
+  const matchedWitnesses=new Set<string>();
+  for(const [off,lane] of lanes)for(let i=1;i<lane.length;i++){
+   const p=lane[i]!,q=lane[i-1]!,step=Math.abs(p.native-q.native),baselineStep=Math.abs(p.base-q.base);
+   const unchangedWitness=off===-2&&witnesses.find(w=>Math.abs(q.s-w.points[0]!.s)<1e-6&&Math.abs(p.s-w.points[1]!.s)<1e-6&&p.native===p.base&&q.native===q.base&&Math.abs(baselineStep-w.step)<1e-8);
+   if(unchangedWitness)matchedWitnesses.add(unchangedWitness.name);
+   if(step>.06&&!unchangedWitness)failures.push({off,i,step,baselineStep});
+  }
+  expect([...matchedWitnesses].sort()).toEqual(witnesses.map(w=>w.name).sort());
+  expect(failures.slice(0,8)).toEqual([]);
  });
 });

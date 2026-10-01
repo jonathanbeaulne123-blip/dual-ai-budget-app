@@ -8,7 +8,7 @@ import {createMountainV2Region,terraceBedExclusion,mouthExclusion} from '../src/
 import {drawnRoadFloor} from '../src/harbour/horizon/regions/mountainV2/drawnRoadFloor.ts';
 const ab=(b:Buffer)=>b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength) as ArrayBuffer;
 const world=parseHorizonDefinition(ab(readFileSync('public/horizon/world/horizon-geo-1.json.gz'))),terrain=decodeTerrainAsset(ab(readFileSync('public/horizon/terrain/horizon-geo-1.bin')),'full');
-const region=createMountainV2Region({horizonGround:(x,z)=>sampleTerrain(terrain,x,z),yield:terraceBedExclusion(world.collision.beds),exclude:mouthExclusion(world.collision.mouths),terrainStep:terrain.step});
+const region=createMountainV2Region({walkingJoinSolids:world.geometry.solids,horizonGround:(x,z)=>sampleTerrain(terrain,x,z),yield:terraceBedExclusion(world.collision.beds),exclude:mouthExclusion(world.collision.mouths),terrainStep:terrain.step});
 const g=createHorizonGeography(terrain,{...world.collision,solids:world.geometry.solids,diagnostics:world.diagnostics??[]});g.addDynamic(region.provider);
 describe('Mountain Road actual drawn floor selection',()=>{
   it('keeps the reachable lower floor beneath a higher drawn deck',()=>{
@@ -30,7 +30,7 @@ describe('Mountain Road actual drawn floor selection',()=>{
     for(let ix=-10;ix<=10;ix++)for(let iz=-10;iz<=10;iz++){
       const px=x+ix*.025,pz=z+iz*.025,p=g.surface(px,pz,y,.48)!;
       expect(p.id).toBe('mountainV2:mountain-road');expect(p.slope).toBeLessThan(7);
-      for(const [dx,dz]of [[.025,0],[0,.025]]){
+      for(const [dx,dz]of [[.025,0],[0,.025]] as const){
         const q=g.surface(px+dx,pz+dz,y,.48)!;expect(Math.abs(q.y-p.y)).toBeLessThan(.004);
       }
     }

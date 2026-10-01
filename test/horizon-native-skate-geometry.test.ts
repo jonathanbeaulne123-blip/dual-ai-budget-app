@@ -16,7 +16,7 @@ const flat:TerrainField={revision:'horizon-geo-1',width:2000,depth:2000,step:100
 const empty:LandCuts={beds:[],pads:[],mouths:[],waters:[],solids:[],diagnostics:[]};
 const ab=(b:Buffer)=>b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength) as ArrayBuffer;
 const world=parseHorizonDefinition(ab(readFileSync('public/horizon/world/horizon-geo-1.json.gz'))),terrain=decodeTerrainAsset(ab(readFileSync('public/horizon/terrain/horizon-geo-1.bin')),'full');
-const region=createMountainV2Region({horizonGround:(x,z)=>sampleTerrain(terrain,x,z),yield:terraceBedExclusion(world.collision.beds),exclude:mouthExclusion(world.collision.mouths),terrainStep:terrain.step});
+const region=createMountainV2Region({walkingJoinSolids:world.geometry.solids,horizonGround:(x,z)=>sampleTerrain(terrain,x,z),yield:terraceBedExclusion(world.collision.beds),exclude:mouthExclusion(world.collision.mouths),terrainStep:terrain.step});
 function slab(underside:number){const s=solid('test-overhead','test','stone','deck');box(s,[1408,868],54+underside+.2,[20,4],54+underside);return s;}
 function ride(underside:number){
   const geography=createHorizonGeography(flat,{...empty,solids:[slab(underside)]}),host=createHorizonSkateWorld(geography,skateField());

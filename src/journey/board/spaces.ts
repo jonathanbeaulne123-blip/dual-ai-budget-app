@@ -14,6 +14,7 @@ import { createMarkLayer, instancedGeometry, type MarkItem, type MarkLayer } fro
 import { box, cap, merge, prism, ring, transform, type Shape } from "./shapes.ts";
 
 const SIDE = 0.72;
+const OPEN_PAD_SCALE = 1.12;
 
 export function padShape(inset: string): Shape {
   return merge(
@@ -31,6 +32,27 @@ export function padRingShape(): Shape {
     stakes.push(box({ w: 1.8, d: 1.8, y0: 0, y1: 7, at: [Math.cos(a) * 16, Math.sin(a) * 16], paint: { tint: 1, shade: 0.85 }, top: { tint: 1 } }));
   }
   return merge(ring({ sides: 8, rIn: 14.6, rOut: 16, y: 1.4, y0: 0, top: { tint: 1 }, wall: { tint: 1, shade: SIDE } }), ...stakes);
+}
+
+/** The radius comes from the same authored vertices and instance scale as the mark.
+ * Reserve the upcoming ring's interior too: a buried tunnel must not read as a road
+ * across the financial space. This affects map ink only, not land/route geometry. */
+const shapeRadius = (shape: Shape) => {
+  let radius = 0;
+  for (let i = 0; i < shape.positions.length; i += 3) radius = Math.max(radius, Math.hypot(shape.positions[i]!, shape.positions[i + 2]!));
+  return radius;
+};
+const PAD_RADIUS = shapeRadius(padShape('#ffffff')), RING_RADIUS = shapeRadius(padRingShape());
+export function stationPadMasks(months: RouteSpace['months'], padUnit: number) {
+  // Multiple displayed years can share a station. One reservation holds the largest
+  // simultaneously drawn mark there, without imposing a chapter-count limit.
+  const pads = new Map<string, { x: number; z: number; radius: number }>();
+  for (const m of months) {
+    const key = m.stationId, radius = padUnit * (m.state === 'upcoming' ? RING_RADIUS : PAD_RADIUS * (m.state === 'open' ? OPEN_PAD_SCALE : 1));
+    const prior = pads.get(key);
+    if (!prior || radius > prior.radius) pads.set(key, { x: m.at[0], z: m.at[2], radius });
+  }
+  return [...pads.values()];
 }
 
 export function dayShape(inset: string): Shape {
@@ -100,7 +122,7 @@ export function createSpaces(): SpaceLayers {
       for (const m of route.months) {
         if (m.state === "upcoming") { ringIds.set(m.chapterId, ringItems.length); ringItems.push({ anchor: m.at, color: d.stakes }); continue; }
         padIds.set(m.chapterId, padItems.length);
-        padItems.push({ anchor: m.at, color: m.state === "open" ? d.spaceOpen : d.spacePast, scale: m.state === "open" ? 1.12 : 1, lift: m.state === "open" ? 0.8 : 0 });
+        padItems.push({ anchor: m.at, color: m.state === "open" ? d.spaceOpen : d.spacePast, scale: m.state === "open" ? OPEN_PAD_SCALE : 1, lift: m.state === "open" ? 0.8 : 0 });
       }
       pads.setGeometry(instancedGeometry(padShape(d.spaceInset), padItems), padIds);
       padRings.setGeometry(instancedGeometry(padRingShape(), ringItems), ringIds);

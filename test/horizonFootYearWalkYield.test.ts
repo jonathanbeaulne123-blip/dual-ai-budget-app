@@ -13,7 +13,7 @@ describe('Horizon Year Walk visible Foot footprint',()=>{
   it('keeps the existing walking slab above the yielded native lawn at the inherited Foot stall',()=>{
     const yieldToWalk=terraceBedExclusion(world.collision.beds);
     const geography=createHorizonGeography(field,{...world.collision,solids:world.geometry.solids,diagnostics:[]});
-    geography.addDynamic(createMountainV2Region({horizonGround:(x,z)=>sampleTerrain(field,x,z),yield:yieldToWalk,exclude:mouthExclusion(world.collision.mouths),terrainStep:field.step}).provider);
+    geography.addDynamic(createMountainV2Region({walkingJoinSolids:world.geometry.solids,horizonGround:(x,z)=>sampleTerrain(field,x,z),yield:yieldToWalk,exclude:mouthExclusion(world.collision.mouths),terrainStep:field.step}).provider);
     // Real extracted walking move() stopped on 43.18-degree native lawn here,
     // 5cm above a physically drawn 1.76-degree Year Walk slab.
     for(const [x,z] of [[1284.9959206721012,735.1861162216874],[1284.980624,735.149156]]){

@@ -68,7 +68,7 @@ function roadLantern(b:CardBuilder,pal:RoadKitPalette,o:V3,full:boolean){
   // Plinth: a dressed-stone block, the post's foot.
   b.box(o[0],o[2],0,.2,.2,o[1]-.15,o[1]+ROAD_LAMP.plinth,pal.coping,pal.stone,full?b.ink:null);
   if(pal.theme==='classic'){
-    const sides=full?8:6;
+    const sides=8;
     b.post(o[0],o[2],o[1]+ROAD_LAMP.plinth,o[1]+top,.075,pal.post,sides,'steel');
     for(const y of full?[ROAD_LAMP.plinth+.05,2.4,top-.08]:[])b.post(o[0],o[2],o[1]+y,o[1]+y+.09,.095,pal.postBand,sides,'steel');
     if(full)b.cone(o[0],o[2],o[1]+top,o[1]+top+.16,.1,.02,pal.postBand,sides,'steel');
@@ -88,8 +88,8 @@ function roadLantern(b:CardBuilder,pal:RoadKitPalette,o:V3,full:boolean){
     b.line(P(R,arm-.05),P(R,4.95),pal.frame);
     // Washi lantern: a round paper body that glows whole, a lilac cap and foot, a heart cut on each face.
     const cx=o[0]+R,cz=o[2],y0=o[1]+4.22;
-    glowCone(b,cx,cz,y0,y0+.18,.16,.26,pal.glassNight,full?10:6);glowCone(b,cx,cz,y0+.18,y0+.52,.26,.24,pal.glassNight,full?10:6);glowCone(b,cx,cz,y0+.52,y0+.68,.24,.13,pal.glassNight,full?10:6);
-    b.cone(cx,cz,y0-.05,y0,.1,.16,pal.lanternRoof,full?8:6);b.cone(cx,cz,y0+.68,y0+.74,.14,.1,pal.lanternRoof,full?8:6);
+    glowCone(b,cx,cz,y0,y0+.18,.16,.26,pal.glassNight,10);glowCone(b,cx,cz,y0+.18,y0+.52,.26,.24,pal.glassNight,10);glowCone(b,cx,cz,y0+.52,y0+.68,.24,.13,pal.glassNight,10);
+    b.cone(cx,cz,y0-.05,y0,.1,.16,pal.lanternRoof,8);b.cone(cx,cz,y0+.68,y0+.74,.14,.1,pal.lanternRoof,8);
     const heart=[[0,-.1],[.09,0],[.07,.07],[0,.04],[-.07,.07],[-.09,0]] as const;
     if(full)for(const s of [-1,1]){const zc=cz+s*.262;b.flat(heart.map(([u,v])=>[u+.1,v+.1] as const),[cx-.1,y0+.3,zc],[cx+.1,y0+.3,zc],pal.lanternRoof,null);}
   }else{
@@ -100,14 +100,13 @@ function roadLantern(b:CardBuilder,pal:RoadKitPalette,o:V3,full:boolean){
     b.beam(P(-.06,arm),P(R+.12,arm),.09,.11,pal.post,full?b.ink:null);
     if(full)b.beam(P(.06,arm-.7),P(.72,arm-.03),.07,.08,pal.post,null);
     const rope:V3[]=[P(R-.05,arm+.06),P(R,arm+.1),P(R+.05,arm+.06),P(R+.02,arm-.1),P(R,4.84)];
-    if(full){b.tube(rope,.025,pal.rope,4);b.tube([P(R,4.84),P(R-.09,4.8),P(R-.11,4.72),P(R,4.69),P(R+.11,4.72),P(R+.09,4.8),P(R,4.84)],.012,pal.galvanised,4);}
-    else b.line(P(R,arm),P(R,4.74),pal.rope);
+    b.tube(rope,.025,pal.rope,4);b.tube([P(R,4.84),P(R-.09,4.8),P(R-.11,4.72),P(R,4.69),P(R+.11,4.72),P(R+.09,4.8),P(R,4.84)],.012,pal.galvanised,4);
     // Hurricane lantern: galvanised font, a glass globe (bulging), wire guards, a vented cap.
     const cx=o[0]+R,cz=o[2],y0=o[1]+4.08;
-    b.cone(cx,cz,y0,y0+.12,.15,.16,pal.galvanised,full?8:6,'steel');
-    glowCone(b,cx,cz,y0+.12,y0+.34,.1,.15,pal.glassNight,full?8:6);glowCone(b,cx,cz,y0+.34,y0+.54,.15,.08,pal.glassNight,full?8:6);
+    b.cone(cx,cz,y0,y0+.12,.15,.16,pal.galvanised,8,'steel');
+    glowCone(b,cx,cz,y0+.12,y0+.34,.1,.15,pal.glassNight,8);glowCone(b,cx,cz,y0+.34,y0+.54,.15,.08,pal.glassNight,8);
     if(full)for(let k=0;k<4;k++){const a=k/4*Math.PI*2+.4;b.line([cx+Math.cos(a)*.13,y0+.12,cz+Math.sin(a)*.13],[cx+Math.cos(a)*.17,y0+.34,cz+Math.sin(a)*.17],pal.galvanised);b.line([cx+Math.cos(a)*.17,y0+.34,cz+Math.sin(a)*.17],[cx+Math.cos(a)*.1,y0+.56,cz+Math.sin(a)*.1],pal.galvanised);}
-    b.cone(cx,cz,y0+.54,y0+.6,.11,.11,pal.galvanised,full?8:6,'steel');b.cone(cx,cz,y0+.6,y0+.66,.12,.04,pal.galvanised,full?8:6,'steel');
+    b.cone(cx,cz,y0+.54,y0+.6,.11,.11,pal.galvanised,8,'steel');b.cone(cx,cz,y0+.6,y0+.66,.12,.04,pal.galvanised,8,'steel');
   }
 }
 

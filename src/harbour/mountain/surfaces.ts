@@ -1,3 +1,4 @@
+import {orchardJunctionAt} from './orchardJunction.ts';
 import {DAM_SOLIDS} from './damSolids.ts';
 import {STATION_SOLIDS,DISTRICT_ART_SOLIDS,SUMMIT_ART_SOLIDS} from './artGeometry.ts';
 import {mountainBaseHeight,SKILL_BRANCHES,MOUNTAIN_ROAD,TOWN_LANE_HALF_WIDTH,ROAD_HALF_WIDTH,nearestOnRoute,ORCHARD_LANE_LINE,EDGE_SOLIDS,type Point3} from './definition.ts';
@@ -54,7 +55,9 @@ function onDeck(x:number,z:number,points:readonly Point3[]){
 /** One deck projection for native and Horizon floor, ceiling and body queries. */
 export function worldDeckAt(surface:WorldSurface,x:number,z:number){
   const p=onDeck(x,z,surface.points);if(!p)return null;
-  if(surface.landingRows){
+  const junction=surface.id==='orchard-lane'?orchardJunctionAt(x,z):null;
+  if(junction){p.point=[p.point[0],junction.y,p.point[2]];p.gradientX=junction.gx;p.gradientZ=junction.gz;}
+  else if(surface.landingRows){
     // Explicit landing meshes end at their visible triangles. The legacy polyline's end-cap
     // tolerance must not invent a flat floor or ceiling beyond this apron.
     const hit=landingSample(surface.landingRows,x,z);if(!hit)return null;

@@ -4,6 +4,7 @@ import { coastCharacter, signedShoreDistance } from '../coast';
 import { buildWaterCuts, waterInfluence } from '../water';
 import { clamp, contains, linePoint, mix, polygonCentre, polygonDistance, polylineArcs, segmentPoint, smooth } from './geometry';
 import { mountainV2Height, mountainV2Rule } from '../mountainV2/ground';
+import { oreRoadGroundCeiling } from '../underground/oreRoad';
 
 export const GEOGRAPHY_REVISION = 'horizon-geo-1' as const;
 /** The one walkable limit: MANIFEST `profiles.walkable.slope_max_deg` (40°, Mountain v2's body
@@ -573,7 +574,7 @@ export function createBedClearanceSampler(beds: BedCut[], rasterMargin = 0): (x:
   const isSpan=(b:BedCut)=>b.id.startsWith('structure.')&&b.structureIds.length>0;
   const clearanceBeds=beds.map(b=>isSpan(b)?{...b,terrainCut:true,terrainExclusions:[]}:b);
   const prepared = prepareBeds(clearanceBeds, rasterMargin), s = getModel().scale;
-  const floor = LAND_FLOOR * s;
+  const floor = LAND_FLOOR * s, oreCeiling = oreRoadGroundCeiling(beds, rasterMargin);
   return (x, z) => {
     let ceiling = Infinity;
     const candidates: { value: number; plane: number; core: boolean; bed: BedCut }[] = [];
@@ -621,7 +622,7 @@ export function createBedClearanceSampler(beds: BedCut[], rasterMargin = 0): (x:
       if (!c.core && (above(decks, c) || above(neighbours, c))) continue;
       ceiling = Math.min(ceiling, c.value);
     }
-    return ceiling;
+    return Math.min(ceiling, oreCeiling(x, z));
   };
 }
 /** R2-08: height (eu) above which another route's deck no longer shields a lower route's raster margin (an overpass). */

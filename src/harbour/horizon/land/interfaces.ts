@@ -64,6 +64,8 @@ export interface StructureSolid {
   id: string;
   /** Original logical solid when its indexed triangles are partitioned for streaming. */
   sourceId?: string;
+  /** Stable logical-mesh origin, set before partitioning; only drawing uses it. */
+  renderOrigin?: XYZ;
   kind: string;
   /** Indexed, outward-facing solid geometry including sides and underside. */
   positions: number[];

@@ -36,6 +36,25 @@ export function repairBranchLanding(authored:readonly Point3[],halfWidth:number,
   const repaired=rows.map((row,i)=>{const w=smooth((arc[i]!-arc[start]!)/(arc[first]!-arc[start]!));return row.map((p,k):Point3=>[p[0],heights[i]!+w*(nearest[i]![k]!.y-target[i]!),p[2]]);});
   return {points:authored.map((p,i):Point3=>[p[0],heights[i]!,p[2]]),rows:repaired};
 }
+/** A point on the actual deck triangles. `band` ends at rows[band], `along` runs
+ * from its preceding row, and `across` runs from the first to the last column.
+ * Barycentric interpolation follows the rendered a-b-c / a-c-d diagonal; a
+ * bilinear height would invent a different surface on a cross-falling cell. */
+export function landingPointAt(rows:LandingRows,band:number,along:number,across:number):Point3{
+  const a=rows[band-1],b=rows[band];
+  if(!a||!b||a.length<2||a.length!==b.length||!Number.isFinite(along)||!Number.isFinite(across)||along<0||along>1||across<0||across>1)throw new RangeError('Invalid landing band coordinate');
+  const column=across*(a.length-1),k=Math.min(a.length-2,Math.floor(column)),v=column-k;
+  const [p,q,r]:readonly [Point3,Point3,Point3]=along>=v?[a[k]!,b[k]!,b[k+1]!]:[a[k]!,b[k+1]!,a[k+1]!];
+  const w:readonly [number,number,number]=along>=v?[1-along,along-v,v]:[1-v,along,v-along];
+  return [p[0]*w[0]!+q[0]*w[1]!+r[0]*w[2]!,p[1]*w[0]!+q[1]*w[1]!+r[1]*w[2]!,p[2]*w[0]!+q[2]*w[1]!+r[2]*w[2]!];
+}
+/** Local plan half-width of those same rows. This is descriptive metadata, not
+ * an inflated capsule or a substitute for exact triangle membership. */
+export function landingHalfWidthAt(rows:LandingRows,band:number,along:number):number{
+  const centre=landingPointAt(rows,band,along,.5),left=landingPointAt(rows,band,along,0),right=landingPointAt(rows,band,along,1);
+  return Math.max(Math.hypot(left[0]-centre[0],left[2]-centre[2]),Math.hypot(right[0]-centre[0],right[2]-centre[2]));
+}
+
 /** Exact triangle height/gradient, using the same diagonal as the rendered apron. */
 export function landingSample(rows:LandingRows,x:number,z:number):{y:number;gx:number;gz:number}|null{
   for(let i=1;i<rows.length;i++)for(let k=1;k<rows[i]!.length;k++){

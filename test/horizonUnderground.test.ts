@@ -1,9 +1,14 @@
-import { expect, it } from 'vitest';
+import {setImmediate as yieldEventLoop} from 'node:timers/promises';
+import { afterEach, expect, it } from 'vitest';
+import type {LandCuts} from '../src/harbour/horizon/land/interfaces';
 import { HORIZON_MANIFEST as M } from '../src/harbour/horizon/world/manifest';
 import { buildLandCuts } from '../src/harbour/horizon/land/beds/build';
 import { baseHeight } from '../src/harbour/horizon/land/terrain';
-import { ROOM_DIMENSIONS, THROAT_COFFER } from '../src/harbour/horizon/land/underground/build';
+import { buildUnderground, ROOM_DIMENSIONS, THROAT_COFFER } from '../src/harbour/horizon/land/underground/build';
 import { BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three';
+
+// Separate synchronous source builds with a real IPC turn; test deadlines stay unchanged.
+afterEach(async()=>{await yieldEventLoop();});
 
 it('encloses rooms and passages, preserves the only named mouths, and reports roof breaches',()=>{
   const cuts=buildLandCuts(baseHeight),f=M.underground.footprint;
@@ -22,7 +27,12 @@ it('encloses rooms and passages, preserves the only named mouths, and reports ro
   const mouthRay=(x:number,y:number)=>{const d=new Vector3(x,y,300).sub(eye),len=d.length();d.normalize();return meshes.filter(({s,mesh})=>!/^underground\.throat\./.test(s.id)&&new Raycaster(eye,d,0,len-8).intersectObject(mesh).length).map(({s})=>s.id);};
   for(const y of [110.5,112])for(const x of [1292,1300,1308])expect(mouthRay(x,y),`mouth ray to [${x},${y}]`).toEqual([]);
   for(const x of [1292,1300,1308])expect(mouthRay(x,119)).toContain('underground.deep.roof');
-  const bad=buildLandCuts(()=>0);expect(bad.diagnostics.some(d=>d.id==='underground.routeCover'&&d.severity==='conflict')).toBe(true);
+  // Isolate the missing-rock diagnostic: a wholly flattened world also makes
+  // Stillwater's fixed native Foot connection impossible, which must keep failing
+  // its independent strict grade check. No valid road is implied by this fixture.
+  const bad:LandCuts={beds:[],pads:[],mouths:[],waters:[],solids:[],diagnostics:[]};
+  buildUnderground(bad,()=>0);
+  expect(bad.diagnostics.some(d=>d.id==='underground.routeCover'&&d.severity==='conflict')).toBe(true);
 },120000);
 it('gives every underground solid a unique id and opens the Deep roof only at the manifest skylight (v1.9: closed over the Throat)',()=>{
   const cuts=buildLandCuts(baseHeight),ids=cuts.solids.map(s=>s.id),dupes=ids.filter((id,i)=>ids.indexOf(id)!==i);

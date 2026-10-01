@@ -1,3 +1,5 @@
+import {funicularFootStationFloor} from '../../land/mountainV2/funicularFootStation.ts';
+import {orchardJunctionAt} from '../../../mountain/orchardJunction.ts';
 /**
  * Mountain v2 on the Horizon — the region's ground, decks, ceilings and solids (pass 5, T2).
  *
@@ -20,6 +22,9 @@
  *    and the channel; the shore that falls to v2's sea is the Horizon's lake shore);
  *  - never within `MOUTH_MARGIN` of a Horizon terrain mouth (`exclude`: the Ore Line's South Portal keeps its opening).
  */
+import {walkingJoinGround} from './walkingJoinGround.ts';
+import {createWalkingGroundPatch} from './walkingGroundPatch.ts';
+import type {StructureSolid} from '../../land/interfaces.ts';
 import {drawnRoadFloor} from './drawnRoadFloor.ts';
 import {drawnRoadGroundCeiling} from './drawnRoadGround.ts';
 import {groundHeightAt} from '../../../scene/ground.ts';
@@ -52,7 +57,11 @@ export const REGION_ORCHARD=drawnRoadSurface(ORCHARD_LANE_LINE);
 export const REGION_SURFACES:readonly WorldSurface[]=WORLD_SURFACES.filter(s=>s.id!=='town-race-road').map(s=>s.id==='mountain-road'?REGION_ROAD:s.id==='orchard-lane'?REGION_ORCHARD:s);
 const DRAWN_ROADS=[REGION_ROAD,REGION_ORCHARD] as const;
 const REGION_OTHER_SURFACES=REGION_SURFACES.filter(s=>!DRAWN_ROADS.includes(s));
-const exactRoadFloors=DRAWN_ROADS.map(surface=>({surface,floor:drawnRoadFloor(surface.landingRows!)}));
+const exactRoadFloors=DRAWN_ROADS.map(surface=>{const original=drawnRoadFloor(surface.landingRows!);return {surface,floor:(x:number,z:number,ceiling=Infinity)=>{
+  // Replaced prefix triangles cannot remain as a higher phantom road/slab.
+  const local=surface.id==='orchard-lane'?orchardJunctionAt(x,z):null;
+  return local?(local.y<=ceiling+1e-8?local:null):original(x,z,ceiling);
+ }};});
 const roadGroundCeiling=drawnRoadGroundCeiling(REGION_ROAD);
 /** One road selector whether the surrounding ground is native terrain or a masked portal. */
 function highestDrawnFloor(x:number,z:number,y:number|undefined,step:number,ground:(x:number,z:number)=>number,decks:readonly WorldSurface[]):WorldSurfaceHit{
@@ -76,6 +85,7 @@ export const REGION_SOLIDS:readonly WorldSolid[]=WORLD_SOLIDS.filter(s=>!s.id.st
 export type RegionSurface={id:string;y:number;n:[number,number,number];material:string;slope:number};
 export type RegionContact={id:string;nx:number;nz:number};
 export type RegionGeographyOptions={
+  walkingJoinSolids?:readonly StructureSolid[];
   /** The Horizon's baked ground (terrain only) at a Horizon point: decides the north face (D-M2). Omitted: native z ≥ −310. */
   horizonGround?:(hx:number,hz:number)=>number;
   /** Horizon points the region leaves to the Horizon (its terrain mouths: a portal's opening must stay open). */
@@ -180,6 +190,7 @@ export function terraceBedExclusion(beds:readonly {id:string;points:readonly Poi
   return test;
 }
 export function createRegionGeography(options:RegionGeographyOptions={}){
+  const walkingGround=walkingJoinGround(options.walkingJoinSolids);
   const near=deckIndex(REGION_SURFACES);
   // A terrain mouth removes rock, not the road or repaired branch visibly crossing it.
   // Keep ground masking unchanged. Only explicit, physically drawn deck triangles span it.
@@ -203,14 +214,20 @@ export function createRegionGeography(options:RegionGeographyOptions={}){
   /** v2's ground (terrain only), Horizon height; null outside the footprint. */
   /** The region answers here: inside the drawn footprint and not yielded to a Horizon deck. */
   const owns=(hx:number,hz:number)=>contains(hx,hz)&&!options.yield?.(hx,hz);
-  // road (L1): v2's ground as felt, held under a yielded Horizon deck's ceiling (TerraceYield.ceiling) exactly as it is drawn.
+  // Pre-join ground stays unchanged outside the local physical patch. This
+  // ceiling remains the input to the original native render lattice and paint.
   const groundCeiling=(hx:number,hz:number):number|null=>{
     const yielded=options.yield?.ceiling?.(hx,hz)??null,road=roadGroundCeiling(hx-O.x,hz-O.z),drawn=road===null?null:road+O.y;
-    return yielded===null?drawn:drawn===null?yielded:Math.min(yielded,drawn);
+    const values=[yielded,drawn].filter((v):v is number=>v!==null);return values.length?Math.min(...values):null;
   };
-  // One height ceiling feeds the visible region ground and its collision authority.
-  // Only ground is cut: native source data, road faces and bridge underpasses stay intact.
-  const feltGround=(nx:number,nz:number)=>{const g=groundHeightAt(nx,nz),c=groundCeiling(nx+O.x,nz+O.z);return c===null?g:Math.min(g,c-O.y);};
+  const baselineGround=(nx:number,nz:number)=>{const g=groundHeightAt(nx,nz),c=groundCeiling(nx+O.x,nz+O.z);return c===null?g:Math.min(g,c-O.y);};
+  // One tier-independent Float32 mesh is both drawn and queried. A rectangle
+  // only rejects work; floor ownership is checked against its actual triangles.
+  // Yielded Horizon decks and native roads/planks remain higher floor candidates.
+  const walkingGroundPatch=walkingGround?createWalkingGroundPatch(walkingGround.triangles,baselineGround,
+    (nx,nz)=>{const c=walkingGround.ceiling(nx+O.x,nz+O.z);return c===null?null:c-O.y;},
+    (nx,nz)=>contains(nx+O.x,nz+O.z)):undefined;
+  const feltGround=(nx:number,nz:number)=>walkingGroundPatch?.floorAt(nx,nz)?.y??baselineGround(nx,nz);
   function groundAt(hx:number,hz:number):number|null{return owns(hx,hz)?feltGround(hx-O.x,hz-O.z)+O.y:null;}
   /** The highest v2 floor (ground or deck) at or under hy + step; null outside the footprint or when it is above that. */
   function surface(hx:number,hy:number|undefined,hz:number,step=STEP,decks:readonly WorldSurface[]=REGION_SURFACES):RegionSurface|null{
@@ -223,19 +240,31 @@ export function createRegionGeography(options:RegionGeographyOptions={}){
       if(hit.id==='terrain')return null;
       return {id:`mountainV2:${hit.id}`,y:hit.y+O.y,n:[hit.nx,hit.ny,hit.nz],material:regionMaterial(hit),slope:Math.atan(hit.slope)*180/Math.PI};
     }
-    const hit=highestDrawnFloor(hx-O.x,hz-O.z,hy===undefined?undefined:hy-O.y,step,feltGround,decks);
+    let hit=highestDrawnFloor(hx-O.x,hz-O.z,hy===undefined?undefined:hy-O.y,step,feltGround,decks);
+    if(hit.id==='terrain'){
+      const patch=walkingGroundPatch?.floorAt(hx-O.x,hz-O.z);
+      if(patch)hit={...hit,y:patch.y,nx:patch.nx,ny:patch.ny,nz:patch.nz,slope:Math.hypot(patch.nx,patch.nz)/patch.ny};
+    }
+    // The existing native picture includes a5cm plank fringe outside its old
+    // capsule floor. The repaired Horizon join subtracts that drawn rectangle
+    // from its apron; these exact source-plan triangles remain its support.
+    // No-option/native and unloaded-region queries retain their old behavior.
+    const plank=walkingGround&&decks.some(s=>s.id==='station:funicular:town')?funicularFootStationFloor(hx,hz):null;
+    if(plank!==null&&(hy===undefined||plank<=hy+step)&&plank>hit.y+O.y)hit={id:'station:funicular:town:planks',y:plank-O.y,nx:0,ny:1,nz:0,material:'wood',slope:0};
     const y=hit.y+O.y;
     if(hy!==undefined&&y>hy+step)return null;
     return {id:hit.id==='terrain'?'terrain':`mountainV2:${hit.id}`,y,n:[hit.nx,hit.ny,hit.nz],material:regionMaterial(hit),slope:Math.atan(hit.slope)*180/Math.PI};
   }
   /** The lowest v2 deck underside above the feet; null when none (or outside). */
   function ceiling(hx:number,hy:number,hz:number):number|null{
+    const plank=walkingGround&&contains(hx,hz)?funicularFootStationFloor(hx,hz):null,under=plank!==null&&plank-.12>hy?plank-.12:null;
+    const withPlank=(value:number|null)=>under===null?value:value===null?under:Math.min(value,under);
     if(!owns(hx,hz)){
-      if(!inMouth(hx,hz))return null;
-      const c=worldCeilingAt(hx-O.x,hz-O.z,hy-O.y,.2,mouthDecks);return Number.isFinite(c)?c+O.y:null;
+      if(!inMouth(hx,hz))return withPlank(null);
+      const c=worldCeilingAt(hx-O.x,hz-O.z,hy-O.y,.2,mouthDecks);return withPlank(Number.isFinite(c)?c+O.y:null);
     }
     const c=worldCeilingAt(hx-O.x,hz-O.z,hy-O.y,.2,REGION_SURFACES);
-    return Number.isFinite(c)?c+O.y:null;
+    return withPlank(Number.isFinite(c)?c+O.y:null);
   }
   /**
    * The first solid overlapping a body standing at `feet` (the span above its step and below its head): deck slabs
@@ -311,6 +340,6 @@ export function createRegionGeography(options:RegionGeographyOptions={}){
     };
   }
   const requiresScene=(hx:number,hz:number)=>contains(hx,hz)||deckAcrossMouth(hx,hz);
-  return {contains,requiresScene,groundAt,groundCeiling,surface,ceiling,contact,blocked,waterLevel,provider,whileDrawn};
+  return {contains,requiresScene,groundAt,groundCeiling,walkingGroundPatch,surface,ceiling,contact,blocked,waterLevel,provider,whileDrawn};
 }
 export type RegionGeography=ReturnType<typeof createRegionGeography>;

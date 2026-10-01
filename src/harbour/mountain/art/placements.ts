@@ -1,3 +1,4 @@
+import {placementRoadNormal} from '../roadPlacement.ts';
 /**
  * Where every free-standing mountain prop stands, as pure data (no three.js), so the
  * renderer and the tests read one answer. Each placement seats its foot on the ground at
@@ -30,7 +31,7 @@ export function seat(id:string,kind:PropKind,x:number,z:number,yaw:number,hx:num
 /** Ground under a bench more uneven than this is levelled with a pad. */
 export const BENCH_LEVEL=.26;
 
-type Line={samples:readonly {at:Point3;normal:Point3;halfWidth:number;tangent:Point3}[]};
+type Line={samples:readonly {at:Point3;normal:Point3;placementNormal?:Point3;halfWidth:number;tangent:Point3}[]};
 /** Nearest road sample to a point (index into MOUNTAIN_ROAD_LINE). */
 function nearestSample(x:number,z:number,line:Line=MOUNTAIN_ROAD_LINE){let best=0,d=Infinity;line.samples.forEach((s,i)=>{const e=Math.hypot(s.at[0]-x,s.at[2]-z);if(e<d){d=e;best=i;}});return {i:best,d};}
 
@@ -38,9 +39,9 @@ function nearestSample(x:number,z:number,line:Line=MOUNTAIN_ROAD_LINE){let best=
 function besideRoute(line:Line,i0:number,side:1|-1,off:number,half:number,span=14):{x:number;z:number;yaw:number}|null{
   let best:{x:number;z:number;yaw:number;score:number}|null=null;
   for(let k=-span;k<=span;k++){const s=line.samples[Math.max(0,Math.min(line.samples.length-1,i0+k))]!;
-    const o=s.halfWidth+off,x=s.at[0]+s.normal[0]*o*side,z=s.at[2]+s.normal[2]*o*side,g=footGround(x,z,0,half,half);
+    const o=s.halfWidth+off,x=s.at[0]+placementRoadNormal(s)[0]*o*side,z=s.at[2]+placementRoadNormal(s)[2]*o*side,g=footGround(x,z,0,half,half);
     if(Math.abs(g.min-s.at[1])>1.2||corridorClearance(x,z)<half+.25)continue;
-    const score=(g.max-g.min)+Math.abs(k)*.02;if(!best||score<best.score)best={x,z,yaw:Math.atan2(-s.normal[0]*side,-s.normal[2]*side),score};}
+    const score=(g.max-g.min)+Math.abs(k)*.02;if(!best||score<best.score)best={x,z,yaw:Math.atan2(-placementRoadNormal(s)[0]*side,-placementRoadNormal(s)[2]*side),score};}
   return best;
 }
 
@@ -52,7 +53,7 @@ export function mountainProps():readonly PropPlacement[]{
   // District signposts: at the road where the district's path leaves it, facing the approach.
   for(const d of DISTRICTS){
     const road=nearestSample(d.at[0],d.at[2]),lane=nearestSample(d.at[0],d.at[2],ORCHARD_LANE_LINE),line:Line=lane.d<road.d?ORCHARD_LANE_LINE:MOUNTAIN_ROAD_LINE,n=lane.d<road.d?lane:road;
-    const s=line.samples[n.i]!,side=((d.at[0]-s.at[0])*s.normal[0]+(d.at[2]-s.at[2])*s.normal[2])>=0?1:-1,i0=Math.max(0,n.i-10);
+    const s=line.samples[n.i]!,side=((d.at[0]-s.at[0])*placementRoadNormal(s)[0]+(d.at[2]-s.at[2])*placementRoadNormal(s)[2])>=0?1:-1,i0=Math.max(0,n.i-10);
     const spot=besideRoute(line,i0,side as 1|-1,1.6,.4,10);
     if(spot){const t=line.samples[i0]!.tangent;out.push(seat(`signpost:${d.id}`,'signpost',spot.x,spot.z,Math.atan2(-t[0],-t[2]),.3,.3,3.1,{district:d.id,label:d.name}));}
   }

@@ -24,7 +24,7 @@ const asset=path=>baseline?execFileSync('git',['show',`${baseline}:${path}`],{ma
 const wb=asset('public/horizon/world/horizon-geo-1.json.gz'),tb=asset('public/horizon/terrain/horizon-geo-1.bin');
 const ab=b=>b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength),w=a.parseHorizonDefinition(ab(wb)),f=a.decodeTerrainAsset(ab(tb),'full');
 const g=a.createHorizonGeography(f,{...w.collision,solids:w.geometry.solids,diagnostics:w.diagnostics??[]});
-g.addDynamic(a.createMountainV2Region({horizonGround:(x,z)=>a.sampleTerrain(f,x,z),yield:a.terraceBedExclusion(w.beds),terrainStep:f.step}).provider);
+g.addDynamic(a.createMountainV2Region({walkingJoinSolids:w.geometry.solids,horizonGround:(x,z)=>a.sampleTerrain(f,x,z),yield:a.terraceBedExclusion(w.beds),terrainStep:f.step}).provider);
 const deps={world:w,geography:g,manifest:a.HORIZON_MANIFEST,reducedMotion:false,calm:false,tier:'full'};
 const pathAt=(p,s)=>{for(let i=1;i<p.length;i++){const q=p[i-1],r=p[i],l=Math.hypot(r[0]-q[0],r[2]-q[2]);if(s<=l||i===p.length-1){const t=Math.max(0,Math.min(1,s/(l||1)));return q.map((v,k)=>v+(r[k]-v)*t);}s-=l;}return p[0];};
 const length=p=>p.slice(1).reduce((s,q,i)=>s+Math.hypot(q[0]-p[i][0],q[2]-p[i][2]),0);

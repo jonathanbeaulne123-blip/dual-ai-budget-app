@@ -2,6 +2,7 @@
 /** Native branch movement evidence. Run only after final source geometry is ready.
  * node scripts/horizon/mountain-native-landings-audit.mjs <checkout> <new-output-dir> --run
  * Optional --full-branches adds separate full-branch attempts (including unchanged skill rails).
+ * Optional --native-roads adds the complete standalone mountain road and Orchard Lane.
  * Optional --skate-only omits direct native walking runtime. Never overwrites earlier evidence. */
 import {createRequire} from 'node:module';
 import {readFileSync,writeFileSync,mkdirSync,existsSync,mkdtempSync,rmSync} from 'node:fs';
@@ -18,6 +19,8 @@ const {build}=createRequire(resolve(ROOT,'package.json'))('esbuild'),sha=b=>crea
 const exports=[
  ['createSkateDriver,skateField','skate/driver.ts'],['SKATE_NO_INTENT','skate/contract.ts'],
  ['SKILL_BRANCHES,MOUNTAIN_COURSE_POINTS','mountain/course.ts'],['groundHeightAt','scene/ground.ts'],
+ ['landingHalfWidthAt','mountain/branchLandings.ts'],
+ ['MOUNTAIN_ROAD_LINE,ORCHARD_LANE_LINE','mountain/roads.ts'],
  ['courtObstacles,pushOut,BODY_RADIUS','body/obstacles.ts'],
  ['createBodyState,stepBody,NO_INPUT','body/bodyModel.ts'],
 ];
@@ -42,7 +45,11 @@ function add(id,branch,startRow,endRow,scope){
  const selected=branch.points.slice(startRow,endRow+1),points=[...selected],approach=startRow===0,runout=endRow===branch.points.length-1;
  if(approach)points.unshift(...slice(course,Math.max(0,course.cumulative[branch.entry]-8),course.cumulative[branch.entry]).slice(0,-1));
  if(runout)points.push(...slice(course,course.cumulative[branch.exit],Math.min(course.length,course.cumulative[branch.exit]+8)).slice(1));
- routes.push({id,branchId:branch.id,scope,startRow,endRow,halfWidth:branch.halfWidth,roadApproachM:approach?8:0,roadRunoutM:runout?8:0,points,sourcePointsSha256:sha(JSON.stringify(branch.points)),selectedPointsSha256:sha(JSON.stringify(points))});
+ // Preserve the existing pursuit corridor and threshold. Its halfWidth is an
+ // envelope; widthProfile names the actual branch rows, excluding road run-ins.
+ const rowHalfWidths=selected.map((_,i)=>{const row=startRow+i;return branch.landingRows?a.landingHalfWidthAt(branch.landingRows,Math.max(1,row),row===0?0:1):branch.halfWidth;});
+ const widthProfile={source:branch.landingRows?'landingRows':'constant-authored-envelope',startRow,endRow,rowHalfWidths,minimumRowHalfWidthM:Math.min(...rowHalfWidths),maximumRowHalfWidthM:Math.max(...rowHalfWidths),includesRoadApproachOrRunout:false};
+ routes.push({id,branchId:branch.id,scope,startRow,endRow,halfWidth:branch.halfWidth,halfWidthMeaning:'conservative audit corridor envelope; exact deck width is widthProfile',widthProfile,roadApproachM:approach?8:0,roadRunoutM:runout?8:0,points,sourcePointsSha256:sha(JSON.stringify(branch.points)),selectedPointsSha256:sha(JSON.stringify(points))});
 }
 const library=a.SKILL_BRANCHES.find(b=>b.id==='library-balcony'),dam=a.SKILL_BRANCHES.find(b=>b.id==='dam-promenade'),awning=a.SKILL_BRANCHES.find(b=>b.id==='hearth-awning');
 if(!library||!dam||!awning)throw Error('Missing authoritative branch');
@@ -54,12 +61,17 @@ const damRow=dam.points.findIndex(p=>dist(p,damDeck.points[0])<1e-7&&Math.abs(p[
 add('dam-exit',dam,damRow,dam.points.length-1,'last deck and landing only; unchanged upstream dam crest and rail excluded');
 add('awning-return',awning,Math.max(0,generated.awning.lockedRows-1),awning.points.length-1,'last locked row through changed contour return and road runout; first rail excluded');
 if(process.argv.includes('--full-branches'))for(const branch of [library,dam,awning])add(branch.id+'-full',branch,0,branch.points.length-1,'optional whole branch, includes unchanged skill features; separate evidence');
+if(process.argv.includes('--native-roads'))for(const line of[a.MOUNTAIN_ROAD_LINE,a.ORCHARD_LANE_LINE]){
+ const points=line.samples.map(s=>s.at),length=path(points).length;
+ routes.push({id:line.id+'-standalone',branchId:null,scope:'complete native road in the standalone world; independent direction and mode attempts',halfWidth:Math.min(...line.samples.map(s=>s.halfWidth)),halfWidthMeaning:'minimum authored road half-width; no deviation tolerance enlargement',points,sourcePointsSha256:sha(JSON.stringify(points)),selectedPointsSha256:sha(JSON.stringify(points)),maxSeconds:Math.max(180,Math.ceil(length/1.6+30))});
+}
 writeFileSync(resolve(OUT,'routes.json'),JSON.stringify(routes,null,2));
 const obstacles=a.courtObstacles('full'),field=a.skateField(),world={groundHeightAt:a.groundHeightAt,obstacles,room:null},dt=1/60;
 const sourceSetSha256=sha(JSON.stringify(sourceHashes)),report={createdAt:new Date().toISOString(),root:ROOT,head:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),sourceSetSha256,sourceHashes,compiledBundleSha256:sha(bundle.outputFiles[0].text),obstacleCount:obstacles.length,method:'Native createSkateDriver with standalone default skateField, real court/mountain obstacles, dressing colliders, shore and slope rules; native walking directly calls the same createBodyState/stepBody as createWalker. One initial placement per independent attempt. Ordinary input only.',driver:{dt,lookaheadSkateM:.7,lookaheadWalkM:.7,pushBelowMs:2.4,brakeAboveMs:2.9,stallSeconds:6,maxSeconds:180,endToleranceM:.35,maxRouteHeightErrorM:1},limits:['Native standalone world only: this is not Horizon shell, streaming, camera, rendered UI or physical-device evidence.','Each direction/range/mode starts independently and cannot establish one uninterrupted whole branch or chain.','Scripted pursuit uses0.7m lookahead for these narrow branch contours, ordinary push below2.4m/s and brake above2.9m/s; it is not skilled human acceptance.','Contacts are native walker state or observational obstacle pushOut; native skate contact normals are not exposed.','Natural airborne motion is counted and reported; a completed attempt with airtime still needs review.','No jumps, grind commands, retries, checkpoint restoration, physics overrides or post-start coordinate writes.'],results:[]};
 const snapshot=p=>({x:p.x,y:p.y,z:p.z,speed:p.speed,heading:p.heading??p.yaw,vx:p.vx,vy:p.vy,vz:p.vz,phase:p.phase,supportId:p.supportId,bail:p.bail?{...p.bail}:null,air:p.air??p.airTime,clearance:p.clearance});
 function run(route,reverse,mode){
  const p=path(reverse?[...route.points].reverse():route.points),start=pointAt(p,0),end=pointAt(p,p.length),r={route:route.id,scope:route.scope,branchId:route.branchId,mode,direction:reverse?'reverse':'forward',sourceSetSha256,sourcePointsSha256:route.sourcePointsSha256,attemptedDistanceM:p.length,requestedStart:start,requestedEnd:end,restarts:0,completed:false,reason:'time-cap',completedDistanceM:0,travelM:0,elapsedS:0,maxDeviationM:0,maxHeightErrorM:0,airborneFrames:0,maxContinuousAirS:0,maxSpeedMs:0,maxTurnRateRadS:0,maxLateralAccelerationMs2:0,gripMargin:null,contacts:{},events:[],samples:[]};
+ const maxSeconds=route.maxSeconds??180;r.maxSeconds=maxSeconds;
  let input={...a.SKATE_NO_INTENT},driver=null,body=null;
  if(mode==='native-skate'){driver=a.createSkateDriver({obstacles},{getGamepads:null,intent:()=>input});driver.mount(start.x,start.z,start.heading,undefined,{y:start.y});}
  else body=a.createBodyState(start.x,start.z,start.heading,world,start.y);
@@ -67,11 +79,12 @@ function run(route,reverse,mode){
  r.actualStart=snapshot(present());r.initialDisplacementM=Math.hypot(r.actualStart.x-start.x,r.actualStart.y-start.y,r.actualStart.z-start.z);
  if(r.initialDisplacementM>.25){r.reason='initial-placement-displaced';r.final=r.actualStart;driver?.unmount();return r;}
  let d=0,mark=0,stall=0,air=0,previous=asPoint(start),lastContact=null;
- for(let frame=0;frame<180/dt;frame++){
+ for(let frame=0;frame<maxSeconds/dt;frame++){
   const before=present(),pr=progress(p,before.x,before.z,d);d=Math.max(d,pr.d);const expected=pointAt(p,pr.d),heightError=Math.abs(before.y-expected.y);
   r.completedDistanceM=d;r.elapsedS=frame*dt;r.maxDeviationM=Math.max(r.maxDeviationM,pr.off);r.maxHeightErrorM=Math.max(r.maxHeightErrorM,heightError);r.maxSpeedMs=Math.max(r.maxSpeedMs,before.speed);
   const endDistance=Math.hypot(before.x-end.x,before.z-end.z);r.endResidualM=endDistance;
-  if(d>=p.length-.35&&endDistance<.5&&heightError<.48){r.completed=true;r.reason='end';break;}
+  // Arrival uses the current projection; high-water d remains diagnostic progress/stall state.
+  if(pr.d>=p.length-.35&&endDistance<.5&&heightError<.48){r.completed=true;r.reason='end';break;}
   if(d>mark+.1){mark=d;stall=0;}else stall+=dt;
   if(stall>6){r.reason='stalled-no-progress-6s';break;}
   if(pr.off>Math.max(1,route.halfWidth+.5)){r.reason='left-authored-route';break;}

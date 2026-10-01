@@ -1,12 +1,12 @@
 # The Mountain Road book
 
-30 September 2026 · Implementation in progress · Jonathan is the decision owner
+1 October 2026 · Draft PR checkpoint · Jonathan is the decision owner
 
-The Prow → Foot → Summit chain and the fitted Stillwater → Green Road link are being built following Jonathan's “build everything, make it beautiful.” The road keeps its native mountain surface and bridges; Horizon supplies the connections, route metadata, furniture and lighting. The library and dam landing repairs are explicitly approved in both worlds. An additional awning-return repair has been submitted for a separate native-world choice.
+The Prow → Foot → Summit chain and the fitted Stillwater → Green Road link are being built following Jonathan's “build everything, make it beautiful.” The road keeps its native mountain surface and bridges; Horizon supplies the connections, route metadata, furniture and lighting. The library and dam landing repairs and the longer awning return are explicitly approved in both worlds. Jonathan also explicitly retains the original steep native grades as named exceptions (D-MR17). Three native frame repairs and the first-five-row awning entry fairing were separately approved on October 1 (D-MR19–20). D-MR22 subsequently approves the Orchard approach, initial bridge fairing and bounded ground cut. These changes are applied. The latest instruction asks for the current work to be wrapped into a draft PR with remaining acceptance explicitly open.
 
 **Budget delta (5): 0. Engagement delta (3): +2 target, awaiting completed traversal and visual acceptance. Risk: High.** No money, command, schema, sync, Auth/RLS or Hercules payload changes.
 
-**Delivery:** local branch `codex/mountain-road-book`, based on `324cd5f246ab295af5cf64d553ebf78fad57f7b5`. No PR, merge, deployment or live verification. The original Phase 1 inventory is preserved in commit `750150f`; its measurements below are explicitly the before state, not current results. Follow [the build worksession](../worksessions/2026-09-30-mountain-road-build.md) and the implementation section below for current scope.
+**Delivery:** local branch `codex/mountain-road-book`, with `origin/main@1cf76c551e6f49124b6257162bc4d36ca18d7bd1` (#577) integrated locally at `df77030298d5ff960d2eeaa5eb62c8558008694b`. The current work is being submitted as a draft PR at Jonathan’s request; merge, deployment and live verification have not occurred. The original Phase 1 inventory is preserved in commit `750150f`; its measurements below are explicitly the before state, not current results. Follow [the build worksession](../worksessions/2026-09-30-mountain-road-build.md) and the implementation section below for current scope.
 
 Read with [worksession](../worksessions/2026-09-30-mountain-road-book.md), [ROAD](ROAD.md), [road handoff](../CLAUDE_HORIZON_MAIN_ROAD.md), [inventory](evidence/mountain-road/before/inventory.json), [chain audit](evidence/mountain-road/before/chain/AUDIT.md), [baseline corridor audit](evidence/mountain-road/before/corridor/AUDIT.md), and [LOOK](evidence/mountain-road/before/LOOK.md).
 
@@ -21,7 +21,7 @@ Read with [worksession](../worksessions/2026-09-30-mountain-road-book.md), [ROAD
 
 ![Existing chain and curve groups](evidence/mountain-road/design/chain-plan.svg)
 
-Main CI remains red for the named Bianca Month month-end regression: [CI run](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/36685087825), 82 passed / 1 failed in `app-startup-p1.test.ts`, “Missing Bianca Month income Start”. That fixture/test is unchanged. Horizon asset CI passed; neither fact means this road is accepted.
+**Inventory-time CI:** main was red for the named Bianca Month month-end regression: [CI run](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/36685087825), 82 passed / 1 failed in `app-startup-p1.test.ts`, “Missing Bianca Month income Start”. This task did not author a fixture/test change. The later main integration includes the separately authorized fix; CI, Cloudflare and Horizon asset workflows on `1cf76c5` were green when integrated. Neither the old failure nor those green workflows establish this road’s acceptance.
 
 ## 2. Decisions D-MR1 onward
 
@@ -36,13 +36,31 @@ D-MR1–7 and D-MR11–12 guide the authorized build. D-MR8 advances to the fitt
 | D-MR5 | Derive guard need from actual regional ground and visible guard volume; preserve existing safe rails until replacements and all openings are proven. | Native drop threshold >1 m differs from corridor >1.25 m. Do not mechanically remove native parapets to unify thresholds. |
 | D-MR6 | Light portals, junctions, tight bends and stops, with dark stretches between. Use the existing world-clock +2°…−6° ramp and shared 6 full / 2 lite shadowless light pool. | D-R3 STYLE exception still belongs to Jonathan. No additional pool or silent exception. |
 | D-MR7 | Publish b-foot/b2/b3 to Journey from their authored source; covered V03 and the whole chain derive from shared station data. | Keep all Journey financial spaces/stops unchanged. |
-| D-MR8 | Advance Stillwater only to a fitted grade-link study; require the second rim→Green Road descent before calling it a loop. | A 59 m connector alone does not make the mountain a through route. |
+| D-MR8 | Build the fitted341.094m Foot→Stillwater→Green Road connection, including its104m lined tunnel. | Jonathan’s build instruction advances the completed profile; maximum8.222% grade. The original59m chord was only an initial feasibility study. |
 | D-MR9 | Keep west and north connections unbuilt for now; reserve a Viaduct fit study as an alternative if a contour route fails. Keep Shoulder as a view. | Large drops, reserved plots and transport/flight/view constraints. |
-| D-MR10 | Use the bridge work's shared BridgeDefinition after its contract lands. Submit any new family to its owner and Jonathan. | The bridge checkout is an unmerged dependency, not permission to invent a parallel system. |
+| D-MR10 | Use the shared BridgeDefinition integrated from main#577. Submit any new landmark family to Jonathan. | No new landmark bridge is built in this change; Stillwater is a fitted grade/tunnel link. |
 | D-MR11 | Separate cruiser, bicycle, Horizon board and native skate evidence; a test of one board mode cannot accept the other. All autonomous recoveries count. | Actual runtime has distinct controllers and legality rules. |
 | D-MR12 | Keep natural-descent, full footway coverage, real captures, envelopes and district budgets explicit gates. | Scripted steering/braking, headless renders and unit passes cannot close these. |
 
-## 3. Ownership line and disagreements
+The later implementation decisions are recorded in full in [DECISIONS.md](../DECISIONS.md):
+
+| Decision | Current boundary |
+|---|---|
+| D-MR13 | Approved shared Library/Dam landings and longer Awning return; protected skill features remain. |
+| D-MR14 | Real Horizon-owned Foot and Ore joins, ending on actual native road triangles. |
+| D-MR15 | Horizon’s native skate adapter uses composed-world support, contacts, water and readiness; standalone defaults and physics remain. |
+| D-MR16 | One clock-owned glow system and the existing6/full,2/lite shadowless road-light pool. |
+| D-MR17 | Jonathan retains only the four original steep main-road grade groups as named exceptions. |
+| D-MR18 | Pickup lifecycle, exact native-road/course ownership, Journey bridge drawing and documented test repairs. |
+| D-MR19–20 | Three individually approved native frame repairs and bounded Awning entrance fairing, with centreline/heights/bridges/scenery preserved. |
+| D-MR21 | Actual lamp-foot support and portable compatible geometry batches; unchanged rendering budgets and authored shapes. |
+| D-MR22 | Approved25.908m Orchard approach and17.936m initial b0 bridge fairing, at most0.361820m bridge lowering and a bounded supporting ground cut. |
+| D-MR23 | Ordered contact-shade facing passes retain exact rendered appearance in the completed comparisons while reducing submitted triangles; the original district limits remain. The warmed CPU submission cost is about0.2ms higher in the two measured cases. |
+| D-MR24 | Preserve the native Summit bench behind the terminal road section and trim only the new Crown landing rails to the existing walking opening; original stairs and native scenery remain. |
+| D-MR25 | Keep one logical render origin across every funicular apron fragment, preserve exact collision coordinates, and use conservative static-face bounds without changing query results. |
+| D-MR26 | Wrap the existing work in a draft PR. Retain the unreduced funicular apron and applied actual-served ground patch; reject reduction that changes downstream ground, preserve failed tests and unchanged rendering limits. |
+
+## 3. Before-state ownership and disagreements
 
 | Consumer / place | Current owner and disagreement | Phase 2 boundary |
 |---|---|---|
@@ -73,7 +91,7 @@ Two station systems are intentionally named: V03/chain **plan** metres and nativ
 | M8 Upper ascent | s694–885 | Dam approach, H6/H7, guarded views and dark intervals. |
 | M-top Summit Commons | s885–945.861 | Observatory, terminal, launch deck and race start; preserve their openings. |
 
-The three main bridge spans' **native plan** ranges are b-foot 34.986–57.978, b2 387.824–444.801, b3 617.738–690.715. The prompt's wider/rounded ranges describe exported spatial samples; they are not interchangeable station axes. The quiet Orchard Lane bridge b0 is outside the main chain and remains unchanged.
+The three main bridge spans' **native plan** ranges are b-foot 34.986–57.978, b2 387.824–444.801, b3 617.738–690.715. The prompt's wider/rounded ranges describe exported spatial samples; they are not interchangeable station axes. The quiet Orchard Lane bridge b0 is outside the main chain. D-MR22 separately approves lowering its first17.936m by at most0.361820m to remove the Orchard junction lip; its plan, width and existing span remain fixed.
 
 Each portal, canal bridge end, native bridge end, branch opening and Foot handover needs rider-height capture and a five-line lip/edge scan, plus driven records. Inventory provides source anchors; a sampled bridge point is not an exact abutment witness. No join is accepted from the current chain probe alone.
 
@@ -179,7 +197,7 @@ The Prow is already connected by V03; finish its seam rather than adding a secon
 
 ### Viaduct · Orchard descent toward the Hollow
 
-**Status:** deferred fit study. Not a selected alignment, contract addition or building authorization. The bridge contract belongs to the unmerged bridge effort; this book creates no second BridgeDefinition. Its current cast already includes suspension, arch, bascule, ribbon, covered, masonry, cantilever, trestle, garden and boardwalk.
+**Status:** deferred fit study. Not a selected alignment, contract addition or building authorization. The bridge contract is now available from integrated main#577; this book creates no second BridgeDefinition. Its cast already includes suspension, arch, bascule, ribbon, covered, masonry, cantilever, trestle, garden and boardwalk.
 
 **Everyday picture name:** Viaduct. **Proposed unique typology:** continuous curved box-girder on slender piers, distinct from the existing timber trestle and arch families. **Purpose:** carry part of a longer ≤10% contour descent toward Green Road over a measured valley. **Signature:** one continuous curve with a valley-facing meeting balcony, outside traffic. The suggested Adit undercrossing is an unverified hypothesis, not a promised passage.
 
@@ -210,13 +228,15 @@ The [independent review](evidence/mountain-road/REVIEW.md) raised two P2 documen
 
 ## 10. Implementation and remaining gates
 
-- **One physical route:** the published chain joins V03, 22.014 m of existing native Foot lane and the mountain road. The lane is now road metadata for bicycle/navigation consumers while its native S1 mesh remains the sole floor.
+- **One physical route:** the published chain joins V03, 22.014 m of existing native Foot lane and the mountain road. The lane has road metadata for bicycle/navigation consumers and a closed seven-metre Horizon apron. Nearby Year Walk/S1 source prisms are refitted before compaction, with a continuous departure from V03 and an exact cut at the native road footprint. The native road remains the highest floor at the join; its vertices and route are unchanged.
 - **Shared landings:** the library and dam use one triangulated landing mesh for drawing, surface queries and body collision in both worlds. The library's terrain-constrained solve runs offline; its generated product is hashed and checked. Its road entry is conformed across the full width while the reading roof is retained. Approval: Jonathan's explicit “Yes—repair the shared landings in both worlds.”
-- **Foot and Ore Line:** Horizon's overlapping Year Walk shoulder follows the native Foot road. The Ore station apron follows the road, its duplicate threshold slab is removed, and the lining/doorway end before the road's clear width. The rail alignment remains fixed. Jonathan also approved the shared awning return: its first rail and main road remain intact, while a longer tapered return rejoins about18 m farther up the same hairpin.
+- **Foot and Ore Line:** Foot’s one-metre source grid contains 7,972 local triangles; source probes found a maximum exposed road grade of 10.7673%, a maximum upward local face of 37.553° and no open/nonmanifold edges. These source measurements precede final served-asset checks. Ore’s visible closed crossing rises to the fixed rail heads over a 17.681 m run, with 11.5% maximum facet grade and a retaining face outside the cart aperture. The roof/doorway withdraw from the road’s full width; rail controls and construction are unchanged. Jonathan’s approved awning return preserves the first rail and main road while rejoining about 18 m farther up the same hairpin.
 - **Native everyday skate on Horizon:** the ordinary native controller now queries the composed world for floors, walls, ceilings and water. Native standalone defaults are retained. Streaming readiness holds input/relocation until its destination exists; it never invents support or snaps a rider onto the route.
-- **Furniture and map:** native-source stations preserve the three existing bridges and visible guards; no second road deck or guard is drawn. Exact native water/building/path/tree footprints constrain planting and supported lantern sites. A physically supported garden bench connects to the library path. Six sustained bends receive strategic lighting through the existing clock and bounded light pool. Classic, Taylor and Newfoundland use their authored kits; lite subtracts detail.
+- **Furniture and map:** native-source stations preserve the three existing bridges and visible guards; no second road deck or guard is drawn. Exact native water/building/path/tree footprints constrain planting and supported lantern sites. A physically supported garden bench connects to the library path. Six sustained bends receive strategic lighting through the existing clock and bounded road-light pool. Both tiers retain the same essential Mountain fixtures; lite removes secondary kit fittings and planting items while preserving retained shapes. The actual themed heads feed one glow owner, avoiding duplicate halos. The inherited airport has five additional point lights, so 6/2 is a road-pool cap rather than a whole-scene cap. Classic, Taylor and Newfoundland use their authored kits. Upper additional pine groves are removed where native woodland already frames the road; lower groves and Stillwater birches remain.
 - **Stillwater link:** 341.094 m fitted route from the Foot through the rim to Green Road; maximum grade 8.222%. A 104 m lined tunnel passes beneath the intervening ground and Year Walk, with 12 m internal width and 5.4 m clear height. The same bed and section drive visible/collision geometry, corridor and Journey. Portal aprons lap the corridor ownership boundaries. This is a grade/tunnel link, not a new landmark bridge or bridge contract.
-- **Verification status:** local focused library, support, furniture, native host and readiness tests have passed. Intermediate full-chain cruiser centreline and walking passes complete both ways; keep-right and native/bicycle joins are being repaired and rerun. These intermediate results are not final acceptance. One parallel typecheck was stopped during severe memory paging and is not a pass. Final serialized verification and final baked/captured evidence remain required.
+
+Current baked source dimensions supersede the Phase 1 coarse-axis inventory above: the 941-section native road has 939.595 m plan length and 945.861 m spatial length. The 1,029-vertex assembled chain has 1,288.984 m plan length and 1,296.220 m spatial length. Stillwater has 341.094 m plan length and 341.627 m spatial length. Controller travel distances can be slightly shorter because the unchanged endpoint tolerance accepts arrival before the last vertex; travel distance is not the source route length.
+- **Verification status:** the current source passes 25/25 focused tests across Foot geometry, Ore crossing, shared landings and composed lighting (18.67 seconds). The final source rebuild, byte-exact comparison, route runs, serial world tests, captures and budget measurement are in progress. Earlier whole-chain and short-join runs remain intermediate evidence; none substitutes for current full-route acceptance. Both earlier failed typechecks and the stopped parallel run are preserved, not counted as passes.
 
 ### Historical Phase 1 owed list
 
@@ -230,6 +250,14 @@ The following is retained from the inventory; the implementation bullets above s
 5. Fitted Stillwater→rim and rim→Green Road profiles, structure/plot/water envelopes, exact abutments and budgets; no link is construction-ready.
 6. Resolve D-R3/4 STYLE calls and any native-world/view/flight/cable/bridge change explicitly with Jonathan.
 7. After approved geometry changes: source-derived bake, byte-exact check, dump check, focused High gate, required horizon/Journey/walk/native suite files serially, view proofs and blind review. No exhaustive suite without its separate exact-SHA request.
-8. Phase 2 stops for Jonathan's visual look/optional phone ride. Phase 3 is one PR per approved link, grade first, then any bridge.
+8. The original phase stop was superseded by Jonathan's “finish the original task dont pause.” The authorized chain and Stillwater implementation continue together through their local checks. Optional physical-device acceptance and any later publishing remain separate.
 
 **Next owner: Codex.** Complete the authorized implementation and exact-source checks. Jonathan owns optional real-device acceptance. Merge, deployment, new landmark bridges and moved flight/cable/view envelopes remain separate decisions.
+
+## 11. October 1 draft wrap-up — current delivery authority
+
+Jonathan requested a PR now and an end to further expansion. The [current handoff](../CODEX_HORIZON_MOUNTAIN_ROAD_2.md) supersedes ongoing-work language in earlier checkpoints. The source includes the approved native changes and the Horizon/Stillwater implementation; it is not accepted or ready to merge.
+
+The v7 shared physical/drawn funicular ground passes its actual-served numerical preflight in both tiers (110,280 dense and 4,521 path samples each), with sub-micrometre drawn seams. It adds 5,515 full / 5,350 lite triangles. Four current synthetic-grid collar tests fail with an inverted-face exception; the actual-world preflight does not excuse those failures. The 16,036-triangle source apron is retained. The proposed 6,704-triangle reduction changes canonical ground by up to 0.2589212656 m and was removed and archived.
+
+The Lakeside baked solid contribution alone remains 33,298 full / 29,360 lite triangles before art and canonical ground, above the unchanged 25,000 / 10,000 corridor limits. The 87/132 native capture run is partial, including a settling timeout; [LOOK](evidence/mountain-road/after/LOOK.md) is a review record, not finished acceptance. Source checks, final gate/bake statuses and hashes live under [draft-pr-wrap-up](evidence/mountain-road/after/attempts/draft-pr-wrap-up/). Final modes, hairpins, funicular traversal/art, streaming, envelopes, rendered budgets, remaining tests and human/device checks remain for a subsequent session.

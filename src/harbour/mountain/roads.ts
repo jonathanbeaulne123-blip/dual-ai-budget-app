@@ -1,9 +1,11 @@
+import {applyOrchardJunctionProfile,orchardEdgeHeight} from './orchardJunction.ts';
+import {fairMountainRoadFrames} from './roadFrameFairing.ts';
 /**
  * The road as data: an arc-length parameterised centreline with per-sample frame, width,
  * grade, curvature, edge kind on each side and support; bridges as explicit objects;
  * parapet/kerb/wall runs and their collision segments; retaining walls.
  */
-import {ROAD_CENTRE,ORCHARD_LANE_CENTRE,ORCHARD_LANE_HALF_WIDTH,ROAD_SAMPLE_STEP as ROAD_PLAN_STEP,roadTagS} from './roadLine.ts';
+import {ROAD_CENTRE,ORCHARD_LANE_AUTHORED_CENTRE,ORCHARD_LANE_HALF_WIDTH,ROAD_SAMPLE_STEP as ROAD_PLAN_STEP,roadTagS} from './roadLine.ts';
 import {BRIDGE_SPANS,ROAD_HALF_WIDTH,type BridgeType} from './bridges.ts';
 import {baseHeight} from './terrainBase.ts';
 import {mountainGround as gridGround} from './mountainGround.ts';
@@ -15,7 +17,7 @@ import {MOUNTAIN_PATH_GRAPH} from './pathGraph.ts';
 
 export type EdgeKind='open'|'kerb'|'parapet'|'wall'|'bridge';
 export type SupportKind='ground'|'embankment'|'bridge'|'tunnel';
-export type RoadSample={s:number;at:Point3;tangent:Point3;normal:Point3;halfWidth:number;grade:number;curvature:number;left:EdgeKind;right:EdgeKind;support:SupportKind;bridgeId:string|null};
+export type RoadSample={s:number;at:Point3;tangent:Point3;normal:Point3;/** Authored unit frame for scenery; absent when draw and placement frames agree. */placementNormal?:Point3;halfWidth:number;grade:number;curvature:number;left:EdgeKind;right:EdgeKind;support:SupportKind;bridgeId:string|null};
 export type RoadLine={id:string;length:number;step:number;samples:readonly RoadSample[]};
 
 /** Heights that decide an edge. A body is ~1.55 tall; a drop beyond ~1 needs a parapet. */
@@ -94,7 +96,7 @@ function departures(line:RoadLine):{id:string;by:'branch'|'path';corridor:Point3
 }
 /** Where two carriageways join (Orchard Lane off the road), each one's edge is open where it lies on the other. */
 function openJunctions(line:RoadLine){
-  const others=line.id==='mountain-road'?[{id:'orchard-lane',pts:ORCHARD_LANE_CENTRE,hw:ORCHARD_LANE_HALF_WIDTH}]:[{id:'mountain-road',pts:ROAD_CENTRE,hw:ROAD_HALF_WIDTH}];
+  const others=line.id==='mountain-road'?[{id:'orchard-lane',pts:ORCHARD_LANE_AUTHORED_CENTRE,hw:ORCHARD_LANE_HALF_WIDTH}]:[{id:'mountain-road',pts:ROAD_CENTRE,hw:ROAD_HALF_WIDTH}];
   for(const o of others){const opened:{side:'left'|'right';s:number}[]=[];let corridor:Point3[]=[];
     for(const sample of line.samples)for(const side of ['left','right'] as const){
       const sign=side==='left'?1:-1,x=sample.at[0]+sample.normal[0]*sample.halfWidth*sign,z=sample.at[2]+sample.normal[2]*sample.halfWidth*sign;
@@ -138,8 +140,9 @@ const roadBridge=(i:number)=>BRIDGE_SPANS.find(b=>b.line==='road'&&i>=b.i0&&i<=b
 const laneBridge=(i:number)=>BRIDGE_SPANS.find(b=>b.line==='lane'&&i>=b.i0&&i<=b.i1)?.id??null;
 /** The foot tapers from mountain width to a town lane over its first 18 units. */
 const TOWN_HALF_WIDTH=3.5;
-export const MOUNTAIN_ROAD_LINE:RoadLine=openDepartures(classify(ROAD_CENTRE,'mountain-road',i=>mix(TOWN_HALF_WIDTH,ROAD_HALF_WIDTH,Math.min(1,i/18)),roadBridge));
-export const ORCHARD_LANE_LINE:RoadLine=openDepartures(classify(ORCHARD_LANE_CENTRE,'orchard-lane',()=>ORCHARD_LANE_HALF_WIDTH,laneBridge));
+export const MOUNTAIN_ROAD_LINE:RoadLine=openDepartures(fairMountainRoadFrames(classify(ROAD_CENTRE,'mountain-road',i=>mix(TOWN_HALF_WIDTH,ROAD_HALF_WIDTH,Math.min(1,i/18)),roadBridge)));
+// Preserve authored span/guard decisions; apply the explicit shared deck profile afterwards.
+export const ORCHARD_LANE_LINE:RoadLine=applyOrchardJunctionProfile(openDepartures(classify(ORCHARD_LANE_AUTHORED_CENTRE,'orchard-lane',()=>ORCHARD_LANE_HALF_WIDTH,laneBridge)),MOUNTAIN_ROAD_LINE);
 
 /** Interpolated sample at arc length `s` (3D arc length, uphill). */
 export function roadSampleAt(s:number,line:RoadLine=MOUNTAIN_ROAD_LINE):RoadSample{
@@ -147,7 +150,7 @@ export function roadSampleAt(s:number,line:RoadLine=MOUNTAIN_ROAD_LINE):RoadSamp
   let lo=0,hi=S.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(S[m]!.s<=s)lo=m;else hi=m;}
   const a=S[lo]!,b=S[hi]!,t=(s-a.s)/((b.s-a.s)||1),m3=(u:Point3,v:Point3):Point3=>[mix(u[0],v[0],t),mix(u[1],v[1],t),mix(u[2],v[2],t)];
   const near=t<.5?a:b;
-  return {...near,s,at:m3(a.at,b.at),tangent:m3(a.tangent,b.tangent),normal:m3(a.normal,b.normal),halfWidth:mix(a.halfWidth,b.halfWidth,t),grade:mix(a.grade,b.grade,t),curvature:mix(a.curvature,b.curvature,t)};
+  return {...near,s,at:m3(a.at,b.at),tangent:m3(a.tangent,b.tangent),normal:m3(a.normal,b.normal),...((a.placementNormal||b.placementNormal)?{placementNormal:m3(a.placementNormal??a.normal,b.placementNormal??b.normal)}:{}),halfWidth:mix(a.halfWidth,b.halfWidth,t),grade:mix(a.grade,b.grade,t),curvature:mix(a.curvature,b.curvature,t)};
 }
 
 export type Bridge={id:string;name:string;type:BridgeType;carries:'road'|'lane'|'path'|'funicular'|'race-lane';s0:number;s1:number;a:Point3;b:Point3;span:number;deckThickness:number;clearance:number;piers:readonly Point3[];crosses:readonly string[];halfWidth:number;deck:readonly Point3[]};
@@ -180,7 +183,7 @@ function runs(line:RoadLine):{edges:EdgeRun[];walls:RetainingWall[]}{
         // Guarded runs overlap one sample into their neighbours so the rail has no gap at a joint (and a one-sample run still has length).
         const guarded=kind==='parapet'||kind==='bridge'||kind==='wall';
         const lo=guarded&&i>0&&!departureGap(S[i-1]!,side)?i-1:i,hi=guarded&&j+1<S.length&&!departureGap(S[j+1]!,side)?j+2:j+1;
-        const pts=S.slice(lo,hi).map(s=>[s.at[0]+s.normal[0]*s.halfWidth*sign,s.at[1],s.at[2]+s.normal[2]*s.halfWidth*sign] as Point3);
+        const pts=S.slice(lo,hi).map(s=>{const x=s.at[0]+s.normal[0]*s.halfWidth*sign,z=s.at[2]+s.normal[2]*s.halfWidth*sign;return [x,orchardEdgeHeight(line.id,x,z,s.at[1]),z] as Point3;});
         const id=`${line.id}:${side}:${kind}:${Math.round(S[i]!.s)}`;
         edges.push({id,line:line.id,side,kind,s0:S[i]!.s,s1:S[j]!.s,points:pts,height:kind==='kerb'?EDGE_RULES.kerbHeight:kind==='wall'?0:EDGE_RULES.parapetHeight});
         if(kind==='wall'){

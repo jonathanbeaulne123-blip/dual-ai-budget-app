@@ -59,3 +59,27 @@ D-MR proposals live in MOUNTAIN_ROAD.md, not silently accepted in DECISIONS.md. 
 ## Handoff
 
 Next owner: Jonathan for the Phase 1 choices; Codex for further evidence or approved Phase 2. No PR, commit, merge or deployment is implied.
+
+
+## Authorized implementation continuation
+
+The earlier inventory-only stop above is historical. Jonathan subsequently instructed “build everything, make it beautiful” and explicitly approved shared library/dam landings and the awning return in both worlds. The implementation is local in the same worktree; `origin/main@1cf76c551e6f49124b6257162bc4d36ca18d7bd1` (#577) is integrated at `df77030298d5ff960d2eeaa5eb62c8558008694b`. The Bianca Month correction arrived through main under its separate authorization; this task did not author it. Main CI, Cloudflare and baked-assets runs observed at integration were successful (36717496580 / 36717496697 / 36717496479).
+
+Current scope: joined chain and Stillwater; visible Horizon joins; strategic lighting and all three authored themes; approved native landings; native skate reading actual composed geography and waiting for destination readiness. No global physics tuning, steering assistance, route snapping, financial changes, new bridge family, push, PR, merge to main or deployment. Road-frame smoothing and the awning entry remain pending individual choices. Promenade alternatives remain infeasible studies.
+
+The current source is undergoing serialized verification. Retained failed attempts include the first focused Foot fixture/geometry tests, both TypeScript runs, the Ore interpolated ramp grade, the later mixed-apron overlap and Foot mesh topology. Successful short crossing attempts do not replace whole-route evidence. `after/attempts/` retains the source versions and limits; final generated assets, route replays, captures and budget measurements must be tied to the integrated source.
+
+
+## October 1 — geometry and visual completion in progress
+
+The written approvals now cover all three native road-frame repairs, the awning entry and return, the library/dam shared landings and the bounded Orchard approach/bridge-prefix/ground repair. The four original main-road grades remain named exceptions; that choice does not waive route failures. The question about four inherited portrait views remains unanswered.
+
+The production builder now shares the exact prejoin source ordering with the regression fixture. Its byte-exact bake/check plus native export check passed in98.49seconds, with3026 source/test/script/asset hashes stable; TypeScript passed. The previous12215.919second bake overrun was not reproduced, and its cause remains unproven. Evidence is under after/attempts/production-source-parity.
+
+The funicular-only planar reducer is applied to source:16036 to6704 closed faces, preserving original positions and the logical render origin. Independent continuous common-refinement error is at most2.586e-10m; raw, bake9 and localFloat32 topology/precision/grade checks pass. The typed port matches the saved experiment exactly and is deterministic; three focused tests pass. Public assets still contain the old16036-face mesh until a new bake. This is numerical geometry evidence, not route/art/budget acceptance.
+
+Shared-ground prototypes remain unapplied. V5 failed exterior-corner edge stitching. V6 fixes actual matching edges (maximum full seam3.1721e-7m, lite5.9605e-8m) but is rejected by the independent dense collar check:26 full and12 lite samples worsen inherited physical-to-drawn bank errors by at most15.05/18.91mm. All4521 published-path samples per tier remain within3.36mm. No threshold or budget waiver is inferred. V7 is being prepared.
+
+The shared-row Stillwater study preserves profile error below5mm and at least5.399m headroom, but its proof reports wall/roof gaps and coverage issues. It remains unaccepted. A conforming roof study and an independent coverage check are next. The current combined Lakeside geometry budget is still over the25k full/10k lite limit.
+
+The native capture harness now preserves Vite raw query semantics, safely parses literal exports and resolves the favicon. Three failed/incomplete capture attempts are retained; the new132-image run is in progress. Images are SwiftShader evidence only. Source changes remain frozen during the capture.

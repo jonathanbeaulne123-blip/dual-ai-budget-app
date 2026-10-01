@@ -12,9 +12,26 @@ import {sampleTerrain} from '../src/harbour/horizon/land/terrain/index.ts';
 import {createHorizonGeography} from '../src/harbour/horizon/runtime/geography.ts';
 const bytes=(p:string)=>{const b=readFileSync(p);return b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength) as ArrayBuffer;};
 const world=parseHorizonDefinition(bytes('public/horizon/world/horizon-geo-1.json.gz')),terrain=decodeTerrainAsset(bytes('public/horizon/terrain/horizon-geo-1.bin'),'full');
-const makeRegion=()=>createRegionGeography({horizonGround:(x,z)=>sampleTerrain(terrain,x,z),yield:terraceBedExclusion(world.collision.beds),exclude:mouthExclusion(world.collision.mouths)});
+const makeRegion=()=>createRegionGeography({walkingJoinSolids:world.geometry.solids,horizonGround:(x,z)=>sampleTerrain(terrain,x,z),yield:terraceBedExclusion(world.collision.beds),exclude:mouthExclusion(world.collision.mouths)});
 const O={x:1308,y:54,z:764};
 describe('Horizon drawn road ground clearance',()=>{
+ it('does not project radial shoulder cuts behind the final actual road section',()=>{
+  const cap=drawnRoadGroundCeiling(REGION_ROAD),floor=drawnRoadFloor(REGION_ROAD.landingRows!);
+  // Expanded ordinary walking audit: the x±6cm stencil crossed a false
+  // 25.0004cm cut and reported 64.359 degrees on an unchanged flat native bench.
+  const hx=1324.1302169332484,hz=470.73125184711256,geo=makeRegion();
+  for(const dx of[-.06,0,.06]){
+   const x=hx+dx-O.x,z=hz-O.z;
+   expect(floor(x,z)).toBeNull();expect(cap(x,z)).toBeNull();
+   expect(geo.groundAt(hx+dx,hz)).toBeCloseTo(groundHeightAt(x,z)+O.y,9);
+  }
+  const hit=geo.surface(hx,158.18000030517578,hz,.48)!;
+  expect(hit.y).toBeCloseTo(158.18000030517578,7);expect(hit.slope).toBeLessThan(.01);
+  // The real terminal face still receives its original 8cm ground clearance.
+  const end=REGION_ROAD.points.at(-1)!;
+  expect(cap(end[0],end[2])).toBeCloseTo(floor(end[0],end[2])!.y-.08,9);
+ });
+
  it('removes the measured grass ridges in both directions while keeping the actual road floor',()=>{
   const geo=makeRegion(),composed=createHorizonGeography(terrain,{...world.collision,solids:world.geometry.solids,diagnostics:world.diagnostics??[]});composed.addDynamic(geo.provider);
   for(const[x,y,z]of[[1344.0086,127.2256,551.1936],[1344.015,127.2256,553.47],[1287.017,98.427,570.989],[1330,68.846,679.64]]){
@@ -33,7 +50,7 @@ describe('Horizon drawn road ground clearance',()=>{
   for(const tier of ['full','lite'] as const){
    // These exact positions and filtered indices are passed to buildRegionGround's
    // BufferGeometry. Test rendered triangles, not just the height callback.
-   const prepared=prepareRegionGround(tier,geo.contains,terrain.step,new Map(),geo.groundCeiling),positions=prepared.lattice.positions,indices=prepared.index;
+   const prepared=prepareRegionGround(tier,geo.contains,terrain.step,new Map(),geo.groundCeiling,geo.walkingGroundPatch),positions=prepared.render.positions,indices=prepared.render.indices;
    for(const[hx,hz]of sites){
     const triangles:number[][][]=[];
     for(let i=0;i<indices.length;i+=3){

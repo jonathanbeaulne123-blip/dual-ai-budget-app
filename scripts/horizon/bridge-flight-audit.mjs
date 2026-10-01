@@ -8,7 +8,7 @@ const built=await build({stdin:{contents:`export * from './src/harbour/horizon/l
 const a=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].text).toString('base64'));
 const w=JSON.parse(gunzipSync(readFileSync('public/horizon/world/horizon-geo-1.json.gz'))),t=readFileSync('public/horizon/terrain/horizon-geo-1.bin'),f=a.decodeTerrainAsset(t.buffer.slice(t.byteOffset,t.byteOffset+t.byteLength),'full'),g=a.createHorizonGeography(f,{...w.collision,solids:w.geometry.solids,diagnostics:[]});
 
-const region=a.createMountainV2Region({horizonGround:(x,z)=>a.sampleTerrain(f,x,z),exclude:a.mouthExclusion(w.collision.mouths),yield:a.terraceBedExclusion(w.collision.beds),terrainStep:f.step});g.addDynamic(region.provider);
+const region=a.createMountainV2Region({walkingJoinSolids:w.geometry.solids,horizonGround:(x,z)=>a.sampleTerrain(f,x,z),exclude:a.mouthExclusion(w.collision.mouths),yield:a.terraceBedExclusion(w.collision.beds),terrainStep:f.step});g.addDynamic(region.provider);
 const env=a.createGliderEnv({world:w,geography:g,cuts:w.collision});
 const runs=[];
 for(const id of ['bightBridge','highSpan'])for(const direction of[1,-1]){

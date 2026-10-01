@@ -1,3 +1,4 @@
+import {ORCHARD_JUNCTION_POINTS,ORCHARD_JUNCTION_TRIANGLES,ORCHARD_JUNCTION_BANDS,ORCHARD_JUNCTION_COLUMNS,ORCHARD_JUNCTION_OWNERSHIP,ORCHARD_JUNCTION_OPEN_EDGES,orchardEdgeHeight} from '../orchardJunction.ts';
 /**
  * The road, the lane, their edges, the paths, the stairs and the overlooks, as painted card.
  *
@@ -28,7 +29,7 @@ export function roadBandColour(pal:MountainArtPalette,k:number,i:number):RGB{
   const g=.97+hash2(i>>2,k)*.06;
   return shade(k===0||k===4?mix(pal.road,pal.verge,.45):k===2?mix(pal.road,pal.chalk,.12):pal.road,g);
 }
-const edgePoint=(s:RoadSample,sign:number,extra=0):V3=>[s.at[0]+s.normal[0]*(s.halfWidth+extra)*sign,s.at[1],s.at[2]+s.normal[2]*(s.halfWidth+extra)*sign];
+const edgePoint=(s:RoadSample,sign:number,extra=0,lineId=''):V3=>{const x=s.at[0]+s.normal[0]*s.halfWidth*sign,z=s.at[2]+s.normal[2]*s.halfWidth*sign;return [x+s.normal[0]*extra*sign,orchardEdgeHeight(lineId,x,z,s.at[1]),z+s.normal[2]*extra*sign];};
 
 /** Contiguous runs of sample indices satisfying `keep`, stepping by `step`. */
 function runs(n:number,keep:(i:number)=>boolean,step:number):number[][]{
@@ -39,7 +40,7 @@ function runs(n:number,keep:(i:number)=>boolean,step:number):number[][]{
 
 function roadLine(b:CardBuilder,pal:MountainArtPalette,line:RoadLine,step:number){
   const S=line.samples;
-  for(const run of runs(S.length,i=>S[i]!.support!=='bridge',step)){
+  for(const run of runs(S.length,i=>S[i]!.support!=='bridge'&&(line.id!=='orchard-lane'||i>=8),step)){
     const frames:Frame[]=run.map(i=>({p:S[i]!.at as V3,side:S[i]!.normal as V3,up:UP}));
     // Surface.
     b.sweep(frames,i=>ROAD_BANDS(S[run[i]!]!.halfWidth),(k,i)=>roadBandColour(pal,k,run[i]!),{bucket:'flat'});
@@ -47,11 +48,25 @@ function roadLine(b:CardBuilder,pal:MountainArtPalette,line:RoadLine,step:number
     for(const sign of [1,-1] as const){
       const side=sign>0?'left':'right';
       const col=(i:number)=>{const k=S[run[i]!]![side];return k==='parapet'||k==='wall'?pal.stoneDark:k==='kerb'?pal.stone:mix(pal.verge,pal.road,.3);};
-      b.sweep(frames,i=>{const s=S[run[i]!]!,e=edgePoint(s,sign,.35),g=groundHeightAt(e[0],e[2])-s.at[1];return [[sign*s.halfWidth,Math.min(-.38,g-.3)],[sign*s.halfWidth,SURFACE_LIFT]];},(_k,i)=>col(i),{bucket:'card',foot:[0]});
-      for(let i=1;i<run.length;i++){const a=edgePoint(S[run[i-1]!]!,sign),c=edgePoint(S[run[i]!]!,sign);b.line(inkLift([a[0],a[1]+SURFACE_LIFT,a[2]]),inkLift([c[0],c[1]+SURFACE_LIFT,c[2]]));}
+      b.sweep(frames,i=>{const s=S[run[i]!]!,e=edgePoint(s,sign,.35,line.id),g=groundHeightAt(e[0],e[2])-s.at[1];return [[sign*s.halfWidth,Math.min(-.38,g-.3)],[sign*s.halfWidth,SURFACE_LIFT]];},(_k,i)=>col(i),{bucket:'card',foot:[0]});
+      for(let i=1;i<run.length;i++){const a=edgePoint(S[run[i-1]!]!,sign,0,line.id),c=edgePoint(S[run[i]!]!,sign,0,line.id);b.line(inkLift([a[0],a[1]+SURFACE_LIFT,a[2]]),inkLift([c[0],c[1]+SURFACE_LIFT,c[2]]));}
     }
     // Pencil slab joints across the road every few units, a painted card road not a ribbon.
-    for(let k=0;k<run.length;k+=Math.max(1,Math.round(6/step))){const s=S[run[k]!]!;const eL=edgePoint(s,1,-.55),eR=edgePoint(s,-1,-.55);b.line(inkLift([eL[0],eL[1]+SURFACE_LIFT,eL[2]] as V3),inkLift([eR[0],eR[1]+SURFACE_LIFT,eR[2]] as V3),b.pencil);}
+    for(let k=0;k<run.length;k+=Math.max(1,Math.round(6/step))){const s=S[run[k]!]!;const eL=edgePoint(s,1,-.55,line.id),eR=edgePoint(s,-1,-.55,line.id);b.line(inkLift([eL[0],eL[1]+SURFACE_LIFT,eL[2]] as V3),inkLift([eR[0],eR[1]+SURFACE_LIFT,eR[2]] as V3),b.pencil);}
+  }
+  if(line.id==='orchard-lane'){
+    // Main-road overlap is already painted by that immutable road; no doubled surface.
+    const paint=(p:Point3):V3=>[p[0],p[1]+SURFACE_LIFT,p[2]];
+    ORCHARD_JUNCTION_TRIANGLES.forEach((ids,i)=>{
+      if(ORCHARD_JUNCTION_BANDS[i]!>8||ORCHARD_JUNCTION_OWNERSHIP[i]==='overlap')return;
+      b.tri(paint(ORCHARD_JUNCTION_POINTS[ids[0]!]!),paint(ORCHARD_JUNCTION_POINTS[ids[1]!]!),paint(ORCHARD_JUNCTION_POINTS[ids[2]!]!),roadBandColour(pal,ORCHARD_JUNCTION_COLUMNS[i]!-1,ORCHARD_JUNCTION_BANDS[i]!-1),'flat');
+    });
+    // Every exposed bank cut reaches the existing ground; this is not a floating ribbon.
+    for(const {a,c,column} of ORCHARD_JUNCTION_OPEN_EDGES.map(e=>({a:e.a,c:e.b,column:e.column}))){
+      const lo=(p:Point3):V3=>[p[0],Math.min(p[1]-.38,groundHeightAt(p[0],p[2])-.3),p[2]];
+      b.quad(lo(a),lo(c),paint(c),paint(a),column===4?pal.stoneDark:mix(pal.verge,pal.road,.3));
+      b.line(inkLift(paint(a)),inkLift(paint(c)));
+    }
   }
   edges(b,pal,line,step);
 }
@@ -63,12 +78,12 @@ function edges(b:CardBuilder,pal:MountainArtPalette,line:RoadLine,step:number){
     const sign=side==='left'?1:-1;
     for(const kind of ['kerb','parapet'] as const){
       for(const run of runs(S.length,i=>S[i]![side]===kind,Math.min(step,2))){
-        const frames:Frame[]=run.map(i=>{const s=S[i]!;return {p:edgePoint(s,sign),side:[s.normal[0]*sign,0,s.normal[2]*sign],up:UP};});
+        const frames:Frame[]=run.map(i=>{const s=S[i]!;return {p:edgePoint(s,sign,0,line.id),side:[s.normal[0]*sign,0,s.normal[2]*sign],up:UP};});
         if(kind==='kerb'){
           b.sweep(frames,[[-.02,-.2],[-.02,.22],[.32,.22],[.32,-.45]],k=>k===1?pal.coping:k===0?pal.stone:pal.stoneDark,{inkAt:[1,2]});
           for(let i=0;i<frames.length;i+=Math.max(1,Math.round(1.2/Math.min(step,2)))){const f=frames[i]!;b.line(inkLift([f.p[0],f.p[1]+.22,f.p[2]]),inkLift([f.p[0]+f.side[0]*.32,f.p[1]+.22,f.p[2]+f.side[2]*.32]),b.pencil);}
         }else{
-          const drop=(i:number)=>{const s=S[run[i]!]!,e=edgePoint(s,sign,.9);return Math.min(-.35,groundHeightAt(e[0],e[2])-s.at[1]-.3);};
+          const drop=(i:number)=>{const s=S[run[i]!]!,e=edgePoint(s,sign,.9,line.id);return Math.min(-.35,groundHeightAt(e[0],e[2])-s.at[1]-.3);};
           b.sweep(frames,i=>[[0,-.05],[0,.95],[-.07,.95],[-.07,1.1],[.57,1.1],[.57,.95],[.5,.95],[.5,drop(i)]],
             k=>k===3?pal.coping:k===0?shade(pal.stone,.96):k===6?pal.stoneDark:shade(pal.coping,.82),{inkAt:[3,4],foot:[6]});
           // Coursed stone: a bed joint at mid height and staggered perpends on the road face.
@@ -114,18 +129,38 @@ function retainingWalls(b:CardBuilder,pal:MountainArtPalette){
 }
 
 /** Ground paths (worn gravel with edge stones) and stairs (real risers, cheek walls, a rail). */
-function paths(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite'){
+export type GroundPathPlacement=(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite',path:typeof PATH_EDGES[number])=>boolean;
+/** Select existing authored path pieces without changing their sampling or seeds.
+ * The default native call keeps the original whole sweep byte-for-byte. */
+export type GroundPathArtSelection={
+  band?:(points:readonly V3[],index:number,band:number)=>boolean;
+  stone?:(stone:{x:number;z:number;yaw:number;hx:number;hz:number;bottom:number;top:number},index:number)=>boolean;
+};
+export function buildGroundPathArt(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite',e:typeof PATH_EDGES[number],selection?:GroundPathArtSelection){
+  const pts=resample(e.points,1);
+  const frames:Frame[]=pts.map((p,i)=>{const a=pts[Math.max(0,i-1)]!,c=pts[Math.min(pts.length-1,i+1)]!,dx=c[0]-a[0],dz=c[2]-a[2],l=Math.hypot(dx,dz)||1;
+    const g=groundHeightAt(p[0],p[2]),y=p[1]-g>.35?p[1]:g;return {p:[p[0],y+.04,p[2]],side:[dz/l,0,-dx/l],up:UP};});
+  const profile=[[-e.halfWidth,0],[-e.halfWidth+.35,.01],[e.halfWidth-.35,.01],[e.halfWidth,0]] as const;
+  const color=(k:number,i:number)=>shade(k===1?pal.gravel:mix(pal.gravel,pal.verge,.5),.95+hash2(i,k)*.08);
+  if(!selection?.band)b.sweep(frames,profile,color,{bucket:'flat'});
+  else {
+    const point=(i:number,k:number):V3=>{const f=frames[i]!,[s,v]=profile[k]!;return [f.p[0]+f.side[0]*s+f.up[0]*v,f.p[1]+f.side[1]*s+f.up[1]*v,f.p[2]+f.side[2]*s+f.up[2]*v];};
+    for(let i=1;i<frames.length;i++)for(let k=0;k<3;k++){const p=[point(i-1,k),point(i,k),point(i,k+1),point(i-1,k+1)];if(selection.band(p,i,k))b.quad(p[0]!,p[1]!,p[2]!,p[3]!,color(k,i),'flat');}
+  }
+  const every=tier==='full'?1.7:3.4;let next=0,acc=0;
+  for(let i=1;i<frames.length;i++){acc+=1;if(acc<next)continue;next=acc+every;const f=frames[i]!,side=(i%2?1:-1)*(e.halfWidth+.12),x=f.p[0]+f.side[0]*side,z=f.p[2]+f.side[2]*side,g=groundHeightAt(x,z);
+    // Edge stones are set into the verge: a hand-width proud, not blocks sitting on it.
+    const stone={x,z,yaw:Math.atan2(f.side[0],f.side[2])+hash2(i,3)*.6,hx:.22+hash2(i,1)*.1,hz:.16,bottom:g-.15,top:g+.05+hash2(i,2)*.04};
+  if(!selection?.stone||selection.stone(stone,i))b.box(stone.x,stone.z,stone.yaw,stone.hx,stone.hz,stone.bottom,stone.top,shade(pal.coping,.92),pal.stone,b.pencil);}
+}
+function paths(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite',placement?:GroundPathPlacement){
   const woods=DISTRICTS.find(d=>d.id==='library')!;
   for(const e of PATH_EDGES){
     if(e.kind==='path'){
-      const pts=resample(e.points,1);
-      const frames:Frame[]=pts.map((p,i)=>{const a=pts[Math.max(0,i-1)]!,c=pts[Math.min(pts.length-1,i+1)]!,dx=c[0]-a[0],dz=c[2]-a[2],l=Math.hypot(dx,dz)||1;
-        const g=groundHeightAt(p[0],p[2]),y=p[1]-g>.35?p[1]:g;return {p:[p[0],y+.04,p[2]],side:[dz/l,0,-dx/l],up:UP};});
-      b.sweep(frames,[[-e.halfWidth,0],[-e.halfWidth+.35,.01],[e.halfWidth-.35,.01],[e.halfWidth,0]],(k,i)=>shade(k===1?pal.gravel:mix(pal.gravel,pal.verge,.5),.95+hash2(i,k)*.08),{bucket:'flat'});
-      const every=tier==='full'?1.7:3.4;let next=0,acc=0;
-      for(let i=1;i<frames.length;i++){acc+=1;if(acc<next)continue;next=acc+every;const f=frames[i]!,side=(i%2?1:-1)*(e.halfWidth+.12),x=f.p[0]+f.side[0]*side,z=f.p[2]+f.side[2]*side,g=groundHeightAt(x,z);
-        // Edge stones are set into the verge: a hand-width proud, not blocks sitting on it.
-        b.box(x,z,Math.atan2(f.side[0],f.side[2])+hash2(i,3)*.6,.22+hash2(i,1)*.1,.16,g-.15,g+.05+hash2(i,2)*.04,shade(pal.coping,.92),pal.stone,b.pencil);}
+      // Native callers omit this hook and retain their exact authored output.
+      // A placed world may replace one explicitly owned ground-path picture.
+      if(placement?.(b,pal,tier,e))continue;
+      buildGroundPathArt(b,pal,tier,e);
     }else if(e.kind==='stair'){
       const inWoods=Math.hypot(e.points[0]![0]-woods.at[0],e.points[0]![2]-woods.at[2])<45;
       stair(b,pal,e.points,e.halfWidth,inWoods,tier);
@@ -183,11 +218,11 @@ function overlooks(b:CardBuilder,pal:MountainArtPalette){
   }
 }
 
-export function buildRouteArt(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite'){
+export function buildRouteArt(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite',placement?:GroundPathPlacement){
   const step=tier==='full'?1:2;
   roadLine(b,pal,MOUNTAIN_ROAD_LINE,step);
   roadLine(b,pal,ORCHARD_LANE_LINE,step);
   retainingWalls(b,pal);
-  paths(b,pal,tier);
+  paths(b,pal,tier,placement);
   overlooks(b,pal);
 }

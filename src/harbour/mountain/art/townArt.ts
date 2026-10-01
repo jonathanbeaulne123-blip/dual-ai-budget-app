@@ -1,3 +1,4 @@
+import {placementRoadNormal} from '../roadPlacement.ts';
 /**
  * The town square's new pieces: the two storefronts (Outfitters, Potter's Supply) as real
  * card buildings facing the square, with a shopfront window, a door, an awning, a sign on
@@ -36,8 +37,8 @@ export function buildTownArt(b:CardBuilder,pal:MountainArtPalette):{signs:TownSi
     b.shadow(x,z,hx+.8,hz+.8,yaw,groundHeightAt,.3);
   });
   // The mountain road's gate: two stone piers outside the kerbs and a timber lintel overhead.
-  const S=MOUNTAIN_ROAD_LINE.samples,g=S[Math.min(S.length-1,6)]!,hw=g.halfWidth+.9,yaw=Math.atan2(g.normal[0],g.normal[2]);
-  const piers=[1,-1].map(sg=>[g.at[0]+g.normal[0]*hw*sg,g.at[2]+g.normal[2]*hw*sg] as const);
+  const S=MOUNTAIN_ROAD_LINE.samples,g=S[Math.min(S.length-1,6)]!,hw=g.halfWidth+.9,yaw=Math.atan2(placementRoadNormal(g)[0],placementRoadNormal(g)[2]);
+  const piers=[1,-1].map(sg=>[g.at[0]+placementRoadNormal(g)[0]*hw*sg,g.at[2]+placementRoadNormal(g)[2]*hw*sg] as const);
   for(const [px,pz] of piers){const y=groundHeightAt(px,pz);b.box(px,pz,yaw,.45,.45,y-.3,g.at[1]+4.6,pal.coping,pal.stone);b.box(px,pz,yaw,.55,.55,g.at[1]+4.6,g.at[1]+4.8,pal.coping,shade(pal.coping,.8));}
   const a=piers[0]!,e=piers[1]!;b.beam([a[0],g.at[1]+4.35,a[1]],[e[0],g.at[1]+4.35,e[1]],.4,.55,pal.timber);
   signs.push({spot:{at:[(a[0]+e[0])/2+g.tangent[0]*-.28,g.at[1]+3.75,(a[1]+e[1])/2+g.tangent[2]*-.28],yaw:Math.atan2(-g.tangent[0],-g.tangent[2]),w:4.2,h:.62},text:'Mountain road',anchor:'mountain:district:hearth'});
