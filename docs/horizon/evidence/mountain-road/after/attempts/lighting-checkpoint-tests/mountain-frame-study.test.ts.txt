@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/mountain-frame-study.test.ts (3 tests) 25ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  13:05:27
+   Duration  576ms (transform 76ms, setup 0ms, collect 79ms, tests 25ms, environment 0ms, prepare 133ms)
+

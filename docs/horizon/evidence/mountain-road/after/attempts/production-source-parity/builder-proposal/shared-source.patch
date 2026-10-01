@@ -1,0 +1,161 @@
+--- a/scripts/horizon/bake-entry.ts
++++ b/scripts/horizon/bake-entry.ts
+@@ -1,39 +1,14 @@
+ import {fitFootLaneJoin} from '../../src/harbour/horizon/land/mountainV2/footLaneJoin.ts';
+-import {groundTerrainBeds} from '../../src/harbour/horizon/land/structures/groundBeds.ts';
+-import {settleFoundations} from '../../src/harbour/horizon/land/structures/foundations.ts';
++import {buildHorizonPrejoinSource} from './bake-source.ts';
+ import {prepareLiteWorld} from '../../src/harbour/horizon/world/lite.ts';
+-import {baseHeight,buildTerrain,sampleTerrain} from '../../src/harbour/horizon/land/terrain/index.ts';
+-import {encodeTerrainAsset,decodeTerrainAsset} from '../../src/harbour/horizon/land/terrain/asset.ts';
+-import {buildLandCuts} from '../../src/harbour/horizon/land/beds/build.ts';
+-import {buildWaterCuts,buildSpringSolids} from '../../src/harbour/horizon/land/water/index.ts';
+-import {buildOffshoreSolids} from '../../src/harbour/horizon/land/offshore/index.ts';
+-import {buildCrossings} from '../../src/harbour/horizon/world/crossings.ts';
+-import {resolveComputedCrossings,settleBedEdges,openRetainingPassages} from '../../src/harbour/horizon/land/beds/junctions.ts';
+-import {createLandWorld,buildWorldLines,corridorDestinations} from '../../src/harbour/horizon/world/build.ts';
+-import {settleCorridors} from '../../src/harbour/horizon/land/corridor/index.ts';
+-import {mountainSourceEnvironment} from '../../src/harbour/horizon/land/mountainV2/sourceEnvironment.ts';
++import {decodeTerrainAsset} from '../../src/harbour/horizon/land/terrain/asset.ts';
++import {createLandWorld} from '../../src/harbour/horizon/world/build.ts';
+ import {buildHorizonCards} from '../../src/harbour/horizon/sky/horizonCards.ts';
+ import {parseHorizonIndex} from '../../src/house/world/horizonAssets.ts';
+ import {extractJourneyLand} from '../../src/journey/land/extract.ts';
+ import {encodeJourneyLandSlim,type JourneyLandSlim,type JourneyLandSlimSource} from '../../src/journey/land/slim.ts';
+ export async function bake(){
+-  const cuts=buildLandCuts(baseHeight);
+-  const waters=buildWaterCuts(),waterIds=new Set(waters.map(w=>w.id));cuts.waters=[...waters,...cuts.waters.filter(w=>!waterIds.has(w.id))];cuts.solids.push(...buildOffshoreSolids());
+-  const crossings=buildCrossings(cuts,buildWorldLines(cuts)).proofs;
+-  resolveComputedCrossings(cuts,crossings,baseHeight);
+-  const built=buildTerrain(cuts,{step:5});
+-  const buffer=encodeTerrainAsset(built, { waters: cuts.waters, beds: cuts.beds }),field=decodeTerrainAsset(buffer,'full');
+-  cuts.solids.push(...buildSpringSolids((x,z)=>sampleTerrain(field,x,z)));
+-  settleBedEdges(cuts,(x,z)=>sampleTerrain(field,x,z));
+-  openRetainingPassages(cuts,crossings);
+-  const groundBeds=groundTerrainBeds(cuts,(x,z)=>sampleTerrain(field,x,z));
+-  const foundations=settleFoundations(cuts,(x,z)=>sampleTerrain(field,x,z));
+-  // Road main (ROAD.md §1): the corridors, last, against the final ground and the final bed points; their solids replace
+-  // the road beds' old strips and edges, their sidewalk beds join the path graph, and the world carries them.
+-  // The ground a rider meets: Mountain v2's own ground inside its footprint (lowered under the Horizon decks it yields to,
+-  // exactly as the runtime and the road audit load it), Horizon terrain elsewhere.
+-  const {ground}=mountainSourceEnvironment(cuts,field);
+-  const {corridors}=settleCorridors(cuts,ground,{destinations:corridorDestinations(cuts)});
++  const {cuts,buffer,field,ground,corridors,groundBeds,foundations}=buildHorizonPrejoinSource();
+   fitFootLaneJoin(cuts,ground);
+   let world=createLandWorld(field,cuts,{terrainAsset:{url:'/horizon/terrain/horizon-geo-1.bin',bytes:buffer.byteLength,step:field.step},corridors});
+   world=await prepareLiteWorld(world,cuts.solids);
+--- /dev/null
++++ b/scripts/horizon/bake-source.ts
+@@ -0,0 +1,38 @@
++import {groundTerrainBeds} from '../../src/harbour/horizon/land/structures/groundBeds.ts';
++import {settleFoundations} from '../../src/harbour/horizon/land/structures/foundations.ts';
++import {baseHeight,buildTerrain,sampleTerrain} from '../../src/harbour/horizon/land/terrain/index.ts';
++import {encodeTerrainAsset,decodeTerrainAsset} from '../../src/harbour/horizon/land/terrain/asset.ts';
++import {buildLandCuts} from '../../src/harbour/horizon/land/beds/build.ts';
++import {buildWaterCuts,buildSpringSolids} from '../../src/harbour/horizon/land/water/index.ts';
++import {buildOffshoreSolids} from '../../src/harbour/horizon/land/offshore/index.ts';
++import {buildCrossings} from '../../src/harbour/horizon/world/crossings.ts';
++import {resolveComputedCrossings,settleBedEdges,openRetainingPassages} from '../../src/harbour/horizon/land/beds/junctions.ts';
++import {settleCorridors} from '../../src/harbour/horizon/land/corridor/index.ts';
++import {mountainSourceEnvironment} from '../../src/harbour/horizon/land/mountainV2/sourceEnvironment.ts';
++import {buildWorldLines,corridorDestinations} from '../../src/harbour/horizon/world/build.ts';
++
++/** The production source immediately before local Foot fitting.
++ * Bake and geometry regressions must use this same ordered construction.
++ * Ground is deliberately created before settleCorridors mutates cuts: returning
++ * that exact closure preserves its original yield/mouth inputs. No fit, world
++ * partition, LOD, output rounding, or artifact IO is performed here. */
++export function buildHorizonPrejoinSource(){
++  const cuts=buildLandCuts(baseHeight);
++  const waters=buildWaterCuts(),waterIds=new Set(waters.map(w=>w.id));cuts.waters=[...waters,...cuts.waters.filter(w=>!waterIds.has(w.id))];cuts.solids.push(...buildOffshoreSolids());
++  const crossings=buildCrossings(cuts,buildWorldLines(cuts)).proofs;
++  resolveComputedCrossings(cuts,crossings,baseHeight);
++  const built=buildTerrain(cuts,{step:5});
++  const buffer=encodeTerrainAsset(built, { waters: cuts.waters, beds: cuts.beds }),field=decodeTerrainAsset(buffer,'full');
++  cuts.solids.push(...buildSpringSolids((x,z)=>sampleTerrain(field,x,z)));
++  settleBedEdges(cuts,(x,z)=>sampleTerrain(field,x,z));
++  openRetainingPassages(cuts,crossings);
++  const groundBeds=groundTerrainBeds(cuts,(x,z)=>sampleTerrain(field,x,z));
++  const foundations=settleFoundations(cuts,(x,z)=>sampleTerrain(field,x,z));
++  // Road main (ROAD.md §1): the corridors, last, against the final ground and the final bed points; their solids replace
++  // the road beds' old strips and edges, their sidewalk beds join the path graph, and the world carries them.
++  // The ground a rider meets: Mountain v2's own ground inside its footprint (lowered under the Horizon decks it yields to,
++  // exactly as the runtime and the road audit load it), Horizon terrain elsewhere.
++  const {ground}=mountainSourceEnvironment(cuts,field);
++  const {corridors}=settleCorridors(cuts,ground,{destinations:corridorDestinations(cuts)});
++  return{cuts,buffer,field,ground,corridors,groundBeds,foundations};
++}
+--- a/test/horizon-foot-lane-apron.test.ts
++++ b/test/horizon-foot-lane-apron.test.ts
+@@ -1,3 +1,5 @@
++import {buildHorizonPrejoinSource} from '../scripts/horizon/bake-source';
++import {createHash} from 'node:crypto';
+ import {transformSync} from 'esbuild';
+ import {createRegionGeography} from '../src/harbour/horizon/regions/mountainV2/geography';
+ import {prepareRegionGround} from '../src/harbour/horizon/regions/mountainV2/ground';
+@@ -10,10 +12,7 @@
+ import {describe,it,expect} from 'vitest';
+ import {readFileSync} from 'node:fs';
+ import {parseHorizonDefinition} from '../src/house/world/horizonAssets';
+-import {decodeTerrainAsset} from '../src/harbour/horizon/land/terrain/asset';
+ import {sampleTerrain} from '../src/harbour/horizon/land/terrain';
+-import {emitBedGeometry} from '../src/harbour/horizon/land/beds/profiles';
+-import {mountainSourceEnvironment} from '../src/harbour/horizon/land/mountainV2/sourceEnvironment';
+ import {fitFootLaneJoin} from '../src/harbour/horizon/land/mountainV2/footLaneJoin';
+ import {mountainJoinRoadTop} from '../src/harbour/horizon/land/mountainV2/joins';
+ import {createHorizonGeography,HORIZON_WALKABLE_DEGREES} from '../src/harbour/horizon/runtime/geography';
+@@ -21,37 +20,15 @@
+ import {bedPath,pointAt,progressOf} from '../src/harbour/horizon/movers/board/situations';
+ import type {LandCuts} from '../src/harbour/horizon/land/interfaces';
+ const bytes=(p:string)=>{const b=readFileSync(p);return b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength) as ArrayBuffer;};
+-const world=parseHorizonDefinition(bytes('public/horizon/world/horizon-geo-1.json.gz')),field=decodeTerrainAsset(bytes('public/horizon/terrain/horizon-geo-1.bin'),'full');
+-const relevant=(x:number,z:number)=>x>1260&&x<1310&&z>708&&z<752;
++const world=parseHorizonDefinition(bytes('public/horizon/world/horizon-geo-1.json.gz'));
++const servedTerrain=bytes('public/horizon/terrain/horizon-geo-1.bin');
++// Build once from the exact production stages. Served compacted prisms and a
++// selectively re-emitted neighbourhood are not interchangeable source inputs.
++// This is intentionally real construction during collection, not a saved fixture.
++const {cuts,buffer,field,ground}=buildHorizonPrejoinSource();
+ const sourceId=(s:LandCuts['solids'][number])=>s.sourceId??s.id.split('@')[0]!;
+ const isApron=(s:LandCuts['solids'][number])=>['mountainV2.footLane.apron','mountainV2.funicularFoot.apron'].includes(sourceId(s));
+ const isFittedSource=(s:LandCuts['solids'][number])=>/^(yearWalk|S1)\.(bed|surface|shoulders|batter)(\.|$)/.test(sourceId(s));
+-const originals=world.geometry.solids.filter(s=>s.positions.some((v,i)=>i%3===0&&relevant(v,s.positions[i+2]!)));
+-// Drop every served partition of the previous apron. Retaining @district pieces
+-// after a bake would add an old floor under the candidate and mask regressions.
+-const cuts:LandCuts={...structuredClone(world.collision),solids:structuredClone(originals.filter(s=>!isApron(s))),diagnostics:[]};
+-const sourceLane=cuts.beds.find(b=>b.id==='mountainV2.footLane')!;
+-sourceLane.structureIds=sourceLane.structureIds.filter(id=>!['mountainV2.footLane.apron','mountainV2.funicularFoot.apron'].includes(id));
+-{
+- // The bake runs before vertex compaction. Regenerate those real source prisms,
+- // rather than falsely interpreting the served mesh's compacted vertex order.
+- const generated:LandCuts&{floorSource:LandCuts['solids']}={...cuts,solids:[],floorSource:originals.filter(s=>!isApron(s))};
+- for(const id of ['yearWalk','S1']){
+-  const source=cuts.beds.find(b=>b.id===id)!,groups:(typeof source.points)[]=[];let group:typeof source.points=[];
+-  for(let i=0;i<source.points.length;i++){
+-   const near=source.points.slice(Math.max(0,i-2),i+3).some(p=>relevant(p[0],p[2]));
+-   if(near)group.push(source.points[i]!);else if(group.length){groups.push(group);group=[];}
+-  }
+-  if(group.length)groups.push(group);
+-  for(const points of groups)emitBedGeometry({...source,points},generated,(x,z)=>sampleTerrain(field,x,z),cuts.pads.filter(p=>!p.underground&&p.kind!=='host').map(p=>[p.centre[0],p.centre[2]]));
+- }
+- // Served chunks add @district (notably bare yearWalk.batter@lakeside).
+- // Remove that old mesh before regenerating source prisms, or it leaves a
+- // false 14.06cm lip at H[1283.815639,723.135064] in the +2m lane.
+- const replaced=isFittedSource;
+- cuts.solids=[...cuts.solids.filter(s=>!replaced(s)),...generated.solids.filter(replaced)];
+-}
+-const {ground}=mountainSourceEnvironment(cuts,field);
+ const originalPoints=JSON.stringify(cuts.beds.map(b=>[b.id,b.points]));
+ const untouched=JSON.stringify(cuts.solids.filter(s=>!isApron(s)&&!isFittedSource(s)));
+ fitFootLaneJoin(cuts,ground);
+@@ -59,6 +36,10 @@
+ const geo=createHorizonGeography(field,cuts);geo.addDynamic(finalRegion.provider);
+ const lane=cuts.beds.find(b=>b.id==='mountainV2.footLane')!,path=bedPath(lane);
+ describe('visible Foot apron',()=>{
++ it('uses byte-identical production terrain before asserting served/source geometry parity',()=>{
++  const hash=(b:ArrayBuffer)=>createHash('sha256').update(new Uint8Array(b)).digest('hex');
++  expect(hash(buffer)).toBe(hash(servedTerrain));
++ });
+  it('ends the visible Horizon join at the oblique native road edge without a proud interior triangle',()=>{
+   // Regression: vertices outside the native end cap used to leave a 35.5 mm
+   // Year Walk triangle above the native road at this interior point.

@@ -21,12 +21,13 @@ function everySpecies(): PlantingGroup[] {
   return [{id: 'all', kind: 'shrubCluster', reachId: 'r', side: 'right', items}];
 }
 const camAt = (x: number, z: number, y = SAMPLE_Y + 3) => { const c = new THREE.PerspectiveCamera(58, 1.6, 0.3, 900); c.position.set(x, y, z); c.lookAt(x + 10, y, z); c.updateMatrixWorld(); return c; };
-const finiteMesh = (mesh: THREE.InstancedMesh) => {
-  const a = mesh.instanceMatrix.array as Float32Array; for (let i = 0; i < mesh.count * 16; i++) if (!Number.isFinite(a[i]!)) return false;
-  const p = mesh.geometry.getAttribute('position').array as Float32Array; for (const v of p) if (!Number.isFinite(v)) return false;
+const finiteMesh = (mesh: THREE.Mesh) => {
+  // Packed bodies retain ordinary matrix attributes; unaffected palms/cards remain instanced.
+  for (const attribute of Object.values(mesh.geometry.attributes)) for (const v of attribute.array) if (!Number.isFinite(v)) return false;
+  if ((mesh as THREE.InstancedMesh).isInstancedMesh) for (const v of (mesh as THREE.InstancedMesh).instanceMatrix.array) if (!Number.isFinite(v)) return false;
   return true;
 };
-const instanced = (g: THREE.Object3D) => g.children.filter((c): c is THREE.InstancedMesh => (c as THREE.InstancedMesh).isInstancedMesh);
+const drawnMeshes = (g: THREE.Object3D) => g.children.filter((c): c is THREE.Mesh => (c as THREE.Mesh).isMesh);
 
 describe('corridor planting kit (ROAD §4.6): every archetype, every dressing, season and tier', () => {
   it('builds every archetype for 3 dressings × 4 seasons × 2 tiers with finite geometry and matrices', () => {
@@ -34,7 +35,7 @@ describe('corridor planting kit (ROAD §4.6): every archetype, every dressing, s
     for (const theme of THEMES) for (const season of SEASONS) for (const tier of TIERS) {
       const p = createCorridorPlanting(world, {tier, theme, season});
       p.update(camAt(1020, 1400), resident);
-      const meshes = instanced(p.group), keys = new Set(p.stats().layers.filter(l => l.count > 0).map(l => l.key));
+      const meshes = drawnMeshes(p.group), keys = new Set(p.stats().layers.filter(l => l.count > 0).map(l => l.key));
       for (const m of meshes) expect(finiteMesh(m), `${theme}/${season}/${tier} ${m.name}`).toBe(true);
       for (const k of ['tree:round', 'tree:fruit', 'tree:birch', 'tree:pine', 'tree:poplar', 'tree:alpine', 'bush', 'hedge', 'heath', 'palm', 'bed', 'bed:wild', 'tuft', 'bentPine', 'contact']) expect(keys, `${theme}/${season}/${tier} ${k}`).toContain(k);
       // Ink shells on the full tier only (STYLE §1.2 rule 7).
@@ -152,9 +153,9 @@ describe('createCorridorPlanting on a synthetic corridors fixture', () => {
     const p = createCorridorPlanting(world, {tier: 'full', theme: 'newfoundland', season: 'summer', month: 7});
     const cam = camAt(SAMPLE_ORIGIN.palms[0] + 20, SAMPLE_ORIGIN.palms[1]);
     p.update(cam, resident);
-    const before = instanced(p.group)[0];
-    p.setSeason('summer', 8); expect(instanced(p.group)[0]).toBe(before);
-    p.setSeason('winter', 1); expect(instanced(p.group)[0]).not.toBe(before);
+    const before = drawnMeshes(p.group)[0];
+    p.setSeason('summer', 8); expect(drawnMeshes(p.group)[0]).toBe(before);
+    p.setSeason('winter', 1); expect(drawnMeshes(p.group)[0]).not.toBe(before);
     expect(p.stats().layers.some(l => l.key.startsWith('bloom:'))).toBe(false);
     p.setSeason('summer', 7); p.update(cam, resident);
     expect(p.stats().layers.find(l => l.key.startsWith('bloom:'))!.count).toBeGreaterThan(0);
@@ -166,7 +167,7 @@ describe('createCorridorPlanting on a synthetic corridors fixture', () => {
     const p = createCorridorPlanting({corridors: [corridor(bad)]}, {tier: 'full', theme: 'classic', season: 'summer'});
     p.update(camAt(1000, 1400), new Set([districtAt(1000, 1400, 1)]));
     expect(p.stats().items).toBe(1);
-    for (const m of instanced(p.group)) expect(finiteMesh(m)).toBe(true);
+    for (const m of drawnMeshes(p.group)) expect(finiteMesh(m)).toBe(true);
     p.dispose();
   });
 });

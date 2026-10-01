@@ -1,0 +1,132 @@
+[
+  {
+    "file": "art-full-classic.json.gz",
+    "rawBytes": 301548,
+    "sha256": "b1440f609de8a1ff6c28093438ee9dbc89cdf7223bc2639a45324b38acd84602"
+  },
+  {
+    "file": "art-full-newfoundland.json.gz",
+    "rawBytes": 301548,
+    "sha256": "b1440f609de8a1ff6c28093438ee9dbc89cdf7223bc2639a45324b38acd84602"
+  },
+  {
+    "file": "art-full-taylor.json.gz",
+    "rawBytes": 301548,
+    "sha256": "b1440f609de8a1ff6c28093438ee9dbc89cdf7223bc2639a45324b38acd84602"
+  },
+  {
+    "file": "art-lite-classic.json.gz",
+    "rawBytes": 300804,
+    "sha256": "320f3152604094abc501546cb73cd99772bf404f0d5d8fe168dde33707e6a143"
+  },
+  {
+    "file": "art-lite-newfoundland.json.gz",
+    "rawBytes": 300804,
+    "sha256": "320f3152604094abc501546cb73cd99772bf404f0d5d8fe168dde33707e6a143"
+  },
+  {
+    "file": "art-lite-taylor.json.gz",
+    "rawBytes": 300804,
+    "sha256": "320f3152604094abc501546cb73cd99772bf404f0d5d8fe168dde33707e6a143"
+  },
+  {
+    "file": "asset-provenance.json",
+    "rawBytes": 268,
+    "sha256": "bbab5469da415052aa1f7112930f509a1dac33d06fda1cdac743e874a726c5f1"
+  },
+  {
+    "file": "candidate-solid.json.gz",
+    "rawBytes": 406604,
+    "sha256": "2d0d4d22f676b9f2ab580768d6ea5536864e589d0031c379203d827bccecc8a6"
+  },
+  {
+    "file": "footprint-inventory.json.gz",
+    "rawBytes": 611588,
+    "sha256": "1be32b4a5640b3257253e265255e840ba7898f6aa85b621287c13c1f19daa449"
+  },
+  {
+    "file": "frozen-source-hashes.json",
+    "rawBytes": 2655,
+    "sha256": "83fb24b012ec524454853506a66f6eb5c9e2a8b2eb274f9c34f19ac6cc79da50"
+  },
+  {
+    "file": "geometry-results.json.gz",
+    "rawBytes": 1741157,
+    "sha256": "e396ebdebeb8b16abd26795e9e9d65edc967818cb5b72de0898b929a05581026"
+  },
+  {
+    "file": "ground-impact.json.gz",
+    "rawBytes": 356997,
+    "sha256": "bd28364e746e090e410a22db307ffd96b1b89ecebd1ff60e16c68a0c1f68f8bd"
+  },
+  {
+    "file": "results.json.gz",
+    "rawBytes": 1760676,
+    "sha256": "6341c67c8bce4580403b14b199f4456236c0d96dfbfdf41fd33b25a017f76d87"
+  },
+  {
+    "file": "runtime-bundle.mjs.gz",
+    "rawBytes": 2158213,
+    "sha256": "dfdca0017e68f2f9633f85ab99f31e66ec2387145205dcedfa497f524c799db3"
+  },
+  {
+    "file": "sources/src/harbour/geometry/capGroundMesh.ts",
+    "rawBytes": 2703,
+    "sha256": "a160e36b088cce88d5cdba1ca4ad876ca1d6842e6efd4d8c9a5d1bc2ebc6d39d"
+  },
+  {
+    "file": "sources/src/harbour/horizon/land/mountainV2/footLaneJoin.ts",
+    "rawBytes": 30043,
+    "sha256": "b430c3f2cd4da30d970ee9d4629704a6d39747b1c1055c452210e2b52a1fc01a"
+  },
+  {
+    "file": "sources/src/harbour/horizon/land/mountainV2/funicularFootStation.ts",
+    "rawBytes": 941,
+    "sha256": "53cecbebbba60e4b5a44512a7ef11e74064d208490d1fe07abef5eaccc5cb607"
+  },
+  {
+    "file": "sources/src/harbour/horizon/regions/mountainV2/funicularFootPath.ts",
+    "rawBytes": 8623,
+    "sha256": "3c17b04c7bb2f63b3d44ec03fe74838be915d40d87a56f5aa7b961a89db883f0"
+  },
+  {
+    "file": "sources/src/harbour/horizon/regions/mountainV2/geography.ts",
+    "rawBytes": 25176,
+    "sha256": "41abf65b8b8d29c6d0c81acd040940ad49ae21c7af6bae7a65c5bb3830f23106"
+  },
+  {
+    "file": "sources/src/harbour/horizon/regions/mountainV2/ground.ts",
+    "rawBytes": 4973,
+    "sha256": "f3e47a5c1f0985e178253aa9f3c545bcee9e942a8aae1d5bcba9d3296feeb13e"
+  },
+  {
+    "file": "sources/src/harbour/horizon/regions/mountainV2/index.ts",
+    "rawBytes": 5926,
+    "sha256": "48d106fb527a10d1721fbcb0f3e1fbd18abdcbebef298235c147c44f1113f377"
+  },
+  {
+    "file": "sources/src/harbour/horizon/regions/mountainV2/scene.ts",
+    "rawBytes": 15491,
+    "sha256": "05a19270458c2a12e78a3620862b7bb57b6788a3bb793e8d3ff3854effe4b056"
+  },
+  {
+    "file": "sources/src/harbour/horizon/regions/mountainV2/walkingJoinGround.ts",
+    "rawBytes": 2501,
+    "sha256": "171bf2ca379eeef843dd3873c79d4bd8945708ef674ba7fbe98561574904148a"
+  },
+  {
+    "file": "sources/src/harbour/horizon/runtime/index.ts.gz",
+    "rawBytes": 127610,
+    "sha256": "7e0a499dfeeb33bb64c7fcb1204da5ae505a9d61d65d6c231ffe2eba64046e29"
+  },
+  {
+    "file": "sources/src/harbour/mountain/art/routeArt.ts",
+    "rawBytes": 15890,
+    "sha256": "8d9624344d1a8e8a08321ca767160da33beee859894d009706c1fc9edd2feec1"
+  },
+  {
+    "file": "stages.json",
+    "rawBytes": 5971,
+    "sha256": "3e5585716fe6f28ad424c0f70ef8966c633f1bae4988ad5374bb2df41bcccb4b"
+  }
+]

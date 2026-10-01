@@ -1,0 +1,12 @@
+# Pickup lifecycle: independent bounded source review
+
+Read-only review of the root-applied current controller and tests; no checkout writes, imports, tests, controller runs or browser. Source identities are recorded in `/tmp/mountain-real-draw-proposal/BASE.json`. This is source evidence, not a second executed regression pass.
+
+No actionable P1/P2 correctness finding in the reviewed pickup change.
+
+- `src/harbour/horizon/movers/board/controller.ts:102,117,220–235`: the hold is local controller state, starts only after `enter` resets to a stopped legal ground contact, and does not accumulate simulation time. Push, slide, nonzero steer or a supported pop release it before the same frame's ordinary fixed-step simulation. Looking/crouching while initially parked leaves camera/pose updates active. It never reinstates the hold after an ordinary moving rider later stops on a slope.
+- `:239–260`: reset/place, successful physical resume and dispose clear the hold; an illegal or airborne enter does not create one. The unchanged failed-resume path leaves the original controller state alone. `movers/shared/registry.ts:46–83,126–128` uses these enter/resume paths for initial pickup and parachute handoff. The shared bicycle controller receives the same lifecycle with its no-pop profile. No cruiser, native skating or kernel tuning was added.
+- `:121–129,223–236`: Space charge is collected while initially held and the board releases the hold on the supported pop; bicycle Space does not manufacture a pop. Once released, existing bail handling remains on the original kernel-step counter.
+- `test/horizonBoardThresholds.test.ts:338–422` checks both profiles, idle/camera hold, no backlog or lost first push against an ordinary place, continuing gravity, steer/slide releases, illegal/air contact, zero-speed place/resume and board/bicycle Space behavior. The existing real threshold test remains. These new assertions have not been executed by this reviewer.
+
+Also source-checked the adjacent scheduling refactor: `runLine` now drains `runLineSteps`, which yields after 120 controller updates without changing simulated dt, input policy, stopping conditions or log; `lineWorkSteps` preserves completed-leg order and `lineLegSteps` filters the new scheduling-only yields. The short synchronous/async trace-equality regression is meaningful. No timeouts or physics tolerances were loosened in this diff.

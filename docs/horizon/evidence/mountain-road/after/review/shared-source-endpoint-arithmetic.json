@@ -1,0 +1,123 @@
+{
+  "method": "Pure Python arithmetic over source export and saved 11 witnesses; no TypeScript import, controller or world execution.",
+  "sourceWorldSha256": "0e129df837d3000d674b6ce1dc56446cfb0f690515064e51455047fe1ead0e33",
+  "nativeExportSha256": "418eab3afb34746b1341d6f80c16efc7d6921eb71ad301e31e249b63b46cab8f",
+  "mappedSegments": 314,
+  "ownedSegments": 940,
+  "completeExactPartition": true,
+  "laneSpanAdded": false,
+  "accepted": 11,
+  "shiftedHitsRejected": 11,
+  "results": [
+    {
+      "id": "cross.s1.mountainV2Road.107",
+      "match": "start-touch",
+      "accepted": true,
+      "courseEndpoint": 122,
+      "roadEndpoint": 576,
+      "courseDistance": 0.001618055999419578,
+      "nativeDistance": 0.001099724184992315,
+      "shiftedHitRejected": true
+    },
+    {
+      "id": "cross.s1.mountainV2Road.154",
+      "match": "start-touch",
+      "accepted": true,
+      "courseEndpoint": 162,
+      "roadEndpoint": 456,
+      "courseDistance": 0.002945089049929001,
+      "nativeDistance": 0.0008550657984947742,
+      "shiftedHitRejected": true
+    },
+    {
+      "id": "cross.s1.mountainV2Road.310",
+      "match": "foot-touch",
+      "accepted": true,
+      "courseEndpoint": 314,
+      "roadEndpoint": 0,
+      "courseDistance": 0.0,
+      "nativeDistance": 0.0,
+      "shiftedHitRejected": true
+    },
+    {
+      "id": "cross.s1.mountainV2Road.241",
+      "match": "end-touch",
+      "accepted": true,
+      "courseEndpoint": 248,
+      "roadEndpoint": 198,
+      "courseDistance": 0.004660504723376693,
+      "nativeDistance": 0.0003529304017843815,
+      "shiftedHitRejected": true
+    },
+    {
+      "id": "cross.s1.mountainV2Road.279",
+      "match": "start-touch",
+      "accepted": true,
+      "courseEndpoint": 284,
+      "roadEndpoint": 90,
+      "courseDistance": 0.0008596892149578387,
+      "nativeDistance": 0.0004801933301338464,
+      "shiftedHitRejected": true
+    },
+    {
+      "id": "cross.s1.mountainV2Road.76",
+      "match": "end-touch",
+      "accepted": true,
+      "courseEndpoint": 82,
+      "roadEndpoint": 696,
+      "courseDistance": 0.001183032719065945,
+      "nativeDistance": 0.000540345197204016,
+      "shiftedHitRejected": true
+    },
+    {
+      "id": "cross.s1.mountainV2Road.41",
+      "match": "start-touch",
+      "accepted": true,
+      "courseEndpoint": 43,
+      "roadEndpoint": 813,
+      "courseDistance": 0.0007127025245818461,
+      "nativeDistance": 0.004410987166711965,
+      "shiftedHitRejected": true
+    },
+    {
+      "id": "cross.s1.mountainV2Road.190",
+      "match": "start-touch",
+      "accepted": true,
+      "courseEndpoint": 196,
+      "roadEndpoint": 354,
+      "courseDistance": 0.00015405717176262377,
+      "nativeDistance": 0.0009628657914078141,
+      "shiftedHitRejected": true
+    },
+    {
+      "id": "cross.s1.mountainV2Road.48",
+      "match": "end-touch",
+      "accepted": true,
+      "courseEndpoint": 51,
+      "roadEndpoint": 789,
+      "courseDistance": 0.0006073874481835673,
+      "nativeDistance": 0.0043051037760064624,
+      "shiftedHitRejected": true
+    },
+    {
+      "id": "cross.s1.mountainV2Road.49",
+      "match": "end-touch",
+      "accepted": true,
+      "courseEndpoint": 53,
+      "roadEndpoint": 783,
+      "courseDistance": 0.0035028465470210123,
+      "nativeDistance": 0.0006158137719679304,
+      "shiftedHitRejected": true
+    },
+    {
+      "id": "cross.s1.mountainV2Road.199",
+      "match": "start-touch",
+      "accepted": true,
+      "courseEndpoint": 210,
+      "roadEndpoint": 312,
+      "courseDistance": 0.0008490421827238037,
+      "nativeDistance": 0.0017603408454518624,
+      "shiftedHitRejected": true
+    }
+  ]
+}

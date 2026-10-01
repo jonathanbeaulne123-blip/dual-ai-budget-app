@@ -1,0 +1,38 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof
+
+ ❯ test/harbour-skate-presence.test.ts (5 tests | 1 failed) 34ms
+   ✓ bounded skate presence > uses the playable shore radius and clamps corners as a complete point 1ms
+   ✓ bounded skate presence > admits bounded altitude only for an explicitly known skate act 1ms
+   × bounded skate presence > smooths a shared aerial trick, clears altitude on walking and on stale data 3ms
+     → expected { x: +0, z: 1, yaw: +0, y: 3, …(6) } to not have property "y"
+   ✓ bounded skate presence > never extrapolates a speeding rider beyond the shoreline 0ms
+   ✓ the real village partner > shows a real board at the received height, then walks and disappears on stale feed 28ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/harbour-skate-presence.test.ts > bounded skate presence > smooths a shared aerial trick, clears altitude on walking and on stale data
+AssertionError: expected { x: +0, z: 1, yaw: +0, y: 3, …(6) } to not have property "y"
+
+- Expected: 
+undefined
+
++ Received: 
+3
+
+ ❯ test/harbour-skate-presence.test.ts:35:50
+     33|     expect(track.pose(1050+WORLD_RENDER_DELAY_MS)).toMatchObject({y:2,…
+     34|     expect(track.pose(1200+WORLD_RENDER_DELAY_MS)).toMatchObject({y:3}…
+     35|     expect(track.pose(1100+WORLD_LIVE_MS+1)).not.toHaveProperty('y');
+       |                                                  ^
+     36|     track.push({x:0,z:2,yaw:0,moving:true,at:1200});
+     37|     expect(track.pose(1180+WORLD_RENDER_DELAY_MS)).toMatchObject({act:…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 passed (5)
+   Start at  13:11:19
+   Duration  1.06s (transform 298ms, setup 0ms, collect 579ms, tests 34ms, environment 312ms, prepare 35ms)
+

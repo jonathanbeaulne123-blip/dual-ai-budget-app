@@ -1,0 +1,718 @@
+{
+  "sourceCandidateWorldSha256": "63c4d1e47b6205c66667812377f98a677439ba94ecb389fdf479fbebcf6af91d",
+  "beforePlannedFull": 56,
+  "afterPlannedFull": 34,
+  "plannedLiteUnchanged": 34,
+  "runtimeGardenFixtures": 1,
+  "targets": 657,
+  "maxDistance": 11.977001102676246,
+  "uncovered": 0,
+  "mandatoryBridgeRetained": true,
+  "removed": [
+    {
+      "id": "mountainV2.road.lamp.1",
+      "kind": "roadLantern",
+      "at": [
+        1287.71,
+        56.63,
+        704.717
+      ],
+      "head": [
+        1286.15,
+        61.83,
+        704.364
+      ],
+      "pool": [
+        1286.15,
+        56.611,
+        704.364
+      ],
+      "poolRadius": 12,
+      "yaw": -1.793,
+      "side": "right",
+      "reachId": "M4",
+      "district": "lakeside"
+    },
+    {
+      "id": "mountainV2.road.lamp.2",
+      "kind": "roadLantern",
+      "at": [
+        1286.683,
+        59.142,
+        684.332
+      ],
+      "head": [
+        1287.556,
+        64.342,
+        685.673
+      ],
+      "pool": [
+        1287.556,
+        59.044,
+        685.673
+      ],
+      "poolRadius": 12,
+      "yaw": 0.577,
+      "side": "left",
+      "reachId": "M4",
+      "district": "lakeside"
+    },
+    {
+      "id": "mountainV2.road.lamp.5",
+      "kind": "roadLantern",
+      "at": [
+        1316.761,
+        60.861,
+        694.789
+      ],
+      "head": [
+        1317.303,
+        66.061,
+        693.284
+      ],
+      "pool": [
+        1317.303,
+        61.153,
+        693.284
+      ],
+      "poolRadius": 12,
+      "yaw": 2.796,
+      "side": "right",
+      "reachId": "M4",
+      "district": "lakeside"
+    },
+    {
+      "id": "mountainV2.road.lamp.9",
+      "kind": "roadLantern",
+      "at": [
+        1365.879,
+        65.232,
+        688.472
+      ],
+      "head": [
+        1365.848,
+        70.432,
+        686.873
+      ],
+      "pool": [
+        1365.848,
+        65.394,
+        686.873
+      ],
+      "poolRadius": 12,
+      "yaw": -3.123,
+      "side": "left",
+      "reachId": "M4",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.11",
+      "kind": "roadLantern",
+      "at": [
+        1352.208,
+        66.52,
+        675.301
+      ],
+      "head": [
+        1352.222,
+        71.72,
+        676.901
+      ],
+      "pool": [
+        1352.222,
+        66.725,
+        676.901
+      ],
+      "poolRadius": 12,
+      "yaw": 0.008,
+      "side": "right",
+      "reachId": "M4",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.12",
+      "kind": "roadLantern",
+      "at": [
+        1347.084,
+        67.321,
+        686.782
+      ],
+      "head": [
+        1347.145,
+        72.521,
+        685.183
+      ],
+      "pool": [
+        1347.145,
+        67.219,
+        685.183
+      ],
+      "poolRadius": 12,
+      "yaw": 3.104,
+      "side": "left",
+      "reachId": "M4",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.16",
+      "kind": "roadLantern",
+      "at": [
+        1363.071,
+        73.518,
+        669.31
+      ],
+      "head": [
+        1362.781,
+        78.718,
+        667.736
+      ],
+      "pool": [
+        1362.781,
+        73.584,
+        667.736
+      ],
+      "poolRadius": 12,
+      "yaw": -2.96,
+      "side": "right",
+      "reachId": "M4",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.17",
+      "kind": "roadLantern",
+      "at": [
+        1368.185,
+        73.846,
+        668.635
+      ],
+      "head": [
+        1367.729,
+        79.046,
+        667.101
+      ],
+      "pool": [
+        1367.729,
+        74.115,
+        667.101
+      ],
+      "poolRadius": 12,
+      "yaw": -2.853,
+      "side": "right",
+      "reachId": "M4",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.20",
+      "kind": "roadLantern",
+      "at": [
+        1368.737,
+        88.814,
+        610.731
+      ],
+      "head": [
+        1368.256,
+        94.014,
+        609.205
+      ],
+      "pool": [
+        1368.256,
+        88.808,
+        609.205
+      ],
+      "poolRadius": 12,
+      "yaw": -2.836,
+      "side": "left",
+      "reachId": "M5",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.22",
+      "kind": "roadLantern",
+      "at": [
+        1332.792,
+        94.076,
+        586.464
+      ],
+      "head": [
+        1334.383,
+        99.276,
+        586.296
+      ],
+      "pool": [
+        1334.383,
+        93.993,
+        586.296
+      ],
+      "poolRadius": 12,
+      "yaw": 1.676,
+      "side": "left",
+      "reachId": "M5",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.27",
+      "kind": "roadLantern",
+      "at": [
+        1287.038,
+        99.184,
+        559.829
+      ],
+      "head": [
+        1286.41,
+        104.384,
+        561.301
+      ],
+      "pool": [
+        1286.41,
+        98.923,
+        561.301
+      ],
+      "poolRadius": 12,
+      "yaw": -0.403,
+      "side": "right",
+      "reachId": "M6",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.29",
+      "kind": "roadLantern",
+      "at": [
+        1244.82,
+        104.341,
+        563.354
+      ],
+      "head": [
+        1245.281,
+        109.541,
+        564.886
+      ],
+      "pool": [
+        1245.281,
+        104.204,
+        564.886
+      ],
+      "poolRadius": 12,
+      "yaw": 0.293,
+      "side": "right",
+      "reachId": "M6",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.30",
+      "kind": "roadLantern",
+      "at": [
+        1224.035,
+        107.871,
+        562.22
+      ],
+      "head": [
+        1223.489,
+        113.071,
+        563.724
+      ],
+      "pool": [
+        1223.489,
+        107.836,
+        563.724
+      ],
+      "poolRadius": 12,
+      "yaw": -0.349,
+      "side": "right",
+      "reachId": "M6",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.31",
+      "kind": "roadLantern",
+      "at": [
+        1217.499,
+        108.026,
+        574.884
+      ],
+      "head": [
+        1218.118,
+        113.226,
+        573.408
+      ],
+      "pool": [
+        1218.118,
+        108.044,
+        573.408
+      ],
+      "poolRadius": 12,
+      "yaw": 2.745,
+      "side": "left",
+      "reachId": "M6",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.34",
+      "kind": "roadLantern",
+      "at": [
+        1217.655,
+        112.761,
+        544.351
+      ],
+      "head": [
+        1216.306,
+        117.961,
+        543.491
+      ],
+      "pool": [
+        1216.306,
+        112.747,
+        543.491
+      ],
+      "poolRadius": 12,
+      "yaw": -2.138,
+      "side": "right",
+      "reachId": "M6",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.35",
+      "kind": "roadLantern",
+      "at": [
+        1209.522,
+        114.1,
+        529.57
+      ],
+      "head": [
+        1210.609,
+        119.3,
+        530.744
+      ],
+      "pool": [
+        1210.609,
+        113.577,
+        530.744
+      ],
+      "poolRadius": 12,
+      "yaw": 0.747,
+      "side": "left",
+      "reachId": "M6",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.37",
+      "kind": "roadLantern",
+      "at": [
+        1254.478,
+        119.501,
+        537.508
+      ],
+      "head": [
+        1255.041,
+        124.701,
+        536.01
+      ],
+      "pool": [
+        1255.041,
+        119.793,
+        536.01
+      ],
+      "poolRadius": 12,
+      "yaw": 2.782,
+      "side": "right",
+      "reachId": "M6",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.38",
+      "kind": "roadLantern",
+      "at": [
+        1271.603,
+        122.084,
+        542.77
+      ],
+      "head": [
+        1272.31,
+        127.284,
+        541.334
+      ],
+      "pool": [
+        1272.31,
+        122.116,
+        541.334
+      ],
+      "poolRadius": 12,
+      "yaw": 2.684,
+      "side": "right",
+      "reachId": "M6",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.44",
+      "kind": "roadLantern",
+      "at": [
+        1347.881,
+        127.686,
+        544.561
+      ],
+      "head": [
+        1347.854,
+        132.886,
+        546.161
+      ],
+      "pool": [
+        1347.854,
+        127.742,
+        546.161
+      ],
+      "poolRadius": 12,
+      "yaw": -0.017,
+      "side": "left",
+      "reachId": "M7",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.46",
+      "kind": "roadLantern",
+      "at": [
+        1389.277,
+        132.971,
+        561.281
+      ],
+      "head": [
+        1388.507,
+        138.171,
+        559.878
+      ],
+      "pool": [
+        1388.507,
+        133.517,
+        559.878
+      ],
+      "poolRadius": 12,
+      "yaw": -2.639,
+      "side": "right",
+      "reachId": "M8",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.47",
+      "kind": "roadLantern",
+      "at": [
+        1402.907,
+        137.381,
+        531.607
+      ],
+      "head": [
+        1401.316,
+        142.581,
+        531.769
+      ],
+      "pool": [
+        1401.316,
+        137.399,
+        531.769
+      ],
+      "poolRadius": 12,
+      "yaw": -1.469,
+      "side": "right",
+      "reachId": "M8",
+      "district": "crown"
+    },
+    {
+      "id": "mountainV2.road.lamp.48",
+      "kind": "roadLantern",
+      "at": [
+        1371.753,
+        142.42,
+        507.399
+      ],
+      "head": [
+        1371.815,
+        147.62,
+        508.998
+      ],
+      "pool": [
+        1371.815,
+        142.394,
+        508.998
+      ],
+      "poolRadius": 12,
+      "yaw": 0.039,
+      "side": "right",
+      "reachId": "M8",
+      "district": "crown"
+    }
+  ],
+  "soleWitnesses": [
+    {
+      "index": 1,
+      "at": [
+        1380.2832574547429,
+        686.2544203948358
+      ],
+      "onlyLamp": "mountainV2.road.lamp.8"
+    },
+    {
+      "index": 108,
+      "at": [
+        1324.7544049798282,
+        671.2465400239048
+      ],
+      "onlyLamp": "mountainV2.road.lamp.13"
+    },
+    {
+      "index": 180,
+      "at": [
+        1327.4380208954321,
+        664.7883500086425
+      ],
+      "onlyLamp": "mountainV2.road.lamp.14"
+    },
+    {
+      "index": 216,
+      "at": [
+        1395.0616840738778,
+        603.5310704460868
+      ],
+      "onlyLamp": "mountainV2.road.lamp.19"
+    },
+    {
+      "index": 296,
+      "at": [
+        1205.6405602784541,
+        551.1816525457169
+      ],
+      "onlyLamp": "mountainV2.road.lamp.33"
+    },
+    {
+      "index": 324,
+      "at": [
+        1210.2215133345928,
+        564.2009061313114
+      ],
+      "onlyLamp": "mountainV2.road.lamp.32"
+    },
+    {
+      "index": 392,
+      "at": [
+        1350.4394298740021,
+        500.2292648069172
+      ],
+      "onlyLamp": "mountainV2.road.lamp.50"
+    },
+    {
+      "index": 394,
+      "at": [
+        1358.519863283512,
+        513.7955438451863
+      ],
+      "onlyLamp": "mountainV2.road.lamp.49"
+    },
+    {
+      "index": 482,
+      "at": [
+        1383.7789782730179,
+        487.45193790448576
+      ],
+      "onlyLamp": "mountainV2.road.lamp.51"
+    },
+    {
+      "index": 499,
+      "at": [
+        1389.3940464442587,
+        489.89296381718515
+      ],
+      "onlyLamp": "mountainV2.road.lamp.52"
+    },
+    {
+      "index": 551,
+      "at": [
+        1393.2778294043771,
+        475.467575536134
+      ],
+      "onlyLamp": "mountainV2.road.lamp.53"
+    },
+    {
+      "index": 576,
+      "at": [
+        1385.384914788999,
+        475.32635343632523
+      ],
+      "onlyLamp": "mountainV2.road.lamp.54"
+    },
+    {
+      "index": 610,
+      "at": [
+        1280.2688520355473,
+        720.256177136317
+      ],
+      "onlyLamp": "mountainV2.road.lamp.0"
+    },
+    {
+      "index": 615,
+      "at": [
+        1340.3631320848715,
+        699.9954752338233
+      ],
+      "onlyLamp": "mountainV2.road.lamp.6"
+    },
+    {
+      "index": 620,
+      "at": [
+        1350.8551796153254,
+        661.1398752226596
+      ],
+      "onlyLamp": "mountainV2.road.lamp.15"
+    },
+    {
+      "index": 628,
+      "at": [
+        1349.5726380943142,
+        604.5166927941136
+      ],
+      "onlyLamp": "mountainV2.road.lamp.21"
+    },
+    {
+      "index": 634,
+      "at": [
+        1271.1154136045338,
+        566.3457023885184
+      ],
+      "onlyLamp": "mountainV2.road.lamp.28"
+    },
+    {
+      "index": 636,
+      "at": [
+        1231.3029360461512,
+        525.6916904110586
+      ],
+      "onlyLamp": "mountainV2.road.lamp.36"
+    },
+    {
+      "index": 642,
+      "at": [
+        1364.2500445010076,
+        552.7656638266644
+      ],
+      "onlyLamp": "mountainV2.road.lamp.45"
+    },
+    {
+      "index": 648,
+      "at": [
+        1397.4540109958325,
+        634.0584312769038
+      ],
+      "onlyLamp": "mountainV2.road.lamp.18"
+    },
+    {
+      "index": 654,
+      "at": [
+        1324.1117689433524,
+        472.72958417308337
+      ],
+      "onlyLamp": "mountainV2.road.lamp.55"
+    }
+  ],
+  "minimumProof": "set-cover.json: 21 unique required road lamps, plus independent3-constraint group needs2; 11 mandatory bridge lamps. Greedy34 equals proven minimum for these saved sites.",
+  "limits": [
+    "Pure saved-JSON proof; no new sites or geometry generated.",
+    "Full now keeps the same essential fixture set as lite. Whole lamps are removed, no per-lamp geometry savings claimed.",
+    "Lite budgets remain unchanged and cannot be solved by a subset of these sites.",
+    "Final bake, strict coverage and real art budgets remain required."
+  ]
+}

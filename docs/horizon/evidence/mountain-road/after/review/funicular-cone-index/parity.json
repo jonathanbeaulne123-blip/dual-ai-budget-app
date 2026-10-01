@@ -1,0 +1,10 @@
+{
+  "scope": "Pure saved v16 mesh cone-index parity; no streaming, full native runtime, or cap execution",
+  "meshSha256": "6e2f9550f4e1dcc8fd698109f7533cceaf7ec29e4963d2c80ed6aeb3e17f8477",
+  "oldSha256": "f079dfdd4333ccc6d554d972476e6dc9b3a27d62087ea5b4d0e73c4e04d3839d",
+  "newSha256": "392de76046bafc854a237422d2f1416666a9acd47a4adef3255091479876a9b1",
+  "samples": 20845,
+  "oldMs": 2108.030875,
+  "newMs": 1519.1227919999997,
+  "mismatches": []
+}

@@ -1,0 +1,51 @@
+{
+  "startedAt": "2026-09-30T16:14:35Z",
+  "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+  "runs": [
+    {
+      "name": "bake",
+      "command": [
+        "pnpm",
+        "horizon:bake"
+      ],
+      "exitCode": 0,
+      "seconds": 144.477
+    },
+    {
+      "name": "byte-exact-check",
+      "command": [
+        "pnpm",
+        "horizon:check"
+      ],
+      "exitCode": 0,
+      "seconds": 160.889
+    },
+    {
+      "name": "focused-joins-and-lights",
+      "command": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/horizon-foot-lane-apron.test.ts",
+        "test/mountain-landings.test.ts",
+        "test/horizon-ore-road-junction.test.ts",
+        "test/horizon-corridor-light-integration.test.ts",
+        "test/horizon-mountain-light-tiers.test.ts",
+        "--maxWorkers=1",
+        "--minWorkers=1"
+      ],
+      "exitCode": 0,
+      "seconds": 31.064
+    }
+  ],
+  "assets": {
+    "src/harbour/horizon/land/mountainV2/v2-data.json": "418eab3afb34746b1341d6f80c16efc7d6921eb71ad301e31e249b63b46cab8f",
+    "src/harbour/mountain/generated/awning-landing.json": "36084212958ad49edcbfd4f8bd9302a8cc0ae6a85710d25be72b39adda64b6c4",
+    "public/horizon/world/horizon-geo-1.json": "0e129df837d3000d674b6ce1dc56446cfb0f690515064e51455047fe1ead0e33",
+    "public/horizon/world/horizon-geo-1.json.gz": "33247e300b9efb5ccf93730d9865a75e707e7bb3ec4b5f01215bcfb5043c7900",
+    "public/horizon/world/horizon-geo-1.journey.json.gz": "33f9ce3ef16f9b71e97ca29b21fa3645df69404632088edbfe9d9576f9908ef9",
+    "public/horizon/terrain/horizon-geo-1.bin": "b8532036cf93e5ba9e7682e5041a69f216c47a91a955c372638e73dcb5a19d8d"
+  },
+  "finishedAt": "2026-09-30T16:20:11Z"
+}

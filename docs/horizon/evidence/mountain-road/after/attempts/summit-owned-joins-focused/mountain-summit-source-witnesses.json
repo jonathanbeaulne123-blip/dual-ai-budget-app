@@ -1,0 +1,70 @@
+{
+  "method": "Pure saved JSON and decoded Float32 native ground only; no runtime imports or tests.",
+  "sourceHashes": {
+    "src/harbour/horizon/land/mountainV2/joins.ts": "5fd2c6296068e5a8fbedd78f2bf1d418f3f9759d218e4e49333a4b79d2e84856",
+    "src/harbour/horizon/regions/mountainV2/drawnRoadGround.ts": "73f5f037b11ceea1cf57516e17a0c84f68f40dec4dd1b03c3d486ce9e00f4c62",
+    "src/harbour/horizon/land/mountainV2/v2-data.json": "876d70fe90947672f9efb3e2dc54c5fa1be9136ae4bc6972ff2a2d6520d05499",
+    "public/horizon/world/horizon-geo-1.json": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+    "public/mountain/terrain/hearth-mountain-geo-2.bin": "16e7a64647985f0a6bc5d90e91ba7b5311b5a9a2732f712934befaf0a9a6fd77"
+  },
+  "railOpening": [
+    {
+      "side": 0,
+      "segment": 4,
+      "openingEnd": [
+        1311.0153428307842,
+        160.42567172091586,
+        454.0065394868734
+      ],
+      "removedPlanRailLengthM": 3.1899171687657253
+    },
+    {
+      "side": 6,
+      "segment": 6,
+      "openingEnd": [
+        1310.9835665842131,
+        159.937175332708,
+        456.0386319026775
+      ],
+      "removedPlanRailLengthM": 2.6683530045032087
+    }
+  ],
+  "forwardStencil": [
+    {
+      "x": 1324.0702169332485,
+      "z": 470.73125184711256,
+      "rawGround": 158.18000030517578,
+      "road": null,
+      "cap": [
+        157.92999654316984,
+        "batter",
+        935
+      ],
+      "felt": 157.92999654316984
+    },
+    {
+      "x": 1324.1302169332484,
+      "z": 470.73125184711256,
+      "rawGround": 158.18000030517578,
+      "road": null,
+      "cap": [
+        159.74189283132216,
+        "batter",
+        934
+      ],
+      "felt": 158.18000030517578
+    },
+    {
+      "x": 1324.1902169332484,
+      "z": 470.73125184711256,
+      "rawGround": 158.18000030517578,
+      "road": null,
+      "cap": [
+        159.62654485026178,
+        "batter",
+        934
+      ],
+      "felt": 158.18000030517578
+    }
+  ]
+}

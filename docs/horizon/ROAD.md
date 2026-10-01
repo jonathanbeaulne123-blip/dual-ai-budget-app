@@ -105,6 +105,8 @@ The Journey land keeps the road's route (rebake), draws bridges as bridges (deck
 
 Per district added by the corridor: ≤ 25k triangles full / 10k lite, ≤ 12 draw calls; lamps, posts and plants instanced per archetype; markings and kerbs merged per card cell; point-light pool fixed at 6 / 2 (no shader recompiles at dusk); detail thins with distance (STYLE §1.2 ink rule; lite: glow cards only beyond 30 eu) — never a visible pop in front of the rider.
 
+The Mountain Road implementation uses compatible packed vertex batches for lamp/post bodies and matching plant bodies/shells (D-MR21). Authored archetype records, local vertices and material behavior are retained. This replaces hardware instancing for those submitted batches and trades larger buffers and residency uploads for fewer draws. The numerical limits above remain unchanged; real-renderer counts and device timing/memory evidence are distinct.
+
 ## 9. Modules
 
 | Module | Owns |

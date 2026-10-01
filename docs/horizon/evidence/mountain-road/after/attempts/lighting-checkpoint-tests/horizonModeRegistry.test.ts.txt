@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonModeRegistry.test.ts (16 tests) 888ms
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  12:28:17
+   Duration  2.90s (transform 863ms, setup 0ms, collect 1.65s, tests 888ms, environment 0ms, prepare 139ms)
+

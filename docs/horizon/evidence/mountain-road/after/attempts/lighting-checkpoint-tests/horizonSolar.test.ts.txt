@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonSolar.test.ts (12 tests) 2040ms
+   ✓ Horizon real solar clock > matches the independent solstice sunrise and sunset 2026-06-21T16:00:00Z  494ms
+   ✓ D-A5 the dam glass face light card (MANIFEST v2.0 lights, views.A.lightRule) > is one quad on the upper band of the dam wall's south face, 0.1 in front, from the manifest lights list  1438ms
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  12:37:01
+   Duration  3.07s (transform 1.16s, setup 0ms, collect 220ms, tests 2.04s, environment 0ms, prepare 174ms)
+

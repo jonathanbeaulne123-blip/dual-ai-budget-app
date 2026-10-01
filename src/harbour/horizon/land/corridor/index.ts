@@ -13,6 +13,7 @@ import { planCorridor } from './plan';
 import { planGuards } from './guards';
 import { applyViewpointGaps, buildCorridor, createCorridorEnv, replacedBy, type CorridorCore, type StructureOwnership } from './stations';
 import { buildCorridorSolids } from './solids';
+import {buildMountainCorridor} from './mountain';
 
 export { CORRIDOR } from './types';
 export type { Corridor } from './types';
@@ -54,6 +55,7 @@ export function buildCorridors(cuts: LandCuts, ground: HeightQuery, options: Cor
     for (const p of core.problems) cuts.diagnostics.push({ id: `corridor.${core.id}.reach`, severity: 'conflict', message: p });
     corridors.push({ id: core.id, closed: core.closed, step: core.step, stations: core.stations, reaches: core.reaches, markings: plan.markings, guards, lamps: plan.lamps, planting: plan.planting, stops: plan.stops });
   }
+  const mountain=buildMountainCorridor(env,options.destinations??[]);if(mountain)corridors.push(mountain);
   const replaced = replacedBy(env.roads.map(r => r.id)), replacedIds = cuts.solids.filter(replaced).map(s => s.id);
   return { corridors, cores, solids, walks, replacedIds };
 }

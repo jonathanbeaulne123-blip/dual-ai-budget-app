@@ -1,6 +1,6 @@
 /**
  * Corridor planting drawn in the world (ROAD.md §4.6, §5, §6, §8): every `world.corridors[].planting` group's items as
- * card-kit plants, one InstancedMesh per archetype layer, in Mountain v2's family (its tree and shrub geometry, colours,
+ * card-kit plants, compatible bodies/shells packed into ordinary indexed draws, in Mountain v2's family (its tree and shrub geometry, colours,
  * wind and ink shells; `kit/plants/**` adds the palm, the flower bed and the grass tuft).
  *
  * Residency: an item belongs to the district containing it (`districtAt`, the definition's Voronoi partition, the same
@@ -31,6 +31,7 @@
  * (`kit/plants/sets.ts` FLOWER_SET) and the fraction the variation; for `palm` a fraction ≥ 0.4 is the tall palm.
  */
 import * as THREE from 'three';
+import { packInstances, type PackedInstances } from './packedInstances';
 import type { WorldDefinition } from '../world/definition.ts';
 import type { PlantItem, PlantSpecies } from '../land/corridor/types.ts';
 import { districtAt } from '../world/districts.ts';
@@ -55,6 +56,8 @@ export type CorridorPlanting = {
   /** The stable material set (for the runtime's fog hook). */
   materials(): THREE.Material[];
   stats(): CorridorPlantingStats;
+  /** Actual retained records and their submission owner, for capacity audits. */
+  activeRecords(): { id: string; layer: string; batch: string; triangles: number }[];
   /** Test/diagnostic: is this item drawn in its body layer now, and at what shader scale for the current viewer. */
   probe(groupId: string, index: number): { district: string; kept: boolean; active: boolean; fade: number } | null;
   dispose(): void;
@@ -68,7 +71,7 @@ export const BENT_PINE_LEAN = 0.15;
 type Rec = { district: string; x: number; z: number; far: number; m: THREE.Matrix4; colour: RGB | null; stretch?: number; trunk?: RGB; on: boolean; /** Clock (s) it joined by residency while already inside its fade-free radius: it scales in from then. */ born: number };
 type Layer = { key: string; family: LayerFamily; mesh: THREE.InstancedMesh; recs: Rec[]; tris: number; stretch: boolean; twoTone: boolean; dirty: boolean };
 type Spec = { family: LayerFamily; geometry: () => THREE.BufferGeometry; material: THREE.Material; depth?: THREE.Material; cast: boolean; order?: number; stretch?: boolean; twoTone?: boolean };
-type Item = { groupId: string; index: number; item: PlantItem; district: string; kept: boolean; rank: number };
+type Item = { corridorId:string; groupId: string; index: number; item: PlantItem; district: string; kept: boolean; rank: number };
 
 const hash = (s: string) => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return ((h >>> 0) % 100000) / 100000; };
 const finite = (p: PlantItem) => [p.at[0], p.at[1], p.at[2], p.scale, p.yaw].every(Number.isFinite) && p.scale > 0;
@@ -94,14 +97,22 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
   // Items, with their district and lite selection. Non-finite items are skipped (never NaN in a matrix).
   const items: Item[] = [];
   for (const c of world.corridors ?? []) for (const g of c.planting) {
+    // The carried mountain already draws its native forest on both tiers. Lite
+    // omits alternate additional framing groves, retaining the complete shapes
+    // of those it draws and all of the native trees. Full keeps every new grove.
+    const extraGrove = c.id === 'mountainV2.road' ? /\.framingTrees\.(\d+)$/.exec(g.id) : null;
+    if (!full && extraGrove && Number(extraGrove[1]) % 2 === 1) continue;
     const keep = full ? g.items.map(() => true) : liteKeep(g.items, g.id);
-    g.items.forEach((item, index) => { if (finite(item)) items.push({ groupId: g.id, index, item, district: districtAt(item.at[0], item.at[2], 1), kept: keep[index]!, rank: hash(`${g.id}#${index}`) }); });
+    g.items.forEach((item, index) => { if (finite(item)) items.push({ corridorId:c.id, groupId: g.id, index, item, district: districtAt(item.at[0], item.at[2], 1), kept: keep[index]!, rank: hash(`${g.id}#${index}`) }); });
   }
   // Materials: built once, stable across seasons (so the runtime can fog-hook them once).
   const mats: THREE.Material[] = [], own = <M extends THREE.Material>(m: M) => { mats.push(m); return m; };
   const hook = (h: Omit<PlantHook, 'eye' | 'now'>): PlantHook => ({ ...h, eye, now });
   const treeHook = (amp: number) => hook({ wind: amp, key: `tree${amp}`, twoTone: true });
   const M = {
+    packedBody: own(cardMaterial(hook({ wind: 0, key: 'packedBody', packed: true, twoTone: true }))),
+    packedDepth: own(depthMaterial(hook({ wind: 0, key: 'packedBody', packed: true, twoTone: true }))),
+    packedShell: own(shellMaterial(pal.ink, hook({ wind: 0, key: 'packedShell', packed: true, farCap: FAR.shell.full }))),
     tree: { 0.022: own(cardMaterial(treeHook(0.022))), 0.012: own(cardMaterial(treeHook(0.012))) } as Record<number, THREE.Material>,
     treeDepth: { 0.022: own(depthMaterial(treeHook(0.022))), 0.012: own(depthMaterial(treeHook(0.012))) } as Record<number, THREE.Material>,
     shell: { 0.022: own(shellMaterial(pal.ink, hook({ wind: 0.022, key: 'shell', farCap: FAR.shell.full }))), 0.012: own(shellMaterial(pal.ink, hook({ wind: 0.012, key: 'shell', farCap: FAR.shell.full }))) } as Record<number, THREE.Material>,
@@ -124,6 +135,8 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
   };
 
   let season = opts.season, month = opts.month ?? SEASON_MONTH[opts.season], layers: Layer[] = [];
+  let packed: { key: string; layers: Layer[]; batch: PackedInstances }[] = [];
+  const packedKey = (key: string) => key.startsWith('tree:') || key === 'bush' || key === 'hedge' ? 'body' : key.startsWith('shell:') ? 'shell' : null;
   const dummy = new THREE.Object3D();
   const matrix = (at: readonly [number, number, number], rx: number, yaw: number, rz: number, sx: number, sy = sx, sz = sx, dy = 0) => { dummy.position.set(at[0], at[1] + dy, at[2]); dummy.rotation.set(rx, yaw, rz); dummy.scale.set(sx, sy, sz); dummy.updateMatrix(); return dummy.matrix.clone(); };
   const trisOf = (g: THREE.BufferGeometry) => (g.index ? g.index.count : g.getAttribute('position').count) / 3;
@@ -134,6 +147,8 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
     // Unit geometries shared by several layers are built once per build (the palm body and its shell come together).
     let palmPair: ReturnType<typeof palmGeometry> | null = null; const palm = () => (palmPair ??= palmGeometry(pal, tier));
     const add = (key: string, spec: Spec, rec: Omit<Rec, 'on' | 'far' | 'born'>, it: Item) => {
+      // Lite keeps the authored mountain silhouettes and bend lights; subtract only secondary ground shadows.
+      if(!full&&it.corridorId==='mountainV2.road'&&spec.family==='contact')return;
       let b = buckets.get(key); if (!b) { b = { ...spec, recs: [] }; buckets.set(key, b); }
       b.recs.push({ ...rec, far: farOf(spec.family, tier, it.rank), on: false, born: -1e9 });
     };
@@ -220,9 +235,16 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
       const mesh = new THREE.InstancedMesh(geometry, b.material, n); mesh.count = 0; mesh.name = `Corridor ${key}`;
       mesh.castShadow = b.cast; mesh.receiveShadow = true; if (b.depth) mesh.customDepthMaterial = b.depth; if (b.order) mesh.renderOrder = b.order;
       if (b.recs.some(r => r.colour)) mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(n * 3), 3);
-      mesh.visible = false; group.add(mesh);
+      mesh.visible = false; if (!packedKey(key)) group.add(mesh);
       return { key, family: b.family, mesh, recs: b.recs, tris: trisOf(geometry), stretch: !!b.stretch, twoTone: !!b.twoTone, dirty: true };
     });
+    packed = [];
+    for (const key of ['body', 'shell']) {
+      const selected = layers.filter(l => packedKey(l.key) === key); if (!selected.length) continue;
+      const source = selected.map(l => ({key:l.key, mesh:l.mesh, wind:l.key === 'hedge' ? .004 : l.key === 'bush' || /:(pine|alpine)$/.test(l.key) ? .012 : .022}));
+      const batch = packInstances(source, key === 'body' ? M.packedBody : M.packedShell, {name:`Corridor packed:${key}`, plant:true, depth:key === 'body' ? M.packedDepth : undefined});
+      packed.push({key, layers:selected, batch}); group.add(batch.mesh);
+    }
   }
   function write(layer: Layer) {
     const { mesh } = layer, g = mesh.geometry, far = g.getAttribute('aFar') as THREE.InstancedBufferAttribute, born = g.getAttribute('aBorn') as THREE.InstancedBufferAttribute, st = g.getAttribute('aStretch') as THREE.InstancedBufferAttribute | undefined, tr = g.getAttribute('aTrunk') as THREE.InstancedBufferAttribute | undefined;
@@ -245,6 +267,7 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
   function evaluate(x: number, z: number, resident: ReadonlySet<string>) {
     // The first evaluation is the world opening (drawn under the loading veil): nothing scales in.
     const first = lastAt === null, at = clock();
+    let packedChanged = false;
     for (const layer of layers) {
       let changed = layer.dirty;
       for (const r of layer.recs) {
@@ -254,8 +277,9 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
           if (on) r.born = first || d >= r.far - FADE_BAND * 0.1 ? -1e9 : at; r.on = on; changed = true;
         }
       }
-      if (changed) write(layer);
+      if (changed) { write(layer); if (packedKey(layer.key)) packedChanged = true; }
     }
+    if (packedChanged) for (const p of packed) p.batch.sync();
     lastAt = { x, z }; lastResident = new Set(resident);
   }
   build();
@@ -275,13 +299,17 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
       if (dead || (next === season && bloomStage(m) === bloomStage(month) && m === month)) return;
       const stageChanged = bloomStage(m) !== bloomStage(month) || next !== season; season = next; month = m;
       if (!stageChanged) return;
+      for (const p of packed) p.batch.dispose(); packed = [];
       for (const l of layers) { group.remove(l.mesh); l.mesh.geometry.dispose(); l.mesh.dispose(); }
       build(); if (lastAt) evaluate(lastAt.x, lastAt.z, lastResident);
     },
     materials: () => [...mats],
     stats() {
       const ls = layers.map(l => ({ key: l.key, count: l.mesh.count, capacity: l.recs.length, triangles: l.mesh.count * l.tris }));
-      return { items: items.length, drawn: layers.filter(l => l.family !== 'shell' && l.family !== 'contact' && l.family !== 'dots').reduce((a, l) => a + l.mesh.count, 0), drawCalls: ls.filter(l => l.count > 0).length, triangles: ls.reduce((a, l) => a + l.triangles, 0), layers: ls };
+      return { items: items.length, drawn: layers.filter(l => l.family !== 'shell' && l.family !== 'contact' && l.family !== 'dots').reduce((a, l) => a + l.mesh.count, 0), drawCalls: layers.filter(l => !packedKey(l.key) && l.mesh.count > 0).length + packed.filter(p => p.batch.mesh.visible).length, triangles: ls.reduce((a, l) => a + l.triangles, 0), layers: ls };
+    },
+    activeRecords() {
+      return layers.flatMap(l => l.recs.flatMap((r, i) => r.on ? [{id:`${l.key}:${i}`, layer:l.key, batch:packedKey(l.key) ?? l.key, triangles:l.tris}] : []));
     },
     probe(groupId, index) {
       const it = items.find(i => i.groupId === groupId && i.index === index); if (!it) return null;
@@ -293,6 +321,7 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
     },
     dispose() {
       if (dead) return; dead = true; group.removeFromParent();
+      for (const p of packed) p.batch.dispose(); packed = [];
       for (const l of layers) { l.mesh.geometry.dispose(); l.mesh.dispose(); }
       for (const m of mats) m.dispose(); layers = []; group.clear();
     },

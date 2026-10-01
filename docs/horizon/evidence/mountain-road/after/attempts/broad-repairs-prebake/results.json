@@ -1,0 +1,46 @@
+{
+  "note": "Applied broad-suite repairs before the next geometry bake. Existing baked assets still identify the lighting checkpoint.",
+  "results": [
+    {
+      "file": "mountain-branch-width",
+      "exitCode": 0,
+      "seconds": 2.052
+    },
+    {
+      "file": "mountain-landings",
+      "exitCode": 1,
+      "seconds": 4.604
+    },
+    {
+      "file": "hearth-mountain",
+      "exitCode": 0,
+      "seconds": 3.919
+    },
+    {
+      "file": "horizonMountainSharedSource",
+      "exitCode": 0,
+      "seconds": 1.65
+    },
+    {
+      "file": "horizonNativeFurniture",
+      "exitCode": 1,
+      "seconds": 6.068
+    },
+    {
+      "file": "journey-road",
+      "exitCode": 1,
+      "seconds": 9.614
+    },
+    {
+      "file": "journey-land",
+      "exitCode": 0,
+      "seconds": 9.917
+    },
+    {
+      "file": "journey-board-route",
+      "exitCode": 0,
+      "seconds": 9.038
+    }
+  ],
+  "sourceStable": true
+}

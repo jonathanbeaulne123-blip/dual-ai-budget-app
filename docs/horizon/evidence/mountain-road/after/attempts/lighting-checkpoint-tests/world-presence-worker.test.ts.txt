@@ -1,0 +1,17 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/world-presence-worker.test.ts > carries one member's walk to the other, live, and the other can see it move
+{"fixture":"two members, two real sockets, one Durable Object","steps":12,"renderedSamples":37,"deliveryP95Ms":13}
+
+ ✓ test/world-presence-worker.test.ts (12 tests) 7390ms
+   ✓ carries one member's walk to the other, live, and the other can see it move  1408ms
+   ✓ carries versioned mountain walking altitude beyond the legacy island bounds  303ms
+   ✓ throttles a flood to the lane's floor  359ms
+   ✓ only reaches peers standing in the same place  370ms
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  13:09:48
+   Duration  18.54s (transform 6.80s, setup 0ms, collect 10.61s, tests 7.39s, environment 0ms, prepare 165ms)
+

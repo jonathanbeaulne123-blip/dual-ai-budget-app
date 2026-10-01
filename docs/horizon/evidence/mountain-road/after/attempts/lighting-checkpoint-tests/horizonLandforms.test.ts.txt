@@ -1,0 +1,94 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/horizonLandforms.test.ts > Horizon authored continuous landforms > respects every effective exposed polygon band and reports exclusions separately
+HORIZON_BAND_PROBES {"harbour":{"eligible":1635,"coverage":1,"rawCoverage":0.968961625282167,"exclusions":{"shore-clipping-and-stroke":137}},"sands":{"eligible":1701,"coverage":1,"rawCoverage":0.8050847457627118,"exclusions":{"shore-clipping-and-stroke":751,"named-water-and-banks":26}},"reach":{"eligible":441,"coverage":1,"rawCoverage":0.9299474605954466,"exclusions":{"higher-band":39,"named-water-and-banks":662}},"green":{"eligible":3410,"coverage":0.9865102639296187,"rawCoverage":0.9060707456978967,"exclusions":{"notch-walls":223,"named-water-and-banks":551}},"hollow":{"eligible":1212,"coverage":1,"rawCoverage":0.9895697522816167,"exclusions":{"named-water-and-banks":322}},"scholars":{"eligible":2720,"coverage":0.9974264705882353,"rawCoverage":0.992600422832981,"exclusions":{"named-water-and-banks":96,"higher-band":8,"shore-clipping-and-stroke":14}},"flats":{"eligible":3195,"coverage":0.9934272300469483,"rawCoverage":0.8331868131868132,"exclusions":{"shore-clipping-and-stroke":665,"named-water-and-banks":690}},"stillwater":{"eligible":108,"coverage":1,"rawCoverage":1,"exclusions":{"named-water-and-banks":1277,"mountain-v2":557}},"prow":{"eligible":1538,"coverage":1,"rawCoverage":0.9305239179954442,"exclusions":{"shore-clipping-and-stroke":218}},"shoulder":{"eligible":1123,"coverage":0.8619768477292965,"rawCoverage":0.22763157894736843,"exclusions":{"higher-band":2096,"mountain-v2":6638,"named-water-and-banks":23}},"crown":{"eligible":1034,"coverage":0.9777562862669246,"rawCoverage":0.6204852750509353,"exclusions":{"mountain-v2":4363,"shore-clipping-and-stroke":2}}}
+
+stdout | test/horizonLandforms.test.ts > Horizon authored continuous landforms > keeps the Crown summit highest and measures actual mid-band contour asymmetry
+HORIZON_CONTOUR harbour {
+  variation: 3.830258302583026,
+  minimum: 24,
+  maximum: 716,
+  intersectedRays: 27,
+  openRays: 5
+}
+HORIZON_CONTOUR sands {
+  variation: 2.3745173745173744,
+  minimum: 18,
+  maximum: 100,
+  intersectedRays: 15,
+  openRays: 17
+}
+HORIZON_CONTOUR reach {
+  variation: 2.1447721179624666,
+  minimum: 8,
+  maximum: 58,
+  intersectedRays: 32,
+  openRays: 0
+}
+HORIZON_CONTOUR green {
+  variation: 1.9580877537655532,
+  minimum: 30,
+  maximum: 260,
+  intersectedRays: 26,
+  openRays: 6
+}
+HORIZON_CONTOUR hollow {
+  variation: 4.580191693290734,
+  minimum: 52,
+  maximum: 564,
+  intersectedRays: 28,
+  openRays: 4
+}
+HORIZON_CONTOUR scholars {
+  variation: 1.9787234042553192,
+  minimum: 12,
+  maximum: 198,
+  intersectedRays: 32,
+  openRays: 0
+}
+HORIZON_CONTOUR flats {
+  variation: 5.803108808290156,
+  minimum: 8,
+  maximum: 148,
+  intersectedRays: 16,
+  openRays: 16
+}
+HORIZON_CONTOUR stillwater {
+  variation: 0.6534779834077856,
+  minimum: 76,
+  maximum: 140,
+  intersectedRays: 32,
+  openRays: 0
+}
+HORIZON_CONTOUR prow {
+  variation: 7.248618784530387,
+  minimum: 6,
+  maximum: 498,
+  intersectedRays: 32,
+  openRays: 0
+}
+HORIZON_CONTOUR shoulder {
+  variation: 3.27321668909825,
+  minimum: 18,
+  maximum: 322,
+  intersectedRays: 32,
+  openRays: 0
+}
+HORIZON_CONTOUR crown {
+  variation: 2.412280701754386,
+  minimum: 6,
+  maximum: 50,
+  intersectedRays: 25,
+  openRays: 7
+}
+
+ ✓ test/horizonLandforms.test.ts (11 tests) 2547ms
+   ✓ Horizon authored continuous landforms > respects every effective exposed polygon band and reports exclusions separately  1759ms
+   ✓ Horizon authored continuous landforms > keeps the Crown summit highest and measures actual mid-band contour asymmetry  700ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  12:28:10
+   Duration  3.54s (transform 401ms, setup 0ms, collect 556ms, tests 2.55s, environment 0ms, prepare 204ms)
+

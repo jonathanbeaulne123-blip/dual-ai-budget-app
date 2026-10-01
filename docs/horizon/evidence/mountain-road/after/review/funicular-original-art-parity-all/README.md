@@ -1,0 +1,1 @@
+All 38 original ground paths across three themes and full/lite: 228 exact primitive comparisons against the original unmodified builder. Default and fully selected calls match; this is primitive parity, not repaired path seating, GPU, walking or device acceptance. The proposal remains unapplied.

@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonComfort.test.ts (4 tests) 113ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  12:25:59
+   Duration  543ms (transform 67ms, setup 0ms, collect 73ms, tests 113ms, environment 0ms, prepare 74ms)
+

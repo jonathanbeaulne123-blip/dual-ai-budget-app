@@ -1,0 +1,203 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/hearth-mountain.test.ts > the landform > carves a real gorge at least 25 deep where the river runs, with raised banks
+Gorge depth along the upper river: 44.2 25.4 27.3 29.9 32.9 29.8
+
+stdout | test/hearth-mountain.test.ts > the landform > keeps the river on its bed: the water line is never more than 0.3 above the ground under it
+River highest above its bed (mountain): 0.28
+
+stdout | test/hearth-mountain.test.ts > the landform > has no cut walls the render lattice cannot draw: walkable ground agrees with the lite lattice
+Walkable ground vs lite lattice: {
+  samples: 3241,
+  p50: '0.022',
+  p95: '0.250',
+  over03: '3.8%',
+  max: '5.30'
+}
+
+stdout | test/hearth-mountain.test.ts > the mountain road > is 800–950 rideable units with an eased grade (target 8–12%, never above 18%)
+Road {
+  length: '945.9',
+  maxGrade: '15.4',
+  '<4%': '7',
+  '4-8%': '12',
+  '8-12%': '28',
+  '12-15%': '49',
+  '15-18%': '4'
+}
+
+stdout | test/hearth-mountain.test.ts > the mountain road > winds like a mountain road: varied bends, little straight, crossing the fall line diagonally
+Road bends { straightFraction: '22.4%', tight: 38, medium: 352, gentle: 340 }
+
+stdout | test/hearth-mountain.test.ts > the mountain road > is edge-safe: every drop beyond body height has a parapet, wall or bridge rail with collision
+Largest edge drop: 51.3 guarded by bridge
+
+stdout | test/hearth-mountain.test.ts > the glass dam and basin > faces the town and is visible from the square at eye height
+Dam crest visible from the square: 7 of 9
+
+stdout | test/hearth-mountain.test.ts > paths, stairs and doors > reaches every district, door, station and plot from the town square; stairs keep Library close
+Square → district over the path graph: {
+  hearth: '170u walk 85s run 44s',
+  orchard: '220u walk 109s run 57s',
+  library: '246u walk 127s run 67s',
+  glasshouse: '371u walk 194s run 102s',
+  reservoir: '459u walk 240s run 126s',
+  summit: '608u walk 312s run 164s'
+}
+
+stdout | test/hearth-mountain.test.ts > rides the whole descent with the shipped skate options: finishes, no bails, every gate in order
+Summit to Sea, input-driven descent (shipped options): {
+  seconds: 94.4,
+  index: 390,
+  points: 391,
+  bails: 0,
+  bailAt: [],
+  maxError: '2.27',
+  gateIndex: 17,
+  gates: 17
+}
+
+stdout | test/hearth-mountain.test.ts > keeps every mountain ground sample finite and the terrain function cheap to call
+groundHeightAt µs/call: 0.116
+
+ ❯ test/hearth-mountain.test.ts (37 tests | 1 failed) 1848ms
+   ✓ mountain detail lifetime > loads before arrival, holds through the release band and releases every departed resource 1ms
+   ✓ mountain detail lifetime > prepares the full race corridor before countdown and releases it after the run 0ms
+   ✓ Hearth Mountain spatial contract > supports an underpass, a deck and a roof at the same horizontal location 1ms
+   ✓ Hearth Mountain spatial contract > requires forward gate crossings at the right elevation 1ms
+   ✓ the landform > is an authored mountain in the planned envelope with the districts in uphill order 3ms
+   ✓ the landform > never shows the sea inland: ground near every road, path and district stands above water 1ms
+   ✓ the landform > carves a real gorge at least 25 deep where the river runs, with raised banks 1ms
+   ✓ the landform > keeps the river on its bed: the water line is never more than 0.3 above the ground under it 14ms
+   ✓ the landform > has no cut walls the render lattice cannot draw: walkable ground agrees with the lite lattice 10ms
+   ✓ the mountain road > is 800–950 rideable units with an eased grade (target 8–12%, never above 18%) 9ms
+   ✓ the mountain road > winds like a mountain road: varied bends, little straight, crossing the fall line diagonally 1ms
+   ✓ the mountain road > starts at town grade (no step at the foot) and reaches every district and reserved plot 1ms
+   ✓ the mountain road > keeps the road continuously supported without terrain protruding into it 36ms
+   ✓ the mountain road > is edge-safe: every drop beyond body height has a parapet, wall or bridge rail with collision 7ms
+   ✓ the mountain road > crosses the gorge on two or more typed bridges and passes under another structure 0ms
+   ✓ the glass dam and basin > faces the town and is visible from the square at eye height 26ms
+   ✓ the glass dam and basin > holds the reservoir in a real hollow with stone abutments above the crest and no land bridge 23ms
+   ✓ paths, stairs and doors > reaches every district, door, station and plot from the town square; stairs keep Library close 21ms
+   ✓ paths, stairs and doors > gives every building a door-facing apron and arrives along the door axis 1ms
+   ✓ paths, stairs and doors > has stairs between plateaus, woodland walks and at least three authored overlooks 0ms
+   ✓ transport > starts and finishes each legacy ride at its exact platform 1ms
+   ✓ transport > runs the funicular on a monotonic incline with stations and platforms off the road 189ms
+   ✓ transport > hangs the gondola from towers on sagging spans that cross the gorge high up 9ms
+   ✓ Summit to Sea > runs as named segments in the plan’s order with upright gates at the features 2ms
+   ✓ Summit to Sea > finishes on the quay with at least 25 units of run-out, away from the bank and studio doors 6ms
+   ✓ Summit to Sea > offers three architectural branches that are shorter than the road they bypass and skip no gate 5ms
+   ✓ Fund basin view > primes history, animates a new accepted event once and keeps a stable scale 1ms
+   ✓ Fund basin view > does not turn unknown evidence into empty water or events 0ms
+   ✓ stops an upward jump at a bridge underside without selecting its upper deck 15ms
+   ✓ rides the whole descent with the shipped skate options: finishes, no bails, every gate in order  1216ms
+   × keeps the complete width of each optional branch supported, clear and inside the world 137ms
+     → expected [ …(8) ] to deeply equal []
+   ✓ keeps the full downhill road width clear of buildings, trees and boundary clamps 41ms
+   ✓ does not replay contributions received while evidence was frozen 0ms
+   ✓ mounts underneath a road bridge and preserves the elevation of a recovery marker 25ms
+   ✓ keeps elevated walking and delayed mountain presence outside the old shore radius 1ms
+   ✓ keeps every mountain ground sample finite and the terrain function cheap to call 23ms
+   ✓ draws the guide map from the shipped geography with a text alternative and a spoken “you are here” 14ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/hearth-mountain.test.ts > keeps the complete width of each optional branch supported, clear and inside the world
+AssertionError: expected [ …(8) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "branch": "hearth-awning",
++     "i": 8,
++     "solid": null,
++     "surface": 16.693750120685415,
++     "x": 34.34834159587545,
++     "y": 17.08669623447073,
++     "z": -93.0731373165179,
++   },
++   {
++     "branch": "hearth-awning",
++     "i": 9,
++     "solid": null,
++     "surface": 16.519554208076276,
++     "x": 34.193965060209344,
++     "y": 17.08669623447073,
++     "z": -92.8575444452353,
++   },
++   {
++     "branch": "hearth-awning",
++     "i": 9,
++     "solid": null,
++     "surface": 16.440504469007777,
++     "x": 34.11724593735823,
++     "y": 17.090883671923834,
++     "z": -92.76911264850648,
++   },
++   {
++     "branch": "hearth-awning",
++     "i": 9,
++     "solid": null,
++     "surface": 16.361217263688516,
++     "x": 34.04052681450711,
++     "y": 17.095071109376942,
++     "z": -92.68068085177767,
++   },
++   {
++     "branch": "hearth-awning",
++     "i": 9,
++     "solid": null,
++     "surface": 16.281476955035863,
++     "x": 33.963807691655994,
++     "y": 17.09925854683005,
++     "z": -92.59224905504885,
++   },
++   {
++     "branch": "hearth-awning",
++     "i": 9,
++     "solid": null,
++     "surface": 16.20201657681433,
++     "x": 33.88708856880488,
++     "y": 17.103445984283155,
++     "z": -92.50381725832003,
++   },
++   {
++     "branch": "hearth-awning",
++     "i": 10,
++     "solid": null,
++     "surface": 16.20201657681428,
++     "x": 33.88708856880485,
++     "y": 17.103445984283155,
++     "z": -92.50381725832,
++   },
++   {
++     "branch": "hearth-awning",
++     "i": 10,
++     "solid": null,
++     "surface": 16.12334996554197,
++     "x": 33.81036944595373,
++     "y": 17.107633421736264,
++     "z": -92.41538546159119,
++   },
++ ]
+
+ ❯ test/hearth-mountain.test.ts:359:30
+    357|   }
+    358|  }
+    359|  expect(failures.slice(0,8)).toEqual([]);
+       |                              ^
+    360| });
+    361| it('keeps the full downhill road width clear of buildings, trees and b…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 36 passed (37)
+   Start at  12:22:21
+   Duration  3.35s (transform 657ms, setup 0ms, collect 1.26s, tests 1.85s, environment 0ms, prepare 72ms)
+

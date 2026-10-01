@@ -1,0 +1,117 @@
+--- a/src/harbour/mountain/art/routeArt.ts
++++ b/src/harbour/mountain/art/routeArt.ts
+@@ -130,6 +130,29 @@
+ 
+ /** Ground paths (worn gravel with edge stones) and stairs (real risers, cheek walls, a rail). */
+ export type GroundPathPlacement=(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite',path:typeof PATH_EDGES[number])=>boolean;
++/** Select existing authored path pieces without changing their sampling or seeds.
++ * The default native call keeps the original whole sweep byte-for-byte. */
++export type GroundPathArtSelection={
++  band?:(points:readonly V3[],index:number,band:number)=>boolean;
++  stone?:(stone:{x:number;z:number;yaw:number;hx:number;hz:number;bottom:number;top:number},index:number)=>boolean;
++};
++export function buildGroundPathArt(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite',e:typeof PATH_EDGES[number],selection?:GroundPathArtSelection){
++  const pts=resample(e.points,1);
++  const frames:Frame[]=pts.map((p,i)=>{const a=pts[Math.max(0,i-1)]!,c=pts[Math.min(pts.length-1,i+1)]!,dx=c[0]-a[0],dz=c[2]-a[2],l=Math.hypot(dx,dz)||1;
++    const g=groundHeightAt(p[0],p[2]),y=p[1]-g>.35?p[1]:g;return {p:[p[0],y+.04,p[2]],side:[dz/l,0,-dx/l],up:UP};});
++  const profile=[[-e.halfWidth,0],[-e.halfWidth+.35,.01],[e.halfWidth-.35,.01],[e.halfWidth,0]] as const;
++  const color=(k:number,i:number)=>shade(k===1?pal.gravel:mix(pal.gravel,pal.verge,.5),.95+hash2(i,k)*.08);
++  if(!selection?.band)b.sweep(frames,profile,color,{bucket:'flat'});
++  else {
++    const point=(i:number,k:number):V3=>{const f=frames[i]!,[s,v]=profile[k]!;return [f.p[0]+f.side[0]*s+f.up[0]*v,f.p[1]+f.side[1]*s+f.up[1]*v,f.p[2]+f.side[2]*s+f.up[2]*v];};
++    for(let i=1;i<frames.length;i++)for(let k=0;k<3;k++){const p=[point(i-1,k),point(i,k),point(i,k+1),point(i-1,k+1)];if(selection.band(p,i,k))b.quad(p[0]!,p[1]!,p[2]!,p[3]!,color(k,i),'flat');}
++  }
++  const every=tier==='full'?1.7:3.4;let next=0,acc=0;
++  for(let i=1;i<frames.length;i++){acc+=1;if(acc<next)continue;next=acc+every;const f=frames[i]!,side=(i%2?1:-1)*(e.halfWidth+.12),x=f.p[0]+f.side[0]*side,z=f.p[2]+f.side[2]*side,g=groundHeightAt(x,z);
++    // Edge stones are set into the verge: a hand-width proud, not blocks sitting on it.
++    const stone={x,z,yaw:Math.atan2(f.side[0],f.side[2])+hash2(i,3)*.6,hx:.22+hash2(i,1)*.1,hz:.16,bottom:g-.15,top:g+.05+hash2(i,2)*.04};
++  if(!selection?.stone||selection.stone(stone,i))b.box(stone.x,stone.z,stone.yaw,stone.hx,stone.hz,stone.bottom,stone.top,shade(pal.coping,.92),pal.stone,b.pencil);}
++}
+ function paths(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite',placement?:GroundPathPlacement){
+   const woods=DISTRICTS.find(d=>d.id==='library')!;
+   for(const e of PATH_EDGES){
+@@ -137,14 +160,7 @@
+       // Native callers omit this hook and retain their exact authored output.
+       // A placed world may replace one explicitly owned ground-path picture.
+       if(placement?.(b,pal,tier,e))continue;
+-      const pts=resample(e.points,1);
+-      const frames:Frame[]=pts.map((p,i)=>{const a=pts[Math.max(0,i-1)]!,c=pts[Math.min(pts.length-1,i+1)]!,dx=c[0]-a[0],dz=c[2]-a[2],l=Math.hypot(dx,dz)||1;
+-        const g=groundHeightAt(p[0],p[2]),y=p[1]-g>.35?p[1]:g;return {p:[p[0],y+.04,p[2]],side:[dz/l,0,-dx/l],up:UP};});
+-      b.sweep(frames,[[-e.halfWidth,0],[-e.halfWidth+.35,.01],[e.halfWidth-.35,.01],[e.halfWidth,0]],(k,i)=>shade(k===1?pal.gravel:mix(pal.gravel,pal.verge,.5),.95+hash2(i,k)*.08),{bucket:'flat'});
+-      const every=tier==='full'?1.7:3.4;let next=0,acc=0;
+-      for(let i=1;i<frames.length;i++){acc+=1;if(acc<next)continue;next=acc+every;const f=frames[i]!,side=(i%2?1:-1)*(e.halfWidth+.12),x=f.p[0]+f.side[0]*side,z=f.p[2]+f.side[2]*side,g=groundHeightAt(x,z);
+-        // Edge stones are set into the verge: a hand-width proud, not blocks sitting on it.
+-        b.box(x,z,Math.atan2(f.side[0],f.side[2])+hash2(i,3)*.6,.22+hash2(i,1)*.1,.16,g-.15,g+.05+hash2(i,2)*.04,shade(pal.coping,.92),pal.stone,b.pencil);}
++      buildGroundPathArt(b,pal,tier,e);
+     }else if(e.kind==='stair'){
+       const inWoods=Math.hypot(e.points[0]![0]-woods.at[0],e.points[0]![2]-woods.at[2])<45;
+       stair(b,pal,e.points,e.halfWidth,inWoods,tier);
+--- a/src/harbour/horizon/regions/mountainV2/funicularFootPath.ts
++++ b/src/harbour/horizon/regions/mountainV2/funicularFootPath.ts
+@@ -3,7 +3,7 @@
+  * host/apron/ground triangles; old floating ribbon and verge stones are replaced. */
+ import type {StructureSolid,XYZ} from '../../land/interfaces.ts';
+ import type {PreparedGround} from './ground.ts';
+-import type {GroundPathPlacement} from '../../../mountain/art/routeArt.ts';
++import {buildGroundPathArt,type GroundPathPlacement} from '../../../mountain/art/routeArt.ts';
+ import {shade,mix,type V3} from '../../../art/cardScene.ts';
+ import {hash2} from '../../../art/cardKit.ts';
+ import {MOUNTAIN_V2_OFFSET as O} from './placement.ts';
+@@ -11,7 +11,7 @@
+ import {funicularFootStationTop} from '../../land/mountainV2/funicularFootStation.ts';
+ 
+ type Point=[number,number];type Face={p:XYZ[];box:readonly[number,number,number,number];order:number};
+-export type FootPathArtProof={discardedFans?:{area:number;altitude:number}[];ribbon:XYZ[][];stones:{x:number;z:number;bottom:number;top:number;support:number[]}[]};
++export type FootPathArtProof={discardedFans?:{area:number;altitude:number}[];ribbon:XYZ[][];preservedRibbon?:XYZ[][];preservedStones?:{index:number;x:number;z:number;bottom:number;top:number}[];repairBounds?:readonly[number,number,number,number];stones:{x:number;z:number;bottom:number;top:number;support:number[]}[]};
+ const eps=1e-8;
+ const cross=(a:Point,b:Point,p:Point)=>(b[0]-a[0])*(p[1]-a[1])-(b[1]-a[1])*(p[0]-a[0]);
+ // Work in a local frame: absolute shoelace products around kilometre-scale
+@@ -35,6 +35,21 @@
+ function resample(points:readonly XYZ[]):XYZ[]{const out:XYZ[]=[points[0]!];let carry=0;for(let i=1;i<points.length;i++){const a=points[i-1]!,c=points[i]!,l=Math.hypot(c[0]-a[0],c[2]-a[2]);let t=1-carry;while(t<l){const u=t/l;out.push([a[0]+(c[0]-a[0])*u,a[1]+(c[1]-a[1])*u,a[2]+(c[2]-a[2])*u]);t++;}carry=l-(t-1);}out.push(points[points.length-1]!);return out;}
+ export function funicularFootPathPlacement(solids:readonly StructureSolid[],ground:PreparedGround,proof?:FootPathArtProof):GroundPathPlacement{
+  const faces:Face[]=[];
++ const joins=solids.filter(s=>(s.sourceId??s.id.split('@')[0])==='mountainV2.funicularFoot.apron');
++ if(!joins.length)return()=>false;
++ const positions=joins.flatMap(s=>s.positions),apronBounds=[Math.min(...positions.filter((_,i)=>i%3===0)),Math.min(...positions.filter((_,i)=>i%3===2)),Math.max(...positions.filter((_,i)=>i%3===0)),Math.max(...positions.filter((_,i)=>i%3===2))] as const;
++ // The ground ceiling reaches1.5m past the apron. Its lattice cap can also
++ // lower the corners of an intersecting triangle and their incident faces.
++ // Bound that complete source footprint; retain every distant native stroke.
++ const ceilingBounds=[apronBounds[0]-1.5,apronBounds[1]-1.5,apronBounds[2]+1.5,apronBounds[3]+1.5],repairBounds=[...ceilingBounds];
++ const overlaps=(p:readonly Point[],box:readonly number[])=>Math.max(...p.map(q=>q[0]))>=box[0]!&&Math.min(...p.map(q=>q[0]))<=box[2]!&&Math.max(...p.map(q=>q[1]))>=box[1]!&&Math.min(...p.map(q=>q[1]))<=box[3]!;
++ const groundPoint=(id:number):Point=>[ground.lattice.positions[id*3]!+O.x,ground.lattice.positions[id*3+2]!+O.z],touched=new Set<number>();
++ for(let k=0;k<ground.index.length;k+=3){const ids=[ground.index[k]!,ground.index[k+1]!,ground.index[k+2]!],p=ids.map(groundPoint);if(overlaps(p,apronBounds))ids.forEach(id=>touched.add(id));for(let j=0;j<ids.length;j++){const q=p[j]!;if(q[0]>=ceilingBounds[0]!&&q[0]<=ceilingBounds[2]!&&q[1]>=ceilingBounds[1]!&&q[1]<=ceilingBounds[3]!)touched.add(ids[j]!);}}
++ for(let k=0;k<ground.index.length;k+=3){const ids=[ground.index[k]!,ground.index[k+1]!,ground.index[k+2]!];if(!ids.some(id=>touched.has(id)))continue;for(const q of ids.map(groundPoint)){repairBounds[0]=Math.min(repairBounds[0]!,q[0]);repairBounds[1]=Math.min(repairBounds[1]!,q[1]);repairBounds[2]=Math.max(repairBounds[2]!,q[0]);repairBounds[3]=Math.max(repairBounds[3]!,q[1]);}}
++ if(proof)proof.repairBounds=repairBounds as [number,number,number,number];
++ const affectedBand=(p:readonly Point[])=>overlaps(p,repairBounds);
++ const stoneCorners=(x:number,z:number,yaw:number,hx:number,hz:number):Point[]=>[[-hx,-hz],[-hx,hz],[hx,-hz],[hx,hz]].map(([u,v])=>[x+O.x+u!*Math.cos(yaw)+v!*Math.sin(yaw),z+O.z-u!*Math.sin(yaw)+v!*Math.cos(yaw)]);
++
+  const affectedIds=['path:station:funicular:town~road:foot','path:town:north~station:funicular:town'];
+  const affected=V2.nativePlanning.walks.filter(p=>affectedIds.includes(p.id));
+  // Bounds follow the two actual source paths, including their original verge
+@@ -56,11 +71,16 @@
+  const support=(x:number,z:number):number=>{let h=-Infinity;for(const f of faces)if(boundaries.get(f)!.every(d=>d([x,z])>=-eps))h=Math.max(h,yAt(f,x,z));if(!Number.isFinite(h))throw new Error(`Missing drawn Foot path support ${x},${z}`);return h;};
+  return(b,pal,tier,path)=>{
+   if(!affectedIds.includes(path.id))return false;
++  buildGroundPathArt(b,pal,tier,path,{
++   band(points){const world=points.map(p=>[p[0]+O.x,p[1]+O.y,p[2]+O.z] as XYZ),keep=!affectedBand(world.map(p=>[p[0],p[2]]));if(keep&&proof){proof.preservedRibbon??=[];proof.preservedRibbon.push([world[0]!,world[1]!,world[2]!],[world[0]!,world[2]!,world[3]!]);}return keep;},
++   stone(stone,index){const keep=!affectedBand(stoneCorners(stone.x,stone.z,stone.yaw,stone.hx,stone.hz));if(keep&&proof){proof.preservedStones??=[];proof.preservedStones.push({index,x:stone.x+O.x,z:stone.z+O.z,bottom:stone.bottom+O.y,top:stone.top+O.y});}return keep;}
++  });
+   const pts=resample(path.points),frames=pts.map((p,i)=>{const a=pts[Math.max(0,i-1)]!,c=pts[Math.min(pts.length-1,i+1)]!,dx=c[0]-a[0],dz=c[2]-a[2],l=Math.hypot(dx,dz)||1;return{p,side:[dz/l,-dx/l] as Point};});
+   const across=[-path.halfWidth,-path.halfWidth+.35,path.halfWidth-.35,path.halfWidth];
+   const point=(i:number,k:number):Point=>{const f=frames[i]!;return[f.p[0]+f.side[0]*across[k]!+O.x,f.p[2]+f.side[1]*across[k]!+O.z];};
+   for(let i=1;i<frames.length;i++)for(let k=0;k<3;k++){
+    const band=[point(i-1,k),point(i,k),point(i,k+1),point(i-1,k+1)],clip=planes(band),color=shade(k===1?pal.gravel:mix(pal.gravel,pal.verge,.5),.95+hash2(i,k)*.08);
++   if(!affectedBand(band))continue;
+    const candidates=faces.filter(f=>f.box[0]<=Math.max(...band.map(p=>p[0]))&&f.box[2]>=Math.min(...band.map(p=>p[0]))&&f.box[1]<=Math.max(...band.map(p=>p[1]))&&f.box[3]>=Math.min(...band.map(p=>p[1])));
+    for(const f of candidates){let pieces=[intersect(f.p.map(p=>[p[0],p[2]] as Point),clip)].filter(valid);
+     for(const other of candidates){if(other===f)continue;
+@@ -92,7 +112,8 @@
+   }
+   const every=tier==='full'?1.7:3.4;let next=0,acc=0;
+   for(let i=1;i<frames.length;i++){acc++;if(acc<next)continue;next=acc+every;const f=frames[i]!,side=(i%2?1:-1)*(path.halfWidth+.12),x=f.p[0]+f.side[0]*side,z=f.p[2]+f.side[1]*side,yaw=Math.atan2(f.side[0],f.side[1])+hash2(i,3)*.6,hx=.22+hash2(i,1)*.1,hz=.16;
+-   const heights=[[-hx,-hz],[-hx,hz],[hx,-hz],[hx,hz]].map(([u,v])=>support(x+O.x+u!*Math.cos(yaw)+v!*Math.sin(yaw),z+O.z-u!*Math.sin(yaw)+v!*Math.cos(yaw)));
++   const corners=stoneCorners(x,z,yaw,hx,hz);if(!affectedBand(corners))continue;
++   const heights=corners.map(p=>support(p[0],p[1]));
+    const bottom=Math.min(...heights)-.15,top=Math.max(...heights)+.05+hash2(i,2)*.04;
+    proof?.stones.push({x:x+O.x,z:z+O.z,bottom,top,support:heights});b.box(x,z,yaw,hx,hz,bottom-O.y,top-O.y,shade(pal.coping,.92),pal.stone,b.pencil);
+   }

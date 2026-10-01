@@ -1,0 +1,15 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/mountain-movement.test.ts (29 tests) 11022ms
+   ✓ town → mountain access by tap-to-walk > walks from the town square to every district and arrives, never giving up  1716ms
+   ✓ rides > carries the body attached to the cabin every frame, at the line's own cruise, and skips mid-ride  537ms
+   ✓ race physics on the shipped options > uphill is slower than downhill with the same push  574ms
+   ✓ race physics on the shipped options > the whole descent on the shipped options: gravity carries a rider who only pushes when slow  4680ms
+   ✓ race physics on the shipped options > no invisible dead stop anywhere on the main line, two units either side  2348ms
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  13:06:03
+   Duration  16.28s (transform 1.71s, setup 0ms, collect 4.69s, tests 11.02s, environment 0ms, prepare 160ms)
+

@@ -1,0 +1,403 @@
+{
+  "method": "Actual Journey board renderer and fictional fixture; headless Chromium SwiftShader, not device evidence",
+  "clock": "Journey is an authored printed map with fixed daylight. These images apply to both world day and world night; no second night scene was invented.",
+  "records": [
+    {
+      "file": "classic-full-mountain.jpg",
+      "stats": {
+        "view": {
+          "x": 1300,
+          "y": 620,
+          "radius": 250,
+          "tier": "region",
+          "worldPerPixel": 0.32382476260763793
+        },
+        "stats": {
+          "triangles": 36319,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15257,
+          "drawCalls": 13
+        },
+        "theme": "classic",
+        "tier": "full"
+      }
+    },
+    {
+      "file": "classic-full-stillwater.jpg",
+      "stats": {
+        "view": {
+          "x": 1180,
+          "y": 710,
+          "radius": 250,
+          "tier": "region",
+          "worldPerPixel": 0.32382476260763793
+        },
+        "stats": {
+          "triangles": 40495,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15257,
+          "drawCalls": 13
+        },
+        "theme": "classic",
+        "tier": "full"
+      }
+    },
+    {
+      "file": "classic-full-foot.jpg",
+      "stats": {
+        "view": {
+          "x": 1280,
+          "y": 735,
+          "radius": 80,
+          "tier": "stop",
+          "worldPerPixel": 0.10362392403444413
+        },
+        "stats": {
+          "triangles": 34053,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15257,
+          "drawCalls": 13
+        },
+        "theme": "classic",
+        "tier": "full"
+      }
+    },
+    {
+      "file": "taylor-full-mountain.jpg",
+      "stats": {
+        "view": {
+          "x": 1300,
+          "y": 620,
+          "radius": 250,
+          "tier": "region",
+          "worldPerPixel": 0.32382476260763793
+        },
+        "stats": {
+          "triangles": 36319,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15257,
+          "drawCalls": 13
+        },
+        "theme": "taylor",
+        "tier": "full"
+      }
+    },
+    {
+      "file": "taylor-full-stillwater.jpg",
+      "stats": {
+        "view": {
+          "x": 1180,
+          "y": 710,
+          "radius": 250,
+          "tier": "region",
+          "worldPerPixel": 0.32382476260763793
+        },
+        "stats": {
+          "triangles": 40495,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15257,
+          "drawCalls": 13
+        },
+        "theme": "taylor",
+        "tier": "full"
+      }
+    },
+    {
+      "file": "taylor-full-foot.jpg",
+      "stats": {
+        "view": {
+          "x": 1280,
+          "y": 735,
+          "radius": 80,
+          "tier": "stop",
+          "worldPerPixel": 0.10362392403444413
+        },
+        "stats": {
+          "triangles": 34053,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15257,
+          "drawCalls": 13
+        },
+        "theme": "taylor",
+        "tier": "full"
+      }
+    },
+    {
+      "file": "newfoundland-full-mountain.jpg",
+      "stats": {
+        "view": {
+          "x": 1300,
+          "y": 620,
+          "radius": 250,
+          "tier": "region",
+          "worldPerPixel": 0.32382476260763793
+        },
+        "stats": {
+          "triangles": 36319,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15257,
+          "drawCalls": 13
+        },
+        "theme": "newfoundland",
+        "tier": "full"
+      }
+    },
+    {
+      "file": "newfoundland-full-stillwater.jpg",
+      "stats": {
+        "view": {
+          "x": 1180,
+          "y": 710,
+          "radius": 250,
+          "tier": "region",
+          "worldPerPixel": 0.32382476260763793
+        },
+        "stats": {
+          "triangles": 40495,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15257,
+          "drawCalls": 13
+        },
+        "theme": "newfoundland",
+        "tier": "full"
+      }
+    },
+    {
+      "file": "newfoundland-full-foot.jpg",
+      "stats": {
+        "view": {
+          "x": 1280,
+          "y": 735,
+          "radius": 80,
+          "tier": "stop",
+          "worldPerPixel": 0.10362392403444413
+        },
+        "stats": {
+          "triangles": 34053,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15257,
+          "drawCalls": 13
+        },
+        "theme": "newfoundland",
+        "tier": "full"
+      }
+    },
+    {
+      "file": "classic-lite-mountain.jpg",
+      "stats": {
+        "view": {
+          "x": 1300,
+          "y": 620,
+          "radius": 250,
+          "tier": "region",
+          "worldPerPixel": 0.32382476260763793
+        },
+        "stats": {
+          "triangles": 36255,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15193,
+          "drawCalls": 13
+        },
+        "theme": "classic",
+        "tier": "lite"
+      }
+    },
+    {
+      "file": "classic-lite-stillwater.jpg",
+      "stats": {
+        "view": {
+          "x": 1180,
+          "y": 710,
+          "radius": 250,
+          "tier": "region",
+          "worldPerPixel": 0.32382476260763793
+        },
+        "stats": {
+          "triangles": 40431,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15193,
+          "drawCalls": 13
+        },
+        "theme": "classic",
+        "tier": "lite"
+      }
+    },
+    {
+      "file": "classic-lite-foot.jpg",
+      "stats": {
+        "view": {
+          "x": 1280,
+          "y": 735,
+          "radius": 80,
+          "tier": "stop",
+          "worldPerPixel": 0.10362392403444413
+        },
+        "stats": {
+          "triangles": 33989,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15193,
+          "drawCalls": 13
+        },
+        "theme": "classic",
+        "tier": "lite"
+      }
+    },
+    {
+      "file": "taylor-lite-mountain.jpg",
+      "stats": {
+        "view": {
+          "x": 1300,
+          "y": 620,
+          "radius": 250,
+          "tier": "region",
+          "worldPerPixel": 0.32382476260763793
+        },
+        "stats": {
+          "triangles": 36255,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15193,
+          "drawCalls": 13
+        },
+        "theme": "taylor",
+        "tier": "lite"
+      }
+    },
+    {
+      "file": "taylor-lite-stillwater.jpg",
+      "stats": {
+        "view": {
+          "x": 1180,
+          "y": 710,
+          "radius": 250,
+          "tier": "region",
+          "worldPerPixel": 0.32382476260763793
+        },
+        "stats": {
+          "triangles": 40431,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15193,
+          "drawCalls": 13
+        },
+        "theme": "taylor",
+        "tier": "lite"
+      }
+    },
+    {
+      "file": "taylor-lite-foot.jpg",
+      "stats": {
+        "view": {
+          "x": 1280,
+          "y": 735,
+          "radius": 80,
+          "tier": "stop",
+          "worldPerPixel": 0.10362392403444413
+        },
+        "stats": {
+          "triangles": 33989,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15193,
+          "drawCalls": 13
+        },
+        "theme": "taylor",
+        "tier": "lite"
+      }
+    },
+    {
+      "file": "newfoundland-lite-mountain.jpg",
+      "stats": {
+        "view": {
+          "x": 1300,
+          "y": 620,
+          "radius": 250,
+          "tier": "region",
+          "worldPerPixel": 0.32382476260763793
+        },
+        "stats": {
+          "triangles": 36255,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15193,
+          "drawCalls": 13
+        },
+        "theme": "newfoundland",
+        "tier": "lite"
+      }
+    },
+    {
+      "file": "newfoundland-lite-stillwater.jpg",
+      "stats": {
+        "view": {
+          "x": 1180,
+          "y": 710,
+          "radius": 250,
+          "tier": "region",
+          "worldPerPixel": 0.32382476260763793
+        },
+        "stats": {
+          "triangles": 40431,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15193,
+          "drawCalls": 13
+        },
+        "theme": "newfoundland",
+        "tier": "lite"
+      }
+    },
+    {
+      "file": "newfoundland-lite-foot.jpg",
+      "stats": {
+        "view": {
+          "x": 1280,
+          "y": 735,
+          "radius": 80,
+          "tier": "stop",
+          "worldPerPixel": 0.10362392403444413
+        },
+        "stats": {
+          "triangles": 33989,
+          "drawCalls": 31
+        },
+        "land": {
+          "triangles": 15193,
+          "drawCalls": 13
+        },
+        "theme": "newfoundland",
+        "tier": "lite"
+      }
+    }
+  ],
+  "errors": []
+}

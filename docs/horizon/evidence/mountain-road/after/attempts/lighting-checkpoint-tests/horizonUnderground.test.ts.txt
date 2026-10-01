@@ -1,0 +1,48 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/horizonUnderground.test.ts (4 tests | 1 failed) 135320ms
+   × encloses rooms and passages, preserves the only named mouths, and reports roof breaches 54099ms
+     → Stillwater profile exceeds 10% at sample 1
+   ✓ gives every underground solid a unique id and opens the Deep roof only at the manifest skylight (v1.9: closed over the Throat)  26302ms
+   ✓ v2.0: checks the Throat against the collar aperture and keeps ceilings off the Ore Line and its branches  27166ms
+   ✓ gives the Deep a floor, carries the Ore Line across it on a trestle and opens the tubes onto the lake (page G, Wave 7)  27746ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/horizonUnderground.test.ts > encloses rooms and passages, preserves the only named mouths, and reports roof breaches
+Error: Stillwater profile exceeds 10% at sample 1
+ ❯ buildStillwaterProfile src/harbour/horizon/land/mountainV2/stillwater.ts:70:56
+     68|   for(let i=1;i<points.length;i++){
+     69|     const a=points[i-1]!,b=points[i]!,run=distance(plan(a),plan(b));
+     70|     if(run>1e-7&&Math.abs(b[1]-a[1])/run>.100001)throw new Error(`Stil…
+       |                                                        ^
+     71|   }
+     72|   return{points,approach,shared,descent,descentStart,tunnelPoints};
+ ❯ buildStillwaterLink src/harbour/horizon/land/mountainV2/stillwater.ts:87:17
+ ❯ buildLandCuts src/harbour/horizon/land/beds/build.ts:734:3
+ ❯ test/horizonUnderground.test.ts:25:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-worker]: Timeout calling "onTaskUpdate"
+ ❯ Object.onTimeoutError ../../../budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/vitest@3.2.7_@types+node@20.19.43_jsdom@26.1.0_supports-color@10.2.2__supports-color@10.2.2_yaml@2.9.0/node_modules/vitest/dist/chunks/rpc.-pEldfrD.js:53:10
+ ❯ Timeout._onTimeout ../../../budget%20app%202/.codex-work/horizon-complete/node_modules/.pnpm/vitest@3.2.7_@types+node@20.19.43_jsdom@26.1.0_supports-color@10.2.2__supports-color@10.2.2_yaml@2.9.0/node_modules/vitest/dist/chunks/index.B521nVV-.js:59:62
+ ❯ listOnTimeout node:internal/timers:685:17
+ ❯ processTimers node:internal/timers:618:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 3 passed (4)
+     Errors  1 error
+   Start at  12:41:18
+   Duration  137.54s (transform 1.12s, setup 0ms, collect 1.56s, tests 135.32s, environment 0ms, prepare 197ms)
+

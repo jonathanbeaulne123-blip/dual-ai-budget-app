@@ -1,3 +1,4 @@
+import plantingAuthoring from './generated/planting-authoring-corridors.json';
 import {TRANSPORT_LINES,DISTRICTS,SKILL_BRANCHES,SUMMIT_OBSERVATORY_SITE,GOAL_PAVILION_SITE,DOOR_APRONS,nearestOnRoute,type Point3,type District} from './definition.ts';
 import {landHeight as groundHeightAt} from './art/land.ts';
 import {findSpot,footGround,corridorClearance} from './art/spots.ts';
@@ -29,6 +30,11 @@ export function districtArtClear(d:District,x:number,z:number,radius=1){
   void d;
   return corridorClearance(x,z)>radius+.4&&SKILL_BRANCHES.every(p=>nearestOnRoute(x,z,p.points).distance>p.halfWidth+1+radius);
 }
+/** Candidate authoring history prevents a repaired landing from creating unrelated
+ * new furniture where its old corridor used to run. Runtime clearance stays current. */
+function authoredDistrictFixtureClear(x:number,z:number,radius:number):boolean{
+  return plantingAuthoring.branches.every(branch=>nearestOnRoute(x,z,branch.points as unknown as readonly Point3[]).distance>branch.halfWidth+1+radius);
+}
 /** Close district furniture that a body bumps into: raised beds, log stacks, crates and boulders. */
 export const DISTRICT_FIXTURES:readonly DistrictFixture[]=DISTRICTS.flatMap(d=>{
   const out:DistrictFixture[]=[];let seed=d.id.split('').reduce((n,c)=>n+c.charCodeAt(0),17);
@@ -41,7 +47,7 @@ export const DISTRICT_FIXTURES:readonly DistrictFixture[]=DISTRICTS.flatMap(d=>{
     // The collision solid is axis-aligned round the turned footprint; the whole solid clears every walk.
     const ex=Math.abs(Math.cos(yaw))*hx+Math.abs(Math.sin(yaw))*hz,ez=Math.abs(Math.sin(yaw))*hx+Math.abs(Math.cos(yaw))*hz,reach=Math.hypot(ex,ez);
     const [x,z]=findSpot(d.at[0],d.at[2],i*2.399+random()*.6,d.radius*.7+random()*9,reach,{level:.7});
-    if(!districtArtClear(d,x,z,reach))continue;
+    if(!districtArtClear(d,x,z,reach)||!authoredDistrictFixtureClear(x,z,reach))continue;
     // Seated on the lowest ground under its own (turned) footprint, a hair into the soil.
     const g=footGround(x,z,yaw,hx,hz),y=g.min-.06;if(g.max-g.min>.85)continue;
     const height=kind==='rock'?size*.9:kind==='bed'?.45:kind==='logs'?.8:.7;

@@ -1,0 +1,97 @@
+{
+  "scenerySnapshot": {
+    "path": "/tmp/mountain-final-plant-comparison/current/snapshot.json",
+    "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+    "sha256": "af3fdc878168bda73413b3bde79f58616bad0f8d0eee76a86bc4c78981b0f049",
+    "limit": "Final-Awning preserved-scenery snapshot; all collection roots included, source hashes recorded, post-apply parity still required"
+  },
+  "status": "Unapplied exact shared-lattice cap proposal; native field/old tree snapshot only, not controller or rendered GPU proof",
+  "sourceSha256": "878a84c6997bb2f49c5a610bf772ad21713ff666f834474bb2313889104b8a94",
+  "method": "Both worlds call the shared buildLattice. Existing Horizon ceilings only lower source field further. This parent-run data reconstruction matches current source axis and diagonal selection.",
+  "reports": [
+    {
+      "tier": "full",
+      "independentGroundProof": {
+        "pairs": 4467,
+        "witnesses": 15615,
+        "worst": {
+          "value": -0.08000966444777369,
+          "at": [
+            19.09365712333768,
+            15.680863190684766,
+            -94.39167161063838
+          ],
+          "roadY": 15.76087285513254,
+          "roadTriangle": 271,
+          "groundTriangle": 76484
+        },
+        "pass": true
+      },
+      "checkedSceneryRoots": 6962,
+      "affectedRoots": [],
+      "changedVertices": 36,
+      "latticeOnlyChangedVertices": 36,
+      "worst": {
+        "at": [
+          16.25,
+          15.48343563079834,
+          -94
+        ],
+        "delta": -0.19212913513183594
+      },
+      "bounds": {
+        "x": [
+          13.75,
+          22.5
+        ],
+        "z": [
+          -104,
+          -92
+        ]
+      },
+      "treeChanges": []
+    },
+    {
+      "tier": "lite",
+      "independentGroundProof": {
+        "pairs": 3609,
+        "witnesses": 12261,
+        "worst": {
+          "value": -0.08000954069659905,
+          "at": [
+            17.68237496996203,
+            15.542545654173884,
+            -92.98735624417299
+          ],
+          "roadY": 15.622555194870483,
+          "roadTriangle": 358,
+          "groundTriangle": 33309
+        },
+        "pass": true
+      },
+      "checkedSceneryRoots": 3316,
+      "affectedRoots": [],
+      "changedVertices": 18,
+      "latticeOnlyChangedVertices": 18,
+      "worst": {
+        "at": [
+          16,
+          16.182405471801758,
+          -102.88288116455078
+        ],
+        "delta": -0.12180519104003906
+      },
+      "bounds": {
+        "x": [
+          14,
+          22
+        ],
+        "z": [
+          -102.88288116455078,
+          -90.9189224243164
+        ]
+      },
+      "treeChanges": []
+    }
+  ]
+}

@@ -39,6 +39,7 @@ export const V01_REACHES: readonly ReachPart[] = Object.freeze([
 
 /** Every other road-kind bed is one reach. */
 export function singleReach(bed: BedCut): Omit<CorridorReach, 'from' | 'to'> {
+  if (bed.id === 'spur stillwater') return { id: 'spur stillwater', label: 'Stillwater Road', context: 'mountain', note: 'shared lake rim; lined Stillwater Tunnel; Green Road entrance' };
   if (bed.id === 'V03') return { id: 'V03', label: 'Mountain Road', context: 'mountain', note: 'stone parapets; the tunnel and the canal bridge own the road on their decks' };
   if (bed.id === 'VG') return { id: 'VG', label: 'Green Road', context: 'open', note: "the High Span owns the road on its deck; nothing taller than 0.85 inside the Green's protected centre" };
   if (bed.id === 'VBS') return { id: 'VBS', label: 'Bight Shore spur', context: 'open', note: 'entrance spur: flush joins, guard gaps' };

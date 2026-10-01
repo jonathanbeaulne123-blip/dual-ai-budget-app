@@ -10,6 +10,8 @@ import {gunzipSync} from 'node:zlib';
 import * as THREE from 'three';
 import {createMountainV2Region,MOUNTAIN_V2_OFFSET as O} from '../src/harbour/horizon/regions/mountainV2/index.ts';
 import {MOUNTAIN_V2_FOOTPRINT,toHorizonXYZ} from '../src/harbour/horizon/regions/mountainV2/placement.ts';
+import {drawnRoadGroundCeiling} from '../src/harbour/horizon/regions/mountainV2/drawnRoadGround.ts';
+import {REGION_ROAD} from '../src/harbour/horizon/regions/mountainV2/geography.ts';
 import {groundHeightAt} from '../src/harbour/scene/ground.ts';
 import {MOUNTAIN_ROAD_LINE,EDGE_SOLIDS,DAM_PARTS,MOUNTAIN_PATH_GRAPH,RESERVOIR_BOWL,RESERVOIR_LEVEL_MAX,RIVER} from '../src/harbour/mountain/definition.ts';
 import {placeHorizonRegions} from '../src/harbour/horizon/runtime/index.ts';
@@ -24,6 +26,10 @@ import {districtAt,useDefinitionDistricts} from '../src/harbour/horizon/world/di
 import {walkPlan,withExtraGraph,type HorizonPathGraph} from '../src/harbour/horizon/world/pathGraph.ts';
 
 const region=createMountainV2Region();
+// The shared ceiling changes Horizon's drawn/felt terrain only, never native
+// groundHeightAt. Low bridge ground remains below the ceiling and unchanged.
+const roadCeiling=drawnRoadGroundCeiling(REGION_ROAD);
+const horizonGround=(x:number,z:number)=>Math.min(groundHeightAt(x,z),roadCeiling(x,z)??Infinity)+O.y;
 const H=(n:readonly [number,number,number])=>toHorizonXYZ(n);
 const bin=readFileSync('public/horizon/terrain/horizon-geo-1.bin');
 const field:TerrainField=decodeTerrainAsset(bin.buffer.slice(bin.byteOffset,bin.byteOffset+bin.byteLength) as ArrayBuffer,'full');
@@ -34,9 +40,11 @@ const highestBridge=()=>MOUNTAIN_ROAD_LINE.samples.filter(q=>q.support==='bridge
 const empty:LandCuts={beds:[],pads:[],mouths:[],waters:[],solids:[],diagnostics:[]};
 
 describe('the region answers with v2’s own numbers',()=>{
-  it('ground: region.groundAt(h) is v2 groundHeightAt(native) + 54 at 20 points',()=>{
+  it('ground: native terrain is unchanged except the shared visible road clearance cut at 20 points',()=>{
     const pts:[number,number][]=[[0,0],[-20,10],[30,-20],[-26,-44],[6,-87],[17,-156],[37,-227],[2,-294],[-2,-298],[44,-246],[58,-115],[-67,-126],[50,-177],[-73,-220],[0,-60],[-40,-100],[60,-200],[-9,-282],[20,-270],[10,-130]];
-    for(const [x,z] of pts){const hx=x+O.x,hz=z+O.z;expect(region.contains(hx,hz),`contains ${x},${z}`).toBe(true);expect(region.groundAt(hx,hz)).toBe(groundHeightAt(x,z)+O.y);}
+    expect(pts.some(([x,z])=>horizonGround(x,z)<groundHeightAt(x,z)+O.y)).toBe(true);
+    expect(pts.some(([x,z])=>horizonGround(x,z)===groundHeightAt(x,z)+O.y)).toBe(true);
+    for(const [x,z] of pts){const hx=x+O.x,hz=z+O.z;expect(region.contains(hx,hz),`contains ${x},${z}`).toBe(true);expect(region.groundAt(hx,hz)).toBe(horizonGround(x,z));}
   });
   it('surface: the dam crest and a road bridge are decks; the ground elsewhere',()=>{
     const crest=DAM_PARTS.promenade[Math.floor(DAM_PARTS.promenade.length/2)]!,c=H(crest);
@@ -78,7 +86,7 @@ describe('the Horizon geography under the region',()=>{
     expect(geo.ground(b[0],b[2])).toBeCloseTo(g,9);
     expect(geo.surface(b[0],b[2],g+.1)?.y).toBeCloseTo(g,9);                  // in the gorge, under the bridge: v2's gorge floor
     expect(geo.surface(b[0],b[2],b[1]+.1)?.id).toBe('mountainV2:mountain-road');
-    let worst=0;for(const n of MOUNTAIN_PATH_GRAPH.nodes){const h=H(n.at);if(!region.contains(h[0],h[2]))continue;worst=Math.max(worst,Math.abs(geo.ground(h[0],h[2])-(groundHeightAt(n.at[0],n.at[2])+O.y)));}
+    let worst=0;for(const n of MOUNTAIN_PATH_GRAPH.nodes){const h=H(n.at);if(!region.contains(h[0],h[2]))continue;worst=Math.max(worst,Math.abs(geo.ground(h[0],h[2])-horizonGround(n.at[0],n.at[2])));}
     expect(worst).toBeLessThan(1e-9);
     off();expect(geo.ground(b[0],b[2])).toBe(sampleTerrain(field,b[0],b[2]));
   });
@@ -131,7 +139,7 @@ describe('the Horizon geography under the region',()=>{
     const runtime=readFileSync('src/harbour/horizon/runtime/index.ts','utf8'),step=runtime.slice(runtime.indexOf('function step(dt:number,now:number){'),runtime.indexOf('function tick(now:number){'));
     expect(runtime).toMatch(/geography\.addDynamic\(placed\.region\.providerWhileDrawn\(\(\)=>regionVisible\)\)/);
     expect(runtime).toMatch(/function gateOpen\(x:number,z:number\):boolean\{return chunkGateOpen\(x,z\)&&regionReady\(x,z\);\}/);
-    expect(runtime).toMatch(/function regionReady\(x:number,z:number\):boolean\{return !placed\|\|regionVisible\|\|!placed\.region\.contains\(x,z\);\}/);
+    expect(runtime).toMatch(/function regionReady\(x:number,z:number\):boolean\{return !placed\|\|regionVisible\|\|!placed\.region\.requiresScene\(x,z\);\}/);
     // The walker: held (resnap) before any movement or airborne branch, re-seated on the deck once drawn; a landing chunk keeps the hold.
     const hold=step.indexOf('if(!regionReady(body.x,body.z)){resnap=true;regionSettle=true;}');expect(hold).toBeGreaterThan(0);expect(hold).toBeLessThan(step.indexOf('if(bodyHeld()){'));
     expect(runtime).toMatch(/function reseat\(\)\{\s*\/\/[^\n]*\n\s*\{const at=holdPoint\(\);if\(!regionReady\(at\[0\],at\[1\]\)\)\{resnap=true;return;\}\}/);

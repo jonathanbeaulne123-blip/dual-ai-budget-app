@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560"><rect width="1000" height="560" fill="#f5f1e7"/><style>text{font-family:Arial,sans-serif;fill:#203a34}.small{font-size:13px}.label{font-size:17px}</style><text x="34" y="42" font-size="25">Orchard Lane to Hollow</text>
+<text x="34" y="70" class="small">Endpoint chord only — a feasibility drawing, not a fitted road or clearance proof</text>
+<polyline fill="none" stroke="#b8b7ac" stroke-width="3" points="441.6,343.7 443.4,340.5 445.7,337.6 448.3,335.0 451.3,332.8 454.5,331.0 457.9,329.4 461.4,328.2 464.5,185.1 460.8,184.8 457.1,184.4 453.5,183.8 449.9,182.8 446.5,181.5 443.0,180.1 439.6,178.6 436.1,177.4 432.5,176.6 428.8,176.3 425.1,176.6 421.5,177.1 417.9,177.9 414.3,178.8 410.7,179.8 407.2,181.0 403.8,182.5 400.4,183.9 396.9,185.1 393.3,185.8 389.6,186.2 385.9,186.3 382.2,186.2 378.5,185.8 374.8,185.1 371.2,184.3 367.7,183.3 364.2,182.0 360.9,180.4 357.8,178.2 355.4,175.5"/>
+<polyline fill="none" stroke="#b8b7ac" stroke-width="3" points="68.2,344.4 69.2,339.0 70.3,333.4 71.7,327.6 73.2,321.7 74.9,315.7 76.6,309.6 78.5,303.4 80.3,297.2 82.2,291.0 84.0,284.7 85.8,278.5 87.4,272.2 89.0,266.1 90.4,260.0 91.5,254.0 92.5,248.1 93.2,242.3 93.7,236.7 93.8,231.2 93.5,225.9 92.9,220.9 92.2,217.4 91.2,213.4 89.9,209.1 88.3,204.5 86.4,199.6 84.4,194.4 82.1,189.0 79.7,183.3 77.1,177.4"/>
+<path d="M396.7684615684592,277.71581446066324 L93.23153843154063,242.28418553933662" stroke="#b66136" stroke-width="3" stroke-dasharray="7 5"/>
+<circle cx="396.7684615684592" cy="277.71581446066324" r="5" fill="#203a34"/><text x="405.7684615684592" y="269.71581446066324" class="label">A</text>
+<circle cx="93.23153843154063" cy="242.28418553933662" r="5" fill="#203a34"/><text x="102.23153843154063" y="234.28418553933662" class="label">B</text>
+<text x="40" y="115" class="label">Plan · north ↑</text>
+<text x="35" y="446" class="small">A [1246.0, 81.60, 646.0] → B [1000.3, 39.03, 617.3]</text>
+<text x="545" y="115" class="label">Profile · vertical scale exaggerated</text>
+<path d="M550,395H940 M550,395V135" fill="none" stroke="#adb3a9"/>
+<path d="M550,182.78230938188378 L935,357.21769061811625" fill="none" stroke="#b66136" stroke-width="3" stroke-dasharray="7 5"/>
+<text x="534" y="170.78230938188378" class="small">81.60</text>
+<text x="919" y="345.21769061811625" class="small">39.03</text>
+<text x="552" y="423" class="small">0 m</text><text x="862" y="423" class="small">247.4 m</text><text x="552" y="448" class="small">At ≤10%: necessary route length ≥425.7 m</text>
+<text x="34" y="502" class="label">Contour study only. No bridge alignment or clearances approved.</text><text x="34" y="535" class="small">Horizon xyz, eu/metres. Measured endpoints at main 324cd5f. Terrain between endpoints is not drawn.</text></svg>

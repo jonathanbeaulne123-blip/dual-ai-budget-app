@@ -1,0 +1,58 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stderr | test/journey-board-app.test.ts > the household Journey Board in the App > select, zoom, preview a crossroads, Back to now, browse chapters and open/close panels: the books never change, and browsing never moves the piece
+An update to HerculesRigProvider inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | test/journey-board-app.test.ts > Simple view while the Journey Board is up (PR #567 Codex P1) > choosing Simple view on the board opens the Court (where the Desk opens) in place of the board, and nothing is posted
+An update to App inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to App inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ✓ test/journey-board-app.test.ts (14 tests) 91984ms
+   ✓ the household Journey Board in the App > is the tab's arrival; a bill mark's Mark paid… opens the App's Bill paid at THAT recurrence; closing returns the same selection and focus  7451ms
+   ✓ the household Journey Board in the App > the list row's Mark paid… opens the same Bill paid for the same recurrence, and closing returns focus to the row  7027ms
+   ✓ the household Journey Board in the App > pressing Mark paid… again for the same bill after closing opens that bill's Confirm again  7769ms
+   ✓ the household Journey Board in the App > select, zoom, preview a crossroads, Back to now, browse chapters and open/close panels: the books never change, and browsing never moves the piece  12833ms
+   ✓ the household Journey Board in the App > a brand-new household sees the honest empty board: setup actions, no invented memories or milestones  951ms
+   ✓ review fixes in the App > B1: the due reminders lead Needs attention, open above the board, and nothing under the frame is reachable by Tab  5254ms
+   ✓ review fixes in the App > M1: Review and record… on expected pay opens the due review on that occurrence; its Confirm turns the SAME stop confirmed, with no income:tx twin  8967ms
+   ✓ review fixes in the App > M3: Bill paid through its named Confirm turns the SAME bill id Paid and keeps the selection  7668ms
+   ✓ review fixes in the App > M3: a tool opened from a stop, then Put it back, returns to the same selection and the same control  8163ms
+   ✓ review fixes in the App > MINOR 6: the Era planner is a modal over the board: focus moves in, the board is inert, Escape closes and focus returns  7356ms
+   ✓ review fixes in the App > M2: the arrival board stands on the slim baked land in one request; without it, the index path still stands the board  6292ms
+   ✓ Simple view while the Journey Board is up (PR #567 Codex P1) > choosing Simple view on the board opens the Court (where the Desk opens) in place of the board, and nothing is posted  4291ms
+   ✓ Simple view while the Journey Board is up (PR #567 Codex P1) > a reload on a saved Journey URL with the reading edition chosen lands on the Court, not the flat board  4267ms
+   ✓ Simple view while the Journey Board is up (PR #567 Codex P1) > the same reload in the illustrated edition keeps the Journey Board  3686ms
+
+ Test Files  1 passed (1)
+      Tests  14 passed (14)
+   Start at  12:46:55
+   Duration  124.22s (transform 23.42s, setup 0ms, collect 29.24s, tests 91.98s, environment 1.94s, prepare 244ms)
+

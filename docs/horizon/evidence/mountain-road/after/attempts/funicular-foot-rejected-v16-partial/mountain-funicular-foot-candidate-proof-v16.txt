@@ -1,0 +1,18 @@
+{"name":"source-snapshot","elapsedMs":19,"files":12}
+{"name":"bundle","elapsedMs":284,"sha256":"0c14bf8cff6bb60fd3b498e58ec6d839b74164adfe6bb69327637e79ba2e0cb4"}
+{"name":"world-loaded","elapsedMs":1082}
+{"name":"construction-start","elapsedMs":1082}
+{"name":"construction-finished","elapsedMs":50244}
+{"name":"roundtrip-finished","elapsedMs":50516,"rows":[{"label":"source","collapsed":0,"inverted":0,"steep":0,"runtimeInvisible":0,"maxDegrees":38.71269009689091},{"label":"bake9","collapsed":0,"inverted":0,"steep":0,"runtimeInvisible":0,"maxDegrees":38.71269005727828},{"label":"absoluteFloat32","collapsed":10,"inverted":12,"steep":3,"runtimeInvisible":1,"maxDegrees":82.12121202487661}]}
+{"name":"walker-start","elapsedMs":50516}
+{"name":"walker-finished","elapsedMs":82705,"attempts":[{"id":"native funicular Foot","offset":-1.45,"reverse":false,"reason":"end"},{"id":"native funicular Foot","offset":-1.45,"reverse":true,"reason":"end"},{"id":"native funicular Foot","offset":0,"reverse":false,"reason":"end"},{"id":"native funicular Foot","offset":0,"reverse":true,"reason":"end"},{"id":"native funicular Foot","offset":1.45,"reverse":false,"reason":"end"},{"id":"native funicular Foot","offset":1.45,"reverse":true,"reason":"end"},{"id":"Year Walk crossing","offset":0,"reverse":false,"reason":"end"},{"id":"Year Walk crossing","offset":0,"reverse":true,"reason":"end"},{"id":"native town station","offset":-1.25,"reverse":false,"reason":"end"},{"id":"native town station","offset":-1.25,"reverse":true,"reason":"end"},{"id":"native town station","offset":0,"reverse":false,"reason":"end"},{"id":"native town station","offset":0,"reverse":true,"reason":"end"},{"id":"native town station","offset":1.25,"reverse":false,"reason":"end"},{"id":"native town station","offset":1.25,"reverse":true,"reason":"end"}]}
+{"name":"sweeps-finished","elapsedMs":146103,"failures":25}
+{"name":"continuous-sweeps-finished","elapsedMs":245748,"failures":32}
+{"name":"drawn-ground-before-start","elapsedMs":245764,"tier":"full"}
+{"name":"drawn-ground-before-finished","elapsedMs":268394,"tier":"full"}
+{"name":"drawn-ground-diff-finished","elapsedMs":269795,"tier":"full","vertices":64,"triangles":384}
+{"name":"drawn-ground-before-start","elapsedMs":269796,"tier":"lite"}
+{"name":"drawn-ground-before-finished","elapsedMs":279078,"tier":"lite"}
+{"name":"drawn-ground-diff-finished","elapsedMs":279766,"tier":"lite","vertices":34,"triangles":222}
+{"name":"drawn-ground-finished","elapsedMs":280225,"tier":"full","localTriangles":646,"proud":0,"maxProud":-0.021339919377240335,"worst":{"q":[1285.0935688939007,55.13827457706782,727.9704928501816],"ground":55.11693465769058}}
+{"name":"drawn-ground-finished","elapsedMs":280392,"tier":"lite","localTriangles":312,"proud":0,"maxProud":-0.020689774796515792,"worst":{"q":[1293.7094714181117,55.40962936631164,731.2867732391096],"ground":55.388939591515125}}

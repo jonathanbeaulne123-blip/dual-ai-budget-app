@@ -138,6 +138,16 @@ export interface LineOptions {
  * the flat below 4 m/s, a pop at any lip the kernel reports. It never chooses to leave the bed.
  */
 export function runLine(deps: MoverDeps, id: LineId, o: LineOptions = {}): LineRun {
+  const steps = runLineSteps(deps, id, o);
+  for (;;) { const next = steps.next(); if (next.done) return next.value; }
+}
+
+/**
+ * Same deterministic rider, with a scheduling checkpoint after every 120 controller updates.
+ * No simulated time or input depends on the host clock. Synchronous callers drain the iterator;
+ * asynchronous tests can yield the event loop without restarting a leg or losing its state.
+ */
+export function* runLineSteps(deps: MoverDeps, id: LineId, o: LineOptions = {}): Generator<void, LineRun, void> {
   const bed = deps.world.beds.find(b => b.id === id);
   if (!bed) throw new Error(`runLine: no bed ${id}`);
   const path = bedPath(bed), {run, start} = logged(deps), c = run.controller, P0 = BOARD_PROFILE;
@@ -156,7 +166,7 @@ export function runLine(deps: MoverDeps, id: LineId, o: LineOptions = {}): LineR
   c.place({x: s0.x, z: s0.z, y: s0.y, heading: s0.heading, speed: v0});
   start();
   let waitFor = 0, lastLeft = false, stallD = o.from ?? 0, d = o.from ?? 0, t = 0, mode: 'ride' | 'kick' | 'hold' | 'gap' | 'catch' = 'ride', modeFor = 0, popNext = false, maxOff = 0, offbedSteps = 0, bails = 0, reason = 'time', stall = 0;
-  let blockedBy: string | null = null, popping = 0;
+  let blockedBy: string | null = null, popping = 0, stepsSinceYield = 0;
   const dt = GROUND_DT, P = BOARD_PROFILE;
   while (t < maxTime) {
     const st = c.state(), s = groundSpeed(st), p = st.p;
@@ -236,6 +246,7 @@ export function runLine(deps: MoverDeps, id: LineId, o: LineOptions = {}): LineR
     if (d > stallD + 0.3) { stallD = d; stall = 0; } else stall += dt;
     if (stall > 2) { reason = 'stalled'; t += dt; break; }
     t += dt;
+    if (++stepsSinceYield === 120) { stepsSinceYield = 0; yield; }
   }
   const q = c.state().p, h = pointAt(path, d + 1);
   if (reason !== 'end' && reason !== 'time') blockedBy = deps.geography.blocker(q[0], q[2], q[1], P.contact.width / 2, [h.x - q[0], h.z - q[2]]);
@@ -327,10 +338,20 @@ export function runLineLegs(deps: MoverDeps, id: LineId, o: LineOptions & { skip
  * synchronous stepping otherwise). Same legs, same order, same result as `runLineLegs`.
  */
 export function* lineLegSteps(deps: MoverDeps, id: LineId, o: LineOptions & { skip?: number; maxLegs?: number } = {}): Generator<LineRun, LineLegs, void> {
+  const work = lineWorkSteps(deps, id, o);
+  for (;;) {
+    const next = work.next();
+    if (next.done) return next.value;
+    if (next.value !== undefined) yield next.value;
+  }
+}
+
+/** Scheduling checkpoints within each leg, plus the same completed-leg yields as lineLegSteps. */
+export function* lineWorkSteps(deps: MoverDeps, id: LineId, o: LineOptions & { skip?: number; maxLegs?: number } = {}): Generator<LineRun | void, LineLegs, void> {
   const path = bedPath(deps.world.beds.find(b => b.id === id)!), legs: LineRun[] = [], stops: LineStop[] = [], log: RideLogRow[] = [];
   let from = o.from ?? 0, speed = o.speed ?? 0, time = 0;
   for (let n = 0; n < (o.maxLegs ?? 64); n++) {
-    const leg = runLine(deps, id, {...o, from, speed, restart: legs.length > 0});
+    const leg = yield* runLineSteps(deps, id, {...o, from, speed, restart: legs.length > 0});
     legs.push(leg); log.push(...leg.log);
     yield leg;
     // (A leg that already ends in the last few metres counts as the end of the line.)

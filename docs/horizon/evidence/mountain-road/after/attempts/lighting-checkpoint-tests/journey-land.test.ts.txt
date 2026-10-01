@@ -1,0 +1,64 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/journey-land.test.ts > extracted land > serializes without pathGraph, collision, geometry or solids, under 400 KB
+[journey-land] extracted data 269.0 KB as JSON (terrain typed arrays included)
+
+stdout | test/journey-land.test.ts > extracted land > measures the slim parse against the index parse + extract (PLAN R3, REVIEW M2)
+[journey-land] median of 20 (Node, unthrottled): slim gunzip+parse+decode 3.1 ms (24.6 KB gz) · index parse 230.7 ms + decode journey LOD 0.3 ms + extract 177.1 ms (2402 KB)
+
+stdout | test/journey-land.test.ts > slim artefact (REVIEW M2) > is small: one request of at most 120 KB gzip, the terrain lattice embedded
+[journey-land] slim 24.6 KB gz vs index 1844 KB gz + terrain 558 KB
+
+stdout | test/journey-land.test.ts > three.js land > stays inside the land budget on full and lite
+[journey-land] full 16307 tris / 13 draws · lite 16229 tris / 13 draws
+
+ ❯ test/journey-land.test.ts (26 tests | 1 failed) 17086ms
+   ✓ extracted land > has the twelve stations jan…dec at the index's xy 5ms
+   ✓ extracted land > keeps the seven hosts, the shared home at its door [1494,1165] 1ms
+   ✓ extracted land > keeps the coastline within the coast budget and the surface water only 1ms
+   ✓ extracted land > serializes without pathGraph, collision, geometry or solids, under 400 KB 9ms
+   ✓ extracted land > measures the slim parse against the index parse + extract (PLAN R3, REVIEW M2)  13119ms
+   ✓ slim artefact (REVIEW M2) > equals, deeply, the land the index path extracts 100ms
+   ✓ slim artefact (REVIEW M2) > is small: one request of at most 120 KB gzip, the terrain lattice embedded 5ms
+   ✓ slim artefact (REVIEW M2) > was baked from the index and terrain in public/ (source sha256) 39ms
+   ✓ slim artefact (REVIEW M2) > reads raw JSON too (a server that already decoded the gzip) 81ms
+   ✓ slim artefact (REVIEW M2) > rejects a different revision, an unknown format and a malformed lattice 33ms
+   ✓ loader > makes ONE request (the slim land) and returns the same promise to a second caller 10ms
+   ✓ loader > falls back to the index and terrain on a 404 (an older deploy), with the same land  406ms
+   ✓ loader > falls back to the index and terrain on the dev server's HTML fallback, with the same land  427ms
+   ✓ loader > falls back to the index and terrain on a different revision, with the same land  396ms
+   ✓ loader > falls back to the index and terrain on an unknown format, with the same land  431ms
+   ✓ loader > falls back to the index and terrain on corrupt bytes, with the same land  410ms
+   ✓ loader > rejects an aborted load, then loads again 13ms
+   ✓ loader > rejects an unavailable asset and forgets the failure 6ms
+   × three.js land > stays inside the land budget on full and lite 372ms
+     → expected 16229 to be less than or equal to 15000
+   ✓ three.js land > draws a provisional home translucent with an outline, and replaces homes in place 111ms
+   ✓ three.js land > maps concept (x, y) to board space: x and z kept, y = compressHeight(rawHeightAt) 103ms
+   ✓ three.js land > knows land from water: false on the sea and in Stillwater, true at the hosts 117ms
+   ✓ three.js land > hides minor roads at Sky, shows them closer, and recolours on a theme change 121ms
+   ✓ flat twin > uses the same coordinates as the 3D land 94ms
+   ✓ flat twin > renders SVG with no WebGL, every host, and an accessible overlay slot 70ms
+   ✓ dressings > authors every key for every theme 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/journey-land.test.ts > three.js land > stays inside the land budget on full and lite
+AssertionError: expected 16229 to be less than or equal to 15000
+ ❯ test/journey-land.test.ts:234:25
+    232|     expect(f.triangles).toBeLessThanOrEqual(25_000);
+    233|     expect(f.drawCalls).toBeLessThanOrEqual(20);
+    234|     expect(l.triangles).toBeLessThanOrEqual(15_000);
+       |                         ^
+    235|     expect(l.triangles).toBeLessThan(f.triangles);
+    236|     expect(full.group.getObjectByName("journey-land:terrain")).toBeTru…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 25 passed (26)
+   Start at  12:54:40
+   Duration  25.79s (transform 5.26s, setup 0ms, collect 7.70s, tests 17.09s, environment 1ms, prepare 286ms)
+

@@ -1,0 +1,116 @@
+{
+  "worldSha256": "09d23d7f69ba638b78277afb6ecf804e358bb3a2d2e452fb67c181286d403bae",
+  "source": "Current runtime native road/ground and baked world; road underside queried from3m below ground, no terrain/source modifications.",
+  "samples": [
+    {
+      "d": 14.25,
+      "x": 1347.8383955499216,
+      "z": 516.3667939051005,
+      "originalY": 143.5897264530376,
+      "ground": 143.95454543550727,
+      "ceiling": null,
+      "requiredFloorFor1_4mBody": null,
+      "excavationRequired": 0,
+      "blockAtOriginal": "mountainV2:summit-art:pavilion:4"
+    },
+    {
+      "d": 14.5,
+      "x": 1348.013455120973,
+      "z": 516.1883166051899,
+      "originalY": 143.61761639081018,
+      "ground": 143.97000122070312,
+      "ceiling": null,
+      "requiredFloorFor1_4mBody": null,
+      "excavationRequired": 0,
+      "blockAtOriginal": "mountainV2:summit-art:pavilion:4"
+    },
+    {
+      "d": 15,
+      "x": 1348.3635742630756,
+      "z": 515.831362005369,
+      "originalY": 143.67339626635535,
+      "ground": 143.98428197720835,
+      "ceiling": null,
+      "requiredFloorFor1_4mBody": null,
+      "excavationRequired": 0,
+      "blockAtOriginal": "mountainV2:summit-art:pavilion:4"
+    },
+    {
+      "d": 18,
+      "x": 1350.4642891156907,
+      "z": 513.6896344064427,
+      "originalY": 144.00807551962643,
+      "ground": 144.43981743686817,
+      "ceiling": null,
+      "requiredFloorFor1_4mBody": null,
+      "excavationRequired": 0,
+      "blockAtOriginal": null
+    },
+    {
+      "d": 19,
+      "x": 1351.1645273998956,
+      "z": 512.9757252068007,
+      "originalY": 144.11963527071677,
+      "ground": 144.58259785428442,
+      "ceiling": null,
+      "requiredFloorFor1_4mBody": null,
+      "excavationRequired": 0,
+      "blockAtOriginal": null
+    },
+    {
+      "d": 19.5,
+      "x": 1351.5146465419982,
+      "z": 512.6187706069796,
+      "originalY": 144.17541514626197,
+      "ground": 144.4516838472607,
+      "ceiling": null,
+      "requiredFloorFor1_4mBody": null,
+      "excavationRequired": 0,
+      "blockAtOriginal": null
+    },
+    {
+      "d": 20,
+      "x": 1351.8647656841008,
+      "z": 512.2618160071586,
+      "originalY": 144.23119502180714,
+      "ground": 144.52798551543617,
+      "ceiling": 144.4409017514272,
+      "requiredFloorFor1_4mBody": 143.04090175142719,
+      "excavationRequired": 1.487083764008986,
+      "blockAtOriginal": "mountainV2:mountain-road"
+    },
+    {
+      "d": 20.5,
+      "x": 1352.2148848262032,
+      "z": 511.90486140733753,
+      "originalY": 144.2869748973523,
+      "ground": 144.6400490794962,
+      "ceiling": 144.4400490794962,
+      "requiredFloorFor1_4mBody": 143.04004907949619,
+      "excavationRequired": 1.6000000000000227,
+      "blockAtOriginal": "mountainV2:mountain-road"
+    },
+    {
+      "d": 21,
+      "x": 1352.5650039683057,
+      "z": 511.54790680751654,
+      "originalY": 144.3427547728975,
+      "ground": 144.63795099977875,
+      "ceiling": 144.43795099977874,
+      "requiredFloorFor1_4mBody": 143.03795099977873,
+      "excavationRequired": 1.6000000000000227,
+      "blockAtOriginal": null
+    },
+    {
+      "d": 22,
+      "x": 1353.265242252511,
+      "z": 510.83399760787444,
+      "originalY": 144.45431452398785,
+      "ground": 144.64298559222806,
+      "ceiling": 144.44298559222807,
+      "requiredFloorFor1_4mBody": 143.04298559222806,
+      "excavationRequired": 1.5999999999999943,
+      "blockAtOriginal": null
+    }
+  ]
+}

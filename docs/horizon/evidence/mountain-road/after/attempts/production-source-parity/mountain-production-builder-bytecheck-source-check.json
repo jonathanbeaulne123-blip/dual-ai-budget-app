@@ -1,0 +1,11 @@
+{
+  "sourceFiles": 3026,
+  "headBefore": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+  "headAfter": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+  "changes": [],
+  "exitCode": 0,
+  "wallSeconds": 98.49,
+  "userSeconds": 103.12,
+  "systemSeconds": 2.44,
+  "peakResidentBytes": 727105536
+}

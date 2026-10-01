@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/journey-roam-camera.test.ts (30 tests) 26ms
+
+ Test Files  1 passed (1)
+      Tests  30 passed (30)
+   Start at  13:03:30
+   Duration  637ms (transform 118ms, setup 0ms, collect 126ms, tests 26ms, environment 0ms, prepare 145ms)
+

@@ -1,0 +1,20 @@
+[
+  {
+    "path": "src/harbour/horizon/regions/mountainV2/walkingGroundPatch.ts",
+    "base": "/tmp/mountain-funicular-shared-ground/source/src/harbour/horizon/regions/mountainV2/walkingGroundPatch.ts",
+    "baseSha256": "73b57ebb061c8c42c48a008fc3a77898acaa87d832dff1bc00abd99686b698c5",
+    "candidateSha256": "c133411203a44b47fb655c029c26b04a24c5c6ff4c8553da6c551b61bc6cf248"
+  },
+  {
+    "path": "src/harbour/horizon/regions/mountainV2/ground.ts",
+    "base": "/tmp/mountain-funicular-shared-ground/source/src/harbour/horizon/regions/mountainV2/ground.ts",
+    "baseSha256": "d5612098e58625df7800b6c2956d20a689fe64a78f4c526172965b16b127fd4a",
+    "candidateSha256": "876db7a1b7df97574166bcdebe7b3b15ef8b6c41e4d51552cc6773221ef66ed5"
+  },
+  {
+    "path": "test/horizon-walking-ground-patch.test.ts",
+    "base": "/tmp/mountain-funicular-shared-ground/source/test/horizon-walking-ground-patch.test.ts",
+    "baseSha256": "956c4a9abc7a1bfcb91c5f8728d6fc45f50c4b197d8c4086a8936b43e006fcf6",
+    "candidateSha256": "faf09b74e9654e6fe1506f581bf0be7c0159046243fb77fdbbce1f9a711fda8f"
+  }
+]

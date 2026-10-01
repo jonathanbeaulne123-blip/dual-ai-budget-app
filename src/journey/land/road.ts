@@ -13,7 +13,7 @@
  * Every other vertex is draped exactly as before (`surfaceAt + LINE_LIFT`): GROUND runs, drawn by `lines.ts`.
  * The board overlay never reads any of this: the route, stations and spaces are laid out from the stations alone.
  */
-import type { JourneyLandData, LandLineKind, Point2 } from "../contracts.ts";
+import type { JourneyLandData, LandLineKind, Point2, Point3 } from "../contracts.ts";
 import { compressHeight } from "../contracts.ts";
 import { isMinorLine, LINE_TOLERANCE } from "./extract.ts";
 import { arcOf, densify, projectOnSegment, simplifyLine } from "./simplify.ts";
@@ -38,6 +38,33 @@ const EPS = 1e-6;
 /** Half length (eu, along the line) of a portal notch. */
 export const NOTCH_EU = 1.6;
 
+/** Map mesh error bounds, much tighter than Journey's 4m line simplification.
+ * Full source axes still own underpasses, road draping, lengths and pier placement. */
+export const BRIDGE_DRAW_ERROR = {plan: .15, height: .02} as const;
+/** Retained source indices only: exact endpoints and source XYZ, no fitted/moved vertices.
+ * Judge height against the chord at plan projection, so a straight but humped deck cannot flatten.
+ * Reject projected reversals; then the bounds also hold between consecutive source vertices. */
+export function bridgeDrawIndices(axis: readonly Point3[]): number[] {
+  if (axis.length < 3) return axis.map((_, i) => i);
+  const keep = new Set([0, axis.length - 1]), stack: [number, number][] = [[0, axis.length - 1]];
+  while (stack.length) {
+    const [first, last] = stack.pop()!, a = axis[first]!, b = axis[last]!;
+    const dx = b[0] - a[0], dz = b[2] - a[2], length2 = dx * dx + dz * dz;
+    let worst = 1, split = -1, previousT = 0;
+    for (let i = first + 1; i < last; i++) {
+      const p = axis[i]!, t = length2 ? ((p[0] - a[0]) * dx + (p[2] - a[2]) * dz) / length2 : 0;
+      const u = Math.max(0, Math.min(1, t));
+      const plan = Math.hypot(p[0] - a[0] - u * dx, p[2] - a[2] - u * dz);
+      const height = Math.abs(p[1] - a[1] - u * (b[1] - a[1]));
+      const error = t < previousT || t > 1 ? Infinity : Math.max(plan / BRIDGE_DRAW_ERROR.plan, height / BRIDGE_DRAW_ERROR.height);
+      if (error > worst) { worst = error; split = i; }
+      previousT = t;
+    }
+    if (split >= 0) { keep.add(split); stack.push([first, split], [split, last]); }
+  }
+  return [...keep].sort((a, b) => a - b);
+}
+
 /** A bridge prepared for drawing: plan axis with arc lengths, compressed deck top per axis point. */
 export type BridgePlan = {
   id: string;
@@ -48,6 +75,8 @@ export type BridgePlan = {
   length: number;
   /** Compressed deck top (board space) per axis point. */
   tops: number[];
+  /** Optional map-mesh detail only; every relationship keeps reading the full arrays above. */
+  drawIndices?: readonly number[];
   lineIds: ReadonlySet<string>;
   underIds: ReadonlySet<string>;
 };
@@ -60,7 +89,7 @@ export function planBridges(data: Pick<JourneyLandData, "bridges">): BridgePlan[
     for (let i = 1; i < plan.length; i++) arc.push(arc[i - 1]! + Math.hypot(plan[i]![0] - plan[i - 1]![0], plan[i]![1] - plan[i - 1]![1]));
     const length = arc[arc.length - 1]!;
     if (!(length > 0)) return [];
-    return [{ id: b.id, width: b.width, half: b.width / 2, plan, arc, length, tops: b.axis.map((p) => compressHeight(p[1])), lineIds: new Set(b.lineIds), underIds: new Set(b.underIds ?? []) }];
+    return [{ id: b.id, width: b.width, half: b.width / 2, plan, arc, length, drawIndices: bridgeDrawIndices(b.axis), tops: b.axis.map((p) => compressHeight(p[1])), lineIds: new Set(b.lineIds), underIds: new Set(b.underIds ?? []) }];
   });
 }
 

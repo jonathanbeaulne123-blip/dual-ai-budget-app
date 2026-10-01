@@ -1,0 +1,9 @@
+file:///private/tmp/mountain-funicular-v9-shape/bundle.mjs:18822
+    if (sMin < -maxExtension || sMax > limit + maxExtension || uMin < -half - fairing - maxExtension || uMax > half + fairing + maxExtension) throw new Error(`Walking join cannot meet support within local extension: ${sMin},${sMax},${uMin},${uMax}`);
+                                                                                                                                                    ^
+
+Error: Walking join cannot meet support within local extension: -5,17.641014777815602,-5.3,5.8
+    at Module.fitFunicularFootJoin (file:///private/tmp/mountain-funicular-v9-shape/bundle.mjs:18822:149)
+    at file:///private/tmp/mountain-funicular-v9-shape-diagnostic.mjs:17:286
+
+Node.js v24.21.0

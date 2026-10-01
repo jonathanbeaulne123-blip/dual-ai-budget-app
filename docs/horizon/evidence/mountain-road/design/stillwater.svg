@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560"><rect width="1000" height="560" fill="#f5f1e7"/><style>text{font-family:Arial,sans-serif;fill:#203a34}.small{font-size:13px}.label{font-size:17px}</style><text x="34" y="42" font-size="25">Foot to Stillwater rim</text>
+<text x="34" y="70" class="small">Endpoint chord only — a feasibility drawing, not a fitted road or clearance proof</text>
+<polyline fill="none" stroke="#b8b7ac" stroke-width="3" points="307.6,207.6 306.4,199.4 305.0,191.1 303.7,182.8 303.0,174.5 303.4,166.2 305.3,158.0 308.4,150.3 312.5,143.0 317.6,136.4 323.7,130.6 330.4,125.7 337.7,121.5 345.3,118.0 353.2,115.3 361.3,113.2 369.5,111.8 377.9,111.0 386.2,111.0 394.5,111.9 402.6,113.9 410.5,116.6 418.4,119.5 426.3,122.4 434.1,125.4 441.8,128.6 449.4,132.1 456.8,136.0 460.8,96.9 453.0,94.0 445.9,89.6 439.8,83.9 434.9,77.1 433.3,69.0 436.7,61.5 442.1,55.1"/>
+<polyline fill="none" stroke="#b8b7ac" stroke-width="3" points="459.6,331.6 447.4,326.1 433.9,320.3 420.6,314.5 408.8,309.3 399.7,305.3 389.3,300.6 376.8,294.9 364.0,289.0 352.5,283.8 343.9,280.2 330.2,275.7 315.5,271.6 306.2,269.0"/>
+<polyline fill="none" stroke="#b8b7ac" stroke-width="3" points="32.5,241.2 48.2,246.1 63.6,251.3 78.7,256.5 93.3,261.9 107.2,267.3 120.4,272.9 132.8,278.4 144.1,283.9 154.2,289.4 163.1,294.8 170.6,300.1 176.5,305.3 182.8,312.8 188.6,322.2 193.9,333.1 198.8,345.5 203.3,359.1 207.2,373.6 210.7,388.9 213.8,404.7 216.3,420.8 218.4,437.0 220.1,453.0"/>
+<path d="M307.60382596270415,207.64317369737643 L182.39617403729585,312.35682630262323" stroke="#b66136" stroke-width="3" stroke-dasharray="7 5"/>
+<circle cx="307.60382596270415" cy="207.64317369737643" r="5" fill="#203a34"/><text x="316.60382596270415" y="199.64317369737643" class="label">A</text>
+<circle cx="182.39617403729585" cy="312.35682630262323" r="5" fill="#203a34"/><text x="191.39617403729585" y="304.35682630262323" class="label">B</text>
+<text x="40" y="115" class="label">Plan · north ↑</text>
+<text x="35" y="446" class="small">A [1282.0, 54.65, 720.0] → B [1237.1, 53.99, 757.5]</text>
+<text x="545" y="115" class="label">Profile · vertical scale exaggerated</text>
+<path d="M550,395H940 M550,395V135" fill="none" stroke="#adb3a9"/>
+<path d="M550,265.26696549627474 L935,274.7330345037253" fill="none" stroke="#b66136" stroke-width="3" stroke-dasharray="7 5"/>
+<text x="534" y="253.26696549627474" class="small">54.65</text>
+<text x="919" y="262.7330345037253" class="small">53.99</text>
+<text x="552" y="423" class="small">0 m</text><text x="862" y="423" class="small">58.5 m</text><text x="552" y="448" class="small">At ≤10%: necessary route length ≥58.5 m</text>
+<text x="34" y="502" class="label">Grade study first. This does not complete the Green Road loop.</text><text x="34" y="535" class="small">Horizon xyz, eu/metres. Measured endpoints at main 324cd5f. Terrain between endpoints is not drawn.</text></svg>

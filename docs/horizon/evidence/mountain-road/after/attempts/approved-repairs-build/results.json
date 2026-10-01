@@ -1,0 +1,15 @@
+{
+  "command": [
+    "pnpm",
+    "horizon:bake"
+  ],
+  "exitCode": 0,
+  "seconds": 77.514,
+  "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+  "assets": {
+    "src/harbour/horizon/land/mountainV2/v2-data.json": "e56f8f614e7b11b0b69ddcd734adabe9efacf73dadcae4a450af0f1175284b2a",
+    "src/harbour/mountain/generated/awning-landing.json": "8dd0fa47ae1aafbf3418c327604c533b9402a70bf986519af6803cfe0723212c",
+    "public/horizon/world/horizon-geo-1.json": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+    "public/horizon/terrain/horizon-geo-1.bin": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76"
+  }
+}

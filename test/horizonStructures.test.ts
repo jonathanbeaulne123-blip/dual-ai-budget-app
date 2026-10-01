@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import {setImmediate as yieldEventLoop} from 'node:timers/promises';
+import { afterEach, describe, expect, it } from 'vitest';
 import { buildLandCuts } from '../src/harbour/horizon/land/beds/build';
 import { baseHeight } from '../src/harbour/horizon/land/terrain';
 import { bounds, box, distance, nearestOnPath, slab, solid } from '../src/harbour/horizon/land/structures/mesh';
@@ -13,6 +14,10 @@ import { buildOffshoreSolids } from '../src/harbour/horizon/land/offshore';
 import { HORIZON_MANIFEST as M } from '../src/harbour/horizon/world/manifest';
 import type { LandCuts, StructureSolid, XY, XYZ } from '../src/harbour/horizon/land/interfaces';
 import { BufferGeometry, Float32BufferAttribute, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three';
+
+// Allow worker progress acknowledgements between synchronous source builds. This is a
+// real event-loop turn; a resolved Promise alone would keep starving IPC. Deadlines stay unchanged.
+afterEach(async () => { await yieldEventLoop(); });
 
 /** Closed 8-vertex prisms of a solid: plan centre, bottom and top. */
 function prisms(s:StructureSolid):{x:number;z:number;bottom:number;top:number;corners:XYZ[]}[] {

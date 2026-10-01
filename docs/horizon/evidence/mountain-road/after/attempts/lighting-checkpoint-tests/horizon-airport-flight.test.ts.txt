@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizon-airport-flight.test.ts (10 tests) 62ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  12:22:25
+   Duration  339ms (transform 51ms, setup 0ms, collect 54ms, tests 62ms, environment 0ms, prepare 71ms)
+

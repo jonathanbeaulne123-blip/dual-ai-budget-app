@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/mountain-yearwalk-foot-hosts.test.ts (3 tests) 224ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  13:06:25
+   Duration  6.81s (transform 1.31s, setup 0ms, collect 6.10s, tests 224ms, environment 0ms, prepare 136ms)
+

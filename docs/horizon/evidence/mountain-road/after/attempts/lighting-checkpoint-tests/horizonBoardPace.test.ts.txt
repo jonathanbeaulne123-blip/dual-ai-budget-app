@@ -1,0 +1,86 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/horizonBoardPace.test.ts (15 tests | 2 failed) 706ms
+   ✓ MANIFEST v1.7 paces resolve (RIDE §8.3) > has one gravity (D40) 1ms
+   ✓ MANIFEST v1.7 paces resolve (RIDE §8.3) > resolves every surface id and every skate segment pace to one paces row 1ms
+   × the board contact adapter over the real world > samples every built threshold pad legal for the board and the bicycle: threshold pace, or a pick-up pad at its line's pace 19ms
+     → expected { id: 'skateLineStarts.1', …(1) } to deeply equal { id: 'skateLineStarts.1', …(1) }
+   ✓ the board contact adapter over the real world > rolls a pick-up pad at the pace of the line it starts; park pads and crossings stay threshold 2ms
+   × the board contact adapter over the real world > rolls S1's Crown drop at v2's Alpine bends pace on v2's paved road 2ms
+     → expected { y: 145.59156808148583, …(10) } to match object { legal: true, pace: 'flow', …(6) }
+(3 matching properties omitted from actual)
+   ✓ the board contact adapter over the real world > reads every S1–S4 slice's own pace at its middle, including S3's square at threshold pace 5ms
+   ✓ the board contact adapter over the real world > counts the edge of the deck plus the margin as the bed, and grass beyond it as offbed 0ms
+   ✓ the board contact adapter over the real world > samples terrain 30 m off any bed as offbed and illegal 6ms
+   ✓ the board contact adapter over the real world > gives the bicycle roads and trails, and puts it offbed on the skate lines 1ms
+   ✓ the board contact adapter over the real world > fades back to the nearest point of the bed from 20 m beside S1 5ms
+   ✓ the board contact adapter over the real world > fades back to dry deck, never into the water, beside S2 on the Bight Bridge 13ms
+   ✓ the board contact adapter over the real world > grips pads and the park like pavement (the stone row), with the park at flow pace 14ms
+   ✓ the board contact adapter over the real world > delegates water and solids to the geography 2ms
+   ✓ the board contact adapter over the real world > is cheap enough for three samples per 1/120 s step 111ms
+   ✓ keeps the pace vocabulary the kernel knows 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/horizonBoardPace.test.ts > the board contact adapter over the real world > samples every built threshold pad legal for the board and the bicycle: threshold pace, or a pick-up pad at its line's pace
+AssertionError: expected { id: 'skateLineStarts.1', …(1) } to deeply equal { id: 'skateLineStarts.1', …(1) }
+
+- Expected
++ Received
+
+  {
+    "id": "skateLineStarts.1",
+-   "pace": "threshold",
++   "pace": "fast",
+  }
+
+ ❯ test/horizonBoardPace.test.ts:82:45
+     80|           expect(s!.roll).toBe(paces[s!.pace]!.roll);
+     81|         } else {
+     82|           expect({id: t.id, pace: s!.pace}).toEqual({id: t.id, pace: '…
+       |                                             ^
+     83|           expect(s!.roll).toBe(1.8); expect(s!.pushGrip).toBe(0.5);
+     84|         }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/horizonBoardPace.test.ts > the board contact adapter over the real world > rolls S1's Crown drop at v2's Alpine bends pace on v2's paved road
+AssertionError: expected { y: 145.59156808148583, …(10) } to match object { legal: true, pace: 'flow', …(6) }
+(3 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "bedId": "S1",
++   "bedId": null,
+    "grip": 1,
+    "legal": true,
+    "material": "paved",
+-   "pace": "flow",
+-   "padId": null,
+-   "pushGrip": 0.9,
+-   "roll": 0.25,
++   "pace": "threshold",
++   "padId": "crossing.cross.s1.mountainV2Road.38",
++   "pushGrip": 0.5,
++   "roll": 1.8,
+  }
+
+ ❯ test/horizonBoardPace.test.ts:114:15
+    112|     const s1 = bed('S1'), i = Math.round((s1.points.length - 1) * .08)…
+    113|     const s = board.sample(p[0], p[2], p[1] + .1)!;
+    114|     expect(s).toMatchObject({legal: true, pace: 'flow', material: 'pav…
+       |               ^
+    115|     expect(paceOf(s)).toBe('flow');
+    116|     expect(board.bedAt(p[0], p[2], p[1])?.segment?.pace).toBe('flow');…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 13 passed (15)
+   Start at  12:25:33
+   Duration  2.13s (transform 665ms, setup 0ms, collect 1.21s, tests 706ms, environment 0ms, prepare 59ms)
+

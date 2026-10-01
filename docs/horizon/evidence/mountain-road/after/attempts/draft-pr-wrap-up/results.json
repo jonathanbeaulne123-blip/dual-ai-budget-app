@@ -1,0 +1,40 @@
+[
+  {
+    "phase": "high-quick-gate",
+    "command": [
+      "pnpm",
+      "test",
+      "--",
+      "--risk=high",
+      "--focus=test/horizon-walking-ground-patch.test.ts",
+      "--focus=test/horizon-funicular-render-precision.test.ts",
+      "--focus-reason=Draft PR wrap-up: shared ground construction and preserved funicular render geometry"
+    ],
+    "elapsedSeconds": 307.964,
+    "exitCode": -9,
+    "timedOut": true,
+    "accepted": false
+  },
+  {
+    "phase": "bake",
+    "command": [
+      "pnpm",
+      "horizon:bake"
+    ],
+    "elapsedSeconds": 300.433,
+    "exitCode": -15,
+    "timedOut": true,
+    "accepted": false
+  },
+  {
+    "phase": "byte-exact-check",
+    "command": [
+      "pnpm",
+      "horizon:check"
+    ],
+    "elapsedSeconds": 17.849,
+    "exitCode": -15,
+    "timedOut": false,
+    "accepted": false
+  }
+]

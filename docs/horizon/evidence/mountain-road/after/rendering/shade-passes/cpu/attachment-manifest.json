@@ -1,0 +1,105 @@
+{
+  "originalDirectory": "/tmp/mountain-shade-parity-v2-cpu-compressed",
+  "files": [
+    {
+      "file": "old-served.js",
+      "bytes": 2242142,
+      "sha256": "92e9e1510267bbf7677d5a20cb256b6ddd330abd3f316b008514711298b592c6"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-original-10476.new.json",
+      "bytes": 11720,
+      "sha256": "a40814a322a49f2e6b1636642c1fe07ca8d086ceed81639fdea7cd0179848a51"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-near-plane-10406.new.json",
+      "bytes": 11780,
+      "sha256": "ed771f65f0992ab8ecbb812ba76bcc75f29b8fcbffc24be75902fc6a6e3bbcf2"
+    },
+    {
+      "file": "summary.json",
+      "bytes": 64377,
+      "sha256": "ac1e154b20890e80028140a18ea061d19a41e161ae93a55d01562836de8f2715"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-original-10476.old.rgba.gz",
+      "bytes": 11434,
+      "sha256": "5eb063ab0b32a38d044bc5274577319644ced74343d03ec1a1e85f2f4121f624"
+    },
+    {
+      "file": "new-served.js",
+      "bytes": 2249178,
+      "sha256": "c4832493fc228fc07756c9f339d749815a6101c7212c0425f05d814d9f790832"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-near-plane-10406.old.png",
+      "bytes": 19294,
+      "sha256": "193ef07fb72097fe5bf964ef92d7d217910c0181228d7a37ac39b22137653d4e"
+    },
+    {
+      "file": "exact-live-fog-hook.ts",
+      "bytes": 1256,
+      "sha256": "ee36ebbcaf52b8f5dcda49dfa7c82d8d54b10501147903173bcafa4fc8d92934"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-near-plane-10406.old.json",
+      "bytes": 9629,
+      "sha256": "813b8c98011642b019027558e7e9dff8300b095807bf0f752db817ea902e7a82"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-original-10476.new.rgba.gz",
+      "bytes": 11434,
+      "sha256": "5eb063ab0b32a38d044bc5274577319644ced74343d03ec1a1e85f2f4121f624"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-original-10476.old.json",
+      "bytes": 9606,
+      "sha256": "3ce535c9d42b8615d5718dd7734d6dd7928cc4761d30de9c4b16ba4c4c9fafaa"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-original-10476.new.png",
+      "bytes": 27369,
+      "sha256": "d44314da8e3e3c10477a0b2942457f2f3596969826587cc3c3bd010fc37c733b"
+    },
+    {
+      "file": "poses.json",
+      "bytes": 775,
+      "sha256": "fd7508da433a362d0efee961ba5c373198bdec842936926f893330d7390e8019"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-near-plane-10406.old.rgba.gz",
+      "bytes": 8013,
+      "sha256": "d26a99b8b1a82173ddf0d6503af8a6b9d56ff6071d06be2a3929e323839d2288"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-original-10476.old.png",
+      "bytes": 27369,
+      "sha256": "d44314da8e3e3c10477a0b2942457f2f3596969826587cc3c3bd010fc37c733b"
+    },
+    {
+      "file": "rgba-compression.ndjson",
+      "bytes": 1310,
+      "sha256": "4fed566c2049d0dce255b71d3271ef1578347625670aef088e614f1c79d2c510"
+    },
+    {
+      "file": "source-proof.json",
+      "bytes": 1702,
+      "sha256": "e7d53e5d3158d5cda5d974acacc9c1b7ffcadfb6b6d8155ef93306f6366e8433"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-near-plane-10406.new.rgba.gz",
+      "bytes": 8013,
+      "sha256": "d26a99b8b1a82173ddf0d6503af8a6b9d56ff6071d06be2a3929e323839d2288"
+    },
+    {
+      "file": "exact-environment.js",
+      "bytes": 477885,
+      "sha256": "8c10bbf9107ff5a091c331cbc05838b901f192b6282b8afeaae164c770aab257"
+    },
+    {
+      "file": "newfoundland_lite_night_color_7.25_crown-near-plane-10406.new.png",
+      "bytes": 19294,
+      "sha256": "193ef07fb72097fe5bf964ef92d7d217910c0181228d7a37ac39b22137653d4e"
+    }
+  ]
+}

@@ -1,0 +1,191 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stderr | test/journey-game-mode-ui.test.ts > Game mode: the open world, full screen (D-285) > closes an open card on Escape first, then minimizes, restoring the page and focus
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | test/journey-game-mode-ui.test.ts > One focus for the simple view and the open world (D-285) > tells the simple view where the world went: levels once a trip lands, and picks
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | test/journey-game-mode-ui.test.ts > One focus for the simple view and the open world (D-285) > tells the simple view where the world went: levels once a trip lands, and picks
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | test/journey-game-mode-ui.test.ts > One focus for the simple view and the open world (D-285) > tells the simple view where the world went: levels once a trip lands, and picks
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | test/journey-game-mode-ui.test.ts > One focus for the simple view and the open world (D-285) > tells the simple view where the world went: levels once a trip lands, and picks
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | test/journey-game-mode-ui.test.ts > One focus for the simple view and the open world (D-285) > tells the simple view where the world went: levels once a trip lands, and picks
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | test/journey-game-mode-ui.test.ts > One focus for the simple view and the open world (D-285) > tells the simple view where the world went: levels once a trip lands, and picks
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | test/journey-game-mode-ui.test.ts > One focus for the simple view and the open world (D-285) > tells the simple view where the world went: levels once a trip lands, and picks
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to OurPathWorld inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ✓ test/journey-game-mode-ui.test.ts (15 tests) 27799ms
+   ✓ Our Path page leads with the simple view (D-285) > mounts the simple view first, hands it the shared focus, and builds nothing heavy until the world opens  964ms
+   ✓ Our Path page leads with the simple view (D-285) > keeps one Plan Studio and its tent return across the three House surfaces  1302ms
+   ✓ Our Path page leads with the simple view (D-285) > with renderMini: null shows a flat-map placeholder with an Open the world button  1151ms
+   ✓ Game mode: the open world, full screen (D-285) > takes the explicit Harbour Journey route straight into the current full world, then returns to the Atlas  917ms
+   ✓ Game mode: the open world, full screen (D-285) > enters full screen with the app hidden and inert, a history entry, and focus in the HUD  1001ms
+   ✓ Game mode: the open world, full screen (D-285) > closes an open card on Escape first, then minimizes, restoring the page and focus  1590ms
+   ✓ Game mode: the open world, full screen (D-285) > minimizes on the browser's back gesture and from the minimize button  1730ms
+   ✓ Game mode: the open world, full screen (D-285) > leaves the open world for the tent and the planner, which open on the page  3530ms
+   ✓ Game mode: the open world, full screen (D-285) > consumes game history before following a canonical house destination  1317ms
+   ✓ Game mode: the open world, full screen (D-285) > consumes game history before the house moves into its persistent Plan Studio  1107ms
+   ✓ Game mode: the open world, full screen (D-285) > shows the flat map inside the open world when WebGL is missing  1598ms
+   ✓ One focus for the simple view and the open world (D-285) > moves the world when the simple view moves, month by month, and keeps Replay on the same month  2691ms
+   ✓ One focus for the simple view and the open world (D-285) > tells the simple view where the world went: levels once a trip lands, and picks  4142ms
+   ✓ One focus for the simple view and the open world (D-285) > shares the page's own time moves (Replay's slider, Where we are) and applies page picks when the world opens  4381ms
+   ✓ focusMonth (pathWorld3d, D-285) > clamps a month index to the grown months  373ms
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  12:53:08
+   Duration  41.54s (transform 8.46s, setup 0ms, collect 11.33s, tests 27.80s, environment 1.67s, prepare 204ms)
+

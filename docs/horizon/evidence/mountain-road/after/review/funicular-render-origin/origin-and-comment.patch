@@ -1,0 +1,27 @@
+--- a/src/harbour/horizon/land/mountainV2/footLaneJoin.ts
++++ b/src/harbour/horizon/land/mountainV2/footLaneJoin.ts
+@@ -563,14 +563,21 @@
+  }
+  // The unchanged station and through-road remain the sole physical owners at
+  // overlap. This is actual polygon subtraction, never a surface-query filter.
+- // Every inserted knot samples the same final field, not a minimum with a
+- // stale pre-clipping interpolation. Existing native/Foot callers retain the
+- // original lower-only projection through the default false option.
++ // Hard-host partition knots sample the final field; later higher-only
++ // intersections retain that actual triangle plane. Default/native Foot
++ // callers retain their original lower-only projection.
+  // Keep the fixed host boundaries and all sampled vertices. Choose a better
+  // diagonal only inside an existing convex pair; copying a nonlinear field
+  // onto a skinny first-vertex fan can otherwise amplify its slope.
+  for(const triangle of sourceTriangles)appendFill([...triangle]);
+  clipFootJoinToNative(out,ground,[...station,...stationDraw,...road,...nativeFootTriangles],height,0,true,[...stationDraw,...stationSupport],1e-6,nearby);
+  fairFootJoinDiagonals(out,[...stationDraw,...stationSupport]);
++ // The complete logical solid owns one render frame before district partition.
++ // Physics retains world coordinates; drawing alone uses this frame to avoid
++ // collapsing micrometre clipping knots when positions become Float32.
++ out.renderOrigin=[0,1,2].map(axis=>{
++  let low=Infinity,high=-Infinity;for(let i=axis;i<out.positions.length;i+=3){low=Math.min(low,out.positions[i]!);high=Math.max(high,out.positions[i]!);}
++  return Math.round((low+high)/2);
++ }) as XYZ;
+  cuts.solids.push(out);cuts.beds.find(b=>b.id===FOOT)!.structureIds.push(id);
+ }

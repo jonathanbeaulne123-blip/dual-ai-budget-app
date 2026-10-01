@@ -1,0 +1,16 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizon-foot-lane-apron.test.ts (5 tests) 10403ms
+   ✓ visible Foot apron > keeps both primary lanes and wider edge witnesses continuous in both directions  7751ms
+   ✓ visible Foot apron > keeps new road faces below 12% and local walkable shoulders below 40 degrees  2395ms
+ ✓ test/mountain-landings.test.ts (12 tests) 1509ms
+   ✓ shared native and Horizon mountain landings > supports the full repaired width and admits the rider in native and the actual composed Horizon  331ms
+ ✓ test/horizon-ore-road-junction.test.ts (6 tests) 479ms
+ ✓ test/horizon-corridor-light-integration.test.ts (2 tests) 185ms
+
+ Test Files  4 passed (4)
+      Tests  25 passed (25)
+   Start at  11:48:21
+   Duration  18.67s (transform 1.10s, setup 0ms, collect 4.85s, tests 12.58s, environment 0ms, prepare 414ms)
+

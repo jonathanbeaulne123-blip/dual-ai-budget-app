@@ -178,8 +178,17 @@ describe('Horizon v2.3 beds (W7-A, Wave 7)',()=>{
   it('D-D8: the lake-rim trail keeps its 2.5 m profile, the Year Walk carries the February share, and the trail ends on the sill\'s east lip (v2.6)',()=>{
     const rim=find('walk lakerim'),yw=find('yearWalk');
     expect(rim.width).toBe(2.5);expect(plan(rim.points.at(-1)!)).toEqual([1166,905]);expect(rim.points.at(-1)![1]).toBeCloseTo(52,5);
-    // The trail's own deck and edges stop where the Year Walk carries it; the Year Walk is not carried there any more.
-    const onShare=plan(nearestOnPath([1215,745],rim.points).at);expect(rim.carried!.some(line=>planDistance(onShare,line)<1)).toBe(true);expect((yw.carried??[]).some(line=>planDistance(onShare,line)<1)).toBe(false);
+    // Stillwater now carries both original footway centrelines on this shared
+    // section. Prove the new road contains their usable widths at the same height;
+    // neither footway emits a competing deck or changes its original profile.
+    const onShare=plan(nearestOnPath([1215,745],rim.points).at),carrier=find('spur stillwater');
+    for(const walk of [rim,yw]){
+      expect((walk.carried??[]).some(line=>planDistance(onShare,line)<1),walk.id).toBe(true);
+      const p=nearestOnPath(onShare,walk.points).at,road=nearestOnPath(plan(p),carrier.points);
+      expect(road.distance+walk.width/2,walk.id).toBeLessThanOrEqual(carrier.width/2);
+      expect(Math.abs(road.at[1]-p[1]),walk.id).toBeLessThan(.02);
+      expect(walk.sharedEdges?.some(e=>e.other===carrier.id),walk.id).toBe(true);
+    }
     // Nothing of the trail within 3 m of the dam gallery's stairwell or south of the crest walk's line (it overhung it 10.4 eu).
     expect(rim.points.every(p=>!(p[0]>1155&&p[0]<1173&&p[2]>906.5))).toBe(true);
     expect(rim.points.filter(p=>p[0]<1160&&p[2]>880).length).toBe(0);

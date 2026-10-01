@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizon-mountain-footway-joins.test.ts (5 tests) 1798ms
+   ✓ physical SummitStation and Crown stair joins > closes both original failures with rendered geometry and unchanged walking limits  1662ms
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  12:22:58
+   Duration  3.73s (transform 814ms, setup 0ms, collect 1.64s, tests 1.80s, environment 0ms, prepare 91ms)
+

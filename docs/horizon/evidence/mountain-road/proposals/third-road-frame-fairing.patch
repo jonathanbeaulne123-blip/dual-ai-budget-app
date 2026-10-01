@@ -1,0 +1,11 @@
+--- a/src/harbour/mountain/roadFrameFairing.ts
++++ b/src/harbour/mountain/roadFrameFairing.ts
+@@ -7,7 +7,7 @@
+  * a planting acceptance branch can otherwise consume different random numbers and
+  * relocate later scenery across the whole mountain. */
+ export function fairMountainRoadFrames(line:RoadLine):RoadLine{
+- const source=line.samples,span=10,anchors=[[70,-77],[85,-284]] as const;
++ const source=line.samples,span=10,anchors=[[70,-77],[85,-284],[19,-93]] as const;
+  const centres=anchors.map(([x,z])=>source.reduce((best,s,i)=>Math.hypot(s.at[0]-x,s.at[2]-z)<Math.hypot(source[best]!.at[0]-x,source[best]!.at[2]-z)?i:best,0));
+  const samples=source.map((s,i):RoadSample=>{
+   const distance=Math.min(...centres.map(c=>Math.abs(i-c)));

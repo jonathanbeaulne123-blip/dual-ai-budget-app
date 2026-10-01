@@ -3,11 +3,19 @@ import type { Point3 } from '../../../world/definition.ts';
 import type { CorridorStation } from '../types.ts';
 import type { LowZone } from './context.ts';
 import type { SideName } from './frame.ts';
+import type {RoadLampSites,RoadLampFootCandidate} from './lampFootprint.ts';
 
 export type StructureKind = 'bridge' | 'tunnel';
 export interface Env {
+  /** Measured setback using the planner's actual rounded candidates, beyond the paved edge. */
+  lampSetback?(s:number,side:'left'|'right',sites:RoadLampSites):number|undefined;
+  /** Exact final parapet-mounted foot must clear other routes, water and native keepouts. */
+  lampMountAllowed?(lamp:RoadLampFootCandidate,side:'left'|'right'):boolean;
+  lightBends?: readonly {from:number;to:number;apex:number}[];
+  /** Required pool coverage, checked against real legal fixture sites after nominal spacing. */
+  lightTargets?: readonly (readonly [number,number])[];
   ground(x: number, z: number): number;
-  occupied(x: number, z: number): boolean;
+  occupied(x: number, z: number, radius?: number, height?: number): boolean;
   wet(x: number, z: number): boolean;
   structureKind(id: string): StructureKind;
   walks: readonly { id: string; points: readonly Point3[] }[];

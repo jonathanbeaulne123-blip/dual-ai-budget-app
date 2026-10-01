@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonCruiser.test.ts (23 tests) 244ms
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  12:26:16
+   Duration  794ms (transform 219ms, setup 0ms, collect 317ms, tests 244ms, environment 0ms, prepare 59ms)
+

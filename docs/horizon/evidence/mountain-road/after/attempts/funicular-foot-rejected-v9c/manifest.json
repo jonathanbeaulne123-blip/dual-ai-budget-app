@@ -1,0 +1,27 @@
+[
+  {
+    "original": "/tmp/mountain-funicular-v9c-shape/grades.json",
+    "saved": "grades.json",
+    "sha256": "c452a50bd906474930817d419521729297821573708bb7b9a898a4af35831f8a"
+  },
+  {
+    "original": "/tmp/mountain-funicular-v9c-shape/terms.json",
+    "saved": "terms.json.gz",
+    "sha256": "c9e6a7a7c9cfd97ce5ebd2e7dafd4cec9728d6040fbbd4bd5f1b812948523eaa"
+  },
+  {
+    "original": "/tmp/mountain-funicular-v9c-shape/instrumented-source.ts",
+    "saved": "instrumented-source.ts",
+    "sha256": "539a9960a986044b31085ef9335b3206b8641ceddcdd64e6b6bf40cb43228b3d"
+  },
+  {
+    "original": "/tmp/mountain-funicular-v9c-shape/candidate-solid.json",
+    "saved": "candidate-solid.json.gz",
+    "sha256": "f5d8d2c137b05d2c424c9627e6e589faf25fa2a96854ae80a67586d4d6ef54a0"
+  },
+  {
+    "original": "/tmp/mountain-funicular-v9c-shape/bundle.mjs",
+    "saved": "bundle.mjs.gz",
+    "sha256": "aca85f3b245222d179646b76e18a694681e3e48a708961817890b1195b4420a1"
+  }
+]

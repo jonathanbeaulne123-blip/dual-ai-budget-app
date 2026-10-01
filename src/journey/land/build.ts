@@ -15,7 +15,7 @@ import { landDressing } from "./dressing.ts";
 import { buildHomes, type HomeMeshes, type Season } from "./homes.ts";
 import { buildHosts, HOST_MIN_PX } from "./hosts.ts";
 import { buildBridges } from "./bridges.ts";
-import { buildLines, landViewUniforms, MINOR_LINES_NAME, type LandViewUniforms } from "./lines.ts";
+import { buildLines, landViewUniforms, MINOR_LINES_NAME, type LandViewUniforms, setStationPadMasks, type StationPadMask } from "./lines.ts";
 import { planRoad } from "./road.ts";
 import { createLandSurface } from "./surface.ts";
 import { buildTerrainMesh } from "./terrain.ts";
@@ -59,9 +59,10 @@ export function setJourneyLandTier(land: Pick<JourneyLandHandle, "group">, tier:
  * and hosts keep a screen-constant minimum size, so the board scene calls this whenever the camera moves (a uniform
  * write — no rebuild). Optional `tier` also applies `setJourneyLandTier`.
  */
-export function setJourneyLandView(land: Pick<JourneyLandHandle, "group">, view: { worldPerPixel: number; tier?: "sky" | "region" | "stop" }): void {
+export function setJourneyLandView(land: Pick<JourneyLandHandle, "group">, view: { worldPerPixel: number; tier?: "sky" | "region" | "stop"; stationPads?: readonly StationPadMask[] }): void {
   const u = land.group.userData.view as LandViewUniforms | undefined;
   if (u && Number.isFinite(view.worldPerPixel) && view.worldPerPixel > 0) u.uWpp.value = view.worldPerPixel;
+  if (u && view.stationPads) setStationPadMasks(u, view.stationPads);
   if (view.tier) setJourneyLandTier(land, view.tier);
 }
 

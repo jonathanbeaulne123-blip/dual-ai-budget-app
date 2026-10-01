@@ -1,0 +1,10 @@
+{"name":"source-snapshot","elapsedMs":20,"files":14}
+{"name":"bundle","elapsedMs":273,"sha256":"c27fd50cfa02196be20b299c287bb06cd9e9b00064a6d8b3fd2ff838fcbea2e2"}
+{"name":"world-loaded","elapsedMs":1092}
+{"name":"construction-start","elapsedMs":1092}
+Error: Canonical ground exceeds unchanged40-degree limit
+    at createWalkingGroundPatch (file:///private/tmp/mountain-funicular-shared-ground-proof-1/runtime-bundle.mjs:39142:54)
+    at createRegionGeography (file:///private/tmp/mountain-funicular-shared-ground-proof-1/runtime-bundle.mjs:39718:46)
+    at createMountainV2Region (file:///private/tmp/mountain-funicular-shared-ground-proof-1/runtime-bundle.mjs:42927:13)
+    at Module.buildSourceFixture (file:///private/tmp/mountain-funicular-shared-ground-proof-1/runtime-bundle.mjs:43737:23)
+    at file:///private/tmp/mountain-funicular-shared-ground/run-ground.mjs:20:69

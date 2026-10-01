@@ -1,0 +1,27 @@
+{
+  "originalDriver": "/tmp/mountain-batching-visual-parity/run.mjs",
+  "originalDriverSha256": "0dc52014755728375a43160aeb8f1b34625d6fb24c6e5d42af14c44c0ca6a795",
+  "newDriverSha256": "b91ded22d8cb349a603c7483541a3689c75a16d0c77159cf133c0d21aba426e5",
+  "posesSha256": "0cfd8bb4976b5f7597aa9348d8a4aedb85262a724fc585cecbd096b7a71d3b35",
+  "old": "/tmp/mountain-real-draw-packed-depthfix",
+  "new": "/tmp/mountain-real-draw-partitioned-nl-lite",
+  "noAgentExecution": true,
+  "oldSummary": {
+    "status": "complete",
+    "worldSha256": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+    "terrainSha256": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+    "bundleSha256": "d6d0a5ac6181dab8d0503f2d5910c042008da075072752fe439f359bf743b5f8",
+    "entrySha256": "cecd8b7c92cbe96f6956d81f2c36bfe885a6221000636502c87cc41b69681375",
+    "sourceDrift": [],
+    "errors": []
+  },
+  "newSummary": {
+    "status": "complete",
+    "worldSha256": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+    "terrainSha256": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+    "bundleSha256": "859e40a58f3ae00f079bf612f309089316fd403537f8c77b47a0c7952c85360c",
+    "entrySha256": "cecd8b7c92cbe96f6956d81f2c36bfe885a6221000636502c87cc41b69681375",
+    "sourceDrift": [],
+    "errors": []
+  }
+}

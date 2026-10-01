@@ -1,0 +1,114 @@
+{
+  "sha": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+  "sourceHashes": {
+    "scripts/horizon/native-mountain-review.mjs": "a17ccdc5a371e10b9b8d8028fc7a21589ad9071ebc2510280503a5b4d77efa7f",
+    "src/harbour/mountain/course.ts": "11d7865cae026f04c7a07ee443ab5064a5e7ae2d6ee65c46783ff5944bb2d2a2",
+    "src/harbour/mountain/generated/library-landing.json": "da0710ea0363da6ecc234db1d57d48ab7f636ca86c38ae758bfb1c2608eb2a5f",
+    "src/harbour/mountain/generated/awning-landing.json": "53cf0e1fa4690812d38779265d41bf7d2e873d56c9e22a3bf7dc6c43efe88e3f",
+    "src/harbour/mountain/branchLandings.ts": "dd4bb7e204bf5359879b3c41f86790a21dd1c4790485db60788c3ac8eda7a78d",
+    "src/harbour/mountain/damEntry.ts": "dab096bbce82f167284d67fbb820a4b4c51e6fbf7129aa48f9927ff940293da5",
+    "src/harbour/mountain/roads.ts": "311da4177ce0d9d733f292033328ac2474102e703b2bdb0d3ff4a81093b2d59d",
+    "src/harbour/mountain/surfaces.ts": "2a8a8ad0be2890775653ceddcf2e95d2fd8f98f3e81bbca3dbec6661d9e37425",
+    "src/harbour/mountain/roadFrameFairing.ts": "3d69668388de4c9893d8d9a3fac52f489fce206912f8d657b874f896b9df0d3d",
+    "src/harbour/mountain/orchardJunction.ts": "3c85c90358f9618be42834cc36bee8e40fa52c6fe31bb096950907a68b116547",
+    "src/harbour/mountain/orchardJunction.generated.json": "3dede61cd6946b7effdd41a56b73cb71ceadc3139f625393fe054fe2baf25a70",
+    "src/harbour/mountain/art/routeArt.ts": "dcc19de2c01220dfd9bd35c5f0c38a636454ac1eef6244512dc3915cf1567ea8",
+    "src/harbour/scene/groundPaint.ts": "71cfa907ad2358d23eed56fbdec2128ea34fe88322b5672f8cbce75994243526"
+  },
+  "method": "Native mountHarbourWorld + villageCourt renderer; headless Chromium SwiftShader; static camera review, not input-driven or device evidence",
+  "lighting": "Native lightRig is fixed authored daylight and has no clock API. No fabricated night captures.",
+  "scope": {
+    "tiers": [
+      "full",
+      "lite"
+    ],
+    "themes": [
+      "classic",
+      "taylor",
+      "newfoundland"
+    ]
+  },
+  "provenance": "provenance.json",
+  "records": [],
+  "errors": [
+    {
+      "fatal": true,
+      "error": "[{\"phase\":\"before\",\"path\":\"scripts/horizon/native-mountain-review.mjs\",\"error\":\"Error: Expected Vite raw source response\"},{\"phase\":\"before\",\"path\":\"src/harbour/mountain/course.ts\",\"error\":\"Error: Expected Vite raw source response\"},{\"phase\":\"before\",\"path\":\"src/harbour/mountain/generated/library-landing.json\",\"error\":\"Error: Expected Vite raw source response\"},{\"phase\":\"before\",\"path\":\"src/harbour/mountain/generated/awning-landing.json\",\"error\":\"Error: Expected Vite raw source response\"},{\"phase\":\"before\",\"path\":\"src/harbour/mountain/branchLandings.ts\",\"error\":\"Error: Expected Vite raw source response\"},{\"phase\":\"before\",\"path\":\"src/harbour/mountain/damEntry.ts\",\"error\":\"Error: Expected Vite raw source response\"},{\"phase\":\"before\",\"path\":\"src/harbour/mountain/roads.ts\",\"error\":\"Error: Expected Vite raw source response\"},{\"phase\":\"before\",\"path\":\"src/harbour/mountain/surfaces.ts\",\"error\":\"Error: Expected Vite raw source response\"},{\"phase\":\"before\",\"path\":\"src/harbour/mountain/roadFrameFairing.ts\",\"error\":\"Error: Expected Vite raw source response\"},{\"phase\":\"before\",\"path\":\"src/harbour/mountain/orchardJunction.ts\",\"error\":\"Error: Expected Vite raw source response\"},{\"phase\":\"before\",\"path\":\"src/harbour/mountain/orchardJunction.generated.json\",\"error\":\"Error: Expected Vite raw source response\"},{\"phase\":\"before\",\"path\":\"src/harbour/mountain/art/routeArt.ts\",\"error\":\"Error: Expected Vite raw source response\"},{\"phase\":\"before\",\"path\":\"src/harbour/scene/groundPaint.ts\",\"error\":\"Error: Expected Vite raw source response\"},{\"phase\":\"before\",\"path\":\"src/worldGeography.ts\",\"error\":\"Error: Expected Vite raw source response\"}]"
+    },
+    {
+      "error": "Incomplete selected capture inventory",
+      "expected": 0,
+      "actual": 0
+    },
+    {
+      "phase": "after",
+      "path": "scripts/horizon/native-mountain-review.mjs",
+      "error": "Error: Expected Vite raw source response"
+    },
+    {
+      "phase": "after",
+      "path": "src/harbour/mountain/course.ts",
+      "error": "Error: Expected Vite raw source response"
+    },
+    {
+      "phase": "after",
+      "path": "src/harbour/mountain/generated/library-landing.json",
+      "error": "Error: Expected Vite raw source response"
+    },
+    {
+      "phase": "after",
+      "path": "src/harbour/mountain/generated/awning-landing.json",
+      "error": "Error: Expected Vite raw source response"
+    },
+    {
+      "phase": "after",
+      "path": "src/harbour/mountain/branchLandings.ts",
+      "error": "Error: Expected Vite raw source response"
+    },
+    {
+      "phase": "after",
+      "path": "src/harbour/mountain/damEntry.ts",
+      "error": "Error: Expected Vite raw source response"
+    },
+    {
+      "phase": "after",
+      "path": "src/harbour/mountain/roads.ts",
+      "error": "Error: Expected Vite raw source response"
+    },
+    {
+      "phase": "after",
+      "path": "src/harbour/mountain/surfaces.ts",
+      "error": "Error: Expected Vite raw source response"
+    },
+    {
+      "phase": "after",
+      "path": "src/harbour/mountain/roadFrameFairing.ts",
+      "error": "Error: Expected Vite raw source response"
+    },
+    {
+      "phase": "after",
+      "path": "src/harbour/mountain/orchardJunction.ts",
+      "error": "Error: Expected Vite raw source response"
+    },
+    {
+      "phase": "after",
+      "path": "src/harbour/mountain/orchardJunction.generated.json",
+      "error": "Error: Expected Vite raw source response"
+    },
+    {
+      "phase": "after",
+      "path": "src/harbour/mountain/art/routeArt.ts",
+      "error": "Error: Expected Vite raw source response"
+    },
+    {
+      "phase": "after",
+      "path": "src/harbour/scene/groundPaint.ts",
+      "error": "Error: Expected Vite raw source response"
+    },
+    {
+      "phase": "after",
+      "path": "src/worldGeography.ts",
+      "error": "Error: Expected Vite raw source response"
+    }
+  ]
+}

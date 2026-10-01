@@ -57,26 +57,53 @@ export const GROUND_LINES_ORDER = 1.3;
 export const DECK_LINES_ORDER = 1.6;
 
 /** The land's view uniforms, shared by every land shader (set once per frame by the board scene). */
-export type LandViewUniforms = { uWpp: { value: number }; uHostPx: { value: number } };
+/** View-only reservation for a drawn month symbol; never part of extracted road geometry. */
+export type StationPadMask = { x: number; z: number; radius: number };
+export const STATION_PAD_MASK_CAPACITY = 12;
+export type LandViewUniforms = {
+  uWpp: { value: number }; uHostPx: { value: number };
+  uStationPadCount: { value: number }; uStationPads: { value: THREE.Vector3[] };
+};
+/** CPU counterpart of the covered-fragment discard, also used by geometric acceptance tests. */
+export function coveredFragmentMasked(x: number, z: number, covered: number, pads: readonly StationPadMask[]): boolean {
+  return covered > 0.5 && pads.some(p => (x - p.x) ** 2 + (z - p.z) ** 2 <= p.radius ** 2);
+}
+export function setStationPadMasks(view: LandViewUniforms, pads: readonly StationPadMask[]): void {
+  if (pads.length > STATION_PAD_MASK_CAPACITY) throw new Error('Too many Journey station pad masks');
+  for (const pad of pads) if (![pad.x, pad.z, pad.radius].every(Number.isFinite) || pad.radius < 0) throw new Error('Invalid Journey station pad mask');
+  view.uStationPadCount.value = pads.length;
+  pads.forEach((p, i) => view.uStationPads.value[i]!.set(p.x, p.z, p.radius));
+}
 export function landViewUniforms(): LandViewUniforms {
   // A Region-like default so a land built without a scene still draws sensibly.
-  return { uWpp: { value: 0.3 }, uHostPx: { value: 0 } };
+  return { uWpp: { value: 0.3 }, uHostPx: { value: 0 }, uStationPadCount: { value: 0 }, uStationPads: { value: Array.from({ length: STATION_PAD_MASK_CAPACITY }, () => new THREE.Vector3()) } };
 }
 
 const VERTEX = /* glsl */ `
-attribute vec2 aSide; attribute vec3 aWidth; attribute vec3 aColor; attribute vec2 aDash; attribute vec2 aBand;
+attribute float aCovered; attribute vec2 aSide; attribute vec3 aWidth; attribute vec3 aColor; attribute vec2 aDash; attribute vec2 aBand;
 uniform float uWpp;
-varying vec3 vColor; varying vec2 vDash; varying vec2 vBand;
+varying vec3 vColor; varying vec2 vDash; varying vec2 vBand; varying vec2 vPlan; varying float vCovered;
 void main() {
   float w = clamp(aWidth.x * uWpp, aWidth.y, aWidth.z);
   vec3 p = position + vec3(aSide.x, 0.0, aSide.y) * (0.5 * w);
-  vColor = aColor; vDash = aDash; vBand = aBand;
+  vColor = aColor; vDash = aDash; vBand = aBand; vPlan = p.xz; vCovered = aCovered;
   gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(p, 1.0);
 }`;
 const FRAGMENT = /* glsl */ `
 uniform vec3 uPlanted;
-varying vec3 vColor; varying vec2 vDash; varying vec2 vBand;
+uniform int uStationPadCount;
+uniform vec3 uStationPads[${STATION_PAD_MASK_CAPACITY}];
+varying vec3 vColor; varying vec2 vDash; varying vec2 vBand; varying vec2 vPlan; varying float vCovered;
 void main() {
+  // Underground cover ink yields to the actual zoom/state-scaled month symbol.
+  // Test the width-expanded fragment, not only its centreline. Nothing is moved,
+  // and uncovered roads/bridges keep their existing drawing and clearance checks.
+  if (vCovered > 0.5) for (int i = 0; i < ${STATION_PAD_MASK_CAPACITY}; i++) {
+    if (i < uStationPadCount) {
+      vec2 delta = vPlan - uStationPads[i].xy;
+      if (dot(delta, delta) <= uStationPads[i].z * uStationPads[i].z) discard;
+    }
+  }
   if (vDash.y > 0.0 && fract(vDash.x / vDash.y) > 0.56) discard;
   float a = abs(vBand.x);
   // vBand.y: 1 = planted median (a green band at the centre), 2 = planted verges (green inset at both edges).
@@ -86,8 +113,8 @@ void main() {
 
 /** Per-vertex paint: the line kind, and whether it is covered (dimmed) or a portal notch. */
 type Paint = { kind: LandLineKind; style: 0 | 1 | 2 };
-type Bucket = { positions: number[]; side: number[]; width: number[]; paints: Paint[]; dash: number[]; band: number[]; index: number[] };
-const bucket = (): Bucket => ({ positions: [], side: [], width: [], paints: [], dash: [], band: [], index: [] });
+type Bucket = { positions: number[]; side: number[]; width: number[]; paints: Paint[]; dash: number[]; band: number[]; covered: number[]; index: number[] };
+const bucket = (): Bucket => ({ positions: [], side: [], width: [], paints: [], dash: [], band: [], covered: [], index: [] });
 
 function ribbon(run: RoadRun, b: Bucket): void {
   const path = run.verts;
@@ -123,6 +150,7 @@ function ribbon(run: RoadRun, b: Bucket): void {
       b.paints.push({ kind, style: v.notch ? 2 : v.covered ? 1 : 0 });
       b.dash.push(v.arc, dash);
       b.band.push(s, v.notch || v.covered ? 0 : v.plant);
+      b.covered.push(v.covered ? 1 : 0);
     }
   }
   for (let i = 0; i < path.length - 1; i++) {
@@ -141,7 +169,7 @@ export function buildLines(plan: RoadPlan, dressing: JourneyLandDressing, view: 
   for (const run of plan.deck) ribbon(run, run.minor || MINOR_KINDS.has(run.kind) ? minorBucket : deckBucket);
   const meshes: THREE.Mesh[] = [], owned: { dispose(): void }[] = [], painted: { b: Bucket; geometry: THREE.BufferGeometry }[] = [];
   let minor: THREE.Mesh | null = null, deck: THREE.Mesh | null = null;
-  const uniforms = { uWpp: view.uWpp, uPlanted: { value: new THREE.Color() } };
+  const uniforms = { uWpp: view.uWpp, uStationPadCount: view.uStationPadCount, uStationPads: view.uStationPads, uPlanted: { value: new THREE.Color() } };
   const material = new THREE.ShaderMaterial({
     uniforms, vertexShader: VERTEX, fragmentShader: FRAGMENT,
     // Ribbons are flat; draw both faces so winding never hides one.
@@ -162,6 +190,7 @@ export function buildLines(plan: RoadPlan, dressing: JourneyLandDressing, view: 
     geometry.setAttribute("aSide", new THREE.Float32BufferAttribute(b.side, 2));
     geometry.setAttribute("aWidth", new THREE.Float32BufferAttribute(b.width, 3));
     geometry.setAttribute("aDash", new THREE.Float32BufferAttribute(b.dash, 2));
+    geometry.setAttribute("aCovered", new THREE.Float32BufferAttribute(b.covered, 1));
     geometry.setAttribute("aBand", new THREE.Float32BufferAttribute(b.band, 2));
     geometry.setAttribute("aColor", new THREE.Float32BufferAttribute(new Float32Array(b.paints.length * 3), 3));
     geometry.setIndex(b.index);

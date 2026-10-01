@@ -53,6 +53,7 @@ export function defaultLowZones(): LowZone[] {
 export class Analysis {
   readonly frame: Frame;
   readonly main: boolean;
+  readonly furnished: boolean;
   readonly mouths: Mouth[] = [];
   readonly boxes: [number, number][] = [];
   readonly structures: { run: Run; id: string }[] = [];
@@ -61,6 +62,7 @@ export class Analysis {
   constructor(readonly id: string, closed: boolean, readonly stations: readonly CorridorStation[], reaches: readonly CorridorReach[]) {
     this.frame = new Frame(stations, closed);
     this.main = MAIN_ROADS.has(id);
+    this.furnished = this.main || id === 'mountainV2.road' || id === 'spur stillwater';
     for (const r of reaches) this.reachById.set(r.id, r);
     const F = this.frame;
     // Gap runs per side and kind.
@@ -84,7 +86,7 @@ export class Analysis {
     if (this.id === 'V01') { const n = reachNumber(this.reachOf(st)); if (n) return `R${n}`; }
     if (this.id === 'VG') return 'VG';
     if (this.id === 'V03') return 'V03';
-    if (!this.main) return 'minor';
+    if (!this.furnished) return 'minor';
     return `ctx:${st.context}`;
   }
 

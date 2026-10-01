@@ -1,0 +1,23 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/journey-land.test.ts > extracted land > serializes without pathGraph, collision, geometry or solids, under 400 KB
+[journey-land] extracted data 269.0 KB as JSON (terrain typed arrays included)
+
+stdout | test/journey-land.test.ts > extracted land > measures the slim parse against the index parse + extract (PLAN R3, REVIEW M2)
+[journey-land] median of 20 (Node, unthrottled): slim gunzip+parse+decode 1.4 ms (24.6 KB gz) · index parse 101.2 ms + decode journey LOD 0.2 ms + extract 66.1 ms (2402 KB)
+
+stdout | test/journey-land.test.ts > slim artefact (REVIEW M2) > is small: one request of at most 120 KB gzip, the terrain lattice embedded
+[journey-land] slim 24.6 KB gz vs index 1844 KB gz + terrain 558 KB
+
+stdout | test/journey-land.test.ts > three.js land > stays inside the land budget on full and lite
+[journey-land] full 14351 tris / 13 draws · lite 14273 tris / 13 draws
+
+ ✓ test/journey-land.test.ts (26 tests) 5434ms
+   ✓ extracted land > measures the slim parse against the index parse + extract (PLAN R3, REVIEW M2)  3579ms
+
+ Test Files  1 passed (1)
+      Tests  26 passed (26)
+   Start at  01:20:07
+   Duration  8.43s (transform 1.90s, setup 0ms, collect 2.73s, tests 5.43s, environment 0ms, prepare 66ms)
+

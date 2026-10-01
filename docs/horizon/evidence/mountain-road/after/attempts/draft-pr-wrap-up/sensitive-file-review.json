@@ -1,0 +1,10 @@
+{
+  "changedPaths": 2072,
+  "totalBytes": 190511556,
+  "scannedContents": 1950,
+  "archives": 20,
+  "archiveMembers": 438,
+  "sensitiveFindings": [],
+  "largeFiles": [],
+  "scope": "Changed/new files and archive members, secret signatures and local-only file types; no values printed. No real household data is used by the world fixtures."
+}

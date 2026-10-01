@@ -1,0 +1,105 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof
+
+ ❯ test/skate-world-mesh.test.ts (7 tests | 4 failed) 6373ms
+   × skate world · render == physics > places every top-surface vertex on sample() within 1 mm (or hidden under a higher surface) 1473ms
+     → expected [ …(10) ] to deeply equal []
+   × skate world · render == physics > draws the lite tier with less and keeps its tops on the field too 402ms
+     → tideline: expected false to be true // Object.is equality
+   ✓ skate world · render == physics > builds every theme, shadows raised pieces only, few draw calls, and disposes everything  617ms
+   × skate world · the island-facing names > keeps the island-facing table in shape for planting, walking, session and HUD 5ms
+     → expected [ 'first-line', 'north-run', …(4) ] to deeply equal [ 'first-line', 'north-run', …(3) ]
+   ✓ skate world · the look > keeps one value ladder in every theme, so surfaces, faces, lips and rails read without hue 2ms
+   × skate world · the look > dresses the edges without standing on a pad, a lane, a route, a building or a tree 754ms
+     → tideline-gate-post-l stands off every pad and apron: expected 2.0903985440053643 to be close to 1.0523628267384775, received difference is 1.0380357172668868, but expected 0.00005
+   ✓ skate world · the look > draws the lite tier with fewer lines, marks and dressing  3116ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/skate-world-mesh.test.ts > skate world · render == physics > places every top-surface vertex on sample() within 1 mm (or hidden under a higher surface)
+AssertionError: expected [ …(10) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "tideline (34.425,-40.710) render 2.2377 vs 0.2471",
++   "tideline (34.858,-40.460) render 2.2378 vs 0.2435",
++   "tideline (35.052,-40.327) render 2.2381 vs 0.2428",
++   "tideline (35.223,-40.165) render 2.2387 vs 0.2442",
++   "tideline (32.260,-41.960) render 2.2371 vs 0.2612",
++   "tideline (34.425,-40.710) render 2.2377 vs 0.2471",
++   "tideline (30.095,-43.210) render 2.2365 vs 0.2702",
++   "tideline (32.260,-41.960) render 2.2371 vs 0.2612",
++   "tideline (27.930,-44.460) render 2.2359 vs 0.2752",
++   "tideline (30.095,-43.210) render 2.2365 vs 0.2702",
++ ]
+
+ ❯ test/skate-world-mesh.test.ts:33:29
+     31|       bad.push(`${c.id} (${c.x.toFixed(3)},${c.z.toFixed(3)}) render $…
+     32|     }
+     33|     expect(bad.slice(0,10)).toEqual([]);
+       |                             ^
+     34|     expect(exact/data.checks.length).toBeGreaterThan(.95);
+     35|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  test/skate-world-mesh.test.ts > skate world · render == physics > draws the lite tier with less and keeps its tops on the field too
+AssertionError: tideline: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ test/skate-world-mesh.test.ts:41:279
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  test/skate-world-mesh.test.ts > skate world · the island-facing names > keeps the island-facing table in shape for planting, walking, session and HUD
+AssertionError: expected [ 'first-line', 'north-run', …(4) ] to deeply equal [ 'first-line', 'north-run', …(3) ]
+
+- Expected
++ Received
+
+@@ -2,6 +2,7 @@
+    "first-line",
+    "north-run",
+    "coast-run",
+    "orchard-run",
+    "meadow-run",
++   "mountain-descent",
+  ]
+
+ ❯ test/skate-world-mesh.test.ts:82:39
+     80|     expect(SKATE_SPOTS[0]!.id).toBe('tideline');
+     81|     for(const s of SKATE_SPOTS){expect(Number.isFinite(s.startYaw)).to…
+     82|     expect(SKATE_ROUTES.map(r=>r.id)).toEqual(['first-line','north-run…
+       |                                       ^
+     83|     const at=SKATE_SPOTS[0]!.start;
+     84|     expect(skateSurface(at[0],at[1],groundHeightAt).y).toBeCloseTo(ska…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  test/skate-world-mesh.test.ts > skate world · the look > dresses the edges without standing on a pad, a lane, a route, a building or a tree
+AssertionError: tideline-gate-post-l stands off every pad and apron: expected 2.0903985440053643 to be close to 1.0523628267384775, received difference is 1.0380357172668868, but expected 0.00005
+ ❯ test/skate-world-mesh.test.ts:124:82
+    122|       const obstacles=courtObstacles(tier);
+    123|       for(const d of data.dressing){
+    124|         expect(field.heightAt(d.x,d.z),`${d.id} stands off every pad a…
+       |                                                                                  ^
+    125|         expect(isClear(d.x,d.z,.2,obstacles),`${d.id} (${tier}) clear …
+    126|         expect(keepOutHit(d.x,d.z,0,buildings),`${d.id} off buildings`…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 3 passed (7)
+   Start at  13:23:38
+   Duration  19.03s (transform 7.49s, setup 0ms, collect 11.91s, tests 6.37s, environment 0ms, prepare 179ms)
+

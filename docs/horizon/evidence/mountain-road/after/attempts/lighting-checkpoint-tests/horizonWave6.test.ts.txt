@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonWave6.test.ts (9 tests) 5968ms
+   ✓ Wave 6 body blockers (full) > S2 walks continuously from the Wash onto the Bight Bridge deck and on to the east descent: the kerb rail opens where S2 crosses it (was a post at [469.2,12,1025.6])  3351ms
+   ✓ Wave 6 body blockers (lite) > S2 walks continuously from the Wash onto the Bight Bridge deck and on to the east descent: the kerb rail opens where S2 crosses it (was a post at [469.2,12,1025.6])  1710ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  12:46:13
+   Duration  20.38s (transform 8.13s, setup 0ms, collect 10.74s, tests 5.97s, environment 3ms, prepare 822ms)
+

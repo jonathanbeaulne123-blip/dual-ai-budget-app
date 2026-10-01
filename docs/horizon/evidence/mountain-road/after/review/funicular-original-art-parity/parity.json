@@ -1,0 +1,104 @@
+{
+  "sourceSHA256": "8d9624344d1a8e8a08321ca767160da33beee859894d009706c1fc9edd2feec1",
+  "proposalSHA256": "dcc19de2c01220dfd9bd35c5f0c38a636454ac1eef6244512dc3915cf1567ea8",
+  "method": "Exact original path body extracted without alterations; actual CardBuilder sweep method expands into recorded primitive arguments, using actual native ground, paths, palettes and hash seeds.",
+  "rows": [
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:town:north~station:funicular:town",
+      "primitives": 56,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "full",
+      "path": "path:station:funicular:town~road:foot",
+      "primitives": 28,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:town:north~station:funicular:town",
+      "primitives": 52,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "classic",
+      "tier": "lite",
+      "path": "path:station:funicular:town~road:foot",
+      "primitives": 26,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:town:north~station:funicular:town",
+      "primitives": 56,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "full",
+      "path": "path:station:funicular:town~road:foot",
+      "primitives": 28,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:town:north~station:funicular:town",
+      "primitives": 52,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "taylor",
+      "tier": "lite",
+      "path": "path:station:funicular:town~road:foot",
+      "primitives": 26,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:town:north~station:funicular:town",
+      "primitives": 56,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "full",
+      "path": "path:station:funicular:town~road:foot",
+      "primitives": 28,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:town:north~station:funicular:town",
+      "primitives": 52,
+      "defaultExact": true,
+      "selectedExact": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "path": "path:station:funicular:town~road:foot",
+      "primitives": 26,
+      "defaultExact": true,
+      "selectedExact": true
+    }
+  ],
+  "accepted": true
+}

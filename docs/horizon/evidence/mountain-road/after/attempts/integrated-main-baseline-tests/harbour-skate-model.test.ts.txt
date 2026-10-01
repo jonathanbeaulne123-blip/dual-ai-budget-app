@@ -1,0 +1,69 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof
+
+ ❯ test/harbour-skate-model.test.ts (19 tests | 2 failed) 585ms
+   ✓ skate v2 driver · riding > pushes along the board with W and rolls away from the spot start 119ms
+   ✓ skate v2 driver · riding > ollies from the arrow keys (pull back, flick up) and a kickflip from ↓ then ↑+← 30ms
+   ✓ skate v2 driver · riding > keeps a flick that finished inside a long frame (a slow device) instead of dropping it as stale 14ms
+   ✓ skate v2 driver · riding > freezes an airborne ride while paused, clears held input, and resumes 22ms
+   ✓ skate v2 driver · riding > restores a route and the board after a renderer rebuild, safely paused 20ms
+   ✓ skate v2 driver · riding > respawn returns to the marker, drops the open line and cuts the camera 12ms
+   ✓ skate v2 driver · riding > stance flows from settings to the sim, the input and the scorer 4ms
+   ✓ skate v2 driver · riding > builds a HUD model with the real hints and the seven spots 5ms
+   ✓ skate v2 driver · riding > teaches grind picking: every grind in the book says how, and the air hints say the stick picks it (every device) 0ms
+   ✓ skate v2 driver · riding > uses one park field for the ride and for the walk 0ms
+   ✓ skate v2 · what a partner sees on the wire > maps the present to a bounded, coarse skate act 0ms
+   × island topology and recreational progress > keeps all spot starts, rails and checkpoints on the island and out of walls 4ms
+     → expected 293.9919216577218 to be less than 73.2
+   ✓ island topology and recreational progress > plants no trees inside the skate pads in either render tier 15ms
+   ✓ island topology and recreational progress > preserves collision-free practice starts 29ms
+   × island topology and recreational progress > keeps every timed route segment clear in full and lite planting 309ms
+     → expected [ …(8) ] to deeply equal []
+   ✓ island topology and recreational progress > discovers only spots visited and earns the explorer milestone after all seven 1ms
+   ✓ island topology and recreational progress > requires sequential physical checkpoints, respects the countdown and records a finish 0ms
+   ✓ island topology and recreational progress > bounds corrupt saves and keys each person, household and environment separately 1ms
+   ✓ island topology and recreational progress > continues with unavailable device storage 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/harbour-skate-model.test.ts > island topology and recreational progress > keeps all spot starts, rails and checkpoints on the island and out of walls
+AssertionError: expected 293.9919216577218 to be less than 73.2
+ ❯ test/harbour-skate-model.test.ts:142:158
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/harbour-skate-model.test.ts > island topology and recreational progress > keeps every timed route segment clear in full and lite planting
+AssertionError: expected [ …(8) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "full:mountain-descent:5 44.610510447038024,-261.39075537686864 -> -50.72342220767428,-233.93602150174692",
++   "full:mountain-descent:12 68.70108179929424,-105.10929369711062 -> 46.752200489236365,-82.01239252452669",
++   "full:mountain-descent:14 52.9409997025835,-62.62172017814495 -> -26,-43.99999999999999",
++   "full:mountain-descent:15 -26,-43.99999999999999 -> -3.8290893908980657,26.95445118683002",
++   "lite:mountain-descent:5 44.610510447038024,-261.39075537686864 -> -50.72342220767428,-233.93602150174692",
++   "lite:mountain-descent:12 68.70108179929424,-105.10929369711062 -> 46.752200489236365,-82.01239252452669",
++   "lite:mountain-descent:14 52.9409997025835,-62.62172017814495 -> -26,-43.99999999999999",
++   "lite:mountain-descent:15 -26,-43.99999999999999 -> -3.8290893908980657,26.95445118683002",
++ ]
+
+ ❯ test/harbour-skate-model.test.ts:153:21
+    151|       const a=route.points[n-1]!,b=route.points[n]!;if(!pathSegmentCle…
+    152|     }
+    153|     expect(blocked).toEqual([]);
+       |                     ^
+    154|   });
+    155|   it('discovers only spots visited and earns the explorer milestone af…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 17 passed (19)
+   Start at  13:11:17
+   Duration  1.42s (transform 338ms, setup 0ms, collect 689ms, tests 585ms, environment 0ms, prepare 51ms)
+

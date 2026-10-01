@@ -1,0 +1,20 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonQuickLayerModes.test.ts (12 tests) 8479ms
+   ✓ the quick layer in every mover phase > registers the gliders on the runtime it mounts  709ms
+   ✓ the quick layer in every mover phase > keeps the same toolbar mounted — Walk, Look, Island, the page, Tools, Journey, Sound — through launch, flight, corridor, freefall and a fade  1395ms
+   ✓ the quick layer in every mover phase > hides Jump and Enter while a mover is attached, and shows the two bubbles in their slots  884ms
+   ✓ the quick layer in every mover phase > after a fade the place bubble reads "→ place" for a moment, not a button  332ms
+   ✓ the quick layer in every mover phase > shows boat braking and physical actions without exposing flight or walking controls  340ms
+   ✓ the quick layer in every mover phase > refreshes boat speed while the same craft stays attached  598ms
+   ✓ the quick layer in every mover phase > switches cruiser and boat controls without mixing actions or freezing speed  1134ms
+   ✓ the quick layer in every mover phase > does not commit unchanged fleet polls, including when the panel is hidden  1898ms
+   ✓ the quick layer in every mover phase > labels the glider offers as the pads read them, and the plane's Jump as a press-and-hold  607ms
+   ✓ the quick layer in every mover phase > shows aircraft power controls and preserves the two pads without the cruiser panel  335ms
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  12:29:03
+   Duration  9.31s (transform 544ms, setup 0ms, collect 92ms, tests 8.48s, environment 504ms, prepare 57ms)
+

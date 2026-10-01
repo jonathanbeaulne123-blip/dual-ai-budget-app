@@ -1,0 +1,12 @@
+# Independent review — Mountain Road inventory and book
+
+30 September 2026 · read-only bounded review by a separate agent
+
+Scope: diagnostic correctness and reproducibility, station axes, controller claims, proposed ownership boundaries and decision-book wording. No product implementation or device acceptance was reviewed. One writer (root) retained all edits.
+
+| Finding | Disposition | Recheck evidence |
+|---|---|---|
+| P2: centreline calculations were presented as measured lateral demand and steering reserve although the right lane retained centreline curvature. | Fixed. Tables now call these centreline demand and steering-rate estimates. The text explains that damping 22/s is not a lateral acceleration limit, and actual trajectory/controller reserve was not measured. | Reviewer checked book §5 and retained drawing script's native-spatial → chain-plan conversion and formula. |
+| P2: decisive Stillwater terrain residual and cable/cabin separation existed only in prose. | Fixed. Source-derived endpoint/chord/cable script and every terrain witness retained. | Reviewer verified .176078674 m cut, .138378217 m fill and 27.527458742 m cabin-floor/road separation; native hang 3.1 m, actual sampled cable intersection. Still labelled centreline feasibility, not swept clearance. |
+
+The closure review reported no additional actionable correctness finding. It verified incomplete mode results, excluded native starts and native timeout were not called passes. It saw 30 capture records and preserved earlier errors before the two supplemental neighbour/context captures. A subsequent lightweight final wording check verified 32 unique existing images, 24 retained errors (21 closed-page and three HTTP 404), the 9/23 observed-clock split, native starts/outcomes, nominal-camera limits and the failed Undercroft sightline. It found no substantive acceptance overclaim. Two P3 wording items were corrected: the original P2 is now accurately described as lateral-demand/steering-reserve overstatement (the first book had already rejected a physical grip-margin calculation), and the handoff now contains actual final file/link/syntax/diff results instead of a future-tense promise. Root verified both wording corrections against the finalized files. The reviewer checked gate wording, not the raw gate artifact; root's gate results remain in the retained log. No review finding or mechanical acceptance is inferred from a screenshot alone.

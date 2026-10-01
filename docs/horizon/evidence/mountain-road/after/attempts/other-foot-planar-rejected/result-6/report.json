@@ -1,0 +1,897 @@
+{
+  "status": "UNACCEPTED_SAVED_MESH_EXPERIMENT",
+  "inputSha256": "3bcf227e275fc66d58a4649aef17daf77524cb90ffc186e8683519628fd367a2",
+  "experimentSha256": "d0658053e2059f33ffc53f7a122ee9c447dc94602d968c5437092a1a4575db87",
+  "input": "/tmp/mountain-other-planar-reduction/mountainV2.footLane.apron.json",
+  "baseline": {
+    "triangles": 2004,
+    "vertices": 992,
+    "topology": [],
+    "variants": [
+      {
+        "variant": "double",
+        "tops": 858,
+        "maxTopDegrees": 5.774183630087965,
+        "invalid": 24,
+        "witnesses": [
+          {
+            "f": [
+              840,
+              368,
+              352
+            ],
+            "n": [
+              9.391753867660224e-13,
+              1.5338616626836554e-9,
+              -4.025795950941824e-11
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              842,
+              370,
+              350
+            ],
+            "n": [
+              7.049272190279288e-13,
+              1.1459774795774536e-9,
+              -3.0193624293503585e-11
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              852,
+              364,
+              394
+            ],
+            "n": [
+              5.998274793528324e-13,
+              1.123770382305267e-9,
+              -2.99534147485403e-11
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              854,
+              366,
+              398
+            ],
+            "n": [
+              7.963052960080486e-13,
+              1.4924113334036093e-9,
+              -3.978003213292447e-11
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              856,
+              350,
+              370
+            ],
+            "n": [
+              7.089637037160923e-13,
+              1.1526394144700802e-9,
+              -3.036652309815202e-11
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              868,
+              394,
+              364
+            ],
+            "n": [
+              6.123619406689373e-13,
+              1.1064212324107814e-9,
+              -3.042551367099522e-11
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              874,
+              428,
+              406
+            ],
+            "n": [
+              7.622169605550622e-12,
+              8.716303984135365e-9,
+              -2.2866207061503219e-10
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              876,
+              432,
+              408
+            ],
+            "n": [
+              3.818512997119661e-12,
+              4.332991895839022e-9,
+              -1.1455236238744337e-10
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              878,
+              412,
+              438
+            ],
+            "n": [
+              3.062044541535247e-12,
+              4.307957213178781e-9,
+              -1.1479521630150535e-10
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              880,
+              414,
+              442
+            ],
+            "n": [
+              6.086777783187447e-12,
+              8.565712972252726e-9,
+              -2.2825686956870483e-10
+            ],
+            "reason": "top below runtime determinant"
+          }
+        ]
+      },
+      {
+        "variant": "bake9",
+        "tops": 858,
+        "maxTopDegrees": 5.774183680898209,
+        "invalid": 24,
+        "witnesses": [
+          {
+            "f": [
+              840,
+              368,
+              352
+            ],
+            "n": [
+              0,
+              1.5643782380614368e-9,
+              -4.0006296886385684e-11
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              842,
+              370,
+              350
+            ],
+            "n": [
+              0,
+              1.0389605009653025e-9,
+              -2.6668989933087417e-11
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              852,
+              364,
+              394
+            ],
+            "n": [
+              0,
+              9.377224552409302e-10,
+              -2.6250114495279808e-11
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              854,
+              366,
+              398
+            ],
+            "n": [
+              0,
+              1.4007585924513677e-9,
+              -3.92199033666385e-11
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              856,
+              350,
+              370
+            ],
+            "n": [
+              0,
+              1.044683714535033e-9,
+              -2.6821704362731125e-11
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              868,
+              394,
+              364
+            ],
+            "n": [
+              0,
+              9.222539121278572e-10,
+              -2.6666562187582787e-11
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              874,
+              428,
+              406
+            ],
+            "n": [
+              6.6414649387697144e-12,
+              8.644660320911157e-9,
+              -2.2578715199589316e-10
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              876,
+              432,
+              408
+            ],
+            "n": [
+              0,
+              4.701076722346542e-9,
+              -1.1976574744963775e-10
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              878,
+              412,
+              438
+            ],
+            "n": [
+              0,
+              4.150195048735483e-9,
+              -1.181358990666459e-10
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              880,
+              414,
+              442
+            ],
+            "n": [
+              6.5241789835163155e-12,
+              8.379328869656533e-9,
+              -2.2182356949548843e-10
+            ],
+            "reason": "top below runtime determinant"
+          }
+        ]
+      },
+      {
+        "variant": "bake9-localFloat32",
+        "tops": 858,
+        "maxTopDegrees": 90,
+        "invalid": 282,
+        "witnesses": [
+          {
+            "f": [
+              718,
+              36,
+              6
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              719,
+              7,
+              37
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "collapsed or orientation changed"
+          },
+          {
+            "f": [
+              720,
+              38,
+              4
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              721,
+              5,
+              39
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "collapsed or orientation changed"
+          },
+          {
+            "f": [
+              722,
+              44,
+              10
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              723,
+              11,
+              45
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "collapsed or orientation changed"
+          },
+          {
+            "f": [
+              724,
+              26,
+              58
+            ],
+            "n": [
+              -0.000001264503225684166,
+              0,
+              -0.0000021993182599544525
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              725,
+              59,
+              27
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "collapsed or orientation changed"
+          },
+          {
+            "f": [
+              726,
+              4,
+              38
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "top below runtime determinant"
+          },
+          {
+            "f": [
+              727,
+              39,
+              5
+            ],
+            "n": [
+              0,
+              0,
+              0
+            ],
+            "reason": "collapsed or orientation changed"
+          }
+        ]
+      }
+    ]
+  },
+  "after": {
+    "triangles": 1518,
+    "referencedVertices": 749,
+    "retainedPositionValues": 2976,
+    "removedTriangles": 486,
+    "removedVertices": 243
+  },
+  "constraints": {
+    "planeDistance": 1e-11,
+    "finalGeometryTolerance": 1e-9,
+    "topMaxDegrees": 40,
+    "minTopDeterminant": 1e-8,
+    "originalPositionArrayExact": true,
+    "logicalOriginExact": true
+  },
+  "proof": {
+    "sourceToCandidate": {
+      "maxError": 2.8251179173821583e-11,
+      "maxCoverageError": 1.337263633161001e-13,
+      "failureCount": 0,
+      "witnesses": []
+    },
+    "candidateToSource": {
+      "maxError": 9.588063676346792e-11,
+      "maxCoverageError": 1.8407497748285095e-13,
+      "failureCount": 0,
+      "witnesses": []
+    }
+  },
+  "topologyFailures": [],
+  "variants": [
+    {
+      "variant": "double",
+      "tops": 646,
+      "maxTopDegrees": 5.774183630087965,
+      "invalid": 22,
+      "witnesses": [
+        {
+          "f": [
+            840,
+            368,
+            352
+          ],
+          "n": [
+            9.391753867660224e-13,
+            1.5338616626836554e-9,
+            -4.025795950941824e-11
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            842,
+            370,
+            350
+          ],
+          "n": [
+            7.049272190279288e-13,
+            1.1459774795774536e-9,
+            -3.0193624293503585e-11
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            852,
+            364,
+            394
+          ],
+          "n": [
+            5.998274793528324e-13,
+            1.123770382305267e-9,
+            -2.99534147485403e-11
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            854,
+            366,
+            398
+          ],
+          "n": [
+            7.963052960080486e-13,
+            1.4924113334036093e-9,
+            -3.978003213292447e-11
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            856,
+            350,
+            370
+          ],
+          "n": [
+            7.089637037160923e-13,
+            1.1526394144700802e-9,
+            -3.036652309815202e-11
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            868,
+            394,
+            364
+          ],
+          "n": [
+            6.123619406689373e-13,
+            1.1064212324107814e-9,
+            -3.042551367099522e-11
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            874,
+            428,
+            406
+          ],
+          "n": [
+            7.622169605550622e-12,
+            8.716303984135365e-9,
+            -2.2866207061503219e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            876,
+            432,
+            408
+          ],
+          "n": [
+            3.818512997119661e-12,
+            4.332991895839022e-9,
+            -1.1455236238744337e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            878,
+            412,
+            438
+          ],
+          "n": [
+            3.062044541535247e-12,
+            4.307957213178781e-9,
+            -1.1479521630150535e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            888,
+            406,
+            428
+          ],
+          "n": [
+            1.3336565359012287e-11,
+            8.71861917384198e-9,
+            -4.0009167723634165e-10
+          ],
+          "reason": "top below runtime determinant"
+        }
+      ]
+    },
+    {
+      "variant": "bake9",
+      "tops": 646,
+      "maxTopDegrees": 5.774183680898209,
+      "invalid": 22,
+      "witnesses": [
+        {
+          "f": [
+            840,
+            368,
+            352
+          ],
+          "n": [
+            0,
+            1.5643782380614368e-9,
+            -4.0006296886385684e-11
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            842,
+            370,
+            350
+          ],
+          "n": [
+            0,
+            1.0389605009653025e-9,
+            -2.6668989933087417e-11
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            852,
+            364,
+            394
+          ],
+          "n": [
+            0,
+            9.377224552409302e-10,
+            -2.6250114495279808e-11
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            854,
+            366,
+            398
+          ],
+          "n": [
+            0,
+            1.4007585924513677e-9,
+            -3.92199033666385e-11
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            856,
+            350,
+            370
+          ],
+          "n": [
+            0,
+            1.044683714535033e-9,
+            -2.6821704362731125e-11
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            868,
+            394,
+            364
+          ],
+          "n": [
+            0,
+            9.222539121278572e-10,
+            -2.6666562187582787e-11
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            874,
+            428,
+            406
+          ],
+          "n": [
+            6.6414649387697144e-12,
+            8.644660320911157e-9,
+            -2.2578715199589316e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            876,
+            432,
+            408
+          ],
+          "n": [
+            0,
+            4.701076722346542e-9,
+            -1.1976574744963775e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            878,
+            412,
+            438
+          ],
+          "n": [
+            0,
+            4.150195048735483e-9,
+            -1.181358990666459e-10
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            888,
+            406,
+            428
+          ],
+          "n": [
+            1.162061939730119e-11,
+            8.646497337561065e-9,
+            -3.950614197757718e-10
+          ],
+          "reason": "top below runtime determinant"
+        }
+      ]
+    },
+    {
+      "variant": "bake9-localFloat32",
+      "tops": 646,
+      "maxTopDegrees": 90,
+      "invalid": 200,
+      "witnesses": [
+        {
+          "f": [
+            718,
+            36,
+            6
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            719,
+            7,
+            37
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "collapsed or orientation changed"
+        },
+        {
+          "f": [
+            720,
+            38,
+            4
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            721,
+            5,
+            39
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "collapsed or orientation changed"
+        },
+        {
+          "f": [
+            722,
+            44,
+            10
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            723,
+            11,
+            45
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "collapsed or orientation changed"
+        },
+        {
+          "f": [
+            724,
+            26,
+            58
+          ],
+          "n": [
+            -0.000001264503225684166,
+            0,
+            -0.0000021993182599544525
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            725,
+            59,
+            27
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "collapsed or orientation changed"
+        },
+        {
+          "f": [
+            726,
+            4,
+            38
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "top below runtime determinant"
+        },
+        {
+          "f": [
+            727,
+            39,
+            5
+          ],
+          "n": [
+            0,
+            0,
+            0
+          ],
+          "reason": "collapsed or orientation changed"
+        }
+      ]
+    }
+  ],
+  "attempts": 1183,
+  "rejections": {
+    "plane-or-triangulation": 935,
+    "local-common-refinement": 5
+  },
+  "bounded": {
+    "maxSeconds": 30,
+    "maxRemovals": 10000,
+    "maxAttempts": 50000,
+    "remainingQueue": 0
+  },
+  "numericalGatesPass": false,
+  "wallMs": 203.670708,
+  "cpu": {
+    "user": 376252,
+    "system": 14003
+  },
+  "limits": [
+    "Numerical saved-mesh checks only; not accepted production geometry.",
+    "Original doubles retained; no Float32 deduplication or geometry optimizer.",
+    "Common refinement uses stated area-roundoff tolerance max(1e-15, projected area * 1e-9); all measured plane differences are <=1e-9.",
+    "Unreferenced original vertices remain in positions deliberately; only indices change.",
+    "Every actual surface/contact/ceiling/movement/art/host ownership and budget gate remains required."
+  ]
+}

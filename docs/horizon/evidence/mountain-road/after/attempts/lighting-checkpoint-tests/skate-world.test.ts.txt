@@ -1,0 +1,167 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/skate-world.test.ts > skate world · the field > samples 100k random points quickly, finitely and without surprises
+[skate-world] 100k sample(): 1604.3 ms · sampleInto(): 1543.3 ms
+
+ ❯ test/skate-world.test.ts (15 tests | 10 failed) 5511ms
+   × skate world · the field > returns unit normals that agree with finite differences of y away from edges 1040ms
+     → expected 18.5200243407251 to be less than 0.25
+   × skate world · the field > flags lips along every coping, facing uphill, and vert on every coping (kickers are not) 13ms
+     → tideline-breadbin-coping-a#0: expected null not to be null
+   ✓ skate world · the field > keeps bowl normals continuous round the corners 126ms
+   × skate world · the field > builds stairs with correct rise, run and landings 5ms
+     → tideline-lantern-steps top landing: expected -1.0670801118060322 to be close to 0.6, received difference is 1.6670801118060323, but expected 5e-7
+   × skate world · the field > puts every grindable top line on the geometry, faces pointing away from the ledge 8ms
+     → tideline-breadbin-coping-a: expected 2.7732861287325 to be close to 0.03, received difference is 2.7432861287325, but expected 0.00005
+   × skate world · the field > has only never-rideable things in solids, each with a top 6ms
+     → expected -1.9219393435232057 to be close to 0.38, received difference is 2.301939343523206, but expected 5e-7
+   × skate world · the field > keeps the parks off buildings, doors, lanes, landmarks and the sea 290ms
+     → tideline -20.39351064635488,9.60648935364512: expected 'boathouse-door' to be null
+   × skate world · the field > keeps every spot rectangle round its pad and apron, and trees out of both tiers 2ms
+     → tideline: expected 26.692990105808075 to be less than or equal to 19.61
+   × skate world · the field > starts every spot on open, flat, dry concrete 26ms
+     → bookends: expected false to be true // Object.is equality
+   × skate world · the field > puts route checkpoints on open ground and keeps segments clear in both tiers 29ms
+     → first-line 8.49,-45.99: expected 'terrain' to be null
+   ✓ skate world · the field > samples 100k random points quickly, finitely and without surprises  3174ms
+   ✓ skate world · the field > agrees across sample, sampleInto and heightAt 209ms
+   × skate world · the field > fits pads to whatever ground it is given 70ms
+     → expected 10.92439018343476 to be greater than or equal to 10.96339018343476
+   ✓ skate world · the field > reports surface kinds that let the sim slow riders off the concrete  507ms
+   ✓ skate world · the field > builds transitions to the authored angles and never past 84° 1ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 10 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/skate-world.test.ts > skate world · the field > returns unit normals that agree with finite differences of y away from edges
+AssertionError: expected 18.5200243407251 to be less than 0.25
+ ❯ test/skate-world.test.ts:48:31
+     46|     }
+     47|     expect(compared).toBeGreaterThan(3000);
+     48|     expect(worst*180/Math.PI).toBeLessThan(0.25);
+       |                               ^
+     49|   });
+     50| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/10]⎯
+
+ FAIL  test/skate-world.test.ts > skate world · the field > flags lips along every coping, facing uphill, and vert on every coping (kickers are not)
+AssertionError: tideline-breadbin-coping-a#0: expected null not to be null
+ ❯ test/skate-world.test.ts:60:43
+     58|         const face=g.faceYaws?.[i]??g.faceYaw!,[fx,fz]=dirOf(face),a=g…
+     59|         const at=field.sample(a[0]+fx*.05,a[2]+fz*.05);
+     60|         expect(at.lip,`${g.id}#${i}`).not.toBeNull();
+       |                                           ^
+     61|         expect(at.lip!.vert,`${g.id}#${i}`).toBe(vert);
+     62|         // lipYaw is the uphill direction: opposite the way the wall f…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/10]⎯
+
+ FAIL  test/skate-world.test.ts > skate world · the field > builds stairs with correct rise, run and landings
+AssertionError: tideline-lantern-steps top landing: expected -1.0670801118060322 to be close to 0.6, received difference is 1.6670801118060323, but expected 5e-7
+ ❯ test/skate-world.test.ts:107:51
+    105|     for(const stairs of field.pads.flatMap(p=>p.shapes).filter((s):s i…
+    106|       const {steps,rise,run}=stairs.def,rel=(lz:number)=>{const [x,z]=…
+    107|       expect(rel(-.3),`${stairs.id} top landing`).toBeCloseTo(steps*ri…
+       |                                                   ^
+    108|       expect(rel(-1e-6),`${stairs.id} top nosing`).toBeCloseTo(steps*r…
+    109|       for(let k=1;k<steps;k++)expect(rel((k-.5)*run),`${stairs.id} tre…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/10]⎯
+
+ FAIL  test/skate-world.test.ts > skate world · the field > puts every grindable top line on the geometry, faces pointing away from the ledge
+AssertionError: tideline-breadbin-coping-a: expected 2.7732861287325 to be close to 0.03, received difference is 2.7432861287325, but expected 0.00005
+ ❯ test/skate-world.test.ts:137:71
+    135|           const p=g.faceYaws?g.points[i]!:inset(g.points,i,.02);
+    136|           // Top of the pipe sits COPE_TOP over the lip; the wall fall…
+    137|           expect(p[1]-field.heightAt(p[0]-fx*1e-5,p[2]-fz*1e-5),g.id).…
+       |                                                                       ^
+    138|           expect(field.heightAt(p[0]+fx*.3,p[2]+fz*.3)).toBeLessThan(p…
+    139|           continue;
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/10]⎯
+
+ FAIL  test/skate-world.test.ts > skate world · the field > has only never-rideable things in solids, each with a top
+AssertionError: expected -1.9219393435232057 to be close to 0.38, received difference is 2.301939343523206, but expected 5e-7
+ ❯ test/skate-world.test.ts:159:87
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/10]⎯
+
+ FAIL  test/skate-world.test.ts > skate world · the field > keeps the parks off buildings, doors, lanes, landmarks and the sea
+AssertionError: tideline -20.39351064635488,9.60648935364512: expected 'boathouse-door' to be null
+
+- Expected: 
+null
+
++ Received: 
+"boathouse-door"
+
+ ❯ test/skate-world.test.ts:169:62
+    167|       if(s.kind!=='concrete'&&s.feature===null&&s.kind!=='metal')conti…
+    168|       if(s.y<=groundHeightAt(x,z)+1e-6)continue;
+    169|       expect(keepOutHit(x,z,0,keep),`${pad.id} ${lx},${lz}`).toBeNull(…
+       |                                                              ^
+    170|       expect(isClear(x,z,.05,obstacles),`${pad.id} ${lx},${lz}`).toBe(…
+    171|       expect(Math.hypot(x,z)).toBeLessThan(HARBOUR_LAND.shore-.5);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/10]⎯
+
+ FAIL  test/skate-world.test.ts > skate world · the field > keeps every spot rectangle round its pad and apron, and trees out of both tiers
+AssertionError: tideline: expected 26.692990105808075 to be less than or equal to 19.61
+ ❯ test/skate-world.test.ts:183:117
+    181|       for(const [lx,lz] of [[-1,-1],[1,-1],[1,1],[-1,1]] as const){
+    182|         const [x,z]=frameToWorld(pad.frame,lx*(pad.half[0]+pad.reach),…
+    183|         expect(Math.abs(x-spot.x),pad.id).toBeLessThanOrEqual(spot.hal…
+       |                                                                                                                     ^
+    184|       }
+    185|       expect(pad.reach,pad.id).toBeLessThan(2.2+1e-9);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/10]⎯
+
+ FAIL  test/skate-world.test.ts > skate world · the field > starts every spot on open, flat, dry concrete
+AssertionError: bookends: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ test/skate-world.test.ts:203:59
+    201|       expect(s.feature,spot.id).toBeNull();expect(s.kind,spot.id).toBe…
+    202|       expect(Math.hypot(...spot.start)).toBeLessThan(HARBOUR_LAND.shor…
+    203|       expect(isClear(...spot.start,.5,obstacles),spot.id).toBe(true);
+       |                                                           ^
+    204|       for(const so of field.solids)expect(Math.hypot(so.x-spot.start[0…
+    205|       // A clear metre all round, and the first two metres ahead are o…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/10]⎯
+
+ FAIL  test/skate-world.test.ts > skate world · the field > puts route checkpoints on open ground and keeps segments clear in both tiers
+AssertionError: first-line 8.49,-45.99: expected 'terrain' to be null
+
+- Expected: 
+null
+
++ Received: 
+"terrain"
+
+ ❯ test/skate-world.test.ts:217:105
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/10]⎯
+
+ FAIL  test/skate-world.test.ts > skate world · the field > fits pads to whatever ground it is given
+AssertionError: expected 10.92439018343476 to be greater than or equal to 10.96339018343476
+ ❯ test/skate-world.test.ts:252:262
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/10]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  10 failed | 5 passed (15)
+   Start at  13:09:34
+   Duration  8.02s (transform 864ms, setup 0ms, collect 1.99s, tests 5.51s, environment 0ms, prepare 144ms)
+

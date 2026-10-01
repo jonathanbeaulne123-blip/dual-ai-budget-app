@@ -7,21 +7,44 @@ import {groundHeightAt} from '../../scene/ground.ts';
 import {SKILL_BRANCHES,MOUNTAIN_PATH_GRAPH,DAM_PARTS,type Point3} from '../definition.ts';
 import {CardBuilder,shade,mix,inkLift,type V3,type RGB} from '../../art/cardScene.ts';
 import type {MountainArtPalette} from './palette.ts';
+import type {LandingRows} from '../branchLandings.ts';
 
 const UP:V3=[0,1,0];
 type Frame={p:V3;side:V3;up:V3};
 const frames=(pts:readonly Point3[]):Frame[]=>pts.map((p,i)=>{const a=pts[Math.max(0,i-1)]!,c=pts[Math.min(pts.length-1,i+1)]!,dx=c[0]-a[0],dz=c[2]-a[2],l=Math.hypot(dx,dz)||1;return {p:[p[0],p[1],p[2]],side:[dz/l,0,-dx/l],up:UP};});
 
-function deck(b:CardBuilder,pal:MountainArtPalette,F:Frame[],hw:number,metal:boolean,th=.32,legs=true,skinColour?:RGB){
+function deck(b:CardBuilder,pal:MountainArtPalette,F:Frame[],hw:number,metal:boolean,th=.32,legs=true,skinColour?:RGB,rows?:LandingRows){
   const top=metal?shade(pal.iron,1.9):pal.plank,skin=skinColour??(metal?mix(pal.iron,pal.glassFrame,.35):pal.timber);
+  if(rows){
+    const lift=(p:Point3,y:number):V3=>[p[0],p[1]+y,p[2]];
+    for(let i=1;i<rows.length;i++){
+      const a=rows[i-1]!,c=rows[i]!;
+      for(let k=1;k<a.length;k++)b.quad(lift(a[k-1]!,.02),lift(c[k-1]!,.02),lift(c[k]!,.02),lift(a[k]!,.02),shade(top,.95+(i%2)*.06),'flat');
+      for(const k of [0,a.length-1]){b.quad(lift(a[k]!,.02),lift(c[k]!,.02),lift(c[k]!,-th),lift(a[k]!,-th),shade(skin,.85),metal?'steel':'card');b.line(inkLift(lift(a[k]!,.02)),inkLift(lift(c[k]!,.02)));}
+      b.quad(lift(a[0]!,-th),lift(a.at(-1)!,-th),lift(c.at(-1)!,-th),lift(c[0]!,-th),shade(skin,.55),metal?'steel':'card');
+      if(!metal)for(let k=1;k<c.length;k++)b.line(inkLift(lift(c[k-1]!,.02)),inkLift(lift(c[k]!,.02)),b.pencil);
+    }
+  }else{
   b.sweep(F,[[-hw,.02],[hw,.02]],(_k,i)=>shade(top,.95+(i%2)*.06),{bucket:'flat'});
   b.sweep(F,[[hw,.03],[hw,-th],[-hw,-th],[-hw,.03]],k=>k===1?shade(skin,.55):shade(skin,.85),{foot:[0,2],bucket:metal?'steel':'card'});
   for(const s of [-1,1])for(let i=1;i<F.length;i++){const a=F[i-1]!,c=F[i]!;b.line(inkLift([a.p[0]+a.side[0]*s*hw,a.p[1]+.02,a.p[2]+a.side[2]*s*hw]),inkLift([c.p[0]+c.side[0]*s*hw,c.p[1]+.02,c.p[2]+c.side[2]*s*hw]));}
   if(!metal)for(let i=0;i<F.length;i+=1){const f=F[i]!;b.line(inkLift([f.p[0]-f.side[0]*hw,f.p[1]+.02,f.p[2]-f.side[2]*hw]),inkLift([f.p[0]+f.side[0]*hw,f.p[1]+.02,f.p[2]+f.side[2]*hw]),b.pencil);}
+  }
   // Supports: posts (or steel legs) down to the ground wherever the deck stands clear of it.
-  if(legs)for(let i=0;i<F.length;i+=3){const f=F[i]!;for(const s of [-1,1]){const x=f.p[0]+f.side[0]*s*(hw-.25),z=f.p[2]+f.side[2]*s*(hw-.25),g=groundHeightAt(x,z);if(f.p[1]-th-g<.4)continue;
-    if(metal)b.post(x,z,g-.3,f.p[1]-th,.1,pal.iron,6,'steel');else b.box(x,z,Math.atan2(f.side[0],f.side[2]),.12,.12,g-.3,f.p[1]-th,pal.timberLight,pal.timber,null);}
-    if(i%6===0){const g=groundHeightAt(f.p[0],f.p[2]);if(f.p[1]-th-g>2)b.beam([f.p[0]-f.side[0]*(hw-.25),g+.5,f.p[2]-f.side[2]*(hw-.25)],[f.p[0]+f.side[0]*(hw-.25),f.p[1]-th-.2,f.p[2]+f.side[2]*(hw-.25)],.1,.1,metal?pal.iron:pal.timber,null,metal?'steel':'card');}}
+  if(legs)for(let i=0;i<F.length;i+=3){
+    const f=F[i]!,row=rows?.[i];
+    // Sample the actual row 25cm inside each edge, including its local crossfall.
+    // The support meets the underside even where a contour landing narrows or banks.
+    const anchors=[-1,1].map((side):V3=>{
+      if(!row)return [f.p[0]+f.side[0]*side*(hw-.25),f.p[1],f.p[2]+f.side[2]*side*(hw-.25)];
+      const edge=row[side<0?0:row.length-1]!,inner=row[side<0?1:row.length-2]!,span=Math.hypot(inner[0]-edge[0],inner[2]-edge[2]),t=Math.min(1,.25/(span||1));
+      return [edge[0]+(inner[0]-edge[0])*t,edge[1]+(inner[1]-edge[1])*t,edge[2]+(inner[2]-edge[2])*t];
+    });
+    for(const [x,y,z] of anchors){const g=groundHeightAt(x,z);if(y-th-g<.4)continue;
+      if(metal)b.post(x,z,g-.3,y-th,.1,pal.iron,6,'steel');else b.box(x,z,Math.atan2(f.side[0],f.side[2]),.12,.12,g-.3,y-th,pal.timberLight,pal.timber,null);
+    }
+    if(i%6===0){const g=groundHeightAt(f.p[0],f.p[2]),a=anchors[0]!,c=anchors[1]!;if(Math.min(a[1],c[1])-th-g>2)b.beam([a[0],g+.5,a[2]],[c[0],c[1]-th-.2,c[2]],.1,.1,metal?pal.iron:pal.timber,null,metal?'steel':'card');}
+  }
 }
 
 export function buildBranchArt(b:CardBuilder,pal:MountainArtPalette){
@@ -42,7 +65,7 @@ export function buildBranchArt(b:CardBuilder,pal:MountainArtPalette){
         if(br.id==='dam-promenade'){const [cx,,cz]=DAM_PARTS.centre;
           for(let i=0;i<F.length;i+=4){const f=F[i]!,dx=cx-f.p[0],dz=cz-f.p[2],l=Math.hypot(dx,dz)||1,d=l-DAM_PARTS.radius;if(d<.5||d>12)continue;
             const back:V3=[f.p[0]+dx/l*(d-.1),f.p[1]-.9,f.p[2]+dz/l*(d-.1)];const steel=shade(mix(pal.brass,pal.coping,.35),.75);b.beam([f.p[0],f.p[1]-.9,f.p[2]],back,.14,.2,steel,null,'steel');b.beam([f.p[0],f.p[1]-.9,f.p[2]],[back[0],back[1]+2.2,back[2]],.08,.08,steel,null,'steel');}}
-      }else deck(b,pal,F,br.halfWidth,metal);
+      }else deck(b,pal,F,br.halfWidth,metal,.32,true,undefined,seg.landingRows);
     }
   }
   // The river footbridge: a timber deck with posts and a rail on both sides.

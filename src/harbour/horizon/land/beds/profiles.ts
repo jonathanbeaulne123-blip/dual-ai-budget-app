@@ -202,7 +202,13 @@ const HOST_CELL=16,hostIndices=new WeakMap<LandCuts,{key:string;index:HostIndex}
  * decks are level across their width, so a host's surface at p is its centreline height at the nearest point. */
 export function hostSurface(b:BedCut,cuts:LandCuts):((p:XYZ)=>number)|undefined {
   if(['cable','cave','rail'].includes(b.kind)||b.id.startsWith('structure.')||!b.terrainCut)return undefined;
-  const rank=surfaceRank(b),hosts=cuts.beds.filter(h=>h!==b&&h.kind==='road'&&h.terrainCut&&!h.id.startsWith('structure.')&&!h.id.startsWith('mountainV2.')&&h.width<=12&&surfaceRank(h)>rank);
+  // The Year Walk crosses the native road's Foot end: its visible corners share that road's
+  // grade too, including the short native town lane joining V03. Its metadata supplies
+  // the shared edge grade; the native region continues to own and draw the lane itself.
+  // Other region-carried Mountain stretches retain their native ownership.
+  const footHost=b.id==='yearWalk'?cuts.beds.find(h=>h.id==='mountainV2.road'):undefined;
+  const footLaneHost=b.id==='yearWalk'?cuts.beds.find(h=>h.id==='mountainV2.footLane'):undefined;
+  const rank=surfaceRank(b),hosts=cuts.beds.filter(h=>h!==b&&h.kind==='road'&&(h===footHost||h===footLaneHost||h.terrainCut&&!h.id.startsWith('structure.')&&!h.id.startsWith('mountainV2.'))&&h.width<=12&&surfaceRank(h)>rank);
   if(!hosts.length)return undefined;
   const key=hosts.map(h=>`${h.id}:${h.points.length}:${h.points[0]?.[1]}:${h.points.at(-1)?.[1]}`).join('|');let cached=hostIndices.get(cuts);
   if(!cached||cached.key!==key||cached.index.beds.length!==hosts.length||cached.index.beds.some((h,i)=>h!==hosts[i])){
@@ -214,10 +220,15 @@ export function hostSurface(b:BedCut,cuts:LandCuts):((p:XYZ)=>number)|undefined 
   return (p:XYZ)=>{
     let best:{h:number;rank:number}|undefined;
     for(const s of index.cells.get(`${Math.floor(p[0]/HOST_CELL)}:${Math.floor(p[2]/HOST_CELL)}`)??[]){
-      if(surfaceRank(s.bed)<=rank)continue;const dx=s.b[0]-s.a[0],dz=s.b[2]-s.a[2],l=dx*dx+dz*dz||1,t=((p[0]-s.a[0])*dx+(p[2]-s.a[2])*dz)/l;
+      if(surfaceRank(s.bed)<=rank||s.bed===footHost&&p[2]<700)continue;const dx=s.b[0]-s.a[0],dz=s.b[2]-s.a[2],l=dx*dx+dz*dz||1,t=((p[0]-s.a[0])*dx+(p[2]-s.a[2])*dz)/l;
       // Only the segment whose span holds the point's foot (an end cap would read a host's closing segment far past its end).
       if(t<-.02||t>1.02)continue;
-      const d=Math.hypot(p[0]-s.a[0]-dx*t,p[2]-s.a[2]-dz*t);if(d>s.bed.width/2+s.bed.shoulder+HOST_APRON)continue;const h=s.a[1]+(s.b[1]-s.a[1])*t;if(Math.abs(h-p[1])>=.6)continue;
+      const d=Math.hypot(p[0]-s.a[0]-dx*t,p[2]-s.a[2]-dz*t);if(d>s.bed.width/2+s.bed.shoulder+HOST_APRON)continue;const h=s.a[1]+(s.b[1]-s.a[1])*t;
+      // The two Year Walk ribbons meet Stillwater at the Foot. Their original outer
+      // corners sit 0.62–0.68 m above its approach; conform the whole joining width,
+      // otherwise only the inner corners lower and the outer slab becomes a low roof.
+      const foot=footHost?.points[0],footJoin=foot&&s.bed.id==='spur stillwater'&&Math.hypot(s.a[0]-foot[0],s.a[2]-foot[2])<20;
+      if(Math.abs(h-p[1])>=(footJoin ? .8 : .6))continue;
       const r=surfaceRank(s.bed);if(!best||r>best.rank||r===best.rank&&Math.abs(h-p[1])<Math.abs(best.h-p[1]))best={h,rank:r};}
     return best?best.h:p[1];
   };

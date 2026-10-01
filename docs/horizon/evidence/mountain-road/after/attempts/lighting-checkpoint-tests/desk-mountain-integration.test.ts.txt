@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/desk-mountain-integration.test.ts (7 tests) 210ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  12:20:36
+   Duration  6.43s (transform 2.98s, setup 0ms, collect 5.36s, tests 210ms, environment 592ms, prepare 88ms)
+

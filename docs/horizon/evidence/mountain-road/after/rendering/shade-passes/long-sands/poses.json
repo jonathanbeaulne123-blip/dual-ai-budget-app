@@ -1,0 +1,53 @@
+[
+  {
+    "id": "long-sands-bench-above",
+    "eye": [
+      1233.4212729677795,
+      6.690473666724502,
+      1404.0785281756844
+    ],
+    "target": [
+      1229.4212729677795,
+      3.990473666724502,
+      1400.0785281756844
+    ],
+    "fov": 58,
+    "district": "reach",
+    "sourceId": "V01.stop.longSandsShore",
+    "source": "Actual source bench stopLayout with frozen full-grid ground. No synthetic terrain/material."
+  },
+  {
+    "id": "long-sands-bench-below",
+    "eye": [
+      1231.4212729677795,
+      2.690473666724502,
+      1402.0785281756844
+    ],
+    "target": [
+      1229.4212729677795,
+      3.740473666724502,
+      1400.0785281756844
+    ],
+    "fov": 58,
+    "district": "reach",
+    "sourceId": "V01.stop.longSandsShore",
+    "source": "Same actual ground-following contact card from below, isolated shader stress; not a valid rider camera."
+  },
+  {
+    "id": "long-sands-bench-near-grazing",
+    "eye": [
+      1232.4212646484375,
+      3.577770238476868,
+      1401.5784912109375
+    ],
+    "target": [
+      1229.4212646484375,
+      3.740473747253418,
+      1400.0784912109375
+    ],
+    "fov": 58,
+    "district": "reach",
+    "sourceId": "V01.stop.longSandsShore",
+    "source": "Eye0.1mm above extension of actual first full-tier Float32 shade face plane. Observe actual per-triangle guarded status on both tiers; no forced classification."
+  }
+]

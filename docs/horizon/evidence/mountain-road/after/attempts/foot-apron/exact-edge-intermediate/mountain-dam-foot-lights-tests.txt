@@ -1,0 +1,33 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/horizon-foot-lane-apron.test.ts (3 tests | 1 failed) 13072ms
+   ✓ visible Foot apron > ends the visible Horizon join at the oblique native road edge without a proud interior triangle 80ms
+   × visible Foot apron > keeps both primary lanes and wider edge witnesses continuous in both directions 12941ms
+     → expected 0.14064517022285372 to be less than 0.06
+   ✓ visible Foot apron > preserves source routes and unrelated geometry and owns one real closed apron 50ms
+ ✓ test/mountain-landings.test.ts (12 tests) 1508ms
+   ✓ shared native and Horizon mountain landings > supports the full repaired width and admits the rider in native and the actual composed Horizon  325ms
+   ✓ shared awning contour return > supports the actual tapered width with no rider contacts in both worlds  308ms
+ ✓ test/horizon-corridor-light-integration.test.ts (2 tests) 162ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/horizon-foot-lane-apron.test.ts > visible Foot apron > keeps both primary lanes and wider edge witnesses continuous in both directions
+AssertionError: expected 0.14064517022285372 to be less than 0.06
+ ❯ test/horizon-foot-lane-apron.test.ts:61:60
+     59|     const s=.5+n*.08,d=direction===1?s:path.length-s,p=pointAt(path,d)…
+     60|     const floor=geo.surface(x,z,previous??p.y,.5);expect(floor).not.to…
+     61|     if(previous!==null)expect(Math.abs(floor!.y-previous)).toBeLessTha…
+       |                                                            ^
+     62|     const native=mountainJoinRoadTop(x,z,floor!.y+.8);if(native!==null…
+     63|     expect(geo.contact(x,z,floor!.y,.25)).toBeNull();expect(geo.ceilin…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 2 passed (3)
+      Tests  1 failed | 16 passed (17)
+   Start at  11:16:32
+   Duration  19.40s (transform 880ms, setup 0ms, collect 3.85s, tests 14.74s, environment 0ms, prepare 234ms)
+

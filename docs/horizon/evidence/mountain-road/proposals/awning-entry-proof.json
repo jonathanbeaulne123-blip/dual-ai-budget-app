@@ -1,0 +1,12 @@
+{
+  "samples": 34440,
+  "maxShift": 0.25167595869205783,
+  "maxGrade": 0.2785723987224503,
+  "maxRoadGap": 0.2615522035308828,
+  "maxCentralRoadGap": 0.0026553570928200543,
+  "maxNativeGap": 0.011478172836007161,
+  "firstRailHashBefore": "cf1409b8563f313c64c59ebc6772b7e83371b441fc8365ac5be3ba0cfe5d1282",
+  "firstRailHashAfter": "cf1409b8563f313c64c59ebc6772b7e83371b441fc8365ac5be3ba0cfe5d1282",
+  "rows5ToEndByteExact": true,
+  "points5ToEndByteExact": true
+}

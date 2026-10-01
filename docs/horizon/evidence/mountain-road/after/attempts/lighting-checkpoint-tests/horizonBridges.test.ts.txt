@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonBridges.test.ts (16 tests) 757ms
+   ✓ bridge residency > applies the retained night intensity to lazily mounted replacement theme art  353ms
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  12:25:41
+   Duration  13.67s (transform 851ms, setup 0ms, collect 12.66s, tests 757ms, environment 0ms, prepare 60ms)
+

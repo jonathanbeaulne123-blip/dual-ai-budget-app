@@ -41,7 +41,7 @@ import { daySpaceFor, stretchMidpoint } from "./route.ts";
 import { ring, transform } from "./shapes.ts";
 import { createSignposts } from "./signposts.ts";
 import { createShadowLayer, type ShadowItem } from "./shadows.ts";
-import { createSpaces, pileShape, type NearWindow } from "./spaces.ts";
+import { createSpaces, pileShape, stationPadMasks, type NearWindow } from "./spaces.ts";
 
 /** Design unit clamps (eu per unit): marks keep their px size between these. */
 export const UNIT_MIN = 0.2;
@@ -391,7 +391,7 @@ export function createJourneyBoardScene(host: HTMLElement, options: BoardSceneOp
     if (selectedKind) ringLayer.uniforms.uUnit.value = unitFor(selectedKind);
     ribbon.uniforms.uWidth.value = ribbonWidth(wpp);
     ribbon.uniforms.uUnit.value = unit;
-    setJourneyLandView(land, { worldPerPixel: wpp });
+    setJourneyLandView(land, { worldPerPixel: wpp, stationPads: stationPadMasks(route.months, padUnit) });
   }
 
   const projected = new THREE.Vector3();

@@ -1,0 +1,10 @@
+{
+  "sha256": {
+    "source-input.json": "4c50478f84d3d9ff66679041d652a897f255e405599abd805d670046ca8311ee",
+    "expected-generated.json": "385b4d832a438d0d982a6dadae4fa66a9ff32ae784006b5bc81ef709c55fd879",
+    "source-planes.py": "1782e0abc7f188f131279a5ca193a340efb72b814a94ed255db89e524f12a9ec",
+    "clip.py": "ba8d74dc657ee92804814c392e3a62ee77593281e7c015e1441eaa35ffd8c72b",
+    "fit.py": "217cb8de9c9d1a1a952f49b51ca508d15da8a3eefa253f028a7775fc149c68d6"
+  },
+  "sourceSha256": "86fe249963667423a4b9f8c5360f271f6ada0ef1a0bbe9a4a6a1ffb88387d91f"
+}

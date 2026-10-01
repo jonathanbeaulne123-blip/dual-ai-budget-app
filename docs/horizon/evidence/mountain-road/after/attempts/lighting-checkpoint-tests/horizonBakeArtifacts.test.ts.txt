@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonBakeArtifacts.test.ts (7 tests) 455ms
+   ✓ keeps the slim Journey land in step with the served index and terrain (REVIEW M2; bake-terrain.mjs --check holds the bytes)  440ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  12:24:23
+   Duration  695ms (transform 210ms, setup 0ms, collect 33ms, tests 455ms, environment 0ms, prepare 58ms)
+

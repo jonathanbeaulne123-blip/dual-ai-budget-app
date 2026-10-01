@@ -14,6 +14,9 @@ import { MIN_RUN } from '../src/harbour/horizon/land/corridor/guards';
 import { GUARD_PANEL } from '../src/harbour/horizon/land/corridor/solids';
 import { createHorizonGeography } from '../src/harbour/horizon/runtime/geography';
 import { corridorLightAnchors } from '../src/harbour/horizon/land/corridor/lights';
+import V2 from '../src/harbour/horizon/land/mountainV2/v2-data.json';
+import {EDGE_RUNS,EDGE_SOLIDS} from '../src/harbour/mountain/roads';
+import {MOUNTAIN_V2_OFFSET as O} from '../src/harbour/horizon/regions/mountainV2/placement';
 import { parseHorizonDefinition } from '../src/house/world/horizonAssets';
 
 const empty = (): LandCuts => ({ beds: [], pads: [], solids: [], mouths: [], waters: [], diagnostics: [] });
@@ -156,7 +159,11 @@ describe('the baked corridors (public/horizon)', () => {
   const pieceOf = (id: string) => world.geometry.solids.filter(s => { const src = s.sourceId ?? s.id; return src === id || src.startsWith(`${id}.`) && !/^\d/.test(src.slice(id.length + 1)); });
   it('carries one corridor per road bed with continuous stations and contiguous reaches', () => {
     expect(corridors.map(c => c.id).slice(0, 4)).toEqual(['V01', 'VG', 'VBS', 'V03']);
-    expect(corridors.length).toBe(17);
+    // Stillwater and the region-owned native road now join the original17.
+    // Derive the inventory from real road beds so duplicates or omissions fail.
+    const roads=world.collision!.beds.filter(b=>isCorridorRoad(b)||b.id==='mountainV2.road').map(b=>b.id).sort();
+    expect(corridors.map(c=>c.id).sort()).toEqual(roads);
+    expect(corridors.map(c=>c.id)).toEqual(expect.arrayContaining(['spur stillwater','mountainV2.road']));
     for (const c of corridors) {
       for (let k = 1; k < c.stations.length; k++) { const a = c.stations[k - 1]!, b = c.stations[k]!; expect(Math.abs(b.s - a.s - c.step)).toBeLessThanOrEqual(2e-3); expect(Math.hypot(b.at[0] - a.at[0], b.at[2] - a.at[2])).toBeLessThanOrEqual(c.step + 2e-3); }
       expect(c.step).toBeGreaterThan(1.8); expect(c.step).toBeLessThanOrEqual(CORRIDOR.step);
@@ -175,6 +182,30 @@ describe('the baked corridors (public/horizon)', () => {
   });
   it('builds each guard collider inside its visible line, never across a declared gap, and lists it by id', () => {
     for (const c of corridors) for (const run of c.guards) {
+      if(run.owner==='region'){
+        // These are native draw/collision authority, not missing Horizon prisms.
+        // Prove every exported run against its actual native source and every
+        // collision segment, including retained walls and explicit nonblocking kerbs.
+        const source=V2.road.guards.find(g=>`mountainV2:${g.id}`===run.id)!;
+        const native=EDGE_RUNS.find(g=>g.id===source?.id)!;
+        expect(source,run.id).toBeDefined();expect(native,run.id).toBeDefined();
+        expect(run.line,run.id).toEqual(source.points);expect(run.colliderId).toBe(run.id);
+        const round=(n:number)=>Math.round(n*1e6)/1e6;
+        expect(run.line,run.id).toEqual(native.points.map(p=>[round(p[0]+O.x),round(p[1]+O.y),round(p[2]+O.z)]));
+        const segments=EDGE_SOLIDS.filter(e=>e.id.startsWith(`${native.id}:`));
+        if(native.kind==='kerb'){
+          expect(run.kind).toBe('none');expect(segments).toHaveLength(0);
+        }else{
+          expect(segments,run.id).toHaveLength(Math.ceil((native.points.length-1)/2));
+          segments.forEach((edge,j)=>{const a=native.points[2*j]!,b=native.points[Math.min(2*j+2,native.points.length-1)]!;
+            expect(edge.a).toEqual([a[0],a[2]]);expect(edge.b).toEqual([b[0],b[2]]);
+            expect(edge.bottom).toBe(Math.min(a[1],b[1])-.2);
+            expect(edge.top).toBe(Math.max(a[1],b[1])+(native.kind==='wall'?2.4:native.height));
+            expect(edge.thickness).toBe(native.kind==='wall'?.7:.3);
+          });
+        }
+        continue;
+      }
       const col = pieceOf(run.colliderId); expect(col.length, run.colliderId).toBeGreaterThan(0);
       if (run.kind === 'retaining') continue;
       const gaps = c.stations.filter(st => st[run.side].gap).map(st => st.s);

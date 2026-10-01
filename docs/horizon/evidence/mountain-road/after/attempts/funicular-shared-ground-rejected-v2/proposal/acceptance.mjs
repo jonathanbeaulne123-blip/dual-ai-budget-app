@@ -1,0 +1,11 @@
+// Pure proof classification; no world, source geometry, or physics imports.
+export const sameContact=(a,b)=>!!a&&!!b&&a.id===b.id&&Object.is(a.nx,b.nx)&&Object.is(a.nz,b.nz);
+export function lateralDistance(points,x,z){let distance=Infinity;for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],dx=b[0]-a[0],dz=b[2]-a[2],d=dx*dx+dz*dz,t=d?Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[2])*dz)/d)):0;distance=Math.min(distance,Math.hypot(x-a[0]-t*dx,z-a[2]-t*dz));}return distance;}
+export function classifySweep(sweep,townRoute,maxDegrees=40){return sweep.failures.map(w=>{
+ const radius=.3,distance=lateralDistance(townRoute.points,w.x,w.z),bodyBeyondWidth=distance+radius-townRoute.halfWidth;
+ const contactOnly=!!w.floor&&!w.reason&&w.delta<=.06&&w.floor.slope<=maxDegrees&&w.headroom>=1.55&&(w.water===null||w.floor.y>w.water);
+ const originalOuterPost=sweep.id==='town station'&&w.contact?.id==='mountainV2:station-art:funicular:town:post:2'&&bodyBeyondWidth>1e-8&&contactOnly&&w.beforeBlockedAtOwnSupport===true&&sameContact(w.contact,w.beforeContactAtOwnSupport)&&sameContact(w.contact,w.beforeContactAtCurrentHeight);
+ return{route:sweep.id,offset:sweep.offset,reverse:sweep.reverse,...w,position:w.floor?[w.x,w.floor.y,w.z]:[w.x,null,w.z],beforePosition:w.beforeFloor?[w.x,w.beforeFloor.y,w.z]:null,bodyRadius:radius,nearestCentrelineDistance:distance,bodyBeyondAuthoredWidth:bodyBeyondWidth,disposition:originalOuterPost?'original visible post outside body-safe centre width':'gating physical failure'};
+});}
+export function introducedBoundary(w,maxDegrees=40){const old=w.before??w.beforeFloor;return{...w,introducedStep:w.delta>.06&&(w.beforeDelta===null||w.delta>w.beforeDelta+1e-7),introducedSlope:w.floor?.slope>maxDegrees&&(!old||old.slope<=maxDegrees||w.floor.slope>old.slope+1e-7),introducedContact:!!w.contact&&!sameContact(w.contact,w.beforeContactAtOwnSupport),introducedWater:w.water!==undefined&&w.water!==null&&!!w.floor&&w.floor.y<=w.water&&(!old||w.beforeWater===undefined||w.beforeWater===null||old.y>w.beforeWater),introducedHeadroom:w.headroom<1.55&&(w.beforeHeadroomAtOwnSupport===null||w.beforeHeadroomAtOwnSupport>=1.55)};}
+export const isIntroduced=w=>w.introducedStep||w.introducedSlope||w.introducedContact||w.introducedHeadroom||w.introducedWater||w.reason==='no floor';

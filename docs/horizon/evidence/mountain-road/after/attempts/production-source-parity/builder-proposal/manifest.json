@@ -1,0 +1,17 @@
+[
+  {
+    "path": "scripts/horizon/bake-entry.ts",
+    "beforeSha256": "213053a9f51da21316b4478eb498bd47dd7e2f0da60539b47856de86a7f15c78",
+    "afterSha256": "bde10fcf78990ddeaf586933b8dd50ec65bfbaa1afc3c47747894248a6d82680"
+  },
+  {
+    "path": "scripts/horizon/bake-source.ts",
+    "beforeSha256": null,
+    "afterSha256": "2ef888522897ea14471f11c1c8bd8aec46d43d7f3bac1009681c31b269e4daad"
+  },
+  {
+    "path": "test/horizon-foot-lane-apron.test.ts",
+    "beforeSha256": "ee7d8492b22bc8eb0053a2c6281f3694511e0b6af8c34c70f6f18f9ed02112a8",
+    "afterSha256": "6381f42e4e976350a9f8a32a3ae3c1c3a50515b6bc0d4a1a6fd7faf2b5d42017"
+  }
+]

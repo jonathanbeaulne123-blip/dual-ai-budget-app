@@ -1,0 +1,137 @@
+{
+  "method": "Pure JSON arithmetic. Exact JS Number(toFixed(9)) matches scripts/horizon/artifacts.mjs; no source/world imports. Common refinement clips every changed old/new triangle pair and evaluates affine height difference at every overlay vertex; numerical double arithmetic, not exact rational arithmetic.",
+  "sourceHashes": {
+    "/tmp/mountain-funicular-v12-shape/before-flips.json": "3badf50abefb88b022f720dbe83c668d45ddbedb52f9b31d5288313f7c31b849",
+    "/tmp/mountain-funicular-v12-shape/candidate-solid.json": "c4ddee0bb563148ef9f569081197d50ec9a3afd6ddb6faa470b61d57a0c45fe6",
+    "/tmp/mountain-funicular-v12-review/candidate-roundtrip.json": "4dc5a0066127cce3cba07ca8144c043eae431e7534582754ea1af8a19d4be1bf"
+  },
+  "positionsUnchanged": true,
+  "indicesChanged": 60,
+  "topFacesBefore": 5472,
+  "topFacesAfter": 5472,
+  "oldChangedTopTriangles": 10,
+  "newChangedTopTriangles": 10,
+  "boundaryEdgesUnchanged": true,
+  "wholeIndexedNonManifoldEdges": 0,
+  "pairedBottomViolations": [],
+  "maxAbsoluteFinalHeightChange": {
+    "xz": [
+      1285.8276518620664,
+      720.6809672843352
+    ],
+    "oldY": 54.65154296775246,
+    "newY": 54.690774255146366,
+    "delta": 0.03923128739390336,
+    "oldFace": [
+      6808,
+      6832,
+      6806
+    ],
+    "newFace": [
+      6838,
+      6806,
+      6808
+    ]
+  },
+  "minFinalHeightChange": {
+    "xz": [
+      1293.2963459912132,
+      731.2848237900719
+    ],
+    "oldY": 55.45371723549606,
+    "newY": 55.42519074062394,
+    "delta": -0.02852649487211778,
+    "oldFace": [
+      906,
+      902,
+      910
+    ],
+    "newFace": [
+      910,
+      908,
+      902
+    ]
+  },
+  "maxFinalHeightChange": {
+    "xz": [
+      1285.8276518620664,
+      720.6809672843352
+    ],
+    "oldY": 54.65154296775246,
+    "newY": 54.690774255146366,
+    "delta": 0.03923128739390336,
+    "oldFace": [
+      6808,
+      6832,
+      6806
+    ],
+    "newFace": [
+      6838,
+      6806,
+      6808
+    ]
+  },
+  "maxOriginalTopDegrees": 38.33764938436592,
+  "originalAnyPositiveNyFaces": 5472,
+  "originalPositiveNyBelowShapeExtraction": [],
+  "originalPositiveNyOver40": [],
+  "roundtripProblems": [],
+  "roundtripMaximumPositiveOriginalTopDegrees": 38.3376485885794,
+  "minimumPlanAltitude": {
+    "altitude": 2.3029944671429926e-09,
+    "triangle": 3192,
+    "indices": [
+      6924,
+      2130,
+      2128
+    ],
+    "originalNormal": [
+      7.289198895666227e-16,
+      1.0662204799616326e-09,
+      -8.19187389033323e-16
+    ],
+    "roundedNormal": [
+      -0.0,
+      1.2174016031374357e-09,
+      0.0
+    ],
+    "originalDegrees": 5.8924876969378484e-05,
+    "roundedDegrees": 0.0,
+    "points": [
+      [
+        1290.098632985921,
+        55.65085412364115,
+        732.5499048536379
+      ],
+      [
+        1290.3292137335613,
+        55.65085412364116,
+        732.755077568614
+      ],
+      [
+        1289.9833426139057,
+        55.650854123641146,
+        732.4473184931318
+      ]
+    ],
+    "roundedPoints": [
+      [
+        1290.098632986,
+        55.650854124,
+        732.549904854
+      ],
+      [
+        1290.329213734,
+        55.650854124,
+        732.755077569
+      ],
+      [
+        1289.983342614,
+        55.650854124,
+        732.447318493
+      ]
+    ]
+  },
+  "originalDegenerateIndices": [],
+  "roundedDegenerateIndices": []
+}

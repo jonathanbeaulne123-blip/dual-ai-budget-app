@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560"><rect width="1000" height="560" fill="#f5f1e7"/><style>text{font-family:Arial,sans-serif;fill:#203a34}.small{font-size:13px}.label{font-size:17px}</style><text x="34" y="42" font-size="25">Upper clearing to Scholars’ Edge</text>
+<text x="34" y="70" class="small">Endpoint chord only — a feasibility drawing, not a fitted road or clearance proof</text>
+<polyline fill="none" stroke="#b8b7ac" stroke-width="3" points="462.6,318.5 459.3,319.0 456.0,319.8 452.7,320.6 449.4,321.4 446.2,322.6 443.0,323.9 439.9,325.3 436.7,326.4 433.4,327.0 430.0,327.4 426.6,327.4 423.2,327.3 419.8,327.0 416.5,326.4 413.2,325.6 409.9,324.7 406.7,323.5 403.6,322.0 400.9,320.1 398.6,317.5 396.7,314.7 395.2,311.6 394.2,308.4 393.6,305.1 393.7,301.7 394.5,298.4 395.7,295.2 397.3,292.2 399.2,289.4 401.3,286.8 403.9,284.5 406.8,282.7 409.8,281.2 412.9,279.9 416.2,278.8 419.4,277.9 422.7,277.1 426.1,276.6 429.5,276.3 432.9,276.2 436.3,276.4 439.6,276.9 442.9,277.7 446.2,278.7 449.4,279.9 452.6,281.1 455.7,282.4 458.8,283.8 461.9,285.2"/>
+<polyline fill="none" stroke="#b8b7ac" stroke-width="3" points="158.0,378.8 158.4,373.7 158.5,368.7 158.3,363.8 157.7,359.2 157.0,355.9 156.1,352.3 154.9,348.4 153.4,344.2 151.8,339.7 149.9,334.9 147.8,329.9 145.6,324.7 143.2,319.3 140.6,313.8 138.0,308.1 135.3,302.3 132.4,296.3 129.6,290.4 126.6,284.4 123.7,278.3 120.8,272.3 117.8,266.2 114.9,260.2 112.1,254.3 109.3,248.5 106.7,242.8 104.1,237.2 101.7,231.8 99.4,226.6 97.2,221.6 95.3,216.8 93.5,212.3 92.0,208.1 90.7,204.1 89.7,200.5 88.7,196.3 87.8,191.7 87.0,186.8 86.3,181.5 85.7,175.9 85.1,170.1 84.6,164.0 84.2,157.8 83.8,151.4 83.5,144.9 83.2,138.3"/>
+<path d="M400.31976744186045,319.5203488372093 L89.68023255813952,200.4796511627907" stroke="#b66136" stroke-width="3" stroke-dasharray="7 5"/>
+<circle cx="400.31976744186045" cy="319.5203488372093" r="5" fill="#203a34"/><text x="409.31976744186045" y="311.5203488372093" class="label">A</text>
+<circle cx="89.68023255813952" cy="200.4796511627907" r="5" fill="#203a34"/><text x="98.68023255813952" y="192.4796511627907" class="label">B</text>
+<text x="40" y="115" class="label">Plan · north ↑</text>
+<text x="35" y="446" class="small">A [1214.0, 109.05, 565.0] → B [940.0, 46.32, 460.0]</text>
+<text x="545" y="115" class="label">Profile · vertical scale exaggerated</text>
+<path d="M550,395H940 M550,395V135" fill="none" stroke="#adb3a9"/>
+<path d="M550,174.3867242872171 L935,365.61327571278287" fill="none" stroke="#b66136" stroke-width="3" stroke-dasharray="7 5"/>
+<text x="534" y="162.3867242872171" class="small">109.05</text>
+<text x="919" y="353.61327571278287" class="small">46.32</text>
+<text x="552" y="423" class="small">0 m</text><text x="862" y="423" class="small">293.4 m</text><text x="552" y="448" class="small">At ≤10%: necessary route length ≥627.3 m</text>
+<text x="34" y="502" class="label">View only. Existing Green Road approach serves this neighbour.</text><text x="34" y="535" class="small">Horizon xyz, eu/metres. Measured endpoints at main 324cd5f. Terrain between endpoints is not drawn.</text></svg>

@@ -1,0 +1,111 @@
+{
+  "meshSha256": "7f77c8a78864a9f1ba2f4d1fbe89141202901b8a4db9a10cb55896ca596b96db",
+  "origin": [
+    1308,
+    54,
+    764
+  ],
+  "method": "Every positive-ny source top; exact JS-style bake9 rounding and IEEE754 Float32 local buffer arithmetic, reconstructed by actual mesh translation. No GPU or perspective raster proof.",
+  "rows": [
+    {
+      "label": "source",
+      "topFaces": 5930,
+      "collapsed": [],
+      "inverted": [],
+      "steep": [],
+      "runtimeInvisible": [],
+      "maxDegrees": 37.82203879737959,
+      "minPlanDeterminant": 1.5659972055397067e-08,
+      "maxVertexWorldError": 0.0
+    },
+    {
+      "label": "bake9",
+      "topFaces": 5930,
+      "collapsed": [],
+      "inverted": [],
+      "steep": [],
+      "runtimeInvisible": [],
+      "maxDegrees": 37.82210479511595,
+      "minPlanDeterminant": 1.5659829570619486e-08,
+      "maxVertexWorldError": 8.456147197762413e-10
+    },
+    {
+      "label": "actualLocalFloat32",
+      "topFaces": 5930,
+      "collapsed": [],
+      "inverted": [
+        3490
+      ],
+      "steep": [],
+      "runtimeInvisible": [],
+      "maxDegrees": 37.82398908122732,
+      "minPlanDeterminant": 1.4682882465422153e-08,
+      "maxVertexWorldError": 2.1297850577518644e-06
+    },
+    {
+      "label": "bake9ThenActualLocalFloat32",
+      "topFaces": 5930,
+      "collapsed": [],
+      "inverted": [
+        3490
+      ],
+      "steep": [],
+      "runtimeInvisible": [],
+      "maxDegrees": 37.82398908122732,
+      "minPlanDeterminant": 1.4682882465422153e-08,
+      "maxVertexWorldError": 2.1297850577518644e-06
+    },
+    {
+      "label": "rejectedAbsoluteFloat32",
+      "topFaces": 5930,
+      "collapsed": [
+        46,
+        1772,
+        5616,
+        5624,
+        5626,
+        8664,
+        8692,
+        8782,
+        8788,
+        11856,
+        11858
+      ],
+      "inverted": [
+        42,
+        3490,
+        3510,
+        3516,
+        6522,
+        6528,
+        6530,
+        7620,
+        7632,
+        8932,
+        8938
+      ],
+      "steep": [
+        {
+          "face": 2498,
+          "degrees": 82.12121202487661
+        },
+        {
+          "face": 5036,
+          "degrees": 40.414499443250314
+        },
+        {
+          "face": 7794,
+          "degrees": 48.464884904134095
+        },
+        {
+          "face": 7802,
+          "degrees": 47.36751428535098
+        }
+      ],
+      "runtimeInvisible": [],
+      "maxDegrees": 82.12121202487661,
+      "minPlanDeterminant": 2.2351741790771484e-08,
+      "maxVertexWorldError": 6.722443616854049e-05
+    }
+  ]
+}

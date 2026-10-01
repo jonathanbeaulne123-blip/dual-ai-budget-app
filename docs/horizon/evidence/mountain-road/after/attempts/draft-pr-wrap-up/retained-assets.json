@@ -1,0 +1,14 @@
+{
+  "current": {
+    "worldGzipSha256": "90e747c9bf765e3d0fbbeb94f850029eed6680526650b18e422d7bf8a91d5138",
+    "terrainSha256": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+    "nativeDataSha256": "876d70fe90947672f9efb3e2dc54c5fa1be9136ae4bc6972ff2a2d6520d05499"
+  },
+  "preflight": {
+    "worldGzipSha256": "90e747c9bf765e3d0fbbeb94f850029eed6680526650b18e422d7bf8a91d5138",
+    "terrainSha256": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+    "nativeDataSha256": "876d70fe90947672f9efb3e2dc54c5fa1be9136ae4bc6972ff2a2d6520d05499"
+  },
+  "unchanged": true,
+  "scope": "Existing served world, terrain and native export remain byte-identical to the actual-served v7 preflight. This does not replace a fresh source bake/check."
+}

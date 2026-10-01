@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/mountainTerrainAsset.test.ts (2 tests) 267ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  13:06:45
+   Duration  864ms (transform 202ms, setup 0ms, collect 65ms, tests 267ms, environment 0ms, prepare 157ms)
+

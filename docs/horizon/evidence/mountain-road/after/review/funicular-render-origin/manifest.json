@@ -1,0 +1,6 @@
+{
+  "base": "/tmp/mountain-funicular-v20/source/src/harbour/horizon/land/mountainV2/footLaneJoin.ts",
+  "baseSha256": "3d8b964a8ff7f8266b700da13220874e7e458bf9395d7f3cf77064d950144579",
+  "finalSha256": "4697b3f2609cde5b0eafe1fa4fbba8a8144b05e693b4e777707c2e3d5b4b11e9",
+  "changes": "Source-wide rendered origin and accurate clipping phase comment only; physical vertices/triangles unchanged."
+}

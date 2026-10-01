@@ -1,0 +1,29 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof
+
+stdout | test/journey-land.test.ts > extracted land > serializes without pathGraph, collision, geometry or solids, under 400 KB
+[journey-land] extracted data 264.8 KB as JSON (terrain typed arrays included)
+
+stdout | test/journey-land.test.ts > extracted land > measures the slim parse against the index parse + extract (PLAN R3, REVIEW M2)
+[journey-land] median of 20 (Node, unthrottled): slim gunzip+parse+decode 2.9 ms (23.1 KB gz) · index parse 166.4 ms + decode journey LOD 0.3 ms + extract 70.6 ms (2035 KB)
+
+stdout | test/journey-land.test.ts > slim artefact (REVIEW M2) > is small: one request of at most 120 KB gzip, the terrain lattice embedded
+[journey-land] slim 23.1 KB gz vs index 1478 KB gz + terrain 558 KB
+
+stdout | test/journey-land.test.ts > three.js land > stays inside the land budget on full and lite
+[journey-land] full 13667 tris / 13 draws · lite 13613 tris / 13 draws
+
+ ✓ test/journey-land.test.ts (26 tests) 9450ms
+   ✓ extracted land > measures the slim parse against the index parse + extract (PLAN R3, REVIEW M2)  5432ms
+   ✓ loader > falls back to the index and terrain on a 404 (an older deploy), with the same land  394ms
+   ✓ loader > falls back to the index and terrain on the dev server's HTML fallback, with the same land  939ms
+   ✓ loader > falls back to the index and terrain on a different revision, with the same land  394ms
+   ✓ loader > falls back to the index and terrain on an unknown format, with the same land  366ms
+   ✓ loader > falls back to the index and terrain on corrupt bytes, with the same land  323ms
+   ✓ three.js land > stays inside the land budget on full and lite  386ms
+
+ Test Files  1 passed (1)
+      Tests  26 passed (26)
+   Start at  13:21:23
+   Duration  16.76s (transform 4.41s, setup 0ms, collect 6.59s, tests 9.45s, environment 0ms, prepare 154ms)
+

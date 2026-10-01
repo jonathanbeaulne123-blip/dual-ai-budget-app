@@ -6,7 +6,11 @@ import { sampleSpline } from '../beds/solver';
 import { buildStair, tunnel } from '../structures/build';
 import { box, clamp, distance, mix, nearestOnPath, pathLength, plan, prism, slab, solid } from '../structures/mesh';
 
+import {oreStationApron,openOreRoadJunction,orePortalFrame,orePortalLintelRise} from './oreRoad';
+
 export const ROOM_DIMENSIONS:Record<string,{size:XY;floor:number;clear:number}>={lanternCave:{size:[46,32],floor:42,clear:18},deep:{size:[64,60],floor:38,clear:30},bellGallery:{size:[30,26],floor:90,clear:15},sealedDrift:{size:[26,18],floor:42,clear:8}};
+export {oreStationFloor,oreStationApron,openOreRoadJunction,orePortalFrame} from './oreRoad';
+
 /** A passage lining stops at the chamber volume; room walls open only where a passage actually meets them. */
 function openRoomConnections(cuts:LandCuts):void {
   const passages=cuts.beds.filter(b=>b.kind==='cave'||b.kind==='rail');
@@ -162,13 +166,22 @@ export function buildUnderground(cuts:LandCuts,base:HeightQuery):void {
   for(const [id,door]of Object.entries(M.underground.doors)){
     const width=id==='throat'?26:id==='seaDoor'?9:4,depth=id==='throat'?18:6,p=door.xy as unknown as XY;
     cuts.mouths.push({id,kind:'portal',floor:door.h,ceiling:door.h+(id==='throat'?18:id==='seaDoor'?6:3.2),outline:[[p[0]!-width/2,p[1]!-depth/2],[p[0]!-width/2,p[1]!+depth/2],[p[0]!+width/2,p[1]!+depth/2],[p[0]!+width/2,p[1]!-depth/2]]});
-    if(id==='adit'||id==='southPortal'){addFlatPad(cuts,`oreStation.${id}`,'landing',p,door.h,[10,6],0,true);const frame=solid(`${id}.portal.frame`,'portal','timber','wall',['ORE'],'crown');for(const side of [-1,1])box(frame,[p[0]!+side*2.2,p[1]!],door.h+3.8,[.5,1],door.h);box(frame,p,door.h+3.8,[4.9,1],door.h+3.2);cuts.solids.push(frame);}
+    if(id==='adit'||id==='southPortal'){
+      addFlatPad(cuts,`oreStation.${id}`,'landing',p,door.h,[10,6],0,true);
+      if(id==='southPortal')oreStationApron(cuts,p,door.h);
+      const placement=id==='southPortal'?orePortalFrame(cuts,ore):{at:[p[0],door.h,p[1]] as XYZ,normal:[1,0] as XY};
+      const q=placement.at,n=placement.normal,rotation=Math.atan2(n[1],n[0])*180/Math.PI,lintelRise=id==='southPortal'?orePortalLintelRise(cuts,ore):0;
+      const frame=solid(`${id}.portal.frame`,'portal','timber','wall',['ORE'],'crown');
+      for(const side of [-1,1])box(frame,[q[0]+n[0]*side*2.2,q[2]+n[1]*side*2.2],q[1]+3.8,[.5,1],q[1]-.1,rotation);
+      box(frame,plan(q),q[1]+3.8+lintelRise,[4.9,1],q[1]+3.2+lintelRise,rotation);cuts.solids.push(frame);
+    }
   }
   // v2.6 (D-M4/D-M7): Crown Road's turning circle is gone; the portal opens onto Mountain v2's road (its lower switchback leg), so
   // the link is the few metres from the door to the road's centreline at the portal's height (the region carries it: v2's road).
   {const road=cuts.beds.find(b=>b.id==='mountainV2.road'),p=portal.xy as unknown as XY,at=road?nearestOnPath(p,road.points).at:undefined;
     const link=bed('southPortal.link','walk',at&&distance(plan(at),p)>1?[[p[0],portal.h,p[1]],[at[0],at[1],at[2]]]:[[p[0],portal.h,p[1]],[p[0]+10,portal.h,p[1]+5]]);regionCarryLand(link);cuts.beds.push(link);}
   openRoomConnections(cuts);
+  openOreRoadJunction(cuts,base);
   deepInterior(cuts);
   // Ignore only the named entrance neighbourhoods when measuring roof cover.
   let low=Infinity,lowAt:XY=[0,0];

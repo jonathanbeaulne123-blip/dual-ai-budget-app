@@ -1,0 +1,1 @@
+Shape-only v15 passed double-precision runtime threshold, closure and slope. Actual global Float32 rendering independently collapses 11 top triangles, reverses one and raises three above 40 degrees. It is not accepted and not applied. Native-coordinate offset diagnostic is not the actual generic solid rendering path. Full walking, art and perimeter evidence remain owed.

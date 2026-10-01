@@ -1,0 +1,5524 @@
+{
+  "status": "complete",
+  "head": "df77030298d5ff960d2eeaa5eb62c8558008694b",
+  "root": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book",
+  "worldPath": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/public/horizon/world/horizon-geo-1.json",
+  "worldSha256": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+  "terrainPath": "/Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book/public/horizon/terrain/horizon-geo-1.bin",
+  "terrainSha256": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+  "scriptSha256": "332a561ba71cf0120cd2263863f85e30841b6925d7bbc454c6defc49f493c5fb",
+  "entrySha256": "cecd8b7c92cbe96f6956d81f2c36bfe885a6221000636502c87cc41b69681375",
+  "districts": [
+    "lakeside",
+    "prow",
+    "crown",
+    "hollow"
+  ],
+  "themes": [
+    "newfoundland"
+  ],
+  "tiers": [
+    "lite"
+  ],
+  "seasons": [
+    "spring",
+    "summer",
+    "autumn",
+    "winter"
+  ],
+  "times": [
+    "day",
+    "night"
+  ],
+  "corridorIds": "all",
+  "reviewViewSource": null,
+  "reviewViewsMatchWorld": null,
+  "cases": [
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "lakeside",
+      "season": "spring",
+      "time": "day",
+      "requestedSamples": 195,
+      "completedSamples": 195,
+      "poseKinds": {
+        "budget-route": 60,
+        "plant-root": 76,
+        "budget-lamp-pool": 58,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 6,
+        "triangles": 6536,
+        "instances": 30
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 6,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 card",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 ink",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 11,
+        "triangles": 7390,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03:station:144:-1",
+          "kind": "budget-route",
+          "eye": [
+            1318.576,
+            57.103,
+            756.573
+          ],
+          "target": [
+            1319.4920595736203,
+            57.103,
+            756.97404221421
+          ],
+          "fov": 58,
+          "district": "lakeside",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 52,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 1
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 5
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 9,
+        "triangles": 7808,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "spur stillwater:station:120:-1",
+          "kind": "budget-route",
+          "eye": [
+            1074.626,
+            50.699,
+            691.595
+          ],
+          "target": [
+            1075.596977269688,
+            50.699,
+            691.8341717829286
+          ],
+          "fov": 58,
+          "district": "lakeside",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 98,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 9,
+        "triangles": 6888,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 194,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "lakeside",
+      "season": "spring",
+      "time": "night",
+      "requestedSamples": 195,
+      "completedSamples": 195,
+      "poseKinds": {
+        "budget-route": 60,
+        "plant-root": 76,
+        "budget-lamp-pool": 58,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 6,
+        "triangles": 6536,
+        "instances": 30
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 6,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 card",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 ink",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 11,
+        "triangles": 8126,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03:station:144:-1",
+          "kind": "budget-route",
+          "eye": [
+            1318.576,
+            57.103,
+            756.573
+          ],
+          "target": [
+            1319.4920595736203,
+            57.103,
+            756.97404221421
+          ],
+          "fov": 58,
+          "district": "lakeside",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 247,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 1
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 5
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 11,
+        "triangles": 8186,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03.lamp.22:pool:1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1289.359,
+            57.365,
+            748.681
+          ],
+          "target": [
+            1290.359,
+            57.365,
+            748.681
+          ],
+          "fov": 58,
+          "district": "lakeside",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 358,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 1
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 5
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 9,
+        "triangles": 6904,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 389,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "lakeside",
+      "season": "summer",
+      "time": "day",
+      "requestedSamples": 195,
+      "completedSamples": 195,
+      "poseKinds": {
+        "budget-route": 60,
+        "plant-root": 76,
+        "budget-lamp-pool": 58,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 6,
+        "triangles": 6536,
+        "instances": 30
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 6,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 card",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 ink",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 11,
+        "triangles": 7390,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03:station:144:-1",
+          "kind": "budget-route",
+          "eye": [
+            1318.576,
+            57.103,
+            756.573
+          ],
+          "target": [
+            1319.4920595736203,
+            57.103,
+            756.97404221421
+          ],
+          "fov": 58,
+          "district": "lakeside",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 442,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 1
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 5
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 9,
+        "triangles": 7808,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "spur stillwater:station:120:-1",
+          "kind": "budget-route",
+          "eye": [
+            1074.626,
+            50.699,
+            691.595
+          ],
+          "target": [
+            1075.596977269688,
+            50.699,
+            691.8341717829286
+          ],
+          "fov": 58,
+          "district": "lakeside",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 488,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 9,
+        "triangles": 6888,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 584,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "lakeside",
+      "season": "summer",
+      "time": "night",
+      "requestedSamples": 195,
+      "completedSamples": 195,
+      "poseKinds": {
+        "budget-route": 60,
+        "plant-root": 76,
+        "budget-lamp-pool": 58,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 6,
+        "triangles": 6536,
+        "instances": 30
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 6,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 card",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 ink",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 11,
+        "triangles": 8126,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03:station:144:-1",
+          "kind": "budget-route",
+          "eye": [
+            1318.576,
+            57.103,
+            756.573
+          ],
+          "target": [
+            1319.4920595736203,
+            57.103,
+            756.97404221421
+          ],
+          "fov": 58,
+          "district": "lakeside",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 637,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 1
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 5
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 11,
+        "triangles": 8186,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03.lamp.22:pool:1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1289.359,
+            57.365,
+            748.681
+          ],
+          "target": [
+            1290.359,
+            57.365,
+            748.681
+          ],
+          "fov": 58,
+          "district": "lakeside",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 748,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 1
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 5
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 9,
+        "triangles": 6904,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 779,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "lakeside",
+      "season": "autumn",
+      "time": "day",
+      "requestedSamples": 195,
+      "completedSamples": 195,
+      "poseKinds": {
+        "budget-route": 60,
+        "plant-root": 76,
+        "budget-lamp-pool": 58,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 6,
+        "triangles": 6536,
+        "instances": 30
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 6,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 card",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 ink",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 11,
+        "triangles": 7390,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03:station:144:-1",
+          "kind": "budget-route",
+          "eye": [
+            1318.576,
+            57.103,
+            756.573
+          ],
+          "target": [
+            1319.4920595736203,
+            57.103,
+            756.97404221421
+          ],
+          "fov": 58,
+          "district": "lakeside",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 832,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 1
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 5
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 9,
+        "triangles": 7808,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "spur stillwater:station:120:-1",
+          "kind": "budget-route",
+          "eye": [
+            1074.626,
+            50.699,
+            691.595
+          ],
+          "target": [
+            1075.596977269688,
+            50.699,
+            691.8341717829286
+          ],
+          "fov": 58,
+          "district": "lakeside",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 878,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 9,
+        "triangles": 6888,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 974,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "lakeside",
+      "season": "autumn",
+      "time": "night",
+      "requestedSamples": 195,
+      "completedSamples": 195,
+      "poseKinds": {
+        "budget-route": 60,
+        "plant-root": 76,
+        "budget-lamp-pool": 58,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 6,
+        "triangles": 6536,
+        "instances": 30
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 6,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 card",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 ink",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 11,
+        "triangles": 8126,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03:station:144:-1",
+          "kind": "budget-route",
+          "eye": [
+            1318.576,
+            57.103,
+            756.573
+          ],
+          "target": [
+            1319.4920595736203,
+            57.103,
+            756.97404221421
+          ],
+          "fov": 58,
+          "district": "lakeside",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 1027,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 1
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 5
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 11,
+        "triangles": 8186,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03.lamp.22:pool:1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1289.359,
+            57.365,
+            748.681
+          ],
+          "target": [
+            1290.359,
+            57.365,
+            748.681
+          ],
+          "fov": 58,
+          "district": "lakeside",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 1138,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 1
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 5
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 9,
+        "triangles": 6904,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 1169,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "lakeside",
+      "season": "winter",
+      "time": "day",
+      "requestedSamples": 195,
+      "completedSamples": 195,
+      "poseKinds": {
+        "budget-route": 60,
+        "plant-root": 76,
+        "budget-lamp-pool": 58,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 6,
+        "triangles": 6536,
+        "instances": 30
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 6,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 card",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 ink",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 11,
+        "triangles": 7390,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03:station:144:-1",
+          "kind": "budget-route",
+          "eye": [
+            1318.576,
+            57.103,
+            756.573
+          ],
+          "target": [
+            1319.4920595736203,
+            57.103,
+            756.97404221421
+          ],
+          "fov": 58,
+          "district": "lakeside",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 1222,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 1
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 5
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 9,
+        "triangles": 7808,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "spur stillwater:station:120:-1",
+          "kind": "budget-route",
+          "eye": [
+            1074.626,
+            50.699,
+            691.595
+          ],
+          "target": [
+            1075.596977269688,
+            50.699,
+            691.8341717829286
+          ],
+          "fov": 58,
+          "district": "lakeside",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 1268,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 9,
+        "triangles": 6888,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 1364,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "lakeside",
+      "season": "winter",
+      "time": "night",
+      "requestedSamples": 195,
+      "completedSamples": 195,
+      "poseKinds": {
+        "budget-route": 60,
+        "plant-root": 76,
+        "budget-lamp-pool": 58,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 6,
+        "triangles": 6536,
+        "instances": 30
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 6,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 card",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside 0:0 ink",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.lakeside.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 11,
+        "triangles": 8126,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03:station:144:-1",
+          "kind": "budget-route",
+          "eye": [
+            1318.576,
+            57.103,
+            756.573
+          ],
+          "target": [
+            1319.4920595736203,
+            57.103,
+            756.97404221421
+          ],
+          "fov": 58,
+          "district": "lakeside",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 1417,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 1
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 5
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 11,
+        "triangles": 8186,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03.lamp.22:pool:1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1289.359,
+            57.365,
+            748.681
+          ],
+          "target": [
+            1290.359,
+            57.365,
+            748.681
+          ],
+          "fov": 58,
+          "district": "lakeside",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 1528,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 1
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 5
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 9,
+        "triangles": 6904,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 1559,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "prow",
+      "season": "spring",
+      "time": "day",
+      "requestedSamples": 251,
+      "completedSamples": 251,
+      "poseKinds": {
+        "budget-route": 78,
+        "plant-root": 96,
+        "budget-lamp-pool": 76,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 4,
+        "triangles": 7226,
+        "instances": 38
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 4,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.prow 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.prow 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.prow.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 9,
+        "triangles": 8590,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01:station:156:1",
+          "kind": "budget-route",
+          "eye": [
+            1600.181,
+            31.528,
+            858.671
+          ],
+          "target": [
+            1600.3220362465659,
+            31.528,
+            857.6809955671035
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 1571,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 2
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 8
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 9,
+        "triangles": 9288,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03.lamp.8:pool:-1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1441.875,
+            50.268,
+            784.704
+          ],
+          "target": [
+            1440.875,
+            50.268,
+            784.704
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 1794,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 1
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 7
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 7,
+        "triangles": 8314,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 1810,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "prow",
+      "season": "spring",
+      "time": "night",
+      "requestedSamples": 251,
+      "completedSamples": 251,
+      "poseKinds": {
+        "budget-route": 78,
+        "plant-root": 96,
+        "budget-lamp-pool": 76,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 4,
+        "triangles": 7226,
+        "instances": 38
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 4,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.prow 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.prow 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.prow.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 9,
+        "triangles": 8726,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01:station:156:1",
+          "kind": "budget-route",
+          "eye": [
+            1600.181,
+            31.528,
+            858.671
+          ],
+          "target": [
+            1600.3220362465659,
+            31.528,
+            857.6809955671035
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 1822,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 2
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 8
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 9,
+        "triangles": 9384,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03.lamp.5:pool:-1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1483.73,
+            46.077,
+            785.215
+          ],
+          "target": [
+            1482.73,
+            46.077,
+            785.215
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 2039,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 4
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 9
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 7,
+        "triangles": 8330,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 2061,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "prow",
+      "season": "summer",
+      "time": "day",
+      "requestedSamples": 251,
+      "completedSamples": 251,
+      "poseKinds": {
+        "budget-route": 78,
+        "plant-root": 96,
+        "budget-lamp-pool": 76,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 4,
+        "triangles": 7226,
+        "instances": 38
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 4,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.prow 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.prow 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.prow.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 9,
+        "triangles": 8590,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01:station:156:1",
+          "kind": "budget-route",
+          "eye": [
+            1600.181,
+            31.528,
+            858.671
+          ],
+          "target": [
+            1600.3220362465659,
+            31.528,
+            857.6809955671035
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 2073,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 2
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 8
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 9,
+        "triangles": 9288,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03.lamp.8:pool:-1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1441.875,
+            50.268,
+            784.704
+          ],
+          "target": [
+            1440.875,
+            50.268,
+            784.704
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 2296,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 1
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 7
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 7,
+        "triangles": 8314,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 2312,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "prow",
+      "season": "summer",
+      "time": "night",
+      "requestedSamples": 251,
+      "completedSamples": 251,
+      "poseKinds": {
+        "budget-route": 78,
+        "plant-root": 96,
+        "budget-lamp-pool": 76,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 4,
+        "triangles": 7226,
+        "instances": 38
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 4,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.prow 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.prow 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.prow.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 9,
+        "triangles": 8726,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01:station:156:1",
+          "kind": "budget-route",
+          "eye": [
+            1600.181,
+            31.528,
+            858.671
+          ],
+          "target": [
+            1600.3220362465659,
+            31.528,
+            857.6809955671035
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 2324,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 2
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 8
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 9,
+        "triangles": 9384,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03.lamp.5:pool:-1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1483.73,
+            46.077,
+            785.215
+          ],
+          "target": [
+            1482.73,
+            46.077,
+            785.215
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 2541,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 4
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 9
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 7,
+        "triangles": 8330,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 2563,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "prow",
+      "season": "autumn",
+      "time": "day",
+      "requestedSamples": 251,
+      "completedSamples": 251,
+      "poseKinds": {
+        "budget-route": 78,
+        "plant-root": 96,
+        "budget-lamp-pool": 76,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 4,
+        "triangles": 7226,
+        "instances": 38
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 4,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.prow 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.prow 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.prow.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 9,
+        "triangles": 8590,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01:station:156:1",
+          "kind": "budget-route",
+          "eye": [
+            1600.181,
+            31.528,
+            858.671
+          ],
+          "target": [
+            1600.3220362465659,
+            31.528,
+            857.6809955671035
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 2575,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 2
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 8
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 9,
+        "triangles": 9288,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03.lamp.8:pool:-1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1441.875,
+            50.268,
+            784.704
+          ],
+          "target": [
+            1440.875,
+            50.268,
+            784.704
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 2798,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 1
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 7
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 7,
+        "triangles": 8314,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 2814,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "prow",
+      "season": "autumn",
+      "time": "night",
+      "requestedSamples": 251,
+      "completedSamples": 251,
+      "poseKinds": {
+        "budget-route": 78,
+        "plant-root": 96,
+        "budget-lamp-pool": 76,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 4,
+        "triangles": 7226,
+        "instances": 38
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 4,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.prow 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.prow 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.prow.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 9,
+        "triangles": 8726,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01:station:156:1",
+          "kind": "budget-route",
+          "eye": [
+            1600.181,
+            31.528,
+            858.671
+          ],
+          "target": [
+            1600.3220362465659,
+            31.528,
+            857.6809955671035
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 2826,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 2
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 8
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 9,
+        "triangles": 9384,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03.lamp.5:pool:-1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1483.73,
+            46.077,
+            785.215
+          ],
+          "target": [
+            1482.73,
+            46.077,
+            785.215
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 3043,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 4
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 9
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 7,
+        "triangles": 8330,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 3065,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "prow",
+      "season": "winter",
+      "time": "day",
+      "requestedSamples": 251,
+      "completedSamples": 251,
+      "poseKinds": {
+        "budget-route": 78,
+        "plant-root": 96,
+        "budget-lamp-pool": 76,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 4,
+        "triangles": 7226,
+        "instances": 38
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 4,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.prow 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.prow 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.prow.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 9,
+        "triangles": 8590,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01:station:156:1",
+          "kind": "budget-route",
+          "eye": [
+            1600.181,
+            31.528,
+            858.671
+          ],
+          "target": [
+            1600.3220362465659,
+            31.528,
+            857.6809955671035
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 3077,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 2
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 8
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 9,
+        "triangles": 9288,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03.lamp.8:pool:-1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1441.875,
+            50.268,
+            784.704
+          ],
+          "target": [
+            1440.875,
+            50.268,
+            784.704
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 3300,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 1
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 7
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 7,
+        "triangles": 8314,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 3316,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "prow",
+      "season": "winter",
+      "time": "night",
+      "requestedSamples": 251,
+      "completedSamples": 251,
+      "poseKinds": {
+        "budget-route": 78,
+        "plant-root": 96,
+        "budget-lamp-pool": 76,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 4,
+        "triangles": 7226,
+        "instances": 38
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 4,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.prow 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.prow 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.prow.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 9,
+        "triangles": 8726,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01:station:156:1",
+          "kind": "budget-route",
+          "eye": [
+            1600.181,
+            31.528,
+            858.671
+          ],
+          "target": [
+            1600.3220362465659,
+            31.528,
+            857.6809955671035
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 3328,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 2
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 8
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 9,
+        "triangles": 9384,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V03.lamp.5:pool:-1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1483.73,
+            46.077,
+            785.215
+          ],
+          "target": [
+            1482.73,
+            46.077,
+            785.215
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 3545,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 4
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 9
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 7,
+        "triangles": 8330,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 3567,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "crown",
+      "season": "spring",
+      "time": "day",
+      "requestedSamples": 399,
+      "completedSamples": 399,
+      "poseKinds": {
+        "budget-route": 130,
+        "plant-root": 200,
+        "budget-lamp-pool": 68,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 6,
+        "triangles": 8322,
+        "instances": 35
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 6,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 card",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 ink",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 11,
+        "triangles": 9000,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01.plant.framingTrees.4:root:2:heading:1",
+          "kind": "plant-root",
+          "eye": [
+            1478.373,
+            67.05900000000001,
+            413.216
+          ],
+          "target": [
+            1478.373,
+            67.05900000000001,
+            414.216
+          ],
+          "fov": 58,
+          "district": "crown",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 3653,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 10
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 3
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 10,
+        "triangles": 9506,
+        "byCategory": {
+          "furniture": 5,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01.plant.framingTrees.7:root:2:heading:0",
+          "kind": "plant-root",
+          "eye": [
+            1364.16,
+            75.839,
+            313.571
+          ],
+          "target": [
+            1365.16,
+            75.839,
+            313.571
+          ],
+          "fov": 58,
+          "district": "crown",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 3712,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 14
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 9,
+        "triangles": 8450,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 3966,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "crown",
+      "season": "spring",
+      "time": "night",
+      "requestedSamples": 399,
+      "completedSamples": 399,
+      "poseKinds": {
+        "budget-route": 130,
+        "plant-root": 200,
+        "budget-lamp-pool": 68,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 6,
+        "triangles": 8322,
+        "instances": 35
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 6,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 card",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 ink",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 11,
+        "triangles": 9016,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01.plant.framingTrees.4:root:2:heading:1",
+          "kind": "plant-root",
+          "eye": [
+            1478.373,
+            67.05900000000001,
+            413.216
+          ],
+          "target": [
+            1478.373,
+            67.05900000000001,
+            414.216
+          ],
+          "fov": 58,
+          "district": "crown",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 4052,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 10
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 3
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 10,
+        "triangles": 9636,
+        "byCategory": {
+          "furniture": 5,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01:station:516:-1",
+          "kind": "budget-route",
+          "eye": [
+            1307.639,
+            74.32700000000001,
+            262.155
+          ],
+          "target": [
+            1308.5770652079912,
+            74.32700000000001,
+            262.50145875015136
+          ],
+          "fov": 58,
+          "district": "crown",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 3997,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 13
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 7
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 9,
+        "triangles": 8466,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 4365,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "crown",
+      "season": "summer",
+      "time": "day",
+      "requestedSamples": 399,
+      "completedSamples": 399,
+      "poseKinds": {
+        "budget-route": 130,
+        "plant-root": 200,
+        "budget-lamp-pool": 68,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 6,
+        "triangles": 8322,
+        "instances": 35
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 6,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 card",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 ink",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 11,
+        "triangles": 9000,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01.plant.framingTrees.4:root:2:heading:1",
+          "kind": "plant-root",
+          "eye": [
+            1478.373,
+            67.05900000000001,
+            413.216
+          ],
+          "target": [
+            1478.373,
+            67.05900000000001,
+            414.216
+          ],
+          "fov": 58,
+          "district": "crown",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 4451,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 10
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 3
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 10,
+        "triangles": 9506,
+        "byCategory": {
+          "furniture": 5,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01.plant.framingTrees.7:root:2:heading:0",
+          "kind": "plant-root",
+          "eye": [
+            1364.16,
+            75.839,
+            313.571
+          ],
+          "target": [
+            1365.16,
+            75.839,
+            313.571
+          ],
+          "fov": 58,
+          "district": "crown",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 4510,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 14
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 9,
+        "triangles": 8450,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 4764,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "crown",
+      "season": "summer",
+      "time": "night",
+      "requestedSamples": 399,
+      "completedSamples": 399,
+      "poseKinds": {
+        "budget-route": 130,
+        "plant-root": 200,
+        "budget-lamp-pool": 68,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 6,
+        "triangles": 8322,
+        "instances": 35
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 6,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 card",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 ink",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 11,
+        "triangles": 9016,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01.plant.framingTrees.4:root:2:heading:1",
+          "kind": "plant-root",
+          "eye": [
+            1478.373,
+            67.05900000000001,
+            413.216
+          ],
+          "target": [
+            1478.373,
+            67.05900000000001,
+            414.216
+          ],
+          "fov": 58,
+          "district": "crown",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 4850,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 10
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 3
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 10,
+        "triangles": 9636,
+        "byCategory": {
+          "furniture": 5,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01:station:516:-1",
+          "kind": "budget-route",
+          "eye": [
+            1307.639,
+            74.32700000000001,
+            262.155
+          ],
+          "target": [
+            1308.5770652079912,
+            74.32700000000001,
+            262.50145875015136
+          ],
+          "fov": 58,
+          "district": "crown",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 4795,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 13
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 7
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 9,
+        "triangles": 8466,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 5163,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "crown",
+      "season": "autumn",
+      "time": "day",
+      "requestedSamples": 399,
+      "completedSamples": 399,
+      "poseKinds": {
+        "budget-route": 130,
+        "plant-root": 200,
+        "budget-lamp-pool": 68,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 6,
+        "triangles": 8322,
+        "instances": 35
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 6,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 card",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 ink",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 11,
+        "triangles": 9000,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01.plant.framingTrees.4:root:2:heading:1",
+          "kind": "plant-root",
+          "eye": [
+            1478.373,
+            67.05900000000001,
+            413.216
+          ],
+          "target": [
+            1478.373,
+            67.05900000000001,
+            414.216
+          ],
+          "fov": 58,
+          "district": "crown",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 5249,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 10
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 3
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 10,
+        "triangles": 9506,
+        "byCategory": {
+          "furniture": 5,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01.plant.framingTrees.7:root:2:heading:0",
+          "kind": "plant-root",
+          "eye": [
+            1364.16,
+            75.839,
+            313.571
+          ],
+          "target": [
+            1365.16,
+            75.839,
+            313.571
+          ],
+          "fov": 58,
+          "district": "crown",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 5308,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 14
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 9,
+        "triangles": 8450,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 5562,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "crown",
+      "season": "autumn",
+      "time": "night",
+      "requestedSamples": 399,
+      "completedSamples": 399,
+      "poseKinds": {
+        "budget-route": 130,
+        "plant-root": 200,
+        "budget-lamp-pool": 68,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 6,
+        "triangles": 8322,
+        "instances": 35
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 6,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 card",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 ink",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 11,
+        "triangles": 9016,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01.plant.framingTrees.4:root:2:heading:1",
+          "kind": "plant-root",
+          "eye": [
+            1478.373,
+            67.05900000000001,
+            413.216
+          ],
+          "target": [
+            1478.373,
+            67.05900000000001,
+            414.216
+          ],
+          "fov": 58,
+          "district": "crown",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 5648,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 10
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 3
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 10,
+        "triangles": 9636,
+        "byCategory": {
+          "furniture": 5,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01:station:516:-1",
+          "kind": "budget-route",
+          "eye": [
+            1307.639,
+            74.32700000000001,
+            262.155
+          ],
+          "target": [
+            1308.5770652079912,
+            74.32700000000001,
+            262.50145875015136
+          ],
+          "fov": 58,
+          "district": "crown",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 5593,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 13
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 7
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 9,
+        "triangles": 8466,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 5961,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "crown",
+      "season": "winter",
+      "time": "day",
+      "requestedSamples": 399,
+      "completedSamples": 399,
+      "poseKinds": {
+        "budget-route": 130,
+        "plant-root": 200,
+        "budget-lamp-pool": 68,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 6,
+        "triangles": 8322,
+        "instances": 35
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 6,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 card",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 ink",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 11,
+        "triangles": 9000,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01.plant.framingTrees.4:root:2:heading:1",
+          "kind": "plant-root",
+          "eye": [
+            1478.373,
+            67.05900000000001,
+            413.216
+          ],
+          "target": [
+            1478.373,
+            67.05900000000001,
+            414.216
+          ],
+          "fov": 58,
+          "district": "crown",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 6047,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 10
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 3
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 10,
+        "triangles": 9506,
+        "byCategory": {
+          "furniture": 5,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01.plant.framingTrees.7:root:2:heading:0",
+          "kind": "plant-root",
+          "eye": [
+            1364.16,
+            75.839,
+            313.571
+          ],
+          "target": [
+            1365.16,
+            75.839,
+            313.571
+          ],
+          "fov": 58,
+          "district": "crown",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 6106,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 14
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 9,
+        "triangles": 8450,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 6360,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "crown",
+      "season": "winter",
+      "time": "night",
+      "requestedSamples": 399,
+      "completedSamples": 399,
+      "poseKinds": {
+        "budget-route": 130,
+        "plant-root": 200,
+        "budget-lamp-pool": 68,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 6,
+        "triangles": 8322,
+        "instances": 35
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 6,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.crown 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 card",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown 0:0 ink",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.crown.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 11,
+        "triangles": 9016,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01.plant.framingTrees.4:root:2:heading:1",
+          "kind": "plant-root",
+          "eye": [
+            1478.373,
+            67.05900000000001,
+            413.216
+          ],
+          "target": [
+            1478.373,
+            67.05900000000001,
+            414.216
+          ],
+          "fov": 58,
+          "district": "crown",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 6446,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 10
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 3
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 10,
+        "triangles": 9636,
+        "byCategory": {
+          "furniture": 5,
+          "plants": 3,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "V01:station:516:-1",
+          "kind": "budget-route",
+          "eye": [
+            1307.639,
+            74.32700000000001,
+            262.155
+          ],
+          "target": [
+            1308.5770652079912,
+            74.32700000000001,
+            262.50145875015136
+          ],
+          "fov": 58,
+          "district": "crown",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 6391,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor heath",
+            "calls": 1,
+            "instances": 13
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 7
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 9,
+        "triangles": 8466,
+        "byCategory": {
+          "furniture": 6,
+          "plants": 1,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 6759,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peakPlantCalls": 3,
+      "peakUnculledActivePlantCalls": 3,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "hollow",
+      "season": "spring",
+      "time": "day",
+      "requestedSamples": 159,
+      "completedSamples": 159,
+      "poseKinds": {
+        "budget-route": 54,
+        "plant-root": 44,
+        "budget-lamp-pool": 60,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 4,
+        "triangles": 7236,
+        "instances": 30
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 4,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.hollow 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.hollow 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.hollow.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 8,
+        "triangles": 8188,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 2,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "VG:station:348:1",
+          "kind": "budget-route",
+          "eye": [
+            972.055,
+            39.473,
+            748.22
+          ],
+          "target": [
+            972.2149722659013,
+            39.473,
+            747.23287849069
+          ],
+          "fov": 58,
+          "district": "hollow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 6761,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 8,
+        "triangles": 8776,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 2,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "spur stillwater.lamp.13:pool:-1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1069.494,
+            50.166,
+            685.369
+          ],
+          "target": [
+            1068.494,
+            50.166,
+            685.369
+          ],
+          "fov": 58,
+          "district": "hollow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 6902,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 3,
+        "triangles": 6042,
+        "byCategory": {
+          "furniture": 1,
+          "plants": 0,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 6918,
+        "renderedPlantLayers": []
+      },
+      "peakPlantCalls": 2,
+      "peakUnculledActivePlantCalls": 2,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "hollow",
+      "season": "spring",
+      "time": "night",
+      "requestedSamples": 159,
+      "completedSamples": 159,
+      "poseKinds": {
+        "budget-route": 54,
+        "plant-root": 44,
+        "budget-lamp-pool": 60,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 4,
+        "triangles": 7236,
+        "instances": 30
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 4,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.hollow 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.hollow 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.hollow.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 8,
+        "triangles": 9044,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 2,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "VG:station:348:1",
+          "kind": "budget-route",
+          "eye": [
+            972.055,
+            39.473,
+            748.22
+          ],
+          "target": [
+            972.2149722659013,
+            39.473,
+            747.23287849069
+          ],
+          "fov": 58,
+          "district": "hollow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 6920,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 8,
+        "triangles": 9155,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 2,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "spur stillwater.lamp.19:pool:-1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1012.454,
+            45.580999999999996,
+            679.514
+          ],
+          "target": [
+            1011.454,
+            45.580999999999996,
+            679.514
+          ],
+          "fov": 58,
+          "district": "hollow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 7073,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 3,
+        "triangles": 6058,
+        "byCategory": {
+          "furniture": 1,
+          "plants": 0,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 7077,
+        "renderedPlantLayers": []
+      },
+      "peakPlantCalls": 2,
+      "peakUnculledActivePlantCalls": 2,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "hollow",
+      "season": "summer",
+      "time": "day",
+      "requestedSamples": 159,
+      "completedSamples": 159,
+      "poseKinds": {
+        "budget-route": 54,
+        "plant-root": 44,
+        "budget-lamp-pool": 60,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 4,
+        "triangles": 7236,
+        "instances": 30
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 4,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.hollow 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.hollow 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.hollow.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 8,
+        "triangles": 8188,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 2,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "VG:station:348:1",
+          "kind": "budget-route",
+          "eye": [
+            972.055,
+            39.473,
+            748.22
+          ],
+          "target": [
+            972.2149722659013,
+            39.473,
+            747.23287849069
+          ],
+          "fov": 58,
+          "district": "hollow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 7079,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 8,
+        "triangles": 8776,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 2,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "spur stillwater.lamp.13:pool:-1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1069.494,
+            50.166,
+            685.369
+          ],
+          "target": [
+            1068.494,
+            50.166,
+            685.369
+          ],
+          "fov": 58,
+          "district": "hollow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 7220,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 3,
+        "triangles": 6042,
+        "byCategory": {
+          "furniture": 1,
+          "plants": 0,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 7236,
+        "renderedPlantLayers": []
+      },
+      "peakPlantCalls": 2,
+      "peakUnculledActivePlantCalls": 2,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "hollow",
+      "season": "summer",
+      "time": "night",
+      "requestedSamples": 159,
+      "completedSamples": 159,
+      "poseKinds": {
+        "budget-route": 54,
+        "plant-root": 44,
+        "budget-lamp-pool": 60,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 4,
+        "triangles": 7236,
+        "instances": 30
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 4,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.hollow 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.hollow 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.hollow.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 8,
+        "triangles": 9044,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 2,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "VG:station:348:1",
+          "kind": "budget-route",
+          "eye": [
+            972.055,
+            39.473,
+            748.22
+          ],
+          "target": [
+            972.2149722659013,
+            39.473,
+            747.23287849069
+          ],
+          "fov": 58,
+          "district": "hollow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 7238,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 8,
+        "triangles": 9155,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 2,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "spur stillwater.lamp.19:pool:-1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1012.454,
+            45.580999999999996,
+            679.514
+          ],
+          "target": [
+            1011.454,
+            45.580999999999996,
+            679.514
+          ],
+          "fov": 58,
+          "district": "hollow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 7391,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 3,
+        "triangles": 6058,
+        "byCategory": {
+          "furniture": 1,
+          "plants": 0,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 7395,
+        "renderedPlantLayers": []
+      },
+      "peakPlantCalls": 2,
+      "peakUnculledActivePlantCalls": 2,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "hollow",
+      "season": "autumn",
+      "time": "day",
+      "requestedSamples": 159,
+      "completedSamples": 159,
+      "poseKinds": {
+        "budget-route": 54,
+        "plant-root": 44,
+        "budget-lamp-pool": 60,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 4,
+        "triangles": 7236,
+        "instances": 30
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 4,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.hollow 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.hollow 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.hollow.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 8,
+        "triangles": 8188,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 2,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "VG:station:348:1",
+          "kind": "budget-route",
+          "eye": [
+            972.055,
+            39.473,
+            748.22
+          ],
+          "target": [
+            972.2149722659013,
+            39.473,
+            747.23287849069
+          ],
+          "fov": 58,
+          "district": "hollow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 7397,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 8,
+        "triangles": 8776,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 2,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "spur stillwater.lamp.13:pool:-1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1069.494,
+            50.166,
+            685.369
+          ],
+          "target": [
+            1068.494,
+            50.166,
+            685.369
+          ],
+          "fov": 58,
+          "district": "hollow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 7538,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 3,
+        "triangles": 6042,
+        "byCategory": {
+          "furniture": 1,
+          "plants": 0,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 7554,
+        "renderedPlantLayers": []
+      },
+      "peakPlantCalls": 2,
+      "peakUnculledActivePlantCalls": 2,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "hollow",
+      "season": "autumn",
+      "time": "night",
+      "requestedSamples": 159,
+      "completedSamples": 159,
+      "poseKinds": {
+        "budget-route": 54,
+        "plant-root": 44,
+        "budget-lamp-pool": 60,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 4,
+        "triangles": 7236,
+        "instances": 30
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 4,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.hollow 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.hollow 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.hollow.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 8,
+        "triangles": 9044,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 2,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "VG:station:348:1",
+          "kind": "budget-route",
+          "eye": [
+            972.055,
+            39.473,
+            748.22
+          ],
+          "target": [
+            972.2149722659013,
+            39.473,
+            747.23287849069
+          ],
+          "fov": 58,
+          "district": "hollow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 7556,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 8,
+        "triangles": 9155,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 2,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "spur stillwater.lamp.19:pool:-1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1012.454,
+            45.580999999999996,
+            679.514
+          ],
+          "target": [
+            1011.454,
+            45.580999999999996,
+            679.514
+          ],
+          "fov": 58,
+          "district": "hollow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 7709,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 3,
+        "triangles": 6058,
+        "byCategory": {
+          "furniture": 1,
+          "plants": 0,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 7713,
+        "renderedPlantLayers": []
+      },
+      "peakPlantCalls": 2,
+      "peakUnculledActivePlantCalls": 2,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "hollow",
+      "season": "winter",
+      "time": "day",
+      "requestedSamples": 159,
+      "completedSamples": 159,
+      "poseKinds": {
+        "budget-route": 54,
+        "plant-root": 44,
+        "budget-lamp-pool": 60,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 4,
+        "triangles": 7236,
+        "instances": 30
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 4,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.hollow 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.hollow 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.hollow.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 8,
+        "triangles": 8188,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 2,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "VG:station:348:1",
+          "kind": "budget-route",
+          "eye": [
+            972.055,
+            39.473,
+            748.22
+          ],
+          "target": [
+            972.2149722659013,
+            39.473,
+            747.23287849069
+          ],
+          "fov": 58,
+          "district": "hollow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 7715,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 8,
+        "triangles": 8776,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 2,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "spur stillwater.lamp.13:pool:-1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1069.494,
+            50.166,
+            685.369
+          ],
+          "target": [
+            1068.494,
+            50.166,
+            685.369
+          ],
+          "fov": 58,
+          "district": "hollow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 7856,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 3,
+        "triangles": 6042,
+        "byCategory": {
+          "furniture": 1,
+          "plants": 0,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 7872,
+        "renderedPlantLayers": []
+      },
+      "peakPlantCalls": 2,
+      "peakUnculledActivePlantCalls": 2,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    },
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "district": "hollow",
+      "season": "winter",
+      "time": "night",
+      "requestedSamples": 159,
+      "completedSamples": 159,
+      "poseKinds": {
+        "budget-route": 54,
+        "plant-root": 44,
+        "budget-lamp-pool": 60,
+        "review-air": 1
+      },
+      "furnitureCapacity": {
+        "drawCalls": 4,
+        "triangles": 7236,
+        "instances": 30
+      },
+      "furnitureWebglCallUpperBoundIgnoringFrustumAndDetail": {
+        "calls": 4,
+        "objects": [
+          {
+            "name": "horizon.corridorArt.hollow 0:0 flat",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.hollow 0:0 shade",
+            "calls": 2,
+            "instances": null
+          },
+          {
+            "name": "horizon.corridorArt.hollow.fixtures",
+            "calls": 1,
+            "instances": null
+          }
+        ]
+      },
+      "peak": {
+        "calls": 8,
+        "triangles": 9044,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 2,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "VG:station:348:1",
+          "kind": "budget-route",
+          "eye": [
+            972.055,
+            39.473,
+            748.22
+          ],
+          "target": [
+            972.2149722659013,
+            39.473,
+            747.23287849069
+          ],
+          "fov": 58,
+          "district": "hollow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 7874,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "trianglePeak": {
+        "calls": 8,
+        "triangles": 9155,
+        "byCategory": {
+          "furniture": 4,
+          "plants": 2,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "spur stillwater.lamp.19:pool:-1",
+          "kind": "budget-lamp-pool",
+          "eye": [
+            1012.454,
+            45.580999999999996,
+            679.514
+          ],
+          "target": [
+            1011.454,
+            45.580999999999996,
+            679.514
+          ],
+          "fov": 58,
+          "district": "hollow",
+          "source": "Baked anchor +1.65m; no composed surface seating claim"
+        },
+        "frame": 8027,
+        "renderedPlantLayers": [
+          {
+            "name": "Corridor packed:body",
+            "calls": 1,
+            "instances": null
+          },
+          {
+            "name": "Corridor contact",
+            "calls": 1,
+            "instances": 4
+          }
+        ]
+      },
+      "reviewPeak": {
+        "calls": 3,
+        "triangles": 6058,
+        "byCategory": {
+          "furniture": 1,
+          "plants": 0,
+          "shared-road-night": 2
+        },
+        "pose": {
+          "id": "review:mountain-air",
+          "kind": "review-air",
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 58,
+          "district": "prow",
+          "source": "capture-mountain-finish.mjs authored aerial"
+        },
+        "frame": 8031,
+        "renderedPlantLayers": []
+      },
+      "peakPlantCalls": 2,
+      "peakUnculledActivePlantCalls": 2,
+      "status": "complete",
+      "sampledAtMost12": true,
+      "triangleBudget": 10000,
+      "sampledWithinTriangleBudget": true
+    }
+  ],
+  "renderers": [
+    {
+      "theme": "newfoundland",
+      "tier": "lite",
+      "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+      "vendor": "Google Inc. (Google)",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+      "webglMultiDraw": true,
+      "threeRevision": "185",
+      "shadowMapEnabled": false,
+      "viewport": [
+        550,
+        360
+      ],
+      "pixelRatio": 1,
+      "near": 0.08,
+      "far": 4500
+    }
+  ],
+  "errors": [],
+  "limits": [
+    "Finite camera/season samples. A sampled peak below12 is not an exhaustive ROAD district bound or a device acceptance.",
+    "Real WebGL base-pass renderer.info calls, including actual transparent double-sided passes. Shadow maps and other render passes are disabled, matching the existing base-pass corridor budget scope.",
+    "Furniture and plants are isolated to one resident district; the actual globally shared road glow/pool draws are charged in full. Door/threshold geometry is excluded from corridor attribution but still competes under the unchanged shared lighting cap.",
+    "Existing physical objects, authored full/lite geometry, all themes, material hooks, wind and plant residency/fade are retained. Hidden/faded primitives count whenever submitted.",
+    "No terrain, native world, buildings, sky or non-corridor structure geometry is rendered. Ground conformation uses the same baked-terrain approximation as mountain-budgets; no visual/support or occlusion acceptance is claimed.",
+    "Budget route/pool eyes are nominal anchor+1.65m, not newly surface-seated views. Plant-root diagnostics have four explicit headings. Captured review poses, if supplied, are copied exactly and their source/hash is recorded.",
+    "Camera traversal order and existing plant hysteresis are retained within each case; all four seasons and day/night are separate cases. Submitted work, not GPU elapsed time, is measured.",
+    "Any retained capacity report is a separate unmodified reference. Asset hash mismatches are explicit and never silently treated as current evidence. Its per-mesh draw counts are not a guaranteed upper bound on WebGL calls: transparent DoubleSide materials may submit twice.",
+    "The actual builder materials and hooks are used; the live global fog hook/environment is not mounted. This count-only harness is not visual or material-appearance acceptance.",
+    "Plant scale-in time follows the browser clock and is retained, not forced complete. It does not exempt any submitted zero-scale or zero-alpha work from the measured call count."
+  ],
+  "capacityReference": {
+    "path": "/tmp/mountain-packed-capacity-current.json",
+    "sha256": "aebcced79585854a832dcd598f3bba7f46d88295afa19aaf2136aed04b94aed7",
+    "worldSha256": "472dcf42f57f15f9c484185828512804c2b712bb19e1d63cdbb904a72a082600",
+    "terrainSha256": "0dc23c32ca9af9d39f1719fecc5bd7b2f1017562af0f7b2c1bfa046cb44b0c76",
+    "matchesAssets": true
+  },
+  "adapters": [
+    {
+      "path": "src/harbour/horizon/land/terrain/index.ts",
+      "sourceSha256": "5fd5c8225b6d70ad33f6bf611ebf297cc8f34b4abd9db89bcf9304511b08f888",
+      "adaptedSha256": "c3557c3054d850af0330d1cbecd5e2f3fc75c83d8c903f0b970ceb478ef0e57e",
+      "purpose": "Exact baked-grid sampler/revision; encode-only functions throw. No source terrain solve.",
+      "throwingExports": [
+        "conserveBedFootprint",
+        "conserveWaterFootprint",
+        "despikeTerrain"
+      ]
+    },
+    {
+      "path": "src/harbour/mountain/planting.ts",
+      "sourceSha256": "211fe984e4694d7f198837e25f99345c9b357a7213efbac609739f5c97c99687",
+      "adaptedSha256": "77c4429753f87b4bd8756c66d782817261d442a2e628aa1b46d29258ce60b4ed",
+      "purpose": "Exact unit-crown dimensions; native generation is unreachable.",
+      "throwingExports": [
+        "mountainPlanting"
+      ]
+    },
+    {
+      "path": "src/harbour/scene/place.ts",
+      "sourceSha256": "12bc35c40556a12f78c739f03d978e7661213910dcc3133e49592129604a96f0",
+      "adaptedSha256": "2dbc0a3693a15128f65e29d15200c5059c39b40f15b516285a54572ada437f93",
+      "purpose": "Exact three-theme dressing; unrelated place registry/native layout is not imported.",
+      "throwingExports": []
+    }
+  ],
+  "bundleSha256": "859e40a58f3ae00f079bf612f309089316fd403537f8c77b47a0c7952c85360c",
+  "sourceHashes": {
+    "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.core.js": "3718df126d69c125362a03340913204470d8c50238605150e57f808840fb7759",
+    "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.module.js": "bbf5ed13fe4373f5bd38b14ea8e62e9f157327da5638edc6d3863e08b167c9c7",
+    "src/harbour/horizon/runtime/packedInstances.ts": "d7c57c88f6dccc5817aa7ef981282a075789326af2e70da96776db1f29c70a25",
+    "src/harbour/horizon/runtime/orderedContactShade.ts": "0d68301305f51fc6b6c09db78d6002d44c400693fecbf697827128998bf52748",
+    "src/house/world/buildTask.ts": "9893c9447be6cd41188888210de147ded872bb5dd471401063b5b73ba587d82f",
+    "src/harbour/skate/world/profiles.ts": "10b8c9b282bda09bf483bc5609dfc81360066f66dc5b7283181dadd54cdfd414",
+    "src/harbour/skate/world/features.ts": "86ec73f6bfa2d39c1a942d57f0a5fcb00384d7e088b48a7422a614e63d2da4cb",
+    "src/harbour/art/cardKit.ts": "966edb49455a6a13f5c80c7032c39fd171652d667845a65356098215510024a2",
+    "src/harbour/art/cardScene.ts": "97ce87236d5c8f1718e4cb4b6c2d5b447d09046a3552e6607c754349ceed322c",
+    "src/harbour/horizon/world/MANIFEST.json": "718c4e93f1e04ed3fa6fcd0cb63554bd29a09d4e96d5d89d79fab7e8c53343f4",
+    "src/harbour/horizon/world/manifest.ts": "980d0c15f7661077905e48556089e0f63f952221ae1f95345b81600b09e06867",
+    "src/harbour/horizon/world/geometry.ts": "f621ab28a5178289d7139912912bc080f0ca980900f30134406fae3663a4bef3",
+    "src/harbour/horizon/world/districts.ts": "1b2ba82717243f74bc7d9b592cc8409dbb02f6e876e1d85e7715c840601bcc4b",
+    "src/harbour/horizon/land/terrain/geometry.ts": "dce99968a6f68bc6ba4c0225edeb5e331f31c9f6c358579454b424b3375501b4",
+    "src/harbour/horizon/sky/gradient.ts": "bd9c6d4979619eaf1c68f7dbc9e39cb9b04145b5421186bf3c4189629f0d3609",
+    "src/harbour/horizon/sky/night.ts": "34d06c1b89aa19fc46d8d7d5c6db2092e577612d1988f06a3b9e4f8833603811",
+    "src/house/queenStyle.ts": "f27ef7bad56c0c5341e4a29497209dabd1a8c616a850c58a2e15a7fa16561946",
+    "src/theme/scenes.ts": "5b1051333bdae3cb82b96c249ec6f15f6994721ee07fdb5f9bcf2d02a8a807e5",
+    "src/harbour/court/dressing.ts": "44c55768936c7e756de8199f02e3dccf9b9eb1441bb9317bcbb1f0cc76cbff23",
+    "src/harbour/scene/place.ts": "12bc35c40556a12f78c739f03d978e7661213910dcc3133e49592129604a96f0",
+    "src/harbour/mountain/art/palette.ts": "6aae4ed894d73034ae7b418390c0fd0b2c40aa33dde93b60cff92ab654ea006a",
+    "src/harbour/horizon/kit/road/palette.ts": "4585cef381d711261695b8dc5ece12cc385b9191748e2ad933b9ec8834ad6ac2",
+    "src/harbour/horizon/kit/road/frames.ts": "b7aa40bda168265c36b89ea56ef48c54fea0e15c7cead0f4bae040532fcb8d78",
+    "src/harbour/horizon/kit/road/markings.ts": "b38606a994a39cd528e33bb6ab4f27107a8b28221f92aae4cf926bf668c9187a",
+    "src/harbour/horizon/land/corridor/types.ts": "ab461353b5f79c28cfc9f714dea0ab03e088bbbe64c35175143aa4490f6b1753",
+    "src/harbour/horizon/kit/road/guards.ts": "19fdb78e6d10039b264b0e5537e455813e87e8e8ef8e1670cf84cf6ce1d1eef2",
+    "src/harbour/horizon/land/corridor/lights.ts": "a3f5e221bfd0dbdc20cc9c57ae2a78e2adf2ed4ba7091d905d6b88d00c262b67",
+    "src/harbour/horizon/kit/road/lamps.ts": "7715f0b721430f7e1a97e8bc2999cc2bd413045f65ca5d31d9a675ceb6400e55",
+    "src/harbour/horizon/kit/road/stops.ts": "9e96c37dd2c65309e8d1c8d2f629daf1f75cc7b5d210a36f59638b60bd19d0e3",
+    "src/harbour/horizon/runtime/corridorArt.ts": "94ef6f8a065c557b5edab34e98186a10e029b45188402f47c17967ac30264574",
+    "../horizon-complete/node_modules/.pnpm/three@0.185.1/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js": "5c552223a9309883743b80538d6e9cdb45e3227f30d3ec56fb2c39b46e78d595",
+    "src/harbour/mountain/planting.ts": "211fe984e4694d7f198837e25f99345c9b357a7213efbac609739f5c97c99687",
+    "src/harbour/mountain/art/plantArt.ts": "7670bfb5955cdb3e97888af8603a63c2c004d1a9b3ca4604fd33d84bc15a9164",
+    "src/harbour/horizon/kit/plants/materials.ts": "4be2735e72e65fc5567d0c215db7b73681c08a079dc0431790b74b35329f52e7",
+    "src/harbour/horizon/kit/plants/archetypes.ts": "5f6d2e50e1800b522fab7357ad793bb684d2e87a9f217fac1ed01848005a647e",
+    "src/harbour/horizon/kit/plants/geometry.ts": "9a4916b8f06a8158c68c23e02eac92e5b175d5b01b4058110e2e3a7a8c19dba8",
+    "src/harbour/horizon/kit/plants/sets.ts": "1e78b6bcef7a48221d5413f446b041c60e904bb969308cb4f27d306dd3a45ba2",
+    "src/harbour/horizon/runtime/corridorPlanting.ts": "7be4f77e90131f36835f8692d27cf970accc5b94defa8b822f42eaa8e2d3c835",
+    "src/harbour/horizon/runtime/roadLights.ts": "ece234a44c27e09b3419a20773622a6e712031be301c5130b597ee26e05ac543",
+    "src/harbour/horizon/land/terrain/index.ts": "5fd5c8225b6d70ad33f6bf611ebf297cc8f34b4abd9db89bcf9304511b08f888",
+    "src/harbour/horizon/land/terrain/asset.ts": "c25f3a3c45ad43fa7c77c94ec0c68d67d0d9847f82fd378c7fb92ae1c4cd8839"
+  },
+  "adapter": "Three narrow exact-source adapters: crownOf; sceneDressingFrom/SCENE_DRESSING; and GEOGRAPHY_REVISION/sampleTerrain. Only unreachable native planting/terrain encode functions are throwing stubs. All rendered builders, geometry, materials, theme data and the served terrain decoder are unchanged. Native/land graph allowlists are checked before browser launch.",
+  "buildSourceSnapshotAt": "2026-10-01T07:10:03.473Z",
+  "sourceDrift": [],
+  "sampledAllAtMost12": true,
+  "sampledAllWithinTriangleBudget": true,
+  "exhaustiveBudgetAcceptance": false
+}

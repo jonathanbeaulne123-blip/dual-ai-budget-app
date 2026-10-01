@@ -1,0 +1,51 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-baseline-proof
+
+ ❯ test/skate-look-craft.test.ts (12 tests | 2 failed) 587ms
+   ✓ skate look craft · the board is sized to its rider > is a stylised 0.62–0.68 deck with wide trucks, and the soles still stand DECK_TOP above the ride frame 3ms
+   × skate look craft · a skater, not a bench squat > opens the chest toward the nose, turns the head down the line, and turns the knees in 63ms
+     → expected 1.2500000000000007 to be less than 0.9
+   ✓ skate look craft · a skater, not a bench squat > looks the other way riding fakie 20ms
+   ✓ skate look craft · flips stay tight under the feet > turns fastest mid-trick and is square again before the catch 1ms
+   ✓ skate look craft · flips stay tight under the feet > kickflip: the board rises to meet the tuck and spins within 0.12 of the soles, never through them 98ms
+   ✓ skate look craft · flips stay tight under the feet > heelflip: the board rises to meet the tuck and spins within 0.12 of the soles, never through them 23ms
+   ✓ skate look craft · flips stay tight under the feet > pop-shove-it: the board rises to meet the tuck and spins within 0.12 of the soles, never through them 21ms
+   ✓ skate look craft · flips stay tight under the feet > 360-flip: the board rises to meet the tuck and spins within 0.18 of the soles, never through them 17ms
+   ✓ skate look craft · the push > plants the back foot on the ground beside the board, sweeps it back behind the tail truck, and keeps the front foot on the bolts 123ms
+   × skate look craft · grabs > puts the grabbing hand on its edge (within 0.06) for every catalog grab, both avatars, both stances 165ms
+     → bianca regular stalefish: expected 0.06087957077456413 to be less than 0.06
+   ✓ skate look craft · bail and get-up > tumbles at once, and after a respawn ends standing on the board at the new spot 46ms
+   ✓ skate look craft · the authored head turns > twists only above the neck, rebuilds the shader with the chunk, and hands the original material back 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/skate-look-craft.test.ts > skate look craft · a skater, not a bench squat > opens the chest toward the nose, turns the head down the line, and turns the knees in
+AssertionError: expected 1.2500000000000007 to be less than 0.9
+ ❯ test/skate-look-craft.test.ts:101:79
+     99|       const chest=new THREE.Vector3(0,0,1).transformDirection(r.figure…
+    100|       const open=Math.atan2(chest.z,chest.x*toeSign); // 0 = square to…
+    101|       expect(open,`${who} ${stance} chest`).toBeGreaterThan(.35);expec…
+       |                                                                               ^
+    102|       // The plain figure has a head that turns: it looks within ~35° …
+    103|       if(who==='default'){
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/skate-look-craft.test.ts > skate look craft · grabs > puts the grabbing hand on its edge (within 0.06) for every catalog grab, both avatars, both stances
+AssertionError: bianca regular stalefish: expected 0.06087957077456413 to be less than 0.06
+ ❯ test/skate-look-craft.test.ts:199:62
+    197|       const idx=g.hand==='front'?front:1-front;
+    198|       const hand=at(r.figure,`body-hand-${idx===1?'right':'left'}`),ot…
+    199|       expect(hand.distanceTo(edge),`${who} ${stance} ${id}`).toBeLessT…
+       |                                                              ^
+    200|       expect(other.distanceTo(edge)).toBeGreaterThan(.25);
+    201|       // The board comes up toward the rider (knees tucked), not the c…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 10 passed (12)
+   Start at  13:23:22
+   Duration  3.72s (transform 1.34s, setup 0ms, collect 2.61s, tests 587ms, environment 0ms, prepare 150ms)
+

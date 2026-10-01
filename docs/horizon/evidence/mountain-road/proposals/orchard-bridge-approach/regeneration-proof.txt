@@ -1,0 +1,119 @@
+{
+  "status": "UNAPPLIED PURE SOURCE CANDIDATE; no terrain/runtime proof",
+  "sourceSha256": "86fe249963667423a4b9f8c5360f271f6ada0ef1a0bbe9a4a6a1ffb88387d91f",
+  "sourceTrianglesReplaced": 260,
+  "candidateTriangles": 2018,
+  "polygons": 562,
+  "fixedFromRow": 26,
+  "fixedStation": 26.01219006533748,
+  "minimumTriangleArea": 3.176614163100862e-06,
+  "deltaRange": [
+    -0.4507262953235145,
+    0.3051364422803733
+  ],
+  "worstDelta": {
+    "value": -0.4507262953235145,
+    "point": [
+      14.468973712680084,
+      15.746036931075997,
+      -94.99211088466154
+    ],
+    "sourceY": 16.19676322639951,
+    "kind": "overlap"
+  },
+  "maximumGrade": {
+    "value": 0.3584340368878685,
+    "points": [
+      [
+        13.11004484505932,
+        16.540008955982547,
+        -99.21388791201652
+      ],
+      [
+        11.836981901603822,
+        16.61401991812796,
+        -98.41353425736357
+      ],
+      [
+        14.098283360731413,
+        16.325074234282713,
+        -99.26121602146998
+      ]
+    ],
+    "type": "blend",
+    "band": 8,
+    "column": 4
+  },
+  "maximumSampledOverlapError": {
+    "error": 3.552713678800501e-15,
+    "point": [
+      20.639147198449596,
+      16.06460045017687,
+      -97.20732644447436
+    ],
+    "main": {
+      "y": 16.064600450176865,
+      "i": 196,
+      "k": 3
+    },
+    "type": "overlap",
+    "band": 1,
+    "column": 1
+  }
+}
+{
+  "status": "UNAPPLIED flat-cross-section b0 alternative: static candidate only",
+  "sourceSha256": "86fe249963667423a4b9f8c5360f271f6ada0ef1a0bbe9a4a6a1ffb88387d91f",
+  "triangleCount": 2121,
+  "oldTriangleCount": 260,
+  "netTriangles": 1861,
+  "vertexCount": 1111,
+  "fixedVertices": 686,
+  "iterations": 3117,
+  "elapsedS": 31.06564075,
+  "maximumNewLongitudinalGrade": [
+    0.11999009558414997,
+    1150
+  ],
+  "maxNewFacetGrade": [
+    0.25000000000035283,
+    1226
+  ],
+  "deltaRange": [
+    -0.4507262953235145,
+    0.3051364422803733
+  ],
+  "bridgeDeltaRange": [
+    -0.3618198295362376,
+    0.0
+  ],
+  "fixedFromOriginalRow": 26,
+  "modifiedBridge": "b0",
+  "bridgeRowY": {
+    "8": 16.25220008859172,
+    "9": 16.366577737951136,
+    "10": 16.472310941225945,
+    "11": 16.578626461714517,
+    "12": 16.692880491602672,
+    "13": 16.809719003498763,
+    "14": 16.918885495176937,
+    "15": 17.021282440208026,
+    "16": 17.118300397328024,
+    "17": 17.211782105509517,
+    "18": 17.30384340815399,
+    "19": 17.396812200957022,
+    "20": 17.49423020934998,
+    "21": 17.59706942328228,
+    "22": 17.703483977029062,
+    "23": 17.812426818360077,
+    "24": 17.923131395900185,
+    "25": 18.022329101684075
+  }
+}
+{
+  "exactGeneratedObject": true,
+  "elapsedSeconds": 31.132716000000002,
+  "triangles": 2121,
+  "vertices": 1111,
+  "output": "/private/tmp/mountain-orchard-reproduced/orchardJunction.generated.json"
+}

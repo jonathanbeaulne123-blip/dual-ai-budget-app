@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizon-mountain-light-tiers.test.ts (3 tests) 70ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  12:23:05
+   Duration  1.43s (transform 485ms, setup 0ms, collect 1.14s, tests 70ms, environment 0ms, prepare 60ms)
+

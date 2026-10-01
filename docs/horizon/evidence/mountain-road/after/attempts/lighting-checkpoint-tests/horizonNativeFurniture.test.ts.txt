@@ -1,0 +1,31 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ❯ test/horizonNativeFurniture.test.ts (5 tests | 1 failed) 2550ms
+   ✓ native mountain furniture uses its real environment > recognizes the rendered reservoir and solid pavilion columns absent from ordinary Horizon cuts 4ms
+   ✓ native mountain furniture uses its real environment > rejects mature crowns which would overlap an existing native tree although the new trunk is clear 5ms
+   ✓ native mountain furniture uses its real environment > keeps one supported library garden stop with its whole walking attachment clear 292ms
+   ✓ native mountain furniture uses its real environment > lights both Stillwater portal approaches without adding a main-road centre line 9ms
+   × native mountain furniture uses its real environment > lights both running lanes through the real bend spans with supported posts outside every running lane and walking section 2239ms
+     → expected 20 to be greater than 20
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/horizonNativeFurniture.test.ts > native mountain furniture uses its real environment > lights both running lanes through the real bend spans with supported posts outside every running lane and walking section
+AssertionError: expected 20 to be greater than 20
+ ❯ test/horizonNativeFurniture.test.ts:75:22
+     73|       }
+     74|     }
+     75|     expect(measured).toBeGreaterThan(20);
+       |                      ^
+     76|   });
+     77| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 passed (5)
+   Start at  12:28:52
+   Duration  5.00s (transform 1.01s, setup 0ms, collect 2.20s, tests 2.55s, environment 0ms, prepare 57ms)
+

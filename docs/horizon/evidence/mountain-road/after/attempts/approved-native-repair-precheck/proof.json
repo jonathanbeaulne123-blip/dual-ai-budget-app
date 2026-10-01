@@ -1,0 +1,114 @@
+{
+  "method": "Serial actual native modules in separate esbuild module graphs; candidate changes only the virtual /tmp overlay. Exact JSON byte comparison of both full planting plans, props, placement inputs, branch payloads and bridge frames.",
+  "passed": true,
+  "footprintChanged": true,
+  "raceRevisionChanged": true,
+  "baselineRaceRevision": "hearth-mountain-2-4d449d9d",
+  "candidateRaceRevision": "hearth-mountain-2-cd7d4bc3",
+  "baselineRoadFootprintSha256": "3085d7e75bb81bcb6ba1d909a31fcfa786d6f5ffc05ec317232e80301c021468",
+  "candidateRoadFootprintSha256": "8a32a1211074c1fe245e8137264af22712b3381c8bcd45356ae779f67695e513",
+  "baselineBundleSha256": "cc495ec208053e3f482a88722e35822debba1b018b10334afefd772fee27dd42",
+  "candidateBundleSha256": "4a832e412959c19a5eedb624f9f8f89a32a52b718c262a99b0d0e6471105c005",
+  "checks": {
+    "full": {
+      "byteEqual": true,
+      "baselineHash": "74ee399d7fb48e030615fa88b1533ada5a2556497ff2c5ce1180009befe91627",
+      "candidateHash": "74ee399d7fb48e030615fa88b1533ada5a2556497ff2c5ce1180009befe91627"
+    },
+    "lite": {
+      "byteEqual": true,
+      "baselineHash": "dd18756674c2a3b94b336a9257b581952d1f72fc277004cebd89f80043fd4c08",
+      "candidateHash": "dd18756674c2a3b94b336a9257b581952d1f72fc277004cebd89f80043fd4c08"
+    },
+    "props": {
+      "byteEqual": true,
+      "baselineHash": "b0f202152a9646ac5785a46fbf63a1372341356beca62a1078d57e8c655fffe8",
+      "candidateHash": "b0f202152a9646ac5785a46fbf63a1372341356beca62a1078d57e8c655fffe8"
+    },
+    "districtFixtures": {
+      "byteEqual": true,
+      "baselineHash": "1314f48fb285410c97288ca586e3d8558be1eeb81512aac3b487d69f54cdae29",
+      "candidateHash": "1314f48fb285410c97288ca586e3d8558be1eeb81512aac3b487d69f54cdae29"
+    },
+    "pavilionColumns": {
+      "byteEqual": true,
+      "baselineHash": "ac76342229552b48f59fe621d9ca41873864522beb61f20bc9eba2a4361870af",
+      "candidateHash": "ac76342229552b48f59fe621d9ca41873864522beb61f20bc9eba2a4361870af"
+    },
+    "stationSolids": {
+      "byteEqual": true,
+      "baselineHash": "7b670ea32fdb1f6b4595f9faf3429f35f2b067d496e78e55a9214dcb4438ffc1",
+      "candidateHash": "7b670ea32fdb1f6b4595f9faf3429f35f2b067d496e78e55a9214dcb4438ffc1"
+    },
+    "summitSolids": {
+      "byteEqual": true,
+      "baselineHash": "bdfbb980b1c33d6a8b3d02364ed94d0704f2726a2825f9384e355a6663a2d2a4",
+      "candidateHash": "bdfbb980b1c33d6a8b3d02364ed94d0704f2726a2825f9384e355a6663a2d2a4"
+    },
+    "strataFull": {
+      "byteEqual": true,
+      "baselineHash": "2aaa325712ddafc331611ddd2735c12640a47338f6a8bf9d5dba59be7d756267",
+      "candidateHash": "2aaa325712ddafc331611ddd2735c12640a47338f6a8bf9d5dba59be7d756267"
+    },
+    "strataLite": {
+      "byteEqual": true,
+      "baselineHash": "f4b0bc9f1dc8fbb5316dc1bb152305ec27d61caa68656994be8e8fcdb86430be",
+      "candidateHash": "f4b0bc9f1dc8fbb5316dc1bb152305ec27d61caa68656994be8e8fcdb86430be"
+    },
+    "placementFrames": {
+      "byteEqual": true,
+      "baselineHash": "acefbc954c99b40977c4d5fdd0273874a8fff9b79bb582d968913df76d395f56",
+      "candidateHash": "acefbc954c99b40977c4d5fdd0273874a8fff9b79bb582d968913df76d395f56"
+    },
+    "firstRails": {
+      "byteEqual": true,
+      "baselineHash": "27c6ab9fba4eead4504495df41c8666276387d24464f22d8e804a6ab2f154912",
+      "candidateHash": "27c6ab9fba4eead4504495df41c8666276387d24464f22d8e804a6ab2f154912"
+    },
+    "allBranchPayload": {
+      "byteEqual": true,
+      "baselineHash": "9adc393189d1518aad68b4cd7eb3c206288573a1961f1e2e1081b2968eed1cf1",
+      "candidateHash": "9adc393189d1518aad68b4cd7eb3c206288573a1961f1e2e1081b2968eed1cf1"
+    },
+    "bridgeFrames": {
+      "byteEqual": true,
+      "baselineHash": "19b118c259541bdb2527cbdd3783ae6d37ac8fd6a5b85acdfef6f386e665a9c8",
+      "candidateHash": "19b118c259541bdb2527cbdd3783ae6d37ac8fd6a5b85acdfef6f386e665a9c8"
+    },
+    "bridges": {
+      "byteEqual": true,
+      "baselineHash": "60fcdf7a2ace46092072c34cc4566bdc1491282b0ce86f1b1432aca642b3770b",
+      "candidateHash": "60fcdf7a2ace46092072c34cc4566bdc1491282b0ce86f1b1432aca642b3770b"
+    }
+  },
+  "sourceHashes": {
+    "src/harbour/mountain/roads.ts": {
+      "baseline": "df95e75bd9b3c80537b9b2ed144af675630be1b81cba85123d2de90cf55c31c8",
+      "candidate": "38b2bc1cbdf3ed4fbd9834556a2aed3269a9dc58d483d5622936aedd2a47e01d"
+    },
+    "src/harbour/mountain/roadFrameFairing.ts": {
+      "baseline": null,
+      "candidate": "4495336278402918fd6a82109c960a800bb785151ca8efdc5127f2931c68b6cf"
+    },
+    "src/harbour/mountain/roadPlacement.ts": {
+      "baseline": null,
+      "candidate": "7d6b98f0c98a08fef17e4e8b0c82e78f6938165fe6d9888714a039be70e46d54"
+    },
+    "src/harbour/mountain/planting.ts": {
+      "baseline": "37d58c29cee5c08de35b26874e18c3e31e70995da15f8e40d11dd5c82261208b",
+      "candidate": "66797e404e0bbdce0a048cbc5c8461080b3bf9268b275113c7016e48910a63fb"
+    },
+    "src/harbour/mountain/art/placements.ts": {
+      "baseline": "ffe25a8da2779b761115fa1c7283fd3fc16eb2082632f7df0019cb4e61482f02",
+      "candidate": "f4deb78ce7653073be27a43a1b2c42b95df96a10085ef73eee04725e117d53bc"
+    },
+    "src/harbour/mountain/art/townArt.ts": {
+      "baseline": "191b7b651f6bede70e9efba69756e975a3b4a778ba0be7cda4964e31448d29de",
+      "candidate": "aeeb5c9d2ff3f4f2fbb91b8d01ebba35e4c80a16ed523a74f9a10b9aca03dfc5"
+    },
+    "src/harbour/mountain/course.ts": {
+      "baseline": "a882445483f32864d2a1704006f4b7f0d77fbbf5bf4e2fe527b00d9ff3737b33",
+      "candidate": "6bee4253f9dfdae0e648681e648fb57483381429206c89f65ae4ba436ad47a8a"
+    }
+  }
+}

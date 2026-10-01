@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/skate-show-camera.test.ts (15 tests) 225ms
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  13:08:47
+   Duration  2.61s (transform 871ms, setup 0ms, collect 1.92s, tests 225ms, environment 0ms, prepare 129ms)
+

@@ -1,0 +1,23 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/journey-board-model.test.ts > Journey Board model — households > derives the demo household in under 400 ms (warm median on this machine; not a phone budget — review M2)
+[journey-board-model] deriveJourneyBoard(demo) warm median: 225.4 ms (runs 260.8 / 239.9 / 217.4 / 225.4 / 196.0)
+
+ ✓ test/journey-board-model.test.ts (42 tests) 9194ms
+   ✓ Journey Board model — identity > re-derives identically, and a JSON round-trip of the household changes nothing  631ms
+   ✓ Journey Board model — identity > importing the SAME record twice keeps one stop that says so, never a doubled figure (review M3)  642ms
+   ✓ Journey Board model — board shape > a lagging open Chapter is close-due, waits the piece's hint, and never blocks today  1856ms
+   ✓ Journey Board model — an appointment occurrence keeps its stop id once posted (PR #567 review) > overdue this month: posted today ("the full cost posts today"), the SAME stop turns Paid  478ms
+   ✓ Journey Board model — an appointment occurrence keeps its stop id once posted (PR #567 review) > carried from last month: posted today ("the full cost posts today"), the SAME stop turns Paid  440ms
+   ✓ Journey Board model — an appointment occurrence keeps its stop id once posted (PR #567 review) > due today: posted today ("the full cost posts today"), the SAME stop turns Paid  453ms
+   ✓ Journey Board model — memories, milestones, crossroads > keeps a shared Win on the board while its adopted memory waits on a member, or after it is withdrawn (PR #567 review)  364ms
+   ✓ Journey Board model — households > keeps a busy month legible: every bill one stop, shared dates clustered, ids unchanged elsewhere  309ms
+   ✓ Journey Board model — households > reads the months outside the day ledger's direct range exactly as the day ledger does  720ms
+   ✓ Journey Board model — households > derives the demo household in under 400 ms (warm median on this machine; not a phone budget — review M2)  1369ms
+
+ Test Files  1 passed (1)
+      Tests  42 passed (42)
+   Start at  12:49:28
+   Duration  16.49s (transform 3.77s, setup 0ms, collect 6.73s, tests 9.19s, environment 0ms, prepare 182ms)
+

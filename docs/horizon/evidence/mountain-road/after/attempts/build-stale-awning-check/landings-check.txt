@@ -1,0 +1,9 @@
+{"bytes":25248,"sourceSha256":"4b8bd8e7da399b68275f264f20a07b07d03c3359710c828145e494595e2d2a2a","maxGrade":0.39501155406641003,"maxConstraintDeficit":0.002040069183337323,"maxCrossfall":0.27949754719643494,"iterations":1500,"vertices":350,"triangles":552,"constraints":27893}
+file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/mountain-road-book/scripts/generate-mountain-landings.mjs:75
+  if(process.argv.includes('--check')){if(await readFile(awningTarget,'utf8')!==awningText)throw new Error('Stale awning landing: run node scripts/generate-mountain-landings.mjs');}
+                                                                                                 ^
+
+Error: Stale awning landing: run node scripts/generate-mountain-landings.mjs
+    at file:///Users/jonathanbeaulne/Documents/ChatGPT/budget%20app%202/.codex-work/mountain-road-book/scripts/generate-mountain-landings.mjs:75:98
+
+Node.js v24.21.0

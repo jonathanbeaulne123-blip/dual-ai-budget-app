@@ -1,0 +1,37 @@
+[
+  {
+    "name": "prepare-old-ground",
+    "elapsedMs": 959.1510000000001,
+    "tier": "full"
+  },
+  {
+    "name": "old-ground-ready",
+    "elapsedMs": 14256.966875,
+    "tier": "full",
+    "triangles": 1012,
+    "prepareMs": 13274.326625
+  },
+  {
+    "name": "prepare-old-ground",
+    "elapsedMs": 14258.336458,
+    "tier": "lite"
+  },
+  {
+    "name": "old-ground-ready",
+    "elapsedMs": 19616.359958,
+    "tier": "lite",
+    "triangles": 420,
+    "prepareMs": 5356.339582999999
+  },
+  {
+    "name": "uniform-samples",
+    "elapsedMs": 20282.879333,
+    "samples": 70731
+  },
+  {
+    "name": "candidate-rings",
+    "elapsedMs": 20580.994791,
+    "rings": 7,
+    "samples": 35028
+  }
+]

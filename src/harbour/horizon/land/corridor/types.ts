@@ -54,6 +54,8 @@ export interface CorridorSide {
   waterEu: number | null;
   /** Outer offset of the paved carriageway incl. shoulder on this side (always positive). */
   paved: number;
+  /** Actual source-owned rail offset, when it differs from the Horizon kit's setback. */
+  guardOffset?: number;
   /** Footway band on this side (sidewalk or Year Walk), absolute offsets from the centreline. */
   footway?: { inner: number; outer: number; height: number; bedId?: string };
   /** Planting band allowed on this side (ROAD.md §5), absolute offsets; absent = nothing grows here. `maxHeight` (optional,
@@ -93,7 +95,7 @@ export interface MarkingRun { id: string; kind: MarkingKind; from: number; to: n
 
 export type GuardEnd = 'flare' | 'buried' | 'pier' | 'abutment' | 'continues';
 /** A guard run: the visible rail kit and its collider are both built from `line` (the rail's centre at ground). */
-export interface GuardRun { id: string; side: 'left' | 'right'; kind: GuardKind; from: number; to: number; offset: number; height: number; line: Point3[]; ends: readonly [GuardEnd, GuardEnd]; colliderId: string }
+export interface GuardRun { id: string; side: 'left' | 'right'; kind: GuardKind; from: number; to: number; offset: number; height: number; line: Point3[]; ends: readonly [GuardEnd, GuardEnd]; colliderId: string; owner?: 'region' }
 
 export type LampKind = 'roadLantern' | 'bridgeLantern' | 'tunnelLamp' | 'bollard';
 /** A streetlight. `at` is the base on the ground/footway; `head` is the lamp head; `pool` is where its light lands. */
@@ -114,7 +116,7 @@ export interface PlantItem {
 export interface PlantingGroup { id: string; kind: PlantingKind; reachId: string; side: 'left' | 'right' | 'median'; items: PlantItem[] }
 
 /** A scenic stopping place: a usable pull-off or viewpoint joined to the road and, where there is one, a walk. */
-export interface ScenicStop { id: string; label: string; at: Point3; outline: Point2[]; facing: number; connectsTo?: string[] }
+export interface ScenicStop { id: string; label: string; at: Point3; outline: Point2[]; facing: number; connectsTo?: string[]; existingFloor?: boolean }
 
 export interface Corridor {
   /** The road bed id (V01, VG, V03, VBS, spur.*). */
@@ -127,8 +129,13 @@ export interface Corridor {
   markings: MarkingRun[];
   guards: GuardRun[];
   lamps: LampSpot[];
+  /** IDs retained on lite; other whole lamps are omitted. Retained lamps keep their authored shape. */
+  liteLampIds?: string[];
   planting: PlantingGroup[];
   stops: ScenicStop[];
+  /** Furniture/map adapter over a source-owned road; no second deck or guard is emitted. */
+  source?: 'mountain-v2';
+  sourceBridges?: {id:string;name:string;axis:Point3[];width:number}[];
 }
 
 /** Shared section dimensions (engine units). Widths come from MANIFEST profiles (CONTRACT §3); these are the kit's. */

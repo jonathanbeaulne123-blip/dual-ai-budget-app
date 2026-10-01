@@ -21,12 +21,14 @@
  */
 import * as THREE from 'three';
 import type { LightAnchor, WorldDefinition } from '../world/definition.ts';
-import { corridorLightAnchors } from '../land/corridor/lights.ts';
+import { corridorLightAnchors, lampsForTier } from '../land/corridor/lights.ts';
 import { LIGHT_CARD_SHARES, NIGHT_LIGHT_CARDS, ROAD_LIGHTS, roadLampDelay, roadLampRamp, type RoadLampKind } from '../sky/night.ts';
 
 export type RoadLightsWorld = Pick<WorldDefinition, 'lights'> & Partial<Pick<WorldDefinition, 'beds' | 'corridors'>>;
 export interface RoadLightsOptions {
   tier: 'full' | 'lite';
+  /** Exact retained/themed fixtures from corridorArt, including scenic-stop fallback lamps. */
+  corridorAnchors?:readonly LightAnchor[];
   /** The walkable surface height at (x, z) nearest `near` (at most ~1 eu above it), or null. Wire to
    * `(x,z,near)=>geography.surface(x,z,near+1,0)?.y??null`. Absent: pools lie flat at the pool point (tests). */
   ground?: (x: number, z: number, near: number) => number | null;
@@ -77,8 +79,13 @@ interface Line { id: string; count: number; on: boolean; since: number }
 export function createRoadLights(scene: THREE.Scene, world: RoadLightsWorld, options: RoadLightsOptions): RoadLights {
   const tier = options.tier, cap = NIGHT_LIGHT_CARDS[tier], share = LIGHT_CARD_SHARES[tier];
   // ---- anchors: the definition's, plus corridor lamps the bake has not merged yet ----
-  const all: LightAnchor[] = [...world.lights];
-  if (world.corridors?.length) { const have = new Set(all.map(a => a.id)); for (const a of corridorLightAnchors(world.corridors)) if (!have.has(a.id)) all.push(a); }
+  const corridors=world.corridors??[],owned=new Set(corridors.flatMap(c=>c.lamps.map(l=>l.id)));
+  const selected=options.corridorAnchors??corridorLightAnchors(corridors.map(c=>({...c,lamps:[...lampsForTier(c,tier)]})));
+  const chosen=new Map(selected.map(a=>[a.id,a]));
+  // Resolve legacy missing anchors and tier selection together: fallback expansion
+  // must never resurrect a lamp whose physical fixture was intentionally omitted.
+  const all:LightAnchor[]=world.lights.filter(a=>!owned.has(a.id)||chosen.has(a.id)).map(a=>options.corridorAnchors?(chosen.get(a.id)??a):a);
+  const have=new Set(all.map(a=>a.id));for(const a of selected)if(!have.has(a.id)){all.push(a);have.add(a.id);}
   const lamps: Lamp[] = [], anchors: { a: LightAnchor; stud: boolean }[] = [], lines: Line[] = [], lineIndex = new Map<string, number>();
   for (const a of all) {
     if (!isRoadKind(a.kind)) { anchors.push({ a, stud: a.kind === 'threshold' && onRoad(a, world.beds ?? []) }); continue; }

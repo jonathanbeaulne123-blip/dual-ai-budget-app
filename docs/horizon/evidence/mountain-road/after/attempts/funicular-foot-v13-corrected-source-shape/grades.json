@@ -1,0 +1,192 @@
+{
+  "scope": "Shape only; physical movement, art, ground and full boundary proof still required",
+  "failure": null,
+  "bundleSha256": "b5ccbc1e4f1146f69bcd85e8649ba3780d251f3d136fb56f22295a7fad03c985",
+  "triangles": 14288,
+  "topFaces": 5487,
+  "maxDegrees": 38.33764731814736,
+  "minPlanAltitude": 2.2603504107889855e-9,
+  "maxSampledFieldError": 0.0639432021351638,
+  "fieldErrorSampling": "vertices, edge midpoints, face centroids; not an exact supremum",
+  "steep": [],
+  "nonmanifoldEdges": 0,
+  "plankOverlapArea": 1.8447807547395565e-14,
+  "flips": [
+    {
+      "oldFaces": [
+        [
+          6794,
+          6824,
+          6818
+        ],
+        [
+          6794,
+          6818,
+          6792
+        ]
+      ],
+      "newFaces": [
+        [
+          6824,
+          6792,
+          6794
+        ],
+        [
+          6792,
+          6824,
+          6818
+        ]
+      ],
+      "oldDegrees": 64.3566847950556,
+      "newDegrees": 19.985546891004077,
+      "crossingHeightChange": 0.03923128784293432
+    },
+    {
+      "oldFaces": [
+        [
+          3754,
+          3990,
+          3992
+        ],
+        [
+          3754,
+          3992,
+          3988
+        ]
+      ],
+      "newFaces": [
+        [
+          3990,
+          3988,
+          3754
+        ],
+        [
+          3988,
+          3990,
+          3992
+        ]
+      ],
+      "oldDegrees": 86.54013322645524,
+      "newDegrees": 52.48114040412121,
+      "crossingHeightChange": -0.02651798410603207
+    },
+    {
+      "oldFaces": [
+        [
+          3512,
+          3742,
+          3744
+        ],
+        [
+          3512,
+          3740,
+          3742
+        ]
+      ],
+      "newFaces": [
+        [
+          3744,
+          3740,
+          3742
+        ],
+        [
+          3740,
+          3744,
+          3512
+        ]
+      ],
+      "oldDegrees": 48.7407981513494,
+      "newDegrees": 19.29004621918811,
+      "crossingHeightChange": -0.006412351035016389
+    },
+    {
+      "oldFaces": [
+        [
+          3512,
+          3744,
+          3736
+        ],
+        [
+          3740,
+          3744,
+          3512
+        ]
+      ],
+      "newFaces": [
+        [
+          3736,
+          3740,
+          3744
+        ],
+        [
+          3740,
+          3736,
+          3512
+        ]
+      ],
+      "oldDegrees": 44.00141790764172,
+      "newDegrees": 20.68991766123181,
+      "crossingHeightChange": -0.002131681253816617
+    },
+    {
+      "oldFaces": [
+        [
+          906,
+          902,
+          910
+        ],
+        [
+          906,
+          908,
+          902
+        ]
+      ],
+      "newFaces": [
+        [
+          910,
+          908,
+          902
+        ],
+        [
+          908,
+          910,
+          906
+        ]
+      ],
+      "oldDegrees": 40.11011199594717,
+      "newDegrees": 20.220664607321016,
+      "crossingHeightChange": -0.02852649486245403
+    },
+    {
+      "oldFaces": [
+        [
+          3990,
+          3988,
+          3754
+        ],
+        [
+          3754,
+          3988,
+          3752
+        ]
+      ],
+      "newFaces": [
+        [
+          3990,
+          3752,
+          3754
+        ],
+        [
+          3752,
+          3990,
+          3988
+        ]
+      ],
+      "oldDegrees": 52.48114040412121,
+      "newDegrees": 38.32356417652609,
+      "crossingHeightChange": -0.026975206449495047
+    }
+  ],
+  "sourceRoutesPreserved": true,
+  "existingSolidsPreserved": true
+}

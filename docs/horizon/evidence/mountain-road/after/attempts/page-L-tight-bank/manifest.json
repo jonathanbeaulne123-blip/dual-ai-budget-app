@@ -1,0 +1,32 @@
+[
+  {
+    "source": "/tmp/mountain-page-L-tight-bank-observed/report.json",
+    "savedAs": "report.json.gz",
+    "bytes": 621725,
+    "sha256": "ead796010fb6fe3b00f32dd4445c31291441f3d513e501bcd27e3707612f8959"
+  },
+  {
+    "source": "/tmp/mountain-page-L-tight-bank-observed/runtime.mjs",
+    "savedAs": "runtime.mjs.gz",
+    "bytes": 402329,
+    "sha256": "9a6a593309aaed047e15d9c8ef6837467f7078316d35930beb6b1c2c38b30e9e"
+  },
+  {
+    "source": "/tmp/mountain-page-L-tight-bank-observed/terrain-readonly-adapter.ts",
+    "savedAs": "terrain-readonly-adapter.ts",
+    "bytes": 1104,
+    "sha256": "ad03b52c4cf70c47af7f8e49ad4bbad92f1619f7791f4ac092e66ec62de09ee9"
+  },
+  {
+    "source": "/tmp/mountain-page-L-tight-bank-probe.mjs",
+    "savedAs": "mountain-page-L-tight-bank-probe.mjs",
+    "bytes": 15477,
+    "sha256": "2afd982713507d0f653bf80f1ee405cda6ddc30369f4c8defd1fbe6247132a13"
+  },
+  {
+    "source": "/tmp/mountain-page-L-tight-bank-observed.txt",
+    "savedAs": "mountain-page-L-tight-bank-observed.txt",
+    "bytes": 549,
+    "sha256": "b842c0133160b49f0f1975a0c419da850d3196bfaf955fe1ebe1b47f73349a4b"
+  }
+]

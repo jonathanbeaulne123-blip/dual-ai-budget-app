@@ -1,0 +1,41 @@
+{
+  "id": "mountainV2.funicularFoot.apron@lakeside",
+  "renderOrigin": [
+    1286,
+    55,
+    726
+  ],
+  "triangles": 16036,
+  "topologyFailures": 0,
+  "topologyWitnesses": [],
+  "rows": [
+    {
+      "variant": "served",
+      "topFaces": 6573,
+      "collapsed": 0,
+      "inverted": 0,
+      "runtimeInvisible": 0,
+      "steep": 0,
+      "maxDegrees": 37.821983491710874
+    },
+    {
+      "variant": "local_float32",
+      "topFaces": 6573,
+      "collapsed": 0,
+      "inverted": 0,
+      "runtimeInvisible": 0,
+      "steep": 0,
+      "maxDegrees": 37.824249417963514
+    },
+    {
+      "variant": "absolute_float32",
+      "topFaces": 6573,
+      "collapsed": 9,
+      "inverted": 23,
+      "runtimeInvisible": 0,
+      "steep": 20,
+      "maxDegrees": 180.0
+    }
+  ],
+  "limits": "Actual served coordinate/topology arithmetic only. No GPU, movement or source-fixture parity claim."
+}

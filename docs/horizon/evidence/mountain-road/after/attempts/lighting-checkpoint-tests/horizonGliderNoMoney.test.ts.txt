@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/horizonGliderNoMoney.test.ts (49 tests) 28ms
+
+ Test Files  1 passed (1)
+      Tests  49 passed (49)
+   Start at  12:26:39
+   Duration  278ms (transform 28ms, setup 0ms, collect 29ms, tests 28ms, environment 0ms, prepare 58ms)
+

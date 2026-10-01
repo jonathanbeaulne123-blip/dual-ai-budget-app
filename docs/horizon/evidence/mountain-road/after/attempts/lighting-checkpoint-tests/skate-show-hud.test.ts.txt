@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+ ✓ test/skate-show-hud.test.ts (14 tests) 549ms
+
+ Test Files  1 passed (1)
+      Tests  14 passed (14)
+   Start at  13:09:00
+   Duration  3.76s (transform 782ms, setup 0ms, collect 1.84s, tests 549ms, environment 855ms, prepare 140ms)
+

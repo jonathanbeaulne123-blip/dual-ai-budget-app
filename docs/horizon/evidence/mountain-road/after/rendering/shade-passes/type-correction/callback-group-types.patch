@@ -1,0 +1,30 @@
+--- a/src/harbour/horizon/runtime/orderedContactShade.ts
++++ b/src/harbour/horizon/runtime/orderedContactShade.ts
+@@ -76,7 +76,8 @@
+   }
+   mesh.onBeforeRender = function(...args) {
+     before.apply(mesh, args); reset();
+-    const group = args[5], side = group === backGroup ? 0 : group === frontGroup ? 1 : -1;
++    // r185 supplies a GeometryGroup here; installed @types declares a scene Group.
++    const group = args[5] as unknown as THREE.BufferGeometry['groups'][number] | null, side = group === backGroup ? 0 : group === frontGroup ? 1 : -1;
+     const counts = classify(args[2]);
+     if (group && side >= 0 && !counts.unsupported) {
+       const start = geometry.drawRange.start, count = Math.min(source.length - start, geometry.drawRange.count); let write = start;
+--- a/test/horizon-ordered-contact-shade.test.ts
++++ b/test/horizon-ordered-contact-shade.test.ts
+@@ -21,12 +21,12 @@
+ }
+ function draw(m: THREE.Mesh, c: THREE.Camera, pass: 0 | 1) {
+   m.updateMatrixWorld(true); c.updateMatrixWorld(true);
+-  // This is the same group object retained by r185's already-built render list.
++  // This is the same geometry group retained by r185; only @types mistakes it for a scene Group.
+   const group = m.geometry.groups[pass]!, mat = (m.material as THREE.Material[])[pass]!;
+-  m.onBeforeRender({} as THREE.WebGLRenderer, {} as THREE.Scene, c, m.geometry, mat, group);
++  m.onBeforeRender({} as THREE.WebGLRenderer, {} as THREE.Scene, c, m.geometry, mat, group as unknown as Parameters<THREE.Mesh['onBeforeRender']>[5]);
+   const start = Math.max(group.start, m.geometry.drawRange.start), end = Math.min(group.start + group.count, m.geometry.drawRange.start + m.geometry.drawRange.count, m.geometry.index!.count);
+   const result = {indices: Array.from(m.geometry.index!.array.slice(start, end)), group, counts: {...m.userData.contactShadeCounts}, state: m.userData.contactShadePass};
+-  m.onAfterRender({} as THREE.WebGLRenderer, {} as THREE.Scene, c, m.geometry, mat, group);
++  m.onAfterRender({} as THREE.WebGLRenderer, {} as THREE.Scene, c, m.geometry, mat, group as unknown as Parameters<THREE.Mesh['onAfterRender']>[5]);
+   return result;
+ }
+ function install(m: THREE.Mesh, p = materials()) {

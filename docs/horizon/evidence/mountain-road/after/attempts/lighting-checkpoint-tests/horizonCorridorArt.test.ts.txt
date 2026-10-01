@@ -1,0 +1,16 @@
+
+ RUN  v3.2.7 /Users/jonathanbeaulne/Documents/ChatGPT/budget app 2/.codex-work/mountain-road-book
+
+stdout | test/horizonCorridorArt.test.ts > Horizon road kit (ROAD.md §4) > the fixture stays within ROAD.md §8 (≤ 25k triangles full / 10k lite, ≤ 12 draw calls per district) in every dressing
+[road kit fixture budget] {"classic/full":{"art":{"drawCalls":9,"triangles":4198,"instances":22},"solidsPaint":7478,"lamps":8},"classic/lite":{"art":{"drawCalls":9,"triangles":2418,"instances":17},"solidsPaint":2120,"lamps":8},"taylor/full":{"art":{"drawCalls":9,"triangles":3660,"instances":22},"solidsPaint":7478,"lamps":8},"taylor/lite":{"art":{"drawCalls":9,"triangles":2904,"instances":17},"solidsPaint":2120,"lamps":8},"newfoundland/full":{"art":{"drawCalls":9,"triangles":3886,"instances":22},"solidsPaint":7478,"lamps":8},"newfoundland/lite":{"art":{"drawCalls":9,"triangles":3332,"instances":17},"solidsPaint":2120,"lamps":8}}
+
+ ✓ test/horizonCorridorArt.test.ts (10 tests) 3907ms
+   ✓ Horizon road kit (ROAD.md §4) > corridor solids paint on their own triangles (finite, bounded, the deck on the collision surface) and guards are never drawn  1936ms
+   ✓ Horizon road kit (ROAD.md §4) > guard art stays within the GuardRun line ± its kit half-width (collider line + thickness), in every dressing  1102ms
+   ✓ Horizon road kit (ROAD.md §4) > three dressings build every lamp kind, differently (materials, not tint), with the head where LAMP_HEAD says  330ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  12:26:03
+   Duration  5.22s (transform 529ms, setup 0ms, collect 1.03s, tests 3.91s, environment 0ms, prepare 62ms)
+

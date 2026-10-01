@@ -1,0 +1,44 @@
+[
+  {
+    "source": "/tmp/mountain-page-L-observed/report.json",
+    "savedAs": "report.json",
+    "originalBytes": 41099,
+    "originalSha256": "1e19d281562eeece8d2a41b6892e31b609a33e796250c56046b5759bfac775a1"
+  },
+  {
+    "source": "/tmp/mountain-page-L-observed/runtime.mjs",
+    "savedAs": "runtime.mjs.gz",
+    "originalBytes": 401750,
+    "originalSha256": "61f3b0ce26e06417e9bec94f2c5a91e6d982929acdad842ff826b0834421649c"
+  },
+  {
+    "source": "/tmp/mountain-page-L-observed/terrain-readonly-adapter.ts",
+    "savedAs": "terrain-readonly-adapter.ts",
+    "originalBytes": 1104,
+    "originalSha256": "ad03b52c4cf70c47af7f8e49ad4bbad92f1619f7791f4ac092e66ec62de09ee9"
+  },
+  {
+    "source": "/tmp/mountain-page-L-diagnostic.mjs",
+    "savedAs": "mountain-page-L-diagnostic.mjs",
+    "originalBytes": 7679,
+    "originalSha256": "7ee294517fc6ccccd28f3977e6a1088c25978b5d7f1059fa8bbb771e3df04980"
+  },
+  {
+    "source": "/tmp/mountain-page-L-observed.txt",
+    "savedAs": "mountain-page-L-observed.txt",
+    "originalBytes": 276,
+    "originalSha256": "7e0eab22f0f77d9683ab7b5723e2b544ed14543df3bcac01f80497e3624443d7"
+  },
+  {
+    "source": "/tmp/mountain-page-L-investigation.md",
+    "savedAs": "mountain-page-L-investigation.md",
+    "originalBytes": 5586,
+    "originalSha256": "c5f1c565081584ba2f0c90277c2a9ef32da892683994fd7b9cd0ca34d0faa5db"
+  },
+  {
+    "source": "/tmp/mountain-page-L-saved-views.json",
+    "savedAs": "mountain-page-L-saved-views.json",
+    "originalBytes": 55413,
+    "originalSha256": "2ffe66e80e2c9468866af57933791c06197799de0bdb87cc5dc457b81b4932db"
+  }
+]

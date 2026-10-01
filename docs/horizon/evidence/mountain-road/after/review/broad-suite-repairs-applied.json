@@ -1,0 +1,46 @@
+{
+  "appliedAt": "2026-09-30T17:17:13Z",
+  "status": "Applied after the frozen 178-file lane. Focused execution and rebake pending. Native frame and awning entry proposals are not included.",
+  "patches": [
+    {
+      "name": "mountain-pickup-controller",
+      "sha256": "bec2886843d178f43b7f5e618b34afa3423b7652e05c2e686142e99d3e6dc130"
+    },
+    {
+      "name": "mountain-pickup-focused-tests",
+      "sha256": "0f2084f9656aeff264917b41eae66cbf553e301e2bfbb8472b6ae26a6a856f15"
+    },
+    {
+      "name": "mountain-branch-width",
+      "sha256": "e51bd0350aa5163801661ad3c57940494d050d091ac0cd80e1edc1b7031064f9"
+    },
+    {
+      "name": "mountain-stale-ownership-tests",
+      "sha256": "1f2f437afd93630cb9281abd207dd59ec5dfd7cb340315b439087d4781de646b"
+    },
+    {
+      "name": "mountain-shared-source-crossings",
+      "sha256": "8af5a9c6d1dd5465a17343e13d65d60f041f513dae6259781375e55a6df673c3"
+    },
+    {
+      "name": "mountain-skate-rpc-yield",
+      "sha256": "d9969085aeae7a65d7c6db0661dde125a0a78c584666ff178f4c3f249c255045"
+    },
+    {
+      "name": "mountain-structures-rpc-yield",
+      "sha256": "dea30aed8319e3dfc8cc2191f3dc03ccb1d5ccf14705b5dc12135d4dd157808b"
+    },
+    {
+      "name": "mountain-underground-test-scope",
+      "sha256": "b893f01f273ac262c794972ba244b62633730d930f8580348a2173961e38d0ab"
+    },
+    {
+      "name": "mountain-native-furniture-test",
+      "sha256": "ab56a551827a45f1274da0e9112022f945124588fe744cf220fe7480e8e045df"
+    },
+    {
+      "name": "mountain-journey-bridge-lod",
+      "sha256": "952d7606303b603a2c914f19f3a7e80ce9c04b5abade4524c1cd695f255c2ce7"
+    }
+  ]
+}

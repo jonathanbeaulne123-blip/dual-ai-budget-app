@@ -1,0 +1,150 @@
+{
+  "files": [
+    {
+      "file": "test/mountain-branch-finishing.test.ts",
+      "same": true,
+      "current": "6c7d08781923973a16ad6309450f907e9c38685e4448e44ed2d33e4694a8ec42",
+      "baseline": "6c7d08781923973a16ad6309450f907e9c38685e4448e44ed2d33e4694a8ec42"
+    },
+    {
+      "file": "test/mountain-camera.test.ts",
+      "same": true,
+      "current": "3168a354268f6241f2838a407991a94bdfd326f2488b5d4be8d5a6e376631f46",
+      "baseline": "3168a354268f6241f2838a407991a94bdfd326f2488b5d4be8d5a6e376631f46"
+    },
+    {
+      "file": "test/skate-int-dressing.test.ts",
+      "same": true,
+      "current": "319c97d509785e5df28584abe2c34cd5d1ec4ab4c097b7ab0b9aaa6948b898ae",
+      "baseline": "319c97d509785e5df28584abe2c34cd5d1ec4ab4c097b7ab0b9aaa6948b898ae"
+    },
+    {
+      "file": "test/skate-int-feel.test.ts",
+      "same": true,
+      "current": "82d3061b39f98ef23819b709ee282d1998f999e47020839b8d3b89821102621f",
+      "baseline": "82d3061b39f98ef23819b709ee282d1998f999e47020839b8d3b89821102621f"
+    },
+    {
+      "file": "src/harbour/mountain/streaming.ts",
+      "same": true,
+      "current": "2e70350b5d71c2b665786b8e49e91785462fae4e96c2a957e21a2c27ee5a0862",
+      "baseline": "2e70350b5d71c2b665786b8e49e91785462fae4e96c2a957e21a2c27ee5a0862"
+    },
+    {
+      "file": "src/harbour/scene/runtime.ts",
+      "same": true,
+      "current": "0b86dd478343c914e871a4ef0d9280d3c3fd6214927a326b49d0d58e9ffc241e",
+      "baseline": "0b86dd478343c914e871a4ef0d9280d3c3fd6214927a326b49d0d58e9ffc241e"
+    },
+    {
+      "file": "src/harbour/mountain/roadLine.ts",
+      "same": true,
+      "current": "540f365ddaff8994c045dcf290a27a1eeea4cca5a6b8e28e17441093a0d99cb0",
+      "baseline": "540f365ddaff8994c045dcf290a27a1eeea4cca5a6b8e28e17441093a0d99cb0"
+    },
+    {
+      "file": "src/harbour/skate/world/layout.ts",
+      "same": true,
+      "current": "75ccb2d652f1704bd301057dc208dd136ed4dd5761191fe7899c81fbb309ea21",
+      "baseline": "75ccb2d652f1704bd301057dc208dd136ed4dd5761191fe7899c81fbb309ea21"
+    },
+    {
+      "file": "src/harbour/skate/world/dressingSolids.ts",
+      "same": true,
+      "current": "d718ff8e9bf6c6465d448886fc67753e4db200f9ba05bb80d5f2a85505eab37f",
+      "baseline": "d718ff8e9bf6c6465d448886fc67753e4db200f9ba05bb80d5f2a85505eab37f"
+    },
+    {
+      "file": "src/harbour/skate/world/dressingBuild.ts",
+      "same": true,
+      "current": "55f46eda9eba599b5efa7d80018cff6c35b4276302f1167292e576813e88ebc3",
+      "baseline": "55f46eda9eba599b5efa7d80018cff6c35b4276302f1167292e576813e88ebc3"
+    },
+    {
+      "file": "src/harbour/skate/sim/geometry.ts",
+      "same": true,
+      "current": "506c2e306631b7b57ca88e192532bc2fc37c04fe182f72580073a84e435aa34e",
+      "baseline": "506c2e306631b7b57ca88e192532bc2fc37c04fe182f72580073a84e435aa34e"
+    },
+    {
+      "file": "src/harbour/skate/sim/tuning.ts",
+      "same": true,
+      "current": "81794f1dde68cb5bfee424036a50a9bf74fe42f0ae28e6a8720f848e47e757f1",
+      "baseline": "81794f1dde68cb5bfee424036a50a9bf74fe42f0ae28e6a8720f848e47e757f1"
+    },
+    {
+      "file": "src/harbour/skate/world/field.ts",
+      "same": false,
+      "current": "4a5e90ecec125282279f919d33c00e100638ef2aaf1f0aab48c46ec7dfab42f0",
+      "baseline": "aec03a16a6681342536c12aa380ee728cc9afb044cef45c113f8cdc3437b185d"
+    },
+    {
+      "file": "src/harbour/skate/sim/index.ts",
+      "same": false,
+      "current": "6ad03ee58f0f8eca4ad33cf480e868d1cd9ade63c6e504851885c62c88aa3aff",
+      "baseline": "cb5354aaef80599b1ac20913c71b2e260d95ff670628fd59a3a2f7ed160cd457"
+    },
+    {
+      "file": "src/harbour/mountain/course.ts",
+      "same": false,
+      "current": "43ec80a5897a8bfa97e3254b6b78f7310be86919e6e08327008770745db167aa",
+      "baseline": "7aa7a1b66ebdd2fece042b67052a7cc2bd4de32cd8408cfec934af5cceea3446"
+    },
+    {
+      "file": "src/harbour/mountain/surfaces.ts",
+      "same": false,
+      "current": "87118aa038f1f393af5add055b7cfd6232feb567d2f8e680fcf8bc671373bc03",
+      "baseline": "6ba9217b783ed99aa1a5dd13bf0501e54de0bbd614eaa64905569465e142652b"
+    }
+  ],
+  "staticParkWitnesses": [
+    {
+      "label": "Breadbin centre",
+      "local": [
+        -9,
+        6.4
+      ],
+      "world": [
+        29.59422863405995,
+        -39.3425625842204
+      ],
+      "worldSampleBranch": false
+    },
+    {
+      "label": "Breadbin along-wall plus3",
+      "local": [
+        -6,
+        6.4
+      ],
+      "world": [
+        26.996152422706633,
+        -40.8425625842204
+      ],
+      "worldSampleBranch": true
+    },
+    {
+      "label": "Hatch spawn",
+      "local": [
+        11,
+        2.5
+      ],
+      "world": [
+        10.323720558371175,
+        -45.965063509461096
+      ],
+      "worldSampleBranch": true
+    },
+    {
+      "label": "Hatch pop",
+      "local": [
+        5.75,
+        2.5
+      ],
+      "world": [
+        14.870353928239478,
+        -43.340063509461096
+      ],
+      "worldSampleBranch": true
+    }
+  ]
+}
