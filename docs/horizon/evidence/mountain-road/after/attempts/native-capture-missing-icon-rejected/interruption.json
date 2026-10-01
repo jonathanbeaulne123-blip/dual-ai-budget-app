@@ -1,0 +1,7 @@
+{
+  "at": "2026-10-01T14:18:31.107119+00:00",
+  "reason": "Missing review-page favicon causes a recorded runtime error. Stop this unsuccessful capture attempt before repeating the remaining themes; correct harness then restart fresh.",
+  "pid": 63778,
+  "signal": "SIGINT",
+  "acceptance": "INCOMPLETE"
+}

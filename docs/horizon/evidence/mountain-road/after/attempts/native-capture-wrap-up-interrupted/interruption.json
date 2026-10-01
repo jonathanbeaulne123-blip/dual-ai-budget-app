@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-01T14:41:00Z",
+  "reason": "Jonathan requested wrap-up and draft PR; stop remaining capture matrix instead of extending acceptance work",
+  "signal": "SIGINT",
+  "pid": 66948,
+  "capturedRecordsBeforeSignal": 88,
+  "knownErrors": [
+    {
+      "id": "native-overview",
+      "theme": "newfoundland",
+      "tier": "full",
+      "error": "Native view did not settle within 45 seconds"
+    },
+    {
+      "id": "native-overview",
+      "theme": "classic",
+      "tier": "lite",
+      "error": "Native view did not settle within 45 seconds"
+    }
+  ],
+  "status": "INCOMPLETE; no final capture acceptance"
+}
