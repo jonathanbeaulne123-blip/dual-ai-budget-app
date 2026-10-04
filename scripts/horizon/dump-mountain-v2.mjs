@@ -34,7 +34,8 @@ try {
       // Preserve the drawn centreline and its widths. Decimation chords cut hairpins
       // and make a correctly placed native edge guard appear inside the carriageway.
       samples:road.map(s=>({s:s.s,at:precise(s.at),normal:s.normal.map(n=>Math.round(n*1e9)/1e9),hw:s.halfWidth,support:s.support,bridge:s.bridgeId??null})),
-      frames:road.map((s,i)=>{if(i)planS+=Math.hypot(s.at[0]-road[i-1].at[0],s.at[2]-road[i-1].at[2]);return {s:planS,spatialS:s.s,at:precise(s.at),half:s.halfWidth,grade:s.grade,curvature:s.curvature,left:s.left,right:s.right,bridge:s.bridgeId};}),
+      // Curvature is a raw float whose last ulp differs between x64 and arm64 (CI Linux vs macOS); round it like the normals so --check is portable.
+      frames:road.map((s,i)=>{if(i)planS+=Math.hypot(s.at[0]-road[i-1].at[0],s.at[2]-road[i-1].at[2]);return {s:planS,spatialS:s.s,at:precise(s.at),half:s.halfWidth,grade:s.grade,curvature:Math.round(s.curvature*1e9)/1e9,left:s.left,right:s.right,bridge:s.bridgeId};}),
       bridges:roads.GORGE_BRIDGES.filter(b=>b.carries==='road').map(b=>({id:`mountainV2:${b.id}`,name:b.name,axis:b.deck.map(precise),width:b.halfWidth*2})),
       guards:roads.EDGE_RUNS.filter(e=>e.line==='mountain-road').map(e=>({...e,points:e.points.map(precise)})),
       openings:roads.EDGE_OPENINGS.filter(e=>e.line==='mountain-road').map(e=>({...e,corridor:e.corridor.map(precise)})),
