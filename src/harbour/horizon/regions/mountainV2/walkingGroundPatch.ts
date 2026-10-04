@@ -12,8 +12,8 @@ export type GroundBoundaryGap={x:number;z:number;base:number;patch:number;delta:
 export type GroundCollarProof={width:number;triangles:number;refinementPasses:number;maxTargetError:number;maxPhysicalError:number;maxInheritedPhysicalError:number;maxWorseningBeyondInheritedOrSixCm:number;innerJoinSamples:number;outerJoinSamples:number;inheritedCoreBoundaryGaps:GroundBoundaryGap[];maxInheritedCoreBoundaryGap:number;sharedOuterEdges:number;exteriorBoundaryAddedTriangles:number;densityProof:{planStep:number;planOffsets:readonly number[];edgeStep:number;uniqueAnalyticGridSamples:number;gridProbeEvaluations:number;edgeProbeEvaluations:number;cacheBytes:number;finiteSampling:true};targetApproximation:{reference:number;facesAboveReference:number;acceptanceGate:false};refinementHistory:{pass:number;triangles:number;failingPhysicalFaces:number;maxTargetError:number;maxWorsening:number}[]};
 export type GroundRender={positions:Float32Array;indices:Uint32Array;baseVertices:number;patchVertices:number;recipes:GroundColorRecipe[];patchIndexStart:number;patchIndexCount:number;seamTriangles:number;clippedBaseTriangles:number;boundaryGaps:GroundBoundaryGap[];maxBoundaryDrawnGap:number;collarProof?:GroundCollarProof};
 export type GroundFaceWitness={index:number;degrees:number;baselineDegrees:number;introducedOrWorsened:boolean;points:readonly P[];baselinePoints:readonly P[]};
-export type WalkingGroundPatch={lattice:PatchLattice;paintLattice:PatchLattice;paintRecipes:PatchPaintRecipe[];boundaryPoints:readonly P[];bounds:PatchBounds;floorAt(x:number,z:number):PatchFloor|null;height(x:number,z:number):number;baselineHeight(x:number,z:number):number;proof:{step:number;ceilingMargin:number;outerRing:number;bounds:PatchBounds;dimensions:readonly[number,number];triangles:number;changedVertices:number;maxLowering:number;maxBaselineQuantization:number;maxTopDegrees:number;maxBaselineTopDegrees:number;outerRingChanged:number;facesOverLimit:GroundFaceWitness[];boundarySamples:GroundBoundaryGap[];maxBoundaryPhysicalDelta:number;boundaryTolerance:number;boundaryRefinement:{addedVertices:number;refinedCells:number;maxDepth:number;sampledMaximum:number};fairing:{passes:number;changedVertices:number;maxAdditionalLowering:number;changes:{index:number;before:number;after:number;extraLowering:number}[]}}};
-const STEP=.5,CEILING_MARGIN=1.5,OUTER_RING=2,BOUNDARY_TOLERANCE=.02,BOUNDARY_REFINE=.005,MAX_BOUNDARY_DEPTH=9,MAX_FAIR_PASSES=32,MAX_FAIR_LOWERING=.03;
+export type WalkingGroundPatch={lattice:PatchLattice;paintLattice:PatchLattice;paintRecipes:PatchPaintRecipe[];boundaryPoints:readonly P[];bounds:PatchBounds;floorAt(x:number,z:number):PatchFloor|null;height(x:number,z:number):number;baselineHeight(x:number,z:number):number;proof:{step:number;ceilingMargin:number;discoveryRing:number;activeRing:number;discoveryBounds:PatchBounds;measuredChangedBounds:PatchBounds|null;outerRing:number;bounds:PatchBounds;dimensions:readonly[number,number];triangles:number;changedVertices:number;maxLowering:number;maxBaselineQuantization:number;maxTopDegrees:number;maxBaselineTopDegrees:number;outerRingChanged:number;facesOverLimit:GroundFaceWitness[];boundarySamples:GroundBoundaryGap[];maxBoundaryPhysicalDelta:number;boundaryTolerance:number;boundaryRefinement:{addedVertices:number;refinedCells:number;maxDepth:number;sampledMaximum:number};fairing:{passes:number;changedVertices:number;maxAdditionalLowering:number;changes:{index:number;before:number;after:number;extraLowering:number}[]}}};
+const STEP=.5,CEILING_MARGIN=1.5,DISCOVERY_RING=2,ACTIVE_RING=2,BOUNDARY_TOLERANCE=.02,BOUNDARY_REFINE=.005,MAX_BOUNDARY_DEPTH=9,MAX_FAIR_PASSES=32,MAX_FAIR_LOWERING=.03;
 const point=(p:Float32Array,i:number):P=>[p[i*3]!,p[i*3+1]!,p[i*3+2]!];
 const bary=(a:P,b:P,c:P,x:number,z:number):Triple=>{const D=(b[2]-c[2])*(a[0]-c[0])+(c[0]-b[0])*(a[2]-c[2]);return[((b[2]-c[2])*(x-c[0])+(c[0]-b[0])*(z-c[2]))/D,((c[2]-a[2])*(x-c[0])+(a[0]-c[0])*(z-c[2]))/D,0];};
 const weighted=(p:readonly P[],w:Triple):P=>[0,1,2].map(j=>p[0]![j]!*w[0]+p[1]![j]!*w[1]+p[2]![j]!*w[2]) as unknown as P;
@@ -23,7 +23,51 @@ export function createWalkingGroundPatch(triangles:readonly CapTriangle[],baseli
  if(!triangles.length)throw new Error('A walking ground patch requires its actual apron triangles');
  const raw={x0:Math.min(...triangles.flatMap(t=>t.map(p=>p[0]))),x1:Math.max(...triangles.flatMap(t=>t.map(p=>p[0]))),z0:Math.min(...triangles.flatMap(t=>t.map(p=>p[2]))),z1:Math.max(...triangles.flatMap(t=>t.map(p=>p[2])))};
  const impact={x0:raw.x0-CEILING_MARGIN,x1:raw.x1+CEILING_MARGIN,z0:raw.z0-CEILING_MARGIN,z1:raw.z1+CEILING_MARGIN};
- const bounds={x0:Math.floor((impact.x0-OUTER_RING)/STEP)*STEP,x1:Math.ceil((impact.x1+OUTER_RING)/STEP)*STEP,z0:Math.floor((impact.z0-OUTER_RING)/STEP)*STEP,z1:Math.ceil((impact.z1+OUTER_RING)/STEP)*STEP};
+ const discoveryBounds={x0:Math.floor((impact.x0-DISCOVERY_RING)/STEP)*STEP,x1:Math.ceil((impact.x1+DISCOVERY_RING)/STEP)*STEP,z0:Math.floor((impact.z0-DISCOVERY_RING)/STEP)*STEP,z1:Math.ceil((impact.z1+DISCOVERY_RING)/STEP)*STEP};
+ // The broad discovery grid measures the actual Float32 cut before allocating
+ // the shared physical/render patch. This keeps the render collar local to the
+ // work instead of carrying the apron bounding rectangle into untouched ground.
+ const discoveryCols=Math.round((discoveryBounds.x1-discoveryBounds.x0)/STEP),discoveryRows=Math.round((discoveryBounds.z1-discoveryBounds.z0)/STEP),discoveryPositions=new Float32Array((discoveryCols+1)*(discoveryRows+1)*3),discoveryBase=new Float32Array(discoveryPositions.length),discoveryIndices:number[]=[];
+ for(let iz=0;iz<=discoveryRows;iz++)for(let ix=0;ix<=discoveryCols;ix++){const id=iz*(discoveryCols+1)+ix,x=discoveryBounds.x0+ix*STEP,z=discoveryBounds.z0+iz*STEP,g=baseline(x,z),cap=ceiling(x,z);if(!Number.isFinite(g)||!owns(x,z))throw new Error('Walking ground crosses an unowned/nonfinite native floor at '+JSON.stringify([x,z]));discoveryPositions[id*3]=x;discoveryPositions[id*3+1]=Math.fround(cap===null?g:Math.min(g,cap));discoveryPositions[id*3+2]=z;discoveryBase[id*3+1]=Math.fround(g);}
+ for(let iz=0;iz<discoveryRows;iz++)for(let ix=0;ix<discoveryCols;ix++){const a=iz*(discoveryCols+1)+ix,b=a+1,c=a+discoveryCols+1,d=c+1,ad=Math.abs(discoveryPositions[a*3+1]!-discoveryPositions[d*3+1]!),bc=Math.abs(discoveryPositions[b*3+1]!-discoveryPositions[c*3+1]!);discoveryIndices.push(...(ad<=bc?[a,c,d,a,d,b]:[a,c,b,b,c,d]));}
+ const discoveryLattice={positions:discoveryPositions,indices:new Uint32Array(discoveryIndices),cols:discoveryCols,rows:discoveryRows,xs:Float32Array.from({length:discoveryCols+1},(_,i)=>discoveryBounds.x0+i*STEP),zs:Float32Array.from({length:discoveryRows+1},(_,i)=>discoveryBounds.z0+i*STEP)};
+ capGroundMesh(discoveryLattice,triangles,.02);
+ let cut={x0:Infinity,x1:-Infinity,z0:Infinity,z1:-Infinity},cutVertices=0;
+ for(let i=0;i<discoveryPositions.length;i+=3)if(discoveryPositions[i+1]!==discoveryBase[i+1]){const x=discoveryPositions[i]!,z=discoveryPositions[i+2]!;cut={x0:Math.min(cut.x0,x),x1:Math.max(cut.x1,x),z0:Math.min(cut.z0,z),z1:Math.max(cut.z1,z)};cutVertices++;}
+ if(!cutVertices)cut={...impact};
+ if(cutVertices&&[cut.x0-discoveryBounds.x0,discoveryBounds.x1-cut.x1,cut.z0-discoveryBounds.z0,discoveryBounds.z1-cut.z1].some(d=>d<DISCOVERY_RING-1e-6))throw Object.assign(new Error('Measured walking cut reached its discovery boundary; no automatic expansion'),{proof:{discoveryBounds,measuredChangedBounds:cut,cutVertices}});
+ const measuredChangedBounds=cutVertices?cut:null;
+ let bounds:PatchBounds=cutVertices?{x0:Math.floor((cut.x0-ACTIVE_RING)/STEP)*STEP,x1:Math.ceil((cut.x1+ACTIVE_RING)/STEP)*STEP,z0:Math.floor((cut.z0-ACTIVE_RING)/STEP)*STEP,z1:Math.ceil((cut.z1+ACTIVE_RING)/STEP)*STEP}:discoveryBounds;
+ // A measured one- or two-metre apron buffer may land on a sharp, untouched
+ // part of the terrain curve. Expand only the failing sides, in half-metre
+ // steps, until the same finite interpolation proof used by the perimeter
+ // mesh passes or reaches the already-validated discovery boundary.
+ const boundaryCurvePasses=(axis:0|2,fixed:number,lo:number,hi:number)=>{
+  let passes=true;
+  const split=(a:number,b:number,ya:number,yb:number,depth:number)=>{
+   let worst=0;for(const t of[.125,.25,.375,.5,.625,.75,.875]){const x=a+(b-a)*t,y=baseline(axis===0?fixed:x,axis===2?fixed:x),gap=Math.abs(y-(ya+(yb-ya)*t));worst=Math.max(worst,gap);}
+   if(worst<=BOUNDARY_REFINE)return;if(depth>=MAX_BOUNDARY_DEPTH){passes=false;return;}
+   const m=(a+b)/2,ym=Math.fround(baseline(axis===0?fixed:m,axis===2?fixed:m));split(a,m,ya,ym,depth+1);split(m,b,ym,yb,depth+1);
+  };
+  for(let a=lo;a<hi-1e-9;a=Math.min(hi,a+STEP)){const b=Math.min(hi,a+STEP),ya=Math.fround(baseline(axis===0?fixed:a,axis===2?fixed:a)),yb=Math.fround(baseline(axis===0?fixed:b,axis===2?fixed:b));split(a,b,ya,yb,0);if(!passes)return false;}
+  return passes;
+ };
+ for(let attempt=0;attempt<=Math.ceil((discoveryBounds.x1-discoveryBounds.x0+discoveryBounds.z1-discoveryBounds.z0)*2);attempt++){
+  const checks:{side:'x0'|'x1'|'z0'|'z1';pass:boolean}[]=[
+   {side:'x0',pass:boundaryCurvePasses(0,bounds.x0,bounds.z0,bounds.z1)},
+   {side:'x1',pass:boundaryCurvePasses(0,bounds.x1,bounds.z0,bounds.z1)},
+   {side:'z0',pass:boundaryCurvePasses(2,bounds.z0,bounds.x0,bounds.x1)},
+   {side:'z1',pass:boundaryCurvePasses(2,bounds.z1,bounds.x0,bounds.x1)},
+  ];
+  const failures=checks.filter(v=>!v.pass);
+  if(!failures.length)break;
+  let expanded=false;for(const{side}of failures){if(side==='x0'&&bounds.x0>discoveryBounds.x0){bounds={...bounds,x0:Math.max(discoveryBounds.x0,bounds.x0-STEP)};expanded=true;}
+   if(side==='x1'&&bounds.x1<discoveryBounds.x1){bounds={...bounds,x1:Math.min(discoveryBounds.x1,bounds.x1+STEP)};expanded=true;}
+   if(side==='z0'&&bounds.z0>discoveryBounds.z0){bounds={...bounds,z0:Math.max(discoveryBounds.z0,bounds.z0-STEP)};expanded=true;}
+   if(side==='z1'&&bounds.z1<discoveryBounds.z1){bounds={...bounds,z1:Math.min(discoveryBounds.z1,bounds.z1+STEP)};expanded=true;}}
+  if(!expanded)throw Object.assign(new Error('Measured patch cannot meet its fixed discovery-boundary curve proof'),{proof:{discoveryBounds,measuredChangedBounds,bounds,failures}});
+  if(attempt===Math.ceil((discoveryBounds.x1-discoveryBounds.x0+discoveryBounds.z1-discoveryBounds.z0)*2))throw new Error('Measured patch boundary expansion did not converge');
+ }
  const cols=Math.round((bounds.x1-bounds.x0)/STEP),rows=Math.round((bounds.z1-bounds.z0)/STEP),gridVertices=(cols+1)*(rows+1);
  if(cols*rows>12000)throw new Error('Walking ground exceeds its bounded12000-cell local allocation: '+JSON.stringify(bounds));
  const xs=Float32Array.from({length:cols+1},(_,i)=>bounds.x0+i*STEP),zs=Float32Array.from({length:rows+1},(_,i)=>bounds.z0+i*STEP),P:number[]=[],B:number[]=[],baseIndices:number[]=[],paintRecipes:PatchPaintRecipe[]=[];
@@ -84,7 +128,7 @@ export function createWalkingGroundPatch(triangles:readonly CapTriangle[],baseli
   if(n.slope>40+1e-7)facesOverLimit.push({index:k/3,degrees:n.slope,baselineDegrees:bn.slope,introducedOrWorsened:bn.slope<=40+1e-7||n.slope>bn.slope+1e-7,points:T,baselinePoints:before});
   for(const w of[[1/3,1/3,1/3],[.5,.5,0],[.5,0,.5],[0,.5,.5]] as const){const q=weighted(T,w);if(!owns(q[0],q[2]))throw new Error('Walking ground face crosses native ownership at '+JSON.stringify(q));}
  }
- const proof={step:STEP,ceilingMargin:CEILING_MARGIN,outerRing:OUTER_RING,bounds,dimensions:[bounds.x1-bounds.x0,bounds.z1-bounds.z0] as const,triangles:indices.length/3,changedVertices,maxLowering,maxBaselineQuantization,maxTopDegrees,maxBaselineTopDegrees,outerRingChanged,facesOverLimit,boundarySamples:[] as GroundBoundaryGap[],maxBoundaryPhysicalDelta:0,boundaryTolerance:BOUNDARY_TOLERANCE,boundaryRefinement:{addedVertices:positions.length/3-gridVertices,refinedCells,maxDepth:maxBoundaryDepth,sampledMaximum},fairing:{passes,changedVertices:changes.length,maxAdditionalLowering:Math.max(0,...changes.map(c=>c.extraLowering)),changes}};
+ const proof={step:STEP,ceilingMargin:CEILING_MARGIN,discoveryRing:DISCOVERY_RING,activeRing:ACTIVE_RING,discoveryBounds,measuredChangedBounds,outerRing:ACTIVE_RING,bounds,dimensions:[bounds.x1-bounds.x0,bounds.z1-bounds.z0] as const,triangles:indices.length/3,changedVertices,maxLowering,maxBaselineQuantization,maxTopDegrees,maxBaselineTopDegrees,outerRingChanged,facesOverLimit,boundarySamples:[] as GroundBoundaryGap[],maxBoundaryPhysicalDelta:0,boundaryTolerance:BOUNDARY_TOLERANCE,boundaryRefinement:{addedVertices:positions.length/3-gridVertices,refinedCells,maxDepth:maxBoundaryDepth,sampledMaximum},fairing:{passes,changedVertices:changes.length,maxAdditionalLowering:Math.max(0,...changes.map(c=>c.extraLowering)),changes}};
  const floorAt=(x:number,z:number):PatchFloor|null=>{
   if(x<bounds.x0||x>bounds.x1||z<bounds.z0||z>bounds.z1)return null;
   const ix=Math.min(cols-1,Math.floor((x-bounds.x0)/STEP)),iz=Math.min(rows-1,Math.floor((z-bounds.z0)/STEP)),cell=iz*cols+ix;
@@ -175,7 +219,12 @@ export function composeWalkingGround(base:Pick<PatchLattice,'positions'|'indices
  const seedNodes=[...nodes.values()],conforming:Face[]=[];
  for(const f of faces){const polygon:number[]=[];let splitEdge=false;
   for(let j=0;j<3;j++){const a=f.ids[j]!,b=f.ids[(j+1)%3]!,A=get(a),C=get(b),dx=C[0]-A[0],dz=C[2]-A[2],length2=dx*dx+dz*dz;polygon.push(a);const between:{index:number;t:number}[]=[];
-   for(const n of seedNodes){if(n.index===a||n.index===b)continue;const q=n.point,t=((q[0]-A[0])*dx+(q[2]-A[2])*dz)/length2;if(t<=1e-8||t>=1-1e-8)continue;const distance=Math.abs((q[0]-A[0])*dz-(q[2]-A[2])*dx)/Math.sqrt(length2);if(distance<=1e-7)between.push({index:n.index,t});}
+   // A skinny Float32 triangle can place its opposite corner within the edge
+   // proximity bound. All original corners are already in the boundary; inserting
+   // one again would reverse part of the polygon instead of splitting an edge.
+   // A nearby distinct knot is not on this represented edge: keep its narrow
+   // intervening face instead of folding it into both neighbouring polygons.
+   for(const n of seedNodes){if(f.ids.includes(n.index))continue;const q=n.point,t=((q[0]-A[0])*dx+(q[2]-A[2])*dz)/length2;if(t<=1e-8||t>=1-1e-8)continue;const cross=(q[0]-A[0])*dz-(q[2]-A[2])*dx;if(cross===0)between.push({index:n.index,t});}
    between.sort((a,b)=>a.t-b.t);for(const n of between)polygon.push(n.index);if(between.length)splitEdge=true;
   }
   if(!splitEdge){conforming.push(f);continue;}const c=node(f.source,polygon.reduce((sum,id)=>sum+get(id)[0],0)/polygon.length,polygon.reduce((sum,id)=>sum+get(id)[2],0)/polygon.length);

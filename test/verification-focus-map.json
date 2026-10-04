@@ -1572,6 +1572,18 @@
         "test/month-rehearsal-mainline.test.ts"
       ],
       "reason": "Journey Board: the household journey route mounts the board, arrival lands there, explicit Enter Horizon; pure derivation, land, route, UI list parity and the App seams"
+    },
+    {
+      "sources": [
+        "src/harbour/horizon/regions/mountainV2/walkingGroundPatch.ts",
+        "src/harbour/horizon/regions/mountainV2/funicularFootPath.ts"
+      ],
+      "tests": [
+        "test/horizon-funicular-streaming.test.ts",
+        "test/horizon-mountain-road-ground.test.ts",
+        "test/horizon-walking-ground-patch.test.ts"
+      ],
+      "reason": "Mountain v2 walking ground and funicular foot path: collar topology, measured-cut patch bounds, indexed funicular trail support and Mountain Road ground contact"
     }
   ]
 }

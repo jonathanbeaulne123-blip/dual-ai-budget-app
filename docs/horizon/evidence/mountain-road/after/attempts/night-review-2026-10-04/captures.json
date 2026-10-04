@@ -1,0 +1,1728 @@
+{
+  "method": "Actual Horizon renderer; static physically seated camera poses; headless Chromium SwiftShader, not device evidence",
+  "revision": "123319dff4cfa870648e5d26272ddd6a80185554",
+  "sourceHashes": {
+    "scripts/horizon/capture-mountain-finish.mjs": "7bd087c7f6a8abe41fa21bd873c52d3873e0f84bb5e508709567f33944fb99c7",
+    "src/harbour/horizon/world/lens.ts": "5dc5cbdb741511fc718714a3cac12dd16048c3577d336a893bf829cbf164ff6c",
+    "src/harbour/horizon/world/views.ts": "40c90948b93c7d9662aea20a029939afbcb42cac999e8f91604bd5aad96c18b5",
+    "src/harbour/horizon/runtime/index.ts": "79d926661634d11656273edc24ebe18cbddf7649b9bc6e2d38a3abc4f711a890",
+    "src/harbour/horizon/runtime/corridorArt.ts": "94ef6f8a065c557b5edab34e98186a10e029b45188402f47c17967ac30264574",
+    "src/harbour/horizon/runtime/roadLights.ts": "ece234a44c27e09b3419a20773622a6e712031be301c5130b597ee26e05ac543",
+    "src/harbour/horizon/runtime/corridorPlanting.ts": "7be4f77e90131f36835f8692d27cf970accc5b94defa8b822f42eaa8e2d3c835",
+    "src/harbour/horizon/kit/road/lamps.ts": "7715f0b721430f7e1a97e8bc2999cc2bd413045f65ca5d31d9a675ceb6400e55",
+    "src/harbour/horizon/regions/mountainV2/geography.ts": "486a7eeb9129058883d8fdc9bbb4208d1d12666b7207b0afb3d1eb0a34fd5386"
+  },
+  "mode": "matrix",
+  "viewports": {
+    "review": {
+      "width": 1100,
+      "height": 720
+    },
+    "landscape": {
+      "width": 1440,
+      "height": 900
+    },
+    "portrait": {
+      "width": 390,
+      "height": 844
+    }
+  },
+  "authoredViews": null,
+  "worldSha256": "caaabc4dad2766c59223343d58765cfae12351d24629cdced02e68df4bb6f918",
+  "scope": {
+    "tiers": [
+      "full"
+    ],
+    "themes": [
+      "classic"
+    ],
+    "times": [
+      "night"
+    ],
+    "orientations": [
+      "review"
+    ]
+  },
+  "provenance": "provenance.json",
+  "records": [
+    {
+      "file": "classic-full-night-review-library-drive.jpg",
+      "sha256": "8650ff7b59f0e093e058020c52badccea9d69828e4613a34a8a08a64a5c69d88",
+      "theme": "classic",
+      "tier": "full",
+      "time": "night",
+      "orientation": "review",
+      "viewport": {
+        "width": 1100,
+        "height": 720
+      },
+      "pose": {
+        "id": "library-drive",
+        "eye": [
+          1339.054894,
+          95.81356638587988,
+          584.302224
+        ],
+        "target": [
+          1336.991516,
+          96.21261970677577,
+          580.974059
+        ],
+        "seat": true,
+        "supports": [
+          {
+            "name": "eye",
+            "x": 1339.054894,
+            "z": 584.302224,
+            "floor": 94.16356638587988,
+            "surface": "mountainV2:library-balcony"
+          },
+          {
+            "name": "target",
+            "x": 1336.991516,
+            "z": 580.974059,
+            "floor": 94.56261970677576,
+            "surface": "mountainV2:mountain-road"
+          }
+        ],
+        "paintCount": 9,
+        "seatProof": {
+          "eye": [
+            1339.054894,
+            95.81356638587988,
+            584.302224
+          ],
+          "floor": 94.16356638587988,
+          "height": 1.6500000000000057
+        }
+      },
+      "settled": {
+        "pending": [],
+        "region": {
+          "mounted": true,
+          "building": false
+        }
+      },
+      "stats": {
+        "region": {
+          "id": "mountainV2",
+          "mounted": true,
+          "building": false,
+          "visible": true,
+          "districts": [
+            "crown",
+            "hollow",
+            "lakeside",
+            "prow"
+          ],
+          "joins": [
+            {
+              "from": "v2:road:foot",
+              "to": "path:1282.000:54.650:720.000",
+              "distance": 3.5623997973743826e-8,
+              "how": "seam"
+            },
+            {
+              "from": "v2:overlook:summit",
+              "to": "path:1313.694:158.050:472.378",
+              "distance": 9.769940111747367,
+              "how": "seam"
+            },
+            {
+              "from": "v2:door:observatory",
+              "to": "path:1307.249:158.012:472.751",
+              "distance": 2.4012809084941527,
+              "how": "seam"
+            },
+            {
+              "from": "v2:town:quay",
+              "to": "path:1282.922:54.705:803.630",
+              "distance": 8.932429187352959,
+              "how": "seam"
+            },
+            {
+              "from": "v2:town:north",
+              "to": "path:1309.598:55.972:740.160",
+              "distance": 19.72543852150275,
+              "how": "seam"
+            },
+            {
+              "from": "v2:station:gondola:summit",
+              "to": "path:1298.300:158.050:481.700",
+              "distance": 0.004163056034290434,
+              "how": "lip"
+            },
+            {
+              "from": "v2:district:hearth",
+              "to": "path:1364.000:73.200:650.000",
+              "distance": 0,
+              "how": "lip"
+            },
+            {
+              "from": "v2:district:summit",
+              "to": "path:1310.000:158.000:470.000",
+              "distance": 0,
+              "how": "lip"
+            },
+            {
+              "from": "v2:apron:home",
+              "to": "path:1363.267:73.200:653.111",
+              "distance": 0.5282507736169731,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:hearth",
+              "to": "path:1357.539:73.072:664.116",
+              "distance": 2.9420806042280226e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:leg1-steps",
+              "to": "path:1342.395:61.715:698.325",
+              "distance": 3.0276320251136365e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:leg2-steps",
+              "to": "path:1356.751:66.282:682.003",
+              "distance": 4.353408132638794e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:leg2-steps-b",
+              "to": "path:1363.736:65.592:681.587",
+              "distance": 4.946626989028847e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:leg3-steps",
+              "to": "path:1347.591:72.017:663.185",
+              "distance": 5.774480562270236e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:lane:junction",
+              "to": "path:1327.339:69.791:669.364",
+              "distance": 7.000389753078281e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:station-steps",
+              "to": "path:1328.256:61.407:690.895",
+              "distance": 6.04864569212623e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:hairpin-2-west",
+              "to": "path:1327.018:69.600:671.320",
+              "distance": 5.381016878209839e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:library",
+              "to": "path:1353.457:90.754:603.745",
+              "distance": 5.771663120001306e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:b2-west",
+              "to": "path:1277.873:99.747:564.785",
+              "distance": 6.507010079083712e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:glasshouse",
+              "to": "path:1229.896:115.873:528.530",
+              "distance": 4.638861303351143e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:clearing",
+              "to": "path:1211.346:109.638:561.603",
+              "distance": 5.283692026955903e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:dam:west",
+              "to": "path:1295.182:142.000:525.942",
+              "distance": 4.403739393701003e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:dam:east",
+              "to": "path:1336.818:142.000:525.942",
+              "distance": 4.403739393701003e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:dam-stairs",
+              "to": "path:1268.306:121.380:534.766",
+              "distance": 6.67618324070233e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:reservoir",
+              "to": "path:1364.114:143.469:512.903",
+              "distance": 2.363053659948173e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:b3-east",
+              "to": "path:1363.710:130.215:555.123",
+              "distance": 6.208050648844299e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:b2-east",
+              "to": "path:1339.418:93.466:590.279",
+              "distance": 6.970148263799374e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:rim-steps",
+              "to": "path:1333.666:94.921:578.769",
+              "distance": 5.098304374971875e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:rim-top",
+              "to": "path:1349.281:127.962:551.115",
+              "distance": 6.847008028704259e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:summit",
+              "to": "path:1325.000:158.200:470.500",
+              "distance": 0,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:shelf",
+              "to": "path:1400.803:80.800:628.665",
+              "distance": 4.87734359140879e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:high-terrace",
+              "to": "path:1388.826:150.563:487.308",
+              "distance": 7.705490538475814e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:dam-overlook",
+              "to": "path:1353.193:128.556:551.929",
+              "distance": 5.921897479144454e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:hearth-lane",
+              "to": "path:1327.339:69.791:669.364",
+              "distance": 7.000389753078281e-7,
+              "how": "lip"
+            }
+          ],
+          "triangles": 494265,
+          "drawCalls": 121,
+          "groundTriangles": 77083,
+          "benches": 1
+        },
+        "draw": {
+          "at": 90037.8,
+          "calls": 106,
+          "triangles": 515260,
+          "resident": 4
+        },
+        "resident": [
+          "bight",
+          "crown",
+          "flats",
+          "green",
+          "harbour",
+          "hollow",
+          "lakeside",
+          "landing",
+          "notch",
+          "offshore",
+          "prow",
+          "reach",
+          "scholars",
+          "undercroft"
+        ],
+        "inspector": {
+          "time": "2026-10-04T16:11:07.841Z",
+          "clock": "2026-06-22T03:00:00.000Z",
+          "sha": null,
+          "tier": "full",
+          "position": {
+            "x": 1339.05,
+            "y": 94.21,
+            "z": 584.3
+          },
+          "heading": {
+            "degrees": 328.2,
+            "compass": "NW"
+          },
+          "mode": "look",
+          "perspective": "activity",
+          "mover": "feet",
+          "speed": null,
+          "grounded": null,
+          "surface": {
+            "id": "mountainV2:library-balcony",
+            "kind": "solid",
+            "role": null,
+            "solidKind": null,
+            "material": "boardwalk",
+            "y": 94.16,
+            "slope": 6.54
+          },
+          "station": {
+            "road": "mountainV2.road",
+            "s": 386.83,
+            "reach": "M5",
+            "context": "mountain",
+            "structureId": null,
+            "offset": 0.07,
+            "distance": 0.07,
+            "side": "right",
+            "left": {
+              "edge": "shoulder",
+              "guard": "bridgeRail",
+              "paved": 4.8,
+              "gap": null
+            },
+            "right": {
+              "edge": "shoulder",
+              "guard": "none",
+              "paved": 4.8,
+              "gap": "entrance"
+            },
+            "onCarriageway": true
+          },
+          "frame": {
+            "p50": 2799.8,
+            "p95": 18666,
+            "samples": 15
+          },
+          "render": {
+            "calls": 106,
+            "triangles": 515260
+          },
+          "resident": {
+            "count": 4,
+            "ids": [
+              "crown",
+              "lakeside",
+              "offshore",
+              "prow"
+            ]
+          },
+          "lights": {
+            "k": 0.6999999999999891,
+            "linesOn": 38,
+            "lines": 38,
+            "roadLamps": 341,
+            "anchors": 106,
+            "cap": 160,
+            "roadCards": 112,
+            "anchorCards": 48,
+            "cards": 160,
+            "pointLights": 6,
+            "pointLightsLit": 6,
+            "pointAssigned": [
+              "mountainV2.road.lamp.25",
+              "mountainV2.road.lamp.23",
+              "mountainV2.road.lamp.26",
+              "mountainV2.road.lamp.46",
+              "mountainV2.road.lamp.44",
+              "mountainV2.road.lamp.43"
+            ],
+            "poolTriangles": 4256,
+            "conformedPools": 38
+          },
+          "blocker": {
+            "walk": null,
+            "contact": null
+          }
+        },
+        "clock": "2026-06-22T03:00:00.000Z",
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+        "lights": {
+          "k": 0.6999999999999891,
+          "linesOn": 38,
+          "lines": 38,
+          "roadLamps": 341,
+          "anchors": 106,
+          "cap": 160,
+          "roadCards": 112,
+          "anchorCards": 48,
+          "cards": 160,
+          "pointLights": 6,
+          "pointLightsLit": 6,
+          "pointAssigned": [
+            "mountainV2.road.lamp.25",
+            "mountainV2.road.lamp.23",
+            "mountainV2.road.lamp.26",
+            "mountainV2.road.lamp.46",
+            "mountainV2.road.lamp.44",
+            "mountainV2.road.lamp.43"
+          ],
+          "poolTriangles": 4256,
+          "conformedPools": 38
+        },
+        "camera": {
+          "eye": [
+            1339.054894,
+            95.81356638587988,
+            584.302224
+          ],
+          "target": [
+            1336.991516,
+            96.21261970677577,
+            580.974059
+          ],
+          "fov": 34.63483611201092
+        },
+        "aspect": 1.5277777777777777,
+        "corridor": {
+          "building": false,
+          "furniture": {
+            "districts": {
+              "crown": {
+                "drawCalls": 6,
+                "triangles": 12334,
+                "instances": 37
+              },
+              "lakeside": {
+                "drawCalls": 6,
+                "triangles": 9692,
+                "instances": 33
+              },
+              "prow": {
+                "drawCalls": 5,
+                "triangles": 11294,
+                "instances": 38
+              }
+            },
+            "lamps": 272
+          },
+          "planting": {
+            "items": 610,
+            "drawn": 35,
+            "drawCalls": 4,
+            "triangles": 4104,
+            "layers": [
+              {
+                "key": "bed",
+                "count": 0,
+                "capacity": 161,
+                "triangles": 0
+              },
+              {
+                "key": "bloom:0",
+                "count": 0,
+                "capacity": 161,
+                "triangles": 0
+              },
+              {
+                "key": "bush",
+                "count": 0,
+                "capacity": 54,
+                "triangles": 0
+              },
+              {
+                "key": "contact",
+                "count": 10,
+                "capacity": 223,
+                "triangles": 100
+              },
+              {
+                "key": "dots:0.12",
+                "count": 0,
+                "capacity": 272,
+                "triangles": 0
+              },
+              {
+                "key": "heath",
+                "count": 1,
+                "capacity": 43,
+                "triangles": 20
+              },
+              {
+                "key": "hedge",
+                "count": 0,
+                "capacity": 34,
+                "triangles": 0
+              },
+              {
+                "key": "palm",
+                "count": 0,
+                "capacity": 32,
+                "triangles": 0
+              },
+              {
+                "key": "palmShell",
+                "count": 0,
+                "capacity": 32,
+                "triangles": 0
+              },
+              {
+                "key": "shell:birch",
+                "count": 0,
+                "capacity": 67,
+                "triangles": 0
+              },
+              {
+                "key": "shell:pine",
+                "count": 10,
+                "capacity": 75,
+                "triangles": 560
+              },
+              {
+                "key": "shell:round",
+                "count": 0,
+                "capacity": 49,
+                "triangles": 0
+              },
+              {
+                "key": "tree:birch",
+                "count": 11,
+                "capacity": 67,
+                "triangles": 1584
+              },
+              {
+                "key": "tree:pine",
+                "count": 23,
+                "capacity": 75,
+                "triangles": 1840
+              },
+              {
+                "key": "tree:round",
+                "count": 0,
+                "capacity": 49,
+                "triangles": 0
+              },
+              {
+                "key": "tuft",
+                "count": 0,
+                "capacity": 95,
+                "triangles": 0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "file": "classic-full-night-review-mountain-air.jpg",
+      "sha256": "28a49320c8df4c841247cb886deb8d7710c51d63e4c655d33d8494c0d5316924",
+      "theme": "classic",
+      "tier": "full",
+      "time": "night",
+      "orientation": "review",
+      "viewport": {
+        "width": 1100,
+        "height": 720
+      },
+      "pose": {
+        "id": "mountain-air",
+        "eye": [
+          1480,
+          290,
+          890
+        ],
+        "target": [
+          1260,
+          95,
+          625
+        ],
+        "paintCount": 22
+      },
+      "settled": {
+        "pending": [],
+        "region": {
+          "mounted": true,
+          "building": false
+        }
+      },
+      "stats": {
+        "region": {
+          "id": "mountainV2",
+          "mounted": true,
+          "building": false,
+          "visible": true,
+          "districts": [
+            "crown",
+            "hollow",
+            "lakeside",
+            "prow"
+          ],
+          "joins": [
+            {
+              "from": "v2:road:foot",
+              "to": "path:1282.000:54.650:720.000",
+              "distance": 3.5623997973743826e-8,
+              "how": "seam"
+            },
+            {
+              "from": "v2:overlook:summit",
+              "to": "path:1313.694:158.050:472.378",
+              "distance": 9.769940111747367,
+              "how": "seam"
+            },
+            {
+              "from": "v2:door:observatory",
+              "to": "path:1307.249:158.012:472.751",
+              "distance": 2.4012809084941527,
+              "how": "seam"
+            },
+            {
+              "from": "v2:town:quay",
+              "to": "path:1282.922:54.705:803.630",
+              "distance": 8.932429187352959,
+              "how": "seam"
+            },
+            {
+              "from": "v2:town:north",
+              "to": "path:1309.598:55.972:740.160",
+              "distance": 19.72543852150275,
+              "how": "seam"
+            },
+            {
+              "from": "v2:station:gondola:summit",
+              "to": "path:1298.300:158.050:481.700",
+              "distance": 0.004163056034290434,
+              "how": "lip"
+            },
+            {
+              "from": "v2:district:hearth",
+              "to": "path:1364.000:73.200:650.000",
+              "distance": 0,
+              "how": "lip"
+            },
+            {
+              "from": "v2:district:summit",
+              "to": "path:1310.000:158.000:470.000",
+              "distance": 0,
+              "how": "lip"
+            },
+            {
+              "from": "v2:apron:home",
+              "to": "path:1363.267:73.200:653.111",
+              "distance": 0.5282507736169731,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:hearth",
+              "to": "path:1357.539:73.072:664.116",
+              "distance": 2.9420806042280226e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:leg1-steps",
+              "to": "path:1342.395:61.715:698.325",
+              "distance": 3.0276320251136365e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:leg2-steps",
+              "to": "path:1356.751:66.282:682.003",
+              "distance": 4.353408132638794e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:leg2-steps-b",
+              "to": "path:1363.736:65.592:681.587",
+              "distance": 4.946626989028847e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:leg3-steps",
+              "to": "path:1347.591:72.017:663.185",
+              "distance": 5.774480562270236e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:lane:junction",
+              "to": "path:1327.339:69.791:669.364",
+              "distance": 7.000389753078281e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:station-steps",
+              "to": "path:1328.256:61.407:690.895",
+              "distance": 6.04864569212623e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:hairpin-2-west",
+              "to": "path:1327.018:69.600:671.320",
+              "distance": 5.381016878209839e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:library",
+              "to": "path:1353.457:90.754:603.745",
+              "distance": 5.771663120001306e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:b2-west",
+              "to": "path:1277.873:99.747:564.785",
+              "distance": 6.507010079083712e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:glasshouse",
+              "to": "path:1229.896:115.873:528.530",
+              "distance": 4.638861303351143e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:clearing",
+              "to": "path:1211.346:109.638:561.603",
+              "distance": 5.283692026955903e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:dam:west",
+              "to": "path:1295.182:142.000:525.942",
+              "distance": 4.403739393701003e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:dam:east",
+              "to": "path:1336.818:142.000:525.942",
+              "distance": 4.403739393701003e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:dam-stairs",
+              "to": "path:1268.306:121.380:534.766",
+              "distance": 6.67618324070233e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:reservoir",
+              "to": "path:1364.114:143.469:512.903",
+              "distance": 2.363053659948173e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:b3-east",
+              "to": "path:1363.710:130.215:555.123",
+              "distance": 6.208050648844299e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:b2-east",
+              "to": "path:1339.418:93.466:590.279",
+              "distance": 6.970148263799374e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:rim-steps",
+              "to": "path:1333.666:94.921:578.769",
+              "distance": 5.098304374971875e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:rim-top",
+              "to": "path:1349.281:127.962:551.115",
+              "distance": 6.847008028704259e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:summit",
+              "to": "path:1325.000:158.200:470.500",
+              "distance": 0,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:shelf",
+              "to": "path:1400.803:80.800:628.665",
+              "distance": 4.87734359140879e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:high-terrace",
+              "to": "path:1388.826:150.563:487.308",
+              "distance": 7.705490538475814e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:dam-overlook",
+              "to": "path:1353.193:128.556:551.929",
+              "distance": 5.921897479144454e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:hearth-lane",
+              "to": "path:1327.339:69.791:669.364",
+              "distance": 7.000389753078281e-7,
+              "how": "lip"
+            }
+          ],
+          "triangles": 494265,
+          "drawCalls": 121,
+          "groundTriangles": 77083,
+          "benches": 1
+        },
+        "draw": {
+          "at": 139235.8,
+          "calls": 193,
+          "triangles": 568478,
+          "resident": 4
+        },
+        "resident": [
+          "bight",
+          "crown",
+          "flats",
+          "green",
+          "harbour",
+          "hollow",
+          "lakeside",
+          "landing",
+          "notch",
+          "offshore",
+          "prow",
+          "reach",
+          "scholars",
+          "undercroft"
+        ],
+        "inspector": {
+          "time": "2026-10-04T16:11:52.887Z",
+          "clock": "2026-06-22T03:00:00.000Z",
+          "sha": null,
+          "tier": "full",
+          "position": {
+            "x": 1480,
+            "y": 288.4,
+            "z": 890
+          },
+          "heading": {
+            "degrees": 320.3,
+            "compass": "NW"
+          },
+          "mode": "look",
+          "perspective": "activity",
+          "mover": "feet",
+          "speed": null,
+          "grounded": null,
+          "surface": {
+            "id": "terrain",
+            "kind": "terrain",
+            "role": null,
+            "solidKind": null,
+            "material": "grass",
+            "y": 22.9,
+            "slope": 14.38
+          },
+          "station": {
+            "road": "plot.terraces.2.service",
+            "s": 62.48,
+            "reach": "service",
+            "context": "open",
+            "structureId": null,
+            "offset": 46.52,
+            "distance": 46.52,
+            "side": "right",
+            "left": {
+              "edge": "shoulder",
+              "guard": "none",
+              "paved": 2.5,
+              "gap": "entrance"
+            },
+            "right": {
+              "edge": "shoulder",
+              "guard": "none",
+              "paved": 2.5,
+              "gap": "entrance"
+            },
+            "onCarriageway": false
+          },
+          "frame": {
+            "p50": 2849.9,
+            "p95": 18666,
+            "samples": 26
+          },
+          "render": {
+            "calls": 193,
+            "triangles": 568478
+          },
+          "resident": {
+            "count": 4,
+            "ids": [
+              "harbour",
+              "notch",
+              "offshore",
+              "prow"
+            ]
+          },
+          "lights": {
+            "k": 1,
+            "linesOn": 38,
+            "lines": 38,
+            "roadLamps": 341,
+            "anchors": 106,
+            "cap": 160,
+            "roadCards": 112,
+            "anchorCards": 48,
+            "cards": 160,
+            "pointLights": 6,
+            "pointLightsLit": 0,
+            "pointAssigned": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "poolTriangles": 6384,
+            "conformedPools": 106
+          },
+          "blocker": {
+            "walk": null,
+            "contact": null
+          }
+        },
+        "clock": "2026-06-22T03:00:00.000Z",
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+        "lights": {
+          "k": 1,
+          "linesOn": 38,
+          "lines": 38,
+          "roadLamps": 341,
+          "anchors": 106,
+          "cap": 160,
+          "roadCards": 112,
+          "anchorCards": 48,
+          "cards": 160,
+          "pointLights": 6,
+          "pointLightsLit": 0,
+          "pointAssigned": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "poolTriangles": 6384,
+          "conformedPools": 106
+        },
+        "camera": {
+          "eye": [
+            1480,
+            290,
+            890
+          ],
+          "target": [
+            1260,
+            95,
+            625
+          ],
+          "fov": 34.63483611201092
+        },
+        "aspect": 1.5277777777777777,
+        "corridor": {
+          "building": false,
+          "furniture": {
+            "districts": {
+              "prow": {
+                "drawCalls": 5,
+                "triangles": 11294,
+                "instances": 38
+              },
+              "harbour": {
+                "drawCalls": 6,
+                "triangles": 12288,
+                "instances": 113
+              },
+              "notch": {
+                "drawCalls": 6,
+                "triangles": 4998,
+                "instances": 26
+              }
+            },
+            "lamps": 272
+          },
+          "planting": {
+            "items": 610,
+            "drawn": 32,
+            "drawCalls": 3,
+            "triangles": 5132,
+            "layers": [
+              {
+                "key": "bed",
+                "count": 0,
+                "capacity": 161,
+                "triangles": 0
+              },
+              {
+                "key": "bloom:0",
+                "count": 0,
+                "capacity": 161,
+                "triangles": 0
+              },
+              {
+                "key": "bush",
+                "count": 0,
+                "capacity": 54,
+                "triangles": 0
+              },
+              {
+                "key": "contact",
+                "count": 10,
+                "capacity": 223,
+                "triangles": 100
+              },
+              {
+                "key": "dots:0.12",
+                "count": 0,
+                "capacity": 272,
+                "triangles": 0
+              },
+              {
+                "key": "heath",
+                "count": 0,
+                "capacity": 43,
+                "triangles": 0
+              },
+              {
+                "key": "hedge",
+                "count": 0,
+                "capacity": 34,
+                "triangles": 0
+              },
+              {
+                "key": "palm",
+                "count": 0,
+                "capacity": 32,
+                "triangles": 0
+              },
+              {
+                "key": "palmShell",
+                "count": 0,
+                "capacity": 32,
+                "triangles": 0
+              },
+              {
+                "key": "shell:birch",
+                "count": 4,
+                "capacity": 67,
+                "triangles": 480
+              },
+              {
+                "key": "shell:pine",
+                "count": 3,
+                "capacity": 75,
+                "triangles": 168
+              },
+              {
+                "key": "shell:round",
+                "count": 4,
+                "capacity": 49,
+                "triangles": 480
+              },
+              {
+                "key": "tree:birch",
+                "count": 10,
+                "capacity": 67,
+                "triangles": 1440
+              },
+              {
+                "key": "tree:pine",
+                "count": 11,
+                "capacity": 75,
+                "triangles": 880
+              },
+              {
+                "key": "tree:round",
+                "count": 11,
+                "capacity": 49,
+                "triangles": 1584
+              },
+              {
+                "key": "tuft",
+                "count": 0,
+                "capacity": 95,
+                "triangles": 0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "file": "classic-full-night-review-stillwater-drive.jpg",
+      "sha256": "0381993eda48c882a22b52d1e74703f0208888c4d116c47b85167b14209bdfa5",
+      "theme": "classic",
+      "tier": "full",
+      "time": "night",
+      "orientation": "review",
+      "viewport": {
+        "width": 1100,
+        "height": 720
+      },
+      "pose": {
+        "id": "stillwater-drive",
+        "eye": [
+          1123.184225019,
+          54.746808364023174,
+          699.467347998
+        ],
+        "target": [
+          1119.229963662,
+          54.41799793776614,
+          698.871376427
+        ],
+        "seat": true,
+        "supports": [
+          {
+            "name": "eye",
+            "x": 1123.184225019,
+            "z": 699.467347998,
+            "floor": 53.096808364023175,
+            "surface": "stillwaterTunnel.floor@lakeside"
+          },
+          {
+            "name": "target",
+            "x": 1119.229963662,
+            "z": 698.871376427,
+            "floor": 52.76799793776614,
+            "surface": "stillwaterTunnel.floor@lakeside"
+          }
+        ],
+        "paintCount": 33,
+        "seatProof": {
+          "eye": [
+            1123.184225019,
+            54.746808364023174,
+            699.467347998
+          ],
+          "floor": 53.096808364023175,
+          "height": 1.6499999999999986
+        }
+      },
+      "settled": {
+        "pending": [],
+        "region": {
+          "mounted": true,
+          "building": false
+        }
+      },
+      "stats": {
+        "region": {
+          "id": "mountainV2",
+          "mounted": true,
+          "building": false,
+          "visible": true,
+          "districts": [
+            "crown",
+            "hollow",
+            "lakeside",
+            "prow"
+          ],
+          "joins": [
+            {
+              "from": "v2:road:foot",
+              "to": "path:1282.000:54.650:720.000",
+              "distance": 3.5623997973743826e-8,
+              "how": "seam"
+            },
+            {
+              "from": "v2:overlook:summit",
+              "to": "path:1313.694:158.050:472.378",
+              "distance": 9.769940111747367,
+              "how": "seam"
+            },
+            {
+              "from": "v2:door:observatory",
+              "to": "path:1307.249:158.012:472.751",
+              "distance": 2.4012809084941527,
+              "how": "seam"
+            },
+            {
+              "from": "v2:town:quay",
+              "to": "path:1282.922:54.705:803.630",
+              "distance": 8.932429187352959,
+              "how": "seam"
+            },
+            {
+              "from": "v2:town:north",
+              "to": "path:1309.598:55.972:740.160",
+              "distance": 19.72543852150275,
+              "how": "seam"
+            },
+            {
+              "from": "v2:station:gondola:summit",
+              "to": "path:1298.300:158.050:481.700",
+              "distance": 0.004163056034290434,
+              "how": "lip"
+            },
+            {
+              "from": "v2:district:hearth",
+              "to": "path:1364.000:73.200:650.000",
+              "distance": 0,
+              "how": "lip"
+            },
+            {
+              "from": "v2:district:summit",
+              "to": "path:1310.000:158.000:470.000",
+              "distance": 0,
+              "how": "lip"
+            },
+            {
+              "from": "v2:apron:home",
+              "to": "path:1363.267:73.200:653.111",
+              "distance": 0.5282507736169731,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:hearth",
+              "to": "path:1357.539:73.072:664.116",
+              "distance": 2.9420806042280226e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:leg1-steps",
+              "to": "path:1342.395:61.715:698.325",
+              "distance": 3.0276320251136365e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:leg2-steps",
+              "to": "path:1356.751:66.282:682.003",
+              "distance": 4.353408132638794e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:leg2-steps-b",
+              "to": "path:1363.736:65.592:681.587",
+              "distance": 4.946626989028847e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:leg3-steps",
+              "to": "path:1347.591:72.017:663.185",
+              "distance": 5.774480562270236e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:lane:junction",
+              "to": "path:1327.339:69.791:669.364",
+              "distance": 7.000389753078281e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:station-steps",
+              "to": "path:1328.256:61.407:690.895",
+              "distance": 6.04864569212623e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:hairpin-2-west",
+              "to": "path:1327.018:69.600:671.320",
+              "distance": 5.381016878209839e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:library",
+              "to": "path:1353.457:90.754:603.745",
+              "distance": 5.771663120001306e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:b2-west",
+              "to": "path:1277.873:99.747:564.785",
+              "distance": 6.507010079083712e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:glasshouse",
+              "to": "path:1229.896:115.873:528.530",
+              "distance": 4.638861303351143e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:clearing",
+              "to": "path:1211.346:109.638:561.603",
+              "distance": 5.283692026955903e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:dam:west",
+              "to": "path:1295.182:142.000:525.942",
+              "distance": 4.403739393701003e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:dam:east",
+              "to": "path:1336.818:142.000:525.942",
+              "distance": 4.403739393701003e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:dam-stairs",
+              "to": "path:1268.306:121.380:534.766",
+              "distance": 6.67618324070233e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:reservoir",
+              "to": "path:1364.114:143.469:512.903",
+              "distance": 2.363053659948173e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:b3-east",
+              "to": "path:1363.710:130.215:555.123",
+              "distance": 6.208050648844299e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:b2-east",
+              "to": "path:1339.418:93.466:590.279",
+              "distance": 6.970148263799374e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:rim-steps",
+              "to": "path:1333.666:94.921:578.769",
+              "distance": 5.098304374971875e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:rim-top",
+              "to": "path:1349.281:127.962:551.115",
+              "distance": 6.847008028704259e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:summit",
+              "to": "path:1325.000:158.200:470.500",
+              "distance": 0,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:shelf",
+              "to": "path:1400.803:80.800:628.665",
+              "distance": 4.87734359140879e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:high-terrace",
+              "to": "path:1388.826:150.563:487.308",
+              "distance": 7.705490538475814e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:dam-overlook",
+              "to": "path:1353.193:128.556:551.929",
+              "distance": 5.921897479144454e-7,
+              "how": "lip"
+            },
+            {
+              "from": "v2:road:hearth-lane",
+              "to": "path:1327.339:69.791:669.364",
+              "distance": 7.000389753078281e-7,
+              "how": "lip"
+            }
+          ],
+          "triangles": 494265,
+          "drawCalls": 121,
+          "groundTriangles": 77083,
+          "benches": 1
+        },
+        "draw": {
+          "at": 181034.1,
+          "calls": 113,
+          "triangles": 251834,
+          "resident": 4
+        },
+        "resident": [
+          "bight",
+          "crown",
+          "flats",
+          "green",
+          "harbour",
+          "hollow",
+          "lakeside",
+          "landing",
+          "notch",
+          "offshore",
+          "prow",
+          "reach",
+          "scholars",
+          "undercroft"
+        ],
+        "inspector": {
+          "time": "2026-10-04T16:12:46.949Z",
+          "clock": "2026-06-22T03:00:00.000Z",
+          "sha": null,
+          "tier": "full",
+          "position": {
+            "x": 1123.18,
+            "y": 53.15,
+            "z": 699.47
+          },
+          "heading": {
+            "degrees": 278.6,
+            "compass": "W"
+          },
+          "mode": "look",
+          "perspective": "activity",
+          "mover": "feet",
+          "speed": null,
+          "grounded": null,
+          "surface": {
+            "id": "stillwaterTunnel.floor@lakeside",
+            "kind": "solid",
+            "role": "floor",
+            "solidKind": "tunnel",
+            "material": "stone",
+            "y": 53.1,
+            "slope": 4.7
+          },
+          "station": {
+            "road": "spur stillwater",
+            "s": 190.13,
+            "reach": "spur stillwater",
+            "context": "structure",
+            "structureId": "stillwaterTunnel",
+            "offset": -0.01,
+            "distance": 0.01,
+            "side": "centre",
+            "left": {
+              "edge": "structure",
+              "guard": "bridgeRail",
+              "paved": 5,
+              "gap": null
+            },
+            "right": {
+              "edge": "structure",
+              "guard": "bridgeRail",
+              "paved": 5,
+              "gap": null
+            },
+            "onCarriageway": true
+          },
+          "frame": {
+            "p50": 2799.8,
+            "p95": 13916.2,
+            "samples": 33
+          },
+          "render": {
+            "calls": 113,
+            "triangles": 251834
+          },
+          "resident": {
+            "count": 4,
+            "ids": [
+              "crown",
+              "hollow",
+              "lakeside",
+              "undercroft"
+            ]
+          },
+          "lights": {
+            "k": 1,
+            "linesOn": 38,
+            "lines": 38,
+            "roadLamps": 341,
+            "anchors": 106,
+            "cap": 160,
+            "roadCards": 112,
+            "anchorCards": 48,
+            "cards": 160,
+            "pointLights": 6,
+            "pointLightsLit": 6,
+            "pointAssigned": [
+              "spur stillwater.lamp.9",
+              "spur stillwater.lamp.10",
+              "spur stillwater.lamp.11",
+              "spur stillwater.lamp.8",
+              "spur stillwater.lamp.12",
+              "spur stillwater.lamp.7"
+            ],
+            "poolTriangles": 9072,
+            "conformedPools": 148
+          },
+          "blocker": {
+            "walk": null,
+            "contact": null
+          }
+        },
+        "clock": "2026-06-22T03:00:00.000Z",
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+        "lights": {
+          "k": 1,
+          "linesOn": 38,
+          "lines": 38,
+          "roadLamps": 341,
+          "anchors": 106,
+          "cap": 160,
+          "roadCards": 112,
+          "anchorCards": 48,
+          "cards": 160,
+          "pointLights": 6,
+          "pointLightsLit": 6,
+          "pointAssigned": [
+            "spur stillwater.lamp.9",
+            "spur stillwater.lamp.10",
+            "spur stillwater.lamp.11",
+            "spur stillwater.lamp.8",
+            "spur stillwater.lamp.12",
+            "spur stillwater.lamp.7"
+          ],
+          "poolTriangles": 9072,
+          "conformedPools": 148
+        },
+        "camera": {
+          "eye": [
+            1123.184225019,
+            54.746808364023174,
+            699.467347998
+          ],
+          "target": [
+            1119.229963662,
+            54.41799793776614,
+            698.871376427
+          ],
+          "fov": 34.63483611201092
+        },
+        "aspect": 1.5277777777777777,
+        "corridor": {
+          "building": false,
+          "furniture": {
+            "districts": {
+              "lakeside": {
+                "drawCalls": 6,
+                "triangles": 9692,
+                "instances": 33
+              },
+              "hollow": {
+                "drawCalls": 5,
+                "triangles": 10872,
+                "instances": 30
+              },
+              "crown": {
+                "drawCalls": 6,
+                "triangles": 12334,
+                "instances": 37
+              }
+            },
+            "lamps": 272
+          },
+          "planting": {
+            "items": 610,
+            "drawn": 25,
+            "drawCalls": 3,
+            "triangles": 4776,
+            "layers": [
+              {
+                "key": "bed",
+                "count": 0,
+                "capacity": 161,
+                "triangles": 0
+              },
+              {
+                "key": "bloom:0",
+                "count": 0,
+                "capacity": 161,
+                "triangles": 0
+              },
+              {
+                "key": "bush",
+                "count": 0,
+                "capacity": 54,
+                "triangles": 0
+              },
+              {
+                "key": "contact",
+                "count": 12,
+                "capacity": 223,
+                "triangles": 120
+              },
+              {
+                "key": "dots:0.12",
+                "count": 0,
+                "capacity": 272,
+                "triangles": 0
+              },
+              {
+                "key": "heath",
+                "count": 0,
+                "capacity": 43,
+                "triangles": 0
+              },
+              {
+                "key": "hedge",
+                "count": 0,
+                "capacity": 34,
+                "triangles": 0
+              },
+              {
+                "key": "palm",
+                "count": 0,
+                "capacity": 32,
+                "triangles": 0
+              },
+              {
+                "key": "palmShell",
+                "count": 0,
+                "capacity": 32,
+                "triangles": 0
+              },
+              {
+                "key": "shell:birch",
+                "count": 12,
+                "capacity": 67,
+                "triangles": 1440
+              },
+              {
+                "key": "shell:pine",
+                "count": 0,
+                "capacity": 75,
+                "triangles": 0
+              },
+              {
+                "key": "shell:round",
+                "count": 0,
+                "capacity": 49,
+                "triangles": 0
+              },
+              {
+                "key": "tree:birch",
+                "count": 14,
+                "capacity": 67,
+                "triangles": 2016
+              },
+              {
+                "key": "tree:pine",
+                "count": 6,
+                "capacity": 75,
+                "triangles": 480
+              },
+              {
+                "key": "tree:round",
+                "count": 5,
+                "capacity": 49,
+                "triangles": 720
+              },
+              {
+                "key": "tuft",
+                "count": 0,
+                "capacity": 95,
+                "triangles": 0
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "errors": []
+}

@@ -1905,3 +1905,11 @@ Keep the authoritative 16,036-triangle funicular apron. Its proposed 6,704-trian
 ### 2026-10-01 — Horizon reset remains visible during rides
 
 Jonathan reported that he still could not see or use Reset when stuck after PR #574 merged. Keep the board's marker/race reset in its existing HUD. Give the Horizon a clearly named, separate Reset position control while walking and riding. Recovery uses the same safe foot position selected for reloading the active vehicle or monorail, then finds a walkable path and ends the active ride or kitchen activity. It changes only local world position and controls; it never resets a ledger or posts money. Risk Medium; Budget delta (5): 0; Engagement delta (3): +1 for reliable recovery.
+
+### 2026-10-01 — D-MR27: resume acceptance and approve portrait reframing
+
+Jonathan's “now finish what you were doing before” resumes implementation and verification after PR578 was merged at `123319dff4cfa870648e5d26272ddd6a80185554`. Work continues on `codex/mountain-road-finish`; the merge does not convert the checkpoint's failed or incomplete gates into passes. Existing native approvals and D-MR17 grade exceptions persist. No deployment or additional native geometry change is authorized.
+
+Jonathan separately chose **“Redesign their portrait framing, preserving routes and scenery”** for the four inherited subject-visibility failures: C/skate shelf (4/8 pixels), D/surf (0/8), F/L01 (0/8), and L/Boathouse (5/8). This authorizes portrait camera composition changes, with fresh standing/view, subject visibility and landscape preservation evidence required. It does not grant exceptions to those four targets or authorize moving scenery or routes.
+
+The ground collar now excludes all existing face corners from edge insertion and splits only at represented collinear knots. Previously a corner could be inserted twice, or a nearby non-collinear knot could create an edge with one or three incident faces. Distinct narrow faces remain present; no coordinate is snapped and no winding, manifold or error gate is weakened. The two focused files pass 19/19 tests in 36.98s. Served-world verification and total district rendering budgets remain separate. Risk High; Budget delta (5): 0; Engagement delta (3): +2 target.
