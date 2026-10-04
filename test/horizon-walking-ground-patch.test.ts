@@ -28,8 +28,21 @@ describe('one physical and drawn local ground patch',()=>{
  it('uses identical canonical top triangles in two different existing render grids',()=>{
   const p=patch(),outputs=[.8,1.5].map(step=>composeWalkingGround(grid(step),p));
   for(const r of outputs){expect(r.positions.slice(r.baseVertices*3,(r.baseVertices+r.patchVertices)*3)).toEqual(p.lattice.positions);
-   expect(Array.from(r.indices.slice(r.patchIndexStart,r.patchIndexStart+r.patchIndexCount),i=>i-r.baseVertices)).toEqual(Array.from(p.lattice.indices));}
+   expect(Array.from(r.indices.slice(r.patchIndexStart,r.patchIndexStart+r.patchIndexCount),i=>i-r.baseVertices)).toEqual(Array.from(p.lattice.indices));
+  // The .8m grid rounds an inner-edge knot beside an existing corner. Keeping
+  // both distinct must still produce upward faces;
+  // the opposite corner must not be inserted a second time as an edge knot.
+   for(let k=0;k<r.indices.length;k+=3){const [a,b,c]=Array.from(r.indices.slice(k,k+3),i=>Array.from(r.positions.slice(i*3,i*3+3)));
+    const ny=(b![2]!-a![2]!)*(c![0]!-a![0]!)-(b![0]!-a![0]!)*(c![2]!-a![2]!);expect(ny).toBeGreaterThan(0);}
+  }
   expect(outputs[0]!.clippedBaseTriangles).toBeGreaterThan(0);expect(outputs[1]!.clippedBaseTriangles).toBeGreaterThan(0);
+  // These different Float32 points are only a few dozen nanometres apart.
+  // They bound a real narrow collar face; neither snapping them nor dropping
+  // that face repairs the topology. The strict edge-incidence gate still runs.
+  const fine=outputs[0]!;let retainsNarrowFace=false;
+  for(let k=0;k<fine.indices.length;k+=3){const triangle=Array.from(fine.indices.slice(k,k+3),i=>[fine.positions[i*3]!,fine.positions[i*3+2]!]);
+   for(let a=0;a<3;a++)for(let b=a+1;b<3;b++)if(Math.hypot(triangle[a]![0]!-triangle[b]![0]!,triangle[a]![1]!-triangle[b]![1]!)>0&&Math.hypot(triangle[a]![0]!-triangle[b]![0]!,triangle[a]![1]!-triangle[b]![1]!)<1e-6)retainsNarrowFace=true;}
+  expect(retainsNarrowFace).toBe(true);
  });
  it('retains original grid vertices and every face wholly outside the explicit1.5m drawing collar',()=>{
   const p=patch(),base=grid(.8),positions=base.positions.slice(),indices=base.indices.slice(),r=composeWalkingGround(base,p);
@@ -38,10 +51,12 @@ describe('one physical and drawn local ground patch',()=>{
   for(let k=0;k<base.indices.length;k+=3){const ids=Array.from(base.indices.slice(k,k+3)),x=ids.map(i=>base.positions[3*i]!),z=ids.map(i=>base.positions[3*i+2]!);
    if(Math.max(...x)<p.bounds.x0-1.5||Math.min(...x)>p.bounds.x1+1.5||Math.max(...z)<p.bounds.z0-1.5||Math.min(...z)>p.bounds.z1+1.5)expect(triples.has(ids.join(','))).toBe(true);}
  });
- it('restores baseline bitwise through the finite outer ring and rejects an escaping cut',()=>{
-  const p=patch();expect(p.proof.outerRingChanged).toBe(0);expect(p.proof.outerRing).toBe(2);
+ it('measures the real cut before building the buffered local patch and rejects an escaping discovery',()=>{
+  const p=patch();expect(p.proof.outerRingChanged).toBe(0);expect(p.proof.discoveryRing).toBe(2);expect(p.proof.outerRing).toBe(2);expect(p.proof.measuredChangedBounds).not.toBeNull();
+  expect(p.bounds.x0).toBeLessThanOrEqual(p.proof.measuredChangedBounds!.x0-2);expect(p.bounds.x1).toBeGreaterThanOrEqual(p.proof.measuredChangedBounds!.x1+2);
+  expect(p.bounds.z0).toBeLessThanOrEqual(p.proof.measuredChangedBounds!.z0-2);expect(p.bounds.z1).toBeGreaterThanOrEqual(p.proof.measuredChangedBounds!.z1+2);
   for(let k=0;k<p.lattice.positions.length;k+=3){const[x,y,z]=p.lattice.positions.slice(k,k+3);if(x!< -1.5||x!>2.5||z!< -1.5||z!>2.5)expect(y).toBe(Math.fround(baseline(x!,z!)));}
-  expect(()=>createWalkingGroundPatch(deck,baseline,()=>.87,()=>true)).toThrow(/outer ring/);
+  expect(()=>createWalkingGroundPatch(deck,baseline,()=>.87,()=>true)).toThrow(/discovery boundary/);
   expect(()=>createWalkingGroundPatch(deck,baseline,ceiling,(x)=>x<2)).toThrow(/unowned/);
  });
  it('preserves original paint and applies the exact source interpolation to clipped vertices',()=>{

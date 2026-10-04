@@ -92,7 +92,7 @@ it('H: the open sea beyond the terrain grid is horizon, not the west sea (R3-59:
   const on = { kind: 'water', t: 400, id: 'water.sea', point: [200, 0, 600] } as const, off = { kind: 'water', t: 900, id: 'water.sea', point: [-300, 0, 330] } as const;
   expect(west(on, [-1, -.1, 0])).toBe(true); expect(west(off, [-1, -.05, 0])).toBe(false); expect(sea(off, [-1, -.05, 0])).toBe(false);
 });
-it('the honest proof on candidate 6\'s bake: G (under the shaft) and H (the aerial eye) pass; the phone fails A, C, D, L (R3-74)', async () => {
+it('keeps all landscape subjects and the repaired C/D/F/L portrait subjects legible on the baked world', async () => {
   const { readFileSync } = await import('node:fs'), { decodeTerrainAsset } = await import('../src/harbour/horizon/land/terrain/asset.ts');
   const world = JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8')), bytes = readFileSync('public/horizon/terrain/horizon-geo-1.bin');
   const baked = decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), 'full');
@@ -104,10 +104,18 @@ it('the honest proof on candidate 6\'s bake: G (under the shaft) and H (the aeri
   // v2.6 (D-M3/D-M10): the dam's glass face is retired: A's phone frame holds the High Span alone and passes; F re-posed on v2's crest.
   // Road main (L1): the Quay Bridge's new south abutment hides 3 px of the Boathouse from page L (11 of 13): owed to Jonathan
   // (an authored-view change or a shorter abutment); the page's night subject, Lantern Row, is unchanged.
-  // Bridge cast: Quay's replaced support arrangement reveals 13 Boathouse pixels (was11).
-  // No camera moved; the original13-pixel landscape threshold now passes. Phone remains5px.
+  // Bridge cast: Quay's replaced support arrangement reveals 13 Boathouse pixels (was 11).
+  // The approved portrait reframe preserves that landscape composition and puts both subjects in frame.
   expect(px('L','the Boathouse').pixels).toBe(13);
-  expect(list('passLandscape')).toBe('ABCDEFGHIJKL'); expect(list('passPortrait')).toBe('ABEGHIJK');   // v2.6b: F's eye moved onto the promenade (the east end stood inside the abutment); L01 is open on the phone like C/D/L (D-D11/D-D12 class)
+  // D-MR27: approved portrait reframing preserves every subject and landscape.
+  expect(list('passLandscape')).toBe('ABCDEFGHIJKL'); expect(list('passPortrait')).toBe('ABCDEFGHIJKL');
+  for (const id of ['C', 'D', 'F', 'L']) {
+    const proof = views.find(v => v.id === id)!.proof!.portrait;
+    if (!proof) throw new Error(`Missing portrait proof for ${id}`);
+    expect(proof.horizonInFrame).toBe(true);
+    expect(Object.values(proof.subjects).every(pixels => pixels >= proof.minPixels)).toBe(true);
+  }
+  expect(views.find(v => v.id === 'L')!.proof!.portrait!.subjects).toMatchObject({ 'Lantern Row': 11, 'the Boathouse': 13 });
   expect([px('G', 'the skylight shaft').pixels, px('G', 'the skylight shaft').portraitPixels]).toEqual([70, 42]);
   expect([px('H', 'the west sea').pixels, px('H', 'the west sea').portraitPixels]).toEqual([349, 94]);   // road main: one ray of the west sea meets the corridor at the Flats
   expect([px('J', 'the Prow').pixels, px('J', 'the arch').pixels]).toEqual([1163, 1743]);

@@ -59,13 +59,17 @@ export function funicularFootPathPlacement(solids:readonly StructureSolid[],grou
   faces.push({p,box,order:faces.length});
  };
  const gp=ground.render.positions;for(let k=0;k<ground.render.indices.length;k+=3)append([0,1,2].map(j=>{const i=ground.render.indices[k+j]!;return[gp[i*3]!+O.x,gp[i*3+1]!+O.y,gp[i*3+2]!+O.z] as XYZ;}));
+ // Physics and authored solid vertices are already in world coordinates.
+ // renderOrigin is only the renderer's translation after Float32-safe baking.
  for(const s of solids){if(!s.walkable)continue;for(let k=0;k<s.indices.length;k+=3)append([0,1,2].map(j=>{const i=s.indices[k+j]!;return[s.positions[i*3]!,s.positions[i*3+1]!,s.positions[i*3+2]!] as XYZ;}));}
  // The native station's actual planked rectangle is another drawn host.
  // Its art extends .05m beyond the platform contract at each edge. Preserve
  // those corners and paint over this real deck, not over its lower lawn.
  for(const tri of funicularFootStationTop())append(tri);
- const boundaries=new Map(faces.map(f=>[f,planes(f.p.map(p=>[p[0],p[2]] as Point))]));
- const support=(x:number,z:number):number=>{let h=-Infinity;for(const f of faces)if(boundaries.get(f)!.every(d=>d([x,z])>=-eps))h=Math.max(h,yAt(f,x,z));if(!Number.isFinite(h))throw new Error(`Missing drawn Foot path support ${x},${z}`);return h;};
+ const boundaries=new Map(faces.map(f=>[f,planes(f.p.map(p=>[p[0],p[2]] as Point))])),FACE_CELL=2,faceCells=new Map<string,Face[]>();
+ for(const f of faces)for(let ix=Math.floor(f.box[0]/FACE_CELL);ix<=Math.floor(f.box[2]/FACE_CELL);ix++)for(let iz=Math.floor(f.box[1]/FACE_CELL);iz<=Math.floor(f.box[3]/FACE_CELL);iz++){const key=`${ix}:${iz}`,list=faceCells.get(key)??[];list.push(f);faceCells.set(key,list);}
+ const facesIn=(x0:number,z0:number,x1:number,z1:number):Face[]=>{const found=new Set<Face>();for(let ix=Math.floor(x0/FACE_CELL);ix<=Math.floor(x1/FACE_CELL);ix++)for(let iz=Math.floor(z0/FACE_CELL);iz<=Math.floor(z1/FACE_CELL);iz++)for(const f of faceCells.get(`${ix}:${iz}`)??[])found.add(f);return[...found].sort((a,b)=>a.order-b.order);};
+ const support=(x:number,z:number):number=>{let h=-Infinity;for(const f of facesIn(x-eps,z-eps,x+eps,z+eps))if(f.box[0]<=x+eps&&f.box[2]>=x-eps&&f.box[1]<=z+eps&&f.box[3]>=z-eps&&boundaries.get(f)!.every(d=>d([x,z])>=-eps))h=Math.max(h,yAt(f,x,z));if(!Number.isFinite(h))throw new Error(`Missing drawn Foot path support ${x},${z}`);return h;};
  return(b,pal,tier,path)=>{
   if(!affectedIds.includes(path.id))return false;
   buildGroundPathArt(b,pal,tier,path,{
@@ -91,7 +95,8 @@ export function funicularFootPathPlacement(solids:readonly StructureSolid[],grou
   for(let i=1;i<frames.length;i++)for(let k=0;k<3;k++){
    const band=[point(i-1,k),point(i,k),point(i,k+1),point(i-1,k+1)],clip=[...planes(band),...patchPlanes],color=shade(k===1?pal.gravel:mix(pal.gravel,pal.verge,.5),.95+hash2(i,k)*.08);
    if(!affectedBand(band))continue;
-   const candidates=faces.filter(f=>f.box[0]<=Math.max(...band.map(p=>p[0]))&&f.box[2]>=Math.min(...band.map(p=>p[0]))&&f.box[1]<=Math.max(...band.map(p=>p[1]))&&f.box[3]>=Math.min(...band.map(p=>p[1])));
+   const minX=Math.min(...band.map(p=>p[0])),maxX=Math.max(...band.map(p=>p[0])),minZ=Math.min(...band.map(p=>p[1])),maxZ=Math.max(...band.map(p=>p[1]));
+   const candidates=facesIn(minX,minZ,maxX,maxZ).filter(f=>f.box[0]<=maxX&&f.box[2]>=minX&&f.box[1]<=maxZ&&f.box[3]>=minZ);
    for(const f of candidates){let pieces=[intersect(f.p.map(p=>[p[0],p[2]] as Point),clip)].filter(valid);
     for(const other of candidates){if(other===f)continue;
      const higher=(q:Point)=>yAt(other,q[0],q[1])-yAt(f,q[0],q[1])+(other.order>f.order?1e-10:-1e-10);

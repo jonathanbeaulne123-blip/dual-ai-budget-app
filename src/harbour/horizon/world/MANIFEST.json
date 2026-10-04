@@ -6191,14 +6191,18 @@
    "portrait": {
     "fov_deg": 50,
     "target": [
-     1222,
-     1102
+     1240,
+     1105
     ],
-    "target_h": 16,
+    "target_h": 15,
     "frames": [
      "the road deck",
      "the skate shelf",
      "the walk at the water"
+    ],
+    "xy": [
+     1198,
+     1145
     ]
    },
    "deferred": [],
@@ -6242,12 +6246,12 @@
     "the Lamp (Pass 2b subject: 670 eu from the eye, 9 px of 13 at 1440 \u00d7 900 by size; the Pass 2b lighthouse and its 25 m gallery make it legible; design lead, Stage A Wave 5 integration 2026-09-27)"
    ],
    "portrait": {
-    "fov_deg": 50,
+    "fov_deg": 55,
     "target": [
-     700,
-     1454
+     1100,
+     1450
     ],
-    "target_h": 5,
+    "target_h": 3,
     "frames": [
      "surf",
      "the zipline landing"
@@ -6378,10 +6382,10 @@
    "portrait": {
     "fov_deg": 45,
     "target": [
-     1150,
-     760
+     1160,
+     650
     ],
-    "target_h": 101.4,
+    "target_h": 100,
     "frames": [
      "L01",
      "Stillwater"
@@ -6896,20 +6900,20 @@
     "lantern cards"
    ],
    "portrait": {
-    "fov_deg": 45,
+    "fov_deg": 65,
     "target": [
-     1285,
-     1315
+     1370,
+     1305
     ],
-    "target_h": 4,
+    "target_h": 5,
     "frames": [
      "Lantern Row",
      "the Boathouse"
     ],
     "v1_8_xy": null,
     "xy": [
-     1460,
-     1300
+     1430,
+     1210
     ]
    },
    "v1_6": {
