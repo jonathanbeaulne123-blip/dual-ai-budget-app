@@ -50,6 +50,7 @@ import type {MonorailState} from '../mountain/monorail.ts';
 import {avatarPreferenceKey,readAvatar,saveAvatar} from '../body/avatarPreference.ts';
 import type {PlayableAvatar} from '../body/avatarDefinition.ts';
 import type {FundPulseFreshness} from '../../core/fundPulse.ts';
+import type {GliderPadId} from './runtime/gliderPads.ts';
 export const HORIZON_HOST_TOOLS:Readonly<Record<string,string>>={home:'conversation',bank:'loft-banks',library:'books',glasshouse:'planner',studio:'pottery',cottage:'wardrobe',boathouse:'wishes'};
 const TOUCH='(hover: none) and (pointer: coarse)';
 const readTouch=()=>{try{return typeof window.matchMedia==='function'&&window.matchMedia(TOUCH).matches;}catch{return false;}};
@@ -273,6 +274,14 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
     else if(action.kind==='monorail-control')world.monorailControl(action.control,action.value);
   }
   function showGuide(){setGuideOpen(true);}
+  /** The Guide's "Glider launches" (Jonathan 2026-10-04): stand on that pad's deck, ready to run off; refused (and said) while a ride, the galley or the monorail owns the body. */
+  function goToGliderPad(id:string){
+    setGuideOpen(false);const world=runtime.current;if(!world)return;
+    if(world.skate()?.active()){world.skate()?.setAudio(null);world.stopSkate();setSkating(null);}
+    const result=world.goToGliderPad(id as GliderPadId);
+    if(!result.ok){setNotice(result.reason);focusStage();return;}
+    setTravelTo(null);world.emote(null);setNotice('');focusStage();
+  }
   const skateAvailable=worldReady&&Boolean(runtime.current?.hasSkate?.());
   useOfferWorldActions({skate:skateAvailable&&!riding&&!toolOpen?startSkating:undefined});
   // The phone branch is below 720px (AGENTS.md), so the glass is lite there.
@@ -292,7 +301,7 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
       {space==='mine'&&worldReady&&!toolOpen&&<MineLayer layer={mine} place="court" rects={rects} hidden={Boolean(riding||skating)} onOpen={openMine}/>}
       {worldReady&&!toolOpen&&<HarbourTwins rects={rects} hidden={Boolean(riding||skating)} label="Horizon places" onActivate={rect=>{const place=rect.id.startsWith('visit:')?rect.id.slice(6):null;if(place&&Object.hasOwn(HARBOUR_PLACE_NAMES,place))walkToPlace(place as HarbourPlaceId);}}/>}
       {worldReady&&!toolOpen&&<VillageHUD memberId={memberId} theme={theme} calm={comfort.quiet} lite={lite} night={glassNight} alwaysShowLabels={comfort.labels} toolsOpen={props.toolsOpen} glassBetween={dock} fab={props.fab} onQuickSheet={props.onQuickSheet} place={here} travelling={travelTo} onVisit={place=>{walkToPlace(place);}} onGuide={showGuide} avatar={avatar} avatarStatus={avatarStatus} onAvatar={chooseAvatar} presence={presence}/>}
-      {worldReady&&!toolOpen&&<HorizonGuide open={guideOpen} onClose={()=>{setGuideOpen(false);focusStage();}} views={runtime.current?.world?.views??[]} onView={id=>{runtime.current?.setMode('look');runtime.current?.shot(id);setGuideOpen(false);focusStage();}} onWalk={()=>{runtime.current?.setMode('walk');setGuideOpen(false);focusStage();}} onPlace={place=>{setGuideOpen(false);walkToPlace(place);}} skateAvailable={skateAvailable&&!riding} skateHere={canSkate} skateWhy={skateWhy} onSkate={()=>{if(startSkating())setGuideOpen(false);}} onRace={()=>{if(startSkating()){runtime.current?.skate()?.route('mountain-descent');setGuideOpen(false);}}} monorailAvailable={runtime.current?.hasMonorail?.()??false} onMonorail={(from,stops)=>{if(runtime.current?.monorailBoard(from)){for(const stop of stops)runtime.current?.monorailSelect(stop);setGuideOpen(false);focusStage();}}} onJourney={props.onJourney} soundOn={soundOn} onSound={toggleSound}/>}
+      {worldReady&&!toolOpen&&<HorizonGuide open={guideOpen} onClose={()=>{setGuideOpen(false);focusStage();}} views={runtime.current?.world?.views??[]} onView={id=>{runtime.current?.setMode('look');runtime.current?.shot(id);setGuideOpen(false);focusStage();}} onWalk={()=>{runtime.current?.setMode('walk');setGuideOpen(false);focusStage();}} onPlace={place=>{setGuideOpen(false);walkToPlace(place);}} skateAvailable={skateAvailable&&!riding} skateHere={canSkate} skateWhy={skateWhy} onSkate={()=>{if(startSkating())setGuideOpen(false);}} onRace={()=>{if(startSkating()){runtime.current?.skate()?.route('mountain-descent');setGuideOpen(false);}}} monorailAvailable={runtime.current?.hasMonorail?.()??false} onMonorail={(from,stops)=>{if(runtime.current?.monorailBoard(from)){for(const stop of stops)runtime.current?.monorailSelect(stop);setGuideOpen(false);focusStage();}}} onJourney={props.onJourney} soundOn={soundOn} onSound={toggleSound} gliderPads={runtime.current?.gliderPads?.()??[]} onGliderPad={goToGliderPad}/>}
       {monorail&&!toolOpen&&<MountainPanel open={false} monorail={monorail} partnerName={partnerName} statusLine={null} onAction={monorailAction} onOpen={props.onOpen}/>}
       {worldReady&&!toolOpen&&props.panel?.host&&<HostPanel key={props.panel.host} host={props.panel.host} reading={reading} extras={props.panel.extras} theme={theme} onClose={props.panel.onClose} onOpen={props.panel.onOpen} onRecord={props.panel.onRecord} onMarkPaid={props.panel.onMarkPaid} onTalk={props.panel.onTalk} returnFocusTo={props.panel.returnFocusTo}
         onVisit={()=>{const host=props.panel?.host;if(host&&host!=='hercules'&&Object.hasOwn(VILLAGE_ADDRESS,host))walkToPlace(host as HarbourPlaceId);props.panel?.onClose();}}

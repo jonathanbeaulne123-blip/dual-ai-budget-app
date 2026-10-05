@@ -18,6 +18,7 @@ import type {HouseBodyReturn} from '../../house/navigation.ts';
 import type {PlaceWalkSource} from '../scene/place.ts';
 import {appCalm,appReducedMotion} from './sun/comfort.ts';
 import './horizon.css';
+import {GLIDER_PAD_HINT} from './runtime/gliderPads.ts';
 import type {ThemeId} from '../../theme/scenes.ts';
 import {HORIZON_MANIFEST} from './world/manifest.ts';
 import {recordDiagnostic,registerDiagnosticProvider} from '../../diagnostics/inspectorCore.ts';
@@ -48,6 +49,11 @@ const readCalm=(props?:Pick<HorizonStageProps,'calm'>)=>props?.calm??appCalm();
 /** A vehicle-to-vehicle hand-off (the plane's Jump) is a 0.5 s hold, so a stray tap does nothing (FLIGHT.md §3.1). */
 const HOLD_MS=(HORIZON_MANIFEST.carriedThresholds.find(threshold=>threshold.id==='bailOut')?.hold_s??.5)*1000;
 const offerKey=(o:ThresholdOffer)=>`${o.thresholdId}:${o.from}:${o.to}`;
+/** A glider offer's button words (Jonathan 2026-10-04): the act ("Glide"), keyed E on desktop; the threshold's own words stay in its name. */
+export const offerButtonText=(o:Pick<ThresholdOffer,'to'|'action'>)=>o.to==='glider'?'Glide':o.action;
+/** The offer row is shown on a desktop (fine pointer ≥ 800 px) too when it holds a glider launch: a keyed button, not only the thin E strip. */
+export const offersKeyed=(offers:readonly Pick<ThresholdOffer,'to'>[])=>offers.some(o=>o.to==='glider');
+
 /** The old shell's words for the stage while skating (HarbourWorld.tsx). */
 export const SKATE_STAGE_WORDS='Skate the Harbour. W pushes, A turns left, D turns right, S brakes. Hold Space and release to jump farther. Press and hold Space again in the air to drift toward a nearby rail or wall ride surface. In the air after a Space jump, the arrows do board tricks; tap W for a backflip, S for a frontflip, and hold A or D to spin. Hold the down arrow and flick up to ollie, flick to a corner to flip. Q and E grab, G locks onto rails, M manuals, R returns to your marker, P pauses, B walks.';
 export const WALK_STATUS='Drag to look. Walk with W A S D, Space jumps; E opens a nearby door.';
@@ -74,6 +80,9 @@ export default function HorizonStage(props:HorizonStageProps){
   // The touch Boost toggle (Shift on a keyboard) for the cruiser and the bicycle; it drops whenever the ride changes.
   const [boost,setBoost]=useState(false),wheeled=mover?.mode==='cruiser'||mover?.mode==='bicycle';
   useEffect(()=>{setBoost(false);},[mover?.mode]);
+  // Jonathan 2026-10-04: the first time this visit the walker comes within ~25 m of a glider launch, one line says so.
+  const [padHint,setPadHint]=useState<string|null>(null),hintedPads=useRef(new Set<string>()),padHintTimer=useRef<number|null>(null);
+  useEffect(()=>()=>{if(padHintTimer.current!==null)window.clearTimeout(padHintTimer.current);},[]);
   const [boatActions,setBoatActions]=useState<FleetAction[]>([]),[fleetState,setFleetState]=useState<ReturnType<HorizonRuntime['fleetState']>|null>(null);
   const [tier]=useState<'full'|'lite'>(()=>new URLSearchParams(location.search).get('tier')==='lite'||matchMedia('(max-width: 600px)').matches?'lite':'full');
   useEffect(()=>{const controller=new AbortController();let current:HorizonRuntime|null=null,unregister:(()=>void)|null=null,unregisterDiagnostics:(()=>void)|null=null;
@@ -116,6 +125,8 @@ export default function HorizonStage(props:HorizonStageProps){
     const poll=window.setInterval(()=>{
       const world=runtime.current;if(!world)return;const airActions=world.airportActions(),airState=world.airportState(),airKey=JSON.stringify([airActions,airState.selected,airState.power,airState.speed,airState.grounded,airState.disabled,airState.saveFailed]);if(airKey!==lastAirport){lastAirport=airKey;setAirportActions(airActions);setAirportState(airState);}const actionsHome=world.homeActions?.()??[],homeKey=JSON.stringify(actionsHome);if(homeKey!==lastHome){lastHome=homeKey;setHomeActions(actionsHome);}
       const kitchenView=world.kitchenView?.();if(kitchenView){const k=JSON.stringify(kitchenView);if(k!==kitchenSnapshot.current){kitchenSnapshot.current=k;setKitchen(kitchenView);}}
+      const pad=latest.current.paused?null:world.gliderPadNear?.()??null;
+      if(pad&&!hintedPads.current.has(pad)){hintedPads.current.add(pad);setPadHint(GLIDER_PAD_HINT);if(padHintTimer.current!==null)window.clearTimeout(padHintTimer.current);padHintTimer.current=window.setTimeout(()=>{padHintTimer.current=null;setPadHint(null);},7000);}
       const next={offers:world.offers(),mover:world.moverState(),mode:world.mode(),cable:world.cableControls?.()??[]},hud=next.mover.hud;
       if(next.mode==='walk'&&!latest.current.paused&&(!next.mover.attached||isCraft(next.mover.mode))){
         const actions=world.fleetActions(),state=world.fleetState();
@@ -187,7 +198,9 @@ export default function HorizonStage(props:HorizonStageProps){
       <div className="horizon-fleet__actions">{boatActions.map((a,i)=><button key={a.id} onClick={()=>{runtime.current?.fleetAction(a.id);stage.current?.focus();}}>{a.label}{i===0?' · E':''}</button>)}</div>
       {fleetState?.saveFailed&&<p role="status">Boats are saved for this visit only; device storage is unavailable.</p>}
     </div>}
-    {!kitchenActive&&!props.paused&&<div className="horizon-offer" role="status" data-empty={mode==='walk'&&offers.length>0?undefined:'true'}><span className="horizon-offer__text">{mode==='walk'&&offers[0]?`E · ${offers[0].action}`:''}</span></div>}
+    {/* A glider launch has its own keyed button on desktop (the offer row below); the strip then stays empty rather than repeat it. */}
+    {!kitchenActive&&!props.paused&&<div className="horizon-offer" role="status" data-empty={mode==='walk'&&offers.length>0&&!offersKeyed(offers)?undefined:'true'}><span className="horizon-offer__text">{mode==='walk'&&offers[0]&&!offersKeyed(offers)?`E · ${offers[0].action}`:''}</span></div>}
+    {!kitchenActive&&!props.paused&&ready&&padHint&&mode==='walk'&&<p className="horizon-glider-hint" role="status">{padHint}</p>}
     {!props.paused&&<>
       <div className="horizon-top-controls">
       {!props.shell&&<div className="horizon-toolbar" aria-label="World controls">
@@ -223,9 +236,9 @@ export default function HorizonStage(props:HorizonStageProps){
         {mover?.stowed&&<button onClick={()=>{runtime.current?.resumeEquipment();stage.current?.focus();}}>Ride {mover.stowed}</button>}</>}
         <div className="horizon-pad" role="group" aria-label="Look pad" onPointerDown={e=>pad(e,'look')} onPointerMove={e=>pad(e,'look')} onPointerUp={e=>pad(e,'look')} onPointerCancel={e=>pad(e,'look')}>Look</div>
       </div>}
-      {!kitchenActive&&ready&&!sheet&&offers.length>0&&<div className="horizon-offers" role="group" aria-label="Change how you travel here">
-        {offers.map(offer=>{const held=offer.from!=='feet'&&offer.to!=='feet';return <button key={offerKey(offer)} className={held?'horizon-offer horizon-offer--hold':'horizon-offer'} aria-label={held?`${offer.action} (press and hold)`:offer.action}
-          onClick={e=>{if(!held||e.detail===0)take(offer);}} onPointerDown={held?()=>holdStart(offer):undefined} onPointerUp={held?holdEnd:undefined} onPointerLeave={held?holdEnd:undefined} onPointerCancel={held?holdEnd:undefined}>{offer.action}</button>;})}
+      {!kitchenActive&&ready&&!sheet&&offers.length>0&&<div className={offersKeyed(offers)?'horizon-offers horizon-offers--keyed':'horizon-offers'} role="group" aria-label="Change how you travel here">
+        {offers.map((offer,i)=>{const held=offer.from!=='feet'&&offer.to!=='feet',text=offerButtonText(offer),name=offer.to==='glider'?`${text}: ${offer.action}`:offer.action;return <button key={offerKey(offer)} className={held?'horizon-offer horizon-offer--hold':'horizon-offer'} aria-label={held?`${name} (press and hold)`:name} aria-keyshortcuts={i===0&&!held?'E':undefined}
+          onClick={e=>{if(!held||e.detail===0)take(offer);}} onPointerDown={held?()=>holdStart(offer):undefined} onPointerUp={held?holdEnd:undefined} onPointerLeave={held?holdEnd:undefined} onPointerCancel={held?holdEnd:undefined}>{text}{i===0&&!held&&<kbd className="horizon-offer__key" aria-hidden="true">E</kbd>}</button>;})}
       </div>}
       {ready&&mover?.attached&&mover.hud?.height!==undefined&&<p className="horizon-bubble horizon-bubble-height" aria-live="off">
         <span>{Math.max(0,Math.round(mover.hud.height))} m</span>{Math.abs(mover.hud.lift??0)>=.5&&<span className="horizon-bubble-lift" aria-label={(mover.hud.lift??0)>0?'rising':'sinking'}>{(mover.hud.lift??0)>0?'↑':'↓'}</span>}
