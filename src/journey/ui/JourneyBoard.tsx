@@ -23,6 +23,7 @@ import { JourneyBoardView, type JourneyStageSource } from "./JourneyBoardView.ts
 import { COPY } from "./copy.ts";
 import { useReducedMotion } from "./motion.ts";
 import { useJourneyViewStateStore } from "./viewState.ts";
+import type { RecordModesProp } from "./mergeShim.ts";
 
 /** Test seams only (the App passes plain `JourneyBoardProps`). */
 export type JourneyBoardSeams = {
@@ -105,6 +106,16 @@ export default function JourneyBoard(props: JourneyBoardProps & JourneyBoardSeam
     return () => controller.abort();
   }, []);
 
+  // Offline: the books shown are this device's copy — said on the purse and the list (UX #25).
+  const [offline, setOffline] = useState(() => typeof navigator !== "undefined" && navigator.onLine === false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sync = () => setOffline(typeof navigator !== "undefined" && navigator.onLine === false);
+    window.addEventListener("online", sync);
+    window.addEventListener("offline", sync);
+    return () => { window.removeEventListener("online", sync); window.removeEventListener("offline", sync); };
+  }, []);
+
   const createScene = props.createScene === undefined ? createJourneyMapScene : props.createScene;
   const [lost, setLost] = useState(false);
   const wants3d = quality !== "flat" && !lost && Boolean(createScene) && land.status !== "failed";
@@ -170,8 +181,10 @@ export default function JourneyBoard(props: JourneyBoardProps & JourneyBoardSeam
         onBeforeEnterHorizon={(state) => { store.save(state); store.flush(); }}
         onLost={() => setLost(true)}
         onReady={props.onReady}
+        notice={notice}
+        offline={offline}
+        recordModes={(props as JourneyBoardProps & RecordModesProp).recordModes}
       />
-      <p className="journey-visually-hidden" role="status" aria-live="polite" data-journey-notice="">{notice}</p>
     </>
   );
 }

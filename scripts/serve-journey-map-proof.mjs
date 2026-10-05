@@ -7,7 +7,7 @@
     Jonathan (MEM-002) — the same fixture the journey model tests use. `?empty=1` is a brand-new household template.
     Query: ?theme=classic|taylor|newfoundland  ?level=year|month|week  ?list=1  ?motion=reduced  ?quality=flat|lite|full
            ?land=fail (the land never arrives)  ?loading=1 (the land is still on its way)  ?empty=1  ?due=N (the App's
-           repeating reminders count)  ?member=MEM-001
+           repeating reminders count)  ?member=MEM-001  ?modes=expense,shift,income,bill,transfer (the dial's verbs)
     Nothing is stored: view state lives in an in-memory Storage seeded from the query, and every action is a stub that
     records its name in `window.__actions`. The page mirrors the App's fonts (index.html) so type renders as it does there. */
 import { createServer } from 'vite';
@@ -65,6 +65,8 @@ function Proof() {
   return React.createElement(JourneyBoard, {
     household, memberId: member, environment: 'development', today, theme, actions, storage,
     dueReview: q.get('due') ? { count: Number(q.get('due')) } : null,
+    // The App's record modes for the "+" dial (fabActionsFor): ?modes=expense,shift,income,bill,transfer.
+    ...(q.get('modes') ? { recordModes: q.get('modes').split(',') } : {}),
     onChooseTheme: (t) => { record('chooseTheme')(t); setTheme(t); },
     onReady: () => { window.__ready = true; },
     ...seams,

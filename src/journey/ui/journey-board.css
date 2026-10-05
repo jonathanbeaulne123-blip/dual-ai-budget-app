@@ -12,6 +12,8 @@
  */
 
 .journey-board {
+  /* Control borders: ≥ 3:1 on paper (UX #22); --edge-deep stays for the soft drop shadows. */
+  --edge-ink: color-mix(in srgb, var(--edge-deep) 55%, var(--ink));
   --sky: #fbeee8; --sea-top: #d3f0ef; --sea-bot: #8ccbd3;
   --paper: #fffaf5; --paper-2: #fdeee6; --edge: #efd3cb; --edge-deep: #d9aea4;
   --ink: #5b3c4d; --ink-soft: #7d5b6c; --accent: #de5577; --accent-deep: #b13e5d; --accent-ink: #ffffff;
@@ -20,7 +22,8 @@
   --font-d: "Fredoka", "Baloo 2", ui-rounded, "Nunito", var(--font, "Trebuchet MS"), system-ui, sans-serif;
   --font-b: "Nunito", var(--font, "Segoe UI"), system-ui, sans-serif;
   --edge-pattern: none;
-  --jb-bottom: var(--jb-compass, var(--mobile-bottom-clearance, 0px));
+  /* Phones: the App's measured Compass when it stands, else the home indicator only (the board owns the bottom). */
+  --jb-bottom: var(--jb-compass, env(safe-area-inset-bottom, 0px));
 
   position: relative;
   box-sizing: border-box;
@@ -45,6 +48,8 @@
   --ink: #4a3a2a; --ink-soft: #6e5c48; --accent: #c9502e; --accent-deep: #9b3c21; --accent-ink: #ffffff;
   --honey: #eea52f; --honey-soft: #fff0cc; --expected: #76695a; --scrim: rgba(60, 45, 25, 0.28);
   --ok: #3e6e3a; --mint-deep: #2c7d58; --focus: #2b4f73;
+  /* Classic Hearth: a hearth-tile edge (a fine terracotta grout grid) on the paper. */
+  --edge-pattern: repeating-linear-gradient(90deg, transparent 0 15px, rgba(155, 60, 33, 0.09) 15px 16px), repeating-linear-gradient(180deg, transparent 0 15px, rgba(155, 60, 33, 0.09) 15px 16px);
 }
 .journey-board--taylor {
   --sky: #fbeee8; --sea-top: #d3f0ef; --sea-bot: #8ccbd3;
@@ -52,6 +57,8 @@
   --ink: #5b3c4d; --ink-soft: #7d5b6c; --accent: #de5577; --accent-deep: #b13e5d; --accent-ink: #ffffff;
   --honey: #f2ad35; --honey-soft: #fff0cf; --expected: #76667c; --scrim: rgba(70, 40, 55, 0.28);
   --ok: #3c7a57; --mint-deep: #2a7d5a; --focus: #6b2a4a;
+  /* Taylor's Scrapbook: ruled notebook paper, and washi tape on the sheets (below). */
+  --edge-pattern: repeating-linear-gradient(180deg, transparent 0 17px, rgba(222, 85, 119, 0.10) 17px 18px);
 }
 .journey-board--newfoundland {
   --sky: #e9f0f1; --sea-top: #cfe3ea; --sea-bot: #5f93ab;
@@ -60,7 +67,7 @@
   --honey: #eaa73a; --honey-soft: #fdf0d4; --expected: #5f707b; --scrim: rgba(20, 40, 55, 0.30);
   --ok: #2f6a49; --mint-deep: #25775a; --focus: #21506f;
   /* Clapboard: painted boards along the paper's lower edge, the same finish as the plinth. */
-  --edge-pattern: repeating-linear-gradient(180deg, transparent 0 9px, rgba(38, 56, 74, 0.07) 9px 10px);
+  --edge-pattern: repeating-linear-gradient(180deg, transparent 0 9px, rgba(38, 56, 74, 0.12) 9px 10px);
 }
 
 /* --- shared atoms ------------------------------------------------------------------------------------------------ */
@@ -76,7 +83,7 @@
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   min-height: 44px; min-width: 44px; padding: 0 12px;
   font-family: var(--font-d); font-weight: 600; font-size: 15px; color: var(--ink);
-  background: var(--paper); border: 2px solid var(--edge-deep); border-radius: 16px; box-shadow: 0 3px 0 var(--edge-deep);
+  background: var(--paper); border: 2px solid var(--edge-ink); border-radius: 16px; box-shadow: 0 3px 0 var(--edge-deep);
   cursor: pointer;
 }
 .journey-toy:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
@@ -94,8 +101,16 @@
 .journey-header > * { pointer-events: auto; }
 .journey-header__side { position: relative; display: flex; gap: 6px; align-items: center; min-width: 44px; }
 .journey-header__side--end { justify-content: flex-end; }
-.journey-chapter { display: flex; align-items: center; gap: 6px; }
+.journey-chapter { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.journey-chapter__short { display: none; }
 .journey-chapter__title { text-align: center; min-width: 112px; line-height: 1.05; }
+.journey-header__chips { position: absolute; top: 60px; right: 10px; display: flex; gap: 6px; pointer-events: auto; }
+.journey-count-chip { min-height: 44px; font-size: 13.5px; background: var(--honey-soft); border-color: var(--honey); box-shadow: 0 3px 0 var(--ink); border-color: var(--ink); }
+.journey-year-caption {
+  position: absolute; z-index: 6; left: 50%; top: 110px; transform: translateX(-50%); margin: 0; width: max-content; max-width: calc(100% - 20px);
+  padding: 4px 12px; text-align: center; font-size: 12.5px; font-weight: 800; color: var(--ink-soft);
+  background: color-mix(in srgb, var(--paper) 88%, transparent); border: 1.5px dashed var(--edge-ink); border-radius: 14px;
+}
 .journey-chapter__title b { display: block; font-family: var(--font-d); font-weight: 700; font-size: 22px; color: var(--ink); text-shadow: 0 2px 0 rgba(255, 255, 255, 0.7); }
 .journey-chapter__title span { font-size: 12px; font-weight: 800; color: var(--ink-soft); letter-spacing: 0.02em; }
 
@@ -108,7 +123,7 @@
 .journey-pop__x { position: absolute; right: 4px; top: 4px; font-size: 18px; }
 .journey-pop__title { margin: 0 48px 6px 0; min-height: 36px; display: flex; align-items: center; font-family: var(--font-d); font-size: 15px; }
 .journey-pop__sub { margin: 8px 0 2px; font-family: var(--font-d); font-size: 13.5px; }
-.journey-about { left: 0; width: min(340px, calc(100vw - 20px)); max-height: 70vh; overflow: auto; }
+.journey-about { left: 0; width: min(340px, calc(100vw - 20px)); max-height: 70dvh; overflow: auto; }
 .journey-about ul { margin: 0; padding-left: 18px; }
 .journey-about li { margin: 3px 0; }
 .journey-themes { right: 0; display: flex; flex-direction: column; gap: 4px; padding: 6px; min-width: 200px; }
@@ -121,12 +136,12 @@
 .journey-stage__canvas { position: absolute; inset: 0; }
 .journey-stage__canvas canvas { display: block; width: 100%; height: 100%; }
 .journey-stage__note {
-  position: absolute; z-index: 2; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0;
+  position: absolute; z-index: 5; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0;
   max-width: min(320px, calc(100% - 32px)); text-align: center; font-weight: 700; font-size: 13px; color: var(--ink);
   background: var(--paper); border: 2px solid var(--edge-deep); border-radius: 16px; padding: 8px 12px;
 }
-/* Above the bubble (bottom 182 px + its height on phones), which covered "Drawing the island…" at every width. */
-.journey-stage__note[data-land-note="loading"] { top: auto; bottom: calc(var(--jb-bottom) + 272px); transform: translateX(-50%); opacity: 0.92; }
+/* Under the header and the purse, clear of the bubble at every width (UX #15). */
+.journey-stage__note[data-land-note="loading"] { top: 132px; transform: translateX(-50%); opacity: 0.92; }
 
 .journey-flat { position: absolute; inset: 0; pointer-events: none; }
 .journey-flat svg { position: absolute; inset: 0; }
@@ -135,13 +150,20 @@
 .journey-flat__sea { fill: var(--sea-top); }
 .journey-flat__stud { fill: var(--edge-deep); }
 .journey-flat__numeral { font-family: var(--font-d); font-weight: 700; font-size: 18px; fill: var(--ink-soft); }
+.journey-flat__numeral--gate { font-size: 20px; fill: var(--accent-deep); }
+.journey-flat__plinth-boards { display: none; }
+.journey-board--newfoundland .journey-flat__plinth-boards { display: inline; opacity: 0.55; }
+.journey-flat__board { fill: #e5544c; }
+.journey-flat__lap { stroke: rgba(0, 0, 0, 0.16); stroke-width: 1; }
+.journey-flat__seam { stroke: rgba(255, 255, 255, 0.85); stroke-width: 1; }
 .journey-flat__lane { stroke: var(--paper); stroke-linecap: round; stroke-linejoin: round; opacity: 0.92; }
 .journey-flat__island { position: absolute; border-radius: 50%; overflow: hidden; }
 .journey-flat__island svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 .journey-marks { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
 .journey-mark {
-  position: absolute; left: 0; top: 0; width: 44px; height: 44px; margin: -22px 0 0 -22px; padding: 0;
+  --mark: 44px;
+  position: absolute; left: 0; top: 0; width: var(--mark); height: var(--mark); min-width: 0; min-height: 0; margin: calc(var(--mark) / -2) 0 0 calc(var(--mark) / -2); padding: 0;
   border: 0; background: transparent; border-radius: 50%; cursor: pointer; pointer-events: auto;
 }
 .journey-mark[hidden] { display: none; }
@@ -160,12 +182,18 @@
 .journey-marks--flat .journey-mark--chapter .journey-mark__hit { inset: 0; background: radial-gradient(circle at 50% 50%, #cfe9a8 0 38%, var(--sea-top) 39% 62%, var(--edge) 63%); border: 2px solid var(--edge-deep); }
 .journey-marks--flat .journey-mark--chapter.journey-mark--empty .journey-mark__hit { opacity: 0.6; border-style: dashed; }
 .journey-marks--flat .journey-mark.is-focused .journey-mark__hit { box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink); }
+/* Live: the keyboard's focused day gets a ring on the canvas too (UX #13). */
+.journey-marks--live .journey-mark--day.is-focused:not(.journey-mark--today) .journey-mark__hit { inset: 6px; box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink); }
+.journey-focus-ring { position: absolute; left: 0; top: 0; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink); pointer-events: none; }
 .journey-mark.is-selected .journey-mark__hit { box-shadow: 0 0 0 3px var(--honey), 0 2px 0 var(--edge-deep); }
 .journey-mark__ring {
   position: absolute; right: -2px; top: -2px; min-width: 20px; height: 20px; border-radius: 10px; padding: 0 5px;
   background: var(--honey); color: #3b2a00; border: 2px solid var(--ink);
   font-family: var(--font-d); font-weight: 700; font-size: 12px; line-height: 16px; text-align: center;
 }
+/* Live: the scene draws each to-check slot's honey ring and "!" bead; the DOM ring would say it twice (the pile's
+   count badge is DOM-only, so it stays). The words travel in every mark's aria-label. */
+.journey-marks--live .journey-mark:not(.journey-mark--pile) .journey-mark__ring { display: none; }
 .journey-mark__plate {
   position: absolute; left: 50%; top: 100%; transform: translate(calc(-50% + var(--plate-dx, 0px)), 2px); white-space: nowrap;
   background: var(--paper); color: var(--ink); border: 1.5px solid var(--ink); border-radius: 12px; box-shadow: 0 2px 0 var(--ink);
@@ -173,19 +201,41 @@
 }
 .journey-mark__plate small { display: block; font-family: var(--font-b); font-weight: 700; font-size: 10.5px; color: var(--ink-soft); }
 .journey-mark--current .journey-mark__plate { background: var(--accent-deep); color: var(--accent-ink); z-index: 1; }
-.journey-marks--year .journey-mark__plate small { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
 .journey-mark--current .journey-mark__plate small { color: rgba(255, 255, 255, 0.92); }
 .journey-mark--empty .journey-mark__plate { color: var(--ink-soft); border-style: dashed; box-shadow: none; }
-.journey-marks--week .journey-mark--today .journey-mark__plate { background: var(--accent-deep); color: var(--accent-ink); }
+/* Year: two-line paper plates centred on the mini's anchor, the open month outlined in honey (UX #8, B2). */
+.journey-mark__plate--year {
+  top: 50%; min-width: 56px; padding: 3px 9px 4px; border-radius: 14px; font-size: 12.5px;
+  transform: translate(calc(-50% + var(--plate-dx, 0px) + var(--plate-x, 0px)), calc(-50% + var(--plate-y, 0px)));
+}
+.journey-mark__plate--year small { font-size: 10px; white-space: pre; }
+.journey-year-caption__key { display: block; font-size: 11.5px; }
+@media (max-width: 719px) {
+  .journey-mark__plate--year { font-size: 11.5px; padding: 2px 7px 3px; min-width: 48px; border-radius: 12px; }
+  .journey-mark__plate--year small { font-size: 9.5px; }
+}
+.journey-marks--year .journey-mark--open .journey-mark__plate { outline: 3px solid var(--honey); outline-offset: 1px; z-index: 2; }
 .journey-marks--live .journey-mark--chapter { width: 64px; height: 64px; margin: -32px 0 0 -32px; }
+/* Week: each day's tag printed ON its tile's face (the scene's face anchor), the prototype's "WED 30 · $300". */
+.journey-mark__plate--face {
+  top: 0; left: 0; transform: translate(calc(var(--mark) / 2 + var(--plate-x, 0px) - 50%), calc(var(--mark) / 2 + var(--plate-y, 0px) - 50%));
+  padding: 2px 7px; border: 0; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12); border-radius: 10px;
+  background: rgba(255, 255, 255, 0.94); font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+}
+.journey-marks--week .journey-mark--stone .journey-mark__plate--face { background: transparent; box-shadow: none; font-size: 10px; color: var(--ink-soft); padding: 0; }
+.journey-marks--week .journey-mark--today .journey-mark__plate--face { background: rgba(255, 255, 255, 0.96); color: var(--ink); font-size: 12px; }
+.journey-marks--flat.journey-marks--week .journey-mark--today .journey-mark__plate { background: var(--accent-deep); color: var(--accent-ink); }
+.journey-mark--pile .journey-mark__ring { min-width: 30px; height: 26px; line-height: 22px; font-size: 14px; border-radius: 13px; right: -10px; top: -10px; }
 
 .journey-callout {
-  position: absolute; left: 0; top: 0; z-index: 4; pointer-events: none; white-space: nowrap; max-width: 260px;
+  position: absolute; left: 0; top: 0; z-index: 4; pointer-events: none; white-space: nowrap;
   background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 16px; box-shadow: 0 3px 0 var(--ink);
   padding: 4px 11px 5px; font-family: var(--font-d); font-weight: 600; font-size: 14px; line-height: 1.15; text-align: center;
-  overflow: hidden; text-overflow: ellipsis;
 }
-.journey-callout small { display: block; font-family: var(--font-b); font-weight: 700; font-size: 11.5px; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; }
+.journey-callout small { display: block; font-family: var(--font-b); font-weight: 700; font-size: 11.5px; color: var(--ink-soft); }
+.journey-leaders { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.journey-leaders line { stroke: var(--ink); stroke-width: 2; stroke-linecap: round; opacity: 0.5; }
+.journey-leaders circle { fill: var(--ink); }
 .journey-callout--today { background: var(--accent-deep); color: var(--accent-ink); }
 .journey-callout--today small { color: rgba(255, 255, 255, 0.92); }
 .journey-callout--selected { background: var(--honey-soft); }
@@ -200,14 +250,20 @@
 }
 .journey-purse__p1 { font-family: var(--font-d); font-weight: 600; font-size: 14px; color: var(--ink-soft); }
 .journey-purse__p1 b { color: var(--ink); font-weight: 700; }
+.journey-purse__gloss { font-size: 11.5px; font-weight: 700; color: var(--ink-soft); }
 .journey-purse__p2 { font-size: 12px; font-weight: 700; color: var(--ink-soft); line-height: 1.25; }
 .journey-purse__p2 b { color: var(--ok); }
-.journey-board--level-week .journey-purse { max-width: calc(100% - 222px); }
+.journey-purse__p3 { font-size: 11.5px; font-weight: 800; color: var(--ink); line-height: 1.25; }
+.journey-purse__short { display: none; }
+/* The phone Week shares its row with the pill: the short pay line (UX #24). */
+.journey-board--level-week .journey-purse { max-width: calc(100% - 196px); }
+.journey-board--level-week .journey-purse__gloss, .journey-board--level-week .journey-purse__long { display: none; }
+.journey-board--level-week .journey-purse__short { display: inline; }
 
 .journey-bubble {
   position: absolute; z-index: 5; left: 50%; bottom: calc(var(--jb-bottom) + 182px); transform: translateX(-50%);
   width: min(340px, calc(100% - 24px)); min-height: 56px; display: flex; align-items: center; gap: 10px; text-align: left;
-  padding: 9px 12px 10px 14px; background: var(--paper); color: var(--ink);
+  padding: 9px 12px 10px 14px; background: var(--paper); background-image: var(--edge-pattern); color: var(--ink);
   border: 2.5px solid var(--ink); border-radius: 22px; box-shadow: 0 4px 0 var(--ink); cursor: pointer;
 }
 .journey-bubble::before {
@@ -216,12 +272,15 @@
 }
 .journey-bubble__text { flex: 1; min-width: 0; }
 .journey-bubble__b1 { display: block; font-family: var(--font-d); font-weight: 700; font-size: 17px; line-height: 1.15; }
-.journey-bubble__b2 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin-top: 1px; font-weight: 700; font-size: 13.5px; line-height: 1.3; color: var(--ink-soft); }
+.journey-bubble__b2 { display: block; margin-top: 1px; font-weight: 700; font-size: 13.5px; line-height: 1.3; color: var(--ink-soft); }
 .journey-bubble__b2 b { color: var(--ink); }
+.journey-bubble__chips { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.journey-bubble__word { color: var(--accent-deep); font-weight: 800; }
 .journey-bubble__chip {
   flex: none; white-space: nowrap; padding: 6px 9px; border-radius: 14px;
   background: var(--honey-soft); border: 2px solid var(--honey); color: var(--ink); font-family: var(--font-d); font-weight: 600; font-size: 13px;
 }
+.journey-bubble__chip--other { background: var(--paper-2); border-color: var(--edge-ink); padding: 3px 8px; font-size: 12px; }
 .journey-bubble__chip--now { background: var(--accent-deep); border-color: var(--ink); color: var(--accent-ink); }
 .journey-bubble--mini {
   top: 62px; bottom: auto; left: auto; right: 10px; transform: none; width: auto; min-height: 44px;
@@ -244,9 +303,10 @@
 /* The dock spans the board (pointer-events pass through) so the dial's scrim covers the whole map. */
 .journey-dock { position: absolute; z-index: 9; inset: 0; pointer-events: none; }
 .journey-dock > * { pointer-events: auto; }
+.journey-dock__pull { display: contents; }
 .journey-pull {
   position: absolute; left: 10px; bottom: calc(var(--jb-bottom) + 98px); width: min(300px, calc(100% - 20px)); padding: 0 6px 4px;
-  background: var(--paper); border: 2px solid var(--edge-deep); border-radius: 18px; box-shadow: 0 3px 0 var(--edge-deep);
+  background: var(--paper); border: 2px solid var(--edge-ink); border-radius: 18px; box-shadow: 0 3px 0 var(--edge-deep);
 }
 .journey-pull__row { display: flex; align-items: center; gap: 2px; }
 .journey-pull__lv {
@@ -261,12 +321,12 @@
   -webkit-appearance: none; appearance: none; display: block; width: calc(100% - 58px); height: 44px; margin: -8px 0 -6px;
   background: transparent; cursor: grab; touch-action: none;
 }
-.journey-pull__slider::-webkit-slider-runnable-track { height: 8px; border-radius: 8px; background: repeating-linear-gradient(90deg, var(--ink) 0 8px, transparent 8px 14px); opacity: 0.55; }
-.journey-pull__slider::-moz-range-track { height: 8px; border-radius: 8px; background: repeating-linear-gradient(90deg, var(--ink) 0 8px, transparent 8px 14px); opacity: 0.55; }
+.journey-pull__slider::-webkit-slider-runnable-track { height: 8px; border-radius: 8px; background: repeating-linear-gradient(90deg, var(--ink-soft) 0 8px, transparent 8px 14px); }
+.journey-pull__slider::-moz-range-track { height: 8px; border-radius: 8px; background: repeating-linear-gradient(90deg, var(--ink-soft) 0 8px, transparent 8px 14px); }
 .journey-pull__slider::-webkit-slider-thumb { -webkit-appearance: none; width: 44px; height: 28px; margin-top: -10px; border-radius: 9px 9px 15px 15px; background: var(--accent); border: 3px solid var(--paper); box-shadow: 0 3px 0 var(--accent-deep); }
 .journey-pull__slider::-moz-range-thumb { width: 38px; height: 22px; border-radius: 9px 9px 15px 15px; background: var(--accent); border: 3px solid var(--paper); box-shadow: 0 3px 0 var(--accent-deep); }
 
-.journey-key { left: 10px; top: auto; bottom: calc(var(--jb-bottom) + 182px); width: min(340px, calc(100% - 20px)); position: absolute; }
+.journey-key { left: 10px; top: auto; bottom: calc(var(--jb-bottom) + 182px); width: min(340px, calc(100% - 20px)); position: absolute; z-index: 13; }
 .journey-key__list { margin: 0; padding: 0; list-style: none; }
 .journey-key__list li { margin: 5px 0; display: flex; gap: 8px; align-items: flex-start; }
 .journey-key__list li.is-current { background: var(--honey-soft); border-radius: 8px; margin: 5px -4px; padding: 2px 4px; }
@@ -300,7 +360,9 @@
   width: 112px; min-height: 44px; display: flex; flex-direction: column; align-items: center; gap: 4px;
   background: none; border: 0; cursor: pointer; padding: 0;
 }
-.journey-petal--paid { margin-bottom: 28px; }
+.journey-petal--mid { margin-bottom: 28px; }
+.journey-radial__petals[data-count="4"], .journey-radial__petals[data-count="5"] { flex-wrap: wrap; max-width: 360px; row-gap: 8px; }
+.journey-radial__petals[data-count="4"] .journey-petal, .journey-radial__petals[data-count="5"] .journey-petal { width: 104px; }
 .journey-petal i {
   width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
   background: var(--paper); color: var(--ink); border: 3px solid var(--ink); box-shadow: 0 4px 0 var(--ink);
@@ -315,12 +377,13 @@
 .journey-board--animated .journey-petal:nth-child(3) { animation-delay: 80ms; }
 @keyframes journey-pop { from { transform: scale(0.3); opacity: 0; } to { transform: none; opacity: 1; } }
 .journey-radial__opens { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 520px; }
-.journey-radial__lead { width: 100%; text-align: center; font-family: var(--font-d); font-weight: 600; font-size: 13px; color: var(--accent-ink); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
+.journey-radial__lead { width: 100%; text-align: center; }
+.journey-radial__lead > span { display: inline-block; padding: 2px 10px; font-family: var(--font-d); font-weight: 600; font-size: 13px; color: var(--ink); background: var(--paper); border: 1.5px solid var(--ink); border-radius: 10px; }
 .journey-chip { font-size: 13.5px; }
 
 .journey-toggle {
   position: absolute; right: 12px; bottom: calc(var(--jb-bottom) + 26px); display: flex; padding: 3px;
-  background: var(--paper); border: 2px solid var(--edge-deep); border-radius: 18px; box-shadow: 0 3px 0 var(--edge-deep);
+  background: var(--paper); border: 2px solid var(--edge-ink); border-radius: 18px; box-shadow: 0 3px 0 var(--edge-deep);
 }
 .journey-toggle__option {
   min-height: 44px; min-width: 52px; border: 0; border-radius: 14px; background: transparent; cursor: pointer;
@@ -342,12 +405,20 @@
 
 .journey-sheet-slot[hidden] { display: none; }
 .journey-panel {
-  position: absolute; z-index: 14; left: 8px; right: 8px; bottom: calc(var(--jb-bottom) + 8px); max-height: 62vh; overflow: auto;
-  padding: 14px 16px 16px; background: var(--paper); color: var(--ink);
+  position: absolute; z-index: 14; left: 8px; right: 8px; bottom: calc(var(--jb-bottom) + 8px); max-height: 62dvh; overflow: auto;
+  padding: 14px 16px 16px; background: var(--paper); background-image: var(--edge-pattern); color: var(--ink);
   border: 2.5px solid var(--ink); border-radius: 26px; box-shadow: 0 5px 0 var(--ink), 0 14px 30px rgba(0, 0, 0, 0.18);
   overscroll-behavior: contain;
 }
 .journey-panel__head { position: relative; padding-right: 52px; }
+/* Taylor's Scrapbook: a strip of washi tape holds each sheet to the map. */
+.journey-board--taylor .journey-panel::before, .journey-board--taylor .journey-list::before {
+  content: ""; position: sticky; display: block; top: -14px; margin: -14px auto 4px; width: 92px; height: 18px; z-index: 3;
+  background: repeating-linear-gradient(135deg, rgba(238, 127, 162, 0.55) 0 6px, rgba(255, 210, 122, 0.55) 6px 12px);
+  border-radius: 2px; transform: rotate(-2deg);
+}
+.journey-panel__title:focus { outline: none; }
+.journey-panel__title:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .journey-panel__kind { margin: 0; font-size: 11.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); }
 .journey-panel__title { margin: 0 0 4px; font-family: var(--font-d); font-weight: 700; font-size: 22px; line-height: 1.1; outline-offset: 2px; }
 .journey-panel__close { position: absolute; right: -6px; top: -4px; width: 44px; height: 44px; border-radius: 50%; padding: 0; font-size: 20px;
@@ -440,9 +511,11 @@
 .journey-list {
   position: absolute; z-index: 7; left: 8px; right: 8px; top: 62px; bottom: calc(var(--jb-bottom) + 190px);
   overflow: auto; overscroll-behavior: contain; padding: 14px 16px 16px;
-  background: var(--paper); border: 2.5px solid var(--ink); border-radius: 26px; box-shadow: 0 5px 0 var(--ink), 0 14px 30px rgba(0, 0, 0, 0.18);
+  background: var(--paper); background-image: var(--edge-pattern); border: 2.5px solid var(--ink); border-radius: 26px; box-shadow: 0 5px 0 var(--ink), 0 14px 30px rgba(0, 0, 0, 0.18);
 }
 .journey-board--list .journey-purse { display: none; }
+.journey-board--list.has-header-chips .journey-list { top: 112px; }
+.journey-list__status { margin: 0 0 6px; padding: 4px 10px; border-radius: 12px; background: var(--honey-soft); border: 1.5px solid var(--honey); font-size: 12.5px; font-weight: 800; }
 .journey-list__kick { margin: 0; font-size: 11.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); }
 .journey-list__title { margin: 0 0 4px; font-family: var(--font-d); font-weight: 700; font-size: 22px; line-height: 1.1; }
 .journey-list__empty, .journey-list__quiet { margin: 2px 0 6px; font-size: 13.5px; font-weight: 700; color: var(--ink-soft); }
@@ -452,14 +525,14 @@
 .journey-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 6px 0 8px; }
 .journey-strip > div { min-width: 0; padding: 6px 8px; background: var(--paper-2); border: 1.5px solid var(--edge); border-radius: 14px; }
 .journey-strip dt { font-size: 11px; font-weight: 800; letter-spacing: 0.02em; color: var(--ink-soft); }
-.journey-strip dd { margin: 0; font-family: var(--font-d); font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.journey-strip dd { margin: 0; font-family: var(--font-d); font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
 .journey-strip__sub { font-family: var(--font-b) !important; font-size: 11px !important; font-weight: 700 !important; white-space: normal !important; }
 .journey-strip__in { color: var(--ok); }
 .journey-strip__need { background: var(--honey-soft) !important; border-color: var(--ink) !important; }
 .journey-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 4px 0 6px; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
 .journey-legend > span { display: inline-flex; align-items: center; gap: 5px; }
 .journey-legend .journey-dot { width: 16px; height: 16px; font-size: 10px; }
-.journey-group { margin: 0; }
+.journey-group { display: contents; }
 .journey-day { margin: 10px 0 0; font-family: var(--font-d); font-weight: 600; font-size: 13px; color: var(--ink-soft); }
 .journey-day--need { color: var(--ink); }
 .journey-day--today {
@@ -474,10 +547,33 @@
   .journey-header { padding: 8px 6px 0; gap: 4px; }
   .journey-chapter { gap: 2px; }
   .journey-chapter__title { min-width: 0; }
+  .journey-chapter__title b { font-size: 19px; }
+  .journey-chapter__title span { font-size: 11px; letter-spacing: 0; }
+  .journey-header__side { gap: 4px; }
+  /* The dial's petals wrap their words and fit 296 px (UX #2); "+" and Map/List keep apart. */
+  .journey-petal { width: 92px; }
+  .journey-radial__petals[data-count="4"] .journey-petal, .journey-radial__petals[data-count="5"] .journey-petal { width: 92px; }
+  .journey-petal__label { white-space: normal; max-width: 92px; text-align: center; font-size: 12px; }
+  .journey-toggle { right: 6px; }
+  .journey-toggle__option { min-width: 46px; font-size: 14px; }
+  .journey-plus { left: calc(50% - 30px); }
+  .journey-purse__gloss, .journey-purse__long { display: none; }
+  .journey-purse__short { display: inline; }
+  .journey-year-caption { top: 104px; font-size: 11.5px; }
+  .journey-chapter__long { display: none; }
+  .journey-chapter__short { display: inline; }
+  /* Week: the pill takes the row under the header; the purse its own row below it (2 lines, never 5). */
+  .journey-board--level-week .journey-purse { top: 112px; max-width: calc(100% - 20px); }
+  .journey-board--level-week .journey-bubble--mini { top: 60px; right: 6px; }
+  .journey-callout { font-size: 12.5px; padding: 3px 9px 4px; }
+  .journey-callout small { font-size: 10.5px; }
+  .journey-bubble__b1 { font-size: 15.5px; }
+  .journey-bubble__b2 { font-size: 12.5px; }
 }
-/* 720–1060 px: the purse (bottom left) and the centred bubble share a band, and the purse covered the bubble's first line. */
-@media (min-width: 720px) and (max-width: 1060px) {
-  .journey-board .journey-bubble:not(.journey-bubble--mini) { bottom: calc(var(--jb-bottom) + 178px); }
+/* 720–1059 px: the purse (bottom left) and a centred bubble share a band: the bubble moves to the right (UX #6). */
+@media (min-width: 720px) and (max-width: 1059px) {
+  .journey-board .journey-bubble:not(.journey-bubble--mini) { left: auto; right: 24px; transform: none; bottom: calc(var(--jb-bottom) + 104px); width: min(340px, calc(50% - 40px)); }
+  .journey-board .journey-bubble:not(.journey-bubble--mini)::before { left: 70%; }
 }
 @media (min-width: 720px) {
   .journey-board { min-height: 560px; }
@@ -487,12 +583,19 @@
   .journey-board--level-week .journey-purse { max-width: 340px; }
   .journey-bubble { bottom: calc(var(--jb-bottom) + 110px); }
   .journey-bubble--mini { top: 64px; bottom: auto; left: 50%; right: auto; transform: translateX(-50%); }
+  .journey-board--level-week .journey-purse__gloss, .journey-board--level-week .journey-purse__long { display: inline; }
+  .journey-board--level-week .journey-purse__short { display: none; }
+  .journey-header__chips { top: 64px; right: 24px; }
+  .journey-stage__note[data-land-note="loading"] { top: 84px; }
+  .journey-year-caption { top: 72px; }
   .journey-pull { left: 20px; bottom: calc(var(--jb-bottom) + 14px); width: min(340px, calc(50% - 64px)); padding: 2px 8px 6px; }
   .journey-pull__lv { font-size: 15px; }
   .journey-key { left: 20px; bottom: calc(var(--jb-bottom) + 104px); }
   .journey-toggle { right: 24px; }
   .journey-panel { left: auto; right: 20px; top: 76px; bottom: auto; width: 370px; max-height: calc(100% - 190px - var(--jb-bottom)); }
   .journey-list { left: 50%; right: auto; transform: translateX(-50%); width: 560px; top: 76px; bottom: calc(var(--jb-bottom) + 104px); }
+  .journey-board--list.has-header-chips .journey-list { top: 76px; }
+  .journey-panel { max-height: calc(100% - 190px - var(--jb-bottom)); }
   .journey-strip { grid-template-columns: repeat(5, 1fr); }
   .journey-radial { bottom: calc(var(--jb-bottom) + 100px); }
 }
@@ -507,6 +610,10 @@
 .journey-board .journey-bubble { --world-r-control: 22px; }
 .journey-board .journey-bubble--mini { --world-r-control: 18px; }
 .journey-board :is(.journey-pull__key, .journey-toggle__option) { --world-r-control: 14px; }
+.journey-board .journey-count-chip { --world-r-control: 16px; }
+/* The dressing also floors every button at 44 px (and 44 on coarse pointers): a day mark's box is its measured
+   spacing (24–44 px, UX #12), so its own height wins here — never below 24 px (WCAG 2.5.8). */
+:root[data-theme] .journey-board button.journey-mark:not(.text-button):not(.link) { min-height: 0; min-width: 0; height: var(--mark); width: var(--mark); }
 .journey-board :is(.journey-pull__lv, .journey-alternative__pick) { --world-r-control: 12px; }
 .journey-board :is(.journey-row__main, .journey-panel__stop, .journey-panel__back) { --world-r-control: 0; }
 .journey-board .journey-petal__label { --world-r-control: 12px; }

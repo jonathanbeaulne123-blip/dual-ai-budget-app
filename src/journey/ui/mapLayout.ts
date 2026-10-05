@@ -4,15 +4,17 @@
  * same ids; the flat map projects these diorama positions itself. Nothing here reads the household or computes money.
  *
  * Mark ids (contracts `JOURNEY_MAP_MARKS`): a date ("2026-09-28") for a clock slot / Week tile, a chapter id
- * ("2026-09") for a Year mini, "piece" (the bus, on today), "hercules" (Month, today's chapter), "pile" (Week's overdue
- * pile). A date mark COVERS every stop and crossroads on that date; the piece covers today's; the pile covers
- * `week.pileStopIds`; a mini covers its chapter's stops. A 3D anchor on any covered id is reachable through its mark.
+ * ("2026-09") for a Year mini, "hercules" (Month, today's chapter), "pile" (Week's overdue pile). A date mark COVERS
+ * every stop and crossroads on that date; today's mark also covers "piece" (the bus stands on today's slot / tile, so
+ * the two never stack as two buttons — axe target-size); the pile covers `week.pileStopIds`; a mini covers its
+ * chapter's stops. A 3D anchor on any covered id is reachable through its mark.
  */
 import { dioramaFrame } from "../land/diorama.ts";
 import { JOURNEY_DIORAMA, JOURNEY_MAP_MARKS, isToCheck, type ChapterId, type DateKey, type JourneyBoard, type JourneyLandData, type JourneyLevel, type Point2, type Stop } from "../contracts.ts";
 import { directionOf, isRecorded } from "../model/index.ts";
 import { addDays, daysInMonth, lastDay } from "./copy.ts";
 
+/** "piece" is kept for callers that still name it; `mapMarks` folds the bus into today's own mark. */
 export type MapMarkKind = "day" | "piece" | "hercules" | "pile" | "chapter";
 export type MapMark = {
   id: string;
@@ -75,9 +77,9 @@ function byDate(board: JourneyBoard): Map<string, { stops: Stop[]; crossroads: s
 /** The marks the map shows at `level` (chapter `chapterId` for Month). DOM (tab) order = date order. */
 export function mapMarks(board: JourneyBoard, level: JourneyLevel, chapterId: ChapterId): MapMark[] {
   const dates = byDate(board);
-  const day = (date: DateKey, at: Point2, kind: MapMarkKind = "day", id: string = date): MapMark => {
+  const day = (date: DateKey, at: Point2, kind: MapMarkKind = "day", id: string = date, bus = false): MapMark => {
     const e = dates.get(date) ?? { stops: [], crossroads: [] };
-    return { id, kind, date, covers: [...e.stops.map((s) => s.id), ...e.crossroads], at, ...moneyOf(e.stops) };
+    return { id, kind, date, covers: [...e.stops.map((s) => s.id), ...e.crossroads, ...(bus ? [JOURNEY_MAP_MARKS.piece] : [])], at, ...moneyOf(e.stops) };
   };
   if (level === "year") {
     return board.year.map((y, i) => {
@@ -87,25 +89,21 @@ export function mapMarks(board: JourneyBoard, level: JourneyLevel, chapterId: Ch
   }
   if (level === "week") {
     const out: MapMark[] = [];
-    const todayIndex = board.week.days.findIndex((d) => d.date === board.today);
     if (board.week.pileStopIds.length) {
       const pile = board.stops.filter((s) => board.week.pileStopIds.includes(s.id));
       const first = weekTileAt(0);
       out.push({ id: JOURNEY_MAP_MARKS.pile, kind: "pile", date: null, covers: [...board.week.pileStopIds], at: [first[0] + 1.8, first[1] + 0.3], ...moneyOf(pile), toCheck: true });
     }
-    board.week.days.forEach((d, i) => out.push(day(d.date, weekTileAt(i))));
-    if (todayIndex >= 0) { const t = weekTileAt(todayIndex); out.push(day(board.today, [t[0] + 0.55, t[1] + 0.35], "piece", JOURNEY_MAP_MARKS.piece)); }
+    board.week.days.forEach((d, i) => out.push(day(d.date, weekTileAt(i), "day", d.date, d.date === board.today)));
     return out;
   }
   const out: MapMark[] = [];
   const n = daysInMonth(chapterId);
   for (let d = 1; d <= n; d += 1) {
     const date = `${chapterId}-${String(d).padStart(2, "0")}` as DateKey;
-    if (dates.has(date) || date === board.today) out.push(day(date, slotAt(d)));
+    if (dates.has(date) || date === board.today) out.push(day(date, slotAt(d), "day", date, date === board.today));
   }
   if (chapterId === board.currentChapterId) {
-    const t = slotAt(Number(board.today.slice(8, 10)));
-    out.push(day(board.today, [t[0] * 0.86, t[1] * 0.86], "piece", JOURNEY_MAP_MARKS.piece));
     out.push({ id: JOURNEY_MAP_MARKS.hercules, kind: "hercules", date: null, covers: [], at: [0, 0], money: "none", recorded: false, toCheck: board.toCheck.length > 0 });
   }
   return out;

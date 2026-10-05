@@ -9,7 +9,7 @@
  *   wheel / pinch that land on the marks layer or the flat map.
  * Nothing here runs an action: a pick only reports ids upward.
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import type {
   ChapterId, CreateJourneyMapScene, JourneyBoard, JourneyLandData, JourneyLandHandle, JourneyLevel, JourneyMapSceneHandle, MarkAnchor, ThemeId,
 } from "../contracts.ts";
@@ -50,6 +50,8 @@ export type StageProps = {
   onLost(): void;
   onKeyDown(event: KeyboardEvent<HTMLDivElement>): void;
   onSize?(size: StageSize): void;
+  /** Any press on the map (the header / Key popovers close, UX #11). Never an action. */
+  onPress?(): void;
   renderMarks(anchors: readonly MarkAnchor[] | null, size: StageSize, unit: number): ReactNode;
 };
 
@@ -62,6 +64,7 @@ export function Stage(props: StageProps) {
   const [anchors, setAnchors] = useState<readonly MarkAnchor[]>([]);
   const latest = useRef(props);
   latest.current = props;
+  const boardsId = `journey-boards-${useId().replace(/[^A-Za-z0-9-]/g, "")}`;
 
   useLayoutEffect(() => {
     const el = wrap.current;
@@ -178,12 +181,13 @@ export function Stage(props: StageProps) {
       data-stage-level={level}
       data-land={props.status}
       role="region"
-      aria-label={COPY.mapLabel}
+      aria-label={COPY.mapLabels[shownLevel]}
       aria-describedby="journey-stage-help"
       tabIndex={0}
       onKeyDown={props.onKeyDown}
       onPointerDown={(e) => {
         lastPointer.current = local(e.clientX, e.clientY);
+        latest.current.onPress?.();
         if (onCanvas(e.target)) return;
         pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
         if (pointers.current.size === 2) { const [a, b] = [...pointers.current.values()]; pinch.current = { d: Math.hypot(a!.x - b!.x, a!.y - b!.y), t: latest.current.t }; }
@@ -207,17 +211,27 @@ export function Stage(props: StageProps) {
           {shownLevel === "month" ? (
             <>
               <svg className="journey-flat__clock" width={size.width} height={size.height} viewBox={`0 0 ${size.width} ${size.height}`}>
+                <defs>
+                  {/* Newfoundland's painted clapboard on the flat plinth (the same boards as the 3D plinth); CSS shows it there only. */}
+                  <pattern id={boardsId} width="22" height="10" patternUnits="userSpaceOnUse">
+                    <rect width="22" height="10" className="journey-flat__board" />
+                    <path d="M0 9.5h22" className="journey-flat__lap" />
+                    <path d="M21.5 0v10" className="journey-flat__seam" />
+                  </pattern>
+                </defs>
                 <circle cx={centre.x} cy={centre.y} r={toPx(bezel.outer + 0.28)} className="journey-flat__plinth" />
+                <circle cx={centre.x} cy={centre.y} r={toPx(bezel.outer + 0.28)} className="journey-flat__plinth-boards" fill={`url(#${boardsId})`} />
                 <circle cx={centre.x} cy={centre.y} r={toPx((bezel.outer + bezel.inner) / 2)} className="journey-flat__bezel" strokeWidth={toPx(bezel.outer - bezel.inner)} fill="none" />
                 <circle cx={centre.x} cy={centre.y} r={toPx(bezel.inner - 0.05)} className="journey-flat__sea" />
                 {Array.from({ length: JOURNEY_DIORAMA.slots }, (_, i) => {
                   const p = projectFlat(slotAt(i + 1), size, inset);
                   return <circle key={i} cx={p.x} cy={p.y} r={Math.max(2, toPx(0.07))} className="journey-flat__stud" />;
                 })}
-                {[8, 15, 22].map((d) => {
-                  const s = slotAt(d), k = (bezel.outer + 0.5) / bezel.road;
+                {[1, 8, 15, 22, 29].map((d) => {
+                  // Day 1 stands on the gate at north (the prototype's "1"); the others just outside the ring.
+                  const s = d === 1 ? slotAt(1) : slotAt(d), k = d === 1 ? (bezel.outer + 0.62) / bezel.road : (bezel.outer + 0.5) / bezel.road;
                   const p = projectFlat([s[0] * k, s[1] * k], size, inset);
-                  return <text key={d} x={p.x} y={p.y} className="journey-flat__numeral" textAnchor="middle" dominantBaseline="middle">{d}</text>;
+                  return <text key={d} x={p.x} y={p.y} className={["journey-flat__numeral", d === 1 ? "journey-flat__numeral--gate" : ""].filter(Boolean).join(" ")} textAnchor="middle" dominantBaseline="middle">{d}</text>;
                 })}
               </svg>
               {flatData && island ? (
@@ -235,7 +249,7 @@ export function Stage(props: StageProps) {
         </div>
       ) : null}
       {props.status !== "ready" ? (
-        <p className="journey-stage__note" role="status" data-land-note={props.status}>{props.status === "failed" ? COPY.mapUnavailable : COPY.loadingMap}</p>
+        <p className="journey-stage__note" data-land-note={props.status}>{props.status === "failed" ? COPY.mapUnavailable : COPY.loadingMap}</p>
       ) : null}
       {props.renderMarks(mode === "live" ? anchors : null, size, unit)}
     </div>

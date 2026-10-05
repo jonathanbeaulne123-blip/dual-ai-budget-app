@@ -28,7 +28,11 @@ import { journeyRowDomId } from "../src/journey/ui/ListView.tsx";
 import { dialItems } from "../src/journey/ui/AddDial.tsx";
 import { mapMarks } from "../src/journey/ui/mapLayout.ts";
 import { readJourneyViewState, writeJourneyViewState, parseJourneyViewStateV2 } from "../src/journey/ui/viewState.ts";
-import { COPY } from "../src/journey/ui/copy.ts";
+import { callWords as callWordsFor, COPY } from "../src/journey/ui/copy.ts";
+import { SHIM_WORDS, signedMoney } from "../src/journey/ui/mergeShim.ts";
+import { callouts, markSizes, placeMarks, tagMoney } from "../src/journey/ui/Marks.tsx";
+import { levelForKey } from "../src/journey/ui/LevelPull.tsx";
+import { needChips } from "../src/journey/ui/HerculesBubble.tsx";
 import { BIANCA, FIXTURE_TODAY, emptyBoardHousehold, journeyDemoHousehold } from "./fixtures/journey-board-households.ts";
 import type { Household } from "../src/core/types.ts";
 
@@ -179,7 +183,10 @@ describe("the purse chip", () => {
     const purse = host.querySelector("[data-journey-purse]")!;
     expect(text(purse.querySelector("[data-purse-everyday]"))).toBe("Everyday $0.00");
     const expected = board.purse.expectedToday[0]!;
-    expect(text(purse.querySelector(`[data-purse-expected="${esc(expected.stopId)}"]`))).toBe(`+$2100.00 ${MAP_WORDS.purse.expectedToday(expected.label)}`);
+    expect(text(purse.querySelector(`[data-purse-expected="${esc(expected.stopId)}"] b`))).toBe(signedMoney(expected.amountCents!));
+    expect(text(purse.querySelector(`[data-purse-expected="${esc(expected.stopId)}"] .journey-purse__long`))).toBe(MAP_WORDS.purse.expectedToday(expected.label));
+    expect(purse.getAttribute("aria-label")).toContain(SHIM_WORDS.purseGloss);
+    expect(purse.getAttribute("role")).not.toBe("status");
     expect(text(purse.querySelector("[data-purse-everyday]"))).not.toContain("2100");
     expect(purse.getAttribute("aria-label")).toContain(MAP_WORDS.purse.notCounted);
     await click(host.querySelector('[data-step="-1"]'));
@@ -195,12 +202,19 @@ describe("Hercules's bubble and the checklist", () => {
     expect(bubble.dataset.journeyBubble).toBe("today");
     expect(text(bubble.querySelector(".journey-bubble__b1"))).toBe(COPY.thingsThisWeek(board.digest.weekStopIds.length));
     expect(text(bubble.querySelector(".journey-bubble__chip"))).toBe(MAP_WORDS.toCheckCount(board.toCheck.length));
-    expect(bubble.getAttribute("aria-label")).toContain(COPY.leavingNext);
-    expect(text(bubble.querySelector(".journey-bubble__b2 b"))).toBe("Standing · jar · Winter reserve $300.00");
+    // Winter reserve is money set aside in a jar, not money leaving (UX #5): the bubble says so in words.
+    expect(bubble.getAttribute("aria-label")).toContain(`${SHIM_WORDS.settingAsideNext} · Standing · jar · Winter reserve`);
+    expect(bubble.getAttribute("aria-label")).not.toContain(COPY.leavingNext);
+    expect(text(bubble.querySelector(".journey-bubble__word"))).toBe(SHIM_WORDS.settingAsideNext);
+    expect(text(bubble.querySelector(".journey-bubble__b2 b"))).toBe("Winter reserve $300.00");
+    // Trust M2: what waits besides "to check" shows on the bubble when non-zero.
+    expect([...bubble.querySelectorAll<HTMLElement>("[data-chip]")].map((c) => c.dataset.chip)).toEqual(["to-check", "waiting", "reminders"]);
+    expect(text(bubble.querySelector('[data-chip="reminders"]'))).toBe(COPY.remindersChip(4));
     await click(bubble);
     const s = sheet(host)!;
     const sections = [...s.querySelectorAll<HTMLElement>("[data-checklist-section]")].map((x) => x.dataset.checklistSection);
-    expect(sections).toEqual(["to-check", "this-week", "waiting-on-you", "reminders"]);
+    // The title says "This week, then N to check": the sections follow it (trust minor 6).
+    expect(sections).toEqual(["this-week", "to-check", "waiting-on-you", "reminders"]);
     expect([...s.querySelectorAll<HTMLElement>('[data-checklist-section="to-check"] [data-open-stop]')].map((b) => b.dataset.openStop)).toEqual(board.toCheck);
     expect(s.querySelectorAll('[data-checklist-section="to-check"] .journey-dot--need')).toHaveLength(board.toCheck.length);
     expect(s.querySelector('input[type="checkbox"], [role="checkbox"]')).toBeNull();
@@ -442,10 +456,11 @@ describe("level pull, Key, marks and keyboard", () => {
   });
 
   it("the Key explains the ruler of the level shown, mint/gold, solid/see-through and the honey ring — in words", async () => {
-    const { host } = await mountView();
+    const { host } = await mountView({ stage: liveStage(stubScene().create) });
     await click(host.querySelector("[data-key-button]"));
     const k = host.querySelector<HTMLElement>("[data-journey-key]")!;
     expect(k.dataset.journeyKey).toBe("month");
+    expect(k.hasAttribute("data-key-flat")).toBe(false);
     expect(text(k)).toContain("a ring every $100.00");
     expect(text(k)).toContain("Mint = coming in · Gold = going out.");
     expect(text(k)).toContain(MAP_WORDS.stack.solid);
@@ -456,13 +471,37 @@ describe("level pull, Key, marks and keyboard", () => {
     expect(host.querySelector("[data-journey-key]")).toBeNull();
   });
 
-  it("marks: one DOM button per day with stops (plus today), Hercules and the bus; at most three callouts", async () => {
+  it("the flat map's Key says there are no stacks in this view (UX #10), and a press on the map closes it (UX #11)", async () => {
+    const { host } = await mountView();
+    await click(host.querySelector("[data-key-button]"));
+    const k = host.querySelector<HTMLElement>("[data-journey-key]")!;
+    expect(k.hasAttribute("data-key-flat")).toBe(true);
+    expect(text(k)).toContain(SHIM_WORDS.flatKey);
+    expect(text(k)).not.toContain("a ring every");
+    await act(async () => { host.querySelector(".journey-stage")!.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true })); });
+    expect(host.querySelector("[data-journey-key]")).toBeNull();
+    // Selecting a mark and changing level close the header's popovers too.
+    await click(host.querySelector("[data-about]"));
+    expect(host.querySelector("[data-about-pane]")).toBeTruthy();
+    await click(mark(host, "2026-09-18"));
+    expect(host.querySelector("[data-about-pane]")).toBeNull();
+    await click(host.querySelector("[data-about]"));
+    await click(host.querySelector('[data-level="week"]'));
+    expect(host.querySelector("[data-about-pane]")).toBeNull();
+  });
+
+  it("marks: one DOM button per day with stops (plus today, which carries the bus), Hercules; Month callouts", async () => {
     const { host } = await mountView();
     const ids = [...host.querySelectorAll<HTMLElement>(".journey-mark")].map((m) => m.dataset.markId!);
     expect(ids).toEqual(mapMarks(board, "month", "2026-09").map((m) => m.id));
     expect(ids).toContain("hercules");
-    expect(ids).toContain("piece");
+    // B7: the bus stands on today's slot, so today's mark covers it — never two stacked buttons (axe target-size).
+    expect(ids).not.toContain("piece");
+    expect(mapMarks(board, "month", "2026-09").find((m) => m.id === FIXTURE_TODAY)!.covers).toContain("piece");
     expect([...host.querySelectorAll<HTMLElement>(".journey-callout")].map((c) => c.dataset.callout)).toEqual(["today", "next"]);
+    // The next stop is set aside, not leaving; the subject is never cut mid-word.
+    expect(text(host.querySelector('[data-callout="next"]'))).toContain(`${SHIM_WORDS.settingAsideNext} · Winter reserve`);
+    expect(CSS).not.toMatch(/\.journey-callout[^{]*\{[^}]*text-overflow: ellipsis/);
     await click(mark(host, "2026-09-18"));
     expect([...host.querySelectorAll<HTMLElement>(".journey-callout")].map((c) => c.dataset.callout)).toEqual(["today", "next", "selected"]);
     const m = mark(host, "2026-09-22")!;
@@ -499,14 +538,16 @@ describe("touch targets, motion and themes", () => {
     await click(host.querySelector("[data-journey-bubble]"));
     await click(host.querySelector("[data-key-button]"));
     await click(host.querySelector("[data-about]"));
-    const sized = [".journey-toy", ".journey-mark", ".journey-pull__lv", ".journey-toggle__option", ".journey-action", ".journey-plus", ".journey-row__main", ".journey-panel__close", ".journey-bubble", ".journey-petal", ".journey-panel__stop", ".journey-panel__back", ".journey-alternative__pick"];
+    const sized = [".journey-toy", ".journey-pull__lv", ".journey-toggle__option", ".journey-action", ".journey-plus", ".journey-row__main", ".journey-panel__close", ".journey-bubble", ".journey-petal", ".journey-panel__stop", ".journey-panel__back", ".journey-alternative__pick"];
     for (const sel of sized) {
       const rule = new RegExp(`${sel.replace(/[.]/g, "\\.")} \\{[^}]*(min-height: (4[4-9]|[5-9]\\d)px|height: (4[4-9]|[5-9]\\d)px)`);
       expect(CSS, sel).toMatch(rule);
     }
+    // Day marks: 44 px, shrunk only to the spacing between neighbouring marks, never below 24 px (WCAG 2.5.8, UX #12).
+    expect(CSS).toMatch(/\.journey-mark \{[^}]*--mark: 44px;[^}]*width: var\(--mark\); height: var\(--mark\)/);
     const buttons = [...host.querySelectorAll<HTMLElement>("button")];
     expect(buttons.length).toBeGreaterThan(20);
-    expect(buttons.filter((b) => !sized.some((sel) => b.matches(sel))).map((b) => b.className)).toEqual([]);
+    expect(buttons.filter((b) => !sized.some((sel) => b.matches(sel)) && !b.matches(".journey-mark")).map((b) => b.className)).toEqual([]);
     expect(CSS).toMatch(/\.journey-pull__slider \{[^}]*height: 44px/);
   });
 
@@ -547,7 +588,7 @@ describe("touch targets, motion and themes", () => {
     const at = CSS.indexOf("@media (min-width: 720px)");
     expect(CSS.slice(at)).toMatch(/\.journey-panel \{[^}]*width: 370px/);
     expect(CSS.slice(at)).toMatch(/\.journey-list \{[^}]*width: 560px/);
-    expect(CSS.slice(0, at)).toMatch(/\.journey-panel \{[^}]*max-height: 62vh/);
+    expect(CSS.slice(0, at)).toMatch(/\.journey-panel \{[^}]*max-height: 62dvh/);
   });
 });
 
@@ -644,6 +685,148 @@ describe("view state v2", () => {
     expect(host.querySelector(".journey-board--newfoundland")).toBeTruthy();
     expect(onReady).toHaveBeenCalledTimes(1);
     expect(total(actions)).toBe(0);
+  });
+});
+
+describe("Horizon Clock fix pass (FIX-B): Week, Year, list, dial, keys", () => {
+  it("Week: ONE callout at rest (Today); the next stop's callout only when its day is selected (UX #4)", async () => {
+    const { host } = await mountView();
+    await click(host.querySelector('[data-level="week"]'));
+    expect([...host.querySelectorAll<HTMLElement>(".journey-callout")].map((c) => c.dataset.callout)).toEqual(["today"]);
+    const marks = mapMarks(board, "week", board.currentChapterId);
+    const next = board.stops.find((s) => s.id === board.digest.nextLeavingStopId)!;
+    expect(callouts(board, marks, new Map(), next.date, "week").map((c) => c.kind)).toEqual(["today", "next"]);
+    expect(callouts(board, marks, new Map(), null, "week").map((c) => c.kind)).toEqual(["today"]);
+    // Each day's tag is printed on its tile: "WED 30 · $300", today "MON 28 · TODAY", an empty day its day only.
+    const plate = (date: string) => text(host.querySelector(`#${journeyMarkDomId(date)} .journey-mark__plate`));
+    expect(plate(next.date)).toBe("WED 30 · $300");
+    expect(plate(FIXTURE_TODAY)).toBe("MON 28 · TODAY");
+    expect(plate("2026-09-29")).toBe("TUE 29");
+    expect(host.querySelector(`#${journeyMarkDomId("2026-09-29")}`)!.classList.contains("journey-mark--stone")).toBe(true);
+  });
+
+  it("Year: the header names the year; two-line plates on every mini; the open month is outlined; a persistent caption", async () => {
+    const { host } = await mountView();
+    await click(host.querySelector('[data-level="year"]'));
+    expect(title(host)).toBe("2026");
+    expect(text(host.querySelector("[data-chapter-title] span"))).toContain("September");
+    expect(text(host.querySelector("[data-journey-year-caption]"))).toContain(SHIM_WORDS.yearCaption);
+    const sep = host.querySelector(`#${journeyMarkDomId("2026-09")}`)!;
+    const y9 = board.year.find((y) => y.chapterId === "2026-09")!;
+    expect(sep.classList.contains("is-focused")).toBe(true);
+    expect(text(sep.querySelector(".journey-mark__plate"))).toContain(`Sep · ${MAP_WORDS.toCheckCount(y9.toCheck)}`);
+    // The open month spells its figures out: recorded and not recorded printed apart, never summed.
+    expect(text(sep.querySelector(".journey-mark__plate small"))).toBe([y9.outRecordedCents ? `${tagMoney(y9.outRecordedCents)} ${MAP_WORDS.stack.solid}` : null, y9.outOpenCents ? `${tagMoney(y9.outOpenCents)} ${MAP_WORDS.stack.seeThrough}` : null].filter(Boolean).join(" · "));
+    const empty = board.year.find((y) => !board.stops.some((s) => s.chapterId === y.chapterId))!;
+    expect(text(host.querySelector(`#${journeyMarkDomId(empty.chapterId)} .journey-mark__plate small`))).toBe(COPY.plateNothing);
+    // Every other mini with a stack prints its figure with the caption's glyphs (● recorded, ○ not recorded).
+    for (const y of board.year.filter((x) => x.chapterId !== "2026-09" && (x.outRecordedCents || x.outOpenCents))) {
+      const small = text(host.querySelector(`#${journeyMarkDomId(y.chapterId)} .journey-mark__plate small`));
+      if (y.outRecordedCents) expect(small, y.chapterId).toContain(`● ${tagMoney(y.outRecordedCents)}`);
+      if (y.outOpenCents) expect(small, y.chapterId).toContain(`○ ${tagMoney(y.outOpenCents)}`);
+    }
+    // ‹ › at Year move the outline (the month that will open), and nothing runs.
+    await click(host.querySelector('[data-step="1"]'));
+    expect(host.querySelector(`#${journeyMarkDomId("2026-10")}`)!.classList.contains("is-focused")).toBe(true);
+    // Year has no bubble: the header carries the count chip that opens the checklist (trust M2 / minor 7).
+    expect(host.querySelector("[data-journey-bubble]")).toBeNull();
+    await click(host.querySelector("[data-journey-count-chip]"));
+    expect(sheet(host)!.classList.contains("journey-panel--checklist")).toBe(true);
+  });
+
+  it("the slider steps one level per arrow key, Home / End to Year / Week (UX #3)", async () => {
+    expect(levelForKey("ArrowRight", "month")).toBe("week");
+    expect(levelForKey("ArrowLeft", "month")).toBe("year");
+    expect(levelForKey("ArrowLeft", "year")).toBe("year");
+    expect(levelForKey("End", "year")).toBe("week");
+    expect(levelForKey("a", "year")).toBeNull();
+    const { host } = await mountView();
+    const slider = host.querySelector<HTMLInputElement>("[data-level-slider]")!;
+    await key(slider, "ArrowRight");
+    expect(host.querySelector('[data-level="week"]')!.getAttribute("aria-current")).toBe("true");
+    await key(slider, "ArrowLeft");
+    await key(slider, "ArrowLeft");
+    expect(host.querySelector('[data-level="year"]')!.getAttribute("aria-current")).toBe("true");
+  });
+
+  it("the list shows Waiting on you and Repeating reminders with their own buttons; the count chip stands in the header (trust M2)", async () => {
+    const { host, actions } = await mountView({ dueReview: { count: 3 } });
+    await click(host.querySelector('[data-list-mode="list"]'));
+    const list = host.querySelector<HTMLElement>("[data-journey-list]")!;
+    expect(text(list.querySelector('[data-waiting-group="waiting-on-you"]'))).toContain(MAP_WORDS.checklist.waitingOnYou);
+    expect(text(list.querySelector('[data-waiting-group="reminders"]'))).toContain(MAP_WORDS.checklist.reminders);
+    expect(text(host.querySelector("[data-journey-count-chip]"))).toContain(COPY.remindersChip(3));
+    clear(actions);
+    await click(list.querySelector('[data-action-id="due-review"]'));
+    expect(recorded(actions)).toEqual(invocation({ name: "openDueReview" }));
+    clear(actions);
+    const item = board.digest.waitingOnYou[0]!;
+    await click(list.querySelector(`[data-action-id="${esc(item.id)}"]`));
+    expect(recorded(actions)).toEqual(invocation(item.call));
+    // Group wrappers are not landmarks; the sticky Today divider spans the list (UX #7).
+    expect(list.querySelectorAll("section[data-group-id]")).toHaveLength(0);
+    expect(CSS).toMatch(/\.journey-group \{ display: contents; \}/);
+    // The legend shows recorded AND expected income samples (trust minor 5).
+    expect(text(list.querySelector(".journey-legend"))).toContain(COPY.legendInExpected);
+  });
+
+  it("the bubble never says '0 to check' alone while something waits (trust M2)", () => {
+    const quiet = { ...board, toCheck: [], digest: { ...board.digest, waitingOnYou: [] } } as JourneyBoard;
+    expect(needChips(quiet, { count: 2 }).map((c) => c.words)).toEqual([COPY.remindersChip(2)]);
+    expect(needChips(quiet, null).map((c) => c.words)).toEqual([MAP_WORDS.toCheckCount(0)]);
+  });
+
+  it("signs come from the value: never '+-$X' (trust minor 2)", () => {
+    expect(signedMoney(210000)).toBe("+$2,100.00");
+    expect(signedMoney(-1200)).toBe("−$12.00");
+  });
+
+  it("the dial renders the App's record modes (shift, transfer) and Enter Horizon is a sentinel call only the dial runs (trust M4, minor 1)", async () => {
+    const items = dialItems(spyActions(), FIXTURE_TODAY, true, ["expense", "shift", "income", "bill", "transfer"]);
+    expect(items.verbs.map((v) => v.id)).toEqual(["purchase", "shift", "paid", "income", "transfer"]);
+    expect(items.verbs.find((v) => v.id === "shift")!.call).toEqual({ name: "openRecord", mode: "shift" });
+    expect(items.chips.find((c) => c.id === "enter-horizon")!.call).toEqual({ name: "enterHorizonCentre" });
+    const { host, actions } = await mountView({ recordModes: ["expense", "shift", "income", "bill", "transfer"] });
+    await click(host.querySelector("[data-journey-plus]"));
+    expect(host.querySelector("[data-journey-behind]")!.hasAttribute("inert")).toBe(true);
+    clear(actions);
+    await click(host.querySelector('[data-dial-verb="shift"]'));
+    expect(recorded(actions)).toEqual(invocation({ name: "openRecord", mode: "shift" }));
+    expect(host.querySelector("[data-journey-behind]")!.hasAttribute("inert")).toBe(false);
+  });
+
+  it("theme options rove with the arrow keys (one tab stop, UX #17); 'Open the {place}' never 'Open it' (UX #20)", async () => {
+    const { host } = await mountView({ onChooseTheme: vi.fn() });
+    await click(host.querySelector("[data-theme-dot]"));
+    const options = [...host.querySelectorAll<HTMLButtonElement>("[data-theme-option]")];
+    expect(options.map((o) => o.tabIndex)).toEqual([-1, 0, -1]);
+    expect(document.activeElement).toBe(options[1]);
+    await key(options[1]!, "ArrowDown");
+    expect(document.activeElement).toBe(options[2]);
+    expect(callWordsFor({ name: "openPlace", target: "plan-studio" })).toBe("Open the kitchen table");
+  });
+
+  it("one live region (UX #18): the title, the purse and the land note are not live; Enter Horizon's busy notice speaks there", async () => {
+    const { host } = await mountView({ stage: flatStage({ status: "failed" }), notice: COPY.enterHorizonBusy });
+    expect(host.querySelectorAll('[aria-live], [role="status"]')).toHaveLength(1);
+    expect(text(host.querySelector("[data-journey-live]"))).toBe(COPY.mapUnavailable);
+  });
+
+  it("day mark hit sizes follow the spacing between marks, 24–44 px (UX #12)", () => {
+    const marks = mapMarks(board, "month", "2026-09");
+    const tight = placeMarks(marks, null, (m) => ({ x: m.date ? Number(m.date.slice(8)) * 30 : 0, y: 0 }));
+    const sizes = markSizes(tight);
+    expect(Math.max(...sizes.values())).toBeLessThanOrEqual(44);
+    expect(Math.min(...sizes.values())).toBeGreaterThanOrEqual(24);
+  });
+
+  it("view state: a migrated v1 record is written as v2 at once, so v1 is read only once (trust minor 10)", () => {
+    const m = new Map<string, string>();
+    const storage = { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => { m.set(k, v); }, removeItem: (k: string) => { m.delete(k); }, clear: () => m.clear(), key: () => null, length: 0 } as Storage;
+    const id = { environment: "development" as const, householdId: "HH-mig", memberId: BIANCA };
+    m.set(journeyViewStateKeyV1(id), JSON.stringify({ version: 1, tier: "region", focusDate: null, listMode: "map" }));
+    readJourneyViewState(id, storage);
+    expect(JSON.parse(m.get(journeyViewStateKeyV2(id))!)).toMatchObject({ version: 2, level: "month" });
   });
 });
 

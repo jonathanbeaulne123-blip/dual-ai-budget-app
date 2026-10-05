@@ -8,6 +8,8 @@ import type { ActionCall, CrossroadsPreview, DateKey, JourneyLevel } from "../co
 export const COPY = {
   boardLabel: "Journey",
   mapLabel: "Our island as a clock",
+  /** The stage's name per level (UX #23): the clock is Month only. */
+  mapLabels: { year: "The year as twelve islands", month: "Our island as a clock", week: "This week as a trail" } as Record<JourneyLevel, string>,
   mapHelp: "Left and right arrows move a day (a month in Year), Page Up and Page Down move a month, Home goes back to now, Enter opens what is on that day, Escape closes it.",
   listLabel: "Journey list",
   listKick: "List view · same data as the map",
@@ -20,6 +22,8 @@ export const COPY = {
   earlier: "earlier",
   ahead: "ahead",
   theYear: "the year",
+  open: "open",
+  offline: "Offline · this device’s copy of the books",
   thisWeek: "This week",
   backToNow: "Back to now",
   about: "About this map",
@@ -79,7 +83,24 @@ export const COPY = {
   legendNeedsYou: "needs you",
   legendExpected: "expected / plan",
   legendIn: "coming in",
+  legendInExpected: "coming in · not yet",
+  /** The bubble / pill chips beside "N to check" (counts only; the sheet says what each is). */
+  waitingChip: (n: number) => `${n} waiting on you`,
+  remindersChip: (n: number) => `${n} reminder${n === 1 ? "" : "s"}`,
+  recordShift: "Record a shift…",
+  moveMoney: "Move money…",
+  /** A Year plate's second line for a month with nothing on the map (UI words; FIX-A may move them). */
+  plateNothing: "nothing on the map",
 } as const;
+
+/** "Open the {place}" for the house targets the board opens (`openPlace`), never "Open it" (UX #20). */
+export const PLACE_WORDS: Record<string, string> = {
+  "plan-studio": "the kitchen table", "cellar-bills": "the bill jars", planner: "the planner", memories: "our memories",
+  "loft-banks": "the Kitty Bank", calendar: "the Calendar", books: "the Books",
+};
+export function placeWords(target: string): string {
+  return PLACE_WORDS[target] ?? `the ${target.replace(/[-_]/g, " ")}`;
+}
 
 export const LEVEL_WORDS: Record<JourneyLevel, string> = { year: "Year", month: "Month", week: "Week" };
 
@@ -131,7 +152,7 @@ export function callWords(call: ActionCall): string {
     case "openRecord": return call.mode === "income" ? "Record income…" : call.mode === "bill" ? "Mark paid…" : "Record it…";
     case "openBillPaid": return "Mark paid…";
     case "openDueReview": return "Review…";
-    case "openPlace": return "Open it";
+    case "openPlace": return `Open ${placeWords(call.target)}`;
     case "openCampfire": return "Open the Campfire";
     case "openWeeklySitdown": return "Open the weekly Sitdown";
     case "openHomeBook": return "Open the HomeBook";

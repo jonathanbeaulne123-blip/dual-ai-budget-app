@@ -30,6 +30,8 @@ import { Purse } from "./Purse.tsx";
 import { NO_SAFE_AREA, Stage, type SafeArea, type StageMode, type StageSize } from "./Stage.tsx";
 import { ChapterPanel, ClusterPanel, PanelFrame, StopCard, StopPanel } from "./StopPanel.tsx";
 import { WhichOne, type WhichOneOption } from "./WhichOne.tsx";
+import { needChips } from "./HerculesBubble.tsx";
+import { SHIM_WORDS, type JourneyRecordMode } from "./mergeShim.ts";
 import { HORIZON_AVAILABLE } from "../../harbour/flag.ts";
 import { HORIZON_GEOGRAPHY } from "../../worldGeography.ts";
 import { recordDiagnostic, registerDiagnosticProvider } from "../../diagnostics/inspectorCore.ts";
@@ -65,6 +67,12 @@ export type JourneyBoardViewProps = {
   onBeforeEnterHorizon?: (state: JourneyViewStateV2) => void;
   onLost?: () => void;
   onReady?: () => void;
+  /** The App's record modes for the "+" dial (`fabActionsFor`; TODO-merge FIX-A: `JourneyBoardProps.recordModes`). */
+  recordModes?: readonly JourneyRecordMode[];
+  /** The device is offline (the books shown are this device's copy): said outside About (UX #25). */
+  offline?: boolean;
+  /** A notice from the entry ("Enter Horizon here" is busy): spoken by the view's one live region (UX #18). */
+  notice?: string;
 };
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -74,11 +82,15 @@ export type JourneyBoardViewProps = {
  * The App's bottom Compass (`nav[data-harbour-bar]`). Read-only: the board measures it so the dock ends above it; the
  * integrator hides it while the board stands, and then nothing is measured.
  */
-const COMPASS = "[data-harbour-bar]";
+const COMPASS = "[data-harbour-bar], nav.nav[data-ledger-nav]";
 export type CompassClearance = { phone: number | null; float: number | null };
-/** How much of the viewport's bottom a bar rect covers: a full-width bar → phone clearance; a narrower one → float. */
+/**
+ * How much of the viewport's bottom a bar rect covers: a full-width bar → phone clearance; a narrower one → float. A
+ * bar in the top half (a desktop top bar) covers nothing at the bottom. With no bar the board keeps only the device's
+ * safe-area inset (the dock sits at the screen's foot, as in the prototype).
+ */
 export function compassClearance(bar: { left: number; right: number; top: number; bottom: number } | null, viewport: { width: number; height: number }): CompassClearance {
-  if (!bar || !(bar.right - bar.left > 0) || !(bar.bottom - bar.top > 0) || bar.top >= viewport.height) return { phone: null, float: null };
+  if (!bar || !(bar.right - bar.left > 0) || !(bar.bottom - bar.top > 0) || bar.top >= viewport.height || bar.top < viewport.height / 2) return { phone: null, float: null };
   const covered = Math.ceil(Math.max(0, viewport.height - bar.top));
   return bar.right - bar.left >= viewport.width * 0.9 ? { phone: covered, float: null } : { phone: null, float: covered };
 }
@@ -138,6 +150,10 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
   const [safeArea, setSafeArea] = useState<SafeArea>(NO_SAFE_AREA);
   const [obstacles, setObstacles] = useState<{ x0: number; x1: number; y0: number; y1: number }[]>([]);
   const [compass, setCompass] = useState<CompassClearance>({ phone: null, float: null });
+  /** Bumped on a selection, a level change or a press on the map: the header and Key popovers close (UX #11). */
+  const [popClose, setPopClose] = useState(0);
+  const closePops = useCallback(() => setPopClose((n) => n + 1), []);
+
   const sheetSlotId = `journey-sheet-${useId().replace(/[^A-Za-z0-9-]/g, "")}`;
   const root = useRef<HTMLElement | null>(null);
   const stageSize = useRef<StageSize>({ width: 390, height: 640 });
@@ -151,6 +167,10 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
   const level: JourneyLevel = vs.level;
   const chapterId = ((vs.focusDate ?? board.today).slice(0, 7)) as ChapterId;
   const announce = useCallback((words: string) => setAnnouncement(words), []);
+
+  // The one live region speaks the entry's notices and a land that failed (the notes on the map are not live).
+  useEffect(() => { if (props.notice) announce(props.notice); }, [props.notice, announce]);
+  useEffect(() => { if (stage.status === "failed") announce(COPY.mapUnavailable); }, [stage.status, announce]);
 
   // --- view state out ------------------------------------------------------------------------------------------
   const onViewStateChange = useRef(props.onViewStateChange);
@@ -212,8 +232,9 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
       return { ...prev, level: next, selectedStopId: null };
     });
     setFan(null);
+    closePops();
     if (words) announce(`${LEVEL_WORDS[next]} · ${next === "week" ? MAP_WORDS.checklist.thisWeek : next === "year" ? COPY.theYear : monthWords(chapterId)}`);
-  }, [announce, chapterId]);
+  }, [announce, chapterId, closePops]);
   const onPull = useCallback((value: number, settle: boolean) => {
     const v = Math.min(2, Math.max(0, Number.isFinite(value) ? value : 1));
     if (settle || reducedMotion) { settleLevel(levelForT(v)); return; }
@@ -254,6 +275,7 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
     origin.current = opts.from ?? (typeof document !== "undefined" ? document.activeElement : null);
     setFan(null);
     setDialOpen(false);
+    closePops();
     // A Year mini dives to its month (the prototype's tap); nothing opens and nothing runs.
     if (MONTH.test(id) && levelForT(t) === "year") {
       settleLevel("month", false);
@@ -268,7 +290,7 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
     focusSheet.current = true;
     const words = stop ? `${stop.label} · ${shortDate(stop.date)}` : DATE.test(target) ? longDate(target as DateKey) : target === JOURNEY_MAP_MARKS.hercules ? COPY.herculesList : target === JOURNEY_MAP_MARKS.pile ? MAP_WORDS.checklist.toCheck : monthWords(target);
     announce(`Opened · ${words}`);
-  }, [t, board.today, crossById, stopById, patch, announce, settleLevel, goChapter]);
+  }, [t, board.today, crossById, stopById, patch, announce, settleLevel, goChapter, closePops]);
 
   /** From the list (or the checklist): show this stop on the map with its sheet open. */
   const openOnMap = useCallback((id: string) => {
@@ -283,17 +305,19 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
   }, [stopById, crossById, level, chapterId, marksFor, patch, select]);
 
   const onPick = useCallback((ids: string[], at: { x: number; y: number } | null) => {
-    if (!ids.length) { if (vs.selectedStopId) patch({ selectedStopId: null }); setFan(null); return; }
+    if (!ids.length) { if (vs.selectedStopId) patch({ selectedStopId: null }); setFan(null); closePops(); return; }
     if (ids.length === 1) { select(ids[0]!); return; }
     const options = ids.map((id) => {
       const stop = stopById.get(id) ?? crossById.get(id);
-      const label = stop ? `${shortDate(stop.date)} · ${stop.label}` : DATE.test(id) ? shortDate(id as DateKey) : MONTH.test(id) ? monthWords(id) : id === JOURNEY_MAP_MARKS.pile ? MAP_WORDS.checklist.toCheck : id;
+      const n = DATE.test(id) ? board.stops.filter((s) => s.date === id).length : 0;
+      const only = n === 1 ? board.stops.find((s) => s.date === id) : undefined;
+      const label = stop ? `${shortDate(stop.date)} · ${stop.label}` : DATE.test(id) ? `${shortDate(id as DateKey)}${only ? ` · ${only.label}` : n ? ` · ${COPY.thingsOnDay(n).replace(" on this day", "")}` : ""}` : MONTH.test(id) ? monthWords(id) : id === JOURNEY_MAP_MARKS.pile ? MAP_WORDS.checklist.toCheck : id;
       const date = stop?.date ?? (DATE.test(id) ? id : "");
       return { id, label, date };
     }).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)).map(({ id, label }) => ({ id, label }));
     setFan({ options, at });
     announce(`${COPY.whichOne} · ${options.length}`);
-  }, [vs.selectedStopId, patch, select, stopById, crossById, announce]);
+  }, [vs.selectedStopId, patch, select, stopById, crossById, announce, closePops, board.stops]);
 
   const selected = vs.selectedStopId;
   const closeSheet = useCallback(() => {
@@ -396,9 +420,11 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
     const wide = base.width >= 720;
     // The chrome the map frames clear of: the header (and on phones the purse and the Week pill under it) above; the
     // dock — pull, "+", Map/List — and on phones the bubble below; a docked sheet on the right (wide) or below (phone).
-    const lows = [".journey-dock > .journey-pull", ".journey-dock > .journey-plus", ".journey-dock > .journey-toggle", ...(wide ? [] : [".journey-bubble:not(.journey-bubble--mini)"]), ...(wide ? [".journey-purse"] : [])]
+    const lows = [".journey-dock .journey-pull", ".journey-dock > .journey-plus", ".journey-dock > .journey-toggle", ...(wide ? [] : [".journey-bubble:not(.journey-bubble--mini)"]), ...(wide ? [".journey-purse"] : [])]
       .flatMap((sel) => [...el.querySelectorAll(sel)].map(box)).filter((b): b is NonNullable<typeof b> => Boolean(b));
-    const highs = [header, ...(wide ? [] : [purse, pillTop])].filter((b): b is NonNullable<typeof b> => Boolean(b));
+    const caption = box(el.querySelector(".journey-year-caption"));
+    const chips = box(el.querySelector(".journey-header__chips"));
+    const highs = [header, chips, ...(wide ? [caption] : [purse, pillTop, caption])].filter((b): b is NonNullable<typeof b> => Boolean(b));
     const safe: SafeArea = {
       top: Math.round(Math.max(0, ...highs.map((b) => b.y1)) + 6),
       bottom: Math.round(Math.max(0, base.height - Math.min(base.height, ...lows.map((b) => b.y0))) + 6),
@@ -407,7 +433,7 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
     };
     // Phone: the sheet rises over the bottom of the map (the prototype); the clock keeps its size behind it.
     setSafeArea((prev) => (prev.top === safe.top && prev.bottom === safe.bottom && prev.right === safe.right && prev.left === safe.left ? prev : safe));
-    const boxes = [".journey-header .journey-toy", ".journey-chapter", ".journey-purse", ".journey-bubble", ".journey-dock > .journey-pull", ".journey-dock > .journey-plus", ".journey-dock > .journey-toggle", ".journey-sheet-slot > .journey-panel"]
+    const boxes = [".journey-header .journey-toy", ".journey-chapter", ".journey-header__chips > *", ".journey-purse", ".journey-bubble", ".journey-year-caption", ".journey-stage__note", ".journey-dock .journey-pull", ".journey-dock > .journey-plus", ".journey-dock > .journey-toggle", ".journey-sheet-slot > .journey-panel"]
       .flatMap((sel) => [...el.querySelectorAll(sel)].map(box).filter((b): b is NonNullable<typeof b> => Boolean(b)));
     setObstacles((prev) => (JSON.stringify(prev) === JSON.stringify(boxes) ? prev : boxes));
   }, []);
@@ -468,9 +494,18 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
   const focusedDate = vs.focusDate ?? board.today;
   const bubbleMode = board.empty ? null : shownLevel === "week" ? "week" : shownLevel === "year" ? null : chapterId === board.currentChapterId ? "today" : "other";
   const showBubble = vs.listMode === "map" && bubbleMode !== null && !sheet && !dialOpen;
+  // Year and the List have no bubble: the header carries a small count chip that opens the same checklist (trust M2 /
+  // minor 7), and says reminders / waiting when they are non-zero.
+  const chips = board.empty ? [] : needChips(board, props.dueReview);
+  const countChip = !board.empty && !sheet && (vs.listMode === "list" || shownLevel === "year")
+    ? { words: chips.map((c) => c.words).join(" · "), aria: `${COPY.herculesList} · ${chips.map((c) => c.words).join(", ")}`, onOpen: () => { if (vs.listMode === "list") patch({ listMode: "map" }); select(JOURNEY_MAP_MARKS.hercules, { from: root.current?.querySelector("[data-journey-count-chip]") }); } }
+    : null;
+  // Offline or stale books: said on the purse (map) and at the list's top, not only inside About (UX #25).
+  const statusNote = props.offline ? COPY.offline : props.freshnessNote ?? null;
   const className = [
     "journey-board", `journey-board--${theme}`, `journey-board--${stage.mode}`, `journey-board--${vs.listMode}`, `journey-board--level-${shownLevel}`,
     reducedMotion ? "journey-board--still" : "journey-board--animated", sheet ? "has-sheet" : "", board.empty ? "journey-board--empty" : "",
+    dialOpen ? "is-dial-open" : "", countChip ? "has-header-chips" : "",
   ].filter(Boolean).join(" ");
   const rootStyle = {
     ...(compass.phone !== null ? { "--jb-compass": `${compass.phone}px` } : {}),
@@ -483,39 +518,51 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
       ref={root} className={className} style={rootStyle} aria-label={COPY.boardLabel} data-journey-board="" data-theme={theme} data-journey-level={level}
       data-safe-area={`${safeArea.top} ${safeArea.right} ${safeArea.bottom} ${safeArea.left}`} onKeyDown={onRootKey}
     >
+      <div className="journey-board__behind" inert={dialOpen || undefined} data-journey-behind="">
       <Header
         level={shownLevel} chapterId={chapterId} currentChapterId={board.currentChapterId} weekRange={weekRange}
         canPrev={(shownLevel === "week" ? board.currentChapterId : chapterId) > board.window.from} canNext={(shownLevel === "week" ? board.currentChapterId : chapterId) < board.window.to}
         onStep={stepChapter} bakeRevision={stage.land?.revision ?? null} limitations={board.limitations} freshnessNote={props.freshnessNote}
-        theme={theme} onChooseTheme={props.onChooseTheme}
+        theme={theme} onChooseTheme={props.onChooseTheme} closeSignal={popClose} countChip={countChip}
       />
-      <Purse purse={board.purse} showToday={shownLevel === "week" || (shownLevel === "month" && chapterId === board.currentChapterId)} />
+      <Purse purse={board.purse} showToday={shownLevel === "week" || (shownLevel === "month" && chapterId === board.currentChapterId)} statusNote={statusNote} />
+      {shownLevel === "year" && vs.listMode === "map" && !board.empty ? (
+        <p className="journey-year-caption" data-journey-year-caption="">
+          {SHIM_WORDS.yearCaption}
+          <span className="journey-year-caption__key"><span aria-hidden="true">●</span> {MAP_WORDS.stack.solid} · <span aria-hidden="true">○</span> {MAP_WORDS.stack.seeThrough}</span>
+        </p>
+      ) : null}
       <Stage
         mode={stage.mode} status={stage.status} board={board} land={stage.land} landHandle={stage.landHandle} createScene={stage.createScene}
         theme={theme} quality={stage.quality} reducedMotion={reducedMotion} t={t} level={level} chapterId={chapterId} chapterDir={chapterDir}
         selection={selected} marks={marks} safeArea={safeArea}
-        onScene={setScene} onAnchors={() => undefined} onPick={onPick} onLevel={onPull}
+        onScene={setScene} onAnchors={() => undefined} onPick={onPick} onLevel={onPull} onPress={closePops}
         onReady={sendReady} onLost={() => props.onLost?.()} onKeyDown={onStageKey}
         onSize={(size) => { stageSize.current = size; measureChrome(); }}
         renderMarks={(anchors: readonly MarkAnchor[] | null, size: StageSize, unit: number) => {
           stageSize.current = size;
           const placed = placeMarks(marks, anchors, (m: MapMark) => projectFlat(m.at, size, safeArea));
-          return <Marks board={board} level={shownLevel} placed={placed} rows={rows} selectedId={selectedMark} focusedDate={focusedDate} flat={!anchors} unit={unit} stage={size} obstacles={obstacles} sheetId={sheetSlotId} onSelect={(id, from) => select(id, { from })} />;
+          // Decorative anchors: the Week tiles' faces (where each day's tag is printed) and, for the keyboard, the
+          // focused day's slot when no mark stands there (UX #13).
+          const decor = new Map<string, { x: number; y: number }>();
+          if (anchors) for (const a of anchors) if (a.visible && (a.id.startsWith("face:") || a.id.startsWith("centre:") || a.id === vs.focusDate)) decor.set(a.id, { x: a.x, y: a.y });
+          return <Marks board={board} level={shownLevel} placed={placed} rows={rows} selectedId={selectedMark} focusedDate={focusedDate} focusAnchor={vs.focusDate ? decor.get(vs.focusDate) ?? null : null} chapterId={chapterId} flat={!anchors} unit={unit} stage={size} obstacles={obstacles} decor={anchors ? decor : undefined} sheetId={sheetSlotId} onSelect={(id, from) => select(id, { from })} onPickMany={(ids, at) => onPick(ids, at)} />;
         }}
       />
       {board.empty && vs.listMode === "map" ? (
-        <div className="journey-empty" role="status" data-journey-empty=""><b>{COPY.emptyTitle}</b><span>{COPY.emptyBody}</span></div>
+        <div className="journey-empty" data-journey-empty=""><b>{COPY.emptyTitle}</b><span>{COPY.emptyBody}</span></div>
       ) : null}
       {showBubble && bubbleMode ? (
-        <HerculesBubble board={board} rows={rows} mode={bubbleMode} chapterId={chapterId} onOpen={() => select(JOURNEY_MAP_MARKS.hercules, { from: root.current?.querySelector(".journey-bubble") })} onBackToNow={backToNow} />
+        <HerculesBubble board={board} rows={rows} mode={bubbleMode} chapterId={chapterId} dueReview={props.dueReview} onOpen={() => select(JOURNEY_MAP_MARKS.hercules, { from: root.current?.querySelector(".journey-bubble") })} onBackToNow={backToNow} />
       ) : null}
-      {list ? <ListView view={list} stops={stopById} actions={actions} onOpen={openOnMap} /> : null}
+      {list ? <ListView view={list} stops={stopById} actions={actions} onOpen={openOnMap} waitingOnYou={board.digest.waitingOnYou} dueReview={props.dueReview} statusNote={statusNote} /> : null}
       <div id={sheetSlotId} className="journey-sheet-slot" hidden={!sheet}>{sheet}</div>
       {fan ? <WhichOne options={fan.options} at={fan.at} onChoose={(id) => select(id)} onClose={() => { setFan(null); (root.current?.querySelector(".journey-stage") as HTMLElement | null)?.focus(); }} /> : null}
+      </div>
       <div className={["journey-dock", dialOpen ? "is-dial-open" : ""].filter(Boolean).join(" ")} data-journey-dock="">
-        <LevelPull t={t} onPull={onPull} />
-        <AddDial open={dialOpen} onToggle={setDialOpen} actions={actions} today={board.today} canEnterHorizon={canEnterHorizon} onEnterHorizon={enterAtCentre} />
-        <div className="journey-toggle" role="group" aria-label={COPY.mapOrList}>
+        <div className="journey-dock__pull" inert={dialOpen || undefined}><LevelPull t={t} onPull={onPull} flat={stage.mode === "flat"} closeSignal={popClose} /></div>
+        <AddDial open={dialOpen} onToggle={setDialOpen} actions={actions} today={board.today} canEnterHorizon={canEnterHorizon} onEnterHorizon={enterAtCentre} recordModes={props.recordModes} />
+        <div className="journey-toggle" role="group" aria-label={COPY.mapOrList} inert={dialOpen || undefined}>
           <button type="button" className="journey-toggle__option" aria-pressed={vs.listMode === "map"} data-list-mode="map" onClick={() => patch({ listMode: "map" })}>{COPY.showMap}</button>
           <button type="button" className="journey-toggle__option" aria-pressed={vs.listMode === "list"} data-list-mode="list" onClick={() => { patch({ listMode: "list", selectedStopId: null }); setFan(null); }}>{COPY.showList}</button>
         </div>
