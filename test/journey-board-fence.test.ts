@@ -155,6 +155,8 @@ describe("src/journey source fence", () => {
     const contracts = readFileSync(join(journey, "contracts.ts"), "utf8");
     const union = contracts.slice(contracts.indexOf("export type ActionCall ="), contracts.indexOf("export type StopAction"));
     const names = [...union.matchAll(/name: "(\w+)"/g)].map((m) => m[1]);
-    expect(names.sort()).toEqual(["back", "enterHorizon", "openBillPaid", "openBooks", "openCalendar", "openCampfire", "openDueReview", "openEraPlanner", "openHomeBook", "openKitty", "openPlace", "openRecord", "openWeeklySitdown"]);
+    // Horizon Clock's dial adds two open-only calls: "All tools" opens the quick sheet; "Simple view" picks the device's
+    // flat motion edition. Neither writes.
+    expect(names.sort()).toEqual(["back", "chooseSimpleView", "enterHorizon", "openAllTools", "openBillPaid", "openBooks", "openCalendar", "openCampfire", "openDueReview", "openEraPlanner", "openHomeBook", "openKitty", "openPlace", "openRecord", "openWeeklySitdown"]);
   });
 });

@@ -10,10 +10,10 @@ import { booksPresentationFloor } from "../src/core/ledgerExperience.ts";
 import { seedDemoHousehold } from "../src/core/seed.ts";
 import type { Household } from "../src/core/types.ts";
 import {
-  isFundStop, isJourneyBoardV2, isToCheck, ringsFor, type JourneyBoardV2, type ListScope, type Stop,
+  isFundStop, isToCheck, ringsFor, type JourneyBoard, type ListScope, type Stop,
 } from "../src/journey/contracts.ts";
 import {
-  boardToList, booksActualsBetween, deriveJourneyBoard, directionOf, listView, MAP_WORDS, mondayOf,
+  boardToList, booksActualsBetween, deriveJourneyBoard, deriveJourneyBoardWithSummary, directionOf, listView, MAP_WORDS, mondayOf,
 } from "../src/journey/model/index.ts";
 import { purseOf } from "../src/journey/model/purse.ts";
 import { yearOf } from "../src/journey/model/year.ts";
@@ -23,7 +23,7 @@ import { deepFreeze } from "./fixtures/journey-board-households.ts";
 const TODAY = "2026-09-28" as DateKey;
 const JONATHAN = "MEM-002";
 const household = seedDemoHousehold({ today: TODAY });
-const board = deriveJourneyBoard(household, JONATHAN, TODAY);
+const { board, summary: boardSummary } = deriveJourneyBoardWithSummary(household, JONATHAN, TODAY);
 const stopById = new Map(board.stops.map(stop => [stop.id, stop]));
 const stop = (id: string) => stopById.get(id)!;
 const known = (s: Stop) => (s.amountCents === null || s.amountCents === undefined || s.amountBasis === "unknown" ? null : s.amountCents);
@@ -47,7 +47,7 @@ const unknownCopy = (s: Stop, id: string): Stop => ({ ...s, id, amountCents: nul
 describe("Horizon Clock model — the v2 board", () => {
   it("is a v2 board: every Horizon Clock field present", () => {
     expect(board.version).toBe(2);
-    expect(isJourneyBoardV2(board)).toBe(true);
+    for (const key of ["week", "year", "toCheck", "purse", "digest"] as const) expect(board[key]).toBeDefined();
     expect(board.year.map(row => row.chapterId)).toEqual(board.chapters.map(chapter => chapter.id));
   });
 
@@ -81,8 +81,8 @@ describe("Horizon Clock model — direction and \"to check\"", () => {
     expect(board.toCheck).toEqual(overdueIds);
     expect(board.toCheck).toEqual(board.stops.filter(isToCheck).map(s => s.id));
     for (const id of board.toCheck) expect(stop(id)).toMatchObject({ kind: "commitment", relation: "past", status: "overdue" });
-    // The v1 summary's overdue attention names the same stops (nothing that used to be visible disappears).
-    expect(board.summary.attention.filter(item => item.stopId && stop(item.stopId).kind === "commitment").map(item => item.stopId)).toEqual(board.toCheck);
+    // The model's summary's overdue attention names the same stops (nothing that used to be visible disappears).
+    expect(boardSummary.attention.filter(item => item.stopId && stop(item.stopId).kind === "commitment").map(item => item.stopId)).toEqual(board.toCheck);
     expect(board.year.reduce((n, row) => n + row.toCheck, 0)).toBe(8);
     expect(board.digest.toCheckIds).toEqual(board.toCheck);
   });
@@ -160,7 +160,7 @@ describe("Horizon Clock model — week", () => {
   });
 });
 
-function stopFrom(b: JourneyBoardV2, id: string): Stop { return b.stops.find(s => s.id === id)!; }
+function stopFrom(b: JourneyBoard, id: string): Stop { return b.stops.find(s => s.id === id)!; }
 
 describe("Horizon Clock model — year", () => {
   it("each chapter's figures equal its stops' sums: recorded and open apart, Fund out of In, unknown counted", () => {
@@ -197,7 +197,7 @@ describe("Horizon Clock model — year", () => {
 
 describe("Horizon Clock model — purse", () => {
   it("prints Everyday and today's expected pay apart; nothing sums them; Fund estimates are not pay", () => {
-    expect(board.purse.everyday).toEqual(board.summary.everyday);
+    expect(board.purse.everyday).toEqual(boardSummary.everyday);
     expect(board.purse.everyday).toEqual({ cents: 0, figure: "$0.00" });
     expect(board.purse.expectedToday).toHaveLength(1);
     const pay = board.purse.expectedToday[0]!;
@@ -212,9 +212,9 @@ describe("Horizon Clock model — purse", () => {
 
   it("keeps an unknown expected pay unknown (null, not $0) and still apart from Everyday", () => {
     const pay = stop(board.purse.expectedToday[0]!.stopId);
-    const purse = purseOf(board.summary.everyday, [unknownCopy(pay, "income:unknown@2026-09-28")], TODAY);
+    const purse = purseOf(boardSummary.everyday, [unknownCopy(pay, "income:unknown@2026-09-28")], TODAY);
     expect(purse.expectedToday).toEqual([{ stopId: "income:unknown@2026-09-28", label: "Bianca pay", amountCents: null }]);
-    expect(purse.everyday).toEqual(board.summary.everyday);
+    expect(purse.everyday).toEqual(boardSummary.everyday);
   });
 });
 

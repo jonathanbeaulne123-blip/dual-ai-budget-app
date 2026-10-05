@@ -1,20 +1,18 @@
 /**
- * The Journey Board — frozen contracts (planner-owned; frozen when Wave A starts).
+ * The Journey Map (Horizon Clock) — shared contracts. One writer: the integrator.
  *
- * Every track (T1 model, T2 land, T3 board, T4 ui, T5 integration, T6 tests)
- * builds against these types. A change goes through the integrator, never a
- * track. Read `src/journey/README.md`, `docs/DECISIONS.md` D49–D67 and `docs/CLAUDE_JOURNEY_BOARD.md`.
- *
- * Horizon Clock (the Journey Map, 2026-10-05): the section "Horizon Clock — the Journey Map (v2)" at the end of this
- * file is additive. Lanes L1 model / L2 land / L3 board / L4 ui build against it; the types and constants it replaces
- * are marked `@deprecated` and stay until the integrator deletes them with the code that still reads them.
+ * Every lane (L1 model, L2 land, L3 board, L4 ui) builds against these types; a change goes through the integrator.
+ * Read `src/journey/README.md`, `docs/DECISIONS.md` (D49–D67 the Journey Board, D68+ the Horizon Clock) and
+ * `docs/CLAUDE_JOURNEY_CLOCK.md`. The route board these replaced (route, spaces, camera tiers, piece looks, the
+ * summary card, the dressings, view state v1) was deleted with its code; only the v1 view-state key and its migration
+ * remain, so a stored record still restores.
  *
  * Invariants (tests enforce them; every module under src/journey keeps them):
  *
  * 1. PRESENTATION ONLY. The board is derived on read from one Household
  *    snapshot + memberId + today (App's Toronto `today`). Nothing here posts,
  *    schedules, moves, sets aside or re-adds money; nothing computes a balance;
- *    nothing is stored except per-viewer view state (`JourneyViewState`).
+ *    nothing is stored except per-viewer view state (`JourneyViewStateV2`).
  *    Amounts are copies of amounts that already exist on a source record.
  * 2. STABLE IDS. Every stop / cluster / crossroads / chapter id is built from
  *    the id of the record that produced it (see `journeyIds`). Importing an
@@ -176,14 +174,13 @@ export type JourneyBoardActions = {
   /** Leave the board the way the house route came (`putHouseObjectBack`). */
   back(): void;
   /**
-   * Horizon Clock: the "+" dial's "All tools" chip — opens the App's quick sheet of every tool (`setQuickSheetOpen(true)`).
-   * Opening it records nothing. Optional until the integrator wires App.tsx; the UI hides the chip when absent.
+   * The "+" dial's "All tools" chip — opens the App's quick sheet of every tool (`setQuickSheetOpen(true)`). Opening it
+   * records nothing. Optional so a host without the sheet can omit it; the dial hides the chip when absent.
    */
   openAllTools?(): void;
   /**
-   * Horizon Clock: the "+" dial's "Simple view" chip — switches the device to the flat motion edition
-   * (`chooseMotionEdition("flat")`), a per-device display preference. Never touches the books. Optional until the
-   * integrator wires App.tsx; the UI hides the chip when absent.
+   * The "+" dial's "Simple view" chip — switches the device to the flat motion edition (`chooseMotionEdition("flat")`),
+   * a per-device display preference. Never touches the books. Optional; the dial hides the chip when absent.
    */
   chooseSimpleView?(): void;
 };
@@ -202,7 +199,9 @@ export type ActionCall =
   | { name: "openCalendar"; date: DateKey }
   | { name: "openBooks"; ref: BooksRef }
   | { name: "enterHorizon"; location: HorizonLocation }
-  | { name: "back" };
+  | { name: "back" }
+  | { name: "openAllTools" }
+  | { name: "chooseSimpleView" };
 
 export type StopAction = {
   /** Stable within its stop: `<stopId>#<verb>`. */
@@ -229,6 +228,9 @@ export function runJourneyAction(actions: JourneyBoardActions, call: ActionCall)
     case "openBooks": actions.openBooks(call.ref); return;
     case "enterHorizon": actions.enterHorizon(call.location); return;
     case "back": actions.back(); return;
+    // Optional callbacks: a host that did not supply one does nothing (the dial hides that chip).
+    case "openAllTools": actions.openAllTools?.(); return;
+    case "chooseSimpleView": actions.chooseSimpleView?.(); return;
   }
 }
 
@@ -468,18 +470,7 @@ export type Chapter = {
 };
 
 /**
- * Device-local token looks (P4). A synced look would need schema; deferred.
- * @deprecated Horizon Clock retires the four looks and the picker (ruling 9, revisits D52): the piece is the
- * cat-eared bus only. Deleted by the integrator with ui/PieceLook.tsx.
- */
-export type PieceLookId = "lantern" | "cat" | "boat" | "kettle";
-/** @deprecated The piece is the cat-eared bus only (Horizon Clock ruling 9). */
-export const PIECE_LOOKS: readonly PieceLookId[] = ["lantern", "cat", "boat", "kettle"];
-/** @deprecated The piece is the cat-eared bus only (Horizon Clock ruling 9). */
-export const DEFAULT_PIECE_LOOK: PieceLookId = "lantern";
-
-/**
- * The household's current place: today's period. Separate from the viewer's selection, from the camera and from any
+ * The household's current place: today's period (drawn as the cat-eared bus; one look, ruling 9). Separate from the viewer's selection, from the camera and from any
  * body in Horizon. Browsing another chapter never moves it.
  */
 export type HouseholdPiece = {
@@ -490,39 +481,13 @@ export type HouseholdPiece = {
   atDate: DateKey;
   /** An earlier month whose Chapter is still open (close due), or null. The piece shows a small gate-ajar hint pointing at its review stop. */
   waitingChapterId: ChapterId | null;
-  /**
-   * The model sets DEFAULT_PIECE_LOOK; the UI overlays the device-local `JourneyViewState.pieceLook` before handing it to the board.
-   * @deprecated The Horizon Clock piece is the cat-eared bus only; the map ignores this.
-   */
-  lookId: PieceLookId;
 };
 
 export type AttentionItem = { id: string; words: string; stopId: string | null; call: ActionCall };
 
-/**
- * The calm header: where we are · what needs attention · what is next · what I can do. From existing selectors only.
- * @deprecated Horizon Clock splits it: `Purse` (the chip), `Digest` (Hercules's bubble and checklist) and the "+" dial
- * (quick actions). Kept while ui/BoardSummary.tsx exists; the integrator deletes it.
- */
-export type BoardSummary = {
-  chapterId: ChapterId;
-  /** "September 2026". */
-  periodLabel: string;
-  /** Everyday · now (`readSnapshot(...).now` via campCardModel); null when the Fund cannot say. */
-  everyday: { cents: number | null; figure: string } | null;
-  /** readCardLeaving words ("Leaving next · Hydro $142.00 · Sat 27 · +2 this week"). */
-  leavingWords: string;
-  /** readNeeds + overdue/needs-review commitments + close-due chapter, most pressing first. */
-  attention: AttentionItem[];
-  /** Up to three next items from today on (stop ids), in date order. */
-  next: string[];
-  /** Always present (Record, Calendar, Books, Plan). Direct access never depends on the map. */
-  quickActions: StopAction[];
-};
-
+/** The Journey Map's board (model v2): derived on read, never stored. */
 export type JourneyBoard = {
-  /** 1 = the route board; 2 = the Horizon Clock model (every v2 field below is present). See `JourneyBoardV2`. */
-  version: 1 | 2;
+  version: 2;
   householdId: string;
   memberId: string;
   today: DateKey;
@@ -536,7 +501,6 @@ export type JourneyBoard = {
   clusters: StopCluster[];
   crossroads: Crossroads[];
   piece: HouseholdPiece;
-  summary: BoardSummary;
   /**
    * Committed member homes the board can draw at map scale: the viewer's own `personalLife.home.layout` (never the
    * draft, never `future`) on the viewer's claimed plot (`hearthside.homePlots`, default `HOME_RESERVE_ID`). A
@@ -547,22 +511,20 @@ export type JourneyBoard = {
   undatedMemories: MemoryStop[];
   /** Chapters older than the window: traces only, list only. */
   olderChapters: { id: ChapterId; unresolved: UnresolvedCounts; traces: ChapterTrace[] }[];
-  /** A new household: honest empty board (no invented achievements); `summary.quickActions` carries setup actions. */
+  /** A new household: honest empty board (no invented achievements, no invented stops). */
   empty: boolean;
   /** Plain-language limits shown in the list's footer (e.g. "Bianca's home is private to her device"). */
   limitations: string[];
-  // Horizon Clock (v2) fields. Optional here only so the v1 model keeps compiling; L1 makes every one present and
-  // sets `version: 2` (`JourneyBoardV2`), and the integrator then makes them required.
-  /** This week, Monday to Sunday around today (ruling 7, 13). */
-  week?: JourneyWeek;
-  /** One entry per chapter in `window`, in window order: the Year ring's twelve minis. */
-  year?: YearChapter[];
+  /** This week, Monday to Sunday around today (rulings 7, 13). */
+  week: JourneyWeek;
+  /** One entry per chapter in `window`, in window order: the Year ring's minis. */
+  year: YearChapter[];
   /** Every "to check" stop id (`isToCheck`), date order. The header chip and Hercules count exactly these. */
-  toCheck?: string[];
+  toCheck: string[];
   /** The purse chip. */
-  purse?: Purse;
-  /** Hercules's bubble and the checklist's first section. */
-  digest?: Digest;
+  purse: Purse;
+  /** Hercules's bubble and the checklist's sections. */
+  digest: Digest;
 };
 
 export type DeriveJourneyBoardOptions = {
@@ -593,103 +555,15 @@ export type ListRow = {
   /** Exactly the actions the map panel offers for the same id. */
   actions: StopAction[];
   depth: 0 | 1 | 2;
-  /** Horizon Clock: the stop's money direction (`MoneyDirection`); "none" for rows that are not money. L1 fills it. */
-  direction?: MoneyDirection;
-  /** Horizon Clock: true exactly when `isToCheck(stop)`; the row shows "!" and words, never colour alone. L1 fills it. */
-  toCheck?: boolean;
+  /** The stop's money direction (`MoneyDirection`); "none" for rows that are not money. */
+  direction: MoneyDirection;
+  /** True exactly when `isToCheck(stop)`; the row shows "!" and words, never colour alone. */
+  toCheck: boolean;
 };
 export type BoardToList = (board: JourneyBoard) => ListRow[];
 
 // ---------------------------------------------------------------------------
-// Route space (T3 lays it out from the board + the land; pure, no three)
-// @deprecated as a whole: Horizon Clock replaces the route (route.ts, crossings.ts, ribbon.ts, spaces.ts) with the
-// clock bezel (board/clock.ts), the week trail (board/week.ts) and the year ring (board/year.ts). Supersedes D51, D55.
-
-/** @deprecated Horizon Clock replaces the route; see the clock / week / year layouts. */
-export type MonthSpace = {
-  chapterId: ChapterId;
-  stationId: StationId;
-  /** Engine coords with compressed height (board space). */
-  at: Point3;
-  state: Chapter["state"];
-};
-/** @deprecated Horizon Clock replaces the route; see the clock / week / year layouts. */
-export type DaySpace = {
-  date: DateKey;
-  chapterId: ChapterId;
-  /** 1…N along the month's stretch; N sits at the station. */
-  index: number;
-  at: Point3;
-  /** Unit tangent of the route at this space (x, z). */
-  tangent: Point2;
-  relation: DayCell["relation"];
-  stopIds: string[];
-  clusterId: string | null;
-  flagstone: boolean;
-};
-/**
- * One month's stretch: the ribbon arc from the previous station to this chapter's station.
- * @deprecated Horizon Clock replaces the route.
- */
-export type RouteStretch = {
-  chapterId: ChapterId;
-  fromStationId: StationId;
-  toStationId: StationId;
-  /** Ribbon centreline, board space. */
-  points: Point3[];
-  lengthEu: number;
-  days: DaySpace[];
-};
-/** @deprecated Horizon Clock replaces the route; see the clock / week / year layouts. */
-export type RouteSpace = {
-  months: MonthSpace[];
-  stretches: RouteStretch[];
-  /** Where the route crosses itself (drawn over/under; no space is ever placed at a crossing). */
-  crossings: { at: Point2; overChapterId: ChapterId; underChapterId: ChapterId }[];
-};
-/** @deprecated Horizon Clock replaces the route. */
-export type LayoutRoute = (board: JourneyBoard, land: JourneyLandData) => RouteSpace;
-
-// ---------------------------------------------------------------------------
-// Camera, heights, LOD (numbers from MANIFEST journey.camera / journey.lod)
-
-/**
- * @deprecated Horizon Clock levels replace the tiers: `JourneyLevel` + `LEVEL_T` (sky→year, region→month, stop→week,
- * `JOURNEY_VIEW_TIER_TO_LEVEL`). Kept for the v1 view-state migration.
- */
-export type CameraTier = "sky" | "region" | "stop";
-/**
- * MANIFEST journey.camera: sky = the island's diagonal (√(2000²+1800²) ≈ 2691), region 250, stop 80, upClose 25
- * (orbit radii for the manifest's 50° lens). The board keeps the FRAMED GROUND EXTENT of those radii
- * (frame height = 2·r·tan(25°)) with a near-orthographic 20° lens: distance = r·tan(25°)/tan(10°).
- * Sky additionally fits the whole island extent to the viewport. upClose is not a board tier: below Stop the board
- * never enters the world by zoom; "Enter Horizon here" does, explicitly.
- * @deprecated Horizon Clock frames a diorama instead (`JOURNEY_DIORAMA`, `DioramaFrame`, board/levels.ts).
- */
-export const JOURNEY_CAMERA = {
-  referenceFovDeg: 50,
-  fovDeg: 20,
-  /** Gently angled, stable: pitch from horizontal, heading 0 = north up. No free rotation. */
-  pitchDeg: 58,
-  headingDeg: 0,
-  radius: { sky: 2691, region: 250, stop: 80 },
-  upCloseRadius: 25,
-  /** Min / max zoom radius; tiers switch at the geometric midpoints. */
-  minRadius: 60,
-  maxRadius: 2900,
-} as const;
-/**
- * Frame height (ground eu) for an orbit radius under the reference lens.
- * @deprecated Horizon Clock frames a diorama (`JOURNEY_DIORAMA`).
- */
-export function frameHeightForRadius(radius: number): number {
-  return 2 * radius * Math.tan((JOURNEY_CAMERA.referenceFovDeg / 2) * Math.PI / 180);
-}
-/** @deprecated Horizon Clock uses `levelForT`. */
-export function tierForRadius(radius: number): CameraTier {
-  const r = JOURNEY_CAMERA.radius;
-  return radius >= Math.sqrt(r.sky * r.region) ? "sky" : radius >= Math.sqrt(r.region * r.stop) ? "region" : "stop";
-}
+// Heights and LOD (numbers from MANIFEST journey.lod)
 
 /**
  * View-only height compression (presentation, never the island): tall land and buildings must not hide the route.
@@ -701,7 +575,7 @@ export function compressHeight(height: number): number {
   return height <= knee ? height * below : knee * below + (height - knee) * above;
 }
 
-/** MANIFEST journey.lod [full, lite]: the board (land + route + spaces + piece + homes) stays inside L0 at Sky and L1 below. */
+/** MANIFEST journey.lod [full, lite]: the map (clay land + bezel + props + homes) stays inside this budget. */
 export const JOURNEY_LOD = {
   sky: { triangles: { full: 40_000, lite: 25_000 }, drawCalls: { full: 60, lite: 40 } },
   region: { triangles: { full: 80_000, lite: 45_000 } },
@@ -769,7 +643,7 @@ export type BuildJourneyLandOptions = {
   season?: "spring" | "summer" | "autumn" | "winter";
 };
 
-/** The three.js land (T2) the board layer (T3) stands on. */
+/** The clay land (L2) the map scene (L3) stands on. */
 export type JourneyLandHandle = {
   group: THREE.Group;
   data: JourneyLandData;
@@ -783,23 +657,20 @@ export type JourneyLandHandle = {
   isLand(x: number, y: number): boolean;
   stationAt(id: StationId): Point3;
   setTheme(theme: ThemeId): void;
-  /** Replace homes (a committed HomeBook edit, or a provisional crossroads preview). */
+  /** Replace homes (a committed HomeBook edit). */
   setHomes(homes: JourneyHome[]): void;
+  /** Where concept metres sit in the diorama: `dioramaFrame(land)` from this land's coastline (never constants). */
+  frame: DioramaFrame;
   /**
-   * Horizon Clock: where concept metres sit in the diorama, computed from this land's coastline by L2's
-   * `dioramaFrame(land)` (never constants). Optional until L2's clay build lands; then always present.
+   * The drawn clay surface's diorama y at concept (x, y) — what a prop, a house, the bus or Hercules stands on. Differs
+   * from `toDiorama`'s height near the coast, where the clay eases to the slab.
    */
-  frame?: DioramaFrame;
+  dioramaGroundAt(x: number, y: number): number;
   /**
-   * Horizon Clock: the drawn clay surface's diorama y at concept (x, y) — what a prop, a house, the bus or Hercules
-   * stands on. Differs from `toDiorama`'s height near the coast, where the clay eases to the slab. Optional until L2 lands.
+   * One low-poly copy of the clay island at diorama scale (centred on the frame, `islandUnits` radius), shared by the
+   * Year ring's instanced minis (board/year.ts). The land owns and disposes it.
    */
-  dioramaGroundAt?(x: number, y: number): number;
-  /**
-   * Horizon Clock: one low-poly copy of the clay island at diorama scale (centred on the frame, `islandUnits` radius),
-   * shared by the Year ring's twelve instanced minis (board/year.ts). The land owns and disposes it. Optional until L2 lands.
-   */
-  miniGeometry?(): THREE.BufferGeometry;
+  miniGeometry(): THREE.BufferGeometry;
   /**
    * Horizon Clock Week calm: soften, lower and thin the clay away from `calm.trail` (concept metres), keeping `clear`
    * discs free (the Week tiles and the pile), by `amount` 0…1; `null` restores the land as drawn. Presentation only.
@@ -831,119 +702,29 @@ export type JourneyLandFlatData = {
 };
 
 // ---------------------------------------------------------------------------
-// Board scene (T3) — mounted by the UI (T4)
+// Marks (the canvas is aria-hidden; every mark is a DOM button)
 
 /** A projected screen anchor for one DOM mark (the canvas is aria-hidden; marks are real buttons). */
 export type MarkAnchor = { id: string; x: number; y: number; depth: number; visible: boolean; bridge?: JourneyLandBridge['landmark'] };
 
-/** @deprecated Horizon Clock: `JourneyMapSceneOptions`. Deleted with board/scene.ts's route board. */
-export type JourneyBoardSceneOptions = {
-  land: JourneyLandHandle;
-  board: JourneyBoard;
-  route: RouteSpace;
-  theme: ThemeId;
-  tier: "full" | "lite";
-  reducedMotion: boolean;
-  /** Called once per rendered frame that moved something: ids = month spaces, day spaces, clusters, stops, crossroads, piece. */
-  onAnchors(anchors: MarkAnchor[]): void;
-  onTier(tier: CameraTier): void;
-  /** A canvas pick (pointer): the id of the space/stop under it, or null. The UI decides what selecting means. */
-  onPick(id: string | null): void;
-  /** First frame drawn (App: journeyCloud.ready("to-journey")). */
-  onReady(): void;
-  /** WebGL context lost: the UI falls back to flat + list. */
-  onLost(): void;
-};
-/** @deprecated Horizon Clock: `JourneyMapSceneHandle`. */
-export type JourneyBoardSceneHandle = {
-  setBoard(board: JourneyBoard, route: RouteSpace): void;
-  setSelection(id: string | null): void;
-  /** A crossroads alternative drawn provisionally (dashed, "preview" label), or null to return. */
-  setPreview(preview: { crossroadsId: string; alternativeId: string } | null): void;
-  /** Frame a tier on a concept point; animate is ignored under reduced motion (cut). */
-  focus(target: { x: number; y: number } | { chapterId: ChapterId } | { date: DateKey } | "piece", tier: CameraTier, animate: boolean): void;
-  /** Screen → concept ground point (for "Enter Horizon here"). Null over sea. */
-  groundAt(screenX: number, screenY: number): { x: number; y: number } | null;
-  setTheme(theme: ThemeId): void;
-  resize(width: number, height: number): void;
-  /**
-   * Optional (added in the fix pass): stage px covered by chrome on each side (summary card, panel, sheet). Framing
-   * centres its target in the uncovered rect and Sky fits the island inside it; the canvas stays full-bleed.
-   */
-  setSafeArea?(inset: { top: number; right: number; bottom: number; left: number }): void;
-  sleep(): void;
-  wake(): void;
-  stats(): { triangles: number; drawCalls: number };
-  dispose(): void;
-};
-/** @deprecated Horizon Clock: `CreateJourneyMapScene`. */
-export type CreateJourneyBoardScene = (host: HTMLElement, options: JourneyBoardSceneOptions) => JourneyBoardSceneHandle;
-
 // ---------------------------------------------------------------------------
-// Themes (one dressing per module; all three themes authored)
+// Themes (all three authored: `JourneyClayPalettes`)
 
 export const JOURNEY_THEMES: readonly ThemeId[] = ["classic", "taylor", "newfoundland"];
-/**
- * CSS colour strings ("#rrggbb").
- * @deprecated Horizon Clock: `JourneyClayPalette` (land/clayPalette.ts) dresses the clay land and the board.
- */
-export type JourneyLandDressing = {
-  sea: string; shallows: string; sand: string; grass: string; forest: string; rock: string; snow: string;
-  lake: string; river: string;
-  road: string; skate: string; walk: string; cable: string; rail: string; ferry: string;
-  hostWall: string; hostRoof: string; reserve: string; districtLabel: string; fog: string; sky: string;
-};
-/** @deprecated Horizon Clock: `JourneyClayPalette`. */
-export type JourneyBoardDressing = {
-  ribbon: string; ribbonEdge: string;
-  spacePast: string; spaceOpen: string; spaceUpcoming: string; spaceInset: string; stakes: string;
-  signpost: string; selectionRing: string; provisional: string; pavilion: string; clusterBase: string;
-  piece: Record<PieceLookId, { body: string; accent: string }>;
-};
-/** @deprecated Horizon Clock: `JourneyClayPalettes`. */
-export type JourneyLandDressings = Record<ThemeId, JourneyLandDressing>;
-/** @deprecated Horizon Clock: `JourneyClayPalettes`. */
-export type JourneyBoardDressings = Record<ThemeId, JourneyBoardDressing>;
-
 // ---------------------------------------------------------------------------
-// Per-viewer view state (device-local; nothing financial)
+// Per-viewer view state (device-local; nothing financial): the identity; v2 lives with the Horizon Clock below
 
-/**
- * @deprecated Horizon Clock: `JourneyViewStateV2` under `journeyViewStateKeyV2`; a stored v1 record is read once and
- * migrated with `migrateJourneyViewState`.
- */
-export type JourneyViewState = {
-  version: 1;
-  tier: CameraTier;
-  /** Null = "now" (follow today). */
-  focusDate: DateKey | null;
-  /** Camera target, concept metres; null = frame the focus. */
-  target: { x: number; y: number } | null;
-  selectedStopId: string | null;
-  expandedClusterId: string | null;
-  listMode: "map" | "list";
-  pieceLook: PieceLookId;
-  /** The last explicit "Enter Horizon here": restored when Horizon's "Journey" button returns (route object "harbour-return"). */
-  lastEnter: { location: HorizonLocation; tier: CameraTier; focusDate: DateKey | null } | null;
-};
-/** @deprecated Horizon Clock: `DEFAULT_JOURNEY_VIEW_STATE_V2`. */
-export const DEFAULT_JOURNEY_VIEW_STATE: JourneyViewState = {
-  version: 1, tier: "region", focusDate: null, target: null, selectedStopId: null, expandedClusterId: null,
-  listMode: "map", pieceLook: DEFAULT_PIECE_LOOK, lastEnter: null,
-};
 export type JourneyViewIdentity = { environment: Environment; householdId: string; memberId: string };
 /**
- * `hearth:journey-board:v1:<environment>:<householdId>:<memberId>` (encodeURIComponent per part, as
- * `houseIdentity`). Read/written only by src/journey/ui/viewState.ts, inside try/catch; a missing or invalid record is
- * DEFAULT_JOURNEY_VIEW_STATE. Household scope only (the board is Ours).
- * @deprecated Horizon Clock: `journeyViewStateKeyV2`; this key is read only to migrate an old record.
+ * The route board's old key, `hearth:journey-board:v1:<environment>:<householdId>:<memberId>`: read ONCE (by
+ * ui/viewState.ts, inside try/catch) to migrate a stored record to v2; never written.
  */
-export function journeyViewStateKey(identity: JourneyViewIdentity): string {
+export function journeyViewStateKeyV1(identity: JourneyViewIdentity): string {
   return `hearth:journey-board:v1:${[identity.environment, identity.householdId, identity.memberId].map(encodeURIComponent).join(":")}`;
 }
 
 // ---------------------------------------------------------------------------
-// The mounted component (T4 implements, T5 mounts)
+// The mounted component (L4 implements, the App mounts)
 
 export type JourneyBoardProps = {
   household: import("../core/types.ts").Household;
@@ -967,9 +748,8 @@ export type JourneyBoardProps = {
    */
   dueReview?: { count: number } | null;
   /**
-   * Horizon Clock: the header's theme dot. Applies the APP-WIDE theme through the existing appearance store (the
-   * same path as Theme Studio, ruling 12), never a board-only preview. Optional until the integrator wires App.tsx;
-   * the UI hides the dot when absent.
+   * The header's theme dot. Applies the APP-WIDE theme through the existing appearance store (`store.apply`, as the
+   * appearance picker does; ruling 12), never a board-only preview. The UI hides the dot when absent.
    */
   onChooseTheme?: (theme: ThemeId) => void;
 };
@@ -979,7 +759,7 @@ export type JourneyBoardProps = {
 //
 // The approved prototype (`horizon-clock.html`) as contracts: a clay diorama of the real island inside a clock bezel
 // of 31 day slots (Month), a ring of twelve minis (Year) and a Party Board trail along the Year Walk (Week), driven by
-// one level pull `t` (0 Year → 1 Month → 2 Week). Everything above this line that it replaces is `@deprecated`.
+// one level pull `t` (0 Year → 1 Month → 2 Week).
 //
 // Money honesty, for every lane (tests enforce it):
 // - A null amount draws NO stack and reads "Unknown amount". Unknown is never zero and never a guessed height.
@@ -1123,7 +903,7 @@ export type YearChapter = {
 /** One line of the purse's "expected today": an expected income stop dated today. Never added to `everyday`. */
 export type PurseExpected = { stopId: string; label: string; amountCents: number | null };
 /**
- * The purse chip: "Everyday · now" (the same figure the deprecated `BoardSummary.everyday` read: campCardModel's
+ * The purse chip: "Everyday · now" (campCardModel's
  * `readSnapshot(...).now`; null when the Fund cannot say) and, separately, today's expected pay. The UI prints them
  * apart ("expected pay isn't counted until it's in"); NOTHING sums `everyday` and `expectedToday`.
  */
@@ -1148,25 +928,6 @@ export type Digest = {
   waitingOnYou: AttentionItem[];
   chapter: AttentionItem[];
 };
-
-/**
- * The board L1 produces for the Horizon Clock: every v2 field present, `version: 2`. Assignable to `JourneyBoard`, so
- * the v1 UI keeps compiling while the lanes land; the map scene and the new UI take this type.
- */
-export type JourneyBoardV2 = Omit<JourneyBoard, "version" | "week" | "year" | "toCheck" | "purse" | "digest"> & {
-  version: 2;
-  week: JourneyWeek;
-  year: YearChapter[];
-  toCheck: string[];
-  purse: Purse;
-  digest: Digest;
-};
-/** True once the model is L1's v2 board. */
-export function isJourneyBoardV2(board: JourneyBoard): board is JourneyBoard & JourneyBoardV2 {
-  return board.version === 2 && !!board.week && !!board.year && !!board.toCheck && !!board.purse && !!board.digest;
-}
-/** L1's v2 entry point (same purity and memo rules as `DeriveJourneyBoard`). */
-export type DeriveJourneyBoardV2 = (household: import("../core/types.ts").Household, memberId: string, today: DateKey, options?: DeriveJourneyBoardOptions) => JourneyBoardV2;
 
 // ---------------------------------------------------------------------------
 // List view (the Map/List toggle): same data, same actions
@@ -1227,24 +988,7 @@ export type ListView = {
   limitations: string[];
 };
 /** L1's `listView()` (model/list.ts). Pure; the household is read only through existing pure selectors. */
-export type ListViewOf = (household: import("../core/types.ts").Household, board: JourneyBoardV2, scope: ListScope) => ListView;
-
-// ---------------------------------------------------------------------------
-// Actions the "+" dial adds (open-only)
-
-/**
- * The map's own action calls: `ActionCall` plus the dial's two open-only chips. Kept as a separate union for now so the
- * fence's frozen `ActionCall` list stays exact; the integrator folds these two into `ActionCall` when it updates
- * test/journey-board-fence.test.ts. Neither writes: "All tools" opens the App's quick sheet; "Simple view" switches the
- * device's motion edition to flat.
- */
-export type JourneyMapActionCall = ActionCall | { name: "openAllTools" } | { name: "chooseSimpleView" };
-/** The dispatcher for `JourneyMapActionCall`. An optional callback the App has not supplied does nothing. */
-export function runJourneyMapAction(actions: JourneyBoardActions, call: JourneyMapActionCall): void {
-  if (call.name === "openAllTools") { actions.openAllTools?.(); return; }
-  if (call.name === "chooseSimpleView") { actions.chooseSimpleView?.(); return; }
-  runJourneyAction(actions, call);
-}
+export type ListViewOf = (household: import("../core/types.ts").Household, board: JourneyBoard, scope: ListScope) => ListView;
 
 // ---------------------------------------------------------------------------
 // The diorama: concept metres ↔ clay units
@@ -1346,7 +1090,7 @@ export const JOURNEY_MAP_MARKS = { piece: "piece", hercules: "hercules", pile: "
  */
 export type JourneyMapSceneOptions = {
   land: JourneyLandHandle;
-  board: JourneyBoardV2;
+  board: JourneyBoard;
   theme: ThemeId;
   /** "full" = real shadows; "lite" = blob shadows (phones). The flat tier never mounts a scene. */
   tier: "full" | "lite";
@@ -1372,7 +1116,7 @@ export type JourneyMapSceneOptions = {
 };
 /** The mounted map scene. Every method is presentation: none posts, records, closes or grants anything. */
 export type JourneyMapSceneHandle = {
-  setBoard(board: JourneyBoardV2): void;
+  setBoard(board: JourneyBoard): void;
   /** Drive the pull to `t` (clamped [0, 2]); `animate` is ignored under reduced motion (a cut). */
   setLevel(t: number, animate: boolean): void;
   /** Turn the clock to a chapter; `direction` −1 = back a month, 1 = forward, 0 = jump. Reduced motion cuts. */
@@ -1389,7 +1133,7 @@ export type JourneyMapSceneHandle = {
   stats(): { triangles: number; drawCalls: number };
   dispose(): void;
 };
-/** L3's entry point (board/scene.ts), on the shared `rendererOwner` lease. Distinct from the deprecated route-board scene. */
+/** L3's entry point (board/scene.ts), on the shared `rendererOwner` lease. */
 export type CreateJourneyMapScene = (host: HTMLElement, options: JourneyMapSceneOptions) => JourneyMapSceneHandle;
 
 // ---------------------------------------------------------------------------
@@ -1419,10 +1163,21 @@ export const DEFAULT_JOURNEY_VIEW_STATE_V2: JourneyViewStateV2 = {
 export function journeyViewStateKeyV2(identity: JourneyViewIdentity): string {
   return `hearth:journey-board:v2:${[identity.environment, identity.householdId, identity.memberId].map(encodeURIComponent).join(":")}`;
 }
+/** The route board's camera tiers, as a stored v1 record names them (migration only). */
+export type JourneyViewTierV1 = "sky" | "region" | "stop";
+/** A stored v1 record's fields that survive (the route board's camera target, expanded cluster and piece look do not). */
+export type JourneyViewStateV1 = {
+  version: 1;
+  tier: JourneyViewTierV1;
+  focusDate: DateKey | null;
+  selectedStopId: string | null;
+  listMode: "map" | "list";
+  lastEnter: { location: HorizonLocation; tier: JourneyViewTierV1; focusDate: DateKey | null } | null;
+};
 /** v1 tier → v2 level: sky → year, region → month, stop → week. */
-export const JOURNEY_VIEW_TIER_TO_LEVEL: Readonly<Record<CameraTier, JourneyLevel>> = { sky: "year", region: "month", stop: "week" };
-/** A valid v1 record as v2 (drops target, expandedClusterId and pieceLook). Pure. */
-export function migrateJourneyViewState(v1: JourneyViewState): JourneyViewStateV2 {
+export const JOURNEY_VIEW_TIER_TO_LEVEL: Readonly<Record<JourneyViewTierV1, JourneyLevel>> = { sky: "year", region: "month", stop: "week" };
+/** A valid v1 record as v2. Pure. */
+export function migrateJourneyViewState(v1: JourneyViewStateV1): JourneyViewStateV2 {
   return {
     version: 2,
     level: JOURNEY_VIEW_TIER_TO_LEVEL[v1.tier] ?? "month",

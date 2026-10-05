@@ -13,11 +13,7 @@
  *
  * Bundling: `scene.ts` pulls three; a flat-only mount imports `./clock.ts`, `./week.ts`, `./year.ts`, `./labels.ts`,
  * `./levels.ts` and `./BoardFlat.tsx` directly (none import three).
- *
- * DEPRECATED (the v1 route board; still imported by ui/ until L4's rewrite lands, deleted by the integrator):
- * `layoutRoute`…, `createJourneyBoardScene` (routeScene.ts), `boardMarks`…, `labelRankFor`, dressings, camera tiers,
- * ribbon, layers, preview, and `<BoardFlat route=…>` (routeFlat.tsx).
- */
+ * */
 // --- Horizon Clock ---------------------------------------------------------------------------------------------------
 export { createJourneyMapScene, BEZEL_Y, type MapSceneHandle, type MapSceneOptions, type JourneyMapSceneExtras } from "./scene.ts";
 export { layoutClock, slotOfDate, slotForStop, stackFor, CLOCK_NUMERAL_DAYS, MIN_STACK_DU, RING_HEIGHT_DU, SLOT_TOYS, type ClockItem, type ClockLayout, type ClockSlot, type CoinStack } from "./clock.ts";
@@ -30,17 +26,7 @@ export {
 } from "./levels.ts";
 export { propKindFor, type PropKind } from "./kinds.ts";
 export { boardPalette, colourOf } from "./palette.ts";
-export { BoardFlat, flatViewBoxFor, FLAT_UNIT, type BoardFlatProps, type MapBoardFlatProps } from "./BoardFlat.tsx";
-export { placeLabels, mapLabels, MAP_LABEL_LIMIT, labelRankFor, LABEL_PRIORITY, type LabelBox, type LabelCandidate, type LabelRank, type MapLabel, type MapLabelRole, type PlacedLabel, type PlaceLabelsOptions } from "./labels.ts";
+export { BoardFlat, flatViewBoxFor, type BoardFlatProps } from "./BoardFlat.tsx";
+export { placeLabels, mapLabels, MAP_LABEL_LIMIT, LABEL_PRIORITY, type LabelBox, type LabelCandidate, type LabelRank, type MapLabel, type MapLabelRole, type PlacedLabel, type PlaceLabelsOptions } from "./labels.ts";
 export { frameFromCoast } from "./geo.ts";
-
-// --- @deprecated: the v1 route board (ui/ still imports these; the integrator deletes them) --------------------------
-export { layoutRoute, layoutBoardRoute, daySpaceFor, stretchMidpoint, ROUTE_SAMPLE_EU, STATION_CLEARANCE_EU, type BoardDaySpace, type BoardRouteSpace, type BoardRouteStretch } from "./route.ts";
-export { CROSSING_CLEARANCE_EU, findCrossings } from "./crossings.ts";
-export { createJourneyBoardScene, UNIT_MAX, UNIT_MIN, type BoardSceneHandle, type BoardSceneOptions, type JourneyBoardSceneExtras, type FocusTarget } from "./routeScene.ts";
-export { boardMarks, boardMarkIds, isAttentionStop, skyPostIds, POST_OFFSET, SKY_POST_LIMIT, type BoardMark, type BoardMarkKind } from "./marks.ts";
-export { JOURNEY_BOARD_DRESSINGS, BOARD_DRESSING_KEYS, boardDressing, type FullBoardDressing } from "./dressing.ts";
-export { radiusForTier, skyFitRadius, worldPerPixel, distanceForRadius, uncoveredRect, CAMERA_MOVE_MS, NO_SAFE_AREA, type SafeArea } from "./camera.ts";
-export { ribbonWidth, RIBBON_PX } from "./ribbon.ts";
-export { countBoardDraws } from "./layers.ts";
-export type { PreviewSelection } from "./preview.ts";
+export { countBoardDraws } from "./kit.ts";

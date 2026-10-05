@@ -7,7 +7,7 @@
  */
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
-import type { JourneyHome, JourneyLandData, JourneyLandDressing } from "../contracts.ts";
+import type { JourneyHome, JourneyLandData } from "../contracts.ts";
 import { compressHeight, HEIGHT_COMPRESSION } from "../contracts.ts";
 import { buildHomeArt } from "../../home/geometry.ts";
 import { homeSite } from "../../home/site.ts";
@@ -54,9 +54,9 @@ function merged(parts: THREE.BufferGeometry[]): THREE.BufferGeometry | null {
   return out;
 }
 
-export type HomeMeshes = { group: THREE.Group; recolour(d: JourneyLandDressing): void; dispose(): void };
+export type HomeMeshes = { group: THREE.Group; recolour(outline: string): void; dispose(): void };
 
-export function buildHomes(homes: readonly JourneyHome[], data: JourneyLandData, surface: LandSurface, dressing: JourneyLandDressing, season: Season = "summer"): HomeMeshes {
+export function buildHomes(homes: readonly JourneyHome[], data: JourneyLandData, surface: LandSurface, outlineColour: string, season: Season = "summer"): HomeMeshes {
   const group = new THREE.Group();
   group.name = "journey-land:homes";
   const owned: { dispose(): void }[] = [];
@@ -80,7 +80,7 @@ export function buildHomes(homes: readonly JourneyHome[], data: JourneyLandData,
       mesh.name = `journey-land:home:provisional:${tag}`;
       mesh.renderOrder = 3;
       const edges = new THREE.EdgesGeometry(geometry, 30);
-      const outlineMaterial = new THREE.LineDashedMaterial({ color: dressing.districtLabel, dashSize: 1.2, gapSize: 0.8 });
+      const outlineMaterial = new THREE.LineDashedMaterial({ color: outlineColour, dashSize: 1.2, gapSize: 0.8 });
       const outline = new THREE.LineSegments(edges, outlineMaterial);
       outline.computeLineDistances();
       outline.name = `journey-land:home:provisional-outline:${tag}`;
@@ -109,7 +109,7 @@ export function buildHomes(homes: readonly JourneyHome[], data: JourneyLandData,
   return {
     group,
     // A home keeps its own finishes in every theme; only the provisional outline takes the theme's ink.
-    recolour(d) { for (const m of outlines) m.color.set(d.districtLabel); },
+    recolour(outline) { for (const m of outlines) m.color.set(outline); },
     dispose() { group.removeFromParent(); for (const o of owned) o.dispose(); },
   };
 }

@@ -11,7 +11,7 @@
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import type {
-  ChapterId, CreateJourneyMapScene, JourneyBoardV2, JourneyLandData, JourneyLandHandle, JourneyLevel, JourneyMapSceneHandle, MarkAnchor, ThemeId,
+  ChapterId, CreateJourneyMapScene, JourneyBoard, JourneyLandData, JourneyLandHandle, JourneyLevel, JourneyMapSceneHandle, MarkAnchor, ThemeId,
 } from "../contracts.ts";
 import { JOURNEY_DIORAMA, levelForT } from "../contracts.ts";
 import { journeyLandFlatData, JourneyLandFlat } from "../land/index.ts";
@@ -27,7 +27,7 @@ export const FALLBACK_STAGE: StageSize = { width: 390, height: 640 };
 export type StageProps = {
   mode: StageMode;
   status: "loading" | "ready" | "failed";
-  board: JourneyBoardV2;
+  board: JourneyBoard;
   land: JourneyLandData | null;
   landHandle: JourneyLandHandle | null;
   createScene: CreateJourneyMapScene | null;
@@ -80,7 +80,7 @@ export function Stage(props: StageProps) {
   }, [mode]);
 
   // --- live scene: one per land handle; everything else goes through the handle's setters ---------------------------
-  const sent = useRef<{ board: JourneyBoardV2; t: number; chapterId: ChapterId; selection: string | null; theme: ThemeId } | null>(null);
+  const sent = useRef<{ board: JourneyBoard; t: number; chapterId: ChapterId; selection: string | null; theme: ThemeId } | null>(null);
   useEffect(() => {
     const create = latest.current.createScene;
     if (mode !== "live" || !landHandle || !create || !host.current) return;

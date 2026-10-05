@@ -1,14 +1,10 @@
 /**
- * `placeLabels()` (T3, pure): collision-aware placement for the board's DOM labels (PLAN §A "DOM labels").
- *
- * Priority: the piece ("We are here", ALWAYS placed — clamped inside the stage if its anchor is off it) → the
- * selection → overdue / needs-review → crossroads → chapter review → the next three → other commitments (added: a
- * bill outranks decoration) → milestone → income → plan → memory → month labels → district labels. A label that would overlap one already placed, or hang off the stage,
- * waits for a closer zoom (the list still carries it). Ties: nearer the camera first, then id (deterministic).
- * Placement never decides DOM/tab order — that stays chronological in the UI.
+ * `placeLabels()` (pure): collision-aware placement for the map's DOM callouts, at most `MAP_LABEL_LIMIT` (today, the
+ * next leaving, the selection — `mapLabels`). The piece ("We are here") is ALWAYS placed, clamped inside the stage;
+ * a label that would overlap one already placed, or hang off the stage, is left out (the list still carries it).
+ * Ties: rank, then nearer the camera, then id (deterministic). Placement never decides DOM/tab order.
  */
 import type { JourneyBoard } from "../contracts.ts";
-import { isAttentionStop } from "./marks.ts";
 
 export type LabelRank =
   | "piece" | "selected" | "attention" | "crossroads" | "chapter-review" | "next" | "commitment" | "milestone" | "income" | "plan" | "memory"
@@ -43,7 +39,7 @@ export type PlaceLabelsOptions = {
   pad?: number;
   /**
    * Horizon Clock: at most this many labels are placed (the piece always counts first). The map passes
-   * `MAP_LABEL_LIMIT` (3: today, next leaving, selected); omitted = no limit (the deprecated route board).
+   * `MAP_LABEL_LIMIT` (3: today, next leaving, selected); omitted = no limit.
    */
   limit?: number;
 };
@@ -86,33 +82,6 @@ export function placeLabels(candidates: readonly LabelCandidate[], options: Plac
   return candidates.map((c) => out.get(c.id)!);
 }
 
-
-/**
- * The rank of a mark id on this board (piece, month ids, cluster / stop / crossroads ids, `district:<id>`, day dates).
- * A cluster takes the highest rank of its stops.
- */
-export function labelRankFor(board: JourneyBoard, id: string, selectedId: string | null): LabelRank {
-  if (id === "piece") return "piece";
-  if (selectedId !== null && id === selectedId) return "selected";
-  if (id.startsWith("district:")) return "district";
-  if (board.chapters.some((c) => c.id === id)) return "month";
-  if (board.crossroads.some((c) => c.id === id)) return "crossroads";
-  const cluster = board.clusters.find((c) => c.id === id);
-  const stops = cluster ? board.stops.filter((s) => cluster.stopIds.includes(s.id)) : board.stops.filter((s) => s.id === id);
-  if (!stops.length) return "other";
-  const ranks = stops.map((stop): LabelRank => {
-    if (isAttentionStop(stop)) return "attention";
-    if (stop.kind === "review" && stop.reviewKind === "chapter-close") return "chapter-review";
-    if (board.summary.next.includes(stop.id)) return "next";
-    if (stop.kind === "commitment") return "commitment";
-    if (stop.kind === "milestone") return "milestone";
-    if (stop.kind === "income") return "income";
-    if (stop.kind === "plan") return "plan";
-    if (stop.kind === "memory") return "memory";
-    return "other";
-  });
-  return ranks.sort((a, b) => rankOrder(a) - rankOrder(b))[0]!;
-}
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Horizon Clock: the map's callouts. Max three, as in the approved prototype: today, the next leaving, the selected.

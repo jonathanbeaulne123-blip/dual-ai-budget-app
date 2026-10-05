@@ -3,15 +3,15 @@
  *
  * Key: `journeyViewStateKeyV2(identity)` (`hearth:journey-board:v2:<environment>:<householdId>:<memberId>`). Device
  * local, household scope, nothing financial: the level, the focused date, the selected stop, map/list and the last
- * explicit "Enter Horizon here". When no v2 record exists, the old v1 record (`journeyViewStateKey`) is read ONCE and
+ * explicit "Enter Horizon here". When no v2 record exists, the old v1 record (`journeyViewStateKeyV1`) is read ONCE and
  * migrated (`migrateJourneyViewState`: sky → year, region → month, stop → week); the v2 record is written from then on.
  * Every read and write is inside try/catch; a missing, invalid or unreadable record — or a storage that throws — is
  * `DEFAULT_JOURNEY_VIEW_STATE_V2`. Restored on mount; written debounced (300 ms); flushed on unmount / before Horizon.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  DEFAULT_JOURNEY_VIEW_STATE_V2, JOURNEY_LEVELS, journeyViewStateKey, journeyViewStateKeyV2, migrateJourneyViewState,
-  type CameraTier, type HorizonLocation, type JourneyLevel, type JourneyViewIdentity, type JourneyViewState, type JourneyViewStateV2,
+  DEFAULT_JOURNEY_VIEW_STATE_V2, JOURNEY_LEVELS, journeyViewStateKeyV1, journeyViewStateKeyV2, migrateJourneyViewState,
+  type HorizonLocation, type JourneyLevel, type JourneyViewIdentity, type JourneyViewStateV1, type JourneyViewStateV2, type JourneyViewTierV1,
 } from "../contracts.ts";
 
 export const VIEW_STATE_WRITE_DELAY_MS = 300;
@@ -21,7 +21,7 @@ export function journeyStorage(): Storage | null {
   try { return typeof globalThis.localStorage === "undefined" ? null : globalThis.localStorage; } catch { return null; }
 }
 
-const TIERS: readonly CameraTier[] = ["sky", "region", "stop"];
+const TIERS: readonly JourneyViewTierV1[] = ["sky", "region", "stop"];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 const str = (v: unknown): string | null => (typeof v === "string" && v.length > 0 && v.length < 400 ? v : null);
@@ -52,21 +52,18 @@ export function parseJourneyViewStateV2(raw: unknown): JourneyViewStateV2 | null
 }
 
 /** A stored v1 value → a valid v1 state, or null (only for migration). */
-export function parseJourneyViewStateV1(raw: unknown): JourneyViewState | null {
+export function parseJourneyViewStateV1(raw: unknown): JourneyViewStateV1 | null {
   const row = obj(raw);
   if (!row || row.version !== 1) return null;
   const last = obj(row.lastEnter);
   const lastLocation = last ? location(last.location) : null;
   return {
     version: 1,
-    tier: TIERS.includes(row.tier as CameraTier) ? (row.tier as CameraTier) : "region",
+    tier: TIERS.includes(row.tier as JourneyViewTierV1) ? (row.tier as JourneyViewTierV1) : "region",
     focusDate: date(row.focusDate),
-    target: null,
     selectedStopId: str(row.selectedStopId),
-    expandedClusterId: null,
     listMode: row.listMode === "list" ? "list" : "map",
-    pieceLook: "lantern",
-    lastEnter: last && lastLocation ? { location: lastLocation, tier: TIERS.includes(last.tier as CameraTier) ? (last.tier as CameraTier) : "stop", focusDate: date(last.focusDate) } : null,
+    lastEnter: last && lastLocation ? { location: lastLocation, tier: TIERS.includes(last.tier as JourneyViewTierV1) ? (last.tier as JourneyViewTierV1) : "stop", focusDate: date(last.focusDate) } : null,
   };
 }
 
@@ -82,7 +79,7 @@ export function readJourneyViewState(identity: JourneyViewIdentity, storage: Sto
     return fresh();
   }
   try {
-    const old = storage.getItem(journeyViewStateKey(identity));
+    const old = storage.getItem(journeyViewStateKeyV1(identity));
     const v1 = old ? parseJourneyViewStateV1(JSON.parse(old)) : null;
     return v1 ? migrateJourneyViewState(v1) : fresh();
   } catch {

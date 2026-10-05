@@ -9,7 +9,7 @@
  */
 import { monthKeyFromDateKey, type DateKey } from "../../core/calendar.ts";
 import type { Household } from "../../core/types.ts";
-import { DEFAULT_PIECE_LOOK, stationForMonth, type DeriveJourneyBoardOptions, type DeriveJourneyBoardV2, type JourneyBoardV2, type Stop } from "../contracts.ts";
+import { stationForMonth, type DeriveJourneyBoardOptions, type DeriveJourneyBoard, type JourneyBoard, type Stop } from "../contracts.ts";
 import { buildChapters, doneTasksByMonth, olderChapters } from "./chapters.ts";
 import { clusterStops } from "./clusters.ts";
 import { commitmentStops } from "./commitments.ts";
@@ -23,12 +23,18 @@ import { goalStops, taskStops } from "./plans.ts";
 import { purseOf } from "./purse.ts";
 import { readChapterRows, reviewStops, waitingChapterMonth } from "./reviews.ts";
 import { compareStops } from "./stopKit.ts";
-import { boardSummary } from "./summary.ts";
+import { boardSummary, type BoardSummary } from "./summary.ts";
 import { weekOf } from "./weeks.ts";
 import { readContext } from "./window.ts";
 import { yearOf } from "./year.ts";
 
-export const deriveJourneyBoard: DeriveJourneyBoardV2 = (household: Household, memberId: string, today: DateKey, options?: DeriveJourneyBoardOptions): JourneyBoardV2 => {
+export const deriveJourneyBoard: DeriveJourneyBoard = (household, memberId, today, options) => deriveJourneyBoardWithSummary(household, memberId, today, options).board;
+
+/**
+ * The board and the model's own summary (attention, next, Everyday, quick actions) it was split from (`purse`, `digest`,
+ * `toCheck`). For the model's tests: they prove nothing the summary saw is lost from the board.
+ */
+export function deriveJourneyBoardWithSummary(household: Household, memberId: string, today: DateKey, options?: DeriveJourneyBoardOptions): { board: JourneyBoard; summary: BoardSummary } {
   const ctx = readContext(household, memberId, today, options);
   const rows = readChapterRows(ctx);
   const viewer = readViewerHome(ctx);
@@ -76,12 +82,11 @@ export const deriveJourneyBoard: DeriveJourneyBoardV2 = (household: Household, m
   // (what waits on this viewer). The overdue / needs-review commitments are `toCheck` itself.
   const chapterItems = summary.attention.filter(item => item.stopId !== null && stopById.get(item.stopId)?.kind === "review");
   const waitingOnYou = summary.attention.filter(item => item.stopId === null);
-  return {
+  const board: JourneyBoard = {
     version: 2, householdId: household.householdId, memberId, today, currentChapterId: current,
     window: { from: ctx.months[0]!, to: ctx.months.at(-1)! },
     chapters, stops, clusters, crossroads,
-    piece: { anchorChapterId: current, atStationId: stationForMonth(current), atDate: today, waitingChapterId: waitingChapterMonth(ctx), lookId: DEFAULT_PIECE_LOOK },
-    summary,
+    piece: { anchorChapterId: current, atStationId: stationForMonth(current), atDate: today, waitingChapterId: waitingChapterMonth(ctx) },
     homes: journeyHomes(viewer, memberId),
     undatedMemories: memories.undated,
     olderChapters: older,
@@ -93,4 +98,5 @@ export const deriveJourneyBoard: DeriveJourneyBoardV2 = (household: Household, m
     purse: purseOf(summary.everyday, stops, today),
     digest: digestOf({ stops, week, today, toCheck, waitingOnYou, chapter: chapterItems }),
   };
-};
+  return { board, summary };
+}

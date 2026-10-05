@@ -14,7 +14,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   CreateJourneyMapScene, JourneyBoardActions, JourneyBoardProps, JourneyLandData, JourneyLandHandle, JourneyViewStateV2, ListScope, LoadJourneyLand,
 } from "../contracts.ts";
-import { isJourneyBoardV2 } from "../contracts.ts";
 import { deriveJourneyBoard, listView } from "../model/index.ts";
 import { buildJourneyLand, loadJourneyLand } from "../land/index.ts";
 import { createJourneyMapScene } from "../board/scene.ts";
@@ -153,7 +152,6 @@ export default function JourneyBoard(props: JourneyBoardProps & JourneyBoardSeam
     return (id: string) => names.get(id) ?? "your partner";
   }, [household.members]);
 
-  if (!isJourneyBoardV2(board)) return null;
   return (
     <>
       <JourneyBoardView

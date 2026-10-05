@@ -8,10 +8,10 @@
  * Escape or the scrim closes it and returns focus to "+".
  */
 import { useEffect, useRef, type ReactNode } from "react";
-import { runJourneyMapAction, type DateKey, type JourneyBoardActions, type JourneyMapActionCall } from "../contracts.ts";
+import { runJourneyAction, type DateKey, type JourneyBoardActions, type ActionCall } from "../contracts.ts";
 import { COPY } from "./copy.ts";
 
-export type DialItem = { id: string; label: string; call: JourneyMapActionCall };
+export type DialItem = { id: string; label: string; call: ActionCall };
 
 /** The dial's verbs and chips, as data (the tests read the same list). */
 export function dialItems(actions: JourneyBoardActions, today: DateKey, canEnterHorizon: boolean): { verbs: DialItem[]; chips: DialItem[] } {
@@ -55,7 +55,7 @@ export function AddDial({ open, onToggle, actions, today, canEnterHorizon, onEnt
   const run = (item: DialItem) => {
     onToggle(false);
     if (item.call.name === "enterHorizon") { onEnterHorizon(); return; }
-    runJourneyMapAction(actions, item.call);
+    runJourneyAction(actions, item.call);
   };
   useEffect(() => {
     if (!open) return;

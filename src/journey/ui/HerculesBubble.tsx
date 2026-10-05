@@ -11,14 +11,14 @@
  * that stop's sheet; an item without a stop has one labelled button that runs its call.
  */
 import type { ReactNode } from "react";
-import type { AttentionItem, JourneyBoardActions, JourneyBoardV2, ListRow, Stop } from "../contracts.ts";
+import type { AttentionItem, JourneyBoardActions, JourneyBoard, ListRow, Stop } from "../contracts.ts";
 import { runJourneyAction } from "../contracts.ts";
 import { MAP_WORDS, pinnedLabel, shortDate } from "../model/index.ts";
 import { callWords, COPY, monthName } from "./copy.ts";
 import { PanelFrame, signedAmount, StateDot } from "./StopPanel.tsx";
 
 export type BubbleProps = {
-  board: JourneyBoardV2;
+  board: JourneyBoard;
   rows: Map<string, ListRow>;
   mode: "today" | "week" | "other";
   chapterId: string;
@@ -62,7 +62,7 @@ export function HerculesBubble({ board, rows, mode, chapterId, onOpen, onBackToN
 }
 
 export type ChecklistProps = {
-  board: JourneyBoardV2;
+  board: JourneyBoard;
   rows: Map<string, ListRow>;
   actions: JourneyBoardActions;
   /** The Week's overdue pile: the "To check" section only, headed by the pinned words. */

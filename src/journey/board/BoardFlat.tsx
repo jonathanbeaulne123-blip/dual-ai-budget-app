@@ -15,9 +15,7 @@
  * Every mark is a `[data-id]` element with `data-kind`, `data-x`, `data-y` (its anchor, concept metres) so the UI places
  * its real 44 px buttons over it — the same ids as the 3D anchors. The drawing is decorative (`aria-hidden`); the
  * UI's buttons and the list carry every word and amount. Nothing here opens or changes anything; `onPick` reports ids.
- *
- * DEPRECATED BRANCH: given `route` (the v1 route board's props), this renders the old route overlay unchanged
- * (`RouteBoardFlat`), so the v1 UI keeps compiling until L4's rewrite lands. The integrator deletes that branch.
+
  */
 import type { ReactNode } from "react";
 import {
@@ -27,12 +25,11 @@ import {
 import { layoutClock, type CoinStack } from "./clock.ts";
 import { frameFromCoast, polar } from "./geo.ts";
 import { boardPalette, colourOf } from "./palette.ts";
-import { RouteBoardFlat, type RouteBoardFlatProps } from "./routeFlat.tsx";
 import { layoutWeek, type WeekLayout } from "./week.ts";
 import { layoutYear, YEAR_RING_DU, YEAR_MINI_SCALE, type YearStackColumn } from "./year.ts";
 import { RING_HEIGHT_DU, stackFor } from "./clock.ts";
 
-export type MapBoardFlatProps = {
+export type BoardFlatProps = {
   board: JourneyBoard;
   land: JourneyLandData;
   level: JourneyLevel;
@@ -46,12 +43,8 @@ export type MapBoardFlatProps = {
   orientation?: "wide" | "phone";
   /** Pointer convenience only (the UI's buttons are the accessible path). Same payload as the scene's `onPick`. */
   onPick?: (ids: string[]) => void;
-  route?: undefined;
 };
-export type BoardFlatProps = MapBoardFlatProps | (RouteBoardFlatProps & { level?: undefined });
 
-/** Concept metres per design unit on the flat twin (kept for the deprecated route branch). */
-export { FLAT_UNIT } from "./routeFlat.tsx";
 
 /** The viewBox (concept metres) that frames a level: the bezel at Month, the ring at Year, the trail at Week. */
 export function flatViewBoxFor(level: JourneyLevel, land: JourneyLandData, frame: DioramaFrame = frameFromCoast(land.coastline), week?: WeekLayout | null): [number, number, number, number] {
@@ -98,12 +91,7 @@ function NeedsRing({ at, r, theme }: { at: Point2; r: number; theme: ThemeId }) 
   );
 }
 
-export function BoardFlat(props: BoardFlatProps) {
-  if (props.route !== undefined) return <RouteBoardFlat {...(props as RouteBoardFlatProps)} />;
-  return <MapBoardFlat {...(props as MapBoardFlatProps)} />;
-}
-
-function MapBoardFlat({ board, land, level, chapterId, selection = null, theme, frame: given, orientation = "wide", onPick }: MapBoardFlatProps) {
+export function BoardFlat({ board, land, level, chapterId, selection = null, theme, frame: given, orientation = "wide", onPick }: BoardFlatProps) {
   const frame = given ?? frameFromCoast(land.coastline);
   const pal = boardPalette(theme);
   const perDu = 1 / frame.scale;

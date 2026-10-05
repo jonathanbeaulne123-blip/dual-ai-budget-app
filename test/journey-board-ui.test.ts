@@ -16,9 +16,9 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
-  DEFAULT_JOURNEY_VIEW_STATE_V2, JOURNEY_THEMES, journeyViewStateKey, journeyViewStateKeyV2, LEVEL_T, runJourneyAction, runJourneyMapAction,
-  type CreateJourneyMapScene, type JourneyBoardActions, type JourneyBoardV2, type JourneyLandData, type JourneyLandHandle,
-  type JourneyMapSceneHandle, type JourneyMapSceneOptions, type JourneyMapActionCall, type ListScope, type ThemeId,
+  DEFAULT_JOURNEY_VIEW_STATE_V2, JOURNEY_THEMES, journeyViewStateKeyV1, journeyViewStateKeyV2, LEVEL_T, runJourneyAction,
+  type CreateJourneyMapScene, type JourneyBoardActions, type JourneyBoard, type JourneyLandData, type JourneyLandHandle,
+  type JourneyMapSceneHandle, type JourneyMapSceneOptions, type ActionCall, type ListScope, type ThemeId,
 } from "../src/journey/contracts.ts";
 import { deriveJourneyBoard, listView, MAP_WORDS } from "../src/journey/model/index.ts";
 import { JourneyBoardView, compassClearance, type JourneyBoardViewProps, type JourneyStageSource } from "../src/journey/ui/JourneyBoardView.tsx";
@@ -35,7 +35,7 @@ import type { Household } from "../src/core/types.ts";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let household: Household;
-let board: JourneyBoardV2;
+let board: JourneyBoard;
 beforeAll(() => {
   household = journeyDemoHousehold().household;
   board = deriveJourneyBoard(household, BIANCA, FIXTURE_TODAY);
@@ -54,9 +54,9 @@ function spyActions(optional = false): Spied {
 const recorded = (a: Spied) => Object.entries(a.spies).flatMap(([name, s]) => s.mock.calls.map((args) => [name, args] as const));
 const total = (a: Spied) => recorded(a).length;
 const clear = (a: Spied) => Object.values(a.spies).forEach((s) => s.mockClear());
-function invocation(call: JourneyMapActionCall) {
+function invocation(call: ActionCall) {
   const probe = spyActions(true);
-  runJourneyMapAction(probe, call);
+  runJourneyAction(probe, call);
   return recorded(probe);
 }
 
@@ -330,7 +330,7 @@ describe("the “+” dial", () => {
     const { host, actions } = await mountView();
     const plus = host.querySelector<HTMLButtonElement>("[data-journey-plus]")!;
     expect(plus.getAttribute("aria-label")).toBe(COPY.add);
-    const expectations: [string, JourneyMapActionCall][] = [["purchase", { name: "openRecord", mode: "expense" }], ["paid", { name: "openRecord", mode: "bill" }], ["income", { name: "openRecord", mode: "income" }]];
+    const expectations: [string, ActionCall][] = [["purchase", { name: "openRecord", mode: "expense" }], ["paid", { name: "openRecord", mode: "bill" }], ["income", { name: "openRecord", mode: "income" }]];
     for (const [verb, call] of expectations) {
       await click(plus);
       expect(plus.getAttribute("aria-expanded")).toBe("true");
@@ -351,7 +351,7 @@ describe("the “+” dial", () => {
     const bare = await mountView();
     await click(bare.host.querySelector("[data-journey-plus]"));
     expect([...bare.host.querySelectorAll<HTMLElement>("[data-dial-chip]")].map((c) => c.dataset.dialChip)).toEqual(["calendar", "books", "kitchen"]);
-    const always: [string, JourneyMapActionCall][] = [["calendar", { name: "openCalendar", date: FIXTURE_TODAY }], ["books", { name: "openBooks", ref: { kind: "register" } }], ["kitchen", { name: "openPlace", target: "plan-studio" }]];
+    const always: [string, ActionCall][] = [["calendar", { name: "openCalendar", date: FIXTURE_TODAY }], ["books", { name: "openBooks", ref: { kind: "register" } }], ["kitchen", { name: "openPlace", target: "plan-studio" }]];
     for (const [chip, call] of always) {
       if (!bare.host.querySelector("[data-journey-radial]")) await click(bare.host.querySelector("[data-journey-plus]"));
       clear(bare.actions);
@@ -607,7 +607,7 @@ describe("view state v2", () => {
 
   it("migrates a v1 record once (sky → year, region → month, stop → week) and writes only v2", () => {
     const { m, storage } = memory();
-    m.set(journeyViewStateKey(identity), JSON.stringify({ version: 1, tier: "stop", focusDate: "2026-09-18", target: { x: 1, y: 2 }, selectedStopId: "bill:x", expandedClusterId: "cluster:y", listMode: "list", pieceLook: "cat", lastEnter: { location: { host: "kitty" }, tier: "sky", focusDate: null } }));
+    m.set(journeyViewStateKeyV1(identity), JSON.stringify({ version: 1, tier: "stop", focusDate: "2026-09-18", target: { x: 1, y: 2 }, selectedStopId: "bill:x", expandedClusterId: "cluster:y", listMode: "list", pieceLook: "cat", lastEnter: { location: { host: "kitty" }, tier: "sky", focusDate: null } }));
     const state = readJourneyViewState(identity, storage);
     expect(state).toEqual({ version: 2, level: "week", focusDate: "2026-09-18", selectedStopId: "bill:x", listMode: "list", lastEnter: { location: { host: "kitty" }, level: "year", focusDate: null } });
     expect(writeJourneyViewState(identity, { ...state, level: "month" }, storage)).toBe(true);
@@ -615,7 +615,7 @@ describe("view state v2", () => {
     expect(readJourneyViewState(identity, storage).level).toBe("month");
     for (const tier of ["sky", "region"] as const) {
       const fresh = memory();
-      fresh.m.set(journeyViewStateKey(identity), JSON.stringify({ version: 1, tier }));
+      fresh.m.set(journeyViewStateKeyV1(identity), JSON.stringify({ version: 1, tier }));
       expect(readJourneyViewState(identity, fresh.storage).level).toBe(tier === "sky" ? "year" : "month");
     }
   });
@@ -631,7 +631,7 @@ describe("view state v2", () => {
   it("the entry restores a migrated v1 Week and renders the flat map with no scene factory and a failed land", async () => {
     const { m, storage } = memory();
     const id = { environment: "development" as const, householdId: household.householdId, memberId: BIANCA };
-    m.set(journeyViewStateKey(id), JSON.stringify({ version: 1, tier: "stop", focusDate: null, listMode: "map" }));
+    m.set(journeyViewStateKeyV1(id), JSON.stringify({ version: 1, tier: "stop", focusDate: null, listMode: "map" }));
     const onReady = vi.fn();
     const actions = spyActions();
     const { host } = await mount(createElement(JourneyBoardEntry, {

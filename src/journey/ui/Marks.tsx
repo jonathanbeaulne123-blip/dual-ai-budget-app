@@ -11,7 +11,7 @@
  * - Pressing a mark only SELECTS it (`onSelect`). No mark runs an action.
  */
 import type { CSSProperties } from "react";
-import type { JourneyBoardV2, JourneyLevel, ListRow, MarkAnchor, YearChapter } from "../contracts.ts";
+import type { JourneyBoard, JourneyLevel, ListRow, MarkAnchor, YearChapter } from "../contracts.ts";
 import { JOURNEY_MAP_MARKS } from "../contracts.ts";
 import { MAP_WORDS, shortDate } from "../model/index.ts";
 import { COPY, money, shortMonth } from "./copy.ts";
@@ -41,7 +41,7 @@ export function placeMarks(marks: readonly MapMark[], anchors: readonly MarkAnch
 export type Callout = { id: string; kind: "today" | "next" | "selected"; title: string; small: string };
 
 /** The ≤ 3 callouts: Today, the next leaving stop, the selection (deduplicated; Today wins its own mark). */
-export function callouts(board: JourneyBoardV2, marks: readonly MapMark[], rows: Map<string, ListRow>, selected: string | null, level: JourneyLevel): Callout[] {
+export function callouts(board: JourneyBoard, marks: readonly MapMark[], rows: Map<string, ListRow>, selected: string | null, level: JourneyLevel): Callout[] {
   if (level === "year") return [];
   const out: Callout[] = [];
   const has = (id: string) => marks.some((m) => m.id === id);
@@ -101,7 +101,7 @@ export function placeCallouts(list: readonly Callout[], at: Map<string, { x: num
 }
 
 /** The words a mark says to a screen reader (and the Year / Week name plates). */
-export function markWords(board: JourneyBoardV2, mark: MapMark, rows: Map<string, ListRow>, year?: YearChapter): { aria: string; plate: string | null; plateSmall: string | null } {
+export function markWords(board: JourneyBoard, mark: MapMark, rows: Map<string, ListRow>, year?: YearChapter): { aria: string; plate: string | null; plateSmall: string | null } {
   const stops = board.stops.filter((s) => mark.covers.includes(s.id));
   const stopWords = stops.map((s) => [s.label, rows.get(s.id)?.amountText, rows.get(s.id)?.statusText].filter(Boolean).join(" · ")).join("; ");
   const cross = board.crossroads.filter((c) => mark.covers.includes(c.id)).map((c) => `${COPY.crossroads} · ${c.label}`);
@@ -141,7 +141,7 @@ export function markWords(board: JourneyBoardV2, mark: MapMark, rows: Map<string
 }
 
 export type MarksProps = {
-  board: JourneyBoardV2;
+  board: JourneyBoard;
   level: JourneyLevel;
   placed: readonly PlacedMark[];
   rows: Map<string, ListRow>;

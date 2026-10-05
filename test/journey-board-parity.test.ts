@@ -16,7 +16,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   JOURNEY_LEVELS, JOURNEY_MAP_MARKS, LEVEL_T, runJourneyAction,
-  type ActionCall, type ChapterId, type CreateJourneyMapScene, type JourneyBoardActions, type JourneyBoardV2, type JourneyLandHandle, type JourneyLevel,
+  type ActionCall, type ChapterId, type CreateJourneyMapScene, type JourneyBoardActions, type JourneyBoard, type JourneyLandHandle, type JourneyLevel,
   type JourneyMapSceneOptions, type ListRow, type MarkAnchor, type Stop,
 } from "../src/journey/contracts.ts";
 import { boardToList, deriveJourneyBoard, listView } from "../src/journey/model/index.ts";
@@ -32,7 +32,7 @@ vi.setConfig({ testTimeout: 120_000 });
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let household: Household;
-let board: JourneyBoardV2;
+let board: JourneyBoard;
 let rows: ListRow[];
 beforeAll(() => {
   household = journeyDemoHousehold().household;
@@ -173,7 +173,7 @@ describe("the sheet's words for a planning step", () => {
   it("names a task's figure its expected cost, never \"Saved\"", () => {
     const task = { kind: "plan", planKind: "task", id: "plan:task:T-1", taskId: "T-1", status: "open", planLineId: null, date: FIXTURE_TODAY, chapterId: "2026-09", label: "Book the ferry",
       amountCents: 42000, amountBasis: "scheduled", sourceRefs: [{ kind: "task", id: "T-1" }], major: false, relation: "today", actions: [] } as Stop;
-    const row: ListRow = { id: task.id, level: "stop", chapterId: "2026-09", date: FIXTURE_TODAY, kindLabel: "Plan · step", label: task.label, amountText: "$420.00 · scheduled", statusText: "Open step", actions: [], depth: 2 };
+    const row: ListRow = { id: task.id, level: "stop", chapterId: "2026-09", date: FIXTURE_TODAY, kindLabel: "Plan · step", label: task.label, amountText: "$420.00 · scheduled", statusText: "Open step", actions: [], depth: 2, direction: "none", toCheck: false };
     const html = renderToStaticMarkup(createElement(StopPanel, { stop: task, row, actions: spyActions(), onClose: () => undefined, horizonLocation: null, onEnterHorizon: () => undefined }));
     expect(html).toContain("<dt>Expected cost</dt>");
     expect(html).not.toContain("<dt>Saved</dt>");
@@ -184,7 +184,7 @@ describe("the sheet's words for a planning step", () => {
 // Flat marks ⊇ 3D anchors, level by level. The stub projects the contract's mark ids for what L3 draws at a level.
 
 /** The anchors a map scene reports at a level (contracts `JOURNEY_MAP_MARKS` + stop ids + dates + chapter ids). */
-function sceneAnchors(b: JourneyBoardV2, level: JourneyLevel, chapterId: ChapterId): MarkAnchor[] {
+function sceneAnchors(b: JourneyBoard, level: JourneyLevel, chapterId: ChapterId): MarkAnchor[] {
   const at = (id: string, i: number): MarkAnchor => ({ id, x: 20 + (i % 30) * 11, y: 80 + Math.floor(i / 30) * 30, depth: i, visible: true });
   const ids: string[] = [];
   if (level === "year") ids.push(...b.year.map((y) => y.chapterId));

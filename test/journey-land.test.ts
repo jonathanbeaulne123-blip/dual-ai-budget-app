@@ -13,8 +13,8 @@ import { MeshStandardMaterial, Vector3 } from "three";
 import { compressHeight, fromDiorama, JOURNEY_DIORAMA, JOURNEY_LOD, JOURNEY_THEMES, STATION_IDS, toDiorama, type JourneyLandData } from "../src/journey/contracts.ts";
 import {
   buildJourneyLand, CLAY_COLOUR_KEYS, CLAY_NAMES, createClayLights, countDraws, dioramaFrame, extractJourneyLand, JOURNEY_CLAY_PALETTES, JOURNEY_LAND_BUDGET,
-  JOURNEY_LAND_DRESSINGS, JOURNEY_PROP_PALETTE, journeyLandFlatData, JourneyLandFlat, journeyLandTimings, JOURNEY_LAND_SLIM_FORMAT, JOURNEY_LAND_SLIM_URL,
-  LAND_DRESSING_KEYS, loadJourneyLand, parseJourneyLandSlim, PROP_COLOUR_KEYS, resetJourneyLandCacheForTests, setJourneyLandCalm, type ClayLandHandle,
+  JOURNEY_PROP_PALETTE, journeyLandFlatData, JourneyLandFlat, journeyLandTimings, JOURNEY_LAND_SLIM_FORMAT, JOURNEY_LAND_SLIM_URL,
+  loadJourneyLand, parseJourneyLandSlim, PROP_COLOUR_KEYS, resetJourneyLandCacheForTests, setJourneyLandCalm, type ClayLandHandle,
 } from "../src/journey/land/index.ts";
 import { HORIZON_INDEX_URL, parseHorizonIndex } from "../src/house/world/horizonAssets.ts";
 import { decodeTerrainAsset } from "../src/harbour/horizon/land/terrain/asset.ts";
@@ -525,13 +525,5 @@ describe("clay palettes", () => {
     for (const key of PROP_COLOUR_KEYS) expect(JOURNEY_PROP_PALETTE[key], key).toMatch(/^#[0-9a-f]{6}$/);
     expect(JOURNEY_PROP_PALETTE.coin).toBe("#ffd158");
     expect(JOURNEY_PROP_PALETTE.mint).toBe("#8fe0bd");
-  });
-
-  it("keeps the deprecated route-board dressings complete until the route board is deleted", () => {
-    expect(LAND_DRESSING_KEYS.length).toBe(21);
-    for (const theme of JOURNEY_THEMES) {
-      const d = JOURNEY_LAND_DRESSINGS[theme];
-      for (const key of LAND_DRESSING_KEYS) expect(d[key], `${theme}.${key}`).toMatch(/^#[0-9a-f]{6}$/);
-    }
   });
 });

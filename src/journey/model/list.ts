@@ -12,7 +12,7 @@ import { monthEndKey, monthKeyFromDateKey, monthStartKey, shiftMonthKey, type Da
 import { booksPresentationFloor } from "../../core/ledgerExperience.ts";
 import type { Household } from "../../core/types.ts";
 import {
-  isFundStop, isToCheck, type Chapter, type Crossroads, type JourneyBoard, type JourneyBoardV2, type ListGroup, type ListRow,
+  isFundStop, isToCheck, type Chapter, type Crossroads, type JourneyBoard, type ListGroup, type ListRow,
   type ListScope, type ListStrip, type ListView, type ListViewOf, type Stop,
 } from "../contracts.ts";
 import { directionOf, isRecorded, knownCents } from "./money.ts";
@@ -122,7 +122,7 @@ export function booksActualsBetween(books: Household, from: DateKey, to: DateKey
 
 type ScopeRead = { stops: Stop[]; from: DateKey; to: DateKey; title: string };
 
-function scopeRead(board: JourneyBoardV2, scope: ListScope): ScopeRead {
+function scopeRead(board: JourneyBoard, scope: ListScope): ScopeRead {
   if (scope.level === "week") {
     const pile = new Set(board.week.pileStopIds);
     return {
@@ -175,7 +175,7 @@ function readBooks(household: Household, memberId: string): Household | null {
   try { return booksPresentationFloor(household, memberId, "household"); } catch { return null; }
 }
 
-export const listView: ListViewOf = (household: Household, board: JourneyBoardV2, scope: ListScope): ListView => {
+export const listView: ListViewOf = (household: Household, board: JourneyBoard, scope: ListScope): ListView => {
   const read = scopeRead(board, scope);
   const today = board.today;
   const need = read.stops.filter(isToCheck);

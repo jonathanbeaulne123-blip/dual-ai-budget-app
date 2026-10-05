@@ -141,6 +141,8 @@ export function callWords(call: ActionCall): string {
     case "openBooks": return call.ref.kind === "fund" ? "Open the Fund" : "Open the Books";
     case "enterHorizon": return COPY.enterHorizon;
     case "back": return "Back";
+    case "openAllTools": return COPY.chipAllTools;
+    case "chooseSimpleView": return COPY.chipSimple;
   }
 }
 

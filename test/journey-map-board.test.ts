@@ -13,7 +13,7 @@ import * as THREE from "three";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   JOURNEY_DIORAMA, JOURNEY_MAP_MARKS, JOURNEY_THEMES, LEVEL_T, STACK_RULER, isToCheck, ringsFor, toDiorama,
-  type DioramaFrame, type JourneyBoardActions, type JourneyBoardV2, type JourneyLandData, type JourneyLandHandle, type MarkAnchor,
+  type DioramaFrame, type JourneyBoardActions, type JourneyBoard, type JourneyLandData, type JourneyLandHandle, type MarkAnchor,
   type Point2, type Stop,
 } from "../src/journey/contracts.ts";
 import { decodeJourneyLandSlim } from "../src/journey/land/slim.ts";
@@ -32,11 +32,11 @@ import { BIANCA, FIXTURE_TODAY, emptyBoardHousehold, journeyDemoHousehold } from
 const SLIM = JSON.parse(gunzipSync(readFileSync("public/horizon/world/horizon-geo-1.journey.json.gz")).toString());
 
 let land: JourneyLandData;
-let board: JourneyBoardV2;
+let board: JourneyBoard;
 let frame: DioramaFrame;
 beforeAll(() => {
   land = decodeJourneyLandSlim(SLIM);
-  board = deriveJourneyBoard(journeyDemoHousehold().household, BIANCA, FIXTURE_TODAY) as JourneyBoardV2;
+  board = deriveJourneyBoard(journeyDemoHousehold().household, BIANCA, FIXTURE_TODAY) as JourneyBoard;
   frame = frameFromCoast(land.coastline);
 });
 
@@ -116,7 +116,7 @@ describe("layoutClock (Month)", () => {
     const goal = board.stops.find((s) => s.kind === "plan");
     if (goal) expect(stackFor(goal, "month")).toBeNull();
     // A null-amount stop on the board lays out with no stack at its slot.
-    const nulled: JourneyBoardV2 = { ...board, stops: board.stops.map((s) => (s.id === base.id ? { ...s, amountCents: null, amountBasis: "unknown" } as Stop : s)) };
+    const nulled: JourneyBoard = { ...board, stops: board.stops.map((s) => (s.id === base.id ? { ...s, amountCents: null, amountBasis: "unknown" } as Stop : s)) };
     const slot = layoutClock(nulled, base.chapterId).slots.find((s) => s.stopIds.includes(base.id))!;
     const item = slot.items.find((i) => i.stopId === base.id);
     if (item) expect(item.stack).toBeNull();
@@ -339,7 +339,7 @@ function flushFrames(time = 0, rounds = 4) {
 type Spies = { onAnchors: ReturnType<typeof vi.fn>; onPick: ReturnType<typeof vi.fn>; onLevel: ReturnType<typeof vi.fn>; onReady: ReturnType<typeof vi.fn>; onLost: ReturnType<typeof vi.fn> };
 type Harness = { scene: MapSceneHandle; land: ReturnType<typeof stubLand>; spies: Spies; calls: ReturnType<typeof fakeRenderer>["calls"]; canvas: HTMLCanvasElement; last: () => MarkAnchor[]; host: HTMLElement };
 const opened: Harness[] = [];
-function mount(extra: Partial<MapSceneOptions> = {}, b: JourneyBoardV2 = board): Harness {
+function mount(extra: Partial<MapSceneOptions> = {}, b: JourneyBoard = board): Harness {
   vi.stubGlobal("requestAnimationFrame", vi.fn((cb: FrameRequestCallback) => { pendingFrames.push(cb); return pendingFrames.length; }));
   vi.stubGlobal("cancelAnimationFrame", vi.fn());
   flushFrames();
@@ -463,7 +463,7 @@ describe("map scene", () => {
     flushFrames();
     expect(h.calls.render).toBe(before); // idle: nothing queued
     for (const theme of JOURNEY_THEMES) { h.scene.setTheme(theme); h.scene.renderNow(); }
-    h.scene.setBoard(deriveJourneyBoard(emptyBoardHousehold(), BIANCA, FIXTURE_TODAY) as JourneyBoardV2);
+    h.scene.setBoard(deriveJourneyBoard(emptyBoardHousehold(), BIANCA, FIXTURE_TODAY) as JourneyBoard);
     h.scene.renderNow();
     h.scene.sleep();
     pendingFrames.length = 0;

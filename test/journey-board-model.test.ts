@@ -5,7 +5,7 @@ import { monthMemories } from "../src/core/timeMachine.ts";
 import type { Household } from "../src/core/types.ts";
 import { dayLedger } from "../src/harbour/glass/dayLedger.ts";
 import { STATION_IDS, isToCheck, journeyIds, type ActionCall, type JourneyBoard, type Stop } from "../src/journey/contracts.ts";
-import { boardToList, deriveJourneyBoard } from "../src/journey/model/index.ts";
+import { boardToList, deriveJourneyBoard, deriveJourneyBoardWithSummary } from "../src/journey/model/index.ts";
 import { calendarDays, readContext } from "../src/journey/model/window.ts";
 import { calendarWeight } from "../src/core/calendarWeight.ts";
 import { SAMPLE_TODAY, sampleJourneyBoard } from "./fixtures/journey-board-sample.ts";
@@ -18,6 +18,9 @@ import {
 
 const demo = journeyDemoHousehold();
 const board = deriveJourneyBoard(demo.household, BIANCA, FIXTURE_TODAY);
+/** The model's own summary the board was split from (`purse`, `digest`, `toCheck`). */
+const summaryOf = (h: Household, member = BIANCA, day: DateKey = FIXTURE_TODAY) => deriveJourneyBoardWithSummary(h, member, day).summary;
+const boardSummary = summaryOf(demo.household);
 const byId = (b: JourneyBoard, id: string) => b.stops.find(stop => stop.id === id);
 const idMap = (b: JourneyBoard) => new Map(b.stops.map(stop => [stop.id, stop.chapterId]));
 
@@ -138,7 +141,7 @@ describe("Journey Board model — financial truth", () => {
   it("a corrected recurring receipt needs review; it is never paid and never merely overdue", () => {
     const stop = byId(board, journeyIds.bill(demo.ids.streamingRecurrenceId, "2026-09-10"));
     expect(stop).toMatchObject({ kind: "commitment", status: "needs-review" });
-    expect(board.summary.attention[0]?.stopId).toBe(stop!.id);
+    expect(boardSummary.attention[0]?.stopId).toBe(stop!.id);
     expect(board.chapters.find(c => c.id === "2026-09")!.unresolved.commitmentsNeedingReview).toBe(1);
   });
 
@@ -169,7 +172,7 @@ describe("Journey Board model — financial truth", () => {
     const september = board.chapters.find(c => c.id === "2026-09")!;
     const u = september.unresolved;
     expect(u.attention).toBe(u.overdueCommitments + u.commitmentsNeedingReview + u.chapterCloseDue);
-    expect(board.summary.attention.every(item => !item.id.includes("income:"))).toBe(true);
+    expect(boardSummary.attention.every(item => !item.id.includes("income:"))).toBe(true);
   });
 
   it("offers only callbacks that open a surface; Mark paid only when Bill paid can take that occurrence", () => {
@@ -223,7 +226,7 @@ describe("Journey Board model — board shape", () => {
   });
 
   it("anchors the piece on today's month, apart from any selection", () => {
-    expect(board.piece).toEqual({ anchorChapterId: "2026-09", atStationId: "sep", atDate: FIXTURE_TODAY, waitingChapterId: null, lookId: "lantern" });
+    expect(board.piece).toEqual({ anchorChapterId: "2026-09", atStationId: "sep", atDate: FIXTURE_TODAY, waitingChapterId: null });
     expect(board.currentChapterId).toBe("2026-09");
   });
 
@@ -243,7 +246,7 @@ describe("Journey Board model — board shape", () => {
     expect(byId(next, "review:2026-08")).toMatchObject({ status: "close-due" });
     expect(next.chapters.find(c => c.id === "2026-08")!.unresolved.chapterCloseDue).toBe(1);
     expect(next.chapters.find(c => c.id === "2026-09")!.record.kind).toBe("still-open");
-    expect(next.summary.attention.some(item => item.stopId === "review:2026-08")).toBe(true);
+    expect(summaryOf(lagging.household).attention.some(item => item.stopId === "review:2026-08")).toBe(true);
     const proposed = proposeChapterClose(lagging.household, BIANCA, lagging.augustChapterId, "2026-09-27T12:00:00.000Z");
     expect(byId(deriveJourneyBoard(proposed, BIANCA, FIXTURE_TODAY), "review:2026-08")).toMatchObject({ status: "waiting-on-partner" });
     expect(byId(deriveJourneyBoard(proposed, JONATHAN, FIXTURE_TODAY), "review:2026-08")).toMatchObject({ status: "waiting-on-you" });
@@ -392,9 +395,10 @@ describe("Journey Board model — households", () => {
     expect(empty.homes).toEqual([]);
     expect(empty.chapters).toHaveLength(12);
     expect(empty.chapters.every(c => c.stopIds.length === 0 && c.traces.length === 0 && c.unresolved.attention === 0)).toBe(true);
-    expect(empty.summary.quickActions.some(a => a.call.name === "openRecord")).toBe(false);
-    expect(empty.summary.quickActions.map(a => a.call.name)).toEqual(["openBooks", "openPlace", "openCalendar"]);
-    expect(empty.summary.next).toEqual([]);
+    const emptySummary = summaryOf(emptyBoardHousehold());
+    expect(emptySummary.quickActions.some(a => a.call.name === "openRecord")).toBe(false);
+    expect(emptySummary.quickActions.map(a => a.call.name)).toEqual(["openBooks", "openPlace", "openCalendar"]);
+    expect(emptySummary.next).toEqual([]);
     expect(boardToList(empty).filter(row => row.level !== "chapter")).toEqual([]);
   });
 
@@ -402,8 +406,9 @@ describe("Journey Board model — households", () => {
     const quiet = deriveJourneyBoard(quietMonthHousehold(), BIANCA, FIXTURE_TODAY);
     expect(quiet.empty).toBe(false);
     expect(quiet.chapters.find(c => c.id === "2026-09")!.stopIds).toEqual([]);
-    expect(quiet.summary.next[0]).toMatch(/^bill:.+@2026-10-01$/);
-    expect(quiet.summary.quickActions[0]!.call).toEqual({ name: "openRecord", mode: "expense" });
+    const quietSummary = summaryOf(quietMonthHousehold());
+    expect(quietSummary.next[0]).toMatch(/^bill:.+@2026-10-01$/);
+    expect(quietSummary.quickActions[0]!.call).toEqual({ name: "openRecord", mode: "expense" });
   });
 
   it("keeps a busy month legible: every bill one stop, shared dates clustered, ids unchanged elsewhere", () => {
@@ -461,12 +466,12 @@ describe("Journey Board model — Horizon Clock v2 fields on the fixture househo
 
   it("the digest splits the summary's attention: Chapter items, readNeeds waiting on you, and to-check — nothing lost", () => {
     const lagging = laggingChapterHousehold();
-    const next = deriveJourneyBoard(lagging.household, BIANCA, FIXTURE_TODAY);
+    const { board: next, summary } = deriveJourneyBoardWithSummary(lagging.household, BIANCA, FIXTURE_TODAY);
     expect(next.digest.chapter.map(item => item.stopId)).toEqual(["review:2026-08"]);
-    const commitments = next.summary.attention.filter(item => item.stopId !== null && byId(next, item.stopId)!.kind === "commitment").map(item => item.stopId);
+    const commitments = summary.attention.filter(item => item.stopId !== null && byId(next, item.stopId)!.kind === "commitment").map(item => item.stopId);
     expect(new Set(commitments)).toEqual(new Set(next.toCheck));
-    expect(next.digest.waitingOnYou).toEqual(next.summary.attention.filter(item => item.stopId === null));
-    expect(next.digest.chapter.length + next.digest.waitingOnYou.length + commitments.length).toBe(next.summary.attention.length);
+    expect(next.digest.waitingOnYou).toEqual(summary.attention.filter(item => item.stopId === null));
+    expect(next.digest.chapter.length + next.digest.waitingOnYou.length + commitments.length).toBe(summary.attention.length);
   });
 
   it("a new household's v2 board is honestly empty", () => {

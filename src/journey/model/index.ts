@@ -3,7 +3,8 @@
  * Public API: `deriveJourneyBoard` (a v2 board), `boardToList`, `listView`, `directionOf`, and the words.
  * No React, no three, no storage, no clock.
  */
-export { deriveJourneyBoard } from "./derive.ts";
+export { deriveJourneyBoard, deriveJourneyBoardWithSummary } from "./derive.ts";
+export type { BoardSummary } from "./summary.ts";
 export { boardToList, booksActualsBetween, listView } from "./list.ts";
 export { directionOf, isRecorded, knownCents, toCheckIds } from "./money.ts";
 export { mondayOf } from "./weeks.ts";

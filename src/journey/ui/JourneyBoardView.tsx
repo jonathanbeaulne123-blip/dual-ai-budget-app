@@ -7,12 +7,12 @@
  *
  * Invariants: selecting, picking, pulling the level, turning the chapter, opening a sheet or the list, the Key, the
  * dial, "Which one?" and About this map call NO action — they change the view only. An action runs only when its own
- * labelled button is pressed, exactly once, through `runJourneyAction` / `runJourneyMapAction` (the sheet and the list
+ * labelled button is pressed, exactly once, through `runJourneyAction` / `runJourneyAction` (the sheet and the list
  * share each stop's `actions[]`).
  */
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactElement } from "react";
 import type {
-  ChapterId, CreateJourneyMapScene, DateKey, HorizonLocation, JourneyBoardActions, JourneyBoardV2, JourneyLandData, JourneyLandHandle, JourneyLevel,
+  ChapterId, CreateJourneyMapScene, DateKey, HorizonLocation, JourneyBoardActions, JourneyBoard, JourneyLandData, JourneyLandHandle, JourneyLevel,
   JourneyMapSceneHandle, JourneyViewStateV2, ListScope, ListView as ListViewModel, MarkAnchor, PlaceRef, StopCluster, ThemeId,
 } from "../contracts.ts";
 import { DEFAULT_JOURNEY_VIEW_STATE_V2, JOURNEY_MAP_MARKS, LEVEL_T, levelForT, runJourneyAction } from "../contracts.ts";
@@ -48,7 +48,7 @@ export type JourneyStageSource = {
 };
 
 export type JourneyBoardViewProps = {
-  board: JourneyBoardV2;
+  board: JourneyBoard;
   actions: JourneyBoardActions;
   theme: ThemeId;
   reducedMotion: boolean;
@@ -99,18 +99,18 @@ export function horizonLocationFor(place: PlaceRef | undefined, land: JourneyLan
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const MONTH = /^\d{4}-\d{2}$/;
-const clampDate = (date: DateKey, board: JourneyBoardV2): DateKey => {
+const clampDate = (date: DateKey, board: JourneyBoard): DateKey => {
   const lo = firstDay(board.window.from), hi = lastDay(board.window.to);
   return date < lo ? lo : date > hi ? hi : date;
 };
 
-function knownIds(board: JourneyBoardV2): Set<string> {
+function knownIds(board: JourneyBoard): Set<string> {
   return new Set<string>([
     JOURNEY_MAP_MARKS.piece, JOURNEY_MAP_MARKS.hercules, JOURNEY_MAP_MARKS.pile,
     ...board.chapters.map((c) => c.id), ...board.stops.map((s) => s.id), ...board.crossroads.map((c) => c.id),
   ]);
 }
-function sanitize(state: JourneyViewStateV2, board: JourneyBoardV2): JourneyViewStateV2 {
+function sanitize(state: JourneyViewStateV2, board: JourneyBoard): JourneyViewStateV2 {
   const known = knownIds(board);
   const sel = state.selectedStopId;
   const okSel = sel && (known.has(sel) || (DATE.test(sel) && sel >= firstDay(board.window.from) && sel <= lastDay(board.window.to))) ? sel : null;

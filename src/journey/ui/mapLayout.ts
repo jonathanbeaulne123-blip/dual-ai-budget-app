@@ -9,7 +9,7 @@
  * `week.pileStopIds`; a mini covers its chapter's stops. A 3D anchor on any covered id is reachable through its mark.
  */
 import { dioramaFrame } from "../land/diorama.ts";
-import { JOURNEY_DIORAMA, JOURNEY_MAP_MARKS, isToCheck, type ChapterId, type DateKey, type JourneyBoardV2, type JourneyLandData, type JourneyLevel, type Point2, type Stop } from "../contracts.ts";
+import { JOURNEY_DIORAMA, JOURNEY_MAP_MARKS, isToCheck, type ChapterId, type DateKey, type JourneyBoard, type JourneyLandData, type JourneyLevel, type Point2, type Stop } from "../contracts.ts";
 import { directionOf, isRecorded } from "../model/index.ts";
 import { addDays, daysInMonth, lastDay } from "./copy.ts";
 
@@ -64,7 +64,7 @@ function moneyOf(stops: readonly Stop[]): Pick<MapMark, "money" | "recorded" | "
   return { money: hasIn && hasOut ? "both" : hasIn ? "in" : hasOut ? "out" : "none", recorded: (hasIn || hasOut) && allRecorded, toCheck: stops.some(isToCheck) };
 }
 
-function byDate(board: JourneyBoardV2): Map<string, { stops: Stop[]; crossroads: string[] }> {
+function byDate(board: JourneyBoard): Map<string, { stops: Stop[]; crossroads: string[] }> {
   const map = new Map<string, { stops: Stop[]; crossroads: string[] }>();
   const at = (date: string) => { let e = map.get(date); if (!e) { e = { stops: [], crossroads: [] }; map.set(date, e); } return e; };
   for (const s of board.stops) at(s.date).stops.push(s);
@@ -73,7 +73,7 @@ function byDate(board: JourneyBoardV2): Map<string, { stops: Stop[]; crossroads:
 }
 
 /** The marks the map shows at `level` (chapter `chapterId` for Month). DOM (tab) order = date order. */
-export function mapMarks(board: JourneyBoardV2, level: JourneyLevel, chapterId: ChapterId): MapMark[] {
+export function mapMarks(board: JourneyBoard, level: JourneyLevel, chapterId: ChapterId): MapMark[] {
   const dates = byDate(board);
   const day = (date: DateKey, at: Point2, kind: MapMarkKind = "day", id: string = date): MapMark => {
     const e = dates.get(date) ?? { stops: [], crossroads: [] };

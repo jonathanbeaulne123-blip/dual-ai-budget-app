@@ -25,7 +25,7 @@
 import * as THREE from "three";
 import {
   JOURNEY_DIORAMA, JOURNEY_MAP_MARKS, LEVEL_T, fromDiorama, levelForT, toDiorama,
-  type ChapterId, type CreateJourneyMapScene, type DioramaFrame, type JourneyBoardV2, type JourneyLandHandle, type JourneyLevel,
+  type ChapterId, type CreateJourneyMapScene, type DioramaFrame, type JourneyBoard, type JourneyLandHandle, type JourneyLevel,
   type JourneyLandCalm, type JourneyMapSceneHandle, type JourneyMapSceneOptions, type MarkAnchor, type Point2, type Stop, type ThemeId,
 } from "../contracts.ts";
 import { acquireWorldRenderer, type WorldRendererOptions } from "../../house/world/rendererOwner.ts";
@@ -101,7 +101,7 @@ type MiniNode = { mini: YearMini; group: THREE.Group; top: number };
 
 export function createJourneyMapScene(host: HTMLElement, options: MapSceneOptions): MapSceneHandle {
   const land: JourneyLandHandle = options.land;
-  let board: JourneyBoardV2 = options.board;
+  let board: JourneyBoard = options.board;
   let theme: ThemeId = options.theme;
   const tier = options.tier;
   const shadows = tier === "full";

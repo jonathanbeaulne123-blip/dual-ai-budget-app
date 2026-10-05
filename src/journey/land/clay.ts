@@ -30,7 +30,6 @@ import { compressHeight, HEIGHT_COMPRESSION, JOURNEY_DIORAMA } from "../contract
 import { blobDisc, buildScatter, countDraws, mergeParts, roundedBox, type ClayPaint, type ScatterMesh, type ToyItem, type ToyPart } from "./clayKit.ts";
 import { clayDerived, clayPalette, JOURNEY_PROP_PALETTE } from "./clayPalette.ts";
 import { createClaySurface, dioramaFrame, distanceToLine, offsetRing, resampleLine, smooth, type ClaySurface } from "./diorama.ts";
-import { landDressing } from "./dressing.ts";
 import { isMinorLine } from "./extract.ts";
 import { buildHomes, reservesForHomes, type HomeMeshes, type Season } from "./homes.ts";
 import { deckBlend, locateOnBridge, planBridges, type BridgePlan } from "./road.ts";
@@ -46,6 +45,9 @@ export const CLAY_NAMES = {
 } as const;
 
 /** Per-tier detail (counts and segments only; no coordinates). */
+/** The clay land's own budget (triangles / draw calls), inside the board's `JOURNEY_LOD` allowance on both tiers. */
+export const JOURNEY_LAND_BUDGET = { full: { triangles: 25_000, drawCalls: 20 }, lite: { triangles: 15_000, drawCalls: 20 } } as const;
+
 export const CLAY_LAND_LOD = {
   full: { coast: 240, bevel: 3, roadStep: 9, minorStep: 12, treeDetail: 1, trunkSides: 5, houseSegments: 2, trees: 64, villageHouses: 22, miniStride: 2, miniCoast: 96 },
   lite: { coast: 160, bevel: 2, roadStep: 14, minorStep: 18, treeDetail: 0, trunkSides: 4, houseSegments: 1, trees: 44, villageHouses: 14, miniStride: 3, miniCoast: 72 },
@@ -461,7 +463,7 @@ function miniIsland(land: JourneyLandData, frame: DioramaFrame, tier: "full" | "
 // --- member homes (D53), re-materialled as clay ----------------------------------------------------------------------
 
 function clayHomes(homes: readonly JourneyHome[], land: JourneyLandData, surface: LandSurface, clay: ClaySurface, tier: "full" | "lite", season: Season) {
-  const built: HomeMeshes = buildHomes(homes, land, surface, landDressing("classic"), season);
+  const built: HomeMeshes = buildHomes(homes, land, surface, clayPalette("classic").ink, season);
   const reserves = reservesForHomes(land, surface);
   const sites = new Map<string, ReturnType<typeof homeSite>>(homes.map((h) => [`${h.memberId}@${h.plotId}`, homeSite(reserves, h.plotId)]));
   const owned: Owned[] = [];
