@@ -1,0 +1,38 @@
+{
+ "390": {
+  "url": "/house/kitchen-table/above?household=<demo>&scope=household&surface=journey",
+  "board": true,
+  "theme": "taylor",
+  "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+  "stageMode": "live",
+  "land": "ready",
+  "level": "month",
+  "boardTop": 258,
+  "plusRadius": "50%",
+  "plusUnobstructed": true,
+  "banners": [],
+  "env": "Development",
+  "overflowX": false,
+  "ms": 32135,
+  "arrived": true,
+  "errors": []
+ },
+ "1100": {
+  "url": "/house/kitchen-table/above?household=<demo>&scope=household&surface=journey",
+  "board": true,
+  "theme": "taylor",
+  "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+  "stageMode": "live",
+  "land": "ready",
+  "level": "month",
+  "boardTop": 244,
+  "plusRadius": "50%",
+  "plusUnobstructed": true,
+  "banners": [],
+  "env": "Development",
+  "overflowX": false,
+  "ms": 30888,
+  "arrived": true,
+  "errors": []
+ }
+}

@@ -1,0 +1,2532 @@
+{
+ "generated": "fictional Development demo household (seedDemoHousehold today 2026-09-28, viewer MEM-002 Jonathan); headless Chromium 141 + SwiftShader",
+ "sha": "8009001",
+ "shots": {
+  "year-320-classic": {
+   "viewport": [
+    320,
+    568
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "year",
+   "header": "September2026 · the year · now",
+   "purse": "Everyday $0.00",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 12,
+   "callouts": [],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "month-320-classic": {
+   "viewport": [
+    320,
+    568
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Month",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "week-320-classic": {
+   "viewport": [
+    320,
+    568
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-week journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 this week8 to check",
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Week",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "year-390-classic": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "year",
+   "header": "September2026 · the year · now",
+   "purse": "Everyday $0.00",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 12,
+   "callouts": [],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "month-390-classic": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Month",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "week-390-classic": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-week journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 this week8 to check",
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Week",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "year-720-classic": {
+   "viewport": [
+    720,
+    900
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "year",
+   "header": "September2026 · the year · now",
+   "purse": "Everyday $0.00",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 12,
+   "callouts": [],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "month-720-classic": {
+   "viewport": [
+    720,
+    900
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Month",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "week-720-classic": {
+   "viewport": [
+    720,
+    900
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-week journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 this week8 to check",
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Week",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "year-1100-classic": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "year",
+   "header": "September2026 · the year · now",
+   "purse": "Everyday $0.00",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 12,
+   "callouts": [],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "month-1100-classic": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Month",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "week-1100-classic": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-week journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 this week8 to check",
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Week",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "year-320-taylor": {
+   "viewport": [
+    320,
+    568
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "year",
+   "header": "September2026 · the year · now",
+   "purse": "Everyday $0.00",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 12,
+   "callouts": [],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "month-320-taylor": {
+   "viewport": [
+    320,
+    568
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Month",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "week-320-taylor": {
+   "viewport": [
+    320,
+    568
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-week journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 this week8 to check",
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Week",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "year-390-taylor": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "year",
+   "header": "September2026 · the year · now",
+   "purse": "Everyday $0.00",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 12,
+   "callouts": [],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "month-390-taylor": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Month",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "week-390-taylor": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-week journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 this week8 to check",
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Week",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "year-720-taylor": {
+   "viewport": [
+    720,
+    900
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "year",
+   "header": "September2026 · the year · now",
+   "purse": "Everyday $0.00",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 12,
+   "callouts": [],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "month-720-taylor": {
+   "viewport": [
+    720,
+    900
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Month",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "week-720-taylor": {
+   "viewport": [
+    720,
+    900
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-week journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 this week8 to check",
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Week",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "year-1100-taylor": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "year",
+   "header": "September2026 · the year · now",
+   "purse": "Everyday $0.00",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 12,
+   "callouts": [],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "month-1100-taylor": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Month",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "week-1100-taylor": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-week journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 this week8 to check",
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Week",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "year-320-newfoundland": {
+   "viewport": [
+    320,
+    568
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "year",
+   "header": "September2026 · the year · now",
+   "purse": "Everyday $0.00",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 12,
+   "callouts": [],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "month-320-newfoundland": {
+   "viewport": [
+    320,
+    568
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Month",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "week-320-newfoundland": {
+   "viewport": [
+    320,
+    568
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-week journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 this week8 to check",
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Week",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "year-390-newfoundland": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "year",
+   "header": "September2026 · the year · now",
+   "purse": "Everyday $0.00",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 12,
+   "callouts": [],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "month-390-newfoundland": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Month",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "week-390-newfoundland": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-week journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 this week8 to check",
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Week",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "year-720-newfoundland": {
+   "viewport": [
+    720,
+    900
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "year",
+   "header": "September2026 · the year · now",
+   "purse": "Everyday $0.00",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 12,
+   "callouts": [],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "month-720-newfoundland": {
+   "viewport": [
+    720,
+    900
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Month",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "week-720-newfoundland": {
+   "viewport": [
+    720,
+    900
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-week journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 this week8 to check",
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Week",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "year-1100-newfoundland": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "year",
+   "header": "September2026 · the year · now",
+   "purse": "Everyday $0.00",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 12,
+   "callouts": [],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "month-1100-newfoundland": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Month",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "week-1100-newfoundland": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-week journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 this week8 to check",
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Week",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "list-month-390-taylor": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": null,
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "list-week-390-taylor": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-week journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": null,
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Week",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "list-year-390-taylor": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-year journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "year",
+   "header": "September2026 · the year · now",
+   "purse": null,
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 12,
+   "callouts": [],
+   "sheet": null,
+   "active": "Year",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "list-month-1100-taylor": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": null,
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "list-week-1100-taylor": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-week journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": null,
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Week",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "list-year-1100-taylor": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-year journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "year",
+   "header": "September2026 · the year · now",
+   "purse": null,
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 12,
+   "callouts": [],
+   "sheet": null,
+   "active": "Year",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "sheet-stop-390-taylor": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated has-sheet",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 6,
+   "callouts": [
+    "Tue 15 Sep · 2 thingsGroceries · planned · Bianca pay"
+   ],
+   "sheet": "2 things on this day",
+   "active": "2 things on this day",
+   "plusUnobstructed": false,
+   "controlsUnder44": [],
+   "outsideViewport": [
+    {
+     "name": "Fri 11 Sep: Fund contribution · $225.00 · record",
+     "left": 359,
+     "right": 403
+    }
+   ],
+   "errors": [],
+   "opened": "2026-09-15"
+  },
+  "sheet-checklist-390-taylor": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated has-sheet",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": "This week, then 8 to check",
+   "active": "This week, then 8 to check",
+   "plusUnobstructed": false,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "dial-390-taylor": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Record a purchase…",
+   "plusUnobstructed": false,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "key-month-390-taylor": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Key",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "which-one-390-taylor": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Mon 28 Sep · Bianca pay",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": [],
+   "fan": {
+    "mark": "2026-09-28",
+    "options": [
+     "Mon 28 Sep · Bianca pay",
+     "Mon 28 Sep · Expected Fund contribution",
+     "Mon 28 Sep · Expected Fund contribution",
+     "Mon 28 Sep · Bianca pay"
+    ]
+   }
+  },
+  "key-year-390-taylor": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "year",
+   "header": "September2026 · the year · now",
+   "purse": "Everyday $0.00",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 12,
+   "callouts": [],
+   "sheet": null,
+   "active": "Key",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "sheet-pile-week-390-taylor": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-week journey-board--animated has-sheet",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": "Needs you · 8 pinned to Mon",
+   "active": "Needs you · 8 pinned to Mon",
+   "plusUnobstructed": false,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "sheet-stop-1100-taylor": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated has-sheet",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 5,
+   "callouts": [
+    "Tue 15 Sep · 2 thingsGroceries · planned · Bianca pay"
+   ],
+   "sheet": "2 things on this day",
+   "active": "2 things on this day",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": [],
+   "opened": "2026-09-15"
+  },
+  "sheet-checklist-1100-taylor": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated has-sheet",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": "This week, then 8 to check",
+   "active": "This week, then 8 to check",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "dial-1100-taylor": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Record a purchase…",
+   "plusUnobstructed": false,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "key-month-1100-taylor": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Key",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "which-one-1100-taylor": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Mon 28 Sep · Bianca pay",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": [],
+   "fan": {
+    "mark": "2026-09-28",
+    "options": [
+     "Mon 28 Sep · Bianca pay",
+     "Mon 28 Sep · Expected Fund contribution",
+     "Mon 28 Sep · Expected Fund contribution",
+     "Mon 28 Sep · Bianca pay"
+    ]
+   }
+  },
+  "key-year-1100-taylor": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "year",
+   "header": "September2026 · the year · now",
+   "purse": "Everyday $0.00",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 12,
+   "callouts": [],
+   "sheet": null,
+   "active": "Key",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "sheet-pile-week-1100-taylor": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-week journey-board--animated has-sheet",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": "Needs you · 8 pinned to Mon",
+   "active": "Needs you · 8 pinned to Mon",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "reduced-motion-month-390-newfoundland": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-month journey-board--still",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Month",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": [],
+   "cuts": [
+    {
+     "want": "week",
+     "level": "week",
+     "slider": "2",
+     "still": true
+    },
+    {
+     "want": "year",
+     "level": "year",
+     "slider": "0",
+     "still": true
+    },
+    {
+     "want": "month",
+     "level": "month",
+     "slider": "1",
+     "still": true
+    }
+   ]
+  },
+  "reduced-motion-week-390-newfoundland": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-week journey-board--still",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 this week8 to check",
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Week",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "reduced-motion-month-1100-newfoundland": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-month journey-board--still",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Month",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": [],
+   "cuts": [
+    {
+     "want": "week",
+     "level": "week",
+     "slider": "2",
+     "still": true
+    },
+    {
+     "want": "year",
+     "level": "year",
+     "slider": "0",
+     "still": true
+    },
+    {
+     "want": "month",
+     "level": "month",
+     "slider": "1",
+     "still": true
+    }
+   ]
+  },
+  "reduced-motion-week-1100-newfoundland": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-week journey-board--still",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 this week8 to check",
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Week",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "keyboard-1-about-390-classic": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "About this map",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": [],
+   "tabStep": 1
+  },
+  "keyboard-2-mark-390-classic": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Fri 4 Sep: Fund contribution · $980.00 · recorde",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": [],
+   "tabStep": 6
+  },
+  "keyboard-2b-sheet-390-classic": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated has-sheet",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 6,
+   "callouts": [
+    "Fund contribution$980.00 · Fri 4 Sep"
+   ],
+   "sheet": "Fund contribution",
+   "active": "Fund contribution",
+   "plusUnobstructed": false,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": [],
+   "tabStep": 6
+  },
+  "keyboard-2c-sheet-action-390-classic": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated has-sheet",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 6,
+   "callouts": [
+    "Fund contribution$980.00 · Fri 4 Sep"
+   ],
+   "sheet": "Fund contribution",
+   "active": "Close · Fund contribution",
+   "plusUnobstructed": false,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "keyboard-3-slider-390-classic": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "journey-pull__slider",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": [],
+   "tabStep": 26
+  },
+  "keyboard-4-plus-390-classic": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Add — record money",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": [],
+   "tabStep": 27
+  },
+  "keyboard-1-about-1100-classic": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "About this map",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": [],
+   "tabStep": 1
+  },
+  "keyboard-2-mark-1100-classic": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Fri 4 Sep: Fund contribution · $980.00 · recorde",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": [],
+   "tabStep": 6
+  },
+  "keyboard-2b-sheet-1100-classic": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated has-sheet",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 6,
+   "callouts": [
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i",
+    "Fund contribution$980.00 · Fri 4 Sep"
+   ],
+   "sheet": "Fund contribution",
+   "active": "Fund contribution",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": [],
+   "tabStep": 6
+  },
+  "keyboard-2c-sheet-action-1100-classic": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated has-sheet",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 5,
+   "callouts": [
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i",
+    "Fund contribution$980.00 · Fri 4 Sep"
+   ],
+   "sheet": "Fund contribution",
+   "active": "Close · Fund contribution",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "keyboard-3-slider-1100-classic": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "journey-pull__slider",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": [],
+   "tabStep": 26
+  },
+  "keyboard-4-plus-1100-classic": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Add — record money",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": [],
+   "tabStep": 27
+  },
+  "empty-month-390-classic": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated journey-board--empty",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 3,
+   "callouts": [
+    "Today · Mon 28 SepNothing on this day."
+   ],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "empty-list-390-classic": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--list journey-board--level-month journey-board--animated journey-board--empty",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": null,
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 3,
+   "callouts": [
+    "Today · Mon 28 SepNothing on this day."
+   ],
+   "sheet": null,
+   "active": "List",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "loading-month-390-classic": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--flat journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "flat",
+   "land": "loading",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": "Drawing the island… every stop and action is already in the list.",
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "land-fail-month-390-classic": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--flat journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "flat",
+   "land": "failed",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": "The island could not be drawn on this device right now. The clock and the list still hold every stop and action.",
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "empty-month-1100-classic": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-month journey-board--animated journey-board--empty",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 3,
+   "callouts": [
+    "Today · Mon 28 SepNothing on this day."
+   ],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "empty-list-1100-classic": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--list journey-board--level-month journey-board--animated journey-board--empty",
+   "stageMode": "live",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": null,
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 3,
+   "callouts": [
+    "Today · Mon 28 SepNothing on this day."
+   ],
+   "sheet": null,
+   "active": "List",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "loading-month-1100-classic": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--flat journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "flat",
+   "land": "loading",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": "Drawing the island… every stop and action is already in the list.",
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "land-fail-month-1100-classic": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--flat journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "flat",
+   "land": "failed",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": "The island could not be drawn on this device right now. The clock and the list still hold every stop and action.",
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "offline-month-390-classic": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--flat journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "flat",
+   "land": "failed",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": "The island could not be drawn on this device right now. The clock and the list still hold every stop and action.",
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": [],
+   "heldRequests": 1
+  },
+  "offline-list-390-classic": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--flat journey-board--list journey-board--level-month journey-board--animated",
+   "stageMode": "flat",
+   "land": "failed",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": null,
+   "bubble": null,
+   "landNote": "The island could not be drawn on this device right now. The clock and the list still hold every stop and action.",
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "List",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "offline-month-1100-classic": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--flat journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "flat",
+   "land": "failed",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": "The island could not be drawn on this device right now. The clock and the list still hold every stop and action.",
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": [],
+   "heldRequests": 1
+  },
+  "offline-list-1100-classic": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--classic journey-board--flat journey-board--list journey-board--level-month journey-board--animated",
+   "stageMode": "flat",
+   "land": "failed",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": null,
+   "bubble": null,
+   "landNote": "The island could not be drawn on this device right now. The clock and the list still hold every stop and action.",
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "List",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "flat-year-390-taylor": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--flat journey-board--map journey-board--level-year journey-board--animated",
+   "stageMode": "flat",
+   "land": "ready",
+   "level": "year",
+   "header": "September2026 · the year · now",
+   "purse": "Everyday $0.00",
+   "bubble": null,
+   "landNote": null,
+   "marksShown": 12,
+   "callouts": [],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "flat-month-390-taylor": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--flat journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "flat",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Month",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "flat-week-390-taylor": {
+   "viewport": [
+    390,
+    844
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--taylor journey-board--flat journey-board--map journey-board--level-week journey-board--animated",
+   "stageMode": "flat",
+   "land": "ready",
+   "level": "week",
+   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 this week8 to check",
+   "landNote": null,
+   "marksShown": 9,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": "Week",
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  },
+  "flat-month-1100-newfoundland": {
+   "viewport": [
+    1100,
+    800
+   ],
+   "pageOverflowX": false,
+   "boardScroll": null,
+   "classes": "journey-board journey-board--newfoundland journey-board--flat journey-board--map journey-board--level-month journey-board--animated",
+   "stageMode": "flat",
+   "land": "ready",
+   "level": "month",
+   "header": "September2026 · now",
+   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "landNote": null,
+   "marksShown": 15,
+   "callouts": [
+    "Today · Mon 28 Seppay expected · 4 things",
+    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+   ],
+   "sheet": null,
+   "active": null,
+   "plusUnobstructed": true,
+   "controlsUnder44": [],
+   "outsideViewport": [],
+   "errors": []
+  }
+ },
+ "keyboardOrder": {
+  "390": [
+   "About this map",
+   "Previous month",
+   "Next month",
+   "Theme",
+   "Our island as a clock",
+   "Fri 4 Sep: Fund contribution · $980.00 · recorded ",
+   "after Escape → Fri 4 Sep: Fund contribution · $980.00 · recorded ",
+   "Sun 6 Sep: Fund contribution · $310.00 · recorded ",
+   "Fri 11 Sep: Fund contribution · $225.00 · recorded",
+   "Sun 13 Sep: Weekly Sitdown · Weekly Sitdown",
+   "Tue 15 Sep · To check: Groceries · planned · $520.",
+   "Fri 18 Sep: Fund contribution · $980.00 · recorded",
+   "Sun 20 Sep · To check: Internet · $92.00 · schedul",
+   "Tue 22 Sep · To check: Gas · $74.00 · scheduled · ",
+   "Fri 25 Sep · To check: Phone · $110.00 · scheduled",
+   "Sat 26 Sep · To check: Vet · Marmalade · $215.00 ·",
+   "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+   "Mon 28 Sep · Today: Bianca pay · $2100.00 · schedu",
+   "Wed 30 Sep: Standing · jar · Winter reserve · $300",
+   "Today · Mon 28 Sep: Bianca pay · $2100.00 · schedu",
+   "Hercules · Hercules’s list · 8 to check",
+   "5 things this week. Leaving next · Standing · jar ",
+   "Year",
+   "Month",
+   "Week",
+   "Key",
+   "INPUT",
+   "Add — record money"
+  ],
+  "1100": [
+   "About this map",
+   "Previous month",
+   "Next month",
+   "Theme",
+   "Our island as a clock",
+   "Fri 4 Sep: Fund contribution · $980.00 · recorded ",
+   "after Escape → Fri 4 Sep: Fund contribution · $980.00 · recorded ",
+   "Sun 6 Sep: Fund contribution · $310.00 · recorded ",
+   "Fri 11 Sep: Fund contribution · $225.00 · recorded",
+   "Sun 13 Sep: Weekly Sitdown · Weekly Sitdown",
+   "Tue 15 Sep · To check: Groceries · planned · $520.",
+   "Fri 18 Sep: Fund contribution · $980.00 · recorded",
+   "Sun 20 Sep · To check: Internet · $92.00 · schedul",
+   "Tue 22 Sep · To check: Gas · $74.00 · scheduled · ",
+   "Fri 25 Sep · To check: Phone · $110.00 · scheduled",
+   "Sat 26 Sep · To check: Vet · Marmalade · $215.00 ·",
+   "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+   "Mon 28 Sep · Today: Bianca pay · $2100.00 · schedu",
+   "Wed 30 Sep: Standing · jar · Winter reserve · $300",
+   "Today · Mon 28 Sep: Bianca pay · $2100.00 · schedu",
+   "Hercules · Hercules’s list · 8 to check",
+   "5 things this week. Leaving next · Standing · jar ",
+   "Year",
+   "Month",
+   "Week",
+   "Key",
+   "INPUT",
+   "Add — record money"
+  ]
+ },
+ "axe": {
+  "390": {
+   "violations": [
+    {
+     "id": "target-size",
+     "impact": "serious",
+     "nodes": 1,
+     "targets": [
+      "#journey-mark-2026-09-28"
+     ],
+     "summary": "Fix any of the following:\n  Target has insufficient size because it is partially obscured (smallest space is 13.5px by 44px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 2.2px instead of at least 24px."
+    }
+   ],
+   "passes": 22,
+   "incomplete": [
+    {
+     "id": "aria-valid-attr-value",
+     "nodes": 1
+    },
+    {
+     "id": "color-contrast",
+     "nodes": 15
+    }
+   ]
+  },
+  "1100": {
+   "violations": [
+    {
+     "id": "target-size",
+     "impact": "serious",
+     "nodes": 1,
+     "targets": [
+      "#journey-mark-2026-09-28"
+     ],
+     "summary": "Fix any of the following:\n  Target has insufficient size because it is partially obscured (smallest space is 20.2px by 44px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 8.6px instead of at least 24px."
+    }
+   ],
+   "passes": 22,
+   "incomplete": [
+    {
+     "id": "aria-valid-attr-value",
+     "nodes": 1
+    },
+    {
+     "id": "color-contrast",
+     "nodes": 15
+    }
+   ]
+  },
+  "390-list": {
+   "violations": [],
+   "passes": 30
+  },
+  "1100-list": {
+   "violations": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 2,
+     "targets": [
+      "button[data-list-mode=\"map\"]",
+      "button[data-list-mode=\"list\"]"
+     ],
+     "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.56 (foreground color: #7d5b6c, background color: #d3c7c8, font size: 11.3pt (15px), font weight: normal). Expected contrast ratio of 4.5:1"
+    }
+   ],
+   "passes": 30
+  }
+ }
+}
