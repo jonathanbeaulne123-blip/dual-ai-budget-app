@@ -91,7 +91,8 @@ describe('Codex P2 · runtime wiring', () => {
   const runtime = readFileSync('src/harbour/horizon/runtime/index.ts', 'utf8');
   const step = runtime.slice(runtime.indexOf('function step(dt:number,now:number){'), runtime.indexOf('function tick(now:number){'));
   it('step() holds the body before any movement or airborne branch; the hold is horizonFootFrame', () => {
-    const held = step.indexOf('if(bodyHeld()){'), move = step.indexOf('moved=move('), air = step.indexOf('beginAirborne(');
+    // 2026-10-04 (walking fix): the walk moves through walkSim's walkTick (which calls move()), so movement starts at walkTick(.
+    const held = step.indexOf('if(bodyHeld()){'), move = step.indexOf('walkTick('), air = step.indexOf('beginAirborne(');
     expect(held).toBeGreaterThan(0); expect(held).toBeLessThan(move); expect(held).toBeLessThan(air);
     expect(step).toMatch(/if\(bodyHeld\(\)\)\{velocityY=0;jumpRequested=false;holdStatus\(\);/);
     expect(runtime).toMatch(/const at=holdPoint\(\),frame=horizonFootFrame\(\{walkOut:pendingWalkOut,restore:pendingRestore!==null,resnap\},\(\)=>gateOpen\(at\[0\],at\[1\]\)\);/);
