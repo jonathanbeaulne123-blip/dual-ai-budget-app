@@ -122,6 +122,16 @@ export type PlaceRef =
 /** The Add flows the App's `openRecordFlow` accepts (FabVerbMode). */
 export type RecordMode = FabVerbMode;
 /**
+ * The App's record kinds, as the "+" dial may offer them (trust M4): exactly the App's own `FabVerbMode` —
+ * "expense" (Record a purchase…), "shift" (Record a shift…), "income" (Record income…), "bill" (Bill paid…) and
+ * "transfer" (Move money…). Each petal runs `{ name: "openRecord", mode }` → the App's `openRecordFlow(mode)`, which
+ * keeps each verb's own ledger rule (a shift is Mine; Bill paid is the bill ledger) and its own named Confirm.
+ */
+export type JourneyRecordMode = "expense" | "shift" | "income" | "bill" | "transfer";
+/** Compile-time guard: `JourneyRecordMode` is the App's `FabVerbMode`, no more and no less. */
+type SameModes<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
+export const JOURNEY_RECORD_MODES_MATCH_APP: SameModes<JourneyRecordMode, FabVerbMode> = true;
+/**
  * What a stop may pre-fill: only what `openRecordFlow` honours in-view today (a recurrence for Bill paid). An amount
  * prefill is not offered: `openRecordFlow` keeps `amount` only for a cross-view hand-off (App.tsx L6364).
  */
@@ -199,6 +209,13 @@ export type ActionCall =
   | { name: "openCalendar"; date: DateKey }
   | { name: "openBooks"; ref: BooksRef }
   | { name: "enterHorizon"; location: HorizonLocation }
+  /**
+   * The dial's "Enter Horizon" chip (trust minor 1): enter at the island's centre ground, which only the mounted map
+   * knows. It carries NO location (never a placeholder): `runJourneyAction` resolves it through its `resolve.centre`
+   * argument and hands the App a real `enterHorizon(location)`; with no resolver, or no centre yet, it does nothing.
+   * The App never receives this call.
+   */
+  | { name: "enterHorizonCentre" }
   | { name: "back" }
   | { name: "openAllTools" }
   | { name: "chooseSimpleView" };
@@ -212,8 +229,14 @@ export type StopAction = {
   primary?: boolean;
 };
 
+/** What only the mounted map can resolve for `runJourneyAction` (the dial's "Enter Horizon" chip). */
+export type JourneyActionResolve = {
+  /** The island's centre ground in concept metres (the scene's `groundAt` at the stage centre, else the frame centre), or null. */
+  centre?: () => HorizonLocation | null;
+};
+
 /** The one dispatcher both the map panel and the list use. */
-export function runJourneyAction(actions: JourneyBoardActions, call: ActionCall): void {
+export function runJourneyAction(actions: JourneyBoardActions, call: ActionCall, resolve?: JourneyActionResolve): void {
   switch (call.name) {
     case "openRecord": actions.openRecord(call.mode, call.prefill); return;
     case "openBillPaid": actions.openBillPaid(call.recurrenceId); return;
@@ -227,6 +250,11 @@ export function runJourneyAction(actions: JourneyBoardActions, call: ActionCall)
     case "openCalendar": actions.openCalendar(call.date); return;
     case "openBooks": actions.openBooks(call.ref); return;
     case "enterHorizon": actions.enterHorizon(call.location); return;
+    case "enterHorizonCentre": {
+      const location = resolve?.centre?.() ?? null;
+      if (location) actions.enterHorizon(location);
+      return;
+    }
     case "back": actions.back(); return;
     // Optional callbacks: a host that did not supply one does nothing (the dial hides that chip).
     case "openAllTools": actions.openAllTools?.(); return;
@@ -559,6 +587,12 @@ export type ListRow = {
   direction: MoneyDirection;
   /** True exactly when `isToCheck(stop)`; the row shows "!" and words, never colour alone. */
   toCheck: boolean;
+  /**
+   * A second line of model words the sheet and the list print under the status, or absent/null. Today: on expected
+   * pay when a pay is already recorded on the same day ("A pay is already recorded today · check the Books before
+   * recording this one", trust M3). No de-duplication: both stops stay as they are (ruling 8).
+   */
+  note?: string | null;
 };
 export type BoardToList = (board: JourneyBoard) => ListRow[];
 
@@ -752,6 +786,13 @@ export type JourneyBoardProps = {
    * appearance picker does; ruling 12), never a board-only preview. The UI hides the dot when absent.
    */
   onChooseTheme?: (theme: ThemeId) => void;
+  /**
+   * The App's record verbs for this member, in the App's own order: `fabActionsFor(view, { memberHasJob }).map(a => a.mode)`
+   * (trust M4). The dial draws one petal per mode ("Record a purchase…", "Record a shift…", "Record income…",
+   * "Bill paid…", "Move money…"), each running `{ name: "openRecord", mode }`. Absent → the dial's own default
+   * (purchase, Bill paid, income). A member with no job gets no "shift" here, exactly as the App's own dial.
+   */
+  recordModes?: readonly JourneyRecordMode[];
 };
 
 // ===========================================================================
@@ -766,8 +807,8 @@ export type JourneyBoardProps = {
 // - Expected / estimated / scheduled money is never summed with recorded money: solid stacks are recorded,
 //   see-through stacks are not, and every figure keeps its basis in words.
 // - Fund contributions are their own figure ("To the Fund"), never summed into "In".
-// - "To check" is ONE definition (`isToCheck`); a passed date never makes anything paid, and expected pay whose date
-//   passed unrecorded is not "to check" (D60).
+// - "To check" is ONE definition (`isToCheck`: an overdue or needs-review commitment); a passed date never makes
+//   anything paid, and expected pay whose date passed unrecorded is not "to check" (D60).
 // - Status words come from model/words.ts only; the map and the list run the same `actions[]`.
 // ===========================================================================
 
@@ -839,13 +880,17 @@ export function ringsFor(cents: number | null | undefined, level: JourneyLevel):
 }
 
 /**
- * THE definition of "to check" (ruling 1): a commitment whose date has passed and that is not recorded as paid
- * (status overdue or needs-review). The header chip, Hercules, the honey "!" ring, the Week pile, the Year counts
- * and the list's "Needs you" all count exactly these. Upcoming items (a standing jar) never count; expected income
- * whose date passed unrecorded is not "to check" (ruling 2, D60).
+ * THE definition of "to check" (ruling 1 as amended for trust M1, 2026-10-05): a commitment whose status is
+ * "overdue" (its day passed and it is not recorded) or "needs-review" (an earlier receipt was corrected or excluded —
+ * on ANY date, today or later included). This is the old attention list's own rule, so nothing it showed is dropped:
+ * a needs-review bill dated today or next week counts, and so does an overdue visit carried to today (its stop
+ * stands on today, but it is overdue). The header chip, Hercules, the honey "!" ring, the Week (pile + its days), the
+ * Year counts, the list's "Needs you" and the checklist's "To check" all count exactly these. Upcoming / due-today
+ * items (a standing jar) never count; paid never counts; expected income whose date passed unrecorded is not "to
+ * check" (ruling 2, D60).
  */
 export function isToCheck(stop: Stop): boolean {
-  return stop.kind === "commitment" && stop.relation === "past" && stop.status !== "paid";
+  return stop.kind === "commitment" && (stop.status === "overdue" || stop.status === "needs-review");
 }
 
 /**
@@ -874,8 +919,9 @@ export type WeekDay = {
 };
 /**
  * This week (rulings 7, 13): Monday `from` to Sunday `to` around today, seven `days`, today highlighted within it.
- * `pileStopIds` = the "to check" stops dated BEFORE `from`, pinned as one overdue pile on the first tile (a "to check"
- * stop inside the week stays on its own day with the "!" ring, so nothing is shown twice). Pinned is not paid.
+ * `pileStopIds` = the "to check" stops dated OUTSIDE the week (before `from`, or a needs-review one after `to`), pinned
+ * as one pile on the first tile; a "to check" stop inside the week stays on its own day with the "!" ring. So the pile
+ * plus the week's own "to check" stops is exactly `board.toCheck`, and nothing is shown twice. Pinned is not paid.
  */
 export type JourneyWeek = { from: DateKey; to: DateKey; days: WeekDay[]; pileStopIds: string[] };
 
@@ -886,7 +932,8 @@ export type JourneyWeek = { from: DateKey; to: DateKey; days: WeekDay[]; pileSto
  * - `in*` = income stops EXCLUDING Fund contributions (`isFundStop`): confirmed (solid) / expected (see-through).
  * - Unknown amounts add nothing to any figure (they are counted in `unknownAmounts`, never as 0).
  * - Recorded and open are separate figures; nothing sums them.
- * `toCheck` = how many of this chapter's stops `isToCheck`. `kept` = a Chapter record exists for the month and is closed.
+ * `toCheck` = how many of this chapter's stops `isToCheck`. `kept` = a Chapter record exists for the month and is closed
+ * (its state is an outcome, not "open"): a close PROPOSED and still waiting on the partner is not kept.
  */
 export type YearChapter = {
   chapterId: ChapterId;
@@ -900,8 +947,13 @@ export type YearChapter = {
   kept: boolean;
 };
 
-/** One line of the purse's "expected today": an expected income stop dated today. Never added to `everyday`. */
-export type PurseExpected = { stopId: string; label: string; amountCents: number | null };
+/**
+ * One line of the purse's "expected today": an expected (non-Fund) income stop dated today. Never added to `everyday`.
+ * `note` (trust M3): model words printed with the line when a pay is ALREADY RECORDED today (a confirmed non-Fund
+ * income stop on the same date) — "A pay is already recorded today · check the Books before recording this one";
+ * null/absent otherwise. Both stops stay on the map as they are (ruling 8: no de-dup heuristic).
+ */
+export type PurseExpected = { stopId: string; label: string; amountCents: number | null; note?: string | null };
 /**
  * The purse chip: "Everyday · now" (campCardModel's
  * `readSnapshot(...).now`; null when the Fund cannot say) and, separately, today's expected pay. The UI prints them
@@ -914,8 +966,13 @@ export type Purse = {
 
 /**
  * What Hercules says and what the checklist sheet opens with (ruling 1; nothing that used to be visible disappears):
- * - `weekStopIds` = this week's unresolved stops (not recorded), date order — the bubble's "This week" section.
- * - `nextLeavingStopId` = the next unrecorded commitment from today on (the Week tile with the honey "›"), or null.
+ * - `weekStopIds` = this week's unresolved stops (not recorded), date order — the bubble's "This week" section —
+ *   WITHOUT the "to check" stops and the Chapter items (each has its own section; nothing is listed twice).
+ * - `nextLeavingStopId` = the next commitment from today on that is neither recorded nor "to check" (the Week tile
+ *   with the honey "›"), or null.
+ * - `nextIsSettingAside` = that next commitment is a standing move into a Build jar (`setAside === "build"`, e.g.
+ *   "Winter reserve"): the money is set aside, not leaving, so the UI says "Setting aside next" (`MAP_WORDS
+ *   .settingAsideNext`), never "Leaving next". False when there is no next commitment.
  * - `toCheckIds` = `board.toCheck` (the "To check" section; the chip's count).
  * - `waitingOnYou` = readNeeds items waiting on this viewer (e.g. a contribution to confirm).
  * - `chapter` = the close-due Chapter item(s) (`chapterCloseDue`), opening the Campfire.
@@ -924,6 +981,7 @@ export type Purse = {
 export type Digest = {
   weekStopIds: string[];
   nextLeavingStopId: string | null;
+  nextIsSettingAside: boolean;
   toCheckIds: string[];
   waitingOnYou: AttentionItem[];
   chapter: AttentionItem[];

@@ -12,13 +12,15 @@ import type { Household } from "../src/core/types.ts";
 import {
   isFundStop, isToCheck, ringsFor, type JourneyBoard, type ListScope, type Stop,
 } from "../src/journey/contracts.ts";
+import { addAppointment, addRecurrence, postEntry, postTransfer, reversePostedMoney } from "../src/core/commands.ts";
 import {
-  boardToList, booksActualsBetween, deriveJourneyBoard, deriveJourneyBoardWithSummary, directionOf, listView, MAP_WORDS, mondayOf,
+  boardToList, booksActualsBetween, chapterStatusText, deriveJourneyBoard, deriveJourneyBoardWithSummary, directionOf, listView, MAP_WORDS, mondayOf,
+  openPlaceWords, signedMoney,
 } from "../src/journey/model/index.ts";
 import { purseOf } from "../src/journey/model/purse.ts";
 import { yearOf } from "../src/journey/model/year.ts";
 import { amountText } from "../src/journey/model/words.ts";
-import { deepFreeze } from "./fixtures/journey-board-households.ts";
+import { BIANCA, deepFreeze, journeyDemoHousehold, laggingChapterHousehold, proposeChapterClose } from "./fixtures/journey-board-households.ts";
 
 const TODAY = "2026-09-28" as DateKey;
 const JONATHAN = "MEM-002";
@@ -77,9 +79,12 @@ describe("Horizon Clock model — direction and \"to check\"", () => {
     expect(board.stops.some(s => s.kind === "plan" && s.planKind === "goal")).toBe(true);
   });
 
-  it("toCheck is exactly the demo's 8 overdue commitments, in date order, and is isToCheck over every stop", () => {
+  it("toCheck is exactly the demo's 8 overdue commitments, in date order, and agrees with the status words and the chapter counts", () => {
     expect(board.toCheck).toEqual(overdueIds);
-    expect(board.toCheck).toEqual(board.stops.filter(isToCheck).map(s => s.id));
+    // Independent of `isToCheck`: the words every row prints, and the chapters' own unresolved counts.
+    const byWords = boardToList(board).filter(row => row.level === "stop" && /^(Overdue · not recorded|Payment status needs review)/.test(row.statusText)).map(row => row.id);
+    expect(board.toCheck).toEqual(byWords);
+    expect(board.toCheck).toHaveLength(board.chapters.reduce((n, c) => n + c.unresolved.overdueCommitments + c.unresolved.commitmentsNeedingReview, 0));
     for (const id of board.toCheck) expect(stop(id)).toMatchObject({ kind: "commitment", relation: "past", status: "overdue" });
     // The model's summary's overdue attention names the same stops (nothing that used to be visible disappears).
     expect(boardSummary.attention.filter(item => item.stopId && stop(item.stopId).kind === "commitment").map(item => item.stopId)).toEqual(board.toCheck);
@@ -213,8 +218,190 @@ describe("Horizon Clock model — purse", () => {
   it("keeps an unknown expected pay unknown (null, not $0) and still apart from Everyday", () => {
     const pay = stop(board.purse.expectedToday[0]!.stopId);
     const purse = purseOf(boardSummary.everyday, [unknownCopy(pay, "income:unknown@2026-09-28")], TODAY);
-    expect(purse.expectedToday).toEqual([{ stopId: "income:unknown@2026-09-28", label: "Bianca pay", amountCents: null }]);
+    expect(purse.expectedToday).toEqual([{ stopId: "income:unknown@2026-09-28", label: "Bianca pay", amountCents: null, note: null }]);
     expect(purse.everyday).toEqual(boardSummary.everyday);
+  });
+});
+
+describe("Horizon Clock model — purse and pay words (trust M3)", () => {
+  it("expected pay says \"not recorded on its schedule\", never \"not in yet\"", () => {
+    expect(MAP_WORDS.purse.expectedToday("Bianca pay")).toBe("Bianca pay expected today · not recorded on its schedule");
+    expect(MAP_WORDS.purse.expectedToday("x")).not.toMatch(/not in yet/);
+  });
+
+  it("the demo twin: a Bianca pay is already recorded today, so the expected one says check the Books — both stay, nothing de-duplicated", () => {
+    const confirmed = board.stops.filter(s => s.kind === "income" && s.status === "confirmed" && s.date === TODAY && !isFundStop(s));
+    expect(confirmed.map(s => s.label)).toEqual(["Bianca pay"]);
+    const expected = board.purse.expectedToday[0]!;
+    expect(expected.note).toBe(MAP_WORDS.purse.alreadyRecorded);
+    expect(MAP_WORDS.purse.alreadyRecorded).toBe("A pay is already recorded today · check the Books before recording this one");
+    // Both stops stand (ruling 8); the expected stop's row carries the same words for its sheet and the list.
+    expect(stop(expected.stopId)).toMatchObject({ kind: "income", status: "expected" });
+    const rows = boardToList(board);
+    expect(rows.find(r => r.id === expected.stopId)!.note).toBe(MAP_WORDS.purse.alreadyRecorded);
+    expect(rows.find(r => r.id === confirmed[0]!.id)!.note).toBeNull();
+    const week = listView(household, board, { level: "week" }).groups.flatMap(g => g.rows);
+    expect(week.find(r => r.id === expected.stopId)!.note).toBe(MAP_WORDS.purse.alreadyRecorded);
+    // Fund estimates are not pay: no note, and never in the purse.
+    for (const row of rows) if (row.id.startsWith("income:fund:")) expect(row.note).toBeNull();
+  });
+
+  it("with no pay recorded that day, the expected pay carries no note", () => {
+    const pay = stop(board.purse.expectedToday[0]!.stopId);
+    const alone = purseOf(boardSummary.everyday, [pay], TODAY);
+    expect(alone.expectedToday[0]!.note).toBeNull();
+  });
+});
+
+describe("Horizon Clock model — words FIX-B prints (A10, trust minors 2–4)", () => {
+  it("signedMoney reads the sign from the value", () => {
+    expect(signedMoney(210_000)).toBe("+$2100.00");
+    expect(signedMoney(-1_200)).toBe("−$12.00");
+    expect(signedMoney(0)).toBe("$0.00");
+    expect(signedMoney(-0)).toBe("$0.00");
+  });
+
+  it("names the place an Open action opens", () => {
+    expect(openPlaceWords("plan-studio")).toBe("Open the kitchen table");
+    expect(openPlaceWords("cellar-bills")).toBe("Open the bill jars");
+    expect(openPlaceWords("some-room")).toBe("Open the some room");
+  });
+
+  it("a chapter's needs are separate words, never one summed number", () => {
+    expect(MAP_WORDS.chapterNeeds(5, true)).toBe("5 to check · Chapter close due");
+    expect(MAP_WORDS.chapterNeeds(5, false)).toBe("5 to check");
+    expect(MAP_WORDS.chapterNeeds(0, true)).toBe("Chapter close due");
+    expect(MAP_WORDS.chapterNeeds(0, false)).toBe("");
+    const sep = board.chapters.find(c => c.id === "2026-09")!;
+    expect(chapterStatusText(sep)).toBe("This month · No Chapter kept · 5 to check");
+    const lagging = laggingChapterHousehold();
+    const next = deriveJourneyBoard(lagging.household, BIANCA, TODAY);
+    const aug = next.chapters.find(c => c.id === "2026-08")!;
+    expect(aug.unresolved.chapterCloseDue).toBe(1);
+    expect(chapterStatusText(aug)).toMatch(/ · \d+ to check · Chapter close due$/);
+    expect(chapterStatusText(aug)).not.toMatch(/need/);
+  });
+
+  it("the Year caption, the flat Key, the purse gloss and \"Setting aside next\"", () => {
+    expect(MAP_WORDS.yearCaption).toBe("Each stack = bills on the map that month · ring = $1,000 · not all spending");
+    expect(MAP_WORDS.flatKey).toBe("No stacks in this view: solid = recorded, dashed = not recorded, mint in, gold out");
+    expect(MAP_WORDS.purseGloss).toBe("money here now");
+    expect(MAP_WORDS.settingAsideNext).toBe("Setting aside next");
+    // Winter reserve is a standing move into a Build jar: the digest says so (A11).
+    expect(board.digest.nextIsSettingAside).toBe(true);
+    expect(stop(board.digest.nextLeavingStopId!)).toMatchObject({ kind: "commitment", setAside: "build" });
+  });
+});
+
+describe("Horizon Clock model — every attention item lands in exactly one place (trust M1)", () => {
+  /** The demo plus: a needs-review bill today, a needs-review bill after this week, and a visit carried from August to today. */
+  function amended() {
+    let h = journeyDemoHousehold().household;
+    const recurrence = (note: string, nextDate: string) => {
+      const before = new Set(h.recurrences.map(r => r.id));
+      h = addRecurrence(h, { cadence: "monthly", nextDate, type: "expense", amount: 40, accountId: "ACC-CHEQUING", subcategoryId: "SUB-LIFE-FUN", note, kind: "subscription" }).household;
+      return h.recurrences.find(r => !before.has(r.id))!.id;
+    };
+    const corrected = (note: string, date: string) => {
+      const id = recurrence(note, date);
+      const posted = postEntry(h, { date, type: "expense", amount: 40, accountId: "ACC-CHEQUING", subcategoryId: "SUB-LIFE-FUN", note, source: "recurring", sourceId: id, confirmDuplicate: true });
+      h = reversePostedMoney(posted.household, posted.postedIds[0]!, { reversalDate: TODAY }).household;
+      return id;
+    };
+    const todayId = corrected("Gym", TODAY);
+    const laterId = corrected("Music", "2026-10-10");
+    h = addAppointment(h, { title: "Dentist", kind: "dentist", nextDate: "2026-08-25", cadence: { kind: "monthly", interval: 6 }, typicalCost: 140, typicalRecovery: 0, subcategoryId: "SUB-HOUSING-GAS", accountId: "ACC-CHEQUING" }).household;
+    return { h, todayId, laterId, appointmentId: h.appointments.at(-1)!.id };
+  }
+  const fx = amended();
+  const { board: b, summary } = deriveJourneyBoardWithSummary(fx.h, BIANCA, TODAY);
+  const find = (pick: (s: Stop) => boolean) => { const found = b.stops.filter(pick); expect(found).toHaveLength(1); return found[0]!; };
+
+  it("the three fixtures are \"to check\": needs-review today, needs-review after this week, the visit carried to today", () => {
+    // Monthly: only the corrected occurrence needs review; the others stay upcoming.
+    const today = find(s => s.kind === "commitment" && s.recurrenceId === fx.todayId && s.date === TODAY);
+    const later = find(s => s.kind === "commitment" && s.recurrenceId === fx.laterId && s.date === "2026-10-10");
+    const visit = find(s => s.kind === "commitment" && s.id.startsWith(`bill:item:${fx.appointmentId}@`) && s.status !== "upcoming");
+    expect(today).toMatchObject({ status: "needs-review", relation: "today", date: TODAY });
+    expect(later).toMatchObject({ status: "needs-review", relation: "future", date: "2026-10-10" });
+    expect(visit).toMatchObject({ status: "overdue" });
+    for (const s of [today, later, visit]) expect(b.toCheck, s.id).toContain(s.id);
+  });
+
+  it("chip, bubble, Week, Year, list \"Needs you\" and the checklist all agree", () => {
+    const n = b.toCheck.length;
+    expect(b.digest.toCheckIds).toEqual(b.toCheck);
+    // Week: the pile plus the week's own to-check stops is every to-check stop, each once.
+    const inWeek = b.week.days.flatMap(d => d.stopIds).filter(id => b.toCheck.includes(id));
+    expect([...b.week.pileStopIds, ...inWeek].sort()).toEqual([...b.toCheck].sort());
+    expect(new Set([...b.week.pileStopIds, ...inWeek]).size).toBe(n);
+    // Year: the minis' counts sum to the chip.
+    expect(b.year.reduce((sum, row) => sum + row.toCheck, 0)).toBe(n);
+    // List: "Needs you" over the year lists exactly these; Week's list too.
+    const year = listView(fx.h, b, { level: "year" });
+    expect(year.groups[0]).toMatchObject({ kind: "needs-you", label: `Needs you · ${n}` });
+    expect(year.groups[0]!.rows.map(r => r.id)).toEqual(b.toCheck);
+    expect(year.strip!.needsYou).toBe(n);
+    const week = listView(fx.h, b, { level: "week" });
+    expect(week.groups[0]!.rows.map(r => r.id).sort()).toEqual([...b.toCheck].sort());
+    // Nothing in the week's "This week" section repeats a to-check stop.
+    for (const id of b.digest.weekStopIds) expect(b.toCheck).not.toContain(id);
+  });
+
+  it("EVERY summary.attention item lands in exactly one of toCheck / weekStopIds / waitingOnYou / chapter", () => {
+    expect(summary.attention.length).toBeGreaterThan(b.toCheck.length - 1);
+    const waiting = new Set(b.digest.waitingOnYou.map(item => item.id));
+    const chapter = new Set(b.digest.chapter.map(item => item.id));
+    for (const item of summary.attention) {
+      const homes = [
+        item.stopId !== null && b.toCheck.includes(item.stopId),
+        item.stopId !== null && b.digest.weekStopIds.includes(item.stopId),
+        waiting.has(item.id),
+        chapter.has(item.id),
+      ].filter(Boolean).length;
+      expect(homes, item.words).toBe(1);
+    }
+    // And the lagging-chapter household (close due + readNeeds) partitions the same way.
+    const lag = deriveJourneyBoardWithSummary(laggingChapterHousehold().household, BIANCA, TODAY);
+    for (const item of lag.summary.attention) {
+      const homes = [
+        item.stopId !== null && lag.board.toCheck.includes(item.stopId),
+        item.stopId !== null && lag.board.digest.weekStopIds.includes(item.stopId),
+        lag.board.digest.waitingOnYou.some(w => w.id === item.id),
+        lag.board.digest.chapter.some(c => c.id === item.id),
+      ].filter(Boolean).length;
+      expect(homes, item.words).toBe(1);
+    }
+  });
+
+  it("the next leaving stop is never a to-check one", () => {
+    if (b.digest.nextLeavingStopId) expect(b.toCheck).not.toContain(b.digest.nextLeavingStopId);
+  });
+});
+
+describe("Horizon Clock model — transfers and kept chapters (trust minors 9, 12)", () => {
+  it("a Fund move and a card paydown inside the week leave the strip's In and Out unchanged", () => {
+    const before = listView(household, board, { level: "week" }).strip!;
+    let h = postTransfer(household, { date: "2026-09-29", amount: 250, fromAccountId: "ACC-CHEQUING", toAccountId: "ACC-SAVINGS", note: "To the Fund account", createdBy: BIANCA, visibility: "household", confirmDuplicate: true }).household;
+    h = postTransfer(h, { date: "2026-09-30", amount: 400, fromAccountId: "ACC-CHEQUING", toAccountId: "ACC-VISA", note: "Card paydown", createdBy: BIANCA, visibility: "household", confirmDuplicate: true }).household;
+    expect(h.transactions.length).toBeGreaterThan(household.transactions.length);
+    const after = listView(h, deriveJourneyBoard(h, JONATHAN, TODAY), { level: "week" }).strip!;
+    expect(after.inBooksCents).toBe(before.inBooksCents);
+    expect(after.outBooksCents).toBe(before.outBooksCents);
+  });
+
+  it("kept means a closed Chapter: a close proposed and waiting on the partner is not kept", () => {
+    const lag = laggingChapterHousehold();
+    const open = deriveJourneyBoard(lag.household, BIANCA, TODAY).year.find(r => r.chapterId === "2026-08")!;
+    expect(open.kept).toBe(false);
+    const proposed = proposeChapterClose(lag.household, BIANCA, lag.augustChapterId, "2026-09-27T12:00:00.000Z");
+    const pendingBoard = deriveJourneyBoard(proposed, BIANCA, TODAY);
+    const aug = pendingBoard.chapters.find(c => c.id === "2026-08")!;
+    expect(aug.record.recordState).toBe("open");
+    expect(pendingBoard.year.find(r => r.chapterId === "2026-08")!.kept).toBe(false);
+    // The fixture household with a CLOSED August keeps it.
+    const closed = deriveJourneyBoard(journeyDemoHousehold().household, BIANCA, TODAY).year.find(r => r.chapterId === "2026-08")!;
+    expect(closed.kept).toBe(true);
   });
 });
 

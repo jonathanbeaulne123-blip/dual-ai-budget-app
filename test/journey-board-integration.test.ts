@@ -13,6 +13,7 @@ import { houseTabForRoute, houseToolPlace } from "../src/house/navigation.ts";
 import type { HouseRoute } from "../src/hearthside/houseRoutes.ts";
 import { HORIZON_GEOGRAPHY, HORIZON_PRESENCE_WORLD } from "../src/worldGeography.ts";
 import { seedDemoHousehold } from "../src/core/seed.ts";
+import { runJourneyAction, type JourneyBoardActions } from "../src/journey/contracts.ts";
 
 /**
  * The Journey Board integration (T5, PLAN §C): the household Journey route mounts the board, the first arrival of a
@@ -76,6 +77,8 @@ describe("the App mounts the Journey Board on the household Journey route", () =
     expect(actions).toMatch(/chooseSimpleView: \(\) => chooseMotionEdition\("flat"\)/);
     // The theme dot applies the APP-WIDE theme through the appearance store (ruling 12), not a board-only preview.
     expect(app).toMatch(/onChooseTheme=\{\(theme\) => appearance\.store\?\.apply\(theme\)\}/);
+    // The dial's record verbs are the App's own (trust M4): the same `fabActionsFor` list the Compass's dial uses.
+    expect(app).toMatch(/recordModes=\{fabActionsFor\(view, \{ memberHasJob \}\)\.map\(verb => verb\.mode\)\}/);
     // The map carries its own dial: the Compass is not drawn over it.
     expect(app).toMatch(/\{!journeyBoardShown&&<Compass fab=\{harbourBarFab\}/);
     expect(actions).toMatch(/openBillPaid: \(recurrenceId\) => openRecordFlow\("bill", undefined, undefined, recurrenceId\)/);
@@ -105,6 +108,20 @@ describe("the App mounts the Journey Board on the household Journey route", () =
     // Nothing from src/journey reaches the App except the lazy board and the contracts' types.
     const journeyImports = [...app.matchAll(/(?:from|import\()\s*["'](\.\/journey\/[^"']+)["']/g)].map((m) => m[1]);
     expect(new Set(journeyImports)).toEqual(new Set(["./journey/ui/JourneyBoard.tsx", "./journey/contracts.ts"]));
+  });
+
+  it("the dial's Enter Horizon is a sentinel the dispatcher resolves to the map's centre; the App only ever gets a real place (trust minor 1)", () => {
+    const entered: unknown[] = [];
+    const actions = { enterHorizon: (location: unknown) => { entered.push(location); } } as unknown as JourneyBoardActions;
+    // No resolver, or no centre yet: nothing is entered (never a made-up {0, 0}).
+    runJourneyAction(actions, { name: "enterHorizonCentre" });
+    runJourneyAction(actions, { name: "enterHorizonCentre" }, { centre: () => null });
+    expect(entered).toEqual([]);
+    runJourneyAction(actions, { name: "enterHorizonCentre" }, { centre: () => ({ x: 120, y: -40 }) });
+    expect(entered).toEqual([{ x: 120, y: -40 }]);
+    // The App's actions have no handler for the sentinel: it never reaches the App.
+    const start = app.indexOf("const journeyActions: Omit<JourneyBoardActions, \"openHomeBook\"> = {");
+    expect(app.slice(start, app.indexOf("function closeEraPlanner()", start))).not.toMatch(/enterHorizonCentre/);
   });
 
   it("hands the Horizon request to the harbour and spends it when the Journey route is active again", () => {

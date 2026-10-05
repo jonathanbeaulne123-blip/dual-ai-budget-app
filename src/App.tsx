@@ -614,9 +614,25 @@ function JourneyBoardFrame({ children }: { children: ReactNode }) {
     window.addEventListener("scroll", schedule, { passive: true });
     return () => { if (queued) window.cancelAnimationFrame(queued); observer?.disconnect(); window.removeEventListener("resize", schedule); window.removeEventListener("scroll", schedule); };
   }, []);
+  // Phones (Journey fix A9): the App header and its banners stay as they are (whether they belong above the map is
+  // Jonathan's decision), but on arrival the page scrolls so the board's region starts at the top of the screen and
+  // the clock gets the full height. Once, on mount; the header is a scroll away. Wide screens keep their layout.
+  useLayoutEffect(() => {
+    const node = frame.current;
+    const marker = node?.closest<HTMLElement>("[data-app-page]");
+    if (!marker || typeof window.matchMedia !== "function" || !window.matchMedia("(max-width: 719px)").matches) return;
+    const raf = window.requestAnimationFrame(() => {
+      const top = marker.getBoundingClientRect().top;
+      if (top > 0) { try { window.scrollTo({ top: window.scrollY + top, behavior: "instant" as ScrollBehavior }); } catch { /* no scrolling here */ } }
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, []);
   // The board sizes itself to `100dvh - --jb-top` (at least 560 px on wide), so a short window is taller than the
-  // frame: the frame scrolls on every width rather than clip the stage and the panel (review MINOR 7).
-  const style = { "--jb-top": `${layout.top}px`, position: "fixed", top: layout.top, left: 0, right: 0, bottom: 0, zIndex: 12, overflowX: "hidden", overflowY: "auto", overscrollBehavior: "contain", background: "var(--paper)" } as CSSProperties;
+  // frame: the frame scrolls on every width rather than clip the stage and the panel (review MINOR 7). The top never
+  // goes under the notch (`env(safe-area-inset-top)`). Vertical overscroll chains to the page, so a pull down at the
+  // frame's top brings the App header back after the arrival scroll; sideways it stays contained.
+  const top = `max(${layout.top}px, env(safe-area-inset-top, 0px))`;
+  const style = { "--jb-top": top, position: "fixed", top, left: 0, right: 0, bottom: 0, zIndex: 12, overflowX: "hidden", overflowY: "auto", overscrollBehaviorX: "contain", overscrollBehaviorY: "auto", background: "var(--paper)" } as CSSProperties;
   // Everything the frame paints over is out of reach (review B1): the page content laid out before the board in the
   // page (a banner, a return chip, a covered heading's controls) goes `inert` while the board stands. Floating layers
   // (a fixed workspace, a live region, a world sheet, a dialog) and the page's named focus target are left alone; the
@@ -648,8 +664,11 @@ function JourneyBoardFrame({ children }: { children: ReactNode }) {
     for (let branch: HTMLElement | null = node.parentElement; branch; branch = branch === page ? null : branch.parentElement) observer?.observe(branch, { childList: true });
     return () => { if (queued) window.cancelAnimationFrame(queued); observer?.disconnect(); for (const el of marked) el.removeAttribute("inert"); };
   }, []);
-  return <div ref={frame} className="journey-board-host" data-journey-board-host="" style={style}>{children}</div>;
+  // The frame is fixed, so it takes no room in the page; its slot does: a full viewport below the safe areas, so the
+  // page can scroll the board's region to the top of the screen (A9) and the frame stands over its own slot.
+  return <div data-journey-board-slot="" style={JOURNEY_BOARD_SLOT}><div ref={frame} className="journey-board-host" data-journey-board-host="" style={style}>{children}</div></div>;
 }
+const JOURNEY_BOARD_SLOT: CSSProperties = { minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" };
 /**
  * The due review raised over the Journey Board (review B1): the `data-world-sheet` pattern (queen-home.css) inline, so it
  * holds even where that stylesheet is not loaded — fixed, above the board's frame (z 12) and below the Compass (z 25),
@@ -7996,6 +8015,7 @@ export function App() {
                   freshnessNote={sceneInterpretationGate.current ? null : sceneInterpretationGate.detail}
                   dueReview={dueReviewCount > 0 ? { count: dueReviewCount } : null}
                   onChooseTheme={(theme) => appearance.store?.apply(theme)}
+                  recordModes={fabActionsFor(view, { memberHasJob }).map(verb => verb.mode)}
                   onReady={() => journeyCloud.ready("to-journey")} />
                 )}</JourneyHomeBookBridge>
                 </Suspense>

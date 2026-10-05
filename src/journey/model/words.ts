@@ -4,7 +4,7 @@
  */
 import { formatMonthLabel, weekdaySunday0, WEEKDAY_SHORT, type DateKey, type MonthKey } from "../../core/calendar.ts";
 import { formatCad } from "../../core/money.ts";
-import type { AmountBasis, ChapterReviewStatus, CommitmentStop, Stop } from "../contracts.ts";
+import { ringsFor, STACK_RULER, type AmountBasis, type Chapter, type ChapterReviewStatus, type CommitmentStop, type JourneyLevel, type Stop } from "../contracts.ts";
 
 export const monthLabel = (month: MonthKey): string => formatMonthLabel(month);
 /** "Tue 15 Sep". */
@@ -151,7 +151,40 @@ export const MAP_WORDS = {
     everyday: "Everyday · now",
     everydayUnknown: "Everyday · the Fund can’t say right now",
     notCounted: "expected pay isn’t counted until it’s in",
-    expectedToday: (label: string) => `${label} expected today · not in yet`,
+    /** Trust M3: the schedule's date is today and nothing is recorded for it — not a claim that the money has not arrived. */
+    expectedToday: (label: string) => `${label} expected today · not recorded on its schedule`,
+    /** Trust M3: a confirmed (non-Fund) pay already stands on the same day. Printed with the line; nothing is de-duplicated. */
+    alreadyRecorded: "A pay is already recorded today · check the Books before recording this one",
+  },
+  /** The purse's gloss under Everyday: what the figure is (the Fund's "now"), not a balance of everything. */
+  purseGloss: "money here now",
+  /** The next commitment is a standing move into a Build jar (`digest.nextIsSettingAside`): set aside, not leaving. */
+  settingAsideNext: "Setting aside next",
+  /** The next commitment leaves (a bill, a planned cost). */
+  leavingNext: "Leaving next",
+  /** The Year view's standing caption (ruling 5; Year ruler $1,000 a ring). */
+  yearCaption: "Each stack = bills on the map that month · ring = $1,000 · not all spending",
+  /** The Key at a level drawn flat (no stacks): how the marks read instead. */
+  flatKey: "No stacks in this view: solid = recorded, dashed = not recorded, mint in, gold out",
+  /** The Key's lines (moved from ui/copy.ts, trust minor 3). */
+  key: {
+    height: "Height is the amount.",
+    mintGold: "Mint = coming in · Gold = going out.",
+    mintGoldMore: "Income stands on the island side of the ring, bills on the sea side.",
+    honey: "Honey ring with “!” — needs you: overdue and not recorded, or a payment whose status needs review. Neither is counted as paid.",
+  },
+  /** The map legend's samples (moved from ui/copy.ts). `inExpected` = an expected income sample (trust minor 5). */
+  legend: {
+    recorded: "recorded",
+    needsYou: "needs you",
+    expected: "expected / plan",
+    in: "coming in",
+    inExpected: "coming in · not recorded",
+  },
+  /** The App's repeating reminders: their own section and count, never folded into "to check" (moved from ui/copy.ts). */
+  reminders: {
+    count: (n: number) => `${n} repeating reminder${n === 1 ? "" : "s"} to review`,
+    sub: "A separate list · reviewing it records nothing",
   },
   /** The Year ring's legend (ruling 5). */
   yearLegend: "bills and planned costs on the map, not all spending",
@@ -161,8 +194,10 @@ export const MAP_WORDS = {
   checklist: {
     thisWeek: "This week",
     toCheck: "To check",
-    toCheckNote: "Date passed · not recorded as paid.",
-    pinnedNote: "Their dates passed without a record. None of them is counted as paid.",
+    toCheckNote: "Overdue, or the payment needs review · not counted as paid.",
+    pinnedNote: "Outside this week: overdue, or a payment that needs review. None of them is counted as paid.",
+    /** The checklist sheet's title (moved from ui/copy.ts). */
+    title: (toCheck: number) => (toCheck ? `This week, then ${toCheck} to check` : "This week"),
     waitingOnYou: "Waiting on you",
     chapter: "Chapter",
     reminders: "Repeating reminders",
@@ -170,4 +205,54 @@ export const MAP_WORDS = {
   },
   /** "8 to check". */
   toCheckCount: (count: number) => `${count} to check`,
+  /**
+   * A chapter's needs, each its own words (trust minor 4): "5 to check · Chapter close due", "5 to check",
+   * "Chapter close due", or "" when nothing waits. The two are never added into one number.
+   */
+  chapterNeeds: (toCheck: number, closeDue: boolean) => [toCheck ? `${toCheck} to check` : "", closeDue ? "Chapter close due" : ""].filter(Boolean).join(" · "),
 } as const;
+
+/**
+ * A figure with its direction from its own sign (trust minor 2): "+$2100.00", "−$12.00" (U+2212), "$0.00" for zero.
+ * The sign is read from the value, never from what kind of row prints it.
+ */
+export function signedMoney(cents: number): string {
+  if (!Number.isFinite(cents) || cents === 0) return formatCad(0);
+  return `${cents < 0 ? "−" : "+"}${formatCad(Math.abs(cents))}`;
+}
+
+/** The house places a stop or a need opens, by name: "Open the kitchen table", never "Open it". */
+const PLACE_NAMES: Record<string, string> = {
+  "plan-studio": "the kitchen table", "cellar-bills": "the bill jars", planner: "the planner", memories: "our memories",
+  "loft-banks": "the Kitty Bank", calendar: "the Calendar", books: "the Books", queen: "the Fund", shift: "Shifts",
+};
+/** "Open the kitchen table" for `openPlace("plan-studio")`; an unknown target still names itself. */
+export function openPlaceWords(target: string): string {
+  return `Open ${PLACE_NAMES[target] ?? `the ${target.replace(/[-_/]+/g, " ").trim()}`}`;
+}
+
+/**
+ * A chapter row's status (moved from list.ts, trust minor 3): when · its Chapter record · its needs, each in its own
+ * words ("This month · Chapter open · 5 to check · Chapter close due"). "to check" counts `isToCheck` stops only.
+ */
+export function chapterStatusText(chapter: Chapter): string {
+  const when = chapter.state === "open" ? "This month" : chapter.state === "past" ? "Past" : "Upcoming";
+  const record = chapter.record.kind === "own" ? chapter.record.recordState === "open" ? "Chapter open" : "Chapter closed"
+    : chapter.record.kind === "still-open" ? "An earlier Chapter is still open" : "No Chapter kept";
+  const u = chapter.unresolved;
+  const needs = MAP_WORDS.chapterNeeds(u.overdueCommitments + u.commitmentsNeedingReview, u.chapterCloseDue === 1);
+  return `${when} · ${record}${needs ? ` · ${needs}` : ""}`;
+}
+
+/** Where a stop's coin stack stands on the level's ruler (moved from ui/StopPanel.tsx; null amount → no stack, said in words). */
+export function rulerWords(stop: Stop, level: JourneyLevel): string | null {
+  const direction = stop.kind === "income" ? "in" : stop.kind === "commitment" ? "out" : "none";
+  if (direction === "none") return null;
+  const known = stop.amountCents === null || stop.amountCents === undefined || stop.amountBasis === "unknown" || stop.amountBasis === undefined ? null : stop.amountCents;
+  const rings = ringsFor(known, level);
+  const side = direction === "in" ? "mint, coming in" : "gold, going out";
+  if (!rings) return `On the ruler: ${side} · ${MAP_WORDS.stack.unknown} · no stack.`;
+  const recorded = (stop.kind === "commitment" && stop.status === "paid") || (stop.kind === "income" && stop.status === "confirmed");
+  const tall = rings.rings < 0.2 ? "a single thin coin" : `${rings.drawnRings.toFixed(1)} rings tall${rings.capped ? " (capped, the figure is printed)" : ""}`;
+  return `On the ruler: ${side} · ${tall} (${formatCad(STACK_RULER[level].centsPerRing)} a ring) · ${recorded ? `solid — ${MAP_WORDS.stack.solid}` : `see-through — ${MAP_WORDS.stack.seeThrough}`}.`;
+}

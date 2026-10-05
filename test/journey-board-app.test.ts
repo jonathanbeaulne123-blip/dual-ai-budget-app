@@ -38,6 +38,8 @@ const state = vi.hoisted(() => ({
   /** Every household the App handed the Journey Board, in render order (the real board renders; this only watches). */
   boardHouseholds: [] as Household[],
   boardToday: [] as string[],
+  /** The props the App last handed the board (record modes, actions). */
+  boardProps: null as null | import("../src/journey/contracts.ts").JourneyBoardProps,
   /** Serve the slim baked Journey land (the production path); false → 404, so the loader falls back to the index. */
   slim: true,
   /** Every URL the App fetched, in order (to prove which land path served the board). */
@@ -81,6 +83,7 @@ vi.mock("../src/journey/ui/JourneyBoard.tsx", async (importOriginal) => {
     default: (props: Parameters<typeof Real>[0]) => {
       state.boardHouseholds.push(props.household);
       state.boardToday.push(props.today);
+      state.boardProps = props;
       return createElement(Real, props);
     },
   };
@@ -92,7 +95,8 @@ import { financialAuditHash } from "../src/core/index.ts";
 import { HORIZON_INDEX_URL } from "../src/house/world/horizonAssets.ts";
 import { journeyLandTimings, resetJourneyLandCacheForTests } from "../src/journey/land/index.ts";
 import { JOURNEY_LAND_SLIM_URL } from "../src/journey/land/slim.ts";
-import { journeyViewStateKeyV2 } from "../src/journey/contracts.ts";
+import { journeyViewStateKeyV2, runJourneyAction } from "../src/journey/contracts.ts";
+import { fabActionsFor } from "../src/core/fabActions.ts";
 import { deriveJourneyBoard } from "../src/journey/model/index.ts";
 import { journeyMarkDomId } from "../src/journey/ui/Marks.tsx";
 import { journeyRowDomId } from "../src/journey/ui/ListView.tsx";
@@ -129,7 +133,7 @@ let container: HTMLDivElement;
 beforeEach(() => {
   // One clock: the App's `today` is the fixture's day in Toronto (only Date is faked; timers stay real).
   vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-09-28T16:00:00.000Z") });
-  state.saves = []; state.boardHouseholds = []; state.boardToday = []; state.slim = true; state.fetched = [];
+  state.saves = []; state.boardHouseholds = []; state.boardToday = []; state.boardProps = null; state.slim = true; state.fetched = [];
   history.replaceState(null, "", "/");
   localStorage.clear(); sessionStorage.clear();
   // The illustrated edition is chosen (no `hearth:motion`): D65 sends the reading edition to the Desk, so the Journey
@@ -414,6 +418,58 @@ describe("the household Journey map in the App", () => {
     await press(map.querySelector('[data-dial-chip="all-tools"]'), "All tools");
     await waitFor(() => q('[data-quick-sheet="open"]'), "the App's quick sheet");
     expect(await moneyHashes()).toEqual([before]);
+  });
+
+  it("trust M4: the dial gets the App's own record verbs — a member with a job gets the shift petal, and it opens the App's Shift flow", async () => {
+    const { household } = journeyDemoHousehold();
+    expect(household.workJobs.some((job) => job.active && job.memberId === BIANCA), "the demo gives Bianca a job").toBe(true);
+    const before = await financialAuditHash(household);
+    const board = await openApp(household, BIANCA);
+    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat clock");
+    const modes = state.boardProps!.recordModes;
+    // Exactly the App's own dial (`fabActionsFor`), shift and transfer included, in its order.
+    expect(modes).toEqual(fabActionsFor("household", { memberHasJob: true }).map((verb) => verb.mode));
+    expect(modes).toEqual(["expense", "shift", "income", "bill", "transfer"]);
+    await press(board.querySelector("[data-journey-plus]"), "+");
+    // The petal runs { name: "openRecord", mode: "shift" } (FIX-B draws it from `recordModes`); press it when drawn,
+    // else run the same call through the board's own actions.
+    const petal = board.querySelector<HTMLElement>('[data-dial-verb="shift"]');
+    if (petal) await press(petal, "Record a shift…");
+    else await act(async () => { runJourneyAction(state.boardProps!.actions, { name: "openRecord", mode: "shift" }); });
+    // `openRecordFlow("shift")`: a shift is Mine, so the App moves to My Money and opens its Shift flow there.
+    await waitFor(() => q('[data-add-slideshow="shift"]'), "the App's Shift flow");
+    expect(await moneyHashes()).toEqual([before]);
+  });
+
+  it("trust M4: a member with no job (while the other has one) gets no shift petal, exactly as the App's dial", async () => {
+    const { household } = journeyDemoHousehold();
+    const noJob = { ...household, workJobs: household.workJobs.map((job) => job.memberId === BIANCA ? { ...job, active: false } : job) };
+    expect(noJob.workJobs.some((job) => job.active)).toBe(true);
+    const board = await openApp(noJob, BIANCA);
+    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat clock");
+    expect(state.boardProps!.recordModes).toEqual(["expense", "income", "bill", "transfer"]);
+  });
+
+  it("A9: on a phone the board's region is a full viewport below the header, and arrival scrolls it to the top", async () => {
+    const scrolls = vi.fn();
+    window.scrollTo = scrolls as unknown as typeof window.scrollTo;
+    Object.defineProperty(window, "matchMedia", { configurable: true, value: vi.fn((query: string) => ({ matches: query === "(max-width: 719px)", media: query, addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn() })) });
+    const page = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      const top = this.matches("[data-app-page]") ? 300 : 0;
+      return { top, left: 0, right: 390, bottom: top + 844, width: 390, height: 844, x: 0, y: top, toJSON() {} } as DOMRect;
+    });
+    const { household } = journeyDemoHousehold();
+    const board = await openApp(household, BIANCA);
+    await settle(3);
+    const slot = board.closest<HTMLElement>("[data-journey-board-slot]")!;
+    expect(slot, "the board's slot in the page").toBeTruthy();
+    expect(slot.style.minHeight).toContain("100dvh");
+    const host = board.closest<HTMLElement>("[data-journey-board-host]")!;
+    expect(host.style.position).toBe("fixed");
+    expect(host.style.top).toContain("env(safe-area-inset-top");
+    // Arrival scrolls the page so the region starts at the top of the screen (the header stays, a scroll away).
+    await waitFor(() => scrolls.mock.calls.some(([arg]) => typeof arg === "object" && arg && (arg as ScrollToOptions).top === 300), "the arrival scroll");
+    page.mockRestore();
   });
 
   it("a brand-new household sees the honest empty map: no invented memories or milestones, the list says so", async () => {

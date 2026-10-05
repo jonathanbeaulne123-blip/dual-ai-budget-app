@@ -305,7 +305,7 @@ function board(stops: Stop[], clusters: StopCluster[], crossroads: Crossroads[],
     // tested on derived boards (test/journey-map-model.test.ts).
     week: { from: "2026-09-28" as DateKey, to: "2026-10-04" as DateKey, days: [], pileStopIds: [] },
     year: [], toCheck: [], purse: { everyday: null, expectedToday: [] },
-    digest: { weekStopIds: [], nextLeavingStopId: null, toCheckIds: [], waitingOnYou: [], chapter: [] },
+    digest: { weekStopIds: [], nextLeavingStopId: null, nextIsSettingAside: false, toCheckIds: [], waitingOnYou: [], chapter: [] },
     ...extra,
   };
 }
