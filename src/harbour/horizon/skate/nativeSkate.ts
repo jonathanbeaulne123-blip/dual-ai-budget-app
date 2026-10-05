@@ -24,6 +24,8 @@ import {SKATE_SPOTS} from '../../skate/park.ts';
  * Mountain's own ground raised by the offset (`regions/mountainV2/geography.ts`). So the skate runs exactly as it did —
  * its sim, field, park, spots, routes, the mountain race, tricks, decks and saved progress, all in native Mountain
  * space — inside one group moved by the offset. Only the edges translate: the body the Horizon reads, and the camera.
+ * Hosted (`geography`), its floors, walls, water and ceilings are the Horizon's everywhere (`./world.ts`), so the board
+ * goes down anywhere on dry, open, walkable ground (Jonathan 2026-10-04: "bring back the skateboard anywhere").
  */
 export type NativeSkateFrame={model:SkateHudModel;progress:SkateProgress;revision:number};
 export type HorizonBodyPose={x:number;y:number;z:number;yaw:number};
