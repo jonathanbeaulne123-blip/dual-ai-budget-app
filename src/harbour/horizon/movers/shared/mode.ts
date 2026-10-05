@@ -20,6 +20,7 @@ export interface MoverInput {
   crouch:number;     // 0..1 (held Space charge, arrows-down, etc.; 0 if the runtime has nothing)
   accept:boolean;    // E / the Enter bubble (edge)
   look:{dx:number;dy:number}; // pointer / Look pad deltas this frame (radians), consumed by the mover's camera if it wants free look
+  rudder?:number;    // -1..1, +1 = nose right (aircraft only: Q / R, the Yaw pedals)
   action?:'fold'|'pull'; // pull toggles the canopy; fold remains the glider's landing shortcut
 }
 export interface MoverPose { lean:number; roll:number; pitch:number; crouch:number; slide:number; speed:number;  // radians / 0..1 / m/s; the figure reads it

@@ -13,14 +13,14 @@ import type {FleetAction} from '../src/harbour/horizon/movers/fleet/model.ts';
 const world={
   moverState:{mode:'feet',attached:false,hud:null} as HorizonMoverState,
   offers:[] as ThresholdOffer[],
-  airportPower:vi.fn(),airportBrake:vi.fn(),airportAction:vi.fn(),
+  airportPower:vi.fn(),airportBrake:vi.fn(),airportTakeoff:vi.fn(),airportRudder:vi.fn(),airportAction:vi.fn(),
   moverAction:vi.fn(),accept:vi.fn(),setTheme:vi.fn(),setCruiserTheme:vi.fn(),setCruiserSkin:vi.fn(),toggleCruiser:vi.fn(),recoverCruiser:vi.fn(),input:vi.fn(),jump:vi.fn(),mode:'walk',
   fleetActions:[] as FleetAction[],fleetAction:vi.fn(),cycleCamera:vi.fn(),jumpHold:vi.fn(),
 };
 const register=vi.fn(()=>()=>{});
 vi.mock('../src/harbour/scene/worldMount.ts',()=>({mountHorizonWorld:async()=>({
   setHome:vi.fn(),visitHome:vi.fn(()=>true),homeActions:()=>[],mode:()=>world.mode,shotId:()=>'A',offers:()=>world.offers,moverState:()=>world.moverState,moverAction:world.moverAction,accept:world.accept,
-  airportActions:()=>[],airportState:()=>({selected:world.moverState.mode==='plane'?'kestrel':null,power:0,speed:0,grounded:true,disabled:false,pitch:0,bank:0,velocity:[0,0,0],saveFailed:false,inventory:[]}),airportPower:world.airportPower,airportBrake:world.airportBrake,airportAction:world.airportAction,
+  airportActions:()=>[],airportState:()=>({selected:world.moverState.mode==='plane'?'kestrel':null,power:0,speed:0,grounded:true,disabled:false,pitch:0,bank:0,velocity:[0,0,0],saveFailed:false,inventory:[]}),airportPower:world.airportPower,airportBrake:world.airportBrake,airportTakeoff:world.airportTakeoff,airportRudder:world.airportRudder,airportAction:world.airportAction,
   fleetActions:()=>world.fleetActions,fleetState:()=>({vessels:[],swimming:false,perspective:'activity',sitting:null,saveFailed:false}),fleetAction:world.fleetAction,cycleCamera:world.cycleCamera,jumpHold:world.jumpHold,
   setTheme:world.setTheme,setCruiserTheme:world.setCruiserTheme,setCruiserSkin:world.setCruiserSkin,toggleCruiser:world.toggleCruiser,recoverCruiser:world.recoverCruiser,cyclePerspective(){},resumeEquipment(){},pause(){},setComfort(){},setReducedMotion(){},setCalm(){},setMode(){},dispose(){},input:world.input,look(){},jump:world.jump,enterDoor(){},cutTo(){},world:{views:[]},
 })}));
@@ -135,7 +135,9 @@ describe('the quick layer in every mover phase',()=>{
   it('shows aircraft power controls and preserves the two pads without the cruiser panel',async()=>{
     hud(true,{height:0},'plane');const h=await mount();await tick();
     expect(h.querySelector('.horizon-cruiser-controls')).toBeNull();expect(h.querySelectorAll('.horizon-pad')).toHaveLength(2);
-    const flight=[...h.querySelectorAll<HTMLButtonElement>('.horizon-airport button')].find(b=>b.textContent==='Flight')!;act(()=>flight.click());expect(world.airportPower).toHaveBeenCalledWith(.8);
+    const flight=[...h.querySelectorAll<HTMLButtonElement>('.horizon-airport button')].find(b=>b.textContent==='Cruise')!;act(()=>flight.click());expect(world.airportPower).toHaveBeenCalledWith(.8);
+    const takeoff=[...h.querySelectorAll<HTMLButtonElement>('.horizon-airport button')].find(b=>b.textContent==='Take off')!;act(()=>takeoff.click());expect(world.airportTakeoff).toHaveBeenCalledTimes(1);
+    expect(h.querySelector('.horizon-lever')).not.toBeNull();const left=h.querySelector<HTMLButtonElement>('.horizon-pedals button[aria-label="Yaw left (Q)"]')!;act(()=>left.click());expect(world.airportRudder).toHaveBeenCalledWith(-1);
     const stop=[...h.querySelectorAll<HTMLButtonElement>('.horizon-airport button')].find(b=>b.textContent==='Stop / ground brake')!;act(()=>stop.click());expect(world.airportPower).toHaveBeenLastCalledWith(0);expect(world.airportBrake).toHaveBeenLastCalledWith(true);
   });
   it('renders and changes cruiser style when the browser storage getter is blocked',async()=>{
