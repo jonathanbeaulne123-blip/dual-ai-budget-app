@@ -22,11 +22,12 @@ export const frameOf=(x:number,z:number,yaw:number):Fr=>{const c=Math.cos(yaw),s
 export type Role=StructureSolid['role'];
 /**
  * Collision volumes in the record's local frame; y is relative to the finished floor, `'ground'` = sunk to the lowest
- * ground under the part, `{g: h}` (box tops only) = `h` above the highest ground under the part (terrain-following walls).
+ * ground under the part, `{g: h}` (box tops only) = `h` above the highest ground under the part; a prism with `gTop`
+ * measures each corner's y from the ground under that corner (terrain-following walls).
  */
 export type Vol=
   |{t:'box';x:number;z:number;hx:number;hz:number;yaw?:number;y0:number|'ground';y1:number|{g:number};role:Role;walk?:boolean;surf:string}
-  |{t:'prism';pts:readonly (readonly [number,number,number])[];y0:number|'ground';role:Role;walk?:boolean;surf:string};
+  |{t:'prism';pts:readonly (readonly [number,number,number])[];y0:number|'ground';role:Role;walk?:boolean;surf:string;gTop?:boolean};
 export interface Plan {
   vols:Vol[];
   /** Eave (or shaft) height above the floor, and the top of the building above the floor. */

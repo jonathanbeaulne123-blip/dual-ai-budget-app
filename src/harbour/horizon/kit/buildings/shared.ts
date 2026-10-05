@@ -171,28 +171,32 @@ export const gate:KindDef<GatePlan>={
 };
 
 /* ------------------------------------------------------------------ wall (terrain-following dry stone) */
-type WallPlan=Plan&{segs:{x:number;hx:number}[];hz:number;h:number};
+type WallPlan=Plan&{xs:number[];hz:number;h:number};
+const COPE=.16;
 export const wall:KindDef<WallPlan>={
   plan(rec){
-    const L=rec.size.w,hz=Math.max(.2,rec.size.d/2),h=Math.max(.4,rec.size.h),n=Math.max(1,Math.ceil(L/2)),segs:WallPlan['segs']=[];
-    for(let i=0;i<n;i++)segs.push({x:-L/2+L*(i+.5)/n,hx:L/n/2});
-    return {vols:segs.map(s=>box(s.x,0,s.hx,hz,'ground',{g:h},'wall','stone')),eave:h,top:h,segs,hz,h};
+    const L=rec.size.w,hz=Math.max(.2,rec.size.d/2),h=Math.max(.4,rec.size.h),n=Math.max(1,Math.ceil(L/1.5)),xs=Array.from({length:n+1},(_,i)=>-L/2+L*i/n);
+    const vols:Vol[]=[];for(let i=0;i<n;i++)vols.push({...prism([[xs[i]!,hz+.05,h],[xs[i+1]!,hz+.05,h],[xs[i+1]!,-hz-.05,h],[xs[i]!,-hz-.05,h]],'ground','wall','stone'),gTop:true});
+    return {vols,eave:h,top:h,xs,hz,h};
   },
   draw(c,p){
-    const {b,pal,F,full,ground,theme}=c,stone=theme==='newfoundland'?pal.stone:theme==='taylor'?pal.stone:pal.stoneLit,lit=theme==='taylor'?pal.paperEdge:pal.stoneLit;
-    const n=p.segs.length;
-    for(const [i,s] of p.segs.entries()){const g=groundUnder(ground,F,s.x,0,s.hx,p.hz,0),top=g.max+p.h,q=F.W(s.x,0,0),r=rectOf(s.hx,p.hz,s.x,0);
-      // Battered body (no ink on the joints between runs), a coping of stones set on edge, irregular courses.
-      b.box(q[0],q[2],F.yaw,s.hx+.01,p.hz,g.min-.35,top-.16,shade(stone,.98),shade(stone,.86),null);
-      b.box(q[0],q[2],F.yaw,s.hx+.02,p.hz+.05,top-.16,top,lit,shade(lit,.85),null);
-      for(const sz of [1,-1])b.line(inkLift(F.W(s.x-s.hx,sz*(p.hz+.05),top)),inkLift(F.W(s.x+s.hx,sz*(p.hz+.05),top)));
-      if(i===0||i===n-1){const sx=i===0?-1:1;b.line(inkLift(F.W(s.x+sx*s.hx,p.hz+.05,top)),inkLift(F.W(s.x+sx*s.hx,-p.hz-.05,top)));}
-      if(full)for(const f of ['front','back'] as const){
-        for(let u=-s.hx+.06;u<s.hx;u+=.16)b.line(facePt(F,r,f,u,top-.02,.06),facePt(F,r,f,u,top-.15,.06),shade(lit,.7));
-        let k=0;for(let y=top-.16;y>g.min-.1;y-=.26+(k%3)*.05,k++){const yy=y-(.26+(k%3)*.05);b.line(facePt(F,r,f,-s.hx,yy,.012),facePt(F,r,f,s.hx,yy,.012),shade(stone,.62));
-          for(let u=-s.hx+((i*5+k*3)%4)*.13;u<s.hx;u+=.36+((i+k)%3)*.12)b.line(facePt(F,r,f,u,y,.012),facePt(F,r,f,u,Math.max(yy,g.min),.012),shade(stone,.66));}}
-      if(theme==='taylor'&&full&&i%3===0)stencil(c,r,'front',0,top-.4,.12,ICON.hearth,pal.tape[0]!);}
-    void windowAt;void doorAt;void plinth;void footShade;void walls;void wallLantern;void postAt;void houseOpenings;void houseShell;void prism;void num;void flag;
+    const {b,pal,F,full,ground,theme}=c,{xs,hz,h}=p,stone=theme==='taylor'?pal.stone:theme==='newfoundland'?pal.stone:mix(pal.stone,pal.stoneLit,.4),lit=theme==='taylor'?pal.paperEdge:pal.stoneLit;
+    // One continuous wall whose top follows the ground (the collision prisms are these same corners).
+    const at=(x:number,z:number,dy:number,top:boolean):V3=>{const [wx,wz]=F.P(x,z),g=ground(wx,wz);return [wx,top?g+h+dy:dy,wz];};
+    let low=Infinity;for(const x of xs)for(const z of [hz,-hz]){const [wx,wz]=F.P(x,z);low=Math.min(low,ground(wx,wz));}
+    const base=low-.35;
+    for(let i=0;i<xs.length-1;i++){const x0=xs[i]!,x1=xs[i+1]!,o=.05;
+      for(const sz of [1,-1]){const z=sz*hz,zc=sz*(hz+o),A=at(x0,z,0,false),Bq=at(x1,z,0,false);
+        const f0:V3=[A[0],base,A[2]],f1:V3=[Bq[0],base,Bq[2]],t0=at(x0,z,-COPE,true),t1=at(x1,z,-COPE,true);
+        if(sz>0)b.side(f0,f1,t1,t0,shade(stone,.98));else b.side(f1,f0,t0,t1,shade(stone,.86));
+        const c0=at(x0,zc,-COPE,true),c1=at(x1,zc,-COPE,true),u0=at(x0,zc,0,true),u1=at(x1,zc,0,true);b.quad(c0,c1,u1,u0,shade(lit,sz>0?.95:.82));b.line(inkLift(u0),inkLift(u1));
+        if(full){for(let u=x0+.06;u<x1;u+=.16)b.line(at(u,zc+sz*.01,-.02,true),at(u,zc+sz*.01,-COPE+.01,true),shade(lit,.7));
+          let k=0;for(let d=COPE+.28;d<h+.3;d+=.26+(k%3)*.05,k++){const y0=at(x0,z+sz*.012,-d,true),y1=at(x1,z+sz*.012,-d,true);b.line(y0,y1,shade(stone,.62));
+            for(let u=x0+((i*5+k*3)%4)*.13;u<x1;u+=.36+((i+k)%3)*.12)b.line(at(u,z+sz*.012,-d,true),at(u,z+sz*.012,-d+.26,true),shade(stone,.66));}}}
+      b.quad(at(x0,hz+.05,0,true),at(x1,hz+.05,0,true),at(x1,-hz-.05,0,true),at(x0,-hz-.05,0,true),lit);}
+    for(const [x,s] of [[xs[0]!,-1],[xs[xs.length-1]!,1]] as const){const a0=at(x,hz,0,false),a1=at(x,-hz,0,false),t0=at(x,hz,0,true),t1=at(x,-hz,0,true);b.side([a0[0],base,a0[2]],[a1[0],base,a1[2]],t1,t0,shade(stone,s>0?.9:.8));b.line(inkLift(t0),inkLift(t1));}
+    if(theme==='taylor'&&full)for(let i=0;i<xs.length-1;i+=3)b.decal(at((xs[i]!+xs[i+1]!)/2,hz+.06,-.45,true),[F.c,0,-F.s],[0,1,0],.12,ICON.hearth,pal.tape[0]!,[F.s,0,F.c]);
+    void windowAt;void doorAt;void plinth;void footShade;void walls;void wallLantern;void postAt;void houseOpenings;void houseShell;void num;void flag;void facePt;void rectOf;void stencil;void groundUnder;
   },
 };
 export type {RGB,Rect};

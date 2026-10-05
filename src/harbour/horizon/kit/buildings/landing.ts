@@ -74,6 +74,7 @@ export const storefront:KindDef<StorePlan>={
 };
 
 /* ------------------------------------------------------------------ lifeguard tower */
+const GUARD_RAILS=(hx:number,hz:number):[[number,number],[number,number]][]=>[[[-hx+.05,hz-.05],[hx-.05,hz-.05]],[[-hx+.05,-hz+.05],[-hx+.05,hz-.05]],[[hx-.05,-hz+.05],[hx-.05,hz-.05]]];
 type GuardPlan=Plan&{hx:number;hz:number;h:number;hut:Rect;hutH:number;ramp:number};
 export const lifeguardTower:KindDef<GuardPlan>={
   plan(rec){
@@ -81,6 +82,7 @@ export const lifeguardTower:KindDef<GuardPlan>={
     const vols:Vol[]=[box(0,0,hx,hz,h-.2,h,'deck','boardwalk',true),box(hut.cx,hut.cz,hut.hx,hut.hz,h,h+hutH,'wall','timber'),box(0,-.2,hx+.1,hz+.1,h+hutH,h+hutH+.25,'roof','timber'),
       prism([[-.65,-hz,h],[.65,-hz,h],[.65,-hz-ramp,0],[-.65,-hz-ramp,0]],'ground','deck','boardwalk',true)];
     for(const [sx,sz] of [[-1,-1],[1,-1],[1,1],[-1,1]] as const)vols.push(box(sx*(hx-.15),sz*(hz-.15),.11,.11,'ground',h-.2,'support','timber'));
+    for(const [a,e] of GUARD_RAILS(hx,hz))vols.push(box((a[0]+e[0])/2,(a[1]+e[1])/2,Math.hypot(e[0]-a[0],e[1]-a[1])/2,.05,h,h+1.05,'rail','timber',false,Math.atan2(e[0]-a[0],e[1]-a[1])-Math.PI/2));
     return {vols,eave:h+hutH,top:h+hutH+2.4,hx,hz,h,hut,hutH,ramp};
   },
   draw(c,p){
@@ -93,7 +95,7 @@ export const lifeguardTower:KindDef<GuardPlan>={
     windowAt(c,hut,'front',0,deck+1.1,Math.min(2.4,hut.hx*2-.5),.8,{lit:true,mullion:true,sill:false,surround:.1});
     doorAt(c,hut,'back',0,deck,.8,1.9,pal.door);
     if(c.theme==='taylor')stencil(c,hut,'left',0,deck+1.5,.3,ICON.shell,pal.tape[1]??pal.tape[0]!);
-    openRail(c,[[-hx+.05,hz-.05],[hx-.05,hz-.05]],deck);if(full){openRail(c,[[-hx+.05,-hz+.05],[-hx+.05,hz-.05]],deck);openRail(c,[[hx-.05,-hz+.05],[hx-.05,hz-.05]],deck);}
+    for(const line of GUARD_RAILS(hx,hz))openRail(c,line,deck);
     // The ramp down the land side, with cleats.
     const a0=F.W(-.65,-hz,deck),a1=F.W(.65,-hz,deck),e1=F.W(.65,-hz-p.ramp,floor),e0=F.W(-.65,-hz-p.ramp,floor);b.quad(a0,a1,e1,e0,pal.timber);b.quad(e1,a1,[a1[0],a1[1]-.12,a1[2]],[e1[0],e1[1]-.12,e1[2]],shade(pal.timber,.6));
     if(full)for(let t=.1;t<1;t+=.12){const p0:V3=[a0[0]+(e0[0]-a0[0])*t,a0[1]+(e0[1]-a0[1])*t+.03,a0[2]+(e0[2]-a0[2])*t],p1:V3=[a1[0]+(e1[0]-a1[0])*t,a1[1]+(e1[1]-a1[1])*t+.03,a1[2]+(e1[2]-a1[2])*t];b.line(p0,p1,shade(pal.timber,.6));}

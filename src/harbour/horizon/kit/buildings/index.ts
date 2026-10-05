@@ -48,7 +48,7 @@ export const BUILDING_TRI_BUDGET:Readonly<Record<BuildingKind,readonly [number,n
   croft:[350,200],chapel:[580,350],longhouse:[350,180],barn:[230,100],shieling:[180,90],liftStation:[270,150],liftTower:[160,120],
   kiln:[280,150],cottage:[430,180],studio:[230,140],coveredBridge:[350,210],
   library:[1890,940],
-  boathouse:[370,170],storefront:[320,230],lifeguardTower:[420,230],shack:[200,160],ferrisWheel:[1610,1420],
+  boathouse:[370,170],storefront:[320,230],lifeguardTower:[440,330],shack:[200,160],ferrisWheel:[1610,1420],
   quonset:[390,370],elevator:[500,370],station:[670,340],observatory:[470,260],arch:[620,410],hoodoo:[310,210],
   pavilion:[590,470],hide:[390,300],deck:[470,390],platform:[340,290],windpump:[690,370],shed:[140,90],gate:[130,90],wall:[150,140],
 };
@@ -63,15 +63,18 @@ export function buildingPlan(rec:BuildingRecord):Plan{
   p=def.plan(rec);planCache.set(rec,p);return p;
 }
 
+const palettes=new Map<string,ReturnType<typeof buildingPalette>>();
 /** Draw one building into `b` in a dressing and tier. Deterministic: the same record draws the same triangles. */
 export function drawBuilding(b:CardBuilder,rec:BuildingRecord,theme:DressingTheme,ground:(x:number,z:number)=>number,tier:'full'|'lite'):void{
   const def=KINDS[rec.kind];if(!def)throw new Error(`kit/buildings: unknown kind ${String(rec.kind)} (${rec.id})`);
-  const c:DrawCtx={b,rec,pal:buildingPalette(theme,rec.style),ground,tier,full:tier==='full',theme,F:frameOf(rec.at[0],rec.at[2],rec.yaw),floor:rec.at[1],h:salt=>hashOf(rec.id,salt)};
+  const key=`${theme}|${rec.style}`;let pal=palettes.get(key);if(!pal){pal=buildingPalette(theme,rec.style);palettes.set(key,pal);}
+  const c:DrawCtx={b,rec,pal,ground,tier,full:tier==='full',theme,F:frameOf(rec.at[0],rec.at[2],rec.yaw),floor:rec.at[1],h:salt=>hashOf(rec.id,salt)};
   def.draw(c,buildingPlan(rec));
 }
 
 /** The record's solid parts in world space (the bake turns them into `StructureSolid`s of kind `dressing`). */
 export function buildingCollision(rec:BuildingRecord,ground:(x:number,z:number)=>number):CollisionPart[]{
+  if(!rec.collide)return [];
   const F=frameOf(rec.at[0],rec.at[2],rec.yaw),floor=rec.at[1],out:CollisionPart[]=[];
   const sunk=(v:Vol)=>{
     if(v.y0!=='ground')return floor+v.y0;
@@ -81,7 +84,7 @@ export function buildingCollision(rec:BuildingRecord,ground:(x:number,z:number)=
   for(const v of buildingPlan(rec).vols){
     const bottom=sunk(v);
     if(v.t==='box'){const [x,z]=F.P(v.x,v.z),top=typeof v.y1==='number'?floor+v.y1:groundUnder(ground,F,v.x,v.z,v.hx,v.hz,0).max+v.y1.g;if(top-bottom<1e-3)continue;out.push({kind:'box',centre:[x,z],size:[v.hx*2,v.hz*2],yaw:rec.yaw+(v.yaw??0),bottom,top,role:v.role,walkable:!!v.walk,surface:v.surf});}
-    else out.push({kind:'prism',corners:v.pts.map(([x,z,y])=>{const [wx,wz]=F.P(x,z);return [wx,floor+y,wz] as [number,number,number];}),bottom,role:v.role,walkable:!!v.walk,surface:v.surf});
+    else out.push({kind:'prism',corners:v.pts.map(([x,z,y])=>{const [wx,wz]=F.P(x,z);return [wx,(v.gTop?ground(wx,wz):floor)+y,wz] as [number,number,number];}),bottom,role:v.role,walkable:!!v.walk,surface:v.surf});
   }
   return out;
 }
