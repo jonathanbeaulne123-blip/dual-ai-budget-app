@@ -70,6 +70,14 @@ describe("the App mounts the Journey Board on the household Journey route", () =
     for (const name of ["openRecord", "openBillPaid", "openDueReview", "openPlace", "openCampfire", "openWeeklySitdown", "openEraPlanner", "openKitty", "openCalendar", "openBooks", "enterHorizon", "back"]) {
       expect(actions, name).toMatch(new RegExp(`\\b${name}: `));
     }
+    // The map's "+" dial (Horizon Clock): All tools opens the Compass's own quick sheet; Simple view uses the one shared
+    // motion-edition writer. Neither posts.
+    expect(actions).toMatch(/openAllTools: \(\) => setQuickSheetOpen\(true\)/);
+    expect(actions).toMatch(/chooseSimpleView: \(\) => chooseMotionEdition\("flat"\)/);
+    // The theme dot applies the APP-WIDE theme through the appearance store (ruling 12), not a board-only preview.
+    expect(app).toMatch(/onChooseTheme=\{\(theme\) => appearance\.store\?\.apply\(theme\)\}/);
+    // The map carries its own dial: the Compass is not drawn over it.
+    expect(app).toMatch(/\{!journeyBoardShown&&<Compass fab=\{harbourBarFab\}/);
     expect(actions).toMatch(/openBillPaid: \(recurrenceId\) => openRecordFlow\("bill", undefined, undefined, recurrenceId\)/);
     // Expected recurring pay and the due reminders open the App's reviewed recurrence path (review B1 / M1)…
     expect(actions).toMatch(/openDueReview: \(recurrenceId\) => openDueReviewFromBoard\(recurrenceId\)/);

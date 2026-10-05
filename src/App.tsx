@@ -19,7 +19,7 @@ import { HouseWorld } from './house/HouseWorld.tsx';
 import { HARBOUR_ENABLED, harbourOwnsRoute, harbourPlaceFor } from './harbour/flag.ts';
 import { VILLAGE_ADDRESS } from './harbour/village/layout.ts';
 import { harbourArrivalRoute, readingEditionRoute, isJourneyHomeRoute, tabSession } from './harbour/nav/arrival.ts';
-import { readMotionEdition } from './harbour/nav/motionEdition.ts';
+import { chooseMotionEdition, readMotionEdition } from './harbour/nav/motionEdition.ts';
 import { Compass, useEditionFlipKey, useMotionEdition, type CompassFab } from './harbour/nav/Compass.tsx';
 import { WorldToggle } from './harbour/nav/WorldToggle.tsx';
 import { useHarbourWorld } from './harbour/harbourWorld.ts';
@@ -7447,6 +7447,10 @@ export function App() {
       return true;
     },
     back: () => putHouseObjectBack(),
+    // The map's "+" dial (Horizon Clock): All tools opens the same quick sheet the Compass does; Simple view picks the
+    // device's flat motion edition through the one shared writer (the App's edition effect then leaves the board).
+    openAllTools: () => setQuickSheetOpen(true),
+    chooseSimpleView: () => chooseMotionEdition("flat"),
   };
   function closeEraPlanner() {
     setEraPlannerFor(null);
@@ -7991,6 +7995,7 @@ export function App() {
                   returningFromHorizon={activeHouseRoute.object === "harbour-return"}
                   freshnessNote={sceneInterpretationGate.current ? null : sceneInterpretationGate.detail}
                   dueReview={dueReviewCount > 0 ? { count: dueReviewCount } : null}
+                  onChooseTheme={(theme) => appearance.store?.apply(theme)}
                   onReady={() => journeyCloud.ready("to-journey")} />
                 )}</JourneyHomeBookBridge>
                 </Suspense>
@@ -9654,7 +9659,7 @@ export function App() {
           card; the Fund bank panel and its open state (Books › the Fund) hold the balance, Needs you, To settle and The Level. */}
 
       {!charterTakeoverVisible ? (
-      HARBOUR_ENABLED?<><WorldToggle/><Compass fab={harbourBarFab} fabOpen={fabOpen} toolsOpen={quickSheetOpen} member={actorId} theme={appearance.preview??appearance.saved.theme} calm={comfort.quiet} alwaysShowLabels={comfort.labels} onQuickSheet={()=>setQuickSheetOpen(true)}/>
+      HARBOUR_ENABLED?<><WorldToggle/>{/* The Journey map carries its own "+" dial and tools chip (Horizon Clock): no Compass over it. */}{!journeyBoardShown&&<Compass fab={harbourBarFab} fabOpen={fabOpen} toolsOpen={quickSheetOpen} member={actorId} theme={appearance.preview??appearance.saved.theme} calm={comfort.quiet} alwaysShowLabels={comfort.labels} onQuickSheet={()=>setQuickSheetOpen(true)}/>}
         {/* All tools, one sheet for both spaces and the Desk drawer (Tool Atlas §3.4). */}
         <QuickSheet open={quickSheetOpen} onClose={()=>setQuickSheetOpen(false)} onOpen={(id,object)=>openAtlasTarget(id,object)} onTarget={(target,object)=>openAtlasTarget(target,object)}
           onStatus={()=>{setQuickSheetOpen(false);goTab("more");}} onSettings={(section)=>openAtlasTarget(section?`settings:${section}`:"settings")} onHercules={()=>{setQuickSheetOpen(false);openLegacyHercules();}}
