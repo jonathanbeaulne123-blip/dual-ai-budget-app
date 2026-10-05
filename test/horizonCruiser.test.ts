@@ -2,9 +2,10 @@ import {describe,it,expect,vi} from 'vitest';
 import {createHorizonGeography} from '../src/harbour/horizon/runtime/geography.ts';
 import type {LandCuts,TerrainField} from '../src/harbour/horizon/land/interfaces.ts';
 import {solid,box} from '../src/harbour/horizon/land/structures/mesh.ts';
-import {createCruiserState,stepCruiser,cruiserDismount,recoverCruiser,cruiserSpeed,validCruiserPosition} from '../src/harbour/horizon/movers/cruiser/sim.ts';
+import {createCruiserState,stepCruiser,cruiserDismount,recoverCruiser,cruiserSpeed,cruiserTopSpeed,validCruiserPosition} from '../src/harbour/horizon/movers/cruiser/sim.ts';
+import {createBicycleController} from '../src/harbour/horizon/movers/bicycle/controller.ts';
 import {createCruiserController} from '../src/harbour/horizon/movers/cruiser/controller.ts';
-import {CRUISER,cruiserPreferenceKey,readCruiserSkin,saveCruiserSkin} from '../src/harbour/horizon/movers/cruiser/tuning.ts';
+import {CRUISER,cruiserPreferenceKey,readCruiserSkin,saveCruiserSkin,rideModeFor,CRUISER_SKINS} from '../src/harbour/horizon/movers/cruiser/tuning.ts';
 import {createCruiserArt} from '../src/harbour/horizon/movers/cruiser/art.ts';
 import {createMoverRegistry,type MoverDeps} from '../src/harbour/horizon/movers/shared/registry.ts';
 import type {AirborneBody,ModeController,MoverInput} from '../src/harbour/horizon/movers/shared/mode.ts';
@@ -16,8 +17,10 @@ function run(seconds:number,input=idle,g=flat,s=createCruiserState(start)) {for(
 function wallAt(x=100,z=120){const wall=solid('wall','test','stone','wall');box(wall,[x,z],5,[30,.4],0);return createHorizonGeography(field,{...empty,solids:[wall]});}
 describe('one forgiving Horizon cruiser',()=>{
   it('accelerates to cruise promptly and stops near a door without reversing on a held brake',()=>{
-    let s=run(3,{...idle,forward:1});expect(cruiserSpeed(s)).toBeCloseTo(16,1);
-    const before=s.z;s=run(2,{...idle,forward:-1},flat,s);expect(cruiserSpeed(s)).toBe(0);expect(s.z-before).toBeLessThan(8.5);expect(s.reverse).toBe(false);
+    // Changed 2026-10-04 (Jonathan: cruise at 2x): cruise is 32 m/s (was 16), so 3 s now reaches 32 and full
+    // braking (24 m/s², was 16) stops it in 21.3 m (was 8 m from 16 m/s). Same shape of test, new numbers.
+    let s=run(3,{...idle,forward:1});expect(cruiserSpeed(s)).toBeCloseTo(32,1);
+    const before=s.z;s=run(2,{...idle,forward:-1},flat,s);expect(cruiserSpeed(s)).toBe(0);expect(s.z-before).toBeLessThan(22);expect(s.reverse).toBe(false);
     const stopped=s.z;s=run(2,{...idle,forward:-1},flat,s);expect(s.z).toBe(stopped);
     s=run(.1,idle,flat,s);s=run(1,{...idle,forward:-1},flat,s);expect(s.z).toBeLessThan(stopped);expect(cruiserSpeed(s)).toBeLessThanOrEqual(2.51);
   });
@@ -151,5 +154,89 @@ describe('one forgiving Horizon cruiser',()=>{
     expect(cruiserPreferenceKey('development','hh','a')).not.toBe(cruiserPreferenceKey('development','hh','b'));
     expect(readCruiserSkin({getItem:()=> 'invalid'},'x')).toBe('vespa');expect(readCruiserSkin({getItem:()=> 'harley'},'x')).toBe('harley');
     expect(saveCruiserSkin({setItem(){throw Error('blocked');}},'x','harley')).toBe(false);
+  });
+});
+const geoDeps=(g:ReturnType<typeof createHorizonGeography>,quiet:{calm?:boolean;reducedMotion?:boolean}={}):MoverDeps=>({world:{} as MoverDeps['world'],geography:g,manifest:{} as MoverDeps['manifest'],reducedMotion:!!quiet.reducedMotion,calm:!!quiet.calm,tier:'full'});
+// The new speeds cover a kilometre in ~20 s: these drives use a 20 km flat field so the world edge never stops them.
+const wide=createHorizonGeography({...field,width:20000,depth:20000,step:10000},empty),far={x:10000,y:0,z:1000,yaw:0};
+const go=(seconds:number,input:MoverInput,s=createCruiserState(far))=>run(seconds,input,wide,s);
+const boostIn={...idle,forward:1,sprint:true};
+/** Drive a controller like the runtime does (1/60 s frames) and return the frames. */
+function drive(c:ModeController,seconds:number,input:MoverInput){const frames=[];for(let i=0;i<Math.round(seconds*60);i++)frames.push(c.update(1/60,input,i/60));return frames;}
+describe('cruiser speed and Shift boost (Jonathan, 2026-10-04)',()=>{
+  it('cruises at 32 m/s by default and boosts to 48 m/s while Shift is held',()=>{
+    expect(CRUISER.speed).toBe(32);expect(CRUISER.boostSpeed).toBe(48);
+    const cruise=go(6,{...idle,forward:1});expect(cruiserSpeed(cruise)).toBeCloseTo(32,6);expect(cruise.boost).toBe(0);
+    const boosted=go(6,boostIn);expect(cruiserSpeed(boosted)).toBeCloseTo(48,6);expect(boosted.boost).toBe(1);expect(cruiserTopSpeed(boosted)).toBe(48);
+    // Steering never adds energy, boosted or not.
+    let s=boosted;for(let i=0;i<120*20;i++){s=stepCruiser(s,{...boostIn,steer:Math.sin(i/35)},wide);expect(cruiserSpeed(s)).toBeLessThanOrEqual(48+1e-9);}
+  });
+  it('ramps the boost in and out smoothly instead of jumping',()=>{
+    let s=go(6,{...idle,forward:1});let prev=cruiserSpeed(s),maxStep=0;const at:number[]=[];
+    for(let i=0;i<120*4;i++){s=stepCruiser(s,boostIn,wide);const v=cruiserSpeed(s);maxStep=Math.max(maxStep,Math.abs(v-prev));prev=v;at.push(v);}
+    // At most acceleration·dt per tick (0.1 m/s), the cap takes boostRampUp to arrive, and 48 is reached in about two seconds.
+    expect(maxStep).toBeLessThanOrEqual(CRUISER.acceleration*CRUISER.dt+1e-9);
+    expect(at[Math.round(.25/CRUISER.dt)]!).toBeLessThan(36);expect(at[Math.round(2.5/CRUISER.dt)]!).toBeCloseTo(48,3);
+    // Releasing Shift eases back to 32 at the same bounded rate: no snap.
+    maxStep=0;for(let i=0;i<120*4;i++){s=stepCruiser(s,{...idle,forward:1},wide);const v=cruiserSpeed(s);maxStep=Math.max(maxStep,Math.abs(v-prev));prev=v;}
+    expect(maxStep).toBeLessThanOrEqual(CRUISER.acceleration*CRUISER.dt+1e-9);expect(cruiserSpeed(s)).toBeCloseTo(32,6);expect(s.boost).toBe(0);
+    // Shift alone (no throttle) and Shift in reverse never boost.
+    expect(go(2,{...idle,sprint:true}).boost).toBe(0);
+  });
+  it('stops from a full 48 m/s boost within 50 m on the brake, and still reverses only from rest',()=>{
+    let s=go(6,boostIn);const before=s.z;
+    s=go(3,{...idle,forward:-1,sprint:true},s);expect(cruiserSpeed(s)).toBe(0);expect(s.z-before).toBeLessThan(50);expect(s.z-before).toBeGreaterThan(40);expect(s.reverse).toBe(false);
+    s=go(.1,idle,s);s=go(1,{...idle,forward:-1,sprint:true},s);expect(s.reverse).toBe(true);expect(cruiserSpeed(s)).toBeLessThanOrEqual(CRUISER.reverseSpeed+1e-6);
+  });
+  it('does not tunnel through a thin wall at 48 m/s',()=>{
+    // 0.4 m wall at z 120; start already at full boost 30 m away (0.4 m per tick, cut into 0.15 m pieces).
+    const g=wallAt(),s0={...createCruiserState({...start,z:90}),vz:48,boost:1};
+    let s=s0;for(let i=0;i<120*3;i++){s=stepCruiser(s,boostIn,g);expect(s.z).toBeLessThan(119.8);}
+    expect(s.z).toBeGreaterThan(118.5);expect(s.y).toBe(0);expect(s.grounded).toBe(true);expect(cruiserSpeed(s)).toBeLessThan(.2);
+  });
+  it('slows to the corner speed on a full-lock bend, boosted or not, and holds a tighter arc than at 48',()=>{
+    for(const input of [{...idle,forward:1,steer:1},{...boostIn,steer:1}]){
+      const s=go(4,input,{...createCruiserState(far),vz:48,boost:input.sprint?1:0});expect(cruiserSpeed(s)).toBeCloseTo(CRUISER.cornerSpeed,3);
+    }
+    expect(CRUISER.cornerSpeed).toBe(10);
+    // Turning circle at corner speed: v / yaw rate is under 6 m; at 48 m/s the rate tapers (√) to keep the arc stable.
+    const rateAt=(v:number)=>{const s=stepCruiser({...createCruiserState(far),vz:v,boost:1},{...boostIn,steer:1},wide);return Math.abs(s.yaw)/CRUISER.dt;};
+    expect(10/rateAt(10)).toBeLessThan(6);expect(rateAt(48)).toBeLessThan(rateAt(32));expect(rateAt(48)).toBeGreaterThan(.8);
+  });
+  it('caps boost at cruise speed under calm or reduced motion, with no roll and no camera pull',()=>{
+    for(const quiet of [{calm:true},{reducedMotion:true}]){
+      const c=createCruiserController(geoDeps(wide,quiet));c.enter({id:'x',thresholdId:'x',from:'feet',to:'cruiser',at:[10000,0,1000],action:'Ride',label:'Ride'},far,0);
+      drive(c,1/30,idle);const frames=drive(c,6,{...boostIn,steer:0});const last=frames.at(-1)!;
+      expect(cruiserSpeed((c as ReturnType<typeof createCruiserController>).state())).toBeCloseTo(32,4);expect(last.hud.label).toBe('Cruising');
+      expect(frames.some(f=>f.sound.boost)).toBe(false);expect(last.pose.roll).toBe(0);expect(last.camera!.fov).toBe(CRUISER.cameraFov);
+      const behind=Math.hypot(last.camera!.eye[0]-last.body.x,last.camera!.eye[2]-last.body.z);expect(behind).toBeCloseTo(CRUISER.cameraDistance,3);
+    }
+  });
+  it('labels a boosted ride "Boost" with km/h, fills the arc against the boost cap and cues the boost once',()=>{
+    const c=createCruiserController(geoDeps(wide));c.enter({id:'x',thresholdId:'x',from:'feet',to:'cruiser',at:[10000,0,1000],action:'Ride',label:'Ride'},far,0);
+    drive(c,1/30,idle);const cruise=drive(c,6,{...idle,forward:1}).at(-1)!;
+    expect(cruise.hud).toMatchObject({pace:'115 km/h',label:'Cruising'});expect(cruise.hud.arc).toBeCloseTo(32/48,3);
+    const frames=drive(c,6,boostIn),last=frames.at(-1)!;
+    expect(last.hud).toMatchObject({pace:'173 km/h',label:'Boost',arc:1});expect(frames.filter(f=>f.sound.boost)).toHaveLength(1);
+    expect(last.camera!.fov).toBe(CRUISER.cameraFov);
+    const behind=Math.hypot(last.camera!.eye[0]-last.body.x,last.camera!.eye[2]-last.body.z);expect(behind).toBeCloseTo(CRUISER.cameraDistance+CRUISER.cameraPull,1);
+    const eased=drive(c,6,{...idle,forward:1}).at(-1)!;expect(eased.hud.label).toBe('Cruising');expect(eased.hud.pace).toBe('115 km/h');
+  });
+  it('runs the bicycle on the same sim, speeds and boost, as its own mode with its own label',()=>{
+    const bike=createBicycleController(geoDeps(wide)),car=createCruiserController(geoDeps(wide));expect(bike.id).toBe('bicycle');expect(car.id).toBe('cruiser');
+    for(const c of [bike,car])c.enter({id:'x',thresholdId:'x',from:'feet',to:c.id,at:[10000,0,1000],action:'Ride',label:'Ride'},far,0);
+    const script:[number,MoverInput][]=[[1/30,idle],[3,{...idle,forward:1,steer:.3}],[4,boostIn],[2,{...idle,forward:-1}],[.2,idle],[1,{...idle,forward:-1}]];
+    for(const [t,input] of script){const a=drive(bike,t,input).at(-1)!,b=drive(car,t,input).at(-1)!;expect(a.body).toEqual(b.body);expect(a.hud.pace).toBe(b.hud.pace);}
+    const both=[bike,car].map(c=>{drive(c,6,boostIn);return (c as ReturnType<typeof createCruiserController>).state();});
+    expect(cruiserSpeed(both[0]!)).toBeCloseTo(48,6);expect(both[0]).toEqual(both[1]);
+    const label=(c:ModeController)=>drive(c,6,{...idle,forward:1}).at(-1)!.hud.label;expect(label(bike)).toBe('Cycling');expect(label(car)).toBe('Cruising');
+    const art=createCruiserArt('classic');art.setSkin('bicycle');expect(art.root.userData.skin).toBe('bicycle');expect(art.root.children[0]!.name).toBe('Town bicycle');art.dispose();
+  });
+});
+describe('the bicycle is a third Ride style (Jonathan 2026-10-04)',()=>{
+  it('offers it in the style list, remembers it, and rides it as the bicycle mode',()=>{
+    expect(Object.keys(CRUISER_SKINS)).toEqual(['vespa','harley','bicycle']);
+    expect(readCruiserSkin({getItem:()=> 'bicycle'},'x')).toBe('bicycle');
+    expect(rideModeFor('bicycle')).toBe('bicycle');expect(rideModeFor('vespa')).toBe('cruiser');expect(rideModeFor('harley')).toBe('cruiser');
   });
 });

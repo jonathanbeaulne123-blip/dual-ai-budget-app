@@ -3,11 +3,16 @@ import type {MoverBody} from '../shared/mode.ts';
 import {CRUISER as C} from './tuning.ts';
 
 export type CruiserGround = Pick<HorizonGeography,'surface'|'ground'|'blocker'|'contact'|'ceiling'|'submerged'>;
-export type CruiserInput = {forward:number;steer:number;jump:boolean};
-export type CruiserState = MoverBody & {vx:number;vz:number;vy:number;grounded:boolean;reverse:boolean;brakeHeld:boolean;jumpHeld:boolean;pitch:number;lean:number;safe:MoverBody;contact:string|null};
+/** `sprint` is Shift / the touch Boost toggle; the controller clears it under calm or reduced motion. */
+export type CruiserInput = {forward:number;steer:number;jump:boolean;sprint?:boolean};
+export type CruiserState = MoverBody & {vx:number;vz:number;vy:number;grounded:boolean;reverse:boolean;brakeHeld:boolean;jumpHeld:boolean;pitch:number;lean:number;safe:MoverBody;contact:string|null;
+  /** 0..1: how far the speed cap has ramped from CRUISER.speed toward CRUISER.boostSpeed. */
+  boost:number};
 const clamp=(n:number,a:number,b:number)=>Math.max(a,Math.min(b,n));
 const approach=(a:number,b:number,d:number)=>a<b?Math.min(b,a+d):Math.max(b,a-d);
 export const cruiserSpeed=(s:CruiserState)=>Math.hypot(s.vx,s.vz);
+/** The current forward speed cap: CRUISER.speed, ramping to CRUISER.boostSpeed while boosted. */
+export const cruiserTopSpeed=(s:Pick<CruiserState,'boost'>)=>C.speed+(C.boostSpeed-C.speed)*clamp(s.boost??0,0,1);
 /** Both wheels must support a seam; a single wheel at a real ledge cannot
  * manufacture ground. Project sloping supports back to the vehicle centre. */
 function wheelSupport(g:CruiserGround,x:number,z:number,y:number,yaw:number) {
@@ -48,7 +53,7 @@ export function cruiserDismount(g:CruiserGround,s:CruiserState):MoverBody|null {
   return null;
 }
 export function createCruiserState(at:MoverBody):CruiserState {
-  return {...at,vx:0,vz:0,vy:0,grounded:true,reverse:false,brakeHeld:false,jumpHeld:false,pitch:0,lean:0,safe:{...at},contact:null};
+  return {...at,vx:0,vz:0,vy:0,grounded:true,reverse:false,brakeHeld:false,jumpHeld:false,pitch:0,lean:0,safe:{...at},contact:null,boost:0};
 }
 /** Recovery never invents a destination: validate nearby ground, then the last supported spot. */
 export function recoverCruiser(g:CruiserGround,s:CruiserState):CruiserState|null {
@@ -67,14 +72,20 @@ export function stepCruiser(s:CruiserState,input:CruiserInput,g:CruiserGround,dt
   if(braking&&!s.brakeHeld&&speed<.12)reverse=true;
   if(forward>.15&&speed<.12)reverse=false;
   signed=reverse?-speed:speed;
+  // Boost moves the cap, never the speed directly: the cap ramps up over boostRampUp and back
+  // over boostRampDown, and the speed follows it at the ordinary acceleration either way.
+  const wantBoost=!!input.sprint&&forward>.15&&!reverse;
+  const boost=approach(clamp(s.boost??0,0,1),wantBoost?1:0,dt/(wantBoost?C.boostRampUp:C.boostRampDown));
+  const top=cruiserTopSpeed({boost});
   if(grounded) {
-    const cruise=C.speed-(C.speed-C.cornerSpeed)*Math.pow(Math.abs(steer),1.5);
+    const cruise=top-(top-C.cornerSpeed)*Math.pow(Math.abs(steer),1.5);
     const target=forward>.15?cruise*forward:braking&&reverse?-C.reverseSpeed*Math.abs(forward):0;
     const slowing=(braking&&!reverse)||(forward>.15&&reverse);
     signed=approach(signed,target,(slowing?C.brake:Math.abs(forward)>.15?C.acceleration:C.coast)*dt);
     speed=Math.abs(signed);
     // D/right decreases yaw in the island's +z-forward camera frame. At rest, turn on the spot.
-    const rate=C.steerLow+(C.steerHigh-C.steerLow)*clamp(speed/C.speed,0,1);
+    // Above cruise the yaw rate tapers with √(speed) so a boosted full lock is a wide, stable arc, not a flick.
+    const base=C.steerLow+(C.steerHigh-C.steerLow)*clamp(speed/C.speed,0,1),rate=speed>C.speed?base*Math.sqrt(C.speed/speed):base;
     yaw-=steer*rate*(reverse?-1:1)*dt;
     const lateral=(vx*Math.cos(yaw)-vz*Math.sin(yaw))*Math.exp(-C.grip*dt);
     vx=Math.sin(yaw)*signed+Math.cos(yaw)*lateral;vz=Math.cos(yaw)*signed-Math.sin(yaw)*lateral;
@@ -127,12 +138,12 @@ export function stepCruiser(s:CruiserState,input:CruiserInput,g:CruiserGround,dt
       const below=ceiling-C.height;
       // Never solve a ceiling by pushing a newly landed rider through its floor.
       // If the envelope cannot fit, reject this step and retain the preceding pose.
-      if(floor&&below<floor.y)return {...s,vx:0,vy:0,vz:0,brakeHeld:braking,jumpHeld:input.jump,contact:'low-headroom'};
+      if(floor&&below<floor.y)return {...s,vx:0,vy:0,vz:0,brakeHeld:braking,jumpHeld:input.jump,contact:'low-headroom',boost};
       y=below;vy=Math.min(0,vy);
     }
   }
   // Art uses -lean for local roll; match the island's rightward negative yaw.
   lean+=(-steer*Math.min(.22,cruiserSpeed(s)*.025)-lean)*(1-Math.exp(-8*dt));
   const safe=grounded&&!contact&&validCruiserPosition(g,{x,y,z,yaw})?{x,y,z,yaw}:s.safe;
-  return {x,y,z,yaw,vx,vz,vy,grounded,reverse,brakeHeld:braking,jumpHeld:input.jump,pitch,lean,safe,contact};
+  return {x,y,z,yaw,vx,vz,vy,grounded,reverse,brakeHeld:braking,jumpHeld:input.jump,pitch,lean,safe,contact,boost};
 }
