@@ -237,10 +237,12 @@ describe('The desktop offer bubble (R2-03)', () => {
 describe('the wheeled ride holds before ground that is not resident (cruiser/bicycle at boost, 2026-10-04)', () => {
   it('checks the next RIDE_AHEAD_S of travel every ≤ 4 m and holds when any of it is missing', () => {
     const seen: number[] = [];
-    // 48 m/s boosted, heading +z, with ground loaded only up to z = 110.
-    const ready = (_x: number, z: number) => { seen.push(z); return z <= 110; };
-    expect(rideAheadReady({x: 0, z: 100}, 0, 48, ready)).toBe(false);
+    // 48 m/s boosted, heading +z: every sample out to 0.3 s (14.4 m) is checked, ≤ 4 m apart.
+    expect(rideAheadReady({x: 0, z: 100}, 0, 48, (_x, z) => { seen.push(z); return true; })).toBe(true);
     expect(Math.max(...seen)).toBeCloseTo(100 + 48 * RIDE_AHEAD_S, 6);
+    // With ground loaded only up to z = 110 the ride holds before it gets there.
+    const ready = (_x: number, z: number) => z <= 110;
+    expect(rideAheadReady({x: 0, z: 100}, 0, 48, ready)).toBe(false);
     for (let i = 1; i < seen.length; i++) expect(seen[i]! - seen[i - 1]!).toBeLessThanOrEqual(4 + 1e-9);
     // At cruise far from the edge, or at rest, it lets the ride step.
     expect(rideAheadReady({x: 0, z: 0}, 0, 32, ready)).toBe(true);
