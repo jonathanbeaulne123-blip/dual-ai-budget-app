@@ -11,9 +11,10 @@
  *   are never cut mid-word (the line is shortened instead). Every mark carries its full words in `aria-label`.
  * - Plates: the Week prints each day's tag ON its tile ("WED 30 · $300") at the scene's `face:<date>` anchor; the
  *   Year's twelve minis carry two-line plates (month + to-check count, then what is on the map), the open month
- *   outlined (`is-focused`).
- * - Hit areas: 44 px, shrunk to the spacing between neighbouring day marks where the clock is tighter (never below
- *   24 px, WCAG 2.5.8), so no two day buttons overlap; where flat marks still overlap a press asks "Which one?".
+ *   outlined (`is-focused`); under 360 px a plate is one line ("Sep · 5") and only the open month prints its figures.
+ * - Hit areas: always 44 × 44 px (Hearth's floor). Where the clock is tighter than that only the DRAWN disc shrinks to
+ *   the spacing (`--glyph-scale`, never below 24 px); the button does not. A press that lands where two or more hit
+ *   areas overlap asks "Which one?" (live and flat alike) — never a guess at the topmost; a keyboard press selects.
  * - Pressing a mark only SELECTS it (`onSelect`). No mark runs an action.
  */
 import type { CSSProperties, MouseEvent } from "react";
@@ -216,16 +217,15 @@ export type MarksProps = {
   focusAnchor?: { x: number; y: number } | null;
   sheetId?: string;
   onSelect(id: string, from: HTMLElement): void;
-  /** A flat press over overlapping marks: every id under the press (the view asks "Which one?"). */
+  /** A press over overlapping hit areas (live or flat): every id under the press (the view asks "Which one?"). */
   onPickMany?(ids: string[], at: { x: number; y: number }): void;
 };
 
 const MARK_MAX = 44, MARK_MIN = 24;
 /**
- * Each day mark's hit size (UX #12). First every mark takes the spacing to its nearest neighbour (24–44 px, WCAG
- * 2.5.8), so no two boxes overlap; then, by importance (today, days with stops, empty days), a mark grows into any room
- * its neighbours leave — today and money days stay large, stepping stones give way. Only where two marks are closer than
- * 24 px do boxes still meet; there a press asks "Which one?".
+ * Each day mark's DRAWN disc size (UX #12; the hit area stays 44 px). First every disc takes the spacing to its nearest
+ * neighbour (24–44 px), so no two drawn discs overlap; then, by importance (today, days with stops, empty days), a disc
+ * grows into any room its neighbours leave. Where hit areas overlap, a press asks "Which one?".
  */
 export function markSizes(placed: readonly PlacedMark[]): Map<string, number> {
   const rank = (p: PlacedMark) => (p.mark.covers.includes(JOURNEY_MAP_MARKS.piece) ? 0 : p.mark.covers.length ? 1 : 2);
@@ -251,7 +251,9 @@ export function Marks({ board, level, placed, rows, selectedId, focusedDate, foc
   const list = callouts(board, visibleMarks, rows, selectedId, level);
   const at = new Map(visible.map((p) => [p.mark.id, { x: p.x, y: p.y }] as const));
   const sizes = markSizes(placed);
-  const sizeOf = (p: PlacedMark) => (p.mark.kind === "day" ? sizes.get(p.mark.id) ?? MARK_MAX : p.mark.kind === "chapter" && !flat ? 64 : MARK_MAX);
+  /** The hit area: 44 px for every mark (64 px for a live Year mini). The drawn disc may be smaller (`glyphOf`). */
+  const sizeOf = (p: PlacedMark) => (p.mark.kind === "chapter" && !flat ? 64 : MARK_MAX);
+  const glyphOf = (p: PlacedMark) => (p.mark.kind === "day" ? sizes.get(p.mark.id) ?? MARK_MAX : MARK_MAX);
   // Other marks' footprints the callouts keep clear of (a Week tile reaches below its anchor).
   const markBoxes: Box[] = visible.map((p) => level === "week" && p.mark.kind === "day"
     ? { x0: p.x - (p.mark.covers.length ? 46 : 22), x1: p.x + (p.mark.covers.length ? 46 : 22), y0: p.y - 14, y1: p.y + (p.mark.covers.length ? 58 : 24) }
@@ -281,8 +283,8 @@ export function Marks({ board, level, placed, rows, selectedId, focusedDate, foc
     return { "--plate-x": `${(tx - p.x).toFixed(1)}px`, "--plate-y": `${(ty - p.y).toFixed(1)}px` } as CSSProperties;
   };
   const press = (p: PlacedMark, e: MouseEvent<HTMLButtonElement>) => {
-    // Flat marks whose boxes still overlap under the press: ask which one (never guess the topmost).
-    if (flat && onPickMany && e.clientX && e.clientY) {
+    // Hit areas that overlap under the press (live or flat): ask which one (never guess the topmost).
+    if (onPickMany && e.clientX && e.clientY) {
       const host = e.currentTarget.parentElement?.getBoundingClientRect();
       const x = e.clientX - (host?.left ?? 0), y = e.clientY - (host?.top ?? 0);
       const under = visible.filter((q) => { const h = sizeOf(q) / 2; return Math.abs(q.x - x) <= h && Math.abs(q.y - y) <= h; });
@@ -305,9 +307,14 @@ export function Marks({ board, level, placed, rows, selectedId, focusedDate, foc
       ) : null}
       {placed.map((p) => {
         const { mark, x, y, visible: shown } = p;
-        const words = markWords(board, mark, rows, yearById.get(mark.id), chapterId);
+        const full = markWords(board, mark, rows, yearById.get(mark.id), chapterId);
+        // Under 360 px the Year ring has no room for two-line plates: one line ("Sep · 5", the to-check count), and the
+        // figures only on the open month. aria-label keeps every word.
+        const narrowYear = level === "year" && mark.kind === "chapter" && stage.width < 360;
+        const words = narrowYear ? { ...full, plate: yearById.get(mark.id)?.toCheck ? `${shortMonth(mark.id)} · ${yearById.get(mark.id)!.toCheck}` : shortMonth(mark.id), plateSmall: mark.id === chapterId ? full.plateSmall : null } : full;
         const size = sizeOf(p);
-        const style = { transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`, ...(size !== MARK_MAX && mark.kind === "day" ? { "--mark": `${size}px` } : {}) } as CSSProperties;
+        const glyph = glyphOf(p);
+        const style = { transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`, ...(size !== MARK_MAX ? { "--mark": `${size}px` } : {}), ...(glyph < MARK_MAX ? { "--glyph-scale": (glyph / MARK_MAX).toFixed(3) } : {}) } as CSSProperties;
         const weekDay = level === "week" && mark.kind === "day";
         const showPlate = level === "year" || weekDay || (flat && mark.kind === "pile");
         // Week: the tag stands on the tile's face (the scene's `face:<date>` anchor); flat: under the disc.

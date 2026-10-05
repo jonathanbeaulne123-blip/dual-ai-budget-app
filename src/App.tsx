@@ -603,7 +603,11 @@ function JourneyBoardFrame({ children }: { children: ReactNode }) {
       queued = 0;
       // The header chrome ends where the page begins (the house strip is not drawn under the board).
       const marker = node.closest<HTMLElement>("[data-app-page]") ?? node.parentElement;
-      const top = Math.max(0, Math.round(marker?.getBoundingClientRect().top ?? 0));
+      // The floating Mountain/Horizon toggle (dev builds) stands at the top of the screen over everything: the board
+      // starts below it rather than under it, so the month title is never covered (the App's toggle does not move).
+      const toggle = document.querySelector<HTMLElement>(".harbour-world-toggle");
+      const toggleBottom = toggle ? Math.ceil(toggle.getBoundingClientRect().bottom) + 4 : 0;
+      const top = Math.max(0, Math.round(marker?.getBoundingClientRect().top ?? 0), toggleBottom);
       setLayout(current => current.top === top ? current : { top });
     };
     const schedule = () => { if (!queued) queued = window.requestAnimationFrame(measure); };
@@ -614,13 +618,14 @@ function JourneyBoardFrame({ children }: { children: ReactNode }) {
     window.addEventListener("scroll", schedule, { passive: true });
     return () => { if (queued) window.cancelAnimationFrame(queued); observer?.disconnect(); window.removeEventListener("resize", schedule); window.removeEventListener("scroll", schedule); };
   }, []);
-  // Phones (Journey fix A9): the App header and its banners stay as they are (whether they belong above the map is
-  // Jonathan's decision), but on arrival the page scrolls so the board's region starts at the top of the screen and
-  // the clock gets the full height. Once, on mount; the header is a scroll away. Wide screens keep their layout.
+  // Every width (Journey fix A9; wide since the final review): the App header and its banners stay as they are
+  // (whether they belong above the map is Jonathan's decision), but on arrival the page scrolls so the board's region
+  // starts at the top of the screen and the clock gets the full viewport height. Once, on mount; the header is a
+  // scroll away.
   useLayoutEffect(() => {
     const node = frame.current;
     const marker = node?.closest<HTMLElement>("[data-app-page]");
-    if (!marker || typeof window.matchMedia !== "function" || !window.matchMedia("(max-width: 719px)").matches) return;
+    if (!marker) return;
     const raf = window.requestAnimationFrame(() => {
       const top = marker.getBoundingClientRect().top;
       if (top > 0) { try { window.scrollTo({ top: window.scrollY + top, behavior: "instant" as ScrollBehavior }); } catch { /* no scrolling here */ } }

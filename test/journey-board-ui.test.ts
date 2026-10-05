@@ -20,7 +20,7 @@ import {
   type CreateJourneyMapScene, type JourneyBoardActions, type JourneyBoard, type JourneyLandData, type JourneyLandHandle,
   type JourneyMapSceneHandle, type JourneyMapSceneOptions, type ActionCall, type ListScope, type ThemeId,
 } from "../src/journey/contracts.ts";
-import { deriveJourneyBoard, listView, MAP_WORDS, signedMoney } from "../src/journey/model/index.ts";
+import { boardToList, deriveJourneyBoard, listView, MAP_WORDS, signedMoney } from "../src/journey/model/index.ts";
 import { JourneyBoardView, compassClearance, type JourneyBoardViewProps, type JourneyStageSource } from "../src/journey/ui/JourneyBoardView.tsx";
 import JourneyBoardEntry from "../src/journey/ui/JourneyBoard.tsx";
 import { journeyMarkDomId } from "../src/journey/ui/Marks.tsx";
@@ -29,7 +29,7 @@ import { dialItems } from "../src/journey/ui/AddDial.tsx";
 import { mapMarks } from "../src/journey/ui/mapLayout.ts";
 import { readJourneyViewState, writeJourneyViewState, parseJourneyViewStateV2 } from "../src/journey/ui/viewState.ts";
 import { callWords as callWordsFor, COPY } from "../src/journey/ui/copy.ts";
-import { callouts, markSizes, placeMarks, tagMoney } from "../src/journey/ui/Marks.tsx";
+import { callouts, Marks, markSizes, placeMarks, tagMoney } from "../src/journey/ui/Marks.tsx";
 import { levelForKey } from "../src/journey/ui/LevelPull.tsx";
 import { needChips } from "../src/journey/ui/HerculesBubble.tsx";
 import { BIANCA, FIXTURE_TODAY, emptyBoardHousehold, journeyDemoHousehold } from "./fixtures/journey-board-households.ts";
@@ -177,7 +177,7 @@ describe("the header", () => {
 });
 
 describe("a pay already recorded today (trust M3)", () => {
-  it("prints the model's note in the purse, on the stop's card and on its list row — both stops stay, nothing merged", async () => {
+  it("prints the model's note in the purse (in full on a tap on phones), on the stop's card and on its list row — nothing merged", async () => {
     const expected = board.purse.expectedToday[0]!;
     const note = MAP_WORDS.purse.alreadyRecorded;
     // The model's own note (its tests prove when it is set, on the demo twin); here the view only has to print it.
@@ -186,10 +186,25 @@ describe("a pay already recorded today (trust M3)", () => {
       const view = listView(household, withNote, scope);
       return { ...view, groups: view.groups.map((g) => ({ ...g, rows: g.rows.map((r) => (r.id === expected.stopId ? { ...r, note } : r)) })) };
     };
-    const { host } = await mountView({ board: withNote, listOf });
+    const { host, actions } = await mountView({ board: withNote, listOf });
     expect(text(host.querySelector(`[data-purse-expected="${esc(expected.stopId)}"] [data-purse-note]`))).toBe(note);
     expect(host.querySelector("[data-journey-purse]")!.getAttribute("aria-label")).toContain(note);
     expect(text(host.querySelector("[data-purse-everyday]"))).toBe("Everyday $0.00");
+    // On a phone the chip shows two lines (CSS hides the note) and is a button: its press opens the purse in full,
+    // the same model words, and runs nothing.
+    expect(CSS).toMatch(/@media \(max-width: 719px\) \{[^}]*\.journey-purse \.journey-purse__note[^}]*display: none;/);
+    const chip = host.querySelector<HTMLButtonElement>("button[data-journey-purse]")!;
+    expect(chip, "the purse is a button where it has more to say").toBeTruthy();
+    clear(actions);
+    await click(chip);
+    const full = sheet(host)!;
+    expect(full.classList.contains("journey-panel--purse")).toBe(true);
+    expect(text(full.querySelector(`[data-purse-sheet-line="${esc(expected.stopId)}"]`))).toContain(MAP_WORDS.purse.expectedToday(expected.label));
+    expect(text(full.querySelector("[data-purse-sheet-note]"))).toBe(note);
+    expect(text(full)).toContain(MAP_WORDS.purse.notCounted);
+    expect(total(actions)).toBe(0);
+    await click(full.querySelector(".journey-panel__close"));
+    expect(sheet(host)).toBeNull();
     await click(host.querySelector('[data-list-mode="list"]'));
     expect(text(host.querySelector(`[data-row-id="${esc(expected.stopId)}"] [data-row-note]`))).toBe(note);
   });
@@ -559,12 +574,12 @@ describe("touch targets, motion and themes", () => {
     await click(host.querySelector("[data-journey-bubble]"));
     await click(host.querySelector("[data-key-button]"));
     await click(host.querySelector("[data-about]"));
-    const sized = [".journey-toy", ".journey-pull__lv", ".journey-toggle__option", ".journey-action", ".journey-plus", ".journey-row__main", ".journey-panel__close", ".journey-bubble", ".journey-petal", ".journey-panel__stop", ".journey-panel__back", ".journey-alternative__pick"];
+    const sized = [".journey-toy", ".journey-pull__lv", ".journey-toggle__option", ".journey-action", ".journey-plus", ".journey-row__main", ".journey-panel__close", ".journey-bubble", ".journey-petal", ".journey-panel__stop", ".journey-panel__back", ".journey-alternative__pick", ".journey-purse"];
     for (const sel of sized) {
       const rule = new RegExp(`${sel.replace(/[.]/g, "\\.")} \\{[^}]*(min-height: (4[4-9]|[5-9]\\d)px|height: (4[4-9]|[5-9]\\d)px)`);
       expect(CSS, sel).toMatch(rule);
     }
-    // Day marks: 44 px, shrunk only to the spacing between neighbouring marks, never below 24 px (WCAG 2.5.8, UX #12).
+    // Marks: always 44 px hit areas (only the drawn disc shrinks on a tight clock; overlaps ask "Which one?", UX #12).
     expect(CSS).toMatch(/\.journey-mark \{[^}]*--mark: 44px;[^}]*width: var\(--mark\); height: var\(--mark\)/);
     const buttons = [...host.querySelectorAll<HTMLElement>("button")];
     expect(buttons.length).toBeGreaterThan(20);
@@ -847,12 +862,53 @@ describe("Horizon Clock fix pass (FIX-B): Week, Year, list, dial, keys", () => {
     expect(text(host.querySelector("[data-journey-live]"))).toBe(COPY.mapUnavailable);
   });
 
-  it("day mark hit sizes follow the spacing between marks, 24–44 px (UX #12)", () => {
+  it("every mark keeps a 44 px hit area; on a tight clock only the drawn disc shrinks (24–44 px) (UX #12, Hearth's 44 px floor)", async () => {
     const marks = mapMarks(board, "month", "2026-09");
     const tight = placeMarks(marks, null, (m) => ({ x: m.date ? Number(m.date.slice(8)) * 30 : 0, y: 0 }));
-    const sizes = markSizes(tight);
-    expect(Math.max(...sizes.values())).toBeLessThanOrEqual(44);
-    expect(Math.min(...sizes.values())).toBeGreaterThanOrEqual(24);
+    const glyphs = markSizes(tight);
+    expect(Math.max(...glyphs.values())).toBeLessThanOrEqual(44);
+    expect(Math.min(...glyphs.values())).toBeGreaterThanOrEqual(24);
+    // Mounted on a tight live clock: the buttons stay 44 px; the disc carries --glyph-scale.
+    const scene = stubScene();
+    const { host } = await mountView({ stage: liveStage(scene.create) });
+    await act(async () => { scene.options.onAnchors([{ id: "2026-09-18", x: 120, y: 200, depth: 1, visible: true }, { id: "2026-09-22", x: 146, y: 200, depth: 1, visible: true }]); });
+    for (const id of ["2026-09-18", "2026-09-22"]) {
+      const m = mark(host, id)!;
+      expect(m.style.getPropertyValue("--mark"), id).toBe("");
+      expect(Number(m.style.getPropertyValue("--glyph-scale")), id).toBeLessThan(1);
+    }
+    expect(CSS).toMatch(/\.journey-mark__hit \{ transform: scale\(var\(--glyph-scale, 1\)\); \}/);
+  });
+
+  it("Year under 360 px: one-line plates (\"Sep · 5\"), figures only on the open month; aria keeps every word (year-320)", async () => {
+    const marks = mapMarks(board, "year", "2026-09");
+    const placed = placeMarks(marks, null, (m) => ({ x: 20 + marks.indexOf(m) * 24, y: 100 }));
+    const render = (width: number) => mount(createElement(Marks, { board, level: "year", placed, rows: new Map(boardToList(board).map((r) => [r.id, r] as const)), selectedId: null, focusedDate: null, chapterId: "2026-09", flat: true, unit: 20, stage: { width, height: 640 }, onSelect: () => undefined }));
+    const narrow = await render(320);
+    const sep = board.year.find((y) => y.chapterId === "2026-09")!;
+    expect(text(narrow.host.querySelector('[data-plate="2026-09"]'))).toMatch(new RegExp(`^Sep · ${sep.toCheck}`));
+    for (const y of board.year.filter((r) => r.chapterId !== "2026-09")) {
+      const plate = narrow.host.querySelector(`[data-plate="${y.chapterId}"]`);
+      if (plate) { expect(plate.querySelector("small"), y.chapterId).toBeNull(); expect(text(plate)).not.toMatch(/\$/); }
+    }
+    expect(mark(narrow.host, "2026-08")!.getAttribute("aria-label")).toMatch(/\$|Nothing/);
+    const wide = await render(390);
+    expect(wide.host.querySelectorAll('[data-plate] small').length).toBeGreaterThan(1);
+  });
+
+  it("a press where two hit areas overlap asks \"Which one?\" (live and flat), never guessing the topmost (UX #12)", async () => {
+    const scene = stubScene();
+    const { host, actions } = await mountView({ stage: liveStage(scene.create) });
+    await act(async () => { scene.options.onAnchors([{ id: "2026-09-18", x: 120, y: 200, depth: 1, visible: true }, { id: "2026-09-22", x: 146, y: 200, depth: 1, visible: true }]); });
+    const layer = host.querySelector<HTMLElement>(".journey-marks")!;
+    layer.getBoundingClientRect = () => ({ left: 0, top: 0, right: 390, bottom: 640, width: 390, height: 640, x: 0, y: 0, toJSON() {} }) as DOMRect;
+    clear(actions);
+    await act(async () => { mark(host, "2026-09-18")!.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 133, clientY: 200 })); });
+    const fan = host.querySelector("[data-journey-fan]");
+    expect(fan, "the Which-one fan").toBeTruthy();
+    expect([...fan!.querySelectorAll<HTMLElement>("[data-fan-option]")].map((o) => o.dataset.fanOption)).toEqual(["2026-09-18", "2026-09-22"]);
+    expect(sheet(host), "nothing opened yet").toBeNull();
+    expect(total(actions)).toBe(0);
   });
 
   it("view state: a migrated v1 record is written as v2 at once, so v1 is read only once (trust minor 10)", () => {

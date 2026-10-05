@@ -473,6 +473,37 @@ describe("the household Journey map in the App", () => {
     page.mockRestore();
   });
 
+  it("wide too: arrival scrolls the board's full-viewport region to the top (the clock full size, the header a scroll away)", async () => {
+    const scrolls = vi.fn();
+    window.scrollTo = scrolls as unknown as typeof window.scrollTo;
+    const page = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      const top = this.matches("[data-app-page]") ? 244 : 0;
+      return { top, left: 0, right: 1100, bottom: top + 900, width: 1100, height: 900, x: 0, y: top, toJSON() {} } as DOMRect;
+    });
+    const { household } = journeyDemoHousehold();
+    const board = await openApp(household, BIANCA);
+    await settle(3);
+    expect(board.closest<HTMLElement>("[data-journey-board-slot]")!.style.minHeight).toContain("100dvh");
+    await waitFor(() => scrolls.mock.calls.some(([arg]) => typeof arg === "object" && arg && (arg as ScrollToOptions).top === 244), "the wide arrival scroll");
+    page.mockRestore();
+  });
+
+  it("the floating Mountain/Horizon toggle never covers the board's header: the frame starts below it", async () => {
+    const toggle = document.createElement("div");
+    toggle.className = "harbour-world-toggle";
+    document.body.appendChild(toggle);
+    const page = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains("harbour-world-toggle")) return { top: 8, left: 140, right: 250, bottom: 50, width: 110, height: 42, x: 140, y: 8, toJSON() {} } as DOMRect;
+      return { top: 0, left: 0, right: 390, bottom: 844, width: 390, height: 844, x: 0, y: 0, toJSON() {} } as DOMRect;
+    });
+    try {
+      const { household } = journeyDemoHousehold();
+      const board = await openApp(household, BIANCA);
+      const host = board.closest<HTMLElement>("[data-journey-board-host]")!;
+      await waitFor(() => host.style.top.includes("54px"), "the frame below the toggle (50 px + 4)");
+    } finally { page.mockRestore(); toggle.remove(); }
+  });
+
   it("a brand-new household sees the honest empty map: no invented memories or milestones, the list says so", async () => {
     const household = emptyBoardHousehold();
     const before = await financialAuditHash(household);

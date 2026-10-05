@@ -49,6 +49,8 @@ export const COPY = {
   onTheMap: (n: number) => `${n} on the map`,
   today: "Today",
   herculesList: "Hercules’s list",
+  purseKind: "The purse · today",
+  purseMore: "Open for the full words",
   add: "Add — record money",
   addLead: "Open",
   recordPurchase: "Record a purchase…",

@@ -168,6 +168,10 @@
 }
 .journey-mark[hidden] { display: none; }
 .journey-mark__hit { position: absolute; inset: 0; border-radius: 50%; }
+/* The hit area is always 44 px; on a tight clock only the drawn disc shrinks to the spacing (`--glyph-scale`, ≥ 24 px),
+   and a press where hit areas overlap asks "Which one?" (UX #12). */
+.journey-mark__hit { transform: scale(var(--glyph-scale, 1)); }
+.journey-mark:focus-visible { z-index: 2; }
 /* Flat glyphs: the slot / tile / mini the 3D scene would draw, as paper discs (words travel in aria-label). */
 .journey-marks--flat .journey-mark__hit { inset: 8px; background: var(--paper); border: 2px solid var(--edge-deep); box-shadow: 0 2px 0 var(--edge-deep); }
 .journey-marks--flat .journey-mark--money-out .journey-mark__hit { background: #ffe39a; border-color: #9a6a1c; }
@@ -211,6 +215,10 @@
 .journey-mark__plate--year small { font-size: 10px; white-space: pre; }
 .journey-year-caption__key { display: block; font-size: 11.5px; }
 @media (max-width: 719px) {
+  /* The purse on a phone: two lines at most — Everyday and one short expected line; the full words open on a tap. */
+  .journey-purse .journey-purse__gloss, .journey-purse .journey-purse__long, .journey-purse .journey-purse__note, .journey-purse .journey-purse__p3 { display: none; }
+  .journey-purse .journey-purse__short { display: inline; }
+  .journey-purse .journey-purse__p2 ~ .journey-purse__p2 { display: none; }
   .journey-mark__plate--year { font-size: 11.5px; padding: 2px 7px 3px; min-width: 48px; border-radius: 12px; }
   .journey-mark__plate--year small { font-size: 9.5px; }
 }
@@ -256,6 +264,9 @@
 /* Trust M3: a pay already recorded today — its own line, model words, never merged into the figure. */
 .journey-purse__note { display: block; font-size: 11.5px; font-weight: 700; color: var(--ink); }
 .journey-purse__p3 { font-size: 11.5px; font-weight: 800; color: var(--ink); line-height: 1.25; }
+.journey-purse--button { text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.journey-purse__more { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 18px; font-weight: 800; color: var(--ink-soft); }
+.journey-purse--button { padding-right: 26px; }
 .journey-purse__short { display: none; }
 /* The phone Week shares its row with the pill: the short pay line (UX #24). */
 .journey-board--level-week .journey-purse { max-width: calc(100% - 196px); }
@@ -615,8 +626,8 @@
 .journey-board .journey-bubble--mini { --world-r-control: 18px; }
 .journey-board :is(.journey-pull__key, .journey-toggle__option) { --world-r-control: 14px; }
 .journey-board .journey-count-chip { --world-r-control: 16px; }
-/* The dressing also floors every button at 44 px (and 44 on coarse pointers): a day mark's box is its measured
-   spacing (24–44 px, UX #12), so its own height wins here — never below 24 px (WCAG 2.5.8). */
+/* The dressing also floors every button at 44 px: a mark is 44 px already (a live Year mini 64 px), so its own size
+   wins here; only the drawn disc inside shrinks on a tight clock (UX #12). */
 :root[data-theme] .journey-board button.journey-mark:not(.text-button):not(.link) { min-height: 0; min-width: 0; height: var(--mark); width: var(--mark); }
 .journey-board :is(.journey-pull__lv, .journey-alternative__pick) { --world-r-control: 12px; }
 .journey-board :is(.journey-row__main, .journey-panel__stop, .journey-panel__back) { --world-r-control: 0; }

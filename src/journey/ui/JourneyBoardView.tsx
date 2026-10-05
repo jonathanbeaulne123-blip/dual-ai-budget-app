@@ -26,7 +26,7 @@ import { LevelPull } from "./LevelPull.tsx";
 import { journeyRowDomId, ListView } from "./ListView.tsx";
 import { mapMarks, projectFlat, type MapMark } from "./mapLayout.ts";
 import { journeyMarkDomId, Marks, placeMarks } from "./Marks.tsx";
-import { Purse } from "./Purse.tsx";
+import { Purse, PurseSheet } from "./Purse.tsx";
 import { NO_SAFE_AREA, Stage, type SafeArea, type StageMode, type StageSize } from "./Stage.tsx";
 import { ChapterPanel, ClusterPanel, PanelFrame, StopCard, StopPanel } from "./StopPanel.tsx";
 import { WhichOne, type WhichOneOption } from "./WhichOne.tsx";
@@ -115,9 +115,11 @@ const clampDate = (date: DateKey, board: JourneyBoard): DateKey => {
   return date < lo ? lo : date > hi ? hi : date;
 };
 
+/** The view's own sheet id for the purse in full (a phone's tap on the chip); not a map mark. */
+const PURSE_SHEET = "purse";
 function knownIds(board: JourneyBoard): Set<string> {
   return new Set<string>([
-    JOURNEY_MAP_MARKS.piece, JOURNEY_MAP_MARKS.hercules, JOURNEY_MAP_MARKS.pile,
+    JOURNEY_MAP_MARKS.piece, JOURNEY_MAP_MARKS.hercules, JOURNEY_MAP_MARKS.pile, PURSE_SHEET,
     ...board.chapters.map((c) => c.id), ...board.stops.map((s) => s.id), ...board.crossroads.map((c) => c.id),
   ]);
 }
@@ -144,6 +146,8 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
   const [dayReturn, setDayReturn] = useState<string | null>(null);
   const [fan, setFan] = useState<{ options: WhichOneOption[]; at: { x: number; y: number } | null } | null>(null);
   const [dialOpen, setDialOpen] = useState(false);
+  /** The stage is wide (≥ 720 px): the purse prints in full there; on a phone its chip opens the full words. */
+  const [phoneWide, setPhoneWide] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const [scene, setScene] = useState<JourneyMapSceneHandle | null>(null);
   const [safeArea, setSafeArea] = useState<SafeArea>(NO_SAFE_AREA);
@@ -451,7 +455,11 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
   const headingRef = (el: HTMLHeadingElement | null) => { sheetHeading.current = el; };
   const horizonFor = (place: PlaceRef | undefined) => (canEnterHorizon ? horizonLocationFor(place, stage.land) : null);
   let sheet: ReactElement | null = null;
-  if (selected === JOURNEY_MAP_MARKS.hercules || selected === JOURNEY_MAP_MARKS.pile) {
+  const statusNote = props.offline ? COPY.offline : props.freshnessNote ?? null;
+  const purseToday = shownLevel === "week" || (shownLevel === "month" && chapterId === board.currentChapterId);
+  if (selected === PURSE_SHEET) {
+    sheet = <PurseSheet purse={board.purse} showToday={purseToday} statusNote={statusNote} onClose={closeSheet} headingRef={headingRef} />;
+  } else if (selected === JOURNEY_MAP_MARKS.hercules || selected === JOURNEY_MAP_MARKS.pile) {
     sheet = <ChecklistSheet board={board} rows={rows} actions={actions} pinned={selected === JOURNEY_MAP_MARKS.pile} dueReview={props.dueReview} onOpenStop={(id) => select(id)} onClose={closeSheet} headingRef={headingRef} />;
   } else if (selected && stopById.has(selected)) {
     const stop = stopById.get(selected)!;
@@ -503,7 +511,6 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
     ? { words: chips.map((c) => c.words).join(" · "), aria: `${COPY.herculesList} · ${chips.map((c) => c.words).join(", ")}`, onOpen: () => { if (vs.listMode === "list") patch({ listMode: "map" }); select(JOURNEY_MAP_MARKS.hercules, { from: root.current?.querySelector("[data-journey-count-chip]") }); } }
     : null;
   // Offline or stale books: said on the purse (map) and at the list's top, not only inside About (UX #25).
-  const statusNote = props.offline ? COPY.offline : props.freshnessNote ?? null;
   const className = [
     "journey-board", `journey-board--${theme}`, `journey-board--${stage.mode}`, `journey-board--${vs.listMode}`, `journey-board--level-${shownLevel}`,
     reducedMotion ? "journey-board--still" : "journey-board--animated", sheet ? "has-sheet" : "", board.empty ? "journey-board--empty" : "",
@@ -527,7 +534,7 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
         onStep={stepChapter} bakeRevision={stage.land?.revision ?? null} limitations={board.limitations} freshnessNote={props.freshnessNote}
         theme={theme} onChooseTheme={props.onChooseTheme} closeSignal={popClose} countChip={countChip}
       />
-      <Purse purse={board.purse} showToday={shownLevel === "week" || (shownLevel === "month" && chapterId === board.currentChapterId)} statusNote={statusNote} />
+      <Purse purse={board.purse} showToday={purseToday} statusNote={statusNote} onOpen={phoneWide ? undefined : (from) => select(PURSE_SHEET, { from })} />
       {shownLevel === "year" && vs.listMode === "map" && !board.empty ? (
         <p className="journey-year-caption" data-journey-year-caption="">
           {MAP_WORDS.yearCaption}
@@ -540,7 +547,7 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
         selection={selected} marks={marks} safeArea={safeArea}
         onScene={setScene} onAnchors={() => undefined} onPick={onPick} onLevel={onPull} onPress={closePops}
         onReady={sendReady} onLost={() => props.onLost?.()} onKeyDown={onStageKey}
-        onSize={(size) => { stageSize.current = size; measureChrome(); }}
+        onSize={(size) => { stageSize.current = size; setPhoneWide(size.width >= 720); measureChrome(); }}
         renderMarks={(anchors: readonly MarkAnchor[] | null, size: StageSize, unit: number) => {
           stageSize.current = size;
           const placed = placeMarks(marks, anchors, (m: MapMark) => projectFlat(m.at, size, safeArea));
