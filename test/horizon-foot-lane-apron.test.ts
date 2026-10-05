@@ -16,6 +16,7 @@ import {sampleTerrain} from '../src/harbour/horizon/land/terrain';
 import {fitFootLaneJoin} from '../src/harbour/horizon/land/mountainV2/footLaneJoin';
 import {mountainJoinRoadTop} from '../src/harbour/horizon/land/mountainV2/joins';
 import {createHorizonGeography,HORIZON_WALKABLE_DEGREES} from '../src/harbour/horizon/runtime/geography';
+import {horizonWalkWorld,walkMove} from '../src/harbour/horizon/runtime/walkSim';
 import {createMountainV2Region,terraceBedExclusion,mouthExclusion} from '../src/harbour/horizon/regions/mountainV2';
 import {bedPath,pointAt,progressOf} from '../src/harbour/horizon/movers/board/situations';
 import type {LandCuts} from '../src/harbour/horizon/land/interfaces';
@@ -152,7 +153,9 @@ const runtimeWalkingSource=readFileSync('src/harbour/horizon/runtime/index.ts','
 if(walkingStart<0||walkingEnd<=walkingStart)throw new Error('Update exact runtime walking extraction');
 type TestBody={x:number;y:number;z:number;yaw:number};
 const walkingCode=transformSync(`function make(body,geography,world,HORIZON_WALKABLE_DEGREES){let held=false,leftSupport=false,velocityY=0,swimming=false,lastMovementBlocker=null;const gateOpen=()=>true;const waterLevel=(x,z,y)=>geography.waterLevel(x,z,y);${runtimeWalkingSource.slice(walkingStart,walkingEnd)}return{move,report:()=>({leftSupport,lastMovementBlocker})}}`,{loader:'ts'}).code;
-const makeWalker=new Function(`${walkingCode};return make;`)() as (body:TestBody,g:typeof geo,w:typeof world,limit:number)=>{move:(dx:number,dz:number,dt:number)=>void;report:()=>{leftSupport:boolean;lastMovementBlocker:unknown}};
+// 2026-10-04 (walking fix): the runtime move() now binds walkSim's collision step (walkMove over horizonWalkWorld); the
+// extracted body is unchanged text, so the two walkSim functions it calls are supplied here exactly as runtime/index.ts imports them.
+const makeWalker=new Function('walkMove','horizonWalkWorld',`${walkingCode};return make;`)(walkMove,horizonWalkWorld) as (body:TestBody,g:typeof geo,w:typeof world,limit:number)=>{move:(dx:number,dz:number,dt:number)=>void;report:()=>{leftSupport:boolean;lastMovementBlocker:unknown}};
 function ordinaryWalk(points:typeof funicularPoints,offset:number,reverse:boolean){
  const pth=bedPath({...lane,points:reverse?[...points].reverse():points}),p=pointAt(pth,.2),sign=reverse?-1:1,ox=-Math.cos(p.heading)*offset*sign,oz=Math.sin(p.heading)*offset*sign,body={x:p.x+ox,y:p.y,z:p.z+oz,yaw:p.heading};
  const initial=geo.surface(body.x,body.z,body.y,.48);if(!initial)return{offset,reverse,reason:'no initial floor',body};body.y=initial.y;

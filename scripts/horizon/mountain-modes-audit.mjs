@@ -15,7 +15,7 @@ const {build,transform}=createRequire(resolve(ROOT,'package.json'))('esbuild');
 const exports=[
  ['restoreHorizonPosition,HORIZON_RESTORE_TOLERANCE','src/harbour/horizon/runtime/savedPosition.ts'],['HORIZON_GEOGRAPHY,HORIZON_PRESENCE_WORLD','src/worldGeography.ts'],
  ['mountainRoadChain','src/harbour/horizon/land/corridor/chain.ts'],
- ['parseHorizonDefinition','src/house/world/horizonAssets.ts'],['decodeTerrainAsset','src/harbour/horizon/land/terrain/asset.ts'],['sampleTerrain','src/harbour/horizon/land/terrain/index.ts'],['createHorizonGeography,HORIZON_WALKABLE_DEGREES','src/harbour/horizon/runtime/geography.ts'],['createMountainV2Region,terraceBedExclusion,mouthExclusion','src/harbour/horizon/regions/mountainV2/index.ts'],['createBoardController','src/harbour/horizon/movers/board/controller.ts'],['createBicycleController','src/harbour/horizon/movers/bicycle/controller.ts'],['HORIZON_MANIFEST','src/harbour/horizon/world/manifest.ts'],['bedPath,pointAt,progressOf,bendRadius','src/harbour/horizon/movers/board/situations.ts']
+ ['parseHorizonDefinition','src/house/world/horizonAssets.ts'],['decodeTerrainAsset','src/harbour/horizon/land/terrain/asset.ts'],['sampleTerrain','src/harbour/horizon/land/terrain/index.ts'],['createHorizonGeography,HORIZON_WALKABLE_DEGREES','src/harbour/horizon/runtime/geography.ts'],['walkMove,horizonWalkWorld','src/harbour/horizon/runtime/walkSim.ts'],['createMountainV2Region,terraceBedExclusion,mouthExclusion','src/harbour/horizon/regions/mountainV2/index.ts'],['createBoardController','src/harbour/horizon/movers/board/controller.ts'],['createBicycleController','src/harbour/horizon/movers/bicycle/controller.ts'],['HORIZON_MANIFEST','src/harbour/horizon/world/manifest.ts'],['bedPath,pointAt,progressOf,bendRadius','src/harbour/horizon/movers/board/situations.ts']
 ];
 const bundle=await build({stdin:{contents:exports.map(([names,file])=>`export {${names}} from './${file}';`).join('\n'),resolveDir:ROOT,loader:'ts'},bundle:true,platform:'node',format:'esm',write:false,logLevel:'error',nodePaths:[resolve(ROOT,'node_modules')],loader:{'.png':'empty','.jpg':'empty','.svg':'empty','.css':'empty','.glb':'empty','.wav':'empty','.mp3':'empty'}});
 const api=await import('data:text/javascript;base64,'+Buffer.from(bundle.outputFiles[0].text).toString('base64'));
@@ -29,6 +29,8 @@ const moveSource=source.slice(source.indexOf('  function move(dx:number'),source
 if(!moveSource.includes('return moved;'))throw Error('walking source extraction failed');
 const compiled=await transform(`export function walker(body,geography,world,HORIZON_WALKABLE_DEGREES){let held=false,leftSupport=false,velocityY=0,swimming=false,lastMovementBlocker=null;const gateOpen=()=>true;const waterLevel=(x,z,y)=>geography.waterLevel(x,z,y);${moveSource}return {move,report:()=>({held,leftSupport,lastMovementBlocker})}}`,{loader:'ts',format:'esm'});
 writeFileSync(OUT+'/walker-extracted.mjs',compiled.code);
+// The runtime move() binds walkSim's collision step; the extracted body reads walkMove/horizonWalkWorld from globals set here.
+globalThis.walkMove=api.walkMove;globalThis.horizonWalkWorld=api.horizonWalkWorld;
 const {walker}=await import('data:text/javascript;base64,'+Buffer.from(compiled.code).toString('base64'));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
 const chain=world.roadChains?.find(c=>c.id==='mountain-road')??api.mountainRoadChain(world.beds);
