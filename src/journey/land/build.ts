@@ -1,6 +1,6 @@
 import {buildAirportMap} from "./airport.ts";
 /**
- * `buildJourneyLand()` (T2): the low-poly bird's-eye island as one three.js Group the board layer stands on.
+ * `buildJourneyRouteLand()` (T2, @deprecated by the Horizon Clock's clay `buildJourneyLand` in `clay.ts`): the low-poly bird's-eye island as one three.js Group the board layer stands on.
  *
  * Terrain (20 m lattice, compressed heights, paint/height colours) · sea plane + water bodies · line ribbons per kind ·
  * the road's bridges, covered stretches and boulevard reaches (ROAD.md §7; `road.ts`, `bridges.ts`) · hosts (the
@@ -11,6 +11,7 @@ import {buildAirportMap} from "./airport.ts";
 import * as THREE from "three";
 import type { BuildJourneyLand, JourneyHome, JourneyLandData, JourneyLandHandle, Point3, StationId, ThemeId } from "../contracts.ts";
 import { compressHeight } from "../contracts.ts";
+import { countDraws } from "./clayKit.ts";
 import { landDressing } from "./dressing.ts";
 import { buildHomes, type HomeMeshes, type Season } from "./homes.ts";
 import { buildHosts, HOST_MIN_PX } from "./hosts.ts";
@@ -25,23 +26,7 @@ export const JOURNEY_LAND_GROUP_NAME = "journey-land";
 /** The land's own share of the board budget (PLAN §A). */
 export const JOURNEY_LAND_BUDGET = { full: { triangles: 25_000, drawCalls: 20 }, lite: { triangles: 15_000, drawCalls: 20 } } as const;
 
-/** Triangles and draw calls of the visible meshes / lines under `root` (a line set is one draw call, no triangles). */
-export function countDraws(root: THREE.Object3D): { triangles: number; drawCalls: number } {
-  let triangles = 0, drawCalls = 0;
-  const visit = (node: THREE.Object3D) => {
-    if (!node.visible) return;
-    const drawable = node as THREE.Mesh | THREE.LineSegments;
-    if ((drawable as THREE.Mesh).isMesh) {
-      const g = drawable.geometry, count = g.index ? g.index.count : g.getAttribute("position").count;
-      if (count > 0) { triangles += count / 3; drawCalls += 1; }
-    } else if ((drawable as THREE.LineSegments).isLine) {
-      if (drawable.geometry.getAttribute("position").count > 0) drawCalls += 1;
-    }
-    for (const child of node.children) visit(child);
-  };
-  visit(root);
-  return { triangles: Math.round(triangles), drawCalls };
-}
+export { countDraws };
 
 /**
  * Show or hide the land's Sky-only simplifications on a built land: minor roads (spurs, plot service roads) are hidden
@@ -66,7 +51,12 @@ export function setJourneyLandView(land: Pick<JourneyLandHandle, "group">, view:
   if (view.tier) setJourneyLandTier(land, view.tier);
 }
 
-export const buildJourneyLand: BuildJourneyLand = (data: JourneyLandData, options): JourneyLandHandle => {
+/**
+ * @deprecated Horizon Clock: the route board's flat, concept-metre land (read by the deprecated `board/scene.ts`
+ * route board and its tests). The clay diorama land is `buildJourneyLand` (`clay.ts`). Deleted by the integrator
+ * with the route board.
+ */
+export const buildJourneyRouteLand: BuildJourneyLand = (data: JourneyLandData, options): JourneyLandHandle => {
   let theme: ThemeId = options.theme;
   let dressing = landDressing(theme);
   const season: Season = options.season ?? "summer";

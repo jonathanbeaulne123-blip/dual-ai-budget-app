@@ -18,7 +18,7 @@ import { BRIDGE_DRAW_ERROR, bridgeDrawIndices, planBridges, DECK_LINE_LIFT, loca
 import { layoutRoute } from "../src/journey/board/index.ts";
 import { stationPadMasks, padShape, padRingShape } from "../src/journey/board/spaces.ts";
 import { coveredFragmentMasked, type LandViewUniforms } from "../src/journey/land/lines.ts";
-import { setJourneyLandView } from "../src/journey/land/build.ts";
+import { buildJourneyRouteLand, setJourneyLandView } from "../src/journey/land/build.ts";
 import { PAD_UNIT_MAX } from "../src/journey/board/scene.ts";
 import { RENDER_ORDER } from "../src/journey/board/layers.ts";
 import { deriveJourneyBoard } from "../src/journey/model/index.ts";
@@ -30,6 +30,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { BIANCA, FIXTURE_TODAY, journeyDemoHousehold } from "./fixtures/journey-board-households.ts";
 import { createHash } from "node:crypto";
+import { CLAY_NAMES } from "../src/journey/land/index.ts";
 
 const ab = (b: Buffer) => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer;
 const INDEX_GZ = readFileSync("public/horizon/world/horizon-geo-1.index.json.gz");
@@ -121,7 +122,7 @@ describe("extract: bridges and covered stretches", () => {
 
   it("marks every authored road tunnel and the Prow gallery as covered, portal to portal", () => {
     const covers = land.covers ?? [];
-    expect(covers.map((c) => `${c.id}:${c.kind}:${c.lineId}`)).toEqual(["mountainRoadTunnel:tunnel:V03", "prowTunnel:gallery:V01", "stillwaterTunnel:tunnel:spur stillwater"]);
+    expect(covers.map((c) => `${c.id}:${c.kind}:${c.lineId}`)).toEqual(["mountainRoadTunnel:tunnel:V03", "prowTunnel:gallery:V01", "rimTunnel:tunnel:V01", "stillwaterTunnel:tunnel:spur stillwater"]);
     const mouths = new Map((world.collision?.mouths ?? []).map((m) => [m.id, m]));
     for (const c of covers) {
       c.portals.forEach((p, n) => {
@@ -296,7 +297,7 @@ describe("the board overlay does not move and is never drawn over", () => {
   it("preserves buried source covers and masks only their map ink beneath actual month symbols", () => {
     const board = deriveJourneyBoard(journeyDemoHousehold().household, BIANCA, FIXTURE_TODAY);
     const route = layoutRoute(board, land), source = JSON.stringify(land);
-    const drawn = buildJourneyLand(land, { theme: 'classic', tier: 'full', homes: [] });
+    const drawn = buildJourneyRouteLand(land, { theme: 'classic', tier: 'full', homes: [] });
     const view = drawn.group.userData.view as LandViewUniforms, originalStats = drawn.stats();
     expect(view.uStationPadCount.value).toBe(0); // Standalone land has no board mask.
     const tunnel = land.covers!.find(c => c.id === 'stillwaterTunnel')!;
@@ -379,7 +380,7 @@ describe("the board overlay does not move and is never drawn over", () => {
         expect(polyDist(s.anchor, axis) - reach, `${b.id} vs ${s.id}`).toBeGreaterThan(padRadius);
       }
     }
-    const drawn=buildJourneyLand(all,{theme:'classic',tier:'full',homes:[]});
+    const drawn=buildJourneyRouteLand(all,{theme:'classic',tier:'full',homes:[]});
     const geometry=(drawn.group.getObjectByName(BRIDGES_NAME) as THREE.Mesh).geometry;
     const pos=geometry.getAttribute('position'),ix=geometry.index!,side=geometry.getAttribute('aSide'),width=geometry.getAttribute('aWidth');
     let railReach=0;for(let i=0;i<pos.count;i++)railReach=Math.max(railReach,Math.hypot(side.getX(i),side.getY(i))*width.getZ(i)/2);
@@ -397,7 +398,7 @@ describe("the board overlay does not move and is never drawn over", () => {
   });
 
   it("draws every land mesh before the board, and the bridges and deck lines write no depth (so they never hide a mark)", () => {
-    const handle = buildJourneyLand(land, { theme: "classic", tier: "full", homes: [] });
+    const handle = buildJourneyRouteLand(land, { theme: "classic", tier: "full", homes: [] });
     const bridges = handle.group.getObjectByName(BRIDGES_NAME) as THREE.Mesh;
     const deck = handle.group.getObjectByName(DECK_LINES_NAME) as THREE.Mesh;
     const major = handle.group.getObjectByName(MAJOR_LINES_NAME) as THREE.Mesh;
@@ -419,7 +420,7 @@ describe("the board overlay does not move and is never drawn over", () => {
 describe("three.js land with the road", () => {
   it("stays inside the land budget on full and lite and recolours the bridges per theme", () => {
     for (const tier of ["full", "lite"] as const) {
-      const handle = buildJourneyLand(land, { theme: "classic", tier, homes: [] });
+      const handle = buildJourneyRouteLand(land, { theme: "classic", tier, homes: [] });
       const stats = handle.stats();
       expect(stats.triangles).toBeLessThanOrEqual(tier === "full" ? 25_000 : 15_000);
       expect(stats.drawCalls).toBeLessThanOrEqual(20);
@@ -469,6 +470,29 @@ describe("three.js land with the road", () => {
   });
 });
 
+
+describe("clay land with the road (Horizon Clock)", () => {
+  it("lays a clay plank under every span that carries a drawn road, and draws main and minor roads apart", () => {
+    const handle = buildJourneyLand(land, { theme: "classic", tier: "full", homes: [] });
+    try {
+      const planks = handle.group.getObjectByName(CLAY_NAMES.bridges) as THREE.Mesh;
+      const drawn = new Set(land.lines.filter((l) => l.kind === "road").map((l) => l.id));
+      const carrying = planBridges(land).filter((b) => [...b.lineIds].some((id) => drawn.has(id)));
+      expect(carrying.length).toBeGreaterThan(0);
+      // Each carrying span is under its plank: the plank's vertices cover every span's axis ends (diorama units).
+      const pos = planks.geometry.getAttribute("position"), frame = handle.frame!;
+      for (const b of carrying) for (const end of [b.plan[0]!, b.plan[b.plan.length - 1]!]) {
+        const x = (end[0] - frame.centre[0]) * frame.scale, z = (end[1] - frame.centre[1]) * frame.scale;
+        let best = Infinity;
+        for (let i = 0; i < pos.count; i++) best = Math.min(best, Math.hypot(pos.getX(i) - x, pos.getZ(i) - z));
+        // The plank's edge vertices sit half its (true or minimum) width off the axis.
+        expect(best, b.id).toBeLessThanOrEqual(Math.max(0.05, b.width * frame.scale) / 2 + 1e-3);
+      }
+      expect(handle.group.getObjectByName(CLAY_NAMES.roads)).toBeTruthy();
+      expect(handle.group.getObjectByName(CLAY_NAMES.minorRoads)).toBeTruthy();
+    } finally { handle.dispose(); }
+  });
+});
 
 describe("map-only bridge mesh detail", () => {
   it("keeps height and plan shape, not just endpoints or a planar chord", () => {
