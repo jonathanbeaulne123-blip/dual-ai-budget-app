@@ -208,7 +208,8 @@ async function capture() {
     }
     // Sheets and pops (Taylor): stop sheet, checklist, + dial, Which one?, Key.
     for (const width of [390, 1100]) {
-      const { page, errors, close } = await open(width, 'theme=taylor&level=month');
+      // The App's own record modes for the dial (fabActionsFor: expense, shift, income, bill, transfer).
+      const { page, errors, close } = await open(width, 'theme=taylor&level=month&modes=expense,shift,income,bill,transfer');
       const pick = await page.evaluate(() => {
         const marks = [...document.querySelectorAll('.journey-mark--day:not([hidden])')];
         const one = marks.find((m) => m.classList.contains('journey-mark--check')) ?? marks.find((m) => !m.classList.contains('journey-mark--quiet') && !m.classList.contains('journey-mark--today'));
@@ -216,8 +217,8 @@ async function capture() {
       });
       if (pick) { await press(page, `.journey-mark[data-mark-id="${pick}"]`); await wait(900); await save(page, errors, `sheet-stop-${width}-taylor`, { opened: pick }); }
       await page.keyboard.press('Escape'); await wait(500);
-      const bubble = page.locator('[data-journey-bubble]');
-      if (await bubble.count()) { await press(page, '[data-journey-bubble]'); await wait(900); await save(page, errors, `sheet-checklist-${width}-taylor`); }
+      const opener = (await page.locator('[data-journey-bubble]').count()) ? '[data-journey-bubble]' : '[data-journey-count-chip]';
+      if (await page.locator(opener).count()) { await press(page, opener); await wait(900); await save(page, errors, `sheet-checklist-${width}-taylor`); }
       await page.keyboard.press('Escape'); await wait(500);
       await press(page, '[data-journey-plus]'); await wait(700);
       await save(page, errors, `dial-${width}-taylor`);
@@ -410,7 +411,7 @@ const facts = {};
     let plusClear = null;
     if (plus) { const r = plus.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); plusClear = !!hit && (hit === plus || plus.contains(hit)); }
     return { url: location.pathname + location.search.replace(/household=[^&]+/, 'household=<demo>'), board: !!b, theme: document.documentElement.dataset.theme, classes: b?.className, stageMode: stage?.dataset.stageMode, land: stage?.dataset.land, level: b?.dataset.journeyLevel,
-      boardTop: b ? Math.round(b.getBoundingClientRect().top) : null, plusRadius: plus ? getComputedStyle(plus).borderRadius : null, plusUnobstructed: plusClear,
+      boardTop: b ? Math.round(b.getBoundingClientRect().top) : null, boardHeight: b ? Math.round(b.getBoundingClientRect().height) : null, scrollY: Math.round(scrollY), stage: (() => { const r = stage?.getBoundingClientRect(); return r ? [Math.round(r.width), Math.round(r.height)] : null; })(), plusRadius: plus ? getComputedStyle(plus).borderRadius : null, plusUnobstructed: plusClear,
       banners: [...document.querySelectorAll('.command-banner, .kitchen-notice')].map((n) => n.textContent.trim().slice(0, 80)), env: (document.body.textContent.match(/Development|Production/) || [null])[0],
       overflowX: document.documentElement.scrollWidth > innerWidth + 1 };
   });

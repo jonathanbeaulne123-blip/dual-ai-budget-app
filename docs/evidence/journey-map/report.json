@@ -1,6 +1,6 @@
 {
  "generated": "fictional Development demo household (seedDemoHousehold today 2026-09-28, viewer MEM-002 Jonathan); headless Chromium 141 + SwiftShader",
- "sha": "8009001",
+ "sha": "9cbd510",
  "shots": {
   "year-320-classic": {
    "viewport": [
@@ -9,12 +9,12 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-year journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "year",
-   "header": "September2026 · the year · now",
-   "purse": "Everyday $0.00",
+   "header": "2026the year · September",
+   "purse": "Everyday $0.00 · money here now",
    "bubble": null,
    "landNote": null,
    "marksShown": 12,
@@ -38,18 +38,84 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 4 Sep: Fund contribution · $980.00 · recorde",
+     "w": 26,
+     "h": 26
+    },
+    {
+     "name": "Sun 6 Sep: Fund contribution · $310.00 · recorde",
+     "w": 26,
+     "h": 26
+    },
+    {
+     "name": "Fri 11 Sep: Fund contribution · $225.00 · record",
+     "w": 28,
+     "h": 28
+    },
+    {
+     "name": "Sun 13 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 28,
+     "h": 28
+    },
+    {
+     "name": "Tue 15 Sep · To check: Groceries · planned · $52",
+     "w": 37,
+     "h": 37
+    },
+    {
+     "name": "Fri 18 Sep: Fund contribution · $980.00 · record",
+     "w": 36,
+     "h": 36
+    },
+    {
+     "name": "Sun 20 Sep · To check: Internet · $92.00 · sched",
+     "w": 28,
+     "h": 28
+    },
+    {
+     "name": "Tue 22 Sep · To check: Gas · $74.00 · scheduled ",
+     "w": 28,
+     "h": 28
+    },
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Wed 30 Sep: Standing · jar · Winter reserve · $3",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -64,19 +130,49 @@
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": "5 this week8 to check",
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Tue 29 Sep: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Thu 1 Oct: Rent · $1,850.00 · scheduled · Upcomi",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Fri 2 Oct: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sat 3 Oct: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sun 4 Oct: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -87,12 +183,12 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-year journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "year",
-   "header": "September2026 · the year · now",
-   "purse": "Everyday $0.00",
+   "header": "2026the year · September",
+   "purse": "Everyday $0.00 · money here now",
    "bubble": null,
    "landNote": null,
    "marksShown": 12,
@@ -116,18 +212,39 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 33,
+     "h": 33
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -142,19 +259,39 @@
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": "5 this week8 to check",
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Thu 1 Oct: Rent · $1,850.00 · scheduled · Upcomi",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Fri 2 Oct: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sat 3 Oct: Nothing on this day.",
+     "w": 30,
+     "h": 30
+    },
+    {
+     "name": "Sun 4 Oct: Nothing on this day.",
+     "w": 30,
+     "h": 30
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -165,12 +302,12 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-year journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "year",
-   "header": "September2026 · the year · now",
-   "purse": "Everyday $0.00",
+   "header": "2026the year · September",
+   "purse": "Everyday $0.00 · money here now",
    "bubble": null,
    "landNote": null,
    "marksShown": 12,
@@ -194,18 +331,29 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 33,
+     "h": 33
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 33,
+     "h": 33
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -220,19 +368,29 @@
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": "5 this week8 to check",
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 3 Oct: Nothing on this day.",
+     "w": 35,
+     "h": 35
+    },
+    {
+     "name": "Sun 4 Oct: Nothing on this day.",
+     "w": 35,
+     "h": 35
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -243,12 +401,12 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "classes": "journey-board journey-board--classic journey-board--live journey-board--map journey-board--level-year journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "year",
-   "header": "September2026 · the year · now",
-   "purse": "Everyday $0.00",
+   "header": "2026the year · September",
+   "purse": "Everyday $0.00 · money here now",
    "bubble": null,
    "landNote": null,
    "marksShown": 12,
@@ -272,18 +430,29 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 31,
+     "h": 31
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 31,
+     "h": 31
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -298,14 +467,13 @@
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": "5 this week8 to check",
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": null,
    "active": "Week",
@@ -321,12 +489,12 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "year",
-   "header": "September2026 · the year · now",
-   "purse": "Everyday $0.00",
+   "header": "2026the year · September",
+   "purse": "Everyday $0.00 · money here now",
    "bubble": null,
    "landNote": null,
    "marksShown": 12,
@@ -350,18 +518,84 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 4 Sep: Fund contribution · $980.00 · recorde",
+     "w": 26,
+     "h": 26
+    },
+    {
+     "name": "Sun 6 Sep: Fund contribution · $310.00 · recorde",
+     "w": 26,
+     "h": 26
+    },
+    {
+     "name": "Fri 11 Sep: Fund contribution · $225.00 · record",
+     "w": 28,
+     "h": 28
+    },
+    {
+     "name": "Sun 13 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 28,
+     "h": 28
+    },
+    {
+     "name": "Tue 15 Sep · To check: Groceries · planned · $52",
+     "w": 37,
+     "h": 37
+    },
+    {
+     "name": "Fri 18 Sep: Fund contribution · $980.00 · record",
+     "w": 36,
+     "h": 36
+    },
+    {
+     "name": "Sun 20 Sep · To check: Internet · $92.00 · sched",
+     "w": 28,
+     "h": 28
+    },
+    {
+     "name": "Tue 22 Sep · To check: Gas · $74.00 · scheduled ",
+     "w": 28,
+     "h": 28
+    },
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Wed 30 Sep: Standing · jar · Winter reserve · $3",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -376,19 +610,49 @@
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": "5 this week8 to check",
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Tue 29 Sep: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Thu 1 Oct: Rent · $1,850.00 · scheduled · Upcomi",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Fri 2 Oct: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sat 3 Oct: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sun 4 Oct: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -399,12 +663,12 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "year",
-   "header": "September2026 · the year · now",
-   "purse": "Everyday $0.00",
+   "header": "2026the year · September",
+   "purse": "Everyday $0.00 · money here now",
    "bubble": null,
    "landNote": null,
    "marksShown": 12,
@@ -428,18 +692,39 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 33,
+     "h": 33
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -454,19 +739,39 @@
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": "5 this week8 to check",
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Thu 1 Oct: Rent · $1,850.00 · scheduled · Upcomi",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Fri 2 Oct: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sat 3 Oct: Nothing on this day.",
+     "w": 30,
+     "h": 30
+    },
+    {
+     "name": "Sun 4 Oct: Nothing on this day.",
+     "w": 30,
+     "h": 30
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -477,12 +782,12 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "year",
-   "header": "September2026 · the year · now",
-   "purse": "Everyday $0.00",
+   "header": "2026the year · September",
+   "purse": "Everyday $0.00 · money here now",
    "bubble": null,
    "landNote": null,
    "marksShown": 12,
@@ -506,18 +811,29 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 33,
+     "h": 33
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 33,
+     "h": 33
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -532,19 +848,29 @@
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": "5 this week8 to check",
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 3 Oct: Nothing on this day.",
+     "w": 35,
+     "h": 35
+    },
+    {
+     "name": "Sun 4 Oct: Nothing on this day.",
+     "w": 35,
+     "h": 35
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -555,12 +881,12 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "year",
-   "header": "September2026 · the year · now",
-   "purse": "Everyday $0.00",
+   "header": "2026the year · September",
+   "purse": "Everyday $0.00 · money here now",
    "bubble": null,
    "landNote": null,
    "marksShown": 12,
@@ -584,18 +910,29 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 31,
+     "h": 31
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 31,
+     "h": 31
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -610,14 +947,13 @@
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": "5 this week8 to check",
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": null,
    "active": "Week",
@@ -633,12 +969,12 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-year journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "year",
-   "header": "September2026 · the year · now",
-   "purse": "Everyday $0.00",
+   "header": "2026the year · September",
+   "purse": "Everyday $0.00 · money here now",
    "bubble": null,
    "landNote": null,
    "marksShown": 12,
@@ -662,18 +998,84 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 4 Sep: Fund contribution · $980.00 · recorde",
+     "w": 26,
+     "h": 26
+    },
+    {
+     "name": "Sun 6 Sep: Fund contribution · $310.00 · recorde",
+     "w": 26,
+     "h": 26
+    },
+    {
+     "name": "Fri 11 Sep: Fund contribution · $225.00 · record",
+     "w": 28,
+     "h": 28
+    },
+    {
+     "name": "Sun 13 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 28,
+     "h": 28
+    },
+    {
+     "name": "Tue 15 Sep · To check: Groceries · planned · $52",
+     "w": 37,
+     "h": 37
+    },
+    {
+     "name": "Fri 18 Sep: Fund contribution · $980.00 · record",
+     "w": 36,
+     "h": 36
+    },
+    {
+     "name": "Sun 20 Sep · To check: Internet · $92.00 · sched",
+     "w": 28,
+     "h": 28
+    },
+    {
+     "name": "Tue 22 Sep · To check: Gas · $74.00 · scheduled ",
+     "w": 28,
+     "h": 28
+    },
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Wed 30 Sep: Standing · jar · Winter reserve · $3",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -688,19 +1090,49 @@
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": "5 this week8 to check",
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Tue 29 Sep: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Thu 1 Oct: Rent · $1,850.00 · scheduled · Upcomi",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Fri 2 Oct: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sat 3 Oct: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sun 4 Oct: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -711,12 +1143,12 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-year journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "year",
-   "header": "September2026 · the year · now",
-   "purse": "Everyday $0.00",
+   "header": "2026the year · September",
+   "purse": "Everyday $0.00 · money here now",
    "bubble": null,
    "landNote": null,
    "marksShown": 12,
@@ -740,18 +1172,39 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 33,
+     "h": 33
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -766,19 +1219,39 @@
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": "5 this week8 to check",
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Thu 1 Oct: Rent · $1,850.00 · scheduled · Upcomi",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Fri 2 Oct: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sat 3 Oct: Nothing on this day.",
+     "w": 30,
+     "h": 30
+    },
+    {
+     "name": "Sun 4 Oct: Nothing on this day.",
+     "w": 30,
+     "h": 30
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -789,12 +1262,12 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-year journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "year",
-   "header": "September2026 · the year · now",
-   "purse": "Everyday $0.00",
+   "header": "2026the year · September",
+   "purse": "Everyday $0.00 · money here now",
    "bubble": null,
    "landNote": null,
    "marksShown": 12,
@@ -818,18 +1291,29 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 33,
+     "h": 33
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 33,
+     "h": 33
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -844,19 +1328,29 @@
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": "5 this week8 to check",
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 3 Oct: Nothing on this day.",
+     "w": 35,
+     "h": 35
+    },
+    {
+     "name": "Sun 4 Oct: Nothing on this day.",
+     "w": 35,
+     "h": 35
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -867,12 +1361,12 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "classes": "journey-board journey-board--newfoundland journey-board--live journey-board--map journey-board--level-year journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "year",
-   "header": "September2026 · the year · now",
-   "purse": "Everyday $0.00",
+   "header": "2026the year · September",
+   "purse": "Everyday $0.00 · money here now",
    "bubble": null,
    "landNote": null,
    "marksShown": 12,
@@ -896,18 +1390,29 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 31,
+     "h": 31
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 31,
+     "h": 31
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -922,14 +1427,13 @@
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": "5 this week8 to check",
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": null,
    "active": "Week",
@@ -945,7 +1449,7 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-month journey-board--animated",
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-month journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "month",
@@ -953,15 +1457,36 @@
    "purse": null,
    "bubble": null,
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 33,
+     "h": 33
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -972,23 +1497,43 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-week journey-board--animated",
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-week journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
    "purse": null,
    "bubble": null,
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Thu 1 Oct: Rent · $1,850.00 · scheduled · Upcomi",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Fri 2 Oct: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sat 3 Oct: Nothing on this day.",
+     "w": 34,
+     "h": 34
+    },
+    {
+     "name": "Sun 4 Oct: Nothing on this day.",
+     "w": 34,
+     "h": 34
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -999,11 +1544,11 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-year journey-board--animated",
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-year journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "year",
-   "header": "September2026 · the year · now",
+   "header": "2026the year · September",
    "purse": null,
    "bubble": null,
    "landNote": null,
@@ -1023,7 +1568,7 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-month journey-board--animated",
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-month journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "month",
@@ -1031,15 +1576,26 @@
    "purse": null,
    "bubble": null,
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 33,
+     "h": 33
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 33,
+     "h": 33
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -1050,18 +1606,17 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-week journey-board--animated",
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-week journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
    "purse": null,
    "bubble": null,
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": null,
    "active": "Week",
@@ -1077,11 +1632,11 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-year journey-board--animated",
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--list journey-board--level-year journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "year",
-   "header": "September2026 · the year · now",
+   "header": "2026the year · September",
    "purse": null,
    "bubble": null,
    "landNote": null,
@@ -1106,12 +1661,13 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": null,
    "landNote": null,
-   "marksShown": 6,
+   "marksShown": 8,
    "callouts": [
-    "Tue 15 Sep · 2 thingsGroceries · planned · Bianca pay"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep",
+    "Tue 15 Sep · 2 thingsplanned · Bianca pay"
    ],
    "sheet": "2 things on this day",
    "active": "2 things on this day",
@@ -1120,8 +1676,13 @@
    "outsideViewport": [
     {
      "name": "Fri 11 Sep: Fund contribution · $225.00 · record",
-     "left": 359,
-     "right": 403
+     "left": 360,
+     "right": 404
+    },
+    {
+     "name": "Setting aside next · Winter reserve$300.00 · Wed",
+     "left": -4,
+     "right": 241
     }
    ],
    "errors": [],
@@ -1139,18 +1700,39 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": null,
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": "This week, then 8 to check",
    "active": "This week, then 8 to check",
    "plusUnobstructed": false,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 34,
+     "h": 34
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 26,
+     "h": 26
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 26,
+     "h": 26
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -1161,23 +1743,44 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated is-dial-open",
    "stageMode": "live",
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": null,
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Record a purchase…",
    "plusUnobstructed": false,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 33,
+     "h": 33
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -1193,18 +1796,39 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Key",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 33,
+     "h": 33
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -1220,18 +1844,39 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Mon 28 Sep · Bianca pay",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 33,
+     "h": 33
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": [],
    "fan": {
@@ -1251,12 +1896,12 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "year",
-   "header": "September2026 · the year · now",
-   "purse": "Everyday $0.00",
+   "header": "2026the year · September",
+   "purse": "Everyday $0.00 · money here now",
    "bubble": null,
    "landNote": null,
    "marksShown": 12,
@@ -1279,19 +1924,39 @@
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": null,
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": "Needs you · 8 pinned to Mon",
    "active": "Needs you · 8 pinned to Mon",
    "plusUnobstructed": false,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Thu 1 Oct: Rent · $1,850.00 · scheduled · Upcomi",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Fri 2 Oct: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sat 3 Oct: Nothing on this day.",
+     "w": 30,
+     "h": 30
+    },
+    {
+     "name": "Sun 4 Oct: Nothing on this day.",
+     "w": 30,
+     "h": 30
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -1307,12 +1972,12 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": null,
    "landNote": null,
    "marksShown": 5,
    "callouts": [
-    "Tue 15 Sep · 2 thingsGroceries · planned · Bianca pay"
+    "Tue 15 Sep · 2 thingsplanned · Bianca pay"
    ],
    "sheet": "2 things on this day",
    "active": "2 things on this day",
@@ -1334,18 +1999,29 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": null,
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": "This week, then 8 to check",
    "active": "This week, then 8 to check",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 32,
+     "h": 32
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 32,
+     "h": 32
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -1356,23 +2032,34 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated is-dial-open",
    "stageMode": "live",
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": null,
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Record a purchase…",
    "plusUnobstructed": false,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 31,
+     "h": 31
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 31,
+     "h": 31
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -1388,18 +2075,29 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Key",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 31,
+     "h": 31
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 31,
+     "h": 31
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -1415,18 +2113,29 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Mon 28 Sep · Bianca pay",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 31,
+     "h": 31
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 31,
+     "h": 31
+    }
+   ],
    "outsideViewport": [],
    "errors": [],
    "fan": {
@@ -1446,12 +2155,12 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated",
+   "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-year journey-board--animated has-header-chips",
    "stageMode": "live",
    "land": "ready",
    "level": "year",
-   "header": "September2026 · the year · now",
-   "purse": "Everyday $0.00",
+   "header": "2026the year · September",
+   "purse": "Everyday $0.00 · money here now",
    "bubble": null,
    "landNote": null,
    "marksShown": 12,
@@ -1474,19 +2183,29 @@
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": null,
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": "Needs you · 8 pinned to Mon",
    "active": "Needs you · 8 pinned to Mon",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 3 Oct: Nothing on this day.",
+     "w": 34,
+     "h": 34
+    },
+    {
+     "name": "Sun 4 Oct: Nothing on this day.",
+     "w": 34,
+     "h": 34
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -1502,18 +2221,39 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 33,
+     "h": 33
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": [],
    "cuts": [
@@ -1548,19 +2288,39 @@
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": "5 this week8 to check",
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Thu 1 Oct: Rent · $1,850.00 · scheduled · Upcomi",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Fri 2 Oct: Nothing on this day.",
+     "w": 24,
+     "h": 24
+    },
+    {
+     "name": "Sat 3 Oct: Nothing on this day.",
+     "w": 30,
+     "h": 30
+    },
+    {
+     "name": "Sun 4 Oct: Nothing on this day.",
+     "w": 30,
+     "h": 30
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -1576,18 +2336,29 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 31,
+     "h": 31
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 31,
+     "h": 31
+    }
+   ],
    "outsideViewport": [],
    "errors": [],
    "cuts": [
@@ -1622,14 +2393,13 @@
    "stageMode": "live",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": "5 this week8 to check",
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": null,
    "active": "Week",
@@ -1650,18 +2420,39 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "About this map",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 33,
+     "h": 33
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": [],
    "tabStep": 1
@@ -1678,18 +2469,39 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Fri 4 Sep: Fund contribution · $980.00 · recorde",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 33,
+     "h": 33
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 25,
+     "h": 25
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": [],
    "tabStep": 6
@@ -1706,7 +2518,7 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": null,
    "landNote": null,
    "marksShown": 6,
@@ -1733,7 +2545,7 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": null,
    "landNote": null,
    "marksShown": 6,
@@ -1759,21 +2571,42 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "journey-pull__slider",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 33,
+     "h": 33
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 26,
+     "h": 26
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 26,
+     "h": 26
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": [],
-   "tabStep": 26
+   "tabStep": 25
   },
   "keyboard-4-plus-390-classic": {
    "viewport": [
@@ -1787,21 +2620,42 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Add — record money",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 33,
+     "h": 33
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 26,
+     "h": 26
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 26,
+     "h": 26
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": [],
-   "tabStep": 27
+   "tabStep": 26
   },
   "keyboard-1-about-1100-classic": {
    "viewport": [
@@ -1815,18 +2669,29 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "About this map",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 31,
+     "h": 31
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 31,
+     "h": 31
+    }
+   ],
    "outsideViewport": [],
    "errors": [],
    "tabStep": 1
@@ -1843,18 +2708,29 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Fri 4 Sep: Fund contribution · $980.00 · recorde",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 31,
+     "h": 31
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 31,
+     "h": 31
+    }
+   ],
    "outsideViewport": [],
    "errors": [],
    "tabStep": 6
@@ -1871,12 +2747,12 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": null,
    "landNote": null,
-   "marksShown": 6,
+   "marksShown": 5,
    "callouts": [
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i",
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep",
     "Fund contribution$980.00 · Fri 4 Sep"
    ],
    "sheet": "Fund contribution",
@@ -1899,12 +2775,12 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": null,
    "landNote": null,
    "marksShown": 5,
    "callouts": [
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i",
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep",
     "Fund contribution$980.00 · Fri 4 Sep"
    ],
    "sheet": "Fund contribution",
@@ -1926,21 +2802,32 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "journey-pull__slider",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 32,
+     "h": 32
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 32,
+     "h": 32
+    }
+   ],
    "outsideViewport": [],
    "errors": [],
-   "tabStep": 26
+   "tabStep": 22
   },
   "keyboard-4-plus-1100-classic": {
    "viewport": [
@@ -1954,21 +2841,32 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Add — record money",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 31,
+     "h": 31
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 31,
+     "h": 31
+    }
+   ],
    "outsideViewport": [],
    "errors": [],
-   "tabStep": 27
+   "tabStep": 23
   },
   "empty-month-390-classic": {
    "viewport": [
@@ -1982,10 +2880,10 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00",
+   "purse": "Everyday $0.00 · money here now",
    "bubble": null,
    "landNote": null,
-   "marksShown": 3,
+   "marksShown": 2,
    "callouts": [
     "Today · Mon 28 SepNothing on this day."
    ],
@@ -2011,7 +2909,7 @@
    "purse": null,
    "bubble": null,
    "landNote": null,
-   "marksShown": 3,
+   "marksShown": 2,
    "callouts": [
     "Today · Mon 28 SepNothing on this day."
    ],
@@ -2034,18 +2932,39 @@
    "land": "loading",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": "Drawing the island… every stop and action is already in the list.",
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 34,
+     "h": 34
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 30,
+     "h": 30
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 26,
+     "h": 26
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 26,
+     "h": 26
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -2061,18 +2980,39 @@
    "land": "failed",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": "The island could not be drawn on this device right now. The clock and the list still hold every stop and action.",
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 34,
+     "h": 34
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 30,
+     "h": 30
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 26,
+     "h": 26
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 26,
+     "h": 26
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -2088,10 +3028,10 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00",
+   "purse": "Everyday $0.00 · money here now",
    "bubble": null,
    "landNote": null,
-   "marksShown": 3,
+   "marksShown": 2,
    "callouts": [
     "Today · Mon 28 SepNothing on this day."
    ],
@@ -2117,7 +3057,7 @@
    "purse": null,
    "bubble": null,
    "landNote": null,
-   "marksShown": 3,
+   "marksShown": 2,
    "callouts": [
     "Today · Mon 28 SepNothing on this day."
    ],
@@ -2140,18 +3080,29 @@
    "land": "loading",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": "Drawing the island… every stop and action is already in the list.",
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 36,
+     "h": 36
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -2167,18 +3118,29 @@
    "land": "failed",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": "The island could not be drawn on this device right now. The clock and the list still hold every stop and action.",
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 36,
+     "h": 36
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -2194,18 +3156,39 @@
    "land": "failed",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": "The island could not be drawn on this device right now. The clock and the list still hold every stop and action.",
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 34,
+     "h": 34
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 30,
+     "h": 30
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 26,
+     "h": 26
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 26,
+     "h": 26
+    }
+   ],
    "outsideViewport": [],
    "errors": [],
    "heldRequests": 1
@@ -2217,7 +3200,7 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--classic journey-board--flat journey-board--list journey-board--level-month journey-board--animated",
+   "classes": "journey-board journey-board--classic journey-board--flat journey-board--list journey-board--level-month journey-board--animated has-header-chips",
    "stageMode": "flat",
    "land": "failed",
    "level": "month",
@@ -2225,15 +3208,36 @@
    "purse": null,
    "bubble": null,
    "landNote": "The island could not be drawn on this device right now. The clock and the list still hold every stop and action.",
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "List",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 34,
+     "h": 34
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 30,
+     "h": 30
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 26,
+     "h": 26
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 26,
+     "h": 26
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -2249,18 +3253,34 @@
    "land": "failed",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": "The island could not be drawn on this device right now. The clock and the list still hold every stop and action.",
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 42,
+     "h": 42
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 35,
+     "h": 35
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 35,
+     "h": 35
+    }
+   ],
    "outsideViewport": [],
    "errors": [],
    "heldRequests": 1
@@ -2272,7 +3292,7 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--classic journey-board--flat journey-board--list journey-board--level-month journey-board--animated",
+   "classes": "journey-board journey-board--classic journey-board--flat journey-board--list journey-board--level-month journey-board--animated has-header-chips",
    "stageMode": "flat",
    "land": "failed",
    "level": "month",
@@ -2280,15 +3300,26 @@
    "purse": null,
    "bubble": null,
    "landNote": "The island could not be drawn on this device right now. The clock and the list still hold every stop and action.",
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "List",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 39,
+     "h": 39
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 39,
+     "h": 39
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -2299,12 +3330,12 @@
    ],
    "pageOverflowX": false,
    "boardScroll": null,
-   "classes": "journey-board journey-board--taylor journey-board--flat journey-board--map journey-board--level-year journey-board--animated",
+   "classes": "journey-board journey-board--taylor journey-board--flat journey-board--map journey-board--level-year journey-board--animated has-header-chips",
    "stageMode": "flat",
    "land": "ready",
    "level": "year",
-   "header": "September2026 · the year · now",
-   "purse": "Everyday $0.00",
+   "header": "2026the year · September",
+   "purse": "Everyday $0.00 · money here now",
    "bubble": null,
    "landNote": null,
    "marksShown": 12,
@@ -2328,18 +3359,39 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
+     "w": 34,
+     "h": 34
+    },
+    {
+     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
+     "w": 30,
+     "h": 30
+    },
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 26,
+     "h": 26
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 26,
+     "h": 26
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -2354,19 +3406,54 @@
    "stageMode": "flat",
    "land": "ready",
    "level": "week",
-   "header": "This weekMon 28 Sep – Sun 4 Oct",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
+   "header": "This weekMon 28 Sep – Sun 4 Oct28 Sep – 4 Oct",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": "5 this week8 to check",
    "landNote": null,
-   "marksShown": 9,
+   "marksShown": 8,
    "callouts": [
-    "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Today · Mon 28 Seppay expected · 4 things"
    ],
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 43,
+     "h": 43
+    },
+    {
+     "name": "Tue 29 Sep: Nothing on this day.",
+     "w": 43,
+     "h": 43
+    },
+    {
+     "name": "Wed 30 Sep: Standing · jar · Winter reserve · $3",
+     "w": 43,
+     "h": 43
+    },
+    {
+     "name": "Thu 1 Oct: Rent · $1,850.00 · scheduled · Upcomi",
+     "w": 43,
+     "h": 43
+    },
+    {
+     "name": "Fri 2 Oct: Nothing on this day.",
+     "w": 43,
+     "h": 43
+    },
+    {
+     "name": "Sat 3 Oct: Nothing on this day.",
+     "w": 43,
+     "h": 43
+    },
+    {
+     "name": "Sun 4 Oct: Nothing on this day.",
+     "w": 43,
+     "h": 43
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   },
@@ -2382,18 +3469,29 @@
    "land": "ready",
    "level": "month",
    "header": "September2026 · now",
-   "purse": "Everyday $0.00+$2100.00 Bianca pay expected today · not in yet",
-   "bubble": "5 things this weekStanding · jar · Winter reserve $300.00 · Wed 30 Sep · Set aside in Build · not paid8 to check",
+   "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
+   "bubble": "5 things this weekSetting aside next · Winter reserve $300.00 · Wed 30 Sep8 to check",
    "landNote": null,
-   "marksShown": 15,
+   "marksShown": 14,
    "callouts": [
     "Today · Mon 28 Seppay expected · 4 things",
-    "Leaving next · Standing · jar · Winter reserve$300.00 · Wed 30 Sep · Set aside i"
+    "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [],
+   "controlsUnder44": [
+    {
+     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
+     "w": 36,
+     "h": 36
+    },
+    {
+     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
+     "w": 36,
+     "h": 36
+    }
+   ],
    "outsideViewport": [],
    "errors": []
   }
@@ -2417,11 +3515,10 @@
    "Fri 25 Sep · To check: Phone · $110.00 · scheduled",
    "Sat 26 Sep · To check: Vet · Marmalade · $215.00 ·",
    "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-   "Mon 28 Sep · Today: Bianca pay · $2100.00 · schedu",
+   "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sched",
    "Wed 30 Sep: Standing · jar · Winter reserve · $300",
-   "Today · Mon 28 Sep: Bianca pay · $2100.00 · schedu",
    "Hercules · Hercules’s list · 8 to check",
-   "5 things this week. Leaving next · Standing · jar ",
+   "5 things this week. Setting aside next · Standing ",
    "Year",
    "Month",
    "Week",
@@ -2440,18 +3537,14 @@
    "Sun 6 Sep: Fund contribution · $310.00 · recorded ",
    "Fri 11 Sep: Fund contribution · $225.00 · recorded",
    "Sun 13 Sep: Weekly Sitdown · Weekly Sitdown",
-   "Tue 15 Sep · To check: Groceries · planned · $520.",
-   "Fri 18 Sep: Fund contribution · $980.00 · recorded",
    "Sun 20 Sep · To check: Internet · $92.00 · schedul",
-   "Tue 22 Sep · To check: Gas · $74.00 · scheduled · ",
    "Fri 25 Sep · To check: Phone · $110.00 · scheduled",
    "Sat 26 Sep · To check: Vet · Marmalade · $215.00 ·",
    "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-   "Mon 28 Sep · Today: Bianca pay · $2100.00 · schedu",
+   "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sched",
    "Wed 30 Sep: Standing · jar · Winter reserve · $300",
-   "Today · Mon 28 Sep: Bianca pay · $2100.00 · schedu",
    "Hercules · Hercules’s list · 8 to check",
-   "5 things this week. Leaving next · Standing · jar ",
+   "5 things this week. Setting aside next · Standing ",
    "Year",
    "Month",
    "Week",
@@ -2462,17 +3555,7 @@
  },
  "axe": {
   "390": {
-   "violations": [
-    {
-     "id": "target-size",
-     "impact": "serious",
-     "nodes": 1,
-     "targets": [
-      "#journey-mark-2026-09-28"
-     ],
-     "summary": "Fix any of the following:\n  Target has insufficient size because it is partially obscured (smallest space is 13.5px by 44px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 2.2px instead of at least 24px."
-    }
-   ],
+   "violations": [],
    "passes": 22,
    "incomplete": [
     {
@@ -2481,22 +3564,12 @@
     },
     {
      "id": "color-contrast",
-     "nodes": 15
+     "nodes": 18
     }
    ]
   },
   "1100": {
-   "violations": [
-    {
-     "id": "target-size",
-     "impact": "serious",
-     "nodes": 1,
-     "targets": [
-      "#journey-mark-2026-09-28"
-     ],
-     "summary": "Fix any of the following:\n  Target has insufficient size because it is partially obscured (smallest space is 20.2px by 44px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 8.6px instead of at least 24px."
-    }
-   ],
+   "violations": [],
    "passes": 22,
    "incomplete": [
     {
@@ -2505,7 +3578,7 @@
     },
     {
      "id": "color-contrast",
-     "nodes": 15
+     "nodes": 18
     }
    ]
   },
@@ -2514,18 +3587,7 @@
    "passes": 30
   },
   "1100-list": {
-   "violations": [
-    {
-     "id": "color-contrast",
-     "impact": "serious",
-     "nodes": 2,
-     "targets": [
-      "button[data-list-mode=\"map\"]",
-      "button[data-list-mode=\"list\"]"
-     ],
-     "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.56 (foreground color: #7d5b6c, background color: #d3c7c8, font size: 11.3pt (15px), font weight: normal). Expected contrast ratio of 4.5:1"
-    }
-   ],
+   "violations": [],
    "passes": 30
   }
  }
