@@ -151,8 +151,8 @@ export function measureDistrictDressing(d: DistrictDressing, ground: (x: number,
     const art = finishBuild(buildDistrictDressingSteps(d, {tier, theme, season: 'summer', ground}));
     let triangles = art.stats.triangles, drawCalls = art.stats.drawCalls;
     if (art.planting && d.plants.length) {
-      const c = d.plants.reduce((s, p) => [s[0] + p.at[0] / d.plants.length, s[1] + p.at[1] / d.plants.length, s[2] + p.at[2] / d.plants.length], [0, 0, 0]);
-      const camera = new THREE.PerspectiveCamera(58, 1.6, 0.3, 900); camera.position.set(c[0]!, c[1]! + 3, c[2]!); camera.updateMatrixWorld();
+      const n = d.plants.length, c: [number, number, number] = [0, 0, 0]; for (const p of d.plants) { c[0] += p.at[0] / n; c[1] += p.at[1] / n; c[2] += p.at[2] / n; }
+      const camera = new THREE.PerspectiveCamera(58, 1.6, 0.3, 900); camera.position.set(c[0], c[1] + 3, c[2]); camera.updateMatrixWorld();
       art.planting.update(camera, new Set([d.districtId]));
       const s = art.planting.stats();
       for (const l of s.layers) if (l.count > 0) triangles += Math.round(l.triangles / l.count * l.capacity);

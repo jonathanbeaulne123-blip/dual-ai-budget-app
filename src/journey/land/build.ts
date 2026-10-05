@@ -85,7 +85,7 @@ export const buildJourneyLand: BuildJourneyLand = (data: JourneyLandData, option
   const lines = buildLines(road, dressing, view);
   const bridges = buildBridges(road.bridges, surface, dressing, view);
   const hosts = buildHosts(data, surface, dressing, view);
-  const dressed = buildDressingMap(data, surface, dressing);
+  const dressed = buildDressingMap(data, surface, dressing, options.tier);
   const airport=buildAirportMap(dressing.hostRoof,dressing.road);group.add(airport.mesh);
   group.add(water.sea, terrain.mesh);
   if (water.bodies) group.add(water.bodies);

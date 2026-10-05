@@ -3,6 +3,7 @@
  * as plain blocks under a pyramid roof on their baked footprint (the grammar's `buildingJourneyShape`, carried by the
  * index), and every story landmark as a slim needle glyph rising to its sighted top. One merged, unlit mesh (one draw
  * call), baked shading from the land's low north-west sun, heights compressed like the hosts (`HEIGHT_COMPRESSION`).
+ * Full: blocks and glyphs (12 + 16 triangles each). Lite: the glyphs only.
  */
 import * as THREE from "three";
 import type { JourneyLandData, JourneyLandDressing } from "../contracts.ts";
@@ -18,16 +19,19 @@ type Paint = 0 | 1 | 2; // wall, roof, landmark
 type V3 = [number, number, number];
 export type DressingMapMeshes = { mesh: THREE.Mesh | null; recolour(d: JourneyLandDressing): void; dispose(): void };
 
-export function buildDressingMap(data: Pick<JourneyLandData, "dressing">, surface: Pick<LandSurface, "heightAt">, dressing: JourneyLandDressing): DressingMapMeshes {
+export function buildDressingMap(data: Pick<JourneyLandData, "dressing">, surface: Pick<LandSurface, "heightAt">, dressing: JourneyLandDressing, tier: "full" | "lite" = "full"): DressingMapMeshes {
   const d = data.dressing;
   if (!d || (!d.buildings.length && !d.landmarks.length)) return { mesh: null, recolour() {}, dispose() {} };
+  // Lite keeps the landmarks (the story's verticals) and drops the blocks: the lite land is within a few hundred
+  // triangles of its 15k budget (lite drops, never substitutes).
+  const blocks = tier === "full" ? d.buildings : [];
   const pos: number[] = [], shadeOf: number[] = [], paintOf: number[] = [];
   const tri = (a: V3, b: V3, c: V3, paint: Paint) => {
     const n = new THREE.Vector3(b[0] - a[0], b[1] - a[1], b[2] - a[2]).cross(new THREE.Vector3(c[0] - a[0], c[1] - a[1], c[2] - a[2])).normalize();
     const lit = 0.62 + 0.38 * Math.max(0, Math.abs(n.y) > 0.99 ? 1 : n.dot(SUN));
     for (const p of [a, b, c]) { pos.push(p[0], p[1], p[2]); shadeOf.push(lit); paintOf.push(paint); }
   };
-  for (const b of d.buildings) {
+  for (const b of blocks) {
     const ring = b.footprint, n = ring.length, pad = compressHeight(b.base);
     const base = Math.min(pad, ...ring.map((p) => surface.heightAt(p[0], p[1]))) - SINK, eave = pad + b.height * HEIGHT_COMPRESSION.buildingScale, apex = eave + b.roofHeight * HEIGHT_COMPRESSION.buildingScale;
     const cx = ring.reduce((s, p) => s + p[0], 0) / n, cz = ring.reduce((s, p) => s + p[1], 0) / n;
