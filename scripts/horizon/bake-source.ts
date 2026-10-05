@@ -4,6 +4,7 @@ import {baseHeight,buildTerrain,sampleTerrain} from '../../src/harbour/horizon/l
 import {encodeTerrainAsset,decodeTerrainAsset} from '../../src/harbour/horizon/land/terrain/asset.ts';
 import {buildLandCuts} from '../../src/harbour/horizon/land/beds/build.ts';
 import {buildWaterCuts,buildSpringSolids} from '../../src/harbour/horizon/land/water/index.ts';
+import {buildMountainV3Falls} from '../../src/harbour/horizon/land/mountainV3/water.ts';
 import {buildOffshoreSolids} from '../../src/harbour/horizon/land/offshore/index.ts';
 import {buildCrossings} from '../../src/harbour/horizon/world/crossings.ts';
 import {resolveComputedCrossings,settleBedEdges,openRetainingPassages} from '../../src/harbour/horizon/land/beds/junctions.ts';
@@ -18,7 +19,7 @@ import {buildWorldLines,corridorDestinations} from '../../src/harbour/horizon/wo
  * partition, LOD, output rounding, or artifact IO is performed here. */
 export function buildHorizonPrejoinSource(){
   const cuts=buildLandCuts(baseHeight);
-  const waters=buildWaterCuts(),waterIds=new Set(waters.map(w=>w.id));cuts.waters=[...waters,...cuts.waters.filter(w=>!waterIds.has(w.id))];cuts.solids.push(...buildOffshoreSolids());
+  const waters=buildWaterCuts(),waterIds=new Set(waters.map(w=>w.id));cuts.waters=[...waters,...cuts.waters.filter(w=>!waterIds.has(w.id))];cuts.falls=buildMountainV3Falls();cuts.solids.push(...buildOffshoreSolids());
   const crossings=buildCrossings(cuts,buildWorldLines(cuts)).proofs;
   resolveComputedCrossings(cuts,crossings,baseHeight);
   const built=buildTerrain(cuts,{step:5});

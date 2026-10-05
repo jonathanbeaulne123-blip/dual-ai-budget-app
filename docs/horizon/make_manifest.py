@@ -2157,6 +2157,100 @@ for _t in m["thresholds"]:
         _t["action_v2_5"] = _t["action"]; _t["action"] = "Ride the gondola ↑ Summit Commons"
 m["thresholds"].extend(_json.loads("[{\"id\": \"funicular.town.to.hearth\", \"xy\": [1291.1, 728.1], \"h\": 55.65, \"modes\": [\"feet→funicular\"], \"action\": \"Ride the funicular ↑ Lower neighbourhood\", \"source\": \"v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)\"}, {\"id\": \"funicular.hearth.to.library\", \"xy\": [1314.41, 677.19], \"h\": 69.6, \"modes\": [\"feet→funicular\"], \"action\": \"Ride the funicular ↑ Library Woods\", \"source\": \"v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)\"}, {\"id\": \"funicular.hearth.to.town\", \"xy\": [1314.41, 677.19], \"h\": 69.6, \"modes\": [\"feet→funicular\"], \"action\": \"Ride the funicular ↓ The square\", \"source\": \"v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)\"}, {\"id\": \"funicular.library.to.reservoir\", \"xy\": [1325.44, 607.53], \"h\": 93.6, \"modes\": [\"feet→funicular\"], \"action\": \"Ride the funicular ↑ Reservoir Heights\", \"source\": \"v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)\"}, {\"id\": \"funicular.library.to.hearth\", \"xy\": [1325.44, 607.53], \"h\": 93.6, \"modes\": [\"feet→funicular\"], \"action\": \"Ride the funicular ↓ Lower neighbourhood\", \"source\": \"v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)\"}, {\"id\": \"funicular.reservoir.to.library\", \"xy\": [1344.86, 536.53], \"h\": 141.6, \"modes\": [\"feet→funicular\"], \"action\": \"Ride the funicular ↓ Library Woods\", \"source\": \"v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)\"}]"))
 
+# v2.7 canonical sync (Mountain V3 integrator, 4 Oct 2026): #581 edited the built MANIFEST.json's portrait views, gate 4's aperture and the
+# garden walk bridge width by hand; these are the built values, verbatim, so the generator reproduces the checked-in file again.
+import json as _json3
+m["views"][2]["portrait"] = _json3.loads("{\"fov_deg\": 50, \"target\": [1240, 1105], \"target_h\": 15, \"frames\": [\"the road deck\", \"the skate shelf\", \"the walk at the water\"], \"xy\": [1198, 1145]}")
+m["views"][3]["portrait"] = _json3.loads("{\"fov_deg\": 55, \"target\": [1100, 1450], \"target_h\": 3, \"frames\": [\"surf\", \"the zipline landing\"], \"v1_7_frames\": [\"surf\", \"the Lamp\", \"the zipline landing\"]}")
+m["views"][5]["portrait"] = _json3.loads("{\"fov_deg\": 45, \"target\": [1160, 650], \"target_h\": 100, \"frames\": [\"L01\", \"Stillwater\"]}")
+m["views"][11]["portrait"] = _json3.loads("{\"fov_deg\": 65, \"target\": [1370, 1305], \"target_h\": 5, \"frames\": [\"Lantern Row\", \"the Boathouse\"], \"v1_8_xy\": null, \"xy\": [1430, 1210]}")
+m["sky"]["gates"][4]["aperture_m"] = [11, 8]
+m["structures"]["gardenWalkBridge"]["width_m"] = 5.6
+
+# ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+# v3.0 · Mountain V3 — The Highlands and the Falls (D-M11, Jonathan 2026-10-04: "the implementor will have full control to edit
+# Mountain v2 however [needed] to make for a better overall product"). The ring of high ground round Mountain v2 becomes the
+# island's water mountain: Glacier Peak and its glacier feed a west branch (the Crown Rill, the Twin Tarns, the Rillcut, Rillcut
+# Falls; Spur Tarn, Veil Falls and Spur Falls) and an east branch (the Col Rill, Split Wall Gorge, Stair Falls, the Shieling
+# Beck); a sheep-farming, ski-village community lives on the benches; the Rim Walk runs the north crest from Westwatch Chapel to
+# the Rim Bridge col, and the Rim Steps descend over Horizon Drive (in its Rim Tunnel) to the Prow. Landform and water are
+# authored in src/harbour/horizon/land/mountainV3/ (one definition); this block registers what the manifest owns: walks, places,
+# structures, the Year Walk's re-route past the falls' pools, and the names.
+m["version"] = "3.0"
+m["date"] = "2026-10-04"
+m["mountainV3"] = {
+ "decision": "D-M11",
+ "source": "src/harbour/horizon/land/mountainV3/{landform,water}.ts",
+ "note": "the Highlands and the Falls: the Shoulder/Crown ring round Mountain v2 reshaped (Glacier Peak 156, the glacier in the cirque, the highland benches, three gorges, the Veil amphitheatre); v2's own land is untouched south of its summit line (D-M2 north of it)",
+ "reads": "the almanac and the clock only; no water here reads household state (CONTRACT §2.2); the reservoir inside v2 is not part of this network",
+}
+# The Year Walk's east-edge stretch through the Hollow moves ~20 m west, off the cliff foot, so Rillcut Falls' and Spur Falls'
+# plunge pools fit between the wall and the walk; it crosses the Hollow Rill on the Rillcut Footbridge.
+_yw = m["journey"]["yearWalk"]
+# [1052,662] stays: 20 m west of it the September station pad (36 x 14 at 40) would catch the walk's samples and pull the
+# descent from the lake rim (55) to 40 in 59 m (the bake's "walk lakerim 1.84 eu" step); the pool clears the walk at x 1061.
+_moves = {(1060, 600): [1056, 600], (1062, 540): [1037, 542], (1060, 505): [1038, 506], (1050, 487): [1034, 489]}
+_yw["v2_7_pts"] = [list(p) for p in _yw["pts"]]
+_yw["pts"] = [(_moves.get((p[0], p[1])) or p) for p in _yw["pts"]]
+_yw["v3_0_edits"] = "the Hollow's east-edge stretch (north of the September pad → the north-east corner) moved ~20 m west off the cliff foot for the V3 plunge pools (Rillcut Falls, Spur Falls); it crosses the Hollow Rill on the Rillcut Footbridge"
+assert sum(1 for p in _yw["pts"] if p in _moves.values()) == 4, "Year Walk V3 re-route: a control point moved"
+# Walks (profile walk, ≤ 12 %): the Rim Walk and the hamlet's lanes. The Rim Steps are a stair (3 m, rise 0.17).
+m["walks"]["rimWalk"] = {"pts": [[1038, 326], [1062, 336], [1092, 344], [1124, 346], [1160, 348], [1196, 346], [1230, 342], [1256, 340], [1290, 342], [1324, 345], [1356, 348], [1376, 356], [1390, 364]], "profile": "walk", "length_m": 0, "levels": [{"xy": [1038, 326], "h": 90, "why": "Westwatch Chapel"}],
+  "note": "V3: the Rim Walk, Westwatch Chapel → the north crest (north of the Crown Rill) → Glacier Springs, the snout of the glacier"}
+m["walks"]["glacierWalk"] = {"pts": [[1338, 452], [1356, 446], [1374, 440], [1388, 446], [1402, 450]], "profile": "walk", "length_m": 0, "note": "V3: from Mountain v2's summit seam (the overlook) along the cirque's south rim to the Col Steps' head, south of the Col Rill"}
+m["walks"]["eastRim"] = {"pts": [[1444, 466], [1450, 458], [1456, 448], [1458, 436], [1462, 426], [1470, 430], [1478, 440], [1488, 452], [1500, 470], [1508, 496], [1512, 520], [1514, 548], [1514, 576], [1512, 604], [1508, 632], [1506, 648]], "profile": "walk", "length_m": 0, "note": "V3: from the Col Steps' foot over the Col Rill (the Col Footbridge) to the Rim Bridge col and along the east rim's crest (Split Wall Gorge on its west flank) to the Rim Lookout and Stair Falls' head; the Shieling Steps go on down to the ranch"}
+m["walks"]["ranchLane"] = {"pts": [[1486, 688], [1472, 698], [1458, 702], [1446, 700], [1436, 694], [1418, 700], [1398, 704], [1380, 708], [1362, 708]], "profile": "walk", "length_m": 0, "levels": [{"xy": [1436, 694], "h": 61.5, "why": "High Shieling Ranch"}], "note": "V3: from the Shieling Steps' foot over the beck (the Shieling Footbridge) to High Shieling Ranch, then west above the Shieling Mere toward the Foot (it ends at the Year Walk's Hearth stretch)"}
+m["walks"]["hamletLane"] = {"pts": [[1038, 326], [1048, 338], [1062, 344], [1074, 352], [1082, 366], [1072, 380], [1066, 394], [1076, 408], [1086, 418], [1094, 402], [1106, 386], [1118, 376], [1132, 368], [1148, 366], [1164, 364], [1182, 360], [1200, 352]], "profile": "walk", "length_m": 0, "levels": [{"xy": [1038, 326], "h": 90, "why": "Westwatch Chapel"}, {"xy": [1086, 418], "h": 104, "why": "Bench Hamlet"}], "note": "V3: Westwatch Chapel → Bench Hamlet → north of the Twin Tarns and the Crown Rill to Orchard Bench"}
+m["walks"]["fallswatch"] = {"pts": [[1086, 418], [1100, 416], [1110, 428], [1114, 460], [1118, 500], [1120, 540], [1120, 580], [1116, 616], [1128, 636], [1134, 660], [1134, 684], [1124, 694]], "profile": "walk", "length_m": 0, "levels": [{"xy": [1086, 418], "h": 104, "why": "Bench Hamlet"}], "note": "V3: Bench Hamlet over the Rillcut's head (the Hamlet Footbridge) and south along the spur, east of Spur Tarn, to Fallswatch at the Veil lip"}
+for _k in ("rimWalk", "glacierWalk", "eastRim", "ranchLane", "hamletLane", "fallswatch"): m["walks"][_k]["length_m"] = length(m["walks"][_k]["pts"])
+# Places (useful now; the ranch is plotted, not yet editable).
+m["places"].extend([
+ {"id": "glacierPeak", "label": "Glacier Peak", "xy": [1402, 398], "h": 156, "note": "V3: the horn north-east of the summit; the glacier in its cirque feeds every V3 stream"},
+ {"id": "glacierSprings", "label": "Glacier Springs", "xy": [1388, 375], "h": 127, "note": "V3: the melt pool at the glacier's snout; the Crown Rill and the Col Rill leave it"},
+ {"id": "benchHamlet", "label": "Bench Hamlet", "xy": [1086, 418], "h": 104, "note": "V3: the farming hamlet on the west bench (useful now; buildings owed)"},
+ {"id": "westwatch", "label": "Westwatch Chapel", "xy": [1036, 318], "h": 86, "note": "V3: the chapel knoll at the Rim Walk's west end"},
+ {"id": "orchardBench", "label": "Orchard Bench", "xy": [1200, 356], "h": 117, "note": "V3: orchards beside the Crown Rill"},
+ {"id": "twinTarns", "label": "The Twin Tarns", "xy": [1131, 401], "h": 105, "note": "V3: the two tarns on the west shelf"},
+ {"id": "fallswatch", "label": "Fallswatch", "xy": [1122, 694], "h": 93.9, "note": "V3: the falls station at Veil Falls' lip: a weather house, a gauge and the viewing deck over the curtain; reads the almanac and the weather only"},
+ {"id": "rimLookout", "label": "Rim Lookout", "xy": [1516, 548], "h": 104, "note": "V3: where the east rim walk meets the Rim Steps down the Rim Bridge over Horizon Drive"},
+ {"id": "highShieling", "label": "High Shieling Ranch", "xy": [1436, 694], "h": 61.5, "note": "V3: the shieling in the east valley's mouth at the foot of Stair Falls, beside Shieling Pool and the beck; plotted now, personal editing later (open to all from the start)"},
+])
+# Structures. Tunnels with a `route` are built by land/structures (manifestTunnels): the Rim Tunnel carries Horizon Drive under
+# the connecting ridge, its twin bore the Year Walk beside it. Footbridges carry walks over the V3 water.
+m["structures"]["rimTunnel"] = {"xy": [1566, 545], "kind": "tunnel", "route": "V01", "length_m": 84, "width_m": 11, "note": "V3 (D-M11): Horizon Drive under the Rim Bridge, the connecting ridge from the east rim to the Prow; the ridge and the Rim Steps cross over it"}
+m["structures"]["rimTunnelWalk"] = {"xy": [1556, 540], "kind": "tunnel", "route": "yearWalk", "length_m": 70, "width_m": 6, "note": "V3: the Year Walk's bore beside the Rim Tunnel"}
+m["structures"]["colFootbridge"] = {"xy": [1451.5, 455.5], "kind": "footbridge", "route": "walk eastRim", "span_m": 8, "width_m": 3.2, "note": "V3: the east rim walk over the Col Rill below the Col Steps"}
+m["structures"]["colSteps"] = {"kind": "stair", "from": [1402, 450], "to": [1444, 466], "note": "V3: the Col Steps, from the glacier's east lip down the horn's south-east flank to the Rim Bridge col"}
+m["structures"]["shielingSteps"] = {"kind": "stair", "from": [1506, 648], "to": [1487, 687], "note": "V3: the Shieling Steps, from Stair Falls' head down the apron beside the falls to the ranch lane"}
+m["structures"]["shielingFootbridge"] = {"xy": [1459, 701], "kind": "footbridge", "route": "walk ranchLane", "span_m": 8, "width_m": 3.2, "note": "V3: the ranch lane over the Shieling Beck"}
+m["structures"]["hamletFootbridge"] = {"xy": [1097, 417], "kind": "footbridge", "route": "walk fallswatch", "span_m": 8, "width_m": 3.2, "note": "V3: the Fallswatch lane over the Rillcut's head"}
+m["structures"]["rillcutFootbridge"] = {"xy": [1037.7, 517.3], "kind": "footbridge", "route": "yearWalk", "span_m": 12, "width_m": 5.6, "note": "V3: the Year Walk over the Hollow Rill at the Rillcut pool (the rill ends in the Hollow Tarn)"}
+m["structures"]["veilFootbridge"] = {"xy": [1124, 720], "kind": "footbridge", "route": "walk lakerim", "span_m": 10, "width_m": 5.6, "note": "V3: the lake-rim trail (carrying the Year Walk's February share) over Veil Pool's outlet to the lake"}
+# The lake-rim trail stays level (55, its v2.7 height) across the Veil Footbridge: without the pins the outlet's bank cut dipped the
+# trail to 54.56 and the Year Walk's February share, laid straight over the span, stood 2.5–4.4 cm off the trail (the Stillwater
+# entrance holds the two flush within 2 cm). Deck 55 over the outlet's 52.3: 2.7 clear.
+m["walks"]["lakerim"]["levels"] = [{"xy": [1108, 721.2], "h": 55, "why": "V3: level across the Veil Footbridge (west approach)"}, {"xy": [1124, 720], "h": 55, "why": "V3: the Veil Footbridge deck"}, {"xy": [1140, 721.3], "h": 55, "why": "V3: level across the Veil Footbridge (east approach)"}]
+m["structures"]["rimSteps"] = {"kind": "stair", "from": [1516, 550], "to": [1596, 556], "note": "V3: the Rim Steps, from the Rim Lookout down the connecting ridge over Horizon Drive (in the Rim Tunnel) to the Prow headland"}
+m["names"]["landforms"] = [*m["names"]["landforms"], "Glacier Peak", "the glacier", "the Highland Ring", "the west bench", "the Rillcut", "Split Wall Gorge", "the Veil"]
+m["names"]["mountainV3"] = ["Glacier Springs", "the Crown Rill", "the Twin Tarns", "Rillcut Falls", "the Hollow Rill", "the Long Beck", "Long Falls", "the Long Cut", "Spur Tarn", "Veil Falls", "Veil Pool", "Spur Falls", "the Col Rill", "Stair Falls", "Shieling Pool", "the Shieling Beck", "Bench Hamlet", "Westwatch Chapel", "Orchard Bench", "Fallswatch", "the Rim Walk", "the Glacier Walk", "the Col Steps", "the east rim walk", "the Rim Bridge", "the Rim Steps", "Rim Lookout", "the Shieling Steps", "the ranch lane", "High Shieling Ranch", "the Shieling Mere", "the Hollow Tarn"]
+m["names"]["structures"] = [*m["names"]["structures"], "Rim Tunnel", "the Rim Steps", "the Col Steps", "the Shieling Steps", "Col Footbridge", "Shieling Footbridge", "Hamlet Footbridge", "Rillcut Footbridge", "Veil Footbridge"]
+
+# Height pins: bridge decks stand ≥ 1.25 eu over the water they cross; the east rim walk meets the Col Steps' foot flush.
+_yw.setdefault("levels", [])
+_yw["levels"] = [*_yw["levels"], {"xy": [1037.7, 517.3], "h": 47.8, "why": "V3: the Rillcut Footbridge deck over the Hollow Rill (45.5)"}, {"xy": [1062, 712], "h": 55.2, "why": "V3: leave the lake-rim share level before descending into the Hollow (the lake-rim trail runs 5 m beside it here)"}]
+m["walks"]["lakerim"]["levels"] = [*m["walks"]["lakerim"].get("levels", [])  ]
+m["walks"]["eastRim"]["levels"] = [{"xy": [1444, 466], "h": 124.2, "why": "V3: the Col Steps' foot (ground + 0.6)"}]
+# Crossing register rows for the V3 water and walks (world/crossings.ts resolves them to geometry; footbridges are built from
+# structures.<id> route + span_m above).
+m["crossings"].extend([
+ {"a": "yearWalk", "b": "water.v3.hollowRill", "at": [1037.7, 517.3], "resolution": "over", "structure": "rillcutFootbridge", "kind": "crossing", "note": "V3: the Year Walk over the Hollow Rill below Rillcut Falls"},
+ {"a": "walk lakerim", "b": "water.v3.veilOut", "at": [1124, 720], "resolution": "over", "structure": "veilFootbridge", "kind": "crossing", "note": "V3: the lake-rim trail over Veil Pool's outlet"},
+ {"a": "yearWalk", "b": "water.v3.veilOut", "at": [1124, 720], "resolution": "over", "structure": "veilFootbridge", "kind": "crossing", "note": "V3: the Year Walk's February share rides the lake-rim trail over the Veil Footbridge"},
+ {"a": "walk eastRim", "b": "water.v3.colRill", "at": [1451.5, 455.5], "resolution": "over", "structure": "colFootbridge", "kind": "crossing", "note": "V3: the east rim walk over the Col Rill"},
+ {"a": "walk ranchLane", "b": "water.v3.shielingBeck", "at": [1459, 701], "resolution": "over", "structure": "shielingFootbridge", "kind": "crossing", "note": "V3: the ranch lane over the Shieling Beck"},
+ {"a": "walk fallswatch", "b": "water.v3.rillcut", "at": [1097.5, 417], "resolution": "over", "structure": "hamletFootbridge", "kind": "crossing", "note": "V3: the Fallswatch lane over the Rillcut's head"},
+ {"a": "DEEP_RUN", "b": "water.v3.splitWall", "at": [1490, 560], "resolution": "under", "kind": "crossing", "note": "V3: the Sea Passage runs ≈ 90 m beneath Split Wall Gorge"},
+])
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")

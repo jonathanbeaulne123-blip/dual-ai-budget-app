@@ -4,6 +4,7 @@ import { coastCharacter, signedShoreDistance } from '../coast';
 import { buildWaterCuts, waterInfluence } from '../water';
 import { clamp, contains, linePoint, mix, polygonCentre, polygonDistance, polylineArcs, segmentPoint, smooth } from './geometry';
 import { mountainV2Height, mountainV2Rule } from '../mountainV2/ground';
+import { mountainV3Height, v3Paint } from '../mountainV3/landform';
 import { oreRoadGroundCeiling } from '../underground/oreRoad';
 
 export const GEOGRAPHY_REVISION = 'horizon-geo-1' as const;
@@ -154,6 +155,8 @@ export function baseHeight(x: number, z: number): number {
   // Pass 5 (D-M1/D-M2): Mountain v2 stands on the Crown summit; inside its footprint its ground (or the Foot terrace, or the
   // apron to the Horizon's own ground) replaces the bands. North of v2's summit line the Crown's north face wins where higher.
   height = mountainV2Height(x / s, z / s, height / s) * s;
+  // Mountain V3 (D-M11): the Highlands and the Falls reshape the ring round v2 (Glacier Peak, the benches, the gorges, the Veil).
+  height = mountainV3Height(x / s, z / s, height / s) * s;
   const character = coastCharacter(x, z), shoreWidth = character === 'southBeach' ? 44 * s : character === 'bight' ? 23 * s : 10 * s;
   height = mix(0.14 * s, height, smooth(shore / shoreWidth));
   height = damWindow(x, z, notchHeight(x, z, height));
@@ -752,6 +755,8 @@ export function biomeGround(x: number, z: number, height: number): number {
   const m = getModel(), s = m.scale, shore = signedShoreDistance(x, z), inside = (id: string) => { const b = m.bands.find(f => f.id === id); return !!b && contains(b.poly, x, z); };
   const beach = coastCharacter(x, z) === 'southBeach' ? 30 * s : coastCharacter(x, z) === 'bight' ? 12 * s : 4 * s;
   if (height < 1 * s || shore < beach || inside('sands')) return PAINT.sand;
+  // Mountain V3: the glacier is snow, its moraine scree.
+  const v3 = v3Paint(x / s, z / s, height / s); if (v3) return PAINT[v3];
   if (inside('crown') && height >= 120 * s) return PAINT.scree;
   if (inside('flats')) return PAINT.ochre;
   if (inside('scholars') || inside('hollow')) return PAINT.duff;

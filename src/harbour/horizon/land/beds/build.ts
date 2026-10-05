@@ -332,6 +332,9 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
     const wb=bed(name,row.profile,gradeRoute(name,points,base,.12,pins,cuts.diagnostics,5,TYP.walk));
     // v2.1: walks.<id>.surface_m / shoulder_m override the profile section (the lake-rim trail carries the Year Walk's February share at its width).
     const {surface_m:sw,shoulder_m:sh}=row as unknown as {surface_m?:number;shoulder_m?:number};if(sw)wb.width=sw*requireScaleFactor();if(sh)wb.shoulder=sh*requireScaleFactor();
+    // V3 (D-M11, the D-M5 rule for every walk): where a Horizon walk runs onto Mountain v2's own land the region carries it (no
+    // Horizon cut, deck or wall; v2's ground is its floor). The ranch lane's last 30 m to the Year Walk's Hearth stretch is one.
+    regionCarryLand(wb);
     cuts.beds.push(wb);
   }
   // Join the Cottage spur to the garden walk at the same contour. A short

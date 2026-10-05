@@ -43,7 +43,8 @@ export const V01_REACHES: readonly { id: string; label: string; from: Point2; co
   { id: 'V01.R13', label: 'Harbour Avenue', from: [1370, 1260], context: 'boulevard' },
 ];
 const ROAD_STRUCTURES: Record<string, { solid: string; kind: 'bridge' | 'tunnel' }[]> = {
-  V01: [{ solid: 'prowTunnel.floor@prow', kind: 'tunnel' }, { solid: 'bightBridge.deck@bight', kind: 'bridge' }, { solid: 'quayBridge.deck@reach', kind: 'bridge' }],
+  // V3 (D-M11): the Rim Tunnel (V01 under the Rim Bridge) spans the Prow/Crown district seam, so both floor pieces name it.
+  V01: [{ solid: 'prowTunnel.floor@prow', kind: 'tunnel' }, { solid: 'rimTunnel.floor@prow', kind: 'tunnel' }, { solid: 'rimTunnel.floor@crown', kind: 'tunnel' }, { solid: 'bightBridge.deck@bight', kind: 'bridge' }, { solid: 'quayBridge.deck@reach', kind: 'bridge' }],
   VG: [{ solid: 'highSpan.deck@notch', kind: 'bridge' }],
   V03: [{ solid: 'mountainRoadTunnel.floor@prow', kind: 'tunnel' }, { solid: 'mountainRoadCanalBridge.deck@lakeside', kind: 'bridge' }],
 };

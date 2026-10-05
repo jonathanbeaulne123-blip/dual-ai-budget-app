@@ -2,6 +2,7 @@ import { HORIZON_MANIFEST as M, requireScaleFactor } from '../../world/manifest'
 import type { StructureSolid, WaterCut, XY, XYZ } from '../interfaces';
 import { ellipse, lineOutline, polygonDistance, polylineArcs, segmentPoint } from '../terrain/geometry';
 import { islandContains } from '../coast';
+import { buildMountainV3Waters } from '../mountainV3/water';
 
 /** Authored hydrology. Heights are independent of route grading and household state.
  * The lake's fixed 50 m level therefore cannot drift. */
@@ -44,6 +45,8 @@ export function buildWaterCuts(): WaterCut[] {
     // R2-60: the spring at the Reach (water.spring) is a water body with a visible source: a pool at the foot of the
     // west bank (SPRING below; the source rock is `buildSpringSolids`).
     { ...basin('water.spring', SPRING.pool.c[0], SPRING.pool.c[1], SPRING.pool.r[0], SPRING.pool.r[1], SPRING.pool.level, 0.6, 'lake'), bank: SPRING.pool.bank * s },
+    // Mountain V3 (D-M11): the glacier-fed network on the ring round Mountain v2 (land/mountainV3/water.ts).
+    ...buildMountainV3Waters(s),
   ];
   return bodies;
 }

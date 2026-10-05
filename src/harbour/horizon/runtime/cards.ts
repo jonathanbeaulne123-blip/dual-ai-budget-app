@@ -3,7 +3,7 @@ import {finishBuild} from '../../../house/world/buildTask.ts';
 import * as THREE from 'three';
 import {CardBuilder, paperGrain, rgb, type CardBuild, type RGB} from '../../art/cardScene.ts';
 import type {District, WorldDefinition} from '../world/definition.ts';
-import type {LandCuts, StructureSolid, TerrainField, WaterCut, XYZ} from '../land/interfaces.ts';
+import type {LandCuts, StructureSolid, TerrainField, WaterCut, XYZ,FallCut} from '../land/interfaces.ts';
 import {BIOME_GROUNDS, ROCK_SETS, rockWeight, TERRAIN_SURFACE_PALETTE, terrainPaintGround, terrainPaintRockSet, terrainTriangleVisible} from '../land/terrain/index.ts';
 import {districtAt} from '../world/districts.ts';
 import {addCorridorSolidSteps,isCorridorSolid} from '../kit/road/pavement.ts';
@@ -206,11 +206,38 @@ function addWater(builder:CardBuilder,w:WaterCut){
     for(const tri of THREE.ShapeUtils.triangulateShape(contour,[])){const p=(i:number):XYZ=>[w.outline[i]![0],w.level,w.outline[i]![1]];waterTriangle(builder,p(tri[0]!),p(tri[1]!),p(tri[2]!),color);}
   }
 }
+/**
+ * Mountain V3 (D-M11): a waterfall curtain. Sheets fall from the lip line at `top` to `foot`, leaning outward from the rock
+ * (a taller fall leans more), lightening toward the foot; the flow sheen (uv.x) travels down the curtain. Full draws two
+ * offset sheets and a foam ring on the pool; lite one sheet and the foam. No collision: the pool below is the water.
+ */
+export function addFall(builder:CardBuilder,f:FallCut,tier:'full'|'lite'){
+  const lip=f.lip;if(lip.length<2)return;
+  const arcs=[0];for(let i=1;i<lip.length;i++)arcs.push(arcs[i-1]!+Math.hypot(lip[i]![0]-lip[i-1]![0],lip[i]![1]-lip[i-1]![1]));
+  const width=arcs.at(-1)!,drop=f.top-f.foot,columns=Math.max(2,Math.ceil(width/1.5)),rows=tier==='full'?8:5,lean=f.lean??1.2+drop*.05;
+  const at=(s:number):[number,number]=>{let i=1;while(i<arcs.length-1&&arcs[i]!<s)i++;const a=lip[i-1]!,b=lip[i]!,t=(s-arcs[i-1]!)/((arcs[i]!-arcs[i-1]!)||1);return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];};
+  const top=rgb('#9cc3c6'),bottom=rgb('#e7f1f0'),mixc=(t:number):RGB=>[top[0]+(bottom[0]-top[0])*t,top[1]+(bottom[1]-top[1])*t,top[2]+(bottom[2]-top[2])*t];
+  for(let sheet=0;sheet<(tier==='full'?2:1);sheet++){
+    const inset=sheet*width*.06,push0=sheet*.7,pt=(c:number,r:number):XYZ=>{const u=c/columns,t=r/rows,[x,z]=at(inset+(width-2*inset)*u),out=push0+lean*Math.sin(t*Math.PI/2)+(sheet?.3*Math.sin(u*Math.PI*3):0);return [x+f.outward[0]*out,f.top-drop*t,z+f.outward[1]*out];};
+    for(let r=0;r<rows;r++)for(let c=0;c<columns;c++){
+      const t0=r/rows,t1=(r+1)/rows,u0=c/columns,u1=(c+1)/columns,a=pt(c,r),b=pt(c+1,r),d=pt(c+1,r+1),e=pt(c,r+1),k0=mixc(t0*.8+sheet*.15),k1=mixc(t1*.8+sheet*.15);
+      const uv=(t:number,u:number):[number,number]=>[t*drop*.9,u];
+      // Both windings are drawn (DoubleSide); vertex colours lighten toward the foot.
+      builder.water(a,b,d,uv(t0,u0),uv(t0,u1),uv(t1,u1),k0);builder.water(a,d,e,uv(t0,u0),uv(t1,u1),uv(t1,u0),k1);
+    }
+  }
+  // Foam: a ring on the pool surface where the curtain lands.
+  const [cx,cz]=at(width/2),fx=cx+f.outward[0]*(lean+1.2),fz=cz+f.outward[1]*(lean+1.2),rx=Math.max(2,width*.55),rz=Math.max(1.5,lean+1.4),seg=tier==='full'?14:8,foam=rgb('#f2f6f3'),y=f.foot+.08;
+  const nx=-f.outward[1],nz=f.outward[0];
+  for(let i=0;i<seg;i++){const a0=i/seg*Math.PI*2,a1=(i+1)/seg*Math.PI*2,p=(a:number):XYZ=>[fx+nx*Math.cos(a)*rx+f.outward[0]*Math.sin(a)*rz,y,fz+nz*Math.cos(a)*rx+f.outward[1]*Math.sin(a)*rz];
+    builder.water([fx,y,fz],p(a0),p(a1),[0,.5],[Math.cos(a0),0],[Math.cos(a1),1],foam);}
+}
 export function buildWaterCards(cuts:LandCuts,tier:'full'|'lite'){
   const b=new CardBuilder('horizon.water',tier,{ink:'#52777b',cell:4096});
   // A sea slab sits underneath the island; inland holes come only from named mouth masks.
   const color=rgb('#527b80');waterTriangle(b,[-800,-.025,-800],[-800,-.025,2600],[2800,-.025,-800],color);waterTriangle(b,[2800,-.025,-800],[-800,-.025,2600],[2800,-.025,2600],color);
   for(const w of cuts.waters)if(w.kind!=='sea')addWater(b,w);
+  for(const f of cuts.falls??[])addFall(b,f,tier);
   return b.finish();
 }
 

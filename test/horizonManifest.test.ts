@@ -17,7 +17,11 @@ describe('Horizon manifest v2.0',()=>{
   it('has the authored ids and counts without treating the two lake places as hosts',()=>{
     expect(manifest.hosts).toHaveLength(7);
     const harbourIds=new Set([...manifest.hosts.flatMap(host=>host.placeIds),...manifest.places.map(place=>place.id)]);
-    expect(harbourIds).toEqual(new Set(['court','campfire','kitchen','tower','cellar','atlas','bank','library','glasshouse','kiln','cottage','boathouse','L01','L02']));
+    // V3 (D-M11): nine highland places (no host, no pad money): Glacier Peak, Glacier Springs, Bench Hamlet, Westwatch Chapel, Orchard
+    // Bench, the Twin Tarns, Fallswatch, Rim Lookout and High Shieling Ranch.
+    const v3=['glacierPeak','glacierSprings','benchHamlet','westwatch','orchardBench','twinTarns','fallswatch','rimLookout','highShieling'];
+    expect(harbourIds).toEqual(new Set(['court','campfire','kitchen','tower','cellar','atlas','bank','library','glasshouse','kiln','cottage','boathouse','L01','L02',...v3]));
+    for(const id of v3)expect(manifest.hosts.some(h=>h.placeIds.includes(id)),id).toBe(false);
     expect(manifest.districts).toHaveLength(13);
     expect(manifest.neighbourhoods).toHaveLength(7);
     expect(manifest.views).toHaveLength(12);
@@ -93,7 +97,7 @@ describe('Horizon manifest v2.0',()=>{
   });
   it('carries Jonathan’s 2026-09-27 rulings as numbers (v2.0) and the Wave 5 integration data (v2.1)',()=>{
     const m=manifest as unknown as Record<string,any>;
-    expect(m.version).toBe('2.6');   // v2.6 = Pass 5, Mountain v2 placed (D-M1..D-M10); was '2.4' (candidate 6). v2.2 = v2.1 + main's data-only v1.7 blocks (reconciliation); v2.3 = Wave 7 (W7-A); v2.4 = Wave 7 integrator 4; v2.5 = reconciled with main #554-#558
+    expect(m.version).toBe('3.0');   // v3.0 = Mountain V3 (D-M11); v2.6 = Pass 5, Mountain v2 placed (D-M1..D-M10); was '2.4' (candidate 6). v2.2 = v2.1 + main's data-only v1.7 blocks (reconciliation); v2.3 = Wave 7 (W7-A); v2.4 = Wave 7 integrator 4; v2.5 = reconciled with main #554-#558
     // D-A1: 245 m, one steel arch, 11.4 clear; an 8 m hull at 46° needs 32.0 m. Ruled 36 m at s 98-134 (kept as opening.v2_0);
     // v2.1 (design lead, reversible): 40 m at s 103-143, 38 clear - the hull cleared the east pier by -3.99 at 36 m, +1.37 at 40.
     const bb=m.structures.bightBridge;expect(bb.span_m).toBe(245);expect(bb.v1_9.span_m).toBe(230);
@@ -165,7 +169,7 @@ describe('Horizon manifest v2.0',()=>{
 });
 describe('Horizon manifest v2.2: main\'s v1.7 sky data on the v2.1 land',()=>{
   it('adds FLIGHT.md sky data without a geography change',()=>{
-    expect(manifest.version).toBe('2.6');   // v2.6 = Pass 5 (Mountain v2); was '2.4' (candidate 6); v2.5 = reconciled with main #554-#560
+    expect(manifest.version).toBe('3.0');   // v3.0 = Mountain V3 (D-M11); v2.6 = Pass 5 (Mountain v2); was '2.4' (candidate 6); v2.5 = reconciled with main #554-#560
     expect(manifest.sky.gliderPolar).toHaveLength(5);
     expect(manifest.sky.parachute).toMatchObject({forward_ms:6,sink_ms:3,freefallCap_ms:30,autoPull_agl_m:45,minBail_agl_m:60,canopy_m:[7,3]});
     expect(manifest.sky.corridors.throat).toMatchObject({gate:12,to:[1300,420],slope_deg:30,level_m:25,splashH:42,coneDeg:25,maxBankDeg:20});
@@ -190,8 +194,8 @@ describe('Horizon manifest v2.2: main\'s v1.7 RIDE data (§8.3, D40, D42)',()=>{
   const paces=manifest.paces as unknown as Record<string,{roll:number|null;pushGrip:number|null}>;
   const surfaces=manifest.surfaces as unknown as Record<string,{pace:string;grip:number|null}>;
   it('is version 2.2 (now 2.3), dated, and says what changed',()=>{
-    expect(manifest.version).toBe('2.6');   // v2.6 = Pass 5 (Mountain v2); was '2.4' (candidate 6)
-    expect(manifest.date).toBe('2026-09-28');   // v2.6 (Pass 5)
+    expect(manifest.version).toBe('3.0');   // v3.0 = Mountain V3 (D-M11, the Highlands and the Falls); v2.6 = Pass 5 (Mountain v2); was '2.4' (candidate 6)
+    expect(manifest.date).toBe('2026-10-04');   // v3.0 (Mountain V3)
     expect(manifest.status).toContain('v2.2: paces and surface grip (RIDE D42)');
   });
   it('gives every surface a numeric grip except duff, which is never a bed',()=>{

@@ -1584,6 +1584,34 @@
         "test/horizon-walking-ground-patch.test.ts"
       ],
       "reason": "Mountain v2 walking ground and funicular foot path: collar topology, measured-cut patch bounds, indexed funicular trail support and Mountain Road ground contact"
+    },
+    {
+      "sources": [
+        "src/harbour/horizon/land/mountainV3/landform.ts",
+        "src/harbour/horizon/land/mountainV3/water.ts",
+        "src/harbour/horizon/land/interfaces.ts",
+        "src/harbour/horizon/land/terrain/index.ts",
+        "src/harbour/horizon/land/water/index.ts",
+        "src/harbour/horizon/runtime/cards.ts",
+        "src/harbour/horizon/world/MANIFEST.json",
+        "src/harbour/horizon/world/build.ts",
+        "src/harbour/horizon/world/crossings.ts",
+        "src/harbour/horizon/world/definition.ts",
+        "scripts/horizon/bake-source.ts",
+        "docs/horizon/make_manifest.py",
+        "src/harbour/mountain/generated/awning-landing.json"
+      ],
+      "tests": [
+        "test/horizon-mountain-v3.test.ts",
+        "test/horizonLandforms.test.ts",
+        "test/horizonWater.test.ts",
+        "test/horizonCrossings.test.ts",
+        "test/horizonManifest.test.ts",
+        "test/horizonCards.test.ts",
+        "test/horizonBakeArtifacts.test.ts",
+        "test/horizonWorldDefinition.test.ts"
+      ],
+      "reason": "Mountain V3 (D-M11): the one landform and water definition of the Highlands and the Falls, its terrain layer and paint, the fall cuts in the world definition and water cards, the D-M11 confluence rule, the generated manifest and the bake's byte-exact artifacts"
     }
   ]
 }
