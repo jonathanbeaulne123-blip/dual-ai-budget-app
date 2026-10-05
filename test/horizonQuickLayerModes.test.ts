@@ -137,8 +137,23 @@ describe('the quick layer in every mover phase',()=>{
     expect(h.querySelector('.horizon-cruiser-controls')).toBeNull();expect(h.querySelectorAll('.horizon-pad')).toHaveLength(2);
     const flight=[...h.querySelectorAll<HTMLButtonElement>('.horizon-airport button')].find(b=>b.textContent==='Cruise')!;act(()=>flight.click());expect(world.airportPower).toHaveBeenCalledWith(.8);
     const takeoff=[...h.querySelectorAll<HTMLButtonElement>('.horizon-airport button')].find(b=>b.textContent==='Take off')!;act(()=>takeoff.click());expect(world.airportTakeoff).toHaveBeenCalledTimes(1);
+    const row=h.querySelector('.horizon-touch-controls')!;expect(row.classList.contains('horizon-touch-controls--plane')).toBe(true);
+    expect([...row.children].map(c=>c.id||c.className.split(' ')[0])).toEqual(['horizon-pad','horizon-cockpit','horizon-pad']);
     expect(h.querySelector('.horizon-lever')).not.toBeNull();const left=h.querySelector<HTMLButtonElement>('.horizon-pedals button[aria-label="Yaw left (Q)"]')!;act(()=>left.click());expect(world.airportRudder).toHaveBeenCalledWith(-1);
     const stop=[...h.querySelectorAll<HTMLButtonElement>('.horizon-airport button')].find(b=>b.textContent==='Stop / ground brake')!;act(()=>stop.click());expect(world.airportPower).toHaveBeenLastCalledWith(0);expect(world.airportBrake).toHaveBeenLastCalledWith(true);
+  });
+  it('renders the lever, pedals and both pads in Classic, Taylor and Newfoundland',async()=>{
+    const {default:HorizonStage}=await import('../src/harbour/horizon/HorizonStage.tsx');
+    for(const theme of ['classic','taylor','newfoundland'] as const){
+      hud(true,{height:0},'plane');
+      host=document.createElement('div');document.body.append(host);root=createRoot(host);
+      await act(async()=>{root!.render(createElement(HorizonStage,{theme,onQuickSheet:()=>{},onJourney:()=>{},sound:{on:false,toggle:()=>{}}}));});await tick(50);await tick();
+      expect(host.querySelector(`.horizon-shell--${theme}`),theme).not.toBeNull();
+      expect(host.querySelectorAll('.horizon-pad'),theme).toHaveLength(2);expect(host.querySelector('.horizon-lever'),theme).not.toBeNull();
+      expect(host.querySelectorAll('.horizon-pedals button'),theme).toHaveLength(2);
+      expect([...host.querySelectorAll<HTMLButtonElement>('.horizon-airport__power button')].map(b=>b.textContent),theme).toEqual(['Idle','Taxi','Approach','Cruise','Full','Take off']);
+      await act(async()=>{root!.unmount();});host.remove();root=null;host=null as never;
+    }
   });
   it('renders and changes cruiser style when the browser storage getter is blocked',async()=>{
     const storage=vi.spyOn(window,'localStorage','get').mockImplementation(()=>{throw new DOMException('Storage blocked','SecurityError');});

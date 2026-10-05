@@ -29,8 +29,8 @@ export function CockpitControls(props:{aircraft:AircraftId;power:number;onPower:
   }
   return <div className="horizon-cockpit" role="group" aria-label="Aircraft power lever and yaw pedals">
     <div className="horizon-lever" ref={track} aria-hidden="true" data-detent={active.id} onPointerDown={lever} onPointerMove={lever} onPointerUp={lever} onPointerCancel={lever} onLostPointerCapture={lever}>
-      {detents.map(d=><span key={d.id} className="horizon-lever__notch" data-on={d.id===active.id?'true':undefined} style={{bottom:`${d.value*100}%`}}><i>{d.label}</i></span>)}
-      <span className="horizon-lever__knob" style={{bottom:`${active.value*100}%`}} />
+      {detents.map(d=><span key={d.id} className="horizon-lever__notch" data-on={d.id===active.id?'true':undefined} style={{bottom:`${d.value*100}%`}} />)}
+      <span className="horizon-lever__knob" style={{bottom:`${active.value*100}%`}}>{active.label}</span>
     </div>
     <div className="horizon-pedals">
       <button type="button" aria-label="Yaw left (Q)" onPointerDown={e=>press(e,-1)} onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release} onClick={e=>tap(e,-1)}><span aria-hidden="true">◀</span></button>
