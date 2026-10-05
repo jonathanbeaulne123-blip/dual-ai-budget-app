@@ -104,13 +104,20 @@ export interface LampSpot { id: string; kind: LampKind; at: Point3; head: Point3
 export type PlantSpecies =
   | 'round' | 'fruit' | 'birch' | 'pine' | 'poplar' | 'alpine'          // Mountain v2 tree archetypes
   | 'shrub' | 'flowering' | 'hedge' | 'heath'                         // Mountain v2 shrub archetypes
-  | 'palm' | 'flowerBed' | 'grassTuft';                               // corridor additions in the same card kit
+  | 'palm' | 'flowerBed' | 'grassTuft'                                // corridor additions in the same card kit
+  // The Water's Way (kit/plants/species.ts; neighbourhoods/types.ts DressingSpecies): the same card kit, drawn through
+  // the same planting machinery when a neighbourhood's plants are fed in as a synthetic corridor.
+  | 'reed' | 'cattail' | 'sedge' | 'lily' | 'willow' | 'tamarack' | 'spruce' | 'balsam' | 'oakGiant'
+  | 'cypress' | 'olive' | 'stonePine' | 'juniper' | 'cedar' | 'prairieGrass' | 'fanPalm' | 'canaryPalm'
+  | 'fern' | 'woodlandCard' | 'iceplant' | 'bougainvillea' | 'lemonPot' | 'dogwood' | 'apple';
 export type PlantingKind = 'avenue' | 'palmGrove' | 'flowerBed' | 'hedgerow' | 'framingTrees' | 'shrubCluster' | 'median';
 export interface PlantItem {
   species: PlantSpecies; at: Point3; scale: number; yaw: number; tint?: number;
   /** Optional wind lean (radians, toward local +x after `yaw`). A `pine` with lean ≥ 0.15 is drawn as a wind-bent
    * (wind-clipped) pine (STYLE §3.2 shore: "wind-bent pine, leaning"); other trees tilt by it. Absent = upright. */
   lean?: number;
+  /** Forces the item onto lite (a landmark tree, a page framer): `PlantRecord.keep` (neighbourhoods/types.ts). */
+  keep?: boolean;
 }
 /** A composed group (never a spline scatter): its items are placed together under one rule. */
 export interface PlantingGroup { id: string; kind: PlantingKind; reachId: string; side: 'left' | 'right' | 'median'; items: PlantItem[] }

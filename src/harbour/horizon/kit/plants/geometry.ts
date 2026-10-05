@@ -39,7 +39,7 @@ const norm = (a: V): V => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return 
 const UP: V = [0, 1, 0];
 
 /** A non-indexed triangle writer with per-vertex colour, an optional crown flag and an optional ink direction. */
-class Writer {
+export class Writer {
   p: number[] = []; c: number[] = []; crown: number[] = []; ink: number[] = [];
   /** A triangle facing `hint` (flipped if its normal points away), so every card's lit face is outward. */
   tri(a: V, b: V, c: V, ca: RGB, cb: RGB = ca, cc: RGB = ca, hint?: V, flags: { crown?: number; ink?: readonly [V, V, V] } = {}) {
@@ -55,12 +55,12 @@ class Writer {
     this.tri(a, c, d, ca, cc, cd, hint, { crown: flags.crown, ink: i ? [i[0], i[2], i[3]] : undefined });
   }
   /** Appends a (non-indexed) three geometry's triangles, coloured by a y-gradient of `col`, facing away from `centre`. */
-  solid(g: THREE.BufferGeometry, col: (y: number) => RGB, centre: V, flags: { crown?: number; ink?: number } = {}) {
+  solid(g: THREE.BufferGeometry, col: (y: number) => RGB, centre: V, flags: { crown?: number; /** Ink push, in units of the shader's 0.07 eu (1 = v2's rim). */ ink?: number } = {}) {
     const q = g.index ? g.toNonIndexed() : g, pos = q.getAttribute('position');
     for (let i = 0; i < pos.count; i += 3) {
       const v = [0, 1, 2].map(k => [pos.getX(i + k), pos.getY(i + k), pos.getZ(i + k)] as V) as [V, V, V];
       const mid: V = [(v[0][0] + v[1][0] + v[2][0]) / 3, (v[0][1] + v[1][1] + v[2][1]) / 3, (v[0][2] + v[1][2] + v[2][2]) / 3];
-      const ink = flags.ink ? v.map(p => norm(sub(p, centre))) as unknown as [V, V, V] : undefined;
+      const k = flags.ink ?? 0, ink = k ? v.map(p => { const d = norm(sub(p, centre)); return [d[0] * k, d[1] * k, d[2] * k] as V; }) as unknown as [V, V, V] : undefined;
       this.tri(v[0], v[1], v[2], col(v[0][1]), col(v[1][1]), col(v[2][1]), sub(mid, centre), { crown: flags.crown, ink });
     }
     if (q !== g) q.dispose(); g.dispose();

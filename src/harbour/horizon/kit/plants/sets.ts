@@ -28,9 +28,15 @@ export const FLOWER_SET = Object.freeze({
   woodland: 3,
   /** Lakeside / the Reach (§3.2 water): blue flag iris, marsh marigold, Joe-Pye weed. */
   water: 4,
+  /** The Water's Way: the Highlands (§3.2 highland): fireweed, harebell, mountain avens (Newfoundland: partridgeberry). */
+  highland: 5,
+  /** The Water's Way: the warm coast, Little Harbour + Long Sands: red geranium, lavender, white jasmine. */
+  warm: 6,
+  /** The Water's Way: the Reach's bog margin: sheep laurel, Labrador tea, cranberry (Newfoundland: bakeapple, pitcher plant). */
+  bog: 7,
 });
 export type FlowerSetId = (typeof FLOWER_SET)[keyof typeof FLOWER_SET];
-const SET_COUNT = 5;
+const SET_COUNT = 8;
 
 const s = (name: string, hex: string, form: FlowerForm = 'head'): FlowerSpecies => ({ name, colour: rgb(hex), form });
 const CLASSIC: readonly (readonly FlowerSpecies[])[] = [
@@ -39,6 +45,9 @@ const CLASSIC: readonly (readonly FlowerSpecies[])[] = [
   [s('red clover', '#c44f5c'), s('ox-eye daisy', '#f4efe6'), s('black-eyed Susan', '#e5b53a')],
   [s('white trillium', '#f3eee6'), s('wild columbine', '#c9563d'), s('foxglove', '#b07ab8', 'spike')],
   [s('blue flag iris', '#6c78c2', 'spike'), s('marsh marigold', '#e9c46a'), s('Joe-Pye weed', '#c08aa6')],
+  [s('fireweed', '#c65a9a', 'spike'), s('harebell', '#7f86c9'), s('mountain avens', '#f1ecdc')],
+  [s('red geranium', '#c8433a'), s('lavender', '#8f7cc0', 'spike'), s('white jasmine', '#f6f1e6')],
+  [s('sheep laurel', '#c45a8a'), s('Labrador tea', '#f2eee2'), s('cranberry', '#e2a3b0')],
 ];
 /** Newfoundland: the species swaps of STYLE §1.4.4 / §3.2, in its brighter primaries. */
 const NEWFOUNDLAND: readonly (readonly FlowerSpecies[])[] = [
@@ -47,6 +56,9 @@ const NEWFOUNDLAND: readonly (readonly FlowerSpecies[])[] = [
   [s('lupine', '#7b6fb8', 'spike'), s('ox-eye daisy', '#f3f1ea'), s('black-eyed Susan', '#e7b53c')],
   CLASSIC[3]!,
   [s('blue flag iris', '#6c78c2', 'spike'), s('bakeapple', '#e8a14a'), s('pitcher plant', '#8a3b4a')],
+  [s('fireweed', '#c8508e', 'spike'), s('harebell', '#7b6fb8'), s('partridgeberry', '#c8453a')],
+  CLASSIC[6]!,
+  [s('bakeapple', '#e8a14a'), s('pitcher plant', '#8a3b4a'), s('Labrador tea', '#f3f1ea')],
 ];
 
 /** The three species of a set in a dressing. Taylor: the same species in pastel paper (a quarter toward white). */
