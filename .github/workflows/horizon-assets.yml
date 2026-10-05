@@ -7,6 +7,8 @@ on:
       - 'src/harbour/horizon/**'
       # PR #566 Codex: Mountain v2's sources feed land/mountainV2/v2-data.json (dump-mountain-v2.mjs --check).
       - 'src/harbour/mountain/**'
+      # Horizon → Journey rule (D74): the Journey map is drawn from the bake; its land reader runs with the bake check.
+      - 'src/journey/land/**'
       - 'public/horizon/**'
       - 'test/horizonBakeArtifacts.test.ts'
       - 'package.json'
@@ -19,6 +21,8 @@ on:
       - 'src/harbour/horizon/**'
       # PR #566 Codex: Mountain v2's sources feed land/mountainV2/v2-data.json (dump-mountain-v2.mjs --check).
       - 'src/harbour/mountain/**'
+      # Horizon → Journey rule (D74): the Journey map is drawn from the bake; its land reader runs with the bake check.
+      - 'src/journey/land/**'
       - 'public/horizon/**'
       - 'test/horizonBakeArtifacts.test.ts'
       - 'package.json'
