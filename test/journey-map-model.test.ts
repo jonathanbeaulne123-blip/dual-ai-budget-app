@@ -15,8 +15,9 @@ import {
 import { addAppointment, addRecurrence, postEntry, postTransfer, reversePostedMoney } from "../src/core/commands.ts";
 import {
   boardToList, booksActualsBetween, chapterStatusText, deriveJourneyBoard, deriveJourneyBoardWithSummary, directionOf, listView, MAP_WORDS, mondayOf,
-  openPlaceWords, signedMoney,
+  mapMoney, openPlaceWords, signedMoney,
 } from "../src/journey/model/index.ts";
+import { formatCadGrouped } from "../src/core/money.ts";
 import { purseOf } from "../src/journey/model/purse.ts";
 import { yearOf } from "../src/journey/model/year.ts";
 import { amountText } from "../src/journey/model/words.ts";
@@ -255,10 +256,22 @@ describe("Horizon Clock model — purse and pay words (trust M3)", () => {
 
 describe("Horizon Clock model — words FIX-B prints (A10, trust minors 2–4)", () => {
   it("signedMoney reads the sign from the value", () => {
-    expect(signedMoney(210_000)).toBe("+$2100.00");
+    expect(signedMoney(210_000)).toBe("+$2,100.00");
     expect(signedMoney(-1_200)).toBe("−$12.00");
     expect(signedMoney(0)).toBe("$0.00");
     expect(signedMoney(-0)).toBe("$0.00");
+  });
+
+  it("every map figure prints Hearth's grouped CAD (the Books' and panels' \"$4,716.80\"), never \"$4716.80\"", () => {
+    expect(formatCadGrouped(471_680)).toBe("$4,716.80");
+    expect(formatCadGrouped(-12_345_678)).toBe("-$123,456.78");
+    expect(formatCadGrouped(99_999)).toBe("$999.99");
+    expect(mapMoney(185_000)).toBe("$1,850.00");
+    expect(signedMoney(-1_000_000)).toBe("−$10,000.00");
+    // Model amount words on the board carry the same grouping wherever a figure has four or more digits.
+    const words = boardToList(board).map((r) => r.amountText).filter(Boolean);
+    expect(words.some((w) => /\$\d{1,3}(,\d{3})+\.\d{2}/.test(w))).toBe(true);
+    expect(words.filter((w) => /\$\d{4,}/.test(w))).toEqual([]);
   });
 
   it("names the place an Open action opens", () => {

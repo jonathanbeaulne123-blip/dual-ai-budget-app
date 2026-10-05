@@ -10,10 +10,11 @@
  *   (UX #25). Not a live region — the view has the one announcer (UX #18).
  */
 import type { Purse as PurseModel } from "../contracts.ts";
-import { MAP_WORDS, signedMoney } from "../model/index.ts";
+import { MAP_WORDS, mapMoney, signedMoney } from "../model/index.ts";
 
 export function Purse({ purse, showToday, statusNote }: { purse: PurseModel; showToday: boolean; statusNote?: string | null }) {
-  const everyday = purse.everyday && purse.everyday.cents !== null ? purse.everyday.figure : null;
+  // Printed from the cents with the map's grouped figure ("$4,716.80"); the desk's `figure` string is ungrouped.
+  const everyday = purse.everyday && purse.everyday.cents !== null ? mapMoney(purse.everyday.cents) : null;
   const expected = showToday ? purse.expectedToday : [];
   const lines = expected.map((e) => ({ id: e.stopId, amount: e.amountCents === null ? null : signedMoney(e.amountCents), words: MAP_WORDS.purse.expectedToday(e.label), note: e.note ?? null }));
   const aria = [

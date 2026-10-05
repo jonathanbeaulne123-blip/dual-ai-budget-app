@@ -796,7 +796,7 @@ describe("Horizon Clock fix pass (FIX-B): Week, Year, list, dial, keys", () => {
 
   it("signs come from the value: never '+-$X' (trust minor 2)", () => {
     // The model's `signedMoney` (Hearth's `formatCad`, as every figure on the map prints): the sign from the value.
-    expect(signedMoney(210000)).toBe("+$2100.00");
+    expect(signedMoney(210000)).toBe("+$2,100.00");
     expect(signedMoney(-1200)).toBe("−$12.00");
     expect(signedMoney(0)).toBe("$0.00");
   });

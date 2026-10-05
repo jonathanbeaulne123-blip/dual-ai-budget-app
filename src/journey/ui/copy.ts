@@ -4,7 +4,7 @@
  * and the list can never say different things. No judgement words ("late", "failed", "behind", "winning").
  */
 import type { ActionCall, CrossroadsPreview, DateKey, JourneyLevel } from "../contracts.ts";
-import { openPlaceWords } from "../model/index.ts";
+import { mapMoney, openPlaceWords } from "../model/index.ts";
 
 export const COPY = {
   boardLabel: "Journey",
@@ -119,10 +119,9 @@ export function monthWords(month: string): string {
   return `${monthName(month)} ${month.slice(0, 4)}`;
 }
 
-/** Same shape as the model's amounts (`formatCad`): "$1850.00". Presentation of an existing figure only. */
+/** The model's `mapMoney` (Hearth's grouped CAD): "$1,850.00". Presentation of an existing figure only. */
 export function money(cents: number): string {
-  const sign = cents < 0 ? "-" : "";
-  return `${sign}$${(Math.abs(cents) / 100).toFixed(2)}`;
+  return mapMoney(cents);
 }
 
 /** Words for a call when nothing else names it (an attention item without a stop). Ends in "…" when a Confirm follows. */

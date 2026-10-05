@@ -48,9 +48,9 @@ export type Callout = { id: string; kind: "today" | "next" | "selected"; title: 
 
 /** "$1,850" for whole dollars, "$79.55" otherwise: a printed figure, never rounded (face tags, plates). */
 export function tagMoney(cents: number): string {
-  const abs = Math.abs(cents) / 100;
-  const body = (Number.isInteger(abs) ? abs.toFixed(0) : abs.toFixed(2)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return `${cents < 0 ? "−" : ""}$${body}`;
+  // The map's grouped figure, with ".00" dropped only on whole dollars (the prototype's face tags).
+  const grouped = money(Math.abs(cents)).replace(/\.00$/, "");
+  return `${cents < 0 ? "−" : ""}${grouped}`;
 }
 /** The subject of a stop's label for a callout ("Standing · jar · Winter reserve" → "Winter reserve"); aria keeps it all. */
 export const subjectOf = (label: string) => label.split(" · ").at(-1) ?? label;

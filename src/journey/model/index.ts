@@ -10,5 +10,5 @@ export { directionOf, isRecorded, knownCents, payAlreadyRecordedToday, toCheckId
 export { mondayOf } from "./weeks.ts";
 export {
   amountText, chapterStatusText, dayLabel, kindLabel, MAP_WORDS, monthLabel, needsYouLabel, openPlaceWords, pinnedLabel, rulerWords, shortDate,
-  signedMoney, statusText, weekTitle, yearTitle,
+  mapMoney, signedMoney, statusText, weekTitle, yearTitle,
 } from "./words.ts";

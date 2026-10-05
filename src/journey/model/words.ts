@@ -3,7 +3,7 @@
  * (`boardToList`) and the summary say exactly the same thing. No judgement words ("late", "failed", "behind").
  */
 import { formatMonthLabel, weekdaySunday0, WEEKDAY_SHORT, type DateKey, type MonthKey } from "../../core/calendar.ts";
-import { formatCad } from "../../core/money.ts";
+import { formatCadGrouped as formatCad } from "../../core/money.ts";
 import { ringsFor, STACK_RULER, type AmountBasis, type Chapter, type ChapterReviewStatus, type CommitmentStop, type JourneyLevel, type Stop } from "../contracts.ts";
 
 export const monthLabel = (month: MonthKey): string => formatMonthLabel(month);
@@ -213,9 +213,14 @@ export const MAP_WORDS = {
 } as const;
 
 /**
- * A figure with its direction from its own sign (trust minor 2): "+$2100.00", "−$12.00" (U+2212), "$0.00" for zero.
+ * A figure with its direction from its own sign (trust minor 2): "+$2,100.00", "−$12.00" (U+2212), "$0.00" for zero.
  * The sign is read from the value, never from what kind of row prints it.
  */
+/** Every unsigned figure on the map (purse, plates, Key, list strip, sheets): Hearth's grouped CAD, "$4,716.80". */
+export function mapMoney(cents: number): string {
+  return formatCad(cents);
+}
+
 export function signedMoney(cents: number): string {
   if (!Number.isFinite(cents) || cents === 0) return formatCad(0);
   return `${cents < 0 ? "−" : "+"}${formatCad(Math.abs(cents))}`;

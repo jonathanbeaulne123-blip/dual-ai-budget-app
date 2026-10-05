@@ -17,7 +17,7 @@ import type { ReactNode } from "react";
 import type { AttentionItem, JourneyBoardActions, JourneyBoard, ListRow, Stop } from "../contracts.ts";
 import { runJourneyAction } from "../contracts.ts";
 import { MAP_WORDS, pinnedLabel, shortDate } from "../model/index.ts";
-import { callWords, COPY, monthName } from "./copy.ts";
+import { callWords, COPY, money, monthName } from "./copy.ts";
 import { subjectOf } from "./Marks.tsx";
 import { PanelFrame, signedAmount, StateDot } from "./StopPanel.tsx";
 
@@ -138,7 +138,7 @@ export function ChecklistSheet({ board, rows, actions, pinned, dueReview, onOpen
   const due = dueReview && dueReview.count > 0 ? dueReview.count : 0;
   const kick = `${COPY.herculesList} · ${pinned ? `pinned to ${shortDate(board.week.from)}` : shortDate(board.today)}`;
   const title = pinned ? pinnedLabel(toCheck.length, board.week.from) : MAP_WORDS.checklist.title(board.toCheck.length);
-  const everyday = board.purse.everyday && board.purse.everyday.cents !== null ? `${MAP_WORDS.purse.everyday} ${board.purse.everyday.figure}` : MAP_WORDS.purse.everydayUnknown;
+  const everyday = board.purse.everyday && board.purse.everyday.cents !== null ? `${MAP_WORDS.purse.everyday} ${money(board.purse.everyday.cents)}` : MAP_WORDS.purse.everydayUnknown;
   return (
     <PanelFrame kindWords={kick} title={title} onClose={onClose} className="journey-panel--checklist" headingRef={headingRef} dialog>
       <p className="journey-panel__sub">{pinned ? MAP_WORDS.checklist.pinnedNote : `${everyday} · ${MAP_WORDS.purse.notCounted}`}</p>
