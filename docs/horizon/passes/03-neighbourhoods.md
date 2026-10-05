@@ -6,6 +6,34 @@ Builders: **Claude subagents**, two neighbourhoods at a time (one subagent per n
 
 This file is one brief template (Part A) applied seven times (Part B).
 
+## Amendment — The Water's Way (2026-10-05)
+
+Jonathan approved The Water's Way on 5 October 2026 ("recommended on all", D-303; book: [`STORY.md`](../STORY.md); registry: `src/harbour/horizon/world/story.ts`). Where this section and the rest of the file disagree, this section wins.
+
+**Waves become two parallel PRs, after a common-ground PR and alongside one land PR.**
+
+| PR | Builds | Builders |
+|---|---|---|
+| 1 · common ground | the dressing engine (one streamed, instanced, theme/season/night-aware layer per district; `WorldDefinition.dressing`), the **building grammar** (`kit/buildings`: one footprint record → collidable baked solids + three-dressing art + a Journey-map silhouette), the **plant kit** and the **prop kit**, the story registry and its sight-chain proofs, STORY.md, the STYLE amendments, the decisions | four in parallel |
+| 2 · the land | one re-bake: the V3.1 landform, the Greenway bed and `greenway` profile, the Reach open rails (boardwalk, bays, footbridge) and new pads, hide and pools, the Scholars spur and raised deck, the Glasshouse stair, Town Weave 3B, the Long Sands pier, the windsock move, the Bight Shore walls, the second stream | in parallel with PR 1 |
+| 3 · downstream | `crown` (the Highlands), `lakeside` (the Green), `landing` : the Reach + the Greenway, `harbour` (Little Harbour), `hollow` (the interlude) | five, one folder each |
+| 4 · the long way round | `landing` : Long Sands, `flats` (the Flats & the Bight), `scholars` (Scholars' Edge) | three, alongside PR 3 |
+| 5 · through-lines and play | the evening relay, the noon bells, the binocular zoom, the Sketchbook pages, the Journey map landmarks, the Lantern Hunt spots, the activities | — |
+
+The old wave order (Little Harbour + Lakeside first) and its pins are superseded; the downstream half goes first only because it holds the story's beginning. `landing` is split between two builders (the Reach + the Greenway in PR 3, Long Sands in PR 4): two sub-folders of one module, merged by the integrator.
+
+**The engine replaces "kit pieces only".** Part A's "Only kit pieces through the registry … No new modelled piece" and "Must not: model a piece outside the kit" now read: a neighbourhood module is a pure function of the bake-time world (`neighbourhoods/types.ts`, `NeighbourhoodModule`) that returns **records** — buildings for the building grammar, plants for the plant kit, props for the prop kit, ground paint, pools, life, light anchors, landmarks and lookouts. A shape the kits lack is a kit request in PR 1 (or to the integrator), never a mesh in a neighbourhood folder. Buildings with `collide` become baked solids, so walking, streaming, ray casts, view proofs and budgets all see what is drawn.
+
+**No geography change, amended.** Ground changes are PR 2's single land pass and re-bake, not a touch-up after the last wave. A neighbourhood that still needs ground writes the request to the integrator.
+
+**Pages.** Page **I** moves to the Reach boardwalk's north end (subject: the source rock; night line: the High Span's lights; the Quay Bridge is "the drawbridge"). Page **A** is retargeted from the square to Mountain v2's dam. The **belfry** page ("From the belfry", north) is the dam view. New pages, each with a view proof (PR 5): "Over the roofs" (belfry south), "From the water" (the harbour mouth), Notch Bluff, the wheel at sunset, the Flats tower, the Bight lookout (Scholars' porch pose). Page **H** takes the pose eye [452,58,890] → [428,30,480]; page **D** gains a night pose; page **L** gets a lantern on the Boathouse gable. Each neighbourhood keeps its pages' subjects clear (clearings first).
+
+**Binocular lookouts.** About sixteen story lookouts use the Lookout kit (STYLE §3.1): two viewers with a free lever (no coin, no money), a bench, a pictogram panel, an open timber rail (STYLE §1.6 rule 10). Each lookout's binocular targets are `STORY_EYES[*].targets`; every lookout also finds the Lamp.
+
+**Tests each neighbourhood adds (on top of Part A's).** Its emitted `Landmark`/`Lookout` records pass `validateStoryAgainstDressing` (registry ids, within 3 m plan / 1.5 m height); every sight-chain link and binocular target that touches its districts still clears ≥ 0.5 m with its buildings baked (`test/horizonStorySightChain.test.ts`); all three dressings authored, even where a prototype drew only Classic.
+
+**Per application (sheets as amended in STYLE, 2026-10-05).** B1 Little Harbour: STYLE §2.1 "cobblestone Italy", the campanile, Town Weave 3B, the island lantern on Lantern Row and the lanes, the bocce court wholly on the green. B2 Lakeside: the Green as STYLE §1.4.1 rule 12 amended (the Old Oak at [1125,1165] with its swing; kites; no treehouse; Green Road's bollards; baskets 4, 6, 7, 8 moved; the Drop Zone target ≈ [1037.2,1115.8]; the Meadow Pavilion and windpump; the Glasshouse stair-and-ramp; the Lantern Ring). B3 the Crown: the Highlands (STYLE §2.7 amendment: crofts, chapel, longhouse, Fallswatch, the drag lift's structure). B4 the Hollow: dressed as the interlude, with the second stream. B5 Scholars' Edge: layout B and the Bight lookout (STYLE §2.3 amendment). B6 the Landing: Long Sands as STYLE §2.5 Direction B; the Reach as a conservation marsh (six lookouts, the osprey pole, open rails, the Reed Maze, the Marsh Hide, reed rafts, pools ≤ 0.3 m) and the Greenway; the Boathouse white with a terracotta roof on its baked footprint; the Wreck at [250,1150]. B7 the Flats: the hybrid airport (STYLE §2.4 amendment), the battered and planted Bight Shore walls.
+
 ---
 
 ## Order and rationale

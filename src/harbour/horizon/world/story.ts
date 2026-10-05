@@ -166,7 +166,6 @@ export interface StoryEye {
 export const STORY_EYES: readonly StoryEye[] = [
   // Highlands. Fallswatch on the west buttress: eye = ground + 1.6 (≈ 96.5); sees the Veil lip and the oak.
   { id: 'fallswatch', label: 'Fallswatch (west buttress)', at: [1080, 692], lift: 1.6, targets: ['oak', 'veilLip', 'lamp'], lookout: true, owed: 'V3.1 west buttress (PR 2 land)' },
-  { id: 'westwatch', label: 'Westwatch Chapel knoll', at: [1036, 318], lift: 1.6, targets: ['library', 'lamp'], lookout: true },
   // Green. Under the oak, at the trunk (the ring bench is at r 6.2; the oak is seen from every spot within 20 m).
   { id: 'oak', label: 'under the Old Oak', at: [1125, 1165], lift: 1.6, targets: ['osprey', 'lamp'], lookout: false },
   // Reach: Spring Bay (deck 5.0, eye 6.6) and the other five Reach lookouts (binocular eyes, reach SPEC §2).

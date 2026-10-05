@@ -9,7 +9,7 @@ import { HORIZON_MANIFEST } from '../src/harbour/horizon/world/manifest.ts';
 import { measureStoryLink } from '../src/harbour/horizon/world/storySight.ts';
 import {
   EVENING_RELAY, LAMP_MIN_LOOKOUTS, NOON_BELLS, RELAY_TOTAL_SECONDS, relayStartSeconds, SIGHT_CHAIN, SIGHT_EXTRAS, SIGHT_MIN_CLEARANCE,
-  STORY_EYES, STORY_LANDMARKS, STORY_PLACES, STORY_ROUTES, storyEye, storyLandmark, validateStoryAgainstDressing,
+  STORY_EYES, STORY_LANDMARKS, STORY_PLACES, STORY_ROUTES, storyEye, storyLandmark, validateStoryAgainstDressing, type SightLink,
 } from '../src/harbour/horizon/world/story.ts';
 
 describe('the story registry is one consistent definition', () => {
@@ -98,21 +98,27 @@ describe('the sight chain holds on the bake (≥ 0.5 m clear to the sighted top 
     }
   }, 60_000);
   const rows: string[] = [];
-  for (const link of [...SIGHT_CHAIN, ...SIGHT_EXTRAS]) {
+  const prove = (link: SightLink) => {
+    const m = measure(link.from, link.to), owed = link.owedOccluders ?? [];
+    rows.push(`${link.from} → ${link.to}: ${m.clearance.toFixed(2)} m over ${m.distance.toFixed(0)} m${m.blocker ? ` (first limit: ${m.blocker})` : ''}`);
+    if (!owed.length) { expect(m.clearance, `${link.from} → ${link.to} limited by ${m.blocker}`).toBeGreaterThanOrEqual(SIGHT_MIN_CLEARANCE); return; }
+    // An owed occluder (its replacement approved, `dependsOn`): it must be the one limit today, and the line must clear with it
+    // opened. Once the bake no longer limits the line by it, this fails until the registry entry drops `owedOccluders`.
+    expect(m.clearance, `${link.from} → ${link.to}: the owed occluder ${owed.join(', ')} no longer limits the line; remove owedOccluders`).toBeLessThan(SIGHT_MIN_CLEARANCE);
+    expect(owed.some(p => m.blocker?.startsWith(p)), `${link.from} → ${link.to} limited by ${m.blocker}, not an owed occluder`).toBe(true);
+    const opened = measure(link.from, link.to, owed);
+    rows.push(`${link.from} → ${link.to} with ${owed.join(', ')} opened: ${opened.clearance.toFixed(2)} m${opened.blocker ? ` (first limit: ${opened.blocker})` : ''}`);
+    expect(opened.clearance, `${link.from} → ${link.to} limited by ${opened.blocker}`).toBeGreaterThanOrEqual(SIGHT_MIN_CLEARANCE);
+  };
+  const registered = [...SIGHT_CHAIN, ...SIGHT_EXTRAS];
+  for (const link of registered) {
     // fallswatch → oak / Veil lip depend on the V3.1 west buttress (PR 2): they pass on today's bake at the ground eye.
-    it(`${link.from} → ${link.to}${link.dependsOn ? ` (depends on ${link.dependsOn})` : ''}`, () => {
-      const m = measure(link.from, link.to), owed = link.owedOccluders ?? [];
-      rows.push(`${link.from} → ${link.to}: ${m.clearance.toFixed(2)} m over ${m.distance.toFixed(0)} m${m.blocker ? ` (first limit: ${m.blocker})` : ''}`);
-      if (!owed.length) { expect(m.clearance, `${link.from} → ${link.to} limited by ${m.blocker}`).toBeGreaterThanOrEqual(SIGHT_MIN_CLEARANCE); return; }
-      // An owed occluder (its replacement approved, `dependsOn`): it must be the one limit today, and the line must clear with it
-      // opened. Once the bake no longer limits the line by it, this fails until the registry entry drops `owedOccluders`.
-      expect(m.clearance, `${link.from} → ${link.to}: the owed occluder ${owed.join(', ')} no longer limits the line; remove owedOccluders`).toBeLessThan(SIGHT_MIN_CLEARANCE);
-      expect(owed.some(p => m.blocker?.startsWith(p)), `${link.from} → ${link.to} limited by ${m.blocker}, not an owed occluder`).toBe(true);
-      const opened = measure(link.from, link.to, owed);
-      rows.push(`${link.from} → ${link.to} with ${owed.join(', ')} opened: ${opened.clearance.toFixed(2)} m${opened.blocker ? ` (first limit: ${opened.blocker})` : ''}`);
-      expect(opened.clearance, `${link.from} → ${link.to} limited by ${opened.blocker}`).toBeGreaterThanOrEqual(SIGHT_MIN_CLEARANCE);
-    }, 60_000);
+    it(`${link.from} → ${link.to}${link.dependsOn ? ` (depends on ${link.dependsOn})` : ''}`, () => prove(link), 60_000);
   }
+  it('finds every binocular target other than the Lamp from its eye', () => {
+    const pairs = STORY_EYES.flatMap(e => e.targets.filter(t => t !== 'lamp').map(to => ({ from: e.id, to })));
+    for (const pair of pairs) prove(registered.find(l => l.from === pair.from && l.to === pair.to) ?? { ...pair, measured: NaN });
+  }, 120_000);
   it('sees the Lamp from at least six story eyes', () => {
     const seen = STORY_EYES.map(e => ({ id: e.id, m: measure(e.id, 'lamp') }));
     for (const s of seen) rows.push(`${s.id} → lamp: ${s.m.clearance.toFixed(2)} m over ${s.m.distance.toFixed(0)} m${s.m.blocker ? ` (${s.m.blocker})` : ''}`);
