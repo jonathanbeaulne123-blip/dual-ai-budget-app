@@ -5,7 +5,7 @@ import {solid,box} from '../src/harbour/horizon/land/structures/mesh.ts';
 import {createCruiserState,stepCruiser,cruiserDismount,recoverCruiser,cruiserSpeed,cruiserTopSpeed,validCruiserPosition} from '../src/harbour/horizon/movers/cruiser/sim.ts';
 import {createBicycleController} from '../src/harbour/horizon/movers/bicycle/controller.ts';
 import {createCruiserController} from '../src/harbour/horizon/movers/cruiser/controller.ts';
-import {CRUISER,cruiserPreferenceKey,readCruiserSkin,saveCruiserSkin} from '../src/harbour/horizon/movers/cruiser/tuning.ts';
+import {CRUISER,cruiserPreferenceKey,readCruiserSkin,saveCruiserSkin,rideModeFor,CRUISER_SKINS} from '../src/harbour/horizon/movers/cruiser/tuning.ts';
 import {createCruiserArt} from '../src/harbour/horizon/movers/cruiser/art.ts';
 import {createMoverRegistry,type MoverDeps} from '../src/harbour/horizon/movers/shared/registry.ts';
 import type {AirborneBody,ModeController,MoverInput} from '../src/harbour/horizon/movers/shared/mode.ts';
@@ -231,5 +231,12 @@ describe('cruiser speed and Shift boost (Jonathan, 2026-10-04)',()=>{
     expect(cruiserSpeed(both[0]!)).toBeCloseTo(48,6);expect(both[0]).toEqual(both[1]);
     const label=(c:ModeController)=>drive(c,6,{...idle,forward:1}).at(-1)!.hud.label;expect(label(bike)).toBe('Cycling');expect(label(car)).toBe('Cruising');
     const art=createCruiserArt('classic');art.setSkin('bicycle');expect(art.root.userData.skin).toBe('bicycle');expect(art.root.children[0]!.name).toBe('Town bicycle');art.dispose();
+  });
+});
+describe('the bicycle is a third Ride style (Jonathan 2026-10-04)',()=>{
+  it('offers it in the style list, remembers it, and rides it as the bicycle mode',()=>{
+    expect(Object.keys(CRUISER_SKINS)).toEqual(['vespa','harley','bicycle']);
+    expect(readCruiserSkin({getItem:()=> 'bicycle'},'x')).toBe('bicycle');
+    expect(rideModeFor('bicycle')).toBe('bicycle');expect(rideModeFor('vespa')).toBe('cruiser');expect(rideModeFor('harley')).toBe('cruiser');
   });
 });

@@ -201,10 +201,10 @@ export default function HorizonStage(props:HorizonStageProps){
         {props.onJourney&&<button onClick={props.onJourney}>Journey</button>}
         {props.sound&&<button aria-pressed={props.sound.on} onClick={()=>{runtime.current?.setKitchenSound?.(!props.sound!.on,true);props.sound!.toggle();}}>{props.sound.on?'Sound on':'Sound off'}</button>}
       </div>}
-      {!kitchenActive&&ready&&!sheet&&mover?.mode!=='plane'&&(!props.shell||mover?.mode==='cruiser')&&<div className="horizon-cruiser-controls" role="group" aria-label="Island cruiser">
-        <button disabled={Boolean(mover?.attached&&mover.mode!=='cruiser')} aria-pressed={mover?.mode==='cruiser'} onClick={()=>{runtime.current?.toggleCruiser();stage.current?.focus();}}>{mover?.mode==='cruiser'?'Get off':'Ride'} <span aria-hidden="true">V</span></button>
-        {(!props.shell||mover?.mode==='cruiser')&&<label>Style <select aria-label="Cruiser style" value={skin} onChange={event=>{const next=event.target.value as CruiserSkin;setSkin(next);runtime.current?.setCruiserSkin(next);const storage=cruiserStorage();setSkinSaveFailed(!storage||!saveCruiserSkin(storage,skinKey,next));}}>{Object.entries(CRUISER_SKINS).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>}
-        {mover?.mode==='cruiser'&&<><button onClick={()=>{runtime.current?.recoverCruiser();stage.current?.focus();}}>Recover <span aria-hidden="true">R</span></button><output aria-label="Cruiser speed">{(mover.hud as {pace?:string})?.pace??'0 km/h'}</output></>}
+      {!kitchenActive&&ready&&!sheet&&mover?.mode!=='plane'&&(!props.shell||wheeled)&&<div className="horizon-cruiser-controls" role="group" aria-label="Island cruiser">
+        <button disabled={Boolean(mover?.attached&&!wheeled)} aria-pressed={wheeled} onClick={()=>{runtime.current?.toggleCruiser();stage.current?.focus();}}>{wheeled?'Get off':'Ride'} <span aria-hidden="true">V</span></button>
+        {(!props.shell||wheeled)&&<label>Style <select aria-label="Cruiser style" value={mover?.mode==='bicycle'?'bicycle':skin} onChange={event=>{const next=event.target.value as CruiserSkin;setSkin(next);runtime.current?.setCruiserSkin(next);const storage=cruiserStorage();setSkinSaveFailed(!storage||!saveCruiserSkin(storage,skinKey,next));}}>{Object.entries(CRUISER_SKINS).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>}
+        {wheeled&&<><button onClick={()=>{runtime.current?.recoverCruiser();stage.current?.focus();}}>Recover <span aria-hidden="true">R</span></button><output aria-label="Cruiser speed">{(mover.hud as {pace?:string})?.pace??'0 km/h'}</output></>}
         {skinSaveFailed&&<span role="status">Style saved for this visit only.</span>}
       </div>}
       {/* PR #566 Codex: Skip (E) and Sit (Space, a toggle) as real buttons while riding the gondola or the funicular; the cruiser group's dressings. */}

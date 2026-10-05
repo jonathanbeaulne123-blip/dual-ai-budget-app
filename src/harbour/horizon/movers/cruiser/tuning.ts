@@ -17,13 +17,16 @@ export const CRUISER = Object.freeze({
   jumpSpeed: 4.8, steerLow: 2.4, steerHigh: 1.05, cornerSpeed: 10,
   cameraDistance: 5.4, cameraPull: 1.4, cameraLead: 3, cameraHeight: 2.6, cameraFov: 58,
 });
-export type CruiserSkin = 'vespa' | 'harley';
-export const CRUISER_SKINS = {vespa: 'Vespa-style scooter', harley: 'Harley-Davidson-style motorcycle'} as const;
+/** The Ride vehicle's three styles. 'bicycle' rides as the `bicycle` mode, the same sim and speeds (Jonathan 2026-10-04). */
+export type CruiserSkin = 'vespa' | 'harley' | 'bicycle';
+export const CRUISER_SKINS = {vespa: 'Vespa-style scooter', harley: 'Harley-Davidson-style motorcycle', bicycle: 'Bicycle'} as const;
+/** Which registry mode a style rides as. */
+export const rideModeFor = (skin:CruiserSkin):'cruiser'|'bicycle' => skin === 'bicycle' ? 'bicycle' : 'cruiser';
 export function cruiserPreferenceKey(environment:string, householdId:string, memberId:string) {
   return `hearth:horizon-cruiser:v1:${JSON.stringify([environment,householdId,memberId])}`;
 }
 export function readCruiserSkin(storage:Pick<Storage,'getItem'>, key:string):CruiserSkin {
-  try { return storage.getItem(key)==='harley'?'harley':'vespa'; } catch { return 'vespa'; }
+  try { const v=storage.getItem(key); return v==='harley'||v==='bicycle'?v:'vespa'; } catch { return 'vespa'; }
 }
 export function saveCruiserSkin(storage:Pick<Storage,'setItem'>,key:string,skin:CruiserSkin):boolean {
   try { storage.setItem(key,skin); return true; } catch { return false; }

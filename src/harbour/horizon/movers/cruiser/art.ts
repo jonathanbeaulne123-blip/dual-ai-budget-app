@@ -10,8 +10,8 @@ export const CRUISER_RIDER_POSE:SkateJointPose={
   arms:[{x:-.9,y:0,z:-.15,bend:.5},{x:-.9,y:0,z:.15,bend:.5}],
 };
 
-/** The cruiser's two saved styles plus the bicycle, which rides the same vehicle (bicycle mode). */
-export type CruiserLook = CruiserSkin | 'bicycle';
+/** The Ride vehicle's looks: the two motor styles and the bicycle (all one vehicle sim). */
+export type CruiserLook = CruiserSkin;
 /** Authored silhouettes, shared footprint. No skin-dependent collision or movement. */
 export function createCruiserArt(theme:VehicleDressing='classic') {
   const root=new THREE.Group(),model=new THREE.Group();root.name='Island cruiser';root.add(model);
