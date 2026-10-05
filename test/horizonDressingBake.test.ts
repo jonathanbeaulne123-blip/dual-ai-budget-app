@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {bakeDressings, collisionPartMesh, createDressingContext, hashSeed, mulberry32, validateDressing} from '../src/harbour/horizon/neighbourhoods/bake.ts';
+import {bakeDressings, collisionPartMesh, collisionSolids, createDressingContext, hashSeed, mulberry32, validateDressing} from '../src/harbour/horizon/neighbourhoods/bake.ts';
 import {building, emptyDressing as empty, fixtureModule, fixtureSource, GROUND} from './helpers/dressingFixture.ts';
 import {NEIGHBOURHOOD_MODULES} from '../src/harbour/horizon/neighbourhoods/index.ts';
 import type {StructureSolid, TerrainField} from '../src/harbour/horizon/land/interfaces.ts';
@@ -44,7 +44,11 @@ describe('neighbourhood dressing bake (neighbourhoods/bake.ts)', () => {
   });
   it('emits building and prop collision as dressing solids with stable ids, closed and outward', () => {
     const {solids} = bakeDressings([fixtureModule], createDressingContext(fixtureSource()));
-    expect(solids.map(s => s.id).sort()).toEqual(['dressing.hollow.bench.0', 'dressing.hollow.kiln.0', 'dressing.hollow.tower.0']);
+    // One solid per collider part (the grammar's support, walls, roof wedges …), ids `dressing.<nbhd>.<record>.<i>`.
+    const records = new Set(solids.map(s => s.id.replace(/\.\d+$/, '')));
+    expect([...records].sort()).toEqual(['dressing.hollow.bench', 'dressing.hollow.kiln', 'dressing.hollow.tower']);
+    for (const s of solids) expect(s.id).toMatch(/^dressing\.hollow\.(bench|kiln|tower)\.\d+$/);
+    for (const s of solids) if (s.walkable) expect(['floor', 'deck', 'roof']).toContain(s.role);
     for (const s of solids) {
       expect(s.kind).toBe('dressing'); expect(s.positions.every(Number.isFinite)).toBe(true);
       // Divergence theorem: a closed, outward-wound mesh has a positive signed volume.
@@ -52,7 +56,7 @@ describe('neighbourhood dressing bake (neighbourhoods/bake.ts)', () => {
       for (let i = 0; i < s.indices.length; i += 3) { const a = s.indices[i]! * 3, b = s.indices[i + 1]! * 3, c = s.indices[i + 2]! * 3; v += (P[a]! * (P[b + 1]! * P[c + 2]! - P[b + 2]! * P[c + 1]!) - P[a + 1]! * (P[b]! * P[c + 2]! - P[b + 2]! * P[c]!) + P[a + 2]! * (P[b]! * P[c + 1]! - P[b + 1]! * P[c]!)) / 6; }
       expect(v, s.id).toBeGreaterThan(0);
     }
-    expect(solids.find(s => s.id === 'dressing.hollow.tower.0')!.districtId).toBe('east');
+    expect(solids.filter(s => s.id.startsWith('dressing.hollow.tower.')).every(s => s.districtId === 'east')).toBe(true);
   });
   it('a walkable deck part is a floor the body stands on; a wall part blocks it (walkable-correct)', () => {
     const deck = collisionPartMesh({kind: 'box', centre: [100, 100], size: [6, 4], yaw: 0.4, bottom: 0, top: 1.2, role: 'deck', walkable: true, surface: 'timber'});
@@ -67,6 +71,16 @@ describe('neighbourhood dressing bake (neighbourhoods/bake.ts)', () => {
     // Ray casts (view proofs, the camera) see dressing solids.
     const ray = createRayCaster(field, {solids: [solid('dressing.t.wall.0', wall, false, 'wall')], waters: [], mouths: []}).first([180, 2, 102], [1, 0, 0], 50);
     expect(ray.kind === 'solid' && ray.sourceId).toBe('dressing.t.wall.0');
+  });
+  it('collider rules: a roof wedge may meet its bottom at the eave; walkable only on floors, decks and flat roofs', () => {
+    const problems: string[] = [];
+    const wedge = {kind: 'prism' as const, corners: [[0, 5, 0], [4, 5, 0], [4, 7, 3], [0, 7, 3]] as [number, number, number][], bottom: 5, role: 'roof' as const, walkable: false, surface: 'tile'};
+    expect(collisionSolids('t', 'w', 'west', [wedge], problems)).toHaveLength(1); expect(problems).toEqual([]);
+    collisionSolids('t', 'pitched', 'west', [{...wedge, walkable: true}], problems);
+    collisionSolids('t', 'under', 'west', [{...wedge, bottom: 6}], problems);
+    collisionSolids('t', 'flat', 'west', [{kind: 'box', centre: [0, 0], size: [4, 4], yaw: 0, bottom: 5, top: 6, role: 'roof', walkable: true, surface: 'lead'}], problems);
+    collisionSolids('t', 'wallWalk', 'west', [{kind: 'box', centre: [0, 0], size: [4, 4], yaw: 0, bottom: 5, top: 6, role: 'wall', walkable: true, surface: 'lead'}], problems);
+    expect(problems.map(p => p.split(':')[0])).toEqual(['dressing.t.pitched.0', 'dressing.t.under.0', 'dressing.t.wallWalk.0']);
   });
   it('validation names every problem: beds, pads, water, solids, protected heights, ids, numbers', () => {
     const ctx = createDressingContext(fixtureSource());

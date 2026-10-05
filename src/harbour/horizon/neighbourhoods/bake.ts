@@ -19,7 +19,8 @@
  *  5. nothing whose nominal height (`BUILDING` eave + roof; `PROP_HEIGHT` × scale; `SPECIES_HEIGHT` × scale) exceeds
  *     `PROTECTED_MAX_HEIGHT` (0.85) stands inside a protected area, unless the module lists its id in `allowInProtected`, or
  *     (plants) it stands at one of the module's own landmarks' base (within 0.5 eu): that plant IS the landmark tree.
- *  6. every collider part is finite, has top > bottom, and a walkable part is a 'deck' or 'floor'.
+ *  6. every collider part is finite, its top never below its bottom (a roof wedge may meet it at the eave) and above it
+ *     somewhere, and a walkable part is a 'floor', a 'deck' or a flat 'roof' (≤ 0.05 eu of rise).
  *
  * Pure data: no scene or renderer imports here (the kits' collision/shape functions are pure geometry).
  */
@@ -287,10 +288,13 @@ function earClip(ring: readonly [number, number][]): [number, number, number][] 
 function partProblems(part: CollisionPart, where: string): string[] {
   const out: string[] = [];
   if (!allFinite(part)) out.push(`${where}: a non-finite collider number`);
-  const top = part.kind === 'box' ? part.top : Math.min(...part.corners.map(c => c[1]));
-  if (!(top > part.bottom)) out.push(`${where}: collider top ≤ bottom`);
+  // A prism's top may meet its bottom along an edge (a roof slope is a wedge: zero thickness at the eave), never pass under it.
+  const ys = part.kind === 'box' ? [part.top] : part.corners.map(c => c[1]), low = Math.min(...ys), high = Math.max(...ys);
+  if (!(high > part.bottom) || low < part.bottom - 1e-6) out.push(`${where}: collider top below or at its bottom`);
   if (part.kind === 'prism' && part.corners.length < 3) out.push(`${where}: prism needs ≥ 3 corners`);
-  if (part.walkable && part.role !== 'deck' && part.role !== 'floor') out.push(`${where}: a walkable part must be a deck or floor (${part.role})`);
+  // Walkable: floors, decks and FLAT roofs (a roof terrace, a belfry floor); a pitched roof is never a floor.
+  const flat = high - low <= 0.05;
+  if (part.walkable && part.role !== 'deck' && part.role !== 'floor' && !(part.role === 'roof' && flat)) out.push(`${where}: a walkable part must be a floor, a deck or a flat roof (${part.role})`);
   return out;
 }
 

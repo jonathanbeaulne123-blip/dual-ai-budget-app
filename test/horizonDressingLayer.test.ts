@@ -2,9 +2,9 @@ import {readFileSync} from 'node:fs';
 import {gunzipSync} from 'node:zlib';
 import * as THREE from 'three';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {createDressingLayer, dressingCorridor, drapePolygon, DRESSING_DETAIL, LITE_DROP_PROPS, measureDistrictDressing} from '../src/harbour/horizon/runtime/dressingLayer.ts';
+import {createDressingLayer, dressingCorridor, drapePolygon, DRESSING_DETAIL, DRESSING_INK, DRESSING_NIGHT, LITE_DROP_PROPS, measureDistrictDressing} from '../src/harbour/horizon/runtime/dressingLayer.ts';
 import {buildDistrictCards, isDressingArtOwned, redressedHostSolids} from '../src/harbour/horizon/runtime/cards.ts';
-import type {DistrictDressing, WorldDressing} from '../src/harbour/horizon/neighbourhoods/types.ts';
+import type {DistrictDressing, PlantRecord, PropRecord, WorldDressing} from '../src/harbour/horizon/neighbourhoods/types.ts';
 import type {StructureSolid, TerrainField} from '../src/harbour/horizon/land/interfaces.ts';
 import type {District, WorldDefinition} from '../src/harbour/horizon/world/definition.ts';
 import {districtAt} from '../src/harbour/horizon/world/districts.ts';
@@ -70,6 +70,14 @@ describe('runtime dressing layer (runtime/dressingLayer.ts)', () => {
     expect(glow()!.opacity).toBeCloseTo(DRESSING_DETAIL.glowDay, 6);
     layer.setNight(1); expect(glow()!.opacity).toBeCloseTo(1, 6);
     layer.setNight(0.5); expect(glow()!.opacity).toBeCloseTo(DRESSING_DETAIL.glowDay + (1 - DRESSING_DETAIL.glowDay) * 0.5, 6);
+    // STYLE §1.3.3: the ink goes to #1a1a24 at 0.8 of its day opacity; the sun's contact shade fades.
+    const ink = (() => { let m: THREE.LineBasicMaterial | null = null; layer.group.traverse(o => { if (o instanceof THREE.LineSegments) m = o.material as THREE.LineBasicMaterial; }); return m as THREE.LineBasicMaterial | null; })();
+    expect(ink).not.toBeNull();
+    layer.setNight(0); const dayOpacity = ink!.opacity; expect(ink!.color.r).toBeCloseTo(1, 6);
+    layer.setNight(1);
+    const day = new THREE.Color(DRESSING_INK), target = new THREE.Color(DRESSING_NIGHT.ink);
+    expect(ink!.color.r * day.r).toBeCloseTo(target.r, 5); expect(ink!.color.b * day.b).toBeCloseTo(target.b, 5);
+    expect(ink!.opacity).toBeCloseTo(dayOpacity * DRESSING_NIGHT.inkOpacity, 6);
     let lights = 0; layer.group.traverse(o => { if ((o as THREE.Light).isLight) lights++; }); expect(lights).toBe(0);
     expect(() => layer.setSeason('winter', 1)).not.toThrow();
     layer.dispose();
@@ -94,19 +102,34 @@ describe('runtime dressing layer (runtime/dressingLayer.ts)', () => {
     for (const [a, b, c] of tris) { area += Math.abs((b![0] - a![0]) * (c![1] - a![1]) - (c![0] - a![0]) * (b![1] - a![1])) / 2; for (const [p, q] of [[a, b], [b, c], [c, a]]) expect(Math.hypot(q![0] - p![0], q![1] - p![1])).toBeLessThanOrEqual(DRESSING_DETAIL.paintEdge + 1e-9); }
     expect(area).toBeCloseTo(200, 6);
   });
-  it('budget: a district measured on both tiers, plants at capacity; a heavy district stays inside 150k / 60k with the baked land', () => {
+  it('budget: a district measured on both tiers, plants at capacity', () => {
     const d = district('landing', 1000, 1400);
     const full = measureDistrictDressing(d, ground, 'full'), lite = measureDistrictDressing(d, ground, 'lite');
     expect(full.triangles).toBeGreaterThan(0); expect(full.drawCalls).toBeGreaterThan(0);
     expect(lite.triangles).toBeLessThanOrEqual(full.triangles);
-    // A neighbourhood-sized load: 60 buildings, 400 plants, 150 props in one district.
-    const heavy: DistrictDressing = {...d, buildings: Array.from({length: 60}, (_, i) => ({...d.buildings[0]!, id: `h${i}`, at: [1000 + (i % 10) * 12, 2, 1400 + Math.floor(i / 10) * 12] as const})), plants: Array.from({length: 400}, (_, i) => ({species: (['round', 'shrub', 'pine', 'grassTuft'] as const)[i % 4]!, at: [900 + (i % 40) * 5, 2, 1300 + Math.floor(i / 40) * 5] as const, scale: 1, yaw: i})), props: Array.from({length: 150}, (_, i) => ({kind: 'bench' as const, at: [950 + i, 2, 1350] as const, yaw: 0}))};
-    const hf = measureDistrictDressing(heavy, ground, 'full'), hl = measureDistrictDressing(heavy, ground, 'lite');
-    // The baked Long Sands (landing) district: terrain + drawn solids, as the index reports it.
+  });
+  it('budget: the prototypes’ real loads fit 150k / 60k with their baked districts (Little Harbour, the Reach)', () => {
+    // The baked districts' terrain + drawn solids, as the index reports them.
     const index = JSON.parse(gunzipSync(readFileSync('public/horizon/world/horizon-geo-1.index.json.gz')).toString()) as {districts: District[]};
-    const baked = index.districts.find(x => x.id === 'landing')!.triangles!;
-    expect(baked.full + hf.triangles, `full ${hf.triangles}`).toBeLessThanOrEqual(150_000);
-    expect(baked.lite + hl.triangles, `lite ${hl.triangles}`).toBeLessThanOrEqual(60_000);
+    const baked = (id: string) => index.districts.find(x => x.id === id)!.triangles!;
+    const grid = (n: number, x0: number, z0: number, step: number, cols: number) => Array.from({length: n}, (_, i) => [x0 + (i % cols) * step, 4, z0 + Math.floor(i / cols) * step] as const);
+    const plants = (species: PlantRecord['species'], n: number, x0: number, z0: number, step = 4, cols = 40): PlantRecord[] => grid(n, x0, z0, step, cols).map((at, i) => ({species, at, scale: 1, yaw: i}));
+    const props = (kind: PropRecord['kind'], n: number, x0: number, z0: number): PropRecord[] => grid(n, x0, z0, 3, 20).map(at => ({kind, at, yaw: 0}));
+    // Little Harbour (protos/harbour SPEC: the solver's 100 row houses, 3B) with its lanterns, benches and planting.
+    const harbour: DistrictDressing = {districtId: 'harbour', life: [], ground: [], pools: [],
+      buildings: grid(100, 1420, 1120, 9, 12).map((at, i) => ({id: `row${i}`, districtId: 'harbour', kind: 'rowHouse' as const, style: 'harbour.ligurian', at, yaw: 0, size: {w: 7, d: 8, h: 9}, roof: {form: 'hip' as const, pitch: 25, overhang: 0.4, material: 'tile'}, storeys: 3, collide: true})),
+      props: [...props('lantern', 40, 1430, 1210), ...props('bench', 20, 1440, 1220)],
+      plants: [...plants('cypress', 20, 1500, 1150), ...plants('lemonPot', 30, 1450, 1230), ...plants('bougainvillea', 20, 1470, 1240)]};
+    // The Reach (protos/reach SPEC: about 2,470 reed clumps, willow and tamarack groves, dogwood) with the lookout furniture.
+    const reach: DistrictDressing = {districtId: 'reach', life: [], ground: [], pools: [], buildings: [],
+      props: [...props('lantern', 30, 1250, 1240), ...props('viewer', 8, 1260, 1250), ...props('bench', 12, 1270, 1255)],
+      plants: [...plants('reed', 2470, 1215, 1225, 2, 70), ...plants('willow', 30, 1230, 1300), ...plants('tamarack', 40, 1300, 1290), ...plants('dogwood', 7, 1240, 1295)]};
+    for (const d of [harbour, reach]) {
+      const f = measureDistrictDressing(d, ground, 'full'), l = measureDistrictDressing(d, ground, 'lite'), b = baked(d.districtId);
+      console.info(`[dressing-budget] ${d.districtId}: dressing full ${f.triangles} / lite ${l.triangles}; with the district ${b.full + f.triangles} / ${b.lite + l.triangles}`);
+      expect(b.full + f.triangles, `${d.districtId} full`).toBeLessThanOrEqual(150_000);
+      expect(b.lite + l.triangles, `${d.districtId} lite`).toBeLessThanOrEqual(60_000);
+    }
   });
 });
 

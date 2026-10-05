@@ -18,7 +18,9 @@
  *
  * Collision is NOT built here: the bake emitted it as `dressing` solids (cards never draw them). Night: windows and lamps
  * the kits put in the `glow` bucket are emissive cards (no point lights; the light pool is untouched) whose opacity follows
- * the night level exactly as the bridge art's glow (`0.12 + 0.88 k`). Lite: the planting machinery's lite share, and props of
+ * the night level exactly as the bridge art's glow (`0.12 + 0.88 k`); the ink shifts to STYLE §1.3.3's night ink
+ * (`#1a1a24` at 0.8 opacity) and the sun's contact shade fades (`DRESSING_NIGHT`). The district cards and Mountain v2's
+ * card materials have no such ramp today; this layer owns its own. Lite: the planting machinery's lite share, and props of
  * a non-essential kind (`LITE_DROP_PROPS`) are dropped unless they collide or carry a pastime fixture (lite drops, never
  * substitutes; collision stays what is drawn).
  */
@@ -31,10 +33,15 @@ import type {DistrictDressing, DressingTheme, PlantRecord, PropKind} from '../ne
 import {drawBuilding} from '../kit/buildings/index.ts';
 import {drawProp} from '../kit/props/index.ts';
 import {groundPaintHex, groundPaintTone} from '../neighbourhoods/paint.ts';
-import {createCorridorPlanting, type CorridorPlanting} from './corridorPlanting.ts';
+import {corridorPlantingDistricts, createCorridorPlanting, type CorridorPlanting} from './corridorPlanting.ts';
 import type {PlantSeason} from '../kit/plants/archetypes.ts';
 
 export const DRESSING_DETAIL = {releaseMs: 20_000, paintLift: 0.04, paintEdge: 2.5, glowDay: 0.12} as const;
+/** STYLE §1.3.3: ink at night is `#1a1a24` at 0.8 of its day opacity; the sun's contact shade fades to `shadeNight` of its
+ * day strength under the moon. The card ink's vertex colour is the builder's ink (`DRESSING_INK`); the material colour
+ * multiplies it, so night = ink × (night ink / day ink) per channel. */
+export const DRESSING_NIGHT = {ink: '#1a1a24', inkOpacity: 0.8, shadeNight: 0.4} as const;
+export const DRESSING_INK = '#5b5447';
 /** Props lite drops (decoration, never a collider or a pastime fixture). */
 export const LITE_DROP_PROPS: ReadonlySet<PropKind> = new Set(['towel', 'umbrella', 'crate', 'net', 'laundryLine', 'festoon', 'flag', 'hayBale', 'hive', 'birdFeeder', 'duckBox', 'kite', 'bookCart', 'buoy', 'lifeRing', 'rodHolder', 'planter']);
 
@@ -98,7 +105,7 @@ export function drapePolygon(polygon: readonly (readonly [number, number])[], ed
 /** Build one district's dressing (pure of the scene: returns the group; the caller adds it). */
 export function* buildDistrictDressingSteps(d: DistrictDressing, opts: Omit<DressingLayerOptions, 'changed' | 'material'>): Generator<void, Omit<DistrictArt, 'lastResident'>, void> {
   const {tier, theme, ground} = opts;
-  const b = new CardBuilder(`horizon.dressing.${d.districtId}`, tier, {ink: '#5b5447', cell: 8192, shadows: tier === 'full'});
+  const b = new CardBuilder(`horizon.dressing.${d.districtId}`, tier, {ink: DRESSING_INK, cell: 8192, shadows: tier === 'full'});
   let buildings = 0, props = 0;
   if (!opts.hideBuildings) for (const rec of d.buildings) { drawBuilding(b, rec, theme, ground, tier); buildings++; yield; }
   for (let i = 0; i < d.props.length; i++) {
@@ -153,7 +160,8 @@ export function measureDistrictDressing(d: DistrictDressing, ground: (x: number,
     if (art.planting && d.plants.length) {
       const n = d.plants.length, c: [number, number, number] = [0, 0, 0]; for (const p of d.plants) { c[0] += p.at[0] / n; c[1] += p.at[1] / n; c[2] += p.at[2] / n; }
       const camera = new THREE.PerspectiveCamera(58, 1.6, 0.3, 900); camera.position.set(c[0], c[1] + 3, c[2]); camera.updateMatrixWorld();
-      art.planting.update(camera, new Set([d.districtId]));
+      // Resident: every district the planting machinery files these plants under (the bake's split uses the same partition).
+      art.planting.update(camera, new Set([d.districtId, ...corridorPlantingDistricts({corridors: [dressingCorridor(d)]})]));
       const s = art.planting.stats();
       for (const l of s.layers) if (l.count > 0) triangles += Math.round(l.triangles / l.count * l.capacity);
       drawCalls += s.drawCalls;
@@ -169,7 +177,15 @@ export function createDressingLayer(world: Pick<WorldDefinition, 'dressing'>, op
   const districts = new Map<string, DistrictArt>();
   let season = opts.season, month = opts.month, night = 0, task: {id: string; run: ReturnType<typeof createBuildTask<Omit<DistrictArt, 'lastResident'>>>} | null = null, pending = false, dead = false;
   const recordsOf = (id: string) => world.dressing?.districts.find(d => d.districtId === id) ?? null;
-  const glowOf = (art: Pick<DistrictArt, 'cards'>) => { const glow = art.cards.materials.glow; if (glow) { glow.transparent = true; glow.opacity = DRESSING_DETAIL.glowDay + (1 - DRESSING_DETAIL.glowDay) * night; } };
+  const dayOpacity = new WeakMap<THREE.Material, number>(), day = (m: THREE.Material) => { let o = dayOpacity.get(m); if (o === undefined) dayOpacity.set(m, o = m.opacity); return o; };
+  const dayInk = rgb(DRESSING_INK), nightInk = rgb(DRESSING_NIGHT.ink), inkFactor = (k: number) => [0, 1, 2].map(i => 1 + (nightInk[i]! / Math.max(1e-6, dayInk[i]!) - 1) * k) as [number, number, number];
+  /** The night ramp of one district's card materials: glow cards light, ink shifts to the night ink, the contact shade fades. */
+  const glowOf = (art: Pick<DistrictArt, 'cards'>) => {
+    const {glow, ink, shade: contact} = art.cards.materials;
+    if (glow) { glow.transparent = true; glow.opacity = DRESSING_DETAIL.glowDay + (1 - DRESSING_DETAIL.glowDay) * night; }
+    if (ink) { const f = inkFactor(night); (ink as THREE.LineBasicMaterial).color.setRGB(f[0], f[1], f[2], THREE.LinearSRGBColorSpace); ink.opacity = day(ink) * (1 - (1 - DRESSING_NIGHT.inkOpacity) * night); }
+    if (contact) contact.opacity = day(contact) * (1 - (1 - DRESSING_NIGHT.shadeNight) * night);
+  };
   function land(art: Omit<DistrictArt, 'lastResident'>): DistrictArt {
     for (const m of Object.values(art.cards.materials)) opts.material?.(m);
     for (const m of art.planting?.materials() ?? []) opts.material?.(m);
