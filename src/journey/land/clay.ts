@@ -710,4 +710,3 @@ export const buildJourneyLand: BuildJourneyLand = (data: JourneyLandData, option
     },
   };
 };
-
