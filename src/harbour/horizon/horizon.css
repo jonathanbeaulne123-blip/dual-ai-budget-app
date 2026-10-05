@@ -106,3 +106,5 @@
 :root[data-scene-lighting="dark"] .horizon-glider-hint{background:#202b2be6;color:#f2eadc;border-color:#e4d8bd55}
 .horizon-shell--taylor .horizon-glider-hint,.horizon-shell--taylor .horizon-offers--keyed{background:#fff1e9f2;color:#563b55;border:2px dashed #ae7992;border-radius:4px 14px 8px 17px}
 .horizon-shell--newfoundland .horizon-glider-hint,.horizon-shell--newfoundland .horizon-offers--keyed{background:#e7eee8f2;color:#163f48;border:2px solid #577b7d;border-radius:5px;border-top:4px solid #d4a040}
+/* In the old app shell the keyed row takes the E strip's place above the dock. */
+@media(min-width:800px) and (pointer:fine){.horizon-shell--in-shell .horizon-offers.horizon-offers--keyed{bottom:calc(var(--dock-height,0px) + 64px + env(safe-area-inset-bottom,0px))}.horizon-shell--in-shell .horizon-glider-hint{bottom:calc(var(--dock-height,0px) + 132px + env(safe-area-inset-bottom,0px))}}

@@ -1012,7 +1012,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
       const refused=gliderPadRefusal({riding:registry.active()!==null,airborne:!!registry.active()?.airborne?.(),kitchen:!!kitchen?.active(),monorail:!!monorail?.state(),seated:airport.seated(),sitting:fleet.sitting()!==null,skating:skating()});
       const pad=padStands.find(p=>p.id===id);
       if(refused||!pad){const reason=refused??'That launch is not on this island.';options.onStatus?.(reason);recordDiagnostic('interaction',`glider pad ${id}`,'rejected',reason);return{ok:false,reason};}
-      const {stand}=pad;
+      // Recomputed now, not at mount: the deck (and the Crown's Mountain v2 ground) may have arrived since, which sets the run-off heading.
+      const stand=gliderPads.placements().find(p=>p.id===id)?.stand??gliderPadStand(world,id,padGround)?.stand??pad.stand;
       // From Look / Island the walk camera and its FOV come back first (as Walk does), then the body stands on the pad.
       if(mode!=='walk')setMode('walk');
       restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',x:stand.x,y:stand.y,z:stand.z,yaw:stand.yaw});

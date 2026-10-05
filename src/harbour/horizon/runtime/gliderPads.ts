@@ -85,10 +85,13 @@ export function gliderPadPlacement(world:PadWorld,id:GliderPadId,surface:PadSurf
   const deck=floor.y,onDeck=(px:number,pz:number)=>{const s=surface(px,pz,deck+.5);return s!==null&&Math.abs(s.y-deck)<.05;};
   const f=[Math.sin(heading),Math.cos(heading)] as const,r=[Math.cos(heading),-Math.sin(heading)] as const;
   let prop:GliderPose|null=null;
-  // Beside the stand first (across the run-off, so the rider runs past it), then behind it.
-  candidates:for(const [along,across] of [[-.5,3.4],[-.5,-3.4],[-1,2.8],[-1,-2.8],[-3.2,0],[-2.6,1.5],[-2.6,-1.5],[-2.2,0]] as const){
+  // Waiting at the launch edge first, nose over the run-off, 1.3 m clear in front of the stand (the decks are ~10 × 8 and a
+  // 10 m span does not fit beside the stand; a non-colliding prop at the edge is where a rider clips in, and it hides the moment
+  // that rider runs off). Then beside, then behind, for a deck shaped otherwise.
+  candidates:for(const [along,across] of [[2.82,0],[-.5,6.2],[-.5,-6.2],[-3.2,0],[-2.6,1.5],[-2.6,-1.5],[-2.2,0]] as const){
     const px=x+f[0]*along+r[0]*across,pz=z+f[1]*along+r[1]*across,yaw=heading;
-    for(const [a,c] of [[0,0],[KEEL/2,0],[.3,.7],[.3,-.7]] as const)if(!onDeck(px+f[0]*a+r[0]*c,pz+f[1]*a+r[1]*c))continue candidates;
+    // The hang point, the base bar and the keel to within 0.5 m of the nose stand on the deck (a parked nose may reach over the rail).
+    for(const [a,c] of [[0,0],[KEEL/2-.5,0],[.3,.7],[.3,-.7]] as const)if(!onDeck(px+f[0]*a+r[0]*c,pz+f[1]*a+r[1]*c))continue candidates;
     if(distanceToParkedGlider([x,z],{x:px,z:pz,yaw})<1.2)continue;
     if(clear.some(p=>Math.hypot(p[0]-x,p[1]-z)<12&&distanceToParkedGlider(p,{x:px,z:pz,yaw})<1))continue;
     prop={x:px,y:deck,z:pz,yaw};break;
