@@ -1186,11 +1186,16 @@
    "id": "benchHamlet",
    "label": "Bench Hamlet",
    "xy": [
+    1080,
+    440
+   ],
+   "h": 105,
+   "note": "V3: the farming hamlet on the west bench (useful now; buildings owed)",
+   "v3_0_xy": [
     1086,
     418
    ],
-   "h": 104,
-   "note": "V3: the farming hamlet on the west bench (useful now; buildings owed)"
+   "v3_0_h": 104
   },
   {
    "id": "westwatch",
@@ -1229,7 +1234,7 @@
     1082,
     692.5
    ],
-   "h": 95.8,
+   "h": 95.3,
    "note": "V3.1: the falls station on the Veil's west buttress, looking along the curtain and down the lake to the Old Oak: a weather house, a gauge and the viewing deck; reads the almanac and the weather only",
    "v3_0_xy": [
     1122,
@@ -4584,6 +4589,22 @@
      ],
      "h": 104,
      "why": "Bench Hamlet"
+    },
+    {
+     "xy": [
+      1195,
+      354.2
+     ],
+     "h": 116.95,
+     "why": "V3.1: level onto the orchard place's pad"
+    },
+    {
+     "xy": [
+      1200,
+      352
+     ],
+     "h": 117,
+     "why": "V3.1: Orchard Bench (the orchard place's pad)"
     }
    ],
    "note": "V3: Westwatch Chapel \u2192 Bench Hamlet \u2192 north of the Twin Tarns and the Crown Rill to Orchard Bench"

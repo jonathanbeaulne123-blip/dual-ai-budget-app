@@ -30,7 +30,7 @@ export const V3_REACHES: readonly Reach[] = [
   { id: 'water.v3.longBeck', kind: 'brook', width: 2.4, depth: .6, bank: .5, note: 'the Long Beck: the Rillcut\'s south branch to Long Falls', pts: [[1094, 466, 99.2], [1095, 490, 98.9], [1095, 514, 98.5], [1096, 538, 98.1], [1097.5, 556, 97.7], [1098.5, 564, 97.5]] },
   { id: 'water.v3.rillcut', kind: 'brook', width: 3, depth: .7, bank: .5, note: 'the Rillcut: the Lower Tarn\'s outlet down the hamlet shelf\'s east edge to Rillcut Falls', pts: [[1103, 406, 102.2], [1103.5, 428, 101.2], [1101, 450, 100.2], [1094, 466, 99.2], [1083, 486, 98.1], [1072, 505, 97.2]] },
   // Rillcut Falls' plunge pool drains under the Year Walk into the Hollow and on to the brook.
-  { id: 'water.v3.hollowRill', kind: 'brook', width: 2.6, depth: .6, bank: .5, note: 'the Hollow Rill: from the Rillcut pool west under the Year Walk into the Hollow Tarn', pts: [[1050, 520, 45.9], [1032, 516, 44.9], [1012, 510, 42.8], [988, 506, 40.8]] },
+  { id: 'water.v3.hollowRill', kind: 'brook', width: 2.6, depth: .6, bank: .5, note: 'the Hollow Rill: from the Rillcut pool west under the Year Walk into the Hollow Tarn', pts: [[1050, 520, 45.9], [1032, 516, 45.4], [1012, 510, 44.8], [988, 506, 40.8]] },
   // V3.1 (D-WW55): the second stream. The Hollow Tarn no longer soaks away: the Hollow Beck leaves its west end under Green Road and
   // the Year Walk's Hollow lanes (on spans, each ≥ 1.25 over the water) and joins Orchard Brook, so the Rillcut's water runs on
   // through the Hollow to the Bight.

@@ -84,10 +84,10 @@ export const V3_SPURS: readonly Ridge[] = [
 /** The rill gullies (V3.1, D-WW50): dry V cuts down the crest's north flank and the west wall between the spurs, where no route
  * runs. Floor polyline [x, z, floor], floor width, wall slope; lower only (a gorge with no water). */
 export const V3_RILLS: readonly Gorge[] = [
-  { id: 'rill.north.1', width: 2, wall: .9, note: 'a dry rill down the crest\'s north flank west of the hamlet spur', floor: [[1092, 327, 104], [1090, 316, 97.5], [1088, 305, 89], [1086, 296, 80]] },
-  { id: 'rill.north.2', width: 2, wall: .9, note: 'a dry rill down the crest\'s north flank north of the Twin Tarns', floor: [[1146, 330, 108.5], [1150, 318, 101.5], [1153, 306, 92], [1155, 297, 84]] },
-  { id: 'rill.north.3', width: 2, wall: .9, note: 'a dry rill down the crest\'s north flank north of Orchard Bench', floor: [[1210, 328, 109.5], [1215, 317, 104], [1219, 306, 96], [1222, 297, 88]] },
-  { id: 'rill.west.1', width: 2, wall: .9, note: 'a dry rill down the west wall between Westwatch\'s knoll and the west ledge', floor: [[1052, 356, 92], [1042, 357, 84], [1032, 358, 78], [1020, 359, 64]] },
+  { id: 'rill.north.1', width: 2, wall: .9, note: 'a dry rill down the crest\'s north flank west of the hamlet spur', floor: [[1092, 327, 103.8], [1090, 316, 96], [1088, 305, 85.8], [1086, 296, 73.4]] },
+  { id: 'rill.north.2', width: 2, wall: .9, note: 'a dry rill down the crest\'s north flank north of the Twin Tarns', floor: [[1146, 330, 110.5], [1150, 318, 106], [1153, 306, 95.5], [1155, 297, 88.5]] },
+  { id: 'rill.north.3', width: 2, wall: .9, note: 'a dry rill down the crest\'s north flank north of Orchard Bench', floor: [[1178, 312, 108.5], [1179, 303, 94], [1180, 295, 88]] },
+  { id: 'rill.west.1', width: 2, wall: .9, note: 'a dry rill down the west wall between Westwatch\'s knoll and the west ledge', floor: [[1052, 356, 102.1], [1042, 357, 80.4], [1032, 358, 79.2], [1020, 359, 65]] },
 ];
 /** The cirque: an ice-scoured bowl between the horn and the summit dome. Floor at its deepest point; rises as a parabola. */
 export const CIRQUE = { at: [1358, 412] as XY, radii: [34, 25] as const, yaw: -.35, floor: 135, rise: 10 } as const;
@@ -325,7 +325,7 @@ export function v3Paint(x: number, z: number, height: number): 'snow' | 'scree' 
 /** The named forms, for probes, tests and the Journey map. */
 export const V3_PLACES = {
   glacierPeak: GLACIER_PEAK.at, glacierSprings: GLACIER.tongue.to, upperTarn: [1154, 381] as XY, lowerTarn: [1112, 400] as XY,
-  benchHamlet: [1086, 418] as XY, westwatchChapel: [1036, 318] as XY, orchardBench: [1200, 356] as XY, fallswatch: [1082, 692.5] as XY,
+  benchHamlet: [1080, 440] as XY, westwatchChapel: [1036, 318] as XY, orchardBench: [1200, 356] as XY, fallswatch: [1082, 692.5] as XY,
   rimBridge: [1566, 545] as XY, rimLookout: [1516, 548] as XY, highShieling: [1436, 694] as XY, splitWall: [1492, 576] as XY, stairFalls: [1490, 660] as XY,
   veilFalls: [1111, 699] as XY, rillcutFalls: [1068, 512] as XY, longFalls: [1099, 568] as XY, spurFalls: [1082, 645] as XY,
 } as const;

@@ -2257,11 +2257,19 @@ m["crossings"].extend([
 # what the manifest owns: Fallswatch onto the west buttress (place, walk end, the Lip Footbridge over the Veil outlet), the Hamlet
 # Footbridge onto the Rillcut's new line down the hamlet shelf's east edge, the drag lift's line (structure data: stations and
 # tower spots; PR 3 dresses it, PR 5 rides it) with its two station thresholds and foot link, and the Hollow Beck's crossings.
+# Bench Hamlet's place pad (8 × 8, level) sat across the hamlet lane where the lane climbs 11 %: the walker met its edge 0.54 above the
+# lane (a step over 0.48) both ways. On the V3.1 shelf the place stands on the shelf's south half (the hamlet green, clear of the croft sites beside the lane) on the shelf's level; the lane runs free.
+# The hamlet lane's east end arrives on Orchard Bench (117) flush with the orchard place's pad, not 3 m under it (the walker met a
+# 3 m wall at the lane's end): the lane climbs its north-east arm at 9.6 % from the hamlet (104) to the bench.
+m["walks"]["hamletLane"]["levels"] = [*m["walks"]["hamletLane"]["levels"], {"xy": [1195, 354.2], "h": 116.95, "why": "V3.1: level onto the orchard place's pad"}, {"xy": [1200, 352], "h": 117, "why": "V3.1: Orchard Bench (the orchard place's pad)"}]
+_bh = next(p for p in m["places"] if p["id"] == "benchHamlet")
+_bh["v3_0_xy"], _bh["v3_0_h"] = _bh["xy"], _bh["h"]
+_bh["xy"], _bh["h"] = [1080, 440], 105
 _fw = next(p for p in m["places"] if p["id"] == "fallswatch")
 _fw["v3_0_xy"], _fw["v3_0_h"] = _fw["xy"], _fw["h"]
 # The buttress top over the Stillwater tunnel's cover is a ridge 5 m wide between the road's cuts (the portal trench north, the
 # lake face south): the deck's pad is 10 × 5 along it (`size_m`, land/town buildTown), its slab bearing on the cover.
-_fw["xy"], _fw["h"], _fw["size_m"] = [1082, 692.5], 95.8, [10, 5]
+_fw["xy"], _fw["h"], _fw["size_m"] = [1082, 692.5], 95.3, [10, 5]
 _fw["note"] = "V3.1: the falls station on the Veil's west buttress, looking along the curtain and down the lake to the Old Oak: a weather house, a gauge and the viewing deck; reads the almanac and the weather only"
 _fwk = m["walks"]["fallswatch"]
 _fwk["v3_0_pts"] = [list(q) for q in _fwk["pts"]]
