@@ -44,9 +44,10 @@ export const CLAY_NAMES = {
   houses: "journey-land:houses", trees: "journey-land:trees", blobs: "journey-land:blobs", homes: "journey-land:homes",
 } as const;
 
-/** Per-tier detail (counts and segments only; no coordinates). */
 /** The clay land's own budget (triangles / draw calls), inside the board's `JOURNEY_LOD` allowance on both tiers. */
 export const JOURNEY_LAND_BUDGET = { full: { triangles: 25_000, drawCalls: 20 }, lite: { triangles: 15_000, drawCalls: 20 } } as const;
+
+/** Per-tier detail (counts and segments only; no coordinates). */
 
 export const CLAY_LAND_LOD = {
   full: { coast: 240, bevel: 3, roadStep: 9, minorStep: 12, treeDetail: 1, trunkSides: 5, houseSegments: 2, trees: 64, villageHouses: 22, miniStride: 2, miniCoast: 96 },

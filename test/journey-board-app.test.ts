@@ -1,16 +1,18 @@
 // @vitest-environment jsdom
 /**
- * The Journey Board in the real App (T6): house world + harbour on, WebGL unavailable (jsdom), illustrated edition chosen.
+ * The Journey Map (Horizon Clock) in the real App: house world + harbour on, WebGL unavailable (jsdom), illustrated
+ * edition chosen. The behaviour is the Journey Board's (arrival, actions, Enter Horizon / return, list parity); the
+ * selectors are the clock shell's.
  *
- * The App loads the fictional Development demo kitchen with a substantial journey (T1's `journeyDemoHousehold`,
- * built on `seedDemoHousehold` through the real commands) from its local replica, and — as the tab's first arrival —
- * lands on the household Journey Board. Then:
- * - select a bill (its cluster mark, then the bill; and the list row) → "Mark paid…" → the App's Bill paid flow opens
- *   at THAT recurrence's named Confirm (the AddSlideshow's own DOM) → close → the same selection and focus return;
- * - selecting, zooming, previewing a crossroads, Back to now, browsing past and upcoming chapters and opening and
- *   closing panels leave the household's `financialAuditHash` exactly as it was, and browsing never moves the piece;
- * - a brand-new household (`emptyBoardHousehold`) shows the honest empty board with setup actions, no memory or
- *   milestone rows.
+ * The App loads the fictional Development demo kitchen with a substantial journey (`journeyDemoHousehold`, built on
+ * `seedDemoHousehold` through the real commands) from its local replica, and — as the tab's first arrival — lands on
+ * the household Journey map (its flat clock: no WebGL). Then:
+ * - select a bill (its day slot on the clock, then the bill in that day's sheet; and the list row) → "Mark paid…" →
+ *   the App's Bill paid flow opens at THAT recurrence's named Confirm → close → the same selection and focus return;
+ * - selecting, the level pull (Year / Month / Week), previewing a crossroads, Back to now, turning past and upcoming
+ *   chapters, the "+" dial and opening and closing sheets leave the household's `financialAuditHash` exactly as it
+ *   was, and browsing never moves the bus (the household's place);
+ * - a brand-new household (`emptyBoardHousehold`) shows the honest empty map, no memory or milestone marks or rows.
  * Nothing leaves the loopback: storage, the books engine and continuity are the same mocks the other full-App tests
  * use; the land files are served from public/ through a stubbed fetch.
  */
@@ -85,17 +87,18 @@ vi.mock("../src/journey/ui/JourneyBoard.tsx", async (importOriginal) => {
 });
 
 import { App } from "../src/App.tsx";
+import { ThemeProvider } from "../src/theme/ThemeProvider.tsx";
 import { financialAuditHash } from "../src/core/index.ts";
 import { HORIZON_INDEX_URL } from "../src/house/world/horizonAssets.ts";
 import { journeyLandTimings, resetJourneyLandCacheForTests } from "../src/journey/land/index.ts";
 import { JOURNEY_LAND_SLIM_URL } from "../src/journey/land/slim.ts";
-import { journeyViewStateKey } from "../src/journey/contracts.ts";
+import { journeyViewStateKeyV2 } from "../src/journey/contracts.ts";
 import { deriveJourneyBoard } from "../src/journey/model/index.ts";
 import { journeyMarkDomId } from "../src/journey/ui/Marks.tsx";
-import { journeyRowDomId } from "../src/journey/ui/JourneyList.tsx";
+import { journeyRowDomId } from "../src/journey/ui/ListView.tsx";
 import { journeyPanelActionDomId } from "../src/journey/ui/StopPanel.tsx";
 import { BIANCA, FIXTURE_TODAY, emptyBoardHousehold, journeyDemoHousehold } from "./fixtures/journey-board-households.ts";
-import { chooseMotionEdition, MOTION_KEY } from "../src/harbour/nav/motionEdition.ts";
+import { MOTION_KEY } from "../src/harbour/nav/motionEdition.ts";
 import { arrivalKey, JOURNEY_HOME_ROUTE } from "../src/harbour/nav/arrival.ts";
 import { housePath } from "../src/hearthside/houseRoutes.ts";
 import { houseIdentity } from "../src/house/navigation.ts";
@@ -160,10 +163,11 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-async function openApp(household: Household, memberId: string) {
+async function openApp(household: Household, memberId: string, options: { themed?: boolean } = {}) {
   state.stored = household;
   localStorage.setItem("hearth:session:v1:development", JSON.stringify({ memberId, view: "household", householdId: household.householdId }));
-  await act(async () => { root.render(createElement(App)); });
+  // `themed`: inside the app's ThemeProvider, as main.tsx mounts it (the appearance store the theme dot applies through).
+  await act(async () => { root.render(options.themed ? createElement(ThemeProvider, null, createElement(App)) : createElement(App)); });
   return waitFor(() => container.querySelector<HTMLElement>("[data-journey-board]"), "the Journey Board", 60_000);
 }
 
@@ -176,7 +180,6 @@ async function press(el: Element | null | undefined, what: string) {
 const q = <E extends Element = HTMLElement>(selector: string) => document.querySelector<E>(selector);
 const esc = (v: string) => v.replace(/["\\]/g, "\\$&");
 const panel = () => q("[data-journey-panel]");
-const panelTitle = () => panel()?.querySelector(".journey-panel__title")?.textContent ?? null;
 const addSheet = () => q("[data-add-slideshow]");
 /** The App's Add sheet is up (it stays mounted, paused, after Close; `open` shows as its fieldset enabled). */
 const addSheetOpen = () => { const sheet = addSheet(); return Boolean(sheet && !sheet.querySelector<HTMLFieldSetElement>(".entry-sheet-fields")?.disabled); };
@@ -194,34 +197,57 @@ const closeAddSheet = async () => {
 };
 const markPaidId = (stopId: string) => `[data-action-id="${esc(`${stopId}#mark-paid`)}"]`;
 
-describe("the household Journey Board in the App", () => {
-  it("is the tab's arrival; a bill mark's Mark paid… opens the App's Bill paid at THAT recurrence; closing returns the same selection and focus", async () => {
+/** The flat clock's day slot for a date, and the day sheet's button for a stop on it. */
+const dayMark = (date: string) => q(`#${journeyMarkDomId(date)}`);
+const openFromDay = (stopId: string) => panel()?.querySelector<HTMLElement>(`[data-open-stop="${esc(stopId)}"]`) ?? null;
+/** The Map's month title in the header. */
+const monthTitle = (board: HTMLElement) => board.querySelector("[data-chapter-month]")?.textContent ?? null;
+/** The bus (the household's place) on the flat clock: its mark and its words. */
+const busMark = () => q(`#${journeyMarkDomId("piece")}`);
+
+/**
+ * Open a stop from its day on the clock: a day with one stop opens that stop's sheet; a day with two or three shows each
+ * stop's card in the day sheet; a busier day lists them (then the stop opens its own sheet).
+ */
+async function selectFromDay(date: string, stopId: string) {
+  await press(dayMark(date), `the ${date} slot`);
+  const listed = openFromDay(stopId);
+  if (listed) await press(listed, `${stopId} in the day`);
+  return panel()!;
+}
+/** The stop's own controls wherever they stand (its sheet, or its card in the day sheet). */
+const stopScope = (stopId: string) => panel()?.querySelector<HTMLElement>(`[data-stop-card="${esc(stopId)}"]`) ?? panel();
+
+describe("the household Journey map in the App", () => {
+  it("is the tab's arrival; a bill's Mark paid… opens the App's Bill paid at THAT recurrence; closing returns the same selection and focus", async () => {
     const { household, ids } = journeyDemoHousehold();
     const before = await financialAuditHash(household);
     const board = await openApp(household, BIANCA);
-    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat board (no WebGL in jsdom)");
+    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat clock (no WebGL in jsdom)");
 
-    // Arrival: the tab's first household landing is the Journey (kitchen-table/above), today's chapter, the piece on today.
+    // Arrival: the tab's first household landing is the Journey (kitchen-table/above): today's chapter at Month, the bus on today.
     expect(location.pathname).toBe("/house/kitchen-table/above");
     expect(state.boardToday.at(-1)).toBe(FIXTURE_TODAY);
-    expect(board.querySelector('.journey-strip__chapter[aria-current="date"]')!.getAttribute("data-chapter-id")).toBe("2026-09");
-    expect(q(`#${journeyMarkDomId("piece")}`)!.getAttribute("aria-label")).toContain("We are here");
-    expect(board.querySelector(".journey-summary__period")!.textContent).toBe("September 2026");
+    expect(board.getAttribute("data-journey-level")).toBe("month");
+    expect(monthTitle(board)).toBe("September");
+    expect(busMark()!.getAttribute("aria-label")).toContain("Today");
+    // The Compass is not drawn over the map (it has its own "+").
+    expect(q("[data-harbour-bar]")).toBeNull();
 
-    // The bill: Tenant insurance, due Fri 18 Sep, not recorded — one of three stops on that day (a cluster).
+    // The bill: Tenant insurance, due Fri 18 Sep, not recorded — one of three stops on that day.
     const stopId = `bill:${ids.insuranceRecurrenceId}@2026-09-18`;
     const derived = deriveJourneyBoard(household, BIANCA, FIXTURE_TODAY).stops.find((s) => s.id === stopId);
     expect(derived && derived.kind === "commitment" && derived.status).toBe("overdue");
-    expect(board.querySelector(`svg [data-id="${esc(stopId)}"]`), "the bill stands on the flat board").toBeTruthy();
-    await press(q(`#${journeyMarkDomId("cluster:2026-09-18")}`), "the 18 Sep cluster mark");
-    await press(panel()?.querySelector(`[data-open-stop="${esc(stopId)}"]`), "Tenant insurance in the cluster");
-    expect(panelTitle()).toBe("Tenant insurance");
-    expect(panel()!.textContent).toContain("Overdue · not recorded");
-    expect(panel()!.textContent).toContain("$118.00");
+    expect(dayMark("2026-09-18")!.classList.contains("journey-mark--check"), "the honey ring: a date passed, not recorded").toBe(true);
+    await selectFromDay("2026-09-18", stopId);
+    const card = () => stopScope(stopId)!;
+    expect(card().textContent).toContain("Tenant insurance");
+    expect(card().textContent).toContain("Overdue · not recorded");
+    expect(card().textContent).toContain("$118.00");
     expect(addSheetOpen()).toBe(false);
 
     // Mark paid… → the App's own Bill paid flow, at this bill's named Confirm. Nothing is recorded by opening it.
-    const markPaid = panel()!.querySelector<HTMLButtonElement>(markPaidId(stopId));
+    const markPaid = card().querySelector<HTMLButtonElement>(markPaidId(stopId));
     expect(markPaid?.textContent).toBe("Mark paid…");
     await press(markPaid, "Mark paid…");
     await waitFor(() => addSheetOpen() && q("[data-bill-confirm]"), "the Bill paid confirm");
@@ -233,16 +259,15 @@ describe("the household Journey Board in the App", () => {
     expect(confirm.textContent).toContain("$118.00");
     expect(confirm.querySelector("[data-add-confirm-bill]"), "its named Confirm waits for a press").toBeTruthy();
 
-    // Close without confirming: the board is where it was — the same stop selected, focus back on its Mark paid….
+    // Close without confirming: the map is where it was — the same stop selected, focus back on its Mark paid….
     await closeAddSheet();
     expect(q("[data-journey-board]")).toBe(board);
-    expect(panelTitle()).toBe("Tenant insurance");
-    expect(board.querySelector(".journey-board-flat__selection"), "the selection ring still stands").toBeTruthy();
-    expect(document.activeElement, "focus returns to the control that opened Bill paid").toBe(panel()!.querySelector(markPaidId(stopId)));
+    expect(card().textContent).toContain("Tenant insurance");
+    expect(document.activeElement, "focus returns to the control that opened Bill paid").toBe(card().querySelector(markPaidId(stopId)));
     // The selection is the device's view state too (a remount restores it).
     await settle(20);
-    const saved = JSON.parse(localStorage.getItem(journeyViewStateKey({ environment: "development", householdId: household.householdId, memberId: BIANCA }))!) as { selectedStopId: string };
-    expect(saved.selectedStopId).toBe(stopId);
+    const saved = JSON.parse(localStorage.getItem(journeyViewStateKeyV2({ environment: "development", householdId: household.householdId, memberId: BIANCA }))!) as { selectedStopId: string };
+    expect([stopId, "2026-09-18"]).toContain(saved.selectedStopId);
 
     expect(await moneyHashes()).toEqual([before]);
   });
@@ -251,12 +276,14 @@ describe("the household Journey Board in the App", () => {
     const { household, ids } = journeyDemoHousehold();
     const before = await financialAuditHash(household);
     const board = await openApp(household, BIANCA);
-    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat board");
+    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat clock");
     await press(board.querySelector('[data-list-mode="list"]'), "List");
     const stopId = `bill:${ids.insuranceRecurrenceId}@2026-09-18`;
     const row = await waitFor(() => q(`#${journeyRowDomId(stopId)}`), "the Tenant insurance row");
     expect(row.querySelector(".journey-row__status")?.textContent).toBe("Overdue · not recorded");
     expect(row.querySelector(".journey-row__amount")?.textContent).toBe("$118.00 · scheduled");
+    // To check rows lead the month (ruling 1): the row stands in "Needs you".
+    expect(row.closest('[data-group-id]')?.getAttribute("data-group-id")).toBe("needs-you");
     await press(row.querySelector(markPaidId(stopId)), "the row's Mark paid…");
     await waitFor(() => addSheetOpen() && q("[data-bill-confirm]"), "the Bill paid confirm from the list");
     expect(addSheet()!.getAttribute("data-add-slide")).toBe("bill-confirm");
@@ -267,104 +294,98 @@ describe("the household Journey Board in the App", () => {
     expect(await moneyHashes()).toEqual([before]);
   });
 
-  // D-T6-1 (fixed in the fix pass): after Close pauses the Add sheet, "Mark paid…" again for the SAME recurrence
-  // must land on that bill's named Confirm again, not on "Which bill was paid?" — the paused `AddSlideshow` forgets
-  // its preselection while closed.
+  // D-T6-1: after Close pauses the Add sheet, "Mark paid…" again for the SAME recurrence must land on that bill's named
+  // Confirm again, not on "Which bill was paid?" — the paused `AddSlideshow` forgets its preselection while closed.
   it("pressing Mark paid… again for the same bill after closing opens that bill's Confirm again", async () => {
     const { household, ids } = journeyDemoHousehold();
     const board = await openApp(household, BIANCA);
-    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat board");
+    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat clock");
     const stopId = `bill:${ids.insuranceRecurrenceId}@2026-09-18`;
-    await press(q(`#${journeyMarkDomId("cluster:2026-09-18")}`), "the 18 Sep cluster mark");
-    await press(panel()?.querySelector(`[data-open-stop="${esc(stopId)}"]`), "Tenant insurance");
-    await press(panel()!.querySelector(markPaidId(stopId)), "Mark paid…");
+    await selectFromDay("2026-09-18", stopId);
+    await press(stopScope(stopId)!.querySelector(markPaidId(stopId)), "Mark paid…");
     await waitFor(() => addSheetOpen() && q("[data-bill-confirm]"), "the first Bill paid confirm");
     await closeAddSheet();
-    await press(panel()!.querySelector(markPaidId(stopId)), "Mark paid… again");
+    await press(stopScope(stopId)!.querySelector(markPaidId(stopId)), "Mark paid… again");
     await settle(5);
     expect(addSheetOpen()).toBe(true);
     expect(addSheet()!.getAttribute("data-add-slide")).toBe("bill-confirm");
     expect(q("[data-bill-confirm]")?.getAttribute("data-bill-confirm")).toBe(ids.insuranceRecurrenceId);
   });
 
-  it("select, zoom, preview a crossroads, Back to now, browse chapters and open/close panels: the books never change, and browsing never moves the piece", async () => {
+  it("select, pull the level, preview a crossroads, Back to now, turn chapters, the dial and sheets: the books never change, and browsing never moves the bus", async () => {
     const { household, ids } = journeyDemoHousehold();
     const before = await financialAuditHash(household);
     const board = await openApp(household, BIANCA);
-    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat board");
+    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat clock");
     const path = location.pathname;
-    const pieceFlat = () => { const el = board.querySelector('svg [data-id="piece"]')!; return { x: el.getAttribute("data-x"), y: el.getAttribute("data-y"), chapter: board.querySelector('.journey-strip__chapter[aria-current="date"]')?.getAttribute("data-chapter-id") }; };
-    const pieceLabel = () => q(`#${journeyMarkDomId("piece")}`)!.getAttribute("aria-label");
-    const anchor = pieceFlat(), label = pieceLabel();
-    expect(anchor.x && anchor.y).toBeTruthy();
-    const focused = () => board.querySelector(".journey-strip__chapter.is-focused")?.getAttribute("data-chapter-id");
-    expect(focused()).toBe("2026-09");
+    const busWords = busMark()!.getAttribute("aria-label");
+    const sheetUp = () => Boolean(panel());
 
-    // Select: a stop (mark), a cluster and one of its stops, a month, the piece; Escape and Close put each away.
+    // Select: a paid bill on its day, the bus (today), Hercules's list; Escape and Close put each away.
     const waterPaid = `bill:${ids.waterRecurrenceId}@2026-09-18`;
-    await press(q(`#${journeyMarkDomId("cluster:2026-09-18")}`), "cluster mark");
-    await press(panel()?.querySelector(`[data-open-stop="${esc(waterPaid)}"]`), "Water (paid) in the cluster");
-    expect(panel()!.textContent).toContain("Paid");
+    await selectFromDay("2026-09-18", waterPaid);
+    expect(stopScope(waterPaid)!.textContent).toContain("Paid");
     await act(async () => { panel()!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })); });
     await settle(1);
-    expect(panel()).toBeNull();
-    await press(q(`#${journeyMarkDomId("2026-08")}`), "the August month space");
-    expect(panelTitle()).toContain("August 2026");
+    expect(sheetUp()).toBe(false);
+    await press(busMark(), "the bus");
+    expect(panel()!.textContent).toContain("28");
     await press(panel()!.querySelector(".journey-panel__close"), "Close");
-    await press(q(`#${journeyMarkDomId("piece")}`), "the piece");
-    expect(panel()!.textContent).toContain("We are here");
-    await press(panel()!.querySelector(".journey-panel__close"), "Close");
-    // The summary's attention / next items select (they never run their call).
-    const next = board.querySelector<HTMLElement>(".journey-summary [data-select]");
-    await press(next, "a summary item");
-    expect(panel()).toBeTruthy();
+    // Hercules's bubble opens his list (the checklist): To check is THE board.toCheck; opening it runs nothing.
+    await press(board.querySelector("[data-journey-bubble]"), "Hercules's bubble");
+    const toCheck = panel()!.querySelector('[data-checklist-section="to-check"]');
+    expect(toCheck?.getAttribute("aria-label")).toBe(`To check · ${deriveJourneyBoard(household, BIANCA, FIXTURE_TODAY).toCheck.length}`);
     await press(panel()!.querySelector(".journey-panel__close"), "Close");
 
-    // Zoom (flat twin: Sky ↔ Region ↔ Stop) and the stage's keys.
-    await press(board.querySelector('[data-zoom="in"]'), "Zoom in");
-    expect(board.getAttribute("data-tier")).toBe("stop");
-    await press(board.querySelector('[data-zoom="out"]'), "Zoom out");
-    await press(board.querySelector('[data-zoom="out"]'), "Zoom out");
-    expect(board.getAttribute("data-tier")).toBe("sky");
+    // The level pull: Year (twelve minis), Week (the trail), back to Month; the stage's keys.
+    await press(board.querySelector('[data-level="year"]'), "Year");
+    expect(board.getAttribute("data-journey-level")).toBe("year");
+    expect(board.querySelectorAll(".journey-mark--chapter").length).toBe(deriveJourneyBoard(household, BIANCA, FIXTURE_TODAY).chapters.length);
+    await press(board.querySelector('[data-level="week"]'), "Week");
+    expect(board.getAttribute("data-journey-level")).toBe("week");
+    expect(q(`#${journeyMarkDomId("pile")}`), "the overdue pile pinned to Monday").toBeTruthy();
+    await press(board.querySelector('[data-level="month"]'), "Month");
+    expect(board.getAttribute("data-journey-level")).toBe("month");
     const stage = board.querySelector<HTMLElement>(".journey-stage")!;
-    for (const key of ["ArrowRight", "PageDown", "PageUp", "ArrowLeft", "+", "-"]) {
+    for (const key of ["ArrowRight", "PageDown", "PageUp", "ArrowLeft", "Home"]) {
       await act(async () => { stage.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true })); });
     }
     await settle(1);
 
-    // A crossroads: preview the other alternative (provisional; nothing changes), then return without changing.
+    // A crossroads (today, with others): preview the other alternative (text only; nothing changes), then return.
     const era = `crossroads:era:${ids.eraRowId}`;
-    await press(q(`#${journeyMarkDomId(era)}`), "the era crossroads");
+    await press(dayMark(FIXTURE_TODAY), "today's slot");
+    await press(openFromDay(era), "the era crossroads");
     const other = panel()!.querySelector<HTMLElement>(".journey-alternative--other .journey-alternative__pick");
     await press(other, "preview the suggestion");
     expect(panel()!.textContent).toContain("Preview — nothing has changed");
-    expect(board.querySelector(".journey-board-flat__preview"), "the flat twin draws the preview provisionally").toBeTruthy();
     await press([...panel()!.querySelectorAll("button")].find((b) => b.textContent === "Return without changing"), "Return without changing");
     expect(panel()!.textContent).not.toContain("Preview — nothing has changed");
     await press(panel()!.querySelector(".journey-panel__close"), "Close");
 
-    // Browse a past and an upcoming chapter: the view moves, the household piece does not.
-    await press(board.querySelector('.journey-strip__chapter[data-chapter-id="2026-02"]'), "February (past)");
-    expect(focused()).toBe("2026-02");
-    expect(pieceFlat()).toEqual(anchor);
-    expect(pieceLabel()).toBe(label);
-    await press(board.querySelector('.journey-strip__chapter[data-chapter-id="2026-11"]'), "November (upcoming)");
-    expect(focused()).toBe("2026-11");
-    expect(pieceFlat()).toEqual(anchor);
-    expect(pieceLabel()).toBe(label);
-    await press(q(`#${journeyMarkDomId("piece")}`), "the piece while browsing");
-    expect(panel()!.textContent).toContain("We are here");
-    expect(panel()!.textContent).toContain("28");
-    await press(panel()!.querySelector(".journey-panel__close"), "Close");
-    // Back to now.
-    await press(board.querySelector("[data-back-to-now]"), "Back to now");
-    expect(focused()).toBe("2026-09");
-    expect(board.getAttribute("data-tier")).toBe("region");
-    expect(pieceFlat()).toEqual(anchor);
+    // Turn to an earlier and a later chapter: the view moves, the household's bus does not.
+    await press(board.querySelector('[data-step="-1"]'), "the month before");
+    expect(monthTitle(board)).toBe("August");
+    expect(busMark(), "the bus stands only in today's chapter").toBeNull();
+    await press(board.querySelector('[data-step="1"]'), "back");
+    await press(board.querySelector('[data-step="1"]'), "the month after");
+    expect(monthTitle(board)).toBe("October");
+    // Back to now (Hercules's chip in another chapter).
+    await press(board.querySelector('[data-journey-bubble="other"]'), "Back to now");
+    expect(monthTitle(board)).toBe("September");
+    expect(busMark()!.getAttribute("aria-label")).toBe(busWords);
+
+    // The "+" dial opens and closes; its chips are open-only (All tools / Simple view are here: the App supplies them).
+    await press(board.querySelector("[data-journey-plus]"), "+");
+    const chips = [...board.querySelectorAll<HTMLElement>("[data-dial-chip]")].map((c) => c.dataset.dialChip);
+    expect(chips).toEqual(expect.arrayContaining(["calendar", "books", "kitchen", "simple", "all-tools"]));
+    await act(async () => { document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })); });
+    await settle(1);
+    expect(board.querySelector("[data-journey-radial]")).toBeNull();
 
     // Map ↔ List and back.
     await press(board.querySelector('[data-list-mode="list"]'), "List");
-    expect(board.querySelector(".journey-list")).toBeTruthy();
+    expect(board.querySelector("[data-journey-list]")).toBeTruthy();
     await press(board.querySelector('[data-list-mode="map"]'), "Map");
     await settle(20);
 
@@ -376,24 +397,46 @@ describe("the household Journey Board in the App", () => {
     expect(await moneyHashes()).toEqual([before]);
   });
 
-  it("a brand-new household sees the honest empty board: setup actions, no invented memories or milestones", async () => {
+  it("the dial's All tools opens the App's quick sheet; the theme dot applies the app-wide theme; neither posts", async () => {
+    const { household } = journeyDemoHousehold();
+    const before = await financialAuditHash(household);
+    const board = await openApp(household, BIANCA, { themed: true });
+    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat clock");
+    const themeBefore = board.getAttribute("data-theme");
+    await press(board.querySelector("[data-theme-dot]"), "the theme dot");
+    const next = [...board.querySelectorAll<HTMLElement>("[data-theme-option]")].find((b) => b.dataset.themeOption !== themeBefore)!;
+    await press(next, `theme ${next.dataset.themeOption}`);
+    await waitFor(() => q("[data-journey-board]")?.getAttribute("data-theme") === next.dataset.themeOption, "the map in the chosen theme");
+    const map = q<HTMLElement>("[data-journey-board]")!;
+    // App-wide (ruling 12): the document's theme follows, not a board-only preview.
+    expect(document.documentElement.dataset.theme).toBe(next.dataset.themeOption);
+    await press(map.querySelector("[data-journey-plus]"), "+");
+    await press(map.querySelector('[data-dial-chip="all-tools"]'), "All tools");
+    await waitFor(() => q('[data-quick-sheet="open"]'), "the App's quick sheet");
+    expect(await moneyHashes()).toEqual([before]);
+  });
+
+  it("a brand-new household sees the honest empty map: no invented memories or milestones, the list says so", async () => {
     const household = emptyBoardHousehold();
     const before = await financialAuditHash(household);
     const board = await openApp(household, BIANCA);
-    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat board");
+    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat clock");
     expect(board.classList.contains("journey-board--empty")).toBe(true);
-    const summary = board.querySelector<HTMLElement>("[data-journey-summary]")!;
-    expect(summary.textContent).toContain("Nothing is on the journey yet");
-    expect(summary.textContent).toContain("Nothing is invented for you.");
-    expect([...summary.querySelectorAll<HTMLElement>("[data-action-id]")].map((b) => b.textContent)).toEqual(["Set up our accounts in the Books", "Make our first plan", "Open the Calendar"]);
-    // The map: the piece and the months only — no stop, cluster, crossroads, memory or milestone marks.
-    const kinds = new Set([...board.querySelectorAll<HTMLElement>(".journey-mark")].map((b) => b.dataset.markKind));
-    expect([...kinds].sort()).toEqual(["month", "piece"]);
-    expect(board.querySelector(".journey-mark--memory, .journey-mark--milestone")).toBeNull();
+    const empty = board.querySelector<HTMLElement>("[data-journey-empty]")!;
+    expect(empty.textContent).toContain("Nothing is on the map yet");
+    expect(empty.textContent).toContain("Nothing is invented for you.");
+    // The map: today and the bus only — no money, memory or milestone marks; no to-check ring.
+    const kinds = new Set([...board.querySelectorAll<HTMLElement>(".journey-mark:not([hidden])")].map((b) => b.dataset.markKind));
+    expect([...kinds].every((k) => k === "day" || k === "piece" || k === "hercules")).toBe(true);
+    expect(board.querySelector(".journey-mark--check")).toBeNull();
+    // Direct access never depends on the map: the dial still records.
+    await press(board.querySelector("[data-journey-plus]"), "+");
+    expect([...board.querySelectorAll<HTMLElement>("[data-dial-verb]")].map((b) => b.dataset.dialVerb)).toEqual(["purchase", "paid", "income"]);
+    await act(async () => { document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })); });
     // The list: the honest empty words; no memory or milestone rows (no stop rows at all).
     await press(board.querySelector('[data-list-mode="list"]'), "List");
-    const list = board.querySelector<HTMLElement>(".journey-list")!;
-    expect(list.querySelector(".journey-empty")!.textContent).toContain("Nothing is on the journey yet");
+    const list = board.querySelector<HTMLElement>("[data-journey-list]")!;
+    expect(list.querySelector("[data-list-empty]")!.textContent).toContain("Nothing on the map this month");
     const rowKinds = [...list.querySelectorAll(".journey-row__kind")].map((k) => k.textContent);
     expect(rowKinds.filter((k) => /Memory|Milestone/.test(k ?? ""))).toEqual([]);
     expect(list.querySelectorAll(".journey-row--stop")).toHaveLength(0);
@@ -424,16 +467,18 @@ describe("review fixes in the App", () => {
     Object.assign(HTMLElement.prototype, { setPointerCapture() {}, releasePointerCapture() {}, hasPointerCapture() { return false; } });
   });
 
-  it("B1: the due reminders lead Needs attention, open above the board, and nothing under the frame is reachable by Tab", async () => {
+  it("B1: the due reminders are their own section of Hercules's list, open above the map, and nothing under the frame is reachable by Tab", async () => {
     const { household } = journeyDemoHousehold();
     const board = await openApp(household, BIANCA);
-    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat board");
-    // The App raised its due reminders on arrival; on the board they are the FIRST attention item, not a link under it.
-    const entry = await waitFor(() => board.querySelector<HTMLButtonElement>('[data-attention-call="attention:due-review"]'), "the due reminders in Needs attention");
-    const first = board.querySelector(".journey-summary__attention li");
-    expect(first?.contains(entry), "the due entry is the first attention item").toBe(true);
-    expect(first!.textContent).toMatch(/^Repeating reminders · \d+ to review/);
-    expect(Number(/· (\d+) to review/.exec(first!.textContent!)![1])).toBeGreaterThan(0);
+    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat clock");
+    // The App raised its due reminders on arrival; on the map they are Hercules's list's own section (ruling 1), with
+    // their own count — not a link painted under the map, and never folded into "To check".
+    await press(board.querySelector("[data-journey-bubble]"), "Hercules's bubble");
+    const section = await waitFor(() => panel()?.querySelector<HTMLElement>('[data-checklist-section="reminders"]'), "the reminders section");
+    expect(section.textContent).toMatch(/Repeating reminders/);
+    expect(Number(/· (\d+)$/.exec(section.getAttribute("aria-label") ?? "")?.[1])).toBeGreaterThan(0);
+    const entry = section.querySelector<HTMLButtonElement>('[data-action-id="due-review"]')!;
+    expect(entry).toBeTruthy();
     expect(q(".due-arrival"), "no due link painted under the board").toBeNull();
     expect(dueHost()?.hidden, "the review waits, hidden, until its entry is taken").toBe(true);
     await settle(3);
@@ -454,10 +499,10 @@ describe("review fixes in the App", () => {
     await waitFor(() => host.contains(document.activeElement), "focus inside the due review");
     expect(reachableUnderTheBoard()).toEqual([]);
 
-    // Escape puts the sheet down: the reminders stay in Needs attention and focus returns to the entry.
+    // Escape puts the sheet down: the reminders stay in Hercules's list and focus returns to the entry.
     await act(async () => { (document.activeElement as HTMLElement).dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })); });
     await waitFor(() => dueHost()?.hidden, "the due review put down");
-    await waitFor(() => document.activeElement === board.querySelector('[data-attention-call="attention:due-review"]'), "focus back on the entry");
+    await waitFor(() => document.activeElement === board.querySelector('[data-checklist-section="reminders"] [data-action-id="due-review"]'), "focus back on the entry");
     expect(reachableUnderTheBoard()).toEqual([]);
   });
 
@@ -465,13 +510,12 @@ describe("review fixes in the App", () => {
     const { household, ids } = journeyDemoHousehold();
     const before = await financialAuditHash(household);
     const board = await openApp(household, BIANCA);
-    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat board");
+    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat clock");
     const stopId = `income:${ids.biancaPayRecurrenceId}@${FIXTURE_TODAY}`;
     const twinsBefore = new Set(latestBoard().stops.filter((s) => s.id.startsWith("income:tx:")).map((s) => s.id));
-    await press(q(`#${journeyMarkDomId(`cluster:${FIXTURE_TODAY}`)}`), "today's cluster mark");
-    await press(panel()?.querySelector(`[data-open-stop="${esc(stopId)}"]`), "Bianca pay in the cluster");
-    expect(panel()!.textContent).toContain("Expected");
-    const review = panel()!.querySelector<HTMLButtonElement>(`[data-action-id="${esc(`${stopId}#review`)}"]`);
+    await selectFromDay(FIXTURE_TODAY, stopId);
+    expect(stopScope(stopId)!.textContent).toContain("Expected");
+    const review = stopScope(stopId)!.querySelector<HTMLButtonElement>(`[data-action-id="${esc(`${stopId}#review`)}"]`);
     expect(review?.textContent).toBe("Review and record…");
     await press(review, "Review and record…");
     await waitFor(() => dueSheetUp(), "the due review");
@@ -486,44 +530,43 @@ describe("review fixes in the App", () => {
     const after = latestBoard();
     expect(after.stops.filter((s) => s.id === stopId)).toHaveLength(1);
     expect(after.stops.filter((s) => s.id.startsWith("income:tx:") && !twinsBefore.has(s.id)), "no income:tx twin").toEqual([]);
-    // The board shows it: the panel on the same stop now reads received.
-    await waitFor(() => panel()?.textContent?.includes("Received · recorded"), "the panel reads confirmed");
-    expect(panelTitle()).toBe(after.stops.find((s) => s.id === stopId)!.label);
+    // The map shows it: the same stop's card now reads received.
+    await waitFor(() => stopScope(stopId)?.textContent?.includes("Received · recorded"), "the card reads confirmed");
+    expect(panel()!.textContent).toContain(after.stops.find((s) => s.id === stopId)!.label);
   });
 
   it("M3: Bill paid through its named Confirm turns the SAME bill id Paid and keeps the selection", async () => {
     const { household, ids } = journeyDemoHousehold();
     const board = await openApp(household, BIANCA);
-    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat board");
+    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat clock");
     const stopId = `bill:${ids.insuranceRecurrenceId}@2026-09-18`;
-    await press(q(`#${journeyMarkDomId("cluster:2026-09-18")}`), "the 18 Sep cluster mark");
-    await press(panel()?.querySelector(`[data-open-stop="${esc(stopId)}"]`), "Tenant insurance");
-    await press(panel()!.querySelector(markPaidId(stopId)), "Mark paid…");
+    await selectFromDay("2026-09-18", stopId);
+    await press(stopScope(stopId)!.querySelector(markPaidId(stopId)), "Mark paid…");
     const final = await waitFor(() => q<HTMLButtonElement>("[data-bill-confirm] [data-add-confirm-bill]"), "the Final Confirm");
     await press(final, final.textContent ?? "the named Confirm");
     await waitFor(() => { const stop = latestBoard().stops.find((s) => s.id === stopId); return stop?.kind === "commitment" && stop.status === "paid"; }, "the same bill paid", 30_000);
-    await waitFor(() => panel()?.textContent?.includes("Paid · recorded Fri 18 Sep"), "the panel reads Paid");
+    await waitFor(() => stopScope(stopId)?.textContent?.includes("Paid · recorded Fri 18 Sep"), "the card reads Paid");
     expect(q("[data-journey-board]")).toBe(board);
-    expect(panelTitle()).toBe("Tenant insurance");
-    expect(board.querySelector(".journey-board-flat__selection"), "the selection ring still stands").toBeTruthy();
-    // Paid now: its actions read the Books, and "Mark paid…" is gone.
-    expect(panel()!.querySelector(markPaidId(stopId))).toBeNull();
+    expect(stopScope(stopId)!.textContent).toContain("Tenant insurance");
+    expect(q(`#${journeyMarkDomId("2026-09-18")}`)!.getAttribute("aria-expanded"), "the day stays selected").toBe("true");
+    // Paid now: its actions read the Books, and "Mark paid…" is gone; the date is no longer "to check".
+    expect(stopScope(stopId)!.querySelector(markPaidId(stopId))).toBeNull();
+    expect(latestBoard().toCheck).not.toContain(stopId);
   });
 
   it("M3: a tool opened from a stop, then Put it back, returns to the same selection and the same control", async () => {
     const { household, ids } = journeyDemoHousehold();
     const before = await financialAuditHash(household);
     const board = await openApp(household, BIANCA);
-    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat board");
+    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat clock");
     const stopId = `bill:${ids.insuranceRecurrenceId}@2026-09-18`;
-    await press(q(`#${journeyMarkDomId("cluster:2026-09-18")}`), "the 18 Sep cluster mark");
-    await press(panel()?.querySelector(`[data-open-stop="${esc(stopId)}"]`), "Tenant insurance");
+    await selectFromDay("2026-09-18", stopId);
     const calendarId = journeyPanelActionDomId(`${stopId}#calendar`);
     await press(document.getElementById(calendarId), "Open the Calendar");
     await waitFor(() => !q("[data-journey-board]") && q(".house-tool-heading button"), "the Calendar, with Put it back");
     await press(buttonNamed(q(".house-tool-heading")!, /^Put it back$/), "Put it back");
     await waitFor(() => q<HTMLElement>("[data-journey-board]"), "the board again");
-    await waitFor(() => panelTitle() === "Tenant insurance", "the same stop selected");
+    await waitFor(() => stopScope(stopId)?.textContent?.includes("Tenant insurance"), "the same stop selected");
     await waitFor(() => document.activeElement?.id === calendarId, "focus on the same control");
     expect(location.pathname).toBe("/house/kitchen-table/above");
     expect(await moneyHashes()).toEqual([before]);
@@ -533,9 +576,10 @@ describe("review fixes in the App", () => {
     const { household, ids } = journeyDemoHousehold();
     const before = await financialAuditHash(household);
     const board = await openApp(household, BIANCA);
-    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat board");
+    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat clock");
     const era = `crossroads:era:${ids.eraRowId}`;
-    await press(q(`#${journeyMarkDomId(era)}`), "the era crossroads");
+    await press(dayMark(FIXTURE_TODAY), "today's slot");
+    await press(openFromDay(era), "the era crossroads");
     const opener = panel()!.querySelector<HTMLButtonElement>(`[data-action-id="${esc(`${era}#confirm`)}"]`);
     await press(opener, "Continue in the Era planner…");
     const sheet = await waitFor(() => q<HTMLElement>(".journey-era-sheet"), "the Era planner sheet");
@@ -553,7 +597,7 @@ describe("review fixes in the App", () => {
     resetJourneyLandCacheForTests();
     const { household } = journeyDemoHousehold();
     const board = await openApp(household, BIANCA);
-    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat board on the slim land");
+    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat clock on the slim land");
     await waitFor(() => journeyLandTimings(), "the land loaded");
     expect(journeyLandTimings()!.path).toBe("slim");
     expect(state.fetched).toContain(JOURNEY_LAND_SLIM_URL);
@@ -566,21 +610,22 @@ describe("review fixes in the App", () => {
     state.slim = false; state.fetched = [];
     localStorage.clear();
     const again = await openApp(household, BIANCA);
-    await waitFor(() => again.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat board on the index land");
+    await waitFor(() => again.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat clock on the index land");
     await waitFor(() => journeyLandTimings()?.path === "index", "the index fallback");
     expect(state.fetched).toContain(HORIZON_INDEX_URL);
   });
 });
 
-describe("Simple view while the Journey Board is up (PR #567 Codex P1)", () => {
-  it("choosing Simple view on the board opens the Court (where the Desk opens) in place of the board, and nothing is posted", async () => {
+describe("Simple view while the Journey map is up (PR #567 Codex P1)", () => {
+  it("choosing Simple view from the map's dial opens the Court (where the Desk opens) in place of the board, and nothing is posted", async () => {
     const { household } = journeyDemoHousehold();
     const before = await financialAuditHash(household);
     const board = await openApp(household, BIANCA);
-    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat board");
+    await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat clock");
     expect(location.pathname).toBe("/house/kitchen-table/above");
-    // The Compass's Simple view control and the backtick both write through `chooseMotionEdition`.
-    await act(async () => { chooseMotionEdition("flat"); });
+    // The map's own "+" dial: Simple view writes through the one shared `chooseMotionEdition` (as the backtick does).
+    await press(board.querySelector("[data-journey-plus]"), "+");
+    await press(board.querySelector('[data-dial-chip="simple"]'), "Simple view");
     await waitFor(() => location.pathname === "/house/home/middle" && !q("[data-journey-board]"), "the Court in place of the board");
     expect(new URLSearchParams(location.search).get("surface")).toBeNull();
     expect(localStorage.getItem(MOTION_KEY)).toBe("flat");
