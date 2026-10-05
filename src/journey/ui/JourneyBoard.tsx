@@ -5,7 +5,7 @@
  *
  * Wiring: `deriveJourneyBoard` (memoised on the household snapshot + memberId + today) → the shell, the flat clock and
  * the list render at once; `loadJourneyLand` (aborted on unmount) → `buildJourneyLand` → L3's `createJourneyMapScene`
- * (inside the Stage). The flat map (SVG, no WebGL) stands while the land loads, on the flat quality tier, after a lost
+ * (inside the Stage), imported directly. The flat map (SVG, no WebGL) stands while the land loads, on the flat quality tier, after a lost
  * context, without a scene factory, and when the land fails — budgeting never waits for 3D. `onReady` fires once.
  *
  * Nothing here posts, stores (except view state through `viewState.ts`) or creates a clock: `today` is the App's.
@@ -17,7 +17,7 @@ import type {
 import { isJourneyBoardV2 } from "../contracts.ts";
 import { deriveJourneyBoard, listView } from "../model/index.ts";
 import { buildJourneyLand, loadJourneyLand } from "../land/index.ts";
-import * as boardApi from "../board/index.ts";
+import { createJourneyMapScene } from "../board/scene.ts";
 import { qualityTier, readQualityInput, type QualityTier } from "../../harbour/scene/quality.ts";
 import { MOTION_KEY } from "../../harbour/nav/motionEdition.ts";
 import { JourneyBoardView, type JourneyStageSource } from "./JourneyBoardView.tsx";
@@ -28,18 +28,12 @@ import { useJourneyViewStateStore } from "./viewState.ts";
 /** Test seams only (the App passes plain `JourneyBoardProps`). */
 export type JourneyBoardSeams = {
   quality?: QualityTier;
-  /** The map scene factory (default: L3's `createJourneyMapScene` from board/, once it exists). */
+  /** The map scene factory (default: L3's `createJourneyMapScene`); null = the flat map only. */
   createScene?: CreateJourneyMapScene | null;
   loadLand?: LoadJourneyLand;
   buildLand?: typeof buildJourneyLand;
   storage?: Storage | null;
 };
-
-/** L3's scene factory when the board lane exports it (the contract's `CreateJourneyMapScene`), else null → flat map. */
-export function defaultMapScene(): CreateJourneyMapScene | null {
-  const found = (boardApi as Record<string, unknown>).createJourneyMapScene;
-  return typeof found === "function" ? (found as CreateJourneyMapScene) : null;
-}
 
 function detectQuality(): QualityTier {
   try {
@@ -112,7 +106,7 @@ export default function JourneyBoard(props: JourneyBoardProps & JourneyBoardSeam
     return () => controller.abort();
   }, []);
 
-  const createScene = props.createScene === undefined ? defaultMapScene() : props.createScene;
+  const createScene = props.createScene === undefined ? createJourneyMapScene : props.createScene;
   const [lost, setLost] = useState(false);
   const wants3d = quality !== "flat" && !lost && Boolean(createScene) && land.status !== "failed";
   const [landHandle, setLandHandle] = useState<JourneyLandHandle | null>(null);

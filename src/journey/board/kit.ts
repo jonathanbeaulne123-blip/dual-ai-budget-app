@@ -225,3 +225,22 @@ export function stylePaint(root: THREE.Object3D, style: { pale?: boolean; faded?
     p.color = `#${c.getHexString()}`;
   });
 }
+
+/** Triangles / draw calls under `root` (visible meshes, instanced copies counted), for the board budget test. */
+export function countBoardDraws(root: THREE.Object3D): { triangles: number; drawCalls: number } {
+  let triangles = 0, drawCalls = 0;
+  const visit = (node: THREE.Object3D) => {
+    if (!node.visible) return;
+    const mesh = node as THREE.Mesh;
+    if (mesh.isMesh) {
+      const g = mesh.geometry, count = g.index ? g.index.count : g.getAttribute("position")?.count ?? 0;
+      const copies = (g as THREE.InstancedBufferGeometry).isInstancedBufferGeometry ? (g as THREE.InstancedBufferGeometry).instanceCount : (mesh as THREE.InstancedMesh).isInstancedMesh ? (mesh as THREE.InstancedMesh).count : 1;
+      if (count > 0 && copies > 0) { triangles += (count / 3) * copies; drawCalls += 1; }
+    } else if ((node as THREE.Line).isLine || (node as THREE.Points).isPoints) {
+      if (((node as THREE.Line).geometry.getAttribute("position")?.count ?? 0) > 0) drawCalls += 1;
+    }
+    for (const child of node.children) visit(child);
+  };
+  visit(root);
+  return { triangles: Math.round(triangles), drawCalls };
+}

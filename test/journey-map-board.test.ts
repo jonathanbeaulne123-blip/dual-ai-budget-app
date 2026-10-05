@@ -25,7 +25,8 @@ import {
   type MapSceneHandle, type MapSceneOptions,
 } from "../src/journey/board/index.ts";
 import { distToLine, inPoly } from "../src/journey/board/geo.ts";
-import { BOARD_CLAY_PALETTES } from "../src/journey/board/palette.ts";
+import { boardPalette } from "../src/journey/board/palette.ts";
+import { JOURNEY_CLAY_PALETTES } from "../src/journey/land/clayPalette.ts";
 import { BIANCA, FIXTURE_TODAY, emptyBoardHousehold, journeyDemoHousehold } from "./fixtures/journey-board-households.ts";
 
 const SLIM = JSON.parse(gunzipSync(readFileSync("public/horizon/world/horizon-geo-1.journey.json.gz")).toString());
@@ -179,7 +180,9 @@ describe("layoutWeek (Week)", () => {
   it("follows the land: a rerouted Year Walk moves the trail and the tiles", () => {
     const moved: JourneyLandData = { ...land, yearWalk: land.yearWalk.map((w) => ({ ...w, points: w.points.map((p) => [p[0] + 30, p[1], p[2] - 20] as const) as unknown as typeof w.points })) };
     const a = layoutWeek(board, land, frame), b = layoutWeek(board, moved, frame);
-    expect(planar(b.tiles[0]!.at, a.tiles[0]!.at)).toBeGreaterThan(20);
+    // A 36 m shift of the walk (the stations stay): Monday re-projects onto the moved walk (≈17 m on the baked land with
+    // L2's enclosing-circle frame), well beyond any rounding.
+    expect(planar(b.tiles[0]!.at, a.tiles[0]!.at)).toBeGreaterThan(10);
     expect(b.trail[0]).not.toEqual(a.trail[0]);
   });
 });
@@ -391,7 +394,11 @@ describe("map scene", () => {
     expect(wk.get(board.today)?.visible).toBe(true);
     expect(wk.get(JOURNEY_MAP_MARKS.pile)?.visible).toBe(true);
     expect(h.land.setCalm).toHaveBeenCalled();
-    expect(h.land.setCalm.mock.calls.at(-1)![0]).toBe(1);
+    // One contract method: (the week's calm request, amount). The trail is the Week trail; tiles stay clear.
+    const [calm, amount] = h.land.setCalm.mock.calls.at(-1)!;
+    expect(amount).toBe(1);
+    expect(calm.trail.length).toBeGreaterThan(1);
+    expect(calm.clear.length).toBeGreaterThanOrEqual(7);
     h.scene.setLevel(LEVEL_T.year, true);
     h.scene.renderNow();
     const yr = h.last().filter((x) => x.visible).map((x) => x.id);
@@ -504,9 +511,8 @@ describe("BoardFlat (SVG twin) at all three levels", () => {
     expect(flatViewBoxFor("month", shifted)[0]).toBeCloseTo(m[0] + 100, 6);
   });
 
-  it("authors all three palettes with every contract key", () => {
-    const keys = Object.keys(BOARD_CLAY_PALETTES.classic).sort();
-    for (const t of JOURNEY_THEMES) expect(Object.keys(BOARD_CLAY_PALETTES[t]).sort()).toEqual(keys);
-    expect(BOARD_CLAY_PALETTES.newfoundland.plinthFinish).toBe("clapboard");
+  it("reads L2's palettes for all three themes (no board copy)", () => {
+    for (const t of JOURNEY_THEMES) expect(boardPalette(t)).toBe(JOURNEY_CLAY_PALETTES[t]);
+    expect(boardPalette("newfoundland").plinthFinish).toBe("clapboard");
   });
 });

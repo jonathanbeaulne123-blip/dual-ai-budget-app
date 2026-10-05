@@ -26,14 +26,14 @@ import * as THREE from "three";
 import {
   JOURNEY_DIORAMA, JOURNEY_MAP_MARKS, LEVEL_T, fromDiorama, levelForT, toDiorama,
   type ChapterId, type CreateJourneyMapScene, type DioramaFrame, type JourneyBoardV2, type JourneyLandHandle, type JourneyLevel,
-  type JourneyMapSceneHandle, type JourneyMapSceneOptions, type MarkAnchor, type Point2, type Stop, type ThemeId,
+  type JourneyLandCalm, type JourneyMapSceneHandle, type JourneyMapSceneOptions, type MarkAnchor, type Point2, type Stop, type ThemeId,
 } from "../contracts.ts";
 import { acquireWorldRenderer, type WorldRendererOptions } from "../../house/world/rendererOwner.ts";
 import { effectiveDpr } from "../../harbour/scene/quality.ts";
 import { layoutClock, RING_HEIGHT_DU, stackFor, type ClockItem, type ClockLayout, type ClockSlot } from "./clock.ts";
 import { angDiff, clamp, distToLine, frameFromCoast, isDry, popE, resample, smoothstep, walkAt, walkSlice } from "./geo.ts";
-import { at, bake, blob, clapboardTex, disposeBaked, flatRing, flatTorus, kitMaterials, lathe, part, rbox, stylePaint, type KitMaterials } from "./kit.ts";
-import { countBoardDraws } from "./layers.ts";
+import { at, bake, blob, clapboardTex, countBoardDraws, disposeBaked, flatRing, flatTorus, kitMaterials, lathe, part, rbox, stylePaint, type KitMaterials } from "./kit.ts";
+import { createClayLights } from "../land/clay.ts";
 import {
   cameraAt, chapterTurn, islandYawAt, isPhone, levelTransition, NO_INSET, PINCH_T_PER_DOUBLING, popsAt, restOf, tilePop, weekFrame,
   WHEEL_T_PER_PX, CHAPTER_TURN_SECONDS, type CameraView, type SafeInset, type WeekFrame,
@@ -58,10 +58,11 @@ const DRAG_SLOP = 8, TAP_MS = 500, PICK_MONTH = 38, PICK_WEEK = 60, PICK_YEAR = 
 const MONTH_FOCUS_ZOOM = 1.7;
 
 /**
- * The calm toggle L2's land offers at Week (optional on the handle until both lanes land): `amount` 0…1 flattens and
- * quietens the clay away from `keep` (the trail and the pile, concept metres). The scene calls it on every pull change.
+ * Week calm (`JourneyLandHandle.setCalm`): one `JourneyLandCalm` object per Week layout (the land caches its field on the
+ * object's identity), and the amount pushed at most every `CALM_THROTTLE_MS` while the pull moves (a recompute costs
+ * ~35 ms on the full tier); the rest value is always pushed.
  */
-export type JourneyLandCalm = { setCalm?(amount: number, keep: { trail: Point2[]; pile: Point2 | null }): void };
+const CALM_THROTTLE_MS = 90;
 
 export type JourneyMapSceneExtras = {
   /** Test seam: passed to the renderer lease (`rendererFactory`), with `shared` to pick the lease mode. */
@@ -99,7 +100,7 @@ type TileNode = { tile: WeekTile | null; group: THREE.Group; body: THREE.Group; 
 type MiniNode = { mini: YearMini; group: THREE.Group; top: number };
 
 export function createJourneyMapScene(host: HTMLElement, options: MapSceneOptions): MapSceneHandle {
-  const land = options.land as JourneyLandHandle & JourneyLandCalm;
+  const land: JourneyLandHandle = options.land;
   let board: JourneyBoardV2 = options.board;
   let theme: ThemeId = options.theme;
   const tier = options.tier;
@@ -115,17 +116,9 @@ export function createJourneyMapScene(host: HTMLElement, options: MapSceneOption
   // --- scene graph ---------------------------------------------------------------------------------------------
   const scene = new THREE.Scene();
   scene.name = "journey-map-scene";
-  const hemi = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.62 * Math.PI);
-  const amb = new THREE.AmbientLight(0xffffff, 0.12 * Math.PI);
-  const sun = new THREE.DirectionalLight(0xffffff, 1.05 * Math.PI);
-  sun.position.set(-7, 11, 5);
-  if (shadows) {
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
-    Object.assign(sun.shadow.camera, { left: -6.5, right: 6.5, top: 6.5, bottom: -6.5, near: 1, far: 40 });
-    sun.shadow.bias = -0.0006;
-  }
-  scene.add(hemi, amb, sun, sun.target);
+  // L2's clay lights: hemisphere + ambient + the sun that casts the real shadow map on the full tier (blob shadows on lite).
+  const lights = createClayLights(theme, tier);
+  scene.add(lights.group);
   /** `world` scales / slides for Year; `island` spins (Month drag, chapter turn, Week yaw); the land lives in it. */
   const world = new THREE.Group(); world.name = "journey-map:world";
   const island = new THREE.Group(); island.name = "journey-map:island";
@@ -355,6 +348,19 @@ export function createJourneyMapScene(host: HTMLElement, options: MapSceneOption
   // --- Hercules on The Green -------------------------------------------------------------------------------------
   let herc: { group: THREE.Group; head: THREE.Group; tail: THREE.Group; y: number; spot: Point2 } | null = null;
   let week: WeekLayout | null = null;
+  /** The Week's calm request: rebuilt with each Week layout, so the land recomputes its field once per week, not per frame. */
+  let calmFor: JourneyLandCalm | null = null;
+  let calmShown = -1, calmAt = 0;
+  function pushCalm(amount: number) {
+    if (!land.setCalm) return;
+    const q = calmFor ? amount : 0;
+    if (Math.abs(q - calmShown) < 0.004) return;
+    const resting = q === 0 || q === 1;
+    const tNow = now();
+    if (!resting && tNow - calmAt < CALM_THROTTLE_MS) { invalidate(); return; }
+    calmAt = tNow; calmShown = q;
+    land.setCalm(q > 0 && calmFor ? calmFor : null, q);
+  }
   function herculesSpot(): Point2 | null {
     const green = land.data.districts.find((d) => d.id === "green")?.heart ?? null;
     if (!green) return null;
@@ -445,8 +451,13 @@ export function createJourneyMapScene(host: HTMLElement, options: MapSceneOption
     tileNodes = [];
     if (trailGroup) { weekRoot.remove(trailGroup); disposeBaked(trailGroup); trailGroup = null; }
     if (weekBus) { weekRoot.remove(weekBus); disposeBaked(weekBus); weekBus = null; }
-    if (!board.week || !board.week.days.length || land.data.yearWalk.length === 0) { week = null; wFrame = null; return; }
+    if (!board.week || !board.week.days.length || land.data.yearWalk.length === 0) { week = null; wFrame = null; calmFor = null; calmShown = -1; return; }
     week = layoutWeek(board, land.data, frame, { orientation: isPhone(width) ? "phone" : "wide" });
+    calmFor = {
+      trail: [...week.pastTrail, ...week.trail],
+      clear: [...week.tiles.map((tl) => ({ x: tl.at[0], y: tl.at[1], r: (tl.edgeDu * 0.56) / frame.scale })), ...(week.pile ? [{ x: week.pile.at[0], y: week.pile.at[1], r: (week.pile.edgeDu * 0.56) / frame.scale }] : [])],
+    };
+    calmShown = -1;
     const pal = boardPalette(theme);
     const byId = stopById();
     // The paper trail: past (faded), this week, the ink edge and Storybook dashes, a spur to the pile.
@@ -638,8 +649,7 @@ export function createJourneyMapScene(host: HTMLElement, options: MapSceneOption
 
   // --- build all -----------------------------------------------------------------------------------------------
   function applyTheme() {
-    const p = boardPalette(theme);
-    hemi.color.set(p.hemiSky); hemi.groundColor.set(p.hemiGround); sun.color.set(p.light);
+    lights.setTheme(theme);
   }
   function buildAll() {
     applyTheme();
@@ -740,7 +750,7 @@ export function createJourneyMapScene(host: HTMLElement, options: MapSceneOption
         if (Math.abs(d) > 0.01 && !reduced()) moving = true;
       }
     }
-    land.setCalm?.(P.calm, { trail: week ? [...week.pastTrail, ...week.trail] : [], pile: week?.pile?.at ?? null });
+    pushCalm(P.calm);
     // Billboards (the "!" beads, the "›" badge) face the camera.
     camera.updateMatrixWorld();
     const faceCamera = (o: THREE.Object3D) => {
@@ -1130,7 +1140,8 @@ export function createJourneyMapScene(host: HTMLElement, options: MapSceneOption
       anims.clear();
       for (const off of unlisten) off();
       if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVisibility);
-      land.setCalm?.(0, { trail: [], pile: null });
+      land.setCalm?.(null);
+      lights.dispose();
       island.remove(land.group);
       for (const root of [plinthRoot, bezelRoot, propsRoot, weekRoot, yearGroup]) for (const c of [...root.children]) { if (c !== roadMesh) disposeBaked(c); }
       if (herc) disposeBaked(herc.group);

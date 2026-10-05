@@ -23,7 +23,7 @@
  */
 import * as THREE from "three";
 import type {
-  BuildJourneyLand, DioramaFrame, JourneyClayPalette, JourneyHome, JourneyLandData, JourneyLandHandle, JourneyPropPalette, Point2, Point3,
+  BuildJourneyLand, DioramaFrame, JourneyClayPalette, JourneyHome, JourneyLandCalm, JourneyLandData, JourneyLandHandle, JourneyPropPalette, Point2, Point3,
   StationId, ThemeId,
 } from "../contracts.ts";
 import { compressHeight, HEIGHT_COMPRESSION, JOURNEY_DIORAMA } from "../contracts.ts";
@@ -78,8 +78,7 @@ export const CALM = {
   mainRoadFade: 0.65,
 } as const;
 
-/** What the Week passes to calm the land: the trail (concept metres) and discs to keep clear (tiles, the pile). */
-export type JourneyLandCalm = { trail: readonly Point2[]; clear?: readonly { x: number; y: number; r: number }[] };
+export type { JourneyLandCalm };
 
 /** The clay land: the contract handle with every Horizon Clock field present, plus Week calm. */
 export type ClayLandHandle = JourneyLandHandle & {

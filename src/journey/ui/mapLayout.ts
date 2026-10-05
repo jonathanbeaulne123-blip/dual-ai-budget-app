@@ -8,6 +8,7 @@
  * pile). A date mark COVERS every stop and crossroads on that date; the piece covers today's; the pile covers
  * `week.pileStopIds`; a mini covers its chapter's stops. A 3D anchor on any covered id is reachable through its mark.
  */
+import { dioramaFrame } from "../land/diorama.ts";
 import { JOURNEY_DIORAMA, JOURNEY_MAP_MARKS, isToCheck, type ChapterId, type DateKey, type JourneyBoardV2, type JourneyLandData, type JourneyLevel, type Point2, type Stop } from "../contracts.ts";
 import { directionOf, isRecorded } from "../model/index.ts";
 import { addDays, daysInMonth, lastDay } from "./copy.ts";
@@ -128,18 +129,9 @@ export function flatScale(size: { width: number; height: number }, inset: FlatIn
   return Math.min(w, Math.max(1, size.height - inset.top - inset.bottom)) / (2 * FLAT_EXTENT);
 }
 
-/**
- * Where the island's concept metres sit inside the flat clock, from its own coastline (never constants): the centre of
- * the coast's bounding box and the enclosing radius from it, scaled to `islandUnits`.
- */
+/** Where the island's concept metres sit inside the flat clock: L2's `dioramaFrame` (the same frame as the clay). */
 export function flatIslandFrame(land: Pick<JourneyLandData, "coastline">): { centre: Point2; radius: number; scale: number } | null {
-  const pts = land.coastline;
-  if (!pts.length) return null;
-  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-  for (const [x, y] of pts) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
-  const centre: Point2 = [(x0 + x1) / 2, (y0 + y1) / 2];
-  const radius = Math.max(...pts.map(([x, y]) => Math.hypot(x - centre[0], y - centre[1])));
-  return radius > 0 ? { centre, radius, scale: JOURNEY_DIORAMA.islandUnits / radius } : null;
+  try { return land.coastline.length ? dioramaFrame(land) : null; } catch { return null; }
 }
 
 /** The days of a month a keyboard can visit (every day, not only the ones with stops). */

@@ -2,6 +2,7 @@
  * Pure plan geometry for the Horizon Clock board (L3): no three, no DOM. Points are `[x, y]` concept metres or
  * `[x, z]` diorama units, whichever the caller works in; nothing here knows which.
  */
+import { dioramaFrame } from "../land/diorama.ts";
 import type { DioramaFrame, JourneyLandData, Point2 } from "../contracts.ts";
 import { JOURNEY_DIORAMA } from "../contracts.ts";
 
@@ -154,17 +155,11 @@ export function isDry(land: Pick<JourneyLandData, "coastline" | "water">, x: num
 }
 
 /**
- * The diorama frame. L2's `land.frame` (`dioramaFrame(land)`, from the coastline) is the source of truth; this is the
- * same idea for a land handle that does not carry one yet: the coast's bounding-box centre and its enclosing radius.
- * Never constants: it follows the coastline.
+ * The diorama frame: L2's `dioramaFrame(land)` (the coastline's enclosing circle), the ONE frame the clay land, the
+ * scene, the flat twin and the UI share. Never constants: it follows the coastline.
  */
 export function frameFromCoast(coast: readonly Point2[]): DioramaFrame {
-  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-  for (const p of coast) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); }
-  const centre: Point2 = [(x0 + x1) / 2, (y0 + y1) / 2];
-  let radius = 1;
-  for (const p of coast) radius = Math.max(radius, Math.hypot(p[0] - centre[0], p[1] - centre[1]));
-  return { centre, radius, scale: JOURNEY_DIORAMA.islandUnits / radius };
+  return dioramaFrame({ coastline: coast });
 }
 
 /** Plan concept metres → diorama plan (x, z). */

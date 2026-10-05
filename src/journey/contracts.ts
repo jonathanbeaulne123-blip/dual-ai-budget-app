@@ -800,11 +800,20 @@ export type JourneyLandHandle = {
    * shared by the Year ring's twelve instanced minis (board/year.ts). The land owns and disposes it. Optional until L2 lands.
    */
   miniGeometry?(): THREE.BufferGeometry;
+  /**
+   * Horizon Clock Week calm: soften, lower and thin the clay away from `calm.trail` (concept metres), keeping `clear`
+   * discs free (the Week tiles and the pile), by `amount` 0…1; `null` restores the land as drawn. Presentation only.
+   * The land caches the calm field per `calm` object identity, so the caller passes the SAME object for the whole
+   * week and only changes `amount`; a recompute of the field costs a few tens of ms on the full tier.
+   */
+  setCalm?(calm: JourneyLandCalm | null, amount?: number): void;
   /** Triangles / draw calls this land adds, for the LOD budget test. */
   stats(): { triangles: number; drawCalls: number };
   dispose(): void;
 };
 export type BuildJourneyLand = (land: JourneyLandData, options: BuildJourneyLandOptions) => JourneyLandHandle;
+/** What the Week passes to calm the land: the trail (concept metres) and discs to keep clear (tiles, the pile; metres). */
+export type JourneyLandCalm = { trail: readonly Point2[]; clear?: readonly { x: number; y: number; r: number }[] };
 
 /** The SVG twin's data (flat tier / no WebGL / reading edition): same land, same coordinates (viewBox in concept metres). */
 export type JourneyLandFlatData = {
