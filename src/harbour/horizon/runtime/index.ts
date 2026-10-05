@@ -903,7 +903,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
       if(t===1)transition=null;
     }
     skate?.publish(now);
-    const chosen=mode==='walk'&&!skating()&&!monorail?.state()?perspective.pose(body,(a,b)=>geography.cameraBlocked(a,b,yachtView()!==null),geography.ceiling(body.x,body.z,body.y)):null;
+    const chosen=mode==='walk'&&!skating()&&!monorail?.state()?(()=>{const seen={...body,...walkView(walkState,body)};return perspective.pose(seen,(a,b)=>geography.cameraBlocked(a,b,yachtView()!==null),geography.ceiling(seen.x,seen.z,seen.y));})():null;
     if(chosen){camera.position.set(...chosen.eye);target.set(...chosen.target);if(camera.fov!==chosen.fov){camera.fov=chosen.fov;camera.updateProjectionMatrix();}camera.lookAt(target);}
     const firstPerson=mode==='walk'&&perspective.mode()==='first-person';
     // The skate's look adopts the figure and its chase camera is external, so the rider shows in any perspective (PR #571 review).
@@ -1051,7 +1051,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
       schedule();return{pending:stream.history.at(-1)?.pending??[],region:placed?{mounted:regionScene!==null,building:regionTask!==null}:null};},
     simulateWalk(seconds:number){if(!HARBOUR_DEV)throw new Error('Simulation is a review-only control.');const count=Math.ceil(Math.max(0,Math.min(seconds,3600))/.05);simulating=true;try{for(let i=0;i<count&&path.length;i++)step(.05,performance.now()+i*50);}finally{simulating=false;updateCamera();}return{body:{...body},remaining:path.length,blocker:lastMovementBlocker};},
     toggleCruiser,recoverCruiser:recoverRide,
-    setCruiserTheme(theme:VehicleDressing){schedule();if(cruiserTheme===theme)return;cruiserTheme=theme;airport.setTheme(theme);if(cruiserArt){cruiserArt.dispose();cruiserArt=createCruiserArt(theme);cruiserArt.setSkin(cruiserSkin);scene.add(cruiserArt.root);}},
+    setCruiserTheme(theme:VehicleDressing){schedule();if(cruiserTheme===theme)return;cruiserTheme=theme;airport.setTheme(theme);if(cruiserArt){cruiserArt.dispose();cruiserArt=createCruiserArt(theme);cruiserArt.setSkin(wheelsLook());scene.add(cruiserArt.root);}},
     setCruiserSkin(skin:CruiserSkin){schedule();cruiserSkin=skin;const active=wheels();if(active&&active.id!==rideModeFor(skin))swapWheels(rideModeFor(skin));else if(active)syncEquipment();},
     cruiserState:()=>wheels()?.state()??null,
     body:()=>({...body}),mode:()=>mode,shotId:()=>shotId,

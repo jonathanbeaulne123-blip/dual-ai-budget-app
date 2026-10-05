@@ -295,7 +295,7 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
   /** The Guide's "Glider launches" (Jonathan 2026-10-04): stand on that pad's deck, ready to run off; refused (and said) while a ride, the galley or the monorail owns the body. */
   function goToGliderPad(id:string){
     setGuideOpen(false);const world=runtime.current;if(!world)return;
-    if(world.skate()?.active()){world.skate()?.setAudio(null);world.stopSkate();setSkating(null);}
+    // The runtime refuses while skating (step off the board first); the board session is never discarded by a Guide choice.
     const result=world.goToGliderPad(id as GliderPadId);
     if(!result.ok){setNotice(result.reason);focusStage();return;}
     setTravelTo(null);world.emote(null);setNotice('');focusStage();

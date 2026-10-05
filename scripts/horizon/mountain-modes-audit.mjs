@@ -26,7 +26,8 @@ g.addDynamic(api.createMountainV2Region({walkingJoinSolids:world.geometry.solids
 const deps={world,geography:{...g,cameraBlocked:undefined},manifest:api.HORIZON_MANIFEST,reducedMotion:false,calm:false,tier:'full'};
 const source=readFileSync(resolve(ROOT,'src/harbour/horizon/runtime/index.ts'),'utf8');
 const moveSource=source.slice(source.indexOf('  function move(dx:number'),source.indexOf('  let emote:',source.indexOf('  function move(dx:number')));
-if(!moveSource.includes('return moved;'))throw Error('walking source extraction failed');
+// move() returns walkSim's WalkMove (`return r;`) since the 2026-10-04 walking fix; the audit reads only the body it moves.
+if(!moveSource.includes('return r;'))throw Error('walking source extraction failed');
 const compiled=await transform(`export function walker(body,geography,world,HORIZON_WALKABLE_DEGREES){let held=false,leftSupport=false,velocityY=0,swimming=false,lastMovementBlocker=null;const gateOpen=()=>true;const waterLevel=(x,z,y)=>geography.waterLevel(x,z,y);${moveSource}return {move,report:()=>({held,leftSupport,lastMovementBlocker})}}`,{loader:'ts',format:'esm'});
 writeFileSync(OUT+'/walker-extracted.mjs',compiled.code);
 // The runtime move() binds walkSim's collision step; the extracted body reads walkMove/horizonWalkWorld from globals set here.
