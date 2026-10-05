@@ -89,3 +89,17 @@ No water here reads household state (CONTRACT §2.2); the reservoir inside v2 is
 ## 6. Evidence
 
 `docs/horizon/evidence/mountain-v3/` — before/after captures from the prototype harness over the real bake (aerial, west, lake, backside, plan) and `LOOK.md`. Headless SwiftShader renders of the baked terrain and water with the harness's own curtain sheets; not device evidence.
+
+## 7. V3.1 — one ridge system (The Water's Way PR 2, D-WW50…D-WW56, 2026-10-05)
+
+Jonathan approved the refined concept (project doc `claude/mountain-v3-dissection-and-refined-concept-2026-10-05.md`, "recommended on all"). The same one definition (`landform.ts`, `water.ts`) now authors:
+
+- **The crest** from Westwatch to the horn: `rim.north` (unchanged west of the Orchard Bench) → `rim.col` over the Throat's head and the col north of Glacier Springs (narrow, steep-sided) → `glacierPeak.north` up the horn's north ridge to the east arête's shoulder. **Spurs** fall south off it (`V3_SPURS`: Westwatch, the long hamlet spur to the spur crown, Orchard); they only round their own crests (≤ 2.5 m within 10 m). The benches are **shelves** on them. **Rill gullies** (`V3_RILLS`) cut the crest's north flank and the west wall where no route runs.
+- **The horn**: summit 156; a cone at 1.6 rise per metre through its top 30 m and two sharp arêtes (east to the col, south-west to the glacier's east lip); the cirque's headwall is its west face over the ice. Within 40 m of the summit v2's north apron takes V3 in full (the summit sits on the footprint line).
+- **Strata** (`V3_STRATA`): every V3 cliff over slope 0.55 steps toward 3.2 m beds in the definition (off v2's footprint, clear of the falls' lips); `baseHeight` passes a sampler of the pre-V3 ground so the layer reads its own slope.
+- **Bench Hamlet**: a rounded-rectangle shelf (72 × 44 m, graded 4 % to the north, long axis along the lane); the Rillcut runs down its east edge and splits to the Long Beck at [1094,466]; the west ledge is narrowed to the wall, the lower field moved to the west rim.
+- **The Veil amphitheatre**: an upper bowl behind the lip, one U of rock below it round the pool, a flat-topped west buttress (97) carrying **Fallswatch** at [1080,693] (lane over the Veil outlet on the Lip Footbridge), the spur crown 15 m north.
+- **The second stream**: the Hollow Tarn (40.5) → **the Hollow Beck** under Green Road (Hollow Beck Bridge) and the Year Walk (Hollow Beck Footbridge) → Orchard Brook at 37.4, so the Rillcut's water reaches the Bight. The Hollow Tarn no longer soaks away.
+- **The drag lift** (structure data, `structures.glacierLift`): Twin Tarns shelf → the hamlet lane at Orchard Bench, two towers, both stations threshold pads on walks. Shortened under ruling 5 (see D-WW56): the glacier line proper needs v2's north land or the skylight keep-out.
+
+Proofs and numbers are in §4 and the PR report; the bake gate stays clean, the region seam ≤ 0.5, v2's footprint untouched.
