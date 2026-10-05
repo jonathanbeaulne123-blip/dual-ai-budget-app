@@ -146,7 +146,8 @@ describe("src/harbour source fences", () => {
     expect(app).toMatch(/harbourOwnsRoute\(activeHouseRoute,view\)\?<Suspense fallback=\{<HarbourFlat place=\{harbourPlaceFor\(activeHouseRoute,view,true\)\?\?"court"\}/);
     expect(app).toMatch(/data-harbour-court=\{harbourOwnsRoute\(activeHouseRoute,view\)&&!activeHouseRoute\.surface\|\|undefined\}/);
     // One glass chrome for both spaces (Tool Atlas D2): no personal bottom bar under the harbour.
-    expect(app).toMatch(/HARBOUR_ENABLED\?<><WorldToggle\/><Compass fab=\{harbourBarFab\}/);
+    // The Journey map (Horizon Clock) carries its own "+" dial and tools chip, so the Compass stands everywhere else.
+    expect(app).toMatch(/HARBOUR_ENABLED\?<><WorldToggle\/>(?:\{\/\*[^*]*\*\/\})?\{!journeyBoardShown&&<Compass fab=\{harbourBarFab\}/);
     expect(app).not.toMatch(/HARBOUR_ENABLED&&view==="household"\?<><Compass/);
     expect(app).toMatch(/harbourArrivalRoute\(\{saved:saved\?\.route,scope:session\.view/);
     // The entry resolves the flat Desk before importing the illustrated world.
