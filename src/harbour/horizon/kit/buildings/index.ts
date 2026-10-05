@@ -26,6 +26,14 @@ import {pavilion,hide,deck,platform,windpump,shed,gate,wall} from './shared.ts';
 
 export {buildingPalette,BUILDING_STYLES,type BuildingPalette} from './palette.ts';
 
+/**
+ * One solid part, world space. `box`: centre [x, z], `size` = FULL extents [along local x, along local z] after
+ * turning by `yaw` (the BuildingRecord convention: local x = (cos yaw, −sin yaw), local z = (sin yaw, cos yaw)),
+ * from `bottom` to `top`. `prism`: the plan polygon of `corners` (x, z) extruded from `bottom` up to a planar top that
+ * passes through each corner's y (gable and hip roof planes, ramps, terrain-following wall runs). `walkable` only on
+ * floors, decks and flat roofs; rails are walls at their drawn height. `collisionPartMesh` closes either into
+ * indexed outward-facing triangles for a `StructureSolid`.
+ */
 export type CollisionPart =
   | { kind: 'box'; centre: [number, number]; size: [number, number]; yaw: number; bottom: number; top: number; role: StructureSolid['role']; walkable: boolean; surface: string }
   | { kind: 'prism'; corners: [number, number, number][]; bottom: number; role: StructureSolid['role']; walkable: boolean; surface: string };

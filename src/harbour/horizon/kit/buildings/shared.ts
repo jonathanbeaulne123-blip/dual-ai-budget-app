@@ -176,7 +176,7 @@ const COPE=.16;
 export const wall:KindDef<WallPlan>={
   plan(rec){
     const L=rec.size.w,hz=Math.max(.2,rec.size.d/2),h=Math.max(.4,rec.size.h),n=Math.max(1,Math.ceil(L/1.5)),xs=Array.from({length:n+1},(_,i)=>-L/2+L*i/n);
-    const vols:Vol[]=[];for(let i=0;i<n;i++)vols.push({...prism([[xs[i]!,hz+.05,h],[xs[i+1]!,hz+.05,h],[xs[i+1]!,-hz-.05,h],[xs[i]!,-hz-.05,h]],'ground','wall','stone'),gTop:true});
+    const vols:Vol[]=[];for(let i=0;i<n;i++)vols.push(prism([[xs[i]!,hz+.05,h],[xs[i+1]!,hz+.05,h],[xs[i+1]!,-hz-.05,h],[xs[i]!,-hz-.05,h]],'ground','wall','stone',false,true));
     return {vols,eave:h,top:h,xs,hz,h};
   },
   draw(c,p){

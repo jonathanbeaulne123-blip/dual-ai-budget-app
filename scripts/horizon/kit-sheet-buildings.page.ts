@@ -80,6 +80,9 @@ if (glow) { glow.transparent = true; glow.opacity = night ? 1 : 0.12; }
 // STYLE §1.3.3: ink at night goes to #1a1a24 at 0.8 of its day opacity (the runtime's night ramp owns this; mirrored here).
 const ink = build.materials.ink as THREE.LineBasicMaterial | undefined;
 if (ink && night) { ink.color.setRGB(0.22, 0.22, 0.28); ink.opacity *= 0.8; }
+// Contact shade is an unlit fixed dark: at night it must dim with the scene or it reads lighter than the ground.
+const shadeMat = build.materials.shade as THREE.MeshBasicMaterial | undefined;
+if (shadeMat && night) shadeMat.color.setScalar(0.2);
 scene.add(new THREE.HemisphereLight(night ? '#40527a' : '#d9e7e8', night ? '#141010' : '#786b57', night ? 0.55 : 1.15));
 const sun = new THREE.DirectionalLight(night ? '#9fb4d8' : '#fff0d5', night ? 0.45 : 2.3); sun.castShadow = !night; sun.shadow.mapSize.set(2048, 2048);
 const sc = sun.shadow.camera; sc.near = 1; sc.far = 500; sun.shadow.bias = -0.0003; sun.shadow.normalBias = 0.05; scene.add(sun, sun.target);

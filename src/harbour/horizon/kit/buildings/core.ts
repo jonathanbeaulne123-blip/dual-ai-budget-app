@@ -43,7 +43,7 @@ export interface DrawCtx {
 export interface KindDef<P extends Plan=Plan> {plan(rec:BuildingRecord):P;draw(c:DrawCtx,p:P):void}
 
 export const box=(x:number,z:number,hx:number,hz:number,y0:number|'ground',y1:number|{g:number},role:Role,surf:string,walk=false,yaw=0):Vol=>({t:'box',x,z,hx,hz,yaw,y0,y1,role,surf,walk});
-export const prism=(pts:readonly (readonly [number,number,number])[],y0:number|'ground',role:Role,surf:string,walk=false):Vol=>({t:'prism',pts,y0,role,surf,walk});
+export const prism=(pts:readonly (readonly [number,number,number])[],y0:number|'ground',role:Role,surf:string,walk=false,gTop=false):Vol=>({t:'prism',pts,y0,role,surf,walk,...(gTop?{gTop}:{})});
 
 /** Deterministic string hash → [0, 1). */
 export function hashOf(id:string,salt=0):number{let h=2166136261^salt;for(let i=0;i<id.length;i++){h^=id.charCodeAt(i);h=Math.imul(h,16777619);}h^=h>>>13;h=Math.imul(h,0x5bd1e995);h^=h>>>15;return (h>>>0)/4294967296;}
