@@ -1127,6 +1127,18 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     /** Whether a tapped or requested route is still being walked. */
     routing(){return path.length>0&&!registry.active();},
     walkTo(p:XYZ){schedule();if(registry.active()||skating()||monorail?.state())return null;lastMovementBlocker=null;const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],p,{stepFree:true});path=plan?[...plan.points]:[];if(plan)routeAhead(plan.points);return plan;},
+    /**
+     * Quick travel (Jonathan, 2026-10-04): the deliberate, instant jump to a place's step that All tools › Places and a panel's
+     * Visit make. It is a restore, so the chunk gate still holds the body on ground that has not arrived and the full
+     * validation runs when it lands (no teleport into the void, no fall-through); the board and the walk end where they stand
+     * and a short fade covers the cut (a plain cut under reduced motion / calm). A ride, the monorail and the kitchen keep
+     * their refusal: false, and the caller says so.
+     */
+    quickTravel(p:XYZ,facing?:number,label=''){
+      schedule();const busy=registry.active()||monorail?.state()||kitchen?.active();if(busy)return false;
+      restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',x:p[0],y:p[1],z:p[2],yaw:Number.isFinite(facing)?facing!:body.yaw});
+      fadeCut(label);return true;
+    },
     setHomeBotanical(...args:Parameters<typeof homeWorld.setBotanical>){schedule();homeWorld.setBotanical(...args);},
     setHome(layout:HomeLayout|undefined,displays?:HomeDisplayContent[],plotId?:string){const occupied=homeWorld.roomAt(body);homeWorld.set(layout,displays,plotId);if(occupied&&(geography.blocked(body.x,body.z,body.y)||!homeWorld.roomAt(body))){const at=homeWorld.visit();if(at)restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',...at});}requestShadow('home-renovation');},
     visitHome(){const at=homeWorld.visit();if(!at)return false;restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',...at});return true;},
