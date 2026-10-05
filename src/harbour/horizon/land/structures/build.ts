@@ -7,6 +7,7 @@ import { baseHeight } from '../terrain';
 import { buildWaterCuts } from '../water';
 import { FOOTING_SINK, GROUND_CONTACT, pier, wallToGround } from './foundations';
 import { box, clamp, distance, districtAt, mitredSlab, mix, nearestOnPath, plan, slab, solid } from './mesh';
+import { buildWestLand } from './westLand';
 
 export interface SpanSpec { id:string; at:XY; route:string; length:number; width:number; height?:number; clear?:number; covered?:boolean; supportSpacing?:number; /** A clear opening centred on the span, carried by a through truss. */ opening?:number; /** Build abutments to the ground at both ends. */ abutments?:boolean; /** v1.9: the deck follows the route's own graded points (plan and height) instead of a level chord. */ followRoute?:boolean }
 export const SPANS:SpanSpec[]=[
@@ -819,7 +820,7 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   const wash=solid('wash.bowl','bowl','ochre','deck',['S2'],'flats'),washH=heightOnBeds(cuts,[465,700],base);for(let i=-12;i<12;i++){const h=washH+5*(i/12)**2,h2=washH+5*((i+1)/12)**2;slabOnGrade(wash,[465+i,h,665],[466+i,h2,665],72,base);}cuts.solids.push(wash);
   // Runway and mooring foundations contain no lamps, windsock, hangar or balloon props in Pass 1.
   const strip=bed('strip','road',[[425,38,520],[445,38,860]]);strip.width=30;cuts.beds.push(strip);
-  addFlatPad(cuts,'hangar','place',[455,600],38,[40,30]);addFlatPad(cuts,'windsock.footing','place',[440,500],38,[1,1]);addFlatPad(cuts,'balloon.footing','place',[520,470],base(520,470),[14,14]);
+  addFlatPad(cuts,'hangar','place',[455,600],38,[40,30]);addFlatPad(cuts,'windsock.footing','place',M.structures.strip.windsock as unknown as XY,38,[1,1]);addFlatPad(cuts,'balloon.footing','place',[520,470],base(520,470),[14,14]);
   Object.entries(M.structures.jetties).forEach(([id,p])=>dock(`jetty.${id}`,p as unknown as XY,id==='deep'?40.6:1,cuts,base));
   Object.entries(M.water_routes.FERRY.piers).forEach(([id,p])=>dock(`ferry.${id}`,p as unknown as XY,1,cuts,base,6,16));
   dock('floatplaneDock',M.structures.floatplaneDock as unknown as XY,1.2,cuts,base,8,20);
@@ -899,5 +900,8 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   buildStair('lampGallery.stair',[540,1,1250],[540,25,1198.5],3,cuts,base);
   buildNamedKinds(cuts,base);
   buildBridgeLandmarks(cuts,base);
+  // The Water's Way (PR 2 land, L3: D-WW80…89): the Bight lookout, the courtyard terrace, the stargazing pad, the Wash Arch and
+  // the hoodoo footings, and the Bight Shore batter's report.
+  buildWestLand(cuts,base);
   flushRails(cuts);
 }

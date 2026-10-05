@@ -124,8 +124,9 @@ const LANDMARK_SOURCE: readonly LandmarkSource[] = [
   { id: 'campanile', label: 'the campanile', kind: 'landmark', neighbourhood: 'harbour', at: [1423, 10.06, 1187], top: [1423, 42.3, 1187] },
   // Hub [1010, 19.6, 1648], r 13, facing NE; at = the pier deck under the hub.
   { id: 'wheel', label: 'the Ferris wheel', kind: 'landmark', neighbourhood: 'landing', at: [1010, 3.6, 1648], top: [1010, 32.6, 1648], owed: 'the pier (PR 2 land)' },
-  // On the airport tower footprint: ground 35.5 + 28 m, green-and-white beacon. Side clearance vs the runway owed.
-  { id: 'elevator', label: 'the grain elevator', kind: 'landmark', neighbourhood: 'flats', at: [395, 35.5, 706], top: [395, 63.5, 706], owed: 'side clearance vs the strip (PR 4 Flats)' },
+  // On the airport tower footprint: ground 35.5 + 28 m, green-and-white beacon. Side clearance vs the strip proved on this footprint
+  // (D-WW81, MANIFEST structures.strip.clearances: outside both approach boxes, ≥ 28 m off the centreline; test/horizonLandWWWest).
+  { id: 'elevator', label: 'the grain elevator', kind: 'landmark', neighbourhood: 'flats', at: [395, 35.5, 706], top: [395, 63.5, 706], owed: 'the elevator on the tower footprint (PR 4 Flats)' },
   // The Library host (pad 48, greybox roof 62 today); the dressed ridge (verdigris) at 64.
   { id: 'library', label: 'the Library', kind: 'landmark', neighbourhood: 'scholars', at: [740, 48, 400], top: [740, 64, 400] },
   // The baked lighthouse gallery (offshore lamp island); every binocular's shared target.
@@ -180,8 +181,8 @@ export const STORY_EYES: readonly StoryEye[] = [
   { id: 'wheelTop', label: 'the top of the wheel', at: [1010, 1648], y: 31, targets: ['elevator', 'oak', 'lamp'], lookout: false, owed: 'the pier and wheel (PR 2 / PR 4)' },
   // Flats: the elevator's head-house gallery (top 63.5).
   { id: 'elevatorTop', label: 'the elevator gallery', at: [395, 706], y: 62, targets: ['library', 'oak', 'lamp'], lookout: false, owed: 'the elevator (PR 4 Flats)' },
-  // Scholars: the Bight lookout deck, raised ~2 m (ground 50.0 → deck 52.0, eye 53.6).
-  { id: 'bightLookout', label: 'the Bight lookout', at: [744, 511], y: 53.6, targets: ['westwatch', 'oak', 'lamp'], lookout: true, owed: 'the spur and raised deck (PR 2 land, PR 4 Scholars)' },
+  // Scholars: the Bight lookout deck as built (D-WW87, MANIFEST structures.bightLookout): deck 52.0 (ground 50.0 + 2), eye = deck + 1.6.
+  { id: 'bightLookout', label: 'the Bight lookout', at: [744, 511], y: 53.6, targets: ['westwatch', 'oak', 'lamp'], lookout: true, owed: 'the Lookout kit set on the built deck (PR 4 Scholars)' },
 ];
 export function storyEye(id: string): StoryEye {
   const e = STORY_EYES.find(q => q.id === id);
@@ -215,7 +216,8 @@ export const SIGHT_CHAIN: readonly SightLink[] = [
   { from: 'belfry', to: 'wheel', measured: 22.9 },
   { from: 'wheelTop', to: 'elevator', measured: 18.6 },
   { from: 'elevatorTop', to: 'library', measured: 14 },
-  { from: 'bightLookout', to: 'westwatch', measured: 3.2, dependsOn: 'the raised Bight lookout deck (PR 2 land, PR 4 Scholars)' },
+  // On the built deck (D-WW87, eye 53.6): 3.16 m, the first limit the lip's ground beside the deck.
+  { from: 'bightLookout', to: 'westwatch', measured: 3.16 },
 ];
 /** Fallswatch must also see the fall it is named for. */
 export const SIGHT_EXTRAS: readonly SightLink[] = [

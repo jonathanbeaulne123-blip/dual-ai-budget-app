@@ -2251,6 +2251,9 @@ m["crossings"].extend([
  {"a": "walk fallswatch", "b": "water.v3.rillcut", "at": [1097.5, 417], "resolution": "over", "structure": "hamletFootbridge", "kind": "crossing", "note": "V3: the Fallswatch lane over the Rillcut's head"},
  {"a": "DEEP_RUN", "b": "water.v3.splitWall", "at": [1490, 560], "resolution": "under", "kind": "crossing", "note": "V3: the Sea Passage runs ≈ 90 m beneath Split Wall Gorge"},
 ])
+# The Water's Way · PR 2 land, L3 (Scholars' Edge, the Flats, the Bight): D-WW80…89.
+import os as _os
+exec(open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "make_manifest_ww_west.py"), encoding="utf-8").read())
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")

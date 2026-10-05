@@ -140,7 +140,8 @@ describe('Horizon manifest v2.0',()=>{
     expect(manifest.crossings.some(r=>r.a==='jetty.bightPier'&&r.b==='FERRY'&&JSON.stringify(r.at)==='[560,890]'&&r.resolution==='threshold')).toBe(true);
     const D=m.views.find((v:{id:string})=>v.id==='D');expect(D.subjects).toEqual(['surf','the zipline landing']);expect(D.deferred.some((x:string)=>x.startsWith('the Lamp (Pass 2b'))).toBe(true);
     expect(m.hosts.find((h:{id:string})=>h.id==='bank')).toMatchObject({footprint_m:[20,18],xy:[1443,1125],v2_0_footprint_m:[26,18]});
-    expect(m.views.find((v:{id:string})=>v.id==='H').portrait.xy).toEqual([428,760]);expect(m.walks.lakerim).toMatchObject({v2_1_surface_m:5.2,v2_1_shoulder_m:1.2});expect(m.walks.lakerim.surface_m).toBeUndefined();
+    // The Water's Way (D-WW86) re-posed page H; the v2.1 portrait eye is kept as its history (`ww_previous`).
+    expect(m.views.find((v:{id:string})=>v.id==='H').ww_previous.portrait.xy).toEqual([428,760]);expect(m.views.find((v:{id:string})=>v.id==='H').portrait.xy).toEqual([452,890]);expect(m.walks.lakerim).toMatchObject({v2_1_surface_m:5.2,v2_1_shoulder_m:1.2});expect(m.walks.lakerim.surface_m).toBeUndefined();
     expect(m.structures.bightSpurTrestle).toMatchObject({v2_3_to:[886.7,916],v2_3_length_m:56,v2_0_to:[891.6,906]});   // v2.4 extends it again (below)
   });
   it.each(['n/a','bridge',''])('rejects unresolved crossing resolution %j on load',resolution=>{
@@ -280,7 +281,8 @@ describe('Horizon manifest v2.4: Stage A Wave 7 (integrator 4)',()=>{
   });
   it('D-D7: G looks up the skylight shaft; H is an aerial eye over the strip (eye 39.6 → 48)',()=>{
     expect(view('G')).toMatchObject({xy:[1320,404],target:[1320,380],target_h:110,subjects:['the skylight shaft']});expect(view('G').v2_3.xy).toEqual([1300,440]);
-    expect(view('H')).toMatchObject({eyeH:48,target_h:20,portrait:{eyeH:48,target_h:20}});expect(view('H').v2_3).toMatchObject({eyeH_measured:39.6,target_h:30});
+    // D-WW86 (The Water's Way) superseded the aerial pose; it stays as `ww_previous`, the new pose is up the strip from its south end.
+    expect(view('H').ww_previous).toMatchObject({eyeH:48,target_h:20,portrait:{eyeH:48,target_h:20}});expect(view('H')).toMatchObject({xy:[452,890],eyeH:58,target:[428,480],target_h:30,portrait:{eyeH:58,target_h:30}});expect(view('H').v2_3).toMatchObject({eyeH_measured:39.6,target_h:30});
   });
   it('moves the Reach meadow onto a clear field, re-seats gate 10, raises the quay finish and extends the spur trestle',()=>{
     expect(m.sky.landings.reachMeadow).toMatchObject({xy:[1195,1205],v2_3_xy:[1143,1167],r:40});

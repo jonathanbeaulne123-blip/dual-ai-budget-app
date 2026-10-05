@@ -18,6 +18,11 @@ export type RayHit =
   | { kind: 'sky'; t: number; id: 'sky' };
 export interface RayCaster { first(origin: Point3, direction: Point3, maxT?: number, options?: { underground?: boolean; step?: number; skip?: (solid: StructureSolid) => boolean }): RayHit; floorAt(x: number, z: number): number }
 
+/** An open rail (posts and bars): sight lines pass through it as the eye does. A timber post-and-rail road guard's collider and
+ * any solid marked `openRail` (a lookout's or a ramp's open rail, STYLE 1.05); a parapet or a solid balustrade stays opaque. */
+export function isOpenRail(solid: Pick<StructureSolid, 'kind' | 'surface' | 'openRail'>): boolean {
+  return solid.openRail === true || (solid.kind === 'corridorGuard' && solid.surface === 'timber');
+}
 export function createRayCaster(field: TerrainField, cuts: Pick<LandCuts, 'solids' | 'waters' | 'mouths'>): RayCaster {
   const width = (field.columns - 1) * field.step, depth = (field.rows - 1) * field.step;
   // Water level grid (5 eu) for the surface waters; underground waters are tested exactly.
@@ -36,8 +41,9 @@ export function createRayCaster(field: TerrainField, cuts: Pick<LandCuts, 'solid
   const cellMin = new Float32Array(GW * GD).fill(Infinity), cellMax = new Float32Array(GW * GD).fill(-Infinity);
   cuts.solids.forEach((solid, si) => {
     // Road main: a post-and-rail guard's collider is never drawn (the visible rail is an open kit of posts and bars); rays see
-    // through it as the eye does. A stone parapet's collider stays opaque, like the parapet.
-    if (solid.kind === 'corridorGuard' && solid.surface === 'timber') return;
+    // through it as the eye does. A stone parapet's collider stays opaque, like the parapet. The Water's Way: one rule for every
+    // open rail (`isOpenRail`).
+    if (isOpenRail(solid)) return;
     const p = solid.positions, ix = solid.indices;
     for (let k = 0; k < ix.length; k += 3) {
       const a = ix[k]! * 3, b = ix[k + 1]! * 3, c = ix[k + 2]! * 3, t = owner.length;
