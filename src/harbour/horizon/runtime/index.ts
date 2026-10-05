@@ -32,6 +32,7 @@ import {createPlayableFigure} from '../../body/playableFigure.ts';
 import type {PlayableAvatar} from '../../body/avatarDefinition.ts';
 import {EMOTE_LOOPS,EMOTE_SECONDS,type EmoteId} from '../../body/bodyModel.ts';
 import {createNativeSkate,type NativeSkate,type NativeSkateFrame} from '../skate/nativeSkate.ts';
+import {terrainPaintKind} from '../skate/world.ts';
 import type {SkateProgress} from '../../skate/session.ts';
 import type {PlaceWalkSource} from '../../scene/place.ts';
 import type {HouseBodyReturn} from '../../../house/navigation.ts';
@@ -112,6 +113,17 @@ export type HorizonOptions={homePlotId?:string;homeLayout?:HomeLayout;onHomeBook
   avatar?:PlayableAvatar|null;onAvatarStatus?:(avatar:PlayableAvatar,status:'ready'|'error')=>void};
 /** Pass 5 (T2): a placed region and the dressing its scene is built in. */
 export type HorizonPlacedRegion={region:MountainV2Region;dressing:(theme:VehicleDressing)=>PlaceDressing};
+/** Why the old board stays in hand (`skateRefusal`): only water, rooms, unsupported or steep (>40°) ground, a wall, unloaded
+ *  ground, or another ride. Everywhere else on the island it goes down where the person stands. */
+export const SKATE_REFUSALS={
+  ride:'Park your current ride before skating.',
+  indoors:'Step outside to put down the board.',
+  water:'Step out of the water to put down the board.',
+  steep:'Too steep for the board here. Find flatter ground.',
+  unsupported:'Stand on solid ground to put down the board.',
+  blocked:'Step clear of the wall to put down the board.',
+  held:CHUNK_ARRIVING_STATUS,
+} as const;
 /** A region not needed (no district under its footprint resident, or the Journey map) is released after this long. */
 export const REGION_RELEASE_MS=20_000;
 /** Loads and creates the placed Mountain v2 region when the definition lists it (dynamic: v2's definition evaluates its terrain at import). */
@@ -165,8 +177,10 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   let figure=options.avatar?createPlayableFigure(options.avatar,tier,{invalidate:()=>schedule(),onStatus:options.onAvatarStatus}):createBodyFigure();
   const partner=createBodyFigure({coat:'#af8760'});
   scene.add(figure.group,partner.group);partner.group.visible=false;
-  // The old skate rides Mountain v2's town island in native space (`../skate/nativeSkate.ts`); without the region it has nowhere to be.
-  const skate:NativeSkate|null=placed?createNativeSkate({scene,figure,tier:options.tier,theme:options.theme,geography,ready:(x,z)=>gateOpen(x,z),destination:{ready:prepareSkateDestination,clear:clearSkateDestination},nativeVisible:(x,z)=>regionVisible&&placed.region.requiresScene(x,z),reducedMotion:()=>comfort.reducedMotion,onSkate:options.onSkate,blocked:(x,y,z,r)=>placed.region.blocked(x,y,z,r)}):null;
+  // The old skate keeps its native Mountain space (`../skate/nativeSkate.ts`): its park, spots and race stand on Mountain v2's
+  // town island, so it exists with the placed region. Its floors, walls, water and ceilings are the Horizon geography's, and
+  // terrain rides as its baked paint, so the board goes down on any dry, open, walkable ground of the whole island.
+  const skate:NativeSkate|null=placed?createNativeSkate({scene,figure,tier:options.tier,theme:options.theme,geography,terrainKind:terrainPaintKind(field),ready:(x,z)=>gateOpen(x,z),destination:{ready:prepareSkateDestination,clear:clearSkateDestination},nativeVisible:(x,z)=>regionVisible&&placed.region.requiresScene(x,z),reducedMotion:()=>comfort.reducedMotion,onSkate:options.onSkate,blocked:(x,y,z,r)=>placed.region.blocked(x,y,z,r)}):null;
   const skating=()=>Boolean(skate?.controls.active());
   // Pass 5: inside the region's footprint its provider owns the ground (v2's exact ground, decks, solids, ceilings).
   // PR #566 Codex: its decks, solids and ceilings answer only while the region's scene is drawn (showRegion); ground and water always.
@@ -1091,15 +1105,22 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
       if(control==='bell')ambience?.bell();
       monorail.control(control,value);reportMonorail(true);schedule();return true;
     },
-    /** Whether the board can be put down here (Mountain v2's town island). */
+    /** Whether the old board exists on this Horizon (it stands with the placed Mountain v2 region). */
     hasSkate(){return Boolean(skate);},
-    canSkate(){return Boolean(skate&&mode==='walk'&&!monorail?.state()&&!registry.active()&&!kitchen?.active()&&skate.canStart(body.x,body.z,body.y));},
+    /** Why the board cannot be put down where the body stands on foot, as a status line; null where it can. */
+    skateRefusal():string|null{
+      if(!skate)return 'The board is not on this island.';
+      if(skating())return null;
+      if(mode!=='walk'||monorail?.state()||registry.active()||kitchen?.active()||airport.seated()||fleet.sitting()||yachtView()!==null)return SKATE_REFUSALS.ride;
+      if(homeWorld.roomAt(body))return SKATE_REFUSALS.indoors;
+      const why=skate.startRefusal(body.x,body.z,body.y);
+      return why?SKATE_REFUSALS[why]:null;
+    },
+    canSkate(){return Boolean(skate)&&!skating()&&api.skateRefusal()===null;},
     startSkate(progress?:SkateProgress){
-      schedule();if(!skate||monorail?.state()||registry.active()||kitchen?.active()||mode!=='walk')return false;
-      if(!gateOpen(body.x,body.z)){holdStatus();return false;}
-      if(!skate.canStart(body.x,body.z,body.y)){
-        options.onStatus?.('Stand on clear, dry ground to put down the board.');return false;
-      }
+      schedule();if(!skate)return false;if(skating())return true;
+      const refusal=api.skateRefusal();
+      if(refusal){if(refusal===SKATE_REFUSALS.held)holdStatus();else options.onStatus?.(refusal);return false;}
       emote=null;path=[];clear();return skate.start({...body},progress);
     },
     retry(){

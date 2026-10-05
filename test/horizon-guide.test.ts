@@ -34,10 +34,17 @@ describe('the old shell guide on Horizon',()=>{
     expect(button('Board the monorail')).toBeUndefined();
     expect(button('Walk to the boats')).toBeTruthy();
   });
-  it('offers a trip to Tideline even when the rider is elsewhere on the Horizon',async()=>{
-    const onSkate=vi.fn();await render({skateHere:false,onSkate});
+  // Changed (Jonathan 2026-10-04, "bring back the skateboard anywhere"): this test expected a "Go skate Tideline" trip
+  // button. Since #578 the runtime no longer moves the rider to Tideline, so that label promised a trip that never
+  // happened. The board now goes down wherever the person stands; off valid ground the guide keeps "Skate here" (which
+  // reports the refusal) and says why underneath.
+  it('keeps Skate here anywhere on the Horizon and says why the board cannot go down here',async()=>{
+    const onSkate=vi.fn();await render({skateHere:false,skateWhy:'Step out of the water to put down the board.',onSkate});
     await act(async()=>button('Travel & play').click());
-    await act(async()=>button('Go skate Tideline').click());
+    expect(button('Go skate Tideline')).toBeUndefined();
+    expect(host.querySelector('#horizon-guide-skate-why')?.textContent).toBe('Step out of the water to put down the board.');
+    expect(button('Skate here').getAttribute('aria-describedby')).toBe('horizon-guide-skate-why');
+    await act(async()=>button('Skate here').click());
     expect(onSkate).toHaveBeenCalledOnce();
     expect(button('Start downhill race')).toBeTruthy();
   });

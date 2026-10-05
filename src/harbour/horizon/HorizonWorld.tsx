@@ -223,8 +223,8 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
   useEffect(()=>{if(lastHere.current===here||toolOpen||!worldReady||riding)return;if(walkToPlace(here))lastHere.current=here;},[here,toolOpen,worldReady,riding,walkToPlace]);
   /** "Step in" on a panel: through that host's door, which opens its tool as a Horizon door always has. */
   function stepIn(place:string){const world=runtime.current,host=world&&horizonHostFor(world.world,place);if(host&&world?.enterDoor(host.id))return;if(Object.hasOwn(VILLAGE_ADDRESS,place))walkToPlace(place as HarbourPlaceId);}
-  // ── The old Tideline skate on Mountain v2's town island (PR B) ── the same HUD, keys, saves and progress key.
-  const [skating,setSkating]=useState<SkateHudModel|null>(null),[skateSaveFailed,setSkateSaveFailed]=useState(false),[canSkate,setCanSkate]=useState(false);
+  // ── The old Tideline skate, put down anywhere on the island (PR B) ── the same HUD, keys, saves and progress key.
+  const [skating,setSkating]=useState<SkateHudModel|null>(null),[skateSaveFailed,setSkateSaveFailed]=useState(false),[canSkate,setCanSkate]=useState(false),[skateWhy,setSkateWhy]=useState<string|null>(null);
   const skateKey=skateProgressKey(household.environment,household.householdId,memberId),skateKeyRef=useRef(skateKey);skateKeyRef.current=skateKey;
   const skateSaved=useRef(''),skateAudio=useRef<SkateAudio|null>(null);
   const onSkate=useCallback((next:NativeSkateFrame|null)=>{
@@ -240,7 +240,9 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
     let progress;try{progress=readSkateProgress(localStorage,skateKey);}catch{progress=undefined;}
     const world=runtime.current;if(!world)return false;
     if(world.mode()!=='walk')world.setMode('walk');
-    if(!world.startSkate(progress)){setNotice('Park your current ride before skating.');return false;}
+    // The shell hides the stage's status line, so the visible phrase says why the board stayed in hand (water, a room,
+    // steep or unsupported ground, ground still arriving, another ride) rather than always blaming a ride.
+    if(!world.startSkate(progress)){setNotice(world.skateRefusal?.()??'Park your current ride before skating.');return false;}
     if(progress?.settings.sound)wantSkateAudio(true);
     setEmotesOpen(false);focusStage();return true;
   }
@@ -251,7 +253,7 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
     if(event.type==='pointerdown')input.touchStart(zone,e);else if(event.type==='pointermove')input.touchMove(e);else if(event.type==='pointerup')input.touchEnd(e);else input.touchCancel(e);
   };
   // Where the board can come out: polled, like the Horizon's own offers.
-  useEffect(()=>{if(!worldReady)return;const id=window.setInterval(()=>setCanSkate(runtime.current?.canSkate()??false),400);return()=>window.clearInterval(id);},[worldReady]);
+  useEffect(()=>{if(!worldReady)return;const id=window.setInterval(()=>{const world=runtime.current,why=world?.skateRefusal?.()??null;setSkateWhy(why);setCanSkate(Boolean(world?.hasSkate?.()&&!world.skate()?.active())&&why===null);},400);return()=>window.clearInterval(id);},[worldReady]);
   // B boards and leaves (as on the Mountain); P and Escape pause the ride and open the book.
   useEffect(()=>{
     const key=(event:KeyboardEvent)=>{
@@ -290,7 +292,7 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
       {space==='mine'&&worldReady&&!toolOpen&&<MineLayer layer={mine} place="court" rects={rects} hidden={Boolean(riding||skating)} onOpen={openMine}/>}
       {worldReady&&!toolOpen&&<HarbourTwins rects={rects} hidden={Boolean(riding||skating)} label="Horizon places" onActivate={rect=>{const place=rect.id.startsWith('visit:')?rect.id.slice(6):null;if(place&&Object.hasOwn(HARBOUR_PLACE_NAMES,place))walkToPlace(place as HarbourPlaceId);}}/>}
       {worldReady&&!toolOpen&&<VillageHUD memberId={memberId} theme={theme} calm={comfort.quiet} lite={lite} night={glassNight} alwaysShowLabels={comfort.labels} toolsOpen={props.toolsOpen} glassBetween={dock} fab={props.fab} onQuickSheet={props.onQuickSheet} place={here} travelling={travelTo} onVisit={place=>{walkToPlace(place);}} onGuide={showGuide} avatar={avatar} avatarStatus={avatarStatus} onAvatar={chooseAvatar} presence={presence}/>}
-      {worldReady&&!toolOpen&&<HorizonGuide open={guideOpen} onClose={()=>{setGuideOpen(false);focusStage();}} views={runtime.current?.world?.views??[]} onView={id=>{runtime.current?.setMode('look');runtime.current?.shot(id);setGuideOpen(false);focusStage();}} onWalk={()=>{runtime.current?.setMode('walk');setGuideOpen(false);focusStage();}} onPlace={place=>{setGuideOpen(false);walkToPlace(place);}} skateAvailable={skateAvailable&&!riding} skateHere={canSkate} onSkate={()=>{if(startSkating())setGuideOpen(false);}} onRace={()=>{if(startSkating()){runtime.current?.skate()?.route('mountain-descent');setGuideOpen(false);}}} monorailAvailable={runtime.current?.hasMonorail?.()??false} onMonorail={(from,stops)=>{if(runtime.current?.monorailBoard(from)){for(const stop of stops)runtime.current?.monorailSelect(stop);setGuideOpen(false);focusStage();}}} onJourney={props.onJourney} soundOn={soundOn} onSound={toggleSound}/>}
+      {worldReady&&!toolOpen&&<HorizonGuide open={guideOpen} onClose={()=>{setGuideOpen(false);focusStage();}} views={runtime.current?.world?.views??[]} onView={id=>{runtime.current?.setMode('look');runtime.current?.shot(id);setGuideOpen(false);focusStage();}} onWalk={()=>{runtime.current?.setMode('walk');setGuideOpen(false);focusStage();}} onPlace={place=>{setGuideOpen(false);walkToPlace(place);}} skateAvailable={skateAvailable&&!riding} skateHere={canSkate} skateWhy={skateWhy} onSkate={()=>{if(startSkating())setGuideOpen(false);}} onRace={()=>{if(startSkating()){runtime.current?.skate()?.route('mountain-descent');setGuideOpen(false);}}} monorailAvailable={runtime.current?.hasMonorail?.()??false} onMonorail={(from,stops)=>{if(runtime.current?.monorailBoard(from)){for(const stop of stops)runtime.current?.monorailSelect(stop);setGuideOpen(false);focusStage();}}} onJourney={props.onJourney} soundOn={soundOn} onSound={toggleSound}/>}
       {monorail&&!toolOpen&&<MountainPanel open={false} monorail={monorail} partnerName={partnerName} statusLine={null} onAction={monorailAction} onOpen={props.onOpen}/>}
       {worldReady&&!toolOpen&&props.panel?.host&&<HostPanel key={props.panel.host} host={props.panel.host} reading={reading} extras={props.panel.extras} theme={theme} onClose={props.panel.onClose} onOpen={props.panel.onOpen} onRecord={props.panel.onRecord} onMarkPaid={props.panel.onMarkPaid} onTalk={props.panel.onTalk} returnFocusTo={props.panel.returnFocusTo}
         onVisit={()=>{const host=props.panel?.host;if(host&&host!=='hercules'&&Object.hasOwn(VILLAGE_ADDRESS,host))walkToPlace(host as HarbourPlaceId);props.panel?.onClose();}}

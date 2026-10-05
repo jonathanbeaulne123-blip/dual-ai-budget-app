@@ -8,13 +8,15 @@ import './horizon-guide.css';
 type GuideProps={
   open:boolean;onClose:()=>void;views:readonly SketchbookPose[];
   onView:(id:string)=>void;onWalk:()=>void;onPlace:(place:HarbourPlaceId)=>void;
-  skateAvailable:boolean;skateHere:boolean;onSkate:()=>void;onRace:()=>void;onJourney?:()=>void;
+  skateAvailable:boolean;skateHere:boolean;
+  /** Why the board cannot go down where the person stands (water, a room, steep ground…), shown under the button. */
+  skateWhy?:string|null;onSkate:()=>void;onRace:()=>void;onJourney?:()=>void;
   monorailAvailable:boolean;onMonorail:(from:number,stops:number[])=>void;
   soundOn:boolean;onSound:()=>void;
 };
 
 /** The old world's Step in entry, using the Horizon's actual views and routes. */
-export function HorizonGuide({open,onClose,views,onView,onWalk,onPlace,skateAvailable,skateHere,onSkate,onRace,onJourney,monorailAvailable,onMonorail,soundOn,onSound}:GuideProps){
+export function HorizonGuide({open,onClose,views,onView,onWalk,onPlace,skateAvailable,skateHere,skateWhy,onSkate,onRace,onJourney,monorailAvailable,onMonorail,soundOn,onSound}:GuideProps){
   const [tab,setTab]=useState<'explore'|'travel'>('explore');
   const [station,setStation]=useState(0),[stops,setStops]=useState<number[]>([MONORAIL_STOPS.length-1]);
   const panel=useRef<HTMLElement>(null),opener=useRef<HTMLElement|null>(null);
@@ -40,8 +42,9 @@ export function HorizonGuide({open,onClose,views,onView,onWalk,onPlace,skateAvai
         <h3>Go to a place</h3><div className="horizon-guide__grid">{(Object.keys(HARBOUR_PLACE_NAMES) as HarbourPlaceId[]).filter(place=>place!=='court').map(place=><button type="button" key={place} onClick={()=>onPlace(place)}>{HARBOUR_PLACE_NAMES[place]}</button>)}</div>
       </>}
       {tab==='travel'&&<>
-        <p>The old Tideline board rides Mountain v2’s town island. The cruiser, bicycle, cable rides, boats, yacht, glider and parachute use their own marked boarding places across the Horizon.</p>
-        <div className="horizon-guide__actions">{skateAvailable&&<><button type="button" onClick={onSkate}>{skateHere?'Skate here':'Go skate Tideline'}</button><button type="button" onClick={onRace}>Start downhill race</button></>}<button type="button" onClick={()=>onPlace('boathouse')}>Walk to the boats</button></div>
+        <p>The old Tideline board goes down anywhere on dry, open ground: press B or Skate here, and B again to pick it up. The cruiser, bicycle, cable rides, boats, yacht, glider and parachute use their own marked boarding places across the Horizon.</p>
+        <div className="horizon-guide__actions">{skateAvailable&&<><button type="button" aria-keyshortcuts="B" aria-describedby={!skateHere&&skateWhy?'horizon-guide-skate-why':undefined} onClick={onSkate}>Skate here</button><button type="button" onClick={onRace}>Start downhill race</button></>}<button type="button" onClick={()=>onPlace('boathouse')}>Walk to the boats</button></div>
+        {skateAvailable&&!skateHere&&skateWhy&&<p id="horizon-guide-skate-why" className="horizon-guide__note" role="note">{skateWhy}</p>}
         {monorailAvailable&&<section aria-label="Island monorail"><h3>Island monorail</h3><label>Board at <select value={station} onChange={e=>{const next=Number(e.target.value);setStation(next);setStops([next===MONORAIL_STOPS.length-1?0:MONORAIL_STOPS.length-1]);}}>{MONORAIL_STOPS.map((stop,i)=><option key={stop.id} value={i}>{stop.name}</option>)}</select></label><fieldset><legend>Choose your stops</legend>{MONORAIL_STOPS.map((stop,i)=><label key={stop.id}><input type="checkbox" disabled={i===station} checked={stops.includes(i)} onChange={()=>setStops(current=>current.includes(i)?current.filter(n=>n!==i):[...current,i])}/>{stop.name}</label>)}</fieldset><button type="button" disabled={!stops.length} onClick={()=>onMonorail(station,stops)}>Board the monorail</button></section>}
         <p>At a boarding place, use its Interact button or E. The yacht’s galley opens from its menu board.</p>
       </>}
