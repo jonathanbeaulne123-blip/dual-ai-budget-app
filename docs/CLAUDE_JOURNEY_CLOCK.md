@@ -1,7 +1,8 @@
 # The Journey map: Horizon Clock — handoff and plan of record (2026-10-05)
 
-**Status:** local branch `claude/journey-clock` from `main@9d13db2` (#585), fix pass merged. Not pushed, no PR, not
-merged, not deployed, not live verified. Evidence in `docs/evidence/journey-map/` predates the fix pass (re-capture owed).
+**Status:** branch `claude/journey-clock` from `main@9d13db2` (#585), pushed with a PR open; fix pass and review fixes
+merged. Not merged to `main`, not deployed, not live verified. Evidence in `docs/evidence/journey-map/` is captured on
+this branch's tree.
 **Risk:** **Medium-High** (replaces the household Journey presentation and the illustrated edition's arrival surface;
 hides the Compass over it; wires three App callbacks). No money arithmetic, command, schema, sync, Auth/RLS, Worker or
 Hercules payload change.
