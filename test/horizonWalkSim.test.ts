@@ -68,7 +68,7 @@ describe('walkSim · collide and slide (was a dead stop on the first blocked pie
     expect(w.body.x).toBeLessThanOrEqual(19.7+1e-6);expect(w.body.z).toBeLessThanOrEqual(19.7+1e-6);expect(speed(w)).toBeLessThan(.05);
   });
   it('slides along a too-steep slope instead of stopping on it',()=>{
-    const bank:Layer=(x,z)=>z>20?{y:(z-20)*2,slope:63.4,nx:0,nz:-.89}:null;
+    const bank:Layer=(_x,z)=>z>20?{y:(z-20)*2,slope:63.4,nx:0,nz:-.89}:null;
     const w=walker(synth([flat,bank]),[10,0,19.5]),d=Math.SQRT1_2;for(let i=0;i<120;i++)w.tick([d,d]);
     expect(w.body.x-10).toBeGreaterThan(2);expect(w.body.y).toBeLessThan(.5);
   });

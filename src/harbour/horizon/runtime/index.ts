@@ -781,12 +781,12 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     let f=1;while(f>.06&&geography.cameraBlocked(eye,[eye[0]+(desired[0]-eye[0])*f,eye[1]+(desired[1]-eye[1])*f,eye[2]+(desired[2]-eye[2])*f],aboard))f-=.04;
     camera.position.set(eye[0]+(desired[0]-eye[0])*f,eye[1]+(desired[1]-eye[1])*f,eye[2]+(desired[2]-eye[2])*f);target.set(...eye);camera.lookAt(target);
   }
-  let held=false,leftSupport=false;
+  let leftSupport=false;
   const walkState=createWalkState(body);
   function move(dx:number,dz:number,_dt:number):WalkMove{
     // The collision step lives in walkSim (collide and slide); this binds it to the runtime's geography, gate and state.
     const r=walkMove(horizonWalkWorld(geography,world.extent,gateOpen,HORIZON_WALKABLE_DEGREES),body,dx,dz,{swimming,grounded:velocityY===0});
-    held=r.held;leftSupport=r.leftSupport;if(r.blocker)lastMovementBlocker=r.blocker;return r;
+    leftSupport=r.leftSupport;if(r.blocker)lastMovementBlocker=r.blocker;return r;
   }
   let emote:{id:EmoteId;at:number}|null=null;
   function step(dt:number,now:number){
@@ -1032,7 +1032,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
      */
     goToGliderPad(id:GliderPadId):{ok:true}|{ok:false;reason:string}{
       schedule();
-      const refused=gliderPadRefusal({riding:registry.active()!==null,airborne:!!registry.active()?.airborne?.(),kitchen:!!kitchen?.active(),monorail:!!monorail?.state(),seated:airport.seated(),sitting:fleet.sitting()!==null,skating:skating()});
+      const refused=gliderPadRefusal({riding:registry.active()!==null,airborne:!!registry.active()?.airborne?.(),kitchen:!!kitchen?.active(),monorail:!!monorail?.state(),seated:!!airport.seated(),sitting:fleet.sitting()!==null,skating:skating()});
       const pad=padStands.find(p=>p.id===id);
       if(refused||!pad){const reason=refused??'That launch is not on this island.';options.onStatus?.(reason);recordDiagnostic('interaction',`glider pad ${id}`,'rejected',reason);return{ok:false,reason};}
       // Recomputed now, not at mount: the deck (and the Crown's Mountain v2 ground) may have arrived since, which sets the run-off heading.

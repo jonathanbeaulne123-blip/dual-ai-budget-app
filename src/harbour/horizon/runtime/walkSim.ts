@@ -174,7 +174,7 @@ export type WalkInput = {
   /** Swimming: this constant pace, no weight (unchanged from before). */
   swim?: number;
   /** A tap-to-walk route (consumed in place as it is walked). */
-  route?: number[][];
+  route?: (readonly number[])[];
 };
 export type WalkTick = {moved: number; held: boolean; leftSupport: boolean; blocker: WalkBlocker | null; routeBlocked: boolean; steps: number; speed: number};
 
@@ -188,7 +188,7 @@ export function slopePace(grade: number): number {
   return s > 0 ? 1 - WALK_UPHILL_COST * s : 1 + WALK_DOWNHILL_GAIN * Math.min(-s, SIN_WALKABLE);
 }
 export const runFraction = (speed: number, s: WalkSpeeds) => clamp((speed - s.walk) / (s.run - s.walk), 0, 1);
-const remaining = (route: number[][], x: number, z: number) => {
+const remaining = (route: readonly (readonly number[])[], x: number, z: number) => {
   let d = Math.hypot(route[0]![0]! - x, route[0]![2]! - z);
   for (let i = 1; i < route.length; i++) d += Math.hypot(route[i]![0]! - route[i - 1]![0]!, route[i]![2]! - route[i - 1]![2]!);
   return d;
