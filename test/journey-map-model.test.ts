@@ -297,7 +297,7 @@ describe("Horizon Clock model — words FIX-B prints (A10, trust minors 2–4)",
 
   it("the Year caption, the flat Key, the purse gloss and \"Setting aside next\"", () => {
     expect(MAP_WORDS.yearCaption).toBe("Each stack = bills on the map that month · ring = $1,000 · not all spending");
-    expect(MAP_WORDS.flatKey).toBe("No stacks in this view: solid = recorded, dashed = not recorded, mint in, gold out");
+    expect(MAP_WORDS.flatKey).toBe("No stacks in this view: one disc per day — solid = recorded, dashed = not recorded, mint in, gold out");
     expect(MAP_WORDS.purseGloss).toBe("money here now");
     expect(MAP_WORDS.settingAsideNext).toBe("Setting aside next");
     // Winter reserve is a standing move into a Build jar: the digest says so (A11).

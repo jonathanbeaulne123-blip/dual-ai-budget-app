@@ -24,7 +24,8 @@ function walk(dir: string): string[] {
 
 const files = walk(journey);
 const nameOf = (file: string) => relative(journey, file).replace(/\\/g, "/");
-const importsOf = (source: string): string[] => [...source.matchAll(/(?:from|import\()\s*["']([^"']+)["']/g)].map((m) => m[1]!);
+/** Every module a source reaches: `from "…"`, `import("…")` and side-effect `import "…"`. */
+const importsOf = (source: string): string[] => [...source.matchAll(/(?:\bfrom|\bimport\s*\(|^\s*import)\s*["']([^"']+)["']/gm)].map((m) => m[1]!);
 /** A relative specifier resolved to a repo path ("src/core/index.ts"); a package specifier as written. */
 const resolved = (file: string, specifier: string): string =>
   specifier.startsWith(".") ? relative(root, resolve(dirname(file), specifier)).replace(/\\/g, "/") : specifier;
@@ -77,6 +78,12 @@ const WRITER_MODULES = /\/(ChapterTaskControls|ChapterPanel|SitDownGuide|PlanStu
 const WRITERS = /\b(postEntry|postShift|commitCommand|acceptHouseholdWrite|fundWalkWith|deferObligation|postOneRecurrence|commitPersonalLife|commitHome|postVisit|allocateHouseholdFundSurplus|commitHearthside|runKitchen)\b/;
 
 describe("src/journey source fence", () => {
+  it("reads every import form, side-effect imports included (so none slips past the fences below)", () => {
+    expect(importsOf('import "../../storage.ts";\nimport x from "./a.ts";\nconst y = import("../api.ts");\nexport { z } from "./b.ts";'))
+      .toEqual(["../../storage.ts", "./a.ts", "../api.ts", "./b.ts"]);
+    expect(importsOf(readFileSync(join(journey, "ui", "JourneyBoardView.tsx"), "utf8"))).toContain("./journey-board.css");
+  });
+
   it("has the module skeleton the plan names (so the fence walks real files)", () => {
     const names = files.map(nameOf);
     for (const expected of ["contracts.ts", "model/index.ts", "land/load.ts", "land/index.ts", "board/index.ts", "ui/JourneyBoard.tsx", "ui/viewState.ts"]) expect(names).toContain(expected);
@@ -130,6 +137,9 @@ describe("src/journey source fence", () => {
   it("fetches in land/load.ts only, touches browser storage in ui/viewState.ts only, and never reads import.meta.env", () => {
     const fetchers = files.filter((file) => /\bfetch\(/.test(codeOf(file))).map(nameOf);
     expect(fetchers).toEqual(["land/load.ts"]);
+    // No other way out to the network anywhere in src/journey (land/load.ts included).
+    const network = files.filter((file) => /\b(?:sendBeacon|XMLHttpRequest|WebSocket|EventSource)\b/.test(codeOf(file))).map(nameOf);
+    expect(network).toEqual([]);
     const storage = files.filter((file) => /localStorage|sessionStorage|indexedDB/.test(readFileSync(file, "utf8"))).map(nameOf);
     expect(storage).toEqual(["ui/viewState.ts"]);
     const env = files.filter((file) => /import\.meta\.env/.test(readFileSync(file, "utf8"))).map(nameOf);

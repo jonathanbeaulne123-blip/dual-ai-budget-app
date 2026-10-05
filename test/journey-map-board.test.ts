@@ -25,6 +25,7 @@ import {
   type MapSceneHandle, type MapSceneOptions,
 } from "../src/journey/board/index.ts";
 import { distToLine, inPoly } from "../src/journey/board/geo.ts";
+import { coinStack } from "../src/journey/board/props.ts";
 import { boardPalette } from "../src/journey/board/palette.ts";
 import { JOURNEY_CLAY_PALETTES } from "../src/journey/land/clayPalette.ts";
 import { BIANCA, FIXTURE_TODAY, emptyBoardHousehold, journeyDemoHousehold } from "./fixtures/journey-board-households.ts";
@@ -112,6 +113,12 @@ describe("layoutClock (Month)", () => {
     const huge = stackFor({ ...base, amountCents: 1_000_000, amountBasis: "scheduled" }, "month")!;
     expect(huge.rings).toEqual({ rings: 100, drawnRings: STACK_RULER.maxRings, capped: true });
     expect(huge.heightDu).toBeCloseTo(STACK_RULER.maxRings * RING_HEIGHT_DU.month, 9);
+    // The break mark is visible: the 3D stack adds the pale gap and the ink slash only when capped.
+    const fine = stackFor({ ...base, amountCents: 142_00, amountBasis: "scheduled" }, "month")!;
+    const capped3d = coinStack(huge, 0.11, RING_HEIGHT_DU.month, "classic").group, fine3d = coinStack(fine, 0.11, RING_HEIGHT_DU.month, "classic").group;
+    expect(capped3d.children.length - coinStack({ ...huge, rings: { ...huge.rings, capped: false } }, 0.11, RING_HEIGHT_DU.month, "classic").group.children.length).toBe(2);
+    expect(fine.rings.capped).toBe(false);
+    expect(fine3d.children.length).toBeLessThan(capped3d.children.length);
     // A goal (a target) never gets a stack.
     const goal = board.stops.find((s) => s.kind === "plan");
     if (goal) expect(stackFor(goal, "month")).toBeNull();
@@ -496,6 +503,12 @@ describe("BoardFlat (SVG twin) at all three levels", () => {
     for (const d of board.week.days) expect(w.has(d.date)).toBe(true);
     expect(w.has(JOURNEY_MAP_MARKS.pile)).toBe(true);
     for (const id of board.week.pileStopIds) expect(w.has(id)).toBe(true);
+    // A stop over $3,000 (30 rings at $100) on the flat twin: its bar carries the visible break mark.
+    const big = board.stops.find((st): st is Extract<Stop, { kind: "commitment" }> => st.kind === "commitment" && st.chapterId === "2026-09" && st.amountCents !== null && st.amountCents !== undefined)!;
+    const bigBoard: JourneyBoard = { ...board, stops: board.stops.map((st) => (st.id === big.id ? { ...st, amountCents: 3_500_00, amountBasis: "scheduled" } as Stop : st)) };
+    const bigMonth = renderToStaticMarkup(createElement("svg", null, createElement(BoardFlat, { board: bigBoard, land, level: "month", theme: "classic" })));
+    expect(bigMonth).toMatch(/<g data-stack="[a-z-]+" data-capped="">(?:(?!<\/g>)[\s\S])*<path /);
+    expect(month).not.toContain("data-capped");
     // Solid and see-through stacks both appear (recorded vs not), never colour alone (a dashed outline).
     expect(month).toContain('data-stack="solid"');
     expect(month).toContain('data-stack="see-through"');

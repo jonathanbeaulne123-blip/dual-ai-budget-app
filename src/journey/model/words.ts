@@ -164,8 +164,8 @@ export const MAP_WORDS = {
   leavingNext: "Leaving next",
   /** The Year view's standing caption (ruling 5; Year ruler $1,000 a ring). */
   yearCaption: "Each stack = bills on the map that month · ring = $1,000 · not all spending",
-  /** The Key at a level drawn flat (no stacks): how the marks read instead. */
-  flatKey: "No stacks in this view: solid = recorded, dashed = not recorded, mint in, gold out",
+  /** The Key over the flat map (the mounted flat map draws one disc per day and no stacks): how the discs read. */
+  flatKey: "No stacks in this view: one disc per day — solid = recorded, dashed = not recorded, mint in, gold out",
   /** The Key's lines (moved from ui/copy.ts, trust minor 3). */
   key: {
     height: "Height is the amount.",

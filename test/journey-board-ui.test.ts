@@ -496,6 +496,9 @@ describe("level pull, Key, marks and keyboard", () => {
     expect(k.hasAttribute("data-key-flat")).toBe(true);
     expect(text(k)).toContain(MAP_WORDS.flatKey);
     expect(text(k)).not.toContain("a ring every");
+    // The words are true of the mounted flat map: one disc per day, no stack bars drawn anywhere in it.
+    expect(host.querySelector(".journey-stage [data-stack]")).toBeNull();
+    expect(host.querySelectorAll(".journey-marks--flat .journey-mark--day").length).toBeGreaterThan(0);
     await act(async () => { host.querySelector(".journey-stage")!.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true })); });
     expect(host.querySelector("[data-journey-key]")).toBeNull();
     // Selecting a mark and changing level close the header's popovers too.
@@ -813,6 +816,18 @@ describe("Horizon Clock fix pass (FIX-B): Week, Year, list, dial, keys", () => {
     await click(host.querySelector('[data-dial-verb="shift"]'));
     expect(recorded(actions)).toEqual(invocation({ name: "openRecord", mode: "shift" }));
     expect(host.querySelector("[data-journey-behind]")!.hasAttribute("inert")).toBe(false);
+  });
+
+  it("Enter Horizon with no centre yet (no ground under the stage, no land frame) enters nothing — never a made-up place (trust minor 1)", async () => {
+    const scene = stubScene();
+    const create: CreateJourneyMapScene = (h, o) => ({ ...scene.create(h, o), groundAt: () => null });
+    const noFrame = { ...fakeHandle, frame: undefined } as unknown as JourneyLandHandle;
+    const { host, actions } = await mountView({ optional: true, stage: { ...liveStage(create), landHandle: noFrame } });
+    await click(host.querySelector("[data-journey-plus]"));
+    clear(actions);
+    await click(host.querySelector('[data-dial-chip="enter-horizon"]'));
+    expect(actions.spies.enterHorizon!.mock.calls).toEqual([]);
+    expect(total(actions)).toBe(0);
   });
 
   it("theme options rove with the arrow keys (one tab stop, UX #17); 'Open the {place}' never 'Open it' (UX #20)", async () => {

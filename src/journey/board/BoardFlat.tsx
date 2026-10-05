@@ -27,7 +27,7 @@ import { frameFromCoast, polar } from "./geo.ts";
 import { boardPalette, colourOf } from "./palette.ts";
 import { layoutWeek, type WeekLayout } from "./week.ts";
 import { layoutYear, YEAR_RING_DU, YEAR_MINI_SCALE, type YearStackColumn } from "./year.ts";
-import { RING_HEIGHT_DU, stackFor } from "./clock.ts";
+import { MIN_STACK_DU, RING_HEIGHT_DU, stackFor } from "./clock.ts";
 
 export type BoardFlatProps = {
   board: JourneyBoard;
@@ -80,7 +80,7 @@ function StackBar({ stack, x, widthM, perDu, theme }: { stack: { fill: "solid" |
   );
 }
 const asBar = (s: CoinStack) => ({ fill: s.fill, heightDu: s.heightDu, capped: s.rings.capped, incoming: s.direction === "in" });
-const yearBar = (c: YearStackColumn) => ({ fill: c.fill, heightDu: Math.max(0.012, c.rings.drawnRings * RING_HEIGHT_DU.year), capped: c.rings.capped, incoming: false });
+const yearBar = (c: YearStackColumn) => ({ fill: c.fill, heightDu: Math.max(MIN_STACK_DU, c.rings.drawnRings * RING_HEIGHT_DU.year), capped: c.rings.capped, incoming: false });
 
 function NeedsRing({ at, r, theme }: { at: Point2; r: number; theme: ThemeId }) {
   return (
