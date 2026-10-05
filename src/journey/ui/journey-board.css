@@ -136,7 +136,7 @@
 .journey-stage__canvas { position: absolute; inset: 0; }
 .journey-stage__canvas canvas { display: block; width: 100%; height: 100%; }
 .journey-stage__note {
-  position: absolute; z-index: 2; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0;
+  position: absolute; z-index: 5; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0;
   max-width: min(320px, calc(100% - 32px)); text-align: center; font-weight: 700; font-size: 13px; color: var(--ink);
   background: var(--paper); border: 2px solid var(--edge-deep); border-radius: 16px; padding: 8px 12px;
 }
@@ -611,6 +611,9 @@
 .journey-board .journey-bubble--mini { --world-r-control: 18px; }
 .journey-board :is(.journey-pull__key, .journey-toggle__option) { --world-r-control: 14px; }
 .journey-board .journey-count-chip { --world-r-control: 16px; }
+/* The dressing also floors every button at 44 px (and 44 on coarse pointers): a day mark's box is its measured
+   spacing (24–44 px, UX #12), so its own height wins here — never below 24 px (WCAG 2.5.8). */
+:root[data-theme] .journey-board button.journey-mark:not(.text-button):not(.link) { min-height: 0; min-width: 0; height: var(--mark); width: var(--mark); }
 .journey-board :is(.journey-pull__lv, .journey-alternative__pick) { --world-r-control: 12px; }
 .journey-board :is(.journey-row__main, .journey-panel__stop, .journey-panel__back) { --world-r-control: 0; }
 .journey-board .journey-petal__label { --world-r-control: 12px; }

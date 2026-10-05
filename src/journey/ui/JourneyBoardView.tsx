@@ -310,7 +310,8 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
     const options = ids.map((id) => {
       const stop = stopById.get(id) ?? crossById.get(id);
       const n = DATE.test(id) ? board.stops.filter((s) => s.date === id).length : 0;
-      const label = stop ? `${shortDate(stop.date)} · ${stop.label}` : DATE.test(id) ? `${shortDate(id as DateKey)}${n ? ` · ${COPY.thingsOnDay(n).replace(" on this day", "")}` : ""}` : MONTH.test(id) ? monthWords(id) : id === JOURNEY_MAP_MARKS.pile ? MAP_WORDS.checklist.toCheck : id;
+      const only = n === 1 ? board.stops.find((s) => s.date === id) : undefined;
+      const label = stop ? `${shortDate(stop.date)} · ${stop.label}` : DATE.test(id) ? `${shortDate(id as DateKey)}${only ? ` · ${only.label}` : n ? ` · ${COPY.thingsOnDay(n).replace(" on this day", "")}` : ""}` : MONTH.test(id) ? monthWords(id) : id === JOURNEY_MAP_MARKS.pile ? MAP_WORDS.checklist.toCheck : id;
       const date = stop?.date ?? (DATE.test(id) ? id : "");
       return { id, label, date };
     }).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)).map(({ id, label }) => ({ id, label }));
@@ -432,7 +433,7 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
     };
     // Phone: the sheet rises over the bottom of the map (the prototype); the clock keeps its size behind it.
     setSafeArea((prev) => (prev.top === safe.top && prev.bottom === safe.bottom && prev.right === safe.right && prev.left === safe.left ? prev : safe));
-    const boxes = [".journey-header .journey-toy", ".journey-chapter", ".journey-header__chips > *", ".journey-purse", ".journey-bubble", ".journey-year-caption", ".journey-dock .journey-pull", ".journey-dock > .journey-plus", ".journey-dock > .journey-toggle", ".journey-sheet-slot > .journey-panel"]
+    const boxes = [".journey-header .journey-toy", ".journey-chapter", ".journey-header__chips > *", ".journey-purse", ".journey-bubble", ".journey-year-caption", ".journey-stage__note", ".journey-dock .journey-pull", ".journey-dock > .journey-plus", ".journey-dock > .journey-toggle", ".journey-sheet-slot > .journey-panel"]
       .flatMap((sel) => [...el.querySelectorAll(sel)].map(box).filter((b): b is NonNullable<typeof b> => Boolean(b)));
     setObstacles((prev) => (JSON.stringify(prev) === JSON.stringify(boxes) ? prev : boxes));
   }, []);

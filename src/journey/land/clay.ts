@@ -605,7 +605,8 @@ export const buildJourneyLand: BuildJourneyLand = (data: JourneyLandData, option
   const terrainPos = terrainGeo.getAttribute("position") as THREE.BufferAttribute, terrainCol = terrainGeo.getAttribute("color") as THREE.BufferAttribute;
   const top = JOURNEY_DIORAMA.slab.top;
   const calmTargets = (f: Float32Array) => {
-    const target = new Float32Array(terrainBase.length), tc = colour(palette.grass).lerp(colour(palette.sand), 0.35);
+    // The calm tone: soft grass with a little sand (the prototype's 0.35 read washed-out cream on the far land here).
+    const target = new Float32Array(terrainBase.length), tc = colour(palette.grass).lerp(colour(palette.sand), 0.22);
     for (let v = 0; v < src.length; v++) {
       const r = terrainBase[v * 3]!, g = terrainBase[v * 3 + 1]!, b = terrainBase[v * 3 + 2]!, l = r * 0.3 + g * 0.59 + b * 0.11;
       const k = Math.min(1, f[v]! * CALM.colourShare) * smooth(CALM.coastFromM, CALM.coastToM, clay.coastDistance[src[v]!]!);

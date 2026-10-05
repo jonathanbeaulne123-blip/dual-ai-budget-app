@@ -223,26 +223,27 @@ export type MarksProps = {
 
 const MARK_MAX = 44, MARK_MIN = 24;
 /**
- * Each day mark's hit size (UX #12): 44 px unless that would overlap a neighbour's box, then shrunk to fit — never
- * below 24 px (WCAG 2.5.8). Greedy by importance (today, then days with stops, then empty days), so today and money
- * days keep their full size and stepping stones give way.
+ * Each day mark's hit size (UX #12). First every mark takes the spacing to its nearest neighbour (24–44 px, WCAG
+ * 2.5.8), so no two boxes overlap; then, by importance (today, days with stops, empty days), a mark grows into any room
+ * its neighbours leave — today and money days stay large, stepping stones give way. Only where two marks are closer than
+ * 24 px do boxes still meet; there a press asks "Which one?".
  */
 export function markSizes(placed: readonly PlacedMark[]): Map<string, number> {
   const rank = (p: PlacedMark) => (p.mark.covers.includes(JOURNEY_MAP_MARKS.piece) ? 0 : p.mark.covers.length ? 1 : 2);
-  const days = placed.filter((p) => p.visible && p.mark.kind === "day").sort((a, b) => rank(a) - rank(b));
-  const out = new Map<string, number>();
-  const done: { x: number; y: number; half: number }[] = [];
+  const days = placed.filter((p) => p.visible && p.mark.kind === "day");
+  const gap = (a: PlacedMark, b: PlacedMark) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+  const size = new Map<PlacedMark, number>();
   for (const a of days) {
-    let half = MARK_MAX / 2;
-    for (const b of done) {
-      const gap = Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
-      half = Math.min(half, gap - b.half);
-    }
-    const size = Math.round(Math.max(MARK_MIN, Math.min(MARK_MAX, half * 2)));
-    out.set(a.mark.id, size);
-    done.push({ x: a.x, y: a.y, half: size / 2 });
+    let near = Infinity;
+    for (const b of days) if (b !== a) near = Math.min(near, gap(a, b));
+    size.set(a, Math.max(MARK_MIN, Math.min(MARK_MAX, near)));
   }
-  return out;
+  for (const a of [...days].sort((x, y) => rank(x) - rank(y))) {
+    let room = MARK_MAX;
+    for (const b of days) if (b !== a) room = Math.min(room, 2 * (gap(a, b) - size.get(b)! / 2));
+    if (room > size.get(a)!) size.set(a, Math.min(MARK_MAX, room));
+  }
+  return new Map(days.map((p) => [p.mark.id, Math.round(size.get(p)!)] as const));
 }
 
 export function Marks({ board, level, placed, rows, selectedId, focusedDate, focusAnchor, chapterId, flat, stage, obstacles, decor, sheetId, onSelect, onPickMany }: MarksProps) {
