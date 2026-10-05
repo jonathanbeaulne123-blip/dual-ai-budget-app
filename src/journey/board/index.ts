@@ -20,7 +20,7 @@ export { layoutClock, slotOfDate, slotForStop, stackFor, CLOCK_NUMERAL_DAYS, MIN
 export { layoutWeek, weekWalk, WEEK_TILE_DU, WEEK_TILE_SCALE, type WeekLayout, type WeekPile, type WeekTile, type WeekTileColour, type LayoutWeekOptions } from "./week.ts";
 export { layoutYear, YEAR_MINI_ROAD, YEAR_MINI_SCALE, YEAR_RING_DU, type YearDot, type YearLayout, type YearMini, type YearStackColumn, type YearTreatment } from "./year.ts";
 export {
-  cameraAt, chapterTurn, fitDistance, islandYawAt, isPhone, levelOf, levelTransition, monthElevationDeg, popsAt, restOf, weekElevationDeg, weekFrame,
+  cameraAt, chapterTurn, fitDistance, yearFitDistance, yearElevationDeg, YEAR_PLATE_PAD, islandYawAt, isPhone, levelOf, levelTransition, monthElevationDeg, popsAt, restOf, weekElevationDeg, weekFrame,
   CHAPTER_TURN_SECONDS, LEVEL_MIN_SECONDS, LEVEL_SECONDS_PER_UNIT, NO_INSET, PHONE_MAX_WIDTH, PINCH_T_PER_DOUBLING, WHEEL_T_PER_PX,
   type CameraPose, type CameraView, type Pops, type SafeInset, type TurnFrame, type WeekFrame,
 } from "./levels.ts";

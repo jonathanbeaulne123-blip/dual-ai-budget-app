@@ -86,6 +86,87 @@ export function fitDistance(wu: number, hu: number, view: Pick<CameraView, "widt
   return Math.max(wu / (2 * tan * aspect * freeW), hu / (2 * tan * freeH));
 }
 
+/**
+ * Pixels the Year plates need around a mini's screen footprint (Marks: on a phone a plate leans out from the ring —
+ * 30 px up for the top minis, 44 px down for the bottom ones — plus half a two-line plate; on wide it stands on the
+ * mini's anchor). The ring is fitted so every plate stays inside the free area between the header and the dock.
+ */
+export const YEAR_PLATE_PAD = {
+  /** Under 360 px: one-line plates on a shorter lean (Marks `YEAR_LEAN.narrow`). */
+  narrow: { top: 24, bottom: 38, side: 12 },
+  phone: { top: 36, bottom: 64, side: 18 },
+  wide: { top: 30, bottom: 30, side: 40 },
+} as const;
+/** How far a phone plate leans out from the ring's centre (px; Marks reads it): out across, out down, then a drop. */
+export const YEAR_LEAN = {
+  narrow: { across: 24, down: 18, drop: 6 },
+  phone: { across: 34, down: 30, drop: 14 },
+} as const;
+const yearPad = (width: number) => (width < 360 ? YEAR_PLATE_PAD.narrow : isPhone(width) ? YEAR_PLATE_PAD.phone : YEAR_PLATE_PAD.wide);
+/** A mini's footprint radius (du): its bezel at the mini scale, plus the stack standing on it. */
+const YEAR_MINI_REACH = JOURNEY_DIORAMA.bezel.outer * YEAR_MINI_SCALE;
+const YEAR_STACK_REACH = 0.6;
+
+/** The lowest the Year camera looks from (a flatter ellipse below this hides the minis' stacks behind each other). */
+export const YEAR_MIN_ELEVATION_DEG = 34;
+/**
+ * The Year elevation: the Month's own, unless on a phone the free area (padded for the plates) is flatter than that
+ * look-down's ellipse — a short phone (320×568) under its header, purse, caption and dock. Then the camera looks from
+ * lower down (never under 34°) so the ring projects as a flatter ellipse that uses the width instead of shrinking.
+ */
+export function yearElevationDeg(view: Pick<CameraView, "width" | "height" | "safe">): number {
+  const pad = yearPad(view.width);
+  const freeW = view.width - view.safe.left - view.safe.right - 2 * pad.side;
+  const freeH = view.height - view.safe.top - view.safe.bottom - pad.top - pad.bottom;
+  const month = monthElevationDeg(view.width);
+  // Wide keeps the prototype's look-down; only a phone's short free area flattens the ring.
+  if (!isPhone(view.width)) return month;
+  if (freeW <= 0 || freeH <= 0) return YEAR_MIN_ELEVATION_DEG;
+  const fit = (Math.asin(Math.min(1, freeH / freeW)) * 180) / Math.PI;
+  return Math.max(YEAR_MIN_ELEVATION_DEG, Math.min(month, fit));
+}
+
+/**
+ * The Year camera distance that fits the ring of twelve minis and their plates inside the uncovered rect: the ring is
+ * projected (the same pinhole, elevation and view offset `cameraAt` uses; the target is the ring's centre at Year) and
+ * the nearest distance whose every point lands inside the padded free rect is found by bisection. Perspective makes
+ * the near side larger and a phone looks from higher up, so a closed form in du alone under- or over-fits.
+ */
+export function yearFitDistance(view: Pick<CameraView, "width" | "height" | "safe">, elevationDeg = yearElevationDeg(view)): number {
+  const pad = yearPad(view.width);
+  const el = (elevationDeg * Math.PI) / 180;
+  const tan = Math.tan(((JOURNEY_DIORAMA.fovDeg / 2) * Math.PI) / 180);
+  const W = Math.max(1, view.width), H = Math.max(1, view.height);
+  const aspect = W / H;
+  const left = view.safe.left, right = W - view.safe.right, top = view.safe.top, bottom = H - view.safe.bottom;
+  const cx = (left + right) / 2, cy = (top + bottom) / 2;
+  // Footprint samples: each mini's centre ± its reach on the ground, and its stack's top.
+  const pts: [number, number, number][] = [];
+  for (let i = 0; i < 12; i += 1) {
+    const a = (i / 12) * Math.PI * 2;
+    const x = Math.sin(a) * YEAR_RING_DU, z = -Math.cos(a) * YEAR_RING_DU;
+    pts.push([x, 0, z], [x, YEAR_STACK_REACH, z]);
+    for (let k = 0; k < 8; k += 1) pts.push([x + Math.sin((k * Math.PI) / 4) * YEAR_MINI_REACH, 0, z - Math.cos((k * Math.PI) / 4) * YEAR_MINI_REACH]);
+  }
+  const sE = Math.sin(el), cE = Math.cos(el);
+  const fits = (d: number) => {
+    const py = d * sE, pz = d * cE;
+    for (const [x, y, z] of pts) {
+      const vy = y - py, vz = z - pz;
+      const depth = -vy * sE - vz * cE; // along the forward axis (0, -sin, -cos)
+      if (depth <= 0.1) return false;
+      const sx = cx + (x / (depth * tan * aspect)) * (W / 2);
+      const sy = cy - ((vy * cE - vz * sE) / (depth * tan)) * (H / 2); // the up axis (0, cos, -sin)
+      if (sx - pad.side < left || sx + pad.side > right || sy - pad.top < top || sy + pad.bottom > bottom) return false;
+    }
+    return true;
+  };
+  let lo = 4, hi = 4000;
+  if (!fits(hi)) return hi; // a free rect too small to hold the ring: the farthest the camera goes
+  for (let i = 0; i < 40; i += 1) { const mid = (lo + hi) / 2; if (fits(mid)) hi = mid; else lo = mid; }
+  return hi;
+}
+
 /** The Week framing from the tiles' island-local plan points (+ the pile), the yaw and a ground height. */
 export function weekFrame(points: readonly Point2[], yaw: number, groundY: number): WeekFrame {
   const cY = Math.cos(yaw), sY = Math.sin(yaw);
@@ -104,13 +185,13 @@ export function cameraAt(t: number, view: CameraView): CameraPose {
   const yearT = 1 - clamp(tt, 0, 1);
   const wk = ease(clamp(tt - 1, 0, 1));
   const dMain = fitDistance(phone ? 11.2 : 12.2, phone ? 10.4 : 9.6, view);
-  // The ring plus the labels under the nearest minis (perspective makes the near side larger): a little extra height.
-  const dYear = fitDistance(2 * (YEAR_RING_DU + (phone ? 2.6 : 2.2)), 2 * (YEAR_RING_DU + 2.2) * 0.78 + 4.5, view);
+  // The ring and its plates, fitted (projected) into the free area between the header and the dock at every size.
+  const dYear = yearFitDistance(view);
   let distance = lerp(dMain / Math.max(0.2, view.focus.zoom), dYear, yearT);
   const f = view.focus.target;
   let target: [number, number, number] = [f[0] * (1 - yearT), f[1] * (1 - yearT), f[2] * (1 - yearT)];
   const monthElev = monthElevationDeg(view.width);
-  let elevationDeg = monthElev;
+  let elevationDeg = lerp(monthElev, yearElevationDeg(view), yearT);
   let lookUp = 0.3 * (1 - yearT);
   if (wk > 0 && view.week) {
     const W = view.week;

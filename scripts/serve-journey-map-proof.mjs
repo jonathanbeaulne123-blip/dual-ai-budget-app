@@ -364,8 +364,11 @@ async function capture() {
       writeFileSync(`${out}/axe-${width}.json`, JSON.stringify(result, null, 1));
       report.axe ??= {};
       report.axe[width] = { violations: result.violations.map((v) => ({ id: v.id, impact: v.impact, nodes: v.nodes.length, targets: v.nodes.slice(0, 6).map((n) => n.target.join(' ')), summary: v.nodes[0]?.failureSummary?.slice(0, 300) })), passes: result.passes.length, incomplete: result.incomplete.map((v) => ({ id: v.id, nodes: v.nodes.length })) };
-      // The same scan with the list open.
+      // The same scan with the list open (after the toggle's background transition has settled: SwiftShader is slow, and
+      // a scan mid-transition reads a half-blended background as a contrast failure).
       await press(page, '[data-list-mode="list"]'); await wait(600);
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('[data-list-mode="list"]')).backgroundColor !== 'rgba(0, 0, 0, 0)' && document.getAnimations().every((a) => a.playState !== 'running'), null, { timeout: 10_000 }).catch(() => {});
+      await wait(900);
       const listResult = await new AxeBuilder({ page }).include('[data-journey-board]').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice']).analyze();
       report.axe[`${width}-list`] = { violations: listResult.violations.map((v) => ({ id: v.id, impact: v.impact, nodes: v.nodes.length, targets: v.nodes.slice(0, 6).map((n) => n.target.join(' ')), summary: v.nodes[0]?.failureSummary?.slice(0, 300) })), passes: listResult.passes.length };
       await close();

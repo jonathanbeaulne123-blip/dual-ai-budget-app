@@ -149,6 +149,28 @@ Commits `55ac0ed` (items 1–7), `035f9a7` (items 8–12) and the evidence/docs 
   overlapping 44 px hits) and both real-App arrivals. The README findings are updated. The capture script now presses
   overlapping DOM hits for Which-one and records `toggleClear` in `real-app.json`.
 
+## Last pass: Year framing and a complete evidence set (2026-10-05, on `4d52736`)
+
+- **Year fits its free area.** `board/levels.ts`:
+  - `yearFitDistance` projects every mini's footprint (bezel at the mini scale, plus its stack) through the Year
+    camera, and bisects for the nearest distance at which all of them, padded for their plates (`YEAR_PLATE_PAD`),
+    sit between the header row and the dock.
+  - `yearElevationDeg` keeps the Month look-down (66° phone, 50° wide), except on a short phone, where it flattens
+    (never under 34°) so the ring uses the width.
+  - Marks takes the phone plate lean from `YEAR_LEAN`, the same numbers the fit pads for. A plate that would touch an
+    earlier one steps out along its lean.
+
+  Measured in all three themes at 320×568, 390×844, 720×900 and 1100×800: no plate covered, touching or off screen.
+  A new test in `test/journey-map-board.test.ts` checks the fit at those four sizes with three.js's own projection.
+- **Evidence.** The whole `docs/evidence/journey-map/` set was re-captured on this tree: 88 proof captures, both axe
+  files and both real-App arrivals. The README is one current list.
+  - axe: 390 and 1100 map, and 390 and 1100 list, are all **0 violations**.
+  - The list scan now waits for the Map/List toggle's background transition. A mid-transition read had reported a
+    1.95:1 contrast failure under SwiftShader.
+- **Gate** (`--risk=medium`, focus: journey-board-ui, journey-map-board): typecheck green and the fast phase
+  **620 / 621** (3 min 35 s, within budget). The one failure is `test/swipe.test.ts`, which also fails on
+  `origin/main`.
+
 ## Verification (local, final review pass, `035f9a7` + Hercules rule)
 
 - `pnpm typecheck`: clean. `pnpm build`: exit 0; `JourneyBoard` 254.56 kB (88.33 kB gzip) + 38.47 kB CSS.
@@ -182,11 +204,7 @@ Commits `55ac0ed` (items 1–7), `035f9a7` (items 8–12) and the evidence/docs 
 
 ## Still to do (next owners)
 
-1. **Evidence not re-captured** (the final pass re-captured 320/390, Which-one 390 and the real App only):
-   - the 720/1100 matrix, which still shows `9cbd510` marks under 44 px;
-   - axe;
-   - keyboard, sheets, list and failure states;
-   - Year 320×568, where the bottom of the ring (Jul, half of Aug/Jun) sits under the level pull.
+1. **320×568 Month** is crowded: both callouts sit over the island, and the bubble covers the front of the ring.
 2. **Phone performance** on a real device (12 minis, 31 props, shadows): the lite tier and the budget test are in place.
 3. **Jonathan's decisions:**
    - **A9 App chrome:** the App header and the status banners still stand above the map on every width. Arrival now

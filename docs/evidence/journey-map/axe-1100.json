@@ -13,7 +13,7 @@
   "orientationAngle": 0,
   "orientationType": "landscape-primary"
  },
- "timestamp": "2026-10-05T20:59:40.727Z",
+ "timestamp": "2026-10-05T23:02:54.080Z",
  "url": "http://127.0.0.1:5398/journey-map-proof?theme=taylor&level=month",
  "toolOptions": {
   "runOnly": {
@@ -9275,11 +9275,18 @@
        "data": {
         "minSize": 24,
         "width": 44,
-        "height": 44
+        "height": 38.2
        },
-       "relatedNodes": [],
+       "relatedNodes": [
+        {
+         "html": "<button type=\"button\" id=\"journey-mark-2026-09...\" class=\"journey-mark journey...\" data-mark-id=\"2026-09-26\" data-mark-kind=\"day\" aria-label=\"Sat 26 Sep · To chec...\" aria-expanded=\"false\" aria-controls=\"journey-sheet-r0\" style=\"transform: translate...\">",
+         "target": [
+          "#journey-mark-2026-09-26"
+         ]
+        }
+       ],
        "impact": "serious",
-       "message": "Control has sufficient size (44px by 44px, should be at least 24px by 24px)"
+       "message": "Control has sufficient size (44px by 38.2px, should be at least 24px by 24px)"
       },
       {
        "id": "target-offset",
@@ -9306,7 +9313,7 @@
        "id": "target-size",
        "data": {
         "minSize": 24,
-        "width": 31,
+        "width": 44,
         "height": 30.7
        },
        "relatedNodes": [
@@ -9318,7 +9325,7 @@
         }
        ],
        "impact": "serious",
-       "message": "Control has sufficient size (31px by 30.7px, should be at least 24px by 24px)"
+       "message": "Control has sufficient size (44px by 30.7px, should be at least 24px by 24px)"
       },
       {
        "id": "target-offset",
@@ -9345,12 +9352,12 @@
        "id": "target-size",
        "data": {
         "minSize": 24,
-        "width": 31,
-        "height": 31
+        "width": 44,
+        "height": 44
        },
        "relatedNodes": [],
        "impact": "serious",
-       "message": "Control has sufficient size (31px by 31px, should be at least 24px by 24px)"
+       "message": "Control has sufficient size (44px by 44px, should be at least 24px by 24px)"
       },
       {
        "id": "target-offset",

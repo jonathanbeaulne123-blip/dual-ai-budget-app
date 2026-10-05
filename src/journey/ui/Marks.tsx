@@ -23,6 +23,7 @@ import { JOURNEY_MAP_MARKS } from "../contracts.ts";
 import { knownCents, MAP_WORDS, shortDate } from "../model/index.ts";
 import { COPY, money, shortMonth } from "./copy.ts";
 import type { MapMark } from "./mapLayout.ts";
+import { YEAR_LEAN } from "../board/levels.ts";
 
 /** A mark id → a safe DOM id (`journey-mark-…`): every character outside [A-Za-z0-9-] becomes `_<hex>_`. */
 export function journeyMarkDomId(id: string): string {
@@ -271,16 +272,41 @@ export function Marks({ board, level, placed, rows, selectedId, focusedDate, foc
   const minis = visible.filter((p) => p.mark.kind === "chapter");
   const ring = minis.length ? { x: minis.reduce((a, p) => a + p.x, 0) / minis.length, y: minis.reduce((a, p) => a + p.y, 0) / minis.length } : null;
   /** Where a Year plate stands: phone = the prototype's lean outward from the ring's centre; always clamped on stage. */
-  const yearPlace = (p: PlacedMark, plate: string, small: string | null): CSSProperties => {
+  const yearSpot = (p: PlacedMark, plate: string, small: string | null) => {
     const c = decor?.get(`centre:${p.mark.id}`);
-    let tx = p.x, ty = p.y;
+    let tx = p.x, ty = p.y, ux = 0, uy = 1;
     if (ring && stage.width < 720 && c) {
+      // The lean the Year camera's fit leaves room for (board/levels.ts `YEAR_PLATE_PAD`), shorter for one-line plates.
+      const lean = stage.width < 360 ? YEAR_LEAN.narrow : YEAR_LEAN.phone;
       const dx = c.x - ring.x, dy = c.y - ring.y, d = Math.hypot(dx, dy) || 1;
-      tx = c.x + (dx / d) * 34; ty = c.y + (dy / d) * 30 + 14;
+      ux = dx / d; uy = dy / d;
+      tx = c.x + ux * lean.across; ty = c.y + uy * lean.down + lean.drop;
     }
     const half = Math.max(plate.length * 6.6, (small?.length ?? 0) * 5.4) / 2 + 10;
-    tx = Math.min(Math.max(tx, half + 6), stage.width - half - 6);
-    return { "--plate-x": `${(tx - p.x).toFixed(1)}px`, "--plate-y": `${(ty - p.y).toFixed(1)}px` } as CSSProperties;
+    const tall = small ? 34 : 22;
+    return { id: p.mark.id, x: tx, y: ty, ux, uy, half, tall, p };
+  };
+  // Two plates that would touch (a width-bound phone ring puts Jan and Feb close): the later one steps further out
+  // along its own lean until they clear (a few px at a time, at most 24), then every plate is clamped on stage.
+  const yearSpots = new Map<string, { x: number; y: number }>();
+  if (level === "year") {
+    const spots = minis.map((p) => {
+      const w = markWords(board, p.mark, rows, yearById.get(p.mark.id), chapterId);
+      const narrow = stage.width < 360;
+      const plate = narrow ? (yearById.get(p.mark.id)?.toCheck ? `${shortMonth(p.mark.id)} · ${yearById.get(p.mark.id)!.toCheck}` : shortMonth(p.mark.id)) : w.plate ?? "";
+      return yearSpot(p, plate, narrow && p.mark.id !== chapterId ? null : w.plateSmall);
+    });
+    const touch = (a: (typeof spots)[number], b: (typeof spots)[number]) => Math.abs(a.x - b.x) < a.half + b.half + 2 && Math.abs(a.y - b.y) < (a.tall + b.tall) / 2 + 2;
+    for (let i = 0; i < spots.length; i += 1) {
+      for (let step = 0; step < 6 && spots.slice(0, i).some((o) => touch(spots[i]!, o)); step += 1) {
+        const s = spots[i]!; s.x += s.ux * 4; s.y += s.uy * 4;
+      }
+    }
+    for (const s of spots) yearSpots.set(s.id, { x: Math.min(Math.max(s.x, s.half + 6), stage.width - s.half - 6), y: s.y });
+  }
+  const yearPlace = (p: PlacedMark): CSSProperties => {
+    const s = yearSpots.get(p.mark.id) ?? { x: p.x, y: p.y };
+    return { "--plate-x": `${(s.x - p.x).toFixed(1)}px`, "--plate-y": `${(s.y - p.y).toFixed(1)}px` } as CSSProperties;
   };
   const press = (p: PlacedMark, e: MouseEvent<HTMLButtonElement>) => {
     // Hit areas that overlap under the press (live or flat): ask which one (never guess the topmost).
@@ -322,7 +348,7 @@ export function Marks({ board, level, placed, rows, selectedId, focusedDate, foc
         const yearPlate = level === "year" && mark.kind === "chapter";
         const plateStyle: CSSProperties | undefined = face
           ? ({ "--plate-x": `${(face.x - x).toFixed(1)}px`, "--plate-y": `${(face.y - y).toFixed(1)}px` } as CSSProperties)
-          : yearPlate ? yearPlace(p, words.plate ?? "", words.plateSmall)
+          : yearPlate ? yearPlace(p)
           : plateNudge(words.plate ?? "", words.plateSmall, x, stage.width);
         const ring = mark.toCheck && mark.kind !== "hercules" ? (mark.kind === "pile" ? `${mark.covers.length} !` : "!") : null;
         return (

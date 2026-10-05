@@ -21,7 +21,7 @@ import { deriveJourneyBoard } from "../src/journey/model/index.ts";
 import { directionOf, isRecorded } from "../src/journey/model/money.ts";
 import {
   BoardFlat, cameraAt, chapterTurn, createJourneyMapScene, flatViewBoxFor, frameFromCoast, layoutClock, layoutWeek, layoutYear, levelTransition,
-  mapLabels, MAP_LABEL_LIMIT, NO_INSET, placeLabels, popsAt, propKindFor, RING_HEIGHT_DU, stackFor, weekFrame, YEAR_RING_DU,
+  mapLabels, MAP_LABEL_LIMIT, NO_INSET, placeLabels, popsAt, propKindFor, RING_HEIGHT_DU, stackFor, weekFrame, YEAR_MINI_SCALE, YEAR_PLATE_PAD, YEAR_RING_DU, yearElevationDeg,
   type MapSceneHandle, type MapSceneOptions,
 } from "../src/journey/board/index.ts";
 import { distToLine, inPoly } from "../src/journey/board/geo.ts";
@@ -244,6 +244,55 @@ describe("levels: one pull t 0→2", () => {
     expect(cameraAt(9, v).distance).toBeCloseTo(week.distance, 6);
     // The phone composition looks from higher up.
     expect(cameraAt(1, { ...v, width: 390, height: 844 }).elevationDeg).toBeGreaterThan(month.elevationDeg);
+  });
+
+  it("Year fits the ring and its plates inside the free area between the header and the dock at every size", () => {
+    // The proof page's measured safe areas (header + purse + caption above; pull, "+", Map/List below).
+    const sizes = [
+      { width: 320, height: 568, safe: { top: 167, right: 0, bottom: 186, left: 0 } },
+      { width: 390, height: 844, safe: { top: 175, right: 0, bottom: 186, left: 0 } },
+      { width: 720, height: 900, safe: { top: 120, right: 0, bottom: 154, left: 0 } },
+      { width: 1100, height: 800, safe: { top: 120, right: 0, bottom: 154, left: 0 } },
+    ];
+    for (const size of sizes) {
+      const v = { ...view, ...size };
+      const pose = cameraAt(LEVEL_T.year, v);
+      // An independent projection: three's own camera at the pose, with the view offset.
+      const cam = new THREE.PerspectiveCamera(JOURNEY_DIORAMA.fovDeg, size.width / size.height, 0.05, 200);
+      cam.position.set(...pose.position);
+      cam.lookAt(...pose.lookAt);
+      cam.setViewOffset(size.width, size.height, pose.offset[0], pose.offset[1], size.width, size.height);
+      cam.updateProjectionMatrix();
+      cam.updateMatrixWorld();
+      expect(pose.distance, `${size.width}: inside the far plane`).toBeLessThan(200);
+      const pad = size.width < 360 ? YEAR_PLATE_PAD.narrow : size.width < 720 ? YEAR_PLATE_PAD.phone : YEAR_PLATE_PAD.wide;
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      // Each mini's footprint: its bezel circle at the mini scale, and a stack standing 0.6 du on it.
+      const reach = JOURNEY_DIORAMA.bezel.outer * YEAR_MINI_SCALE;
+      for (let i = 0; i < 12; i += 1) {
+        const a = (i / 12) * Math.PI * 2;
+        const mx = Math.sin(a) * YEAR_RING_DU, mz = -Math.cos(a) * YEAR_RING_DU;
+        const around = Array.from({ length: 16 }, (_, k) => new THREE.Vector3(mx + Math.cos((k * Math.PI) / 8) * reach, 0, mz + Math.sin((k * Math.PI) / 8) * reach));
+        for (const point of [...around, new THREE.Vector3(mx, 0.6, mz)]) {
+          const q = point.project(cam);
+          const sx = (q.x + 1) / 2 * size.width, sy = (1 - q.y) / 2 * size.height;
+          x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy);
+        }
+      }
+      const label = `${size.width}×${size.height}`;
+      expect(y0 - pad.top, `${label}: the top minis' plates clear the header`).toBeGreaterThanOrEqual(size.safe.top - 1.5);
+      expect(y1 + pad.bottom, `${label}: the bottom minis' plates clear the dock`).toBeLessThanOrEqual(size.height - size.safe.bottom + 1.5);
+      expect(x0 - pad.side, `${label}: left`).toBeGreaterThanOrEqual(-1);
+      expect(x1 + pad.side, `${label}: right`).toBeLessThanOrEqual(size.width + 1);
+      // The ring uses the room it has: the minis come within 4 px of the padded free edge on one side (no tiny ring in a corner).
+      const slackX = Math.min(x0 - pad.side, size.width - x1 - pad.side);
+      const slackY = Math.min(y0 - pad.top - size.safe.top, size.height - size.safe.bottom - y1 - pad.bottom);
+      expect(Math.min(slackX, slackY), `${label}: fills its free area`).toBeLessThan(4);
+    }
+    // Only a short phone flattens the look; wide keeps the prototype's 50°, a tall phone its 66°.
+    expect(yearElevationDeg(sizes[0]!)).toBeLessThan(66);
+    expect(yearElevationDeg(sizes[1]!)).toBe(66);
+    expect(yearElevationDeg(sizes[3]!)).toBe(JOURNEY_DIORAMA.elevationDeg);
   });
 
   it("pops by t: month props shrink as Week arrives, tiles pop in after; reduced motion makes the pull a cut", () => {

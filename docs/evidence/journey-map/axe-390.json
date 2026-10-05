@@ -13,7 +13,7 @@
   "orientationAngle": 0,
   "orientationType": "landscape-primary"
  },
- "timestamp": "2026-10-05T20:59:31.671Z",
+ "timestamp": "2026-10-05T23:02:44.108Z",
  "url": "http://127.0.0.1:5398/journey-map-proof?theme=taylor&level=month",
  "toolOptions": {
   "runOnly": {
@@ -1237,7 +1237,7 @@
       }
      ],
      "impact": null,
-     "html": "<section class=\"journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated\" aria-label=\"Journey\" data-journey-board=\"\" data-theme=\"taylor\" data-journey-level=\"month\" data-safe-area=\"163 0 267 0\">",
+     "html": "<section class=\"journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated\" aria-label=\"Journey\" data-journey-board=\"\" data-theme=\"taylor\" data-journey-level=\"month\" data-safe-area=\"119 0 267 0\">",
      "target": [
       "section"
      ]
@@ -1437,7 +1437,7 @@
       }
      ],
      "impact": null,
-     "html": "<div class=\"journey-purse\" role=\"group\" aria-label=\"Everyday · now $0.00...\" data-journey-purse=\"\">",
+     "html": "<button type=\"button\" class=\"journey-purse journe...\" aria-label=\"Everyday · now $0.00...\" aria-haspopup=\"dialog\" data-journey-purse=\"\" data-purse-more=\"\">",
      "target": [
       ".journey-purse"
      ]
@@ -2548,24 +2548,6 @@
      "all": [],
      "none": [],
      "impact": null,
-     "html": "<div class=\"journey-purse\" role=\"group\" aria-label=\"Everyday · now $0.00...\" data-journey-purse=\"\">",
-     "target": [
-      ".journey-purse"
-     ]
-    },
-    {
-     "any": [
-      {
-       "id": "aria-allowed-role",
-       "data": null,
-       "relatedNodes": [],
-       "impact": "minor",
-       "message": "ARIA role is allowed for given element"
-      }
-     ],
-     "all": [],
-     "none": [],
-     "impact": null,
      "html": "<div class=\"journey-stage journey-stage--live journey-stage--month\" data-stage-mode=\"live\" data-stage-level=\"month\" data-land=\"ready\" role=\"region\" aria-label=\"Our island as a clock\" aria-describedby=\"journey-stage-help\" tabindex=\"0\">",
      "target": [
       ".journey-stage"
@@ -2656,7 +2638,7 @@
      ],
      "none": [],
      "impact": null,
-     "html": "<section class=\"journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated\" aria-label=\"Journey\" data-journey-board=\"\" data-theme=\"taylor\" data-journey-level=\"month\" data-safe-area=\"163 0 267 0\">",
+     "html": "<section class=\"journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated\" aria-label=\"Journey\" data-journey-board=\"\" data-theme=\"taylor\" data-journey-level=\"month\" data-safe-area=\"119 0 267 0\">",
      "target": [
       "section"
      ]
@@ -2746,7 +2728,7 @@
      ],
      "none": [],
      "impact": null,
-     "html": "<div class=\"journey-purse\" role=\"group\" aria-label=\"Everyday · now $0.00...\" data-journey-purse=\"\">",
+     "html": "<button type=\"button\" class=\"journey-purse journe...\" aria-label=\"Everyday · now $0.00...\" aria-haspopup=\"dialog\" data-journey-purse=\"\" data-purse-more=\"\">",
      "target": [
       ".journey-purse"
      ]
@@ -3268,24 +3250,6 @@
       }
      ],
      "impact": null,
-     "html": "<div class=\"journey-purse\" role=\"group\" aria-label=\"Everyday · now $0.00...\" data-journey-purse=\"\">",
-     "target": [
-      ".journey-purse"
-     ]
-    },
-    {
-     "any": [],
-     "all": [],
-     "none": [
-      {
-       "id": "deprecatedrole",
-       "data": null,
-       "relatedNodes": [],
-       "impact": "minor",
-       "message": "ARIA role is not deprecated"
-      }
-     ],
-     "impact": null,
      "html": "<div class=\"journey-stage journey-stage--live journey-stage--month\" data-stage-mode=\"live\" data-stage-level=\"month\" data-land=\"ready\" role=\"region\" aria-label=\"Our island as a clock\" aria-describedby=\"journey-stage-help\" tabindex=\"0\">",
      "target": [
       ".journey-stage"
@@ -3555,6 +3519,38 @@
      "html": "<span class=\"journey-purse__short\" aria-hidden=\"true\"> Bianca pay expected today</span>",
      "target": [
       ".journey-purse__short"
+     ]
+    },
+    {
+     "any": [],
+     "all": [
+      {
+       "id": "focusable-modal-open",
+       "data": null,
+       "relatedNodes": [],
+       "impact": "serious",
+       "message": "No focusable elements while a modal is open"
+      },
+      {
+       "id": "focusable-disabled",
+       "data": null,
+       "relatedNodes": [],
+       "impact": "serious",
+       "message": "No focusable elements contained within element"
+      },
+      {
+       "id": "focusable-not-tabbable",
+       "data": null,
+       "relatedNodes": [],
+       "impact": "serious",
+       "message": "No focusable elements contained within element"
+      }
+     ],
+     "none": [],
+     "impact": null,
+     "html": "<span class=\"journey-purse__more\" aria-hidden=\"true\">›</span>",
+     "target": [
+      ".journey-purse__more"
      ]
     },
     {
@@ -4256,7 +4252,7 @@
      ],
      "none": [],
      "impact": null,
-     "html": "<span class=\"journey-callout journey-callout--today\" data-callout=\"today\" aria-hidden=\"true\" style=\"transform: translate(170px, 287.8px) translate(-50%, -50%);\">Today · Mon 28 Sep<small>pay expected · 4 things</small></span>",
+     "html": "<span class=\"journey-callout journey-callout--today\" data-callout=\"today\" aria-hidden=\"true\" style=\"transform: translate(111.3px, 156.7px) translate(-50%, -50%);\">Today · Mon 28 Sep<small>pay expected · 4 things</small></span>",
      "target": [
       ".journey-callout--today"
      ]
@@ -4288,7 +4284,7 @@
      ],
      "none": [],
      "impact": null,
-     "html": "<span class=\"journey-callout journey-callout--next\" data-callout=\"next\" aria-hidden=\"true\" style=\"transform: translate(202.6px, 350.1px) translate(-50%, -50%);\">Setting aside next · Winter reserve<small>$300.00 · Wed 30 Sep</small></span>",
+     "html": "<span class=\"journey-callout journey-callout--next\" data-callout=\"next\" aria-hidden=\"true\" style=\"transform: translate(202.6px, 328.1px) translate(-50%, -50%);\">Setting aside next · Winter reserve<small>$300.00 · Wed 30 Sep</small></span>",
      "target": [
       ".journey-callout--next"
      ]
@@ -4388,7 +4384,7 @@
       }
      ],
      "impact": null,
-     "html": "<section class=\"journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated\" aria-label=\"Journey\" data-journey-board=\"\" data-theme=\"taylor\" data-journey-level=\"month\" data-safe-area=\"163 0 267 0\">",
+     "html": "<section class=\"journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated\" aria-label=\"Journey\" data-journey-board=\"\" data-theme=\"taylor\" data-journey-level=\"month\" data-safe-area=\"119 0 267 0\">",
      "target": [
       "section"
      ]
@@ -4478,7 +4474,7 @@
       }
      ],
      "impact": null,
-     "html": "<div class=\"journey-purse\" role=\"group\" aria-label=\"Everyday · now $0.00...\" data-journey-purse=\"\">",
+     "html": "<button type=\"button\" class=\"journey-purse journe...\" aria-label=\"Everyday · now $0.00...\" aria-haspopup=\"dialog\" data-journey-purse=\"\" data-purse-more=\"\">",
      "target": [
       ".journey-purse"
      ]
@@ -5000,24 +4996,6 @@
      "all": [],
      "none": [],
      "impact": null,
-     "html": "<div class=\"journey-purse\" role=\"group\" aria-label=\"Everyday · now $0.00...\" data-journey-purse=\"\">",
-     "target": [
-      ".journey-purse"
-     ]
-    },
-    {
-     "any": [
-      {
-       "id": "aria-required-attr",
-       "data": null,
-       "relatedNodes": [],
-       "impact": "critical",
-       "message": "All required ARIA attributes are present"
-      }
-     ],
-     "all": [],
-     "none": [],
-     "impact": null,
      "html": "<div class=\"journey-stage journey-stage--live journey-stage--month\" data-stage-mode=\"live\" data-stage-level=\"month\" data-land=\"ready\" role=\"region\" aria-label=\"Our island as a clock\" aria-describedby=\"journey-stage-help\" tabindex=\"0\">",
      "target": [
       ".journey-stage"
@@ -5095,38 +5073,6 @@
    "help": "ARIA roles used must conform to valid values",
    "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/aria-roles?application=playwright",
    "nodes": [
-    {
-     "any": [],
-     "all": [],
-     "none": [
-      {
-       "id": "invalidrole",
-       "data": null,
-       "relatedNodes": [],
-       "impact": "critical",
-       "message": "ARIA role is valid"
-      },
-      {
-       "id": "abstractrole",
-       "data": null,
-       "relatedNodes": [],
-       "impact": "critical",
-       "message": "Abstract roles are not used"
-      },
-      {
-       "id": "unsupportedrole",
-       "data": null,
-       "relatedNodes": [],
-       "impact": "critical",
-       "message": "ARIA role is supported"
-      }
-     ],
-     "impact": null,
-     "html": "<div class=\"journey-purse\" role=\"group\" aria-label=\"Everyday · now $0.00...\" data-journey-purse=\"\">",
-     "target": [
-      ".journey-purse"
-     ]
-    },
     {
      "any": [],
      "all": [],
@@ -5300,7 +5246,7 @@
      ],
      "none": [],
      "impact": null,
-     "html": "<section class=\"journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated\" aria-label=\"Journey\" data-journey-board=\"\" data-theme=\"taylor\" data-journey-level=\"month\" data-safe-area=\"163 0 267 0\">",
+     "html": "<section class=\"journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated\" aria-label=\"Journey\" data-journey-board=\"\" data-theme=\"taylor\" data-journey-level=\"month\" data-safe-area=\"119 0 267 0\">",
      "target": [
       "section"
      ]
@@ -5428,7 +5374,7 @@
      ],
      "none": [],
      "impact": null,
-     "html": "<div class=\"journey-purse\" role=\"group\" aria-label=\"Everyday · now $0.00...\" data-journey-purse=\"\">",
+     "html": "<button type=\"button\" class=\"journey-purse journe...\" aria-label=\"Everyday · now $0.00...\" aria-haspopup=\"dialog\" data-journey-purse=\"\" data-purse-more=\"\">",
      "target": [
       ".journey-purse"
      ]
@@ -6328,7 +6274,7 @@
      "all": [],
      "none": [],
      "impact": null,
-     "html": "<section class=\"journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated\" aria-label=\"Journey\" data-journey-board=\"\" data-theme=\"taylor\" data-journey-level=\"month\" data-safe-area=\"163 0 267 0\">",
+     "html": "<section class=\"journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated\" aria-label=\"Journey\" data-journey-board=\"\" data-theme=\"taylor\" data-journey-level=\"month\" data-safe-area=\"119 0 267 0\">",
      "target": [
       "section"
      ]
@@ -6418,7 +6364,7 @@
      "all": [],
      "none": [],
      "impact": null,
-     "html": "<div class=\"journey-purse\" role=\"group\" aria-label=\"Everyday · now $0.00...\" data-journey-purse=\"\">",
+     "html": "<button type=\"button\" class=\"journey-purse journe...\" aria-label=\"Everyday · now $0.00...\" aria-haspopup=\"dialog\" data-journey-purse=\"\" data-purse-more=\"\">",
      "target": [
       ".journey-purse"
      ]
@@ -7472,6 +7418,31 @@
     {
      "any": [
       {
+       "id": "button-has-visible-text",
+       "data": null,
+       "relatedNodes": [],
+       "impact": "critical",
+       "message": "Element has inner text that is visible to screen readers"
+      },
+      {
+       "id": "aria-label",
+       "data": null,
+       "relatedNodes": [],
+       "impact": "critical",
+       "message": "aria-label attribute exists and is not empty"
+      }
+     ],
+     "all": [],
+     "none": [],
+     "impact": null,
+     "html": "<button type=\"button\" class=\"journey-purse journe...\" aria-label=\"Everyday · now $0.00...\" aria-haspopup=\"dialog\" data-journey-purse=\"\" data-purse-more=\"\">",
+     "target": [
+      ".journey-purse"
+     ]
+    },
+    {
+     "any": [
+      {
        "id": "aria-label",
        "data": null,
        "relatedNodes": [],
@@ -8307,7 +8278,7 @@
      "all": [],
      "none": [],
      "impact": null,
-     "html": "<section class=\"journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated\" aria-label=\"Journey\" data-journey-board=\"\" data-theme=\"taylor\" data-journey-level=\"month\" data-safe-area=\"163 0 267 0\">",
+     "html": "<section class=\"journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated\" aria-label=\"Journey\" data-journey-board=\"\" data-theme=\"taylor\" data-journey-level=\"month\" data-safe-area=\"119 0 267 0\">",
      "target": [
       "section"
      ]
@@ -8423,6 +8394,24 @@
      "html": "<button type=\"button\" class=\"journey-toy journey-toy--round\" aria-label=\"Theme\" aria-haspopup=\"true\" aria-expanded=\"false\" aria-controls=\"_r_2_\" data-theme-dot=\"\"><span class=\"journey-swatch\" aria-hidden=\"true\" style=\"background: rgb(238, 127, 162);\"></span></button>",
      "target": [
       "button[aria-label=\"Theme\"]"
+     ]
+    },
+    {
+     "any": [
+      {
+       "id": "no-focusable-content",
+       "data": null,
+       "relatedNodes": [],
+       "impact": "serious",
+       "message": "Element does not have focusable descendants"
+      }
+     ],
+     "all": [],
+     "none": [],
+     "impact": null,
+     "html": "<button type=\"button\" class=\"journey-purse journe...\" aria-label=\"Everyday · now $0.00...\" aria-haspopup=\"dialog\" data-journey-purse=\"\" data-purse-more=\"\">",
+     "target": [
+      ".journey-purse"
      ]
     },
     {
@@ -9018,6 +9007,38 @@
        "id": "target-size",
        "data": {
         "minSize": 24,
+        "width": 257.6,
+        "height": 50.9
+       },
+       "relatedNodes": [],
+       "impact": "serious",
+       "message": "Control has sufficient size (257.6px by 50.9px, should be at least 24px by 24px)"
+      },
+      {
+       "id": "target-offset",
+       "data": {
+        "closestOffset": 24,
+        "minOffset": 24
+       },
+       "relatedNodes": [],
+       "impact": "serious",
+       "message": "Target has sufficient space from its closest neighbors. Safe clickable space has a diameter of 24px which is at least 24px."
+      }
+     ],
+     "all": [],
+     "none": [],
+     "impact": null,
+     "html": "<button type=\"button\" class=\"journey-purse journe...\" aria-label=\"Everyday · now $0.00...\" aria-haspopup=\"dialog\" data-journey-purse=\"\" data-purse-more=\"\">",
+     "target": [
+      ".journey-purse"
+     ]
+    },
+    {
+     "any": [
+      {
+       "id": "target-size",
+       "data": {
+        "minSize": 24,
         "width": 44,
         "height": 44
        },
@@ -9274,22 +9295,19 @@
        "id": "target-size",
        "data": {
         "minSize": 24,
-        "width": 33,
-        "height": 33
+        "width": 44,
+        "height": 29.4
        },
-       "relatedNodes": [],
+       "relatedNodes": [
+        {
+         "html": "<button type=\"button\" id=\"journey-mark-2026-09...\" class=\"journey-mark journey...\" data-mark-id=\"2026-09-26\" data-mark-kind=\"day\" aria-label=\"Sat 26 Sep · To chec...\" aria-expanded=\"false\" aria-controls=\"journey-sheet-r0\" style=\"transform: translate...\">",
+         "target": [
+          "#journey-mark-2026-09-26"
+         ]
+        }
+       ],
        "impact": "serious",
-       "message": "Control has sufficient size (33px by 33px, should be at least 24px by 24px)"
-      },
-      {
-       "id": "target-offset",
-       "data": {
-        "closestOffset": 24,
-        "minOffset": 24
-       },
-       "relatedNodes": [],
-       "impact": "serious",
-       "message": "Target has sufficient space from its closest neighbors. Safe clickable space has a diameter of 24px which is at least 24px."
+       "message": "Control has sufficient size (44px by 29.4px, should be at least 24px by 24px)"
       }
      ],
      "all": [],
@@ -9306,22 +9324,19 @@
        "id": "target-size",
        "data": {
         "minSize": 24,
-        "width": 25,
-        "height": 25
+        "width": 44,
+        "height": 25.4
        },
-       "relatedNodes": [],
+       "relatedNodes": [
+        {
+         "html": "<button type=\"button\" id=\"journey-mark-2026-09...\" class=\"journey-mark journey...\" data-mark-id=\"2026-09-27\" data-mark-kind=\"day\" aria-label=\"Sun 27 Sep: Weekly S...\" aria-expanded=\"false\" aria-controls=\"journey-sheet-r0\" style=\"transform: translate...\">",
+         "target": [
+          "#journey-mark-2026-09-27"
+         ]
+        }
+       ],
        "impact": "serious",
-       "message": "Control has sufficient size (25px by 25px, should be at least 24px by 24px)"
-      },
-      {
-       "id": "target-offset",
-       "data": {
-        "closestOffset": 24,
-        "minOffset": 24
-       },
-       "relatedNodes": [],
-       "impact": "serious",
-       "message": "Target has sufficient space from its closest neighbors. Safe clickable space has a diameter of 24px which is at least 24px."
+       "message": "Control has sufficient size (44px by 25.4px, should be at least 24px by 24px)"
       }
      ],
      "all": [],
@@ -9338,22 +9353,19 @@
        "id": "target-size",
        "data": {
         "minSize": 24,
-        "width": 25,
-        "height": 25
+        "width": 44,
+        "height": 30.7
        },
-       "relatedNodes": [],
+       "relatedNodes": [
+        {
+         "html": "<button type=\"button\" id=\"journey-mark-2026-09...\" class=\"journey-mark journey...\" data-mark-id=\"2026-09-28\" data-mark-kind=\"day\" aria-label=\"Mon 28 Sep · Today: ...\" aria-expanded=\"false\" aria-controls=\"journey-sheet-r0\" style=\"transform: translate...\">",
+         "target": [
+          "#journey-mark-2026-09-28"
+         ]
+        }
+       ],
        "impact": "serious",
-       "message": "Control has sufficient size (25px by 25px, should be at least 24px by 24px)"
-      },
-      {
-       "id": "target-offset",
-       "data": {
-        "closestOffset": 24,
-        "minOffset": 24
-       },
-       "relatedNodes": [],
-       "impact": "serious",
-       "message": "Target has sufficient space from its closest neighbors. Safe clickable space has a diameter of 24px which is at least 24px."
+       "message": "Control has sufficient size (44px by 30.7px, should be at least 24px by 24px)"
       }
      ],
      "all": [],
@@ -9370,12 +9382,12 @@
        "id": "target-size",
        "data": {
         "minSize": 24,
-        "width": 36,
-        "height": 36
+        "width": 44,
+        "height": 44
        },
        "relatedNodes": [],
        "impact": "serious",
-       "message": "Control has sufficient size (36px by 36px, should be at least 24px by 24px)"
+       "message": "Control has sufficient size (44px by 44px, should be at least 24px by 24px)"
       },
       {
        "id": "target-offset",
@@ -9963,31 +9975,6 @@
        "id": "color-contrast",
        "data": {
         "contrastRatio": 0,
-        "fontSize": "8.6pt (11.5px)",
-        "fontWeight": "bold",
-        "messageKey": "bgOverlap",
-        "expectedContrastRatio": "4.5:1"
-       },
-       "relatedNodes": [],
-       "impact": "serious",
-       "message": "Element's background color could not be determined because it is overlapped by another element"
-      }
-     ],
-     "all": [],
-     "none": [],
-     "impact": "serious",
-     "html": "<span class=\"journey-purse__gloss\" aria-hidden=\"true\"> · money here now</span>",
-     "target": [
-      ".journey-purse__gloss"
-     ],
-     "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
-    },
-    {
-     "any": [
-      {
-       "id": "color-contrast",
-       "data": {
-        "contrastRatio": 0,
         "fontSize": "9.0pt (12px)",
         "fontWeight": "bold",
         "messageKey": "bgOverlap",
@@ -10026,34 +10013,9 @@
      "all": [],
      "none": [],
      "impact": "serious",
-     "html": "<span class=\"journey-purse__long\"> Bianca pay expected today · not recorded on its schedule</span>",
+     "html": "<span class=\"journey-purse__short\" aria-hidden=\"true\"> Bianca pay expected today</span>",
      "target": [
-      ".journey-purse__long"
-     ],
-     "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
-    },
-    {
-     "any": [
-      {
-       "id": "color-contrast",
-       "data": {
-        "contrastRatio": 0,
-        "fontSize": "8.6pt (11.5px)",
-        "fontWeight": "bold",
-        "messageKey": "bgOverlap",
-        "expectedContrastRatio": "4.5:1"
-       },
-       "relatedNodes": [],
-       "impact": "serious",
-       "message": "Element's background color could not be determined because it is overlapped by another element"
-      }
-     ],
-     "all": [],
-     "none": [],
-     "impact": "serious",
-     "html": "<span class=\"journey-purse__note\" data-purse-note=\"\">A pay is already recorded today · check the Books before recording this one</span>",
-     "target": [
-      ".journey-purse__note"
+      ".journey-purse__short"
      ],
      "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
     },
@@ -10076,7 +10038,7 @@
      "all": [],
      "none": [],
      "impact": "serious",
-     "html": "<span class=\"journey-callout journey-callout--today\" data-callout=\"today\" aria-hidden=\"true\" style=\"transform: translate(170px, 287.8px) translate(-50%, -50%);\">Today · Mon 28 Sep<small>pay expected · 4 things</small></span>",
+     "html": "<span class=\"journey-callout journey-callout--today\" data-callout=\"today\" aria-hidden=\"true\" style=\"transform: translate(111.3px, 156.7px) translate(-50%, -50%);\">Today · Mon 28 Sep<small>pay expected · 4 things</small></span>",
      "target": [
       ".journey-callout--today"
      ],
@@ -10126,7 +10088,7 @@
      "all": [],
      "none": [],
      "impact": "serious",
-     "html": "<span class=\"journey-callout journey-callout--next\" data-callout=\"next\" aria-hidden=\"true\" style=\"transform: translate(202.6px, 350.1px) translate(-50%, -50%);\">Setting aside next · Winter reserve<small>$300.00 · Wed 30 Sep</small></span>",
+     "html": "<span class=\"journey-callout journey-callout--next\" data-callout=\"next\" aria-hidden=\"true\" style=\"transform: translate(202.6px, 328.1px) translate(-50%, -50%);\">Setting aside next · Winter reserve<small>$300.00 · Wed 30 Sep</small></span>",
      "target": [
       ".journey-callout--next"
      ],

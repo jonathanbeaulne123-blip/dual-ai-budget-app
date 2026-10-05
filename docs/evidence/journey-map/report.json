@@ -1,6 +1,6 @@
 {
  "generated": "fictional Development demo household (seedDemoHousehold today 2026-09-28, viewer MEM-002 Jonathan); headless Chromium 141 + SwiftShader",
- "sha": "035f9a7",
+ "sha": "4d52736",
  "shots": {
   "year-320-classic": {
    "viewport": [
@@ -203,18 +203,7 @@
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 33,
-     "h": 33
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 33,
-     "h": 33
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -240,18 +229,7 @@
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 3 Oct: Nothing on this day.",
-     "w": 35,
-     "h": 35
-    },
-    {
-     "name": "Sun 4 Oct: Nothing on this day.",
-     "w": 35,
-     "h": 35
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -302,18 +280,7 @@
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 31,
-     "h": 31
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 31,
-     "h": 31
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -544,18 +511,7 @@
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 33,
-     "h": 33
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 33,
-     "h": 33
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -581,18 +537,7 @@
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 3 Oct: Nothing on this day.",
-     "w": 35,
-     "h": 35
-    },
-    {
-     "name": "Sun 4 Oct: Nothing on this day.",
-     "w": 35,
-     "h": 35
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -643,18 +588,7 @@
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 31,
-     "h": 31
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 31,
-     "h": 31
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -885,18 +819,7 @@
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 33,
-     "h": 33
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 33,
-     "h": 33
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -922,18 +845,7 @@
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 3 Oct: Nothing on this day.",
-     "w": 35,
-     "h": 35
-    },
-    {
-     "name": "Sun 4 Oct: Nothing on this day.",
-     "w": 35,
-     "h": 35
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -984,18 +896,7 @@
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 31,
-     "h": 31
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 31,
-     "h": 31
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -1048,28 +949,7 @@
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
-     "w": 33,
-     "h": 33
-    },
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 25,
-     "h": 25
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 25,
-     "h": 25
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 36,
-     "h": 36
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -1095,28 +975,7 @@
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Thu 1 Oct: Rent · $1,850.00 · scheduled · Upcomi",
-     "w": 24,
-     "h": 24
-    },
-    {
-     "name": "Fri 2 Oct: Nothing on this day.",
-     "w": 24,
-     "h": 24
-    },
-    {
-     "name": "Sat 3 Oct: Nothing on this day.",
-     "w": 34,
-     "h": 34
-    },
-    {
-     "name": "Sun 4 Oct: Nothing on this day.",
-     "w": 34,
-     "h": 34
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -1167,18 +1026,7 @@
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 33,
-     "h": 33
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 33,
-     "h": 33
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -1261,11 +1109,6 @@
      "name": "Fri 11 Sep: Fund contribution · $225.00 · record",
      "left": 360,
      "right": 404
-    },
-    {
-     "name": "Setting aside next · Winter reserve$300.00 · Wed",
-     "left": -4,
-     "right": 241
     }
    ],
    "errors": [],
@@ -1294,28 +1137,7 @@
    "sheet": "This week, then 8 to check",
    "active": "This week, then 8 to check",
    "plusUnobstructed": false,
-   "controlsUnder44": [
-    {
-     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
-     "w": 34,
-     "h": 34
-    },
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 26,
-     "h": 26
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 26,
-     "h": 26
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 36,
-     "h": 36
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -1342,28 +1164,7 @@
    "sheet": null,
    "active": "Record a purchase…",
    "plusUnobstructed": false,
-   "controlsUnder44": [
-    {
-     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
-     "w": 33,
-     "h": 33
-    },
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 25,
-     "h": 25
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 25,
-     "h": 25
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 36,
-     "h": 36
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -1390,28 +1191,7 @@
    "sheet": null,
    "active": "Key",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
-     "w": 33,
-     "h": 33
-    },
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 25,
-     "h": 25
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 25,
-     "h": 25
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 36,
-     "h": 36
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -1502,28 +1282,7 @@
    "sheet": "Needs you · 8 pinned to Mon",
    "active": "Needs you · 8 pinned to Mon",
    "plusUnobstructed": false,
-   "controlsUnder44": [
-    {
-     "name": "Thu 1 Oct: Rent · $1,850.00 · scheduled · Upcomi",
-     "w": 24,
-     "h": 24
-    },
-    {
-     "name": "Fri 2 Oct: Nothing on this day.",
-     "w": 24,
-     "h": 24
-    },
-    {
-     "name": "Sat 3 Oct: Nothing on this day.",
-     "w": 30,
-     "h": 30
-    },
-    {
-     "name": "Sun 4 Oct: Nothing on this day.",
-     "w": 30,
-     "h": 30
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -1542,7 +1301,7 @@
    "purse": "Everyday $0.00 · money here now+$2,100.00 Bianca pay expected today · not recorded on its schedule Bianca pay expected todayA pay is already",
    "bubble": null,
    "landNote": null,
-   "marksShown": 5,
+   "marksShown": 6,
    "callouts": [
     "Tue 15 Sep · 2 thingsplanned · Bianca pay"
    ],
@@ -1577,18 +1336,7 @@
    "sheet": "This week, then 8 to check",
    "active": "This week, then 8 to check",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 32,
-     "h": 32
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 32,
-     "h": 32
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -1615,18 +1363,7 @@
    "sheet": null,
    "active": "Record a purchase…",
    "plusUnobstructed": false,
-   "controlsUnder44": [
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 31,
-     "h": 31
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 31,
-     "h": 31
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -1653,18 +1390,7 @@
    "sheet": null,
    "active": "Key",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 31,
-     "h": 31
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 31,
-     "h": 31
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -1689,29 +1415,23 @@
     "Setting aside next · Winter reserve$300.00 · Wed 30 Sep"
    ],
    "sheet": null,
-   "active": "Mon 28 Sep · Bianca pay",
+   "active": "Fri 25 Sep · Phone",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 31,
-     "h": 31
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 31,
-     "h": 31
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": [],
    "fan": {
-    "mark": "2026-09-28",
+    "overlap": {
+     "x": 299.3500061035156,
+     "y": 252.4000015258789,
+     "ids": [
+      "2026-09-25",
+      "2026-09-26"
+     ]
+    },
     "options": [
-     "Mon 28 Sep · Bianca pay",
-     "Mon 28 Sep · Expected Fund contribution",
-     "Mon 28 Sep · Expected Fund contribution",
-     "Mon 28 Sep · Bianca pay"
+     "Fri 25 Sep · Phone",
+     "Sat 26 Sep · Vet · Marmalade"
     ]
    }
   },
@@ -1761,18 +1481,7 @@
    "sheet": "Needs you · 8 pinned to Mon",
    "active": "Needs you · 8 pinned to Mon",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 3 Oct: Nothing on this day.",
-     "w": 34,
-     "h": 34
-    },
-    {
-     "name": "Sun 4 Oct: Nothing on this day.",
-     "w": 34,
-     "h": 34
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -1799,28 +1508,7 @@
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
-     "w": 33,
-     "h": 33
-    },
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 25,
-     "h": 25
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 25,
-     "h": 25
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 36,
-     "h": 36
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": [],
    "cuts": [
@@ -1866,28 +1554,7 @@
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Thu 1 Oct: Rent · $1,850.00 · scheduled · Upcomi",
-     "w": 24,
-     "h": 24
-    },
-    {
-     "name": "Fri 2 Oct: Nothing on this day.",
-     "w": 24,
-     "h": 24
-    },
-    {
-     "name": "Sat 3 Oct: Nothing on this day.",
-     "w": 30,
-     "h": 30
-    },
-    {
-     "name": "Sun 4 Oct: Nothing on this day.",
-     "w": 30,
-     "h": 30
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -1914,18 +1581,7 @@
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 31,
-     "h": 31
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 31,
-     "h": 31
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": [],
    "cuts": [
@@ -1998,28 +1654,7 @@
    "sheet": null,
    "active": "About this map",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
-     "w": 33,
-     "h": 33
-    },
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 25,
-     "h": 25
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 25,
-     "h": 25
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 36,
-     "h": 36
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": [],
    "tabStep": 1
@@ -2047,31 +1682,10 @@
    "sheet": null,
    "active": "Fri 4 Sep: Fund contribution · $980.00 · recorde",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
-     "w": 33,
-     "h": 33
-    },
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 25,
-     "h": 25
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 25,
-     "h": 25
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 36,
-     "h": 36
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": [],
-   "tabStep": 6
+   "tabStep": 7
   },
   "keyboard-2b-sheet-390-classic": {
    "viewport": [
@@ -2098,7 +1712,7 @@
    "controlsUnder44": [],
    "outsideViewport": [],
    "errors": [],
-   "tabStep": 6
+   "tabStep": 7
   },
   "keyboard-2c-sheet-action-390-classic": {
    "viewport": [
@@ -2149,31 +1763,10 @@
    "sheet": null,
    "active": "journey-pull__slider",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
-     "w": 33,
-     "h": 33
-    },
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 26,
-     "h": 26
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 26,
-     "h": 26
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 36,
-     "h": 36
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": [],
-   "tabStep": 25
+   "tabStep": 26
   },
   "keyboard-4-plus-390-classic": {
    "viewport": [
@@ -2198,31 +1791,10 @@
    "sheet": null,
    "active": "Add — record money",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
-     "w": 33,
-     "h": 33
-    },
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 26,
-     "h": 26
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 26,
-     "h": 26
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 36,
-     "h": 36
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": [],
-   "tabStep": 26
+   "tabStep": 27
   },
   "keyboard-1-about-1100-classic": {
    "viewport": [
@@ -2247,18 +1819,7 @@
    "sheet": null,
    "active": "About this map",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 31,
-     "h": 31
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 31,
-     "h": 31
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": [],
    "tabStep": 1
@@ -2286,18 +1847,7 @@
    "sheet": null,
    "active": "Fri 4 Sep: Fund contribution · $980.00 · recorde",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 31,
-     "h": 31
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 31,
-     "h": 31
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": [],
    "tabStep": 6
@@ -2380,21 +1930,10 @@
    "sheet": null,
    "active": "journey-pull__slider",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 32,
-     "h": 32
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 32,
-     "h": 32
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": [],
-   "tabStep": 22
+   "tabStep": 25
   },
   "keyboard-4-plus-1100-classic": {
    "viewport": [
@@ -2419,21 +1958,10 @@
    "sheet": null,
    "active": "Add — record money",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 31,
-     "h": 31
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 31,
-     "h": 31
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": [],
-   "tabStep": 23
+   "tabStep": 26
   },
   "empty-month-390-classic": {
    "viewport": [
@@ -2510,28 +2038,7 @@
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
-     "w": 34,
-     "h": 34
-    },
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 30,
-     "h": 30
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 26,
-     "h": 26
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 26,
-     "h": 26
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -2558,28 +2065,7 @@
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
-     "w": 34,
-     "h": 34
-    },
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 30,
-     "h": 30
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 26,
-     "h": 26
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 26,
-     "h": 26
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -2658,18 +2144,7 @@
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 36,
-     "h": 36
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 36,
-     "h": 36
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -2696,18 +2171,7 @@
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 36,
-     "h": 36
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 36,
-     "h": 36
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -2734,28 +2198,7 @@
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
-     "w": 34,
-     "h": 34
-    },
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 30,
-     "h": 30
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 26,
-     "h": 26
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 26,
-     "h": 26
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": [],
    "heldRequests": 1
@@ -2783,28 +2226,7 @@
    "sheet": null,
    "active": "List",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
-     "w": 34,
-     "h": 34
-    },
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 30,
-     "h": 30
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 26,
-     "h": 26
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 26,
-     "h": 26
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -2831,23 +2253,7 @@
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 42,
-     "h": 42
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 35,
-     "h": 35
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 35,
-     "h": 35
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": [],
    "heldRequests": 1
@@ -2875,18 +2281,7 @@
    "sheet": null,
    "active": "List",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 39,
-     "h": 39
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 39,
-     "h": 39
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -2937,28 +2332,7 @@
    "sheet": null,
    "active": "Month",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Fri 25 Sep · To check: Phone · $110.00 · schedul",
-     "w": 34,
-     "h": 34
-    },
-    {
-     "name": "Sat 26 Sep · To check: Vet · Marmalade · $215.00",
-     "w": 30,
-     "h": 30
-    },
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 26,
-     "h": 26
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 26,
-     "h": 26
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -2984,43 +2358,7 @@
    "sheet": null,
    "active": "Week",
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 43,
-     "h": 43
-    },
-    {
-     "name": "Tue 29 Sep: Nothing on this day.",
-     "w": 43,
-     "h": 43
-    },
-    {
-     "name": "Wed 30 Sep: Standing · jar · Winter reserve · $3",
-     "w": 43,
-     "h": 43
-    },
-    {
-     "name": "Thu 1 Oct: Rent · $1,850.00 · scheduled · Upcomi",
-     "w": 43,
-     "h": 43
-    },
-    {
-     "name": "Fri 2 Oct: Nothing on this day.",
-     "w": 43,
-     "h": 43
-    },
-    {
-     "name": "Sat 3 Oct: Nothing on this day.",
-     "w": 43,
-     "h": 43
-    },
-    {
-     "name": "Sun 4 Oct: Nothing on this day.",
-     "w": 43,
-     "h": 43
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   },
@@ -3047,18 +2385,7 @@
    "sheet": null,
    "active": null,
    "plusUnobstructed": true,
-   "controlsUnder44": [
-    {
-     "name": "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
-     "w": 36,
-     "h": 36
-    },
-    {
-     "name": "Mon 28 Sep · Today: Bianca pay · $2,100.00 · sch",
-     "w": 36,
-     "h": 36
-    }
-   ],
+   "controlsUnder44": [],
    "outsideViewport": [],
    "errors": []
   }
@@ -3069,6 +2396,7 @@
    "Previous month",
    "Next month",
    "Theme",
+   "Everyday · now $0.00 · money here now. +$2,100.00 ",
    "Our island as a clock",
    "Fri 4 Sep: Fund contribution · $980.00 · recorded ",
    "after Escape → Fri 4 Sep: Fund contribution · $980.00 · recorded ",
@@ -3104,7 +2432,10 @@
    "Sun 6 Sep: Fund contribution · $310.00 · recorded ",
    "Fri 11 Sep: Fund contribution · $225.00 · recorded",
    "Sun 13 Sep: Weekly Sitdown · Weekly Sitdown",
+   "Tue 15 Sep · To check: Groceries · planned · $520.",
+   "Fri 18 Sep: Fund contribution · $980.00 · recorded",
    "Sun 20 Sep · To check: Internet · $92.00 · schedul",
+   "Tue 22 Sep · To check: Gas · $74.00 · scheduled · ",
    "Fri 25 Sep · To check: Phone · $110.00 · scheduled",
    "Sat 26 Sep · To check: Vet · Marmalade · $215.00 ·",
    "Sun 27 Sep: Weekly Sitdown · Weekly Sitdown",
@@ -3131,7 +2462,7 @@
     },
     {
      "id": "color-contrast",
-     "nodes": 18
+     "nodes": 16
     }
    ]
   },
