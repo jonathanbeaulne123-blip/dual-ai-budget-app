@@ -183,8 +183,9 @@ const LINE_TOLERANCE_FULL = 4;
 describe("slim round-trip", () => {
   it("the baked slim file is this format and decodes to what the index extracts, bridges and covers included", () => {
     expect(SLIM.format).toBe(JOURNEY_LAND_SLIM_FORMAT);
-    // Format 3 carries baked landmark identities for road and walking crossings.
-    expect(JOURNEY_LAND_SLIM_FORMAT).toBe(3);
+    // Format 3 carries baked landmark identities for road and walking crossings; format 4 (The Water's Way) adds the
+    // optional neighbourhood `dressing` (buildings and landmarks), absent while no module dresses the island.
+    expect(JOURNEY_LAND_SLIM_FORMAT).toBe(4);
     const decoded = decodeJourneyLandSlim(SLIM);
     expect(decoded).toStrictEqual(land);
     expect(decoded.bridges!.map(b => b.id).sort()).toEqual(bridgeIds());

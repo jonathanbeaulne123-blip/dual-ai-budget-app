@@ -106,6 +106,7 @@ export function extractJourneyLand(world: WorldDefinition, terrain: TerrainField
   const bridges = extractBridges(world, lines);
   const covers = extractCovers(world, lines);
   const boulevards = world.corridors ? extractBoulevards(world.corridors, lines) : null;
+  const dressing = extractDressing(world);
 
   return {
     revision: world.geographyRevision,
@@ -127,6 +128,18 @@ export function extractJourneyLand(world: WorldDefinition, terrain: TerrainField
     bridges,
     covers,
     ...(boulevards ? { boulevards } : {}),
+    ...(dressing ? { dressing } : {}),
+  };
+}
+
+/** The Water's Way: the index's Journey buildings (already shaped by the grammar at the bake) and landmarks, rounded. */
+function extractDressing(world: WorldDefinition): JourneyLandData["dressing"] | null {
+  const d = world.dressing;
+  if (!d || (!d.journey?.length && !d.landmarks.length)) return null;
+  const p3 = (p: readonly number[]): Point3 => [round(p[0]!), round(p[1]!), round(p[2]!)];
+  return {
+    buildings: (d.journey ?? []).filter((b) => b.footprint.length >= 3).map((b) => ({ id: b.id, footprint: b.footprint.map((p) => [round(p[0]), round(p[1])] as const), base: round(b.base), height: round(b.height), roofHeight: round(b.roofHeight) })),
+    landmarks: d.landmarks.map((l) => ({ id: l.id, label: l.label, at: p3(l.at), top: p3(l.top) })),
   };
 }
 

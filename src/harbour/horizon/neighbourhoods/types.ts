@@ -170,6 +170,12 @@ export interface NeighbourhoodDressing {
   lights: LightAnchor[];
   landmarks: Landmark[];
   lookouts: Lookout[];
+  /**
+   * E1 (additive): ids of this module's building and prop records allowed inside a protected area although taller than
+   * `PROTECTED_MAX_HEIGHT` (the Green's swing and kites "count as tree/sky"). A plant standing at one of the module's own
+   * landmarks' base (within 0.5 eu in plan) is that landmark (the Old Oak) and is allowed without listing.
+   */
+  allowInProtected?: string[];
 }
 
 /** What a module may read at bake time. Everything is the same world the bake and the tests build (horizon-create rule 2). */
@@ -200,6 +206,27 @@ export interface DistrictDressing {
   pools: PoolRecord[];
   life: LifeSpawn[];
 }
+
+/** E1 (additive): a Journey-map building as the bake measures it with the grammar's `buildingJourneyShape` (index-borne). */
+export interface JourneyDressingBuilding { id: string; districtId: string; footprint: Point2[]; base: number; height: number; roofHeight: number; landmarkId?: string }
+
+/**
+ * E1 (additive): the baked dressing in the world definition. The monolith carries every district; a served chunk carries its
+ * own district's `DistrictDressing`; the index carries the whole-island parts only (landmarks, lookouts, the hosts a record
+ * re-dresses, the Journey-map buildings) with `districts` empty, and the chunk loader appends each district as it lands.
+ */
+export interface WorldDressing {
+  districts: DistrictDressing[];
+  landmarks: Landmark[];
+  lookouts: Lookout[];
+  /** Hosts whose greybox walls/roof the cards no longer draw (their collision stays). Omitted when none. */
+  redressedHosts?: string[];
+  /** Buildings at or above `JOURNEY_MIN_HEIGHT` (and every landmark-carrying building), for the Journey map. Omitted when none. */
+  journey?: JourneyDressingBuilding[];
+}
+
+/** Nothing taller than this (eu) stands inside a protected area (the Green), except what a module explicitly allows. */
+export const PROTECTED_MAX_HEIGHT = 0.85;
 
 /** Buildings at or above this eave height (eu) appear on the Journey map. */
 export const JOURNEY_MIN_HEIGHT = 6;
