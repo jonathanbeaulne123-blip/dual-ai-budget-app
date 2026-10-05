@@ -1,7 +1,7 @@
 {
  "title": "The Horizon \u2014 MANIFEST",
- "version": "2.6",
- "date": "2026-09-28",
+ "version": "3.0",
+ "date": "2026-10-04",
  "status": "Design numbers for implementation. Control points are centreline intent to be solved into splines by the land pass; not navigation or collision data until baked into WorldDefinition v3. v2.2: paces and surface grip (RIDE D42) and the FLIGHT sky fields (D34\u2013D38), reconciled onto the v2.1 land \u2014 data only, no geometry change.",
  "units": {
   "x": "east, concept metres",
@@ -1161,6 +1161,96 @@
     470
    ],
    "h": 158
+  },
+  {
+   "id": "glacierPeak",
+   "label": "Glacier Peak",
+   "xy": [
+    1402,
+    398
+   ],
+   "h": 156,
+   "note": "V3: the horn north-east of the summit; the glacier in its cirque feeds every V3 stream"
+  },
+  {
+   "id": "glacierSprings",
+   "label": "Glacier Springs",
+   "xy": [
+    1388,
+    375
+   ],
+   "h": 127,
+   "note": "V3: the melt pool at the glacier's snout; the Crown Rill and the Col Rill leave it"
+  },
+  {
+   "id": "benchHamlet",
+   "label": "Bench Hamlet",
+   "xy": [
+    1086,
+    418
+   ],
+   "h": 104,
+   "note": "V3: the farming hamlet on the west bench (useful now; buildings owed)"
+  },
+  {
+   "id": "westwatch",
+   "label": "Westwatch Chapel",
+   "xy": [
+    1036,
+    318
+   ],
+   "h": 86,
+   "note": "V3: the chapel knoll at the Rim Walk's west end"
+  },
+  {
+   "id": "orchardBench",
+   "label": "Orchard Bench",
+   "xy": [
+    1200,
+    356
+   ],
+   "h": 117,
+   "note": "V3: orchards beside the Crown Rill"
+  },
+  {
+   "id": "twinTarns",
+   "label": "The Twin Tarns",
+   "xy": [
+    1131,
+    401
+   ],
+   "h": 105,
+   "note": "V3: the two tarns on the west shelf"
+  },
+  {
+   "id": "fallswatch",
+   "label": "Fallswatch",
+   "xy": [
+    1122,
+    694
+   ],
+   "h": 93.9,
+   "note": "V3: the falls station at Veil Falls' lip: a weather house, a gauge and the viewing deck over the curtain; reads the almanac and the weather only"
+  },
+  {
+   "id": "rimLookout",
+   "label": "Rim Lookout",
+   "xy": [
+    1516,
+    548
+   ],
+   "h": 104,
+   "note": "V3: where the east rim walk meets the Rim Steps down the Rim Bridge over Horizon Drive"
+  },
+  {
+   "id": "highShieling",
+   "label": "High Shieling Ranch",
+   "xy": [
+    1436,
+    694
+   ],
+   "h": 61.5,
+   "note": "V3: the shieling in the east valley's mouth at the foot of Stair Falls, beside Shieling Pool and the beck; plotted now, personal editing later (open to all from the start)"
   }
  ],
  "profileRule": "widths and lengths of routes scale with scale.factor (they are concept metres); clearances, gauges, rises and anything sized to the body or a vehicle are engine units and never scale",
@@ -3637,7 +3727,33 @@
     "source": "bake v1.8",
     "note": "",
     "retired_v2_3": "the trail ends at the gallery exit [1166,905] (D-D8): walk damCrest \u00d7 river lower [1140.2,903] is the rim's crossing"
-   }
+   },
+   "levels": [
+    {
+     "xy": [
+      1108,
+      721.2
+     ],
+     "h": 55,
+     "why": "V3: level across the Veil Footbridge (west approach)"
+    },
+    {
+     "xy": [
+      1124,
+      720
+     ],
+     "h": 55,
+     "why": "V3: the Veil Footbridge deck"
+    },
+    {
+     "xy": [
+      1140,
+      721.3
+     ],
+     "h": 55,
+     "why": "V3: level across the Veil Footbridge (east approach)"
+    }
+   ]
   },
   "prow": {
    "pts": [
@@ -4139,6 +4255,394 @@
    "profile": "walk",
    "length_m": 70,
    "note": "v2.6 (D-M6): from the Mountain Road's end on v2's town lane to the gondola's Waterfront station point on the Foot terrace (G1.from; the boarding threshold is the platform beside it), between v2's town lane and the rope; v2's own paths are the region's (T2 graph)"
+  },
+  "rimWalk": {
+   "pts": [
+    [
+     1038,
+     326
+    ],
+    [
+     1062,
+     336
+    ],
+    [
+     1092,
+     344
+    ],
+    [
+     1124,
+     346
+    ],
+    [
+     1160,
+     348
+    ],
+    [
+     1196,
+     346
+    ],
+    [
+     1230,
+     342
+    ],
+    [
+     1256,
+     340
+    ],
+    [
+     1290,
+     342
+    ],
+    [
+     1324,
+     345
+    ],
+    [
+     1356,
+     348
+    ],
+    [
+     1376,
+     356
+    ],
+    [
+     1390,
+     364
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 360,
+   "levels": [
+    {
+     "xy": [
+      1038,
+      326
+     ],
+     "h": 90,
+     "why": "Westwatch Chapel"
+    }
+   ],
+   "note": "V3: the Rim Walk, Westwatch Chapel \u2192 the north crest (north of the Crown Rill) \u2192 Glacier Springs, the snout of the glacier"
+  },
+  "glacierWalk": {
+   "pts": [
+    [
+     1338,
+     452
+    ],
+    [
+     1356,
+     446
+    ],
+    [
+     1374,
+     440
+    ],
+    [
+     1388,
+     446
+    ],
+    [
+     1402,
+     450
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 68,
+   "note": "V3: from Mountain v2's summit seam (the overlook) along the cirque's south rim to the Col Steps' head, south of the Col Rill"
+  },
+  "eastRim": {
+   "pts": [
+    [
+     1444,
+     466
+    ],
+    [
+     1450,
+     458
+    ],
+    [
+     1456,
+     448
+    ],
+    [
+     1458,
+     436
+    ],
+    [
+     1462,
+     426
+    ],
+    [
+     1470,
+     430
+    ],
+    [
+     1478,
+     440
+    ],
+    [
+     1488,
+     452
+    ],
+    [
+     1500,
+     470
+    ],
+    [
+     1508,
+     496
+    ],
+    [
+     1512,
+     520
+    ],
+    [
+     1514,
+     548
+    ],
+    [
+     1514,
+     576
+    ],
+    [
+     1512,
+     604
+    ],
+    [
+     1508,
+     632
+    ],
+    [
+     1506,
+     648
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 284,
+   "note": "V3: from the Col Steps' foot over the Col Rill (the Col Footbridge) to the Rim Bridge col and along the east rim's crest (Split Wall Gorge on its west flank) to the Rim Lookout and Stair Falls' head; the Shieling Steps go on down to the ranch",
+   "levels": [
+    {
+     "xy": [
+      1444,
+      466
+     ],
+     "h": 124.2,
+     "why": "V3: the Col Steps' foot (ground + 0.6)"
+    }
+   ]
+  },
+  "ranchLane": {
+   "pts": [
+    [
+     1486,
+     688
+    ],
+    [
+     1472,
+     698
+    ],
+    [
+     1458,
+     702
+    ],
+    [
+     1446,
+     700
+    ],
+    [
+     1436,
+     694
+    ],
+    [
+     1418,
+     700
+    ],
+    [
+     1398,
+     704
+    ],
+    [
+     1380,
+     708
+    ],
+    [
+     1362,
+     708
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 131,
+   "levels": [
+    {
+     "xy": [
+      1436,
+      694
+     ],
+     "h": 61.5,
+     "why": "High Shieling Ranch"
+    }
+   ],
+   "note": "V3: from the Shieling Steps' foot over the beck (the Shieling Footbridge) to High Shieling Ranch, then west above the Shieling Mere toward the Foot (it ends at the Year Walk's Hearth stretch)"
+  },
+  "hamletLane": {
+   "pts": [
+    [
+     1038,
+     326
+    ],
+    [
+     1048,
+     338
+    ],
+    [
+     1062,
+     344
+    ],
+    [
+     1074,
+     352
+    ],
+    [
+     1082,
+     366
+    ],
+    [
+     1072,
+     380
+    ],
+    [
+     1066,
+     394
+    ],
+    [
+     1076,
+     408
+    ],
+    [
+     1086,
+     418
+    ],
+    [
+     1094,
+     402
+    ],
+    [
+     1106,
+     386
+    ],
+    [
+     1118,
+     376
+    ],
+    [
+     1132,
+     368
+    ],
+    [
+     1148,
+     366
+    ],
+    [
+     1164,
+     364
+    ],
+    [
+     1182,
+     360
+    ],
+    [
+     1200,
+     352
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 265,
+   "levels": [
+    {
+     "xy": [
+      1038,
+      326
+     ],
+     "h": 90,
+     "why": "Westwatch Chapel"
+    },
+    {
+     "xy": [
+      1086,
+      418
+     ],
+     "h": 104,
+     "why": "Bench Hamlet"
+    }
+   ],
+   "note": "V3: Westwatch Chapel \u2192 Bench Hamlet \u2192 north of the Twin Tarns and the Crown Rill to Orchard Bench"
+  },
+  "fallswatch": {
+   "pts": [
+    [
+     1086,
+     418
+    ],
+    [
+     1100,
+     416
+    ],
+    [
+     1110,
+     428
+    ],
+    [
+     1114,
+     460
+    ],
+    [
+     1118,
+     500
+    ],
+    [
+     1120,
+     540
+    ],
+    [
+     1120,
+     580
+    ],
+    [
+     1116,
+     616
+    ],
+    [
+     1128,
+     636
+    ],
+    [
+     1134,
+     660
+    ],
+    [
+     1134,
+     684
+    ],
+    [
+     1124,
+     694
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 305,
+   "levels": [
+    {
+     "xy": [
+      1086,
+      418
+     ],
+     "h": 104,
+     "why": "Bench Hamlet"
+    }
+   ],
+   "note": "V3: Bench Hamlet over the Rillcut's head (the Hamlet Footbridge) and south along the spur, east of Spur Tarn, to Fallswatch at the Veil lip"
   }
  },
  "cable": {
@@ -5220,6 +5724,119 @@
    "span_m": 10,
    "width_m": 3.2,
    "note": "v2.6: the lake-rim trail over the mountain river at its mouth"
+  },
+  "rimTunnel": {
+   "xy": [
+    1566,
+    545
+   ],
+   "kind": "tunnel",
+   "route": "V01",
+   "length_m": 84,
+   "width_m": 11,
+   "note": "V3 (D-M11): Horizon Drive under the Rim Bridge, the connecting ridge from the east rim to the Prow; the ridge and the Rim Steps cross over it"
+  },
+  "rimTunnelWalk": {
+   "xy": [
+    1556,
+    540
+   ],
+   "kind": "tunnel",
+   "route": "yearWalk",
+   "length_m": 70,
+   "width_m": 6,
+   "note": "V3: the Year Walk's bore beside the Rim Tunnel"
+  },
+  "colFootbridge": {
+   "xy": [
+    1451.5,
+    455.5
+   ],
+   "kind": "footbridge",
+   "route": "walk eastRim",
+   "span_m": 8,
+   "width_m": 3.2,
+   "note": "V3: the east rim walk over the Col Rill below the Col Steps"
+  },
+  "colSteps": {
+   "kind": "stair",
+   "from": [
+    1402,
+    450
+   ],
+   "to": [
+    1444,
+    466
+   ],
+   "note": "V3: the Col Steps, from the glacier's east lip down the horn's south-east flank to the Rim Bridge col"
+  },
+  "shielingSteps": {
+   "kind": "stair",
+   "from": [
+    1506,
+    648
+   ],
+   "to": [
+    1487,
+    687
+   ],
+   "note": "V3: the Shieling Steps, from Stair Falls' head down the apron beside the falls to the ranch lane"
+  },
+  "shielingFootbridge": {
+   "xy": [
+    1459,
+    701
+   ],
+   "kind": "footbridge",
+   "route": "walk ranchLane",
+   "span_m": 8,
+   "width_m": 3.2,
+   "note": "V3: the ranch lane over the Shieling Beck"
+  },
+  "hamletFootbridge": {
+   "xy": [
+    1097,
+    417
+   ],
+   "kind": "footbridge",
+   "route": "walk fallswatch",
+   "span_m": 8,
+   "width_m": 3.2,
+   "note": "V3: the Fallswatch lane over the Rillcut's head"
+  },
+  "rillcutFootbridge": {
+   "xy": [
+    1037.7,
+    517.3
+   ],
+   "kind": "footbridge",
+   "route": "yearWalk",
+   "span_m": 12,
+   "width_m": 5.6,
+   "note": "V3: the Year Walk over the Hollow Rill at the Rillcut pool (the rill ends in the Hollow Tarn)"
+  },
+  "veilFootbridge": {
+   "xy": [
+    1124,
+    720
+   ],
+   "kind": "footbridge",
+   "route": "walk lakerim",
+   "span_m": 10,
+   "width_m": 5.6,
+   "note": "V3: the lake-rim trail (carrying the Year Walk's February share) over Veil Pool's outlet to the lake"
+  },
+  "rimSteps": {
+   "kind": "stair",
+   "from": [
+    1516,
+    550
+   ],
+   "to": [
+    1596,
+    556
+   ],
+   "note": "V3: the Rim Steps, from the Rim Lookout down the connecting ridge over Horizon Drive (in the Rim Tunnel) to the Prow headland"
   }
  },
  "underground": {
@@ -5516,11 +6133,11 @@
      1080
     ],
     "h": 6,
+    "note": "under the deck",
     "aperture_m": [
      11,
      8
-    ],
-    "note": "under the deck"
+    ]
    },
    {
     "n": 6,
@@ -9682,6 +10299,89 @@
    "resolution": "threshold",
    "kind": "modeTransfer",
    "note": "v2.6 (D-M6): boarding threshold at Mountain v2's Summit Commons station (threshold.gondolaTop on its platform; the region draws the terminal)"
+  },
+  {
+   "a": "yearWalk",
+   "b": "water.v3.hollowRill",
+   "at": [
+    1037.7,
+    517.3
+   ],
+   "resolution": "over",
+   "structure": "rillcutFootbridge",
+   "kind": "crossing",
+   "note": "V3: the Year Walk over the Hollow Rill below Rillcut Falls"
+  },
+  {
+   "a": "walk lakerim",
+   "b": "water.v3.veilOut",
+   "at": [
+    1124,
+    720
+   ],
+   "resolution": "over",
+   "structure": "veilFootbridge",
+   "kind": "crossing",
+   "note": "V3: the lake-rim trail over Veil Pool's outlet"
+  },
+  {
+   "a": "yearWalk",
+   "b": "water.v3.veilOut",
+   "at": [
+    1124,
+    720
+   ],
+   "resolution": "over",
+   "structure": "veilFootbridge",
+   "kind": "crossing",
+   "note": "V3: the Year Walk's February share rides the lake-rim trail over the Veil Footbridge"
+  },
+  {
+   "a": "walk eastRim",
+   "b": "water.v3.colRill",
+   "at": [
+    1451.5,
+    455.5
+   ],
+   "resolution": "over",
+   "structure": "colFootbridge",
+   "kind": "crossing",
+   "note": "V3: the east rim walk over the Col Rill"
+  },
+  {
+   "a": "walk ranchLane",
+   "b": "water.v3.shielingBeck",
+   "at": [
+    1459,
+    701
+   ],
+   "resolution": "over",
+   "structure": "shielingFootbridge",
+   "kind": "crossing",
+   "note": "V3: the ranch lane over the Shieling Beck"
+  },
+  {
+   "a": "walk fallswatch",
+   "b": "water.v3.rillcut",
+   "at": [
+    1097.5,
+    417
+   ],
+   "resolution": "over",
+   "structure": "hamletFootbridge",
+   "kind": "crossing",
+   "note": "V3: the Fallswatch lane over the Rillcut's head"
+  },
+  {
+   "a": "DEEP_RUN",
+   "b": "water.v3.splitWall",
+   "at": [
+    1490,
+    560
+   ],
+   "resolution": "under",
+   "kind": "crossing",
+   "note": "V3: the Sea Passage runs \u2248 90 m beneath Split Wall Gorge"
   }
  ],
  "thresholds": [
@@ -10885,20 +11585,20 @@
      662
     ],
     [
-     1060,
+     1056,
      600
     ],
     [
-     1062,
-     540
+     1037,
+     542
     ],
     [
-     1060,
-     505
+     1038,
+     506
     ],
     [
-     1050,
-     487
+     1034,
+     489
     ],
     [
      1000,
@@ -12547,7 +13247,24 @@
      640
     ]
    ],
-   "levels": [],
+   "levels": [
+    {
+     "xy": [
+      1037.7,
+      517.3
+     ],
+     "h": 47.8,
+     "why": "V3: the Rillcut Footbridge deck over the Hollow Rill (45.5)"
+    },
+    {
+     "xy": [
+      1062,
+      712
+     ],
+     "h": 55.2,
+     "why": "V3: leave the lake-rim share level before descending into the Hollow (the lake-rim trail runs 5 m beside it here)"
+    }
+   ],
    "levelsRule": "levels are extra height pins on the Year Walk's own (unshared) stretches: the builder pins the nearest walk sample to h, so the grade between two pins can use the walk maximum where the ground demands it",
    "s1Crossing": null,
    "v1_9_edits": [
@@ -14914,7 +15631,1326 @@
    "v2_5_s1Crossing": [
     1267,
     842
-   ]
+   ],
+   "v2_7_pts": [
+    [
+     1364,
+     650
+    ],
+    [
+     1359.58,
+     666.44
+    ],
+    [
+     1353.32,
+     666.26
+    ],
+    [
+     1347.38,
+     665.58
+    ],
+    [
+     1341.56,
+     665.37
+    ],
+    [
+     1335.92,
+     665.38
+    ],
+    [
+     1331.81,
+     667.12
+    ],
+    [
+     1329.46,
+     670.59
+    ],
+    [
+     1331.2,
+     674.04
+    ],
+    [
+     1335.18,
+     677.11
+    ],
+    [
+     1340.36,
+     678.72
+    ],
+    [
+     1345.92,
+     679.54
+    ],
+    [
+     1351.74,
+     679.61
+    ],
+    [
+     1357.67,
+     679.58
+    ],
+    [
+     1363.64,
+     679.19
+    ],
+    [
+     1370.24,
+     679.58
+    ],
+    [
+     1376.54,
+     682.24
+    ],
+    [
+     1380.86,
+     688.63
+    ],
+    [
+     1379.2,
+     696.02
+    ],
+    [
+     1373.51,
+     700.48
+    ],
+    [
+     1367.47,
+     702.67
+    ],
+    [
+     1361.16,
+     703.77
+    ],
+    [
+     1354.77,
+     703.83
+    ],
+    [
+     1348.48,
+     702.85
+    ],
+    [
+     1342.38,
+     700.94
+    ],
+    [
+     1336.81,
+     697.94
+    ],
+    [
+     1331.77,
+     695.07
+    ],
+    [
+     1326.43,
+     692.74
+    ],
+    [
+     1320.9,
+     690.65
+    ],
+    [
+     1315.38,
+     688.71
+    ],
+    [
+     1310.05,
+     687.75
+    ],
+    [
+     1304.51,
+     688.03
+    ],
+    [
+     1299.02,
+     689.19
+    ],
+    [
+     1293.87,
+     691.25
+    ],
+    [
+     1289.3,
+     694.23
+    ],
+    [
+     1285.75,
+     698.15
+    ],
+    [
+     1283.46,
+     702.92
+    ],
+    [
+     1282.74,
+     708.09
+    ],
+    [
+     1283.44,
+     713.7
+    ],
+    [
+     1284.37,
+     719.65
+    ],
+    [
+     1276,
+     728
+    ],
+    [
+     1262,
+     742
+    ],
+    [
+     1248,
+     750
+    ],
+    [
+     1235,
+     755
+    ],
+    [
+     1219.3,
+     745.4
+    ],
+    [
+     1189.0,
+     733.8
+    ],
+    [
+     1155.8,
+     724.5
+    ],
+    [
+     1145,
+     720
+    ],
+    [
+     1100,
+     720
+    ],
+    [
+     1080,
+     725
+    ],
+    [
+     1055,
+     710
+    ],
+    [
+     1052,
+     662
+    ],
+    [
+     1060,
+     600
+    ],
+    [
+     1062,
+     540
+    ],
+    [
+     1060,
+     505
+    ],
+    [
+     1050,
+     487
+    ],
+    [
+     1000,
+     480
+    ],
+    [
+     960,
+     470
+    ],
+    [
+     930,
+     480
+    ],
+    [
+     895,
+     480
+    ],
+    [
+     905,
+     470
+    ],
+    [
+     885,
+     465
+    ],
+    [
+     872,
+     461.7
+    ],
+    [
+     857,
+     441.3
+    ],
+    [
+     789.3,
+     436.5
+    ],
+    [
+     769.2,
+     446.5
+    ],
+    [
+     715,
+     446.5
+    ],
+    [
+     700,
+     470
+    ],
+    [
+     715,
+     450
+    ],
+    [
+     770,
+     450
+    ],
+    [
+     790,
+     440
+    ],
+    [
+     855,
+     445
+    ],
+    [
+     870,
+     465
+    ],
+    [
+     905,
+     470
+    ],
+    [
+     895,
+     475
+    ],
+    [
+     905,
+     475
+    ],
+    [
+     895,
+     480
+    ],
+    [
+     915,
+     480
+    ],
+    [
+     900,
+     500
+    ],
+    [
+     905,
+     545
+    ],
+    [
+     910,
+     565
+    ],
+    [
+     935,
+     585
+    ],
+    [
+     905,
+     610
+    ],
+    [
+     900,
+     640
+    ],
+    [
+     900,
+     628
+    ],
+    [
+     899,
+     660
+    ],
+    [
+     898,
+     700
+    ],
+    [
+     895,
+     740
+    ],
+    [
+     892,
+     780
+    ],
+    [
+     887,
+     815
+    ],
+    [
+     890,
+     870
+    ],
+    [
+     920,
+     900
+    ],
+    [
+     915,
+     910
+    ],
+    [
+     930,
+     995
+    ],
+    [
+     990,
+     1010
+    ],
+    [
+     997,
+     1006.7
+    ],
+    [
+     977.4,
+     967.2
+    ],
+    [
+     966.1,
+     929.6
+    ],
+    [
+     957.3,
+     889.1
+    ],
+    [
+     953.3,
+     848.9
+    ],
+    [
+     956.7,
+     808.9
+    ],
+    [
+     962.3,
+     768.6
+    ],
+    [
+     969.2,
+     725.7
+    ],
+    [
+     975.4,
+     689.6
+    ],
+    [
+     986.5,
+     649.9
+    ],
+    [
+     994.1,
+     612.3
+    ],
+    [
+     970,
+     625
+    ],
+    [
+     960,
+     640
+    ],
+    [
+     930,
+     605
+    ],
+    [
+     910,
+     605
+    ],
+    [
+     903,
+     628
+    ],
+    [
+     902,
+     660
+    ],
+    [
+     901,
+     700
+    ],
+    [
+     898,
+     740
+    ],
+    [
+     895,
+     780
+    ],
+    [
+     890,
+     815
+    ],
+    [
+     870,
+     835
+    ],
+    [
+     870,
+     870
+    ],
+    [
+     885,
+     905
+    ],
+    [
+     865,
+     920
+    ],
+    [
+     845,
+     965
+    ],
+    [
+     865,
+     985
+    ],
+    [
+     885,
+     1065
+    ],
+    [
+     885,
+     1120
+    ],
+    [
+     900,
+     1180
+    ],
+    [
+     920,
+     1220
+    ],
+    [
+     960,
+     1355
+    ],
+    [
+     970,
+     1365
+    ],
+    [
+     945,
+     1385
+    ],
+    [
+     950,
+     1445
+    ],
+    [
+     925,
+     1440
+    ],
+    [
+     870,
+     1385
+    ],
+    [
+     790,
+     1325
+    ],
+    [
+     735,
+     1270
+    ],
+    [
+     765,
+     1235
+    ],
+    [
+     710,
+     1190
+    ],
+    [
+     701.9,
+     1195.9
+    ],
+    [
+     679.4,
+     1178.1
+    ],
+    [
+     645.9,
+     1154.1
+    ],
+    [
+     613.3,
+     1133.2
+    ],
+    [
+     579.3,
+     1111.5
+    ],
+    [
+     546.3,
+     1090
+    ],
+    [
+     512.6,
+     1067
+    ],
+    [
+     482.5,
+     1044.2
+    ],
+    [
+     454.9,
+     1014
+    ],
+    [
+     437.3,
+     979.5
+    ],
+    [
+     423.4,
+     943.6
+    ],
+    [
+     410.5,
+     904
+    ],
+    [
+     425,
+     890
+    ],
+    [
+     400,
+     745
+    ],
+    [
+     425,
+     770
+    ],
+    [
+     440,
+     860
+    ],
+    [
+     440,
+     870
+    ],
+    [
+     412.6,
+     903.3
+    ],
+    [
+     425.5,
+     942.8
+    ],
+    [
+     439.3,
+     978.6
+    ],
+    [
+     456.7,
+     1012.8
+    ],
+    [
+     483.9,
+     1042.5
+    ],
+    [
+     513.9,
+     1065.2
+    ],
+    [
+     547.5,
+     1088.2
+    ],
+    [
+     580.5,
+     1109.6
+    ],
+    [
+     614.5,
+     1131.3
+    ],
+    [
+     647.1,
+     1152.2
+    ],
+    [
+     680.8,
+     1176.4
+    ],
+    [
+     703.3,
+     1194.2
+    ],
+    [
+     730,
+     1180
+    ],
+    [
+     930,
+     1265
+    ],
+    [
+     950,
+     1265
+    ],
+    [
+     970,
+     1245
+    ],
+    [
+     1120,
+     1270
+    ],
+    [
+     1160,
+     1300
+    ],
+    [
+     1205,
+     1290
+    ],
+    [
+     1160,
+     1245
+    ],
+    [
+     1120,
+     1250
+    ],
+    [
+     1100,
+     1245
+    ],
+    [
+     975,
+     1155
+    ],
+    [
+     960,
+     1130
+    ],
+    [
+     955,
+     1095
+    ],
+    [
+     990,
+     1010
+    ],
+    [
+     994.6,
+     1008.6
+    ],
+    [
+     974.6,
+     968.2
+    ],
+    [
+     963.2,
+     930.4
+    ],
+    [
+     954.3,
+     889.7
+    ],
+    [
+     950.3,
+     848.9
+    ],
+    [
+     953.7,
+     808.6
+    ],
+    [
+     959.3,
+     768.2
+    ],
+    [
+     966.2,
+     725.2
+    ],
+    [
+     972.5,
+     688.9
+    ],
+    [
+     983.6,
+     649
+    ],
+    [
+     991.1,
+     612
+    ],
+    [
+     1010,
+     615
+    ],
+    [
+     1032,
+     652
+    ],
+    [
+     1025,
+     626
+    ],
+    [
+     1010,
+     604
+    ],
+    [
+     991.3,
+     592.5
+    ],
+    [
+     974.3,
+     552.6
+    ],
+    [
+     956.4,
+     515.5
+    ],
+    [
+     938.9,
+     476.8
+    ],
+    [
+     929.5,
+     433.8
+    ],
+    [
+     927.1,
+     388.0
+    ],
+    [
+     915,
+     370
+    ],
+    [
+     820,
+     345
+    ],
+    [
+     790,
+     320
+    ],
+    [
+     810,
+     305
+    ],
+    [
+     810,
+     280
+    ],
+    [
+     815,
+     275
+    ],
+    [
+     895,
+     275
+    ],
+    [
+     899.2,
+     283.6
+    ],
+    [
+     940,
+     276.6
+    ],
+    [
+     980,
+     268.6
+    ],
+    [
+     1017.4,
+     261
+    ],
+    [
+     1056.8,
+     253.2
+    ],
+    [
+     1096.5,
+     246.3
+    ],
+    [
+     1136.3,
+     242.6
+    ],
+    [
+     1178.5,
+     242.2
+    ],
+    [
+     1216.7,
+     243.5
+    ],
+    [
+     1259.2,
+     246.9
+    ],
+    [
+     1297.7,
+     252.8
+    ],
+    [
+     1320.2,
+     260.7
+    ],
+    [
+     1338.9,
+     296.4
+    ],
+    [
+     1382.5,
+     312.2
+    ],
+    [
+     1413.8,
+     330.5
+    ],
+    [
+     1439.8,
+     360.0
+    ],
+    [
+     1467.2,
+     393.5
+    ],
+    [
+     1494.8,
+     422.8
+    ],
+    [
+     1521.4,
+     455.9
+    ],
+    [
+     1546.9,
+     487.5
+    ],
+    [
+     1553.8,
+     519.4
+    ],
+    [
+     1561,
+     556.4
+    ],
+    [
+     1567.4,
+     598.5
+    ],
+    [
+     1572.5,
+     635.5
+    ],
+    [
+     1577.9,
+     678.4
+    ],
+    [
+     1581,
+     705
+    ],
+    [
+     1570,
+     665
+    ],
+    [
+     1575,
+     670
+    ],
+    [
+     1600,
+     665
+    ],
+    [
+     1615,
+     725
+    ],
+    [
+     1630,
+     745
+    ],
+    [
+     1630,
+     855
+    ],
+    [
+     1626,
+     904
+    ],
+    [
+     1645,
+     875
+    ],
+    [
+     1650,
+     855
+    ],
+    [
+     1650,
+     745
+    ],
+    [
+     1645,
+     725
+    ],
+    [
+     1615,
+     685
+    ],
+    [
+     1596.9,
+     703.2
+    ],
+    [
+     1601.8,
+     746.3
+    ],
+    [
+     1606.0,
+     790.3
+    ],
+    [
+     1608.0,
+     832.0
+    ],
+    [
+     1602.7,
+     877.6
+    ],
+    [
+     1588.6,
+     919.0
+    ],
+    [
+     1572.7,
+     957.4
+    ],
+    [
+     1553.6,
+     996.8
+    ],
+    [
+     1523.0,
+     1027.7
+    ],
+    [
+     1498.6,
+     1039.6
+    ],
+    [
+     1510,
+     1050
+    ],
+    [
+     1510,
+     1100
+    ],
+    [
+     1525,
+     1175
+    ],
+    [
+     1500,
+     1200
+    ],
+    [
+     1490,
+     1230
+    ],
+    [
+     1500,
+     1200
+    ],
+    [
+     1545,
+     1160
+    ],
+    [
+     1535,
+     1120
+    ],
+    [
+     1540,
+     1085
+    ],
+    [
+     1530,
+     1055
+    ],
+    [
+     1505,
+     1015
+    ],
+    [
+     1495,
+     1015
+    ],
+    [
+     1490,
+     1020
+    ],
+    [
+     1493.6,
+     1027.6
+    ],
+    [
+     1528.6,
+     1007.9
+    ],
+    [
+     1549.8,
+     975.8
+    ],
+    [
+     1567.7,
+     936.2
+    ],
+    [
+     1582.4,
+     898.3
+    ],
+    [
+     1593.6,
+     859.0
+    ],
+    [
+     1593.5,
+     820
+    ],
+    [
+     1593.1,
+     803
+    ],
+    [
+     1574.97,
+     797.5
+    ],
+    [
+     1539.91,
+     797.0
+    ],
+    [
+     1504.95,
+     796.5
+    ],
+    [
+     1477.95,
+     796.5
+    ],
+    [
+     1441.41,
+     796.0
+    ],
+    [
+     1404.69,
+     795.49
+    ],
+    [
+     1387.28,
+     793.27
+    ],
+    [
+     1362.44,
+     783.97
+    ],
+    [
+     1337.28,
+     771.91
+    ],
+    [
+     1312.36,
+     760.94
+    ],
+    [
+     1292.65,
+     752.06
+    ],
+    [
+     1279.65,
+     748.23
+    ],
+    [
+     1285.5,
+     736
+    ],
+    [
+     1279.4,
+     727.5
+    ],
+    [
+     1278.7,
+     714.46
+    ],
+    [
+     1277.94,
+     708.17
+    ],
+    [
+     1278.88,
+     701.5
+    ],
+    [
+     1281.75,
+     695.49
+    ],
+    [
+     1286.22,
+     690.55
+    ],
+    [
+     1291.67,
+     686.99
+    ],
+    [
+     1297.64,
+     684.59
+    ],
+    [
+     1303.87,
+     683.27
+    ],
+    [
+     1310.31,
+     682.95
+    ],
+    [
+     1316.74,
+     684.11
+    ],
+    [
+     1322.54,
+     686.15
+    ],
+    [
+     1328.23,
+     688.3
+    ],
+    [
+     1333.89,
+     690.77
+    ],
+    [
+     1339.27,
+     693.82
+    ],
+    [
+     1344.24,
+     696.52
+    ],
+    [
+     1349.58,
+     698.17
+    ],
+    [
+     1355.13,
+     699.05
+    ],
+    [
+     1360.72,
+     698.99
+    ],
+    [
+     1366.21,
+     698.03
+    ],
+    [
+     1371.45,
+     696.14
+    ],
+    [
+     1375.16,
+     693.42
+    ],
+    [
+     1376.1,
+     689.27
+    ],
+    [
+     1373.88,
+     686.24
+    ],
+    [
+     1369.16,
+     684.26
+    ],
+    [
+     1363.84,
+     683.99
+    ],
+    [
+     1357.83,
+     684.38
+    ],
+    [
+     1351.76,
+     684.41
+    ],
+    [
+     1345.6,
+     684.32
+    ],
+    [
+     1339.3,
+     683.4
+    ],
+    [
+     1333.06,
+     681.41
+    ],
+    [
+     1327.6,
+     677.22
+    ],
+    [
+     1324.68,
+     670.05
+    ],
+    [
+     1328.61,
+     663.54
+    ],
+    [
+     1335.3,
+     660.62
+    ],
+    [
+     1341.64,
+     660.57
+    ],
+    [
+     1347.8,
+     660.8
+    ],
+    [
+     1353.78,
+     661.48
+    ],
+    [
+     1359.5,
+     661.64
+    ],
+    [
+     1364,
+     650
+    ]
+   ],
+   "v3_0_edits": "the Hollow's east-edge stretch (north of the September pad \u2192 the north-east corner) moved ~20 m west off the cliff foot for the V3 plunge pools (Rillcut Falls, Spur Falls); it crosses the Hollow Rill on the Rillcut Footbridge"
   },
   "stretch": {
    "rule": "a month is the stretch of the Year Walk from the previous station to its own; one paving stone per day (28\u201331); every seventh stone a flagstone with a lantern post; the camp stands on today\u2019s stone; scheduled items stand on their stone as explicit markers (slip, pennant, stake, chairs); the next stretch is stakes and string until its month begins",
@@ -15185,7 +17221,14 @@
    "the Stacks",
    "the Wreck",
    "the Terraces",
-   "Bight Shore"
+   "Bight Shore",
+   "Glacier Peak",
+   "the glacier",
+   "the Highland Ring",
+   "the west bench",
+   "the Rillcut",
+   "Split Wall Gorge",
+   "the Veil"
   ],
   "roads": [
    "Horizon Drive",
@@ -15229,7 +17272,16 @@
    "Crown station",
    "the South Portal",
    "the Sea Passage",
-   "the Steps"
+   "the Steps",
+   "Rim Tunnel",
+   "the Rim Steps",
+   "the Col Steps",
+   "the Shieling Steps",
+   "Col Footbridge",
+   "Shieling Footbridge",
+   "Hamlet Footbridge",
+   "Rillcut Footbridge",
+   "Veil Footbridge"
   ],
   "water": [
    "Orchard Brook",
@@ -15267,6 +17319,40 @@
    "the Sketchbook",
    "Campfire",
    "Winter (skating, sledding)"
+  ],
+  "mountainV3": [
+   "Glacier Springs",
+   "the Crown Rill",
+   "the Twin Tarns",
+   "Rillcut Falls",
+   "the Hollow Rill",
+   "the Long Beck",
+   "Long Falls",
+   "the Long Cut",
+   "Spur Tarn",
+   "Veil Falls",
+   "Veil Pool",
+   "Spur Falls",
+   "the Col Rill",
+   "Stair Falls",
+   "Shieling Pool",
+   "the Shieling Beck",
+   "Bench Hamlet",
+   "Westwatch Chapel",
+   "Orchard Bench",
+   "Fallswatch",
+   "the Rim Walk",
+   "the Glacier Walk",
+   "the Col Steps",
+   "the east rim walk",
+   "the Rim Bridge",
+   "the Rim Steps",
+   "Rim Lookout",
+   "the Shieling Steps",
+   "the ranch lane",
+   "High Shieling Ranch",
+   "the Shieling Mere",
+   "the Hollow Tarn"
   ]
  },
  "scale": {
@@ -17757,5 +19843,11 @@
    ],
    "why": "v2.6: rows on retired routes (V02, the Shoulder Tunnel, the dam, the portage, the upper river, the Crown walk, the old G1 line, S1 upper half); the re-bake measures the new meetings"
   }
+ },
+ "mountainV3": {
+  "decision": "D-M11",
+  "source": "src/harbour/horizon/land/mountainV3/{landform,water}.ts",
+  "note": "the Highlands and the Falls: the Shoulder/Crown ring round Mountain v2 reshaped (Glacier Peak 156, the glacier in the cirque, the highland benches, three gorges, the Veil amphitheatre); v2's own land is untouched south of its summit line (D-M2 north of it)",
+  "reads": "the almanac and the clock only; no water here reads household state (CONTRACT \u00a72.2); the reservoir inside v2 is not part of this network"
  }
 }

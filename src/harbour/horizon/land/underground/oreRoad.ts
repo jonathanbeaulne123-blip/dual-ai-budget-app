@@ -101,7 +101,9 @@ export function oreStationApron(cuts:LandCuts,p:XY,height:number):void{
 
 /** Keep the existing portal frame's plan placement outside the lower road. */
 export function orePortalFrame(cuts:LandCuts,ore:readonly XYZ[]):{at:XYZ;normal:XY}{
-  const road=cuts.beds.find(b=>b.id==='mountainV2.road')!;
+  const road=cuts.beds.find(b=>b.id==='mountainV2.road');
+  // A world without v2's road (the missing-rock diagnostic fixture in horizonUnderground) keeps the frame at the ore's end.
+  if(!road){const a=ore[ore.length-1]!,b=ore[ore.length-2]??a,l=distance(plan(a),plan(b))||1;return {at:a,normal:[-(a[2]-b[2])/l,(a[0]-b[0])/l]};}
   for(let i=ore.length-1;i>0;i--){
     const a=ore[i]!,b=ore[i-1]!,l=distance(plan(a),plan(b));
     for(let d=0;d<=l;d+=.25){const p=lerp(a,b,d/l);

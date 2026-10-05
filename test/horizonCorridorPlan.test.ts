@@ -272,7 +272,9 @@ describe('the corridor plan (Track P) on the committed bake\'s corridor stations
       for (const p of parts) { sum.groups += p.groups; sum.items += p.items; for (const [k, v] of Object.entries(p.lamps)) sum.lamps[k] = (sum.lamps[k] ?? 0) + v; for (const [k, v] of Object.entries(p.species)) sum.species[k as PlantSpecies] = (sum.species[k as PlantSpecies] ?? 0) + (v ?? 0); }
       return sum; };
     // Mountain and coastal stay restrained; developed and boulevard reaches carry the lamps; the groves are in R5.
-    expect(v01('R3').lamps.roadLantern).toBeLessThanOrEqual(6);
+    // V3 (D-M11): the Rim Tunnel sits on R3 (V01 under the Rim Bridge, [1566,545]); its lit run's approach tails (LAMP.tail, two
+    // widening lanterns beyond each open end) are the rule's own lanterns, so the mountain reach carries 7 (was 6).
+    expect(v01('R3').lamps.roadLantern).toBeLessThanOrEqual(8);
     expect(v01('R3').groups).toBeLessThanOrEqual(6);
     expect(v01('R1').lamps.roadLantern).toBeGreaterThan(4);
     expect(v01('R10').lamps.roadLantern).toBeGreaterThan(8);

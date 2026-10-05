@@ -16,6 +16,8 @@ export interface Intersection { a: string; b: string; sourceA?: string; sourceB?
  * - waterConfluence / modeTransfer: as before.
  */
 export type CrossingKind = 'crossing' | 'junction' | 'sharedStretch' | 'footway' | 'waterBody' | 'waterConfluence' | 'modeTransfer';
+/** Two aquatic lines within this height of each other where they meet are one waterway (a confluence). */
+export const CONFLUENCE_LEVEL_EU = 6;
 export interface CrossingProof extends Intersection { sharedSource?:SharedRoadProof; id: string; resolution: Crossing['resolution']; kind?: CrossingKind; manifestIndex?: number; registered: boolean; proposed: boolean; separation: number; clearHeight?: number; requiredClearance: number; clearancePass: boolean; structureIds: string[]; built: boolean; padId?: string; markerId?: string; kerbGap?: boolean; waterBodyIds?: string[]; moverPending?: boolean; note?: string; matchDistance?: number }
 /** Register rows match a computed intersection only within this distance of the authored point or corridor (was 65 eu, R1-38). */
 export const CROSSING_MATCH_EU = 10;
@@ -155,7 +157,10 @@ export function buildCrossings(cuts: LandCuts, lines: readonly Line[] = [], cont
     const candidates = HORIZON_MANIFEST.crossings.map((row, index) => ({ row, index, flipped: matches(row.a, hit.b) && matches(row.b, hit.a) })).filter(({ row, flipped }) => flipped || matches(row.a, hit.a) && matches(row.b, hit.b)).map(entry => ({ ...entry, distance: rowDistance(entry.row.at, hit.at, s) })).filter(entry => entry.distance <= CROSSING_MATCH_EU * s).sort((x, y) => x.distance - y.distance);
     const match = candidates[0];
     const aquatic = (line: Centreline) => ['water', 'row', 'ferry'].includes(line.kind) || line.id === 'DEEP_RUN';
-    const waterBody = wet.includes(hit), confluence = !waterBody && aquatic(a) && aquatic(b), ferryTransfer = hit.a === 'FERRY' && hit.b.startsWith('ferry.') || hit.b === 'FERRY' && hit.a.startsWith('ferry.');
+    // Mountain V3 (D-M11): a surface brook crossing the Sea Passage's line 90 m above its roof is not one waterway. A
+    // confluence is two waters meeting at one level (the register's existing confluences all sit at separation 0); an
+    // aquatic pair further apart than CONFLUENCE_LEVEL_EU is an ordinary over/under crossing with the cave's roof between.
+    const waterBody = wet.includes(hit), confluence = !waterBody && aquatic(a) && aquatic(b) && Math.abs(hit.heightA - hit.heightB) <= CONFLUENCE_LEVEL_EU, ferryTransfer = hit.a === 'FERRY' && hit.b.startsWith('ferry.') || hit.b === 'FERRY' && hit.a.startsWith('ferry.');
     const mover = [a, b].find(line => line.kind === 'cable' || line.kind === 'rail'), footLine = mover === a ? b : a;
     const endpointTransfer = !!mover && ['walk', 'road', 'trail', 'boardwalk', 'cave'].includes(footLine.kind) && [mover.points[0]!, mover.points.at(-1)!].some(p => p && Math.hypot(p[0] - hit.at[0], p[2] - hit.at[1]) < 1);
     // A jetty or dock deck standing over water is a boarding interface (feet → boat), not a land route

@@ -60,6 +60,20 @@ export interface WaterCut {
   bank: number;
   underground?: boolean;
 }
+/** Mountain V3 (D-M11): a waterfall. The lip line stands on the ground at `top`; the curtain falls `outward` of the rock to
+ * `foot`, where it lands in the named pool. Render draws the curtain and foam; the bake checks lip and foot; no collision. */
+export interface FallCut {
+  id: string;
+  label: string;
+  lip: XY[];
+  top: number;
+  foot: number;
+  outward: XY;
+  poolId: string;
+  /** Metres the curtain stands out from the lip at the foot (default 1.2 + 5 % of the drop); a fall in a box notch leans further so it clears its own wall. */
+  lean?: number;
+  note?: string;
+}
 export interface StructureSolid {
   id: string;
   /** Original logical solid when its indexed triangles are partitioned for streaming. */
@@ -106,6 +120,8 @@ export interface LandCuts {
   pads: PadCut[];
   mouths: MouthMask[];
   waters: WaterCut[];
+  /** Mountain V3 falls (land/mountainV3/water.ts); absent before V3. */
+  falls?: FallCut[];
   solids: StructureSolid[];
   diagnostics: LandDiagnostic[];
 }

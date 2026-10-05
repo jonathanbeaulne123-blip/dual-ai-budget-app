@@ -7,6 +7,7 @@ import { buildWaterCuts, bightMouthWidth, waterInfluence } from '../src/harbour/
 import { islandContains } from '../src/harbour/horizon/land/coast';
 import { HORIZON_MANIFEST } from '../src/harbour/horizon/world/manifest';
 import { buildNeedleArch, buildOffshoreSolids, NEEDLE } from '../src/harbour/horizon/land/offshore';
+import { buildMountainV3Falls } from '../src/harbour/horizon/land/mountainV3/water';
 
 /** A pool is level; within one lattice diagonal of a weir or fall the ground may stand at
  * the pool above it (the step itself), never higher. Graded reaches use their plane. */
@@ -30,7 +31,7 @@ describe('Horizon water and offshore land', () => {
     for (const water of waters) for (let i = 1; i < water.points.length; i++) expect(water.points[i]![1], water.id).toBeLessThanOrEqual(water.points[i - 1]![1]);
   });
   it('places surfaces below both banks and above beds except at named confluences', () => {
-    const waters = buildWaterCuts(), report: Record<string, unknown> = {};
+    const waters = buildWaterCuts(), falls = buildMountainV3Falls(), report: Record<string, unknown> = {};
     for (const water of waters) {
       if (water.underground || water.kind === 'sea' || water.kind === 'lagoon') continue;
       let bankSamples = 0, joined = 0;
@@ -39,6 +40,9 @@ describe('Horizon water and offshore land', () => {
         if (other || !islandContains(x, z)) { joined++; return; }
         // The dam's solid holds Stillwater on its downstream side (no earth bank there).
         if (water.id === 'water.stillwater' && z > 905 && Math.abs(x - 1140) < 90) { joined++; return; }
+        // V3 (D-M11): at a fall's lip the water leaves the ground; the reach's last metres run along the cliff edge, so the
+        // outer side there is the lip itself, not a bank (the falls are named, lip lines in LandCuts.falls).
+        if (falls.some(f => f.lip.some(p => Math.hypot(p[0] - x, p[1] - z) < 10))) { joined++; return; }
         bankSamples++;
         // The bank stands above the water it borders (at a weir, the pool it faces).
         const faced = water.points.length ? waterInfluence(water, x, z).level : level;

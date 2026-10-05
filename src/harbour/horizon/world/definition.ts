@@ -1,5 +1,5 @@
 /** Horizon's data contract. This module contains no scene, terrain, or renderer imports. */
-import type { BedCut, PadCut, MouthMask, WaterCut, StructureSolid, LandDiagnostic, DistrictBounds } from '../land/interfaces.ts';
+import type { BedCut, PadCut, MouthMask, WaterCut, StructureSolid, LandDiagnostic, DistrictBounds, FallCut} from '../land/interfaces.ts';
 import type { HorizonPathGraph, JourneyMeasurement } from './pathGraph.ts';
 import type { CrossingProof, Intersection } from './crossings.ts';
 import type { ViewProof } from './views.ts';
@@ -94,7 +94,7 @@ export interface WorldDefinition {
     method: 'meshopt' | 'prism-chain'; requestedErrorEu: number; targetIndexRatio: number; inputTriangles: number; outputTriangles: number; changedSolids: number; maxReportedErrorEu: number; fullCollisionUnchanged: true; maximumMergedPrisms?: number; minWidthRatio?: number;
     solids: { id: string; inputTriangles: number; outputTriangles: number; reportedErrorEu: number; boundsDeviationEu: number; accepted: boolean; reason?: string }[];
   } };
-  collision?: { beds: BedCut[]; pads: PadCut[]; mouths: MouthMask[]; waters: WaterCut[]; walkableSlopeDegrees: number; lipStepMax: number };
+  collision?: { beds: BedCut[]; pads: PadCut[]; mouths: MouthMask[]; waters: WaterCut[]; falls?: FallCut[]; walkableSlopeDegrees: number; lipStepMax: number };
   pathGraph?: HorizonPathGraph;
   /** The road corridors (ROAD.md): one definition per road bed that the deck, collision, edges, markings, lamps and
    * planting are all derived from. Absent before a bake carries them. */
