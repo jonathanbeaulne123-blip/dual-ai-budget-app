@@ -15,7 +15,7 @@ import {createCruiserController} from '../movers/cruiser/controller.ts';
 import {createBicycleController} from '../movers/bicycle/controller.ts';
 import {cableMover} from '../movers/gondola/index.ts';
 
-export type MoverControls = {forward:number;strafe:number;run:boolean};
+export type MoverControls = {forward:number;strafe:number;run:boolean;rudder?:number};
 export interface MoverInputSources {
   keys:ReadonlySet<string>;          // lower-cased KeyboardEvent.key values currently held (' ' = Space)
   controls:MoverControls;            // the Move pad (forward = up, strafe = right) and the run toggle
@@ -36,6 +36,7 @@ export function moverInputFrom(s:MoverInputSources):MoverInput {
     jump: s.keys.has(' ') || s.jumpHeld || s.jumpEdge,
     sprint: s.keys.has('shift') || s.controls.run,
     crouch: 0,
+    rudder: clamp1(held(s.keys, 'r') - held(s.keys, 'q') + (s.controls.rudder ?? 0)),
     accept: s.accept,
     look: {dx:s.look.dx, dy:s.look.dy},
   };

@@ -1,4 +1,5 @@
-import {AIRCRAFT,FLIGHT_CONTROLS} from './airport/aircraft.ts';
+import {AIRCRAFT,FLIGHT_CONTROLS,throttleDetents} from './airport/aircraft.ts';
+import {CockpitControls} from './airport/CockpitControls.tsx';
 import type {AirportAction} from './airport/campus.ts';
 import type {HomeLayout} from '../../home/model.ts';
 import type {HomeDisplayContent} from '../../home/displays.ts';
@@ -64,6 +65,17 @@ export function statusTextFor({riding,offerLabel,paused,flight,cable}:{riding:bo
   return offerLabel?`E · ${offerLabel}`:WALK_STATUS;
 }
 function cruiserStorage(){try{return window.localStorage;}catch{return null;}}
+/** Keep the airport panel clear of the touch pads: it takes the room between the toolbar and the pads, or below them when the pads sit higher than the panel starts. */
+function placeAirportPanel(shell:HTMLElement,toolbarBottom:number){
+  const panel=shell.querySelector<HTMLElement>('.horizon-airport');if(!panel)return;
+  const box=shell.getBoundingClientRect(),row=shell.querySelector<HTMLElement>('.horizon-touch-controls'),dock=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dock-height'))||0;
+  const floor=box.height-dock-8,rowBox=row&&getComputedStyle(row).display!=='none'?row.getBoundingClientRect():null;
+  let top=toolbarBottom,room=floor-top;
+  if(rowBox){const rowTop=rowBox.top-box.top-8,rowBottom=rowBox.bottom-box.top+8;if(top<rowTop)room=rowTop-top;else if(top<rowBottom){top=rowBottom;room=floor-top;}}
+  const topPx=`${Math.round(top)}px`,roomPx=`${Math.max(72,Math.floor(room))}px`;
+  if(shell.style.getPropertyValue('--horizon-airport-top')!==topPx)shell.style.setProperty('--horizon-airport-top',topPx);
+  if(shell.style.getPropertyValue('--horizon-airport-room')!==roomPx)shell.style.setProperty('--horizon-airport-room',roomPx);
+}
 export default function HorizonStage(props:HorizonStageProps){
   const stage=useRef<HTMLDivElement>(null),runtime=useRef<HorizonRuntime|null>(null),latest=useRef(props);latest.current=props;
   const skinKey=props.cruiserPreference??'hearth:horizon-cruiser:review:v1';
@@ -107,9 +119,11 @@ export default function HorizonStage(props:HorizonStageProps){
   // The toolbar can wrap onto several rows as tools, camera controls or larger text appear.
   useEffect(()=>{
     const shell=stage.current?.parentElement,bar=shell?.querySelector('.horizon-top-controls');if(!shell||!bar)return;
-    const place=()=>shell.style.setProperty('--horizon-toolbar-bottom',`${bar.getBoundingClientRect().bottom-shell.getBoundingClientRect().top+12}px`);
-    place();const observer=new ResizeObserver(place);observer.observe(bar);return()=>observer.disconnect();
+    const place=()=>{const bottom=bar.getBoundingClientRect().bottom-shell.getBoundingClientRect().top+12;shell.style.setProperty('--horizon-toolbar-bottom',`${bottom}px`);placeAirportPanel(shell,bottom);};
+    place();const observer=new ResizeObserver(place);observer.observe(bar);observer.observe(shell);return()=>observer.disconnect();
   },[ready,mode,props.paused]);
+  // The airport panel and the touch row share the shell: re-fit the panel whenever the aircraft panel or the pads appear, change or go.
+  useEffect(()=>{const shell=stage.current?.parentElement,bar=shell?.querySelector('.horizon-top-controls');if(shell&&bar)placeAirportPanel(shell,bar.getBoundingClientRect().bottom-shell.getBoundingClientRect().top+12);});
   // Comfort is live (CONTRACT §2.10): the app's props (useComfort), html[data-motion] / html[data-quiet] and the OS query, without a remount.
   useEffect(()=>{setReducedMotion(readReducedMotion(props));setCalm(readCalm(props));},[props.calm,props.reducedMotion]);
   useEffect(()=>{
@@ -123,7 +137,7 @@ export default function HorizonStage(props:HorizonStageProps){
   useEffect(()=>{
     if(!ready)return;let last='',lastFleet='',lastHome='',lastAirport='';
     const poll=window.setInterval(()=>{
-      const world=runtime.current;if(!world)return;const airActions=world.airportActions(),airState=world.airportState(),airKey=JSON.stringify([airActions,airState.selected,airState.power,airState.speed,airState.grounded,airState.disabled,airState.saveFailed]);if(airKey!==lastAirport){lastAirport=airKey;setAirportActions(airActions);setAirportState(airState);}const actionsHome=world.homeActions?.()??[],homeKey=JSON.stringify(actionsHome);if(homeKey!==lastHome){lastHome=homeKey;setHomeActions(actionsHome);}
+      const world=runtime.current;if(!world)return;const airActions=world.airportActions(),airState=world.airportState(),airKey=JSON.stringify([airActions,airState.selected,airState.power,airState.speed,airState.grounded,airState.disabled,airState.assist,airState.saveFailed]);if(airKey!==lastAirport){lastAirport=airKey;setAirportActions(airActions);setAirportState(airState);}const actionsHome=world.homeActions?.()??[],homeKey=JSON.stringify(actionsHome);if(homeKey!==lastHome){lastHome=homeKey;setHomeActions(actionsHome);}
       const kitchenView=world.kitchenView?.();if(kitchenView){const k=JSON.stringify(kitchenView);if(k!==kitchenSnapshot.current){kitchenSnapshot.current=k;setKitchen(kitchenView);}}
       const pad=latest.current.paused?null:world.gliderPadNear?.()??null;
       if(pad&&!hintedPads.current.has(pad)){hintedPads.current.add(pad);setPadHint(GLIDER_PAD_HINT);if(padHintTimer.current!==null)window.clearTimeout(padHintTimer.current);padHintTimer.current=window.setTimeout(()=>{padHintTimer.current=null;setPadHint(null);},7000);}
@@ -178,14 +192,16 @@ export default function HorizonStage(props:HorizonStageProps){
     const box=event.currentTarget.getBoundingClientRect(),x=Math.max(-1,Math.min(1,(event.clientX-box.left-box.width/2)/(box.width*.36))),y=Math.max(-1,Math.min(1,(event.clientY-box.top-box.height/2)/(box.height*.36)));
     if(kind==='move')runtime.current?.input({forward:-y,strafe:x});else runtime.current?.look(-x*.08,-y*.06);
   }
+  const lookPad=<div className="horizon-pad" role="group" aria-label="Look pad" onPointerDown={e=>pad(e,'look')} onPointerMove={e=>pad(e,'look')} onPointerUp={e=>pad(e,'look')} onPointerCancel={e=>pad(e,'look')}>Look</div>;
   return <section className={`horizon-shell horizon-shell--${props.theme??'classic'} ${props.review?'horizon-shell--review':''} ${kitchenActive?'horizon-shell--kitchen':''} ${props.shell?'horizon-shell--in-shell':''}`} aria-label={props.shell?'The Horizon':'Horizon land review'}>
     <div ref={stage} className="horizon-stage" tabIndex={props.paused?-1:0} aria-label={mover?.mode==='plane'?FLIGHT_CONTROLS:props.skating?SKATE_STAGE_WORDS:kitchenActive?"Yacht Kitchen. WASD or arrows moves, E picks up and places, F prepares, R tosses, Q changes ingredient, Escape pauses, C changes the solo camera.":mover?.mode==='cruiser'?"Cruiser. W accelerates, S brakes; release and press S again to reverse. A D steer. Space hops; press again airborne to open the parachute. V gets off, C changes view, R recovers. Drag to look.":"Horizon. Drag to look. W A S D moves, Space jumps or brakes a boat, E interacts, C changes view. V rides the cruiser."} />
     {!kitchenActive&&!props.paused&&ready&&mode==='walk'&&(airportActions.length>0||mover?.mode==='plane')&&<div className="horizon-airport" role="group" aria-label="Airport and aircraft">
       <strong>{airportState?.selected?AIRCRAFT[airportState.selected].name:'Horizon Airport'}</strong>
-      {airportState?.selected&&<><p>{airportState.speed} km/h · Power {airportState.power}% · {airportState.disabled?'Stopped — recovery available':airportState.grounded?'On the ground':'In flight'}</p>
-        <div className="horizon-airport__power">{([[0,'Idle'],[.13,'Taxi'],[.8,'Flight']] as const).map(([value,label])=><button key={label} onClick={()=>{runtime.current?.airportPower(value);stage.current?.focus();}}>{label}</button>)}
-        <label>Power <input aria-label="Aircraft power" type="range" min="0" max="100" step="1" value={airportState.power} onChange={e=>runtime.current?.airportPower(Number(e.target.value)/100)}/></label></div>
-        <p>A/D turn · S climbs · W descends · C view</p>
+      {airportState?.selected&&<><p>{airportState.speed} km/h · Power {airportState.power}% · {airportState.disabled?'Stopped — recovery available':airportState.grounded?'On the ground':'In flight'}{airportState.assist?' · Take-off assist on':''}</p>
+        <div className="horizon-airport__power" role="group" aria-label="Power detents">{throttleDetents(airportState.selected).map(d=><button key={d.id} aria-pressed={airportState.power===Math.round(d.value*100)} onClick={()=>{runtime.current?.airportPower(d.value);stage.current?.focus();}}>{d.label}</button>)}
+        {airportState.grounded&&!airportState.disabled&&<button className="horizon-airport__takeoff" onClick={()=>{runtime.current?.airportTakeoff();stage.current?.focus();}}>Take off</button>}
+        <label className="horizon-airport__sr">Power <input aria-label="Aircraft power" type="range" min="0" max="100" step="1" value={airportState.power} onChange={e=>runtime.current?.airportPower(Number(e.target.value)/100)}/></label></div>
+        <p className="horizon-airport__hint">{airportState.assist?'Take-off assist is holding the nose up — pull S or W to take over. ':''}A/D bank · Q/R yaw · S climbs · W descends · C view</p>
         <button onClick={()=>{runtime.current?.airportPower(0);runtime.current?.airportBrake(true);stage.current?.focus();}}>Stop / ground brake</button>
         {!airportState.grounded&&<button onClick={()=>{runtime.current?.jump();stage.current?.focus();}}>Leave & open parachute</button>}
       </>}
@@ -225,7 +241,7 @@ export default function HorizonStage(props:HorizonStageProps){
         {cable.map(c=><button key={c.id} aria-keyshortcuts={c.key} aria-pressed={c.id==='seat'?c.pressed===true:undefined} onClick={()=>{runtime.current?.moverAction(c.id);stage.current?.focus();}}>{c.id==='seat'?'Sit':c.label} <span aria-hidden="true">{c.key}</span></button>)}
       </div>}
       </div>
-      {!kitchenActive&&ready&&mode==='walk'&&(!props.shell||Boolean(mover?.attached||mover?.airborne))&&<div className="horizon-touch-controls">
+      {!kitchenActive&&ready&&mode==='walk'&&(!props.shell||Boolean(mover?.attached||mover?.airborne))&&<div className={`horizon-touch-controls${mover?.mode==='plane'?' horizon-touch-controls--plane':''}`}>
         <div className="horizon-pad" role="group" aria-label={mover?.mode==='plane'?'Flight pad: pull down to climb, push up to descend, left and right to turn':wheeled?'Ride pad: up accelerates, down brakes, left and right steer':mover&&isCraft(mover.mode)?'Move pad: accelerate, reverse and steer the boat':mover?.mode==='parachute'?'Move pad: steer and brake the parachute':mover?.attached?'Move pad: push and pull the bar, lean to bank':'Move pad'} onPointerDown={e=>pad(e,'move')} onPointerMove={e=>pad(e,'move')} onPointerUp={e=>pad(e,'move')} onPointerCancel={e=>pad(e,'move')} onLostPointerCapture={e=>pad(e,'move')}>{wheeled?'Ride':'Move'}</div>
         {wheeled&&<button className="horizon-jump" onPointerDown={e=>e.preventDefault()} onClick={()=>{stage.current?.focus();runtime.current?.jump();}}>{mover?.airborne?'Open parachute':'Hop'}</button>}
         {wheeled&&!reducedMotion&&!calm&&<button className="horizon-jump" aria-pressed={boost} onPointerDown={e=>e.preventDefault()} onClick={()=>{const next=!boost;setBoost(next);runtime.current?.input({run:next});stage.current?.focus();}}>Boost</button>}
@@ -234,7 +250,8 @@ export default function HorizonStage(props:HorizonStageProps){
         {!mover?.attached&&<><button className="horizon-jump" onClick={()=>{stage.current?.focus();runtime.current?.jump();}}>Jump</button>
         <button onClick={()=>runtime.current?.accept()}>Interact</button>
         {mover?.stowed&&<button onClick={()=>{runtime.current?.resumeEquipment();stage.current?.focus();}}>Ride {mover.stowed}</button>}</>}
-        <div className="horizon-pad" role="group" aria-label="Look pad" onPointerDown={e=>pad(e,'look')} onPointerMove={e=>pad(e,'look')} onPointerUp={e=>pad(e,'look')} onPointerCancel={e=>pad(e,'look')}>Look</div>
+        {mover?.mode==='plane'&&airportState?.selected&&<CockpitControls aircraft={airportState.selected} power={airportState.power} onPower={value=>runtime.current?.airportPower(value)} onRudder={value=>runtime.current?.airportRudder(value)} refocus={()=>stage.current?.focus({preventScroll:true})}/>}
+        {lookPad}
       </div>}
       {!kitchenActive&&ready&&!sheet&&offers.length>0&&<div className={offersKeyed(offers)?'horizon-offers horizon-offers--keyed':'horizon-offers'} role="group" aria-label="Change how you travel here">
         {offers.map((offer,i)=>{const held=offer.from!=='feet'&&offer.to!=='feet',text=offerButtonText(offer),name=offer.to==='glider'?`${text}: ${offer.action}`:offer.action;return <button key={offerKey(offer)} className={held?'horizon-offer horizon-offer--hold':'horizon-offer'} aria-label={held?`${name} (press and hold)`:name} aria-keyshortcuts={i===0&&!held?'E':undefined}
