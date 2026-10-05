@@ -1,3 +1,46 @@
+## 2026-10-04 — Horizon movement pass: board anywhere, weighted walking, 2× / 3× rides, reachable glider launches
+
+Jonathan asked for five things:
+- bring back the skateboard-anywhere mechanics;
+- fix walking;
+- make the Vespa twice as fast, three times on Shift;
+- give the bike the same speed;
+- make every glider spot accessible, with a glider model at each.
+
+Decisions:
+
+**The board.**
+- The old Tideline skate sim is not retuned.
+- On the Horizon geography, terrain rides as the old island's kinds on Mountain v2's town island and as baked paint elsewhere. Before this it rode as grass everywhere.
+- One `skateRefusal()` rule gates B, the button and the Guide. It names why the board stays in hand.
+
+**Walking.**
+- Walking is a pure fixed-step module (`runtime/walkSim.ts`) with weight and collide-and-slide.
+- An authored floor within 1.5 m under terrain (uncut cliff over a stair) is walked instead of the terrain.
+- MANIFEST walk and run speeds are unchanged.
+
+**The cruiser.**
+- It cruises at 32 m/s and boosts to 48 m/s while Shift or the touch Boost toggle is held. The cap ramps up over 0.6 s and down over 0.8 s.
+- Calm and reduced motion keep cruise speed.
+- A boosted ride holds before ground that has not streamed in.
+
+**The bicycle.**
+- It is a third style of the same vehicle: same sim, same speeds. It keeps its `bicycle` mode id and art.
+- A Bike button sits beside Ride.
+
+**Gliders.**
+- A parked, non-colliding glider stands at each launch edge (Crown, Prow, Lamp).
+- The Guide's "Glider launches" stand the body on each deck within offer reach.
+- Desktop shows a keyed "Glide · E" button.
+- Offers for modes with no controller (zip, Ore Line cart, balloon, ferry) no longer render.
+
+**Owed:**
+- the cove stair's top tread joins the cove walk about 0.6 m low (land touch-up);
+- the road audit at the new cruiser speed;
+- device verdicts on the board's feel, the 48 m/s boost and the parked gliders.
+
+Risk: High. Budget (5): 0. Engagement (3): +2. No money, schema, sync, Auth or deploy change. Handoff: [CLAUDE_HORIZON_MOVEMENT_PASS.md](CLAUDE_HORIZON_MOVEMENT_PASS.md).
+
 ## 2026-10-01 — Horizon Inspector incident evidence integration
 
 The unmodified `=` key toggles one read-only diagnostic overlay across Journey and Horizon without changing movement, camera, position, or tool selection. The prior Horizon road snapshot remains available as a read-only runtime probe, while the global overlay owns keyboard control and incident capture. A separate remappable action preserves bounded, local technical history before optional browser-tab image selection; ZIP export includes a report and structured state, with a reviewed image only when the source is verified. Ordinary builds start with recording off; Development/testing starts with it on. No financial, Auth, schema, sync or Confirm semantics change. Risk Medium-High. Budget (5): +0; Engagement (3): +1 through actionable world diagnostics. Implementation and current limits: [Horizon Inspector](HORIZON_INSPECTOR.md).

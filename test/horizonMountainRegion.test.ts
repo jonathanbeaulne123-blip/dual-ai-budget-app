@@ -145,7 +145,9 @@ describe('the Horizon geography under the region',()=>{
     expect(runtime).toMatch(/function reseat\(\)\{\s*\/\/[^\n]*\n\s*\{const at=holdPoint\(\);if\(!regionReady\(at\[0\],at\[1\]\)\)\{resnap=true;return;\}\}/);
     // A rider (board, bicycle, flight) waits; a cable ride runs on its line.
     expect(runtime).toMatch(/hold\.steps\(mode\)&&riderReady\(\)\)ride\(dt,now,accept\)/);
-    expect(runtime).toMatch(/function riderReady\(\):boolean\{const m=registry\.mode\(\);return m==='gondola'\|\|m==='funicular'\|\|regionReady\(body\.x,body\.z\);\}/);
+    // 2026-10-04 (cruiser boost): riderReady also holds a boosted cruiser/bicycle before unloaded ground (rideAheadReady); the
+    // region rule it proves is unchanged — a cable ride runs on its line, every other rider waits for the drawn region.
+    expect(runtime).toMatch(/function riderReady\(\):boolean\{const m=registry\.mode\(\);if\(m==='gondola'\|\|m==='funicular'\)return true;if\(!regionReady\(body\.x,body\.z\)\)return false;/);
   });
   it('hides exactly the terrain cells whose centre is inside the region (split into `under` tiles)',()=>{
     const id='crown',st=field.step;

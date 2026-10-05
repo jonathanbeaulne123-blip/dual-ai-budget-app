@@ -4323,3 +4323,24 @@ Jonathan requested immediate PR handoff and took over user-facing testing. Branc
 The web build passed on `7fac9972` in **212.809s**. TypeScript passed in **78.418s**. The change-focused High gate passed **1,512 tests** and failed **one Chapter browser assertion** that read fields before React committed a household remount; the actual App startup subset passed **83/83**. The gate exceeded its **300s budget**, taking **775.209s** wall time. It remains failed. The Chapter test now uses bounded polling for the actual remounted DOM; this final test-only correction was independently reviewed and was not rerun after Jonathan requested immediate PR handoff. The application trees (`src`, `workers`, `scripts`, `public`) are identical to the built/tested candidate. No full green gate is claimed. See the adjacent evidence JSON for exact hashes and outcomes.
 
 Next owner: Jonathan and an independent reviewer. Start with [the review brief](briefs/WHOLE_HOUSE_REVIEW_2026-09-19.md), the adjacent JSON evidence and the labelled local preview at http://127.0.0.1:4186/__review. Do not resume PR #501’s old recovery/activation or deploy/activate/native work from this handoff.
+
+
+## 2026-10-04 — Horizon movement pass (board anywhere, walking, ride speeds, glider launches)
+
+- **Branch:** `claude/horizon-movement-pass` from `main` 4f76029 (#581).
+- **Risk:** High. **Budget delta (5):** 0. **Engagement delta (3):** +2.
+- **Outcome:**
+  - The old board goes down anywhere walkable, with the right surface feel.
+  - Walking has weight, slides along walls and climbs the cliff stairs.
+  - Vespa, Harley and bicycle cruise at 32 m/s and boost to 48 m/s on Shift.
+  - Each glider launch has a parked glider and a Guide entry.
+- **Verification:**
+  - typecheck clean;
+  - focused files listed in [the handoff](CLAUDE_HORIZON_MOVEMENT_PASS.md);
+  - failures shared with `main` named there.
+- **Data / environment:** fictional, headless, baked world; no device or browser evidence.
+- **Uncertainty:**
+  - boost feel on the tightest bends;
+  - Prow ground route;
+  - the cove stair land gap.
+- **Next owner:** Jonathan on devices, then merge.

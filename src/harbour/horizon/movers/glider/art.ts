@@ -89,3 +89,29 @@ export function createFlightArt(kind:'glider'|'parachute',dressing:VehicleDressi
     dispose(){root.traverse(o=>{if(o instanceof THREE.Mesh||o instanceof THREE.LineSegments){o.geometry.dispose();for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();}});},
   };
 }
+
+/**
+ * A parked glider for a launch pad (Jonathan 2026-10-04: "if there is a model for the glider have it at each glider spot").
+ * The same greybox wing, keel and base bar as the flying art, standing still on its base bar: the root's origin is the
+ * contact (the deck), the hang point `GLIDER_HANG_ABOVE_CONTACT` above it, the nose along +z. Nothing here moves or
+ * collides; the tail light card shows only at night (`setNight`). Lite keeps the sail and keel and drops the base bar.
+ */
+export interface ParkedGlider{root:THREE.Group;setNight(on:boolean):void;dispose():void}
+export function createParkedGlider(dressing:VehicleDressing='classic',tier:VehicleTier='full'):ParkedGlider{
+  const art=greyboxArt('glider'),root=new THREE.Group(),wing=art.build(dressing,tier);root.name='parked.glider';
+  const frame=new THREE.MeshStandardMaterial({color:'#5d5a52',roughness:.8});
+  wing.position.y=GLIDER_HANG_ABOVE_CONTACT;root.add(wing);
+  const keel=bar(VEHICLE_DIMENSIONS.glider.keel,'z',frame);keel.position.y=.3;keel.name='greybox.glider.keel';wing.add(keel);
+  if(tier==='full'){
+    const base=bar(1.4,'x',frame);base.position.set(0,-1.3,.3);base.name='greybox.glider.baseBar';wing.add(base);
+    // The two uprights from the keel to the base bar ends (an A-frame), so it reads as standing, not floating.
+    for(const side of[-1,1]){const upright=new THREE.Mesh(new THREE.BoxGeometry(.04,1.62,.04),frame);upright.position.set(side*.35,-.5,.3);upright.rotation.z=side*.42;upright.name='greybox.glider.upright';wing.add(upright);}
+  }
+  const light=art.anchors.runningLights[0],lightCard=light?tailLightCard(light.at):null;if(lightCard){lightCard.visible=false;wing.add(lightCard);}
+  root.traverse(o=>{o.castShadow=false;o.receiveShadow=false;o.matrixAutoUpdate=false;o.updateMatrix();});
+  return{
+    root,
+    setNight(on){if(lightCard)lightCard.visible=on;},
+    dispose(){root.traverse(o=>{if(o instanceof THREE.Mesh){o.geometry.dispose();for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();}});},
+  };
+}

@@ -1,4 +1,5 @@
-import {createHorizonSkateWorld,type HorizonSkateGeography} from './world.ts';
+import {createHorizonSkateWorld,type HorizonSkateGeography,type SkateStartRefusal} from './world.ts';
+import type {SurfaceKind} from '../../skate/contract.ts';
 import * as THREE from 'three';
 import {createSkateDriver,SKATE_CATALOGS,skateField,type SkateControls} from '../../skate/driver.ts';
 import {createSkaterLook,type SkaterLook} from '../../skate/look/index.ts';
@@ -23,14 +24,19 @@ import {SKATE_SPOTS} from '../../skate/park.ts';
  * Mountain's own ground raised by the offset (`regions/mountainV2/geography.ts`). So the skate runs exactly as it did —
  * its sim, field, park, spots, routes, the mountain race, tricks, decks and saved progress, all in native Mountain
  * space — inside one group moved by the offset. Only the edges translate: the body the Horizon reads, and the camera.
+ * Hosted (`geography`), its floors, walls, water and ceilings are the Horizon's everywhere (`./world.ts`), so the board
+ * goes down anywhere on dry, open, walkable ground (Jonathan 2026-10-04: "bring back the skateboard anywhere").
  */
 export type NativeSkateFrame={model:SkateHudModel;progress:SkateProgress;revision:number};
 export type HorizonBodyPose={x:number;y:number;z:number;yaw:number};
 export type NativeSkate={
   /** The old skate's controls (HUD commands, settings, input), unchanged. */
   controls:SkateControls;
-  /** Whether a board may be put down here: the Mountain v2 town island, where the park stands. */
+  /** Whether a board may be put down here. Hosted on the Horizon geography: any dry, open, walkable floor whose ground has
+   *  streamed in. Standalone (no geography): the Mountain v2 town island, where the park stands. */
   canStart(x:number,z:number,y?:number):boolean;
+  /** Why it may not ('held' while the ground there is still streaming in), null where it may. */
+  startRefusal(x:number,z:number,y?:number):SkateStartRefusal|'held'|null;
   /** Put the board down at a Horizon position. */
   start(at:HorizonBodyPose,progress?:SkateProgress):boolean;
   /** Pick the board up; returns where the body stands on the Horizon (null if not skating). */
@@ -60,6 +66,8 @@ export function createNativeSkate(options:{scene:THREE.Scene;figure:BodyFigure;t
   blocked?:(hx:number,hy:number,hz:number,r:number)=>boolean;
   /** Optional host geometry; omitted preserves standalone native world behavior. */
   geography?:HorizonSkateGeography;
+  /** Horizon terrain paint as a skate kind (Horizon space); with `geography`, terrain off the town island rides as its paint. */
+  terrainKind?:(hx:number,hz:number)=>SurfaceKind|null;
   /** Runtime streaming/region gate in Horizon coordinates. */
   ready?:(hx:number,hz:number)=>boolean;
   /** Explicit route/spot/retry destinations: request remote streaming before any surface query or reset. */
@@ -67,7 +75,7 @@ export function createNativeSkate(options:{scene:THREE.Scene;figure:BodyFigure;t
   nativeVisible?:(hx:number,hz:number)=>boolean}):NativeSkate{
   const group=new THREE.Group();group.name='horizon-native-skate';group.position.set(O.x,O.y,O.z);options.scene.add(group);
   const field=skateField();
-  const hosted=options.geography?createHorizonSkateWorld(options.geography,field):null;
+  const hosted=options.geography?createHorizonSkateWorld(options.geography,field,options.terrainKind?{terrainKind:options.terrainKind}:{}):null;
   let theme:ThemeId=options.theme??'classic';
   let park:SkatePark|null=null;
   function buildPark(){if(park){group.remove(park.group);park.dispose();}park=buildSkatePark(sceneDressingFrom(COURT_DRESSING[theme]),{tier:options.tier,field});group.add(park.group);}
@@ -102,7 +110,13 @@ export function createNativeSkate(options:{scene:THREE.Scene;figure:BodyFigure;t
   };
   const api:NativeSkate={
     controls,
-    canStart(x,z,y){if(options.ready&&!options.ready(x,z))return false;if(hosted)return hosted.canStart(x,z,y);const n=toNative(x,0,z);return Math.hypot(n.x,n.z)<NATIVE_SKATE_RADIUS;},
+    canStart(x,z,y){return api.startRefusal(x,z,y)===null;},
+    startRefusal(x,z,y){
+      // Never on ground whose chunk (or the placed region's scene) has not arrived: its floors and walls are not answered yet.
+      if(options.ready&&!options.ready(x,z))return 'held';
+      if(hosted)return hosted.startRefusal(x,z,y);
+      const n=toNative(x,0,z);return Math.hypot(n.x,n.z)<NATIVE_SKATE_RADIUS?null:'unsupported';
+    },
     start(at,progress){
       if(driver.active())return true;
       const n=toNative(at.x,at.y,at.z);

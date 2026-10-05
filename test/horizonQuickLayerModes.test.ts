@@ -127,7 +127,10 @@ describe('the quick layer in every mover phase',()=>{
   it('labels the glider offers as the pads read them, and the plane\'s Jump as a press-and-hold',async()=>{
     const h=await mount();
     world.offers=[{id:'lampGallery:feet→glider',thresholdId:'lampGallery',from:'feet',to:'glider',action:'Run off the gallery',label:'Run off the gallery',at:[540,25,1195]}];hud(false,null,'feet');await tick();
-    expect([...h.querySelectorAll('.horizon-offers .horizon-offer')].map(b=>b.textContent)).toEqual(['Run off the gallery']);
+    // 2026-10-04 (Jonathan: glider spots accessible): a glider offer's button says the act, "Glide", with its E key cap; the
+    // pad's own words ("Run off the gallery") stay in its accessible name.
+    const glide=[...h.querySelectorAll('.horizon-offers .horizon-offer')];
+    expect(glide.map(b=>b.textContent)).toEqual(['GlideE']);expect(glide[0]!.getAttribute('aria-label')).toBe('Glide: Run off the gallery');
     world.offers=[{id:'bailOut:plane→parachute',thresholdId:'bailOut',from:'plane',to:'parachute',action:'Jump',label:'Jump',at:[1040,200,1000]}];hud(true,{height:180},'plane');await tick();
     const jump=h.querySelector('.horizon-offers .horizon-offer')!;expect(jump.textContent).toBe('Jump');expect(jump.classList.contains('horizon-offer--hold')).toBe(true);expect(jump.getAttribute('aria-label')).toBe('Jump (press and hold)');
     world.offers=[];

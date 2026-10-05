@@ -8,6 +8,7 @@ import {buildStair} from '../src/harbour/horizon/land/structures/build';
 import {baseHeight,sampleTerrain} from '../src/harbour/horizon/land/terrain';
 import {decodeTerrainAsset} from '../src/harbour/horizon/land/terrain/asset';
 import {createHorizonGeography,HORIZON_WALKABLE_DEGREES} from '../src/harbour/horizon/runtime/geography';
+import {horizonWalkWorld,walkMove} from '../src/harbour/horizon/runtime/walkSim';
 import {createRegionGeography} from '../src/harbour/horizon/regions/mountainV2/geography';
 import {bedPath,pointAt,progressOf} from '../src/harbour/horizon/movers/board/situations';
 import {solidTopAt} from '../src/harbour/horizon/world/geometry';
@@ -34,7 +35,9 @@ const geography=(cuts:LandCuts)=>{const g=createHorizonGeography(field,cuts);g.a
 const runtime=readFileSync('src/harbour/horizon/runtime/index.ts','utf8'),start=runtime.indexOf('  function move(dx:number'),end=runtime.indexOf('  let emote:',start);
 if(start<0||end<=start)throw new Error('Update the exact runtime walker extraction');
 const compiled=transformSync(`function makeWalker(body,geography,world,HORIZON_WALKABLE_DEGREES){let held=false,leftSupport=false,velocityY=0,swimming=false,lastMovementBlocker=null;const gateOpen=()=>true;const waterLevel=(x,z,y)=>geography.waterLevel(x,z,y);${runtime.slice(start,end)}return{move,report:()=>({leftSupport,lastMovementBlocker})}}`,{loader:'ts'}).code;
-const makeWalker=new Function(`${compiled};return makeWalker;`)();
+// 2026-10-04 (walking fix): the runtime move() now binds walkSim's collision step (walkMove over horizonWalkWorld); the
+// extracted body is unchanged text, so the two walkSim functions it calls are supplied here exactly as runtime/index.ts imports them.
+const makeWalker=new Function('walkMove','horizonWalkWorld',`${compiled};return makeWalker;`)(walkMove,horizonWalkWorld);
 function replay(cuts:LandCuts,id:string,reverse:boolean){
   const b=cuts.beds.find(b=>b.id===id)!,path=bedPath({...b,points:reverse?[...b.points].reverse():b.points}),g=geography(cuts),p=pointAt(path,.5),body={x:p.x,y:p.y,z:p.z,yaw:p.heading};
   const initial=g.surface(body.x,body.z,body.y,.48);if(initial)body.y=initial.y;
