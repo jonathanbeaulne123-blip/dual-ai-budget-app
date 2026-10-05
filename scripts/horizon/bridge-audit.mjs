@@ -16,7 +16,7 @@ const exports=[
 ['createMountainV2Region, terraceBedExclusion','src/harbour/horizon/regions/mountainV2/index.ts'],
 ['SPANS, structureStretches','src/harbour/horizon/land/structures/build.ts'],['nearestOnPath, bounds','src/harbour/horizon/land/structures/mesh.ts'],
 ['HORIZON_MANIFEST','src/harbour/horizon/world/manifest.ts'],['createBoardController','src/harbour/horizon/movers/board/controller.ts'],
-['createBicycleController','src/harbour/horizon/movers/bicycle/controller.ts'],['createCruiserState, stepCruiser','src/harbour/horizon/movers/cruiser/sim.ts']];
+['createCruiserState, stepCruiser','src/harbour/horizon/movers/cruiser/sim.ts']];
 const b=await build({stdin:{contents:exports.map(([e,p])=>`export {${e}} from './${p}';`).join('\n'),resolveDir:root,loader:'ts'},bundle:true,platform:'node',format:'esm',write:false,logLevel:'error'});
 const a=await import('data:text/javascript;base64,'+Buffer.from(b.outputFiles[0].text).toString('base64'));
 const baseline=args.includes('--baseline-ref')?args[args.indexOf('--baseline-ref')+1]:null;
@@ -43,7 +43,8 @@ for(const s of spans){
  if(drive)for(const mode of ['board','bicycle','cruiser'])for(const dir of [1,-1]){
   if(mode==='cruiser'&&!['V01','VG','V03','VBS'].includes(s.route)){runs.push({mode,direction:dir,status:'not-applicable',reason:'No authored road on this deck'});continue;}
   const start=pathAt(bed.points,dir===1?from:to),target=pathAt(bed.points,(dir===1?from:to)+dir*2),yaw=Math.atan2(target[0]-start[0],target[2]-start[2]);
-  const controller=mode==='board'?a.createBoardController(deps):mode==='bicycle'?a.createBicycleController(deps):null;
+  // Since 2026-10-04 the bicycle is a skin of the cruiser: it is driven through stepCruiser like the cruiser, on every deck.
+  const controller=mode==='board'?a.createBoardController(deps):null;
   let state=controller?null:a.createCruiserState({x:start[0],y:start[1],z:start[2],yaw});
   controller?.place({x:start[0],y:start[1],z:start[2],heading:yaw,speed:2});
   let reached=false,events=new Set(),maxLateral=0,airSteps=0,lastProgress=0,stalled=0,steps=0;

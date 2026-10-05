@@ -71,6 +71,9 @@ export default function HorizonStage(props:HorizonStageProps){
   const kitchenActive=Boolean(kitchen&&kitchen.state.phase!=='idle');
   // PR #566 Codex: the cable ride's Skip and Sit buttons (runtime.cableControls), for touch riders and keyboard/screen-reader users.
   const [cable,setCable]=useState<CableControl[]>([]);
+  // The touch Boost toggle (Shift on a keyboard) for the cruiser and the bicycle; it drops whenever the ride changes.
+  const [boost,setBoost]=useState(false),wheeled=mover?.mode==='cruiser'||mover?.mode==='bicycle';
+  useEffect(()=>{setBoost(false);},[mover?.mode]);
   const [boatActions,setBoatActions]=useState<FleetAction[]>([]),[fleetState,setFleetState]=useState<ReturnType<HorizonRuntime['fleetState']>|null>(null);
   const [tier]=useState<'full'|'lite'>(()=>new URLSearchParams(location.search).get('tier')==='lite'||matchMedia('(max-width: 600px)').matches?'lite':'full');
   useEffect(()=>{const controller=new AbortController();let current:HorizonRuntime|null=null,unregister:(()=>void)|null=null,unregisterDiagnostics:(()=>void)|null=null;
@@ -125,7 +128,8 @@ export default function HorizonStage(props:HorizonStageProps){
       if(isCraft(next.mover.mode)){setStatus(world.ridePaused?.()?RIDE_PAUSED_STATUS:'W / ↑ accelerates · S / ↓ slows then reverses · A / D steer · Space brakes · E interacts · C camera.');return;}
       if(next.mover.mode==='plane')setStatus(world.ridePaused?.()?RIDE_PAUSED_STATUS:FLIGHT_CONTROLS);
       else if(next.mover.mode==='parachute')setStatus(`${hud?.place?.label??'Airborne'}. Space opens or retracts; A/D steer, S brakes. C changes view.`);
-      else if(next.mover.mode==='cruiser')setStatus(world.ridePaused?.()?RIDE_PAUSED_STATUS:'W / ↑ accelerates · S / ↓ brakes; release and press again to reverse · A / D steer · Space hops; press again airborne for parachute · V gets off · C changes view · R recovers.');
+      else if(next.mover.mode==='cruiser')setStatus(world.ridePaused?.()?RIDE_PAUSED_STATUS:'W / ↑ accelerates · hold Shift to boost · S / ↓ brakes; release and press again to reverse · A / D steer · Space hops; press again airborne for parachute · V gets off · C changes view · R recovers.');
+      else if(next.mover.mode==='bicycle')setStatus(world.ridePaused?.()?RIDE_PAUSED_STATUS:'W / ↑ rides on · hold Shift to boost · S / ↓ brakes; release and press again to reverse · A / D steer · Space hops · E parks at a stand.');
       else if(next.mover.attached||next.offers.length>0)setStatus(statusTextFor({riding:next.mover.attached,offerLabel:next.offers[0]?.action,paused:typeof world.ridePaused==='function'&&world.ridePaused(),flight:next.mover.mode==='glider',cable:next.mover.mode==='gondola'||next.mover.mode==='funicular'?next.mover.mode:null}));
     },200);
     return()=>window.clearInterval(poll);
@@ -209,10 +213,11 @@ export default function HorizonStage(props:HorizonStageProps){
       </div>}
       </div>
       {!kitchenActive&&ready&&mode==='walk'&&(!props.shell||Boolean(mover?.attached||mover?.airborne))&&<div className="horizon-touch-controls">
-        <div className="horizon-pad" role="group" aria-label={mover?.mode==='plane'?'Flight pad: pull down to climb, push up to descend, left and right to turn':mover?.mode==='cruiser'?'Ride pad: up accelerates, down brakes, left and right steer':mover&&isCraft(mover.mode)?'Move pad: accelerate, reverse and steer the boat':mover?.mode==='parachute'?'Move pad: steer and brake the parachute':mover?.attached?'Move pad: push and pull the bar, lean to bank':'Move pad'} onPointerDown={e=>pad(e,'move')} onPointerMove={e=>pad(e,'move')} onPointerUp={e=>pad(e,'move')} onPointerCancel={e=>pad(e,'move')} onLostPointerCapture={e=>pad(e,'move')}>{mover?.mode==='cruiser'?'Ride':'Move'}</div>
-        {mover?.mode==='cruiser'&&<button className="horizon-jump" onPointerDown={e=>e.preventDefault()} onClick={()=>{stage.current?.focus();runtime.current?.jump();}}>{mover.airborne?'Open parachute':'Hop'}</button>}
+        <div className="horizon-pad" role="group" aria-label={mover?.mode==='plane'?'Flight pad: pull down to climb, push up to descend, left and right to turn':wheeled?'Ride pad: up accelerates, down brakes, left and right steer':mover&&isCraft(mover.mode)?'Move pad: accelerate, reverse and steer the boat':mover?.mode==='parachute'?'Move pad: steer and brake the parachute':mover?.attached?'Move pad: push and pull the bar, lean to bank':'Move pad'} onPointerDown={e=>pad(e,'move')} onPointerMove={e=>pad(e,'move')} onPointerUp={e=>pad(e,'move')} onPointerCancel={e=>pad(e,'move')} onLostPointerCapture={e=>pad(e,'move')}>{wheeled?'Ride':'Move'}</div>
+        {wheeled&&!reducedMotion&&!calm&&<button className="horizon-jump" aria-pressed={boost} onPointerDown={e=>e.preventDefault()} onClick={()=>{const next=!boost;setBoost(next);runtime.current?.input({run:next});stage.current?.focus();}}>Boost</button>}
+        {wheeled&&<button className="horizon-jump" onPointerDown={e=>e.preventDefault()} onClick={()=>{stage.current?.focus();runtime.current?.jump();}}>{mover?.airborne?'Open parachute':'Hop'}</button>}
         {mover&&isCraft(mover.mode)&&<button className="horizon-jump" onPointerDown={e=>{e.preventDefault();stage.current?.focus();jumpPointer.current=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);runtime.current?.jumpHold(true);}} onClick={e=>{if(e.detail===0){stage.current?.focus();runtime.current?.jumpHold(true);window.setTimeout(()=>runtime.current?.jumpHold(false),150);}}}>Brake</button>}
-        {(mover?.mode==='board'||mover?.mode==='bicycle'&&mover.airborne)&&<button className="horizon-jump" onPointerDown={e=>{e.preventDefault();stage.current?.focus();jumpPointer.current=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);runtime.current?.jumpHold(true);}} onClick={e=>{if(e.detail===0){stage.current?.focus();runtime.current?.jump();}}}>{mover.airborne?'Open parachute':'Jump'}</button>}
+        {mover?.mode==='board'&&<button className="horizon-jump" onPointerDown={e=>{e.preventDefault();stage.current?.focus();jumpPointer.current=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);runtime.current?.jumpHold(true);}} onClick={e=>{if(e.detail===0){stage.current?.focus();runtime.current?.jump();}}}>{mover.airborne?'Open parachute':'Jump'}</button>}
         {!mover?.attached&&<><button className="horizon-jump" onClick={()=>{stage.current?.focus();runtime.current?.jump();}}>Jump</button>
         <button onClick={()=>runtime.current?.accept()}>Interact</button>
         {mover?.stowed&&<button onClick={()=>{runtime.current?.resumeEquipment();stage.current?.focus();}}>Ride {mover.stowed}</button>}</>}

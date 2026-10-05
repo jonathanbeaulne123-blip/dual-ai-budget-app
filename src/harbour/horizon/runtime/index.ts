@@ -76,7 +76,7 @@ import type {WorldAmbience} from '../../mountain/audio.ts';
 import {createMoverRegistry,type MoverDeps} from '../movers/shared/registry.ts';
 import type {AirborneBody,ModeController,ModeHud,ModeId,MoverBody,MoverFrame,MoverHud,MoverInput,MoverSound,ReducedMotionCut,ReducedMotionLanding} from '../movers/shared/mode.ts';
 import type {ThresholdOffer} from '../movers/shared/threshold.ts';
-import {moverInputFrom,moverFadeMs,moverBlendMs,moverBlendEase,registerHorizonMovers,riderSlip,savedRideBody,offerToShow,sameHud,sameOffer,createRideHold,RIDING_STATUS} from './moverInput.ts';
+import {moverInputFrom,moverFadeMs,moverBlendMs,moverBlendEase,registerHorizonMovers,riderSlip,savedRideBody,offerToShow,sameHud,sameOffer,createRideHold,RIDING_STATUS,rideAheadReady} from './moverInput.ts';
 import {buildBoardProxy,BOARD_PROXY,type BoardProxy} from '../movers/board/art/proxy.ts';
 import type {VehicleDressing} from '../movers/shared/vehicleArt.ts';
 
@@ -242,6 +242,9 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   let cruiserTheme=options.theme??'classic';
   let cruiserSkin:CruiserSkin=options.cruiserSkin??'vespa',cruiserArt:ReturnType<typeof createCruiserArt>|null=null;
   const cruiser=()=>registry.mode()==='cruiser'?registry.active() as CruiserController:null;
+  /** The cruiser or the bicycle: one vehicle sim (cruiser/sim.ts) under two registry modes. */
+  const wheels=()=>registry.mode()==='cruiser'||registry.mode()==='bicycle'?registry.active() as CruiserController|null:null;
+  const wheelsLook=()=>registry.mode()==='bicycle'?'bicycle' as const:cruiserSkin;
   let boardProxy:BoardProxy|null=null,consumeJumpUntilRelease=false,jumpHeld=false,acceptRequested=false,lookAcc={dx:0,dy:0},lastOffer:ThresholdOffer|null=null,lastHud:MoverHud|null=null,lastInput:MoverInput|null=null,walkFov:number|null=null,footFov=45,fadeTimer=0,moverActionRequested:'fold'|'pull'|null=null,fadeLabel:{label:string;at:number}|null=null;
   const fadeEl=document.createElement('div');fadeEl.className='horizon-fade';fadeEl.setAttribute('aria-hidden','true');host.appendChild(fadeEl);
   const partnerMaterials:Record<string,THREE.Material>={};partner.group.traverse(object=>{if(object instanceof THREE.Mesh)for(const material of Array.isArray(object.material)?object.material:[object.material])partnerMaterials[material.uuid]=material;});
@@ -388,7 +391,9 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   /** PR #566 Codex: the placed region is not in the way here: drawn, or (x, z) outside its footprint. */
   function regionReady(x:number,z:number):boolean{return !placed||regionVisible||!placed.region.requiresScene(x,z);}
   /** PR #566 Codex: a rider inside the not-yet-drawn region waits (a board on a bridge keeps its deck); a cable ride runs on its line. */
-  function riderReady():boolean{const m=registry.mode();return m==='gondola'||m==='funicular'||regionReady(body.x,body.z);}
+  function riderReady():boolean{const m=registry.mode();if(m==='gondola'||m==='funicular')return true;if(!regionReady(body.x,body.z))return false;
+    // A boosted cruiser/bicycle covers 4.8 m in a capped frame: hold before ground that is not resident, not on it.
+    const w=wheels()?.state();return !w||rideAheadReady(body,w.vx,w.vz,gateOpen);}
   function chunkGateOpen(x:number,z:number):boolean{
     if(!gate||!chunks)return true;
     const missing=gate.missingAt(x,z),at:XYZ=[x,body.y,z],t=performance.now(),hold=(h:typeof chunkHolds[number])=>{chunkHolds.push(h);if(chunkHolds.length>200)chunkHolds.shift();};
@@ -540,8 +545,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   }
   function unmountBoardProxy(){boardProxy?.dispose();boardProxy=null;}
   function syncEquipment(){
-    if(registry.mode()==='board'||registry.mode()==='bicycle'||registry.stowed()==='board')mountBoardProxy();else unmountBoardProxy();
-    if(cruiser()){if(!cruiserArt){cruiserArt=createCruiserArt(cruiserTheme);cruiserArt.setSkin(cruiserSkin);scene.add(cruiserArt.root);}}
+    if(registry.mode()==='board'||registry.stowed()==='board')mountBoardProxy();else unmountBoardProxy();
+    if(wheels()){if(!cruiserArt){cruiserArt=createCruiserArt(cruiserTheme);scene.add(cruiserArt.root);}if(cruiserArt.root.userData.skin!==wheelsLook())cruiserArt.setSkin(wheelsLook());}
     else{cruiserArt?.dispose();cruiserArt=null;}
   }
   function beginAirborne(at:AirborneBody,open:boolean){emote=null;
@@ -556,7 +561,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   const proxyTurn=new THREE.Quaternion(),proxyEuler=new THREE.Euler(0,0,0,'YXZ'),figureInverse=new THREE.Quaternion();
   function poseRider(pose:MoverFrame['pose'],active:ModeController,now:number){
     if(active.id==='plane'){figure.group.position.set(body.x,body.y-.45,body.z);figure.group.rotation.set(-pose.pitch,body.yaw,-pose.roll,'YXZ');figure.pose(0,0,now/1000,{lean:0,bank:0,run:0,air:0,rise:0,crouch:0,slide:0,emote:'sit',emoteAt:1,flourish:0});return;}
-    if(active.id==='cruiser'){
+    if(active.id==='cruiser'||active.id==='bicycle'){
       const state=(active as CruiserController).state();
       figure.group.position.set(body.x,body.y+.265,body.z-.12*Math.cos(body.yaw));figure.group.position.x-=.12*Math.sin(body.yaw);
       figure.group.rotation.set(0,body.yaw,comfort.reducedMotion?0:-state.lean);
@@ -619,16 +624,16 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     return true;
   }
   /** Pick-up: save the walk FOV, blend the camera to the mover's (0.8 s; a cut under reduced motion / calm), show the deck. */
-  function startRide(){schedule();recordDiagnostic('movement','mount','accepted',registry.mode());emote=null;if(cruiser()){clear();cruiser()!.resetInput();}else if(isCraft(registry.mode()))clear();if(walkFov===null)walkFov=footFov;path=[];blendCamera(moverBlendMs('pickup',comfort.reducedMotion,comfort.calm),camera.fov);syncEquipment();options.onStatus?.(isCraft(registry.mode())?'W accelerates; S slows then reverses. A/D steer; Space brakes; E interacts. C changes camera.':registry.mode()==='parachute'?'Airborne. Space opens or retracts the parachute.':RIDING_STATUS);}
+  function startRide(){schedule();recordDiagnostic('movement','mount','accepted',registry.mode());emote=null;if(wheels()){clear();wheels()!.resetInput();}else if(isCraft(registry.mode()))clear();if(walkFov===null)walkFov=footFov;path=[];blendCamera(moverBlendMs('pickup',comfort.reducedMotion,comfort.calm),camera.fov);syncEquipment();options.onStatus?.(isCraft(registry.mode())?'W accelerates; S slows then reverses. A/D steer; Space brakes; E interacts. C changes camera.':registry.mode()==='parachute'?'Airborne. Space opens or retracts the parachute.':RIDING_STATUS);}
   /** Leaving Walk (Look / Island / a page) while riding: the mover pauses where it is (R2-01). The mode, the controller and the rider's body are kept; `update` stops; the Look / Island camera takes over. */
   function pauseRide(){
     if(!hold.pause({...body}))return;
-    clear();cruiser()?.resetInput();
+    clear();wheels()?.resetInput();
     options.onStatus?.(`The ${registry.mode()} waits where you left it. Choose Walk to ride on.`);
   }
   /** Walk again: the paused rider is put back and the mover camera blends back in (0.8 s; a cut under reduced motion / calm). */
   function resumeRide(){
-    const at=hold.resume();if(!at)return false;clear();cruiser()?.resetInput();
+    const at=hold.resume();if(!at)return false;clear();wheels()?.resetInput();
     Object.assign(body,at);yaw=body.yaw;mode='walk';path=[];lookAcc={dx:0,dy:0};jumpRequested=false;acceptRequested=false;
     const ms=moverBlendMs('pickup',comfort.reducedMotion,comfort.calm);if(!ms)transition=null;   // a cut also drops a Look/Island transition still running
     blendCamera(ms,camera.fov);options.onStatus?.(RIDING_STATUS);return true;
@@ -665,7 +670,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(f.camera){camera.position.set(...f.camera.eye);target.set(...f.camera.target);camera.lookAt(target);if(transition?.live)transition.toFov=f.camera.fov;else if(Math.abs(camera.fov-f.camera.fov)>1e-3){camera.fov=f.camera.fov;camera.updateProjectionMatrix();}}
     else updateCamera();
     poseRider(f.pose,active,now);
-    if(active.id==='cruiser')cruiserArt?.update((active as CruiserController).state(),dt,comfort.reducedMotion||comfort.calm);
+    if(active.id==='cruiser'||active.id==='bicycle')cruiserArt?.update((active as CruiserController).state(),dt,comfort.reducedMotion||comfort.calm);
     if(!sameHud(lastHud,f.hud)){
       if(active.id==='parachute'&&lastHud?.label!==f.hud.label)recordDiagnostic('parachute','deployment state','changed',f.hud.label??'unknown');
       lastHud={...f.hud};options.onMoverHud?.(lastHud);
@@ -853,7 +858,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     const view=monorail!.camera();if(view){camera.position.set(...view.eye);target.set(...view.target);camera.lookAt(target);}
     reportMonorail();
   }
-  function tick(now:number){if(disposed)return false;const workStarted=performance.now(),frameMs=last?now-last:0;if(qualityDirty&&lease.active){applyHorizonQuality(renderer,sun,adaptiveQuality.profile(window.devicePixelRatio));qualityDirty=false;}const dt=Math.min(kitchen?.active() ? .1 : cruiser() ? .1 : .05,Math.max(0,(now-(last||now))/1000));if(last)frameTimes.push(now-last);if(frameTimes.length>3600)frameTimes.shift();last=now;
+  function tick(now:number){if(disposed)return false;const workStarted=performance.now(),frameMs=last?now-last:0;if(qualityDirty&&lease.active){applyHorizonQuality(renderer,sun,adaptiveQuality.profile(window.devicePixelRatio));qualityDirty=false;}const dt=Math.min(kitchen?.active() ? .1 : wheels() ? .1 : .05,Math.max(0,(now-(last||now))/1000));if(last)frameTimes.push(now-last);if(frameTimes.length>3600)frameTimes.shift();last=now;
     let stepped=false;
     if(!paused&&!document.hidden&&mode==='walk'&&!hold.paused()&&!monorail?.state()){physicalBody=null;tickFleet(dt);}
     if(kitchen?.active()){if(!paused&&!document.hidden&&mode==='walk')kitchen.update(dt);}
@@ -973,11 +978,11 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     Object.assign(body,at);transition=null;
     return acceptOffer({id:'cruiser-pickup',thresholdId:'beside-rider',from:'feet',to:'cruiser',at:[at.x,at.y,at.z],action:'Ride',label:'Ride'});
   }
-  function recoverRide(){const active=cruiser();if(!active)return false;clear();const ok=active.recover();options.onStatus?.(ok?'Ready to ride.':'No clear recovery spot nearby.');return ok;}
+  function recoverRide(){const active=wheels();if(!active)return false;clear();const ok=active.recover();options.onStatus?.(ok?'Ready to ride.':'No clear recovery spot nearby.');return ok;}
   // ---- Road-specific read-only probe; the global Inspector owns `=` ----
   const inspectorSource:InspectorSource={tier,sha:new URLSearchParams(location.search).get('sha'),   // scripts pass ?sha=<git sha> (flag.ts alone reads the build env)
     body:()=>body,mode:()=>mode,perspective:()=>perspective.mode(),mover:()=>registry.mode(),
-    motion:()=>{const plane=airport.selected();if(plane)return{speed:plane.speed,grounded:plane.grounded,contact:plane.disabled?'aircraft-stopped':null};const c=cruiser()?.state();return c?{speed:Math.hypot(c.vx,c.vz),grounded:c.grounded,contact:c.contact}:registry.active()?{speed:ambienceSpeed,grounded:registry.active()?.airborne?.()?false:null}:{speed:null,grounded:null};},
+    motion:()=>{const plane=airport.selected();if(plane)return{speed:plane.speed,grounded:plane.grounded,contact:plane.disabled?'aircraft-stopped':null};const c=wheels()?.state();return c?{speed:Math.hypot(c.vx,c.vz),grounded:c.grounded,contact:c.contact}:registry.active()?{speed:ambienceSpeed,grounded:registry.active()?.airborne?.()?false:null}:{speed:null,grounded:null};},
     surface:(x,z,y)=>geography.surface(x,z,y),solid:id=>{const s=solidsById.get(id);return s?{role:s.role,kind:s.kind,surface:s.surface}:null;},
     corridors:()=>world.corridors,frames:()=>frameTimes,render:()=>drawSamples.at(-1)??null,resident:()=>[...stream.live.keys()],
     lights:()=>({...roadLights.stats()}),blocker:()=>lastMovementBlocker,clock:()=>api.reviewDate()};
@@ -996,7 +1001,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     simulateWalk(seconds:number){if(!HARBOUR_DEV)throw new Error('Simulation is a review-only control.');const count=Math.ceil(Math.max(0,Math.min(seconds,3600))/.05);simulating=true;try{for(let i=0;i<count&&path.length;i++)step(.05,performance.now()+i*50);}finally{simulating=false;updateCamera();}return{body:{...body},remaining:path.length,blocker:lastMovementBlocker};},
     toggleCruiser,recoverCruiser:recoverRide,
     setCruiserTheme(theme:VehicleDressing){schedule();if(cruiserTheme===theme)return;cruiserTheme=theme;airport.setTheme(theme);if(cruiserArt){cruiserArt.dispose();cruiserArt=createCruiserArt(theme);cruiserArt.setSkin(cruiserSkin);scene.add(cruiserArt.root);}},
-    setCruiserSkin(skin:CruiserSkin){schedule();cruiserSkin=skin;cruiserArt?.setSkin(skin);},
+    setCruiserSkin(skin:CruiserSkin){schedule();cruiserSkin=skin;if(cruiser())cruiserArt?.setSkin(skin);},
     cruiserState:()=>cruiser()?.state()??null,
     body:()=>({...body}),mode:()=>mode,shotId:()=>shotId,
     setTheme(next:VehicleDressing){if(next===theme)return;theme=next;airport.setTheme(next);bridgeArt.dispose();bridgeArt=createBridgeArt(world,{tier,theme,material:fogHook,changed:()=>requestShadow('bridge-art')});bridgeArt.setNight(corridorNight);scene.add(bridgeArt.group);unmountCorridor();mountCorridor(currentTime??new Date());roadLights.dispose();roadLights=makeRoadLights();roadLights.refresh();skate?.setTheme(next);if(regionScene||regionTask)releaseRegion();if(placed)monorail?.setTheme(placed.dressing(next));kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
@@ -1005,13 +1010,13 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     inspectorRead(){
       const road=buildInspectorSnapshot(inspectorSource),station=road.station;
       const support=fleet.support(body),ground=support??geography.surface(body.x,body.z,body.y,.1),active=registry.active(),modeId=registry.mode();
-      const board=(modeId==='board'||modeId==='bicycle')?(active as {state?:()=>GroundState}|null)?.state?.()??null:null,cruiserData=cruiser()?.state()??null;
+      const board=modeId==='board'?(active as {state?:()=>GroundState}|null)?.state?.()??null:null,cruiserData=wheels()?.state()??null;
       const speed=board?Math.hypot(board.v[0],board.v[2]):cruiserData?Math.hypot(cruiserData.vx,cruiserData.vz):ambienceSpeed;
       const yacht=fleet.yacht,vessel=isCraft(modeId)?fleet.get(modeId):support?yacht:null,dx=body.x-yacht.x,dz=body.z-yacht.z,cos=Math.cos(yacht.yaw),sin=Math.sin(yacht.yaw);
       const details={supportId:ground?.id??null,supportMaterial:ground?.material??null,supportSlopeDegrees:ground?.slope??null,supportNormal:ground?`${ground.nx.toFixed(2)}/${ground.ny.toFixed(2)}/${ground.nz.toFixed(2)}`:null,
         roadStation:'none' in station?station.none:`${station.road} / ${station.reach} / ${station.s.toFixed(1)}`,roadContext:'none' in station?null:station.context,roadStructure:'none' in station?null:station.structureId,roadOffset:'none' in station?null:station.offset,roadSide:'none' in station?null:station.side,roadSurfaceRole:road.surface?.role??null,roadHeading:road.heading.degrees,
         boardStep:board?.step??null,boardGrip:board?.grip??null,boardSteer:lastInput&&board?lastInput.steer:null,boardBoost:board?board.legs.boost>0:null,boardHeading:board?.heading??null,boardTravelHeading:board&&speed>.05?Math.atan2(board.v[0],board.v[2]):null,boardGround:board?.contact.kind??null,boardSlope:board?.contact.slope??null,boardSurfaceNormal:board?.contact.n.map(n=>n.toFixed(2)).join('/')??null,
-        cruiserSkin:cruiserData?cruiserSkin:null,cruiserReverse:cruiserData?.reverse??null,cruiserBrake:cruiserData?.brakeHeld??null,cruiserGrounded:cruiserData?.grounded??null,cruiserContact:cruiserData?.contact??null,
+        cruiserSkin:cruiserData?wheelsLook():null,cruiserReverse:cruiserData?.reverse??null,cruiserBrake:cruiserData?.brakeHeld??null,cruiserGrounded:cruiserData?.grounded??null,cruiserContact:cruiserData?.contact??null,
         vessel:vessel?.id??null,vesselSpeed:vessel?.speed??null,vesselAnchor:vessel?.anchor??null,vesselLocalX:support?dx*cos-dz*sin:null,vesselLocalY:support?body.y-yacht.y:null,vesselLocalZ:support?dx*sin+dz*cos:null,vesselWorldX:vessel?.x??null,vesselWorldZ:vessel?.z??null,
         cookingPhase:kitchen?.active()?kitchen.view().state.phase:null,flightPrompt:modeId==='parachute'||modeId==='glider'?lastHud?.label??null:null,flightHeight:modeId==='parachute'||modeId==='glider'?lastHud?.height??null:null,flightLift:modeId==='parachute'||modeId==='glider'?lastHud?.lift??null:null,cameraFov:camera.fov,transitionFrom:transition?transition.eye.toArray().map(n=>n.toFixed(1)).join('/'):null,transitionTo:transition?transition.toEye.toArray().map(n=>n.toFixed(1)).join('/'):null};
       return {body:{...body},camera:{eye:camera.position.toArray() as [number,number,number],target:target.toArray() as [number,number,number],mode:perspective.mode(),owner:active?modeId:`perspective:${perspective.mode()}`,transitioning:transition!==null},mode,shot:shotId,
@@ -1033,7 +1038,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
       const rect=renderer.domElement.getBoundingClientRect(),project=(x:number,y:number,z:number)=>{const p=new THREE.Vector3(x,y,z).project(camera);return p.z>=-1&&p.z<=1?{x:rect.left+(p.x+1)*rect.width/2,y:rect.top+(1-p.y)*rect.height/2}:null;};
       const visuals:{id:'ground'|'movement'|'camera';x:number;y:number;x2?:number;y2?:number}[]=[],ground=fleet.support(body)??geography.surface(body.x,body.z,body.y,.1),g=ground?project(body.x,ground.y,body.z):null;
       if(g)visuals.push({id:'ground',...g});
-      const board=(registry.mode()==='board'||registry.mode()==='bicycle')?(registry.active() as {state?:()=>GroundState}|null)?.state?.()??null:null,cruiserData=cruiser()?.state();
+      const board=registry.mode()==='board'?(registry.active() as {state?:()=>GroundState}|null)?.state?.()??null:null,cruiserData=wheels()?.state();
       const vx=board?.v[0]??cruiserData?.vx??Math.sin(body.yaw)*ambienceSpeed,vz=board?.v[2]??cruiserData?.vz??Math.cos(body.yaw)*ambienceSpeed;
       const a=project(body.x,body.y+.8,body.z),b=project(body.x+vx,body.y+.8,body.z+vz);if(a&&b)visuals.push({id:'movement',...a,x2:b.x,y2:b.y});
       const c=project(target.x,target.y,target.z);if(c)visuals.push({id:'camera',...c});

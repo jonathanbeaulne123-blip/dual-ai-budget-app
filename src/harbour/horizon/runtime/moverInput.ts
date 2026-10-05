@@ -27,7 +27,8 @@ export interface MoverInputSources {
 const clamp1 = (v:number) => Math.max(-1, Math.min(1, v));
 const held = (keys:ReadonlySet<string>, ...names:string[]) => names.some(n => keys.has(n)) ? 1 : 0;
 
-/** RIDE §10.5: W/S (and the pad's y) = forward, A/D (and the pad's x) = steer, Space/Jump = jump (held), Shift = sprint. */
+/** RIDE §10.5: W/S (and the pad's y) = forward, A/D (and the pad's x) = steer, Space/Jump = jump (held), Shift = sprint
+ *  (the cruiser's and the bicycle's boost; the touch Boost toggle sets `controls.run`). */
 export function moverInputFrom(s:MoverInputSources):MoverInput {
   return {
     steer: clamp1(held(s.keys, 'd', 'arrowright') - held(s.keys, 'a', 'arrowleft') + s.controls.strafe),
@@ -55,8 +56,21 @@ export function moverBlendEase(elapsedMs:number, durationMs:number):number {
   return t * t * (3 - 2 * t);
 }
 
+/** How far ahead (seconds of current travel) a cruiser or bicycle checks that its ground is resident. */
+export const RIDE_AHEAD_S = .3;
+/**
+ * The wheeled ride's streaming hold: true when every point along the next `seconds` of travel (sampled every ≤ 4 m)
+ * passes `ready` (the runtime's chunk + region gate). False holds the ride where it is — the runtime skips `update`,
+ * so the vehicle keeps its velocity and resumes when the ground lands — instead of stepping 4.8 m into ground that is not there.
+ */
+export function rideAheadReady(at:{x:number;z:number}, vx:number, vz:number, ready:(x:number, z:number) => boolean, seconds = RIDE_AHEAD_S):boolean {
+  const n = Math.max(1, Math.ceil(Math.hypot(vx, vz) * seconds / 4));
+  for (let i = 1; i <= n; i++) { const t = seconds * i / n; if (!ready(at.x + vx * t, at.z + vz * t)) return false; }
+  return true;
+}
+
 type MoverFactory = (deps:MoverDeps) => ModeController;
-/** The movers the Horizon runtime registers at mount (RIDE §11 ask 2): the board and the bicycle. */
+/** The movers the Horizon runtime registers at mount (RIDE §11 ask 2): the cruiser, the board, the bicycle (a cruiser skin) and the cable rides. */
 export const HORIZON_MOVERS:Readonly<Partial<Record<ModeId, MoverFactory>>> = Object.freeze({
   cruiser: (deps:MoverDeps) => createCruiserController(deps),
   board: (deps:MoverDeps) => createBoardController(deps),

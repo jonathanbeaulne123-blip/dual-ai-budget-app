@@ -6,7 +6,7 @@ import type {WorldDefinition} from '../src/harbour/horizon/world/definition.ts';
 import {createMoverRegistry, type HorizonGeography} from '../src/harbour/horizon/movers/shared/registry.ts';
 import {thresholdPairs} from '../src/harbour/horizon/movers/shared/threshold.ts';
 import type {ModeController, MoverBody} from '../src/harbour/horizon/movers/shared/mode.ts';
-import {moverInputFrom, moverFadeMs, MOVER_FADE_MS, moverBlendMs, moverBlendEase, MOVER_PICKUP_BLEND_MS, MOVER_PARK_BLEND_MS, riderSlip, savedRideBody, offerToShow, offerBubbleText, sameHud, paceWord, createRideHold, RIDING_STATUS, type HorizonViewMode, type MoverInputSources} from '../src/harbour/horizon/runtime/moverInput.ts';
+import {moverInputFrom, moverFadeMs, MOVER_FADE_MS, moverBlendMs, moverBlendEase, MOVER_PICKUP_BLEND_MS, MOVER_PARK_BLEND_MS, riderSlip, savedRideBody, offerToShow, offerBubbleText, sameHud, paceWord, createRideHold, RIDING_STATUS, rideAheadReady, RIDE_AHEAD_S, type HorizonViewMode, type MoverInputSources} from '../src/harbour/horizon/runtime/moverInput.ts';
 import {statusTextFor, WALK_STATUS, RIDE_PAUSED_STATUS} from '../src/harbour/horizon/HorizonStage.tsx';
 import type {MoverFrame} from '../src/harbour/horizon/movers/shared/mode.ts';
 import type {MoverPose} from '../src/harbour/horizon/movers/shared/mode.ts';
@@ -231,5 +231,19 @@ describe('The desktop offer bubble (R2-03)', () => {
     expect(css).toMatch(/:root\[data-motion="reduced"\] \.horizon-offer\{transition:none\}/);
     const stage = readFileSync('src/harbour/horizon/HorizonStage.tsx', 'utf8');
     expect(stage).toMatch(/className="horizon-offer" role="status"/);
+  });
+});
+
+describe('the wheeled ride holds before ground that is not resident (cruiser/bicycle at boost, 2026-10-04)', () => {
+  it('checks the next RIDE_AHEAD_S of travel every ≤ 4 m and holds when any of it is missing', () => {
+    const seen: number[] = [];
+    // 48 m/s boosted, heading +z, with ground loaded only up to z = 110.
+    const ready = (_x: number, z: number) => { seen.push(z); return z <= 110; };
+    expect(rideAheadReady({x: 0, z: 100}, 0, 48, ready)).toBe(false);
+    expect(Math.max(...seen)).toBeCloseTo(100 + 48 * RIDE_AHEAD_S, 6);
+    for (let i = 1; i < seen.length; i++) expect(seen[i]! - seen[i - 1]!).toBeLessThanOrEqual(4 + 1e-9);
+    // At cruise far from the edge, or at rest, it lets the ride step.
+    expect(rideAheadReady({x: 0, z: 0}, 0, 32, ready)).toBe(true);
+    expect(rideAheadReady({x: 0, z: 110}, 0, 0, ready)).toBe(true);
   });
 });
