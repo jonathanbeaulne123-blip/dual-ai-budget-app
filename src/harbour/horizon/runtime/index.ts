@@ -53,6 +53,7 @@ import {useCoastline} from '../land/coast/index.ts';
 import {HORIZON_MANIFEST} from '../world/manifest.ts';
 import {restoreHorizonPosition,HORIZON_RESTORE_TOLERANCE} from './savedPosition.ts';
 import {horizonFootFrame,horizonWalkOut,type HorizonWalkProbe} from './walkOut.ts';
+import {GLIDER_PADS,createGliderPads,gliderPadNear,gliderPadPlacement,gliderPadRefusal,gliderPadStand,liveTravelOffers,stairEnds,type GliderPadId} from './gliderPads.ts';
 import {horizonPartnerPose} from './partner.ts';
 import {nearestPathNode,walkPlan,withExtraGraph} from '../world/pathGraph.ts';
 import {createChunkGate,createChunkScheduler,createRideGate,CHUNK_REACH_EU,CHUNK_ARRIVING_STATUS,CHUNK_FAILED_STATUS} from './chunkGate.ts';
@@ -291,6 +292,12 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   for(const card of world.faceCards??[]){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(card.corners.flat(),3));g.setIndex([0,1,2,0,2,3]);g.computeVertexNormals();const mesh=new THREE.Mesh(g,faceCardMaterial);mesh.name=`faceCard.${card.id}`;mesh.renderOrder=2;faceCards.add(mesh);}
   faceCards.visible=false;scene.add(faceCards);let faceCardsLit=false;
   let night=false,lastSolar={elevation:30,azimuth:180},ambience:WorldAmbience|null=null;
+  // Jonathan 2026-10-04: a parked glider at each launch pad (gliderPads.ts), built once its deck is resident; `gliderFrom` is the
+  // pad the rider launched from (its parked glider hides while that flight lasts).
+  const padGround=(x:number,z:number,y:number)=>geography.surface(x,z,y)?.y??geography.ground(x,z),padClear=stairEnds(cuts.beds);
+  const padStands=GLIDER_PADS.flatMap(p=>{const s=gliderPadStand(world,p.id,padGround);return s?[{id:p.id,label:p.label,stand:s.stand}]:[];});
+  const gliderPads=createGliderPads(scene,world,id=>gliderPadPlacement(world,id,(x,z,y)=>geography.surface(x,z,y),geography.ground,padClear),{theme,tier});
+  let gliderFrom:string|null=null;
   const shadowRequests:{at:number;reason:string}[]=[];
   function requestShadow(reason:string){schedule();renderer.shadowMap.needsUpdate=true;shadowRequests.push({at:performance.now(),reason});if(shadowRequests.length>120)shadowRequests.shift();}
   function updateFog(){const fog=horizonFog({tier,eyeAboveGround:Math.max(0,camera.position.y-geography.ground(camera.position.x,camera.position.z)),elevation:lastSolar.elevation,sunAzimuth:lastSolar.azimuth,heading:yaw*180/Math.PI});scene.fog=mode==='journey'?null:new THREE.Fog(fog.color,fog.near,fog.far);if(lastSkyColors)skyDome.update(lastSkyColors,fog.color,lastSunDirection);}
@@ -615,7 +622,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(!registry.accept(offer,{...body},performance.now())){recordDiagnostic('interaction',offer.thresholdId,'rejected','controller declined threshold');return false;}
     recordDiagnostic('interaction',offer.thresholdId,'accepted',offer.to);
     if(offer.to==='feet')onFoot(registry.lastExit(),`Parked the ${name} at ${offer.thresholdId}.`);
-    else {if(!riding)startRide();if(comfort.reducedMotion||comfort.calm)openComfortCut(acceptedBody);}
+    else {if(offer.to==='glider')gliderFrom=offer.thresholdId;if(!riding)startRide();if(comfort.reducedMotion||comfort.calm)openComfortCut(acceptedBody);}
     return true;
   }
   /** Pick-up: save the walk FOV, blend the camera to the mover's (0.8 s; a cut under reduced motion / calm), show the deck. */
@@ -692,7 +699,9 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(id.startsWith('recover:')){const aircraftId=id.slice(8) as AircraftId;const active=registry.mode()==='plane';if(active){registry.finish();onFoot({...AIRPORT.arrival},'Back at the airport.');}if(!airport.recover(aircraftId)){options.onStatus?.('That stand is occupied. Move the other aircraft first.');return false;}options.onStatus?.(AIRCRAFT[aircraftId].name+' recovered to its stand.');clear();return true;}
     if(id.startsWith('board:')){if(!rideGateOpen()){options.onStatus?.(RIDE_WAITS_STATUS);return false;}const aircraftId=id.slice(6) as AircraftId,controller=airport.controller(aircraftId);if(!registry.attach(controller,{id,thresholdId:id,from:'feet',to:'plane',at:[body.x,body.y,body.z],action:'Board',label:'Board'},body,performance.now()))return false;clear();startRide();if(comfort.reducedMotion||comfort.calm)openComfortCut({...AIRPORT.arrival});options.onStatus?.(FLIGHT_CONTROLS);airport.save();return true;}return false;
   }
-  const travelOffers=()=>registry.offers(body).filter(o=>o.to!=='plane'&&o.from!=='plane');
+  // Only offers this registry can take now (gliderPads.ts `liveTravelOffers`): a mode with no registered controller (zip, cart,
+  // balloon, ferry…) keeps its thresholds but renders no button that does nothing (Jonathan 2026-10-04: the Prow offers only "run off").
+  const travelOffers=()=>liveTravelOffers(registry,body);
   function offersAndAccept():boolean{
     const offer=mode==='walk'&&(!transition||transition.live)?offerToShow(travelOffers(),registry.canAccept):null;
     if(!sameOffer(offer,lastOffer)){lastOffer=offer;options.onOffer?.(offer);}
@@ -892,6 +901,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     // Own equipment is hidden locally in first person; activity and floating retain the full canopy.
     for(const art of moverArts)if(firstPerson)art.object.visible=false;
     if(cruiserArt)cruiserArt.root.visible=mode==='walk'&&!firstPerson;
+    if(registry.mode()!=='glider')gliderFrom=null;
+    gliderPads.update(body,gliderFrom,mode!=='journey',(x,z)=>gateOpen(x,z)&&stream.live.has(districtAt(x,z)),night);
     homeWorld.update(body,mode,firstPerson);fleetArt.update(body,yachtView()!==null,mode==='journey',!firstPerson,yachtView()?.y);
     const roomMarkers=fleetArt.root.getObjectByName('yacht-room-markers');if(roomMarkers&&kitchen?.active())roomMarkers.visible=false;
     kitchen?.render(camera,target,mode==='walk');
@@ -987,6 +998,27 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     simulateMotion(seconds:number){if(!HARBOUR_DEV)throw new Error('Development replay only.');const steps=Math.ceil(Math.max(0,Math.min(120,seconds))*60);for(let i=0;i<steps;i++){if(paused||mode!=='walk'||hold.paused())break;physicalBody=null;tickFleet(1/60);if(kitchen?.active())kitchen.update(1/60);else if(registry.active())ride(1/60,performance.now()+i*1000/60,false);else step(1/60,performance.now()+i*1000/60);}homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);return{body:{...body},vessels:fleet.snapshot().vessels};},
     kitchenView:()=>kitchen!.view(),kitchenCommand:(command:KitchenCommand)=>{if(command.type==='resume'&&mode!=='walk')setMode('walk');return kitchen!.command(command);},kitchenInput:(chef:ChefId,value:Partial<KitchenChefInput>)=>kitchen!.input(chef,value),setKitchenSound:(on:boolean,gesture=false)=>kitchen!.setSound(on,gesture),
     fleetActions,fleetAction,cycleCamera,fleetState:()=>({vessels:fleet.snapshot().vessels,swimming,perspective:perspective.mode(),sitting:fleet.sitting(),saveFailed:fleetSaveFailed}),
+    /** The three glider launch pads for the Guide (Jonathan 2026-10-04). */
+    gliderPads:()=>padStands.map(p=>({id:p.id,label:p.label})),
+    /** The pad within `radius` (3D) of the body, for the first-approach hint; null when none or not walking. */
+    gliderPadNear:(radius?:number)=>mode==='walk'&&!registry.active()?gliderPadNear(padStands,body,radius)?.id??null:null,
+    /**
+     * The Guide's "Glider launches": stand on the pad's deck at its threshold, facing the run-off, the offer in reach, with the
+     * walk-out fade (a cut under reduced motion / calm). Refused while riding or airborne, in the galley, on the monorail,
+     * seated or skating (`gliderPadRefusal`). A deck whose chunk has not arrived holds the body (`restore`) until it lands.
+     */
+    goToGliderPad(id:GliderPadId):{ok:true}|{ok:false;reason:string}{
+      schedule();
+      const refused=gliderPadRefusal({riding:registry.active()!==null,airborne:!!registry.active()?.airborne?.(),kitchen:!!kitchen?.active(),monorail:!!monorail?.state(),seated:airport.seated(),sitting:fleet.sitting()!==null,skating:skating()});
+      const pad=padStands.find(p=>p.id===id);
+      if(refused||!pad){const reason=refused??'That launch is not on this island.';options.onStatus?.(reason);recordDiagnostic('interaction',`glider pad ${id}`,'rejected',reason);return{ok:false,reason};}
+      const {stand}=pad;
+      // From Look / Island the walk camera and its FOV come back first (as Walk does), then the body stands on the pad.
+      if(mode!=='walk')setMode('walk');
+      restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',x:stand.x,y:stand.y,z:stand.z,yaw:stand.yaw});
+      transition=null;fadeCut(`${pad.label} launch. Press E to run off.`);recordDiagnostic('interaction',`glider pad ${id}`,'accepted');
+      return{ok:true};
+    },
     arrive(hostId:string){const h=world.hosts.find(h=>h.id===hostId);if(!h||!h.returnAt)return false;restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',x:h.returnAt[0],y:h.returnAt[1],z:h.returnAt[2],yaw:(h.facing??0)+Math.PI});return true;},
     /** Review-only: run the district stream and the region build to completion without waiting for frames (headless captures
      * at 1 fps advance a 3 ms build budget once a second; a page's four districts took minutes). Returns what is still pending. */
@@ -999,7 +1031,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     setCruiserSkin(skin:CruiserSkin){schedule();cruiserSkin=skin;cruiserArt?.setSkin(skin);},
     cruiserState:()=>cruiser()?.state()??null,
     body:()=>({...body}),mode:()=>mode,shotId:()=>shotId,
-    setTheme(next:VehicleDressing){if(next===theme)return;theme=next;airport.setTheme(next);bridgeArt.dispose();bridgeArt=createBridgeArt(world,{tier,theme,material:fogHook,changed:()=>requestShadow('bridge-art')});bridgeArt.setNight(corridorNight);scene.add(bridgeArt.group);unmountCorridor();mountCorridor(currentTime??new Date());roadLights.dispose();roadLights=makeRoadLights();roadLights.refresh();skate?.setTheme(next);if(regionScene||regionTask)releaseRegion();if(placed)monorail?.setTheme(placed.dressing(next));kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
+    setTheme(next:VehicleDressing){if(next===theme)return;theme=next;airport.setTheme(next);bridgeArt.dispose();bridgeArt=createBridgeArt(world,{tier,theme,material:fogHook,changed:()=>requestShadow('bridge-art')});bridgeArt.setNight(corridorNight);scene.add(bridgeArt.group);unmountCorridor();mountCorridor(currentTime??new Date());roadLights.dispose();roadLights=makeRoadLights();roadLights.refresh();skate?.setTheme(next);gliderPads.setTheme(next);if(regionScene||regionTask)releaseRegion();if(placed)monorail?.setTheme(placed.dressing(next));kitchen?.setTheme(next);fleetArt.dispose();fleetArt=createFleetArt(fleet,theme);scene.add(fleetArt.root);homeWorld.update(body,mode);fleetArt.update(body,yachtView()!==null,mode==='journey',perspective.mode()!=='first-person',yachtView()?.y);requestShadow('fleet-theme');},
     setAvatar(next:PlayableAvatar|null){const previous=figure;figure=next?createPlayableFigure(next,tier,{invalidate:schedule,onStatus:options.onAvatarStatus}):createBodyFigure();scene.add(figure.group);skate?.setFigure(figure);previous.group.removeFromParent();previous.dispose();schedule();},
     settings:()=>({tier,reducedMotion:comfort.reducedMotion,calm:comfort.calm,theme}),reviewDate:()=>(motion.sunFollowsClock&&currentTime?currentTime:solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion:comfort.reducedMotion,calm:comfort.calm})),setAmbience(audio:WorldAmbience|null){ambience=audio;schedule();},
     inspectorRead(){
@@ -1151,7 +1183,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     /** Pass 5: the water picture at v2's dam, as given (0…1; null = unknown, frosted glass). The runtime and the region read
      *  nothing themselves: the app feeds the one reading L01 shows (CONTRACT §2.2). */
     setMountainDamWater(level:number|null,reserve:number|null){regionWater={level,reserve};regionScene?.setWater(level,reserve);schedule();},
-    dispose(){airport.dispose();bridgeArt.dispose();monorail?.dispose();skate?.dispose();kitchen?.dispose();releaseRegion();offRegion?.();offCable?.();saveFleet();window.removeEventListener('pagehide',saveAll);offFleet();offHome();homeWorld.dispose();fleetArt.dispose();disposed=true;window.clearTimeout(fadeTimer);registry.dispose();cruiserArt?.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();offChunk?.();frameDriver?.dispose();observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',focusPause);document.removeEventListener('visibilitychange',visibilityClear);host.removeEventListener('blur',hostBlur);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();roadLights.dispose();unmountCorridor();inspector.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
+    dispose(){airport.dispose();bridgeArt.dispose();gliderPads.dispose();monorail?.dispose();skate?.dispose();kitchen?.dispose();releaseRegion();offRegion?.();offCable?.();saveFleet();window.removeEventListener('pagehide',saveAll);offFleet();offHome();homeWorld.dispose();fleetArt.dispose();disposed=true;window.clearTimeout(fadeTimer);registry.dispose();cruiserArt?.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();offChunk?.();frameDriver?.dispose();observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',focusPause);document.removeEventListener('visibilitychange',visibilityClear);host.removeEventListener('blur',hostBlur);stream.dispose();cableLayer.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyDome.dispose();roadLights.dispose();unmountCorridor();inspector.dispose();chalkMaterial.dispose();doorGeometry.dispose();doorMaterial.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
   };
   // Pass 5 (T3's contract, HANDOFF-notes/rides.md): the cable rides move the region's cabins through `setTransit`.
   const offCable=placed&&api.mountainRegion?connectCableRegion(placed.region,api.mountainRegion,()=>camera.aspect):null;
