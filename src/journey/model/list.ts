@@ -15,23 +15,22 @@ import {
   isFundStop, isToCheck, type Chapter, type Crossroads, type JourneyBoard, type ListGroup, type ListRow,
   type ListScope, type ListStrip, type ListView, type ListViewOf, type Stop,
 } from "../contracts.ts";
-import { directionOf, isRecorded, knownCents } from "./money.ts";
-import { amountText, dayLabel, kindLabel, MAP_WORDS, monthLabel, needsYouLabel, pinnedLabel, statusText, weekTitle, yearTitle } from "./words.ts";
+import { directionOf, isRecorded, knownCents, payAlreadyRecordedToday } from "./money.ts";
+import { amountText, chapterStatusText, dayLabel, kindLabel, MAP_WORDS, monthLabel, needsYouLabel, pinnedLabel, statusText, weekTitle, yearTitle } from "./words.ts";
 
-function chapterStatus(chapter: Chapter): string {
-  const when = chapter.state === "open" ? "This month" : chapter.state === "past" ? "Past" : "Upcoming";
-  const record = chapter.record.kind === "own" ? chapter.record.recordState === "open" ? "Chapter open" : "Chapter closed"
-    : chapter.record.kind === "still-open" ? "An earlier Chapter is still open" : "No Chapter kept";
-  const attention = chapter.unresolved.attention > 0 ? ` · ${chapter.unresolved.attention} need${chapter.unresolved.attention === 1 ? "s" : ""} attention` : "";
-  return `${when} · ${record}${attention}`;
-}
+/** Where a stop's second line comes from: the board's stops and today (trust M3 reads the same day's other stops). */
+type RowContext = { stops: readonly Stop[]; today: string };
 
-/** One stop as a row: the stop's own `actions` (the map's), its money direction and whether it is "to check". */
-export function stopRow(stop: Stop, depth: 1 | 2, dated = true): ListRow {
+/**
+ * One stop as a row: the stop's own `actions` (the map's), its money direction and whether it is "to check".
+ * With `ctx`, `note` carries the model's second line (trust M3: a pay already recorded the same day).
+ */
+export function stopRow(stop: Stop, depth: 1 | 2, dated = true, ctx?: RowContext): ListRow {
   return {
     id: stop.id, level: "stop", chapterId: stop.chapterId, date: dated ? stop.date : null,
     kindLabel: kindLabel(stop), label: stop.label, amountText: amountText(stop), statusText: statusText(stop),
     actions: stop.actions, depth, direction: directionOf(stop), toCheck: isToCheck(stop),
+    note: ctx && payAlreadyRecordedToday(stop, ctx.stops, ctx.today) ? MAP_WORDS.purse.alreadyRecorded : null,
   };
 }
 
@@ -58,12 +57,13 @@ export function chapterRow(chapter: Chapter): ListRow {
   return {
     id: chapter.id, level: "chapter", chapterId: chapter.id, date: null, kindLabel: "Chapter",
     label: chapter.record.title ? `${chapter.label} · ${chapter.record.title}` : chapter.label,
-    amountText: "", statusText: chapterStatus(chapter), actions: [], depth: 0, direction: "none", toCheck: false,
+    amountText: "", statusText: chapterStatusText(chapter), actions: [], depth: 0, direction: "none", toCheck: false,
   };
 }
 
 export function boardToList(board: JourneyBoard): ListRow[] {
   const rows: ListRow[] = [];
+  const ctx: RowContext = { stops: board.stops, today: board.today };
   const stops = new Map(board.stops.map(stop => [stop.id, stop]));
   const clusters = new Map(board.clusters.map(cluster => [cluster.id, cluster]));
   for (const older of board.olderChapters) rows.push(olderChapterRow(older));
@@ -74,14 +74,14 @@ export function boardToList(board: JourneyBoard): ListRow[] {
       const cluster = day.clusterId ? clusters.get(day.clusterId) : undefined;
       if (cluster) {
         rows.push({ id: cluster.id, level: "cluster", chapterId: chapter.id, date: cluster.date, kindLabel: "Several on one day", label: cluster.label, amountText: "", statusText: "", actions: [], depth: 1, direction: "none", toCheck: false });
-        for (const id of cluster.stopIds) { const stop = stops.get(id); if (stop) rows.push(stopRow(stop, 2)); }
+        for (const id of cluster.stopIds) { const stop = stops.get(id); if (stop) rows.push(stopRow(stop, 2, true, ctx)); }
       } else {
-        for (const id of day.stopIds) { const stop = stops.get(id); if (stop) rows.push(stopRow(stop, 1)); }
+        for (const id of day.stopIds) { const stop = stops.get(id); if (stop) rows.push(stopRow(stop, 1, true, ctx)); }
       }
       for (const item of crossroads) if (item.date === day.date) rows.push(crossroadsRow(item));
     }
   }
-  for (const memory of board.undatedMemories) rows.push(stopRow(memory, 1, false));
+  for (const memory of board.undatedMemories) rows.push(stopRow(memory, 1, false, ctx));
   return rows;
 }
 
@@ -182,18 +182,20 @@ export const listView: ListViewOf = (household: Household, board: JourneyBoard, 
   const rest = read.stops.filter(stop => !isToCheck(stop));
   const crossroads = board.crossroads.filter(item => item.date >= read.from && item.date <= read.to);
   const groups: ListGroup[] = [];
+  const ctx: RowContext = { stops: board.stops, today };
+  const row = (stop: Stop, dated = true) => stopRow(stop, 1, dated, ctx);
 
   if (need.length) {
-    const pinnedOnly = scope.level === "week" && need.every(stop => stop.date < board.week.from);
+    const pinnedOnly = scope.level === "week" && need.every(stop => stop.date < board.week.from || stop.date > board.week.to);
     groups.push({
       id: "needs-you", kind: "needs-you", date: null, today: false, emptyText: null,
       label: pinnedOnly ? pinnedLabel(need.length, board.week.from) : needsYouLabel(need.length),
-      rows: need.map(stop => stopRow(stop, 1)),
+      rows: need.map(stop => row(stop)),
     });
   }
 
   const dayGroup = (date: DateKey, onDay: Stop[]): ListGroup => {
-    const rows = [...onDay.map(stop => stopRow(stop, 1)), ...crossroads.filter(item => item.date === date).map(crossroadsRow)];
+    const rows = [...onDay.map(stop => row(stop)), ...crossroads.filter(item => item.date === date).map(crossroadsRow)];
     return { id: `day:${date}`, kind: "day", date, label: dayLabel(date, today), today: date === today, rows, emptyText: rows.length ? null : MAP_WORDS.nothingOnThisDay };
   };
 
@@ -210,7 +212,7 @@ export const listView: ListViewOf = (household: Household, board: JourneyBoard, 
       const rows: ListRow[] = [];
       for (const stop of rest.filter(row => row.chapterId === chapter.id)) {
         for (const item of crossroads) if (item.chapterId === chapter.id && item.date < stop.date && !rows.some(row => row.id === item.id)) rows.push(crossroadsRow(item));
-        rows.push(stopRow(stop, 1));
+        rows.push(row(stop));
       }
       for (const item of crossroads) if (item.chapterId === chapter.id && !rows.some(row => row.id === item.id)) rows.push(crossroadsRow(item));
       groups.push({
@@ -219,7 +221,7 @@ export const listView: ListViewOf = (household: Household, board: JourneyBoard, 
       });
     }
     if (board.undatedMemories.length) {
-      groups.push({ id: "undated", kind: "undated", date: null, label: MAP_WORDS.undated, today: false, rows: board.undatedMemories.map(memory => stopRow(memory, 1, false)), emptyText: null });
+      groups.push({ id: "undated", kind: "undated", date: null, label: MAP_WORDS.undated, today: false, rows: board.undatedMemories.map(memory => row(memory, false)), emptyText: null });
     }
   }
 

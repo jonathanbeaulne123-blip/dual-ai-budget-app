@@ -151,12 +151,59 @@ describe("src/journey source fence", () => {
     expect(offences).toEqual([]);
   });
 
+  it("reaches outside src/journey only through the README's \"may import\" table (trust minor 8)", () => {
+    // Per layer: the non-journey modules it may import. Anything else outside src/journey is an offence, so a new
+    // reach (a writer hiding in a "constants" module) has to be added here and to the README table on purpose.
+    const ALLOWED: Record<string, RegExp[]> = {
+      "contracts.ts": [/^src\/core\/(calendar|chapters|fabActions|types)\.ts$/, /^src\/harbour\/horizon\/(world\/definition|land\/interfaces)\.ts$/, /^src\/home\/model\.ts$/, /^src\/theme\/scenes\.ts$/],
+      model: [/^src\/core\/\w+\.ts$/, /^src\/harbour\/glass\/(dayLedger|campCardModel)\.ts$/, /^src\/campfire\/model\.ts$/, /^src\/home\/(progression|model|site|catalogue)\.ts$/, /^src\/hearthside\/(contracts|winMemory)\.ts$/],
+      land: [/^src\/house\/world\/horizonAssets\.ts$/, /^src\/harbour\/horizon\/land\/(terrain\/asset|interfaces|corridor\/types)\.ts$/, /^src\/harbour\/horizon\/world\/definition\.ts$/, /^src\/home\/(geometry|site)\.ts$/, /^src\/worldGeography\.ts$/],
+      board: [/^src\/house\/world\/rendererOwner\.ts$/, /^src\/harbour\/scene\/quality\.ts$/],
+      // ui: the theme, the Horizon flag and quality tier (read-only), the world revision, the motion key (constants
+      // only: `harbour/nav/motionKey.ts`; `motionEdition.ts` for MOTION_KEY alone until the ui switches) and the
+      // local diagnostics inspector (device-only: no fetch, no upload; an export is a file the person saves).
+      ui: [/^src\/theme\/\w+\.tsx?$/, /^src\/harbour\/flag\.ts$/, /^src\/harbour\/scene\/quality\.ts$/, /^src\/harbour\/nav\/(motionKey|motionEdition)\.ts$/, /^src\/worldGeography\.ts$/, /^src\/diagnostics\/inspectorCore\.ts$/],
+    };
+    const offences: string[] = [];
+    for (const file of files) {
+      const name = nameOf(file);
+      const layer = name === "contracts.ts" ? name : name.split("/")[0]!;
+      const allowed = ALLOWED[layer];
+      if (!allowed) continue;
+      const source = readFileSync(file, "utf8");
+      for (const specifier of importsOf(source)) {
+        if (!specifier.startsWith(".")) continue;
+        const path = resolved(file, specifier);
+        if (path.startsWith("src/journey/")) continue;
+        if (!allowed.some((rule) => rule.test(path))) offences.push(`${name} → ${path}`);
+      }
+      // From the edition module, only the key and its type: never its storage reader or writer.
+      for (const match of source.matchAll(/import\s+(?:type\s+)?\{([^}]*)\}\s+from\s+["'][^"']*harbour\/nav\/motionEdition\.ts["']/g)) {
+        for (const raw of match[1]!.split(",")) {
+          const imported = raw.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0]!.trim();
+          if (imported && imported !== "MOTION_KEY" && imported !== "MotionEdition") offences.push(`${name} → motionEdition.${imported} (a storage reader/writer)`);
+        }
+      }
+    }
+    expect(offences).toEqual([]);
+    // The key module itself holds constants only.
+    const key = code(readFileSync(join(root, "src", "harbour", "nav", "motionKey.ts"), "utf8"));
+    expect(key).not.toMatch(/localStorage|sessionStorage|function|import\s/);
+  });
+
+  it("the diagnostics inspector the ui reports to never leaves the device (trust minor 11)", () => {
+    const core = code(readFileSync(join(root, "src", "diagnostics", "inspectorCore.ts"), "utf8"));
+    expect(core).not.toMatch(/\bfetch\(|sendBeacon|XMLHttpRequest|WebSocket|EventSource|supabase/i);
+    expect(importsOf(core)).toEqual([]);
+  });
+
   it("keeps the frozen contracts free of a writing action: every ActionCall opens a surface", () => {
     const contracts = readFileSync(join(journey, "contracts.ts"), "utf8");
     const union = contracts.slice(contracts.indexOf("export type ActionCall ="), contracts.indexOf("export type StopAction"));
     const names = [...union.matchAll(/name: "(\w+)"/g)].map((m) => m[1]);
     // Horizon Clock's dial adds two open-only calls: "All tools" opens the quick sheet; "Simple view" picks the device's
     // flat motion edition. Neither writes.
-    expect(names.sort()).toEqual(["back", "chooseSimpleView", "enterHorizon", "openAllTools", "openBillPaid", "openBooks", "openCalendar", "openCampfire", "openDueReview", "openEraPlanner", "openHomeBook", "openKitty", "openPlace", "openRecord", "openWeeklySitdown"]);
+    // "enterHorizonCentre" (trust minor 1) resolves to `enterHorizon` at the map's centre ground inside runJourneyAction.
+    expect(names.sort()).toEqual(["back", "chooseSimpleView", "enterHorizon", "enterHorizonCentre", "openAllTools", "openBillPaid", "openBooks", "openCalendar", "openCampfire", "openDueReview", "openEraPlanner", "openHomeBook", "openKitty", "openPlace", "openRecord", "openWeeklySitdown"]);
   });
 });

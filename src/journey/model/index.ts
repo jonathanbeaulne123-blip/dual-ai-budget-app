@@ -6,6 +6,9 @@
 export { deriveJourneyBoard, deriveJourneyBoardWithSummary } from "./derive.ts";
 export type { BoardSummary } from "./summary.ts";
 export { boardToList, booksActualsBetween, listView } from "./list.ts";
-export { directionOf, isRecorded, knownCents, toCheckIds } from "./money.ts";
+export { directionOf, isRecorded, knownCents, payAlreadyRecordedToday, toCheckIds } from "./money.ts";
 export { mondayOf } from "./weeks.ts";
-export { amountText, dayLabel, kindLabel, MAP_WORDS, monthLabel, needsYouLabel, pinnedLabel, shortDate, statusText, weekTitle, yearTitle } from "./words.ts";
+export {
+  amountText, chapterStatusText, dayLabel, kindLabel, MAP_WORDS, monthLabel, needsYouLabel, openPlaceWords, pinnedLabel, rulerWords, shortDate,
+  signedMoney, statusText, weekTitle, yearTitle,
+} from "./words.ts";

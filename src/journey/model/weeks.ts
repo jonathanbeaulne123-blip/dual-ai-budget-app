@@ -1,8 +1,9 @@
 /**
  * This week (rulings 7, 13): Monday to Sunday around today, anchored to the Monday of the current week, today
  * highlighted within it. Sizes: today's tile is "today"; a day with at least one in/out stop is "money"; any other
- * day is a "stone" (still a real, selectable day). The pile is the "to check" stops dated BEFORE Monday, pinned to the
- * first tile; a "to check" stop inside the week stays on its own day, so nothing is shown twice. Pinned is not paid.
+ * day is a "stone" (still a real, selectable day). The pile is the "to check" stops dated OUTSIDE the week (before
+ * Monday, or a needs-review bill after Sunday), pinned to the first tile; a "to check" stop inside the week stays on
+ * its own day. Pile + the week's own "to check" stops = every "to check" stop, each once. Pinned is not paid.
  */
 import { addDays, weekdaySunday0, type DateKey } from "../../core/calendar.ts";
 import { isToCheck, type JourneyWeek, type Stop, type WeekDay } from "../contracts.ts";
@@ -26,5 +27,5 @@ export function weekOf(stops: readonly Stop[], today: DateKey): JourneyWeek {
       size: relation === "today" ? "today" : onDay.some(stop => directionOf(stop) !== "none") ? "money" : "stone",
     });
   }
-  return { from, to, days, pileStopIds: stops.filter(stop => isToCheck(stop) && stop.date < from).map(stop => stop.id) };
+  return { from, to, days, pileStopIds: stops.filter(stop => isToCheck(stop) && (stop.date < from || stop.date > to)).map(stop => stop.id) };
 }

@@ -4,8 +4,10 @@
  * - `directionOf(stop)`: income → "in", commitment → "out", everything else → "none". A goal's figure is a target
  *   (basis "target"), not money moving: it is "none" and never gets a coin stack.
  * - `toCheckIds(stops)`: the ids `isToCheck` (contracts) accepts, in the stops' own order (board order = date order).
- *   One definition only: a commitment whose date passed and that is not recorded as paid. Expected income whose date
- *   passed unrecorded is never "to check" (D60, ruling 2).
+ *   One definition only: an overdue or needs-review commitment (the old attention list's rule, trust M1). Expected
+ *   income whose date passed unrecorded is never "to check" (D60, ruling 2).
+ * - `payAlreadyRecordedToday(stop, stops, today)`: trust M3 — an expected (non-Fund) pay dated today while a
+ *   confirmed non-Fund pay already stands on that day. Both stay on the map; the words ask to check the Books.
  * - `knownCents(stop)`: the stop's figure when one is known; null when unknown (never 0).
  */
 import { isFundStop, isToCheck, type DirectionOf, type MoneyDirection, type Stop } from "../contracts.ts";
@@ -30,6 +32,12 @@ export function knownCents(stop: Stop): number | null {
 /** Recorded = a commitment paid or an income stop confirmed. Everything else on the map is not recorded. */
 export function isRecorded(stop: Stop): boolean {
   return (stop.kind === "commitment" && stop.status === "paid") || (stop.kind === "income" && stop.status === "confirmed");
+}
+
+/** Trust M3: `stop` is expected non-Fund pay dated today, and a confirmed non-Fund income stop stands on the same day. */
+export function payAlreadyRecordedToday(stop: Stop, stops: readonly Stop[], today: string): boolean {
+  if (stop.kind !== "income" || stop.status !== "expected" || stop.date !== today || isFundStop(stop)) return false;
+  return stops.some(other => other.kind === "income" && other.status === "confirmed" && other.date === today && !isFundStop(other));
 }
 
 export { isFundStop, isToCheck };

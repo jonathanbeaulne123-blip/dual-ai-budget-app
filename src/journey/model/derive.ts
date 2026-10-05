@@ -78,10 +78,14 @@ export function deriveJourneyBoardWithSummary(household: Household, memberId: st
   const toCheck = toCheckIds(stops);
   const week = weekOf(stops, today);
   const stopById = new Map(stops.map(stop => [stop.id, stop]));
-  // The summary's attention list, split the way the checklist reads it: the close-due Chapter item(s), and readNeeds
-  // (what waits on this viewer). The overdue / needs-review commitments are `toCheck` itself.
+  // The summary's attention list, split the way the checklist reads it (trust M1: every item lands in exactly one
+  // section). A commitment item is "to check" (`isToCheck` is the attention list's own overdue / needs-review rule,
+  // whatever its date — a needs-review bill today or next week included); a review item is the Chapter section;
+  // anything else (readNeeds, or a stop the board does not draw) waits on you, so nothing is silently dropped.
+  const toCheckSet = new Set(toCheck);
   const chapterItems = summary.attention.filter(item => item.stopId !== null && stopById.get(item.stopId)?.kind === "review");
-  const waitingOnYou = summary.attention.filter(item => item.stopId === null);
+  const waitingOnYou = summary.attention.filter(item => item.stopId === null
+    || (!toCheckSet.has(item.stopId) && stopById.get(item.stopId)?.kind !== "review"));
   const board: JourneyBoard = {
     version: 2, householdId: household.householdId, memberId, today, currentChapterId: current,
     window: { from: ctx.months[0]!, to: ctx.months.at(-1)! },

@@ -457,8 +457,11 @@ describe("Journey Board model — Horizon Clock v2 fields on the fixture househo
     expect(board.version).toBe(2);
     const needsReview = byId(board, journeyIds.bill(demo.ids.streamingRecurrenceId, "2026-09-10"))!;
     expect(board.toCheck).toContain(needsReview.id);
-    expect(board.toCheck).toEqual(board.stops.filter(stop => stop.kind === "commitment" && stop.relation === "past" && (stop.status === "overdue" || stop.status === "needs-review")).map(stop => stop.id));
-    expect(board.toCheck).toEqual(board.stops.filter(isToCheck).map(stop => stop.id));
+    // Independent of `isToCheck`: the summary's own attention commitments (the old list) are exactly the chip's set.
+    const attention = boardSummary.attention.filter(item => item.stopId !== null && byId(board, item.stopId)?.kind === "commitment").map(item => item.stopId!);
+    expect([...board.toCheck].sort()).toEqual([...attention].sort());
+    for (const id of board.toCheck) expect(["overdue", "needs-review"]).toContain((byId(board, id) as Extract<Stop, { kind: "commitment" }>).status);
+    expect(board.stops.filter(stop => !board.toCheck.includes(stop.id)).some(isToCheck)).toBe(false);
     const counted = board.chapters.reduce((n, c) => n + c.unresolved.overdueCommitments + c.unresolved.commitmentsNeedingReview, 0);
     expect(board.toCheck).toHaveLength(counted);
     for (const row of boardToList(board).filter(r => r.level === "stop")) expect(row.toCheck).toBe(board.toCheck.includes(row.id));
@@ -476,7 +479,7 @@ describe("Journey Board model — Horizon Clock v2 fields on the fixture househo
 
   it("a new household's v2 board is honestly empty", () => {
     const empty = deriveJourneyBoard(emptyBoardHousehold(), BIANCA, FIXTURE_TODAY);
-    expect(empty).toMatchObject({ version: 2, toCheck: [], purse: { expectedToday: [] }, digest: { weekStopIds: [], nextLeavingStopId: null, toCheckIds: [] } });
+    expect(empty).toMatchObject({ version: 2, toCheck: [], purse: { expectedToday: [] }, digest: { weekStopIds: [], nextLeavingStopId: null, nextIsSettingAside: false, toCheckIds: [] } });
     expect(empty.week.days.every(day => day.size === "stone" || day.size === "today")).toBe(true);
     expect(empty.year.every(row => row.outRecordedCents + row.outOpenCents + row.inRecordedCents + row.inOpenCents === 0)).toBe(true);
   });
