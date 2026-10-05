@@ -16,7 +16,8 @@
  *   the trail (`setCalm`, when the land offers it).
  *
  * All text stays DOM: the scene reports `onAnchors` (stop ids, dates, chapter ids, `piece`, `hercules`, `pile`, plus
- * decorative `numeral:<day>` anchors) and the UI prints every word, number and face tag. Canvas `aria-hidden`.
+ * decorative `numeral:<day>` and Week `face:<date>` anchors) and the UI prints every word, number and face tag.
+ * Canvas `aria-hidden`.
  *
  * Inert: the options carry no actions. Picking reports ids (`onPick`), the pull reports `onLevel`; selecting, turning,
  * levelling and animating only change pixels. Reduced motion (`options.reducedMotion`, `prefers-reduced-motion` or
@@ -244,12 +245,16 @@ export function createJourneyMapScene(host: HTMLElement, options: MapSceneOption
       const [x, z] = polar(s.angle, 5.08);
       studs.add(at(part(new THREE.SphereGeometry(0.05, 10, 6), colr), x, BEZEL_Y + 0.03, z, { s: [1, 0.6, 1] }));
     }
+    bezelRoot.add(bake(studs, mats, shadows, "journey-map:studs").group);
+    // The chapter gate stands apart so it can hide past t 1.3 with the numerals (the prototype's `ringGate`): in Week
+    // it would stand over the trail as a stray arch.
     const gate = chapterGate(theme);
     gate.position.set(layout.gate.at[0], BEZEL_Y + 0.12, layout.gate.at[1]);
     gate.rotation.y = -layout.gate.angle;
-    studs.add(gate);
-    bezelRoot.add(bake(studs, mats, shadows, "journey-map:studs").group);
+    gateNode = bake(gate, mats, shadows, "journey-map:gate").group;
+    bezelRoot.add(gateNode);
   }
+  let gateNode: THREE.Object3D | null = null;
 
   // --- Month props on the bezel ---------------------------------------------------------------------------------
   let clock: ClockLayout = layoutClock(board, chapterId);
@@ -521,12 +526,9 @@ export function createJourneyMapScene(host: HTMLElement, options: MapSceneOption
       const bodyBaked = bake(tb.body, mats, shadows, "journey-map:pile").group;
       bodyBaked.position.y = tb.top;
       tb.root.add(bodyBaked);
-      const bead = bake(needBeadGeometryParts(theme), mats, false, "journey-map:pile-bead").group;
-      bead.scale.setScalar(0.2);
-      bead.position.set(pile.edgeDu * 0.34, 0.05 + cards * 0.05 + 0.15, -pile.edgeDu * 0.3);
-      bodyBaked.add(bead);
+      // The count badge ("8 !") is the pile mark's own DOM ring (words, not a 3D bead), as the prototype's one tag.
       weekRoot.add(tb.root);
-      tileNodes.push({ tile: null, group: tb.root, body: bodyBaked, top: tb.top, topY: tb.top + 0.05 + cards * 0.05 + 0.03, ord: 0, ids: pile.stopIds, bump: 0, billboards: [bead] });
+      tileNodes.push({ tile: null, group: tb.root, body: bodyBaked, top: tb.top, topY: tb.top + 0.05 + cards * 0.05 + 0.03, ord: 0, ids: pile.stopIds, bump: 0, billboards: [] });
     }
     weekBus = bake(makeBus(theme), mats, shadows, "journey-map:week-bus").group;
     weekBus.scale.setScalar(0.001);
@@ -710,6 +712,7 @@ export function createJourneyMapScene(host: HTMLElement, options: MapSceneOption
       bus.group.visible = s > 0.002;
     }
     weekRoot.visible = P.weekVisible;
+    if (gateNode) gateNode.visible = P.numerals;
     trailMats.solid.opacity = P.trail;
     trailMats.glass.opacity = P.trail;
     for (const n of tileNodes) {
@@ -805,16 +808,29 @@ export function createJourneyMapScene(host: HTMLElement, options: MapSceneOption
     for (const nm of clock.numerals) push(`numeral:${nm.day}`, project(island, new THREE.Vector3(nm.at[0], BEZEL_Y + 0.12, nm.at[1])), t < 1.3 && !yr);
     push("numeral:1", project(island, new THREE.Vector3(clock.gate.at[0], BEZEL_Y + 0.5, clock.gate.at[1])), t < 1.3 && !yr);
     if (herc) push(JOURNEY_MAP_MARKS.hercules, project(herc.group, new THREE.Vector3(0, 1.5, 0)), herc.group.visible && t < 1.5 && t >= 0.5);
-    // Week: each tile's date (and its stops), the pile, the bus.
+    // Week: each tile's date (and its stops), the pile, the bus — and `face:<date>`, the point on the tile's top face
+    // nearest the camera, where the UI prints the day's tag ("WED 30 · $300") so it reads as printed on the tile.
+    const camFlat = new THREE.Vector3();
     for (const n of tileNodes) {
       const p = project(n.group, new THREE.Vector3(0, n.topY, 0));
       const drawn = wk && n.group.visible;
-      if (n.tile) { push(n.tile.date, p, drawn); for (const id of n.tile.stopIds) push(id, p, drawn); }
-      else { push(JOURNEY_MAP_MARKS.pile, p, drawn); for (const id of n.ids) push(id, p, drawn); }
+      if (n.tile) {
+        push(n.tile.date, p, drawn);
+        for (const id of n.tile.stopIds) push(id, p, drawn);
+        n.group.updateWorldMatrix(true, false);
+        const c = new THREE.Vector3(0, n.top + 0.02, 0).applyMatrix4(n.group.matrixWorld);
+        camFlat.set(camera.position.x - c.x, 0, camera.position.z - c.z);
+        if (camFlat.lengthSq() > 1e-9) c.addScaledVector(camFlat.normalize(), n.tile.edgeDu * (n.tile.size === "stone" ? 0.05 : 0.3) * Math.max(0.001, n.body.scale.x));
+        push(`face:${n.tile.date}`, project(null, null, c), drawn);
+      } else { push(JOURNEY_MAP_MARKS.pile, p, drawn); for (const id of n.ids) push(id, p, drawn); }
     }
     if (weekBus) push(JOURNEY_MAP_MARKS.piece, project(weekBus, new THREE.Vector3(0, BUS_TOP, 0)), wk && weekBus.visible);
-    // Year: each mini's chapter id (under the mini, where its label reads).
-    for (const n of miniNodes) push(n.mini.chapterId, project(n.group, new THREE.Vector3(0, -0.55, 1.6)), yr && n.group.visible);
+    // Year: each mini's chapter id (under the mini, where its label reads), and `centre:<chapter>` (decorative: the
+    // mini's own centre, from which a phone leans its plate outward, as the prototype does).
+    for (const n of miniNodes) {
+      push(n.mini.chapterId, project(n.group, new THREE.Vector3(0, -0.55, 1.6)), yr && n.group.visible);
+      push(`centre:${n.mini.chapterId}`, project(n.group, new THREE.Vector3(0, 0, 0)), yr && n.group.visible);
+    }
     return dedupe(out);
   }
   /** One anchor per id: a visible one wins (the bus is "piece" on Month and on Week). */

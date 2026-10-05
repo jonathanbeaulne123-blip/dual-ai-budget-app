@@ -69,7 +69,10 @@ export function parseJourneyViewStateV1(raw: unknown): JourneyViewStateV1 | null
 
 const fresh = (): JourneyViewStateV2 => ({ ...DEFAULT_JOURNEY_VIEW_STATE_V2 });
 
-/** The v2 record; else the v1 record migrated once; else the default. Never throws. */
+/**
+ * The v2 record; else the v1 record migrated ONCE — the v2 record is written straight away (trust minor 10), so the
+ * next mount reads v2 and never re-reads v1; else the default. Never throws (a refused write keeps the migrated state).
+ */
 export function readJourneyViewState(identity: JourneyViewIdentity, storage: Storage | null = journeyStorage()): JourneyViewStateV2 {
   if (!storage) return fresh();
   try {
@@ -78,13 +81,17 @@ export function readJourneyViewState(identity: JourneyViewIdentity, storage: Sto
   } catch {
     return fresh();
   }
+  let migrated: JourneyViewStateV2 | null = null;
   try {
     const old = storage.getItem(journeyViewStateKeyV1(identity));
     const v1 = old ? parseJourneyViewStateV1(JSON.parse(old)) : null;
-    return v1 ? migrateJourneyViewState(v1) : fresh();
+    migrated = v1 ? migrateJourneyViewState(v1) : null;
   } catch {
     return fresh();
   }
+  if (!migrated) return fresh();
+  writeJourneyViewState(identity, migrated, storage);
+  return migrated;
 }
 
 /** False when the storage refused (the in-memory state stays; nothing else happens). */

@@ -78,7 +78,8 @@ const PAINT_WOOD = 2, PAINT_SETTLED: readonly [number, number] = [12, 18];
 export const CALM = {
   fadeFromM: 90, fadeToM: 300, highFromM: 68, highToM: 120, highNearFromM: 45, highNearToM: 95,
   squash: 0.85, colourShare: 0.75, coastFromM: 18, coastToM: 60, keepNearM: 45, keepFarM: 150, keepClearM: 40, keepEvery: 3,
-  mainRoadFade: 0.65,
+  /** Main roads all but vanish off the trail (the prototype hides them); a whisper stays so the island keeps its shape. */
+  mainRoadFade: 0.9,
 } as const;
 
 export type { JourneyLandCalm };
