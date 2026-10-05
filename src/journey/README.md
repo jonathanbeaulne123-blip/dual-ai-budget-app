@@ -18,7 +18,7 @@ Decisions: `docs/DECISIONS.md` D49–D67 (the Journey Board) and D68–D74 (the 
 | `model/` | L1 | PURE `deriveJourneyBoard(h, memberId, today)` → `JourneyBoard` (stops, chapters, `week`, `year`, `toCheck`, `purse`, `digest`); `listView(h, board, scope)`; `boardToList`; every status word and money sign (`words.ts`: `MAP_WORDS`, `signedMoney`, `rulerWords`, `chapterStatusText`, `openPlaceWords`) | `src/core/*` selectors, `src/harbour/glass/{dayLedger,campCardModel}.ts`, `src/campfire/model.ts`, `src/home/{progression,model,site,catalogue}.ts`, `src/hearthside/{contracts,winMemory}.ts` — no React, no three, no storage |
 | `land/` | L2 | `loadJourneyLand()` (the only `fetch`), pure extraction, `dioramaFrame(land)` from the coastline, `buildJourneyLand()` clay island (lights, Week calm, Year mini geometry), `JourneyLandFlat` SVG twin, the three clay palettes | `three`, `src/house/world/horizonAssets.ts` (parse + URLs), `src/harbour/horizon/land/terrain/asset.ts`, `src/home/{geometry,site}.ts` |
 | `board/` | L3 | pure `layoutClock` / `layoutWeek` / `layoutYear` / `stackFor`, `levels.ts` (the pull, the chapter turn), `createJourneyMapScene()` on the shared renderer lease (bezel, toys on stacks, the cat-eared bus, Hercules, minis, trail), `BoardFlat` for all three levels, `mapLabels` / `placeLabels` (max 3) | `three`, `src/house/world/rendererOwner.ts`, `land/` |
-| `ui/` | L4 | React: `JourneyBoard.tsx` (entry), header, purse chip, stage + DOM marks, Hercules's bubble + checklist, stop / day / chapter / crossroads sheets, "Which one?", "+" dial, level pull + Key, `ListView`, `viewState.ts` (the only storage), CSS for three themes | `model/`, `land/`, `board/`, `src/theme/*`, read-only: `src/harbour/flag.ts` (`HORIZON_AVAILABLE`), `src/harbour/scene/quality.ts` (tier), `src/worldGeography.ts` (revision), `src/harbour/nav/motionKey.ts` (the edition key, constants only — `motionEdition.ts` holds the writer and is imported for `MOTION_KEY` alone), `src/diagnostics/inspectorCore.ts` (the local Inspector: no network; a report leaves only when the person copies or saves it) |
+| `ui/` | L4 | React: `JourneyBoard.tsx` (entry), header, purse chip, stage + DOM marks, Hercules's bubble + checklist, stop / day / chapter / crossroads sheets, "Which one?", "+" dial, level pull + Key, `ListView`, `viewState.ts` (the only storage), CSS for three themes | `model/`, `land/`, `board/`, `src/theme/*`, read-only: `src/harbour/flag.ts` (`HORIZON_AVAILABLE`), `src/harbour/scene/quality.ts` (tier), `src/worldGeography.ts` (revision), `src/harbour/nav/motionKey.ts` (the edition key, constants only — never `motionEdition.ts`, which holds the storage writer), `src/diagnostics/inspectorCore.ts` (the local Inspector: no network; a report leaves only when the person copies or saves it) |
 
 ## Rules (fenced by `test/journey-board-fence.test.ts` and `test/journey-map-geometry-source.test.ts`)
 
@@ -36,7 +36,11 @@ Decisions: `docs/DECISIONS.md` D49–D67 (the Journey Board) and D68–D74 (the 
    ONE definition (`isToCheck`: a commitment that is overdue or needs review — the old attention list's rule, so a
    needs-review bill today or later counts too); every attention item lands in exactly one checklist section (To
    check, This week, Waiting on you, Chapter); stacks cap at 30 rings with a break and the amount is always printed.
-   All status words and money signs come from `model/words.ts`.
+   Expected pay reads "expected today · not recorded on its schedule" (never "not in yet"); when a pay is already
+   recorded the same day the purse, the stop's sheet and its list row print the model's note ("A pay is already recorded
+   today · check the Books before recording this one") and both stops stay (no de-duplication). The dial's record verbs
+   are the App's own (`recordModes`, its `fabActionsFor` list). All status words and money signs (`signedMoney`, the
+   sign from the value) come from `model/words.ts`; `ui/copy.ts` holds layout words only, never a status or money word.
 5. Stable ids from source ids (`journeyIds`). Derive on read; nothing about the map is stored except view state
    (`hearth:journey-board:v2:…`; a v1 record is migrated once).
 6. Three authored themes (classic / taylor / newfoundland, with Newfoundland's clapboard plinth); the theme dot applies

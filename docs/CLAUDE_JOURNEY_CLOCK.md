@@ -1,7 +1,7 @@
 # The Journey map: Horizon Clock — handoff and plan of record (2026-10-05)
 
-**Status:** local branch `claude/journey-clock` from `main@9d13db2` (#585). Not pushed, no PR, not merged, not deployed,
-not live verified. Evidence captures are not made yet (a separate pass owns them; see "Still to do").
+**Status:** local branch `claude/journey-clock` from `main@9d13db2` (#585), fix pass merged. Not pushed, no PR, not
+merged, not deployed, not live verified. Evidence in `docs/evidence/journey-map/` predates the fix pass (re-capture owed).
 **Risk:** **Medium-High** (replaces the household Journey presentation and the illustrated edition's arrival surface;
 hides the Compass over it; wires three App callbacks). No money arithmetic, command, schema, sync, Auth/RLS, Worker or
 Hercules payload change.
@@ -76,33 +76,65 @@ The Compass is not drawn while `journeyBoardShown` (the map has its own "+").
   `src/harbour/geometry` (added by #585, a pure helper with no imports). That fence also now reads the conditional
   Compass.
 
-## Verification (local, this branch)
+## Fix pass (2026-10-05, after the evidence pass)
 
-- `pnpm typecheck`: clean.
-- Gate: `pnpm test -- --risk=medium-high --focus=test/journey-board-app.test.ts --focus=test/journey-board-fence.test.ts
-  --focus=test/journey-map-geometry-source.test.ts --focus=test/app-startup-p1.test.ts --focus=test/journey-map-board.test.ts
-  --focus=test/journey-board-ui.test.ts --focus=test/journey-land.test.ts --focus=test/journey-map-model.test.ts
-  --focus-reason="…"`: 59 selected (51 fast, 8 serial). Fast phase **522 / 523** in ~100 s (whole gate ~4 min, no
-  time-budget breach); the one failure is the known timing test `journey-land › measures the slim parse…`, which times out at 15 s
-  only under the gate's parallel load and passes alone (~6 s). Not loosened. One earlier gate run had it green.
-- Serial phase, run by hand exactly as the gate would (`--maxWorkers=1 --testTimeout=30000`): `app-startup-p1` **83 / 83**
-  (the Bianca regression), `plan-system`, `proof-matrix`, `hearthside-workspace-browser` green; `hearthside-actual-app-browser`
-  and `-v2-browser` fail identically on clean `main@9d13db2` ("The first-plan proposal changed…"); `hearthside-bank-ack-recovery`
-  and `workspace-merge-review-browser` skip / fail for the missing `chromium_headless_shell-1234` binary. All four predate
-  this branch.
-- `pnpm build` (runs the bake `--check`s): green; `JourneyBoard` chunk 235.5 kB (82.7 kB gzip) + 29.9 kB CSS.
+Rulings in the orchestrator's FIXES list; two lanes merged on this branch (`claude/jc-fixa` f539d0b, `claude/jc-fixb`
+1f8d071), then the integrator removed the lane-B shim (`ui/mergeShim.ts`) and switched the ui to lane A's real names.
+
+- **Trust M1 (D69 amended):** `isToCheck` = a commitment that is overdue or needs review, on any date (the old attention
+  list's own rule; a needs-review bill today or later is no longer dropped). Every attention item lands in exactly one
+  checklist section; chip, bubble, Week pile, Year counts, list "Needs you" and the checklist agree (tests).
+- **Trust M2:** waiting-on-you and the repeating reminders show on the bubble, as list groups with labelled buttons, and
+  as a count chip in the header at Year and in List — the bubble never says "0 to check" while something waits.
+- **Trust M3:** expected pay reads "expected today · not recorded on its schedule". When a confirmed pay already stands on
+  the same day, `PurseExpected.note` / `ListRow.note` ("A pay is already recorded today · check the Books before
+  recording this one") print in the purse, on the stop's card and on its list row. No de-duplication.
+- **Trust M4:** `JourneyBoardProps.recordModes` (`JourneyRecordMode`, the App's `fabActionsFor` list): the dial gets
+  "Record a shift…" for a member with a job and "Move money…" (transfer), exactly as the App's own dial.
+- **Trust minors:** the dial's Enter Horizon is `ActionCall {name: "enterHorizonCentre"}`, resolved by
+  `runJourneyAction(…, {centre})` (no placeholder location); money signs from the value (`signedMoney`); chapter needs
+  in separate words ("5 to check · Chapter close due"); all status words moved to `model/words.ts` (Key, legend,
+  reminders, checklist title, ruler words, chapter status, "Open the {place}") and the ui duplicates deleted; `MOTION_KEY`
+  from the constants-only `harbour/nav/motionKey.ts` (fence allowlist per layer); the local Inspector has no network
+  egress (test); v2 view state written right after a v1 migration.
+- **UX:** Week at rest has one callout (Today) and day tags printed on the tiles; Year plates on every mini (to-check
+  count; recorded / not recorded apart), the open month outlined, a persistent caption ("Each stack = bills on the map
+  that month · ring = $1,000 · not all spending"); "Setting aside next · Winter reserve" for a jar
+  (`Digest.nextIsSettingAside`); the bus folds into today's mark (axe target-size 0); day marks size 24–44 px to their
+  spacing; slider arrow keys step a level; popovers close on outside press / selection / level; flat Key text; one
+  live region; theme details in the shell (Classic hearth-tile edge, Taylor washi tape, Newfoundland clapboard).
+- **A9 (phones):** on arrival the board's full-height slot is scrolled to the top so the clock is full size; the App
+  header and banners are untouched.
+
+## Verification (local, this branch, after the fix pass)
+
+- `pnpm typecheck`: clean. `pnpm build` (bake `--check`s): green; `JourneyBoard` 252.6 kB (87.9 kB gzip) + 37.8 kB CSS.
+- Gate (`--risk=medium-high`, focus: journey-board-app, -fence, -map-geometry-source, app-startup-p1, journey-map-board,
+  journey-board-ui, -parity, journey-land, journey-map-model, journey-board-model): 59 selected (51 fast, 8 serial).
+  Fast phase **555 / 555** in 109 s. Serial: `app-startup-p1` **83 / 83** (the Bianca regression), `plan-system`,
+  `proof-matrix`, `hearthside-workspace-browser` green; the four known failures only — `hearthside-actual-app-browser`
+  and `-v2-browser` fail identically on `main@9d13db2` ("The first-plan proposal changed…" / a click timeout), and
+  `hearthside-bank-ack-recovery` and `workspace-merge-review-browser` need the missing `chromium_headless_shell-1234`.
+  Whole gate 6 min 55 s: `time-budget-breached` in the serial phase (those browser files), not in the journey tests.
+- Timing tests under parallel load (`journey-land › slim parse`, the model's < 400 ms): green in this run; both have
+  timed out under load before and pass alone. Not loosened.
 - Known pre-existing on main, not touched: `test/journey-mini-story.test.ts` (a seed hits the Fund top-up rule).
-- Data: fictional Development demo (`seedDemoHousehold`, `journeyDemoHousehold`), jsdom only; no phone, no browser
-  capture yet.
+- Data: fictional Development demo, jsdom.
+- **Evidence is stale for the fix pass:** `docs/evidence/journey-map/` was captured at `8009001`, before the fixes (it
+  still shows "not in yet", the old Week and Year). B10's re-capture did not run; it is the next step.
 
 ## Still to do (next owners)
 
-1. **Evidence captures** (separate agent): `scripts/serve-journey-map-proof.mjs` (modelled on
-   `serve-journey-mini-proof.mjs`), 320 / 390 / 720 / 1100 × 3 themes × Year / Month / Week, list, reduced motion,
-   keyboard, empty / loading / error / offline, flat, axe at 390 / 1100 → `docs/evidence/journey-map/`.
+1. **Re-capture the evidence** on this tip with `scripts/serve-journey-map-proof.mjs` (`?modes=` feeds the dial's record
+   verbs): the full matrix, axe at 390 / 1100, and a side-by-side of week / month / year at 390 / 1100 against the
+   approved prototype captures; update `docs/evidence/journey-map/README.md`.
 2. **Phone performance** on a real device (12 minis, 31 props, shadows): the lite tier and the budget test are in place.
-3. **App chrome above the board** (status banners, Our Home / My Money tabs) is left as is (ruling 11), a follow-up.
-4. **Jonathan**: D68–D73 (proposed), and whether the dial's Simple view should stay a one-way exit (D65 lands on the Court).
+3. **Jonathan's decisions:**
+   - **A9 App chrome on phones:** the App header and the status banners still stand above the map on phones
+     (`real-app-arrival-390`); arrival now scrolls the map to full size. Should the Journey route hide or collapse
+     the App header / banners on phones (ruling 11 left them as is)?
+   - D68–D73 (proposed; D69 amended for trust M1), and whether the dial's Simple view should stay a one-way exit (D65
+     lands on the Court).
 
 No money-meaning question was opened: every figure on the map is an existing selector's or a source record's, and every
 write still goes through its own named Confirm.

@@ -1,5 +1,9 @@
 # Journey map (Horizon Clock) — visual and accessibility evidence
 
+> **Stale after the fix pass (2026-10-05):** these captures are from `8009001`, before the fix pass merged (trust M1–M4,
+> Week/Year rework, "not recorded on its schedule" wording). Re-capture on the current tip before using them as proof;
+> see `docs/CLAUDE_JOURNEY_CLOCK.md` › Still to do.
+
 **Tree.** Branch `claude/journey-clock`. Every proof-page capture, `report.json` and both axe files come from **`8009001`**
 (the plan-of-record tree `8c8a4f4` plus two presentation-only fix commits made during this pass, `a20f1e6` and `8009001`,
 listed under *Fixed during this pass*). Local only: not pushed, not merged, not deployed.
