@@ -226,9 +226,21 @@ async function capture() {
       await press(page, '[data-key-button]'); await wait(600);
       await save(page, errors, `key-month-${width}-taylor`);
       await page.keyboard.press('Escape'); await wait(400);
-      // Which one?: a canvas tap on today's slot (it holds more than one stop) — the pointer events go to the canvas,
-      // the same path a finger takes where no DOM mark covers the slot.
-      const fan = await page.evaluate(async () => {
+      // Which one?: first a real press where two 44 px day-mark hit areas overlap (the path a finger takes on a
+      // crowded phone ring); then, as before, a canvas tap on a slot that holds more than one stop.
+      const overlap = await page.evaluate(() => {
+        const hits = [...document.querySelectorAll('.journey-mark--day:not([hidden])')].map((m) => ({ id: m.dataset.markId, r: m.getBoundingClientRect() }));
+        for (let i = 0; i < hits.length; i++) for (let j = i + 1; j < hits.length; j++) {
+          const a = hits[i].r, b = hits[j].r;
+          const l = Math.max(a.left, b.left), r = Math.min(a.right, b.right), t = Math.max(a.top, b.top), btm = Math.min(a.bottom, b.bottom);
+          if (r - l > 4 && btm - t > 4) return { x: (l + r) / 2, y: (t + btm) / 2, ids: [hits[i].id, hits[j].id] };
+        }
+        return null;
+      });
+      if (overlap) { await page.mouse.click(overlap.x, overlap.y); await wait(500); }
+      const fan = (await page.locator('[data-journey-fan]').count())
+        ? { overlap, options: await page.locator('[data-fan-option]').allTextContents() }
+        : await page.evaluate(async () => {
         const canvas = document.querySelector('.journey-stage__canvas canvas');
         const days = [...document.querySelectorAll('.journey-mark--day:not([hidden])')];
         if (!canvas) return { canvas: false };
@@ -413,7 +425,9 @@ const facts = {};
     return { url: location.pathname + location.search.replace(/household=[^&]+/, 'household=<demo>'), board: !!b, theme: document.documentElement.dataset.theme, classes: b?.className, stageMode: stage?.dataset.stageMode, land: stage?.dataset.land, level: b?.dataset.journeyLevel,
       boardTop: b ? Math.round(b.getBoundingClientRect().top) : null, boardHeight: b ? Math.round(b.getBoundingClientRect().height) : null, scrollY: Math.round(scrollY), stage: (() => { const r = stage?.getBoundingClientRect(); return r ? [Math.round(r.width), Math.round(r.height)] : null; })(), plusRadius: plus ? getComputedStyle(plus).borderRadius : null, plusUnobstructed: plusClear,
       banners: [...document.querySelectorAll('.command-banner, .kitchen-notice')].map((n) => n.textContent.trim().slice(0, 80)), env: (document.body.textContent.match(/Development|Production/) || [null])[0],
-      overflowX: document.documentElement.scrollWidth > innerWidth + 1 };
+      overflowX: document.documentElement.scrollWidth > innerWidth + 1,
+      // The App's floating Mountain/Horizon toggle must not cover the board's header (month title and its buttons).
+      toggleClear: (() => { const t = document.querySelector('.harbour-world-toggle')?.getBoundingClientRect(); const h = b?.querySelector('[data-journey-header]')?.getBoundingClientRect(); if (!t || !h || !t.height) return null; return t.bottom <= h.top || t.right <= h.left || t.left >= h.right || t.top >= h.bottom; })() };
   });
   f.ms = Date.now() - t0; f.arrived = arrived; f.errors = errors.slice(0, 3);
   facts[`${w}`] = f;

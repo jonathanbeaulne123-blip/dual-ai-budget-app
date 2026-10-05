@@ -1,8 +1,10 @@
 # Journey map (Horizon Clock) — visual and accessibility evidence
 
-**Tree.** Branch `claude/journey-clock` at **`9cbd510`**: the fix-pass tip `6801956` plus the grouped-money commit
-`9cbd510`. Every proof-page capture, `report.json`, both axe files and the real-App pass come from that tree
-(`report.json → sha`). Local only: not pushed, not merged, not deployed.
+**Tree.** Branch `claude/journey-clock`. Most captures, both axe files and the 720/1100 matrix come from **`9cbd510`**
+(the fix-pass tip `6801956` plus grouped money). The final review pass (`55ac0ed`, `035f9a7` and the commit that adds this
+paragraph) re-captured only what it changed, from the `035f9a7` tree plus the floating-Hercules rule: the 320 and 390
+matrix in all three themes (18 PNG), `which-one-390-taylor` and both real-App arrivals (`report.json → sha` is
+`035f9a7`). Local only: not pushed, not merged, not deployed.
 
 **Data.** The fictional Development demo kitchen `seedDemoHousehold({ today: "2026-09-28", environment: "development" })`,
 viewed by Jonathan (`MEM-002`), which is the fixture `test/journey-map-model.test.ts` uses. `empty-*` uses a brand-new
@@ -47,7 +49,7 @@ visible control under 44 px, and every visible word or control past the viewport
 | `sheet-checklist-{390,1100}-taylor.png` | Hercules's list ("This week, then 8 to check"): this week's rows with signed grouped figures. |
 | `sheet-pile-week-{390,1100}-taylor.png` | Week's overdue pile: "Needs you · 8 pinned to Mon". |
 | `dial-{390,1100}-taylor.png` | "+" open with the App's five record modes (purchase, shift, Mark paid, income, Move money) and the Open chips. |
-| `which-one-{390,1100}-taylor.png` | A canvas tap on today's slot (4 stops) fans out "Which one?" inside the board. |
+| `which-one-{390,1100}-taylor.png` | "Which one?" inside the board. 390 (final pass): a real press where the 44 px hit areas of Fri 25 and Sat 26 Sep overlap fans out "Fri 25 Sep · Phone" / "Sat 26 Sep · Vet · Marmalade". 1100 (older tree): a canvas tap on today's slot (4 stops). |
 | `key-{month,year}-{390,1100}-taylor.png` | The Key at Month ($100.00 a ring) and Year ($1,000.00 a ring). |
 | `reduced-motion-{month,week}-{390,1100}-newfoundland.png` | Reduced motion. Each level change is a cut (`report.json → …cuts`). |
 | `keyboard-*-{390,1100}-classic.png` | Tab from the top: "i" at step 1; first mark at step 6, where Enter opens its sheet (focus on the title) and Tab moves to its close button; the slider at step 25 (390) / 22 (1100); "+" at step 26 / 23. |
@@ -89,40 +91,46 @@ purse ("+$2,100.00"), callouts, sheets, list strip and rows ("+$4,959.86", "$15,
 - **Phone vs wide**: on phones the purse sits under the header; on wide it sits at the bottom left over the pull, and the
   bubble and Map/List float, as in the prototype.
 
-### Differs from the prototype / worth a look
-1. **Phone purse is tall.** With the trust note ("A pay is already recorded today · check the Books before recording this
-   one") it runs 4–5 lines. At 390 it takes about 90 px; at 320 Week about 110 px (`month-390-*`, `week-320-*`). The
-   prototype's purse is 2 lines.
-2. **320×568 is cramped.**
-   - Year: plates overlap; Jan is under Dec and the caption, and Jul is hidden behind Aug/Jun (`year-320-*`).
-   - Week: the island shows between a large purse and the dock; tags sit close together but are readable (`week-320-*`).
+### Final review pass (`55ac0ed`, `035f9a7` and the evidence commit)
+- **Day marks are 44 px again** at 320 and 390 (`controlsUnder44` is empty in all 18 re-captured frames and in
+  `which-one-390-taylor`). Crowded stretches keep a smaller drawn disc (`--glyph-scale`) inside the 44 px hit area. Where
+  hit areas overlap, a press asks "Which one?" on the live and flat maps alike, and never guesses the topmost
+  (`which-one-390-taylor`). A keyboard press still selects directly.
+- **Phone purse is two lines**: "Everyday $0.00" plus one short line ("+$2,100.00 Bianca pay expected today"), with a "›"
+  that opens a small sheet ("The purse · today") holding the full expected and already-recorded words from the model.
+  Wide keeps the long purse inline (`month-1100-taylor`, unchanged).
+- **Year at 320** (`year-320-*`): one-line plates ("Sep · 5"), figures only on the open month ("$1,311 not recorded").
+  No plate covers another plate. The bottom of the ring still sits under the level pull at 320×568: Jul is hidden and
+  Aug/Jun are half covered (finding 1). Each month stays reachable by keyboard and in the list.
+- **Real App, phone** (`real-app-arrival-390-taylor`): the board starts below the floating Mountain/Horizon toggle (board
+  top 64 px, `toggleClear: true` in `real-app.json`), so "October" is never covered. The App's toggle does not move.
+- **Real App, wide** (`real-app-arrival-1100-taylor`): arrival now scrolls on wide too (scrollY 244). The board fills the
+  viewport below the toggle (736 px), and the clock is about 550 px across, up from about 210. That scroll lifted the
+  board under the App's floating wide Hercules (`.hercules-live`), which then covered the board's "i". So it now rests
+  while the board stands (`styles.css`, the same rule the Court uses; the board's scene draws its own Hercules). The
+  "Groceries · planned needs a payment" note it carried still shows in the checklist and list.
+
+### Differs from the prototype / worth a look (still open)
+1. **320×568**:
+   - Year: the bottom of the ring sits under the level pull, so Jul is hidden and Aug/Jun are half covered (`year-320-*`).
    - Month: both callouts sit over the island (`month-320-*`).
-3. **Year at 390 and above**: plates sit beside or over the minis, so Dec/Feb/Mar/Apr/May partly cover their minis.
+   - Week: the tags sit close together but are readable (`week-320-*`).
+2. **Year at 390 and above**: plates sit beside or over the minis, so Dec/Feb/Mar/Apr/May partly cover their minis.
    They are readable but busier than the prototype's spacing.
-4. **Real App, phone** (`real-app-arrival-390-taylor`): arrival now scrolls the App chrome away (scrollY 258), so the
-   board is the full 844 px and the clock is about 360 px wide. Two side effects:
-   - the App's floating **Mountain/Horizon toggle sits over the header month title** ("October" is hidden behind it);
-   - the **Development label scrolls out of view** on arrival. It is literal in the chrome above, but not on screen.
-5. **Real App, wide** (`real-app-arrival-1100-taylor`): the board stays below the chrome (top 244 px, board 560 px tall,
-   no scroll), so the clock is small (about 210 px). The App's resident Hercules bubble also overlaps Status Centre.
-6. `sheet-stop-390-taylor`: the "Setting aside next" callout runs 4 px off the left edge behind the open sheet. This is cosmetic.
+3. **Development label off screen after arrival** (phone and now wide). It is literal in the App chrome a scroll away.
+4. `sheet-stop-390-taylor` (older tree): the "Setting aside next" callout runs 4 px off the left edge behind the open
+   sheet. This is cosmetic.
 
 ### Overflow
-- No page-level horizontal overflow in any of the 88 proof captures or the 2 real-App captures.
-- `outsideViewport` is empty everywhere except `sheet-stop-390-taylor` (finding 6, plus a 44 px mark behind the sheet).
+- No page-level horizontal overflow in any proof capture or either real-App capture.
+- `outsideViewport` is empty in every re-captured frame. In the older tree it is empty except `sheet-stop-390-taylor`
+  (finding 4).
 
 ### Touch targets
-- Every non-mark control is at least 44×44: header buttons, pull words, Key, slider, "+" (72), Map/List, petals, chips,
-  sheet actions and rows.
-- **Day marks are now sized to their spacing** (fix pass, `1f8d071`) and go as small as **24×24** in crowded stretches:
-  - 320 Month: 13 marks, 24–37 px;
-  - 320 Week: 6 marks at 24 px;
-  - 390 Month: 4 marks, 25–36 px;
-  - 390 Week: 4 marks, 24–30 px;
-  - 720 / 1100: 2 marks, 31–35 px.
-
-  All meet WCAG 2.2 AA target-size (24 px, which axe passes) but not Hearth's own 44 px floor. Every day is also reachable
-  through the keyboard (arrow keys) and the list.
+- Every control is at least 44×44: header buttons, the purse button, day marks, pull words, Key, slider, "+" (72),
+  Map/List, petals, chips, sheet actions and rows.
+- The 720/1100 captures are from `9cbd510`, where crowded day marks still went down to 31 px. The code now gives them 44 px
+  at every width. `test/journey-board-ui.test.ts` pins this, but those frames were not re-captured.
 
 ### axe-core 4.13.0
 | Scan | Violations | Passes | Incomplete |
@@ -137,7 +145,7 @@ The previous pass's target-size violation (today's day mark under the bus) and t
 ### Behaviour verified
 - **Add unobstructed.** "+" is topmost at its centre in every capture except intentional overlays: the open dial (its
   scrim closes it) and phone sheets over the dock.
-- **Development label.** Literal in the real App's chrome (finding 4: scrolled out of view on phone arrival).
+- **Development label.** Literal in the real App's chrome (finding 3: scrolled out of view after arrival).
 - **Reduced motion.** Year/Month/Week land within 80 ms (slider 2 → 0 → 1), `journey-board--still`.
 - **Keyboard.** Header (i, ‹, ›, theme) → stage → marks in date order → level words, Key, slider → "+" → Map/List.
   Escape returns focus to the opening mark. Focus is visible at every stop.
@@ -148,3 +156,5 @@ The previous pass's target-size violation (today's day mark under the bus) and t
 - No Crossroads preview: the demo has none.
 - The Horizon round trip and "Enter Horizon here" were not pressed.
 - The real-App pass is arrival only, Taylor, at 390 and 1100.
+- The final pass did not re-capture 720/1100, the axe scans, keyboard, sheets, list or failure states. Its changes
+  there are covered by unit tests only.

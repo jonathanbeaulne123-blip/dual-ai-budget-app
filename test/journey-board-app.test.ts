@@ -504,6 +504,12 @@ describe("the household Journey map in the App", () => {
     } finally { page.mockRestore(); toggle.remove(); }
   });
 
+  it("the floating wide Hercules rests while the board stands, so it never covers the board's header controls", () => {
+    // jsdom does not apply `:has()` styles; the rule itself is the contract (the board's scene draws Hercules).
+    const css = readFileSync("src/styles.css", "utf8");
+    expect(css).toMatch(/\.app:has\(\[data-journey-board-host\]\) \.hercules-live \{ display: none; \}/);
+  });
+
   it("a brand-new household sees the honest empty map: no invented memories or milestones, the list says so", async () => {
     const household = emptyBoardHousehold();
     const before = await financialAuditHash(household);

@@ -1790,6 +1790,9 @@ input, select, textarea {
   100% { transform: scale(1); }
 }
 .hercules-world { pointer-events: none; }
+/* The Journey board draws Hercules in its own scene; the floating one (wide) would stand over the board's header
+   controls once the arrival scroll lifts the board to the top, so it rests while the board is up (as on the Court). */
+.app:has([data-journey-board-host]) .hercules-live { display: none; }
 .hercules-live {
   pointer-events: auto;
   position: fixed;

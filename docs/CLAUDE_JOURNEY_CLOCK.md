@@ -106,6 +106,63 @@ Rulings in the orchestrator's FIXES list; two lanes merged on this branch (`clau
 - **A9 (phones):** on arrival the board's full-height slot is scrolled to the top so the clock is full size; the App
   header and banners are untouched.
 
+## Final review pass (2026-10-05, on `99e1396`)
+
+Commits `55ac0ed` (items 1–7), `035f9a7` (items 8–12) and the evidence/docs commit after them.
+
+- **Geometry-source proof (MAJOR 1).** `test/journey-map-geometry-source.test.ts` now proves what it claims:
+  - moving the land 50 m east moves the frame, the clock slots, the clay shallows and slab, and the flat twin's coast,
+    stations and hosts by 50 m (bounding boxes, not just "a new array");
+  - the terrain mesh moves by −50·scale;
+  - every `data-x` in `BoardFlat` moves by +50 at Year, Month and Week (`data-y` by 0).
+
+  The coordinate scan flags runs of ≥4 pairs, flat runs of ≥8 numbers, and ≥4 `{x, y}` literals. It has a two-entry
+  allowlist (`land/clay.ts` tree-pot lathe, `board/scene.ts` Hercules offsets), and a self-test keeps both entries
+  honest. **Proof it fails:** a temporary `export const HAND_COAST = [[900, 180], [1075.6, 176.7], [1200, 190],
+  [1261.6, 208.4]];` in `board/clock.ts` failed the test with that exact offence (1 failed | 6 passed). It was then
+  removed (diff clean).
+- **CI (2):** `horizon-assets.yml` runs the geometry-source test, and both path lists include `src/journey/board/**` and
+  the test.
+- **Flat Key (3):** the mounted flat map (`ui/Stage`) draws DOM discs and no stacks. `BoardFlat`'s bars are the scene
+  twin's, not what the person sees. So the copy stays true as "No stacks in this view: one disc per day …", and the ui
+  test pins it with `.journey-stage [data-stack]` = none.
+- **Break mark (4):**
+  - `BoardFlat` gives a stop over $3,000 a `[data-capped]` path;
+  - the 3D `coinStack` adds exactly the two break-mark meshes when `rings.capped`;
+  - `BoardFlat` uses `MIN_STACK_DU` (5).
+- **Fence (6):** `importsOf` also reads side-effect imports. `sendBeacon`, `XMLHttpRequest`, `WebSocket` and `EventSource`
+  are banned across `src/journey` alongside `fetch`.
+- **Enter Horizon (7):** with no centre, `enterHorizonCentre` makes no `enterHorizon` call (test).
+- **44 px marks (8):** every day mark has a 44 px hit area at every width (64 for the live chapter). A crowded disc draws
+  smaller inside it (`--glyph-scale`). Overlapping hits ask "Which one?" on live and flat maps alike.
+- **Phone purse (9):** under 720 px it is two lines plus "›". The tap opens "The purse · today", a sheet with the model's
+  full expected / already-recorded words. Wide is unchanged.
+- **Year under 360 px (10):** one-line plates ("Sep · 5"), with figures only on the open month.
+- **Real-App framing (11, 12):**
+  - the board frame starts below the floating Mountain/Horizon toggle (its bottom + 4 px). The toggle does not move.
+  - arrival scrolls the board region to the top on every width, so the wide clock is full size (about 550 px across,
+    was about 210).
+  - **Broadened:** that wide scroll put the App's floating wide Hercules (`.hercules-live`) over the board's "i". It now
+    rests while the board stands (`src/styles.css`, the Court's own rule; the board's scene draws Hercules). A CSS
+    contract test pins it.
+- **Evidence:** re-captured the 320/390 matrix in all three themes, `which-one-390-taylor` (a real press on two
+  overlapping 44 px hits) and both real-App arrivals. The README findings are updated. The capture script now presses
+  overlapping DOM hits for Which-one and records `toggleClear` in `real-app.json`.
+
+## Verification (local, final review pass, `035f9a7` + Hercules rule)
+
+- `pnpm typecheck`: clean. `pnpm build`: exit 0; `JourneyBoard` 254.56 kB (88.33 kB gzip) + 38.47 kB CSS.
+- Gate (`--risk=medium-high`, the six focus files) on the final tree: 54 fast files selected (the `styles.css` change
+  pulls in more). The fast phase was **619 / 620** in 102 s; the whole run took 3 min 39 s.
+  - The one failure is `test/swipe.test.ts › nets refund and income reversals`. It fails identically on `origin/main`
+    (checked in a clean worktree), so this branch did not cause it.
+  - The gate stops after the fast phase, so the serial phase was run alone: `app-startup-p1` **83 / 83** (the Bianca
+    regression).
+- The same gate on `035f9a7`, before the Hercules rule, ran fast **564 / 564** and serial `app-startup-p1` 83 / 83. It
+  took 6 min 53 s, `time-budget-breached` in the serial browser files: the known browser failures below, plus missing
+  `chromium_headless_shell-1234`.
+- The Hercules rule's CSS contract test passes alone and in the fast phase.
+
 ## Verification (local, this branch, after the fix pass)
 
 - `pnpm typecheck`: clean. `pnpm build` (bake `--check`s): green; `JourneyBoard` 252.6 kB (87.9 kB gzip) + 37.8 kB CSS.
@@ -125,16 +182,20 @@ Rulings in the orchestrator's FIXES list; two lanes merged on this branch (`clau
 
 ## Still to do (next owners)
 
-1. **Re-capture the evidence** on this tip with `scripts/serve-journey-map-proof.mjs` (`?modes=` feeds the dial's record
-   verbs): the full matrix, axe at 390 / 1100, and a side-by-side of week / month / year at 390 / 1100 against the
-   approved prototype captures; update `docs/evidence/journey-map/README.md`.
+1. **Evidence not re-captured** (the final pass re-captured 320/390, Which-one 390 and the real App only):
+   - the 720/1100 matrix, which still shows `9cbd510` marks under 44 px;
+   - axe;
+   - keyboard, sheets, list and failure states;
+   - Year 320×568, where the bottom of the ring (Jul, half of Aug/Jun) sits under the level pull.
 2. **Phone performance** on a real device (12 minis, 31 props, shadows): the lite tier and the budget test are in place.
 3. **Jonathan's decisions:**
-   - **A9 App chrome on phones:** the App header and the status banners still stand above the map on phones
-     (`real-app-arrival-390`); arrival now scrolls the map to full size. Should the Journey route hide or collapse
+   - **A9 App chrome:** the App header and the status banners still stand above the map on every width. Arrival now
+     scrolls the map to full size, so the Development label is a scroll away. Should the Journey route hide or collapse
      the App header / banners on phones (ruling 11 left them as is)?
    - D68–D73 (proposed; D69 amended for trust M1), and whether the dial's Simple view should stay a one-way exit (D65
      lands on the Court).
+   - Whether the floating wide Hercules should rest on the Journey route (done here, as on the Court) or move aside.
+4. **Pre-existing on main:** `test/swipe.test.ts › nets refund and income reversals` fails on `origin/main`.
 
 No money-meaning question was opened: every figure on the map is an existing selector's or a source record's, and every
 write still goes through its own named Confirm.

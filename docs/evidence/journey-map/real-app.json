@@ -7,19 +7,20 @@
   "stageMode": "live",
   "land": "ready",
   "level": "month",
-  "boardTop": 0,
-  "boardHeight": 844,
+  "boardTop": 64,
+  "boardHeight": 780,
   "scrollY": 258,
   "stage": [
    390,
-   844
+   780
   ],
   "plusRadius": "50%",
   "plusUnobstructed": true,
   "banners": [],
   "env": "Development",
   "overflowX": false,
-  "ms": 40854,
+  "toggleClear": true,
+  "ms": 28881,
   "arrived": true,
   "errors": []
  },
@@ -31,19 +32,20 @@
   "stageMode": "live",
   "land": "ready",
   "level": "month",
-  "boardTop": 244,
-  "boardHeight": 560,
-  "scrollY": 0,
+  "boardTop": 64,
+  "boardHeight": 736,
+  "scrollY": 244,
   "stage": [
    1100,
-   560
+   736
   ],
   "plusRadius": "50%",
   "plusUnobstructed": true,
   "banners": [],
   "env": "Development",
   "overflowX": false,
-  "ms": 30361,
+  "toggleClear": true,
+  "ms": 28040,
   "arrived": true,
   "errors": []
  }
