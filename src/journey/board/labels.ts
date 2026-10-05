@@ -41,6 +41,11 @@ export type PlaceLabelsOptions = {
   lift?: number;
   /** Padding kept around every label (px). */
   pad?: number;
+  /**
+   * Horizon Clock: at most this many labels are placed (the piece always counts first). The map passes
+   * `MAP_LABEL_LIMIT` (3: today, next leaving, selected); omitted = no limit (the deprecated route board).
+   */
+  limit?: number;
 };
 
 const overlaps = (a: LabelBox, b: LabelBox) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
@@ -52,7 +57,10 @@ export function placeLabels(candidates: readonly LabelCandidate[], options: Plac
     rankOrder(a.rank) - rankOrder(b.rank) || (a.depth ?? 0) - (b.depth ?? 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const taken: LabelBox[] = [...(options.obstacles ?? [])];
   const out = new Map<string, PlacedLabel>();
+  const limit = options.limit ?? Infinity;
+  let count = 0;
   for (const c of sorted) {
+    if (count >= limit) { out.set(c.id, { id: c.id, placed: false, box: null, rank: c.rank }); continue; }
     const w = Math.min(c.width, width), h = Math.min(c.height, height);
     let box: LabelBox = { x0: c.x - w / 2 - pad, x1: c.x + w / 2 + pad, y0: c.y - lift - h - pad, y1: c.y - lift + pad };
     if (c.rank === "piece") {
@@ -61,6 +69,7 @@ export function placeLabels(candidates: readonly LabelCandidate[], options: Plac
       const dy = box.y0 < 0 ? -box.y0 : box.y1 > height ? height - box.y1 : 0;
       box = { x0: box.x0 + dx, x1: box.x1 + dx, y0: box.y0 + dy, y1: box.y1 + dy };
       taken.push(box);
+      count += 1;
       out.set(c.id, { id: c.id, placed: true, box, rank: c.rank });
       continue;
     }
@@ -70,6 +79,7 @@ export function placeLabels(candidates: readonly LabelCandidate[], options: Plac
       continue;
     }
     taken.push(box);
+    count += 1;
     out.set(c.id, { id: c.id, placed: true, box, rank: c.rank });
   }
   // Same order as the input (callers keep their own DOM order).
@@ -102,4 +112,38 @@ export function labelRankFor(board: JourneyBoard, id: string, selectedId: string
     return "other";
   });
   return ranks.sort((a, b) => rankOrder(a) - rankOrder(b))[0]!;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Horizon Clock: the map's callouts. Max three, as in the approved prototype: today, the next leaving, the selected.
+// Everything else is printed on the tiles / carried by the list; the canvas never draws text.
+
+export const MAP_LABEL_LIMIT = 3;
+export type MapLabelRole = "today" | "next" | "selected";
+export type MapLabel = { id: string; role: MapLabelRole; rank: LabelRank };
+
+/**
+ * The (≤ 3) mark ids that get a callout at a level, in priority order. Month: the bus ("piece", today's chapter only),
+ * the next leaving stop (`digest.nextLeavingStopId`, today's chapter only), the selection. Week: today's tile (its
+ * date), the next leaving stop's tile, the selection. Year: none (each mini's own button carries its words).
+ * Pure; it reads the board only and never selects or opens anything.
+ */
+export function mapLabels(board: JourneyBoard, level: "year" | "month" | "week", chapterId: string, selectedId: string | null): MapLabel[] {
+  if (level === "year") return [];
+  const out: MapLabel[] = [];
+  const push = (id: string | null | undefined, role: MapLabelRole, rank: LabelRank) => {
+    if (id && !out.some((l) => l.id === id) && out.length < MAP_LABEL_LIMIT) out.push({ id, role, rank });
+  };
+  const next = board.digest?.nextLeavingStopId ?? null;
+  if (level === "month") {
+    const own = chapterId === board.currentChapterId;
+    if (own) push("piece", "today", "piece");
+    if (own && next) push(next, "next", "next");
+  } else {
+    push(board.today, "today", "piece");
+    const nextDay = next ? board.week?.days.find((d) => d.stopIds.includes(next))?.date : undefined;
+    if (nextDay && nextDay !== board.today) push(nextDay, "next", "next");
+  }
+  push(selectedId, "selected", "selected");
+  return out;
 }
