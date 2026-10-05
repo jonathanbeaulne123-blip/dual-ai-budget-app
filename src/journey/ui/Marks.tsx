@@ -1,25 +1,23 @@
-import { BRIDGE_GLYPHS } from '../land/bridgeGlyph';
 /**
- * The board's DOM marks (T4): real `<button>`s over the aria-hidden canvas (or the flat SVG twin), one per piece,
- * month space, cluster, unclustered stop and crossroads, positioned at the anchors the stage reports each frame.
+ * The map's DOM marks (L4): one real `<button>` per `mapMarks()` entry over the aria-hidden canvas (live) or as the
+ * flat map's own glyphs (no WebGL). Every hit area is ≥ 44 × 44 px; tab order is date order, never screen position.
  *
- * - Hit area ≥ 44 × 44 px centred on the anchor; a label chip shows only where `placeLabels` found room (the
- *   button always carries its full words in `aria-label`, and the list carries everything).
- * - DOM (tab) order is chronological (date, then piece → month → kind), never screen position.
- * - A mark whose anchor is not drawn at this zoom or is off the stage is `hidden` (not tabbable); it is still in the list.
- * - Pressing a mark only SELECTS it (`onSelect`), which opens its panel: each mark says so with `aria-expanded` (its
- *   panel is the open one) and `aria-controls` (the board's panel slot), not `aria-pressed`. No mark runs an action.
- * - District names (`district:<id>` anchors, reported by the 3D scene at Sky and Region) are small, muted paper tags:
- *   `<span aria-hidden>`, never focusable, placed by `placeLabels` at the lowest priority (they yield to every mark).
+ * - Live: a mark stands at the scene's anchor for its own id, else at the first visible anchor of an id it covers
+ *   (a stop on that day). A mark with no visible anchor is `hidden` (not tabbable) — it is still in the list.
+ * - Flat: a mark stands where `mapLayout` puts it (`projectFlat`), and draws its slot / tile / mini as CSS.
+ * - At most THREE callouts on the map (Today, the next leaving stop, the selection), placed clear of each other and of
+ *   the chrome; every mark carries its full words in `aria-label` regardless. The Year's twelve minis carry their own
+ *   small name plates, as the Week's tiles do.
+ * - Pressing a mark only SELECTS it (`onSelect`). No mark runs an action.
  */
 import type { CSSProperties } from "react";
-import type { JourneyBoard, MarkAnchor, Stop } from "../contracts.ts";
-import { isAttentionStop, labelRankFor, placeLabels, type LabelBox, type LabelCandidate } from "../board/index.ts";
-import { districtName } from "../land/index.ts";
-import { COPY, KIND_WORDS, shortDate } from "./copy.ts";
+import type { JourneyBoardV2, JourneyLevel, ListRow, MarkAnchor, YearChapter } from "../contracts.ts";
+import { JOURNEY_MAP_MARKS } from "../contracts.ts";
+import { MAP_WORDS, shortDate } from "../model/index.ts";
+import { COPY, money, shortMonth } from "./copy.ts";
+import type { MapMark } from "./mapLayout.ts";
 
-/** A mark id → a safe DOM id (`journey-mark-…`): every character outside [A-Za-z0-9-] becomes `_<hex>_`, so it is
- * unique, needs no CSS escaping and survives `querySelector('#…')`. */
+/** A mark id → a safe DOM id (`journey-mark-…`): every character outside [A-Za-z0-9-] becomes `_<hex>_`. */
 export function journeyMarkDomId(id: string): string {
   return `journey-mark-${cssSafe(id)}`;
 }
@@ -27,158 +25,190 @@ export function cssSafe(id: string): string {
   return id.replace(/[^A-Za-z0-9-]/g, (c) => `_${c.charCodeAt(0).toString(16)}_`);
 }
 
-export type MarkKind = "piece" | "month" | "cluster" | "stop" | "crossroads";
-export type MarkEntry = { id: string; kind: MarkKind; date: string; order: number; label: string; aria: string; attention: boolean; stop?: Stop };
+export type PlacedMark = { mark: MapMark; x: number; y: number; visible: boolean };
 
-const KIND_ORDER: Record<MarkKind, number> = { piece: 0, month: 1, cluster: 2, stop: 3, crossroads: 4 };
-
-const lastDay = (month: string) => {
-  const n = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).getUTCDate();
-  return `${month}-${String(n).padStart(2, "0")}`;
-};
-
-
-/**
- * The marks that get a button, in chronological DOM order. `words(id)` gives the list row's amount + status words
- * for a stop (the same words the panel and the list print).
- */
-export function markEntries(board: JourneyBoard, words: (id: string) => { amount: string; status: string } | undefined): MarkEntry[] {
-  const out: MarkEntry[] = [];
-  const clustered = new Set(board.clusters.flatMap((c) => c.stopIds));
-  const stopById = new Map(board.stops.map((s) => [s.id, s]));
-  out.push({
-    id: "piece", kind: "piece", date: board.piece.atDate, order: 0, label: COPY.weAreHere,
-    aria: `${COPY.weAreHere} · ${shortDate(board.piece.atDate)} · ${board.summary.periodLabel}`, attention: false,
+/** Where each mark stands this frame. `flatAt` gives the flat position; live marks follow the scene's anchors. */
+export function placeMarks(marks: readonly MapMark[], anchors: readonly MarkAnchor[] | null, flatAt: (m: MapMark) => { x: number; y: number }): PlacedMark[] {
+  if (!anchors) return marks.map((mark) => ({ mark, ...flatAt(mark), visible: true }));
+  const byId = new Map(anchors.map((a) => [a.id, a] as const));
+  return marks.map((mark) => {
+    const own = byId.get(mark.id);
+    const a = own && own.visible ? own : mark.covers.map((id) => byId.get(id)).find((x) => x && x.visible) ?? own;
+    return a ? { mark, x: a.x, y: a.y, visible: a.visible } : { mark, x: 0, y: 0, visible: false };
   });
-  for (const c of board.chapters) {
-    const attention = c.unresolved.attention;
-    out.push({
-      id: c.id, kind: "month", date: lastDay(c.id), order: 0, label: c.label.split(" ")[0] ?? c.label,
-      aria: `${c.label} · ${c.state === "open" ? "this month" : c.state === "past" ? "past" : "upcoming"}${attention ? ` · ${attention} need${attention === 1 ? "s" : ""} attention` : ""}`,
-      attention: attention > 0,
-    });
+}
+
+export type Callout = { id: string; kind: "today" | "next" | "selected"; title: string; small: string };
+
+/** The ≤ 3 callouts: Today, the next leaving stop, the selection (deduplicated; Today wins its own mark). */
+export function callouts(board: JourneyBoardV2, marks: readonly MapMark[], rows: Map<string, ListRow>, selected: string | null, level: JourneyLevel): Callout[] {
+  if (level === "year") return [];
+  const out: Callout[] = [];
+  const has = (id: string) => marks.some((m) => m.id === id);
+  const todayMark = has(board.today) ? board.today : null;
+  if (todayMark) {
+    const n = board.stops.filter((s) => s.date === board.today).length;
+    const pay = board.purse.expectedToday.length ? "pay expected · " : "";
+    out.push({ id: todayMark, kind: "today", title: `${COPY.today} · ${shortDate(board.today)}`, small: n ? `${pay}${n === 1 ? "1 thing" : `${n} things`}` : MAP_WORDS.nothingOnThisDay });
   }
-  for (const c of board.clusters) {
-    const stops = c.stopIds.map((id) => stopById.get(id)).filter((s): s is Stop => Boolean(s));
-    out.push({
-      id: c.id, kind: "cluster", date: c.date, order: 0, label: c.label,
-      aria: `${c.label}: ${stops.map((s) => s.label).join(", ")}`, attention: stops.some(isAttentionStop),
-    });
+  const next = board.digest.nextLeavingStopId ? board.stops.find((s) => s.id === board.digest.nextLeavingStopId) : undefined;
+  if (next && has(next.date) && next.date !== todayMark) {
+    const row = rows.get(next.id);
+    out.push({ id: next.date, kind: "next", title: `${COPY.leavingNext} · ${next.label}`, small: [row?.amountText.split(" · ")[0], shortDate(next.date), row?.statusText].filter(Boolean).join(" · ") });
   }
-  for (const s of board.stops) {
-    if (clustered.has(s.id)) continue;
-    const w = words(s.id);
-    const amount = w?.amount ? w.amount.split(" · ")[0] : "";
-    out.push({
-      id: s.id, kind: "stop", date: s.date, order: 0, stop: s,
-      label: amount ? `${s.label} · ${amount}` : s.label,
-      aria: [KIND_WORDS[s.kind], s.label, shortDate(s.date), w?.amount, w?.status].filter(Boolean).join(" · "),
-      attention: isAttentionStop(s),
-    });
+  const selMark = selected ? marks.find((x) => x.id === selected) : undefined;
+  if (selMark && (selMark.kind === "day" || selMark.kind === "piece") && !out.some((c) => c.id === selected)) {
+    const m = marks.find((x) => x.id === selected)!;
+    const stops = board.stops.filter((s) => m.covers.includes(s.id));
+    const first = stops[0];
+    const title = stops.length > 1 ? `${m.date ? shortDate(m.date) : ""} · ${stops.length} things`.replace(/^ · /, "") : first ? first.label : m.date ? shortDate(m.date) : m.id;
+    const small = stops.length === 1 && first ? [rows.get(first.id)?.amountText.split(" · ")[0], shortDate(first.date)].filter(Boolean).join(" · ") : stops.map((s) => s.label).join(" · ");
+    out.push({ id: selMark.id, kind: "selected", title, small });
   }
-  for (const x of board.crossroads) {
-    out.push({ id: x.id, kind: "crossroads", date: x.date, order: 0, label: x.label, aria: `Crossroads · ${x.label} · ${shortDate(x.date)}`, attention: false });
+  return out.slice(0, 3);
+}
+
+type Box = { x0: number; x1: number; y0: number; y1: number };
+const overlap = (a: Box, b: Box) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+/** Estimated callout box (px): reading layout per frame would thrash; the CSS keeps to this size. */
+export function calloutSize(c: Callout): { width: number; height: number } {
+  const longest = Math.max(c.title.length * 7.6, c.small.length * 6.2);
+  return { width: Math.min(260, Math.max(96, Math.round(longest + 26))), height: c.small ? 44 : 30 };
+}
+
+/** Each callout above its mark, nudged up past earlier ones and chrome, clamped on stage. Pure. */
+export function placeCallouts(list: readonly Callout[], at: Map<string, { x: number; y: number }>, stage: { width: number; height: number }, obstacles: readonly Box[] = []): { id: string; x: number; y: number }[] {
+  const placed: Box[] = [];
+  const out: { id: string; x: number; y: number }[] = [];
+  for (const c of list) {
+    const p = at.get(c.id);
+    if (!p) continue;
+    const { width, height } = calloutSize(c);
+    let x = Math.min(Math.max(p.x, width / 2 + 8), stage.width - width / 2 - 8);
+    let y = p.y - 30 - height / 2;
+    for (let i = 0; i < 8; i += 1) {
+      const box = { x0: x - width / 2, x1: x + width / 2, y0: y - height / 2, y1: y + height / 2 };
+      const hit = [...placed, ...obstacles].find((b) => overlap(box, b));
+      if (!hit) break;
+      y = hit.y0 - height / 2 - 6;
+      if (y - height / 2 < 4) { y = p.y + 30 + height / 2; x = Math.min(stage.width - width / 2 - 8, x + 12); }
+    }
+    y = Math.min(Math.max(y, height / 2 + 4), stage.height - height / 2 - 4);
+    placed.push({ x0: x - width / 2, x1: x + width / 2, y0: y - height / 2, y1: y + height / 2 });
+    out.push({ id: c.id, x, y });
   }
-  out.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)));
-  out.forEach((e, i) => { e.order = i; });
   return out;
 }
 
-const clamp = (v: number, lo: number, hi: number) => (hi < lo ? v : Math.min(hi, Math.max(lo, v)));
-
-/** Estimated chip size (px): layout reads per frame would thrash; the chip's CSS keeps to this box. */
-export function chipSize(label: string): { width: number; height: number } {
-  return { width: Math.min(222, Math.max(44, Math.round(label.length * 7.4 + 22))), height: 26 };
+/** The words a mark says to a screen reader (and the Year / Week name plates). */
+export function markWords(board: JourneyBoardV2, mark: MapMark, rows: Map<string, ListRow>, year?: YearChapter): { aria: string; plate: string | null; plateSmall: string | null } {
+  const stops = board.stops.filter((s) => mark.covers.includes(s.id));
+  const stopWords = stops.map((s) => [s.label, rows.get(s.id)?.amountText, rows.get(s.id)?.statusText].filter(Boolean).join(" · ")).join("; ");
+  const cross = board.crossroads.filter((c) => mark.covers.includes(c.id)).map((c) => `${COPY.crossroads} · ${c.label}`);
+  const all = [stopWords, ...cross].filter(Boolean).join("; ");
+  switch (mark.kind) {
+    case "piece": return { aria: `${COPY.today} · ${shortDate(board.today)}${all ? `: ${all}` : ` · ${MAP_WORDS.nothingOnThisDay}`}`, plate: null, plateSmall: null };
+    case "hercules": return { aria: `Hercules · ${COPY.herculesList} · ${MAP_WORDS.toCheckCount(board.toCheck.length)}`, plate: null, plateSmall: null };
+    case "pile": return { aria: `${MAP_WORDS.checklist.toCheck} · ${board.week.pileStopIds.length} · ${MAP_WORDS.checklist.pinnedNote}`, plate: `${board.week.pileStopIds.length} !`, plateSmall: null };
+    case "chapter": {
+      const y = year;
+      const name = shortMonth(mark.id);
+      const parts = y ? [
+        y.outRecordedCents ? `Out ${money(y.outRecordedCents)} · ${MAP_WORDS.stack.solid}` : null,
+        y.outOpenCents ? `Out ${money(y.outOpenCents)} · ${MAP_WORDS.stack.seeThrough}` : null,
+        y.inRecordedCents ? `In +${money(y.inRecordedCents)} · ${MAP_WORDS.stack.solid}` : null,
+        y.inOpenCents ? `In +${money(y.inOpenCents)} · ${MAP_WORDS.stack.seeThrough}` : null,
+        y.unknownAmounts ? MAP_WORDS.strip.stillToComeUnknown(y.unknownAmounts) : null,
+      ].filter((p): p is string => Boolean(p)) : [];
+      const check = y && y.toCheck ? ` · ${y.toCheck} !` : "";
+      // Only the current chapter's plate carries a figure (the prototype's plates); every mini says it all in aria-label.
+      const small = mark.id === board.currentChapterId && stops.length ? parts[0] ?? COPY.onTheMap(stops.length) : null;
+      return {
+        aria: [`${name} ${mark.id.slice(0, 4)}`, y?.toCheck ? MAP_WORDS.toCheckCount(y.toCheck) : null, ...(stops.length ? parts : [MAP_WORDS.nothingOnTheMap]), y?.kept ? "Chapter kept" : null].filter(Boolean).join(" · "),
+        plate: `${name}${check}`, plateSmall: small,
+      };
+    }
+    case "day": {
+      const date = mark.date!;
+      const amounts = stops.map((s) => rows.get(s.id)?.amountText.split(" · ")[0]).filter((a) => a && a.startsWith("$"));
+      return {
+        aria: `${shortDate(date)}${date === board.today ? ` · ${COPY.today}` : ""}${mark.toCheck ? ` · ${MAP_WORDS.checklist.toCheck}` : ""}: ${all || MAP_WORDS.nothingOnThisDay}`,
+        plate: `${shortDate(date).slice(0, 6).trim()}${date === board.today ? ` · ${COPY.today}` : amounts.length === 1 ? ` · ${amounts[0]}` : ""}`,
+        plateSmall: null,
+      };
+    }
+  }
 }
-
-/** A district tag's box (px): 11 px type, lighter than a mark's chip. */
-export function districtChipSize(label: string): { width: number; height: number } {
-  return { width: Math.min(200, Math.round(label.length * 6.6 + 16)), height: 20 };
-}
-const DISTRICT_PREFIX = "district:";
-/** The gap `placeLabels` leaves between an anchor and its label (a district tag is centred on its anchor instead). */
-const LABEL_LIFT = 18;
 
 export type MarksProps = {
-  board: JourneyBoard;
-  entries: MarkEntry[];
-  anchors: readonly MarkAnchor[];
-  size: { width: number; height: number };
+  board: JourneyBoardV2;
+  level: JourneyLevel;
+  placed: readonly PlacedMark[];
+  rows: Map<string, ListRow>;
   selectedId: string | null;
-  /** Stage regions covered by chrome (summary card, toolbar, panel). */
-  obstacles?: readonly LabelBox[];
-  onSelect(id: string): void;
-  /** Where the "Preview" tag stands while a crossroads alternative is previewed (3D only). */
-  previewTag?: string | null;
-  /** The DOM id of the board's panel slot (each mark opens its panel there). */
-  panelId?: string;
+  focusedDate: string | null;
+  flat: boolean;
+  /** px per diorama unit on the flat map (sizes the glyphs). */
+  unit: number;
+  stage: { width: number; height: number };
+  obstacles?: readonly Box[];
+  sheetId?: string;
+  onSelect(id: string, from: HTMLElement): void;
 };
 
-export function Marks({ board, entries, anchors, size, selectedId, obstacles, onSelect, previewTag, panelId }: MarksProps) {
-  const byId = new Map(anchors.map((a) => [a.id, a] as const));
-  const candidates: LabelCandidate[] = [];
-  for (const e of entries) {
-    const a = byId.get(e.id);
-    if (!a || !a.visible) continue;
-    const chip = chipSize(e.label);
-    candidates.push({ id: e.id, x: a.x, y: a.y, width: chip.width, height: chip.height, depth: a.depth, visible: a.visible, rank: labelRankFor(board, e.id, selectedId) });
-  }
-  // District names: centred on the district's heart (the candidate's anchor is dropped by the lift + half a tag).
-  const districts: { id: string; label: string; x: number; y: number }[] = [];
-  for (const a of anchors) {
-    if (!a.id.startsWith(DISTRICT_PREFIX) || !a.visible) continue;
-    const label = districtName(a.id.slice(DISTRICT_PREFIX.length));
-    const chip = districtChipSize(label);
-    districts.push({ id: a.id, label, x: a.x, y: a.y });
-    candidates.push({ id: a.id, x: a.x, y: a.y + LABEL_LIFT + chip.height / 2, width: chip.width, height: chip.height, depth: a.depth, visible: true, rank: "district" });
-  }
-  const bridges=anchors.filter(a=>a.bridge&&a.visible);
-  for(const a of bridges){const chip=chipSize(a.bridge!.name);candidates.push({id:a.id,x:a.x,y:a.y,width:chip.width+30,height:30,depth:a.depth,visible:true,rank:"bridge"});}
-  const placed = new Map(placeLabels(candidates, { width: size.width, height: size.height, obstacles, lift: LABEL_LIFT }).map((p) => [p.id, p] as const));
-  const preview = previewTag ? byId.get(previewTag) : undefined;
+export function Marks({ board, level, placed, rows, selectedId, focusedDate, flat, stage, obstacles, sheetId, onSelect }: MarksProps) {
+  const visibleMarks = placed.filter((p) => p.visible).map((p) => p.mark);
+  const list = callouts(board, visibleMarks, rows, selectedId, level);
+  const at = new Map(placed.filter((p) => p.visible).map((p) => [p.mark.id, { x: p.x, y: p.y }] as const));
+  const spots = new Map(placeCallouts(list, at, stage, obstacles).map((s) => [s.id, s] as const));
+  const yearById = new Map(board.year.map((y) => [y.chapterId, y] as const));
   return (
-    <div className="journey-marks" data-mark-count={entries.length}>
-      {entries.map((e) => {
-        const a = byId.get(e.id);
-        const shown = Boolean(a && (a.visible || e.id === "piece"));
-        const labelled = Boolean(placed.get(e.id)?.placed);
-        // The piece never leaves the stage: off-stage it waits at the nearest edge, pointing the way back.
-        const x = a ? (e.id === "piece" ? clamp(a.x, 24, size.width - 24) : a.x) : 0;
-        const y = a ? (e.id === "piece" ? clamp(a.y, 24, size.height - 24) : a.y) : 0;
-        const style: CSSProperties | undefined = a ? { transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`, zIndex: e.id === selectedId ? 3000 : e.kind === "piece" ? 2500 : Math.max(1, 2000 - Math.round(a.depth / 4)) } : undefined;
+    <div className={["journey-marks", flat ? "journey-marks--flat" : "journey-marks--live", `journey-marks--${level}`].join(" ")} data-mark-count={placed.length}>
+      {placed.map(({ mark, x, y, visible }) => {
+        const words = markWords(board, mark, rows, yearById.get(mark.id));
+        const style: CSSProperties = { transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)` };
+        const showPlate = level === "year" || (level === "week" && mark.kind === "day" && mark.date !== board.today) || (flat && mark.kind === "pile");
         return (
           <button
-            key={e.id}
+            key={mark.id}
             type="button"
-            id={journeyMarkDomId(e.id)}
+            id={journeyMarkDomId(mark.id)}
             className={[
-              "journey-mark", `journey-mark--${e.kind}`, e.stop ? `journey-mark--${e.stop.kind}` : "",
-              e.attention ? "journey-mark--attention" : "", labelled ? "journey-mark--labelled" : "", e.id === selectedId ? "is-selected" : "",
-              a && !a.visible ? "journey-mark--offstage" : "",
+              "journey-mark", `journey-mark--${mark.kind}`, `journey-mark--money-${mark.money}`,
+              mark.recorded ? "journey-mark--recorded" : "", mark.toCheck ? "journey-mark--check" : "",
+              mark.date === board.today ? "journey-mark--today" : "", mark.id === selectedId ? "is-selected" : "",
+              mark.date && mark.date === focusedDate ? "is-focused" : "", mark.covers.length === 0 && mark.kind === "day" ? "journey-mark--quiet" : "",
+              mark.kind === "chapter" && mark.id === board.currentChapterId ? "journey-mark--current" : "",
+              mark.kind === "chapter" && !mark.covers.length ? "journey-mark--empty" : "",
             ].filter(Boolean).join(" ")}
-            data-mark-id={e.id}
-            data-mark-kind={e.kind}
-            hidden={!shown}
-            aria-label={e.aria}
-            aria-expanded={e.id === selectedId}
-            aria-controls={panelId}
+            data-mark-id={mark.id}
+            data-mark-kind={mark.kind}
+            hidden={!visible}
+            aria-label={words.aria}
+            aria-expanded={mark.id === selectedId}
+            aria-controls={sheetId}
             style={style}
-            onClick={() => onSelect(e.id)}
+            onClick={(e) => onSelect(mark.id, e.currentTarget)}
           >
             <span className="journey-mark__hit" aria-hidden="true" />
-            {labelled ? <span className="journey-mark__label" aria-hidden="true">{e.label}</span> : null}
+            {mark.toCheck && mark.kind !== "hercules" ? <span className="journey-mark__ring" aria-hidden="true">!</span> : null}
+            {showPlate && words.plate ? (
+              <span className="journey-mark__plate" aria-hidden="true">{words.plate}{words.plateSmall ? <small>{words.plateSmall}</small> : null}</span>
+            ) : null}
           </button>
         );
       })}
-      {bridges.map(a=>placed.get(a.id)?.placed?<span key={a.id} className="journey-bridge-label" data-bridge-id={a.id.slice(7)} style={{transform:`translate(${a.x}px, ${a.y-LABEL_LIFT}px) translate(-50%,-100%)`}}>
-        <svg viewBox="0 0 64 32" aria-hidden="true"><path d={BRIDGE_GLYPHS[a.bridge!.glyph]}/></svg>{a.bridge!.name}
-      </span>:null)}
-      {districts.map((d) => placed.get(d.id)?.placed ? (
-        <span key={d.id} className="journey-district" data-district-id={d.id.slice(DISTRICT_PREFIX.length)} aria-hidden="true" style={{ transform: `translate(${d.x.toFixed(1)}px, ${d.y.toFixed(1)}px) translate(-50%, -50%)` }}>{d.label}</span>
-      ) : null)}
-      {preview ? (
-        <span className="journey-mark__preview-tag" aria-hidden="true" style={{ transform: `translate(${preview.x.toFixed(1)}px, ${preview.y.toFixed(1)}px)` }}>{COPY.previewPrefix}</span>
-      ) : null}
+      {list.map((c) => {
+        const s = spots.get(c.id);
+        if (!s) return null;
+        return (
+          <span key={`callout-${c.id}`} className={`journey-callout journey-callout--${c.kind}`} data-callout={c.kind} aria-hidden="true" style={{ transform: `translate(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px) translate(-50%, -50%)` }}>
+            {c.title}{c.small ? <small>{c.small}</small> : null}
+          </span>
+        );
+      })}
     </div>
   );
 }
+
+export { JOURNEY_MAP_MARKS };

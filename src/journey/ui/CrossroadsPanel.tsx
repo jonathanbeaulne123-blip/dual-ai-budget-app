@@ -2,8 +2,7 @@
  * A crossroads (T4): select → preview an alternative → understand what changes → continue in the surface that owns
  * the choice, or return without changing anything.
  *
- * - Previewing calls ONLY `onPreview` (the stage draws it provisionally: `scene.setPreview` / the flat twin's dashed
- *   ring) and shows the banner "Preview — nothing has changed". No action runs.
+ * - Previewing calls ONLY `onPreview` (text-only on the Horizon Clock: the 3D provisional preview is dropped) and shows the banner "Preview — nothing has changed". No action runs.
  * - The differences are the model's existing-calculation preview data (era rows, `planVersionDiff`, the two home
  *   layouts), printed as they are. Nothing is estimated here.
  * - "Continue in <surface>…" runs `confirm.call` once (it opens the Era planner / HomeBook / kitchen table, which keep
@@ -11,7 +10,9 @@
  */
 import type { Crossroads, JourneyBoardActions } from "../contracts.ts";
 import { runJourneyAction } from "../contracts.ts";
-import type { PreviewSelection } from "../board/index.ts";
+
+/** Which alternative is previewed (presentation only; the map dims nothing and changes nothing). */
+export type PreviewSelection = { crossroadsId: string; alternativeId: string };
 import { COPY, longDate, previewLines } from "./copy.ts";
 import { PanelFrame } from "./StopPanel.tsx";
 
@@ -31,7 +32,7 @@ export function CrossroadsPanel({ crossroads, actions, preview, onPreview, onClo
   const previewing = Boolean(shown && !shown.isCurrent);
   const waiting = crossroads.waitingOn.map((id) => nameOf?.(id) ?? "your partner");
   return (
-    <PanelFrame kindWords={`Crossroads · ${longDate(crossroads.date)}`} title={crossroads.label} onClose={onClose} className="journey-panel--crossroads" headingRef={headingRef}>
+    <PanelFrame kindWords={`${COPY.crossroads} · ${longDate(crossroads.date)}`} title={crossroads.label} onClose={onClose} className="journey-panel--crossroads" headingRef={headingRef} dialog>
       {previewing ? <p className="journey-preview-banner" role="status">{COPY.previewBanner}</p> : null}
       <p className="journey-panel__question">{crossroads.question}</p>
       <fieldset className="journey-alternatives">
