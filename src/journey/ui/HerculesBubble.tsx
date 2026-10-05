@@ -20,7 +20,6 @@ import { MAP_WORDS, pinnedLabel, shortDate } from "../model/index.ts";
 import { callWords, COPY, monthName } from "./copy.ts";
 import { subjectOf } from "./Marks.tsx";
 import { PanelFrame, signedAmount, StateDot } from "./StopPanel.tsx";
-import { isSettingAside, SHIM_WORDS } from "./mergeShim.ts";
 
 export type BubbleProps = {
   board: JourneyBoard;
@@ -44,7 +43,7 @@ export function needChips(board: JourneyBoard, dueReview?: { count: number } | n
 export function HerculesBubble({ board, rows, mode, chapterId, dueReview, onOpen, onBackToNow }: BubbleProps) {
   const weekCount = board.digest.weekStopIds.length;
   const needs = needChips(board, dueReview);
-  let b1: string, b2: string | null = null, lead: string | null = null, chips = needs, now = false, nextWord: string = COPY.leavingNext, nextLabel = "";
+  let b1: string, b2: string | null = null, lead: string | null = null, chips = needs, now = false, nextWord: string = MAP_WORDS.leavingNext, nextLabel = "";
   if (mode === "week") {
     b1 = COPY.thisWeekShort(weekCount);
     chips = needs.slice(0, 1);
@@ -52,7 +51,7 @@ export function HerculesBubble({ board, rows, mode, chapterId, dueReview, onOpen
     b1 = COPY.thingsThisWeek(weekCount);
     const next = board.digest.nextLeavingStopId ? board.stops.find((s) => s.id === board.digest.nextLeavingStopId) : undefined;
     const row = next ? rows.get(next.id) : undefined;
-    nextWord = isSettingAside(next) ? SHIM_WORDS.settingAsideNext : COPY.leavingNext;
+    nextWord = board.digest.nextIsSettingAside ? MAP_WORDS.settingAsideNext : MAP_WORDS.leavingNext;
     nextLabel = next?.label ?? "";
     lead = next ? `${subjectOf(next.label)}${row?.amountText ? ` ${row.amountText.split(" · ")[0]}` : ""}` : null;
     b2 = next ? shortDate(next.date) : null;
@@ -138,7 +137,7 @@ export function ChecklistSheet({ board, rows, actions, pinned, dueReview, onOpen
   const week = board.digest.weekStopIds.map((id) => byId.get(id)).filter((s): s is Stop => Boolean(s));
   const due = dueReview && dueReview.count > 0 ? dueReview.count : 0;
   const kick = `${COPY.herculesList} · ${pinned ? `pinned to ${shortDate(board.week.from)}` : shortDate(board.today)}`;
-  const title = pinned ? pinnedLabel(toCheck.length, board.week.from) : COPY.checklistTitle(board.toCheck.length);
+  const title = pinned ? pinnedLabel(toCheck.length, board.week.from) : MAP_WORDS.checklist.title(board.toCheck.length);
   const everyday = board.purse.everyday && board.purse.everyday.cents !== null ? `${MAP_WORDS.purse.everyday} ${board.purse.everyday.figure}` : MAP_WORDS.purse.everydayUnknown;
   return (
     <PanelFrame kindWords={kick} title={title} onClose={onClose} className="journey-panel--checklist" headingRef={headingRef} dialog>
@@ -167,7 +166,7 @@ export function ChecklistSheet({ board, rows, actions, pinned, dueReview, onOpen
         <Section id="reminders" title={MAP_WORDS.checklist.reminders} count={due}>
           <li className="journey-row journey-row--item">
             <span className="journey-dot journey-dot--exp" aria-hidden="true" />
-            <span className="journey-row__text"><b className="journey-row__label">{COPY.dueReview(due)}</b><span className="journey-row__item-status">{COPY.dueReviewSub}</span></span>
+            <span className="journey-row__text"><b className="journey-row__label">{MAP_WORDS.reminders.count(due)}</b><span className="journey-row__item-status">{MAP_WORDS.reminders.sub}</span></span>
             <button type="button" className="journey-action" data-action-id="due-review" onClick={() => runJourneyAction(actions, { name: "openDueReview" })}>{callWords({ name: "openDueReview" })}</button>
           </li>
         </Section>

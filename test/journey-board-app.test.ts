@@ -95,7 +95,7 @@ import { financialAuditHash } from "../src/core/index.ts";
 import { HORIZON_INDEX_URL } from "../src/house/world/horizonAssets.ts";
 import { journeyLandTimings, resetJourneyLandCacheForTests } from "../src/journey/land/index.ts";
 import { JOURNEY_LAND_SLIM_URL } from "../src/journey/land/slim.ts";
-import { journeyViewStateKeyV2, runJourneyAction } from "../src/journey/contracts.ts";
+import { journeyViewStateKeyV2 } from "../src/journey/contracts.ts";
 import { fabActionsFor } from "../src/core/fabActions.ts";
 import { deriveJourneyBoard } from "../src/journey/model/index.ts";
 import { journeyMarkDomId } from "../src/journey/ui/Marks.tsx";
@@ -207,7 +207,8 @@ const openFromDay = (stopId: string) => panel()?.querySelector<HTMLElement>(`[da
 /** The Map's month title in the header. */
 const monthTitle = (board: HTMLElement) => board.querySelector("[data-chapter-month]")?.textContent ?? null;
 /** The bus (the household's place) on the flat clock: its mark and its words. */
-const busMark = () => q(`#${journeyMarkDomId("piece")}`);
+/** The bus folds into today's day mark (B7: no stacked targets), so "the bus" is today's mark. */
+const busMark = () => q(`#${journeyMarkDomId(FIXTURE_TODAY)}`);
 
 /**
  * Open a stop from its day on the clock: a day with one stop opens that stop's sheet; a day with two or three shows each
@@ -431,11 +432,9 @@ describe("the household Journey map in the App", () => {
     expect(modes).toEqual(fabActionsFor("household", { memberHasJob: true }).map((verb) => verb.mode));
     expect(modes).toEqual(["expense", "shift", "income", "bill", "transfer"]);
     await press(board.querySelector("[data-journey-plus]"), "+");
-    // The petal runs { name: "openRecord", mode: "shift" } (FIX-B draws it from `recordModes`); press it when drawn,
-    // else run the same call through the board's own actions.
-    const petal = board.querySelector<HTMLElement>('[data-dial-verb="shift"]');
-    if (petal) await press(petal, "Record a shift…");
-    else await act(async () => { runJourneyAction(state.boardProps!.actions, { name: "openRecord", mode: "shift" }); });
+    // The dial draws its petals from `recordModes`: the shift petal is there, and it runs { name: "openRecord", mode: "shift" }.
+    expect([...board.querySelectorAll<HTMLElement>("[data-dial-verb]")].map((p) => p.dataset.dialVerb)).toEqual(["purchase", "shift", "paid", "income", "transfer"]);
+    await press(board.querySelector('[data-dial-verb="shift"]'), "Record a shift…");
     // `openRecordFlow("shift")`: a shift is Mine, so the App moves to My Money and opens its Shift flow there.
     await waitFor(() => q('[data-add-slideshow="shift"]'), "the App's Shift flow");
     expect(await moneyHashes()).toEqual([before]);
@@ -448,6 +447,8 @@ describe("the household Journey map in the App", () => {
     const board = await openApp(noJob, BIANCA);
     await waitFor(() => board.querySelector('.journey-stage[data-stage-mode="flat"]'), "the flat clock");
     expect(state.boardProps!.recordModes).toEqual(["expense", "income", "bill", "transfer"]);
+    await press(board.querySelector("[data-journey-plus]"), "+");
+    expect(board.querySelector('[data-dial-verb="shift"]')).toBeNull();
   });
 
   it("A9: on a phone the board's region is a full viewport below the header, and arrival scrolls it to the top", async () => {
@@ -487,7 +488,10 @@ describe("the household Journey map in the App", () => {
     expect(board.querySelector(".journey-mark--check")).toBeNull();
     // Direct access never depends on the map: the dial still records.
     await press(board.querySelector("[data-journey-plus]"), "+");
-    expect([...board.querySelectorAll<HTMLElement>("[data-dial-verb]")].map((b) => b.dataset.dialVerb)).toEqual(["purchase", "paid", "income"]);
+    // The App's own record verbs (`recordModes`, from `fabActionsFor`), drawn in the dial's petal order.
+    const order = ["expense", "shift", "bill", "income", "transfer"] as const, petal: Record<string, string> = { expense: "purchase", bill: "paid" };
+    expect([...board.querySelectorAll<HTMLElement>("[data-dial-verb]")].map((b) => b.dataset.dialVerb))
+      .toEqual(order.filter((m) => state.boardProps!.recordModes!.includes(m)).map((m) => petal[m] ?? m));
     await act(async () => { document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })); });
     // The list: the honest empty words; no memory or milestone rows (no stop rows at all).
     await press(board.querySelector('[data-list-mode="list"]'), "List");

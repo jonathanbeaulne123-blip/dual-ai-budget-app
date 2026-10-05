@@ -7,12 +7,12 @@
  *
  * Invariants: selecting, picking, pulling the level, turning the chapter, opening a sheet or the list, the Key, the
  * dial, "Which one?" and About this map call NO action — they change the view only. An action runs only when its own
- * labelled button is pressed, exactly once, through `runJourneyAction` / `runJourneyAction` (the sheet and the list
+ * labelled button is pressed, exactly once, through `runJourneyAction` (the sheet and the list
  * share each stop's `actions[]`).
  */
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactElement } from "react";
 import type {
-  ChapterId, CreateJourneyMapScene, DateKey, HorizonLocation, JourneyBoardActions, JourneyBoard, JourneyLandData, JourneyLandHandle, JourneyLevel,
+  ChapterId, CreateJourneyMapScene, JourneyRecordMode, DateKey, HorizonLocation, JourneyBoardActions, JourneyBoard, JourneyLandData, JourneyLandHandle, JourneyLevel,
   JourneyMapSceneHandle, JourneyViewStateV2, ListScope, ListView as ListViewModel, MarkAnchor, PlaceRef, StopCluster, ThemeId,
 } from "../contracts.ts";
 import { DEFAULT_JOURNEY_VIEW_STATE_V2, JOURNEY_MAP_MARKS, LEVEL_T, levelForT, runJourneyAction } from "../contracts.ts";
@@ -31,7 +31,6 @@ import { NO_SAFE_AREA, Stage, type SafeArea, type StageMode, type StageSize } fr
 import { ChapterPanel, ClusterPanel, PanelFrame, StopCard, StopPanel } from "./StopPanel.tsx";
 import { WhichOne, type WhichOneOption } from "./WhichOne.tsx";
 import { needChips } from "./HerculesBubble.tsx";
-import { SHIM_WORDS, type JourneyRecordMode } from "./mergeShim.ts";
 import { HORIZON_AVAILABLE } from "../../harbour/flag.ts";
 import { HORIZON_GEOGRAPHY } from "../../worldGeography.ts";
 import { recordDiagnostic, registerDiagnosticProvider } from "../../diagnostics/inspectorCore.ts";
@@ -351,14 +350,17 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
     runJourneyAction(actions, { name: "enterHorizon", location });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vs, level, actions, props.onBeforeEnterHorizon]);
-  const enterAtCentre = useCallback(() => {
-    if (!canEnterHorizon) return;
+  /** The island's centre ground (the scene's ground at the stage centre, else the frame centre): `resolve.centre`. */
+  const centreGround = useCallback((): HorizonLocation | null => {
+    if (!canEnterHorizon) return null;
     const { width, height } = stageSize.current;
     const at = scene?.groundAt(width / 2, (safeArea.top + height - safeArea.bottom) / 2) ?? null;
     const frame = stage.landHandle?.frame;
     const location = at ?? (frame ? { x: frame.centre[0], y: frame.centre[1] } : null);
-    if (location) enterHorizon({ x: Math.round(location.x), y: Math.round(location.y) });
-  }, [canEnterHorizon, scene, safeArea, stage.landHandle, enterHorizon]);
+    return location ? { x: Math.round(location.x), y: Math.round(location.y) } : null;
+  }, [canEnterHorizon, scene, safeArea, stage.landHandle]);
+  /** The dial's actions: its resolved `enterHorizonCentre` goes through the map's own Enter Horizon (it saves `lastEnter`). */
+  const dialActions = useMemo<JourneyBoardActions>(() => ({ ...actions, enterHorizon: (location) => { enterHorizon(location); } }), [actions, enterHorizon]);
 
   // --- keyboard ----------------------------------------------------------------------------------------------------
   const moveTo = useCallback((date: DateKey) => {
@@ -528,7 +530,7 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
       <Purse purse={board.purse} showToday={shownLevel === "week" || (shownLevel === "month" && chapterId === board.currentChapterId)} statusNote={statusNote} />
       {shownLevel === "year" && vs.listMode === "map" && !board.empty ? (
         <p className="journey-year-caption" data-journey-year-caption="">
-          {SHIM_WORDS.yearCaption}
+          {MAP_WORDS.yearCaption}
           <span className="journey-year-caption__key"><span aria-hidden="true">●</span> {MAP_WORDS.stack.solid} · <span aria-hidden="true">○</span> {MAP_WORDS.stack.seeThrough}</span>
         </p>
       ) : null}
@@ -561,7 +563,7 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
       </div>
       <div className={["journey-dock", dialOpen ? "is-dial-open" : ""].filter(Boolean).join(" ")} data-journey-dock="">
         <div className="journey-dock__pull" inert={dialOpen || undefined}><LevelPull t={t} onPull={onPull} flat={stage.mode === "flat"} closeSignal={popClose} /></div>
-        <AddDial open={dialOpen} onToggle={setDialOpen} actions={actions} today={board.today} canEnterHorizon={canEnterHorizon} onEnterHorizon={enterAtCentre} recordModes={props.recordModes} />
+        <AddDial open={dialOpen} onToggle={setDialOpen} actions={dialActions} today={board.today} canEnterHorizon={canEnterHorizon} centre={centreGround} recordModes={props.recordModes} />
         <div className="journey-toggle" role="group" aria-label={COPY.mapOrList} inert={dialOpen || undefined}>
           <button type="button" className="journey-toggle__option" aria-pressed={vs.listMode === "map"} data-list-mode="map" onClick={() => patch({ listMode: "map" })}>{COPY.showMap}</button>
           <button type="button" className="journey-toggle__option" aria-pressed={vs.listMode === "list"} data-list-mode="list" onClick={() => { patch({ listMode: "list", selectedStopId: null }); setFan(null); }}>{COPY.showList}</button>

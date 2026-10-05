@@ -160,9 +160,9 @@ describe("src/journey source fence", () => {
       land: [/^src\/house\/world\/horizonAssets\.ts$/, /^src\/harbour\/horizon\/land\/(terrain\/asset|interfaces|corridor\/types)\.ts$/, /^src\/harbour\/horizon\/world\/definition\.ts$/, /^src\/home\/(geometry|site)\.ts$/, /^src\/worldGeography\.ts$/],
       board: [/^src\/house\/world\/rendererOwner\.ts$/, /^src\/harbour\/scene\/quality\.ts$/],
       // ui: the theme, the Horizon flag and quality tier (read-only), the world revision, the motion key (constants
-      // only: `harbour/nav/motionKey.ts`; `motionEdition.ts` for MOTION_KEY alone until the ui switches) and the
-      // local diagnostics inspector (device-only: no fetch, no upload; an export is a file the person saves).
-      ui: [/^src\/theme\/\w+\.tsx?$/, /^src\/harbour\/flag\.ts$/, /^src\/harbour\/scene\/quality\.ts$/, /^src\/harbour\/nav\/(motionKey|motionEdition)\.ts$/, /^src\/worldGeography\.ts$/, /^src\/diagnostics\/inspectorCore\.ts$/],
+      // only: `harbour/nav/motionKey.ts`, never `motionEdition.ts` with its storage writer) and the local diagnostics
+      // inspector (device-only: no fetch, no upload; an export is a file the person saves).
+      ui: [/^src\/theme\/\w+\.tsx?$/, /^src\/harbour\/flag\.ts$/, /^src\/harbour\/scene\/quality\.ts$/, /^src\/harbour\/nav\/motionKey\.ts$/, /^src\/worldGeography\.ts$/, /^src\/diagnostics\/inspectorCore\.ts$/],
     };
     const offences: string[] = [];
     for (const file of files) {

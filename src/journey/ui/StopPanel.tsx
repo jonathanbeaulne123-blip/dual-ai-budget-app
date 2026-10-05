@@ -10,9 +10,9 @@
  */
 import { useId, type ReactNode } from "react";
 import type { Chapter, Crossroads, HorizonLocation, JourneyBoardActions, JourneyLevel, ListRow, Stop, StopAction, StopCluster } from "../contracts.ts";
-import { isToCheck, ringsFor, runJourneyAction, STACK_RULER } from "../contracts.ts";
-import { directionOf, isRecorded, knownCents, MAP_WORDS, shortDate } from "../model/index.ts";
-import { COPY, longDate, money } from "./copy.ts";
+import { isToCheck, runJourneyAction } from "../contracts.ts";
+import { directionOf, isRecorded, knownCents, rulerWords, shortDate } from "../model/index.ts";
+import { COPY, longDate } from "./copy.ts";
 
 export type PanelFrameProps = {
   kindWords: string;
@@ -101,17 +101,6 @@ export function signedAmount(stop: Stop, amountText: string): string {
   return amountText && directionOf(stop) === "in" && knownCents(stop) !== null ? `+${amountText}` : amountText;
 }
 
-/** Where the stop's coin stack stands on the level's ruler (null amount → no stack, said in words). */
-export function rulerWords(stop: Stop, level: JourneyLevel): string | null {
-  const direction = directionOf(stop);
-  if (direction === "none") return null;
-  const rings = ringsFor(knownCents(stop), level);
-  const side = direction === "in" ? "mint, coming in" : "gold, going out";
-  if (!rings) return `On the ruler: ${side} · ${MAP_WORDS.stack.unknown} · no stack.`;
-  const tall = rings.rings < 0.2 ? "a single thin coin" : `${rings.drawnRings.toFixed(1)} rings tall${rings.capped ? " (capped, the figure is printed)" : ""}`;
-  return `On the ruler: ${side} · ${tall} (${money(STACK_RULER[level].centsPerRing)} a ring) · ${isRecorded(stop) ? `solid — ${MAP_WORDS.stack.solid}` : `see-through — ${MAP_WORDS.stack.seeThrough}`}.`;
-}
-
 export type StopCardProps = {
   stop: Stop;
   row: ListRow | undefined;
@@ -134,6 +123,7 @@ export function StopCard({ stop, row, actions, horizonLocation, onEnterHorizon, 
       <p className="journey-card__kick">{row?.kindLabel ?? stop.kind}{named ? ` · ${stop.label}` : ""}</p>
       {amount ? <p className={["journey-card__amount", directionOf(stop) === "in" ? "journey-card__amount--in" : ""].filter(Boolean).join(" ")}>{amount}</p> : null}
       {row?.statusText ? <p className="journey-card__status"><StateDot stop={stop} /> <span className="journey-card__words">{row.statusText}</span></p> : null}
+      {row?.note ? <p className="journey-card__note" data-stop-note="">{row.note}</p> : null}
       {facts.length ? (
         <dl className="journey-facts">
           {facts.map((f) => (

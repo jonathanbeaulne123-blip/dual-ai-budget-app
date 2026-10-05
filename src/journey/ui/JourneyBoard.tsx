@@ -18,12 +18,11 @@ import { deriveJourneyBoard, listView } from "../model/index.ts";
 import { buildJourneyLand, loadJourneyLand } from "../land/index.ts";
 import { createJourneyMapScene } from "../board/scene.ts";
 import { qualityTier, readQualityInput, type QualityTier } from "../../harbour/scene/quality.ts";
-import { MOTION_KEY } from "../../harbour/nav/motionEdition.ts";
+import { MOTION_KEY } from "../../harbour/nav/motionKey.ts";
 import { JourneyBoardView, type JourneyStageSource } from "./JourneyBoardView.tsx";
 import { COPY } from "./copy.ts";
 import { useReducedMotion } from "./motion.ts";
 import { useJourneyViewStateStore } from "./viewState.ts";
-import type { RecordModesProp } from "./mergeShim.ts";
 
 /** Test seams only (the App passes plain `JourneyBoardProps`). */
 export type JourneyBoardSeams = {
@@ -183,7 +182,7 @@ export default function JourneyBoard(props: JourneyBoardProps & JourneyBoardSeam
         onReady={props.onReady}
         notice={notice}
         offline={offline}
-        recordModes={(props as JourneyBoardProps & RecordModesProp).recordModes}
+        recordModes={props.recordModes}
       />
     </>
   );

@@ -4,6 +4,7 @@
  * and the list can never say different things. No judgement words ("late", "failed", "behind", "winning").
  */
 import type { ActionCall, CrossroadsPreview, DateKey, JourneyLevel } from "../contracts.ts";
+import { openPlaceWords } from "../model/index.ts";
 
 export const COPY = {
   boardLabel: "Journey",
@@ -46,10 +47,8 @@ export const COPY = {
   thingsThisWeek: (n: number) => (n === 1 ? "1 thing this week" : `${n} things this week`),
   thisWeekShort: (n: number) => `${n} this week`,
   onTheMap: (n: number) => `${n} on the map`,
-  leavingNext: "Leaving next",
   today: "Today",
   herculesList: "Hercules’s list",
-  checklistTitle: (n: number) => (n ? `This week, then ${n} to check` : "This week"),
   add: "Add — record money",
   addLead: "Open",
   recordPurchase: "Record a purchase…",
@@ -63,10 +62,6 @@ export const COPY = {
   pull: "Zoom: Year, Month or Week",
   key: "Key",
   keyTitle: "How to read the stacks",
-  keyHeight: "Height is the amount.",
-  keyMintGold: "Mint = coming in · Gold = going out.",
-  keyMintGoldMore: "Income stands on the island side of the ring, bills on the sea side.",
-  keyHoney: "Honey ring with “!” — needs you: the date passed and it is not recorded as paid.",
   crossroads: "Crossroads",
   previewBanner: "Preview — nothing has changed",
   returnWithoutChanging: "Return without changing",
@@ -77,13 +72,6 @@ export const COPY = {
   chapterStops: "In this chapter",
   chapterNothing: "Nothing dated in this chapter.",
   clusterStops: "On this day",
-  dueReview: (n: number) => `${n} repeating reminder${n === 1 ? "" : "s"} to review`,
-  dueReviewSub: "A separate list · reviewing it records nothing",
-  legendRecorded: "recorded",
-  legendNeedsYou: "needs you",
-  legendExpected: "expected / plan",
-  legendIn: "coming in",
-  legendInExpected: "coming in · not yet",
   /** The bubble / pill chips beside "N to check" (counts only; the sheet says what each is). */
   waitingChip: (n: number) => `${n} waiting on you`,
   remindersChip: (n: number) => `${n} reminder${n === 1 ? "" : "s"}`,
@@ -92,15 +80,6 @@ export const COPY = {
   /** A Year plate's second line for a month with nothing on the map (UI words; FIX-A may move them). */
   plateNothing: "nothing on the map",
 } as const;
-
-/** "Open the {place}" for the house targets the board opens (`openPlace`), never "Open it" (UX #20). */
-export const PLACE_WORDS: Record<string, string> = {
-  "plan-studio": "the kitchen table", "cellar-bills": "the bill jars", planner: "the planner", memories: "our memories",
-  "loft-banks": "the Kitty Bank", calendar: "the Calendar", books: "the Books",
-};
-export function placeWords(target: string): string {
-  return PLACE_WORDS[target] ?? `the ${target.replace(/[-_]/g, " ")}`;
-}
 
 export const LEVEL_WORDS: Record<JourneyLevel, string> = { year: "Year", month: "Month", week: "Week" };
 
@@ -152,7 +131,7 @@ export function callWords(call: ActionCall): string {
     case "openRecord": return call.mode === "income" ? "Record income…" : call.mode === "bill" ? "Mark paid…" : "Record it…";
     case "openBillPaid": return "Mark paid…";
     case "openDueReview": return "Review…";
-    case "openPlace": return `Open ${placeWords(call.target)}`;
+    case "openPlace": return openPlaceWords(call.target);
     case "openCampfire": return "Open the Campfire";
     case "openWeeklySitdown": return "Open the weekly Sitdown";
     case "openHomeBook": return "Open the HomeBook";

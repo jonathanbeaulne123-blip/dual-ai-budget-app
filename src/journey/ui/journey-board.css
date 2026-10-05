@@ -253,6 +253,8 @@
 .journey-purse__gloss { font-size: 11.5px; font-weight: 700; color: var(--ink-soft); }
 .journey-purse__p2 { font-size: 12px; font-weight: 700; color: var(--ink-soft); line-height: 1.25; }
 .journey-purse__p2 b { color: var(--ok); }
+/* Trust M3: a pay already recorded today — its own line, model words, never merged into the figure. */
+.journey-purse__note { display: block; font-size: 11.5px; font-weight: 700; color: var(--ink); }
 .journey-purse__p3 { font-size: 11.5px; font-weight: 800; color: var(--ink); line-height: 1.25; }
 .journey-purse__short { display: none; }
 /* The phone Week shares its row with the pill: the short pay line (UX #24). */
@@ -443,6 +445,7 @@
 .journey-card__kick { margin: 0; font-size: 11.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); }
 .journey-card__amount { margin: 2px 0 0; font-family: var(--font-d); font-weight: 600; font-size: 21px; }
 .journey-card__amount--in { color: var(--ok); }
+.journey-card__note { margin: 0 0 6px; font-size: 13px; font-weight: 700; color: var(--ink); }
 .journey-card__status { margin: 2px 0 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13.5px; font-weight: 700; }
 .journey-card__ruler { margin: 4px 0 0; font-size: 12px; font-weight: 700; color: var(--ink-soft); }
 .journey-facts { margin: 4px 0; display: grid; gap: 2px; }
@@ -486,6 +489,7 @@
 .journey-row__text { flex: 1; min-width: 0; }
 .journey-row__label { display: block; font-weight: 800; }
 .journey-row__kind { display: block; font-size: 11.5px; font-weight: 800; color: var(--ink-soft); }
+.journey-row__note { display: block; font-size: 12px; font-weight: 700; color: var(--ink); }
 .journey-row__meta { display: block; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
 .journey-row__date::after { content: " · "; }
 .journey-row__status { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }

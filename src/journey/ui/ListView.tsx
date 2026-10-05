@@ -15,10 +15,9 @@
  */
 import type { AttentionItem, JourneyBoardActions, ListRow, ListView as ListViewModel, Stop } from "../contracts.ts";
 import { isToCheck, runJourneyAction } from "../contracts.ts";
-import { MAP_WORDS, shortDate } from "../model/index.ts";
+import { MAP_WORDS, shortDate, signedMoney } from "../model/index.ts";
 import { callWords, COPY, money } from "./copy.ts";
 import { cssSafe } from "./Marks.tsx";
-import { signedMoney } from "./mergeShim.ts";
 import { ActionButtons, signedAmount, StateDot } from "./StopPanel.tsx";
 
 /** A row's DOM id (`journey-row-…`), stable across renders (the App's tool doors return focus to it). */
@@ -48,11 +47,11 @@ function Strip({ strip }: { strip: NonNullable<ListViewModel["strip"]> }) {
 function Legend() {
   return (
     <p className="journey-legend" aria-hidden="true">
-      <span><span className="journey-dot journey-dot--rec" />{COPY.legendRecorded}</span>
-      <span><span className="journey-dot journey-dot--need">!</span>{COPY.legendNeedsYou}</span>
-      <span><span className="journey-dot journey-dot--exp" />{COPY.legendExpected}</span>
-      <span><span className="journey-dot journey-dot--rec journey-dot--in">↑</span>{COPY.legendIn} · {MAP_WORDS.stack.solid}</span>
-      <span><span className="journey-dot journey-dot--exp journey-dot--in">↑</span>{COPY.legendInExpected}</span>
+      <span><span className="journey-dot journey-dot--rec" />{MAP_WORDS.legend.recorded}</span>
+      <span><span className="journey-dot journey-dot--need">!</span>{MAP_WORDS.legend.needsYou}</span>
+      <span><span className="journey-dot journey-dot--exp" />{MAP_WORDS.legend.expected}</span>
+      <span><span className="journey-dot journey-dot--rec journey-dot--in">↑</span>{MAP_WORDS.legend.in} · {MAP_WORDS.stack.solid}</span>
+      <span><span className="journey-dot journey-dot--exp journey-dot--in">↑</span>{MAP_WORDS.legend.inExpected}</span>
     </p>
   );
 }
@@ -87,7 +86,7 @@ function Waiting({ items, dueReview, actions, onOpen }: { items: readonly Attent
           <ul className="journey-rows" aria-labelledby="journey-list-reminders">
             <li className="journey-row journey-row--item" data-row-id="due-review">
               <span className="journey-dot journey-dot--exp" aria-hidden="true" />
-              <span className="journey-row__text"><b className="journey-row__label">{COPY.dueReview(due)}</b><span className="journey-row__item-status">{COPY.dueReviewSub}</span></span>
+              <span className="journey-row__text"><b className="journey-row__label">{MAP_WORDS.reminders.count(due)}</b><span className="journey-row__item-status">{MAP_WORDS.reminders.sub}</span></span>
               <button type="button" className="journey-action" data-action-id="due-review" onClick={() => runJourneyAction(actions, { name: "openDueReview" })}>{callWords({ name: "openDueReview" })}</button>
             </li>
           </ul>
@@ -121,6 +120,7 @@ function Row({ row, stop, actions, onOpen, withDate }: { row: ListRow; stop: Sto
           <b className="journey-row__label">{row.label}</b>
           <span className="journey-row__kind">{row.kindLabel}</span>
           <span className="journey-row__meta">{withDate && row.date ? <span className="journey-row__date">{shortDate(row.date)}</span> : null}<span className="journey-row__status">{row.statusText}</span></span>
+          {row.note ? <span className="journey-row__note" data-row-note="">{row.note}</span> : null}
         </span>
         {amount ? <span className={["journey-row__amount", amount.startsWith("+") ? "journey-row__amount--in" : ""].filter(Boolean).join(" ")}>{amount}</span> : null}
       </button>

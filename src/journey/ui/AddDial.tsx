@@ -6,16 +6,15 @@
  *   Record a purchase… → openRecord("expense") · Record a shift… → openRecord("shift") · Mark paid… → openRecord("bill")
  *   · Record income… → openRecord("income") · Move money… → openRecord("transfer").
  * Open chips: Calendar (today), Books (register), Kitchen table (plan-studio), Simple view (`chooseSimpleView`),
- * All tools (`openAllTools`), Enter Horizon (the `enterHorizonCentre` call: only the dial's own run handles it, so the
- * item list never carries a made-up location) — a chip whose callback is absent is not drawn.
+ * All tools (`openAllTools`), Enter Horizon (the `enterHorizonCentre` call: `runJourneyAction` resolves it through the
+ * map's `centre`, so the item list never carries a made-up location) — a chip whose callback is absent is not drawn.
  * Escape or the scrim closes it and returns focus to "+". While open, the rest of the board is `inert` (the view).
  */
 import { useEffect, useRef, type ReactNode } from "react";
-import { runJourneyAction, type DateKey, type JourneyBoardActions } from "../contracts.ts";
+import { runJourneyAction, type ActionCall, type DateKey, type HorizonLocation, type JourneyBoardActions, type JourneyRecordMode } from "../contracts.ts";
 import { COPY } from "./copy.ts";
-import type { DialCall, JourneyRecordMode } from "./mergeShim.ts";
 
-export type DialItem = { id: string; label: string; call: DialCall };
+export type DialItem = { id: string; label: string; call: ActionCall };
 
 const VERB: Record<JourneyRecordMode, { id: string; label: string }> = {
   expense: { id: "purchase", label: COPY.recordPurchase },
@@ -57,21 +56,20 @@ export type AddDialProps = {
   actions: JourneyBoardActions;
   today: DateKey;
   canEnterHorizon: boolean;
-  /** "Enter Horizon" from the dial lands at the island's centre ground (the map supplies where that is). */
-  onEnterHorizon(): void;
+  /** The island's centre ground for "Enter Horizon" (`runJourneyAction`'s `resolve.centre`); null when there is none yet. */
+  centre(): HorizonLocation | null;
   /** The App's record modes (`fabActionsFor`), shift and transfer included when present. */
   recordModes?: readonly JourneyRecordMode[];
 };
 
-export function AddDial({ open, onToggle, actions, today, canEnterHorizon, onEnterHorizon, recordModes }: AddDialProps) {
+export function AddDial({ open, onToggle, actions, today, canEnterHorizon, centre, recordModes }: AddDialProps) {
   const plus = useRef<HTMLButtonElement | null>(null);
   const first = useRef<HTMLButtonElement | null>(null);
   const { verbs, chips } = dialItems(actions, today, canEnterHorizon, recordModes);
   const close = () => { onToggle(false); plus.current?.focus(); };
   const run = (item: DialItem) => {
     onToggle(false);
-    if (item.call.name === "enterHorizonCentre") { onEnterHorizon(); return; }
-    runJourneyAction(actions, item.call);
+    runJourneyAction(actions, item.call, { centre });
   };
   useEffect(() => {
     if (!open) return;

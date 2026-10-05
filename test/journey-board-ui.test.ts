@@ -20,7 +20,7 @@ import {
   type CreateJourneyMapScene, type JourneyBoardActions, type JourneyBoard, type JourneyLandData, type JourneyLandHandle,
   type JourneyMapSceneHandle, type JourneyMapSceneOptions, type ActionCall, type ListScope, type ThemeId,
 } from "../src/journey/contracts.ts";
-import { deriveJourneyBoard, listView, MAP_WORDS } from "../src/journey/model/index.ts";
+import { deriveJourneyBoard, listView, MAP_WORDS, signedMoney } from "../src/journey/model/index.ts";
 import { JourneyBoardView, compassClearance, type JourneyBoardViewProps, type JourneyStageSource } from "../src/journey/ui/JourneyBoardView.tsx";
 import JourneyBoardEntry from "../src/journey/ui/JourneyBoard.tsx";
 import { journeyMarkDomId } from "../src/journey/ui/Marks.tsx";
@@ -29,7 +29,6 @@ import { dialItems } from "../src/journey/ui/AddDial.tsx";
 import { mapMarks } from "../src/journey/ui/mapLayout.ts";
 import { readJourneyViewState, writeJourneyViewState, parseJourneyViewStateV2 } from "../src/journey/ui/viewState.ts";
 import { callWords as callWordsFor, COPY } from "../src/journey/ui/copy.ts";
-import { SHIM_WORDS, signedMoney } from "../src/journey/ui/mergeShim.ts";
 import { callouts, markSizes, placeMarks, tagMoney } from "../src/journey/ui/Marks.tsx";
 import { levelForKey } from "../src/journey/ui/LevelPull.tsx";
 import { needChips } from "../src/journey/ui/HerculesBubble.tsx";
@@ -177,6 +176,25 @@ describe("the header", () => {
   });
 });
 
+describe("a pay already recorded today (trust M3)", () => {
+  it("prints the model's note in the purse, on the stop's card and on its list row — both stops stay, nothing merged", async () => {
+    const expected = board.purse.expectedToday[0]!;
+    const note = MAP_WORDS.purse.alreadyRecorded;
+    // The model's own note (its tests prove when it is set, on the demo twin); here the view only has to print it.
+    const withNote = { ...board, purse: { ...board.purse, expectedToday: board.purse.expectedToday.map((e) => (e.stopId === expected.stopId ? { ...e, note } : e)) } } as JourneyBoard;
+    const listOf = (scope: ListScope) => {
+      const view = listView(household, withNote, scope);
+      return { ...view, groups: view.groups.map((g) => ({ ...g, rows: g.rows.map((r) => (r.id === expected.stopId ? { ...r, note } : r)) })) };
+    };
+    const { host } = await mountView({ board: withNote, listOf });
+    expect(text(host.querySelector(`[data-purse-expected="${esc(expected.stopId)}"] [data-purse-note]`))).toBe(note);
+    expect(host.querySelector("[data-journey-purse]")!.getAttribute("aria-label")).toContain(note);
+    expect(text(host.querySelector("[data-purse-everyday]"))).toBe("Everyday $0.00");
+    await click(host.querySelector('[data-list-mode="list"]'));
+    expect(text(host.querySelector(`[data-row-id="${esc(expected.stopId)}"] [data-row-note]`))).toBe(note);
+  });
+});
+
 describe("the purse chip", () => {
   it("prints Everyday and today's expected pay apart — never summed — and expected pay only for today's chapter", async () => {
     const { host } = await mountView();
@@ -185,7 +203,7 @@ describe("the purse chip", () => {
     const expected = board.purse.expectedToday[0]!;
     expect(text(purse.querySelector(`[data-purse-expected="${esc(expected.stopId)}"] b`))).toBe(signedMoney(expected.amountCents!));
     expect(text(purse.querySelector(`[data-purse-expected="${esc(expected.stopId)}"] .journey-purse__long`))).toBe(MAP_WORDS.purse.expectedToday(expected.label));
-    expect(purse.getAttribute("aria-label")).toContain(SHIM_WORDS.purseGloss);
+    expect(purse.getAttribute("aria-label")).toContain(MAP_WORDS.purseGloss);
     expect(purse.getAttribute("role")).not.toBe("status");
     expect(text(purse.querySelector("[data-purse-everyday]"))).not.toContain("2100");
     expect(purse.getAttribute("aria-label")).toContain(MAP_WORDS.purse.notCounted);
@@ -203,9 +221,9 @@ describe("Hercules's bubble and the checklist", () => {
     expect(text(bubble.querySelector(".journey-bubble__b1"))).toBe(COPY.thingsThisWeek(board.digest.weekStopIds.length));
     expect(text(bubble.querySelector(".journey-bubble__chip"))).toBe(MAP_WORDS.toCheckCount(board.toCheck.length));
     // Winter reserve is money set aside in a jar, not money leaving (UX #5): the bubble says so in words.
-    expect(bubble.getAttribute("aria-label")).toContain(`${SHIM_WORDS.settingAsideNext} · Standing · jar · Winter reserve`);
-    expect(bubble.getAttribute("aria-label")).not.toContain(COPY.leavingNext);
-    expect(text(bubble.querySelector(".journey-bubble__word"))).toBe(SHIM_WORDS.settingAsideNext);
+    expect(bubble.getAttribute("aria-label")).toContain(`${MAP_WORDS.settingAsideNext} · Standing · jar · Winter reserve`);
+    expect(bubble.getAttribute("aria-label")).not.toContain(MAP_WORDS.leavingNext);
+    expect(text(bubble.querySelector(".journey-bubble__word"))).toBe(MAP_WORDS.settingAsideNext);
     expect(text(bubble.querySelector(".journey-bubble__b2 b"))).toBe("Winter reserve $300.00");
     // Trust M2: what waits besides "to check" shows on the bubble when non-zero.
     expect([...bubble.querySelectorAll<HTMLElement>("[data-chip]")].map((c) => c.dataset.chip)).toEqual(["to-check", "waiting", "reminders"]);
@@ -220,7 +238,7 @@ describe("Hercules's bubble and the checklist", () => {
     expect(s.querySelector('input[type="checkbox"], [role="checkbox"]')).toBeNull();
     expect(text(s.querySelector("[data-checklist-note]"))).toBe(MAP_WORDS.checklist.looking);
     expect(text(s.querySelector('[data-checklist-section="waiting-on-you"]'))).toContain(board.digest.waitingOnYou[0]!.words);
-    expect(text(s.querySelector('[data-checklist-section="reminders"]'))).toContain(COPY.dueReview(4));
+    expect(text(s.querySelector('[data-checklist-section="reminders"]'))).toContain(MAP_WORDS.reminders.count(4));
     expect(total(actions)).toBe(0);
     await click(s.querySelector(`[data-open-stop="${esc(board.toCheck[0]!)}"]`));
     expect(sheet(host)!.querySelector(`[data-stop-card="${esc(board.toCheck[0]!)}"]`)).toBeTruthy();
@@ -476,7 +494,7 @@ describe("level pull, Key, marks and keyboard", () => {
     await click(host.querySelector("[data-key-button]"));
     const k = host.querySelector<HTMLElement>("[data-journey-key]")!;
     expect(k.hasAttribute("data-key-flat")).toBe(true);
-    expect(text(k)).toContain(SHIM_WORDS.flatKey);
+    expect(text(k)).toContain(MAP_WORDS.flatKey);
     expect(text(k)).not.toContain("a ring every");
     await act(async () => { host.querySelector(".journey-stage")!.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true })); });
     expect(host.querySelector("[data-journey-key]")).toBeNull();
@@ -500,7 +518,7 @@ describe("level pull, Key, marks and keyboard", () => {
     expect(mapMarks(board, "month", "2026-09").find((m) => m.id === FIXTURE_TODAY)!.covers).toContain("piece");
     expect([...host.querySelectorAll<HTMLElement>(".journey-callout")].map((c) => c.dataset.callout)).toEqual(["today", "next"]);
     // The next stop is set aside, not leaving; the subject is never cut mid-word.
-    expect(text(host.querySelector('[data-callout="next"]'))).toContain(`${SHIM_WORDS.settingAsideNext} · Winter reserve`);
+    expect(text(host.querySelector('[data-callout="next"]'))).toContain(`${MAP_WORDS.settingAsideNext} · Winter reserve`);
     expect(CSS).not.toMatch(/\.journey-callout[^{]*\{[^}]*text-overflow: ellipsis/);
     await click(mark(host, "2026-09-18"));
     expect([...host.querySelectorAll<HTMLElement>(".journey-callout")].map((c) => c.dataset.callout)).toEqual(["today", "next", "selected"]);
@@ -710,7 +728,7 @@ describe("Horizon Clock fix pass (FIX-B): Week, Year, list, dial, keys", () => {
     await click(host.querySelector('[data-level="year"]'));
     expect(title(host)).toBe("2026");
     expect(text(host.querySelector("[data-chapter-title] span"))).toContain("September");
-    expect(text(host.querySelector("[data-journey-year-caption]"))).toContain(SHIM_WORDS.yearCaption);
+    expect(text(host.querySelector("[data-journey-year-caption]"))).toContain(MAP_WORDS.yearCaption);
     const sep = host.querySelector(`#${journeyMarkDomId("2026-09")}`)!;
     const y9 = board.year.find((y) => y.chapterId === "2026-09")!;
     expect(sep.classList.contains("is-focused")).toBe(true);
@@ -767,7 +785,7 @@ describe("Horizon Clock fix pass (FIX-B): Week, Year, list, dial, keys", () => {
     expect(list.querySelectorAll("section[data-group-id]")).toHaveLength(0);
     expect(CSS).toMatch(/\.journey-group \{ display: contents; \}/);
     // The legend shows recorded AND expected income samples (trust minor 5).
-    expect(text(list.querySelector(".journey-legend"))).toContain(COPY.legendInExpected);
+    expect(text(list.querySelector(".journey-legend"))).toContain(MAP_WORDS.legend.inExpected);
   });
 
   it("the bubble never says '0 to check' alone while something waits (trust M2)", () => {
@@ -777,8 +795,10 @@ describe("Horizon Clock fix pass (FIX-B): Week, Year, list, dial, keys", () => {
   });
 
   it("signs come from the value: never '+-$X' (trust minor 2)", () => {
-    expect(signedMoney(210000)).toBe("+$2,100.00");
+    // The model's `signedMoney` (Hearth's `formatCad`, as every figure on the map prints): the sign from the value.
+    expect(signedMoney(210000)).toBe("+$2100.00");
     expect(signedMoney(-1200)).toBe("−$12.00");
+    expect(signedMoney(0)).toBe("$0.00");
   });
 
   it("the dial renders the App's record modes (shift, transfer) and Enter Horizon is a sentinel call only the dial runs (trust M4, minor 1)", async () => {

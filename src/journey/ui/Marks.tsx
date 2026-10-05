@@ -22,7 +22,6 @@ import { JOURNEY_MAP_MARKS } from "../contracts.ts";
 import { knownCents, MAP_WORDS, shortDate } from "../model/index.ts";
 import { COPY, money, shortMonth } from "./copy.ts";
 import type { MapMark } from "./mapLayout.ts";
-import { isSettingAside, SHIM_WORDS } from "./mergeShim.ts";
 
 /** A mark id → a safe DOM id (`journey-mark-…`): every character outside [A-Za-z0-9-] becomes `_<hex>_`. */
 export function journeyMarkDomId(id: string): string {
@@ -57,8 +56,8 @@ export function tagMoney(cents: number): string {
 export const subjectOf = (label: string) => label.split(" · ").at(-1) ?? label;
 const amountOf = (stop: Stop | undefined, rows: Map<string, ListRow>) => (stop ? rows.get(stop.id)?.amountText.split(" · ")[0] ?? "" : "");
 
-function nextCallout(rows: Map<string, ListRow>, next: Stop): Callout {
-  const word = isSettingAside(next) ? SHIM_WORDS.settingAsideNext : COPY.leavingNext;
+function nextCallout(rows: Map<string, ListRow>, next: Stop, settingAside: boolean): Callout {
+  const word = settingAside ? MAP_WORDS.settingAsideNext : MAP_WORDS.leavingNext;
   return { id: next.date, kind: "next", title: `${word} · ${subjectOf(next.label)}`, small: [amountOf(next, rows), shortDate(next.date)].filter(Boolean).join(" · ") };
 }
 
@@ -79,7 +78,7 @@ export function callouts(board: JourneyBoard, marks: readonly MapMark[], rows: M
   const next = board.digest.nextLeavingStopId ? board.stops.find((s) => s.id === board.digest.nextLeavingStopId) : undefined;
   const selMark = selected ? marks.find((x) => x.id === selected || (x.kind === "day" && x.covers.includes(selected))) : undefined;
   const nextSelected = Boolean(next && selMark && selMark.date === next.date);
-  if (next && has(next.date) && next.date !== todayMark && (level === "month" || nextSelected)) out.push(nextCallout(rows, next));
+  if (next && has(next.date) && next.date !== todayMark && (level === "month" || nextSelected)) out.push(nextCallout(rows, next, board.digest.nextIsSettingAside));
   if (selMark && (selMark.kind === "day" || selMark.kind === "piece") && !out.some((c) => c.id === selMark.id)) {
     const stops = board.stops.filter((s) => selMark.covers.includes(s.id));
     const first = stops[0];

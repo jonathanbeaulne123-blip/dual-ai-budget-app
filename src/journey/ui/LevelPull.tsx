@@ -13,7 +13,6 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboard
 import { JOURNEY_LEVELS, LEVEL_T, levelForT, STACK_RULER, type JourneyLevel } from "../contracts.ts";
 import { MAP_WORDS } from "../model/index.ts";
 import { COPY, LEVEL_WORDS, money } from "./copy.ts";
-import { SHIM_WORDS } from "./mergeShim.ts";
 
 export type LevelPullProps = {
   t: number;
@@ -96,18 +95,18 @@ export function Key({ id, level, flat = false, onClose, popRef }: { id?: string;
         <ul className="journey-key__list">
           <li className="is-current" data-key-row="flat">
             <svg viewBox="0 0 18 22" aria-hidden="true"><circle cx="5" cy="11" r="4" className="journey-key__solid" /><circle cx="13" cy="11" r="4" fill="none" className="journey-key__dash" /></svg>
-            <span>{SHIM_WORDS.flatKey}.</span>
+            <span>{MAP_WORDS.flatKey}.</span>
           </li>
           <li data-key-row="honey">
             <svg viewBox="0 0 18 22" aria-hidden="true"><ellipse cx="9" cy="17" rx="7.5" ry="3.4" fill="none" className="journey-key__ring" /></svg>
-            <span>{COPY.keyHoney}</span>
+            <span>{MAP_WORDS.key.honey}</span>
           </li>
         </ul>
       ) : (
       <ul className="journey-key__list">
         <li className={level !== "year" ? "is-current" : ""} data-key-row="ruler-month">
           <svg viewBox="0 0 18 22" aria-hidden="true"><rect x="4" y="3" width="10" height="17" rx="2" className="journey-key__accent" /><path d="M4 9h10M4 14h10" className="journey-key__ink" /></svg>
-          <span><b>{COPY.keyHeight}</b> Month and Week: one ruler, a ring every <b>{mw}</b>.</span>
+          <span><b>{MAP_WORDS.key.height}</b> Month and Week: one ruler, a ring every <b>{mw}</b>.</span>
         </li>
         <li className={level === "year" ? "is-current" : ""} data-key-row="ruler-year">
           <svg viewBox="0 0 18 22" aria-hidden="true"><rect x="4" y="5" width="10" height="15" rx="2" className="journey-key__honey" /><path d="M4 12h10" className="journey-key__ink" /></svg>
@@ -115,7 +114,7 @@ export function Key({ id, level, flat = false, onClose, popRef }: { id?: string;
         </li>
         <li data-key-row="mint-gold">
           <svg viewBox="0 0 18 22" aria-hidden="true"><rect x="1" y="6" width="7" height="14" rx="2" fill="#8fe0bd" stroke="#2f8a64" /><rect x="10" y="9" width="7" height="11" rx="2" fill="#ffd158" stroke="#9a6a1c" /></svg>
-          <span><b>{COPY.keyMintGold}</b> {COPY.keyMintGoldMore}</span>
+          <span><b>{MAP_WORDS.key.mintGold}</b> {MAP_WORDS.key.mintGoldMore}</span>
         </li>
         <li data-key-row="solid">
           <svg viewBox="0 0 18 22" aria-hidden="true"><rect x="4" y="5" width="10" height="15" rx="2" className="journey-key__solid" /></svg>
@@ -127,7 +126,7 @@ export function Key({ id, level, flat = false, onClose, popRef }: { id?: string;
         </li>
         <li data-key-row="honey">
           <svg viewBox="0 0 18 22" aria-hidden="true"><ellipse cx="9" cy="17" rx="7.5" ry="3.4" fill="none" className="journey-key__ring" /></svg>
-          <span>{COPY.keyHoney}</span>
+          <span>{MAP_WORDS.key.honey}</span>
         </li>
       </ul>
       )}
