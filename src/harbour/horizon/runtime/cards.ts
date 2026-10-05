@@ -144,6 +144,17 @@ export function terrainMaterial(paper:THREE.Texture|null){
   m.customProgramCacheKey=()=>'horizon-terrain-strata-1';
   return m;
 }
+/**
+ * The Water's Way: what the dressing layer (runtime/dressingLayer.ts) draws instead of the cards — every `dressing` collider
+ * (collision only; the layer draws the art) and the greybox walls and roof of a host a dressing record re-dresses
+ * (`world.dressing.redressedHosts`; its slab, apron and collision stay). Ray casts, view proofs and walking still read them.
+ */
+export function redressedHostSolids(world:Pick<WorldDefinition,'dressing'>):ReadonlySet<string>{
+  return new Set((world.dressing?.redressedHosts??[]).flatMap(id=>[`host.${id}.walls`,`host.${id}.roof`]));
+}
+export function isDressingArtOwned(solid:Pick<StructureSolid,'id'|'sourceId'|'kind'>,redressed:ReadonlySet<string>):boolean{
+  return solid.kind==='dressing'||redressed.has(solid.sourceId??solid.id.split('@')[0]!);
+}
 /** A district's cards; `under` holds the terrain tiles a placed region draws over (TerrainCellFilter.split), if any. */
 export type DistrictCards=CardBuild&{under?:THREE.Mesh[]};
 export function buildDistrictCards(world:WorldDefinition,field:TerrainField,cuts:LandCuts,district:District,tier:'full'|'lite',coarse=false,hideBuildings=false,filter:TerrainCellFilter={}):DistrictCards{
@@ -157,7 +168,7 @@ export function* buildDistrictCardSteps(world:WorldDefinition,field:TerrainField
   let localBuilder:CardBuilder|undefined,local:CardBuild|undefined;
   let result:CardBuild|undefined,terrain:TerrainMeshes|null|undefined,complete=false;
   try {
-    if(!coarse){const ids=new Set(district.solidIds??[]);for(const solid of world.geometry?.solids??[])if(ids.has(solid.id)&&!(world.bridges?.length&&bridgeOwner(solid.sourceId??solid.id))&&!CABLE_LINE.test(solid.sourceId??solid.id)&&!(hideBuildings&&(solid.sourceId??solid.id).startsWith('host.'))){
+    if(!coarse){const ids=new Set(district.solidIds??[]),redressed=redressedHostSolids(world);for(const solid of world.geometry?.solids??[])if(ids.has(solid.id)&&!(world.bridges?.length&&bridgeOwner(solid.sourceId??solid.id))&&!CABLE_LINE.test(solid.sourceId??solid.id)&&!(hideBuildings&&(solid.sourceId??solid.id).startsWith('host.'))&&!isDressingArtOwned(solid,redressed)){
       if((solid.sourceId??solid.id.split('@')[0])==='mountainV2.funicularFoot.apron'){
         const origin=solid.renderOrigin;
         if(!origin||origin.length!==3||!origin.every(Number.isFinite))throw new Error('Walking join needs its baked logical render origin');

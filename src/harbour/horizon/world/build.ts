@@ -17,6 +17,7 @@ import { waterHeightAt } from '../land/water/index.ts';
 import { buildCoastline } from '../land/coast/index.ts';
 import type { Corridor } from '../land/corridor/types.ts';
 import { corridorLightAnchors } from '../land/corridor/lights.ts';
+import type { DressingBake } from '../neighbourhoods/bake.ts';
 
 export const GEOGRAPHY_REVISION = 'horizon-geo-1';
 export interface LandWorldOptions { terrainAsset?: { url: string; bytes: number; step: number }; extraSolids?: StructureSolid[];
@@ -24,7 +25,11 @@ export interface LandWorldOptions { terrainAsset?: { url: string; bytes: number;
   extraGraph?: ExtraPathGraph;
   /** Road main (ROAD.md §1): the corridors the bake built (`land/corridor settleCorridors`); written to `world.corridors`,
    * their lamps appended to `world.lights`. */
-  corridors?: Corridor[] }
+  corridors?: Corridor[];
+  /** The Water's Way (neighbourhoods/bake.ts `bakeDressings`): the baked dressing payload and night anchors (its collision
+   * solids come in `extraSolids`), and each dressed district's art budget (runtime/dressingLayer.ts `measureDistrictDressing`),
+   * added to the district's triangles and draw calls before the budget check. */
+  dressing?: Pick<DressingBake, 'dressing' | 'lights'> & { budget?: Record<string, NonNullable<import('./definition.ts').District['dressing']>> } }
 /** Pass 5 (T2): the manifest's `regions` (placed worlds), in engine units; empty when the manifest has none. */
 export function buildRegions(): RegionPlacement[] {
   const s = requireScaleFactor(), list = (HORIZON_MANIFEST as unknown as { regions?: readonly { id: string; kind?: string; offset: { x: number; y: number; z: number } | readonly number[]; footprint: { minX: number; maxX: number; minZ: number; maxZ: number } | readonly number[] }[] }).regions;
@@ -67,7 +72,7 @@ export function corridorDestinations(cuts: LandCuts): { id: string; at: Point2 }
     ...m.places.filter(p => /tideline|campfire/i.test(p.id)).map(p => ({ id: p.id, at: [p.xy[0]! * s, p.xy[1]! * s] as Point2 })),
   ];
 }
-function buildHosts(cuts: LandCuts): Host[] {
+export function buildHosts(cuts: LandCuts): Host[] {
   const m = HORIZON_MANIFEST, s = requireScaleFactor();
   return m.hosts.map(host => {
     const pad = resolvePad(cuts, `host.${host.id}`), apron = resolvePad(cuts, `host.${host.id}.apron`), centre: Point3 = [host.xy[0]! * s, host.h * s, host.xy[1]! * s];
@@ -112,6 +117,8 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
   const cuts: LandCuts = { ...input, solids: [...input.solids, ...(options.extraSolids ?? [])] };
   assertUniqueSolidIds(cuts.solids);
   const hosts = buildHosts(cuts), lines = buildWorldLines(terrain, cuts), crossing = buildCrossings(cuts, lines, { ground: (x, z) => terrainHeight(terrain, x, z), waterAt: waterHeightAt }), graph = buildPathGraph(cuts, crossing.proofs, options.extraGraph), sky = buildFlightEnvelope(terrain, cuts), views = buildViews(terrain, cuts), geometry = partitionWorldSolids(cuts.solids), districts = buildDistricts(terrain, cuts.beds, geometry), thresholds = buildThresholds(terrain, cuts, crossing.proofs);
+  // The Water's Way: the dressing layer's art joins its district's budget (its `dressing` collision solids are never drawn).
+  for (const d of districts) { const b = options.dressing?.budget?.[d.id]; if (!b) continue; d.dressing = b; d.triangles!.full += b.full.triangles; d.triangles!.lite += b.lite.triangles; d.drawCalls = (d.drawCalls ?? 0) + b.full.drawCalls; }
   const bridges=finalizeBridges(cuts),deckBounds=cuts.solids.filter(s=>s.walkable).map(s=>({s,b:solidBounds(s)}));
   // High cable/rib bulbs are emissive art, not pools projected through open air
   // onto the lagoon. Only deck lanterns enter the existing bounded light pool.
@@ -155,10 +162,10 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
     crossings: crossing.crossings, crossingProofs: crossing.proofs, rawIntersections: crossing.rawIntersections, thresholds,
     reserves: cuts.pads.filter(p => p.kind === 'reserve').map(p => ({ id: p.id, placeId: p.placeId ?? p.id, outline: padOutline(p), door: anchor(`${p.id}.door`, p.door ?? p.centre), rotationDegrees: p.rotationDegrees })), sky,
     underground: { doors: Object.entries(m.underground.doors).map(([id, door]) => anchor(id, [door.xy[0]! * s, door.h * s, door.xy[1]! * s])), rooms: roomVolumes.map(room => room.outline), roomVolumes, waterBodyId: cuts.waters.find(w => w.kind === 'deep')?.id, skylight: anchor('deep.skylight', [m.underground.rooms.deep.skylight.to[0]! * s, m.underground.rooms.deep.skylight.topH * s, m.underground.rooms.deep.skylight.to[1]! * s]) },
-    lights: [...hosts.map(h => { const d = h.door as { xy: Point2; height: number }; return { id: `door.${h.id}.lamp`, at: [d.xy[0], d.height + 2.2, d.xy[1]] as Point3, kind: 'door' }; }), ...thresholds.filter(t => !t.carried).map(t => ({ id: `${t.id}.lamp`, at: [t.at[0], (t.height ?? 0) + .8, t.at[1]] as Point3, kind: 'threshold' })), ...corridorLightAnchors(options.corridors ?? []), ...bridgeLights], faceCards: buildFaceCards(geometry), views, lanterns: [],
+    lights: [...hosts.map(h => { const d = h.door as { xy: Point2; height: number }; return { id: `door.${h.id}.lamp`, at: [d.xy[0], d.height + 2.2, d.xy[1]] as Point3, kind: 'door' }; }), ...thresholds.filter(t => !t.carried).map(t => ({ id: `${t.id}.lamp`, at: [t.at[0], (t.height ?? 0) + .8, t.at[1]] as Point3, kind: 'threshold' })), ...corridorLightAnchors(options.corridors ?? []), ...bridgeLights, ...(options.dressing?.lights ?? [])], faceCards: buildFaceCards(geometry), views, lanterns: [],
     protected: [{ id: 'green', outline: protectedGreenOutline(), reason: 'No building, plot or tall prop inside the protected centre.' }],
     bridges,
-    geometry: { solids: geometry, sourceMap }, collision: { beds: cuts.beds, pads: cuts.pads, mouths: cuts.mouths, waters: cuts.waters, falls: cuts.falls ?? [], walkableSlopeDegrees: 40, lipStepMax: .48 }, pathGraph: graph, diagnostics, journeyMeasurements: measurements, ...(regions.length ? { regions } : {}), ...(options.corridors ? { corridors: options.corridors } : {}), roadChains: [mountainRoadChain(cuts.beds)].filter((c):c is NonNullable<typeof c>=>c!==null),
+    geometry: { solids: geometry, sourceMap }, collision: { beds: cuts.beds, pads: cuts.pads, mouths: cuts.mouths, waters: cuts.waters, falls: cuts.falls ?? [], walkableSlopeDegrees: 40, lipStepMax: .48 }, pathGraph: graph, diagnostics, journeyMeasurements: measurements, ...(regions.length ? { regions } : {}), ...(options.dressing?.dressing ? { dressing: options.dressing.dressing } : {}), ...(options.corridors ? { corridors: options.corridors } : {}), roadChains: [mountainRoadChain(cuts.beds)].filter((c):c is NonNullable<typeof c>=>c!==null),
     journey: {
       stations: m.journey.stations.map((station, i) => { const pad = resolvePad(cuts, `station.${station.id}`), prev = m.journey.stations[(i + 11) % 12]!, points = yearWalkStretch(yearWalk.points, prev.xy.map(v => v * s), station.xy.map(v => v * s)), len = length3(points); return { id: station.id, month: station.month, anchor: anchor(`station.${station.id}`, pad?.centre ?? [station.xy[0]! * s, terrainHeight(terrain, station.xy[0]! * s, station.xy[1]! * s), station.xy[1]! * s]), bedIds: [], padId: pad?.id, footprint: pad ? padOutline(pad) : [], bedPositions: pad ? stationPositions(pad, s) : [], stretch: { from: prev.id, lengthEu: len, lengthM: len / s, spacing: [28, 29, 30, 31].map(days => ({ days, eu: len / days })), points } }; }), yearWalk,
       homestead: m.journey.homestead.sites.map(site => { const pad = resolvePad(cuts, `homestead.${site.id}`), host = hosts.find(h => h.id === site.id), fallback = site.id === 'reserveBasin' ? m.places.find(p => p.id === 'L01')!.xy : site.xy ?? m.hosts[0]!.xy, p: Point3 = pad?.centre ?? [fallback[0]! * s, terrainHeight(terrain, fallback[0]! * s, fallback[1]! * s), fallback[1]! * s]; return { id: site.id, anchor: anchor(`homestead.${site.id}`, p), footprint: pad ? padOutline(pad) : host?.footprint ?? [] }; }),

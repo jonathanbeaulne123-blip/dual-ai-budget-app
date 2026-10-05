@@ -7,10 +7,14 @@ import {buildHorizonCards} from '../../src/harbour/horizon/sky/horizonCards.ts';
 import {parseHorizonIndex} from '../../src/house/world/horizonAssets.ts';
 import {extractJourneyLand} from '../../src/journey/land/extract.ts';
 import {encodeJourneyLandSlim,type JourneyLandSlim,type JourneyLandSlimSource} from '../../src/journey/land/slim.ts';
+import {NEIGHBOURHOOD_MODULES} from '../../src/harbour/horizon/neighbourhoods/index.ts';
+import {bakeNeighbourhoodDressing} from './bake-dressing.ts';
 export async function bake(){
   const {cuts,buffer,field,ground,corridors,groundBeds,foundations}=buildHorizonPrejoinSource();
   fitFootLaneJoin(cuts,ground);
-  let world=createLandWorld(field,cuts,{terrainAsset:{url:'/horizon/terrain/horizon-geo-1.bin',bytes:buffer.byteLength,step:field.step},corridors});
+  // The Water's Way: every neighbourhood module against this same world; its colliders join the solids, its records the world.
+  const dressing=await bakeNeighbourhoodDressing(NEIGHBOURHOOD_MODULES,cuts,ground);
+  let world=createLandWorld(field,cuts,{terrainAsset:{url:'/horizon/terrain/horizon-geo-1.bin',bytes:buffer.byteLength,step:field.step},corridors,...(dressing?{extraSolids:dressing.solids,dressing}:{})});
   world=await prepareLiteWorld(world,cuts.solids);
   return{buffer,world,foundations,groundBeds,horizonCards:buildHorizonCards(field,cuts.solids)};
 }

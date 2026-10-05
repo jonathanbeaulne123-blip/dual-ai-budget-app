@@ -3,7 +3,8 @@ import {buildAirportMap} from "./airport.ts";
  * `buildJourneyLand()` (T2): the low-poly bird's-eye island as one three.js Group the board layer stands on.
  *
  * Terrain (20 m lattice, compressed heights, paint/height colours) · sea plane + water bodies · line ribbons per kind ·
- * the road's bridges, covered stretches and boulevard reaches (ROAD.md §7; `road.ts`, `bridges.ts`) · hosts (the
+ * the road's bridges, covered stretches and boulevard reaches (ROAD.md §7; `road.ts`, `bridges.ts`) · the neighbourhood
+ * buildings and landmarks (`dressingMap.ts`, when the index carries dressing) · hosts (the
  * shared "Our home" included) · reserve outlines · the viewer's home(s) at map scale. No vegetation,
  * moving fleet, sky effects, district chunks, lights or scene state (the board scene owns lights, fog and background from the dressing).
  * Budget (PLAN §A): ≤ 25k triangles / ≤ 20 draw calls on full, ≤ 15k triangles on lite; `stats()` reports it.
@@ -15,6 +16,7 @@ import { landDressing } from "./dressing.ts";
 import { buildHomes, type HomeMeshes, type Season } from "./homes.ts";
 import { buildHosts, HOST_MIN_PX } from "./hosts.ts";
 import { buildBridges } from "./bridges.ts";
+import { buildDressingMap } from "./dressingMap.ts";
 import { buildLines, landViewUniforms, MINOR_LINES_NAME, type LandViewUniforms, setStationPadMasks, type StationPadMask } from "./lines.ts";
 import { planRoad } from "./road.ts";
 import { createLandSurface } from "./surface.ts";
@@ -83,6 +85,7 @@ export const buildJourneyLand: BuildJourneyLand = (data: JourneyLandData, option
   const lines = buildLines(road, dressing, view);
   const bridges = buildBridges(road.bridges, surface, dressing, view);
   const hosts = buildHosts(data, surface, dressing, view);
+  const dressed = buildDressingMap(data, surface, dressing);
   const airport=buildAirportMap(dressing.hostRoof,dressing.road);group.add(airport.mesh);
   group.add(water.sea, terrain.mesh);
   if (water.bodies) group.add(water.bodies);
@@ -91,6 +94,7 @@ export const buildJourneyLand: BuildJourneyLand = (data: JourneyLandData, option
   if (hosts.shadows) group.add(hosts.shadows);
   if (hosts.hosts) group.add(hosts.hosts);
   if (hosts.reserves) group.add(hosts.reserves);
+  if (dressed.mesh) group.add(dressed.mesh);
   let homes: HomeMeshes = buildHomes(options.homes, data, surface, dressing, season);
   group.add(homes.group);
 
@@ -113,7 +117,7 @@ export const buildJourneyLand: BuildJourneyLand = (data: JourneyLandData, option
     setTheme(next: ThemeId) {
       if (next === theme) return;
       theme = next; dressing = landDressing(next);
-      airport.recolour(dressing.hostRoof,dressing.road);terrain.recolour(dressing); water.recolour(dressing); lines.recolour(dressing); bridges.recolour(dressing); hosts.recolour(dressing); homes.recolour(dressing);
+      airport.recolour(dressing.hostRoof,dressing.road);terrain.recolour(dressing); water.recolour(dressing); lines.recolour(dressing); bridges.recolour(dressing); hosts.recolour(dressing); dressed.recolour(dressing); homes.recolour(dressing);
     },
     setHomes(next: JourneyHome[]) {
       if (disposed) return;
@@ -126,7 +130,7 @@ export const buildJourneyLand: BuildJourneyLand = (data: JourneyLandData, option
       if (disposed) return;
       disposed = true;
       group.removeFromParent();
-      airport.dispose();terrain.dispose(); water.dispose(); lines.dispose(); bridges.dispose(); hosts.dispose(); homes.dispose();
+      airport.dispose();terrain.dispose(); water.dispose(); lines.dispose(); bridges.dispose(); hosts.dispose(); dressed.dispose(); homes.dispose();
       group.clear();
     },
   };

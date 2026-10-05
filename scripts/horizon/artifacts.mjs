@@ -35,7 +35,8 @@ export function assertHorizonArtifact(key, stored, generated) {
  * R1-72: split a baked definition into a small index (every whole-island thing; `geometry.solids` empty) and one chunk per
  * district (that district's solids, as listed in `districts[*].solidIds` and their children's). The index lists every chunk
  * with its URL (keyed by the geography revision), its serialized byte length, SHA-256 and solid count. Deterministic: chunks
- * sorted by district id, solids in definition order, the same number serialization as the monolith.
+ * sorted by district id, solids in definition order, the same number serialization as the monolith. A district's baked
+ * dressing (`world.dressing.districts`) rides in its chunk as `dressing`.
  * @param {any} world
  * @param {(buffer: Buffer) => string} sha256
  */
@@ -48,8 +49,12 @@ export function splitHorizonDefinition(world, sha256) {
     if (!groups.has(id)) groups.set(id, []);
     groups.get(id).push(solid);
   }
-  const chunks = [...groups.keys()].sort().map(districtId => ({ districtId, path: `${revision}/${districtId}.json.gz`, json: serializeHorizonJson({ id: 'horizon-chunk', geographyRevision: revision, districtId, solids: groups.get(districtId) }) }));
-  const index = { ...world, geometry: { ...world.geometry, solids: [] }, chunks: chunks.map(c => ({ districtId: c.districtId, url: `/horizon/world/${c.path}`, bytes: c.json.byteLength, sha256: sha256(c.json), solids: groups.get(c.districtId).length, footprint: chunkFootprint(groups.get(c.districtId)) })) };
+  // The Water's Way: a district's baked dressing travels in its own chunk (a dressed district without solids still gets one);
+  // the index keeps only the whole-island parts (landmarks, lookouts, re-dressed hosts, Journey buildings), `districts` empty.
+  const dressed = new Map((world.dressing?.districts ?? []).map(d => [d.districtId, d]));
+  for (const id of dressed.keys()) if (!groups.has(id)) groups.set(id, []);
+  const chunks = [...groups.keys()].sort().map(districtId => ({ districtId, path: `${revision}/${districtId}.json.gz`, json: serializeHorizonJson({ id: 'horizon-chunk', geographyRevision: revision, districtId, solids: groups.get(districtId), ...(dressed.has(districtId) ? { dressing: dressed.get(districtId) } : {}) }) }));
+  const index = { ...world, ...(world.dressing ? { dressing: { ...world.dressing, districts: [] } } : {}), geometry: { ...world.geometry, solids: [] }, chunks: chunks.map(c => ({ districtId: c.districtId, url: `/horizon/world/${c.path}`, bytes: c.json.byteLength, sha256: sha256(c.json), solids: groups.get(c.districtId).length, footprint: chunkFootprint(groups.get(c.districtId)) })) };
   return { index: serializeHorizonJson(index), chunks };
 }
 /** Wave 6: the plan-view cells (HORIZON_CHUNK_CELL eu) a chunk's solids touch — every triangle's xz box, conservative. The

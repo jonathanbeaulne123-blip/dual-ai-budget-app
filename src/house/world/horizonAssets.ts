@@ -1,6 +1,7 @@
 import {gunzipSync} from 'fflate';
 import type {WorldDefinition} from '../../harbour/horizon/world/definition.ts';
 import type {LandCuts, StructureSolid, TerrainField} from '../../harbour/horizon/land/interfaces.ts';
+import type {DistrictDressing} from '../../harbour/horizon/neighbourhoods/types.ts';
 import {decodeTerrainAsset} from '../../harbour/horizon/land/terrain/asset.ts';
 import {HORIZON_GEOGRAPHY} from '../../worldGeography.ts';
 /**
@@ -49,10 +50,19 @@ export function parseHorizonIndex(bytes:ArrayBuffer):LoadedWorld{
   if(world.chunks&&(!Array.isArray(world.chunks)||world.chunks.some(c=>!c.url.includes(`/${world.geographyRevision}/`))))throw new Error('The Horizon index lists a chunk from a different geography revision.');
   return world;
 }
-export function parseHorizonChunk(bytes:ArrayBuffer,ref:HorizonChunkRef):StructureSolid[]{
-  const chunk=decodeJson(bytes) as {id?:string;geographyRevision?:string;districtId?:string;solids?:StructureSolid[]};
+export function parseHorizonChunk(bytes:ArrayBuffer,ref:HorizonChunkRef):StructureSolid[]{return parseHorizonChunkPayload(bytes,ref).solids;}
+/** The Water's Way: a chunk also carries its district's baked dressing (`DistrictDressing`) when the district has one. */
+export function parseHorizonChunkPayload(bytes:ArrayBuffer,ref:HorizonChunkRef):{solids:StructureSolid[];dressing?:DistrictDressing}{
+  const chunk=decodeJson(bytes) as {id?:string;geographyRevision?:string;districtId?:string;solids?:StructureSolid[];dressing?:DistrictDressing};
   if(chunk.id!=='horizon-chunk'||chunk.geographyRevision!==HORIZON_GEOGRAPHY||chunk.districtId!==ref.districtId||!Array.isArray(chunk.solids)||chunk.solids.length!==ref.solids)throw new Error(`The Horizon chunk ${ref.districtId} is stale or incomplete.`);
-  return chunk.solids;
+  if(chunk.dressing!==undefined&&(chunk.dressing?.districtId!==ref.districtId||!Array.isArray(chunk.dressing.buildings)))throw new Error(`The Horizon chunk ${ref.districtId} carries another district's dressing.`);
+  return chunk.dressing?{solids:chunk.solids,dressing:chunk.dressing}:{solids:chunk.solids};
+}
+/** Append a landed chunk's district dressing to the index's `world.dressing` (the dressing layer reads it from there). */
+export function appendChunkDressing(world:Pick<WorldDefinition,'dressing'>,dressing:DistrictDressing|undefined):void{
+  if(!dressing)return;
+  const into=(world.dressing??={districts:[],landmarks:[],lookouts:[]}).districts;
+  if(!into.some(d=>d.districtId===dressing.districtId))into.push(dressing);
 }
 export function createHorizonChunkLoader(world:LoadedWorld,counter:{bytes:number}={bytes:0}):HorizonChunkLoader|undefined{
   const refs=world.chunks??[];if(!refs.length)return undefined;
@@ -62,7 +72,7 @@ export function createHorizonChunkLoader(world:LoadedWorld,counter:{bytes:number
   if(withFootprint)for(const r of refs){const c=r.footprint!.cells;for(let i=0;i+1<c.length;i+=2){const k=`${c[i]}:${c[i+1]}`,list=byCell.get(k);if(list)list.push(r.districtId);else byCell.set(k,[r.districtId]);}}
   function append(id:string,buffer:ArrayBuffer):StructureSolid[]{
     if(done.has(id))return [];
-    const solids=parseHorizonChunk(buffer,byId.get(id)!);world.geometry.solids.push(...solids);done.add(id);raw.delete(id);
+    const {solids,dressing}=parseHorizonChunkPayload(buffer,byId.get(id)!);world.geometry.solids.push(...solids);appendChunkDressing(world,dressing);done.add(id);raw.delete(id);
     for(const listener of listeners)listener(id,solids);return solids;
   }
   function fetchBytes(id:string,signal?:AbortSignal):Promise<ArrayBuffer>{

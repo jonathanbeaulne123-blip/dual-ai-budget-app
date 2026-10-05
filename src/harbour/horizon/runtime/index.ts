@@ -70,6 +70,7 @@ import {nightLight,nightDome,NIGHT_LIGHT_CARDS,NIGHT_FLOOR,faceCardOn,FACE_CARD_
 import {createRoadLights} from './roadLights.ts';
 import {createCorridorArt,type CorridorArt} from './corridorArt.ts';
 import {createCorridorPlanting,type CorridorPlanting} from './corridorPlanting.ts';
+import {createDressingLayer,type DressingLayer} from './dressingLayer.ts';
 import {roadLampRamp} from '../sky/night.ts';
 import {createInspector,inspectorEnabled,buildInspectorSnapshot,type InspectorSource} from './inspector.ts';
 import {sketchbookLens} from '../world/lens.ts';
@@ -287,14 +288,19 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   // The kit's lamp heads feed roadLights so the pools, glow cards and point lights sit on the lanterns as drawn.
   const seasonOf=(date:Date)=>{const month=date.getMonth()+1;return month<=2||month===12?'winter' as const:month<=5?'spring' as const:month<=8?'summer' as const:'autumn' as const;};
   let corridorArt:CorridorArt,corridorPlanting:CorridorPlanting,corridorSeason='',corridorNight=-1;
+  // The Water's Way: the neighbourhood dressing (runtime/dressingLayer.ts) — buildings, props, plants, ground paint and pools
+  // from the baked `world.dressing`, per resident district, built and released beside the corridor layers.
+  let dressingLayer:DressingLayer;
   function mountCorridor(date:Date){
     corridorArt=createCorridorArt(world,{tier,theme,ground:(x,z)=>geography.ground(x,z),externalLampHalos:true});
     corridorSeason=seasonOf(date);corridorNight=-1;
     corridorPlanting=createCorridorPlanting(world,{tier,theme,season:corridorSeason as ReturnType<typeof seasonOf>,month:date.getMonth()+1});
     scene.add(corridorArt.group,corridorPlanting.group);
     for(const material of Object.values(corridorArt.materials))fogHook(material);for(const material of corridorPlanting.materials())fogHook(material);
+    dressingLayer=createDressingLayer(world,{tier,theme,season:corridorSeason as ReturnType<typeof seasonOf>,month:date.getMonth()+1,ground:(x,z)=>geography.ground(x,z),material:m=>{fogHook(m);},changed:()=>requestShadow('dressing'),hideBuildings:options.hideBuildings===true});
+    scene.add(dressingLayer.group);
   }
-  function unmountCorridor(){corridorArt.dispose();corridorPlanting.dispose();scene.remove(corridorPlanting.group);}
+  function unmountCorridor(){corridorArt.dispose();corridorPlanting.dispose();scene.remove(corridorPlanting.group);dressingLayer.dispose();}
   let bridgeArt=createBridgeArt(world,{tier,theme,material:fogHook,changed:()=>requestShadow('bridge-art')});scene.add(bridgeArt.group);
   mountCorridor(new Date());
   // The lanterns' heads as this theme's kit draws them (review minor 2: rebuilt with the kit on a theme change).
@@ -322,7 +328,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function updateLocalLights(now:number){
     doors.visible=night&&mode!=='journey';lightAt[0]=body.x;lightAt[1]=body.y;lightAt[2]=body.z;lightFrame.at=mode==='look'?undefined:lightAt;lightFrame.hidden=mode==='journey';
     roadLights.update(camera,lastSolar.elevation,now,lightFrame);
-    const k=Math.round(roadLampRamp(lastSolar.elevation)*100)/100;if(k!==corridorNight){corridorNight=k;corridorArt.setNight(k);bridgeArt.setNight(k);}
+    const k=Math.round(roadLampRamp(lastSolar.elevation)*100)/100;if(k!==corridorNight){corridorNight=k;corridorArt.setNight(k);bridgeArt.setNight(k);dressingLayer.setNight(k);}
   }
   let interactiveAt:number|null=null;
   let doorCooldown=0,lastMovementBlocker:unknown=null,simulating=false;
@@ -450,7 +456,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function resize(reframe=true){schedule();adaptiveQuality.interrupt();if(lease.active)applyHorizonQuality(renderer,sun,adaptiveQuality.profile(window.devicePixelRatio));const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(reframe&&mode==='look'&&!transition){const pose=world.views.find(p=>p.id===shotId);if(pose)lookAt(pose);}}
   const observer=new ResizeObserver(()=>resize());observer.observe(host);resize();
   function setLight(date:Date){const month=date.getMonth()+1;homeWorld.setSeason(month<=2||month===12?'winter':month<=5?'spring':month<=8?'summer':'autumn');
-    if(seasonOf(date)!==corridorSeason){corridorSeason=seasonOf(date);corridorPlanting.setSeason(seasonOf(date),month);}
+    if(seasonOf(date)!==corridorSeason){corridorSeason=seasonOf(date);corridorPlanting.setSeason(seasonOf(date),month);dressingLayer.setSeason(seasonOf(date),month);}
     const position=solarPosition(date),colors=skyGradient(position.elevation),lookHeight=camera.position.y-geography.ground(camera.position.x,camera.position.z),fog=horizonFog({tier,eyeAboveGround:Math.max(0,lookHeight),elevation:position.elevation,sunAzimuth:position.azimuth,heading:yaw*180/Math.PI}),floor=nightLight(position.elevation,colors);
     lastSolar=position;night=floor.lightCards;faceCardsLit=faceCardOn(position,comfort.calm);faceCards.visible=faceCardsLit&&mode!=='journey';roadLights.refresh();
     lastSkyColors=nightDome(colors,floor.nightness);lastSunDirection=[position.direction[0],position.direction[1],position.direction[2]];skyDome.update(lastSkyColors,fog.color,lastSunDirection);
@@ -894,7 +900,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     // Fine districts rise from the fog colour over 0.8 s (a cut under reduced motion); the coarse card they replace hides at once.
     for(const resource of stream.live.values()){resource.cards.group.visible=mode!=='journey';if(resource.chalk)resource.chalk.visible=night&&mode!=='journey';resource.fadeIn(motion.districtFadeMs>0?Math.min(1,Math.max(0,(now-resource.at)/motion.districtFadeMs)):1);}
     // Road main: the corridor's art and planting follow the resident districts (hidden on the Journey map).
-    bridgeArt.group.visible=corridorArt.group.visible=corridorPlanting.group.visible=mode!=='journey';if(mode!=='journey'){bridgeArt.update(residentIds);corridorArt.update(camera,residentIds);corridorPlanting.update(camera,residentIds);}
+    bridgeArt.group.visible=corridorArt.group.visible=corridorPlanting.group.visible=dressingLayer.group.visible=mode!=='journey';if(mode!=='journey'){bridgeArt.update(residentIds);corridorArt.update(camera,residentIds);corridorPlanting.update(camera,residentIds);dressingLayer.update(camera,residentIds);}
     if(transition){
       if(transition.live&&stepped){transition.toEye.copy(camera.position);transition.toTarget.copy(target);}   // ride()/step() just set this frame's goal camera
       const t=transition.duration>0?Math.min(1,Math.max(0,(now-transition.at)/transition.duration)):1,ease=transition.live?moverBlendEase(now-transition.at,transition.duration):t*t*(3-2*t);
@@ -924,7 +930,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     updateLocalLights(now);
     airport.update(paused||mode!=='walk'?0:Math.max(0,frameMs/1000),mode==='journey',camera.position,night?1:0,perspective.mode()==='first-person');
     skyDome.follow(camera);renderer.render(scene,camera);paintCount++;if(interactiveAt===null){interactiveAt=performance.now();options.onReady?.();void prefetchChunks();}if(drawSamples.length===0||now-drawSamples.at(-1)!.at>500){drawSamples.push({at:now,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,resident:stream.live.size});if(drawSamples.length>600)drawSamples.shift();}
-    const building=stream.building||!!regionTask||corridorArt.building()||(mode!=='journey'&&bridgeArt.building())||stream.live.size<stream.cap&&Boolean(stream.history.at(-1)?.pending.some(id=>!chunks||chunks.ready(id)));
+    const building=stream.building||!!regionTask||corridorArt.building()||(mode!=='journey'&&(bridgeArt.building()||dressingLayer.building()))||stream.live.size<stream.cap&&Boolean(stream.history.at(-1)?.pending.some(id=>!chunks||chunks.ready(id)));
     const fading=motion.districtFadeMs>0&&([...stream.live.values()].some(resource=>now-resource.at<motion.districtFadeMs)||regionVisible&&performance.now()-regionShownAt<motion.districtFadeMs);
     const continuous=!paused&&(mode==='walk'||skating()||!!transition||mode!=='journey'&&(building||fading||!!peer&&motion.ambientMotion||roadLights.busy(now))||moverArts.size>0);
     // Queue a quality change for the next paint: resizing after render would clear this frame.
@@ -1220,6 +1226,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     bridgeArt:()=>bridgeArt.stats(),roadLights:()=>roadLights.stats(),
     /** Read-only capture readiness: settle() alone does not drive deferred corridor builders. */
     corridorRenderStatus:()=>({building:corridorArt.building(),furniture:corridorArt.stats(),planting:corridorPlanting.stats()}),
+    dressingRenderStatus:()=>({building:dressingLayer.building(),...dressingLayer.stats()}),
     /** Pass 5: the placed Mountain v2 region (null when not placed). T3's rides move its cabins through `setTransit`. */
     mountainRegion:placed?{region:placed.region,scene:()=>regionScene,visible:()=>regionVisible,
       setTransit(cabin:{at:XYZ;yaw:number;pitch:number}|null,kind:'gondola'|'funicular'){regionTransit={cabin,kind};regionScene?.setTransit(cabin,kind);}}:null,

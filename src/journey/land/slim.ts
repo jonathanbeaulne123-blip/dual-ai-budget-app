@@ -19,10 +19,11 @@ import { HORIZON_GEOGRAPHY } from "../../worldGeography.ts";
 export const JOURNEY_LAND_SLIM_URL = `/horizon/world/${HORIZON_GEOGRAPHY}.journey.json.gz`;
 /**
  * Bumped when the payload shape changes; a loader that does not know the format falls back to the index.
+ * 4 (The Water's Way): optional `dressing` — neighbourhood buildings at or above the Journey height and every landmark.
  * 3 (bridge cast): optional landmark name, silhouette glyph and raised anchor on each bridge.
  * 2 (road pass, ROAD.md §7): `bridges` and `covers` always, `boulevards` when the index carries corridors.
  */
-export const JOURNEY_LAND_SLIM_FORMAT = 3;
+export const JOURNEY_LAND_SLIM_FORMAT = 4;
 
 /** Which bake the payload came from: the sha256 of the index JSON (uncompressed) and of the terrain asset. */
 export type JourneyLandSlimSource = { index: string; indexSha256: string; terrainSha256: string };
@@ -80,6 +81,12 @@ export function decodeJourneyLandSlim(value: unknown, revision: string = HORIZON
     if (b.lineIds.some((id) => !drawn.has(id))) fail(`bridge ${b.id} carries a line the land does not draw`);
   }
   for (const c of [...land!.covers!, ...(land!.boulevards ?? [])]) if (!c || !drawn.has(c.lineId) || !isArray(c.points) || c.points.length < 2) fail(`${String(c?.id)} is malformed`);
+  if (land!.dressing !== undefined) {
+    const d = land!.dressing, finite3 = (p: unknown) => isArray(p) && p.length === 3 && p.every(Number.isFinite);
+    if (!d || !isArray(d.buildings) || !isArray(d.landmarks)) fail("dressing is malformed");
+    for (const b of d!.buildings) if (!b || typeof b.id !== "string" || !isArray(b.footprint) || b.footprint.length < 3 || !b.footprint.every((p) => isArray(p) && p.length === 2 && p.every(Number.isFinite)) || ![b.base, b.height, b.roofHeight].every(Number.isFinite) || !(b.height > 0)) fail(`dressing building ${String(b?.id)} is malformed`);
+    for (const l of d!.landmarks) if (!l || typeof l.id !== "string" || typeof l.label !== "string" || !finite3(l.at) || !finite3(l.top)) fail(`landmark ${String(l?.id)} is malformed`);
+  }
   if (land!.stations.length !== STATION_IDS.length || land!.stations.some((s, i) => s.id !== STATION_IDS[i])) fail("the twelve stations are not jan…dec");
   const heights = new Float32Array(count), surfaces = new Uint8Array(count);
   for (let n = 0; n < count; n++) { heights[n] = t!.heightsCm[n]! / 100; surfaces[n] = t!.surfaces[n]!; }
