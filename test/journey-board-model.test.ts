@@ -4,7 +4,7 @@ import { monthEndKey, monthStartKey, weekBounds, weekdaySunday0, type DateKey } 
 import { monthMemories } from "../src/core/timeMachine.ts";
 import type { Household } from "../src/core/types.ts";
 import { dayLedger } from "../src/harbour/glass/dayLedger.ts";
-import { STATION_IDS, journeyIds, type ActionCall, type JourneyBoard, type Stop } from "../src/journey/contracts.ts";
+import { STATION_IDS, isToCheck, journeyIds, type ActionCall, type JourneyBoard, type Stop } from "../src/journey/contracts.ts";
 import { boardToList, deriveJourneyBoard } from "../src/journey/model/index.ts";
 import { calendarDays, readContext } from "../src/journey/model/window.ts";
 import { calendarWeight } from "../src/core/calendarWeight.ts";
@@ -444,6 +444,36 @@ describe("Journey Board model — households", () => {
     const median = [...runs].sort((a, b) => a - b)[2]!;
     console.info(`[journey-board-model] deriveJourneyBoard(demo) warm median: ${median.toFixed(1)} ms (runs ${runs.map(ms => ms.toFixed(1)).join(" / ")})`);
     expect(median).toBeLessThan(400);
+  });
+});
+
+describe("Journey Board model — Horizon Clock v2 fields on the fixture households", () => {
+  it("is a v2 board; to check = overdue + needs-review commitments (a corrected receipt counts; it is never paid)", () => {
+    expect(board.version).toBe(2);
+    const needsReview = byId(board, journeyIds.bill(demo.ids.streamingRecurrenceId, "2026-09-10"))!;
+    expect(board.toCheck).toContain(needsReview.id);
+    expect(board.toCheck).toEqual(board.stops.filter(stop => stop.kind === "commitment" && stop.relation === "past" && (stop.status === "overdue" || stop.status === "needs-review")).map(stop => stop.id));
+    expect(board.toCheck).toEqual(board.stops.filter(isToCheck).map(stop => stop.id));
+    const counted = board.chapters.reduce((n, c) => n + c.unresolved.overdueCommitments + c.unresolved.commitmentsNeedingReview, 0);
+    expect(board.toCheck).toHaveLength(counted);
+    for (const row of boardToList(board).filter(r => r.level === "stop")) expect(row.toCheck).toBe(board.toCheck.includes(row.id));
+  });
+
+  it("the digest splits the summary's attention: Chapter items, readNeeds waiting on you, and to-check — nothing lost", () => {
+    const lagging = laggingChapterHousehold();
+    const next = deriveJourneyBoard(lagging.household, BIANCA, FIXTURE_TODAY);
+    expect(next.digest.chapter.map(item => item.stopId)).toEqual(["review:2026-08"]);
+    const commitments = next.summary.attention.filter(item => item.stopId !== null && byId(next, item.stopId)!.kind === "commitment").map(item => item.stopId);
+    expect(new Set(commitments)).toEqual(new Set(next.toCheck));
+    expect(next.digest.waitingOnYou).toEqual(next.summary.attention.filter(item => item.stopId === null));
+    expect(next.digest.chapter.length + next.digest.waitingOnYou.length + commitments.length).toBe(next.summary.attention.length);
+  });
+
+  it("a new household's v2 board is honestly empty", () => {
+    const empty = deriveJourneyBoard(emptyBoardHousehold(), BIANCA, FIXTURE_TODAY);
+    expect(empty).toMatchObject({ version: 2, toCheck: [], purse: { expectedToday: [] }, digest: { weekStopIds: [], nextLeavingStopId: null, toCheckIds: [] } });
+    expect(empty.week.days.every(day => day.size === "stone" || day.size === "today")).toBe(true);
+    expect(empty.year.every(row => row.outRecordedCents + row.outOpenCents + row.inRecordedCents + row.inOpenCents === 0)).toBe(true);
   });
 });
 

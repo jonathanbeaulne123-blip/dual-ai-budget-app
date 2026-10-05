@@ -3,24 +3,32 @@
  * from the App), no storage, no writes, no memo (the UI memoizes on revision + member + today). The input is never
  * mutated. Every id comes from `journeyIds` over a source record id, so re-reading, reloading, importing an older
  * record or correcting another record never re-keys an unrelated stop.
+ *
+ * Horizon Clock (v2): the board also carries `week` (Monday–Sunday around today), `year` (one mini per chapter),
+ * `toCheck` (THE "to check" ids, `isToCheck`), `purse` (Everyday, and expected pay apart) and `digest` (Hercules).
  */
 import { monthKeyFromDateKey, type DateKey } from "../../core/calendar.ts";
 import type { Household } from "../../core/types.ts";
-import { DEFAULT_PIECE_LOOK, stationForMonth, type DeriveJourneyBoard, type DeriveJourneyBoardOptions, type JourneyBoard, type Stop } from "../contracts.ts";
+import { DEFAULT_PIECE_LOOK, stationForMonth, type DeriveJourneyBoardOptions, type DeriveJourneyBoardV2, type JourneyBoardV2, type Stop } from "../contracts.ts";
 import { buildChapters, doneTasksByMonth, olderChapters } from "./chapters.ts";
 import { clusterStops } from "./clusters.ts";
 import { commitmentStops } from "./commitments.ts";
 import { crossroadsFor } from "./crossroads.ts";
+import { digestOf } from "./digest.ts";
 import { incomeStops } from "./income.ts";
 import { memoryStops } from "./memories.ts";
 import { journeyHomes, milestoneStops, readViewerHome } from "./milestones.ts";
+import { toCheckIds } from "./money.ts";
 import { goalStops, taskStops } from "./plans.ts";
+import { purseOf } from "./purse.ts";
 import { readChapterRows, reviewStops, waitingChapterMonth } from "./reviews.ts";
 import { compareStops } from "./stopKit.ts";
 import { boardSummary } from "./summary.ts";
+import { weekOf } from "./weeks.ts";
 import { readContext } from "./window.ts";
+import { yearOf } from "./year.ts";
 
-export const deriveJourneyBoard: DeriveJourneyBoard = (household: Household, memberId: string, today: DateKey, options?: DeriveJourneyBoardOptions): JourneyBoard => {
+export const deriveJourneyBoard: DeriveJourneyBoardV2 = (household: Household, memberId: string, today: DateKey, options?: DeriveJourneyBoardOptions): JourneyBoardV2 => {
   const ctx = readContext(household, memberId, today, options);
   const rows = readChapterRows(ctx);
   const viewer = readViewerHome(ctx);
@@ -60,16 +68,29 @@ export const deriveJourneyBoard: DeriveJourneyBoard = (household: Household, mem
   limitations.push("The Campfire opens on the Chapter that is still open, not on a month chosen on the board.");
 
   const current = monthKeyFromDateKey(today);
+  const summary = boardSummary(ctx, stops, empty);
+  const toCheck = toCheckIds(stops);
+  const week = weekOf(stops, today);
+  const stopById = new Map(stops.map(stop => [stop.id, stop]));
+  // The summary's attention list, split the way the checklist reads it: the close-due Chapter item(s), and readNeeds
+  // (what waits on this viewer). The overdue / needs-review commitments are `toCheck` itself.
+  const chapterItems = summary.attention.filter(item => item.stopId !== null && stopById.get(item.stopId)?.kind === "review");
+  const waitingOnYou = summary.attention.filter(item => item.stopId === null);
   return {
-    version: 1, householdId: household.householdId, memberId, today, currentChapterId: current,
+    version: 2, householdId: household.householdId, memberId, today, currentChapterId: current,
     window: { from: ctx.months[0]!, to: ctx.months.at(-1)! },
     chapters, stops, clusters, crossroads,
     piece: { anchorChapterId: current, atStationId: stationForMonth(current), atDate: today, waitingChapterId: waitingChapterMonth(ctx), lookId: DEFAULT_PIECE_LOOK },
-    summary: boardSummary(ctx, stops, empty),
+    summary,
     homes: journeyHomes(viewer, memberId),
     undatedMemories: memories.undated,
     olderChapters: older,
     empty,
     limitations,
+    week,
+    year: yearOf(chapters, stops),
+    toCheck,
+    purse: purseOf(summary.everyday, stops, today),
+    digest: digestOf({ stops, week, today, toCheck, waitingOnYou, chapter: chapterItems }),
   };
 };

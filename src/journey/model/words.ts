@@ -93,3 +93,81 @@ export function kindLabel(stop: Stop): string {
     case "memory": return "Memory";
   }
 }
+
+// ---------------------------------------------------------------------------
+// Horizon Clock (the Journey Map) words. Every map / list / sheet string that states a status or a figure's meaning
+// comes from here (ruling 10). Each one is held to the data it describes in test/journey-map-model.test.ts.
+
+/** "Mon 28 Sep – Sun 4 Oct". */
+export function dateRangeLabel(from: DateKey, to: DateKey): string {
+  return `${shortDate(from)} – ${shortDate(to)}`;
+}
+/** A day heading: "Today · Mon 28 Sep" or "Tue 29 Sep". */
+export function dayLabel(date: DateKey, today: DateKey): string {
+  return date === today ? `Today · ${shortDate(date)}` : shortDate(date);
+}
+/** "This week · Mon 28 Sep – Sun 4 Oct". */
+export function weekTitle(from: DateKey, to: DateKey): string {
+  return `This week · ${dateRangeLabel(from, to)}`;
+}
+/** "January 2026 – December 2026". */
+export function yearTitle(from: MonthKey, to: MonthKey): string {
+  return `${monthLabel(from)} – ${monthLabel(to)}`;
+}
+/** "Needs you · 8". */
+export function needsYouLabel(count: number): string {
+  return `Needs you · ${count}`;
+}
+/** The Week pile's heading: "Needs you · 5 pinned to Mon". Pinned is not paid. */
+export function pinnedLabel(count: number, monday: DateKey): string {
+  return `Needs you · ${count} pinned to ${WEEKDAY_SHORT[weekdaySunday0(monday)]}`;
+}
+
+export const MAP_WORDS = {
+  /** A Week / list day with no stops. */
+  nothingOnThisDay: "Nothing on this day.",
+  /** A month with no stops on the map (posted shift earnings or purchases may still be in the Books). */
+  emptyMonth: "Nothing on the map this month. Anything recorded is in the Books.",
+  /** A Year chapter with no stops on the map. */
+  nothingOnTheMap: "Nothing on the map this month.",
+  /** The whole window has no stops. */
+  emptyYear: "Nothing on the map yet. Bills, pay and plans appear here once they are kept.",
+  /** The undated group: kept memories with no date (never placed on a guessed day). */
+  undated: "Kept, no date",
+  /** ListStrip labels. "In the Books" / "Out in the Books" are recorded money only (Books actuals). */
+  strip: {
+    inBooks: "In · in the Books",
+    outBooks: "Out · in the Books",
+    toFund: "To the Fund · recorded",
+    stillToCome: "Still to come · not recorded",
+    stillToComeIn: "expected in",
+    /** Every "estimate" stop on the map today is an expected Fund contribution (the Fund's lower-median estimate). */
+    stillToComeEstimate: "Fund estimate · not recorded",
+    stillToComeUnknown: (count: number) => `${count} with no amount yet`,
+    needsYou: "Needs you",
+  },
+  /** The purse chip. Expected pay is printed beside Everyday, never added to it. */
+  purse: {
+    everyday: "Everyday · now",
+    everydayUnknown: "Everyday · the Fund can’t say right now",
+    notCounted: "expected pay isn’t counted until it’s in",
+    expectedToday: (label: string) => `${label} expected today · not in yet`,
+  },
+  /** The Year ring's legend (ruling 5). */
+  yearLegend: "bills and planned costs on the map, not all spending",
+  /** Stack labels: solid = recorded, see-through = not recorded. Never colour alone. */
+  stack: { solid: "recorded", seeThrough: "not recorded", unknown: "Unknown amount" },
+  /** Hercules's checklist. */
+  checklist: {
+    thisWeek: "This week",
+    toCheck: "To check",
+    toCheckNote: "Date passed · not recorded as paid.",
+    pinnedNote: "Their dates passed without a record. None of them is counted as paid.",
+    waitingOnYou: "Waiting on you",
+    chapter: "Chapter",
+    reminders: "Repeating reminders",
+    looking: "Looking through this list doesn’t post anything.",
+  },
+  /** "8 to check". */
+  toCheckCount: (count: number) => `${count} to check`,
+} as const;
