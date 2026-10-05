@@ -100,6 +100,13 @@ export function placeCallouts(list: readonly Callout[], at: Map<string, { x: num
   return out;
 }
 
+/** A plate is centred under its mark; near the stage's edge, shift it (by its estimated width) so its words stay on screen. */
+function plateNudge(plate: string, small: string | null, x: number, width: number): CSSProperties | undefined {
+  const half = Math.min(180, Math.max(plate.length * 7, (small?.length ?? 0) * 6) + 20) / 2;
+  const dx = Math.max(0, half + 6 - x) - Math.max(0, x + half + 6 - width);
+  return dx ? ({ "--plate-dx": `${Math.round(dx)}px` } as CSSProperties) : undefined;
+}
+
 /** The words a mark says to a screen reader (and the Year / Week name plates). */
 export function markWords(board: JourneyBoard, mark: MapMark, rows: Map<string, ListRow>, year?: YearChapter): { aria: string; plate: string | null; plateSmall: string | null } {
   const stops = board.stops.filter((s) => mark.covers.includes(s.id));
@@ -193,7 +200,7 @@ export function Marks({ board, level, placed, rows, selectedId, focusedDate, fla
             <span className="journey-mark__hit" aria-hidden="true" />
             {mark.toCheck && mark.kind !== "hercules" ? <span className="journey-mark__ring" aria-hidden="true">!</span> : null}
             {showPlate && words.plate ? (
-              <span className="journey-mark__plate" aria-hidden="true">{words.plate}{words.plateSmall ? <small>{words.plateSmall}</small> : null}</span>
+              <span className="journey-mark__plate" aria-hidden="true" style={plateNudge(words.plate, words.plateSmall, x, stage.width)}>{words.plate}{words.plateSmall ? <small>{words.plateSmall}</small> : null}</span>
             ) : null}
           </button>
         );
