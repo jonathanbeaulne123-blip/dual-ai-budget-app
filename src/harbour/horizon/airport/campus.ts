@@ -30,8 +30,10 @@ export function createAirport(scene:THREE.Scene,geography:HorizonGeography,theme
  return{aircraft,selected,actions,recover,save,seated:()=>seated,stand(){seated=null;},sit(id:string){seated=AIRPORT_SEATS.find(s=>s.id===id)??null;return seated;},
   controller(id:AircraftId){const s=aircraft.find(s=>s.id===id)!;return createAircraftController(s,{...geography,wind,blocked(x,z,y,r){if(geography.blocked(x,z,y,r))return true;return aircraft.some(other=>other!==s&&(other.grounded||!other.disabled)&&Math.abs(y-other.y)<2.5&&Math.hypot(x-other.x,z-other.z)<1.5);}});},
   exit:()=>{const s=selected();return s?aircraftExit(s,geography):null;},
-  power(value:number){const s=selected();if(s&&!s.disabled){s.throttle=Math.max(0,Math.min(1,value));s.brake=false;}},brake(on:boolean){const s=selected();if(s)s.brake=on;},
-  state(){const s=selected();return{selected:s?.id??null,power:s?Math.round(s.throttle*100):0,speed:s?Math.round(s.speed*3.6):0,grounded:s?.grounded??true,disabled:s?.disabled??false,pitch:s?.pitch??0,bank:s?.bank??0,velocity:s?[s.vx,s.vy,s.vz]:[0,0,0],saveFailed,inventory:aircraft.map(p=>({id:p.id,name:AIRCRAFT[p.id].name,available:!p.disabled,at:{x:p.x,y:p.y,z:p.z}}))};},
+  power(value:number){const s=selected();if(s&&!s.disabled){s.throttle=Math.max(0,Math.min(1,value));s.brake=false;}},
+  /** One tap on the ground: full-ish power and an assisted rotation. The pilot's own pitch input takes over at once. */
+  takeoff(){const s=selected();if(!s||s.disabled||!s.grounded)return false;s.throttle=.85;s.brake=false;s.takeoff=true;return true;},brake(on:boolean){const s=selected();if(s)s.brake=on;},
+  state(){const s=selected();return{selected:s?.id??null,power:s?Math.round(s.throttle*100):0,speed:s?Math.round(s.speed*3.6):0,grounded:s?.grounded??true,disabled:s?.disabled??false,assist:s?.takeoff??false,pitch:s?.pitch??0,bank:s?.bank??0,velocity:s?[s.vx,s.vy,s.vz]:[0,0,0],saveFailed,inventory:aircraft.map(p=>({id:p.id,name:AIRCRAFT[p.id].name,available:!p.disabled,at:{x:p.x,y:p.y,z:p.z}}))};},
   update(dt:number,journey:boolean,eye:THREE.Vector3,night:number,firstPerson:boolean){art.update(journey,eye,night,wind?.());planes.forEach((p,i)=>{p.update(aircraft[i]!,dt,firstPerson&&aircraft[i]!.occupied);if(journey)p.root.visible=false;});},
   setTheme(next:VehicleDressing){art.dispose();planes.forEach(p=>p.dispose());art=airportArt(next);planes=aircraft.map(s=>aircraftArt(s.id,next));scene.add(art.root,...planes.map(p=>p.root));},
   dispose(){save();off();art.dispose();planes.forEach(p=>p.dispose());},
