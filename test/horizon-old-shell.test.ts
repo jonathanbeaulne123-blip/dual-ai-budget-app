@@ -42,9 +42,20 @@ describe("the old shell's chrome around the Horizon (static)", () => {
     expect(shell).toMatch(/className=\{`harbour-world harbour-world--\$\{theme\} harbour-world--horizon/);
   });
 
-  it("All tools › Places walks on the Horizon (HARBOUR_GO_EVENT), as do a panel's Visit and a route change", () => {
+  it("All tools › Places and a panel's Visit quick-travel on the Horizon; a route change, the map markers and the room bar still walk", () => {
     expect(shell).toMatch(/window\.addEventListener\(HARBOUR_GO_EVENT,go\)/);
-    expect(shell).toMatch(/onVisit=\{\(\)=>\{const host=props\.panel\?\.host;[^}]*walkToPlace/);
+    expect(shell).toMatch(/if\(place&&Object\.hasOwn\(VILLAGE_ADDRESS,place\)\)jumpToPlace\(place as HarbourPlaceId\)/);
+    expect(shell).toMatch(/onVisit=\{\(\)=>\{const host=props\.panel\?\.host;[^}]*jumpToPlace/);
+    // Quick travel keeps the walk's refusals and its arrival, and never marks the place current twice (no walk after the jump).
+    expect(shell).toMatch(/const jumpToPlace=useCallback\(\(place:HarbourPlaceId\)=>\{/);
+    expect(shell).toMatch(/if\(riding\.attached\|\|riding\.airborne\)\{setTravelTo\(null\);setNotice\('Park the ride first, then choose where to go\.'\);return false;\}[\s\S]*?world\.quickTravel\(/);
+    expect(shell).toMatch(/lastHere\.current=place;props\.onNavigateLocation\(\{\.\.\.routeRef\.current,\.\.\.VILLAGE_ADDRESS\[place\],surface:undefined,object:undefined\}\)/);
+    expect(shell).toMatch(/onActivate=\{rect=>\{[^}]*walkToPlace\(place as HarbourPlaceId\)/);
+    expect(shell).toMatch(/onVisit=\{place=>\{walkToPlace\(place\);\}\}/);
+    // The runtime: a restore (so the chunk gate still holds the body on unloaded ground), refused for a ride, the monorail and the kitchen.
+    const quick = read("src/harbour/horizon/runtime/index.ts");
+    expect(quick).toMatch(/quickTravel\(p:XYZ,facing\?:number,label=''\)\{\s*schedule\(\);const busy=registry\.active\(\)\|\|monorail\?\.state\(\)\|\|kitchen\?\.active\(\);if\(busy\)return false;\s*restore\(\{world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',x:p\[0\],y:p\[1\],z:p\[2\],yaw:/);
+    expect(quick).toMatch(/fadeCut\(label\);return true;/);
     expect(shell).toMatch(/if\(lastHere\.current===here\|\|toolOpen\|\|!worldReady\|\|riding\)return;if\(walkToPlace\(here\)\)lastHere\.current=here;/);
     // Arrival makes the place current (the old shell's Places navigated there); a ride refuses the walk and says so.
     expect(shell).toMatch(/props\.onNavigateLocation\(\{\.\.\.routeRef\.current,\.\.\.VILLAGE_ADDRESS\[travelTo\],surface:undefined/);

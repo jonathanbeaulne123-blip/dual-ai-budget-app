@@ -211,11 +211,29 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
     },500);
     return()=>window.clearInterval(id);
   },[travelTo]); // eslint-disable-line react-hooks/exhaustive-deps
-  // All tools › Places (App `openPlacePanel`) and the QuickSheet dispatch this: on the Horizon it is a walk.
+  /**
+   * Quick travel (Jonathan, 2026-10-04): All tools › Places and a panel's Visit jump to the place instead of walking the
+   * whole island. The same refusals as the walk (a ride, the monorail) and the same arrival: the place becomes the current
+   * one at once, so the route change does not then walk there as well. The map's markers and the doors still walk.
+   */
+  const jumpToPlace=useCallback((place:HarbourPlaceId)=>{
+    const world=runtime.current;if(!world)return false;
+    const at=horizonPlaceTarget(world.world,place);if(!at)return false;
+    if(world.monorailState?.()){setTravelTo(null);setNotice('Step off the monorail at a platform before choosing another place.');return false;}
+    const riding=world.moverState();if(riding.attached||riding.airborne){setTravelTo(null);setNotice('Park the ride first, then choose where to go.');return false;}
+    if(world.skate()?.active()){world.skate()?.setAudio(null);world.stopSkate();setSkating(null);}
+    world.setMode('walk');
+    const host=horizonHostFor(world.world,place),name=place==='court'?'the square':HARBOUR_PLACE_NAMES[place];
+    if(!world.quickTravel(at,host?(host.facing??0)+Math.PI:undefined,`Quick travel to ${name}.`)){setTravelTo(null);setNotice('Finish what you are doing here, then choose where to go.');return false;}
+    setTravelTo(null);setNotice('');world.emote(null);
+    if(harbourPlaceFor(routeRef.current,scope,true)!==place&&props.onNavigateLocation){lastHere.current=place;props.onNavigateLocation({...routeRef.current,...VILLAGE_ADDRESS[place],surface:undefined,object:undefined});}
+    return true;
+  },[scope,props.onNavigateLocation]); // eslint-disable-line react-hooks/exhaustive-deps
+  // All tools › Places (App `openPlacePanel`) and the QuickSheet dispatch this: on the Horizon it is a quick travel.
   useEffect(()=>{
-    const go=(event:Event)=>{const place=(event as CustomEvent<{place?:string}>).detail?.place;if(place&&Object.hasOwn(VILLAGE_ADDRESS,place))walkToPlace(place as HarbourPlaceId);};
+    const go=(event:Event)=>{const place=(event as CustomEvent<{place?:string}>).detail?.place;if(place&&Object.hasOwn(VILLAGE_ADDRESS,place))jumpToPlace(place as HarbourPlaceId);};
     window.addEventListener(HARBOUR_GO_EVENT,go);return()=>window.removeEventListener(HARBOUR_GO_EVENT,go);
-  },[walkToPlace]);
+  },[jumpToPlace]);
   // A route to another harbour place (the room bar, Compass) walks there; the first route is where the saved body is.
   // Only a walk actually started moves the marker, so a place chosen while a tool was open is walked to once it closes.
   // …and one chosen before the world was ready is walked to once it is (PR #570 review).
@@ -293,7 +311,7 @@ export default function HorizonWorld(props:HarbourWorldProps&{onFailed?:(message
       {worldReady&&!toolOpen&&<HorizonGuide open={guideOpen} onClose={()=>{setGuideOpen(false);focusStage();}} views={runtime.current?.world?.views??[]} onView={id=>{runtime.current?.setMode('look');runtime.current?.shot(id);setGuideOpen(false);focusStage();}} onWalk={()=>{runtime.current?.setMode('walk');setGuideOpen(false);focusStage();}} onPlace={place=>{setGuideOpen(false);walkToPlace(place);}} skateAvailable={skateAvailable&&!riding} skateHere={canSkate} onSkate={()=>{if(startSkating())setGuideOpen(false);}} onRace={()=>{if(startSkating()){runtime.current?.skate()?.route('mountain-descent');setGuideOpen(false);}}} monorailAvailable={runtime.current?.hasMonorail?.()??false} onMonorail={(from,stops)=>{if(runtime.current?.monorailBoard(from)){for(const stop of stops)runtime.current?.monorailSelect(stop);setGuideOpen(false);focusStage();}}} onJourney={props.onJourney} soundOn={soundOn} onSound={toggleSound}/>}
       {monorail&&!toolOpen&&<MountainPanel open={false} monorail={monorail} partnerName={partnerName} statusLine={null} onAction={monorailAction} onOpen={props.onOpen}/>}
       {worldReady&&!toolOpen&&props.panel?.host&&<HostPanel key={props.panel.host} host={props.panel.host} reading={reading} extras={props.panel.extras} theme={theme} onClose={props.panel.onClose} onOpen={props.panel.onOpen} onRecord={props.panel.onRecord} onMarkPaid={props.panel.onMarkPaid} onTalk={props.panel.onTalk} returnFocusTo={props.panel.returnFocusTo}
-        onVisit={()=>{const host=props.panel?.host;if(host&&host!=='hercules'&&Object.hasOwn(VILLAGE_ADDRESS,host))walkToPlace(host as HarbourPlaceId);props.panel?.onClose();}}
+        onVisit={()=>{const host=props.panel?.host;if(host&&host!=='hercules'&&Object.hasOwn(VILLAGE_ADDRESS,host))jumpToPlace(host as HarbourPlaceId);props.panel?.onClose();}}
         onStepIn={host=>{if(host!=='hercules')stepIn(host);props.panel?.onClose();}}/>}
       {worldReady&&!toolOpen&&!riding&&skateAvailable&&<SkateHUD model={skating} onStart={startSkating} onWalk={leaveSkating} onOpenFund={()=>{leaveSkating();props.onOpen('fund');}}
         onReplay={action=>runtime.current?.skate()?.replay(action)} onSettings={skateSettings} onCommand={command=>runtime.current?.skate()?.command(command)} onZonePointer={skateZone}
