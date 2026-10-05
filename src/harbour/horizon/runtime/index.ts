@@ -55,6 +55,7 @@ import {HORIZON_MANIFEST} from '../world/manifest.ts';
 import {restoreHorizonPosition,HORIZON_RESTORE_TOLERANCE} from './savedPosition.ts';
 import {horizonFootFrame,horizonWalkOut,type HorizonWalkProbe} from './walkOut.ts';
 import {horizonPartnerPose} from './partner.ts';
+import {createWalkState,horizonWalkWorld,walkMove,walkPose,walkTick,walkView,type WalkMove} from './walkSim.ts';
 import {nearestPathNode,walkPlan,withExtraGraph} from '../world/pathGraph.ts';
 import {createChunkGate,createChunkScheduler,createRideGate,CHUNK_REACH_EU,CHUNK_ARRIVING_STATUS,CHUNK_FAILED_STATUS} from './chunkGate.ts';
 import {createCableLayer} from './cableLayer.ts';
@@ -765,26 +766,18 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     const aboard=yachtView()!==null;
     const trail=craft?HANDLING[craft.id].camera:aboard?6.5:distance;
     const heading=craft?craft.yaw+fleetLook:yaw;
-    const eye:XYZ=[body.x,body.y+(craft?.id==='kayak'?.95:1.15),body.z];
+    const seen=craft||aboard?body:walkView(walkState,body);   // on foot: the walker as drawn (walkSim), not its last fixed step
+    const eye:XYZ=[seen.x,seen.y+(craft?.id==='kayak'?.95:1.15),seen.z];
     const desired:XYZ=[eye[0]-Math.sin(heading)*trail,eye[1]+(craft?.id==='yacht'?10:aboard?7:Math.max(1,-Math.sin(pitch)*trail)),eye[2]-Math.cos(heading)*trail];
     let f=1;while(f>.06&&geography.cameraBlocked(eye,[eye[0]+(desired[0]-eye[0])*f,eye[1]+(desired[1]-eye[1])*f,eye[2]+(desired[2]-eye[2])*f],aboard))f-=.04;
     camera.position.set(eye[0]+(desired[0]-eye[0])*f,eye[1]+(desired[1]-eye[1])*f,eye[2]+(desired[2]-eye[2])*f);target.set(...eye);camera.lookAt(target);
   }
   let held=false,leftSupport=false;
-  function move(dx:number,dz:number,_dt:number){
-    const length=Math.hypot(dx,dz),steps=Math.max(1,Math.ceil(length/.15));let moved=0;held=false;leftSupport=false;
-    for(let i=0;i<steps;i++){
-      const x=body.x+dx/steps,z=body.z+dz/steps;if(!gateOpen(x,z)){held=true;break;}
-      if(x<.4||z<.4||x>world.extent.w-.4||z>world.extent.h-.4)break;
-      const hit=geography.surface(x,z,body.y,.48),wet=waterLevel(x,z,body.y),water=wet!==null&&(!hit||hit.y<wet-.3);
-      const height=hit&&!water&&velocityY===0?Math.max(body.y,hit.y):body.y;
-      const obstacle=geography.blocker(x,z,height,.3,[dx/steps,dz/steps]);
-      if(obstacle||hit&&!water&&hit.slope>HORIZON_WALKABLE_DEGREES){lastMovementBlocker={at:[x,body.y,z],surface:hit,obstacle,water};break;}
-      body.x=x;body.z=z;
-      if(!swimming&&(!hit||body.y-hit.y>.48||water)){moved+=length/steps;leftSupport=true;break;}
-      if(velocityY===0&&hit&&!water&&Math.abs(body.y-hit.y)<=.5)body.y=hit.y;
-      moved+=length/steps;
-    }return moved;
+  const walkState=createWalkState(body);
+  function move(dx:number,dz:number,_dt:number):WalkMove{
+    // The collision step lives in walkSim (collide and slide); this binds it to the runtime's geography, gate and state.
+    const r=walkMove(horizonWalkWorld(geography,world.extent,gateOpen,HORIZON_WALKABLE_DEGREES),body,dx,dz,{swimming,grounded:velocityY===0});
+    held=r.held;leftSupport=r.leftSupport;if(r.blocker)lastMovementBlocker=r.blocker;return r;
   }
   let emote:{id:EmoteId;at:number}|null=null;
   function step(dt:number,now:number){
@@ -799,21 +792,19 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     const at=geography.surface(body.x,body.z,body.y,.1),water=waterLevel(body.x,body.z,body.y);
     swimming=water!==null&&body.y<=water-.3&&(!at||at.y<water-.3);
     let forward=controls.forward+(keys.has('w')||keys.has('arrowup')?1:0)-(keys.has('s')||keys.has('arrowdown')?1:0),strafe=controls.strafe+(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0);
-    let dx=Math.sin(yaw)*forward+Math.cos(yaw)*strafe,dz=Math.cos(yaw)*forward-Math.sin(yaw)*strafe;
-    let following=false;
-    if(dx||dz)path=[];else if(path.length){const p=path[0]!;dx=p[0]-body.x;dz=p[2]-body.z;following=true;if(Math.hypot(dx,dz)<.35){path.shift();dx=0;dz=0;}}
-    const length=Math.hypot(dx,dz),speed=swimming?2.4:controls.run||keys.has('shift')?HORIZON_MANIFEST.speeds_ms.run:HORIZON_MANIFEST.speeds_ms.walk;
-    const before={x:body.x,z:body.z};
-    // A pad's analog magnitude scales the pace (main #557); a route (tap-to-walk, walkTo) keeps full pace to each point and
-    // never overshoots it — scaled by the remaining distance it crawled the last metre to every one of a route's points.
-    const pace=following?Math.min(length,speed*dt):Math.min(1,length)*speed*dt;
-    let moved=0;if(length){dx=dx/length*pace;dz=dz/length*pace;body.yaw=Math.atan2(dx,dz);moved=move(dx,dz,dt);if(path.length&&moved<.001&&!held){path=[];options.onStatus?.('That path is blocked. Choose another approach.');}}
+    const dx=Math.sin(yaw)*forward+Math.cos(yaw)*strafe,dz=Math.cos(yaw)*forward-Math.sin(yaw)*strafe;
+    if(dx||dz)path=[];
+    // walkSim (fixed step): weight on start and release, slides along walls, slope pace, and a route followed through its
+    // corners. A pad's analog magnitude still scales the pace (main #557); a route keeps full pace and eases into its end.
+    const walked=walkTick(walkState,body,{wishX:dx,wishZ:dz,run:controls.run||keys.has('shift'),speeds:HORIZON_MANIFEST.speeds_ms,swim:swimming?2.4:undefined,route:path.length?path:undefined},dt,(x,z)=>move(x,z,dt));
+    const moved=walked.moved;
+    if(walked.routeBlocked){path=[];options.onStatus?.('That path is blocked. Choose another approach.');}
     holdStatus();
     const floor=geography.surface(body.x,body.z,body.y,.02),wet=waterLevel(body.x,body.z,body.y);
     swimming=wet!==null&&body.y<=wet-.3&&(!floor||floor.y<wet-.3);
     const unsupported=leftSupport||!floor||body.y-floor.y>.05;
     if(!swimming&&(unsupported||jumpRequested&&!consumeJumpUntilRelease)){
-      const vx=(dt>0?(leftSupport?dx:body.x-before.x)/dt:0)+carriedVelocity.x,vz=(dt>0?(leftSupport?dz:body.z-before.z)/dt:0)+carriedVelocity.z;
+      const vx=walkState.vx+carriedVelocity.x,vz=walkState.vz+carriedVelocity.z;
       if(beginAirborne({...body,velocity:[vx,unsupported?0:4.2,vz]},false))return;
     }
     if(swimming&&wet!==null)body.y=wet-.5;
@@ -821,7 +812,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(moved>0&&now>doorCooldown&&!swimming){const door=world.hosts.find(h=>'xy'in h.door&&Math.hypot(body.x-h.door.xy[0],body.z-h.door.xy[1],body.y-(h.door.height??0))<1.15);if(door)enterDoor(door.id);}
     // The old shell's emote row (walk-moves): an emote plays while standing; walking or its own length ends it.
     if(emote&&(moved>0||!EMOTE_LOOPS[emote.id]&&(now-emote.at)/1000>EMOTE_SECONDS[emote.id]))emote=null;
-    if(!simulating){figure.group.position.set(body.x,body.y,body.z);figure.group.rotation.y=body.yaw;if(emote)figure.pose(0,0,now/1000,{lean:0,bank:0,run:0,air:0,rise:0,crouch:0,slide:0,emote:emote.id,emoteAt:(now-emote.at)/1000,flourish:0});else figure.pose(now*.007,moved>0?1:0,now/1000);updateCamera();}
+    // The figure stands where walkSim shows the body (interpolated, risers eased) and walks by distance, at the walk's speed.
+    if(!simulating){const seen=walkView(walkState,body),gait=walkPose(walkState,HORIZON_MANIFEST.speeds_ms);figure.group.position.set(seen.x,seen.y,seen.z);figure.group.rotation.y=body.yaw;if(emote)figure.pose(0,0,now/1000,{lean:0,bank:0,run:0,air:0,rise:0,crouch:0,slide:0,emote:emote.id,emoteAt:(now-emote.at)/1000,flourish:0});else figure.pose(gait.phase,gait.gait,now/1000,gait.motion);updateCamera();}
   }
   // ---- Pass 5: the placed region (Mountain v2) ----
   // Mounted (one v2 builder per frame) when a district under its footprint is resident outside the Journey map, drawn while
