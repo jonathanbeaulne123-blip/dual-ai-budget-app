@@ -486,6 +486,20 @@
   .journey-radial { bottom: calc(var(--jb-bottom) + 100px); }
 }
 
+/* --- the App's theme dressing ---------------------------------------------------------------------------------------
+   theme/worlds.css gives every button `border-radius: var(--world-r-control)` at 0-5-0
+   (`:root[data-theme] :is(button, .btn):not(.text-button):not(.link)`), which flattens the board's round toys, "+" and
+   pills to 3 px squares on phones (14 px on wide). The dressing reads the custom property on the button itself, so the
+   board answers through it: each button keeps its own shape without an arms race of selectors. */
+.journey-board { --world-r-control: 16px; }
+.journey-board :is(.journey-toy--round, .journey-plus, .journey-panel__close, .journey-mark) { --world-r-control: 50%; }
+.journey-board .journey-bubble { --world-r-control: 22px; }
+.journey-board .journey-bubble--mini { --world-r-control: 18px; }
+.journey-board :is(.journey-pull__key, .journey-toggle__option) { --world-r-control: 14px; }
+.journey-board :is(.journey-pull__lv, .journey-alternative__pick) { --world-r-control: 12px; }
+.journey-board :is(.journey-row__main, .journey-panel__stop, .journey-panel__back) { --world-r-control: 0; }
+.journey-board .journey-petal__label { --world-r-control: 12px; }
+
 /* --- reduced motion and forced colours --------------------------------------------------------------------------- */
 
 .journey-board--still *, .journey-board--still *::before, .journey-board--still *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
