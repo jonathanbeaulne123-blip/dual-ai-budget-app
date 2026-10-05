@@ -74,6 +74,8 @@ export type CorridorPlanting = {
 const isWildSet = (set: FlowerSetId) => set === FLOWER_SET.prairie || set === FLOWER_SET.highland || set === FLOWER_SET.bog;
 /** Hysteresis margins beyond an instance's far radius (eu), and the viewer travel that triggers re-evaluation. */
 export const PLANT_JOIN = 10, PLANT_LEAVE = 30, PLANT_RECHECK = 8;
+/** The far radius of the Water's Way trees' ink shells (the Old Oak's keeps FAR.shell). */
+export const WW_SHELL_FAR = 120;
 /** A `pine` item leaning at least this much (radians) is drawn wind-bent. */
 export const BENT_PINE_LEAN = 0.15;
 
@@ -143,12 +145,12 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
     contact: own(contactMaterial(eye, now)),
   };
   // The Water's Way species: one material set each, built once (stable for the fog hook).
-  const paperBack = opts.theme === 'taylor' ? { mul: 1, tint: pal.paperEdge, mix: 0.5 } : { mul: 0.62 };
   const wwMats = new Map<WWSpecies, { body: THREE.Material; depth?: THREE.Material; shell?: THREE.Material }>();
   for (const sp of WW_SPECIES) {
     const spec = WW_SPEC[sp], shape = { wind: spec.wind, key: `ww:${sp}`, ...(spec.stretchTop !== undefined ? { stretchTop: spec.stretchTop } : {}) };
     const depth = spec.cast ? own(depthMaterial(hook(shape))) : undefined; if (depth && spec.double) depth.side = THREE.DoubleSide;
-    const back = opts.theme === 'taylor' ? paperBack : { mul: spec.back ?? 0.62 };
+    // Taylor's cards show a paler paper backing; woodland cards (seen from both sides as canopy) keep their colour.
+    const back = opts.theme === 'taylor' ? (sp === 'woodlandCard' ? { mul: 0.9 } : { mul: 1, tint: pal.paperEdge, mix: 0.28 }) : { mul: spec.back ?? 0.62 };
     wwMats.set(sp, { body: own(cardMaterial(hook({ ...shape, ...(spec.double ? { backFace: back } : {}) }), spec.double ? { side: THREE.DoubleSide } : {})), depth,
       shell: spec.shell ? own(shellMaterial(pal.ink, hook({ ...shape, key: `ww:${sp}:shell`, ink: 'attr', farCap: FAR.shell.full }))) : undefined });
   }
@@ -157,7 +159,11 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
   /** The layer a Water's Way item draws in (its species or rule variant, kit/plants/species.ts `wwVariant`). */
   const wwKey = (p: PlantItem, v: number) => { const r = wwVariant(p.species as WWSpecies, opts.theme, p.scale, v); return { ...r, key: `ww:${r.species}${r.variant ? `:${r.variant}` : ''}` }; };
   let packed: { key: string; layers: Layer[]; batch: PackedInstances }[] = [];
-  const packedKey = (key: string) => key.startsWith('tree:') || key === 'bush' || key === 'hedge' ? 'body' : key.startsWith('shell:') ? 'shell' : null;
+  /** A Water's Way layer joins the packed batches when it draws like a v2 tree: single-sided, unstretched, casting, not
+   * the landmark (the oak keeps its own layer and its wide pushed-out shell); its shell then takes v2's radial rim. */
+  const wwSpeciesOf = (key: string) => key.split(':')[1] as WWSpecies;
+  const wwPackable = (key: string) => { if (!key.startsWith('ww:')) return false; const sp = WW_SPEC[wwSpeciesOf(key)]; return !!sp && !sp.double && sp.stretchTop === undefined && sp.cast && sp.family !== 'landmark'; };
+  const packedKey = (key: string) => key.startsWith('tree:') || key === 'bush' || key === 'hedge' || (wwPackable(key) && !key.endsWith(':shell')) ? 'body' : key.startsWith('shell:') || (wwPackable(key) && key.endsWith(':shell')) ? 'shell' : null;
   const dummy = new THREE.Object3D();
   const matrix = (at: readonly [number, number, number], rx: number, yaw: number, rz: number, sx: number, sy = sx, sz = sx, dy = 0) => { dummy.position.set(at[0], at[1] + dy, at[2]); dummy.rotation.set(rx, yaw, rz); dummy.scale.set(sx, sy, sz); dummy.updateMatrix(); return dummy.matrix.clone(); };
   const trisOf = (g: THREE.BufferGeometry) => (g.index ? g.index.count : g.getAttribute('position').count) / 3;
@@ -173,7 +179,9 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
       // Lite keeps the authored mountain silhouettes and bend lights; subtract only secondary ground shadows.
       if(!full&&it.corridorId==='mountainV2.road'&&spec.family==='contact')return;
       let b = buckets.get(key); if (!b) { b = { ...spec, recs: [] }; buckets.set(key, b); }
-      b.recs.push({ ...rec, far: farOf(spec.family, tier, it.rank), on: false, born: -1e9 });
+      // Water's Way tree shells stop at WW_SHELL_FAR (dense woods: a 1 px rim beyond it is noise and costs the district).
+      const far = farOf(spec.family, tier, it.rank), cap = key.startsWith('ww:') && key.endsWith(':shell') && !key.startsWith('ww:oakGiant') ? WW_SHELL_FAR : Infinity;
+      b.recs.push({ ...rec, far: Math.min(far, cap), on: false, born: -1e9 });
     };
     const base = (it: Item) => ({ district: it.district, x: it.item.at[0], z: it.item.at[2] });
     for (const it of items) {
@@ -277,7 +285,7 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
     packed = [];
     for (const key of ['body', 'shell']) {
       const selected = layers.filter(l => packedKey(l.key) === key); if (!selected.length) continue;
-      const source = selected.map(l => ({key:l.key, mesh:l.mesh, wind:l.key === 'hedge' ? .004 : l.key === 'bush' || /:(pine|alpine)$/.test(l.key) ? .012 : .022}));
+      const source = selected.map(l => ({key:l.key, mesh:l.mesh, wind:l.key.startsWith('ww:') ? WW_SPEC[wwSpeciesOf(l.key)].wind : l.key === 'hedge' ? .004 : l.key === 'bush' || /:(pine|alpine)$/.test(l.key) ? .012 : .022}));
       const batch = packInstances(source, key === 'body' ? M.packedBody : M.packedShell, {name:`Corridor packed:${key}`, plant:true, depth:key === 'body' ? M.packedDepth : undefined});
       packed.push({key, layers:selected, batch}); group.add(batch.mesh);
     }

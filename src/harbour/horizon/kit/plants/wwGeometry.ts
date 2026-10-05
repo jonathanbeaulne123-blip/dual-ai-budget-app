@@ -302,8 +302,9 @@ const stonePine: Build = (d, C) => {
 };
 const juniper: Build = (d, C, look) => {
   const full = d.full, col = grad(pick(C.juniper, 0), 0, 2.6, 0.6, 1.08), snow = winterOf(look) ? 0.55 : 0;
-  lump(d, [0, 0.9, 0], 1.4, 1.0, 1.25, full ? 6 : 5, col, { seed: 131, snow, flat: 0.85 });
-  if (full) cone(d, [0.2, 1.3, 0.1], 0.8, 1.3, 6, col, { cap: false, snow, seed: 132 });
+  // A low spreading mound from the ground (never a top), a shorter leader rising off-centre.
+  lump(d, [0, 0.5, 0], 1.4, 1.3, 1.25, full ? 6 : 5, col, { seed: 131, snow, flat: 0.3 });
+  if (full) cone(d, [0.25, 1.2, 0.1], 0.75, 1.4, 6, col, { cap: false, snow, seed: 132 });
 };
 const cedar: Build = (d, C, look) => {
   const full = d.full, winter = winterOf(look), tone = winter ? mix(pick(C.cedar, 0), C.cedarWinter, 0.35) : pick(C.cedar, 0), col = grad(tone, 0.7, 9.8, 0.6, 1.1), snow = winter ? 0.4 : 0;

@@ -26,8 +26,8 @@ function record(kind: PropKind, collide = true): PropRecord {
   const lineY = kind === 'festoon' ? (x: number, z: number) => ground(x, z) + 4 : kind === 'railOpen' ? (x: number, z: number) => ground(x, z) + 0.6 : ground;
   return { kind, at: AT, yaw: 0.6, ...(linear ? { line: LINE(lineY) } : {}), ...(kind === 'swing' ? { scale: 9.7 } : {}), ...(kind === 'kite' ? { line: [AT, [505, AT[1] + 22, 520]] } : {}), collide };
 }
-/** Per-kind triangle ceilings (full, lite). */
-const BUDGET: Partial<Record<PropKind, [number, number]>> = { geoglyph: [1400, 700], drystoneWall: [260, 120], sheepFank: [260, 120], railOpen: [600, 300], fence: [700, 300], festoon: [500, 300], ringBench: [640, 480], fountain: [500, 400], ospreyPole: [500, 200], readingTable: [500, 400], stall: [600, 300], volleyNet: [200, 100] };
+/** Per-kind triangle ceilings (full, lite); linear kinds on the 13.4 eu fixture line (walls ≤ ~26 / 8 per eu). */
+const BUDGET: Partial<Record<PropKind, [number, number]>> = { geoglyph: [1400, 700], drystoneWall: [360, 120], sheepFank: [360, 120], railOpen: [600, 300], fence: [700, 300], festoon: [500, 300], ringBench: [640, 480], fountain: [500, 400], ospreyPole: [500, 200], readingTable: [500, 400], stall: [600, 300], volleyNet: [200, 100] };
 const DEFAULT_BUDGET: [number, number] = [400, 260];
 /** How far (plan) a kind's drawing may reach from its record (lines and kites reach further). */
 const REACH: Partial<Record<PropKind, number>> = { geoglyph: 40, kite: 30, volleyNet: 10, ringBench: 7, bocceCourt: 8.5, skateBowl: 7, ospreyPole: 2.5, windsock: 3.5, fountain: 2.8, stall: 2.5, gozzo: 3.2, rowboat: 2.3, kayak: 2.1, snag: 3, rodHolder: 3.6, flag: 2 };

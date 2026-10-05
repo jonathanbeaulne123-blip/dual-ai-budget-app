@@ -20,7 +20,7 @@ import type { MountainArtPalette } from '../../../mountain/art/palette.ts';
 import { mix, shade, type RGB } from '../../../art/cardKit.ts';
 import type { PlantTier } from './geometry.ts';
 import { SNOW, wwColours } from './species.ts';
-import { Draw, hashRand, lens, lump, tube, type V, type WWGeometry, type WWLook } from './wwGeometry.ts';
+import { Draw, hashRand, lump, tube, type V, type WWGeometry, type WWLook } from './wwGeometry.ts';
 
 /** The oak's dimensions at scale 1 (the sight-chain proofs aim at `top`; the Green module places the swing from `swing`). */
 export const OAK = Object.freeze({ height: 36, spread: 30, trunkTop: 11.5, limbs: 8, swingLimb: { base: 8, reach: 21, end: 10.2 } });
@@ -87,13 +87,20 @@ export function oakGeometry(pal: MountainArtPalette, tier: PlantTier, look: WWLo
   };
   // A pad is a billowing, flattened mass (the prototype's spheres squashed to 0.5–0.65): lit on top, never black beneath.
   const pad = (c: V, rad: number, i: number) => {
-    if (bare) { lens(d, c, rad * 0.55, rad * 0.22, full ? 5 : 4, () => C.twig, { seed: 300 + i, snow: 0.75, ink: 0 }); return; }
+    if (bare) return;
     const base = tierColour(c[1], i), ry = rad * (0.5 + (i % 4) * 0.05), col = (y: number) => shade(base, 0.8 + 0.38 * Math.max(0, Math.min(1, (y - c[1] + ry * 0.5) / (ry * 1.4))));
     lump(d, c, rad, ry, rad * (0.85 + (i % 3) * 0.08), full ? 5 : 4, col, { seed: 300 + i, spin: i * 0.7, ink: 0.22 / 0.07, flat: 0.45 });
   };
   let i = 0;
   // Pads stay inside the ~60 eu crown (the Green's protected-circle and glider-approach clearances are measured on it).
   const place = (x: number, y: number, z: number, rad: number) => { const k2 = Math.min(1, (OAK.spread - rad * 0.7) / (Math.hypot(x, z) || 1)); pad([x * k2, Math.min(OAK.height - rad * 0.45, y), z * k2], rad, i++); };
+  // Bare months: every tip sprays fine twigs up and out (the winter oak reads by its limbs and its twig fans), their
+  // upper sides snow-lit.
+  if (bare) for (const t of tips) for (let k = 0; k < (full ? 4 : 2); k++) {
+    const a = r() * TAU, out = Math.hypot(t[0], t[2]) || 1, len = 2.5 + r() * 2.5, dir: V = [t[0] / out * 0.6 + Math.cos(a) * 0.6, 0.55 + r() * 0.4, t[2] / out * 0.6 + Math.sin(a) * 0.6];
+    const e: V = [t[0] + dir[0] * len, Math.min(OAK.height - 0.5, t[1] + dir[1] * len), t[2] + dir[2] * len], kk = Math.min(1, (OAK.spread - 0.5) / (Math.hypot(e[0], e[2]) || 1));
+    tube(d, t, [e[0] * kk, e[1], e[2] * kk], 0.16, 0.04, 3, shade(C.twig, 0.9), mix(C.twig, SNOW, 0.35), { lit: 0.4 });
+  }
   // 1. Clusters on the 32 tips.
   const perTip = bare ? (full ? 2 : 1) : full ? 4 : 2;
   for (const t of tips) for (let k = 0; k < perTip; k++) { const a = r() * TAU, rr = Math.sqrt(r()) * 5; place(t[0] + Math.cos(a) * rr, t[1] + 1.0 + r() * 1.4 - 0.4, t[2] + Math.sin(a) * rr, 2.6 + r() * 1.6); }
@@ -113,6 +120,5 @@ export function oakGeometry(pal: MountainArtPalette, tier: PlantTier, look: WWLo
     const y = 19 + 15 * Math.sqrt(Math.max(0, 1 - (rho / 29) ** 2)) - r() * 2.5;
     for (let q = 0; q < per; q++) { const b = r() * TAU, s2 = r() * 3.2; place(x + Math.cos(b) * s2, y + (r() - 0.5), z + Math.sin(b) * s2, 3.0 + r() * 1.6); }
   }
-  void SNOW;
   return d.result(false);
 }

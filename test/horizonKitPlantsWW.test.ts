@@ -169,8 +169,9 @@ describe("The Water's Way plant kit: through createCorridorPlanting", () => {
     const r = rng(9), marsh: PlantItem[] = [], sedge: PlantItem[] = [];
     for (let i = 0; i < 4400; i++) marsh.push({ species: r() < 0.78 ? 'reed' : 'cattail', at: [1200 + r() * 140, 4, 1180 + r() * 140], scale: 0.85 + r() * 0.3, yaw: r() * 6.28, tint: r() });
     for (let i = 0; i < 900; i++) sedge.push({ species: 'sedge', at: [1200 + r() * 140, 4, 1180 + r() * 140], scale: 0.7 + r() * 0.5, yaw: r() * 6.28, tint: r() });
-    const wood: PlantItem[] = [], kinds: WWSpecies[] = ['spruce', 'balsam', 'cedar', 'tamarack', 'woodlandCard', 'woodlandCard', 'woodlandCard', 'fern'];
-    for (let i = 0; i < 1900; i++) wood.push({ species: kinds[i % 7]!, at: [690 + r() * 120, 40, 360 + r() * 120], scale: 0.95 + r() * 0.35, yaw: r() * 6.28, tint: r() });
+    // Scholars' 60–70 % canopy: real trees along the walks and glades, woodland cards for the back rows (brief).
+    const wood: PlantItem[] = [], kinds: WWSpecies[] = ['spruce', 'balsam', 'cedar', 'tamarack'];
+    for (let i = 0; i < 1900; i++) wood.push({ species: i < 600 ? kinds[i % 4]! : 'woodlandCard', at: [690 + r() * 120, 40, 360 + r() * 120], scale: 0.95 + r() * 0.35, yaw: r() * 6.28, tint: r() });
     const ferns: PlantItem[] = Array.from({ length: 1300 }, () => ({ species: 'fern', at: [690 + r() * 120, 40, 360 + r() * 120], scale: 0.8 + r() * 0.4, yaw: r() * 6.28, tint: r() }));
     const out: Record<string, unknown> = {};
     for (const [name, groups, cam] of [['reach', [group('reach.marsh', marsh), group('reach.sedge', sedge)], [1270, 1250]], ['scholars', [group('scholars.wood', wood), group('scholars.ferns', ferns)], [750, 420]]] as const) {

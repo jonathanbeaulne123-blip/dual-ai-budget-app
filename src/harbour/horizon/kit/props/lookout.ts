@@ -179,11 +179,11 @@ export function drystoneWall(c: Ctx, height = 1.1) {
     if (c.full) {
       // Dry stones: courses of irregular stones laid on each face (lighter and darker, never one length), so the wall
       // reads as stacked stone, not a rendered block; its foot is the ground's.
-      const len = Math.hypot(d[0] - a[0], d[2] - a[2]), courses = 4;
+      const len = Math.hypot(d[0] - a[0], d[2] - a[2]), courses = 3;
       for (const s of [-1, 1]) for (let k = 0; k < courses; k++) {
         const h0 = 0.04 + (k / courses) * 0.92, h1 = h0 + 0.92 / courses - 0.03; let u = (k % 2) * 0.25 * rnd(i * 13 + k);
         for (let q = 0; u < len - 0.05 && q < 14; q++) {
-          const l = 0.38 + rnd(i * 31 + k * 7 + q) * 0.5, u1 = Math.min(len - 0.03, u + l), tone = shade(mix(P.stoneMid, P.stoneLow, rnd(i * 17 + k * 5 + q * 3)), 0.88 + rnd(q * 11 + k + i) * 0.22);
+          const l = 0.55 + rnd(i * 31 + k * 7 + q) * 0.55, u1 = Math.min(len - 0.03, u + l), tone = shade(mix(P.stoneMid, P.stoneLow, rnd(i * 17 + k * 5 + q * 3)), 0.88 + rnd(q * 11 + k + i) * 0.22);
           const at = (uu: number): V3 => [a[0] + dir[0] * uu, 0, a[2] + dir[1] * uu], gy = (uu: number) => g(at(uu)), y = (uu: number, h: number) => { const f = Math.min(ga, gd) - 0.2 + (gy(uu) - Math.min(ga, gd)), t2 = Math.max(ga, gd) + height; return f + (t2 - f) * h; };
           const off = (h: number) => 0.355 - 0.14 * h + 0.012;
           b.quad(W(at(u), s, off(h0), y(u, h0)), W(at(u1), s, off(h0), y(u1, h0)), W(at(u1), s, off(h1), y(u1, h1)), W(at(u), s, off(h1), y(u, h1)), tone, 'paint');
