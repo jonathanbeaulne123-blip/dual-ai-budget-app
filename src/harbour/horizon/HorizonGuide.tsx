@@ -11,10 +11,12 @@ type GuideProps={
   skateAvailable:boolean;skateHere:boolean;onSkate:()=>void;onRace:()=>void;onJourney?:()=>void;
   monorailAvailable:boolean;onMonorail:(from:number,stops:number[])=>void;
   soundOn:boolean;onSound:()=>void;
+  /** The three glider launch pads (runtime.gliderPads): each entry stands you on its deck, ready to run off. */
+  gliderPads?:readonly {id:string;label:string}[];onGliderPad?:(id:string)=>void;
 };
 
 /** The old world's Step in entry, using the Horizon's actual views and routes. */
-export function HorizonGuide({open,onClose,views,onView,onWalk,onPlace,skateAvailable,skateHere,onSkate,onRace,onJourney,monorailAvailable,onMonorail,soundOn,onSound}:GuideProps){
+export function HorizonGuide({open,onClose,views,onView,onWalk,onPlace,skateAvailable,skateHere,onSkate,onRace,onJourney,monorailAvailable,onMonorail,soundOn,onSound,gliderPads=[],onGliderPad}:GuideProps){
   const [tab,setTab]=useState<'explore'|'travel'>('explore');
   const [station,setStation]=useState(0),[stops,setStops]=useState<number[]>([MONORAIL_STOPS.length-1]);
   const panel=useRef<HTMLElement>(null),opener=useRef<HTMLElement|null>(null);
@@ -38,9 +40,10 @@ export function HorizonGuide({open,onClose,views,onView,onWalk,onPlace,skateAvai
         <div className="horizon-guide__actions"><button type="button" onClick={onWalk}>Walk from here</button>{onJourney&&<button type="button" onClick={()=>{onClose();onJourney();}}>Journey map</button>}</div>
         <h3>Sketchbook views</h3><div className="horizon-guide__grid">{views.map(view=><button type="button" key={view.id} onClick={()=>onView(view.id)}>{view.label||`View ${view.id}`}</button>)}</div>
         <h3>Go to a place</h3><div className="horizon-guide__grid">{(Object.keys(HARBOUR_PLACE_NAMES) as HarbourPlaceId[]).filter(place=>place!=='court').map(place=><button type="button" key={place} onClick={()=>onPlace(place)}>{HARBOUR_PLACE_NAMES[place]}</button>)}</div>
+        {onGliderPad&&gliderPads.length>0&&<section aria-labelledby="horizon-guide-gliders"><h3 id="horizon-guide-gliders">Glider launches</h3><p>Stand on a launch deck, ready to fly. Press E (or Glide) to run off.</p><div className="horizon-guide__grid">{gliderPads.map(pad=><button type="button" key={pad.id} aria-label={`Glider launch: ${pad.label}`} onClick={()=>onGliderPad(pad.id)}>{pad.label}</button>)}</div></section>}
       </>}
       {tab==='travel'&&<>
-        <p>The old Tideline board rides Mountain v2’s town island. The cruiser, bicycle, cable rides, boats, yacht, glider and parachute use their own marked boarding places across the Horizon.</p>
+        <p>The old Tideline board rides Mountain v2’s town island. The cruiser, bicycle, cable rides, boats, yacht, glider and parachute use their own marked boarding places across the Horizon. The three glider launches are under Explore.</p>
         <div className="horizon-guide__actions">{skateAvailable&&<><button type="button" onClick={onSkate}>{skateHere?'Skate here':'Go skate Tideline'}</button><button type="button" onClick={onRace}>Start downhill race</button></>}<button type="button" onClick={()=>onPlace('boathouse')}>Walk to the boats</button></div>
         {monorailAvailable&&<section aria-label="Island monorail"><h3>Island monorail</h3><label>Board at <select value={station} onChange={e=>{const next=Number(e.target.value);setStation(next);setStops([next===MONORAIL_STOPS.length-1?0:MONORAIL_STOPS.length-1]);}}>{MONORAIL_STOPS.map((stop,i)=><option key={stop.id} value={i}>{stop.name}</option>)}</select></label><fieldset><legend>Choose your stops</legend>{MONORAIL_STOPS.map((stop,i)=><label key={stop.id}><input type="checkbox" disabled={i===station} checked={stops.includes(i)} onChange={()=>setStops(current=>current.includes(i)?current.filter(n=>n!==i):[...current,i])}/>{stop.name}</label>)}</fieldset><button type="button" disabled={!stops.length} onClick={()=>onMonorail(station,stops)}>Board the monorail</button></section>}
         <p>At a boarding place, use its Interact button or E. The yacht’s galley opens from its menu board.</p>
