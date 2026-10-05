@@ -2,34 +2,28 @@ import { BRIDGE_CAST } from '../src/harbour/horizon/land/bridges/catalog';
 /**
  * The road on the Journey land (ROAD.md §7, Jonathan's brief §8): bridges drawn as bridges, covered stretches dimmed,
  * boulevard reaches as a wider road with a planted band — extracted from the REAL baked index + journey terrain LOD in
- * public/, with and without corridors, slim round-trip, and the board overlay (route, stations, spaces) unchanged and
- * never drawn over.
+ * public/, with and without corridors, slim round-trip, the land's cover masks under station symbols, and bridges kept
+ * clear of the stations. (The v1 route board's layout / pad / render-order checks moved out with that board: the
+ * Horizon Clock map is tested in test/journey-map-board.test.ts.)
  */
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import * as THREE from "three";
 import { beforeAll, describe, expect, it } from "vitest";
-import { compressHeight, STATION_IDS, type JourneyLandData, type Point2 } from "../src/journey/contracts.ts";
+import { compressHeight, type JourneyLandData, type Point2 } from "../src/journey/contracts.ts";
 import {
   buildJourneyLand, buildBridges, landDressing, BRIDGES_NAME, DECK_LINES_NAME, decodeJourneyLandSlim, encodeJourneyLandSlim, extractJourneyLand, journeyLandFlatData,
   JourneyLandFlat, JOURNEY_LAND_EXTRAS, JOURNEY_LAND_SLIM_FORMAT, LAND_EXTRA_KEYS, MAJOR_LINES_NAME, planRoad, createLandSurface,
 } from "../src/journey/land/index.ts";
 import { BRIDGE_DRAW_ERROR, bridgeDrawIndices, planBridges, DECK_LINE_LIFT, locateOnBridge, RAMP_EU } from "../src/journey/land/road.ts";
-import { layoutRoute } from "../src/journey/board/index.ts";
-import { stationPadMasks, padShape, padRingShape } from "../src/journey/board/spaces.ts";
 import { coveredFragmentMasked, type LandViewUniforms } from "../src/journey/land/lines.ts";
 import { buildJourneyRouteLand, setJourneyLandView } from "../src/journey/land/build.ts";
-import { PAD_UNIT_MAX } from "../src/journey/board/scene.ts";
-import { RENDER_ORDER } from "../src/journey/board/layers.ts";
-import { deriveJourneyBoard } from "../src/journey/model/index.ts";
 import { parseHorizonIndex } from "../src/house/world/horizonAssets.ts";
 type LoadedWorld = ReturnType<typeof parseHorizonIndex>;
 import { decodeTerrainAsset } from "../src/harbour/horizon/land/terrain/asset.ts";
 import type { Corridor, CorridorContext, CorridorSide, CorridorStation } from "../src/harbour/horizon/land/corridor/types.ts";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { BIANCA, FIXTURE_TODAY, journeyDemoHousehold } from "./fixtures/journey-board-households.ts";
-import { createHash } from "node:crypto";
 import { CLAY_NAMES } from "../src/journey/land/index.ts";
 
 const ab = (b: Buffer) => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer;
@@ -44,6 +38,15 @@ const segDist = (p: Point2, a: Point2, b: Point2) => {
   return Math.hypot(a[0] + t * dx - p[0], a[1] + t * dz - p[1]);
 };
 const polyDist = (p: Point2, pts: readonly Point2[]) => pts.slice(1).reduce((m, q, i) => Math.min(m, segDist(p, pts[i]!, q)), Infinity);
+
+/**
+ * The legacy station reservation the land's cover masks and bridge clearance are held to (the v1 board's largest month
+ * pad: 17 eu × the pad unit 2.2; the open month 12 % larger). Land facts, kept as numbers now that the route board is
+ * gone; the Horizon Clock draws no station pads.
+ */
+const PAD_UNIT_MAX = 2.2, PAD_EU = 17, OPEN_PAD_SCALE = 1.12;
+const stationPads = (stations: JourneyLandData["stations"], unit: number, open = false) =>
+  stations.map((s) => ({ x: s.anchor[0], z: s.anchor[1], radius: PAD_EU * unit * (open ? OPEN_PAD_SCALE : 1) }));
 
 /** The road's named spans (MAP.md / ROAD.md §3) and the drawn road each one carries. */
 const SPANS: Record<string, string> = { quayBridge: "V01", bightBridge: "V01", highSpan: "VG", mountainRoadCanalBridge: "V03" };
@@ -272,31 +275,9 @@ describe("road plan: what is drawn where", () => {
   });
 });
 
-describe("the board overlay does not move and is never drawn over", () => {
-  it("lays out the same route, stations, spaces and crossings with or without the road fields", () => {
-    const board = deriveJourneyBoard(journeyDemoHousehold().household, BIANCA, FIXTURE_TODAY);
-    const { bridges: _b, covers: _c, ...bare } = land;
-    const w = freshWorld();
-    w.corridors = [syntheticCorridor(w)];
-    const withBoulevards = extractJourneyLand(w, journeyTerrain());
-    const route = layoutRoute(board, land);
-    expect(layoutRoute(board, bare as JourneyLandData)).toStrictEqual(route);
-    expect(layoutRoute(board, withBoulevards)).toStrictEqual(route);
-    // Pinned plan geometry of the baked board layout (x/z only: a rebake that changes terrain heights may lift the
-    // route, it may not move it). Recorded on the pre-road land (format 1) at this branch's base.
-    const q = (n: number) => Math.round(n * 1000) / 1000;
-    const plan = {
-      months: route.months.map((m) => [m.chapterId, m.stationId, q(m.at[0]), q(m.at[2])]),
-      stretches: route.stretches.map((s) => [s.chapterId, s.points.map((p) => [q(p[0]), q(p[2])]), s.days.map((d) => [d.date, q(d.at[0]), q(d.at[2])])]),
-      crossings: route.crossings.map((c) => [q(c.at[0]), q(c.at[1]), c.overChapterId, c.underChapterId]),
-    };
-    expect(createHash("sha256").update(JSON.stringify(plan)).digest("hex")).toBe("6fe908db734f176ae812099540e6174586d107fe860c59e639231d0b1b01bea3");
-    expect(route.months.map((m) => m.stationId).sort()).toEqual([...STATION_IDS].sort());
-  });
-
-  it("preserves buried source covers and masks only their map ink beneath actual month symbols", () => {
-    const board = deriveJourneyBoard(journeyDemoHousehold().household, BIANCA, FIXTURE_TODAY);
-    const route = layoutRoute(board, land), source = JSON.stringify(land);
+describe("station symbols and the road", () => {
+  it("preserves buried source covers and masks only their map ink beneath station symbols", () => {
+    const source = JSON.stringify(land);
     const drawn = buildJourneyRouteLand(land, { theme: 'classic', tier: 'full', homes: [] });
     const view = drawn.group.userData.view as LandViewUniforms, originalStats = drawn.stats();
     expect(view.uStationPadCount.value).toBe(0); // Standalone land has no board mask.
@@ -307,7 +288,7 @@ describe("the board overlay does not move and is never drawn over", () => {
     expect(polyDist(feb.anchor, tunnel.points)).toBeLessThan(17 * PAD_UNIT_MAX);
     let masked = 0, visible = 0, boundaryInk = 0;
     for (const unit of [.2 * 1.45, .8, PAD_UNIT_MAX]) {
-      const pads = stationPadMasks(route.months, unit);
+      const pads = stationPads(land.stations, unit);
       setJourneyLandView(drawn, { worldPerPixel: unit / 1.45, stationPads: pads });
       expect(view.uStationPadCount.value).toBe(pads.length);
       expect(view.uStationPads.value.slice(0, pads.length).map(v => v.toArray())).toEqual(pads.map(p => [p.x, p.z, p.radius]));
@@ -340,7 +321,7 @@ describe("the board overlay does not move and is never drawn over", () => {
     expect(masked).toBeGreaterThan(0); expect(boundaryInk).toBeGreaterThan(0); expect(visible).toBeGreaterThan(0);
     // Both named portals remain represented beyond the February symbol, even at
     // the larger open-month scale. All source covers/roads/stations remain exact.
-    const biggest = stationPadMasks(route.months.map(m => ({ ...m, state: 'open' as const })), PAD_UNIT_MAX);
+    const biggest = stationPads(land.stations, PAD_UNIT_MAX, true);
     const febPad = biggest.find(p => p.x === feb.anchor[0] && p.z === feb.anchor[1])!;
     for (const portal of tunnel.portals) expect(Math.hypot(portal[0] - febPad.x, portal[1] - febPad.z)).toBeGreaterThan(febPad.radius);
     expect(JSON.stringify(land)).toBe(source);
@@ -350,23 +331,9 @@ describe("the board overlay does not move and is never drawn over", () => {
     drawn.dispose();
   });
 
-  it("sizes cover masks from the actual past, open and upcoming pad geometry", () => {
-    const board = deriveJourneyBoard(journeyDemoHousehold().household, BIANCA, FIXTURE_TODAY);
-    const month = layoutRoute(board, land).months[0]!;
-    for (const state of ['past', 'open', 'upcoming'] as const) {
-      const shape = state === 'upcoming' ? padRingShape() : padShape('#ffffff');
-      const scale = state === 'open' ? 1.12 : 1;
-      const mask = stationPadMasks([{ ...month, state }], PAD_UNIT_MAX)[0]!;
-      let actual = 0;
-      for (let i = 0; i < shape.positions.length; i += 3) actual = Math.max(actual, Math.hypot(shape.positions[i]!, shape.positions[i + 2]!) * scale * PAD_UNIT_MAX);
-      expect(mask.radius).toBeCloseTo(actual, 12);
-      expect(stationPadMasks([{ ...month, state }, { ...month, state: 'open' }], PAD_UNIT_MAX)).toHaveLength(1);
-    }
-  });
-
   it("keeps every bridge and boulevard clear of every station pad at its largest (Sky) size", () => {
     // Month pads are 17 eu × the pad unit (≤ PAD_UNIT_MAX) in radius; bridges also reach out by their ramp and shadow.
-    const padRadius = 17 * PAD_UNIT_MAX;
+    const padRadius = PAD_EU * PAD_UNIT_MAX;
     const w = freshWorld();
     w.corridors = [syntheticCorridor(w)];
     const all = extractJourneyLand(w, journeyTerrain());
@@ -397,19 +364,12 @@ describe("the board overlay does not move and is never drawn over", () => {
     expect(all.boulevards!.length).toBeGreaterThan(0);
   });
 
-  it("draws every land mesh before the board, and the bridges and deck lines write no depth (so they never hide a mark)", () => {
+  it("draws the bridges and deck lines without depth writes, deck over bridge (so they never hide a mark)", () => {
     const handle = buildJourneyRouteLand(land, { theme: "classic", tier: "full", homes: [] });
     const bridges = handle.group.getObjectByName(BRIDGES_NAME) as THREE.Mesh;
     const deck = handle.group.getObjectByName(DECK_LINES_NAME) as THREE.Mesh;
     const major = handle.group.getObjectByName(MAJOR_LINES_NAME) as THREE.Mesh;
     expect(bridges && deck && major).toBeTruthy();
-    // Every land line, the bridges and the lines on them are drawn before the board's marks (2); the ground lines were
-    // at 2 before this pass (tied with the board), now 1.3.
-    for (const name of [MAJOR_LINES_NAME, "journey-land:lines:minor", BRIDGES_NAME, DECK_LINES_NAME]) {
-      expect(handle.group.getObjectByName(name)!.renderOrder, name).toBeLessThan(RENDER_ORDER.board);
-    }
-    // The board's ghost pass (1) tests against the land's depth; the bridges and the lines on them add none.
-    expect(bridges.renderOrder).toBeGreaterThan(RENDER_ORDER.ghost);
     expect(deck.renderOrder).toBeGreaterThan(bridges.renderOrder);
     expect((bridges.material as THREE.Material).depthWrite).toBe(false);
     expect((deck.material as THREE.Material).depthWrite).toBe(false);
