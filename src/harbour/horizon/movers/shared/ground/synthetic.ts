@@ -11,7 +11,7 @@ import {boardFrame} from './tyre.ts';
 export const BOARD_TEST_PROFILE: GroundProfile = {
   g: 12,
   pop: true,
-  beds: ['skate', 'park', 'pad'],
+  beds: ['skate', 'park', 'pad', 'greenway'],
   contact: {wheelbase: 0.44, stepMax: 0.12, width: 0.31},
   roll: {fast: 0.12, flow: 0.25, slow: 0.6, threshold: 1.8, skate: 0.03, offbed: 6.0},
   drag: 0.0092,

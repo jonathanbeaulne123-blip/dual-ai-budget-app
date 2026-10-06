@@ -23,6 +23,9 @@ const MODE_KIND: Readonly<Record<string, LandLineKind>> = {
 const SKIPPED_LINES = new Set(["strip", "dam.apron.level"]);
 /** Water bodies that are not drawn on the surface: the open sea (the sea plane) and underground water (the Deep). */
 const HIDDEN_WATER_KINDS = new Set(["sea", "deep"]);
+/** The Water's Way (D-WW23): the Greenway's scraped marsh pools (34 reed-bed scrapes, 6–15 m, ≤ 0.3 deep) are dressing at the
+ *  board's scale, not map water; drawn, they cost 680 of the lite land budget's triangles. */
+const HIDDEN_WATER_ID = /^water\.marsh\./;
 /** Landforms that are not surface relief (the Undercroft is the cave system under the Crown). */
 const HIDDEN_LANDFORMS = new Set(["undercroft"]);
 
@@ -45,7 +48,7 @@ export function extractJourneyLand(world: WorldDefinition, terrain: TerrainField
   const coastline = simplifyRing(coastSource, 0, JOURNEY_LOD.coastVertices);
 
   const water = world.water
-    .filter((w) => !HIDDEN_WATER_KINDS.has(w.kind) && w.outline.length >= 3)
+    .filter((w) => !HIDDEN_WATER_KINDS.has(w.kind) && !HIDDEN_WATER_ID.test(w.id) && w.outline.length >= 3)
     .map((w) => ({ id: w.id, kind: w.kind, level: w.level, outline: copyRing(w.outline) }));
 
   const landforms = world.landforms

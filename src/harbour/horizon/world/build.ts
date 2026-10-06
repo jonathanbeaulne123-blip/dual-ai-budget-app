@@ -47,6 +47,8 @@ export function buildWorldLines(field: TerrainField, cuts: LandCuts): Line[];
 export function buildWorldLines(input: LandCuts | TerrainField, supplied?: LandCuts): Line[] {
   const cuts = 'beds' in input ? input : supplied!, field = 'heights' in input ? input : undefined;
   const m = HORIZON_MANIFEST, s = requireScaleFactor(), lines: Line[] = cuts.beds.filter(b => ['road', 'skate', 'rail', 'cable'].includes(b.kind) && !b.id.startsWith('structure.') && !['prowTunnel', 'shoulderTunnel', 'duneCulvert'].includes(b.id)).map(b => ({ id: b.id, bedIds: [b.id], mode: b.kind === 'road' ? 'bicycle' : b.kind === 'skate' ? 'board' : b.id === 'G1' ? 'gondola' : b.id === 'ZIP' ? 'zip' : 'cart', points: b.points }));
+  // The Water's Way (D-WW22): the Greenway is a route on the Journey map (a walk line; its deck is a structure bed).
+  for (const b of cuts.beds) if (b.profile === 'greenway') lines.push({ id: 'greenway', bedIds: [b.id], mode: 'walk', points: b.points });
   const level = (x: number, z: number) => { let closest = Infinity, h = 0; for (const w of cuts.waters) { if (!w.points.length) continue; const p = closestOnPolyline(w.points, x, z); if (p.distance < closest) { closest = p.distance; h = p.point[1]; } } return closest < 100 * s ? h : field ? Math.min(0, terrainHeight(field, x, z)) : 0; };
   for (const [id, route] of Object.entries(m.water_routes)) {
     if (!('pts' in route)) continue;

@@ -276,7 +276,8 @@ describe('Horizon manifest v2.3: Stage A Wave 7 (W7-A)',()=>{
 describe('Horizon manifest v2.4: Stage A Wave 7 (integrator 4)',()=>{
   const m=manifest as unknown as Record<string,any>,view=(id:string)=>m.views.find((v:{id:string})=>v.id===id);
   it('gives D, E (on the Crown launch deck), G, H, I, J and L a Walk ground point',()=>{
-    expect(Object.fromEntries('DEGHIJL'.split('').map(id=>[id,view(id).ground]))).toEqual({D:{xy:[1181,1401],h:3},E:{xy:[1306,482],h:170},G:{xy:[1300,440],h:40.6},H:{xy:[440,760],h:38},I:{xy:[1284.8,1215],h:9.5},J:{xy:[1607.3,690.9],h:48.5},L:{xy:[1477,1289],h:3}});
+    // D-WW19 (The Water's Way): page I stands on the boardwalk's north end, its ground the deck (was the Reach walk, v3_0).
+    expect(Object.fromEntries('DEGHIJL'.split('').map(id=>[id,view(id).ground]))).toEqual({D:{xy:[1181,1401],h:3},E:{xy:[1306,482],h:170},G:{xy:[1300,440],h:40.6},H:{xy:[440,760],h:38},I:{xy:[1247.5,1218],h:5},J:{xy:[1607.3,690.9],h:48.5},L:{xy:[1477,1289],h:3}});
   });
   it('D-D7: G looks up the skylight shaft; H is an aerial eye over the strip (eye 39.6 → 48)',()=>{
     expect(view('G')).toMatchObject({xy:[1320,404],target:[1320,380],target_h:110,subjects:['the skylight shaft']});expect(view('G').v2_3.xy).toEqual([1300,440]);
