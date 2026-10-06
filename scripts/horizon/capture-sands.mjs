@@ -51,8 +51,11 @@ const browser=await chromium.launch({headless:true,executablePath:process.env.HO
 const records=[],errors=[];
 try{
   for(const tier of tiers)for(const theme of themes){
-    // Lite: Classic all poses, the others page D only (the lite rule is the same in every dressing).
-    const poses=POSES.filter(p=>(!only||only.some(o=>p.label.includes(o)))&&(tier==='full'||theme==='classic'||p.label==='D-page'));
+    // Classic full: every pose. Taylor / Newfoundland full: the place's pages and signature poses. Lite: Classic's pages and
+    // signatures, the other dressings page D (the lite rule is the same in every dressing).
+    const SIGN=['D-page','L-page','promenade','beach','wheel','pier'],LITE=['D-page','promenade','wheel','aerial'];
+    const keep=p=>tier==='full'?(theme==='classic'||SIGN.includes(p.label)):(theme==='classic'?LITE.includes(p.label):p.label==='D-page');
+    const poses=POSES.filter(p=>(!only||only.some(o=>p.label.includes(o)))&&keep(p));
     if(!poses.length)continue;
     const page=await browser.newPage({viewport:VIEW,timezoneId:'America/Toronto',deviceScaleFactor:1});page.setDefaultTimeout(600000);
     page.on('pageerror',e=>errors.push({theme,tier,message:e.message}));
@@ -61,7 +64,11 @@ try{
     await page.addStyleTag({content:'.horizon-toolbar,.horizon-status,.horizon-touch-controls,.horizon-cruiser-controls,.horizon-inspector{visibility:hidden!important}'});
     log(theme,tier,'interactive');
     const setTime=hhmm=>page.evaluate(({hhmm,DATE})=>{const [H,M]=hhmm.split(':').map(Number);const d=new Date(`${DATE}T12:00:00-04:00`);d.setHours(H,M,0,0);window.__harbour.setDate(d);},{hhmm,DATE});
-    const settle=async()=>{await page.evaluate(()=>window.__harbour.settle(300000));await page.waitForTimeout(3000);};
+    // settle, then wait out the dressing layer's lazy per-district build (the first pose otherwise catches a district's far
+    // landmark silhouette before its records are drawn)
+    const settle=async()=>{await page.evaluate(()=>window.__harbour.settle(300000));
+      for(let i=0;i<60;i++){const b=await page.evaluate(()=>window.__harbour.dressingRenderStatus?.().building??false);if(!b)break;await page.waitForTimeout(1000);}
+      await page.evaluate(()=>window.__harbour.settle(300000));await page.waitForTimeout(3000);};
     for(const p of poses){
       for(const [when,hhmm] of [['day',p.day],['night',p.night]]){
         if(!hhmm||(flag('night-only')&&when==='day')||(flag('day-only')&&when==='night'))continue;

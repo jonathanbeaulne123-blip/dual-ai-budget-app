@@ -130,7 +130,9 @@ export const ferrisWheel:KindDef<WheelPlan>={
     for(const [fx,fz] of feet){vols.push(box(fx,fz,.8,.8,footBase,.3,'support','stone'));
       for(let k=0;k<3;k++){const t=(k+.5)/3,x=fx*(1-t),z=fz+(Math.sign(fz)*1.2-fz)*t,y0=hub*t-hub/6,y1=hub*t+hub/6;vols.push(box(x,z,.35,.35,Math.max(.3,y0),y1,'support','steel'));}}
     for(let i=0;i<n;i++){const a=i/n*Math.PI*2,x=Math.cos(a)*R,y=hub+Math.sin(a)*R-.3-gond*2;vols.push(box(x,0,gond,gond,y-gond*.9,y+gond*.9,'support','steel'));}
-    return {vols,eave:hub,top:hub+R+.6,R,hub,n,rimZ,feet,gond};
+    // eave = the footings' top: a wheel has no walls, so its Journey shape and far silhouette (block + roof to `top`) read
+    // as the A-frame's triangle, not a house (PR 4 D-WW152).
+    return {vols,eave:.3,top:hub+R+.6,R,hub,n,rimZ,feet,gond};
   },
   draw(c,p){
     const {b,pal,F,floor,full,ground}=c,{R,n,rimZ}=p,hy=floor+p.hub,white=pal.special.wheel??pal.trim,spoke=pal.special.spoke??pal.trim,seg=32;

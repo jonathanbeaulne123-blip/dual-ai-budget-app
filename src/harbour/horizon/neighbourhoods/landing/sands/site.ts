@@ -34,7 +34,7 @@ export const SANDS = {
   quayBridgeX: 1300,
   /** The existing corridor palm groves on the Drive's verge (land/corridor/plan/planting.ts R10/R11, baked into
    *  `corridors[*].planting`; test/horizonNeighbourhoodLongSands checks this list against the bake). */
-  corridorPalms: [[1013.6, 1378.5], [1016.4, 1378.5], [1017.4, 1375.4], [1022.1, 1379.3], [1025.4, 1375.4], [1028.3, 1378.5],
+  corridorPalms: [[844.4, 1340.5], [898.5, 1346.5], [906.2, 1351.2], [908.1, 1348.1], [1013.6, 1378.5], [1016.4, 1378.5], [1017.4, 1375.4], [1022.1, 1379.3], [1025.4, 1375.4], [1028.3, 1378.5],
     [1069.9, 1407.2], [1070.1, 1411.3], [1074, 1410.7], [1076.4, 1408.9], [1081.9, 1408.8], [1123.7, 1414.2], [1127.2, 1410.9], [1131.7, 1412.3]] as Point2[],
   /** The Campfire place (MANIFEST places.campfire) and its slab. */
   campfire: [1200, 1430] as Point2,
