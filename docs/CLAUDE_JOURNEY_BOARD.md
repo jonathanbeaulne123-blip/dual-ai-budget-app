@@ -1,5 +1,7 @@
 # The Journey Board — handoff and plan of record (2026-09-28)
 
+> **Superseded (2026-10-05):** the Journey map is now the Horizon Clock — see [`CLAUDE_JOURNEY_CLOCK.md`](CLAUDE_JOURNEY_CLOCK.md) and D68–D74. This file stays as the record of the route board (D49–D67).
+
 **Status:** branch `claude/journey-board` from `main@9fed600` (#564). Pushed; [PR #567](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/567) to `main`. Not merged, not deployed, not live verified.
 **Risk:** **Medium-High**. **Budget (5): +1.** **Engagement (3): +2.**
 **Decisions:** `docs/DECISIONS.md` D49–D67, all PROPOSED and waiting for Jonathan (summarised at the end of this file).

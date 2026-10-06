@@ -1,0 +1,52 @@
+{
+ "390": {
+  "url": "/house/kitchen-table/above?household=<demo>&scope=household&surface=journey",
+  "board": true,
+  "theme": "taylor",
+  "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+  "stageMode": "live",
+  "land": "ready",
+  "level": "month",
+  "boardTop": 64,
+  "boardHeight": 780,
+  "scrollY": 258,
+  "stage": [
+   390,
+   780
+  ],
+  "plusRadius": "50%",
+  "plusUnobstructed": true,
+  "banners": [],
+  "env": "Development",
+  "overflowX": false,
+  "toggleClear": true,
+  "ms": 35056,
+  "arrived": true,
+  "errors": []
+ },
+ "1100": {
+  "url": "/house/kitchen-table/above?household=<demo>&scope=household&surface=journey",
+  "board": true,
+  "theme": "taylor",
+  "classes": "journey-board journey-board--taylor journey-board--live journey-board--map journey-board--level-month journey-board--animated",
+  "stageMode": "live",
+  "land": "ready",
+  "level": "month",
+  "boardTop": 64,
+  "boardHeight": 736,
+  "scrollY": 244,
+  "stage": [
+   1100,
+   736
+  ],
+  "plusRadius": "50%",
+  "plusUnobstructed": true,
+  "banners": [],
+  "env": "Development",
+  "overflowX": false,
+  "toggleClear": true,
+  "ms": 27138,
+  "arrived": true,
+  "errors": []
+ }
+}

@@ -1,16 +1,18 @@
 /**
- * The Journey Board — frozen contracts (planner-owned; frozen when Wave A starts).
+ * The Journey Map (Horizon Clock) — shared contracts. One writer: the integrator.
  *
- * Every track (T1 model, T2 land, T3 board, T4 ui, T5 integration, T6 tests)
- * builds against these types. A change goes through the integrator, never a
- * track. Read `src/journey/README.md`, `docs/DECISIONS.md` D49–D67 and `docs/CLAUDE_JOURNEY_BOARD.md`.
+ * Every lane (L1 model, L2 land, L3 board, L4 ui) builds against these types; a change goes through the integrator.
+ * Read `src/journey/README.md`, `docs/DECISIONS.md` (D49–D67 the Journey Board, D68+ the Horizon Clock) and
+ * `docs/CLAUDE_JOURNEY_CLOCK.md`. The route board these replaced (route, spaces, camera tiers, piece looks, the
+ * summary card, the dressings, view state v1) was deleted with its code; only the v1 view-state key and its migration
+ * remain, so a stored record still restores.
  *
  * Invariants (tests enforce them; every module under src/journey keeps them):
  *
  * 1. PRESENTATION ONLY. The board is derived on read from one Household
  *    snapshot + memberId + today (App's Toronto `today`). Nothing here posts,
  *    schedules, moves, sets aside or re-adds money; nothing computes a balance;
- *    nothing is stored except per-viewer view state (`JourneyViewState`).
+ *    nothing is stored except per-viewer view state (`JourneyViewStateV2`).
  *    Amounts are copies of amounts that already exist on a source record.
  * 2. STABLE IDS. Every stop / cluster / crossroads / chapter id is built from
  *    the id of the record that produced it (see `journeyIds`). Importing an
@@ -120,6 +122,16 @@ export type PlaceRef =
 /** The Add flows the App's `openRecordFlow` accepts (FabVerbMode). */
 export type RecordMode = FabVerbMode;
 /**
+ * The App's record kinds, as the "+" dial may offer them (trust M4): exactly the App's own `FabVerbMode` —
+ * "expense" (Record a purchase…), "shift" (Record a shift…), "income" (Record income…), "bill" (Bill paid…) and
+ * "transfer" (Move money…). Each petal runs `{ name: "openRecord", mode }` → the App's `openRecordFlow(mode)`, which
+ * keeps each verb's own ledger rule (a shift is Mine; Bill paid is the bill ledger) and its own named Confirm.
+ */
+export type JourneyRecordMode = "expense" | "shift" | "income" | "bill" | "transfer";
+/** Compile-time guard: `JourneyRecordMode` is the App's `FabVerbMode`, no more and no less. */
+type SameModes<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
+export const JOURNEY_RECORD_MODES_MATCH_APP: SameModes<JourneyRecordMode, FabVerbMode> = true;
+/**
  * What a stop may pre-fill: only what `openRecordFlow` honours in-view today (a recurrence for Bill paid). An amount
  * prefill is not offered: `openRecordFlow` keeps `amount` only for a cross-view hand-off (App.tsx L6364).
  */
@@ -171,6 +183,16 @@ export type JourneyBoardActions = {
   enterHorizon(location: HorizonLocation): boolean | void;
   /** Leave the board the way the house route came (`putHouseObjectBack`). */
   back(): void;
+  /**
+   * The "+" dial's "All tools" chip — opens the App's quick sheet of every tool (`setQuickSheetOpen(true)`). Opening it
+   * records nothing. Optional so a host without the sheet can omit it; the dial hides the chip when absent.
+   */
+  openAllTools?(): void;
+  /**
+   * The "+" dial's "Simple view" chip — switches the device to the flat motion edition (`chooseMotionEdition("flat")`),
+   * a per-device display preference. Never touches the books. Optional; the dial hides the chip when absent.
+   */
+  chooseSimpleView?(): void;
 };
 
 /** One callback invocation, as data, so the map panel and the list run the SAME action. No variant writes. */
@@ -187,7 +209,16 @@ export type ActionCall =
   | { name: "openCalendar"; date: DateKey }
   | { name: "openBooks"; ref: BooksRef }
   | { name: "enterHorizon"; location: HorizonLocation }
-  | { name: "back" };
+  /**
+   * The dial's "Enter Horizon" chip (trust minor 1): enter at the island's centre ground, which only the mounted map
+   * knows. It carries NO location (never a placeholder): `runJourneyAction` resolves it through its `resolve.centre`
+   * argument and hands the App a real `enterHorizon(location)`; with no resolver, or no centre yet, it does nothing.
+   * The App never receives this call.
+   */
+  | { name: "enterHorizonCentre" }
+  | { name: "back" }
+  | { name: "openAllTools" }
+  | { name: "chooseSimpleView" };
 
 export type StopAction = {
   /** Stable within its stop: `<stopId>#<verb>`. */
@@ -198,8 +229,14 @@ export type StopAction = {
   primary?: boolean;
 };
 
+/** What only the mounted map can resolve for `runJourneyAction` (the dial's "Enter Horizon" chip). */
+export type JourneyActionResolve = {
+  /** The island's centre ground in concept metres (the scene's `groundAt` at the stage centre, else the frame centre), or null. */
+  centre?: () => HorizonLocation | null;
+};
+
 /** The one dispatcher both the map panel and the list use. */
-export function runJourneyAction(actions: JourneyBoardActions, call: ActionCall): void {
+export function runJourneyAction(actions: JourneyBoardActions, call: ActionCall, resolve?: JourneyActionResolve): void {
   switch (call.name) {
     case "openRecord": actions.openRecord(call.mode, call.prefill); return;
     case "openBillPaid": actions.openBillPaid(call.recurrenceId); return;
@@ -213,7 +250,15 @@ export function runJourneyAction(actions: JourneyBoardActions, call: ActionCall)
     case "openCalendar": actions.openCalendar(call.date); return;
     case "openBooks": actions.openBooks(call.ref); return;
     case "enterHorizon": actions.enterHorizon(call.location); return;
+    case "enterHorizonCentre": {
+      const location = resolve?.centre?.() ?? null;
+      if (location) actions.enterHorizon(location);
+      return;
+    }
     case "back": actions.back(); return;
+    // Optional callbacks: a host that did not supply one does nothing (the dial hides that chip).
+    case "openAllTools": actions.openAllTools?.(); return;
+    case "chooseSimpleView": actions.chooseSimpleView?.(); return;
   }
 }
 
@@ -452,13 +497,8 @@ export type Chapter = {
   crossroadsIds: string[];
 };
 
-/** Device-local token looks (P4). A synced look would need schema; deferred. */
-export type PieceLookId = "lantern" | "cat" | "boat" | "kettle";
-export const PIECE_LOOKS: readonly PieceLookId[] = ["lantern", "cat", "boat", "kettle"];
-export const DEFAULT_PIECE_LOOK: PieceLookId = "lantern";
-
 /**
- * The household's current place: today's period. Separate from the viewer's selection, from the camera and from any
+ * The household's current place: today's period (drawn as the cat-eared bus; one look, ruling 9). Separate from the viewer's selection, from the camera and from any
  * body in Horizon. Browsing another chapter never moves it.
  */
 export type HouseholdPiece = {
@@ -469,31 +509,13 @@ export type HouseholdPiece = {
   atDate: DateKey;
   /** An earlier month whose Chapter is still open (close due), or null. The piece shows a small gate-ajar hint pointing at its review stop. */
   waitingChapterId: ChapterId | null;
-  /** The model sets DEFAULT_PIECE_LOOK; the UI overlays the device-local `JourneyViewState.pieceLook` before handing it to the board. */
-  lookId: PieceLookId;
 };
 
 export type AttentionItem = { id: string; words: string; stopId: string | null; call: ActionCall };
 
-/** The calm header: where we are · what needs attention · what is next · what I can do. From existing selectors only. */
-export type BoardSummary = {
-  chapterId: ChapterId;
-  /** "September 2026". */
-  periodLabel: string;
-  /** Everyday · now (`readSnapshot(...).now` via campCardModel); null when the Fund cannot say. */
-  everyday: { cents: number | null; figure: string } | null;
-  /** readCardLeaving words ("Leaving next · Hydro $142.00 · Sat 27 · +2 this week"). */
-  leavingWords: string;
-  /** readNeeds + overdue/needs-review commitments + close-due chapter, most pressing first. */
-  attention: AttentionItem[];
-  /** Up to three next items from today on (stop ids), in date order. */
-  next: string[];
-  /** Always present (Record, Calendar, Books, Plan). Direct access never depends on the map. */
-  quickActions: StopAction[];
-};
-
+/** The Journey Map's board (model v2): derived on read, never stored. */
 export type JourneyBoard = {
-  version: 1;
+  version: 2;
   householdId: string;
   memberId: string;
   today: DateKey;
@@ -507,7 +529,6 @@ export type JourneyBoard = {
   clusters: StopCluster[];
   crossroads: Crossroads[];
   piece: HouseholdPiece;
-  summary: BoardSummary;
   /**
    * Committed member homes the board can draw at map scale: the viewer's own `personalLife.home.layout` (never the
    * draft, never `future`) on the viewer's claimed plot (`hearthside.homePlots`, default `HOME_RESERVE_ID`). A
@@ -518,10 +539,20 @@ export type JourneyBoard = {
   undatedMemories: MemoryStop[];
   /** Chapters older than the window: traces only, list only. */
   olderChapters: { id: ChapterId; unresolved: UnresolvedCounts; traces: ChapterTrace[] }[];
-  /** A new household: honest empty board (no invented achievements); `summary.quickActions` carries setup actions. */
+  /** A new household: honest empty board (no invented achievements, no invented stops). */
   empty: boolean;
   /** Plain-language limits shown in the list's footer (e.g. "Bianca's home is private to her device"). */
   limitations: string[];
+  /** This week, Monday to Sunday around today (rulings 7, 13). */
+  week: JourneyWeek;
+  /** One entry per chapter in `window`, in window order: the Year ring's minis. */
+  year: YearChapter[];
+  /** Every "to check" stop id (`isToCheck`), date order. The header chip and Hercules count exactly these. */
+  toCheck: string[];
+  /** The purse chip. */
+  purse: Purse;
+  /** Hercules's bubble and the checklist's sections. */
+  digest: Digest;
 };
 
 export type DeriveJourneyBoardOptions = {
@@ -552,81 +583,21 @@ export type ListRow = {
   /** Exactly the actions the map panel offers for the same id. */
   actions: StopAction[];
   depth: 0 | 1 | 2;
+  /** The stop's money direction (`MoneyDirection`); "none" for rows that are not money. */
+  direction: MoneyDirection;
+  /** True exactly when `isToCheck(stop)`; the row shows "!" and words, never colour alone. */
+  toCheck: boolean;
+  /**
+   * A second line of model words the sheet and the list print under the status, or absent/null. Today: on expected
+   * pay when a pay is already recorded on the same day ("A pay is already recorded today · check the Books before
+   * recording this one", trust M3). No de-duplication: both stops stay as they are (ruling 8).
+   */
+  note?: string | null;
 };
 export type BoardToList = (board: JourneyBoard) => ListRow[];
 
 // ---------------------------------------------------------------------------
-// Route space (T3 lays it out from the board + the land; pure, no three)
-
-export type MonthSpace = {
-  chapterId: ChapterId;
-  stationId: StationId;
-  /** Engine coords with compressed height (board space). */
-  at: Point3;
-  state: Chapter["state"];
-};
-export type DaySpace = {
-  date: DateKey;
-  chapterId: ChapterId;
-  /** 1…N along the month's stretch; N sits at the station. */
-  index: number;
-  at: Point3;
-  /** Unit tangent of the route at this space (x, z). */
-  tangent: Point2;
-  relation: DayCell["relation"];
-  stopIds: string[];
-  clusterId: string | null;
-  flagstone: boolean;
-};
-/** One month's stretch: the ribbon arc from the previous station to this chapter's station. */
-export type RouteStretch = {
-  chapterId: ChapterId;
-  fromStationId: StationId;
-  toStationId: StationId;
-  /** Ribbon centreline, board space. */
-  points: Point3[];
-  lengthEu: number;
-  days: DaySpace[];
-};
-export type RouteSpace = {
-  months: MonthSpace[];
-  stretches: RouteStretch[];
-  /** Where the route crosses itself (drawn over/under; no space is ever placed at a crossing). */
-  crossings: { at: Point2; overChapterId: ChapterId; underChapterId: ChapterId }[];
-};
-export type LayoutRoute = (board: JourneyBoard, land: JourneyLandData) => RouteSpace;
-
-// ---------------------------------------------------------------------------
-// Camera, heights, LOD (numbers from MANIFEST journey.camera / journey.lod)
-
-export type CameraTier = "sky" | "region" | "stop";
-/**
- * MANIFEST journey.camera: sky = the island's diagonal (√(2000²+1800²) ≈ 2691), region 250, stop 80, upClose 25
- * (orbit radii for the manifest's 50° lens). The board keeps the FRAMED GROUND EXTENT of those radii
- * (frame height = 2·r·tan(25°)) with a near-orthographic 20° lens: distance = r·tan(25°)/tan(10°).
- * Sky additionally fits the whole island extent to the viewport. upClose is not a board tier: below Stop the board
- * never enters the world by zoom; "Enter Horizon here" does, explicitly.
- */
-export const JOURNEY_CAMERA = {
-  referenceFovDeg: 50,
-  fovDeg: 20,
-  /** Gently angled, stable: pitch from horizontal, heading 0 = north up. No free rotation. */
-  pitchDeg: 58,
-  headingDeg: 0,
-  radius: { sky: 2691, region: 250, stop: 80 },
-  upCloseRadius: 25,
-  /** Min / max zoom radius; tiers switch at the geometric midpoints. */
-  minRadius: 60,
-  maxRadius: 2900,
-} as const;
-/** Frame height (ground eu) for an orbit radius under the reference lens. */
-export function frameHeightForRadius(radius: number): number {
-  return 2 * radius * Math.tan((JOURNEY_CAMERA.referenceFovDeg / 2) * Math.PI / 180);
-}
-export function tierForRadius(radius: number): CameraTier {
-  const r = JOURNEY_CAMERA.radius;
-  return radius >= Math.sqrt(r.sky * r.region) ? "sky" : radius >= Math.sqrt(r.region * r.stop) ? "region" : "stop";
-}
+// Heights and LOD (numbers from MANIFEST journey.lod)
 
 /**
  * View-only height compression (presentation, never the island): tall land and buildings must not hide the route.
@@ -638,7 +609,7 @@ export function compressHeight(height: number): number {
   return height <= knee ? height * below : knee * below + (height - knee) * above;
 }
 
-/** MANIFEST journey.lod [full, lite]: the board (land + route + spaces + piece + homes) stays inside L0 at Sky and L1 below. */
+/** MANIFEST journey.lod [full, lite]: the map (clay land + bezel + props + homes) stays inside this budget. */
 export const JOURNEY_LOD = {
   sky: { triangles: { full: 40_000, lite: 25_000 }, drawCalls: { full: 60, lite: 40 } },
   region: { triangles: { full: 80_000, lite: 45_000 } },
@@ -706,7 +677,7 @@ export type BuildJourneyLandOptions = {
   season?: "spring" | "summer" | "autumn" | "winter";
 };
 
-/** The three.js land (T2) the board layer (T3) stands on. */
+/** The clay land (L2) the map scene (L3) stands on. */
 export type JourneyLandHandle = {
   group: THREE.Group;
   data: JourneyLandData;
@@ -720,13 +691,34 @@ export type JourneyLandHandle = {
   isLand(x: number, y: number): boolean;
   stationAt(id: StationId): Point3;
   setTheme(theme: ThemeId): void;
-  /** Replace homes (a committed HomeBook edit, or a provisional crossroads preview). */
+  /** Replace homes (a committed HomeBook edit). */
   setHomes(homes: JourneyHome[]): void;
+  /** Where concept metres sit in the diorama: `dioramaFrame(land)` from this land's coastline (never constants). */
+  frame: DioramaFrame;
+  /**
+   * The drawn clay surface's diorama y at concept (x, y) — what a prop, a house, the bus or Hercules stands on. Differs
+   * from `toDiorama`'s height near the coast, where the clay eases to the slab.
+   */
+  dioramaGroundAt(x: number, y: number): number;
+  /**
+   * One low-poly copy of the clay island at diorama scale (centred on the frame, `islandUnits` radius), shared by the
+   * Year ring's instanced minis (board/year.ts). The land owns and disposes it.
+   */
+  miniGeometry(): THREE.BufferGeometry;
+  /**
+   * Horizon Clock Week calm: soften, lower and thin the clay away from `calm.trail` (concept metres), keeping `clear`
+   * discs free (the Week tiles and the pile), by `amount` 0…1; `null` restores the land as drawn. Presentation only.
+   * The land caches the calm field per `calm` object identity, so the caller passes the SAME object for the whole
+   * week and only changes `amount`; a recompute of the field costs a few tens of ms on the full tier.
+   */
+  setCalm?(calm: JourneyLandCalm | null, amount?: number): void;
   /** Triangles / draw calls this land adds, for the LOD budget test. */
   stats(): { triangles: number; drawCalls: number };
   dispose(): void;
 };
 export type BuildJourneyLand = (land: JourneyLandData, options: BuildJourneyLandOptions) => JourneyLandHandle;
+/** What the Week passes to calm the land: the trail (concept metres) and discs to keep clear (tiles, the pile; metres). */
+export type JourneyLandCalm = { trail: readonly Point2[]; clear?: readonly { x: number; y: number; r: number }[] };
 
 /** The SVG twin's data (flat tier / no WebGL / reading edition): same land, same coordinates (viewBox in concept metres). */
 export type JourneyLandFlatData = {
@@ -744,104 +736,29 @@ export type JourneyLandFlatData = {
 };
 
 // ---------------------------------------------------------------------------
-// Board scene (T3) — mounted by the UI (T4)
+// Marks (the canvas is aria-hidden; every mark is a DOM button)
 
 /** A projected screen anchor for one DOM mark (the canvas is aria-hidden; marks are real buttons). */
 export type MarkAnchor = { id: string; x: number; y: number; depth: number; visible: boolean; bridge?: JourneyLandBridge['landmark'] };
 
-export type JourneyBoardSceneOptions = {
-  land: JourneyLandHandle;
-  board: JourneyBoard;
-  route: RouteSpace;
-  theme: ThemeId;
-  tier: "full" | "lite";
-  reducedMotion: boolean;
-  /** Called once per rendered frame that moved something: ids = month spaces, day spaces, clusters, stops, crossroads, piece. */
-  onAnchors(anchors: MarkAnchor[]): void;
-  onTier(tier: CameraTier): void;
-  /** A canvas pick (pointer): the id of the space/stop under it, or null. The UI decides what selecting means. */
-  onPick(id: string | null): void;
-  /** First frame drawn (App: journeyCloud.ready("to-journey")). */
-  onReady(): void;
-  /** WebGL context lost: the UI falls back to flat + list. */
-  onLost(): void;
-};
-export type JourneyBoardSceneHandle = {
-  setBoard(board: JourneyBoard, route: RouteSpace): void;
-  setSelection(id: string | null): void;
-  /** A crossroads alternative drawn provisionally (dashed, "preview" label), or null to return. */
-  setPreview(preview: { crossroadsId: string; alternativeId: string } | null): void;
-  /** Frame a tier on a concept point; animate is ignored under reduced motion (cut). */
-  focus(target: { x: number; y: number } | { chapterId: ChapterId } | { date: DateKey } | "piece", tier: CameraTier, animate: boolean): void;
-  /** Screen → concept ground point (for "Enter Horizon here"). Null over sea. */
-  groundAt(screenX: number, screenY: number): { x: number; y: number } | null;
-  setTheme(theme: ThemeId): void;
-  resize(width: number, height: number): void;
-  /**
-   * Optional (added in the fix pass): stage px covered by chrome on each side (summary card, panel, sheet). Framing
-   * centres its target in the uncovered rect and Sky fits the island inside it; the canvas stays full-bleed.
-   */
-  setSafeArea?(inset: { top: number; right: number; bottom: number; left: number }): void;
-  sleep(): void;
-  wake(): void;
-  stats(): { triangles: number; drawCalls: number };
-  dispose(): void;
-};
-export type CreateJourneyBoardScene = (host: HTMLElement, options: JourneyBoardSceneOptions) => JourneyBoardSceneHandle;
-
 // ---------------------------------------------------------------------------
-// Themes (one dressing per module; all three themes authored)
+// Themes (all three authored: `JourneyClayPalettes`)
 
 export const JOURNEY_THEMES: readonly ThemeId[] = ["classic", "taylor", "newfoundland"];
-/** CSS colour strings ("#rrggbb"). */
-export type JourneyLandDressing = {
-  sea: string; shallows: string; sand: string; grass: string; forest: string; rock: string; snow: string;
-  lake: string; river: string;
-  road: string; skate: string; walk: string; cable: string; rail: string; ferry: string;
-  hostWall: string; hostRoof: string; reserve: string; districtLabel: string; fog: string; sky: string;
-};
-export type JourneyBoardDressing = {
-  ribbon: string; ribbonEdge: string;
-  spacePast: string; spaceOpen: string; spaceUpcoming: string; spaceInset: string; stakes: string;
-  signpost: string; selectionRing: string; provisional: string; pavilion: string; clusterBase: string;
-  piece: Record<PieceLookId, { body: string; accent: string }>;
-};
-export type JourneyLandDressings = Record<ThemeId, JourneyLandDressing>;
-export type JourneyBoardDressings = Record<ThemeId, JourneyBoardDressing>;
-
 // ---------------------------------------------------------------------------
-// Per-viewer view state (device-local; nothing financial)
+// Per-viewer view state (device-local; nothing financial): the identity; v2 lives with the Horizon Clock below
 
-export type JourneyViewState = {
-  version: 1;
-  tier: CameraTier;
-  /** Null = "now" (follow today). */
-  focusDate: DateKey | null;
-  /** Camera target, concept metres; null = frame the focus. */
-  target: { x: number; y: number } | null;
-  selectedStopId: string | null;
-  expandedClusterId: string | null;
-  listMode: "map" | "list";
-  pieceLook: PieceLookId;
-  /** The last explicit "Enter Horizon here": restored when Horizon's "Journey" button returns (route object "harbour-return"). */
-  lastEnter: { location: HorizonLocation; tier: CameraTier; focusDate: DateKey | null } | null;
-};
-export const DEFAULT_JOURNEY_VIEW_STATE: JourneyViewState = {
-  version: 1, tier: "region", focusDate: null, target: null, selectedStopId: null, expandedClusterId: null,
-  listMode: "map", pieceLook: DEFAULT_PIECE_LOOK, lastEnter: null,
-};
 export type JourneyViewIdentity = { environment: Environment; householdId: string; memberId: string };
 /**
- * `hearth:journey-board:v1:<environment>:<householdId>:<memberId>` (encodeURIComponent per part, as
- * `houseIdentity`). Read/written only by src/journey/ui/viewState.ts, inside try/catch; a missing or invalid record is
- * DEFAULT_JOURNEY_VIEW_STATE. Household scope only (the board is Ours).
+ * The route board's old key, `hearth:journey-board:v1:<environment>:<householdId>:<memberId>`: read ONCE (by
+ * ui/viewState.ts, inside try/catch) to migrate a stored record to v2; never written.
  */
-export function journeyViewStateKey(identity: JourneyViewIdentity): string {
+export function journeyViewStateKeyV1(identity: JourneyViewIdentity): string {
   return `hearth:journey-board:v1:${[identity.environment, identity.householdId, identity.memberId].map(encodeURIComponent).join(":")}`;
 }
 
 // ---------------------------------------------------------------------------
-// The mounted component (T4 implements, T5 mounts)
+// The mounted component (L4 implements, the App mounts)
 
 export type JourneyBoardProps = {
   household: import("../core/types.ts").Household;
@@ -864,4 +781,470 @@ export type JourneyBoardProps = {
    * `openDueReview`); the model stays pure and never reads the App's reminder state.
    */
   dueReview?: { count: number } | null;
+  /**
+   * The header's theme dot. Applies the APP-WIDE theme through the existing appearance store (`store.apply`, as the
+   * appearance picker does; ruling 12), never a board-only preview. The UI hides the dot when absent.
+   */
+  onChooseTheme?: (theme: ThemeId) => void;
+  /**
+   * The App's record verbs for this member, in the App's own order: `fabActionsFor(view, { memberHasJob }).map(a => a.mode)`
+   * (trust M4). The dial draws one petal per mode ("Record a purchase…", "Record a shift…", "Record income…",
+   * "Bill paid…", "Move money…"), each running `{ name: "openRecord", mode }`. Absent → the dial's own default
+   * (purchase, Bill paid, income). A member with no job gets no "shift" here, exactly as the App's own dial.
+   */
+  recordModes?: readonly JourneyRecordMode[];
 };
+
+// ===========================================================================
+// Horizon Clock — the Journey Map (v2)
+//
+// The approved prototype (`horizon-clock.html`) as contracts: a clay diorama of the real island inside a clock bezel
+// of 31 day slots (Month), a ring of twelve minis (Year) and a Party Board trail along the Year Walk (Week), driven by
+// one level pull `t` (0 Year → 1 Month → 2 Week).
+//
+// Money honesty, for every lane (tests enforce it):
+// - A null amount draws NO stack and reads "Unknown amount". Unknown is never zero and never a guessed height.
+// - Expected / estimated / scheduled money is never summed with recorded money: solid stacks are recorded,
+//   see-through stacks are not, and every figure keeps its basis in words.
+// - Fund contributions are their own figure ("To the Fund"), never summed into "In".
+// - "To check" is ONE definition (`isToCheck`: an overdue or needs-review commitment); a passed date never makes
+//   anything paid, and expected pay whose date passed unrecorded is not "to check" (D60).
+// - Status words come from model/words.ts only; the map and the list run the same `actions[]`.
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// Levels: one pull, three views
+
+/** The three map levels. Year = twelve minis; Month = the clock (today's chapter by default); Week = the trail. */
+export type JourneyLevel = "year" | "month" | "week";
+/** The levels in pull order (Year → Month → Week), for the LevelPull and the Key. */
+export const JOURNEY_LEVELS: readonly JourneyLevel[] = ["year", "month", "week"];
+/**
+ * The level pull's rest values. `t` is continuous in [0, 2] while pinching / wheeling / dragging the LevelPull; it
+ * settles on one of these. Every pop and camera move is a function of `t` (board/levels.ts); under reduced motion
+ * `t` jumps between rests (a cut).
+ */
+export const LEVEL_T = { year: 0, month: 1, week: 2 } as const satisfies Record<JourneyLevel, number>;
+/** The level a pull value reads as (nearest rest; clamped to [0, 2]): t < 0.5 Year, t < 1.5 Month, else Week. */
+export function levelForT(t: number): JourneyLevel {
+  const v = Number.isFinite(t) ? Math.min(2, Math.max(0, t)) : LEVEL_T.month;
+  return v < 0.5 ? "year" : v < 1.5 ? "month" : "week";
+}
+
+// ---------------------------------------------------------------------------
+// Money on the map: direction, coin stacks, "to check"
+
+/**
+ * Which way a stop's money goes. "in" = an income stop (pay, recorded income, a Fund contribution — drawn as a mint
+ * in-stack, but summed only into "To the Fund", see `isFundStop`); "out" = a commitment (bill, planned cost);
+ * "none" = everything else (reviews, plans, milestones, memories). A goal (basis `target`) is "none": a target is
+ * not money moving, so it never gets a stack.
+ */
+export type MoneyDirection = "in" | "out" | "none";
+/** L1's `directionOf(stop)` (model/money.ts). Pure; the board and the list both read it. */
+export type DirectionOf = (stop: Stop) => MoneyDirection;
+
+/**
+ * How a coin stack is drawn. "solid" = recorded (a commitment with status "paid", an income stop "confirmed");
+ * "see-through" = not recorded (scheduled, expected, estimate, overdue, needs-review). A see-through stack is never
+ * drawn on top of, or added to, a solid one as if it were the same money.
+ */
+export type StackFill = "solid" | "see-through";
+
+/**
+ * One ruler per level (ruling 6): Month and Week draw a ring every $100.00, Year a ring every $1,000.00. A stack
+ * caps at `maxRings` with a visible break mark; the amount is always printed beside it, so a capped stack never
+ * hides the figure.
+ */
+export const STACK_RULER = {
+  month: { centsPerRing: 10_000 },
+  week: { centsPerRing: 10_000 },
+  year: { centsPerRing: 100_000 },
+  maxRings: 30,
+} as const satisfies Record<JourneyLevel, { centsPerRing: number }> & { maxRings: number };
+
+/**
+ * A stack's height in rings. `rings` is exact (fractional: $142.00 at Month = 1.42 rings); `drawnRings` is what the
+ * geometry draws (≤ `STACK_RULER.maxRings`); `capped` = the break mark shows. A known $0.00 is `rings: 0` (the board
+ * draws one flat coin at most); it is never confused with unknown, which has no stack at all.
+ */
+export type StackRings = { rings: number; drawnRings: number; capped: boolean };
+/**
+ * Rings for an amount at a level. Null / undefined / non-finite cents → null: NO stack (unknown is never zero, never a
+ * guessed height). Callers pass only stops whose direction is "in" or "out".
+ */
+export function ringsFor(cents: number | null | undefined, level: JourneyLevel): StackRings | null {
+  if (cents === null || cents === undefined || !Number.isFinite(cents)) return null;
+  const rings = Math.abs(cents) / STACK_RULER[level].centsPerRing;
+  return { rings, drawnRings: Math.min(rings, STACK_RULER.maxRings), capped: rings > STACK_RULER.maxRings };
+}
+
+/**
+ * THE definition of "to check" (ruling 1 as amended for trust M1, 2026-10-05): a commitment whose status is
+ * "overdue" (its day passed and it is not recorded) or "needs-review" (an earlier receipt was corrected or excluded —
+ * on ANY date, today or later included). This is the old attention list's own rule, so nothing it showed is dropped:
+ * a needs-review bill dated today or next week counts, and so does an overdue visit carried to today (its stop
+ * stands on today, but it is overdue). The header chip, Hercules, the honey "!" ring, the Week (pile + its days), the
+ * Year counts, the list's "Needs you" and the checklist's "To check" all count exactly these. Upcoming / due-today
+ * items (a standing jar) never count; paid never counts; expected income whose date passed unrecorded is not "to
+ * check" (ruling 2, D60).
+ */
+export function isToCheck(stop: Stop): boolean {
+  return stop.kind === "commitment" && (stop.status === "overdue" || stop.status === "needs-review");
+}
+
+/**
+ * A Fund contribution (expected estimate or confirmed). Drawn as an in-stack, but its money is ONLY ever summed into
+ * "To the Fund" — never into "In" (ruling 4).
+ */
+export function isFundStop(stop: Stop): boolean {
+  return stop.kind === "income" && (stop.origin === "fund-estimate" || stop.origin === "fund-confirmed");
+}
+
+// ---------------------------------------------------------------------------
+// Week, Year, purse, digest (L1 derives them; pure)
+
+/**
+ * How big a Week tile is. "today" = today's tile (largest, the bus stands on it); "money" = a day with at least one
+ * in/out stop (a full tile with props on coin stacks); "stone" = a day with no money stops (a thin stepping stone,
+ * still a real, selectable day).
+ */
+export type WeekDaySize = "today" | "money" | "stone";
+/** One day of the Week trail. `stopIds` = every stop on that date, in the board's stop order. */
+export type WeekDay = {
+  date: DateKey;
+  relation: "past" | "today" | "future";
+  stopIds: string[];
+  size: WeekDaySize;
+};
+/**
+ * This week (rulings 7, 13): Monday `from` to Sunday `to` around today, seven `days`, today highlighted within it.
+ * `pileStopIds` = the "to check" stops dated OUTSIDE the week (before `from`, or a needs-review one after `to`), pinned
+ * as one pile on the first tile; a "to check" stop inside the week stays on its own day with the "!" ring. So the pile
+ * plus the week's own "to check" stops is exactly `board.toCheck`, and nothing is shown twice. Pinned is not paid.
+ */
+export type JourneyWeek = { from: DateKey; to: DateKey; days: WeekDay[]; pileStopIds: string[] };
+
+/**
+ * One Year mini (one per chapter in the window). Year stacks are COMMITMENTS AND INCOME ON THE MAP only (ruling 5),
+ * legend "bills and planned costs on the map, not all spending" — never the Books' total spending.
+ * - `out*` = commitments: `outRecordedCents` paid (solid), `outOpenCents` not recorded (see-through).
+ * - `in*` = income stops EXCLUDING Fund contributions (`isFundStop`): confirmed (solid) / expected (see-through).
+ * - Unknown amounts add nothing to any figure (they are counted in `unknownAmounts`, never as 0).
+ * - Recorded and open are separate figures; nothing sums them.
+ * `toCheck` = how many of this chapter's stops `isToCheck`. `kept` = a Chapter record exists for the month and is closed
+ * (its state is an outcome, not "open"): a close PROPOSED and still waiting on the partner is not kept.
+ */
+export type YearChapter = {
+  chapterId: ChapterId;
+  outRecordedCents: number;
+  outOpenCents: number;
+  inRecordedCents: number;
+  inOpenCents: number;
+  /** Money stops in this chapter whose amount is unknown: listed, never summed, never drawn as a stack. */
+  unknownAmounts: number;
+  toCheck: number;
+  kept: boolean;
+};
+
+/**
+ * One line of the purse's "expected today": an expected (non-Fund) income stop dated today. Never added to `everyday`.
+ * `note` (trust M3): model words printed with the line when a pay is ALREADY RECORDED today (a confirmed non-Fund
+ * income stop on the same date) — "A pay is already recorded today · check the Books before recording this one";
+ * null/absent otherwise. Both stops stay on the map as they are (ruling 8: no de-dup heuristic).
+ */
+export type PurseExpected = { stopId: string; label: string; amountCents: number | null; note?: string | null };
+/**
+ * The purse chip: "Everyday · now" (campCardModel's
+ * `readSnapshot(...).now`; null when the Fund cannot say) and, separately, today's expected pay. The UI prints them
+ * apart ("expected pay isn't counted until it's in"); NOTHING sums `everyday` and `expectedToday`.
+ */
+export type Purse = {
+  everyday: { cents: number | null; figure: string } | null;
+  expectedToday: PurseExpected[];
+};
+
+/**
+ * What Hercules says and what the checklist sheet opens with (ruling 1; nothing that used to be visible disappears):
+ * - `weekStopIds` = this week's unresolved stops (not recorded), date order — the bubble's "This week" section —
+ *   WITHOUT the "to check" stops and the Chapter items (each has its own section; nothing is listed twice).
+ * - `nextLeavingStopId` = the next commitment from today on that is neither recorded nor "to check" (the Week tile
+ *   with the honey "›"), or null.
+ * - `nextIsSettingAside` = that next commitment is a standing move into a Build jar (`setAside === "build"`, e.g.
+ *   "Winter reserve"): the money is set aside, not leaving, so the UI says "Setting aside next" (`MAP_WORDS
+ *   .settingAsideNext`), never "Leaving next". False when there is no next commitment.
+ * - `toCheckIds` = `board.toCheck` (the "To check" section; the chip's count).
+ * - `waitingOnYou` = readNeeds items waiting on this viewer (e.g. a contribution to confirm).
+ * - `chapter` = the close-due Chapter item(s) (`chapterCloseDue`), opening the Campfire.
+ * The App's repeating reminders (`JourneyBoardProps.dueReview`) are a fourth, separate section with their own count.
+ */
+export type Digest = {
+  weekStopIds: string[];
+  nextLeavingStopId: string | null;
+  nextIsSettingAside: boolean;
+  toCheckIds: string[];
+  waitingOnYou: AttentionItem[];
+  chapter: AttentionItem[];
+};
+
+// ---------------------------------------------------------------------------
+// List view (the Map/List toggle): same data, same actions
+
+/** What the list shows: the level and chapter the map is on. Week = the board's `week`. */
+export type ListScope =
+  | { level: "year" }
+  | { level: "month"; chapterId: ChapterId }
+  | { level: "week" };
+
+/**
+ * The list's summary strip for its scope (ruling 3). Each figure is separate; none is a balance and none is summed
+ * with another.
+ * - `inBooksCents` / `outBooksCents` = Books actuals for the scope's dates via the existing pure selector
+ *   (core/budget.ts `monthSummary`), labelled "in the Books" — recorded money only.
+ * - `toFundCents` = recorded Fund contributions in the scope (ruling 4): never part of `inBooksCents`.
+ * - `stillToComeOutCents` / `stillToComeInCents` = unrecorded scheduled stops from today on (commitments / non-Fund
+ *   income with basis "scheduled"); `stillToComeEstimateCents` = basis "estimate" stops from today on, printed
+ *   separately as an estimate; `stillToComeUnknown` = how many unrecorded stops have no known amount (never 0 cents).
+ * - `needsYou` = how many stops in the scope `isToCheck`.
+ */
+export type ListStrip = {
+  inBooksCents: number;
+  outBooksCents: number;
+  toFundCents: number;
+  stillToComeOutCents: number;
+  stillToComeInCents: number;
+  stillToComeEstimateCents: number;
+  stillToComeUnknown: number;
+  needsYou: number;
+};
+
+/**
+ * A group of rows. "needs-you" = the scope's "to check" rows first, each with its date; "day" = one date (Week lists
+ * all seven, an empty day with `emptyText`); "chapter" = one month (Year scope); "undated" = kept memories with no date.
+ * `label` is words from model/words.ts ("Today · Mon 28 Sep", "Needs you · 5").
+ */
+export type ListGroup = {
+  id: string;
+  kind: "needs-you" | "day" | "chapter" | "undated";
+  date: DateKey | null;
+  label: string;
+  today: boolean;
+  rows: ListRow[];
+  /** "Nothing on this day." when `rows` is empty; null otherwise. */
+  emptyText: string | null;
+};
+/** The readable list for one scope. Rows carry each stop's own `actions` (the map's), `direction` and `toCheck`. */
+export type ListView = {
+  scope: ListScope;
+  /** "September 2026", "This week · Mon 28 Sep – Sun 4 Oct", "October 2025 – September 2026". */
+  title: string;
+  /** Null when the scope has no stops and no Books actuals (an honest empty month says so in `emptyText`). A month
+   *  with only ordinary purchases / refunds keeps its In / Out in the Books. */
+  strip: ListStrip | null;
+  groups: ListGroup[];
+  emptyText: string | null;
+  /** `board.limitations`, shown in the footer. */
+  limitations: string[];
+};
+/** L1's `listView()` (model/list.ts). Pure; the household is read only through existing pure selectors. */
+export type ListViewOf = (household: import("../core/types.ts").Household, board: JourneyBoard, scope: ListScope) => ListView;
+
+// ---------------------------------------------------------------------------
+// The diorama: concept metres ↔ clay units
+
+/**
+ * The diorama's fixed proportions (from the approved prototype). Everything is in DIORAMA UNITS (du): the island's
+ * coast fits a circle of `islandUnits` du; the bezel ring runs `bezel.inner`…`bezel.outer` du with its road at
+ * `bezel.road`; `slots` day slots (day 1 at north, clockwise). Heights: the slab top is `slab.top`, the sea `slab.sea`;
+ * land rises `toyLift` du per compressed metre (`compressHeight`). Camera: `fovDeg` lens at `elevationDeg` above the
+ * horizon. These are proportions, never island coordinates: WHERE the island is comes only from `DioramaFrame`.
+ */
+export const JOURNEY_DIORAMA = {
+  fovDeg: 30,
+  elevationDeg: 50,
+  islandUnits: 4.0,
+  bezel: { inner: 4.3, outer: 5.0, road: 4.62 },
+  slots: 31,
+  toyLift: 0.034,
+  slab: { top: 0.372, sea: 0.296 },
+} as const;
+
+/**
+ * Where concept metres sit in the diorama, computed by L2's `dioramaFrame(land)` from `JourneyLandData.coastline`
+ * (never constants; test/journey-map-geometry-source.test.ts moves the coast and expects the frame to follow).
+ * `centre` = concept (x, y) metres at the diorama origin; `radius` = the coast's enclosing radius from `centre`
+ * (metres); `scale` = du per metre (`JOURNEY_DIORAMA.islandUnits / radius`).
+ */
+export type DioramaFrame = { centre: Point2; radius: number; scale: number };
+/** L2's frame builder (land/diorama.ts). */
+export type DioramaFrameOf = (land: JourneyLandData) => DioramaFrame;
+
+/**
+ * Concept (x, y) metres (+ baked height in metres) → diorama (x, y, z) du. x/z are a pure scale about `centre`
+ * (concept y = south = diorama +z); height is view-only: `slab.top + compressHeight(max(0, h)) · toyLift`. The clay
+ * surface eases this to the slab near the coast (`JourneyLandHandle.dioramaGroundAt`); use that for what stands on land.
+ */
+export function toDiorama(frame: DioramaFrame, x: number, y: number, height = 0): Point3 {
+  return [
+    (x - frame.centre[0]) * frame.scale,
+    JOURNEY_DIORAMA.slab.top + compressHeight(Math.max(0, height)) * JOURNEY_DIORAMA.toyLift,
+    (y - frame.centre[1]) * frame.scale,
+  ];
+}
+/**
+ * Diorama (x, z) du → concept (x, y) metres: the exact inverse of `toDiorama`'s plan mapping. "Enter Horizon here"
+ * hands this point to Horizon unchanged (Horizon grounds it), so a place on the map is the same place in the world.
+ */
+export function fromDiorama(frame: DioramaFrame, dx: number, dz: number): { x: number; y: number } {
+  return { x: dx / frame.scale + frame.centre[0], y: dz / frame.scale + frame.centre[1] };
+}
+
+// ---------------------------------------------------------------------------
+// Clay palettes (L2 authors the values in land/clayPalette.ts; all three themes)
+
+/**
+ * One theme's clay colours (CSS "#rrggbb"), keyed exactly as the prototype's palettes. Land and board both read it.
+ * Tile colours (`t*`) carry meaning only together with words and the "!" / "›" marks — never colour alone.
+ */
+export type JourneyClayPalette = {
+  // the plinth and the land
+  plinth: string; plinth2: string;
+  /** Newfoundland's plinth is clapboard (painted boards texture); the others are plain clay. */
+  plinthFinish: "plain" | "clapboard";
+  sand: string; grass: string; grass2: string; hill: string; rock: string; snow: string; water: string; shallow: string;
+  // the bezel ring and roads
+  road: string; roadPast: string; roadFuture: string; stud: string; gate: string;
+  // houses, trees
+  wall: string; roof1: string; roof2: string; roof3: string; homeRoof: string; trunk: string; leaf: string; leaf2: string;
+  // the cat-eared bus, ink, attention
+  bus: string; busEar: string; glass: string; ink: string; honey: string;
+  // light
+  light: string; hemiSky: string; hemiGround: string;
+  // Week Party Board tiles: in, out, standing jar, to check, today's base, empty day, pedestal, the trail lane
+  tin: string; tout: string; tjar: string; tcheck: string; tbase: string; tempty: string; ped: string; lane: string;
+};
+/** All three authored themes (classic / taylor / newfoundland); none is optional. */
+export type JourneyClayPalettes = Record<ThemeId, JourneyClayPalette>;
+/** Prop colours shared by every theme (the prototype's PROPC): coins, mint income coins, and the props' materials. */
+export type JourneyPropPalette = {
+  coin: string; coinEdge: string; mint: string; mintEdge: string; jarGlass: string; jarLid: string; phone: string; screen: string;
+  white: string; cross: string; flame: string; flame2: string; metal: string; disc: string; discLabel: string; umbrella: string;
+  bulb: string; pot: string; porcelain: string; basket: string; leafy: string; tan: string; furWhite: string; nose: string;
+  earIn: string; eye: string; tooth: string; snowflake: string;
+};
+
+// ---------------------------------------------------------------------------
+// The map scene (L3 implements on the rendererOwner lease; L4 mounts)
+
+/**
+ * Mark ids the map projects (the canvas is aria-hidden; each is a real 44 px DOM button): stop ids, day dates
+ * ("2026-09-28", a clock slot or a Week tile), chapter ids ("2026-09", a Year mini), plus these fixed ids.
+ * `boardMarks` ids are kept.
+ */
+export const JOURNEY_MAP_MARKS = { piece: "piece", hercules: "hercules", pile: "pile" } as const;
+
+/**
+ * What the map scene is built from (L3 `createJourneyMapScene`). The scene draws only `board` (a v2 board) on `land`;
+ * it never reads the household, never computes money, and every stack height comes from `ringsFor`.
+ */
+export type JourneyMapSceneOptions = {
+  land: JourneyLandHandle;
+  board: JourneyBoard;
+  theme: ThemeId;
+  /** "full" = real shadows; "lite" = blob shadows (phones). The flat tier never mounts a scene. */
+  tier: "full" | "lite";
+  reducedMotion: boolean;
+  /** The pull value to open at (`LEVEL_T[level]`). */
+  t: number;
+  /** The chapter the Month clock shows (default the board's `currentChapterId`). */
+  chapterId: ChapterId;
+  /** Per frame that moved something: one anchor per visible mark (`JOURNEY_MAP_MARKS`, stop ids, dates, chapter ids). */
+  onAnchors(anchors: MarkAnchor[]): void;
+  /**
+   * A canvas pick: every stop id under the pointer (a slot or tile holding several stops returns them all; the UI shows
+   * "Which one?" for more than one), a chapter id for a Year mini, a date for an empty day, or [] for nothing.
+   * The UI decides what selecting means; picking never acts.
+   */
+  onPick(ids: string[]): void;
+  /** The pull moved from the canvas (pinch / wheel): the continuous `t` and the level it reads as. */
+  onLevel(t: number, level: JourneyLevel): void;
+  /** First frame drawn (App: journeyCloud.ready("to-journey")). Called once. */
+  onReady(): void;
+  /** WebGL context lost: the UI falls back to the flat clock / trail + list. */
+  onLost(): void;
+};
+/** The mounted map scene. Every method is presentation: none posts, records, closes or grants anything. */
+export type JourneyMapSceneHandle = {
+  setBoard(board: JourneyBoard): void;
+  /** Drive the pull to `t` (clamped [0, 2]); `animate` is ignored under reduced motion (a cut). */
+  setLevel(t: number, animate: boolean): void;
+  /** Turn the clock to a chapter; `direction` −1 = back a month, 1 = forward, 0 = jump. Reduced motion cuts. */
+  setChapter(chapterId: ChapterId, direction: -1 | 0 | 1, animate: boolean): void;
+  setSelection(id: string | null): void;
+  setTheme(theme: ThemeId): void;
+  resize(width: number, height: number): void;
+  /** Stage px covered by chrome (header, sheets, dock); framing fits inside the uncovered rect, the canvas stays full-bleed. */
+  setSafeArea(inset: { top: number; right: number; bottom: number; left: number }): void;
+  /** Screen → concept ground metres (via `fromDiorama`), for "Enter Horizon here". Null over sea, the bezel or the plinth. */
+  groundAt(screenX: number, screenY: number): { x: number; y: number } | null;
+  sleep(): void;
+  wake(): void;
+  stats(): { triangles: number; drawCalls: number };
+  dispose(): void;
+};
+/** L3's entry point (board/scene.ts), on the shared `rendererOwner` lease. */
+export type CreateJourneyMapScene = (host: HTMLElement, options: JourneyMapSceneOptions) => JourneyMapSceneHandle;
+
+// ---------------------------------------------------------------------------
+// Per-viewer view state v2 (device-local; nothing financial)
+
+/**
+ * The Horizon Clock's view state. `level` replaces the camera tier; `focusDate` null = "now" (the chapter is
+ * `focusDate`'s month, else today's); no camera target, no expanded cluster, no piece look (the bus only).
+ */
+export type JourneyViewStateV2 = {
+  version: 2;
+  level: JourneyLevel;
+  focusDate: DateKey | null;
+  selectedStopId: string | null;
+  listMode: "map" | "list";
+  /** The last explicit "Enter Horizon here": restored when Horizon's "Journey" button returns (route object "harbour-return"). */
+  lastEnter: { location: HorizonLocation; level: JourneyLevel; focusDate: DateKey | null } | null;
+};
+/** A missing or invalid v2 record (and no v1 record to migrate): Month, following today, map mode. */
+export const DEFAULT_JOURNEY_VIEW_STATE_V2: JourneyViewStateV2 = {
+  version: 2, level: "month", focusDate: null, selectedStopId: null, listMode: "map", lastEnter: null,
+};
+/**
+ * `hearth:journey-board:v2:<environment>:<householdId>:<memberId>` (encodeURIComponent per part). Read/written only by
+ * ui/viewState.ts inside try/catch; when it is missing, the v1 key is read once and migrated.
+ */
+export function journeyViewStateKeyV2(identity: JourneyViewIdentity): string {
+  return `hearth:journey-board:v2:${[identity.environment, identity.householdId, identity.memberId].map(encodeURIComponent).join(":")}`;
+}
+/** The route board's camera tiers, as a stored v1 record names them (migration only). */
+export type JourneyViewTierV1 = "sky" | "region" | "stop";
+/** A stored v1 record's fields that survive (the route board's camera target, expanded cluster and piece look do not). */
+export type JourneyViewStateV1 = {
+  version: 1;
+  tier: JourneyViewTierV1;
+  focusDate: DateKey | null;
+  selectedStopId: string | null;
+  listMode: "map" | "list";
+  lastEnter: { location: HorizonLocation; tier: JourneyViewTierV1; focusDate: DateKey | null } | null;
+};
+/** v1 tier → v2 level: sky → year, region → month, stop → week. */
+export const JOURNEY_VIEW_TIER_TO_LEVEL: Readonly<Record<JourneyViewTierV1, JourneyLevel>> = { sky: "year", region: "month", stop: "week" };
+/** A valid v1 record as v2. Pure. */
+export function migrateJourneyViewState(v1: JourneyViewStateV1): JourneyViewStateV2 {
+  return {
+    version: 2,
+    level: JOURNEY_VIEW_TIER_TO_LEVEL[v1.tier] ?? "month",
+    focusDate: v1.focusDate,
+    selectedStopId: v1.selectedStopId,
+    listMode: v1.listMode,
+    lastEnter: v1.lastEnter
+      ? { location: v1.lastEnter.location, level: JOURNEY_VIEW_TIER_TO_LEVEL[v1.lastEnter.tier] ?? "week", focusDate: v1.lastEnter.focusDate }
+      : null,
+  };
+}

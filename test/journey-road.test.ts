@@ -2,34 +2,26 @@ import { BRIDGE_CAST } from '../src/harbour/horizon/land/bridges/catalog';
 /**
  * The road on the Journey land (ROAD.md §7, Jonathan's brief §8): bridges drawn as bridges, covered stretches dimmed,
  * boulevard reaches as a wider road with a planted band — extracted from the REAL baked index + journey terrain LOD in
- * public/, with and without corridors, slim round-trip, and the board overlay (route, stations, spaces) unchanged and
- * never drawn over.
+ * public/, with and without corridors, slim round-trip, bridges kept clear of the stations, the flat twin's bridges and
+ * underpass masks, and the clay land's plank decks. (The route board's road meshes went with that board; the Horizon
+ * Clock map is tested in test/journey-map-board.test.ts.)
  */
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import * as THREE from "three";
 import { beforeAll, describe, expect, it } from "vitest";
-import { compressHeight, STATION_IDS, type JourneyLandData, type Point2 } from "../src/journey/contracts.ts";
+import { compressHeight, type JourneyLandData, type Point2 } from "../src/journey/contracts.ts";
 import {
-  buildJourneyLand, buildBridges, landDressing, BRIDGES_NAME, DECK_LINES_NAME, decodeJourneyLandSlim, encodeJourneyLandSlim, extractJourneyLand, journeyLandFlatData,
-  JourneyLandFlat, JOURNEY_LAND_EXTRAS, JOURNEY_LAND_SLIM_FORMAT, LAND_EXTRA_KEYS, MAJOR_LINES_NAME, planRoad, createLandSurface,
+  buildJourneyLand, CLAY_NAMES, decodeJourneyLandSlim, encodeJourneyLandSlim, extractJourneyLand, journeyLandFlatData, JourneyLandFlat,
+  JOURNEY_LAND_SLIM_FORMAT,
 } from "../src/journey/land/index.ts";
-import { BRIDGE_DRAW_ERROR, bridgeDrawIndices, planBridges, DECK_LINE_LIFT, locateOnBridge, RAMP_EU } from "../src/journey/land/road.ts";
-import { layoutRoute } from "../src/journey/board/index.ts";
-import { stationPadMasks, padShape, padRingShape } from "../src/journey/board/spaces.ts";
-import { coveredFragmentMasked, type LandViewUniforms } from "../src/journey/land/lines.ts";
-import { setJourneyLandView } from "../src/journey/land/build.ts";
-import { PAD_UNIT_MAX } from "../src/journey/board/scene.ts";
-import { RENDER_ORDER } from "../src/journey/board/layers.ts";
-import { deriveJourneyBoard } from "../src/journey/model/index.ts";
+import { BRIDGE_DRAW_ERROR, bridgeDrawIndices, planBridges, RAMP_EU } from "../src/journey/land/road.ts";
 import { parseHorizonIndex } from "../src/house/world/horizonAssets.ts";
 type LoadedWorld = ReturnType<typeof parseHorizonIndex>;
 import { decodeTerrainAsset } from "../src/harbour/horizon/land/terrain/asset.ts";
 import type { Corridor, CorridorContext, CorridorSide, CorridorStation } from "../src/harbour/horizon/land/corridor/types.ts";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { BIANCA, FIXTURE_TODAY, journeyDemoHousehold } from "./fixtures/journey-board-households.ts";
-import { createHash } from "node:crypto";
 
 const ab = (b: Buffer) => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer;
 const INDEX_GZ = readFileSync("public/horizon/world/horizon-geo-1.index.json.gz");
@@ -43,6 +35,13 @@ const segDist = (p: Point2, a: Point2, b: Point2) => {
   return Math.hypot(a[0] + t * dx - p[0], a[1] + t * dz - p[1]);
 };
 const polyDist = (p: Point2, pts: readonly Point2[]) => pts.slice(1).reduce((m, q, i) => Math.min(m, segDist(p, pts[i]!, q)), Infinity);
+
+/**
+ * The legacy station reservation the land's cover masks and bridge clearance are held to (the v1 board's largest month
+ * pad: 17 eu × the pad unit 2.2; the open month 12 % larger). Land facts, kept as numbers now that the route board is
+ * gone; the Horizon Clock draws no station pads.
+ */
+const PAD_UNIT_MAX = 2.2, PAD_EU = 17, OPEN_PAD_SCALE = 1.12;
 
 /** The road's named spans (MAP.md / ROAD.md §3) and the drawn road each one carries. */
 const SPANS: Record<string, string> = { quayBridge: "V01", bightBridge: "V01", highSpan: "VG", mountainRoadCanalBridge: "V03" };
@@ -121,7 +120,7 @@ describe("extract: bridges and covered stretches", () => {
 
   it("marks every authored road tunnel and the Prow gallery as covered, portal to portal", () => {
     const covers = land.covers ?? [];
-    expect(covers.map((c) => `${c.id}:${c.kind}:${c.lineId}`)).toEqual(["mountainRoadTunnel:tunnel:V03", "prowTunnel:gallery:V01", "stillwaterTunnel:tunnel:spur stillwater"]);
+    expect(covers.map((c) => `${c.id}:${c.kind}:${c.lineId}`)).toEqual(["mountainRoadTunnel:tunnel:V03", "prowTunnel:gallery:V01", "rimTunnel:tunnel:V01", "stillwaterTunnel:tunnel:spur stillwater"]);
     const mouths = new Map((world.collision?.mouths ?? []).map((m) => [m.id, m]));
     for (const c of covers) {
       c.portals.forEach((p, n) => {
@@ -215,228 +214,28 @@ describe("slim round-trip", () => {
   });
 });
 
-describe("road plan: what is drawn where", () => {
-  it("puts the carried road ON the deck, breaks what passes under it, and blends back to the ground past its ends", () => {
-    const surface = createLandSurface(land);
-    const plan = planRoad(land, surface, "full");
-    const bight = plan.bridges.find((b) => b.id === "bightBridge")!;
-    const deckTop = compressHeight(12);
-    const onDeck = plan.deck.filter((r) => r.lineId === "V01").flatMap((r) => r.verts).filter((v) => { const w = locateOnBridge(bight, v.x, v.z); return w.along > 1 && w.along < bight.length - 1 && w.lateral < bight.half; });
-    expect(onDeck.length).toBeGreaterThan(5);
-    for (const v of onDeck) expect(v.y).toBeCloseTo(deckTop + DECK_LINE_LIFT, 3);
-    // No ground run of V01 lies over the deck (it would paint the road on the water under the bridge).
-    for (const r of plan.ground.filter((x) => x.lineId === "V01")) for (const v of r.verts) {
-      const w = locateOnBridge(bight, v.x, v.z);
-      expect(w.along > 0 && w.along < bight.length && w.lateral < bight.half, `${v.x},${v.z}`).toBe(false);
-    }
-    // The ramps end on the ground: every deck run starts and ends on a vertex at deck blend 0 (RAMP_EU past the deck),
-    // unless the drawn line itself ends there (V03 ends at the Mountain Road's town lane, inside the canal bridge's ramp).
-    expect(RAMP_EU).toBeGreaterThan(0);
-    for (const r of plan.deck) {
-      const line = land.lines.find((l) => l.id === r.lineId)!.points, ends = [line[0]!, line[line.length - 1]!];
-      for (const v of [r.verts[0]!, r.verts[r.verts.length - 1]!]) if (!ends.some((e) => planar(e, [v.x, v.z]) < 0.01)) expect(v.deck, r.lineId).toBe(0);
-    }
-    // The ferry and the lower skate lane are broken under the Bight Bridge and the High Span.
-    const high = plan.bridges.find((b) => b.id === "highSpan")!;
-    const under = (lineId: string, b: typeof bight) => plan.ground.filter((r) => r.lineId === lineId).flatMap((r) => r.verts).filter((v) => { const w = locateOnBridge(b, v.x, v.z); return w.along > 0 && w.along < b.length && w.lateral < b.half; });
-    expect(under("FERRY", bight)).toEqual([]);
-    expect(under("S1", high)).toEqual([]);
-  });
-
-  it("dims and dashes the covered stretches with a notch at each portal, and leaves every other line as it was", () => {
-    const plan = planRoad(land, createLandSurface(land), "full");
-    const v01 = plan.ground.filter((r) => r.lineId === "V01").flatMap((r) => r.verts);
-    expect(v01.some((v) => v.covered)).toBe(true);
-    expect(v01.filter((v) => v.notch).length).toBeGreaterThanOrEqual(4);
-    const v03 = plan.ground.filter((r) => r.lineId === "V03").flatMap((r) => r.verts);
-    expect(v03.some((v) => v.covered)).toBe(true);
-    // No boulevard without corridors (the same land with its boulevards stripped).
-    const { boulevards: _b, ...plain } = land; void _b;
-    const plainPlan = planRoad(plain as JourneyLandData, createLandSurface(plain as JourneyLandData), "full");
-    expect([...plainPlan.ground, ...plainPlan.deck].every((r) => r.verts.every((v) => v.plant === 0))).toBe(true);
-    // A line no bridge, cover or boulevard touches is draped exactly as before: surfaceAt + lift at the densified points.
-    const surface = createLandSurface(land);
-    const ore = plan.ground.find((r) => r.lineId === "ORE")!;
-    for (const v of ore.verts) expect(v.y).toBeCloseTo(surface.surfaceAt(v.x, v.z) + 0.65, 6);
-  });
-
-  it("flags boulevard reaches (median / verges) when the corridor is there", () => {
-    const w = freshWorld();
-    w.corridors = [syntheticCorridor(w)];
-    const withCorridor = extractJourneyLand(w, journeyTerrain());
-    const plan = planRoad(withCorridor, createLandSurface(withCorridor), "full");
-    const verts = plan.ground.filter((r) => r.lineId === "V01").flatMap((r) => r.verts);
-    expect(verts.some((v) => v.plant === 1)).toBe(true);
-    expect(verts.some((v) => v.plant === 2)).toBe(true);
-  });
-});
-
-describe("the board overlay does not move and is never drawn over", () => {
-  it("lays out the same route, stations, spaces and crossings with or without the road fields", () => {
-    const board = deriveJourneyBoard(journeyDemoHousehold().household, BIANCA, FIXTURE_TODAY);
-    const { bridges: _b, covers: _c, ...bare } = land;
-    const w = freshWorld();
-    w.corridors = [syntheticCorridor(w)];
-    const withBoulevards = extractJourneyLand(w, journeyTerrain());
-    const route = layoutRoute(board, land);
-    expect(layoutRoute(board, bare as JourneyLandData)).toStrictEqual(route);
-    expect(layoutRoute(board, withBoulevards)).toStrictEqual(route);
-    // Pinned plan geometry of the baked board layout (x/z only: a rebake that changes terrain heights may lift the
-    // route, it may not move it). Recorded on the pre-road land (format 1) at this branch's base.
-    const q = (n: number) => Math.round(n * 1000) / 1000;
-    const plan = {
-      months: route.months.map((m) => [m.chapterId, m.stationId, q(m.at[0]), q(m.at[2])]),
-      stretches: route.stretches.map((s) => [s.chapterId, s.points.map((p) => [q(p[0]), q(p[2])]), s.days.map((d) => [d.date, q(d.at[0]), q(d.at[2])])]),
-      crossings: route.crossings.map((c) => [q(c.at[0]), q(c.at[1]), c.overChapterId, c.underChapterId]),
-    };
-    expect(createHash("sha256").update(JSON.stringify(plan)).digest("hex")).toBe("6fe908db734f176ae812099540e6174586d107fe860c59e639231d0b1b01bea3");
-    expect(route.months.map((m) => m.stationId).sort()).toEqual([...STATION_IDS].sort());
-  });
-
-  it("preserves buried source covers and masks only their map ink beneath actual month symbols", () => {
-    const board = deriveJourneyBoard(journeyDemoHousehold().household, BIANCA, FIXTURE_TODAY);
-    const route = layoutRoute(board, land), source = JSON.stringify(land);
-    const drawn = buildJourneyLand(land, { theme: 'classic', tier: 'full', homes: [] });
-    const view = drawn.group.userData.view as LandViewUniforms, originalStats = drawn.stats();
-    expect(view.uStationPadCount.value).toBe(0); // Standalone land has no board mask.
-    const tunnel = land.covers!.find(c => c.id === 'stillwaterTunnel')!;
-    const feb = land.stations.find(s => s.id === 'feb')!;
-    // This is a genuine map-overlay overlap, not a physical-clearance waiver.
-    // The source cover still crosses the old maximum-size reservation unchanged.
-    expect(polyDist(feb.anchor, tunnel.points)).toBeLessThan(17 * PAD_UNIT_MAX);
-    let masked = 0, visible = 0, boundaryInk = 0;
-    for (const unit of [.2 * 1.45, .8, PAD_UNIT_MAX]) {
-      const pads = stationPadMasks(route.months, unit);
-      setJourneyLandView(drawn, { worldPerPixel: unit / 1.45, stationPads: pads });
-      expect(view.uStationPadCount.value).toBe(pads.length);
-      expect(view.uStationPads.value.slice(0, pads.length).map(v => v.toArray())).toEqual(pads.map(p => [p.x, p.z, p.radius]));
-      for (const mesh of drawn.group.children.filter((o): o is THREE.Mesh => o instanceof THREE.Mesh && o.geometry.hasAttribute('aCovered'))) {
-        const g = mesh.geometry, position = g.getAttribute('position'), side = g.getAttribute('aSide'), width = g.getAttribute('aWidth'), cover = g.getAttribute('aCovered');
-        const material = mesh.material as THREE.ShaderMaterial;
-        expect(material.uniforms.uStationPads).toBe(view.uStationPads);
-        expect(material.vertexShader).toContain('vPlan = p.xz');
-        expect(material.fragmentShader).toContain('dot(delta, delta) <= uStationPads[i].z * uStationPads[i].z');
-        const ix = g.index!;
-        // Sample actual expanded ribbon triangles, including edges; centreline-only
-        // removal would leave cover ink bleeding back beneath the marker.
-        for (let n = 0; n < ix.count; n += 3) {
-          const ids = [ix.getX(n), ix.getX(n + 1), ix.getX(n + 2)];
-          if (!ids.some(i => cover.getX(i) > .5)) continue;
-          const p = ids.map(i => {
-            const w = Math.min(Math.max(width.getX(i) * view.uWpp.value, width.getY(i)), width.getZ(i));
-            return [position.getX(i) + side.getX(i) * w / 2, position.getZ(i) + side.getY(i) * w / 2, cover.getX(i)];
-          });
-          for (let u = 0; u <= 4; u++) for (let v = 0; v <= 4 - u; v++) {
-            const weights = [1 - (u + v) / 4, u / 4, v / 4], at = [0, 1, 2].map(k => p.reduce((sum, q, j) => sum + q[k]! * weights[j]!, 0));
-            const inside = pads.some(pad => Math.hypot(at[0]! - pad.x, at[1]! - pad.z) <= pad.radius);
-            const hidden = coveredFragmentMasked(at[0]!, at[1]!, at[2]!, pads);
-            if (at[2]! > .5) { expect(hidden).toBe(inside); if (hidden) { masked++; if (u === 0 || v === 0 || u + v === 4) boundaryInk++; } else visible++; }
-            expect(coveredFragmentMasked(at[0]!, at[1]!, 0, pads)).toBe(false);
-          }
-        }
-      }
-    }
-    expect(masked).toBeGreaterThan(0); expect(boundaryInk).toBeGreaterThan(0); expect(visible).toBeGreaterThan(0);
-    // Both named portals remain represented beyond the February symbol, even at
-    // the larger open-month scale. All source covers/roads/stations remain exact.
-    const biggest = stationPadMasks(route.months.map(m => ({ ...m, state: 'open' as const })), PAD_UNIT_MAX);
-    const febPad = biggest.find(p => p.x === feb.anchor[0] && p.z === feb.anchor[1])!;
-    for (const portal of tunnel.portals) expect(Math.hypot(portal[0] - febPad.x, portal[1] - febPad.z)).toBeGreaterThan(febPad.radius);
-    expect(JSON.stringify(land)).toBe(source);
-    expect(drawn.stats()).toEqual(originalStats);
-    setJourneyLandView(drawn, { worldPerPixel: .3, stationPads: [] });
-    expect(view.uStationPadCount.value).toBe(0);
-    drawn.dispose();
-  });
-
-  it("sizes cover masks from the actual past, open and upcoming pad geometry", () => {
-    const board = deriveJourneyBoard(journeyDemoHousehold().household, BIANCA, FIXTURE_TODAY);
-    const month = layoutRoute(board, land).months[0]!;
-    for (const state of ['past', 'open', 'upcoming'] as const) {
-      const shape = state === 'upcoming' ? padRingShape() : padShape('#ffffff');
-      const scale = state === 'open' ? 1.12 : 1;
-      const mask = stationPadMasks([{ ...month, state }], PAD_UNIT_MAX)[0]!;
-      let actual = 0;
-      for (let i = 0; i < shape.positions.length; i += 3) actual = Math.max(actual, Math.hypot(shape.positions[i]!, shape.positions[i + 2]!) * scale * PAD_UNIT_MAX);
-      expect(mask.radius).toBeCloseTo(actual, 12);
-      expect(stationPadMasks([{ ...month, state }, { ...month, state: 'open' }], PAD_UNIT_MAX)).toHaveLength(1);
-    }
-  });
-
-  it("keeps every bridge and boulevard clear of every station pad at its largest (Sky) size", () => {
-    // Month pads are 17 eu × the pad unit (≤ PAD_UNIT_MAX) in radius; bridges also reach out by their ramp and shadow.
-    const padRadius = 17 * PAD_UNIT_MAX;
+describe("the road's spans keep clear of the stations", () => {
+  it("keeps every bridge (deck half-width + ramp) clear of every station's old pad reservation", () => {
+    const padRadius = PAD_EU * PAD_UNIT_MAX;
     const w = freshWorld();
     w.corridors = [syntheticCorridor(w)];
     const all = extractJourneyLand(w, journeyTerrain());
     for (const s of all.stations) {
       for (const b of all.bridges!) {
         const axis = b.axis.map((p) => [p[0], p[2]] as const);
-        // All ten landmarks now include elevated inland walks. Absolute deck altitude
-        // overestimates their shadow by the underlying hillside height; keep the
-        // ramp bound here and test the actual rendered shadow triangles below.
         const reach = b.width / 2 + RAMP_EU;
         expect(polyDist(s.anchor, axis) - reach, `${b.id} vs ${s.id}`).toBeGreaterThan(padRadius);
       }
     }
-    const drawn=buildJourneyLand(all,{theme:'classic',tier:'full',homes:[]});
-    const geometry=(drawn.group.getObjectByName(BRIDGES_NAME) as THREE.Mesh).geometry;
-    const pos=geometry.getAttribute('position'),ix=geometry.index!,side=geometry.getAttribute('aSide'),width=geometry.getAttribute('aWidth');
-    let railReach=0;for(let i=0;i<pos.count;i++)railReach=Math.max(railReach,Math.hypot(side.getX(i),side.getY(i))*width.getZ(i)/2);
-    const triangle=new THREE.Triangle(),point=new THREE.Vector3(),nearest=new THREE.Vector3();
-    for(const station of all.stations){let minimum=Infinity;point.set(station.anchor[0],0,station.anchor[1]);
-      for(let i=0;i<ix.count;i+=3){for(let k=0;k<3;k++){const n=ix.getX(i+k);(k===0?triangle.a:k===1?triangle.b:triangle.c).set(pos.getX(n),0,pos.getZ(n));}
-        if(triangle.getArea()<1e-8){for(const [a,b] of [[triangle.a,triangle.b],[triangle.b,triangle.c],[triangle.c,triangle.a]]){new THREE.Line3(a,b).closestPointToPoint(point,true,nearest);minimum=Math.min(minimum,nearest.distanceTo(point));}}else{triangle.closestPointToPoint(point,nearest);minimum=Math.min(minimum,nearest.distanceTo(point));}}
-      // Reserve the rail shader's maximum half-width including each corner miter as well as the unchanged pad.
-      expect(minimum-railReach,`rendered bridge or shadow vs ${station.id}`).toBeGreaterThan(padRadius);
-    }
-    drawn.dispose();
-    // The real boulevards (R10 Long Sands, R13 Harbour Avenue) must pass the same check once the corridor lands; the
-    // synthetic ones here only prove the check runs.
+    // The Stillwater tunnel's portals stay beyond February's reservation; the source cover is kept unchanged.
+    const tunnel = land.covers!.find((c) => c.id === "stillwaterTunnel")!;
+    const feb = land.stations.find((st) => st.id === "feb")!;
+    for (const portal of tunnel.portals) expect(planar(portal, feb.anchor)).toBeGreaterThan(PAD_EU * PAD_UNIT_MAX * OPEN_PAD_SCALE);
     expect(all.boulevards!.length).toBeGreaterThan(0);
-  });
-
-  it("draws every land mesh before the board, and the bridges and deck lines write no depth (so they never hide a mark)", () => {
-    const handle = buildJourneyLand(land, { theme: "classic", tier: "full", homes: [] });
-    const bridges = handle.group.getObjectByName(BRIDGES_NAME) as THREE.Mesh;
-    const deck = handle.group.getObjectByName(DECK_LINES_NAME) as THREE.Mesh;
-    const major = handle.group.getObjectByName(MAJOR_LINES_NAME) as THREE.Mesh;
-    expect(bridges && deck && major).toBeTruthy();
-    // Every land line, the bridges and the lines on them are drawn before the board's marks (2); the ground lines were
-    // at 2 before this pass (tied with the board), now 1.3.
-    for (const name of [MAJOR_LINES_NAME, "journey-land:lines:minor", BRIDGES_NAME, DECK_LINES_NAME]) {
-      expect(handle.group.getObjectByName(name)!.renderOrder, name).toBeLessThan(RENDER_ORDER.board);
-    }
-    // The board's ghost pass (1) tests against the land's depth; the bridges and the lines on them add none.
-    expect(bridges.renderOrder).toBeGreaterThan(RENDER_ORDER.ghost);
-    expect(deck.renderOrder).toBeGreaterThan(bridges.renderOrder);
-    expect((bridges.material as THREE.Material).depthWrite).toBe(false);
-    expect((deck.material as THREE.Material).depthWrite).toBe(false);
-    handle.dispose();
   });
 });
 
-describe("three.js land with the road", () => {
-  it("stays inside the land budget on full and lite and recolours the bridges per theme", () => {
-    for (const tier of ["full", "lite"] as const) {
-      const handle = buildJourneyLand(land, { theme: "classic", tier, homes: [] });
-      const stats = handle.stats();
-      expect(stats.triangles).toBeLessThanOrEqual(tier === "full" ? 25_000 : 15_000);
-      expect(stats.drawCalls).toBeLessThanOrEqual(20);
-      const bridges = handle.group.getObjectByName(BRIDGES_NAME) as THREE.Mesh;
-      const colours = () => Array.from(bridges.geometry.getAttribute("aColor").array as Float32Array);
-      const tris = (bridges.geometry.index?.count ?? 0) / 3;
-      expect(tris).toBeGreaterThan(50);
-      expect(tris).toBeLessThan(1500);
-      const classic = colours();
-      handle.setTheme("newfoundland");
-      expect(colours()).not.toEqual(classic);
-      handle.setTheme("classic");
-      expect(colours()).toEqual(classic);
-      handle.dispose();
-    }
-  });
-
+describe("the flat twin with the road", () => {
   it("masks only roads beneath a bridge and gives each mounted flat map distinct mask IDs", () => {
     const flat=journeyLandFlatData(land);
     const garden=flat.bridges!.find(b=>b.id==='gardenWalkBridge')!;
@@ -456,11 +255,7 @@ describe("three.js land with the road", () => {
     }
   });
 
-  it("authors the road's colours for every theme, and the flat twin draws the bridges at their true width", () => {
-    for (const key of ["deck", "deckRail", "planted"] as const) {
-      expect(LAND_EXTRA_KEYS).toContain(key);
-      for (const theme of ["classic", "taylor", "newfoundland"] as const) expect(JOURNEY_LAND_EXTRAS[theme][key]).toMatch(/^#[0-9a-f]{6}$/);
-    }
+  it("the flat twin draws the bridges at their true width", () => {
     const flat = journeyLandFlatData(land);
     expect(flat.bridges!.map((b) => b.id).sort()).toEqual(bridgeIds());
     const html = renderToStaticMarkup(createElement(JourneyLandFlat, { data: flat, theme: "taylor" }));
@@ -469,6 +264,29 @@ describe("three.js land with the road", () => {
   });
 });
 
+
+describe("clay land with the road (Horizon Clock)", () => {
+  it("lays a clay plank under every span that carries a drawn road, and draws main and minor roads apart", () => {
+    const handle = buildJourneyLand(land, { theme: "classic", tier: "full", homes: [] });
+    try {
+      const planks = handle.group.getObjectByName(CLAY_NAMES.bridges) as THREE.Mesh;
+      const drawn = new Set(land.lines.filter((l) => l.kind === "road").map((l) => l.id));
+      const carrying = planBridges(land).filter((b) => [...b.lineIds].some((id) => drawn.has(id)));
+      expect(carrying.length).toBeGreaterThan(0);
+      // Each carrying span is under its plank: the plank's vertices cover every span's axis ends (diorama units).
+      const pos = planks.geometry.getAttribute("position"), frame = handle.frame!;
+      for (const b of carrying) for (const end of [b.plan[0]!, b.plan[b.plan.length - 1]!]) {
+        const x = (end[0] - frame.centre[0]) * frame.scale, z = (end[1] - frame.centre[1]) * frame.scale;
+        let best = Infinity;
+        for (let i = 0; i < pos.count; i++) best = Math.min(best, Math.hypot(pos.getX(i) - x, pos.getZ(i) - z));
+        // The plank's edge vertices sit half its (true or minimum) width off the axis.
+        expect(best, b.id).toBeLessThanOrEqual(Math.max(0.05, b.width * frame.scale) / 2 + 1e-3);
+      }
+      expect(handle.group.getObjectByName(CLAY_NAMES.roads)).toBeTruthy();
+      expect(handle.group.getObjectByName(CLAY_NAMES.minorRoads)).toBeTruthy();
+    } finally { handle.dispose(); }
+  });
+});
 
 describe("map-only bridge mesh detail", () => {
   it("keeps height and plan shape, not just endpoints or a planar chord", () => {
@@ -504,19 +322,5 @@ describe("map-only bridge mesh detail", () => {
     }
     // Includes every cast glyph/landmark, untouched source axis and relationship list.
     expect(land.bridges).toEqual(before);
-  });
-
-  it("removes only mesh chord detail, with exact triangle savings and unchanged draw count", () => {
-    const plans = planBridges(land), surface = createLandSurface(land);
-    const drawn = buildBridges(plans, surface, landDressing("classic"));
-    const full = buildBridges(plans.map(p => ({...p, drawIndices: undefined})), surface, landDressing("classic"));
-    try {
-      const removed = plans.reduce((n, p) => n + 12 * (p.plan.length - p.drawIndices!.length), 0);
-      const count = (g: typeof drawn) => g.mesh!.geometry.index!.count / 3;
-      expect(count(full) - count(drawn)).toBe(removed);
-      expect(removed).toBeGreaterThan(0); // existing land, Sky and bridge-mesh budget gates remain unchanged
-      expect(count(drawn)).toBeLessThan(1500);
-      expect(drawn.mesh).not.toBeNull(); expect(full.mesh).not.toBeNull(); // one merged draw each
-    } finally { drawn.dispose(); full.dispose(); }
   });
 });

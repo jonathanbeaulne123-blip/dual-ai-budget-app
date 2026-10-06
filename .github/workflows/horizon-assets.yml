@@ -7,6 +7,10 @@ on:
       - 'src/harbour/horizon/**'
       # PR #566 Codex: Mountain v2's sources feed land/mountainV2/v2-data.json (dump-mountain-v2.mjs --check).
       - 'src/harbour/mountain/**'
+      # Horizon → Journey rule (D74): the Journey map is drawn from the bake; its land and board run with the bake check.
+      - 'src/journey/land/**'
+      - 'src/journey/board/**'
+      - 'test/journey-map-geometry-source.test.ts'
       - 'public/horizon/**'
       - 'test/horizonBakeArtifacts.test.ts'
       - 'package.json'
@@ -19,6 +23,10 @@ on:
       - 'src/harbour/horizon/**'
       # PR #566 Codex: Mountain v2's sources feed land/mountainV2/v2-data.json (dump-mountain-v2.mjs --check).
       - 'src/harbour/mountain/**'
+      # Horizon → Journey rule (D74): the Journey map is drawn from the bake; its land and board run with the bake check.
+      - 'src/journey/land/**'
+      - 'src/journey/board/**'
+      - 'test/journey-map-geometry-source.test.ts'
       - 'public/horizon/**'
       - 'test/horizonBakeArtifacts.test.ts'
       - 'package.json'
@@ -41,6 +49,7 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec vitest run test/horizonBakeArtifacts.test.ts --maxWorkers=1
+      # D74 Horizon → Journey: the bake, and the Journey map drawn from it only.
+      - run: pnpm exec vitest run test/horizonBakeArtifacts.test.ts test/journey-map-geometry-source.test.ts --maxWorkers=1
       # PR #566 Codex: horizon:check runs the terrain bake check and the Mountain v2 data check (dump-mountain-v2.mjs --check).
       - run: pnpm horizon:check

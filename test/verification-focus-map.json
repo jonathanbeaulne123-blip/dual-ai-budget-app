@@ -1079,7 +1079,7 @@
         "test/queen-rooms.test.ts",
         "test/queen-house.test.ts"
       ],
-      "reason": "The Queen's world: every reserved channel stays on its own geometry under any paint, she cannot be fired by any path, freshness owns the glaze axis, fired versus unfired banks resolve to different materials, both paths give every pulse state a distinct still, disposal retains nothing, and conservation is untouched; the charms: a charm cannot be written onto any reserved channel through the guard, an unearned charm cannot be placed, every unlock derives from existing Chapter, Charter and goal records, charms round-trip through the guard on the King's draft, the flat path draws the same charms as the 3D path, and disposal returns every count to zero; her creation and history: a closed Chapter adds exactly one ring and rings cannot be painted, charmed or removed, the wheel cannot produce a profile that hides a reserved channel or breaks the 40px silhouette and both turns are attributed with the second changing a different part, the underside is not paintable and holds no charm seat, a portrait is immutable and renders flat in both paths, the glaze axis reads fresh versus stale at the darkest and brightest hour, and disposal returns every count to zero with rings, marks and charms on her; the worlds shared Home opens into: each of the three shared-home scenes gets a world and no other route does, each world builds three real layers of depth, the drawn row wears the same six colours as the sculpted one, ambient motion is a pure function of the clock and is refused outright under reduced motion, no scenery object can claim the name of one of her reserved channels, and every world returns its geometries, materials and textures on unmount; the two rooms in three dimensions: the ledge's order is one list of design keys on the Build plan bank's own row so one rearrangement is one save and the last save wins, a malformed order is refused and a key for a bank that has left the shelf is ignored, moving one bank leaves every other bank where it was, and the jar's swell and the bank's glaze are quantised bands so no figure can be read off a shape; the kitty banks in the rooms and the one axis that reaches them: every bank form is the studio's own silhouette normalised to a single unit and the nest's own tier rather than a new shape, the house stacks loft over hearth over cellar and clamps at both ends, a swipe counts only when it leans vertical and travels far enough or is flicked, and a control that already owns the pointer or the arrow keeps them \u2014 she keeps the pull down that tips her over and lets the climb up pass through"
+      "reason": "The Queen's world: every reserved channel stays on its own geometry under any paint, she cannot be fired by any path, freshness owns the glaze axis, fired versus unfired banks resolve to different materials, both paths give every pulse state a distinct still, disposal retains nothing, and conservation is untouched; the charms: a charm cannot be written onto any reserved channel through the guard, an unearned charm cannot be placed, every unlock derives from existing Chapter, Charter and goal records, charms round-trip through the guard on the King's draft, the flat path draws the same charms as the 3D path, and disposal returns every count to zero; her creation and history: a closed Chapter adds exactly one ring and rings cannot be painted, charmed or removed, the wheel cannot produce a profile that hides a reserved channel or breaks the 40px silhouette and both turns are attributed with the second changing a different part, the underside is not paintable and holds no charm seat, a portrait is immutable and renders flat in both paths, the glaze axis reads fresh versus stale at the darkest and brightest hour, and disposal returns every count to zero with rings, marks and charms on her; the worlds shared Home opens into: each of the three shared-home scenes gets a world and no other route does, each world builds three real layers of depth, the drawn row wears the same six colours as the sculpted one, ambient motion is a pure function of the clock and is refused outright under reduced motion, no scenery object can claim the name of one of her reserved channels, and every world returns its geometries, materials and textures on unmount; the two rooms in three dimensions: the ledge's order is one list of design keys on the Build plan bank's own row so one rearrangement is one save and the last save wins, a malformed order is refused and a key for a bank that has left the shelf is ignored, moving one bank leaves every other bank where it was, and the jar's swell and the bank's glaze are quantised bands so no figure can be read off a shape; the kitty banks in the rooms and the one axis that reaches them: every bank form is the studio's own silhouette normalised to a single unit and the nest's own tier rather than a new shape, the house stacks loft over hearth over cellar and clamps at both ends, a swipe counts only when it leans vertical and travels far enough or is flicked, and a control that already owns the pointer or the arrow keeps them — she keeps the pull down that tips her over and lets the climb up pass through"
     },
     {
       "sources": [
@@ -1099,7 +1099,7 @@
         "test/vision-v2-home-ui.test.ts",
         "test/queen-charms.test.ts"
       ],
-      "reason": "The Queen's Nest Stage 1: every pulse state has a distinct still, protect+prepare route to the Protect door and everyday to the belly, the King still conserves to the cent, no Move gives empty hands, every region is a named keyboard control, and the panel Home stays intact behind the flag; the Queen's world page: the App's top bar, sync line and household switcher readings (the attention label, its explanation and recovery action, the household, the device time, the environment, the switcher and the office door) are one tap away behind the Status door, and the field is unchanged when the App passes no shell \u2014 the no-scroll, chrome-free, \u226555% composition on the actual App page is browser evidence (test/queen-world-page-layout.mjs), not a unit test"
+      "reason": "The Queen's Nest Stage 1: every pulse state has a distinct still, protect+prepare route to the Protect door and everyday to the belly, the King still conserves to the cent, no Move gives empty hands, every region is a named keyboard control, and the panel Home stays intact behind the flag; the Queen's world page: the App's top bar, sync line and household switcher readings (the attention label, its explanation and recovery action, the household, the device time, the environment, the switcher and the office door) are one tap away behind the Status door, and the field is unchanged when the App passes no shell — the no-scroll, chrome-free, ≥55% composition on the actual App page is browser evidence (test/queen-world-page-layout.mjs), not a unit test"
     },
     {
       "sources": [
@@ -1122,7 +1122,7 @@
       "tests": [
         "test/habitat-story.test.ts"
       ],
-      "reason": "Our Story (D-268 sample household): the third Hercules habitat, twenty-five fictional months from the Demo Suite's own generator with the Journey of Life laid over them through ordinary commands \u2014 move-in, a survived first year crossed at M\u221212, Make it ours with the sofa bought and the plant corner full, a house and retirement ahead, six foundation Chapters, a vet storm covered from the cushion through the Fund, lean winters, three trips, a kept Memory and things still waiting \u2014 balanced, health-clean, replaying byte-for-byte and passing the Demo Suite's books verification"
+      "reason": "Our Story (D-268 sample household): the third Hercules habitat, twenty-five fictional months from the Demo Suite's own generator with the Journey of Life laid over them through ordinary commands — move-in, a survived first year crossed at M−12, Make it ours with the sofa bought and the plant corner full, a house and retirement ahead, six foundation Chapters, a vet storm covered from the cushion through the Fund, lean winters, three trips, a kept Memory and things still waiting — balanced, health-clean, replaying byte-for-byte and passing the Demo Suite's books verification"
     },
     {
       "sources": [
@@ -1135,7 +1135,7 @@
         "test/demo-suite.test.ts",
         "test/app-startup-p1.test.ts"
       ],
-      "reason": "The Hercules habitats: two Development-only synthetic households from the Demo Suite's own generator with a story laid over twelve months through the ordinary commands \u2014 doing well reads building with the water above the mark and every bill paid on its day; doing badly reads needs-us with the water under the mark and dry, two bills overdue, subscriptions crept in, a reversal and a lapsed ritual \u2014 both replaying exactly from a seed, balanced, health-clean, and passing the Demo Suite's books verification with the investor-only checks skipped rather than failed"
+      "reason": "The Hercules habitats: two Development-only synthetic households from the Demo Suite's own generator with a story laid over twelve months through the ordinary commands — doing well reads building with the water above the mark and every bill paid on its day; doing badly reads needs-us with the water under the mark and dry, two bills overdue, subscriptions crept in, a reversal and a lapsed ritual — both replaying exactly from a seed, balanced, health-clean, and passing the Demo Suite's books verification with the investor-only checks skipped rather than failed"
     },
     {
       "sources": [
@@ -1487,67 +1487,72 @@
     {
       "sources": [
         "src/journey/board/BoardFlat.tsx",
-        "src/journey/board/camera.ts",
-        "src/journey/board/crossings.ts",
-        "src/journey/board/dressing.ts",
+        "src/journey/board/clock.ts",
+        "src/journey/board/geo.ts",
         "src/journey/board/index.ts",
+        "src/journey/board/kinds.ts",
+        "src/journey/board/kit.ts",
         "src/journey/board/labels.ts",
-        "src/journey/board/layers.ts",
-        "src/journey/board/marks.ts",
-        "src/journey/board/materials.ts",
-        "src/journey/board/pavilion.ts",
-        "src/journey/board/piece.ts",
-        "src/journey/board/preview.ts",
-        "src/journey/board/ribbon.ts",
-        "src/journey/board/route.ts",
+        "src/journey/board/levels.ts",
+        "src/journey/board/palette.ts",
+        "src/journey/board/props.ts",
         "src/journey/board/scene.ts",
-        "src/journey/board/shapes.ts",
-        "src/journey/board/signposts.ts",
-        "src/journey/board/spaces.ts",
+        "src/journey/board/week.ts",
+        "src/journey/board/year.ts",
         "src/journey/contracts.ts",
         "src/journey/land/JourneyLandFlat.tsx",
-        "src/journey/land/build.ts",
-        "src/journey/land/dressing.ts",
+        "src/journey/land/bridgeGlyph.ts",
+        "src/journey/land/clay.ts",
+        "src/journey/land/clayKit.ts",
+        "src/journey/land/clayPalette.ts",
+        "src/journey/land/diorama.ts",
         "src/journey/land/extract.ts",
         "src/journey/land/flat.ts",
         "src/journey/land/homes.ts",
-        "src/journey/land/hosts.ts",
         "src/journey/land/index.ts",
-        "src/journey/land/lines.ts",
         "src/journey/land/load.ts",
         "src/journey/land/names.ts",
+        "src/journey/land/road.ts",
         "src/journey/land/simplify.ts",
+        "src/journey/land/slim.ts",
         "src/journey/land/surface.ts",
-        "src/journey/land/terrain.ts",
-        "src/journey/land/water.ts",
         "src/journey/model/chapters.ts",
         "src/journey/model/clusters.ts",
         "src/journey/model/commitments.ts",
         "src/journey/model/crossroads.ts",
         "src/journey/model/derive.ts",
+        "src/journey/model/digest.ts",
         "src/journey/model/income.ts",
         "src/journey/model/index.ts",
         "src/journey/model/list.ts",
         "src/journey/model/memories.ts",
         "src/journey/model/milestones.ts",
+        "src/journey/model/money.ts",
         "src/journey/model/plans.ts",
+        "src/journey/model/purse.ts",
         "src/journey/model/reviews.ts",
         "src/journey/model/stopKit.ts",
         "src/journey/model/summary.ts",
+        "src/journey/model/weeks.ts",
         "src/journey/model/window.ts",
         "src/journey/model/words.ts",
-        "src/journey/ui/BoardSummary.tsx",
-        "src/journey/ui/ChapterStrip.tsx",
+        "src/journey/model/year.ts",
+        "src/journey/ui/AddDial.tsx",
         "src/journey/ui/CrossroadsPanel.tsx",
+        "src/journey/ui/Header.tsx",
+        "src/journey/ui/HerculesBubble.tsx",
         "src/journey/ui/JourneyBoard.tsx",
         "src/journey/ui/JourneyBoardView.tsx",
-        "src/journey/ui/JourneyList.tsx",
+        "src/journey/ui/LevelPull.tsx",
+        "src/journey/ui/ListView.tsx",
         "src/journey/ui/Marks.tsx",
-        "src/journey/ui/PieceLook.tsx",
+        "src/journey/ui/Purse.tsx",
         "src/journey/ui/Stage.tsx",
         "src/journey/ui/StopPanel.tsx",
+        "src/journey/ui/WhichOne.tsx",
         "src/journey/ui/copy.ts",
         "src/journey/ui/journey-board.css",
+        "src/journey/ui/mapLayout.ts",
         "src/journey/ui/motion.ts",
         "src/journey/ui/viewState.ts",
         "src/App.tsx",
@@ -1559,10 +1564,13 @@
       "tests": [
         "test/journey-board-integration.test.ts",
         "test/journey-board-model.test.ts",
-        "test/journey-board-route.test.ts",
+        "test/journey-map-model.test.ts",
+        "test/journey-map-board.test.ts",
         "test/journey-board-ui.test.ts",
         "test/journey-land.test.ts",
+        "test/journey-road.test.ts",
         "test/journey-board-fence.test.ts",
+        "test/journey-map-geometry-source.test.ts",
         "test/journey-board-app.test.ts",
         "test/journey-board-parity.test.ts",
         "test/harbour-arrival.test.ts",
@@ -1571,7 +1579,34 @@
         "test/app-startup-p1.test.ts",
         "test/month-rehearsal-mainline.test.ts"
       ],
-      "reason": "Journey Board: the household journey route mounts the board, arrival lands there, explicit Enter Horizon; pure derivation, land, route, UI list parity and the App seams"
+      "reason": "Journey Map (Horizon Clock): the household journey route mounts the clock map, arrival lands there, explicit Enter Horizon; pure v2 derivation (to check, week, year, purse, digest, list strip), clay land from the bake, the clock/week/year layouts and scene, the UI shell with list parity, the source fence and the Horizon-geometry source rule, and the App seams"
+    },
+    {
+      "sources": [
+        "src/journey/land/JourneyLandFlat.tsx",
+        "src/journey/land/bridgeGlyph.ts",
+        "src/journey/land/clay.ts",
+        "src/journey/land/clayKit.ts",
+        "src/journey/land/clayPalette.ts",
+        "src/journey/land/diorama.ts",
+        "src/journey/land/extract.ts",
+        "src/journey/land/flat.ts",
+        "src/journey/land/homes.ts",
+        "src/journey/land/index.ts",
+        "src/journey/land/load.ts",
+        "src/journey/land/names.ts",
+        "src/journey/land/road.ts",
+        "src/journey/land/simplify.ts",
+        "src/journey/land/slim.ts",
+        "src/journey/land/surface.ts"
+      ],
+      "tests": [
+        "test/horizonBakeArtifacts.test.ts",
+        "test/journey-land.test.ts",
+        "test/journey-road.test.ts",
+        "test/journey-map-geometry-source.test.ts"
+      ],
+      "reason": "Horizon → Journey rule: src/journey/land/** reads the bake (index + journey LOD + slim land); the baked artefacts, the clay land and the geometry-source rule must stay green together"
     },
     {
       "sources": [

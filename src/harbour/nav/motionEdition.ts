@@ -1,7 +1,7 @@
 import { editionAvailability } from './editionAvailability.ts';
+import { MOTION_KEY, type MotionEdition } from './motionKey.ts';
 
-export const MOTION_KEY = 'hearth:motion';
-export type MotionEdition = 'illustrated' | 'flat';
+export { MOTION_KEY, type MotionEdition };
 
 /** The reader's chosen edition. Storage failure defaults to illustrated. */
 export function readMotionEdition(storage?: Pick<Storage, 'getItem'>): MotionEdition {
