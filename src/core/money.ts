@@ -62,6 +62,15 @@ export function formatCad(cents: number): string {
   return `${sign}$${(Math.abs(cents) / 100).toFixed(2)}`;
 }
 
+/**
+ * `formatCad` with thousands separators, as Hearth's money panels print a figure: 471680 → "$4,716.80",
+ * -12000 → "-$120.00". Presentation only; the cents are untouched.
+ */
+export function formatCadGrouped(cents: number): string {
+  const [whole, part] = formatCad(Math.abs(cents)).slice(1).split(".");
+  return `${cents < 0 ? "-" : ""}$${whole!.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${part}`;
+}
+
 export function formatCadCompact(cents: number): string {
   const abs = Math.abs(cents);
   if (abs >= 1000000) return `${cents < 0 ? "-" : ""}$${(abs / 100000).toFixed(1)}k`;

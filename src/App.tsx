@@ -19,7 +19,7 @@ import { HouseWorld } from './house/HouseWorld.tsx';
 import { HARBOUR_ENABLED, harbourOwnsRoute, harbourPlaceFor } from './harbour/flag.ts';
 import { VILLAGE_ADDRESS } from './harbour/village/layout.ts';
 import { harbourArrivalRoute, readingEditionRoute, isJourneyHomeRoute, tabSession } from './harbour/nav/arrival.ts';
-import { readMotionEdition } from './harbour/nav/motionEdition.ts';
+import { chooseMotionEdition, readMotionEdition } from './harbour/nav/motionEdition.ts';
 import { Compass, useEditionFlipKey, useMotionEdition, type CompassFab } from './harbour/nav/Compass.tsx';
 import { WorldToggle } from './harbour/nav/WorldToggle.tsx';
 import { useHarbourWorld } from './harbour/harbourWorld.ts';
@@ -603,7 +603,11 @@ function JourneyBoardFrame({ children }: { children: ReactNode }) {
       queued = 0;
       // The header chrome ends where the page begins (the house strip is not drawn under the board).
       const marker = node.closest<HTMLElement>("[data-app-page]") ?? node.parentElement;
-      const top = Math.max(0, Math.round(marker?.getBoundingClientRect().top ?? 0));
+      // The floating Mountain/Horizon toggle (dev builds) stands at the top of the screen over everything: the board
+      // starts below it rather than under it, so the month title is never covered (the App's toggle does not move).
+      const toggle = document.querySelector<HTMLElement>(".harbour-world-toggle");
+      const toggleBottom = toggle ? Math.ceil(toggle.getBoundingClientRect().bottom) + 4 : 0;
+      const top = Math.max(0, Math.round(marker?.getBoundingClientRect().top ?? 0), toggleBottom);
       setLayout(current => current.top === top ? current : { top });
     };
     const schedule = () => { if (!queued) queued = window.requestAnimationFrame(measure); };
@@ -614,9 +618,26 @@ function JourneyBoardFrame({ children }: { children: ReactNode }) {
     window.addEventListener("scroll", schedule, { passive: true });
     return () => { if (queued) window.cancelAnimationFrame(queued); observer?.disconnect(); window.removeEventListener("resize", schedule); window.removeEventListener("scroll", schedule); };
   }, []);
+  // Every width (Journey fix A9; wide since the final review): the App header and its banners stay as they are
+  // (whether they belong above the map is Jonathan's decision), but on arrival the page scrolls so the board's region
+  // starts at the top of the screen and the clock gets the full viewport height. Once, on mount; the header is a
+  // scroll away.
+  useLayoutEffect(() => {
+    const node = frame.current;
+    const marker = node?.closest<HTMLElement>("[data-app-page]");
+    if (!marker) return;
+    const raf = window.requestAnimationFrame(() => {
+      const top = marker.getBoundingClientRect().top;
+      if (top > 0) { try { window.scrollTo({ top: window.scrollY + top, behavior: "instant" as ScrollBehavior }); } catch { /* no scrolling here */ } }
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, []);
   // The board sizes itself to `100dvh - --jb-top` (at least 560 px on wide), so a short window is taller than the
-  // frame: the frame scrolls on every width rather than clip the stage and the panel (review MINOR 7).
-  const style = { "--jb-top": `${layout.top}px`, position: "fixed", top: layout.top, left: 0, right: 0, bottom: 0, zIndex: 12, overflowX: "hidden", overflowY: "auto", overscrollBehavior: "contain", background: "var(--paper)" } as CSSProperties;
+  // frame: the frame scrolls on every width rather than clip the stage and the panel (review MINOR 7). The top never
+  // goes under the notch (`env(safe-area-inset-top)`). Vertical overscroll chains to the page, so a pull down at the
+  // frame's top brings the App header back after the arrival scroll; sideways it stays contained.
+  const top = `max(${layout.top}px, env(safe-area-inset-top, 0px))`;
+  const style = { "--jb-top": top, position: "fixed", top, left: 0, right: 0, bottom: 0, zIndex: 12, overflowX: "hidden", overflowY: "auto", overscrollBehaviorX: "contain", overscrollBehaviorY: "auto", background: "var(--paper)" } as CSSProperties;
   // Everything the frame paints over is out of reach (review B1): the page content laid out before the board in the
   // page (a banner, a return chip, a covered heading's controls) goes `inert` while the board stands. Floating layers
   // (a fixed workspace, a live region, a world sheet, a dialog) and the page's named focus target are left alone; the
@@ -648,8 +669,11 @@ function JourneyBoardFrame({ children }: { children: ReactNode }) {
     for (let branch: HTMLElement | null = node.parentElement; branch; branch = branch === page ? null : branch.parentElement) observer?.observe(branch, { childList: true });
     return () => { if (queued) window.cancelAnimationFrame(queued); observer?.disconnect(); for (const el of marked) el.removeAttribute("inert"); };
   }, []);
-  return <div ref={frame} className="journey-board-host" data-journey-board-host="" style={style}>{children}</div>;
+  // The frame is fixed, so it takes no room in the page; its slot does: a full viewport below the safe areas, so the
+  // page can scroll the board's region to the top of the screen (A9) and the frame stands over its own slot.
+  return <div data-journey-board-slot="" style={JOURNEY_BOARD_SLOT}><div ref={frame} className="journey-board-host" data-journey-board-host="" style={style}>{children}</div></div>;
 }
+const JOURNEY_BOARD_SLOT: CSSProperties = { minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" };
 /**
  * The due review raised over the Journey Board (review B1): the `data-world-sheet` pattern (queen-home.css) inline, so it
  * holds even where that stylesheet is not loaded — fixed, above the board's frame (z 12) and below the Compass (z 25),
@@ -7447,6 +7471,10 @@ export function App() {
       return true;
     },
     back: () => putHouseObjectBack(),
+    // The map's "+" dial (Horizon Clock): All tools opens the same quick sheet the Compass does; Simple view picks the
+    // device's flat motion edition through the one shared writer (the App's edition effect then leaves the board).
+    openAllTools: () => setQuickSheetOpen(true),
+    chooseSimpleView: () => chooseMotionEdition("flat"),
   };
   function closeEraPlanner() {
     setEraPlannerFor(null);
@@ -7991,6 +8019,8 @@ export function App() {
                   returningFromHorizon={activeHouseRoute.object === "harbour-return"}
                   freshnessNote={sceneInterpretationGate.current ? null : sceneInterpretationGate.detail}
                   dueReview={dueReviewCount > 0 ? { count: dueReviewCount } : null}
+                  onChooseTheme={(theme) => appearance.store?.apply(theme)}
+                  recordModes={fabActionsFor(view, { memberHasJob }).map(verb => verb.mode)}
                   onReady={() => journeyCloud.ready("to-journey")} />
                 )}</JourneyHomeBookBridge>
                 </Suspense>
@@ -9654,7 +9684,7 @@ export function App() {
           card; the Fund bank panel and its open state (Books › the Fund) hold the balance, Needs you, To settle and The Level. */}
 
       {!charterTakeoverVisible ? (
-      HARBOUR_ENABLED?<><WorldToggle/><Compass fab={harbourBarFab} fabOpen={fabOpen} toolsOpen={quickSheetOpen} member={actorId} theme={appearance.preview??appearance.saved.theme} calm={comfort.quiet} alwaysShowLabels={comfort.labels} onQuickSheet={()=>setQuickSheetOpen(true)}/>
+      HARBOUR_ENABLED?<><WorldToggle/>{/* The Journey map carries its own "+" dial and tools chip (Horizon Clock): no Compass over it. */}{!journeyBoardShown&&<Compass fab={harbourBarFab} fabOpen={fabOpen} toolsOpen={quickSheetOpen} member={actorId} theme={appearance.preview??appearance.saved.theme} calm={comfort.quiet} alwaysShowLabels={comfort.labels} onQuickSheet={()=>setQuickSheetOpen(true)}/>}
         {/* All tools, one sheet for both spaces and the Desk drawer (Tool Atlas §3.4). */}
         <QuickSheet open={quickSheetOpen} onClose={()=>setQuickSheetOpen(false)} onOpen={(id,object)=>openAtlasTarget(id,object)} onTarget={(target,object)=>openAtlasTarget(target,object)}
           onStatus={()=>{setQuickSheetOpen(false);goTab("more");}} onSettings={(section)=>openAtlasTarget(section?`settings:${section}`:"settings")} onHercules={()=>{setQuickSheetOpen(false);openLegacyHercules();}}

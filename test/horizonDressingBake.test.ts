@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {bakeDressings, collisionSolids, createDressingContext, hashSeed, HOST_FIT, mergeDressingLights, mulberry32, validateDressing} from '../src/harbour/horizon/neighbourhoods/bake.ts';
+import {bakeDressings, buildingHeight, collisionSolids, createDressingContext, footprintFit, hashSeed, HOST_FIT, mergeDressingLights, mulberry32, validateDressing} from '../src/harbour/horizon/neighbourhoods/bake.ts';
 import {collisionPartMesh} from '../src/harbour/horizon/kit/buildings/index.ts';
 import {createRoadLights} from '../src/harbour/horizon/runtime/roadLights.ts';
 import * as THREE from 'three';
@@ -128,6 +128,11 @@ describe('neighbourhood dressing bake (neighbourhoods/bake.ts)', () => {
     expect(check(building('solid', 420, 420, {...fit, collide: true})).join()).toMatch(/must not collide/);
     expect(check(building('shifted', 420 + HOST_FIT.plan + 0.2, 420, fit)).join()).toMatch(/off host test's baked footprint/);
     expect(check(building('tall', 420, 420, {...fit, size: {w: 20, d: 10, h: 5}})).join()).toMatch(/miss host test's baked/);
+    // PR #588 Codex: corner-for-corner both ways. A tiny replacement at one host corner (every corner of it within
+    // HOST_FIT.plan of the same host corner) is refused; the same footprint turned half a turn still fits.
+    const tiny = building('tiny', 410.2, 415.2, {...fit, size: {w: 0.4, d: 0.4, h: 4}});
+    expect(check(tiny).join()).toMatch(/building tiny: footprint is not corner-for-corner off host test's baked footprint/);
+    expect(check(building('turned', 420, 420, {...fit, yaw: Math.PI}))).toEqual([]);
     const twice = empty('hollow'); twice.buildings.push(building('a', 420, 420, fit), building('b', 420, 420, fit));
     expect(validateDressing([{module: 'hollow', dressing: twice}], ctx).join()).toMatch(/re-dressed twice/);
     // Filed under the district holding the host's walls (here a partition that puts the record's own centre elsewhere).
@@ -141,7 +146,7 @@ describe('neighbourhood dressing bake (neighbourhoods/bake.ts)', () => {
     const src = fixtureSource(); src.beds = [...src.beds, {id: 'path.b', kind: 'walk', profile: 'walk', points: [[650, GROUND, 200], [650, GROUND, 299]], width: 1}];
     const ctx = createDressingContext(src), d = empty('hollow');
     // Centre and corners clear of path.b; its north edge (z = 297.1) crosses the path's end.
-    d.buildings.push(building('straddle', 650, 300, {yaw: 0, size: {w: 20, d: 6, h: 4}}), building('ring', 830, 800, {size: {w: 1, d: 1, h: 0.5}, roof: {form: 'flat', pitch: 0, overhang: 0, material: 'lead'}}), building('dup', 200, 600), building('bad@id', 200, 650));
+    d.buildings.push(building('straddle', 650, 300, {yaw: 0, size: {w: 20, d: 6, h: 4}}), building('ring', 830, 800, {kind: 'wall', size: {w: 1, d: 1, h: 0.5}, roof: {form: 'flat', pitch: 0, overhang: 0, material: 'lead'}}), building('dup', 200, 600), building('bad@id', 200, 650));
     d.buildings.push(building('pillar', 800, 760, {size: {w: 1, d: 1, h: 3}, params: {allowInProtected: true}}));
     d.props.push({id: 'dup', kind: 'bench', at: [200, GROUND, 700], yaw: 0}, {id: 'wall', kind: 'drystoneWall', at: [300, GROUND, 290], yaw: 0, collide: true, line: [[300, GROUND, 290], [300, GROUND, 310]]},
       {id: 'rail', kind: 'fence', at: [300, GROUND, 290], yaw: 0, line: [[300, GROUND, 290], [300, GROUND, 310]]},
@@ -154,7 +159,40 @@ describe('neighbourhood dressing bake (neighbourhoods/bake.ts)', () => {
     expect(has(/prop rail/)).toBe(false); // a non-colliding fence may follow a bed
     expect(has(/prop string: festoon .* inside protected green/)).toBe(true); // its line reaches into the Green
     expect(has(/building pillar: .* inside protected green/)).toBe(true); // params.allowInProtected is no bypass
-    expect(has(/building ring/)).toBe(false); // 0.5 eu: under the 0.85 limit
+    // A 0.5 eu dry-stone wall stays under the 0.85 limit. (This was a 0.5 eu flat-roofed cottage, but the cottage grammar
+    // raises its eave to 1.8 and draws 2.9 eu: heights are the grammar plan's now, PR #588 Codex.)
+    expect(has(/building ring/)).toBe(false);
+  });
+  it('protected heights are the grammar plan\'s top, not size.h (a Quonset barrel ~9 eu over size.h 0.6; PR #588 Codex)', () => {
+    const ctx = createDressingContext(fixtureSource()), d = empty('hollow');
+    const hangar = building('hangar', 800, 800, {kind: 'quonset', size: {w: 26, d: 24, h: 0.6}, roof: {form: 'barrel', pitch: 0, overhang: 0, material: 'tile'}});
+    expect(buildingHeight(hangar)).toBeGreaterThan(8);
+    d.buildings.push(hangar, building('cottage', 820, 820, {size: {w: 1, d: 1, h: 0.5}, roof: {form: 'flat', pitch: 0, overhang: 0, material: 'lead'}}));
+    const problems = validateDressing([{module: 'hollow', dressing: d}], ctx);
+    expect(problems.join('\n')).toMatch(/building hangar: 8\.\d\d eu tall inside protected green/);
+    expect(problems.join('\n')).toMatch(/building cottage: 2\.\d\d eu tall inside protected green/);
+    // Listed in allowInProtected: allowed (the module's explicit exception still holds).
+    d.allowInProtected = ['hangar', 'cottage'];
+    expect(validateDressing([{module: 'hollow', dressing: d}], ctx)).toEqual([]);
+  });
+  it('prop scales must be positive and finite, like plants (PR #588 Codex)', () => {
+    const ctx = createDressingContext(fixtureSource()), d = empty('hollow');
+    d.props.push({id: 'zero', kind: 'bench', at: [200, GROUND, 700], yaw: 0, scale: 0, collide: true}, {id: 'negative', kind: 'bollard', at: [210, GROUND, 700], yaw: 0, scale: -1},
+      {id: 'endless', kind: 'bollard', at: [220, GROUND, 700], yaw: 0, scale: Infinity}, {id: 'fine', kind: 'bollard', at: [230, GROUND, 700], yaw: 0, scale: 1.2});
+    const problems = validateDressing([{module: 'hollow', dressing: d}], ctx);
+    expect(problems.filter(p => /prop zero: scale must be positive/.test(p))).toHaveLength(1);
+    expect(problems.filter(p => /prop negative: scale must be positive/.test(p))).toHaveLength(1);
+    expect(problems.filter(p => /prop endless: a non-finite number/.test(p))).toHaveLength(1);
+    expect(problems.some(p => /prop fine/.test(p))).toBe(false);
+    expect(() => bakeDressings([{id: 'hollow', build: () => d}], ctx)).toThrow(/Neighbourhood dressing is invalid/);
+  });
+  it('footprintFit: both ways, one-to-one', () => {
+    const host: [number, number][] = [[0, 0], [10, 0], [10, 6], [0, 6]];
+    expect(footprintFit(host, host)).toBe(0);
+    expect(footprintFit([host[2]!, host[3]!, host[0]!, host[1]!], host)).toBe(0);
+    expect(footprintFit([[0.1, 0], [10, 0.1], [10, 6], [0, 5.9]], host)).toBeCloseTo(0.1, 9);
+    expect(footprintFit([[0, 0], [0.3, 0], [0.3, 0.3], [0, 0.3]], host)).toBe(Infinity);
+    expect(footprintFit([[0, 0], [10, 0], [10, 6]], host)).toBe(Infinity);
   });
   it('module lights are emissive cards only (never a road-lamp kind, never a point light) and never reuse a world id', () => {
     const baked = bakeDressings([{id: 'hollow', build: () => ({...empty('hollow'), lights: [{id: 'hollow.post', at: [10, 3, 10], kind: 'roadLantern', head: [10, 5.6, 10], pool: [10, 3, 10], poolRadius: 3}]})}], createDressingContext(fixtureSource()));

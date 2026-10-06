@@ -69,7 +69,7 @@ describe("src/harbour source fences", () => {
     // body and the seam the live-position lane installs itself into. Like every
     // other directory here, neither reaches anything outside the harbour, which
     // the import fence below is what proves.
-    const dirs = ["bubbles", "panels", "court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat", "nav", "data", "camera", "assets", "body", "presence", "interiors", "village", "skate", "mountain", "desk", "art", "horizon", "glass", "mine"];
+    const dirs = ["bubbles", "panels", "court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat", "nav", "data", "camera", "assets", "body", "presence", "interiors", "village", "skate", "mountain", "desk", "art", "horizon", "glass", "mine", "geometry"];
     const seen = new Set(files.map((f) => relative(harbour, f).replace(/\\/g, "/").split("/")[0]).filter((part) => part && !part.endsWith(".ts") && !part.endsWith(".tsx")));
     for (const dir of ["court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat"]) expect([...seen]).toContain(dir);
     for (const name of [...seen]) expect(dirs).toContain(name);
@@ -146,7 +146,8 @@ describe("src/harbour source fences", () => {
     expect(app).toMatch(/harbourOwnsRoute\(activeHouseRoute,view\)\?<Suspense fallback=\{<HarbourFlat place=\{harbourPlaceFor\(activeHouseRoute,view,true\)\?\?"court"\}/);
     expect(app).toMatch(/data-harbour-court=\{harbourOwnsRoute\(activeHouseRoute,view\)&&!activeHouseRoute\.surface\|\|undefined\}/);
     // One glass chrome for both spaces (Tool Atlas D2): no personal bottom bar under the harbour.
-    expect(app).toMatch(/HARBOUR_ENABLED\?<><WorldToggle\/><Compass fab=\{harbourBarFab\}/);
+    // The Journey map (Horizon Clock) carries its own "+" dial and tools chip, so the Compass stands everywhere else.
+    expect(app).toMatch(/HARBOUR_ENABLED\?<><WorldToggle\/>(?:\{\/\*[^*]*\*\/\})?\{!journeyBoardShown&&<Compass fab=\{harbourBarFab\}/);
     expect(app).not.toMatch(/HARBOUR_ENABLED&&view==="household"\?<><Compass/);
     expect(app).toMatch(/harbourArrivalRoute\(\{saved:saved\?\.route,scope:session\.view/);
     // The entry resolves the flat Desk before importing the illustrated world.

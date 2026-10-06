@@ -27,5 +27,10 @@ export function journeyLandFlatData(data: JourneyLandData): JourneyLandFlatData 
     reserves: data.reserves.map((r) => ({ id: r.id, d: pathData(closedRing(r.outline), true) })),
     districts: data.districts.flatMap((d) => (d.heart ? [{ id: d.id, label: d.label, x: d.heart[0], y: d.heart[1] }] : [])),
     stations: data.stations.map((s) => ({ id: s.id, x: s.anchor[0], y: s.anchor[1] })),
+    // The Water's Way: the same buildings and landmarks the clay draws (`dressingMap.ts`), at their plan positions.
+    ...(data.dressing ? { dressing: {
+      buildings: data.dressing.buildings.filter((b) => b.footprint.length >= 3).map((b) => ({ id: b.id, d: pathData(closedRing(b.footprint), true) })),
+      landmarks: data.dressing.landmarks.map((l) => ({ id: l.id, label: l.label, x: l.top[0], y: l.top[2] })),
+    } } : {}),
   };
 }

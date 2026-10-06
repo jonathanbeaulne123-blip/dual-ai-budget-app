@@ -24,7 +24,8 @@ function walk(dir: string): string[] {
 
 const files = walk(journey);
 const nameOf = (file: string) => relative(journey, file).replace(/\\/g, "/");
-const importsOf = (source: string): string[] => [...source.matchAll(/(?:from|import\()\s*["']([^"']+)["']/g)].map((m) => m[1]!);
+/** Every module a source reaches: `from "…"`, `import("…")` and side-effect `import "…"`. */
+const importsOf = (source: string): string[] => [...source.matchAll(/(?:\bfrom|\bimport\s*\(|^\s*import)\s*["']([^"']+)["']/gm)].map((m) => m[1]!);
 /** A relative specifier resolved to a repo path ("src/core/index.ts"); a package specifier as written. */
 const resolved = (file: string, specifier: string): string =>
   specifier.startsWith(".") ? relative(root, resolve(dirname(file), specifier)).replace(/\\/g, "/") : specifier;
@@ -77,6 +78,12 @@ const WRITER_MODULES = /\/(ChapterTaskControls|ChapterPanel|SitDownGuide|PlanStu
 const WRITERS = /\b(postEntry|postShift|commitCommand|acceptHouseholdWrite|fundWalkWith|deferObligation|postOneRecurrence|commitPersonalLife|commitHome|postVisit|allocateHouseholdFundSurplus|commitHearthside|runKitchen)\b/;
 
 describe("src/journey source fence", () => {
+  it("reads every import form, side-effect imports included (so none slips past the fences below)", () => {
+    expect(importsOf('import "../../storage.ts";\nimport x from "./a.ts";\nconst y = import("../api.ts");\nexport { z } from "./b.ts";'))
+      .toEqual(["../../storage.ts", "./a.ts", "../api.ts", "./b.ts"]);
+    expect(importsOf(readFileSync(join(journey, "ui", "JourneyBoardView.tsx"), "utf8"))).toContain("./journey-board.css");
+  });
+
   it("has the module skeleton the plan names (so the fence walks real files)", () => {
     const names = files.map(nameOf);
     for (const expected of ["contracts.ts", "model/index.ts", "land/load.ts", "land/index.ts", "board/index.ts", "ui/JourneyBoard.tsx", "ui/viewState.ts"]) expect(names).toContain(expected);
@@ -130,6 +137,9 @@ describe("src/journey source fence", () => {
   it("fetches in land/load.ts only, touches browser storage in ui/viewState.ts only, and never reads import.meta.env", () => {
     const fetchers = files.filter((file) => /\bfetch\(/.test(codeOf(file))).map(nameOf);
     expect(fetchers).toEqual(["land/load.ts"]);
+    // No other way out to the network anywhere in src/journey (land/load.ts included).
+    const network = files.filter((file) => /\b(?:sendBeacon|XMLHttpRequest|WebSocket|EventSource)\b/.test(codeOf(file))).map(nameOf);
+    expect(network).toEqual([]);
     const storage = files.filter((file) => /localStorage|sessionStorage|indexedDB/.test(readFileSync(file, "utf8"))).map(nameOf);
     expect(storage).toEqual(["ui/viewState.ts"]);
     const env = files.filter((file) => /import\.meta\.env/.test(readFileSync(file, "utf8"))).map(nameOf);
@@ -151,10 +161,59 @@ describe("src/journey source fence", () => {
     expect(offences).toEqual([]);
   });
 
+  it("reaches outside src/journey only through the README's \"may import\" table (trust minor 8)", () => {
+    // Per layer: the non-journey modules it may import. Anything else outside src/journey is an offence, so a new
+    // reach (a writer hiding in a "constants" module) has to be added here and to the README table on purpose.
+    const ALLOWED: Record<string, RegExp[]> = {
+      "contracts.ts": [/^src\/core\/(calendar|chapters|fabActions|types)\.ts$/, /^src\/harbour\/horizon\/(world\/definition|land\/interfaces)\.ts$/, /^src\/home\/model\.ts$/, /^src\/theme\/scenes\.ts$/],
+      model: [/^src\/core\/\w+\.ts$/, /^src\/harbour\/glass\/(dayLedger|campCardModel)\.ts$/, /^src\/campfire\/model\.ts$/, /^src\/home\/(progression|model|site|catalogue)\.ts$/, /^src\/hearthside\/(contracts|winMemory)\.ts$/],
+      land: [/^src\/house\/world\/horizonAssets\.ts$/, /^src\/harbour\/horizon\/land\/(terrain\/asset|interfaces|corridor\/types)\.ts$/, /^src\/harbour\/horizon\/world\/definition\.ts$/, /^src\/home\/(geometry|site)\.ts$/, /^src\/worldGeography\.ts$/],
+      board: [/^src\/house\/world\/rendererOwner\.ts$/, /^src\/harbour\/scene\/quality\.ts$/],
+      // ui: the theme, the Horizon flag and quality tier (read-only), the world revision, the motion key (constants
+      // only: `harbour/nav/motionKey.ts`, never `motionEdition.ts` with its storage writer) and the local diagnostics
+      // inspector (device-only: no fetch, no upload; an export is a file the person saves).
+      ui: [/^src\/theme\/\w+\.tsx?$/, /^src\/harbour\/flag\.ts$/, /^src\/harbour\/scene\/quality\.ts$/, /^src\/harbour\/nav\/motionKey\.ts$/, /^src\/worldGeography\.ts$/, /^src\/diagnostics\/inspectorCore\.ts$/],
+    };
+    const offences: string[] = [];
+    for (const file of files) {
+      const name = nameOf(file);
+      const layer = name === "contracts.ts" ? name : name.split("/")[0]!;
+      const allowed = ALLOWED[layer];
+      if (!allowed) continue;
+      const source = readFileSync(file, "utf8");
+      for (const specifier of importsOf(source)) {
+        if (!specifier.startsWith(".")) continue;
+        const path = resolved(file, specifier);
+        if (path.startsWith("src/journey/")) continue;
+        if (!allowed.some((rule) => rule.test(path))) offences.push(`${name} → ${path}`);
+      }
+      // From the edition module, only the key and its type: never its storage reader or writer.
+      for (const match of source.matchAll(/import\s+(?:type\s+)?\{([^}]*)\}\s+from\s+["'][^"']*harbour\/nav\/motionEdition\.ts["']/g)) {
+        for (const raw of match[1]!.split(",")) {
+          const imported = raw.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0]!.trim();
+          if (imported && imported !== "MOTION_KEY" && imported !== "MotionEdition") offences.push(`${name} → motionEdition.${imported} (a storage reader/writer)`);
+        }
+      }
+    }
+    expect(offences).toEqual([]);
+    // The key module itself holds constants only.
+    const key = code(readFileSync(join(root, "src", "harbour", "nav", "motionKey.ts"), "utf8"));
+    expect(key).not.toMatch(/localStorage|sessionStorage|function|import\s/);
+  });
+
+  it("the diagnostics inspector the ui reports to never leaves the device (trust minor 11)", () => {
+    const core = code(readFileSync(join(root, "src", "diagnostics", "inspectorCore.ts"), "utf8"));
+    expect(core).not.toMatch(/\bfetch\(|sendBeacon|XMLHttpRequest|WebSocket|EventSource|supabase/i);
+    expect(importsOf(core)).toEqual([]);
+  });
+
   it("keeps the frozen contracts free of a writing action: every ActionCall opens a surface", () => {
     const contracts = readFileSync(join(journey, "contracts.ts"), "utf8");
     const union = contracts.slice(contracts.indexOf("export type ActionCall ="), contracts.indexOf("export type StopAction"));
     const names = [...union.matchAll(/name: "(\w+)"/g)].map((m) => m[1]);
-    expect(names.sort()).toEqual(["back", "enterHorizon", "openBillPaid", "openBooks", "openCalendar", "openCampfire", "openDueReview", "openEraPlanner", "openHomeBook", "openKitty", "openPlace", "openRecord", "openWeeklySitdown"]);
+    // Horizon Clock's dial adds two open-only calls: "All tools" opens the quick sheet; "Simple view" picks the device's
+    // flat motion edition. Neither writes.
+    // "enterHorizonCentre" (trust minor 1) resolves to `enterHorizon` at the map's centre ground inside runJourneyAction.
+    expect(names.sort()).toEqual(["back", "chooseSimpleView", "enterHorizon", "enterHorizonCentre", "openAllTools", "openBillPaid", "openBooks", "openCalendar", "openCampfire", "openDueReview", "openEraPlanner", "openHomeBook", "openKitty", "openPlace", "openRecord", "openWeeklySitdown"]);
   });
 });
