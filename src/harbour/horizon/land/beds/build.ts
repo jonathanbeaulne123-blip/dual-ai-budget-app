@@ -14,6 +14,9 @@ import { buildUnderground, oreStationFloor } from '../underground/build';
 import { addFlatPad, bed, emitBedGeometry, heightOnBeds, planDistance } from './profiles';
 import { gradeRoute, listSteepStretches, sampleSpline, type HeightPin } from './solver';
 import { registerRowKey } from '../../world/crossings';
+import { createTerrainCutSampler } from '../terrain';
+import { buildWaterCuts } from '../water';
+import { buildDippingPlatform, generateMarshPools, marshWaters } from '../water/marsh';
 import { mountainV2Rule } from '../mountainV2/ground';
 import { mountainV2Road, mountainV2Promenade, mountainV2Course, mountainV2RoadFootway, onMountainV2Road, regionCarry, regionCarryRadius, regionCarryLand, MOUNTAIN_V2_ROAD_ID, MOUNTAIN_V2_SEGMENTS } from '../mountainV2/beds';
 /** R2-03: eu inside a road tunnel's portal where its natural roof cover begins (the mouth mask hides 6 eu inside). */
@@ -654,7 +657,7 @@ function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
     // Integrator 4 (W7-S request 5): a manifest threshold that takes its bed's height (no authored height: skateLineStarts on
     // S1/S4) stands on that bed's own graded cut, which the bed makes anyway — built ground, not a pit. Authored heights and
     // register pads are still checked.
-    if(!underground&&!deck&&(h0!==undefined||!id.startsWith('threshold.'))&&ground-height>BODY_HEIGHT)cuts.diagnostics.push({id:`${id}.pit`,severity:'conflict',message:`${id} is authored ${(ground-height).toFixed(1)} eu below its ground; the pad would dig a pit`,at:p,measured:height,required:ground});
+    if(!underground&&!deck&&!pad.deck&&(h0!==undefined||!id.startsWith('threshold.'))&&ground-height>BODY_HEIGHT)cuts.diagnostics.push({id:`${id}.pit`,severity:'conflict',message:`${id} is authored ${(ground-height).toFixed(1)} eu below its ground; the pad would dig a pit`,at:p,measured:height,required:ground});
     positions.push(p);const marker=solid(`${id}.marker`,'threshold','stone','marker',[],districtAt(...p));box(marker,p,height+.025,[2,.6],height-.05);cuts.solids.push(marker);pad.margin=1;};
   for(const row of M.thresholds){
     if(typeof row.xy==='string'){Object.entries(M.water_routes.FERRY.piers).forEach(([id,p])=>make(`threshold.${row.id}.${id}`,p as unknown as XY,1));continue;}
@@ -743,5 +746,13 @@ export function buildLandCuts(baseHeight:HeightQuery):LandCuts {
   const chain=mountainRoadChain(cuts.beds);
   if(chain){const part=chain.parts[1]!,points=chain.points.filter((_,i)=>chain.widths[i]!.s>=part.from-1e-6&&chain.widths[i]!.s<=part.to+1e-6);
     const lane=bed(part.id,'road',points,false);lane.width=7;lane.shoulder=0;regionCarry(lane);cuts.beds.push(lane);}
+  // The Water's Way (D-WW23): the scraped marsh pools along the Greenway, generated on these finished cuts' own ground (the bake's
+  // terrain before the pools, at the bake's 5 eu lattice), and the dipping platform at the Reed Maze trail's pool. The pools join
+  // the island's authored waters here (cuts.waters was empty: the terrain read the model's waters), so every consumer sees both.
+  // The sampler reads a copy of the beds and pads: the terrain's prepared-bed cache is keyed on the beds array (and pad frames on
+  // each pad), and the bake goes on adding beds and settling pads after this; sampling the live arrays here froze a stale cache
+  // into the bake's own terrain solve (measured: ground moved up to 2.4 m across the island, far from any pool).
+  {const probe={...cuts,beds:[...cuts.beds],pads:cuts.pads.map(p=>({...p}))},sample=createTerrainCutSampler(probe,5),ground=(x:number,z:number)=>sample(x,z).height,pools=generateMarshPools(cuts,ground);
+    buildDippingPlatform(cuts,pools,ground);cuts.waters=[...(cuts.waters.length?cuts.waters:buildWaterCuts()),...marshWaters(pools)];}
   return cuts;
 }

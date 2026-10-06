@@ -59,6 +59,10 @@ export interface WaterCut {
   depth: number;
   bank: number;
   underground?: boolean;
+  /** The Water's Way (D-WW23): a shallow scraped marsh pool (land/water/marsh.ts). Inside its outline the ground is the level less
+   *  a depth growing from the wet edge to `depth` (≤ 0.3); outside, the ground is only ever raised to the level under the lattice's
+   *  straddling triangles (a soft lip) — no river guard band, bank or basin rule. */
+  scrape?: boolean;
 }
 /** Mountain V3 (D-M11): a waterfall. The lip line stands on the ground at `top`; the curtain falls `outward` of the rock to
  * `foot`, where it lands in the named pool. Render draws the curtain and foam; the bake checks lip and foot; no collision. */

@@ -172,9 +172,9 @@ export const STORY_EYES: readonly StoryEye[] = [
   { id: 'oak', label: 'under the Old Oak', at: [1125, 1165], lift: 1.6, targets: ['osprey', 'lamp'], lookout: false },
   // Reach: Spring Bay (deck 5.0, eye 6.6) and the other five Reach lookouts (binocular eyes, reach SPEC §2).
   { id: 'springBay', label: 'Spring Bay', at: [1246.4, 1199.5], y: 6.6, targets: ['campanile', 'osprey', 'lamp'], lookout: true },
-  { id: 'notchBluff', label: 'Notch Bluff', at: [1188.51, 1114.3], y: 24.8, targets: ['osprey', 'lamp'], lookout: true, owed: 'stone pad (PR 2 land)' },
+  { id: 'notchBluff', label: 'Notch Bluff', at: [1188.51, 1114.3], y: 24.8, targets: ['osprey', 'lamp'], lookout: true },
   { id: 'highSpanOverlook', label: 'High Span Overlook', at: [1267.77, 1147.3], y: 11.3, targets: ['osprey', 'lamp'], lookout: true },
-  { id: 'sunsetRail', label: 'Sunset Rail', at: [1353.98, 1234.78], y: 12.39, targets: ['osprey', 'lamp'], lookout: true, owed: 'stone pad (PR 2 land)' },
+  { id: 'sunsetRail', label: 'Sunset Rail', at: [1353.98, 1234.78], y: 12.39, targets: ['osprey', 'lamp'], lookout: true },
   { id: 'harbourBellLanding', label: 'Harbour Bell Landing', at: [1323.53, 1380.94], y: 10.3, targets: ['lamp', 'osprey'], lookout: true },
   // Harbour: the belfry (eye ≈ 34.4, cornice 38).
   { id: 'belfry', label: 'the belfry', at: [1423, 1187], y: 34.4, targets: ['wheel', 'oak', 'lamp'], lookout: true, owed: 'the campanile (PR 3 Harbour)' },
@@ -213,8 +213,9 @@ export const SIGHT_CHAIN: readonly SightLink[] = [
   // V3.1 (PR 2 L1): the eye at the deck's south-east corner on the west buttress's cover ridge (deck 95.3).
   { from: 'fallswatch', to: 'oak', measured: 6.08 },
   { from: 'oak', to: 'osprey', measured: 1.6 },
-  // 2.89 m with the Reach Footbridge's rails open; on today's bake its 1.15 stone parapet (top 10.65) cuts the line (−0.06 m).
-  { from: 'springBay', to: 'campanile', measured: 2.89, dependsOn: 'open timber rails on the Reach Footbridge, seen through by the ray caster (PR 2 land)', owedOccluders: ['reachFootbridge.rails'] },
+  // 2.89 m with the Reach Footbridge's rails open (PR 2 land, L2a: the footbridge's 1.15 stone parapet is the open timber rail,
+  // and world/raycast.ts sees through every open rail under one rule, land/structures/openRail.ts isOpenRail).
+  { from: 'springBay', to: 'campanile', measured: 2.89 },
   { from: 'belfry', to: 'wheel', measured: 22.9 },
   { from: 'wheelTop', to: 'elevator', measured: 18.6 },
   { from: 'elevatorTop', to: 'library', measured: 14 },
@@ -246,7 +247,7 @@ export const STORY_ROUTES: readonly StoryRoute[] = [
   { id: 'yearWalk', label: 'the Year Walk', mode: 'foot', manifest: 'journey.yearWalk', places: ['highlands', 'green', 'reach', 'harbour', 'longSands', 'flats', 'scholars', 'hollow'] },
   { id: 'S1', label: 'Summit to Sea', mode: 'board', manifest: 'skate.S1', places: ['highlands', 'green', 'reach'] },
   { id: 'RIVER_RUN', label: 'River Run', mode: 'canoe', manifest: 'water_routes.RIVER_RUN', places: ['green', 'reach', 'harbour'] },
-  { id: 'greenway', label: 'the Greenway', mode: 'foot+wheel', manifest: null, places: ['reach', 'longSands', 'flats'], owed: 'the Greenway bed and its `greenway` profile (PR 2 land)' },
+  { id: 'greenway', label: 'the Greenway', mode: 'foot+wheel', manifest: 'structures.greenway', places: ['reach', 'longSands', 'flats'] },
   // Clockwise from the Landing pier: west along Long Sands, into the Bight, up the west, along the north.
   { id: 'FERRY', label: 'the ferry (clockwise)', mode: 'ferry', manifest: 'water_routes.FERRY', places: ['harbour', 'longSands', 'flats', 'scholars'] },
   { id: 'damRun', label: 'Dam Run', mode: 'glider', manifest: 'sky.courses.damRun', places: ['highlands', 'green', 'reach'] },

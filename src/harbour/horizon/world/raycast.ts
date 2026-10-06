@@ -3,6 +3,7 @@ import type { Point3 } from './definition.ts';
 import { terrainTriangleVisible } from '../land/terrain/index.ts';
 import { waterHeightAt } from '../land/water/index.ts';
 import { terrainHeight } from './geometry.ts';
+import { isOpenRail } from '../land/structures/openRail.ts';
 
 /**
  * One first-hit ray caster over the SAME data the renderer draws: the heightfield (mouth masks
@@ -35,9 +36,10 @@ export function createRayCaster(field: TerrainField, cuts: Pick<LandCuts, 'solid
   const C = 25, GW = Math.ceil((width + 200) / C), GD = Math.ceil((depth + 200) / C), cells: number[][] = Array.from({ length: GW * GD }, () => []), tris: number[] = [], owner: number[] = [];
   const cellMin = new Float32Array(GW * GD).fill(Infinity), cellMax = new Float32Array(GW * GD).fill(-Infinity);
   cuts.solids.forEach((solid, si) => {
-    // Road main: a post-and-rail guard's collider is never drawn (the visible rail is an open kit of posts and bars); rays see
-    // through it as the eye does. A stone parapet's collider stays opaque, like the parapet.
-    if (solid.kind === 'corridorGuard' && solid.surface === 'timber') return;
+    // One rule (land/structures/openRail.ts `isOpenRail`): an open rail — posts and bars, never a wall (the Water's Way open
+    // timber rails, D-WW18; the road main's post-and-rail guard collider, whose visible kit is the corridor art) — is seen
+    // through as the eye does. A stone parapet or a solid rail stays opaque, like the parapet.
+    if (isOpenRail(solid)) return;
     const p = solid.positions, ix = solid.indices;
     for (let k = 0; k < ix.length; k += 3) {
       const a = ix[k]! * 3, b = ix[k + 1]! * 3, c = ix[k + 2]! * 3, t = owner.length;

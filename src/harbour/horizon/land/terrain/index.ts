@@ -430,6 +430,15 @@ function applyWaters(x: number, z: number, original: number, waters: WaterCut[],
       waterBounds.set(water, bounds);
     }
     if (x < bounds[0] - outer || z < bounds[1] - outer || x > bounds[2] + outer || z > bounds[3] + outer) continue;
+    if (water.scrape) {
+      // The Water's Way (D-WW23): a scraped marsh pool. Inside: the level less 0.03 at the edge growing to `depth` 3 m in (never
+      // deeper). Outside: raised only (a soft lip at level + 0.02 across the raster guard, faded over 2.5 m); never cut.
+      const { distance, level } = waterInfluence(water, x, z);
+      if (distance <= 0) { const bed = level - (WET_EDGE_DEPTH * s + (water.depth - WET_EDGE_DEPTH * s) * smooth(-distance / (3 * s))); h = bed; wetBedCeiling = Math.min(wetBedCeiling, bed); continue; }
+      const lip = level + .02 * s, fade = 2.5 * s;
+      if (distance <= rasterMargin) h = Math.max(h, lip); else if (distance <= rasterMargin + fade) h = Math.max(h, mix(lip, h, smooth((distance - rasterMargin) / fade)));
+      continue;
+    }
     const { distance, level, grade } = waterInfluence(water, x, z);
     if (distance > outer) continue;
     if (distance <= 0) {
