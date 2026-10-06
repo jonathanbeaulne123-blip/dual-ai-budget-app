@@ -7,12 +7,13 @@ import * as THREE from 'three';
 import { createCorridorPlanting, corridorPlantingDistricts } from '../src/harbour/horizon/runtime/corridorPlanting';
 import { WW_SPECIES, WW_SPEC, wwVariant, type WWSpecies } from '../src/harbour/horizon/kit/plants/species';
 import { wwGeometry, type WWLook } from '../src/harbour/horizon/kit/plants/wwGeometry';
-import { OAK, oakLimbs, oakSwing } from '../src/harbour/horizon/kit/plants/oak';
+import { OAK, domeTop, oakLimbs, oakSwing } from '../src/harbour/horizon/kit/plants/oak';
 import { LITE_KEEP, FAR } from '../src/harbour/horizon/kit/plants/archetypes';
 import { PLANT_FORM } from '../src/harbour/horizon/land/corridor/plan/species';
 import { mountainArtPalette } from '../src/harbour/mountain/art/palette';
 import { SCENE_DRESSING } from '../src/harbour/scene/place';
-import { bloomStage } from '../src/harbour/horizon/kit/plants/sets';
+import { bloomStage, flowerSet, FLOWER_SET, WILD_SETS } from '../src/harbour/horizon/kit/plants/sets';
+import { bloomGeometry } from '../src/harbour/horizon/kit/plants/geometry';
 import type { Corridor, PlantItem, PlantingGroup } from '../src/harbour/horizon/land/corridor/types';
 import type { DressingSpecies } from '../src/harbour/horizon/neighbourhoods/types';
 
@@ -111,7 +112,20 @@ describe("The Water's Way plant kit: geometry", () => {
     expect(bb.max.x - bb.min.x).toBeGreaterThan(50); expect(bb.max.z - bb.min.z).toBeGreaterThan(50);
     const limbs = oakLimbs(); expect(limbs).toHaveLength(8);
     expect(limbs[0]!.tip[2]).toBeGreaterThan(19); expect(Math.abs(limbs[0]!.tip[0])).toBeLessThan(0.5); expect(limbs[0]!.tip[1]).toBeCloseTo(10.2, 5);
-    for (const l of limbs.slice(1)) { expect(l.tip[1]).toBeGreaterThanOrEqual(15); expect(l.tip[1]).toBeLessThanOrEqual(23); }
+    // D-WW110 (a bur oak, not an acacia): five heavy low limbs run out 20–25 eu nearly level (tips 7–12 eu up), three climb
+    // into the dome (tips 24–30); every tip inside the crown; the roots dive in inside the ring bench (r 6.2).
+    limbs.forEach((l, i) => {
+      const reach = Math.hypot(l.tip[0], l.tip[2]);
+      expect(l.low, `limb ${i}`).toBe(i === 0 || i % 2 === 1); expect(reach).toBeLessThanOrEqual(OAK.spread);
+      if (l.low) { expect(l.tip[1]).toBeGreaterThanOrEqual(6.5); expect(l.tip[1]).toBeLessThanOrEqual(12); expect(reach).toBeGreaterThanOrEqual(19.9); }
+      else { expect(l.tip[1]).toBeGreaterThanOrEqual(24); expect(l.tip[1]).toBeLessThanOrEqual(30); }
+      for (const s of l.secondaries) expect(s.to[1]).toBeLessThanOrEqual(domeTop(Math.hypot(s.to[0], s.to[2])) - 2 + 1e-9);
+    });
+    expect(OAK.rootReach).toBeLessThan(6.2 - 0.4);
+    // A broad dome, not a flat top: the crown's mass reaches down to ~10 eu at its rim and up to the top over the trunk.
+    const pos = g.getAttribute('position'), rim: number[] = [];
+    for (let i = 0; i < pos.count; i++) { const r = Math.hypot(pos.getX(i), pos.getZ(i)); if (r > 24) rim.push(pos.getY(i)); }
+    expect(Math.min(...rim)).toBeLessThan(10); expect(domeTop(0)).toBe(OAK.height); expect(domeTop(25)).toBeLessThan(26); expect(domeTop(25)).toBeGreaterThan(20);
     const sw = oakSwing(); expect(Math.hypot(sw.at[0], sw.at[2])).toBeGreaterThan(13); expect(Math.hypot(sw.at[0], sw.at[2])).toBeLessThan(19); expect(sw.at[1]).toBeGreaterThan(8.5);
   });
 });
@@ -202,5 +216,31 @@ describe("The Water's Way plant kit: through createCorridorPlanting", () => {
       }
     }
     console.log('[ww plants] district budgets:', JSON.stringify(out));
+  });
+});
+
+describe("The Water's Way flower sets for the Green (D-WW113)", () => {
+  it('the meadow, field-edge, clocks and lake-edge sets are wild drifts; dandelions flower yellow in May, clock in June, nothing else', () => {
+    for (const set of [FLOWER_SET.meadowWild, FLOWER_SET.fieldEdge, FLOWER_SET.clocks, FLOWER_SET.lakeEdge]) expect(WILD_SETS.has(set)).toBe(true);
+    expect(WILD_SETS.has(FLOWER_SET.meadow)).toBe(false); // the roadside meadow beds keep their bed and edging
+    for (const theme of THEMES) {
+      expect(flowerSet(theme, FLOWER_SET.clocks + 0.3, 5).every(f => f.form === 'head' && /dandelion/.test(f.name))).toBe(true);
+      expect(flowerSet(theme, FLOWER_SET.clocks + 0.3, 6).every(f => f.form === 'puff')).toBe(true);
+      for (const m of [1, 4, 7, 8, 10]) expect(flowerSet(theme, FLOWER_SET.clocks + 0.3, m)).toEqual([]);
+      expect(flowerSet(theme, FLOWER_SET.meadowWild)).toHaveLength(3); expect(flowerSet(theme, FLOWER_SET.lakeEdge)).toHaveLength(3);
+    }
+    expect(flowerSet('newfoundland', FLOWER_SET.meadowWild)[0]!.name).toBe('lupine'); // clover → lupine (STYLE §1.4.4)
+    const pal = mountainArtPalette(SCENE_DRESSING.classic), clocks = bloomGeometry(pal, 'full', flowerSet('classic', FLOWER_SET.clocks, 6), 'bloom')!;
+    const col = clocks.getAttribute('color'); let white = 0; for (let i = 0; i < col.count; i++) if (col.getX(i) > 0.8 && col.getY(i) > 0.8 && col.getZ(i) > 0.75) white++;
+    expect(white).toBeGreaterThan(col.count * 0.4);
+  });
+  it('a district planted with dandelions rebuilds when the month turns May → June (clocks appear)', () => {
+    const items: PlantItem[] = [0, 1, 2].map(k => ({ species: 'flowerBed', at: [1000 + k * 5, 10, 1100] as [number, number, number], scale: 1, yaw: 0, tint: FLOWER_SET.clocks + 0.2 }));
+    const w = world([group('ww.clocks', items)]), p = createCorridorPlanting(w, { tier: 'full', theme: 'classic', season: 'spring', month: 5 }), resident = corridorPlantingDistricts(w);
+    const cam = camAt(1005, 1110); p.update(cam, resident);
+    const bloomTris = () => p.stats().layers.filter(l => l.key === `bloom:${FLOWER_SET.clocks}`).reduce((n, l) => n + l.count, 0);
+    const may = bloomTris(); p.setSeason('summer', 6); p.update(cam, resident); const june = bloomTris(); p.setSeason('summer', 7); p.update(cam, resident); const july = bloomTris();
+    expect(may).toBeGreaterThan(0); expect(june).toBeGreaterThan(0); expect(july).toBe(0);
+    p.dispose();
   });
 });
