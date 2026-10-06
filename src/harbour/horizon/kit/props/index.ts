@@ -20,7 +20,7 @@ import { bench, drystoneWall, fence, mapBoard, panel, picnicTable, railOpen, rin
 import { beacon, bell, bollard, festoon, flag, lantern, lanternLow, windsock } from './lights.ts';
 import {
   birdFeeder, bikeRack, bocceCourt, bollardQuay, bookCart, buoy, cafeTable, cairn, crate, duckBox, fireRing, fountain, geoglyph, gozzo, hayBale, hive, kayak, kite,
-  laundryLine, lifeRing, monthStone, net, ospreyPole, planter, readingTable, rodHolder, rowboat, skateBowl, snag, stall, sundial, swing, towel, umbrella, volleyNet,
+  balloon, laundryLine, lifeRing, monthStone, net, ospreyPole, planter, readingTable, rodHolder, rowboat, skateBowl, snag, stall, sundial, swing, towel, umbrella, volleyNet,
 } from './things.ts';
 
 export type { CollisionPart } from './collision.ts';
@@ -33,7 +33,7 @@ const DRAW: Record<PropKind, (c: Ctx) => void> = {
   laundryLine, stall, cafeTable, fountain, planter, bikeRack, mapBoard, sundial, monthStone,
   kite, swing, windsock, beacon, fireRing, volleyNet, lifeRing, rodHolder, duckBox,
   ospreyPole, snag, buoy, bollardQuay, net, crate, cairn, sheepFank, festoon, flag,
-  bocceCourt, skateBowl, geoglyph, readingTable, bookCart, birdFeeder, bell,
+  bocceCourt, skateBowl, geoglyph, readingTable, bookCart, birdFeeder, bell, balloon,
 };
 export const PROP_KINDS = Object.keys(DRAW) as PropKind[];
 
@@ -54,7 +54,7 @@ export function drawProp(b: CardBuilder, rec: PropRecord, theme: DressingTheme, 
 const ESSENTIAL: ReadonlySet<PropKind> = new Set<PropKind>([
   'viewer', 'viewerSeated', 'bench', 'ringBench', 'picnicTable', 'lantern', 'lanternLow', 'bollard', 'railOpen', 'fence', 'drystoneWall', 'sheepFank',
   'fountain', 'stall', 'monthStone', 'swing', 'windsock', 'beacon', 'fireRing', 'volleyNet', 'ospreyPole', 'buoy', 'cairn', 'festoon',
-  'bocceCourt', 'skateBowl', 'geoglyph', 'readingTable', 'bell', 'bollardQuay', 'lifeRing',
+  'bocceCourt', 'skateBowl', 'geoglyph', 'readingTable', 'bell', 'bollardQuay', 'lifeRing', 'balloon',
 ]);
 export function propIsEssential(kind: PropKind): boolean { return ESSENTIAL.has(kind); }
 /**
@@ -113,6 +113,8 @@ export function propCollision(rec: PropRecord, ground: Ground): CollisionPart[] 
     case 'lifeRing': return [B(0, 0, 0.84, 0.3, 0, 1.56, 'support', 'timber')];
     case 'duckBox': return [B(0, 0, 0.1, 0.1, 0, 1.9, 'support', 'timber')];
     case 'birdFeeder': return [B(0, 0, 0.1, 0.1, 0, 1.6, 'support', 'timber')];
+    // The basket only: the envelope floats 3 eu over it (the tethers are lines).
+    case 'balloon': return [B(0, 0, 1.5, 1.5, 0, 1.1, 'support', 'timber')];
     case 'ospreyPole': return [B(0, 0, 0.36, 0.36, -0.3, 11.5, 'support', 'timber')];
     case 'snag': return [B(0, 0, 0.7, 0.7, 0, 7.5, 'support', 'timber')];
     case 'readingTable': return [B(0, 0, 1.56, 1.56, 0, 0.76, 'support', 'timber')];

@@ -50,6 +50,16 @@ for(const [x,z] of [[389,671],[389,677],[407,670],[407,678],[398,643]] as const)
  box(`bench-${x}-${z}`,x,38.25,z,2,.5,.65,'cedar');
 }
 for(const z of [612,634])box('garden-'+z,393,38.3,z,9,.6,8,'soil');
+/**
+ * The Water's Way hybrid (STYLE §2.4, D-WW160): the hangar is THE Flats Quonset. Its barrel is one definition read by the art
+ * (airport/art.ts draws it), the walk and flight support (airport/geography.ts: a solid from the spring line to the arc) and
+ * the tests. It springs at 45.0 just outside the flat roof slab's edges (so the slab, kept as it is, lies inside the barrel)
+ * and runs the roof's length; the walls, the roof slab and every other box and deck are unchanged.
+ */
+export type AirportVault={id:string;x0:number;x1:number;z0:number;z1:number;spring:number;crown:number};
+export const AIRPORT_VAULTS:AirportVault[]=[{id:'hangar-vault',x0:382,x1:408,z0:570.6,z1:599.4,spring:45,crown:48.6}];
+/** The barrel's top at (x, z) — a segmental arc across z — or null outside its plan. */
+export function vaultTop(v:AirportVault,x:number,z:number){if(x<v.x0-1e-6||x>v.x1+1e-6||z<v.z0-1e-6||z>v.z1+1e-6)return null;const half=(v.z1-v.z0)/2,rise=v.crown-v.spring,R=(half*half+rise*rise)/(2*rise),d=z-(v.z0+v.z1)/2;return v.crown-R+Math.sqrt(Math.max(0,R*R-d*d));}
 /** Projection is shared by support, rendering and tests. */
 export function deckAt(deck:AirportDeck,x:number,z:number){const [a,b]=[deck.a,deck.b],dx=b[0]-a[0],dz=b[2]-a[2],length=Math.hypot(dx,dz),t=((x-a[0])*dx+(z-a[2])*dz)/(length*length),side=((x-a[0])*dz-(z-a[2])*dx)/length;return t>=0&&t<=1&&Math.abs(side)<=deck.width/2?{y:a[1]+(b[1]-a[1])*t,slope:Math.atan2(Math.abs(b[1]-a[1]),length)*180/Math.PI}:null;}
 export const AIRPORT_VIEWS=[

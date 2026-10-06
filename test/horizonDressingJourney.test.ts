@@ -31,12 +31,16 @@ function dressedIndex() {
 }
 
 describe('the Journey map carries the dressing (slim format 4)', () => {
-  it('an undressed index extracts no dressing (the baked slim is unchanged but for its format)', () => {
-    const land = extractJourneyLand(parseHorizonIndex(INDEX.slice(0)), TERRAIN);
-    expect(land.dressing).toBeUndefined();
+  // PR 4 (the Flats, D-WW162): the committed index now carries the first module's dressing, so "undressed" strips it here, and
+  // the committed slim must carry exactly what the committed index extracts.
+  it('an undressed index extracts no dressing; the baked slim carries what the baked index extracts', () => {
+    const bare = parseHorizonIndex(INDEX.slice(0)); delete (bare as {dressing?: unknown}).dressing;
+    expect(extractJourneyLand(bare, TERRAIN).dressing).toBeUndefined();
     const slim = JSON.parse(gunzipSync(readFileSync('public/horizon/world/horizon-geo-1.journey.json.gz')).toString());
     expect(slim.format).toBe(JOURNEY_LAND_SLIM_FORMAT);
-    expect('dressing' in slim.land).toBe(false);
+    const dressed = extractJourneyLand(parseHorizonIndex(INDEX.slice(0)), TERRAIN).dressing;
+    if (dressed) expect(slim.land.dressing.landmarks.map((l: {id: string}) => l.id)).toEqual(dressed.landmarks.map(l => l.id));
+    else expect('dressing' in slim.land).toBe(false);
   });
   it('tall buildings and every landmark extract, encode and decode exactly (round trip)', () => {
     const land = extractJourneyLand(dressedIndex(), TERRAIN);
@@ -123,7 +127,8 @@ describe('the Journey map carries the dressing (slim format 4)', () => {
       expect((landBody.match(/<g[ >]/g) ?? []).length).toBe((landBody.match(/<\/g>/g) ?? []).length);
     }
     // No dressing: no field, no glyphs.
-    const plain = journeyLandFlatData(extractJourneyLand(parseHorizonIndex(INDEX.slice(0)), TERRAIN));
+    const bare = parseHorizonIndex(INDEX.slice(0)); delete (bare as {dressing?: unknown}).dressing;
+    const plain = journeyLandFlatData(extractJourneyLand(bare, TERRAIN));
     expect('dressing' in plain).toBe(false);
     expect(renderToStaticMarkup(createElement(JourneyLandFlat, {data: plain, theme: 'classic'}))).not.toContain('data-land-landmark');
   });

@@ -99,7 +99,9 @@ export type PropKind =
   | 'laundryLine' | 'stall' | 'cafeTable' | 'fountain' | 'planter' | 'bikeRack' | 'mapBoard' | 'sundial' | 'monthStone'
   | 'kite' | 'swing' | 'windsock' | 'beacon' | 'fireRing' | 'volleyNet' | 'lifeRing' | 'rodHolder' | 'duckBox'
   | 'ospreyPole' | 'snag' | 'buoy' | 'bollardQuay' | 'net' | 'crate' | 'cairn' | 'sheepFank' | 'festoon' | 'flag'
-  | 'bocceCourt' | 'skateBowl' | 'geoglyph' | 'readingTable' | 'bookCart' | 'birdFeeder' | 'bell';
+  | 'bocceCourt' | 'skateBowl' | 'geoglyph' | 'readingTable' | 'bookCart' | 'birdFeeder' | 'bell'
+  // E2 (additive, PR 4 Flats): the hot-air balloon at its mooring (MANIFEST sky.balloon; the ride is PR 5's mover).
+  | 'balloon';
 
 export interface PropRecord {
   id?: string;
