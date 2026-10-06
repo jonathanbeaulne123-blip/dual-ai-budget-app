@@ -19,6 +19,11 @@ export type RayHit =
   | { kind: 'sky'; t: number; id: 'sky' };
 export interface RayCaster { first(origin: Point3, direction: Point3, maxT?: number, options?: { underground?: boolean; step?: number; skip?: (solid: StructureSolid) => boolean }): RayHit; floorAt(x: number, z: number): number }
 
+/** An open rail (posts and bars, ≤ 1.05 high: the eye sees through it): a timber post-and-rail road guard's collider, or any
+ * solid of kind 'openRail' (the Long Sands pier's rails, land/structures/waterwaySouth.ts). */
+export function isOpenRail(solid: Pick<StructureSolid, 'kind' | 'surface'>): boolean {
+  return solid.kind === 'openRail' || (solid.kind === 'corridorGuard' && solid.surface === 'timber');
+}
 export function createRayCaster(field: TerrainField, cuts: Pick<LandCuts, 'solids' | 'waters' | 'mouths'>): RayCaster {
   const width = (field.columns - 1) * field.step, depth = (field.rows - 1) * field.step;
   // Water level grid (5 eu) for the surface waters; underground waters are tested exactly.
@@ -38,7 +43,7 @@ export function createRayCaster(field: TerrainField, cuts: Pick<LandCuts, 'solid
   cuts.solids.forEach((solid, si) => {
     // One rule (land/structures/openRail.ts `isOpenRail`): an open rail — posts and bars, never a wall (the Water's Way open
     // timber rails, D-WW18; the road main's post-and-rail guard collider, whose visible kit is the corridor art) — is seen
-    // through as the eye does. A stone parapet or a solid rail stays opaque, like the parapet.
+    // through as the eye does, by the view proofs and the story sight chain alike. A stone parapet or a solid rail stays opaque.
     if (isOpenRail(solid)) return;
     const p = solid.positions, ix = solid.indices;
     for (let k = 0; k < ix.length; k += 3) {

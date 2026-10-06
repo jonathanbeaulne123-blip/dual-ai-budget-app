@@ -41,7 +41,7 @@ const routePins:Record<string,HeightPin[]>={
   S1:[pin([1270.5,836.5],52.9,'the Foot bridge over the mountain brook (s1InflowBridge: 1.25 clear over 50.6)'),pin([1170.2,929],31,'the sill shelf, east edge (v2.5: the apron\'s level bay)'),pin([1160,935],31,'the sill shelf (v2.5: dam apron)'),pin([1204,1080],12,'High Span shelf north end (v1.9: S1 rides its shelf)'),pin([1204,1098],12,'High Span shelf'),pin([1204,1133],12,'High Span shelf south end'),pin([1255,1251],5,'Reach boardwalk'),pin([1270,1330],M.structures.landingQuay.finish_h,'Landing finish (v2.4: the islet\'s natural ground, W7-S request)')],
   // v2.0 D-A1: S2's Bight stretch is authored (skate.S2.levels/westRamp/deckLanes/eastDescent): see s2Profile.
   S2:[pin([480,480],38,'strip start'),pin([1020,1430],3,'park')],
-  S3:[pin([1480,1060],18,'upper street'),pin([1470,1160],12,'square arrival'),pin([1440,1200],12,'square'),pin([1433,1298],3,'town quay at grade (T0 request 4: S3 ran 6-7 eu over the 3 eu quay)'),pin([1360,1340],9,'Quay Bridge deck edge (integrator 4, W7-S request 1: S3 joined the 9 deck at 8.5-8.7)'),pin([1350,1345],9,'Quay Bridge'),pin([1133,1435],4,'zip underpass'),pin([1020,1430],3,'park')],
+  S3:[pin([1480,1060],18,'upper street'),pin([1470,1160],12,'square arrival'),pin([1440,1200],12,'square'),pin([1427.82,1292.28],3,'town quay at grade (T0 request 4: S3 ran 6-7 eu over the 3 eu quay; D-WW70: the 3B shift of [1433,1298])'),pin([1360,1340],9,'Quay Bridge deck edge (integrator 4, W7-S request 1: S3 joined the 9 deck at 8.5-8.7)'),pin([1350,1345],9,'Quay Bridge'),pin([1133,1435],4,'zip underpass'),pin([1020,1430],3,'park')],
   S4:[pin([1000,520],40,'studio start'),pin([893,600],37,'Hollow Bridge'),pin([905.9,640.6],36,'Cottage front walk at grade (v1.9)'),pin([1020,1430],3,'park')],
   'walk garden':[pin([762,422],48,'Library apron'),pin([893,600],37,'Hollow Bridge'),pin([915,638],36,'Cottage front walk'),pin([930,650],38,'Cottage spur landing'),pin([990,780],56,'Glasshouse')],
   // v2.6: the Inlet Footbridge (55 over the upper river) is retired with the upper river; the trail ends on the sill's east lip.
@@ -190,13 +190,22 @@ function parkPins(controls:readonly XY[]):HeightPin[] {
   const park=M.skate.park as unknown as {xy:number[];size:number[]},c=park.xy as unknown as XY,half:XY=[park.size[0]!/2+1,park.size[1]!/2+1];
   return sampleSpline(controls).flatMap((q,i)=>Math.abs(q[0]-c[0])<=half[0]&&Math.abs(q[1]-c[1])<=half[1]?[pin(q,3,'the Tideline park level (road L1)',i)]:[]);
 }
+/** The Water's Way (L2b, D-WW70): a skate line's authored plan shift (MANIFEST skate.<id>.move_3B: Town Weave 8 m inland along
+ * the quay). The prototype's own transform (place.py s3_shift): every sampled point moves `distance` along the unit `normal`,
+ * weighted w(z) = ss(r0,r1,z)·(1 − ss(r2,r3,z)) (smoothstep), so the line is unchanged outside z r0…r3. */
+export function skatePlanShift(id:string):((p:XY)=>XY)|undefined {
+  const m=(M.skate as unknown as Record<string,{move_3B?:{normal:number[];distance:number;ramp:number[]}}>)[id]?.move_3B;if(!m)return undefined;
+  const ss=(a:number,c:number,v:number)=>{const t=Math.max(0,Math.min(1,(v-a)/(c-a)));return t*t*(3-2*t);},[r0,r1,r2,r3]=m.ramp as [number,number,number,number];
+  return p=>{const w=ss(r0,r1,p[1])*(1-ss(r2,r3,p[1]));return [p[0]+m.normal[0]!*m.distance*w,p[1]+m.normal[1]!*m.distance*w];};
+}
+const skateShiftOption=(id:string)=>{const planShift=skatePlanShift(id);return planShift?{planShift}:{};};
 /** road (L1): the main roads a skate line may ride at grade (their deck is its surface there). */
 const LANE_HOSTS=['V01','VG','V03'];
 /** road (L1): a skate line whose provisional solve runs within 1.5 eu of a main road's height inside that road's paved width
  * plus its own half width takes the road's height there (pins by sample), and the samples just beyond ease away at its grade. */
 function roadLanePins(id:string,controls:readonly XY[],cuts:LandCuts,pins:readonly HeightPin[],base:HeightQuery):HeightPin[] {
   const roads=cuts.beds.filter(b=>LANE_HOSTS.includes(b.id));if(!roads.length)return [];
-  const pre=gradeRoute(id,controls,base,.18,pins,[],5,TYP.skate),out:HeightPin[]=[],own=M.profiles.skateMain.surface_m[1]!/2;
+  const pre=gradeRoute(id,controls,base,.18,pins,[],5,TYP.skate,skateShiftOption(id)),out:HeightPin[]=[],own=M.profiles.skateMain.surface_m[1]!/2;
   pre.forEach((p,i)=>{for(const r of roads){const n=nearestOnPath(plan(p),r.points);if(n.distance<=r.width/2+r.shoulder+own&&Math.abs(n.at[1]-p[1])<1.5){out.push(pin(plan(p),n.at[1],`on ${r.id}'s carriageway (road L1)`,i));break;}}});
   return out;
 }
@@ -263,6 +272,13 @@ export function straightSegments(id:string,controls:readonly XY[]):Set<number> {
   for(let i=0;i<controls.length-1;i++)if(distance(controls[i]!,w)<.01&&distance(controls[i+1]!,x)<.01)out.add(i);
   return out;
 }
+/** v2.1: walks.<id>.surface_m / shoulder_m override the profile section (the lake-rim trail carries the Year Walk's February
+ * share at its width). The Water's Way (L2b): walks.<id>.material names the bed's surface (the Long Sands promenade's concrete,
+ * the Strand's paving), for a footway too (the Strand rides the promenade's edge). */
+function walkSection(b:BedCut,row:unknown):void {
+  const {surface_m:sw,shoulder_m:sh,material}=row as {surface_m?:number;shoulder_m?:number;material?:string};
+  if(sw)b.width=sw*requireScaleFactor();if(sh)b.shoulder=sh*requireScaleFactor();if(material)b.surface=material;
+}
 function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
   // v2.6 (D-M4): Mountain v2's own road is the mountain's road: a Horizon bed on v2's exact line, carried by the region
   // (it shapes no baked ground and draws nothing), so wheels, the Year Walk's lanes and the Crown walk can share it.
@@ -302,7 +318,7 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
     const skatePins=[...withSpanPins(id,pts,routePins[id]),...flushPins(id,cuts,pts),...atGradePins(id,pts,cuts),...(id==='S2'?s2Profile(pts).pins:spanLanePins(id,pts,cuts)),...parkPins(pts)];
     // road (L1): where the line runs on a road's carriageway at grade (S3 along the Drive off the Quay Bridge's south end) it takes
     // the road's height across the road's paved width and its own (roadLanePins): no step between the lane and the carriageway.
-    const b=bed(id,'skateMain',gradeRoute(id,pts,base,.18,[...skatePins,...roadLanePins(id,pts,cuts,skatePins,base)],cuts.diagnostics,5,TYP.skate));
+    const b=bed(id,'skateMain',gradeRoute(id,pts,base,.18,[...skatePins,...roadLanePins(id,pts,cuts,skatePins,base)],cuts.diagnostics,5,TYP.skate,skateShiftOption(id)));
     b.surfaceSegments=row.segments.map((segment,i)=>({from:i/row.segments.length,to:(i+1)/row.segments.length,surface:segment.surface,pace:segment.pace,bankDegrees:segment.surface==='bankedTurf'?18:0}));cuts.beds.push(b);
   }
   for(const [id,row]of Object.entries(M.walks)){
@@ -318,7 +334,7 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
     }
     if(fw&&fwHost&&fw.side_xy){
       const side=fw.side_xy as unknown as XY,pts=fwHost.points.map((p,i):XYZ=>{const a=fwHost.points[Math.max(0,i-1)]!,c=fwHost.points[Math.min(fwHost.points.length-1,i+1)]!,len=Math.hypot(c[0]-a[0],c[2]-a[2])||1;let nx=-(c[2]-a[2])/len,nz=(c[0]-a[0])/len;if((side[0]-p[0])*nx+(side[1]-p[2])*nz<0){nx=-nx;nz=-nz;}return [p[0]+nx*fw.offset_m,p[1],p[2]+nz*fw.offset_m];});
-      const b=bed(name,row.profile,pts);(b.sharedEdges??=[]).push({other:fwHost.id,at:pts.map(plan)});(fwHost.sharedEdges??=[]).push({other:name,at:fwHost.points.map(plan)});cuts.beds.push(b);continue;
+      const b=bed(name,row.profile,pts);(b.sharedEdges??=[]).push({other:fwHost.id,at:pts.map(plan)});(fwHost.sharedEdges??=[]).push({other:name,at:fwHost.points.map(plan)});walkSection(b,row);cuts.beds.push(b);continue;
     }
     let points=row.pts as unknown as XY[];
     if(id==='garden')points=[[762,422],[850,525],[893,600],[900,640],[915,638],[930,650],[926,680],[930,720],[960,756],[990,780]];
@@ -332,9 +348,11 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
     // road's height at the row and across its footway lanes (flushPins), so the junction solve never lifts the road to the walk.
     const pins=withSpanPins(name,points,[...(routePins[name]??[]),...levels,...(id==='square'?squareWalkPins(sampleSpline(points)):[]),...flushPins(name,cuts,points,true)]);
     if(id==='garden')for(const p of sampleSpline(points))if(p[0]>=899&&p[0]<=916&&p[1]>=637&&p[1]<=642)pins.push(pin(p,36,'Cottage front bench'));
-    const wb=bed(name,row.profile,gradeRoute(name,points,base,.12,pins,cuts.diagnostics,5,TYP.walk));
+    // The Water's Way (L2b): walks.<id>.grade_max_pct (a stair twin's step-free way holds 8 %, profiles.walk).
+    const walkLimit=((row as unknown as {grade_max_pct?:number}).grade_max_pct??12)/100;
+    const wb=bed(name,row.profile,gradeRoute(name,points,base,walkLimit,pins,cuts.diagnostics,5,Math.min(walkLimit,TYP.walk)));if(walkLimit<.12)wb.maxGrade=walkLimit;
     // v2.1: walks.<id>.surface_m / shoulder_m override the profile section (the lake-rim trail carries the Year Walk's February share at its width).
-    const {surface_m:sw,shoulder_m:sh}=row as unknown as {surface_m?:number;shoulder_m?:number};if(sw)wb.width=sw*requireScaleFactor();if(sh)wb.shoulder=sh*requireScaleFactor();
+    walkSection(wb,row);
     // V3 (D-M11, the D-M5 rule for every walk): where a Horizon walk runs onto Mountain v2's own land the region carries it (no
     // Horizon cut, deck or wall; v2's ground is its floor). The ranch lane's last 30 m to the Year Walk's Hearth stretch is one.
     regionCarryLand(wb);

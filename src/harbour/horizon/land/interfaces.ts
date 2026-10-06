@@ -46,7 +46,8 @@ export interface MouthMask {
   outline: XY[];
   floor: number;
   ceiling: number;
-  kind: 'portal' | 'skylight';
+  /** 'bowl' (The Water's Way, L2b): a sunken structure's square (the Tideline skate bowl) whose shell is the ground there. */
+  kind: 'portal' | 'skylight' | 'bowl';
 }
 export interface WaterCut {
   id: string;

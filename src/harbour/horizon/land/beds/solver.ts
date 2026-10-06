@@ -27,8 +27,10 @@ export function sampleSpline(controls: readonly XY[], step=5, straight?: Readonl
   result.push(controls[last]!);return result;
 }
 /** Pins are exact constraints. Incompatible pins produce diagnostics, never an invented pass. */
-export function gradeRoute(id:string, controls:readonly XY[], height:HeightQuery, limit:number, pins:readonly HeightPin[]=[], diagnostics:LandDiagnostic[]=[], step=5, typical=limit, options:{straight?:ReadonlySet<number>;fair?:boolean}={}): XYZ[] {
-  const xy=sampleSpline(controls,step,options.straight), chain=[0];
+export function gradeRoute(id:string, controls:readonly XY[], height:HeightQuery, limit:number, pins:readonly HeightPin[]=[], diagnostics:LandDiagnostic[]=[], step=5, typical=limit, options:{straight?:ReadonlySet<number>;fair?:boolean;planShift?:(p:XY)=>XY}={}): XYZ[] {
+  // The Water's Way (L2b, D-WW70): `planShift` moves the sampled centreline in plan before it is graded (Town Weave's 3B move:
+  // MANIFEST skate.S3.move_3B), so the route is graded on the ground it will stand on.
+  const xy=sampleSpline(controls,step,options.straight).map(p=>options.planShift?options.planShift(p):p), chain=[0];
   for(let i=1;i<xy.length;i++)chain.push(chain[i-1]!+distance(xy[i-1]!,xy[i]!));
   const targets=xy.map(p=>height(...p));
   const fixed=new Map<number,number>();

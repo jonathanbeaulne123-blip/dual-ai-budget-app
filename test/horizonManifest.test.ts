@@ -177,7 +177,8 @@ describe('Horizon manifest v2.2: main\'s v1.7 sky data on the v2.1 land',()=>{
     for(const key of ['green','reachMeadow','sands'] as const)expect(manifest.sky.landings[key].modes).toContain('parachute');
     expect(manifest.sky.landingModes.deep).toEqual(['glider']);
     // The Drop Zone follows the green landing onto the v2.1 land ([1040,1065] was the v1.6 green landing).
-    expect(manifest.sky.dropZone.xy).toEqual([1028,1112]);expect((manifest.sky.dropZone as unknown as {v1_7_xy:number[]}).v1_7_xy).toEqual([1040,1065]);
+    // D-WW77 (The Water's Way, RULINGS 1): the target 10 m ESE of the v2.1 [1028,1112], its field edge clear of the Year Walk.
+    expect(manifest.sky.dropZone.xy).toEqual([1037.2,1115.8]);expect((manifest.sky.dropZone as unknown as {v2_7_xy:number[]}).v2_7_xy).toEqual([1028,1112]);expect((manifest.sky.dropZone as unknown as {v1_7_xy:number[]}).v1_7_xy).toEqual([1040,1065]);
     // Stage A v1.7's target stands (96.0 s measured on candidate 5 from the lookout launch); D34's [70,110] is recorded beside it.
     expect(manifest.journeys.targets_s['crown→lamp by glider']).toEqual([85,120]);
     expect(manifest.journeys.targets_s.decisions['crown→lamp by glider']).toContain("D34 applied pending Jonathan's confirmation");

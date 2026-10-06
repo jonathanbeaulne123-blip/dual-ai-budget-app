@@ -2398,6 +2398,105 @@ for _pid, _side_id in (("A", "greenway.terrace"), ("B", "greenway.reedTrail"), (
 _gw_rows.append({"a": "greenway", "b": "greenway.bluffEnd", "at": _gw_at(_GW_L)[:2], "resolution": "threshold", "kind": "junction", "source": "The Water's Way L2a", "note": "the deck's end onto Bluff End's terrace: flush, no marker"})
 m["crossings"].extend(_gw_rows)
 
+
+# ───────────────────────────────────────────────────────────────────────────────────────────────────
+# The Water's Way · PR 2 land, L2b (Little Harbour, Long Sands, the Green; Jonathan 2026-10-05 "recommended on all"; D-WW70…79).
+# 1. Little Harbour (3B, D-WW70): Town Weave (S3) moves ~8 m inland along the quay between [1433,1298] and [1470,1257] so a
+#    continuous quayfront row fits; the prototype's transform (place.py s3_shift: 8 m along the quay's inland normal
+#    (−0.67, −0.74), full for z 1256–1296, smooth ramps over 1236→1256 and 1296→1314) is laid as five control points fitted
+#    to the transformed baked centreline (≤ 0.9 eu off it over z 1180–1345; the controls either side are unchanged).
+_s3 = m["skate"]["S3"]
+_s3["move_3B"] = {"decided": "D-WW70 (Jonathan 2026-10-05: Town Weave 8 m inland at the quay, option 3B)", "normal": [-0.67, -0.74], "distance": 8, "ramp": [1236, 1256, 1296, 1314],
+ "transform": "every sampled centreline point (x, z) moves distance·w(z) along normal; w = ss(1236,1256,z)·(1 − ss(1296,1314,z)), ss = smoothstep (the prototype's place.py s3_shift)", "span": [[1469.78, 1257.14], [1432.73, 1297.72]],
+ "note": "the controls stay as authored; the land solver shifts the sampled line before grading it (land/beds/build.ts skatePlanShift), so the line is unchanged outside z 1236–1314: the square's floor, the Market stair and the river-mouth bridge stretch do not move; the quay's houses get a continuous quayfront (tier 4: 13 → 21)"}
+def _s3shift(p):
+    import math as _m
+    ss = lambda a, c, v: (lambda t: t * t * (3 - 2 * t))(min(1, max(0, (v - a) / (c - a))))
+    w = ss(1236, 1256, p[1]) * (1 - ss(1296, 1314, p[1]))
+    return [round(p[0] - 0.67 * 8 * w, 2), round(p[1] - 0.74 * 8 * w, 2)]
+for _t in m["thresholds"]:
+    if _t["id"] == "quayWest":
+        _t["v2_7_xy"] = list(_t["xy"]); _t["xy"] = _s3shift(_t["xy"])
+        _t["note_ww"] = "D-WW70: moves with Town Weave (3B); the same 8 m inland shift keeps the board→feet mark on the line's quay stretch"
+# Page A (the square) retargets from the retired Stillwater dam to Mountain v2's glass dam (the prototype's porch pose); the
+# 'nothing over 6 eu' corridor of STYLE §2.1 follows the new bearing.
+for _v in m["views"]:
+    if _v["id"] == "A":
+        _v["v2_7"] = {"xy": _v["xy"], "target": _v["target"], "target_h": _v["target_h"], "fov_deg": _v["fov_deg"], "subjects": _v["subjects"], "portrait": dict(_v["portrait"])}
+        _v["xy"] = [1432, 1166]; _v["target"] = [1318, 560]; _v["target_h"] = 108; _v["fov_deg"] = 50
+        _v["subjects"] = ["the glass dam", "the Shoulder"]
+        _v["frames"] = "from the square's west edge (the porch), north-north-west up the dam line to Mountain v2's glass dam, the Shoulder's flank beside it"
+        _v["portrait"] = {"fov_deg": 45, "target": [1318, 560], "target_h": 108, "frames": ["the glass dam"]}
+        _v["damLine"] = {"from": [1433, 1158], "to": [1316, 538], "halfWidth_m": 14, "maxHeight_eu": 6, "rule": "STYLE §2.1: nothing taller than 6 eu stands in the town between the square's north-west edge and the dam line (the corridor's harbour stretch)"}
+        _v["note_ww"] = "D-WW71 (Jonathan 2026-10-05): the square view is retargeted to the v2 glass dam (~[1316, 87–142, 538], RULINGS) from the porch pose (1432, ·, 1166); the belfry is the dam view's height"
+# 2. Long Sands (D-WW74–76). The pier is a land structure: deck 12 m wide at 3.6, 0.6 thick, open rails 1.05; a ≤ 5 % ramp from
+#    the Tideline slab (RULINGS 9). Checked against the ferry: as drawn (to z 1630, platform to 1659) it crossed the FERRY line
+#    (z 1533 at x 1020) — the pier is shortened to end 12.9 eu short of the line (8 m hull + 8.9 eu) and the wheel moves inland
+#    along it (hub z 1648 → 1509); the platform widens 4 m west so the wheel's A-frame feet stand on it.
+m["structures"]["longSandsPier"] = {"kind": "pier", "axis_x": 1020, "from_z": 1434.6, "ramp_to_z": 1448.6, "slab_h": 3.0, "deck_h": 3.6, "deck_thick": 0.6, "width_m": 12, "to_z": 1490,
+ "platform": {"x": [1002, 1034], "z": [1490, 1520], "h": 3.6}, "rail_h": 1.05, "pileSpacing": 12, "pileFrom": 1462, "headroom_min": 2.4, "ferryMargin_min": 6,
+ "wheel": {"hub": [1010, 19.6, 1509], "r": 13, "top": 32.6, "faces": "NE", "footing": [[1004.34, 1503.34], [1015.66, 1514.66]], "planReach": 13.75},
+ "decided": "D-WW74 (RULINGS 9; brief: pier + wheel as drawn, checked vs the ferry line and the glider sands landing)",
+ "drawn": {"to_z": 1630, "platform": {"x": [1006, 1034], "z": [1629, 1659]}, "hub": [1010, 19.6, 1648], "why_changed": "the drawn pier crossed the FERRY line (polyline [1250,1540]→[900,1530] passes x 1020 at z 1533.4); shortened to z 1520 and the wheel moved 139 m inland along the pier"},
+ "note": "deck, ramp, piles, open rails and the platform are land (PR 2); lamps, the entrance arch, the seafood shack and the wheel are PR 3/4 dressing on this deck"}
+m["structures"]["tidelineBowl"] = {"kind": "skateBowl", "xy": [1000, 1456], "rim_h": 3.0, "floor_h": 1.5, "floor_r": 2.5, "lip_r": 6.5, "coping_r": 7.0, "base_h": 1.0,
+ "mask": [[990, 1445], [1010, 1465]], "decided": "D-WW75 (RULINGS 9: a sunken bowl beside Tideline park, never on its slab; PR 5 makes it rideable)",
+ "note": "south of the park slab (z ≤ 1446), 4 eu west of the pier deck: a concrete bowl 1.5 deep (rim = the park's level 3.0, a flat floor r 2.5, a parabolic transition to the lip at r 6.5, coping to 7.0) in a level apron; the apron's square is the terrain's hole (mouth mask 'bowl') and a pad banks the beach up to it"}
+_prom = [[795, 1364.31], [807, 1376.03], [819, 1386.26], [831, 1394.93], [843, 1402.08], [855, 1408.05], [867, 1413.0], [879, 1416.83], [891, 1419.62], [903, 1421.93], [915, 1423.79], [927, 1425.53], [939, 1427.06], [951, 1428.35], [963, 1429.24], [975, 1429.81], [987, 1429.4], [999, 1428.48], [1011, 1426.94], [1023, 1424.9], [1035, 1422.55], [1047, 1420.4], [1059, 1418.69], [1071, 1417.15], [1083, 1416.85], [1095, 1418.65], [1107, 1419.6], [1119, 1419.75], [1131, 1419.1], [1143, 1417.5], [1155, 1414.6], [1167, 1413.6], [1179, 1412.6], [1191, 1411.5], [1203, 1410.2], [1215, 1408.8], [1227, 1407.4], [1239, 1405.9], [1245, 1405.1]]
+# East of x 1160 the prototype's 11.5 m-from-the-Drive rule bound; the promenade stands 16.5 m off the Drive's centreline there, so the
+# Drive's Long Sands Shore scenic stop (corridor plan R10/R11: a 14 × 6 pad on the seaward verge) keeps its verge.
+m["walks"]["promenade"] = {"pts": _prom, "profile": "walk", "surface_m": 7.5, "material": "paved", "length_m": length(_prom),
+ "levels": [{"xy": p, "h": 3.0, "why": "D-WW76: level across the Tideline park's slab"} for p in [[991, 1429.33], *[q for q in _prom if 990 <= q[0] <= 1050], [1049, 1420.12]]],
+ "modes": ["feet"], "decided": "D-WW76 (Long Sands Direction B: the promenade, 7.5 m concrete, 58 m inland of the smoothed shore, never < 11.5 m from the Drive; x 795–1215 — the last 30 m of the drawn x 1245 stay the Drive's verge for its Long Sands Shore stop)"}
+m["walks"]["strand"] = {"pts": [], "profile": "trail", "surface_m": 3.2, "material": "paved", "length_m": 0,
+ "footwayOf": {"host": "walk promenade", "offset_m": 5.6, "side_xy": [1020, 2000]}, "modes": ["feet", "bicycle", "board"],
+ "decided": "D-WW76: the Strand, a 3.2 m bike path on the promenade's seaward edge (offset 5.6), one height with it"}
+m["walks"]["tidelineBeach"] = {"pts": [[1040, 1446], [1040, 1462], [1040, 1481.8]], "profile": "walk", "length_m": 36, "levels": [{"xy": [1040, 1446], "h": 3.0, "why": "D-WW76: the Tideline park slab's south edge"}],
+ "decided": "D-WW76: the promenade and the park join the dune walk east of the pier"}
+m["walks"]["strandDune"] = {"pts": [[791.0, 1368.2], [800, 1395], [810, 1420]], "profile": "walk", "length_m": 55, "decided": "D-WW76: the Strand's west end joins the dune walk's west end"}
+# 3. The Green (D-WW72, D-WW73, D-WW77): the Glasshouse stair-and-ramp and the scarp batter are authored in
+#    land/terrain/glasshouseScarp.ts (one definition, read by the terrain and structures); Green Road's lanterns inside the
+#    protected circle are 0.8 eu bollards (land/corridor/plan/lamps.ts, the low-zone rule).
+m["structures"]["glasshouseStair"] = {"kind": "stairFlights", "source": "land/terrain/glasshouseScarp.ts (GLASSHOUSE_STAIR, glasshouseStairFlights)", "twin": "structures.glasshouseRamp", "head": "the Lakeside terrace at 44.5 (the head landing, joined to the Glasshouse steps by walk glasshouseTerrace)", "foot": "the Green at 22",
+ "decided": "D-WW72 (brief: the Glasshouse stair-and-ramp down the scarp; passes/03 §B2 'a ramp twin beside them')", "note": "four flights straight down the batter (pitch ≤ 0.61, rise 0.17) with level landings at 44.5, 38.9, 33.3, 27.6 and 22; the head, the middle turn and the foot landings are the ramp's own"}
+m["structures"]["glasshouseRamp"] = {"kind": "rampTwin", "source": "land/terrain/glasshouseScarp.ts (GLASSHOUSE_RAMP, glasshouseRampPlan)", "grade_pct": 8, "legs": 4, "width_m": 3,
+ "decided": "D-WW72", "note": "the stair's step-free twin: four legs at an even 8 % lying on the batter's contours, level turning landings (4 × 8) at each switchback; 281 eu from the head landing to the Green"}
+m["structures"]["greenScarp"] = {"kind": "batter", "source": "land/terrain/glasshouseScarp.ts (GLASSHOUSE_SCARP)", "x": [990, 1122], "decided": "D-WW73 (brief: batter/ledge the bare north cut face so PR 3 can plant it; no skirt)",
+ "note": "west of x 1028 the face is cut and filled to one 1 : 2 batter through its midline; east of x 1048 Stillwater's own raised bank stands above the Green and the batter only fills below it (1 : 2, then 1 : 1.5 and steeper at the east end where it meets the S1 shelf's cliff)"}
+# The terrace walk: the Glasshouse steps end 16 m over the Glasshouse spur's end ([990,830] at 50); the walk crosses the spur's cut on the
+# Glasshouse Footbridge (15.4 clear over the road) onto the Lakeside terrace and winds down at ≤ 8 % to the stair-and-ramp's head
+# landing (land/terrain/glasshouseScarp.ts glasshouseRampPlan().pads[0]: [1020,901] at 44.5).
+_gt = [[990, 830], [1000, 830], [1011, 831], [1018, 840], [1009, 852], [1018, 864], [1009, 876], [1016, 889], [1020, 901]]  # zig-zags west of x 1018: Stillwater's rim (its 50 eu bank) lies east of it
+m["walks"]["glasshouseTerrace"] = {"pts": _gt, "profile": "walk", "length_m": length(_gt), "grade_max_pct": 8,
+ "levels": [{"xy": [990, 830], "h": 50.0, "why": "D-WW72: the Glasshouse steps' end"}, {"xy": [1000, 830], "h": 50.0, "why": "D-WW72: the Glasshouse Footbridge deck"}, {"xy": [1011, 831], "h": 50.0, "why": "D-WW72: the footbridge's east end on the terrace"}, {"xy": [1020, 901], "h": 44.5, "why": "D-WW72: the stair-and-ramp head landing"}],
+ "decided": "D-WW72: the Glasshouse steps join the stair-and-ramp across the Lakeside terrace (step-free, ≤ 8 %)"}
+m["structures"]["glasshouseFootbridge"] = {"xy": [1000, 830], "kind": "footbridge", "route": "walk glasshouseTerrace", "span_m": 22, "width_m": 3.2, "note": "D-WW72: the terrace walk over the Glasshouse spur's end (road 34, deck 50)"}
+m["sky"]["landings"]["green"]["v2_7_xy"] = list(m["sky"]["landings"]["green"]["xy"])
+m["sky"]["landings"]["green"]["xy"] = [1037.2, 1115.8]
+m["sky"]["landings"]["green"]["note_ww"] = "D-WW77 (RULINGS 1): the Drop Zone target 10 m ESE, its field edge clear of the Year Walk"
+m["sky"]["dropZone"]["v2_7_xy"] = list(m["sky"]["dropZone"]["xy"]); m["sky"]["dropZone"]["xy"] = list(m["sky"]["landings"]["green"]["xy"])
+m["pastimeData"]["v2_7_nineBaskets"] = [list(p) for p in m["pastimeData"]["nineBaskets"]]
+m["pastimeData"]["nineBaskets"] = [[1189, 1151], [1118, 1218], [1022, 1236], [925.4, 1199.2], [876, 1118], [866.1, 1022.5], [907.5, 929.0], [939.1, 905.2], [893, 600]]
+m["pastimeData"]["nineBasketsNote_ww"] = "D-WW77 (RULINGS 1, measured on the L2b bake): #4 6.6 m, #6 8.2 m and #7 7.4 m along the 172–190 m ring, each ≥ 6.6 m off every bed edge; #8 leaves the Lakeside terrace (41.9 over the Green's 18.3) for the nearest ring spot within 4 m of the Green's level (189 m, 21.1, bearing 82° west of its old one: the north arc is the terrace and the new batter)"
+m["names"]["structures"] = [*m["names"]["structures"], "the Long Sands Pier", "the Tideline Bowl", "the Glasshouse Stair", "the Glasshouse Ramp", "the Glasshouse Footbridge"]
+m["names"]["walks_ww"] = ["the Promenade", "the Strand", "the Glasshouse terrace walk"]
+m["crossings"].extend([
+ {"a": "longSandsPier", "b": "walk dune", "at": [1020, 1481.2], "resolution": "over", "structure": "longSandsPier", "kind": "crossing", "note": "D-WW74: the dune trail passes under the pier deck (headroom diagnostic structures.longSandsPier.duneHeadroom ≥ 2.4)"},
+ {"a": "walk promenade", "b": "yearWalk", "at": [948.6, 1428.1], "resolution": "threshold", "kind": "junction", "source": "ww L2b", "note": "D-WW76: the Year Walk crosses the promenade at grade (x ≈ 948)"},
+ {"a": "walk strand", "b": "yearWalk", "at": [949.6, 1433.7], "resolution": "threshold", "kind": "junction", "source": "ww L2b", "note": "D-WW76: the Year Walk crosses the Strand at grade"},
+ {"a": "walk promenade", "b": "yearWalk", "at": [907.2, 1422.6], "resolution": "threshold", "kind": "junction", "source": "ww L2b", "note": "D-WW76: the Year Walk's return leg from the June station crosses the promenade at grade"},
+ {"a": "walk strand", "b": "yearWalk", "at": [913.6, 1429.2], "resolution": "threshold", "kind": "junction", "source": "ww L2b", "note": "D-WW76: the Year Walk's return leg crosses the Strand at grade"},
+ {"a": "S2", "b": "walk promenade", "at": [1018.2, 1425.7], "resolution": "threshold", "kind": "crossing", "source": "ww L2b", "note": "D-WW76: the Wash Run ends on the Tideline park, where the promenade crosses the park at its level"},
+ {"a": "S4", "b": "walk promenade", "at": [1018.8, 1425.6], "resolution": "threshold", "kind": "crossing", "source": "ww L2b", "note": "D-WW76: the Hollow Line ends on the Tideline park, where the promenade crosses it"},
+ {"a": "S3", "b": "walk strand", "at": [1023.5, 1430.5], "resolution": "threshold", "kind": "crossing", "source": "ww L2b", "note": "D-WW76: Town Weave's boardwalk end meets the Strand on the Tideline park"},
+ {"a": "ZIP", "b": "walk promenade", "at": [1143.6, 1417.4], "resolution": "over", "kind": "crossing", "note": "D-WW76: the zipline passes 11 eu over the promenade"},
+ {"a": "ZIP", "b": "walk strand", "at": [1139.8, 1423.7], "resolution": "over", "kind": "crossing", "note": "D-WW76: the zipline passes 10.6 eu over the Strand"},
+ {"a": "walk tidelineBeach", "b": "walk dune", "at": [1040, 1481.8], "resolution": "threshold", "kind": "junction", "source": "ww L2b", "note": "D-WW76: flush path junction"},
+ {"a": "walk strandDune", "b": "walk dune", "at": [810, 1420], "resolution": "threshold", "kind": "junction", "source": "ww L2b", "note": "D-WW76: flush path junction"},
+ {"a": "walk strandDune", "b": "walk strand", "at": [791.0, 1368.2], "resolution": "threshold", "kind": "junction", "source": "ww L2b", "note": "D-WW76: flush path junction"},
+ {"a": "walk glasshouseTerrace", "b": "walk glasshouseSteps", "at": [990, 830], "resolution": "threshold", "kind": "junction", "source": "ww L2b", "note": "D-WW72: flush path junction (the steps' end)"},
+ {"a": "walk glasshouseTerrace", "b": "spur glasshouse", "at": [1000, 830], "resolution": "over", "structure": "glasshouseFootbridge", "kind": "crossing", "note": "D-WW72: the terrace walk over the spur's end on the Glasshouse Footbridge"},
+])
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")

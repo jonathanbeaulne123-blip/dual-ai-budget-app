@@ -6,6 +6,7 @@ import { clamp, contains, linePoint, mix, polygonCentre, polygonDistance, polyli
 import { mountainV2Height, mountainV2Rule } from '../mountainV2/ground';
 import { mountainV3Height, v3Paint } from '../mountainV3/landform';
 import { oreRoadGroundCeiling } from '../underground/oreRoad';
+import { glasshouseScarp } from './glasshouseScarp';
 
 export const GEOGRAPHY_REVISION = 'horizon-geo-1' as const;
 /** The one walkable limit: MANIFEST `profiles.walkable.slope_max_deg` (40°, Mountain v2's body
@@ -128,14 +129,22 @@ const SHOULDER_RINGED = new Set(['hollow', 'stillwater', 'crown']);
 export function baseHeight(x: number, z: number): number {
   const m = getModel(), s = m.scale, shore = signedShoreDistance(x, z);
   if (shore < 0) return bightAbutment(x, z, outsideHeight(x, z, shore, s));
+  // The Water's Way (L2b, D-WW73): the Green's north scarp is a planted batter carrying the Glasshouse stair-and-ramp; it reads
+  // the ground before it on the terrace and the Green either side of the face.
+  const height = glasshouseScarp(x / s, z / s, landHeight(x, z, shore) / s, (qx, qz) => landHeight(qx * s, qz * s, signedShoreDistance(qx * s, qz * s)) / s) * s;
+  return coveStairBench(x, z, bightAbutment(x, z, spitKnollCut(x, z, applyWaters(x, z, height, m.water))));
+}
+/** Authored land before the named water and the late local edits (the scarp batter, the abutments, the cove bench). */
+function landHeight(x: number, z: number, shore: number): number {
+  const m = getModel(), s = m.scale;
+  if (shore < 0) return outsideHeight(x, z, shore, s);
   let height = preV3Height(x, z);
   // Mountain V3 (D-M11): the Highlands and the Falls reshape the ring round v2 (Glacier Peak, the benches, the gorges, the Veil);
   // V3.1's strata read the local slope of V3's ground, so the layer samples the Horizon's ground before V3 beside the point.
   height = mountainV3Height(x / s, z / s, height / s, (px, pz) => preV3Height(px * s, pz * s) / s) * s;
   const character = coastCharacter(x, z), shoreWidth = character === 'southBeach' ? 44 * s : character === 'bight' ? 23 * s : 10 * s;
   height = mix(0.14 * s, height, smooth(shore / shoreWidth));
-  height = damWindow(x, z, notchHeight(x, z, height));
-  return coveStairBench(x, z, bightAbutment(x, z, spitKnollCut(x, z, applyWaters(x, z, height, m.water))));
+  return damWindow(x, z, notchHeight(x, z, height));
 }
 /** The Horizon's authored land up to and including the Mountain v2 rule (D-M1/D-M2), before Mountain V3 and the shore. */
 function preV3Height(x: number, z: number): number {
