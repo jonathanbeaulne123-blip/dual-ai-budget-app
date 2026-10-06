@@ -19,17 +19,18 @@ Jonathan and Bianca can walk the island's water story from the crown to the sea:
 - **Integration:** one open-rail builder and marker for every open rail (D-WW92); the prepared-bed cache validated against its source; the glider's `sands` field moved (D-WW90); the Bight batter reads the built Greenway (D-WW93); the corridor survey ignores scraped pools so the Long Sands Shore stop stays at Long Sands (D-WW91, `land/corridor/stations.ts`).
 - **Journey map (AGENTS.md, D-WW95):** re-baked with the land; the clay map carries the Highlands' ground, the Hollow Beck and its bridge, the scarp and the Bight batter (86 of 9,191 lattice points move ≥ 0.5 m). Walks, skate lines, the pier and rails are not drawn by the clay map, so the Greenway does not show (a Journey design call). Budget unchanged in kind: land alone full 19,230 / lite 13,490 triangles (≤ 25,000 / 15,000). Captures in `docs/horizon/evidence/waters-way-land/journey/` (before = `4104445`, after = this branch): the real board in Classic, Taylor and Newfoundland × full and lite, and six Classic close-ups × full and lite; `LOOK.md` says what each shows. Tool: `scripts/horizon/capture-journey-land-diff.mjs`.
 - **Build time (D-WW97):** the marsh pools and the Bight batter answer the same with less work (byte-exact); `horizonBeds` no longer trips vitest's 60 s worker RPC timeout.
-- **Tests changed with the reason in place:** `horizonGliderJourneys`, `horizonGliderJourneysWind` (D-WW90), `horizonGliderReducedMotion` (D-WW94), `horizonLandWWWest` (D-WW93), `horizonHeldWalkOut` (page I moved, D-WW64: lite would-fall list drops I), `journey-road` (the Hollow Beck Bridge is a new road span, D-WW55). Each passes unmodified on `origin/main` (checked in `/home/claude/wt/base9d`, 4746796). New: `horizonLandWWOpenRails` (27).
+- **Tests changed with the reason in place:** `horizonGliderJourneys`, `horizonGliderJourneysWind` (D-WW90), `horizonGliderReducedMotion` (D-WW94), `horizonLandWWWest` (D-WW93), `horizonHeldWalkOut` (page I moved, D-WW64: lite would-fall list drops I), `journey-road` (the Hollow Beck Bridge is a new road span, D-WW55), `horizonModeRegistry` (the drag lift's `lift` thresholds are named placeholders until PR 5, plus a no-offer proof, D-WW98). Each passes unmodified on `origin/main` (checked in `/home/claude/wt/base9d`, 4746796). New: `horizonLandWWOpenRails` (27).
 - **Evidence:** `docs/horizon/evidence/waters-way-land/` (18 before/after JPGs, `LOOK.md` describes each; SwiftShader, not device evidence).
 
 ## Verification (exact)
 
 - `pnpm horizon:bake` then `pnpm horizon:check`: byte-exact (rc 0) at the final source. 1,505 solids, 839 diagnostics, **137 conflicts** (PR 1 head 138).
 - Index vs the PR 1 head: water 34 → 69, beds 162 → 213, structures 1,184 → 1,505 (+328 −7), crossings 694 → 754, thresholds 100 → 108, lights 459 → 463. Every moved corridor station, lamp and guard sits at a land change.
-- Suites, one file at a time (`--maxWorkers=1`), see the report in the PR for the full list: every Horizon land, structure, water, corridor, glider, walk, dressing and Journey suite green; `journey-mini-story` fails 4/4 with "Top up the Household Fund by $105.00" exactly as on `origin/main` 4746796 (a books-fixture clock failure, not the land).
-- Sight chain (`horizonStorySightChain`, 16): every link passes; Spring Bay → the campanile 2.89 m; the Lamp from 9 of 11 eyes.
-- Road audit: **5 BLOCKER / 22 MAJOR / 104 MINOR, 0 restarts** (PR 1 head 5 / 22 / 102); the two new MINORs are sub-guardDrop steps (D-WW96).
-- `pnpm typecheck` (inside the CI quick gate) and `git diff --check origin/main...HEAD`: see the PR body for the final run.
+- Suites, one file at a time (`--maxWorkers=1`), 64 files green: horizonLandWW{Highlands 19, Reach 23, South 26, West 15, OpenRails 27}, horizonStorySightChain 16, horizonManifest 35, horizonBeds 17 (clean after D-WW97; it tripped vitest's 60 s worker RPC timeout before), horizonStructures 23, horizonCrossings 12, horizonThresholds 8, horizonViews 11, horizonWater 11, horizonTerrainCuts 18, horizonLandforms 11, horizonCorridor 16, horizonCorridorArt 10, horizonCorridorPlan 10 + 1 skipped, horizonCorridorPlanting 11, horizonBakeArtifacts 7, horizonWorldDefinition 3, horizon-mountain-v3 7, horizonBridges 16, horizonSkyEnvelope 5, horizonGlider{Bodies 3, Camera 11, Controller 24, Journeys 22, JourneysWind 6, Landing 12, Lift 8, NoMoney 49, Pads 38, PadsGuide 4, Polar 13, ReducedMotion 16}, horizonWalkSim 38, horizonHeldWalkOut 29, horizonStillwaterLink 3, horizonDressingBake 17, horizonDressingJourney 7, horizonModeRegistry 17, and every `test/journey-*.test.ts` except one. `journey-mini-story` fails 4/4 ("Top up the Household Fund by $105.00") exactly as on `origin/main` 4746796: a books-fixture clock failure, not the land.
+- Sight chain: every link passes; Spring Bay → the campanile 2.89 m; the Lamp from 9 of 11 eyes.
+- Road audit: **5 BLOCKER / 22 MAJOR / 104 MINOR, 0 restarts** (PR 1 head 5 / 22 / 102); the two new MINORs are steps under `guardDrop` (D-WW96).
+- CI quick gate as `ci.yml` runs it (`HEARTH_TEST_BASE=origin/main HEARTH_TEST_RISK=medium pnpm check`): diff-check, ai-surface and **typescript passed** (130.7 s); vitest-fast (59 files, 4 workers on this 2-CPU machine) 949 passed, 3 timed out: `horizonThresholds` × 2 at 60 s and `journey-land`'s slim-parse timing at 15 s, with 5 worker RPC timeouts; time budget breached (550 s against 300 s). Serially they pass in 26.7 s, 26.4 s and 6.6 s (`origin/main`: 13.5 s, 13.6 s, 6.2 s): each `horizonThresholds` case builds the land, which the new land doubles. The same 47 files that exist on `origin/main` pass there under 4 workers. Watch these two on the GitHub runner.
+- `git diff --check origin/main...HEAD`: clean.
 
 ## Rough areas
 
@@ -38,6 +39,8 @@ Jonathan and Bianca can walk the island's water story from the crown to the sea:
 - The Bight batter is partial (walls 19.0 / 18.1 / 13.4 / 11.3 m remain; 6.73 m to the Greenway).
 - Prow → Long Sands under the shipped wind is still short (−0.46 m).
 - Captures are SwiftShader; no device or runtime theme captures (owed with the dressing).
+- The Journey map does not draw the Greenway (the clay draws roads, not walks); the land's changes show there only as small shape changes on its 20 m lattice.
+- The land build is about twice `origin/main`'s (~25 s against ~14 s here: the Bight batter's march and the marsh pools), so suites that build the land in each case (`horizonThresholds`) run near vitest's 60 s timeout under parallel load.
 
 ## Jonathan's calls
 
@@ -46,6 +49,7 @@ Jonathan and Bianca can walk the island's water story from the crown to the sea:
 3. **The partial Bight batter** (D-WW89): a full batter needs the Greenway ~30 m off the lagoon faces, or the plots' lagoon margins given up.
 4. **The shorter pier and the wheel inland** (D-WW74): pier to z 1520 so the ferry passes; the wheel's hub at z 1509, 139 m inland of the drawn spot.
 5. **The glacier stays hidden from the south and west** (ruling 7): you find the source by climbing.
+6. **The Greenway on the Journey map** (D-WW95): the clay map draws no walks today; drawing the Greenway is a Journey design choice.
 
 ## Next owner
 
