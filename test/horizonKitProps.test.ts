@@ -34,14 +34,21 @@ const REACH: Partial<Record<PropKind, number>> = { geoglyph: 40, kite: 30, volle
 const LINEAR: PropKind[] = ['railOpen', 'fence', 'drystoneWall', 'sheepFank', 'festoon', 'laundryLine'];
 
 describe("The Water's Way prop kit", () => {
-  it('every kind × dressing × tier draws finite geometry near its record, within budget; lite draws only essential kinds and never more', () => {
+  it('every kind × dressing × tier draws finite geometry near its record, within budget; lite draws essential kinds (and colliders, fixtures) and never more', () => {
     const table: Record<string, string> = {}, fails: string[] = [];
     for (const kind of PROP_KINDS) for (const theme of THEMES) {
       const counts: Record<string, number> = {};
       for (const tier of ['full', 'lite'] as const) {
         const b = new CardBuilder('t', tier, { ink: '#5b5447' }); drawProp(b, record(kind), theme, ground, tier);
         const v = verts(b), n = triangles(b); counts[tier] = n;
-        if (tier === 'lite' && !propIsEssential(kind)) { if (v.length) fails.push(`${kind}/${theme} lite drew ${n}`); continue; }
+        // One lite rule (kit/props propDraws, review of PR 1): a non-essential kind is dropped on lite unless it collides or
+        // carries a fixture — a collider is never invisible. `record(kind)` collides, so it draws; a plain one does not.
+        if (tier === 'lite' && !propIsEssential(kind)) {
+          if (!n) fails.push(`${kind}/${theme} lite: a colliding prop drew nothing`);
+          const plain = new CardBuilder('t', tier, { ink: '#5b5447' }); drawProp(plain, record(kind, false), theme, ground, tier);
+          if (verts(plain).length) fails.push(`${kind}/${theme} lite drew ${triangles(plain)} without collide or fixture`);
+          continue;
+        }
         if (!n) fails.push(`${kind}/${theme}/${tier} drew nothing`);
         const reach = LINEAR.includes(kind) ? 12 : (REACH[kind] ?? 2) * (kind === 'swing' ? 1 : 1);
         for (const p of v) { if (!p.every(Number.isFinite)) { fails.push(`${kind} non-finite`); break; } if (Math.hypot(p[0] - AT[0], p[2] - AT[2]) > reach + 0.5) { fails.push(`${kind}/${theme} reaches ${Math.hypot(p[0] - AT[0], p[2] - AT[2]).toFixed(1)}`); break; } }

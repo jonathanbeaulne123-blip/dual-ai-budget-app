@@ -54,7 +54,10 @@ import { WW_SPECIES, WW_SPEC, isWW, wwStretch, wwVariant, type WWSpecies } from 
 import { wwDrawn, wwGeometry, type WWGeometry, type WWLook } from '../kit/plants/wwGeometry.ts';
 
 export type CorridorPlantingOptions = { tier: 'full' | 'lite'; theme: PlantTheme; season: PlantSeason; /** 1–12; refines the bloom stage within a season. */ month?: number };
-export type CorridorPlantingStats = { items: number; drawn: number; drawCalls: number; triangles: number; layers: { key: string; count: number; capacity: number; triangles: number }[] };
+export type CorridorPlantingStats = { items: number; drawn: number; drawCalls: number; triangles: number; layers: { key: string; count: number; capacity: number; triangles: number }[];
+  /** Every retained record on at once (each layer's capacity × its unit triangles; every layer and batch drawn): the
+   * worst case a district budget measures (runtime/dressingLayer.ts `measureDistrictDressing`). */
+  capacity: { triangles: number; drawCalls: number } };
 export type CorridorPlanting = {
   group: THREE.Group;
   /** Call every frame (cheap): the viewer drives the fade; residency and distance re-evaluate after 8 eu or a residency change. */
@@ -76,6 +79,8 @@ const isWildSet = (set: FlowerSetId) => set === FLOWER_SET.prairie || set === FL
 export const PLANT_JOIN = 10, PLANT_LEAVE = 30, PLANT_RECHECK = 8;
 /** The far radius of the Water's Way trees' ink shells (the Old Oak's keeps FAR.shell). */
 export const WW_SHELL_FAR = 120;
+/** Newfoundland draws these as the wind-bent pine (STYLE §2.5, D-R4: no palm in Newfoundland), like the corridor palm. */
+export const NF_BENT_PALMS: ReadonlySet<PlantSpecies> = new Set<PlantSpecies>(['fanPalm', 'canaryPalm']);
 /** A `pine` item leaning at least this much (radians) is drawn wind-bent. */
 export const BENT_PINE_LEAN = 0.15;
 
@@ -144,9 +149,13 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
     dots: own(cardMaterial(hook({ wind: 0, key: 'dots' }), { roughness: 0.6 })),
     contact: own(contactMaterial(eye, now)),
   };
-  // The Water's Way species: one material set each, built once (stable for the fog hook).
+  // The Water's Way species: one material set per species these items draw (a variant's species included), built once at
+  // construction — stable for the fog hook, and none for the species a planting never uses (a dressing district's few).
   const wwMats = new Map<WWSpecies, { body: THREE.Material; depth?: THREE.Material; shell?: THREE.Material }>();
+  const wwUsed = new Set<WWSpecies>();
+  for (const it of items) if (isWW(it.item.species)) { const sp = it.item.species as WWSpecies; if (opts.theme === 'newfoundland' && NF_BENT_PALMS.has(sp)) continue; wwUsed.add(sp); for (const v of [0, 0.2, 0.5, 0.9]) wwUsed.add(wwVariant(sp, opts.theme, it.item.scale, v).species); }
   for (const sp of WW_SPECIES) {
+    if (!wwUsed.has(sp)) continue;
     const spec = WW_SPEC[sp], shape = { wind: spec.wind, key: `ww:${sp}`, ...(spec.stretchTop !== undefined ? { stretchTop: spec.stretchTop } : {}) };
     const depth = spec.cast ? own(depthMaterial(hook(shape))) : undefined; if (depth && spec.double) depth.side = THREE.DoubleSide;
     // Taylor's cards show a paler paper backing; woodland cards (seen from both sides as canopy) keep their colour.
@@ -187,6 +196,13 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
     for (const it of items) {
       if (!it.kept) continue;
       const p = it.item, v = variationOf(p.tint, p.at[0], p.at[2]), s = p.scale, at = p.at;
+      if (opts.theme === 'newfoundland' && NF_BENT_PALMS.has(p.species)) {
+        // STYLE §2.5 / D-R4: Newfoundland never draws a palm; its palms are the wind-bent pine (the corridor palm's rule).
+        add('bentPine', { family: 'tree', geometry: () => bentPineGeometry(pal, tier).body, material: M.palm, depth: M.palmDepth, cast: full, stretch: true }, { ...base(it), m: matrix(at, 0, p.yaw, 0, s, s, s, -0.05), colour: shade([1, 1, 1], 0.95 + v * 0.1), stretch: 1 }, it);
+        if (full) add('bentPineShell', { family: 'shell', geometry: () => bentPineGeometry(pal, tier).shell!, material: M.pineShell, cast: false, stretch: true }, { ...base(it), m: matrix(at, 0, p.yaw, 0, s, s, s, -0.05), colour: null, stretch: 1 }, it);
+        add('contact', { family: 'contact', geometry: shadowGeometry, material: M.contact, cast: false, order: 1 }, { ...base(it), m: matrix([at[0] + Math.cos(p.yaw) * 0.8 * s, at[1], at[2] - Math.sin(p.yaw) * 0.8 * s], 0, 0, 0, 1.6 * s, 1, 1.3 * s, 0.06), colour: null }, it);
+        continue;
+      }
       if (isWW(p.species)) {
         const { key, species: sp, variant } = wwKey(p, v);
         if (!wwDrawn(sp, look)) continue;
@@ -350,14 +366,15 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
     materials: () => [...mats],
     stats() {
       const ls = layers.map(l => ({ key: l.key, count: l.mesh.count, capacity: l.recs.length, triangles: l.mesh.count * l.tris }));
-      return { items: items.length, drawn: layers.filter(l => l.family !== 'shell' && l.family !== 'contact' && l.family !== 'dots').reduce((a, l) => a + l.mesh.count, 0), drawCalls: layers.filter(l => !packedKey(l.key) && l.mesh.count > 0).length + packed.filter(p => p.batch.mesh.visible).length, triangles: ls.reduce((a, l) => a + l.triangles, 0), layers: ls };
+      return { items: items.length, drawn: layers.filter(l => l.family !== 'shell' && l.family !== 'contact' && l.family !== 'dots').reduce((a, l) => a + l.mesh.count, 0), drawCalls: layers.filter(l => !packedKey(l.key) && l.mesh.count > 0).length + packed.filter(p => p.batch.mesh.visible).length, triangles: ls.reduce((a, l) => a + l.triangles, 0), layers: ls,
+        capacity: { triangles: layers.reduce((a, l) => a + l.recs.length * l.tris, 0), drawCalls: layers.filter(l => !packedKey(l.key) && l.recs.length > 0).length + packed.length } };
     },
     activeRecords() {
       return layers.flatMap(l => l.recs.flatMap((r, i) => r.on ? [{id:`${l.key}:${i}`, layer:l.key, batch:packedKey(l.key) ?? l.key, triangles:l.tris}] : []));
     },
     probe(groupId, index) {
       const it = items.find(i => i.groupId === groupId && i.index === index); if (!it) return null;
-      const p = it.item, key = isWW(p.species) ? wwKey(p, variationOf(p.tint, p.at[0], p.at[2])).key : p.species === 'pine' && (p.lean ?? 0) >= BENT_PINE_LEAN ? 'bentPine' : isTree(p.species) ? `tree:${p.species}` : p.species === 'flowering' || p.species === 'shrub' ? 'bush' : p.species === 'flowerBed' ? (isWildSet(setOf(p.tint)) ? 'bed:wild' : 'bed') : p.species === 'grassTuft' ? 'tuft' : p.species;
+      const p = it.item, key = opts.theme === 'newfoundland' && NF_BENT_PALMS.has(p.species) ? 'bentPine' : isWW(p.species) ? wwKey(p, variationOf(p.tint, p.at[0], p.at[2])).key : p.species === 'pine' && (p.lean ?? 0) >= BENT_PINE_LEAN ? 'bentPine' : isTree(p.species) ? `tree:${p.species}` : p.species === 'flowering' || p.species === 'shrub' ? 'bush' : p.species === 'flowerBed' ? (isWildSet(setOf(p.tint)) ? 'bed:wild' : 'bed') : p.species === 'grassTuft' ? 'tuft' : p.species;
       const layer = layers.find(l => l.key === key), rec = layer?.recs.find(r => r.x === p.at[0] && r.z === p.at[2] && r.district === it.district);
       if (!rec) return { district: it.district, kept: it.kept, active: false, fade: 0 };
       const born = Math.max(0, Math.min(1, (clock() - rec.born) / BORN_SECONDS)), grown = born * born * (3 - 2 * born);

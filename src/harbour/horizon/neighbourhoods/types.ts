@@ -207,7 +207,7 @@ export interface DistrictDressing {
   life: LifeSpawn[];
 }
 
-/** E1 (additive): a Journey-map building as the bake measures it with the grammar's `buildingJourneyShape` (index-borne). */
+/** E1 (additive): a Journey-map building as the bake measures it with the grammar's `buildingJourneyShape` (index-borne): `height` the eave above `base`, `roofHeight` the roof's rise above the eave. */
 export interface JourneyDressingBuilding { id: string; districtId: string; footprint: Point2[]; base: number; height: number; roofHeight: number; landmarkId?: string }
 
 /**

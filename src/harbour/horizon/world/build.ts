@@ -18,6 +18,7 @@ import { buildCoastline } from '../land/coast/index.ts';
 import type { Corridor } from '../land/corridor/types.ts';
 import { corridorLightAnchors } from '../land/corridor/lights.ts';
 import type { DressingBake } from '../neighbourhoods/bake.ts';
+import { mergeDressingLights } from '../neighbourhoods/lights.ts';
 
 export const GEOGRAPHY_REVISION = 'horizon-geo-1';
 export interface LandWorldOptions { terrainAsset?: { url: string; bytes: number; step: number }; extraSolids?: StructureSolid[];
@@ -162,7 +163,7 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
     crossings: crossing.crossings, crossingProofs: crossing.proofs, rawIntersections: crossing.rawIntersections, thresholds,
     reserves: cuts.pads.filter(p => p.kind === 'reserve').map(p => ({ id: p.id, placeId: p.placeId ?? p.id, outline: padOutline(p), door: anchor(`${p.id}.door`, p.door ?? p.centre), rotationDegrees: p.rotationDegrees })), sky,
     underground: { doors: Object.entries(m.underground.doors).map(([id, door]) => anchor(id, [door.xy[0]! * s, door.h * s, door.xy[1]! * s])), rooms: roomVolumes.map(room => room.outline), roomVolumes, waterBodyId: cuts.waters.find(w => w.kind === 'deep')?.id, skylight: anchor('deep.skylight', [m.underground.rooms.deep.skylight.to[0]! * s, m.underground.rooms.deep.skylight.topH * s, m.underground.rooms.deep.skylight.to[1]! * s]) },
-    lights: [...hosts.map(h => { const d = h.door as { xy: Point2; height: number }; return { id: `door.${h.id}.lamp`, at: [d.xy[0], d.height + 2.2, d.xy[1]] as Point3, kind: 'door' }; }), ...thresholds.filter(t => !t.carried).map(t => ({ id: `${t.id}.lamp`, at: [t.at[0], (t.height ?? 0) + .8, t.at[1]] as Point3, kind: 'threshold' })), ...corridorLightAnchors(options.corridors ?? []), ...bridgeLights, ...(options.dressing?.lights ?? [])], faceCards: buildFaceCards(geometry), views, lanterns: [],
+    lights: mergeDressingLights([...hosts.map(h => { const d = h.door as { xy: Point2; height: number }; return { id: `door.${h.id}.lamp`, at: [d.xy[0], d.height + 2.2, d.xy[1]] as Point3, kind: 'door' }; }), ...thresholds.filter(t => !t.carried).map(t => ({ id: `${t.id}.lamp`, at: [t.at[0], (t.height ?? 0) + .8, t.at[1]] as Point3, kind: 'threshold' })), ...corridorLightAnchors(options.corridors ?? []), ...bridgeLights], options.dressing?.lights ?? []), faceCards: buildFaceCards(geometry), views, lanterns: [],
     protected: [{ id: 'green', outline: protectedGreenOutline(), reason: 'No building, plot or tall prop inside the protected centre.' }],
     bridges,
     geometry: { solids: geometry, sourceMap }, collision: { beds: cuts.beds, pads: cuts.pads, mouths: cuts.mouths, waters: cuts.waters, falls: cuts.falls ?? [], walkableSlopeDegrees: 40, lipStepMax: .48 }, pathGraph: graph, diagnostics, journeyMeasurements: measurements, ...(regions.length ? { regions } : {}), ...(options.dressing?.dressing ? { dressing: options.dressing.dressing } : {}), ...(options.corridors ? { corridors: options.corridors } : {}), roadChains: [mountainRoadChain(cuts.beds)].filter((c):c is NonNullable<typeof c>=>c!==null),

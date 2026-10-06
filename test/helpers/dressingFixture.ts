@@ -5,6 +5,11 @@ import type {StructureSolid, WaterCut} from '../../src/harbour/horizon/land/inte
 /** Test-local neighbourhood dressing fixtures (the dressing engine's tests; never a registered module). */
 /** A flat test island (2 eu) with one walk bed, one pad, one pond, one baked box, the protected circle and two districts. */
 export const GROUND = 2;
+/** The host's baked walls: a 20 × 10 box over its footprint from the pad (2) to the eave (6), as the bake names it. */
+export function hostWalls(): StructureSolid {
+  const [x0, x1, z0, z1, y0, y1] = [410, 430, 415, 425, GROUND, GROUND + 4];
+  return {id: 'host.test.walls', kind: 'host', positions: [x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1, x0, y1, z0, x1, y1, z0, x1, y1, z1, x0, y1, z1], indices: [4, 6, 5, 4, 7, 6, 0, 1, 2, 0, 2, 3, 0, 4, 5, 0, 5, 1], surface: 'stucco', districtId: 'west', bedIds: [], walkable: false, role: 'wall'};
+}
 export function fixtureSource(): DressingSource {
   const box: StructureSolid = {id: 'baked.box', kind: 'test', positions: [600, 0, 600, 610, 0, 600, 610, 0, 610, 600, 0, 610, 600, 5, 600, 610, 5, 600, 610, 5, 610, 600, 5, 610], indices: [4, 6, 5, 4, 7, 6, 0, 1, 2, 0, 2, 3], surface: 'stone', districtId: 'east', bedIds: [], walkable: false, role: 'wall'};
   const pond: WaterCut = {id: 'pond', kind: 'lake', outline: [[300, 500], [340, 500], [340, 540], [300, 540]], points: [], level: 1.5, width: 0, depth: 1, bank: 1};
@@ -13,7 +18,7 @@ export function fixtureSource(): DressingSource {
     ground: () => GROUND,
     beds: [{id: 'walk.a', kind: 'walk', profile: 'walk', points: [[100, GROUND, 300], [500, GROUND, 300]], width: 4}],
     pads: [{id: 'host.test', kind: 'host', centre: [420, GROUND, 420], size: [20, 10], rotationDegrees: 0}],
-    waters: [pond], solids: [box],
+    waters: [pond], solids: [box, hostWalls()],
     hosts: [{id: 'test', footprint: [[410, 415], [430, 415], [430, 425], [410, 425]], door: {xy: [420, 425]}, height: GROUND}],
     protectedAreas: [{id: 'green', outline: circle}],
     districtAt: x => (x < 500 ? 'west' : 'east'),
@@ -26,7 +31,7 @@ export const fixtureModule: NeighbourhoodModule = {
   id: 'hollow',
   build(ctx: DressingContext) {
     const r = ctx.rng('hollow.scatter'), d = emptyDressing('hollow');
-    d.buildings.push(building('kiln', 200, 350), building('tower', 700, 350, {kind: 'studio', size: {w: 6, d: 6, h: 12}, landmarkId: 'tower'}), building('home', 420, 420, {kind: 'cottage', hostId: 'test', collide: false}));
+    d.buildings.push(building('kiln', 200, 350), building('tower', 700, 350, {kind: 'studio', size: {w: 6, d: 6, h: 12}, landmarkId: 'tower'}), building('home', 420, 420, {kind: 'cottage', hostId: 'test', collide: false, yaw: 0, size: {w: 20, d: 10, h: 4}}));
     for (let i = 0; i < 12; i++) { const x = 150 + r() * 300, z = 200 + r() * 60; if (!ctx.occupied(x, z, 1)) d.plants.push({species: 'birch', at: [x, ctx.heightAt(x, z), z], scale: 0.8 + r() * 0.4, yaw: r() * 6}); }
     d.plants.push({species: 'reed', at: [320, 1.5, 520], scale: 1, yaw: 0}, {species: 'oakGiant', at: [800, GROUND, 800], scale: 1, yaw: 0, keep: true}, {species: 'grassTuft', at: [790, GROUND, 790], scale: 1, yaw: 0});
     d.props.push({id: 'bench', kind: 'bench', at: [250, GROUND, 330], yaw: 0, collide: true}, {id: 'swing', kind: 'swing', at: [805, GROUND, 805], yaw: 0}, {kind: 'buoy', at: [310, 1.5, 510], yaw: 0}, {kind: 'bollard', at: [780, GROUND, 800], yaw: 0});

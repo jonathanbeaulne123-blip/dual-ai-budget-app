@@ -133,7 +133,8 @@ describe("The Water's Way plant kit: through createCorridorPlanting", () => {
       p.update(camAt(1200, 1190), resident);
       const s = p.stats(), keys = new Set(s.layers.filter(l => l.count > 0).map(l => l.key));
       for (const sp of WW_SPECIES) {
-        const want = theme === 'newfoundland' && sp === 'spruce' ? 'ww:spruce:black' : sp === 'woodlandCard' ? (theme === 'newfoundland' ? 'ww:woodlandCard:spire' : null) : `ww:${sp}`;
+        // Newfoundland's palms are the wind-bent pine (STYLE §2.5, D-R4; review of PR 1), drawn in the corridor's bentPine layer.
+        const want = theme === 'newfoundland' && (sp === 'fanPalm' || sp === 'canaryPalm') ? 'bentPine' : theme === 'newfoundland' && sp === 'spruce' ? 'ww:spruce:black' : sp === 'woodlandCard' ? (theme === 'newfoundland' ? 'ww:woodlandCard:spire' : null) : `ww:${sp}`;
         if (want) expect(keys.has(want), `${theme}/${tier} ${want} in ${[...keys].join(',')}`).toBe(true);
       }
       const oak = s.layers.find(l => l.key === 'ww:oakGiant')!; expect(oak.count).toBe(4);

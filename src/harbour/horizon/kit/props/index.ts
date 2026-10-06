@@ -4,7 +4,7 @@
  *
  *   drawProp(b, rec, theme, ground, tier)   draw one record into a CardBuilder (world space)
  *   propCollision(rec, ground)              its collision parts ([] unless `rec.collide`)
- *   propIsEssential(kind)                   lite keeps essential props only (and drops the rest whole, never substitutes)
+ *   propDraws(rec, tier) / propIsEssential   lite draws an essential kind, or any prop that collides or carries a fixture (one rule, here)
  *
  * Frame and scale: kit.ts. Linear kinds (railOpen, fence, drystoneWall, sheepFank, laundryLine, festoon) follow
  * `rec.line`; rails, festoons and laundry sit on the line's own heights (decks, wall fixings), fences and walls on the
@@ -40,7 +40,7 @@ export const PROP_KINDS = Object.keys(DRAW) as PropKind[];
 /** Draw one prop record (world space) into a card builder. Non-finite records draw nothing. */
 export function drawProp(b: CardBuilder, rec: PropRecord, theme: DressingTheme, ground: Ground, tier: 'full' | 'lite'): void {
   if (![rec.at[0], rec.at[1], rec.at[2], rec.yaw, rec.scale ?? 1].every(Number.isFinite) || (rec.scale ?? 1) <= 0) return;
-  if (tier === 'lite' && !propIsEssential(rec.kind)) return;
+  if (!propDraws(rec, tier)) return;
   DRAW[rec.kind](ctxOf(b, rec, theme, ground, tier));
 }
 
@@ -57,6 +57,13 @@ const ESSENTIAL: ReadonlySet<PropKind> = new Set<PropKind>([
   'bocceCourt', 'skateBowl', 'geoglyph', 'readingTable', 'bell', 'bollardQuay', 'lifeRing',
 ]);
 export function propIsEssential(kind: PropKind): boolean { return ESSENTIAL.has(kind); }
+/**
+ * The one lite rule (lite drops, never substitutes; collision is what is drawn): lite draws an essential kind, and ANY prop
+ * that collides or carries a pastime fixture — a collider is never invisible. Full draws everything.
+ */
+export function propDraws(rec: Pick<PropRecord, 'kind' | 'collide' | 'fixture'>, tier: 'full' | 'lite'): boolean {
+  return tier === 'full' || ESSENTIAL.has(rec.kind) || !!rec.collide || !!rec.fixture;
+}
 
 /** Collision parts for one record: none unless `rec.collide`, and only for kinds that physically block (what is drawn). */
 export function propCollision(rec: PropRecord, ground: Ground): CollisionPart[] {

@@ -1,8 +1,11 @@
 import {readFileSync} from 'node:fs';
 import {gunzipSync} from 'node:zlib';
 import * as THREE from 'three';
+import {CardBuilder} from '../src/harbour/art/cardScene.ts';
+import {drawProp, propDraws} from '../src/harbour/horizon/kit/props/index.ts';
+import {createCorridorPlanting} from '../src/harbour/horizon/runtime/corridorPlanting.ts';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {createDressingLayer, dressingCorridor, drapePolygon, DRESSING_DETAIL, DRESSING_INK, DRESSING_NIGHT, LITE_DROP_PROPS, measureDistrictDressing} from '../src/harbour/horizon/runtime/dressingLayer.ts';
+import {createDressingLayer, dressingCorridor, drapePolygon, DRESSING_DETAIL, DRESSING_INK, DRESSING_NIGHT, countDraws, measureDistrictDressing} from '../src/harbour/horizon/runtime/dressingLayer.ts';
 import {buildDistrictCards, isDressingArtOwned, redressedHostSolids} from '../src/harbour/horizon/runtime/cards.ts';
 import type {DistrictDressing, PlantRecord, PropRecord, WorldDressing} from '../src/harbour/horizon/neighbourhoods/types.ts';
 import type {StructureSolid, TerrainField} from '../src/harbour/horizon/land/interfaces.ts';
@@ -82,19 +85,61 @@ describe('runtime dressing layer (runtime/dressingLayer.ts)', () => {
     expect(() => layer.setSeason('winter', 1)).not.toThrow();
     layer.dispose();
   });
-  it('lite drops non-essential props (never a collider or a fixture) and thins plants by the planting rules', () => {
+  it('lite: one prop rule (kit/props propDraws) — a non-essential kind goes, never a collider or a fixture; counts are props that drew', () => {
+    const drawn = (rec: PropRecord, tier: 'full' | 'lite') => { const b = new CardBuilder('t', tier, {ink: '#000000', cell: 8192}); drawProp(b, rec, 'classic', ground, tier); const c = b.finish(), n = countDraws(c.group).triangles; c.dispose(); return n; };
+    const towel: PropRecord = {kind: 'towel', at: [1000, 2, 1410], yaw: 0};
+    expect(drawn(towel, 'full')).toBeGreaterThan(0); expect(drawn(towel, 'lite')).toBe(0);
+    for (const rec of [{...towel, collide: true}, {...towel, fixture: 'beach'}, {kind: 'bench', at: [1000, 2, 1410], yaw: 0} as PropRecord]) {
+      expect(propDraws(rec, 'lite')).toBe(true); expect(drawn(rec, 'lite'), rec.kind).toBeGreaterThan(0); // a collider is never invisible
+    }
     const full = createDressingLayer(world(), {tier: 'full', theme: 'classic', season: 'summer', ground}), lite = createDressingLayer(world(), {tier: 'lite', theme: 'classic', season: 'summer', ground});
     full.prebuild(['landing']); lite.prebuild(['landing']);
-    expect(LITE_DROP_PROPS.has('towel') && LITE_DROP_PROPS.has('umbrella')).toBe(true);
-    expect(full.stats().districts.landing!.props).toBe(3);
+    const props = district('landing', 1000, 1400).props;
+    expect(full.stats().districts.landing!.props).toBe(props.filter(p => drawn(p, 'full') > 0).length);
+    expect(lite.stats().districts.landing!.props).toBe(props.filter(p => drawn(p, 'lite') > 0).length);
     expect(lite.stats().districts.landing!.props).toBe(2); // the towel goes; the colliding bench and the fixture umbrella stay
     full.dispose(); lite.dispose();
   });
-  it('plants become one synthetic corridor; keep plants get groups of their own (lite never drops them)', () => {
+  it('plants become one synthetic corridor; a keep plant carries its flag (lite never drops it)', () => {
     const c = dressingCorridor(district('landing', 1000, 1400));
     expect(c.id).toBe('dressing.landing');
-    expect(c.planting.map(g => [g.id, g.items.length])).toEqual([['dressing.landing', 2], ['dressing.landing.keep.2', 1]]);
-    expect(c.planting.every(g => g.kind === 'framingTrees' && g.reachId === 'dressing')).toBe(true);
+    expect(c.planting.map(g => [g.id, g.items.length])).toEqual([['dressing.landing', 3]]);
+    expect(c.planting[0]!.items.map(i => i.keep ?? false)).toEqual([false, false, true]);
+    // Lite: a crowd of the same species keeps its share AND the marked one.
+    const crowd: DistrictDressing = {...district('landing', 1000, 1400), plants: Array.from({length: 40}, (_, i) => ({species: 'reed' as const, at: [1000 + i, 2, 1420] as const, scale: 1, yaw: 0, ...(i === 17 ? {keep: true} : {})}))};
+    const p = createCorridorPlanting({corridors: [dressingCorridor(crowd)]}, {tier: 'lite', theme: 'classic', season: 'summer'});
+    p.update(camera(1017, 1420), new Set([districtAt(1017, 1420)]));
+    expect(p.probe('dressing.landing', 17)!.kept).toBe(true);
+    p.dispose();
+  });
+  it('Newfoundland draws its palms as the wind-bent pine (STYLE §2.5, D-R4); the other dressings draw palms', () => {
+    const palms: DistrictDressing = {...district('landing', 1000, 1400), plants: [{species: 'fanPalm', at: [1000, 2, 1420], scale: 1, yaw: 0}, {species: 'canaryPalm', at: [1006, 2, 1420], scale: 1, yaw: 0}]};
+    for (const theme of ['classic', 'taylor', 'newfoundland'] as const) {
+      const p = createCorridorPlanting({corridors: [dressingCorridor(palms)]}, {tier: 'full', theme, season: 'summer'});
+      p.update(camera(1003, 1420), new Set([districtAt(1003, 1420)]));
+      const keys = p.stats().layers.filter(l => l.count > 0).map(l => l.key);
+      if (theme === 'newfoundland') { expect(keys).toContain('bentPine'); expect(keys.some(k => /fanPalm|canaryPalm/.test(k))).toBe(false); }
+      else { expect(keys.some(k => k.startsWith('ww:fanPalm'))).toBe(true); expect(keys).not.toContain('bentPine'); }
+      p.dispose();
+    }
+  });
+  it('far landmarks: a landmark is drawn when its district is not resident, hidden once its own dressing is drawn', () => {
+    const w = world();
+    w.dressing!.landmarks = [{id: 'campanile', label: 'The campanile', neighbourhood: 'harbour', at: [1423, 4, 1187], top: [1423, 42.3, 1187]}, {id: 'oak', label: 'The Old Oak', neighbourhood: 'lakeside', at: [1125, 16, 1165], top: [1125, 52, 1165]}];
+    w.dressing!.journey = [{id: 'campanile', districtId: 'harbour', footprint: [[1419, 1183], [1427, 1183], [1427, 1191], [1419, 1191]], base: 4, height: 34, roofHeight: 4, landmarkId: 'campanile'}];
+    w.dressing!.districts.push({...district('harbour', 1440, 1200)});
+    const materials: THREE.Material[] = [];
+    const layer = createDressingLayer(w, {tier: 'lite', theme: 'classic', season: 'summer', ground, material: m => materials.push(m)});
+    const far = () => layer.stats().far;
+    expect(far().districts.sort()).toEqual(['harbour', districtAt(1125, 1165)].sort());
+    expect(materials.some(m => m.name === 'horizon.dressing.far')).toBe(true); // fogged like the land
+    layer.update(camera(1000, 1400), new Set(['landing'])); // far from both
+    expect(far().visible.sort()).toEqual(far().districts.sort());
+    let frames = 0; while (!layer.stats().districts.harbour && frames++ < 200) layer.update(camera(1430, 1190), new Set(['harbour']));
+    expect(far().visible).not.toContain('harbour'); // its own dressing is drawn
+    expect(far().visible).toContain(districtAt(1125, 1165));
+    expect(far().triangles).toBeGreaterThan(0);
+    layer.dispose();
   });
   it('ground paint is draped in ≤ 2.5 eu triangles over the whole polygon', () => {
     const tris = drapePolygon([[0, 0], [20, 0], [20, 10], [0, 10]], DRESSING_DETAIL.paintEdge);
@@ -108,7 +153,7 @@ describe('runtime dressing layer (runtime/dressingLayer.ts)', () => {
     expect(full.triangles).toBeGreaterThan(0); expect(full.drawCalls).toBeGreaterThan(0);
     expect(lite.triangles).toBeLessThanOrEqual(full.triangles);
   });
-  it('budget: the prototypes’ real loads fit 150k / 60k with their baked districts (Little Harbour, the Reach)', () => {
+  it('budget: the prototypes’ real loads fit 150k / 60k with their baked districts (Little Harbour, the Reach, Scholars’ Edge)', () => {
     // The baked districts' terrain + drawn solids, as the index reports them.
     const index = JSON.parse(gunzipSync(readFileSync('public/horizon/world/horizon-geo-1.index.json.gz')).toString()) as {districts: District[]};
     const baked = (id: string) => index.districts.find(x => x.id === id)!.triangles!;
@@ -124,7 +169,13 @@ describe('runtime dressing layer (runtime/dressingLayer.ts)', () => {
     const reach: DistrictDressing = {districtId: 'reach', life: [], ground: [], pools: [], buildings: [],
       props: [...props('lantern', 30, 1250, 1240), ...props('viewer', 8, 1260, 1250), ...props('bench', 12, 1270, 1255)],
       plants: [...plants('reed', 2470, 1215, 1225, 2, 70), ...plants('willow', 30, 1230, 1300), ...plants('tamarack', 40, 1300, 1290), ...plants('dogwood', 7, 1240, 1295)]};
-    for (const d of [harbour, reach]) {
+    // Scholars' Edge (protos/scholars SPEC, layout B: the 1,875-tree wood, 60–70 % canopy, instanced cards for the back
+    // rows): 300 front-row trees (130 broadleaf, 170 conifers) and 1,575 woodland cards. The limit, measured: 420 front-row
+    // trees with 190 broadleaf (v2's round/birch: 144 lite / 264 full triangles each, the cards 8) is ~3.8k over lite and
+    // ~0.6k over full — the Scholars module keeps ≤ ~130 broadleaf in the front rows, or the plant kit gains a lighter one.
+    const scholars: DistrictDressing = {districtId: 'scholars', life: [], ground: [], pools: [], buildings: [], props: [...props('lantern', 12, 760, 420), ...props('bench', 10, 770, 430)],
+      plants: [...plants('spruce', 110, 700, 330), ...plants('birch', 70, 700, 370), ...plants('cedar', 60, 760, 330), ...plants('round', 60, 760, 360), ...plants('woodlandCard', 1575, 640, 300, 3, 60)]};
+    for (const d of [harbour, reach, scholars]) {
       const f = measureDistrictDressing(d, ground, 'full'), l = measureDistrictDressing(d, ground, 'lite'), b = baked(d.districtId);
       console.info(`[dressing-budget] ${d.districtId}: dressing full ${f.triangles} / lite ${l.triangles}; with the district ${b.full + f.triangles} / ${b.lite + l.triangles}`);
       expect(b.full + f.triangles, `${d.districtId} full`).toBeLessThanOrEqual(150_000);

@@ -1,5 +1,8 @@
 import {describe, expect, it} from 'vitest';
-import {bakeDressings, collisionPartMesh, collisionSolids, createDressingContext, hashSeed, mulberry32, validateDressing} from '../src/harbour/horizon/neighbourhoods/bake.ts';
+import {bakeDressings, collisionSolids, createDressingContext, hashSeed, HOST_FIT, mergeDressingLights, mulberry32, validateDressing} from '../src/harbour/horizon/neighbourhoods/bake.ts';
+import {collisionPartMesh} from '../src/harbour/horizon/kit/buildings/index.ts';
+import {createRoadLights} from '../src/harbour/horizon/runtime/roadLights.ts';
+import * as THREE from 'three';
 import {building, emptyDressing as empty, fixtureModule, fixtureSource, GROUND} from './helpers/dressingFixture.ts';
 import {NEIGHBOURHOOD_MODULES} from '../src/harbour/horizon/neighbourhoods/index.ts';
 import type {StructureSolid, TerrainField} from '../src/harbour/horizon/land/interfaces.ts';
@@ -116,6 +119,50 @@ describe('neighbourhood dressing bake (neighbourhoods/bake.ts)', () => {
     // The fixture's exceptions are honoured: the listed swing and the oak at its own landmark's base.
     expect(validateDressing([{module: 'hollow', dressing: fixtureModule.build(ctx)}], ctx)).toEqual([]);
     expect(() => bakeDressings([fixtureModule, fixtureModule], ctx)).toThrow(/Duplicate neighbourhood module/);
+  });
+  it('a re-dressed host: a known host, once, on its baked shell, with no collider of its own, filed with its walls', () => {
+    const ctx = createDressingContext(fixtureSource()), check = (b: ReturnType<typeof building>) => { const d = empty('hollow'); d.buildings.push(b); return validateDressing([{module: 'hollow', dressing: d}], ctx); };
+    const fit = {kind: 'cottage' as const, hostId: 'test', collide: false, yaw: 0, size: {w: 20, d: 10, h: 4}};
+    expect(check(building('ok', 420, 420, fit))).toEqual([]);
+    expect(check(building('ghost', 420, 420, {...fit, hostId: 'nobody'})).join()).toMatch(/unknown host nobody/);
+    expect(check(building('solid', 420, 420, {...fit, collide: true})).join()).toMatch(/must not collide/);
+    expect(check(building('shifted', 420 + HOST_FIT.plan + 0.2, 420, fit)).join()).toMatch(/off host test's baked footprint/);
+    expect(check(building('tall', 420, 420, {...fit, size: {w: 20, d: 10, h: 5}})).join()).toMatch(/miss host test's baked/);
+    const twice = empty('hollow'); twice.buildings.push(building('a', 420, 420, fit), building('b', 420, 420, fit));
+    expect(validateDressing([{module: 'hollow', dressing: twice}], ctx).join()).toMatch(/re-dressed twice/);
+    // Filed under the district holding the host's walls (here a partition that puts the record's own centre elsewhere).
+    const split = createDressingContext({...fixtureSource(), districtAt: (_x: number, z: number) => (z < 420 ? 'west' : 'east')});
+    expect(split.districtAt(420, 420)).toBe('east'); // the record's own centre
+    expect(split.hostShell('test')!.district).toBe('west');
+    const home = bakeDressings([fixtureModule], split).dressing!.districts.flatMap(d => d.buildings.map(b => [d.districtId, b.id])).find(([, id]) => id === 'home');
+    expect(home).toEqual(['west', 'home']);
+  });
+  it('footprint edges and colliding lines are checked, not only points; one id namespace; no protected bypass', () => {
+    const src = fixtureSource(); src.beds = [...src.beds, {id: 'path.b', kind: 'walk', profile: 'walk', points: [[650, GROUND, 200], [650, GROUND, 299]], width: 1}];
+    const ctx = createDressingContext(src), d = empty('hollow');
+    // Centre and corners clear of path.b; its north edge (z = 297.1) crosses the path's end.
+    d.buildings.push(building('straddle', 650, 300, {yaw: 0, size: {w: 20, d: 6, h: 4}}), building('ring', 830, 800, {size: {w: 1, d: 1, h: 0.5}, roof: {form: 'flat', pitch: 0, overhang: 0, material: 'lead'}}), building('dup', 200, 600), building('bad@id', 200, 650));
+    d.buildings.push(building('pillar', 800, 760, {size: {w: 1, d: 1, h: 3}, params: {allowInProtected: true}}));
+    d.props.push({id: 'dup', kind: 'bench', at: [200, GROUND, 700], yaw: 0}, {id: 'wall', kind: 'drystoneWall', at: [300, GROUND, 290], yaw: 0, collide: true, line: [[300, GROUND, 290], [300, GROUND, 310]]},
+      {id: 'rail', kind: 'fence', at: [300, GROUND, 290], yaw: 0, line: [[300, GROUND, 290], [300, GROUND, 310]]},
+      {id: 'string', kind: 'festoon', at: [700, GROUND, 800], yaw: 0, line: [[700, GROUND, 800], [790, GROUND, 800]]});
+    const problems = validateDressing([{module: 'hollow', dressing: d}], ctx), has = (re: RegExp) => problems.some(p => re.test(p));
+    expect(has(/building straddle: footprint .* on path\.b/)).toBe(true);
+    expect(has(/duplicate prop id dup/)).toBe(true);
+    expect(has(/bad@id contains '@' or '#'/)).toBe(true);
+    expect(has(/prop wall: colliding drystoneWall line crosses walk\.a/)).toBe(true);
+    expect(has(/prop rail/)).toBe(false); // a non-colliding fence may follow a bed
+    expect(has(/prop string: festoon .* inside protected green/)).toBe(true); // its line reaches into the Green
+    expect(has(/building pillar: .* inside protected green/)).toBe(true); // params.allowInProtected is no bypass
+    expect(has(/building ring/)).toBe(false); // 0.5 eu: under the 0.85 limit
+  });
+  it('module lights are emissive cards only (never a road-lamp kind, never a point light) and never reuse a world id', () => {
+    const baked = bakeDressings([{id: 'hollow', build: () => ({...empty('hollow'), lights: [{id: 'hollow.post', at: [10, 3, 10], kind: 'roadLantern', head: [10, 5.6, 10], pool: [10, 3, 10], poolRadius: 3}]})}], createDressingContext(fixtureSource()));
+    expect(baked.lights.map(l => l.kind)).toEqual(['dressing:roadLantern']);
+    expect(() => mergeDressingLights([{id: 'hollow.post', at: [0, 0, 0], kind: 'door'}], baked.lights)).toThrow(/already used/);
+    const scene = new THREE.Scene(), lights = createRoadLights(scene, {lights: baked.lights}, {tier: 'full'});
+    expect(lights.lights.length).toBe(0); // no road lamps: the fixed point-light pool stays empty
+    lights.dispose();
   });
   it('the context answers from the world: bed clearance, occupied, water, districts, hosts', () => {
     const ctx = createDressingContext(fixtureSource());

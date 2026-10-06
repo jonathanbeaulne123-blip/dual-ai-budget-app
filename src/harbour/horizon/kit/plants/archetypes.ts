@@ -55,8 +55,9 @@ export const LITE_KEEP: Record<PlantSpecies, number> = {
   round: 0.7, fruit: 0.7, birch: 0.7, pine: 0.7, poplar: 0.7, alpine: 0.7, palm: 0.75,
   shrub: 0.55, flowering: 0.55, hedge: 0.75, heath: 0.5, flowerBed: 1, grassTuft: 0.4,
   // The Water's Way: dense ground layers keep little on lite (the drift's first, last and largest still stay), trees
-  // most of their groves, the authored and few-of-a-kind trees everything.
-  reed: 0.3, cattail: 0.3, sedge: 0.25, lily: 0.4, prairieGrass: 0.3, fern: 0.35, iceplant: 0.4, woodlandCard: 0.6,
+  // most of their groves, the authored and few-of-a-kind trees everything. Woodland cards 0.45: Scholars' Edge's
+  // 60–70 % canopy (≈ 1,455 back-row cards) fits the 60k lite district budget with its trees (test/horizonDressingLayer).
+  reed: 0.3, cattail: 0.3, sedge: 0.25, lily: 0.4, prairieGrass: 0.3, fern: 0.35, iceplant: 0.4, woodlandCard: 0.45,
   willow: 0.7, tamarack: 0.6, spruce: 0.55, balsam: 0.55, oakGiant: 1, cypress: 0.7, olive: 0.6, stonePine: 1,
   juniper: 0.5, cedar: 0.55, fanPalm: 0.75, canaryPalm: 1, bougainvillea: 0.6, lemonPot: 0.5, dogwood: 0.5, apple: 0.6,
 };

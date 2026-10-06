@@ -104,18 +104,40 @@ export function buildingJourneyShape(rec:BuildingRecord):{footprint:[number,numb
 
 /**
  * Closed indexed geometry for one collision part (outward faces, sides and underside), for the bake's
- * `StructureSolid.positions/indices`. Boxes: 8 corners; prisms: the top polygon (fan) over the bottom polygon.
+ * `StructureSolid.positions/indices` (neighbourhoods/bake.ts) and the kit sheet — the one implementation. Boxes: 8
+ * corners; prisms: the top polygon (ear-clipped, so an L or concave plan stays inside its outline) over the bottom.
  */
 export function collisionPartMesh(part:CollisionPart):{positions:number[];indices:number[]}{
-  const top:[number,number,number][]=[],bot:[number,number,number][]=[];
+  let ring:[number,number][],tops:number[];
   if(part.kind==='box'){const c=Math.cos(part.yaw),s=Math.sin(part.yaw),hx=part.size[0]/2,hz=part.size[1]/2;
-    for(const [lx,lz] of [[-hx,-hz],[hx,-hz],[hx,hz],[-hx,hz]] as const){const x=part.centre[0]+lx*c+lz*s,z=part.centre[1]+lz*c-lx*s;top.push([x,part.top,z]);bot.push([x,part.bottom,z]);}}
-  else for(const [x,y,z] of part.corners){top.push([x,y,z]);bot.push([x,part.bottom,z]);}
-  // Wind the plan counter-clockwise seen from above (+y): signed area in (x, z) negative → CCW from above.
-  let area=0;for(let i=0;i<top.length;i++){const a=top[i]!,b=top[(i+1)%top.length]!;area+=a[0]*b[2]-b[0]*a[2];}
-  if(area>0){top.reverse();bot.reverse();}
-  const n=top.length,positions=[...top.flat(),...bot.flat()],indices:number[]=[];
-  for(let i=1;i<n-1;i++){indices.push(0,i,i+1);indices.push(n,n+i+1,n+i);}
-  for(let i=0;i<n;i++){const j=(i+1)%n;indices.push(i,n+i,n+j,i,n+j,j);}
+    ring=([[-hx,-hz],[hx,-hz],[hx,hz],[-hx,hz]] as const).map(([lx,lz])=>[part.centre[0]+lx*c+lz*s,part.centre[1]+lz*c-lx*s] as [number,number]);tops=ring.map(()=>part.top);}
+  else{ring=part.corners.map(p=>[p[0],p[2]]);tops=part.corners.map(p=>p[1]);}
+  // Wind the plan counter-clockwise seen from above (+y): signed area in (x, z) negative → the top faces up, sides out.
+  let area=0;for(let i=0;i<ring.length;i++){const a=ring[i]!,b=ring[(i+1)%ring.length]!;area+=a[0]*b[1]-b[0]*a[1];}
+  if(area>0){ring=[...ring].reverse();tops=[...tops].reverse();}
+  const n=ring.length,positions:number[]=[],indices:number[]=[];
+  for(let i=0;i<n;i++)positions.push(ring[i]![0],tops[i]!,ring[i]![1]);
+  for(let i=0;i<n;i++)positions.push(ring[i]![0],part.bottom,ring[i]![1]);
+  for(const [a,b,c] of earClip(ring)){indices.push(a,b,c);indices.push(n+a,n+c,n+b);}
+  for(let i=0;i<n;i++){const j=(i+1)%n;indices.push(i,n+i,j,j,n+i,n+j);}
   return {positions,indices};
+}
+/** Ear clipping of a simple polygon in the winding whose triangles (a, b, c) face +y. */
+function earClip(ring:readonly [number,number][]):[number,number,number][]{
+  const idx=ring.map((_,i)=>i),out:[number,number,number][]=[];
+  const cross=(a:number,b:number,c:number)=>{const A=ring[a]!,B=ring[b]!,C=ring[c]!;return (B[0]-A[0])*(C[1]-A[1])-(B[1]-A[1])*(C[0]-A[0]);};
+  const inside=(p:number,a:number,b:number,c:number)=>cross(a,b,p)<0&&cross(b,c,p)<0&&cross(c,a,p)<0;
+  let guard=0;
+  while(idx.length>3&&guard++<10000){
+    let clipped=false;
+    for(let k=0;k<idx.length;k++){
+      const a=idx[(k+idx.length-1)%idx.length]!,b=idx[k]!,c=idx[(k+1)%idx.length]!;
+      if(cross(a,b,c)>=0)continue; // reflex (or straight) in this winding
+      if(idx.some(p=>p!==a&&p!==b&&p!==c&&inside(p,a,b,c)))continue;
+      out.push([a,b,c]);idx.splice(k,1);clipped=true;break;
+    }
+    if(!clipped)break;
+  }
+  if(idx.length>=3)for(let k=1;k<idx.length-1;k++)out.push([idx[0]!,idx[k]!,idx[k+1]!]);
+  return out;
 }

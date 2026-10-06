@@ -10,6 +10,10 @@ dressing engine (PR 1 "common ground") lives here.
   The rules are documented at the top of the file. Wired in `scripts/horizon/bake-entry.ts`; the world carries the result as
   `WorldDefinition.dressing` (absent when no module dresses anything, so an empty registry bakes byte-identically).
 - `paint.ts` — the ground-paint palette per dressing.
+- `lights.ts` — the modules' light anchors as emissive cards only (`dressing:<kind>`, never in the point-light pool) and
+  the merge that refuses an id the world already uses.
 
 The runtime draws the baked records in `runtime/dressingLayer.ts` (per resident district, lazily, released 20 s after a
-district leaves); `runtime/cards.ts` never draws `dressing` collision solids nor the greybox walls/roof of a re-dressed host.
+district leaves; far landmark silhouettes from the index while a landmark's district is not drawn); `runtime/cards.ts`
+never draws `dressing` collision solids nor the greybox walls/roof of a re-dressed host (whose record matches the host's
+baked shell, adds no collider and rides in the chunk of the host's walls).
