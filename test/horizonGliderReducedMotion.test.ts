@@ -52,8 +52,9 @@ describe('the launch sheet under reduced motion (FLIGHT.md §6)',()=>{
     expect(floor.id).toBe('terrain');expect(Math.abs(floor.y-sandbar.height!)).toBeLessThan(.05);
     expect(geography.submerged(sandbar.xy[0],sandbar.xy[1],sandbar.height!)).toBe(false);expect(env.water(sandbar.xy[0],sandbar.xy[1],sandbar.height!-.3)).toBeNull();
     // Not the deck: the old fallback stood 12 over the water.
-    // D-WW89: the next beach west of the battered plot stands 99.9 m from that deck walk (its floor is terrain, proved above).
-    expect(Math.hypot(sandbar.xy[0]-553.4,sandbar.xy[1]-1077.9)).toBeGreaterThan(90);
+    // D-WW89: the next beach west of the battered plot stands 99.9 m from that deck walk (its floor is terrain, proved above), so the
+    // bar is 99 (was 100): the least change that still says "not the deck".
+    expect(Math.hypot(sandbar.xy[0]-553.4,sandbar.xy[1]-1077.9)).toBeGreaterThan(99);
     expect(env.shoreNode(600,1030)?.label).toBe('Bight Shore');
   });
   it('every landing has a finite place and height (the cut lands on foot there)',()=>{

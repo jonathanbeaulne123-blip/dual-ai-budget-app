@@ -70,15 +70,15 @@ Each place's lookout frames the next place's landmark. One Lookout kit (viewer, 
 | Fallswatch → the Old Oak | **6.08** | 472 | the buttress's south face beside the eye | built (PR 2 L1: the V3.1 west buttress) |
 | (Fallswatch → the Veil lip) | **1.95** | 25 | the buttress's edge at [1087,95,694] | built (PR 2 L1) |
 | under the oak → the osprey pole | **1.61** | 196 | ground at the trunk | — |
-| Spring Bay → the campanile | **−0.06** today; **2.89** with the Reach Footbridge's rails open | 177 | the Reach Footbridge's 1.15 stone parapet (top 10.65) | open rails on the Reach Footbridge (PR 2), seen through by the ray caster |
-| the belfry → the Ferris wheel | **22.93** | 619 | Horizon Drive's kerb (reach 7) | the campanile, the pier |
-| the top of the wheel → the grain elevator | **18.62** | 1,125 | the Flats rim at [475,39,829] | the pier and wheel, the elevator |
-| the elevator gallery → the Library | **14.00** | 461 | the Library host's slab | the elevator |
+| Spring Bay → the campanile | **2.89** (−0.06 before PR 2) | 177 | ground at [1251,4,1199] | built (PR 2: the Reach Footbridge's rails are open timber, seen through by the ray caster) |
+| the belfry → the Ferris wheel | **20.58** | 524 | the zip landing's ramp | the campanile; the wheel inland at [1010,1509] (PR 2, D-WW74) |
+| the top of the wheel → the grain elevator | **19.59** | 1,011 | the Flats rim at [470,38,804] | the wheel, the elevator |
+| the elevator gallery → the Library | **14.00** | 461 | courtyard B's terrace slab (PR 2) | the elevator |
 | the Bight lookout → Westwatch | **3.16** | 354 | ground at the deck edge | the raised Bight lookout deck (PR 2, PR 4) |
 
-**The one link that fails today.** Spring Bay → the campanile is cut by 0.06 m by the Reach Footbridge's solid 1.15 m stone parapet (the same parapet family the Reach prototype replaced with open rails on the boardwalk). The registry records `reachFootbridge.rails` as an **owed occluder**: the test passes only if it is the sole limit and the line clears by ≥ 0.5 m with it opened (2.89 m); once the bake no longer limits the line by it, the test fails until the entry is removed, so the exception cleans itself up. The fix is PR 2's: open timber rails on the footbridge too, and the ray caster must see through open rails (today it does so only for post-and-rail corridor guards).
+**Every link passes (PR 2, measured on the land bake).** Spring Bay → the campanile used to be cut by 0.06 m by the Reach Footbridge's solid 1.15 m stone parapet. PR 2 opened that rail (open timber, D-WW61) and gave the island one open-rail rule the ray caster sees through (`isOpenRail`, D-WW92), so the registry's `owedOccluders` entry is gone and the link is a plain passing proof (2.89 m).
 
-**The Lamp from the story eyes** (≥ 0.5 m to the gallery less 2 m): seen from **8 of 12** — under the oak 1.62, Notch Bluff 4.75, Sunset Rail 2.52, Harbour Bell Landing 1.28, the belfry 13.51, the top of the wheel 19.38, the elevator gallery 5.29, the Bight lookout 8.10. Not from Fallswatch (0.00), Spring Bay (−5.57) or the High Span Overlook (−3.09). The contract is ≥ 6. Every other binocular target each eye lists (the osprey from all five Reach lookouts that face it, the oak, the Veil lip) is proved the same way; the tightest is Harbour Bell Landing → the osprey, 0.61 m past the Quay Bridge's rail.
+**The Lamp from the story eyes** (≥ 0.5 m to the gallery less 2 m): seen from **9 of the 11 story eyes** on the PR 2 land — Fallswatch 5.90 (the V3.1 buttress top; 0.00 before), under the oak 1.62, Notch Bluff 4.76, Sunset Rail 2.52, Harbour Bell Landing 1.28, the belfry 11.79, the top of the wheel 21.17, the elevator gallery 5.29, the Bight lookout 8.10. Not from Spring Bay (−5.57) or the High Span Overlook (−3.09). The contract is ≥ 6. Every other binocular target each eye lists (the osprey from all five Reach lookouts that face it, the oak, the Veil lip) is proved the same way; the tightest is Harbour Bell Landing → the osprey, 0.61 m past the Quay Bridge's rail.
 
 The oak is the island's second constant: Fallswatch (6.08), the belfry (22.35), the top of the wheel (31.17), the elevator gallery (23.03) and the Bight lookout (5.20) all see it, and so do the Reach lookouts.
 
@@ -134,7 +134,17 @@ Build what is shared once, so seven neighbourhoods don't each invent houses, ree
 
 ## 8. Limits and what is owed
 
-- The landmark tops are planned points until PR 3/4 bake the buildings; the test will then include them as occluders and the registry's tolerance check guards drift.
-- Fallswatch's links depend on PR 2's land (the buttress top); the Bight lookout's raised deck is built (D-WW87: deck 52.0, eye 53.6). Spring Bay → the campanile depends on PR 2 opening the Reach Footbridge's rails and the ray caster seeing through open rails.
-- The wheel's spot depends on the pier as built; the elevator's side clearance against the strip is proved on the tower footprint (D-WW81); the Westwatch cote must reach ≥ 96 (PR 3).
-- Measured on bake 9d13db2; nothing here is device evidence.
+**Closed by PR 2 (the land):**
+- Open rails and the ray caster: one open-rail builder and marker for the whole island (the Reach boardwalk, its bays and the Reach Footbridge, the Greenway, the Long Sands pier, the lookouts), and one `isOpenRail` rule the view proofs and this sight chain both use (D-WW61, D-WW92).
+- The Spring Bay link: Spring Bay → the campanile is a plain passing proof (2.89 m); the registry's owed occluder is gone.
+- Fallswatch's links stand on the V3.1 west buttress (built: 6.08 to the oak, 1.95 to the Veil lip, 5.90 to the Lamp); the Bight lookout's raised deck is built (D-WW87: deck 52.0, eye 53.6); the second stream runs (the Hollow Beck under Green Road into Orchard Brook, D-WW55).
+
+**Still owed:**
+- The landmark tops are planned points until PR 3/4 bake the buildings; the test will then include them as occluders and the registry's tolerance check guards drift. The Westwatch cote must reach ≥ 96 (PR 3).
+- The elevator's side clearance against the strip is proved on the tower footprint (D-WW81); its building is PR 3/4.
+- **Jonathan's calls** (applied or drawn the recommended way, each reversible):
+  1. The glider's Long Sands landing field moved off the Greenway to [1185,1355], r 35 (D-WW90); the alternative is a larger field over the Drive.
+  2. The Bight Shore batter is partial: a full batter needs the Greenway about 30 m off the plots' lagoon faces, or the plots' lagoon margins given up (D-WW89, D-WW93).
+  3. The drag lift is a short tow (68 m, Twin Tarns → Orchard Bench), because the glacier's cirque rim sits on v2 land and inside the skylight keep-out (ruling 5).
+  4. The pier stops at z 1520 so the ferry line passes, so the Ferris wheel stands inland at [1010,1509], 139 m from the drawn spot (D-WW74); the wheel's links above are measured there.
+- Measured on the PR 2 land bake; nothing here is device evidence.

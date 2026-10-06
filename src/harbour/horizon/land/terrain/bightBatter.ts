@@ -54,13 +54,25 @@ function lineDistance(q: XY, line: readonly XY[]): number {
   }
   return best;
 }
+/** Whether a point lies nearer than `r` to a line: the same test as `lineDistance(q, line) < r`, without the hypot for a segment
+ * whose box (grown by r) does not hold the point (land integration: the Greenway line has 566 points and the march asks
+ * this per step, which tripled the land build). */
+function lineWithin(q: XY, line: readonly XY[], r: number): boolean {
+  for (let i = 1; i < line.length; i++) {
+    const a = line[i - 1]!, c = line[i]!;
+    if (q[0] < Math.min(a[0], c[0]) - r || q[0] > Math.max(a[0], c[0]) + r || q[1] < Math.min(a[1], c[1]) - r || q[1] > Math.max(a[1], c[1]) + r) continue;
+    const dx = c[0] - a[0], dz = c[1] - a[1], t = Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dz) / (dx * dx + dz * dz || 1)));
+    if (Math.hypot(q[0] - a[0] - dx * t, q[1] - a[1] - dz * t) < r) return true;
+  }
+  return false;
+}
 /** Distance from a point to the Greenway line (the batter's keep-off reference). */
 export function bightGreenwayDistance(pads: readonly PadCut[], q: XY): number { return lineDistance(q, prepare(pads).greenway); }
 /** The march tests the keep-offs this much wider, so the lattice between two marched normals (and a corner's fan) stays clear. */
 const KEEP_MARGIN = .75;
 function kept(p: Prepared, q: XY): boolean {
-  if (p.greenway.length > 1 && lineDistance(q, p.greenway) < p.keepGreenway + KEEP_MARGIN) return false;
-  for (const c of p.channels) if (lineDistance(q, c.line) < c.keep + KEEP_MARGIN) return false;
+  if (p.greenway.length > 1 && lineWithin(q, p.greenway, p.keepGreenway + KEEP_MARGIN)) return false;
+  for (const c of p.channels) if (lineWithin(q, c.line, c.keep + KEEP_MARGIN)) return false;
   if (p.jetty) { const dx = Math.max(0, Math.abs(q[0] - p.jetty.centre[0]) - p.jetty.half[0]), dz = Math.max(0, Math.abs(q[1] - p.jetty.centre[1]) - p.jetty.half[1]); if (Math.hypot(dx, dz) < p.keepJetty + KEEP_MARGIN) return false; }
   return true;
 }

@@ -43,10 +43,12 @@ export function generateMarshPools(cuts: LandCuts, ground: (x: number, z: number
     const n = 22, ph = rnd() * 6.28, ph2 = rnd() * 6.28, outline: XY[] = [];
     for (let k = 0; k < n; k++) { const a = k / n * 6.283, rr = r * (.82 + .16 * Math.sin(3 * a + ph) + .1 * Math.sin(5 * a + ph2)); outline.push([cx + Math.cos(a) * rr, cz + Math.sin(a) * rr]); }
     const samp: XY[] = [...outline, [cx, cz]]; for (let k = 0; k < 10; k++) { const a = rnd() * 6.28, rr = Math.sqrt(rnd()) * r * .8; samp.push([cx + Math.cos(a) * rr, cz + Math.sin(a) * rr]); }
+    // The plan tests before the ground (each ground sample is a full terrain-cut solve): the same pools, in the same order, since
+    // every test is pure and the random draws above are already made (land integration: the build ran 13 s here).
+    if (out.some(q => Math.hypot(q.c[0] - cx, q.c[1] - cz) < q.r + r + 4)) return false;
+    for (const [x, z] of outline) if (blocked(x, z, 5.5)) return false;
     const gs = samp.map(([x, z]) => ground(x, z)).sort((a, b) => a - b), gmin = gs[0]!, gmax = gs.at(-1)!, med = gs[gs.length >> 1]!;
     if (gmin < 1.6 || gmax - gmin > (force ? .9 : .55)) return false;
-    for (const [x, z] of outline) if (blocked(x, z, 5.5)) return false;
-    if (out.some(q => Math.hypot(q.c[0] - cx, q.c[1] - cz) < q.r + r + 4)) return false;
     let y = Math.min(Math.max(med + .05, gmin + .08), gmin + .32);
     // A pool under the Greenway: its surface stays ≥ 0.55 under the deck (the crossing register's water-body rule is 0.5).
     for (const [x, z] of [...outline, [cx, cz] as XY]) { const hit = nearestOnPath([x, z], deck); if (hit.distance < 3.6) y = Math.min(y, hit.at[1] - .55); }
