@@ -14,8 +14,11 @@ import {appendChunkDressing, parseHorizonChunkPayload} from '../src/house/world/
 import {createHash} from 'node:crypto';
 
 describe('neighbourhood dressing bake (neighbourhoods/bake.ts)', () => {
-  it('the registry starts empty and an empty registry bakes nothing', () => {
-    expect(NEIGHBOURHOOD_MODULES).toEqual([]);
+  it('the registry lists each neighbourhood once and an empty registry bakes nothing', () => {
+    // PR 3/4 (The Water's Way) register the neighbourhood modules: one per id, ids from the contract's NeighbourhoodId.
+    const ids = NEIGHBOURHOOD_MODULES.map(m => m.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const id of ids) expect(['harbour', 'hollow', 'scholars', 'flats', 'landing', 'lakeside', 'crown']).toContain(id);
     expect(bakeDressings([], createDressingContext(fixtureSource()))).toEqual({dressing: null, solids: [], lights: []});
   });
   it('seeded streams are deterministic and distinct per seed', () => {
