@@ -15,6 +15,8 @@ import type { Analysis } from './context.ts';
 import { landSide, seaSide, type Env } from './env.ts';
 import { sign, type SideName } from './frame.ts';
 import { r3 } from './rng.ts';
+/** The island lantern's low version (STYLE §3.1, D-303): a 0.8 eu bollard and the small pool it throws on the road. */
+export const BOLLARD_HEIGHT = .8, BOLLARD_POOL = 3;
 import type { StopSpan } from './stops.ts';
 import {roadLampFootSupported} from './lampFootprint.ts';
 
@@ -414,5 +416,9 @@ export function planLamps(A: Analysis, env: Env, stops: readonly { span: StopSpa
 
   // Order along the road, then name.
   out.sort((a, b) => a.s - b.s || (a.l.side < b.l.side ? -1 : 1));
-  return out.map(({ l }, k) => ({ ...l, id: `${A.id}.lamp.${k}` }));
+  // The Water's Way (D-303, L2b): inside a low zone (STYLE rule 12, the Green's protected centre) a lantern is the island lantern's
+  // low version, the 0.8 eu bollard, on its own spot (no arm: the head over the post). A bridge lantern on a deck's rail line stays
+  // where it stands, below the 1.05 rail, so the bridge's guard is unchanged. The road keeps its ids and its sequence.
+  const low = (l: LampSpot) => env.lowZones.some(zn => CORRIDOR.lampHeight > zn.maxHeight && Math.hypot(l.at[0] - zn.centre[0], l.at[2] - zn.centre[1]) < zn.radius);
+  return out.map(({ l }, k) => ({ ...(low(l) ? { ...l, kind: 'bollard' as LampKind, head: [l.at[0], r3(l.at[1] + BOLLARD_HEIGHT), l.at[2]] as Point3, pool: [l.at[0], l.pool[1], l.at[2]] as Point3, poolRadius: BOLLARD_POOL } : l), id: `${A.id}.lamp.${k}` }));
 }

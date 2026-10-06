@@ -122,8 +122,9 @@ const LANDMARK_SOURCE: readonly LandmarkSource[] = [
   { id: 'osprey', label: 'the osprey pole', kind: 'landmark', neighbourhood: 'landing', at: [1292, 4.1, 1268], top: [1292, 15.6, 1268] },
   // Apex 42.3 (belfry cornice 38); the shaft stands on a plinth to the lowest ground (10.06).
   { id: 'campanile', label: 'the campanile', kind: 'landmark', neighbourhood: 'harbour', at: [1423, 10.06, 1187], top: [1423, 42.3, 1187] },
-  // Hub [1010, 19.6, 1648], r 13, facing NE; at = the pier deck under the hub.
-  { id: 'wheel', label: 'the Ferris wheel', kind: 'landmark', neighbourhood: 'landing', at: [1010, 3.6, 1648], top: [1010, 32.6, 1648], owed: 'the pier (PR 2 land)' },
+  // Hub [1010, 19.6, 1509], r 13, facing NE; at = the pier platform under the hub. D-WW74 (PR 2 land): the drawn pier (to z 1630,
+  // hub z 1648) crossed the ferry line; the pier ends at z 1520 and the wheel moved inland along it (MANIFEST structures.longSandsPier).
+  { id: 'wheel', label: 'the Ferris wheel', kind: 'landmark', neighbourhood: 'landing', at: [1010, 3.6, 1509], top: [1010, 32.6, 1509], owed: 'the wheel (PR 4)' },
   // On the airport tower footprint: ground 35.5 + 28 m, green-and-white beacon. Side clearance vs the runway owed.
   { id: 'elevator', label: 'the grain elevator', kind: 'landmark', neighbourhood: 'flats', at: [395, 35.5, 706], top: [395, 63.5, 706], owed: 'side clearance vs the strip (PR 4 Flats)' },
   // The Library host (pad 48, greybox roof 62 today); the dressed ridge (verdigris) at 64.
@@ -177,7 +178,7 @@ export const STORY_EYES: readonly StoryEye[] = [
   // Harbour: the belfry (eye ≈ 34.4, cornice 38).
   { id: 'belfry', label: 'the belfry', at: [1423, 1187], y: 34.4, targets: ['wheel', 'oak', 'lamp'], lookout: true, owed: 'the campanile (PR 3 Harbour)' },
   // Long Sands: the top cabin of the wheel (rim top 32.6; seated eye ≈ 31).
-  { id: 'wheelTop', label: 'the top of the wheel', at: [1010, 1648], y: 31, targets: ['elevator', 'oak', 'lamp'], lookout: false, owed: 'the pier and wheel (PR 2 / PR 4)' },
+  { id: 'wheelTop', label: 'the top of the wheel', at: [1010, 1509], y: 31, targets: ['elevator', 'oak', 'lamp'], lookout: false, owed: 'the wheel (PR 4)' },
   // Flats: the elevator's head-house gallery (top 63.5).
   { id: 'elevatorTop', label: 'the elevator gallery', at: [395, 706], y: 62, targets: ['library', 'oak', 'lamp'], lookout: false, owed: 'the elevator (PR 4 Flats)' },
   // Scholars: the Bight lookout deck, raised ~2 m (ground 50.0 → deck 52.0, eye 53.6).
@@ -212,8 +213,8 @@ export const SIGHT_CHAIN: readonly SightLink[] = [
   { from: 'oak', to: 'osprey', measured: 1.6 },
   // 2.89 m with the Reach Footbridge's rails open; on today's bake its 1.15 stone parapet (top 10.65) cuts the line (−0.06 m).
   { from: 'springBay', to: 'campanile', measured: 2.89, dependsOn: 'open timber rails on the Reach Footbridge, seen through by the ray caster (PR 2 land)', owedOccluders: ['reachFootbridge.rails'] },
-  { from: 'belfry', to: 'wheel', measured: 22.9 },
-  { from: 'wheelTop', to: 'elevator', measured: 18.6 },
+  { from: 'belfry', to: 'wheel', measured: 20.6 },   // D-WW74: the wheel moved inland along the shortened pier (was 22.9)
+  { from: 'wheelTop', to: 'elevator', measured: 19.6 },   // D-WW74 (was 18.6)
   { from: 'elevatorTop', to: 'library', measured: 14 },
   { from: 'bightLookout', to: 'westwatch', measured: 3.2, dependsOn: 'the raised Bight lookout deck (PR 2 land, PR 4 Scholars)' },
 ];

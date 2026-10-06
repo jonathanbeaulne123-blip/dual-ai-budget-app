@@ -7,6 +7,7 @@ import { baseHeight } from '../terrain';
 import { buildWaterCuts } from '../water';
 import { FOOTING_SINK, GROUND_CONTACT, pier, wallToGround } from './foundations';
 import { box, clamp, distance, districtAt, mitredSlab, mix, nearestOnPath, plan, slab, solid } from './mesh';
+import { buildWaterwaySouth } from './waterwaySouth';
 
 export interface SpanSpec { id:string; at:XY; route:string; length:number; width:number; height?:number; clear?:number; covered?:boolean; supportSpacing?:number; /** A clear opening centred on the span, carried by a through truss. */ opening?:number; /** Build abutments to the ground at both ends. */ abutments?:boolean; /** v1.9: the deck follows the route's own graded points (plan and height) instead of a level chord. */ followRoute?:boolean }
 export const SPANS:SpanSpec[]=[
@@ -83,12 +84,12 @@ function axisAt(b:BedCut|undefined,at:XY):XY {
   if(!b)return [1,0];const n=nearestOnPath(at,b.points),a=b.points[n.segment]!,p=b.points[Math.min(n.segment+1,b.points.length-1)]!,len=distance(plan(a),plan(p))||1;return [(p[0]!-a[0]!)/len,(p[2]!-a[2]!)/len];
 }
 /** Point and unit direction at an arc length along a polyline. */
-function along(path:readonly XYZ[],s:number):{p:XYZ;dir:XY} {
+export function along(path:readonly XYZ[],s:number):{p:XYZ;dir:XY} {
   let run=0;
   for(let i=1;i<path.length;i++){const a=path[i-1]!,b=path[i]!,len=distance(plan(a),plan(b));if(len<1e-9)continue;if(run+len>=s||i===path.length-1){const t=clamp((s-run)/len,0,1);return {p:[mix(a[0],b[0],t),mix(a[1],b[1],t),mix(a[2],b[2],t)],dir:[(b[0]-a[0])/len,(b[2]-a[2])/len]};}run+=len;}
   const p=path[0]!;return {p,dir:[1,0]};
 }
-const planLength=(path:readonly XYZ[])=>path.slice(1).reduce((n,p,i)=>n+distance(plan(path[i]!),plan(p)),0);
+export const planLength=(path:readonly XYZ[])=>path.slice(1).reduce((n,p,i)=>n+distance(plan(path[i]!),plan(p)),0);
 /** The route's own graded points within ±length/2 of the nearest station to `centre`, ends interpolated. */
 /** R2-03: eu of floor apron past each road-tunnel portal (the mouth mask reaches 3 eu outside the face). */
 export const PORTAL_APRON=6.5;
@@ -108,7 +109,7 @@ function routeStretch(route:BedCut,centre:XY,length:number,height?:number):XYZ[]
  * clearance). The river lane runs in valleys at every height, so it binds at any height. */
 const WATER_LANE_TOP=16;
 /** Lower routes and boat lanes a footing may not stand in. */
-function laneGuard(cuts:LandCuts):(xy:XY,above:number,ownBeds:readonly string[])=>string|undefined {
+export function laneGuard(cuts:LandCuts):(xy:XY,above:number,ownBeds:readonly string[])=>string|undefined {
   const lanes:{id:string;pts:XY[];half:number;top:number}[]=[{id:'FERRY',pts:sampleSpline(M.water_routes.FERRY.pts as unknown as XY[],4),half:7,top:WATER_LANE_TOP},{id:'RIVER_RUN',pts:sampleSpline(M.water_routes.RIVER_RUN.pts as unknown as XY[],4),half:4,top:Infinity}];
   const segDistance=(p:XY,a:XY,b:XY)=>{const dx=b[0]-a[0],dz=b[1]-a[1],t=clamp(((p[0]-a[0])*dx+(p[1]-a[1])*dz)/(dx*dx+dz*dz||1),0,1);return distance(p,[a[0]+t*dx,a[1]+t*dz]);};
   return (xy,above,own)=>{
@@ -131,7 +132,7 @@ const WEST_FILL=.45;
  * 0.25 eu after its trestle was built) so a vehicle
  * or a walker is stopped at body height between the posts (a top rail at 1.05 alone passes under the cruiser's 0.2/0.65 contact
  * levels: the Bight spur trestle's east edge let a rider through to a 9 eu drop). */
-function postedRail(rails:StructureSolid,path:readonly XYZ[],offset:number,height=1.05,spacing=2,midRail=false):void {
+export function postedRail(rails:StructureSolid,path:readonly XYZ[],offset:number,height=1.05,spacing=2,midRail=false):void {
   const length=planLength(path),n=Math.max(1,Math.ceil(length/spacing));let prev:XYZ|undefined;
   for(let k=0;k<=n;k++){const {p,dir}=along(path,length*k/n),xy:XY=[p[0]-dir[1]*offset,p[2]+dir[0]*offset];box(rails,xy,p[1]+height,[.1,.1],p[1]-.35);const top:XYZ=[p[0],p[1],p[2]];if(prev){slab(rails,prev,top,.09,.09,offset,height);if(midRail)slab(rails,prev,top,.08,.7,offset,.95);}prev=top;}
 }
@@ -897,6 +898,8 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   for(let i=0;i<lampRamp.length;i+=3){const p=lampRamp[i]!;pier(lampSupports,[p[0],p[2]],p[1]-.35,base,[.4,.4],[.9,.9]);}cuts.solids.push(lampSupports);
   const galleryBed=bed('lampGallery.ramp','walk',lampRamp,false);galleryBed.maxGrade=.08;cuts.beds.push(galleryBed);
   buildStair('lampGallery.stair',[540,1,1250],[540,25,1198.5],3,cuts,base);
+  // The Water's Way (L2b): Long Sands' pier and skate bowl, the Glasshouse stair-and-ramp (land/structures/waterwaySouth.ts).
+  buildWaterwaySouth(cuts,base);
   buildNamedKinds(cuts,base);
   buildBridgeLandmarks(cuts,base);
   flushRails(cuts);

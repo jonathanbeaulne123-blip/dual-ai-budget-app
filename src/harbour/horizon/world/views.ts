@@ -28,9 +28,11 @@ export interface ViewProof {
 }
 type Test = (hit: RayHit, direction: Point3, eye?: Point3) => boolean;
 const HOOK: Point2[] = [[520, 780], [545, 940], [460, 1030], [370, 950], [330, 800]];
+/** Mountain v2's glass dam as page A's subject (RULINGS: ~[1316, 87–142, 538]; the region's arc R 24 about [1316,514]). */
+export const GLASS_DAM = { xy: [1316, 538] as Point2, r: 30, foot: 87, crest: 142 } as const;
 /** The Pass 1 subjects each page must hold at 16:9, in the manifest's frame vocabulary (portrait.frames uses the same names). */
 export const PAGE_SUBJECTS: Record<string, string[]> = {
-  A: ['the High Span', 'the Shoulder', 'the Crown'],   // v2.6: the dam is Mountain v2's, beyond the square's fog; page F holds it (D-M3)
+  A: ['the glass dam', 'the Shoulder'],   // D-WW71 (The Water's Way): the square looks up the dam line to Mountain v2's glass dam (v2.6 held the High Span)
   B: ['the Bight Bridge', 'the Flats', 'the hook'],
   C: ['the road deck', 'the skate shelf', 'the walk at the water'],
   D: ['surf', 'the Lamp', 'the zipline landing'],
@@ -73,7 +75,10 @@ export function subjectTests(solids: readonly StructureSolid[] = [], field?: Pic
     return hit => hit.kind === 'solid' && decks.some(b => hit.point[0] >= b.min[0] && hit.point[0] <= b.max[0] && hit.point[2] >= b.min[2] && hit.point[2] <= b.max[2] && hit.point[1] >= b.min[1] - .25);
   };
   return {
-    'the High Span': any(solid('highSpan.'), carried('highSpan.deck')), "the dam's glass face": solid('dam.wall'), 'the Shoulder': landform('shoulder'), 'the Crown': landform('crown'),
+    'the High Span': any(solid('highSpan.'), carried('highSpan.deck')), "the dam's glass face": solid('dam.wall'),
+    // D-WW71: Mountain v2's glass dam is drawn by the region, not the bake: its face is the first hit within GLASS_DAM.r of the
+    // arc's face point at the face's own heights (foot 87 … crest 142), whatever the region draws there.
+    'the glass dam': hit => hit.kind !== 'sky' && Math.hypot(hit.point[0] - GLASS_DAM.xy[0] * s, hit.point[2] - GLASS_DAM.xy[1] * s) < GLASS_DAM.r * s && hit.point[1] >= GLASS_DAM.foot * s && hit.point[1] <= GLASS_DAM.crest * s + 2, 'the Shoulder': landform('shoulder'), 'the Crown': landform('crown'),
     'the Bight Bridge': solid('bightBridge.'), 'the Flats': landform('flats'), 'the hook': ground(polygon(HOOK)),
     'the road deck': solid('highSpan.deck'), 'the skate shelf': solid('highSpan.shelf'), 'the walk at the water': solid('highSpan.walk'),
     surf: water('water.sea'), 'the Lamp': any(solid('lampGallery', 'jetty.lamp', 'threshold.lampGallery', 'threshold.lampDock', 'offshore.lamp', 'lamp.'), near(lamp, 45)), 'the zipline landing': solid('platform.zipLanding', 'zipLanding', 'threshold.zipLanding'),
