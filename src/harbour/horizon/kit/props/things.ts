@@ -123,6 +123,34 @@ export function ospreyPole(c: Ctx) {
   shadow(c, 0.5, 0.5, 0.22);
 }
 /** A snag: a dead standing trunk 7.5 tall, three bare branches, a broken top. */
+/**
+ * A floating reed raft (the Greenway over the Bight, D-WW23): a timber frame 4 × 9 (× scale) whose top is `at`, a planted mat,
+ * reed and cattail clumps, sedge and a few iris / Joe-Pye flowers drawn with it (so lite, which drops the raft, never leaves
+ * planting floating on the water), and its tether — `line[0]` on the raft to `line[1]` at a pile — as a thin rope.
+ * Not physically blocking (it floats out of reach): no collider.
+ */
+const RAFT_REEDS: Record<Ctx['theme'], readonly string[]> = { classic: ['#7f9050', '#8d9a58', '#9aa060', '#6f8446'], taylor: ['#9cc5a1', '#b5d6b2', '#a8c79a', '#c3dcb4'], newfoundland: ['#7a8a4c', '#8a9454', '#96995c', '#6c7e44'] };
+const RAFT_MAT: Record<Ctx['theme'], string> = { classic: '#6d7f4f', taylor: '#b9d3a6', newfoundland: '#5f7148' };
+const RAFT_HEAD: Record<Ctx['theme'], string> = { classic: '#6b4a32', taylor: '#b0828a', newfoundland: '#5e3f2a' };
+const hexRGB = (h: string): RGB => [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255];
+export function raft(c: Ctx) {
+  const P = c.P, hw = 2, hl = 4.5, frame = c.theme === 'taylor' ? P.woodDark : shade(P.woodDark, 0.95), mat = hexRGB(RAFT_MAT[c.theme]), reeds = RAFT_REEDS[c.theme].map(hexRGB), head = hexRGB(RAFT_HEAD[c.theme]);
+  box(c, 0, 0, hw, hl, -0.2, -0.02, shade(frame, 1.05), frame);
+  quad(c, [-hw + 0.12, 0.0, -hl + 0.12], [hw - 0.12, 0.0, -hl + 0.12], [hw - 0.12, 0.0, hl - 0.12], [-hw + 0.12, 0.0, hl - 0.12], mat);
+  const seed = Math.round(c.x * 3.1 + c.z * 7.7), n = c.full ? 16 : 8;
+  for (let k = 0; k < n; k++) {
+    const x = (hash(seed + k, 1) - 0.5) * (2 * hw - 0.7), z = (hash(seed + k, 2) - 0.5) * (2 * hl - 0.7), h = 1.4 + hash(seed + k, 3) * 0.8, col = reeds[k % reeds.length]!;
+    for (let j = 0; j < 3; j++) { const a = (j / 3) * Math.PI * 2 + hash(seed + k, 4 + j) * 1.2, ox = Math.cos(a) * 0.14, oz = Math.sin(a) * 0.14, lean = 0.18 + hash(seed + k, 7 + j) * 0.2;
+      tri(c, [x - oz * 0.6, 0, z + ox * 0.6], [x + oz * 0.6, 0, z - ox * 0.6], [x + ox * lean * 4, h * (0.8 + 0.2 * j / 2), z + oz * lean * 4], shade(col, 0.85 + j * 0.1)); }
+    if (k % 3 === 0) { const t = h * 0.95; tri(c, [x - 0.02, 0, z], [x + 0.02, 0, z], [x, t + 0.15, z], shade(reeds[3]!, 0.7)); tri(c, [x - 0.045, t - 0.32, z], [x + 0.045, t - 0.32, z], [x, t, z], head); tri(c, [x, t - 0.32, z - 0.045], [x, t - 0.32, z + 0.045], [x, t, z], shade(head, 0.85)); }
+  }
+  if (c.full) for (let k = 0; k < 6; k++) {
+    const x = (hash(seed + k, 11) - 0.5) * (2 * hw - 0.9), z = (hash(seed + k, 12) - 0.5) * (2 * hl - 0.9), h = 0.7 + hash(seed + k, 13) * 0.5, col: RGB = k % 2 ? [0.357, 0.373, 0.659] : [0.659, 0.416, 0.557];
+    tri(c, [x - 0.02, 0, z], [x + 0.02, 0, z], [x, h, z], shade(reeds[0]!, 0.7)); tri(c, [x - 0.08, h - 0.05, z], [x + 0.08, h - 0.05, z], [x, h + 0.14, z], col); tri(c, [x, h - 0.05, z - 0.08], [x, h - 0.05, z + 0.08], [x, h + 0.14, z], shade(col, 0.88));
+  }
+  // The tether: a rope from the raft's edge to its pile (world points; the prop frame's scale does not apply).
+  const t = c.rec.line; if (t && t.length >= 2) c.b.beam([t[0]![0], t[0]![1], t[0]![2]], [t[1]![0], t[1]![1], t[1]![2]], 0.035, 0.035, c.theme === 'taylor' ? P.paperEdge : [0.25, 0.23, 0.2], null, 'card');
+}
 export function snag(c: Ctx) {
   const col: RGB = [0.557, 0.53, 0.482];
   cone(c, 0, 0, -0.2, 7.5, 0.36, 0.12, col, c.full ? 7 : 5);

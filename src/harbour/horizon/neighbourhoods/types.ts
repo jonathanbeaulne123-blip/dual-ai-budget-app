@@ -99,7 +99,9 @@ export type PropKind =
   | 'laundryLine' | 'stall' | 'cafeTable' | 'fountain' | 'planter' | 'bikeRack' | 'mapBoard' | 'sundial' | 'monthStone'
   | 'kite' | 'swing' | 'windsock' | 'beacon' | 'fireRing' | 'volleyNet' | 'lifeRing' | 'rodHolder' | 'duckBox'
   | 'ospreyPole' | 'snag' | 'buoy' | 'bollardQuay' | 'net' | 'crate' | 'cairn' | 'sheepFank' | 'festoon' | 'flag'
-  | 'bocceCourt' | 'skateBowl' | 'geoglyph' | 'readingTable' | 'bookCart' | 'birdFeeder' | 'bell';
+  | 'bocceCourt' | 'skateBowl' | 'geoglyph' | 'readingTable' | 'bookCart' | 'birdFeeder' | 'bell'
+  // E-WW (additive, the Reach PR 3): a floating reed raft (its planting drawn with it; `line` = its tether to a pile).
+  | 'raft';
 
 export interface PropRecord {
   id?: string;
