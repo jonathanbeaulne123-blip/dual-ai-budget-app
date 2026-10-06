@@ -109,7 +109,7 @@ describe('Long Sands: the place\'s contracts', () => {
   it('keeps the ferry line clear: the wheel\'s sweep and every record ≥ 6 eu off FERRY (MANIFEST structures.longSandsPier.ferryMargin_min)', () => {
     const { dressing } = world(), pts = (HORIZON_MANIFEST.water_routes.FERRY.pts as number[][]).map(p => [p[0]!, p[1]!] as Point2);
     const dist = (x: number, z: number) => Math.min(...pts.slice(1).map((b, i) => { const a = pts[i]!, dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz || 1))); return Math.hypot(a[0] + dx * t - x, a[1] + dz * t - z); }));
-    const [hx, , hz] = SANDS.wheel.hub, ax = -Math.SQRT1_2, az = -Math.SQRT1_2; // the wheel's plane runs NW–SE
+    const [hx, , hz] = SANDS.wheel.hub, ax = Math.cos(SANDS.wheel.yaw), az = -Math.sin(SANDS.wheel.yaw); // the wheel's plane (its local x)
     for (const s of [-1, 1]) expect(dist(hx + s * ax * (SANDS.wheel.r + 1), hz + s * az * (SANDS.wheel.r + 1))).toBeGreaterThanOrEqual(6);
     for (const r of [...dressing.buildings, ...dressing.props].filter(r => r.id !== 'sands.wreck.hull' && r.id !== 'sands.wreck.net')) expect(dist(r.at[0], r.at[2]), (r as { id?: string }).id ?? '').toBeGreaterThanOrEqual(6);
   }, 60_000);

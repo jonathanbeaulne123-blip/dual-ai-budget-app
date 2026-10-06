@@ -5,7 +5,7 @@
 //   node scripts/horizon/capture-sands.mjs --out docs/horizon/evidence/waters-way-landing-sands --port 5206
 // Options: --out <dir> · --port <n> · --url <origin> · --only <comma list of label substrings> · --themes classic,taylor,…
 //          --tiers full,lite · --night-only · --day-only
-// Each shot is a JPEG (quality 72, 1280 × 800 → 960 × 600) so the whole set stays under ~4 MB.
+// Each shot is a 1280 × 800 JPEG (quality 72); LOOK.md's set is downscaled to 960 × 600 so it stays under ~4 MB.
 import {chromium} from '@playwright/test';
 import {mkdir,writeFile,rm} from 'node:fs/promises';
 import {resolve,join} from 'node:path';

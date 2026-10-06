@@ -62,12 +62,12 @@ export function buildSandsParts(ctx: DressingContext): SandsParts {
   const W = SANDS.wheel, deck = SANDS.pier.deck;
   out.buildings.push({ id: 'sands.wheel', districtId: '', kind: 'ferrisWheel', style: STYLE, at: P3(W.hub[0], deck, W.hub[2]), yaw: q3(W.yaw),
     size: { w: 2 * W.r + 2, d: 6, h: q3(W.hub[1] - deck) }, roof: { form: 'none', pitch: 0, overhang: 0, material: 'steel' },
-    params: { radius: W.r, hubH: q3(W.hub[1] - deck), gondolas: W.gondolas, allowOnBed: true }, collide: true, landmarkId: 'wheel' });
-  // The seafood shack on the platform's east side, its door to the pier walk (west), clear of the wheel's sweep.
-  const P = SANDS.pier.platform;
-  out.buildings.push({ id: 'sands.shack', districtId: '', kind: 'shack', style: STYLE, at: P3(P.x1 - 4.6, deck, P.z0 + 14), yaw: -Math.PI / 2,
-    size: { w: 10, d: 7, h: 3.4 }, roof: { form: 'gable', pitch: 12, overhang: 0.35, material: 'tile' }, door: { face: 'front', u: -2.5 }, paint: 6,
-    params: { allowOnBed: true }, collide: true });
+    params: { radius: W.r, hubH: q3(W.hub[1] - deck), gondolas: W.gondolas, onDeck: true, allowOnBed: true }, collide: true, landmarkId: 'wheel' });
+  // The seafood shack at the pier's foot (east of the ramp, on the sand), its door to the plaza (north).
+  const P = SANDS.pier.platform, SH = SANDS.shack, shFloor = Math.max(...rectSamples(SH.at[0], SH.at[1], SH.wx / 2, SH.dz / 2, 0, 1).map(([a, b]) => ctx.heightAt(a, b))) + 0.1;
+  out.buildings.push({ id: 'sands.shack', districtId: '', kind: 'shack', style: STYLE, at: P3(SH.at[0], shFloor, SH.at[1]), yaw: Math.PI,
+    size: { w: SH.wx, d: SH.dz, h: 3.2 }, roof: { form: 'gable', pitch: 12, overhang: 0.35, material: 'tile' }, door: { face: 'front', u: 1.2 }, paint: 6, collide: true });
+  claims.add(SH.at[0], SH.at[1], 6, 'shack');
   // The pier's entrance gate where the ramp meets the deck (no lettering; a beam on two posts outside the rails).
   out.buildings.push({ id: 'sands.pierGate', districtId: '', kind: 'gate', style: STYLE, at: P3(SANDS.pier.x, 3.3, SANDS.pier.rampTo - 1), yaw: 0,
     size: { w: 2 * SANDS.pier.half + 1, d: 0.9, h: 5.9 }, roof: { form: 'none', pitch: 0, overhang: 0, material: 'timber' }, params: { gateStyle: 'timber' }, collide: true });
@@ -169,7 +169,7 @@ export function buildSandsParts(ctx: DressingContext): SandsParts {
   notes.sentinelPalms = sentinels;
   // Canary Island date palms at the pier plaza (protos §4): four, framing the pier mouth, off the Tideline slab.
   let canaries = 0;
-  const plazaSpots: Point2[] = [[1031.5, 1453], [986.5, 1440], [986.5, 1426], [1055, 1447], [1008.5, 1470], [1032, 1468]];
+  const plazaSpots: Point2[] = [[986.5, 1440], [986.5, 1426], [1055, 1447], [1008.5, 1470], [1032, 1468]];
   for (const [cx, cz] of plazaSpots) {
     if (canaries >= 4) break;
     if (!palmCountry(ctx, cx, cz) || ctx.occupied(cx, cz, 1.6) || !claims.free(cx, cz, 1.5)) continue;
@@ -285,7 +285,8 @@ export function buildSandsParts(ctx: DressingContext): SandsParts {
     lamps++;
   }
   for (const [lx, lz] of [[P.x0 + 1.4, P.z0 + 3.6], [P.x1 - 1.4, P.z0 + 3.6]] as Point2[]) {
-    if (ctx.waterLevelAt(lx, lz) !== null || segDist(lx, lz, [W.hub[0] - 10, W.hub[2] - 10], [W.hub[0] + 10, W.hub[2] + 10]) < 4) continue;
+    const ux = Math.cos(W.yaw) * (W.r + 1), uz = -Math.sin(W.yaw) * (W.r + 1); // the wheel's plane (local x)
+    if (ctx.waterLevelAt(lx, lz) !== null || segDist(lx, lz, [W.hub[0] - ux, W.hub[2] - uz], [W.hub[0] + ux, W.hub[2] + uz]) < 4) continue;
     out.props.push({ id: `sands.pier.lamp.${lamps}`, kind: 'lantern', at: P3(lx, deck, lz), yaw: 0, collide: true });
     out.lights.push({ id: `landing.sands.pier.lamp.${lamps}`, at: P3(lx, deck, lz), kind: 'pierLantern', head: P3(lx, deck + 2.75, lz), pool: P3(lx, deck, lz + 1.5), poolRadius: 4.5, bestHour: 'night' });
     lamps++;

@@ -20,9 +20,10 @@ export const SANDS = {
   /** The pier (MANIFEST structures.longSandsPier): axis x 1020, deck 3.6, 12 wide, ramp from the Tideline slab (3.0) at
    *  z 1434.6 to 1448.6, to z 1490, the platform x 1002–1034 × z 1490–1520 for the wheel. */
   pier: { x: 1020, deck: 3.6, half: 6, rampFrom: 1434.6, rampTo: 1448.6, slab: 3.0, to: 1490, platform: { x0: 1002, x1: 1034, z0: 1490, z1: 1520 } },
-  /** The Ferris wheel (story landmark `wheel`, D-WW74): hub 0.7 eu SE of the registry's [1010, 19.6, 1509] along the wheel's
-   *  own plane so its north-west footing stands wholly on the platform (registry tolerance 3 eu); r 13, faces NE. */
-  wheel: { hub: [1010.5, 19.6, 1509.5] as const, r: 13, gondolas: 16, yaw: 3 * Math.PI / 4 },
+  /** The Ferris wheel (story landmark `wheel`, D-WW74): hub on the registry's [1010, 19.6, 1509], r 13, facing north-east
+   *  turned 0.15 rad toward the belfry (so all four footings stand ≥ 0.3 inside the platform's edge); its footings are plates
+   *  on the pier platform (`params.onDeck`), the pier's piles carry it (D-WW152). */
+  wheel: { hub: [1010, 19.6, 1509] as const, r: 13, gondolas: 16, yaw: 3 * Math.PI / 4 - 0.15 },
   /** The glider's `sands` landing field (MANIFEST sky.landings.sands, D-WW90): nothing tall within r + 10. */
   glider: { at: [1185, 1355] as Point2, r: 35, keep: 10 },
   /** Page D (MANIFEST views D): its eye and the foreground the prototype cleared (22 eu). */
@@ -37,6 +38,9 @@ export const SANDS = {
     [1069.9, 1407.2], [1070.1, 1411.3], [1074, 1410.7], [1076.4, 1408.9], [1081.9, 1408.8], [1123.7, 1414.2], [1127.2, 1410.9], [1131.7, 1412.3]] as Point2[],
   /** The Campfire place (MANIFEST places.campfire) and its slab. */
   campfire: [1200, 1430] as Point2,
+  /** The seafood shack at the pier's foot, east of the ramp on the sand (on the platform its stone footing reached the sea
+   *  bed under the deck and hid page D's surf): centre, size along x and z, door to the north (the plaza). */
+  shack: { at: [1032.5, 1455] as Point2, wx: 7, dz: 8 },
   /** The Tideline bowl (MANIFEST structures.tidelineBowl): rim 3.0, coping r 7.0. */
   bowl: { at: [1000, 1456] as Point2, rim: 3.0, coping: 7.0 },
   /** The Wreck on its reef (MANIFEST offshore wreck [250,1150], the reef rock top 1.4: land/offshore). */
