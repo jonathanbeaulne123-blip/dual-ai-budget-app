@@ -10,7 +10,8 @@
  * `rec.line`; rails, festoons and laundry sit on the line's own heights (decks, wall fixings), fences and walls on the
  * ground under it. `scale` exceptions: ringBench radius = 6.2 × scale (heights fixed), swing rope top = scale eu above
  * `at` (default 2.6), geoglyph wingspan = 63 × scale. `variant`: viewer pictograms, boat and buoy colours, rail
- * style (railOpen 1 = steel pickets), stacked crates, bell kind (1 = ship's bell), parasols, month (monthStone 0–11).
+ * style (railOpen 1 = steel pickets), stacked crates, bell kind (1 = ship's bell), parasols, month (monthStone 0–11), the
+ * festoon's drag-lift haul rope (1 = the up side with T-bars, 2 = the bare return; no bulbs).
  */
 import type { CardBuilder } from '../../../art/cardScene.ts';
 import type { DressingTheme, PropKind, PropRecord } from '../../neighbourhoods/types.ts';

@@ -72,6 +72,12 @@ export interface DressingSource {
 
 /** Bed kinds that are not ground a thing could stand on (a cable in the air, a cave underground). */
 const OFF_GROUND_BEDS = new Set(['cable', 'cave']);
+/**
+ * A bed stretch this far (eu) or more under the final ground at both ends and its middle is inside a tunnel (the Stillwater
+ * road under the Veil's west buttress): the surface over it is ground a thing can stand on, so it is not a bed there (PR 3
+ * Highlands: Fallswatch's Lookout kit stands on the cover ridge 45 m over the tunnel).
+ */
+export const TUNNEL_COVER = 6;
 const GRID = 32;
 type Segment = { ax: number; az: number; bx: number; bz: number; half: number; bed: number };
 
@@ -116,8 +122,11 @@ export function createDressingContext(src: DressingSource): DressingContextImpl 
   beds.forEach((b, bed) => {
     const half = (b.width ?? 0) / 2; maxHalf = Math.max(maxHalf, half);
     const pts = b.points.length === 1 ? [b.points[0]!, b.points[0]!] : b.points;
+    const buried = (p: readonly number[]) => p[1]! < src.ground(p[0]!, p[2]!) - TUNNEL_COVER;
     for (let i = 1; i < pts.length; i++) {
-      const a = pts[i - 1]!, c = pts[i]!, k = segs.length; segs.push({ ax: a[0], az: a[2], bx: c[0], bz: c[2], half, bed });
+      const a = pts[i - 1]!, c = pts[i]!;
+      if (buried(a) && buried(c) && buried([(a[0] + c[0]) / 2, (a[1] + c[1]) / 2, (a[2] + c[2]) / 2])) continue;
+      const k = segs.length; segs.push({ ax: a[0], az: a[2], bx: c[0], bz: c[2], half, bed });
       const x0 = Math.floor((Math.min(a[0], c[0]) - half) / GRID), x1 = Math.floor((Math.max(a[0], c[0]) + half) / GRID), z0 = Math.floor((Math.min(a[2], c[2]) - half) / GRID), z1 = Math.floor((Math.max(a[2], c[2]) + half) / GRID);
       for (let cx = x0; cx <= x1; cx++) for (let cz = z0; cz <= z1; cz++) { const key = cellKey(cx, cz); let l = grid.get(key); if (!l) grid.set(key, l = []); l.push(k); }
     }

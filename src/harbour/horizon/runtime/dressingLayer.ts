@@ -50,7 +50,7 @@ export const DRESSING_DETAIL = {releaseMs: 20_000, paintLift: 0.04, paintEdge: 2
 export const DRESSING_NIGHT = {ink: '#1a1a24', inkOpacity: 0.8, shadeNight: 0.4} as const;
 export const DRESSING_INK = '#5b5447';
 /** Far landmark silhouettes: wall colour per dressing (the roof a shade darker), the spire's radius share of its height. */
-export const DRESSING_FAR = {wall: {classic: '#b9ab95', taylor: '#d9c8ad', newfoundland: '#8e9396'}, roof: 0.78, spire: 0.05, minRadius: 0.6} as const;
+export const DRESSING_FAR = {wall: {classic: '#b9ab95', taylor: '#d9c8ad', newfoundland: '#8e9396'}, roof: 0.78, spire: 0.05, minRadius: 0.6, roofRise: 0.6} as const;
 
 export type DressingLayerOptions = {
   tier: 'full' | 'lite'; theme: DressingTheme; season: PlantSeason; month?: number;
@@ -187,7 +187,10 @@ export function buildFarLandmarks(dressing: Pick<WorldDressing, 'landmarks' | 'j
     const carrier = dressing?.journey?.find(j => j.landmarkId === l.id), district = carrier?.districtId ?? districtOf(l.at[0], l.at[2]);
     let top = l.at[1];
     if (carrier && carrier.footprint.length >= 3) {
-      const ring = carrier.footprint, n = ring.length, y0 = carrier.base - 1, eave = carrier.base + carrier.height, apex = eave + carrier.roofHeight;
+      const ring = carrier.footprint, n = ring.length, y0 = carrier.base - 1, eave = carrier.base + carrier.height;
+      // The roof's rise is the main roof's (≤ 0.6 × the footprint's short side); anything taller on the building (a bell cote, a
+      // belfry) is the spire below, so a chapel never reads as a tent (PR 3 Highlands: Westwatch's cote stands 7 m over its eave).
+      const side = Math.min(...ring.map((p, i) => { const q = ring[(i + 1) % n]!; return Math.hypot(q[0] - p[0], q[1] - p[1]); })), apex = eave + Math.min(carrier.roofHeight, side * DRESSING_FAR.roofRise);
       const cx = ring.reduce((t, p) => t + p[0], 0) / n, cz = ring.reduce((t, p) => t + p[1], 0) / n;
       for (let i = 0; i < n; i++) { const p = ring[i]!, q = ring[(i + 1) % n]!; put(district, [p[0], y0, p[1]], [q[0], y0, q[1]], [q[0], eave, q[1]], wall); put(district, [p[0], y0, p[1]], [q[0], eave, q[1]], [p[0], eave, p[1]], wall); put(district, [p[0], eave, p[1]], [q[0], eave, q[1]], [cx, apex, cz], roof); }
       top = apex;
