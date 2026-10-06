@@ -73,8 +73,9 @@ export type CorridorPlanting = {
   dispose(): void;
 };
 
-/** Sets drawn as wild drifts (no soil card or edging): the prairie, the Highlands' fell and the Reach's bog. */
-const isWildSet = (set: FlowerSetId) => set === FLOWER_SET.prairie || set === FLOWER_SET.highland || set === FLOWER_SET.bog;
+/** Sets drawn as wild drifts (no soil card or edging): the prairie, the Highlands' fell, the Reach's bog and the Scholars'
+ * woodland floor (trillium, columbine and foxglove grow in the duff, never in an edged bed; D-WW171). */
+export const isWildSet = (set: FlowerSetId) => set === FLOWER_SET.prairie || set === FLOWER_SET.highland || set === FLOWER_SET.bog || set === FLOWER_SET.woodland;
 /** Hysteresis margins beyond an instance's far radius (eu), and the viewer travel that triggers re-evaluation. */
 export const PLANT_JOIN = 10, PLANT_LEAVE = 30, PLANT_RECHECK = 8;
 /** The far radius of the Water's Way trees' ink shells (the Old Oak's keeps FAR.shell). */
