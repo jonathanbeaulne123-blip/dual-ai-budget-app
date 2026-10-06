@@ -115,7 +115,7 @@ function build(ctx: DressingContext): NeighbourhoodDressing {
   P({ id: 'flats.bay.hoarding.e', kind: 'fence', at: [ex, 38, bz], yaw: 0, line: [[ex, 38, nz], [ex, 38, bz + HANGAR_BAY.size[1] / 2 - 0.4]], collide: false });
   P({ id: 'flats.bay.hoarding.n', kind: 'fence', at: [ex - 2.4, 38, nz], yaw: 0, line: [[ex - 4.6, 38, nz], [ex, 38, nz]], collide: false });
   P({ id: 'flats.bay.sign', kind: 'panel', at: [ex - 2.2, 38, nz - 0.3], yaw: Math.PI, variant: 0 });
-  for (const [k, [dx, dz]] of [[-3.6, -1.6], [-3.6, -0.4], [-2.4, -1.6]].entries()) P({ id: `flats.bay.timber.${k + 1}`, kind: 'crate', at: [bx + dx, 38, bz + dz], yaw: 0.1 * k, variant: 0 });
+  for (const [k, [dx, dz]] of ([[-3.6, -1.6], [-3.6, -0.4], [-2.4, -1.6]] as const).entries()) P({ id: `flats.bay.timber.${k + 1}`, kind: 'crate', at: [bx + dx, 38, bz + dz], yaw: 0.1 * k, variant: 0 });
   // Each plot's apron side is its −v edge (MANIFEST plot.bight.N.apron); its lagoon face is the edge whose ground falls furthest.
   const lagoonSide = (p: (typeof BIGHT_PLOTS)[number]) => ([[1, 0], [-1, 0], [0, 1], [0, -1]] as const).map(([su, sv]) => { const q = plotPoint(p, su * (p.size[0] / 2 + 10), sv * (p.size[1] / 2 + 10)); return { su, sv, gz: g(q[0], q[1]) }; }).sort((a, b) => a.gz - b.gz)[0]!;
   for (const p of BIGHT_PLOTS) {

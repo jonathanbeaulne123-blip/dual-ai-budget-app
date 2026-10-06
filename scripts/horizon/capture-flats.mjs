@@ -49,7 +49,7 @@ const PLAN=[
   ...['H','porch','elevator'].flatMap(id=>[GOLDEN,NIGHT].map(time=>({pose:id,theme:'classic',tier:'lite',time}))),
 ].filter(s=>!only||only.includes(s.pose));
 
-const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader']});
+const browser=await chromium.launch({headless:true,executablePath:process.env.HORIZON_CHROMIUM??'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
 const records=[],errors=[];
 try{
   for(const theme of ['classic','taylor','newfoundland'])for(const tier of ['full','lite']){
