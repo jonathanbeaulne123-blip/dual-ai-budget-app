@@ -166,7 +166,7 @@ export function wwColours(pal: MountainArtPalette) {
       mid: list(t, ['#5a7a42', '#557540', '#50703c'], ['#a4c08a', '#9ebb86', '#98b580'], ['#506f3c', '#4b6a3a', '#466536']),
       low: list(t, ['#46613a', '#4a6536'], ['#90ad80', '#94b07c'], ['#3f5a36', '#435e33']),
       autumn: list(t, ['#b8743a', '#a8643a', '#c4893f'], ['#e8c49a', '#e2b892', '#f0d0a2'], ['#a8573a', '#b8693a', '#c47f3a']) },
-    oakBark: by(t, '#665648', '#c4a6a8', '#564b41'),
+    oakBark: by(t, '#706152', '#c4a6a8', '#5d5247'),
     paper: pal.paperEdge,
   };
 }

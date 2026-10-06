@@ -231,8 +231,9 @@ describe("The Water's Way flower sets for the Green (D-WW113)", () => {
     }
     expect(flowerSet('newfoundland', FLOWER_SET.meadowWild)[0]!.name).toBe('lupine'); // clover → lupine (STYLE §1.4.4)
     const pal = mountainArtPalette(SCENE_DRESSING.classic), clocks = bloomGeometry(pal, 'full', flowerSet('classic', FLOWER_SET.clocks, 6), 'bloom')!;
-    const col = clocks.getAttribute('color'); let white = 0; for (let i = 0; i < col.count; i++) if (col.getX(i) > 0.8 && col.getY(i) > 0.8 && col.getZ(i) > 0.75) white++;
-    expect(white).toBeGreaterThan(col.count * 0.4);
+    // White seed heads (their shaded undersides ~0.8 of the top) over green stems: most vertices are pale.
+    const col = clocks.getAttribute('color'); let white = 0; for (let i = 0; i < col.count; i++) if (col.getX(i) > 0.7 && col.getY(i) > 0.7 && col.getZ(i) > 0.65) white++;
+    expect(white).toBeGreaterThan(col.count * 0.6);
   });
   it('a district planted with dandelions rebuilds when the month turns May → June (clocks appear)', () => {
     const items: PlantItem[] = [0, 1, 2].map(k => ({ species: 'flowerBed', at: [1000 + k * 5, 10, 1100] as [number, number, number], scale: 1, yaw: 0, tint: FLOWER_SET.clocks + 0.2 }));

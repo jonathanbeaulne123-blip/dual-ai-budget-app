@@ -128,7 +128,7 @@ function billow(d: Draw, c: V, rx: number, ry: number, rz: number, n: number, to
     A.push([c[0] + Math.cos(a) * rx * ja, c[1] + (r() - 0.5) * 0.25 * ry, c[2] + Math.sin(a) * rz * ja]);
     B.push([c[0] + Math.cos(b) * rx * 0.8 * jb, c[1] + 0.6 * ry, c[2] + Math.sin(b) * rz * 0.8 * jb]);
   }
-  const T: V = [c[0], c[1] + ry, c[2]], Bt: V = [c[0], c[1] - (o.flat ?? 0.72) * ry, c[2]], ink = 0.22 / 0.07, snow = o.snow ?? 0;
+  const T: V = [c[0], c[1] + ry, c[2]], Bt: V = [c[0], c[1] - (o.flat ?? 0.6) * ry, c[2]], ink = 0.22 / 0.07, snow = o.snow ?? 0;
   const hi = snow ? mix(top, SNOW, snow) : top, mid = snow ? mix(side, SNOW, snow * 0.3) : side, low = mix(under, side, 0.3);
   for (let k = 0; k < n; k++) {
     const a0 = A[k]!, a1 = A[(k + 1) % n]!, b0 = B[k]!, b1 = B[(k + 1) % n]!;
@@ -140,7 +140,7 @@ function billow(d: Draw, c: V, rx: number, ry: number, rz: number, n: number, to
 }
 
 /** The leaves' silvery backs per dressing (bur oak undersides are pale and felted). */
-const UNDER: Record<MountainArtPalette['theme'], RGB> = { classic: rgb('#c2c8a4'), taylor: rgb('#eef2de'), newfoundland: rgb('#aeb79a') };
+const UNDER: Record<MountainArtPalette['theme'], RGB> = { classic: rgb('#9fb08f'), taylor: rgb('#dfe8d2'), newfoundland: rgb('#8c9c86') };
 
 export function oakGeometry(pal: MountainArtPalette, tier: PlantTier, look: WWLook): WWGeometry {
   const C = wwColours(pal), full = tier === 'full', d = new Draw(full, true), r = hashRand(52), m = ((Math.round(look.month) - 1) % 12 + 12) % 12 + 1;
@@ -152,7 +152,7 @@ export function oakGeometry(pal: MountainArtPalette, tier: PlantTier, look: WWLo
   // The three segments share their rings (each starts at the last one's twist), so the column has no seams.
   bough(d, [0, -1.2, 0], [0, 1.2, 0], 4.0, 2.75, tn, shade(ridge, 0.92), furrow, { flute: 0.18, twist: 0.08, spin: 0.2, lit: 0.12 });
   bough(d, [0, 1.2, 0], [0, 4.4, 0], 2.75, 2.45, tn, ridge, furrow, { flute: 0.18, twist: 0.12, spin: 0.28, lit: 0.12 });
-  bough(d, [0, 4.4, 0], [0.15, OAK.trunkTop + 0.6, -0.1], 2.45, 2.1, tn, shade(ridge, 1.04), furrow, { flute: 0.18, twist: 0.12, spin: 0.4, lit: 0.15 });
+  bough(d, [0, 4.4, 0], [0, OAK.trunkTop + 0.6, 0], 2.45, 2.1, tn, shade(ridge, 1.04), furrow, { flute: 0.18, twist: 0.12, spin: 0.4, lit: 0.15 });
   // Buttress roots: eight short spurs that dive into the turf inside OAK.rootReach (the ring bench stands at r 6.2).
   for (let k = 0; k < 8; k++) {
     const a = (k / 8) * TAU + 0.2 + r() * 0.35, R = 4.4 + r() * (OAK.rootReach - 4.6);
@@ -186,7 +186,7 @@ export function oakGeometry(pal: MountainArtPalette, tier: PlantTier, look: WWLo
     const set = tierSet(y); let c = set[i % set.length]!;
     c = mix(c, [0.68, 0.78, 0.4], fresh); c = mix(c, C.oakLeaf.autumn[i % 3]!, fall * (i % 4 === 0 ? 0.55 : 1)); return c;
   };
-  const underOf = (c: RGB): RGB => shade(mix(c, under, 0.5), 1.32);
+  const underOf = (c: RGB): RGB => shade(mix(c, under, 0.38), 1.1);
   /** Keeps a billow inside the ~60 eu crown and under the dome (the Green's clearances are measured on that envelope). */
   const clampIn = (x: number, y: number, z: number, rad: number): V => {
     const rr = Math.hypot(x, z) || 1, k = Math.min(1, (OAK.spread - rad * 0.95) / rr), px = x * k, pz = z * k;

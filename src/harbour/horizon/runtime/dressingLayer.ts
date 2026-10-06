@@ -26,7 +26,8 @@
  *
  * Far landmarks: the story's sight chain spans 600–1,100 eu, far beyond residency. From the index-borne landmarks (and the
  * Journey shapes of the buildings that carry them) the layer builds, once, a coarse silhouette per landmark — the carrying
- * building's block and roof, a slim spire up to the sighted top — merged per district, drawn while that district's own
+ * building's block and roof, a slim spire up to the sighted top; a landmark no building carries is the landmark tree (the
+ * Old Oak), drawn as the plant kit's own tree on the lite tier in the season's look — merged per district, drawn while that district's own
  * dressing is not built (not resident, or still building) and hidden as soon as it is. Fogged like the land.
  */
 import * as THREE from 'three';
@@ -38,10 +39,13 @@ import type {DistrictDressing, DressingTheme, PlantRecord, WorldDressing} from '
 import {drawBuilding} from '../kit/buildings/index.ts';
 import {drawProp, propDraws} from '../kit/props/index.ts';
 import {districtAt} from '../world/districts.ts';
-import {SEASON_MONTH} from '../kit/plants/sets.ts';
+import {SEASON_MONTH, bloomStage} from '../kit/plants/sets.ts';
 import {groundPaintHex, groundPaintTone} from '../neighbourhoods/paint.ts';
 import {createCorridorPlanting, type CorridorPlanting} from './corridorPlanting.ts';
 import type {PlantSeason} from '../kit/plants/archetypes.ts';
+import {OAK, oakGeometry} from '../kit/plants/oak.ts';
+import {mountainArtPalette} from '../../mountain/art/palette.ts';
+import {SCENE_DRESSING} from '../../scene/place.ts';
 
 export const DRESSING_DETAIL = {releaseMs: 20_000, paintLift: 0.04, paintEdge: 2.5, glowDay: 0.12} as const;
 /** STYLE §1.3.3: ink at night is `#1a1a24` at 0.8 of its day opacity; the sun's contact shade fades to `shadeNight` of its
@@ -173,7 +177,7 @@ export function measureDistrictDressing(d: DistrictDressing, ground: (x: number,
 }
 
 /** The far silhouettes of the index-borne landmarks, merged per district (see the header). */
-export function buildFarLandmarks(dressing: Pick<WorldDressing, 'landmarks' | 'journey'> | undefined, theme: DressingTheme, districtOf: (x: number, z: number) => string = (x, z) => districtAt(x, z)): {material: THREE.MeshStandardMaterial; silhouettes: FarSilhouette[]} {
+export function buildFarLandmarks(dressing: Pick<WorldDressing, 'landmarks' | 'journey'> | undefined, theme: DressingTheme, districtOf: (x: number, z: number) => string = (x, z) => districtAt(x, z), look: {season: PlantSeason; month?: number} = {season: 'summer'}): {material: THREE.MeshStandardMaterial; silhouettes: FarSilhouette[]} {
   const material = new THREE.MeshStandardMaterial({vertexColors: true, flatShading: true, roughness: 0.95});
   material.name = 'horizon.dressing.far';
   const wall = new THREE.Color(DRESSING_FAR.wall[theme]), roof = wall.clone().multiplyScalar(DRESSING_FAR.roof);
@@ -191,6 +195,14 @@ export function buildFarLandmarks(dressing: Pick<WorldDressing, 'landmarks' | 'j
       const cx = ring.reduce((t, p) => t + p[0], 0) / n, cz = ring.reduce((t, p) => t + p[1], 0) / n;
       for (let i = 0; i < n; i++) { const p = ring[i]!, q = ring[(i + 1) % n]!; put(district, [p[0], y0, p[1]], [q[0], y0, q[1]], [q[0], eave, q[1]], wall); put(district, [p[0], y0, p[1]], [q[0], eave, q[1]], [p[0], eave, p[1]], wall); put(district, [p[0], eave, p[1]], [q[0], eave, q[1]], [cx, apex, cz], roof); }
       top = apex;
+    }
+    if (!carrier && l.top[1] > l.at[1] + 0.5) {
+      // A landmark tree (D-WW110): the kit's own tree, lite, in the season's look, at the plant's yaw and the sighted height.
+      const month = look.month ?? SEASON_MONTH[look.season], g = oakGeometry(mountainArtPalette(SCENE_DRESSING[theme]), 'lite', {season: look.season, month, stage: bloomStage(month)}).body;
+      const pos = g.getAttribute('position'), col = g.getAttribute('color'), k = (l.top[1] - l.at[1]) / OAK.height, c = Math.cos(l.yaw ?? 0), s = Math.sin(l.yaw ?? 0);
+      let m = byDistrict.get(district); if (!m) byDistrict.set(district, m = {pos: [], col: []});
+      for (let i = 0; i < pos.count; i++) { const x = pos.getX(i) * k, z = pos.getZ(i) * k; m.pos.push(l.at[0] + x * c + z * s, l.at[1] + pos.getY(i) * k, l.at[2] + z * c - x * s); m.col.push(col.getX(i), col.getY(i), col.getZ(i)); }
+      g.dispose(); continue;
     }
     // Up to the sighted top: a slim spire (the belfry over its tower, a pole, a tree's height as a marker).
     if (l.top[1] > top + 0.5) spire(district, l.top[0], l.top[2], top, l.top[1], Math.max(DRESSING_FAR.minRadius, (l.top[1] - top) * DRESSING_FAR.spire));
@@ -210,9 +222,16 @@ export function createDressingLayer(world: Pick<WorldDefinition, 'dressing'>, op
   // Records by district: re-indexed only when the chunk loader appends a district (no per-frame search).
   const index = new Map<string, DistrictDressing>(); let indexed = -1;
   const recordsOf = (id: string) => { const list = world.dressing?.districts; if ((list?.length ?? 0) !== indexed) { index.clear(); for (const d of list ?? []) index.set(d.districtId, d); indexed = list?.length ?? 0; } return index.get(id) ?? null; };
-  const far = buildFarLandmarks(world.dressing, opts.theme);
+  let far = buildFarLandmarks(world.dressing, opts.theme, undefined, {season, ...(month !== undefined ? {month} : {})});
   opts.material?.(far.material);
   for (const f of far.silhouettes) group.add(f.mesh);
+  /** The season turns: a landmark tree's far silhouette follows it (rebuilt; a handful of landmarks). */
+  const refreshFar = () => {
+    if (!world.dressing?.landmarks?.some(l => !world.dressing?.journey?.some(j => j.landmarkId === l.id))) return;
+    const next = buildFarLandmarks(world.dressing, opts.theme, undefined, {season, ...(month !== undefined ? {month} : {})});
+    for (const f of far.silhouettes) { group.remove(f.mesh); f.mesh.geometry.dispose(); } far.material.dispose();
+    far = next; opts.material?.(far.material); for (const f of far.silhouettes) group.add(f.mesh);
+  };
   const dayOpacity = new WeakMap<THREE.Material, number>(), day = (m: THREE.Material) => { let o = dayOpacity.get(m); if (o === undefined) dayOpacity.set(m, o = m.opacity); return o; };
   const dayInk = rgb(DRESSING_INK), nightInk = rgb(DRESSING_NIGHT.ink), inkFactor = (k: number) => [0, 1, 2].map(i => 1 + (nightInk[i]! / Math.max(1e-6, dayInk[i]!) - 1) * k) as [number, number, number];
   /** The night ramp of one district's card materials: glow cards light, ink shifts to the night ink, the contact shade fades. */
@@ -249,7 +268,7 @@ export function createDressingLayer(world: Pick<WorldDefinition, 'dressing'>, op
       for (const f of far.silhouettes) f.mesh.visible = !(resident.has(f.district) && districts.has(f.district));
     },
     setNight(kIn) { night = Math.max(0, Math.min(1, kIn)); for (const art of districts.values()) glowOf(art); },
-    setSeason(next, nextMonth) { season = next; month = nextMonth; for (const art of districts.values()) art.planting?.setSeason(next, nextMonth); },
+    setSeason(next, nextMonth) { const changed = next !== season || nextMonth !== month; season = next; month = nextMonth; for (const art of districts.values()) art.planting?.setSeason(next, nextMonth); if (changed) refreshFar(); },
     building: () => pending,
     prebuild(ids) { for (const id of ids) { if (districts.has(id)) continue; const d = recordsOf(id); if (d) land(finishBuild(buildDistrictDressingSteps(d, buildOpts()))).group.visible = true; } },
     // Cards as built, plus the planting's currently drawn layers (its own distance rules decide what is on).

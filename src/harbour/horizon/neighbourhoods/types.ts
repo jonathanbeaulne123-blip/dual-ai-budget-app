@@ -138,6 +138,11 @@ export interface Landmark {
   top: Point3;
   /** Its place in the evening relay (1 = first lit at civil dusk); absent if it doesn't join. */
   relayOrder?: number;
+  /**
+   * E2 (additive, the Green): a landmark no building carries is a landmark tree (the Old Oak); its far silhouette is the
+   * plant kit's landmark tree, turned by this yaw (the plant record's) so the near tree replaces it in place.
+   */
+  yaw?: number;
   /** Rings in the noon bell chain (STORY.md through-line 5). */
   bell?: 'westwatch' | 'summit' | 'campanile';
 }
