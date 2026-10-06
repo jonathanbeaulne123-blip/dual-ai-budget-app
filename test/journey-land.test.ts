@@ -106,7 +106,8 @@ describe("extracted land", () => {
     for (const key of ["pathGraph", "collision", "geometry", "solids", "crossings", "beds"]) expect(json).not.toContain(`"${key}"`);
     expect(Object.keys(land).sort()).toEqual(
       // bridges / covers: the road pass (ROAD.md §7); `boulevards`: the committed index carries the corridors (journey-road.test.ts).
-      ["boulevards", "bridges", "coastline", "covers", "districts", "extent", "homestead", "hosts", "kittyPlaza", "landforms", "lines", "lod", "reserves", "revision", "seaLevel", "stations", "terrain", "water", "yearWalk"].sort(),
+      // `dressing`: PR 3 (The Water's Way) dresses the island, so the index carries the Journey dressing (slim format 4).
+      ["boulevards", "bridges", "coastline", "covers", "districts", "dressing", "extent", "homestead", "hosts", "kittyPlaza", "landforms", "lines", "lod", "reserves", "revision", "seaLevel", "stations", "terrain", "water", "yearWalk"].sort(),
     );
     expect(json.length).toBeLessThan(400_000);
     console.info(`[journey-land] extracted data ${(json.length / 1024).toFixed(1)} KB as JSON (terrain typed arrays included)`);

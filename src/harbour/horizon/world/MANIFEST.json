@@ -13164,21 +13164,33 @@
     "lantern cards"
    ],
    "portrait": {
-    "fov_deg": 65,
+    "fov_deg": 45,
     "target": [
-     1370,
-     1305
+     1300,
+     1320
     ],
-    "target_h": 5,
+    "target_h": 4,
     "frames": [
      "Lantern Row",
      "the Boathouse"
     ],
     "v1_8_xy": null,
     "xy": [
+     1475,
+     1297
+    ],
+    "ww_v2_xy": [
      1430,
      1210
-    ]
+    ],
+    "ww_v2_target": [
+     1370,
+     1305
+    ],
+    "ww_v2_fov_deg": 65,
+    "ww_v2_target_h": 5,
+    "eyeH": 11.0,
+    "note_ww": "D-WW139 (PR 3 Little Harbour; owed to Jonathan): the in-town portrait eye is inside the dressed vicolo; re-posed on the quay, 8 eu over the walk, along Lantern Row to the Boathouse"
    },
    "v1_6": {
     "xy": [

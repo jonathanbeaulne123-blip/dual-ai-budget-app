@@ -120,7 +120,7 @@ export function* buildDistrictDressingSteps(d: DistrictDressing, opts: Omit<Dres
     drawProp(b, rec, theme, ground, tier); props++; if (i % 8 === 7) yield;
   }
   for (const g of d.ground) {
-    const col = shade(rgb(groundPaintHex(theme, g.surface)), groundPaintTone(g.tone)), y = (p: readonly [number, number]): V3 => [p[0], ground(p[0], p[1]) + DRESSING_DETAIL.paintLift, p[1]];
+    const col = shade(rgb(groundPaintHex(theme, g.surface)), groundPaintTone(g.tone)), y = (p: readonly [number, number]): V3 => [p[0], Math.max(ground(p[0], p[1]), g.floor ?? -Infinity) + DRESSING_DETAIL.paintLift, p[1]];
     for (const [p0, p1, p2] of drapePolygon(g.polygon, DRESSING_DETAIL.paintEdge)) b.tri(y(p0!), y(p2!), y(p1!), col, 'flat');
     yield;
   }
