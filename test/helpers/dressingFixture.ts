@@ -45,4 +45,3 @@ export const fixtureModule: NeighbourhoodModule = {
     return d;
   },
 };
-
