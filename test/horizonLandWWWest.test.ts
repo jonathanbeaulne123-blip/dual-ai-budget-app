@@ -7,7 +7,8 @@ import type { BedCut, LandCuts, StructureSolid, TerrainField, XY } from '../src/
 import { decodeTerrainAsset } from '../src/harbour/horizon/land/terrain/asset';
 import { baseHeight } from '../src/harbour/horizon/land/terrain';
 import { bightBatterAt, bightGreenwayDistance } from '../src/harbour/horizon/land/terrain/bightBatter';
-import { OPEN_RAIL, stripClearanceBreach, stripLocal } from '../src/harbour/horizon/land/structures/westLand';
+import { stripClearanceBreach, stripLocal } from '../src/harbour/horizon/land/structures/westLand';
+import { OPEN_RAIL, OPEN_RAIL_KIND } from '../src/harbour/horizon/land/structures/openRail';
 import { nearestOnPath } from '../src/harbour/horizon/land/structures/mesh';
 import { createHorizonGeography, HORIZON_WALKABLE_DEGREES } from '../src/harbour/horizon/runtime/geography';
 import { createWalkState, horizonWalkWorld, WALK_FIXED_DT, walkMove, walkTick, type WalkBody } from '../src/harbour/horizon/runtime/walkSim';
@@ -88,8 +89,8 @@ describe('Scholars\' Edge · the Bight lookout (D-WW87)', () => {
   }, 120_000);
   it('rails the ramp and the deck with open rails (1.05) that stop the walker and that sight sees through', () => {
     const { geo, field, world } = bake(), rails = solidsOf('bightLookout.rails');
-    expect(rails.length).toBeGreaterThan(0); for (const r of rails) { expect(r.openRail).toBe(true); expect(isOpenRail(r)).toBe(true); }
-    let top = -Infinity; for (const r of rails) for (let i = 1; i < r.positions.length; i += 3) top = Math.max(top, r.positions[i]!); expect(top).toBeCloseTo(S.deck.top + OPEN_RAIL.top, 2);
+    expect(rails.length).toBeGreaterThan(0); for (const r of rails) { expect(r.kind).toBe(OPEN_RAIL_KIND); expect(isOpenRail(r)).toBe(true); }   // land integration: one open-rail marker (kind openRail), not a per-solid flag
+    let top = -Infinity; for (const r of rails) for (let i = 1; i < r.positions.length; i += 3) top = Math.max(top, r.positions[i]!); expect(top).toBeCloseTo(S.deck.top + OPEN_RAIL.height, 2);
     // Pushing south off the deck between two posts: the body is held on the deck.
     const ww = horizonWalkWorld(geo, world.extent, () => true, HORIZON_WALKABLE_DEGREES), body: WalkBody = { x: 743, y: S.deck.top, z: 510, yaw: 0 }, state = createWalkState(body);
     for (let i = 0; i < 240; i++) walkTick(state, body, { wishX: 0, wishZ: 1, run: false, speeds: { walk: 2.4, run: 5 } }, WALK_FIXED_DT, (dx, dz) => walkMove(ww, body, dx, dz, { swimming: false, grounded: true }));

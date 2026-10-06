@@ -27,7 +27,10 @@ const CHANNEL_BANK = 12;
 function prepare(pads: readonly PadCut[]): Prepared {
   let p = cache.get(pads);
   if (p) return p;
-  const spec = (M.reserves.bightShore as unknown as { batter?: { slope: number; toeKeepOff: { greenway_m: number; jetty_m: number }; greenwayLine: number[][] } }).batter;
+  const spec = (M.reserves.bightShore as unknown as { batter?: { slope: number; toeKeepOff: { greenway_m: number; jetty_m: number } } }).batter;
+  // The keep-off reference is the built Greenway's line (MANIFEST structures.greenway.pts, plan [x, z]: the bed
+  // `structure.greenway` is drawn on these points), not the prototype's route.
+  const greenwayPts = ((M.structures as unknown as Record<string, { pts?: number[][] }>).greenway?.pts ?? []).map(q => [q[0]!, q[1]!] as XY);
   const plots: BightPlotFrame[] = [];
   if (spec) for (const pad of pads) {
     if (!/^plot\.bight\.\d+$/.test(pad.id)) continue;
@@ -39,7 +42,7 @@ function prepare(pads: readonly PadCut[]): Prepared {
   // 12 eu bank zone, applyWaters) of its centreline.
   const near = (q: readonly number[]) => plots.some(f => Math.hypot(q[0]! - f.centre[0], q[2]! - f.centre[1]) < Math.max(f.a, f.b) + MARCH + 30);
   const channels = spec ? buildWaterCuts().filter(w => !w.underground && w.kind !== 'dry' && w.points.length > 1 && w.points.some(near)).map(w => ({ line: w.points.map(q => [q[0], q[2]] as XY), keep: w.width / 2 + CHANNEL_BANK })) : [];
-  p = { plots, channels, greenway: (spec?.greenwayLine ?? []) as unknown as XY[], jetty: j ? { centre: [j[0]!, j[1]!], half: [2.5, 6] } : null, slope: spec?.slope ?? 1.5, keepGreenway: spec?.toeKeepOff.greenway_m ?? 6, keepJetty: spec?.toeKeepOff.jetty_m ?? 4, runs: new Map() };
+  p = { plots, channels, greenway: spec ? greenwayPts : [], jetty: j ? { centre: [j[0]!, j[1]!], half: [2.5, 6] } : null, slope: spec?.slope ?? 1.5, keepGreenway: spec?.toeKeepOff.greenway_m ?? 6, keepJetty: spec?.toeKeepOff.jetty_m ?? 4, runs: new Map() };
   cache.set(pads, p);
   return p;
 }

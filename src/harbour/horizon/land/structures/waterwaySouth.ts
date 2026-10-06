@@ -3,9 +3,10 @@ import type { HeightQuery, LandCuts, XY, XYZ } from '../interfaces';
 import { addFlatPad, bed } from '../beds/profiles';
 import { sampleSpline } from '../beds/solver';
 import { GLASSHOUSE_RAMP, GLASSHOUSE_STAIR, glasshouseRampPlan, glasshouseStairFlights, glasshouseStairLine } from '../terrain/glasshouseScarp';
-import { buildStair, laneGuard, postedRail } from './build';
+import { buildStair, laneGuard } from './build';
 import { FOOTING_SINK } from './foundations';
 import { box, distance, plan, prism, slab, solid } from './mesh';
+import { OPEN_RAIL_KIND, openRail, openRailLoop } from './openRail';
 
 /**
  * The Water's Way, PR 2 land, L2b (docs/horizon/DECISIONS.md D-WW70…79): Long Sands' pier and skate bowl, and the Glasshouse
@@ -18,8 +19,6 @@ type BowlSpec = { xy: [number, number]; rim_h: number; floor_h: number; floor_r:
 export const pierSpec = (): PierSpec => (M.structures as unknown as Record<string, PierSpec>).longSandsPier!;
 export const bowlSpec = (): BowlSpec => (M.structures as unknown as Record<string, BowlSpec>).tidelineBowl!;
 
-/** The open rail rule (world/raycast.ts isOpenRail): a posted rail drawn as posts and bars, which rays see through. */
-export const OPEN_RAIL_KIND = 'openRail';
 
 /** Plan distance from a point to a polyline (and the polyline's z there). */
 function polylineDistance(p: XY, line: readonly XY[]): number {
@@ -52,9 +51,10 @@ export function buildLongSandsPier(cuts: LandCuts, base: HeightQuery): void {
   // platform; round the platform, open where the deck comes on.
   const slabEdge = M.skate.park.xy[1]! + M.skate.park.size[1]! / 2, railFrom = Math.max(slabEdge, P.from_z);
   const deckZ = (z: number) => z <= P.ramp_to_z ? P.slab_h + (h - P.slab_h) * (z - P.from_z) / (P.ramp_to_z - P.from_z) : h;
-  for (const side of [-1, 1]) postedRail(rails, [[x, deckZ(railFrom), railFrom], [x, h, P.ramp_to_z], [x, h, pz0]], side * (w / 2 - .05), P.rail_h);
+  for (const side of [-1, 1]) openRail(rails, [[x, deckZ(railFrom), railFrom], [x, h, P.ramp_to_z], [x, h, pz0]], side * (w / 2 - .05), { height: P.rail_h });
   const c = (px: number, pz: number): XYZ => [px, h, pz];
-  postedRail(rails, [c(x - w / 2, pz0 + .05), c(px0 + .05, pz0 + .05), c(px0 + .05, pz1 - .05), c(px1 - .05, pz1 - .05), c(px1 - .05, pz0 + .05), c(x + w / 2, pz0 + .05)], 0, P.rail_h);
+  // Round the platform corner to corner (a post on every corner), open where the deck comes on.
+  openRailLoop(rails, [c(x - w / 2, pz0 + .05), c(px0 + .05, pz0 + .05), c(px0 + .05, pz1 - .05), c(px1 - .05, pz1 - .05), c(px1 - .05, pz0 + .05), c(x + w / 2, pz0 + .05)], false, { height: P.rail_h });
   cuts.solids.push(deck, piles, rails);
   // One bed for the walk out (structure.* : the deck above is its surface; no second bed deck is emitted).
   const b = bed('structure.longSandsPier', 'boardwalk', [r0, r1, d1, [pc[0], h, pc[1]]], false); b.width = w; b.structureIds = ['longSandsPier']; b.maxGrade = .05; cuts.beds.push(b);

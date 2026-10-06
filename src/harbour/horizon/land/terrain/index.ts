@@ -494,12 +494,17 @@ function padDistance(p: PadCut, x: number, z: number): number {
   return Math.hypot(Math.max(0, a), Math.max(0, b)) + Math.min(0, Math.max(a, b));
 }
 interface PreparedSegment { bed: BedCut; a: XYZ; b: XYZ; arc: number; length: number; total: number }
-interface PreparedBeds { bins: Map<string, PreparedSegment[]>; cell: number }
+interface PreparedBeds { bins: Map<string, PreparedSegment[]>; cell: number; key: readonly unknown[] }
+/** Prepared bins per beds array and raster margin. The Water's Way (PR 2 land integration): the cache is keyed on the array AND
+ * validated against what the bins were built from (each bed, its points array, their count and the reach inputs), so a builder
+ * that samples the ground mid-build (the marsh pools, D-WW67) and then pushes or replaces beds never reads a stale preparation. */
 const preparedBedCache = new WeakMap<BedCut[], Map<number, PreparedBeds>>();
+const bedsKey = (beds: readonly BedCut[]): unknown[] => { const k: unknown[] = []; for (const b of beds) k.push(b, b.points, b.points.length, b.width, b.shoulder, b.blend, b.terrainCut, b.kind); return k; };
+const sameKey = (a: readonly unknown[], b: readonly unknown[]): boolean => a.length === b.length && a.every((v, i) => v === b[i]);
 const cellKey = (x: number, z: number, cell: number): string => `${Math.floor(x / cell)},${Math.floor(z / cell)}`;
 const cutsTerrain = (bed: BedCut) => bed.terrainCut && !['cave', 'rail', 'cable'].includes(bed.kind);
 function prepareBeds(beds: BedCut[], rasterMargin = 0): PreparedBeds {
-  const cache = preparedBedCache.get(beds), cached = cache?.get(rasterMargin); if (cached) return cached;
+  const key = bedsKey(beds), cache = preparedBedCache.get(beds), cached = cache?.get(rasterMargin); if (cached && sameKey(cached.key, key)) return cached;
   const cell = 64 * getModel().scale, bins = new Map<string, PreparedSegment[]>();
   // Every potentially influencing segment is inserted; order remains bed order,
   // then segment order. Closed routes spanning the island no longer scan globally.
@@ -517,7 +522,7 @@ function prepareBeds(beds: BedCut[], rasterMargin = 0): PreparedBeds {
       }
     }
   }
-  const prepared = { bins, cell }, next = cache ?? new Map<number, PreparedBeds>();
+  const prepared = { bins, cell, key }, next = cache ?? new Map<number, PreparedBeds>();
   next.set(rasterMargin, prepared); preparedBedCache.set(beds, next); return prepared;
 }
 /** Ground that no bed or pad may raise: the sea floor outside the surveyed

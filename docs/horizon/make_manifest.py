@@ -2500,6 +2500,16 @@ m["crossings"].extend([
 # The Water's Way · PR 2 land, L3 (Scholars' Edge, the Flats, the Bight): D-WW80…89.
 import os as _os
 exec(open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "make_manifest_ww_west.py"), encoding="utf-8").read())
+# The Water's Way · PR 2 land integration (D-WW90…, 2026-10-05). The glider's `sands` landing field (r 60 at [1095,1362]) held
+# the built Greenway's deck, the Reed Maze trail and the Dune Overlook (bake conflict sky.landing.sands), and already reached
+# over Horizon Drive (V01, its walks) and now the promenade and the Strand. Between the Greenway (north) and V01 (south) the
+# largest circle clear of every bed edge and every solid in the landing band is r 35.6 at [1185,1355] (searched at 1 m on the
+# merged bake): the field moves 90 m east-north-east onto it, r 35 (0.6 m to the nearest solid, 0.8 m to the nearest bed edge).
+# A sky owner's call, applied and owed to Jonathan (DECISIONS D-WW90): the alternative is a larger field over V01 as before.
+_sands = m["sky"]["landings"]["sands"]
+_sands["ww_v2_xy"], _sands["ww_v2_r"] = _sands["xy"], _sands["r"]
+_sands["xy"], _sands["r"] = [1185, 1355], 35
+_sands["note_ww"] = "D-WW90 (land integration, owed to Jonathan): moved off the Greenway, the Reed Maze trail, the Dune Overlook, V01 and the promenade/Strand onto the clear ground between the Greenway and Horizon Drive; r 60 → 35 (the largest clear circle there is 35.6)"
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")

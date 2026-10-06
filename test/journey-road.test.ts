@@ -121,7 +121,9 @@ describe("extract: bridges and covered stretches", () => {
 
   it("marks every authored road tunnel and the Prow gallery as covered, portal to portal", () => {
     const covers = land.covers ?? [];
-    expect(covers.map((c) => `${c.id}:${c.kind}:${c.lineId}`)).toEqual(["mountainRoadTunnel:tunnel:V03", "prowTunnel:gallery:V01", "stillwaterTunnel:tunnel:spur stillwater"]);
+    // Mountain V3 (#585, D-M11) added the Rim Tunnel on V01 (Horizon Drive under the Rim Bridge); this expectation predates it and
+    // failed on 9d13db2 itself (a stale expectation, ported here by the Water's Way land integration, not a land change).
+    expect(covers.map((c) => `${c.id}:${c.kind}:${c.lineId}`)).toEqual(["mountainRoadTunnel:tunnel:V03", "prowTunnel:gallery:V01", "rimTunnel:tunnel:V01", "stillwaterTunnel:tunnel:spur stillwater"]);
     const mouths = new Map((world.collision?.mouths ?? []).map((m) => [m.id, m]));
     for (const c of covers) {
       c.portals.forEach((p, n) => {

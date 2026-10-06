@@ -4,6 +4,7 @@ import { addFlatPad, bed } from '../beds/profiles';
 import { bightBatterAt, bightGreenwayDistance, bightPlotFrames, bightPlotToWorld } from '../terrain/bightBatter';
 import { FOOTING_SINK, pier } from './foundations';
 import { box, clamp, distance, districtAt, mitredSlab, mix, nearestOnPath, plan, slab, solid } from './mesh';
+import { OPEN_RAIL, OPEN_RAIL_KIND, openRail } from './openRail';
 
 /**
  * The Water's Way · PR 2 land, builder L3 (D-WW80…89): Scholars' Edge, the Flats and the Bight's land. Every number is read from
@@ -12,9 +13,6 @@ import { box, clamp, distance, districtAt, mitredSlab, mix, nearestOnPath, plan,
  * report (the batter itself is terrain's: land/terrain/bightBatter.ts). Dressing (buildings, plants, props, lights) is PR 3/4's.
  */
 
-/** STYLE open rail: posts every ≤ 2 eu, a top rail at 1.05 and two bars through the body's contact bands (0.2, 0.65), so the
- * walker is stopped between the posts (geography.contact tests 0.2 / 0.65 / 1.25) while sight passes through (`openRail`). */
-export const OPEN_RAIL = { top: 1.05, bars: [.2, .65] as const, bar: .12, post: .1, spacing: 2 } as const;
 const planLength = (path: readonly XYZ[]) => path.slice(1).reduce((n, p, i) => n + distance(plan(path[i]!), plan(p)), 0);
 function along(path: readonly XYZ[], s: number): { p: XYZ; dir: XY } {
   let run = 0;
@@ -25,20 +23,9 @@ function along(path: readonly XYZ[], s: number): { p: XYZ; dir: XY } {
   }
   return { p: path[0]!, dir: [1, 0] };
 }
-export function openRail(out: StructureSolid, path: readonly XYZ[], offset: number): void {
-  const length = planLength(path), n = Math.max(1, Math.ceil(length / OPEN_RAIL.spacing));
-  let prev: XYZ | undefined;
-  for (let k = 0; k <= n; k++) {
-    const { p, dir } = along(path, length * k / n), xy: XY = [p[0] - dir[1] * offset, p[2] + dir[0] * offset];
-    box(out, xy, p[1] + OPEN_RAIL.top, [OPEN_RAIL.post, OPEN_RAIL.post], p[1] - .35);
-    if (prev) {
-      slab(out, prev, p, .07, .09, offset, OPEN_RAIL.top);
-      for (const h of OPEN_RAIL.bars) slab(out, prev, p, .05, OPEN_RAIL.bar, offset, h + OPEN_RAIL.bar / 2);
-    }
-    prev = p;
-  }
-}
-const railSolid = (id: string, bedIds: string[], district: string): StructureSolid => ({ ...solid(id, 'handrail', 'timber', 'rail', bedIds, district), openRail: true });
+/** Open rails through the one builder and the one marker (land/structures/openRail.ts: kind OPEN_RAIL_KIND, seen through by
+ * world/raycast.ts; posts ≤ 2 m, the top rail at 1.05, the guard bar at 0.65 and the kicker through the 0.2 band). */
+const railSolid = (id: string, bedIds: string[], district: string): StructureSolid => solid(id, OPEN_RAIL_KIND, 'timber', 'rail', bedIds, district);
 const info = (cuts: LandCuts, id: string, message: string, at: XY, measured?: number, required?: number, conflict = false) =>
   cuts.diagnostics.push({ id, severity: conflict ? 'conflict' : 'info', message, at: [Number(at[0].toFixed(2)), Number(at[1].toFixed(2))], ...(measured === undefined ? {} : { measured: Number(measured.toFixed(3)) }), ...(required === undefined ? {} : { required }) });
 
@@ -76,7 +63,7 @@ export function bightLookout(cuts: LandCuts, base: HeightQuery): void {
   const rb = bed('structure.bightLookout.ramp', 'walk', ramp, false); rb.width = w; rb.maxGrade = .07; cuts.beds.push(rb);
   const db = bed('structure.bightLookout.deck', 'walk', [P(c[0], z0), P(c[0], S.eye[1]!)], false); db.width = x1 - x0; cuts.beds.push(db);
   const grade = (top - foot) / total, lip = base(c[0], z1);
-  info(cuts, 'structures.bightLookout.ramp', `bightLookout: the ramp climbs ${(top - foot).toFixed(2)} eu over ${total.toFixed(1)} eu at ${(grade * 100).toFixed(2)} % to the deck at ${top} (eye ${top + 1.6}); open rails ${OPEN_RAIL.top}`, plan(ramp[0]!), grade, .07, grade > .07 + 1e-9);
+  info(cuts, 'structures.bightLookout.ramp', `bightLookout: the ramp climbs ${(top - foot).toFixed(2)} eu over ${total.toFixed(1)} eu at ${(grade * 100).toFixed(2)} % to the deck at ${top} (eye ${top + 1.6}); open rails ${OPEN_RAIL.height}`, plan(ramp[0]!), grade, .07, grade > .07 + 1e-9);
   info(cuts, 'structures.bightLookout.deck', `bightLookout: deck ${(x1 - x0)} × ${(z1 - z0)} at ${top}, its south edge on the lip (ground ${lip.toFixed(2)}); six posts reach the ground, the tallest ${deepest.toFixed(2)} eu`, c, deepest);
 }
 

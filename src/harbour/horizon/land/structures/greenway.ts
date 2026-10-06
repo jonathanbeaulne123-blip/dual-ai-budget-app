@@ -2,7 +2,7 @@ import { HORIZON_MANIFEST as M } from '../../world/manifest';
 import type { BedCut, HeightQuery, LandCuts, StructureSolid, XY, XYZ } from '../interfaces';
 import { bed } from '../beds/profiles';
 import { box, distance, districtAt, mitredSlab, nearestOnPath, plan, prism, slab, solid } from './mesh';
-import { OPEN_RAIL, OPEN_RAIL_KIND, planLength, pointAlong, railBar } from './openRail';
+import { OPEN_RAIL, OPEN_RAIL_KIND, openRail, planLength } from './openRail';
 
 /**
  * The Water's Way — the Greenway (D-WW22, D-WW24; MANIFEST profiles.greenway + structures.greenway; the prototype's
@@ -118,12 +118,10 @@ function fineOf(out: StructureSolid): StructureSolid {
   let f = FINE.get(out); if (!f) { f = solid(`${out.id}.fine`, out.kind, out.surface, out.role, out.bedIds, out.districtId); f.liteIndices = []; FINE.set(out, f); } return f;
 }
 function flushFine(cuts: LandCuts): void { for (const f of FINE.values()) if (f.indices.length) cuts.solids.push(f); FINE.clear(); }
-/** An open timber rail along a short polyline (side structures): posts every ≤ 2 m (every third kept in lite), the top rail, bars. */
+/** An open timber rail along a short polyline (side structures): the one open-rail builder (openRail.ts) along the drawn
+ *  segments, with the lite twin (a post every 6th and the top rail kept; the bars dropped). No kicker: as on the deck. */
 function railAlong(out: StructureSolid, pts: readonly XYZ[], offset: number, bars: readonly number[] = PRO.rail_bars): void {
-  const length = planLength(pts); if (length < .05) return;
-  const n = Math.max(1, Math.ceil(length / OPEN_RAIL.spacing)), fine = fineOf(out);
-  for (let k = 0; k <= n; k++) { const { p, dir } = pointAlong(pts, length * k / n); box(k % 6 === 0 || k === n ? out : fine, [p[0] - dir[1] * offset, p[2] + dir[0] * offset], p[1] + OPEN_RAIL.height, [OPEN_RAIL.post, OPEN_RAIL.post], p[1] - OPEN_RAIL.embed); }
-  for (let i = 1; i < pts.length; i++) { const a = pts[i - 1]!, b = pts[i]!; slab(out, a, b, OPEN_RAIL.top[0], OPEN_RAIL.top[1], offset, OPEN_RAIL.height); for (const at of bars) railBar(fine, a, b, offset, at); }
+  openRail(out, pts, offset, { bars, kicker: false, alongPath: true, fine: fineOf(out), liteEvery: 6 });
 }
 /** A deck ribbon (mitred, 0.3 thick) along points. */
 function ribbon(out: StructureSolid, pts: readonly XYZ[], width: number, thickness = .3): void { for (let i = 1; i < pts.length; i++) mitredSlab(out, pts, i, width, thickness); }
@@ -255,19 +253,11 @@ export function buildGreenway(cuts: LandCuts, base: HeightQuery): void {
   buildPlaces(cuts, base);
   flushFine(cuts);
 }
-/** The Greenway's rail: timber (posts every 2 m, top rail, bars 0.7 / 0.36) or the bridges' steel picket rail. */
+/** The Greenway's rail through the one open-rail builder (openRail.ts): timber (posts 0.11 every ≤ 2 m, a 0.14 × 0.07 top rail,
+ *  bars 0.65 / 0.36; the kerbs stop the wheels, so no kicker) or the bridges' steel picket rail. Lite keeps a post every 6th. */
 function greenwayRail(out: StructureSolid, line: readonly XYZ[], offset: number, steel: boolean): void {
-  const length = planLength(line); if (length < .3) return;
-  const posts = Math.max(1, Math.ceil(length / 2));
-  const fine = fineOf(out);
-  for (let k = 0; k <= posts; k++) { const { p, dir } = pointAlong(line, length * k / posts); box(k % 6 === 0 || k === posts ? out : fine, [p[0] - dir[1] * offset, p[2] + dir[0] * offset], p[1] + OPEN_RAIL.height, [.11, .11], p[1] - OPEN_RAIL.embed); }
-  for (let i = 1; i < line.length; i++) {
-    const a = line[i - 1]!, b = line[i]!; slab(out, a, b, .14, .07, offset, OPEN_RAIL.height);
-    if (!steel) { for (const at of PRO.rail_bars) railBar(fine, a, b, offset, at); continue; }
-    slab(fine, a, b, .05, .04, offset, .2);
-    const run = distance(plan(a), plan(b)), m = Math.max(1, Math.round(run / PRO.bridge.pickets.every_m)), d = run || 1, dir: XY = [(b[0] - a[0]) / d, (b[2] - a[2]) / d];
-    for (let j = 1; j < m; j++) { const t = j / m, q: XYZ = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; box(fine, [q[0] - dir[1] * offset, q[2] + dir[0] * offset], q[1] + OPEN_RAIL.height - .07, [PRO.bridge.pickets.size_m, PRO.bridge.pickets.size_m], q[1] + PRO.bridge.pickets.from_m); }
-  }
+  if (planLength(line) < .3) return;
+  openRail(out, line, offset, { ...(steel ? { infill: 'pickets' as const } : { bars: PRO.rail_bars }), kicker: false, alongPath: true, post: .11, top: [.14, .07], fine: fineOf(out), liteEvery: 6 });
 }
 /** A side bed from the Greenway's centreline at s through its rail gap along `pts` (the path graph's junction). */
 function sideBed(cuts: LandCuts, id: string, s: number, path: readonly XYZ[], width: number): BedCut {

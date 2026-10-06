@@ -99,9 +99,6 @@ export interface StructureSolid {
   walkable: boolean;
   /** Excludes threshold paint/markers from structural-clearance measurements. */
   role: 'deck' | 'support' | 'wall' | 'rail' | 'roof' | 'floor' | 'marker' | 'rock';
-  /** The Water's Way (PR 2 land): an open rail (posts and bars, STYLE open rail 1.05): it collides as drawn, but sight lines
-   * (the view proof, the story sight chain) see through it, as the eye does (world/raycast.ts `isOpenRail`). */
-  openRail?: boolean;
 }
 export interface DistrictBounds {
   id: string;
