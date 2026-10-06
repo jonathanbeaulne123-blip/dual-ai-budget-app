@@ -1,5 +1,5 @@
 /**
- * The calm header: where we are · what needs attention · what is next · what I can do. From existing selectors
+ * Where we are · what needs attention · what is next. From existing selectors
  * only: the camp card (`campCardModel`: Everyday · now, "Leaving next") read over the same day ledger the board
  * used, `readNeeds` (what waits on this reader), plus the board's own overdue / needs-review commitments and a
  * close-due Chapter. Direct access (Record, Calendar, Books, Plan) never depends on the map.
@@ -7,7 +7,24 @@
 import { addDays, monthKeyFromDateKey, type DateKey } from "../../core/calendar.ts";
 import { campCardModel, readNeeds } from "../../harbour/glass/campCardModel.ts";
 import { stripRange, type DayLedger } from "../../harbour/glass/dayLedger.ts";
-import type { AttentionItem, BoardSummary, Stop, StopAction } from "../contracts.ts";
+import type { AttentionItem, ChapterId, Stop, StopAction } from "../contracts.ts";
+
+/**
+ * The model's own reading of where we are · what needs attention · what is next (internal: the board carries it as
+ * `purse`, `digest` and `toCheck`; the route board's summary card that showed it whole was retired with it).
+ */
+export type BoardSummary = {
+  chapterId: ChapterId;
+  periodLabel: string;
+  /** Everyday · now (`readSnapshot(...).now` via campCardModel); null when the Fund cannot say. */
+  everyday: { cents: number | null; figure: string } | null;
+  leavingWords: string;
+  /** readNeeds + overdue/needs-review commitments + close-due chapter, most pressing first. */
+  attention: AttentionItem[];
+  /** Up to three next items from today on (stop ids), in date order. */
+  next: string[];
+  quickActions: StopAction[];
+};
 import { action } from "./stopKit.ts";
 import { monthLabel, shortDate } from "./words.ts";
 import type { DeriveContext } from "./window.ts";

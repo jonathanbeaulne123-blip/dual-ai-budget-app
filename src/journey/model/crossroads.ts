@@ -8,7 +8,7 @@
  * No fork is manufactured from transactions or from goals that can run side by side.
  */
 import { monthStartKey, shiftMonthKey, type MonthKey } from "../../core/calendar.ts";
-import { formatCad } from "../../core/money.ts";
+import { formatCadGrouped as formatCad } from "../../core/money.ts";
 import { pathEras, type PathEraView } from "../../core/pathEras.ts";
 import { currentPlanVersion, planVersionDiff, type PlanLine, type PlanVersion } from "../../core/planSystem.ts";
 import { BLUEPRINTS } from "../../home/catalogue.ts";

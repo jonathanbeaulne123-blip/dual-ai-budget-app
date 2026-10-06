@@ -456,7 +456,7 @@ describe("swipe posting contract", () => {
     });
     const refundId = refund.postedIds.find((id) => id.startsWith("TXN-"));
     if (!refundId) throw new Error("Missing refund row");
-    household = reversePostedMoney(refund.household, refundId, { createdBy: BIANCA }).household;
+    household = reversePostedMoney(refund.household, refundId, { createdBy: BIANCA, reversalDate: TODAY }).household;
 
     const income = postEntry(household, {
       date: TODAY,
@@ -470,7 +470,7 @@ describe("swipe posting contract", () => {
     });
     const incomeId = income.postedIds.find((id) => id.startsWith("TXN-"));
     if (!incomeId) throw new Error("Missing income row");
-    household = reversePostedMoney(income.household, incomeId, { createdBy: BIANCA }).household;
+    household = reversePostedMoney(income.household, incomeId, { createdBy: BIANCA, reversalDate: TODAY }).household;
 
     expect(monthSummary(household, "2026-09")).toMatchObject({
       expenseActualCents: 0,

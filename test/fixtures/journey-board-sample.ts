@@ -294,25 +294,18 @@ const WINDOW = ["2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08"
 
 function board(stops: Stop[], clusters: StopCluster[], crossroads: Crossroads[], extra: Partial<JourneyBoard>): JourneyBoard {
   return {
-    version: 1, householdId: "HH-sample", memberId: SAMPLE_MEMBER, today: SAMPLE_TODAY, currentChapterId: m("2026-09"),
+    version: 2, householdId: "HH-sample", memberId: SAMPLE_MEMBER, today: SAMPLE_TODAY, currentChapterId: m("2026-09"),
     window: { from: m(WINDOW[0]!), to: m(WINDOW.at(-1)!) },
     chapters: WINDOW.map((month) => chapter(month, stops, clusters, crossroads)),
     stops, clusters, crossroads,
-    piece: { anchorChapterId: m("2026-09"), atStationId: "sep", atDate: SAMPLE_TODAY, waitingChapterId: m("2026-08"), lookId: "lantern" },
-    summary: {
-      chapterId: m("2026-09"), periodLabel: "September 2026", everyday: { cents: 123456, figure: "$1234.56" },
-      leavingWords: "Leaving next · Rent $1850.00 · Mon 28 · +1 this week", attention: [], next: [],
-      quickActions: [
-        { id: "quick#expense", label: "Record a purchase…", call: { name: "openRecord", mode: "expense" }, primary: true },
-        { id: "quick#bill", label: "Bill paid…", call: { name: "openRecord", mode: "bill" } },
-        { id: "quick#income", label: "Record income…", call: { name: "openRecord", mode: "income" } },
-        { id: "quick#calendar", label: "Open the Calendar", call: { name: "openCalendar", date: SAMPLE_TODAY } },
-        { id: "quick#books", label: "Open the Books", call: { name: "openBooks", ref: { kind: "register" } } },
-        { id: "quick#plan", label: "Open the kitchen table", call: { name: "openPlace", target: "plan-studio" } },
-      ],
-    },
+    piece: { anchorChapterId: m("2026-09"), atStationId: "sep", atDate: SAMPLE_TODAY, waitingChapterId: m("2026-08") },
     homes: [], undatedMemories: [], olderChapters: [], empty: false,
     limitations: ["Jonathan’s home and milestones are private to their own device."],
+    // The v2 fields, honestly empty: this hand-written sample checks stops and chapters; the model's own v2 fields are
+    // tested on derived boards (test/journey-map-model.test.ts).
+    week: { from: "2026-09-28" as DateKey, to: "2026-10-04" as DateKey, days: [], pileStopIds: [] },
+    year: [], toCheck: [], purse: { everyday: null, expectedToday: [] },
+    digest: { weekStopIds: [], nextLeavingStopId: null, nextIsSettingAside: false, toCheckIds: [], waitingOnYou: [], chapter: [] },
     ...extra,
   };
 }
@@ -320,27 +313,12 @@ function board(stops: Stop[], clusters: StopCluster[], crossroads: Crossroads[],
 /** The full sample: every stop kind × status, two clusters, three crossroads kinds, one undated memory. */
 export function sampleJourneyBoard(): JourneyBoard {
   const b = board(STOPS, CLUSTERS, CROSSROADS, { undatedMemories: UNDATED, olderChapters: [{ id: m("2026-02"), unresolved: { overdueCommitments: 0, commitmentsNeedingReview: 0, chapterCloseDue: 0, expectedIncomeNotRecorded: 0, attention: 0 }, traces: [] }] });
-  b.summary.attention = [
-    { id: `attention:${SAMPLE_IDS.overdue}`, words: "Groceries · planned · Tue 15 Sep · overdue, not recorded", stopId: SAMPLE_IDS.overdue, call: { name: "openBillPaid", recurrenceId: "REC-groceries" } },
-    { id: `attention:${SAMPLE_IDS.needsReview}`, words: "Streaming · Thu 10 Sep · payment status needs review", stopId: SAMPLE_IDS.needsReview, call: { name: "openBooks", ref: { kind: "register" } } },
-    { id: "attention:review:2026-08", words: "August 2026 · the Chapter is still open", stopId: "review:2026-08", call: { name: "openCampfire", chapterId: m("2026-08") } },
-    { id: "need:fund", words: "A contribution to confirm", stopId: null, call: { name: "openBooks", ref: { kind: "fund" } } },
-  ];
-  b.summary.next = [SAMPLE_IDS.dueToday, SAMPLE_IDS.milestoneReady, SAMPLE_IDS.goalFull];
   return b;
 }
 
-/** A new household: honest empty board, setup actions only. */
+/** A new household: honest empty board. */
 export function sampleEmptyJourneyBoard(): JourneyBoard {
   const b = board([], [], [], { empty: true, limitations: [] });
   b.piece = { ...b.piece, waitingChapterId: null };
-  b.summary = {
-    ...b.summary, everyday: null, leavingWords: "Leaving next · Nothing dated this week", attention: [], next: [],
-    quickActions: [
-      { id: "quick#books", label: "Set up our accounts in the Books", call: { name: "openBooks", ref: { kind: "register" } }, primary: true },
-      { id: "quick#plan", label: "Make our first plan", call: { name: "openPlace", target: "plan-studio" } },
-      { id: "quick#calendar", label: "Open the Calendar", call: { name: "openCalendar", date: SAMPLE_TODAY } },
-    ],
-  };
   return b;
 }
