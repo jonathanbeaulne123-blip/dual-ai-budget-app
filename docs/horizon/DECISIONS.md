@@ -76,3 +76,52 @@ The pass keeps `horizon-geo-1` (the Horizon is not pinned and no household has a
 | D-M9 | Are v2's four tool buildings drawn? | 0 of 4 | v2's tools live in the Horizon hosts; their terraces stay as open shelves; the observatory (`L02`) and the goal pavilion (as a plain shelter) are drawn | v2's home, cottage, library and glasshouse buildings (their terraces are kept) | Design lead |
 | D-M10 | How far are pages A, E, F, G re-posed? | only as far as the new ground requires | old values kept as `v2_5` | — | Design lead; Jonathan confirms by eye |
 | D-M11 | What stands on the ring of high ground round v2 (Mountain V3)? | Glacier Peak 156 (under v2's 163.24, ceiling 157); the glacier in its cirque (floor 135, ice crown 143) feeds every V3 stream; nine uneven benches (61.5–117); six falls (Veil 48 m, Rillcut 51 m, Long 52 m, Spur 36 m, Stair 14 + 16 m); the Rim Tunnel on V01 at `[1566,545]` (84 m) under the Rim Bridge | the Highlands and the Falls: one landform and water definition in `land/mountainV3/`; v2's land south of its summit line untouched, north of it the higher wins (D-M2); every Horizon walk on v2's land is region-carried (the D-M5 rule generalised); the confluence rule (two aquatic routes within 6 eu meet, they do not cross); a fall's lip is where water leaves the ground (no bank there); the Year Walk's Hollow east-edge stretch moves ~20 m west for the plunge pools; the lake-rim trail is pinned level across the Veil Footbridge | — (nothing retired; the Shoulder band's west failures are now V3 ground) | Jonathan, 2026-10-04 ("build it, improve where it lacks"); book [MOUNTAIN_V3.md](MOUNTAIN_V3.md); names, buildings, map glyphs and a V3 view page are open calls |
+
+## The Water's Way (D-303, D-WW1…D-WW42, 2026-10-05)
+
+Jonathan, 5 October 2026: *"recommended on all"* on the plan [`STORY.md`](STORY.md) and every open call from the seven neighbourhood prototype chats. The dated entry is D-303 in [docs/DECISIONS.md](../DECISIONS.md); the one definition is `src/harbour/horizon/world/story.ts`. Names are proposals.
+
+| Id | Decision | Where it lands |
+|---|---|---|
+| D-WW1 | Adopt "The Water's Way": places 1–7 in story order (the Highlands, the Green, the Reach + Greenway, Little Harbour, Long Sands, the Flats & the Bight, Scholars' Edge), hours dawn → before dawn | `world/story.ts` `STORY_PLACES`; STORY §2 |
+| D-WW2 | Never "Chapter" for places in the app (a Chapter is a month) | STORY §1; registry test |
+| D-WW3 | Dress the Hollow as the interlude in the same program | PR 3; STORY §5 |
+| D-WW4 | The second stream: the Hollow Tarn into Orchard Brook | PR 2 land |
+| D-WW5 | The evening relay (civil dusk, 40 s, emissive cards), three noon bells (Westwatch → summit → campanile), the Lamp as every binocular's target | `EVENING_RELAY`, `NOON_BELLS`; PR 5 |
+| D-WW6 | Warm coast for Little Harbour + Long Sands; no palms in the Reach; the fit edits (Boathouse white/terracotta, one island lantern, bluff-end pines, juniper → spruce, verdigris cote, dry-stone from the north pass, Glasshouse stair, Fallswatch on the buttress, Green Road bollards) | STYLE §2.0; STORY §6 |
+| D-WW7 | V3.1: one ridge system, benches as shelves on spurs | PR 2 land |
+| D-WW8 | Horn under v2's summit (≤ 156), top 30 m steepened (~1:0.7), two arêtes, ~20 m cirque headwall | PR 2 land |
+| D-WW9 | Veil amphitheatre cleared; Spur-crown bench 15 m north; west buttress 10 m west of the portal trench; Fallswatch on it | PR 2 land; STORY §4.2 |
+| D-WW10 | Bench Hamlet a real shelf ≥ 60 × 35 m at ≤ 8 % (nine crofts with yards) | PR 2 land |
+| D-WW11 | Drag lift kept: structure now, ride in PR 5; STYLE §2.7 allows it | STYLE §2.7 |
+| D-WW12 | The swing and kites count as tree and sky | STYLE §1.4.1 rule 12 |
+| D-WW13 | No treehouse | STYLE §1.4.1 rule 12 |
+| D-WW14 | The Old Oak at [1125,1165]; the Meadow Pavilion [848,1060] and the windpump [908,1245] added | PR 3 Green |
+| D-WW15 | Green Road's lanterns inside the circle → 0.8 eu bollards; rule 12 names the road | STYLE §1.4.1 rule 12 |
+| D-WW16 | Glasshouse stair-and-ramp down the scarp | PR 2 land |
+| D-WW17 | Baskets 4, 6, 7, 8 off the beds (#8 ~[1000,935]); Drop Zone target ~10 m ESE | PR 3 Green |
+| D-WW18 | Open timber rails on the Reach boardwalk and bays (S1 checked) | PR 2 land; STYLE §1.6 rule 10 |
+| D-WW19 | Page I to the boardwalk's north end; night line the High Span's lights; "the drawbridge" | PR 5 |
+| D-WW20 | Six Reach lookouts and the osprey pole (new pads, the Channel Hide) | PR 2 land, PR 3 Reach |
+| D-WW21 | Binoculars with a free lever, no coin | STYLE §3.1 Lookout kit |
+| D-WW22 | The Greenway: 6 m deck, ≤ 5 %, `greenway` profile, three bridged crossings in the register, Bluff End dead-end lookout | PR 2 land, PR 3 |
+| D-WW23 | Scraped pools ≤ 0.3 m, the Reed Maze, the Marsh Hide, floating reed rafts | PR 2 land, PR 3 |
+| D-WW24 | Rail 1.05 on the high deck | STYLE §1.6 |
+| D-WW25 | STYLE §2.1 → "cobblestone Italy"; Taylor/Newfoundland skin the same massing | STYLE §2.1 |
+| D-WW26 | Square view retargeted to v2's dam; the belfry is the dam view; the bank stays | page A; PR 3 Harbour |
+| D-WW27 | Town Weave 8 m inland at the quay (3B) | PR 2 land |
+| D-WW28 | New pages (belfry N, over the roofs, from the water) + the Giro del Porto route | PR 5; MANIFEST |
+| D-WW29 | Single-device bocce and passeggiata; shared play waits for a presence plan + trust review; cats placeholder (D11 open) | PR 5 |
+| D-WW30 | Long Sands Direction B; STYLE §2.5 rewritten; D-R4 settled for palms (west of the Quay Bridge only) | STYLE §2.5 |
+| D-WW31 | The pier and the Ferris wheel as drawn (ferry line and `sands` landing checked) | PR 2 land, PR 4 |
+| D-WW32 | Storefronts: collidable facades with shallow porches, not hosts | PR 4 |
+| D-WW33 | Page D night pose; Boathouse gable lantern for page L; the Wreck at [250,1150] | PR 4, PR 5 |
+| D-WW34 | The hybrid airport: elevator + beacon, Quonset the one hangar, timber station, geoglyph, stargazing deck + observatory, arch + Wash hoodoos, tallgrass/steppe | STYLE §2.4 |
+| D-WW35 | Windsock out of the approach (design lead: [466,508]) | PR 2 land |
+| D-WW36 | Page H's tested pose; porch frame reworded | PR 5 |
+| D-WW37 | Bight Shore plot walls battered and planted | PR 2 land |
+| D-WW38 | Scholars layout B (courtyard on the SW gable, sun-window glade) | STYLE §2.3 |
+| D-WW39 | The Bight lookout spur as the porch pose, deck raised ~2 m | PR 2 land, PR 4; STORY §4.2 |
+| D-WW40 | 60–70 % canopy with instanced cards for the back rows | PR 4 |
+| D-WW41 | (design lead) The canonical story points, eyes and sight-chain contract (≥ 0.5 m to top − 2 m, baked solids included) | `world/story.ts`; STORY §3–4 |
+| D-WW42 | (design lead) The thirteen prototype-conflict rulings (baskets, Oak Clock, windsock, no lettering, drag lift, hamlet, glacier, Boathouse, Long Sands ramp/headroom/bowl, harbour lantern/bocce, Scholars pad/deck, three dressings, the Lamp) | D-303 entry |

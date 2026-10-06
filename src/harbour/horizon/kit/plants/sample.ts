@@ -87,3 +87,54 @@ export function sampleCorridor(verges: readonly SampleVerge[] = ['palms', 'avenu
     left: { edge: 'shoulder', guard: 'none', drop: 0, waterEu: null, paved: 5 }, right: { edge: 'shoulder', guard: 'none', drop: 0, waterEu: null, paved: 5 } }));
   return { id: 'SAMPLE', closed: false, step: 2, stations, reaches: [{ id: 'sample', label: 'Sample', from: 0, to: SAMPLE_LENGTH, context: 'boulevard' }], markings: [], guards: [], lamps: [], planting: verges.flatMap(v => samplePlanting(v)), stops: [] };
 }
+
+/* ------------------------------------------------------------------------------------- The Water's Way samples */
+
+/** Sample stands of the Water's Way species (fictional; kit sheet and tests), each composed as its neighbourhood would. */
+export type SampleStand = 'marsh' | 'woods' | 'coast' | 'prairie' | 'oak';
+export const STAND_ORIGIN: Record<SampleStand, readonly [number, number]> = { marsh: [1250, 1250], woods: [740, 420], coast: [1000, 1440], prairie: [430, 600], oak: [1125, 1165] };
+export function sampleStand(stand: SampleStand): PlantingGroup[] {
+  const o = STAND_ORIGIN[stand], r = rng({ marsh: 5, woods: 7, coast: 13, prairie: 17, oak: 19 }[stand]), groups: PlantingGroup[] = [];
+  const it = (species: PlantItem['species'], x: number, z: number, scale = 1, yaw = r() * 6.28, tint = r(), y = SAMPLE_Y, extra: Partial<PlantItem> = {}): PlantItem => ({ species, at: [o[0] + x, y, o[1] + z], scale, yaw, tint, ...extra });
+  const g = (id: string, items: PlantItem[]) => groups.push({ id: `stand.${stand}.${id}`, kind: 'shrubCluster', reachId: `stand.${stand}`, side: 'left', items });
+  if (stand === 'marsh') {
+    // A scraped pool (x 6…18, z −4…6, its water at y 9.9) with lilies, reeds and cattails thick at its edge, sedge
+    // behind, a willow at the inflow, a tamarack grove and red-osier dogwood beyond.
+    const lilies: PlantItem[] = []; for (let k = 0; k < 9; k++) lilies.push(it('lily', 8 + r() * 9, -3 + r() * 8, 0.9 + r() * 0.3, r() * 6.28, r(), SAMPLE_Y + 0.01));
+    g('lilies', lilies);
+    const reeds: PlantItem[] = [];
+    for (let k = 0; k < 260; k++) { const a = r() * 6.28, d = 7.5 + r() * 9, x = 12 + Math.cos(a) * d * 1.1, z = 1 + Math.sin(a) * d * 0.8; if (x < 3 && z > -2 && z < 4) continue; reeds.push(it(r() < 0.8 ? 'reed' : 'cattail', x, z, 0.85 + r() * 0.3)); }
+    g('reeds', reeds);
+    const sedge: PlantItem[] = []; for (let k = 0; k < 90; k++) sedge.push(it('sedge', -10 + r() * 50, -18 + r() * 8, 0.7 + r() * 0.5)); g('sedge', sedge);
+    g('willow', [it('willow', 30, -8, 1.05, 0.4, 0.5), it('willow', 36, -2, 0.9, 2, 0.2)]);
+    g('tamarack', [[22, -26], [26, -30], [19, -31], [30, -27], [24, -35], [33, -33]].map(([x, z]) => it('tamarack', x!, z!, 0.9 + r() * 0.25)));
+    g('dogwood', [[14, -18], [17, -20], [11, -21], [36, -14], [39, -17]].map(([x, z]) => it('dogwood', x!, z!, 0.9 + r() * 0.3)));
+  }
+  if (stand === 'woods') {
+    // A woodland edge: ferns and a front row of real trees, back rows of woodland cards (Scholars' 60–70 % canopy).
+    const front: PlantItem[] = [], kinds = ['spruce', 'balsam', 'cedar', 'spruce', 'tamarack'] as const;
+    for (let row = 0; row < 3; row++) for (let k = 0; k < 14; k++) front.push(it(kinds[(k + row) % kinds.length]!, 4 + k * 3.8 + r() * 1.5 + row * 1.7, -10 - row * 6 - r() * 4, 0.9 + r() * 0.3));
+    g('front', front);
+    const cards: PlantItem[] = []; for (let k = 0; k < 60; k++) cards.push(it('woodlandCard', r() * 80 - 12, -34 - r() * 50, 0.9 + r() * 0.3));
+    g('cards', cards);
+    const ferns: PlantItem[] = []; for (let k = 0; k < 70; k++) ferns.push(it('fern', 2 + r() * 50, -3 - r() * 8, 0.8 + r() * 0.4)); g('ferns', ferns);
+    g('dwarf', [it('spruce', 0, -6, 0.6), it('spruce', 2.5, -7.5, 0.55), it('juniper', -3, -5, 0.9)]);
+  }
+  if (stand === 'coast') {
+    // The warm coast: a fan-palm row and two canary palms on the plaza; olive, cypress and a stone pine on the hill;
+    // lemon pots and a bougainvillea on a wall (the wall is the sheet's, at z = −6, facing +z); iceplant on the dune.
+    g('fan', [0, 14, 28, 42].map((x, k) => it('fanPalm', 6 + x, -16 - (k % 2) * 6, 1, 0, k / 3)));
+    g('canary', [it('canaryPalm', 6, -4, 1, 0.3, 0.2), it('canaryPalm', 18, -3, 1, 1.1, 0.9)]);
+    g('hill', [it('olive', 32, -4, 1, 0.5), it('olive', 37, -7, 0.9, 2.2), it('cypress', 44, -10, 1), it('cypress', 47, -12, 0.95), it('stonePine', 52, -4, 1, 2.6)]);
+    g('wall', [it('bougainvillea', 26, -5.7, 1, 0), it('lemonPot', 23, -4.5, 1), it('lemonPot', 24.4, -4.6, 0.85), it('lemonPot', 29, -4.4, 1)]);
+    const ice: PlantItem[] = []; for (let k = 0; k < 24; k++) ice.push(it('iceplant', 2 + r() * 50, 4 + r() * 5, 0.8 + r() * 0.5)); g('ice', ice);
+  }
+  if (stand === 'prairie') {
+    // Tallgrass drifts with juniper and red cedar clumps in the lee of a rise, and a small apple orchard behind.
+    const grass: PlantItem[] = []; for (let k = 0; k < 220; k++) grass.push(it('prairieGrass', r() * 60, -2 - r() * 14, 0.8 + r() * 0.5)); g('grass', grass);
+    g('clump', [it('juniper', 14, -20, 1), it('juniper', 17, -22, 0.8), it('cedar', 15.5, -24, 0.7), it('cedar', 19, -21, 0.6), it('juniper', 38, -18, 1.1)]);
+    const orchard: PlantItem[] = []; for (let row = 0; row < 3; row++) for (let k = 0; k < 6; k++) orchard.push(it('apple', 26 + k * 4.5 + (row % 2) * 1.2, -30 - row * 6, 0.9 + r() * 0.2)); g('orchard', orchard);
+  }
+  if (stand === 'oak') g('oak', [{ species: 'oakGiant', at: [o[0], SAMPLE_Y, o[1]], scale: 1, yaw: 0, tint: 0.5, keep: true }]);
+  return groups;
+}

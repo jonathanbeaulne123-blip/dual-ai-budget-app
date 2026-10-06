@@ -3,9 +3,13 @@
  * flat tier, no WebGL, a failed land load or a lost context. Same data and concept coordinates as the clay land
  * (viewBox = the island extent), so the board's flat overlay (`BoardFlat`) projects the same points by x/y. Painted in
  * the theme's CLAY palette (`clayPalette.ts`): water sea, a pale shallows shoulder and a sand rim round the coast,
- * grass → hill → rock relief, soft grey roads, clay-wall hosts under their roofs. Only `JourneyLandData` is drawn.
+ * grass → hill → rock relief, soft grey roads, clay-wall hosts under their roofs, and (The Water's Way, when the land
+ * carries `dressing`) the neighbourhood buildings as small clay-wall footprints and every story landmark as a honey
+ * diamond — the clay pin seen from above. Only `JourneyLandData` is drawn.
  * The land is decoration: its layers are `aria-hidden`; the overlay slot is not, so real marks inside it stay
- * reachable. Nothing financial is drawn here.
+ * reachable. The landmark glyphs sit outside the hidden land, each an image named by its landmark (`aria-label` and a
+ * `<title>` tooltip; no painted words), so the story's places are announced when the map is read with an overlay; on a
+ * bare (decorative) map the whole SVG stays hidden. Nothing financial is drawn here.
  */
 import { useId, type ReactNode } from "react";
 import type { JourneyLandFlatData, LandLineKind, ThemeId } from "../contracts.ts";
@@ -28,6 +32,8 @@ const STROKE: Readonly<Record<LandLineKind, { width: number; dash?: string }>> =
   rail: { width: 1.2, dash: "6 2" }, ferry: { width: 1, dash: "5 4" }, row: { width: 0.8, dash: "3 4" },
 };
 const HOST_HALF = 9;
+/** A landmark diamond's half-diagonal (concept metres): a little larger than a host, so the story's verticals read. */
+const LANDMARK_HALF = 13;
 const LABEL_SIZE = 38;
 
 /**
@@ -120,6 +126,9 @@ export function JourneyLandFlat({ data, theme, children, className, showDistrict
             data-land-host={host.id} data-x={host.x} data-y={host.y}
           />
         ))}
+        {data.dressing?.buildings.map((b) => (
+          <path key={b.id} d={b.d} fill={p.wall} stroke={mixHex(p.roof1, p.ink, 0.25)} strokeWidth={1} strokeLinejoin="round" vectorEffect="non-scaling-stroke" data-land-building={b.id} />
+        ))}
         {showDistrictLabels && fitDistrictLabels(data.districts).map((district) => (
           <text
             key={district.id} x={district.x} y={district.y} textAnchor="middle" dominantBaseline="middle" fontSize={LABEL_SIZE}
@@ -130,6 +139,19 @@ export function JourneyLandFlat({ data, theme, children, className, showDistrict
           </text>
         ))}
       </g>
+      {data.dressing?.landmarks.length ? (
+        <g className="journey-land-flat__landmarks">
+          {data.dressing.landmarks.map((l) => (
+            <g key={l.id} role="img" aria-label={l.label} data-land-landmark={l.id} data-x={l.x} data-y={l.y}>
+              <title>{l.label}</title>
+              <path
+                d={`M${l.x} ${l.y - LANDMARK_HALF}L${l.x + LANDMARK_HALF} ${l.y}L${l.x} ${l.y + LANDMARK_HALF}L${l.x - LANDMARK_HALF} ${l.y}Z`}
+                fill={p.honey} stroke={p.ink} strokeWidth={1.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke"
+              />
+            </g>
+          ))}
+        </g>
+      ) : null}
       {hasOverlay ? <g className="journey-land-flat__overlay">{children}</g> : null}
     </svg>
   );

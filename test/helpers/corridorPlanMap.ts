@@ -13,6 +13,10 @@ import type { Island } from './corridorStations.ts';
 const SPECIES_COLOUR: Record<PlantSpecies, string> = {
   pine: '#1f5a3a', alpine: '#2d6b4f', birch: '#9ccf6a', round: '#3f8f3a', fruit: '#6aa84f', poplar: '#5b8f2a',
   palm: '#0fa37f', shrub: '#4f7f3a', flowering: '#d86fb0', hedge: '#2f6f2f', heath: '#8a6fa8', flowerBed: '#e07a9a', grassTuft: '#b7c46a',
+  reed: '#8d9a58', cattail: '#6b4a32', sedge: '#9a9a62', lily: '#5f7f45', willow: '#9bb06a', tamarack: '#9bb36d', spruce: '#36513a',
+  balsam: '#33503f', oakGiant: '#5a7a42', cypress: '#3c5034', olive: '#8c9a6e', stonePine: '#4c6a3c', juniper: '#4b5e3f', cedar: '#5a7744',
+  prairieGrass: '#8f9c7c', fanPalm: '#6d9746', canaryPalm: '#557f3a', fern: '#6f9046', woodlandCard: '#45633f', iceplant: '#c8467a',
+  bougainvillea: '#d6409a', lemonPot: '#f2d02e', dogwood: '#a8452f', apple: '#c9563d',
 };
 
 export interface MapInput { input: PlanInput; plan: CorridorPlan }

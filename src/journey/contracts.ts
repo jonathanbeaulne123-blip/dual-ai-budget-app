@@ -653,6 +653,15 @@ export type JourneyLandData = {
   /** Boulevard reaches (the corridor's `boulevard` context): a slightly wider road with a planted band. Present only
    * when the index carries corridors. */
   boulevards?: JourneyLandBoulevard[];
+  /** The Water's Way (slim format 4): neighbourhood buildings at or above the Journey height and every landmark, from the
+   * index's `dressing`. Absent when the island carries no dressing. */
+  dressing?: JourneyLandDressingMap;
+};
+/** A dressed building on the map (`buildingJourneyShape` at the bake: plan footprint, raw base, eave height and roof rise)
+ * and a story landmark (base and sighted top, raw heights). */
+export type JourneyLandDressingMap = {
+  buildings: { id: string; footprint: Point2[]; base: number; height: number; roofHeight: number }[];
+  landmarks: { id: string; label: string; at: Point3; top: Point3 }[];
 };
 /**
  * A road bridge (index `structures` of kind bridge + its `structure.<id>` bed): the deck's centreline stretch in engine
@@ -733,6 +742,9 @@ export type JourneyLandFlatData = {
   reserves: { id: string; d: string }[];
   districts: { id: string; label: string; x: number; y: number }[];
   stations: { id: StationId; x: number; y: number }[];
+  /** The Water's Way (from `JourneyLandData.dressing`): the dressed buildings' plan footprints and each landmark's glyph
+   * at its sighted top (concept x, y) with its name. Present only when the land carries dressing. */
+  dressing?: { buildings: { id: string; d: string }[]; landmarks: { id: string; label: string; x: number; y: number }[] };
 };
 
 // ---------------------------------------------------------------------------

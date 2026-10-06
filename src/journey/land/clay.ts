@@ -14,6 +14,8 @@
  * - `journey-land:houses` — a clay house at every host (Our home under the home roof, the bank as the porcelain
  *   Mandevilla Queen) and village houses on the bake's settled paint; `journey-land:trees` on woodland paint and a
  *   sprinkle on low meadow; the member homes (D53) re-materialled as clay at their plots (`journey-land:homes`);
+ * - `journey-land:dressing` — The Water's Way (`dressingMap.ts`, when the land carries `dressing`): the neighbourhood
+ *   buildings as clay blocks and every story landmark as a clay pin, inside the land budget (landmarks always);
  * - `journey-land:blobs` — contact shadows, shown on the lite tier only. On full the meshes cast and receive a real
  *   shadow map (`createClayLights` configures the sun the board scene adds).
  *
@@ -31,6 +33,7 @@ import { blobDisc, buildScatter, countDraws, mergeParts, roundedBox, type ClayPa
 import { clayDerived, clayPalette, JOURNEY_PROP_PALETTE } from "./clayPalette.ts";
 import { createClaySurface, dioramaFrame, distanceToLine, offsetRing, resampleLine, smooth, type ClaySurface } from "./diorama.ts";
 import { isMinorLine } from "./extract.ts";
+import { buildClayDressing, DRESSING_TOY } from "./dressingMap.ts";
 import { buildHomes, reservesForHomes, type HomeMeshes, type Season } from "./homes.ts";
 import { deckBlend, locateOnBridge, planBridges, type BridgePlan } from "./road.ts";
 import { closedRing, pointInPolygon } from "./simplify.ts";
@@ -47,11 +50,14 @@ export const CLAY_NAMES = {
 /** The clay land's own budget (triangles / draw calls), inside the board's `JOURNEY_LOD` allowance on both tiers. */
 export const JOURNEY_LAND_BUDGET = { full: { triangles: 25_000, drawCalls: 20 }, lite: { triangles: 15_000, drawCalls: 20 } } as const;
 
-/** Per-tier detail (counts and segments only; no coordinates). */
-
+/**
+ * Per-tier detail (counts and segments only; no coordinates). `dressingTriangles` caps The Water's Way buildings
+ * (`dressingMap.ts`; landmark pins are always drawn on top of it): full leaves the land inside `JOURNEY_LAND_BUDGET`
+ * with every pin; lite draws no dressing buildings (lite drops, never substitutes).
+ */
 export const CLAY_LAND_LOD = {
-  full: { coast: 240, bevel: 3, roadStep: 9, minorStep: 12, treeDetail: 1, trunkSides: 5, houseSegments: 2, trees: 64, villageHouses: 22, miniStride: 2, miniCoast: 96 },
-  lite: { coast: 160, bevel: 2, roadStep: 14, minorStep: 18, treeDetail: 0, trunkSides: 4, houseSegments: 1, trees: 44, villageHouses: 14, miniStride: 3, miniCoast: 72 },
+  full: { coast: 240, bevel: 3, roadStep: 9, minorStep: 12, treeDetail: 1, trunkSides: 5, houseSegments: 2, trees: 64, villageHouses: 22, miniStride: 2, miniCoast: 96, dressingTriangles: 3000 },
+  lite: { coast: 160, bevel: 2, roadStep: 14, minorStep: 18, treeDetail: 0, trunkSides: 4, houseSegments: 1, trees: 44, villageHouses: 14, miniStride: 3, miniCoast: 72, dressingTriangles: 0 },
 } as const;
 
 /** Toy proportions (du unless named in metres), from the prototype. */
@@ -582,6 +588,13 @@ export const buildJourneyLand: BuildJourneyLand = (data: JourneyLandData, option
   blobs.mesh.visible = !shadows; blobs.mesh.renderOrder = 1; group.add(blobs.mesh); owned.push(blobs);
   for (const s of [houses, trees, blobs]) recolourAll(s);
 
+  // The Water's Way: neighbourhood buildings and landmark pins (one scatter; none when the land carries no dressing).
+  const dressed = buildClayDressing(data, clay, tier, lod.dressingTriangles, toyMat());
+  if (dressed) {
+    dressed.scatter.mesh.castShadow = shadows; dressed.scatter.mesh.receiveShadow = shadows;
+    group.add(dressed.scatter.mesh); owned.push(dressed); recolourAll(dressed.scatter);
+  }
+
   // Member homes (D53).
   let homes = clayHomes(options.homes, data, surface, clay, tier, season);
   group.add(homes.group);
@@ -596,11 +609,15 @@ export const buildJourneyLand: BuildJourneyLand = (data: JourneyLandData, option
       m.color.set(hex ?? "#ffffff");
     }
     for (const s of [houses, trees, blobs]) recolourAll(s);
+    if (dressed) recolourAll(dressed.scatter);
   };
   recolourMaterials();
 
   // --- Week calm (prototype calmPrep / calmColours / applyCalm) ----------------------------------------------------
-  let calm: { f: Float32Array; target: Float32Array; lakeF: Float32Array; keepHouses: boolean[]; keepTrees: boolean[]; liftHouses: number[]; liftTrees: number[]; trail: readonly Point2[]; clear: JourneyLandCalm["clear"] } | null = null;
+  let calm: {
+    f: Float32Array; target: Float32Array; lakeF: Float32Array; keepHouses: boolean[]; keepTrees: boolean[]; keepDressing: boolean[];
+    liftHouses: number[]; liftTrees: number[]; liftDressing: number[]; trail: readonly Point2[]; clear: JourneyLandCalm["clear"];
+  } | null = null;
   let calmQ = 0;
   const terrainPos = terrainGeo.getAttribute("position") as THREE.BufferAttribute, terrainCol = terrainGeo.getAttribute("color") as THREE.BufferAttribute;
   const top = JOURNEY_DIORAMA.slab.top;
@@ -618,7 +635,7 @@ export const buildJourneyLand: BuildJourneyLand = (data: JourneyLandData, option
     const d = distanceToLine(trail, x, y, false);
     return Math.max(smooth(CALM.fadeFromM, CALM.fadeToM, d), smooth(CALM.highFromM, CALM.highToM, h) * smooth(CALM.highNearFromM, CALM.highNearToM, d));
   };
-  const keepRule = (list: readonly Placed[], trail: readonly Point2[], clear: JourneyLandCalm["clear"]) => {
+  const keepRule = (list: readonly { x: number; y: number }[], trail: readonly Point2[], clear: JourneyLandCalm["clear"]) => {
     let n = 0;
     return list.map((p) => {
       const d = distanceToLine(trail, p.x, p.y, false);
@@ -647,6 +664,11 @@ export const buildJourneyLand: BuildJourneyLand = (data: JourneyLandData, option
     blobs.setShown(thin ? placed.map((p) => (p.kind === "tree" ? calm!.keepTrees[treeIndex.get(p)!]! : calm!.keepHouses[houseIndex.get(p)!]!)) : null);
     houses.setBaseY(on ? calm!.liftHouses.map((y, i) => houses.bases[i]!.y + (y - houses.bases[i]!.y) * q) : null);
     trees.setBaseY(on ? calm!.liftTrees.map((y, i) => trees.bases[i]!.y + (y - trees.bases[i]!.y) * q) : null);
+    if (dressed) {
+      const s = dressed.scatter;
+      s.setShown(thin ? calm!.keepDressing : null);
+      s.setBaseY(on ? calm!.liftDressing.map((y, i) => s.bases[i]!.y + (y - s.bases[i]!.y) * q) : null);
+    }
   };
   const setCalm: ClayLandHandle["setCalm"] = (next, amount = 1) => {
     const q = next ? Math.min(1, Math.max(0, Number.isFinite(amount) ? amount : 1)) : 0;
@@ -656,8 +678,18 @@ export const buildJourneyLand: BuildJourneyLand = (data: JourneyLandData, option
       for (let v = 0; v < src.length; v++) { const i = src[v]!; f[v] = fieldAt(next.trail, (i % clay.columns) * clay.step, Math.floor(i / clay.columns) * clay.step, clay.heights[i]!); }
       const lakeF = Float32Array.from(lakesData.centres, (c) => smooth(CALM.fadeFromM, CALM.fadeToM, distanceToLine(next.trail, c[0], c[1], false)));
       const squashed = (p: Placed) => { const y0 = clay.groundAt(p.x, p.y), k = fieldAt(next.trail, p.x, p.y, 0); return top + (y0 - top) * (1 - CALM.squash * k) - TOY.sink; };
-      calm = { f, target: calmTargets(f), lakeF, keepHouses: keepRule(housesPlaced, next.trail, next.clear), keepTrees: keepRule(treesPlaced, next.trail, next.clear),
-        liftHouses: housesPlaced.map(squashed), liftTrees: treesPlaced.map(squashed), trail: next.trail, clear: next.clear };
+      // The dressing: landmark pins always stay (the story's verticals); buildings thin by the houses' rule. Each toy
+      // sinks with the clay under it (from its own base, which already stands on the lowest clay under its footprint).
+      const dressedBuildings = dressed ? dressed.placed.filter((p) => !p.landmark) : [];
+      const keepBuildings = keepRule(dressedBuildings, next.trail, next.clear);
+      let b = 0;
+      const keepDressing = dressed ? dressed.placed.map((p) => p.landmark || keepBuildings[b++]!) : [];
+      const liftDressing = dressed ? dressed.placed.map((p, i) => {
+        const y0 = dressed.scatter.bases[i]!.y + DRESSING_TOY.sink, k = fieldAt(next.trail, p.x, p.y, 0);
+        return top + (y0 - top) * (1 - CALM.squash * k) - DRESSING_TOY.sink;
+      }) : [];
+      calm = { f, target: calmTargets(f), lakeF, keepHouses: keepRule(housesPlaced, next.trail, next.clear), keepTrees: keepRule(treesPlaced, next.trail, next.clear), keepDressing,
+        liftHouses: housesPlaced.map(squashed), liftTrees: treesPlaced.map(squashed), liftDressing, trail: next.trail, clear: next.clear };
       calmQ = -1;
     }
     if (Math.abs(q - calmQ) < 0.004) return;

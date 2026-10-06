@@ -5,6 +5,7 @@ import type { CrossingProof, Intersection } from './crossings.ts';
 import type { ViewProof } from './views.ts';
 import type { SkyProof } from './sky.ts';
 import type { Corridor } from '../land/corridor/types.ts';
+import type { WorldDressing } from '../neighbourhoods/types.ts';
 export type Point2 = readonly [number, number];
 export type Point3 = readonly [number, number, number];
 export type Polygon = readonly Point2[];
@@ -20,6 +21,9 @@ export interface District { id: string; neighbourhood: string | null; outline: P
   drawCalls?: number;
   /** The district's Voronoi heart (engine units): the single source of the streaming partition. */
   heart?: Point2;
+  /** The Water's Way: the dressing layer's own share of `triangles` / `drawCalls` (runtime/dressingLayer.ts, measured at the
+   * bake with every plant layer at capacity). Absent when the district carries no dressing. */
+  dressing?: { full: { triangles: number; drawCalls: number }; lite: { triangles: number; drawCalls: number } };
   /** Offshore only: rock sites, the island box outside which the rocks stream, and the radius that puts them first. */
   offshore?: { sites: Point2[]; islandBox: [Point2, Point2]; arriveRadius: number } }
 export interface Host { id: string; placeIds: string[]; door: Anchor; apron: Polygon; arrivalThresholds: string[]; height?: number; roofHeight?: number; footprint?: Polygon; solidIds?: string[]; padId?: string; facing?: number; returnAt?: Point3; arrivalEye?: Point3; arrivalTarget?: Point3; toolPlaceId?: string }
@@ -105,6 +109,8 @@ export interface WorldDefinition {
   bridges?: import('../land/bridges/types').BridgeDefinition[];
   /** Pass 5: placed worlds (MANIFEST `regions`), absent before the bake carries one. */
   regions?: RegionPlacement[];
+  /** The Water's Way: the baked neighbourhood dressing (neighbourhoods/bake.ts). Absent when no module dresses anything. */
+  dressing?: WorldDressing;
   diagnostics?: LandDiagnostic[];
   crossingProofs?: CrossingProof[];
   rawIntersections?: Intersection[];
