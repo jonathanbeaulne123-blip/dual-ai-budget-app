@@ -7,8 +7,13 @@ import { baseHeight } from '../terrain';
 import { buildWaterCuts } from '../water';
 import { FOOTING_SINK, GROUND_CONTACT, pier, wallToGround } from './foundations';
 import { box, clamp, distance, districtAt, mitredSlab, mix, nearestOnPath, plan, slab, solid } from './mesh';
+import { OPEN_RAIL_KIND, openRail, openRailLoop } from './openRail';
+import { buildReachLookouts } from './reach';
+import { buildGreenway } from './greenway';
+import { buildWaterwaySouth } from './waterwaySouth';
+import { buildWestLand } from './westLand';
 
-export interface SpanSpec { id:string; at:XY; route:string; length:number; width:number; height?:number; clear?:number; covered?:boolean; supportSpacing?:number; /** A clear opening centred on the span, carried by a through truss. */ opening?:number; /** Build abutments to the ground at both ends. */ abutments?:boolean; /** v1.9: the deck follows the route's own graded points (plan and height) instead of a level chord. */ followRoute?:boolean }
+export interface SpanSpec { id:string; at:XY; route:string; length:number; width:number; height?:number; clear?:number; covered?:boolean; supportSpacing?:number; /** A clear opening centred on the span, carried by a through truss. */ opening?:number; /** Build abutments to the ground at both ends. */ abutments?:boolean; /** v1.9: the deck follows the route's own graded points (plan and height) instead of a level chord. */ followRoute?:boolean; /** The Water's Way (D-WW18): an open light-timber rail (openRail.ts) instead of the stone parapet. */ openRail?:boolean }
 export const SPANS:SpanSpec[]=[
   // road (L1): the High Span and the Quay Bridge stand on abutments at both ends (their road approaches hung 1.5–4.4 eu over the
   // banks for the 2 eu the span exclusion reaches past each deck end).
@@ -21,8 +26,10 @@ export const SPANS:SpanSpec[]=[
   {id:'hollowBridge',at:[893,600],route:'walk garden',length:32,width:8,height:37,clear:4,covered:true,followRoute:true},
   // v2.6: the Inlet Footbridge is retired with the upper river (MANIFEST retired_v2_6.structures.inletFootbridge).
   ...((M.structures as unknown as Record<string,unknown>).inletFootbridge?[{id:'inletFootbridge',at:[1161,731] as XY,route:'walk lakerim',length:28,width:3,height:55,clear:4}]:[]),
-  {id:'reachFootbridge',at:[1274,1203],route:'walk reach',length:48,width:3,height:9.5,clear:4},
-  {id:'reachBoardwalk',at:[1255,1251],route:'S1',length:112,width:4,height:5,clear:1},
+  // The Water's Way (D-WW18, reach LAND-ASKS R1): the Reach boardwalk (S1's deck) and the Reach Footbridge carry open timber
+  // rails on the parapets' lines; the footbridge's 1.15 stone parapet cut the Spring Bay → campanile sightline (story.ts).
+  {id:'reachFootbridge',at:[1274,1203],route:'walk reach',length:48,width:3,height:9.5,clear:4,openRail:true},
+  {id:'reachBoardwalk',at:[1255,1251],route:'S1',length:112,width:4,height:5,clear:1,openRail:true},
   {id:'timberCrossing',at:[1500,1250],route:'homestead.lane',length:20,width:3,height:5,clear:2},
   // v1.9 named footbridges (MANIFEST structures.<id> with route + span_m): a foot route over a lower
   // route's corridor on its own grade, bents outside the corridor, a truss over the opening.
@@ -83,12 +90,12 @@ function axisAt(b:BedCut|undefined,at:XY):XY {
   if(!b)return [1,0];const n=nearestOnPath(at,b.points),a=b.points[n.segment]!,p=b.points[Math.min(n.segment+1,b.points.length-1)]!,len=distance(plan(a),plan(p))||1;return [(p[0]!-a[0]!)/len,(p[2]!-a[2]!)/len];
 }
 /** Point and unit direction at an arc length along a polyline. */
-function along(path:readonly XYZ[],s:number):{p:XYZ;dir:XY} {
+export function along(path:readonly XYZ[],s:number):{p:XYZ;dir:XY} {
   let run=0;
   for(let i=1;i<path.length;i++){const a=path[i-1]!,b=path[i]!,len=distance(plan(a),plan(b));if(len<1e-9)continue;if(run+len>=s||i===path.length-1){const t=clamp((s-run)/len,0,1);return {p:[mix(a[0],b[0],t),mix(a[1],b[1],t),mix(a[2],b[2],t)],dir:[(b[0]-a[0])/len,(b[2]-a[2])/len]};}run+=len;}
   const p=path[0]!;return {p,dir:[1,0]};
 }
-const planLength=(path:readonly XYZ[])=>path.slice(1).reduce((n,p,i)=>n+distance(plan(path[i]!),plan(p)),0);
+export const planLength=(path:readonly XYZ[])=>path.slice(1).reduce((n,p,i)=>n+distance(plan(path[i]!),plan(p)),0);
 /** The route's own graded points within ±length/2 of the nearest station to `centre`, ends interpolated. */
 /** R2-03: eu of floor apron past each road-tunnel portal (the mouth mask reaches 3 eu outside the face). */
 export const PORTAL_APRON=6.5;
@@ -108,7 +115,7 @@ function routeStretch(route:BedCut,centre:XY,length:number,height?:number):XYZ[]
  * clearance). The river lane runs in valleys at every height, so it binds at any height. */
 const WATER_LANE_TOP=16;
 /** Lower routes and boat lanes a footing may not stand in. */
-function laneGuard(cuts:LandCuts):(xy:XY,above:number,ownBeds:readonly string[])=>string|undefined {
+export function laneGuard(cuts:LandCuts):(xy:XY,above:number,ownBeds:readonly string[])=>string|undefined {
   const lanes:{id:string;pts:XY[];half:number;top:number}[]=[{id:'FERRY',pts:sampleSpline(M.water_routes.FERRY.pts as unknown as XY[],4),half:7,top:WATER_LANE_TOP},{id:'RIVER_RUN',pts:sampleSpline(M.water_routes.RIVER_RUN.pts as unknown as XY[],4),half:4,top:Infinity}];
   const segDistance=(p:XY,a:XY,b:XY)=>{const dx=b[0]-a[0],dz=b[1]-a[1],t=clamp(((p[0]-a[0])*dx+(p[1]-a[1])*dz)/(dx*dx+dz*dz||1),0,1);return distance(p,[a[0]+t*dx,a[1]+t*dz]);};
   return (xy,above,own)=>{
@@ -131,7 +138,7 @@ const WEST_FILL=.45;
  * 0.25 eu after its trestle was built) so a vehicle
  * or a walker is stopped at body height between the posts (a top rail at 1.05 alone passes under the cruiser's 0.2/0.65 contact
  * levels: the Bight spur trestle's east edge let a rider through to a 9 eu drop). */
-function postedRail(rails:StructureSolid,path:readonly XYZ[],offset:number,height=1.05,spacing=2,midRail=false):void {
+export function postedRail(rails:StructureSolid,path:readonly XYZ[],offset:number,height=1.05,spacing=2,midRail=false):void {
   const length=planLength(path),n=Math.max(1,Math.ceil(length/spacing));let prev:XYZ|undefined;
   for(let k=0;k<=n;k++){const {p,dir}=along(path,length*k/n),xy:XY=[p[0]-dir[1]*offset,p[2]+dir[0]*offset];box(rails,xy,p[1]+height,[.1,.1],p[1]-.35);const top:XYZ=[p[0],p[1],p[2]];if(prev){slab(rails,prev,top,.09,.09,offset,height);if(midRail)slab(rails,prev,top,.08,.7,offset,.95);}prev=top;}
 }
@@ -482,7 +489,7 @@ export function buildSpan(spec:SpanSpec,cuts:LandCuts,base:HeightQuery):void {
   // road (L1): one continuous deck (mitred pieces sharing their corners): per-segment rectangles left 0.2–0.3 eu cracks to the
   // river on the outside of the Quay Bridge's bend.
   const deck=solid(`${spec.id}.deck`,spec.covered?'coveredFootbridge':'bridge','stone','deck',[spec.route],districtAt(...spec.at));for(let i=1;i<path.length;i++)mitredSlab(deck,path,i,spec.width,.6);
-  const piers=solid(`${spec.id}.supports`,'pier','stone','support',bedIds,deck.districtId),rails=solid(`${spec.id}.rails`,'parapet','stone','rail',[spec.route],deck.districtId);
+  const piers=solid(`${spec.id}.supports`,'pier','stone','support',bedIds,deck.districtId),rails=spec.openRail?solid(`${spec.id}.rails`,OPEN_RAIL_KIND,'timber','rail',[spec.route],deck.districtId):solid(`${spec.id}.rails`,'parapet','stone','rail',[spec.route],deck.districtId);
   const spacing=spec.supportSpacing??12,half=length/2;let stations:number[]=[];
   if(spec.opening){const o=spec.opening/2,n=Math.max(1,Math.ceil((half-o)/spacing));for(let k=0;k<=n;k++){const s=o+(half-o)*k/n;stations.push(half-s,half+s);}}
   else{const n=Math.max(1,Math.ceil(length/spacing));stations=Array.from({length:n+1},(_,k)=>length*k/n);}
@@ -520,7 +527,8 @@ export function buildSpan(spec:SpanSpec,cuts:LandCuts,base:HeightQuery):void {
   }
   // Wave 7 (A1.3): the parapets wait for every route: a kerb gap opens where a route joins the deck through its edge
   // (S1 × the dam portage on the apron bridge, [1160.8,940.1]).
-  for(const side of [-1,1])railLineLater(offsetLine(path,side*(spec.width/2-.125)),[spec.route,`structure.${spec.id}`],run=>{for(let i=1;i<run.length;i++){slab(rails,run[i-1]!,run[i]!,.25,1,0,1);slab(rails,run[i-1]!,run[i]!,.4,.15,0,1.15);}});
+  // The Water's Way (D-WW18): an open rail stands on the same line (±1.88 on the boardwalk), posts every ≤ 2 eu, 1.05 high.
+  for(const side of [-1,1])railLineLater(offsetLine(path,side*(spec.width/2-.125)),[spec.route,`structure.${spec.id}`],run=>{if(spec.openRail){openRail(rails,run);return;}for(let i=1;i<run.length;i++){slab(rails,run[i-1]!,run[i]!,.25,1,0,1);slab(rails,run[i-1]!,run[i]!,.4,.15,0,1.15);}});
   cuts.solids.push(deck,piers,rails);
   if(spec.abutments){
     // Abutments carry the deck ends and the approaches down to the bank; they never step into the channel.
@@ -731,8 +739,10 @@ function highSpanLevels(cuts:LandCuts,base:HeightQuery):void {
   const overlook=solid('highSpan.overlook.deck','shelf','stone','deck',['highSpan.overlook'],'notch');box(overlook,c,oh,size,oh-.6);
   const piles=solid('highSpan.overlook.supports','pier','stone','support',['highSpan.overlook'],'notch');
   for(const x of [-1,1])for(const z of [-1,1])pier(piles,[c[0]!+x*(size[0]/2-.5),c[1]!+z*(size[1]/2-.5)],oh-.6,base,[.6,.6],[1.4,1.4]);
-  const overlookRail=solid('highSpan.overlook.rails','handrail','metal','rail',['highSpan.overlook'],'notch'),q=(x:number,z:number):XYZ=>[c[0]!+x*size[0]/2,oh,c[1]!+z*size[1]/2];
-  postedRail(overlookRail,[q(-1,-1),q(1,-1),q(1,1),q(-1,1),q(-1,.35)],-.1);
+  // The Water's Way (D-WW18, reach LAND-ASKS R2): the High Span Overlook's rail is the open timber rail (1.05), 0.1 inside the
+  // deck's edge on the north, east and south sides and the west side's south part; the approach enters the west side's north part.
+  const overlookRail=solid('highSpan.overlook.rails',OPEN_RAIL_KIND,'timber','rail',['highSpan.overlook'],'notch'),q=(x:number,z:number):XYZ=>[c[0]!+x*(size[0]/2-.1),oh,c[1]!+z*(size[1]/2-.1)];
+  openRailLoop(overlookRail,[q(-1,-1),q(1,-1),q(1,1),q(-1,1),q(-1,.35)],false);
   cuts.solids.push(overlook,overlookRail);if(piles.indices.length)cuts.solids.push(piles);
   const approach:XYZ[]=[[1244.7,7.9,1142.4],[c[0]!-size[0]/2,oh,c[1]!]];
   const approachDeck=solid('highSpan.overlook.approach','shelf','stone','deck',['highSpan.overlook'],'notch'),approachCheeks=solid('highSpan.overlook.approach.cheeks','cheekWall','stone','support',['highSpan.overlook'],'notch');
@@ -819,7 +829,7 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   const wash=solid('wash.bowl','bowl','ochre','deck',['S2'],'flats'),washH=heightOnBeds(cuts,[465,700],base);for(let i=-12;i<12;i++){const h=washH+5*(i/12)**2,h2=washH+5*((i+1)/12)**2;slabOnGrade(wash,[465+i,h,665],[466+i,h2,665],72,base);}cuts.solids.push(wash);
   // Runway and mooring foundations contain no lamps, windsock, hangar or balloon props in Pass 1.
   const strip=bed('strip','road',[[425,38,520],[445,38,860]]);strip.width=30;cuts.beds.push(strip);
-  addFlatPad(cuts,'hangar','place',[455,600],38,[40,30]);addFlatPad(cuts,'windsock.footing','place',[440,500],38,[1,1]);addFlatPad(cuts,'balloon.footing','place',[520,470],base(520,470),[14,14]);
+  addFlatPad(cuts,'hangar','place',[455,600],38,[40,30]);addFlatPad(cuts,'windsock.footing','place',M.structures.strip.windsock as unknown as XY,38,[1,1]);addFlatPad(cuts,'balloon.footing','place',[520,470],base(520,470),[14,14]);
   Object.entries(M.structures.jetties).forEach(([id,p])=>dock(`jetty.${id}`,p as unknown as XY,id==='deep'?40.6:1,cuts,base));
   Object.entries(M.water_routes.FERRY.piers).forEach(([id,p])=>dock(`ferry.${id}`,p as unknown as XY,1,cuts,base,6,16));
   dock('floatplaneDock',M.structures.floatplaneDock as unknown as XY,1.2,cuts,base,8,20);
@@ -897,7 +907,16 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   for(let i=0;i<lampRamp.length;i+=3){const p=lampRamp[i]!;pier(lampSupports,[p[0],p[2]],p[1]-.35,base,[.4,.4],[.9,.9]);}cuts.solids.push(lampSupports);
   const galleryBed=bed('lampGallery.ramp','walk',lampRamp,false);galleryBed.maxGrade=.08;cuts.beds.push(galleryBed);
   buildStair('lampGallery.stair',[540,1,1250],[540,25,1198.5],3,cuts,base);
+  // The Water's Way (L2b): Long Sands' pier and skate bowl, the Glasshouse stair-and-ramp (land/structures/waterwaySouth.ts).
+  buildWaterwaySouth(cuts,base);
   buildNamedKinds(cuts,base);
+  // The Water's Way (PR 2 land, L2a): the Reach lookouts (Notch Bluff, Sunset Rail, the Channel Hide) and the Greenway, before the
+  // rails wait for every route (the hide's connector opens the boardwalk's west rail).
+  buildReachLookouts(cuts,base);
+  buildGreenway(cuts,base);
   buildBridgeLandmarks(cuts,base);
+  // The Water's Way (PR 2 land, L3: D-WW80…89): the Bight lookout, the courtyard terrace, the stargazing pad, the Wash Arch and
+  // the hoodoo footings, and the Bight Shore batter's report.
+  buildWestLand(cuts,base);
   flushRails(cuts);
 }

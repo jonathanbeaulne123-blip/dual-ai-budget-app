@@ -14,7 +14,9 @@ interface Prism { points: Point3[]; start: Point3; end: Point3; width: number; t
 /** Only consecutive strip prisms qualify. Posts, route ends, gaps and district seams remain authored. */
 export function simplifyPrismChains(source: StructureSolid): { solid: StructureSolid; maxErrorEu: number; mergedPrisms: number; minWidthRatio: number } {
   const unchanged = { solid: source, maxErrorEu: 0, mergedPrisms: 0, minWidthRatio: 1 };
-  if (!source.bedIds.length || !['bed', 'shoulder', 'kerb', 'parapet', 'handrail', 'rail'].includes(source.kind) || source.positions.length % 24 || source.indices.length !== source.positions.length / 24 * 36) return unchanged;
+  // An authored lite index (a lite drop, land/structures/greenway.ts) is the solid's lite: never re-simplified.
+  if (source.liteIndices) return unchanged;
+  if (!source.bedIds.length || !['bed', 'shoulder', 'kerb', 'parapet', 'handrail', 'rail', 'openRail'].includes(source.kind) || source.positions.length % 24 || source.indices.length !== source.positions.length / 24 * 36) return unchanged;
   if (source.indices.some((value, i) => value !== Math.floor(i / 36) * 8 + FACES[i % 36]!)) return unchanged;
   const prisms: Prism[] = [];
   for (let offset = 0; offset < source.positions.length; offset += 24) {

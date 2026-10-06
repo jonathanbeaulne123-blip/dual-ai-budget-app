@@ -93,7 +93,8 @@ export function buildDistricts(field: TerrainField, beds: readonly BedCut[], sol
     const b = solidBounds(solid), d = solid.districtId === 'undercroft' ? underground : byId.get(solid.districtId) ?? byId.get(districtAt((b.min[0] + b.max[0]) / 2, (b.min[2] + b.max[2]) / 2))!; d.solidIds!.push(solid.id);
     // The Water's Way: dressing colliders are collision only (the dressing layer draws the art; its budget is added apart).
     if (solid.kind === 'dressing') continue;
-    d.triangles!.full += solid.indices.length / 3; d.triangles!.lite += solid.indices.length / 3;
+    // A lite drop (an authored liteIndices = [], land/structures/greenway.ts) counts nothing in the lite tier.
+    d.triangles!.full += solid.indices.length / 3; d.triangles!.lite += (solid.liteIndices ?? solid.indices).length / 3;
     const cells = solidCells.get(d) ?? new Set<string>(); solidCells.set(d, cells);
     for (let i = 0; i < solid.indices.length; i += 3) { const a = solid.indices[i]! * 3, bb = solid.indices[i + 1]! * 3, c = solid.indices[i + 2]! * 3; cells.add(cell((solid.positions[a]! + solid.positions[bb]! + solid.positions[c]!) / 3, (solid.positions[a + 2]! + solid.positions[bb + 2]! + solid.positions[c + 2]!) / 3)); }
   }

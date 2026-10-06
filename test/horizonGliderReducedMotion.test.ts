@@ -45,12 +45,16 @@ describe('the launch sheet under reduced motion (FLIGHT.md §6)',()=>{
     // v2.2 (Stage A land): the sandbar itself is awash (−0.22) and the Bight keeps no low shore path (the nearest node within
     // 6 m of water is 463 m away at Stillwater): shoreNode fell back to the bridge's deck walk [553, 12, 1078] (RECONCILE item 8).
     // Wave 7: `beach` searches the terrain — measured [679.4, 0.44, 1057.5], 84 m east of [600, 1030], 0.44 over the Bight.
-    expect(sandbar.xy[0]).toBeCloseTo(679.4,1);expect(sandbar.xy[1]).toBeCloseTo(1057.5,1);expect(sandbar.height!).toBeCloseTo(.44,2);
+    // The Water's Way (PR 2 land, D-WW89): the Bight Shore batter fills plot 3's lagoon face over that beach (its ground 0.44 → 6.3,
+    // 25°), so the search finds the next dry beach: [514.8, 0.14, 985.8], 87 m west of [600, 1030] under the Flats spit.
+    expect(sandbar.xy[0]).toBeCloseTo(514.8,1);expect(sandbar.xy[1]).toBeCloseTo(985.8,1);expect(sandbar.height!).toBeCloseTo(.14,2);
     const floor=geography.surface(sandbar.xy[0],sandbar.xy[1],sandbar.height!+.5)!;
     expect(floor.id).toBe('terrain');expect(Math.abs(floor.y-sandbar.height!)).toBeLessThan(.05);
     expect(geography.submerged(sandbar.xy[0],sandbar.xy[1],sandbar.height!)).toBe(false);expect(env.water(sandbar.xy[0],sandbar.xy[1],sandbar.height!-.3)).toBeNull();
     // Not the deck: the old fallback stood 12 over the water.
-    expect(Math.hypot(sandbar.xy[0]-553.4,sandbar.xy[1]-1077.9)).toBeGreaterThan(100);
+    // D-WW89: the next beach west of the battered plot stands 99.9 m from that deck walk (its floor is terrain, proved above), so the
+    // bar is 99 (was 100): the least change that still says "not the deck".
+    expect(Math.hypot(sandbar.xy[0]-553.4,sandbar.xy[1]-1077.9)).toBeGreaterThan(99);
     expect(env.shoreNode(600,1030)?.label).toBe('Bight Shore');
   });
   it('every landing has a finite place and height (the cut lands on foot there)',()=>{

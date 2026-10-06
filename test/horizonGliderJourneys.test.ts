@@ -55,16 +55,18 @@ describe('Crown → the Lamp',()=>{
 describe('the Prow → Long Sands and the Reach meadow',()=>{
   // CHANGED on the v2.1 land (open item, RECONCILE.md): Stage A moved the Sands landing 88 m nearer the Prow, so the straight
   // glide now arrives (+3.5 m) and the afternoon thermal is no longer what earns the Sands (FLIGHT: 'Long Sands (afternoon)').
-  it('reaches the Sands in still air straight from the Prow on the v2.1 land (+3.5 m in hand; −2.0 m on the v1.6 land)',()=>{
-    for(const hour of [7,14]){const j=flyProwToSands(env(SANDS,hour));expect(j.reached).toBe(true);expect(j.heightInHand.arrival).toBeCloseTo(3.5,1);}
+  it('reaches the Sands in still air straight from the Prow (+7.5 / +7.8 m in hand at 07:00 / 14:00 on the D-WW90 field; +3.5 on the v2.1 field, −2.0 on the v1.6 land)',()=>{
+    // The Water's Way land integration (D-WW90, owed to Jonathan): the field moved 90 m east-north-east off the Greenway to [1185,1355]
+    // r 35, nearer the Prow: +7.5 m in hand (was +3.5 at [1095,1362]).
+    for(const [hour,inHand] of [[7,7.49],[14,7.84]] as const){const j=flyProwToSands(env(SANDS,hour));expect(j.reached).toBe(true);expect(j.heightInHand.arrival).toBeCloseTo(inHand,1);}
   });
   it('does not reach it at 07:00 by the thermal either: the Prow thermal is off before 08:00',()=>{
     const j=flyProwToSands(env(SANDS,7),{thermal:true});expect(j.reached).toBe(false);
   });
-  it('reaches the Sands at 14:00 after ≤ 60 s in the Prow thermal (measured 1.6 s in the core, 24.7 m in hand)',()=>{
+  it('reaches the Sands at 14:00 after ≤ 60 s in the Prow thermal (measured 1.6 s in the core, 29.55 m in hand on the D-WW90 field)',()=>{
     const j=flyProwToSands(env(SANDS,14),{thermal:true});
     expect(j.reached).toBe(true);expect(j.measures.secondsInThermal).toBeLessThanOrEqual(60);expect(j.heightInHand.arrival).toBeGreaterThan(0);
-    expect(j.heightInHand.arrival).toBeCloseTo(24.7,1);
+    expect(j.heightInHand.arrival).toBeCloseTo(29.55,1);   // D-WW90: the field at [1185,1355] (was 24.7 at [1095,1362])
     expect(j.path.some(p=>p.lift>1)).toBe(true);
   });
   // v2.4 (integrator 4, W7-T A6): the meadow on the low ground south of the High Span ([1195,1205], h 4.7; the v2.1 meadow at

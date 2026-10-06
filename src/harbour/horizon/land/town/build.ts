@@ -97,7 +97,8 @@ export function buildTown(cuts:LandCuts,base:HeightQuery):void {
   // road (L1): the park's pad blend (6) fell short of the Drive's embankment beside it: the ground between the Drive's edge and
   // the park stepped 0.4–0.8 onto the slab. A longer blend (12) takes the Drive's batter down to the park's level.
   {const park=addFlatPad(cuts,'tidelinePark','place',M.skate.park.xy as unknown as XY,3,M.skate.park.size as unknown as XY);park.blend=12;}
-  for(const p of M.places)if(p.id!=='court'){const pad=addFlatPad(cuts,`place.${p.id}`,'place',p.xy as unknown as XY,p.h,p.id==='L02'?[12,10]:[8,8]);
+  // A place may carry its own pad size (V3.1: Fallswatch's 10 × 5 deck on the west buttress's cover ridge); 8 × 8 otherwise.
+  for(const p of M.places)if(p.id!=='court'){const size=(p as {size_m?:number[]}).size_m as unknown as XY|undefined,pad=addFlatPad(cuts,`place.${p.id}`,'place',p.xy as unknown as XY,p.h,size??(p.id==='L02'?[12,10]:[8,8]));
     // v2.6 (D-M3): L01 stands on Mountain v2's glass dam crest (the region draws the crest and its plaques): a deck, never earth.
     if(p.id==='L01'&&mountainV2Rule(...(p.xy as unknown as XY)).kind!=='outside'){pad.deck=true;pad.blend=0;
       // The place's 8 x 8 slab would float 25 eu over the gorge under v2's crest: L01 is a bay of v2's promenade (4 x 2.2, flush

@@ -114,18 +114,21 @@ type LandmarkSource = Omit<StoryLandmark, 'relayOrder' | 'bell'>;
 const LANDMARK_SOURCE: readonly LandmarkSource[] = [
   // Westwatch Chapel's bell cote (north gable, "to the sea"), in the Library's verdigris; cote top 96–98.
   { id: 'westwatch', label: 'Westwatch Chapel', kind: 'landmark', neighbourhood: 'crown', at: [1036, 86, 318], top: [1038, 97, 313.2], owed: 'cote height ≥ 96 (PR 3 Highlands)' },
-  // The Fallswatch deck on the V3.1 west buttress: a lookout that also lights second in the relay (its deck lamp).
-  { id: 'fallswatch', label: 'Fallswatch', kind: 'lookout', neighbourhood: 'crown', at: [1080, 94.9, 692], top: [1080, 97.2, 692], aimDrop: 0, owed: 'V3.1 west buttress top (PR 2 land)' },
+  // The Fallswatch deck on the V3.1 west buttress (PR 2 L1, D-WW54): its 10 × 5 pad on the buttress's cover ridge at 95.3, the
+  // eye at its south-east corner over the amphitheatre; a lookout that also lights second in the relay (its deck lamp).
+  { id: 'fallswatch', label: 'Fallswatch', kind: 'lookout', neighbourhood: 'crown', at: [1086, 95.3, 694.3], top: [1086, 97.6, 694.3], aimDrop: 0 },
   // The Veil's lip: what Fallswatch must see (not a relay light).
   { id: 'veilLip', label: 'the Veil lip', kind: 'feature', neighbourhood: 'crown', at: [1111, 92, 699], top: [1111, 92, 699], aimDrop: 0 },
   { id: 'oak', label: 'the Old Oak', kind: 'landmark', neighbourhood: 'lakeside', at: [1125, 16.1, 1165], top: [1125, 52, 1165] },
   { id: 'osprey', label: 'the osprey pole', kind: 'landmark', neighbourhood: 'landing', at: [1292, 4.1, 1268], top: [1292, 15.6, 1268] },
   // Apex 42.3 (belfry cornice 38); the shaft stands on a plinth to the lowest ground (10.06).
   { id: 'campanile', label: 'the campanile', kind: 'landmark', neighbourhood: 'harbour', at: [1423, 10.06, 1187], top: [1423, 42.3, 1187] },
-  // Hub [1010, 19.6, 1648], r 13, facing NE; at = the pier deck under the hub.
-  { id: 'wheel', label: 'the Ferris wheel', kind: 'landmark', neighbourhood: 'landing', at: [1010, 3.6, 1648], top: [1010, 32.6, 1648], owed: 'the pier (PR 2 land)' },
-  // On the airport tower footprint: ground 35.5 + 28 m, green-and-white beacon. Side clearance vs the runway owed.
-  { id: 'elevator', label: 'the grain elevator', kind: 'landmark', neighbourhood: 'flats', at: [395, 35.5, 706], top: [395, 63.5, 706], owed: 'side clearance vs the strip (PR 4 Flats)' },
+  // Hub [1010, 19.6, 1509], r 13, facing NE; at = the pier platform under the hub. D-WW74 (PR 2 land): the drawn pier (to z 1630,
+  // hub z 1648) crossed the ferry line; the pier ends at z 1520 and the wheel moved inland along it (MANIFEST structures.longSandsPier).
+  { id: 'wheel', label: 'the Ferris wheel', kind: 'landmark', neighbourhood: 'landing', at: [1010, 3.6, 1509], top: [1010, 32.6, 1509], owed: 'the wheel (PR 4)' },
+  // On the airport tower footprint: ground 35.5 + 28 m, green-and-white beacon. Side clearance vs the strip proved on this footprint
+  // (D-WW81, MANIFEST structures.strip.clearances: outside both approach boxes, ≥ 28 m off the centreline; test/horizonLandWWWest).
+  { id: 'elevator', label: 'the grain elevator', kind: 'landmark', neighbourhood: 'flats', at: [395, 35.5, 706], top: [395, 63.5, 706], owed: 'the elevator on the tower footprint (PR 4 Flats)' },
   // The Library host (pad 48, greybox roof 62 today); the dressed ridge (verdigris) at 64.
   { id: 'library', label: 'the Library', kind: 'landmark', neighbourhood: 'scholars', at: [740, 48, 400], top: [740, 64, 400] },
   // The baked lighthouse gallery (offshore lamp island); every binocular's shared target.
@@ -164,24 +167,25 @@ export interface StoryEye {
 }
 
 export const STORY_EYES: readonly StoryEye[] = [
-  // Highlands. Fallswatch on the west buttress: eye = ground + 1.6 (≈ 96.5); sees the Veil lip and the oak.
-  { id: 'fallswatch', label: 'Fallswatch (west buttress)', at: [1080, 692], lift: 1.6, targets: ['oak', 'veilLip', 'lamp'], lookout: true, owed: 'V3.1 west buttress (PR 2 land)' },
+  // Highlands. Fallswatch on the V3.1 west buttress: eye = deck + 1.6 (≈ 96.9) at the deck's south-east corner, south of its
+  // lane, so the line to the lip runs over the amphitheatre; sees the Veil lip and the oak.
+  { id: 'fallswatch', label: 'Fallswatch (west buttress)', at: [1086, 694.3], lift: 1.6, targets: ['oak', 'veilLip', 'lamp'], lookout: true },
   // Green. Under the oak, at the trunk (the ring bench is at r 6.2; the oak is seen from every spot within 20 m).
   { id: 'oak', label: 'under the Old Oak', at: [1125, 1165], lift: 1.6, targets: ['osprey', 'lamp'], lookout: false },
   // Reach: Spring Bay (deck 5.0, eye 6.6) and the other five Reach lookouts (binocular eyes, reach SPEC §2).
   { id: 'springBay', label: 'Spring Bay', at: [1246.4, 1199.5], y: 6.6, targets: ['campanile', 'osprey', 'lamp'], lookout: true },
-  { id: 'notchBluff', label: 'Notch Bluff', at: [1188.51, 1114.3], y: 24.8, targets: ['osprey', 'lamp'], lookout: true, owed: 'stone pad (PR 2 land)' },
+  { id: 'notchBluff', label: 'Notch Bluff', at: [1188.51, 1114.3], y: 24.8, targets: ['osprey', 'lamp'], lookout: true },
   { id: 'highSpanOverlook', label: 'High Span Overlook', at: [1267.77, 1147.3], y: 11.3, targets: ['osprey', 'lamp'], lookout: true },
-  { id: 'sunsetRail', label: 'Sunset Rail', at: [1353.98, 1234.78], y: 12.39, targets: ['osprey', 'lamp'], lookout: true, owed: 'stone pad (PR 2 land)' },
+  { id: 'sunsetRail', label: 'Sunset Rail', at: [1353.98, 1234.78], y: 12.39, targets: ['osprey', 'lamp'], lookout: true },
   { id: 'harbourBellLanding', label: 'Harbour Bell Landing', at: [1323.53, 1380.94], y: 10.3, targets: ['lamp', 'osprey'], lookout: true },
   // Harbour: the belfry (eye ≈ 34.4, cornice 38).
   { id: 'belfry', label: 'the belfry', at: [1423, 1187], y: 34.4, targets: ['wheel', 'oak', 'lamp'], lookout: true, owed: 'the campanile (PR 3 Harbour)' },
   // Long Sands: the top cabin of the wheel (rim top 32.6; seated eye ≈ 31).
-  { id: 'wheelTop', label: 'the top of the wheel', at: [1010, 1648], y: 31, targets: ['elevator', 'oak', 'lamp'], lookout: false, owed: 'the pier and wheel (PR 2 / PR 4)' },
+  { id: 'wheelTop', label: 'the top of the wheel', at: [1010, 1509], y: 31, targets: ['elevator', 'oak', 'lamp'], lookout: false, owed: 'the wheel (PR 4)' },
   // Flats: the elevator's head-house gallery (top 63.5).
   { id: 'elevatorTop', label: 'the elevator gallery', at: [395, 706], y: 62, targets: ['library', 'oak', 'lamp'], lookout: false, owed: 'the elevator (PR 4 Flats)' },
-  // Scholars: the Bight lookout deck, raised ~2 m (ground 50.0 → deck 52.0, eye 53.6).
-  { id: 'bightLookout', label: 'the Bight lookout', at: [744, 511], y: 53.6, targets: ['westwatch', 'oak', 'lamp'], lookout: true, owed: 'the spur and raised deck (PR 2 land, PR 4 Scholars)' },
+  // Scholars: the Bight lookout deck as built (D-WW87, MANIFEST structures.bightLookout): deck 52.0 (ground 50.0 + 2), eye = deck + 1.6.
+  { id: 'bightLookout', label: 'the Bight lookout', at: [744, 511], y: 53.6, targets: ['westwatch', 'oak', 'lamp'], lookout: true, owed: 'the Lookout kit set on the built deck (PR 4 Scholars)' },
 ];
 export function storyEye(id: string): StoryEye {
   const e = STORY_EYES.find(q => q.id === id);
@@ -208,18 +212,21 @@ export interface SightLink {
 
 /** Each place's lookout sees the next place's landmark (≥ 0.5 m clear to top − 2 m, buildings and baked solids included). */
 export const SIGHT_CHAIN: readonly SightLink[] = [
-  { from: 'fallswatch', to: 'oak', measured: 1.1, dependsOn: 'V3.1 west buttress (PR 2 land)' },
+  // V3.1 (PR 2 L1): the eye at the deck's south-east corner on the west buttress's cover ridge (deck 95.3).
+  { from: 'fallswatch', to: 'oak', measured: 6.08 },
   { from: 'oak', to: 'osprey', measured: 1.6 },
-  // 2.89 m with the Reach Footbridge's rails open; on today's bake its 1.15 stone parapet (top 10.65) cuts the line (−0.06 m).
-  { from: 'springBay', to: 'campanile', measured: 2.89, dependsOn: 'open timber rails on the Reach Footbridge, seen through by the ray caster (PR 2 land)', owedOccluders: ['reachFootbridge.rails'] },
-  { from: 'belfry', to: 'wheel', measured: 22.9 },
-  { from: 'wheelTop', to: 'elevator', measured: 18.6 },
+  // 2.89 m with the Reach Footbridge's rails open (PR 2 land, L2a: the footbridge's 1.15 stone parapet is the open timber rail,
+  // and world/raycast.ts sees through every open rail under one rule, land/structures/openRail.ts isOpenRail).
+  { from: 'springBay', to: 'campanile', measured: 2.89 },
+  { from: 'belfry', to: 'wheel', measured: 20.6 },   // D-WW74: the wheel moved inland along the shortened pier (was 22.9)
+  { from: 'wheelTop', to: 'elevator', measured: 19.6 },   // D-WW74 (was 18.6)
   { from: 'elevatorTop', to: 'library', measured: 14 },
-  { from: 'bightLookout', to: 'westwatch', measured: 3.2, dependsOn: 'the raised Bight lookout deck (PR 2 land, PR 4 Scholars)' },
+  // On the built deck (D-WW87, eye 53.6): 3.16 m, the first limit the lip's ground beside the deck.
+  { from: 'bightLookout', to: 'westwatch', measured: 3.16 },
 ];
 /** Fallswatch must also see the fall it is named for. */
 export const SIGHT_EXTRAS: readonly SightLink[] = [
-  { from: 'fallswatch', to: 'veilLip', measured: 1.3, dependsOn: 'V3.1 west buttress (PR 2 land)' },
+  { from: 'fallswatch', to: 'veilLip', measured: 1.95 },
 ];
 /** The proof's clearance contract (m). */
 export const SIGHT_MIN_CLEARANCE = .5;
@@ -243,7 +250,7 @@ export const STORY_ROUTES: readonly StoryRoute[] = [
   { id: 'yearWalk', label: 'the Year Walk', mode: 'foot', manifest: 'journey.yearWalk', places: ['highlands', 'green', 'reach', 'harbour', 'longSands', 'flats', 'scholars', 'hollow'] },
   { id: 'S1', label: 'Summit to Sea', mode: 'board', manifest: 'skate.S1', places: ['highlands', 'green', 'reach'] },
   { id: 'RIVER_RUN', label: 'River Run', mode: 'canoe', manifest: 'water_routes.RIVER_RUN', places: ['green', 'reach', 'harbour'] },
-  { id: 'greenway', label: 'the Greenway', mode: 'foot+wheel', manifest: null, places: ['reach', 'longSands', 'flats'], owed: 'the Greenway bed and its `greenway` profile (PR 2 land)' },
+  { id: 'greenway', label: 'the Greenway', mode: 'foot+wheel', manifest: 'structures.greenway', places: ['reach', 'longSands', 'flats'] },
   // Clockwise from the Landing pier: west along Long Sands, into the Bight, up the west, along the north.
   { id: 'FERRY', label: 'the ferry (clockwise)', mode: 'ferry', manifest: 'water_routes.FERRY', places: ['harbour', 'longSands', 'flats', 'scholars'] },
   { id: 'damRun', label: 'Dam Run', mode: 'glider', manifest: 'sky.courses.damRun', places: ['highlands', 'green', 'reach'] },
