@@ -2497,6 +2497,9 @@ m["crossings"].extend([
  {"a": "walk glasshouseTerrace", "b": "walk glasshouseSteps", "at": [990, 830], "resolution": "threshold", "kind": "junction", "source": "ww L2b", "note": "D-WW72: flush path junction (the steps' end)"},
  {"a": "walk glasshouseTerrace", "b": "spur glasshouse", "at": [1000, 830], "resolution": "over", "structure": "glasshouseFootbridge", "kind": "crossing", "note": "D-WW72: the terrace walk over the spur's end on the Glasshouse Footbridge"},
 ])
+# The Water's Way · PR 2 land, L3 (Scholars' Edge, the Flats, the Bight): D-WW80…89.
+import os as _os
+exec(open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "make_manifest_ww_west.py"), encoding="utf-8").read())
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")

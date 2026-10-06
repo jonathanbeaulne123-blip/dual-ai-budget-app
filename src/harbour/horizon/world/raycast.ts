@@ -4,6 +4,7 @@ import { terrainTriangleVisible } from '../land/terrain/index.ts';
 import { waterHeightAt } from '../land/water/index.ts';
 import { terrainHeight } from './geometry.ts';
 import { isOpenRail } from '../land/structures/openRail.ts';
+export { isOpenRail };
 
 /**
  * One first-hit ray caster over the SAME data the renderer draws: the heightfield (mouth masks
@@ -19,11 +20,6 @@ export type RayHit =
   | { kind: 'sky'; t: number; id: 'sky' };
 export interface RayCaster { first(origin: Point3, direction: Point3, maxT?: number, options?: { underground?: boolean; step?: number; skip?: (solid: StructureSolid) => boolean }): RayHit; floorAt(x: number, z: number): number }
 
-/** An open rail (posts and bars, ≤ 1.05 high: the eye sees through it): a timber post-and-rail road guard's collider, or any
- * solid of kind 'openRail' (the Long Sands pier's rails, land/structures/waterwaySouth.ts). */
-export function isOpenRail(solid: Pick<StructureSolid, 'kind' | 'surface'>): boolean {
-  return solid.kind === 'openRail' || (solid.kind === 'corridorGuard' && solid.surface === 'timber');
-}
 export function createRayCaster(field: TerrainField, cuts: Pick<LandCuts, 'solids' | 'waters' | 'mouths'>): RayCaster {
   const width = (field.columns - 1) * field.step, depth = (field.rows - 1) * field.step;
   // Water level grid (5 eu) for the surface waters; underground waters are tested exactly.

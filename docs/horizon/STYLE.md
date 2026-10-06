@@ -477,7 +477,7 @@ The neighbourhoods are one story ([STORY.md](STORY.md)); where two sheets meet, 
 - **Roof and silhouette.** Horizontal: the strip, the plateau's rim, the Quonset's barrel roof, the station's low eaves. Verticals are rare and meaningful: **the grain elevator** (the Flats' landmark, seen from the top of the Ferris wheel and seeing the Library), the windsock mast, the balloon, the one wind-shaped pine by the hangar, the rock arch at the Wash.
 - **Ground.** `ochre` (strip rim, the Wash), the strip painted as mown turf that goes copper in golden light (surface id per the land pass; `packedEarth` recommended), `gravel` on the Flats trail.
 - **Planting.** Own flowers: little bluestem (copper in fall), purple coneflower, eastern prickly pear; yarrow, wild bergamot, harebell. Trees: red cedar and juniper in clumps of 3–5 in the lee of rocks, the one pine. Tree cover ≤ 3 %; ≥ 70 % open ground.
-- **Porch.** The hangar's bench, watching take-offs. Porch pose: from the bench toward the Bight Bridge and Long Sands.
+- **Porch.** The hangar's bench, watching take-offs. Porch pose: from the bench, framing the take-offs, the strip and the Bight Bridge's arch over the rim (D-WW86: Long Sands is never in sight from the bench).
 - **Thresholds.** `strip` (feet → plane, climb in), `balloon` (step in), the Wash Run's start (`skateLineStarts` `[480,480]`) and its wet-day closure marker, the Flats ferry pier, the Bight pier `[560,890]` at the end of the Bight pier walk (`walks.bightPier`).
 - **Sound.** Wind in the sock, grass hiss, the plane's engine, the balloon's burner, dust footsteps.
 - **Light at best hour.** Sunset (page H): the strip's grass copper, the balloon lit, long shadows from the rim.

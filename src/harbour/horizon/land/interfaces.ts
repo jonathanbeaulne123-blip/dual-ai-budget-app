@@ -99,6 +99,9 @@ export interface StructureSolid {
   walkable: boolean;
   /** Excludes threshold paint/markers from structural-clearance measurements. */
   role: 'deck' | 'support' | 'wall' | 'rail' | 'roof' | 'floor' | 'marker' | 'rock';
+  /** The Water's Way (PR 2 land): an open rail (posts and bars, STYLE open rail 1.05): it collides as drawn, but sight lines
+   * (the view proof, the story sight chain) see through it, as the eye does (world/raycast.ts `isOpenRail`). */
+  openRail?: boolean;
 }
 export interface DistrictBounds {
   id: string;
@@ -160,4 +163,7 @@ export interface PadCut {
    * a raised deck (a tower top, a lookout run-off, a jetty over water) on its structure's
    * supports, or an at-grade junction where two graded beds meet flush. */
   deck?: boolean;
+  /** The Water's Way (D-WW88): the pad's open edges are batters of this many eu run per eu rise (1.5 = 1 : 1.5), cut and fill,
+   * instead of the smooth `blend`: outside its footprint the ground is held within that cone of the pad's level. */
+  batter?: number;
 }

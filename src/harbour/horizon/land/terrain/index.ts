@@ -1,3 +1,4 @@
+import { bightBatterAt } from './bightBatter';
 import { HORIZON_MANIFEST as M, requireScaleFactor } from '../../world/manifest';
 import type { BedCut, LandCuts, PadCut, TerrainField, WaterCut, XY, XYZ } from '../interfaces';
 import { coastCharacter, signedShoreDistance } from '../coast';
@@ -672,14 +673,19 @@ function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<
   height = sightWindows(x, z, height, bedded.edgeGap);
   height = throatJambs(x, z, height, cuts, bedded.edgeGap);
   const ground = height, s = getModel().scale;
+  const battered: PadCut[] = [];
   for (const p of cuts.pads) {
     // A deck pad (PadCut.deck) is carried by its structure or sits flush on graded beds: never earth.
     if (p.underground || p.deck) continue;
     const distance = padDistance(p, x, z);
+    // The Water's Way (D-WW88): a battered pad is level over its footprint; its edges are batters (below), not a blend.
+    if (p.batter) { battered.push(p); if (distance <= 0) { height = p.centre[1]; surface = p.kind === 'reserve' ? 13 : 14; } continue; }
     if (distance > p.blend) continue;
     height = mix(height, p.centre[1], 1 - smooth(distance / Math.max(p.blend, 0.01)));
     if (distance <= 0) surface = p.kind === 'reserve' ? 13 : 14;
   }
+  // D-WW88: outside a battered pad the ground is held within its 1 : batter cone (cut and fill), never into the pad.
+  for (const p of battered) { const d = padDistance(p, x, z); if (d > 0) { const reach = d / p.batter!; height = clamp(height, p.centre[1] - reach, p.centre[1] + reach); } }
   // road (L1): a road stands on its embankment: the ground beside it is at least bedded.roadFloor (flush with the deck at the
   // paved edge, then falling 1 : 1.5), whatever a pad, another bed's blend or the natural ground would leave there (the Drive
   // stood 0.7–2.6 over the ground at the upper street and the Tideline park; its edges hung over the dunes by the culvert).
@@ -696,6 +702,10 @@ function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<
     height = Math.min(height, ground + fillCap, Math.max(ground, crownSummitHeight() - 1 * s));
     if (raiseForbidden(x, z)) height = ground;
   }
+  // D-WW89: the Bight Shore plots' lagoon faces are battered at 1 : 1.5 over the lagoon floor (an authored earthwork, raise only;
+  // land/terrain/bightBatter.ts), the plots filled to their level where the lagoon reached into them.
+  const bight = bightBatterAt(cuts.pads, baseHeight, x, z);
+  if (bight && bight.fill > height) height = bight.fill;
   // Mouths are topology masks read by terrainIndices(), not pits through a heightfield.
   // A cave's floor and ceiling remain independent surfaces under this continuous roof.
   height = applyWaters(x, z, height, cuts.waters.length ? cuts.waters : getModel().water, rasterMargin);

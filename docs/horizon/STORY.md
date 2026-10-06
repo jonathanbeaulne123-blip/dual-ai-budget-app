@@ -47,7 +47,7 @@ Ruled by the integrator on 5 October 2026 from the prototypes' real positions; `
 | `osprey` | [1292, 4.1, 1268] | y 15.6 (nest) | pole + nest, planting clear within 9 m |
 | `campanile` | [1423, 10.06, 1187] | apex 42.3 | belfry cornice 38, bell 34.3; the shaft stands on a plinth to the lowest ground |
 | `wheel` | pier deck under the hub [1010, 3.6, 1648] | rim top 32.6 | hub y 19.6, r 13, faces NE |
-| `elevator` | [395, 35.5, 706] | 63.5 | on the airport tower footprint; side clearance vs the strip owed |
+| `elevator` | [395, 35.5, 706] | 63.5 | on the airport tower footprint; side clearance vs the strip proved (D-WW81: outside both approach boxes, ≥ 28 m off the centreline) |
 | `library` | [740, 48, 400] | ridge 64 | the host's greybox roof is 62 today |
 | `lamp` | [540, 0, 1195] | gallery 25 | the baked lighthouse gallery (MANIFEST `offshore.lamp.xy` [540,1230] is the islet's centre) |
 
@@ -135,6 +135,6 @@ Build what is shared once, so seven neighbourhoods don't each invent houses, ree
 ## 8. Limits and what is owed
 
 - The landmark tops are planned points until PR 3/4 bake the buildings; the test will then include them as occluders and the registry's tolerance check guards drift.
-- Fallswatch's links and the Bight lookout's depend on PR 2's land (the buttress top; the raised deck). Spring Bay → the campanile depends on PR 2 opening the Reach Footbridge's rails and the ray caster seeing through open rails.
-- The wheel's spot depends on the pier as built; the elevator's side clearance against the strip is owed (PR 4); the Westwatch cote must reach ≥ 96 (PR 3).
+- Fallswatch's links depend on PR 2's land (the buttress top); the Bight lookout's raised deck is built (D-WW87: deck 52.0, eye 53.6). Spring Bay → the campanile depends on PR 2 opening the Reach Footbridge's rails and the ray caster seeing through open rails.
+- The wheel's spot depends on the pier as built; the elevator's side clearance against the strip is proved on the tower footprint (D-WW81); the Westwatch cote must reach ≥ 96 (PR 3).
 - Measured on bake 9d13db2; nothing here is device evidence.
