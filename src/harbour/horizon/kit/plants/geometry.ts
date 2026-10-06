@@ -321,6 +321,13 @@ export function bloomGeometry(pal: MountainArtPalette, tier: PlantTier, set: rea
     const h = b.h * (stage === 'bud' ? 0.8 : 1), base: V = [b.x, topY, b.z], head: V = [b.x, topY + h, b.z], t: V = [Math.cos(b.spin), 0, Math.sin(b.spin)], n: V = [-t[2], 0, t[0]];
     // Stem: one narrow card triangle (the material is double-sided).
     w.tri(add(base, t, -0.022), add(base, t, 0.022), add(head, t, 0), shade(stem, 0.78), shade(stem, 0.78), stem, n);
+    if (f.form === 'puff') {
+      // A seed head (a dandelion clock): a white ball (an octahedron, 8 triangles; Taylor a paper disc) on the stem.
+      const r = 0.075 * size, c = shade(c0, 1.02), lo = shade(c0, 0.84);
+      const P: V[] = [[b.x + r, topY + h, b.z], [b.x, topY + h, b.z + r], [b.x - r, topY + h, b.z], [b.x, topY + h, b.z - r]], top: V = [b.x, topY + h + r, b.z], bot: V = [b.x, topY + h - r, b.z];
+      for (let k = 0; k < 4; k++) { const p0 = P[k]!, p1 = P[(k + 1) % 4]!; w.tri(p0, p1, top, c, c, shade(c, 1.08), UP); if (full || !paper) w.tri(p1, p0, bot, lo, lo, lo, [0, -1, 0]); }
+      continue;
+    }
     if (f.form === 'spike') {
       // Stacked florets up the top half of the stem (lupine, foxglove, iris): three-sided cones, or Taylor paper stars.
       const florets = full ? 3 : 2;
