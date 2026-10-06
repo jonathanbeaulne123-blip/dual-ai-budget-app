@@ -212,8 +212,9 @@ describe('the Bight · the Bight Shore batter (D-WW89)', () => {
       const s = bightBatterAt(world.collision.pads, baseHeight, x, z); if (!s || s.d <= 0 || s.fill <= baseHeight(x, z) + .05) continue;
       raised++; near = Math.min(near, bightGreenwayDistance(world.collision.pads, [x, z]));
       // A route beside the plot keeps its clearance (the bed ceiling: its deck less 0.05 within its raster margin, 5 √2 eu): the
-      // batter yields there, as every fill does; elsewhere the lattice carries the batter.
-      const yields = world.collision.beds.some(b => { if (['cable', 'cave'].includes(b.kind) || b.points.length < 2) return false; const n = nearestOnPath([x, z], b.points); return n.distance < b.width / 2 + b.shoulder + 5 * Math.SQRT2 && n.at[1] < s.fill; });
+      // batter yields there, as every fill does; elsewhere the lattice carries the batter. Land integration: an open structure's bed
+      // (the built Greenway on its piles) keeps the ground 0.65 under its deck, so the batter yields under it too.
+      const yields = world.collision.beds.some(b => { if (['cable', 'cave'].includes(b.kind) || b.points.length < 2) return false; const n = nearestOnPath([x, z], b.points); return n.distance < b.width / 2 + b.shoulder + 5 * Math.SQRT2 && n.at[1] - (b.id.startsWith('structure.') && b.structureIds.length ? .65 : 0) < s.fill; });
       if (!yields && field.heights[j * field.columns + i]! < s.fill - .05) short++;
       // Never above the 1 : 1.5 plane from the crest (the batter is the plane where it fits, and parallel to it below where it does not).
       expect(s.fill).toBeLessThanOrEqual(world.collision.pads.find(p => p.id === s.plot)!.centre[1] - s.d / 1.5 + 1e-6);
