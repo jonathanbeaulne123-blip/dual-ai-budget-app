@@ -5,5 +5,6 @@
  * listed here once; PR 3/4 add them. Order does not matter (the bake sorts by id); an empty list bakes the world unchanged.
  */
 import type { NeighbourhoodModule } from './types.ts';
+import { landing } from './landing/index.ts';
 
-export const NEIGHBOURHOOD_MODULES: NeighbourhoodModule[] = [];
+export const NEIGHBOURHOOD_MODULES: NeighbourhoodModule[] = [landing];
