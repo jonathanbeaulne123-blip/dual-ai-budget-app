@@ -165,6 +165,8 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
   }
 
   let season = opts.season, month = opts.month ?? SEASON_MONTH[opts.season], layers: Layer[] = [];
+  /** Any Water's Way item drawn (their geometry reads the month, not only the bloom stage: `setSeason`). */
+  const monthSensitive = wwUsed.size > 0;
   /** The layer a Water's Way item draws in (its species or rule variant, kit/plants/species.ts `wwVariant`). */
   const wwKey = (p: PlantItem, v: number) => { const r = wwVariant(p.species as WWSpecies, opts.theme, p.scale, v); return { ...r, key: `ww:${r.species}${r.variant ? `:${r.variant}` : ''}` }; };
   let packed: { key: string; layers: Layer[]; batch: PackedInstances }[] = [];
@@ -357,8 +359,10 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
     setSeason(next, nextMonth) {
       const m = nextMonth ?? SEASON_MONTH[next];
       if (dead || (next === season && bloomStage(m) === bloomStage(month) && m === month)) return;
-      const stageChanged = bloomStage(m) !== bloomStage(month) || next !== season; season = next; month = m;
-      if (!stageChanged) return;
+      // v2's geometry follows the bloom stage only; the Water's Way's follows the month too (WWLook: leaf state, apple
+      // blossom and fruit, prairie tips, lily pads …), so a month change inside one stage rebuilds when any is drawn.
+      const stageChanged = bloomStage(m) !== bloomStage(month) || next !== season, monthChanged = m !== month; season = next; month = m;
+      if (!stageChanged && !(monthChanged && monthSensitive)) return;
       for (const p of packed) p.batch.dispose(); packed = [];
       for (const l of layers) { group.remove(l.mesh); l.mesh.geometry.dispose(); l.mesh.dispose(); }
       build(); if (lastAt) evaluate(lastAt.x, lastAt.z, lastResident);

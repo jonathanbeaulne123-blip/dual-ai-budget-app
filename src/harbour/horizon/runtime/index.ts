@@ -287,13 +287,13 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   // Markings, guard kits, lamps and stop furniture, and the roadside planting, per resident district; hidden on the Journey map.
   // The kit's lamp heads feed roadLights so the pools, glow cards and point lights sit on the lanterns as drawn.
   const seasonOf=(date:Date)=>{const month=date.getMonth()+1;return month<=2||month===12?'winter' as const:month<=5?'spring' as const:month<=8?'summer' as const:'autumn' as const;};
-  let corridorArt:CorridorArt,corridorPlanting:CorridorPlanting,corridorSeason='',corridorNight=-1;
+  let corridorArt:CorridorArt,corridorPlanting:CorridorPlanting,corridorSeason='',corridorMonth=0,corridorNight=-1;
   // The Water's Way: the neighbourhood dressing (runtime/dressingLayer.ts) — buildings, props, plants, ground paint and pools
   // from the baked `world.dressing`, per resident district, built and released beside the corridor layers.
   let dressingLayer:DressingLayer;
   function mountCorridor(date:Date){
     corridorArt=createCorridorArt(world,{tier,theme,ground:(x,z)=>geography.ground(x,z),externalLampHalos:true});
-    corridorSeason=seasonOf(date);corridorNight=-1;
+    corridorSeason=seasonOf(date);corridorMonth=date.getMonth()+1;corridorNight=-1;
     corridorPlanting=createCorridorPlanting(world,{tier,theme,season:corridorSeason as ReturnType<typeof seasonOf>,month:date.getMonth()+1});
     scene.add(corridorArt.group,corridorPlanting.group);
     for(const material of Object.values(corridorArt.materials))fogHook(material);for(const material of corridorPlanting.materials())fogHook(material);
@@ -456,7 +456,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   function resize(reframe=true){schedule();adaptiveQuality.interrupt();if(lease.active)applyHorizonQuality(renderer,sun,adaptiveQuality.profile(window.devicePixelRatio));const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(reframe&&mode==='look'&&!transition){const pose=world.views.find(p=>p.id===shotId);if(pose)lookAt(pose);}}
   const observer=new ResizeObserver(()=>resize());observer.observe(host);resize();
   function setLight(date:Date){const month=date.getMonth()+1;homeWorld.setSeason(month<=2||month===12?'winter':month<=5?'spring':month<=8?'summer':'autumn');
-    if(seasonOf(date)!==corridorSeason){corridorSeason=seasonOf(date);corridorPlanting.setSeason(seasonOf(date),month);dressingLayer.setSeason(seasonOf(date),month);}
+    // PR #588 Codex: the month is tracked apart from the season (the Water's Way plants change month by month inside one).
+    if(seasonOf(date)!==corridorSeason||month!==corridorMonth){corridorSeason=seasonOf(date);corridorMonth=month;corridorPlanting.setSeason(seasonOf(date),month);dressingLayer.setSeason(seasonOf(date),month);}
     const position=solarPosition(date),colors=skyGradient(position.elevation),lookHeight=camera.position.y-geography.ground(camera.position.x,camera.position.z),fog=horizonFog({tier,eyeAboveGround:Math.max(0,lookHeight),elevation:position.elevation,sunAzimuth:position.azimuth,heading:yaw*180/Math.PI}),floor=nightLight(position.elevation,colors);
     lastSolar=position;night=floor.lightCards;faceCardsLit=faceCardOn(position,comfort.calm);faceCards.visible=faceCardsLit&&mode!=='journey';roadLights.refresh();
     lastSkyColors=nightDome(colors,floor.nightness);lastSunDirection=[position.direction[0],position.direction[1],position.direction[2]];skyDome.update(lastSkyColors,fog.color,lastSunDirection);

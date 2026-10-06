@@ -165,6 +165,23 @@ describe("The Water's Way plant kit: through createCorridorPlanting", () => {
     p.dispose();
   });
 
+  it('setSeason inside one season rebuilds the month-sensitive Water\'s Way looks (July → August: apples fruit; PR #588 Codex)', () => {
+    const orchard = world([group('ww.orchard', [0, 1, 2].map(k => ({ species: 'apple' as const, at: [1200 + k * 6, 4, 1190] as [number, number, number], scale: 1, yaw: k, tint: 0.3 })))]);
+    const r = corridorPlantingDistricts(orchard), cam = camAt(1206, 1180);
+    const p = createCorridorPlanting(orchard, { tier: 'full', theme: 'classic', season: 'summer', month: 7 });
+    p.update(cam, r);
+    const tris = () => p.stats().layers.find(l => l.key === 'ww:apple')!.triangles;
+    const july = tris(), mesh = p.group.children.find(m => m.name.includes('apple'));
+    p.setSeason('summer', 8); p.update(cam, r);
+    // Same season, same bloom stage, a new month: the layer is rebuilt with the fruit dots.
+    expect(tris()).toBeGreaterThan(july);
+    if (mesh) expect(p.group.children).not.toContain(mesh);
+    // And back: no fruit in July.
+    p.setSeason('summer', 7); p.update(cam, r);
+    expect(tris()).toBe(july);
+    p.dispose();
+  });
+
   it('district budgets (CONTRACT §6: ≤ 150k full / 60k lite): the Reach marsh (4,400 clumps) and a Scholars wood (1,900 trees)', () => {
     const rng = (seed: number) => () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
     const r = rng(9), marsh: PlantItem[] = [], sedge: PlantItem[] = [];

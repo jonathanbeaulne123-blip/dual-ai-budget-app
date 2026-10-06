@@ -2,7 +2,9 @@ import {readFileSync} from 'node:fs';
 import {gunzipSync} from 'node:zlib';
 import * as THREE from 'three';
 import {describe, expect, it} from 'vitest';
-import {buildJourneyLand, extractJourneyLand} from '../src/journey/land/index.ts';
+import {buildJourneyLand, extractJourneyLand, journeyLandFlatData, JourneyLandFlat, JOURNEY_CLAY_PALETTES} from '../src/journey/land/index.ts';
+import {createElement} from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
 import {decodeJourneyLandSlim, encodeJourneyLandSlim, JOURNEY_LAND_SLIM_FORMAT} from '../src/journey/land/slim.ts';
 import {buildClayDressing, buildingTriangles, chooseDressingBuildings, DRESSING_MAP_NAME} from '../src/journey/land/dressingMap.ts';
 import {CLAY_LAND_LOD, countDraws, JOURNEY_LAND_BUDGET, type ClayLandHandle} from '../src/journey/land/index.ts';
@@ -93,6 +95,37 @@ describe('the Journey map carries the dressing (slim format 4)', () => {
     full.dispose(); lite.dispose();
     expect(countDraws(full.group)).toEqual({triangles: 0, drawCalls: 0});
     expect(buildClayDressing({}, {frame, toX: x => x, toZ: z => z, groundAt: () => 0}, 'full', 1000, new THREE.MeshBasicMaterial())).toBeNull();
+  });
+  it('the flat (no-WebGL / reading-edition) map draws the same buildings and names every landmark (PR #588 Codex)', () => {
+    const land = extractJourneyLand(dressedIndex(), TERRAIN), flat = journeyLandFlatData(land);
+    expect(flat.dressing!.buildings).toHaveLength(40);
+    expect(flat.dressing!.buildings.every(b => b.d.startsWith('M') && b.d.endsWith('Z'))).toBe(true);
+    // Each glyph at its landmark's sighted top, the same plan point the clay pin stands on.
+    expect(flat.dressing!.landmarks).toEqual(land.dressing!.landmarks.map(l => ({id: l.id, label: l.label, x: l.top[0], y: l.top[2]})));
+    for (const theme of ['classic', 'taylor', 'newfoundland'] as const) {
+      const p = JOURNEY_CLAY_PALETTES[theme];
+      const bare = renderToStaticMarkup(createElement(JourneyLandFlat, {data: flat, theme}));
+      expect(bare.match(/data-land-building="/g)).toHaveLength(40);
+      expect(bare.match(/data-land-landmark="/g)).toHaveLength(7);
+      // A bare flat map is decoration: the whole SVG is hidden.
+      expect(bare).toMatch(/^<svg[^>]*aria-hidden="true"/);
+      const read = renderToStaticMarkup(createElement(JourneyLandFlat, {data: flat, theme}, createElement('circle', {'data-overlay': 'piece', cx: 1000, cy: 900, r: 8})));
+      // With the board overlay the land stays hidden, but each landmark is an image named by its landmark, with a tooltip.
+      expect(read).not.toMatch(/^<svg[^>]*aria-hidden/);
+      const marks = read.slice(read.indexOf('<g class="journey-land-flat__landmarks">'), read.indexOf('<g class="journey-land-flat__overlay">'));
+      for (const l of flat.dressing!.landmarks) expect(marks).toContain(`role="img" aria-label="${l.label}" data-land-landmark="${l.id}"`);
+      expect(marks).toContain('<title>campanile</title>');
+      expect(marks).toContain(`fill="${p.honey}"`);
+      // The landmark group is not inside the aria-hidden land group.
+      const landOpen = read.indexOf('<g class="journey-land-flat__land" aria-hidden="true">'), landmarksAt = read.indexOf('<g class="journey-land-flat__landmarks">');
+      expect(landOpen).toBeGreaterThanOrEqual(0);
+      const landBody = read.slice(landOpen, landmarksAt);
+      expect((landBody.match(/<g[ >]/g) ?? []).length).toBe((landBody.match(/<\/g>/g) ?? []).length);
+    }
+    // No dressing: no field, no glyphs.
+    const plain = journeyLandFlatData(extractJourneyLand(parseHorizonIndex(INDEX.slice(0)), TERRAIN));
+    expect('dressing' in plain).toBe(false);
+    expect(renderToStaticMarkup(createElement(JourneyLandFlat, {data: plain, theme: 'classic'}))).not.toContain('data-land-landmark');
   });
   it('landmarks always; buildings tallest-first only while they fit the dressing triangles (a crowded island stays in budget)', () => {
     const world = dressedIndex();

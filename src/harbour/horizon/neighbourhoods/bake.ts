@@ -17,14 +17,16 @@
  *     its kind is a deck-like structure (`BED_ALLOWED_BUILDINGS`: deck, platform, coveredBridge, gate, wall, liftTower, arch)
  *     or `params.allowOnBed === true`;
  *  3. a building that re-dresses a host (`hostId`) names a host of the world, re-dresses it alone, matches its baked shell
- *     (footprint corners within `HOST_FIT.plan`, floor and eave within `HOST_FIT.height`) and adds NO collider of its own
+ *     (footprint corner-for-corner both ways within `HOST_FIT.plan` — `footprintFit` — floor and eave within
+ *     `HOST_FIT.height`) and adds NO collider of its own
  *     (the host's baked walls and roof stay the collision; the grammar draws on the same planes). It is filed under the
  *     district that holds the host's walls, so the record and the walls the cards stop drawing ride in one chunk;
  *  4. a prop is not in the inner part of a bed's tread (≥ 0.5 eu in from its edge) nor in water, unless it is a water prop
  *     (`WATER_PROPS`: buoy, rowboat, kayak, gozzo, duckBox, net); a colliding prop is not on a pad either; a colliding linear
- *     prop (`line`) is checked along every segment (beds exactly, pads and water every `EDGE_STEP` eu);
+ *     prop (`line`) is checked along every segment (beds exactly, pads and water every `EDGE_STEP` eu); a prop's scale, like a
+ *     plant's, is positive and finite;
  *  5. a plant is not on a bed or pad, and not in water unless aquatic (`AQUATIC_SPECIES`);
- *  6. nothing whose nominal height (`BUILDING` eave + roof; `PROP_HEIGHT` × scale; `SPECIES_HEIGHT` × scale) exceeds
+ *  6. nothing whose height (buildings: the grammar plan's top, `buildingHeight`; `PROP_HEIGHT` × scale; `SPECIES_HEIGHT` × scale) exceeds
  *     `PROTECTED_MAX_HEIGHT` (0.85) stands inside a protected area (buildings: every footprint sample; props: `at` and every
  *     `line` point), unless the module lists its id in `allowInProtected`, or (plants) it stands at one of the module's own
  *     landmarks' base (within 0.5 eu): that plant IS the landmark tree. There is no other exception.
@@ -39,7 +41,7 @@ import type { BedCut, PadCut, StructureSolid, WaterCut } from '../land/interface
 import type { LightAnchor, Point2 } from '../world/definition.ts';
 import { pointInPolygon } from '../world/geometry.ts';
 import { waterHeightAt } from '../land/water/index.ts';
-import { buildingCollision, buildingJourneyShape, collisionPartMesh, type CollisionPart } from '../kit/buildings/index.ts';
+import { buildingCollision, buildingJourneyShape, buildingPlan, collisionPartMesh, type CollisionPart } from '../kit/buildings/index.ts';
 import { propCollision } from '../kit/props/index.ts';
 import { DRESSING_LIGHT_PREFIX } from './lights.ts';
 import { JOURNEY_MIN_HEIGHT, PROTECTED_MAX_HEIGHT, type BuildingKind, type BuildingRecord, type DistrictDressing, type DressingContext, type DressingSpecies, type JourneyDressingBuilding, type Landmark, type Lookout, type NeighbourhoodDressing, type NeighbourhoodModule, type PlantRecord, type PropKind, type PropRecord, type WorldDressing } from './types.ts';
@@ -248,7 +250,23 @@ export const PROP_HEIGHT: Record<PropKind, number> = {
 export const EDGE_STEP = 0.5;
 /** How closely a re-dressing record must match its host's baked shell (eu). */
 export const HOST_FIT = { plan: 0.6, height: 0.35 } as const;
-export const buildingHeight = (r: BuildingRecord) => r.size.h + (r.roof.form === 'flat' || r.roof.form === 'none' ? 0 : Math.tan(r.roof.pitch * Math.PI / 180) * Math.min(r.size.w, r.size.d) / 2);
+/**
+ * A building's drawn height above its floor: the grammar plan's top (`buildingPlan`), never `size.h` plus a pitch guess —
+ * a kind may rise far past `size.h` (a Quonset's barrel, a cote, a beacon; PR #588 Codex).
+ */
+export const buildingHeight = (r: BuildingRecord) => { const p = buildingPlan(r); return Math.max(p.eave, p.top); };
+/**
+ * Whether a re-dressing footprint matches a host's baked one: the same corner count, every corner of each within `tol`
+ * of the other's, and the nearest corners one-to-one (so a tiny replacement at one host corner, whose corners all sit
+ * near the same host corner, is refused). Returns the worst corner distance either way (Infinity when not one-to-one).
+ */
+export function footprintFit(record: readonly Point2[], host: readonly Point2[]): number {
+  if (record.length !== host.length || !record.length) return Infinity;
+  const near = (p: Point2, ring: readonly Point2[]) => ring.reduce((best, q, i) => { const d = Math.hypot(q[0] - p[0], q[1] - p[1]); return d < best.d ? { d, i } : best; }, { d: Infinity, i: -1 });
+  const there = record.map(p => near(p, host)), back = host.map(q => near(q, record));
+  if (new Set(there.map(t => t.i)).size !== host.length || new Set(back.map(t => t.i)).size !== record.length) return Infinity;
+  return Math.max(...there.map(t => t.d), ...back.map(t => t.d));
+}
 
 /** The plan footprint's corners (inset `inset` eu), counter-clockwise in local frame order. */
 export function footprintCorners(r: BuildingRecord, inset = 0.1): Point2[] {
@@ -297,8 +315,9 @@ export function validateDressing(outputs: readonly { module: NeighbourhoodModule
         else {
           if (redressed.has(b.hostId)) problems.push(`${w}: host ${b.hostId} is re-dressed twice`); redressed.add(b.hostId);
           if (b.collide) problems.push(`${w}: a re-dressed host keeps its baked collision; the record must not collide`);
-          const off = Math.max(...footprintCorners(b, 0).map(([x, z]) => Math.min(...shell.footprint.map(q => Math.hypot(q[0] - x, q[1] - z)))));
-          if (shell.footprint.length !== 4 || off > HOST_FIT.plan) problems.push(`${w}: footprint is ${off.toFixed(2)} eu off host ${b.hostId}'s baked footprint (≤ ${HOST_FIT.plan})`);
+          // Both ways and one-to-one (PR #588 Codex): every record corner near its own host corner and back.
+          const off = footprintFit(footprintCorners(b, 0), shell.footprint);
+          if (shell.footprint.length !== 4 || off > HOST_FIT.plan) problems.push(`${w}: footprint is ${Number.isFinite(off) ? `${off.toFixed(2)} eu` : 'not corner-for-corner'} off host ${b.hostId}'s baked footprint (≤ ${HOST_FIT.plan})`);
           if (Math.abs(b.at[1] - shell.floor) > HOST_FIT.height || Math.abs(b.at[1] + b.size.h - shell.wallTop) > HOST_FIT.height) problems.push(`${w}: floor ${b.at[1].toFixed(2)} / eave ${(b.at[1] + b.size.h).toFixed(2)} miss host ${b.hostId}'s baked ${shell.floor.toFixed(2)} / ${shell.wallTop.toFixed(2)} (± ${HOST_FIT.height})`);
         }
       } else if (!BED_ALLOWED_BUILDINGS.has(b.kind) && b.params?.allowOnBed !== true) {
@@ -312,11 +331,17 @@ export function validateDressing(outputs: readonly { module: NeighbourhoodModule
         if (hit) problems.push(`${w}: footprint at [${where2![0].toFixed(1)}, ${where2![1].toFixed(1)}] is on ${hit}`);
       }
       const zone = footprintSamples(b).map(([x, z]) => protectedAt(x, z)).find(Boolean);
-      if (zone && buildingHeight(b) > PROTECTED_MAX_HEIGHT && !allow.has(b.id)) problems.push(`${w}: ${buildingHeight(b).toFixed(2)} eu tall inside protected ${zone}`);
+      if (zone && !allow.has(b.id)) {
+        let tall: number | null = null;
+        try { tall = buildingHeight(b); } catch (e) { problems.push(`${w}: ${(e as Error).message}`); }
+        if (tall !== null && tall > PROTECTED_MAX_HEIGHT) problems.push(`${w}: ${tall.toFixed(2)} eu tall inside protected ${zone}`);
+      }
     }
     d.props?.forEach((p, i) => {
       const w = `${where} prop ${p.id ?? `#${i}`}`; if (p.id !== undefined) unique('prop', p.id, where);
       if (!allFinite([p.at, p.yaw, p.scale ?? 1, p.variant ?? 0, p.line ?? []]) || p.at.length !== 3) { problems.push(`${w}: a non-finite number`); return; }
+      // The plants' rule (PR #588 Codex): a zero or negative scale draws nothing and can bake a degenerate collider.
+      if (p.scale !== undefined && !(p.scale > 0)) { problems.push(`${w}: scale must be positive`); return; }
       const [x, , z] = p.at;
       if (!p.line && !WATER_PROPS.has(p.kind)) {
         const bed = ctx.onBed(x, z, 0.5), pad = p.collide ? ctx.onPad(x, z) : null, wet = ctx.inWater(x, z);

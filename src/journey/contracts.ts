@@ -742,6 +742,9 @@ export type JourneyLandFlatData = {
   reserves: { id: string; d: string }[];
   districts: { id: string; label: string; x: number; y: number }[];
   stations: { id: StationId; x: number; y: number }[];
+  /** The Water's Way (from `JourneyLandData.dressing`): the dressed buildings' plan footprints and each landmark's glyph
+   * at its sighted top (concept x, y) with its name. Present only when the land carries dressing. */
+  dressing?: { buildings: { id: string; d: string }[]; landmarks: { id: string; label: string; x: number; y: number }[] };
 };
 
 // ---------------------------------------------------------------------------
