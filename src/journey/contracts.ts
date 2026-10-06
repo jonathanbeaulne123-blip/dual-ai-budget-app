@@ -1038,7 +1038,8 @@ export type ListView = {
   scope: ListScope;
   /** "September 2026", "This week · Mon 28 Sep – Sun 4 Oct", "October 2025 – September 2026". */
   title: string;
-  /** Null when the scope has no stops (an honest empty month says so in `emptyText`). */
+  /** Null when the scope has no stops and no Books actuals (an honest empty month says so in `emptyText`). A month
+   *  with only ordinary purchases / refunds keeps its In / Out in the Books. */
   strip: ListStrip | null;
   groups: ListGroup[];
   emptyText: string | null;

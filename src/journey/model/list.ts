@@ -143,10 +143,14 @@ function scopeRead(board: JourneyBoard, scope: ListScope): ScopeRead {
  * - Still to come: unrecorded stops from today on with a scheduled figure (commitments → out; non-Fund income → in);
  *   estimates apart; unknown amounts counted, never summed as 0.
  * - Needs you: the scope's "to check" stops.
+ * Null only when the Books are unreadable for the viewer, or the scope has no stops and no Books actuals.
  */
 function stripFor(books: Household | null, read: ScopeRead, today: DateKey): ListStrip | null {
-  if (!read.stops.length || !books) return null;
+  if (!books) return null;
   const actuals = booksActualsBetween(books, read.from, read.to);
+  // Codex P2 (PR #586): ordinary purchases and refunds are Books actuals, not map stops. A month with no stops but
+  // money in the Books keeps its In / Out; only a scope with neither has no strip.
+  if (!read.stops.length && !actuals.inCents && !actuals.outCents) return null;
   const strip: ListStrip = {
     inBooksCents: actuals.inCents, outBooksCents: actuals.outCents, toFundCents: 0,
     stillToComeOutCents: 0, stillToComeInCents: 0, stillToComeEstimateCents: 0, stillToComeUnknown: 0, needsYou: 0,

@@ -18,7 +18,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_JOURNEY_VIEW_STATE_V2, JOURNEY_THEMES, journeyViewStateKeyV1, journeyViewStateKeyV2, LEVEL_T, runJourneyAction,
   type CreateJourneyMapScene, type JourneyBoardActions, type JourneyBoard, type JourneyLandData, type JourneyLandHandle,
-  type JourneyMapSceneHandle, type JourneyMapSceneOptions, type ActionCall, type ListScope, type ThemeId,
+  type JourneyMapSceneHandle, type JourneyMapSceneOptions, type ActionCall, type ChapterId, type ListScope, type MemoryStop, type ThemeId,
 } from "../src/journey/contracts.ts";
 import { boardToList, deriveJourneyBoard, listView, MAP_WORDS, signedMoney } from "../src/journey/model/index.ts";
 import { JourneyBoardView, compassClearance, type JourneyBoardViewProps, type JourneyStageSource } from "../src/journey/ui/JourneyBoardView.tsx";
@@ -456,6 +456,36 @@ describe("the list", () => {
     expect(host.querySelector("[data-journey-list]")).toBeNull();
     expect(sheet(host)!.querySelector(`[data-stop-card="${esc(bill)}"]`)).toBeTruthy();
     expect(total(actions)).toBe(0);
+  });
+
+  it("Codex P2: Year rows with no place on the map (an older chapter, an undated memory) are text, not a map jump", async () => {
+    const memory: MemoryStop = {
+      kind: "memory", id: "memory:undated-picnic", date: board.today, chapterId: board.currentChapterId, label: "Our first picnic",
+      sourceRefs: [{ kind: "hearthsideMemory", id: "undated-picnic" }], major: true, relation: "today",
+      actions: [{ id: "memory:undated-picnic#open", label: "Open the memory", call: { name: "openPlace", target: "memories", object: "memory/undated-picnic" }, primary: true }],
+      status: "kept-by-everyone", memoryKind: "hearthside", hideAmounts: false,
+    };
+    const older = { id: "2025-12" as ChapterId, unresolved: { overdueCommitments: 0, commitmentsNeedingReview: 0, chapterCloseDue: 0 as const, expectedIncomeNotRecorded: 0, attention: 0 }, traces: [] };
+    const wider: JourneyBoard = { ...board, olderChapters: [older], undatedMemories: [memory] };
+    const { host, actions } = await mountView({ board: wider, listOf: (scope: ListScope) => listView(household, wider, scope) });
+    await click(host.querySelector('[data-level="year"]'));
+    await click(host.querySelector('[data-list-mode="list"]'));
+    const olderRow = host.querySelector<HTMLElement>(`#${journeyRowDomId("2025-12")}`)!;
+    const memoryRow = host.querySelector<HTMLElement>(`#${journeyRowDomId(memory.id)}`)!;
+    expect(olderRow, "the older chapter's row").toBeTruthy();
+    expect(memoryRow, "the undated memory's row").toBeTruthy();
+    // Neither offers a map jump: the main part is plain text, so a press cannot close the list and open nothing.
+    for (const row of [olderRow, memoryRow]) {
+      expect(row.querySelector("[data-open-stop]")).toBeNull();
+      expect(row.querySelector("[data-row-still]")!.tagName).toBe("DIV");
+    }
+    // The memory keeps its own action, and it runs the memory's own destination; the list stays open.
+    await click(memoryRow.querySelector('[data-action-id="memory:undated-picnic#open"]'), "Open the memory");
+    expect(recorded(actions)).toEqual([["openPlace", ["memories", "memory/undated-picnic"]]]);
+    expect(host.querySelector("[data-journey-list]")).toBeTruthy();
+    // A stop in the window still opens on the map.
+    const inWindow = board.stops[0]!;
+    expect(host.querySelector(`#${journeyRowDomId(inWindow.id)} [data-open-stop]`)).toBeTruthy();
   });
 
   it("Week: the pinned Needs-you group first, then all seven days (an empty day says so)", async () => {

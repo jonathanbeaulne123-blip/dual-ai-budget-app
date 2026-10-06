@@ -102,6 +102,12 @@ export type ListViewProps = {
   actions: JourneyBoardActions;
   /** Show this stop (or crossroads) on the map, its sheet open. */
   onOpen(id: string): void;
+  /**
+   * Whether a row has a place on the map (a stop or crossroads in the window). Codex P2 (PR #586): a Year row for a
+   * chapter older than the window, or an undated memory, has none; its main part is plain text, not a button that
+   * would close the list and open nothing. Its own actions (an undated memory's "Open the memory") stay.
+   */
+  canOpen?(id: string): boolean;
   /** What waits on this viewer (`board.digest.waitingOnYou`) and the App's repeating reminders (trust M2). */
   waitingOnYou?: readonly AttentionItem[];
   dueReview?: { count: number } | null;
@@ -109,12 +115,16 @@ export type ListViewProps = {
   statusNote?: string | null;
 };
 
-function Row({ row, stop, actions, onOpen, withDate }: { row: ListRow; stop: Stop | undefined; actions: JourneyBoardActions; onOpen(id: string): void; withDate: boolean }) {
+function Row({ row, stop, actions, onOpen, withDate, onMap }: { row: ListRow; stop: Stop | undefined; actions: JourneyBoardActions; onOpen(id: string): void; withDate: boolean; onMap: boolean }) {
   const amount = stop ? signedAmount(stop, row.amountText) : row.amountText;
   const check = stop ? isToCheck(stop) : false;
+  const Main = onMap ? "button" : "div";
+  const mainProps = onMap
+    ? { type: "button" as const, className: "journey-row__main", "data-open-stop": row.id, onClick: () => onOpen(row.id) }
+    : { className: "journey-row__main journey-row__main--still", "data-row-still": "" };
   return (
     <li id={journeyRowDomId(row.id)} className={["journey-row", `journey-row--${row.level}`, check ? "journey-row--check" : ""].filter(Boolean).join(" ")} data-row-id={row.id}>
-      <button type="button" className="journey-row__main" data-open-stop={row.id} onClick={() => onOpen(row.id)}>
+      <Main {...mainProps}>
         {stop ? <StateDot stop={stop} /> : <span className="journey-dot journey-dot--exp" aria-hidden="true" />}
         <span className="journey-row__text">
           <b className="journey-row__label">{row.label}</b>
@@ -123,13 +133,13 @@ function Row({ row, stop, actions, onOpen, withDate }: { row: ListRow; stop: Sto
           {row.note ? <span className="journey-row__note" data-row-note="">{row.note}</span> : null}
         </span>
         {amount ? <span className={["journey-row__amount", amount.startsWith("+") ? "journey-row__amount--in" : ""].filter(Boolean).join(" ")}>{amount}</span> : null}
-      </button>
+      </Main>
       <ActionButtons actions={row.actions} run={(a) => runJourneyAction(actions, a.call)} className="journey-row__actions" />
     </li>
   );
 }
 
-export function ListView({ view, stops, actions, onOpen, waitingOnYou = [], dueReview, statusNote }: ListViewProps) {
+export function ListView({ view, stops, actions, onOpen, canOpen = () => true, waitingOnYou = [], dueReview, statusNote }: ListViewProps) {
   return (
     <section className="journey-list" aria-label={COPY.listLabel} data-journey-list={view.scope.level}>
       <p className="journey-list__kick">{COPY.listKick}</p>
@@ -148,7 +158,7 @@ export function ListView({ view, stops, actions, onOpen, waitingOnYou = [], dueR
             <h3 id={headId} className={["journey-day", g.today ? "journey-day--today" : "", g.kind === "needs-you" ? "journey-day--need" : ""].filter(Boolean).join(" ")} data-day-divider={g.today ? "today" : g.kind}>{g.label}</h3>
             {g.rows.length ? (
               <ul className="journey-rows" aria-labelledby={headId}>
-                {g.rows.map((row) => <Row key={row.id} row={row} stop={stops.get(row.id)} actions={actions} onOpen={onOpen} withDate={g.kind !== "day"} />)}
+                {g.rows.map((row) => <Row key={row.id} row={row} stop={stops.get(row.id)} actions={actions} onOpen={onOpen} withDate={g.kind !== "day"} onMap={canOpen(row.id)} />)}
               </ul>
             ) : g.emptyText ? <p className="journey-list__quiet">{g.emptyText}</p> : null}
           </div>

@@ -496,6 +496,8 @@
   border: 0; background: none; text-align: left; cursor: pointer; color: var(--ink); font-size: 14px;
 }
 .journey-rows > li > .journey-row__main { width: 100%; border-bottom: 1.5px dashed var(--edge); }
+/* A row with no place on the map (an older chapter, an undated memory): text, not a button. */
+.journey-row__main--still { cursor: default; }
 .journey-rows > li:last-child > .journey-row__main { border-bottom: 0; }
 .journey-row__text { flex: 1; min-width: 0; }
 .journey-row__label { display: block; font-weight: 800; }

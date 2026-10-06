@@ -295,6 +295,8 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
     announce(`Opened · ${words}`);
   }, [t, board.today, crossById, stopById, patch, announce, settleLevel, goChapter, closePops]);
 
+  /** A list row with a place on the map: a stop or crossroads in the window (not an older chapter or undated memory). */
+  const canOpenOnMap = useCallback((id: string) => stopById.has(id) || crossById.has(id), [stopById, crossById]);
   /** From the list (or the checklist): show this stop on the map with its sheet open. */
   const openOnMap = useCallback((id: string) => {
     const stop = stopById.get(id) ?? crossById.get(id);
@@ -564,7 +566,7 @@ export function JourneyBoardView(props: JourneyBoardViewProps) {
       {showBubble && bubbleMode ? (
         <HerculesBubble board={board} rows={rows} mode={bubbleMode} chapterId={chapterId} dueReview={props.dueReview} onOpen={() => select(JOURNEY_MAP_MARKS.hercules, { from: root.current?.querySelector(".journey-bubble") })} onBackToNow={backToNow} />
       ) : null}
-      {list ? <ListView view={list} stops={stopById} actions={actions} onOpen={openOnMap} waitingOnYou={board.digest.waitingOnYou} dueReview={props.dueReview} statusNote={statusNote} /> : null}
+      {list ? <ListView view={list} stops={stopById} actions={actions} onOpen={openOnMap} canOpen={canOpenOnMap} waitingOnYou={board.digest.waitingOnYou} dueReview={props.dueReview} statusNote={statusNote} /> : null}
       <div id={sheetSlotId} className="journey-sheet-slot" hidden={!sheet}>{sheet}</div>
       {fan ? <WhichOne options={fan.options} at={fan.at} onChoose={(id) => select(id)} onClose={() => { setFan(null); (root.current?.querySelector(".journey-stage") as HTMLElement | null)?.focus(); }} /> : null}
       </div>

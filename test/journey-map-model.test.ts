@@ -514,4 +514,21 @@ describe("Horizon Clock model — listView", () => {
     const feb = listView(household, board, { level: "month", chapterId: "2026-02" });
     expect(feb).toMatchObject({ title: "February 2026", strip: null, groups: [], emptyText: MAP_WORDS.emptyMonth });
   });
+
+  it("Codex P2: a month with only ordinary purchases and a refund keeps its In / Out in the Books (no map stops)", () => {
+    // February has no stops on the map. A grocery purchase and a refund are Books actuals, never Journey stops.
+    let h = household;
+    h = postEntry(h, { date: "2026-02-10", type: "expense", amount: 64.2, accountId: "ACC-CHEQUING", subcategoryId: "SUB-FOOD-GROCERIES", note: "Groceries", confirmDuplicate: true }).household;
+    const bought = postEntry(h, { date: "2026-02-14", type: "expense", amount: 30, accountId: "ACC-CHEQUING", subcategoryId: "SUB-LIFE-FUN", note: "Movie", confirmDuplicate: true });
+    h = reversePostedMoney(bought.household, bought.postedIds[0]!, { reversalDate: "2026-02-20" }).household;
+    const b = deriveJourneyBoard(h, JONATHAN, TODAY);
+    expect(b.stops.filter(s => s.chapterId === "2026-02")).toEqual([]);
+    const feb = listView(h, b, { level: "month", chapterId: "2026-02" });
+    const summary = monthSummary(booksPresentationFloor(h, JONATHAN, "household"), "2026-02");
+    expect(summary.expenseActualCents).not.toBe(0);
+    // The strip stands with the Books' own figures; the map's honest "nothing on the map" note stays.
+    expect(feb.strip).toMatchObject({ inBooksCents: summary.incomeActualCents, outBooksCents: summary.expenseActualCents, toFundCents: 0, stillToComeOutCents: 0, stillToComeInCents: 0, needsYou: 0 });
+    expect(feb.groups).toEqual([]);
+    expect(feb.emptyText).toBe(MAP_WORDS.emptyMonth);
+  });
 });
