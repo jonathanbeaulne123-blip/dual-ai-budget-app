@@ -41,7 +41,7 @@ Ruled by the integrator on 5 October 2026 from the prototypes' real positions; `
 | id | Base [x, ground, z] | Sighted top | Notes |
 |---|---|---|---|
 | `westwatch` | [1036, 86, 318] | [1038, 97, 313.2] | bell cote on the north gable, cote top 96–98, verdigris |
-| `fallswatch` | [1080, 94.9, 692] | deck lamp ≈ 97.2 | a lookout that lights second in the relay; on the V3.1 west buttress |
+| `fallswatch` | [1086, 95.3, 694.3] | deck lamp ≈ 97.6 | a lookout that lights second in the relay; on the V3.1 west buttress (its 10 × 5 deck on the buttress's cover ridge, PR 2 L1) |
 | `veilLip` | [1111, 92, 699] | aimed at the lip itself | what Fallswatch must see |
 | `oak` | [1125, 16.1, 1165] | y 52 | the Old Oak |
 | `osprey` | [1292, 4.1, 1268] | y 15.6 (nest) | pole + nest, planting clear within 9 m |
@@ -51,14 +51,14 @@ Ruled by the integrator on 5 October 2026 from the prototypes' real positions; `
 | `library` | [740, 48, 400] | ridge 64 | the host's greybox roof is 62 today |
 | `lamp` | [540, 0, 1195] | gallery 25 | the baked lighthouse gallery (MANIFEST `offshore.lamp.xy` [540,1230] is the islet's centre) |
 
-Eyes (`STORY_EYES`): Fallswatch [1080,692] ground + 1.6 (96.5 on the bake); under the oak ground + 1.6; Spring Bay [1246.4,1199.5] eye 6.6 (deck 5.0); the five other Reach lookouts at their binocular eyes; the belfry [1423,1187] 34.4; the top of the wheel 31; the elevator gallery 62; the Bight lookout [744,511] 53.6 (deck raised ~2 m to 52.0).
+Eyes (`STORY_EYES`): Fallswatch [1086,694.3] deck + 1.6 (96.9 on the bake); under the oak ground + 1.6; Spring Bay [1246.4,1199.5] eye 6.6 (deck 5.0); the five other Reach lookouts at their binocular eyes; the belfry [1423,1187] 34.4; the top of the wheel 31; the elevator gallery 62; the Bight lookout [744,511] 53.6 (deck raised ~2 m to 52.0).
 
 ## 4. Through-lines
 
 All of these are in the world, not in the UI.
 
 ### 4.1 The water, unbroken
-One surface water path reaches the sea today: springs → the seep → Veil Falls → Stillwater → the sill → the Notch → the Reach → the river mouth. Each stage has its own sound bed, so you can hear where you are in the story with your eyes shut. **The second stream** (approved): a short new reach from the Hollow Tarn into Orchard Brook, so the Rillcut's water no longer soaks away in the tarn but runs through the Hollow to the Bight, and the Flats get the Highlands' water too (PR 2 land).
+Two surface water paths reach the sea: springs → the seep → Veil Falls → Stillwater → the sill → the Notch → the Reach → the river mouth; and (V3.1, PR 2 L1) springs → the Twin Tarns → the Rillcut → Rillcut Falls → the Hollow Tarn → the Hollow Beck → Orchard Brook → the Bight. Each stage has its own sound bed, so you can hear where you are in the story with your eyes shut. **The second stream** (approved): a short new reach from the Hollow Tarn into Orchard Brook, so the Rillcut's water no longer soaks away in the tarn but runs through the Hollow to the Bight, and the Flats get the Highlands' water too (PR 2 land).
 
 ### 4.2 The sight chain
 Each place's lookout frames the next place's landmark. One Lookout kit (viewer, bench, panel, open timber rail) at about sixteen spots; the binoculars have a free lever where a coin box would be (no money in the world, CONTRACT §2.1). The tap is a zoom cut (twin-circle mask, fov 3–9). **Every binocular finds the Lamp**: it is the island's compass, the way every Reach lookout finds the osprey.
@@ -67,8 +67,8 @@ Each place's lookout frames the next place's landmark. One Lookout kit (viewer, 
 
 | Link | Clearance (m) | Over (m) | First limit | Depends on |
 |---|---|---|---|---|
-| Fallswatch → the Old Oak | **1.10** | 475 | the buttress ground beside the eye | the V3.1 west buttress (PR 2): passes on today's bake at the ground eye |
-| (Fallswatch → the Veil lip) | **1.30** | 32 | ground at [1086,94,693] | the V3.1 west buttress (PR 2) |
+| Fallswatch → the Old Oak | **6.08** | 472 | the buttress's south face beside the eye | built (PR 2 L1: the V3.1 west buttress) |
+| (Fallswatch → the Veil lip) | **1.95** | 25 | the buttress's edge at [1087,95,694] | built (PR 2 L1) |
 | under the oak → the osprey pole | **1.61** | 196 | ground at the trunk | — |
 | Spring Bay → the campanile | **−0.06** today; **2.89** with the Reach Footbridge's rails open | 177 | the Reach Footbridge's 1.15 stone parapet (top 10.65) | open rails on the Reach Footbridge (PR 2), seen through by the ray caster |
 | the belfry → the Ferris wheel | **22.93** | 619 | Horizon Drive's kerb (reach 7) | the campanile, the pier |
@@ -80,7 +80,7 @@ Each place's lookout frames the next place's landmark. One Lookout kit (viewer, 
 
 **The Lamp from the story eyes** (≥ 0.5 m to the gallery less 2 m): seen from **8 of 12** — under the oak 1.62, Notch Bluff 4.75, Sunset Rail 2.52, Harbour Bell Landing 1.28, the belfry 13.51, the top of the wheel 19.38, the elevator gallery 5.29, the Bight lookout 8.10. Not from Fallswatch (0.00), Spring Bay (−5.57) or the High Span Overlook (−3.09). The contract is ≥ 6. Every other binocular target each eye lists (the osprey from all five Reach lookouts that face it, the oak, the Veil lip) is proved the same way; the tightest is Harbour Bell Landing → the osprey, 0.61 m past the Quay Bridge's rail.
 
-The oak is the island's second constant: Fallswatch (1.10), the belfry (22.35), the top of the wheel (31.17), the elevator gallery (23.03) and the Bight lookout (5.20) all see it, and so do the Reach lookouts.
+The oak is the island's second constant: Fallswatch (6.08), the belfry (22.35), the top of the wheel (31.17), the elevator gallery (23.03) and the Bight lookout (5.20) all see it, and so do the Reach lookouts.
 
 ### 4.3 One day, once round
 Each place gets a Sketchbook page at its story hour, so the book's pages run dawn to night. The existing twelve stay. Changes and new pages (PR 5, with their view proofs): page **I** moves to the boardwalk's north end (night line: the High Span's lights; the Quay Bridge is "the drawbridge"); page **A** retargets the square's view to the v2 dam; the **belfry** page ("From the belfry", north) is the dam view; new pages "Over the roofs" (belfry south), "From the water" (the harbour mouth), Notch Bluff, the wheel at sunset, the Flats tower and the Bight lookout (the Scholars porch pose); page **H** takes the tested pose eye [452,58,890] → [428,30,480]; page **D** gains a night pose; page **L** gets a lantern on the Boathouse gable.

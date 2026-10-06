@@ -1186,11 +1186,16 @@
    "id": "benchHamlet",
    "label": "Bench Hamlet",
    "xy": [
+    1080,
+    440
+   ],
+   "h": 105,
+   "note": "V3: the farming hamlet on the west bench (useful now; buildings owed)",
+   "v3_0_xy": [
     1086,
     418
    ],
-   "h": 104,
-   "note": "V3: the farming hamlet on the west bench (useful now; buildings owed)"
+   "v3_0_h": 104
   },
   {
    "id": "westwatch",
@@ -1226,11 +1231,20 @@
    "id": "fallswatch",
    "label": "Fallswatch",
    "xy": [
+    1082,
+    692.5
+   ],
+   "h": 95.3,
+   "note": "V3.1: the falls station on the Veil's west buttress, looking along the curtain and down the lake to the Old Oak: a weather house, a gauge and the viewing deck; reads the almanac and the weather only",
+   "v3_0_xy": [
     1122,
     694
    ],
-   "h": 93.9,
-   "note": "V3: the falls station at Veil Falls' lip: a weather house, a gauge and the viewing deck over the curtain; reads the almanac and the weather only"
+   "v3_0_h": 93.9,
+   "size_m": [
+    10,
+    5
+   ]
   },
   {
    "id": "rimLookout",
@@ -4575,12 +4589,123 @@
      ],
      "h": 104,
      "why": "Bench Hamlet"
+    },
+    {
+     "xy": [
+      1195,
+      354.2
+     ],
+     "h": 116.95,
+     "why": "V3.1: level onto the orchard place's pad"
+    },
+    {
+     "xy": [
+      1200,
+      352
+     ],
+     "h": 117,
+     "why": "V3.1: Orchard Bench (the orchard place's pad)"
     }
    ],
    "note": "V3: Westwatch Chapel \u2192 Bench Hamlet \u2192 north of the Twin Tarns and the Crown Rill to Orchard Bench"
   },
   "fallswatch": {
    "pts": [
+    [
+     1086,
+     418
+    ],
+    [
+     1100,
+     416
+    ],
+    [
+     1110,
+     428
+    ],
+    [
+     1114,
+     460
+    ],
+    [
+     1118,
+     500
+    ],
+    [
+     1120,
+     540
+    ],
+    [
+     1120,
+     580
+    ],
+    [
+     1116,
+     616
+    ],
+    [
+     1126,
+     632
+    ],
+    [
+     1131,
+     648
+    ],
+    [
+     1131,
+     664
+    ],
+    [
+     1124,
+     678
+    ],
+    [
+     1111,
+     686
+    ],
+    [
+     1100,
+     687
+    ],
+    [
+     1092,
+     690.5
+    ],
+    [
+     1082,
+     692.5
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 331,
+   "levels": [
+    {
+     "xy": [
+      1086,
+      418
+     ],
+     "h": 104,
+     "why": "Bench Hamlet"
+    },
+    {
+     "xy": [
+      1110.5,
+      431
+     ],
+     "h": 104.4,
+     "why": "V3.1: the lift link (walk liftFoot) joins here flush"
+    },
+    {
+     "xy": [
+      1111,
+      686
+     ],
+     "h": 96.5,
+     "why": "V3.1: the Lip Footbridge deck over the Veil outlet (94.55; 1.25 clear under a 0.6 deck)"
+    }
+   ],
+   "note": "V3.1: Bench Hamlet over the Rillcut (the Hamlet Footbridge) and south along the hamlet spur, east of Spur Tarn, over the Veil outlet (the Lip Footbridge) to Fallswatch on the west buttress",
+   "v3_0_pts": [
     [
      1086,
      418
@@ -4629,20 +4754,40 @@
      1124,
      694
     ]
+   ]
+  },
+  "liftFoot": {
+   "pts": [
+    [
+     1144,
+     404
+    ],
+    [
+     1130,
+     416
+    ],
+    [
+     1118,
+     426
+    ],
+    [
+     1110.5,
+     431
+    ]
    ],
    "profile": "walk",
-   "length_m": 305,
+   "length_m": 43,
    "levels": [
     {
      "xy": [
-      1086,
-      418
+      1110.5,
+      431
      ],
-     "h": 104,
-     "why": "Bench Hamlet"
+     "h": 104.4,
+     "why": "V3.1: flush with the Fallswatch lane"
     }
    ],
-   "note": "V3: Bench Hamlet over the Rillcut's head (the Hamlet Footbridge) and south along the spur, east of Spur Tarn, to Fallswatch at the Veil lip"
+   "note": "V3.1: the drag lift's foot station on the Twin Tarns shelf to the Fallswatch lane"
   }
  },
  "cable": {
@@ -5795,14 +5940,18 @@
   },
   "hamletFootbridge": {
    "xy": [
-    1097,
-    417
+    1103.3,
+    420
    ],
    "kind": "footbridge",
    "route": "walk fallswatch",
    "span_m": 8,
    "width_m": 3.2,
-   "note": "V3: the Fallswatch lane over the Rillcut's head"
+   "note": "V3.1: the Fallswatch lane over the Rillcut, which now runs down the hamlet shelf's east edge",
+   "v3_0_xy": [
+    1097,
+    417
+   ]
   },
   "rillcutFootbridge": {
    "xy": [
@@ -5837,6 +5986,91 @@
     556
    ],
    "note": "V3: the Rim Steps, from the Rim Lookout down the connecting ridge over Horizon Drive (in the Rim Tunnel) to the Prow headland"
+  },
+  "lipFootbridge": {
+   "xy": [
+    1111,
+    686
+   ],
+   "kind": "footbridge",
+   "route": "walk fallswatch",
+   "span_m": 8,
+   "width_m": 3.2,
+   "note": "V3.1: the Fallswatch lane over the Veil outlet, 13 m behind the lip, on its way to the west buttress"
+  },
+  "glacierLift": {
+   "kind": "dragLift",
+   "from": [
+    1144,
+    404
+   ],
+   "to": [
+    1192,
+    355.6
+   ],
+   "length_m": 68.2,
+   "stations": {
+    "bottom": {
+     "xy": [
+      1144,
+      404
+     ],
+     "threshold": "glacierLiftFoot",
+     "on": "walk liftFoot",
+     "hut_m": [
+      5,
+      4
+     ]
+    },
+    "top": {
+     "xy": [
+      1192,
+      355.6
+     ],
+     "threshold": "glacierLiftHead",
+     "on": "walk hamletLane",
+     "hut_m": [
+      5,
+      4
+     ]
+    }
+   },
+   "towers": [
+    [
+     1151.2,
+     396.7
+    ],
+    [
+     1180.5,
+     367.2
+    ]
+   ],
+   "towerHeight_m": 7,
+   "cableOffset_m": 1.4,
+   "ride": "PR 5 (a T-bar drag lift: feet\u2192lift at the foot, lift\u2192feet at the head)",
+   "note": "V3.1 (D-WW56): the Highlands drag lift, shortened under RULINGS 5: the Twin Tarns shelf (106) \u2192 the hamlet lane at Orchard Bench (\u2248 113.5); every station and tower on V3 land outside v2's footprint and the Throat and skylight keep-outs, none on a bed or water"
+  },
+  "hollowBeckBridge": {
+   "xy": [
+    961.3,
+    510.7
+   ],
+   "kind": "bridge",
+   "route": "VG",
+   "span_m": 10,
+   "width_m": 17,
+   "note": "V3.1: Green Road and its footway lane over the Hollow Beck at the Hollow Tarn's outlet"
+  },
+  "hollowBeckFootbridge": {
+   "xy": [
+    901.6,
+    522.6
+   ],
+   "kind": "footbridge",
+   "route": "yearWalk",
+   "span_m": 10,
+   "width_m": 5.6,
+   "note": "V3.1: the Year Walk's Hollow lane over the Hollow Beck above its fall into Orchard Brook"
   }
  },
  "underground": {
@@ -10364,13 +10598,17 @@
    "a": "walk fallswatch",
    "b": "water.v3.rillcut",
    "at": [
-    1097.5,
-    417
+    1103.3,
+    420
    ],
    "resolution": "over",
    "structure": "hamletFootbridge",
    "kind": "crossing",
-   "note": "V3: the Fallswatch lane over the Rillcut's head"
+   "note": "V3: the Fallswatch lane over the Rillcut's head",
+   "v3_0_at": [
+    1097.5,
+    417
+   ]
   },
   {
    "a": "DEEP_RUN",
@@ -10382,6 +10620,54 @@
    "resolution": "under",
    "kind": "crossing",
    "note": "V3: the Sea Passage runs \u2248 90 m beneath Split Wall Gorge"
+  },
+  {
+   "a": "walk fallswatch",
+   "b": "water.v3.veilOutlet",
+   "at": [
+    1111,
+    686
+   ],
+   "resolution": "over",
+   "structure": "lipFootbridge",
+   "kind": "crossing",
+   "note": "V3.1: the Fallswatch lane over the Veil outlet"
+  },
+  {
+   "a": "VG",
+   "b": "water.v3.hollowBeck",
+   "at": [
+    961.3,
+    510.7
+   ],
+   "resolution": "over",
+   "structure": "hollowBeckBridge",
+   "kind": "crossing",
+   "note": "V3.1: Green Road over the Hollow Beck"
+  },
+  {
+   "a": "yearWalk",
+   "b": "water.v3.hollowBeck",
+   "at": [
+    955.2,
+    512.9
+   ],
+   "resolution": "over",
+   "structure": "hollowBeckBridge",
+   "kind": "crossing",
+   "note": "V3.1: the Year Walk's lane beside Green Road rides the same span over the Hollow Beck"
+  },
+  {
+   "a": "yearWalk",
+   "b": "water.v3.hollowBeck",
+   "at": [
+    901.6,
+    522.6
+   ],
+   "resolution": "over",
+   "structure": "hollowBeckFootbridge",
+   "kind": "crossing",
+   "note": "V3.1: the Year Walk's Hollow lane over the Hollow Beck"
   }
  ],
  "thresholds": [
@@ -10770,6 +11056,30 @@
    ],
    "action": "Ride the funicular \u2193 Library Woods",
    "source": "v2.6 (R5-02): Mountain v2 FUNICULAR_LINE platform + offset; per-direction boarding (movers/gondola/route.ts cableThresholds)"
+  },
+  {
+   "id": "glacierLiftFoot",
+   "xy": [
+    1144,
+    404
+   ],
+   "modes": [
+    "feet\u2192lift"
+   ],
+   "action": "take a T-bar up (the ride comes with PR 5)",
+   "source": "V3.1 (D-WW56): the drag lift's foot station pad on the Twin Tarns shelf"
+  },
+  {
+   "id": "glacierLiftHead",
+   "xy": [
+    1192,
+    355.6
+   ],
+   "modes": [
+    "lift\u2192feet"
+   ],
+   "action": "let go at the top station onto the hamlet lane",
+   "source": "V3.1 (D-WW56): the drag lift's head station pad on the hamlet lane beside Orchard Bench"
   }
  ],
  "journeys": {
@@ -17281,7 +17591,11 @@
    "Shieling Footbridge",
    "Hamlet Footbridge",
    "Rillcut Footbridge",
-   "Veil Footbridge"
+   "Veil Footbridge",
+   "Lip Footbridge",
+   "Hollow Beck Bridge",
+   "Hollow Beck Footbridge",
+   "the glacier lift"
   ],
   "water": [
    "Orchard Brook",
@@ -17352,7 +17666,12 @@
    "the ranch lane",
    "High Shieling Ranch",
    "the Shieling Mere",
-   "the Hollow Tarn"
+   "the Hollow Tarn",
+   "the Hollow Beck",
+   "the Lip Footbridge",
+   "the glacier lift",
+   "the hamlet spur",
+   "the crest"
   ]
  },
  "scale": {
@@ -19848,6 +20167,11 @@
   "decision": "D-M11",
   "source": "src/harbour/horizon/land/mountainV3/{landform,water}.ts",
   "note": "the Highlands and the Falls: the Shoulder/Crown ring round Mountain v2 reshaped (Glacier Peak 156, the glacier in the cirque, the highland benches, three gorges, the Veil amphitheatre); v2's own land is untouched south of its summit line (D-M2 north of it)",
-  "reads": "the almanac and the clock only; no water here reads household state (CONTRACT \u00a72.2); the reservoir inside v2 is not part of this network"
+  "reads": "the almanac and the clock only; no water here reads household state (CONTRACT \u00a72.2); the reservoir inside v2 is not part of this network",
+  "v3_1": {
+   "decisions": "D-WW50\u202659",
+   "date": "2026-10-05",
+   "note": "V3.1: one ridge system (crest Westwatch \u2192 horn, spurs, rill gullies, benches as shelves), the horn's top 30 m at ~55\u00b0 with two ar\u00eates over the cirque headwall, stepped strata in the definition, the Veil's one amphitheatre with Fallswatch on the west buttress, Bench Hamlet a real shelf, the drag lift's line, and the second stream (the Hollow Beck into Orchard Brook)"
+  }
  }
 }

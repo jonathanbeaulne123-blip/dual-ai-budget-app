@@ -128,6 +128,18 @@ const SHOULDER_RINGED = new Set(['hollow', 'stillwater', 'crown']);
 export function baseHeight(x: number, z: number): number {
   const m = getModel(), s = m.scale, shore = signedShoreDistance(x, z);
   if (shore < 0) return bightAbutment(x, z, outsideHeight(x, z, shore, s));
+  let height = preV3Height(x, z);
+  // Mountain V3 (D-M11): the Highlands and the Falls reshape the ring round v2 (Glacier Peak, the benches, the gorges, the Veil);
+  // V3.1's strata read the local slope of V3's ground, so the layer samples the Horizon's ground before V3 beside the point.
+  height = mountainV3Height(x / s, z / s, height / s, (px, pz) => preV3Height(px * s, pz * s) / s) * s;
+  const character = coastCharacter(x, z), shoreWidth = character === 'southBeach' ? 44 * s : character === 'bight' ? 23 * s : 10 * s;
+  height = mix(0.14 * s, height, smooth(shore / shoreWidth));
+  height = damWindow(x, z, notchHeight(x, z, height));
+  return coveStairBench(x, z, bightAbutment(x, z, spitKnollCut(x, z, applyWaters(x, z, height, m.water))));
+}
+/** The Horizon's authored land up to and including the Mountain v2 rule (D-M1/D-M2), before Mountain V3 and the shore. */
+function preV3Height(x: number, z: number): number {
+  const m = getModel(), s = m.scale;
   let height = (9 + 28 * clamp((1150 - z / s) / 1000) + 10 * clamp((x / s - 1050) / 650)) * s;
   // landformRule: where polygons overlap or meet, the higher band wins and its 60 m
   // blend lies INSIDE the winner, so the lower landform keeps its band to the edge.
@@ -154,13 +166,7 @@ export function baseHeight(x: number, z: number): number {
   height = stillwaterSill(x, z, throatButtress(x, z, height));
   // Pass 5 (D-M1/D-M2): Mountain v2 stands on the Crown summit; inside its footprint its ground (or the Foot terrace, or the
   // apron to the Horizon's own ground) replaces the bands. North of v2's summit line the Crown's north face wins where higher.
-  height = mountainV2Height(x / s, z / s, height / s) * s;
-  // Mountain V3 (D-M11): the Highlands and the Falls reshape the ring round v2 (Glacier Peak, the benches, the gorges, the Veil).
-  height = mountainV3Height(x / s, z / s, height / s) * s;
-  const character = coastCharacter(x, z), shoreWidth = character === 'southBeach' ? 44 * s : character === 'bight' ? 23 * s : 10 * s;
-  height = mix(0.14 * s, height, smooth(shore / shoreWidth));
-  height = damWindow(x, z, notchHeight(x, z, height));
-  return coveStairBench(x, z, bightAbutment(x, z, spitKnollCut(x, z, applyWaters(x, z, height, m.water))));
+  return mountainV2Height(x / s, z / s, height / s) * s;
 }
 /**
  * D-A1 (MANIFEST v2.0 `structures.bightBridge.ends.abutments`): the Bight Bridge's west abutment is an embankment

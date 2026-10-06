@@ -114,8 +114,9 @@ type LandmarkSource = Omit<StoryLandmark, 'relayOrder' | 'bell'>;
 const LANDMARK_SOURCE: readonly LandmarkSource[] = [
   // Westwatch Chapel's bell cote (north gable, "to the sea"), in the Library's verdigris; cote top 96–98.
   { id: 'westwatch', label: 'Westwatch Chapel', kind: 'landmark', neighbourhood: 'crown', at: [1036, 86, 318], top: [1038, 97, 313.2], owed: 'cote height ≥ 96 (PR 3 Highlands)' },
-  // The Fallswatch deck on the V3.1 west buttress: a lookout that also lights second in the relay (its deck lamp).
-  { id: 'fallswatch', label: 'Fallswatch', kind: 'lookout', neighbourhood: 'crown', at: [1080, 94.9, 692], top: [1080, 97.2, 692], aimDrop: 0, owed: 'V3.1 west buttress top (PR 2 land)' },
+  // The Fallswatch deck on the V3.1 west buttress (PR 2 L1, D-WW54): its 10 × 5 pad on the buttress's cover ridge at 95.3, the
+  // eye at its south-east corner over the amphitheatre; a lookout that also lights second in the relay (its deck lamp).
+  { id: 'fallswatch', label: 'Fallswatch', kind: 'lookout', neighbourhood: 'crown', at: [1086, 95.3, 694.3], top: [1086, 97.6, 694.3], aimDrop: 0 },
   // The Veil's lip: what Fallswatch must see (not a relay light).
   { id: 'veilLip', label: 'the Veil lip', kind: 'feature', neighbourhood: 'crown', at: [1111, 92, 699], top: [1111, 92, 699], aimDrop: 0 },
   { id: 'oak', label: 'the Old Oak', kind: 'landmark', neighbourhood: 'lakeside', at: [1125, 16.1, 1165], top: [1125, 52, 1165] },
@@ -164,8 +165,9 @@ export interface StoryEye {
 }
 
 export const STORY_EYES: readonly StoryEye[] = [
-  // Highlands. Fallswatch on the west buttress: eye = ground + 1.6 (≈ 96.5); sees the Veil lip and the oak.
-  { id: 'fallswatch', label: 'Fallswatch (west buttress)', at: [1080, 692], lift: 1.6, targets: ['oak', 'veilLip', 'lamp'], lookout: true, owed: 'V3.1 west buttress (PR 2 land)' },
+  // Highlands. Fallswatch on the V3.1 west buttress: eye = deck + 1.6 (≈ 96.9) at the deck's south-east corner, south of its
+  // lane, so the line to the lip runs over the amphitheatre; sees the Veil lip and the oak.
+  { id: 'fallswatch', label: 'Fallswatch (west buttress)', at: [1086, 694.3], lift: 1.6, targets: ['oak', 'veilLip', 'lamp'], lookout: true },
   // Green. Under the oak, at the trunk (the ring bench is at r 6.2; the oak is seen from every spot within 20 m).
   { id: 'oak', label: 'under the Old Oak', at: [1125, 1165], lift: 1.6, targets: ['osprey', 'lamp'], lookout: false },
   // Reach: Spring Bay (deck 5.0, eye 6.6) and the other five Reach lookouts (binocular eyes, reach SPEC §2).
@@ -208,7 +210,8 @@ export interface SightLink {
 
 /** Each place's lookout sees the next place's landmark (≥ 0.5 m clear to top − 2 m, buildings and baked solids included). */
 export const SIGHT_CHAIN: readonly SightLink[] = [
-  { from: 'fallswatch', to: 'oak', measured: 1.1, dependsOn: 'V3.1 west buttress (PR 2 land)' },
+  // V3.1 (PR 2 L1): the eye at the deck's south-east corner on the west buttress's cover ridge (deck 95.3).
+  { from: 'fallswatch', to: 'oak', measured: 6.08 },
   { from: 'oak', to: 'osprey', measured: 1.6 },
   // 2.89 m with the Reach Footbridge's rails open; on today's bake its 1.15 stone parapet (top 10.65) cuts the line (−0.06 m).
   { from: 'springBay', to: 'campanile', measured: 2.89, dependsOn: 'open timber rails on the Reach Footbridge, seen through by the ray caster (PR 2 land)', owedOccluders: ['reachFootbridge.rails'] },
@@ -219,7 +222,7 @@ export const SIGHT_CHAIN: readonly SightLink[] = [
 ];
 /** Fallswatch must also see the fall it is named for. */
 export const SIGHT_EXTRAS: readonly SightLink[] = [
-  { from: 'fallswatch', to: 'veilLip', measured: 1.3, dependsOn: 'V3.1 west buttress (PR 2 land)' },
+  { from: 'fallswatch', to: 'veilLip', measured: 1.95 },
 ];
 /** The proof's clearance contract (m). */
 export const SIGHT_MIN_CLEARANCE = .5;

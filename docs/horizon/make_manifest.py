@@ -2251,6 +2251,69 @@ m["crossings"].extend([
  {"a": "walk fallswatch", "b": "water.v3.rillcut", "at": [1097.5, 417], "resolution": "over", "structure": "hamletFootbridge", "kind": "crossing", "note": "V3: the Fallswatch lane over the Rillcut's head"},
  {"a": "DEEP_RUN", "b": "water.v3.splitWall", "at": [1490, 560], "resolution": "under", "kind": "crossing", "note": "V3: the Sea Passage runs ≈ 90 m beneath Split Wall Gorge"},
 ])
+# ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+# V3.1 · The Highlands landform + the second stream (The Water's Way PR 2, land builder L1; Jonathan 2026-10-05, "recommended on
+# all"; D-WW50…59). The landform itself is authored in src/harbour/horizon/land/mountainV3/{landform,water}.ts; this block moves
+# what the manifest owns: Fallswatch onto the west buttress (place, walk end, the Lip Footbridge over the Veil outlet), the Hamlet
+# Footbridge onto the Rillcut's new line down the hamlet shelf's east edge, the drag lift's line (structure data: stations and
+# tower spots; PR 3 dresses it, PR 5 rides it) with its two station thresholds and foot link, and the Hollow Beck's crossings.
+# Bench Hamlet's place pad (8 × 8, level) sat across the hamlet lane where the lane climbs 11 %: the walker met its edge 0.54 above the
+# lane (a step over 0.48) both ways. On the V3.1 shelf the place stands on the shelf's south half (the hamlet green, clear of the croft sites beside the lane) on the shelf's level; the lane runs free.
+# The hamlet lane's east end arrives on Orchard Bench (117) flush with the orchard place's pad, not 3 m under it (the walker met a
+# 3 m wall at the lane's end): the lane climbs its north-east arm at 9.6 % from the hamlet (104) to the bench.
+m["walks"]["hamletLane"]["levels"] = [*m["walks"]["hamletLane"]["levels"], {"xy": [1195, 354.2], "h": 116.95, "why": "V3.1: level onto the orchard place's pad"}, {"xy": [1200, 352], "h": 117, "why": "V3.1: Orchard Bench (the orchard place's pad)"}]
+_bh = next(p for p in m["places"] if p["id"] == "benchHamlet")
+_bh["v3_0_xy"], _bh["v3_0_h"] = _bh["xy"], _bh["h"]
+_bh["xy"], _bh["h"] = [1080, 440], 105
+_fw = next(p for p in m["places"] if p["id"] == "fallswatch")
+_fw["v3_0_xy"], _fw["v3_0_h"] = _fw["xy"], _fw["h"]
+# The buttress top over the Stillwater tunnel's cover is a ridge 5 m wide between the road's cuts (the portal trench north, the
+# lake face south): the deck's pad is 10 × 5 along it (`size_m`, land/town buildTown), its slab bearing on the cover.
+_fw["xy"], _fw["h"], _fw["size_m"] = [1082, 692.5], 95.3, [10, 5]
+_fw["note"] = "V3.1: the falls station on the Veil's west buttress, looking along the curtain and down the lake to the Old Oak: a weather house, a gauge and the viewing deck; reads the almanac and the weather only"
+_fwk = m["walks"]["fallswatch"]
+_fwk["v3_0_pts"] = [list(q) for q in _fwk["pts"]]
+_fwk["pts"] = [[1086, 418], [1100, 416], [1110, 428], [1114, 460], [1118, 500], [1120, 540], [1120, 580], [1116, 616], [1126, 632], [1131, 648], [1131, 664], [1124, 678], [1111, 686], [1100, 687], [1092, 690.5], [1082, 692.5]]
+_fwk["levels"] = [{"xy": [1086, 418], "h": 104, "why": "Bench Hamlet"}, {"xy": [1110.5, 431], "h": 104.4, "why": "V3.1: the lift link (walk liftFoot) joins here flush"}, {"xy": [1111, 686], "h": 96.5, "why": "V3.1: the Lip Footbridge deck over the Veil outlet (94.55; 1.25 clear under a 0.6 deck)"}]
+_fwk["note"] = "V3.1: Bench Hamlet over the Rillcut (the Hamlet Footbridge) and south along the hamlet spur, east of Spur Tarn, over the Veil outlet (the Lip Footbridge) to Fallswatch on the west buttress"
+_fwk["length_m"] = length(_fwk["pts"])
+m["structures"]["hamletFootbridge"]["v3_0_xy"] = m["structures"]["hamletFootbridge"]["xy"]
+m["structures"]["hamletFootbridge"]["xy"] = [1103.3, 420]
+m["structures"]["hamletFootbridge"]["note"] = "V3.1: the Fallswatch lane over the Rillcut, which now runs down the hamlet shelf's east edge"
+m["structures"]["lipFootbridge"] = {"xy": [1111, 686], "kind": "footbridge", "route": "walk fallswatch", "span_m": 8, "width_m": 3.2, "note": "V3.1: the Fallswatch lane over the Veil outlet, 13 m behind the lip, on its way to the west buttress"}
+for _c in m["crossings"]:
+    if _c.get("structure") == "hamletFootbridge": _c["v3_0_at"], _c["at"] = _c["at"], [1103.3, 420]
+# The drag lift (RULINGS 5: entirely on V3 land outside every keep-out and off v2's footprint). The cirque's west rim lies inside
+# the skylight keep-out and on v2's north land, and every straight line from the Twin Tarns shelf toward it crosses the skylight
+# box, v2's land or the Crown Rill's corridor; shortened, the lift climbs from the Twin Tarns shelf over the shelf's bank to the
+# hamlet lane beside Orchard Bench (D-WW56; the full glacier line is a Jonathan call). Two towers, each ≥ 5 m from water and beds.
+# Structure data only: the stations are the two threshold pads below (level, on their walks); PR 3 dresses towers, huts and the
+# line, PR 5 makes it a ride.
+m["structures"]["glacierLift"] = {"kind": "dragLift", "from": [1144, 404], "to": [1192, 355.6], "length_m": 68.2,
+  "stations": {"bottom": {"xy": [1144, 404], "threshold": "glacierLiftFoot", "on": "walk liftFoot", "hut_m": [5, 4]}, "top": {"xy": [1192, 355.6], "threshold": "glacierLiftHead", "on": "walk hamletLane", "hut_m": [5, 4]}},
+  "towers": [[1151.2, 396.7], [1180.5, 367.2]], "towerHeight_m": 7, "cableOffset_m": 1.4,
+  "ride": "PR 5 (a T-bar drag lift: feet→lift at the foot, lift→feet at the head)",
+  "note": "V3.1 (D-WW56): the Highlands drag lift, shortened under RULINGS 5: the Twin Tarns shelf (106) → the hamlet lane at Orchard Bench (≈ 113.5); every station and tower on V3 land outside v2's footprint and the Throat and skylight keep-outs, none on a bed or water"}
+m["walks"]["liftFoot"] = {"pts": [[1144, 404], [1130, 416], [1118, 426], [1110.5, 431]], "profile": "walk", "length_m": 0, "levels": [{"xy": [1110.5, 431], "h": 104.4, "why": "V3.1: flush with the Fallswatch lane"}], "note": "V3.1: the drag lift's foot station on the Twin Tarns shelf to the Fallswatch lane"}
+m["walks"]["liftFoot"]["length_m"] = length(m["walks"]["liftFoot"]["pts"])
+m["thresholds"].extend([
+ {"id": "glacierLiftFoot", "xy": [1144, 404], "modes": ["feet→lift"], "action": "take a T-bar up (the ride comes with PR 5)", "source": "V3.1 (D-WW56): the drag lift's foot station pad on the Twin Tarns shelf"},
+ {"id": "glacierLiftHead", "xy": [1192, 355.6], "modes": ["lift→feet"], "action": "let go at the top station onto the hamlet lane", "source": "V3.1 (D-WW56): the drag lift's head station pad on the hamlet lane beside Orchard Bench"},
+])
+# The second stream (D-WW55): the Hollow Beck from the Hollow Tarn under Green Road (its May/September footway lane carried on the
+# same span) and the Year Walk's Hollow lane, into Orchard Brook. Decks stand ≥ 1.25 over the water (VG 42.2 over 40.1; the Year
+# Walk's lane 42.3 over 39.9; its south leg 45.0 over 38.2).
+m["structures"]["hollowBeckBridge"] = {"xy": [961.3, 510.7], "kind": "bridge", "route": "VG", "span_m": 10, "width_m": 17, "note": "V3.1: Green Road and its footway lane over the Hollow Beck at the Hollow Tarn's outlet"}
+m["structures"]["hollowBeckFootbridge"] = {"xy": [901.6, 522.6], "kind": "footbridge", "route": "yearWalk", "span_m": 10, "width_m": 5.6, "note": "V3.1: the Year Walk's Hollow lane over the Hollow Beck above its fall into Orchard Brook"}
+m["crossings"].extend([
+ {"a": "walk fallswatch", "b": "water.v3.veilOutlet", "at": [1111, 686], "resolution": "over", "structure": "lipFootbridge", "kind": "crossing", "note": "V3.1: the Fallswatch lane over the Veil outlet"},
+ {"a": "VG", "b": "water.v3.hollowBeck", "at": [961.3, 510.7], "resolution": "over", "structure": "hollowBeckBridge", "kind": "crossing", "note": "V3.1: Green Road over the Hollow Beck"},
+ {"a": "yearWalk", "b": "water.v3.hollowBeck", "at": [955.2, 512.9], "resolution": "over", "structure": "hollowBeckBridge", "kind": "crossing", "note": "V3.1: the Year Walk's lane beside Green Road rides the same span over the Hollow Beck"},
+ {"a": "yearWalk", "b": "water.v3.hollowBeck", "at": [901.6, 522.6], "resolution": "over", "structure": "hollowBeckFootbridge", "kind": "crossing", "note": "V3.1: the Year Walk's Hollow lane over the Hollow Beck"},
+])
+m["mountainV3"]["v3_1"] = {"decisions": "D-WW50…59", "date": "2026-10-05", "note": "V3.1: one ridge system (crest Westwatch → horn, spurs, rill gullies, benches as shelves), the horn's top 30 m at ~55° with two arêtes over the cirque headwall, stepped strata in the definition, the Veil's one amphitheatre with Fallswatch on the west buttress, Bench Hamlet a real shelf, the drag lift's line, and the second stream (the Hollow Beck into Orchard Brook)"}
+m["names"]["mountainV3"] = [*m["names"]["mountainV3"], "the Hollow Beck", "the Lip Footbridge", "the glacier lift", "the hamlet spur", "the crest"]
+m["names"]["structures"] = [*m["names"]["structures"], "Lip Footbridge", "Hollow Beck Bridge", "Hollow Beck Footbridge", "the glacier lift"]
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")
