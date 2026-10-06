@@ -1,0 +1,2287 @@
+{
+ "sha": "05d4c9baba505b3aa06952ba6775f2e766bb06e8",
+ "method": "headless Chromium (SwiftShader) on the review harness, look poses via __harbour.world.views + shot(); not device evidence",
+ "records": [
+  {
+   "file": "porch_10-00_classic_full.jpg",
+   "id": "porch",
+   "label": "Porch: the Glasshouse stair's foot landing, south over the Green to the Old Oak",
+   "theme": "classic",
+   "tier": "full",
+   "time": "10:00",
+   "date": "2026-06-21",
+   "eye": [
+    1007,
+    23.7,
+    953
+   ],
+   "target": [
+    1110,
+    26,
+    1150
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 373,
+    "triangles": 164135,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "porch_22-30_classic_full.jpg",
+   "id": "porch",
+   "label": "Porch: the Glasshouse stair's foot landing, south over the Green to the Old Oak",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1007,
+    23.7,
+    953
+   ],
+   "target": [
+    1110,
+    26,
+    1150
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 380,
+    "triangles": 250987,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "hero_12-00_classic_full.jpg",
+   "id": "hero",
+   "label": "The Old Oak over the meadow, the sea behind",
+   "theme": "classic",
+   "tier": "full",
+   "time": "12:00",
+   "date": "2026-06-21",
+   "eye": [
+    1090,
+    20.2,
+    1082
+   ],
+   "target": [
+    1126,
+    27,
+    1170
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 266,
+    "triangles": 183215,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "canopy_11-00_classic_full.jpg",
+   "id": "canopy",
+   "label": "Under the crown: the ring bench, the limbs, the rope swing",
+   "theme": "classic",
+   "tier": "full",
+   "time": "11:00",
+   "date": "2026-06-21",
+   "eye": [
+    1104,
+    17.7,
+    1153
+   ],
+   "target": [
+    1125,
+    22,
+    1166
+   ],
+   "fov": 72,
+   "stats": {
+    "drawCalls": 392,
+    "triangles": 229289,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "clock_11-00_classic_full.jpg",
+   "id": "clock",
+   "label": "The oak, its ring bench, the Oak Clock (January north), the swing and the tables",
+   "theme": "classic",
+   "tier": "full",
+   "time": "11:00",
+   "date": "2026-06-21",
+   "eye": [
+    1050,
+    58,
+    1115
+   ],
+   "target": [
+    1122,
+    12,
+    1166
+   ],
+   "fov": 50,
+   "stats": {
+    "drawCalls": 763,
+    "triangles": 520456,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "labyrinth_10-00_classic_full.jpg",
+   "id": "labyrinth",
+   "label": "The turf labyrinth, entrance toward the Year Walk; the stair-and-ramp behind",
+   "theme": "classic",
+   "tier": "full",
+   "time": "10:00",
+   "date": "2026-06-21",
+   "eye": [
+    1062,
+    42,
+    1040
+   ],
+   "target": [
+    1090,
+    19,
+    1004
+   ],
+   "fov": 52,
+   "stats": {
+    "drawCalls": 511,
+    "triangles": 1311824,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "apiary_10-00_classic_full.jpg",
+   "id": "apiary",
+   "label": "The apiary in the clover, the kites over the April station",
+   "theme": "classic",
+   "tier": "full",
+   "time": "10:00",
+   "date": "2026-06-21",
+   "eye": [
+    985,
+    19,
+    1185
+   ],
+   "target": [
+    960,
+    24,
+    1110
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 117,
+    "triangles": 114273,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "rim_17-30_classic_full.jpg",
+   "id": "rim",
+   "label": "The south-west rim: the windpump, hay bales, the windsock, the oak beyond",
+   "theme": "classic",
+   "tier": "full",
+   "time": "17:30",
+   "date": "2026-06-21",
+   "eye": [
+    884,
+    10.6,
+    1262
+   ],
+   "target": [
+    1040,
+    17,
+    1200
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 437,
+    "triangles": 327790,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "pavilion_19-30_classic_full.jpg",
+   "id": "pavilion",
+   "label": "The Meadow Pavilion on the west rim, open toward the Bight",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:30",
+   "date": "2026-06-21",
+   "eye": [
+    870,
+    19.5,
+    1040
+   ],
+   "target": [
+    846,
+    19,
+    1063
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 88,
+    "triangles": 195030,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "pavilion_22-30_classic_full.jpg",
+   "id": "pavilion",
+   "label": "The Meadow Pavilion on the west rim, open toward the Bight",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    870,
+    19.5,
+    1040
+   ],
+   "target": [
+    846,
+    19,
+    1063
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 95,
+    "triangles": 269331,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "night_22-30_classic_full.jpg",
+   "id": "night",
+   "label": "Night: the Lantern Ring draws the protected circle; the oak against the sky",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1065,
+    18.9,
+    1110
+   ],
+   "target": [
+    1125,
+    22,
+    1162
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 408,
+    "triangles": 329236,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "E_12-30_classic_full.jpg",
+   "id": "E",
+   "label": "Page E framing from the Crown (noon): the Green below, the oak on its rim",
+   "theme": "classic",
+   "tier": "full",
+   "time": "12:30",
+   "date": "2026-06-21",
+   "eye": [
+    1318,
+    172,
+    476
+   ],
+   "target": [
+    870,
+    20,
+    860
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 271,
+    "triangles": 738377,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "E_22-30_classic_full.jpg",
+   "id": "E",
+   "label": "Page E framing from the Crown (noon): the Green below, the oak on its rim",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1318,
+    172,
+    476
+   ],
+   "target": [
+    870,
+    20,
+    860
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 704,
+    "triangles": 1509024,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "K_20-50_classic_full.jpg",
+   "id": "K",
+   "label": "Page K: the Glasshouse at dusk over Stillwater (the shore, no trees between)",
+   "theme": "classic",
+   "tier": "full",
+   "time": "20:50",
+   "date": "2026-06-21",
+   "eye": [
+    994,
+    57,
+    770
+   ],
+   "target": [
+    1120,
+    52,
+    815
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 473,
+    "triangles": 603580,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "K_12-30_classic_full.jpg",
+   "id": "K",
+   "label": "Page K: the Glasshouse at dusk over Stillwater (the shore, no trees between)",
+   "theme": "classic",
+   "tier": "full",
+   "time": "12:30",
+   "date": "2026-06-21",
+   "eye": [
+    994,
+    57,
+    770
+   ],
+   "target": [
+    1120,
+    52,
+    815
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 458,
+    "triangles": 564290,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "fallswatch_07-30_classic_full.jpg",
+   "id": "fallswatch",
+   "label": "From Fallswatch on the west buttress: the oak on the Green below (the sight chain)",
+   "theme": "classic",
+   "tier": "full",
+   "time": "07:30",
+   "date": "2026-06-21",
+   "eye": [
+    1086,
+    96.9,
+    694.3
+   ],
+   "target": [
+    1125,
+    40,
+    1165
+   ],
+   "fov": 30,
+   "stats": {
+    "drawCalls": 76,
+    "triangles": 228709,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "aerial_12-00_classic_full.jpg",
+   "id": "aerial",
+   "label": "Aerial from the south-west: the Green, the oak, the labyrinth, the Lantern Ring",
+   "theme": "classic",
+   "tier": "full",
+   "time": "12:00",
+   "date": "2026-06-21",
+   "eye": [
+    820,
+    230,
+    1420
+   ],
+   "target": [
+    1040,
+    15,
+    1060
+   ],
+   "fov": 45,
+   "stats": {
+    "drawCalls": 494,
+    "triangles": 680031,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "aerial_22-30_classic_full.jpg",
+   "id": "aerial",
+   "label": "Aerial from the south-west: the Green, the oak, the labyrinth, the Lantern Ring",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    820,
+    230,
+    1420
+   ],
+   "target": [
+    1040,
+    15,
+    1060
+   ],
+   "fov": 45,
+   "stats": {
+    "drawCalls": 172,
+    "triangles": 459406,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "porch_10-00_classic_lite.jpg",
+   "id": "porch",
+   "label": "Porch: the Glasshouse stair's foot landing, south over the Green to the Old Oak",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "10:00",
+   "date": "2026-06-21",
+   "eye": [
+    1007,
+    23.7,
+    953
+   ],
+   "target": [
+    1110,
+    26,
+    1150
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 330,
+    "triangles": 76480,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "porch_22-30_classic_lite.jpg",
+   "id": "porch",
+   "label": "Porch: the Glasshouse stair's foot landing, south over the Green to the Old Oak",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1007,
+    23.7,
+    953
+   ],
+   "target": [
+    1110,
+    26,
+    1150
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 336,
+    "triangles": 107055,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "hero_12-00_classic_lite.jpg",
+   "id": "hero",
+   "label": "The Old Oak over the meadow, the sea behind",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "12:00",
+   "date": "2026-06-21",
+   "eye": [
+    1090,
+    20.2,
+    1082
+   ],
+   "target": [
+    1126,
+    27,
+    1170
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 216,
+    "triangles": 66630,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "canopy_11-00_classic_lite.jpg",
+   "id": "canopy",
+   "label": "Under the crown: the ring bench, the limbs, the rope swing",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "11:00",
+   "date": "2026-06-21",
+   "eye": [
+    1104,
+    17.7,
+    1153
+   ],
+   "target": [
+    1125,
+    22,
+    1166
+   ],
+   "fov": 72,
+   "stats": {
+    "drawCalls": 353,
+    "triangles": 85456,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "clock_11-00_classic_lite.jpg",
+   "id": "clock",
+   "label": "The oak, its ring bench, the Oak Clock (January north), the swing and the tables",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "11:00",
+   "date": "2026-06-21",
+   "eye": [
+    1050,
+    58,
+    1115
+   ],
+   "target": [
+    1122,
+    12,
+    1166
+   ],
+   "fov": 50,
+   "stats": {
+    "drawCalls": 656,
+    "triangles": 153242,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "labyrinth_10-00_classic_lite.jpg",
+   "id": "labyrinth",
+   "label": "The turf labyrinth, entrance toward the Year Walk; the stair-and-ramp behind",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "10:00",
+   "date": "2026-06-21",
+   "eye": [
+    1062,
+    42,
+    1040
+   ],
+   "target": [
+    1090,
+    19,
+    1004
+   ],
+   "fov": 52,
+   "stats": {
+    "drawCalls": 168,
+    "triangles": 320788,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "night_22-30_classic_lite.jpg",
+   "id": "night",
+   "label": "Night: the Lantern Ring draws the protected circle; the oak against the sky",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1065,
+    18.9,
+    1110
+   ],
+   "target": [
+    1125,
+    22,
+    1162
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 363,
+    "triangles": 111912,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "E_12-30_classic_lite.jpg",
+   "id": "E",
+   "label": "Page E framing from the Crown (noon): the Green below, the oak on its rim",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "12:30",
+   "date": "2026-06-21",
+   "eye": [
+    1318,
+    172,
+    476
+   ],
+   "target": [
+    870,
+    20,
+    860
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 280,
+    "triangles": 564377,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "E_22-30_classic_lite.jpg",
+   "id": "E",
+   "label": "Page E framing from the Crown (noon): the Green below, the oak on its rim",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1318,
+    172,
+    476
+   ],
+   "target": [
+    870,
+    20,
+    860
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 244,
+    "triangles": 419460,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "K_20-50_classic_lite.jpg",
+   "id": "K",
+   "label": "Page K: the Glasshouse at dusk over Stillwater (the shore, no trees between)",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "20:50",
+   "date": "2026-06-21",
+   "eye": [
+    994,
+    57,
+    770
+   ],
+   "target": [
+    1120,
+    52,
+    815
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 426,
+    "triangles": 302200,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "K_12-30_classic_lite.jpg",
+   "id": "K",
+   "label": "Page K: the Glasshouse at dusk over Stillwater (the shore, no trees between)",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "12:30",
+   "date": "2026-06-21",
+   "eye": [
+    994,
+    57,
+    770
+   ],
+   "target": [
+    1120,
+    52,
+    815
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 421,
+    "triangles": 278843,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "porch_10-00_taylor_full.jpg",
+   "id": "porch",
+   "label": "Porch: the Glasshouse stair's foot landing, south over the Green to the Old Oak",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "10:00",
+   "date": "2026-06-21",
+   "eye": [
+    1007,
+    23.7,
+    953
+   ],
+   "target": [
+    1110,
+    26,
+    1150
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 371,
+    "triangles": 163041,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "porch_22-30_taylor_full.jpg",
+   "id": "porch",
+   "label": "Porch: the Glasshouse stair's foot landing, south over the Green to the Old Oak",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1007,
+    23.7,
+    953
+   ],
+   "target": [
+    1110,
+    26,
+    1150
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 378,
+    "triangles": 249893,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "hero_12-00_taylor_full.jpg",
+   "id": "hero",
+   "label": "The Old Oak over the meadow, the sea behind",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "12:00",
+   "date": "2026-06-21",
+   "eye": [
+    1090,
+    20.2,
+    1082
+   ],
+   "target": [
+    1126,
+    27,
+    1170
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 625,
+    "triangles": 647410,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "canopy_11-00_taylor_full.jpg",
+   "id": "canopy",
+   "label": "Under the crown: the ring bench, the limbs, the rope swing",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "11:00",
+   "date": "2026-06-21",
+   "eye": [
+    1104,
+    17.7,
+    1153
+   ],
+   "target": [
+    1125,
+    22,
+    1166
+   ],
+   "fov": 72,
+   "stats": {
+    "drawCalls": 389,
+    "triangles": 231696,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "clock_11-00_taylor_full.jpg",
+   "id": "clock",
+   "label": "The oak, its ring bench, the Oak Clock (January north), the swing and the tables",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "11:00",
+   "date": "2026-06-21",
+   "eye": [
+    1050,
+    58,
+    1115
+   ],
+   "target": [
+    1122,
+    12,
+    1166
+   ],
+   "fov": 50,
+   "stats": {
+    "drawCalls": 758,
+    "triangles": 517431,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "labyrinth_10-00_taylor_full.jpg",
+   "id": "labyrinth",
+   "label": "The turf labyrinth, entrance toward the Year Walk; the stair-and-ramp behind",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "10:00",
+   "date": "2026-06-21",
+   "eye": [
+    1062,
+    42,
+    1040
+   ],
+   "target": [
+    1090,
+    19,
+    1004
+   ],
+   "fov": 52,
+   "stats": {
+    "drawCalls": 506,
+    "triangles": 1312664,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "night_22-30_taylor_full.jpg",
+   "id": "night",
+   "label": "Night: the Lantern Ring draws the protected circle; the oak against the sky",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1065,
+    18.9,
+    1110
+   ],
+   "target": [
+    1125,
+    22,
+    1162
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 791,
+    "triangles": 597415,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "E_12-30_taylor_full.jpg",
+   "id": "E",
+   "label": "Page E framing from the Crown (noon): the Green below, the oak on its rim",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "12:30",
+   "date": "2026-06-21",
+   "eye": [
+    1318,
+    172,
+    476
+   ],
+   "target": [
+    870,
+    20,
+    860
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 284,
+    "triangles": 727861,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "E_22-30_taylor_full.jpg",
+   "id": "E",
+   "label": "Page E framing from the Crown (noon): the Green below, the oak on its rim",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1318,
+    172,
+    476
+   ],
+   "target": [
+    870,
+    20,
+    860
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 275,
+    "triangles": 776034,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "K_20-50_taylor_full.jpg",
+   "id": "K",
+   "label": "Page K: the Glasshouse at dusk over Stillwater (the shore, no trees between)",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "20:50",
+   "date": "2026-06-21",
+   "eye": [
+    994,
+    57,
+    770
+   ],
+   "target": [
+    1120,
+    52,
+    815
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 474,
+    "triangles": 599888,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "K_12-30_taylor_full.jpg",
+   "id": "K",
+   "label": "Page K: the Glasshouse at dusk over Stillwater (the shore, no trees between)",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "12:30",
+   "date": "2026-06-21",
+   "eye": [
+    994,
+    57,
+    770
+   ],
+   "target": [
+    1120,
+    52,
+    815
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 453,
+    "triangles": 559314,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "porch_10-00_taylor_lite.jpg",
+   "id": "porch",
+   "label": "Porch: the Glasshouse stair's foot landing, south over the Green to the Old Oak",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "10:00",
+   "date": "2026-06-21",
+   "eye": [
+    1007,
+    23.7,
+    953
+   ],
+   "target": [
+    1110,
+    26,
+    1150
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 329,
+    "triangles": 83828,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "porch_22-30_taylor_lite.jpg",
+   "id": "porch",
+   "label": "Porch: the Glasshouse stair's foot landing, south over the Green to the Old Oak",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1007,
+    23.7,
+    953
+   ],
+   "target": [
+    1110,
+    26,
+    1150
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 335,
+    "triangles": 114403,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "hero_12-00_taylor_lite.jpg",
+   "id": "hero",
+   "label": "The Old Oak over the meadow, the sea behind",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "12:00",
+   "date": "2026-06-21",
+   "eye": [
+    1090,
+    20.2,
+    1082
+   ],
+   "target": [
+    1126,
+    27,
+    1170
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 214,
+    "triangles": 77758,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "porch_10-00_newfoundland_full.jpg",
+   "id": "porch",
+   "label": "Porch: the Glasshouse stair's foot landing, south over the Green to the Old Oak",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "10:00",
+   "date": "2026-06-21",
+   "eye": [
+    1007,
+    23.7,
+    953
+   ],
+   "target": [
+    1110,
+    26,
+    1150
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 373,
+    "triangles": 162857,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "porch_22-30_newfoundland_full.jpg",
+   "id": "porch",
+   "label": "Porch: the Glasshouse stair's foot landing, south over the Green to the Old Oak",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1007,
+    23.7,
+    953
+   ],
+   "target": [
+    1110,
+    26,
+    1150
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 380,
+    "triangles": 249709,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "hero_12-00_newfoundland_full.jpg",
+   "id": "hero",
+   "label": "The Old Oak over the meadow, the sea behind",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "12:00",
+   "date": "2026-06-21",
+   "eye": [
+    1090,
+    20.2,
+    1082
+   ],
+   "target": [
+    1126,
+    27,
+    1170
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 266,
+    "triangles": 189181,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "canopy_11-00_newfoundland_full.jpg",
+   "id": "canopy",
+   "label": "Under the crown: the ring bench, the limbs, the rope swing",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "11:00",
+   "date": "2026-06-21",
+   "eye": [
+    1104,
+    17.7,
+    1153
+   ],
+   "target": [
+    1125,
+    22,
+    1166
+   ],
+   "fov": 72,
+   "stats": {
+    "drawCalls": 391,
+    "triangles": 225506,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "clock_11-00_newfoundland_full.jpg",
+   "id": "clock",
+   "label": "The oak, its ring bench, the Oak Clock (January north), the swing and the tables",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "11:00",
+   "date": "2026-06-21",
+   "eye": [
+    1050,
+    58,
+    1115
+   ],
+   "target": [
+    1122,
+    12,
+    1166
+   ],
+   "fov": 50,
+   "stats": {
+    "drawCalls": 763,
+    "triangles": 512722,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "labyrinth_10-00_newfoundland_full.jpg",
+   "id": "labyrinth",
+   "label": "The turf labyrinth, entrance toward the Year Walk; the stair-and-ramp behind",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "10:00",
+   "date": "2026-06-21",
+   "eye": [
+    1062,
+    42,
+    1040
+   ],
+   "target": [
+    1090,
+    19,
+    1004
+   ],
+   "fov": 52,
+   "stats": {
+    "drawCalls": 511,
+    "triangles": 1314594,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "night_22-30_newfoundland_full.jpg",
+   "id": "night",
+   "label": "Night: the Lantern Ring draws the protected circle; the oak against the sky",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1065,
+    18.9,
+    1110
+   ],
+   "target": [
+    1125,
+    22,
+    1162
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 796,
+    "triangles": 593430,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "E_12-30_newfoundland_full.jpg",
+   "id": "E",
+   "label": "Page E framing from the Crown (noon): the Green below, the oak on its rim",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "12:30",
+   "date": "2026-06-21",
+   "eye": [
+    1318,
+    172,
+    476
+   ],
+   "target": [
+    870,
+    20,
+    860
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 282,
+    "triangles": 736983,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "E_22-30_newfoundland_full.jpg",
+   "id": "E",
+   "label": "Page E framing from the Crown (noon): the Green below, the oak on its rim",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1318,
+    172,
+    476
+   ],
+   "target": [
+    870,
+    20,
+    860
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 292,
+    "triangles": 782296,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "K_20-50_newfoundland_full.jpg",
+   "id": "K",
+   "label": "Page K: the Glasshouse at dusk over Stillwater (the shore, no trees between)",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "20:50",
+   "date": "2026-06-21",
+   "eye": [
+    994,
+    57,
+    770
+   ],
+   "target": [
+    1120,
+    52,
+    815
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 458,
+    "triangles": 602612,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "K_12-30_newfoundland_full.jpg",
+   "id": "K",
+   "label": "Page K: the Glasshouse at dusk over Stillwater (the shore, no trees between)",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "12:30",
+   "date": "2026-06-21",
+   "eye": [
+    994,
+    57,
+    770
+   ],
+   "target": [
+    1120,
+    52,
+    815
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 457,
+    "triangles": 562010,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "porch_10-00_newfoundland_lite.jpg",
+   "id": "porch",
+   "label": "Porch: the Glasshouse stair's foot landing, south over the Green to the Old Oak",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "10:00",
+   "date": "2026-06-21",
+   "eye": [
+    1007,
+    23.7,
+    953
+   ],
+   "target": [
+    1110,
+    26,
+    1150
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 329,
+    "triangles": 83783,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "porch_22-30_newfoundland_lite.jpg",
+   "id": "porch",
+   "label": "Porch: the Glasshouse stair's foot landing, south over the Green to the Old Oak",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1007,
+    23.7,
+    953
+   ],
+   "target": [
+    1110,
+    26,
+    1150
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 335,
+    "triangles": 114358,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "hero_12-00_newfoundland_lite.jpg",
+   "id": "hero",
+   "label": "The Old Oak over the meadow, the sea behind",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "12:00",
+   "date": "2026-06-21",
+   "eye": [
+    1090,
+    20.2,
+    1082
+   ],
+   "target": [
+    1126,
+    27,
+    1170
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 216,
+    "triangles": 70104,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  }
+ ],
+ "errors": []
+}
