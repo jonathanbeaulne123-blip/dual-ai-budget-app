@@ -64,9 +64,17 @@ describe('Horizon threshold offers (RIDE §10.2, 02-movers rule 1)', () => {
       const pairs = thresholdPairs(t);
       expect(pairs.length, t.id).toBeGreaterThan(0);
       for (const p of pairs) {
-        const sides = [p.from, p.to].filter(s => !isModeId(s) && !['wheels', 'boat', 'cable'].includes(s));
+        // The Water's Way (PR 2 land, D-WW56): the drag lift's two station thresholds name 'lift' now and its ride comes with
+        // PR 5; until a 'lift' mode is registered they offer nothing (proved below), so 'lift' is the one named placeholder.
+        const sides = [p.from, p.to].filter(s => !isModeId(s) && !['wheels', 'boat', 'cable', 'lift'].includes(s));
         expect(sides, `${t.id} ${p.from}→${p.to}`).toEqual([]);
       }
+    }
+  });
+  it('offers nothing at the drag lift\'s stations until its ride exists (PR 5)', () => {
+    for (const id of ['glacierLiftFoot', 'glacierLiftHead']) {
+      expect(world.thresholds.some(t => t.id === id), id).toBe(true);
+      for (const mode of ['feet', 'board', 'bicycle'] as const) expect(offersAt(world, at(id), mode).filter(o => o.thresholdId === id), `${id} on ${mode}`).toEqual([]);
     }
   });
 });
