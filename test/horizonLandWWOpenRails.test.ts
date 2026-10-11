@@ -47,12 +47,20 @@ describe('one open rail, one sight rule', () => {
 type Geo = ReturnType<typeof createHorizonGeography>;
 let solids: StructureSolid[] = [], geo: Geo, extent: { w: number; h: number }, deps: MoverDeps, beds: BedCut[] = [];
 const ab = (b: Buffer) => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer;
-beforeAll(() => {
+// The merged bake is large: yield between the heavy steps so the vitest worker's RPC heartbeat (onTaskUpdate) is never
+// starved on a busy CI runner (an unhandled 'Timeout calling onTaskUpdate' failed the quick gate with every test green).
+const breathe = () => new Promise<void>(r => setTimeout(r, 0));
+beforeAll(async () => {
   const world = parseHorizonDefinition(ab(readFileSync('public/horizon/world/horizon-geo-1.json.gz'))), field = decodeTerrainAsset(ab(readFileSync('public/horizon/terrain/horizon-geo-1.bin')), 'full');
+  await breathe();
   geo = createHorizonGeography(field, { ...world.collision, solids: world.geometry.solids, diagnostics: world.diagnostics ?? [] } as never);
+  await breathe();
   geo.addDynamic(createMountainV2Region({ walkingJoinSolids: world.geometry.solids, horizonGround: (x, z) => sampleTerrain(field, x, z), yield: terraceBedExclusion(world.collision.beds), exclude: mouthExclusion(world.collision.mouths), terrainStep: field.step }).provider);
+  await breathe();
   solids = world.geometry.solids.map(q => ({ ...q, id: (q as { sourceId?: string }).sourceId ?? q.id.split('@')[0]! })) as StructureSolid[];
+  await breathe();
   extent = world.extent; beds = world.collision.beds as BedCut[];
+  await breathe();
   deps = { world, geography: geo, manifest: M, reducedMotion: false, calm: false, tier: 'full' } as MoverDeps;
 }, 240_000);
 

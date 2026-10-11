@@ -77,11 +77,18 @@ describe('the Greenway definition (MANIFEST profiles.greenway, structures.greenw
 interface Baked { field: TerrainField; solids: StructureSolid[]; beds: BedCut[]; waters: WaterCut[]; json: Record<string, any>; world: ReturnType<typeof parseHorizonDefinition>; geo: ReturnType<typeof createHorizonGeography>; deps: MoverDeps }
 let W: Baked;
 const ab = (b: Buffer) => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer;
-beforeAll(() => {
+// The merged bake is large: yield between the heavy steps so the vitest worker's RPC heartbeat (onTaskUpdate) is never
+// starved on a busy CI runner (an unhandled 'Timeout calling onTaskUpdate' failed the quick gate with every test green).
+const breathe = () => new Promise<void>(r => setTimeout(r, 0));
+beforeAll(async () => {
   const world = parseHorizonDefinition(ab(readFileSync('public/horizon/world/horizon-geo-1.json.gz'))), field = decodeTerrainAsset(ab(readFileSync('public/horizon/terrain/horizon-geo-1.bin')), 'full');
+  await breathe();
   const geo = createHorizonGeography(field, { ...world.collision, solids: world.geometry.solids, diagnostics: world.diagnostics ?? [] } as never);
+  await breathe();
   geo.addDynamic(createMountainV2Region({ walkingJoinSolids: world.geometry.solids, horizonGround: (x, z) => sampleTerrain(field, x, z), yield: terraceBedExclusion(world.collision.beds), exclude: mouthExclusion(world.collision.mouths), terrainStep: field.step }).provider);
+  await breathe();
   const solids = world.geometry.solids.map(q => ({ ...q, id: (q as { sourceId?: string }).sourceId ?? q.id.split('@')[0]! })) as StructureSolid[];
+  await breathe();
   W = { field, solids, beds: world.collision.beds as BedCut[], waters: world.collision.waters as WaterCut[], json: world as unknown as Record<string, any>, world, geo, deps: { world, geography: geo, manifest: M, reducedMotion: false, calm: false, tier: 'full' } as MoverDeps };
 }, 180_000);
 const of = (prefix: string) => W.solids.filter(s => s.id === prefix || s.id.startsWith(`${prefix}.`));

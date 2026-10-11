@@ -2,7 +2,7 @@
 // The Bight lookout spur, ramp and raised deck; courtyard B's battered terrace; the windsock, the strip's clearances and the
 // elevator's side clearance; the stargazing pad; the Wash Arch over S2 and the hoodoo footings; the Bight Shore batter.
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import type { BedCut, LandCuts, StructureSolid, TerrainField, XY } from '../src/harbour/horizon/land/interfaces';
 import { decodeTerrainAsset } from '../src/harbour/horizon/land/terrain/asset';
 import { baseHeight } from '../src/harbour/horizon/land/terrain';
@@ -30,6 +30,14 @@ const bake = () => {
   const geo = createHorizonGeography(field, { ...world.collision, solids: world.geometry.solids, diagnostics: [] } as LandCuts);
   return (baked = { world, field, solids, geo });
 };
+// One ray caster over the merged bake, built once with the bake before the tests and with yields between the heavy steps:
+// building it inside two tests (≈ 18 s each) starved vitest's worker RPC heartbeat on a busy runner (onTaskUpdate timeout).
+let rayCaster: ReturnType<typeof createRayCaster> | null = null;
+const caster = () => (rayCaster ??= createRayCaster(bake().field, { ...bake().world.collision, solids: bake().solids } as LandCuts));
+beforeAll(async () => {
+  const breathe = () => new Promise<void>(r => setTimeout(r, 0));
+  await breathe(); bake(); await breathe(); caster(); await breathe();
+}, 240_000);
 const bedOf = (id: string) => bake().world.collision.beds.find(b => b.id === id)!;
 const solidsOf = (id: string) => bake().solids.filter(s => s.id === id);
 const diag = (id: string) => bake().world.diagnostics.find(d => d.id === id)!;
@@ -88,7 +96,7 @@ describe('Scholars\' Edge · the Bight lookout (D-WW87)', () => {
     expect(diag('structures.bightLookout.deck').severity).toBe('info');
   }, 120_000);
   it('rails the ramp and the deck with open rails (1.05) that stop the walker and that sight sees through', () => {
-    const { geo, field, world } = bake(), rails = solidsOf('bightLookout.rails');
+    const { geo, world } = bake(), rails = solidsOf('bightLookout.rails');
     expect(rails.length).toBeGreaterThan(0); for (const r of rails) { expect(r.kind).toBe(OPEN_RAIL_KIND); expect(isOpenRail(r)).toBe(true); }   // land integration: one open-rail marker (kind openRail), not a per-solid flag
     let top = -Infinity; for (const r of rails) for (let i = 1; i < r.positions.length; i += 3) top = Math.max(top, r.positions[i]!); expect(top).toBeCloseTo(S.deck.top + OPEN_RAIL.height, 2);
     // Pushing south off the deck between two posts: the body is held on the deck.
@@ -96,7 +104,7 @@ describe('Scholars\' Edge · the Bight lookout (D-WW87)', () => {
     for (let i = 0; i < 240; i++) walkTick(state, body, { wishX: 0, wishZ: 1, run: false, speeds: { walk: 2.4, run: 5 } }, WALK_FIXED_DT, (dx, dz) => walkMove(ww, body, dx, dz, { swimming: false, grounded: true }));
     expect(body.z).toBeLessThan((S.deck.to as number[])[1]!); expect(body.y).toBeCloseTo(S.deck.top, 2);
     // A ray from the eye down through the south rail reaches what lies beyond it (the rail is not a hit).
-    const ray = createRayCaster(field, { ...world.collision, solids: bake().solids } as LandCuts), eye: [number, number, number] = [744, S.deck.top + 1.6, 511], dir: [number, number, number] = [0, -.58, 1], l = Math.hypot(...dir);
+    const ray = caster(), eye: [number, number, number] = [744, S.deck.top + 1.6, 511], dir: [number, number, number] = [0, -.58, 1], l = Math.hypot(...dir);
     const hit = ray.first(eye, dir.map(v => v / l) as [number, number, number], 60);
     expect(hit.kind === 'solid' ? hit.sourceId : hit.kind).not.toBe('bightLookout.rails');
   }, 120_000);
@@ -107,7 +115,7 @@ describe('Scholars\' Edge · the Bight lookout (D-WW87)', () => {
   it('puts the story\'s bightLookout eye on the built deck (deck + 1.6) and still sees Westwatch', () => {
     const e = storyEye('bightLookout'); expect(e.at).toEqual(S.eye); expect(e.y).toBeCloseTo(S.deck.top + 1.6, 6);
     const { geo } = bake(), floor = geo.surface(e.at[0], e.at[1], e.y!, .1); expect(floor?.y).toBeCloseTo(S.deck.top, 2);
-    const { field, world, solids } = bake(), m = measureStoryLink(createRayCaster(field, { ...world.collision, solids } as LandCuts), solids, 'bightLookout', 'westwatch');
+    const { solids } = bake(), m = measureStoryLink(caster(), solids, 'bightLookout', 'westwatch');
     expect(m.clearance).toBeGreaterThanOrEqual(.5);
   }, 120_000);
 });

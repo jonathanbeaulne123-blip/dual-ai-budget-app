@@ -9,7 +9,7 @@ import { GLASSHOUSE_RAMP, glasshouseRampPlan, glasshouseStairFlights } from '../
 import { bowlSurface, glideApproach } from '../src/harbour/horizon/land/structures/waterwaySouth.ts';
 import { createRayCaster, isOpenRail } from '../src/harbour/horizon/world/raycast.ts';
 import { solidBounds, terrainHeight } from '../src/harbour/horizon/world/geometry.ts';
-import { buildViews } from '../src/harbour/horizon/world/views.ts';
+import type { SketchbookPose } from '../src/harbour/horizon/world/definition.ts';
 import { HORIZON_MANIFEST as M } from '../src/harbour/horizon/world/manifest.ts';
 
 type World = { collision: { beds: BedCut[]; pads: LandCuts['pads']; mouths: LandCuts['mouths']; waters: LandCuts['waters'] }; geometry: { solids: StructureSolid[] }; diagnostics: { id: string; severity: string; measured?: number; required?: number; message: string }[]; lights: { id: string; kind: string; at: XYZ; head: XYZ }[]; corridors?: { id: string; lamps: { id: string; kind: string; at: XYZ; head: XYZ }[] }[] };
@@ -48,7 +48,9 @@ describe('Little Harbour: Town Weave 3B and page A (D-WW70, D-WW71)', () => {
     expect(nearest(t, bed('S3').points).d).toBeLessThan(4);
   });
   it('retargets page A to the glass dam and proves it from the porch pose', () => {
-    const a = buildViews(field, cuts).find(v => v.id === 'A')!;
+    // The bake's own proof (bake-entry runs buildViews over this same field and cuts; horizonViews re-proves every page from the
+    // bake). Re-running all twelve proofs here held the worker for ~27 s and, on a busy runner, starved vitest's RPC heartbeat.
+    const a = (world as unknown as { views: SketchbookPose[] }).views.find(v => v.id === 'A')!;
     expect([a.eye[0], a.eye[2], a.target[0], a.target[2], a.target[1], a.fovDegrees]).toEqual([1432, 1166, 1318, 560, 108, 50]);
     expect(a.proof!.subjects.map(s => [s.id, s.pass])).toEqual([['the glass dam', true], ['the Shoulder', true]]);
     expect(a.proof!.pass).toBe(true);
