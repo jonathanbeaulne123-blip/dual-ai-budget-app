@@ -13,7 +13,7 @@ import type { SketchbookPose } from '../src/harbour/horizon/world/definition.ts'
 import { HORIZON_MANIFEST as M } from '../src/harbour/horizon/world/manifest.ts';
 
 type World = { collision: { beds: BedCut[]; pads: LandCuts['pads']; mouths: LandCuts['mouths']; waters: LandCuts['waters'] }; geometry: { solids: StructureSolid[] }; diagnostics: { id: string; severity: string; measured?: number; required?: number; message: string }[]; lights: { id: string; kind: string; at: XYZ; head: XYZ }[]; corridors?: { id: string; lamps: { id: string; kind: string; at: XYZ; head: XYZ }[] }[] };
-let world: World, field: TerrainField, cuts: LandCuts;
+let world: World, field: TerrainField;
 const bed = (id: string) => world.collision.beds.find(b => b.id === id)!;
 const diag = (id: string) => world.diagnostics.find(d => d.id === id)!;
 const source = (s: StructureSolid) => (s as StructureSolid & { sourceId?: string }).sourceId ?? s.id.split('@')[0]!;
@@ -27,7 +27,6 @@ beforeAll(() => {
   world = JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8')) as World;
   const t = readFileSync('public/horizon/terrain/horizon-geo-1.bin');
   field = decodeTerrainAsset(t.buffer.slice(t.byteOffset, t.byteOffset + t.byteLength) as ArrayBuffer, 'full');
-  cuts = { beds: world.collision.beds, pads: world.collision.pads, mouths: world.collision.mouths, waters: world.collision.waters, solids: world.geometry.solids, diagnostics: [] };
 }, 120000);
 
 describe('Little Harbour: Town Weave 3B and page A (D-WW70, D-WW71)', () => {
