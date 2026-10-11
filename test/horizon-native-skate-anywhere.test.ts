@@ -32,7 +32,7 @@ const PLACES:[string,number,number][]=[
   ['Tideline (Mountain v2 town)',entry.x,entry.z],
   ['Little Harbour square',1455,1175],
   ['Little Harbour quay',1484,1295],
-  ['quayWest threshold',1453,1277],
+  ['quayWest threshold',1447.64,1271.08],   // D-WW70: the threshold moved with Town Weave (3B, 8 m inland at the quay)
   ['Long Sands',1185,1445],
   ['Landing campfire',1200,1430],
   ['Flats strip',420,685],

@@ -45,8 +45,9 @@ const PAD_UNIT_MAX = 2.2, PAD_EU = 17, OPEN_PAD_SCALE = 1.12;
 
 /** The road's named spans (MAP.md / ROAD.md §3) and the drawn road each one carries. */
 const SPANS: Record<string, string> = { quayBridge: "V01", bightBridge: "V01", highSpan: "VG", mountainRoadCanalBridge: "V03" };
-/** Original named cast plus the native bridges actually exported by the Mountain corridor. */
-const bridgeIds = () => [...new Set([...BRIDGE_CAST.map(b => b.id),
+/** Original named cast plus the native bridges actually exported by the Mountain corridor, plus The Water's Way's one new road
+ *  span: the Hollow Beck Bridge (D-WW55, PR 2 land: the second stream runs under Green Road on one 17 m span). */
+const bridgeIds = () => [...new Set([...BRIDGE_CAST.map(b => b.id), "hollowBeckBridge",
   ...(world.corridors ?? []).flatMap(c => (c.sourceBridges ?? []).map(b => b.id))])].sort();
 
 let world: LoadedWorld;
@@ -111,6 +112,7 @@ describe("extract: bridges and covered stretches", () => {
     // The wide decks carry their skate lane too; what passes under a deck is broken beneath it.
     expect(byId.get("bightBridge")!.lineIds).toEqual(["S2", "V01"]);
     expect(byId.get("quayBridge")!.lineIds).toEqual(["S3", "V01"]);
+    expect(byId.get("hollowBeckBridge")!.lineIds).toContain("VG");   // D-WW55: Green Road over the second stream
     expect(byId.get("bightBridge")!.underIds).toContain("FERRY");
     expect(byId.get("highSpan")!.underIds).toContain("S1");
     // The bridge cast now includes walking landmarks; the unnamed companion stays quiet.

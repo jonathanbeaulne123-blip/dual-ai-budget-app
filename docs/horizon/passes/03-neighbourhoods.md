@@ -248,7 +248,7 @@ Jonathan per wave: `TEST-PLAN.md` on his Mac and iPhone (walk the porch, stand i
 
 ## B7 — The Flats, with the Bight (wave 4)
 
-- **Sheet:** `STYLE §2.4`; the shore biome of `STYLE §3.2` for the Bight. **Hosts:** none. **Pages:** H, B; porch (the hangar's bench toward the Bight Bridge and Long Sands).
+- **Sheet:** `STYLE §2.4`; the shore biome of `STYLE §3.2` for the Bight. **Hosts:** none. **Pages:** H, B; porch (the hangar's bench: the take-offs, the strip and the Bight Bridge's arch over the rim, D-WW86).
 - **Thresholds:** `strip`, `balloon`, the Wash Run's start (`skateLineStarts` `[480,480]`), the Flats ferry pier, the Bight pier (`FERRY.piers.bight` `[560,890]`, reached by `walks.bightPier` from the Flats trail across Horizon Drive `[407,894]`, the Wash Run `[509,896]` and a plank footbridge over the Wash mouth), `bightShoreJetty`, S2's dismount after the Bight Bridge (`crossings`, `[660,1170]`), the Wash Run's wet-day closure marker (six hours after drizzle).
 - **Night order:** the windsock's red lamp → runway lamps in two rows, lit from the threshold end (pass 2 anchors) → the hangar door lamp → the balloon's burner glow when it rises. The darkest surface neighbourhood: the most stars.
 - **Life:** swallows over the strip (May–Aug); hawks circling in the thermals 12:00–18:00; sulphurs (Jun–Aug).

@@ -1,0 +1,374 @@
+{
+  "method": "Journey map renderer of this tree on two baked Journey lands; headless Chromium SwiftShader, not device evidence",
+  "before": {
+    "ref": "4104445",
+    "sha": "4104445"
+  },
+  "after": {
+    "sha": "0fb04cb",
+    "worktree": "HEAD + uncommitted"
+  },
+  "records": [
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/board-classic-full.jpg",
+      "mode": "board",
+      "theme": "classic",
+      "tier": "full"
+    },
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/board-taylor-full.jpg",
+      "mode": "board",
+      "theme": "taylor",
+      "tier": "full"
+    },
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/board-newfoundland-full.jpg",
+      "mode": "board",
+      "theme": "newfoundland",
+      "tier": "full"
+    },
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/board-classic-lite.jpg",
+      "mode": "board",
+      "theme": "classic",
+      "tier": "lite"
+    },
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/board-taylor-lite.jpg",
+      "mode": "board",
+      "theme": "taylor",
+      "tier": "lite"
+    },
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/board-newfoundland-lite.jpg",
+      "mode": "board",
+      "theme": "newfoundland",
+      "tier": "lite"
+    },
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/highlands-classic-full.jpg",
+      "mode": "land",
+      "area": {
+        "id": "highlands",
+        "at": [
+          1090,
+          440
+        ],
+        "span": 620,
+        "themes": [
+          "classic"
+        ]
+      },
+      "theme": "classic",
+      "tier": "full",
+      "stats": {
+        "before": {
+          "triangles": 19212,
+          "drawCalls": 10
+        },
+        "after": {
+          "triangles": 19230,
+          "drawCalls": 10
+        }
+      }
+    },
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/highlands-classic-lite.jpg",
+      "mode": "land",
+      "area": {
+        "id": "highlands",
+        "at": [
+          1090,
+          440
+        ],
+        "span": 620,
+        "themes": [
+          "classic"
+        ]
+      },
+      "theme": "classic",
+      "tier": "lite",
+      "stats": {
+        "before": {
+          "triangles": 13472,
+          "drawCalls": 11
+        },
+        "after": {
+          "triangles": 13490,
+          "drawCalls": 11
+        }
+      }
+    },
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/reach-greenway-classic-full.jpg",
+      "mode": "land",
+      "area": {
+        "id": "reach-greenway",
+        "at": [
+          1170,
+          1190
+        ],
+        "span": 520,
+        "themes": [
+          "classic"
+        ]
+      },
+      "theme": "classic",
+      "tier": "full",
+      "stats": {
+        "before": {
+          "triangles": 19212,
+          "drawCalls": 10
+        },
+        "after": {
+          "triangles": 19230,
+          "drawCalls": 10
+        }
+      }
+    },
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/reach-greenway-classic-lite.jpg",
+      "mode": "land",
+      "area": {
+        "id": "reach-greenway",
+        "at": [
+          1170,
+          1190
+        ],
+        "span": 520,
+        "themes": [
+          "classic"
+        ]
+      },
+      "theme": "classic",
+      "tier": "lite",
+      "stats": {
+        "before": {
+          "triangles": 13472,
+          "drawCalls": 11
+        },
+        "after": {
+          "triangles": 13490,
+          "drawCalls": 11
+        }
+      }
+    },
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/harbour-quay-classic-full.jpg",
+      "mode": "land",
+      "area": {
+        "id": "harbour-quay",
+        "at": [
+          1440,
+          1265
+        ],
+        "span": 320,
+        "themes": [
+          "classic"
+        ]
+      },
+      "theme": "classic",
+      "tier": "full",
+      "stats": {
+        "before": {
+          "triangles": 19212,
+          "drawCalls": 10
+        },
+        "after": {
+          "triangles": 19230,
+          "drawCalls": 10
+        }
+      }
+    },
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/harbour-quay-classic-lite.jpg",
+      "mode": "land",
+      "area": {
+        "id": "harbour-quay",
+        "at": [
+          1440,
+          1265
+        ],
+        "span": 320,
+        "themes": [
+          "classic"
+        ]
+      },
+      "theme": "classic",
+      "tier": "lite",
+      "stats": {
+        "before": {
+          "triangles": 13472,
+          "drawCalls": 11
+        },
+        "after": {
+          "triangles": 13490,
+          "drawCalls": 11
+        }
+      }
+    },
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/sands-pier-classic-full.jpg",
+      "mode": "land",
+      "area": {
+        "id": "sands-pier",
+        "at": [
+          1010,
+          1470
+        ],
+        "span": 320,
+        "themes": [
+          "classic"
+        ]
+      },
+      "theme": "classic",
+      "tier": "full",
+      "stats": {
+        "before": {
+          "triangles": 19212,
+          "drawCalls": 10
+        },
+        "after": {
+          "triangles": 19230,
+          "drawCalls": 10
+        }
+      }
+    },
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/sands-pier-classic-lite.jpg",
+      "mode": "land",
+      "area": {
+        "id": "sands-pier",
+        "at": [
+          1010,
+          1470
+        ],
+        "span": 320,
+        "themes": [
+          "classic"
+        ]
+      },
+      "theme": "classic",
+      "tier": "lite",
+      "stats": {
+        "before": {
+          "triangles": 13472,
+          "drawCalls": 11
+        },
+        "after": {
+          "triangles": 13490,
+          "drawCalls": 11
+        }
+      }
+    },
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/green-scarp-classic-full.jpg",
+      "mode": "land",
+      "area": {
+        "id": "green-scarp",
+        "at": [
+          1050,
+          915
+        ],
+        "span": 360,
+        "themes": [
+          "classic"
+        ]
+      },
+      "theme": "classic",
+      "tier": "full",
+      "stats": {
+        "before": {
+          "triangles": 19212,
+          "drawCalls": 10
+        },
+        "after": {
+          "triangles": 19230,
+          "drawCalls": 10
+        }
+      }
+    },
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/green-scarp-classic-lite.jpg",
+      "mode": "land",
+      "area": {
+        "id": "green-scarp",
+        "at": [
+          1050,
+          915
+        ],
+        "span": 360,
+        "themes": [
+          "classic"
+        ]
+      },
+      "theme": "classic",
+      "tier": "lite",
+      "stats": {
+        "before": {
+          "triangles": 13472,
+          "drawCalls": 11
+        },
+        "after": {
+          "triangles": 13490,
+          "drawCalls": 11
+        }
+      }
+    },
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/west-scholars-flats-bight-classic-full.jpg",
+      "mode": "land",
+      "area": {
+        "id": "west-scholars-flats-bight",
+        "at": [
+          640,
+          760
+        ],
+        "span": 780,
+        "themes": [
+          "classic"
+        ]
+      },
+      "theme": "classic",
+      "tier": "full",
+      "stats": {
+        "before": {
+          "triangles": 19212,
+          "drawCalls": 10
+        },
+        "after": {
+          "triangles": 19230,
+          "drawCalls": 10
+        }
+      }
+    },
+    {
+      "file": "docs/horizon/evidence/waters-way-land/journey/west-scholars-flats-bight-classic-lite.jpg",
+      "mode": "land",
+      "area": {
+        "id": "west-scholars-flats-bight",
+        "at": [
+          640,
+          760
+        ],
+        "span": 780,
+        "themes": [
+          "classic"
+        ]
+      },
+      "theme": "classic",
+      "tier": "lite",
+      "stats": {
+        "before": {
+          "triangles": 13472,
+          "drawCalls": 11
+        },
+        "after": {
+          "triangles": 13490,
+          "drawCalls": 11
+        }
+      }
+    }
+  ],
+  "errors": []
+}

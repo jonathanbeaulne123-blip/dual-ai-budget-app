@@ -140,7 +140,8 @@ describe('Horizon manifest v2.0',()=>{
     expect(manifest.crossings.some(r=>r.a==='jetty.bightPier'&&r.b==='FERRY'&&JSON.stringify(r.at)==='[560,890]'&&r.resolution==='threshold')).toBe(true);
     const D=m.views.find((v:{id:string})=>v.id==='D');expect(D.subjects).toEqual(['surf','the zipline landing']);expect(D.deferred.some((x:string)=>x.startsWith('the Lamp (Pass 2b'))).toBe(true);
     expect(m.hosts.find((h:{id:string})=>h.id==='bank')).toMatchObject({footprint_m:[20,18],xy:[1443,1125],v2_0_footprint_m:[26,18]});
-    expect(m.views.find((v:{id:string})=>v.id==='H').portrait.xy).toEqual([428,760]);expect(m.walks.lakerim).toMatchObject({v2_1_surface_m:5.2,v2_1_shoulder_m:1.2});expect(m.walks.lakerim.surface_m).toBeUndefined();
+    // The Water's Way (D-WW86) re-posed page H; the v2.1 portrait eye is kept as its history (`ww_previous`).
+    expect(m.views.find((v:{id:string})=>v.id==='H').ww_previous.portrait.xy).toEqual([428,760]);expect(m.views.find((v:{id:string})=>v.id==='H').portrait.xy).toEqual([452,890]);expect(m.walks.lakerim).toMatchObject({v2_1_surface_m:5.2,v2_1_shoulder_m:1.2});expect(m.walks.lakerim.surface_m).toBeUndefined();
     expect(m.structures.bightSpurTrestle).toMatchObject({v2_3_to:[886.7,916],v2_3_length_m:56,v2_0_to:[891.6,906]});   // v2.4 extends it again (below)
   });
   it.each(['n/a','bridge',''])('rejects unresolved crossing resolution %j on load',resolution=>{
@@ -177,7 +178,8 @@ describe('Horizon manifest v2.2: main\'s v1.7 sky data on the v2.1 land',()=>{
     for(const key of ['green','reachMeadow','sands'] as const)expect(manifest.sky.landings[key].modes).toContain('parachute');
     expect(manifest.sky.landingModes.deep).toEqual(['glider']);
     // The Drop Zone follows the green landing onto the v2.1 land ([1040,1065] was the v1.6 green landing).
-    expect(manifest.sky.dropZone.xy).toEqual([1028,1112]);expect((manifest.sky.dropZone as unknown as {v1_7_xy:number[]}).v1_7_xy).toEqual([1040,1065]);
+    // D-WW77 (The Water's Way, RULINGS 1): the target 10 m ESE of the v2.1 [1028,1112], its field edge clear of the Year Walk.
+    expect(manifest.sky.dropZone.xy).toEqual([1037.2,1115.8]);expect((manifest.sky.dropZone as unknown as {v2_7_xy:number[]}).v2_7_xy).toEqual([1028,1112]);expect((manifest.sky.dropZone as unknown as {v1_7_xy:number[]}).v1_7_xy).toEqual([1040,1065]);
     // Stage A v1.7's target stands (96.0 s measured on candidate 5 from the lookout launch); D34's [70,110] is recorded beside it.
     expect(manifest.journeys.targets_s['crown→lamp by glider']).toEqual([85,120]);
     expect(manifest.journeys.targets_s.decisions['crown→lamp by glider']).toContain("D34 applied pending Jonathan's confirmation");
@@ -276,11 +278,13 @@ describe('Horizon manifest v2.3: Stage A Wave 7 (W7-A)',()=>{
 describe('Horizon manifest v2.4: Stage A Wave 7 (integrator 4)',()=>{
   const m=manifest as unknown as Record<string,any>,view=(id:string)=>m.views.find((v:{id:string})=>v.id===id);
   it('gives D, E (on the Crown launch deck), G, H, I, J and L a Walk ground point',()=>{
-    expect(Object.fromEntries('DEGHIJL'.split('').map(id=>[id,view(id).ground]))).toEqual({D:{xy:[1181,1401],h:3},E:{xy:[1306,482],h:170},G:{xy:[1300,440],h:40.6},H:{xy:[440,760],h:38},I:{xy:[1284.8,1215],h:9.5},J:{xy:[1607.3,690.9],h:48.5},L:{xy:[1477,1289],h:3}});
+    // D-WW19 (The Water's Way): page I stands on the boardwalk's north end, its ground the deck (was the Reach walk, v3_0).
+    expect(Object.fromEntries('DEGHIJL'.split('').map(id=>[id,view(id).ground]))).toEqual({D:{xy:[1181,1401],h:3},E:{xy:[1306,482],h:170},G:{xy:[1300,440],h:40.6},H:{xy:[440,760],h:38},I:{xy:[1247.5,1218],h:5},J:{xy:[1607.3,690.9],h:48.5},L:{xy:[1477,1289],h:3}});
   });
   it('D-D7: G looks up the skylight shaft; H is an aerial eye over the strip (eye 39.6 → 48)',()=>{
     expect(view('G')).toMatchObject({xy:[1320,404],target:[1320,380],target_h:110,subjects:['the skylight shaft']});expect(view('G').v2_3.xy).toEqual([1300,440]);
-    expect(view('H')).toMatchObject({eyeH:48,target_h:20,portrait:{eyeH:48,target_h:20}});expect(view('H').v2_3).toMatchObject({eyeH_measured:39.6,target_h:30});
+    // D-WW86 (The Water's Way) superseded the aerial pose; it stays as `ww_previous`, the new pose is up the strip from its south end.
+    expect(view('H').ww_previous).toMatchObject({eyeH:48,target_h:20,portrait:{eyeH:48,target_h:20}});expect(view('H')).toMatchObject({xy:[452,890],eyeH:58,target:[428,480],target_h:30,portrait:{eyeH:58,target_h:30}});expect(view('H').v2_3).toMatchObject({eyeH_measured:39.6,target_h:30});
   });
   it('moves the Reach meadow onto a clear field, re-seats gate 10, raises the quay finish and extends the spur trestle',()=>{
     expect(m.sky.landings.reachMeadow).toMatchObject({xy:[1195,1205],v2_3_xy:[1143,1167],r:40});

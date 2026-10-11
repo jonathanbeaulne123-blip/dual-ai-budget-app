@@ -3,10 +3,13 @@ import { bed } from '../beds/profiles';
 import type { HeightQuery, LandCuts, StructureSolid, XYZ } from '../interfaces';
 import { box, districtAt, mix, prism, slab, solid } from '../structures/mesh';
 import { pier } from '../structures/foundations';
+import { OPEN_RAIL_KIND, openRail } from '../structures/openRail';
 import { BRIDGE_CAST } from './catalog';
 import type { BridgeDefinition } from './types';
 
 const clear=(s:StructureSolid|undefined)=>{if(s){s.positions=[];s.indices=[];}};
+/** The Water's Way (D-WW20): the meeting bays that are Reach lookouts (Spring Bay, Harbour Bell Landing) take the open rail. */
+export const OPEN_BAYS:ReadonlySet<string>=new Set(['reachBoardwalk','quayBridge']);
 /** Architectural members replace the generic support kit. Deck axes/grades and their route ownership stay intact. */
 export function buildBridgeLandmarks(cuts:LandCuts,ground:HeightQuery):void {
   cuts.bridges=[];
@@ -100,14 +103,18 @@ export function buildBridgeLandmarks(cuts:LandCuts,ground:HeightQuery):void {
     if(!meetingBed){
       // A side bay follows the carried grade so its entire entrance meets the deck.
       // Its connector opens the existing delayed rail run, using the ordinary junction rule.
-      const floor=make('meetingDeck','bridge','boardwalk','deck'),rail=make('meetingRail','handrail','metal','rail'),legs=make('meetingSupports','beam','metal');
+      // The Water's Way (D-WW18, reach LAND-ASKS R2): Spring Bay (the boardwalk's bay) and Harbour Bell Landing (the drawbridge's
+      // bay) are lookouts: their rail is the open timber rail (posts and bars, 1.05) on the same boundary, seen through by the
+      // ray caster (openRail.ts isOpenRail). Every other meeting bay keeps its solid handrail.
+      const openBay=OPEN_BAYS.has(c.id);
+      const floor=make('meetingDeck','bridge','boardwalk','deck'),rail=openBay?make('meetingRail',OPEN_RAIL_KIND,'timber','rail'):make('meetingRail','handrail','metal','rail'),legs=make('meetingSupports','beam','metal');
       const Q=(s:number,o:number):XYZ=>{const p=P(s,meetingSide*o),blend=Math.max(0,Math.min(1,(o-(W/2-.1))/.9));return[p[0],mix(p[1],meetingAt[1],blend),p[2]];};
       // The inner 0.9 m blends the route grade into a flat 3 m standing bay.
       for(let s=ms-2.5;s<ms+2.5;s+=.25)for(const [a,b] of [[W/2-.1,W/2+.8],[W/2+.8,W/2+5.3]]){
         const corners=[Q(s,a!),Q(s,b!),Q(s+.25,b!),Q(s+.25,a!)];if(meetingSide<0)corners.reverse();prism(floor,corners,corners.map(p=>p[1]-.6));
       }
       const boundary=[Q(ms-2.5,W/2-.05),...Array.from({length:21},(_,i)=>Q(ms-2.5+i*.25,W/2+5.25)),Q(ms+2.5,W/2-.05)];
-      for(let k=1;k<boundary.length;k++){const a=boundary[k-1]!,b=boundary[k]!;slab(rail,a,b,.16,1.05,0,1.05);}
+      if(openBay)openRail(rail,boundary);else for(let k=1;k<boundary.length;k++){const a=boundary[k-1]!,b=boundary[k]!;slab(rail,a,b,.16,1.05,0,1.05);}
       for(const s of [ms-1.6,ms+1.6]){const a=Q(s,W/2-1),b=Q(s,W/2+5.3);slab(legs,[a[0],a[1]-.55,a[2]],[b[0],b[1]-.55,b[2]],.35,.3);}
       if(c.family==='covered'){
         const roof=make('meetingRoof','roof','timber','roof'),posts=make('meetingPosts','beam');

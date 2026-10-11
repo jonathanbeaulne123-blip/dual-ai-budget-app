@@ -26,10 +26,15 @@ export const V3_REACHES: readonly Reach[] = [
   // The Rillcut: the Lower Tarn's outlet across the hamlet's lower field to the west wall's lip.
   // The Long Beck: the Rillcut splits on a gravel bar at [1082,456]; the south branch runs down the hamlet's lower field in a cut
   // channel (the plateau stands 100.6–102 beside it) to the west wall's lip at the Long Cut, the island's longest fall.
-  { id: 'water.v3.longBeck', kind: 'brook', width: 2.4, depth: .6, bank: .5, note: 'the Long Beck: the Rillcut\'s south branch to Long Falls', pts: [[1082, 456, 99.2], [1088, 476, 99], [1093, 500, 98.6], [1095, 526, 98.2], [1097, 550, 97.8], [1098.5, 564, 97.5]] },
-  { id: 'water.v3.rillcut', kind: 'brook', width: 3, depth: .7, bank: .5, note: 'the Rillcut: the Lower Tarn\'s outlet to Rillcut Falls', pts: [[1103, 406, 102.2], [1092, 428, 100.6], [1082, 456, 99.2], [1076, 484, 98], [1072, 505, 97.2]] },
+  // V3.1 (D-WW53): the Rillcut runs down the hamlet shelf's east edge and splits at [1094,466]; Bench Hamlet's shelf lies west of it.
+  { id: 'water.v3.longBeck', kind: 'brook', width: 2.4, depth: .6, bank: .5, note: 'the Long Beck: the Rillcut\'s south branch to Long Falls', pts: [[1094, 466, 99.2], [1095, 490, 98.9], [1095, 514, 98.5], [1096, 538, 98.1], [1097.5, 556, 97.7], [1098.5, 564, 97.5]] },
+  { id: 'water.v3.rillcut', kind: 'brook', width: 3, depth: .7, bank: .5, note: 'the Rillcut: the Lower Tarn\'s outlet down the hamlet shelf\'s east edge to Rillcut Falls', pts: [[1103, 406, 102.2], [1103.5, 428, 101.2], [1101, 450, 100.2], [1094, 466, 99.2], [1083, 486, 98.1], [1072, 505, 97.2]] },
   // Rillcut Falls' plunge pool drains under the Year Walk into the Hollow and on to the brook.
-  { id: 'water.v3.hollowRill', kind: 'brook', width: 2.6, depth: .6, bank: .5, note: 'the Hollow Rill: from the Rillcut pool west under the Year Walk into the Hollow Tarn', pts: [[1050, 520, 45.9], [1032, 516, 45.4], [1012, 510, 44.8], [988, 506, 44.3]] },
+  { id: 'water.v3.hollowRill', kind: 'brook', width: 2.6, depth: .6, bank: .5, note: 'the Hollow Rill: from the Rillcut pool west under the Year Walk into the Hollow Tarn', pts: [[1050, 520, 45.9], [1032, 516, 45.4], [1012, 510, 44.8], [988, 506, 40.8]] },
+  // V3.1 (D-WW55): the second stream. The Hollow Tarn no longer soaks away: the Hollow Beck leaves its west end under Green Road and
+  // the Year Walk's Hollow lanes (on spans, each ≥ 1.25 over the water) and joins Orchard Brook, so the Rillcut's water runs on
+  // through the Hollow to the Bight.
+  { id: 'water.v3.hollowBeck', kind: 'brook', width: 2.6, depth: .6, bank: .5, note: 'the Hollow Beck: the Hollow Tarn\'s outlet west across the Hollow into Orchard Brook (the second stream)', pts: [[966, 509, 40.2], [955, 513, 39.9], [940, 517, 39.5], [925, 520, 39.1], [910, 522, 38.6], [897, 523, 38], [888.5, 523.5, 37.4]] },
   // Spur Tarn's two outlets: south over the Veil lip, west through the Spur cut.
   { id: 'water.v3.veilOutlet', kind: 'brook', width: 3.2, depth: .5, bank: .4, note: 'Spur Tarn to the Veil lip', pts: [[1112, 664, 95], [1111, 680, 94.7], [1111, 696, 94.3]] },
   { id: 'water.v3.spurSpill', kind: 'brook', width: 2.2, depth: .5, bank: .4, note: 'Spur Tarn\'s west spill to Spur Falls', pts: [[1102, 652, 94.9], [1096, 658, 94.4], [1089, 654, 93.6], [1085, 646, 92.3]] },
@@ -46,7 +51,7 @@ export const V3_BASINS: readonly Basin[] = [
   { id: 'water.v3.upperTarn', at: [1154, 381], radii: [11, 8], level: 105.6, depth: 3, bank: .6, note: 'the Upper Tarn' },
   { id: 'water.v3.lowerTarn', at: [1112, 400], radii: [10, 7.5], level: 102.4, depth: 3, bank: .6, note: 'the Lower Tarn' },
   { id: 'water.v3.rillcutPool', at: [1056, 519], radii: [6, 6], level: 46.2, depth: 2.6, bank: .5, note: 'Rillcut Falls\' plunge pool' },
-  { id: 'water.v3.hollowTarn', at: [975, 506], radii: [10, 7], level: 44, depth: 2.4, bank: .5, note: 'the Hollow Tarn: the Rillcut\'s water gathers in the Hollow\'s north bowl and soaks away' },
+  { id: 'water.v3.hollowTarn', at: [975, 506], radii: [10, 7], level: 40.5, depth: 2.2, bank: .5, note: 'the Hollow Tarn: the Rillcut\'s water gathers in the Hollow\'s north bowl and runs on west by the Hollow Beck' },
   { id: 'water.v3.spurTarn', at: [1112, 654], radii: [11, 8], level: 95.2, depth: 2.8, bank: .6, note: 'Spur Tarn on the spur crown' },
   { id: 'water.v3.longPool', at: [1083, 568], radii: [8, 6], level: 45.5, depth: 2.2, bank: .5, note: 'Long Falls\' plunge pool on the Long Cut\'s floor' },
   { id: 'water.v3.spurPool', at: [1069, 650], radii: [8, 6], level: 55.8, depth: 2.2, bank: .5, note: 'Spur Falls\' pool' },
@@ -64,10 +69,11 @@ export const V3_FALLS: readonly Fall[] = [
   { id: 'fall.stair.upper', label: 'Stair Falls', lip: [[1504, 647], [1502, 649], [1500, 651]], top: 92.4, foot: 78, outward: [-.7, .7], pool: 'water.v3.stairPool', note: 'the upper drop, off Split Wall\'s mouth' },
   { id: 'fall.stair.lower', label: 'Stair Falls', lip: [[1489, 663], [1487, 665], [1485, 667]], top: 78, foot: 62, outward: [-.7, .7], pool: 'water.v3.shielingPool', note: 'the lower drop, into Shieling Pool' },
 ];
-/** Which V3 water a reach or fall hands its water to (for the map and the no-orphan test). */
+/** Which V3 water a reach or fall hands its water to (for the map and the no-orphan test). Two leave the network: Veil Pool's
+ * outlet into Stillwater and, V3.1, the Hollow Beck into Orchard Brook (`water.brook`, land/water). */
 export const V3_FLOW: readonly (readonly [string, string])[] = [
   ['water.v3.glacierSprings', 'water.v3.crownRill'],  ['water.v3.crownRill', 'water.v3.upperTarn'], ['water.v3.upperTarn', 'water.v3.tarnLink'],
-  ['water.v3.tarnLink', 'water.v3.lowerTarn'], ['water.v3.lowerTarn', 'water.v3.rillcut'], ['water.v3.rillcut', 'fall.rillcut'], ['fall.rillcut', 'water.v3.rillcutPool'], ['water.v3.rillcutPool', 'water.v3.hollowRill'], ['water.v3.hollowRill', 'water.v3.hollowTarn'],
+  ['water.v3.tarnLink', 'water.v3.lowerTarn'], ['water.v3.lowerTarn', 'water.v3.rillcut'], ['water.v3.rillcut', 'fall.rillcut'], ['fall.rillcut', 'water.v3.rillcutPool'], ['water.v3.rillcutPool', 'water.v3.hollowRill'], ['water.v3.hollowRill', 'water.v3.hollowTarn'], ['water.v3.hollowTarn', 'water.v3.hollowBeck'], ['water.v3.hollowBeck', 'water.brook'],
   ['water.v3.spurTarn', 'water.v3.veilOutlet'], ['water.v3.veilOutlet', 'fall.veil'], ['fall.veil', 'water.v3.veilPool'], ['water.v3.veilPool', 'water.v3.veilOut'], ['water.v3.veilOut', 'water.stillwater'],
   ['water.v3.rillcut', 'water.v3.longBeck'], ['water.v3.longBeck', 'fall.long'], ['fall.long', 'water.v3.longPool'],
   ['water.v3.spurTarn', 'water.v3.spurSpill'], ['water.v3.spurSpill', 'fall.spur'], ['fall.spur', 'water.v3.spurPool'],

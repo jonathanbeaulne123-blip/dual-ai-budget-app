@@ -63,7 +63,9 @@ describe('Mountain V3 · the Highlands and the Falls (D-M11)', () => {
   });
 
   it('is one water system: every reach and fall flows to a named body, falls drop from lip to pool, and no water reads money', () => {
-    const ids = new Set([...V3_REACHES.map(r => r.id), ...V3_BASINS.map(b => b.id), ...V3_FALLS.map(f => f.id), 'water.stillwater']);
+    // Two waters outside the network receive it: Stillwater (by Veil Pool's outlet) and, V3.1 (D-WW55, the second stream), Orchard
+    // Brook (by the Hollow Beck from the Hollow Tarn).
+    const ids = new Set([...V3_REACHES.map(r => r.id), ...V3_BASINS.map(b => b.id), ...V3_FALLS.map(f => f.id), 'water.stillwater', 'water.brook']);
     for (const [a, b] of V3_FLOW) { expect(ids.has(a), a).toBe(true); expect(ids.has(b), b).toBe(true); }
     const feeds = new Set(V3_FLOW.map(([a]) => a)), fed = new Set([...V3_FLOW.map(([, b]) => b), ...V3_SEEPS.map(s => s.to)]);
     // Every reach hands its water on; every basin but the springs, the tarns' seep source and the terminal meres is fed by something.

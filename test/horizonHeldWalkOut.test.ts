@@ -65,7 +65,9 @@ describe('Codex P2 · Look → Walk with the page chunk delayed 5 s: held, never
     expect(wrongPlace.full).toContain('J'); expect(wrongPlace.lite).toContain('J');
     // Measured on the committed bake (candidate 6): pages whose first Walk step had no floor within 5 cm without their chunk,
     // and pages whose walk-out landed elsewhere (or at another height) on the partial collision.
-    expect(wouldFall).toEqual({ full: ['A', 'B', 'C', 'E', 'F', 'G', 'H', 'L'], lite: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L'] });
+    // The Water's Way (PR 2 land, D-WW64): page I moved to the Reach boardwalk's north end (eye [1250, 5.7, 1184]); on lite its
+    // first Walk step now finds a floor within 5 cm without the delayed chunk, so I leaves lite's would-fall list (was …, 'I', …).
+    expect(wouldFall).toEqual({ full: ['A', 'B', 'C', 'E', 'F', 'G', 'H', 'L'], lite: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'K', 'L'] });
     expect(wrongPlace).toEqual({ full: ['A', 'B', 'C', 'E', 'F', 'G', 'H', 'I', 'J', 'L'], lite: ['A', 'B', 'C', 'E', 'F', 'G', 'H', 'I', 'J', 'L'] });
   });
 });

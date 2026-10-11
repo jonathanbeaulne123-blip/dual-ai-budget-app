@@ -1,3 +1,4 @@
+import { bightBatterAt } from './bightBatter';
 import { HORIZON_MANIFEST as M, requireScaleFactor } from '../../world/manifest';
 import type { BedCut, LandCuts, PadCut, TerrainField, WaterCut, XY, XYZ } from '../interfaces';
 import { coastCharacter, signedShoreDistance } from '../coast';
@@ -6,6 +7,7 @@ import { clamp, contains, linePoint, mix, polygonCentre, polygonDistance, polyli
 import { mountainV2Height, mountainV2Rule } from '../mountainV2/ground';
 import { mountainV3Height, v3Paint } from '../mountainV3/landform';
 import { oreRoadGroundCeiling } from '../underground/oreRoad';
+import { glasshouseScarp } from './glasshouseScarp';
 
 export const GEOGRAPHY_REVISION = 'horizon-geo-1' as const;
 /** The one walkable limit: MANIFEST `profiles.walkable.slope_max_deg` (40°, Mountain v2's body
@@ -128,6 +130,26 @@ const SHOULDER_RINGED = new Set(['hollow', 'stillwater', 'crown']);
 export function baseHeight(x: number, z: number): number {
   const m = getModel(), s = m.scale, shore = signedShoreDistance(x, z);
   if (shore < 0) return bightAbutment(x, z, outsideHeight(x, z, shore, s));
+  // The Water's Way (L2b, D-WW73): the Green's north scarp is a planted batter carrying the Glasshouse stair-and-ramp; it reads
+  // the ground before it on the terrace and the Green either side of the face.
+  const height = glasshouseScarp(x / s, z / s, landHeight(x, z, shore) / s, (qx, qz) => landHeight(qx * s, qz * s, signedShoreDistance(qx * s, qz * s)) / s) * s;
+  return coveStairBench(x, z, bightAbutment(x, z, spitKnollCut(x, z, applyWaters(x, z, height, m.water))));
+}
+/** Authored land before the named water and the late local edits (the scarp batter, the abutments, the cove bench). */
+function landHeight(x: number, z: number, shore: number): number {
+  const m = getModel(), s = m.scale;
+  if (shore < 0) return outsideHeight(x, z, shore, s);
+  let height = preV3Height(x, z);
+  // Mountain V3 (D-M11): the Highlands and the Falls reshape the ring round v2 (Glacier Peak, the benches, the gorges, the Veil);
+  // V3.1's strata read the local slope of V3's ground, so the layer samples the Horizon's ground before V3 beside the point.
+  height = mountainV3Height(x / s, z / s, height / s, (px, pz) => preV3Height(px * s, pz * s) / s) * s;
+  const character = coastCharacter(x, z), shoreWidth = character === 'southBeach' ? 44 * s : character === 'bight' ? 23 * s : 10 * s;
+  height = mix(0.14 * s, height, smooth(shore / shoreWidth));
+  return damWindow(x, z, notchHeight(x, z, height));
+}
+/** The Horizon's authored land up to and including the Mountain v2 rule (D-M1/D-M2), before Mountain V3 and the shore. */
+function preV3Height(x: number, z: number): number {
+  const m = getModel(), s = m.scale;
   let height = (9 + 28 * clamp((1150 - z / s) / 1000) + 10 * clamp((x / s - 1050) / 650)) * s;
   // landformRule: where polygons overlap or meet, the higher band wins and its 60 m
   // blend lies INSIDE the winner, so the lower landform keeps its band to the edge.
@@ -154,13 +176,7 @@ export function baseHeight(x: number, z: number): number {
   height = stillwaterSill(x, z, throatButtress(x, z, height));
   // Pass 5 (D-M1/D-M2): Mountain v2 stands on the Crown summit; inside its footprint its ground (or the Foot terrace, or the
   // apron to the Horizon's own ground) replaces the bands. North of v2's summit line the Crown's north face wins where higher.
-  height = mountainV2Height(x / s, z / s, height / s) * s;
-  // Mountain V3 (D-M11): the Highlands and the Falls reshape the ring round v2 (Glacier Peak, the benches, the gorges, the Veil).
-  height = mountainV3Height(x / s, z / s, height / s) * s;
-  const character = coastCharacter(x, z), shoreWidth = character === 'southBeach' ? 44 * s : character === 'bight' ? 23 * s : 10 * s;
-  height = mix(0.14 * s, height, smooth(shore / shoreWidth));
-  height = damWindow(x, z, notchHeight(x, z, height));
-  return coveStairBench(x, z, bightAbutment(x, z, spitKnollCut(x, z, applyWaters(x, z, height, m.water))));
+  return mountainV2Height(x / s, z / s, height / s) * s;
 }
 /**
  * D-A1 (MANIFEST v2.0 `structures.bightBridge.ends.abutments`): the Bight Bridge's west abutment is an embankment
@@ -424,6 +440,15 @@ function applyWaters(x: number, z: number, original: number, waters: WaterCut[],
       waterBounds.set(water, bounds);
     }
     if (x < bounds[0] - outer || z < bounds[1] - outer || x > bounds[2] + outer || z > bounds[3] + outer) continue;
+    if (water.scrape) {
+      // The Water's Way (D-WW23): a scraped marsh pool. Inside: the level less 0.03 at the edge growing to `depth` 3 m in (never
+      // deeper). Outside: raised only (a soft lip at level + 0.02 across the raster guard, faded over 2.5 m); never cut.
+      const { distance, level } = waterInfluence(water, x, z);
+      if (distance <= 0) { const bed = level - (WET_EDGE_DEPTH * s + (water.depth - WET_EDGE_DEPTH * s) * smooth(-distance / (3 * s))); h = bed; wetBedCeiling = Math.min(wetBedCeiling, bed); continue; }
+      const lip = level + .02 * s, fade = 2.5 * s;
+      if (distance <= rasterMargin) h = Math.max(h, lip); else if (distance <= rasterMargin + fade) h = Math.max(h, mix(lip, h, smooth((distance - rasterMargin) / fade)));
+      continue;
+    }
     const { distance, level, grade } = waterInfluence(water, x, z);
     if (distance > outer) continue;
     if (distance <= 0) {
@@ -469,12 +494,17 @@ function padDistance(p: PadCut, x: number, z: number): number {
   return Math.hypot(Math.max(0, a), Math.max(0, b)) + Math.min(0, Math.max(a, b));
 }
 interface PreparedSegment { bed: BedCut; a: XYZ; b: XYZ; arc: number; length: number; total: number }
-interface PreparedBeds { bins: Map<string, PreparedSegment[]>; cell: number }
+interface PreparedBeds { bins: Map<string, PreparedSegment[]>; cell: number; key: readonly unknown[] }
+/** Prepared bins per beds array and raster margin. The Water's Way (PR 2 land integration): the cache is keyed on the array AND
+ * validated against what the bins were built from (each bed, its points array, their count and the reach inputs), so a builder
+ * that samples the ground mid-build (the marsh pools, D-WW67) and then pushes or replaces beds never reads a stale preparation. */
 const preparedBedCache = new WeakMap<BedCut[], Map<number, PreparedBeds>>();
+const bedsKey = (beds: readonly BedCut[]): unknown[] => { const k: unknown[] = []; for (const b of beds) k.push(b, b.points, b.points.length, b.width, b.shoulder, b.blend, b.terrainCut, b.kind); return k; };
+const sameKey = (a: readonly unknown[], b: readonly unknown[]): boolean => a.length === b.length && a.every((v, i) => v === b[i]);
 const cellKey = (x: number, z: number, cell: number): string => `${Math.floor(x / cell)},${Math.floor(z / cell)}`;
 const cutsTerrain = (bed: BedCut) => bed.terrainCut && !['cave', 'rail', 'cable'].includes(bed.kind);
 function prepareBeds(beds: BedCut[], rasterMargin = 0): PreparedBeds {
-  const cache = preparedBedCache.get(beds), cached = cache?.get(rasterMargin); if (cached) return cached;
+  const key = bedsKey(beds), cache = preparedBedCache.get(beds), cached = cache?.get(rasterMargin); if (cached && sameKey(cached.key, key)) return cached;
   const cell = 64 * getModel().scale, bins = new Map<string, PreparedSegment[]>();
   // Every potentially influencing segment is inserted; order remains bed order,
   // then segment order. Closed routes spanning the island no longer scan globally.
@@ -492,7 +522,7 @@ function prepareBeds(beds: BedCut[], rasterMargin = 0): PreparedBeds {
       }
     }
   }
-  const prepared = { bins, cell }, next = cache ?? new Map<number, PreparedBeds>();
+  const prepared = { bins, cell, key }, next = cache ?? new Map<number, PreparedBeds>();
   next.set(rasterMargin, prepared); preparedBedCache.set(beds, next); return prepared;
 }
 /** Ground that no bed or pad may raise: the sea floor outside the surveyed
@@ -648,14 +678,19 @@ function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<
   height = sightWindows(x, z, height, bedded.edgeGap);
   height = throatJambs(x, z, height, cuts, bedded.edgeGap);
   const ground = height, s = getModel().scale;
+  const battered: PadCut[] = [];
   for (const p of cuts.pads) {
     // A deck pad (PadCut.deck) is carried by its structure or sits flush on graded beds: never earth.
     if (p.underground || p.deck) continue;
     const distance = padDistance(p, x, z);
+    // The Water's Way (D-WW88): a battered pad is level over its footprint; its edges are batters (below), not a blend.
+    if (p.batter) { battered.push(p); if (distance <= 0) { height = p.centre[1]; surface = p.kind === 'reserve' ? 13 : 14; } continue; }
     if (distance > p.blend) continue;
     height = mix(height, p.centre[1], 1 - smooth(distance / Math.max(p.blend, 0.01)));
     if (distance <= 0) surface = p.kind === 'reserve' ? 13 : 14;
   }
+  // D-WW88: outside a battered pad the ground is held within its 1 : batter cone (cut and fill), never into the pad.
+  for (const p of battered) { const d = padDistance(p, x, z); if (d > 0) { const reach = d / p.batter!; height = clamp(height, p.centre[1] - reach, p.centre[1] + reach); } }
   // road (L1): a road stands on its embankment: the ground beside it is at least bedded.roadFloor (flush with the deck at the
   // paved edge, then falling 1 : 1.5), whatever a pad, another bed's blend or the natural ground would leave there (the Drive
   // stood 0.7–2.6 over the ground at the upper street and the Tideline park; its edges hung over the dunes by the culvert).
@@ -672,6 +707,10 @@ function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<
     height = Math.min(height, ground + fillCap, Math.max(ground, crownSummitHeight() - 1 * s));
     if (raiseForbidden(x, z)) height = ground;
   }
+  // D-WW89: the Bight Shore plots' lagoon faces are battered at 1 : 1.5 over the lagoon floor (an authored earthwork, raise only;
+  // land/terrain/bightBatter.ts), the plots filled to their level where the lagoon reached into them.
+  const bight = bightBatterAt(cuts.pads, baseHeight, x, z);
+  if (bight && bight.fill > height) height = bight.fill;
   // Mouths are topology masks read by terrainIndices(), not pits through a heightfield.
   // A cave's floor and ceiling remain independent surfaces under this continuous roof.
   height = applyWaters(x, z, height, cuts.waters.length ? cuts.waters : getModel().water, rasterMargin);

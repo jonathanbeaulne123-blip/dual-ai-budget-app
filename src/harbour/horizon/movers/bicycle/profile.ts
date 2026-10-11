@@ -1,6 +1,6 @@
 /**
  * The bicycle's bed-legality GroundProfile (RIDE §8.1, the bicycle column; D45): which beds a
- * bicycle wheel may use (roads, spurs, trails and pads, never skate lines or walks) and its
+ * bicycle wheel may use (roads, spurs, trails, pads and the Greenway's deck; never skate lines or walks) and its
  * contact footprint, grip and steer columns. Road-legality metadata tests and the Mountain
  * modes / bridge audits read it through the board kernel's contact layer.
  *
@@ -14,7 +14,7 @@ import {BOARD_PROFILE} from '../board/profile.ts';
 export const BICYCLE_PROFILE: GroundProfile = Object.freeze({
   ...BOARD_PROFILE,
   pop: false,
-  beds: Object.freeze(['road', 'trail', 'pad']),
+  beds: Object.freeze(['road', 'trail', 'pad', 'greenway']),
   contact: Object.freeze({wheelbase: 1.05, stepMax: 0.10, width: 0.5}),
   grip: Object.freeze({
     ...BOARD_PROFILE.grip,

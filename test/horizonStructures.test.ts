@@ -68,7 +68,9 @@ describe('Horizon structural solids',()=>{
     const field={revision:'horizon-geo-1' as const,width:2000,depth:1800,step:100,columns:21,rows:19,heights:new Float32Array(399).fill(6),surfaces:new Uint8Array(399)};
     expect(floorAt(field,cuts,c)).toBe(10);
     expect(prisms(find(cuts,'highSpan.overlook.supports')!).length).toBe(8);
-    expect(solidVerticalRangeAt(find(cuts,'highSpan.overlook.rails')!,c[0]+.3,c[1]-3.1)?.top).toBeCloseTo(11.05,5);
+    // D-WW18: the overlook's rail is an open rail (posts and bars, its top 1.05 over the deck), so a point probe can fall between
+    // posts; its height is the solid's top.
+    const rails=find(cuts,'highSpan.overlook.rails')!;expect(rails.kind).toBe('openRail');expect(bounds(rails).max[1]).toBeCloseTo(11.05,5);
   },120000);
   it('follows each road tunnel floor on its road and measures the Prow Tunnel rock cover',()=>{
     const cuts=cutsOnce();

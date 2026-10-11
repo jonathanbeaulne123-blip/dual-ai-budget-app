@@ -45,6 +45,8 @@ export function bedClass(bed: Pick<Bed, 'kind' | 'profile'>): string {
   if (bed.kind === 'skate' || bed.profile.startsWith('skate')) return 'skate';
   if (bed.kind === 'road' || bed.profile === 'road' || bed.profile === 'spur') return 'road';
   if (bed.kind === 'trail' || bed.profile === 'trail') return 'trail';
+  // The Water's Way (D-WW22): the Greenway's shared deck (profile greenway) answers to its own class: feet, bicycles and boards.
+  if (bed.profile === 'greenway') return 'greenway';
   return bed.kind ?? bed.profile;
 }
 

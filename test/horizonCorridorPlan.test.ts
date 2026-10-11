@@ -96,6 +96,9 @@ describe('the corridor plan (Track P) on the committed bake\'s corridor stations
         const near = [stationAt(id, w.s - 2), st, stationAt(id, w.s + 2)].map(q => (w.o >= 0 ? q.right : q.left));
         const sd = { ...sd0, paved: Math.max(...near.map(q => q.paved)) };
         if (st.median && Math.abs(w.o) < st.median.half) { expect(l.kind).toBe('roadLantern'); continue; }
+        // D-WW77 (The Water's Way, D-303): inside the Green's protected centre a lantern is the island lantern's 0.8 eu bollard on its
+        // own post spot (no arm, a small pool): STYLE rule 12 keeps everything there under 0.85.
+        if (l.kind === 'bollard') { expect(l.head[1] - l.at[1], l.id).toBeCloseTo(.8, 6); expect([l.head[0], l.head[2]]).toEqual([l.at[0], l.at[2]]); expect(Math.hypot(l.at[0] - 1040, l.at[2] - 1065), l.id).toBeLessThan(160); continue; }
         expect(Math.abs(w.o), l.id).toBeGreaterThan(sd.paved - (l.kind === 'tunnelLamp' ? 0 : 1e-6));
         expect(l.poolRadius).toBe(CORRIDOR.lampPoolRadius);
         expect(l.head[1] - l.at[1]).toBeGreaterThan(3);
@@ -129,6 +132,8 @@ describe('the corridor plan (Track P) on the committed bake\'s corridor stations
         if (!F.closed && k === lamps.length - 1) break;
         // Both lamps and the whole stretch between them inside one lit run (the tails beyond a run are meant to thin out).
         if (gap <= 0 || !inLit(a.s) || !inLit(b.s) || !inLit(a.s + gap / 2)) continue;
+        // D-WW77: the protected centre is marked by low bollards, not lit as a reach (STYLE rule 12 names Green Road).
+        if (a.l.kind === 'bollard' || b.l.kind === 'bollard') continue;
         // Named, reported exception (HANDOFF rough areas): the Quay Bridge's south approach, where the boathouse spur's mouth, a
         // crossing, S3's separated lane and the bridge abutment leave no legal lantern spot for ~16 eu.
         if (id === 'V01' && KNOWN_DARK.some(([p, q]) => a.s + gap / 2 >= p && a.s + gap / 2 <= q)) continue;

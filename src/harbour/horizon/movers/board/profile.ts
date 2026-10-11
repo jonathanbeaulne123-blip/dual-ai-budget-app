@@ -17,7 +17,8 @@ import {HORIZON_G} from '../../runtime/geography.ts';
 export const BOARD_PROFILE: GroundProfile = Object.freeze({
   g: HORIZON_G,   // one g for the walker, the ground kernel and the wings (RIDE §11 ask 7, D40)
   pop: true,
-  beds: Object.freeze(['skate', 'park', 'pad']),
+  // 'greenway': the Greenway's wheel lane (The Water's Way, D-WW22: feet, bicycles and boards; no cars).
+  beds: Object.freeze(['skate', 'park', 'pad', 'greenway']),
   contact: Object.freeze({wheelbase: 0.44, stepMax: 0.12, width: 0.31}),
   roll: Object.freeze({fast: 0.12, flow: 0.25, slow: 0.6, threshold: 1.8, skate: 0.03, offbed: 6.0}),
   drag: 0.0092,

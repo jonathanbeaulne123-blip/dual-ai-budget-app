@@ -46,7 +46,8 @@ export interface MouthMask {
   outline: XY[];
   floor: number;
   ceiling: number;
-  kind: 'portal' | 'skylight';
+  /** 'bowl' (The Water's Way, L2b): a sunken structure's square (the Tideline skate bowl) whose shell is the ground there. */
+  kind: 'portal' | 'skylight' | 'bowl';
 }
 export interface WaterCut {
   id: string;
@@ -59,6 +60,10 @@ export interface WaterCut {
   depth: number;
   bank: number;
   underground?: boolean;
+  /** The Water's Way (D-WW23): a shallow scraped marsh pool (land/water/marsh.ts). Inside its outline the ground is the level less
+   *  a depth growing from the wet edge to `depth` (≤ 0.3); outside, the ground is only ever raised to the level under the lattice's
+   *  straddling triangles (a soft lip) — no river guard band, bank or basin rule. */
+  scrape?: boolean;
 }
 /** Mountain V3 (D-M11): a waterfall. The lip line stands on the ground at `top`; the curtain falls `outward` of the rock to
  * `foot`, where it lands in the named pool. Render draws the curtain and foam; the bake checks lip and foot; no collision. */
@@ -155,4 +160,7 @@ export interface PadCut {
    * a raised deck (a tower top, a lookout run-off, a jetty over water) on its structure's
    * supports, or an at-grade junction where two graded beds meet flush. */
   deck?: boolean;
+  /** The Water's Way (D-WW88): the pad's open edges are batters of this many eu run per eu rise (1.5 = 1 : 1.5), cut and fill,
+   * instead of the smooth `blend`: outside its footprint the ground is held within that cone of the pad's level. */
+  batter?: number;
 }

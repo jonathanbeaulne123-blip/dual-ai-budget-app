@@ -144,7 +144,9 @@ export function createCorridorEnv(cuts: LandCuts, ground: HeightQuery, ownership
   const tops = topIndex(cuts.solids.filter(s => s.walkable && s.role !== 'marker' && !replaced(s)), 8), walls = obstructionIndex(cuts.solids.filter(s => !s.walkable && s.role !== 'marker' && !replaced(s)), 8);
   const segments = segIndex(cuts.beds.filter(b => !['cable', 'cave', 'rail'].includes(b.kind) && b.points.length > 1), 16);
   const roadSet = new Set(roads), wetCache = new Map<string, boolean>(), pads = cuts.pads.filter(p => !p.underground), deckIndex = new Map<string, ReturnType<typeof topIndex>>();
-  const waters = cuts.waters.filter(w => w.kind !== 'dry' && !w.underground);
+  // The Greenway's scraped marsh pools (D-WW23, ≤ 0.3 deep) are reed beds, not water a road reads: a scrape needs no guard, clips
+  // no planting band and is no "open water" view (the Long Sands Shore stop had moved 430 m west to face one; land integration).
+  const waters = cuts.waters.filter(w => w.kind !== 'dry' && !w.underground && !w.scrape);
   return {
     cuts, ground, roads, segments, ownership: ownership ?? detectStructureOwnership(cuts),
     surface(x, z, below, except) {

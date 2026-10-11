@@ -15,6 +15,8 @@ export function batteredWall(out:StructureSolid,a:XYZ,b:XYZ,offset:number,side:n
 }
 
 export function bed(id:string, profile:string, points:XYZ[], terrainCut=true):BedCut {
+  // The Water's Way (D-WW22): the Greenway's 6 m shared deck (MANIFEST profiles.greenway) is a boardwalk-kind bed on piles.
+  if(profile==='greenway'){const g=M.profiles.greenway,s=requireScaleFactor();return {id,kind:'boardwalk',profile,surface:'boardwalk',points,width:g.surface_m*s,shoulder:0,blend:15*s,clearHeight:2.4,maxGrade:g.grade_max_pct/100,terrainCut,structureIds:[],districtIds:[...new Set(points.map(p=>districtAt(p[0]!,p[2]!)))]};}
   const s=requireScaleFactor(), road=profile==='road',spur=profile==='spur',skate=profile==='skateMain';
   const width=road?M.profiles.road.surface_m:spur?M.profiles.spur.surface_m:skate?M.profiles.skateMain.surface_m[1]!:profile==='boardwalk'?3:profile==='rail'?2.8:profile==='cable'?.1:profile==='cave'?8:profile==='stair'?3:2.5;
   return {id,kind:road||spur?'road':skate?'skate':profile as BedCut['kind'],profile,surface:road||spur||skate?'paved':profile==='boardwalk'?'boardwalk':profile==='rail'?'rail':profile==='cable'?'metal':profile==='cave'?'wetStone':'gravel',points,width:width*s,shoulder:road?s:0,blend:15*s,clearHeight:road?5*s:spur?4*s:profile==='rail'?3.2*s:profile==='cave'?6*s:2.4,maxGrade:skate?.18:profile==='cable'||profile==='rail'||profile==='cave'?10:.12,terrainCut,structureIds:[],districtIds:[...new Set(points.map(p=>districtAt(p[0]!,p[2]!)))]};

@@ -117,6 +117,9 @@ it('keeps all landscape subjects and the repaired C/D/F/L portrait subjects legi
   }
   expect(views.find(v => v.id === 'L')!.proof!.portrait!.subjects).toMatchObject({ 'Lantern Row': 11, 'the Boathouse': 13 });
   expect([px('G', 'the skylight shaft').pixels, px('G', 'the skylight shaft').portraitPixels]).toEqual([70, 42]);
-  expect([px('H', 'the west sea').pixels, px('H', 'the west sea').portraitPixels]).toEqual([349, 94]);   // road main: one ray of the west sea meets the corridor at the Flats
+  // The Water's Way (D-WW86, PR 2 land L3): page H re-posed up the strip from over its south end (eye [452,58,890] → [428,30,480],
+  // the Flats prototype's pose: the strip, the windsock and the balloon in frame); the west sea now sits at the frame's west edge
+  // (was 349 / 94 px from the aerial eye over the strip looking west). Both still pass the legibility bar.
+  expect([px('H', 'the west sea').pixels, px('H', 'the west sea').portraitPixels]).toEqual([74, 12]);
   expect([px('J', 'the Prow').pixels, px('J', 'the arch').pixels]).toEqual([1163, 1743]);
 }, 60_000);
