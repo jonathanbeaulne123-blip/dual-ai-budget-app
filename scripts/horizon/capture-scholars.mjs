@@ -1,6 +1,6 @@
 // The Water's Way, Scholars' Edge (story place 7, layout B): review captures of the dressed place on the runtime review page.
 // Headless Chromium with SwiftShader on the review harness — not device evidence (CONTRACT §2.21). Starts its own vite dev
-// server (port 5208 unless --port/--url) and kills it at the end. JPEGs into docs/horizon/evidence/waters-way-scholars/.
+// server (port 5187 unless --port/--url) and kills it at the end. JPEGs into docs/horizon/evidence/waters-way-scholars/.
 //   node scripts/horizon/capture-scholars.mjs [--out dir] [--port n] [--url origin] [--only a,b] [--themes classic,taylor] [--tiers full,lite]
 // Poses are look poses through the runtime's own `world.views` + `shot()` (as capture-road.mjs); the clock through
 // `setDate` at 21 June 2026, America/Toronto: golden hour = sunset − 60 min (capture.mjs's clock words), night = 02:00.
@@ -13,7 +13,7 @@ import {pathToFileURL} from 'node:url';
 import {execFileSync,spawn} from 'node:child_process';
 
 const args=process.argv.slice(2),opt=(n,f)=>{const i=args.indexOf(`--${n}`);return i>=0?args[i+1]:f;};
-const output=resolve(opt('out','docs/horizon/evidence/waters-way-scholars')),port=Number(opt('port','5208')),only=opt('only')?.split(',')??null;
+const output=resolve(opt('out','docs/horizon/evidence/waters-way-scholars')),port=Number(opt('port','5187')),only=opt('only')?.split(',')??null;
 const themes=(opt('themes','classic,taylor,newfoundland')).split(','),tiers=(opt('tiers','full,lite')).split(',');
 const DATE='2026-06-21',ZONE='America/Toronto',VIEW={full:{width:1200,height:750},lite:{width:1200,height:750}},QUALITY=Number(opt('quality','70'));
 await mkdir(output,{recursive:true});
@@ -30,21 +30,29 @@ const started=Date.now(),log=(...m)=>console.log(`[${((Date.now()-started)/1000)
 const LIB=[740,48,400];
 const POSES=[
   // The porch pose: the Bight lookout deck (eye 53.6) across the Bight toward the Flats; best hour and 02:00 (STYLE porch rule).
-  {id:'porch',label:'the Bight lookout, across the Bight to the Flats',eye:[744.4,53.6,510.9],target:[560,26,760],fov:60,radius:240,when:{classic:['golden','night'],taylor:['golden','night'],newfoundland:['golden','night']},lite:['golden','night']},
+  {id:'porch',label:'the Bight lookout, across the Bight to the Flats',eye:[744.4,53.6,510.9],target:[567,26,688],fov:60,radius:240,when:{classic:['golden','night'],taylor:['golden','night'],newfoundland:['golden','night']},lite:{classic:['golden','night'],taylor:['golden'],newfoundland:['golden']}},
+  // Up the lookout spur at night: the knee-height bollards to the deck and its lantern.
+  {id:'spur',label:'the lookout spur to the deck',eye:[747.8,50.8,457],target:[744.5,52.5,510],fov:58,radius:200,when:{classic:['golden','night'],taylor:['night'],newfoundland:['night']}},
   // From the deck back over the woods to Westwatch (the loop closes): the view cone cut through the canopy.
   {id:'westwatch',label:'from the lookout to Westwatch over the woods',eye:[746.6,53.6,507.4],target:[1036,90,318],fov:50,radius:240,when:{classic:['golden']}},
+  // The binoculars' view from the story eye (deck + 1.6) to Westwatch's bell cote (the loop closes): a 9° field.
+  {id:'binoWestwatch',label:'the binoculars on Westwatch from the Bight lookout',eye:[744,53.6,511],target:[1036,96,318],fov:9,radius:480,when:{classic:['golden']}},
+  // And on the Lamp, every binocular's shared target.
+  {id:'binoLamp',label:'the binoculars on the Lamp from the Bight lookout',eye:[744,53.6,511],target:[540,25,1195],fov:9,radius:800,when:{classic:['golden']}},
   // Courtyard B on the south-west gable, into the sun window (SPEC porch B terrace pose).
-  {id:'courtyard',label:'courtyard B in the sun window',eye:[725.4,49.65,438],target:[700.9,51.2,410.6],fov:60,radius:200,when:{classic:['golden','night'],taylor:['golden'],newfoundland:['golden']},lite:['golden']},
+  {id:'courtyard',label:'courtyard B in the sun window',eye:[725.4,49.65,438],target:[700.9,51.2,410.6],fov:60,radius:200,when:{classic:['golden','night'],taylor:['golden','night'],newfoundland:['golden','night']},lite:{classic:['golden'],taylor:['golden'],newfoundland:['golden']}},
   // The Library from the courtyard's far corner: the verdigris roofs and the reading-room windows.
   {id:'library',label:'the Library from the courtyard',eye:[709,49.7,421.5],target:[748,55,404],fov:58,radius:200,when:{classic:['golden','night'],taylor:['golden'],newfoundland:['golden']}},
   // The garden walk with its bollards, looking back to the Library.
   {id:'gardenwalk',label:'the garden walk to the Library',eye:[812,49.1,478],target:[758,52.5,418],fov:58,radius:200,when:{classic:['golden','night']}},
   // Under the canopy by the cove walk.
-  {id:'woods',label:'in the woods by the cove walk',eye:[730,46.6,344],target:[690,47,322],fov:62,radius:200,when:{classic:['golden']}},
+  {id:'woods',label:'in the woods along the cove walk',eye:[752,49.4,355.5],target:[712,47,337],fov:62,radius:200,when:{classic:['golden']}},
+  // A glade off the Year Walk: the woods' light opening (ferns, moss, a woodland drift, the canopy's edge).
+  {id:'glade',label:'a glade off the Year Walk',eye:[845,53.0,447.5],target:[835,52.6,480],fov:64,radius:200,when:{classic:['golden'],taylor:['golden'],newfoundland:['golden']}},
   // From the Bight below: the cliff, the lookout, the woods' skyline.
   {id:'fromBight',label:'Scholars\' Edge from the Bight',eye:[690,6,690],target:[744,50,452],fov:50,radius:320,when:{classic:['golden']}},
   // The aerial.
-  {id:'aerial',label:'aerial over Scholars\' Edge',eye:[648,112,572],target:[748,45,420],fov:50,radius:320,when:{classic:['golden']},lite:['golden']},
+  {id:'aerial',label:'aerial over Scholars\' Edge',eye:[648,112,572],target:[748,45,420],fov:50,radius:320,when:{classic:['golden','night']},lite:{classic:['golden']}},
 ];
 
 let server=null,origin=opt('url');
@@ -63,7 +71,7 @@ const browser=await chromium.launch({headless:true,executablePath:process.env.HO
 const records=[],errors=[];
 try{
   for(const theme of themes)for(const tier of tiers){
-    const jobs=POSES.filter(p=>!only||only.includes(p.id)).flatMap(p=>(tier==='lite'?(theme==='classic'?p.lite??[]:[]):p.when[theme]??[]).map(w=>({p,w})));
+    const jobs=POSES.filter(p=>!only||only.includes(p.id)).flatMap(p=>(tier==='lite'?(p.lite?.[theme]??[]):p.when[theme]??[]).map(w=>({p,w})));
     if(!jobs.length)continue;
     const page=await browser.newPage({viewport:VIEW[tier],timezoneId:ZONE,deviceScaleFactor:1});page.setDefaultTimeout(900000);
     page.on('pageerror',e=>errors.push({theme,tier,message:e.message}));

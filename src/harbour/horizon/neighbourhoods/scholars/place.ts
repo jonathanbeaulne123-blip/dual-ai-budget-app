@@ -8,7 +8,7 @@
 import type { LightAnchor, Point2, Point3 } from '../../world/definition.ts';
 import { storyLandmark } from '../../world/story.ts';
 import type { BuildingRecord, DressingContext, GroundPaint, Landmark, LifeSpawn, Lookout, PropRecord } from '../types.ts';
-import { CEN, DECK, FLOOR, GLADES, LOOKOUT_EYE, SHELL_EAVE, SPUR_LINE, TERRACE_LEVEL, TERRACE_RECTS, SUN_WINDOW, W, WOODS_C, YAW, rectPolygon, sunWindowPolygon } from './frame.ts';
+import { CEN, DECK, FLOOR, GLADES, LOOKOUT_EYE, SHELL_EAVE, SPUR_LINE, TERRACE_LEVEL, TERRACE_RECTS, SUN_WINDOW, W, WOODS_C, YAW, rectPolygon } from './frame.ts';
 import { DISTRICT } from './woods.ts';
 
 const r3 = (v: number) => Math.round(v * 1000) / 1000;
@@ -48,7 +48,7 @@ export function library(ctx: DressingContext): { building: BuildingRecord; landm
 type Edge = { u0: number; v0: number; u1: number; v1: number; out: [number, number] };
 /** The terrace's outer edges (Library frame) and their outward normals; the gable side and the apron stay open. */
 const TERRACE_EDGES: readonly Edge[] = (() => {
-  const [main, north, door] = TERRACE_RECTS as [readonly number[], readonly number[], readonly number[]];
+  const main = TERRACE_RECTS[0]!, north = TERRACE_RECTS[1]!, door = TERRACE_RECTS[2]!;
   return [
     { u0: main[0]!, v0: main[2]!, u1: main[0]!, v1: main[3]!, out: [-1, 0] },
     { u0: main[0]!, v0: main[3]!, u1: north[0]!, v1: main[3]!, out: [0, 1] },
@@ -93,6 +93,9 @@ export function courtyardProps(): PropRecord[] {
   [[-28, -6], [-33, 2], [-27, 10], [-14, 19.5]].forEach(([u, v], i) => props.push({ id: `courtyard.table.${i}`, kind: 'readingTable', at: at(u!, v!), yaw: r3(YAW + i * 0.6) }));
   [[-38.6, -8], [-38.6, 3], [-38.6, 12.5]].forEach(([u, v], i) => props.push({ id: `courtyard.bench.${i}`, kind: 'bench', at: at(u!, v!), yaw: r3(inU) }));
   props.push({ id: 'courtyard.bench.3', kind: 'bench', at: at(-29.5, 22.3), yaw: r3(inNegV) });
+  // Two benches against the reading-room wall on the door strip, under the windows, facing out (SPEC: benches on the SE wall).
+  const outV = facing(Math.SQRT1_2, Math.SQRT1_2);
+  [-17, -9].forEach((u, i) => props.push({ id: `courtyard.wallBench.${i}`, kind: 'bench', at: at(u, 16.45), yaw: r3(outV) }));
   [[-23.5, -12], [-38, -13.6], [-33.4, 22.2], [-5.6, 22.2]].forEach(([u, v], i) => props.push({ id: `courtyard.planter.${i}`, kind: 'planter', at: at(u!, v!), yaw: r3(YAW) }));
   props.push({ id: 'courtyard.bookCart', kind: 'bookCart', at: at(-23.6, 0), yaw: r3(facing(-Math.SQRT1_2, Math.SQRT1_2)) });
   props.push({ id: 'courtyard.birdFeeder', kind: 'birdFeeder', at: at(-24, 21.4), yaw: r3(YAW) });
@@ -126,7 +129,7 @@ export function lookoutSet(): { props: PropRecord[]; lookout: Lookout } {
 
 /* ---------------------------------------------------------------- walks: bollards, racks */
 
-export const BOLLARDS = { step: 14, offset: 2.0, reach: 150, poolRadius: 2 } as const;
+export const BOLLARDS = { step: 14, offset: 2.0, reach: 150 } as const;
 /** Knee-height bollard lights along the garden walk (within 150 m of the woods' centre) and the lookout spur, alternating
  * sides 2 m off the centreline (STYLE §2.3 night face: dim, 2 eu pools). */
 export function walkBollards(ctx: DressingContext): PropRecord[] {
@@ -186,23 +189,33 @@ function crossings(a: readonly Point2[], b: readonly Point2[]): Point2[] {
 /* ---------------------------------------------------------------- night, life, ground */
 
 /** The night order (STYLE §2.3 night face; LIGHT §3): 0 the reading-room windows (the relay's last card, STORY §4.4),
- * 1 the knee-height bollards on the garden walk and the spur, 2 the courtyard lantern and the tables' banker's lamps,
- * 3 the lookout lantern. (4, the ferry's running lights on the Bight, is the ferry's.) Emissive cards only. */
+ * 1 the knee-height bollards on the garden walk and the spur, 2 the courtyard lantern, 3 the lookout lantern. (4, the
+ * ferry's running lights on the Bight, is the ferry's.) Emissive cards only. The runtime draws a module anchor as the
+ * door/threshold card pair (runtime/roadLights.ts): a bead (r 0.32) AT the anchor and a pool (r 2.4) 0.8 below it, so each
+ * anchor stands 0.8 over the floor it lights: a bollard's bead is its lit cap; a window's and a lantern's stand inside
+ * the wall beside them (the bead hidden, the pool spilling out onto the flags); the lookout lantern's in its post's foot
+ * under the deck's open rail. The kits draw the lamps' own glow (the `glow` bucket). */
 export const NIGHT_ORDER = ['window', 'bollard', 'courtyard', 'lookout'] as const;
 export const NIGHT_LINE = 'scholars:night';
-export function nightLights(props: readonly PropRecord[]): LightAnchor[] {
-  const out: LightAnchor[] = [], y = TERRACE_LEVEL;
+export const ANCHOR_LIFT = 0.8;
+export function nightLights(props: readonly PropRecord[], walls: readonly BuildingRecord[] = []): LightAnchor[] {
+  const out: LightAnchor[] = [], y = TERRACE_LEVEL + ANCHOR_LIFT;
   const order = (k: (typeof NIGHT_ORDER)[number]) => NIGHT_ORDER.indexOf(k);
-  // Window spill: the door face either side of the porch and the south-west gable over the courtyard.
-  ([[-12, 15.2, -12, 19, 9], [12, 15.2, 12, 19, 9], [-21.2, -4, -25, -2, 10], [-21.2, 6, -25, 6, 9]] as const).forEach(([hu, hv, pu, pv, r], i) => {
-    const h = W(hu, hv), p = W(pu, pv);
-    out.push({ id: `scholars.window.${i}`, at: P3(h[0], y + 2.6, h[1]), head: P3(h[0], y + 2.6, h[1]), pool: P3(p[0], y, p[1]), poolRadius: r, kind: 'window', line: NIGHT_LINE, order: order('window') });
+  // Window spill: 1 m inside the door face either side of the porch and inside the south-west gable over the courtyard.
+  ([[-12, 14], [12, 14], [-20, -4], [-20, 6]] as const).forEach(([u, v], i) => {
+    const h = W(u, v);
+    out.push({ id: `scholars.window.${i}`, at: P3(h[0], y, h[1]), kind: 'window', line: NIGHT_LINE, order: order('window') });
   });
   for (const p of props) {
-    if (p.kind === 'bollard') out.push({ id: `scholars.${p.id}`, at: p.at, head: P3(p.at[0], p.at[1] + 0.66, p.at[2]), pool: p.at, poolRadius: BOLLARDS.poolRadius, kind: 'bollard', line: NIGHT_LINE, order: order('bollard') });
-    if (p.id === 'courtyard.lantern') out.push({ id: 'scholars.courtyard.lantern', at: p.at, head: P3(p.at[0], p.at[1] + 2.8, p.at[2]), pool: p.at, poolRadius: 5, kind: 'lantern', line: NIGHT_LINE, order: order('courtyard') });
-    if (p.kind === 'readingTable') out.push({ id: `scholars.${p.id}.lamp`, at: p.at, head: P3(p.at[0], p.at[1] + 1.1, p.at[2]), pool: p.at, poolRadius: 2.2, kind: 'tableLamp', line: NIGHT_LINE, order: order('courtyard') });
-    if (p.id === 'bightLookout.lantern') out.push({ id: 'scholars.bightLookout.lantern', at: p.at, head: P3(p.at[0], p.at[1] + 2.8, p.at[2]), pool: p.at, poolRadius: 4, kind: 'lantern', line: NIGHT_LINE, order: order('lookout') });
+    if (p.kind === 'bollard') out.push({ id: `scholars.${p.id}`, at: P3(p.at[0], p.at[1] + ANCHOR_LIFT, p.at[2]), kind: 'bollard', line: NIGHT_LINE, order: order('bollard') });
+    if (p.id === 'courtyard.lantern') {
+      // In the low wall beside the lantern (the nearest wall's centreline), else at the lantern.
+      const near = walls.map(w => ({ w, d: Math.hypot(w.at[0] - p.at[0], w.at[2] - p.at[2]) })).filter(q => q.d < 20).sort((a, b) => a.d - b.d)[0]?.w;
+      let at: Point3 = P3(p.at[0], p.at[1] + ANCHOR_LIFT, p.at[2]);
+      if (near) { const ux = Math.cos(near.yaw), uz = -Math.sin(near.yaw), t = (p.at[0] - near.at[0]) * ux + (p.at[2] - near.at[2]) * uz, half = near.size.w / 2 - 0.4, tc = Math.max(-half, Math.min(half, t)); at = P3(near.at[0] + ux * tc, near.at[1] + ANCHOR_LIFT, near.at[2] + uz * tc); }
+      out.push({ id: 'scholars.courtyard.lantern', at, kind: 'lantern', line: NIGHT_LINE, order: order('courtyard') });
+    }
+    if (p.id === 'bightLookout.lantern') out.push({ id: 'scholars.bightLookout.lantern', at: P3(p.at[0], p.at[1] - 0.35, p.at[2]), kind: 'lantern', line: NIGHT_LINE, order: order('lookout') });
   }
   return out;
 }
@@ -225,7 +238,7 @@ export const LIFE_CAP = { full: 24, lite: 10 } as const;
 /** Moss (the `sedge` token, dark) on the floors of the glades a walk passes and on the sun window's near end; the
  * terrain's own duff carries the rest of the woods (land/terrain biomeGround: `duff` inside the Scholars' Edge landform).
  * Paint is draped in ≤ 2.5 eu triangles on both tiers, so it is spent where it is seen (D-WW174). */
-export const MOSS = { gladeReach: 14, gladeShare: 0.62, sunWindowTo: 40 } as const;
+export const MOSS = { gladeReach: 14, gladeShare: 0.62, sunWindowFrom: 18, sunWindowTo: 46 } as const;
 export function mossPaint(ctx: DressingContext): GroundPaint[] {
   const out: GroundPaint[] = [];
   for (const [gx, gz, r] of GLADES) {
@@ -233,8 +246,9 @@ export function mossPaint(ctx: DressingContext): GroundPaint[] {
     const poly: Point2[] = Array.from({ length: 9 }, (_, k) => { const a = (k / 9) * Math.PI * 2, rr = r * MOSS.gladeShare * (0.85 + 0.15 * Math.sin(k * 2.3 + gx)); return [r3(gx + Math.cos(a) * rr), r3(gz + Math.sin(a) * rr)] as Point2; });
     out.push({ polygon: poly, surface: 'sedge', tone: 0.15 });
   }
-  const sw = sunWindowPolygon(), near = sw[0]!, far0 = sw[1]!, far1 = sw[2]!, nearB = sw[3]!, t = (MOSS.sunWindowTo - SUN_WINDOW.near) / (SUN_WINDOW.far - SUN_WINDOW.near);
-  const mid = (a: Point2, b: Point2): Point2 => [r3(a[0] + (b[0] - a[0]) * t), r3(a[1] + (b[1] - a[1]) * t)];
-  out.push({ polygon: [[r3(near[0]), r3(near[1])], mid(near, far0), mid(nearB, far1), [r3(nearB[0]), r3(nearB[1])]], surface: 'sedge', tone: 0.3 });
+  // The sun window's moss starts past the terrace's edge (paint on paint z-fights) and runs to 46 m.
+  const S = SUN_WINDOW, n: Point2 = [-S.axis[1], S.axis[0]], P = (al: number, ac: number): Point2 => [r3(S.origin[0] + S.axis[0] * al + n[0] * ac), r3(S.origin[1] + S.axis[1] * al + n[1] * ac)];
+  const half = (al: number) => S.half0 + S.widen * al;
+  out.push({ polygon: [P(MOSS.sunWindowFrom, -half(MOSS.sunWindowFrom)), P(MOSS.sunWindowTo, -half(MOSS.sunWindowTo)), P(MOSS.sunWindowTo, half(MOSS.sunWindowTo)), P(MOSS.sunWindowFrom, half(MOSS.sunWindowFrom))], surface: 'sedge', tone: 0.3 });
   return out;
 }

@@ -13,16 +13,16 @@ import { plantWoods } from './woods.ts';
 
 export function buildScholars(ctx: Parameters<NeighbourhoodModule['build']>[0]): NeighbourhoodDressing {
   const lib = library(ctx), look = lookoutSet(), woods = plantWoods(ctx);
-  const props = [...courtyardProps(), ...look.props, ...walkBollards(ctx), ...thresholdRacks(ctx)];
+  const props = [...courtyardProps(), ...look.props, ...walkBollards(ctx), ...thresholdRacks(ctx)], walls = courtyardWalls(ctx);
   return {
     id: 'scholars',
-    buildings: [lib.building, ...courtyardWalls(ctx)],
+    buildings: [lib.building, ...walls],
     plants: [...woods.trees, ...plantUnderstorey(ctx)],
     props,
     ground: [...courtyardFlags(), ...mossPaint(ctx)],
     pools: [],
     life: life(),
-    lights: nightLights(props),
+    lights: nightLights(props, walls),
     landmarks: [lib.landmark],
     lookouts: [look.lookout],
   };

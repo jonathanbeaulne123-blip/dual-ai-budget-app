@@ -13,9 +13,9 @@ import { buildingPlan } from '../src/harbour/horizon/kit/buildings/index.ts';
 import { bakeDressings, createDressingContext, footprintCorners, footprintFit, validateDressing, type DressingContextImpl } from '../src/harbour/horizon/neighbourhoods/bake.ts';
 import { NEIGHBOURHOOD_MODULES } from '../src/harbour/horizon/neighbourhoods/index.ts';
 import { scholars } from '../src/harbour/horizon/neighbourhoods/scholars/index.ts';
-import { DECK, LOOKOUT_EYE, LOOKOUT_VIEW, SHELL_ROOF, sunWindowAt } from '../src/harbour/horizon/neighbourhoods/scholars/frame.ts';
+import { DECK, LOC, LOOKOUT_EYE, LOOKOUT_VIEW, SHELL_ROOF, sunWindowAt } from '../src/harbour/horizon/neighbourhoods/scholars/frame.ts';
 import { bearing, canopyCover, crownClearance, crownOf, storySightlines, sunlitShare } from '../src/harbour/horizon/neighbourhoods/scholars/measure.ts';
-import { LIFE_CAP, LIBRARY_DRAWN, NIGHT_ORDER } from '../src/harbour/horizon/neighbourhoods/scholars/place.ts';
+import { ANCHOR_LIFT, LIFE_CAP, LIBRARY_DRAWN, NIGHT_ORDER } from '../src/harbour/horizon/neighbourhoods/scholars/place.ts';
 import { DISTRICT, WOODS, openness } from '../src/harbour/horizon/neighbourhoods/scholars/woods.ts';
 import type { NeighbourhoodDressing } from '../src/harbour/horizon/neighbourhoods/types.ts';
 import { measureDistrictDressing } from '../src/harbour/horizon/runtime/dressingLayer.ts';
@@ -30,13 +30,19 @@ import { protectedGreenOutline } from '../src/harbour/horizon/world/views.ts';
 
 type Json = { collision: LandCuts & { beds: LandCuts['beds'] }; geometry: { solids: (StructureSolid & { sourceId?: string })[] }; hosts: { id: string; footprint: [number, number][]; door?: { xy?: [number, number] }; height: number }[]; thresholds: { id: string; at: [number, number]; modes: string[] }[] };
 let json: Json, ground: (x: number, z: number) => number, ctx: DressingContextImpl, d: NeighbourhoodDressing;
+let field: ReturnType<typeof decodeTerrainAsset>, baked: ReturnType<typeof bakeDressings>;
+/** Hand the worker back to the runner between heavy steps (CI runs four workers: a long synchronous hold times out its RPC). */
+const yieldToRunner = () => new Promise<void>(r => setTimeout(r, 0));
 
 /** The bake's own world for the module: the committed bake's ground, beds, pads, water, solids (partitions merged back into
  * their source solids, this module's own `dressing.` colliders left out) and hosts (scripts/horizon/bake-dressing.ts). */
-beforeAll(() => {
+beforeAll(async () => {
   json = JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8')) as Json;
-  const bytes = readFileSync('public/horizon/terrain/horizon-geo-1.bin'), field = decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), 'full');
+  await yieldToRunner();
+  const bytes = readFileSync('public/horizon/terrain/horizon-geo-1.bin');
+  field = decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), 'full');
   ground = (x, z) => sampleTerrain(field, x, z);
+  await yieldToRunner();
   const merged = new Map<string, { id: string; positions: number[]; indices: number[] }>();
   for (const q of json.geometry.solids) {
     const id = q.sourceId ?? q.id.split('@')[0]!; if (id.startsWith('dressing.')) continue;
@@ -46,7 +52,11 @@ beforeAll(() => {
   ctx = createDressingContext({ ground, beds: json.collision.beds, pads: json.collision.pads, waters: json.collision.waters, solids: [...merged.values()],
     hosts: json.hosts.map(h => ({ id: h.id, footprint: h.footprint, door: { ...(h.door?.xy ? { xy: h.door.xy } : {}) }, height: h.height })),
     protectedAreas: [{ id: 'green', outline: protectedGreenOutline() }], districtAt: (x, z) => districtAt(x, z) });
+  await yieldToRunner();
   d = scholars.build(ctx);
+  await yieldToRunner();
+  baked = bakeDressings([scholars], ctx);
+  await yieldToRunner();
 }, 120_000);
 
 describe("Scholars' Edge: the module", () => {
@@ -138,11 +148,11 @@ describe("Scholars' Edge: the place", () => {
     expect([look.id, look.viewer, look.targets[0]]).toEqual(['bightLookout', 'both', 'westwatch']);
     expect(look.targets).toContain('lamp');
   });
-  it('the binoculars find their targets from the eye on the bake (the elevator too, past baked solids)', () => {
+  it('the binoculars find their targets from the eye on the bake (the elevator too, past baked solids)', async () => {
     const solids = json.geometry.solids.map(q => ({ ...q, id: q.sourceId ?? q.id.split('@')[0]! })) as StructureSolid[];
-    const bytes = readFileSync('public/horizon/terrain/horizon-geo-1.bin'), field = decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), 'full');
+    await yieldToRunner();
     const ray = createRayCaster(field, { ...json.collision, solids } as LandCuts);
-    for (const t of d.lookouts[0]!.targets) { const m = measureStoryLink(ray, solids, 'bightLookout', t); expect(m.clearance, `bightLookout → ${t} (${m.blocker})`).toBeGreaterThanOrEqual(SIGHT_MIN_CLEARANCE); }
+    for (const t of d.lookouts[0]!.targets) { await yieldToRunner(); const m = measureStoryLink(ray, solids, 'bightLookout', t); expect(m.clearance, `bightLookout → ${t} (${m.blocker})`).toBeGreaterThanOrEqual(SIGHT_MIN_CLEARANCE); }
   }, 60_000);
   it('furnishes courtyard B on the terrace: four reading tables, benches, planters, the cart, the feeder and the lantern; walls on the battered edges', () => {
     const kinds = d.props.filter(p => p.id?.startsWith('courtyard.')).map(p => p.kind);
@@ -156,12 +166,16 @@ describe("Scholars' Edge: the place", () => {
     expect(wheels.length).toBeGreaterThan(0);
     for (const t of wheels) expect(Math.min(...racks.map(r => Math.hypot(r.at[0] - t.at[0], r.at[2] - t.at[1]))), t.id).toBeLessThanOrEqual(12.5);
   });
-  it('lights in the sheet\'s night order: windows → bollards → the courtyard lantern (and tables) → the lookout lantern; emissive anchors only', () => {
+  it('lights in the sheet\'s night order: windows → bollards → the courtyard lantern → the lookout lantern; emissive anchors only', () => {
     const kinds = { window: 'window', bollard: 'bollard', courtyard: 'lantern|tableLamp', lookout: 'lantern' } as const;
     for (const l of d.lights) { expect(l.id.startsWith('scholars.')).toBe(true); expect(l.order).toBeGreaterThanOrEqual(0); expect(new RegExp(`^(${kinds[NIGHT_ORDER[l.order!]!]})$`).test(l.kind)).toBe(true); }
     expect([...new Set([...d.lights].sort((a, b) => a.order! - b.order!).map(l => NIGHT_ORDER[l.order!]))]).toEqual([...NIGHT_ORDER]);
-    expect(d.lights.filter(l => l.kind === 'bollard').every(l => l.poolRadius === 2)).toBe(true);
-    expect(d.props.filter(p => p.kind === 'bollard').length).toBe(d.lights.filter(l => l.kind === 'bollard').length);
+    // A module anchor is the runtime's bead AT it and pool ANCHOR_LIFT below it: each bollard's anchor is its lit cap.
+    const bollards = d.props.filter(p => p.kind === 'bollard');
+    expect(bollards.length).toBe(d.lights.filter(l => l.kind === 'bollard').length);
+    for (const b of bollards) expect(d.lights.find(l => l.id === `scholars.${b.id}`)!.at[1] - b.at[1]).toBeCloseTo(ANCHOR_LIFT, 6);
+    // The window anchors stand inside the Library (bead hidden, pool spilling out of the wall).
+    for (const l of d.lights.filter(q => q.kind === 'window')) { const [u, v] = LOC(l.at[0], l.at[2]); expect(Math.abs(u) < 21 && Math.abs(v) < 15).toBe(true); }
   });
   it('spawns chickadees and moths: ≤ 24 creatures, the lite share (the first spawns) ≤ 10', () => {
     const total = d.life.reduce((n, l) => n + l.count, 0);
@@ -169,12 +183,15 @@ describe("Scholars' Edge: the place", () => {
     let lite = 0; for (const l of d.life) { if (lite + l.count > LIFE_CAP.lite) break; lite += l.count; }
     expect(lite).toBeGreaterThan(0); expect(new Set(d.life.map(l => l.kind))).toEqual(new Set(['chickadee', 'moth']));
   });
-  it('fits the per-district budget with the baked land: ≤ 150k full / 60k lite triangles, ≤ 400 / 180 draw calls', () => {
-    const baked = bakeDressings([scholars], ctx), dist = baked.dressing!.districts.find(x => x.districtId === DISTRICT)!;
+  it('fits the per-district budget with the baked land: ≤ 150k full / 60k lite triangles, ≤ 400 / 180 draw calls', async () => {
+    const dist = baked.dressing!.districts.find(x => x.districtId === DISTRICT)!;
     expect(baked.dressing!.districts.map(x => x.districtId)).toEqual([DISTRICT]);
     const index = JSON.parse(gunzipSync(readFileSync('public/horizon/world/horizon-geo-1.index.json.gz')).toString()) as { districts: District[] };
     const row = index.districts.find(x => x.id === DISTRICT)!, land = { full: row.triangles!.full - (row.dressing?.full.triangles ?? 0), lite: row.triangles!.lite - (row.dressing?.lite.triangles ?? 0) };
-    const full = measureDistrictDressing(dist, ground, 'full'), lite = measureDistrictDressing(dist, ground, 'lite');
+    await yieldToRunner();
+    const full = measureDistrictDressing(dist, ground, 'full');
+    await yieldToRunner();
+    const lite = measureDistrictDressing(dist, ground, 'lite');
     console.info(`[scholars] budget: land ${land.full} / ${land.lite}; dressing ${full.triangles} / ${lite.triangles} (${full.drawCalls} / ${lite.drawCalls} draws); district ${land.full + full.triangles} / ${land.lite + lite.triangles}`);
     expect(land.full + full.triangles).toBeLessThanOrEqual(150_000); expect(land.lite + lite.triangles).toBeLessThanOrEqual(60_000);
     expect((row.drawCalls ?? 0) - (row.dressing?.full.drawCalls ?? 0) + full.drawCalls).toBeLessThanOrEqual(400); expect(lite.drawCalls).toBeLessThanOrEqual(180);

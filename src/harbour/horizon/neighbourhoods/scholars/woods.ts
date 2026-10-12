@@ -4,7 +4,7 @@
  *
  *  - a 4.3 m grid over x 560–960, z 220–620 with ±2 m jitter; kept with probability 0.95 within 120 m of the woods'
  *    centre, fading to 0 at 175 m (× 0.65 in the fade), the threshold moved by 0.12 × fbm(0.03) so the edge is ragged;
- *  - never in the eight glades, on or near a bed (crowns may overhang the walks; trunks stand 2 m off every tread and
+ *  - never in the eight glades, on or near a bed (crowns may overhang the walks; trunks stand 2.5 m off every tread and
  *    12 m off the roads, whose own framing groves line them), in the Library + 4 m, the courtyard + 3 m, the sun window,
  *    within 5 m of the lookout spur or 16 m of the lookout, below ground 30, on a slope over 0.7, or outside the
  *    `scholars` district (its budget holds the woods; nothing spills into a neighbour's);
@@ -16,11 +16,13 @@
  * spruce 130 / 29, balsam 106 / 24, cedar 85 / 22, a woodland card 8 / 3.6):
  *  - FRONT ROWS are real trees: the `FRONT.max` trunks nearest an opening (a walk, a glade, the sun window, the
  *    courtyard, the Library, the lookout — `openness`, in units of each opening's front depth). White pine → `pine`
- *    (emergent, 19–24 m), hemlock → `spruce` / `balsam` (Newfoundland draws `spruce` as black spruce), birch → `birch`
- *    (at most `FRONT.birch`, the nearest; the rest spruce), cedar → `cedar`. Sugar maple is never a front-row tree:
- *    STYLE §1.4.4 swaps it for black spruce in Newfoundland and a record carries no dressing, so front-row maples stand as
- *    balsam and the maples' mass is the broadleaf back-row cards.
- *  - BACK ROWS are `woodlandCard`s: a conifer pick is a spire card (tint < 0.5), a broadleaf pick a round card
+ *    (emergent, 23–29 m), hemlock → `spruce` / `balsam` (Newfoundland draws `spruce` as black spruce), birch → `birch`
+ *    (at most `FRONT.birch`, the nearest; the rest spruce), cedar → `cedar`; hemlocks and cedars smaller at a walk's
+ *    edge than behind it (the blend band). Sugar maple is never a front-row tree: STYLE §1.4.4 swaps it for black spruce
+ *    in Newfoundland and a record carries no dressing, so front-row maples stand as balsam and the maples' mass is the
+ *    broadleaf back-row cards.
+ *  - BACK ROWS are `woodlandCard`s, never nearer an opening than 1.1 front depths (a place between the front rows and
+ *    that line stays open): a conifer pick is a spire card (tint < 0.5), a broadleaf pick a round card
  *    (tint ≥ 0.5; Newfoundland draws every card as a spire: the maples' swap).
  *  - CLEARANCES are contracts: every crown keeps 1.5 m under every story eye → target line over the woods
  *    (`storySightlines`: the elevator gallery → the Library, the Bight lookout → Westwatch, the oak, the Lamp …); inside
@@ -36,9 +38,17 @@ import { fbm } from './noise.ts';
 
 export const WOODS = {
   grid: 4.3, x0: 560, x1: 960, z0: 220, z1: 620, jitter: 4, inner: 120, outer: 175,
-  minGround: 30, maxSlope: 0.7, trailClear: 2, roadClear: 12, spurClear: 5, lookoutClear: 16,
+  minGround: 30, maxSlope: 0.7, trailClear: 2.5, roadClear: 12, spurClear: 5, lookoutClear: 16,
   /** Front rows: each opening's depth (m), the most real trees, and the most birches among them. */
-  front: { trail: 9, glade: 6, sunWindow: 8, court: 12, lookout: 28, max: 300, birch: 50 },
+  front: { trail: 9, glade: 6, sunWindow: 8, court: 12, lookout: 28, max: 480, birch: 30 },
+  /** A card never stands nearer an opening than this (in front depths): a flat card read from a walk is a slab. */
+  cardOpen: 1.1, cardScale: 1.1,
+  /** Front-row hemlocks and cedars (`spruce`, `balsam`, `cedar`) are drawn at this share over the kit-mapped size: the
+   * prototype's hemlocks top out at ~16–22 m with crowns of 3.4–4.7 m (SPEC), the kit's spruce is narrower. At a walk's
+   * edge they are smaller (`walkScale` within `walkside` m of a tread, blending to `frontScale` over the next
+   * `walkBlend` m: STYLE §1.4.1's blend band, so a walk is a lane under the canopy, never a tunnel of skirts), and the
+   * white pines stand `pineScale` taller than the kit mapping (STYLE §2.3: emergent over the hemlocks). */
+  frontScale: 1.45, walkside: 4, walkScale: 1.15, walkBlend: 4, pineScale: 1.2,
   saplings: 60,
   sightMargin: 1.5, coneMargin: 1.0, sunMargin: 0.3, minShrink: 0.5,
 } as const;
@@ -89,7 +99,7 @@ function candidates(ctx: DressingContext): Cand[] {
     [W(-38, 31), 'whitepine', 1.3], [W(-46, 26), 'hemlock', 1.2], [W(-47, 13), 'birch', 1.0], [W(-41, 34), 'birch', 0.9], [W(-23, -21), 'birch', 1.0],
     // The lookout's frame stands at the edges of the porch view (bearings ~35° and ~190° from the eye), clear of the story's
     // lines (Westwatch ~327°, the oak ~60°, the Lamp ~107°, the elevator ~151°).
-    [[DECK.x0 - 9.5, DECK.z0 + 2.4], 'whitepine', 0.9], [[DECK.x1 + 4.5, DECK.z1 + 4.9], 'birch', 1.0], [[DECK.x0 - 13.8, DECK.z0 - 2.6], 'hemlock', 1.0],
+    [[DECK.x0 - 8.5, DECK.z1 - 0.1], 'whitepine', 0.9], [[DECK.x1 + 4.5, DECK.z1 + 4.9], 'birch', 1.0], [[DECK.x0 - 13.8, DECK.z0 - 2.6], 'hemlock', 1.0],
   ];
   for (const [[x, z], pick, s] of frame) if (ctx.districtAt(x, z) === DISTRICT && !ctx.occupied(x, z, 1.2) && !onTerrace(x, z, 1) && !inLibrary(x, z, 2) && !sunWindowAt(x, z)) out.push({ x, z, pick, s, v: rnd(), yaw: rnd() * Math.PI * 2, alt: rnd(), keep: true });
   // Saplings in the gaps by the walks.
@@ -103,8 +113,15 @@ function candidates(ctx: DressingContext): Cand[] {
 }
 
 /** The kit species and scale of a candidate in the front rows (real trees). */
-function frontTree(c: Cand, birch: boolean): { species: DressingSpecies; scale: number } {
+function frontTree(c: Cand, birch: boolean, edge: number): { species: DressingSpecies; scale: number } {
   if (c.sapling) return { species: c.alt < 0.6 ? 'spruce' : 'balsam', scale: 0.45 + (c.s - 0.22) * 1.6 };
+  const t = frontKind(c, birch);
+  if (t.species === 'pine') return { species: t.species, scale: t.scale * WOODS.pineScale };
+  if (t.species !== 'spruce' && t.species !== 'balsam' && t.species !== 'cedar') return t;
+  const k = Math.max(0, Math.min(1, (edge - WOODS.walkside) / WOODS.walkBlend));
+  return { species: t.species, scale: t.scale * (WOODS.walkScale + (WOODS.frontScale - WOODS.walkScale) * k) };
+}
+function frontKind(c: Cand, birch: boolean): { species: DressingSpecies; scale: number } {
   switch (c.pick) {
     case 'whitepine': return { species: 'pine', scale: c.s * 2.95 };
     case 'hemlock': return c.alt < 0.62 ? { species: 'spruce', scale: c.s * 1.55 } : { species: 'balsam', scale: c.s * 1.45 };
@@ -117,7 +134,7 @@ function frontTree(c: Cand, birch: boolean): { species: DressingSpecies; scale: 
 function backCard(c: Cand): { species: DressingSpecies; scale: number; tint: number } {
   const conifer = c.pick === 'whitepine' || c.pick === 'hemlock' || c.pick === 'cedar', tint = conifer ? 0.04 + c.v * 0.42 : 0.54 + c.v * 0.42;
   const scale = c.pick === 'whitepine' ? 1.45 + (c.s - 1.05) * 1.2 : c.pick === 'hemlock' ? 1.1 + (c.s - 0.95) * 1.1 : c.pick === 'cedar' ? 0.72 + (c.s - 0.95) * 0.7 : c.pick === 'maple' ? 1.05 + (c.s - 0.95) * 1.1 : 0.95 + (c.s - 0.95);
-  return { species: 'woodlandCard', scale, tint };
+  return { species: 'woodlandCard', scale: scale * WOODS.cardScale, tint };
 }
 
 export type WoodsResult = { trees: PlantRecord[]; front: number; back: number; broadleafFront: number; cut: number; dropped: number };
@@ -165,10 +182,12 @@ export function plantWoods(ctx: DressingContext): WoodsResult {
   let nFront = 0, back = 0, broadleaf = 0, cut = 0, dropped = 0;
   cands.forEach((c, i) => {
     if (c.sapling && !front.has(i)) return;
+    // Not a front-row tree and too near an opening for a card: left open (understorey and light).
+    if (!front.has(i) && open[i]! < WOODS.cardOpen) return;
     const y = ctx.heightAt(c.x, c.z), at: [number, number, number] = [round(c.x), round(y), round(c.z)];
     let rec: PlantRecord;
     if (front.has(i)) {
-      const t = frontTree(c, birches.has(i));
+      const t = frontTree(c, birches.has(i), ctx.bedClearance(c.x, c.z));
       rec = { species: t.species, at, scale: round(t.scale), yaw: round(c.yaw), tint: round(c.v), ...(c.keep ? { keep: true } : {}) };
     } else {
       const t = backCard(c);

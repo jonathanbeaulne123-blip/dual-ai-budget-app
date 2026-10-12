@@ -14,7 +14,7 @@ import { DISTRICT } from './woods.ts';
 import { fbm } from './noise.ts';
 
 /** Drift caps per place (a woodland drift costs ~340 / 210 triangles full / lite, and lite keeps every drift). */
-export const UNDERSTOREY = { scatter: 760, radius: 128, gladeTries: 16, walkStep: 9, drifts: { walk: 6, glade: 3, scatter: 3 } } as const;
+export const UNDERSTOREY = { scatter: 500, radius: 128, gladeTries: 16, walkStep: 9, drifts: { walk: 6, glade: 2, scatter: 0 } } as const;
 const r3 = (v: number) => Math.round(v * 1000) / 1000;
 
 export function plantUnderstorey(ctx: DressingContext): PlantRecord[] {
