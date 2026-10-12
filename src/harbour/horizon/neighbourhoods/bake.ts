@@ -244,7 +244,7 @@ export const PROP_HEIGHT: Record<PropKind, number> = {
   laundryLine: 2.4, stall: 2.6, cafeTable: 0.8, fountain: 1.6, planter: 0.8, bikeRack: 0.8, mapBoard: 1.6, sundial: 1.1, monthStone: 0.6,
   kite: 12, swing: 3, windsock: 6, beacon: 4, fireRing: 0.4, volleyNet: 2.4, lifeRing: 1.4, rodHolder: 1, duckBox: 1.5,
   ospreyPole: 12, snag: 8, buoy: 1, bollardQuay: 0.7, net: 1.5, crate: 0.8, cairn: 1.2, sheepFank: 1.2, festoon: 3, flag: 6,
-  bocceCourt: 0.3, skateBowl: 0.2, geoglyph: 0.2, readingTable: 0.8, bookCart: 1.1, birdFeeder: 1.8, bell: 1,
+  bocceCourt: 0.3, skateBowl: 0.2, geoglyph: 0.2, readingTable: 0.8, bookCart: 1.1, birdFeeder: 1.8, bell: 1, balloon: 20.6,
 };
 /** Footprint edges and colliding lines are sampled this often (eu) against pads, water and baked solids. */
 export const EDGE_STEP = 0.5;

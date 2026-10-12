@@ -357,3 +357,41 @@ export function birdFeeder(c: Ctx) {
   if (c.full) for (const [x, z] of [[0.22, 0.12], [-0.18, -0.13]] as const) { dome(c, x, 1.6, z, 0.06, [0.42, 0.4, 0.38], 6, 2); dome(c, x + 0.04, 1.66, z, 0.035, [0.15, 0.14, 0.13], 5, 1); }
 }
 export { mix, steel, stations, yawAlong, glowOrb };
+
+/* ------------------------------------------------------------------------------------------------- the sky */
+
+/**
+ * The hot-air balloon at its mooring (E2, PR 4 Flats; MANIFEST `sky.balloon`): a wicker basket (1.5 × 1.5, 1.1 tall), the
+ * burner on its frame, the skirt and an envelope of gores (equator 8 eu round, crown 20.6 over the basket), three tethers
+ * to ground stakes. Classic: rust gores with porcelain bands (never the Hollow's sumac); Taylor: pastel paper gores with
+ * paper-edge seams; Newfoundland: red, yellow and blue gores. The burner's pilot flame is a small glow orb. The ride is PR 5's.
+ */
+export function balloon(c: Ctx) {
+  const P = c.P, n = c.full ? 12 : 8, wicker: RGB = c.theme === 'taylor' ? P.woodDark : [0.55, 0.42, 0.26];
+  const gores: readonly RGB[] = c.theme === 'taylor' ? [[0.96, 0.78, 0.84], [1, 0.96, 0.9], [0.8, 0.88, 0.95]] : c.theme === 'newfoundland' ? [[0.78, 0.27, 0.23], [0.91, 0.71, 0.24], [0.25, 0.44, 0.69]] : [[0.79, 0.42, 0.27], [0.79, 0.42, 0.27]];
+  const band: RGB = c.theme === 'taylor' ? P.paperEdge : c.theme === 'newfoundland' ? [0.96, 0.95, 0.92] : [0.96, 0.94, 0.9];
+  // the basket, its rim and the frame up to the burner
+  box(c, 0, 0, 0.75, 0.75, 0, 1.1, shade(wicker, 1.08), wicker);
+  box(c, 0, 0, 0.8, 0.8, 1.02, 1.12, shade(wicker, 0.8), shade(wicker, 0.7));
+  for (const [x, z] of [[-0.7, -0.7], [0.7, -0.7], [0.7, 0.7], [-0.7, 0.7]] as const) beam(c, [x, 1.1, z], [x * 0.45, 2.3, z * 0.45], 0.04, 0.04, P.iron, 'steel', false);
+  cone(c, 0, 0, 2.15, 2.6, 0.32, 0.28, P.galvanised, 8, 'steel');
+  glowOrb(c, [0, 2.75, 0], 0.13, [1, 0.67, 0.29]);
+  // the envelope: a lathe of gores from the skirt's mouth to the crown
+  const prof: [number, number][] = [[3.2, 1.1], [5.0, 2.7], [7.0, 5.4], [9.6, 7.4], [12.4, 8], [15.3, 7.6], [17.8, 5.9], [19.6, 3.4], [20.6, 0]];
+  for (let k = 0; k < n; k++) {
+    const a0 = (k / n) * Math.PI * 2, a1 = ((k + 1) / n) * Math.PI * 2, col = gores[k % gores.length]!;
+    for (let j = 0; j < prof.length - 1; j++) {
+      const [y0, r0] = prof[j]!, [y1, r1] = prof[j + 1]!, lit = 0.8 + 0.22 * Math.cos((a0 + a1) / 2 - 2.4) + (j > 3 ? 0.05 : 0), skirt = j === 0, hoop = j === 3 || j === 4;
+      const tone = skirt ? shade(col, 0.62) : hoop && c.theme !== 'newfoundland' ? band : col;
+      quad(c, [Math.cos(a0) * r0, y0, Math.sin(a0) * r0], [Math.cos(a1) * r0, y0, Math.sin(a1) * r0], [Math.cos(a1) * r1, y1, Math.sin(a1) * r1], [Math.cos(a0) * r1, y1, Math.sin(a0) * r1], shade(tone, lit));
+    }
+    if (c.full) line(c, [Math.cos(a0) * 7.42, 9.6, Math.sin(a0) * 7.42], [Math.cos(a0) * 8.02, 12.4, Math.sin(a0) * 8.02], c.theme === 'taylor' ? P.paperEdge : undefined);
+  }
+  // three tethers to stakes on the turf (each stake on the ground under it)
+  for (let k = 0; k < 3; k++) {
+    const a = (k / 3) * Math.PI * 2 + 0.5, gx = Math.cos(a) * 7, gz = Math.sin(a) * 7, w = L(c, gx, 0, gz), gy = c.ground(w[0], w[2]) - c.y;
+    beam(c, [Math.cos(a) * 2.6, 5.0, Math.sin(a) * 2.6], [gx, gy + 0.35, gz], 0.03, 0.03, P.iron, 'steel', false);
+    post(c, gx, gz, gy - 0.1, gy + 0.4, 0.06, shade(wicker, 0.8), 4);
+  }
+  shadow(c, 1.1, 1.1, 0.3);
+}

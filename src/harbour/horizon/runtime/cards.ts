@@ -21,7 +21,7 @@ export function solidTriangle(builder:CardBuilder,a:XYZ,b:XYZ,c:XYZ,color:RGB,bu
   const shade=ny/n<-.2?.65:Math.abs(ny/n)<.45?.82:1;
   for(const p of [a,b,c]){if(localOrigin)data.positions.push(p[0]-localOrigin[0],p[1]-localOrigin[1],p[2]-localOrigin[2]);else data.positions.push(...p);data.normals.push(nx/n,ny/n,nz/n);data.colors.push(color[0]*shade,color[1]*shade,color[2]*shade);data.uvs.push(p[0]*.03,p[2]*.03);}
 }
-const surfaceColor=(surface:string,role:string):RGB=>rgb(role==='marker'?'#e6b95b':surface.includes('water')?'#527f83':surface.includes('metal')?'#777e7f':surface.includes('wood')||surface.includes('board')?'#b59c79':role==='roof'?'#aaa398':role==='rock'?'#a3998a':'#c9c2b4');
+const surfaceColor=(surface:string,role:string):RGB=>rgb(role==='marker'?'#e6b95b':surface==='ochre'&&role!=='deck'?'#b9864b':surface.includes('water')?'#527f83':surface.includes('metal')?'#777e7f':surface.includes('wood')||surface.includes('board')?'#b59c79':role==='roof'?'#aaa398':role==='rock'?'#a3998a':'#c9c2b4');
 export function addSolid(builder:CardBuilder,solid:StructureSolid,tier:'full'|'lite'='full'){finishBuild(addSolidSteps(builder,solid,tier));}
 /**
  * ROAD.md §4 (track K): the road corridor's solids are painted by the road kit — `corridorDeck` in swept pavement bands with

@@ -39,8 +39,9 @@ m["structures"]["washArch"] = {
 }
 m["structures"]["washHoodoos"] = {
     "kind": "hoodooFootings", "footing_m": 4, "rise_m": .5,
-    "xy": [[483.5, 650], [486, 663], [483, 677], [485.5, 690], [482.5, 704]],
-    "note": "D-WW85: five footings on the Wash's east bank, ≥ 6 m off every bed edge, mid-strip (no approach box)",
+    "xy": [[486, 636], [490, 626], [492, 616], [496, 606], [490, 600]],
+    "ww_l3_xy": [[483.5, 650], [486, 663], [483, 677], [485.5, 690], [482.5, 704]],
+    "note": "D-WW85: five footings at the Wash, ≥ 6 m off every bed edge, mid-strip (no approach box). D-WW164a (PR 4 Flats): moved from the east bank's face (4.4–9.1 m of fall across a 4 m footing: up to 9.6 m of footing stood bare under the drums) up onto the Wash's east rim at its head (≤ 0.2 m across each footing, ≤ 0.5 m within 4 m), 12.6–21 m off S2's edge, |o| ≥ 54 off the strip's centreline",
 }
 # D-WW86 · page H re-posed (the Flats prototype): from over the strip's south end up the strip, the windsock and the balloon in
 # frame, the west sea beyond.
