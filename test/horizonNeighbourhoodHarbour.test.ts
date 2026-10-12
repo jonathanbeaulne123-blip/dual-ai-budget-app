@@ -28,15 +28,22 @@ type World = { collision: { beds: BedCut[]; pads: LandCuts['pads']; mouths: Land
 let world: World, field: TerrainField, ctx: DressingContextImpl;
 const source = (s: { id: string; sourceId?: string }) => s.sourceId ?? s.id.split('@')[0]!;
 let mine: ReturnType<typeof harbour.build>, baked: { buildings: BuildingRecord[]; plants: PlantRecord[]; props: PropRecord[]; life: LifeSpawn[] };
-beforeAll(() => {
+// CI runs four workers: never hold one synchronously for long (an unhandled "Timeout calling onTaskUpdate" fails the gate even
+// with every test green). The heavy fixtures are built in steps with a yield between them, and the long loops yield too.
+const tick = () => new Promise<void>(r => setTimeout(r, 0));
+beforeAll(async () => {
   world = JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8')) as World;
+  await tick();
   const t = readFileSync('public/horizon/terrain/horizon-geo-1.bin');
   field = decodeTerrainAsset(t.buffer.slice(t.byteOffset, t.byteOffset + t.byteLength) as ArrayBuffer, 'full');
+  await tick();
   // The bake-time world as the module saw it: the baked land without the dressing's own colliders.
   const solids = world.geometry.solids.map(s => ({ ...s, id: source(s) })).filter(s => !s.id.startsWith('dressing.'));
   ctx = createDressingContext({ ground: (x, z) => sampleTerrain(field, x, z), beds: world.collision.beds, pads: world.collision.pads, waters: world.collision.waters, solids,
     hosts: world.hosts.map(h => ({ id: h.id, footprint: h.footprint, door: h.door.xy ? { xy: h.door.xy } : {}, height: h.height })), protectedAreas: [{ id: 'green', outline: protectedGreenOutline() }], districtAt: (x, z) => districtAt(x, z) });
+  await tick();
   mine = harbour.build(ctx);
+  await tick();
   const ds: DistrictDressing[] = world.dressing?.districts ?? [];
   baked = { buildings: ds.flatMap(d => d.buildings), plants: ds.flatMap(d => d.plants), props: ds.flatMap(d => d.props), life: ds.flatMap(d => d.life) };
 }, 180_000);
@@ -163,11 +170,15 @@ describe('Little Harbour: the contracts', () => {
     expect(d.triangles.full).toBeLessThanOrEqual(150_000); expect(d.triangles.lite).toBeLessThanOrEqual(60_000);
     expect(d.drawCalls).toBeLessThanOrEqual(180);
   });
-  it('keeps the square in warm shade at golden hour (60–80 % at sun 6–10°, measured as the prototype did)', () => {
+  it('keeps the square in warm shade at golden hour (60–80 % at sun 6–10°, measured as the prototype did)', async () => {
     const ray = createRayCaster(field, { solids: world.geometry.solids, waters: world.collision.waters, mouths: world.collision.mouths });
     const pts: Point2[] = []; for (let x = 1429; x < 1483; x += 4) for (let z = 1149; z < 1203; z += 4) pts.push([x, z]);
-    const shade = (bearing: number, el: number) => { const r = bearing * Math.PI / 180, e = el * Math.PI / 180, d: [number, number, number] = [Math.sin(r) * Math.cos(e), Math.sin(e), -Math.cos(r) * Math.cos(e)]; return pts.filter(([x, z]) => ray.first([x, 12.1, z], d, 1500, { step: 1 }).kind !== 'sky').length / pts.length; };
-    const samples = [247.5, 270, 292.5].flatMap(b => [6, 10].map(e => shade(b, e)));
+    const shade = async (bearing: number, el: number) => {
+      const r = bearing * Math.PI / 180, e = el * Math.PI / 180, d: [number, number, number] = [Math.sin(r) * Math.cos(e), Math.sin(e), -Math.cos(r) * Math.cos(e)];
+      let hit = 0; for (const [i, [x, z]] of pts.entries()) { if (ray.first([x, 12.1, z], d, 1500, { step: 1 }).kind !== 'sky') hit++; if (i % 16 === 15) await tick(); }
+      return hit / pts.length;
+    };
+    const samples: number[] = []; for (const b of [247.5, 270, 292.5]) for (const e of [6, 10]) samples.push(await shade(b, e));
     const mean = samples.reduce((t, v) => t + v, 0) / samples.length;
     console.log(`square shade at WSW/W/WNW × 6°/10°: ${samples.map(v => (v * 100).toFixed(0)).join(' ')} % (mean ${(mean * 100).toFixed(1)})`);
     // The prototype measured 60–83 % per sample (mean 72.7) on terrain and its own boxes; the bake also counts the land's own
@@ -178,12 +189,33 @@ describe('Little Harbour: the contracts', () => {
   }, 120_000);
 });
 
+describe('Little Harbour: the ground (SPEC §7; STYLE §2.1)', () => {
+  it('cobbles the lanes wall to wall: verge paint off every bed, pad and solid, inside the town, dropped whole on lite', async () => {
+    const verges = mine.ground.filter(g => g.fullOnly);
+    expect(verges.length).toBeGreaterThan(300);
+    for (const g of verges) {
+      expect(g.surface).toBe('cobble');
+      for (const [x, z] of g.polygon) { expect(ctx.onBed(x, z)).toBeNull(); expect(ctx.onPad(x, z)).toBeNull(); expect(ctx.inWater(x, z)).toBe(false); }
+    }
+    // The paint a page or a pastime reads (the campo, the green) is drawn on both tiers; the verges only on full.
+    expect(mine.ground.filter(g => g.surface === 'mown' || g.surface === 'ochre').every(g => !g.fullOnly)).toBe(true);
+    await tick();
+    const draw = (tier: 'full' | 'lite') => { const art = finishBuild(buildDistrictDressingSteps({ districtId: 'harbour', buildings: [], plants: [], props: [], ground: verges.slice(0, 40), pools: [], life: [] }, { tier, theme: 'classic', season: 'summer', ground: (x, z) => sampleTerrain(field, x, z) })); const n = art.stats.triangles; art.cards.dispose(); return n; };
+    expect(draw('full')).toBeGreaterThan(0); expect(draw('lite')).toBe(0);
+  });
+  it('lays the campo in ten fans between the travertine rays (alternate fans a shade apart)', () => {
+    const campo = mine.ground.filter(g => g.surface === 'ochre');
+    expect(new Set(campo.map(g => g.tone)).size).toBe(3);
+  });
+});
+
 describe('Little Harbour: three dressings skin one massing', () => {
-  it('draws every harbour kind in Classic, Taylor\'s Scrapbook and Newfoundland, each re-materialised (not re-tinted)', () => {
+  it('draws every harbour kind in Classic, Taylor\'s Scrapbook and Newfoundland, each re-materialised (not re-tinted)', async () => {
     const sample = mine.buildings.filter(b => b.kind !== 'rowHouse').concat(mine.buildings.filter(b => b.kind === 'rowHouse').slice(0, 6));
     const props = mine.props.filter(p => ['lantern', 'fountain', 'stall', 'gozzo', 'laundryLine', 'drystoneWall', 'bell', 'bocceCourt'].includes(p.kind)).slice(0, 24);
     const counts: number[] = [];
     for (const theme of ['classic', 'taylor', 'newfoundland'] as const) {
+      await tick();
       const art = finishBuild(buildDistrictDressingSteps({ districtId: 'harbour', buildings: sample, plants: [], props, ground: [], pools: [], life: [] }, { tier: 'full', theme, season: 'summer', ground: (x, z) => sampleTerrain(field, x, z) }));
       counts.push(art.stats.triangles); art.cards.dispose();
     }

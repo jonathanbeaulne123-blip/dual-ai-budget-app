@@ -1,8 +1,9 @@
 /**
  * Little Harbour's ground paint (SPEC §7; STYLE §2.1 ground): the brick piazza with a travertine border and ten
  * travertine rays from the Queen's Court's porcelain inlay (Siena-style), the small green (red clover) round the bocce
- * court, cobble setts on the upper street. Every patch lies on a level pad and carries that pad's height as its `floor`
- * (the slab the land draws), each layer a hair above the one under it. Paint never re-shapes ground.
+ * court, cobble setts on the upper street, and the lanes' cobbled verges out to the façades. Every patch on a level pad
+ * carries that pad's height as its `floor` (the slab the land draws), each layer a hair above the one under it; the verges
+ * drape the ground and are set dressing (`fullOnly`: lite drops them). Paint never re-shapes ground.
  *
  * The runtime drapes paint in triangles no longer than 2.5 eu a side (runtime/dressingLayer.ts `paintEdge`), splitting the
  * longest edge until they are. A big rectangle or a long thin strip handed over whole splits into far more triangles
@@ -11,7 +12,9 @@
  */
 import type { Point2 } from '../../world/definition.ts';
 import type { DressingContext, GroundPaint } from '../types.ts';
-import { COURT, GREEN, tier } from './plan.ts';
+import { pointInPolygon } from '../../world/geometry.ts';
+import { COURT, GREEN, TOWN, tier, untouched } from './plan.ts';
+import { FRONTAGE_BEDS } from './solver.ts';
 
 export const LATTICE = 2.45, PIECE = 2.2;
 /** A thin strip from a to b, `w` wide (≤ 1), cut into pieces ≤ PIECE long. */
@@ -50,7 +53,9 @@ export function paintGround(ctx: DressingContext): GroundPaint[] {
   const out: GroundPaint[] = [], sq = tier('square'), y = sq.y;
   // The campo's brick is the warm Siena tone (protos/harbour BRICK #c4906a): the paint table's `ochre`, lightened; `brick`
   // (#a8664f) read maroon in the square's golden-hour shade.
-  for (const t of lattice(sq.x0, sq.z0, sq.x1, sq.z1)) out.push({ polygon: t, surface: 'ochre', tone: 0.7, floor: y + LIFT.brick });
+  // The campo is laid in ten fans between the travertine rays (Siena), alternate fans a shade apart, so the 56 m of brick
+  // reads as laid courses rather than one plain (no triangles added: the lattice's own pieces carry the tone).
+  for (const t of lattice(sq.x0, sq.z0, sq.x1, sq.z1)) out.push({ polygon: t, surface: 'ochre', tone: campoTone(t), floor: y + LIFT.brick });
   // The small green: from the square's north edge south to 0.3 eu short of the bank approach (the bocce court wholly on it).
   const bank = ctx.beds.find(b => b.id === 'host.bank.approach'), half = (bank?.width ?? 2.5) / 2;
   const edgeZ = (x: number) => { let best = Infinity; const P = bank?.points ?? []; for (let i = 1; i < P.length; i++) { const a = P[i - 1]!, b = P[i]!; if ((a[0] - x) * (b[0] - x) <= 0 && a[0] !== b[0]) { const t = (x - a[0]) / (b[0] - a[0]); best = Math.min(best, a[2] + (b[2] - a[2]) * t); } } return best - half - 0.3; };
@@ -69,5 +74,41 @@ export function paintGround(ctx: DressingContext): GroundPaint[] {
   for (let a = 0; a < 8; a++) { const t = a / 8 * Math.PI * 2; for (const q of strip([COURT[0] + Math.cos(t) * 1.6, COURT[1] + Math.sin(t) * 1.6], [COURT[0] + Math.cos(t) * 4.4, COURT[1] + Math.sin(t) * 4.4], 0.22)) out.push({ polygon: q, surface: 'travertine', tone: 1, floor: y + LIFT.inlay }); }
   // Cobble setts on the upper street (the lane and the quay keep the land's stone slab: the lite budget).
   { const t = tier('upperStreet'); for (const q of lattice(t.x0, t.z0, t.x1, t.z1)) out.push({ polygon: q, surface: 'cobble', tone: 0.55, floor: t.y }); }
+  out.push(...laneVerges(ctx));
+  return out;
+}
+
+/** The campo's tone for one lattice piece: by the fan (between two rays) its centroid lies in; the Court's disc a mid tone. */
+export function campoTone(t: readonly Point2[]): number {
+  const cx = t.reduce((a, p) => a + p[0], 0) / t.length, cz = t.reduce((a, p) => a + p[1], 0) / t.length, dx = cx - COURT[0], dz = cz - COURT[1];
+  if (Math.hypot(dx, dz) < 6.6) return 0.6;
+  const a = ((Math.atan2(dz, dx) - RAYS[0]!) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2), fan = Math.floor(a / (Math.PI / 5));
+  return fan % 2 ? 0.2 : 1;
+}
+
+/**
+ * The lanes' verges (SPEC §5.1: the town's ground is cobble near every road and walk): a band of setts from each frontage
+ * bed's edge out to the façade line (the solver's 1.3 setback), so a vicolo is stone wall to wall, not a path between two
+ * strips of lawn. Cut into pieces ≤ PIECE long (2 triangles each); a piece is kept only where all its corners are inside
+ * the town, dry, off every other bed, pad and baked solid and off the untouched sites. Set dressing: lite drops it whole.
+ */
+export const VERGE = { from: 0.08, to: 1.35 } as const;
+export function laneVerges(ctx: DressingContext): GroundPaint[] {
+  const out: GroundPaint[] = [], wanted = new Set<string>(FRONTAGE_BEDS);
+  const ok = (p: Point2) => pointInPolygon(p[0], p[1], TOWN as Point2[]) && ctx.waterLevelAt(p[0], p[1]) === null && ctx.heightAt(p[0], p[1]) >= 1.5
+    && ctx.bedClearance(p[0], p[1]) >= -0.06 && (ctx.onPad?.(p[0], p[1], 0.1) ?? null) === null && !ctx.occupied(p[0], p[1], 0) && !untouched(p[0], p[1], 0.3, ctx.onPad);
+  for (const b of ctx.beds) {
+    if (!wanted.has(b.id)) continue;
+    const half = (b.width ?? 0) / 2, P = b.points.map(q => [q[0], q[2]] as Point2);
+    for (let i = 1; i < P.length; i++) {
+      const a = P[i - 1]!, c = P[i]!, L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 0.05) continue;
+      const u: Point2 = [(c[0] - a[0]) / L, (c[1] - a[1]) / L], n: Point2 = [-u[1], u[0]], k = Math.max(1, Math.ceil(L / PIECE));
+      for (let j = 0; j < k; j++) for (const side of [1, -1]) {
+        const s0 = L * j / k, s1 = L * (j + 1) / k, at = (s: number, o: number): Point2 => [a[0] + u[0] * s + n[0] * o * side, a[1] + u[1] * s + n[1] * o * side];
+        const q = [at(s0, half + VERGE.from), at(s1, half + VERGE.from), at(s1, half + VERGE.to), at(s0, half + VERGE.to)];
+        if (q.every(ok)) out.push({ polygon: side > 0 ? q : [...q].reverse(), surface: 'cobble', tone: 0.35 + 0.3 * (((i * 7 + j * 3) % 5) / 4), fullOnly: true });
+      }
+    }
+  }
   return out;
 }

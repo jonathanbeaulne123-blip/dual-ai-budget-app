@@ -52,5 +52,7 @@ export function plantHillside(ctx: DressingContext, buildings: readonly Building
   // Stone pines on the ridges (bed clearance > 7) and cypress (two framing the campanile).
   STONE_PINES.forEach(([x, z, sc]) => { if (ctx.bedClearance(x, z) > 7 && plantOk(x, z, 1) && tallOk('stonePine', sc, x, z) && !nearHouse(x, z, 2)) plants.push({ species: 'stonePine', at: [x, ctx.heightAt(x, z), z], scale: sc, yaw: x % 6.2832, keep: true }); });
   CYPRESSES.forEach(([x, z], i) => { if (ctx.bedClearance(x, z) > 4 && plantOk(x, z, 0.8) && tallOk('cypress', 1.05, x, z) && !nearHouse(x, z, 1.5)) plants.push({ species: 'cypress', at: [x, ctx.heightAt(x, z), z], scale: 1.05, yaw: i * 1.3, keep: i < 2 }); });
+  // Two alders by the river link's foot (SPEC §9: birch at 0.62 stands in for alder).
+  ([[1507, 1258], [1509, 1250]] as Point2[]).forEach(([x, z], i) => { if (plantOk(x, z, 0.8) && !nearHouse(x, z, 1.5)) plants.push({ species: 'birch', at: [x, ctx.heightAt(x, z), z], scale: 0.62, yaw: i * 2.1 + 0.4 }); });
   return { plants, props };
 }

@@ -16,7 +16,7 @@ import { HORIZON_MANIFEST } from '../../world/manifest.ts';
 import {
   BOCCE, CAFE, CAMPANILE, belfryFloor, untouched, COURT_LANTERNS, CRATES, DAM_BENCHES, FISHING, FOUNTAIN, GIRO, GOZZI_HAULED, GOZZI_MOORED, NETS, QUAY, STALLS, SUNDIAL, tier, type TierId,
 } from './plan.ts';
-import { footprintQuads } from './town.ts';
+import { footprintQuads, frontOf } from './town.ts';
 
 /** The night line every harbour anchor joins, in order (STYLE §2.1 "Night face, in order"; LIGHT §3). */
 export const NIGHT_LINE = 'harbour.night';
@@ -107,6 +107,14 @@ export function buildPlaces(ctx: DressingContext, buildings: readonly BuildingRe
   const upper = tier('upperStreet');
   for (let i = 0; i < 6; i++) { const at = nearestSpot(ctx, [upper.x0 + 1.2, upper.z0 + 8 + i * 11], onSquare, 3); if (at && onTier('upperStreet', at[0], at[1])) prop({ id: `upper.planter.${i}`, kind: 'planter', at: [at[0], upper.y, at[1]], yaw: 0, collide: false }); }
   for (const [i, p] of ([[1476.5, 1196.5], [1472, 1199]] as Point2[]).entries()) { const at = nearestSpot(ctx, p, onSquare, 3); if (at) prop({ id: `cafe.east.${i}`, kind: 'cafeTable', at: [at[0], squareY, at[1]], yaw: 0.4 + i, variant: 1, collide: false }); }
+
+  // A festoon along the café side: fixed to the fronts of the houses on the square's south edge, 3.4 over the paving,
+  // sagging across the gaps (Classic warm bulbs; Taylor draws it as her one concert-light string; kit/props `festoon`).
+  {
+    const fronts = buildings.filter(b => b.id.startsWith('row.square-S.')).map(b => frontOf(b)).sort((p, q) => p.at[0] - q.at[0]);
+    const line: Point3[] = fronts.flatMap(f => { const u: Point2 = [-f.n[1], f.n[0]]; return [-2.6, 2.6].map(o => [f.at[0] + f.n[0] * 0.15 + u[0] * o, squareY + 3.4, f.at[1] + f.n[1] * 0.15 + u[1] * o] as Point3); }).sort((p, q) => p[0] - q[0]);
+    if (line.length >= 2) prop({ id: 'square.festoon', kind: 'festoon', at: line[Math.floor(line.length / 2)]!, yaw: 0, line, collide: false });
+  }
 
   /* ---- the storefront lane's market (no prices, no lettering) ---- */
   const laneY = tier('storefrontLane').y;
