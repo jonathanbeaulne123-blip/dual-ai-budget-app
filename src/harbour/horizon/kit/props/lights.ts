@@ -43,6 +43,7 @@ export function bollard(c: Ctx) {
 const CONCERT: readonly RGB[] = [[1, 0.56, 0.69], [0.56, 0.82, 1], [1, 0.88, 0.56], [0.72, 1, 0.6], [0.85, 0.63, 1]];
 /** A festoon: a string of glow bulbs along `line` (sagging between its points; ~1.3 eu apart, every 4th warm pink). */
 export function festoon(c: Ctx) {
+  if ((c.rec.variant ?? 0) >= 1) { haulRope(c); return; }
   const pts = lineOf(c), b = c.b, warm: RGB = [1, 0.84, 0.59], pink: RGB = [1, 0.7, 0.63], wire = c.theme === 'taylor' ? c.P.paperEdge : c.P.iron;
   let n = 0;
   for (let i = 1; i < pts.length; i++) {
@@ -52,6 +53,28 @@ export function festoon(c: Ctx) {
     for (let k = 1; k < bulbs; k++, n++) { const p = at(k / bulbs), col = c.theme === 'taylor' ? CONCERT[n % CONCERT.length]! : n % 4 === 3 ? pink : warm;
       const r = 0.07 * c.s; for (let q = 0; q < 4; q++) { const a0 = (q / 4) * Math.PI * 2, a1 = ((q + 1) / 4) * Math.PI * 2; for (const y of [r, -r * 1.3]) b.tri([p[0] + Math.cos(a0) * r, p[1] - 0.06, p[2] + Math.sin(a0) * r], [p[0] + Math.cos(a1) * r, p[1] - 0.06, p[2] + Math.sin(a1) * r], [p[0], p[1] - 0.06 + y, p[2]], col, 'glow'); }
       b.line(p, [p[0], p[1] - 0.04, p[2]], wire); }
+  }
+}
+/**
+ * The Highlands drag lift's haul rope (festoon `variant` 1 = the up side with its T-bars, 2 = the bare return side): a steel
+ * rope along `line` (sheave to sheave, a slight sag), no bulbs and no glow. On the up side a T-bar hangs every ~9 m: a 2.4 m
+ * drop stick and a 1.3 m crossbar across the line in the lift's red (white in Newfoundland, tape in Taylor). Static: PR 5 runs it.
+ */
+function haulRope(c: Ctx) {
+  const pts = lineOf(c), b = c.b, rope: RGB = c.theme === 'taylor' ? c.P.timberLight : c.P.iron, bar: RGB = c.theme === 'taylor' ? c.P.tape[0]! : c.theme === 'newfoundland' ? c.P.signalWhite : c.P.signalRed;
+  const stick: RGB = c.theme === 'taylor' ? c.P.paperEdge : c.P.galvanised;
+  let along = 4;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1]!, d = pts[i]!, len = Math.hypot(d[0] - a[0], d[2] - a[2]), sag = Math.min(0.45, len * 0.012), at = (t: number): V3 => [a[0] + (d[0] - a[0]) * t, a[1] + (d[1] - a[1]) * t - sag * Math.sin(Math.PI * t), a[2] + (d[2] - a[2]) * t];
+    const seg = Math.max(4, Math.round(len / 3)); for (let k = 0; k < seg; k++) b.line(at(k / seg), at((k + 1) / seg), rope);
+    if ((c.rec.variant ?? 0) !== 1) continue;
+    const ux = (d[0] - a[0]) / (len || 1), uz = (d[2] - a[2]) / (len || 1);
+    for (; along < len - 1.5; along += 9) {
+      const p = at(along / len), foot: V3 = [p[0], p[1] - 2.4, p[2]];
+      b.beam(p, foot, 0.05, 0.05, stick, null, 'steel');
+      b.beam([foot[0] + uz * 0.65, foot[1], foot[2] - ux * 0.65], [foot[0] - uz * 0.65, foot[1], foot[2] + ux * 0.65], 0.09, 0.07, bar, c.full ? b.ink : null, 'steel');
+    }
+    along -= len;
   }
 }
 /** The airfield beacon (green / white): a lamp drum on a short mast, half its lens green, half white (a static glow; the

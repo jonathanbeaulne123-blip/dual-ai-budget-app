@@ -235,6 +235,33 @@ export function hayBale(c: Ctx) {
   if (c.full) for (const x of [-0.3, 0.3]) { const ring: V3[] = []; for (let k = 0; k <= 10; k++) { const a = (k / 10) * Math.PI * 2; ring.push(L(c, x, 0.75 + Math.sin(a) * 0.76, Math.cos(a) * 0.76)); } c.b.tube(ring, 0.012 * c.s, shade(straw, 0.6), 3); }
   shadow(c, 0.8, 0.75, 0.26);
 }
+/**
+ * A boulder (an erratic on the moraine, a shore stone, a field stone): a faceted rock about 2 wide and 1.2 high (× scale),
+ * its foot following the ground under it (sunk 0.18, so it never floats on a slope); flat-lit crown, darker flanks; a lichen
+ * patch on the crown (full). `variant` seeds its shape. Rock tones from the Crown sheet (STYLE §2.7) per dressing.
+ */
+export function boulder(c: Ctx) {
+  const v = c.rec.variant ?? 0, n = c.full ? 7 : 5;
+  const [lit, dark, lichen]: [RGB, RGB, RGB] = c.theme === 'taylor' ? [[0.85, 0.8, 0.79], [0.71, 0.64, 0.64], [0.91, 0.65, 0.74]]
+    : c.theme === 'newfoundland' ? [[0.56, 0.6, 0.61], [0.35, 0.4, 0.42], [0.78, 0.56, 0.16]] : [[0.6, 0.57, 0.51], [0.45, 0.42, 0.38], [0.85, 0.54, 0.18]];
+  const tone = 0.9 + hash(v, 3) * 0.2, top = shade(lit, tone), side = shade(mix(lit, dark, 0.55), tone);
+  const ring = (r: number, y: number, k: number): V3[] => Array.from({ length: n }, (_, i) => {
+    const a = (i / n) * Math.PI * 2 + (hash(v + k, i) - 0.5) * 0.6, rr = r * (0.78 + hash(v * 3 + k, i) * 0.44), lx = Math.cos(a) * rr, lz = Math.sin(a) * rr * 0.86;
+    if (y >= 0) return [lx, y * (0.82 + hash(v * 5 + k, i) * 0.36), lz] as V3;
+    const w = L(c, lx, 0, lz); return [lx, (c.ground(w[0], w[2]) - c.y) / c.s - 0.18, lz] as V3;
+  });
+  const foot = ring(1, -1, 1), mid = ring(0.92, 0.62, 2), crown: V3 = [(hash(v, 7) - 0.5) * 0.3, 1.2 * (0.85 + hash(v, 8) * 0.3), (hash(v, 9) - 0.5) * 0.3];
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n, a = ((i + 0.5) / n) * Math.PI * 2;
+    quad(c, foot[i]!, foot[j]!, mid[j]!, mid[i]!, shade(side, 0.82 + 0.22 * Math.cos(a - 0.9)));
+    tri(c, mid[i]!, mid[j]!, crown, shade(top, 0.9 + 0.12 * Math.cos(a - 0.9)));
+  }
+  if (c.full) {
+    const k = Math.floor(hash(v, 11) * n), A = mid[k]!, B = mid[(k + 1) % n]!, m = (p: V3, t: number): V3 => [p[0] + (crown[0] - p[0]) * t, p[1] + (crown[1] - p[1]) * t + 0.03, p[2] + (crown[2] - p[2]) * t];
+    tri(c, m(A, 0.3), m(B, 0.3), m(crown, 0), lichen, 'paint');
+  }
+  shadow(c, 1.15, 1.0, 0.24);
+}
 /** A cairn: flat stones stacked to ~1.8 (× scale), each turned and offset a little, a pointed stone on top. */
 export function cairn(c: Ctx) {
   let y = 0; const stone = c.P.stoneMid, n = c.full ? 7 : 4;

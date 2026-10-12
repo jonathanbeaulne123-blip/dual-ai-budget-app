@@ -10,7 +10,9 @@
  * `rec.line`; rails, festoons and laundry sit on the line's own heights (decks, wall fixings), fences and walls on the
  * ground under it. `scale` exceptions: ringBench radius = 6.2 × scale (heights fixed), swing rope top = scale eu above
  * `at` (default 2.6), geoglyph wingspan = 63 × scale. `variant`: viewer pictograms, boat and buoy colours, rail
- * style (railOpen 1 = steel pickets), stacked crates, bell kind (1 = ship's bell), parasols, month (monthStone 0–11).
+ * style (railOpen 1 = steel pickets), stacked crates, bell kind (1 = ship's bell), parasols, month (monthStone 0–11), the
+ * festoon's drag-lift haul rope (1 = the up side with T-bars, 2 = the bare return; no bulbs), the boulder's shape seed
+ * (`scale` = its size: ≈ 2 wide, 1.2 high at 1).
  */
 import type { CardBuilder } from '../../../art/cardScene.ts';
 import type { DressingTheme, PropKind, PropRecord } from '../../neighbourhoods/types.ts';
@@ -19,7 +21,7 @@ import { boxPart, ctxOf, lineParts, type Ctx, type Ground } from './kit.ts';
 import { bench, drystoneWall, fence, mapBoard, panel, picnicTable, railOpen, ringBench, sheepFank, viewer } from './lookout.ts';
 import { beacon, bell, bollard, festoon, flag, lantern, lanternLow, windsock } from './lights.ts';
 import {
-  birdFeeder, bikeRack, bocceCourt, bollardQuay, bookCart, buoy, cafeTable, cairn, crate, duckBox, fireRing, fountain, geoglyph, gozzo, hayBale, hive, kayak, kite,
+  birdFeeder, bikeRack, bocceCourt, bollardQuay, bookCart, boulder, buoy, cafeTable, cairn, crate, duckBox, fireRing, fountain, geoglyph, gozzo, hayBale, hive, kayak, kite,
   balloon, laundryLine, lifeRing, monthStone, net, ospreyPole, planter, readingTable, rodHolder, rowboat, skateBowl, snag, stall, sundial, swing, towel, umbrella, volleyNet,
 } from './things.ts';
 
@@ -33,7 +35,7 @@ const DRAW: Record<PropKind, (c: Ctx) => void> = {
   laundryLine, stall, cafeTable, fountain, planter, bikeRack, mapBoard, sundial, monthStone,
   kite, swing, windsock, beacon, fireRing, volleyNet, lifeRing, rodHolder, duckBox,
   ospreyPole, snag, buoy, bollardQuay, net, crate, cairn, sheepFank, festoon, flag,
-  bocceCourt, skateBowl, geoglyph, readingTable, bookCart, birdFeeder, bell, balloon,
+  bocceCourt, skateBowl, geoglyph, readingTable, bookCart, birdFeeder, bell, balloon, boulder,
 };
 export const PROP_KINDS = Object.keys(DRAW) as PropKind[];
 
@@ -105,6 +107,7 @@ export function propCollision(rec: PropRecord, ground: Ground): CollisionPart[] 
     case 'hayBale': return [B(0, 0, 1.2, 1.5, 0, 1.5, 'support', 'straw')];
     case 'crate': return [B(0, 0, 0.6, 0.6, 0, (rec.variant ?? 0) === 1 ? 1.18 : 0.58, 'support', 'timber')];
     case 'cairn': return [B(0, 0, 1.4, 1.4, 0, 1.6, 'rock', 'stone')];
+    case 'boulder': return [B(0, 0, 1.7, 1.5, -0.18, 1.1, 'rock', 'stone')];
     case 'windsock': return [B(0, 0, 0.36, 0.36, 0, 6.2, 'support', 'metal')];
     case 'beacon': return [B(0, 0, 0.64, 0.64, 0, 1.5, 'support', 'metal')];
     case 'flag': return [B(0, 0, 0.14, 0.14, 0, 6, 'support', 'metal')];

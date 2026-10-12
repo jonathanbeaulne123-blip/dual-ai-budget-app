@@ -119,7 +119,7 @@ const SHEETS:Record<string,Record<DressingTheme,Sheet>>={
   // The Highlands (protos/highlands §2.10 PALS).
   'crown.croft':{
     classic:()=>({skin:'stone',eave:'plain',walls:list('#a3998a','#aaa092','#9d9384'),stone:C('#a3998a'),stoneLit:C('#c4bba9'),stoneDark:C('#7c7268'),plinth:C('#7c7268'),plinthDark:C('#62594f'),
-      timber:C('#4a3526'),timberLight:C('#6b5238'),roofs:list('#5a4a3c','#5e4d3d'),slate:C('#6b6f74'),ridge:C('#4a3e33'),chapel:C('#d9d2c3'),glow:C('#ffd98e'),glass:C('#e9dcb8'),
+      timber:C('#4a3526'),timberLight:C('#6b5238'),roofs:list('#7a6552','#82694f','#725e4b'),slate:C('#6b6f74'),ridge:C('#4a3e33'),chapel:C('#d9d2c3'),glow:C('#ffd98e'),glass:C('#e9dcb8'),
       trim:C('#d9d2c3'),frame:C('#4a3526'),door:C('#4a3526'),plank:C('#8a6c4c'),verdigris:C('#7fa495'),verdigrisLit:C('#9ac0ae'),
       special:{steel:C('#5d6166'),cabin:C('#b23a2e'),lichen:C('#d9892f'),cable:C('#2d2822')}}),
     taylor:()=>({skin:'paper',eave:'scallop',walls:list('#d8cbc9','#e2d6d4'),stone:C('#d8cbc9'),stoneLit:C('#f1e9e6'),stoneDark:C('#b5a2a4'),plinth:C('#b5a2a4'),plinthDark:C('#9d8a8d'),

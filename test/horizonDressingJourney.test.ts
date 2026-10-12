@@ -32,6 +32,9 @@ function dressedIndex() {
   return world;
 }
 
+/** The baked index without its dressing (the committed bake is dressed once PR 3/4 register their modules). */
+function undressedIndex() { const world = parseHorizonIndex(INDEX.slice(0)); delete (world as { dressing?: unknown }).dressing; return world; }
+
 describe('the Journey map carries the dressing (slim format 4)', () => {
   // PR 4 (the Flats, D-WW162): the committed index now carries the first module's dressing, so "undressed" strips it here, and
   // the committed slim must carry exactly what the committed index extracts.

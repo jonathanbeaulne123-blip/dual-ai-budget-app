@@ -101,7 +101,9 @@ export type PropKind =
   | 'ospreyPole' | 'snag' | 'buoy' | 'bollardQuay' | 'net' | 'crate' | 'cairn' | 'sheepFank' | 'festoon' | 'flag'
   | 'bocceCourt' | 'skateBowl' | 'geoglyph' | 'readingTable' | 'bookCart' | 'birdFeeder' | 'bell'
   // E2 (additive, PR 4 Flats): the hot-air balloon at its mooring (MANIFEST sky.balloon; the ride is PR 5's mover).
-  | 'balloon';
+  | 'balloon'
+  // E2 (additive, the Highlands PR 3): a boulder (moraine erratics, tarn-shore and field stones; `variant` seeds its shape).
+  | 'boulder';
 
 export interface PropRecord {
   id?: string;
