@@ -22,6 +22,7 @@
 import * as THREE from 'three';
 import type { LightAnchor, WorldDefinition } from '../world/definition.ts';
 import { corridorLightAnchors, lampsForTier } from '../land/corridor/lights.ts';
+import { isDressingLightKind } from '../neighbourhoods/lights.ts';
 import { LIGHT_CARD_SHARES, NIGHT_LIGHT_CARDS, ROAD_LIGHTS, roadLampDelay, roadLampRamp, type RoadLampKind } from '../sky/night.ts';
 
 export type RoadLightsWorld = Pick<WorldDefinition, 'lights'> & Partial<Pick<WorldDefinition, 'beds' | 'corridors'>>;
@@ -67,6 +68,9 @@ export interface RoadLights {
 export const ROAD_LIGHT_SWITCH = { on: 0.35, off: 0.25 } as const;
 const PICK_MS = 500, PICK_MOVE = 20, POINT_PICK_MS = 250, CONFORM_BUDGET = { full: 8, lite: 4 } as const;
 const POOL_RINGS = { full: [0, 0.25, 0.5, 0.75, 1], lite: [0, 0.34, 0.67, 1] } as const, POOL_SEGMENTS = { full: 16, lite: 12 } as const;
+/** Halo scale (the road glow card's half-size, eu) of the modules' island lanterns, and their brightness at full night. */
+export const ANCHOR_HALO: Readonly<Record<string, number>> = { 'dressing:lantern': 2.4, 'dressing:lanternLow': 1.0 };
+const ANCHOR_HALO_LEVEL = 1;
 /** A pool vertex whose ground differs from the pool point by more than this is off the surface (a drop, a wall). */
 const POOL_MAX_DELTA = 1.2;
 const ROAD_KINDS = new Set<string>(Object.keys(ROAD_LIGHTS.kinds));
@@ -114,6 +118,13 @@ export function createRoadLights(scene: THREE.Scene, world: RoadLightsWorld, opt
   const glows = new THREE.InstancedMesh(new THREE.PlaneGeometry(2, 2), glowMaterial, roadMax);
   glows.name = 'lightCards.roadGlows'; glows.renderOrder = 5; glows.frustumCulled = false; glows.count = 0;
   glows.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(roadMax * 3), 3);
+  // The neighbourhood modules' island lanterns (`dressing:lantern`, `dressing:lanternLow`) also carry the road glow's
+  // camera-facing core + halo over their bead, so a ring of them reads from the ground at night (the Green's Lantern Ring;
+  // D-WW116). Emissive cards only: no point light, the 6 / 2 pool untouched; one more instanced draw.
+  const anchorHaloOf = (kind: string) => ANCHOR_HALO[kind] ?? 0;
+  const anchorGlows = new THREE.InstancedMesh(glows.geometry, glowMaterial, anchorMax);
+  anchorGlows.name = 'lightCards.anchorGlows'; anchorGlows.renderOrder = 5; anchorGlows.frustumCulled = false; anchorGlows.count = 0;
+  anchorGlows.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(anchorMax * 3), 3);
 
   // ---- road pool decals: conformed polar grids merged into one additive draw ----
   const rings = POOL_RINGS[tier], segments = POOL_SEGMENTS[tier], perPool = 1 + (rings.length - 1) * segments;
@@ -160,8 +171,8 @@ export function createRoadLights(scene: THREE.Scene, world: RoadLightsWorld, opt
     p.castShadow = false; p.name = `roadLights.point.${i}`; p.position.set(0, -1000, 0); lights.push(p);
   }
   // The group is never hidden: an invisible PointLight drops out of the light count and recompiles every lit material.
-  const group = new THREE.Group(); group.name = 'roadLights'; group.add(anchorPools, beads, pools, glows, ...lights); scene.add(group);
-  const cards: THREE.Object3D[] = [anchorPools, beads, pools, glows];
+  const group = new THREE.Group(); group.name = 'roadLights'; group.add(anchorPools, beads, pools, glows, anchorGlows, ...lights); scene.add(group);
+  const cards: THREE.Object3D[] = [anchorPools, beads, pools, glows, anchorGlows];
 
   // ---- state (preallocated; nothing allocates in update) ----
   const lampLevel = new Float32Array(lamps.length), lampDist = new Float64Array(lamps.length), lampOrder = new Uint32Array(lamps.length);
@@ -196,11 +207,20 @@ export function createRoadLights(scene: THREE.Scene, world: RoadLightsWorld, opt
     // Door / threshold cards (a threshold on a road drops its bead to a flush stud on the pad).
     for (let i = 0; i < a; i++) {
       const { a: anchor, stud } = anchors[pickedAnchor[i]!]!, lift = anchor.kind === 'door' ? 2.2 : .8, ground = anchor.at[1] - lift;
-      matrix.makeTranslation(anchor.at[0], ground + .06, anchor.at[2]); anchorPools.setMatrixAt(i, matrix);
-      if (stud) matrix.makeScale(1, .22, 1).setPosition(anchor.at[0], ground + .03, anchor.at[2]); else matrix.makeTranslation(anchor.at[0], anchor.at[1], anchor.at[2]);
+      // A neighbourhood module's anchor (kind `dressing:*`, neighbourhoods/lights.ts) stands at its fixture's base: its bead is
+      // the lamp `head` and its pool the `pool` point on the ground (PR 4 D-WW157), like a road lamp's. Any other anchor that
+      // names its own pool point (a lantern head over the paving it lights) pools there.
+      const dressing = isDressingLightKind(anchor.kind), dressingHead = dressing ? anchor.head : undefined, pool = dressing ? (anchor.pool ?? anchor.at) : anchor.pool;
+      if (pool) matrix.makeTranslation(pool[0], pool[1] + .06, pool[2]); else matrix.makeTranslation(anchor.at[0], ground + .06, anchor.at[2]);
+      anchorPools.setMatrixAt(i, matrix);
+      if (dressingHead) matrix.makeTranslation(dressingHead[0], dressingHead[1], dressingHead[2]);
+      else if (stud) matrix.makeScale(1, .22, 1).setPosition(anchor.at[0], ground + .03, anchor.at[2]); else matrix.makeTranslation(anchor.at[0], anchor.at[1], anchor.at[2]);
       beads.setMatrixAt(i, matrix);
     }
     anchorPools.count = beads.count = a; anchorPools.instanceMatrix.needsUpdate = beads.instanceMatrix.needsUpdate = true;
+    let h = 0;
+    for (let i = 0; i < a; i++) { const anchor = anchors[pickedAnchor[i]!]!.a, s = anchorHaloOf(anchor.kind); if (s <= 0) continue; matrix.makeScale(s, s, 1).setPosition(anchor.at[0], anchor.at[1], anchor.at[2]); anchorGlows.setMatrixAt(h++, matrix); }
+    anchorGlows.count = h; anchorGlows.instanceMatrix.needsUpdate = true;
     // Glow matrices and pool positions for the picked road lamps.
     poolCount = 0; conformPending = false; let budget = CONFORM_BUDGET[tier];
     const poolFar = ROAD_LIGHTS.poolFade[tier][1];
@@ -226,6 +246,7 @@ export function createRoadLights(scene: THREE.Scene, world: RoadLightsWorld, opt
       glowColor[i * 3] = colour.r * v; glowColor[i * 3 + 1] = colour.g * v; glowColor[i * 3 + 2] = colour.b * v;
     }
     glows.instanceColor!.needsUpdate = true;
+    { const c = anchorGlows.instanceColor!.array as Float32Array, v = displayK * ANCHOR_HALO_LEVEL; for (let i = 0; i < anchorGlows.count; i++) { c[i * 3] = colour.r * v; c[i * 3 + 1] = colour.g * v; c[i * 3 + 2] = colour.b * v; } anchorGlows.instanceColor!.needsUpdate = true; }
     for (let p = 0; p < poolCount; p++) {
       const li = poolSlot[p]!, l = lamps[li]!, c = conformed.get(li)!, d = Math.hypot(l.pool.x - camAt.x, l.pool.z - camAt.z);
       const v = lampLevel[li]! * ROAD_LIGHTS.kinds[l.kind].pool * (1 - smooth(near, far, d)), base = p * perPool * 3;
@@ -325,7 +346,7 @@ export function createRoadLights(scene: THREE.Scene, world: RoadLightsWorld, opt
     },
     dispose() {
       scene.remove(group);
-      for (const g of [anchorPoolGeometry, beadGeometry, poolGeometry, glows.geometry]) g.dispose();
+      for (const g of [anchorPoolGeometry, beadGeometry, poolGeometry, glows.geometry]) g.dispose(); anchorGlows.dispose();
       for (const m of [anchorPoolMaterial, beadMaterial, poolMaterial, glowMaterial]) m.dispose();
       anchors.length = 0; for (const p of lights) p.dispose();
     },

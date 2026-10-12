@@ -119,7 +119,7 @@ const SHEETS:Record<string,Record<DressingTheme,Sheet>>={
   // The Highlands (protos/highlands §2.10 PALS).
   'crown.croft':{
     classic:()=>({skin:'stone',eave:'plain',walls:list('#a3998a','#aaa092','#9d9384'),stone:C('#a3998a'),stoneLit:C('#c4bba9'),stoneDark:C('#7c7268'),plinth:C('#7c7268'),plinthDark:C('#62594f'),
-      timber:C('#4a3526'),timberLight:C('#6b5238'),roofs:list('#5a4a3c','#5e4d3d'),slate:C('#6b6f74'),ridge:C('#4a3e33'),chapel:C('#d9d2c3'),glow:C('#ffd98e'),glass:C('#e9dcb8'),
+      timber:C('#4a3526'),timberLight:C('#6b5238'),roofs:list('#7a6552','#82694f','#725e4b'),slate:C('#6b6f74'),ridge:C('#4a3e33'),chapel:C('#d9d2c3'),glow:C('#ffd98e'),glass:C('#e9dcb8'),
       trim:C('#d9d2c3'),frame:C('#4a3526'),door:C('#4a3526'),plank:C('#8a6c4c'),verdigris:C('#7fa495'),verdigrisLit:C('#9ac0ae'),
       special:{steel:C('#5d6166'),cabin:C('#b23a2e'),lichen:C('#d9892f'),cable:C('#2d2822')}}),
     taylor:()=>({skin:'paper',eave:'scallop',walls:list('#d8cbc9','#e2d6d4'),stone:C('#d8cbc9'),stoneLit:C('#f1e9e6'),stoneDark:C('#b5a2a4'),plinth:C('#b5a2a4'),plinthDark:C('#9d8a8d'),
@@ -168,6 +168,8 @@ const SHEETS:Record<string,Record<DressingTheme,Sheet>>={
       special:{boathouse:C('#c8453a'),boatDoor:C('#f5f3ea'),stilt:C('#8c7a62'),flag:C('#c8453a'),band:C('#f5f3ea'),wheel:C('#f5f3ea'),spoke:C('#d9dcd6'),hub:C('#c8453a'),bulbA:C('#ffd58a'),bulbB:C('#f5f3ea')}}),
   },
   // The Flats, the approved hybrid (protos/flats §2–§8): tin, canvas, timber, ochre rock; bush-plane yellow on doors.
+  // Newfoundland (STYLE §2.4 amended): the Quonset stays galvanised tin (a barrel roof cannot be a fish-store); the station
+  // and the elevator take the barn-red clapboard (PR 4 Flats, D-WW160).
   'flats.prairie':{
     classic:()=>({skin:'board',eave:'plain',walls:list('#a0794f','#8e6a46'),timber:C('#8e6a46'),timberLight:C('#b08a5e'),timberDark:C('#5a4334'),roofs:list('#7a6a58','#9aa3a6'),ridge:C('#5a4334'),
       tin:C('#9aa3a6'),tinAlt:C('#a7b0b2'),rust:C('#a8603a'),canvas:C('#e9dfc6'),doorAccent:C('#e8c547'),door:C('#e8c547'),trim:C('#efe6cf'),frame:C('#5a4334'),plinth:C('#b9864b'),plinthDark:C('#8f6236'),
@@ -177,7 +179,7 @@ const SHEETS:Record<string,Record<DressingTheme,Sheet>>={
       tin:C('#d6d2e2'),tinAlt:C('#e4e0ee'),rust:C('#e3b49a'),canvas:C('#fff4e4'),doorAccent:C('#f2d38a'),door:C('#f2d38a'),trim:C('#ffffff'),frame:C('#a5846e'),plinth:C('#e8cdb4'),plinthDark:C('#d2b498'),
       strata:p.strata,special:{elevator:C('#e8a6bd'),band:C('#f2d38a'),beaconG:C('#c9f0cf'),beaconW:C('#fff8e0'),cap:C('#c3899f'),dome:C('#fffaf3'),pathLamp:C('#ff9fb8'),star:C('#d9b26a')}}),
     newfoundland:p=>({skin:'clapboard',eave:'fascia',walls:list('#c8453a','#b33f35'),timber:C('#6d4b36'),timberLight:C('#93704f'),timberDark:C('#4a3426'),roofs:list('#3b4a52','#3d3a36'),ridge:C('#2a2826'),
-      tin:C('#b0453a'),tinAlt:C('#c04e42'),rust:C('#7e3428'),canvas:C('#e7e1d2'),doorAccent:C('#e7b53c'),door:C('#e7b53c'),trim:C('#f5f3ea'),frame:C('#f5f3ea'),plinth:C('#8e9a9c'),plinthDark:C('#66737a'),
+      tin:C('#a3abae'),tinAlt:C('#b3babc'),rust:C('#8a4a34'),canvas:C('#e7e1d2'),doorAccent:C('#e7b53c'),door:C('#e7b53c'),trim:C('#f5f3ea'),frame:C('#f5f3ea'),plinth:C('#8e9a9c'),plinthDark:C('#66737a'),
       strata:p.strata,special:{elevator:C('#c8453a'),band:C('#f5f3ea'),beaconG:C('#9fe6a8'),beaconW:C('#f6f4ea'),cap:C('#2f5b63'),dome:C('#f5f3ea'),pathLamp:C('#e5533d')}}),
   },
 };

@@ -99,7 +99,15 @@ export type PropKind =
   | 'laundryLine' | 'stall' | 'cafeTable' | 'fountain' | 'planter' | 'bikeRack' | 'mapBoard' | 'sundial' | 'monthStone'
   | 'kite' | 'swing' | 'windsock' | 'beacon' | 'fireRing' | 'volleyNet' | 'lifeRing' | 'rodHolder' | 'duckBox'
   | 'ospreyPole' | 'snag' | 'buoy' | 'bollardQuay' | 'net' | 'crate' | 'cairn' | 'sheepFank' | 'festoon' | 'flag'
-  | 'bocceCourt' | 'skateBowl' | 'geoglyph' | 'readingTable' | 'bookCart' | 'birdFeeder' | 'bell';
+  | 'bocceCourt' | 'skateBowl' | 'geoglyph' | 'readingTable' | 'bookCart' | 'birdFeeder' | 'bell'
+  // E2 (additive, PR 4 Flats): the hot-air balloon at its mooring (MANIFEST sky.balloon; the ride is PR 5's mover).
+  | 'balloon'
+  // E2 (additive, the Highlands PR 3): a boulder (moraine erratics, tarn-shore and field stones; `variant` seeds its shape).
+  | 'boulder'
+  // E-WW (additive, the Reach PR 3): a floating reed raft (its planting drawn with it; `line` = its tether to a pile) and a
+  // muskrat lodge (a reed-and-mud mound standing in a channel).
+  | 'raft' | 'lodge';
+
 
 export interface PropRecord {
   id?: string;
@@ -118,7 +126,13 @@ export interface PropRecord {
 /* ---------------------------------------------------------------- ground, life */
 
 /** Paint only: colours/textures the terrain inside the polygon by surface token. Never re-shapes ground. */
-export interface GroundPaint { polygon: Point2[]; surface: 'cobble' | 'brick' | 'travertine' | 'gravel' | 'sand' | 'duff' | 'sedge' | 'mown' | 'meadow' | 'prairie' | 'ochre' | 'scree' | 'snow' | 'mud' | 'pasture' | 'concrete'; tone?: number }
+export interface GroundPaint { polygon: Point2[]; surface: 'cobble' | 'brick' | 'travertine' | 'gravel' | 'sand' | 'duff' | 'sedge' | 'mown' | 'meadow' | 'prairie' | 'ochre' | 'scree' | 'snow' | 'mud' | 'pasture' | 'concrete'; tone?: number;
+  /** H2 (additive, Little Harbour): a level the paint never sinks below — a pad's top (the square's slab at 12), so paint on a
+   * level pad lies on the slab the land draws, not on the terrain under it. The decal is at max(ground, floor). */
+  floor?: number;
+  /** H3 (additive, Little Harbour): set dressing paint that lite drops whole (lite drops, never substitutes), e.g. the town's
+   * cobbled lane verges; the paint a page or a pastime reads (the square, the bocce green) leaves it unset. */
+  fullOnly?: boolean }
 /** Shallow standing water drawn as a surface (marsh pools, the Reed Maze channels); its ground is the land pass's. */
 export interface PoolRecord { id: string; outline: Point2[]; level: number }
 
@@ -138,6 +152,11 @@ export interface Landmark {
   top: Point3;
   /** Its place in the evening relay (1 = first lit at civil dusk); absent if it doesn't join. */
   relayOrder?: number;
+  /**
+   * E2 (additive, the Green): a landmark no building carries that names this yaw is a landmark tree (the Old Oak); its far silhouette is the
+   * plant kit's landmark tree, turned by this yaw (the plant record's) so the near tree replaces it in place.
+   */
+  yaw?: number;
   /** Rings in the noon bell chain (STORY.md through-line 5). */
   bell?: 'westwatch' | 'summit' | 'campanile';
 }
@@ -192,6 +211,12 @@ export interface DressingContext {
   protectedAreas: readonly { id: string; outline: readonly Point2[] }[];
   /** Deterministic PRNG for a named stream; same seed → same sequence on every machine. */
   rng(seed: string): () => number;
+  /**
+   * H1 (additive, Little Harbour): the pad (place, landing, threshold, host …) whose plan holds (x, z) grown by `margin`, or
+   * null. The bake's context always answers (it is the validator's own `onPad`); optional so small test doubles may omit it.
+   * A module needs it where `occupied` is too coarse: a colliding prop may stand on a bed's edge band but never on a pad.
+   */
+  onPad?(x: number, z: number, margin?: number): string | null;
 }
 
 export interface NeighbourhoodModule { id: NeighbourhoodId; build(ctx: DressingContext): NeighbourhoodDressing }

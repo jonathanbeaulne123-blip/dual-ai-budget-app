@@ -122,6 +122,48 @@ export function ospreyPole(c: Ctx) {
     beam(c, [Math.cos(a) * r0, y, Math.sin(a) * r0], [Math.cos(a + 0.35) * r1, y + (hash(k, 9) - 0.5) * 0.3, Math.sin(a + 0.35) * r1], 0.06, 0.06, shade(nest, 0.85 + hash(k, 11) * 0.3), 'card', false); }
   shadow(c, 0.5, 0.5, 0.22);
 }
+/**
+ * A floating reed raft (the Greenway over the Bight, D-WW23): a timber frame 4 × 9 (× scale) whose top is `at`, a planted mat,
+ * reed and cattail clumps, sedge and a few iris / Joe-Pye flowers drawn with it (so lite, which drops the raft, never leaves
+ * planting floating on the water), and its tether — `line[0]` on the raft to `line[1]` at a pile — as a thin rope.
+ * Not physically blocking (it floats out of reach): no collider.
+ */
+const RAFT_REEDS: Record<Ctx['theme'], readonly string[]> = { classic: ['#7f9050', '#8d9a58', '#9aa060', '#6f8446'], taylor: ['#9cc5a1', '#b5d6b2', '#a8c79a', '#c3dcb4'], newfoundland: ['#7a8a4c', '#8a9454', '#96995c', '#6c7e44'] };
+const RAFT_MAT: Record<Ctx['theme'], string> = { classic: '#6d7f4f', taylor: '#b9d3a6', newfoundland: '#5f7148' };
+const RAFT_HEAD: Record<Ctx['theme'], string> = { classic: '#6b4a32', taylor: '#b0828a', newfoundland: '#5e3f2a' };
+const hexRGB = (h: string): RGB => [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255];
+export function raft(c: Ctx) {
+  const P = c.P, hw = 2, hl = 4.5, frame = c.theme === 'taylor' ? P.woodDark : shade(P.woodDark, 0.95), mat = hexRGB(RAFT_MAT[c.theme]), reeds = RAFT_REEDS[c.theme].map(hexRGB), head = hexRGB(RAFT_HEAD[c.theme]);
+  box(c, 0, 0, hw, hl, -0.2, -0.02, shade(frame, 1.05), frame);
+  quad(c, [-hw + 0.12, 0.0, -hl + 0.12], [hw - 0.12, 0.0, -hl + 0.12], [hw - 0.12, 0.0, hl - 0.12], [-hw + 0.12, 0.0, hl - 0.12], mat);
+  const seed = Math.round(c.x * 3.1 + c.z * 7.7), n = c.full ? 16 : 8;
+  for (let k = 0; k < n; k++) {
+    const x = (hash(seed + k, 1) - 0.5) * (2 * hw - 0.7), z = (hash(seed + k, 2) - 0.5) * (2 * hl - 0.7), h = 1.4 + hash(seed + k, 3) * 0.8, col = reeds[k % reeds.length]!;
+    for (let j = 0; j < 3; j++) { const a = (j / 3) * Math.PI * 2 + hash(seed + k, 4 + j) * 1.2, ox = Math.cos(a) * 0.14, oz = Math.sin(a) * 0.14, lean = 0.18 + hash(seed + k, 7 + j) * 0.2;
+      tri(c, [x - oz * 0.6, 0, z + ox * 0.6], [x + oz * 0.6, 0, z - ox * 0.6], [x + ox * lean * 4, h * (0.8 + 0.2 * j / 2), z + oz * lean * 4], shade(col, 0.85 + j * 0.1)); }
+    if (k % 3 === 0) { const t = h * 0.95; tri(c, [x - 0.02, 0, z], [x + 0.02, 0, z], [x, t + 0.15, z], shade(reeds[3]!, 0.7)); tri(c, [x - 0.045, t - 0.32, z], [x + 0.045, t - 0.32, z], [x, t, z], head); tri(c, [x, t - 0.32, z - 0.045], [x, t - 0.32, z + 0.045], [x, t, z], shade(head, 0.85)); }
+  }
+  if (c.full) for (let k = 0; k < 6; k++) {
+    const x = (hash(seed + k, 11) - 0.5) * (2 * hw - 0.9), z = (hash(seed + k, 12) - 0.5) * (2 * hl - 0.9), h = 0.7 + hash(seed + k, 13) * 0.5, col: RGB = k % 2 ? [0.357, 0.373, 0.659] : [0.659, 0.416, 0.557];
+    tri(c, [x - 0.02, 0, z], [x + 0.02, 0, z], [x, h, z], shade(reeds[0]!, 0.7)); tri(c, [x - 0.08, h - 0.05, z], [x + 0.08, h - 0.05, z], [x, h + 0.14, z], col); tri(c, [x, h - 0.05, z - 0.08], [x, h - 0.05, z + 0.08], [x, h + 0.14, z], shade(col, 0.88));
+  }
+  // The tether: a rope from the raft's edge to its pile (world points; the prop frame's scale does not apply).
+  const t = c.rec.line; if (t && t.length >= 2) c.b.beam([t[0]![0], t[0]![1], t[0]![2]], [t[1]![0], t[1]![1], t[1]![2]], 0.035, 0.035, c.theme === 'taylor' ? P.paperEdge : [0.25, 0.23, 0.2], null, 'card');
+}
+/**
+ * A muskrat lodge (the Reach's channels, the Channel Hide's subject; reach SPEC §3): a low dome of cut reeds and mud, 2.6 wide
+ * and 1.3 tall at scale 1, its base `at` (0.3 under the water it rises from), reed stems poking out of the thatch. A solid
+ * mound: one box collider round its core when asked.
+ */
+export function lodge(c: Ctx) {
+  const reed = hexRGB(RAFT_REEDS[c.theme][3]!), mud: RGB = c.theme === 'taylor' ? [0.72, 0.6, 0.56] : c.theme === 'newfoundland' ? [0.36, 0.31, 0.24] : [0.42, 0.37, 0.26], n = c.full ? 9 : 7;
+  cone(c, 0, 0, 0, 0.55, 1.3, 1.05, shade(mud, 0.92), n);
+  cone(c, 0, 0, 0.55, 1.05, 1.05, 0.55, mix(mud, reed, 0.45), n);
+  cone(c, 0, 0, 1.05, 1.3, 0.55, 0.08, mix(mud, reed, 0.7), n);
+  const seed = Math.round(c.x * 5.3 + c.z * 2.9), k1 = c.full ? 14 : 6;
+  for (let k = 0; k < k1; k++) { const a = (k / k1) * Math.PI * 2 + hash(seed + k, 1) * 0.4, r = 0.55 + hash(seed + k, 2) * 0.6, y = 1.25 - r * 0.75, l = 0.5 + hash(seed + k, 3) * 0.5;
+    tri(c, [Math.cos(a) * r - 0.04, y, Math.sin(a) * r], [Math.cos(a) * r + 0.04, y, Math.sin(a) * r], [Math.cos(a) * (r + l * 0.7), y + l * 0.55, Math.sin(a) * (r + l * 0.7)], shade(reed, 0.8 + hash(seed + k, 4) * 0.3)); }
+}
 /** A snag: a dead standing trunk 7.5 tall, three bare branches, a broken top. */
 export function snag(c: Ctx) {
   const col: RGB = [0.557, 0.53, 0.482];
@@ -234,6 +276,33 @@ export function hayBale(c: Ctx) {
   drum(c, [-0.6, 0.75, 0], [0.6, 0.75, 0], 0.75, c.full ? 10 : 7, straw, shade(straw, 1.08));
   if (c.full) for (const x of [-0.3, 0.3]) { const ring: V3[] = []; for (let k = 0; k <= 10; k++) { const a = (k / 10) * Math.PI * 2; ring.push(L(c, x, 0.75 + Math.sin(a) * 0.76, Math.cos(a) * 0.76)); } c.b.tube(ring, 0.012 * c.s, shade(straw, 0.6), 3); }
   shadow(c, 0.8, 0.75, 0.26);
+}
+/**
+ * A boulder (an erratic on the moraine, a shore stone, a field stone): a faceted rock about 2 wide and 1.2 high (× scale),
+ * its foot following the ground under it (sunk 0.18, so it never floats on a slope); flat-lit crown, darker flanks; a lichen
+ * patch on the crown (full). `variant` seeds its shape. Rock tones from the Crown sheet (STYLE §2.7) per dressing.
+ */
+export function boulder(c: Ctx) {
+  const v = c.rec.variant ?? 0, n = c.full ? 7 : 5;
+  const [lit, dark, lichen]: [RGB, RGB, RGB] = c.theme === 'taylor' ? [[0.85, 0.8, 0.79], [0.71, 0.64, 0.64], [0.91, 0.65, 0.74]]
+    : c.theme === 'newfoundland' ? [[0.56, 0.6, 0.61], [0.35, 0.4, 0.42], [0.78, 0.56, 0.16]] : [[0.6, 0.57, 0.51], [0.45, 0.42, 0.38], [0.85, 0.54, 0.18]];
+  const tone = 0.9 + hash(v, 3) * 0.2, top = shade(lit, tone), side = shade(mix(lit, dark, 0.55), tone);
+  const ring = (r: number, y: number, k: number): V3[] => Array.from({ length: n }, (_, i) => {
+    const a = (i / n) * Math.PI * 2 + (hash(v + k, i) - 0.5) * 0.6, rr = r * (0.78 + hash(v * 3 + k, i) * 0.44), lx = Math.cos(a) * rr, lz = Math.sin(a) * rr * 0.86;
+    if (y >= 0) return [lx, y * (0.82 + hash(v * 5 + k, i) * 0.36), lz] as V3;
+    const w = L(c, lx, 0, lz); return [lx, (c.ground(w[0], w[2]) - c.y) / c.s - 0.18, lz] as V3;
+  });
+  const foot = ring(1, -1, 1), mid = ring(0.92, 0.62, 2), crown: V3 = [(hash(v, 7) - 0.5) * 0.3, 1.2 * (0.85 + hash(v, 8) * 0.3), (hash(v, 9) - 0.5) * 0.3];
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n, a = ((i + 0.5) / n) * Math.PI * 2;
+    quad(c, foot[i]!, foot[j]!, mid[j]!, mid[i]!, shade(side, 0.82 + 0.22 * Math.cos(a - 0.9)));
+    tri(c, mid[i]!, mid[j]!, crown, shade(top, 0.9 + 0.12 * Math.cos(a - 0.9)));
+  }
+  if (c.full) {
+    const k = Math.floor(hash(v, 11) * n), A = mid[k]!, B = mid[(k + 1) % n]!, m = (p: V3, t: number): V3 => [p[0] + (crown[0] - p[0]) * t, p[1] + (crown[1] - p[1]) * t + 0.03, p[2] + (crown[2] - p[2]) * t];
+    tri(c, m(A, 0.3), m(B, 0.3), m(crown, 0), lichen, 'paint');
+  }
+  shadow(c, 1.15, 1.0, 0.24);
 }
 /** A cairn: flat stones stacked to ~1.8 (× scale), each turned and offset a little, a pointed stone on top. */
 export function cairn(c: Ctx) {
@@ -357,3 +426,41 @@ export function birdFeeder(c: Ctx) {
   if (c.full) for (const [x, z] of [[0.22, 0.12], [-0.18, -0.13]] as const) { dome(c, x, 1.6, z, 0.06, [0.42, 0.4, 0.38], 6, 2); dome(c, x + 0.04, 1.66, z, 0.035, [0.15, 0.14, 0.13], 5, 1); }
 }
 export { mix, steel, stations, yawAlong, glowOrb };
+
+/* ------------------------------------------------------------------------------------------------- the sky */
+
+/**
+ * The hot-air balloon at its mooring (E2, PR 4 Flats; MANIFEST `sky.balloon`): a wicker basket (1.5 × 1.5, 1.1 tall), the
+ * burner on its frame, the skirt and an envelope of gores (equator 8 eu round, crown 20.6 over the basket), three tethers
+ * to ground stakes. Classic: rust gores with porcelain bands (never the Hollow's sumac); Taylor: pastel paper gores with
+ * paper-edge seams; Newfoundland: red, yellow and blue gores. The burner's pilot flame is a small glow orb. The ride is PR 5's.
+ */
+export function balloon(c: Ctx) {
+  const P = c.P, n = c.full ? 12 : 8, wicker: RGB = c.theme === 'taylor' ? P.woodDark : [0.55, 0.42, 0.26];
+  const gores: readonly RGB[] = c.theme === 'taylor' ? [[0.96, 0.78, 0.84], [1, 0.96, 0.9], [0.8, 0.88, 0.95]] : c.theme === 'newfoundland' ? [[0.78, 0.27, 0.23], [0.91, 0.71, 0.24], [0.25, 0.44, 0.69]] : [[0.79, 0.42, 0.27], [0.79, 0.42, 0.27]];
+  const band: RGB = c.theme === 'taylor' ? P.paperEdge : c.theme === 'newfoundland' ? [0.96, 0.95, 0.92] : [0.96, 0.94, 0.9];
+  // the basket, its rim and the frame up to the burner
+  box(c, 0, 0, 0.75, 0.75, 0, 1.1, shade(wicker, 1.08), wicker);
+  box(c, 0, 0, 0.8, 0.8, 1.02, 1.12, shade(wicker, 0.8), shade(wicker, 0.7));
+  for (const [x, z] of [[-0.7, -0.7], [0.7, -0.7], [0.7, 0.7], [-0.7, 0.7]] as const) beam(c, [x, 1.1, z], [x * 0.45, 2.3, z * 0.45], 0.04, 0.04, P.iron, 'steel', false);
+  cone(c, 0, 0, 2.15, 2.6, 0.32, 0.28, P.galvanised, 8, 'steel');
+  glowOrb(c, [0, 2.75, 0], 0.13, [1, 0.67, 0.29]);
+  // the envelope: a lathe of gores from the skirt's mouth to the crown
+  const prof: [number, number][] = [[3.2, 1.1], [5.0, 2.7], [7.0, 5.4], [9.6, 7.4], [12.4, 8], [15.3, 7.6], [17.8, 5.9], [19.6, 3.4], [20.6, 0]];
+  for (let k = 0; k < n; k++) {
+    const a0 = (k / n) * Math.PI * 2, a1 = ((k + 1) / n) * Math.PI * 2, col = gores[k % gores.length]!;
+    for (let j = 0; j < prof.length - 1; j++) {
+      const [y0, r0] = prof[j]!, [y1, r1] = prof[j + 1]!, lit = 0.8 + 0.22 * Math.cos((a0 + a1) / 2 - 2.4) + (j > 3 ? 0.05 : 0), skirt = j === 0, hoop = j === 3 || j === 4;
+      const tone = skirt ? shade(col, 0.62) : hoop && c.theme !== 'newfoundland' ? band : col;
+      quad(c, [Math.cos(a0) * r0, y0, Math.sin(a0) * r0], [Math.cos(a1) * r0, y0, Math.sin(a1) * r0], [Math.cos(a1) * r1, y1, Math.sin(a1) * r1], [Math.cos(a0) * r1, y1, Math.sin(a0) * r1], shade(tone, lit));
+    }
+    if (c.full) line(c, [Math.cos(a0) * 7.42, 9.6, Math.sin(a0) * 7.42], [Math.cos(a0) * 8.02, 12.4, Math.sin(a0) * 8.02], c.theme === 'taylor' ? P.paperEdge : undefined);
+  }
+  // three tethers to stakes on the turf (each stake on the ground under it)
+  for (let k = 0; k < 3; k++) {
+    const a = (k / 3) * Math.PI * 2 + 0.5, gx = Math.cos(a) * 7, gz = Math.sin(a) * 7, w = L(c, gx, 0, gz), gy = c.ground(w[0], w[2]) - c.y;
+    beam(c, [Math.cos(a) * 2.6, 5.0, Math.sin(a) * 2.6], [gx, gy + 0.35, gz], 0.03, 0.03, P.iron, 'steel', false);
+    post(c, gx, gz, gy - 0.1, gy + 0.4, 0.06, shade(wicker, 0.8), 4);
+  }
+  shadow(c, 1.1, 1.1, 0.3);
+}

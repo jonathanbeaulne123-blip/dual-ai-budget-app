@@ -1,0 +1,1569 @@
+{
+ "sha": "83181a2d6f31c36a69b224ca79aa9bf25e2be553",
+ "method": "headless Chromium (SwiftShader) on the review harness; look poses via __harbour.world.views + shot(); themes via setTheme. SwiftShader, not device evidence.",
+ "date": "2026-06-21",
+ "viewport": {
+  "width": 960,
+  "height": 600
+ },
+ "records": [
+  {
+   "file": "pageI_classic_full_09-30.jpg",
+   "label": "pageI",
+   "theme": "classic",
+   "tier": "full",
+   "time": "09:30",
+   "view": "I",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "note": "page I: the boardwalk's north end, reeds at hand height, the spring's source rock (night: the High Span's lights)",
+   "settle": [],
+   "stats": {
+    "drawCalls": 97,
+    "triangles": 220240
+   }
+  },
+  {
+   "file": "pageI_classic_full_22-20.jpg",
+   "label": "pageI",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:20",
+   "view": "I",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "note": "page I: the boardwalk's north end, reeds at hand height, the spring's source rock (night: the High Span's lights)",
+   "settle": [],
+   "stats": {
+    "drawCalls": 509,
+    "triangles": 692629
+   }
+  },
+  {
+   "file": "notchBluff_classic_full_19-50.jpg",
+   "label": "notchBluff",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "view": null,
+   "eye": [
+    1191.4364495509262,
+    25.2,
+    1112.5664048763372
+   ],
+   "target": [
+    1247.662613479912,
+    5,
+    1216.1171097982779
+   ],
+   "fov": 62,
+   "note": "Notch Bluff (new page): the marsh, the osprey pole, the river mouth",
+   "settle": [],
+   "stats": {
+    "drawCalls": 381,
+    "triangles": 318752
+   }
+  },
+  {
+   "file": "notchBluff_classic_full_22-20.jpg",
+   "label": "notchBluff",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:20",
+   "view": null,
+   "eye": [
+    1191.4364495509262,
+    25.2,
+    1112.5664048763372
+   ],
+   "target": [
+    1247.662613479912,
+    5,
+    1216.1171097982779
+   ],
+   "fov": 62,
+   "note": "Notch Bluff (new page): the marsh, the osprey pole, the river mouth",
+   "settle": [],
+   "stats": {
+    "drawCalls": 387,
+    "triangles": 353435
+   }
+  },
+  {
+   "file": "porch-springBay_classic_full_09-30.jpg",
+   "label": "porch-springBay",
+   "theme": "classic",
+   "tier": "full",
+   "time": "09:30",
+   "view": null,
+   "eye": [
+    1245.004065340692,
+    6,
+    1200.8495800928224
+   ],
+   "target": [
+    1285.6027190849309,
+    5.4,
+    1207.4464971118105
+   ],
+   "fov": 60,
+   "note": "the porch: Spring Bay, its viewers, the heron's pool",
+   "settle": [],
+   "stats": {
+    "drawCalls": 373,
+    "triangles": 319831
+   }
+  },
+  {
+   "file": "greenway-deck_classic_full_10-30.jpg",
+   "label": "greenway-deck",
+   "theme": "classic",
+   "tier": "full",
+   "time": "10:30",
+   "view": null,
+   "eye": [
+    1065.9847996594867,
+    11.547252334181824,
+    1318.9
+   ],
+   "target": [
+    1020.9847996594867,
+    12.630568830926153,
+    1318.5
+   ],
+   "fov": 58,
+   "note": "the Greenway at s 150: reeds at hand height, the island lanterns",
+   "settle": [],
+   "stats": {
+    "drawCalls": 96,
+    "triangles": 190099
+   }
+  },
+  {
+   "file": "greenway-deck_classic_full_22-20.jpg",
+   "label": "greenway-deck",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:20",
+   "view": null,
+   "eye": [
+    1065.9847996594867,
+    11.547252334181824,
+    1318.9
+   ],
+   "target": [
+    1020.9847996594867,
+    12.630568830926153,
+    1318.5
+   ],
+   "fov": 58,
+   "note": "the Greenway at s 150: reeds at hand height, the island lanterns",
+   "settle": [],
+   "stats": {
+    "drawCalls": 104,
+    "triangles": 244713
+   }
+  },
+  {
+   "file": "greenway-bluffEnd_classic_full_19-50.jpg",
+   "label": "greenway-bluffEnd",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "view": null,
+   "eye": [
+    869.5,
+    22.5,
+    694.5
+   ],
+   "target": [
+    540,
+    8,
+    1195
+   ],
+   "fov": 62,
+   "note": "Bluff End: the pavilion, wind-bent pines, the Lamp across the Bight",
+   "settle": [],
+   "stats": {
+    "drawCalls": 131,
+    "triangles": 284745
+   }
+  },
+  {
+   "file": "channelHide-dawn_classic_full_05-40.jpg",
+   "label": "channelHide-dawn",
+   "theme": "classic",
+   "tier": "full",
+   "time": "05:40",
+   "view": null,
+   "eye": [
+    1252.6,
+    6.7,
+    1237.5
+   ],
+   "target": [
+    1244,
+    3.6,
+    1262
+   ],
+   "fov": 62,
+   "note": "the Channel Hide at dawn from the boardwalk: the blind on its piles, the west channel beyond",
+   "settle": [],
+   "stats": {
+    "drawCalls": 499,
+    "triangles": 655696
+   }
+  },
+  {
+   "file": "sunsetRail-golden_classic_full_19-50.jpg",
+   "label": "sunsetRail-golden",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "view": null,
+   "eye": [
+    1353.2201380179306,
+    12.8,
+    1238.09818191791
+   ],
+   "target": [
+    1229.7425902672462,
+    2.5,
+    1205.0312013863056
+   ],
+   "fov": 62,
+   "note": "Sunset Rail: the marsh into the sunset, the High Span",
+   "settle": [],
+   "stats": {
+    "drawCalls": 187,
+    "triangles": 395530
+   }
+  },
+  {
+   "file": "greenway-reedMaze_classic_full_19-50.jpg",
+   "label": "greenway-reedMaze",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "view": null,
+   "eye": [
+    1101,
+    30,
+    1329
+   ],
+   "target": [
+    1088,
+    7.9,
+    1353
+   ],
+   "fov": 58,
+   "note": "the Reed Maze and the Dune Overlook from above",
+   "settle": [],
+   "stats": {
+    "drawCalls": 71,
+    "triangles": 214290
+   }
+  },
+  {
+   "file": "greenway-marshHide_classic_full_09-30.jpg",
+   "label": "greenway-marshHide",
+   "theme": "classic",
+   "tier": "full",
+   "time": "09:30",
+   "view": null,
+   "eye": [
+    851.7191057475721,
+    11.299999999999999,
+    1252.6805735565354
+   ],
+   "target": [
+    823.8431626817988,
+    10.1,
+    1250.335917046389
+   ],
+   "fov": 60,
+   "note": "the Marsh Hide and its pool",
+   "settle": [],
+   "stats": {
+    "drawCalls": 131,
+    "triangles": 282576
+   }
+  },
+  {
+   "file": "night-boardwalk_classic_full_22-20.jpg",
+   "label": "night-boardwalk",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:20",
+   "view": null,
+   "eye": [
+    1247.5,
+    5.98,
+    1218
+   ],
+   "target": [
+    1258,
+    6,
+    1262
+   ],
+   "fov": 58,
+   "note": "night: the boardwalk lanterns down the deck",
+   "settle": [],
+   "stats": {
+    "drawCalls": 105,
+    "triangles": 305906
+   }
+  },
+  {
+   "file": "binoc-notchBluff-osprey_classic_full_19-50.jpg",
+   "label": "binoc-notchBluff-osprey",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "view": null,
+   "eye": [
+    1188.5113241955917,
+    24.8,
+    1114.300227720684
+   ],
+   "target": [
+    1292,
+    14.5,
+    1268
+   ],
+   "fov": 8,
+   "note": "through the Notch Bluff viewer: the osprey on its pole",
+   "settle": [],
+   "stats": {
+    "drawCalls": 84,
+    "triangles": 167498
+   }
+  },
+  {
+   "file": "binoc-highSpan-osprey_classic_full_09-30.jpg",
+   "label": "binoc-highSpan-osprey",
+   "theme": "classic",
+   "tier": "full",
+   "time": "09:30",
+   "view": null,
+   "eye": [
+    1267.766032827598,
+    11.3,
+    1147.296793278081
+   ],
+   "target": [
+    1292,
+    16.4,
+    1268
+   ],
+   "fov": 7,
+   "note": "through the High Span Overlook viewer: the osprey from above",
+   "settle": [],
+   "stats": {
+    "drawCalls": 69,
+    "triangles": 162200
+   }
+  },
+  {
+   "file": "binoc-springBay-heron_classic_full_09-30.jpg",
+   "label": "binoc-springBay-heron",
+   "theme": "classic",
+   "tier": "full",
+   "time": "09:30",
+   "view": null,
+   "eye": [
+    1248.42,
+    6.3,
+    1200.62
+   ],
+   "target": [
+    1268.6,
+    5.2,
+    1204
+   ],
+   "fov": 6.5,
+   "note": "through the Spring Bay viewer: the heron",
+   "settle": [],
+   "stats": {
+    "drawCalls": 438,
+    "triangles": 528224
+   }
+  },
+  {
+   "file": "binoc-sunsetRail-span_classic_full_19-50.jpg",
+   "label": "binoc-sunsetRail-span",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "view": null,
+   "eye": [
+    1353.9815306702376,
+    12.39,
+    1234.7841539715866
+   ],
+   "target": [
+    1240,
+    27,
+    1104
+   ],
+   "fov": 7.5,
+   "note": "through the Sunset Rail viewer: the High Span against the sunset",
+   "settle": [],
+   "stats": {
+    "drawCalls": 79,
+    "triangles": 235365
+   }
+  },
+  {
+   "file": "binoc-harbourBell-lamp_classic_full_21-05.jpg",
+   "label": "binoc-harbourBell-lamp",
+   "theme": "classic",
+   "tier": "full",
+   "time": "21:05",
+   "view": null,
+   "eye": [
+    1323.53,
+    10.3,
+    1380.94
+   ],
+   "target": [
+    540,
+    20,
+    1195
+   ],
+   "fov": 3.2,
+   "note": "through the Harbour Bell viewer: the Lamp at dusk",
+   "settle": [],
+   "stats": {
+    "drawCalls": 86,
+    "triangles": 299236
+   }
+  },
+  {
+   "file": "binoc-channelHide-lodge_classic_full_05-40.jpg",
+   "label": "binoc-channelHide-lodge",
+   "theme": "classic",
+   "tier": "full",
+   "time": "05:40",
+   "view": null,
+   "eye": [
+    1250.58,
+    5.98,
+    1254.3
+   ],
+   "target": [
+    1236,
+    2.6,
+    1292
+   ],
+   "fov": 14,
+   "note": "the Channel Hide's slot: the muskrat lodge",
+   "settle": [],
+   "stats": {
+    "drawCalls": 64,
+    "triangles": 194123
+   }
+  },
+  {
+   "file": "aerial-reach_classic_full_09-30.jpg",
+   "label": "aerial-reach",
+   "theme": "classic",
+   "tier": "full",
+   "time": "09:30",
+   "view": null,
+   "eye": [
+    1440,
+    175,
+    1450
+   ],
+   "target": [
+    1262,
+    6,
+    1235
+   ],
+   "fov": 50,
+   "note": "aerial: the Reach from the south-east",
+   "settle": [],
+   "stats": {
+    "drawCalls": 179,
+    "triangles": 392684
+   }
+  },
+  {
+   "file": "aerial-greenway_classic_full_11-00.jpg",
+   "label": "aerial-greenway",
+   "theme": "classic",
+   "tier": "full",
+   "time": "11:00",
+   "view": null,
+   "eye": [
+    1230,
+    330,
+    1560
+   ],
+   "target": [
+    985,
+    0,
+    1150
+   ],
+   "fov": 52,
+   "note": "aerial: the Greenway from the Reach Gate to the bluff",
+   "settle": [],
+   "stats": {
+    "drawCalls": 180,
+    "triangles": 388762
+   }
+  },
+  {
+   "file": "pageI_taylor_full_09-30.jpg",
+   "label": "pageI",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "09:30",
+   "view": "I",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "note": "page I: the boardwalk's north end, reeds at hand height, the spring's source rock (night: the High Span's lights)",
+   "settle": [],
+   "stats": {
+    "drawCalls": 97,
+    "triangles": 215442
+   }
+  },
+  {
+   "file": "pageI_taylor_full_22-20.jpg",
+   "label": "pageI",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "22:20",
+   "view": "I",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "note": "page I: the boardwalk's north end, reeds at hand height, the spring's source rock (night: the High Span's lights)",
+   "settle": [],
+   "stats": {
+    "drawCalls": 131,
+    "triangles": 339530
+   }
+  },
+  {
+   "file": "notchBluff_taylor_full_19-50.jpg",
+   "label": "notchBluff",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "19:50",
+   "view": null,
+   "eye": [
+    1191.4364495509262,
+    25.2,
+    1112.5664048763372
+   ],
+   "target": [
+    1247.662613479912,
+    5,
+    1216.1171097982779
+   ],
+   "fov": 62,
+   "note": "Notch Bluff (new page): the marsh, the osprey pole, the river mouth",
+   "settle": [],
+   "stats": {
+    "drawCalls": 381,
+    "triangles": 315092
+   }
+  },
+  {
+   "file": "notchBluff_taylor_full_22-20.jpg",
+   "label": "notchBluff",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "22:20",
+   "view": null,
+   "eye": [
+    1191.4364495509262,
+    25.2,
+    1112.5664048763372
+   ],
+   "target": [
+    1247.662613479912,
+    5,
+    1216.1171097982779
+   ],
+   "fov": 62,
+   "note": "Notch Bluff (new page): the marsh, the osprey pole, the river mouth",
+   "settle": [],
+   "stats": {
+    "drawCalls": 387,
+    "triangles": 349775
+   }
+  },
+  {
+   "file": "porch-springBay_taylor_full_09-30.jpg",
+   "label": "porch-springBay",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "09:30",
+   "view": null,
+   "eye": [
+    1245.004065340692,
+    6,
+    1200.8495800928224
+   ],
+   "target": [
+    1285.6027190849309,
+    5.4,
+    1207.4464971118105
+   ],
+   "fov": 60,
+   "note": "the porch: Spring Bay, its viewers, the heron's pool",
+   "settle": [],
+   "stats": {
+    "drawCalls": 373,
+    "triangles": 316656
+   }
+  },
+  {
+   "file": "greenway-deck_taylor_full_10-30.jpg",
+   "label": "greenway-deck",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "10:30",
+   "view": null,
+   "eye": [
+    1065.9847996594867,
+    11.547252334181824,
+    1318.9
+   ],
+   "target": [
+    1020.9847996594867,
+    12.630568830926153,
+    1318.5
+   ],
+   "fov": 58,
+   "note": "the Greenway at s 150: reeds at hand height, the island lanterns",
+   "settle": [],
+   "stats": {
+    "drawCalls": 94,
+    "triangles": 189073
+   }
+  },
+  {
+   "file": "greenway-deck_taylor_full_22-20.jpg",
+   "label": "greenway-deck",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "22:20",
+   "view": null,
+   "eye": [
+    1065.9847996594867,
+    11.547252334181824,
+    1318.9
+   ],
+   "target": [
+    1020.9847996594867,
+    12.630568830926153,
+    1318.5
+   ],
+   "fov": 58,
+   "note": "the Greenway at s 150: reeds at hand height, the island lanterns",
+   "settle": [],
+   "stats": {
+    "drawCalls": 102,
+    "triangles": 243687
+   }
+  },
+  {
+   "file": "greenway-bluffEnd_taylor_full_19-50.jpg",
+   "label": "greenway-bluffEnd",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "19:50",
+   "view": null,
+   "eye": [
+    869.5,
+    22.5,
+    694.5
+   ],
+   "target": [
+    540,
+    8,
+    1195
+   ],
+   "fov": 62,
+   "note": "Bluff End: the pavilion, wind-bent pines, the Lamp across the Bight",
+   "settle": [],
+   "stats": {
+    "drawCalls": 133,
+    "triangles": 273659
+   }
+  },
+  {
+   "file": "aerial-reach_taylor_full_09-30.jpg",
+   "label": "aerial-reach",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "09:30",
+   "view": null,
+   "eye": [
+    1440,
+    175,
+    1450
+   ],
+   "target": [
+    1262,
+    6,
+    1235
+   ],
+   "fov": 50,
+   "note": "aerial: the Reach from the south-east",
+   "settle": [],
+   "stats": {
+    "drawCalls": 147,
+    "triangles": 335001
+   }
+  },
+  {
+   "file": "pageI_newfoundland_full_09-30.jpg",
+   "label": "pageI",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "09:30",
+   "view": "I",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "note": "page I: the boardwalk's north end, reeds at hand height, the spring's source rock (night: the High Span's lights)",
+   "settle": [],
+   "stats": {
+    "drawCalls": 97,
+    "triangles": 218592
+   }
+  },
+  {
+   "file": "pageI_newfoundland_full_22-20.jpg",
+   "label": "pageI",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "22:20",
+   "view": "I",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "note": "page I: the boardwalk's north end, reeds at hand height, the spring's source rock (night: the High Span's lights)",
+   "settle": [],
+   "stats": {
+    "drawCalls": 509,
+    "triangles": 682825
+   }
+  },
+  {
+   "file": "notchBluff_newfoundland_full_19-50.jpg",
+   "label": "notchBluff",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "19:50",
+   "view": null,
+   "eye": [
+    1191.4364495509262,
+    25.2,
+    1112.5664048763372
+   ],
+   "target": [
+    1247.662613479912,
+    5,
+    1216.1171097982779
+   ],
+   "fov": 62,
+   "note": "Notch Bluff (new page): the marsh, the osprey pole, the river mouth",
+   "settle": [],
+   "stats": {
+    "drawCalls": 381,
+    "triangles": 316936
+   }
+  },
+  {
+   "file": "notchBluff_newfoundland_full_22-20.jpg",
+   "label": "notchBluff",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "22:20",
+   "view": null,
+   "eye": [
+    1191.4364495509262,
+    25.2,
+    1112.5664048763372
+   ],
+   "target": [
+    1247.662613479912,
+    5,
+    1216.1171097982779
+   ],
+   "fov": 62,
+   "note": "Notch Bluff (new page): the marsh, the osprey pole, the river mouth",
+   "settle": [],
+   "stats": {
+    "drawCalls": 387,
+    "triangles": 351619
+   }
+  },
+  {
+   "file": "porch-springBay_newfoundland_full_09-30.jpg",
+   "label": "porch-springBay",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "09:30",
+   "view": null,
+   "eye": [
+    1245.004065340692,
+    6,
+    1200.8495800928224
+   ],
+   "target": [
+    1285.6027190849309,
+    5.4,
+    1207.4464971118105
+   ],
+   "fov": 60,
+   "note": "the porch: Spring Bay, its viewers, the heron's pool",
+   "settle": [],
+   "stats": {
+    "drawCalls": 373,
+    "triangles": 317198
+   }
+  },
+  {
+   "file": "greenway-deck_newfoundland_full_10-30.jpg",
+   "label": "greenway-deck",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "10:30",
+   "view": null,
+   "eye": [
+    1065.9847996594867,
+    11.547252334181824,
+    1318.9
+   ],
+   "target": [
+    1020.9847996594867,
+    12.630568830926153,
+    1318.5
+   ],
+   "fov": 58,
+   "note": "the Greenway at s 150: reeds at hand height, the island lanterns",
+   "settle": [],
+   "stats": {
+    "drawCalls": 96,
+    "triangles": 185354
+   }
+  },
+  {
+   "file": "greenway-deck_newfoundland_full_22-20.jpg",
+   "label": "greenway-deck",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "22:20",
+   "view": null,
+   "eye": [
+    1065.9847996594867,
+    11.547252334181824,
+    1318.9
+   ],
+   "target": [
+    1020.9847996594867,
+    12.630568830926153,
+    1318.5
+   ],
+   "fov": 58,
+   "note": "the Greenway at s 150: reeds at hand height, the island lanterns",
+   "settle": [],
+   "stats": {
+    "drawCalls": 104,
+    "triangles": 239968
+   }
+  },
+  {
+   "file": "greenway-bluffEnd_newfoundland_full_19-50.jpg",
+   "label": "greenway-bluffEnd",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "19:50",
+   "view": null,
+   "eye": [
+    869.5,
+    22.5,
+    694.5
+   ],
+   "target": [
+    540,
+    8,
+    1195
+   ],
+   "fov": 62,
+   "note": "Bluff End: the pavilion, wind-bent pines, the Lamp across the Bight",
+   "settle": [],
+   "stats": {
+    "drawCalls": 131,
+    "triangles": 280306
+   }
+  },
+  {
+   "file": "aerial-reach_newfoundland_full_09-30.jpg",
+   "label": "aerial-reach",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "09:30",
+   "view": null,
+   "eye": [
+    1440,
+    175,
+    1450
+   ],
+   "target": [
+    1262,
+    6,
+    1235
+   ],
+   "fov": 50,
+   "note": "aerial: the Reach from the south-east",
+   "settle": [],
+   "stats": {
+    "drawCalls": 141,
+    "triangles": 325201
+   }
+  },
+  {
+   "file": "pageI_classic_lite_09-30.jpg",
+   "label": "pageI",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "09:30",
+   "view": "I",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "note": "page I: the boardwalk's north end, reeds at hand height, the spring's source rock (night: the High Span's lights)",
+   "settle": [],
+   "stats": {
+    "drawCalls": 93,
+    "triangles": 90033
+   }
+  },
+  {
+   "file": "pageI_classic_lite_22-20.jpg",
+   "label": "pageI",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "22:20",
+   "view": "I",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "note": "page I: the boardwalk's north end, reeds at hand height, the spring's source rock (night: the High Span's lights)",
+   "settle": [],
+   "stats": {
+    "drawCalls": 125,
+    "triangles": 136322
+   }
+  },
+  {
+   "file": "notchBluff_classic_lite_19-50.jpg",
+   "label": "notchBluff",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "19:50",
+   "view": null,
+   "eye": [
+    1191.4364495509262,
+    25.2,
+    1112.5664048763372
+   ],
+   "target": [
+    1247.662613479912,
+    5,
+    1216.1171097982779
+   ],
+   "fov": 62,
+   "note": "Notch Bluff (new page): the marsh, the osprey pole, the river mouth",
+   "settle": [],
+   "stats": {
+    "drawCalls": 341,
+    "triangles": 75548
+   }
+  },
+  {
+   "file": "notchBluff_classic_lite_22-20.jpg",
+   "label": "notchBluff",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "22:20",
+   "view": null,
+   "eye": [
+    1191.4364495509262,
+    25.2,
+    1112.5664048763372
+   ],
+   "target": [
+    1247.662613479912,
+    5,
+    1216.1171097982779
+   ],
+   "fov": 62,
+   "note": "Notch Bluff (new page): the marsh, the osprey pole, the river mouth",
+   "settle": [],
+   "stats": {
+    "drawCalls": 346,
+    "triangles": 88965
+   }
+  },
+  {
+   "file": "porch-springBay_classic_lite_09-30.jpg",
+   "label": "porch-springBay",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "09:30",
+   "view": null,
+   "eye": [
+    1245.004065340692,
+    6,
+    1200.8495800928224
+   ],
+   "target": [
+    1285.6027190849309,
+    5.4,
+    1207.4464971118105
+   ],
+   "fov": 60,
+   "note": "the porch: Spring Bay, its viewers, the heron's pool",
+   "settle": [],
+   "stats": {
+    "drawCalls": 347,
+    "triangles": 106342
+   }
+  },
+  {
+   "file": "greenway-deck_classic_lite_10-30.jpg",
+   "label": "greenway-deck",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "10:30",
+   "view": null,
+   "eye": [
+    1065.9847996594867,
+    11.547252334181824,
+    1318.9
+   ],
+   "target": [
+    1020.9847996594867,
+    12.630568830926153,
+    1318.5
+   ],
+   "fov": 58,
+   "note": "the Greenway at s 150: reeds at hand height, the island lanterns",
+   "settle": [],
+   "stats": {
+    "drawCalls": 75,
+    "triangles": 82878
+   }
+  },
+  {
+   "file": "greenway-deck_classic_lite_22-20.jpg",
+   "label": "greenway-deck",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "22:20",
+   "view": null,
+   "eye": [
+    1065.9847996594867,
+    11.547252334181824,
+    1318.9
+   ],
+   "target": [
+    1020.9847996594867,
+    12.630568830926153,
+    1318.5
+   ],
+   "fov": 58,
+   "note": "the Greenway at s 150: reeds at hand height, the island lanterns",
+   "settle": [],
+   "stats": {
+    "drawCalls": 83,
+    "triangles": 101512
+   }
+  },
+  {
+   "file": "greenway-bluffEnd_classic_lite_19-50.jpg",
+   "label": "greenway-bluffEnd",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "19:50",
+   "view": null,
+   "eye": [
+    869.5,
+    22.5,
+    694.5
+   ],
+   "target": [
+    540,
+    8,
+    1195
+   ],
+   "fov": 62,
+   "note": "Bluff End: the pavilion, wind-bent pines, the Lamp across the Bight",
+   "settle": [],
+   "stats": {
+    "drawCalls": 97,
+    "triangles": 126997
+   }
+  },
+  {
+   "file": "channelHide-dawn_classic_lite_05-40.jpg",
+   "label": "channelHide-dawn",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "05:40",
+   "view": null,
+   "eye": [
+    1252.6,
+    6.7,
+    1237.5
+   ],
+   "target": [
+    1244,
+    3.6,
+    1262
+   ],
+   "fov": 62,
+   "note": "the Channel Hide at dawn from the boardwalk: the blind on its piles, the west channel beyond",
+   "settle": [],
+   "stats": {
+    "drawCalls": 35,
+    "triangles": 38371
+   }
+  },
+  {
+   "file": "aerial-reach_classic_lite_09-30.jpg",
+   "label": "aerial-reach",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "09:30",
+   "view": null,
+   "eye": [
+    1440,
+    175,
+    1450
+   ],
+   "target": [
+    1262,
+    6,
+    1235
+   ],
+   "fov": 50,
+   "note": "aerial: the Reach from the south-east",
+   "settle": [],
+   "stats": {
+    "drawCalls": 156,
+    "triangles": 163689
+   }
+  },
+  {
+   "file": "aerial-greenway_classic_lite_11-00.jpg",
+   "label": "aerial-greenway",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "11:00",
+   "view": null,
+   "eye": [
+    1230,
+    330,
+    1560
+   ],
+   "target": [
+    985,
+    0,
+    1150
+   ],
+   "fov": 52,
+   "note": "aerial: the Greenway from the Reach Gate to the bluff",
+   "settle": [],
+   "stats": {
+    "drawCalls": 157,
+    "triangles": 145080
+   }
+  },
+  {
+   "file": "pageI_taylor_lite_09-30.jpg",
+   "label": "pageI",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "09:30",
+   "view": "I",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "note": "page I: the boardwalk's north end, reeds at hand height, the spring's source rock (night: the High Span's lights)",
+   "settle": [],
+   "stats": {
+    "drawCalls": 93,
+    "triangles": 92511
+   }
+  },
+  {
+   "file": "pageI_taylor_lite_22-20.jpg",
+   "label": "pageI",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "22:20",
+   "view": "I",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "note": "page I: the boardwalk's north end, reeds at hand height, the spring's source rock (night: the High Span's lights)",
+   "settle": [],
+   "stats": {
+    "drawCalls": 125,
+    "triangles": 141101
+   }
+  },
+  {
+   "file": "notchBluff_taylor_lite_19-50.jpg",
+   "label": "notchBluff",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "19:50",
+   "view": null,
+   "eye": [
+    1191.4364495509262,
+    25.2,
+    1112.5664048763372
+   ],
+   "target": [
+    1247.662613479912,
+    5,
+    1216.1171097982779
+   ],
+   "fov": 62,
+   "note": "Notch Bluff (new page): the marsh, the osprey pole, the river mouth",
+   "settle": [],
+   "stats": {
+    "drawCalls": 341,
+    "triangles": 78837
+   }
+  },
+  {
+   "file": "porch-springBay_taylor_lite_09-30.jpg",
+   "label": "porch-springBay",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "09:30",
+   "view": null,
+   "eye": [
+    1245.004065340692,
+    6,
+    1200.8495800928224
+   ],
+   "target": [
+    1285.6027190849309,
+    5.4,
+    1207.4464971118105
+   ],
+   "fov": 60,
+   "note": "the porch: Spring Bay, its viewers, the heron's pool",
+   "settle": [],
+   "stats": {
+    "drawCalls": 347,
+    "triangles": 111077
+   }
+  },
+  {
+   "file": "greenway-deck_taylor_lite_10-30.jpg",
+   "label": "greenway-deck",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "10:30",
+   "view": null,
+   "eye": [
+    1065.9847996594867,
+    11.547252334181824,
+    1318.9
+   ],
+   "target": [
+    1020.9847996594867,
+    12.630568830926153,
+    1318.5
+   ],
+   "fov": 58,
+   "note": "the Greenway at s 150: reeds at hand height, the island lanterns",
+   "settle": [],
+   "stats": {
+    "drawCalls": 73,
+    "triangles": 89103
+   }
+  },
+  {
+   "file": "greenway-bluffEnd_taylor_lite_19-50.jpg",
+   "label": "greenway-bluffEnd",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "19:50",
+   "view": null,
+   "eye": [
+    869.5,
+    22.5,
+    694.5
+   ],
+   "target": [
+    540,
+    8,
+    1195
+   ],
+   "fov": 62,
+   "note": "Bluff End: the pavilion, wind-bent pines, the Lamp across the Bight",
+   "settle": [],
+   "stats": {
+    "drawCalls": 97,
+    "triangles": 129575
+   }
+  },
+  {
+   "file": "aerial-reach_taylor_lite_09-30.jpg",
+   "label": "aerial-reach",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "09:30",
+   "view": null,
+   "eye": [
+    1440,
+    175,
+    1450
+   ],
+   "target": [
+    1262,
+    6,
+    1235
+   ],
+   "fov": 50,
+   "note": "aerial: the Reach from the south-east",
+   "settle": [],
+   "stats": {
+    "drawCalls": 136,
+    "triangles": 145019
+   }
+  },
+  {
+   "file": "pageI_newfoundland_lite_09-30.jpg",
+   "label": "pageI",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "09:30",
+   "view": "I",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "note": "page I: the boardwalk's north end, reeds at hand height, the spring's source rock (night: the High Span's lights)",
+   "settle": [],
+   "stats": {
+    "drawCalls": 90,
+    "triangles": 97347
+   }
+  },
+  {
+   "file": "pageI_newfoundland_lite_22-20.jpg",
+   "label": "pageI",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "22:20",
+   "view": "I",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "note": "page I: the boardwalk's north end, reeds at hand height, the spring's source rock (night: the High Span's lights)",
+   "settle": [],
+   "stats": {
+    "drawCalls": 122,
+    "triangles": 144622
+   }
+  },
+  {
+   "file": "notchBluff_newfoundland_lite_19-50.jpg",
+   "label": "notchBluff",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "19:50",
+   "view": null,
+   "eye": [
+    1191.4364495509262,
+    25.2,
+    1112.5664048763372
+   ],
+   "target": [
+    1247.662613479912,
+    5,
+    1216.1171097982779
+   ],
+   "fov": 62,
+   "note": "Notch Bluff (new page): the marsh, the osprey pole, the river mouth",
+   "settle": [],
+   "stats": {
+    "drawCalls": 340,
+    "triangles": 81798
+   }
+  },
+  {
+   "file": "porch-springBay_newfoundland_lite_09-30.jpg",
+   "label": "porch-springBay",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "09:30",
+   "view": null,
+   "eye": [
+    1245.004065340692,
+    6,
+    1200.8495800928224
+   ],
+   "target": [
+    1285.6027190849309,
+    5.4,
+    1207.4464971118105
+   ],
+   "fov": 60,
+   "note": "the porch: Spring Bay, its viewers, the heron's pool",
+   "settle": [],
+   "stats": {
+    "drawCalls": 345,
+    "triangles": 113460
+   }
+  },
+  {
+   "file": "greenway-deck_newfoundland_lite_10-30.jpg",
+   "label": "greenway-deck",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "10:30",
+   "view": null,
+   "eye": [
+    1065.9847996594867,
+    11.547252334181824,
+    1318.9
+   ],
+   "target": [
+    1020.9847996594867,
+    12.630568830926153,
+    1318.5
+   ],
+   "fov": 58,
+   "note": "the Greenway at s 150: reeds at hand height, the island lanterns",
+   "settle": [],
+   "stats": {
+    "drawCalls": 75,
+    "triangles": 88328
+   }
+  },
+  {
+   "file": "greenway-bluffEnd_newfoundland_lite_19-50.jpg",
+   "label": "greenway-bluffEnd",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "19:50",
+   "view": null,
+   "eye": [
+    869.5,
+    22.5,
+    694.5
+   ],
+   "target": [
+    540,
+    8,
+    1195
+   ],
+   "fov": 62,
+   "note": "Bluff End: the pavilion, wind-bent pines, the Lamp across the Bight",
+   "settle": [],
+   "stats": {
+    "drawCalls": 96,
+    "triangles": 134603
+   }
+  },
+  {
+   "file": "aerial-reach_newfoundland_lite_09-30.jpg",
+   "label": "aerial-reach",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "09:30",
+   "view": null,
+   "eye": [
+    1440,
+    175,
+    1450
+   ],
+   "target": [
+    1262,
+    6,
+    1235
+   ],
+   "fov": 50,
+   "note": "aerial: the Reach from the south-east",
+   "settle": [],
+   "stats": {
+    "drawCalls": 134,
+    "triangles": 150481
+   }
+  },
+  {
+   "file": "harbourBell-dusk_classic_full_20-50.jpg",
+   "label": "harbourBell-dusk",
+   "theme": "classic",
+   "tier": "full",
+   "time": "20:50",
+   "view": null,
+   "eye": [
+    1327.0640904375412,
+    11.3,
+    1382.5034392290345
+   ],
+   "target": [
+    1131.3245480705882,
+    4,
+    1335.517041687024
+   ],
+   "fov": 58,
+   "note": "Harbour Bell Landing at dusk",
+   "settle": [],
+   "stats": {
+    "drawCalls": 147,
+    "triangles": 292089
+   },
+   "sha": "83181a2d6f31c36a69b224ca79aa9bf25e2be553"
+  },
+  {
+   "file": "greenway-bight-rafts_classic_full_15-30.jpg",
+   "label": "greenway-bight-rafts",
+   "theme": "classic",
+   "tier": "full",
+   "time": "15:30",
+   "view": null,
+   "eye": [
+    657.44466746115,
+    17.61022575449729,
+    1080.2720524429183
+   ],
+   "target": [
+    652,
+    0.2,
+    1103
+   ],
+   "fov": 64,
+   "note": "over the Bight: the floating reed rafts tethered to the bents",
+   "settle": [],
+   "stats": {
+    "drawCalls": 135,
+    "triangles": 422265
+   },
+   "sha": "93ef6eb7068d91d98379fa1bc44af67d5a3f9141"
+  }
+ ],
+ "errors": [],
+ "seconds": 1761
+}

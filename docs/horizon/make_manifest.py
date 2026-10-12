@@ -2510,6 +2510,15 @@ _sands = m["sky"]["landings"]["sands"]
 _sands["ww_v2_xy"], _sands["ww_v2_r"] = _sands["xy"], _sands["r"]
 _sands["xy"], _sands["r"] = [1185, 1355], 35
 _sands["note_ww"] = "D-WW90 (land integration, owed to Jonathan): moved off the Greenway, the Reed Maze trail, the Dune Overlook, V01 and the promenade/Strand onto the clear ground between the Greenway and Horizon Drive; r 60 → 35 (the largest clear circle there is 35.6)"
+# The Water's Way · PR 3 Little Harbour (D-WW139 proposal, owed to Jonathan): page L's portrait eye (#581/D-MR27 put it at the
+# square's south-west corner, [1430,1210]) now stands among the solved town's vicolo houses, which take all of Lantern Row
+# and the Boathouse from it (0 px each). It moves onto the quay: 8 eu over the quay's walk east of the pad, as from a
+# quayfront balcony, looking along Lantern Row to the Boathouse (searched on the dressed bake: Lantern Row 2,294 px, the
+# Boathouse 12 px of the 8 needed at 60 × 130). The landscape pose is unchanged; the town keeps its page-L clearing.
+_l = next(v for v in m["views"] if v["id"] == "L")
+_l["portrait"]["ww_v2_xy"], _l["portrait"]["ww_v2_target"], _l["portrait"]["ww_v2_fov_deg"], _l["portrait"]["ww_v2_target_h"] = _l["portrait"].get("xy"), _l["portrait"].get("target"), _l["portrait"].get("fov_deg"), _l["portrait"].get("target_h")
+_l["portrait"].update({"xy": [1475, 1297], "eyeH": 11.0, "target": [1300, 1320], "target_h": 4, "fov_deg": 45})
+_l["portrait"]["note_ww"] = "D-WW139 (PR 3 Little Harbour; owed to Jonathan): the in-town portrait eye is inside the dressed vicolo; re-posed on the quay, 8 eu over the walk, along Lantern Row to the Boathouse"
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")

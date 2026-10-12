@@ -1,0 +1,2279 @@
+{
+ "sha": "64e00919dbf50ba157c6e35eaebf14a66933f12c",
+ "renderer": "headless Chromium, SwiftShader (not device evidence)",
+ "view": {
+  "width": 1120,
+  "height": 700
+ },
+ "records": [
+  {
+   "file": "pageA_19-55_classic_full.jpg",
+   "id": "pageA",
+   "label": "Sketchbook page A (MANIFEST pose): the square to Mountain v2's glass dam",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "view": "A",
+   "stats": {
+    "drawCalls": 73,
+    "triangles": 188904,
+    "dressing": {},
+    "camera": {
+     "eye": [
+      1432,
+      13.833537507,
+      1166
+     ],
+     "target": [
+      1318,
+      108,
+      560
+     ],
+     "fov": 29.39495760062298
+    }
+   }
+  },
+  {
+   "file": "pageL_22-30_classic_full.jpg",
+   "id": "pageL",
+   "label": "Sketchbook page L (MANIFEST pose): Lantern Row at night to the Boathouse",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "view": "L",
+   "stats": {
+    "drawCalls": 88,
+    "triangles": 266615,
+    "dressing": {
+     "harbour": {
+      "triangles": 63044,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2486,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1484,
+      4.6,
+      1295
+     ],
+     "target": [
+      1285,
+      4,
+      1315
+     ],
+     "fov": 32.64206322435176
+    }
+   }
+  },
+  {
+   "file": "porch_19-55_classic_full.jpg",
+   "id": "porch",
+   "label": "Porch: the square's north-west edge, along the dam corridor to the dam",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1432,
+    13.6,
+    1166
+   ],
+   "target": [
+    1318,
+    108,
+    560
+   ],
+   "fov": 50,
+   "view": null,
+   "stats": {
+    "drawCalls": 294,
+    "triangles": 872816,
+    "dressing": {
+     "harbour": {
+      "triangles": 65698,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2486,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1432,
+      13.6,
+      1166
+     ],
+     "target": [
+      1318,
+      108,
+      560
+     ],
+     "fov": 50
+    }
+   }
+  },
+  {
+   "file": "belfry_19-55_classic_full.jpg",
+   "id": "belfry",
+   "label": "From the belfry (north): the dam the square cannot see",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1423,
+    34.3,
+    1185.5
+   ],
+   "target": [
+    1318,
+    108,
+    560
+   ],
+   "fov": 55,
+   "view": null,
+   "stats": {
+    "drawCalls": 301,
+    "triangles": 873293,
+    "dressing": {
+     "harbour": {
+      "triangles": 65698,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2486,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1423,
+      34.3,
+      1185.5
+     ],
+     "target": [
+      1318,
+      108,
+      560
+     ],
+     "fov": 54.99999999999999
+    }
+   }
+  },
+  {
+   "file": "belfrySouth_19-55_classic_full.jpg",
+   "id": "belfrySouth",
+   "label": "Over the roofs (belfry south): the town to the quay",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1423,
+    34.3,
+    1188.8
+   ],
+   "target": [
+    1470,
+    2,
+    1320
+   ],
+   "fov": 62,
+   "view": null,
+   "stats": {
+    "drawCalls": 354,
+    "triangles": 282396,
+    "dressing": {
+     "harbour": {
+      "triangles": 65698,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2486,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1423,
+      34.3,
+      1188.8
+     ],
+     "target": [
+      1470,
+      2,
+      1320
+     ],
+     "fov": 62
+    }
+   }
+  },
+  {
+   "file": "mouth_19-55_classic_full.jpg",
+   "id": "mouth",
+   "label": "From the water: the town climbing from Lantern Row to the campanile",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1545,
+    16,
+    1425
+   ],
+   "target": [
+    1452,
+    20,
+    1190
+   ],
+   "fov": 44,
+   "view": null,
+   "stats": {
+    "drawCalls": 177,
+    "triangles": 301617,
+    "dressing": {
+     "harbour": {
+      "triangles": 58532,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2234,
+      "drawCalls": 10,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1545,
+      16,
+      1425
+     ],
+     "target": [
+      1452,
+      20,
+      1190
+     ],
+     "fov": 43.99999999999999
+    }
+   }
+  },
+  {
+   "file": "mouthDusk_21-05_classic_full.jpg",
+   "id": "mouthDusk",
+   "label": "From the water at dusk: the night line coming on",
+   "theme": "classic",
+   "tier": "full",
+   "time": "21:05",
+   "date": "2026-06-21",
+   "eye": [
+    1545,
+    16,
+    1425
+   ],
+   "target": [
+    1452,
+    20,
+    1190
+   ],
+   "fov": 44,
+   "view": null,
+   "stats": {
+    "drawCalls": 187,
+    "triangles": 332382,
+    "dressing": {
+     "harbour": {
+      "triangles": 58532,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2234,
+      "drawCalls": 10,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1545,
+      16,
+      1425
+     ],
+     "target": [
+      1452,
+      20,
+      1190
+     ],
+     "fov": 43.99999999999999
+    }
+   }
+  },
+  {
+   "file": "square_19-55_classic_full.jpg",
+   "id": "square",
+   "label": "The piazza: brick fans, travertine rays, the Court's inlay, the campanile and the café festoon",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1481,
+    13.7,
+    1201
+   ],
+   "target": [
+    1436,
+    16,
+    1160
+   ],
+   "fov": 62,
+   "view": null,
+   "stats": {
+    "drawCalls": 339,
+    "triangles": 895336,
+    "dressing": {
+     "harbour": {
+      "triangles": 65488,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2486,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1481,
+      13.7,
+      1201
+     ],
+     "target": [
+      1436,
+      16,
+      1160
+     ],
+     "fov": 62
+    }
+   }
+  },
+  {
+   "file": "square_22-30_classic_full.jpg",
+   "id": "square",
+   "label": "The piazza: brick fans, travertine rays, the Court's inlay, the campanile and the café festoon",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1481,
+    13.7,
+    1201
+   ],
+   "target": [
+    1436,
+    16,
+    1160
+   ],
+   "fov": 62,
+   "view": null,
+   "stats": {
+    "drawCalls": 356,
+    "triangles": 948340,
+    "dressing": {
+     "harbour": {
+      "triangles": 65488,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2486,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1481,
+      13.7,
+      1201
+     ],
+     "target": [
+      1436,
+      16,
+      1160
+     ],
+     "fov": 62
+    }
+   }
+  },
+  {
+   "file": "lanternRow_22-30_classic_full.jpg",
+   "id": "lanternRow",
+   "label": "Lantern Row at night from the ferry pier",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1470,
+    2.7,
+    1347
+   ],
+   "target": [
+    1452,
+    9,
+    1268
+   ],
+   "fov": 60,
+   "view": null,
+   "stats": {
+    "drawCalls": 191,
+    "triangles": 368617,
+    "dressing": {
+     "harbour": {
+      "triangles": 62378,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2486,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1470,
+      2.7,
+      1347
+     ],
+     "target": [
+      1452,
+      9,
+      1268
+     ],
+     "fov": 59.99999999999999
+    }
+   }
+  },
+  {
+   "file": "vicolo_13-00_classic_full.jpg",
+   "id": "vicolo",
+   "label": "A cobbled lane (quayLink) with laundry overhead",
+   "theme": "classic",
+   "tier": "full",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "eye": [
+    1409.3,
+    12.8,
+    1226
+   ],
+   "target": [
+    1401.3,
+    9.4,
+    1278
+   ],
+   "fov": 60,
+   "view": null,
+   "stats": {
+    "drawCalls": 106,
+    "triangles": 303282,
+    "dressing": {
+     "harbour": {
+      "triangles": 64971,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2486,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1409.3,
+      12.8,
+      1226
+     ],
+     "target": [
+      1401.3,
+      9.4,
+      1278
+     ],
+     "fov": 59.99999999999999
+    }
+   }
+  },
+  {
+   "file": "bocce_19-55_classic_full.jpg",
+   "id": "bocce",
+   "label": "Bocce on the small green, the palazzo behind",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1471,
+    13.9,
+    1156
+   ],
+   "target": [
+    1453.5,
+    12.4,
+    1147
+   ],
+   "fov": 55,
+   "view": null,
+   "stats": {
+    "drawCalls": 232,
+    "triangles": 668179,
+    "dressing": {
+     "harbour": {
+      "triangles": 66088,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2426,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1471,
+      13.9,
+      1156
+     ],
+     "target": [
+      1453.5,
+      12.4,
+      1147
+     ],
+     "fov": 54.99999999999999
+    }
+   }
+  },
+  {
+   "file": "market_13-00_classic_full.jpg",
+   "id": "market",
+   "label": "Down Town Weave through the market lane",
+   "theme": "classic",
+   "tier": "full",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "eye": [
+    1449.5,
+    11.2,
+    1219
+   ],
+   "target": [
+    1468,
+    7.5,
+    1258
+   ],
+   "fov": 60,
+   "view": null,
+   "stats": {
+    "drawCalls": 340,
+    "triangles": 270471,
+    "dressing": {
+     "harbour": {
+      "triangles": 65578,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2486,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1449.5,
+      11.2,
+      1219
+     ],
+     "target": [
+      1468,
+      7.5,
+      1258
+     ],
+     "fov": 59.99999999999999
+    }
+   }
+  },
+  {
+   "file": "upper_13-00_classic_full.jpg",
+   "id": "upper",
+   "label": "The upper street, down to the piazza",
+   "theme": "classic",
+   "tier": "full",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "eye": [
+    1471.5,
+    19.6,
+    1050
+   ],
+   "target": [
+    1466,
+    15,
+    1125
+   ],
+   "fov": 58,
+   "view": null,
+   "stats": {
+    "drawCalls": 361,
+    "triangles": 304137,
+    "dressing": {
+     "harbour": {
+      "triangles": 63825,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2101,
+      "drawCalls": 9,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1471.5,
+      19.6,
+      1050
+     ],
+     "target": [
+      1466,
+      15,
+      1125
+     ],
+     "fov": 58
+    }
+   }
+  },
+  {
+   "file": "belfryWheel_19-55_classic_full.jpg",
+   "id": "belfryWheel",
+   "label": "Lookout: from the belfry to the Ferris wheel (the story's next landmark)",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1421.32,
+    34.3,
+    1186.35
+   ],
+   "target": [
+    1010,
+    24,
+    1648
+   ],
+   "fov": 30,
+   "view": null,
+   "stats": {
+    "drawCalls": 77,
+    "triangles": 270873,
+    "dressing": {
+     "harbour": {
+      "triangles": 65758,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2486,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1421.32,
+      34.3,
+      1186.35
+     ],
+     "target": [
+      1010,
+      24,
+      1648
+     ],
+     "fov": 29.999999999999996
+    }
+   }
+  },
+  {
+   "file": "springBay_19-55_classic_full.jpg",
+   "id": "springBay",
+   "label": "Lookout: Spring Bay to the campanile (the sight chain into Little Harbour)",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1246.4,
+    6.6,
+    1199.5
+   ],
+   "target": [
+    1423,
+    30,
+    1187
+   ],
+   "fov": 28,
+   "view": null,
+   "stats": {
+    "drawCalls": 125,
+    "triangles": 269480,
+    "dressing": {
+     "harbour": {
+      "triangles": 60964,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2282,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1246.4,
+      6.6,
+      1199.5
+     ],
+     "target": [
+      1423,
+      30,
+      1187
+     ],
+     "fov": 28
+    }
+   }
+  },
+  {
+   "file": "aerial_19-55_classic_full.jpg",
+   "id": "aerial",
+   "label": "Aerial from the harbour mouth",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1630,
+    150,
+    1450
+   ],
+   "target": [
+    1462,
+    12,
+    1185
+   ],
+   "fov": 42,
+   "view": null,
+   "stats": {
+    "drawCalls": 198,
+    "triangles": 313793,
+    "dressing": {
+     "harbour": {
+      "triangles": 56620,
+      "drawCalls": 9,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2015,
+      "drawCalls": 9,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1630,
+      150,
+      1450
+     ],
+     "target": [
+      1462,
+      12,
+      1185
+     ],
+     "fov": 42
+    }
+   }
+  },
+  {
+   "file": "aerial_22-30_classic_full.jpg",
+   "id": "aerial",
+   "label": "Aerial from the harbour mouth",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1630,
+    150,
+    1450
+   ],
+   "target": [
+    1462,
+    12,
+    1185
+   ],
+   "fov": 42,
+   "view": null,
+   "stats": {
+    "drawCalls": 213,
+    "triangles": 343946,
+    "dressing": {
+     "harbour": {
+      "triangles": 56620,
+      "drawCalls": 9,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2015,
+      "drawCalls": 9,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1630,
+      150,
+      1450
+     ],
+     "target": [
+      1462,
+      12,
+      1185
+     ],
+     "fov": 42
+    }
+   }
+  },
+  {
+   "file": "pageA_19-55_taylor_full.jpg",
+   "id": "pageA",
+   "label": "Sketchbook page A (MANIFEST pose): the square to Mountain v2's glass dam",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "view": "A",
+   "stats": {
+    "drawCalls": 73,
+    "triangles": 187244,
+    "dressing": {},
+    "camera": {
+     "eye": [
+      1432,
+      13.833537507,
+      1166
+     ],
+     "target": [
+      1318,
+      108,
+      560
+     ],
+     "fov": 29.39495760062298
+    }
+   }
+  },
+  {
+   "file": "pageL_22-30_taylor_full.jpg",
+   "id": "pageL",
+   "label": "Sketchbook page L (MANIFEST pose): Lantern Row at night to the Boathouse",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "view": "L",
+   "stats": {
+    "drawCalls": 92,
+    "triangles": 271061,
+    "dressing": {
+     "harbour": {
+      "triangles": 69291,
+      "drawCalls": 15,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2695,
+      "drawCalls": 14,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1484,
+      4.6,
+      1295
+     ],
+     "target": [
+      1285,
+      4,
+      1315
+     ],
+     "fov": 32.64206322435176
+    }
+   }
+  },
+  {
+   "file": "belfry_19-55_taylor_full.jpg",
+   "id": "belfry",
+   "label": "From the belfry (north): the dam the square cannot see",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1423,
+    34.3,
+    1185.5
+   ],
+   "target": [
+    1318,
+    108,
+    560
+   ],
+   "fov": 55,
+   "view": null,
+   "stats": {
+    "drawCalls": 297,
+    "triangles": 880010,
+    "dressing": {
+     "harbour": {
+      "triangles": 71755,
+      "drawCalls": 15,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2695,
+      "drawCalls": 14,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1423,
+      34.3,
+      1185.5
+     ],
+     "target": [
+      1318,
+      108,
+      560
+     ],
+     "fov": 54.99999999999999
+    }
+   }
+  },
+  {
+   "file": "belfrySouth_19-55_taylor_full.jpg",
+   "id": "belfrySouth",
+   "label": "Over the roofs (belfry south): the town to the quay",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1423,
+    34.3,
+    1188.8
+   ],
+   "target": [
+    1470,
+    2,
+    1320
+   ],
+   "fov": 62,
+   "view": null,
+   "stats": {
+    "drawCalls": 358,
+    "triangles": 286120,
+    "dressing": {
+     "harbour": {
+      "triangles": 71755,
+      "drawCalls": 15,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2695,
+      "drawCalls": 14,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1423,
+      34.3,
+      1188.8
+     ],
+     "target": [
+      1470,
+      2,
+      1320
+     ],
+     "fov": 62
+    }
+   }
+  },
+  {
+   "file": "mouth_19-55_taylor_full.jpg",
+   "id": "mouth",
+   "label": "From the water: the town climbing from Lantern Row to the campanile",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1545,
+    16,
+    1425
+   ],
+   "target": [
+    1452,
+    20,
+    1190
+   ],
+   "fov": 44,
+   "view": null,
+   "stats": {
+    "drawCalls": 551,
+    "triangles": 653748,
+    "dressing": {
+     "harbour": {
+      "triangles": 64779,
+      "drawCalls": 15,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2443,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1545,
+      16,
+      1425
+     ],
+     "target": [
+      1452,
+      20,
+      1190
+     ],
+     "fov": 43.99999999999999
+    }
+   }
+  },
+  {
+   "file": "square_19-55_taylor_full.jpg",
+   "id": "square",
+   "label": "The piazza: brick fans, travertine rays, the Court's inlay, the campanile and the café festoon",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1481,
+    13.7,
+    1201
+   ],
+   "target": [
+    1436,
+    16,
+    1160
+   ],
+   "fov": 62,
+   "view": null,
+   "stats": {
+    "drawCalls": 335,
+    "triangles": 893345,
+    "dressing": {
+     "harbour": {
+      "triangles": 71735,
+      "drawCalls": 15,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2695,
+      "drawCalls": 14,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1481,
+      13.7,
+      1201
+     ],
+     "target": [
+      1436,
+      16,
+      1160
+     ],
+     "fov": 62
+    }
+   }
+  },
+  {
+   "file": "square_22-30_taylor_full.jpg",
+   "id": "square",
+   "label": "The piazza: brick fans, travertine rays, the Court's inlay, the campanile and the café festoon",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1481,
+    13.7,
+    1201
+   ],
+   "target": [
+    1436,
+    16,
+    1160
+   ],
+   "fov": 62,
+   "view": null,
+   "stats": {
+    "drawCalls": 352,
+    "triangles": 946349,
+    "dressing": {
+     "harbour": {
+      "triangles": 71735,
+      "drawCalls": 15,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2695,
+      "drawCalls": 14,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1481,
+      13.7,
+      1201
+     ],
+     "target": [
+      1436,
+      16,
+      1160
+     ],
+     "fov": 62
+    }
+   }
+  },
+  {
+   "file": "lanternRow_22-30_taylor_full.jpg",
+   "id": "lanternRow",
+   "label": "Lantern Row at night from the ferry pier",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1470,
+    2.7,
+    1347
+   ],
+   "target": [
+    1452,
+    9,
+    1268
+   ],
+   "fov": 60,
+   "view": null,
+   "stats": {
+    "drawCalls": 195,
+    "triangles": 371403,
+    "dressing": {
+     "harbour": {
+      "triangles": 68625,
+      "drawCalls": 15,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2695,
+      "drawCalls": 14,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1470,
+      2.7,
+      1347
+     ],
+     "target": [
+      1452,
+      9,
+      1268
+     ],
+     "fov": 59.99999999999999
+    }
+   }
+  },
+  {
+   "file": "vicolo_13-00_taylor_full.jpg",
+   "id": "vicolo",
+   "label": "A cobbled lane (quayLink) with laundry overhead",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "eye": [
+    1409.3,
+    12.8,
+    1226
+   ],
+   "target": [
+    1401.3,
+    9.4,
+    1278
+   ],
+   "fov": 60,
+   "view": null,
+   "stats": {
+    "drawCalls": 110,
+    "triangles": 303998,
+    "dressing": {
+     "harbour": {
+      "triangles": 71218,
+      "drawCalls": 15,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2695,
+      "drawCalls": 14,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1409.3,
+      12.8,
+      1226
+     ],
+     "target": [
+      1401.3,
+      9.4,
+      1278
+     ],
+     "fov": 59.99999999999999
+    }
+   }
+  },
+  {
+   "file": "pageA_19-55_newfoundland_full.jpg",
+   "id": "pageA",
+   "label": "Sketchbook page A (MANIFEST pose): the square to Mountain v2's glass dam",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "view": "A",
+   "stats": {
+    "drawCalls": 73,
+    "triangles": 188310,
+    "dressing": {},
+    "camera": {
+     "eye": [
+      1432,
+      13.833537507,
+      1166
+     ],
+     "target": [
+      1318,
+      108,
+      560
+     ],
+     "fov": 29.39495760062298
+    }
+   }
+  },
+  {
+   "file": "pageL_22-30_newfoundland_full.jpg",
+   "id": "pageL",
+   "label": "Sketchbook page L (MANIFEST pose): Lantern Row at night to the Boathouse",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "view": "L",
+   "stats": {
+    "drawCalls": 88,
+    "triangles": 265951,
+    "dressing": {
+     "harbour": {
+      "triangles": 63030,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2458,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1484,
+      4.6,
+      1295
+     ],
+     "target": [
+      1285,
+      4,
+      1315
+     ],
+     "fov": 32.64206322435176
+    }
+   }
+  },
+  {
+   "file": "belfry_19-55_newfoundland_full.jpg",
+   "id": "belfry",
+   "label": "From the belfry (north): the dam the square cannot see",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1423,
+    34.3,
+    1185.5
+   ],
+   "target": [
+    1318,
+    108,
+    560
+   ],
+   "fov": 55,
+   "view": null,
+   "stats": {
+    "drawCalls": 301,
+    "triangles": 877447,
+    "dressing": {
+     "harbour": {
+      "triangles": 65494,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2458,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1423,
+      34.3,
+      1185.5
+     ],
+     "target": [
+      1318,
+      108,
+      560
+     ],
+     "fov": 54.99999999999999
+    }
+   }
+  },
+  {
+   "file": "belfrySouth_19-55_newfoundland_full.jpg",
+   "id": "belfrySouth",
+   "label": "Over the roofs (belfry south): the town to the quay",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1423,
+    34.3,
+    1188.8
+   ],
+   "target": [
+    1470,
+    2,
+    1320
+   ],
+   "fov": 62,
+   "view": null,
+   "stats": {
+    "drawCalls": 354,
+    "triangles": 280300,
+    "dressing": {
+     "harbour": {
+      "triangles": 65494,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2458,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1423,
+      34.3,
+      1188.8
+     ],
+     "target": [
+      1470,
+      2,
+      1320
+     ],
+     "fov": 62
+    }
+   }
+  },
+  {
+   "file": "mouth_19-55_newfoundland_full.jpg",
+   "id": "mouth",
+   "label": "From the water: the town climbing from Lantern Row to the campanile",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1545,
+    16,
+    1425
+   ],
+   "target": [
+    1452,
+    20,
+    1190
+   ],
+   "fov": 44,
+   "view": null,
+   "stats": {
+    "drawCalls": 177,
+    "triangles": 299711,
+    "dressing": {
+     "harbour": {
+      "triangles": 58518,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2206,
+      "drawCalls": 10,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1545,
+      16,
+      1425
+     ],
+     "target": [
+      1452,
+      20,
+      1190
+     ],
+     "fov": 43.99999999999999
+    }
+   }
+  },
+  {
+   "file": "square_19-55_newfoundland_full.jpg",
+   "id": "square",
+   "label": "The piazza: brick fans, travertine rays, the Court's inlay, the campanile and the café festoon",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1481,
+    13.7,
+    1201
+   ],
+   "target": [
+    1436,
+    16,
+    1160
+   ],
+   "fov": 62,
+   "view": null,
+   "stats": {
+    "drawCalls": 339,
+    "triangles": 892090,
+    "dressing": {
+     "harbour": {
+      "triangles": 65474,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2458,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1481,
+      13.7,
+      1201
+     ],
+     "target": [
+      1436,
+      16,
+      1160
+     ],
+     "fov": 62
+    }
+   }
+  },
+  {
+   "file": "square_22-30_newfoundland_full.jpg",
+   "id": "square",
+   "label": "The piazza: brick fans, travertine rays, the Court's inlay, the campanile and the café festoon",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1481,
+    13.7,
+    1201
+   ],
+   "target": [
+    1436,
+    16,
+    1160
+   ],
+   "fov": 62,
+   "view": null,
+   "stats": {
+    "drawCalls": 356,
+    "triangles": 945094,
+    "dressing": {
+     "harbour": {
+      "triangles": 65474,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2458,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1481,
+      13.7,
+      1201
+     ],
+     "target": [
+      1436,
+      16,
+      1160
+     ],
+     "fov": 62
+    }
+   }
+  },
+  {
+   "file": "lanternRow_22-30_newfoundland_full.jpg",
+   "id": "lanternRow",
+   "label": "Lantern Row at night from the ferry pier",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1470,
+    2.7,
+    1347
+   ],
+   "target": [
+    1452,
+    9,
+    1268
+   ],
+   "fov": 60,
+   "view": null,
+   "stats": {
+    "drawCalls": 191,
+    "triangles": 367359,
+    "dressing": {
+     "harbour": {
+      "triangles": 62364,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2458,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1470,
+      2.7,
+      1347
+     ],
+     "target": [
+      1452,
+      9,
+      1268
+     ],
+     "fov": 59.99999999999999
+    }
+   }
+  },
+  {
+   "file": "vicolo_13-00_newfoundland_full.jpg",
+   "id": "vicolo",
+   "label": "A cobbled lane (quayLink) with laundry overhead",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "13:00",
+   "date": "2026-06-21",
+   "eye": [
+    1409.3,
+    12.8,
+    1226
+   ],
+   "target": [
+    1401.3,
+    9.4,
+    1278
+   ],
+   "fov": 60,
+   "view": null,
+   "stats": {
+    "drawCalls": 106,
+    "triangles": 299982,
+    "dressing": {
+     "harbour": {
+      "triangles": 64957,
+      "drawCalls": 13,
+      "buildings": 91,
+      "props": 140,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 2458,
+      "drawCalls": 12,
+      "buildings": 4,
+      "props": 4,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1409.3,
+      12.8,
+      1226
+     ],
+     "target": [
+      1401.3,
+      9.4,
+      1278
+     ],
+     "fov": 59.99999999999999
+    }
+   }
+  },
+  {
+   "file": "pageA_19-55_classic_lite.jpg",
+   "id": "pageA",
+   "label": "Sketchbook page A (MANIFEST pose): the square to Mountain v2's glass dam",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "view": "A",
+   "stats": {
+    "drawCalls": 63,
+    "triangles": 64092,
+    "dressing": {},
+    "camera": {
+     "eye": [
+      1432,
+      13.833537507,
+      1166
+     ],
+     "target": [
+      1318,
+      108,
+      560
+     ],
+     "fov": 29.39495760062298
+    }
+   }
+  },
+  {
+   "file": "mouth_19-55_classic_lite.jpg",
+   "id": "mouth",
+   "label": "From the water: the town climbing from Lantern Row to the campanile",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1545,
+    16,
+    1425
+   ],
+   "target": [
+    1452,
+    20,
+    1190
+   ],
+   "fov": 44,
+   "view": null,
+   "stats": {
+    "drawCalls": 159,
+    "triangles": 127397,
+    "dressing": {
+     "harbour": {
+      "triangles": 23904,
+      "drawCalls": 9,
+      "buildings": 91,
+      "props": 90,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 821,
+      "drawCalls": 7,
+      "buildings": 4,
+      "props": 3,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1545,
+      16,
+      1425
+     ],
+     "target": [
+      1452,
+      20,
+      1190
+     ],
+     "fov": 43.99999999999999
+    }
+   }
+  },
+  {
+   "file": "square_22-30_classic_lite.jpg",
+   "id": "square",
+   "label": "The piazza: brick fans, travertine rays, the Court's inlay, the campanile and the café festoon",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1481,
+    13.7,
+    1201
+   ],
+   "target": [
+    1436,
+    16,
+    1160
+   ],
+   "fov": 62,
+   "view": null,
+   "stats": {
+    "drawCalls": 175,
+    "triangles": 156603,
+    "dressing": {
+     "harbour": {
+      "triangles": 26514,
+      "drawCalls": 12,
+      "buildings": 91,
+      "props": 90,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 964,
+      "drawCalls": 9,
+      "buildings": 4,
+      "props": 3,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1481,
+      13.7,
+      1201
+     ],
+     "target": [
+      1436,
+      16,
+      1160
+     ],
+     "fov": 62
+    }
+   }
+  },
+  {
+   "file": "pageA_19-55_taylor_lite.jpg",
+   "id": "pageA",
+   "label": "Sketchbook page A (MANIFEST pose): the square to Mountain v2's glass dam",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "view": "A",
+   "stats": {
+    "drawCalls": 63,
+    "triangles": 65656,
+    "dressing": {},
+    "camera": {
+     "eye": [
+      1432,
+      13.833537507,
+      1166
+     ],
+     "target": [
+      1318,
+      108,
+      560
+     ],
+     "fov": 29.39495760062298
+    }
+   }
+  },
+  {
+   "file": "mouth_19-55_taylor_lite.jpg",
+   "id": "mouth",
+   "label": "From the water: the town climbing from Lantern Row to the campanile",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1545,
+    16,
+    1425
+   ],
+   "target": [
+    1452,
+    20,
+    1190
+   ],
+   "fov": 44,
+   "view": null,
+   "stats": {
+    "drawCalls": 162,
+    "triangles": 133951,
+    "dressing": {
+     "harbour": {
+      "triangles": 26686,
+      "drawCalls": 11,
+      "buildings": 91,
+      "props": 90,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 989,
+      "drawCalls": 8,
+      "buildings": 4,
+      "props": 3,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1545,
+      16,
+      1425
+     ],
+     "target": [
+      1452,
+      20,
+      1190
+     ],
+     "fov": 43.99999999999999
+    }
+   }
+  },
+  {
+   "file": "square_22-30_taylor_lite.jpg",
+   "id": "square",
+   "label": "The piazza: brick fans, travertine rays, the Court's inlay, the campanile and the café festoon",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1481,
+    13.7,
+    1201
+   ],
+   "target": [
+    1436,
+    16,
+    1160
+   ],
+   "fov": 62,
+   "view": null,
+   "stats": {
+    "drawCalls": 177,
+    "triangles": 162879,
+    "dressing": {
+     "harbour": {
+      "triangles": 29296,
+      "drawCalls": 14,
+      "buildings": 91,
+      "props": 90,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 1132,
+      "drawCalls": 10,
+      "buildings": 4,
+      "props": 3,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1481,
+      13.7,
+      1201
+     ],
+     "target": [
+      1436,
+      16,
+      1160
+     ],
+     "fov": 62
+    }
+   }
+  },
+  {
+   "file": "pageA_19-55_newfoundland_lite.jpg",
+   "id": "pageA",
+   "label": "Sketchbook page A (MANIFEST pose): the square to Mountain v2's glass dam",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": null,
+   "target": null,
+   "fov": null,
+   "view": "A",
+   "stats": {
+    "drawCalls": 62,
+    "triangles": 66438,
+    "dressing": {},
+    "camera": {
+     "eye": [
+      1432,
+      13.833537507,
+      1166
+     ],
+     "target": [
+      1318,
+      108,
+      560
+     ],
+     "fov": 29.39495760062298
+    }
+   }
+  },
+  {
+   "file": "mouth_19-55_newfoundland_lite.jpg",
+   "id": "mouth",
+   "label": "From the water: the town climbing from Lantern Row to the campanile",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "19:55",
+   "date": "2026-06-21",
+   "eye": [
+    1545,
+    16,
+    1425
+   ],
+   "target": [
+    1452,
+    20,
+    1190
+   ],
+   "fov": 44,
+   "view": null,
+   "stats": {
+    "drawCalls": 157,
+    "triangles": 135105,
+    "dressing": {
+     "harbour": {
+      "triangles": 25698,
+      "drawCalls": 9,
+      "buildings": 91,
+      "props": 90,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 949,
+      "drawCalls": 7,
+      "buildings": 4,
+      "props": 3,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1545,
+      16,
+      1425
+     ],
+     "target": [
+      1452,
+      20,
+      1190
+     ],
+     "fov": 43.99999999999999
+    }
+   }
+  },
+  {
+   "file": "square_22-30_newfoundland_lite.jpg",
+   "id": "square",
+   "label": "The piazza: brick fans, travertine rays, the Court's inlay, the campanile and the café festoon",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1481,
+    13.7,
+    1201
+   ],
+   "target": [
+    1436,
+    16,
+    1160
+   ],
+   "fov": 62,
+   "view": null,
+   "stats": {
+    "drawCalls": 172,
+    "triangles": 166095,
+    "dressing": {
+     "harbour": {
+      "triangles": 28308,
+      "drawCalls": 12,
+      "buildings": 91,
+      "props": 90,
+      "plants": 136
+     },
+     "reach": {
+      "triangles": 1092,
+      "drawCalls": 9,
+      "buildings": 4,
+      "props": 3,
+      "plants": 7
+     }
+    },
+    "camera": {
+     "eye": [
+      1481,
+      13.7,
+      1201
+     ],
+     "target": [
+      1436,
+      16,
+      1160
+     ],
+     "fov": 62
+    }
+   }
+  }
+ ],
+ "errors": []
+}

@@ -321,6 +321,13 @@ export function bloomGeometry(pal: MountainArtPalette, tier: PlantTier, set: rea
     const h = b.h * (stage === 'bud' ? 0.8 : 1), base: V = [b.x, topY, b.z], head: V = [b.x, topY + h, b.z], t: V = [Math.cos(b.spin), 0, Math.sin(b.spin)], n: V = [-t[2], 0, t[0]];
     // Stem: one narrow card triangle (the material is double-sided).
     w.tri(add(base, t, -0.022), add(base, t, 0.022), add(head, t, 0), shade(stem, 0.78), shade(stem, 0.78), stem, n);
+    if (f.form === 'puff') {
+      // A seed head (a dandelion clock): a white ball (an octahedron, 8 triangles; Taylor a paper disc) on the stem.
+      const r = 0.075 * size, c = shade(c0, 1.02), lo = shade(c0, 0.84);
+      const P: V[] = [[b.x + r, topY + h, b.z], [b.x, topY + h, b.z + r], [b.x - r, topY + h, b.z], [b.x, topY + h, b.z - r]], top: V = [b.x, topY + h + r, b.z], bot: V = [b.x, topY + h - r, b.z];
+      for (let k = 0; k < 4; k++) { const p0 = P[k]!, p1 = P[(k + 1) % 4]!; w.tri(p0, p1, top, c, c, shade(c, 1.08), UP); if (full || !paper) w.tri(p1, p0, bot, lo, lo, lo, [0, -1, 0]); }
+      continue;
+    }
     if (f.form === 'spike') {
       // Stacked florets up the top half of the stem (lupine, foxglove, iris): three-sided cones, or Taylor paper stars.
       const florets = full ? 3 : 2;
@@ -356,6 +363,21 @@ export function tuftGeometry(): THREE.BufferGeometry {
   for (let k = 0; k < 5; k++) { const a = (k / 5) * Math.PI * 2 + 0.3, lean = 0.12 + (k % 2) * 0.1, h = 0.34 + (k % 3) * 0.09, w = 0.045, ca = Math.cos(a), sa = Math.sin(a);
     p.push(-sa * w, 0, ca * w, sa * w, 0, -ca * w, ca * lean * 1.6, h, sa * lean * 1.6); }
   g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); g.computeVertexNormals(); return gradient(g, 0.55, 1.02, 0, 0.45);
+}
+/**
+ * The Green's long grass (D-WW113): a wide sheaf of nine thin blades (9 triangles) rising from a root ~0.4 eu across and
+ * fanning out to ~1 eu, the middle blades tallest (0.42), the outer ones leaning low — timothy and fescue gone to seed. Lighter
+ * at the foot than v2's tuft (a meadow is tawny, not black at the root), so a field of them reads as one surface.
+ */
+export function longTuftGeometry(): THREE.BufferGeometry {
+  const g = new THREE.BufferGeometry(), p: number[] = [], n = 9;
+  for (let k = 0; k < n; k++) {
+    const f = (Math.sin(k * 12.9898 + 1.7) * 43758.5453) % 1, j = Math.abs(f), a = (k / n) * Math.PI * 2 + j * 0.6, ca = Math.cos(a), sa = Math.sin(a);
+    const rb = 0.06 + ((k * 5) % 9) / 9 * 0.16, bx = ca * rb, bz = sa * rb, mid = 1 - Math.abs(((k * 4) % n) / (n - 1) - 0.5) * 2;
+    const h = 0.24 + mid * 0.18 + j * 0.05, lean = 0.52 - mid * 0.3 + j * 0.08, w = 0.034;
+    p.push(bx - sa * w, 0, bz + ca * w, bx + sa * w, 0, bz - ca * w, bx + ca * lean, h, bz + sa * lean);
+  }
+  g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); g.computeVertexNormals(); return gradient(g, 0.66, 1.1, 0, 0.42);
 }
 /** Mountain v2's shrub shapes: bush (shrub, flowering), clipped hedge, heath. */
 export function shrubGeometry(kind: 'bush' | 'hedge' | 'heath'): THREE.BufferGeometry {

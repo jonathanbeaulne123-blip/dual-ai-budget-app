@@ -5,7 +5,7 @@ import {CardBuilder} from '../src/harbour/art/cardScene.ts';
 import {drawProp, propDraws} from '../src/harbour/horizon/kit/props/index.ts';
 import {createCorridorPlanting} from '../src/harbour/horizon/runtime/corridorPlanting.ts';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {createDressingLayer, dressingCorridor, drapePolygon, DRESSING_DETAIL, DRESSING_INK, DRESSING_NIGHT, countDraws, measureDistrictDressing} from '../src/harbour/horizon/runtime/dressingLayer.ts';
+import {createDressingLayer, dressingCorridor, drapePolygon, DRESSING_DETAIL, DRESSING_FIREFLY, DRESSING_INK, DRESSING_NIGHT, countDraws, measureDistrictDressing} from '../src/harbour/horizon/runtime/dressingLayer.ts';
 import {buildDistrictCards, isDressingArtOwned, redressedHostSolids} from '../src/harbour/horizon/runtime/cards.ts';
 import type {DistrictDressing, PlantRecord, PropRecord, WorldDressing} from '../src/harbour/horizon/neighbourhoods/types.ts';
 import type {StructureSolid, TerrainField} from '../src/harbour/horizon/land/interfaces.ts';
@@ -85,6 +85,24 @@ describe('runtime dressing layer (runtime/dressingLayer.ts)', () => {
     expect(() => layer.setSeason('winter', 1)).not.toThrow();
     layer.dispose();
   });
+  it('fireflies (D-WW118): a district\'s firefly spawns draw as still specks, only at night and in their months; lite fewer; no light', () => {
+    const w = world(); w.dressing!.districts[0]!.life = [{kind: 'firefly', at: [1010, 3, 1420], radius: 20, count: 10, months: [6, 7, 8], hours: [21, 23]}, {kind: 'bee', at: [1010, 3, 1420], radius: 5, count: 3}];
+    const flies = (l: ReturnType<typeof createDressingLayer>) => l.group.getObjectByName('horizon.dressing.landing.fireflies') as THREE.Points | undefined;
+    const layer = createDressingLayer(w, {tier: 'full', theme: 'classic', season: 'summer', month: 6, ground});
+    layer.prebuild(['landing']);
+    const p = flies(layer)!; expect(p).toBeTruthy(); expect(p.geometry.getAttribute('position').count).toBe(10 * DRESSING_FIREFLY.perSpawn);
+    expect(p.visible).toBe(false);
+    layer.setNight(1); expect(p.visible).toBe(true); expect((p.material as THREE.PointsMaterial).opacity).toBeCloseTo(1, 6);
+    const pos = p.geometry.getAttribute('position');
+    for (let i = 0; i < pos.count; i++) { expect(Math.hypot(pos.getX(i) - 1010, pos.getZ(i) - 1420)).toBeLessThanOrEqual(20 + 1e-9); expect(pos.getY(i)).toBeGreaterThanOrEqual(2 + DRESSING_FIREFLY.lift[0] - 1e-9); expect(pos.getY(i)).toBeLessThanOrEqual(2 + DRESSING_FIREFLY.lift[1] + 1e-9); }
+    layer.setSeason('winter', 1); expect(p.visible).toBe(false);
+    layer.setSeason('summer', 7); expect(p.visible).toBe(true);
+    let lights = 0; layer.group.traverse(o => { if ((o as THREE.Light).isLight) lights++; }); expect(lights).toBe(0);
+    layer.dispose();
+    const lite = createDressingLayer(w, {tier: 'lite', theme: 'classic', season: 'summer', month: 6, ground}); lite.prebuild(['landing']);
+    expect(flies(lite)!.geometry.getAttribute('position').count).toBe(Math.round(10 * DRESSING_FIREFLY.perSpawn * DRESSING_FIREFLY.liteShare));
+    lite.dispose();
+  });
   it('lite: one prop rule (kit/props propDraws) — a non-essential kind goes, never a collider or a fixture; counts are props that drew', () => {
     const drawn = (rec: PropRecord, tier: 'full' | 'lite') => { const b = new CardBuilder('t', tier, {ink: '#000000', cell: 8192}); drawProp(b, rec, 'classic', ground, tier); const c = b.finish(), n = countDraws(c.group).triangles; c.dispose(); return n; };
     const towel: PropRecord = {kind: 'towel', at: [1000, 2, 1410], yaw: 0};
@@ -154,9 +172,12 @@ describe('runtime dressing layer (runtime/dressingLayer.ts)', () => {
     expect(lite.triangles).toBeLessThanOrEqual(full.triangles);
   });
   it('budget: the prototypes’ real loads fit 150k / 60k with their baked districts (Little Harbour, the Reach, Scholars’ Edge)', () => {
-    // The baked districts' terrain + drawn solids, as the index reports them.
+    // The baked districts' terrain + drawn solids, as the index reports them — less the baked dressing's own share once PR 3/4
+    // dress the bake (`District.dressing`), so a prototype load stands in for it rather than adding to it.
     const index = JSON.parse(gunzipSync(readFileSync('public/horizon/world/horizon-geo-1.index.json.gz')).toString()) as {districts: District[]};
-    const baked = (id: string) => index.districts.find(x => x.id === id)!.triangles!;
+    // The land's own share: once a module dresses a district (PR 3), the index's triangles include its baked dressing, which
+    // these synthetic loads stand in for (counting both would double the dressing).
+    const baked = (id: string) => { const d = index.districts.find(x => x.id === id)!, t = d.triangles!, own = d.dressing; return {full: t.full - (own?.full.triangles ?? 0), lite: t.lite - (own?.lite.triangles ?? 0)}; };
     const grid = (n: number, x0: number, z0: number, step: number, cols: number) => Array.from({length: n}, (_, i) => [x0 + (i % cols) * step, 4, z0 + Math.floor(i / cols) * step] as const);
     const plants = (species: PlantRecord['species'], n: number, x0: number, z0: number, step = 4, cols = 40): PlantRecord[] => grid(n, x0, z0, step, cols).map((at, i) => ({species, at, scale: 1, yaw: i}));
     const props = (kind: PropRecord['kind'], n: number, x0: number, z0: number): PropRecord[] => grid(n, x0, z0, 3, 20).map(at => ({kind, at, yaw: 0}));

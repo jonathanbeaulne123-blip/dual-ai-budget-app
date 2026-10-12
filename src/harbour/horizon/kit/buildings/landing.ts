@@ -123,11 +123,16 @@ export const ferrisWheel:KindDef<WheelPlan>={
   plan(rec){
     const R=num(rec,'radius',13),hub=num(rec,'hubH',R+3),n=Math.max(8,Math.round(num(rec,'gondolas',16))),rimZ=.7,gond=.75;
     const feet:[number,number][]=[[-R*.62,-2.2],[R*.62,-2.2],[-R*.62,2.2],[R*.62,2.2]];
+    // params.onDeck: the wheel stands on a deck that carries it (the Long Sands pier platform): its footings are plates on the
+    // deck, not piers to the ground under it (drawn and collided alike; PR 4 D-WW152).
+    const footBase:number|'ground'=rec.params?.onDeck===true?-.25:'ground';
     const vols:Vol[]=[box(0,0,1.1,1.6,hub-1.1,hub+1.1,'support','steel')];
-    for(const [fx,fz] of feet){vols.push(box(fx,fz,.8,.8,'ground',.3,'support','stone'));
+    for(const [fx,fz] of feet){vols.push(box(fx,fz,.8,.8,footBase,.3,'support','stone'));
       for(let k=0;k<3;k++){const t=(k+.5)/3,x=fx*(1-t),z=fz+(Math.sign(fz)*1.2-fz)*t,y0=hub*t-hub/6,y1=hub*t+hub/6;vols.push(box(x,z,.35,.35,Math.max(.3,y0),y1,'support','steel'));}}
     for(let i=0;i<n;i++){const a=i/n*Math.PI*2,x=Math.cos(a)*R,y=hub+Math.sin(a)*R-.3-gond*2;vols.push(box(x,0,gond,gond,y-gond*.9,y+gond*.9,'support','steel'));}
-    return {vols,eave:hub,top:hub+R+.6,R,hub,n,rimZ,feet,gond};
+    // eave = the footings' top: a wheel has no walls, so its Journey shape and far silhouette (block + roof to `top`) read
+    // as the A-frame's triangle, not a house (PR 4 D-WW152).
+    return {vols,eave:.3,top:hub+R+.6,R,hub,n,rimZ,feet,gond};
   },
   draw(c,p){
     const {b,pal,F,floor,full,ground}=c,{R,n,rimZ}=p,hy=floor+p.hub,white=pal.special.wheel??pal.trim,spoke=pal.special.spoke??pal.trim,seg=32;
@@ -138,7 +143,7 @@ export const ferrisWheel:KindDef<WheelPlan>={
     // Hub (a drum along the axle), and the A-frame legs to footings.
     const hubCol=pal.special.hub??pal.doorAccent;b.tube([F.W(0,-1.6,hy),F.W(0,1.6,hy)],1.1,hubCol,8);
     for(const z of [1.6,-1.6]){const cen=F.W(0,z,hy);for(let k=0;k<8;k++){const a0=k/8*Math.PI*2,a1=(k+1)/8*Math.PI*2;b.tri(cen,F.W(Math.cos(a0)*1.1,z,hy+Math.sin(a0)*1.1),F.W(Math.cos(a1)*1.1,z,hy+Math.sin(a1)*1.1),shade(hubCol,1.05));}}
-    for(const [fx,fz] of p.feet){const foot=F.W(fx,fz,floor+.3),top=F.W(0,Math.sign(fz)*1.2,hy);rod(b,foot,top,.55,white);const q=F.W(fx,fz,0);b.box(q[0],q[2],F.yaw,.8,.8,Math.min(ground(q[0],q[2]),floor)-.3,floor+.3,pal.plinth,pal.plinthDark);}
+    for(const [fx,fz] of p.feet){const foot=F.W(fx,fz,floor+.3),top=F.W(0,Math.sign(fz)*1.2,hy);rod(b,foot,top,.55,white);const q=F.W(fx,fz,0);b.box(q[0],q[2],F.yaw,.8,.8,c.rec.params?.onDeck===true?floor-.25:Math.min(ground(q[0],q[2]),floor)-.3,floor+.3,pal.plinth,pal.plinthDark);}
     for(const s of [-1,1])rod(b,F.W(-p.feet[1]![0]*.55,s*1.9,floor+p.hub*.42),F.W(p.feet[1]![0]*.55,s*1.9,floor+p.hub*.42),.3,white);
     // Gondolas hanging plumb under the rim, pastels in turn, with little roofs.
     for(let k=0;k<n;k++){const a=k/n*Math.PI*2,rp=P(a,R,0),cy=rp[1]-.3-p.gond*2,q=F.W(Math.cos(a)*R,0,0),col=pick(pal.walls,k);

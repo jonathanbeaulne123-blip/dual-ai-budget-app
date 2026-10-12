@@ -1,0 +1,1535 @@
+{
+ "sha": "da3227dc636bb43d4d3785de039dbbe375d606d1",
+ "date": "2026-06-21",
+ "times": {
+  "dawn": "06:30",
+  "day": "10:30",
+  "night": "22:40"
+ },
+ "viewport": {
+  "width": 960,
+  "height": 600
+ },
+ "method": "headless Chromium (SwiftShader) on the review harness; look poses via __harbour.world.views + shot(). SwiftShader, not device evidence.",
+ "records": [
+  {
+   "file": "full_classic_porch-north-pass_0630.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "the porch: the hamlet lane at the north pass, Westwatch Chapel on its knoll and the sea beyond",
+   "eye": [
+    1060,
+    94.4920742420897,
+    342
+   ],
+   "target": [
+    1036,
+    93,
+    316
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 66,
+    "triangles": 156488
+   }
+  },
+  {
+   "file": "full_classic_porch-north-pass_2240.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "the porch: the hamlet lane at the north pass, Westwatch Chapel on its knoll and the sea beyond",
+   "eye": [
+    1060,
+    94.4920742420897,
+    342
+   ],
+   "target": [
+    1036,
+    93,
+    316
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 72,
+    "triangles": 197710
+   }
+  },
+  {
+   "file": "full_classic_westwatch-chapel_0630.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "Westwatch Chapel from its churchyard gate: the verdigris bell cote on the north gable",
+   "eye": [
+    1049,
+    91.93600006103516,
+    321
+   ],
+   "target": [
+    1036,
+    91,
+    316
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 75,
+    "triangles": 165965
+   }
+  },
+  {
+   "file": "full_classic_westwatch-chapel_2240.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "Westwatch Chapel from its churchyard gate: the verdigris bell cote on the north gable",
+   "eye": [
+    1049,
+    91.93600006103516,
+    321
+   ],
+   "target": [
+    1036,
+    91,
+    316
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 84,
+    "triangles": 205375
+   }
+  },
+  {
+   "file": "full_classic_bench-hamlet_0630.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "Bench Hamlet from the shelf's south end: the crofts along the lane, yards, strips and dykes",
+   "eye": [
+    1036,
+    116,
+    466
+   ],
+   "target": [
+    1082,
+    103,
+    412
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 126,
+    "triangles": 487244
+   }
+  },
+  {
+   "file": "full_classic_bench-hamlet_2240.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "Bench Hamlet from the shelf's south end: the crofts along the lane, yards, strips and dykes",
+   "eye": [
+    1036,
+    116,
+    466
+   ],
+   "target": [
+    1082,
+    103,
+    412
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 132,
+    "triangles": 526306
+   }
+  },
+  {
+   "file": "full_classic_bench-hamlet-to-horn_0630.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "standing in Bench Hamlet toward the horn (the prototype's hamlet camera)",
+   "eye": [
+    1068,
+    102.54141864706179,
+    400
+   ],
+   "target": [
+    1400,
+    150,
+    398
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 201,
+    "triangles": 687467
+   }
+  },
+  {
+   "file": "full_classic_bench-hamlet-to-horn_2240.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "standing in Bench Hamlet toward the horn (the prototype's hamlet camera)",
+   "eye": [
+    1068,
+    102.54141864706179,
+    400
+   ],
+   "target": [
+    1400,
+    150,
+    398
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 208,
+    "triangles": 726195
+   }
+  },
+  {
+   "file": "full_classic_fallswatch-veil_0630.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "from the Fallswatch eye along the Veil (the binocular line to the lip)",
+   "eye": [
+    1086,
+    96.89999999999999,
+    694.3
+   ],
+   "target": [
+    1113,
+    86,
+    706
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 473,
+    "triangles": 600438
+   }
+  },
+  {
+   "file": "full_classic_fallswatch-veil_2240.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "from the Fallswatch eye along the Veil (the binocular line to the lip)",
+   "eye": [
+    1086,
+    96.89999999999999,
+    694.3
+   ],
+   "target": [
+    1113,
+    86,
+    706
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 499,
+    "triangles": 643671
+   }
+  },
+  {
+   "file": "full_classic_fallswatch-oak_0630.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "from the Fallswatch eye: the Old Oak across Stillwater (story link 1 → 2)",
+   "eye": [
+    1086,
+    96.89999999999999,
+    694.3
+   ],
+   "target": [
+    1125,
+    50,
+    1165
+   ],
+   "fov": 16,
+   "stats": {
+    "drawCalls": 63,
+    "triangles": 231406
+   }
+  },
+  {
+   "file": "full_classic_fallswatch-oak_2240.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "from the Fallswatch eye: the Old Oak across Stillwater (story link 1 → 2)",
+   "eye": [
+    1086,
+    96.89999999999999,
+    694.3
+   ],
+   "target": [
+    1125,
+    50,
+    1165
+   ],
+   "fov": 16,
+   "stats": {
+    "drawCalls": 69,
+    "triangles": 274351
+   }
+  },
+  {
+   "file": "full_classic_fallswatch-deck_0630.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "the Fallswatch deck and its Lookout kit on the west buttress, from the lane behind the lip",
+   "eye": [
+    1122,
+    97.80338084047249,
+    680
+   ],
+   "target": [
+    1083,
+    94,
+    695
+   ],
+   "fov": 50,
+   "stats": {
+    "drawCalls": 132,
+    "triangles": 276447
+   }
+  },
+  {
+   "file": "full_classic_fallswatch-deck_2240.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "the Fallswatch deck and its Lookout kit on the west buttress, from the lane behind the lip",
+   "eye": [
+    1122,
+    97.80338084047249,
+    680
+   ],
+   "target": [
+    1083,
+    94,
+    695
+   ],
+   "fov": 50,
+   "stats": {
+    "drawCalls": 148,
+    "triangles": 328004
+   }
+  },
+  {
+   "file": "full_classic_high-shieling-ranch_0630.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "High Shieling Ranch: longhouse, barn, paddock, the mere below",
+   "eye": [
+    1414,
+    72.82081146240235,
+    667
+   ],
+   "target": [
+    1452,
+    63,
+    683
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 103,
+    "triangles": 385325
+   }
+  },
+  {
+   "file": "full_classic_high-shieling-ranch_2240.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "High Shieling Ranch: longhouse, barn, paddock, the mere below",
+   "eye": [
+    1414,
+    72.82081146240235,
+    667
+   ],
+   "target": [
+    1452,
+    63,
+    683
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 517,
+    "triangles": 1089387
+   }
+  },
+  {
+   "file": "full_classic_drag-lift_0630.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "the drag lift from the Twin Tarns shelf: stations, towers, the rope and its T-bars",
+   "eye": [
+    1124,
+    107.23466904424077,
+    420
+   ],
+   "target": [
+    1186,
+    117,
+    360
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 82,
+    "triangles": 314324
+   }
+  },
+  {
+   "file": "full_classic_drag-lift_2240.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "the drag lift from the Twin Tarns shelf: stations, towers, the rope and its T-bars",
+   "eye": [
+    1124,
+    107.23466904424077,
+    420
+   ],
+   "target": [
+    1186,
+    117,
+    360
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 102,
+    "triangles": 388529
+   }
+  },
+  {
+   "file": "full_classic_rim-walk-cairns_0630.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "on the Rim Walk: cairns, turf and scree toward the horn",
+   "eye": [
+    1236,
+    140,
+    318
+   ],
+   "target": [
+    1360,
+    128,
+    372
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 133,
+    "triangles": 514407
+   }
+  },
+  {
+   "file": "full_classic_rim-walk-cairns_2240.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "on the Rim Walk: cairns, turf and scree toward the horn",
+   "eye": [
+    1236,
+    140,
+    318
+   ],
+   "target": [
+    1360,
+    128,
+    372
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 138,
+    "triangles": 525763
+   }
+  },
+  {
+   "file": "full_classic_rim-lookout_0630.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "the Rim Lookout: the lookout wall on the lip, its viewer and low lamp, the fall to Horizon Drive beyond",
+   "eye": [
+    1534,
+    109,
+    561
+   ],
+   "target": [
+    1519,
+    104.5,
+    546
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 142,
+    "triangles": 542898
+   }
+  },
+  {
+   "file": "full_classic_rim-lookout_2240.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "the Rim Lookout: the lookout wall on the lip, its viewer and low lamp, the fall to Horizon Drive beyond",
+   "eye": [
+    1534,
+    109,
+    561
+   ],
+   "target": [
+    1519,
+    104.5,
+    546
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 147,
+    "triangles": 567545
+   }
+  },
+  {
+   "file": "full_classic_twin-tarns_0630.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "the Twin Tarns shelf: shore stones, shingle, birch, the lift foot",
+   "eye": [
+    1134,
+    107.21400146484376,
+    408
+   ],
+   "target": [
+    1156,
+    105,
+    378
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 90,
+    "triangles": 276054
+   }
+  },
+  {
+   "file": "full_classic_twin-tarns_2240.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "the Twin Tarns shelf: shore stones, shingle, birch, the lift foot",
+   "eye": [
+    1134,
+    107.21400146484376,
+    408
+   ],
+   "target": [
+    1156,
+    105,
+    378
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 95,
+    "triangles": 311284
+   }
+  },
+  {
+   "file": "full_classic_bight-to-westwatch_0630.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "telephoto along the Bight lookout's line to the Westwatch cote (story link 7 → 1)",
+   "eye": [
+    744,
+    53.6,
+    511
+   ],
+   "target": [
+    1038,
+    95,
+    313.2
+   ],
+   "fov": 12,
+   "stats": {
+    "drawCalls": 50,
+    "triangles": 130742
+   }
+  },
+  {
+   "file": "full_classic_bight-to-westwatch_2240.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "telephoto along the Bight lookout's line to the Westwatch cote (story link 7 → 1)",
+   "eye": [
+    744,
+    53.6,
+    511
+   ],
+   "target": [
+    1038,
+    95,
+    313.2
+   ],
+   "fov": 12,
+   "stats": {
+    "drawCalls": 55,
+    "triangles": 162832
+   }
+  },
+  {
+   "file": "full_classic_aerial_0630.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "aerial from the south-west",
+   "eye": [
+    840,
+    330,
+    1010
+   ],
+   "target": [
+    1270,
+    95,
+    500
+   ],
+   "fov": 46,
+   "stats": {
+    "drawCalls": 247,
+    "triangles": 632818
+   }
+  },
+  {
+   "file": "full_classic_aerial_2240.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "aerial from the south-west",
+   "eye": [
+    840,
+    330,
+    1010
+   ],
+   "target": [
+    1270,
+    95,
+    500
+   ],
+   "fov": 46,
+   "stats": {
+    "drawCalls": 252,
+    "triangles": 651198
+   }
+  },
+  {
+   "file": "full_classic_page-E_1030.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "10:30",
+   "note": "Sketchbook page E",
+   "stats": {
+    "drawCalls": 162,
+    "triangles": 626913
+   }
+  },
+  {
+   "file": "full_classic_page-F_1030.jpg",
+   "tier": "full",
+   "theme": "classic",
+   "time": "10:30",
+   "note": "Sketchbook page F",
+   "stats": {
+    "drawCalls": 209,
+    "triangles": 708708
+   }
+  },
+  {
+   "file": "full_taylor_porch-north-pass_0630.jpg",
+   "tier": "full",
+   "theme": "taylor",
+   "time": "06:30",
+   "note": "the porch: the hamlet lane at the north pass, Westwatch Chapel on its knoll and the sea beyond",
+   "eye": [
+    1060,
+    94.4920742420897,
+    342
+   ],
+   "target": [
+    1036,
+    93,
+    316
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 68,
+    "triangles": 154622
+   }
+  },
+  {
+   "file": "full_taylor_porch-north-pass_2240.jpg",
+   "tier": "full",
+   "theme": "taylor",
+   "time": "22:40",
+   "note": "the porch: the hamlet lane at the north pass, Westwatch Chapel on its knoll and the sea beyond",
+   "eye": [
+    1060,
+    94.4920742420897,
+    342
+   ],
+   "target": [
+    1036,
+    93,
+    316
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 74,
+    "triangles": 195844
+   }
+  },
+  {
+   "file": "full_taylor_westwatch-chapel_0630.jpg",
+   "tier": "full",
+   "theme": "taylor",
+   "time": "06:30",
+   "note": "Westwatch Chapel from its churchyard gate: the verdigris bell cote on the north gable",
+   "eye": [
+    1049,
+    91.93600006103516,
+    321
+   ],
+   "target": [
+    1036,
+    91,
+    316
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 77,
+    "triangles": 164099
+   }
+  },
+  {
+   "file": "full_taylor_westwatch-chapel_2240.jpg",
+   "tier": "full",
+   "theme": "taylor",
+   "time": "22:40",
+   "note": "Westwatch Chapel from its churchyard gate: the verdigris bell cote on the north gable",
+   "eye": [
+    1049,
+    91.93600006103516,
+    321
+   ],
+   "target": [
+    1036,
+    91,
+    316
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 86,
+    "triangles": 203509
+   }
+  },
+  {
+   "file": "full_taylor_bench-hamlet_0630.jpg",
+   "tier": "full",
+   "theme": "taylor",
+   "time": "06:30",
+   "note": "Bench Hamlet from the shelf's south end: the crofts along the lane, yards, strips and dykes",
+   "eye": [
+    1036,
+    116,
+    466
+   ],
+   "target": [
+    1082,
+    103,
+    412
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 128,
+    "triangles": 481139
+   }
+  },
+  {
+   "file": "full_taylor_bench-hamlet_2240.jpg",
+   "tier": "full",
+   "theme": "taylor",
+   "time": "22:40",
+   "note": "Bench Hamlet from the shelf's south end: the crofts along the lane, yards, strips and dykes",
+   "eye": [
+    1036,
+    116,
+    466
+   ],
+   "target": [
+    1082,
+    103,
+    412
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 134,
+    "triangles": 519865
+   }
+  },
+  {
+   "file": "full_taylor_fallswatch-veil_0630.jpg",
+   "tier": "full",
+   "theme": "taylor",
+   "time": "06:30",
+   "note": "from the Fallswatch eye along the Veil (the binocular line to the lip)",
+   "eye": [
+    1086,
+    96.89999999999999,
+    694.3
+   ],
+   "target": [
+    1113,
+    86,
+    706
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 470,
+    "triangles": 588283
+   }
+  },
+  {
+   "file": "full_taylor_fallswatch-veil_2240.jpg",
+   "tier": "full",
+   "theme": "taylor",
+   "time": "22:40",
+   "note": "from the Fallswatch eye along the Veil (the binocular line to the lip)",
+   "eye": [
+    1086,
+    96.89999999999999,
+    694.3
+   ],
+   "target": [
+    1113,
+    86,
+    706
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 496,
+    "triangles": 633420
+   }
+  },
+  {
+   "file": "full_newfoundland_porch-north-pass_0630.jpg",
+   "tier": "full",
+   "theme": "newfoundland",
+   "time": "06:30",
+   "note": "the porch: the hamlet lane at the north pass, Westwatch Chapel on its knoll and the sea beyond",
+   "eye": [
+    1060,
+    94.4920742420897,
+    342
+   ],
+   "target": [
+    1036,
+    93,
+    316
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 66,
+    "triangles": 150982
+   }
+  },
+  {
+   "file": "full_newfoundland_porch-north-pass_2240.jpg",
+   "tier": "full",
+   "theme": "newfoundland",
+   "time": "22:40",
+   "note": "the porch: the hamlet lane at the north pass, Westwatch Chapel on its knoll and the sea beyond",
+   "eye": [
+    1060,
+    94.4920742420897,
+    342
+   ],
+   "target": [
+    1036,
+    93,
+    316
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 72,
+    "triangles": 192204
+   }
+  },
+  {
+   "file": "full_newfoundland_westwatch-chapel_0630.jpg",
+   "tier": "full",
+   "theme": "newfoundland",
+   "time": "06:30",
+   "note": "Westwatch Chapel from its churchyard gate: the verdigris bell cote on the north gable",
+   "eye": [
+    1049,
+    91.93600006103516,
+    321
+   ],
+   "target": [
+    1036,
+    91,
+    316
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 75,
+    "triangles": 160126
+   }
+  },
+  {
+   "file": "full_newfoundland_westwatch-chapel_2240.jpg",
+   "tier": "full",
+   "theme": "newfoundland",
+   "time": "22:40",
+   "note": "Westwatch Chapel from its churchyard gate: the verdigris bell cote on the north gable",
+   "eye": [
+    1049,
+    91.93600006103516,
+    321
+   ],
+   "target": [
+    1036,
+    91,
+    316
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 84,
+    "triangles": 199536
+   }
+  },
+  {
+   "file": "full_newfoundland_bench-hamlet_0630.jpg",
+   "tier": "full",
+   "theme": "newfoundland",
+   "time": "06:30",
+   "note": "Bench Hamlet from the shelf's south end: the crofts along the lane, yards, strips and dykes",
+   "eye": [
+    1036,
+    116,
+    466
+   ],
+   "target": [
+    1082,
+    103,
+    412
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 126,
+    "triangles": 479133
+   }
+  },
+  {
+   "file": "full_newfoundland_bench-hamlet_2240.jpg",
+   "tier": "full",
+   "theme": "newfoundland",
+   "time": "22:40",
+   "note": "Bench Hamlet from the shelf's south end: the crofts along the lane, yards, strips and dykes",
+   "eye": [
+    1036,
+    116,
+    466
+   ],
+   "target": [
+    1082,
+    103,
+    412
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 132,
+    "triangles": 518195
+   }
+  },
+  {
+   "file": "full_newfoundland_fallswatch-veil_0630.jpg",
+   "tier": "full",
+   "theme": "newfoundland",
+   "time": "06:30",
+   "note": "from the Fallswatch eye along the Veil (the binocular line to the lip)",
+   "eye": [
+    1086,
+    96.89999999999999,
+    694.3
+   ],
+   "target": [
+    1113,
+    86,
+    706
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 483,
+    "triangles": 589876
+   }
+  },
+  {
+   "file": "full_newfoundland_fallswatch-veil_2240.jpg",
+   "tier": "full",
+   "theme": "newfoundland",
+   "time": "22:40",
+   "note": "from the Fallswatch eye along the Veil (the binocular line to the lip)",
+   "eye": [
+    1086,
+    96.89999999999999,
+    694.3
+   ],
+   "target": [
+    1113,
+    86,
+    706
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 499,
+    "triangles": 634869
+   }
+  },
+  {
+   "file": "lite_classic_porch-north-pass_0630.jpg",
+   "tier": "lite",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "the porch: the hamlet lane at the north pass, Westwatch Chapel on its knoll and the sea beyond",
+   "eye": [
+    1060,
+    94.4920742420897,
+    342
+   ],
+   "target": [
+    1036,
+    93,
+    316
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 51,
+    "triangles": 65463
+   }
+  },
+  {
+   "file": "lite_classic_porch-north-pass_2240.jpg",
+   "tier": "lite",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "the porch: the hamlet lane at the north pass, Westwatch Chapel on its knoll and the sea beyond",
+   "eye": [
+    1060,
+    94.4920742420897,
+    342
+   ],
+   "target": [
+    1036,
+    93,
+    316
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 57,
+    "triangles": 90277
+   }
+  },
+  {
+   "file": "lite_classic_westwatch-chapel_0630.jpg",
+   "tier": "lite",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "Westwatch Chapel from its churchyard gate: the verdigris bell cote on the north gable",
+   "eye": [
+    1049,
+    91.90999984741211,
+    321
+   ],
+   "target": [
+    1036,
+    91,
+    316
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 58,
+    "triangles": 68728
+   }
+  },
+  {
+   "file": "lite_classic_westwatch-chapel_2240.jpg",
+   "tier": "lite",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "Westwatch Chapel from its churchyard gate: the verdigris bell cote on the north gable",
+   "eye": [
+    1049,
+    91.90999984741211,
+    321
+   ],
+   "target": [
+    1036,
+    91,
+    316
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 67,
+    "triangles": 94194
+   }
+  },
+  {
+   "file": "lite_classic_bench-hamlet_0630.jpg",
+   "tier": "lite",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "Bench Hamlet from the shelf's south end: the crofts along the lane, yards, strips and dykes",
+   "eye": [
+    1036,
+    116,
+    466
+   ],
+   "target": [
+    1082,
+    103,
+    412
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 91,
+    "triangles": 173813
+   }
+  },
+  {
+   "file": "lite_classic_bench-hamlet_2240.jpg",
+   "tier": "lite",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "Bench Hamlet from the shelf's south end: the crofts along the lane, yards, strips and dykes",
+   "eye": [
+    1036,
+    116,
+    466
+   ],
+   "target": [
+    1082,
+    103,
+    412
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 97,
+    "triangles": 198595
+   }
+  },
+  {
+   "file": "lite_classic_fallswatch-veil_0630.jpg",
+   "tier": "lite",
+   "theme": "classic",
+   "time": "06:30",
+   "note": "from the Fallswatch eye along the Veil (the binocular line to the lip)",
+   "eye": [
+    1086,
+    96.89999999999999,
+    694.3
+   ],
+   "target": [
+    1113,
+    86,
+    706
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 444,
+    "triangles": 312690
+   }
+  },
+  {
+   "file": "lite_classic_fallswatch-veil_2240.jpg",
+   "tier": "lite",
+   "theme": "classic",
+   "time": "22:40",
+   "note": "from the Fallswatch eye along the Veil (the binocular line to the lip)",
+   "eye": [
+    1086,
+    96.89999999999999,
+    694.3
+   ],
+   "target": [
+    1113,
+    86,
+    706
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 450,
+    "triangles": 340511
+   }
+  },
+  {
+   "file": "lite_taylor_porch-north-pass_0630.jpg",
+   "tier": "lite",
+   "theme": "taylor",
+   "time": "06:30",
+   "note": "the porch: the hamlet lane at the north pass, Westwatch Chapel on its knoll and the sea beyond",
+   "eye": [
+    1060,
+    94.4920742420897,
+    342
+   ],
+   "target": [
+    1036,
+    93,
+    316
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 53,
+    "triangles": 66939
+   }
+  },
+  {
+   "file": "lite_taylor_porch-north-pass_2240.jpg",
+   "tier": "lite",
+   "theme": "taylor",
+   "time": "22:40",
+   "note": "the porch: the hamlet lane at the north pass, Westwatch Chapel on its knoll and the sea beyond",
+   "eye": [
+    1060,
+    94.4920742420897,
+    342
+   ],
+   "target": [
+    1036,
+    93,
+    316
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 59,
+    "triangles": 91753
+   }
+  },
+  {
+   "file": "lite_taylor_westwatch-chapel_0630.jpg",
+   "tier": "lite",
+   "theme": "taylor",
+   "time": "06:30",
+   "note": "Westwatch Chapel from its churchyard gate: the verdigris bell cote on the north gable",
+   "eye": [
+    1049,
+    91.90999984741211,
+    321
+   ],
+   "target": [
+    1036,
+    91,
+    316
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 60,
+    "triangles": 70204
+   }
+  },
+  {
+   "file": "lite_taylor_westwatch-chapel_2240.jpg",
+   "tier": "lite",
+   "theme": "taylor",
+   "time": "22:40",
+   "note": "Westwatch Chapel from its churchyard gate: the verdigris bell cote on the north gable",
+   "eye": [
+    1049,
+    91.90999984741211,
+    321
+   ],
+   "target": [
+    1036,
+    91,
+    316
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 69,
+    "triangles": 95670
+   }
+  },
+  {
+   "file": "lite_taylor_bench-hamlet_0630.jpg",
+   "tier": "lite",
+   "theme": "taylor",
+   "time": "06:30",
+   "note": "Bench Hamlet from the shelf's south end: the crofts along the lane, yards, strips and dykes",
+   "eye": [
+    1036,
+    116,
+    466
+   ],
+   "target": [
+    1082,
+    103,
+    412
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 91,
+    "triangles": 178111
+   }
+  },
+  {
+   "file": "lite_taylor_bench-hamlet_2240.jpg",
+   "tier": "lite",
+   "theme": "taylor",
+   "time": "22:40",
+   "note": "Bench Hamlet from the shelf's south end: the crofts along the lane, yards, strips and dykes",
+   "eye": [
+    1036,
+    116,
+    466
+   ],
+   "target": [
+    1082,
+    103,
+    412
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 97,
+    "triangles": 202893
+   }
+  },
+  {
+   "file": "lite_taylor_fallswatch-veil_0630.jpg",
+   "tier": "lite",
+   "theme": "taylor",
+   "time": "06:30",
+   "note": "from the Fallswatch eye along the Veil (the binocular line to the lip)",
+   "eye": [
+    1086,
+    96.89999999999999,
+    694.3
+   ],
+   "target": [
+    1113,
+    86,
+    706
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 441,
+    "triangles": 317526
+   }
+  },
+  {
+   "file": "lite_taylor_fallswatch-veil_2240.jpg",
+   "tier": "lite",
+   "theme": "taylor",
+   "time": "22:40",
+   "note": "from the Fallswatch eye along the Veil (the binocular line to the lip)",
+   "eye": [
+    1086,
+    96.89999999999999,
+    694.3
+   ],
+   "target": [
+    1113,
+    86,
+    706
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 447,
+    "triangles": 345347
+   }
+  },
+  {
+   "file": "lite_newfoundland_porch-north-pass_0630.jpg",
+   "tier": "lite",
+   "theme": "newfoundland",
+   "time": "06:30",
+   "note": "the porch: the hamlet lane at the north pass, Westwatch Chapel on its knoll and the sea beyond",
+   "eye": [
+    1060,
+    94.4920742420897,
+    342
+   ],
+   "target": [
+    1036,
+    93,
+    316
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 50,
+    "triangles": 67177
+   }
+  },
+  {
+   "file": "lite_newfoundland_porch-north-pass_2240.jpg",
+   "tier": "lite",
+   "theme": "newfoundland",
+   "time": "22:40",
+   "note": "the porch: the hamlet lane at the north pass, Westwatch Chapel on its knoll and the sea beyond",
+   "eye": [
+    1060,
+    94.4920742420897,
+    342
+   ],
+   "target": [
+    1036,
+    93,
+    316
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 56,
+    "triangles": 91991
+   }
+  },
+  {
+   "file": "lite_newfoundland_westwatch-chapel_0630.jpg",
+   "tier": "lite",
+   "theme": "newfoundland",
+   "time": "06:30",
+   "note": "Westwatch Chapel from its churchyard gate: the verdigris bell cote on the north gable",
+   "eye": [
+    1049,
+    91.90999984741211,
+    321
+   ],
+   "target": [
+    1036,
+    91,
+    316
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 57,
+    "triangles": 70662
+   }
+  },
+  {
+   "file": "lite_newfoundland_westwatch-chapel_2240.jpg",
+   "tier": "lite",
+   "theme": "newfoundland",
+   "time": "22:40",
+   "note": "Westwatch Chapel from its churchyard gate: the verdigris bell cote on the north gable",
+   "eye": [
+    1049,
+    91.90999984741211,
+    321
+   ],
+   "target": [
+    1036,
+    91,
+    316
+   ],
+   "fov": 60,
+   "stats": {
+    "drawCalls": 66,
+    "triangles": 96128
+   }
+  },
+  {
+   "file": "lite_newfoundland_bench-hamlet_0630.jpg",
+   "tier": "lite",
+   "theme": "newfoundland",
+   "time": "06:30",
+   "note": "Bench Hamlet from the shelf's south end: the crofts along the lane, yards, strips and dykes",
+   "eye": [
+    1036,
+    116,
+    466
+   ],
+   "target": [
+    1082,
+    103,
+    412
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 89,
+    "triangles": 180035
+   }
+  },
+  {
+   "file": "lite_newfoundland_bench-hamlet_2240.jpg",
+   "tier": "lite",
+   "theme": "newfoundland",
+   "time": "22:40",
+   "note": "Bench Hamlet from the shelf's south end: the crofts along the lane, yards, strips and dykes",
+   "eye": [
+    1036,
+    116,
+    466
+   ],
+   "target": [
+    1082,
+    103,
+    412
+   ],
+   "fov": 55,
+   "stats": {
+    "drawCalls": 95,
+    "triangles": 204817
+   }
+  },
+  {
+   "file": "lite_newfoundland_fallswatch-veil_0630.jpg",
+   "tier": "lite",
+   "theme": "newfoundland",
+   "time": "06:30",
+   "note": "from the Fallswatch eye along the Veil (the binocular line to the lip)",
+   "eye": [
+    1086,
+    96.89999999999999,
+    694.3
+   ],
+   "target": [
+    1113,
+    86,
+    706
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 442,
+    "triangles": 322886
+   }
+  },
+  {
+   "file": "lite_newfoundland_fallswatch-veil_2240.jpg",
+   "tier": "lite",
+   "theme": "newfoundland",
+   "time": "22:40",
+   "note": "from the Fallswatch eye along the Veil (the binocular line to the lip)",
+   "eye": [
+    1086,
+    96.89999999999999,
+    694.3
+   ],
+   "target": [
+    1113,
+    86,
+    706
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 448,
+    "triangles": 350707
+   }
+  }
+ ],
+ "errors": []
+}

@@ -10740,6 +10740,28 @@
    "rise_m": 0.5,
    "xy": [
     [
+     486,
+     636
+    ],
+    [
+     490,
+     626
+    ],
+    [
+     492,
+     616
+    ],
+    [
+     496,
+     606
+    ],
+    [
+     490,
+     600
+    ]
+   ],
+   "ww_l3_xy": [
+    [
      483.5,
      650
     ],
@@ -10760,7 +10782,7 @@
      704
     ]
    ],
-   "note": "D-WW85: five footings on the Wash's east bank, \u2265 6 m off every bed edge, mid-strip (no approach box)"
+   "note": "D-WW85: five footings at the Wash, \u2265 6 m off every bed edge, mid-strip (no approach box). D-WW164a (PR 4 Flats): moved from the east bank's face (4.4\u20139.1 m of fall across a 4 m footing: up to 9.6 m of footing stood bare under the drums) up onto the Wash's east rim at its head (\u2264 0.2 m across each footing, \u2264 0.5 m within 4 m), 12.6\u201321 m off S2's edge, |o| \u2265 54 off the strip's centreline"
   },
   "bightLookout": {
    "kind": "lookoutDeck",
@@ -13164,21 +13186,33 @@
     "lantern cards"
    ],
    "portrait": {
-    "fov_deg": 65,
+    "fov_deg": 45,
     "target": [
-     1370,
-     1305
+     1300,
+     1320
     ],
-    "target_h": 5,
+    "target_h": 4,
     "frames": [
      "Lantern Row",
      "the Boathouse"
     ],
     "v1_8_xy": null,
     "xy": [
+     1475,
+     1297
+    ],
+    "ww_v2_xy": [
      1430,
      1210
-    ]
+    ],
+    "ww_v2_target": [
+     1370,
+     1305
+    ],
+    "ww_v2_fov_deg": 65,
+    "ww_v2_target_h": 5,
+    "eyeH": 11.0,
+    "note_ww": "D-WW139 (PR 3 Little Harbour; owed to Jonathan): the in-town portrait eye is inside the dressed vicolo; re-posed on the quay, 8 eu over the walk, along Lantern Row to the Boathouse"
    },
    "v1_6": {
     "xy": [
