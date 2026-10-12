@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -q -m 'Green budget test reads the recorded ceilings \\(D-WW182\\) *)",
+      "Bash(xargs grep -nE 'Math\\\\.random|Date\\\\.now|performance\\\\.now|localeCompare|Intl\\\\.|readdirSync|os\\\\.cpus|availableParallelism|process\\\\.platform')"
+    ]
+  }
+}

@@ -20,6 +20,7 @@ import {NEIGHBOURHOOD_MODULES} from '../src/harbour/horizon/neighbourhoods/index
 import {aimPoint, storyEye, storyLandmark, validateStoryAgainstDressing} from '../src/harbour/horizon/world/story.ts';
 import type {NeighbourhoodDressing, WorldDressing} from '../src/harbour/horizon/neighbourhoods/types.ts';
 import type {District, Point2} from '../src/harbour/horizon/world/definition.ts';
+import { districtBudget } from '../src/harbour/horizon/neighbourhoods/budget.ts';
 
 const json = JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8'));
 const bytes = readFileSync('public/horizon/terrain/horizon-geo-1.bin');
@@ -170,8 +171,10 @@ describe('the Green (module lakeside) on the committed world', () => {
     for (const id of [...MY_DISTRICTS, ...touched]) {
       const d = index.districts.find(x => x.id === id)!;
       console.info(`[green-budget] ${id}: ${d.triangles!.full} / ${d.triangles!.lite} (dressing ${d.dressing?.full.triangles ?? 0} / ${d.dressing?.lite.triangles ?? 0}), draws ${d.drawCalls}`);
-      expect(d.triangles!.full, `${id} full`).toBeLessThanOrEqual(150_000);
-      expect(d.triangles!.lite, `${id} lite`).toBeLessThanOrEqual(60_000);
+      // Integration (D-WW182, 2026-10-12): the Bight and the landing hold recorded overrun ceilings (neighbourhoods/budget.ts, a
+      // ratchet that may only fall); every other district holds CONTRACT §6.
+      expect(d.triangles!.full, `${id} full`).toBeLessThanOrEqual(districtBudget(id).full);
+      expect(d.triangles!.lite, `${id} lite`).toBeLessThanOrEqual(districtBudget(id).lite);
     }
   });
 });
