@@ -81,10 +81,12 @@ export function airportArt(theme:VehicleDressing){
  const tin=S(pal.tin,.5,{metalness:.35,side:THREE.DoubleSide}),tinAlt=S(pal.tinAlt,.5,{metalness:.35,side:THREE.DoubleSide}),tinEnd=S(pal.tinAlt,.55,{metalness:.3,side:THREE.DoubleSide}),ceiling=S(pal.tin,.7,{color:hex(pal.tin).multiplyScalar(.55)});
  const station=S(pal.walls[0]!,.9),batten=S(pal.timberDark,.9),trim=S(pal.trim,.8),canvas=S(pal.canvas,.95,{side:THREE.DoubleSide}),canvasAlt=S(pal.canvas,.95,{side:THREE.DoubleSide,color:hex(pal.canvas).multiplyScalar(.9)}),yellow=S(pal.doorAccent,.6),rust=S(pal.rust,.9),pier=S(pal.plinth,.95),grass=S(theme==='newfoundland'?[.45,.42,.3]:[.7,.48,.25],1),bloom=S(theme==='taylor'?[.92,.7,.85]:[.7,.35,.56],.9),iron=S([.16,.16,.17],.6,{metalness:.4});
  const b=builder(detail),r=builder(roofs),m=builder(map);
- const hangarWalls=new Set(['hangar-west','hangar-north','hangar-south-west','hangar-south-east']),stationWalls=new Set(['terminal-west','terminal-south']),elevatorBoxes=new Set(['tower-base','tower-cabin','tower-cap']);
+ const hangarWalls=new Set(['hangar-west','hangar-north','hangar-south-west','hangar-south-east']),stationWalls=new Set(['terminal-west','terminal-south','terminal-entry-left','terminal-entry-right','terminal-east-north','terminal-east-south']),elevatorBoxes=new Set(['tower-base','tower-cabin','tower-cap']);
  for(const q of AIRPORT_BOXES){
   if(elevatorBoxes.has(q.id))continue;   // inside the elevator (neighbourhoods/flats draws it over these boxes; their collision is unchanged)
-  const mat=hangarWalls.has(q.id)?tin:stationWalls.has(q.id)?station:q.id==='hangar-roof'?ceiling:q.id==='observation-roof'?mats.cedar:mats[q.material];
+  // The station's walls are all timber now (the merged glass entry and east walls included: same boxes, re-dressed), and the
+  // roof deck's glass rails become a board parapet of the same box (what is drawn is what is struck).
+  const mat=hangarWalls.has(q.id)?tin:stationWalls.has(q.id)?station:q.id.startsWith('roof-rail-')?mats.cedar:q.id==='hangar-roof'?ceiling:q.id==='observation-roof'?mats.cedar:mats[q.material];
   (q.roof?r:b).box(mat,q.x,q.y,q.z,q.w,q.h,q.d);if(q.roof)m.box(mats[q.material],q.x,q.y,q.z,q.w,q.h,q.d);
  }
  for(const d of AIRPORT_DECKS){const dx=d.b[0]-d.a[0],dy=d.b[1]-d.a[1],dz=d.b[2]-d.a[2],length=Math.hypot(dx,dy,dz),yaw=Math.atan2(dx,dz),pitch=-Math.atan2(dy,Math.hypot(dx,dz));for(const target of [b,m])target.box(mats.paving,(d.a[0]+d.b[0])/2,(d.a[1]+d.b[1])/2-.105,(d.a[2]+d.b[2])/2,d.width,.24,length,pitch,yaw);
@@ -114,11 +116,12 @@ export function airportArt(theme:VehicleDressing){
  for(let z=574;z<598;z+=2)b.box(tinAlt,383.25,41,z,.1,5,.06);
  for(let i=0;i<12;i++)b.box(mats.copper,384.4+i*.3,39.7,575.2,.08,.35+(i%3)*.1,.08);
  /* ---- the station: board-and-batten timber, deep eaves on brackets, canvas awnings, yellow doors ---- */
- for(const q of AIRPORT_BOXES)if(stationWalls.has(q.id)){const alongX=q.w>q.d,len=alongX?q.w:q.d,n=Math.floor(len/.7),out=q.id==='terminal-west'?-1:1;
+ for(const q of AIRPORT_BOXES)if(q.id.startsWith('roof-rail-')){const alongX=q.w>q.d;b.box(trim,q.x,q.y+q.h/2+.04,q.z,alongX?q.w:q.w+.04,.08,alongX?q.d+.04:q.d);b.box(batten,q.x,q.y-q.h/2+.12,q.z,alongX?q.w:q.w+.02,.1,alongX?q.d+.02:q.d);}
+ for(const q of AIRPORT_BOXES)if(stationWalls.has(q.id)){const alongX=q.w>q.d,len=alongX?q.w:q.d,n=Math.floor(len/.7),out=q.id==='terminal-west'||q.id.startsWith('terminal-entry')?-1:1;
   for(let i=1;i<n;i++){const t=-len/2+i*len/n;if(alongX)b.box(batten,q.x+t,q.y,q.z+out*(q.d/2+.03),.08,q.h,.05);else b.box(batten,q.x+out*(q.w/2+.03),q.y,q.z+t,.05,q.h,.08);}
   if(alongX)b.box(pier,q.x,38.25,q.z+out*(q.d/2+.05),q.w,.5,.08);else b.box(pier,q.x+out*(q.w/2+.05),38.25,q.z,.08,.5,q.d);
   // Windows (flush panes in timber surrounds; the wall stays solid, as its box).
-  for(let i=0;i<3;i++){const t=-len/2+len*(i+.5)/3;if(alongX){b.box(trim,q.x+t,40.3,q.z+out*(q.d/2+.05),1.5,1.8,.04);b.box(mats.glass,q.x+t,40.3,q.z+out*(q.d/2+.08),1.2,1.5,.02);}else{b.box(trim,q.x+out*(q.w/2+.05),40.3,q.z+t,.04,1.8,1.5);b.box(mats.glass,q.x+out*(q.w/2+.08),40.3,q.z+t,.02,1.5,1.2);}}}
+  const nw=len>12?3:2;for(let i=0;i<nw;i++){const t=-len/2+len*(i+.5)/nw;if(alongX){b.box(trim,q.x+t,40.3,q.z+out*(q.d/2+.05),1.5,1.8,.04);b.box(mats.glass,q.x+t,40.3,q.z+out*(q.d/2+.08),1.2,1.5,.02);}else{b.box(trim,q.x+out*(q.w/2+.05),40.3,q.z+t,.04,1.8,1.5);b.box(mats.glass,q.x+out*(q.w/2+.08),40.3,q.z+t,.02,1.5,1.2);}}}
  // The observation roof's fascia (the deck stays usable at 42.2; the rails are its own) and the deep eaves' brackets.
  b.box(trim,394,41.95,660.97,24.1,.5,.06);b.box(trim,394,41.95,689.03,24.1,.5,.06);b.box(trim,381.97,41.95,675,.06,.5,28.1);b.box(trim,406.03,41.95,675,.06,.5,28.1);
  for(let z=670;z<=686;z+=4){b.box(mats.cedar,382.5,41.15,z,1.2,.12,.12,0,0,-.62);}for(let x=385;x<=403;x+=4){b.box(mats.cedar,x,41.15,688.5,.12,.12,1.2,-.62);}

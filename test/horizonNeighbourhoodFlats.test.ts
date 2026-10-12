@@ -5,7 +5,7 @@
 // life; the per-district budget; page H's subjects; the Wash Arch dressing over the baked arch; determinism.
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import type { LandCuts, StructureSolid, TerrainField } from '../src/harbour/horizon/land/interfaces.ts';
 import { decodeTerrainAsset } from '../src/harbour/horizon/land/terrain/asset.ts';
 import { terrainHeight, solidBounds } from '../src/harbour/horizon/world/geometry.ts';
@@ -16,7 +16,9 @@ import { storyLandmark, validateStoryAgainstDressing } from '../src/harbour/hori
 import { bakeDressings, buildingHeight, createDressingContext, footprintCorners, PROP_HEIGHT, SPECIES_HEIGHT, validateDressing } from '../src/harbour/horizon/neighbourhoods/bake.ts';
 import { buildingPlan } from '../src/harbour/horizon/kit/buildings/index.ts';
 import { flatsModule, FLATS_LIGHT_LINE, FLATS_NIGHT_ORDER } from '../src/harbour/horizon/neighbourhoods/flats/index.ts';
-import { BALLOON, CROWN_RADIUS, ELEVATOR, FLATS_LANDFORM, WASH_ARCH, WASH_HOODOOS, WINDSOCK, polyArea, pointInPoly, stripClearanceBreach, stripLocal } from '../src/harbour/horizon/neighbourhoods/flats/plan.ts';
+import { BALLOON, BIGHT_BRIDGE_ARCH, BIGHT_PLOTS, CROWN_RADIUS, ELEVATOR, FLATS_LANDFORM, PORCH_BENCH, WASH_ARCH, WASH_HOODOOS, WINDSOCK, plotPoint, polyArea, pointInPoly, stripClearanceBreach, stripLocal } from '../src/harbour/horizon/neighbourhoods/flats/plan.ts';
+import { FLATS_PLANTING } from '../src/harbour/horizon/neighbourhoods/flats/planting.ts';
+import { baseHeight } from '../src/harbour/horizon/land/terrain/index.ts';
 import { NEIGHBOURHOOD_MODULES } from '../src/harbour/horizon/neighbourhoods/index.ts';
 import { AIRPORT, AIRPORT_BOXES, AIRPORT_DECKS, AIRPORT_VAULTS, vaultTop } from '../src/harbour/horizon/airport/layout.ts';
 import { airportGeography } from '../src/harbour/horizon/airport/geography.ts';
@@ -24,19 +26,27 @@ import { measureDistrictDressing } from '../src/harbour/horizon/runtime/dressing
 import type { NeighbourhoodDressing } from '../src/harbour/horizon/neighbourhoods/types.ts';
 
 type World = { collision: Omit<LandCuts, 'solids' | 'diagnostics'>; geometry: { solids: (StructureSolid & { sourceId?: string })[] }; hosts: { id: string; footprint?: [number, number][]; door: { xy?: [number, number] }; height?: number }[]; districts: { id: string; triangles?: { full: number; lite: number }; dressing?: unknown }[]; views: { id: string; eye: number[]; target: number[]; fovDegrees: number }[]; dressing?: { districts: { districtId: string; buildings: { id: string }[]; plants: unknown[]; props: { id?: string }[] }[]; landmarks: { id: string; at: number[]; top: number[] }[]; lookouts: { id: string; eye: number[] }[] }; lights: { id: string; kind: string; at: number[]; order?: number; line?: string }[] };
-let cache: { world: World; field: TerrainField; ground: (x: number, z: number) => number; solids: StructureSolid[]; land: StructureSolid[]; ctx: ReturnType<typeof createDressingContext>; out: NeighbourhoodDressing } | null = null;
-const bake = () => {
-  if (cache) return cache;
-  const world = JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8')) as World, bytes = readFileSync('public/horizon/terrain/horizon-geo-1.bin');
-  const field = decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), 'full'), ground = (x: number, z: number) => terrainHeight(field, x, z);
+type Fixture = { world: World; field: TerrainField; ground: (x: number, z: number) => number; solids: StructureSolid[]; land: StructureSolid[]; ctx: ReturnType<typeof createDressingContext>; out: NeighbourhoodDressing; ray: ReturnType<typeof createRayCaster> };
+let cache: Fixture | null = null;
+const tick = () => new Promise<void>(r => setTimeout(r, 0));
+// The heavy fixtures (the bake's parse, the terrain field, the context, the module, the ray caster) are built once, in steps that
+// yield to the worker's event loop between them (CI runs four workers: a worker held synchronously too long fails the gate with
+// "Timeout calling onTaskUpdate" even when every test is green).
+beforeAll(async () => {
+  const world = JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8')) as World; await tick();
+  const bytes = readFileSync('public/horizon/terrain/horizon-geo-1.bin');
+  const field = decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), 'full'), ground = (x: number, z: number) => terrainHeight(field, x, z); await tick();
   const solids = world.geometry.solids.map(q => ({ ...q, id: q.sourceId ?? q.id.split('@')[0]! })) as StructureSolid[];
   // The bake runs the modules before their own colliders join the world: the same context, without `dressing.*` solids.
-  const land = solids.filter(s => !s.id.startsWith('dressing.'));
+  const land = solids.filter(s => !s.id.startsWith('dressing.')); await tick();
   const ctx = createDressingContext({ ground, beds: world.collision.beds, pads: world.collision.pads, waters: world.collision.waters, solids: land,
     hosts: world.hosts.map(h => ({ id: h.id, footprint: h.footprint, door: h.door?.xy ? { xy: h.door.xy } : {}, height: h.height })),
-    protectedAreas: [{ id: 'green', outline: protectedGreenOutline() }], districtAt: (x, z) => districtAt(x, z) });
-  return (cache = { world, field, ground, solids, land, ctx, out: flatsModule.build(ctx) });
-};
+    protectedAreas: [{ id: 'green', outline: protectedGreenOutline() }], districtAt: (x, z) => districtAt(x, z) }); await tick();
+  const out = flatsModule.build(ctx); await tick();
+  const ray = createRayCaster(field, { ...world.collision, solids } as LandCuts); await tick();
+  cache = { world, field, ground, solids, land, ctx, out, ray };
+}, 300_000);
+const bake = (): Fixture => { if (!cache) throw new Error('fixtures not built'); return cache; };
 const tallOf = (species: string, scale: number) => (SPECIES_HEIGHT as Record<string, number>)[species]! * scale;
 
 describe('the Flats module on the bake-time world', () => {
@@ -146,6 +156,41 @@ describe('the Wash: the arch dresses the baked arch, the hoodoos stand on their 
   }, 120_000);
 });
 
+describe('the hoodoos stand on level footings on the Wash\'s rim (D-WW164a)', () => {
+  it('the ground under each 4 m footing falls ≤ 0.8 m (no bare pedestal), and the footings stay off S2 and outside the strip\'s boxes', () => {
+    const { ctx } = bake();
+    for (const [x, z] of WASH_HOODOOS.xy) {
+      const g = [[0, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]].map(([i, j]) => baseHeight(x + i! * WASH_HOODOOS.footing_m / 2, z + j! * WASH_HOODOOS.footing_m / 2));
+      expect(Math.max(...g) - Math.min(...g), `[${x}, ${z}]`).toBeLessThanOrEqual(0.8);
+      expect(ctx.bedClearance(x, z, ['S2']) - WASH_HOODOOS.footing_m / 2).toBeGreaterThanOrEqual(6);
+      expect(stripClearanceBreach(x, z, WASH_HOODOOS.footing_m)).toBeNull();
+    }
+  }, 120_000);
+});
+
+describe('the porch looks over the grass (the seated eye at 0.98)', () => {
+  it('nothing over 0.5 m within 7 m of the bench, nor in the frame toward the Bight Bridge\'s arch for 45 m', () => {
+    const { out } = bake(), dir = Math.atan2(BIGHT_BRIDGE_ARCH[0] - PORCH_BENCH[0], BIGHT_BRIDGE_ARCH[1] - PORCH_BENCH[1]);
+    for (const p of out.plants) {
+      const dx = p.at[0] - PORCH_BENCH[0], dz = p.at[2] - PORCH_BENCH[1], d = Math.hypot(dx, dz), a = Math.atan2(dx, dz) - dir, off = Math.abs(Math.atan2(Math.sin(a), Math.cos(a)));
+      if (d < 7 || (d < 45 && off < (12 * Math.PI) / 180)) expect(tallOf(p.species, p.scale), `${p.species} at [${p.at[0].toFixed(1)}, ${p.at[2].toFixed(1)}]`).toBeLessThanOrEqual(0.5);
+    }
+  }, 120_000);
+});
+
+describe('the Bight: eelgrass and the plots\' battered faces planted (D-WW165a)', () => {
+  it('eelgrass in the shallows and shore planting on every plot\'s lagoon faces, below its level', () => {
+    const { out, ground, ctx } = bake();
+    const eel = out.plants.filter(p => p.species === 'sedge' && ctx.districtAt(p.at[0], p.at[2]) === 'bight' && ctx.waterLevelAt(p.at[0], p.at[2]) !== null);
+    expect(eel.length).toBeGreaterThanOrEqual(FLATS_PLANTING.eelgrass * 0.75);
+    for (const plot of BIGHT_PLOTS) {
+      const c = plotPoint(plot, 0, 0), level = ground(c[0], c[1]), reach = Math.hypot(plot.size[0], plot.size[1]) / 2 + 17;
+      const shore = out.plants.filter(p => p.species !== 'sedge' && Math.hypot(p.at[0] - c[0], p.at[2] - c[1]) < reach && p.at[1] < level - 1.5 && ctx.districtAt(p.at[0], p.at[2]) === 'bight');
+      expect(shore.length, plot.id).toBeGreaterThanOrEqual(FLATS_PLANTING.shorePerPlot * 0.8);
+    }
+  }, 120_000);
+});
+
 describe('planting by the sheet (STYLE §2.4, §1.4.1)', () => {
   it('tree cover ≤ 3 % of the landform (within ±5 points of the sheet), ≥ 70 % open ground, trees in clumps of the lee', () => {
     const { out } = bake(), area = polyArea(FLATS_LANDFORM);
@@ -198,16 +243,15 @@ describe('night, life and budget', () => {
       expect(d.triangles!.full).toBeLessThanOrEqual(150_000); expect(d.triangles!.lite).toBeLessThanOrEqual(60_000);
     }
   }, 120_000);
-  it('measures the module\'s own art with the runtime layer\'s builder (one measure)', () => {
-    const { ctx, ground } = bake(), b = bakeDressings([flatsModule], ctx);
-    for (const d of b.dressing!.districts) { const f = measureDistrictDressing(d, ground, 'full'), l = measureDistrictDressing(d, ground, 'lite'); expect(l.triangles).toBeLessThanOrEqual(f.triangles); expect(f.drawCalls).toBeLessThanOrEqual(40); }
+  it('measures the module\'s own art with the runtime layer\'s builder (one measure)', async () => {
+    const { ctx, ground } = bake(), b = bakeDressings([flatsModule], ctx); await tick();
+    for (const d of b.dressing!.districts) { const f = measureDistrictDressing(d, ground, 'full'); await tick(); const l = measureDistrictDressing(d, ground, 'lite'); await tick(); expect(l.triangles).toBeLessThanOrEqual(f.triangles); expect(f.drawCalls).toBeLessThanOrEqual(40); }
   }, 120_000);
 });
 
 describe('page H holds its subjects (D-WW86 pose)', () => {
   it('the strip, the windsock, the balloon and the elevator stand inside the frame, unoccluded by the dressing', () => {
-    const { world, field, solids } = bake(), v = world.views.find(q => q.id === 'H')!;
-    const ray = createRayCaster(field, { ...world.collision, solids } as LandCuts);
+    const { world, ray } = bake(), v = world.views.find(q => q.id === 'H')!;
     const ax = Math.atan2(v.target[0]! - v.eye[0]!, v.target[2]! - v.eye[2]!), half = (v.fovDegrees / 2) * Math.PI / 180;
     const subjects: [string, [number, number, number]][] = [['windsock', [WINDSOCK[0], 44, WINDSOCK[1]]], ['balloon', [BALLOON[0], 52, BALLOON[1]]], ['elevator', [ELEVATOR.at[0], 60, ELEVATOR.at[2]]], ['strip', [435, 38.5, 690]]];
     for (const [id, p] of subjects) {

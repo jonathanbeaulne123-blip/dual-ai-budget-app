@@ -61,7 +61,8 @@ function build(ctx: DressingContext): NeighbourhoodDressing {
     B({ id: 'flats.washArch', kind: 'arch', at: [n.at[0], floor, n.at[2]], yaw: Math.atan2(-nrm[1], nrm[0]), size: { w: 2 * (WASH_ARCH.legOffset_m + WASH_ARCH.legRadius_m[0]! * 1.5), d: WASH_ARCH.lintel.width_m + 0.6, h: top - floor }, roof: ROOF_FLAT, collide: false });
   }
   // The small hoodoo cluster on the five PR 2 footings (3–9 m drums in the ochre bands); they collide (what is drawn).
-  const HOODOO_H = [6.6, 8.8, 4.4, 7.4, 3.4], HOODOO_W = [3.2, 3.6, 2.8, 3.4, 2.6];
+  // Wide at the foot (3.0–4.0 of the 4 m footing: the drum's base hides the footing's rise; talus planting takes its corners).
+  const HOODOO_H = [6.6, 8.8, 4.4, 7.4, 3.4], HOODOO_W = [3.6, 4.0, 3.2, 3.8, 3.0];
   // Each stands on its footing's top: the land's own rule (land/structures/westLand.ts washArch: the highest of five samples of the
   // pre-structure ground `baseHeight` over the 4 × 4 footing, + rise), so the drum meets the plinth exactly (the test reads the solid).
   WASH_HOODOOS.xy.forEach(([x, z], i) => {

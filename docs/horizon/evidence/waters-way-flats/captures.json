@@ -1,0 +1,2084 @@
+{
+ "sha": "3fcbebd0ce04cb6ff194a9379cbd0d69f1196784",
+ "method": "headless Chromium, SwiftShader (--use-angle=swiftshader): not device evidence. Look poses via __harbour.world.views + shot(); 21 June 2026, America/Toronto.",
+ "records": [
+  {
+   "file": "H_19-50_classic_full.jpg",
+   "pose": "H",
+   "label": "page H: the strip up to the windsock and the balloon, the west sea",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    452,
+    58,
+    890
+   ],
+   "target": [
+    428,
+    30,
+    480
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 260,
+    "triangles": 414972
+   }
+  },
+  {
+   "file": "H_22-40_classic_full.jpg",
+   "pose": "H",
+   "label": "page H: the strip up to the windsock and the balloon, the west sea",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    452,
+    58,
+    890
+   ],
+   "target": [
+    428,
+    30,
+    480
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 141,
+    "triangles": 230637
+   }
+  },
+  {
+   "file": "porch_19-50_classic_full.jpg",
+   "pose": "porch",
+   "label": "the porch: from the hangar's bench toward the Bight Bridge's arch, the strip on the right",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    449.5,
+    39,
+    616.5
+   ],
+   "target": [
+    561,
+    22,
+    1099
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 148,
+    "triangles": 323717
+   }
+  },
+  {
+   "file": "porch_22-40_classic_full.jpg",
+   "pose": "porch",
+   "label": "the porch: from the hangar's bench toward the Bight Bridge's arch, the strip on the right",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    449.5,
+    39,
+    616.5
+   ],
+   "target": [
+    561,
+    22,
+    1099
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 158,
+    "triangles": 391169
+   }
+  },
+  {
+   "file": "elevator_19-50_classic_full.jpg",
+   "pose": "elevator",
+   "label": "the grain elevator over the station, from the apron",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    432,
+    41.2,
+    652
+   ],
+   "target": [
+    396,
+    50,
+    704
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 108,
+    "triangles": 215817
+   }
+  },
+  {
+   "file": "elevator_22-40_classic_full.jpg",
+   "pose": "elevator",
+   "label": "the grain elevator over the station, from the apron",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    432,
+    41.2,
+    652
+   ],
+   "target": [
+    396,
+    50,
+    704
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 116,
+    "triangles": 283211
+   }
+  },
+  {
+   "file": "quonset_19-50_classic_full.jpg",
+   "pose": "quonset",
+   "label": "THE hangar: the Quonset's open mouth on the apron",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    436,
+    41,
+    566
+   ],
+   "target": [
+    400,
+    42,
+    590
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 106,
+    "triangles": 161059
+   }
+  },
+  {
+   "file": "quonset_22-40_classic_full.jpg",
+   "pose": "quonset",
+   "label": "THE hangar: the Quonset's open mouth on the apron",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    436,
+    41,
+    566
+   ],
+   "target": [
+    400,
+    42,
+    590
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 119,
+    "triangles": 171771
+   }
+  },
+  {
+   "file": "station_19-50_classic_full.jpg",
+   "pose": "station",
+   "label": "the prairie station from the arrival court",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    366,
+    40.2,
+    640
+   ],
+   "target": [
+    394,
+    40.5,
+    668
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 394,
+    "triangles": 180206
+   }
+  },
+  {
+   "file": "final_19-50_classic_full.jpg",
+   "pose": "final",
+   "label": "on final: the geoglyph in the approach, the strip ahead",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    417,
+    65,
+    400
+   ],
+   "target": [
+    438,
+    38,
+    720
+   ],
+   "fovDegrees": 50,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 500,
+    "triangles": 341545
+   }
+  },
+  {
+   "file": "stargazing_19-50_classic_full.jpg",
+   "pose": "stargazing",
+   "label": "the stargazing deck and the observatory in the dark tip",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    458,
+    41.5,
+    394
+   ],
+   "target": [
+    479,
+    39,
+    381
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 154,
+    "triangles": 302824
+   }
+  },
+  {
+   "file": "wash_19-50_classic_full.jpg",
+   "pose": "wash",
+   "label": "the Wash Arch over the Wash Run, the hoodoos beyond",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    503,
+    42,
+    452
+   ],
+   "target": [
+    480,
+    42,
+    520
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 491,
+    "triangles": 357731
+   }
+  },
+  {
+   "file": "hoodoos_19-50_classic_full.jpg",
+   "pose": "hoodoos",
+   "label": "the hoodoo cluster on the Wash's east rim, the elevator beyond",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    515,
+    41.5,
+    595
+   ],
+   "target": [
+    488,
+    43,
+    625
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 135,
+    "triangles": 228435
+   }
+  },
+  {
+   "file": "bight_19-50_classic_full.jpg",
+   "pose": "bight",
+   "label": "the Bight Shore plots over the lagoon",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    640,
+    24,
+    1000
+   ],
+   "target": [
+    760,
+    14,
+    990
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 395,
+    "triangles": 226238
+   }
+  },
+  {
+   "file": "aerial_19-50_classic_full.jpg",
+   "pose": "aerial",
+   "label": "aerial: the Flats arm from the south-west",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    230,
+    240,
+    930
+   ],
+   "target": [
+    450,
+    32,
+    640
+   ],
+   "fovDegrees": 50,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 146,
+    "triangles": 202985
+   }
+  },
+  {
+   "file": "elevatorTop_19-50_classic_full.jpg",
+   "pose": "elevatorTop",
+   "label": "lookout: from the elevator's head-house (story elevatorTop) to the Library on the Scholars' rise",
+   "theme": "classic",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    398,
+    64.8,
+    703
+   ],
+   "target": [
+    740,
+    58,
+    400
+   ],
+   "fovDegrees": 50,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 136,
+    "triangles": 207931
+   }
+  },
+  {
+   "file": "stargazing_22-40_classic_full.jpg",
+   "pose": "stargazing",
+   "label": "the stargazing deck and the observatory in the dark tip",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    458,
+    41.5,
+    394
+   ],
+   "target": [
+    479,
+    39,
+    381
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 76,
+    "triangles": 154099
+   }
+  },
+  {
+   "file": "hoodoos_22-40_classic_full.jpg",
+   "pose": "hoodoos",
+   "label": "the hoodoo cluster on the Wash's east rim, the elevator beyond",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    515,
+    41.5,
+    595
+   ],
+   "target": [
+    488,
+    43,
+    625
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 148,
+    "triangles": 295731
+   }
+  },
+  {
+   "file": "bight_22-40_classic_full.jpg",
+   "pose": "bight",
+   "label": "the Bight Shore plots over the lagoon",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    640,
+    24,
+    1000
+   ],
+   "target": [
+    760,
+    14,
+    990
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 400,
+    "triangles": 292985
+   }
+  },
+  {
+   "file": "aerial_22-40_classic_full.jpg",
+   "pose": "aerial",
+   "label": "aerial: the Flats arm from the south-west",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    230,
+    240,
+    930
+   ],
+   "target": [
+    450,
+    32,
+    640
+   ],
+   "fovDegrees": 50,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": true,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 306,
+    "triangles": 542170
+   }
+  },
+  {
+   "file": "final_22-40_classic_full.jpg",
+   "pose": "final",
+   "label": "on final: the geoglyph in the approach, the strip ahead",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    417,
+    65,
+    400
+   ],
+   "target": [
+    438,
+    38,
+    720
+   ],
+   "fovDegrees": 50,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 148,
+    "triangles": 169594
+   }
+  },
+  {
+   "file": "H_19-50_classic_lite.jpg",
+   "pose": "H",
+   "label": "page H: the strip up to the windsock and the balloon, the west sea",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    452,
+    58,
+    890
+   ],
+   "target": [
+    428,
+    30,
+    480
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 107,
+    "triangles": 91882
+   }
+  },
+  {
+   "file": "H_22-40_classic_lite.jpg",
+   "pose": "H",
+   "label": "page H: the strip up to the windsock and the balloon, the west sea",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    452,
+    58,
+    890
+   ],
+   "target": [
+    428,
+    30,
+    480
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 122,
+    "triangles": 116900
+   }
+  },
+  {
+   "file": "porch_19-50_classic_lite.jpg",
+   "pose": "porch",
+   "label": "the porch: from the hangar's bench toward the Bight Bridge's arch, the strip on the right",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    449.5,
+    39,
+    616.5
+   ],
+   "target": [
+    561,
+    22,
+    1099
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 110,
+    "triangles": 135824
+   }
+  },
+  {
+   "file": "porch_22-40_classic_lite.jpg",
+   "pose": "porch",
+   "label": "the porch: from the hangar's bench toward the Bight Bridge's arch, the strip on the right",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    449.5,
+    39,
+    616.5
+   ],
+   "target": [
+    561,
+    22,
+    1099
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 120,
+    "triangles": 160772
+   }
+  },
+  {
+   "file": "elevator_19-50_classic_lite.jpg",
+   "pose": "elevator",
+   "label": "the grain elevator over the station, from the apron",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    432,
+    41.2,
+    652
+   ],
+   "target": [
+    396,
+    50,
+    704
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 82,
+    "triangles": 101529
+   }
+  },
+  {
+   "file": "elevator_22-40_classic_lite.jpg",
+   "pose": "elevator",
+   "label": "the grain elevator over the station, from the apron",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    432,
+    41.2,
+    652
+   ],
+   "target": [
+    396,
+    50,
+    704
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 90,
+    "triangles": 126461
+   }
+  },
+  {
+   "file": "quonset_19-50_classic_lite.jpg",
+   "pose": "quonset",
+   "label": "THE hangar: the Quonset's open mouth on the apron",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    436,
+    41,
+    566
+   ],
+   "target": [
+    400,
+    42,
+    590
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 94,
+    "triangles": 74686
+   }
+  },
+  {
+   "file": "quonset_22-40_classic_lite.jpg",
+   "pose": "quonset",
+   "label": "THE hangar: the Quonset's open mouth on the apron",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    436,
+    41,
+    566
+   ],
+   "target": [
+    400,
+    42,
+    590
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 107,
+    "triangles": 80720
+   }
+  },
+  {
+   "file": "H_19-50_taylor_full.jpg",
+   "pose": "H",
+   "label": "page H: the strip up to the windsock and the balloon, the west sea",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    452,
+    58,
+    890
+   ],
+   "target": [
+    428,
+    30,
+    480
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 265,
+    "triangles": 408183
+   }
+  },
+  {
+   "file": "H_22-40_taylor_full.jpg",
+   "pose": "H",
+   "label": "page H: the strip up to the windsock and the balloon, the west sea",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    452,
+    58,
+    890
+   ],
+   "target": [
+    428,
+    30,
+    480
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 145,
+    "triangles": 227921
+   }
+  },
+  {
+   "file": "porch_19-50_taylor_full.jpg",
+   "pose": "porch",
+   "label": "the porch: from the hangar's bench toward the Bight Bridge's arch, the strip on the right",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    449.5,
+    39,
+    616.5
+   ],
+   "target": [
+    561,
+    22,
+    1099
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 147,
+    "triangles": 323508
+   }
+  },
+  {
+   "file": "porch_22-40_taylor_full.jpg",
+   "pose": "porch",
+   "label": "the porch: from the hangar's bench toward the Bight Bridge's arch, the strip on the right",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    449.5,
+    39,
+    616.5
+   ],
+   "target": [
+    561,
+    22,
+    1099
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 157,
+    "triangles": 390960
+   }
+  },
+  {
+   "file": "elevator_19-50_taylor_full.jpg",
+   "pose": "elevator",
+   "label": "the grain elevator over the station, from the apron",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    432,
+    41.2,
+    652
+   ],
+   "target": [
+    396,
+    50,
+    704
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 110,
+    "triangles": 216041
+   }
+  },
+  {
+   "file": "elevator_22-40_taylor_full.jpg",
+   "pose": "elevator",
+   "label": "the grain elevator over the station, from the apron",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    432,
+    41.2,
+    652
+   ],
+   "target": [
+    396,
+    50,
+    704
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 118,
+    "triangles": 283477
+   }
+  },
+  {
+   "file": "quonset_19-50_taylor_full.jpg",
+   "pose": "quonset",
+   "label": "THE hangar: the Quonset's open mouth on the apron",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    436,
+    41,
+    566
+   ],
+   "target": [
+    400,
+    42,
+    590
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 110,
+    "triangles": 164798
+   }
+  },
+  {
+   "file": "quonset_22-40_taylor_full.jpg",
+   "pose": "quonset",
+   "label": "THE hangar: the Quonset's open mouth on the apron",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    436,
+    41,
+    566
+   ],
+   "target": [
+    400,
+    42,
+    590
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 123,
+    "triangles": 175552
+   }
+  },
+  {
+   "file": "station_19-50_taylor_full.jpg",
+   "pose": "station",
+   "label": "the prairie station from the arrival court",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    366,
+    40.2,
+    640
+   ],
+   "target": [
+    394,
+    40.5,
+    668
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 396,
+    "triangles": 183608
+   }
+  },
+  {
+   "file": "wash_19-50_taylor_full.jpg",
+   "pose": "wash",
+   "label": "the Wash Arch over the Wash Run, the hoodoos beyond",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    503,
+    42,
+    452
+   ],
+   "target": [
+    480,
+    42,
+    520
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 498,
+    "triangles": 359294
+   }
+  },
+  {
+   "file": "aerial_19-50_taylor_full.jpg",
+   "pose": "aerial",
+   "label": "aerial: the Flats arm from the south-west",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    230,
+    240,
+    930
+   ],
+   "target": [
+    450,
+    32,
+    640
+   ],
+   "fovDegrees": 50,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 150,
+    "triangles": 198736
+   }
+  },
+  {
+   "file": "H_19-50_taylor_lite.jpg",
+   "pose": "H",
+   "label": "page H: the strip up to the windsock and the balloon, the west sea",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    452,
+    58,
+    890
+   ],
+   "target": [
+    428,
+    30,
+    480
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 212,
+    "triangles": 195516
+   }
+  },
+  {
+   "file": "H_22-40_taylor_lite.jpg",
+   "pose": "H",
+   "label": "page H: the strip up to the windsock and the balloon, the west sea",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    452,
+    58,
+    890
+   ],
+   "target": [
+    428,
+    30,
+    480
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 126,
+    "triangles": 120286
+   }
+  },
+  {
+   "file": "porch_19-50_taylor_lite.jpg",
+   "pose": "porch",
+   "label": "the porch: from the hangar's bench toward the Bight Bridge's arch, the strip on the right",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    449.5,
+    39,
+    616.5
+   ],
+   "target": [
+    561,
+    22,
+    1099
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 109,
+    "triangles": 140544
+   }
+  },
+  {
+   "file": "porch_22-40_taylor_lite.jpg",
+   "pose": "porch",
+   "label": "the porch: from the hangar's bench toward the Bight Bridge's arch, the strip on the right",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    449.5,
+    39,
+    616.5
+   ],
+   "target": [
+    561,
+    22,
+    1099
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 119,
+    "triangles": 165492
+   }
+  },
+  {
+   "file": "elevator_19-50_taylor_lite.jpg",
+   "pose": "elevator",
+   "label": "the grain elevator over the station, from the apron",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    432,
+    41.2,
+    652
+   ],
+   "target": [
+    396,
+    50,
+    704
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 84,
+    "triangles": 106527
+   }
+  },
+  {
+   "file": "elevator_22-40_taylor_lite.jpg",
+   "pose": "elevator",
+   "label": "the grain elevator over the station, from the apron",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    432,
+    41.2,
+    652
+   ],
+   "target": [
+    396,
+    50,
+    704
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 92,
+    "triangles": 131459
+   }
+  },
+  {
+   "file": "quonset_19-50_taylor_lite.jpg",
+   "pose": "quonset",
+   "label": "THE hangar: the Quonset's open mouth on the apron",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    436,
+    41,
+    566
+   ],
+   "target": [
+    400,
+    42,
+    590
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 98,
+    "triangles": 78496
+   }
+  },
+  {
+   "file": "quonset_22-40_taylor_lite.jpg",
+   "pose": "quonset",
+   "label": "THE hangar: the Quonset's open mouth on the apron",
+   "theme": "taylor",
+   "tier": "lite",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    436,
+    41,
+    566
+   ],
+   "target": [
+    400,
+    42,
+    590
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 111,
+    "triangles": 84530
+   }
+  },
+  {
+   "file": "H_19-50_newfoundland_full.jpg",
+   "pose": "H",
+   "label": "page H: the strip up to the windsock and the balloon, the west sea",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    452,
+    58,
+    890
+   ],
+   "target": [
+    428,
+    30,
+    480
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 261,
+    "triangles": 415010
+   }
+  },
+  {
+   "file": "H_22-40_newfoundland_full.jpg",
+   "pose": "H",
+   "label": "page H: the strip up to the windsock and the balloon, the west sea",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    452,
+    58,
+    890
+   ],
+   "target": [
+    428,
+    30,
+    480
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 142,
+    "triangles": 230728
+   }
+  },
+  {
+   "file": "porch_19-50_newfoundland_full.jpg",
+   "pose": "porch",
+   "label": "the porch: from the hangar's bench toward the Bight Bridge's arch, the strip on the right",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    449.5,
+    39,
+    616.5
+   ],
+   "target": [
+    561,
+    22,
+    1099
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 147,
+    "triangles": 323900
+   }
+  },
+  {
+   "file": "porch_22-40_newfoundland_full.jpg",
+   "pose": "porch",
+   "label": "the porch: from the hangar's bench toward the Bight Bridge's arch, the strip on the right",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    449.5,
+    39,
+    616.5
+   ],
+   "target": [
+    561,
+    22,
+    1099
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 157,
+    "triangles": 391352
+   }
+  },
+  {
+   "file": "elevator_19-50_newfoundland_full.jpg",
+   "pose": "elevator",
+   "label": "the grain elevator over the station, from the apron",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    432,
+    41.2,
+    652
+   ],
+   "target": [
+    396,
+    50,
+    704
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 108,
+    "triangles": 216072
+   }
+  },
+  {
+   "file": "elevator_22-40_newfoundland_full.jpg",
+   "pose": "elevator",
+   "label": "the grain elevator over the station, from the apron",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    432,
+    41.2,
+    652
+   ],
+   "target": [
+    396,
+    50,
+    704
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 116,
+    "triangles": 283394
+   }
+  },
+  {
+   "file": "quonset_19-50_newfoundland_full.jpg",
+   "pose": "quonset",
+   "label": "THE hangar: the Quonset's open mouth on the apron",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    436,
+    41,
+    566
+   ],
+   "target": [
+    400,
+    42,
+    590
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 107,
+    "triangles": 160796
+   }
+  },
+  {
+   "file": "quonset_22-40_newfoundland_full.jpg",
+   "pose": "quonset",
+   "label": "THE hangar: the Quonset's open mouth on the apron",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    436,
+    41,
+    566
+   ],
+   "target": [
+    400,
+    42,
+    590
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 120,
+    "triangles": 171488
+   }
+  },
+  {
+   "file": "station_19-50_newfoundland_full.jpg",
+   "pose": "station",
+   "label": "the prairie station from the arrival court",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    366,
+    40.2,
+    640
+   ],
+   "target": [
+    394,
+    40.5,
+    668
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 394,
+    "triangles": 179859
+   }
+  },
+  {
+   "file": "wash_19-50_newfoundland_full.jpg",
+   "pose": "wash",
+   "label": "the Wash Arch over the Wash Run, the hoodoos beyond",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    503,
+    42,
+    452
+   ],
+   "target": [
+    480,
+    42,
+    520
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 494,
+    "triangles": 358580
+   }
+  },
+  {
+   "file": "aerial_19-50_newfoundland_full.jpg",
+   "pose": "aerial",
+   "label": "aerial: the Flats arm from the south-west",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    230,
+    240,
+    930
+   ],
+   "target": [
+    450,
+    32,
+    640
+   ],
+   "fovDegrees": 50,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 147,
+    "triangles": 202768
+   }
+  },
+  {
+   "file": "H_19-50_newfoundland_lite.jpg",
+   "pose": "H",
+   "label": "page H: the strip up to the windsock and the balloon, the west sea",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    452,
+    58,
+    890
+   ],
+   "target": [
+    428,
+    30,
+    480
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 207,
+    "triangles": 196688
+   }
+  },
+  {
+   "file": "H_22-40_newfoundland_lite.jpg",
+   "pose": "H",
+   "label": "page H: the strip up to the windsock and the balloon, the west sea",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    452,
+    58,
+    890
+   ],
+   "target": [
+    428,
+    30,
+    480
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 122,
+    "triangles": 121228
+   }
+  },
+  {
+   "file": "porch_19-50_newfoundland_lite.jpg",
+   "pose": "porch",
+   "label": "the porch: from the hangar's bench toward the Bight Bridge's arch, the strip on the right",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    449.5,
+    39,
+    616.5
+   ],
+   "target": [
+    561,
+    22,
+    1099
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 108,
+    "triangles": 140174
+   }
+  },
+  {
+   "file": "porch_22-40_newfoundland_lite.jpg",
+   "pose": "porch",
+   "label": "the porch: from the hangar's bench toward the Bight Bridge's arch, the strip on the right",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    449.5,
+    39,
+    616.5
+   ],
+   "target": [
+    561,
+    22,
+    1099
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 118,
+    "triangles": 165122
+   }
+  },
+  {
+   "file": "elevator_19-50_newfoundland_lite.jpg",
+   "pose": "elevator",
+   "label": "the grain elevator over the station, from the apron",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    432,
+    41.2,
+    652
+   ],
+   "target": [
+    396,
+    50,
+    704
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 81,
+    "triangles": 105879
+   }
+  },
+  {
+   "file": "elevator_22-40_newfoundland_lite.jpg",
+   "pose": "elevator",
+   "label": "the grain elevator over the station, from the apron",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    432,
+    41.2,
+    652
+   ],
+   "target": [
+    396,
+    50,
+    704
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 89,
+    "triangles": 130811
+   }
+  },
+  {
+   "file": "quonset_19-50_newfoundland_lite.jpg",
+   "pose": "quonset",
+   "label": "THE hangar: the Quonset's open mouth on the apron",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "19:50",
+   "date": "2026-06-21",
+   "eye": [
+    436,
+    41,
+    566
+   ],
+   "target": [
+    400,
+    42,
+    590
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 94,
+    "triangles": 76084
+   }
+  },
+  {
+   "file": "quonset_22-40_newfoundland_lite.jpg",
+   "pose": "quonset",
+   "label": "THE hangar: the Quonset's open mouth on the apron",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "time": "22:40",
+   "date": "2026-06-21",
+   "eye": [
+    436,
+    41,
+    566
+   ],
+   "target": [
+    400,
+    42,
+    590
+   ],
+   "fovDegrees": 55,
+   "settled": {
+    "pending": [],
+    "region": {
+     "mounted": false,
+     "building": false
+    }
+   },
+   "stats": {
+    "drawCalls": 107,
+    "triangles": 82118
+   }
+  }
+ ],
+ "errors": []
+}
