@@ -1,0 +1,659 @@
+{
+ "sha": "679a707",
+ "date": "2026-06-21",
+ "method": "headless Chromium (SwiftShader) on horizon-review.html; look poses via __harbour.world.views + shot(). SwiftShader, not device evidence.",
+ "records": [
+  {
+   "file": "classic-full-D-night2-night.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "D-night2",
+   "time": "22:30",
+   "note": "page D's night pose (protos Dnight2, 47 m east of D): the Campfire, the festoons and the wheel",
+   "drawCalls": 84,
+   "triangles": 251931
+  },
+  {
+   "file": "classic-full-D-page-day.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "D-page",
+   "time": "16:30",
+   "note": "Sketchbook page D (Long Sands, baked pose): surf, the zip landing, the Lamp",
+   "drawCalls": 73,
+   "triangles": 203698
+  },
+  {
+   "file": "classic-full-D-page-night.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "D-page",
+   "time": "22:30",
+   "note": "Sketchbook page D (Long Sands, baked pose): surf, the zip landing, the Lamp",
+   "drawCalls": 77,
+   "triangles": 259699
+  },
+  {
+   "file": "classic-full-L-page-day.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "L-page",
+   "time": "06:00",
+   "note": "Sketchbook page L (the quay at night): the Boathouse across the water, its gable lantern",
+   "drawCalls": 65,
+   "triangles": 167336
+  },
+  {
+   "file": "classic-full-L-page-night.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "L-page",
+   "time": "22:30",
+   "note": "Sketchbook page L (the quay at night): the Boathouse across the water, its gable lantern",
+   "drawCalls": 70,
+   "triangles": 196381
+  },
+  {
+   "file": "classic-full-L-zoom-night.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "L-zoom",
+   "time": "22:30",
+   "note": "page L zoomed on the Boathouse from the page's own eye: the Quay Bridge deck and the bank in front of it",
+   "drawCalls": 52,
+   "triangles": 180742
+  },
+  {
+   "file": "classic-full-aerial-day.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "aerial",
+   "time": "19:30",
+   "note": "aerial over Long Sands from the south-west",
+   "drawCalls": 371,
+   "triangles": 196547
+  },
+  {
+   "file": "classic-full-beach-day.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "beach",
+   "time": "19:30",
+   "note": "the beach: towers, courts, umbrellas, the promenade behind",
+   "drawCalls": 71,
+   "triangles": 184946
+  },
+  {
+   "file": "classic-full-belfry-wheel-day.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "belfry-wheel",
+   "time": "19:30",
+   "note": "the sight line belfry \u2192 wheel (STORY \u00a74.2)",
+   "drawCalls": 75,
+   "triangles": 217145
+  },
+  {
+   "file": "classic-full-boathouse-day.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "boathouse",
+   "time": "19:30",
+   "note": "the Boathouse re-dress: white walls, terracotta gable, boat doors and the gable lantern (page L's light)",
+   "drawCalls": 146,
+   "triangles": 238306
+  },
+  {
+   "file": "classic-full-boathouse-night.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "boathouse",
+   "time": "22:30",
+   "note": "the Boathouse re-dress: white walls, terracotta gable, boat doors and the gable lantern (page L's light)",
+   "drawCalls": 163,
+   "triangles": 319714
+  },
+  {
+   "file": "classic-full-campfire-night.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "campfire",
+   "time": "22:30",
+   "note": "the Campfire's log ring at night",
+   "drawCalls": 286,
+   "triangles": 230519
+  },
+  {
+   "file": "classic-full-pier-day.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "pier",
+   "time": "19:30",
+   "note": "from the pier back to the promenade: festoons, palms, the zip landing",
+   "drawCalls": 396,
+   "triangles": 258139
+  },
+  {
+   "file": "classic-full-pier-night.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "pier",
+   "time": "22:30",
+   "note": "from the pier back to the promenade: festoons, palms, the zip landing",
+   "drawCalls": 402,
+   "triangles": 323082
+  },
+  {
+   "file": "classic-full-porch-day.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "porch",
+   "time": "19:30",
+   "note": "porch: from the Boathouse dock across the river mouth to the quay",
+   "drawCalls": 318,
+   "triangles": 169589
+  },
+  {
+   "file": "classic-full-porch-night.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "porch",
+   "time": "22:30",
+   "note": "porch: from the Boathouse dock across the river mouth to the quay",
+   "drawCalls": 322,
+   "triangles": 198620
+  },
+  {
+   "file": "classic-full-promenade-day.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "promenade",
+   "time": "19:30",
+   "note": "the promenade west from the pier plaza: palms, storefronts, the Strand",
+   "drawCalls": 115,
+   "triangles": 320242
+  },
+  {
+   "file": "classic-full-promenade-night.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "promenade",
+   "time": "22:30",
+   "note": "the promenade west from the pier plaza: palms, storefronts, the Strand",
+   "drawCalls": 123,
+   "triangles": 426573
+  },
+  {
+   "file": "classic-full-wheel-day.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "wheel",
+   "time": "20:30",
+   "note": "the Ferris wheel on the pier platform, the shack, the pier lamps",
+   "drawCalls": 51,
+   "triangles": 172942
+  },
+  {
+   "file": "classic-full-wheel-night.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "wheel",
+   "time": "22:30",
+   "note": "the Ferris wheel on the pier platform, the shack, the pier lamps",
+   "drawCalls": 54,
+   "triangles": 220457
+  },
+  {
+   "file": "classic-full-wheeltop-elevator-day.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "wheeltop-elevator",
+   "time": "20:00",
+   "note": "from the top of the wheel across the Bight to the grain elevator",
+   "drawCalls": 100,
+   "triangles": 171644
+  },
+  {
+   "file": "classic-full-wheeltop-lamp-day.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "wheeltop-lamp",
+   "time": "20:00",
+   "note": "from the top of the wheel west along the coast to the Lamp",
+   "drawCalls": 94,
+   "triangles": 169787
+  },
+  {
+   "file": "classic-full-wheeltop-lamp-night.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "wheeltop-lamp",
+   "time": "22:30",
+   "note": "from the top of the wheel west along the coast to the Lamp",
+   "drawCalls": 108,
+   "triangles": 218990
+  },
+  {
+   "file": "classic-full-wreck-day.jpg",
+   "theme": "classic",
+   "tier": "full",
+   "label": "wreck",
+   "time": "18:00",
+   "note": "the Wreck on its reef",
+   "drawCalls": 37,
+   "triangles": 62108
+  },
+  {
+   "file": "classic-lite-D-page-day.jpg",
+   "theme": "classic",
+   "tier": "lite",
+   "label": "D-page",
+   "time": "16:30",
+   "note": "Sketchbook page D (Long Sands, baked pose): surf, the zip landing, the Lamp",
+   "drawCalls": 55,
+   "triangles": 89359
+  },
+  {
+   "file": "classic-lite-D-page-night.jpg",
+   "theme": "classic",
+   "tier": "lite",
+   "label": "D-page",
+   "time": "22:30",
+   "note": "Sketchbook page D (Long Sands, baked pose): surf, the zip landing, the Lamp",
+   "drawCalls": 59,
+   "triangles": 111863
+  },
+  {
+   "file": "classic-lite-aerial-day.jpg",
+   "theme": "classic",
+   "tier": "lite",
+   "label": "aerial",
+   "time": "19:30",
+   "note": "aerial over Long Sands from the south-west",
+   "drawCalls": 357,
+   "triangles": 92007
+  },
+  {
+   "file": "classic-lite-pier-day.jpg",
+   "theme": "classic",
+   "tier": "lite",
+   "label": "pier",
+   "time": "19:30",
+   "note": "from the pier back to the promenade: festoons, palms, the zip landing",
+   "drawCalls": 382,
+   "triangles": 121076
+  },
+  {
+   "file": "classic-lite-pier-night.jpg",
+   "theme": "classic",
+   "tier": "lite",
+   "label": "pier",
+   "time": "22:30",
+   "note": "from the pier back to the promenade: festoons, palms, the zip landing",
+   "drawCalls": 388,
+   "triangles": 147647
+  },
+  {
+   "file": "classic-lite-promenade-day.jpg",
+   "theme": "classic",
+   "tier": "lite",
+   "label": "promenade",
+   "time": "19:30",
+   "note": "the promenade west from the pier plaza: palms, storefronts, the Strand",
+   "drawCalls": 50,
+   "triangles": 79116
+  },
+  {
+   "file": "classic-lite-promenade-night.jpg",
+   "theme": "classic",
+   "tier": "lite",
+   "label": "promenade",
+   "time": "22:30",
+   "note": "the promenade west from the pier plaza: palms, storefronts, the Strand",
+   "drawCalls": 56,
+   "triangles": 95618
+  },
+  {
+   "file": "classic-lite-wheel-day.jpg",
+   "theme": "classic",
+   "tier": "lite",
+   "label": "wheel",
+   "time": "20:30",
+   "note": "the Ferris wheel on the pier platform, the shack, the pier lamps",
+   "drawCalls": 37,
+   "triangles": 71420
+  },
+  {
+   "file": "classic-lite-wheel-night.jpg",
+   "theme": "classic",
+   "tier": "lite",
+   "label": "wheel",
+   "time": "22:30",
+   "note": "the Ferris wheel on the pier platform, the shack, the pier lamps",
+   "drawCalls": 40,
+   "triangles": 87324
+  },
+  {
+   "file": "newfoundland-full-D-night2-night.jpg",
+   "theme": "newfoundland",
+   "tier": "full",
+   "label": "D-night2",
+   "time": "22:30",
+   "note": "page D's night pose (protos Dnight2, 47 m east of D): the Campfire, the festoons and the wheel",
+   "drawCalls": 82,
+   "triangles": 247991
+  },
+  {
+   "file": "newfoundland-full-D-page-day.jpg",
+   "theme": "newfoundland",
+   "tier": "full",
+   "label": "D-page",
+   "time": "16:30",
+   "note": "Sketchbook page D (Long Sands, baked pose): surf, the zip landing, the Lamp",
+   "drawCalls": 177,
+   "triangles": 448396
+  },
+  {
+   "file": "newfoundland-full-D-page-night.jpg",
+   "theme": "newfoundland",
+   "tier": "full",
+   "label": "D-page",
+   "time": "22:30",
+   "note": "Sketchbook page D (Long Sands, baked pose): surf, the zip landing, the Lamp",
+   "drawCalls": 75,
+   "triangles": 256865
+  },
+  {
+   "file": "newfoundland-full-L-page-day.jpg",
+   "theme": "newfoundland",
+   "tier": "full",
+   "label": "L-page",
+   "time": "06:00",
+   "note": "Sketchbook page L (the quay at night): the Boathouse across the water, its gable lantern",
+   "drawCalls": 65,
+   "triangles": 166300
+  },
+  {
+   "file": "newfoundland-full-L-page-night.jpg",
+   "theme": "newfoundland",
+   "tier": "full",
+   "label": "L-page",
+   "time": "22:30",
+   "note": "Sketchbook page L (the quay at night): the Boathouse across the water, its gable lantern",
+   "drawCalls": 70,
+   "triangles": 195345
+  },
+  {
+   "file": "newfoundland-full-beach-day.jpg",
+   "theme": "newfoundland",
+   "tier": "full",
+   "label": "beach",
+   "time": "19:30",
+   "note": "the beach: towers, courts, umbrellas, the promenade behind",
+   "drawCalls": 72,
+   "triangles": 183859
+  },
+  {
+   "file": "newfoundland-full-boathouse-day.jpg",
+   "theme": "newfoundland",
+   "tier": "full",
+   "label": "boathouse",
+   "time": "19:30",
+   "note": "the Boathouse re-dress: white walls, terracotta gable, boat doors and the gable lantern (page L's light)",
+   "drawCalls": 146,
+   "triangles": 239958
+  },
+  {
+   "file": "newfoundland-full-boathouse-night.jpg",
+   "theme": "newfoundland",
+   "tier": "full",
+   "label": "boathouse",
+   "time": "22:30",
+   "note": "the Boathouse re-dress: white walls, terracotta gable, boat doors and the gable lantern (page L's light)",
+   "drawCalls": 163,
+   "triangles": 315846
+  },
+  {
+   "file": "newfoundland-full-pier-day.jpg",
+   "theme": "newfoundland",
+   "tier": "full",
+   "label": "pier",
+   "time": "19:30",
+   "note": "from the pier back to the promenade: festoons, palms, the zip landing",
+   "drawCalls": 394,
+   "triangles": 254484
+  },
+  {
+   "file": "newfoundland-full-pier-night.jpg",
+   "theme": "newfoundland",
+   "tier": "full",
+   "label": "pier",
+   "time": "22:30",
+   "note": "from the pier back to the promenade: festoons, palms, the zip landing",
+   "drawCalls": 400,
+   "triangles": 319427
+  },
+  {
+   "file": "newfoundland-full-promenade-day.jpg",
+   "theme": "newfoundland",
+   "tier": "full",
+   "label": "promenade",
+   "time": "19:30",
+   "note": "the promenade west from the pier plaza: palms, storefronts, the Strand",
+   "drawCalls": 116,
+   "triangles": 319385
+  },
+  {
+   "file": "newfoundland-full-promenade-night.jpg",
+   "theme": "newfoundland",
+   "tier": "full",
+   "label": "promenade",
+   "time": "22:30",
+   "note": "the promenade west from the pier plaza: palms, storefronts, the Strand",
+   "drawCalls": 124,
+   "triangles": 425716
+  },
+  {
+   "file": "newfoundland-full-wheel-day.jpg",
+   "theme": "newfoundland",
+   "tier": "full",
+   "label": "wheel",
+   "time": "20:30",
+   "note": "the Ferris wheel on the pier platform, the shack, the pier lamps",
+   "drawCalls": 51,
+   "triangles": 169813
+  },
+  {
+   "file": "newfoundland-full-wheel-night.jpg",
+   "theme": "newfoundland",
+   "tier": "full",
+   "label": "wheel",
+   "time": "22:30",
+   "note": "the Ferris wheel on the pier platform, the shack, the pier lamps",
+   "drawCalls": 54,
+   "triangles": 218486
+  },
+  {
+   "file": "newfoundland-lite-D-page-day.jpg",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "label": "D-page",
+   "time": "16:30",
+   "note": "Sketchbook page D (Long Sands, baked pose): surf, the zip landing, the Lamp",
+   "drawCalls": 52,
+   "triangles": 93941
+  },
+  {
+   "file": "newfoundland-lite-D-page-night.jpg",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "label": "D-page",
+   "time": "22:30",
+   "note": "Sketchbook page D (Long Sands, baked pose): surf, the zip landing, the Lamp",
+   "drawCalls": 56,
+   "triangles": 116445
+  },
+  {
+   "file": "taylor-full-D-night2-night.jpg",
+   "theme": "taylor",
+   "tier": "full",
+   "label": "D-night2",
+   "time": "22:30",
+   "note": "page D's night pose (protos Dnight2, 47 m east of D): the Campfire, the festoons and the wheel",
+   "drawCalls": 86,
+   "triangles": 248904
+  },
+  {
+   "file": "taylor-full-D-page-day.jpg",
+   "theme": "taylor",
+   "tier": "full",
+   "label": "D-page",
+   "time": "16:30",
+   "note": "Sketchbook page D (Long Sands, baked pose): surf, the zip landing, the Lamp",
+   "drawCalls": 75,
+   "triangles": 201241
+  },
+  {
+   "file": "taylor-full-D-page-night.jpg",
+   "theme": "taylor",
+   "tier": "full",
+   "label": "D-page",
+   "time": "22:30",
+   "note": "Sketchbook page D (Long Sands, baked pose): surf, the zip landing, the Lamp",
+   "drawCalls": 79,
+   "triangles": 258138
+  },
+  {
+   "file": "taylor-full-L-page-day.jpg",
+   "theme": "taylor",
+   "tier": "full",
+   "label": "L-page",
+   "time": "06:00",
+   "note": "Sketchbook page L (the quay at night): the Boathouse across the water, its gable lantern",
+   "drawCalls": 67,
+   "triangles": 164398
+  },
+  {
+   "file": "taylor-full-L-page-night.jpg",
+   "theme": "taylor",
+   "tier": "full",
+   "label": "L-page",
+   "time": "22:30",
+   "note": "Sketchbook page L (the quay at night): the Boathouse across the water, its gable lantern",
+   "drawCalls": 72,
+   "triangles": 193443
+  },
+  {
+   "file": "taylor-full-beach-day.jpg",
+   "theme": "taylor",
+   "tier": "full",
+   "label": "beach",
+   "time": "19:30",
+   "note": "the beach: towers, courts, umbrellas, the promenade behind",
+   "drawCalls": 73,
+   "triangles": 183333
+  },
+  {
+   "file": "taylor-full-boathouse-day.jpg",
+   "theme": "taylor",
+   "tier": "full",
+   "label": "boathouse",
+   "time": "19:30",
+   "note": "the Boathouse re-dress: white walls, terracotta gable, boat doors and the gable lantern (page L's light)",
+   "drawCalls": 150,
+   "triangles": 236186
+  },
+  {
+   "file": "taylor-full-boathouse-night.jpg",
+   "theme": "taylor",
+   "tier": "full",
+   "label": "boathouse",
+   "time": "22:30",
+   "note": "the Boathouse re-dress: white walls, terracotta gable, boat doors and the gable lantern (page L's light)",
+   "drawCalls": 167,
+   "triangles": 312074
+  },
+  {
+   "file": "taylor-full-pier-day.jpg",
+   "theme": "taylor",
+   "tier": "full",
+   "label": "pier",
+   "time": "19:30",
+   "note": "from the pier back to the promenade: festoons, palms, the zip landing",
+   "drawCalls": 400,
+   "triangles": 254028
+  },
+  {
+   "file": "taylor-full-pier-night.jpg",
+   "theme": "taylor",
+   "tier": "full",
+   "label": "pier",
+   "time": "22:30",
+   "note": "from the pier back to the promenade: festoons, palms, the zip landing",
+   "drawCalls": 406,
+   "triangles": 318971
+  },
+  {
+   "file": "taylor-full-promenade-day.jpg",
+   "theme": "taylor",
+   "tier": "full",
+   "label": "promenade",
+   "time": "19:30",
+   "note": "the promenade west from the pier plaza: palms, storefronts, the Strand",
+   "drawCalls": 117,
+   "triangles": 319033
+  },
+  {
+   "file": "taylor-full-promenade-night.jpg",
+   "theme": "taylor",
+   "tier": "full",
+   "label": "promenade",
+   "time": "22:30",
+   "note": "the promenade west from the pier plaza: palms, storefronts, the Strand",
+   "drawCalls": 125,
+   "triangles": 421412
+  },
+  {
+   "file": "taylor-full-wheel-day.jpg",
+   "theme": "taylor",
+   "tier": "full",
+   "label": "wheel",
+   "time": "20:30",
+   "note": "the Ferris wheel on the pier platform, the shack, the pier lamps",
+   "drawCalls": 53,
+   "triangles": 170479
+  },
+  {
+   "file": "taylor-full-wheel-night.jpg",
+   "theme": "taylor",
+   "tier": "full",
+   "label": "wheel",
+   "time": "22:30",
+   "note": "the Ferris wheel on the pier platform, the shack, the pier lamps",
+   "drawCalls": 56,
+   "triangles": 219152
+  },
+  {
+   "file": "taylor-lite-D-page-day.jpg",
+   "theme": "taylor",
+   "tier": "lite",
+   "label": "D-page",
+   "time": "16:30",
+   "note": "Sketchbook page D (Long Sands, baked pose): surf, the zip landing, the Lamp",
+   "drawCalls": 57,
+   "triangles": 93147
+  },
+  {
+   "file": "taylor-lite-D-page-night.jpg",
+   "theme": "taylor",
+   "tier": "lite",
+   "label": "D-page",
+   "time": "22:30",
+   "note": "Sketchbook page D (Long Sands, baked pose): surf, the zip landing, the Lamp",
+   "drawCalls": 61,
+   "triangles": 115651
+  }
+ ],
+ "errors": [],
+ "note": "Merged: capture-sands.mjs full run (sha 679a707) and its D-page / D-night2 / campfire re-shoot after the fire-bead change (sha 679a707)."
+}

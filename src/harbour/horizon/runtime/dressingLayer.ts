@@ -27,7 +27,10 @@
  * Far landmarks: the story's sight chain spans 600–1,100 eu, far beyond residency. From the index-borne landmarks (and the
  * Journey shapes of the buildings that carry them) the layer builds, once, a coarse silhouette per landmark — the carrying
  * building's block and roof, a slim spire up to the sighted top — merged per district, drawn while that district's own
- * dressing is not built (not resident, or still building) and hidden as soon as it is. Fogged like the land.
+ * dressing is not built (not resident, or still building) and hidden as soon as it is. Fogged like the land. A wheel
+ * (`DRESSING_FAR.wheels`: the Long Sands Ferris wheel, story landmark `wheel`) is not a block and a roof: its far shape is
+ * the rim's ring in the carrier's long axis (radius = half that side less the kit's 1 eu margin, the hub r below the
+ * sighted top) on its A-frame, drawn from both sides (PR 4 D-WW152: the block + roof read as a grey pyramid from the belfry).
  */
 import * as THREE from 'three';
 import {createBuildTask, finishBuild} from '../../../house/world/buildTask.ts';
@@ -50,7 +53,9 @@ export const DRESSING_DETAIL = {releaseMs: 20_000, paintLift: 0.04, paintEdge: 2
 export const DRESSING_NIGHT = {ink: '#1a1a24', inkOpacity: 0.8, shadeNight: 0.4} as const;
 export const DRESSING_INK = '#5b5447';
 /** Far landmark silhouettes: wall colour per dressing (the roof a shade darker), the spire's radius share of its height. */
-export const DRESSING_FAR = {wall: {classic: '#b9ab95', taylor: '#d9c8ad', newfoundland: '#8e9396'}, roof: 0.78, spire: 0.05, minRadius: 0.6} as const;
+export const DRESSING_FAR = {wall: {classic: '#b9ab95', taylor: '#d9c8ad', newfoundland: '#8e9396'}, roof: 0.78, spire: 0.05, minRadius: 0.6,
+  /** Landmarks whose far shape is a wheel's rim (ids from world/story.ts), its rim's radial depth and segment count. */
+  wheels: ['wheel'] as readonly string[], rim: 0.9, rimSegments: 28} as const;
 
 export type DressingLayerOptions = {
   tier: 'full' | 'lite'; theme: DressingTheme; season: PlantSeason; month?: number;
@@ -183,8 +188,20 @@ export function buildFarLandmarks(dressing: Pick<WorldDressing, 'landmarks' | 'j
     const n = 6, at = (k: number, rr: number, y: number): V3 => [x + Math.cos(k / n * Math.PI * 2) * rr, y, z + Math.sin(k / n * Math.PI * 2) * rr];
     for (let k = 0; k < n; k++) { put(district, at(k, r, y0), at(k + 1, r, y0), at(k + 1, r * 0.35, y1 - r), wall); put(district, at(k, r, y0), at(k + 1, r * 0.35, y1 - r), at(k, r * 0.35, y1 - r), wall); put(district, at(k, r * 0.35, y1 - r), at(k + 1, r * 0.35, y1 - r), [x, y1, z], roof); }
   };
+  const both = (district: string, a: V3, b: V3, c: V3, colour: THREE.Color) => { put(district, a, b, c, colour); put(district, a, c, b, colour); };
+  const wheel = (district: string, ring: readonly (readonly [number, number])[], base: number, top: V3) => {
+    // The carrier's long side is the wheel's plane (kit ferrisWheel: w = 2 r + 2).
+    let ux = 0, uz = 0, long = 0;
+    for (let i = 0; i < ring.length; i++) { const p = ring[i]!, q = ring[(i + 1) % ring.length]!, l = Math.hypot(q[0] - p[0], q[1] - p[1]); if (l > long) { long = l; ux = (q[0] - p[0]) / l; uz = (q[1] - p[1]) / l; } }
+    const R = Math.max(1, long / 2 - 1), hub: V3 = [top[0], top[1] - R, top[2]], n = DRESSING_FAR.rimSegments, r0 = R - DRESSING_FAR.rim;
+    const on = (a: number, r: number): V3 => [hub[0] + ux * Math.cos(a) * r, hub[1] + Math.sin(a) * r, hub[2] + uz * Math.cos(a) * r];
+    for (let k = 0; k < n; k++) { const a0 = k / n * Math.PI * 2, a1 = (k + 1) / n * Math.PI * 2; both(district, on(a0, r0), on(a1, r0), on(a1, R), wall); both(district, on(a0, r0), on(a1, R), on(a0, R), wall); }
+    // The A-frame: two legs from the hub to the deck at ± 0.62 r along the plane.
+    for (const s of [-1, 1]) { const fx = hub[0] + ux * s * R * 0.62, fz = hub[2] + uz * s * R * 0.62, w = 0.5; both(district, [hub[0], hub[1], hub[2]], [fx - ux * w, base, fz - uz * w], [fx + ux * w, base, fz + uz * w], roof); }
+  };
   for (const l of dressing?.landmarks ?? []) {
     const carrier = dressing?.journey?.find(j => j.landmarkId === l.id), district = carrier?.districtId ?? districtOf(l.at[0], l.at[2]);
+    if (carrier && carrier.footprint.length >= 3 && DRESSING_FAR.wheels.includes(l.id)) { wheel(district, carrier.footprint, carrier.base, l.top); continue; }
     let top = l.at[1];
     if (carrier && carrier.footprint.length >= 3) {
       const ring = carrier.footprint, n = ring.length, y0 = carrier.base - 1, eave = carrier.base + carrier.height, apex = eave + carrier.roofHeight;

@@ -73,3 +73,5 @@ export const pickOf = <T>(r: () => number, list: readonly T[]): T => list[Math.m
 /** Round to 1/1000 eu: baked records stay short and identical on every machine. */
 export const q3 = (v: number) => Math.round(v * 1000) / 1000;
 export const q3p = (p: readonly number[]) => p.map(q3);
+/** A point rounded to 1/1000 eu, kept a `Point3`. */
+export const q3v = (p: readonly [number, number, number]): Point3 => [q3(p[0]), q3(p[1]), q3(p[2])];

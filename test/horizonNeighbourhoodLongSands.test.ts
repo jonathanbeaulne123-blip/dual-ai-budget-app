@@ -2,7 +2,7 @@
 // on the committed bake — determinism, validation, the place's own contracts (palms never in the Reach, the glider field,
 // the wheel's sight lines and the ferry line, page D's foreground, the night order) and the per-district budget.
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { decodeTerrainAsset } from '../src/harbour/horizon/land/terrain/asset.ts';
 import { terrainHeight } from '../src/harbour/horizon/world/geometry.ts';
 import { districtAt } from '../src/harbour/horizon/world/districts.ts';
@@ -11,6 +11,7 @@ import { pointInPolygon } from '../src/harbour/horizon/world/geometry.ts';
 import { HORIZON_MANIFEST } from '../src/harbour/horizon/world/manifest.ts';
 import { PLANT_FORM } from '../src/harbour/horizon/land/corridor/plan/species.ts';
 import { NF_BENT_PALMS } from '../src/harbour/horizon/runtime/corridorPlanting.ts';
+import { buildFarLandmarks } from '../src/harbour/horizon/runtime/dressingLayer.ts';
 import { createDressingContext, validateDressing, buildingHeight, PROP_HEIGHT, type DressingContextImpl } from '../src/harbour/horizon/neighbourhoods/bake.ts';
 import { NEIGHBOURHOOD_MODULES } from '../src/harbour/horizon/neighbourhoods/index.ts';
 import { buildSands, buildSandsParts, NIGHT_ORDER, SANDS } from '../src/harbour/horizon/neighbourhoods/landing/sands.ts';
@@ -18,19 +19,26 @@ import { storyEye, storyLandmark, validateStoryAgainstDressing, aimPoint } from 
 import type { NeighbourhoodDressing, PlantRecord } from '../src/harbour/horizon/neighbourhoods/types.ts';
 import type { Point2, Point3 } from '../src/harbour/horizon/world/definition.ts';
 
-let cached: { ctx: DressingContextImpl; json: any; dressing: NeighbourhoodDressing } | null = null;
+type World = { ctx: DressingContextImpl; json: any; dressing: NeighbourhoodDressing; again: NeighbourhoodDressing; notes: Record<string, number | string> };
+let W: World | null = null;
 /** The bake-time context rebuilt from the committed bake (the module's own `dressing.*` solids left out: it is what the
- *  bake handed the module), and the module's output on it. */
-function world() {
-  if (cached) return cached;
-  const json = JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8')), bytes = readFileSync('public/horizon/terrain/horizon-geo-1.bin');
-  const field = decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), 'full');
+ *  bake handed the module), and the module's output on it — built once, in an async beforeAll that yields between the heavy
+ *  steps (CI runs four workers: a worker held synchronously for long fails the gate with "Timeout calling onTaskUpdate"). */
+const world = (): World => { if (!W) throw new Error('Long Sands: the world fixture did not build'); return W; };
+const tick = () => new Promise(r => setTimeout(r, 0));
+beforeAll(async () => {
+  const json = JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8')); await tick();
+  const bytes = readFileSync('public/horizon/terrain/horizon-geo-1.bin');
+  const field = decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), 'full'); await tick();
   const solids = json.geometry.solids.map((q: any) => ({ ...q, id: q.sourceId ?? q.id.split('@')[0] })).filter((s: any) => !s.id.startsWith('dressing.'));
   const ctx = createDressingContext({ ground: (x, z) => terrainHeight(field, x, z), beds: json.collision.beds, pads: json.collision.pads, waters: json.collision.waters, solids,
     hosts: json.hosts.map((h: any) => ({ id: h.id, footprint: h.footprint, door: h.door?.xy ? { xy: h.door.xy } : {}, height: h.height })),
-    protectedAreas: [{ id: 'green', outline: protectedGreenOutline() }], districtAt: (x, z) => districtAt(x, z) });
-  return (cached = { ctx, json, dressing: buildSands(ctx) });
-}
+    protectedAreas: [{ id: 'green', outline: protectedGreenOutline() }], districtAt: (x, z) => districtAt(x, z) }); await tick();
+  const dressing = buildSands(ctx); await tick();
+  const again = buildSands(ctx); await tick();
+  const notes = buildSandsParts(ctx).notes; await tick();
+  W = { ctx, json, dressing, again, notes };
+}, 300_000);
 const isTree = (p: PlantRecord) => PLANT_FORM[p.species as keyof typeof PLANT_FORM]?.tree ?? false;
 /** A plant's drawn top: the fan palm's height comes from its trunk stretch (kit/plants/species.ts wwStretch: 19 × (0.92 + 0.34 t)). */
 const plantTop = (p: PlantRecord) => p.at[1] + (p.species === 'fanPalm' ? 19 * (0.92 + 0.34 * ((p.tint ?? 0) % 1)) + 1 : PLANT_FORM[p.species as keyof typeof PLANT_FORM].height * p.scale);
@@ -44,8 +52,8 @@ function lineClearance(eye: Point3, aim: Point3, x: number, z: number, y: number
 describe('Long Sands (landing · Direction B): the module', () => {
   it('is registered in the landing neighbourhood and builds deterministically', () => {
     expect(NEIGHBOURHOOD_MODULES.map(m => m.id)).toContain('landing');
-    const { ctx, dressing } = world();
-    expect(JSON.stringify(buildSands(ctx))).toBe(JSON.stringify(dressing));
+    const { dressing, again } = world();
+    expect(JSON.stringify(again)).toBe(JSON.stringify(dressing));
     expect(dressing.id).toBe('landing');
     for (const r of [...dressing.buildings, ...dressing.props.filter(p => p.id)]) expect(r.id ?? '').toMatch(/^sands\./);
   }, 60_000);
@@ -111,7 +119,7 @@ describe('Long Sands: the place\'s contracts', () => {
     const dist = (x: number, z: number) => Math.min(...pts.slice(1).map((b, i) => { const a = pts[i]!, dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz || 1))); return Math.hypot(a[0] + dx * t - x, a[1] + dz * t - z); }));
     const [hx, , hz] = SANDS.wheel.hub, ax = Math.cos(SANDS.wheel.yaw), az = -Math.sin(SANDS.wheel.yaw); // the wheel's plane (its local x)
     for (const s of [-1, 1]) expect(dist(hx + s * ax * (SANDS.wheel.r + 1), hz + s * az * (SANDS.wheel.r + 1))).toBeGreaterThanOrEqual(6);
-    for (const r of [...dressing.buildings, ...dressing.props].filter(r => r.id !== 'sands.wreck.hull' && r.id !== 'sands.wreck.net')) expect(dist(r.at[0], r.at[2]), (r as { id?: string }).id ?? '').toBeGreaterThanOrEqual(6);
+    for (const r of [...dressing.buildings, ...dressing.props].filter(r => !(r.id ?? '').startsWith('sands.wreck.'))) expect(dist(r.at[0], r.at[2]), (r as { id?: string }).id ?? '').toBeGreaterThanOrEqual(6);
   }, 60_000);
   it('keeps page D\'s foreground open (no tower, umbrella or court within 22 eu of the eye) and gives it its bench', () => {
     const { dressing } = world(), [ex, ez] = SANDS.pageD.eye;
@@ -120,7 +128,7 @@ describe('Long Sands: the place\'s contracts', () => {
     expect(Math.hypot(bench.at[0] - ex, bench.at[2] - ez)).toBeLessThan(35);
   }, 60_000);
   it('lands tree cover near the sheet\'s ~8 % of Long Sands (± 5 points)', () => {
-    const { dressing } = world(), poly = (HORIZON_MANIFEST.landforms as { id: string; poly: Point2[] }[]).find(l => l.id === 'sands')!.poly;
+    const { dressing } = world(), poly = (HORIZON_MANIFEST.landforms as unknown as { id: string; poly: Point2[] }[]).find(l => l.id === 'sands')!.poly;
     let area = 0; for (let i = 0; i < poly.length; i++) { const a = poly[i]!, b = poly[(i + 1) % poly.length]!; area += a[0] * b[1] - b[0] * a[1]; } area = Math.abs(area) / 2;
     const canopy = dressing.plants.filter(isTree).filter(p => pointInPolygon(p.at[0], p.at[2], poly)).reduce((s, p) => s + Math.PI * (PLANT_FORM[p.species as keyof typeof PLANT_FORM].canopy * p.scale) ** 2, 0);
     const cover = canopy / area * 100;
@@ -149,9 +157,25 @@ describe('Long Sands: the place\'s contracts', () => {
     const wheel = dressing.buildings.find(b => b.landmarkId === 'wheel')!, lm = dressing.landmarks[0]!;
     expect(wheel.at[1] + (wheel.params!.hubH as number) + (wheel.params!.radius as number)).toBeCloseTo(lm.top[1], 6);
     expect(lm.relayOrder).toBe(storyLandmark('wheel').relayOrder);
+    // From the top of the wheel: the Flats' grain elevator (the next landmark) and the Lamp (every binocular's target).
+    const top = dressing.lookouts.find(l => l.id === 'wheelTop')!;
+    expect(top.targets).toEqual(expect.arrayContaining(['elevator', 'lamp']));
+    expect([top.eye[0], top.eye[2]]).toEqual([SANDS.wheel.hub[0], SANDS.wheel.hub[2]]);
+  }, 60_000);
+  it('draws the wheel\'s far shape as its rim on the A-frame (the belfry sees a wheel, not a pyramid)', () => {
+    const { json } = world(), far = buildFarLandmarks(json.dressing, 'classic', (x, z) => districtAt(x, z));
+    const mesh = far.silhouettes.find(f => f.district === 'landing')!.mesh, pos = mesh.geometry.getAttribute('position');
+    const [hx, hy, hz] = SANDS.wheel.hub, R = SANDS.wheel.r;
+    let top = -Infinity, rimAtHub = 0;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i); if (Math.hypot(x - hx, z - hz) > R + 1) continue;
+      top = Math.max(top, y); if (Math.abs(y - hy) < 0.05 && Math.abs(Math.hypot(x - hx, z - hz) - R) < 0.05) rimAtHub++;
+    }
+    expect(top).toBeCloseTo(hy + R, 3); expect(rimAtHub).toBeGreaterThan(0);
+    far.material.dispose(); for (const f of far.silhouettes) f.mesh.geometry.dispose();
   }, 60_000);
   it('reports its counts (handoff)', () => {
-    const { ctx } = world(), n = buildSandsParts(ctx).notes;
+    const n = world().notes;
     console.log(JSON.stringify(n));
     expect(n.storefronts).toBeGreaterThan(0);
   }, 60_000);

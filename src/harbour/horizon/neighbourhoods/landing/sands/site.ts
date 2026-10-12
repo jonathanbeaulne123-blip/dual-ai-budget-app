@@ -43,8 +43,14 @@ export const SANDS = {
   shack: { at: [1032.5, 1455] as Point2, wx: 7, dz: 8 },
   /** The Tideline bowl (MANIFEST structures.tidelineBowl): rim 3.0, coping r 7.0. */
   bowl: { at: [1000, 1456] as Point2, rim: 3.0, coping: 7.0 },
-  /** The Wreck on its reef (MANIFEST offshore wreck [250,1150], the reef rock top 1.4: land/offshore). */
+  /** The Wreck on its reef (MANIFEST offshore wreck [250,1150]; land/offshore: the reef's flat top 0.7–1.4 over x 222–275,
+   *  z 1118–1178, its two ridges x 230–247 × z 1136–1153 (to 4) and x 254–268 × z 1149–1162 (to 3.2)). The hull lies on the
+   *  reef's top south of the ridges, broadside to the south-east (the ferry's side). */
   wreck: [250, 1150] as Point2,
+  wreckHull: { at: [244, 1166] as Point2, y: 1.15, yaw: 1.35, scale: 3.6 },
+  /** A fire's light bead sits low in its ring, among the logs (the anchor's head; roadLights draws it); the Campfire's just
+   *  over its ring of log seats (0.47 tall), so the glow shows from the beach over the seats. */
+  fireBead: 0.3, campfireBead: 0.6,
   /** The Boathouse host (MANIFEST hosts boathouse): baked footprint x 1275–1295, z 1308–1322, floor 3, walls to 9.65. */
   boathouse: 'boathouse',
 } as const;

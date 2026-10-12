@@ -22,6 +22,7 @@
 import * as THREE from 'three';
 import type { LightAnchor, WorldDefinition } from '../world/definition.ts';
 import { corridorLightAnchors, lampsForTier } from '../land/corridor/lights.ts';
+import { isDressingLightKind } from '../neighbourhoods/lights.ts';
 import { LIGHT_CARD_SHARES, NIGHT_LIGHT_CARDS, ROAD_LIGHTS, roadLampDelay, roadLampRamp, type RoadLampKind } from '../sky/night.ts';
 
 export type RoadLightsWorld = Pick<WorldDefinition, 'lights'> & Partial<Pick<WorldDefinition, 'beds' | 'corridors'>>;
@@ -196,8 +197,13 @@ export function createRoadLights(scene: THREE.Scene, world: RoadLightsWorld, opt
     // Door / threshold cards (a threshold on a road drops its bead to a flush stud on the pad).
     for (let i = 0; i < a; i++) {
       const { a: anchor, stud } = anchors[pickedAnchor[i]!]!, lift = anchor.kind === 'door' ? 2.2 : .8, ground = anchor.at[1] - lift;
-      matrix.makeTranslation(anchor.at[0], ground + .06, anchor.at[2]); anchorPools.setMatrixAt(i, matrix);
-      if (stud) matrix.makeScale(1, .22, 1).setPosition(anchor.at[0], ground + .03, anchor.at[2]); else matrix.makeTranslation(anchor.at[0], anchor.at[1], anchor.at[2]);
+      // A neighbourhood module's anchor (kind `dressing:*`, neighbourhoods/lights.ts) stands at its fixture's base: its bead is
+      // the lamp `head` and its pool the `pool` point on the ground (PR 4 D-WW157), like a road lamp's.
+      const dressingHead = isDressingLightKind(anchor.kind) ? anchor.head : undefined, dressingPool = isDressingLightKind(anchor.kind) ? (anchor.pool ?? anchor.at) : undefined;
+      if (dressingPool) matrix.makeTranslation(dressingPool[0], dressingPool[1] + .06, dressingPool[2]); else matrix.makeTranslation(anchor.at[0], ground + .06, anchor.at[2]);
+      anchorPools.setMatrixAt(i, matrix);
+      if (dressingHead) matrix.makeTranslation(dressingHead[0], dressingHead[1], dressingHead[2]);
+      else if (stud) matrix.makeScale(1, .22, 1).setPosition(anchor.at[0], ground + .03, anchor.at[2]); else matrix.makeTranslation(anchor.at[0], anchor.at[1], anchor.at[2]);
       beads.setMatrixAt(i, matrix);
     }
     anchorPools.count = beads.count = a; anchorPools.instanceMatrix.needsUpdate = beads.instanceMatrix.needsUpdate = true;

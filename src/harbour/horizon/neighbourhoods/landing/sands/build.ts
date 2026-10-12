@@ -11,7 +11,7 @@ import type { Point2, Point3 } from '../../../world/definition.ts';
 import type { LightAnchor } from '../../../world/definition.ts';
 import { FLOWER_SET } from '../../../kit/plants/sets.ts';
 import type { BuildingRecord, DressingContext, GroundPaint, LifeSpawn, PlantRecord, PropRecord } from '../../types.ts';
-import { between, onFrame, pickOf, q3, q3p, rectSamples, shoreZ, slopeAt, type Frame } from './frame.ts';
+import { between, onFrame, pickOf, q3, q3v, rectSamples, shoreZ, slopeAt, type Frame } from './frame.ts';
 import { Claims, palmCountry, SANDS, segDist, siteOf, type Site } from './site.ts';
 
 export type SandsParts = {
@@ -20,12 +20,8 @@ export type SandsParts = {
   notes: Record<string, number | string>;
 };
 const STYLE = 'landing.boardwalk';
-const P3 = (x: number, y: number, z: number): Point3 => q3p([x, y, z]) as Point3;
+const P3 = (x: number, y: number, z: number): Point3 => q3v([x, y, z]);
 
-/** Is (x, z) clear of every bed, pad, water and baked solid by `margin`, and of this module's own claims by `r`? */
-function clear(ctx: DressingContext, claims: Claims, x: number, z: number, margin: number, r = margin): boolean {
-  return !ctx.occupied(x, z, margin) && claims.free(x, z, r);
-}
 /** Every sample of a rectangle clear of beds, pads, water and solids (margin) and of the module's claims. */
 function rectClear(ctx: DressingContext, claims: Claims, cx: number, cz: number, hx: number, hz: number, yaw: number, margin: number): boolean {
   return rectSamples(cx, cz, hx, hz, yaw, 1).every(([x, z]) => !ctx.occupied(x, z, margin) && claims.free(x, z, 0.2));
@@ -239,7 +235,7 @@ export function buildSandsParts(ctx: DressingContext): SandsParts {
   const rf = ctx.rng('sands.prints');
   let prints = 0;
   for (const fx of [858, 936, 1088, 1158]) {
-    const f = prom.frameAt(fx), sz = shoreAt(fx), from = prom.zAt(fx) + 9.5, pts: Point2[] = [];
+    const sz = shoreAt(fx), from = prom.zAt(fx) + 9.5, pts: Point2[] = [];
     let xx = fx;
     for (let zz = from; zz < sz - 2; zz += 3) { xx += (rf() - 0.5) * 2.2; pts.push([xx, zz]); }
     if (pts.length < 3 || pts.some(([a, b]) => ctx.districtAt(a, b) !== 'landing' || ctx.waterLevelAt(a, b) !== null || (ctx.occupied(a, b) && ctx.bedClearance(a, b) > 0))) continue;
@@ -334,7 +330,7 @@ export function buildSandsParts(ctx: DressingContext): SandsParts {
     const zz = shoreAt(fx) - 26;
     if (ctx.districtAt(fx, zz) !== 'landing' || ctx.occupied(fx, zz, 2) || !claims.free(fx, zz, 2.5)) continue;
     out.props.push({ id: `sands.fire.${fires}`, kind: 'fireRing', at: P3(fx, ctx.heightAt(fx, zz), zz), yaw: 0, fixture: 'fireRing' });
-    out.lights.push({ id: `landing.sands.fire.${fires}`, at: P3(fx, ctx.heightAt(fx, zz), zz), kind: 'fire', head: P3(fx, ctx.heightAt(fx, zz) + 0.6, zz), pool: P3(fx, ctx.heightAt(fx, zz), zz), poolRadius: 4, bestHour: 'night' });
+    out.lights.push({ id: `landing.sands.fire.${fires}`, at: P3(fx, ctx.heightAt(fx, zz), zz), kind: 'fire', head: P3(fx, ctx.heightAt(fx, zz) + SANDS.fireBead, zz), pool: P3(fx, ctx.heightAt(fx, zz), zz), poolRadius: 4, bestHour: 'night' });
     claims.add(fx, zz, 3, 'fire'); fires++;
   }
   notes.fireRings = fires;
@@ -356,9 +352,11 @@ export function buildSandsParts(ctx: DressingContext): SandsParts {
   notes.festoons = festoons;
 
   // The Wreck on its reef (MANIFEST offshore wreck; the offshore pass draws only the reef rock): a grounded plank hull
-  // (the rowboat's lines at wreck scale) and a fouled net; reached only by the Ferry, which slows here.
-  out.props.push({ id: 'sands.wreck.hull', kind: 'rowboat', at: P3(SANDS.wreck[0], 0.55, SANDS.wreck[1]), yaw: 0.62, scale: 3.6, variant: 3 });
-  out.props.push({ id: 'sands.wreck.net', kind: 'net', at: P3(SANDS.wreck[0] + 6, 0.9, SANDS.wreck[1] + 3), yaw: 1.9, scale: 1.4 });
+  // (the rowboat's lines at wreck scale) on the reef's flat top south of the two ridges, broadside to the ferry line, and a
+  // fouled net (only the water props may stand over the sea: no mast); reached only by the Ferry, which slows here.
+  const WR = SANDS.wreckHull;
+  out.props.push({ id: 'sands.wreck.hull', kind: 'rowboat', at: P3(WR.at[0], WR.y, WR.at[1]), yaw: WR.yaw, scale: WR.scale, variant: 3 });
+  out.props.push({ id: 'sands.wreck.net', kind: 'net', at: P3(WR.at[0] + 7, WR.y + 0.1, WR.at[1] - 2), yaw: 1.9, scale: 1.4 });
 
   /* ------------------------------------------------------------------ lights, in night order (one run, LIGHT §3) */
   // Brief order: the Boathouse window and its gable lantern (page L) → [the Lamp's beam, offshore's own] → the Campfire →
@@ -368,7 +366,7 @@ export function buildSandsParts(ctx: DressingContext): SandsParts {
     const gx = bh.at[0] + bh.size.w / 2 + 0.3, gy = bh.at[1] + bh.size.h + 1.1, gz = bh.at[2];
     out.lights.unshift({ id: 'landing.sands.boathouse.lantern', at: P3(gx, bh.at[1], gz), kind: 'gableLantern', head: P3(gx, gy, gz), pool: P3(gx + 2.5, bh.at[1], gz), poolRadius: 6, bestHour: 'night' });
   }
-  out.lights.push({ id: 'landing.sands.campfire', at: P3(cfx, cfy, cfz), kind: 'campfire', head: P3(cfx, cfy + 0.8, cfz), pool: P3(cfx, cfy, cfz), poolRadius: 6, bestHour: 'night' });
+  out.lights.push({ id: 'landing.sands.campfire', at: P3(cfx, cfy, cfz), kind: 'campfire', head: P3(cfx, cfy + SANDS.campfireBead, cfz), pool: P3(cfx, cfy, cfz), poolRadius: 6, bestHour: 'night' });
   out.lights.push({ id: 'landing.sands.wheel', at: P3(W.hub[0], deck, W.hub[2]), kind: 'wheelRing', head: P3(W.hub[0], W.hub[1], W.hub[2]), pool: P3(W.hub[0] + 6, deck, W.hub[2] - 6), poolRadius: 7, bestHour: 'sunset' });
   const rank = (id: string) => NIGHT_ORDER.findIndex(re => re.test(id));
   out.lights.sort((a, b) => rank(a.id) - rank(b.id) || (a.at[0] - b.at[0]) || (a.at[2] - b.at[2]));
