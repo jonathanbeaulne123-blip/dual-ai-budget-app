@@ -22,7 +22,9 @@
  *     (the host's baked walls and roof stay the collision; the grammar draws on the same planes). It is filed under the
  *     district that holds the host's walls, so the record and the walls the cards stop drawing ride in one chunk;
  *  4. a prop is not in the inner part of a bed's tread (≥ 0.5 eu in from its edge) nor in water, unless it is a water prop
- *     (`WATER_PROPS`: buoy, rowboat, kayak, gozzo, duckBox, net); a colliding prop is not on a pad either; a colliding linear
+ *     (`WATER_PROPS`: buoy, rowboat, kayak, gozzo, duckBox, net, raft, lodge) or stands on a baked structure over the water
+ *     (`onStructureOverWater`); the Lookout kit and a deck's fittings (`LOOKOUT_KIT_PROPS`) may stand on a `structure.` bed; a colliding
+ *     prop is not on a pad either; a colliding linear
  *     prop (`line`) is checked along every segment (beds exactly, pads and water every `EDGE_STEP` eu); a prop's scale, like a
  *     plant's, is positive and finite;
  *  5. a plant is not on a bed or pad, and not in water unless aquatic (`AQUATIC_SPECIES`);
@@ -113,6 +115,11 @@ export type DressingContextImpl = DressingContext & {
   onPad(x: number, z: number, margin?: number): string | null;
   inWater(x: number, z: number): boolean;
   inSolid(x: number, z: number, margin?: number, ignore?: (id: string) => boolean): string | null;
+  /**
+   * E-WW (additive, the Reach PR 3): the top (y) of the baked floor under (x, z) — the highest level face of a baked solid
+   * (a deck, a pad, a terrace; never a dressing collider) within `window` of `near`, or null. Props stand on what was baked.
+   */
+  floorAt(x: number, z: number, near: number, window?: number): number | null;
 };
 
 export function createDressingContext(src: DressingSource): DressingContextImpl {
@@ -216,6 +223,23 @@ export function createDressingContext(src: DressingSource): DressingContextImpl 
     }
     return null;
   }
+  function floorAt(x: number, z: number, near: number, window = 1.5): number | null {
+    if (!solidGrid) buildSolidGrid();
+    let best: number | null = null;
+    for (const k of solidGrid!.get(cellKey(Math.floor(x / GRID), Math.floor(z / GRID))) ?? []) {
+      const t = tris[k]!; if (src.solids[t.s]!.id.startsWith('dressing.')) continue;
+      const [ax, az, bx, bz, cx, cz] = t.p as [number, number, number, number, number, number], det = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz);
+      if (Math.abs(det) < 1e-9) continue;
+      const l1 = ((bz - cz) * (x - cx) + (cx - bx) * (z - cz)) / det, l2 = ((cz - az) * (x - cx) + (ax - cx) * (z - cz)) / det, l3 = 1 - l1 - l2;
+      if (l1 < -1e-6 || l2 < -1e-6 || l3 < -1e-6) continue;
+      // Level-ish faces only (a slab's top and bottom); the highest within the window is the floor.
+      const ux = bx - ax, uz = bz - az, vx = cx - ax, vz = cz - az, uy = t.y[1]! - t.y[0]!, vy = t.y[2]! - t.y[0]!, ny = uz * vx - ux * vz, nl = Math.hypot(uy * vz - uz * vy, ny, ux * vy - uy * vx);
+      if (!(Math.abs(ny) / (nl || 1) > 0.7)) continue;
+      const y = l1 * t.y[0]! + l2 * t.y[1]! + l3 * t.y[2]!;
+      if (Math.abs(y - near) <= window && (best === null || y > best)) best = y;
+    }
+    return best;
+  }
   const onBed = (x: number, z: number, inset = 0) => { const n = nearestEdge(x, z, () => true); return n.d <= -inset ? beds[n.bed]!.id : null; };
   // A host's baked shell from its host entry and its baked walls solid (the bake's `host.<id>.walls`).
   const shells = new Map<string, HostShell | null>();
@@ -242,14 +266,14 @@ export function createDressingContext(src: DressingSource): DressingContextImpl 
     hosts: src.hosts,
     protectedAreas: src.protectedAreas,
     rng: seed => mulberry32(hashSeed(seed)),
-    onBed, segmentOnBed, onPad, inWater: (x, z) => waterLevelAt(x, z) !== null, inSolid, hostShell,
+    onBed, segmentOnBed, onPad, inWater: (x, z) => waterLevelAt(x, z) !== null, inSolid, hostShell, floorAt,
   };
 }
 
 /* ------------------------------------------------------------------ rules */
 
 export const BED_ALLOWED_BUILDINGS: ReadonlySet<BuildingKind> = new Set(['deck', 'platform', 'coveredBridge', 'gate', 'wall', 'liftTower', 'arch']);
-export const WATER_PROPS: ReadonlySet<PropKind> = new Set(['buoy', 'rowboat', 'kayak', 'gozzo', 'duckBox', 'net']);
+export const WATER_PROPS: ReadonlySet<PropKind> = new Set(['buoy', 'rowboat', 'kayak', 'gozzo', 'duckBox', 'net', 'raft', 'lodge']);
 export const AQUATIC_SPECIES: ReadonlySet<DressingSpecies> = new Set(['reed', 'cattail', 'sedge', 'lily']);
 /** Nominal height (eu) of a plant at scale 1 (the protected-area rule; generous, never smaller than drawn). */
 export const SPECIES_HEIGHT: Record<DressingSpecies, number> = {
@@ -264,7 +288,7 @@ export const PROP_HEIGHT: Record<PropKind, number> = {
   laundryLine: 2.4, stall: 2.6, cafeTable: 0.8, fountain: 1.6, planter: 0.8, bikeRack: 0.8, mapBoard: 1.6, sundial: 1.1, monthStone: 0.6,
   kite: 12, swing: 3, windsock: 6, beacon: 4, fireRing: 0.4, volleyNet: 2.4, lifeRing: 1.4, rodHolder: 1, duckBox: 1.5,
   ospreyPole: 12, snag: 8, buoy: 1, bollardQuay: 0.7, net: 1.5, crate: 0.8, cairn: 1.2, sheepFank: 1.2, festoon: 3, flag: 6,
-  bocceCourt: 0.3, skateBowl: 0.2, geoglyph: 0.2, readingTable: 0.8, bookCart: 1.1, birdFeeder: 1.8, bell: 1, balloon: 20.6, boulder: 1.4,
+  bocceCourt: 0.3, skateBowl: 0.2, geoglyph: 0.2, readingTable: 0.8, bookCart: 1.1, birdFeeder: 1.8, bell: 1, balloon: 20.6, boulder: 1.4, raft: 2.4, lodge: 1.4,
 };
 /** Footprint edges and colliding lines are sampled this often (eu) against pads, water and baked solids. */
 export const EDGE_STEP = 0.5;
@@ -301,6 +325,23 @@ export function along(points: readonly Point2[], step: number, closed = false): 
   for (let i = 0; i < m; i++) { const a = points[i]!, b = points[(i + 1) % n]!, k = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / step)); for (let j = 0; j < k; j++) out.push([a[0] + (b[0] - a[0]) * j / k, a[1] + (b[1] - a[1]) * j / k]); }
   if (!closed && n) out.push(points[n - 1]!);
   return out;
+}
+/**
+ * E-WW (additive, the Reach PR 3): a prop whose base stands on a baked structure over water — on a baked solid's plan footprint
+ * (not a dressing collider) and at least `DECK_OVER_WATER` eu above the water level — stands on that structure (a pier, the
+ * Greenway's deck over the Bight), not in the water.
+ */
+export const DECK_OVER_WATER = 0.3;
+/**
+ * E-WW (additive, the Reach PR 3): the Lookout kit (STORY: viewer(s), a bench, a panel) stands on its lookout's floor, and a
+ * lookout's floor is a structure bed by construction (the land's pads, bays and decks: `structure.<id>` walk beds over the
+ * whole slab, so the path graph reaches it); a deck's own fittings — the island lantern on its rail line, a life ring, a rod
+ * holder — stand on it too. These kinds may stand on a `structure.` bed's tread; every other rule holds.
+ */
+export const LOOKOUT_KIT_PROPS: ReadonlySet<PropKind> = new Set(['viewer', 'viewerSeated', 'bench', 'panel', 'lantern', 'lanternLow', 'lifeRing', 'rodHolder']);
+export function onStructureOverWater(ctx: Pick<DressingContextImpl, 'waterLevelAt' | 'inSolid'>, x: number, y: number, z: number): boolean {
+  const level = ctx.waterLevelAt(x, z);
+  return level !== null && y >= level + DECK_OVER_WATER && ctx.inSolid(x, z, 0.05, id => id.startsWith('dressing.')) !== null;
 }
 /** Record ids may not carry the partition's '@' nor the engine's own '#' (fallback ids for unnamed props). */
 const BAD_ID = /[@#]/;
@@ -362,9 +403,10 @@ export function validateDressing(outputs: readonly { module: NeighbourhoodModule
       if (!allFinite([p.at, p.yaw, p.scale ?? 1, p.variant ?? 0, p.line ?? []]) || p.at.length !== 3) { problems.push(`${w}: a non-finite number`); return; }
       // The plants' rule (PR #588 Codex): a zero or negative scale draws nothing and can bake a degenerate collider.
       if (p.scale !== undefined && !(p.scale > 0)) { problems.push(`${w}: scale must be positive`); return; }
-      const [x, , z] = p.at;
+      const [x, y, z] = p.at;
       if (!p.line && !WATER_PROPS.has(p.kind)) {
-        const bed = ctx.onBed(x, z, 0.5), pad = p.collide ? ctx.onPad(x, z) : null, wet = ctx.inWater(x, z);
+        const tread = ctx.onBed(x, z, 0.5), bed = tread && !(LOOKOUT_KIT_PROPS.has(p.kind) && tread.startsWith('structure.')) ? tread : null;
+        const pad = p.collide ? ctx.onPad(x, z) : null, wet = ctx.inWater(x, z) && !onStructureOverWater(ctx, x, y, z);
         if (bed || pad || wet) problems.push(`${w}: ${p.kind} stands on ${bed ?? pad ?? 'water'}`);
       }
       if (p.line && p.collide && !WATER_PROPS.has(p.kind)) {

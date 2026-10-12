@@ -43,9 +43,15 @@ export const FLOWER_SET = Object.freeze({
   clocks: 10,
   /** The Water's Way: Stillwater's banks as wild drifts (the water set without a bed): blue flag iris, marsh marigold, Joe-Pye weed (Newfoundland: iris, bakeapple, pitcher plant). */
   lakeEdge: 11,
+  /** The Water's Way (the Reach PR 3): the wet meadow's tall drifts: Joe-Pye weed, cardinal flower, swamp milkweed
+   * (Newfoundland: Joe-Pye weed, pitcher plant, bakeapple). A wild drift. */
+  marsh: 12,
+  /** The Water's Way (the Reach PR 3): the pool and channel edge: blue flag iris, marsh marigold, cardinal flower
+   * (Newfoundland: blue flag iris, marsh marigold, bakeapple). A wild drift. */
+  marshEdge: 13,
 });
 export type FlowerSetId = (typeof FLOWER_SET)[keyof typeof FLOWER_SET];
-const SET_COUNT = 12;
+const SET_COUNT = 14;
 
 const s = (name: string, hex: string, form: FlowerForm = 'head'): FlowerSpecies => ({ name, colour: rgb(hex), form });
 const CLASSIC: readonly (readonly FlowerSpecies[])[] = [
@@ -61,6 +67,8 @@ const CLASSIC: readonly (readonly FlowerSpecies[])[] = [
   [s('goldenrod', '#d9b02e', 'spike'), s('milkweed', '#c58b9c'), s('black-eyed Susan', '#e5b53a')],
   [s('dandelion', '#f2c62e'), s('dandelion', '#ecbd24'), s('dandelion', '#f2c62e')],
   [s('blue flag iris', '#6c78c2', 'spike'), s('marsh marigold', '#e9c46a'), s('Joe-Pye weed', '#c08aa6')],
+  [s('Joe-Pye weed', '#a86a8e'), s('cardinal flower', '#c0283c', 'spike'), s('swamp milkweed', '#c98aa0')],
+  [s('blue flag iris', '#5b5fa8', 'spike'), s('marsh marigold', '#e8c23a'), s('cardinal flower', '#c0283c', 'spike')],
 ];
 /** Newfoundland: the species swaps of STYLE §1.4.4 / §3.2, in its brighter primaries. */
 const NEWFOUNDLAND: readonly (readonly FlowerSpecies[])[] = [
@@ -76,6 +84,8 @@ const NEWFOUNDLAND: readonly (readonly FlowerSpecies[])[] = [
   [s('goldenrod', '#e0b53a', 'spike'), s('fireweed', '#c8508e', 'spike'), s('yarrow', '#f3f1ea')],
   [s('dandelion', '#f0c22a'), s('dandelion', '#e8b820'), s('dandelion', '#f0c22a')],
   [s('blue flag iris', '#6c78c2', 'spike'), s('bakeapple', '#e8a14a'), s('pitcher plant', '#8a3b4a')],
+  [s('Joe-Pye weed', '#a06686'), s('pitcher plant', '#8a3b4a'), s('bakeapple', '#e8a14a')],
+  [s('blue flag iris', '#6c78c2', 'spike'), s('marsh marigold', '#e7b53c'), s('bakeapple', '#e8a14a')],
 ];
 /** The dandelion clocks (June): white seed heads on their stems (STYLE §1.4.2, "dandelion clocks (June)"). */
 const CLOCKS: readonly FlowerSpecies[] = [s('dandelion clock', '#f4f1e8', 'puff'), s('dandelion clock', '#ebe7dc', 'puff'), s('dandelion clock', '#f4f1e8', 'puff')];
@@ -98,7 +108,7 @@ export function flowerSet(theme: PlantTheme, tint: number | undefined, month?: n
   return CLASSIC[id]!;
 }
 /** Sets drawn as wild drifts (no soil card, no edging): the prairie, the highland, the bog, the Green's meadow sets and Stillwater's lake edge. */
-export const WILD_SETS: ReadonlySet<FlowerSetId> = new Set<FlowerSetId>([FLOWER_SET.prairie, FLOWER_SET.highland, FLOWER_SET.bog, FLOWER_SET.meadowWild, FLOWER_SET.fieldEdge, FLOWER_SET.clocks, FLOWER_SET.lakeEdge, FLOWER_SET.woodland]);
+export const WILD_SETS: ReadonlySet<FlowerSetId> = new Set<FlowerSetId>([FLOWER_SET.prairie, FLOWER_SET.highland, FLOWER_SET.bog, FLOWER_SET.meadowWild, FLOWER_SET.fieldEdge, FLOWER_SET.clocks, FLOWER_SET.lakeEdge, FLOWER_SET.woodland, FLOWER_SET.marsh, FLOWER_SET.marshEdge]);
 /** The set id of a `tint` (integer part, clamped). */
 export function setOf(tint: number | undefined): FlowerSetId {
   const id = Math.floor(tint ?? 0);

@@ -103,7 +103,11 @@ export type PropKind =
   // E2 (additive, PR 4 Flats): the hot-air balloon at its mooring (MANIFEST sky.balloon; the ride is PR 5's mover).
   | 'balloon'
   // E2 (additive, the Highlands PR 3): a boulder (moraine erratics, tarn-shore and field stones; `variant` seeds its shape).
-  | 'boulder';
+  | 'boulder'
+  // E-WW (additive, the Reach PR 3): a floating reed raft (its planting drawn with it; `line` = its tether to a pile) and a
+  // muskrat lodge (a reed-and-mud mound standing in a channel).
+  | 'raft' | 'lodge';
+
 
 export interface PropRecord {
   id?: string;

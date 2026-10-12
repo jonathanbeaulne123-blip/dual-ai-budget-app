@@ -172,7 +172,8 @@ describe('runtime dressing layer (runtime/dressingLayer.ts)', () => {
     expect(lite.triangles).toBeLessThanOrEqual(full.triangles);
   });
   it('budget: the prototypes’ real loads fit 150k / 60k with their baked districts (Little Harbour, the Reach, Scholars’ Edge)', () => {
-    // The baked districts' terrain + drawn solids, as the index reports them.
+    // The baked districts' terrain + drawn solids, as the index reports them — less the baked dressing's own share once PR 3/4
+    // dress the bake (`District.dressing`), so a prototype load stands in for it rather than adding to it.
     const index = JSON.parse(gunzipSync(readFileSync('public/horizon/world/horizon-geo-1.index.json.gz')).toString()) as {districts: District[]};
     // The land's own share: once a module dresses a district (PR 3), the index's triangles include its baked dressing, which
     // these synthetic loads stand in for (counting both would double the dressing).
