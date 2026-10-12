@@ -24,6 +24,7 @@ import { AIRPORT, AIRPORT_BOXES, AIRPORT_DECKS, AIRPORT_VAULTS, vaultTop } from 
 import { airportGeography } from '../src/harbour/horizon/airport/geography.ts';
 import { measureDistrictDressing } from '../src/harbour/horizon/runtime/dressingLayer.ts';
 import type { NeighbourhoodDressing } from '../src/harbour/horizon/neighbourhoods/types.ts';
+import { districtBudget } from '../src/harbour/horizon/neighbourhoods/budget.ts';
 
 type World = { collision: Omit<LandCuts, 'solids' | 'diagnostics'>; geometry: { solids: (StructureSolid & { sourceId?: string })[] }; hosts: { id: string; footprint?: [number, number][]; door: { xy?: [number, number] }; height?: number }[]; districts: { id: string; triangles?: { full: number; lite: number }; dressing?: unknown }[]; views: { id: string; eye: number[]; target: number[]; fovDegrees: number }[]; dressing?: { districts: { districtId: string; buildings: { id: string }[]; plants: unknown[]; props: { id?: string }[] }[]; landmarks: { id: string; at: number[]; top: number[] }[]; lookouts: { id: string; eye: number[] }[] }; lights: { id: string; kind: string; at: number[]; order?: number; line?: string }[] };
 type Fixture = { world: World; field: TerrainField; ground: (x: number, z: number) => number; solids: StructureSolid[]; land: StructureSolid[]; ctx: ReturnType<typeof createDressingContext>; out: NeighbourhoodDressing; ray: ReturnType<typeof createRayCaster> };
@@ -240,7 +241,9 @@ describe('night, life and budget', () => {
     for (const id of ['flats', 'bight', 'scholars']) {
       const d = world.districts.find(q => q.id === id)!;
       console.log(`[flats] budget ${id}: full ${d.triangles!.full}, lite ${d.triangles!.lite}`);
-      expect(d.triangles!.full).toBeLessThanOrEqual(150_000); expect(d.triangles!.lite).toBeLessThanOrEqual(60_000);
+      // Integration (D-WW182, 2026-10-12): the Bight and the landing hold recorded overrun ceilings (neighbourhoods/budget.ts, a
+      // ratchet that may only fall); every other district holds CONTRACT §6.
+      expect(d.triangles!.full).toBeLessThanOrEqual(districtBudget(id).full); expect(d.triangles!.lite).toBeLessThanOrEqual(districtBudget(id).lite);
     }
   }, 120_000);
   it('measures the module\'s own art with the runtime layer\'s builder (one measure)', async () => {

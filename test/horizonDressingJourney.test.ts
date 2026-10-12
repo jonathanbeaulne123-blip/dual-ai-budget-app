@@ -21,9 +21,6 @@ const INDEX = toArrayBuffer(readFileSync('public/horizon/world/horizon-geo-1.ind
 const TERRAIN = decodeTerrainAsset(toArrayBuffer(readFileSync('public/horizon/terrain/horizon-geo-1.bin')), 'journey');
 const source = {index: '/horizon/world/horizon-geo-1.index.json.gz', indexSha256: 'a', terrainSha256: 'b'};
 
-/** The baked index with a story's worth of dressing: 40 tall buildings around the harbour and the seven landmarks. */
-/** The committed index without its dressing (PR 3/4 modules dress the committed one). */
-function undressedIndex() { const world = parseHorizonIndex(INDEX.slice(0)); delete world.dressing; return world; }
 function dressedIndex() {
   const world = parseHorizonIndex(INDEX.slice(0));
   const journey: NonNullable<WorldDressing['journey']> = Array.from({length: 40}, (_, i) => { const x = 1400 + (i % 8) * 12, z = 1150 + Math.floor(i / 8) * 12; return {id: `harbour.row${i}`, districtId: 'harbour', footprint: [[x, z], [x + 8, z], [x + 8, z + 6], [x, z + 6]], base: 4, height: JOURNEY_MIN_HEIGHT + (i % 4), roofHeight: 2.5}; });
@@ -32,8 +29,6 @@ function dressedIndex() {
   return world;
 }
 
-/** The baked index without its dressing (the committed bake is dressed once PR 3/4 register their modules). */
-function undressedIndex() { const world = parseHorizonIndex(INDEX.slice(0)); delete (world as { dressing?: unknown }).dressing; return world; }
 
 describe('the Journey map carries the dressing (slim format 4)', () => {
   // PR 4 (the Flats, D-WW162): the committed index now carries the first module's dressing, so "undressed" strips it here, and

@@ -88,7 +88,9 @@ describe('Little Harbour: the town (STYLE §2.1; SPEC §1–§6)', () => {
   it('re-dresses the Fund bank (palazzo) and Our home (villa) on their baked shells, without colliders', () => {
     const bank = mine.buildings.find(b => b.hostId === 'bank')!, home = mine.buildings.find(b => b.hostId === 'home')!;
     expect([bank.kind, bank.collide, home.kind, home.collide]).toEqual(['palazzo', false, 'villa', false]);
-    expect(world.dressing!.redressedHosts).toEqual(['bank', 'home']);
+    // Integration (2026-10-12): other places re-dress their own hosts too (Long Sands' boathouse …), so the world's list must
+    // contain the harbour's two rather than equal them.
+    expect(world.dressing!.redressedHosts).toEqual(expect.arrayContaining(['bank', 'home']));
     // Our home's kitchen window faces the dam (north).
     expect(home.params?.kitchenFace).toBe('left'); expect(Math.sin(home.yaw)).toBeCloseTo(-1, 6);
   });

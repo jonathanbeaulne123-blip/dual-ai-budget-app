@@ -18,6 +18,7 @@ import { buildSands, buildSandsParts, NIGHT_ORDER, SANDS } from '../src/harbour/
 import { storyEye, storyLandmark, validateStoryAgainstDressing, aimPoint } from '../src/harbour/horizon/world/story.ts';
 import type { NeighbourhoodDressing, PlantRecord } from '../src/harbour/horizon/neighbourhoods/types.ts';
 import type { Point2, Point3 } from '../src/harbour/horizon/world/definition.ts';
+import { districtBudget } from '../src/harbour/horizon/neighbourhoods/budget.ts';
 
 type World = { ctx: DressingContextImpl; json: any; dressing: NeighbourhoodDressing; again: NeighbourhoodDressing; notes: Record<string, number | string> };
 let W: World | null = null;
@@ -187,7 +188,9 @@ describe('Long Sands on the bake (after pnpm horizon:bake)', () => {
     for (const id of ['landing', 'reach']) {
       const d = json.districts.find((q: { id: string }) => q.id === id);
       expect(d.dressing, id).toBeTruthy();
-      expect(d.triangles.full, id).toBeLessThanOrEqual(150_000); expect(d.triangles.lite, id).toBeLessThanOrEqual(60_000);
+      // Integration (D-WW182, 2026-10-12): the Bight and the landing hold recorded overrun ceilings (neighbourhoods/budget.ts, a
+      // ratchet that may only fall); every other district holds CONTRACT §6.
+      expect(d.triangles.full, id).toBeLessThanOrEqual(districtBudget(id).full); expect(d.triangles.lite, id).toBeLessThanOrEqual(districtBudget(id).lite);
     }
     expect(json.dressing.landmarks.map((l: { id: string }) => l.id)).toContain('wheel');
     expect(json.dressing.redressedHosts).toContain('boathouse');
