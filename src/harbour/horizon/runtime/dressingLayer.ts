@@ -254,8 +254,10 @@ export function buildFarLandmarks(dressing: Pick<WorldDressing, 'landmarks' | 'j
       for (let i = 0; i < n; i++) { const p = ring[i]!, q = ring[(i + 1) % n]!; put(district, [p[0], y0, p[1]], [q[0], y0, q[1]], [q[0], eave, q[1]], wall); put(district, [p[0], y0, p[1]], [q[0], eave, q[1]], [p[0], eave, p[1]], wall); put(district, [p[0], eave, p[1]], [q[0], eave, q[1]], [cx, apex, cz], roof); }
       top = apex;
     }
-    if (!carrier && l.top[1] > l.at[1] + 0.5) {
+    if (!carrier && l.yaw !== undefined && l.top[1] > l.at[1] + 0.5) {
       // A landmark tree (D-WW110): the kit's own tree, lite, in the season's look, at the plant's yaw and the sighted height.
+      // Only a landmark that names its tree's yaw is a tree (the Old Oak); other uncarried landmarks (the osprey pole, the
+      // Fallswatch deck) take the slim spire below (PR 591 review).
       const month = look.month ?? SEASON_MONTH[look.season], g = oakGeometry(mountainArtPalette(SCENE_DRESSING[theme]), 'lite', {season: look.season, month, stage: bloomStage(month)}).body;
       const pos = g.getAttribute('position'), col = g.getAttribute('color'), k = (l.top[1] - l.at[1]) / OAK.height, c = Math.cos(l.yaw ?? 0), s = Math.sin(l.yaw ?? 0);
       let m = byDistrict.get(district); if (!m) byDistrict.set(district, m = {pos: [], col: []});

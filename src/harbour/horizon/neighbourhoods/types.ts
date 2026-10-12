@@ -153,7 +153,7 @@ export interface Landmark {
   /** Its place in the evening relay (1 = first lit at civil dusk); absent if it doesn't join. */
   relayOrder?: number;
   /**
-   * E2 (additive, the Green): a landmark no building carries is a landmark tree (the Old Oak); its far silhouette is the
+   * E2 (additive, the Green): a landmark no building carries that names this yaw is a landmark tree (the Old Oak); its far silhouette is the
    * plant kit's landmark tree, turned by this yaw (the plant record's) so the near tree replaces it in place.
    */
   yaw?: number;
