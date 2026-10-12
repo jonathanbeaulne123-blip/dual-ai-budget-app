@@ -24,6 +24,9 @@ import { corners } from '../src/harbour/horizon/neighbourhoods/harbour/solver.ts
 import { buildDistrictDressingSteps } from '../src/harbour/horizon/runtime/dressingLayer.ts';
 import { finishBuild } from '../src/house/world/buildTask.ts';
 import { buildingPalette } from '../src/harbour/horizon/kit/buildings/index.ts';
+import { harbourLandColor, HARBOUR_STONE } from '../src/harbour/horizon/runtime/cards.ts';
+import { createRoadLights } from '../src/harbour/horizon/runtime/roadLights.ts';
+import * as THREE from 'three';
 
 type World = { collision: { beds: BedCut[]; pads: LandCuts['pads']; mouths: LandCuts['mouths']; waters: LandCuts['waters'] }; geometry: { solids: (StructureSolid & { sourceId?: string })[] }; hosts: { id: string; footprint: Point2[]; door: { xy?: Point2 }; height: number }[]; districts: { id: string; triangles: { full: number; lite: number }; drawCalls: number; dressing?: { full: { triangles: number; drawCalls: number }; lite: { triangles: number; drawCalls: number } } }[]; lights: { id: string; kind: string; at: [number, number, number]; line?: string; order?: number }[]; dressing?: WorldDressing };
 let world: World, field: TerrainField, ctx: DressingContextImpl;
@@ -226,6 +229,50 @@ describe('Little Harbour: the ground (SPEC §7; STYLE §2.1)', () => {
     const outer = campo.filter(g => { const c = g.polygon[0]!; return Math.hypot(c[0] - COURT[0], c[1] - COURT[1]) > 9; });
     for (const g of outer.slice(0, 400)) expect(g.surface).toBe(fanOf(g) % 2 ? 'brick' : 'ochre');
     expect(new Set(campo.map(g => g.surface))).toEqual(new Set(['ochre', 'brick']));
+  });
+});
+
+describe('Little Harbour: warm stone and the square at night', () => {
+  it('draws the harbour district\'s land walls and pads in warm limestone, nothing else on the island (runtime/cards.ts)', () => {
+    const solids = world.geometry.solids as (StructureSolid & { districtId: string; sourceId?: string })[];
+    const warm = solids.filter(s => harbourLandColor(s) !== null);
+    expect(warm.length).toBeGreaterThan(20);
+    for (const s of warm) { expect(s.districtId).toBe('harbour'); expect(s.role).not.toBe('deck'); expect(source(s).startsWith('dressing.')).toBe(false); }
+    const kinds = new Set(warm.map(s => s.kind));
+    for (const k of ['retainingWall', 'pad', 'kerb']) expect(kinds.has(k), k).toBe(true);
+    for (const s of warm.filter(q => q.kind === 'retainingWall')) expect(harbourLandColor(s)).toBe(HARBOUR_STONE.wall);
+    // Elsewhere (the same kinds in other districts), decks, the road corridor and the re-dressed hosts keep the island colour.
+    expect(solids.filter(s => s.districtId !== 'harbour' && s.kind === 'retainingWall').every(s => harbourLandColor(s) === null)).toBe(true);
+    for (const s of solids.filter(q => q.districtId === 'harbour' && (q.role === 'deck' || q.kind === 'host' || q.kind.startsWith('corridor')))) expect(harbourLandColor(s)).toBeNull();
+  });
+  it('lights the square at night: shopfront lanterns pool on the paving in front of their arches, lanterns pool at their feet', () => {
+    const lights = world.lights.filter(l => l.line === NIGHT_LINE) as { id: string; at: [number, number, number]; head?: number[]; pool?: number[] }[];
+    const shops = lights.filter(l => l.id.startsWith('harbour.shopfronts.'));
+    expect(shops.length).toBeGreaterThanOrEqual(6);
+    const sq = tier('square');
+    expect(shops.filter(l => l.pool![0]! >= sq.x0 && l.pool![0]! <= sq.x1 && l.pool![2]! >= sq.z0 && l.pool![2]! <= sq.z1).length).toBeGreaterThanOrEqual(2);
+    // The lantern is the kit's (floor + 3.9 on the front); where a row stands below its street (the upper street's west side)
+    // it is ~2 eu over the paving it lights, elsewhere ~3.6.
+    for (const l of shops) { expect(l.at[1] - l.pool![1]!).toBeGreaterThan(1.5); expect(ctx.inWater(l.pool![0]!, l.pool![2]!)).toBe(false); }
+    // Every lantern's bead sits in its glass, its pool on the ground or slab under it.
+    for (const l of lights.filter(q => q.id.includes('.lanternRow.') || q.id.includes('.court.'))) { expect(l.pool).toBeDefined(); expect(l.at[1] - l.pool![1]!).toBeCloseTo(2.6, 6); }
+  });
+  it('lays the campo in courses as well as fans, so it is never one flat tone', () => {
+    const sq = tier('square'), campo = mine.ground.filter(g => (g.surface === 'ochre' || g.surface === 'brick') && g.floor === sq.y);
+    expect(new Set(campo.map(g => `${g.surface}:${g.tone}`)).size).toBe(4);
+  });
+  it('pools an anchor that names its pool point there (runtime/roadLights.ts), and the rest under the anchor', async () => {
+    const scene = new THREE.Scene(), rl = createRoadLights(scene, { lights: [
+      { id: 'harbour.court.x', at: [10, 2.6, 10], kind: 'dressing:lantern', head: [10, 2.6, 10], pool: [10, 0, 10], line: 'l', order: 0 },
+      { id: 'door.y', at: [20, 2.2, 10], kind: 'door', line: 'm', order: 0 },
+    ] }, { tier: 'full' });
+    const cam = new THREE.PerspectiveCamera(); cam.position.set(15, 5, 30); cam.updateMatrixWorld();
+    for (let t = 0; t < 12000; t += 500) rl.update(cam, -12, t);
+    const pools = scene.getObjectByName('lightCards.anchorPools') as THREE.InstancedMesh, m = new THREE.Matrix4(), p = new THREE.Vector3();
+    expect(pools.count).toBe(2);
+    const ys = [0, 1].map(i => { pools.getMatrixAt(i, m); p.setFromMatrixPosition(m); return [p.x, p.y]; }).sort((a, b) => a[0]! - b[0]!);
+    expect(ys[0]![1]).toBeCloseTo(0.06, 6); expect(ys[1]![1]).toBeCloseTo(0.06, 6);
+    rl.dispose();
   });
 });
 

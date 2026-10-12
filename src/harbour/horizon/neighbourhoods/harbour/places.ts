@@ -16,11 +16,14 @@ import { HORIZON_MANIFEST } from '../../world/manifest.ts';
 import {
   BOCCE, CAFE, CAMPANILE, belfryFloor, untouched, COURT_LANTERNS, CRATES, DAM_BENCHES, FISHING, FOUNTAIN, GIRO, GOZZI_HAULED, GOZZI_MOORED, NETS, QUAY, STALLS, SUNDIAL, tier, type TierId,
 } from './plan.ts';
-import { footprintQuads, frontOf } from './town.ts';
+import { footprintQuads, frontOf, onFront } from './town.ts';
+
+/** The frontages whose shops light the paving at night: the square, the market lane, the upper street. */
+export const SHOPFRONTS = ['row.square-', 'row.lane-S', 'row.town-storefront', 'row.upper-'] as const;
 
 /** The night line every harbour anchor joins, in order (STYLE §2.1 "Night face, in order"; LIGHT §3). */
 export const NIGHT_LINE = 'harbour.night';
-export const NIGHT_ORDER = ['lanternRow', 'court', 'hosts', 'belfry', 'floatDock'] as const;
+export const NIGHT_ORDER = ['lanternRow', 'court', 'shopfronts', 'hosts', 'belfry', 'floatDock'] as const;
 export type NightGroup = (typeof NIGHT_ORDER)[number];
 
 const TIERS: readonly TierId[] = ['upperStreet', 'square', 'storefrontLane', 'quay'];
@@ -64,7 +67,10 @@ export interface Places { props: PropRecord[]; lights: LightAnchor[]; landmarks:
 export function buildPlaces(ctx: DressingContext, buildings: readonly BuildingRecord[]): Places {
   const props: PropRecord[] = [], lights: LightAnchor[] = [], life: LifeSpawn[] = [], houses = footprintQuads(buildings), lanternRow: Point3[] = [];
   let order = 0;
-  const light = (id: string, at: Point3, kind: string, group: NightGroup) => lights.push({ id: `harbour.${group}.${id}`, at, kind, bestHour: 'night', line: NIGHT_LINE, order: order++ });
+  const light = (id: string, at: Point3, kind: string, group: NightGroup, pool?: Point3) => lights.push({ id: `harbour.${group}.${id}`, at, kind, bestHour: 'night', line: NIGHT_LINE, order: order++, ...(pool ? { head: at, pool } : {}) });
+  /** The island lantern's glass (kit/props `lantern`: the road kit's lamp on a 0.2 foot, head ≈ 2.83): its anchor's bead
+   * sits in the lamp, its pool on the ground under it (runtime/roadLights.ts honours `pool`). */
+  const LANTERN_GLASS = 2.6;
   const prop = (r: PropRecord) => { props.push(r); return r; };
   const onSquare: Spot = { clear: 1.2, onPad: true, houses };
 
@@ -86,13 +92,13 @@ export function buildPlaces(ctx: DressingContext, buildings: readonly BuildingRe
       const p = prop({ id: `lanternRow.${lanternRow.length}`, kind: 'lantern', at: [at[0], y, at[1]], yaw: Math.atan2(u[0], u[1]), collide });
       lanternRow.push(p.at);
     }
-    lanternRow.forEach((p, i) => light(`${i}`, [p[0], p[1] + 0.8, p[2]], 'lantern', 'lanternRow'));
+    lanternRow.forEach((p, i) => light(`${i}`, [p[0], p[1] + LANTERN_GLASS, p[2]], 'lantern', 'lanternRow', [p[0], p[1], p[2]]));
   }
 
   /* ---- the square (SPEC §7, §8, §11) ---- */
   const squareY = tier('square').y;
   COURT_LANTERNS.forEach((p, i) => { const at = nearestSpot(ctx, p, onSquare, 4); if (!at) return; prop({ id: `court.lantern.${i}`, kind: 'lantern', at: [at[0], squareY, at[1]], yaw: 0, collide: false }); });
-  props.filter(p => p.id?.startsWith('court.lantern')).forEach((p, i) => light(`${i}`, [p.at[0], p.at[1] + 0.8, p.at[2]], 'lantern', 'court'));
+  props.filter(p => p.id?.startsWith('court.lantern')).forEach((p, i) => light(`${i}`, [p.at[0], p.at[1] + LANTERN_GLASS, p.at[2]], 'lantern', 'court', [p.at[0], p.at[1], p.at[2]]));
   { const at = nearestSpot(ctx, FOUNTAIN, { ...onSquare, clear: 3 }, 5); if (at) prop({ id: 'fountain', kind: 'fountain', at: [at[0], squareY, at[1]], yaw: 0, collide: false }); }
   { const at = nearestSpot(ctx, SUNDIAL, onSquare, 3); if (at) prop({ id: 'sundial', kind: 'sundial', at: [at[0], squareY, at[1]], yaw: 0, fixture: 'sundial', collide: false }); }
   const dam = HORIZON_MANIFEST.views.find(v => v.id === 'A')!.target as unknown as Point2;
@@ -158,7 +164,19 @@ export function buildPlaces(ctx: DressingContext, buildings: readonly BuildingRe
   const l = storyLandmark('campanile');
   const landmarks: Landmark[] = [{ id: l.id, label: l.label, neighbourhood: 'harbour', at: l.at, top: l.top, ...(l.relayOrder ? { relayOrder: l.relayOrder } : {}), ...(l.bell ? { bell: l.bell } : {}) }];
 
-  /* ---- the night order after the Court: the hosts' windows, the belfry, the floatplane dock ---- */
+  /* ---- the night order after the Court: the wall lanterns and shop arches (STYLE §2.1 "Night face") ---- */
+  // Each shop on the square, the market lane and the upper street that carries the kit's wall lantern (kit/buildings
+  // harbour.ts: odd id hash) gets a light anchor on that lantern, its pool on the paving in front of the arches — the warm
+  // pools that break up the square at night. Emissive pool + bead cards only (roadLights' anchor share; no point light).
+  for (const b of buildings) {
+    if (b.kind !== 'rowHouse' || b.params?.shop !== true || !SHOPFRONTS.some(f => b.id.startsWith(f))) continue;
+    let k = 0; for (let i = 0; i < b.id.length; i++) k = (k * 31 + b.id.charCodeAt(i)) >>> 0;
+    if (k % 2 !== 1) continue;
+    const head = onFront(b, -b.size.w / 2 + 0.55, 0.45), f = frontOf(b), pool: Point2 = [f.at[0] + f.n[0] * 2.4, f.at[1] + f.n[1] * 2.4], py = floorAt(ctx, pool[0], pool[1]);
+    lights.push({ id: `harbour.shopfronts.${b.id}`, at: [head[0], b.at[1] + 3.6, head[1]], head: [head[0], b.at[1] + 3.6, head[1]], pool: [pool[0], py, pool[1]], kind: 'wallLantern', bestHour: 'night', line: NIGHT_LINE, order: order++ });
+  }
+
+  /* ---- then the hosts' windows, the belfry, the floatplane dock ---- */
   for (const id of ['home', 'bank'] as const) { const h = ctx.hosts.find(q => q.id === id); const d = h?.door.xy; if (h && d) light(`${id}`, [d[0], (h.height ?? 0) + 0.8, d[1]], 'window', 'hosts'); }
   light('bell', [bx, floorB + 0.8, bz], 'belfry', 'belfry');
   { const t = thresholds.find(q => q.id === 'floatDock')!.xy;

@@ -55,7 +55,7 @@ export function paintGround(ctx: DressingContext): GroundPaint[] {
   // (#a8664f) read maroon in the square's golden-hour shade.
   // The campo is laid in ten fans between the travertine rays (Siena), alternate fans a shade apart, so the 56 m of brick
   // reads as laid courses rather than one plain (no triangles added: the lattice's own pieces carry the tone).
-  for (const t of lattice(sq.x0, sq.z0, sq.x1, sq.z1)) for (const piece of campoPieces(t)) { const fan = campoFan(piece); out.push({ polygon: piece, surface: fan === 1 ? 'brick' : 'ochre', tone: fan === 1 ? 1 : 0.75, floor: y + LIFT.brick }); }
+  for (const t of lattice(sq.x0, sq.z0, sq.x1, sq.z1)) for (const piece of campoPieces(t)) { const fan = campoFan(piece); out.push({ polygon: piece, surface: fan === 1 ? 'brick' : 'ochre', tone: campoTone(piece, fan), floor: y + LIFT.brick }); }
   // The small green: from the square's north edge south to 0.3 eu short of the bank approach (the bocce court wholly on it).
   const bank = ctx.beds.find(b => b.id === 'host.bank.approach'), half = (bank?.width ?? 2.5) / 2;
   const edgeZ = (x: number) => { let best = Infinity; const P = bank?.points ?? []; for (let i = 1; i < P.length; i++) { const a = P[i - 1]!, b = P[i]!; if ((a[0] - x) * (b[0] - x) <= 0 && a[0] !== b[0]) { const t = (x - a[0]) / (b[0] - a[0]); best = Math.min(best, a[2] + (b[2] - a[2]) * t); } } return best - half - 0.3; };
@@ -78,6 +78,17 @@ export function paintGround(ctx: DressingContext): GroundPaint[] {
   return out;
 }
 
+/**
+ * The campo's courses: within each fan the brick is laid in concentric courses round the Court, alternate courses a shade
+ * apart (`COURSE` eu wide, by the piece's centroid radius), so under the night's flat moonlight — where the two bricks
+ * nearly meet in value — the square still reads as laid paving, not one slab. No triangles added.
+ */
+export const COURSE = 3.2;
+export function campoTone(t: readonly Point2[], fan: 0 | 1): number {
+  const c: Point2 = [t.reduce((a, p) => a + p[0], 0) / t.length, t.reduce((a, p) => a + p[1], 0) / t.length];
+  const odd = Math.floor(Math.hypot(c[0] - COURT[0], c[1] - COURT[1]) / COURSE) % 2 === 1;
+  return fan === 1 ? (odd ? 0.4 : 1) : (odd ? 0.1 : 0.75);
+}
 /** Clip a convex polygon to the half-plane left of the line from COURT along angle `a` (cross ≥ 0). */
 function clipHalf(P: readonly Point2[], a: number, keepLeft: boolean): Point2[] {
   const dx = Math.cos(a), dz = Math.sin(a), side = (p: Point2) => (dx * (p[1] - COURT[1]) - dz * (p[0] - COURT[0])) * (keepLeft ? 1 : -1), out: Point2[] = [];

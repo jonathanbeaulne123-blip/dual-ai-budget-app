@@ -196,7 +196,9 @@ export function createRoadLights(scene: THREE.Scene, world: RoadLightsWorld, opt
     // Door / threshold cards (a threshold on a road drops its bead to a flush stud on the pad).
     for (let i = 0; i < a; i++) {
       const { a: anchor, stud } = anchors[pickedAnchor[i]!]!, lift = anchor.kind === 'door' ? 2.2 : .8, ground = anchor.at[1] - lift;
-      matrix.makeTranslation(anchor.at[0], ground + .06, anchor.at[2]); anchorPools.setMatrixAt(i, matrix);
+      // An anchor that names its own pool point (a neighbourhood's lantern head over the paving it lights) pools there.
+      if (anchor.pool) matrix.makeTranslation(anchor.pool[0], anchor.pool[1] + .06, anchor.pool[2]); else matrix.makeTranslation(anchor.at[0], ground + .06, anchor.at[2]);
+      anchorPools.setMatrixAt(i, matrix);
       if (stud) matrix.makeScale(1, .22, 1).setPosition(anchor.at[0], ground + .03, anchor.at[2]); else matrix.makeTranslation(anchor.at[0], anchor.at[1], anchor.at[2]);
       beads.setMatrixAt(i, matrix);
     }

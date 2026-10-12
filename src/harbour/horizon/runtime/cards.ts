@@ -22,6 +22,28 @@ export function solidTriangle(builder:CardBuilder,a:XYZ,b:XYZ,c:XYZ,color:RGB,bu
   for(const p of [a,b,c]){if(localOrigin)data.positions.push(p[0]-localOrigin[0],p[1]-localOrigin[1],p[2]-localOrigin[2]);else data.positions.push(...p);data.normals.push(nx/n,ny/n,nz/n);data.colors.push(color[0]*shade,color[1]*shade,color[2]*shade);data.uvs.push(p[0]*.03,p[2]*.03);}
 }
 const surfaceColor=(surface:string,role:string):RGB=>rgb(role==='marker'?'#e6b95b':surface.includes('water')?'#527f83':surface.includes('metal')?'#777e7f':surface.includes('wood')||surface.includes('board')?'#b59c79':role==='roof'?'#aaa398':role==='rock'?'#a3998a':'#c9c2b4');
+/**
+ * The Water's Way, Little Harbour (STYLE §2.1 "cobblestone Italy"; protos/harbour SPEC §7 "baked greybox re-materialled,
+ * same geometry"): the land's stone in the harbour district is warm Ligurian limestone, not the island's grey — retaining,
+ * cheek and shoulder walls and the stair's piers and stringers in coursed limestone, kerbs and parapets in travertine, the
+ * quay's bollards in iron, the town's pads (the square, the lanes, the quay, the Kitty plaza) in warm flags. Keyed by the
+ * solid's district so no wall elsewhere on the island changes. Decks (beds, stairs' treads, jetties, bridges), the road
+ * corridor (its own kit), markers, rails, timber, metal and the hosts' shells (re-dressed) keep their colour. One colour in
+ * every dressing: the land is not themed, and a warm stone sits under Ligurian stucco, Taylor's card and the jellybeans.
+ * Returns null where the island colour stands.
+ */
+export const HARBOUR_STONE={wall:'#bda57f',trim:'#dccfb0',iron:'#4a433b',pad:'#c7b493'} as const;
+export function harbourLandColor(solid:Pick<StructureSolid,'kind'|'surface'|'role'|'id'>&{districtId?:string;sourceId?:string}):string|null{
+  if(solid.districtId!=='harbour'||(solid.sourceId??solid.id).startsWith('dressing.')||solid.role==='deck'||solid.role==='marker'||solid.kind==='host')return null;
+  if(solid.surface!=='stone'&&solid.surface!=='rock')return null;
+  switch(solid.kind){
+    case 'retainingWall':case 'cheekWall':case 'pier':case 'stringer':return HARBOUR_STONE.wall;
+    case 'kerb':case 'parapet':return HARBOUR_STONE.trim;
+    case 'bollard':return HARBOUR_STONE.iron;
+    case 'pad':return HARBOUR_STONE.pad;
+    default:return null;
+  }
+}
 export function addSolid(builder:CardBuilder,solid:StructureSolid,tier:'full'|'lite'='full'){finishBuild(addSolidSteps(builder,solid,tier));}
 /**
  * ROAD.md §4 (track K): the road corridor's solids are painted by the road kit — `corridorDeck` in swept pavement bands with
@@ -44,7 +66,8 @@ export function* addCorridorOrSolidSteps(builder:CardBuilder,solid:StructureSoli
   for(let i=0;i<indices.length;i+=3){if(i%1536===0)yield;const v=(n:number):XYZ=>{const j=indices[i+n]!*3;return[p[j]!,p[j+1]!,p[j+2]!];};solidTriangle(builder,v(0),v(1),v(2),color);}
 }
 export function* addSolidSteps(builder:CardBuilder,solid:StructureSolid,tier:'full'|'lite'='full',localOrigin?:XYZ):Generator<void,void,void>{
-  const color=surfaceColor(solid.surface,solid.role),p=tier==='lite'?(solid.litePositions??solid.positions):solid.positions,indices=tier==='lite'?(solid.liteIndices??solid.indices):solid.indices;
+  const harbour=harbourLandColor(solid as StructureSolid&{districtId?:string});
+  const color=harbour?rgb(harbour):surfaceColor(solid.surface,solid.role),p=tier==='lite'?(solid.litePositions??solid.positions):solid.positions,indices=tier==='lite'?(solid.liteIndices??solid.indices):solid.indices;
   for(let i=0;i<indices.length;i+=3){if(i%1536===0)yield;const v=(n:number):XYZ=>{const j=indices[i+n]!*3;return[p[j]!,p[j+1]!,p[j+2]!];};solidTriangle(builder,v(0),v(1),v(2),color,'card',localOrigin);}
 }
 /** Terrain cells per mesh tile: frustum culling still works across a district. */

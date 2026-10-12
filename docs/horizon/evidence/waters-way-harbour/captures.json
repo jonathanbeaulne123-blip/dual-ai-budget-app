@@ -1,5 +1,5 @@
 {
- "sha": "e7ae69821ca7b29b69f7bc8a2e1c9829de427ce0",
+ "sha": "64e00919dbf50ba157c6e35eaebf14a66933f12c",
  "renderer": "headless Chromium, SwiftShader (not device evidence)",
  "view": {
   "width": 1120,
@@ -105,7 +105,7 @@
    "view": null,
    "stats": {
     "drawCalls": 294,
-    "triangles": 866400,
+    "triangles": 872816,
     "dressing": {
      "harbour": {
       "triangles": 65698,
@@ -1046,7 +1046,7 @@
    "view": null,
    "stats": {
     "drawCalls": 297,
-    "triangles": 873482,
+    "triangles": 880010,
     "dressing": {
      "harbour": {
       "triangles": 71755,
@@ -1153,8 +1153,8 @@
    "fov": 44,
    "view": null,
    "stats": {
-    "drawCalls": 181,
-    "triangles": 305531,
+    "drawCalls": 551,
+    "triangles": 653748,
     "dressing": {
      "harbour": {
       "triangles": 64779,
@@ -1501,7 +1501,7 @@
    "view": null,
    "stats": {
     "drawCalls": 301,
-    "triangles": 870919,
+    "triangles": 877447,
     "dressing": {
      "harbour": {
       "triangles": 65494,
@@ -1825,7 +1825,7 @@
    "view": null,
    "stats": {
     "drawCalls": 106,
-    "triangles": 293454,
+    "triangles": 299982,
     "dressing": {
      "harbour": {
       "triangles": 64957,
