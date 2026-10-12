@@ -152,7 +152,9 @@ describe("The Water's Way plant kit: through createCorridorPlanting", () => {
         if (want) expect(keys.has(want), `${theme}/${tier} ${want} in ${[...keys].join(',')}`).toBe(true);
       }
       const oak = s.layers.find(l => l.key === 'ww:oakGiant')!; expect(oak.count).toBe(4);
-      if (tier === 'full') expect(keys.has('ww:oakGiant:shell')).toBe(true); else expect([...keys].some(k => k.endsWith(':shell'))).toBe(false);
+      // D-WW110 (re-shoot): the Old Oak has no ink shell (an unlit shell drew every billow's rim as a bright tile edge at night);
+      // the other closed crowns keep theirs on full; lite has none.
+      expect(keys.has('ww:oakGiant:shell')).toBe(false); if (tier === 'lite') expect([...keys].some(k => k.endsWith(':shell'))).toBe(false);
       for (const m of p.group.children) if (m instanceof THREE.InstancedMesh) for (const v of m.instanceMatrix.array) expect(Number.isFinite(v)).toBe(true);
       p.dispose();
     }

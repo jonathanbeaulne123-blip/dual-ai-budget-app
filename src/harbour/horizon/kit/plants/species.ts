@@ -57,7 +57,7 @@ export const WW_SPEC: Readonly<Record<WWSpecies, WWSpec>> = Object.freeze({
   tamarack: tree(0.012, 2),
   spruce: tree(0.01, 2),
   balsam: tree(0.01, 1.8),
-  oakGiant: { family: 'landmark', wind: 0.0015, cast: true, shell: true, double: false, contact: 26 },
+  oakGiant: { family: 'landmark', wind: 0.0015, cast: true, shell: false, double: false, contact: 26 },
   cypress: tree(0.008, 1.3),
   olive: tree(0.016, 3),
   stonePine: tree(0.006, 6),

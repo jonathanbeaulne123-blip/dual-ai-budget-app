@@ -364,6 +364,21 @@ export function tuftGeometry(): THREE.BufferGeometry {
     p.push(-sa * w, 0, ca * w, sa * w, 0, -ca * w, ca * lean * 1.6, h, sa * lean * 1.6); }
   g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); g.computeVertexNormals(); return gradient(g, 0.55, 1.02, 0, 0.45);
 }
+/**
+ * The Green's long grass (D-WW113): a wide sheaf of nine thin blades (9 triangles) rising from a root ~0.4 eu across and
+ * fanning out to ~1 eu, the middle blades tallest (0.42), the outer ones leaning low — timothy and fescue gone to seed. Lighter
+ * at the foot than v2's tuft (a meadow is tawny, not black at the root), so a field of them reads as one surface.
+ */
+export function longTuftGeometry(): THREE.BufferGeometry {
+  const g = new THREE.BufferGeometry(), p: number[] = [], n = 9;
+  for (let k = 0; k < n; k++) {
+    const f = (Math.sin(k * 12.9898 + 1.7) * 43758.5453) % 1, j = Math.abs(f), a = (k / n) * Math.PI * 2 + j * 0.6, ca = Math.cos(a), sa = Math.sin(a);
+    const rb = 0.06 + ((k * 5) % 9) / 9 * 0.16, bx = ca * rb, bz = sa * rb, mid = 1 - Math.abs(((k * 4) % n) / (n - 1) - 0.5) * 2;
+    const h = 0.24 + mid * 0.18 + j * 0.05, lean = 0.52 - mid * 0.3 + j * 0.08, w = 0.034;
+    p.push(bx - sa * w, 0, bz + ca * w, bx + sa * w, 0, bz - ca * w, bx + ca * lean, h, bz + sa * lean);
+  }
+  g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); g.computeVertexNormals(); return gradient(g, 0.66, 1.1, 0, 0.42);
+}
 /** Mountain v2's shrub shapes: bush (shrub, flowering), clipped hedge, heath. */
 export function shrubGeometry(kind: 'bush' | 'hedge' | 'heath'): THREE.BufferGeometry {
   if (kind === 'hedge') return gradient(new THREE.BoxGeometry(1, 1, 1, 2, 1, 1).translate(0, 0.5, 0), 0.66, 1.08, 0, 1);

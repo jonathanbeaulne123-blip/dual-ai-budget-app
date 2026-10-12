@@ -111,8 +111,13 @@ export function variationOf(tint: number | undefined, x: number, z: number): num
 }
 
 /** Grass by set and season: bluestem on the prairie (copper in fall and winter, STYLE §1.4.2), marram on the shore. */
+/** The Green's long-grass sets (D-WW113): their tufts are drawn as the wide long-grass sheaf (`longTuftGeometry`), tawny. */
+export const isLongGrassSet = (set: FlowerSetId) => set === FLOWER_SET.meadowWild || set === FLOWER_SET.fieldEdge || set === FLOWER_SET.clocks;
 export function grassColour(set: FlowerSetId, stage: BloomStage, leaf: RGB, variation: number): RGB {
-  const summer: RGB = set === FLOWER_SET.prairie ? rgb('#8f9c7c') : set === FLOWER_SET.shore ? rgb('#aeb07a') : mix(leaf, rgb('#b8b27a'), 0.18 + variation * 0.12);
+  // The Green's long grass (meadowWild / fieldEdge / clocks): timothy and fescue gone to seed, a tawny straw-green that varies
+  // tuft to tuft (the prototype's long grass #a9a86c toward straw #b8a957), tinted by the dressing's leaf (D-WW113).
+  const long = isLongGrassSet(set);
+  const summer: RGB = set === FLOWER_SET.prairie ? rgb('#8f9c7c') : set === FLOWER_SET.shore ? rgb('#aeb07a') : long ? mix(mix(leaf, rgb('#b3ab66'), 0.62), rgb('#c4b46a'), variation * 0.55) : mix(leaf, rgb('#b8b27a'), 0.18 + variation * 0.12);
   const fall: RGB = set === FLOWER_SET.prairie ? rgb('#c89a5b') : rgb('#c2ac6e');
   if (stage === 'mulch') return mix(fall, rgb('#d9c9a0'), 0.45);
   if (stage === 'fade' || stage === 'leaf') return mix(summer, fall, stage === 'fade' ? 0.55 : 0.8);

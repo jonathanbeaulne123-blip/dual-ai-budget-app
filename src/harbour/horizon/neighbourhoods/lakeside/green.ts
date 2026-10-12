@@ -11,9 +11,9 @@ import type { LightAnchor, Point2, Point3 } from '../../world/definition.ts';
 import type { BuildingRecord, DressingContext, GroundPaint, Landmark, LifeSpawn, PlantRecord, PropRecord } from '../types.ts';
 import { FLOWER_SET } from '../../kit/plants/sets.ts';
 import {
-  APIARY, APRIL, BALES, BASKETS, CENTRE, CLOCK_R, DROP_ZONE, FIELD_R, LAB_ENTRANCE, LAB_GAP, LAB_PATH, LAB_R, LAB_RINGS, LABYRINTH, MEADOW, OAK_AT, OAK_BEARING_TO_FIELD,
+  APIARY, BALES, BASKETS, CENTRE, CLOCK_R, DROP_ZONE, FIELD_R, LAB_ENTRANCE, LAB_GAP, LAB_PATH, LAB_R, LAB_RINGS, LABYRINTH, MEADOW, OAK_AT, OAK_BEARING_TO_FIELD,
   OAK_CROWN, OAK_HEIGHT, OAK_YAW, PAVILION, PROTECT_R, RING_POST_R, RING_SLOTS, RING_STONE_CLEAR, RING_WALK_R, STAIR_FOOT, WINDPUMP, WINDSOCK,
-  arcQuads, bearing, bend, disc, dist, inPolygon, monthStones, polar, quadStrip, swingPlan, yawToward,
+  arcQuads, bearing, bend, contourCells, disc, dist, inPolygon, LONG_GRASS, meadowField, monthStones, polar, quadStrip, STRAW, swingPlan, yawToward,
 } from './plan.ts';
 
 export type GreenOut = { buildings: BuildingRecord[]; plants: PlantRecord[]; props: PropRecord[]; ground: GroundPaint[]; life: LifeSpawn[]; lights: LightAnchor[]; landmarks: Landmark[]; allow: string[] };
@@ -27,6 +27,12 @@ export function groundKit(ctx: DressingContext) {
   const at3 = (p: Point2, lift = 0): Point3 => [p[0], h(p[0], p[1]) + lift, p[1]];
   return { h, slope, ok, at3 };
 }
+
+/** The meadow's budget knobs (D-WW115): flower drifts (each 1–3 beds), dandelion-clock drifts, the desire lines' mown width. */
+const DRIFTS = 32, CLOCK_DRIFTS = 24, DESIRE_W = 2.4, TARGET_R = 30;
+/** Long-grass sheaf scale caps (kit/plants longTuftGeometry: 0.47 eu × scale × ≤ 1.6 instance stretch): inside the protected
+ * circle ≤ 0.85 eu tall, outside it knee-high to ~1.2 eu. */
+const LONG_IN = 1.1, LONG_OUT = 1.6;
 
 export function buildGreen(ctx: DressingContext): GreenOut {
   const { h, slope, ok, at3 } = groundKit(ctx);
@@ -68,16 +74,18 @@ export function buildGreen(ctx: DressingContext): GreenOut {
   paint(quadStrip([polar(LABYRINTH, g, LAB_R + 3), polar(LABYRINTH, g, LAB_RINGS[6] + LAB_PATH / 2)], LAB_PATH), 'mown', 1);
   for (let i = 0; i < 6; i++) { const b = g + (i % 2 ? gapDeg : -gapDeg) * 0.6; paint(quadStrip([polar(LABYRINTH, b, LAB_RINGS[i]! + LAB_PATH / 2), polar(LABYRINTH, b, LAB_RINGS[i + 1]! - LAB_PATH / 2)], LAB_PATH), 'mown', 1); }
   out.ground.push({ polygon: disc(LABYRINTH, 1.5, 12), surface: 'travertine', tone: 0.5 });
-  // The walls: long grass between the circuits, broken at the entrance and where the path turns.
-  { const r = rng('labyrinth.walls');
+  // The walls: long grass between the circuits, broken at the entrance and where the path turns (never on a mown circuit,
+  // link or the entrance spur).
+  { const r = rng('labyrinth.walls'), labPaint = out.ground.filter(gp => gp.surface === 'mown' && dist(gp.polygon[0]!, LABYRINTH) < LAB_R + 5);
     const walls = [2, ...LAB_RINGS.slice(0, -1).map((x, i) => (x + LAB_RINGS[i + 1]!) / 2), LAB_R + 0.4];
     walls.forEach((wr, i) => {
       const n = Math.round((Math.PI * 2 * wr) / 0.5);
       for (let k = 0; k < n; k++) {
         const b = (k / n) * 360, da = Math.abs(((b - g + 540) % 360) - 180);
         if (da < (i === walls.length - 1 ? 4 : 2.6) || (i > 0 && i < walls.length - 1 && Math.abs(da - gapDeg * 0.6) < 2.4)) continue;
-        const p = polar(LABYRINTH, b + (r() - 0.5) * 1.2, wr + (r() - 0.5) * 0.3);
-        out.plants.push({ species: 'grassTuft', at: at3(p), scale: 0.95 + r() * 0.45, yaw: r() * 6.283, tint: FLOWER_SET.meadow + r() * 0.99 });
+        const p = polar(LABYRINTH, b + (r() - 0.5) * 1.2, wr + (r() - 0.5) * 0.3), sc = 0.8 + r() * 0.3, yaw = r() * 6.283, tint = FLOWER_SET.meadowWild + r() * 0.99;
+        if (labPaint.some(gp => inPolygon(p[0], p[1], gp.polygon))) continue;
+        out.plants.push({ species: 'grassTuft', at: at3(p), scale: sc, yaw, tint });
       }
     });
   }
@@ -109,10 +117,14 @@ export function buildGreen(ctx: DressingContext): GreenOut {
   const keepOff = (x: number, z: number) => dist([x, z], LABYRINTH) < LAB_R + 2.2 || dist([x, z], OAK_AT) < CLOCK_R + 1.4 || dist([x, z], DROP_ZONE) < FIELD_R + 1;
   for (const [a, b, k] of lines) {
     let run: Point2[] = [];
-    const flush = () => { if (run.length >= 3) paint(quadStrip(run, 1.8, 1.5), 'mown', 0.75); run = []; };
+    const flush = () => { if (run.length >= 3) paint(quadStrip(run, DESIRE_W, 1.5), 'mown', 0.75); run = []; };
     for (const p of bend(a, b, k)) { if (ctx.bedClearance(p[0], p[1]) > 1.6 && !ctx.occupied(p[0], p[1], 1) && !keepOff(p[0], p[1])) run.push(p); else flush(); }
     flush();
   }
+  // The landing field reads as a field: the Drop Zone's chalk rings (sky.dropZone rings 5 / 10 / 25) and its terracotta
+  // target, mown flat inside r 60 (no long grass, no drift).
+  for (const rr of [5, 10, 25]) paint(arcQuads(DROP_ZONE, rr, rr === 5 ? 0.9 : 0.6, 0, 360, 2).filter(q => q.every(([x, z]) => ctx.bedClearance(x, z) > 0.8 && !ctx.occupied(x, z, 0.3))), 'travertine', 1);
+  out.ground.push({ polygon: disc(DROP_ZONE, 1.5, 12), surface: 'brick', tone: 0.7 });
   const bench = (id: string, p: Point2, facing: number) => out.props.push({ id: `green.bench.${id}`, kind: 'bench', at: at3(p), yaw: yawToward(facing), collide: true });
   bench('field', [DROP_ZONE[0] + 4, DROP_ZONE[1] - FIELD_R - 4], 180);
   bench('labyrinth', polar(LABYRINTH, g + 28, LAB_R + 3.2), (g + 28 + 180) % 360);
@@ -186,43 +198,79 @@ export function buildGreen(ctx: DressingContext): GreenOut {
     }
   }
 
-  /* ------------------------------------------------------------------ 9. the meadow: drifts, dandelion clocks, long grass */
+  /* ------------------------------------------------------------------ 9. the meadow: drifts of long grass, flowers, straw */
+  // D-WW113 (re-shoot): a wild meadow, not a lawn. One drift field (`meadowField`, ~40 eu drifts) decides where the long grass
+  // stands (tawny tufts, knee-high outside the protected circle, ≤ 0.85 inside it) and where the shorter flowery turf lies; the
+  // drifts' cores are painted straw so the meadow reads from the air; the mown desire lines, the labyrinth and the clock ring
+  // stay clear (visibly shorter). Density is paid where people stand and look (the FOCI) and thins with distance.
   const inMeadow = (x: number, z: number) => inPolygon(x, z, MEADOW) || rCentre(x, z) < PROTECT_R;
-  const pathy = (x: number, z: number) => out.ground.some(gp => gp.surface === 'mown' && gp.polygon.length < 80 && dist(gp.polygon[0]!, [x, z]) < 60 && inPolygon(x, z, gp.polygon));
-  const keepMeadow = (x: number, z: number) => dist([x, z], OAK_AT) < OAK_CROWN - 2 || Math.abs(dist([x, z], OAK_AT) - CLOCK_R) < 2.6 || dist([x, z], LABYRINTH) < LAB_R + 2.5 || dist([x, z], DROP_ZONE) < FIELD_R + 2
-    || Math.abs(rCentre(x, z) - RING_WALK_R) < 2.2 || dist([x, z], APIARY) < 9 || nearBasket(x, z, 3) || ['bight', 'landing', 'reach', 'lakeside'].includes(ctx.districtAt(x, z));
+  const offLimits = (d: string) => d === 'bight' || d === 'landing' || d === 'reach' || d === 'lakeside';
+  // The mown mask (1 eu cells): every mown paint polygon, so nothing tall grows on a path.
+  const M0: Point2 = [790, 860], MW = 540, MH = 430, mown = new Uint8Array(MW * MH);
+  for (const gp of out.ground) {
+    if (gp.surface !== 'mown' && gp.surface !== 'duff' && gp.surface !== 'travertine') continue;
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity; for (const [x, z] of gp.polygon) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+    for (let j = Math.max(0, Math.floor(z0 - M0[1] - 1)); j <= Math.min(MH - 1, Math.ceil(z1 - M0[1] + 1)); j++) for (let i = Math.max(0, Math.floor(x0 - M0[0] - 1)); i <= Math.min(MW - 1, Math.ceil(x1 - M0[0] + 1)); i++)
+      if (inPolygon(M0[0] + i + 0.5, M0[1] + j + 0.5, gp.polygon)) mown[j * MW + i] = 1;
+  }
+  const pathy = (x: number, z: number, m = 0) => { for (let dj = -m; dj <= m; dj++) for (let di = -m; di <= m; di++) { const i = Math.floor(x - M0[0]) + di, j = Math.floor(z - M0[1]) + dj; if (i >= 0 && j >= 0 && i < MW && j < MH && mown[j * MW + i]) return true; } return false; };
+  const keepMeadow = (x: number, z: number) => dist([x, z], OAK_AT) < OAK_CROWN - 2 || Math.abs(dist([x, z], OAK_AT) - CLOCK_R) < 2.6 || dist([x, z], LABYRINTH) < LAB_R + 2.5 || dist([x, z], DROP_ZONE) < TARGET_R
+    || Math.abs(rCentre(x, z) - RING_WALK_R) < 2.2 || dist([x, z], APIARY) < 9 || nearBasket(x, z, 3) || offLimits(ctx.districtAt(x, z));
+  // Where the pages and the walkers look: the oak, the labyrinth, the stair foot, the apiary, the landing field's rim, the
+  // hero's meadow (between the field and the oak), the windpump, the porch's view down the Green.
+  const FOCI: Point2[] = [OAK_AT, LABYRINTH, STAIR_FOOT, APIARY, DROP_ZONE, [1090, 1100], [1060, 1050], [990, 1185], WINDPUMP, [1035, 1000]];
+  const nearFocus = (x: number, z: number) => Math.min(...FOCI.map(f => dist(f, [x, z])));
+  // The rim runs to long grass; the landing field (r 60 round the Drop Zone) is short flowery turf round a mown target (r 30).
+  // A wild meadow stands round the oak (beyond its clock ring, out to ~75 eu): the field leans to long grass there.
+  const oakMeadow = (x: number, z: number) => { const d = dist([x, z], OAK_AT); return d < CLOCK_R + 3 ? 0 : Math.max(0, Math.min(1, (d - CLOCK_R - 3) / 6, (80 - d) / 12)) * 0.4; };
+  const field = (x: number, z: number) => { const f = meadowField(x, z) + (rCentre(x, z) > 130 ? 0.12 : 0) + oakMeadow(x, z); return dist([x, z], DROP_ZONE) < FIELD_R + 2 ? Math.min(f, LONG_GRASS - 0.08) : f; };
+  // 9a. The drifts painted (marching squares; cut back 3 eu from every path and keep-out), full tier only (detail paint: lite
+  // drops it, D-WW115).
+  { const clearOf = (x: number, z: number) => inMeadow(x, z) && !keepMeadow(x, z) && !pathy(x, z, 3) && ctx.bedClearance(x, z) > 4 && ctx.waterLevelAt(x, z) === null && slope(x, z) < 0.5;
+    // One colour, the dull olive of seeding grass (a tawny heart coloured cell by cell read as blocky sand from the air).
+    for (const poly of contourCells([800, 870], [1310, 1270], 4, (x, z) => (clearOf(x, z) ? field(x, z) - STRAW : -0.5))) {
+      const c = poly.reduce<Point2>((a, q) => [a[0] + q[0] / poly.length, a[1] + q[1] / poly.length], [0, 0]);
+      if (offLimits(ctx.districtAt(c[0], c[1]))) continue;
+      out.ground.push({ polygon: poly, surface: 'sedge', tone: 0.55, fullOnly: true });
+    } }
+  // 9b. Long grass and short turf: a jittered 2.2 eu grid; each cell holds a tuft (or a clump of two) by its zone and its
+  // distance from the foci.
+  { const r = rng('meadow.grass'), step = 2.2;
+    for (let z = 872; z < 1270; z += step) for (let x = 802; x < 1310; x += step) {
+      const px = x + r() * step, pz = z + r() * step, f = field(px, pz), long = f > LONG_GRASS, near = nearFocus(px, pz);
+      // (the notch — the oak's east and south — has lite budget to spare: half as dense again)
+      const base = long ? (near < 40 ? 1 : near < 80 ? 0.46 : 0.1) : (near < 40 ? 0.62 : near < 80 ? 0.22 : 0.05), roll = r(), tall = r(), yaw = r() * 6.283, v = r();
+      const want = ctx.districtAt(px, pz) === 'notch' ? Math.min(1, base * 2.2) : base;
+      if (roll > want || !inMeadow(px, pz) || keepMeadow(px, pz) || pathy(px, pz, 1) || !ok(px, pz, 3.5, 0.8)) continue;
+      const inner = rCentre(px, pz) < PROTECT_R + 1, sc = long ? Math.min(inner ? LONG_IN : LONG_OUT, 0.82 + tall * 0.3 + Math.max(0, f) * 0.5) : 0.52 + tall * 0.26;
+      const set = long ? (f > STRAW ? FLOWER_SET.fieldEdge : FLOWER_SET.meadowWild) : FLOWER_SET.meadowWild;
+      out.plants.push({ species: 'grassTuft', at: at3([px, pz]), scale: +sc.toFixed(3), yaw, tint: set + v * 0.99 });
+      if (long && near < 60 && tall > 0.35) { const qx = px + Math.cos(yaw) * 0.55, qz = pz + Math.sin(yaw) * 0.55; if (!pathy(qx, qz, 1) && ok(qx, qz, 3.5, 0.8)) out.plants.push({ species: 'grassTuft', at: at3([qx, qz]), scale: +(sc * 0.82).toFixed(3), yaw: yaw + 2.1, tint: set + ((v + 0.37) % 1) * 0.99 }); }
+    } }
+  // 9c. Flower drifts: one species set per drift (STYLE §1.4.1 rule 4) — field-edge flowers (goldenrod, milkweed, Susan)
+  // in the long grass, the clover/daisy/Susan meadow in the short turf and round the hives; most within 70 eu of a focus.
   const drift = (x: number, z: number, set: number, units: number, yaw: number, r: () => number) => {
     const dx = Math.cos(yaw), dz = -Math.sin(yaw);
     for (let u = 0; u < units; u++) {
       const px = x + dx * (u - (units - 1) / 2) * 3.4 + (r() - 0.5) * 0.8, pz = z + dz * (u - (units - 1) / 2) * 3.4 + (r() - 0.5) * 0.8;
-      if (!ok(px, pz, 4.5, 1.2) || keepMeadow(px, pz) || pathy(px, pz)) continue;
+      if (!ok(px, pz, 4.5, 1.2) || keepMeadow(px, pz) || pathy(px, pz, 2)) continue;
       out.plants.push({ species: 'flowerBed', at: at3([px, pz]), scale: 0.85 + r() * 0.35, yaw: yaw + (r() - 0.5) * 0.5, tint: set + r() * 0.99 });
     }
   };
-  // Budget (D-WW115): ~85 beds (each drift 1–3 beds of one set) — most within 70 eu of where people stand and look.
-  const FOCI: Point2[] = [OAK_AT, LABYRINTH, STAIR_FOOT, APIARY, DROP_ZONE, [990, 1185], WINDPUMP, [1075, 1085]];
   { const r = rng('meadow.drifts'); let made = 0;
-    for (let k = 0; k < 3000 && made < 78; k++) {
-      const focal = r() < 0.65, c = FOCI[Math.floor(r() * FOCI.length)]!, q = focal ? polar(c, r() * 360, 10 + Math.sqrt(r()) * 62) : [800 + r() * 500, 880 + r() * 380] as Point2, x = q[0], z = q[1];
-      if (!inMeadow(x, z) || !ok(x, z, 4.5, 1.2) || keepMeadow(x, z)) continue;
-      // Clover thick round the apiary; elsewhere the clover/daisy/Susan meadow, goldenrod and milkweed toward the rim.
-      const nearHives = dist([x, z], APIARY) < 30, rim = rCentre(x, z) > 120;
-      const set = nearHives ? FLOWER_SET.meadowWild : rim && r() < 0.55 ? FLOWER_SET.fieldEdge : FLOWER_SET.meadowWild;
-      drift(x, z, set, 1 + Math.floor(r() * 3), r() * Math.PI, r); made++;
+    for (let k = 0; k < 3000 && made < DRIFTS; k++) {
+      const focal = r() < 0.7, c = FOCI[Math.floor(r() * FOCI.length)]!, q = focal ? polar(c, r() * 360, 10 + Math.sqrt(r()) * 60) : [800 + r() * 500, 880 + r() * 380] as Point2, x = q[0], z = q[1];
+      if (!inMeadow(x, z) || !ok(x, z, 4.5, 1.2) || keepMeadow(x, z) || pathy(x, z, 2)) continue;
+      const nearHives = dist([x, z], APIARY) < 30, long = field(x, z) > LONG_GRASS;
+      drift(x, z, nearHives || !long ? FLOWER_SET.meadowWild : FLOWER_SET.fieldEdge, 1 + Math.floor(r() * 3), r() * Math.PI, r); made++;
     } }
-  // Dandelion clocks round the landing field's rim (June: they lift when a glider lands) and by the labyrinth.
-  { const r = rng('meadow.clocks');
-    for (let k = 0; k < 20; k++) {
-      const c = k < 14 ? DROP_ZONE : LABYRINTH, rr = k < 18 ? FIELD_R + 4 + r() * 14 : LAB_R + 4 + r() * 10, p = polar(c, r() * 360, rr);
-      if (!ok(p[0], p[1], 4.5, 1.2) || keepMeadow(p[0], p[1]) || pathy(p[0], p[1])) continue;
-      drift(p[0], p[1], FLOWER_SET.clocks, 1, r() * Math.PI, r);
+  // Dandelion clocks in the short turf: round the landing field's rim (June: they lift when a glider lands), the centre and the labyrinth.
+  { const r = rng('meadow.clocks'); let made = 0;
+    for (let k = 0; k < 400 && made < CLOCK_DRIFTS; k++) {
+      const c = k % 3 === 2 ? LABYRINTH : k % 3 === 1 ? CENTRE : DROP_ZONE, rr = c === DROP_ZONE ? TARGET_R + 2 + r() * 34 : c === CENTRE ? 20 + r() * 90 : LAB_R + 4 + r() * 12, p = polar(c, r() * 360, rr);
+      if (field(p[0], p[1]) > LONG_GRASS + 0.1 || !ok(p[0], p[1], 4.5, 1.2) || keepMeadow(p[0], p[1]) || pathy(p[0], p[1], 2)) continue;
+      drift(p[0], p[1], FLOWER_SET.clocks, 1, r() * Math.PI, r); made++;
     } }
-  // Long grass: a light scatter over the meadow, denser where the pages and the walkers look (the oak, the labyrinth, the stair foot).
-  { const r = rng('meadow.tufts');
-    const scatter = (n: number, pick: () => Point2) => { for (let k = 0; k < n; k++) { const [x, z] = pick(); if (!inMeadow(x, z) || !ok(x, z, 3.5, 0.8) || keepMeadow(x, z) || pathy(x, z)) continue; out.plants.push({ species: 'grassTuft', at: at3([x, z]), scale: 0.8 + r() * 0.5, yaw: r() * 6.283, tint: FLOWER_SET.meadow + r() * 0.99 }); } };
-    scatter(3200, () => [800 + r() * 500, 880 + r() * 380]);
-    for (const c of [OAK_AT, LABYRINTH, STAIR_FOOT, APIARY, WINDPUMP, DROP_ZONE]) scatter(650, () => polar(c, r() * 360, 4 + Math.sqrt(r()) * 50));
-  }
 
   /* ------------------------------------------------------------------ 10. life (data; PR 5 plays it) */
   // Fireflies June–August, dusk to 23:00: a cloud under the oak and a scatter in the long grass (specks, not light cards).

@@ -22,6 +22,8 @@ const TERRAIN = decodeTerrainAsset(toArrayBuffer(readFileSync('public/horizon/te
 const source = {index: '/horizon/world/horizon-geo-1.index.json.gz', indexSha256: 'a', terrainSha256: 'b'};
 
 /** The baked index with a story's worth of dressing: 40 tall buildings around the harbour and the seven landmarks. */
+/** The committed index without its dressing (PR 3/4 modules dress the committed one). */
+function undressedIndex() { const world = parseHorizonIndex(INDEX.slice(0)); delete world.dressing; return world; }
 function dressedIndex() {
   const world = parseHorizonIndex(INDEX.slice(0));
   const journey: NonNullable<WorldDressing['journey']> = Array.from({length: 40}, (_, i) => { const x = 1400 + (i % 8) * 12, z = 1150 + Math.floor(i / 8) * 12; return {id: `harbour.row${i}`, districtId: 'harbour', footprint: [[x, z], [x + 8, z], [x + 8, z + 6], [x, z + 6]], base: 4, height: JOURNEY_MIN_HEIGHT + (i % 4), roofHeight: 2.5}; });
@@ -32,11 +34,13 @@ function dressedIndex() {
 
 describe('the Journey map carries the dressing (slim format 4)', () => {
   it('an undressed index extracts no dressing (the baked slim is unchanged but for its format)', () => {
-    const land = extractJourneyLand(parseHorizonIndex(INDEX.slice(0)), TERRAIN);
+    // PR 3/4: the committed index carries the registered modules' dressing, so "undressed" is the index with it taken off; the
+    // committed slim carries exactly what the committed index does.
+    const land = extractJourneyLand(undressedIndex(), TERRAIN);
     expect(land.dressing).toBeUndefined();
     const slim = JSON.parse(gunzipSync(readFileSync('public/horizon/world/horizon-geo-1.journey.json.gz')).toString());
     expect(slim.format).toBe(JOURNEY_LAND_SLIM_FORMAT);
-    expect('dressing' in slim.land).toBe(false);
+    expect('dressing' in slim.land).toBe(!!parseHorizonIndex(INDEX.slice(0)).dressing);
   });
   it('tall buildings and every landmark extract, encode and decode exactly (round trip)', () => {
     const land = extractJourneyLand(dressedIndex(), TERRAIN);
@@ -123,7 +127,7 @@ describe('the Journey map carries the dressing (slim format 4)', () => {
       expect((landBody.match(/<g[ >]/g) ?? []).length).toBe((landBody.match(/<\/g>/g) ?? []).length);
     }
     // No dressing: no field, no glyphs.
-    const plain = journeyLandFlatData(extractJourneyLand(parseHorizonIndex(INDEX.slice(0)), TERRAIN));
+    const plain = journeyLandFlatData(extractJourneyLand(undressedIndex(), TERRAIN));
     expect('dressing' in plain).toBe(false);
     expect(renderToStaticMarkup(createElement(JourneyLandFlat, {data: plain, theme: 'classic'}))).not.toContain('data-land-landmark');
   });

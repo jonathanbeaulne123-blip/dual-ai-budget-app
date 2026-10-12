@@ -18,7 +18,11 @@
  * §1.3.2: ≥ 10 L* darker than the turf), October bronze-and-green, November russet and thinning (bur oaks hold their
  * leaves late), December–March bare: trunk, limbs and a fine twig dome, snow along the limbs' tops in the snow months
  * (STYLE §1.4.2 "bare / snow": trunks and branches).
- * The ink shell (full) repeats the billows pushed out 0.22 eu (a 0.09 rim is sub-pixel on a 60 eu crown).
+ * - LOBED, NOT TILED (re-shoot): the crown is ~45 irregular lobes — a high crown on the three climbing limbs and over the trunk,
+ *   a mid lobe over each low limb's elbow and the low tier at its tip, small lobes on the secondaries' ends (a few left out),
+ *   dark core masses round the trunk's head — each lobe a cauliflower of rounded billows with its own tone, lit on top and
+ *   darker on its inward side, so the crown reads as masses in light and shade with gaps where the limbs show.
+ * No ink shell: an unlit shell drew every billow's rim as a bright tile edge at night (the far silhouette carries no ink either).
  */
 import type { MountainArtPalette } from '../../../mountain/art/palette.ts';
 import { mix, rgb, shade, type RGB } from '../../../art/cardKit.ts';
@@ -117,25 +121,28 @@ function bough(d: Draw, a: V, b: V, ra: number, rb: number, n: number, ridge: RG
 }
 
 /**
- * A billow: the crown's unit of foliage, a faceted cumulus lump (4n triangles: a low apex, a wide lower ring, a narrower
- * upper ring, a top apex). Lit top, mid sides and a PALE underside (`under`, the leaves' silvery backs) so that seen from
- * beneath it reads mid-tone, not black. `snow` whitens the top (branch flats in the snow months).
+ * A billow: the crown's unit of foliage, a rounded faceted lump (6n triangles: a bottom apex, a low ring, a wide middle
+ * ring, an upper ring, a top apex — round enough that a lobe of them reads as a cauliflower mass, not a stack of pads).
+ * Lit top, mid sides and a PALE underside (`under`, the leaves' silvery backs) so that seen from beneath it reads mid-tone,
+ * not black. `snow` whitens the top. No ink shell: the shell is unlit, and on a 60 eu crown it drew every billow's rim as
+ * a bright tile edge at night and a stacked-pad outline by day (D-WW110).
  */
-function billow(d: Draw, c: V, rx: number, ry: number, rz: number, n: number, top: RGB, side: RGB, under: RGB, o: { seed?: number; spin?: number; snow?: number; flat?: number } = {}) {
-  const r = hashRand(o.seed ?? 7), spin = o.spin ?? 0, A: V[] = [], B: V[] = [];
+function billow(d: Draw, c: V, rx: number, ry: number, rz: number, n: number, top: RGB, side: RGB, under: RGB, o: { seed?: number; spin?: number; snow?: number } = {}) {
+  const r = hashRand(o.seed ?? 7), spin = o.spin ?? 0, L: V[] = [], A: V[] = [], B: V[] = [];
   for (let k = 0; k < n; k++) {
-    const a = spin + (k / n) * TAU, ja = 0.84 + r() * 0.3, b = a + Math.PI / n, jb = 0.84 + r() * 0.3;
-    A.push([c[0] + Math.cos(a) * rx * ja, c[1] + (r() - 0.5) * 0.25 * ry, c[2] + Math.sin(a) * rz * ja]);
-    B.push([c[0] + Math.cos(b) * rx * 0.8 * jb, c[1] + 0.6 * ry, c[2] + Math.sin(b) * rz * 0.8 * jb]);
+    const a = spin + (k / n) * TAU, ja = 0.82 + r() * 0.34, h = a + Math.PI / n, jb = 0.84 + r() * 0.3, jl = 0.85 + r() * 0.25;
+    L.push([c[0] + Math.cos(h) * rx * 0.72 * jl, c[1] - 0.5 * ry, c[2] + Math.sin(h) * rz * 0.72 * jl]);
+    A.push([c[0] + Math.cos(a) * rx * ja, c[1] + (r() - 0.4) * 0.3 * ry, c[2] + Math.sin(a) * rz * ja]);
+    B.push([c[0] + Math.cos(h) * rx * 0.74 * jb, c[1] + 0.62 * ry, c[2] + Math.sin(h) * rz * 0.74 * jb]);
   }
-  const T: V = [c[0], c[1] + ry, c[2]], Bt: V = [c[0], c[1] - (o.flat ?? 0.6) * ry, c[2]], ink = 0.22 / 0.07, snow = o.snow ?? 0;
-  const hi = snow ? mix(top, SNOW, snow) : top, mid = snow ? mix(side, SNOW, snow * 0.3) : side, low = mix(under, side, 0.3);
+  const T: V = [c[0] + (r() - 0.5) * rx * 0.25, c[1] + ry, c[2] + (r() - 0.5) * rz * 0.25], Bt: V = [c[0], c[1] - 0.78 * ry, c[2]], snow = o.snow ?? 0;
+  const hi = snow ? mix(top, SNOW, snow) : top, mid = snow ? mix(side, SNOW, snow * 0.3) : side, low = mix(under, side, 0.45), base = mix(under, side, 0.15);
   for (let k = 0; k < n; k++) {
-    const a0 = A[k]!, a1 = A[(k + 1) % n]!, b0 = B[k]!, b1 = B[(k + 1) % n]!;
-    d.tri(Bt, a1, a0, under, low, low, c, undefined, ink);
-    d.tri(a0, a1, b0, mid, mid, hi, c, undefined, ink);
-    d.tri(a1, b1, b0, mid, hi, hi, c, undefined, ink);
-    d.tri(b0, b1, T, hi, hi, shade(hi, 1.05), c, undefined, ink);
+    const l0 = L[k]!, l1 = L[(k + 1) % n]!, a0 = A[k]!, a1 = A[(k + 1) % n]!, b0 = B[k]!, b1 = B[(k + 1) % n]!, a2 = A[(k + 1) % n]!;
+    d.tri(Bt, l1, l0, under, base, base, c);
+    d.tri(l0, l1, a2, base, base, low, c); d.tri(l0, a2, a0, base, low, low, c);
+    d.tri(a0, a1, b0, mid, mid, hi, c); d.tri(a1, b1, b0, mid, hi, hi, c);
+    d.tri(b0, b1, T, hi, hi, shade(hi, 1.06), c);
   }
 }
 
@@ -143,7 +150,7 @@ function billow(d: Draw, c: V, rx: number, ry: number, rz: number, n: number, to
 const UNDER: Record<MountainArtPalette['theme'], RGB> = { classic: rgb('#9fb08f'), taylor: rgb('#dfe8d2'), newfoundland: rgb('#8c9c86') };
 
 export function oakGeometry(pal: MountainArtPalette, tier: PlantTier, look: WWLook): WWGeometry {
-  const C = wwColours(pal), full = tier === 'full', d = new Draw(full, true), r = hashRand(52), m = ((Math.round(look.month) - 1) % 12 + 12) % 12 + 1;
+  const C = wwColours(pal), full = tier === 'full', d = new Draw(full, false), r = hashRand(52), m = ((Math.round(look.month) - 1) % 12 + 12) % 12 + 1;
   const bare = m === 12 || m <= 3, snowy = m === 12 || m <= 2, april = m === 4, fresh = april ? 0.55 : m === 5 ? 0.22 : 0, fall = m === 10 ? 0.5 : m === 11 ? 0.85 : 0;
   const ridge = C.oakBark, furrow = shade(mix(C.oakBark, [0.12, 0.1, 0.09], 0.35), 0.62), limbBark = shade(mix(C.oakBark, C.twig, 0.35), 1.08), snowOn = snowy ? 0.85 : 0;
   const under = UNDER[pal.theme] ?? UNDER.classic;
@@ -180,7 +187,8 @@ export function oakGeometry(pal: MountainArtPalette, tier: PlantTier, look: WWLo
     if (full || k % 2 === 0) { const m = lerp(t, e, 0.55), b = r() * TAU, f: V = [m[0] + Math.cos(b) * 1.6, Math.min(OAK.height - 0.5, m[1] + 1.4), m[2] + Math.sin(b) * 1.6];
       bough(d, m, f, 0.06, 0.02, 3, C.twig, shade(C.twig, 0.8), { lit: 0.4 }); }
   }
-  // 4. The crown: billows on and under the dome, tiered colour, pale undersides.
+  // 4. The crown: LOBES — irregular masses of rounded billows over the limbs, each lobe its own tone, darker inside, lit on
+  // top; gaps between them (and under the high crown, above the low tier) where the limbs and the sky read (D-WW110).
   const tierSet = (y: number) => { const f = (y - 9) / 27; return f > 0.72 ? C.oakLeaf.top : f > 0.42 ? C.oakLeaf.mid : C.oakLeaf.low; };
   const leafAt = (y: number, i: number): RGB => {
     const set = tierSet(y); let c = set[i % set.length]!;
@@ -190,37 +198,56 @@ export function oakGeometry(pal: MountainArtPalette, tier: PlantTier, look: WWLo
   /** Keeps a billow inside the ~60 eu crown and under the dome (the Green's clearances are measured on that envelope). */
   const clampIn = (x: number, y: number, z: number, rad: number): V => {
     const rr = Math.hypot(x, z) || 1, k = Math.min(1, (OAK.spread - rad * 0.95) / rr), px = x * k, pz = z * k;
-    return [px, Math.min(y, domeTop(Math.hypot(px, pz)) - rad * 0.62, OAK.height - rad * 0.62), pz];
+    return [px, Math.min(y, domeTop(Math.hypot(px, pz)) - rad * 0.7, OAK.height - rad * 0.72), pz];
   };
   // Size by season: April's late leaf-out is sparse and small; November thins.
   const keepShare = april ? 0.45 : m === 11 ? 0.72 : 1, sizeK = april ? 0.62 : m === 11 ? 0.9 : 1, sides = full ? 5 : 4;
   let i = 0;
-  const put = (x: number, y: number, z: number, rad: number, sat: number) => {
+  /** One billow of a lobe: `tone` the lobe's light (its own shade × its place: tops lit, the inward side and the core dark). */
+  const put = (x: number, y: number, z: number, rad: number, tone: number, squash = 0.78) => {
     i++;
     if (bare) return; // the bare crown is the limbs and the twig dome
     if (keepShare < 1) { const h = Math.sin(i * 12.9898 + 4.1) * 43758.5453; if (h - Math.floor(h) > keepShare) return; }
-    const R = rad * sizeK, c = clampIn(x, y, z, R), base = leafAt(c[1], i);
-    billow(d, c, R, R * (0.68 + (i % 4) * 0.04), R * (0.86 + (i % 3) * 0.07), sides, shade(base, 1.16), base, underOf(base), { seed: 300 + i, spin: i * 0.7 });
-    // Satellites make the cumulus texture (cauliflower lobes) the silhouette reads by.
-    for (let k = 0; k < sat; k++) {
-      const a = (i * 2.4 + k * 2.1) % TAU, q = clampIn(c[0] + Math.cos(a) * R * 0.85, c[1] - R * 0.08 + (k % 2) * R * 0.18, c[2] + Math.sin(a) * R * 0.85, R * 0.62), sb = leafAt(q[1], i + k + 1);
-      billow(d, q, R * 0.62, R * 0.62 * 0.7, R * 0.58, full ? 5 : 4, shade(sb, 1.16), sb, underOf(sb), { seed: 700 + i * 3 + k, spin: k * 1.3 + i });
+    const R = rad * sizeK, c = clampIn(x, y, z, R), base = shade(leafAt(c[1], i), tone);
+    billow(d, c, R, R * squash * (0.92 + (i % 3) * 0.06), R * (0.86 + (i % 4) * 0.06), sides, shade(base, 1.18), base, underOf(base), { seed: 300 + i, spin: i * 0.7 });
+  };
+  /** A lobe: `n` billows on its upper hemisphere round a core billow; the lobe's tone varies, the inward billows darker. */
+  const lobe = (c: V, R: number, n: number, tone: number, squash = 0.78) => {
+    const out: V = [c[0], 0, c[2]], ol = Math.hypot(c[0], c[2]) || 1;
+    put(c[0], c[1], c[2], R * 0.62, tone * 0.86, squash);
+    for (let k = 0; k < n; k++) {
+      // golden-angle points on the upper 70 % of a sphere, so the lobe's top and outer face are covered, its belly open
+      const t = (k + 0.5) / n, yv = 0.95 - t * 1.15, rr = Math.sqrt(Math.max(0, 1 - yv * yv)), a = k * 2.399963 + tone * 7;
+      const dir: V = [Math.cos(a) * rr, yv, Math.sin(a) * rr], facing = (dir[0] * out[0] + dir[2] * out[2]) / ol;
+      const lit = tone * (0.9 + 0.16 * yv + 0.08 * facing), rad = R * (0.42 + ((k * 7 + i) % 5) * 0.045);
+      put(c[0] + dir[0] * R * 0.6, c[1] + dir[1] * R * 0.5, c[2] + dir[2] * R * 0.6, rad, lit, squash);
     }
   };
-  // 4a. The outer dome: a golden-angle spiral of billows just under the dome surface; the noise leaves a few gaps low down.
-  const N = full ? 78 : 40;
-  for (let k = 0; k < N; k++) {
-    const rho = (OAK.spread - 3.5) * Math.sqrt((k + 0.5) / N), a = k * 2.399963 + 0.4, x = Math.sin(a) * rho, z = Math.cos(a) * rho;
-    const rad = (full ? 4.4 : 5.4) + r() * 1.4 - (rho > 22 ? 0.4 : 0);
-    if (rho > 12 && noise(x * 0.09 + 3.1, z * 0.09 - 1.7) < -0.5) { i++; continue; }
-    put(x, domeTop(rho) - rad * 0.55 - r() * 1.6, z, rad, full ? (rho > 8 ? 2 : 1) : 1);
+  const lt = () => 0.8 + r() * 0.36;
+  // 4a. The core: a few big dark masses round the trunk's head, filling the middle so the gaps show depth, not sky through
+  // the trunk.
+  for (let k = 0; k < (full ? 5 : 2); k++) { const a = k * 2.2 + 0.6, rho = 6 + r() * 4; put(Math.sin(a) * rho, 17 + r() * 5, Math.cos(a) * rho, full ? 6 : 7, 0.6 + r() * 0.08, 0.7); }
+  // 4b. The high crown: the three climbing limbs carry the top lobes; a crown lobe over the trunk rounds the dome.
+  for (const l of limbs) if (!l.low) {
+    lobe([l.tip[0] * 0.92, l.tip[1] + 1.2, l.tip[2] * 0.92], 8 + r() * 1.5, full ? 7 : 4, 1.06 + r() * 0.12);
+    lobe([l.elbow[0], l.elbow[1] + 2.5, l.elbow[2]], 6 + r(), full ? 5 : 3, lt());
   }
-  // 4b. The secondaries' ends carry the crown down to the limbs (the dome's inner layer).
-  for (const l of limbs) for (const s of l.secondaries) put(s.to[0], s.to[1] + 0.6, s.to[2], (full ? 3.8 : 4.6) + r() * 1.2, full ? 1 : 0);
-  // 4c. The low skirt: billows riding on the heavy low limbs' outer halves (the tiers a bur oak shows), a little below their tips.
-  for (const l of limbs) if (l.low) for (const u of full ? [0.35, 0.7, 1] : [0.6, 1]) {
-    const p = u < 0.5 ? lerp(l.kink, l.elbow, u * 2) : lerp(l.elbow, l.tip, (u - 0.5) * 2);
-    put(p[0], p[1] + 1.4 - (u === 1 ? 1.6 : 0), p[2], (full ? 3.6 : 4.4) + r(), full ? 1 : 0);
+  lobe([0.5, 30.5, -0.5], 7, full ? 6 : 2, 1.14);
+  // 4c. The low limbs: a mid lobe over each elbow and the low tier at the tip, with a gap between (the bur oak's tiers; the
+  // limbs read between them). The swing limb's tip lobe stays small and past the swing (it hangs at 62 % along the limb).
+  for (const [li, l] of limbs.entries()) if (l.low) {
+    const swing = li === 0;
+    lobe([l.elbow[0] * 1.02, l.elbow[1] + 6.5 + r() * 1.5, l.elbow[2] * 1.02], 5.6 + r(), full ? 5 : 3, lt());
+    const out = Math.hypot(l.tip[0], l.tip[2]) || 1, push = swing ? 2.2 : 0.6;
+    lobe([l.tip[0] * (1 + push / out), l.tip[1] + (swing ? 2.4 : 1.4), l.tip[2] * (1 + push / out)], swing ? 4.4 : 5.4 + r() * 1.2, full ? 5 : 3, lt() * 0.96, 0.62);
+  }
+  // 4d. The secondaries' ends: small lobes that fill the dome between the limb lobes (some skipped: the gaps the crown reads by).
+  let s2 = 0;
+  for (const l of limbs) for (const sc of l.secondaries) {
+    s2++; if (!full && s2 % 2 === 0) continue;
+    // A few ends stay small (a single billow on the twig's tip: the gaps the crown reads by, never a bare stick poking out).
+    if (noise(sc.to[0] * 0.11 + 2.3, sc.to[2] * 0.11 - 0.7) < -0.35) { if (full) put(sc.to[0], sc.to[1] + 0.8, sc.to[2], 2.6, lt() * 0.9); continue; }
+    lobe([sc.to[0], sc.to[1] + 1.4, sc.to[2]], 4.2 + r() * 1.4, full ? 3 : 2, lt());
   }
   return d.result(false);
 }

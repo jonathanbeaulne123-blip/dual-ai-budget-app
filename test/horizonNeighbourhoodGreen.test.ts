@@ -88,6 +88,24 @@ describe('the Green (module lakeside) on the committed world', () => {
     }
   });
 
+  it('a wild meadow, not a lawn: long grass in drifts, straw paint, the mown paths and the landing target clear (D-WW113)', () => {
+    const d = green(), inPoly = (x: number, z: number, poly: readonly Point2[]) => { let k = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i]!, b = poly[j]!; if ((a[1] > z) !== (b[1] > z) && x < ((b[0] - a[0]) * (z - a[1])) / (b[1] - a[1]) + a[0]) k = !k; } return k; };
+    const mown = d.ground.filter(g => g.surface === 'mown'), tufts = d.plants.filter(p => p.species === 'grassTuft'), beds = d.plants.filter(p => p.species === 'flowerBed');
+    for (const p of [...tufts, ...beds]) expect(mown.some(g => inPoly(p.at[0], p.at[2], g.polygon)), `${p.species} on a mown path at ${p.at}`).toBe(false);
+    // long grass: most tufts outside the protected circle knee-high; inside it never over 0.85 (nominal height × scale)
+    const long = tufts.filter(p => p.scale >= 0.82);
+    expect(long.length).toBeGreaterThan(2500);
+    // the sheaf's real top: 0.47 eu × scale × the planting's ≤ 1.6 instance stretch
+    for (const p of tufts) if (dist([p.at[0], p.at[2]], CENTRE) < PROTECT_R) expect(0.47 * 1.6 * p.scale).toBeLessThanOrEqual(0.85);
+    // the landing field's mown target (r 30 round the Drop Zone) carries nothing; the straw paint is there and never on a path
+    const dz: Point2 = [1037.2, 1115.8];
+    for (const p of d.plants) expect(dist([p.at[0], p.at[2]], dz), `${p.species} on the landing target`).toBeGreaterThanOrEqual(30);
+    const straw = d.ground.filter(g => g.surface === 'sedge'); expect(straw.length).toBeGreaterThan(400); for (const g of straw) expect(g.fullOnly).toBe(true);
+    for (const g of straw) { const c = g.polygon.reduce<Point2>((a, q) => [a[0] + q[0] / g.polygon.length, a[1] + q[1] / g.polygon.length], [0, 0]); expect(mown.some(m => inPoly(c[0], c[1], m.polygon))).toBe(false); }
+    // the June clocks and the summer drifts are there
+    expect(beds.filter(b => Math.floor(b.tint!) === 10).length).toBeGreaterThanOrEqual(15);
+  });
+
   it('the Oak Clock: twelve stones, January due north, clockwise every 30°, facing the trunk; the Lantern Ring outside r 160, ≥ 8 m off the stones, ≥ 4 m off the baskets', () => {
     const d = green(), stones = d.props.filter(p => p.kind === 'monthStone').sort((a, b) => a.variant! - b.variant!);
     expect(stones.map(s => s.variant)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);

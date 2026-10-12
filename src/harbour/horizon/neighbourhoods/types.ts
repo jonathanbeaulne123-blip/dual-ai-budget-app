@@ -118,7 +118,7 @@ export interface PropRecord {
 /* ---------------------------------------------------------------- ground, life */
 
 /** Paint only: colours/textures the terrain inside the polygon by surface token. Never re-shapes ground. */
-export interface GroundPaint { polygon: Point2[]; surface: 'cobble' | 'brick' | 'travertine' | 'gravel' | 'sand' | 'duff' | 'sedge' | 'mown' | 'meadow' | 'prairie' | 'ochre' | 'scree' | 'snow' | 'mud' | 'pasture' | 'concrete'; tone?: number }
+export interface GroundPaint { polygon: Point2[]; surface: 'cobble' | 'brick' | 'travertine' | 'gravel' | 'sand' | 'duff' | 'sedge' | 'mown' | 'meadow' | 'prairie' | 'ochre' | 'scree' | 'snow' | 'mud' | 'pasture' | 'concrete'; tone?: number; /** E3 (additive, the Green): detail paint the lite tier drops (lite drops, never substitutes). */ fullOnly?: boolean }
 /** Shallow standing water drawn as a surface (marsh pools, the Reed Maze channels); its ground is the land pass's. */
 export interface PoolRecord { id: string; outline: Point2[]; level: number }
 

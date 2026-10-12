@@ -1,55 +1,60 @@
 # The Green (module `lakeside`): what the captures show
 
 SwiftShader, not device evidence. Headless Chromium on the review harness (`scripts/horizon/capture-green.mjs`), June 21
-(dandelion clocks out), 1280 × 800. Files are `<pose>_<hh-mm>_<dressing>_<tier>.jpg`; `captures.json` holds every eye,
-target, fov, time and the whole-scene draw calls and triangles. `oak/` holds the plant kit sheet of the Old Oak
-(`kit-sheet-plants.mjs --set oak`): from 95 eu, under the crown, from 260 eu and from 1 km at about 64 px, in each season and
-dressing. `base/` (if present) is the same poses on the PR 2 head with no dressing, for the draw-call baseline.
+(dandelion clocks out, fireflies on), 1280 × 800. Files are `<pose>_<hh-mm>_<dressing>_<tier>.jpg`; `captures.json` holds
+every eye, target, fov, time, and the draw calls and triangles for the whole scene. The captures wait until the dressing
+and corridor builders are idle, so no shot is taken while the Green is still building. This set is the re-shoot of
+2026-10-12, after review.
 
-## The Old Oak
+## What changed after review
 
-- **It reads as an oak now.** The PR 1 oak was a flat-topped acacia: a parasol of flat pads on a tall trunk, black underneath.
-  The new one is a broad dome of rounded billows on a short, heavy, fluted trunk, with low, crooked limbs that run out
-  almost level. See `hero`, `clock` and `oak/`.
-- **From far away.** From Fallswatch (472 m, `fallswatch_07-30`), from the Crown (page E) and across the meadow from the
-  porch (`porch_10-00`), it is unmistakably a big, broad, solitary tree. Before this change, any view from outside the
-  oak's district drew the landmark as a slim grey obelisk. Now the far silhouette is the kit's own oak (lite tier, in the
-  season's look, at the plant's yaw). See `porch_10-00_classic_lite` and `hero_12-00_*_lite`.
-- **Under the crown** (`canopy`). The undersides are a pale olive-sage, never black. You can see the limbs, the fluted
-  trunk, the ring bench and the swing.
-- **Seasons and dressings** (`oak/`). In May it is fresh green, in October bronze, in November russet. In winter it is bare,
-  with a twig dome and snow along the limbs. Taylor is pastel; Newfoundland is darker and cooler.
+- **The meadow is a wild meadow, not a mown lawn** (`hero`, `meadow`, `porch`, `clock`, `aerial`).
+  - Long-grass drifts about 40 m across, painted a dull olive. You can see them from the air and from the porch.
+  - Inside the drifts the grass is a new wide tawny sheaf: knee-high outside the protected circle and no taller than
+    0.85 inside it.
+  - Between the drifts the turf is shorter and has flowers: clover, daisy, Susan and dandelion clocks.
+  - A meadow now stands round the oak beyond the clock ring.
+  - The landing field is short flowery turf round a mown target, with its chalk rings and terracotta centre.
+  - The mown desire lines are 2.4 m wide and nothing grows on them. They are visibly shorter and greener (`porch`,
+    `meadow`, `labyrinth`).
+  - On lite the olive paint is dropped. The lite shots show the meadow as grass and flowers on the lawn colour.
+- **The Old Oak is lobed, not tiled** (`hero`, `meadow`, `canopy`, `clock`).
+  - The crown is irregular masses. Each mass has its own light and shade, with gaps where the eight limbs show.
+  - The low tier sits apart from the high crown.
+  - The rope swing hangs clear under the long WNW limb.
+  - There is no ink shell, so at night the crown is one dark silhouette. The bright tile edges are gone.
+- **Night** (`night`, `fireflies`, `porch_22-30`, `aerial_22-30`, `pavilion_22-30`).
+  - Each lantern of the Lantern Ring has a warm glow and halo. From the ground they read as a string of lights round the
+    rim. In the night aerial they read as a ring of pools.
+  - The Meadow Pavilion's lantern and the Glasshouse terrace's low lanterns glow the same way.
+  - Fireflies hang under and around the oak and over the long grass. They are still specks for now; PR 5 makes them
+    fly.
+  - Everything at night is emissive cards. There are no point lights.
 
-## The Green
+## Pose by pose
 
-- **The Oak Clock** (`clock`). Twelve stones on a mown ring, with the picnic tables at the drip line, the ring bench and
-  the swing. In Classic and Taylor the ring and the desire lines read clearly. In Newfoundland the mown paint is close to
-  the turf's own colour, so the ring and the lines are faint.
-- **The turf labyrinth** (`labyrinth`, best in Taylor). Seven circuits with long-grass walls, the entrance toward the Year
-  Walk, and the two new desire lines from the Glasshouse stair-and-ramp meeting at the labyrinth.
-- **The apiary and the kites** (`apiary`). The hives sit in the clover; only the kite lines are visible.
-- **The rim.** The windpump, the hay bales and the windsock are in `rim`. The Meadow Pavilion is in `pavilion`; its
-  surroundings are bare because the bight district has no budget left (D-WW115).
-- **The meadow.** The wild drifts (clover, daisy and black-eyed Susan; goldenrod and milkweed; dandelion clocks in June;
-  lupine in Newfoundland) and the long grass are concentrated where people stand and look. The open middle of the Green
-  is still plain turf.
-- **At night.** The Lantern Ring reads as a ring of warm pools in the aerial (`aerial_22-30`). From the ground
-  (`night`, `porch_22-30`) the oak is a strong silhouette, but the ring's posts are small. The Glasshouse is the first
-  light (page E at 22:30).
-
-## Pages and porch
-
-- **E (noon, night).** The oak stands on the Green's rim below the Crown.
-- **K (dusk, noon).** This page is dominated by the Glasshouse's greybox wall. The kit has no Glasshouse building kind, so
-  the host is not re-dressed here; the module dresses its surroundings only. The shore planting is light (the lakeside
-  district's lite budget), so it hardly registers in K.
-- **Porch.** From the stair's foot landing, south over the meadow to the oak.
+- **hero** (noon): the oak over the meadow, with an olive long-grass drift in the foreground and the sea behind.
+- **meadow** (11:00): standing in the long grass north-east of the oak, with a mown line and the clock ring beyond.
+- **canopy** (11:00): under the crown. You can see the limbs, the fluted trunk, the ring bench and the swing.
+- **clock** (11:00): the Oak Clock's twelve stones on the mown ring, the tables at the drip line, and the meadow drifts
+  round it.
+- **labyrinth** (10:00): seven mown circuits with long-grass walls, and the entrance toward the Year Walk.
+- **apiary** (10:00): the hives in the clover. The kites are over the April station.
+- **rim** (17:30): the windpump, the hay bales and the windsock. This is the landing district, which has no meadow
+  dressing.
+- **pavilion** (19:30, 22:30): the Meadow Pavilion lit on the west rim. Its surroundings are bare because the bight
+  district has no budget left (D-WW115).
+- **night, fireflies** (22:30): the oak against the sky, the fireflies and the ring's lanterns.
+- **E** (12:30, 22:30): page E from the Crown. **K** (20:50, 12:30): page K, the Glasshouse over Stillwater.
+- **porch** (10:00, 22:30): the stair's foot landing, looking south over the meadow to the oak.
+- **fallswatch** (07:30): the oak from the west buttress, 472 m away.
+- **aerial** (12:00, 22:30).
 
 ## What's rough
 
-- Whole-scene draw calls at several poses are over CONTRACT §6's 400 full / 180 lite. Each of this module's districts
-  adds about 15 draws (index: green 23, notch 23, lakeside 30, land included). `base/` gives the comparison. See
-  `captures.json`.
-- Newfoundland's mown paint has little contrast.
-- Page K needs a Glasshouse re-dress.
-- The meadow is thinner than the prototype, because of the budget.
+- Page K is still the Glasshouse's greybox wall. There is no Glasshouse building kind (owed).
+- The meadow is denser where people stand and look. Far from those places it thins.
+- The olive paint follows a 4 m grid, so its edges step slightly where a path or a keep-out cuts it.
+- The Newfoundland mown paint is still close to its turf colour.
+- Some poses draw more than CONTRACT §6's 400 / 180 calls for the whole scene. Each district this module dresses adds
+  about 15 draws, and one more each for the firefly points and the lantern halos (`captures.json`).

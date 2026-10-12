@@ -1,5 +1,5 @@
 {
- "sha": "05d4c9baba505b3aa06952ba6775f2e766bb06e8",
+ "sha": "f290f4576284042e8e40d6da0a805b386770cdac",
  "method": "headless Chromium (SwiftShader) on the review harness, look poses via __harbour.world.views + shot(); not device evidence",
  "records": [
   {
@@ -22,8 +22,8 @@
    ],
    "fov": 58,
    "stats": {
-    "drawCalls": 373,
-    "triangles": 164135,
+    "drawCalls": 374,
+    "triangles": 211045,
     "resident": [
      "bight",
      "crown",
@@ -62,8 +62,8 @@
    ],
    "fov": 58,
    "stats": {
-    "drawCalls": 380,
-    "triangles": 250987,
+    "drawCalls": 384,
+    "triangles": 297955,
     "resident": [
      "bight",
      "crown",
@@ -92,7 +92,7 @@
    "date": "2026-06-21",
    "eye": [
     1090,
-    20.2,
+    20.1,
     1082
    ],
    "target": [
@@ -102,8 +102,8 @@
    ],
    "fov": 60,
    "stats": {
-    "drawCalls": 266,
-    "triangles": 183215,
+    "drawCalls": 630,
+    "triangles": 702039,
     "resident": [
      "bight",
      "crown",
@@ -142,8 +142,8 @@
    ],
    "fov": 72,
    "stats": {
-    "drawCalls": 392,
-    "triangles": 229289,
+    "drawCalls": 391,
+    "triangles": 277197,
     "resident": [
      "bight",
      "crown",
@@ -182,8 +182,8 @@
    ],
    "fov": 50,
    "stats": {
-    "drawCalls": 763,
-    "triangles": 520456,
+    "drawCalls": 764,
+    "triangles": 573544,
     "resident": [
      "bight",
      "crown",
@@ -223,7 +223,7 @@
    "fov": 52,
    "stats": {
     "drawCalls": 511,
-    "triangles": 1311824,
+    "triangles": 1376971,
     "resident": [
      "bight",
      "crown",
@@ -263,7 +263,7 @@
    "fov": 58,
    "stats": {
     "drawCalls": 117,
-    "triangles": 114273,
+    "triangles": 157997,
     "resident": [
      "bight",
      "crown",
@@ -302,8 +302,8 @@
    ],
    "fov": 62,
    "stats": {
-    "drawCalls": 437,
-    "triangles": 327790,
+    "drawCalls": 435,
+    "triangles": 349632,
     "resident": [
      "bight",
      "crown",
@@ -342,8 +342,8 @@
    ],
    "fov": 58,
    "stats": {
-    "drawCalls": 88,
-    "triangles": 195030,
+    "drawCalls": 87,
+    "triangles": 212311,
     "resident": [
      "bight",
      "crown",
@@ -383,7 +383,87 @@
    "fov": 58,
    "stats": {
     "drawCalls": 95,
-    "triangles": 269331,
+    "triangles": 286670,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "meadow_11-00_classic_full.jpg",
+   "id": "meadow",
+   "label": "Knee-deep in the meadow: long grass and field-edge flowers, a mown desire line to the oak",
+   "theme": "classic",
+   "tier": "full",
+   "time": "11:00",
+   "date": "2026-06-21",
+   "eye": [
+    1152,
+    19.11,
+    1114
+   ],
+   "target": [
+    1122,
+    20,
+    1165
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 494,
+    "triangles": 588784,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "fireflies_22-30_classic_full.jpg",
+   "id": "fireflies",
+   "label": "Fireflies under the Old Oak (June, 22:30), the ring bench and the swing",
+   "theme": "classic",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1093,
+    18.4,
+    1138
+   ],
+   "target": [
+    1125,
+    20.5,
+    1166
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 401,
+    "triangles": 358012,
     "resident": [
      "bight",
      "crown",
@@ -411,19 +491,19 @@
    "time": "22:30",
    "date": "2026-06-21",
    "eye": [
-    1065,
-    18.9,
-    1110
+    1078,
+    18.45,
+    1132
    ],
    "target": [
     1125,
     22,
-    1162
+    1165
    ],
    "fov": 62,
    "stats": {
-    "drawCalls": 408,
-    "triangles": 329236,
+    "drawCalls": 794,
+    "triangles": 640327,
     "resident": [
      "bight",
      "crown",
@@ -462,8 +542,8 @@
    ],
    "fov": 55,
    "stats": {
-    "drawCalls": 271,
-    "triangles": 738377,
+    "drawCalls": 286,
+    "triangles": 739377,
     "resident": [
      "bight",
      "crown",
@@ -502,8 +582,8 @@
    ],
    "fov": 55,
    "stats": {
-    "drawCalls": 704,
-    "triangles": 1509024,
+    "drawCalls": 298,
+    "triangles": 787840,
     "resident": [
      "bight",
      "crown",
@@ -542,8 +622,8 @@
    ],
    "fov": 55,
    "stats": {
-    "drawCalls": 473,
-    "triangles": 603580,
+    "drawCalls": 485,
+    "triangles": 627299,
     "resident": [
      "bight",
      "crown",
@@ -583,7 +663,7 @@
    "fov": 55,
    "stats": {
     "drawCalls": 458,
-    "triangles": 564290,
+    "triangles": 580809,
     "resident": [
      "bight",
      "crown",
@@ -623,7 +703,7 @@
    "fov": 30,
    "stats": {
     "drawCalls": 76,
-    "triangles": 228709,
+    "triangles": 229493,
     "resident": [
      "bight",
      "crown",
@@ -663,7 +743,7 @@
    "fov": 45,
    "stats": {
     "drawCalls": 494,
-    "triangles": 680031,
+    "triangles": 697582,
     "resident": [
      "bight",
      "crown",
@@ -702,8 +782,8 @@
    ],
    "fov": 45,
    "stats": {
-    "drawCalls": 172,
-    "triangles": 459406,
+    "drawCalls": 174,
+    "triangles": 476875,
     "resident": [
      "bight",
      "crown",
@@ -742,8 +822,8 @@
    ],
    "fov": 58,
    "stats": {
-    "drawCalls": 330,
-    "triangles": 76480,
+    "drawCalls": 632,
+    "triangles": 238024,
     "resident": [
      "bight",
      "crown",
@@ -782,8 +862,8 @@
    ],
    "fov": 58,
    "stats": {
-    "drawCalls": 336,
-    "triangles": 107055,
+    "drawCalls": 340,
+    "triangles": 115780,
     "resident": [
      "bight",
      "crown",
@@ -812,7 +892,7 @@
    "date": "2026-06-21",
    "eye": [
     1090,
-    20.2,
+    20.1,
     1082
    ],
    "target": [
@@ -823,7 +903,7 @@
    "fov": 60,
    "stats": {
     "drawCalls": 216,
-    "triangles": 66630,
+    "triangles": 80164,
     "resident": [
      "bight",
      "crown",
@@ -863,7 +943,7 @@
    "fov": 72,
    "stats": {
     "drawCalls": 353,
-    "triangles": 85456,
+    "triangles": 96750,
     "resident": [
      "bight",
      "crown",
@@ -902,8 +982,8 @@
    ],
    "fov": 50,
    "stats": {
-    "drawCalls": 656,
-    "triangles": 153242,
+    "drawCalls": 658,
+    "triangles": 164638,
     "resident": [
      "bight",
      "crown",
@@ -943,7 +1023,87 @@
    "fov": 52,
    "stats": {
     "drawCalls": 168,
-    "triangles": 320788,
+    "triangles": 335596,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "meadow_11-00_classic_lite.jpg",
+   "id": "meadow",
+   "label": "Knee-deep in the meadow: long grass and field-edge flowers, a mown desire line to the oak",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "11:00",
+   "date": "2026-06-21",
+   "eye": [
+    1152,
+    19.17,
+    1114
+   ],
+   "target": [
+    1122,
+    20,
+    1165
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 77,
+    "triangles": 88458,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "fireflies_22-30_classic_lite.jpg",
+   "id": "fireflies",
+   "label": "Fireflies under the Old Oak (June, 22:30), the ring bench and the swing",
+   "theme": "classic",
+   "tier": "lite",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1093,
+    18.4,
+    1138
+   ],
+   "target": [
+    1125,
+    20.5,
+    1166
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 360,
+    "triangles": 114021,
     "resident": [
      "bight",
      "crown",
@@ -971,19 +1131,19 @@
    "time": "22:30",
    "date": "2026-06-21",
    "eye": [
-    1065,
-    18.9,
-    1110
+    1078,
+    18.45,
+    1132
    ],
    "target": [
     1125,
     22,
-    1162
+    1165
    ],
    "fov": 62,
    "stats": {
-    "drawCalls": 363,
-    "triangles": 111912,
+    "drawCalls": 693,
+    "triangles": 182354,
     "resident": [
      "bight",
      "crown",
@@ -1023,7 +1183,7 @@
    "fov": 55,
    "stats": {
     "drawCalls": 280,
-    "triangles": 564377,
+    "triangles": 565161,
     "resident": [
      "bight",
      "crown",
@@ -1063,7 +1223,7 @@
    "fov": 55,
    "stats": {
     "drawCalls": 244,
-    "triangles": 419460,
+    "triangles": 420244,
     "resident": [
      "bight",
      "crown",
@@ -1102,8 +1262,8 @@
    ],
    "fov": 55,
    "stats": {
-    "drawCalls": 426,
-    "triangles": 302200,
+    "drawCalls": 427,
+    "triangles": 302212,
     "resident": [
      "bight",
      "crown",
@@ -1182,8 +1342,8 @@
    ],
    "fov": 58,
    "stats": {
-    "drawCalls": 371,
-    "triangles": 163041,
+    "drawCalls": 372,
+    "triangles": 208126,
     "resident": [
      "bight",
      "crown",
@@ -1222,8 +1382,8 @@
    ],
    "fov": 58,
    "stats": {
-    "drawCalls": 378,
-    "triangles": 249893,
+    "drawCalls": 382,
+    "triangles": 295036,
     "resident": [
      "bight",
      "crown",
@@ -1252,7 +1412,7 @@
    "date": "2026-06-21",
    "eye": [
     1090,
-    20.2,
+    20.1,
     1082
    ],
    "target": [
@@ -1262,8 +1422,8 @@
    ],
    "fov": 60,
    "stats": {
-    "drawCalls": 625,
-    "triangles": 647410,
+    "drawCalls": 624,
+    "triangles": 696472,
     "resident": [
      "bight",
      "crown",
@@ -1302,8 +1462,8 @@
    ],
    "fov": 72,
    "stats": {
-    "drawCalls": 389,
-    "triangles": 231696,
+    "drawCalls": 388,
+    "triangles": 273529,
     "resident": [
      "bight",
      "crown",
@@ -1342,8 +1502,8 @@
    ],
    "fov": 50,
    "stats": {
-    "drawCalls": 758,
-    "triangles": 517431,
+    "drawCalls": 759,
+    "triangles": 562644,
     "resident": [
      "bight",
      "crown",
@@ -1383,7 +1543,87 @@
    "fov": 52,
    "stats": {
     "drawCalls": 506,
-    "triangles": 1312664,
+    "triangles": 1372861,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "meadow_11-00_taylor_full.jpg",
+   "id": "meadow",
+   "label": "Knee-deep in the meadow: long grass and field-edge flowers, a mown desire line to the oak",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "11:00",
+   "date": "2026-06-21",
+   "eye": [
+    1152,
+    19.11,
+    1114
+   ],
+   "target": [
+    1122,
+    20,
+    1165
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 491,
+    "triangles": 587399,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "fireflies_22-30_taylor_full.jpg",
+   "id": "fireflies",
+   "label": "Fireflies under the Old Oak (June, 22:30), the ring bench and the swing",
+   "theme": "taylor",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1093,
+    18.4,
+    1138
+   ],
+   "target": [
+    1125,
+    20.5,
+    1166
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 398,
+    "triangles": 359691,
     "resident": [
      "bight",
      "crown",
@@ -1411,19 +1651,19 @@
    "time": "22:30",
    "date": "2026-06-21",
    "eye": [
-    1065,
-    18.9,
-    1110
+    1078,
+    18.45,
+    1132
    ],
    "target": [
     1125,
     22,
-    1162
+    1165
    ],
    "fov": 62,
    "stats": {
-    "drawCalls": 791,
-    "triangles": 597415,
+    "drawCalls": 404,
+    "triangles": 372181,
     "resident": [
      "bight",
      "crown",
@@ -1462,8 +1702,8 @@
    ],
    "fov": 55,
    "stats": {
-    "drawCalls": 284,
-    "triangles": 727861,
+    "drawCalls": 269,
+    "triangles": 728429,
     "resident": [
      "bight",
      "crown",
@@ -1502,8 +1742,8 @@
    ],
    "fov": 55,
    "stats": {
-    "drawCalls": 275,
-    "triangles": 776034,
+    "drawCalls": 291,
+    "triangles": 777036,
     "resident": [
      "bight",
      "crown",
@@ -1542,8 +1782,8 @@
    ],
    "fov": 55,
    "stats": {
-    "drawCalls": 474,
-    "triangles": 599888,
+    "drawCalls": 470,
+    "triangles": 622179,
     "resident": [
      "bight",
      "crown",
@@ -1583,7 +1823,7 @@
    "fov": 55,
    "stats": {
     "drawCalls": 453,
-    "triangles": 559314,
+    "triangles": 575833,
     "resident": [
      "bight",
      "crown",
@@ -1622,8 +1862,8 @@
    ],
    "fov": 58,
    "stats": {
-    "drawCalls": 329,
-    "triangles": 83828,
+    "drawCalls": 331,
+    "triangles": 91089,
     "resident": [
      "bight",
      "crown",
@@ -1662,8 +1902,8 @@
    ],
    "fov": 58,
    "stats": {
-    "drawCalls": 335,
-    "triangles": 114403,
+    "drawCalls": 339,
+    "triangles": 121684,
     "resident": [
      "bight",
      "crown",
@@ -1692,7 +1932,7 @@
    "date": "2026-06-21",
    "eye": [
     1090,
-    20.2,
+    20.1,
     1082
    ],
    "target": [
@@ -1703,7 +1943,7 @@
    "fov": 60,
    "stats": {
     "drawCalls": 214,
-    "triangles": 77758,
+    "triangles": 84974,
     "resident": [
      "bight",
      "crown",
@@ -1742,8 +1982,8 @@
    ],
    "fov": 58,
    "stats": {
-    "drawCalls": 373,
-    "triangles": 162857,
+    "drawCalls": 374,
+    "triangles": 209500,
     "resident": [
      "bight",
      "crown",
@@ -1782,8 +2022,8 @@
    ],
    "fov": 58,
    "stats": {
-    "drawCalls": 380,
-    "triangles": 249709,
+    "drawCalls": 384,
+    "triangles": 296410,
     "resident": [
      "bight",
      "crown",
@@ -1812,7 +2052,7 @@
    "date": "2026-06-21",
    "eye": [
     1090,
-    20.2,
+    20.1,
     1082
    ],
    "target": [
@@ -1822,8 +2062,8 @@
    ],
    "fov": 60,
    "stats": {
-    "drawCalls": 266,
-    "triangles": 189181,
+    "drawCalls": 265,
+    "triangles": 243306,
     "resident": [
      "bight",
      "crown",
@@ -1862,8 +2102,8 @@
    ],
    "fov": 72,
    "stats": {
-    "drawCalls": 391,
-    "triangles": 225506,
+    "drawCalls": 390,
+    "triangles": 271902,
     "resident": [
      "bight",
      "crown",
@@ -1902,8 +2142,8 @@
    ],
    "fov": 50,
    "stats": {
-    "drawCalls": 763,
-    "triangles": 512722,
+    "drawCalls": 764,
+    "triangles": 563965,
     "resident": [
      "bight",
      "crown",
@@ -1942,8 +2182,88 @@
    ],
    "fov": 52,
    "stats": {
-    "drawCalls": 511,
-    "triangles": 1314594,
+    "drawCalls": 199,
+    "triangles": 703055,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "meadow_11-00_newfoundland_full.jpg",
+   "id": "meadow",
+   "label": "Knee-deep in the meadow: long grass and field-edge flowers, a mown desire line to the oak",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "11:00",
+   "date": "2026-06-21",
+   "eye": [
+    1152,
+    19.11,
+    1114
+   ],
+   "target": [
+    1122,
+    20,
+    1165
+   ],
+   "fov": 58,
+   "stats": {
+    "drawCalls": 137,
+    "triangles": 332351,
+    "resident": [
+     "bight",
+     "crown",
+     "flats",
+     "green",
+     "harbour",
+     "hollow",
+     "lakeside",
+     "landing",
+     "notch",
+     "offshore",
+     "prow",
+     "reach",
+     "scholars",
+     "undercroft"
+    ]
+   }
+  },
+  {
+   "file": "fireflies_22-30_newfoundland_full.jpg",
+   "id": "fireflies",
+   "label": "Fireflies under the Old Oak (June, 22:30), the ring bench and the swing",
+   "theme": "newfoundland",
+   "tier": "full",
+   "time": "22:30",
+   "date": "2026-06-21",
+   "eye": [
+    1093,
+    18.4,
+    1138
+   ],
+   "target": [
+    1125,
+    20.5,
+    1166
+   ],
+   "fov": 62,
+   "stats": {
+    "drawCalls": 401,
+    "triangles": 358268,
     "resident": [
      "bight",
      "crown",
@@ -1971,19 +2291,19 @@
    "time": "22:30",
    "date": "2026-06-21",
    "eye": [
-    1065,
-    18.9,
-    1110
+    1078,
+    18.45,
+    1132
    ],
    "target": [
     1125,
     22,
-    1162
+    1165
    ],
    "fov": 62,
    "stats": {
-    "drawCalls": 796,
-    "triangles": 593430,
+    "drawCalls": 407,
+    "triangles": 369713,
     "resident": [
      "bight",
      "crown",
@@ -2022,8 +2342,8 @@
    ],
    "fov": 55,
    "stats": {
-    "drawCalls": 282,
-    "triangles": 736983,
+    "drawCalls": 398,
+    "triangles": 1436395,
     "resident": [
      "bight",
      "crown",
@@ -2062,8 +2382,8 @@
    ],
    "fov": 55,
    "stats": {
-    "drawCalls": 292,
-    "triangles": 782296,
+    "drawCalls": 291,
+    "triangles": 783054,
     "resident": [
      "bight",
      "crown",
@@ -2102,8 +2422,8 @@
    ],
    "fov": 55,
    "stats": {
-    "drawCalls": 458,
-    "triangles": 602612,
+    "drawCalls": 464,
+    "triangles": 624731,
     "resident": [
      "bight",
      "crown",
@@ -2142,8 +2462,8 @@
    ],
    "fov": 55,
    "stats": {
-    "drawCalls": 457,
-    "triangles": 562010,
+    "drawCalls": 472,
+    "triangles": 578745,
     "resident": [
      "bight",
      "crown",
@@ -2182,8 +2502,8 @@
    ],
    "fov": 58,
    "stats": {
-    "drawCalls": 329,
-    "triangles": 83783,
+    "drawCalls": 631,
+    "triangles": 246603,
     "resident": [
      "bight",
      "crown",
@@ -2222,8 +2542,8 @@
    ],
    "fov": 58,
    "stats": {
-    "drawCalls": 335,
-    "triangles": 114358,
+    "drawCalls": 339,
+    "triangles": 123015,
     "resident": [
      "bight",
      "crown",
@@ -2252,7 +2572,7 @@
    "date": "2026-06-21",
    "eye": [
     1090,
-    20.2,
+    20.1,
     1082
    ],
    "target": [
@@ -2263,7 +2583,7 @@
    "fov": 60,
    "stats": {
     "drawCalls": 216,
-    "triangles": 70104,
+    "triangles": 83251,
     "resident": [
      "bight",
      "crown",

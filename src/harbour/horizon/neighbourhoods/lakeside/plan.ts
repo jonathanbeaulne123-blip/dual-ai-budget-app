@@ -128,3 +128,42 @@ export function bend(a: Point2, b: Point2, k: number): Point2[] {
   const L = dist(a, b), n = Math.max(4, Math.ceil(L / 2)), mx = (a[0] + b[0]) / 2 - (b[1] - a[1]) * k, mz = (a[1] + b[1]) / 2 + (b[0] - a[0]) * k;
   return Array.from({ length: n + 1 }, (_, i) => { const t = i / n; return [(1 - t) ** 2 * a[0] + 2 * (1 - t) * t * mx + t * t * b[0], (1 - t) ** 2 * a[1] + 2 * (1 - t) * t * mz + t * t * b[1]] as Point2; });
 }
+
+/* ------------------------------------------------------------------------------------------------- the meadow's drifts */
+
+/** Smooth value noise in [−1, 1] (deterministic, no rng: the meadow's drift field is a pure function of the plan). */
+export function valueNoise(x: number, z: number): number {
+  const h = (i: number, j: number) => { const s = Math.sin(i * 127.1 + j * 311.7) * 43758.5453; return (s - Math.floor(s)) * 2 - 1; };
+  const i = Math.floor(x), j = Math.floor(z), fx = x - i, fz = z - j, sx = fx * fx * (3 - 2 * fx), sz = fz * fz * (3 - 2 * fz);
+  return (h(i, j) * (1 - sx) + h(i + 1, j) * sx) * (1 - sz) + (h(i, j + 1) * (1 - sx) + h(i + 1, j + 1) * sx) * sz;
+}
+/**
+ * The meadow's drift field (D-WW113, re-shoot): > LONG_GRASS is long grass gone to seed (tawny, knee-high, the field-edge
+ * flowers), below it the shorter flowery turf (clover, daisy, Susan, the dandelion clocks); > STRAW the drift's core, painted
+ * straw. Two octaves: drifts ~40 eu across with ~15 eu lobes.
+ */
+export const meadowField = (x: number, z: number) => 0.68 * valueNoise(x / 34 + 11.3, z / 34 - 4.1) + 0.32 * valueNoise(x / 13 - 2.7, z / 13 + 8.9);
+export const LONG_GRASS = -0.06, STRAW = -0.12;
+
+/**
+ * Marching squares over a grid of `step` eu from `min` to `max`: the polygons of the region where `value ≥ 0`, one polygon
+ * per cell (a square inside, a cut shape on the contour), so neighbours share their edges exactly (paint decals never
+ * overlap and never z-fight). Saddles take the joined reading.
+ */
+export function contourCells(min: Point2, max: Point2, step: number, value: (x: number, z: number) => number): Point2[][] {
+  const nx = Math.ceil((max[0] - min[0]) / step), nz = Math.ceil((max[1] - min[1]) / step), V: number[] = [];
+  for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) V.push(value(min[0] + i * step, min[1] + j * step));
+  const at = (i: number, j: number) => V[j * (nx + 1) + i]!, P = (i: number, j: number): Point2 => [min[0] + i * step, min[1] + j * step];
+  const cut = (a: Point2, va: number, b: Point2, vb: number): Point2 => { const t = va / (va - vb); return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; };
+  const out: Point2[][] = [];
+  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+    // corners clockwise seen from above (x east, z south): NW, NE, SE, SW
+    const c: [Point2, number][] = [[P(i, j), at(i, j)], [P(i + 1, j), at(i + 1, j)], [P(i + 1, j + 1), at(i + 1, j + 1)], [P(i, j + 1), at(i, j + 1)]];
+    const inside = c.filter(q => q[1] >= 0).length; if (!inside) continue;
+    if (inside === 4) { out.push(c.map(q => q[0])); continue; }
+    const poly: Point2[] = [];
+    for (let k = 0; k < 4; k++) { const [a, va] = c[k]!, [b, vb] = c[(k + 1) % 4]!; if (va >= 0) poly.push(a); if ((va >= 0) !== (vb >= 0)) poly.push(cut(a, va, b, vb)); }
+    if (poly.length >= 3) out.push(poly);
+  }
+  return out;
+}
