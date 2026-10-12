@@ -2,7 +2,7 @@
 // High Shieling Ranch, the drag lift, the planting and the paint, on the committed bake (the records the bake wrote) and
 // re-run against the same world for determinism and the bake's own validation.
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import type { LandCuts, StructureSolid } from '../src/harbour/horizon/land/interfaces.ts';
 import type { BuildingRecord, DistrictDressing, PropRecord, WorldDressing } from '../src/harbour/horizon/neighbourhoods/types.ts';
 import type { LightAnchor } from '../src/harbour/horizon/world/definition.ts';
@@ -16,36 +16,42 @@ import { buildingPlan } from '../src/harbour/horizon/kit/buildings/index.ts';
 import { drawProp } from '../src/harbour/horizon/kit/props/index.ts';
 import { wwVariant } from '../src/harbour/horizon/kit/plants/species.ts';
 import { CardBuilder } from '../src/harbour/art/cardScene.ts';
-import { crown, CHAPEL, COTE_TOP, HAMLET, LIFT, ORCHARD, SPRUCE_SCALE } from '../src/harbour/horizon/neighbourhoods/crown/index.ts';
+import { crown, CHAPEL, COTE_TOP, HAMLET, LIFT, ORCHARD, RIM, SPRUCE_SCALE, STONES } from '../src/harbour/horizon/neighbourhoods/crown/index.ts';
 import { onV2Footprint, SHOULDER } from '../src/harbour/horizon/neighbourhoods/crown/site.ts';
 import { V3_BENCHES, benchWeight } from '../src/harbour/horizon/land/mountainV3/landform.ts';
 import { storyEye, storyLandmark, validateStoryAgainstDressing } from '../src/harbour/horizon/world/story.ts';
 
 type Baked = { dressing: WorldDressing; lights: LightAnchor[]; districts: { id: string; triangles: { full: number; lite: number }; drawCalls?: number }[] };
-let cache: { json: Baked & Record<string, any>; ground: (x: number, z: number) => number } | null = null;
-const world = () => {
-  if (cache) return cache;
-  const json = JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8')), bytes = readFileSync('public/horizon/terrain/horizon-geo-1.bin');
-  const field = decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), 'full');
-  return (cache = { json, ground: (x, z) => terrainHeight(field, x, z) });
-};
-/** The module's own records as baked (ids are the module's; the bake files them per district). */
-const mine = () => {
-  const d = world().json.dressing, crownDistricts = d.districts as DistrictDressing[];
-  const ours = <T extends { id?: string }>(list: T[]) => list;
-  const buildings = crownDistricts.flatMap(x => x.buildings.filter(b => b.style === 'crown.croft'));
-  const props = crownDistricts.flatMap(x => x.props.filter(p => /^(hamlet|westwatch|fallswatch|ranch|lift|rim|col|springs|orchard)\./.test(p.id ?? '')));
-  return { buildings: ours(buildings), props, lights: world().json.lights.filter(l => l.id.startsWith('crown.')), landmarks: d.landmarks.filter(l => l.neighbourhood === 'crown'), lookouts: d.lookouts.filter(l => l.id === 'fallswatch') };
-};
-const corners = (b: BuildingRecord) => { const c = Math.cos(b.yaw), s = Math.sin(b.yaw), hx = b.size.w / 2, hz = b.size.d / 2; return [[-hx, -hz], [hx, -hz], [hx, hz], [-hx, hz]].map(([u, v]) => [b.at[0] + u! * c + v! * s, b.at[2] + v! * c - u! * s] as const); };
-/** The module re-run against the baked world (without its own baked colliders, which did not exist when it ran). */
-function rerun() {
-  const { json, ground } = world();
+type Built = ReturnType<typeof crown.build>;
+// The heavy fixtures (the bake's JSON, the terrain, the dressing context and two module builds) are made ONCE, in an async
+// beforeAll that yields between steps, so no test holds the worker synchronously (CI: "Timeout calling onTaskUpdate").
+const yieldTick = () => new Promise<void>(r => setTimeout(r, 0));
+let W: { json: Baked & Record<string, any>; ground: (x: number, z: number) => number } | null = null;
+let RUN: { ctx: ReturnType<typeof createDressingContext>; a: Built; b: Built } | null = null;
+const world = () => W!;
+beforeAll(async () => {
+  const json = JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8')); await yieldTick();
+  const bytes = readFileSync('public/horizon/terrain/horizon-geo-1.bin');
+  const field = decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), 'full'); await yieldTick();
+  const ground = (x: number, z: number) => terrainHeight(field, x, z);
+  W = { json, ground };
+  // The module re-run against the baked world (without its own baked colliders, which did not exist when it ran).
   const solids = (json.geometry.solids as (StructureSolid & { sourceId?: string })[]).map(q => ({ ...q, id: q.sourceId ?? q.id.split('@')[0]! })).filter(q => !q.id.startsWith('dressing.'));
   const cuts = { ...json.collision, solids } as LandCuts;
   const ctx = createDressingContext({ ground, beds: cuts.beds, pads: cuts.pads, waters: cuts.waters, solids, hosts: json.hosts.map((h: any) => ({ id: h.id, footprint: h.footprint, door: h.door?.xy ? { xy: h.door.xy } : {}, height: h.height })), protectedAreas: [{ id: 'green', outline: protectedGreenOutline() }], districtAt: (x, z) => districtAt(x, z) });
-  return { ctx, a: crown.build(ctx), b: crown.build(ctx) };
-}
+  await yieldTick(); const a = crown.build(ctx); await yieldTick(); const b = crown.build(ctx); await yieldTick();
+  RUN = { ctx, a, b };
+}, 240_000);
+const OURS = /^(hamlet|westwatch|fallswatch|ranch|lift|rim|rimLookout|col|springs|orchard|moraine|upperTarn|lowerTarn|spurTarn|shielingMere|glacierSprings|tarns|scree)\./;
+/** The module's own records as baked (ids are the module's; the bake files them per district). */
+const mine = () => {
+  const d = world().json.dressing, crownDistricts = d.districts as DistrictDressing[];
+  const buildings = crownDistricts.flatMap(x => x.buildings.filter(b => b.style === 'crown.croft'));
+  const props = crownDistricts.flatMap(x => x.props.filter(p => OURS.test(p.id ?? '')));
+  return { buildings, props, lights: world().json.lights.filter(l => l.id.startsWith('crown.')), landmarks: d.landmarks.filter(l => l.neighbourhood === 'crown'), lookouts: d.lookouts.filter(l => l.id === 'fallswatch') };
+};
+const corners = (b: BuildingRecord) => { const c = Math.cos(b.yaw), s = Math.sin(b.yaw), hx = b.size.w / 2, hz = b.size.d / 2; return [[-hx, -hz], [hx, -hz], [hx, hz], [-hx, hz]].map(([u, v]) => [b.at[0] + u! * c + v! * s, b.at[2] + v! * c - u! * s] as const); };
+const rerun = () => RUN!;
 
 describe('the Highlands dressing on the bake (D-WW100…109)', () => {
   it('builds nine crofts on Bench Hamlet\'s shelf beside the lanes, each with its walled yard and door to the lane', () => {
@@ -56,7 +62,8 @@ describe('the Highlands dressing on the bake (D-WW100…109)', () => {
     for (const c of crofts) {
       expect(benchWeight(shelf, c.at[0], c.at[2]), c.id).toBeGreaterThan(.5);
       const g = corners(c).map(([x, z]) => ground(x, z));
-      expect(Math.max(...g) - Math.min(...g), `${c.id} ground span`).toBeLessThanOrEqual(HAMLET.maxSpan + .3);
+      // The solver's rule: ≤ maxSpan, or ≤ steepSpan (a deeper plinth) for a slot the flat shelf cannot fill (D-WW100).
+      expect(Math.max(...g) - Math.min(...g), `${c.id} ground span`).toBeLessThanOrEqual(HAMLET.steepSpan + .05);
       expect(c.at[1] - Math.max(...g), `${c.id} floor on its ground`).toBeLessThan(.4);
       expect(mine().props.filter(p => p.kind === 'drystoneWall' && p.id!.startsWith(`${c.id}.yard`)).length, `${c.id} yard`).toBeGreaterThan(0);
     }
@@ -91,11 +98,11 @@ describe('the Highlands dressing on the bake (D-WW100…109)', () => {
     const lm = mine().landmarks.find(l => l.id === 'fallswatch')!;
     expect(lm.relayOrder).toBe(2);
   });
-  it('lights in night order: chapel lantern → hamlet windows → Fallswatch deck lamp → ranch window (emissive cards only)', () => {
+  it('lights in night order: chapel lantern → hamlet windows → Fallswatch deck lamp → ranch window → Rim Lookout lamp (emissive cards only)', () => {
     const lights = mine().lights;
     expect(lights.every(l => l.kind.startsWith('dressing:') && l.line === 'crown.night')).toBe(true);
     const order = (p: RegExp) => [...new Set(lights.filter(l => p.test(l.id)).map(l => l.order))];
-    expect(order(/westwatch/)).toEqual([0]); expect(order(/hamlet/)).toEqual([1]); expect(order(/fallswatch/)).toEqual([2]); expect(order(/ranch/)).toEqual([3]);
+    expect(order(/westwatch/)).toEqual([0]); expect(order(/hamlet/)).toEqual([1]); expect(order(/fallswatch/)).toEqual([2]); expect(order(/ranch/)).toEqual([3]); expect(order(/rimLookout/)).toEqual([4]);
     expect(lights.filter(l => /hamlet/.test(l.id)).length).toBeGreaterThanOrEqual(3);
   });
   it('builds the ranch and the drag lift (towers on the manifest points, a station at each end, the rope with T-bars)', () => {
@@ -108,6 +115,30 @@ describe('the Highlands dressing on the bake (D-WW100…109)', () => {
     const ropes = mine().props.filter(p => p.id!.startsWith('lift.rope.'));
     expect(ropes.map(r => r.variant).sort()).toEqual([1, 2]);
     expect(ropes.every(r => r.line!.length === LIFT.towers.length + 2 && !r.collide)).toBe(true);
+  });
+  it('dresses the Rim Lookout: the lookout wall on the lip east of the pad, a viewer in its lee, the low lamp, ravens', () => {
+    const props = mine().props.filter(p => p.id!.startsWith('rimLookout.')), wall = props.filter(p => p.kind === 'drystoneWall');
+    expect(wall.length).toBeGreaterThan(0);
+    const len = wall.reduce((n, w) => n + w.line!.slice(1).reduce((m, q, i) => m + Math.hypot(q[0] - w.line![i]![0], q[2] - w.line![i]![2]), 0), 0);
+    expect(len).toBeGreaterThan(4);   // the lip south of the Rim Steps (the steps cut it; the rise to the walk ends it)
+    for (const w of wall) for (const q of w.line!) { expect(q[0]).toBeGreaterThan(RIM.pad.x1 + 1); expect(Math.abs(q[0] - RIM.wallX)).toBeLessThan(.5); }
+    expect(props.map(p => p.kind)).toEqual(expect.arrayContaining(['viewer', 'lanternLow']));
+    expect(rerun().a.life.some(l => l.kind === 'raven' && Math.abs(l.at[0] - RIM.wallX) < 1)).toBe(true);
+  });
+  it('lays the stones: moraine erratics off the ice and the skylight, shore stones off the water, field stones on the bench rims; big ones collide', () => {
+    const { ctx, a } = rerun(), stones = a.props.filter(p => p.kind === 'boulder');
+    expect(stones.length).toBeGreaterThan(60);
+    for (const prefix of ['moraine', 'upperTarn', 'lowerTarn', 'hamlet', 'scree']) expect(stones.some(s => s.id!.startsWith(`${prefix}.`)), prefix).toBe(true);
+    for (const s of stones) {
+      expect(s.collide, s.id).toBe((s.scale ?? 1) >= STONES.collideFrom);
+      expect(ctx.waterLevelAt(s.at[0], s.at[2]), s.id).toBeNull();
+      expect(s.at[0] > 1262 && s.at[0] < 1338 && s.at[2] > 362 && s.at[2] < 438, `${s.id} in the skylight keep-out`).toBe(false);
+    }
+    // Stones never touch one another (each sits on its own ground) and the baked ones are the module's.
+    for (let i = 0; i < stones.length; i++) for (let j = i + 1; j < stones.length; j++) expect(Math.hypot(stones[i]!.at[0] - stones[j]!.at[0], stones[i]!.at[2] - stones[j]!.at[2]), `${stones[i]!.id} / ${stones[j]!.id}`).toBeGreaterThan(1.05 * ((stones[i]!.scale ?? 1) + (stones[j]!.scale ?? 1)) * .5);
+    // Shore stones are small set dressing (never colliders, so lite drops them): the lakeside district's lite budget is tight.
+    for (const s of stones.filter(q => /Tarn|Mere|Springs/.test(q.id!))) expect(s.collide, s.id).toBe(false);
+    expect(mine().props.filter(p => p.kind === 'boulder').length).toBe(stones.length);
   });
   it('keeps every record off Mountain v2\'s own footprint and out of the protected Green', () => {
     const d = world().json.dressing.districts as DistrictDressing[], green = protectedGreenOutline();
@@ -172,6 +203,14 @@ describe('the engine and kit additions the Highlands needed', () => {
     const road = createDressingContext({ ...base, ground: () => 60, beds: [{ id: 'road', kind: 'road', profile: 'road', points: [[0, 60, 0], [100, 60, 0]], width: 8 }] });
     expect(tunnel.onBed(50, 0)).toBeNull(); expect(tunnel.occupied(50, 0)).toBe(false);
     expect(road.onBed(50, 0)).toBe('road');
+  });
+  it('treats a solid buried ≥ TUNNEL_COVER under the ground as rock, not as an occupied footprint (Fallswatch\'s bench over the Stillwater tunnel)', () => {
+    const base = { beds: [], pads: [], waters: [], hosts: [], protectedAreas: [], districtAt: () => 'x' };
+    const slab = (id: string, y: number) => ({ id, kind: 'tunnel', role: 'floor', positions: [0, y, 0, 10, y, 0, 10, y, 10, 0, y, 10], indices: [0, 1, 2, 0, 2, 3] }) as unknown as StructureSolid;
+    const deep = createDressingContext({ ...base, ground: () => 60, solids: [slab('deep', 60 - TUNNEL_COVER - 1)] });
+    const shallow = createDressingContext({ ...base, ground: () => 60, solids: [slab('shallow', 60 - 2)] });
+    expect(deep.occupied(5, 5)).toBe(false); expect(deep.inSolid(5, 5)).toBeNull();
+    expect(shallow.inSolid(5, 5)).toBe('shallow');
   });
   it('draws the drag lift\'s haul rope (festoon variant 1 with T-bars, 2 bare) with no glow bulbs', () => {
     const rope = (variant: number): PropRecord => ({ kind: 'festoon', at: [0, 10, 0], yaw: 0, variant, line: [[0, 10, 0], [40, 14, 0], [80, 18, 0]] });

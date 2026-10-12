@@ -30,13 +30,18 @@ function dressedIndex() {
   return world;
 }
 
+/** The baked index without its dressing (the committed bake is dressed once PR 3/4 register their modules). */
+function undressedIndex() { const world = parseHorizonIndex(INDEX.slice(0)); delete (world as { dressing?: unknown }).dressing; return world; }
+
 describe('the Journey map carries the dressing (slim format 4)', () => {
-  it('an undressed index extracts no dressing (the baked slim is unchanged but for its format)', () => {
-    const land = extractJourneyLand(parseHorizonIndex(INDEX.slice(0)), TERRAIN);
+  it('an undressed index extracts no dressing; the baked slim carries the baked index\'s dressing', () => {
+    // PR 3/4 register the neighbourhood modules, so the committed index is dressed: "undressed" is that index without it.
+    const land = extractJourneyLand(undressedIndex(), TERRAIN);
     expect(land.dressing).toBeUndefined();
     const slim = JSON.parse(gunzipSync(readFileSync('public/horizon/world/horizon-geo-1.journey.json.gz')).toString());
     expect(slim.format).toBe(JOURNEY_LAND_SLIM_FORMAT);
-    expect('dressing' in slim.land).toBe(false);
+    const baked = extractJourneyLand(parseHorizonIndex(INDEX.slice(0)), TERRAIN);
+    expect('dressing' in slim.land).toBe(!!baked.dressing);
   });
   it('tall buildings and every landmark extract, encode and decode exactly (round trip)', () => {
     const land = extractJourneyLand(dressedIndex(), TERRAIN);
@@ -123,7 +128,7 @@ describe('the Journey map carries the dressing (slim format 4)', () => {
       expect((landBody.match(/<g[ >]/g) ?? []).length).toBe((landBody.match(/<\/g>/g) ?? []).length);
     }
     // No dressing: no field, no glyphs.
-    const plain = journeyLandFlatData(extractJourneyLand(parseHorizonIndex(INDEX.slice(0)), TERRAIN));
+    const plain = journeyLandFlatData(extractJourneyLand(undressedIndex(), TERRAIN));
     expect('dressing' in plain).toBe(false);
     expect(renderToStaticMarkup(createElement(JourneyLandFlat, {data: plain, theme: 'classic'}))).not.toContain('data-land-landmark');
   });

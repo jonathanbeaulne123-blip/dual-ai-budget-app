@@ -60,7 +60,7 @@ export interface Sight { from: Point3; to: Point3; half: number; margin: number 
 export interface Site {
   ctx: DressingContext;
   /** Footprints, yards and clearings already taken (plants, walls and paint keep off them). */
-  claims: { rect: Rect; kind: 'building' | 'yard' | 'clearing' }[];
+  claims: { rect: Rect; kind: 'building' | 'yard' | 'clearing' | 'stone' }[];
   sights: Sight[];
   h(x: number, z: number): number;
   slope(x: number, z: number, e?: number): number;
@@ -69,7 +69,8 @@ export interface Site {
   /** Nothing standing at (x, z) up to `top` crosses a kept sightline. */
   clearOfSights(x: number, z: number, top: number): boolean;
   claim(rect: Rect, kind: Site['claims'][number]['kind']): void;
-  claimed(x: number, z: number, grow?: number): boolean;
+  /** Whether (x, z) lies in a claim (grown by `grow`); `skipStones` ignores the stones' small claims (paint runs through them). */
+  claimed(x: number, z: number, grow?: number, skipStones?: boolean): boolean;
   /** Nearest point on any of the named beds, with the segment's plan direction. */
   nearestBed(x: number, z: number, ids: readonly string[]): { d: number; at: Point2; dir: Point2 } | null;
   /** Lowest and highest ground under a rect (corners, edges and centre). */
@@ -84,7 +85,7 @@ export function createSite(ctx: DressingContext): Site {
   const site: Site = {
     ctx, claims, sights, h,
     slope(x, z, e = 1.5) { return Math.hypot(h(x + e, z) - h(x - e, z), h(x, z + e) - h(x, z - e)) / (2 * e); },
-    claimed(x, z, grow = 0) { return claims.some(c => inRect(c.rect, x, z, grow)); },
+    claimed(x, z, grow = 0, skipStones = false) { return claims.some(c => !(skipStones && c.kind === 'stone') && inRect(c.rect, x, z, grow)); },
     free(x, z, margin = 1, claimGrow = 0) {
       if (!insideV3Reach(x, z) || onV2Footprint(x, z)) return false;
       if (ctx.occupied(x, z, margin)) return false;
@@ -129,13 +130,15 @@ export function createSite(ctx: DressingContext): Site {
   return site;
 }
 
+/** The steepest ground a wall or fence follows (rise per metre along its line). */
+export const WALL_GRADE = .22;
 /**
  * A linear wall or fence along `pts`, resampled every `step` m and cut into runs wherever the ground is not free (a lane, a
- * pad, water, a baked solid, a claimed footprint) — the gaps are the gates. Runs shorter than `minRun` are dropped. Heights
+ * pad, water, a baked solid, a claimed footprint, a stretch steeper than `maxGrade`) — the gaps are the gates. Runs shorter than `minRun` are dropped. Heights
  * are the ground's (the prop kit stands walls and fences on the ground under their line).
  */
-export function freeRuns(site: Site, pts: readonly Point2[], o: { step?: number; margin?: number; minRun?: number; claimGrow?: number; closed?: boolean; ok?: (x: number, z: number) => boolean } = {}): Point3[][] {
-  const step = o.step ?? 1, margin = o.margin ?? 1, minRun = o.minRun ?? 3, ring = o.closed ? [...pts, pts[0]!] : [...pts];
+export function freeRuns(site: Site, pts: readonly Point2[], o: { step?: number; margin?: number; minRun?: number; claimGrow?: number; closed?: boolean; maxGrade?: number; ok?: (x: number, z: number) => boolean } = {}): Point3[][] {
+  const step = o.step ?? 1, margin = o.margin ?? 1, minRun = o.minRun ?? 3, maxGrade = o.maxGrade ?? WALL_GRADE, ring = o.closed ? [...pts, pts[0]!] : [...pts];
   const samples: Point2[] = [];
   for (let i = 1; i < ring.length; i++) {
     const a = ring[i - 1]!, b = ring[i]!, n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / step));
@@ -151,7 +154,14 @@ export function freeRuns(site: Site, pts: readonly Point2[], o: { step?: number;
     }
     run = [];
   };
-  for (const [x, z] of samples) { if (site.free(x, z, margin, o.claimGrow ?? 0) && (o.ok?.(x, z) ?? true)) run.push([x, z]); else flush(); }
+  // A wall never climbs a ledge: where the ground along the line is steeper than `maxGrade`, the run ends (the kit stands
+  // each 3 m stretch from its low end's foot to its high end + 1.1, so a steep stretch would stand as a tall slab).
+  for (const [x, z] of samples) {
+    if (!(site.free(x, z, margin, o.claimGrow ?? 0) && (o.ok?.(x, z) ?? true))) { flush(); continue; }
+    const prev = run[run.length - 1];
+    if (prev) { const d = Math.hypot(x - prev[0], z - prev[1]); if (d > 1e-6 && Math.abs(site.h(x, z) - site.h(prev[0], prev[1])) / d > maxGrade) flush(); }
+    run.push([x, z]);
+  }
   flush();
   return runs;
 }

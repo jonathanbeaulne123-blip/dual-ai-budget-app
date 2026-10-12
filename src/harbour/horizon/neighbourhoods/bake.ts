@@ -181,7 +181,7 @@ export function createDressingContext(src: DressingSource): DressingContextImpl 
   });
   function waterLevelAt(x: number, z: number): number | null { for (const i of watersNear(x, z)) { const h = waterHeightAt(waters[i]!, x, z); if (h !== null) return h; } return null; }
   // Baked solids' plan footprints: every triangle's xz projection in a lazy grid (built on the first solid query).
-  let solidGrid: Map<number, number[]> | null = null; const tris: { s: number; p: number[] }[] = [];
+  let solidGrid: Map<number, number[]> | null = null; const tris: { s: number; p: number[]; y: number[] }[] = [];
   function buildSolidGrid() {
     solidGrid = new Map();
     src.solids.forEach((solid, si) => {
@@ -190,18 +190,29 @@ export function createDressingContext(src: DressingSource): DressingContextImpl 
         const a = I[i]! * 3, b = I[i + 1]! * 3, c = I[i + 2]! * 3, p = [P[a]!, P[a + 2]!, P[b]!, P[b + 2]!, P[c]!, P[c + 2]!];
         const area = Math.abs((p[2]! - p[0]!) * (p[5]! - p[1]!) - (p[4]! - p[0]!) * (p[3]! - p[1]!));
         if (area < 1e-6) continue; // vertical faces project to a line; their neighbours carry the footprint
-        const k = tris.length; tris.push({ s: si, p });
+        const k = tris.length; tris.push({ s: si, p, y: [P[a + 1]!, P[b + 1]!, P[c + 1]!] });
         const x0 = Math.floor(Math.min(p[0]!, p[2]!, p[4]!) / GRID), x1 = Math.floor(Math.max(p[0]!, p[2]!, p[4]!) / GRID), z0 = Math.floor(Math.min(p[1]!, p[3]!, p[5]!) / GRID), z1 = Math.floor(Math.max(p[1]!, p[3]!, p[5]!) / GRID);
         for (let cx = x0; cx <= x1; cx++) for (let cz = z0; cz <= z1; cz++) { const key = cellKey(cx, cz); let l = solidGrid!.get(key); if (!l) solidGrid!.set(key, l = []); l.push(k); }
       }
     });
+  }
+  /** The triangle's height over (x, z): its plane, with the barycentric weights clamped (a point just outside takes its edge). */
+  function solidHeightAt(t: { p: number[]; y: number[] }, x: number, z: number): number {
+    const [ax, az, bx, bz, cx, cz] = t.p as [number, number, number, number, number, number], d = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz);
+    let u = ((bz - cz) * (x - cx) + (cx - bx) * (z - cz)) / d, v = ((cz - az) * (x - cx) + (ax - cx) * (z - cz)) / d, w = 1 - u - v;
+    u = Math.max(0, u); v = Math.max(0, v); w = Math.max(0, w); const n = u + v + w || 1;
+    return (u * t.y[0]! + v * t.y[1]! + w * t.y[2]!) / n;
   }
   function inSolid(x: number, z: number, margin = 0, ignore?: (id: string) => boolean): string | null {
     if (!solidGrid) buildSolidGrid();
     const r = Math.ceil(margin / GRID), cx = Math.floor(x / GRID), cz = Math.floor(z / GRID);
     for (let i = -r; i <= r; i++) for (let j = -r; j <= r; j++) for (const k of solidGrid!.get(cellKey(cx + i, cz + j)) ?? []) {
       const t = tris[k]!, id = src.solids[t.s]!.id; if (ignore?.(id)) continue;
-      if (triangleDistance2d(t.p[0]!, t.p[1]!, t.p[2]!, t.p[3]!, t.p[4]!, t.p[5]!, x, z) <= margin) return id;
+      if (triangleDistance2d(t.p[0]!, t.p[1]!, t.p[2]!, t.p[3]!, t.p[4]!, t.p[5]!, x, z) > margin) continue;
+      // Where the solid lies ≥ TUNNEL_COVER under the ground at (x, z) (a tunnel's floor, walls or roof deep in the rock) it is
+      // rock's business, not the surface's: it does not occupy the ground above it (as a buried bed stretch, D-WW103).
+      if (solidHeightAt(t, x, z) < src.ground(x, z) - TUNNEL_COVER) continue;
+      return id;
     }
     return null;
   }
@@ -253,7 +264,7 @@ export const PROP_HEIGHT: Record<PropKind, number> = {
   laundryLine: 2.4, stall: 2.6, cafeTable: 0.8, fountain: 1.6, planter: 0.8, bikeRack: 0.8, mapBoard: 1.6, sundial: 1.1, monthStone: 0.6,
   kite: 12, swing: 3, windsock: 6, beacon: 4, fireRing: 0.4, volleyNet: 2.4, lifeRing: 1.4, rodHolder: 1, duckBox: 1.5,
   ospreyPole: 12, snag: 8, buoy: 1, bollardQuay: 0.7, net: 1.5, crate: 0.8, cairn: 1.2, sheepFank: 1.2, festoon: 3, flag: 6,
-  bocceCourt: 0.3, skateBowl: 0.2, geoglyph: 0.2, readingTable: 0.8, bookCart: 1.1, birdFeeder: 1.8, bell: 1,
+  bocceCourt: 0.3, skateBowl: 0.2, geoglyph: 0.2, readingTable: 0.8, bookCart: 1.1, birdFeeder: 1.8, bell: 1, boulder: 1.4,
 };
 /** Footprint edges and colliding lines are sampled this often (eu) against pads, water and baked solids. */
 export const EDGE_STEP = 0.5;

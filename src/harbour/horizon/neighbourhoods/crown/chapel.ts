@@ -16,7 +16,10 @@ export const CHAPEL = { at: [1036, 318] as const, yaw: -.4, w: 6, d: 11, wallH: 
 export const COTE_TOP = storyLandmark('westwatch').top[1];
 
 export function chapel(site: Site): { buildings: BuildingRecord[]; props: PropRecord[]; lights: LightAnchor[]; landmarks: Landmark[]; life: LifeSpawn[] } {
-  const { h } = site, [x, z] = CHAPEL.at, floor = h(x, z) + CHAPEL.floorLift, coteTop = COTE_TOP - floor;
+  // The pad is a terrace cut into the knoll's south slope: the nave's door gable stands on the slope 1–1.5 m above the pad,
+  // so the floor is the door step's ground (never below the pad + lift) and the plinth carries it over the pad's cut.
+  const { h } = site, [x, z] = CHAPEL.at, [dx, dz] = local(x, z, CHAPEL.yaw, 0, CHAPEL.d / 2 + .3);
+  const floor = Math.round(Math.max(h(x, z) + CHAPEL.floorLift, h(dx, dz) + .05) * 1000) / 1000, coteTop = COTE_TOP - floor;
   const rect: Rect = { x, z, hx: CHAPEL.w / 2, hz: CHAPEL.d / 2, yaw: CHAPEL.yaw };
   const rec: BuildingRecord = {
     id: 'westwatch.chapel', districtId: '', kind: 'chapel', style: 'crown.croft', at: P3(x, floor, z), yaw: CHAPEL.yaw,

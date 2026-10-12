@@ -27,8 +27,11 @@ export const HAMLET = {
   crofts: 9, big: 4,
   /** A croft's walled yard behind it (m, from its back wall) and the gap kept between neighbours' house+yard plots. */
   yard: 5, gap: 2,
-  maxSpan: 1.6, steepSpan: 2.1,
+  maxSpan: 1.2, steepSpan: 2.0,
 } as const;
+
+/** The steepest ground a croft's yard wall follows (field walls: `WALL_GRADE`). */
+export const YARD_GRADE = .34;
 
 export interface Croft { id: string; rect: Rect; floor: number; big: boolean; lit: boolean }
 
@@ -76,8 +79,8 @@ export function hamlet(site: Site): { buildings: BuildingRecord[]; props: PropRe
   const buildings: BuildingRecord[] = [], props: PropRecord[] = [], plants: PlantRecord[] = [], ground: GroundPaint[] = [], lights: LightAnchor[] = [], life: LifeSpawn[] = [];
   const walls: [Point2, Point2][] = [];
   const nearWall = (x: number, z: number, r: number) => walls.some(([a, b]) => segDist(x, z, a, b).d < r);
-  const addWall = (id: string, pts: Point2[], o: { closed?: boolean; minRun?: number } = {}) => {
-    const runs = freeRuns(site, pts, { margin: .9, minRun: o.minRun ?? 3, closed: o.closed, ok: (x, z) => !nearWall(x, z, 2) });
+  const addWall = (id: string, pts: Point2[], o: { closed?: boolean; minRun?: number; maxGrade?: number } = {}) => {
+    const runs = freeRuns(site, pts, { margin: .9, minRun: o.minRun ?? 3, closed: o.closed, maxGrade: o.maxGrade, ok: (x, z) => !nearWall(x, z, 2) });
     for (const r of runs) for (let i = 1; i < r.length; i++) walls.push([[r[i - 1]![0], r[i - 1]![2]], [r[i]![0], r[i]![2]]]);
     props.push(...linear('drystoneWall', id, runs));
   };
@@ -90,8 +93,9 @@ export function hamlet(site: Site): { buildings: BuildingRecord[]; props: PropRe
     });
     // The yard: a dry-stone U behind the house, its gate in the back wall's middle.
     const Y = (lx: number, lz: number) => local(r.x, r.z, r.yaw, lx, lz), back = -r.hz - HAMLET.yard;
-    addWall(`${c.id}.yard.l`, [Y(-r.hx - .6, -r.hz - .5), Y(-r.hx - .6, back), Y(-1.2, back)], { minRun: 2 });
-    addWall(`${c.id}.yard.r`, [Y(1.2, back), Y(r.hx + .6, back), Y(r.hx + .6, -r.hz - .5)], { minRun: 2 });
+    // A yard's walls are short: they may follow a steeper yard (a croft on the shelf's edge) than a field wall does.
+    addWall(`${c.id}.yard.l`, [Y(-r.hx - .6, -r.hz - .5), Y(-r.hx - .6, back), Y(-1.2, back)], { minRun: 2, maxGrade: YARD_GRADE });
+    addWall(`${c.id}.yard.r`, [Y(1.2, back), Y(r.hx + .6, back), Y(r.hx + .6, -r.hz - .5)], { minRun: 2, maxGrade: YARD_GRADE });
     const yard: Rect = { x: Y(0, -r.hz - HAMLET.yard / 2)[0], z: Y(0, -r.hz - HAMLET.yard / 2)[1], hx: r.hx, hz: HAMLET.yard / 2, yaw: r.yaw };
     // In the yard: the kale bed (dug ground), a hay bale or two, a washing line on the bigger crofts.
     const kale = rectCorners({ ...yard, x: Y(-r.hx / 2, -r.hz - HAMLET.yard / 2)[0], z: Y(-r.hx / 2, -r.hz - HAMLET.yard / 2)[1], hx: Math.min(2.4, r.hx / 2 - .6), hz: HAMLET.yard / 2 - 1.4 });

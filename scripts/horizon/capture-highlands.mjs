@@ -1,6 +1,6 @@
 // The Highlands (The Water's Way PR 3, module `crown`) evidence: the place's Sketchbook pages (E, F), its porch (the hamlet
 // lane at the north pass), its signature poses (Bench Hamlet, Westwatch Chapel, Fallswatch's binocular lines, High Shieling
-// Ranch, the drag lift, the Rim Walk), the Bight lookout's telephoto line to the Westwatch cote, and an aerial — at the
+// Ranch, the drag lift, the Rim Walk, the Rim Lookout, the Twin Tarns), the Bight lookout's telephoto line to the Westwatch cote, and an aerial — at the
 // place's best hour (dawn) and at night, in Classic, Taylor's Scrapbook and Newfoundland, full and lite. Headless SwiftShader
 // on the review harness; NOT device evidence. Starts its own vite dev server (unless --url) and kills it at the end.
 //   node scripts/horizon/capture-highlands.mjs --out docs/horizon/evidence/waters-way-crown --port 5201
@@ -14,7 +14,7 @@ import {execFileSync,spawn} from 'node:child_process';
 const args=process.argv.slice(2),opt=(n,f)=>{const i=args.indexOf(`--${n}`);return i>=0?args[i+1]:f;};
 const out=resolve(opt('out','docs/horizon/evidence/waters-way-crown')),port=Number(opt('port','5201')),only=opt('only')?.split(',').filter(Boolean)??null;
 const themes=opt('themes','classic,taylor,newfoundland').split(','),tiers=opt('tiers','full,lite').split(',');
-const VIEW={width:Number(opt('width','1024')),height:Number(opt('height','640'))},QUALITY=Number(opt('quality','78'));
+const VIEW={width:Number(opt('width','960')),height:Number(opt('height','600'))},QUALITY=Number(opt('quality','78'));
 const DATE='2026-06-21',DAWN='06:30',DAY='10:30',NIGHT='22:40';
 const sha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 await mkdir(out,{recursive:true});
@@ -35,15 +35,17 @@ process.on('exit',kill);
 // Poses: [label, eye, target, vertical fov, eye mode]. `g` eyes stand `dy` over the surface the runtime reports at (x, z).
 const POSES=[
   {label:'porch-north-pass',eye:{x:1060,z:342,dy:1.6},target:[1036,93,316],fov:55,note:'the porch: the hamlet lane at the north pass, Westwatch Chapel on its knoll and the sea beyond'},
-  {label:'westwatch-chapel',eye:{x:1046,z:331,dy:1.6},target:[1036,91,315],fov:55,note:'Westwatch Chapel from its churchyard gate: the verdigris bell cote on the north gable'},
+  {label:'westwatch-chapel',eye:{x:1049,z:321,dy:1.6},target:[1036,91,316],fov:60,note:'Westwatch Chapel from its churchyard gate: the verdigris bell cote on the north gable'},
   {label:'bench-hamlet',eye:{abs:[1036,116,466]},target:[1082,103,412],fov:55,note:'Bench Hamlet from the shelf\'s south end: the crofts along the lane, yards, strips and dykes'},
   {label:'bench-hamlet-to-horn',eye:{x:1068,z:400,dy:1.6},target:[1400,150,398],fov:58,note:'standing in Bench Hamlet toward the horn (the prototype\'s hamlet camera)'},
-  {label:'fallswatch-veil',eye:{x:1081,z:692.5,dy:1.7},target:[1112,74,706],fov:62,note:'from the Fallswatch eye along the Veil (the binocular line to the lip)'},
-  {label:'fallswatch-oak',eye:{x:1086,z:694.3,dy:1.6},target:[1125,50,1165],fov:40,note:'from the Fallswatch eye: the Old Oak across Stillwater (story link 1 → 2)'},
-  {label:'fallswatch-deck',eye:{x:1104,z:672,dy:1.6},target:[1082,95.5,693],fov:55,note:'the Fallswatch deck and its Lookout kit on the west buttress, from the lane behind the lip'},
-  {label:'high-shieling-ranch',eye:{x:1430,z:706,dy:1.7},target:[1452,63.5,680],fov:58,note:'High Shieling Ranch: longhouse, barn, paddock, the mere below'},
+  {label:'fallswatch-veil',eye:{x:1086,z:694.3,dy:1.6},target:[1113,86,706],fov:62,note:'from the Fallswatch eye along the Veil (the binocular line to the lip)'},
+  {label:'fallswatch-oak',eye:{x:1086,z:694.3,dy:1.6},target:[1125,50,1165],fov:16,note:'from the Fallswatch eye: the Old Oak across Stillwater (story link 1 → 2)'},
+  {label:'fallswatch-deck',eye:{x:1122,z:680,dy:1.7},target:[1083,94,695],fov:50,note:'the Fallswatch deck and its Lookout kit on the west buttress, from the lane behind the lip'},
+  {label:'high-shieling-ranch',eye:{x:1414,z:667,dy:1.7},target:[1452,63,683],fov:58,note:'High Shieling Ranch: longhouse, barn, paddock, the mere below'},
   {label:'drag-lift',eye:{x:1124,z:420,dy:1.7},target:[1186,117,360],fov:55,note:'the drag lift from the Twin Tarns shelf: stations, towers, the rope and its T-bars'},
   {label:'rim-walk-cairns',eye:{abs:[1236,140,318]},target:[1360,128,372],fov:55,note:'on the Rim Walk: cairns, turf and scree toward the horn'},
+  {label:'rim-lookout',eye:{abs:[1534,109,561]},target:[1519,104.5,546],fov:55,note:'the Rim Lookout: the lookout wall on the lip, its viewer and low lamp, the fall to Horizon Drive beyond'},
+  {label:'twin-tarns',eye:{x:1134,z:408,dy:1.7},target:[1156,105,378],fov:55,note:'the Twin Tarns shelf: shore stones, shingle, birch, the lift foot'},
   {label:'bight-to-westwatch',eye:{abs:[744,53.6,511]},target:[1038,95,313.2],fov:12,note:'telephoto along the Bight lookout\'s line to the Westwatch cote (story link 7 → 1)'},
   {label:'aerial',eye:{abs:[840,330,1010]},target:[1270,95,500],fov:46,note:'aerial from the south-west'},
 ];
@@ -55,8 +57,9 @@ const wanted=l=>!only||only.some(o=>l.includes(o));
 try{
   for(const tier of tiers)for(const theme of themes){
     // Classic full: everything at dawn + night; other dressings / lite: the signature set.
-    const set=tier==='full'&&theme==='classic'?POSES:POSES.filter(p=>['porch-north-pass','westwatch-chapel','bench-hamlet','fallswatch-veil','fallswatch-deck','high-shieling-ranch'].includes(p.label));
-    const times=tier==='full'&&theme==='classic'?[DAWN,NIGHT]:theme==='newfoundland'&&tier==='full'?[DAWN,NIGHT]:[DAWN];
+    // Classic full: every pose; every other dressing × tier: the porch and three signature poses — all at dawn and night.
+    const set=tier==='full'&&theme==='classic'?POSES:POSES.filter(p=>['porch-north-pass','westwatch-chapel','bench-hamlet','fallswatch-veil'].includes(p.label));
+    const times=[DAWN,NIGHT];
     const todo=set.filter(p=>wanted(p.label));if(!todo.length&&!(tier==='full'&&theme==='classic'))continue;
     const page=await browser.newPage({viewport:VIEW,timezoneId:'America/Toronto',deviceScaleFactor:1});page.setDefaultTimeout(600000);
     page.on('pageerror',e=>errors.push({tier,theme,message:e.message}));

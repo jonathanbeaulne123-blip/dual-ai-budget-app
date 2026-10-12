@@ -19,6 +19,8 @@ export function paintField(f: (x: number, z: number) => number, box: Box, step: 
   const push = (polygon: Point2[]) => {
     if (polygon.length < 3) return;
     let cx = 0, cz = 0; for (const p of polygon) { cx += p[0]; cz += p[1]; }
+    // A marching-squares sliver whose centre falls outside the rule (a curved edge cut by a straight chord) is dropped.
+    if (f(cx / polygon.length, cz / polygon.length) <= 0) return;
     out.push({ polygon, surface, tone: round(Math.max(0, Math.min(1, tone(cx / polygon.length, cz / polygon.length))), 1000) });
   };
   for (let j = 0; j < nz; j++) {

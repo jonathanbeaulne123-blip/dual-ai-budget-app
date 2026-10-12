@@ -19,6 +19,8 @@ import { hamlet } from './hamlet.ts';
 import { lift } from './lift.ts';
 import { ranch } from './ranch.ts';
 import { planting } from './planting.ts';
+import { rimLookout } from './rim.ts';
+import { stones } from './stones.ts';
 import { paintField, ring } from './paint.ts';
 import { fbm } from './noise.ts';
 import { createSite, local, onV2Footprint, P3, type Rect, type Site } from './site.ts';
@@ -30,6 +32,8 @@ export { CHAPEL, COTE_TOP } from './chapel.ts';
 export { DECK } from './fallswatch.ts';
 export { LIFT } from './lift.ts';
 export { ORCHARD, SPRUCE_SCALE } from './planting.ts';
+export { RIM } from './rim.ts';
+export { STONES } from './stones.ts';
 
 const bench = (id: string) => V3_BENCHES.find(b => b.id === id)!;
 
@@ -58,7 +62,7 @@ const inHayOne = (r: Rect, x: number, z: number) => { const c = Math.cos(r.yaw),
 /** The painted ground (budgeted: zones where they read, never on a lane, a pad, water or a building). */
 function paint(site: Site, hay: readonly Rect[]): GroundPaint[] {
   const { h, ctx } = site, out: GroundPaint[] = [];
-  const clear = (x: number, z: number, m = .6) => Math.min(ctx.bedClearance(x, z) - m, onV2Footprint(x, z) || ctx.waterLevelAt(x, z) !== null || site.claimed(x, z, .3) ? -1 : 1);
+  const clear = (x: number, z: number, m = .6) => Math.min(ctx.bedClearance(x, z) - m, onV2Footprint(x, z) || ctx.waterLevelAt(x, z) !== null || site.claimed(x, z, .3, true) ? -1 : 1);
   const tone = (x: number, z: number) => .5 + .35 * fbm(x * .04, z * .04, 31);
   // Pasture on the farmed benches: the hamlet's in-bye strips, the ranch, the orchard's grass (mown under the rows).
   // The hamlet's hay strips (every other croft's in-bye strip, mown) are cut out of its pasture so the two never overlap.
@@ -81,11 +85,11 @@ function paint(site: Site, hay: readonly Rect[]): GroundPaint[] {
   // Shingle shores round the tarns and the mere; wet stone round every fall's pool (the spray's reach).
   for (const id of ['water.v3.upperTarn', 'water.v3.lowerTarn', 'water.v3.spurTarn', 'water.v3.shielingMere', 'water.v3.glacierSprings']) {
     const t = V3_BASINS.find(b => b.id === id)!, k = 1 + 3.2 / Math.min(...t.radii);
-    out.push(...ring(t.at, t.radii, .96, k, 18, 'gravel', .72, (x, z) => ctx.bedClearance(x, z) > .8 && !site.claimed(x, z)));
+    out.push(...ring(t.at, t.radii, .96, k, 18, 'gravel', .72, (x, z) => ctx.bedClearance(x, z) > .8 && !site.claimed(x, z, 0, true)));
   }
   for (const f of V3_FALLS) {
     const p = V3_BASINS.find(b => b.id === f.pool)!, k = 1 + 3 / Math.min(...p.radii);
-    out.push(...ring(p.at, p.radii, .97, k, 16, 'scree', .05, (x, z) => ctx.bedClearance(x, z) > .8 && !site.claimed(x, z)));
+    out.push(...ring(p.at, p.radii, .97, k, 16, 'scree', .05, (x, z) => ctx.bedClearance(x, z) > .8 && !site.claimed(x, z, 0, true)));
   }
   return out;
 }
@@ -95,22 +99,22 @@ export function buildCrown(ctx: Parameters<NeighbourhoodModule['build']>[0]): Ne
   // The kept sightlines first (clearings before anything): the Bight lookout to Westwatch's cote crosses the west wall.
   const bight = storyEye('bightLookout'), cote = aimPoint(storyLandmark('westwatch'));
   site.sights.push({ from: [bight.at[0], bight.y ?? 0, bight.at[1]], to: cote, half: 3, margin: .8 });
-  const w = chapel(site), f = fallswatch(site), l = lift(site), hm = hamlet(site), r = ranch(site), c = cairns(site), p = planting(site);
+  const w = chapel(site), f = fallswatch(site), l = lift(site), hm = hamlet(site), r = ranch(site), rim = rimLookout(site), c = cairns(site), st = stones(site), p = planting(site);
   // Every other croft's strip behind its yard is a hay meadow (mown), the rest pasture: the township's striped in-bye land.
   const hay = hm.crofts.filter((_, i) => i % 2 === 0).map(c => { const [x, z] = local(c.rect.x, c.rect.z, c.rect.yaw, 0, -c.rect.hz - HAMLET.yard - 11); return { x, z, hx: c.rect.hx + 2.2, hz: 10, yaw: c.rect.yaw }; });
   const ground = [...hm.ground, ...paint(site, hay)];
-  const life: LifeSpawn[] = [...w.life, ...hm.life, ...r.life,
+  const life: LifeSpawn[] = [...w.life, ...hm.life, ...r.life, ...rim.life,
     // Ravens over the crest and the horn (STYLE §1.9: the Crown's ravens), dawn to dusk.
     { kind: 'raven', at: P3(1300, 150, 360), radius: 60, count: 2, hours: [5, 20] }];
   return {
     id: 'crown',
     buildings: [...w.buildings, ...f.buildings, ...l.buildings, ...hm.buildings, ...r.buildings],
     plants: p.plants.concat(hm.plants),
-    props: [...w.props, ...f.props, ...l.props, ...hm.props, ...r.props, ...c, ...p.props],
+    props: [...w.props, ...f.props, ...l.props, ...hm.props, ...r.props, ...rim.props, ...c, ...st, ...p.props],
     ground,
     pools: [],
     life,
-    lights: [...w.lights, ...hm.lights, ...f.lights, ...r.lights],
+    lights: [...w.lights, ...hm.lights, ...f.lights, ...r.lights, ...rim.lights],
     landmarks: [...w.landmarks, ...f.landmarks],
     lookouts: f.lookouts,
   };
