@@ -122,7 +122,13 @@ export interface PropRecord {
 /* ---------------------------------------------------------------- ground, life */
 
 /** Paint only: colours/textures the terrain inside the polygon by surface token. Never re-shapes ground. */
-export interface GroundPaint { polygon: Point2[]; surface: 'cobble' | 'brick' | 'travertine' | 'gravel' | 'sand' | 'duff' | 'sedge' | 'mown' | 'meadow' | 'prairie' | 'ochre' | 'scree' | 'snow' | 'mud' | 'pasture' | 'concrete'; tone?: number; /** E3 (additive, the Green): detail paint the lite tier drops (lite drops, never substitutes). */ fullOnly?: boolean }
+export interface GroundPaint { polygon: Point2[]; surface: 'cobble' | 'brick' | 'travertine' | 'gravel' | 'sand' | 'duff' | 'sedge' | 'mown' | 'meadow' | 'prairie' | 'ochre' | 'scree' | 'snow' | 'mud' | 'pasture' | 'concrete'; tone?: number;
+  /** H2 (additive, Little Harbour): a level the paint never sinks below — a pad's top (the square's slab at 12), so paint on a
+   * level pad lies on the slab the land draws, not on the terrain under it. The decal is at max(ground, floor). */
+  floor?: number;
+  /** H3 (additive, Little Harbour): set dressing paint that lite drops whole (lite drops, never substitutes), e.g. the town's
+   * cobbled lane verges; the paint a page or a pastime reads (the square, the bocce green) leaves it unset. */
+  fullOnly?: boolean }
 /** Shallow standing water drawn as a surface (marsh pools, the Reed Maze channels); its ground is the land pass's. */
 export interface PoolRecord { id: string; outline: Point2[]; level: number }
 
@@ -201,6 +207,12 @@ export interface DressingContext {
   protectedAreas: readonly { id: string; outline: readonly Point2[] }[];
   /** Deterministic PRNG for a named stream; same seed → same sequence on every machine. */
   rng(seed: string): () => number;
+  /**
+   * H1 (additive, Little Harbour): the pad (place, landing, threshold, host …) whose plan holds (x, z) grown by `margin`, or
+   * null. The bake's context always answers (it is the validator's own `onPad`); optional so small test doubles may omit it.
+   * A module needs it where `occupied` is too coarse: a colliding prop may stand on a bed's edge band but never on a pad.
+   */
+  onPad?(x: number, z: number, margin?: number): string | null;
 }
 
 export interface NeighbourhoodModule { id: NeighbourhoodId; build(ctx: DressingContext): NeighbourhoodDressing }

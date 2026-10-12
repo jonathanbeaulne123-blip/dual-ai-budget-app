@@ -7,6 +7,7 @@
 import type { NeighbourhoodModule } from './types.ts';
 import { crown } from './crown/index.ts';
 import { flatsModule } from './flats/index.ts';
+import { harbour } from './harbour/index.ts';
 import { lakeside } from './lakeside/index.ts';
 
-export const NEIGHBOURHOOD_MODULES: NeighbourhoodModule[] = [crown, flatsModule, lakeside];
+export const NEIGHBOURHOOD_MODULES: NeighbourhoodModule[] = [crown, flatsModule, harbour, lakeside];

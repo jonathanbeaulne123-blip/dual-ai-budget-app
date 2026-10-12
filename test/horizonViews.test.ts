@@ -106,6 +106,8 @@ it('keeps all landscape subjects and the repaired C/D/F/L portrait subjects legi
   // (an authored-view change or a shorter abutment); the page's night subject, Lantern Row, is unchanged.
   // Bridge cast: Quay's replaced support arrangement reveals 13 Boathouse pixels (was 11).
   // The approved portrait reframe preserves that landscape composition and puts both subjects in frame.
+  // D-WW139 (PR 3, Little Harbour dressed): the town keeps a clearing to the Boathouse, so the landscape keeps its 13; the
+  // portrait eye moved from the square's corner (now inside the vicolo's houses) onto the quay.
   expect(px('L','the Boathouse').pixels).toBe(13);
   // D-MR27: approved portrait reframing preserves every subject and landscape.
   expect(list('passLandscape')).toBe('ABCDEFGHIJKL'); expect(list('passPortrait')).toBe('ABCDEFGHIJKL');
@@ -115,7 +117,8 @@ it('keeps all landscape subjects and the repaired C/D/F/L portrait subjects legi
     expect(proof.horizonInFrame).toBe(true);
     expect(Object.values(proof.subjects).every(pixels => pixels >= proof.minPixels)).toBe(true);
   }
-  expect(views.find(v => v.id === 'L')!.proof!.portrait!.subjects).toMatchObject({ 'Lantern Row': 11, 'the Boathouse': 13 });
+  // D-WW139: page L's portrait eye on the quay (was the square's corner, 11 / 13, now inside the dressed vicolo).
+  expect(views.find(v => v.id === 'L')!.proof!.portrait!.subjects).toMatchObject({ 'Lantern Row': 2294, 'the Boathouse': 12 });
   expect([px('G', 'the skylight shaft').pixels, px('G', 'the skylight shaft').portraitPixels]).toEqual([70, 42]);
   // The Water's Way (D-WW86, PR 2 land L3): page H re-posed up the strip from over its south end (eye [452,58,890] → [428,30,480],
   // the Flats prototype's pose: the strip, the windsock and the balloon in frame); the west sea now sits at the frame's west edge
