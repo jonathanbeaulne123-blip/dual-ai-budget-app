@@ -6,6 +6,9 @@
  * posts with wall lanterns. Taylor: linen card, vellum windows, mint paper roofs. Newfoundland: silver-grey shingle,
  * galvanised flashing, the verdigris kept as the story's landmark roof.
  * Local frame: x = the long axis (u, NE at yaw π/4), +z = the door face (v, SE).
+ * `params.eaveH` (optional): the drawn eave when the record re-dresses a host whose baked shell is a taller box (the
+ * Library's greybox walls stand to roofH − 0.35 = 13.65 above the floor; the bake fits `size.h` to that shell, and the
+ * re-dress draws the prototype's 5.2 m walls and 50° roofs inside the same envelope, ridges at the shell's roof plane).
  */
 import {
   box,num,rectOf,facePt,facePanel,windowAt,doorAt,plinth,footShade,walls,roofGable,gableVols,wallLantern,turnedCtx,turnVols,
@@ -16,7 +19,7 @@ import {
 type LibPlan=Plan&{r:Rect;wallH:number;rise:number;ov:number;halves:[Rect,Rect];canopy:{rt:Rect;eave:number;rise:number;posts:[number,number][]};stack:[number,number,number,number]};
 export const library:KindDef<LibPlan>={
   plan(rec){
-    const r=rectOf(rec.size.w/2,rec.size.d/2),wallH=Math.max(3,rec.size.h),hz2=r.hz/2,rise=num(rec,'rise',hz2*1.2),ov=rec.roof.overhang>0?rec.roof.overhang:.9;
+    const r=rectOf(rec.size.w/2,rec.size.d/2),wallH=Math.max(3,num(rec,'eaveH',rec.size.h)),hz2=r.hz/2,rise=num(rec,'rise',hz2*1.2),ov=rec.roof.overhang>0?rec.roof.overhang:.9;
     const halves:[Rect,Rect]=[rectOf(r.hx,hz2,0,hz2),rectOf(r.hx,hz2,0,-hz2)];
     // Porch canopy: a small gable whose ridge runs out from the door (planned in the turned frame).
     const cz=r.hz+1.9,rt=rectOf(1.8,1.9,-cz,0),ce=3.7,cr=1.5,posts:[number,number][]=[[-1.6,r.hz+3.4],[1.6,r.hz+3.4]];

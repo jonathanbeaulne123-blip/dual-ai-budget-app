@@ -1,0 +1,1336 @@
+{
+ "sha": "250517ef319e8170054d6dbf2f7aa25c3fec4d27",
+ "date": "2026-06-21",
+ "timeZone": "America/Toronto",
+ "clocks": {
+  "golden": "19:47",
+  "dusk": "21:17",
+  "night": "02:00",
+  "noon": "13:02"
+ },
+ "method": "headless Chromium (SwiftShader) on horizon-review.html; look poses via __harbour.world.views + shot(); not device evidence.",
+ "records": [
+  {
+   "file": "porch_golden_classic_full.jpg",
+   "pose": "porch",
+   "label": "the Bight lookout, across the Bight to the Flats",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    744.4,
+    53.6,
+    510.9
+   ],
+   "target": [
+    567,
+    26,
+    688
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 64096.5,
+    "calls": 154,
+    "triangles": 355368,
+    "resident": 4
+   },
+   "dressing": {
+    "triangles": 65918,
+    "drawCalls": 16,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "porch_night_classic_full.jpg",
+   "pose": "porch",
+   "label": "the Bight lookout, across the Bight to the Flats",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "02:00",
+   "when": "night",
+   "eye": [
+    744.4,
+    53.6,
+    510.9
+   ],
+   "target": [
+    567,
+    26,
+    688
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 94578.6,
+    "calls": 171,
+    "triangles": 452502,
+    "resident": 4
+   },
+   "dressing": {
+    "triangles": 65918,
+    "drawCalls": 16,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "spur_golden_classic_full.jpg",
+   "pose": "spur",
+   "label": "the lookout spur to the deck",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    747.8,
+    50.8,
+    457
+   ],
+   "target": [
+    744.5,
+    52.5,
+    510
+   ],
+   "fov": 58,
+   "draw": {
+    "at": 143260,
+    "calls": 103,
+    "triangles": 281667,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 73999,
+    "drawCalls": 16,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "spur_night_classic_full.jpg",
+   "pose": "spur",
+   "label": "the lookout spur to the deck",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "02:00",
+   "when": "night",
+   "eye": [
+    747.8,
+    50.8,
+    457
+   ],
+   "target": [
+    744.5,
+    52.5,
+    510
+   ],
+   "fov": 58,
+   "draw": {
+    "at": 199524.4,
+    "calls": 111,
+    "triangles": 318803,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 73999,
+    "drawCalls": 16,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "westwatch_golden_classic_full.jpg",
+   "pose": "westwatch",
+   "label": "from the lookout to Westwatch over the woods",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    746.6,
+    53.6,
+    507.4
+   ],
+   "target": [
+    1036,
+    90,
+    318
+   ],
+   "fov": 50,
+   "draw": {
+    "at": 274021.4,
+    "calls": 143,
+    "triangles": 620658,
+    "resident": 4
+   },
+   "dressing": {
+    "triangles": 70707,
+    "drawCalls": 16,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "binoWestwatch_golden_classic_full.jpg",
+   "pose": "binoWestwatch",
+   "label": "the binoculars on Westwatch from the Bight lookout",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    744,
+    53.6,
+    511
+   ],
+   "target": [
+    1036,
+    96,
+    318
+   ],
+   "fov": 9,
+   "draw": {
+    "at": 311369.9,
+    "calls": 53,
+    "triangles": 174426,
+    "resident": 4
+   },
+   "dressing": {
+    "triangles": 70707,
+    "drawCalls": 16,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "binoLamp_golden_classic_full.jpg",
+   "pose": "binoLamp",
+   "label": "the binoculars on the Lamp from the Bight lookout",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    744,
+    53.6,
+    511
+   ],
+   "target": [
+    540,
+    25,
+    1195
+   ],
+   "fov": 9,
+   "draw": {
+    "at": 339335.4,
+    "calls": 46,
+    "triangles": 189132,
+    "resident": 4
+   },
+   "dressing": {
+    "triangles": 70433,
+    "drawCalls": 16,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "courtyard_golden_classic_full.jpg",
+   "pose": "courtyard",
+   "label": "courtyard B in the sun window",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    725.4,
+    49.65,
+    438
+   ],
+   "target": [
+    700.9,
+    51.2,
+    410.6
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 347051.8,
+    "calls": 66,
+    "triangles": 204523,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 74518,
+    "drawCalls": 16,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "courtyard_night_classic_full.jpg",
+   "pose": "courtyard",
+   "label": "courtyard B in the sun window",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "02:00",
+   "when": "night",
+   "eye": [
+    725.4,
+    49.65,
+    438
+   ],
+   "target": [
+    700.9,
+    51.2,
+    410.6
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 386200.3,
+    "calls": 71,
+    "triangles": 238773,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 74518,
+    "drawCalls": 16,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "library_golden_classic_full.jpg",
+   "pose": "library",
+   "label": "the Library from the courtyard",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    709,
+    49.7,
+    421.5
+   ],
+   "target": [
+    748,
+    55,
+    404
+   ],
+   "fov": 58,
+   "draw": {
+    "at": 464763.8,
+    "calls": 302,
+    "triangles": 1369290,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 73733,
+    "drawCalls": 16,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "library_night_classic_full.jpg",
+   "pose": "library",
+   "label": "the Library from the courtyard",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "02:00",
+   "when": "night",
+   "eye": [
+    709,
+    49.7,
+    421.5
+   ],
+   "target": [
+    748,
+    55,
+    404
+   ],
+   "fov": 58,
+   "draw": {
+    "at": 546543.9,
+    "calls": 310,
+    "triangles": 1415068,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 73733,
+    "drawCalls": 16,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "gardenwalk_golden_classic_full.jpg",
+   "pose": "gardenwalk",
+   "label": "the garden walk to the Library",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    812,
+    49.1,
+    478
+   ],
+   "target": [
+    758,
+    52.5,
+    418
+   ],
+   "fov": 58,
+   "draw": {
+    "at": 613724.5,
+    "calls": 71,
+    "triangles": 208702,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 71251,
+    "drawCalls": 16,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "gardenwalk_night_classic_full.jpg",
+   "pose": "gardenwalk",
+   "label": "the garden walk to the Library",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "02:00",
+   "when": "night",
+   "eye": [
+    812,
+    49.1,
+    478
+   ],
+   "target": [
+    758,
+    52.5,
+    418
+   ],
+   "fov": 58,
+   "draw": {
+    "at": 671222.2,
+    "calls": 76,
+    "triangles": 244856,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 71251,
+    "drawCalls": 16,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "woods_golden_classic_full.jpg",
+   "pose": "woods",
+   "label": "in the woods along the cove walk",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    752,
+    49.4,
+    355.5
+   ],
+   "target": [
+    712,
+    47,
+    337
+   ],
+   "fov": 62,
+   "draw": {
+    "at": 716487,
+    "calls": 51,
+    "triangles": 184751,
+    "resident": 2
+   },
+   "dressing": {
+    "triangles": 74087,
+    "drawCalls": 16,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "fromBight_golden_classic_full.jpg",
+   "pose": "fromBight",
+   "label": "Scholars' Edge from the Bight",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    690,
+    6,
+    690
+   ],
+   "target": [
+    744,
+    50,
+    452
+   ],
+   "fov": 50,
+   "draw": {
+    "at": 745985.8,
+    "calls": 86,
+    "triangles": 219135,
+    "resident": 4
+   },
+   "dressing": {
+    "triangles": 38087,
+    "drawCalls": 13,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "aerial_golden_classic_full.jpg",
+   "pose": "aerial",
+   "label": "aerial over Scholars' Edge",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    648,
+    112,
+    572
+   ],
+   "target": [
+    748,
+    45,
+    420
+   ],
+   "fov": 50,
+   "draw": {
+    "at": 759068.6,
+    "calls": 82,
+    "triangles": 306116,
+    "resident": 4
+   },
+   "dressing": {
+    "triangles": 49134,
+    "drawCalls": 14,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "aerial_night_classic_full.jpg",
+   "pose": "aerial",
+   "label": "aerial over Scholars' Edge",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "02:00",
+   "when": "night",
+   "eye": [
+    648,
+    112,
+    572
+   ],
+   "target": [
+    748,
+    45,
+    420
+   ],
+   "fov": 50,
+   "draw": {
+    "at": 802350.3,
+    "calls": 88,
+    "triangles": 343180,
+    "resident": 4
+   },
+   "dressing": {
+    "triangles": 49134,
+    "drawCalls": 14,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "porch_golden_classic_lite.jpg",
+   "pose": "porch",
+   "label": "the Bight lookout, across the Bight to the Flats",
+   "theme": "classic",
+   "tier": "lite",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    744.4,
+    53.6,
+    510.9
+   ],
+   "target": [
+    567,
+    26,
+    688
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 42131.6,
+    "calls": 93,
+    "triangles": 81923,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 23532,
+    "drawCalls": 15,
+    "buildings": 3,
+    "props": 35,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "porch_night_classic_lite.jpg",
+   "pose": "porch",
+   "label": "the Bight lookout, across the Bight to the Flats",
+   "theme": "classic",
+   "tier": "lite",
+   "clock": "02:00",
+   "when": "night",
+   "eye": [
+    744.4,
+    53.6,
+    510.9
+   ],
+   "target": [
+    567,
+    26,
+    688
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 57981,
+    "calls": 109,
+    "triangles": 106135,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 23532,
+    "drawCalls": 15,
+    "buildings": 3,
+    "props": 35,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "courtyard_golden_classic_lite.jpg",
+   "pose": "courtyard",
+   "label": "courtyard B in the sun window",
+   "theme": "classic",
+   "tier": "lite",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    725.4,
+    49.65,
+    438
+   ],
+   "target": [
+    700.9,
+    51.2,
+    410.6
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 75397,
+    "calls": 50,
+    "triangles": 84007,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 25569,
+    "drawCalls": 15,
+    "buildings": 3,
+    "props": 35,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "aerial_golden_classic_lite.jpg",
+   "pose": "aerial",
+   "label": "aerial over Scholars' Edge",
+   "theme": "classic",
+   "tier": "lite",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    648,
+    112,
+    572
+   ],
+   "target": [
+    748,
+    45,
+    420
+   ],
+   "fov": 50,
+   "draw": {
+    "at": 78313.5,
+    "calls": 122,
+    "triangles": 268989,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 19021,
+    "drawCalls": 13,
+    "buildings": 3,
+    "props": 35,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "porch_golden_taylor_full.jpg",
+   "pose": "porch",
+   "label": "the Bight lookout, across the Bight to the Flats",
+   "theme": "taylor",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    744.4,
+    53.6,
+    510.9
+   ],
+   "target": [
+    567,
+    26,
+    688
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 61751.1,
+    "calls": 151,
+    "triangles": 343860,
+    "resident": 4
+   },
+   "dressing": {
+    "triangles": 67306,
+    "drawCalls": 18,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "porch_night_taylor_full.jpg",
+   "pose": "porch",
+   "label": "the Bight lookout, across the Bight to the Flats",
+   "theme": "taylor",
+   "tier": "full",
+   "clock": "02:00",
+   "when": "night",
+   "eye": [
+    744.4,
+    53.6,
+    510.9
+   ],
+   "target": [
+    567,
+    26,
+    688
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 94266.4,
+    "calls": 171,
+    "triangles": 446226,
+    "resident": 4
+   },
+   "dressing": {
+    "triangles": 67306,
+    "drawCalls": 18,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "spur_night_taylor_full.jpg",
+   "pose": "spur",
+   "label": "the lookout spur to the deck",
+   "theme": "taylor",
+   "tier": "full",
+   "clock": "02:00",
+   "when": "night",
+   "eye": [
+    747.8,
+    50.8,
+    457
+   ],
+   "target": [
+    744.5,
+    52.5,
+    510
+   ],
+   "fov": 58,
+   "draw": {
+    "at": 117132.3,
+    "calls": 111,
+    "triangles": 313961,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 75577,
+    "drawCalls": 18,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "courtyard_golden_taylor_full.jpg",
+   "pose": "courtyard",
+   "label": "courtyard B in the sun window",
+   "theme": "taylor",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    725.4,
+    49.65,
+    438
+   ],
+   "target": [
+    700.9,
+    51.2,
+    410.6
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 155830.7,
+    "calls": 68,
+    "triangles": 205178,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 76201,
+    "drawCalls": 18,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "courtyard_night_taylor_full.jpg",
+   "pose": "courtyard",
+   "label": "courtyard B in the sun window",
+   "theme": "taylor",
+   "tier": "full",
+   "clock": "02:00",
+   "when": "night",
+   "eye": [
+    725.4,
+    49.65,
+    438
+   ],
+   "target": [
+    700.9,
+    51.2,
+    410.6
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 210278.5,
+    "calls": 73,
+    "triangles": 237268,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 76201,
+    "drawCalls": 18,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "library_golden_taylor_full.jpg",
+   "pose": "library",
+   "label": "the Library from the courtyard",
+   "theme": "taylor",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    709,
+    49.7,
+    421.5
+   ],
+   "target": [
+    748,
+    55,
+    404
+   ],
+   "fov": 58,
+   "draw": {
+    "at": 289208.7,
+    "calls": 301,
+    "triangles": 1361709,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 75228,
+    "drawCalls": 18,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "porch_golden_taylor_lite.jpg",
+   "pose": "porch",
+   "label": "the Bight lookout, across the Bight to the Flats",
+   "theme": "taylor",
+   "tier": "lite",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    744.4,
+    53.6,
+    510.9
+   ],
+   "target": [
+    567,
+    26,
+    688
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 31372.8,
+    "calls": 88,
+    "triangles": 80653,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 24258,
+    "drawCalls": 17,
+    "buildings": 3,
+    "props": 35,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "courtyard_golden_taylor_lite.jpg",
+   "pose": "courtyard",
+   "label": "courtyard B in the sun window",
+   "theme": "taylor",
+   "tier": "lite",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    725.4,
+    49.65,
+    438
+   ],
+   "target": [
+    700.9,
+    51.2,
+    410.6
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 35572.6,
+    "calls": 120,
+    "triangles": 219536,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 26373,
+    "drawCalls": 17,
+    "buildings": 3,
+    "props": 35,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "porch_golden_newfoundland_full.jpg",
+   "pose": "porch",
+   "label": "the Bight lookout, across the Bight to the Flats",
+   "theme": "newfoundland",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    744.4,
+    53.6,
+    510.9
+   ],
+   "target": [
+    567,
+    26,
+    688
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 59509.9,
+    "calls": 153,
+    "triangles": 356553,
+    "resident": 4
+   },
+   "dressing": {
+    "triangles": 68839,
+    "drawCalls": 15,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "porch_night_newfoundland_full.jpg",
+   "pose": "porch",
+   "label": "the Bight lookout, across the Bight to the Flats",
+   "theme": "newfoundland",
+   "tier": "full",
+   "clock": "02:00",
+   "when": "night",
+   "eye": [
+    744.4,
+    53.6,
+    510.9
+   ],
+   "target": [
+    567,
+    26,
+    688
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 91775.3,
+    "calls": 170,
+    "triangles": 453687,
+    "resident": 4
+   },
+   "dressing": {
+    "triangles": 68839,
+    "drawCalls": 15,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "spur_night_newfoundland_full.jpg",
+   "pose": "spur",
+   "label": "the lookout spur to the deck",
+   "theme": "newfoundland",
+   "tier": "full",
+   "clock": "02:00",
+   "when": "night",
+   "eye": [
+    747.8,
+    50.8,
+    457
+   ],
+   "target": [
+    744.5,
+    52.5,
+    510
+   ],
+   "fov": 58,
+   "draw": {
+    "at": 111524.5,
+    "calls": 263,
+    "triangles": 985356,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 77690,
+    "drawCalls": 15,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "courtyard_golden_newfoundland_full.jpg",
+   "pose": "courtyard",
+   "label": "courtyard B in the sun window",
+   "theme": "newfoundland",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    725.4,
+    49.65,
+    438
+   ],
+   "target": [
+    700.9,
+    51.2,
+    410.6
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 152022.8,
+    "calls": 65,
+    "triangles": 208706,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 78563,
+    "drawCalls": 15,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "courtyard_night_newfoundland_full.jpg",
+   "pose": "courtyard",
+   "label": "courtyard B in the sun window",
+   "theme": "newfoundland",
+   "tier": "full",
+   "clock": "02:00",
+   "when": "night",
+   "eye": [
+    725.4,
+    49.65,
+    438
+   ],
+   "target": [
+    700.9,
+    51.2,
+    410.6
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 196754.4,
+    "calls": 70,
+    "triangles": 240796,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 78563,
+    "drawCalls": 15,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "library_golden_newfoundland_full.jpg",
+   "pose": "library",
+   "label": "the Library from the courtyard",
+   "theme": "newfoundland",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    709,
+    49.7,
+    421.5
+   ],
+   "target": [
+    748,
+    55,
+    404
+   ],
+   "fov": 58,
+   "draw": {
+    "at": 251718.9,
+    "calls": 171,
+    "triangles": 726810,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 77577,
+    "drawCalls": 15,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "porch_golden_newfoundland_lite.jpg",
+   "pose": "porch",
+   "label": "the Bight lookout, across the Bight to the Flats",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    744.4,
+    53.6,
+    510.9
+   ],
+   "target": [
+    567,
+    26,
+    688
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 33541.6,
+    "calls": 90,
+    "triangles": 87063,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 24898,
+    "drawCalls": 14,
+    "buildings": 3,
+    "props": 35,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "courtyard_golden_newfoundland_lite.jpg",
+   "pose": "courtyard",
+   "label": "courtyard B in the sun window",
+   "theme": "newfoundland",
+   "tier": "lite",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    725.4,
+    49.65,
+    438
+   ],
+   "target": [
+    700.9,
+    51.2,
+    410.6
+   ],
+   "fov": 60,
+   "draw": {
+    "at": 37658.1,
+    "calls": 115,
+    "triangles": 222994,
+    "resident": 3
+   },
+   "dressing": {
+    "triangles": 27055,
+    "drawCalls": 14,
+    "buildings": 3,
+    "props": 35,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "glade_golden_classic_full.jpg",
+   "pose": "glade",
+   "label": "a glade off the Year Walk",
+   "theme": "classic",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    845,
+    53,
+    447.5
+   ],
+   "target": [
+    835,
+    52.6,
+    480
+   ],
+   "fov": 64,
+   "draw": {
+    "at": 82412.8,
+    "calls": 470,
+    "triangles": 815872,
+    "resident": 2
+   },
+   "dressing": {
+    "triangles": 68361,
+    "drawCalls": 16,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "glade_golden_taylor_full.jpg",
+   "pose": "glade",
+   "label": "a glade off the Year Walk",
+   "theme": "taylor",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    845,
+    53,
+    447.5
+   ],
+   "target": [
+    835,
+    52.6,
+    480
+   ],
+   "fov": 64,
+   "draw": {
+    "at": 61860.7,
+    "calls": 93,
+    "triangles": 224545,
+    "resident": 2
+   },
+   "dressing": {
+    "triangles": 69749,
+    "drawCalls": 18,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  },
+  {
+   "file": "glade_golden_newfoundland_full.jpg",
+   "pose": "glade",
+   "label": "a glade off the Year Walk",
+   "theme": "newfoundland",
+   "tier": "full",
+   "clock": "19:47",
+   "when": "golden",
+   "eye": [
+    845,
+    53,
+    447.5
+   ],
+   "target": [
+    835,
+    52.6,
+    480
+   ],
+   "fov": 64,
+   "draw": {
+    "at": 59230.9,
+    "calls": 92,
+    "triangles": 228998,
+    "resident": 2
+   },
+   "dressing": {
+    "triangles": 71520,
+    "drawCalls": 15,
+    "buildings": 3,
+    "props": 41,
+    "plants": 1708
+   }
+  }
+ ],
+ "errors": [],
+ "note": "glade frames re-shot with a corrected pose (second shoot, same bake and module)"
+}

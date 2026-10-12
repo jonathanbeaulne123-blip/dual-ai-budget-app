@@ -74,7 +74,7 @@ export type CorridorPlanting = {
 };
 
 /** Sets drawn as wild drifts (no soil card or edging): the prairie, the Highlands' fell and the Reach's bog. */
-const isWildSet = (set: FlowerSetId) => WILD_SETS.has(set);
+export const isWildSet = (set: FlowerSetId) => WILD_SETS.has(set);
 /** Hysteresis margins beyond an instance's far radius (eu), and the viewer travel that triggers re-evaluation. */
 export const PLANT_JOIN = 10, PLANT_LEAVE = 30, PLANT_RECHECK = 8;
 /** The far radius of the Water's Way trees' ink shells (the Old Oak's keeps FAR.shell). */

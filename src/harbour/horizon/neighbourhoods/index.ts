@@ -9,5 +9,6 @@ import { crown } from './crown/index.ts';
 import { flatsModule } from './flats/index.ts';
 import { harbour } from './harbour/index.ts';
 import { lakeside } from './lakeside/index.ts';
+import { scholars } from './scholars/index.ts';
 
-export const NEIGHBOURHOOD_MODULES: NeighbourhoodModule[] = [crown, flatsModule, harbour, lakeside];
+export const NEIGHBOURHOOD_MODULES: NeighbourhoodModule[] = [crown, flatsModule, harbour, lakeside, scholars];

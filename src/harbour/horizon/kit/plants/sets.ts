@@ -98,7 +98,7 @@ export function flowerSet(theme: PlantTheme, tint: number | undefined, month?: n
   return CLASSIC[id]!;
 }
 /** Sets drawn as wild drifts (no soil card, no edging): the prairie, the highland, the bog, the Green's meadow sets and Stillwater's lake edge. */
-export const WILD_SETS: ReadonlySet<FlowerSetId> = new Set<FlowerSetId>([FLOWER_SET.prairie, FLOWER_SET.highland, FLOWER_SET.bog, FLOWER_SET.meadowWild, FLOWER_SET.fieldEdge, FLOWER_SET.clocks, FLOWER_SET.lakeEdge]);
+export const WILD_SETS: ReadonlySet<FlowerSetId> = new Set<FlowerSetId>([FLOWER_SET.prairie, FLOWER_SET.highland, FLOWER_SET.bog, FLOWER_SET.meadowWild, FLOWER_SET.fieldEdge, FLOWER_SET.clocks, FLOWER_SET.lakeEdge, FLOWER_SET.woodland]);
 /** The set id of a `tint` (integer part, clamped). */
 export function setOf(tint: number | undefined): FlowerSetId {
   const id = Math.floor(tint ?? 0);
