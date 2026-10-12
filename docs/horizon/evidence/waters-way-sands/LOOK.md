@@ -26,7 +26,7 @@ and triangles on screen). Day shots are 16:30 (page D), 19:30–20:30 (late afte
   middle of the frame (the land's pose, unchanged).
 - `*-D-night2-night` — the proposed night pose for page D (47 m east of D): the wheel lit on the horizon, the zip landing, the
   palms, the festoons and the Campfire.
-- `classic-full-campfire-night` — the Campfire's ring of log seats on its slab, its glow just over the seats.
+- `classic-full-campfire-night` — the Campfire's ring of log seats on its slab, its fire glow showing over the seat backs.
 - `*-boathouse-day` / `-night` — the Boathouse re-dress on its baked footprint: white walls, terracotta gable, blue boat doors
   on the east gable with the gable lantern above them (page L's light), lit windows at night. Taylor keeps it white paper;
   Newfoundland paints it red clapboard under a dark roof (its working-waterfront sheet).

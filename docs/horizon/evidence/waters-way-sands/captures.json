@@ -11,7 +11,7 @@
    "time": "22:30",
    "note": "page D's night pose (protos Dnight2, 47 m east of D): the Campfire, the festoons and the wheel",
    "drawCalls": 84,
-   "triangles": 251931
+   "triangles": 250479
   },
   {
    "file": "classic-full-D-page-day.jpg",
@@ -341,7 +341,7 @@
    "time": "22:30",
    "note": "page D's night pose (protos Dnight2, 47 m east of D): the Campfire, the festoons and the wheel",
    "drawCalls": 82,
-   "triangles": 247991
+   "triangles": 246435
   },
   {
    "file": "newfoundland-full-D-page-day.jpg",
@@ -501,7 +501,7 @@
    "time": "22:30",
    "note": "page D's night pose (protos Dnight2, 47 m east of D): the Campfire, the festoons and the wheel",
    "drawCalls": 86,
-   "triangles": 248904
+   "triangles": 247321
   },
   {
    "file": "taylor-full-D-page-day.jpg",
@@ -655,5 +655,5 @@
   }
  ],
  "errors": [],
- "note": "Merged: capture-sands.mjs full run (sha 679a707) and its D-page / D-night2 / campfire re-shoot after the fire-bead change (sha 679a707)."
+ "note": "Merged: capture-sands.mjs full run (sha 679a707) and its D-page / D-night2 / campfire re-shoot after the fire-bead change (sha 679a707). Campfire and D-night2 re-shot after the Campfire bead rose to 1.0 (sha c475d6e)."
 }

@@ -48,9 +48,9 @@ export const SANDS = {
    *  reef's top south of the ridges, broadside to the south-east (the ferry's side). */
   wreck: [250, 1150] as Point2,
   wreckHull: { at: [244, 1166] as Point2, y: 1.15, yaw: 1.35, scale: 3.6 },
-  /** A fire's light bead sits low in its ring, among the logs (the anchor's head; roadLights draws it); the Campfire's just
-   *  over its ring of log seats (0.47 tall), so the glow shows from the beach over the seats. */
-  fireBead: 0.3, campfireBead: 0.6,
+  /** A fire's light bead sits low in its ring, among the logs (the anchor's head; roadLights draws it); the Campfire's over
+   *  the backs of its ring of log seats (≈ 0.85), so the glow shows from the beach over the seats. */
+  fireBead: 0.3, campfireBead: 1.0,
   /** The Boathouse host (MANIFEST hosts boathouse): baked footprint x 1275–1295, z 1308–1322, floor 3, walls to 9.65. */
   boathouse: 'boathouse',
 } as const;
