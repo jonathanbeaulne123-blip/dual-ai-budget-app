@@ -44,5 +44,7 @@ triangles.
   Bight district is over its triangle cap because of the land, not the dressing (see the handoff).
 - **Lite** drops reed density and props without colliders (lite drops, never substitutes). Lite frames are expected to
   look thinner.
-- **Harbour Bell Landing at dusk** is dark in the foreground because of the drawbridge deck. Its binocular frame of the
-  Lamp is the useful one.
+- **The reed rafts** (`greenway-bight-rafts_*`, seen from above the deck over the Bight) are tethered on both sides as
+  planned, but from above they read thin: a pale mat with sparse reeds. The raft kit could carry denser planting.
+- **Harbour Bell Landing at dusk** (`20-50`) looks west over the drawbridge's deck. The deck is dark in the foreground,
+  so the binocular frame of the Lamp is the one to use.

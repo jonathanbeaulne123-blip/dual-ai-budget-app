@@ -292,31 +292,6 @@
    }
   },
   {
-   "file": "greenway-bight-rafts_classic_full_15-30.jpg",
-   "label": "greenway-bight-rafts",
-   "theme": "classic",
-   "tier": "full",
-   "time": "15:30",
-   "view": null,
-   "eye": [
-    726.6656213128483,
-    7.039877386379567,
-    926.7962384056384
-   ],
-   "target": [
-    721.5,
-    0.2,
-    948.8
-   ],
-   "fov": 58,
-   "note": "over the Bight: the floating reed rafts tethered to the bents",
-   "settle": [],
-   "stats": {
-    "drawCalls": 84,
-    "triangles": 207311
-   }
-  },
-  {
    "file": "night-boardwalk_classic_full_22-20.jpg",
    "label": "night-boardwalk",
    "theme": "classic",
@@ -1561,6 +1536,32 @@
     "triangles": 292089
    },
    "sha": "83181a2d6f31c36a69b224ca79aa9bf25e2be553"
+  },
+  {
+   "file": "greenway-bight-rafts_classic_full_15-30.jpg",
+   "label": "greenway-bight-rafts",
+   "theme": "classic",
+   "tier": "full",
+   "time": "15:30",
+   "view": null,
+   "eye": [
+    657.44466746115,
+    17.61022575449729,
+    1080.2720524429183
+   ],
+   "target": [
+    652,
+    0.2,
+    1103
+   ],
+   "fov": 64,
+   "note": "over the Bight: the floating reed rafts tethered to the bents",
+   "settle": [],
+   "stats": {
+    "drawCalls": 135,
+    "triangles": 422265
+   },
+   "sha": "93ef6eb7068d91d98379fa1bc44af67d5a3f9141"
   }
  ],
  "errors": [],
