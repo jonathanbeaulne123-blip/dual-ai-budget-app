@@ -43,6 +43,8 @@ function reachLife(site: Site, pools: ReturnType<Site['edge']['bodies']>): LifeS
     { kind: 'blackbird', at: at(1251, g(1251, 1232) + 2.3, 1232), radius: 12, count: 4, months: [4, 5, 6, 7, 8] },
     { kind: 'turtle', at: at(1236, lvl(1236, 1292), 1292), radius: 2, count: 2, months: [5, 6, 7, 8, 9] },
     { kind: 'dragonfly', at: at(1256, g(1256, 1240) + 1.2, 1240), radius: 18, count: 4, months: [6, 7, 8], hours: [10, 18] },
+    // Fireflies over the wet meadow west of the boardwalk on summer nights (the prototype's night specks; never lights).
+    { kind: 'firefly', at: at(1222, g(1222, 1250) + 1.0, 1250), radius: 22, count: 4, months: [6, 7, 8], hours: [21, 24] },
   ];
   // The Greenway (reach SPEC §5): the egret in the under-deck pool, the hide pool's heron, ducks and turtles, blackbirds on the
   // cattails by the deck, monarchs over the Reed Maze's milkweed. Split by district (each stays well under the cap).
@@ -61,7 +63,7 @@ export function buildReachDetailed(ctx: DressingContext): ReachBuild {
   const site = createSite(ctx as Impl), pools = site.edge.bodies();
   const fx = buildFixtures(site, pools), marsh = plantMarsh(site);
   // Planting keeps clear of what stands on the land: 0.8 eu round every prop and the footprint (+ 0.5) of every building.
-  const occupied = [...fx.props.filter(p => p.kind !== 'raft' && p.kind !== 'duckBox').map(p => ({ x: p.at[0], z: p.at[2], r: p.kind === 'ospreyPole' ? 9 : p.kind === 'snag' ? 1.4 : 0.8 })),
+  const occupied = [...fx.props.filter(p => p.kind !== 'raft' && p.kind !== 'duckBox').map(p => ({ x: p.at[0], z: p.at[2], r: p.kind === 'ospreyPole' ? 9 : p.kind === 'snag' ? 1.4 : p.kind === 'lodge' ? 1.6 * (p.scale ?? 1) : 0.8 })),
     ...fx.buildings.map(b => ({ x: b.at[0], z: b.at[2], r: Math.hypot(b.size.w, b.size.d) / 2 + 0.5 }))];
   const plants: PlantRecord[] = marsh.plants.filter(p => !occupied.some(o => Math.hypot(p.at[0] - o.x, p.at[2] - o.z) < o.r + (p.species === 'flowerBed' ? 2 * p.scale : 0)));
   void greenwayGaps;

@@ -11,7 +11,7 @@ import type { GroundPaint, PlantRecord } from '../../types.ts';
 import { FLOWER_SET } from '../../../kit/plants/sets.ts';
 import { HORIZON_MANIFEST as M } from '../../../world/manifest.ts';
 import { clamp, fbm, inPoly, polyDist, polyEdgeDist, smooth, type XY } from './geom.ts';
-import { HERON, LOOKOUTS, PAGE_I, REACH_POLY, SPRING, type Site } from './site.ts';
+import { BOATHOUSE, DECK_PREFIXES, HERON, LOOKOUTS, MEADOW, PAGE_I, REACH_POLY, SANDS_FIELD, SPRING, type Site } from './site.ts';
 
 /** Drawn heights (eu) at scale 1 (kit/plants/wwGeometry.ts): a reed clump ≈ 2.2, a cattail spike 2.35, sedge 0.85. */
 export const UNIT_H = { reed: 2.2, cattail: 2.35, sedge: 0.85, willow: 9.5, tamarack: 9.6, dogwood: 2.4, pine: 8, spruce: 11, flowerBed: 0.7 } as const;
@@ -27,7 +27,9 @@ export function plantMarsh(site: Site): MarshOut {
   const { ctx, edge, bw, L } = site, plants: PlantRecord[] = [], stats: Record<string, number> = {};
   const count = (k: string) => { stats[k] = (stats[k] ?? 0) + 1; };
   const add = (species: PlantRecord['species'], x: number, z: number, scale: number, yaw: number, extra: Partial<PlantRecord> = {}, y = ctx.heightAt(x, z)) => {
-    plants.push({ species, at: [r3(x), r3(y), r3(z)], scale: r3(scale), yaw: r3(yaw), ...extra }); count(species);
+    // Baked numbers stay short and exact (the bake serialises to 9 decimals; a rebuild must equal the bake's records).
+    const e: Partial<PlantRecord> = { ...extra, ...(extra.tint !== undefined ? { tint: r3(extra.tint) } : {}), ...(extra.lean !== undefined ? { lean: r3(extra.lean) } : {}) };
+    plants.push({ species, at: [r3(x), r3(y), r3(z)], scale: r3(scale), yaw: r3(yaw), ...e }); count(species);
   };
   const eyes: XY[] = [[PAGE_I.eye[0], PAGE_I.eye[2]], ...LOOKOUTS.map(l => l.at)];
   const heroD = (x: number, z: number) => Math.min(...eyes.map(e => Math.hypot(x - e[0], z - e[1])));
@@ -77,6 +79,18 @@ export function plantMarsh(site: Site): MarshOut {
       add('lily', x, z, s, yaw, { tint }, lvl);
     } }
 
+  /* ---------------------------------------------------------------- the spring's lip: fern and heath round the source rock */
+  // Sixteen low plants on the ring just outside the spring's open water (reach SPEC §3 "spring lip"); none over 0.85, so the
+  // page I view of the source rock stays open (the corridor's own rule still applies).
+  { const rnd = ctx.rng('reach.springLip'); let n = 0;
+    for (let k = 0; k < 80 && n < 16; k++) {
+      const a = rnd() * TAU, f = 1.25 + rnd() * 0.5, x = SPRING.c[0] + Math.cos(a) * SPRING.r[0] * f, z = SPRING.c[1] + Math.sin(a) * SPRING.r[1] * f, fern = rnd() < 0.6, sc = 0.9 + rnd() * 0.4, yaw = rnd() * TAU, tint = rnd();
+      const sp = fern ? 'fern' : 'heath', h = (fern ? 0.6 : 0.5) * sc;
+      if (ctx.waterLevelAt(x, z) !== null || !site.plantOk(x, z, h, 0.5, {})) continue;
+      add(sp, x, z, sc, yaw, { tint }); n++;
+    }
+    stats.springLip = n; }
+
   /* ---------------------------------------------------------------- groves on the dry hummocks: willow, tamarack, dogwood */
   const trees: XY[] = [];
   const grove = (ax: number, az: number, kind: 'willow' | 'tamarack', n: number, sp: number, rnd: () => number) => {
@@ -107,7 +121,7 @@ export function plantMarsh(site: Site): MarshOut {
   /* ---------------------------------------------------------------- drifts: the marsh set, the water's edge, the bog margin */
   const drift = (x: number, z: number, set: number, scale: number, yaw: number, tint: number) => {
     if (!site.plantOk(x, z, UNIT_H.flowerBed * scale, 2 * scale, {})) return false;
-    add('flowerBed', x, z, scale, yaw, { tint: set + tint }); return true;
+    add('flowerBed', x, z, scale, yaw, { tint: set + Math.min(tint, 0.998) }); return true;
   };
   // A drift is the kit's wild bed (≈ 330 / 200 triangles full / lite, all kept on lite): few and large, where they read.
   { const rnd = ctx.rng('reach.drifts'); let wet = 0, edgeN = 0, bog = 0;
@@ -213,7 +227,43 @@ export function plantMarsh(site: Site): MarshOut {
     // The heart (round the sundial) mown too.
     { const n = 14, o: [number, number][] = []; for (let k = 0; k < n; k++) { const a = (k / n) * TAU; o.push([r3(cx + Math.cos(a) * 1.9), r3(cz + Math.sin(a) * 1.9)]); } ground.push({ polygon: o, surface: 'mown', tone: 0.62 }); } }
 
-  // Reed beds near the heron's spot thin out (it stands in the open); the heron's own 1.6 m is a keep.
+  /* ---------------------------------------------------------------- the marsh floor: sedge and mud paint (never lawn) */
+  // From any distance past the planting's reach the floor itself must read as marsh: the wet floor painted sedge, a mud rim
+  // within 1.6 m of the water, over the Reach and the Greenway's pool margins. Rows 4 m deep, cells 2 m wide; a run of one
+  // class is one quad (run ends against lawn pulled in by up to 0.8 m of noise, so the edge is ragged, not stepped). Never over
+  // a path (2.3 m off every bed that is not an open deck on piles; under a deck the paint is hidden), a pad, the meadow, the
+  // Sands glider field, the Boathouse or the Reed Maze (it has its own mown rings).
+  // S1 (the skate line) is a deck only where it rides the boardwalk; elsewhere it is a ground bed like any path.
+  { const decks = DECK_PREFIXES.filter(d => d !== 'S1'), nonDeck = [...new Set(ctx.beds.map(q => q.id).filter(id => !decks.some(d => id.startsWith(d)) && !id.startsWith('S1')))];
+    const clear = (x: number, z: number) => ctx.bedClearance(x, z, nonDeck) >= 2.3 && (bw.dist(x, z) < 3 || ctx.bedClearance(x, z, ['S1']) >= 2.3) && !ctx.onPad?.(x, z, 2.3);
+    const cls = (x: number, z: number): 'sedge' | 'mud' | null => {
+      const g = ctx.heightAt(x, z), we = edge.at(x, z);
+      if (we > 1e5 || g > 6.5 || keepB(x, z) || Math.hypot(x - MEADOW.c[0], z - MEADOW.c[1]) < MEADOW.r + 3 || Math.hypot(x - SANDS_FIELD.c[0], z - SANDS_FIELD.c[1]) < SANDS_FIELD.r + 2) return null;
+      if (inPoly(x, z, BOATHOUSE) || polyEdgeDist(x, z, BOATHOUSE) < 4) return null;
+      const reach = inPoly(x, z, REACH_POLY) || polyEdgeDist(x, z, REACH_POLY) < 5;
+      if (!reach) { if (x > 1150 && inReach(x, z)) return null; const q = site.gw(x, z); if (q.d > 45 || q.s > 612 || we > 7) return null; }
+      else if (we > 9) return null; // the wet margin only (paint drapes at ≤ 2.5 eu edges: the lite budget)
+      if (!clear(x, z)) return null;
+      return we < 1.6 ? 'mud' : 'sedge';
+    };
+    let quads = 0;
+    for (let z0 = 1100; z0 < 1392; z0 += 4) {
+      let run: { c: 'sedge' | 'mud'; x0: number; prev: 'sedge' | 'mud' | null } | null = null;
+      const close = (x1: number, next: 'sedge' | 'mud' | null) => {
+        if (!run) return;
+        const j0 = run.prev ? 0 : 0.8 * (0.5 + 0.5 * fbm(run.x0 * 0.3, z0 * 0.3)), j1 = next ? 0 : 0.8 * (0.5 + 0.5 * fbm(x1 * 0.3 + 5, z0 * 0.3 - 3));
+        const a = run.x0 + j0, b = x1 - j1;
+        if (b - a > 0.6) { ground.push({ polygon: [[r3(a), z0], [r3(b), z0], [r3(b), z0 + 4], [r3(a), z0 + 4]], surface: run.c, tone: run.c === 'mud' ? 0.5 : 0.42 }); quads++; }
+      };
+      let last: 'sedge' | 'mud' | null = null;
+      for (let x0 = 640; x0 < 1392; x0 += 2) {
+        const c = (z0 < 1166 && x0 > 1150) || (x0 < 1150 && z0 < 1100) ? null : cls(x0 + 1, z0 + 2);
+        if (c !== last) { close(x0, c); run = c ? { c, x0, prev: last } : null; last = c; }
+      }
+      close(1392, null);
+    }
+    stats.paintQuads = quads; }
+
   void HERON; void polyDist;
   return { plants, ground, stats };
 }

@@ -22,7 +22,7 @@
  *     (the host's baked walls and roof stay the collision; the grammar draws on the same planes). It is filed under the
  *     district that holds the host's walls, so the record and the walls the cards stop drawing ride in one chunk;
  *  4. a prop is not in the inner part of a bed's tread (≥ 0.5 eu in from its edge) nor in water, unless it is a water prop
- *     (`WATER_PROPS`: buoy, rowboat, kayak, gozzo, duckBox, net, raft) or stands on a baked structure over the water
+ *     (`WATER_PROPS`: buoy, rowboat, kayak, gozzo, duckBox, net, raft, lodge) or stands on a baked structure over the water
  *     (`onStructureOverWater`); the Lookout kit and a deck's fittings (`LOOKOUT_KIT_PROPS`) may stand on a `structure.` bed; a colliding
  *     prop is not on a pad either; a colliding linear
  *     prop (`line`) is checked along every segment (beds exactly, pads and water every `EDGE_STEP` eu); a prop's scale, like a
@@ -253,7 +253,7 @@ export function createDressingContext(src: DressingSource): DressingContextImpl 
 /* ------------------------------------------------------------------ rules */
 
 export const BED_ALLOWED_BUILDINGS: ReadonlySet<BuildingKind> = new Set(['deck', 'platform', 'coveredBridge', 'gate', 'wall', 'liftTower', 'arch']);
-export const WATER_PROPS: ReadonlySet<PropKind> = new Set(['buoy', 'rowboat', 'kayak', 'gozzo', 'duckBox', 'net', 'raft']);
+export const WATER_PROPS: ReadonlySet<PropKind> = new Set(['buoy', 'rowboat', 'kayak', 'gozzo', 'duckBox', 'net', 'raft', 'lodge']);
 export const AQUATIC_SPECIES: ReadonlySet<DressingSpecies> = new Set(['reed', 'cattail', 'sedge', 'lily']);
 /** Nominal height (eu) of a plant at scale 1 (the protected-area rule; generous, never smaller than drawn). */
 export const SPECIES_HEIGHT: Record<DressingSpecies, number> = {
@@ -268,7 +268,7 @@ export const PROP_HEIGHT: Record<PropKind, number> = {
   laundryLine: 2.4, stall: 2.6, cafeTable: 0.8, fountain: 1.6, planter: 0.8, bikeRack: 0.8, mapBoard: 1.6, sundial: 1.1, monthStone: 0.6,
   kite: 12, swing: 3, windsock: 6, beacon: 4, fireRing: 0.4, volleyNet: 2.4, lifeRing: 1.4, rodHolder: 1, duckBox: 1.5,
   ospreyPole: 12, snag: 8, buoy: 1, bollardQuay: 0.7, net: 1.5, crate: 0.8, cairn: 1.2, sheepFank: 1.2, festoon: 3, flag: 6,
-  bocceCourt: 0.3, skateBowl: 0.2, geoglyph: 0.2, readingTable: 0.8, bookCart: 1.1, birdFeeder: 1.8, bell: 1, raft: 2.4,
+  bocceCourt: 0.3, skateBowl: 0.2, geoglyph: 0.2, readingTable: 0.8, bookCart: 1.1, birdFeeder: 1.8, bell: 1, raft: 2.4, lodge: 1.4,
 };
 /** Footprint edges and colliding lines are sampled this often (eu) against pads, water and baked solids. */
 export const EDGE_STEP = 0.5;

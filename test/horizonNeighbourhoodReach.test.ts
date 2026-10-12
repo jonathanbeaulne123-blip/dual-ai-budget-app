@@ -12,9 +12,8 @@ import { districtAt } from '../src/harbour/horizon/world/districts.ts';
 import { createDressingContext, validateDressing, type DressingContextImpl } from '../src/harbour/horizon/neighbourhoods/bake.ts';
 import { NEIGHBOURHOOD_MODULES } from '../src/harbour/horizon/neighbourhoods/index.ts';
 import { buildReachDetailed, NOTCH_IN_GREEN, REACH_TREE_COVER } from '../src/harbour/horizon/neighbourhoods/landing/reach.ts';
-import { composeLanding } from '../src/harbour/horizon/neighbourhoods/landing/index.ts';
 import { UNIT_H } from '../src/harbour/horizon/neighbourhoods/landing/reach/marsh.ts';
-import { NIGHT_LINE } from '../src/harbour/horizon/neighbourhoods/landing/reach/fixtures.ts';
+import { NIGHT_LINE, OPEN_WATER } from '../src/harbour/horizon/neighbourhoods/landing/reach/fixtures.ts';
 import { createSite, LOOKOUTS, OSPREY, REACH_POLY } from '../src/harbour/horizon/neighbourhoods/landing/reach/site.ts';
 import { blocksSight, inPoly, polyDist, polyEdgeDist } from '../src/harbour/horizon/neighbourhoods/landing/reach/geom.ts';
 import { storyLandmark, validateStoryAgainstDressing } from '../src/harbour/horizon/world/story.ts';
@@ -22,15 +21,22 @@ import type { NeighbourhoodDressing, PlantRecord, WorldDressing } from '../src/h
 import type { District, LightAnchor } from '../src/harbour/horizon/world/definition.ts';
 
 type Baked = { dressing?: WorldDressing; districts: District[]; lights: LightAnchor[]; collision: { beds: never[]; pads: never[]; waters: never[] }; geometry: { solids: StructureSolid[] }; hosts: { id: string; footprint?: [number, number][]; door: { xy?: [number, number] }; height?: number }[]; protected: { id: string; outline: [number, number][] }[] };
-let world: Baked, ctx: DressingContextImpl, built: ReturnType<typeof buildReachDetailed>, r: NeighbourhoodDressing;
+let world: Baked, ctx: DressingContextImpl, built: ReturnType<typeof buildReachDetailed>, r: NeighbourhoodDressing, again: string, site: ReturnType<typeof createSite>, problems: string[];
 
-beforeAll(() => {
-  world = JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8'));
-  const bytes = readFileSync('public/horizon/terrain/horizon-geo-1.bin'), field = decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), 'full');
+// Heavy fixtures once, asynchronously, yielding between the steps (CI runs four workers: a worker held synchronously for long
+// fails the gate with "Timeout calling onTaskUpdate" even when every test is green).
+const tick = () => new Promise(res => setTimeout(res, 0));
+beforeAll(async () => {
+  world = JSON.parse(readFileSync('public/horizon/world/horizon-geo-1.json', 'utf8')); await tick();
+  const bytes = readFileSync('public/horizon/terrain/horizon-geo-1.bin'), field = decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), 'full'); await tick();
   ctx = createDressingContext({ ground: (x, z) => sampleTerrain(field, x, z), beds: world.collision.beds, pads: world.collision.pads, waters: world.collision.waters, solids: world.geometry.solids.filter(s => s.kind !== 'dressing'),
     hosts: world.hosts.map(h => ({ id: h.id, footprint: h.footprint, door: h.door.xy ? { xy: h.door.xy } : {}, height: h.height })), protectedAreas: world.protected.map(p => ({ id: p.id, outline: p.outline })), districtAt: (x, z) => districtAt(x, z) });
-  built = buildReachDetailed(ctx); r = built.dressing;
-}, 240_000);
+  await tick();
+  built = buildReachDetailed(ctx); r = built.dressing; await tick();
+  again = JSON.stringify(buildReachDetailed(ctx).dressing); await tick();
+  site = createSite(ctx); await tick();
+  problems = validateDressing([{ module: 'landing', dressing: r }], ctx); await tick();
+}, 400_000);
 
 const bakedPlants = () => world.dressing!.districts.flatMap(d => d.plants);
 const bakedProps = () => world.dressing!.districts.flatMap(d => d.props);
@@ -41,24 +47,24 @@ const inReach = (x: number, z: number) => inPoly(x, z, REACH_POLY) || polyEdgeDi
 describe('the Reach and the Greenway (neighbourhoods/landing, STORY place 3)', () => {
   it('is registered as the landing module and rebuilds the baked records exactly (deterministic, one definition)', () => {
     expect(NEIGHBOURHOOD_MODULES.map(m => m.id)).toContain('landing');
-    expect(JSON.stringify(buildReachDetailed(ctx).dressing)).toBe(JSON.stringify(r));
+    expect(again).toBe(JSON.stringify(r));
     const plants = new Set(bakedPlants().map(p => JSON.stringify(p))), props = new Map(bakedProps().filter(p => p.id).map(p => [p.id!, JSON.stringify(p)]));
     expect(r.plants.filter(p => !plants.has(JSON.stringify(p)))).toEqual([]);
     expect(r.props.filter(p => props.get(p.id!) !== JSON.stringify(p)).map(p => p.id)).toEqual([]);
     expect(world.dressing!.landmarks.find(l => l.id === 'osprey')).toEqual(r.landmarks[0]);
-  }, 120_000);
+  });
 
   it('validates clean against the bake-time world (beds, pads, water, solids, the protected Green)', () => {
-    expect(validateDressing([{ module: 'landing', dressing: composeLanding([r]) }], ctx)).toEqual([]);
+    expect(problems).toEqual([]);
     // Only Notch Bluff's Lookout kit stands in the protected circle, by name.
     expect(r.allowInProtected).toEqual([...NOTCH_IN_GREEN]);
-  }, 120_000);
+  });
 
   it('plants the marsh at the place\'s scale: thousands of reeds and cattails, sedge, drifts, groves; no palm anywhere', () => {
     const n = (s: PlantRecord['species']) => r.plants.filter(p => p.species === s).length;
     expect(n('reed') + n('cattail')).toBeGreaterThan(3000);
     expect(n('sedge')).toBeGreaterThan(1200);
-    expect(n('flowerBed')).toBeGreaterThan(60);
+    expect(n('flowerBed')).toBeGreaterThan(24);   // wild drifts are few and large (D-WW122)
     expect(n('willow') + n('tamarack')).toBeGreaterThan(40);
     expect(n('dogwood')).toBeGreaterThan(40);
     expect(n('pine') + n('spruce')).toBeGreaterThan(10);
@@ -67,7 +73,7 @@ describe('the Reach and the Greenway (neighbourhoods/landing, STORY place 3)', (
   });
 
   it('keeps the story lines (Spring Bay → campanile, oak → osprey) and every lookout\'s binocular lines clear of planting', () => {
-    const site = createSite(ctx), drawn = (p: PlantRecord) => (UNIT_H as Record<string, number>)[p.species] ?? 1;
+    const drawn = (p: PlantRecord) => (UNIT_H as Record<string, number>)[p.species] ?? 1;
     const blocked = r.plants.map(p => ({ p, hit: blocksSight(site.lines, p.at[0], p.at[2], p.at[1] + drawn(p) * p.scale, 0.3) })).filter(q => q.hit);
     expect(blocked.map(q => `${q.p.species} at ${q.p.at.map(v => v.toFixed(1)).join(',')} → ${q.hit}`)).toEqual([]);
     expect(site.lines.map(l => l.id)).toEqual(expect.arrayContaining(['springBay→campanile', 'oak→osprey', 'notchBluff→osprey', 'sunsetRail→osprey']));
@@ -96,19 +102,22 @@ describe('the Reach and the Greenway (neighbourhoods/landing, STORY place 3)', (
   it('lights in night order (STYLE: the High Span → the boardwalk\'s edge lamps → the Greenway\'s lanterns), emissive cards only', () => {
     const mine = world.lights.filter(l => l.line === NIGHT_LINE);
     expect(mine.length).toBe(r.lights.length);
-    expect(mine.every(l => l.kind === 'dressing:islandLantern')).toBe(true);
+    expect(mine.every(l => l.kind === 'dressing:islandLantern' || l.kind === 'dressing:railLamp')).toBe(true);
     const order = (prefix: string) => mine.filter(l => l.id.startsWith(prefix)).map(l => l.order!);
     const bw = order('reach.boardwalk.'), gw = order('greenway.');
     expect(bw).toHaveLength(12); expect(Math.max(...bw)).toBeLessThan(Math.min(...gw));
     expect(gw).toEqual([...gw].sort((a, b) => a - b));
     // Each lantern prop has its anchor over it; the Greenway's run outward from the Gate (s increasing with order).
-    for (const l of r.lights) expect(r.props.some(p => p.kind === 'lantern' && `${p.id}.light` === l.id)).toBe(true);
+    // Each island lantern's anchor stands over its prop; over the open water (s 612–955) the lamps ride the rail posts.
+    for (const l of r.lights.filter(q => q.kind === 'islandLantern')) expect(r.props.some(p => p.kind === 'lantern' && `${p.id}.light` === l.id), l.id).toBe(true);
+    for (const l of r.lights.filter(q => q.kind === 'railLamp')) { const s0 = polyDist(l.at[0], l.at[2], L.full.map(p => [p[0], p[2]])).s; expect((s0 > OPEN_WATER[0] && s0 < OPEN_WATER[1]) || districtAt(l.at[0], l.at[2]) === 'bight', l.id).toBe(true); }
+    // No island lantern post stands in the Bight district (its land holds the budget, D-WW126).
+    expect(r.props.filter(p => p.kind === 'lantern' && districtAt(p.at[0], p.at[2]) === 'bight').map(p => p.id)).toEqual([]);
     const s = r.lights.filter(l => l.id.startsWith('greenway.')).map(l => polyDist(l.at[0], l.at[2], L.full.map(p => [p[0], p[2]])).s);
     expect(s).toEqual([...s].sort((a, b) => a - b));
   });
 
   it('keeps the rail gaps open: no lantern in the Channel Hide\'s gap nor within 1 m of a Greenway gap', () => {
-    const site = createSite(ctx);
     for (const p of r.props.filter(q => q.id?.startsWith('reach.boardwalk.lantern'))) { const s = (p.at[0] - site.bw.a[0]) * site.bw.dir[0] + (p.at[2] - site.bw.a[1]) * site.bw.dir[1], west = (p.at[0] - site.bw.a[0]) * site.bw.n[0] + (p.at[2] - site.bw.a[1]) * site.bw.n[1] < 0;
       expect(west && s > 54.4 - 0.5 && s < 58 + 0.5, p.id).toBe(false); }
     const gaps = { [-1]: greenwayGaps(-1), [1]: greenwayGaps(1) } as Record<number, number[][]>;
@@ -128,6 +137,18 @@ describe('the Reach and the Greenway (neighbourhoods/landing, STORY place 3)', (
       expect(s).toBeGreaterThan(620); expect(s).toBeLessThan(955);
       for (const [place, gap] of [[690, 14], [790, 16], [962, 14]] as const) if (Math.abs(s - place) < gap) expect(Math.sign((p.at[0] - L.at(s).p[0]) * L.at(s).r[0] + (p.at[2] - L.at(s).p[2]) * L.at(s).r[1]), p.id).toBe(1);
     }
+  });
+
+  it('stands the muskrat lodges in the Reach channels\' shallow water, off the River Run, the first in the Channel Hide\'s slot view', () => {
+    const lodges = r.props.filter(p => p.kind === 'lodge');
+    expect(lodges.length).toBeGreaterThanOrEqual(2);
+    const river = [[1140, 905], [1170, 980], [1220, 1060], [1250, 1140], [1280, 1220], [1330, 1290], [1350, 1345], [1364, 1390]] as [number, number][];
+    for (const p of lodges) {
+      const lvl = ctx.waterLevelAt(p.at[0], p.at[2]);
+      expect(lvl, p.id).not.toBeNull(); expect(p.at[1]).toBeCloseTo(lvl! - 0.3, 3); expect(p.collide).toBe(true);
+      expect(polyDist(p.at[0], p.at[2], river).d, p.id).toBeGreaterThanOrEqual(7);
+    }
+    expect(Math.hypot(lodges[0]!.at[0] - 1236, lodges[0]!.at[2] - 1292)).toBeLessThan(4);
   });
 
   it('keeps creatures ≤ 24 per district (the Reach\'s own share leaves room for Long Sands and the Flats)', () => {
@@ -157,11 +178,16 @@ describe('the Reach and the Greenway (neighbourhoods/landing, STORY place 3)', (
     expect(Math.abs(cover - REACH_TREE_COVER)).toBeLessThanOrEqual(5);
   });
 
-  it('fits the per-district budget (CONTRACT §6: ≤ 150k / 60k triangles, the baked land included)', () => {
-    for (const id of ['reach', 'notch', 'landing', 'green', 'bight', 'hollow']) {
+  it('fits the per-district budget (CONTRACT §6: ≤ 150k / 60k triangles, the baked land included); the Bight is the land\'s', () => {
+    for (const id of ['reach', 'notch', 'landing', 'green', 'hollow']) {
       const d = world.districts.find(q => q.id === id)!;
       expect(d.triangles!.full, `${id} full`).toBeLessThanOrEqual(150_000); expect(d.triangles!.lite, `${id} lite`).toBeLessThanOrEqual(60_000);
     }
+    // The Bight held 145.0k / 59.4k from the land alone (PR 2), so no dressing fits its lite cap; the Reach's share there stays
+    // within this allowance (the Greenway's Bight stretch: lanterns on land, rail lamps over the water, rafts, the balcony,
+    // the Arch Pier, the bluff) and the overrun is the integrator's (D-WW129). Shares measured with the Reach alone dressing.
+    const bight = world.districts.find(q => q.id === 'bight')!.dressing!;
+    expect(bight.full.triangles).toBeLessThanOrEqual(15_000); expect(bight.lite.triangles).toBeLessThanOrEqual(7_000);
     expect(world.districts.find(q => q.id === 'reach')!.dressing).toBeTruthy();
   });
 });

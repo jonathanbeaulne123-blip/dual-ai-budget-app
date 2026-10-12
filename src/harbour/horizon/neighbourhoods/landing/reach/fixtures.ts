@@ -122,7 +122,30 @@ export function buildFixtures(site: Site, pools: ReturnType<WaterEdge['bodies']>
       for (let t = 0; t < 16; t++) { const a = t / 16 * Math.PI * 2 + 0.4, x = p.c[0] + Math.cos(a) * (p.r + 1.0), z = p.c[1] + Math.sin(a) * (p.r + 1.0), e = site.edge.at(x, z);
         if (e < 0.3 || e > 1.6 || ctx.waterLevelAt(x, z) !== null || !site.plantOk(x, z, 7.5, 1.5, { tree: true })) continue;
         prop(`greenway.snag.${snags++}`, 'snag', x, ctx.heightAt(x, z), z, a, { collide: true }); break; } }
+    // Tree swallow boxes along the Greenway's marsh stretch (reach SPEC §5): every 52 m from s 40 to 600, alternating sides,
+    // 8–13 m off the centreline, on dry ground off every bed.
+    { const rnd = ctx.rng('greenway.swallowBoxes'); let n = 0;
+      for (let s = 40, k = 0; s <= 600; s += 52, k++) { const q = L.at(s), sd = k % 2 ? 1 : -1;
+        for (let t = 0; t < 6; t++) { const w = q.W(sd * (8 + rnd() * 5), 0, (rnd() - 0.5) * 6), x = w[0], z = w[2];
+          if (ctx.waterLevelAt(x, z) !== null || ctx.bedClearance(x, z) < 1.5 || !site.plantOk(x, z, 0.5, 0.2, {})) continue;
+          prop(`greenway.swallowBox.${n++}`, 'duckBox', x, ctx.heightAt(x, z), z, yawTo([x, z], [q.p[0], q.p[2]]), { scale: 0.8 }); break; } }
+      stats.greenwaySwallowBoxes = n; }
     stats.greenwayPools = gw.length; }
+
+  /* ---------------------------------------------------------------- muskrat lodges in the Reach channels (reach SPEC §3) */
+  // The Channel Hide's slot finds the first ([1236, 1292], its binocular subject); the others sit in the east channel's reeds.
+  // A lodge stands in a channel's shallow water (its base 0.3 under the water), ≥ 7 m off the River Run's line (the canoe's).
+  { const river = (M.water.river.lower as unknown as XY[]); let n = 0;
+    const riverD = (x: number, z: number) => { let d = Infinity; for (let i = 1; i < river.length; i++) d = Math.min(d, segDist(x, z, river[i - 1]!, river[i]!).d); return d; };
+    for (const [x0, z0, sc] of [[1236, 1292, 1.0], [1321, 1305, 0.85], [1314, 1268, 0.7]] as const) {
+      let at: XY | null = null;
+      for (let t = 0; t < 25 && !at; t++) { const a = t * 2.4, r = t === 0 ? 0 : 0.6 + t * 0.35, x = x0 + Math.cos(a) * r, z = z0 + Math.sin(a) * r, lvl = ctx.waterLevelAt(x, z);
+        if (lvl === null || lvl < 0.6 || lvl - ctx.heightAt(x, z) > 1.0 || riverD(x, z) < 7 || ctx.bedClearance(x, z) < 2.2 * sc) continue;
+        at = [x, z]; }
+      if (!at) continue;
+      const lvl = ctx.waterLevelAt(at[0], at[1])!;
+      prop(`reach.lodge.${n++}`, 'lodge', at[0], lvl - 0.3, at[1], (x0 + z0) % 6.28, { scale: sc, collide: true }); }
+    stats.lodges = n; }
 
   /* ---------------------------------------------------------------- the island lantern: the boardwalk, then the Greenway */
   let order = 0;
@@ -140,7 +163,8 @@ export function buildFixtures(site: Site, pools: ReturnType<WaterEdge['bodies']>
       const q = L.at(s).W(sd * 3.05); if (ctx.bedClearance(q[0], q[2]) < -0.4) continue;
       // Over the open water (s 612–955, the Bight crossing on piles) the lamp rides the rail post (the prototype's form):
       // an emissive card at the post top, no post of its own (the Bight's district budget, D-WW126).
-      if (s > OPEN_WATER[0] && s < OPEN_WATER[1]) { const top = L.at(s).W(sd * 3.05, 1.15); lights.push({ id: `greenway.railLamp.${k}.light`, at: P3(...top), kind: 'railLamp', pool: P3(q[0], q[1], q[2]), poolRadius: 2.2, line: NIGHT_LINE, order: order++ }); continue; }
+      // So does every lamp in the Bight district (its land alone holds 145k / 59k of the 150k / 60k cap, D-WW129).
+      if ((s > OPEN_WATER[0] && s < OPEN_WATER[1]) || ctx.districtAt(q[0], q[2]) === 'bight') { const top = L.at(s).W(sd * 3.05, 1.15); lights.push({ id: `greenway.railLamp.${k}.light`, at: P3(...top), kind: 'railLamp', pool: P3(q[0], q[1], q[2]), poolRadius: 2.2, line: NIGHT_LINE, order: order++ }); continue; }
       lantern(`greenway.lantern.${k}`, q[0], q[1], q[2]); } }
 
   /* ---------------------------------------------------------------- the far threshold (greenwayBluff): a bike rack at the deck's edge */
@@ -204,7 +228,8 @@ export function buildFixtures(site: Site, pools: ReturnType<WaterEdge['bodies']>
 
   /* ---------------------------------------------------------------- F · the Paddle Dock: kayaks on the floating dock, a bench */
   { const F = GP.F as { s: number; dock_o: number; dock_h: number }, q = L.at(F.s), D = (off: number, fwd: number): XYZ => { const w = q.W(off, 0, fwd); return [w[0], floor(w[0], w[2], F.dock_h, 0.4), w[2]]; }, along = Math.atan2(q.f[0], q.f[1]);
-    ([[-F.dock_o - 0.75, -5.5, 0], [-F.dock_o + 0.15, -1.8, 1], [-F.dock_o - 0.75, 1.9, 2]] as const).forEach(([o, fw, v], i) => prop(`greenway.paddleDock.kayak.${i}`, 'kayak', ...D(o, fw), along + (i % 2 ? Math.PI : 0), { variant: v, collide: true }));
+    // Three kayaks in the dressing's hull colours and a fourth (the prototype's upturned green) beside them.
+    ([[-F.dock_o - 0.75, -5.5, 0], [-F.dock_o + 0.15, -1.8, 1], [-F.dock_o - 0.75, 1.9, 2], [-F.dock_o + 0.15, 5.2, 3]] as const).forEach(([o, fw, v], i) => prop(`greenway.paddleDock.kayak.${i}`, 'kayak', ...D(o, fw), along + (i % 2 ? Math.PI : 0), { variant: v, collide: true }));
     prop('greenway.paddleDock.bench', 'bench', ...D(-F.dock_o - 1.2, -7.2 + 0.3), Math.atan2(-q.r[0], -q.r[1]), { collide: true }); }
 
   /* ---------------------------------------------------------------- G · the Sunset Balcony: viewers to the Lamp and the Bight Bridge arch */

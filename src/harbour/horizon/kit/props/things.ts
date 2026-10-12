@@ -122,7 +122,6 @@ export function ospreyPole(c: Ctx) {
     beam(c, [Math.cos(a) * r0, y, Math.sin(a) * r0], [Math.cos(a + 0.35) * r1, y + (hash(k, 9) - 0.5) * 0.3, Math.sin(a + 0.35) * r1], 0.06, 0.06, shade(nest, 0.85 + hash(k, 11) * 0.3), 'card', false); }
   shadow(c, 0.5, 0.5, 0.22);
 }
-/** A snag: a dead standing trunk 7.5 tall, three bare branches, a broken top. */
 /**
  * A floating reed raft (the Greenway over the Bight, D-WW23): a timber frame 4 × 9 (× scale) whose top is `at`, a planted mat,
  * reed and cattail clumps, sedge and a few iris / Joe-Pye flowers drawn with it (so lite, which drops the raft, never leaves
@@ -151,6 +150,21 @@ export function raft(c: Ctx) {
   // The tether: a rope from the raft's edge to its pile (world points; the prop frame's scale does not apply).
   const t = c.rec.line; if (t && t.length >= 2) c.b.beam([t[0]![0], t[0]![1], t[0]![2]], [t[1]![0], t[1]![1], t[1]![2]], 0.035, 0.035, c.theme === 'taylor' ? P.paperEdge : [0.25, 0.23, 0.2], null, 'card');
 }
+/**
+ * A muskrat lodge (the Reach's channels, the Channel Hide's subject; reach SPEC §3): a low dome of cut reeds and mud, 2.6 wide
+ * and 1.3 tall at scale 1, its base `at` (0.3 under the water it rises from), reed stems poking out of the thatch. A solid
+ * mound: one box collider round its core when asked.
+ */
+export function lodge(c: Ctx) {
+  const reed = hexRGB(RAFT_REEDS[c.theme][3]!), mud: RGB = c.theme === 'taylor' ? [0.72, 0.6, 0.56] : c.theme === 'newfoundland' ? [0.36, 0.31, 0.24] : [0.42, 0.37, 0.26], n = c.full ? 9 : 7;
+  cone(c, 0, 0, 0, 0.55, 1.3, 1.05, shade(mud, 0.92), n);
+  cone(c, 0, 0, 0.55, 1.05, 1.05, 0.55, mix(mud, reed, 0.45), n);
+  cone(c, 0, 0, 1.05, 1.3, 0.55, 0.08, mix(mud, reed, 0.7), n);
+  const seed = Math.round(c.x * 5.3 + c.z * 2.9), k1 = c.full ? 14 : 6;
+  for (let k = 0; k < k1; k++) { const a = (k / k1) * Math.PI * 2 + hash(seed + k, 1) * 0.4, r = 0.55 + hash(seed + k, 2) * 0.6, y = 1.25 - r * 0.75, l = 0.5 + hash(seed + k, 3) * 0.5;
+    tri(c, [Math.cos(a) * r - 0.04, y, Math.sin(a) * r], [Math.cos(a) * r + 0.04, y, Math.sin(a) * r], [Math.cos(a) * (r + l * 0.7), y + l * 0.55, Math.sin(a) * (r + l * 0.7)], shade(reed, 0.8 + hash(seed + k, 4) * 0.3)); }
+}
+/** A snag: a dead standing trunk 7.5 tall, three bare branches, a broken top. */
 export function snag(c: Ctx) {
   const col: RGB = [0.557, 0.53, 0.482];
   cone(c, 0, 0, -0.2, 7.5, 0.36, 0.12, col, c.full ? 7 : 5);

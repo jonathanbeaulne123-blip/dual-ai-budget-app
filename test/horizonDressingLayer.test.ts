@@ -154,9 +154,10 @@ describe('runtime dressing layer (runtime/dressingLayer.ts)', () => {
     expect(lite.triangles).toBeLessThanOrEqual(full.triangles);
   });
   it('budget: the prototypes’ real loads fit 150k / 60k with their baked districts (Little Harbour, the Reach, Scholars’ Edge)', () => {
-    // The baked districts' terrain + drawn solids, as the index reports them.
+    // The baked districts' terrain + drawn solids, as the index reports them — less the baked dressing's own share once PR 3/4
+    // dress the bake (`District.dressing`), so a prototype load stands in for it rather than adding to it.
     const index = JSON.parse(gunzipSync(readFileSync('public/horizon/world/horizon-geo-1.index.json.gz')).toString()) as {districts: District[]};
-    const baked = (id: string) => index.districts.find(x => x.id === id)!.triangles!;
+    const baked = (id: string) => { const d = index.districts.find(x => x.id === id)!; return {full: d.triangles!.full - (d.dressing?.full.triangles ?? 0), lite: d.triangles!.lite - (d.dressing?.lite.triangles ?? 0)}; };
     const grid = (n: number, x0: number, z0: number, step: number, cols: number) => Array.from({length: n}, (_, i) => [x0 + (i % cols) * step, 4, z0 + Math.floor(i / cols) * step] as const);
     const plants = (species: PlantRecord['species'], n: number, x0: number, z0: number, step = 4, cols = 40): PlantRecord[] => grid(n, x0, z0, step, cols).map((at, i) => ({species, at, scale: 1, yaw: i}));
     const props = (kind: PropRecord['kind'], n: number, x0: number, z0: number): PropRecord[] => grid(n, x0, z0, 3, 20).map(at => ({kind, at, yaw: 0}));

@@ -20,7 +20,7 @@ import { bench, drystoneWall, fence, mapBoard, panel, picnicTable, railOpen, rin
 import { beacon, bell, bollard, festoon, flag, lantern, lanternLow, windsock } from './lights.ts';
 import {
   birdFeeder, bikeRack, bocceCourt, bollardQuay, bookCart, buoy, cafeTable, cairn, crate, duckBox, fireRing, fountain, geoglyph, gozzo, hayBale, hive, kayak, kite,
-  laundryLine, lifeRing, monthStone, net, ospreyPole, planter, raft, readingTable, rodHolder, rowboat, skateBowl, snag, stall, sundial, swing, towel, umbrella, volleyNet,
+  laundryLine, lifeRing, lodge, monthStone, net, ospreyPole, planter, raft, readingTable, rodHolder, rowboat, skateBowl, snag, stall, sundial, swing, towel, umbrella, volleyNet,
 } from './things.ts';
 
 export type { CollisionPart } from './collision.ts';
@@ -33,7 +33,7 @@ const DRAW: Record<PropKind, (c: Ctx) => void> = {
   laundryLine, stall, cafeTable, fountain, planter, bikeRack, mapBoard, sundial, monthStone,
   kite, swing, windsock, beacon, fireRing, volleyNet, lifeRing, rodHolder, duckBox,
   ospreyPole, snag, buoy, bollardQuay, net, crate, cairn, sheepFank, festoon, flag,
-  bocceCourt, skateBowl, geoglyph, readingTable, bookCart, birdFeeder, bell, raft,
+  bocceCourt, skateBowl, geoglyph, readingTable, bookCart, birdFeeder, bell, raft, lodge,
 };
 export const PROP_KINDS = Object.keys(DRAW) as PropKind[];
 
@@ -115,6 +115,7 @@ export function propCollision(rec: PropRecord, ground: Ground): CollisionPart[] 
     case 'birdFeeder': return [B(0, 0, 0.1, 0.1, 0, 1.6, 'support', 'timber')];
     case 'ospreyPole': return [B(0, 0, 0.36, 0.36, -0.3, 11.5, 'support', 'timber')];
     case 'snag': return [B(0, 0, 0.7, 0.7, 0, 7.5, 'support', 'timber')];
+    case 'lodge': return [B(0, 0, 1.9, 1.9, 0, 1.15, 'rock', 'straw')];
     case 'readingTable': return [B(0, 0, 1.56, 1.56, 0, 0.76, 'support', 'timber')];
     case 'bookCart': return [B(0, 0, 1.12, 0.6, 0, 1.05, 'support', 'timber')];
     case 'kayak': return [B(0, 0, 0.62, 3.6, 0, 0.35, 'support', 'timber')];

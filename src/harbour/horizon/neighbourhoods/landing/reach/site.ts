@@ -35,7 +35,8 @@ export const LOOKOUTS: readonly ReachLookout[] = [
 ];
 
 /** The beds a reed may grow right up to (open decks on piles): the boardwalk, the footbridge, the hides, the Greenway. */
-const DECK_BEDS = ['structure.reachBoardwalk', 'structure.reachFootbridge', 'structure.channelHide', 'structure.greenway', 'S1'];
+export const DECK_PREFIXES = ['structure.reachBoardwalk', 'structure.reachFootbridge', 'structure.channelHide', 'structure.greenway', 'S1'] as const;
+const DECK_BEDS = [...DECK_PREFIXES];
 
 export interface Keep { c: XY; r: number; maxH: number }
 /** The bake's context carries three more probes (neighbourhoods/bake.ts `DressingContextImpl`); a test double may not. */

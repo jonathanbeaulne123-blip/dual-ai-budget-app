@@ -100,8 +100,9 @@ export type PropKind =
   | 'kite' | 'swing' | 'windsock' | 'beacon' | 'fireRing' | 'volleyNet' | 'lifeRing' | 'rodHolder' | 'duckBox'
   | 'ospreyPole' | 'snag' | 'buoy' | 'bollardQuay' | 'net' | 'crate' | 'cairn' | 'sheepFank' | 'festoon' | 'flag'
   | 'bocceCourt' | 'skateBowl' | 'geoglyph' | 'readingTable' | 'bookCart' | 'birdFeeder' | 'bell'
-  // E-WW (additive, the Reach PR 3): a floating reed raft (its planting drawn with it; `line` = its tether to a pile).
-  | 'raft';
+  // E-WW (additive, the Reach PR 3): a floating reed raft (its planting drawn with it; `line` = its tether to a pile) and a
+  // muskrat lodge (a reed-and-mud mound standing in a channel).
+  | 'raft' | 'lodge';
 
 export interface PropRecord {
   id?: string;
