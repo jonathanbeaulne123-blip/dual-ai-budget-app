@@ -5,15 +5,17 @@
 // --url is given) and kills it at the end. Writes JPEGs (sharp, q 70) and captures.json.
 //   node scripts/horizon/capture-harbour.mjs --out docs/horizon/evidence/waters-way-harbour --port 5183
 // Options: --out <dir> · --port <n> · --url <origin> · --only <comma list of pose ids> · --themes classic,taylor,newfoundland
-//          · --tiers full,lite · --width 1120 --height 700
+//          · --tiers full,lite · --skip-existing (keep shots already in --out) · --width 1120 --height 700
 import {chromium} from '@playwright/test';
 import {mkdir,writeFile,rm} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
 import {resolve,join} from 'node:path';
 import {execFileSync,spawn} from 'node:child_process';
 import sharp from 'sharp';
 
 const args=process.argv.slice(2),opt=(name,fallback)=>{const i=args.indexOf(`--${name}`);return i>=0?args[i+1]:fallback;};
 const output=resolve(opt('out','docs/horizon/evidence/waters-way-harbour')),port=Number(opt('port','5183')),only=opt('only')?.split(',').filter(Boolean)??null;
+const skipExisting=args.includes('--skip-existing');
 const themes=(opt('themes','classic,taylor,newfoundland')).split(','),tiers=(opt('tiers','full,lite')).split(',');
 const VIEW={width:Number(opt('width','1120')),height:Number(opt('height','700'))},DATE='2026-06-21',GOLDEN='19:55',DUSK='21:05',NIGHT='22:30',NOON='13:00';
 const sha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
@@ -36,7 +38,7 @@ const POSES=[
   {id:'bocce',label:'Bocce on the small green, the palazzo behind',eye:[1471,13.9,1156],target:[1453.5,12.4,1147],fov:55,hours:[GOLDEN],themes:'classic'},
   {id:'market',label:'Down Town Weave through the market lane',eye:[1449.5,11.2,1219],target:[1468,7.5,1258],fov:60,hours:[NOON],themes:'classic'},
   {id:'upper',label:'The upper street, down to the piazza',eye:[1471.5,19.6,1050],target:[1466,15,1125],fov:58,hours:[NOON],themes:'classic'},
-  {id:'belfryWheel',label:'Lookout: from the belfry to the Ferris wheel (the story\'s next landmark)',eye:[1421.5,34.3,1187.3],target:[1010,24,1648],fov:30,hours:[GOLDEN],themes:'classic'},
+  {id:'belfryWheel',label:'Lookout: from the belfry to the Ferris wheel (the story\'s next landmark)',eye:[1421.32,34.3,1186.35],target:[1010,24,1648],fov:30,hours:[GOLDEN],themes:'classic'},
   {id:'springBay',label:'Lookout: Spring Bay to the campanile (the sight chain into Little Harbour)',eye:[1246.4,6.6,1199.5],target:[1423,30,1187],fov:28,hours:[GOLDEN],themes:'classic'},
   {id:'aerial',label:'Aerial from the harbour mouth',eye:[1630,150,1450],target:[1462,12,1185],fov:42,hours:[GOLDEN,NIGHT],themes:'classic'},
 ];
@@ -66,6 +68,8 @@ try{
     await page.addStyleTag({content:'.horizon-toolbar,.horizon-status,.horizon-touch-controls,.horizon-cruiser-controls,.horizon-inspector{visibility:hidden!important}'});
     log('page',theme,tier);
     for(const p of poses)for(const hhmm of (tier==='lite'&&p.liteHours?p.liteHours:p.hours)){
+      const name=`${p.id}_${hhmm.replace(':','-')}_${theme}_${tier}.jpg`;
+      if(skipExisting&&existsSync(join(output,name))){records.push({file:name,id:p.id,label:p.label,theme,tier,time:hhmm,date:DATE,eye:p.eye??null,target:p.target??null,fov:p.fov??null,view:p.view??null,stats:null,note:'kept from an earlier run on the same bake'});log('kept',name);continue;}
       try{
         await page.evaluate(({p,DATE,hhmm})=>{const w=window.__harbour,views=w.world.views;if(p.view)w.shot(p.view);else{const i=views.findIndex(v=>v.id===`H_${p.id}`);const v={id:`H_${p.id}`,label:p.label,eye:p.eye,target:p.target,fovDegrees:p.fov,aspect:1,radius:260,portrait:null};if(i>=0)views[i]=v;else views.push(v);w.shot(`H_${p.id}`);}const [H,M]=hhmm.split(':').map(Number);const d=new Date(`${DATE}T12:00:00-04:00`);d.setHours(H,M,0,0);w.setDate(d);},{p,DATE,hhmm});
         await page.evaluate(()=>window.__harbour.settle(300000));
@@ -76,7 +80,7 @@ try{
         await page.locator('.horizon-stage canvas').screenshot({path:png,timeout:240000});
         await sharp(png).jpeg({quality:70,mozjpeg:true}).toFile(join(output,file));await rm(png);
         const stats=await page.evaluate(()=>{const s=window.__harbour.stats(),d=s.drawSamples.at(-1)??null;return{drawCalls:d?.calls??null,triangles:d?.triangles??null,dressing:window.__harbour.dressingRenderStatus?.()?.districts??null,camera:s.camera};});
-        records.push({file,id:p.id,label:p.label,theme,tier,time:hhmm,date:DATE,eye:p.eye,target:p.target,fov:p.fov,stats});log(file,'draw',stats.drawCalls,'tri',stats.triangles);
+        records.push({file,id:p.id,label:p.label,theme,tier,time:hhmm,date:DATE,eye:p.eye??null,target:p.target??null,fov:p.fov??null,view:p.view??null,stats});log(file,'draw',stats.drawCalls,'tri',stats.triangles);
       }catch(e){errors.push({theme,tier,pose:p.id,message:String(e).slice(0,300)});log('FAILED',p.id,theme,tier,String(e).slice(0,160));}
     }
     await page.close();

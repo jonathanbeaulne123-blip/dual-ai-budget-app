@@ -14,9 +14,10 @@ import { districtAt } from '../src/harbour/horizon/world/districts.ts';
 import { pointInPolygon } from '../src/harbour/horizon/world/geometry.ts';
 import { createRayCaster } from '../src/harbour/horizon/world/raycast.ts';
 import { HORIZON_MANIFEST as M } from '../src/harbour/horizon/world/manifest.ts';
-import { storyEye, validateStoryAgainstDressing } from '../src/harbour/horizon/world/story.ts';
+import { storyEye, storyLandmark, validateStoryAgainstDressing } from '../src/harbour/horizon/world/story.ts';
 import { harbour, lanternHunt } from '../src/harbour/horizon/neighbourhoods/harbour/index.ts';
-import { BOCCE, CAMPANILE, DAM_LINE, damAcross, tier, WEST_FRAME } from '../src/harbour/horizon/neighbourhoods/harbour/plan.ts';
+import { BOCCE, CAMPANILE, COURT, DAM_LINE, damAcross, tier, WEST_FRAME } from '../src/harbour/horizon/neighbourhoods/harbour/plan.ts';
+import { RAYS } from '../src/harbour/horizon/neighbourhoods/harbour/ground.ts';
 import { NIGHT_LINE, NIGHT_ORDER } from '../src/harbour/horizon/neighbourhoods/harbour/places.ts';
 import { CROWN } from '../src/harbour/horizon/neighbourhoods/harbour/planting.ts';
 import { corners } from '../src/harbour/horizon/neighbourhoods/harbour/solver.ts';
@@ -103,6 +104,22 @@ describe('Little Harbour: the town (STYLE §2.1; SPEC §1–§6)', () => {
     expect(Math.abs(b.eye[1] - storyEye('belfry').y!)).toBeLessThan(0.5);
     expect(mine.props.filter(p => p.id?.startsWith('belfry.viewer')).length).toBe(2);
   });
+  it('lets each belfry viewer see its target through an arch, not into a pier (the baked campanile collider)', async () => {
+    // Only the solids within 40 eu of the campanile (the belfry's piers and anything beside them): the island-wide caster is a
+    // long synchronous build, and the question is whether the line leaves the belfry.
+    const near = world.geometry.solids.filter(s => { for (let i = 0; i < s.positions.length; i += 3) if (Math.hypot(s.positions[i]! - CAMPANILE.at[0], s.positions[i + 2]! - CAMPANILE.at[1]) < 40) return true; return false; });
+    await tick();
+    const ray = createRayCaster(field, { solids: near, waters: world.collision.waters, mouths: world.collision.mouths });
+    await tick();
+    expect(near.some(s => (s.sourceId ?? s.id).startsWith('dressing.harbour.campanile'))).toBe(true);
+    const wheel = storyLandmark('wheel');
+    for (const [id, target] of [['belfry.viewer.wheel', wheel.top], ['belfry.viewer.dam', [1316, 115, 538]]] as const) {
+      const v = mine.props.find(p => p.id === id)!, eye: [number, number, number] = [v.at[0], v.at[1] + 1.5, v.at[2]];
+      const d = [target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]], n = Math.hypot(d[0]!, d[1]!, d[2]!);
+      const hit = ray.first(eye, [d[0]! / n, d[1]! / n, d[2]! / n], 60, { step: 0.25, skip: s => (s as { sourceId?: string }).sourceId?.startsWith(`dressing.harbour.${id}`) ?? s.id.startsWith(`dressing.harbour.${id}`) });
+      expect(hit.kind === 'sky' || hit.t > 6, `${id}: ${hit.kind} ${hit.id} at ${hit.t.toFixed(2)}`).toBe(true);
+    }
+  }, 60_000);
 });
 
 describe('Little Harbour: the contracts', () => {
@@ -198,14 +215,17 @@ describe('Little Harbour: the ground (SPEC §7; STYLE §2.1)', () => {
       for (const [x, z] of g.polygon) { expect(ctx.onBed(x, z)).toBeNull(); expect(ctx.onPad(x, z)).toBeNull(); expect(ctx.inWater(x, z)).toBe(false); }
     }
     // The paint a page or a pastime reads (the campo, the green) is drawn on both tiers; the verges only on full.
-    expect(mine.ground.filter(g => g.surface === 'mown' || g.surface === 'ochre').every(g => !g.fullOnly)).toBe(true);
+    expect(mine.ground.filter(g => g.surface === 'mown' || g.surface === 'ochre' || g.surface === 'brick').every(g => !g.fullOnly)).toBe(true);
     await tick();
     const draw = (tier: 'full' | 'lite') => { const art = finishBuild(buildDistrictDressingSteps({ districtId: 'harbour', buildings: [], plants: [], props: [], ground: verges.slice(0, 40), pools: [], life: [] }, { tier, theme: 'classic', season: 'summer', ground: (x, z) => sampleTerrain(field, x, z) })); const n = art.stats.triangles; art.cards.dispose(); return n; };
     expect(draw('full')).toBeGreaterThan(0); expect(draw('lite')).toBe(0);
   });
-  it('lays the campo in ten fans between the travertine rays (alternate fans a shade apart)', () => {
-    const campo = mine.ground.filter(g => g.surface === 'ochre');
-    expect(new Set(campo.map(g => g.tone)).size).toBe(3);
+  it('lays the campo in ten fans between the travertine rays, alternate fans in two bricks', () => {
+    const sq = tier('square'), campo = mine.ground.filter(g => (g.surface === 'ochre' || g.surface === 'brick') && g.floor === sq.y);
+    const fanOf = (g: { polygon: Point2[] }) => { const c = g.polygon.reduce((a, p) => [a[0] + p[0] / g.polygon.length, a[1] + p[1] / g.polygon.length], [0, 0]); return Math.floor(((Math.atan2(c[1] - COURT[1], c[0] - COURT[0]) - RAYS[0]!) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) / (Math.PI / 5)); };
+    const outer = campo.filter(g => { const c = g.polygon[0]!; return Math.hypot(c[0] - COURT[0], c[1] - COURT[1]) > 9; });
+    for (const g of outer.slice(0, 400)) expect(g.surface).toBe(fanOf(g) % 2 ? 'brick' : 'ochre');
+    expect(new Set(campo.map(g => g.surface))).toEqual(new Set(['ochre', 'brick']));
   });
 });
 

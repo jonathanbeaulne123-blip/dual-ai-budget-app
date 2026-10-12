@@ -150,7 +150,9 @@ export function buildPlaces(ctx: DressingContext, buildings: readonly BuildingRe
   const floorB = belfryFloor(), [bx, bz] = CAMPANILE.at, eye = storyEye('belfry');
   const damTarget: Point2 = [1316, 538], wheel = storyLandmark('wheel');
   prop({ id: 'belfry.viewer.dam', kind: 'viewer', at: [bx, floorB, bz - 1.45], yaw: yawToward([bx, bz], damTarget), collide: true });
-  prop({ id: 'belfry.viewer.wheel', kind: 'viewer', at: [bx - 1.45, floorB, bz + 0.3], yaw: yawToward([bx, bz], [wheel.at[0], wheel.at[2]]), collide: true });
+  // The wheel is 42° off the south face's normal (south-west): from the belfry's centre that line meets the corner pier, so
+  // the wheel's viewer stands by the west arch's north jamb, where the line to the wheel leaves through the west arch.
+  { const at: Point2 = [bx - 1.95, bz - 0.35]; prop({ id: 'belfry.viewer.wheel', kind: 'viewer', at: [at[0], floorB, at[1]], yaw: yawToward(at, [wheel.at[0], wheel.at[2]]), collide: true }); }
   prop({ id: 'belfry.panel', kind: 'panel', at: [bx + 1.4, floorB, bz + 0.9], yaw: -Math.PI / 2, variant: 2, collide: true });
   const lookouts: Lookout[] = [{ id: 'belfry', label: 'the belfry', eye: [eye.at[0], floorB + 1.6, eye.at[1]], facing: yawToward([bx, bz], damTarget), targets: ['wheel', 'dam', ...eye.targets.filter(t => t !== 'wheel')], viewer: 'standing', bestHour: 'golden hour' }];
   const l = storyLandmark('campanile');

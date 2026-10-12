@@ -55,7 +55,7 @@ export function paintGround(ctx: DressingContext): GroundPaint[] {
   // (#a8664f) read maroon in the square's golden-hour shade.
   // The campo is laid in ten fans between the travertine rays (Siena), alternate fans a shade apart, so the 56 m of brick
   // reads as laid courses rather than one plain (no triangles added: the lattice's own pieces carry the tone).
-  for (const t of lattice(sq.x0, sq.z0, sq.x1, sq.z1)) out.push({ polygon: t, surface: 'ochre', tone: campoTone(t), floor: y + LIFT.brick });
+  for (const t of lattice(sq.x0, sq.z0, sq.x1, sq.z1)) for (const piece of campoPieces(t)) { const fan = campoFan(piece); out.push({ polygon: piece, surface: fan === 1 ? 'brick' : 'ochre', tone: fan === 1 ? 1 : 0.75, floor: y + LIFT.brick }); }
   // The small green: from the square's north edge south to 0.3 eu short of the bank approach (the bocce court wholly on it).
   const bank = ctx.beds.find(b => b.id === 'host.bank.approach'), half = (bank?.width ?? 2.5) / 2;
   const edgeZ = (x: number) => { let best = Infinity; const P = bank?.points ?? []; for (let i = 1; i < P.length; i++) { const a = P[i - 1]!, b = P[i]!; if ((a[0] - x) * (b[0] - x) <= 0 && a[0] !== b[0]) { const t = (x - a[0]) / (b[0] - a[0]); best = Math.min(best, a[2] + (b[2] - a[2]) * t); } } return best - half - 0.3; };
@@ -78,12 +78,47 @@ export function paintGround(ctx: DressingContext): GroundPaint[] {
   return out;
 }
 
-/** The campo's tone for one lattice piece: by the fan (between two rays) its centroid lies in; the Court's disc a mid tone. */
-export function campoTone(t: readonly Point2[]): number {
-  const cx = t.reduce((a, p) => a + p[0], 0) / t.length, cz = t.reduce((a, p) => a + p[1], 0) / t.length, dx = cx - COURT[0], dz = cz - COURT[1];
-  if (Math.hypot(dx, dz) < 6.6) return 0.6;
-  const a = ((Math.atan2(dz, dx) - RAYS[0]!) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2), fan = Math.floor(a / (Math.PI / 5));
-  return fan % 2 ? 0.2 : 1;
+/** Clip a convex polygon to the half-plane left of the line from COURT along angle `a` (cross ≥ 0). */
+function clipHalf(P: readonly Point2[], a: number, keepLeft: boolean): Point2[] {
+  const dx = Math.cos(a), dz = Math.sin(a), side = (p: Point2) => (dx * (p[1] - COURT[1]) - dz * (p[0] - COURT[0])) * (keepLeft ? 1 : -1), out: Point2[] = [];
+  for (let i = 0; i < P.length; i++) {
+    const p = P[i]!, q = P[(i + 1) % P.length]!, sp = side(p), sq = side(q);
+    if (sp >= 0) out.push(p);
+    if ((sp >= 0) !== (sq >= 0)) { const t = sp / (sp - sq); out.push([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]); }
+  }
+  return out;
+}
+const area2 = (P: readonly Point2[]) => Math.abs(P.reduce((a, p, i) => { const q = P[(i + 1) % P.length]!; return a + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2;
+/**
+ * A lattice piece cut along the travertine rays, so each brick fan ends exactly on its ray (not in a sawtooth of whole
+ * lattice triangles). A piece no ray crosses is returned whole; one a ray crosses becomes one piece per fan it touches
+ * (each fan is a 36° wedge from the Court: the intersection of two half-planes). Slivers under 0.02 m² are dropped.
+ */
+export function campoPieces(t: readonly Point2[]): Point2[][] {
+  // A piece by the Court's centre may span fans none of its corners lie in: try all ten there.
+  const fans = t.some(p => Math.hypot(p[0] - COURT[0], p[1] - COURT[1]) < 3) ? new Set(Array.from({ length: 10 }, (_, k) => k)) : new Set(t.map(p => fanOfPoint(p)));
+  if (fans.size === 1) return [t as Point2[]];
+  const out: Point2[][] = [];
+  for (const k of fans) {
+    const a0 = RAYS[0]! + k * Math.PI / 5, a1 = a0 + Math.PI / 5;
+    const piece = clipHalf(clipHalf(t, a0, true), a1, false);
+    if (piece.length >= 3 && area2(piece) > 0.02) out.push(piece);
+  }
+  return out;
+}
+/** The fan (0…9, between ray k and ray k + 1) a point lies in, by its bearing from the Court. */
+export function fanOfPoint(p: Point2): number {
+  return Math.floor((((Math.atan2(p[1] - COURT[1], p[0] - COURT[0]) - RAYS[0]!) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 5)) % 10;
+}
+
+/**
+ * Which brick a campo piece is laid in: by the fan (between two rays) its centroid lies in — the warm `ochre` brick in
+ * alternate fans (0), the deeper `brick` in the others (1); the fans run in to the Court's centre under its inlay. One tone of brick over
+ * 56 m read as bare earth at golden hour (the square sits in warm shade, D-WW135); two bricks read as laid fans.
+ */
+export function campoFan(t: readonly Point2[]): 0 | 1 {
+  const c: Point2 = [t.reduce((a, p) => a + p[0], 0) / t.length, t.reduce((a, p) => a + p[1], 0) / t.length];
+  return fanOfPoint(c) % 2 ? 1 : 0;
 }
 
 /**

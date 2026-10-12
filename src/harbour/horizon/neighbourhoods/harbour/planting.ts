@@ -8,11 +8,14 @@ import type { Point2, Point3 } from '../../world/definition.ts';
 import type { BuildingRecord, DressingContext, DressingSpecies, PlantRecord, PropRecord } from '../types.ts';
 import { pointInPolygon } from '../../world/geometry.ts';
 import { SPECIES_HEIGHT } from '../bake.ts';
-import { CAMPANILE, CYPRESSES, DAM_LINE, HILLSIDE, STONE_PINES, damAcross, untouched } from './plan.ts';
+import { CAMPANILE, CYPRESSES, DAM_LINE, HILLSIDE, STONE_PINES, TOWN, damAcross, untouched } from './plan.ts';
 
 /** Crown radius at scale 1 (plan, eu) for the cover measure (the prototype's CR and canopy discs). */
 export const CROWN: Partial<Record<DressingSpecies, number>> = { olive: 1.6, stonePine: 3.6, cypress: 1.2 };
 export const TERRACES = { tries: 900, walls: 50, slope: [0.1, 0.75] as const, minGround: 3, bedClear: 6, houseClear: 4, campanileClear: 8, length: [6, 9] as const, oliveShare: 0.8, oliveDown: 2.2 } as const;
+
+/** The orti (town gardens): an olive on the open grass between the rows. */
+export const ORTI = { grid: 7, max: 12, bedClear: 3, houseClear: 2.5, spacing: 6, enclosure: 22, minHouses: 4 } as const;
 
 const slopeAt = (ctx: DressingContext, x: number, z: number) => { const gx = (ctx.heightAt(x + 1, z) - ctx.heightAt(x - 1, z)) / 2, gz = (ctx.heightAt(x, z + 1) - ctx.heightAt(x, z - 1)) / 2; return { s: Math.hypot(gx, gz), gx, gz }; };
 
@@ -52,6 +55,27 @@ export function plantHillside(ctx: DressingContext, buildings: readonly Building
   // Stone pines on the ridges (bed clearance > 7) and cypress (two framing the campanile).
   STONE_PINES.forEach(([x, z, sc]) => { if (ctx.bedClearance(x, z) > 7 && plantOk(x, z, 1) && tallOk('stonePine', sc, x, z) && !nearHouse(x, z, 2)) plants.push({ species: 'stonePine', at: [x, ctx.heightAt(x, z), z], scale: sc, yaw: x % 6.2832, keep: true }); });
   CYPRESSES.forEach(([x, z], i) => { if (ctx.bedClearance(x, z) > 4 && plantOk(x, z, 0.8) && tallOk('cypress', 1.05, x, z) && !nearHouse(x, z, 1.5)) plants.push({ species: 'cypress', at: [x, ctx.heightAt(x, z), z], scale: 1.05, yaw: i * 1.3, keep: i < 2 }); });
+  // The town's orti: the open grass the solver leaves inside the rows (the backs of the houses, the inside of Town Weave's
+  // bend) gets olives — candidates on a 7 eu grid, ≥ 3 eu off every bed, ≥ 2.5 eu off every house, on gentle dry ground;
+  // the most enclosed first (most houses within 22 eu: a lawn among the roofs, not the open hillside the terraces dress),
+  // ≥ 6 eu from another tree. Read from the belfry, the lawns between the roofs become kitchen gardens.
+  {
+    const r = ctx.rng('harbour.orti'), cand: { x: number; z: number; g: number; sc: number; yaw: number; tint: number; enclosed: number }[] = [];
+    for (let x = 1392; x <= 1560; x += ORTI.grid) for (let z = 1048; z <= 1320; z += ORTI.grid) {
+      const jx = x + (r() - 0.5) * 3, jz = z + (r() - 0.5) * 3, sc = 0.85 + r() * 0.3, yaw = r() * 6.2832, tint = r();
+      if (!pointInPolygon(jx, jz, TOWN as Point2[]) || ctx.bedClearance(jx, jz) < ORTI.bedClear || nearHouse(jx, jz, ORTI.houseClear) || !plantOk(jx, jz, 1)) continue;
+      const g = ctx.heightAt(jx, jz); if (g < 3 || slopeAt(ctx, jx, jz).s > 0.6 || !tallOk('olive', sc, jx, jz) || Math.hypot(jx - CAMPANILE.at[0], jz - CAMPANILE.at[1]) < 8) continue;
+      const enclosed = buildings.filter(b => Math.hypot(b.at[0] - jx, b.at[2] - jz) < ORTI.enclosure).length;
+      if (enclosed >= ORTI.minHouses) cand.push({ x: jx, z: jz, g, sc, yaw, tint, enclosed });
+    }
+    cand.sort((a, b) => b.enclosed - a.enclosed || a.x - b.x || a.z - b.z);
+    let n = 0;
+    for (const c of cand) {
+      if (n >= ORTI.max) break;
+      if (plants.some(p => CROWN[p.species] && Math.hypot(p.at[0] - c.x, p.at[2] - c.z) < ORTI.spacing)) continue;
+      plants.push({ species: 'olive', at: [c.x, c.g, c.z], scale: c.sc, yaw: c.yaw, tint: c.tint }); n++;
+    }
+  }
   // Two alders by the river link's foot (SPEC §9: birch at 0.62 stands in for alder).
   ([[1507, 1258], [1509, 1250]] as Point2[]).forEach(([x, z], i) => { if (plantOk(x, z, 0.8) && !nearHouse(x, z, 1.5)) plants.push({ species: 'birch', at: [x, ctx.heightAt(x, z), z], scale: 0.62, yaw: i * 2.1 + 0.4 }); });
   return { plants, props };
