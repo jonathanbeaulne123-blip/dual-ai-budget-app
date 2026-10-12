@@ -120,7 +120,7 @@ export interface PropRecord {
 /* ---------------------------------------------------------------- ground, life */
 
 /** Paint only: colours/textures the terrain inside the polygon by surface token. Never re-shapes ground. */
-export interface GroundPaint { polygon: Point2[]; surface: 'cobble' | 'brick' | 'travertine' | 'gravel' | 'sand' | 'duff' | 'sedge' | 'mown' | 'meadow' | 'prairie' | 'ochre' | 'scree' | 'snow' | 'mud' | 'pasture' | 'concrete'; tone?: number }
+export interface GroundPaint { polygon: Point2[]; surface: 'cobble' | 'brick' | 'travertine' | 'gravel' | 'sand' | 'duff' | 'sedge' | 'mown' | 'meadow' | 'prairie' | 'ochre' | 'scree' | 'snow' | 'mud' | 'pasture' | 'concrete'; tone?: number; /** E3 (additive, the Green): detail paint the lite tier drops (lite drops, never substitutes). */ fullOnly?: boolean }
 /** Shallow standing water drawn as a surface (marsh pools, the Reed Maze channels); its ground is the land pass's. */
 export interface PoolRecord { id: string; outline: Point2[]; level: number }
 
@@ -140,6 +140,11 @@ export interface Landmark {
   top: Point3;
   /** Its place in the evening relay (1 = first lit at civil dusk); absent if it doesn't join. */
   relayOrder?: number;
+  /**
+   * E2 (additive, the Green): a landmark no building carries is a landmark tree (the Old Oak); its far silhouette is the
+   * plant kit's landmark tree, turned by this yaw (the plant record's) so the near tree replaces it in place.
+   */
+  yaw?: number;
   /** Rings in the noon bell chain (STORY.md through-line 5). */
   bell?: 'westwatch' | 'summit' | 'campanile';
 }

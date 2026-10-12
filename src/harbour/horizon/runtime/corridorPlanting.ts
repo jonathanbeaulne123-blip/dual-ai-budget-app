@@ -47,9 +47,9 @@ import { crownOf } from '../../mountain/planting.ts';
 import { mix, shade, type RGB } from '../../art/cardKit.ts';
 import { FADE_BAND } from '../kit/plants/materials.ts';
 import { FAR, HEDGE_STRETCH, LITE_KEEP, TREE_KINDS, farOf, isTree, leafColour, shrubColour, trunkColour, type LayerFamily, type PlantSeason } from '../kit/plants/archetypes.ts';
-import { PALM, bentPineGeometry, bedGeometry, bloomGeometry, dotGeometry, palmGeometry, shadowGeometry, shrubGeometry, treeGeometry, tuftGeometry } from '../kit/plants/geometry.ts';
+import { PALM, bentPineGeometry, bedGeometry, bloomGeometry, dotGeometry, palmGeometry, shadowGeometry, shrubGeometry, treeGeometry, tuftGeometry, longTuftGeometry } from '../kit/plants/geometry.ts';
 import { BORN_SECONDS, cardMaterial, contactMaterial, depthMaterial, fadeAt, rimMaterial, shellMaterial, type EyeUniform, type NowUniform, type PlantHook } from '../kit/plants/materials.ts';
-import { FLOWER_SET, SEASON_MONTH, bloomStage, flowerSet, grassColour, setOf, variationOf, type BloomStage, type FlowerSetId, type PlantTheme } from '../kit/plants/sets.ts';
+import { FLOWER_SET, SEASON_MONTH, WILD_SETS, bloomStage, flowerSet, grassColour, isLongGrassSet, setOf, variationOf, type BloomStage, type FlowerSetId, type PlantTheme } from '../kit/plants/sets.ts';
 import { WW_SPECIES, WW_SPEC, isWW, wwStretch, wwVariant, type WWSpecies } from '../kit/plants/species.ts';
 import { wwDrawn, wwGeometry, type WWGeometry, type WWLook } from '../kit/plants/wwGeometry.ts';
 
@@ -74,7 +74,7 @@ export type CorridorPlanting = {
 };
 
 /** Sets drawn as wild drifts (no soil card or edging): the prairie, the Highlands' fell and the Reach's bog. */
-const isWildSet = (set: FlowerSetId) => set === FLOWER_SET.prairie || set === FLOWER_SET.highland || set === FLOWER_SET.bog;
+const isWildSet = (set: FlowerSetId) => WILD_SETS.has(set);
 /** Hysteresis margins beyond an instance's far radius (eu), and the viewer travel that triggers re-evaluation. */
 export const PLANT_JOIN = 10, PLANT_LEAVE = 30, PLANT_RECHECK = 8;
 /** The far radius of the Water's Way trees' ink shells (the Old Oak's keeps FAR.shell). */
@@ -166,7 +166,8 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
 
   let season = opts.season, month = opts.month ?? SEASON_MONTH[opts.season], layers: Layer[] = [];
   /** Any Water's Way item drawn (their geometry reads the month, not only the bloom stage: `setSeason`). */
-  const monthSensitive = wwUsed.size > 0;
+  // The clocks set flowers by month too (yellow in May, white clocks in June: kit/plants/sets.ts flowerSet).
+  const monthSensitive = wwUsed.size > 0 || items.some(it => it.item.species === 'flowerBed' && setOf(it.item.tint) === FLOWER_SET.clocks);
   /** The layer a Water's Way item draws in (its species or rule variant, kit/plants/species.ts `wwVariant`). */
   const wwKey = (p: PlantItem, v: number) => { const r = wwVariant(p.species as WWSpecies, opts.theme, p.scale, v); return { ...r, key: `ww:${r.species}${r.variant ? `:${r.variant}` : ''}` }; };
   let packed: { key: string; layers: Layer[]; batch: PackedInstances }[] = [];
@@ -256,12 +257,14 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
           const m = matrix(at, 0, p.yaw, 0, s, 1, s, 0), set = setOf(p.tint), wild = isWildSet(set);
           add(wild ? 'bed:wild' : 'bed', { family: 'bed', geometry: () => bedGeometry(pal, tier, stage, wild), material: M.bed, cast: false }, { ...base(it), m, colour: shade([1, 1, 1], 0.97 + v * 0.06) }, it);
           // Blooms draw in bud, bloom and fade; none in leaf (Nov) or under the winter mulch (bloomGeometry → null).
-          if (stage !== 'leaf' && stage !== 'mulch') add(`bloom:${set}`, { family: 'bloom', geometry: () => bloomGeometry(pal, tier, flowerSet(opts.theme, set), stage)!, material: M.bloom, cast: false }, { ...base(it), m, colour: shade([1, 1, 1], 0.96 + v * 0.08) }, it);
+          const blooms = flowerSet(opts.theme, set, month);
+          if (stage !== 'leaf' && stage !== 'mulch' && blooms.length) add(`bloom:${set}`, { family: 'bloom', geometry: () => bloomGeometry(pal, tier, blooms, stage)!, material: M.bloom, cast: false }, { ...base(it), m, colour: shade([1, 1, 1], 0.96 + v * 0.08) }, it);
           break;
         }
         case 'grassTuft': {
           const set: FlowerSetId = p.tint === undefined ? FLOWER_SET.meadow : setOf(p.tint), m = matrix(at, 0, p.yaw, 0, s, s * (1.1 + v * 0.5), s, -0.02);
-          add('tuft', { family: 'tuft', geometry: tuftGeometry, material: M.tuft, cast: false }, { ...base(it), m, colour: shade(grassColour(set, stage, pal.leaf[v > 0.5 ? 1 : 2]!, v), 0.85 + v * 0.15) }, it);
+          const long = isLongGrassSet(set);
+          add(long ? 'tuft:long' : 'tuft', { family: 'tuft', geometry: long ? longTuftGeometry : tuftGeometry, material: M.tuft, cast: false }, { ...base(it), m, colour: shade(grassColour(set, stage, pal.leaf[v > 0.5 ? 1 : 2]!, v), 0.85 + v * 0.15) }, it);
           break;
         }
         case 'hedge': {
@@ -378,7 +381,7 @@ export function createCorridorPlanting(world: Pick<WorldDefinition, 'corridors'>
     },
     probe(groupId, index) {
       const it = items.find(i => i.groupId === groupId && i.index === index); if (!it) return null;
-      const p = it.item, key = opts.theme === 'newfoundland' && NF_BENT_PALMS.has(p.species) ? 'bentPine' : isWW(p.species) ? wwKey(p, variationOf(p.tint, p.at[0], p.at[2])).key : p.species === 'pine' && (p.lean ?? 0) >= BENT_PINE_LEAN ? 'bentPine' : isTree(p.species) ? `tree:${p.species}` : p.species === 'flowering' || p.species === 'shrub' ? 'bush' : p.species === 'flowerBed' ? (isWildSet(setOf(p.tint)) ? 'bed:wild' : 'bed') : p.species === 'grassTuft' ? 'tuft' : p.species;
+      const p = it.item, key = opts.theme === 'newfoundland' && NF_BENT_PALMS.has(p.species) ? 'bentPine' : isWW(p.species) ? wwKey(p, variationOf(p.tint, p.at[0], p.at[2])).key : p.species === 'pine' && (p.lean ?? 0) >= BENT_PINE_LEAN ? 'bentPine' : isTree(p.species) ? `tree:${p.species}` : p.species === 'flowering' || p.species === 'shrub' ? 'bush' : p.species === 'flowerBed' ? (isWildSet(setOf(p.tint)) ? 'bed:wild' : 'bed') : p.species === 'grassTuft' ? (isLongGrassSet(setOf(p.tint)) ? 'tuft:long' : 'tuft') : p.species;
       const layer = layers.find(l => l.key === key), rec = layer?.recs.find(r => r.x === p.at[0] && r.z === p.at[2] && r.district === it.district);
       if (!rec) return { district: it.district, kept: it.kept, active: false, fade: 0 };
       const born = Math.max(0, Math.min(1, (clock() - rec.born) / BORN_SECONDS)), grown = born * born * (3 - 2 * born);

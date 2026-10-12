@@ -131,6 +131,18 @@ describe('the D-R3 point-light pool', () => {
     const scene = new THREE.Scene(), lights = createRoadLights(scene, { lights: [{ id: 'door.a.lamp', at: [0, 2.2, 0], kind: 'door' }] }, { tier: 'full' });
     lights.update(camera(), -12, 0); expect(lightCount(scene)).toBe(0); expect(lights.stats().anchorCards).toBe(1);
   });
+  it('gives the modules\' island lanterns a glow + halo card at night and nothing else: no point light, doors keep pool + bead (D-WW116)', () => {
+    const scene = new THREE.Scene(), lights = createRoadLights(scene, { lights: [
+      { id: 'door.a.lamp', at: [0, 2.2, 0], kind: 'door' }, { id: 'green.ring.1', at: [10, 2.83, 0], kind: 'dressing:lantern' }, { id: 'glass.1', at: [20, 0.98, 0], kind: 'dressing:lanternLow' },
+    ] }, { tier: 'full' });
+    const halos = () => scene.getObjectByName('lightCards.anchorGlows') as THREE.InstancedMesh;
+    let t = 0; for (let i = 0; i < 40; i++) lights.update(camera(), 20, t += 16);
+    expect(halos().count).toBe(0);
+    for (let i = 0; i < 400; i++) lights.update(camera(), -12, t += 16);
+    expect(lightCount(scene)).toBe(0); expect(lights.stats().anchorCards).toBe(3); expect(halos().count).toBe(2);
+    const m = new THREE.Matrix4(), p = new THREE.Vector3(); halos().getMatrixAt(0, m); p.setFromMatrixPosition(m); expect(p.x).toBeCloseTo(10, 5); expect(p.y).toBeCloseTo(2.83, 5); expect(p.z).toBeCloseTo(0, 5);
+    expect(halos().instanceColor!.getX(0)).toBeGreaterThan(0.5);
+  });
   it('is dark by day (tunnel lamps included) and lights the nearest lamps ahead at night', () => {
     const scene = new THREE.Scene(), lights = createRoadLights(scene, worldOf([corridor({ tunnelAt: 50 })]), { tier: 'full' }), cam = camera([100, 12, 0], [200, 12, 0]);
     let t = 0; for (let i = 0; i < 100; i++) lights.update(cam, 30, t += 16);

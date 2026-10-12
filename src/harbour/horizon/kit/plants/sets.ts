@@ -13,7 +13,8 @@
 import { mix, rgb, type RGB } from '../../../art/cardKit.ts';
 
 export type PlantTheme = 'classic' | 'taylor' | 'newfoundland';
-export type FlowerForm = 'head' | 'spike';
+/** `puff`: a seed head (a dandelion clock): a white ball on its stem. */
+export type FlowerForm = 'head' | 'spike' | 'puff';
 export type FlowerSpecies = { name: string; colour: RGB; form: FlowerForm };
 
 /** The integer part of a bed's or tuft's `tint`. The plan track picks the set per reach. */
@@ -34,9 +35,17 @@ export const FLOWER_SET = Object.freeze({
   warm: 6,
   /** The Water's Way: the Reach's bog margin: sheep laurel, Labrador tea, cranberry (Newfoundland: bakeapple, pitcher plant). */
   bog: 7,
+  /** The Water's Way: the Green's wild meadow (STYLE §3.2 open meadow as drifts, no bed): red clover, ox-eye daisy, black-eyed Susan (Newfoundland: lupine). */
+  meadowWild: 8,
+  /** The Water's Way: the Green's long-grass edges: goldenrod, milkweed, black-eyed Susan (Newfoundland: goldenrod, fireweed, yarrow). */
+  fieldEdge: 9,
+  /** The Water's Way: dandelions on the Green — yellow heads in May, white clocks in June (STYLE §1.4.2 seed heads), leaf otherwise. */
+  clocks: 10,
+  /** The Water's Way: Stillwater's banks as wild drifts (the water set without a bed): blue flag iris, marsh marigold, Joe-Pye weed (Newfoundland: iris, bakeapple, pitcher plant). */
+  lakeEdge: 11,
 });
 export type FlowerSetId = (typeof FLOWER_SET)[keyof typeof FLOWER_SET];
-const SET_COUNT = 8;
+const SET_COUNT = 12;
 
 const s = (name: string, hex: string, form: FlowerForm = 'head'): FlowerSpecies => ({ name, colour: rgb(hex), form });
 const CLASSIC: readonly (readonly FlowerSpecies[])[] = [
@@ -48,6 +57,10 @@ const CLASSIC: readonly (readonly FlowerSpecies[])[] = [
   [s('fireweed', '#c65a9a', 'spike'), s('harebell', '#7f86c9'), s('mountain avens', '#f1ecdc')],
   [s('red geranium', '#c8433a'), s('lavender', '#8f7cc0', 'spike'), s('white jasmine', '#f6f1e6')],
   [s('sheep laurel', '#c45a8a'), s('Labrador tea', '#f2eee2'), s('cranberry', '#e2a3b0')],
+  [s('red clover', '#c44f5c'), s('ox-eye daisy', '#f4efe6'), s('black-eyed Susan', '#e5b53a')],
+  [s('goldenrod', '#d9b02e', 'spike'), s('milkweed', '#c58b9c'), s('black-eyed Susan', '#e5b53a')],
+  [s('dandelion', '#f2c62e'), s('dandelion', '#ecbd24'), s('dandelion', '#f2c62e')],
+  [s('blue flag iris', '#6c78c2', 'spike'), s('marsh marigold', '#e9c46a'), s('Joe-Pye weed', '#c08aa6')],
 ];
 /** Newfoundland: the species swaps of STYLE §1.4.4 / §3.2, in its brighter primaries. */
 const NEWFOUNDLAND: readonly (readonly FlowerSpecies[])[] = [
@@ -59,15 +72,33 @@ const NEWFOUNDLAND: readonly (readonly FlowerSpecies[])[] = [
   [s('fireweed', '#c8508e', 'spike'), s('harebell', '#7b6fb8'), s('partridgeberry', '#c8453a')],
   CLASSIC[6]!,
   [s('bakeapple', '#e8a14a'), s('pitcher plant', '#8a3b4a'), s('Labrador tea', '#f3f1ea')],
+  [s('lupine', '#7b6fb8', 'spike'), s('ox-eye daisy', '#f3f1ea'), s('black-eyed Susan', '#e7b53c')],
+  [s('goldenrod', '#e0b53a', 'spike'), s('fireweed', '#c8508e', 'spike'), s('yarrow', '#f3f1ea')],
+  [s('dandelion', '#f0c22a'), s('dandelion', '#e8b820'), s('dandelion', '#f0c22a')],
+  [s('blue flag iris', '#6c78c2', 'spike'), s('bakeapple', '#e8a14a'), s('pitcher plant', '#8a3b4a')],
 ];
+/** The dandelion clocks (June): white seed heads on their stems (STYLE §1.4.2, "dandelion clocks (June)"). */
+const CLOCKS: readonly FlowerSpecies[] = [s('dandelion clock', '#f4f1e8', 'puff'), s('dandelion clock', '#ebe7dc', 'puff'), s('dandelion clock', '#f4f1e8', 'puff')];
 
-/** The three species of a set in a dressing. Taylor: the same species in pastel paper (a quarter toward white). */
-export function flowerSet(theme: PlantTheme, tint: number | undefined): readonly FlowerSpecies[] {
+/**
+ * The three species of a set in a dressing. Taylor: the same species in pastel paper (a quarter toward white).
+ * `month` (1–12) matters only to the clocks set: yellow dandelions in May, white clocks in June, nothing in flower
+ * otherwise (an empty list: the planting draws no blooms for it).
+ */
+export function flowerSet(theme: PlantTheme, tint: number | undefined, month?: number): readonly FlowerSpecies[] {
   const id = setOf(tint);
+  if (id === FLOWER_SET.clocks) {
+    const m = month === undefined ? 5 : ((Math.round(month) - 1) % 12 + 12) % 12 + 1;
+    if (m !== 5 && m !== 6) return [];
+    const list = m === 6 ? CLOCKS : theme === 'newfoundland' ? NEWFOUNDLAND[id]! : CLASSIC[id]!;
+    return theme === 'taylor' ? list.map(f => ({ ...f, colour: mix(f.colour, [1, 1, 1], 0.26) })) : list;
+  }
   if (theme === 'newfoundland') return NEWFOUNDLAND[id]!;
   if (theme === 'taylor') return CLASSIC[id]!.map(f => ({ ...f, colour: mix(f.colour, [1, 1, 1], 0.26) }));
   return CLASSIC[id]!;
 }
+/** Sets drawn as wild drifts (no soil card, no edging): the prairie, the highland, the bog, the Green's meadow sets and Stillwater's lake edge. */
+export const WILD_SETS: ReadonlySet<FlowerSetId> = new Set<FlowerSetId>([FLOWER_SET.prairie, FLOWER_SET.highland, FLOWER_SET.bog, FLOWER_SET.meadowWild, FLOWER_SET.fieldEdge, FLOWER_SET.clocks, FLOWER_SET.lakeEdge]);
 /** The set id of a `tint` (integer part, clamped). */
 export function setOf(tint: number | undefined): FlowerSetId {
   const id = Math.floor(tint ?? 0);
@@ -80,8 +111,13 @@ export function variationOf(tint: number | undefined, x: number, z: number): num
 }
 
 /** Grass by set and season: bluestem on the prairie (copper in fall and winter, STYLE §1.4.2), marram on the shore. */
+/** The Green's long-grass sets (D-WW113): their tufts are drawn as the wide long-grass sheaf (`longTuftGeometry`), tawny. */
+export const isLongGrassSet = (set: FlowerSetId) => set === FLOWER_SET.meadowWild || set === FLOWER_SET.fieldEdge || set === FLOWER_SET.clocks;
 export function grassColour(set: FlowerSetId, stage: BloomStage, leaf: RGB, variation: number): RGB {
-  const summer: RGB = set === FLOWER_SET.prairie ? rgb('#8f9c7c') : set === FLOWER_SET.shore ? rgb('#aeb07a') : mix(leaf, rgb('#b8b27a'), 0.18 + variation * 0.12);
+  // The Green's long grass (meadowWild / fieldEdge / clocks): timothy and fescue gone to seed, a tawny straw-green that varies
+  // tuft to tuft (the prototype's long grass #a9a86c toward straw #b8a957), tinted by the dressing's leaf (D-WW113).
+  const long = isLongGrassSet(set);
+  const summer: RGB = set === FLOWER_SET.prairie ? rgb('#8f9c7c') : set === FLOWER_SET.shore ? rgb('#aeb07a') : long ? mix(mix(leaf, rgb('#b3ab66'), 0.62), rgb('#c4b46a'), variation * 0.55) : mix(leaf, rgb('#b8b27a'), 0.18 + variation * 0.12);
   const fall: RGB = set === FLOWER_SET.prairie ? rgb('#c89a5b') : rgb('#c2ac6e');
   if (stage === 'mulch') return mix(fall, rgb('#d9c9a0'), 0.45);
   if (stage === 'fade' || stage === 'leaf') return mix(summer, fall, stage === 'fade' ? 0.55 : 0.8);
