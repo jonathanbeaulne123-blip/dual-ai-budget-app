@@ -1647,6 +1647,17 @@
         "test/horizonWorldDefinition.test.ts"
       ],
       "reason": "Mountain V3 (D-M11): the one landform and water definition of the Highlands and the Falls, its terrain layer and paint, the fall cuts in the world definition and water cards, the D-M11 confluence rule, the generated manifest and the bake's byte-exact artifacts"
+    },
+    {
+      "sources": [
+        "src/core/money.ts",
+        "src/core/shift.ts"
+      ],
+      "tests": [
+        "test/money.test.ts",
+        "test/shift.test.ts"
+      ],
+      "reason": "CAD integer-cent parsing, rounding, and grouped display plus Tip Tracker shift-form validation on the posting path into the ledger"
     }
   ]
 }
