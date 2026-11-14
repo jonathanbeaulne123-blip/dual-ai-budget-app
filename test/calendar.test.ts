@@ -7,6 +7,9 @@ describe("Toronto calendar", () => {
     expect(isValidDateKey("2026-02-28")).toBe(true);
     expect(isValidDateKey("2026-02-29")).toBe(false);
     expect(isValidDateKey("2024-02-29")).toBe(true);
+    expect(isValidDateKey("2000-02-29")).toBe(true);
+    expect(isValidDateKey("1900-02-29")).toBe(false);
+    expect(isValidDateKey("2100-02-29")).toBe(false);
     expect(isValidDateKey("2026-13-01")).toBe(false);
     expect(daysInMonthKey("2026-08")).toBe(31);
   });
@@ -38,5 +41,12 @@ describe("cadence math", () => {
     expect(advanceCadence("2026-08-21", "daily")).toBe("2026-08-22");
     expect(googleRrule("2026-08-21", "biweekly")).toBe("RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=FR");
     expect(googleRrule("2026-08-21", "daily")).toBe("RRULE:FREQ=DAILY");
+  });
+
+  it("keeps the existing month-end overflow: Jan 31 becomes a March date", () => {
+    // Same Date.UTC(year, month, day) the poster uses. February is too short, so the day spills.
+    expect(advanceCadence("2026-01-31", "monthly")).toBe("2026-03-03");
+    expect(advanceCadence("2024-01-31", "monthly")).toBe("2024-03-02");
+    expect(advanceCadence("2026-08-31", "monthly")).toBe("2026-10-01");
   });
 });

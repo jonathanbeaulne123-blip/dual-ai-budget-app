@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { calcPotentialDuplicateFlags, duplicateKey, findSimilarTransactions, refreshDuplicateFlags } from "../src/core/duplicate.ts";
-import { equalSplits, percentSplits } from "../src/core/splits.ts";
-import { JOINT, type Transaction } from "../src/core/types.ts";
+import { assertSplits, equalSplits, percentSplits } from "../src/core/splits.ts";
+import { JOINT, ValidationError, type Transaction } from "../src/core/types.ts";
 import { partitionLedger } from "../src/core/ledgerView.ts";
 
 function tx(overrides: Partial<Transaction>): Transaction {
@@ -111,6 +111,27 @@ describe("duplicates and splits", () => {
       { party: "MEM-001", percent: 33.33 },
       { party: "MEM-002", percent: 33.34 },
     ], 100).reduce((sum, split) => sum + split.amountCents, 0)).toBe(100);
+  });
+
+  it("admits only exact ownership splits and refuses a missing, duplicate, or inexact owner", () => {
+    expect(assertSplits([{ party: JOINT, amountCents: 4723 }], 4723)).toEqual([
+      { party: JOINT, amountCents: 4723 },
+    ]);
+    expect(() => assertSplits([], 4723)).toThrow(ValidationError);
+    expect(() => assertSplits([], 4723)).toThrow("Every transaction needs at least one owner split.");
+    expect(() => assertSplits(
+      [{ party: "MEM-001", amountCents: 2000 }, { party: "MEM-001", amountCents: 2723 }],
+      4723,
+    )).toThrow("The same person cannot appear twice in a split.");
+    expect(() => assertSplits([{ party: JOINT, amountCents: 12.5 }], 12.5)).toThrow(
+      "Split amounts must be whole cents.",
+    );
+    expect(() => assertSplits([{ party: JOINT, amountCents: 100 }, { party: "MEM-001", amountCents: 50 }], 200)).toThrow(
+      "Ownership splits must add up to the transaction amount exactly.",
+    );
+    expect(() => percentSplits([{ party: "MEM-001", percent: 60 }, { party: "MEM-002", percent: 39 }], 100)).toThrow(
+      "Percentages must add to 100.",
+    );
   });
 
   it("partitions the ledger into income, expenses, and other", () => {

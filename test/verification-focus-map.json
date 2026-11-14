@@ -606,7 +606,8 @@
         "test/planner-tasks.test.ts",
         "test/planner-agenda.test.ts",
         "test/planner-ui.test.ts",
-        "test/month-rehearsal-mainline.test.ts"
+        "test/month-rehearsal-mainline.test.ts",
+        "test/chapter-consent.test.ts"
       ],
       "reason": "Canonical Chapter/Move/Ritual Task graph, exact mutual review, individual pause, accepted responsibility and financial-restore preservation"
     },
@@ -1647,6 +1648,36 @@
         "test/horizonWorldDefinition.test.ts"
       ],
       "reason": "Mountain V3 (D-M11): the one landform and water definition of the Highlands and the Falls, its terrain layer and paint, the fall cuts in the world definition and water cards, the D-M11 confluence rule, the generated manifest and the bake's byte-exact artifacts"
+    },
+    {
+      "sources": [
+        "src/core/money.ts",
+        "src/core/shift.ts"
+      ],
+      "tests": [
+        "test/money.test.ts",
+        "test/shift.test.ts"
+      ],
+      "reason": "CAD integer-cent parsing, rounding, and grouped display plus Tip Tracker shift-form validation on the posting path into the ledger"
+    },
+    {
+      "sources": [
+        "src/core/splits.ts"
+      ],
+      "tests": [
+        "test/duplicate-splits.test.ts"
+      ],
+      "reason": "Ownership splits must stay whole cents, unique owners, and exact to the transaction amount before a ledger write"
+    },
+    {
+      "sources": [
+        "src/core/calendar.ts",
+        "src/core/recurrence.ts"
+      ],
+      "tests": [
+        "test/calendar.test.ts"
+      ],
+      "reason": "Civil date keys, century leap years, and month-end cadence overflow used when posting repeating items"
     }
   ]
 }
