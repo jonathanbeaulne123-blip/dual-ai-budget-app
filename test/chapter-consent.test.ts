@@ -5,6 +5,8 @@ import {
   mergeChapterParticipation,
   proposeChapterConsent,
   selectChapterConsent,
+  shapeChapterConsent,
+  shapeChapterParticipation,
 } from "../src/core/chapterConsent.ts";
 import { ValidationError } from "../src/core/types.ts";
 
@@ -118,6 +120,56 @@ describe("chapter consent", () => {
     expect(mergeChapterParticipation([older, other], [newer])).toEqual([newer, other]);
     expect(() => mergeChapterParticipation([older], [{ ...older, paused: true }])).toThrow(
       "Conflicting personal participation needs authoritative recovery.",
+    );
+  });
+
+  it("round-trips an accepted record and refuses extra keys, two pending reviews, or a prototype object", () => {
+    const checkTerms = (value: unknown) => value as typeof terms;
+    const proposed = propose();
+    expect(shapeChapterConsent(undefined, checkTerms)).toBeUndefined();
+    expect(shapeChapterConsent(structuredClone(proposed), checkTerms)).toEqual(proposed);
+
+    const extra = { ...structuredClone(proposed), extra: true };
+    expect(() => shapeChapterConsent(extra, checkTerms)).toThrow(
+      "This shared Chapter record is not supported. Keep its original copy for recovery.",
+    );
+    expect(() => shapeChapterConsent([], checkTerms)).toThrow(
+      "This shared Chapter record is not supported. Keep its original copy for recovery.",
+    );
+    expect(() => shapeChapterConsent(Object.create(null), checkTerms)).toThrow(
+      "This shared Chapter record is not supported. Keep its original copy for recovery.",
+    );
+
+    const withExtraProposalField = structuredClone(proposed);
+    (withExtraProposalField.proposals[0] as { extra?: boolean }).extra = true;
+    expect(() => shapeChapterConsent(withExtraProposalField, checkTerms)).toThrow(
+      "This shared Chapter record is not supported. Keep its original copy for recovery.",
+    );
+
+    const superseded = propose(proposed, "MEM-002", { at: later });
+    const twoPending = structuredClone(superseded);
+    twoPending.proposals[0]!.state = "pending";
+    expect(() => shapeChapterConsent(twoPending, checkTerms)).toThrow(
+      "This shared agreement needs its current review restored.",
+    );
+
+    const mismatch = structuredClone(proposed);
+    mismatch.acceptedProposalId = proposed.proposals[0]!.id;
+    expect(() => shapeChapterConsent(mismatch, checkTerms)).toThrow(
+      "This shared agreement needs its current review restored.",
+    );
+  });
+
+  it("shapes participation rows and refuses a duplicate identity or extra field", () => {
+    const row = { version: 1 as const, memberId: "MEM-001", revision: 1, paused: false, updatedAt: at };
+    expect(shapeChapterParticipation(undefined)).toEqual([]);
+    expect(shapeChapterParticipation([row])).toEqual([row]);
+    expect(() => shapeChapterParticipation([row, { ...row }])).toThrow("A participation identity appears twice.");
+    expect(() => shapeChapterParticipation([{ ...row, extra: true }])).toThrow(
+      "This shared Chapter record is not supported. Keep its original copy for recovery.",
+    );
+    expect(() => shapeChapterParticipation({ version: 1, memberId: "MEM-001" })).toThrow(
+      "This participation record needs recovery.",
     );
   });
 });

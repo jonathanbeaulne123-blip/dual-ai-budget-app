@@ -59,6 +59,8 @@ describe("parseHours", () => {
   it("keeps two-decimal hours and refuses empty, zero, over-24, and extra decimals", () => {
     expect(parseHours("4")).toBe(4);
     expect(parseHours("0.25")).toBe(0.25);
+    expect(parseHours(".25")).toBe(0.25);
+    expect(parseHours("24")).toBe(24);
     expect(parseHours(8.5)).toBe(8.5);
     expect(() => parseHours("")).toThrow("Hours worked is required.");
     expect(() => parseHours("0")).toThrow("Hours worked must be greater than zero.");
