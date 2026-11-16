@@ -1,4 +1,4 @@
-import { addDays, monthKeyFromDateKey, monthStartKey, parseDateKey, type DateKey } from "./calendar.ts";
+import { addCalendarMonths, addDays, monthKeyFromDateKey, monthStartKey, type DateKey } from "./calendar.ts";
 import { captureCommand } from "../ledgerSync/capture.ts";
 import { CELLAR_BRIDGE_MARK, CELLAR_BRIDGE_PATTERN, CELLAR_BRIDGE_SUFFIX } from "./cellarBridge.ts";
 import { allocateHouseholdFundSurplus, declinePlanBridge, proposePlanBridge, withdrawPlanBridge } from "./commands.ts";
@@ -103,13 +103,12 @@ export type MissingReading = {
 
 export const missingKey = (recurrenceId: string, date: DateKey) => `cellar-roll:${recurrenceId}:${date}`;
 
-/** A cadence step backwards, the mirror of `advanceCadence` (a month back keeps the day, as posting does). */
+/** A cadence step backwards, the mirror of `advanceCadence`. */
 export function retreatCadence(date: DateKey, cadence: Recurrence["cadence"]): DateKey {
   if (cadence === "daily") return addDays(date, -1);
   if (cadence === "weekly") return addDays(date, -7);
   if (cadence === "biweekly") return addDays(date, -14);
-  const { year, month, day } = parseDateKey(date);
-  return new Date(Date.UTC(year, month - 2, day)).toISOString().slice(0, 10);
+  return addCalendarMonths(date, -1);
 }
 
 /** What was charged for each occurrence day, from the recorded payments and the recurrence's own posts. Reversed and duplicate rows do not count. */

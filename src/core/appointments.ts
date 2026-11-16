@@ -1,4 +1,4 @@
-import { addDays, calendarDaysBetween, dateKeyInZone, daysInMonth, formatMonthLabel, parseDateKey, weekdaySunday0, type DateKey } from "./calendar.ts";
+import { addCalendarMonths, addDays, calendarDaysBetween, dateKeyInZone, daysInMonth, formatMonthLabel, parseDateKey, weekdaySunday0, type DateKey } from "./calendar.ts";
 import { projectedExpenseEffect, transactionProjection } from "./budget.ts";
 import { formatCad, roundToCents } from "./money.ts";
 import { COMPANION, JOINT, ValidationError, type Appointment, type AppointmentCadence, type AppointmentCoverage, type AppointmentKind, type AppointmentSensitivity, type BillLine, type Claim, type ClaimKind, type ClaimStatus, type Household } from "./types.ts";
@@ -153,9 +153,7 @@ function nthWeekdayInMonth(year: number, month: number, weekday: number, nth: nu
 }
 
 export function addMonthsClamped(date: DateKey, months: number): DateKey {
-  const { year, month, day } = parseDateKey(date);
-  const utc = new Date(Date.UTC(year, month - 1 + months, day));
-  return utc.toISOString().slice(0, 10);
+  return addCalendarMonths(date, months);
 }
 
 export function advanceAppointmentCadence(date: DateKey, cadence: AppointmentCadence): DateKey {

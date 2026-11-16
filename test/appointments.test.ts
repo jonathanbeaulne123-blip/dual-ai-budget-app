@@ -68,6 +68,11 @@ describe("appointment cadence", () => {
     expect(thirdTuesdays).toContain("2026-08-18");
     expect(thirdTuesdays).toContain("2026-09-15");
   });
+
+  it("clamps a 31st monthly visit into February instead of skipping to March", () => {
+    expect(advanceAppointmentCadence("2026-01-31", { kind: "monthly", interval: 1 })).toBe("2026-02-28");
+    expect(advanceAppointmentCadence("2026-08-31", { kind: "monthly", interval: 1 })).toBe("2026-09-30");
+  });
 });
 
 describe("visit receivable then settle", () => {

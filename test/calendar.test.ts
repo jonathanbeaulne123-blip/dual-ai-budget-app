@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, dateKeyInZone, daysInMonthKey, formatDayLabel, isValidDateKey, todayKey, weekBounds, weekdaySunday0 } from "../src/core/calendar.ts";
+import { addCalendarMonths, addDays, dateKeyInZone, daysInMonthKey, formatDayLabel, isValidDateKey, todayKey, weekBounds, weekdaySunday0 } from "../src/core/calendar.ts";
 import { advanceCadence, googleRrule } from "../src/core/recurrence.ts";
 
 describe("Toronto calendar", () => {
@@ -38,5 +38,16 @@ describe("cadence math", () => {
     expect(advanceCadence("2026-08-21", "daily")).toBe("2026-08-22");
     expect(googleRrule("2026-08-21", "biweekly")).toBe("RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=FR");
     expect(googleRrule("2026-08-21", "daily")).toBe("RRULE:FREQ=DAILY");
+  });
+
+  it("keeps a month-end bill in the next calendar month instead of skipping it", () => {
+    expect(advanceCadence("2026-01-31", "monthly")).toBe("2026-02-28");
+    expect(advanceCadence("2024-01-31", "monthly")).toBe("2024-02-29");
+    expect(advanceCadence("2026-08-31", "monthly")).toBe("2026-09-30");
+    expect(advanceCadence("2026-12-31", "monthly")).toBe("2027-01-31");
+    expect(advanceCadence("2026-02-28", "monthly")).toBe("2026-03-28");
+    expect(addCalendarMonths("2026-01-31", 1)).toBe("2026-02-28");
+    expect(addCalendarMonths("2026-03-31", -1)).toBe("2026-02-28");
+    expect(addCalendarMonths("2026-01-31", 2)).toBe("2026-03-31");
   });
 });

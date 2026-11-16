@@ -1,4 +1,4 @@
-import { isValidDateKey, addDays, parseDateKey, weekdaySunday0, type DateKey } from "./calendar.ts";
+import { isValidDateKey, addCalendarMonths, addDays, parseDateKey, weekdaySunday0, type DateKey } from "./calendar.ts";
 import type { HouseholdCalendar, Recurrence, RecurrenceCadence, RecurrenceKind } from "./types.ts";
 
 export const DEFAULT_REMINDER_HOURS_BEFORE = 24;
@@ -7,13 +7,12 @@ export const EMPTY_CALENDAR: HouseholdCalendar = { dismissedRhythmKeys: [], dism
 
 const WEEKDAY_ICAL = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const;
 
-/** Same month-add the household already posts with. Jan 31 becomes a March date when February is short. */
+/** Next occurrence. Monthly keeps the civil day, or the last day of a shorter month. */
 export function advanceCadence(date: DateKey, cadence: RecurrenceCadence): DateKey {
-  const { year, month, day } = parseDateKey(date);
   if (cadence === "daily") return addDays(date, 1);
   if (cadence === "weekly") return addDays(date, 7);
   if (cadence === "biweekly") return addDays(date, 14);
-  return new Date(Date.UTC(year, month, day)).toISOString().slice(0, 10);
+  return addCalendarMonths(date, 1);
 }
 
 export function normalizeRecurrenceCadence(value: string | null | undefined): RecurrenceCadence {

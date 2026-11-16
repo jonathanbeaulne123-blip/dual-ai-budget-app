@@ -62,6 +62,26 @@ describe("repeating form commands", () => {
     expect(item.nextDate).toBe("2026-09-01");
   });
 
+  it("posts a 31st monthly bill into February instead of jumping to March", () => {
+    const created = addRecurrence(catalogHousehold(), {
+      cadence: "monthly",
+      nextDate: "2026-01-31",
+      type: "expense",
+      amount: "1850",
+      accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-HOUSING-RENT",
+      note: "Rent",
+      kind: "bill",
+    });
+    const id = created.postedIds[0]!;
+    const january = postOneRecurrence(created.household, id, "2026-01-31");
+    expect(january.household.transactions.some((tx) => tx.note === "Rent" && tx.date === "2026-01-31" && tx.amountCents === 185000)).toBe(true);
+    expect(january.household.recurrences.find((row) => row.id === id)!.nextDate).toBe("2026-02-28");
+    const february = postOneRecurrence(january.household, id, "2026-02-28");
+    expect(february.household.transactions.some((tx) => tx.note === "Rent" && tx.date === "2026-02-28")).toBe(true);
+    expect(february.household.recurrences.find((row) => row.id === id)!.nextDate).toBe("2026-03-28");
+  });
+
   it("can create then post the first occurrence when Confirm opts in", () => {
     const created = addRecurrence(catalogHousehold(), {
       cadence: "monthly",

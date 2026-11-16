@@ -71,6 +71,8 @@ describe("Missing subscriptions — the grace period and the marks", () => {
     expect(read(future, "2026-09-16").open).toEqual([]);
     expect(retreatCadence("2026-10-12", "monthly")).toBe("2026-09-12");
     expect(retreatCadence("2026-10-12", "biweekly")).toBe("2026-09-28");
+    expect(retreatCadence("2026-03-31", "monthly")).toBe("2026-02-28");
+    expect(retreatCadence("2026-01-31", "monthly")).toBe("2025-12-31");
   });
 
   it("edge: a late charge after the grace period clears the mark", () => {
