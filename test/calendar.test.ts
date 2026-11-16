@@ -4,6 +4,7 @@ import {
   advanceCadence,
   googleRrule,
   inferRecurrenceKind,
+  mergeCalendars,
   nextOnOrAfter,
   normalizeRecurrenceCadence,
   projectCadence,
@@ -210,6 +211,42 @@ describe("recurrence restore shape", () => {
     expect(() => shapeRecurrence(recurrence({
       payments: [valid, { ...valid, transactionId: "TXN-2" }],
     }), "2026-08-01T00:00:00.000Z")).toThrow("Invalid bill payment history.");
+    expect(() => shapeRecurrence(recurrence({ payments: [{ ...valid, accountId: "" }] }), "2026-08-01T00:00:00.000Z")).toThrow(
+      "Invalid bill payment history.",
+    );
+  });
+
+  it("keeps a valid Household Fund default and drops a malformed one instead of inventing funding", () => {
+    expect(shapeRecurrence(recurrence({
+      fundingDefault: { fundId: "FUND-HH", fundedCents: "full", destinationAccountId: "ACC-VISA" },
+    }), "2026-08-01T00:00:00.000Z").fundingDefault).toEqual({
+      fundId: "FUND-HH",
+      fundedCents: "full",
+      destinationAccountId: "ACC-VISA",
+    });
+    expect(shapeRecurrence(recurrence({
+      fundingDefault: { fundId: "FUND-HH", fundedCents: 2500, destinationAccountId: "ACC-VISA", extra: true } as never,
+    }), "2026-08-01T00:00:00.000Z").fundingDefault).toEqual({
+      fundId: "FUND-HH",
+      fundedCents: 2500,
+      destinationAccountId: "ACC-VISA",
+    });
+    expect(shapeRecurrence(recurrence({
+      fundingDefault: { fundId: "FUND-HH", fundedCents: 0, destinationAccountId: "ACC-VISA" } as never,
+    }), "2026-08-01T00:00:00.000Z").fundingDefault).toBeNull();
+    expect(shapeRecurrence(recurrence({
+      fundingDefault: { fundId: "FUND-HH", fundedCents: 12.5, destinationAccountId: "ACC-VISA" } as never,
+    }), "2026-08-01T00:00:00.000Z").fundingDefault).toBeNull();
+    expect(shapeRecurrence(recurrence({
+      fundingDefault: { fundId: "FUND-HH", fundedCents: "full" } as never,
+    }), "2026-08-01T00:00:00.000Z").fundingDefault).toBeNull();
+    expect(shapeRecurrence(recurrence({ fundingDefault: null }), "2026-08-01T00:00:00.000Z").fundingDefault).toBeNull();
+  });
+
+  it("preserves income and transfer types and treats any other stored type as an expense", () => {
+    expect(shapeRecurrence(recurrence({ type: "income", note: "Pay" }), "2026-08-01T00:00:00.000Z").type).toBe("income");
+    expect(shapeRecurrence(recurrence({ type: "transfer" }), "2026-08-01T00:00:00.000Z").type).toBe("transfer");
+    expect(shapeRecurrence(recurrence({ type: "refund" as never }), "2026-08-01T00:00:00.000Z").type).toBe("expense");
   });
 
   it("unions dismissed calendar keys without duplicates", () => {
@@ -219,6 +256,27 @@ describe("recurrence restore shape", () => {
     })).toEqual({
       dismissedRhythmKeys: ["a", "b"],
       dismissedNoticeKeys: ["z"],
+    });
+  });
+
+  it("unions two devices' dismissed calendar keys so a sync cannot drop a hide", () => {
+    expect(mergeCalendars(undefined, undefined)).toEqual({
+      dismissedRhythmKeys: [],
+      dismissedNoticeKeys: [],
+    });
+    expect(mergeCalendars(
+      { dismissedRhythmKeys: ["b", "a"], dismissedNoticeKeys: ["n1"] },
+      { dismissedRhythmKeys: ["a", "c"], dismissedNoticeKeys: ["n2", "n1"] },
+    )).toEqual({
+      dismissedRhythmKeys: ["a", "b", "c"],
+      dismissedNoticeKeys: ["n1", "n2"],
+    });
+    expect(mergeCalendars(
+      { dismissedRhythmKeys: ["only-left"], dismissedNoticeKeys: [] },
+      undefined,
+    )).toEqual({
+      dismissedRhythmKeys: ["only-left"],
+      dismissedNoticeKeys: [],
     });
   });
 });

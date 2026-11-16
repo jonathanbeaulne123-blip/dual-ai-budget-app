@@ -1677,7 +1677,7 @@
       "tests": [
         "test/calendar.test.ts"
       ],
-      "reason": "Civil date keys, century leap years, month-end cadence overflow, nextOnOrAfter/projectCadence caps, and bill-payment restore shaping used when posting repeating items"
+      "reason": "Civil date keys, century leap years, month-end cadence overflow, nextOnOrAfter/projectCadence caps, two-device dismissed-calendar union, and restore shaping of bill payments plus Household Fund defaults on repeating items"
     }
   ]
 }

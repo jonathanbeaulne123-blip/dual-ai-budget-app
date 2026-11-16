@@ -386,6 +386,14 @@ describe("Hearth Household Fund", () => {
     })).toThrow(/before adding a new planned commitment/i);
   });
 
+  it("refuses a Household Fund default on income standing orders", () => {
+    expect(() => addRecurrence(configuredFund(), {
+      cadence: "biweekly", nextDate: "2026-09-18", type: "income", amount: "900", accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-INCOME-WAGES", note: "Paycheque",
+      fundingDefault: { fundId: HOUSEHOLD_FUND_ID, fundedCents: "full", destinationAccountId: "ACC-VISA" },
+    })).toThrow("Only recurring expenses can reserve the Household Fund.");
+  });
+
   it("reserves every weekly, biweekly, and monthly occurrence still due this month", () => {
     let household = configuredFund();
     const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."}, memberId: BIANCA, contributorMemberId: BIANCA, amount: "100", date: DATE });
