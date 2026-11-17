@@ -117,6 +117,16 @@ export function shiftMonthKey(monthKey: MonthKey, delta: number): MonthKey {
   return `${nextYear}-${String(nextMonth).padStart(2, "0")}`;
 }
 
+/**
+ * Shift by whole calendar years. Keeps the civil month-day when that day exists
+ * in the landing year; otherwise uses that month's last day (Feb 29 → Feb 28).
+ */
+export function addCalendarYears(dateKey: DateKey, delta: number): DateKey {
+  const { year, month, day } = parseDateKey(dateKey);
+  const nextYear = year + delta;
+  return `${nextYear}-${String(month).padStart(2, "0")}-${String(Math.min(day, daysInMonth(nextYear, month))).padStart(2, "0")}`;
+}
+
 export function monthStartKey(monthKey: MonthKey): DateKey {
   parseMonthKey(monthKey);
   return `${monthKey}-01`;

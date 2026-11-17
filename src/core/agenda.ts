@@ -1,5 +1,5 @@
 import type { Household, LedgerView, Recurrence } from "./types.ts";
-import { addDays, monthKeyFromDateKey, shiftMonthKey, type DateKey } from "./calendar.ts";
+import { addDays, daysInMonth, monthKeyFromDateKey, parseDateKey, shiftMonthKey, type DateKey } from "./calendar.ts";
 import { projectCadence } from "./recurrence.ts";
 import { nativeEventOccurrences } from "./nativeEvents.ts";
 import { householdForView } from "./visibility.ts";
@@ -50,9 +50,10 @@ export function taskOccurrences(task: Task, from: DateKey, to: DateKey): DateKey
   if (!start) return [];
   if (task.repeat === "none") return start >= from && start <= to ? [start] : [];
   if (task.repeat === "yearly") {
+    const { month, day } = parseDateKey(start);
     const out: DateKey[] = [];
     for (let year = Number(from.slice(0, 4)); year <= Number(to.slice(0, 4)); year += 1) {
-      const date = `${year}${start.slice(4)}`;
+      const date = `${year}-${String(month).padStart(2, "0")}-${String(Math.min(day, daysInMonth(year, month))).padStart(2, "0")}`;
       if (date >= start && date >= from && date <= to) out.push(date);
     }
     return out;

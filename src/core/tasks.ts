@@ -1,6 +1,6 @@
 import type { Household, CommitResult, LedgerView, RecurrenceCadence } from "./types.ts";
 import { ValidationError } from "./types.ts";
-import { isValidDateKey, type DateKey } from "./calendar.ts";
+import { addCalendarYears, isValidDateKey, type DateKey } from "./calendar.ts";
 import { advanceCadence } from "./recurrence.ts";
 import { canonical } from "../ledgerSync/patch.ts";
 import { captureCommand } from "../ledgerSync/capture.ts";
@@ -300,10 +300,10 @@ export const completeTask = captureCommand("completeTask", (h: Household, input:
   }
   return { household: next, postedIds: [row.id], warnings: [], undo: undo(h, row, "Complete task", "planner-task") };
 });
-/** Where a repeating task goes after one occurrence is done. Yearly keeps the day; the rest follow the recurrence engine. */
+/** Where a repeating task goes after one occurrence is done. Yearly keeps the month-day, or Feb 28 after a leap day; the rest follow the recurrence engine. */
 export function nextTaskDates(task: Task): { doDate: DateKey | null; dueDate: DateKey | null } | null {
   if (task.repeat === "none") return null;
-  const shift = (date: DateKey | null) => date === null ? null : task.repeat === "yearly" ? `${Number(date.slice(0, 4)) + 1}${date.slice(4)}` : advanceCadence(date, task.repeat as RecurrenceCadence);
+  const shift = (date: DateKey | null) => date === null ? null : task.repeat === "yearly" ? addCalendarYears(date, 1) : advanceCadence(date, task.repeat as RecurrenceCadence);
   return { doDate: shift(task.doDate), dueDate: shift(task.dueDate) };
 }
 

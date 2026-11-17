@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { catalogHousehold, compileHousehold, postEntry, saveBoardTask, splitForSync, assembleHousehold, mergeShared, mergePersonal } from "../src/core/index.ts";
-import { saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks, mergeTasks, shapeTasks, taskIsFinancial, hasTaskData, type Task, type TaskInput } from "../src/core/tasks.ts";
+import { saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks, mergeTasks, shapeTasks, taskIsFinancial, hasTaskData, nextTaskDates, type Task, type TaskInput } from "../src/core/tasks.ts";
 import { householdForView, householdForAiDisclosure } from "../src/core/visibility.ts";
 import { executeIntent } from "../src/ledgerSync/registry.ts";
 import { capturedIntent } from "../src/ledgerSync/capture.ts";
@@ -133,5 +133,12 @@ describe("planner tasks (D-245)", () => {
     delete (old as { taskPlannerVersion?: 1 }).taskPlannerVersion;
     await expect(prepareCommand(next, old, scope, () => {})).rejects.toThrow(/CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve planner tasks/);
     await expect(prepareCommand(next, { ...old, taskPlannerVersion: 1 }, scope, () => {})).resolves.toBeTruthy();
+  });
+  it("completes a yearly leap-day task onto February 28 instead of minting an invalid next date", () => {
+    expect(nextTaskDates({ ...draft({ doDate: "2024-02-29", dueDate: "2024-03-01", repeat: "yearly" }), version: 1, id: "TASK-leap", revision: 1, createdBy: B, acknowledgedBy: [], completedAt: null, completedBy: null, completionEvidence: null, createdAt: "2024-02-29T12:00:00.000Z", updatedAt: "2024-02-29T12:00:00.000Z" })).toEqual({ doDate: "2025-02-28", dueDate: "2025-03-01" });
+    let h = saveTask(catalogHousehold(), input("leap", { title: "Leap birthday", doDate: "2024-02-29", repeat: "yearly" })).household;
+    h = acknowledgeTask(h, { memberId: B, id: "TASK-leap", expectedRevision: 1 }).household;
+    h = completeTask(h, { memberId: B, id: "TASK-leap", expectedRevision: 2 }).household;
+    expect(h.tasks!.map((t) => [t.id, t.doDate, Boolean(t.completedAt)])).toEqual([["TASK-leap", "2024-02-29", true], ["TASK-leap-r20250228", "2025-02-28", false]]);
   });
 });

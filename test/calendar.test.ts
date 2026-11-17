@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, dateKeyInZone, daysInMonthKey, formatDayLabel, isValidDateKey, todayKey, weekBounds, weekdaySunday0 } from "../src/core/calendar.ts";
+import { addCalendarYears, addDays, dateKeyInZone, daysInMonthKey, formatDayLabel, isValidDateKey, todayKey, weekBounds, weekdaySunday0 } from "../src/core/calendar.ts";
 import { advanceCadence, googleRrule } from "../src/core/recurrence.ts";
 
 describe("Toronto calendar", () => {
@@ -38,5 +38,11 @@ describe("cadence math", () => {
     expect(advanceCadence("2026-08-21", "daily")).toBe("2026-08-22");
     expect(googleRrule("2026-08-21", "biweekly")).toBe("RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=FR");
     expect(googleRrule("2026-08-21", "daily")).toBe("RRULE:FREQ=DAILY");
+  });
+
+  it("keeps a yearly leap day on February 28 in ordinary years", () => {
+    expect(addCalendarYears("2024-02-29", 1)).toBe("2025-02-28");
+    expect(addCalendarYears("2024-02-29", 4)).toBe("2028-02-29");
+    expect(addCalendarYears("2025-02-28", 1)).toBe("2026-02-28");
   });
 });

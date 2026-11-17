@@ -92,6 +92,12 @@ describe("planner agenda and affordability (D-245)", () => {
     expect(h.tasks!.map((t) => [t.id, t.doDate, Boolean(t.completedAt)])).toEqual([["TASK-bins", "2026-09-15", true], ["TASK-bins-r20260922", "2026-09-22", false]]);
     expect(agenda(h, "week", { memberId: B, view: "household", today: "2026-09-21" }).items.map((i) => i.key)).toContain("TASK-bins-r20260922@2026-09-22");
   });
+  it("places a yearly Feb 29 task on February 28 in ordinary years", () => {
+    const h = saveTask(fixture(), input("leap", { title: "Leap birthday", doDate: "2024-02-29", repeat: "yearly" })).household;
+    expect(taskOccurrences(h.tasks![0]!, "2025-02-01", "2026-03-01")).toEqual(["2025-02-28", "2026-02-28"]);
+    expect(taskOccurrences(h.tasks![0]!, "2028-02-01", "2028-03-01")).toEqual(["2028-02-29"]);
+    expect(agenda(h, "week", { memberId: B, view: "household", today: "2026-02-23" }).items.map((i) => `${i.title}@${i.date}`)).toContain("Leap birthday@2026-02-28");
+  });
   it("shows Mine, Theirs and Ours without ever showing a partner's private task", () => {
     let h = fixture();
     h = saveTask(h, input("mine", { title: "Mine", assigneeId: B })).household;
