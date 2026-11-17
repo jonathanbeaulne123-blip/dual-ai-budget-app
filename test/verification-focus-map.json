@@ -1675,9 +1675,38 @@
         "src/core/recurrence.ts"
       ],
       "tests": [
-        "test/calendar.test.ts"
+        "test/calendar.test.ts",
+        "test/timezone-location.test.ts"
       ],
-      "reason": "Civil date keys, century leap years, month-end cadence overflow, nextOnOrAfter/projectCadence caps, two-device dismissed-calendar union, and restore shaping of bill payments plus Household Fund defaults on repeating items"
+      "reason": "Civil date keys, century leap years, month-end cadence overflow, nextOnOrAfter/projectCadence caps, last-week bounds for weekly documents, IANA timezone restore fallback, two-device dismissed-calendar union, and restore shaping of bill payments plus Household Fund defaults on repeating items"
+    },
+    {
+      "sources": [
+        "src/core/sync.ts"
+      ],
+      "tests": [
+        "test/sync-merge.test.ts",
+        "test/timezone-location.test.ts"
+      ],
+      "reason": "Two-device tombstone/record merge must not resurrect deleted money rows; restore replaces an invalid IANA timezone with America/Toronto"
+    },
+    {
+      "sources": [
+        "src/core/weather.ts"
+      ],
+      "tests": [
+        "test/shift-weather.test.ts"
+      ],
+      "reason": "Historical shift weather glass: pending withholds a glass, snow WMO codes beat rain, precip or rain codes become rain, otherwise clear"
+    },
+    {
+      "sources": [
+        "src/core/tipScience.ts"
+      ],
+      "tests": [
+        "test/tip-science.test.ts"
+      ],
+      "reason": "Tip-oracle weatherTipFactor stacks season and glass multipliers to three decimals before projected tip cents"
     }
   ]
 }

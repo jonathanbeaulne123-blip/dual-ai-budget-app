@@ -12,6 +12,7 @@ import {
   shiftOutlook,
   simulateTipSchedule,
   upcomingCadenceSchedule,
+  weatherTipFactor,
 } from "../src/core/index.ts";
 import type { Household } from "../src/core/types.ts";
 
@@ -185,5 +186,17 @@ describe("Hercules Shift Oracle tip science", () => {
       expect(value).toBeGreaterThanOrEqual(0);
       expect(value).toBeLessThan(1);
     }
+  });
+
+  it("stacks season and glass multipliers to three decimals", () => {
+    expect(weatherTipFactor("clear", "patio")).toBe(1.092);
+    expect(weatherTipFactor("rain", "patio")).toBe(0.915);
+    expect(weatherTipFactor("rain", "none")).toBe(1.04);
+    expect(weatherTipFactor("rain", "ruff")).toBe(0.978);
+    expect(weatherTipFactor(undefined, "ruff")).toBe(0.94);
+    expect(weatherTipFactor("season", "patio")).toBe(1.04);
+    expect(weatherTipFactor("snow", "ruff")).toBe(0.846);
+    expect(weatherTipFactor("humid", "none")).toBe(1.06);
+    expect(weatherTipFactor("night", "none")).toBe(1.02);
   });
 });

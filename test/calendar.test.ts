@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, dateKeyInZone, daysInMonthKey, formatDayLabel, isValidDateKey, todayKey, weekBounds, weekdaySunday0 } from "../src/core/calendar.ts";
+import { addDays, dateKeyInZone, daysInMonthKey, formatDayLabel, isValidDateKey, lastWeekBounds, monthEndKey, monthStartKey, parseMonthKey, todayKey, weekBounds, weekdaySunday0 } from "../src/core/calendar.ts";
 import {
   advanceCadence,
   googleRrule,
@@ -48,6 +48,13 @@ describe("Toronto calendar", () => {
     expect(isValidDateKey("2100-02-29")).toBe(false);
     expect(isValidDateKey("2026-13-01")).toBe(false);
     expect(daysInMonthKey("2026-08")).toBe(31);
+    expect(monthStartKey("2026-08")).toBe("2026-08-01");
+    expect(monthEndKey("2026-08")).toBe("2026-08-31");
+    expect(monthEndKey("2024-02")).toBe("2024-02-29");
+    expect(monthEndKey("2026-02")).toBe("2026-02-28");
+    expect(() => parseMonthKey("2026-13")).toThrow(/YYYY-MM/);
+    expect(() => parseMonthKey("2026-00")).toThrow(/YYYY-MM/);
+    expect(() => parseMonthKey("26-08")).toThrow(/YYYY-MM/);
   });
 
   it("computes week bounds from the civil date, not local midnight", () => {
@@ -55,6 +62,13 @@ describe("Toronto calendar", () => {
     expect(weekdaySunday0("2026-08-21")).toBe(5);
     expect(weekBounds("2026-08-21")).toEqual({ start: "2026-08-16", end: "2026-08-22" });
     expect(addDays("2026-08-31", 1)).toBe("2026-09-01");
+  });
+
+  it("returns the prior Sunday-start week for weekly-document windows", () => {
+    // Friday in Aug 16–22 → previous week Aug 9–15. Sunday itself is still this week.
+    expect(lastWeekBounds("2026-08-21")).toEqual({ start: "2026-08-09", end: "2026-08-15" });
+    expect(lastWeekBounds("2026-08-16")).toEqual({ start: "2026-08-09", end: "2026-08-15" });
+    expect(lastWeekBounds("2026-08-23")).toEqual({ start: "2026-08-16", end: "2026-08-22" });
   });
 
   it("formats a late-evening UTC instant as the Toronto calendar date", () => {

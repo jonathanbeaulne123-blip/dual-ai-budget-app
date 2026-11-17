@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { dateKeyInZone, isValidIanaTimeZone, todayKey, TIMEZONE } from "../src/core/calendar.ts";
 import { postEntry, setHouseholdTimezone } from "../src/core/commands.ts";
 import { catalogHousehold } from "../src/core/seed.ts";
+import { ensureHouseholdShape } from "../src/core/sync.ts";
 import { requireTimezone } from "../src/core/catalog.ts";
 import { runHealthCheck } from "../src/core/health.ts";
 import { loadPhonePlacePrefs, savePhonePlacePrefs } from "../src/core/locationPrefs.ts";
@@ -36,6 +37,21 @@ describe("D-126 Q2 C books stay Toronto", () => {
     expect(isValidIanaTimeZone("America/Vancouver")).toBe(true);
     expect(dateKeyInZone(new Date("2026-08-22T03:30:00Z"), "America/Toronto")).toBe("2026-08-21");
     expect(todayKey(new Date("2026-08-21T16:00:00Z"), "UTC")).toBe("2026-08-21");
+  });
+
+  it("rejects empty, oversized, and unknown IANA ids so restore cannot poison posting dates", () => {
+    expect(isValidIanaTimeZone("")).toBe(false);
+    expect(isValidIanaTimeZone("   ")).toBe(false);
+    expect(isValidIanaTimeZone("Not/AZone")).toBe(false);
+    expect(isValidIanaTimeZone("America/Toronto")).toBe(true);
+    expect(isValidIanaTimeZone(`America/${"A".repeat(64)}`)).toBe(false);
+  });
+
+  it("replaces a stored invalid timezone with America/Toronto during shape", () => {
+    const household = catalogHousehold();
+    expect(ensureHouseholdShape({ ...household, timezone: "Not/AZone" }).timezone).toBe(TIMEZONE);
+    expect(ensureHouseholdShape({ ...household, timezone: "" }).timezone).toBe(TIMEZONE);
+    expect(ensureHouseholdShape({ ...household, timezone: "  America/Toronto  " }).timezone).toBe(TIMEZONE);
   });
 });
 
