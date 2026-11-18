@@ -295,11 +295,18 @@ export const completeTask = captureCommand("completeTask", (h: Household, input:
   // A repeating task keeps its history: this occurrence stays in the logbook and the next one opens on its own date.
   const following = nextTaskDates(old);
   if (following) {
-    const nextId = `${old.id}-r${(following.doDate ?? following.dueDate)!.replace(/-/g, "")}`;
+    const nextId = nextRepeatingTaskId(old, following);
     if (!(next.tasks ?? []).some((r) => r.id === nextId)) next = put(next, validateTask({ ...old, id: nextId, revision: 1, ...following, acknowledgedBy: [], completedAt: null, completedBy: null, completionEvidence: null, createdAt: now, updatedAt: now }));
   }
   return { household: next, postedIds: [row.id], warnings: [], undo: undo(h, row, "Complete task", "planner-task") };
 });
+/** Strip `-rYYYYMMDD` suffixes so the next occurrence stays `TASK-{series}-r{date}` instead of chaining the previous id. */
+export function taskSeriesRootId(id: string): string {
+  return id.replace(/-r\d{8}(-r\d{8})*$/, "");
+}
+function nextRepeatingTaskId(task: Task, following: { doDate: DateKey | null; dueDate: DateKey | null }): string {
+  return `${taskSeriesRootId(task.id)}-r${(following.doDate ?? following.dueDate)!.replace(/-/g, "")}`;
+}
 /** Where a repeating task goes after one occurrence is done. Yearly keeps the day; the rest follow the recurrence engine. */
 export function nextTaskDates(task: Task): { doDate: DateKey | null; dueDate: DateKey | null } | null {
   if (task.repeat === "none") return null;

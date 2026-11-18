@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { catalogHousehold, compileHousehold, postEntry, saveBoardTask, splitForSync, assembleHousehold, mergeShared, mergePersonal } from "../src/core/index.ts";
-import { saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks, mergeTasks, shapeTasks, taskIsFinancial, hasTaskData, type Task, type TaskInput } from "../src/core/tasks.ts";
+import { saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks, mergeTasks, shapeTasks, taskIsFinancial, hasTaskData, taskSeriesRootId, type Task, type TaskInput } from "../src/core/tasks.ts";
 import { householdForView, householdForAiDisclosure } from "../src/core/visibility.ts";
 import { executeIntent } from "../src/ledgerSync/registry.ts";
 import { capturedIntent } from "../src/ledgerSync/capture.ts";
@@ -106,6 +106,29 @@ describe("planner tasks (D-245)", () => {
     h = acknowledgeTask(h, { memberId: B, id: "TASK-laundry", expectedRevision: 4 }).household;
     h = acknowledgeTask(h, { memberId: J, id: "TASK-laundry", expectedRevision: 5 }).household;
     expect(h.tasks![0]!.acknowledgedBy).toEqual([B, J]);
+  });
+  it("pins repeating occurrence ids to the series root so UUID-length tasks keep completing", () => {
+    const series = "TASK-550e8400-e29b-41d4-a716-446655440000";
+    expect(taskSeriesRootId(`${series}-r20260922-r20260929`)).toBe(series);
+    let h = saveTask(catalogHousehold(), { memberId: B, id: series, expectedRevision: 0, task: draft({ title: "Bins out", doDate: "2026-09-15", repeat: "weekly" }) }).household;
+    let openId = series;
+    const dates = ["2026-09-15"];
+    for (let n = 0; n < 8; n += 1) {
+      const open = h.tasks!.find((row) => row.id === openId)!;
+      h = acknowledgeTask(h, { memberId: B, id: openId, expectedRevision: open.revision }).household;
+      const current = h.tasks!.find((row) => row.id === openId)!;
+      h = completeTask(h, { memberId: B, id: openId, expectedRevision: current.revision }).household;
+      expect(h.tasks!.find((row) => row.id === openId)?.completedAt).toBeTruthy();
+      const next = h.tasks!.find((row) => !row.completedAt && row.repeat === "weekly")!;
+      expect(next.id).toMatch(/^TASK-550e8400-e29b-41d4-a716-446655440000-r\d{8}$/);
+      expect(next.id.length).toBeLessThanOrEqual(5 + 80);
+      openId = next.id;
+      dates.push(next.doDate!);
+    }
+    expect(dates).toEqual([
+      "2026-09-15", "2026-09-22", "2026-09-29", "2026-10-06", "2026-10-13",
+      "2026-10-20", "2026-10-27", "2026-11-03", "2026-11-10",
+    ]);
   });
   it("adopts the board to-do list once, tombstones the board rows, and links Plan next-steps only while they are current", () => {
     let h = saveBoardTask(catalogHousehold(), { memberId: B, id: "BOARD-TASK-one", title: "Feed Hercules", assigneeId: J, dueDate: "2026-09-15", completed: false, expectedVersion: 0 }).household;
