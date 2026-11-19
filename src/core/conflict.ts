@@ -1,6 +1,8 @@
 import { cloneHousehold } from "./household.ts";
 import { assembleHousehold, ensureHouseholdShape, mergeRecords, mergeShared, mergeTombstones, splitForSync } from "./sync.ts";
 import { applyGoalSavings } from "./goals.ts";
+import { mergeFundModelRows } from "./fundRules.ts";
+import { mergeHouseholdFundConfigs } from "./householdFund.ts";
 import { financialAuditHash } from "./commandIdentity.ts";
 import { nextId } from "./ids.ts";
 import { markConflicted, markPendingTransport, markSynchronized } from "./sharing.ts";
@@ -99,6 +101,15 @@ export function canAbsorbDisjointSharedMoney(local: Household, remote: Household
   if (idContentConflict(local.sitDownSessions ?? [], remote.sitDownSessions ?? [])) return false;
   if (idContentConflict(local.goalPurchases ?? [], remote.goalPurchases ?? [])) return false;
   if (idContentConflict(local.goalContributions ?? [], remote.goalContributions ?? [])) return false;
+  if (JSON.stringify(local.householdFund ?? null) !== JSON.stringify(remote.householdFund ?? null)) return false;
+  if (idContentConflict(local.fundEvents ?? [], remote.fundEvents ?? [])) return false;
+  if (idContentConflict(local.fundMonthPlans ?? [], remote.fundMonthPlans ?? [])) return false;
+  if (idContentConflict(local.fundSettlementAllocations ?? [], remote.fundSettlementAllocations ?? [])) return false;
+  if (idContentConflict(local.fundKittyAllocations ?? [], remote.fundKittyAllocations ?? [])) return false;
+  if (idContentConflict(
+    (local.fundModelRows ?? []).filter((row) => row.visibility === "household"),
+    (remote.fundModelRows ?? []).filter((row) => row.visibility === "household"),
+  )) return false;
   // Identical money → canAutoMergeConflict path; absorb still ok as a no-op union.
   return true;
 }
@@ -142,6 +153,35 @@ export function absorbDisjointSharedMoney(
       localParts.shared.goalContributions ?? [],
       tombstones,
     ),
+    householdFund: mergeHouseholdFundConfigs(remoteParts.shared.householdFund, localParts.shared.householdFund),
+    fundMonthPlans: mergeRecords(
+      remoteParts.shared.fundMonthPlans ?? [],
+      localParts.shared.fundMonthPlans ?? [],
+      tombstones,
+    ),
+    fundEvents: mergeRecords(
+      remoteParts.shared.fundEvents ?? [],
+      localParts.shared.fundEvents ?? [],
+      tombstones,
+    ),
+    fundSettlementAllocations: mergeRecords(
+      remoteParts.shared.fundSettlementAllocations ?? [],
+      localParts.shared.fundSettlementAllocations ?? [],
+      tombstones,
+    ),
+    fundKittyAllocations: mergeRecords(
+      remoteParts.shared.fundKittyAllocations ?? [],
+      localParts.shared.fundKittyAllocations ?? [],
+      tombstones,
+    ),
+    ...(remoteParts.shared.fundModelRows || localParts.shared.fundModelRows
+      ? {
+          fundModelRows: mergeFundModelRows(
+            remoteParts.shared.fundModelRows,
+            localParts.shared.fundModelRows,
+          ).filter((row) => row.visibility === "household"),
+        }
+      : {}),
     goals: applyGoalSavings(
       mergeRecords(remoteParts.shared.goals ?? [], localParts.shared.goals ?? [], tombstones),
       mergeRecords(

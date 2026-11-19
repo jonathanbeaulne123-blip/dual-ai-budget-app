@@ -4,8 +4,11 @@ import {
   canAbsorbDisjointSharedMoney,
   canAutoMergeConflict,
   catalogHousehold,
+  configureHouseholdFund,
+  HOUSEHOLD_FUND_ID,
   mergeSharedLastEntryWins,
   postEntry,
+  proposeHouseholdFundContribution,
   recordConflict,
   reversePostedMoney,
   resolveStoredConflictsLastEntryWins,
@@ -164,6 +167,130 @@ describe("disjoint shared money absorb", () => {
     expect(merged.baseRevision).toBe(4);
     expect(merged.transactions.some((tx) => tx.note === "Jonathan milk")).toBe(true);
     expect(merged.transactions.some((tx) => tx.note === "Bianca bread")).toBe(true);
+  });
+
+  it("absorbs a local Fund contribution with a remote shared expense", () => {
+    const funded = configureHouseholdFund(catalogHousehold(), {
+      custodianMemberId: "MEM-001",
+      openedOn: "2026-08-01",
+      createdBy: "MEM-001",
+    }).household;
+    const base = { ...funded, revision: 3, baseRevision: 3, linked: true };
+    const local = {
+      ...proposeHouseholdFundContribution(base, {
+        memberId: "MEM-002",
+        contributorMemberId: "MEM-002",
+        amount: "40",
+        date: "2026-08-25",
+        source: {
+          version: 1,
+          kind: "external-received",
+          explanation: "E-transfer into shared savings",
+        },
+      }).household,
+      revision: 4,
+      baseRevision: 3,
+      linked: true,
+    };
+    const remote = {
+      ...postEntry(base, {
+        date: "2026-08-25",
+        type: "expense",
+        amount: "8.00",
+        accountId: "ACC-VISA",
+        subcategoryId: "SUB-FOOD-GROCERIES",
+        note: "Bianca bread",
+        createdBy: "MEM-002",
+        confirmDuplicate: true,
+      }).household,
+      revision: 4,
+      baseRevision: 4,
+      linked: true,
+    };
+    expect(canAbsorbDisjointSharedMoney(local, remote)).toBe(true);
+    const merged = absorbDisjointSharedMoney(local, remote, "MEM-001");
+    expect(merged.transactions.some((tx) => tx.note === "Bianca bread")).toBe(true);
+    expect(merged.fundEvents?.some((event) => event.kind === "contribution-proposed" && event.amountCents === 4000)).toBe(true);
+    expect(merged.fundEvents?.some((event) => event.kind === "contribution-proposed")).toBe(true);
+    expect((remote.fundEvents ?? []).some((event) => event.kind === "contribution-proposed")).toBe(false);
+  });
+
+  it("absorbs a funded purchase event with a disjoint remote expense", () => {
+    const funded = configureHouseholdFund(catalogHousehold(), {
+      custodianMemberId: "MEM-001",
+      openedOn: "2026-08-01",
+      createdBy: "MEM-001",
+    }).household;
+    const base = { ...funded, revision: 3, baseRevision: 3, linked: true };
+    const local = {
+      ...postEntry(base, {
+        date: "2026-08-25",
+        type: "expense",
+        amount: "25.00",
+        accountId: "ACC-VISA",
+        subcategoryId: "SUB-FOOD-GROCERIES",
+        note: "Funded groceries",
+        createdBy: "MEM-001",
+        confirmDuplicate: true,
+        funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 2500, destinationAccountId: "ACC-VISA" },
+      }).household,
+      revision: 4,
+      baseRevision: 3,
+      linked: true,
+    };
+    const remote = {
+      ...postEntry(base, {
+        date: "2026-08-25",
+        type: "expense",
+        amount: "8.00",
+        accountId: "ACC-VISA",
+        subcategoryId: "SUB-FOOD-GROCERIES",
+        note: "Bianca bread",
+        createdBy: "MEM-002",
+        confirmDuplicate: true,
+      }).household,
+      revision: 4,
+      baseRevision: 4,
+      linked: true,
+    };
+    expect(canAbsorbDisjointSharedMoney(local, remote)).toBe(true);
+    const merged = absorbDisjointSharedMoney(local, remote, "MEM-001");
+    expect(merged.transactions.some((tx) => tx.note === "Funded groceries")).toBe(true);
+    expect(merged.transactions.some((tx) => tx.note === "Bianca bread")).toBe(true);
+    expect(merged.fundEvents?.some((event) => (
+      event.kind === "purchase-funded" && event.amountCents === 2500
+    ))).toBe(true);
+  });
+
+  it("refuses absorb when the same Fund event id diverges", () => {
+    const funded = configureHouseholdFund(catalogHousehold(), {
+      custodianMemberId: "MEM-001",
+      openedOn: "2026-08-01",
+      createdBy: "MEM-001",
+    }).household;
+    const proposed = proposeHouseholdFundContribution(funded, {
+      memberId: "MEM-002",
+      contributorMemberId: "MEM-002",
+      amount: "40",
+      date: "2026-08-25",
+      source: {
+        version: 1,
+        kind: "external-received",
+        explanation: "E-transfer into shared savings",
+      },
+    }).household;
+    const eventId = proposed.fundEvents!.find((event) => event.kind === "contribution-proposed")!.id;
+    const local = { ...proposed, revision: 4, baseRevision: 3, linked: true };
+    const remote = {
+      ...proposed,
+      revision: 4,
+      baseRevision: 4,
+      linked: true,
+      fundEvents: proposed.fundEvents!.map((event) => (
+        event.id === eventId ? { ...event, amountCents: 5000 } : event
+      )),
+    };
+    expect(canAbsorbDisjointSharedMoney(local, remote)).toBe(false);
   });
 
   it("refuses absorb when tombstones disagree (no silent resurrect)", () => {

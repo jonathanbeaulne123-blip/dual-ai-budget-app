@@ -1647,6 +1647,15 @@
         "test/horizonWorldDefinition.test.ts"
       ],
       "reason": "Mountain V3 (D-M11): the one landform and water definition of the Highlands and the Falls, its terrain layer and paint, the fall cuts in the world definition and water cards, the D-M11 confluence rule, the generated manifest and the bake's byte-exact artifacts"
+    },
+    {
+      "sources": [
+        "src/core/conflict.ts"
+      ],
+      "tests": [
+        "test/live-pull-dual-use.test.ts"
+      ],
+      "reason": "Disjoint-money absorb must union Household Fund events, plans, and allocations so an offline contribution cannot vanish on CAS conflict"
     }
   ]
 }
