@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { postShift } from "../src/core/commands.ts";
+import { createCompanionProfile } from "../src/core/herculesCompanionContracts.ts";
 import { catalogHousehold } from "../src/core/seed.ts";
 import { shiftBibleMaterialHash, type ShiftBible } from "../src/core/shiftEnvelope.ts";
 import {
@@ -13,7 +14,8 @@ import {
   mergeTombstones,
   recency,
 } from "../src/core/sync.ts";
-import type { CommandReceipt, HerculesProPermissions } from "../src/core/types.ts";
+import type { CommandReceipt, HerculesProPermissions, SyntheticFixtureProvenance } from "../src/core/types.ts";
+import { emptyPersonalLife } from "../src/hearthside/personalLifeContracts.ts";
 
 describe("two-device tombstone merge", () => {
   it("keeps the latest deletedAt for a shared id and unions the rest", () => {
@@ -235,6 +237,256 @@ describe("two-device envelope recency", () => {
       { ...shared, name: "Server House", lastCommittedAt: "2026-08-01T00:00:00.000Z" },
       { ...shared, name: "Client House", lastCommittedAt: null },
     ).name).toBe("Server House");
+  });
+
+  it("copies timezone and shift settings from the later envelope, including a clock tie", () => {
+    const { shared } = splitForSync(catalogHousehold(), "MEM-002");
+    const later = mergeShared(
+      {
+        ...shared,
+        timezone: "America/Toronto",
+        shiftSettings: { ...shared.shiftSettings, floorPct: 6 },
+        lastCommittedAt: "2026-08-01T00:00:00.000Z",
+      },
+      {
+        ...shared,
+        timezone: "America/Vancouver",
+        shiftSettings: { ...shared.shiftSettings, floorPct: 8 },
+        lastCommittedAt: "2026-08-02T00:00:00.000Z",
+      },
+    );
+    expect(later.timezone).toBe("America/Vancouver");
+    expect(later.shiftSettings.floorPct).toBe(8);
+
+    const uncommittedClient = mergeShared(
+      {
+        ...shared,
+        timezone: "America/Toronto",
+        shiftSettings: { ...shared.shiftSettings, floorPct: 6 },
+        lastCommittedAt: "2026-08-01T00:00:00.000Z",
+      },
+      {
+        ...shared,
+        timezone: "America/Vancouver",
+        shiftSettings: { ...shared.shiftSettings, floorPct: 8 },
+        lastCommittedAt: null,
+      },
+    );
+    expect(uncommittedClient.timezone).toBe("America/Toronto");
+    expect(uncommittedClient.shiftSettings.floorPct).toBe(6);
+
+    const tied = mergeShared(
+      {
+        ...shared,
+        timezone: "America/Toronto",
+        lastCommittedAt: "2026-08-01T00:00:00.000Z",
+      },
+      {
+        ...shared,
+        timezone: "UTC",
+        lastCommittedAt: "2026-08-01T00:00:00.000Z",
+      },
+    );
+    expect(tied.timezone).toBe("UTC");
+
+    const uncommittedServer = mergeShared(
+      {
+        ...shared,
+        timezone: "America/Toronto",
+        lastCommittedAt: null,
+      },
+      {
+        ...shared,
+        timezone: "Pacific/Auckland",
+        lastCommittedAt: "2026-08-01T00:00:00.000Z",
+      },
+    );
+    expect(uncommittedServer.timezone).toBe("Pacific/Auckland");
+  });
+});
+
+function demoFixture(overrides: Partial<SyntheticFixtureProvenance> = {}): SyntheticFixtureProvenance {
+  return {
+    kind: "hearth-demo-suite",
+    version: "1",
+    seed: 1,
+    generatedForDate: "2026-08-01",
+    generatedAt: "2026-08-01T00:00:00.000Z",
+    buildSha: "abc",
+    profile: "investor",
+    numberStyle: "realistic",
+    coverageDigest: "digest-a",
+    fixtureHashSha256: "hash-a",
+    ...overrides,
+  };
+}
+
+describe("synthetic Demo Suite merge", () => {
+  it("keeps the later generatedAt key, fills a missing side, and refuses Production provenance", () => {
+    const { shared } = splitForSync(catalogHousehold(), "MEM-002");
+    const earlier = demoFixture({ generatedAt: "2026-08-01T00:00:00.000Z", fixtureHashSha256: "hash-old" });
+    const later = demoFixture({ generatedAt: "2026-08-02T00:00:00.000Z", fixtureHashSha256: "hash-new" });
+    expect(mergeShared(
+      { ...shared, syntheticFixture: earlier },
+      { ...shared, syntheticFixture: later },
+    ).syntheticFixture).toEqual(later);
+    expect(mergeShared(
+      { ...shared, syntheticFixture: later },
+      { ...shared, syntheticFixture: earlier },
+    ).syntheticFixture).toEqual(later);
+    expect(mergeShared(
+      { ...shared, syntheticFixture: earlier },
+      { ...shared, syntheticFixture: null },
+    ).syntheticFixture).toEqual(earlier);
+    expect(mergeShared(
+      { ...shared, syntheticFixture: null },
+      { ...shared, syntheticFixture: later },
+    ).syntheticFixture).toEqual(later);
+
+    const tied = demoFixture({ coverageDigest: "digest-client", fixtureHashSha256: "hash-client" });
+    expect(mergeShared(
+      { ...shared, syntheticFixture: earlier },
+      { ...shared, syntheticFixture: tied },
+    ).syntheticFixture).toEqual(tied);
+
+    expect(() => mergeShared(
+      { ...shared, environment: "production", syntheticFixture: later },
+      shared,
+    )).toThrow(/only in Development/);
+  });
+});
+
+describe("personal companion and life authority", () => {
+  it("refuses a clock merge when companion profiles differ and keeps identical profiles", () => {
+    const household = catalogHousehold();
+    const { personal } = splitForSync(household, "MEM-002");
+    const profile = createCompanionProfile({
+      environment: household.environment,
+      householdId: household.householdId,
+      memberId: "MEM-002",
+    });
+    const quiet = { ...profile, remembering: { ...profile.remembering, enabled: false } };
+    expect(() => mergePersonal(
+      { ...personal, companionProfile: profile },
+      { ...personal, companionProfile: quiet },
+    )).toThrow("COMPANION_REQUIRES_AUTHORITY_REFRESH");
+    expect(() => mergePersonal(
+      { ...personal, companionProfile: undefined },
+      { ...personal, companionProfile: profile },
+    )).toThrow("COMPANION_REQUIRES_AUTHORITY_REFRESH");
+
+    const merged = mergePersonal(
+      { ...personal, companionProfile: profile },
+      { ...personal, companionProfile: structuredClone(profile) },
+    );
+    expect(merged.companionProfile).toEqual(profile);
+    expect(merged.companionProfile).not.toBe(profile);
+  });
+
+  it("refuses a clock merge when both Personal Together documents differ and restores a one-sided copy", () => {
+    const { personal } = splitForSync(catalogHousehold(), "MEM-002");
+    const empty = emptyPersonalLife("MEM-002");
+    expect(mergePersonal(
+      { ...personal, personalLife: empty },
+      { ...personal, personalLife: structuredClone(empty) },
+    ).personalLife).toEqual(empty);
+    expect(() => mergePersonal(
+      { ...personal, personalLife: empty },
+      { ...personal, personalLife: { ...empty, ownerMemberId: "MEM-001" } },
+    )).toThrow("PERSONAL_LIFE_REQUIRES_AUTHORITY_REFRESH");
+
+    const restoredFromClient = mergePersonal(
+      { ...personal, personalLife: undefined },
+      { ...personal, personalLife: empty },
+    );
+    expect(restoredFromClient.personalLife).toEqual(empty);
+    const restoredFromServer = mergePersonal(
+      { ...personal, personalLife: empty },
+      { ...personal, personalLife: undefined },
+    );
+    expect(restoredFromServer.personalLife).toEqual(empty);
+  });
+});
+
+const RAIL_SHAPE = ["level", "contribute", "waiting", "ask", "next-out", "streams", "shape", "week"] as const;
+const RAIL_WEEK = ["level", "contribute", "waiting", "ask", "next-out", "streams", "week", "shape"] as const;
+
+describe("personal preference clock ties", () => {
+  it("converges glance and Fund-card ids on later clocks, missing sides, and lexicographic ties", () => {
+    const { personal } = splitForSync(catalogHousehold(), "MEM-002");
+    const visa = {
+      ...personal,
+      glanceAccountId: "ACC-VISA",
+      glanceAccountUpdatedAt: "2026-08-01T00:00:00.000Z",
+      fundCardAccountId: "ACC-VISA",
+      fundCardAccountUpdatedAt: "2026-08-01T00:00:00.000Z",
+    };
+    const mc = {
+      ...personal,
+      glanceAccountId: "ACC-MC",
+      glanceAccountUpdatedAt: "2026-08-01T00:00:00.000Z",
+      fundCardAccountId: "ACC-MC",
+      fundCardAccountUpdatedAt: "2026-08-01T00:00:00.000Z",
+    };
+    expect(mergePersonal(mc, visa).glanceAccountId).toBe("ACC-VISA");
+    expect(mergePersonal(visa, mc).glanceAccountId).toBe("ACC-VISA");
+    expect(mergePersonal(mc, visa).fundCardAccountId).toBe("ACC-VISA");
+    expect(mergePersonal(visa, mc).fundCardAccountId).toBe("ACC-VISA");
+
+    const missingServer = mergePersonal(
+      { ...personal, glanceAccountId: undefined, fundCardAccountId: undefined },
+      { ...mc, glanceAccountUpdatedAt: "2026-07-01T00:00:00.000Z", fundCardAccountUpdatedAt: "2026-07-01T00:00:00.000Z" },
+    );
+    expect(missingServer.glanceAccountId).toBe("ACC-MC");
+    expect(missingServer.fundCardAccountId).toBe("ACC-MC");
+
+    const byCommit = mergePersonal(
+      { ...personal, glanceAccountId: "ACC-MC", lastCommittedAt: "2026-08-01T00:00:00.000Z" },
+      { ...personal, glanceAccountId: "ACC-VISA", lastCommittedAt: "2026-08-02T00:00:00.000Z" },
+    );
+    expect(byCommit.glanceAccountId).toBe("ACC-VISA");
+    expect(byCommit.glanceAccountUpdatedAt).toBe("2026-08-02T00:00:00.000Z");
+  });
+
+  it("converges Fund rails on later updatedAt, JSON slot ties, and a missing side", () => {
+    const { personal } = splitForSync(catalogHousehold(), "MEM-002");
+    const shapeRail = { memberId: "MEM-002", slots: [...RAIL_SHAPE], updatedAt: "2026-08-01T00:00:00.000Z" };
+    const weekRail = { memberId: "MEM-002", slots: [...RAIL_WEEK], updatedAt: "2026-08-01T00:00:00.000Z" };
+    expect(mergePersonal({ ...personal, fundRail: shapeRail }, { ...personal, fundRail: weekRail }).fundRail?.slots)
+      .toEqual([...RAIL_WEEK]);
+    expect(mergePersonal({ ...personal, fundRail: weekRail }, { ...personal, fundRail: shapeRail }).fundRail?.slots)
+      .toEqual([...RAIL_WEEK]);
+
+    const later = { ...shapeRail, updatedAt: "2026-08-02T00:00:00.000Z" };
+    expect(mergePersonal({ ...personal, fundRail: weekRail }, { ...personal, fundRail: later }).fundRail)
+      .toEqual(later);
+    expect(mergePersonal({ ...personal, fundRail: undefined }, { ...personal, fundRail: shapeRail }).fundRail)
+      .toEqual(shapeRail);
+  });
+
+  it("ignores an invalid landing surface and uses lastCommittedAt when the surface clock is missing", () => {
+    const { personal } = splitForSync(catalogHousehold(), "MEM-002");
+    const invalid = mergePersonal(
+      {
+        ...personal,
+        landingSurface: "kitchen" as never,
+        landingSurfaceUpdatedAt: "2026-08-03T00:00:00.000Z",
+        lastCommittedAt: "2026-08-03T00:00:00.000Z",
+      },
+      {
+        ...personal,
+        landingSurface: "desk",
+        landingSurfaceUpdatedAt: "2026-08-01T00:00:00.000Z",
+      },
+    );
+    expect(invalid.landingSurface).toBe("desk");
+
+    const byCommit = mergePersonal(
+      { ...personal, landingSurface: "desk", lastCommittedAt: "2026-08-01T00:00:00.000Z" },
+      { ...personal, landingSurface: "till", lastCommittedAt: "2026-08-02T00:00:00.000Z" },
+    );
+    expect(byCommit.landingSurface).toBe("till");
+    expect(byCommit.landingSurfaceUpdatedAt).toBe("2026-08-02T00:00:00.000Z");
   });
 });
 
