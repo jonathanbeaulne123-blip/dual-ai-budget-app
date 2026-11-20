@@ -904,8 +904,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
         });
       }
       if (transported.errorClass === "conflict-detected" && transported.remote) {
-        const memberId = accepted.members.find((member) => member.active)?.id ?? accepted.members[0]?.id ?? "MEM-001";
-        const reconciled = await autoResolveSharedConflict(accepted, transported.remote, memberId, "local");
+        const reconciled = await autoResolveSharedConflict(accepted, transported.remote, actorMemberId, "local");
         try {
           const status = await input.adapters.ingest(reconciled);
           if (!status.ok) throw new Error("conflict reconciliation ingest refused");

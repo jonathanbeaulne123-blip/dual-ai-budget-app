@@ -973,3 +973,46 @@ describe("atomic household writes", () => {
     ).toBe(false);
   });
 });
+
+describe("CAS conflict personal envelope", () => {
+  it("keeps Jonathan's Personal rows when Bianca's cloud copy wins the CAS race", async () => {
+    const previous = { ...catalogHousehold(), linked: true, revision: 3, baseRevision: 3 };
+    const personal = postEntry(previous, {
+      date: "2026-08-24",
+      type: "expense",
+      amount: "12.50",
+      accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-FOOD-COFFEE",
+      note: "Jonathan personal coffee",
+      createdBy: "MEM-002",
+      visibility: "personal",
+      confirmDuplicate: true,
+    });
+    const local = postEntry(personal.household, {
+      ...grocery("Jonathan bread", "6.00"),
+      createdBy: "MEM-002",
+    });
+    const remote = postEntry(previous, grocery("Bianca milk")).household;
+    const store = memoryAdapters({
+      transport: async () => ({
+        ok: false,
+        errorClass: "conflict-detected",
+        remote: { ...remote, linked: true, revision: 4, baseRevision: 3 },
+        message: "Another phone posted a newer household snapshot. Nothing was overwritten.",
+      }),
+    });
+    const outcome = await acceptHouseholdWrite({
+      previous: personal.household,
+      candidate: { ...local.household, linked: true },
+      confirmationId: "confirm-jonathan-cas",
+      postedIds: local.postedIds,
+      actingMemberId: "MEM-002",
+      transportRequested: true,
+      adapters: store.adapters,
+    });
+    expect(outcome.ok).toBe(true);
+    expect(outcome.household.transactions.some((row) => row.note === "Jonathan personal coffee")).toBe(true);
+    expect(outcome.household.transactions.some((row) => row.note === "Jonathan bread")).toBe(true);
+    expect(outcome.household.transactions.some((row) => row.note === "Bianca milk")).toBe(true);
+  });
+});
