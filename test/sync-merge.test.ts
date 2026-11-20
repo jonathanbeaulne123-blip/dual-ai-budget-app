@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { postShift } from "../src/core/commands.ts";
 import { createCompanionProfile } from "../src/core/herculesCompanionContracts.ts";
 import { catalogHousehold } from "../src/core/seed.ts";
+import { parseSevenShiftsCalendar } from "../src/core/sevenShiftsCalendar.ts";
 import { shiftBibleMaterialHash, type ShiftBible } from "../src/core/shiftEnvelope.ts";
 import {
   assembleHousehold,
@@ -303,6 +304,83 @@ describe("two-device envelope recency", () => {
     );
     expect(uncommittedServer.timezone).toBe("Pacific/Auckland");
   });
+
+  it("lets the later envelope keep ledger names and environment, then shapes blank names", () => {
+    const { shared } = splitForSync(catalogHousehold(), "MEM-002");
+    const kitchen = {
+      shared: "Kitchen Books",
+      personal: { "MEM-001": "Bianca's Notebook", "MEM-002": "Jonathan's Quiet Books" },
+    };
+    const later = mergeShared(
+      {
+        ...shared,
+        name: "Server House",
+        ledgerNames: shared.ledgerNames,
+        environment: "development",
+        lastCommittedAt: "2026-08-01T00:00:00.000Z",
+      },
+      {
+        ...shared,
+        name: "North House",
+        ledgerNames: kitchen,
+        environment: "production",
+        lastCommittedAt: "2026-08-02T00:00:00.000Z",
+      },
+    );
+    expect(later.name).toBe("North House");
+    expect(later.ledgerNames).toEqual(kitchen);
+    expect(later.environment).toBe("production");
+
+    const uncommittedClient = mergeShared(
+      {
+        ...shared,
+        ledgerNames: kitchen,
+        environment: "production",
+        lastCommittedAt: "2026-08-01T00:00:00.000Z",
+      },
+      {
+        ...shared,
+        ledgerNames: shared.ledgerNames,
+        environment: "development",
+        lastCommittedAt: null,
+      },
+    );
+    expect(uncommittedClient.ledgerNames).toEqual(kitchen);
+    expect(uncommittedClient.environment).toBe("production");
+
+    const tied = mergeShared(
+      {
+        ...shared,
+        ledgerNames: kitchen,
+        environment: "production",
+        lastCommittedAt: "2026-08-01T00:00:00.000Z",
+      },
+      {
+        ...shared,
+        ledgerNames: shared.ledgerNames,
+        environment: "development",
+        lastCommittedAt: "2026-08-01T00:00:00.000Z",
+      },
+    );
+    expect(tied.ledgerNames).toEqual(shared.ledgerNames);
+    expect(tied.environment).toBe("development");
+
+    const blank = mergeShared(
+      {
+        ...shared,
+        ledgerNames: { shared: "  ", personal: {} },
+        lastCommittedAt: "2026-08-02T00:00:00.000Z",
+      },
+      {
+        ...shared,
+        ledgerNames: kitchen,
+        lastCommittedAt: "2026-08-01T00:00:00.000Z",
+      },
+    );
+    expect(blank.ledgerNames.shared).toBe("Household Ledger");
+    expect(blank.ledgerNames.personal["MEM-001"]).toBe("Bianca's Personal Ledger");
+    expect(blank.ledgerNames.personal["MEM-002"]).toBe("Jonathan's Personal Ledger");
+  });
 });
 
 function demoFixture(overrides: Partial<SyntheticFixtureProvenance> = {}): SyntheticFixtureProvenance {
@@ -446,6 +524,20 @@ describe("personal preference clock ties", () => {
     );
     expect(byCommit.glanceAccountId).toBe("ACC-VISA");
     expect(byCommit.glanceAccountUpdatedAt).toBe("2026-08-02T00:00:00.000Z");
+
+    const blankServer = mergePersonal(
+      { ...personal, glanceAccountId: "   ", fundCardAccountId: "" },
+      mc,
+    );
+    expect(blankServer.glanceAccountId).toBe("ACC-MC");
+    expect(blankServer.fundCardAccountId).toBe("ACC-MC");
+
+    const bothBlank = mergePersonal(
+      { ...personal, glanceAccountId: " ", fundCardAccountId: "" },
+      { ...personal, glanceAccountId: "", fundCardAccountId: "   " },
+    );
+    expect(bothBlank.glanceAccountId).toBeUndefined();
+    expect(bothBlank.fundCardAccountId).toBeUndefined();
   });
 
   it("converges Fund rails on later updatedAt, JSON slot ties, and a missing side", () => {
@@ -487,6 +579,46 @@ describe("personal preference clock ties", () => {
     );
     expect(byCommit.landingSurface).toBe("till");
     expect(byCommit.landingSurfaceUpdatedAt).toBe("2026-08-02T00:00:00.000Z");
+  });
+});
+
+const SEVEN_SHIFTS_ICS = `BEGIN:VCALENDAR\r
+VERSION:2.0\r
+PRODID:-//7shifts//Personal Schedule//EN\r
+BEGIN:VEVENT\r
+UID:jonathan-20260901@example.7shifts.com\r
+DTSTAMP:20260827T120000Z\r
+DTSTART:20260901T210000Z\r
+DTEND:20260902T030000Z\r
+SUMMARY:Jonathan - Server\r
+END:VEVENT\r
+END:VCALENDAR\r
+`;
+
+describe("personal 7shifts schedule source", () => {
+  it("keeps the older replica when the newer envelope omits the key, and clears when the newer list is present and empty", () => {
+    const { personal } = splitForSync(catalogHousehold(), "MEM-002");
+    const schedules = parseSevenShiftsCalendar({
+      source: SEVEN_SHIFTS_ICS,
+      sourceName: "7shifts.ics",
+      memberId: "MEM-002",
+      memberName: "Jonathan",
+      jobs: [],
+    }).shifts;
+    expect(schedules).toHaveLength(1);
+    const withSchedules = { ...personal, sevenShiftsSchedules: schedules, lastCommittedAt: "2026-08-01T00:00:00.000Z" };
+
+    const laterServerOmits = { ...personal, lastCommittedAt: "2026-08-02T00:00:00.000Z" };
+    delete laterServerOmits.sevenShiftsSchedules;
+    expect(mergePersonal(laterServerOmits, withSchedules).sevenShiftsSchedules).toEqual(schedules);
+
+    const laterClientOmits = { ...personal, lastCommittedAt: "2026-08-02T00:00:00.000Z" };
+    delete laterClientOmits.sevenShiftsSchedules;
+    expect(mergePersonal(withSchedules, laterClientOmits).sevenShiftsSchedules).toEqual(schedules);
+
+    const laterEmpty = { ...personal, sevenShiftsSchedules: [], lastCommittedAt: "2026-08-02T00:00:00.000Z" };
+    expect(mergePersonal(withSchedules, laterEmpty).sevenShiftsSchedules).toEqual([]);
+    expect(mergePersonal(laterEmpty, withSchedules).sevenShiftsSchedules).toEqual([]);
   });
 });
 
