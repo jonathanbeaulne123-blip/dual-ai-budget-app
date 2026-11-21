@@ -4,7 +4,7 @@ import {
   assertPassInviteConsistency,
   assertSharedEnvelopeBinding,
 } from "./environmentIsolation.ts";
-import { assembleHousehold, emptyPersonal, ensureHouseholdShape, splitForSync } from "./sync.ts";
+import { assembleHousehold, emptyPersonal, ensureHouseholdShape, overlayPersonalReplica, splitForSync } from "./sync.ts";
 import { moneyFactsChanged } from "./conflict.ts";
 import type { Environment, Household, SharedEnvelope } from "./types.ts";
 import { ValidationError } from "./types.ts";
@@ -86,12 +86,26 @@ export function applyHearthPass(
           shifts: localParts.shared.shifts,
           claims: localParts.shared.claims ?? [],
           sitDownSessions: localParts.shared.sitDownSessions ?? [],
+          goalPurchases: localParts.shared.goalPurchases ?? [],
+          goalContributions: localParts.shared.goalContributions ?? [],
+          householdFund: localParts.shared.householdFund ?? null,
+          fundMonthPlans: localParts.shared.fundMonthPlans ?? [],
+          fundEvents: localParts.shared.fundEvents ?? [],
+          fundSettlementAllocations: localParts.shared.fundSettlementAllocations ?? [],
+          fundKittyAllocations: localParts.shared.fundKittyAllocations ?? [],
         },
         {
           transactions: shared.transactions,
           shifts: shared.shifts,
           claims: shared.claims ?? [],
           sitDownSessions: shared.sitDownSessions ?? [],
+          goalPurchases: shared.goalPurchases ?? [],
+          goalContributions: shared.goalContributions ?? [],
+          householdFund: shared.householdFund ?? null,
+          fundMonthPlans: shared.fundMonthPlans ?? [],
+          fundEvents: shared.fundEvents ?? [],
+          fundSettlementAllocations: shared.fundSettlementAllocations ?? [],
+          fundKittyAllocations: shared.fundKittyAllocations ?? [],
         },
       )
     ) {
@@ -107,13 +121,24 @@ export function applyHearthPass(
       shifts: localParts.shared.shifts,
       claims: localParts.shared.claims,
       sitDownSessions: localParts.shared.sitDownSessions,
+      goalPurchases: localParts.shared.goalPurchases,
+      goalContributions: localParts.shared.goalContributions,
+      householdFund: localParts.shared.householdFund,
+      fundMonthPlans: localParts.shared.fundMonthPlans,
+      fundEvents: localParts.shared.fundEvents,
+      fundSettlementAllocations: localParts.shared.fundSettlementAllocations,
+      fundKittyAllocations: localParts.shared.fundKittyAllocations,
     };
-    const assembled = assembleHousehold(overlaid, localParts.personal, { linked: local.linked === true });
+    let assembled = assembleHousehold(overlaid, localParts.personal, { linked: local.linked === true });
     assembled.commandReceipts = local.commandReceipts ?? [];
     assembled.conflicts = local.conflicts ?? [];
     assembled.booksAcceptedHash = local.booksAcceptedHash ?? null;
     assembled.revision = local.revision;
     assembled.baseRevision = local.baseRevision;
+    for (const member of local.members) {
+      if (member.id === who) continue;
+      assembled = overlayPersonalReplica(assembled, splitForSync(local, member.id).personal, member.id);
+    }
     return assembled;
   }
   if (local.transactions.length > 0 || local.shifts.length > 0) {

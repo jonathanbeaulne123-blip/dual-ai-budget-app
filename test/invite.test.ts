@@ -9,7 +9,13 @@ import {
 } from "../src/core/invite.ts";
 import { applyHearthPass, makeHearthPass, parseHearthPass } from "../src/core/pass.ts";
 import { catalogHousehold } from "../src/core/seed.ts";
-import { postEntry } from "../src/core/commands.ts";
+import {
+  addGoal,
+  configureHouseholdFund,
+  contributeToGoal,
+  postEntry,
+  proposeHouseholdFundContribution,
+} from "../src/core/commands.ts";
 
 describe("household invite phrases", () => {
   it("creates a three-word kitchen phrase instead of a six-character code", () => {
@@ -150,5 +156,38 @@ describe("Hearth Pass", () => {
     const household = catalogHousehold();
     const pass = makeHearthPass({ ...household, environment: "development" });
     expect(() => applyHearthPass(null, pass, "MEM-001", "production")).toThrow(/different environment/);
+  });
+
+  it("refuses to last-write-wins a later Household Fund contribution", () => {
+    const funded = configureHouseholdFund(catalogHousehold(), {
+      custodianMemberId: "MEM-001",
+      openedOn: "2026-08-01",
+      createdBy: "MEM-001",
+    }).household;
+    const pass = makeHearthPass(funded);
+    const contributed = proposeHouseholdFundContribution(funded, {
+      memberId: "MEM-002",
+      contributorMemberId: "MEM-002",
+      amount: "40",
+      date: "2026-08-25",
+      source: {
+        version: 1,
+        kind: "external-received",
+        explanation: "E-transfer into shared savings",
+      },
+    }).household;
+    expect(() => applyHearthPass(contributed, pass, "MEM-001")).toThrow(/different journal facts/);
+    expect(contributed.fundEvents?.some((event) => event.kind === "contribution-proposed" && event.amountCents === 4000)).toBe(true);
+  });
+
+  it("refuses to last-write-wins a later shared goal contribution", () => {
+    const withGoal = addGoal(catalogHousehold(), { name: "Trip", target: "100.00" }).household;
+    const pass = makeHearthPass(withGoal);
+    const contributed = contributeToGoal(withGoal, withGoal.goals[0]!.id, "25.00", {
+      createdBy: "MEM-001",
+      date: "2026-08-25",
+    }).household;
+    expect(() => applyHearthPass(contributed, pass, "MEM-001")).toThrow(/different journal facts/);
+    expect(contributed.goalContributions.some((row) => row.amountCents === 2500)).toBe(true);
   });
 });

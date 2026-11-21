@@ -5,8 +5,10 @@ import {
   canAutoMergeConflict,
   catalogHousehold,
   compileHousehold,
+  configureHouseholdFund,
   contributeToGoal,
   postEntry,
+  proposeHouseholdFundContribution,
   splitForSync,
   type Household,
   type WriteAdapters,
@@ -971,5 +973,25 @@ describe("atomic household writes", () => {
         tombstones: [{ id: tx.id, deletedAt: "2026-08-24T00:00:00.000Z" }],
       }),
     ).toBe(false);
+  });
+
+  it("does not auto-merge changed Household Fund events", () => {
+    const funded = configureHouseholdFund(catalogHousehold(), {
+      custodianMemberId: "MEM-001",
+      openedOn: "2026-08-01",
+      createdBy: "MEM-001",
+    }).household;
+    const proposed = proposeHouseholdFundContribution(funded, {
+      memberId: "MEM-002",
+      contributorMemberId: "MEM-002",
+      amount: "40",
+      date: "2026-08-25",
+      source: {
+        version: 1,
+        kind: "external-received",
+        explanation: "E-transfer into shared savings",
+      },
+    }).household;
+    expect(canAutoMergeConflict(funded, proposed)).toBe(false);
   });
 });

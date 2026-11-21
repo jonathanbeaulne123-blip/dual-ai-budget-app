@@ -11,8 +11,14 @@ import type {
   Claim,
   ConflictRecord,
   Goal,
+  GoalContribution,
   GoalPurchase,
   Household,
+  HouseholdFundConfig,
+  HouseholdFundEvent,
+  HouseholdFundKittyAllocation,
+  HouseholdFundMonthPlan,
+  HouseholdFundSettlementAllocation,
   Shift,
   SitDownSession,
   Tombstone,
@@ -25,6 +31,12 @@ type MoneyCollections = {
   claims: Claim[];
   sitDownSessions: SitDownSession[];
   goalPurchases?: GoalPurchase[];
+  goalContributions?: GoalContribution[];
+  householdFund?: HouseholdFundConfig | null;
+  fundMonthPlans?: HouseholdFundMonthPlan[];
+  fundEvents?: HouseholdFundEvent[];
+  fundSettlementAllocations?: HouseholdFundSettlementAllocation[];
+  fundKittyAllocations?: HouseholdFundKittyAllocation[];
 };
 
 function recordsMatch<T extends { id: string }>(left: T[] = [], right: T[] = []): boolean {
@@ -54,7 +66,13 @@ export function moneyFactsChanged(left: MoneyCollections, right: MoneyCollection
   if (!recordsMatch(left.shifts, right.shifts)) return true;
   if (!recordsMatch(left.claims ?? [], right.claims ?? [])) return true;
   if (!recordsMatch(left.sitDownSessions ?? [], right.sitDownSessions ?? [])) return true;
-  return !recordsMatch(left.goalPurchases ?? [], right.goalPurchases ?? []);
+  if (!recordsMatch(left.goalPurchases ?? [], right.goalPurchases ?? [])) return true;
+  if (!recordsMatch(left.goalContributions ?? [], right.goalContributions ?? [])) return true;
+  if (!recordsMatch(left.fundEvents ?? [], right.fundEvents ?? [])) return true;
+  if (!recordsMatch(left.fundMonthPlans ?? [], right.fundMonthPlans ?? [])) return true;
+  if (!recordsMatch(left.fundSettlementAllocations ?? [], right.fundSettlementAllocations ?? [])) return true;
+  if (!recordsMatch(left.fundKittyAllocations ?? [], right.fundKittyAllocations ?? [])) return true;
+  return JSON.stringify(left.householdFund ?? null) !== JSON.stringify(right.householdFund ?? null);
 }
 
 export function canAutoMergeConflict(local: Household, remote: Household): boolean {
