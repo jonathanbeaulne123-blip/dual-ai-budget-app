@@ -255,6 +255,13 @@ describe("recurrence restore shape", () => {
       fundingDefault: { fundId: "FUND-HH", fundedCents: "full" } as never,
     }), "2026-08-01T00:00:00.000Z").fundingDefault).toBeNull();
     expect(shapeRecurrence(recurrence({ fundingDefault: null }), "2026-08-01T00:00:00.000Z").fundingDefault).toBeNull();
+    expect(shapeRecurrence(recurrence({
+      fundingDefault: { fundId: "", fundedCents: "full", destinationAccountId: "ACC-VISA" },
+    }), "2026-08-01T00:00:00.000Z").fundingDefault).toEqual({
+      fundId: "",
+      fundedCents: "full",
+      destinationAccountId: "ACC-VISA",
+    });
   });
 
   it("preserves income and transfer types and treats any other stored type as an expense", () => {
