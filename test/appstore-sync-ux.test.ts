@@ -143,6 +143,50 @@ describe("autoResolveSharedConflict", () => {
     expect(resolved.sharing?.mode).toBe("pending-transport");
     expect(resolved.revision).toBeGreaterThan(cloud.revision);
   });
+
+  it("keeps restore-point tips from both phones instead of wiping them", async () => {
+    const base = { ...catalogHousehold(), linked: true, revision: 8, baseRevision: 8 };
+    const phoneWithPoint = await appendRestorePoint({
+      ...postEntry(base, {
+        date: "2026-08-25",
+        type: "expense",
+        amount: "4.00",
+        accountId: "ACC-VISA",
+        subcategoryId: "SUB-FOOD-GROCERIES",
+        note: "Phone groceries",
+        createdBy: "MEM-001",
+        confirmDuplicate: true,
+      }).household,
+      linked: true,
+      revision: 9,
+      baseRevision: 8,
+    }, "MEM-001");
+    const cloudWithPoint = await appendRestorePoint({
+      ...postEntry(base, {
+        date: "2026-08-25",
+        type: "expense",
+        amount: "7.00",
+        accountId: "ACC-VISA",
+        subcategoryId: "SUB-FOOD-GROCERIES",
+        note: "Cloud groceries",
+        createdBy: "MEM-002",
+        confirmDuplicate: true,
+      }).household,
+      linked: true,
+      revision: 9,
+      baseRevision: 8,
+    }, "MEM-002");
+    expect(phoneWithPoint.restorePoints).toHaveLength(1);
+    expect(cloudWithPoint.restorePoints).toHaveLength(1);
+    expect(phoneWithPoint.restorePoints![0]!.id).not.toBe(cloudWithPoint.restorePoints![0]!.id);
+
+    const resolved = await autoResolveSharedConflict(phoneWithPoint, cloudWithPoint, "MEM-001", "local");
+    expect(resolved.restorePoints?.map((point) => point.id).sort()).toEqual(
+      [phoneWithPoint.restorePoints![0]!.id, cloudWithPoint.restorePoints![0]!.id].sort(),
+    );
+    expect(resolved.transactions.some((tx) => tx.note === "Phone groceries")).toBe(true);
+    expect(resolved.transactions.some((tx) => tx.note === "Cloud groceries")).toBe(true);
+  });
 });
 
 describe("pairing status label", () => {

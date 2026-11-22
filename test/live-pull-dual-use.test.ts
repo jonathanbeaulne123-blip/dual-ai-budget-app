@@ -1,6 +1,7 @@
 import { describe, expect, it, afterEach, vi } from "vitest";
 import {
   absorbDisjointSharedMoney,
+  appendRestorePoint,
   canAbsorbDisjointSharedMoney,
   canAutoMergeConflict,
   catalogHousehold,
@@ -162,6 +163,48 @@ describe("disjoint shared money absorb", () => {
     expect(merged.sharing?.mode).toBe("pending-transport");
     expect(merged.revision).toBe(5);
     expect(merged.baseRevision).toBe(4);
+    expect(merged.transactions.some((tx) => tx.note === "Jonathan milk")).toBe(true);
+    expect(merged.transactions.some((tx) => tx.note === "Bianca bread")).toBe(true);
+  });
+
+  it("keeps a local restore-point tip when absorbing a disjoint remote expense", async () => {
+    const base = { ...catalogHousehold(), revision: 3, baseRevision: 3, linked: true };
+    const localPosted = {
+      ...postEntry(base, {
+        date: "2026-08-25",
+        type: "expense",
+        amount: "12.00",
+        accountId: "ACC-VISA",
+        subcategoryId: "SUB-FOOD-GROCERIES",
+        note: "Jonathan milk",
+        createdBy: "MEM-001",
+        confirmDuplicate: true,
+      }).household,
+      revision: 4,
+      baseRevision: 3,
+      linked: true,
+    };
+    const local = await appendRestorePoint(localPosted, "MEM-001");
+    const remote = {
+      ...postEntry(base, {
+        date: "2026-08-25",
+        type: "expense",
+        amount: "8.00",
+        accountId: "ACC-VISA",
+        subcategoryId: "SUB-FOOD-GROCERIES",
+        note: "Bianca bread",
+        createdBy: "MEM-002",
+        confirmDuplicate: true,
+      }).household,
+      revision: 4,
+      baseRevision: 4,
+      linked: true,
+    };
+    expect(local.restorePoints).toHaveLength(1);
+    expect(remote.restorePoints ?? []).toHaveLength(0);
+    expect(canAbsorbDisjointSharedMoney(local, remote)).toBe(true);
+    const merged = absorbDisjointSharedMoney(local, remote, "MEM-001");
+    expect(merged.restorePoints?.map((point) => point.id)).toEqual([local.restorePoints![0]!.id]);
     expect(merged.transactions.some((tx) => tx.note === "Jonathan milk")).toBe(true);
     expect(merged.transactions.some((tx) => tx.note === "Bianca bread")).toBe(true);
   });

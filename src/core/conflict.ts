@@ -1,5 +1,5 @@
 import { cloneHousehold } from "./household.ts";
-import { assembleHousehold, ensureHouseholdShape, mergeRecords, mergeShared, mergeTombstones, splitForSync } from "./sync.ts";
+import { assembleHousehold, ensureHouseholdShape, mergeRecords, mergeRestorePoints, mergeShared, mergeTombstones, splitForSync } from "./sync.ts";
 import { applyGoalSavings } from "./goals.ts";
 import { financialAuditHash } from "./commandIdentity.ts";
 import { nextId } from "./ids.ts";
@@ -161,6 +161,7 @@ export function absorbDisjointSharedMoney(
     conflicts: [...(local.conflicts ?? []), ...(remote.conflicts ?? [])].filter(
       (row, index, rows) => rows.findIndex((item) => item.id === row.id) === index && row.resolved,
     ),
+    restorePoints: mergeRestorePoints(remoteParts.shared.restorePoints, localParts.shared.restorePoints),
   };
   const assembled = assembleHousehold(shared, localParts.personal, { linked: true });
   // Pending until CAS acknowledges the union — never pretend cloud already has it.

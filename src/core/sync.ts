@@ -40,6 +40,7 @@ import type {
   PersonalEnvelope,
   HerculesProPermissions,
   Preset,
+  RestorePoint,
   SharedEnvelope,
   Shift,
   Tombstone,
@@ -216,6 +217,20 @@ export function mergeRecords<T extends { id: string; updatedAt: string }>(
     if (!existing || recency(item) >= recency(existing)) map.set(item.id, item);
   }
   return [...map.values()];
+}
+
+const MERGED_RESTORE_POINT_MAX = 40;
+
+/** Union restore-point tips by id. These are immutable snapshots, not last-write rows. */
+export function mergeRestorePoints(server: RestorePoint[] = [], client: RestorePoint[] = []): RestorePoint[] {
+  const map = new Map<string, RestorePoint>();
+  for (const point of [...server, ...client]) {
+    const existing = map.get(point.id);
+    if (!existing || point.createdAt > existing.createdAt) map.set(point.id, point);
+  }
+  return [...map.values()]
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt) || left.id.localeCompare(right.id))
+    .slice(0, MERGED_RESTORE_POINT_MAX);
 }
 
 function mergeCommandReceipts(server: CommandReceipt[] = [], client: CommandReceipt[] = []): CommandReceipt[] {
@@ -1315,6 +1330,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     tombstones,
     syntheticFixture: mergeSyntheticFixture(server, client),
     commandReceipts: mergeCommandReceipts(server.commandReceipts, client.commandReceipts),
+    restorePoints: mergeRestorePoints(server.restorePoints, client.restorePoints),
   };
 }
 
