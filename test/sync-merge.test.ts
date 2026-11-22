@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { postShift } from "../src/core/commands.ts";
 import { createCompanionProfile } from "../src/core/herculesCompanionContracts.ts";
 import { catalogHousehold } from "../src/core/seed.ts";
-import type { Coworker } from "../src/core/coworkers.ts";
+import type { Coworker, CoworkerAttendance, CoworkerSchedule } from "../src/core/coworkers.ts";
 import { parseSevenShiftsCalendar } from "../src/core/sevenShiftsCalendar.ts";
-import { shiftBibleMaterialHash, type ShiftBible, type ShiftEnvelope } from "../src/core/shiftEnvelope.ts";
+import { shapeShiftEnvelopes, shiftBibleMaterialHash, type ShiftBible, type ShiftEnvelope } from "../src/core/shiftEnvelope.ts";
 import {
   assembleHousehold,
   mergePersonal,
@@ -402,7 +402,63 @@ describe("two-device envelope recency", () => {
       { ...shared, inviteCode: "maple-hearth-linen" },
     ).inviteCode).toBe("cedar-lantern-maple");
   });
+
+  it("keeps the server household id when present and uses the client only when the server id is empty", () => {
+    const { shared } = splitForSync(catalogHousehold(), "MEM-002");
+    expect(mergeShared(
+      { ...shared, householdId: "HH-SERVER" },
+      { ...shared, householdId: "HH-CLIENT" },
+    ).householdId).toBe("HH-SERVER");
+    expect(mergeShared(
+      { ...shared, householdId: "" },
+      { ...shared, householdId: "HH-CLIENT" },
+    ).householdId).toBe("HH-CLIENT");
+    expect(mergeShared(
+      { ...shared, householdId: "HH-SERVER" },
+      { ...shared, householdId: "" },
+    ).householdId).toBe("HH-SERVER");
+    expect(mergeShared(
+      { ...shared, householdId: "" },
+      { ...shared, householdId: "" },
+    ).householdId).toBe("");
+  });
 });
+
+function attendance(overrides: Partial<CoworkerAttendance> = {}): CoworkerAttendance {
+  return {
+    id: "ATT-001",
+    ownerMemberId: "MEM-002",
+    jobId: "JOB-001",
+    shiftId: "SHIFT-001",
+    coworkerId: "COW-001",
+    roleLabel: "Server",
+    status: "user-confirmed-present",
+    scheduledStart: "2026-08-29T20:30:00.000Z",
+    scheduledEnd: "2026-08-30T02:30:00.000Z",
+    createdAt: "2026-08-01T00:00:00.000Z",
+    updatedAt: "2026-08-01T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function schedule(overrides: Partial<CoworkerSchedule> = {}): CoworkerSchedule {
+  return {
+    id: "SCH-001",
+    ownerMemberId: "MEM-002",
+    jobId: "JOB-001",
+    coworkerId: "COW-001",
+    date: "2026-08-29",
+    scheduledStart: "2026-08-29T20:30:00.000Z",
+    scheduledEnd: "2026-08-30T02:30:00.000Z",
+    roleLabel: "Server",
+    sourceScheduleKey: "s7shift_aaaaaaaaaaaaaaaaaaaa",
+    observedAt: "2026-08-01T00:00:00.000Z",
+    active: true,
+    createdAt: "2026-08-01T00:00:00.000Z",
+    updatedAt: "2026-08-01T00:00:00.000Z",
+    ...overrides,
+  };
+}
 
 function coworker(overrides: Partial<Coworker> = {}): Coworker {
   return {
@@ -508,6 +564,89 @@ describe("personal coworker and shift-envelope recency", () => {
       { ...personal, shiftEnvelopes: [shiftEnvelope({ status: "cut", updatedAt: "2026-08-01T00:00:00.000Z" })] },
     );
     expect(tied.shiftEnvelopes?.[0]?.status).toBe("cut");
+  });
+
+  it("lets later coworker attendance win on updatedAt, drops another member, and keeps tombstones gone", () => {
+    const { personal } = splitForSync(catalogHousehold(), "MEM-002");
+    const earlier = attendance({ status: "scheduled-assumed", updatedAt: "2026-08-01T00:00:00.000Z" });
+    const later = attendance({ status: "user-confirmed-absent", updatedAt: "2026-08-03T00:00:00.000Z" });
+    const staleEnvelope = { ...personal, lastCommittedAt: "2026-08-04T00:00:00.000Z", coworkerAttendance: [earlier] };
+    const liveEnvelope = { ...personal, lastCommittedAt: "2026-08-02T00:00:00.000Z", coworkerAttendance: [later] };
+    expect(mergePersonal(staleEnvelope, liveEnvelope).coworkerAttendance).toMatchObject([
+      { id: "ATT-001", status: "user-confirmed-absent" },
+    ]);
+    expect(mergePersonal(liveEnvelope, staleEnvelope).coworkerAttendance).toMatchObject([
+      { id: "ATT-001", status: "user-confirmed-absent" },
+    ]);
+
+    const theirs = attendance({ id: "ATT-THEIRS", ownerMemberId: "MEM-001", coworkerId: "COW-THEIRS" });
+    const deleted = attendance({ id: "ATT-GONE", updatedAt: "2026-08-04T00:00:00.000Z" });
+    const merged = mergePersonal(
+      { ...personal, coworkerAttendance: [theirs, deleted] },
+      {
+        ...personal,
+        coworkerAttendance: [attendance({ id: "ATT-MINE" })],
+        tombstones: [{ id: "ATT-GONE", deletedAt: "2026-08-02T00:00:00.000Z" }],
+      },
+    );
+    expect(merged.coworkerAttendance).toMatchObject([{ id: "ATT-MINE" }]);
+    expect(merged.coworkerAttendance?.some((row) => row.ownerMemberId === "MEM-001")).toBe(false);
+  });
+
+  it("lets later coworker schedules win on updatedAt, drops another member, and keeps tombstones gone", () => {
+    const { personal } = splitForSync(catalogHousehold(), "MEM-002");
+    const earlier = schedule({ roleLabel: "Support", updatedAt: "2026-08-01T00:00:00.000Z" });
+    const later = schedule({ roleLabel: "Server", scheduledEnd: "2026-08-30T03:00:00.000Z", updatedAt: "2026-08-03T00:00:00.000Z" });
+    const staleEnvelope = { ...personal, lastCommittedAt: "2026-08-04T00:00:00.000Z", coworkerSchedules: [earlier] };
+    const liveEnvelope = { ...personal, lastCommittedAt: "2026-08-02T00:00:00.000Z", coworkerSchedules: [later] };
+    expect(mergePersonal(staleEnvelope, liveEnvelope).coworkerSchedules).toMatchObject([
+      { id: "SCH-001", roleLabel: "Server", scheduledEnd: "2026-08-30T03:00:00.000Z" },
+    ]);
+    expect(mergePersonal(liveEnvelope, staleEnvelope).coworkerSchedules).toMatchObject([
+      { id: "SCH-001", roleLabel: "Server", scheduledEnd: "2026-08-30T03:00:00.000Z" },
+    ]);
+
+    const theirs = schedule({ id: "SCH-THEIRS", ownerMemberId: "MEM-001", sourceScheduleKey: "s7shift_bbbbbbbbbbbbbbbbbbbb" });
+    const deleted = schedule({ id: "SCH-GONE", sourceScheduleKey: "s7shift_cccccccccccccccccccc", updatedAt: "2026-08-04T00:00:00.000Z" });
+    const merged = mergePersonal(
+      { ...personal, coworkerSchedules: [theirs, deleted] },
+      {
+        ...personal,
+        coworkerSchedules: [schedule({ id: "SCH-MINE", sourceScheduleKey: "s7shift_dddddddddddddddddddd" })],
+        tombstones: [{ id: "SCH-GONE", deletedAt: "2026-08-02T00:00:00.000Z" }],
+      },
+    );
+    expect(merged.coworkerSchedules).toMatchObject([{ id: "SCH-MINE" }]);
+    expect(merged.coworkerSchedules?.some((row) => row.ownerMemberId === "MEM-001")).toBe(false);
+  });
+
+  it("keeps the client personal member id when present and uses the server only when the client id is empty", () => {
+    const { personal } = splitForSync(catalogHousehold(), "MEM-002");
+    expect(mergePersonal(
+      { ...personal, memberId: "MEM-001" },
+      { ...personal, memberId: "MEM-002" },
+    ).memberId).toBe("MEM-002");
+    expect(mergePersonal(
+      { ...personal, memberId: "MEM-001" },
+      { ...personal, memberId: "" },
+    ).memberId).toBe("MEM-001");
+    expect(mergePersonal(
+      { ...personal, memberId: "" },
+      { ...personal, memberId: "MEM-002" },
+    ).memberId).toBe("MEM-002");
+  });
+});
+
+describe("shift envelope restore shaping", () => {
+  it("keeps the last copy of a duplicate id even when an earlier copy is newer, and drops another member", () => {
+    const earlierLive = shiftEnvelope({ status: "worked_ready", workedMinutes: 330, updatedAt: "2026-08-03T00:00:00.000Z" });
+    const laterStale = shiftEnvelope({ status: "upcoming", workedMinutes: null, updatedAt: "2026-08-01T00:00:00.000Z" });
+    const theirs = shiftEnvelope({ id: "ENV-OTHER", memberId: "MEM-001", canonicalShiftKey: "schedule:7shifts-calendar:other" });
+    expect(shapeShiftEnvelopes([earlierLive, laterStale, theirs], "MEM-002")).toMatchObject([
+      { id: "ENV-001", status: "upcoming", workedMinutes: null },
+    ]);
+    expect(shapeShiftEnvelopes(null)).toEqual([]);
+    expect(shapeShiftEnvelopes([{ ...laterStale, id: "not a safe id" }])).toEqual([]);
   });
 });
 
