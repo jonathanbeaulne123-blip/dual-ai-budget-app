@@ -1,6 +1,6 @@
 import type { Household, LedgerView, Recurrence } from "./types.ts";
 import { addDays, monthKeyFromDateKey, shiftMonthKey, type DateKey } from "./calendar.ts";
-import { projectCadence } from "./recurrence.ts";
+import { projectCadence, recurrenceOccurrencePosted } from "./recurrence.ts";
 import { nativeEventOccurrences } from "./nativeEvents.ts";
 import { householdForView } from "./visibility.ts";
 import { householdWallet } from "./accounts.ts";
@@ -99,7 +99,7 @@ function recurrenceVisible(visible: Household, row: Recurrence) {
   return row.active && row.type !== "transfer" && visible.accounts.some((account) => account.id === row.accountId);
 }
 function postedOccurrence(household: Household, row: Recurrence, date: DateKey) {
-  return household.transactions.some((tx) => !tx.isDuplicate && tx.source === "recurring" && tx.sourceId === row.id && tx.date === date) || Boolean(row.payments?.some((p) => p.occurrenceDate === date));
+  return recurrenceOccurrencePosted(household, row, date);
 }
 function ownershipMatches(task: Task, memberId: string, ownership: AgendaOwnership) {
   if (ownership === "all") return true;

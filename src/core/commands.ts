@@ -14,7 +14,7 @@ import { prepareDuplicateReview, reviewedDuplicateRequest, type DuplicateReviewR
 import { captureCommand } from "../ledgerSync/capture.ts";
 import { BOARD_ITEM_LIMIT, BOARD_TITLE_LIMIT, shapeSharedBoards, type BoardTask, type BoardMilestone, type BoardPhoto } from "./sharedBoards.ts";
 import { isValidDateKey, TIMEZONE, addDays, todayKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
-import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRecurrenceKind, normalizeRecurrenceCadence, shapeCalendar } from "./recurrence.ts";
+import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRecurrenceKind, normalizeRecurrenceCadence, recurrenceOccurrencePosted, shapeCalendar } from "./recurrence.ts";
 import { detectHabits, detectRhythms } from "./rhythm.ts";
 import { CURRENCY, parseWholeCents } from "./money.ts";
 import { nextId, nowIso, randomHouseholdId, randomInviteCode, slug, uniquePrefixedId } from "./ids.ts";
@@ -5343,6 +5343,9 @@ export const postOneRecurrence = captureCommand("postOneRecurrence", function po
   const item = household.recurrences.find((row) => row.id === recurrenceId && row.active);
   if (!item) throw new ValidationError("That repeating item is not active.");
   if (!options.allowNotDue && item.nextDate > today) throw new ValidationError("That item is not due yet.");
+  if (recurrenceOccurrencePosted(household, item, item.nextDate)) {
+    throw new ValidationError("That occurrence is already posted. Review its current payment status.");
+  }
   const previous = cloneHousehold(household);
   let working = household;
   const postedIds: string[] = [];

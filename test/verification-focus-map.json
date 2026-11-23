@@ -1647,6 +1647,22 @@
         "test/horizonWorldDefinition.test.ts"
       ],
       "reason": "Mountain V3 (D-M11): the one landform and water definition of the Highlands and the Falls, its terrain layer and paint, the fall cuts in the world definition and water cards, the D-M11 confluence rule, the generated manifest and the bake's byte-exact artifacts"
+    },
+    {
+      "sources": [
+        "src/core/sync.ts",
+        "src/core/recurrence.ts",
+        "src/core/commands.ts",
+        "src/core/dueOccurrenceReview.ts",
+        "src/core/agenda.ts"
+      ],
+      "tests": [
+        "test/recurrence-payment-merge.test.ts",
+        "test/repeating-form.test.ts",
+        "test/due-occurrence-review.test.ts",
+        "test/hercules-execution.test.ts"
+      ],
+      "reason": "Shared merge must union bill payment history so a later template edit or Google calendar sync cannot rewind a paid occurrence and post it twice"
     }
   ]
 }

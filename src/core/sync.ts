@@ -22,7 +22,7 @@ import { shapeSharing } from "./sharing.ts";
 import { mergeGoogle, shapeGoogle } from "./google.ts";
 import { mergeKitchen, shapeKitchen } from "./kitchen.ts";
 import { shapeSitDownSessions } from "./sitDown.ts";
-import { mergeCalendars, shapeCalendar, shapeRecurrence } from "./recurrence.ts";
+import { advanceCadence, mergeCalendars, shapeCalendar, shapeRecurrence } from "./recurrence.ts";
 import { mergePotentialExpenses, shapePotentialExpenses } from "./potentialExpenses.ts";
 import { applyGoalSavings, shapeGoalProgress, shapeGoalPurchases } from "./goals.ts";
 import { shapeAppointments, shapeClaims } from "./appointments.ts";
@@ -40,6 +40,7 @@ import type {
   PersonalEnvelope,
   HerculesProPermissions,
   Preset,
+  Recurrence,
   SharedEnvelope,
   Shift,
   Tombstone,
@@ -216,6 +217,41 @@ export function mergeRecords<T extends { id: string; updatedAt: string }>(
     if (!existing || recency(item) >= recency(existing)) map.set(item.id, item);
   }
   return [...map.values()];
+}
+
+function laterDateKey(left: string, right: string): string {
+  return left >= right ? left : right;
+}
+
+function mergeRecurrencePayments(winner: Recurrence, other: Recurrence): Recurrence["payments"] {
+  const byDate = new Map<string, NonNullable<Recurrence["payments"]>[number]>();
+  for (const payment of other.payments ?? []) byDate.set(payment.occurrenceDate, payment);
+  for (const payment of winner.payments ?? []) byDate.set(payment.occurrenceDate, payment);
+  if (!byDate.size) return winner.payments;
+  return [...byDate.values()].sort((left, right) => left.occurrenceDate.localeCompare(right.occurrenceDate));
+}
+
+/** Last-write-wins the template, but never drop the other replica's paid occurrences. */
+export function mergeRecurrences(
+  server: Recurrence[],
+  client: Recurrence[],
+  tombstones: Tombstone[],
+): Recurrence[] {
+  const dead = new Set(tombstones.map((tombstone) => tombstone.id));
+  const serverById = new Map(server.filter((row) => !dead.has(row.id)).map((row) => [row.id, row]));
+  const clientById = new Map(client.filter((row) => !dead.has(row.id)).map((row) => [row.id, row]));
+  return mergeRecords(server, client, tombstones).map((row) => {
+    const left = serverById.get(row.id);
+    const right = clientById.get(row.id);
+    if (!left || !right) return row;
+    const other = row === left ? right : left;
+    const payments = mergeRecurrencePayments(row, other);
+    const latestPaid = (payments ?? []).reduce((max, payment) => laterDateKey(max, payment.occurrenceDate), "");
+    const afterPaid = latestPaid ? advanceCadence(latestPaid, row.cadence) : row.nextDate;
+    const nextDate = [row.nextDate, left.nextDate, right.nextDate, afterPaid].reduce(laterDateKey);
+    if (payments === row.payments && nextDate === row.nextDate) return row;
+    return { ...row, payments, nextDate };
+  });
 }
 
 function mergeCommandReceipts(server: CommandReceipt[] = [], client: CommandReceipt[] = []): CommandReceipt[] {
@@ -1245,7 +1281,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     members,
     accounts: mergeRecords(server.accounts, client.accounts, []),
     categories: mergeRecords(server.categories, client.categories, []),
-    recurrences: mergeRecords(server.recurrences, client.recurrences, tombstones),
+    recurrences: mergeRecurrences(server.recurrences, client.recurrences, tombstones),
     nativeEvents:mergeNativeEvents(server.nativeEvents,client.nativeEvents),
     kittyNestDesigns:mergeKittyNestDesigns(server.kittyNestDesigns,client.kittyNestDesigns),
     ...fundRowsIf(mergeFundModelRows(server.fundModelRows,client.fundModelRows).filter(r=>r.visibility==='household')),

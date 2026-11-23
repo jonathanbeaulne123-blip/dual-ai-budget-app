@@ -21,6 +21,16 @@ export function normalizeRecurrenceCadence(value: string | null | undefined): Re
   return "monthly";
 }
 
+/** True when this occurrence already has a recurring journal row or an actual bill payment. */
+export function recurrenceOccurrencePosted(
+  household: { transactions: Array<{ isDuplicate?: boolean; source?: string; sourceId?: string | null; date: string }> },
+  row: Pick<Recurrence, "id" | "payments">,
+  date: DateKey,
+): boolean {
+  return household.transactions.some((tx) => !tx.isDuplicate && tx.source === "recurring" && tx.sourceId === row.id && tx.date === date)
+    || Boolean(row.payments?.some((payment) => payment.occurrenceDate === date));
+}
+
 export function nextOnOrAfter(start: DateKey, cadence: RecurrenceCadence, today: DateKey): DateKey {
   let cursor = start;
   for (let i = 0; i < 48 && cursor < today; i += 1) {

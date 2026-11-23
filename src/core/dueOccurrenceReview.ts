@@ -1,6 +1,7 @@
 import type {Household,Account} from './types.ts';
 import {canonical} from '../ledgerSync/patch.ts';
 import {formatCad} from './money.ts';
+import {recurrenceOccurrencePosted} from './recurrence.ts';
 export type DueOccurrenceRequest={environment:Household['environment'];householdId:string;memberId:string;view:'household'|'personal';recurrenceId:string;occurrenceDate:string;today:string};
 export type DueOccurrenceReview={kind:'ready';request:DueOccurrenceRequest;basis:string;title:string;detail:string;type:'expense'|'income'|'transfer';amountCents:number;occurrenceDate:string}|{kind:'unavailable';reason:string};
 const date=(v:unknown):v is string=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v;
@@ -10,7 +11,7 @@ export function dueOccurrenceReview(h:Household,r:DueOccurrenceRequest):DueOccur
  const unavailable=(reason:string):DueOccurrenceReview=>({kind:'unavailable',reason});
  if(!r||r.environment!==h.environment||r.householdId!==h.householdId||!['household','personal'].includes(r.view)||!date(r.today)||!date(r.occurrenceDate)||!h.members.some(m=>m.id===r.memberId&&m.active))return unavailable('The ledger view changed. Open this reminder again.');
  const item=h.recurrences.find(x=>x.id===r.recurrenceId&&x.active);
- if(!item||item.nextDate!==r.occurrenceDate||item.nextDate>r.today)return unavailable('This occurrence changed or is no longer due. Review the current reminder.');
+ if(!item||item.nextDate!==r.occurrenceDate||item.nextDate>r.today||recurrenceOccurrencePosted(h,item,item.nextDate))return unavailable('This occurrence changed or is no longer due. Review the current reminder.');
  if(!Number.isSafeInteger(item.amountCents)||item.amountCents<=0)return unavailable('This occurrence needs a valid positive amount.');
  const account=h.accounts.find(x=>x.id===item.accountId),destination=item.type==='transfer'?h.accounts.find(x=>x.id===item.transferToAccountId):null;
  if(!shared(account)||(item.type==='transfer'&&!shared(destination??undefined)))return unavailable('Review this account in Calendar. This posting path requires active Shared CAD accounts.');
