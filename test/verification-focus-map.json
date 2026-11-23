@@ -1682,13 +1682,14 @@
     },
     {
       "sources": [
-        "src/core/sync.ts"
+        "src/core/sync.ts",
+        "src/core/coworkers.ts"
       ],
       "tests": [
         "test/sync-merge.test.ts",
         "test/timezone-location.test.ts"
       ],
-      "reason": "Two-device tombstone/record merge must not resurrect deleted money rows; command receipts keep the highest revision; later envelopes keep timezone, shift settings, ledger names and environment; blank ledger names restore defaults; a server invite that does not normalize falls back to the client token; empty server householdId falls back to the client while a present server id is authoritative; synthetic Demo Suite provenance compares generatedAt keys and stays Development-only; companion and Personal Together refuse silent clock merges; glance/Fund-card/rail/landing converge on clocks and stable ties, treating blank glance ids as missing; a newer 7shifts envelope that omits the key keeps the older list while a present empty list clears; coworker, attendance, schedule and shift-envelope rows merge on updatedAt recency without leaking another member; empty client personal memberId falls back to the server; duplicate shift-envelope ids keep last-in-array even when an earlier copy is newer; Hercules Pro write consent restores from a shaped clock; personal shift bibles unique-by-id and reattach only this member's live linked copy; restore replaces an invalid IANA timezone with America/Toronto"
+      "reason": "Two-device tombstone/record merge must not resurrect deleted money rows; command receipts keep the highest revision; later envelopes keep timezone, shift settings, ledger names and environment; blank ledger names restore defaults; a server invite that does not normalize falls back to the client token; empty server householdId falls back to the client while a present server id is authoritative; mergeShared keeps onboarding submissions, approvals, category proposals and merges only for that resolved householdId; synthetic Demo Suite provenance compares generatedAt keys and stays Development-only; companion and Personal Together refuse silent clock merges; glance/Fund-card/rail/landing converge on clocks and stable ties, treating blank glance ids as missing; a newer 7shifts envelope that omits the key keeps the older list while a present empty list clears; coworker, attendance, schedule and shift-envelope rows merge on updatedAt recency without leaking another member; empty client personal memberId falls back to the server; duplicate shift-envelope ids keep last-in-array even when an earlier copy is newer; invalid coworker attendance restores as scheduled-assumed; coworker schedules refuse a bad sourceScheduleKey, one-sided hours, or an inverted window while keeping an open-ended pair; unknown coworker sources restore as manual and drop unsafe identity keys; attendance review keeps a 60-minute overlap margin and falls back to the whole day when none overlap; Hercules Pro write consent restores from a shaped clock; personal shift bibles unique-by-id and reattach only this member's live linked copy; restore replaces an invalid IANA timezone with America/Toronto"
     },
     {
       "sources": [

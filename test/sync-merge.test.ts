@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 import { postShift } from "../src/core/commands.ts";
 import { createCompanionProfile } from "../src/core/herculesCompanionContracts.ts";
 import { catalogHousehold } from "../src/core/seed.ts";
-import type { Coworker, CoworkerAttendance, CoworkerSchedule } from "../src/core/coworkers.ts";
+import {
+  scheduledCoworkersForReview,
+  shapeCoworkerAttendance,
+  shapeCoworkerSchedules,
+  shapeCoworkers,
+  type Coworker,
+  type CoworkerAttendance,
+  type CoworkerSchedule,
+} from "../src/core/coworkers.ts";
 import { parseSevenShiftsCalendar } from "../src/core/sevenShiftsCalendar.ts";
 import { shapeShiftEnvelopes, shiftBibleMaterialHash, type ShiftBible, type ShiftEnvelope } from "../src/core/shiftEnvelope.ts";
 import {
@@ -422,7 +430,107 @@ describe("two-device envelope recency", () => {
       { ...shared, householdId: "" },
     ).householdId).toBe("");
   });
+
+  it("drops onboarding submissions, approvals, proposals, and merges that belong to another household", () => {
+    const { shared } = splitForSync(catalogHousehold(), "MEM-002");
+    const mine = {
+      submission: onboardingSubmission({ householdId: "HH-MINE" }),
+      approval: onboardingApproval({ householdId: "HH-MINE" }),
+      proposal: onboardingProposal({ householdId: "HH-MINE" }),
+      merge: onboardingCategoryMerge({ householdId: "HH-MINE" }),
+    };
+    const other = {
+      submission: onboardingSubmission({ id: "ONB-SUB-OTHER", householdId: "HH-OTHER" }),
+      approval: onboardingApproval({ id: "ONB-APR-OTHER", householdId: "HH-OTHER" }),
+      proposal: onboardingProposal({ id: "ONB-PROP-OTHER", householdId: "HH-OTHER", submissionId: "ONB-SUB-OTHER" }),
+      merge: onboardingCategoryMerge({
+        id: "ONB-MERGE-OTHER",
+        householdId: "HH-OTHER",
+        submissionIds: ["ONB-SUB-OTHER"],
+        resolutions: [{ sourceId: "ONB-PROP-OTHER", categoryId: "CAT-OTHER" }],
+      }),
+    };
+    const mixed = {
+      onboardingSubmissions: [mine.submission, other.submission],
+      onboardingApprovals: [mine.approval, other.approval],
+      onboardingCategoryProposals: [mine.proposal, other.proposal],
+      onboardingCategoryMerges: [mine.merge, other.merge],
+    };
+
+    const kept = mergeShared(
+      { ...shared, householdId: "HH-MINE", ...mixed },
+      { ...shared, householdId: "HH-CLIENT", ...mixed },
+    );
+    expect(kept.householdId).toBe("HH-MINE");
+    expect(kept.onboardingSubmissions).toEqual([mine.submission]);
+    expect(kept.onboardingApprovals).toEqual([mine.approval]);
+    expect(kept.onboardingCategoryProposals).toEqual([mine.proposal]);
+    expect(kept.onboardingCategoryMerges).toEqual([mine.merge]);
+
+    const fallback = mergeShared(
+      { ...shared, householdId: "", ...mixed },
+      { ...shared, householdId: "HH-MINE", onboardingSubmissions: [], onboardingApprovals: [], onboardingCategoryProposals: [], onboardingCategoryMerges: [] },
+    );
+    expect(fallback.householdId).toBe("HH-MINE");
+    expect(fallback.onboardingSubmissions).toEqual([mine.submission]);
+    expect(fallback.onboardingApprovals).toEqual([mine.approval]);
+    expect(fallback.onboardingCategoryProposals).toEqual([mine.proposal]);
+    expect(fallback.onboardingCategoryMerges).toEqual([mine.merge]);
+  });
 });
+
+function onboardingSubmission(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "ONB-SUB-001",
+    householdId: "HH-MINE",
+    memberId: "MEM-002",
+    kind: "categories" as const,
+    revision: 1,
+    categoryIds: ["SUB-FOOD"],
+    estimates: [] as Array<{ subcategoryId: string; amountCents: number }>,
+    submittedAt: "2026-09-04T18:00:00.000Z",
+    supersededBy: null as string | null,
+    ...overrides,
+  };
+}
+
+function onboardingApproval(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "ONB-APR-001",
+    householdId: "HH-MINE",
+    memberId: "MEM-002",
+    scope: "proposal" as const,
+    digest: `proposal-v1-${"a".repeat(64)}`,
+    approvedAt: "2026-09-05T03:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function onboardingProposal(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "ONB-PROP-001",
+    householdId: "HH-MINE",
+    memberId: "MEM-002",
+    submissionId: "ONB-SUB-001",
+    name: "Cat snacks",
+    parentId: "CAT-LIFE",
+    proposedAt: "2026-09-04T18:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function onboardingCategoryMerge(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "ONB-MERGE-001",
+    householdId: "HH-MINE",
+    submissionIds: ["ONB-SUB-001"],
+    resolutions: [{ sourceId: "ONB-PROP-001", categoryId: "CAT-SNACKS" }],
+    categoryIds: ["SUB-FOOD"],
+    mergedByMemberId: "MEM-002",
+    mergedAt: "2026-09-04T18:02:00.000Z",
+    ...overrides,
+  };
+}
 
 function attendance(overrides: Partial<CoworkerAttendance> = {}): CoworkerAttendance {
   return {
@@ -647,6 +755,126 @@ describe("shift envelope restore shaping", () => {
     ]);
     expect(shapeShiftEnvelopes(null)).toEqual([]);
     expect(shapeShiftEnvelopes([{ ...laterStale, id: "not a safe id" }])).toEqual([]);
+  });
+});
+
+const SHAPE_FALLBACK = "2026-08-01T00:00:00.000Z";
+
+describe("coworker restore shaping", () => {
+  it("defaults an invalid attendance status to scheduled-assumed and drops another member", () => {
+    expect(shapeCoworkerAttendance(null, SHAPE_FALLBACK)).toEqual([]);
+    expect(shapeCoworkerAttendance([
+      attendance({ status: "present" as never }),
+      attendance({ id: "ATT-THEIRS", ownerMemberId: "MEM-001", coworkerId: "COW-THEIRS" }),
+      "not-attendance",
+    ], SHAPE_FALLBACK, "MEM-002")).toMatchObject([
+      { id: "ATT-001", status: "scheduled-assumed", ownerMemberId: "MEM-002" },
+    ]);
+
+    const laterStale = attendance({ status: "user-confirmed-absent", updatedAt: "2026-08-01T00:00:00.000Z" });
+    const earlierLive = attendance({ status: "user-confirmed-present", updatedAt: "2026-08-03T00:00:00.000Z" });
+    expect(shapeCoworkerAttendance([earlierLive, laterStale], SHAPE_FALLBACK)).toMatchObject([
+      { id: "ATT-001", status: "user-confirmed-present" },
+    ]);
+    expect(shapeCoworkerAttendance([
+      attendance({ status: "user-confirmed-present", updatedAt: "2026-08-01T00:00:00.000Z" }),
+      attendance({ status: "user-confirmed-absent", updatedAt: "2026-08-01T00:00:00.000Z" }),
+    ], SHAPE_FALLBACK)).toMatchObject([{ id: "ATT-001", status: "user-confirmed-absent" }]);
+
+    const { personal } = splitForSync(catalogHousehold(), "MEM-002");
+    expect(mergePersonal(
+      personal,
+      { ...personal, coworkerAttendance: [attendance({ status: "present" as never })] },
+    ).coworkerAttendance).toMatchObject([{ id: "ATT-001", status: "scheduled-assumed" }]);
+  });
+
+  it("refuses coworker schedules with a bad source key, one-sided hours, or an inverted window", () => {
+    expect(shapeCoworkerSchedules(null, SHAPE_FALLBACK)).toEqual([]);
+    const openEnded = schedule({ scheduledStart: null, scheduledEnd: null });
+    expect(shapeCoworkerSchedules([
+      openEnded,
+      schedule({ id: "SCH-START", scheduledEnd: null, sourceScheduleKey: "s7shift_bbbbbbbbbbbbbbbbbbbb" }),
+      schedule({ id: "SCH-END", scheduledStart: null, sourceScheduleKey: "s7shift_cccccccccccccccccccc" }),
+      schedule({
+        id: "SCH-INVERTED",
+        scheduledStart: "2026-08-30T02:30:00.000Z",
+        scheduledEnd: "2026-08-29T20:30:00.000Z",
+        sourceScheduleKey: "s7shift_dddddddddddddddddddd",
+      }),
+      schedule({ id: "SCH-KEY", sourceScheduleKey: "shift-not-protected" }),
+      schedule({ id: "SCH-DATE", date: "2026-8-29", sourceScheduleKey: "s7shift_eeeeeeeeeeeeeeeeeeee" }),
+      schedule({ id: "SCH-THEIRS", ownerMemberId: "MEM-001", sourceScheduleKey: "s7shift_ffffffffffffffffffff" }),
+    ], SHAPE_FALLBACK, "MEM-002")).toEqual([openEnded]);
+
+    const { personal } = splitForSync(catalogHousehold(), "MEM-002");
+    expect(mergePersonal(
+      personal,
+      {
+        ...personal,
+        coworkerSchedules: [
+          openEnded,
+          schedule({ id: "SCH-KEY", sourceScheduleKey: "s7shift_short" }),
+        ],
+      },
+    ).coworkerSchedules).toEqual([openEnded]);
+  });
+
+  it("treats an unknown coworker source as manual and drops an unsafe identity key", () => {
+    expect(shapeCoworkers([
+      coworker({ source: "imported" as never, sourceIdentityKey: "raw-provider-id" }),
+      coworker({ id: "COW-THEIRS", ownerMemberId: "MEM-001", displayName: "Other" }),
+    ], SHAPE_FALLBACK, "MEM-002")).toMatchObject([
+      { id: "COW-001", source: "manual", sourceIdentityKey: null, ownerMemberId: "MEM-002" },
+    ]);
+    expect(shapeCoworkers([
+      coworker({ source: "seven-shifts-roster", sourceIdentityKey: "s7subject_aaaaaaaaaaaaaaaaaaaa", updatedAt: "2026-08-01T00:00:00.000Z" }),
+      coworker({ source: "manual", sourceIdentityKey: "s7subject_bbbbbbbbbbbbbbbbbbbb", updatedAt: "2026-08-03T00:00:00.000Z" }),
+    ], SHAPE_FALLBACK)).toMatchObject([
+      { id: "COW-001", source: "manual", sourceIdentityKey: "s7subject_bbbbbbbbbbbbbbbbbbbb" },
+    ]);
+  });
+
+  it("keeps schedules inside a 60-minute margin and falls back to the day when none overlap", () => {
+    const overlapping = schedule({ id: "SCH-OVER" });
+    const exactMargin = schedule({
+      id: "SCH-MARGIN",
+      coworkerId: "COW-MARGIN",
+      scheduledStart: "2026-08-29T18:00:00.000Z",
+      scheduledEnd: "2026-08-29T19:30:00.000Z",
+      sourceScheduleKey: "s7shift_bbbbbbbbbbbbbbbbbbbb",
+    });
+    const tooFar = schedule({
+      id: "SCH-FAR",
+      coworkerId: "COW-FAR",
+      scheduledStart: "2026-08-29T12:00:00.000Z",
+      scheduledEnd: "2026-08-29T18:00:00.000Z",
+      sourceScheduleKey: "s7shift_cccccccccccccccccccc",
+    });
+    const inactive = schedule({
+      id: "SCH-OFF",
+      coworkerId: "COW-OFF",
+      active: false,
+      sourceScheduleKey: "s7shift_dddddddddddddddddddd",
+    });
+    const otherDay = schedule({
+      id: "SCH-DAY",
+      coworkerId: "COW-DAY",
+      date: "2026-08-28",
+      sourceScheduleKey: "s7shift_eeeeeeeeeeeeeeeeeeee",
+    });
+    const review = {
+      ownerMemberId: "MEM-002",
+      jobId: "JOB-001",
+      date: "2026-08-29",
+      startedAt: "2026-08-29T20:30:00.000Z",
+      endedAt: "2026-08-30T02:30:00.000Z",
+    };
+    expect(scheduledCoworkersForReview(
+      [overlapping, exactMargin, tooFar, inactive, otherDay],
+      review,
+    ).map((row) => row.id)).toEqual(["SCH-OVER", "SCH-MARGIN"]);
+    expect(scheduledCoworkersForReview([tooFar, inactive, otherDay], review).map((row) => row.id))
+      .toEqual(["SCH-FAR"]);
   });
 });
 
